@@ -1,12 +1,13 @@
-# Environnement et secrets
+# Secrets et configuration locale
 .env
 .env.*
+!.env.example
 .clasp.json
 .clasprc.json
 credentials.json
 token.json
 client_secret*.json
-# Dépendances et artefacts
+# Dépendances et builds
 node_modules/
 .next/
 dist/
@@ -18,3 +19,7 @@ patients_reels/
 resultats_reels/
 *.csv
 *.xlsx
+# Journaux et fichiers système
+*.log
+.DS_Store
+Thumbs.db
