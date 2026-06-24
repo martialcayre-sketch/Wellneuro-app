@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test QE Engine</title>
+  <style>
+    body { font-family: Arial; margin: 20px; background: #f5f5f5; }
+    .test { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border-left: 4px solid #2ea8a0; }
+    .pass { color: green; font-weight: bold; }
+    .fail { color: red; font-weight: bold; }
+    pre { background: #f0f0f0; padding: 10px; overflow-x: auto; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<h1>Test du Moteur QE</h1>
+
+<div class="test">
+  <h3>Test 1 : Vérifier qe_selftest() disponible</h3>
+  <p id="test1">En attente...</p>
+  <script>
+    if (typeof qe_selftest === 'function') {
+      document.getElementById('test1').innerHTML = '<span class="pass">✓ PASS</span> - qe_selftest est disponible';
+    } else {
+      document.getElementById('test1').innerHTML = '<span class="fail">✗ FAIL</span> - qe_selftest n\'existe pas';
+    }
+  </script>
+</div>
+
+<div class="test">
+  <h3>Test 2 : Vérifier les fonctions QE</h3>
+  <p id="test2">En attente...</p>
+  <script>
+    const funcs = ['qeInit', 'qeRenderSection', 'qeNext', 'qePrev', 'qeSubmit', 'qeBack'];
+    const missing = funcs.filter(f => typeof window[f] !== 'function');
+    if (missing.length === 0) {
+      document.getElementById('test2').innerHTML = '<span class="pass">✓ PASS</span> - Toutes les fonctions QE existent: ' + funcs.join(', ');
+    } else {
+      document.getElementById('test2').innerHTML = '<span class="fail">✗ FAIL</span> - Manquantes: ' + missing.join(', ');
+    }
+  </script>
+</div>
+
+<div class="test">
+  <h3>Test 3 : Vérifier les éléments DOM</h3>
+  <p id="test3">En attente...</p>
+  <script>
+    const elements = ['view-q-engine', 'qe-titre', 'qe-instructions', 'qe-progress', 'qe-section-titre', 'qe-section-body', 'qe-btn-prev', 'qe-btn-next', 'qe-btn-submit', 'view-q-score', 'qs-titre'];
+    const missing = elements.filter(id => !document.getElementById(id));
+    if (missing.length === 0) {
+      document.getElementById('test3').innerHTML = '<span class="pass">✓ PASS</span> - Tous les éléments DOM existent';
+    } else {
+      document.getElementById('test3').innerHTML = '<span class="fail">✗ FAIL</span> - Éléments manquants: ' + missing.join(', ');
+    }
+  </script>
+</div>
+
+<div class="test">
+  <h3>Test 4 : Vérifier l'objet QE</h3>
+  <p id="test4">En attente...</p>
+  <script>
+    if (typeof QE === 'object' && QE.sections !== undefined) {
+      document.getElementById('test4').innerHTML = '<span class="pass">✓ PASS</span> - QE objet initialisé: ' + JSON.stringify({def: QE.def ? 'set' : 'null', sections: QE.sections.length, current: QE.current});
+    } else {
+      document.getElementById('test4').innerHTML = '<span class="fail">✗ FAIL</span> - QE n\'est pas correctement initialisé';
+    }
+  </script>
+</div>
+
+<div class="test">
+  <h3>Test 5 : Tester qe_selftest()</h3>
+  <p id="test5">En attente...</p>
+  <button onclick="testSelftest()">Exécuter qe_selftest()</button>
+  <pre id="test5-output"></pre>
+  <script>
+    function testSelftest() {
+      try {
+        const oldView = showView;
+        let viewsCalled = [];
+        window.showView = function(view) {
+          viewsCalled.push(view);
+          console.log('showView called with:', view);
+        };
+        
+        qe_selftest();
+        
+        window.showView = oldView;
+        
+        document.getElementById('test5').innerHTML = '<span class="pass">✓ PASS</span> - qe_selftest() exécuté';
+        document.getElementById('test5-output').textContent = 'QE state:\n' + JSON.stringify({
+          title: QE.def ? QE.def.titre : 'N/A',
+          sections: QE.sections.length,
+          current: QE.current,
+          answers: Object.keys(QE.answers).length + ' réponses',
+          viewsCalled: viewsCalled
+        }, null, 2);
+      } catch(e) {
+        document.getElementById('test5').innerHTML = '<span class="fail">✗ FAIL</span> - Erreur: ' + e.message;
+        document.getElementById('test5-output').textContent = e.stack;
+      }
+    }
+  </script>
+</div>
+
+<hr>
+<p><strong>Note:</strong> Ce test doit être ouvert dans le contexte de l'application GAS (avec la fonction showView() disponible).</p>
+
+</body>
+</html>

@@ -857,123 +857,264 @@ function renderPatientHome(list) {
 }
 
 // ═══════════════════ PATIENT — QUESTIONNAIRE ═══════════════════
+// ═══════════════════ MOTEUR QUESTIONNAIRE (QE) ═══════════════════
+
+let QE = {
+  def: null,
+  idAss: null,
+  sections: [],
+  current: 0,
+  answers: {}
+};
 
 function startQ(idQ, idAss) {
   document.getElementById('loading').style.display = 'flex';
   google.script.run
     .withSuccessHandler(function(r) {
       document.getElementById('loading').style.display = 'none';
-      if (r.error) { alert('Erreur : ' + r.error); return; }
-      renderQuestionnaire(r.questionnaire, idAss);
+      if (!r || r.error) { alert('Erreur : ' + (r ? r.error : 'Réponse vide')); return; }
+      qeInit(r.questionnaire || r, idAss);
     })
     .withFailureHandler(function(e) {
       document.getElementById('loading').style.display = 'none';
-      alert('Erreur : ' + e.message);
+      alert('Erreur chargement questionnaire : ' + e.message);
     })
     .serveQuestionnaire(idQ);
 }
 
-function renderQuestionnaire(def, idAss) {
-  const container = document.getElementById('pt-q-list');
-  const empty = document.getElementById('pt-empty');
-  container.innerHTML = '';
-  empty.classList.add('d-none');
+function qeInit(def, idAss) {
+  QE.def    = def;
+  QE.idAss  = idAss;
+  QE.answers = {};
+  QE.current = 0;
 
-  const form = document.createElement('div');
-  form.id = 'q-form-wrapper';
-  form.innerHTML =
-    '<div class="d-flex align-items-center gap-2 mb-4">' +
-    '  <button class="btn btn-sm btn-outline-secondary" onclick="loadPatientHome()">' +
-    '    <i class="fas fa-arrow-left me-1"></i>Retour' +
-    '  </button>' +
-    '  <h5 class="mb-0">' + def.titre + '</h5>' +
-    '</div>' +
-    (def.descriptionPatient ? '<p class="text-muted mb-4">' + def.descriptionPatient + '</p>' : '') +
-    '<form id="q-form" class="mb-4">' +
-    def.questions.map(function(q) { return renderQuestion(q); }).join('') +
-    '</form>' +
-    '<div class="d-flex gap-3 align-items-center">' +
-    '  <button class="btn btn-teal btn-lg" onclick="submitAnswers(\'' + def.id + '\',\'' + idAss + '\')">' +
-    '    <i class="fas fa-paper-plane me-2"></i>Valider mes réponses' +
-    '  </button>' +
-    '  <span id="q-submit-msg" class="small text-muted"></span>' +
-    '</div>';
-  container.appendChild(form);
+  if (def.sections && def.sections.length > 0) {
+    QE.sections = def.sections;
+  } else if (def.questions && def.questions.length > 0) {
+    QE.sections = [{ titre: def.titre || '', questions: def.questions }];
+  } else {
+    alert('Ce questionnaire ne contient pas de questions configurées.');
+    return;
+  }
+
+  document.getElementById('qe-titre').textContent = def.titre || '';
+  document.getElementById('qe-instructions').textContent = def.descriptionPatient || def.instructions || '';
+
+  showView('q-engine');
+  qeRenderSection(0);
 }
 
-function renderQuestion(q) {
-  var label = '<label class="form-label fw-semibold">' + q.label +
-    (q.required ? ' <span class="text-danger">*</span>' : '') + '</label>';
+function qeRenderSection(idx) {
+  const section = QE.sections[idx];
+  const total   = QE.sections.length;
 
-  if (q.type === 'likert' || q.type === 'radio') {
-    var opts = q.options.map(function(o, i) {
-      return '<div class="form-check form-check-inline">' +
-        '<input class="form-check-input" type="radio" name="' + q.id + '" id="' + q.id + '_' + i + '" value="' + o.value + '"' +
-        (q.required ? ' required' : '') + '>' +
-        '<label class="form-check-label" for="' + q.id + '_' + i + '">' + o.label + '</label>' +
-        '</div>';
-    }).join('');
-    return '<div class="mb-4 p-3 border rounded">' + label + '<div class="mt-2">' + opts + '</div></div>';
-  }
-  if (q.type === 'select') {
-    var opts = q.options.map(function(o) {
-      return '<option value="' + o.value + '">' + o.label + '</option>';
-    }).join('');
-    return '<div class="mb-4 p-3 border rounded">' + label +
-      '<select class="form-select mt-2" name="' + q.id + '" id="' + q.id + '"' +
-      (q.required ? ' required' : '') + '><option value="">— Choisir —</option>' + opts + '</select></div>';
-  }
-  if (q.type === 'number') {
-    return '<div class="mb-4 p-3 border rounded">' + label +
-      '<input class="form-control mt-2" type="number" name="' + q.id + '" id="' + q.id +
-      '" min="' + (q.min || 0) + '" max="' + (q.max || 100) + '"' +
-      (q.required ? ' required' : '') + '></div>';
-  }
-  if (q.type === 'boolean') {
-    return '<div class="mb-4 p-3 border rounded">' + label + '<div class="mt-2">' +
-      '<div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="' + q.id + '" value="1" id="' + q.id + '_y"><label class="form-check-label" for="' + q.id + '_y">Oui</label></div>' +
-      '<div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="' + q.id + '" value="0" id="' + q.id + '_n"><label class="form-check-label" for="' + q.id + '_n">Non</label></div>' +
-      '</div></div>';
-  }
-  return '<div class="mb-4 p-3 border rounded">' + label +
-    '<input class="form-control mt-2" type="text" name="' + q.id + '" id="' + q.id + '"' +
-    (q.required ? ' required' : '') + '></div>';
-}
+  const pct = Math.round(((idx) / total) * 100);
+  document.getElementById('qe-progress').style.width = pct + '%';
+  document.getElementById('qe-progress-txt').textContent = 'Section ' + (idx + 1) + ' / ' + total;
 
-function submitAnswers(idQ, idAss) {
-  var form = document.getElementById('q-form');
-  if (!form.checkValidity()) { form.reportValidity(); return; }
+  document.getElementById('qe-section-titre').textContent = section.titre || ('Section ' + (idx + 1));
 
-  var answers = {};
-  var data = new FormData(form);
-  data.forEach(function(v, k) {
-    var val = parseFloat(v);
-    answers[k] = isNaN(val) ? v : val;
+  const body = document.getElementById('qe-section-body');
+  body.innerHTML = (section.description
+    ? '<div class="qe-section-desc">' + section.description + '</div>'
+    : '') +
+    (section.questions || []).map(function(q) { return qeRenderQuestion(q); }).join('');
+
+  (section.questions || []).forEach(function(q) {
+    if (QE.answers[q.id] !== undefined) {
+      qeRestoreAnswer(q);
+    }
   });
 
-  document.getElementById('q-submit-msg').textContent = 'Envoi en cours…';
+  document.getElementById('qe-btn-prev').style.visibility   = idx === 0 ? 'hidden' : 'visible';
+  document.getElementById('qe-btn-next').classList.toggle('d-none',   idx === total - 1);
+  document.getElementById('qe-btn-submit').classList.toggle('d-none', idx !== total - 1);
+
+  window.scrollTo(0, 0);
+}
+
+function qeRenderQuestion(q) {
+  const num   = '<span class="qe-question-num">' + (q.order || q.num || '') + '.</span> ';
+  const label = '<div class="qe-question-label">' + num + (q.label || q.question || '') +
+    (q.required ? ' <span class="required-star">*</span>' : '') + '</div>';
+  const vmsg  = '<div class="qe-validation-msg" id="vm_' + q.id + '">Réponse requise</div>';
+
+  if (q.type === 'likert' || q.type === 'radio') {
+    const layout = (q.options && q.options.length > 4) ? 'qe-opt-vertical' : 'qe-options';
+    const opts = (q.options || []).map(function(o) {
+      return '<label class="qe-opt">' +
+        '<input type="radio" name="' + q.id + '" value="' + o.value + '">' +
+        o.label + '</label>';
+    }).join('');
+    return '<div class="qe-question"><div class="' + layout + '">' + label + opts + '</div>' + vmsg + '</div>';
+  }
+
+  if (q.type === 'select') {
+    const opts = (q.options || []).map(function(o) {
+      return '<option value="' + o.value + '">' + o.label + '</option>';
+    }).join('');
+    return '<div class="qe-question">' + label +
+      '<select class="qe-select" name="' + q.id + '" id="qe_' + q.id + '">' +
+      '<option value="">— Choisir —</option>' + opts + '</select>' + vmsg + '</div>';
+  }
+
+  if (q.type === 'number') {
+    return '<div class="qe-question">' + label +
+      '<div class="qe-number-wrap">' +
+      '<input type="number" class="qe-number" name="' + q.id + '" id="qe_' + q.id + '"' +
+      ' min="' + (q.min !== undefined ? q.min : 0) + '"' +
+      ' max="' + (q.max !== undefined ? q.max : 100) + '">' +
+      (q.unite ? '<span class="text-muted small">' + q.unite + '</span>' : '') +
+      '</div>' + vmsg + '</div>';
+  }
+
+  if (q.type === 'boolean') {
+    return '<div class="qe-question"><div class="qe-options">' + label +
+      '<label class="qe-opt"><input type="radio" name="' + q.id + '" value="1"> Oui</label>' +
+      '<label class="qe-opt"><input type="radio" name="' + q.id + '" value="0"> Non</label>' +
+      '</div>' + vmsg + '</div>';
+  }
+
+  return '<div class="qe-question">' + label +
+    '<input type="text" class="form-control mt-2" name="' + q.id + '" id="qe_' + q.id + '">' +
+    vmsg + '</div>';
+}
+
+function qeRestoreAnswer(q) {
+  const val = QE.answers[q.id];
+  if (val === undefined || val === null) return;
+  if (q.type === 'likert' || q.type === 'radio' || q.type === 'boolean') {
+    const radio = document.querySelector('input[name="' + q.id + '"][value="' + val + '"]');
+    if (radio) radio.checked = true;
+  } else {
+    const el = document.getElementById('qe_' + q.id);
+    if (el) el.value = val;
+  }
+}
+
+function qeCollectSection() {
+  const section = QE.sections[QE.current];
+  let valid = true;
+
+  (section.questions || []).forEach(function(q) {
+    const vm = document.getElementById('vm_' + q.id);
+    if (vm) vm.style.display = 'none';
+
+    let val;
+    if (q.type === 'likert' || q.type === 'radio' || q.type === 'boolean') {
+      const checked = document.querySelector('input[name="' + q.id + '"]:checked');
+      val = checked ? checked.value : null;
+    } else if (q.type === 'number') {
+      const el = document.getElementById('qe_' + q.id);
+      val = el && el.value !== '' ? el.value : null;
+    } else if (q.type === 'select') {
+      const el = document.getElementById('qe_' + q.id);
+      val = el && el.value !== '' ? el.value : null;
+    } else {
+      const el = document.getElementById('qe_' + q.id);
+      val = el ? el.value.trim() || null : null;
+    }
+
+    if (q.required && (val === null || val === '')) {
+      if (vm) { vm.style.display = 'block'; }
+      valid = false;
+    } else if (val !== null) {
+      const num = parseFloat(val);
+      QE.answers[q.id] = isNaN(num) ? val : num;
+    }
+  });
+
+  return valid;
+}
+
+function qeNext() {
+  if (!qeCollectSection()) return;
+  QE.current++;
+  qeRenderSection(QE.current);
+}
+
+function qePrev() {
+  qeCollectSection();
+  QE.current--;
+  qeRenderSection(QE.current);
+}
+
+function qeBack() {
+  showView('patient-home');
+  loadPatientHome();
+}
+
+function qeSubmit() {
+  if (!qeCollectSection()) return;
+
+  document.getElementById('qe-btn-submit').disabled = true;
+  document.getElementById('qe-btn-submit').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Envoi…';
+
   google.script.run
     .withSuccessHandler(function(r) {
-      if (r.error) { alert('Erreur : ' + r.error); return; }
-      var wrapper = document.getElementById('q-form-wrapper');
-      if (wrapper) wrapper.innerHTML =
-        '<div class="text-center py-5">' +
-        '  <i class="fas fa-check-circle fa-4x text-success mb-3"></i>' +
-        '  <h4>Questionnaire envoyé !</h4>' +
-        '  <p class="text-muted">Merci — votre praticien recevra vos résultats.</p>' +
-        '  <button class="btn btn-teal mt-2" onclick="loadPatientHome()">' +
-        '    <i class="fas fa-arrow-left me-1"></i>Retour à mes questionnaires' +
-        '  </button></div>';
+      if (r && r.error) {
+        alert('Erreur : ' + r.error);
+        document.getElementById('qe-btn-submit').disabled = false;
+        document.getElementById('qe-btn-submit').innerHTML = '<i class="fas fa-paper-plane me-1"></i>Envoyer';
+        return;
+      }
+      qeShowScore(r);
     })
-    .withFailureHandler(function(e) { alert('Erreur : ' + e.message); })
+    .withFailureHandler(function(e) {
+      alert('Erreur envoi : ' + e.message);
+      document.getElementById('qe-btn-submit').disabled = false;
+      document.getElementById('qe-btn-submit').innerHTML = '<i class="fas fa-paper-plane me-1"></i>Envoyer';
+    })
     .submitQuestionnaire({
-      idPatient: APP.idPatient || '',
-      email: APP.email,
-      idAssignation: idAss,
-      idQuestionnaire: idQ,
-      answers: answers
+      idPatient:      APP.idPatient || '',
+      email:          APP.email,
+      idAssignation:  QE.idAss,
+      idQuestionnaire: QE.def.id,
+      answers:        QE.answers
     });
 }
+
+function qeShowScore(r) {
+  const scores = (r && r.scores) ? r.scores : {};
+
+  document.getElementById('qs-titre').textContent = QE.def.titre || '';
+  document.getElementById('qs-icon').textContent  = '✅';
+
+  if (scores.total !== undefined) {
+    document.getElementById('qs-score').textContent =
+      'Score total : ' + scores.total + (scores.maxTotal ? ' / ' + scores.maxTotal : '');
+  } else {
+    document.getElementById('qs-score').textContent = 'Questionnaire complété';
+  }
+
+  const interpEl = document.getElementById('qs-interp');
+  if (scores.interpretation && scores.interpretation.label) {
+    interpEl.className = 'alert mb-3 py-2 px-3 alert-info';
+    interpEl.textContent = scores.interpretation.label;
+  } else {
+    interpEl.className = 'alert mb-3 py-2 px-3 alert-success';
+    interpEl.textContent = 'Merci — vos réponses ont été transmises à votre praticien.';
+  }
+
+  const subEl = document.getElementById('qs-subscores');
+  subEl.innerHTML = '';
+  if (scores.subscores) {
+    subEl.innerHTML = Object.entries(scores.subscores).map(function(entry) {
+      const key = entry[0], val = entry[1];
+      const max = val.max || 40;
+      const pct = Math.min(100, Math.round((val.score / max) * 100));
+      const color = pct >= 70 ? '#dc3545' : pct >= 40 ? '#f39c12' : '#27ae60';
+      return '<div class="qs-subscore">' +
+        '<div><strong>' + (val.label || key) + '</strong>' +
+        '<div class="qs-progress"><div class="qs-bar" style="width:' + pct + '%;background:' + color + '"></div></div></div>' +
+        '<span class="qs-badge" style="background:' + color + '20;color:' + color + '">' + val.score + '/' + max + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  showView('q-score');
+}
+
 
 // ═══════════════════ PRATICIEN — ACCUEIL ═══════════════════
 
@@ -1330,6 +1471,31 @@ function confirmAssignPack(pack) {
         notes: note
       });
   });
+}
+
+// ═══════════════════ DEBUG ═══════════════════
+
+function qe_selftest() {
+  const mock = {
+    id: 'mock-q-1',
+    titre: 'Questionnaire de test',
+    descriptionPatient: 'Ceci est une simulation pour tester le flux QE.',
+    sections: [
+      { titre: 'Général', description: 'Section 1 — informations générales', questions: [
+        { id: 'q1', label: 'Quel âge avez-vous ?', type: 'number', required: true, min: 0, max: 120 },
+        { id: 'q2', label: 'Fumeur ?', type: 'boolean', required: false }
+      ]},
+      { titre: 'Symptômes', questions: [
+        { id: 'q3', label: 'Douleur (0-10)', type: 'number', required: true, min: 0, max: 10 },
+        { id: 'q4', label: 'Humeur', type: 'select', options: [{value:'good',label:'Bonne'},{value:'ok',label:'Moyenne'},{value:'bad',label:'Mauvaise'}], required: true }
+      ]}
+    ]
+  };
+  APP = APP || {};
+  APP.email = APP.email || 'dev@test';
+  APP.idPatient = APP.idPatient || 'dev-patient';
+  qeInit(mock, 'mock-ass-1');
+  console.info('qe_selftest: questionnaire simulé injecté');
 }
 
 </script>

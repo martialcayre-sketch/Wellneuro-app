@@ -1,5 +1,9 @@
 {
     "chat.tools.terminal.autoApprove": {
-        "clasp": true
+        "clasp": true,
+        "/^node test-qe\\.js$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
     }
 }
