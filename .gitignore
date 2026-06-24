@@ -1,0 +1,22 @@
+# Environnement et secrets
+.env
+.env.*
+.clasp.json
+.clasprc.json
+credentials.json
+token.json
+client_secret*.json
+
+# Dépendances et artefacts
+node_modules/
+.next/
+dist/
+build/
+
+# Données sensibles et exports
+exports/
+data/private/
+patients_reels/
+resultats_reels/
+*.csv
+*.xlsx
