@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(clasp --version)",
+      "Bash(clasp status *)",
+      "Bash(clasp push *)",
+      "Bash(clasp deployments *)",
+      "Bash(clasp open *)",
+      "WebFetch(domain:script.google.com)",
+      "Bash(clasp run *)",
+      "Bash(node -e ' *)",
+      "Bash(curl -sL -o /tmp/claude-1000/-workspaces-nutriconsult-nnpp2-gas-mvp/0126d167-8361-4c17-8072-d3e4b803fd7d/scratchpad/gas_response.html \"https://script.google.com/macros/s/AKfycbx0b1iaxUWCmeYZg9WxDkleau3n-8pNFrD2lDAm0OhJT9FJygF8slAbdC4o0dElVDL3/exec\")",
+      "Bash(curl -sL --max-time 15 \"https://script.google.com/macros/s/AKfycbx0b1iaxUWCmeYZg9WxDkleau3n-8pNFrD2lDAm0OhJT9FJygF8slAbdC4o0dElVDL3/exec\")",
+      "WebFetch(domain:n-6xzrjavo2r2vyzoy5yb6y2qwykglsvcuaokkl4y-0lu-script.googleusercontent.com)",
+      "Bash(clasp version *)",
+      "Bash(clasp deploy *)",
+      "Bash(mkdir -p /tmp/claude-1000/-workspaces-nutriconsult-nnpp2-gas-mvp/0126d167-8361-4c17-8072-d3e4b803fd7d/scratchpad/pulled)",
+      "Bash(clasp pull *)",
+      "Bash(curl -sL --max-time 20 \"https://script.google.com/macros/s/AKfycbx0b1iaxUWCmeYZg9WxDkleau3n-8pNFrD2lDAm0OhJT9FJygF8slAbdC4o0dElVDL3/exec\")",
+      "Bash(curl -sL --max-time 15 -H \"Accept: text/html\" --max-redirs 0 \"https://script.google.com/macros/s/AKfycbx0b1iaxUWCmeYZg9WxDkleau3n-8pNFrD2lDAm0OhJT9FJygF8slAbdC4o0dElVDL3/exec\")",
+      "Bash(grep -oP '.{0,20}\\(startPlaintes|Q_PLAINTES|q\\\\.texte|colorMap|cat-plaintes\\).{0,20}' /home/codespace/.claude/projects/-workspaces-nutriconsult-nnpp2-gas-mvp/0126d167-8361-4c17-8072-d3e4b803fd7d/tool-results/bmwqtyxub.txt)",
+      "Bash(curl -sL --max-time 15 -D- \"https://script.google.com/macros/s/AKfycbx0b1iaxUWCmeYZg9WxDkleau3n-8pNFrD2lDAm0OhJT9FJygF8slAbdC4o0dElVDL3/exec\")",
+      "Bash(curl -sL --max-time 20 \"https://script.google.com/macros/s/AKfycbyexxfxxXECj-TMsLEGqaUuvOFiXa66k9jbDRqhZrhyBGPzsEuBw5PGKJyY23TQcbFb/exec\")",
+      "Bash(curl -sI --max-time 10 \"https://script.google.com/macros/s/AKfycbyexxfxxXECj-TMsLEGqaUuvOFiXa66k9jbDRqhZrhyBGPzsEuBw5PGKJyY23TQcbFb/exec\")",
+      "Bash(curl -sI --max-time 10 \"https://script.google.com/macros/s/AKfycbx0b1iaxUWCmeYZg9WxDkleau3n-8pNFrD2lDAm0OhJT9FJygF8slAbdC4o0dElVDL3/exec\")",
+      "Bash(npm install *)",
+      "Bash(clasp login *)",
+      "Read(//home/codespace/**)",
+      "Bash(git ls-files *)",
+      "Bash(node /workspaces/nutriconsult-nnpp2-gas-mvp/test-qe.js)",
+      "Bash(git rm *)",
+      "Bash(npx clasp *)",
+      "Bash(npm ls *)"
+    ]
+  }
+}
