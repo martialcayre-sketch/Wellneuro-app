@@ -7,6 +7,9 @@
     "executeAs": "USER_DEPLOYING",
     "access": "ANYONE"
   },
+  "executionApi": {
+    "access": "MYSELF"
+  },
   "oauthScopes": [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/script.external_request"

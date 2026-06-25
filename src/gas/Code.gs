@@ -846,3 +846,7 @@ function getQuestionnaireResults(patientEmail) {
     return results;
   } catch(e) { return { error: e.message }; }
 }
+
+function ping() {
+  return { status: 'ok', timestamp: new Date().toISOString() };
+}
