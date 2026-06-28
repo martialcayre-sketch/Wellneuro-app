@@ -5,6 +5,12 @@
 
 const SHEET_ID = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
 
+// Identités email projet
+const MAILBOX_CONTACT = 'contact@wellneuro.fr';
+const MAILBOX_NOREPLY = 'noreply@wellneuro.fr';
+const PRACTITIONER_UNIQUE_EMAIL = 'martialcayre@wellneuro.fr';
+const ADMIN_EMAIL = 'admin@wellneuro.fr';
+
 // Mode développement : permet à Martial d'accéder aux deux espaces avec le même compte Google.
 // À supprimer ou vider avant mise en production.
 const DEV_MULTI_ROLE_EMAILS = ['martialcayre@wellneuro.fr'];
@@ -213,6 +219,68 @@ function updateAssignationStatus(idAssignation, statut) {
   }
 }
 
+// ─── NOTIFICATIONS EMAIL ──────────────────────────────────────────────────────
+
+/**
+ * Envoi transactionnel sans échange (documents/liens praticien -> patient).
+ * Priorité: alias noreply@wellneuro.fr, fallback noReply.
+ */
+function sendNoReplyEmailToPatient_(patientEmail, sujet, corps) {
+  try {
+    GmailApp.sendEmail(patientEmail, sujet, corps, {
+      from: MAILBOX_NOREPLY,
+      name: 'NutriConsult',
+      replyTo: MAILBOX_NOREPLY
+    });
+  } catch (e) {
+    Logger.log('sendNoReplyEmailToPatient_ alias fallback: ' + e.message);
+    MailApp.sendEmail(patientEmail, sujet, corps, {
+      name: 'NutriConsult',
+      noReply: true
+    });
+  }
+}
+
+/**
+ * Envoi conversationnel patient <-> praticien.
+ * Priorité: alias contact@wellneuro.fr, fallback replyTo contact.
+ */
+function sendContactEmailToPatient_(patientEmail, sujet, corps) {
+  try {
+    GmailApp.sendEmail(patientEmail, sujet, corps, {
+      from: MAILBOX_CONTACT,
+      name: 'NutriConsult - Contact',
+      replyTo: MAILBOX_CONTACT
+    });
+  } catch (e) {
+    Logger.log('sendContactEmailToPatient_ alias fallback: ' + e.message);
+    MailApp.sendEmail(patientEmail, sujet, corps, {
+      name: 'NutriConsult - Contact',
+      replyTo: MAILBOX_CONTACT
+    });
+  }
+}
+
+/**
+ * Accusé de réception au patient après soumission d'un questionnaire.
+ * Silencieux en cas d'erreur (ne doit jamais bloquer submitQuestionnaire).
+ */
+function sendAcknowledgmentToPatient_(patientEmail, patientPrenom, titreQuestionnaire) {
+  try {
+    if (!patientEmail) return;
+    var sujet = 'Vos réponses ont bien été reçues — NutriConsult';
+    var corps = 'Bonjour ' + (patientPrenom || '') + ',\n\n'
+      + 'Nous confirmons la bonne réception de vos réponses au questionnaire :\n'
+      + '« ' + titreQuestionnaire + ' »\n\n'
+      + 'Votre praticien en prendra connaissance prochainement.\n\n'
+      + 'Merci de votre participation.\n\n'
+      + '— L\'équipe NutriConsult';
+    sendNoReplyEmailToPatient_(patientEmail, sujet, corps);
+  } catch(e) {
+    Logger.log('sendAcknowledgmentToPatient_ error: ' + e.message);
+  }
+}
+
 // ─── FONCTIONS PRATICIEN ──────────────────────────────────────────────────────
 
 function getPraticienDashboard() {
@@ -354,6 +422,59 @@ function assignQuestionnaire(patientEmail, idQuestionnaire, titreQ, dateLimite, 
 
     return { success: true, id: id };
   } catch(e) {
+    return { error: e.message };
+  }
+}
+
+/**
+ * Repousse la date limite d'une assignation sans en créer une nouvelle.
+ * @param {string} idAssignation
+ * @param {string} nouvelleDateStr - format 'YYYY-MM-DD'
+ */
+function extendAssignationDeadline(idAssignation, nouvelleDateStr) {
+  try {
+    if (!idAssignation || !nouvelleDateStr) return { error: 'Paramètres manquants' };
+    const sh = getSheet('Assignations');
+    const rows = sh.getDataRange().getValues();
+    for (let i = DATA_START; i < rows.length; i++) {
+      if (rows[i][0] === idAssignation) {
+        sh.getRange(i + 1, 7).setValue(new Date(nouvelleDateStr));
+        return { success: true };
+      }
+    }
+    return { error: 'Assignation introuvable : ' + idAssignation };
+  } catch(e) {
+    Logger.log('extendAssignationDeadline error: ' + e.message);
+    return { error: e.message };
+  }
+}
+
+/**
+ * Réassigne un questionnaire déjà complété pour un suivi longitudinal.
+ * Crée une NOUVELLE ligne d'assignation — n'écrase jamais les résultats précédents.
+ * @param {string} patientEmail
+ * @param {string} idQuestionnaire
+ * @param {string} nouvelleDateLimite - format 'YYYY-MM-DD'
+ * @param {string} notes - optionnel
+ */
+function reassignQuestionnaireForFollowUp(patientEmail, idQuestionnaire, nouvelleDateLimite, notes) {
+  try {
+    var titre = idQuestionnaire;
+    try {
+      var qRows = getSheet('Questionnaires').getDataRange().getValues();
+      for (var qi = DATA_START; qi < qRows.length; qi++) {
+        if (qRows[qi][0] === idQuestionnaire) { titre = qRows[qi][1]; break; }
+      }
+    } catch(e) {}
+    return assignQuestionnaire(
+      patientEmail,
+      idQuestionnaire,
+      titre,
+      nouvelleDateLimite,
+      notes || 'Suivi longitudinal'
+    );
+  } catch(e) {
+    Logger.log('reassignQuestionnaireForFollowUp error: ' + e.message);
     return { error: e.message };
   }
 }
@@ -572,7 +693,7 @@ function setupDevMultiRoleMartial() {
   };
 }
 
-// ─── OUTIL DEV — CRÉER LES PRATICIENS WELLNEURO.FR ───────────────────────────
+// ─── OUTIL DEV — CRÉER LE COMPTE ADMIN WELLNEURO.FR ──────────────────────────
 
 function setupPraticienWellneuro() {
   const ss = SpreadsheetApp.openById(
@@ -586,15 +707,8 @@ function setupPraticienWellneuro() {
     .slice(1)
     .map(r => String(r[1]).trim().toLowerCase());
 
+  // contact@wellneuro.fr reste une messagerie d'échange patient, sans rôle applicatif.
   const comptes = [
-    {
-      id:     'PRA_CONTACT_WN',
-      email:  'contact@wellneuro.fr',
-      role:   'Praticien',
-      prenom: 'Contact',
-      nom:    'WellNeuro',
-      note:   'Compte praticien démonstration'
-    },
     {
       id:     'PRA_ADMIN_WN',
       email:  'admin@wellneuro.fr',
@@ -871,6 +985,18 @@ function submitQuestionnaire(payload) {
         }
       }
     }
+    var patientPrenom = '';
+    try {
+      var patRows = getSheet('Patients').getDataRange().getValues();
+      for (var pi = DATA_START; pi < patRows.length; pi++) {
+        if (normalizeEmail_(patRows[pi][1]) === normalizeEmail_(email) && patRows[pi][2] === 'Patient') {
+          patientPrenom = patRows[pi][3];
+          break;
+        }
+      }
+    } catch(e) {}
+    sendAcknowledgmentToPatient_(email, patientPrenom, titre);
+
     return {success: true, scores: scores, titre: titre};
   } catch(e) { return {error: e.message}; }
 }
