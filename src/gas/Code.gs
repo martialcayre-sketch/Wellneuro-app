@@ -1282,7 +1282,7 @@ function callClaudeForSynthesis_(userMessage) {
   var apiKey = props.getProperty('ANTHROPIC_API_KEY');
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY non configurée dans les propriétés du script.');
 
-  var model = props.getProperty('CLAUDE_MODEL') || 'claude-sonnet-4-20250514';
+  var model = props.getProperty('CLAUDE_MODEL') || 'claude-sonnet-4-6';
 
   var payload = {
     model: model,
@@ -1370,7 +1370,7 @@ function generateAISynthesisForPatient(patientEmail) {
     var synthese = callClaudeForSynthesis_(userMessage);
 
     var props = PropertiesService.getScriptProperties();
-    var model = props.getProperty('CLAUDE_MODEL') || 'claude-sonnet-4-20250514';
+    var model = props.getProperty('CLAUDE_MODEL') || 'claude-sonnet-4-6';
     var idSynthese = 'SYN' + new Date().getTime();
 
     var sh = getOrCreateSheet('Syntheses_IA', SYNTHESE_HEADERS);
