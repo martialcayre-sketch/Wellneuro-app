@@ -1003,25 +1003,67 @@ function submitQuestionnaire(payload) {
 
 function getQuestionnaireResults(patientEmail) {
   try {
-    const sh = getSheet('Rep_Questionnaires');
-    if (!sh) return [];
-    const rows = sh.getDataRange().getValues();
     const results = [];
     const normalizedEmail = normalizeEmail_(patientEmail);
-    for (let i = DATA_START; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row[0]) continue;
-      if (normalizeEmail_(row[2]) === normalizedEmail) {
-        let scores = {};
-        try { scores = JSON.parse(row[8]); } catch(e) {}
-        results.push({
-          idReponse: row[0], idPatient: row[1], email: row[2],
-          idAssignation: row[3], idQuestionnaire: row[4], titre: row[5],
-          date: formatDate(row[6]), scores: scores,
-          scorePrincipal: row[9], interpretation: row[10]
-        });
+
+    // Rep_Questionnaires (questionnaires génériques)
+    const shQ = getSheet('Rep_Questionnaires');
+    if (shQ) {
+      const rowsQ = shQ.getDataRange().getValues();
+      for (let i = DATA_START; i < rowsQ.length; i++) {
+        const row = rowsQ[i];
+        if (!row[0]) continue;
+        if (normalizeEmail_(row[2]) === normalizedEmail) {
+          let scores = {};
+          try { scores = JSON.parse(row[8]); } catch(e) {}
+          results.push({
+            idReponse: row[0], idPatient: row[1], email: row[2],
+            idAssignation: row[3], idQuestionnaire: row[4], titre: row[5],
+            date: formatDate(row[6]), scores: scores,
+            scorePrincipal: row[9], interpretation: row[10]
+          });
+        }
       }
     }
+
+    // Rep_Plaintes (questionnaire Plaintes — structure spécifique)
+    const shP = getSheet('Rep_Plaintes');
+    if (shP) {
+      const rowsP = shP.getDataRange().getValues();
+      for (let i = DATA_START; i < rowsP.length; i++) {
+        const row = rowsP[i];
+        if (!row[0]) continue;
+        if (normalizeEmail_(row[2]) === normalizedEmail) {
+          const total = row[12] || 0;
+          const interp = row[13] || '';
+          results.push({
+            idReponse: row[0], idPatient: row[1], email: row[2],
+            idAssignation: row[3], idQuestionnaire: 'Q_PLAINTES',
+            titre: 'Questionnaire de Plaintes',
+            date: formatDate(row[4]),
+            scores: {
+              total: total,
+              subScores: [
+                { label: 'Fatigue', total: row[5] },
+                { label: 'Douleurs', total: row[6] },
+                { label: 'Digestion', total: row[7] },
+                { label: 'Surpoids', total: row[8] },
+                { label: 'Insomnie', total: row[9] },
+                { label: 'Moral', total: row[10] },
+                { label: 'Mobilité', total: row[11] }
+              ]
+            },
+            scorePrincipal: total,
+            interpretation: interp
+          });
+        }
+      }
+    }
+
+    results.sort(function(a, b) {
+      return new Date(b.date) - new Date(a.date);
+    });
+
     return results;
   } catch(e) { return { error: e.message }; }
 }
