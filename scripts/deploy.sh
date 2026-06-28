@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 DESC="${1:-deploy $(date '+%Y-%m-%d %H:%M')}"
+DEPLOY_ID_FILE=".deploy-id"
 
 echo "═══ NutriConsult — Déploiement unifié ═══"
 echo ""
@@ -17,9 +18,17 @@ bash scripts/check_no_secrets.sh
 echo "── 2/5 Push vers Google Apps Script…"
 clasp push
 
-# 3. Déploiement GAS (nouvelle version)
+# 3. Déploiement GAS (mise à jour du déploiement existant pour conserver les paramètres d'accès)
 echo "── 3/5 Déploiement : $DESC"
-clasp deploy --description "$DESC"
+if [[ -f "$DEPLOY_ID_FILE" ]]; then
+  DEPLOY_ID="$(cat "$DEPLOY_ID_FILE" | tr -d '[:space:]')"
+  clasp deploy -i "$DEPLOY_ID" --description "$DESC"
+  echo "   ✓ Déploiement $DEPLOY_ID mis à jour"
+else
+  echo "   ⚠ Pas de .deploy-id — création d'un nouveau déploiement"
+  echo "   ⚠ Pensez à configurer l'accès 'Tout le monde dans wellneuro.fr' dans l'éditeur GAS"
+  clasp deploy --description "$DESC"
+fi
 
 # 4. Git commit
 echo "── 4/5 Commit Git…"
