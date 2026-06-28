@@ -14,6 +14,7 @@ echo "── 1/6 Synchronisation src/gas → racine…"
 cp src/gas/Code.gs Code.gs
 cp src/gas/Questions.gs Questions.gs
 cp src/gas/appsscript.json appsscript.json
+cp src/gas/index.html index.html
 echo "   ✓ Fichiers synchronisés"
 
 # 2. Vérification secrets
