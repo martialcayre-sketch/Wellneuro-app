@@ -1255,6 +1255,52 @@ function ping() {
   return { status: 'ok', timestamp: new Date().toISOString() };
 }
 
+// ─── TEST IA — Exécuter depuis l'éditeur GAS pour déboguer ───────────────────
+
+function testSyntheseIA() {
+  var email = 'martialcayre@wellneuro.fr';
+  Logger.log('=== TEST SYNTHÈSE IA ===');
+
+  // 1. Vérifier la clé API
+  var props = PropertiesService.getScriptProperties();
+  var apiKey = props.getProperty('ANTHROPIC_API_KEY');
+  Logger.log('ANTHROPIC_API_KEY présente : ' + (apiKey ? 'OUI (' + apiKey.substring(0, 10) + '...)' : 'NON'));
+  var model = props.getProperty('CLAUDE_MODEL') || 'claude-sonnet-4-6';
+  Logger.log('Modèle : ' + model);
+
+  // 2. Vérifier les résultats patient
+  var results = getQuestionnaireResults(email);
+  if (!results || results.error || !Array.isArray(results)) {
+    Logger.log('Pas de résultats pour ' + email + ' : ' + JSON.stringify(results));
+    return;
+  }
+  Logger.log('Résultats trouvés : ' + results.length);
+  results.forEach(function(r) {
+    Logger.log('  - ' + r.titre + ' (' + r.date + ') score=' + r.scorePrincipal);
+  });
+
+  // 3. Tester l'appel API
+  if (!apiKey) {
+    Logger.log('STOP — configurez ANTHROPIC_API_KEY dans Paramètres > Propriétés du script');
+    return;
+  }
+
+  Logger.log('Appel API Claude en cours...');
+  try {
+    var result = generateAISynthesisForPatient(email);
+    if (result.error) {
+      Logger.log('ERREUR : ' + result.error);
+    } else {
+      Logger.log('SUCCÈS — ID synthèse : ' + result.idSynthese);
+      Logger.log('Résumé : ' + (result.synthese.resume_praticien || '').substring(0, 200));
+      Logger.log('Axes : ' + (result.synthese.axes_prioritaires || []).length);
+    }
+  } catch(e) {
+    Logger.log('EXCEPTION : ' + e.message);
+  }
+  Logger.log('=== FIN TEST ===');
+}
+
 // ─── PHASE 2A — SYNTHÈSE IA CLINIQUE ─────────────────────────────────────────
 
 var SYNTHESE_HEADERS = [
@@ -1321,9 +1367,26 @@ function callClaudeForSynthesis_(userMessage) {
   if (!text) throw new Error('Réponse vide de l\'API Claude.');
 
   var jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('La réponse IA ne contient pas de JSON valide.');
+  if (!jsonMatch) {
+    Logger.log('callClaudeForSynthesis_ réponse brute (pas de JSON) : ' + text.substring(0, 1000));
+    throw new Error('La réponse IA ne contient pas de JSON valide.');
+  }
 
-  return JSON.parse(jsonMatch[0]);
+  var jsonStr = jsonMatch[0];
+  try {
+    return JSON.parse(jsonStr);
+  } catch(parseErr) {
+    Logger.log('callClaudeForSynthesis_ JSON invalide — tentative de nettoyage. Erreur: ' + parseErr.message);
+    Logger.log('callClaudeForSynthesis_ JSON brut (500 premiers chars) : ' + jsonStr.substring(0, 500));
+    // Nettoyage : trailing commas avant ] ou }
+    jsonStr = jsonStr.replace(/,\s*([}\]])/g, '$1');
+    try {
+      return JSON.parse(jsonStr);
+    } catch(e2) {
+      Logger.log('callClaudeForSynthesis_ nettoyage échoué : ' + e2.message);
+      throw new Error('JSON invalide dans la réponse IA. Réessayez (régénérer).');
+    }
+  }
 }
 
 function buildSyntheseUserMessage_(results, patientPrenom, patientNom) {
