@@ -1,9 +1,7 @@
-# Avec rootDir=. dans .clasp.json, ce fichier évite de pousser
-# des fichiers locaux inutiles vers Google Apps Script.
+# Avec rootDir=src/gas dans .clasp.json, seuls les fichiers
+# de src/gas/ sont poussés. Ce fichier exclut le superflu.
 **/**
 !appsscript.json
 !Code.gs
 !Questions.gs
 !index.html
-!README.md
-src/**

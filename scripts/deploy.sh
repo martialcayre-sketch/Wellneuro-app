@@ -9,32 +9,21 @@ DESC="${1:-deploy $(date '+%Y-%m-%d %H:%M')}"
 echo "═══ NutriConsult — Déploiement unifié ═══"
 echo ""
 
-# 1. Sync src/gas → racine (clasp pousse les fichiers racine)
-echo "── 1/6 Synchronisation src/gas → racine…"
-cp src/gas/Code.gs Code.gs
-cp src/gas/Questions.gs Questions.gs
-cp src/gas/appsscript.json appsscript.json
-cp src/gas/index.html index.html
-echo "   ✓ Fichiers synchronisés"
-
-# 2. Vérification secrets
-echo "── 2/6 Vérification des secrets…"
+# 1. Vérification secrets
+echo "── 1/5 Vérification des secrets…"
 bash scripts/check_no_secrets.sh
 
-# 3. Push vers GAS
-echo "── 3/6 Push vers Google Apps Script…"
+# 2. Push vers GAS (clasp rootDir=src/gas)
+echo "── 2/5 Push vers Google Apps Script…"
 clasp push
 
-# 4. Déploiement GAS (nouvelle version)
-echo "── 4/6 Déploiement : $DESC"
+# 3. Déploiement GAS (nouvelle version)
+echo "── 3/5 Déploiement : $DESC"
 clasp deploy --description "$DESC"
 
-# 5. Git commit
-echo "── 5/6 Commit Git…"
-git add src/gas/Code.gs src/gas/Questions.gs src/gas/appsscript.json \
-        Code.gs Questions.gs appsscript.json \
-        index.html src/gas/index.html \
-        scripts/
+# 4. Git commit
+echo "── 4/5 Commit Git…"
+git add -A
 if git diff --cached --quiet; then
   echo "   Aucun changement à committer"
 else
@@ -42,8 +31,8 @@ else
   echo "   ✓ Commit créé"
 fi
 
-# 6. Git push
-echo "── 6/6 Push Git…"
+# 5. Git push
+echo "── 5/5 Push Git…"
 git push
 echo "   ✓ Poussé vers GitHub"
 

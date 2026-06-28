@@ -22,10 +22,10 @@ PropertiesService.getScriptProperties().getProperty('SHEET_ID')
 
 ## Fichiers coeur a connaitre
 
-- Code serveur GAS: `Code.gs` et `src/gas/Code.gs`
-- Questionnaires/scoring: `Questions.gs` et `src/gas/Questions.gs`
-- UI HTML: `index.html` et `src/gas/index.html`
-- Manifeste GAS: `appsscript.json` et `src/gas/appsscript.json`
+- Code serveur GAS: `src/gas/Code.gs`
+- Questionnaires/scoring: `src/gas/Questions.gs`
+- UI HTML: `src/gas/index.html`
+- Manifeste GAS: `src/gas/appsscript.json`
 
 ## Documentation de reference
 
