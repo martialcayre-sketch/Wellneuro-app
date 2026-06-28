@@ -4,6 +4,14 @@ Toutes les évolutions notables du MVP NutriConsult NNPP2 doivent être document
 
 ## Non publié
 
+### Phase 4 — Dashboard ops praticien (2026-06-28)
+
+- Carte « Suivi opérationnel » dans la vue praticien avec compteurs : synthèses IA, validées/corrigées, booklets envoyés, erreurs audit.
+- Dernière activité affichée (date dernière synthèse et dernier booklet).
+- Tableau historique récent (20 derniers événements, triés par date).
+- Filtre temporel : 7 jours, 30 jours, tout — met à jour compteurs et historique.
+- Aucune modification de la logique clinique ou des seuils de scoring.
+
 ### Phase 3 — Booklet patient (2026-06-28)
 
 - Génération du booklet HTML patient à partir d'une synthèse IA validée.
