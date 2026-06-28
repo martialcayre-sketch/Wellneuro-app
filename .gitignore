@@ -19,6 +19,8 @@ patients_reels/
 resultats_reels/
 *.csv
 *.xlsx
+# Archives
+*.zip
 # Journaux et fichiers système
 *.log
 .DS_Store
