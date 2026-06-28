@@ -1332,7 +1332,7 @@ function callClaudeForSynthesis_(userMessage) {
 
   var payload = {
     model: model,
-    max_tokens: 2048,
+    max_tokens: 4096,
     messages: [
       { role: 'user', content: userMessage }
     ],
@@ -1360,6 +1360,12 @@ function callClaudeForSynthesis_(userMessage) {
   }
 
   var parsed = JSON.parse(body);
+
+  if (parsed.stop_reason === 'max_tokens') {
+    Logger.log('callClaudeForSynthesis_ TRONCATURE — réponse coupée par max_tokens');
+    throw new Error('La synthèse IA a été tronquée (réponse trop longue). Réessayez.');
+  }
+
   var text = '';
   if (parsed.content && parsed.content.length > 0) {
     text = parsed.content[0].text || '';
