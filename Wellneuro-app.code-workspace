@@ -1,0 +1,56 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.eol": "\n",
+    "files.insertFinalNewline": true,
+    "files.trimTrailingWhitespace": true,
+    "editor.formatOnSave": false,
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "eslint.validate": [
+      "javascript",
+      "html"
+    ],
+    "terminal.integrated.defaultProfile.linux": "bash",
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/.git": true
+    }
+  },
+  "extensions": {
+    "recommendations": [
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "github.copilot",
+      "github.copilot-chat",
+      "ms-vscode-remote.remote-containers"
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "bootstrap-local",
+        "type": "shell",
+        "command": "npm install -g @google/clasp && npm install"
+      },
+      {
+        "label": "check-no-secrets",
+        "type": "shell",
+        "command": "bash scripts/check_no_secrets.sh",
+        "group": "test"
+      },
+      {
+        "label": "deploy-gas",
+        "type": "shell",
+        "command": "bash scripts/deploy.sh \"feat: local deploy\"",
+        "group": "build"
+      }
+    ]
+  }
+}

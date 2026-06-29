@@ -1,6 +1,6 @@
 # Source Google Apps Script
 
-Ce dossier est la racine `clasp` du MVP NutriConsult NNPP2.
+Ce dossier est la racine `clasp` du MVP Wellneuro.
 
 ## Fichiers
 

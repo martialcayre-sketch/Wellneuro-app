@@ -1,4 +1,4 @@
-# Kit Claude IA - NutriConsult NNPP2
+# Kit Claude IA - Wellneuro NNPP2
 
 Ce dossier fournit les fichiers Markdown necessaires pour donner a Claude IA un cadre fiable sur ce depot.
 

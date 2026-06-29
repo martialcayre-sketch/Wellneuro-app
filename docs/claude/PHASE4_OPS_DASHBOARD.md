@@ -1,7 +1,7 @@
 ## Phase 4A - Dashboard Ops praticien : contexte pre-deploiement
 
 ## Objectif du document
-Ce document formalise le contexte complet avant finalisation Git de la Phase 4A du MVP NutriConsult NNPP2.
+Ce document formalise le contexte complet avant finalisation Git de la Phase 4A du MVP Wellneuro NNPP2.
 La Phase 4A ajoute une visibilite operationnelle dans le tableau praticien, sans modifier la logique clinique, sans changer les seuils de scoring, et sans migration technique hors Google Apps Script + Google Sheets.
 
 ## Etat Git et deploiement au moment de redaction

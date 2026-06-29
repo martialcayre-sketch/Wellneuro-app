@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// NutriConsult Pro SIIN — Code.gs
+// Wellneuro SIIN — Code.gs
 // Google Apps Script — Serveur
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -20,7 +20,7 @@ const DEV_MULTI_ROLE_EMAILS = ['martialcayre@wellneuro.fr'];
 function doGet(e) {
   var assignId = sanitizeAssignId_((e && e.parameter && e.parameter.assign) || '');
   var output = HtmlService.createHtmlOutputFromFile('index')
-    .setTitle('NutriConsult Pro — SIIN')
+    .setTitle('Wellneuro — SIIN')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   if (assignId) {
     // Injection sûre via JSON.stringify pour éviter toute injection de caractères spéciaux.
@@ -47,7 +47,7 @@ function getOrCreateSheet(name, headers) {
     sh = ss.insertSheet(name);
     // Row 1 = titre, Row 2 = note, Row 3 = headers
     sh.getRange(1, 1).setValue(name);
-    sh.getRange(2, 1).setValue('Généré automatiquement par NutriConsult Pro SIIN');
+    sh.getRange(2, 1).setValue('Généré automatiquement par Wellneuro SIIN');
     sh.getRange(3, 1, 1, headers.length).setValues([headers]);
     sh.getRange(3, 1, 1, headers.length).setFontWeight('bold').setBackground('#1a3a5c').setFontColor('#ffffff');
   }
@@ -237,7 +237,7 @@ function updateAssignationStatus(idAssignation, statut) {
  * Priorité: alias noreply@wellneuro.fr, fallback noReply.
  */
 function sendNoReplyEmailToPatient_(patientEmail, sujet, corps, extraOptions) {
-  var opts = { from: MAILBOX_NOREPLY, name: 'NutriConsult', replyTo: MAILBOX_NOREPLY };
+  var opts = { from: MAILBOX_NOREPLY, name: 'Wellneuro', replyTo: MAILBOX_NOREPLY };
   if (extraOptions) {
     for (var k in extraOptions) { opts[k] = extraOptions[k]; }
   }
@@ -245,7 +245,7 @@ function sendNoReplyEmailToPatient_(patientEmail, sujet, corps, extraOptions) {
     GmailApp.sendEmail(patientEmail, sujet, corps, opts);
   } catch (e) {
     Logger.log('sendNoReplyEmailToPatient_ alias fallback: ' + e.message);
-    var fallback = { name: 'NutriConsult', noReply: true };
+    var fallback = { name: 'Wellneuro', noReply: true };
     if (extraOptions) {
       for (var k in extraOptions) { fallback[k] = extraOptions[k]; }
     }
@@ -261,13 +261,13 @@ function sendContactEmailToPatient_(patientEmail, sujet, corps) {
   try {
     GmailApp.sendEmail(patientEmail, sujet, corps, {
       from: MAILBOX_CONTACT,
-      name: 'NutriConsult - Contact',
+      name: 'Wellneuro - Contact',
       replyTo: MAILBOX_CONTACT
     });
   } catch (e) {
     Logger.log('sendContactEmailToPatient_ alias fallback: ' + e.message);
     MailApp.sendEmail(patientEmail, sujet, corps, {
-      name: 'NutriConsult - Contact',
+      name: 'Wellneuro - Contact',
       replyTo: MAILBOX_CONTACT
     });
   }
@@ -280,13 +280,13 @@ function sendContactEmailToPatient_(patientEmail, sujet, corps) {
 function sendAcknowledgmentToPatient_(patientEmail, patientPrenom, titreQuestionnaire) {
   try {
     if (!patientEmail) return;
-    var sujet = 'Vos réponses ont bien été reçues — NutriConsult';
+    var sujet = 'Vos réponses ont bien été reçues — Wellneuro';
     var corps = 'Bonjour ' + (patientPrenom || '') + ',\n\n'
       + 'Nous confirmons la bonne réception de vos réponses au questionnaire :\n'
       + '« ' + titreQuestionnaire + ' »\n\n'
       + 'Votre praticien en prendra connaissance prochainement.\n\n'
       + 'Merci de votre participation.\n\n'
-      + '— L\'équipe NutriConsult';
+      + '— L\'équipe Wellneuro';
     sendNoReplyEmailToPatient_(patientEmail, sujet, corps);
   } catch(e) {
     Logger.log('sendAcknowledgmentToPatient_ error: ' + e.message);
@@ -329,7 +329,7 @@ function sendAssignmentLinkToPatient_(patientEmail, titreQuestionnaire, dateLimi
       return false;
     }
     var deadline = formatDeadlineForEmail_(dateLimite);
-    var sujet = 'Questionnaire à compléter avant votre consultation — NutriConsult';
+    var sujet = 'Questionnaire à compléter avant votre consultation — Wellneuro';
     var corps = 'Bonjour,\n\n'
       + 'Votre praticien vous invite à compléter le questionnaire suivant avant votre consultation :\n'
       + '« ' + titreQuestionnaire + ' »\n\n'
@@ -337,7 +337,7 @@ function sendAssignmentLinkToPatient_(patientEmail, titreQuestionnaire, dateLimi
       + (notes ? 'Message du praticien : ' + notes + '\n\n' : '')
       + 'Accéder à votre espace questionnaire :\n' + link + '\n\n'
       + 'Merci de votre participation.\n\n'
-      + '— L\'équipe NutriConsult';
+      + '— L\'équipe Wellneuro';
     sendNoReplyEmailToPatient_(patientEmail, sujet, corps);
     return true;
   } catch(e) {
@@ -355,7 +355,7 @@ function sendPackAssignmentLinkToPatient_(patientEmail, packNom, count, dateLimi
       return false;
     }
     var deadline = formatDeadlineForEmail_(dateLimite);
-    var sujet = 'Questionnaires à compléter avant votre consultation — NutriConsult';
+    var sujet = 'Questionnaires à compléter avant votre consultation — Wellneuro';
     var corps = 'Bonjour,\n\n'
       + 'Votre praticien vous invite à compléter ' + count + ' questionnaire' + (count > 1 ? 's' : '')
       + ' du pack « ' + packNom + ' » avant votre consultation.\n\n'
@@ -363,7 +363,7 @@ function sendPackAssignmentLinkToPatient_(patientEmail, packNom, count, dateLimi
       + (notes ? 'Message du praticien : ' + notes + '\n\n' : '')
       + 'Accéder à votre espace questionnaire :\n' + link + '\n\n'
       + 'Merci de votre participation.\n\n'
-      + '— L\'équipe NutriConsult';
+      + '— L\'équipe Wellneuro';
     sendNoReplyEmailToPatient_(patientEmail, sujet, corps);
     return true;
   } catch(e) {
@@ -414,7 +414,7 @@ function sendReminders_() {
       + 'Date limite : ' + formatDeadlineForEmail_(dateLimite) + '\n\n'
       + (link ? 'Accéder au questionnaire :\n' + link + '\n\n' : '')
       + 'Merci de votre participation.\n\n'
-      + '— L\'équipe NutriConsult';
+      + '— L\'équipe Wellneuro';
 
     try {
       sendNoReplyEmailToPatient_(patientEmail, sujet, corps);
@@ -463,12 +463,12 @@ function testSendEmail() {
     if (!email) return { error: 'Utilisateur non connecté' };
 
     const webAppUrl = getWebAppUrl_();
-    const sujet = 'Test email NutriConsult — Configuration OK ✓';
+    const sujet = 'Test email Wellneuro — Configuration OK ✓';
     const corps = 'Ceci est un email de test.\n\n'
       + 'Si vous recevez ce message, votre configuration d\'envoi d\'emails est fonctionnelle.\n\n'
       + 'URL Web App : ' + (webAppUrl || '(non configurée)') + '\n'
       + 'Compte : ' + email + '\n\n'
-      + '— NutriConsult Pro SIIN';
+      + '— Wellneuro SIIN';
 
     sendNoReplyEmailToPatient_(email, sujet, corps);
     return { success: true, email: email, message: 'Email de test envoyé vers ' + email };
@@ -1873,12 +1873,12 @@ function sendBookletToPatient(idSynthese, forceSend, reviewConfirmed) {
       };
     }
 
-    var sujet = 'Votre bilan neuronutritionnel validé — NutriConsult';
+    var sujet = 'Votre bilan neuronutritionnel validé — Wellneuro';
     var corps = 'Bonjour,\n\n'
-      + 'Votre praticien vous transmet votre bilan neuronutritionnel NutriConsult.\n'
+      + 'Votre praticien vous transmet votre bilan neuronutritionnel Wellneuro.\n'
       + 'Ce document a été préparé après validation humaine et ne constitue pas un diagnostic médical.\n\n'
       + 'Bien cordialement,\n'
-      + 'L\'équipe NutriConsult';
+      + 'L\'équipe Wellneuro';
     sendNoReplyEmailToPatient_(patientEmail, sujet, corps, {
       htmlBody: result.html
     });
@@ -1972,7 +1972,7 @@ function validateBookletSynthese_(s) {
 function buildBookletHTML_(patientNom, dateGeneration, s, notesPraticien) {
   var h = '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">';
   h += '<meta name="viewport" content="width=device-width,initial-scale=1">';
-  h += '<title>Bilan NutriConsult — ' + escapeHtml_(patientNom) + '</title>';
+  h += '<title>Bilan Wellneuro — ' + escapeHtml_(patientNom) + '</title>';
   h += '<style>';
   h += 'body{font-family:Georgia,serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1a1a1a;line-height:1.6}';
   h += '.page-header{text-align:center;border-bottom:2px solid #1a3a5c;padding-bottom:20px;margin-bottom:30px}';
@@ -1995,7 +1995,7 @@ function buildBookletHTML_(patientNom, dateGeneration, s, notesPraticien) {
   // 1. Page de garde
   h += '<div class="page-header">';
   h += '<h1>Bilan Neuronutritionnel</h1>';
-  h += '<div class="subtitle">NutriConsult Pro — wellneuro.fr</div>';
+  h += '<div class="subtitle">Wellneuro — wellneuro.fr</div>';
   h += '<div class="subtitle" style="margin-top:15px;font-size:1.1em"><strong>' + escapeHtml_(patientNom) + '</strong></div>';
   h += '<div class="subtitle">' + escapeHtml_(dateGeneration) + '</div>';
   h += '</div>';
@@ -2060,7 +2060,7 @@ function buildBookletHTML_(patientNom, dateGeneration, s, notesPraticien) {
   h += '<div class="footer">';
   h += '<p>Document généré après validation par votre praticien.<br>';
   h += 'Ce bilan ne constitue pas un diagnostic médical.<br>';
-  h += 'wellneuro.fr — NutriConsult Pro SIIN</p>';
+  h += 'wellneuro.fr — Wellneuro SIIN</p>';
   h += '</div>';
 
   h += '</body></html>';

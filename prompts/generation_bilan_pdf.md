@@ -1,4 +1,4 @@
-# Prompt — génération booklet patient NutriConsult
+# Prompt — génération booklet patient Wellneuro
 
 Gabarit réservé à la génération de booklets patients. Ne jamais committer de bilan réel,
 de donnée patient identifiable ou de contenu clinique individualisé issu d'une consultation réelle.
@@ -22,7 +22,7 @@ l'envoi est manuel et réservé au praticien après validation humaine.
 
 ## Structure du booklet
 
-1. Page de garde : titre, patient, date, mention NutriConsult / wellneuro.fr.
+1. Page de garde : titre, patient, date, mention Wellneuro / wellneuro.fr.
 2. Résumé patient accessible : ce que les réponses suggèrent, en langage clair.
 3. Profil neuronutritionnel : axes principaux, maximum trois priorités.
 4. Ce que les questionnaires suggèrent : hypothèses à explorer, pas de diagnostic.

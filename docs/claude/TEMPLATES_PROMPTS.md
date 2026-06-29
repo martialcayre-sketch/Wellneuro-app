@@ -5,7 +5,7 @@ Ces templates servent a obtenir des reponses robustes et compatibles avec le MVP
 ## 1) Correction ciblee
 
 ```text
-Contexte: projet NutriConsult NNPP2 (MVP Google Apps Script).
+Contexte: projet Wellneuro NNPP2 (MVP Google Apps Script).
 Tache: corrige le bug suivant dans [fichier]: [description bug].
 Contraintes:
 - ne pas modifier la logique clinique,
@@ -21,7 +21,7 @@ Verification demandee:
 ## 2) Refactor limite
 
 ```text
-Contexte: MVP GAS NutriConsult NNPP2.
+Contexte: MVP GAS Wellneuro NNPP2.
 Tache: ameliorer la lisibilite de [fichier/fonction] sans changer le comportement.
 Contraintes:
 - aucun changement fonctionnel,
@@ -48,7 +48,7 @@ Contexte de securite:
 ## 4) Ajout de documentation
 
 ```text
-Cree/complete la documentation de [sujet] pour NutriConsult NNPP2.
+Cree/complete la documentation de [sujet] pour Wellneuro NNPP2.
 Exigences:
 - francais clair,
 - orientation praticien + dev,

@@ -2,7 +2,7 @@
 
 ## Objectif du document
 
-Ce fichier sert de contexte complet avant de deployer la Phase 3 du MVP NutriConsult NNPP2.
+Ce fichier sert de contexte complet avant de deployer la Phase 3 du MVP Wellneuro NNPP2.
 
 La Phase 3 transforme la synthese IA validee par le praticien en booklet patient consultable, imprimable et envoyable manuellement. Elle reste dans l'architecture actuelle Google Apps Script + Google Sheets. Aucune migration technique n'est incluse.
 

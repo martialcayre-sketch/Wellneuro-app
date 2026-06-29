@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-Ce fichier donne le contexte essentiel a Claude IA pour intervenir sur NutriConsult NNPP2.
+Ce fichier donne le contexte essentiel a Claude IA pour intervenir sur Wellneuro NNPP2.
 
 ## Objectif projet
 
-NutriConsult NNPP2 est un MVP de consultation en neuronutrition base sur Google Apps Script (GAS) + Google Sheets.
+Wellneuro NNPP2 est un MVP de consultation en neuronutrition base sur Google Apps Script (GAS) + Google Sheets.
 Priorite absolue: stabiliser le MVP GAS, pas de migration technologique sans demande explicite.
 
 ## Regles critiques

@@ -1,6 +1,6 @@
 # Configuration Clasp Local — PC de Bureau
 
-Guide pour déployer NutriConsult GAS depuis ton VS Studio local au lieu de Codespace.
+Guide pour déployer Wellneuro GAS depuis ton VS Studio local au lieu de Codespace.
 
 ## ⚠️ Sécurité
 
@@ -28,8 +28,8 @@ Cela ouvre un navigateur → connecte-toi avec `martialcayre@wellneuro.fr` → c
 **Sur ton PC local:**
 
 ```bash
-git clone https://github.com/martialcayre-sketch/nutriconsult-nnpp2-gas-mvp.git
-cd nutriconsult-nnpp2-gas-mvp
+git clone https://github.com/martialcayre-sketch/Wellneuro.git Wellneuro-app
+cd Wellneuro-app
 ```
 
 Vérifie que `.clasp.json` contient:

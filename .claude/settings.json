@@ -37,7 +37,8 @@
       "Bash(chmod +x /workspaces/nutriconsult-nnpp2-gas-mvp/scripts/deploy.sh)",
       "Bash(bash scripts/deploy.sh \"v17 — suppression proxy + script deploy\")",
       "Bash(bash scripts/check_no_secrets.sh)",
-      "Bash(grep -rnE --exclude-dir='.git' --exclude='check_no_secrets.sh' '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\\\.[A-Za-z]{2,}' .)"
+      "Bash(grep -rnE --exclude-dir='.git' --exclude='check_no_secrets.sh' '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\\\.[A-Za-z]{2,}' .)",
+      "Bash(bash /workspaces/nutriconsult-nnpp2-gas-mvp/scripts/deploy.sh \"Phase 4 — Dashboard ops praticien\")"
     ],
     "additionalDirectories": [
       "/workspaces/nutriconsult-nnpp2-gas-mvp"

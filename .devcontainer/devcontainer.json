@@ -1,5 +1,5 @@
 {
-  "name": "Nutriconsult GAS Dev",
+  "name": "Wellneuro-app GAS Dev",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
   "postCreateCommand": "npm install -g @google/clasp && npm install",
   "customizations": {

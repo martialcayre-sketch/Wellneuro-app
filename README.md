@@ -1,6 +1,6 @@
-# NutriConsult NNPP2 — MVP Google Apps Script
+# Wellneuro — MVP Google Apps Script
 
-NutriConsult NNPP2 est une application web praticien-patient de neuronutrition clinique. Ce dépôt contient la structure de travail du MVP actuel basé sur Google Apps Script (GAS) et Google Sheets.
+Wellneuro est une application web praticien-patient de neuronutrition clinique. Ce dépôt contient la structure de travail du MVP actuel basé sur Google Apps Script (GAS) et Google Sheets.
 
 ## Périmètre actuel
 

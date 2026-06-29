@@ -1,6 +1,6 @@
 # Changelog
 
-Toutes les évolutions notables du MVP NutriConsult NNPP2 doivent être documentées ici.
+Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentées ici.
 
 ## Non publié
 

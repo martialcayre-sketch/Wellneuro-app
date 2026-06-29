@@ -2,7 +2,7 @@
 
 ## ✓ État actuel
 - clasp est installé (`v3.3.0`)
-- `.clasp.json` est configuré avec le script ID NutriConsult NNPP2
+- `.clasp.json` est configuré avec le script ID Wellneuro NNPP2
 - Authentification: **À reconfigurer**
 
 ## Configuration de clasp (authentification)
@@ -21,7 +21,7 @@ clasp login
 ```bash
 clasp projects
 ```
-Doit afficher les projets accessibles (dont le script NutriConsult NNPP2).
+Doit afficher les projets accessibles (dont le script Wellneuro NNPP2).
 
 ### Étape 3 : Tester un push
 ```bash

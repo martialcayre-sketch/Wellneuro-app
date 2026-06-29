@@ -1,6 +1,6 @@
 # Architecture GAS
 
-Le MVP NutriConsult NNPP2 repose sur Google Apps Script et Google Sheets.
+Le MVP Wellneuro NNPP2 repose sur Google Apps Script et Google Sheets.
 
 ## Composants
 

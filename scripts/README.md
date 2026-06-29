@@ -1,4 +1,4 @@
-# Scripts — NutriConsult MVP GAS
+# Scripts — Wellneuro MVP GAS
 
 ## Deploy
 

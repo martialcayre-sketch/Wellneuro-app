@@ -1,8 +1,8 @@
-# Configuration GitHub Codespaces et Codex — NutriConsult NNPP2
+# Configuration GitHub Codespaces et Codex — Wellneuro NNPP2
 
 ## Objectif
 
-Ce guide explique comment préparer un environnement GitHub Codespaces pour travailler sur le MVP Google Apps Script de NutriConsult NNPP2 avec Codex et clasp.
+Ce guide explique comment préparer un environnement GitHub Codespaces pour travailler sur le MVP Google Apps Script de Wellneuro NNPP2 avec Codex et clasp.
 
 L'objectif est de permettre à Martial et aux agents IA de :
 
@@ -47,7 +47,7 @@ Créer le dossier `.devcontainer/`, puis ajouter `.devcontainer/devcontainer.jso
 
 ```json
 {
-  "name": "NutriConsult NNPP2 GAS",
+  "name": "Wellneuro NNPP2 GAS",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
   "features": {
     "ghcr.io/devcontainers/features/github-cli:1": {}
@@ -73,7 +73,7 @@ Si `package.json` n'existe pas, créer un fichier minimal :
 
 ```json
 {
-  "name": "nutriconsult-nnpp2-gas-mvp",
+  "name": "wellneuro-app",
   "private": true,
   "scripts": {
     "check:secrets": "bash scripts/check_no_secrets.sh",

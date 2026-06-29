@@ -4,7 +4,7 @@ Copier-coller ce bloc au debut d'une session Claude pour cadrer rapidement l'IA.
 
 ## Prompt pret a l'emploi
 
-Tu travailles sur NutriConsult NNPP2 (MVP Google Apps Script + Google Sheets).
+Tu travailles sur Wellneuro NNPP2 (MVP Google Apps Script + Google Sheets).
 Contraintes non negociables:
 - Pas de donnees patients reelles.
 - Pas de secrets dans le code ou les commits.
@@ -21,4 +21,4 @@ Avant de proposer une livraison:
 
 ## Variante ultra compacte (1 ligne)
 
-Contexte NutriConsult NNPP2 MVP GAS: pas de donnees reelles, pas de secrets, pas de SHEET_ID en dur, pas de changement clinique non demande, UI en francais, changements minimaux, puis resume des fichiers modifies + risques + test manuel.
+Contexte Wellneuro NNPP2 MVP GAS: pas de donnees reelles, pas de secrets, pas de SHEET_ID en dur, pas de changement clinique non demande, UI en francais, changements minimaux, puis resume des fichiers modifies + risques + test manuel.

@@ -16,7 +16,7 @@
 ## Documentation gouvernance produit
 
 - `docs/INSTRUCTIONS_PROJET_NUTRICONSULT_NNPP2.md`: priorites projet.
-- `docs/cahier_des_charges_NutriConsult_NNPP2.md`: cadrage fonctionnel.
+- `docs/cahier_des_charges_Wellneuro_NNPP2.md`: cadrage fonctionnel.
 - `docs/roadmap.md`: priorites et hors perimetre.
 
 ## Securite et qualite

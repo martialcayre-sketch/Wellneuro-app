@@ -1,8 +1,8 @@
-# AGENTS.md — NutriConsult NNPP2
+# AGENTS.md — Wellneuro NNPP2
 
 ## Identité du projet
 
-NutriConsult NNPP2 est un MVP Google Apps Script destiné à accompagner un parcours de consultation en neuronutrition. Le dépôt doit rester centré sur la stabilisation du MVP GAS tant qu'une migration n'est pas explicitement demandée.
+Wellneuro NNPP2 est un MVP Google Apps Script destiné à accompagner un parcours de consultation en neuronutrition. Le dépôt doit rester centré sur la stabilisation du MVP GAS tant qu'une migration n'est pas explicitement demandée.
 
 ## Architecture actuelle
 

@@ -2,7 +2,7 @@
 
 ## Vision
 
-NutriConsult NNPP2 est un MVP de parcours praticien-patient en neuronutrition clinique.
+Wellneuro NNPP2 est un MVP de parcours praticien-patient en neuronutrition clinique.
 Le socle actuel est Google Apps Script + Google Sheets.
 
 ## Priorite produit

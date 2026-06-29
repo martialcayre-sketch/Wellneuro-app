@@ -1,4 +1,4 @@
-# Instructions projet NutriConsult NNPP2
+# Instructions projet Wellneuro NNPP2
 
 - Priorité au MVP Google Apps Script validé end-to-end.
 - Interface en français.

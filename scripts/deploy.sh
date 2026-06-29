@@ -7,7 +7,7 @@ cd "$ROOT_DIR"
 DESC="${1:-deploy $(date '+%Y-%m-%d %H:%M')}"
 DEPLOY_ID_FILE=".deploy-id"
 
-echo "═══ NutriConsult — Déploiement unifié ═══"
+echo "═══ Wellneuro — Déploiement unifié ═══"
 echo ""
 
 # 1. Vérification secrets

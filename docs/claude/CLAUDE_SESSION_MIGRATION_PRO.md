@@ -9,7 +9,7 @@
 
 ## Contexte projet
 
-NutriConsult NNPP2 — MVP Google Apps Script + Google Sheets.
+Wellneuro NNPP2 — MVP Google Apps Script + Google Sheets.
 Neuronutrition clinique, parcours praticien-patient.
 Priorité absolue : stabiliser le MVP GAS. Pas de migration technologique sans demande explicite.
 

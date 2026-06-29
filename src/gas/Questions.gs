@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-// NutriConsult Pro SIIN — Questions.gs — DÉFINITIF v4 corrigé Dev
+// Wellneuro SIIN — Questions.gs — DÉFINITIF v4 corrigé Dev
 // Dr Martial Cayre — 23/06/2026
 // 14 thématiques certifiées · ~67 entrées catalogue
 // ─── Corrections v2 (session précédente) :
