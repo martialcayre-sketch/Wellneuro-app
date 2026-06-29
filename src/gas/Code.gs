@@ -516,8 +516,9 @@ function getPraticienDashboard() {
 
     const metrics = getPracticienMetrics_();
     const opsHistory = getOpsHistory_();
+    const alerts = getPracticienAlerts_();
 
-    return { patients, questionnaires, packs, assignations, metrics, opsHistory };
+    return { patients, questionnaires, packs, assignations, metrics, opsHistory, alerts };
   } catch(e) {
     return { error: e.message };
   }
@@ -627,6 +628,66 @@ function getOpsHistory_() {
 
   events.sort(function(a, b) { return b.date - a.date; });
   return events.slice(0, 20);
+}
+
+function getPracticienAlerts_() {
+  var alerts = [];
+  var now = Date.now();
+  var sevenDaysMs = 7 * 86400000;
+
+  try {
+    var synthSh = getSheet('Syntheses_IA');
+    if (synthSh) {
+      var synthRows = synthSh.getDataRange().getValues();
+      for (var i = DATA_START; i < synthRows.length; i++) {
+        var row = synthRows[i];
+        if (!row[0] || row[8] !== 'Brouillon_IA') continue;
+        var d = row[3] ? new Date(row[3]) : null;
+        if (!d || isNaN(d.getTime())) continue;
+        var ageMs = now - d.getTime();
+        if (ageMs > sevenDaysMs) {
+          alerts.push({
+            type: 'synthese_brouillon',
+            severity: 'warning',
+            patient: row[1] || '',
+            detail: 'Synthèse brouillon depuis ' + Math.floor(ageMs / 86400000) + ' jours',
+            dateCreation: formatDate(d)
+          });
+        }
+      }
+    }
+  } catch(e) { Logger.log('getPracticienAlerts_ synth: ' + e.message); }
+
+  try {
+    var synthSh = getSheet('Syntheses_IA');
+    var bookletSh = getSheet('Booklet_Envois');
+    if (synthSh && bookletSh) {
+      var synthRows = synthSh.getDataRange().getValues();
+      var bookletRows = bookletSh.getDataRange().getValues();
+      var bookletEmails = {};
+      for (var k = DATA_START; k < bookletRows.length; k++) {
+        if (bookletRows[k][1]) bookletEmails[bookletRows[k][1]] = true;
+      }
+      for (var j = DATA_START; j < synthRows.length; j++) {
+        var sRow = synthRows[j];
+        if (!sRow[0] || sRow[8] !== 'Validee_Praticien') continue;
+        if (!bookletEmails[sRow[1]]) {
+          var sd = sRow[3] ? new Date(sRow[3]) : null;
+          if (sd && !isNaN(sd.getTime())) {
+            alerts.push({
+              type: 'booklet_non_envoye',
+              severity: 'info',
+              patient: sRow[1] || '',
+              detail: 'Synthèse validée sans booklet envoyé',
+              dateCreation: formatDate(sd)
+            });
+          }
+        }
+      }
+    }
+  } catch(e) { Logger.log('getPracticienAlerts_ booklet: ' + e.message); }
+
+  return alerts.slice(0, 10);
 }
 
 function addPatient(prenom, nom, email, telephone, dateNaissance) {

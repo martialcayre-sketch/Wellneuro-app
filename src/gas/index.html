@@ -387,6 +387,13 @@
           <div class="small text-muted" id="ops-last-activity">—</div>
         </div>
       </div>
+
+      <!-- Alertes (Phase 4C) -->
+      <div id="ops-alerts-container" style="display:none" class="mb-3 p-2 bg-light border-start border-warning rounded">
+        <div class="small fw-bold text-warning mb-2"><i class="fas fa-bell me-2"></i>Alertes</div>
+        <div id="ops-alerts-list"></div>
+      </div>
+
       <div class="row g-3">
         <div class="col-6 col-md-3">
           <div class="card p-3 text-center h-100">
@@ -1396,7 +1403,7 @@ function loadPraticienHome() {
       document.getElementById('s-done').textContent = ass.filter(function(a) { return a.statut === 'Complété'; }).length;
 
       // Metrics opérationnelles
-      window._opsRawData = { metrics: d.metrics || {}, history: d.opsHistory || [] };
+      window._opsRawData = { metrics: d.metrics || {}, history: d.opsHistory || [], alerts: d.alerts || [] };
       renderOpsMetrics(window._opsRawData, 0);
 
       // Populate patient selects
@@ -1448,6 +1455,22 @@ function renderOpsMetrics(raw, days) {
   if (raw.metrics.lastSyntheseDate) lastActivity.push('Dernière synthèse : ' + raw.metrics.lastSyntheseDate);
   if (raw.metrics.lastBookletDate) lastActivity.push('Dernier booklet : ' + raw.metrics.lastBookletDate);
   document.getElementById('ops-last-activity').textContent = lastActivity.length ? lastActivity.join(' • ') : 'Aucune activité enregistrée';
+
+  // Alertes (Phase 4C)
+  var alertsContainer = document.getElementById('ops-alerts-container');
+  var alertsList = document.getElementById('ops-alerts-list');
+  var alerts = raw.alerts || [];
+  if (alerts.length > 0) {
+    alertsContainer.style.display = '';
+    alertsList.innerHTML = alerts.map(function(a) {
+      var badge = a.severity === 'warning'
+        ? '<span class="badge bg-warning text-dark">⚠ ' + (a.type === 'synthese_brouillon' ? 'Synthèse brouillon' : 'Booklet non envoyé') + '</span>'
+        : '<span class="badge bg-info text-dark">ℹ ' + (a.type === 'booklet_non_envoye' ? 'À envoyer' : 'À valider') + '</span>';
+      return '<div class="mb-1 small">' + badge + ' <strong>' + escHtml(a.patient) + '</strong> — ' + escHtml(a.detail) + '</div>';
+    }).join('');
+  } else {
+    alertsContainer.style.display = 'none';
+  }
 
   var container = document.getElementById('ops-history-container');
   var tbody = document.getElementById('ops-history-body');
