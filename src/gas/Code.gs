@@ -455,6 +455,28 @@ function configurerRappelsAutomatiques() {
   Logger.log('Déclencheur créé : sendReminders_ tous les jours à 8h.');
 }
 
+// ─── TEST EMAIL ───────────────────────────────────────────────────────────────
+
+function testSendEmail() {
+  try {
+    const email = Session.getActiveUser().getEmail();
+    if (!email) return { error: 'Utilisateur non connecté' };
+
+    const webAppUrl = getWebAppUrl_();
+    const sujet = 'Test email NutriConsult — Configuration OK ✓';
+    const corps = 'Ceci est un email de test.\n\n'
+      + 'Si vous recevez ce message, votre configuration d\'envoi d\'emails est fonctionnelle.\n\n'
+      + 'URL Web App : ' + (webAppUrl || '(non configurée)') + '\n'
+      + 'Compte : ' + email + '\n\n'
+      + '— NutriConsult Pro SIIN';
+
+    sendNoReplyEmailToPatient_(email, sujet, corps);
+    return { success: true, email: email, message: 'Email de test envoyé vers ' + email };
+  } catch(e) {
+    return { error: 'Erreur lors de l\'envoi : ' + e.message };
+  }
+}
+
 // ─── FONCTIONS PRATICIEN ──────────────────────────────────────────────────────
 
 function getPraticienDashboard() {
