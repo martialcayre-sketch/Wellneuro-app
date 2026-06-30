@@ -85,10 +85,11 @@ Next.js App    ──── portail praticien (/dashboard/*)
 | Pagination patients/assignations | Moyenne | Nécessaire si volume > ~100 lignes |
 
 ### Lot C5 — Décommission GAS
-> À lancer après **2 semaines de prod stable** sur C3/C4 + portail patient
+> Démarré le 2026-06-30 sur demande explicite (avant la fenêtre des 2 semaines de prod stable initialement prévue)
 
-- Rediriger `WEB_APP_URL` (Script Property GAS) vers `app.wellneuro.fr`
-- Migrer les données Sheets historiques vers PostgreSQL (patients, assignations, réponses)
+- ✅ `POST /api/praticien/migrate-historique` — migration idempotente Sheets → PostgreSQL (patients, assignations, réponses), mode `dryRun` disponible. **Pas encore exécuté en prod.**
+- 🔲 Rediriger `WEB_APP_URL` (Script Property GAS) vers `app.wellneuro.fr` — **action manuelle console Apps Script, hors portée Claude Code**
+- 🔲 Exécuter la migration historique réelle (après vérification dryRun)
 - Éteindre flux GAS un par un :
   1. Portail patient (remplacé par `/patient/[idAssignation]`) ✅ prêt
   2. Création/gestion patients (remplacé par `/dashboard/patients`) ✅ prêt
@@ -96,7 +97,7 @@ Next.js App    ──── portail praticien (/dashboard/*)
   4. Synthèse IA + booklet (remplacé par `/dashboard/synthese`) ✅ prêt
   5. Métriques (remplacé par `/dashboard`) ✅ prêt
 - Archiver `src/gas/` dans une branche `archive/gas-legacy`
-- Révoquer le déploiement GAS (Google Apps Script)
+- Révoquer le déploiement GAS (Google Apps Script) — **action manuelle console Apps Script**
 
 ### Hors périmètre MVP (décisions futures)
 
