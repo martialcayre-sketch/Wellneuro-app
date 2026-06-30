@@ -56,6 +56,22 @@ export type CreatePatientResponse = {
     | 'exception';
 };
 
+export type PatchPatientResponse = {
+  success: boolean;
+  error?: string;
+  reason?:
+    | 'unauthenticated'
+    | 'no_sheet_id'
+    | 'no_access_token'
+    | 'invalid_payload'
+    | 'patient_not_found'
+    | 'sheets_400'
+    | 'sheets_401'
+    | 'sheets_403'
+    | 'sheets_404'
+    | 'exception';
+};
+
 type SessionContext = {
   session: Session | null;
   sheetId?: string;
@@ -204,19 +220,24 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
     );
   }
 
-  const prenom = (payload.prenom ?? '').trim();
-  const nom = (payload.nom ?? '').trim();
-  const email = (payload.email ?? '').trim().toLowerCase();
-  const telephone = (payload.telephone ?? '').trim();
+  const prenom = (payload.prenom ?? '').trim().slice(0, 100);
+  const nom = (payload.nom ?? '').trim().slice(0, 100);
+  const email = (payload.email ?? '').trim().toLowerCase().slice(0, 254);
+  const telephone = (payload.telephone ?? '').trim().slice(0, 30);
   const dateNaissance = (payload.dateNaissance ?? '').trim();
 
   const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  if (!prenom || !nom || !isEmailValid) {
+  const isDateValid = !dateNaissance || /^\d{4}-\d{2}-\d{2}$/.test(dateNaissance);
+  if (!prenom || !nom || !isEmailValid || !isDateValid) {
     return NextResponse.json(
       {
         success: false,
         reason: 'invalid_payload',
-        error: 'Prénom, nom et email valide sont requis.',
+        error: !prenom || !nom
+          ? 'Prénom et nom sont requis.'
+          : !isEmailValid
+            ? 'Email invalide.'
+            : 'Date de naissance invalide (format attendu : AAAA-MM-JJ).',
       },
       { status: 400 }
     );
@@ -317,6 +338,127 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
       success: false,
       reason: 'exception',
       error: 'Erreur technique lors de la création du patient.',
+    });
+  }
+}
+
+type PatchPatientPayload = {
+  idPatient?: string;
+  telephone?: string;
+  actif?: 'OUI' | 'NON';
+};
+
+export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResponse>> {
+  const session = await getServerSession(authOptions);
+  const { sheetId, accessToken } = getSessionContext(session);
+
+  if (!session) {
+    return NextResponse.json(
+      { success: false, reason: 'unauthenticated', error: 'Session absente.' },
+      { status: 401 }
+    );
+  }
+  if (!sheetId || !accessToken) {
+    return NextResponse.json({
+      success: false,
+      reason: !sheetId ? 'no_sheet_id' : 'no_access_token',
+      error: 'Configuration incomplète.',
+    });
+  }
+
+  let payload: PatchPatientPayload;
+  try {
+    payload = (await req.json()) as PatchPatientPayload;
+  } catch {
+    return NextResponse.json(
+      { success: false, reason: 'invalid_payload', error: 'JSON invalide.' },
+      { status: 400 }
+    );
+  }
+
+  const idPatient = (payload.idPatient ?? '').trim();
+  const telephone = (payload.telephone ?? '').trim().slice(0, 30);
+  const actif = payload.actif;
+
+  if (!idPatient || !/^PAT\d+$/.test(idPatient)) {
+    return NextResponse.json(
+      { success: false, reason: 'invalid_payload', error: 'idPatient invalide.' },
+      { status: 400 }
+    );
+  }
+  if (actif !== undefined && actif !== 'OUI' && actif !== 'NON') {
+    return NextResponse.json(
+      { success: false, reason: 'invalid_payload', error: 'Valeur actif invalide (OUI ou NON).' },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const readUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent('Patients!A:J')}`;
+    const readResp = await fetch(readUrl, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: 'no-store',
+    });
+    if (!readResp.ok) {
+      return NextResponse.json({
+        success: false,
+        reason: mapSheetsReason(readResp.status),
+        error: 'Impossible de lire la feuille Patients.',
+      });
+    }
+
+    const readData = await readResp.json();
+    const allRows: string[][] = readData.values ?? [];
+    const rowIndex = allRows.findIndex((row, i) => i >= DATA_START && row[0] === idPatient);
+
+    if (rowIndex === -1) {
+      return NextResponse.json(
+        { success: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
+        { status: 404 }
+      );
+    }
+
+    const sheetRow = rowIndex + 1; // 1-indexed
+    const updates: { range: string; values: string[][] }[] = [];
+
+    if (telephone !== undefined) {
+      updates.push({ range: `Patients!G${sheetRow}`, values: [[telephone]] });
+    }
+    if (actif !== undefined) {
+      updates.push({ range: `Patients!J${sheetRow}`, values: [[actif]] });
+    }
+
+    if (updates.length === 0) {
+      return NextResponse.json({ success: true });
+    }
+
+    const batchUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchUpdate`;
+    const batchResp = await fetch(batchUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        valueInputOption: 'USER_ENTERED',
+        data: updates,
+      }),
+    });
+
+    if (!batchResp.ok) {
+      return NextResponse.json({
+        success: false,
+        reason: mapSheetsReason(batchResp.status),
+        error: 'Impossible de mettre à jour le patient.',
+      });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({
+      success: false,
+      reason: 'exception',
+      error: 'Erreur technique lors de la modification du patient.',
     });
   }
 }

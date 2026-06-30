@@ -67,18 +67,25 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
     );
   }
 
-  const emailPatient = (payload.emailPatient ?? '').trim().toLowerCase();
-  const idQuestionnaire = (payload.idQuestionnaire ?? '').trim();
-  const titrePayload = (payload.titre ?? '').trim();
-  const notes = (payload.notes ?? '').trim();
+  const emailPatient = (payload.emailPatient ?? '').trim().toLowerCase().slice(0, 254);
+  const idQuestionnaire = (payload.idQuestionnaire ?? '').trim().slice(0, 50);
+  const titrePayload = (payload.titre ?? '').trim().slice(0, 200);
+  const notes = (payload.notes ?? '').trim().slice(0, 500);
   const dateLimite = (payload.dateLimite ?? '').trim();
 
-  if (!emailPatient || !idQuestionnaire) {
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailPatient);
+  const isDateValid = !dateLimite || /^\d{4}-\d{2}-\d{2}$/.test(dateLimite);
+
+  if (!emailPatient || !idQuestionnaire || !isEmailValid || !isDateValid) {
     return NextResponse.json(
       {
         success: false,
         reason: 'invalid_payload',
-        error: 'emailPatient et idQuestionnaire sont requis.',
+        error: !emailPatient || !isEmailValid
+          ? 'Email patient invalide.'
+          : !idQuestionnaire
+            ? 'Questionnaire requis.'
+            : 'Date limite invalide (format attendu : AAAA-MM-JJ).',
       },
       { status: 400 }
     );

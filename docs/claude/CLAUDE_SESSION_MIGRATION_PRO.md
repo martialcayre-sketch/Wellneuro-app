@@ -3,6 +3,7 @@
 
 > Coller ce fichier au début d'une session Claude Code dédiée à la migration.
 > Complète CLAUDE_SESSION_BOOTSTRAP.md (règles de base) sans le remplacer.
+> Pour un point de reprise rapide orienté exécution, utiliser aussi CLAUDE_ETAT_DES_LIEUX_MIGRATION.md.
 > Mis à jour le 2026-06-29.
 
 ---
@@ -110,9 +111,9 @@ URI à configurer dans la console GCP (wellneuro-app-gcp) :
 | Lot | Contenu | Statut |
 |---|---|---|
 | **Lot 0** — Scaffold | Next.js 14, auth Google, login, dashboard skeleton | ✅ Livré 2026-06-29 |
-| **Lot C2** — API lecture | Connexion métriques praticien depuis GAS ou proxy | 🔲 Prochain |
-| **Lot C3** — Patients & assignations | CRUD patients, assignation questionnaires, scoring | 🔲 À faire |
-| **Lot C4** — IA & Booklet | Synthèse IA, booklet, envoi dans nouvelle stack | 🔲 À faire |
+| **Lot C2** — API lecture | Connexion métriques praticien depuis GAS ou proxy | ✅ Livré 2026-06-29 |
+| **Lot C3** — Patients & assignations | CRUD patients, assignation questionnaires, scoring | ✅ Livré 2026-06-30 |
+| **Lot C4** — IA & Booklet | Synthèse IA, booklet, envoi dans nouvelle stack | 🔲 Prochain |
 | **Lot C5** — Décommission GAS | Retrait progressif des endpoints Apps Script validés | 🔲 Futur |
 
 ---

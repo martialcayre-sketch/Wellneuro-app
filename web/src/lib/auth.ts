@@ -13,8 +13,8 @@ export const authOptions: AuthOptions = {
         params: {
           // Forcer le choix du compte à chaque connexion
           prompt: 'select_account',
-          // Profil + lecture Sheets pour les métriques dashboard (Lot C2)
-          scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets.readonly',
+          // Profil + lecture/écriture Sheets (Lot C2 métriques, Lot C3 création patients/assignations)
+          scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets',
         },
       },
     }),
