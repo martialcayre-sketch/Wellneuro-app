@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { PatientsApiResponse } from '@/app/api/praticien/patients/route';
+import type { PatientsPgApiResponse } from '@/app/api/praticien/patients-pg/route';
 import type { SyntheseSchema } from '@/lib/anthropic';
 
 type SyntheseRecord = {
@@ -45,7 +45,7 @@ const inputCls = 'bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm';
 const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60';
 
 export function SynthesePanel() {
-  const [patients, setPatients] = useState<PatientsApiResponse['patients']>([]);
+  const [patients, setPatients] = useState<PatientsPgApiResponse['patients']>([]);
   const [selectedPatient, setSelectedPatient] = useState('');
   const [syntheses, setSyntheses] = useState<SyntheseRecord[]>([]);
   const [selectedSynthese, setSelectedSynthese] = useState<SyntheseRecord | null>(null);
@@ -62,9 +62,9 @@ export function SynthesePanel() {
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
   useEffect(() => {
-    fetch('/api/praticien/patients')
+    fetch('/api/praticien/patients-pg')
       .then(r => r.json())
-      .then((d: PatientsApiResponse) => setPatients(d.patients ?? []))
+      .then((d: PatientsPgApiResponse) => setPatients(d.patients ?? []))
       .catch(() => {});
   }, []);
 
