@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import nodemailer from 'nodemailer';
 
 const DATA_START = 3;
 
@@ -202,6 +203,11 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
       },
     }).catch(e => console.error('[assignations POST] sync PG:', (e as Error).message));
 
+    // Email patient avec lien questionnaire (best-effort)
+    sendAssignmentEmail(emailPatient, titre, dateLimite, notes, idAssignation).catch(
+      e => console.error('[assignations POST] email patient:', (e as Error).message)
+    );
+
     return NextResponse.json({ success: true, idAssignation });
   } catch {
     return NextResponse.json({
@@ -210,4 +216,31 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
       error: "Erreur technique lors de la création de l'assignation.",
     });
   }
+}
+
+async function sendAssignmentEmail(
+  patientEmail: string,
+  titreQuestionnaire: string,
+  dateLimite: string,
+  notes: string,
+  idAssignation: string
+) {
+  const smtpUrl = process.env.SMTP_URL;
+  if (!smtpUrl) return;
+  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const link = `${baseUrl}/patient/${idAssignation}`;
+  const transport = nodemailer.createTransport(smtpUrl);
+  const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
+  const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
+  await transport.sendMail({
+    from: '"Wellneuro" <noreply@wellneuro.fr>',
+    to: patientEmail,
+    subject: 'Questionnaire à compléter avant votre consultation — Wellneuro',
+    text:
+      `Bonjour,\n\n` +
+      `Votre praticien vous invite à compléter le questionnaire suivant avant votre consultation :\n` +
+      `« ${titreQuestionnaire} »${dateInfo}${noteInfo}\n\n` +
+      `Accédez à votre questionnaire ici :\n${link}\n\n` +
+      `L'équipe Wellneuro`,
+  });
 }

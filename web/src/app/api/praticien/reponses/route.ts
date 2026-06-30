@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 // Colonnes de l'onglet Rep_Questionnaires (0-indexé)
 // A: ID_Reponse | B: ID_Patient | C: Email | D: ID_Assignation
@@ -94,6 +95,33 @@ export async function GET(req: Request): Promise<NextResponse<ReponsesApiRespons
         scorePrincipal,
         interpretation: row[10] ?? '',
       });
+    }
+
+    // Compléter avec les réponses PostgreSQL (soumises via portail patient Next.js)
+    try {
+      const pgReponses = await prisma.questionnaireReponse.findMany({
+        where: { emailPatient: email },
+        orderBy: { dateReponse: 'desc' },
+      });
+      for (const pg of pgReponses) {
+        // Dédupliquer sur idReponse (évite doublons si la même réponse existe en Sheets et PG)
+        if (reponses.some(r => r.idReponse === pg.idReponse)) continue;
+        const scores = pg.scoresJson as Record<string, unknown>;
+        reponses.push({
+          idReponse: pg.idReponse,
+          idPatient: pg.idPatient,
+          emailPatient: pg.emailPatient,
+          idAssignation: pg.idAssignation ?? '',
+          idQuestionnaire: pg.idQuestionnaire,
+          titre: pg.titre,
+          dateSoumission: pg.dateReponse.toISOString(),
+          scoresParsed: scores ?? null,
+          scorePrincipal: pg.scorePrincipal ?? null,
+          interpretation: pg.interpretation ?? '',
+        });
+      }
+    } catch (pgErr) {
+      console.error('[reponses GET] PG fallback:', pgErr instanceof Error ? pgErr.message : String(pgErr));
     }
 
     // Tri antéchronologique
