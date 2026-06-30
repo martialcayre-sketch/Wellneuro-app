@@ -19,6 +19,10 @@
 - `docs/cahier_des_charges_Wellneuro_NNPP2.md`: cadrage fonctionnel.
 - `docs/roadmap.md`: priorites et hors perimetre.
 
+## API Claude — optimisation
+
+- `docs/claude/PROMPT_CACHING.md`: stratégie de cache des prompts, règles anti-invalidation, vérification et économies attendues.
+
 ## Securite et qualite
 
 - `docs/securite_rgpd.md`: exigences RGPD/secrets.

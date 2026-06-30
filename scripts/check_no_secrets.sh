@@ -8,11 +8,14 @@ GREP_EXCLUDES=(
   --exclude-dir='.git'
   --exclude-dir='node_modules'
   --exclude-dir='.next'
+  --exclude-dir='generated'
+  --exclude-dir='pgdata'
   --exclude='check_no_secrets.sh'
   --exclude='*.env.local'
   --exclude='.env.local'
   --exclude='*.env.local.example'
   --exclude='package-lock.json'
+  --exclude='*.lock'
 )
 
 check_pattern() {

@@ -59,7 +59,7 @@ export default async function DashboardPage() {
             { done: true, label: 'Lot 0 — Layout protégé + login page' },
             { done: true, label: 'Lot C2 — Connexion API lecture seule (métriques)' },
             { done: true, label: 'Lot C3 — Page patients et assignations' },
-            { done: false, label: 'Lot C4 — Synthèse IA et booklet' },
+            { done: true, label: 'Lot C4 — Synthèse IA et booklet' },
             { done: false, label: 'Lot C5 — Décommission Apps Script' },
           ].map(({ done, label }, i) => (
             <li key={i} className="flex items-center gap-3">

@@ -1,0 +1,121 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Patient {
+  id             String   @id @default(cuid())
+  idPatient      String   @unique @map("id_patient")
+  email          String   @unique @map("email")
+  prenom         String   @map("prenom")
+  nom            String   @map("nom")
+  dateNaissance  String?  @map("date_naissance")
+  telephone      String?  @map("telephone")
+  praticienEmail String   @map("praticien_email")
+  actif          Boolean  @default(true) @map("actif")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  assignations          Assignation[]
+  questionnaireReponses QuestionnaireReponse[]
+  synthesiesIA          SyntheseIA[]
+
+  @@map("patients")
+}
+
+model Assignation {
+  id              String   @id @default(cuid())
+  idAssignation   String   @unique @map("id_assignation")
+  idPatient       String   @map("id_patient")
+  emailPatient    String   @map("email_patient")
+  idQuestionnaire String   @map("id_questionnaire")
+  titre           String   @map("titre")
+  dateAssignation DateTime @default(now()) @map("date_assignation")
+  dateLimite      String?  @map("date_limite")
+  statut          String   @default("En attente") @map("statut")
+  notes           String?  @map("notes")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@map("assignations")
+}
+
+model QuestionnaireReponse {
+  id              String   @id @default(cuid())
+  idReponse       String   @unique @map("id_reponse")
+  idPatient       String   @map("id_patient")
+  emailPatient    String   @map("email_patient")
+  idAssignation   String?  @map("id_assignation")
+  idQuestionnaire String   @map("id_questionnaire")
+  titre           String   @map("titre")
+  dateReponse     DateTime @default(now()) @map("date_reponse")
+  scoresJson      Json     @map("scores_json")
+  scorePrincipal  Float?   @map("score_principal")
+  interpretation  String?  @map("interpretation")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@map("questionnaire_reponses")
+}
+
+model SyntheseIA {
+  id             String    @id @default(cuid())
+  idSynthese     String    @unique @map("id_synthese")
+  idPatient      String    @map("id_patient")
+  emailPatient   String    @map("email_patient")
+  dateGeneration DateTime  @default(now()) @map("date_generation")
+  modele         String    @map("modele")
+  versionPrompt  String    @default("v1") @map("version_prompt")
+  donneesEntree  Json      @map("donnees_entree")
+  syntheseJson   Json      @map("synthese_json")
+  statut         String    @default("Brouillon_IA") @map("statut")
+  dateValidation DateTime? @map("date_validation")
+  notesPraticien String?   @map("notes_praticien")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  patient       Patient        @relation(fields: [idPatient], references: [idPatient])
+  auditEntrees  AuditSynthese[]
+  bookletEnvois BookletEnvoi[]
+
+  @@map("syntheses_ia")
+}
+
+model AuditSynthese {
+  id             String   @id @default(cuid())
+  dateGeneration DateTime @default(now()) @map("date_generation")
+  idSynthese     String   @map("id_synthese")
+  idPatient      String   @map("id_patient")
+  modele         String   @map("modele")
+  versionPrompt  String   @map("version_prompt")
+  statut         String   @map("statut")
+  erreurCourte   String?  @map("erreur_courte")
+
+  synthese SyntheseIA @relation(fields: [idSynthese], references: [idSynthese])
+
+  @@map("audit_syntheses")
+}
+
+model BookletEnvoi {
+  id                 String   @id @default(cuid())
+  dateEnvoi          DateTime @default(now()) @map("date_envoi")
+  idSynthese         String   @map("id_synthese")
+  idPatient          String   @map("id_patient")
+  emailPatientMasque String   @map("email_patient_masque")
+  statut             String   @map("statut")
+  operation          String   @map("operation")
+  relectureConfirmee Boolean  @default(false) @map("relecture_confirmee")
+  erreurCourte       String?  @map("erreur_courte")
+
+  synthese SyntheseIA @relation(fields: [idSynthese], references: [idSynthese])
+
+  @@map("booklet_envois")
+}

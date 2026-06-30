@@ -31,6 +31,12 @@ export function NavBar({ email }: NavBarProps) {
         >
           Patients
         </Link>
+        <Link
+          href="/dashboard/synthese"
+          className="text-sm text-gray-600 hover:text-gray-800 transition"
+        >
+          Synthèse IA
+        </Link>
         <span className="text-sm text-gray-600 hidden sm:block">{email}</span>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}

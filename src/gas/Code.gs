@@ -1557,7 +1557,7 @@ function callClaudeForSynthesis_(userMessage) {
     messages: [
       { role: 'user', content: userMessage }
     ],
-    system: SYSTEM_PROMPT_SYNTHESE
+    system: [{ type: 'text', text: SYSTEM_PROMPT_SYNTHESE, cache_control: { type: 'ephemeral' } }]
   };
 
   var options = {
@@ -1565,7 +1565,8 @@ function callClaudeForSynthesis_(userMessage) {
     contentType: 'application/json',
     headers: {
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
+      'anthropic-version': '2023-06-01',
+      'anthropic-beta': 'prompt-caching-2024-07-31'
     },
     payload: JSON.stringify(payload),
     muteHttpExceptions: true
