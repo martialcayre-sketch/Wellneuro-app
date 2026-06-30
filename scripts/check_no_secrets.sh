@@ -39,6 +39,7 @@ check_pattern "private_key"       "private_key[[:space:]]*[:=][[:space:]]*['\"]?
 
 if grep -rnE "${GREP_EXCLUDES[@]}" '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' . 2>/dev/null \
   | grep -v '@wellneuro\.fr' \
+  | grep -v '@fictif\.wellneuro\.fr' \
   | grep -v 'martialcayre@gmail\.com' \
   | grep -v 'placeholder=' \
   | grep -v 'noreply@' \

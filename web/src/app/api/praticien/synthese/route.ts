@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
   }
 
-  if (!idPatient || !/^PAT\d+$/.test(idPatient)) {
+  if (!idPatient || idPatient.length > 64 || !/^[A-Za-z0-9_-]+$/.test(idPatient)) {
     return NextResponse.json({ error: 'idPatient invalide.' }, { status: 400 });
   }
 

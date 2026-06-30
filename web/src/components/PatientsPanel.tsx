@@ -8,6 +8,7 @@ import type {
 } from '@/app/api/praticien/patients/route';
 import type { CreateAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
+import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/praticien/reponses/route';
 
 type SortBy = 'nom' | 'email';
 type StatutFilter = '' | 'Terminé' | 'Envoyé' | 'En_cours' | 'En attente';
@@ -62,6 +63,9 @@ export function PatientsPanel() {
   const [saving, setSaving] = useState(false);
   const [savingAssignation, setSavingAssignation] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
+  const [reponses, setReponses] = useState<ReponseQuestionnaire[]>([]);
+  const [loadingReponses, setLoadingReponses] = useState(false);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('nom');
   const [statutFilter, setStatutFilter] = useState<StatutFilter>('');
@@ -150,6 +154,19 @@ export function PatientsPanel() {
     } finally {
       setSavingAssignation(false);
     }
+  };
+
+  const loadReponses = async (email: string) => {
+    if (selectedEmail === email) { setSelectedEmail(null); setReponses([]); return; }
+    setSelectedEmail(email);
+    setReponses([]);
+    setLoadingReponses(true);
+    try {
+      const r = await fetch(`/api/praticien/reponses?email=${encodeURIComponent(email)}`);
+      const d = await r.json() as ReponsesApiResponse;
+      setReponses(d.reponses ?? []);
+    } catch { setReponses([]); }
+    finally { setLoadingReponses(false); }
   };
 
   const openEdit = (p: PatientsApiResponse['patients'][number]) => {
@@ -333,11 +350,12 @@ export function PatientsPanel() {
                 <th className="px-4 py-2 text-left">Téléphone</th>
                 <th className="px-4 py-2 text-left">Actif</th>
                 <th className="px-4 py-2 text-left"></th>
+                <th className="px-4 py-2 text-left"></th>
               </tr>
             </thead>
             <tbody>
               {filteredPatients.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-4 text-center text-gray-400">Aucun patient.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-4 text-center text-gray-400">Aucun patient.</td></tr>
               )}
               {filteredPatients.map(p => (
                 <tr key={p.idPatient} className="border-t border-gray-100 hover:bg-gray-50">
@@ -354,12 +372,71 @@ export function PatientsPanel() {
                       Modifier
                     </button>
                   </td>
+                  <td className="px-4 py-2">
+                    <button
+                      onClick={() => loadReponses(p.email)}
+                      className={`text-xs hover:underline ${selectedEmail === p.email ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}
+                    >
+                      {selectedEmail === p.email ? 'Masquer' : 'Résultats'}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Résultats questionnaires du patient sélectionné */}
+      {selectedEmail && (
+        <div className="bg-white border border-indigo-200 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-indigo-100 flex items-center justify-between bg-indigo-50">
+            <h3 className="text-sm font-semibold text-indigo-800">
+              Résultats questionnaires — {selectedEmail}
+            </h3>
+            {loadingReponses && <span className="text-xs text-indigo-500">Chargement...</span>}
+          </div>
+          {!loadingReponses && reponses.length === 0 && (
+            <div className="px-4 py-4 text-sm text-gray-400">
+              Aucun questionnaire complété pour ce patient.
+            </div>
+          )}
+          {reponses.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-gray-600">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Date</th>
+                    <th className="px-4 py-2 text-left">Questionnaire</th>
+                    <th className="px-4 py-2 text-left">Score</th>
+                    <th className="px-4 py-2 text-left">Interprétation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reponses.map(r => (
+                    <tr key={r.idReponse} className="border-t border-gray-100">
+                      <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                        {r.dateSoumission ? new Date(r.dateSoumission).toLocaleDateString('fr-FR') : '—'}
+                      </td>
+                      <td className="px-4 py-2 font-medium">{r.titre || r.idQuestionnaire || '—'}</td>
+                      <td className="px-4 py-2">
+                        {r.scorePrincipal !== null ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                            {r.scorePrincipal}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="px-4 py-2 text-gray-600 max-w-xs truncate" title={r.interpretation}>
+                        {r.interpretation || '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tableau assignations */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
