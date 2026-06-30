@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type {
   CreatePatientResponse,
+  DeletePatientResponse,
   PatchPatientResponse,
   PatientsApiResponse,
 } from '@/app/api/praticien/patients/route';
@@ -66,6 +67,8 @@ export function PatientsPanel() {
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [reponses, setReponses] = useState<ReponseQuestionnaire[]>([]);
   const [loadingReponses, setLoadingReponses] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null); // idPatient en attente de confirmation
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('nom');
   const [statutFilter, setStatutFilter] = useState<StatutFilter>('');
@@ -172,6 +175,25 @@ export function PatientsPanel() {
   const openEdit = (p: PatientsApiResponse['patients'][number]) => {
     setEditState({ idPatient: p.idPatient, telephone: p.telephone, actif: p.actif === 'OUI' ? 'OUI' : 'NON' });
     setEditFeedback(null);
+    setConfirmDelete(null);
+  };
+
+  const onDelete = async (idPatient: string) => {
+    setDeletingId(idPatient);
+    setConfirmDelete(null);
+    try {
+      const r = await fetch(`/api/praticien/patients?idPatient=${encodeURIComponent(idPatient)}`, { method: 'DELETE' });
+      const json = (await r.json()) as DeletePatientResponse;
+      if (!r.ok || !json.success) {
+        setFeedback({ ok: false, msg: json.error ?? 'Erreur lors de la suppression.' });
+      } else {
+        await loadData();
+      }
+    } catch {
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const onSaveEdit = async () => {
@@ -351,11 +373,12 @@ export function PatientsPanel() {
                 <th className="px-4 py-2 text-left">Actif</th>
                 <th className="px-4 py-2 text-left"></th>
                 <th className="px-4 py-2 text-left"></th>
+                <th className="px-4 py-2 text-left"></th>
               </tr>
             </thead>
             <tbody>
               {filteredPatients.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-4 text-center text-gray-400">Aucun patient.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-4 text-center text-gray-400">Aucun patient.</td></tr>
               )}
               {filteredPatients.map(p => (
                 <tr key={p.idPatient} className="border-t border-gray-100 hover:bg-gray-50">
@@ -379,6 +402,29 @@ export function PatientsPanel() {
                     >
                       {selectedEmail === p.email ? 'Masquer' : 'Résultats'}
                     </button>
+                  </td>
+                  <td className="px-4 py-2">
+                    {confirmDelete === p.idPatient ? (
+                      <span className="flex items-center gap-1">
+                        <button
+                          onClick={() => onDelete(p.idPatient)}
+                          disabled={deletingId === p.idPatient}
+                          className="text-xs text-white bg-red-600 hover:bg-red-700 px-2 py-0.5 rounded disabled:opacity-60"
+                        >
+                          {deletingId === p.idPatient ? '...' : 'Confirmer'}
+                        </button>
+                        <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-500 hover:underline">
+                          Annuler
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDelete(p.idPatient)}
+                        className="text-xs text-red-500 hover:underline"
+                      >
+                        Supprimer
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

@@ -73,6 +73,22 @@ export type PatchPatientResponse = {
     | 'exception';
 };
 
+export type DeletePatientResponse = {
+  success: boolean;
+  error?: string;
+  reason?:
+    | 'unauthenticated'
+    | 'no_sheet_id'
+    | 'no_access_token'
+    | 'invalid_payload'
+    | 'patient_not_found'
+    | 'sheets_400'
+    | 'sheets_401'
+    | 'sheets_403'
+    | 'sheets_404'
+    | 'exception';
+};
+
 type SessionContext = {
   session: Session | null;
   sheetId?: string;
@@ -492,5 +508,87 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
       reason: 'exception',
       error: 'Erreur technique lors de la modification du patient.',
     });
+  }
+}
+
+// DELETE /api/praticien/patients?idPatient=PAT001
+// Supprime la ligne du patient dans Sheets + désactive en PostgreSQL (préserve l'historique)
+export async function DELETE(req: Request): Promise<NextResponse<DeletePatientResponse>> {
+  const session = await getServerSession(authOptions);
+  const { sheetId, accessToken } = getSessionContext(session);
+
+  if (!session) {
+    return NextResponse.json({ success: false, reason: 'unauthenticated', error: 'Session absente.' }, { status: 401 });
+  }
+  if (!sheetId || !accessToken) {
+    return NextResponse.json({ success: false, reason: !sheetId ? 'no_sheet_id' : 'no_access_token', error: 'Configuration incomplète.' });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const idPatient = (searchParams.get('idPatient') ?? '').trim();
+
+  if (!idPatient || !/^[A-Za-z0-9_-]+$/.test(idPatient)) {
+    return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'idPatient invalide.' }, { status: 400 });
+  }
+
+  try {
+    // 1. Lire toutes les lignes + récupérer le sheetId numérique de l'onglet Patients
+    const [readResp, metaResp] = await Promise.all([
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent('Patients!A:A')}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: 'no-store',
+      }),
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?fields=sheets(properties)`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        cache: 'no-store',
+      }),
+    ]);
+
+    if (!readResp.ok) return NextResponse.json({ success: false, reason: mapSheetsReason(readResp.status), error: 'Lecture Sheets impossible.' });
+    if (!metaResp.ok) return NextResponse.json({ success: false, reason: mapSheetsReason(metaResp.status), error: 'Métadonnées Sheets impossibles.' });
+
+    const readData = await readResp.json() as { values?: string[][] };
+    const metaData = await metaResp.json() as { sheets?: { properties?: { title?: string; sheetId?: number } }[] };
+
+    const allIds = readData.values ?? [];
+    // allIds[0] = ligne 1 (header), data à partir de DATA_START (index 3 = ligne 4 en 1-indexed)
+    const rowIndex1Based = allIds.findIndex((row, i) => i >= DATA_START && row[0] === idPatient);
+
+    if (rowIndex1Based === -1) {
+      return NextResponse.json({ success: false, reason: 'patient_not_found', error: 'Patient introuvable dans Google Sheets.' }, { status: 404 });
+    }
+
+    const patientsSheet = metaData.sheets?.find(s => s.properties?.title === 'Patients');
+    const tabId = patientsSheet?.properties?.sheetId;
+    if (tabId === undefined) {
+      return NextResponse.json({ success: false, reason: 'exception', error: "Onglet 'Patients' introuvable dans le classeur." });
+    }
+
+    // 2. Supprimer la ligne dans Sheets (deleteDimension, 0-indexed)
+    const deleteResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}:batchUpdate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        requests: [{
+          deleteDimension: {
+            range: { sheetId: tabId, dimension: 'ROWS', startIndex: rowIndex1Based, endIndex: rowIndex1Based + 1 },
+          },
+        }],
+      }),
+    });
+
+    if (!deleteResp.ok) {
+      return NextResponse.json({ success: false, reason: mapSheetsReason(deleteResp.status), error: 'Suppression Sheets impossible.' });
+    }
+
+    // 3. PostgreSQL : désactivation (soft-delete pour préserver l'historique clinique)
+    prisma.patient.updateMany({
+      where: { idPatient },
+      data: { actif: false },
+    }).catch(e => console.error('[patients DELETE] sync PG:', (e as Error).message));
+
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({ success: false, reason: 'exception', error: 'Erreur technique lors de la suppression.' });
   }
 }
