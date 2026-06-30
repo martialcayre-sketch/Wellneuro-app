@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 const DATA_START = 3;
 
@@ -180,16 +181,33 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
       return NextResponse.json({
         success: false,
         reason: mapSheetsReason(appendResp.status),
-        error: 'Impossible de créer l’assignation dans Google Sheets.',
+        error: "Impossible de créer l'assignation dans Google Sheets.",
       });
     }
+
+    // Sync best-effort → PostgreSQL
+    prisma.assignation.upsert({
+      where: { idAssignation },
+      update: {},
+      create: {
+        idAssignation,
+        idPatient,
+        emailPatient,
+        idQuestionnaire,
+        titre,
+        dateAssignation: new Date(nowIso),
+        dateLimite: dateLimite || null,
+        statut: 'En attente',
+        notes: notes || null,
+      },
+    }).catch(e => console.error('[assignations POST] sync PG:', (e as Error).message));
 
     return NextResponse.json({ success: true, idAssignation });
   } catch {
     return NextResponse.json({
       success: false,
       reason: 'exception',
-      error: 'Erreur technique lors de la création de l’assignation.',
+      error: "Erreur technique lors de la création de l'assignation.",
     });
   }
 }

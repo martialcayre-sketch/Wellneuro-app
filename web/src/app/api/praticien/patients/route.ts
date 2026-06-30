@@ -1,6 +1,7 @@
 import { getServerSession, type Session } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
 const DATA_START = 3;
 const MAX_ASSIGNATIONS = 40;
@@ -172,6 +173,21 @@ export async function GET(): Promise<NextResponse<PatientsApiResponse>> {
         statut: row[7] ?? '',
       }));
 
+    // Sync best-effort : nouveaux patients Sheets → PostgreSQL (skipDuplicates = idempotent)
+    const praticienEmail = (session.user?.email ?? '').toLowerCase();
+    prisma.patient.createMany({
+      data: patients.map(p => ({
+        idPatient: p.idPatient,
+        email: p.email,
+        prenom: p.prenom,
+        nom: p.nom,
+        telephone: p.telephone || null,
+        praticienEmail,
+        actif: p.actif === 'OUI',
+      })),
+      skipDuplicates: true,
+    }).catch(e => console.error('[patients GET] sync PG:', (e as Error).message));
+
     return NextResponse.json({ patients, assignations });
   } catch {
     return NextResponse.json({
@@ -322,6 +338,13 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
       });
     }
 
+    // Sync best-effort → PostgreSQL
+    prisma.patient.upsert({
+      where: { idPatient },
+      update: { email, prenom, nom, telephone: telephone || null, actif: true },
+      create: { idPatient, email, prenom, nom, telephone: telephone || null, praticienEmail, actif: true },
+    }).catch(e => console.error('[patients POST] sync PG:', (e as Error).message));
+
     return NextResponse.json({
       success: true,
       patient: {
@@ -452,6 +475,15 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
         error: 'Impossible de mettre à jour le patient.',
       });
     }
+
+    // Sync best-effort → PostgreSQL
+    prisma.patient.updateMany({
+      where: { idPatient },
+      data: {
+        ...(telephone !== undefined && { telephone: telephone || null }),
+        ...(actif !== undefined && { actif: actif === 'OUI' }),
+      },
+    }).catch(e => console.error('[patients PATCH] sync PG:', (e as Error).message));
 
     return NextResponse.json({ success: true });
   } catch {
