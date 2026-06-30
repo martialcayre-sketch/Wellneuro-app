@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createPublicId } from '@/lib/ids';
 import { anthropic, CLAUDE_MODEL, SYSTEM_PROMPT_SYNTHESE, validateSyntheseSchema, sanitizeAuditError, maskEmail } from '@/lib/anthropic';
 
 type ReponseInput = {
@@ -140,7 +141,7 @@ export async function POST(req: Request) {
     }
 
     const synthese = validateSyntheseSchema(parsed);
-    idSynthese = `SYN${Date.now()}`;
+    idSynthese = createPublicId('SYN');
 
     const record = await prisma.syntheseIA.create({
       data: {

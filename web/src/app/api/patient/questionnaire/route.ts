@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { isDeadlineExpired } from '@/lib/patient-access';
 
 export type PatientQuestionnaireResponse =
   | { ok: true; assignation: AssignationInfo; questionnaire: unknown }
-  | { ok: false; reason: 'not_found' | 'already_done' | 'invalid' | 'exception'; error: string };
+  | { ok: false; reason: 'not_found' | 'already_done' | 'expired' | 'invalid' | 'exception'; error: string };
 
 type AssignationInfo = {
   idAssignation: string;
@@ -41,6 +42,9 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
     }
     if (ass.statut === 'Complété') {
       return NextResponse.json({ ok: false, reason: 'already_done', error: 'Ce questionnaire a déjà été complété.' }, { status: 409 });
+    }
+    if (isDeadlineExpired(ass.dateLimite)) {
+      return NextResponse.json({ ok: false, reason: 'expired', error: 'Ce lien de questionnaire a expiré.' }, { status: 410 });
     }
 
     const questionnaire = (QUESTIONNAIRE_CATALOGUE as Record<string, unknown>)[ass.idQuestionnaire] ?? null;

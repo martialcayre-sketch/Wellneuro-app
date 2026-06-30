@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { createPublicId } from '@/lib/ids';
 import nodemailer from 'nodemailer';
 
 const DATA_START = 3;
@@ -151,7 +152,7 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
       );
     }
 
-    const idAssignation = `ASS${Date.now()}`;
+    const idAssignation = createPublicId('ASS');
     const idPatient = patientRow[0] ?? '';
     const titre = titrePayload || (questionnaireRow[1] ?? idQuestionnaire);
     const nowIso = new Date().toISOString();

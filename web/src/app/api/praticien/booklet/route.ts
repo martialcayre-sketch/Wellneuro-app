@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { type SyntheseSchema, maskEmail, sanitizeAuditError } from '@/lib/anthropic';
+import { escapeHtml } from '@/lib/html';
 
 // GET /api/praticien/booklet?idSynthese=SYN...
 // Génère et retourne le HTML du booklet (prévisualisation praticien)
@@ -179,13 +180,17 @@ function buildBookletHTML(patientNom: string, dateDocument: string, s: SyntheseS
     modere: '#d97706',
     faible: '#16a34a',
   };
+  const patientNomHtml = escapeHtml(patientNom);
+  const dateDocumentHtml = escapeHtml(dateDocument);
+  const narratifHtml = escapeHtml(s.narratif_patient || 'Synthèse à compléter par votre praticien.');
+  const notesPraticienHtml = escapeHtml(notesPraticien);
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bilan neuronutritionnel — ${patientNom}</title>
+<title>Bilan neuronutritionnel — ${patientNomHtml}</title>
 <style>
   body { font-family: Georgia, serif; color: #1a1a2e; background: #fff; margin: 0; padding: 0; }
   .page { max-width: 780px; margin: 0 auto; padding: 40px 48px; }
@@ -213,49 +218,49 @@ function buildBookletHTML(patientNom: string, dateDocument: string, s: SyntheseS
     <div class="brand">WELLNEURO</div>
     <div class="title">Bilan neuronutritionnel</div>
     <div class="meta">
-      ${patientNom ? `<strong>${patientNom}</strong> &nbsp;·&nbsp; ` : ''}
-      Document du ${dateDocument} &nbsp;·&nbsp;
+      ${patientNom ? `<strong>${patientNomHtml}</strong> &nbsp;·&nbsp; ` : ''}
+      Document du ${dateDocumentHtml} &nbsp;·&nbsp;
       Validé par votre praticien
     </div>
   </div>
 
   <h2>Ce que vos réponses suggèrent</h2>
-  <div class="narratif">${s.narratif_patient || 'Synthèse à compléter par votre praticien.'}</div>
+  <div class="narratif">${narratifHtml}</div>
 
   ${axesPrioritaires.length > 0 ? `
   <h2>Profil neuronutritionnel — axes prioritaires</h2>
   ${axesPrioritaires.map(axe => `
   <div class="axe">
     <div class="axe-header">
-      <h3 style="margin:0">${axe.axe}</h3>
+      <h3 style="margin:0">${escapeHtml(axe.axe)}</h3>
       <span class="prio-badge" style="background:${couleurPriorite[axe.niveau_priorite] ?? '#6b7280'}">
         ${axe.niveau_priorite === 'eleve' ? 'Priorité élevée' : axe.niveau_priorite === 'modere' ? 'Priorité modérée' : 'Priorité faible'}
       </span>
     </div>
-    ${axe.arguments?.length ? `<ul>${axe.arguments.map(a => `<li>${a}</li>`).join('')}</ul>` : ''}
-    ${axe.points_a_confirmer?.length ? `<p style="font-size:13px;color:#555;margin:10px 0 0"><em>À confirmer : ${axe.points_a_confirmer.join(' — ')}</em></p>` : ''}
+    ${axe.arguments?.length ? `<ul>${axe.arguments.map(a => `<li>${escapeHtml(a)}</li>`).join('')}</ul>` : ''}
+    ${axe.points_a_confirmer?.length ? `<p style="font-size:13px;color:#555;margin:10px 0 0"><em>À confirmer : ${axe.points_a_confirmer.map(escapeHtml).join(' — ')}</em></p>` : ''}
   </div>`).join('')}` : ''}
 
   ${s.points_de_vigilance?.length ? `
   <h2>Points de vigilance</h2>
   <div class="vigilance">
-    <ul>${s.points_de_vigilance.map(p => `<li>${p}</li>`).join('')}</ul>
+    <ul>${s.points_de_vigilance.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>
   </div>` : ''}
 
   ${s.questions_entretien?.length ? `
   <h2>Questions pour la consultation</h2>
   <div class="questions">
-    <ul>${s.questions_entretien.map(q => `<li>${q}</li>`).join('')}</ul>
+    <ul>${s.questions_entretien.map(q => `<li>${escapeHtml(q)}</li>`).join('')}</ul>
   </div>` : ''}
 
   ${notesPraticien ? `
   <h2>Note de votre praticien</h2>
-  <div class="notes-praticien">${notesPraticien}</div>` : ''}
+  <div class="notes-praticien">${notesPraticienHtml}</div>` : ''}
 
   <div class="footer">
     Document généré après validation par votre praticien.<br>
     Ce bilan ne constitue pas un diagnostic médical.<br>
-    wellneuro.fr &nbsp;·&nbsp; ${dateDocument}
+    wellneuro.fr &nbsp;·&nbsp; ${dateDocumentHtml}
   </div>
 </div>
 </body>

@@ -1,40 +1,39 @@
-# Wellneuro — MVP Google Apps Script
+# Wellneuro — Migration Next.js
 
-Wellneuro est une application web praticien-patient de neuronutrition clinique. Ce dépôt contient la structure de travail du MVP actuel basé sur Google Apps Script (GAS) et Google Sheets.
+Wellneuro est une application web praticien-patient de neuronutrition clinique. La migration vers **Next.js + Google Auth + PostgreSQL** a commencé le 2026-06-29.
 
 ## Périmètre actuel
 
-- Backend Apps Script dans `src/gas/Code.gs`.
-- Catalogue questionnaires et scoring dans `src/gas/Questions.gs`.
-- Interface patient/praticien dans `src/gas/index.html`.
-- Google Sheets comme base de données du MVP.
+- Application cible dans `web/`.
+- Authentification praticien via Google / NextAuth.
+- PostgreSQL sert de base cible pour patients, assignations, réponses, synthèses et booklets.
+- Google Sheets peut rester utilisé comme source transitoire pendant la migration.
+- Le dossier `src/gas/` est legacy : il n'est plus maintenu ni corrigé, et sera supprimé après migration complète.
 
-La migration cible future pourra être étudiée ultérieurement, mais elle ne doit pas être commencée tant que le MVP GAS n'est pas validé end-to-end.
+La priorité avant C5 est de finaliser la parité fonctionnelle et la sécurité côté `web/`, puis de retirer progressivement les dépendances Apps Script.
 
 ## Sécurité indispensable
 
 - Ne jamais écrire de `SHEET_ID` en dur dans le code.
-- Utiliser uniquement `PropertiesService.getScriptProperties().getProperty('SHEET_ID')`.
 - Ne jamais committer de données patients réelles, identifiants Google, clés API, exports CSV/XLSX, résultats biologiques ou questionnaires remplis réels.
 - Les patients Sophie Nicola, Jennifer Martin et Michel Dogné sont exclusivement des patients fictifs de test.
+- Les liens patients doivent rester non prédictibles et expirables.
+- Tout HTML généré à partir de données patient, praticien ou IA doit être échappé avant rendu ou envoi.
 
-## Installation locale avec clasp
+## Installation locale
 
-1. Copier `.clasp.example.json` vers `.clasp.json`.
-2. Remplacer `A_REMPLACER_PAR_LE_SCRIPT_ID_LOCAL` par le script ID local.
-3. Vérifier que `rootDir` vaut `src/gas`.
-4. Configurer la propriété Apps Script `SHEET_ID` dans l'interface Google Apps Script, sans la committer.
+La configuration clasp est conservée uniquement pour historique/migration. Ne pas ajouter de nouveau développement GAS.
 
 ## Vérifications
 
 ```bash
 bash scripts/check_no_secrets.sh
+cd web && npm run lint
 ```
 
 ## Documentation
 
-- Architecture GAS : `docs/architecture_gas.md`
-- Schéma Google Sheets : `docs/schema_google_sheets.md`
+- Roadmap migration : `docs/roadmap.md`
 - Sécurité RGPD : `docs/securite_rgpd.md`
-- Workflow GitHub + clasp : `docs/workflow_github_clasp.md`
-- Tests end-to-end : `docs/checklist_tests_end_to_end.md`
+- Schéma Google Sheets transitoire : `docs/schema_google_sheets.md`
+- Configuration Codespaces : `docs/CONFIGURATION_CODESPACES_CODEX.md`

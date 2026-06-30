@@ -9,12 +9,12 @@
 | Phase 3 — Booklet | Génération HTML, prévisualisation, envoi manuel, anti-double envoi | ✅ Livré |
 | Phase 4A — Ops dashboard | Compteurs, dernière activité, historique 20 événements | ✅ Livré |
 
-## En cours — Stabilisation MVP GAS
+## État GAS — Legacy gelé
 
-- Validation payload questionnaire (submitQuestionnaire) — **fixé 2026-06-29**
-- DEV_MULTI_ROLE_EMAILS contrôlé par ScriptProperties — **fixé 2026-06-29**
-- Injection mini-corpus SIIN dans le prompt Claude
-- Schéma Google Sheets à compléter
+- Le MVP GAS est conservé uniquement comme référence transitoire.
+- Il n'est plus maintenu ni corrigé.
+- Les occurrences GAS seront supprimées après migration complète.
+- Aucun nouveau développement ne doit être ajouté dans `src/gas/`.
 
 ## En cours — Migration vers stack moderne (décision prise 2026-06-29)
 
@@ -24,10 +24,10 @@ Cible retenue : **Next.js 14 + Google Auth (NextAuth) + Cloud Run + Cloud SQL Po
 | Lot | Contenu | Statut |
 |---|---|---|
 | Lot 0 — Scaffold Next.js | App web `web/`, auth Google, login page, dashboard praticien POC | ✅ Livré 2026-06-29 |
-| Lot C2 — API lecture seule | Connexion métriques depuis Apps Script ou proxy | 🔲 À venir |
-| Lot C3 — Patients & assignations | Pages lecture + création patients, assignation questionnaires | 🔲 À venir |
-| Lot C4 — IA & Booklet | Synthèse IA, booklet, envoi dans nouvelle stack | 🔲 À venir |
-| Lot C5 — Décommission GAS | Retrait progressif des endpoints Apps Script | 🔲 Futur |
+| Lot C2 — API lecture seule | Connexion métriques depuis Google Sheets / PostgreSQL | 🟡 En cours |
+| Lot C3 — Patients & assignations | Pages lecture + création patients, assignation questionnaires | 🟡 En cours |
+| Lot C4 — IA & Booklet | Synthèse IA, booklet, envoi dans nouvelle stack | 🟡 En cours |
+| Lot C5 — Décommission GAS | Retrait progressif des endpoints et fichiers Apps Script | 🔲 À préparer |
 
 ## Hors périmètre (sauf demande explicite)
 

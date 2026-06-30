@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { calculateScore } from '@/lib/questions';
+import { createPublicId } from '@/lib/ids';
+import { isDeadlineExpired } from '@/lib/patient-access';
 import nodemailer from 'nodemailer';
 
 export type PatientSubmitResponse =
@@ -24,10 +26,16 @@ export async function POST(req: Request): Promise<NextResponse<PatientSubmitResp
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
   }
 
-  const { idAssignation, idPatient, email, idQuestionnaire, answers } = payload;
+  const { idAssignation, email, answers } = payload;
 
-  if (!idQuestionnaire || !answers || !email || !idPatient) {
+  if (!idAssignation || !answers || !email) {
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Données manquantes.' }, { status: 400 });
+  }
+  if (!/^[A-Za-z0-9_-]{8,80}$/.test(idAssignation)) {
+    return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiant invalide.' }, { status: 400 });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Email invalide.' }, { status: 400 });
   }
   if (typeof answers !== 'object' || Array.isArray(answers)) {
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Format réponses invalide.' }, { status: 400 });
@@ -38,13 +46,21 @@ export async function POST(req: Request): Promise<NextResponse<PatientSubmitResp
   }
 
   try {
-    // Vérifier l'assignation appartient bien à ce patient/email
-    if (idAssignation) {
-      const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
-      if (!ass || ass.emailPatient.toLowerCase() !== email.toLowerCase()) {
-        return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Assignation non reconnue.' }, { status: 403 });
-      }
+    const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
+    if (!ass || ass.emailPatient.toLowerCase() !== email.toLowerCase()) {
+      return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Assignation non reconnue.' }, { status: 403 });
     }
+    if (ass.statut === 'Complété') {
+      return NextResponse.json({ ok: false, reason: 'already_done', error: 'Ce questionnaire a déjà été complété.' }, { status: 409 });
+    }
+    if (isDeadlineExpired(ass.dateLimite)) {
+      return NextResponse.json({ ok: false, reason: 'expired', error: 'Ce lien de questionnaire a expiré.' }, { status: 410 });
+    }
+
+    const idPatient = ass.idPatient;
+    const emailPatient = ass.emailPatient.toLowerCase();
+    const idQuestionnaire = ass.idQuestionnaire;
+    const titre = ass.titre || idQuestionnaire;
 
     // Calculer le score
     const scores = calculateScore(idQuestionnaire, answers) as Record<string, unknown>;
@@ -58,11 +74,10 @@ export async function POST(req: Request): Promise<NextResponse<PatientSubmitResp
       typeof scores.total === 'number' ? scores.total :
       typeof scores.count === 'number' ? scores.count : null;
 
-    // Titre depuis le catalogue (scores.titre peut être absent — on utilise idQuestionnaire comme fallback)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const scoresWithAnswers = { ...scores, rawAnswers: answers } as any;
 
-    const idReponse = `REP${Date.now()}`;
+    const idReponse = createPublicId('REP');
     const now = new Date();
 
     // Sauvegarder en PostgreSQL
@@ -70,10 +85,10 @@ export async function POST(req: Request): Promise<NextResponse<PatientSubmitResp
       data: {
         idReponse,
         idPatient,
-        emailPatient: email.toLowerCase(),
-        idAssignation: idAssignation ?? null,
+        emailPatient,
+        idAssignation,
         idQuestionnaire,
-        titre: (scores as Record<string, unknown>).titre as string ?? idQuestionnaire,
+        titre,
         dateReponse: now,
         scoresJson: scoresWithAnswers,
         scorePrincipal,
@@ -82,19 +97,17 @@ export async function POST(req: Request): Promise<NextResponse<PatientSubmitResp
     });
 
     // Mettre à jour le statut de l'assignation
-    if (idAssignation) {
-      await prisma.assignation.updateMany({
-        where: { idAssignation },
-        data: { statut: 'Complété' },
-      });
-    }
+    await prisma.assignation.update({
+      where: { idAssignation },
+      data: { statut: 'Complété' },
+    });
 
     // Accusé de réception email (best-effort, ne bloque pas)
-    sendAck(email, idQuestionnaire).catch(e =>
+    sendAck(emailPatient, titre).catch(e =>
       console.error('[patient/submit] ack email:', (e as Error).message)
     );
 
-    return NextResponse.json({ ok: true, scores, titre: idQuestionnaire });
+    return NextResponse.json({ ok: true, scores, titre });
   } catch (err) {
     console.error('[patient/submit POST]', err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique lors de la soumission.' }, { status: 500 });
