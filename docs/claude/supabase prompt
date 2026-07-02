@@ -1,0 +1,24 @@
+1. Connection string
+Copy the connection details for your database.
+Details:
+Shared Pooler
+Forgot your database password? fwERPrAoTX1qvzWD
+host:aws-1-eu-central-1.pooler.supabase.com
+port:6543
+database:postgres
+user:postgres.ohnbmypinamzzfhqymlt
+Code:
+File: Code
+```
+postgresql://postgres.ohnbmypinamzzfhqymlt:[YOUR-PASSWORD]@aws-1-eu-central-1.pooler.supabase.com:6543/postgres
+```
+
+2. Install Agent Skills (Optional)
+Agent Skills give AI coding tools ready-made instructions, scripts, and resources for working with Supabase more accurately and efficiently.
+Details:
+npx skills add supabase/agent-skills
+Code:
+File: Code
+```
+npx skills add supabase/agent-skills
+```

@@ -29,7 +29,13 @@
       "typescriptreact": "javascript"
     },
     "chat.tools.terminal.autoApprove": {
-      "clasp": true
+      "clasp": true,
+      "git check-ignore": true,
+      "/^cd /workspaces/Wellneuro/web && set -a && source \\.env\\.production\\.local && set \\+a && npx prisma migrate deploy 2>&1 \\| tail -40$/": {
+        "approve": true,
+        "matchCommandLine": true
+      },
+      "command": true
     }
   },
   "extensions": {
