@@ -48,6 +48,33 @@ Colle le BASE64 du step précédent et appuie sur **Ctrl+D**.
 - ✓ `.clasp.json` est safe (pas de secrets)
 - ✓ `.deploy-id` est safe (ID public du déploiement)
 
+## Supabase + Prisma
+
+### `setup_supabase_prisma.sh` — Setup complet Docker + migration 5432
+
+Automatise la preparation d'un environnement Supabase/Prisma pour migration distante:
+
+1. installe Docker (Debian/Ubuntu) si absent,
+2. verifie l'acces au daemon Docker,
+3. verifie l'authentification Supabase CLI,
+4. lie le projet Supabase,
+5. verifie l'acces reseau `db.<project_ref>.supabase.co:5432`,
+6. derive une URL directe de migration (port 5432) depuis `DATABASE_URL`,
+7. lance `prisma migrate deploy`,
+8. lance optionnellement `supabase db pull`.
+
+Usage recommande:
+
+```bash
+bash scripts/setup_supabase_prisma.sh --project-ref <project_ref>
+```
+
+Mode rapide (si Docker est deja installe):
+
+```bash
+bash scripts/setup_supabase_prisma.sh --project-ref <project_ref> --skip-docker-install
+```
+
 ## Files
 
 | File | Purpose | Status | Commit? |

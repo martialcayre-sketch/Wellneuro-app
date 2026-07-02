@@ -31,6 +31,44 @@ bash scripts/check_no_secrets.sh
 cd web && npm run lint
 ```
 
+## Setup Supabase Prisma Vercel
+
+Configuration recommandee pour la stack Next.js en production:
+
+```bash
+# 1) Installer les dependances et generer Prisma client
+cd web
+npm install
+npm run prisma:generate
+
+# 2) Configurer Supabase CLI
+supabase login
+export SUPABASE_PROJECT_REF=<project-ref>
+npm run supabase:link
+
+# 3) Appliquer les migrations sur la base cible
+npm run prisma:migrate:deploy
+
+# 4) Verifier le projet
+npm run type-check
+```
+
+Variables obligatoires cote Vercel:
+
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `DATABASE_URL` (pooler Supabase)
+- `SHEET_ID`
+- `SMTP_URL`
+- `ANTHROPIC_API_KEY`
+
+Controle OAuth Google Cloud Console (production):
+
+- Origine JavaScript: `https://app.wellneuro.fr`
+- Redirect URI: `https://app.wellneuro.fr/api/auth/callback/google`
+
 ## Documentation
 
 - Roadmap migration : `docs/roadmap.md`

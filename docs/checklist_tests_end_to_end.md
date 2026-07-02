@@ -48,6 +48,27 @@ Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogné.
 - [ ] Tenter un renvoi : vérifier la confirmation renforcée.
 - [ ] Vérifier qu'une synthèse trop vide est refusée.
 
+## Phase 4 — Connexion OAuth production (NextAuth)
+
+- [ ] Vérifier dans Google Cloud Console le bon client OAuth (ID utilisé en prod Wellneuro).
+- [ ] Vérifier `Origines JavaScript autorisées` : `https://app.wellneuro.fr`.
+- [ ] Vérifier `URI de redirection autorisés` : `https://app.wellneuro.fr/api/auth/callback/google`.
+- [ ] Vérifier l'absence d'URI erronée prioritaire (exemple : `https://www.wellneuro.fr/api/auth/callback/google` si non utilisée).
+- [ ] Vérifier les variables Vercel de prod : `NEXTAUTH_URL=https://app.wellneuro.fr`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`.
+- [ ] Tester la connexion praticien sur `/login` avec un compte `@wellneuro.fr`.
+- [ ] Vérifier qu'aucune erreur `redirect_uri_mismatch` n'apparaît.
+
+## Contrôle post-déploiement (Vercel + Google)
+
+1. Déployer `main` puis confirmer le statut `Ready` sur Vercel.
+2. Vérifier que le domaine `app.wellneuro.fr` répond sans `404`.
+3. Vérifier le flux OAuth via `https://app.wellneuro.fr/login`.
+4. En cas d'erreur OAuth, contrôler en priorité la paire:
+	- Origin: `https://app.wellneuro.fr`
+	- Redirect URI: `https://app.wellneuro.fr/api/auth/callback/google`
+5. Attendre 5 à 10 minutes après un changement Google Cloud avant re-test.
+6. Consigner l'incident et la correction dans `docs/claude/CONTEXTE_SESSION_VERCEL_2026-07-01.md`.
+
 ## Vérification sécurité
 
 - [ ] Pas de clé API dans les feuilles Sheets.

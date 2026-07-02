@@ -26,7 +26,7 @@
 ## Securite et qualite
 
 - `docs/securite_rgpd.md`: exigences RGPD/secrets.
-- `docs/checklist_tests_end_to_end.md`: validation manuelle E2E.
+- `docs/checklist_tests_end_to_end.md`: validation manuelle E2E + checklist OAuth prod + controle post-deploiement Vercel/Google.
 - `scripts/check_no_secrets.sh`: controle anti-secrets avant commit.
 
 ## Prompts metier existants
