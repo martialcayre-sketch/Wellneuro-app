@@ -2,6 +2,7 @@
 
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/Badge';
 
 interface NavBarProps {
   email: string;
@@ -9,38 +10,36 @@ interface NavBarProps {
 
 export function NavBar({ email }: NavBarProps) {
   return (
-    <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+    <header className="bg-surface border-b border-border px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <span className="text-lg font-bold" style={{ color: 'var(--primary)' }}>
+        <span className="text-lg font-bold text-accent">
           Wellneuro
         </span>
-        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-          Espace praticien — v2
-        </span>
+        <Badge variant="neutral">Espace praticien — v2</Badge>
       </div>
       <div className="flex items-center gap-4">
         <Link
           href="/dashboard"
-          className="text-sm text-gray-600 hover:text-gray-800 transition"
+          className="text-sm text-muted-foreground hover:text-foreground transition"
         >
           Dashboard
         </Link>
         <Link
           href="/dashboard/patients"
-          className="text-sm text-gray-600 hover:text-gray-800 transition"
+          className="text-sm text-muted-foreground hover:text-foreground transition"
         >
           Patients
         </Link>
         <Link
           href="/dashboard/synthese"
-          className="text-sm text-gray-600 hover:text-gray-800 transition"
+          className="text-sm text-muted-foreground hover:text-foreground transition"
         >
           Synthèse IA
         </Link>
-        <span className="text-sm text-gray-600 hidden sm:block">{email}</span>
+        <span className="text-sm text-muted-foreground hidden sm:block">{email}</span>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="text-sm text-gray-500 hover:text-gray-700 transition"
+          className="text-sm text-muted-foreground hover:text-foreground transition"
         >
           Déconnexion
         </button>

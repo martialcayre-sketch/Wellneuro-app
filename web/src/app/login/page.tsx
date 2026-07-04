@@ -14,30 +14,27 @@ export default function LoginPage() {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-gray-500">Chargement…</div>
+      <div data-theme="praticien" className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Chargement…</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-sm w-full bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6">
+    <div data-theme="praticien" className="min-h-screen flex items-center justify-center bg-background">
+      <div className="max-w-sm w-full bg-surface rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6">
         {/* Logo / titre */}
         <div className="text-center">
-          <h1
-            className="text-2xl font-bold"
-            style={{ color: 'var(--primary)' }}
-          >
+          <h1 className="text-2xl font-bold text-accent">
             Wellneuro
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Espace praticien</p>
+          <p className="text-sm text-muted-foreground mt-1">Espace praticien</p>
         </div>
 
         {/* Connexion Google */}
         <button
           onClick={() => signIn('google', { callbackUrl: '/dashboard' })}
-          className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+          className="w-full flex items-center justify-center gap-3 px-4 py-3 border border-border rounded-xl text-sm font-medium text-foreground hover:bg-muted transition"
         >
           {/* Icône Google SVG inline */}
           <svg width="18" height="18" viewBox="0 0 48 48" fill="none">
@@ -49,7 +46,7 @@ export default function LoginPage() {
           Se connecter avec Google Workspace
         </button>
 
-        <p className="text-xs text-gray-400 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           Accès réservé aux praticiens wellneuro.fr
         </p>
       </div>
