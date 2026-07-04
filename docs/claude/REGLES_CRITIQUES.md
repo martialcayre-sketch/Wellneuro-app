@@ -9,8 +9,7 @@ Interdits dans Git:
 - exports CSV/XLSX reels,
 - identifiants Google,
 - cles API,
-- fichiers `.env` reels,
-- `.clasp.json`, `.clasprc.json`.
+- fichiers `.env` / `.env.local` reels.
 
 ## 2) Donnees de test autorisees
 
@@ -19,15 +18,13 @@ Seuls patients fictifs nommes autorises:
 - Jennifer Martin
 - Michel Dogne
 
-## 3) Regle SHEET_ID
+## 3) Regle secrets et configuration
 
-Toujours recuperer via:
-
-```javascript
-PropertiesService.getScriptProperties().getProperty('SHEET_ID')
-```
+Toute configuration sensible (`DATABASE_URL`, `SHEET_ID`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`) passe uniquement par des variables d'environnement (`web/.env.local` en dev, variables Vercel en production).
 
 Jamais en dur dans le code.
+
+Note : `SHEET_ID` reste requis — plusieurs routes praticien (`metrics`, `patients`, `assignations`, `questionnaires`, `reponses`, `migrate-historique`) interrogent encore directement l'API Google Sheets en parallele de PostgreSQL malgre la decommission du deploiement Apps Script.
 
 ## 4) Contraintes cliniques
 

@@ -1,25 +1,32 @@
 # Kit Claude IA - Wellneuro NNPP2
 
-Ce dossier fournit les fichiers Markdown necessaires pour donner a Claude IA un cadre fiable sur ce depot.
+Ce dossier fournit les fichiers Markdown nécessaires pour donner à Claude IA un cadre fiable sur ce dépôt.
 
 ## Fichiers
 
-- `CLAUDE_SESSION_BOOTSTRAP.md`: prompt de demarrage ultra court pour chaque session.
-- `PROJET_CONTEXTE.md`: resume operationnel du produit, architecture et priorites.
-- `REGLES_CRITIQUES.md`: securite, RGPD, contraintes cliniques et anti-regressions.
-- `WORKFLOW_DEVELOPPEMENT.md`: procedure pratique pour modifier, verifier et livrer.
-- `TEMPLATES_PROMPTS.md`: prompts reutilisables pour les taches courantes.
-- `RESSOURCES_INDEX.md`: index des documents existants du repo.
+- `PROJET_CONTEXTE.md` : contexte projet à jour — stack, architecture, dette technique, ce qui reste ouvert. **À lire en premier.**
+- `REGLES_CRITIQUES.md` : sécurité, RGPD, contraintes cliniques et anti-régressions.
+- `WORKFLOW_DEVELOPPEMENT.md` : procédure pratique pour modifier, vérifier et livrer.
+- `TEMPLATES_PROMPTS.md` : prompts réutilisables pour les tâches courantes.
+- `PROMPT_CACHING.md` : stratégie de cache des prompts pour l'API Claude (synthèse IA).
+- `CONTEXTE_SESSION_VERCEL_2026-07-01.md` : runbook de l'incident 404/DNS production — référence en cas de nouvel incident de routage ou de domaine.
 
 ## Comment utiliser
 
-1. Ouvrir `CLAUDE.md` en premier.
-2. Donner a Claude la tache precise.
-3. Referencer les sections du dossier `docs/claude/` selon le besoin.
-4. Verifier les resultats avec les checklists et scripts de securite.
+1. Ouvrir `CLAUDE.md` (racine du dépôt) en premier.
+2. Lire `PROJET_CONTEXTE.md` pour l'état courant de l'architecture et la dette technique connue.
+3. Donner à Claude la tâche précise.
+4. Vérifier les résultats avec les checklists et scripts de sécurité (`docs/checklist_tests_end_to_end.md`, `scripts/check_no_secrets.sh`).
 
-## Public vise
+## Autres documents utiles du dépôt (hors ce dossier)
 
-- Claude IA (contexte systeme/projet)
-- Developpeurs du MVP
-- Practiciens qui veulent valider les limites fonctionnelles documentees
+- `docs/roadmap.md` : lots livrés et dette technique.
+- `docs/securite_rgpd.md` : exigences RGPD et secrets.
+- `docs/checklist_tests_end_to_end.md` : validation manuelle E2E.
+- `CHANGELOG.md` : historique des évolutions fonctionnelles.
+
+## Public visé
+
+- Claude IA (contexte système/projet)
+- Développeurs de l'application
+- Praticiens qui veulent valider les limites fonctionnelles documentées

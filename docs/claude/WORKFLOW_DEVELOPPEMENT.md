@@ -15,14 +15,13 @@
 ## Etape 3 - Implementer
 
 - Faire des changements minimaux et explicites.
-- Preserver la compatibilite MVP GAS.
 - Garder les textes UI en francais.
 
 ## Etape 4 - Verifier
 
 Checklist rapide:
 - pas de secret introduit,
-- pas de SHEET_ID en dur,
+- pas de SHEET_ID ou DATABASE_URL en dur,
 - pas de donnee patient reelle,
 - pas de changement clinique involontaire.
 
@@ -30,6 +29,7 @@ Commande de controle:
 
 ```bash
 bash scripts/check_no_secrets.sh
+cd web && npm run type-check
 ```
 
 ## Etape 5 - Documenter

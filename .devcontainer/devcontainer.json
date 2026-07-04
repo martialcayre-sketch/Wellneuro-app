@@ -1,7 +1,7 @@
 {
-  "name": "Wellneuro — GAS + Next.js Dev",
+  "name": "Wellneuro — Next.js Dev",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
-  "postCreateCommand": "npm install -g @google/clasp && cd web && npm install",
+  "postCreateCommand": "cd web && npm install",
   "customizations": {
     "vscode": {
       "extensions": [

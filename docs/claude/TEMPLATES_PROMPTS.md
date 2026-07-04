@@ -1,15 +1,15 @@
 # Templates de Prompts pour Claude IA
 
-Ces templates servent a obtenir des reponses robustes et compatibles avec le MVP GAS.
+Ces templates servent a obtenir des reponses robustes et compatibles avec la stack Wellneuro NNPP2 (Next.js + Prisma + PostgreSQL).
 
 ## 1) Correction ciblee
 
 ```text
-Contexte: projet Wellneuro NNPP2 (MVP Google Apps Script).
+Contexte: projet Wellneuro NNPP2 (Next.js + Prisma + PostgreSQL, deploye sur Vercel).
 Tache: corrige le bug suivant dans [fichier]: [description bug].
 Contraintes:
 - ne pas modifier la logique clinique,
-- ne pas ajouter de SHEET_ID en dur,
+- ne pas ajouter de secret ou de SHEET_ID en dur,
 - conserver les textes UI en francais,
 - changements minimaux.
 Verification demandee:
@@ -21,7 +21,7 @@ Verification demandee:
 ## 2) Refactor limite
 
 ```text
-Contexte: MVP GAS Wellneuro NNPP2.
+Contexte: Wellneuro NNPP2 (Next.js + Prisma + PostgreSQL).
 Tache: ameliorer la lisibilite de [fichier/fonction] sans changer le comportement.
 Contraintes:
 - aucun changement fonctionnel,
@@ -42,7 +42,7 @@ Pour chaque point: cause, impact, correction proposee.
 Contexte de securite:
 - pas de donnees patients reelles,
 - pas de secrets,
-- SHEET_ID uniquement via Script Properties.
+- secrets et SHEET_ID uniquement via variables d'environnement (jamais en dur).
 ```
 
 ## 4) Ajout de documentation
@@ -60,7 +60,7 @@ Ajoute un exemple fictif si necessaire.
 ## 5) Preparation de test end-to-end
 
 ```text
-A partir de la checklist MVP, prepare un plan de test manuel pour [scenario].
+A partir de la checklist E2E (`docs/checklist_tests_end_to_end.md`), prepare un plan de test manuel pour [scenario].
 Contrainte:
 - utiliser uniquement Sophie Nicola, Jennifer Martin ou Michel Dogne.
 Resultat attendu:

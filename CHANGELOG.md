@@ -4,6 +4,14 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Lot C5 — Décommission GAS (2026-07-03)
+
+- Migration historique des données Google Sheets → Supabase exécutée en production (patients, assignations, réponses).
+- Suppression du déclencheur `sendReminders` et retrait du déploiement web côté Apps Script.
+- Archivage de `src/gas/` dans `archive/gas-legacy/`, suppression des artefacts clasp restants (`deploy.sh`, `.clasp.json`).
+- `app.wellneuro.fr` (Next.js) devient l'unique point d'entrée applicatif ; le MVP GAS est hors service.
+- Dette technique restante documentée dans `docs/roadmap.md` : plusieurs routes praticien lisent/écrivent encore directement Google Sheets en parallèle de PostgreSQL.
+
 ### Phase 4 — Dashboard ops praticien (2026-06-28)
 
 - Carte « Suivi opérationnel » dans la vue praticien avec compteurs : synthèses IA, validées/corrigées, booklets envoyés, erreurs audit.

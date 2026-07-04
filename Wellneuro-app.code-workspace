@@ -29,7 +29,6 @@
       "typescriptreact": "javascript"
     },
     "chat.tools.terminal.autoApprove": {
-      "clasp": true,
       "git check-ignore": true,
       "/^cd /workspaces/Wellneuro/web && set -a && source \\.env\\.production\\.local && set \\+a && npx prisma migrate deploy 2>&1 \\| tail -40$/": {
         "approve": true,
@@ -54,7 +53,7 @@
       {
         "label": "bootstrap-local",
         "type": "shell",
-        "command": "npm install -g @google/clasp && cd web && npm install"
+        "command": "cd web && npm install"
       },
       {
         "label": "dev-web",
@@ -75,12 +74,6 @@
         "type": "shell",
         "command": "bash scripts/check_no_secrets.sh",
         "group": "test"
-      },
-      {
-        "label": "deploy-gas",
-        "type": "shell",
-        "command": "bash scripts/deploy.sh \"feat: local deploy\"",
-        "group": "build"
       }
     ]
   }

@@ -2,30 +2,35 @@
 
 ## Identité du projet
 
-Wellneuro NNPP2 est un MVP Google Apps Script destiné à accompagner un parcours de consultation en neuronutrition. Le dépôt doit rester centré sur la stabilisation du MVP GAS tant qu'une migration n'est pas explicitement demandée.
+Wellneuro NNPP2 est une application de consultation en neuronutrition en production, construite sur **Next.js 14 (App Router) + TypeScript + Prisma + PostgreSQL (Supabase) + NextAuth**, déployée sur **Vercel** (`app.wellneuro.fr`).
+
+Le déploiement Google Apps Script (GAS) historique a été décommissionné le 2026-07-03 (lot C5) : web app et déclencheurs arrêtés côté console Apps Script. Le code est conservé pour référence dans `archive/gas-legacy/` mais n'est plus exécuté ni maintenu.
+
+**Point de vigilance** : le décommissionnement du déploiement GAS ne signifie pas que Google Sheets a disparu du périmètre applicatif. Plusieurs routes Next.js appellent encore directement l'API Google Sheets (voir ci-dessous) en parallèle de PostgreSQL. Ne pas présumer que ces routes sont mortes sans vérifier.
 
 ## Architecture actuelle
 
-- `Code.gs` : logique serveur GAS
-- `Questions.gs` : catalogue questionnaires et moteurs de scoring
-- `index.html` : interface HTML patient/praticien
-- `appsscript.json` : manifeste Apps Script
-- Google Sheets sert de base de données
+- `web/src/app/dashboard/*` : portail praticien (auth Google via NextAuth, restreint au domaine `@wellneuro.fr`)
+- `web/src/app/patient/[idAssignation]` : portail patient public (email gate, pas d'auth Google)
+- `web/src/app/api/*` : routes serveur (patients, assignations, questionnaires, synthèse IA, booklet)
+  - `api/praticien/metrics`, `api/praticien/patients`, `api/praticien/assignations`, `api/praticien/questionnaires`, `api/praticien/reponses`, `api/praticien/migrate-historique` lisent/écrivent encore directement Google Sheets (`SHEET_ID` + token OAuth du praticien) en plus de PostgreSQL — dette technique héritée du strangler pattern, pas encore nettoyée
+- `web/prisma/schema.prisma` : schéma PostgreSQL (Patient, Assignation, QuestionnaireReponse, SyntheseIA, BookletEnvoi, ...)
+- `web/src/lib/questions.ts` : catalogue des questionnaires et moteur de scoring
+- `web/src/lib/auth.ts`, `web/src/lib/prisma.ts` : auth et client base de données
+- `archive/gas-legacy/` : ancien code GAS (`Code.gs`, `Questions.gs`, `index.html`, `appsscript.json`) — référence historique uniquement, ne pas modifier ni réactiver
 
 ## Chemins importants
 
-- Documentation Codespaces et clasp : `docs/CONFIGURATION_CODESPACES_CODEX.md`
+- Contexte projet à jour : `docs/claude/PROJET_CONTEXTE.md`
 - Scripts de contrôle : `scripts/`
-- Exemple de configuration clasp : `.clasp.example.json`
-- Exemple d'environnement sans secret : `.env.example`
+- Exemple d'environnement sans secret : `web/.env.local.example`
 
 ## Règles critiques de sécurité
 
-- Ne jamais écrire de `SHEET_ID` en dur dans le code ou les commits
-- Le `SHEET_ID` doit être récupéré uniquement avec :
-  `PropertiesService.getScriptProperties().getProperty('SHEET_ID')`
+- Ne jamais écrire de secret en dur dans le code ou les commits (`DATABASE_URL`, `SHEET_ID`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`, etc.)
+- Toute configuration sensible passe par les variables d'environnement : `web/.env.local` en développement (jamais commité), variables d'environnement Vercel en production
 - Ne jamais committer de données patients réelles
-- Ne jamais committer de clés API, fichiers `.env` réels, `.clasp.json`, `.clasprc.json`, identifiants Google, jetons OAuth, exports patients ou fichiers de résultats réels
+- Ne jamais committer de clés API, fichiers `.env*` réels, identifiants Google, jetons OAuth, exports patients ou fichiers de résultats réels
 - Les seuls patients fictifs autorisés sont : Sophie Nicola, Jennifer Martin et Michel Dogné
 
 ## Règles RGPD et données de santé
@@ -44,11 +49,10 @@ Wellneuro NNPP2 est un MVP Google Apps Script destiné à accompagner un parcour
 
 ## Priorités produit et techniques
 
-- Priorité actuelle : finaliser la stabilisation MVP Google Apps Script et mener en parallèle la migration progressive vers Next.js + Google Auth + Cloud Run + PostgreSQL.
-- La migration a été décidée explicitement le 2026-06-29. Le dossier `web/` contient le scaffold Next.js (POC Lot 0).
+- Priorité actuelle : stabilité de l'application en production (`app.wellneuro.fr`).
+- Pas de nouvelle migration technologique sans demande explicite.
+- Ne pas modifier `archive/gas-legacy/` : ce code est gelé et hors service.
 - Ne pas modifier la logique clinique sans consigne claire.
-- Ne pas modifier `Code.gs`, `Questions.gs` ou `index.html` pour une tâche purement documentaire.
-- Ne pas décommissionner Apps Script avant que les lots C2-C4 soient validés en production.
 
 ## Règles de style
 
@@ -61,19 +65,13 @@ Wellneuro NNPP2 est un MVP Google Apps Script destiné à accompagner un parcour
 ## Commandes utiles
 
 ```bash
-clasp login --no-localhost
-clasp pull
-clasp status
-clasp push
-bash scripts/check_no_secrets.sh
+cd web && npm run dev             # serveur de développement
+cd web && npm run type-check      # vérification TypeScript
+cd web && npm run prisma:generate # régénérer le client Prisma après modif du schéma
+bash scripts/check_no_secrets.sh  # contrôle anti-secrets avant commit
 ```
 
-## Configuration Codespaces
-
-Pour configurer GitHub Codespaces, clasp et l'environnement de développement GAS, consulter :
-`docs/CONFIGURATION_CODESPACES_CODEX.md`
-
-## Consignes pour Codex et agents IA
+## Consignes pour les agents IA
 
 - Lire ce fichier avant toute modification
 - Vérifier l'état Git avant de modifier le dépôt

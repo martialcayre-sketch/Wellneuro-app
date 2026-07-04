@@ -6,14 +6,7 @@ Chaque appel à l'API Claude facture **tous les tokens en entrée**, y compris l
 
 ## État d'implémentation
 
-`cache_control: { type: 'ephemeral' }` est posé sur `SYSTEM_PROMPT_SYNTHESE` dans les deux call sites :
-
-| Call site | Fichier | Méthode |
-|---|---|---|
-| Web app (Next.js) | `web/src/app/api/praticien/synthese/route.ts:117` | Anthropic SDK TypeScript |
-| GAS | `src/gas/Code.gs:1554` | Raw HTTP (`UrlFetchApp.fetch`) |
-
-Le GAS inclut aussi le header `anthropic-beta: prompt-caching-2024-07-31` requis pour l'appel HTTP direct.
+`cache_control: { type: 'ephemeral' }` est posé sur `SYSTEM_PROMPT_SYNTHESE` dans `web/src/app/api/praticien/synthese/route.ts:117` (Anthropic SDK TypeScript).
 
 ## Seuil minimal à connaître
 

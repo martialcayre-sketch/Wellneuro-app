@@ -10,8 +10,7 @@ Ne jamais committer :
 - exports CSV/XLSX ;
 - identifiants Google ;
 - clés API ;
-- fichiers `.env` réels ;
-- fichiers `.clasp.json` ou `.clasprc.json`.
+- fichiers `.env` / `.env.local` réels.
 
 ## Données de test autorisées
 
@@ -23,7 +22,7 @@ Les seuls patients nommés autorisés dans le dépôt sont fictifs :
 
 ## Identifiants techniques
 
-Le `SHEET_ID` doit être configuré dans les propriétés Apps Script et récupéré par `PropertiesService.getScriptProperties().getProperty('SHEET_ID')`.
+Toute configuration sensible (`DATABASE_URL`, `SHEET_ID`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`) passe uniquement par des variables d'environnement : `web/.env.local` en développement (jamais commité) et les variables d'environnement du projet Vercel en production. Aucune de ces valeurs ne doit apparaître en dur dans le code source.
 
 ## Bonnes pratiques
 

@@ -1,20 +1,19 @@
-# Wellneuro — Migration Next.js
+# Wellneuro
 
-Wellneuro est une application web praticien-patient de neuronutrition clinique. La migration vers **Next.js + Google Auth + PostgreSQL** a commencé le 2026-06-29.
+Wellneuro est une application web praticien-patient de neuronutrition clinique, en production sur **Next.js 14 + NextAuth (Google) + Prisma + PostgreSQL (Supabase)**, déployée sur **Vercel** (`app.wellneuro.fr`).
+
+La migration depuis le MVP Google Apps Script (GAS) a débuté le 2026-06-29 et s'est achevée le 2026-07-03 (décommission du déploiement GAS, lot C5). Le code GAS historique est archivé dans `archive/gas-legacy/`.
 
 ## Périmètre actuel
 
-- Application cible dans `web/`.
-- Authentification praticien via Google / NextAuth.
-- PostgreSQL sert de base cible pour patients, assignations, réponses, synthèses et booklets.
-- Google Sheets peut rester utilisé comme source transitoire pendant la migration.
-- Le dossier `src/gas/` est legacy : il n'est plus maintenu ni corrigé, et sera supprimé après migration complète.
-
-La priorité avant C5 est de finaliser la parité fonctionnelle et la sécurité côté `web/`, puis de retirer progressivement les dépendances Apps Script.
+- Application dans `web/` : portail praticien (`/dashboard/*`) et portail patient (`/patient/[idAssignation]`).
+- Authentification praticien via Google / NextAuth, restreinte au domaine `@wellneuro.fr`.
+- PostgreSQL (Prisma) est la base cible pour patients, assignations, réponses, synthèses IA et booklets.
+- **Point de vigilance** : certaines routes API (`metrics`, `patients`, `assignations`, `questionnaires`, `reponses`, `migrate-historique`) interrogent encore directement l'API Google Sheets via `SHEET_ID` en parallèle de PostgreSQL. Le déploiement GAS (web app + déclencheurs) est arrêté, mais cette dépendance Sheets côté Next.js n'est pas encore retirée — voir `docs/claude/PROJET_CONTEXTE.md`.
 
 ## Sécurité indispensable
 
-- Ne jamais écrire de `SHEET_ID` en dur dans le code.
+- Ne jamais écrire de secret en dur dans le code (`DATABASE_URL`, `SHEET_ID`, clés API, secrets OAuth).
 - Ne jamais committer de données patients réelles, identifiants Google, clés API, exports CSV/XLSX, résultats biologiques ou questionnaires remplis réels.
 - Les patients Sophie Nicola, Jennifer Martin et Michel Dogné sont exclusivement des patients fictifs de test.
 - Les liens patients doivent rester non prédictibles et expirables.
@@ -22,21 +21,28 @@ La priorité avant C5 est de finaliser la parité fonctionnelle et la sécurité
 
 ## Installation locale
 
-La configuration clasp est conservée uniquement pour historique/migration. Ne pas ajouter de nouveau développement GAS.
+```bash
+cd web
+npm install
+npm run prisma:generate
+cp .env.local.example .env.local   # puis renseigner les valeurs (jamais commiter .env.local)
+npm run dev                        # http://localhost:3000
+```
 
 ## Vérifications
 
 ```bash
 bash scripts/check_no_secrets.sh
+cd web && npm run type-check
 cd web && npm run lint
 ```
 
 ## Setup Supabase Prisma Vercel
 
-Configuration recommandee pour la stack Next.js en production:
+Configuration recommandée pour la stack Next.js en production :
 
 ```bash
-# 1) Installer les dependances et generer Prisma client
+# 1) Installer les dépendances et générer le client Prisma
 cd web
 npm install
 npm run prisma:generate
@@ -49,29 +55,30 @@ npm run supabase:link
 # 3) Appliquer les migrations sur la base cible
 npm run prisma:migrate:deploy
 
-# 4) Verifier le projet
+# 4) Vérifier le projet
 npm run type-check
 ```
 
-Variables obligatoires cote Vercel:
+Variables obligatoires côté Vercel :
 
 - `NEXTAUTH_URL`
 - `NEXTAUTH_SECRET`
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `DATABASE_URL` (pooler Supabase)
-- `SHEET_ID`
+- `SHEET_ID` (encore utilisé par plusieurs routes praticien, voir ci-dessus)
 - `SMTP_URL`
 - `ANTHROPIC_API_KEY`
 
-Controle OAuth Google Cloud Console (production):
+Contrôle OAuth Google Cloud Console (production) :
 
-- Origine JavaScript: `https://app.wellneuro.fr`
-- Redirect URI: `https://app.wellneuro.fr/api/auth/callback/google`
+- Origine JavaScript : `https://app.wellneuro.fr`
+- Redirect URI : `https://app.wellneuro.fr/api/auth/callback/google`
 
 ## Documentation
 
-- Roadmap migration : `docs/roadmap.md`
+- Contexte projet et état actuel : `docs/claude/PROJET_CONTEXTE.md`
+- Roadmap : `docs/roadmap.md`
 - Sécurité RGPD : `docs/securite_rgpd.md`
-- Schéma Google Sheets transitoire : `docs/schema_google_sheets.md`
-- Configuration Codespaces : `docs/CONFIGURATION_CODESPACES_CODEX.md`
+- Checklist de validation end-to-end : `docs/checklist_tests_end_to_end.md`
+- Runbook incident Vercel/DNS : `docs/claude/CONTEXTE_SESSION_VERCEL_2026-07-01.md`
