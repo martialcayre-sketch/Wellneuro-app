@@ -64,13 +64,13 @@ Découpage en PR courtes déjà acté :
 
 | Lot | Branche | Périmètre | Statut |
 |---|---|---|---|
-| D1-0 | `chore/d1-align-context` | Recaler la *documentation* (pas l'architecture, déjà à jour dans `PROJET_CONTEXTE.md` depuis le 2026-07-03) : référencer `ROADMAP_AGENT_PLAN.md` dans l'index de `README.md`, et clarifier la relation avec `docs/roadmap.md` (fusion ou dépréciation explicite de l'un des deux — éviter une double source de vérité sur la roadmap) | À faire |
-| D1-1 | `feat/d1-design-tokens` | `tailwind.config.ts` + `globals.css` : variables CSS, thèmes praticien (dark) / patient (clair), fonts, couleurs, radius. Inclut le choix de contraste AA pour le dark mode praticien | À faire |
-| D1-2a | `feat/d1-ui-components-base` | Créer `web/src/components/ui/` : Badge, MetricCard, PatientRow (composants sans dépendance graphique, risque faible) | À faire |
-| D1-2b | `feat/d1-ui-components-score-viz` | ScoreGauge, ScoreRadar, ScoreBarChart, ScoreSparkline, ScoreThreshold. **Préalable bloquant** : trancher la librairie de visualisation avant d'ouvrir la branche (non décidé à ce jour) | À faire |
-| D1-3 | `feat/d1-practitioner-shell` | NavBar, layout dashboard, page login — dark mode praticien. Ne pas toucher la logique signOut | À faire |
-| D1-4 | `feat/d1-dashboard-metrics` | MetricsSection → MetricCard, sans changer fetch ni messages d'erreur | À faire |
-| D1-5 | `feat/d1-patients-panel-ui` | PatientsPanel : UI uniquement, logique intacte (composant à risque moyen). Vigilance : si `PatientRow` embarque un composant de score (D1-2b), vérifier l'absence de dégradation de perf sur une liste longue avant l'arrivée de la pagination (dette technique séparée) | À faire |
+| D1-0 | `chore/d1-align-context` | Recaler la *documentation* (pas l'architecture, déjà à jour dans `PROJET_CONTEXTE.md` depuis le 2026-07-03) : référencer `ROADMAP_AGENT_PLAN.md` dans l'index de `README.md`, et clarifier la relation avec `docs/roadmap.md` (fusion ou dépréciation explicite de l'un des deux — éviter une double source de vérité sur la roadmap) | Fait |
+| D1-1 | `feat/d1-design-tokens` | `tailwind.config.ts` + `globals.css` : variables CSS, thèmes praticien (dark) / patient (clair), fonts, couleurs, radius. Inclut le choix de contraste AA pour le dark mode praticien | Fait (PR #4) |
+| D1-2a | `feat/d1-ui-components-base` | Créer `web/src/components/ui/` : Badge, MetricCard, PatientRow (composants sans dépendance graphique, risque faible) | Fait (PR #5) |
+| D1-2b | `feat/d1-ui-components-score-viz` | ScoreGauge, ScoreRadar, ScoreBarChart, ScoreSparkline, ScoreThreshold. Librairie retenue le 2026-07-04 : **Recharts** (API JSX idiomatique, couvre Radar/Bar/Line(sparkline)/ReferenceLine(seuil) nativement, Gauge via `RadialBarChart`, bundle raisonnable, thème pilotable via nos tokens CSS en passant par la prop `style` plutôt que `fill`) | À faire |
+| D1-3 | `feat/d1-practitioner-shell` | NavBar, layout dashboard, page login — dark mode praticien. Ne pas toucher la logique signOut | Fait (PR #6) |
+| D1-4 | `feat/d1-dashboard-metrics` | MetricsSection → MetricCard, sans changer fetch ni messages d'erreur | Fait (PR #7) |
+| D1-5 | `feat/d1-patients-panel-ui` | PatientsPanel : UI uniquement, logique intacte (composant à risque moyen). Vigilance : si `PatientRow` embarque un composant de score (D1-2b), vérifier l'absence de dégradation de perf sur une liste longue avant l'arrivée de la pagination (dette technique séparée) | Fait (PR #8) |
 | D1-6 | `docs/d1-design-system-preview` | `docs/design-system-d1.md` | À faire |
 
 Identité visuelle : deep teal + champagne gold, premium clinique,
@@ -93,7 +93,8 @@ logique de PatientsPanel.
 - **Décision technique préalable à D1-2b** : choix de la librairie de
   visualisation de score à documenter avant l'ouverture de la branche,
   pour éviter que ce choix ne se fasse en cours de PR et n'en fasse
-  déraper le périmètre.
+  déraper le périmètre. Tranché le 2026-07-04 : **Recharts** (cf. tableau
+  ci-dessus).
 
 ---
 

@@ -49,6 +49,20 @@ Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogné.
 - [ ] Tester la connexion praticien sur `/login` avec un compte `@wellneuro.fr`.
 - [ ] Vérifier qu'aucune erreur `redirect_uri_mismatch` n'apparaît.
 
+## Design system praticien — série D1
+
+- [x] `/login` et `/dashboard` (shell, NavBar) : thème sombre praticien
+  lisible, logo « Wellneuro » en accent or, contraste AA vérifié (D1-3).
+- [x] `/dashboard` (métriques) : `MetricCard`/skeleton conformes au
+  thème sombre, bandeau « indisponible » lisible (D1-4).
+- [x] `/dashboard/patients` : formulaires, tableau patients (`PatientRow`),
+  panneau édition, panneau résultats, tableau assignations — conformes
+  au thème sombre avec les 3 patients fictifs autorisés (D1-5).
+- [ ] `ScoreGauge`/`ScoreRadar`/`ScoreBarChart`/`ScoreSparkline`/
+  `ScoreThreshold` (Recharts, D1-2b) : seuils cliniques jamais signalés
+  par la seule couleur (icône/motif/libellé requis).
+- [ ] `docs/design-system-d1.md` (D1-6) à jour avec les composants livrés.
+
 ## Contrôle post-déploiement (Vercel)
 
 1. Déployer `main` puis confirmer le statut `Ready` sur Vercel.
