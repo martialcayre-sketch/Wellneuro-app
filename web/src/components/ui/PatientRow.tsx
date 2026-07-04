@@ -41,14 +41,14 @@ export function PatientRow({
         </Badge>
       </td>
       <td className="px-4 py-2">
-        <button onClick={() => onEdit(patient)} className="text-xs text-blue-600 hover:underline">
+        <button onClick={() => onEdit(patient)} className="text-xs text-muted-foreground hover:text-foreground hover:underline">
           Modifier
         </button>
       </td>
       <td className="px-4 py-2">
         <button
           onClick={() => onToggleResultats(patient.email)}
-          className={`text-xs hover:underline ${resultatsOuverts ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}
+          className={`text-xs hover:underline ${resultatsOuverts ? 'text-accent font-medium' : 'text-muted-foreground hover:text-foreground'}`}
         >
           {resultatsOuverts ? 'Masquer' : 'Résultats'}
         </button>
@@ -63,14 +63,14 @@ export function PatientRow({
             >
               {suppressionEnCours ? '...' : 'Confirmer'}
             </button>
-            <button onClick={onAnnulerSuppression} className="text-xs text-gray-500 hover:underline">
+            <button onClick={onAnnulerSuppression} className="text-xs text-muted-foreground hover:underline">
               Annuler
             </button>
           </span>
         ) : (
           <button
             onClick={() => onDemanderSuppression(patient.idPatient)}
-            className="text-xs text-red-500 hover:underline"
+            className="text-xs text-red-400 hover:underline"
           >
             Supprimer
           </button>
