@@ -11,6 +11,7 @@ Ce dossier fournit les fichiers Markdown nécessaires pour donner à Claude IA u
 - `PROMPT_CACHING.md` : stratégie de cache des prompts pour l'API Claude (synthèse IA).
 - `CONTEXTE_SESSION_VERCEL_2026-07-01.md` : runbook de l'incident 404/DNS production — référence en cas de nouvel incident de routage ou de domaine.
 - `ROADMAP_AGENT_PLAN.md` : feuille de route produit consolidée (séries D/R/E, priorités) — fait foi sur les priorités produit, `PROJET_CONTEXTE.md` fait foi sur l'état technique courant.
+- `SESSION_LOG.md` : historique des résumés de fin de session (décisions, options écartées, prochaine action).
 
 ## Comment utiliser
 
