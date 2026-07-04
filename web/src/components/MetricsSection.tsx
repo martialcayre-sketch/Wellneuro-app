@@ -2,32 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { MetricsResponse } from '@/app/api/praticien/metrics/route';
-
-function MetricCard({
-  label,
-  value,
-  sub,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-}) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col gap-1 shadow-sm">
-      <span className="text-xs text-gray-500 uppercase tracking-wide">{label}</span>
-      <span className="text-3xl font-bold" style={{ color: 'var(--primary)' }}>
-        {value}
-      </span>
-      {sub && <span className="text-xs text-gray-400">{sub}</span>}
-    </div>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse h-24 shadow-sm" />
-  );
-}
+import { MetricCard, MetricCardSkeleton } from '@/components/ui/MetricCard';
 
 export function MetricsSection() {
   const [data, setData] = useState<MetricsResponse | null>(null);
@@ -66,10 +41,10 @@ export function MetricsSection() {
   if (loading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
+        <MetricCardSkeleton />
+        <MetricCardSkeleton />
+        <MetricCardSkeleton />
+        <MetricCardSkeleton />
       </div>
     );
   }
@@ -89,9 +64,9 @@ export function MetricsSection() {
     const message = data.reason ? reasonText[data.reason] : 'Cause inconnue.';
 
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-500">
+      <div className="bg-muted border border-border rounded-xl p-4 text-sm text-muted-foreground">
         Métriques indisponibles.{' '}
-        <span className="text-gray-400">
+        <span className="text-muted-foreground">
           {message}
         </span>
       </div>
