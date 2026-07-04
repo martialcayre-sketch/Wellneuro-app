@@ -13,10 +13,10 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-8">
       {/* En-tête */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-800">
+        <h2 className="text-2xl font-bold text-foreground">
           Bonjour, {session?.user?.email?.split('@')[0] ?? 'Praticien'} 👋
         </h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Tableau de bord Wellneuro — version web (migration en cours)
         </p>
       </div>
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
 
       {/* Métriques opérationnelles — Lot C2 */}
       <section>
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           Suivi opérationnel
         </h3>
         <MetricsSection />
@@ -50,10 +50,10 @@ export default async function DashboardPage() {
 
       {/* Prochaines étapes */}
       <section>
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           Feuille de route migration
         </h3>
-        <ol className="flex flex-col gap-2 text-sm text-gray-700">
+        <ol className="flex flex-col gap-2 text-sm text-foreground">
           {[
             { done: true, label: 'Lot 0 — Scaffold Next.js + auth Google' },
             { done: true, label: 'Lot 0 — Layout protégé + login page' },
