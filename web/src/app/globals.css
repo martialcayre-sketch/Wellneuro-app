@@ -18,7 +18,22 @@
   --gold-300: #e3cd8f;
   --cream-100: #fbf9f5;
   --cream-50: #f4efe6;
+
+  /* Compat : couleurs historiques du Lot 0, consommées telles quelles
+   * par des composants existants (login, NavBar, MetricsSection,
+   * PatientsPanel, SynthesePanel) via var(--primary)/var(--accent).
+   * Ne pas modifier ici — la migration vers la nouvelle palette se fait
+   * composant par composant dans les lots D1-3/D1-4/D1-5. */
+  --primary: #1a3a5c;
+  --accent: #4a9d8f;
 }
+
+/*
+ * Nouveaux tokens sémantiques du design system D1 — pas encore
+ * consommés par un layout existant (aucun data-theme n'est posé avant
+ * D1-3). Espace de noms distinct de --primary/--accent ci-dessus pour
+ * ne pas re-teinter les composants qui n'ont pas encore été migrés.
+ */
 
 /*
  * Thème patient — clair, appliqué par défaut et via [data-theme="patient"].
@@ -33,10 +48,10 @@
   --muted: #e7eeee;
   --muted-foreground: #4a6367;
   --border: #d8e2e1;
-  --primary: var(--teal-700);
-  --primary-foreground: #ffffff;
-  --accent: var(--gold-600);
-  --accent-foreground: #16323a;
+  --color-primary: var(--teal-700);
+  --color-primary-foreground: #ffffff;
+  --color-accent: var(--gold-600);
+  --color-accent-foreground: #16323a;
 }
 
 /*
@@ -52,13 +67,8 @@
   --muted: #16383d;
   --muted-foreground: var(--teal-200);
   --border: #24444a;
-  --primary: var(--teal-700);
-  --primary-foreground: var(--cream-50);
-  --accent: var(--gold-500);
-  --accent-foreground: var(--teal-950);
-}
-
-body {
-  background-color: var(--background);
-  color: var(--foreground);
+  --color-primary: var(--teal-700);
+  --color-primary-foreground: var(--cream-50);
+  --color-accent: var(--gold-500);
+  --color-accent-foreground: var(--teal-950);
 }

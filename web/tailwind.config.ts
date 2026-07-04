@@ -21,12 +21,12 @@ const config: Config = {
         },
         border: 'var(--border)',
         primary: {
-          DEFAULT: 'var(--primary)',
-          foreground: 'var(--primary-foreground)',
+          DEFAULT: 'var(--color-primary)',
+          foreground: 'var(--color-primary-foreground)',
         },
         accent: {
-          DEFAULT: 'var(--accent)',
-          foreground: 'var(--accent-foreground)',
+          DEFAULT: 'var(--color-accent)',
+          foreground: 'var(--color-accent-foreground)',
         },
         // Palette de marque brute, disponible pour des usages ponctuels
         // en dehors des rôles sémantiques ci-dessus.
