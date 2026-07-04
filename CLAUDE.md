@@ -75,7 +75,10 @@ bash scripts/check_no_secrets.sh  # contrôle anti-secrets
 - Pas de secret ni donnée sensible introduits.
 - Documentation mise à jour si nécessaire.
 
+## Début de session
+
+Si `docs/claude/SESSION_LOG.md` existe, lire sa dernière entrée avant de répondre à la première question de la session, sans qu'on ait besoin de le demander. Ne pas résumer ce contenu à voix haute sauf si c'est demandé — l'utiliser silencieusement comme contexte de reprise.
+
 ## Fin de session
 
-Sur demande, produire un résumé (<150 mots) : décisions prises, options écartées et pourquoi, prochaine action prioritaire, questions ouvertes.
-Ce résumé peut être ajouté à `docs/claude/SESSION_LOG.md`.
+Sur demande d'un "résumé de session" : produire un résumé (<150 mots) — décisions prises, options écartées et pourquoi, prochaine action prioritaire, questions ouvertes — puis l'ajouter directement (append, jamais d'écrasement) à la fin de `docs/claude/SESSION_LOG.md`, précédé d'un titre `## [date] — [sujet]`. Créer le fichier s'il n'existe pas. Ne pas demander de confirmation pour cet ajout : fichier de log interne au projet, sans donnée sensible.
