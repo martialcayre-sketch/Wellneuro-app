@@ -10,6 +10,8 @@ import type {
 import type { CreateAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
 import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/praticien/reponses/route';
+import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { PatientRow } from '@/components/ui/PatientRow';
 
 type SortBy = 'nom' | 'email';
 type StatutFilter = '' | 'Terminé' | 'Envoyé' | 'En_cours' | 'En attente';
@@ -42,13 +44,13 @@ function erreurLisible(reason?: string, fallback?: string): string {
 
 function StatusBadge({ value }: { value: string }) {
   const status = value || '—';
-  const classes =
+  const variant: BadgeVariant =
     status === 'Terminé'
-      ? 'bg-green-100 text-green-700'
+      ? 'success'
       : status === 'Envoyé' || status === 'En_cours'
-        ? 'bg-amber-100 text-amber-700'
-        : 'bg-gray-100 text-gray-600';
-  return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${classes}`}>{status}</span>;
+        ? 'warning'
+        : 'neutral';
+  return <Badge variant={variant}>{status}</Badge>;
 }
 
 type EditPatientState = {
@@ -241,26 +243,26 @@ export function PatientsPanel() {
   }, [data?.assignations, statutFilter]);
 
   if (loading) {
-    return <div className="text-sm text-gray-500">Chargement des données patients...</div>;
+    return <div className="text-sm text-muted-foreground">Chargement des données patients...</div>;
   }
 
   if (data?.unavailable) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-600">
+      <div className="bg-muted border border-border rounded-xl p-4 text-sm text-muted-foreground">
         {erreurLisible(data.reason)}
       </div>
     );
   }
 
-  const inputCls = 'bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm';
-  const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60';
+  const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
+  const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground disabled:opacity-60';
 
   return (
     <div className="flex flex-col gap-6">
 
       {/* Nouveau patient */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Nouveau patient</h3>
+      <div className="bg-surface border border-border rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Nouveau patient</h3>
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreatePatient}>
           <input required value={form.prenom} onChange={e => setForm(p => ({ ...p, prenom: e.target.value }))} placeholder="Prénom *" className={inputCls} maxLength={100} />
           <input required value={form.nom} onChange={e => setForm(p => ({ ...p, nom: e.target.value }))} placeholder="Nom *" className={inputCls} maxLength={100} />
@@ -268,11 +270,11 @@ export function PatientsPanel() {
           <input value={form.telephone} onChange={e => setForm(p => ({ ...p, telephone: e.target.value }))} placeholder="Téléphone" className={inputCls} maxLength={30} />
           <input type="date" value={form.dateNaissance} onChange={e => setForm(p => ({ ...p, dateNaissance: e.target.value }))} className={inputCls} />
           <div className="flex items-center gap-3">
-            <button type="submit" disabled={saving} className={btnPrimary} style={{ backgroundColor: 'var(--primary)' }}>
+            <button type="submit" disabled={saving} className={btnPrimary}>
               {saving ? 'Création...' : 'Créer le patient'}
             </button>
             {feedback && (
-              <span className={`text-sm ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`text-sm ${feedback.ok ? 'text-green-600' : 'text-red-400'}`}>
                 {feedback.msg}
               </span>
             )}
@@ -281,8 +283,8 @@ export function PatientsPanel() {
       </div>
 
       {/* Nouvelle assignation */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Nouvelle assignation questionnaire</h3>
+      <div className="bg-surface border border-border rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Nouvelle assignation questionnaire</h3>
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateAssignation}>
           <select required value={assignationForm.emailPatient} onChange={e => setAssignationForm(p => ({ ...p, emailPatient: e.target.value }))} className={inputCls}>
             <option value="">Patient *</option>
@@ -299,11 +301,11 @@ export function PatientsPanel() {
           <input type="date" value={assignationForm.dateLimite} onChange={e => setAssignationForm(p => ({ ...p, dateLimite: e.target.value }))} className={inputCls} />
           <input value={assignationForm.notes} onChange={e => setAssignationForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notes praticien (optionnel)" className={inputCls} maxLength={500} />
           <div className="flex items-center gap-3 md:col-span-2">
-            <button type="submit" disabled={savingAssignation} className={btnPrimary} style={{ backgroundColor: 'var(--primary)' }}>
+            <button type="submit" disabled={savingAssignation} className={btnPrimary}>
               {savingAssignation ? 'Création...' : 'Créer l’assignation'}
             </button>
             {assignationFeedback && (
-              <span className={`text-sm ${assignationFeedback.ok ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`text-sm ${assignationFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>
                 {assignationFeedback.msg}
               </span>
             )}
@@ -313,32 +315,32 @@ export function PatientsPanel() {
 
       {/* Édition patient inline */}
       {editState && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            Modifier patient <span className="font-normal text-gray-500">{editState.idPatient}</span>
+        <div className="bg-surface border border-accent rounded-xl p-4">
+          <h3 className="text-sm font-semibold text-foreground mb-3">
+            Modifier patient <span className="font-normal text-muted-foreground">{editState.idPatient}</span>
           </h3>
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Téléphone</label>
+              <label className="text-xs text-muted-foreground">Téléphone</label>
               <input value={editState.telephone} onChange={e => setEditState(s => s ? { ...s, telephone: e.target.value } : s)} className={inputCls} maxLength={30} placeholder="Téléphone" />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-gray-500">Actif</label>
+              <label className="text-xs text-muted-foreground">Actif</label>
               <select value={editState.actif} onChange={e => setEditState(s => s ? { ...s, actif: e.target.value as 'OUI' | 'NON' } : s)} className={inputCls}>
                 <option value="OUI">Actif</option>
                 <option value="NON">Inactif</option>
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={onSaveEdit} disabled={savingEdit} className={btnPrimary} style={{ backgroundColor: 'var(--primary)' }}>
+              <button onClick={onSaveEdit} disabled={savingEdit} className={btnPrimary}>
                 {savingEdit ? 'Enregistrement...' : 'Enregistrer'}
               </button>
-              <button onClick={() => setEditState(null)} className="px-3 py-2 rounded-lg text-sm text-gray-600 border border-gray-300">
+              <button onClick={() => setEditState(null)} className="px-3 py-2 rounded-lg text-sm text-muted-foreground border border-border">
                 Annuler
               </button>
             </div>
             {editFeedback && (
-              <span className={`text-sm ${editFeedback.ok ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`text-sm ${editFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>
                 {editFeedback.msg}
               </span>
             )}
@@ -355,17 +357,17 @@ export function PatientsPanel() {
             <option value="email">Tri : email</option>
           </select>
         </div>
-        <div className="text-sm text-gray-500">{filteredPatients.length} patient(s)</div>
+        <div className="text-sm text-muted-foreground">{filteredPatients.length} patient(s)</div>
       </div>
 
       {/* Tableau patients */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-700">Patients</h3>
+      <div className="bg-surface border border-border rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
+          <h3 className="text-sm font-semibold text-foreground">Patients</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
+            <thead className="bg-muted text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 text-left">Nom</th>
                 <th className="px-4 py-2 text-left">Email</th>
@@ -378,55 +380,21 @@ export function PatientsPanel() {
             </thead>
             <tbody>
               {filteredPatients.length === 0 && (
-                <tr><td colSpan={7} className="px-4 py-4 text-center text-gray-400">Aucun patient.</td></tr>
+                <tr><td colSpan={7} className="px-4 py-4 text-center text-muted-foreground">Aucun patient.</td></tr>
               )}
               {filteredPatients.map(p => (
-                <tr key={p.idPatient} className="border-t border-gray-100 hover:bg-gray-50">
-                  <td className="px-4 py-2">{`${p.prenom} ${p.nom}`.trim() || '—'}</td>
-                  <td className="px-4 py-2">{p.email || '—'}</td>
-                  <td className="px-4 py-2">{p.telephone || '—'}</td>
-                  <td className="px-4 py-2">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${p.actif === 'OUI' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {p.actif === 'OUI' ? 'Actif' : 'Inactif'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <button onClick={() => openEdit(p)} className="text-xs text-blue-600 hover:underline">
-                      Modifier
-                    </button>
-                  </td>
-                  <td className="px-4 py-2">
-                    <button
-                      onClick={() => loadReponses(p.email)}
-                      className={`text-xs hover:underline ${selectedEmail === p.email ? 'text-indigo-600 font-medium' : 'text-gray-500'}`}
-                    >
-                      {selectedEmail === p.email ? 'Masquer' : 'Résultats'}
-                    </button>
-                  </td>
-                  <td className="px-4 py-2">
-                    {confirmDelete === p.idPatient ? (
-                      <span className="flex items-center gap-1">
-                        <button
-                          onClick={() => onDelete(p.idPatient)}
-                          disabled={deletingId === p.idPatient}
-                          className="text-xs text-white bg-red-600 hover:bg-red-700 px-2 py-0.5 rounded disabled:opacity-60"
-                        >
-                          {deletingId === p.idPatient ? '...' : 'Confirmer'}
-                        </button>
-                        <button onClick={() => setConfirmDelete(null)} className="text-xs text-gray-500 hover:underline">
-                          Annuler
-                        </button>
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => setConfirmDelete(p.idPatient)}
-                        className="text-xs text-red-500 hover:underline"
-                      >
-                        Supprimer
-                      </button>
-                    )}
-                  </td>
-                </tr>
+                <PatientRow
+                  key={p.idPatient}
+                  patient={{ ...p, actif: p.actif === 'OUI' ? 'OUI' : 'NON' }}
+                  onEdit={openEdit}
+                  onToggleResultats={loadReponses}
+                  resultatsOuverts={selectedEmail === p.email}
+                  onDelete={onDelete}
+                  confirmationSuppression={confirmDelete === p.idPatient}
+                  onDemanderSuppression={setConfirmDelete}
+                  onAnnulerSuppression={() => setConfirmDelete(null)}
+                  suppressionEnCours={deletingId === p.idPatient}
+                />
               ))}
             </tbody>
           </table>
@@ -435,22 +403,22 @@ export function PatientsPanel() {
 
       {/* Résultats questionnaires du patient sélectionné */}
       {selectedEmail && (
-        <div className="bg-white border border-indigo-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-indigo-100 flex items-center justify-between bg-indigo-50">
-            <h3 className="text-sm font-semibold text-indigo-800">
+        <div className="bg-surface border border-accent rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted">
+            <h3 className="text-sm font-semibold text-foreground">
               Résultats questionnaires — {selectedEmail}
             </h3>
-            {loadingReponses && <span className="text-xs text-indigo-500">Chargement...</span>}
+            {loadingReponses && <span className="text-xs text-muted-foreground">Chargement...</span>}
           </div>
           {!loadingReponses && reponses.length === 0 && (
-            <div className="px-4 py-4 text-sm text-gray-400">
+            <div className="px-4 py-4 text-sm text-muted-foreground">
               Aucun questionnaire complété pour ce patient.
             </div>
           )}
           {reponses.length > 0 && (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600">
+                <thead className="bg-muted text-muted-foreground">
                   <tr>
                     <th className="px-4 py-2 text-left">Date</th>
                     <th className="px-4 py-2 text-left">Questionnaire</th>
@@ -460,8 +428,8 @@ export function PatientsPanel() {
                 </thead>
                 <tbody>
                   {reponses.map(r => (
-                    <tr key={r.idReponse} className="border-t border-gray-100">
-                      <td className="px-4 py-2 whitespace-nowrap text-gray-500">
+                    <tr key={r.idReponse} className="border-t border-border">
+                      <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">
                         {r.dateSoumission ? new Date(r.dateSoumission).toLocaleDateString('fr-FR') : '—'}
                       </td>
                       <td className="px-4 py-2 font-medium">{r.titre || r.idQuestionnaire || '—'}</td>
@@ -472,7 +440,7 @@ export function PatientsPanel() {
                           </span>
                         ) : '—'}
                       </td>
-                      <td className="px-4 py-2 text-gray-600 max-w-xs truncate" title={r.interpretation}>
+                      <td className="px-4 py-2 text-muted-foreground max-w-xs truncate" title={r.interpretation}>
                         {r.interpretation || '—'}
                       </td>
                     </tr>
@@ -485,13 +453,13 @@ export function PatientsPanel() {
       )}
 
       {/* Tableau assignations */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">
+      <div className="bg-surface border border-border rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground">
             Assignations récentes
-            <span className="ml-2 text-gray-400 font-normal">({filteredAssignations.length})</span>
+            <span className="ml-2 text-muted-foreground font-normal">({filteredAssignations.length})</span>
           </h3>
-          <select value={statutFilter} onChange={e => setStatutFilter(e.target.value as StatutFilter)} className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-600">
+          <select value={statutFilter} onChange={e => setStatutFilter(e.target.value as StatutFilter)} className="text-xs border border-border rounded-lg px-2 py-1 bg-surface text-muted-foreground">
             {(Object.keys(STATUT_LABELS) as StatutFilter[]).map(s => (
               <option key={s} value={s}>{STATUT_LABELS[s]}</option>
             ))}
@@ -499,7 +467,7 @@ export function PatientsPanel() {
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-50 text-gray-600">
+            <thead className="bg-muted text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 text-left">Date</th>
                 <th className="px-4 py-2 text-left">Patient</th>
@@ -509,10 +477,10 @@ export function PatientsPanel() {
             </thead>
             <tbody>
               {filteredAssignations.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-4 text-center text-gray-400">Aucune assignation.</td></tr>
+                <tr><td colSpan={4} className="px-4 py-4 text-center text-muted-foreground">Aucune assignation.</td></tr>
               )}
               {filteredAssignations.map(a => (
-                <tr key={a.idAssignation} className="border-t border-gray-100">
+                <tr key={a.idAssignation} className="border-t border-border">
                   <td className="px-4 py-2">{a.dateAssignation ? new Date(a.dateAssignation).toLocaleDateString('fr-FR') : '—'}</td>
                   <td className="px-4 py-2">{a.emailPatient || a.idPatient || '—'}</td>
                   <td className="px-4 py-2">{a.titre || a.idQuestionnaire || '—'}</td>
