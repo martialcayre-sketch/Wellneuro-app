@@ -1,6 +1,7 @@
 .env.local
 node_modules/
 .next/
+supabase/.temp/
 out/
 dist/
 *.log

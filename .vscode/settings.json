@@ -21,8 +21,5 @@
   "tailwindCSS.includeLanguages": {
     "typescript": "javascript",
     "typescriptreact": "javascript"
-  },
-  "chat.tools.terminal.autoApprove": {
-    "clasp": true
   }
 }

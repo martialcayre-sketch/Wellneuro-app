@@ -16,8 +16,8 @@ Prérequis :
 Procédure :
 
 ```bash
-git clone https://github.com/martialcayre-sketch/Wellneuro.git Wellneuro-app
-cd Wellneuro-app
+git clone https://github.com/martialcayre-sketch/wellneuro-app.git wellneuro-app
+cd wellneuro-app
 code .
 # Puis : Dev Containers: Reopen in Container
 ```

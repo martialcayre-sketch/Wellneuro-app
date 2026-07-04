@@ -1,6 +1,9 @@
 {
-  "name": "Wellneuro — Next.js Dev",
+  "name": "wellneuro-app — Dev",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
   "postCreateCommand": "cd web && npm install",
   "customizations": {
     "vscode": {

@@ -11,7 +11,7 @@ Contexte pour Claude Code sur ce dépôt. Lu automatiquement à chaque session.
 
 ## Contexte projet
 
-Wellneuro NNPP2 est une application de consultation en neuronutrition en production.
+Wellneuro-app est une application de consultation en neuronutrition en production.
 
 Le déploiement Google Apps Script (GAS) historique a été décommissionné le 2026-07-03 (web app + déclencheurs arrêtés) ; le code est archivé dans `archive/gas-legacy/` à titre de référence et n'est plus exécuté.
 
