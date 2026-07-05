@@ -126,7 +126,7 @@ via les tokens CSS (`fill="var(--color-primary)"`, etc.) — fonctionne
 directement dans les attributs SVG, aucune résolution JS nécessaire.
 
 ```tsx
-<ScoreGauge value={72} max={100} label="NeuroScore" zoneLabel="Bon niveau" />
+<ScoreGauge value={72} max={100} label="Mon équilibre" zoneLabel="Bon niveau" />
 
 <ScoreRadar data={[{ axe: 'Sommeil', value: 72 }, ...]} max={100} />
 
@@ -144,9 +144,10 @@ numérique et/ou un libellé de zone en texte à côté de la couleur —
 respecter ce principe dans toute nouvelle variante.
 
 Ces 5 composants ne sont pas encore branchés dans une page réelle (pas
-de score calculé en production à ce stade — le NeuroScore est prévu en
-E2 du séquencement produit) : lot purement additif, vérifié uniquement
-via une page de démo locale (non committée) dans les deux thèmes.
+de score calculé en production à ce stade — l'indicateur "Mon équilibre"
+est prévu en E2 du séquencement produit, cf. `docs/claude/MON_EQUILIBRE_CONTEXTE.md`) :
+lot purement additif, vérifié uniquement via une page de démo locale (non
+committée) dans les deux thèmes.
 
 ## 4. État d'intégration réelle (pages migrées)
 
