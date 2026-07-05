@@ -7,6 +7,7 @@ import { PrismaClient } from '../src/generated/prisma';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { withSupabaseSslMode } from '../src/lib/postgres';
+import { verifierMoteurEquilibre } from '../src/lib/equilibre/score.check';
 
 const DATABASE_URL =
   process.env.DATABASE_URL ??
@@ -290,6 +291,12 @@ async function seed() {
   }
 
   console.log('\nSeed terminé.');
+
+  // Vérification zéro-dépendance du moteur "Mon équilibre" (feat/e2-scoring-engine).
+  // N'écrit rien en base — purement du calcul en mémoire.
+  if (process.env.SEED_VERIFY_EQUILIBRE_SCORE === '1') {
+    verifierMoteurEquilibre();
+  }
 }
 
 seed()
