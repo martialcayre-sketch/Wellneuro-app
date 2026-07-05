@@ -166,7 +166,7 @@ derive_direct_url_from_pooler() {
   [[ -n "$db_line" ]] || die "DATABASE_URL not found in $ENV_FILE"
   db_url="${db_line#DATABASE_URL=}"
 
-  direct_url="$(DATABASE_URL="$db_url" node -e 'const raw=process.env.DATABASE_URL||""; if(!raw){process.exit(2)}; const u=new URL(raw); const ref=((u.username||"").match(/^postgres\.([a-z0-9]{20})$/)||[])[1]||""; if(!ref){process.exit(3)}; u.hostname=`db.${ref}.supabase.co`; u.port="5432"; u.username="postgres"; u.searchParams.delete("pgbouncer"); if(!u.searchParams.has("sslmode")) u.searchParams.set("sslmode","require"); process.stdout.write(u.toString());')" || die "Unable to derive direct URL from DATABASE_URL"
+  direct_url="$(DATABASE_URL="$db_url" node -e 'const raw=process.env.DATABASE_URL||""; if(!raw){process.exit(2)}; const u=new URL(raw); const ref=((u.username||"").match(/^postgres\.([a-z0-9]{20})$/)||[])[1]||""; if(!ref){process.exit(3)}; u.hostname=`db.${ref}.supabase.co`; u.port="5432"; u.username="postgres"; u.searchParams.delete("pgbouncer"); if(!u.searchParams.has("sslmode")) u.searchParams.set("sslmode","require"); if(!u.searchParams.has("uselibpqcompat")) u.searchParams.set("uselibpqcompat","true"); process.stdout.write(u.toString());')" || die "Unable to derive direct URL from DATABASE_URL"
 
   printf '%s\n' "$direct_url"
 }

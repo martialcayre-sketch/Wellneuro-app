@@ -52,12 +52,6 @@ export function MetricsSection() {
   if (data?.unavailable) {
     const reasonText: Record<NonNullable<MetricsResponse['reason']>, string> = {
       unauthenticated: 'Session expirée. Déconnectez-vous puis reconnectez-vous.',
-      no_sheet_id: 'Variable SHEET_ID absente dans web/.env.local.',
-      no_access_token: 'Accès Google Sheets non accordé. Reconnectez-vous pour valider le consentement OAuth.',
-      sheets_400: 'Requête Google Sheets invalide.',
-      sheets_401: 'Jeton Google invalide/expiré. Déconnectez-vous puis reconnectez-vous.',
-      sheets_403: "Accès refusé par Google Sheets (API désactivée ou droits insuffisants sur le fichier).",
-      sheets_404: 'Google Sheet introuvable. Vérifiez la valeur SHEET_ID.',
       exception: 'Erreur technique côté serveur. Vérifiez le terminal Next.js.',
     };
 

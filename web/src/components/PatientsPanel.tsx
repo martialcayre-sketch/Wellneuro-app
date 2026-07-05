@@ -14,29 +14,21 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { PatientRow } from '@/components/ui/PatientRow';
 
 type SortBy = 'nom' | 'email';
-type StatutFilter = '' | 'Terminé' | 'Envoyé' | 'En_cours' | 'En attente';
+type StatutFilter = '' | 'Complété' | 'En attente';
 
 const STATUT_LABELS: Record<StatutFilter, string> = {
   '': 'Tous les statuts',
-  'Terminé': 'Terminé',
-  'Envoyé': 'Envoyé',
-  'En_cours': 'En cours',
+  'Complété': 'Complété',
   'En attente': 'En attente',
 };
 
 function erreurLisible(reason?: string, fallback?: string): string {
   const map: Record<string, string> = {
     unauthenticated: 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.',
-    no_sheet_id: 'Configuration incomplète (SHEET_ID manquant).',
-    no_access_token: 'Accès Google Sheets non accordé. Reconnectez-vous.',
     invalid_payload: fallback ?? 'Données invalides.',
     duplicate_email: 'Un patient avec cet email existe déjà.',
-    patient_not_found: 'Patient introuvable dans la feuille.',
-    questionnaire_not_found: 'Questionnaire introuvable ou inactif.',
-    sheets_400: 'Requête Google Sheets invalide.',
-    sheets_401: 'Jeton Google expiré. Déconnectez-vous puis reconnectez-vous.',
-    sheets_403: 'Accès refusé par Google Sheets. Vérifiez les droits sur le fichier.',
-    sheets_404: 'Feuille Google Sheets introuvable. Vérifiez SHEET_ID.',
+    patient_not_found: 'Patient introuvable.',
+    questionnaire_not_found: 'Questionnaire introuvable.',
     exception: 'Erreur technique. Vérifiez le terminal Next.js.',
   };
   return (reason && map[reason]) ?? fallback ?? 'Erreur inconnue.';
@@ -44,12 +36,7 @@ function erreurLisible(reason?: string, fallback?: string): string {
 
 function StatusBadge({ value }: { value: string }) {
   const status = value || '—';
-  const variant: BadgeVariant =
-    status === 'Terminé'
-      ? 'success'
-      : status === 'Envoyé' || status === 'En_cours'
-        ? 'warning'
-        : 'neutral';
+  const variant: BadgeVariant = status === 'Complété' ? 'success' : 'neutral';
   return <Badge variant={variant}>{status}</Badge>;
 }
 
