@@ -32,6 +32,12 @@
 >    (Classe 1, « carburant ») ; les besoins 4/5/9/10 ne sont jamais calculés
 >    par ce module, seulement croisés en signal secondaire (niveau de preuve
 >    D). Détail complet en §2.1.
+> 3. **Résolution des 12 décisions ouvertes** (session du 2026-07-06) — les
+>    points listés en §9 sont tranchés : point d'entrée MVP en vertical slice
+>    (besoin 1 uniquement), pondération clinique du besoin 2, ajout des 3 axes
+>    Niveau 2 nommés dès V1 (dont Clarté cognitive), restitution patient des
+>    signaux Niveau 2 dès V1, chronobiologie différée après le MVP. Détail
+>    complet en §9 (désormais "Décisions actées").
 
 ---
 
@@ -186,6 +192,23 @@ besoin qu'ils touchent) — jamais présentés comme un calcul du besoin lui-mê
 Formulation patient : *« votre alimentation semble aller dans le sens de votre
 objectif sommeil »*, jamais *« votre alimentation détermine votre sommeil »*.
 
+**Décision actée (§9.11) : ces signaux Niveau 2 sont affichés explicitement au
+patient dès la V1**, pas seulement en interne praticien — toujours au
+conditionnel/en signal, jamais en affirmation de calcul du besoin.
+
+**Trois de ces signaux sont nommés comme axes patient dès V1 (§9.7)**, en plus
+des 3 axes Niveau 1 (besoins 1/2/3) :
+- **Calme/stress** — libellé patient du signal vers le besoin 9 (stress,
+  charge allostatique).
+- **Microbiote/digestif** — libellé patient du signal vers le besoin 4
+  (perception corporelle / digestif-microbiote).
+- **Clarté cognitive** — libellé patient du signal vers le besoin 10 (pensées
+  fonctionnelles, DNSM), inclus dès V1 malgré l'absence de correspondance
+  formelle dans le modèle R9 actuel (décision assumée, pas un report).
+
+Le signal vers le besoin 5 (sommeil, tryptophane/magnésium) reste en Niveau 2
+sans libellé d'axe dédié pour l'instant — pas de 4e axe nommé dans ce lot.
+
 **« Anti-inflammatoire » et « Antioxydant »** n'ont pas de besoin dédié dans la
 matrice des 12 — ils sont déjà couverts en filigrane : l'index oméga-3 dans le
 besoin 1, les micronutriments antioxydants (zinc, sélénium, vit D) dans le
@@ -203,9 +226,12 @@ indépendants qui se contredisent.
 **indicateur transversal** (ratio ω-6/ω-3) qui *module* l'axe anti-inflammatoire
 plutôt que de dupliquer ses constituants.
 
-Cette table passe donc de 4 à 7 axes de calcul (+ 1 lecture dérivée). C'est
-toujours conforme au principe « axes = données, pas code » (§2.1 intro) : on
-ajoute des lignes, le moteur ne change pas.
+Cette table passe donc de 4 à 6 axes nommés dès V1 (les 3 axes Niveau 1 —
+équilibre de l'assiette, micronutriments, rythme alimentaire — plus les 3 axes
+Niveau 2 nommés ci-dessus — Calme/stress, Microbiote/digestif, Clarté
+cognitive) + 1 lecture dérivée (« Humeur », §9.8 — jamais un axe calculé,
+confirmé). C'est toujours conforme au principe « axes = données, pas code »
+(§2.1 intro) : on ajoute des lignes, le moteur ne change pas.
 
 ### 2.2 Le mapping propriétaire (la table qui vaut de l'or)
 
@@ -239,9 +265,15 @@ Trois choix de modélisation, avec recommandations V1 :
 3. **Éléments limitants** (sucres rapides pour l'axe sommeil le soir, excès ω-6
    pour l'inflammation). V1 : le modèle porte `direction=limitant` dès le
    départ ; le seed V1 se concentre sur le favorable + un petit set de limitants
-   bien établis. Restitution **toujours** en « marge de progression », jamais en
-   « erreur » (principe non-culpabilisant du projet). → à confirmer l'ampleur du
-   set limitant V1.
+   bien établis (décision actée, §9.3 — pas d'élargissement du set V1 au-delà
+   du minimal bien établi). Restitution **toujours** en « marge de
+   progression », jamais en « erreur » (principe non-culpabilisant du projet).
+
+**Décision actée (§9.0) : la pondération interne du besoin 2 est clinique, pas
+équi-pondérée** — fer, B9 et B12 pèsent plus lourd que zinc, iode, sélénium et
+vitamine D dans `nutrient_axis_weight`, reflétant la fréquence de ces carences
+en pratique clinique. Les valeurs de poids exactes restent à fixer dans la
+branche `feat/e1-mapping-seed-v1` (pas de chiffre arbitraire non sourcé ici).
 
 ### 2.3 Calcul du score intrinsèque
 
@@ -283,6 +315,32 @@ la lecture patient est une simple jointure sur du cache.
 v1 ; il ne se compare jamais silencieusement à un v2. Toute modif du mapping ou
 de la formule = bump + trace `CHANGELOG.md` + validation praticien
 (logique clinique).
+
+### 2.5 Vertical slice V1 (périmètre resserré du MVP, décision §9.5)
+
+Le point d'entrée du chantier n'est pas la Phase A complète : c'est un
+**vertical slice étroit**, pour valider l'expérience de bout en bout (score
+intrinsèque → score contextuel → restitution patient) avant d'élargir aux 6
+axes et aux 191 aliments moyens.
+
+Périmètre du slice :
+- **Un seul axe Niveau 1** : besoin 1 (équilibre de l'assiette) — le mieux
+  cadré (index glycémique, oméga-3, ultra-transformés), déjà cross-référencé
+  avec le score SIIN/90 existant.
+- **~12 aliments vedettes** (table Ciqual complète, pas les aliments moyens —
+  cohérent avec la règle §1.1 pour les fiches vedettes).
+- **1 produit scanné** via OFF, pour valider le fallback Ciqual et la lecture
+  contextuelle sur un cas réel.
+- **Chronobiologie (besoin 3) hors slice** (décision §9.10) : pas de
+  `feat/e1-journal-chronobiologie` avant que le slice besoin 1 n'ait validé
+  l'expérience. Le champ `meal_entry.heure` reste différé.
+- Le besoin 2 (micronutriments) et les 3 axes Niveau 2 nommés (§2.1) suivent
+  une fois le slice besoin 1 validé — pas dans ce premier lot.
+
+Les branches de la §8 (Phase A/B) restent valides telles que décrites : ce
+slice en est un sous-ensemble à traiter en premier à l'intérieur de chacune
+(ex. `feat/e1-mapping-seed-v1` ne seed que le besoin 1 dans un premier temps),
+pas une réécriture du séquencement.
 
 ---
 
@@ -591,40 +649,50 @@ Chaîne de dépendances : A → B → (C ‖ D). C ne dépend pas de E3 ; D en d
 
 ---
 
-## 9. Décisions à confirmer avant tout code
+## 9. Décisions actées (session du 2026-07-06)
 
-0. **Pondération interne du besoin 2** : les « 5+3 majeurs » (fer, zinc,
-   magnésium, iode, sélénium, vitamine D, B9, B12) doivent-ils être
-   équi-pondérés dans le score du besoin, ou pondérés selon leur poids
-   clinique respectif (ex. le document source suggère que fer/B9/B12 sont
-   souvent traités comme prioritaires) ? Impacte directement `nutrient_axis_weight`.
-1. Oméga-3/6 : indicateur transversal modulant le besoin 1 (recommandé) vs
-   axe scoré indépendant.
-2. Cofacteurs : somme pondérée simple en V1 avec champ réservé pour plafonnement
-   v2 (recommandé) vs plafonnement dès V1.
-3. Ampleur du set « limitant » en V1 (recommandé : minimal + bien établi).
-4. Normalisation : min-max par axe sur percentiles p5/p95 (recommandé) vs seuils
-   cliniques absolus.
-5. Point d'entrée MVP : Phase A complète d'abord, ou un « vertical slice » étroit
-   (1 axe, 12 aliments vedettes, scan d'un produit) pour valider l'expérience de
-   bout en bout avant d'élargir.
-6. Répartition Ciqual moyens/complet par usage (§1.1) — confirmer la règle
-   proposée (journal libre → moyens, vedettes/scan → complet) plutôt qu'une
-   séparation stricte par module.
-7. Passage de 4 à 7 axes de calcul (§2.1) — confirmer l'ajout de « Calme/stress »
-   et « Microbiote/digestif », et le statut de « Clarté cognitive » (axe calculé
-   dès V1 malgré l'absence de correspondance R9, ou reporté après la décision R9).
-8. « Humeur » en lecture dérivée plutôt qu'axe calculé — confirmer que cette
-   simplification n'est pas perçue comme un manque côté restitution patient.
-9. Protocole 21 jours / ordonnance alimentaire restent hors périmètre de ce
-   module (relèvent de R4) — confirmer cette frontière pour éviter un doublon.
-10. Chronobiologie (besoin 3) : l'ajout du champ heure au journal justifie-t-il
-    une branche dédiée dès la Phase A (`feat/e1-journal-chronobiologie`), ou
-    reste-t-il différé après le MVP du besoin 1/2 ?
-11. Restitution patient des contributions secondaires (niveau 2, §2.1) :
-    les afficher explicitement (« va dans le sens de votre objectif sommeil »)
-    dès la V1, ou les garder en signal interne pour la triangulation praticien
-    uniquement, plus prudent réglementairement mais moins engageant pour le patient ?
+Les 12 points ci-dessous, précédemment ouverts, sont désormais tranchés.
+Chaque résolution est reportée à l'endroit du document qu'elle impacte
+(références croisées entre parenthèses) ; cette section sert de journal de
+décision, pas de liste de questions.
 
-Par défaut, aucune de ces branches n'est ouverte tant que tu ne le demandes pas
-explicitement, et aucune migration n'est exécutée sans ta confirmation.
+0. **Pondération interne du besoin 2** (→ §2.2) : **pondérée par priorité
+   clinique**, pas équi-pondérée — fer, B9, B12 pèsent plus lourd que
+   zinc/iode/sélénium/vitamine D. Valeurs exactes à fixer dans
+   `feat/e1-mapping-seed-v1`.
+1. **Oméga-3/6** (→ §2.1) : indicateur transversal modulant le besoin 1,
+   confirmé — pas d'axe scoré indépendant.
+2. **Cofacteurs** (→ §2.2) : somme pondérée simple en V1, `cofacteur_group`
+   réservé pour plafonnement v2, confirmé.
+3. **Ampleur du set « limitant » en V1** (→ §2.2) : minimal + bien établi,
+   confirmé — pas d'élargissement dans ce lot.
+4. **Normalisation** (→ §2.3) : min-max par axe sur percentiles p5/p95 Ciqual,
+   confirmé — pas de seuils cliniques absolus.
+5. **Point d'entrée MVP** (→ §2.5) : **vertical slice étroit** — besoin 1
+   uniquement, ~12 aliments vedettes, 1 produit scanné — plutôt que la Phase A
+   complète d'abord.
+6. **Répartition Ciqual moyens/complet** (→ §1.1) : règle proposée confirmée
+   (journal libre → moyens, vedettes/scan → complet), pas de séparation
+   stricte par module.
+7. **Passage de 4 à 6 axes nommés + 1 lecture dérivée** (→ §2.1) : Calme/stress
+   et Microbiote/digestif ajoutés, **et Clarté cognitive incluse dès V1**
+   malgré l'absence de correspondance formelle dans le modèle R9 actuel —
+   décision assumée, pas un report conditionné à R9.
+8. **« Humeur » en lecture dérivée** (→ §2.1) : confirmé, pas d'axe calculé
+   dédié — reste une sous-vue des besoins 1+2.
+9. **Protocole 21 jours / ordonnance alimentaire** (→ §4.6) : confirmé hors
+   périmètre de ce module, relèvent de R4 — frontière actée pour éviter un
+   doublon.
+10. **Chronobiologie (besoin 3)** (→ §2.5) : **différée après le MVP** — pas
+    de `feat/e1-journal-chronobiologie` avant que le vertical slice
+    (besoin 1) ait validé l'expérience de bout en bout.
+11. **Restitution patient des contributions secondaires (Niveau 2)** (→ §2.1) :
+    **affichée explicitement au patient dès la V1** (« va dans le sens de
+    votre objectif sommeil »), pas gardée en signal interne praticien
+    uniquement — toujours en signal, jamais en calcul affirmé du besoin.
+
+Aucune de ces décisions n'ouvre à elle seule une branche ou n'autorise une
+migration : chaque branche de la §8 reste soumise aux règles projet
+(confirmation explicite avant toute migration Prisma/SQL), et le périmètre
+réel du premier lot est celui du vertical slice décrit en §2.5, pas
+l'ensemble de la Phase A.

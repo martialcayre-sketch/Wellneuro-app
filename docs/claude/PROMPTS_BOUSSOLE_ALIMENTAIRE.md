@@ -8,11 +8,13 @@ après avoir créé la branche indiquée. Chaque prompt suppose que
 l'agent.
 
 **Périmètre couvert ici** : Phase A (fondation clinique) + Phase B (moteur de
-score), soit les 7 branches qui ne dépendent d'aucune décision encore
-ouverte côté UI/UX. Les phases C (Nutrition Lab praticien) et D (scan
-patient) ne sont volontairement pas incluses : elles dépendent de décisions
-non tranchées (§9 du contexte) et, pour la phase D, de E3 (auth patient) qui
-n'existe pas encore.
+score), soit les 7 branches ci-dessous. Les 12 décisions du §9 du contexte
+sont désormais actées (session du 2026-07-06) ; le premier passage réel sur
+ces branches doit se limiter au **vertical slice** décrit en §2.5 du contexte
+(besoin 1 uniquement, ~12 aliments vedettes, 1 produit scanné), pas à
+l'ensemble de la Phase A d'un coup. Les phases C (Nutrition Lab praticien) et
+D (scan patient) restent volontairement hors de ce fichier : la phase D
+dépend toujours de E3 (auth patient), qui n'existe pas encore.
 
 Ordre d'exécution : 1 → (2, 3 en parallèle possible après 1) → 4 →
 (5 après 1) → (6, 7 après 1+2+4+5).
