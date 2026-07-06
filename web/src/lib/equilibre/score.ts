@@ -14,10 +14,11 @@ import type {
   ReponsesParQuestionnaire,
   ResultatEquilibre,
   ResultatStrate,
+  SourceQuestionnaire,
   StrateCode,
 } from './types';
 
-function clamp01(valeur: number): number {
+export function clamp01(valeur: number): number {
   return Math.min(1, Math.max(0, valeur));
 }
 
@@ -37,6 +38,26 @@ function extraireValeurBrute(resultat: any, sousScore?: string): number | null {
 }
 
 /**
+ * Couverture (0-1, plus haut = mieux) d'une source unique (un questionnaire,
+ * ou un sous-score précis) — brique réutilisée par calculerCouvertureBesoin
+ * et par les objets cliniques dérivés d'une source hors périmètre des 12
+ * besoins (ex. stabilité métabolique, cf. objetsCliniques.ts). Retourne null
+ * si la source n'a pas de réponse disponible, jamais 0 par défaut.
+ */
+export function calculerCouvertureSource(
+  source: SourceQuestionnaire,
+  reponses: ReponsesParQuestionnaire
+): number | null {
+  const answers = reponses[source.idQuestionnaire];
+  if (!answers) return null;
+  const resultat = calculateScore(source.idQuestionnaire, answers);
+  const valeurBrute = extraireValeurBrute(resultat, source.sousScore);
+  if (valeurBrute === null) return null;
+  const ratio = valeurBrute / source.max;
+  return clamp01(source.inverser ? 1 - ratio : ratio);
+}
+
+/**
  * Couverture (0-1, plus haut = mieux) d'un besoin à partir des réponses aux
  * questionnaires existants. Retourne null si aucune des sources mappées n'a
  * de réponse disponible (besoin non évaluable), jamais 0 par défaut.
@@ -46,17 +67,9 @@ export function calculerCouvertureBesoin(
   reponses: ReponsesParQuestionnaire
 ): number | null {
   const sources = BESOIN_SOURCES[besoinId] ?? [];
-  const couvertures: number[] = [];
-
-  for (const source of sources) {
-    const answers = reponses[source.idQuestionnaire];
-    if (!answers) continue;
-    const resultat = calculateScore(source.idQuestionnaire, answers);
-    const valeurBrute = extraireValeurBrute(resultat, source.sousScore);
-    if (valeurBrute === null) continue;
-    const ratio = valeurBrute / source.max;
-    couvertures.push(clamp01(source.inverser ? 1 - ratio : ratio));
-  }
+  const couvertures = sources
+    .map(source => calculerCouvertureSource(source, reponses))
+    .filter((c): c is number => c !== null);
 
   if (couvertures.length === 0) return null;
   return couvertures.reduce((somme, c) => somme + c, 0) / couvertures.length;
