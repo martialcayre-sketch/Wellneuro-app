@@ -4,6 +4,13 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Schéma V1 — Moteur d'intention clinique (2026-07-06)
+
+- Ajout de 10 tables de référentiel clinique dans `schema.prisma` : `clinical_intent_tags`, `clinical_criteria`, `functional_categories`, `clinical_rules` (versionné, mapping direct 1 ingrédient), `ingredient_functional_thresholds`, `protocol_review_flags` (avec traçabilité d'override praticien), et le squelette minimal `supplement_ingredients`/`supplement_ingredient_formes`/`supplement_source_references`/`supplement_safety_alerts`.
+- Aucune donnée de production affectée : migration purement additive (nouvelles tables), aucune table existante modifiée.
+- Contexte, décisions d'audit (11 points) et périmètre V1/V2 documentés dans `docs/claude/MOTEUR_INTENTION_CLINIQUE_CONTEXTE.md`.
+- Pipeline de résolution des règles (parsing LLM, moteur de décision) non implémenté à ce stade — schéma de données uniquement.
+
 ### Lot C5 — Décommission GAS (2026-07-03)
 
 - Migration historique des données Google Sheets → Supabase exécutée en production (patients, assignations, réponses).
