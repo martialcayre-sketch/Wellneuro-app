@@ -126,3 +126,33 @@ seul besoin 1 (vertical slice).
 `seuil_reference` en `String?` vs `Float?` (choisi String pour préserver
 l'unité, à reconfirmer) ; contrainte d'exclusivité besoin_niveau1/2 non
 posée en base (validation applicative seulement).
+
+## 2026-07-06 — Moteur d'équilibre, priorisation clinique et protocole 21 jours
+
+**Décisions prises** : effet domino conservé mais requalifié — abandon de
+la matrice numérique de poids (ex. sommeil→GABA=8), remplacée par une
+classification qualitative à 3 niveaux (fondation/intermediaire/
+peripherique), taguée niveau de preuve D, cantonnée strictement au moteur
+de priorisation (jamais dans le score « Mon équilibre » affiché au
+patient). Niveaux de preuve A/B/C/D retenus à la place du champ
+`confiance` continu. Moteur de cohérence (sécurité) déterministe et
+testable, sans LLM. Couche narrative LLM : traduit uniquement, ne décide
+jamais, avec garde-fou anti-hallucination (blocage/régénération). Audit
+trail immuable dès le Jalon 1. Ordre de dépendance dev validé : sécurité/
+audit → priorisation → narration → suivi longitudinal → extensions
+premium — ne jamais avancer la narration avant validation clinique du
+noyau sécurité. Livrable : `SYNTHESE_MOTEUR_EQUILIBRE.md`, destiné à
+remplacer la section R9 de `ROADMAP_AGENT_PLAN.md`.
+
+**Options écartées** : champ `confiance` continu (remplacé par A/B/C/D) ;
+matrice domino numérique 12×12 comme donnée de calcul silencieuse
+(remplacée par classification qualitative tracée).
+
+**Prochaine action prioritaire** : intégrer la section 10 de
+`SYNTHESE_MOTEUR_EQUILIBRE.md` dans `ROADMAP_AGENT_PLAN.md` (remplacement
+de la section R9 actuelle).
+
+**Questions ouvertes** : écrasement vs traçage double lors d'un ajustement
+par biomarqueur (niveau C sur donnée niveau A) ; poids exacts du score de
+priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
+écran détail des 12 besoins côté praticien (non conçu).
