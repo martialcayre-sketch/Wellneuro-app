@@ -46,6 +46,9 @@ Le déploiement Google Apps Script (GAS) historique a été décommissionné le 
 - Ne pas modifier les seuils de scoring sans source et documentation
 - Ne pas inventer de questionnaire, score, seuil ou recommandation clinique
 - Toute modification clinique doit être documentée dans `CHANGELOG.md`
+- Toute modification de questionnaire/scoring doit aussi mettre à jour `docs/questionnaires-drive-mapping.md` et respecter `docs/gouvernance-questionnaires-scoring.md`
+- Un questionnaire marqué `certifié` dans la matrice doit avoir une fixture dans `scripts/check_questionnaire_certification.js`
+- Les scores Drive certifiés ou ambigus doivent exposer une métadonnée `certification` dans `scoresJson`
 
 ## Priorités produit et techniques
 
@@ -67,6 +70,7 @@ Le déploiement Google Apps Script (GAS) historique a été décommissionné le 
 ```bash
 cd web && npm run dev             # serveur de développement
 cd web && npm run type-check      # vérification TypeScript
+cd web && npm run scoring-check   # certification questionnaires/scoring
 cd web && npm run prisma:generate # régénérer le client Prisma après modif du schéma
 bash scripts/check_no_secrets.sh  # contrôle anti-secrets avant commit
 ```

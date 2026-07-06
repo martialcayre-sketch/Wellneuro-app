@@ -18,7 +18,8 @@
     "supabase:db:pull": "supabase db pull",
     "supabase:db:push": "supabase db push",
     "supabase:migration:new": "supabase migration new",
-    "setup:check": "npm run prisma:generate && npm run type-check"
+    "setup:check": "npm run prisma:generate && npm run type-check && npm run scoring-check",
+    "scoring-check": "node ../scripts/check_questionnaire_certification.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.107.0",

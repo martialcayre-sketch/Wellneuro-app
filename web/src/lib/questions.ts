@@ -37,6 +37,7 @@ const O_CUNGI= [{v:0,l:'Non pas du tout'},{v:1,l:'Faiblement'},{v:2,l:'Un peu'},
 const O_PAS  = [{v:0,l:'Jamais'},{v:1,l:'Presque jamais'},{v:2,l:'Parfois'},{v:3,l:'Assez souvent'},{v:4,l:'Très souvent'}];
 const O_ZARIT= [{v:0,l:'Jamais'},{v:1,l:'Rarement'},{v:2,l:'Parfois'},{v:3,l:'Assez souvent'},{v:4,l:'Presque toujours'}];
 const O_DASS = [{v:0,l:'Ne s\'applique pas du tout'},{v:1,l:'S\'applique un peu / parfois'},{v:2,l:'S\'applique beaucoup / souvent'},{v:3,l:'S\'applique tout à fait / la plupart du temps'}];
+const O_CONNERS = [{v:0,l:'Pas vrai du tout — Jamais ou rarement'},{v:1,l:"Un peu vrai — À l'occasion"},{v:2,l:'Assez vrai — Souvent'},{v:3,l:'Très vrai — Très souvent'}];
 
 // meta : objet optionnel — ex. {conditionnel:'BR4>=2'} pour items conditionnels
 function q(id, texte, opts, meta)  { const o={id:id,texte:texte,type:'likert',options:opts}; if(meta) Object.assign(o,meta); return o; }
@@ -1529,154 +1530,58 @@ Q_MOD_03: {
 // ════════════════════════════════════════════════════════
 
 Q_ALI_01: {
-  id:'Q_ALI_01', titre:'Enquête alimentaire SiiN',
-  instructions:'Pour chaque item, cochez Oui si votre réponse habituelle remplit la condition décrite, sinon cochez Non.',
+  id:'Q_ALI_01', titre:'Questionnaire alimentaire SIIN',
+  instructions:'Répondez pour vos habitudes habituelles des 3 derniers mois. Il n\'y a pas de bonne ou mauvaise réponse.',
   sections:[
-    { id:'A', titre:'Boissons et hydratation',
+    { id:'A', titre:'Légumes, Fruits & Légumineuses',
       questions:[
-        q('ALIM_SIIN_Q001','Combien de verres d’eau ou de litres d’eau buvez-vous chaque jour ? (en incluant également les tasses de thé, tisanes ou infusions, café…) Condition : `> 12 verres` ou `> 1,5 l`',
-          [{v:1,l:'Oui - condition remplie (`> 12 verres` ou `> 1,5 l`)'},{v:0,l:'Non / autre réponse'}],{categorie:'boissons_hydratation'}),
-        q('ALIM_SIIN_Q002','Combien de tasses de café buvez-vous chaque jour ? Condition : `1 à 5`',
-          [{v:1,l:'Oui - condition remplie (`1 à 5`)'},{v:0,l:'Non / autre réponse'}],{categorie:'boissons_hydratation'}),
-        q('ALIM_SIIN_Q003','Combien de tasses de thé buvez-vous chaque jour ? Condition : `1 à 5`',
-          [{v:1,l:'Oui - condition remplie (`1 à 5`)'},{v:0,l:'Non / autre réponse'}],{categorie:'boissons_hydratation'}),
-        q('ALIM_SIIN_Q004','Combien de jus de fruits, sans sucre rajouté, buvez-vous chaque jour ? Condition : `0 à 1`',
-          [{v:1,l:'Oui - condition remplie (`0 à 1`)'},{v:0,l:'Non / autre réponse'}],{categorie:'boissons_hydratation'}),
-        q('ALIM_SIIN_Q005','Combien de boissons sucrées, sodas, cola, limonade… buvez-vous chaque jour ? Condition : `0` ou `< 1` ; pas tous les jours',
-          [{v:1,l:'Oui - condition remplie (`0` ou `< 1` ; pas tous les jours)'},{v:0,l:'Non / autre réponse'}],{categorie:'boissons_hydratation'}),
-        q('ALIM_SIIN_Q006','Combien de verres de vin buvez-vous en moyenne chaque jour ? Condition : `0`, `1` ou `< 2`',
-          [{v:1,l:'Oui - condition remplie (`0`, `1` ou `< 2`)'},{v:0,l:'Non / autre réponse'}],{categorie:'boissons_hydratation'}),
-        q('ALIM_SIIN_Q007','Combien de verres de vin ou boissons alcoolisées buvez-vous chaque semaine ? Condition : `< 10`',
-          [{v:2,l:'Oui - condition remplie (`< 10`)'},{v:0,l:'Non / autre réponse'}],{categorie:'boissons_hydratation'}),
+        qs('AL1','Combien de fois par jour consommez-vous des légumes (hors pommes de terre) ?',
+          [{v:0,l:'Rarement ou jamais'},{v:1,l:'1 fois/jour'},{v:2,l:'2 fois/jour'},{v:3,l:'3 fois/jour ou plus'}]),
+        qs('AL2','Combien de portions de fruits consommez-vous par jour ?',
+          [{v:0,l:'Rarement ou jamais'},{v:1,l:'1 portion/jour'},{v:2,l:'2 portions/jour'},{v:3,l:'3 portions ou plus'}]),
+        qs('AL3','À quelle fréquence consommez-vous des légumineuses (lentilles, pois chiches, haricots...) ?',
+          [{v:0,l:'Rarement ou jamais'},{v:1,l:'1 fois/semaine'},{v:2,l:'2-3 fois/semaine'},{v:3,l:'4 fois ou plus/semaine'}]),
       ]},
-    { id:'B', titre:'Végétaux, fibres et glucides complets',
+    { id:'B', titre:'Protéines & Graisses',
       questions:[
-        q('ALIM_SIIN_Q008','Combien de portions d’environ 80 g de légumes consommez-vous chaque jour ? Condition : `> 5`',
-          [{v:2,l:'Oui - condition remplie (`> 5`)'},{v:0,l:'Non / autre réponse'}],{categorie:'vegetaux_fibres_glucides'}),
-        q('ALIM_SIIN_Q009','Combien de fruits entiers consommez-vous chaque jour ? Condition : `1`, `2` ou `3`',
-          [{v:2,l:'Oui - condition remplie (`1`, `2` ou `3`)'},{v:0,l:'Non / autre réponse'}],{categorie:'vegetaux_fibres_glucides'}),
-        q('ALIM_SIIN_Q010','Combien de portions de céréales complètes ou semi-complètes consommez-vous chaque jour ? (portion d’environ 80 à 100 g de riz complet, quinoa, flocons…) Condition : `1` ou `2`',
-          [{v:1,l:'Oui - condition remplie (`1` ou `2`)'},{v:0,l:'Non / autre réponse'}],{categorie:'vegetaux_fibres_glucides'}),
-        q('ALIM_SIIN_Q011','Consommez-vous préférentiellement, au moins une fois sur 2, des céréales complètes plutôt que les céréales raffinées (blé complet, farine complète, riz complet, pâtes complètes…) Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'vegetaux_fibres_glucides'}),
-        q('ALIM_SIIN_Q012','Consommez-vous préférentiellement du pain complet plutôt que du pain blanc, baguettes ? Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'vegetaux_fibres_glucides'}),
-        q('ALIM_SIIN_Q013','Combien de portions de légumes secs consommez-vous chaque semaine ? (une portion : 150 g) Condition : `3 ou +`',
-          [{v:2,l:'Oui - condition remplie (`3 ou +`)'},{v:0,l:'Non / autre réponse'}],{categorie:'vegetaux_fibres_glucides'}),
-        q('ALIM_SIIN_Q014','Combien de portions de noix « de Grenoble » consommez-vous chaque semaine ? (une portion : 30 g) Condition : `3 ou +`',
-          [{v:2,l:'Oui - condition remplie (`3 ou +`)'},{v:0,l:'Non / autre réponse'}],{categorie:'vegetaux_fibres_glucides'}),
-        q('ALIM_SIIN_Q015','Combien de portions de fruits secs non sucrés et non salés tels que les amandes, noisettes, pistaches, noix de cajou, noix du Brésil… consommez-vous chaque semaine ? Condition : `3 ou +`',
-          [{v:2,l:'Oui - condition remplie (`3 ou +`)'},{v:0,l:'Non / autre réponse'}],{categorie:'vegetaux_fibres_glucides'}),
+        qs('AL4','À quelle fréquence consommez-vous du poisson (saumon, sardines, maquereau, thon...) ?',
+          [{v:0,l:'Rarement ou jamais'},{v:1,l:'1 fois/semaine'},{v:2,l:'2 fois/semaine'},{v:3,l:'3 fois/semaine ou plus'}]),
+        qs('AL5','À quelle fréquence consommez-vous de la viande rouge ou de la charcuterie ?',
+          [{v:3,l:'Rarement ou jamais'},{v:2,l:'1-2 fois/semaine'},{v:1,l:'3-4 fois/semaine'},{v:0,l:'Tous les jours'}]),
+        qs('AL6','Quelle matière grasse utilisez-vous principalement ?',
+          [{v:0,l:'Beurre / margarine hydrogénée'},{v:1,l:'Huile de tournesol ou maïs'},{v:2,l:'Huile de colza ou noix'},{v:3,l:'Huile d\'olive vierge extra'}]),
+        qs('AL7','Consommez-vous des fruits à coque (noix, amandes, noisettes...) ?',
+          [{v:0,l:'Jamais'},{v:1,l:'Rarement'},{v:2,l:'1-2 fois/semaine'},{v:3,l:'3 fois/semaine ou plus'}]),
+        qs('AL8','À quelle fréquence consommez-vous des œufs ?',
+          [{v:0,l:'Rarement ou jamais'},{v:1,l:'1-2/semaine'},{v:2,l:'3-4/semaine'},{v:3,l:'5 ou plus/semaine'}]),
       ]},
-    { id:'C', titre:'Lipides, huiles et laitages',
+    { id:'C', titre:'Glucides & Produits transformés',
       questions:[
-        q('ALIM_SIIN_Q016','Utilisez-vous de l’huile de colza comme huile principale de cuisine ou d’assaisonnement ? Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'lipides_huiles_laitiers'}),
-        q('ALIM_SIIN_Q017','Combien de cuillères à soupe d’huile de colza consommez-vous chaque jour ? Condition : `> 2`',
-          [{v:2,l:'Oui - condition remplie (`> 2`)'},{v:0,l:'Non / autre réponse'}],{categorie:'lipides_huiles_laitiers'}),
-        q('ALIM_SIIN_Q018','Combien de portions de beurre, margarine, crème fraîche, graisses de coco consommez-vous quotidiennement ? (une portion égale 12 g) Condition : `< 1`',
-          [{v:2,l:'Oui - condition remplie (`< 1`)'},{v:0,l:'Non / autre réponse'}],{categorie:'lipides_huiles_laitiers'}),
-        q('ALIM_SIIN_Q019','Utilisez-vous des huiles de tournesol, huile de maïs ou de pépin de raisin comme huile principale ou régulière de cuisine ? Condition : Non',
-          [{v:2,l:'Oui - condition remplie (Non)'},{v:0,l:'Non / autre réponse'}],{categorie:'lipides_huiles_laitiers'}),
-        q('ALIM_SIIN_Q020','Combien de sauces « industrielles » type mayonnaise, sauce salade, sauce barbecue… (hormis celles qui sont préparées à base d’huile de colza) consommez-vous chaque jour ? Condition : `0` ou `< 1` ; pas tous les jours',
-          [{v:2,l:'Oui - condition remplie (`0` ou `< 1` ; pas tous les jours)'},{v:0,l:'Non / autre réponse'}],{categorie:'lipides_huiles_laitiers'}),
-        q('ALIM_SIIN_Q021','Combien de produits laitiers frais, non sucrés consommez-vous chaque jour ? (yaourt, fromage blanc ou petit-suisse…) Condition : `1` ou `2`',
-          [{v:1,l:'Oui - condition remplie (`1` ou `2`)'},{v:0,l:'Non / autre réponse'}],{categorie:'lipides_huiles_laitiers'}),
-        q('ALIM_SIIN_Q022','Combien de produits laitiers frais et sucrés consommez-vous chaque jour ? (yaourt aux fruits, yaourt sucré, desserts lactés aromatisés sucrés…) Condition : `< 1`',
-          [{v:1,l:'Oui - condition remplie (`< 1`)'},{v:0,l:'Non / autre réponse'}],{categorie:'lipides_huiles_laitiers'}),
-        q('ALIM_SIIN_Q023','Combien de portions de fromage consommez-vous chaque jour ? Condition : `0` ou `1`',
-          [{v:1,l:'Oui - condition remplie (`0` ou `1`)'},{v:0,l:'Non / autre réponse'}],{categorie:'lipides_huiles_laitiers'}),
-        q('ALIM_SIIN_Q024','Combien de portions de fromage « gras » consommez-vous par semaine ? Condition : `< 4`',
-          [{v:1,l:'Oui - condition remplie (`< 4`)'},{v:0,l:'Non / autre réponse'}],{categorie:'lipides_huiles_laitiers'}),
+        qs('AL9','Quelle est votre consommation de produits céréaliers complets (pain complet, pâtes complètes, riz complet) ?',
+          [{v:0,l:'Jamais'},{v:1,l:'Rarement'},{v:2,l:'Souvent'},{v:3,l:'Principalement'}]),
+        qs('AL10','Quelle est votre consommation de boissons sucrées (sodas, jus industriels) ?',
+          [{v:3,l:'Jamais'},{v:2,l:'Moins d\'1 fois/semaine'},{v:1,l:'1 fois/jour'},{v:0,l:'2 fois/jour ou plus'}]),
+        qs('AL11','Quelle est votre consommation de produits ultra-transformés (plats cuisinés, biscuits, chips) ?',
+          [{v:3,l:'Rarement ou jamais'},{v:2,l:'1-2 fois/semaine'},{v:1,l:'3-5 fois/semaine'},{v:0,l:'Chaque jour'}]),
       ]},
-    { id:'D', titre:'Protéines animales et filières',
+    { id:'D', titre:'Comportement alimentaire',
       questions:[
-        q('ALIM_SIIN_Q025','Combien d’œufs issus de la filière oméga 3 consommez-vous chaque semaine ? Condition : `4 à 14`',
-          [{v:2,l:'Oui - condition remplie (`4 à 14`)'},{v:0,l:'Non / autre réponse'}],{categorie:'proteines_animales_filieres'}),
-        q('ALIM_SIIN_Q026','Combien d’œufs, issus de filières conventionnelles, bio ou plein air mais non oméga 3 consommez-vous chaque semaine ? Condition : `< 5`',
-          [{v:1,l:'Oui - condition remplie (`< 5`)'},{v:0,l:'Non / autre réponse'}],{categorie:'proteines_animales_filieres'}),
-        q('ALIM_SIIN_Q027','Combien de portions de poissons gras (sardine, maquereau, hareng, saumon, thon…) consommez-vous par semaine ? (portions de 100 g) Condition : `2 ou plus`',
-          [{v:2,l:'Oui - condition remplie (`2 ou plus`)'},{v:0,l:'Non / autre réponse'}],{categorie:'proteines_animales_filieres'}),
-        q('ALIM_SIIN_Q028','Combien de portions de 100 g de poisson, tout-venant, y compris les poissons gras précédents, consommez-vous chaque semaine ? Condition : `4`',
-          [{v:1,l:'Oui - condition remplie (`4`)'},{v:0,l:'Non / autre réponse'}],{categorie:'proteines_animales_filieres'}),
-        q('ALIM_SIIN_Q029','Combien de portions de coquillages ou crustacés consommez-vous par semaine ? (une portion : 4 ou 5 coquillages) Condition : `> 1`',
-          [{v:1,l:'Oui - condition remplie (`> 1`)'},{v:0,l:'Non / autre réponse'}],{categorie:'proteines_animales_filieres'}),
-        q('ALIM_SIIN_Q030','Combien de portions de viande blanche ou volaille consommez-vous chaque semaine ? (poulet, dinde, canard, lapin, porc…) Condition : `2 à 3`',
-          [{v:1,l:'Oui - condition remplie (`2 à 3`)'},{v:0,l:'Non / autre réponse'}],{categorie:'proteines_animales_filieres'}),
-        q('ALIM_SIIN_Q031','Combien de portions de viande rouge, hamburger consommez-vous chaque semaine ? (une portion = 100 à 150 g) Condition : `< 3 fois` ou `< 350 g`',
-          [{v:2,l:'Oui - condition remplie (`< 3 fois` ou `< 350 g`)'},{v:0,l:'Non / autre réponse'}],{categorie:'proteines_animales_filieres'}),
-        q('ALIM_SIIN_Q032','Consommez-vous préférentiellement des volailles, poulet, dinde, lapin… plutôt que du veau, du bœuf, des saucisses, des hamburgers… ? Condition : Oui',
-          [{v:1,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'proteines_animales_filieres'}),
-        q('ALIM_SIIN_Q033','Combien de portions de charcuteries consommez-vous chaque semaine ? Condition : `< 3 fois` ou `< 140 g`',
-          [{v:2,l:'Oui - condition remplie (`< 3 fois` ou `< 140 g`)'},{v:0,l:'Non / autre réponse'}],{categorie:'proteines_animales_filieres'}),
-      ]},
-    { id:'E', titre:'Féculents raffinés, sucre, sel et ultra-transformation',
-      questions:[
-        q('ALIM_SIIN_Q034','Combien de pommes de terre consommez-vous chaque semaine ? (frites, purée, pommes vapeur…) Condition : `< 3`',
-          [{v:1,l:'Oui - condition remplie (`< 3`)'},{v:0,l:'Non / autre réponse'}],{categorie:'feculents_sucre_sel_ultratransformation'}),
-        q('ALIM_SIIN_Q035','Combien de portions de pâtes blanches, raffinées non complètes, de riz blanc ou de pain blanc comme la baguette consommez-vous chaque semaine ? Condition : `< 3`',
-          [{v:1,l:'Oui - condition remplie (`< 3`)'},{v:0,l:'Non / autre réponse'}],{categorie:'feculents_sucre_sel_ultratransformation'}),
-        q('ALIM_SIIN_Q036','Consommez-vous régulièrement ou quotidiennement des produits sucrés industrialisés tels que les confitures, pâte chocolatée à tartiner, céréales de petit déjeuner sucrées… Condition : Non',
-          [{v:2,l:'Oui - condition remplie (Non)'},{v:0,l:'Non / autre réponse'}],{categorie:'feculents_sucre_sel_ultratransformation'}),
-        q('ALIM_SIIN_Q037','Combien de fois par semaine consommez-vous des pâtisseries industrielles, cookies, biscuits… ? Condition : `< 2`',
-          [{v:2,l:'Oui - condition remplie (`< 2`)'},{v:0,l:'Non / autre réponse'}],{categorie:'feculents_sucre_sel_ultratransformation'}),
-        q('ALIM_SIIN_Q038','L’achat ou la consommation de boissons sucrées telles que les limonades, les jus de fruits industriels, les sodas… même les boissons light ou allégées, sont pour moi occasionnelles, jamais quotidiennes. Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'feculents_sucre_sel_ultratransformation'}),
-        q('ALIM_SIIN_Q039','Lors de mes achats en grande surface, la part de produits transformés, industrialisés, « prêts à être consommés » représente moins d’un cinquième de mon caddy… Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'feculents_sucre_sel_ultratransformation'}),
-        q('ALIM_SIIN_Q040','J’achète parfois du sucre (sucre blanc, sucre roux, sucre de canne…) mais j’en utilise très peu, je rajoute moins d’une cuillère à soupe par jour dans ma consommation, y compris les boissons telles que café, thé, tisanes… Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'feculents_sucre_sel_ultratransformation'}),
-        q('ALIM_SIIN_Q041','Je rajoute du sel fréquemment dans ma cuisson ou dans mon assiette. Condition : Non',
-          [{v:1,l:'Oui - condition remplie (Non)'},{v:0,l:'Non / autre réponse'}],{categorie:'feculents_sucre_sel_ultratransformation'}),
-        q('ALIM_SIIN_Q042','J’achète et je consomme assez souvent des produits industrialisés salés tels que des chips, des fruits secs apéritifs salés, des cacahuètes salées… Condition : Non',
-          [{v:2,l:'Oui - condition remplie (Non)'},{v:0,l:'Non / autre réponse'}],{categorie:'feculents_sucre_sel_ultratransformation'}),
-      ]},
-    { id:'F', titre:'Aromates, polyphénols, cuisson et production',
-      questions:[
-        q('ALIM_SIIN_Q043','Combien de fois par semaine consommez-vous des plats assaisonnés naturellement avec sauce tomate, oignon, ail, curry, curcuma, gingembre, moutarde, condiments, aromates ? Condition : `> 2`',
-          [{v:2,l:'Oui - condition remplie (`> 2`)'},{v:0,l:'Non / autre réponse'}],{categorie:'aromates_polyphenols_cuisson_production'}),
-        q('ALIM_SIIN_Q044','Consommez-vous chaque jour des épices, des aromates, des herbes aromatiques, condiments… directement sur la table ou lors de vos préparations et recettes ? Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'aromates_polyphenols_cuisson_production'}),
-        q('ALIM_SIIN_Q045','Consommez-vous chaque jour un ou plusieurs des aliments suivants : chocolat noir (> 70 % cacao), agrumes (citrons, oranges, mandarines…), petits fruits rouges (groseille, framboise, cassis, raisin… frais ou surgelés), thé vert ? Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'aromates_polyphenols_cuisson_production'}),
-        q('ALIM_SIIN_Q046','Consommez-vous chaque semaine un ou plusieurs des aliments suivants : brocolis, choux (choux verts, choux rouges, choux de Bruxelles, etc.) et/ou champignons, algues, soja ? Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'aromates_polyphenols_cuisson_production'}),
-        q('ALIM_SIIN_Q047','Je suis très attentif aux températures de cuisson, j’évite les cuissons à haute température, les barbecues, l’excès de « brunissement » comme sur le pain grillé ou les fritures… Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'aromates_polyphenols_cuisson_production'}),
-        q('ALIM_SIIN_Q048','À chaque fois que cela est possible, je m’oriente vers une consommation de produits bio plus particulièrement sur les légumes, les fruits, les céréales complètes, le pain complet… Condition : Oui',
-          [{v:1,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'aromates_polyphenols_cuisson_production'}),
-        q('ALIM_SIIN_Q049','Je suis attentif aux filières de production et j’achète notamment des produits issus de la filière oméga 3 à chaque fois que cela est possible. Condition : Oui',
-          [{v:1,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'aromates_polyphenols_cuisson_production'}),
-      ]},
-    { id:'G', titre:'Rythme alimentaire et chrononutrition',
-      questions:[
-        q('ALIM_SIIN_Q050','Je mange régulièrement et j’évite les grignotages entre les repas. Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'rythme_alimentaire_chrononutrition'}),
-        q('ALIM_SIIN_Q051','Je mange régulièrement au restaurant, « sur le pouce » ou des plats de « restauration rapide » ou des plats « tout prêts à réchauffer ». Condition : Non',
-          [{v:1,l:'Oui - condition remplie (Non)'},{v:0,l:'Non / autre réponse'}],{categorie:'rythme_alimentaire_chrononutrition'}),
-        q('ALIM_SIIN_Q052','Je prends chaque jour un petit déjeuner complet, copieux, riche en protéines (œufs, jambon, poissons, fromages ou yaourts de lait ou de soja, amandes…) et pauvre en aliments sucrés (sucre, confiture, miel, produits sucrés industriels…). Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'rythme_alimentaire_chrononutrition'}),
-        q('ALIM_SIIN_Q053','Je consomme régulièrement au cours de mon petit déjeuner des aliments source de protéines… Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'rythme_alimentaire_chrononutrition'}),
-        q('ALIM_SIIN_Q054','Habituellement, entre la fin de mon repas du soir et mon petit déjeuner il s’écoule environ au moins 10 heures (exemple : fin du repas 21 heures et petit déjeuner à 07 heures le matin). Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'rythme_alimentaire_chrononutrition'}),
-        q('ALIM_SIIN_Q055','Je privilégie un petit déjeuner et un déjeuner copieux avec un repas du soir léger et digeste. Condition : Oui',
-          [{v:1,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'rythme_alimentaire_chrononutrition'}),
-        q('ALIM_SIIN_Q056','Je lis les étiquettes, le Nutri-score, je fais attention à la composition et provenance des produits que j’achète en grande surface. Condition : Oui',
-          [{v:1,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'rythme_alimentaire_chrononutrition'}),
-        q('ALIM_SIIN_Q057','J’évite la consommation régulière ou quotidienne d’édulcorants intenses (aspartame, Néotame, acésulfame K…) qu’il s’agisse de « sucrettes » rajoutées ou d’édulcorants dans les produits. Condition : Oui',
-          [{v:2,l:'Oui - condition remplie (Oui)'},{v:0,l:'Non / autre réponse'}],{categorie:'rythme_alimentaire_chrononutrition'}),
+        qs('AL12','Combien de repas structurés faites-vous par jour ?',
+          [{v:0,l:'1 repas ou irrégulier'},{v:1,l:'2 repas'},{v:2,l:'3 repas'},{v:3,l:'3 repas + collation structurée'}]),
+        q('AL13','Mangez-vous souvent devant un écran ou en faisant autre chose (lecture, télé...) ?',
+          [{v:3,l:'Jamais'},{v:2,l:'Rarement'},{v:1,l:'Souvent'},{v:0,l:'Presque toujours'}]),
+        q('AL14','Avez-vous des compulsions alimentaires (envies irrépressibles de manger) ?',
+          [{v:3,l:'Jamais'},{v:2,l:'Parfois'},{v:1,l:'Souvent'},{v:0,l:'Très souvent'}]),
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:90,
+    type:'sum', maxTotal:42,
     interpretation:[
-      {min:0, max:24, label:'Alimentation très déséquilibrée et défavorable', color:'danger', protocol:'Réforme alimentaire prioritaire ciblée sur les items les plus perturbés.'},
-      {min:25,max:50, label:'Alimentation déséquilibrée', color:'warning', protocol:'Réforme alimentaire progressive selon motivation et facteurs prioritaires.'},
-      {min:51,max:70, label:'Alimentation plutôt équilibrée mais insuffisamment protectrice', color:'info', protocol:'Identifier les comportements à optimiser.'},
-      {min:71,max:90, label:'Alimentation optimale', color:'success', protocol:'Encourager le maintien et associer conseils sommeil, activité physique et stress.'},
-    ],
-    note:'Source SIIN: cotation conditionnelle (points si condition remplie, sinon 0). Les seuils 25 et 71 ont été inclus en borne pratique continue pour éviter des zones non classées.'
+      {min:35,max:42,label:'Alimentation de haute qualité nutritionnelle',color:'success',protocol:'Maintenir ces habitudes — bilan micronutritionnel si symptômes'},
+      {min:25,max:34,label:'Alimentation globalement équilibrée — points à optimiser',color:'info',protocol:'Identification des axes d\'amélioration prioritaires'},
+      {min:15,max:24,label:'Alimentation déséquilibrée — interventions prioritaires',color:'warning',protocol:'Programme de rééducation alimentaire progressif'},
+      {min:0, max:14,label:'Alimentation très déséquilibrée — bilan approfondi nécessaire',color:'danger',protocol:'Consultation diététique spécialisée + bilan biologique'},
+    ]
   }
 },
 
@@ -1729,215 +1634,54 @@ Q_ALI_02: {
 },
 
 Q_ALI_03: {
-  id:'Q_ALI_03', titre:'Evaluation des apports caloriques et proteiques - Methode Monnier',
-  instructions:'Renseignez vos portions habituelles. Les valeurs proposent une estimation selon les coefficients source Monnier.',
+  id:'Q_ALI_03', titre:'Évaluation des apports caloriques et protéiques — Méthode Monnier',
+  instructions:'Ce questionnaire permet d\'estimer vos apports journaliers en protéines et calories. Renseignez vos habitudes habituelles.',
   sections:[
-    { id:'A', titre:'Apports proteiques estimes (g/jour)',
+    { id:'A', titre:'Protéines animales',
       questions:[
-        qs('MONNIER_PROT_Q001','Petite portion de viande 100 g (nombre de portions)',[
-          {v:0,l:'0 portion(s)/jour -> 0 g/j estime'},
-          {v:20,l:'1 portion(s)/jour -> 20 g/j estime'},
-          {v:40,l:'2 portion(s)/jour -> 40 g/j estime'},
-          {v:60,l:'3 portion(s)/jour -> 60 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q002','Portion moyenne de viande 125 g (nombre de portions)',[
-          {v:0,l:'0 portion(s)/jour -> 0 g/j estime'},
-          {v:25,l:'1 portion(s)/jour -> 25 g/j estime'},
-          {v:50,l:'2 portion(s)/jour -> 50 g/j estime'},
-          {v:75,l:'3 portion(s)/jour -> 75 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q003','Grande portion de viande 150 g (nombre de portions)',[
-          {v:0,l:'0 portion(s)/jour -> 0 g/j estime'},
-          {v:30,l:'1 portion(s)/jour -> 30 g/j estime'},
-          {v:60,l:'2 portion(s)/jour -> 60 g/j estime'},
-          {v:90,l:'3 portion(s)/jour -> 90 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q004','2 oeufs (nombre de portions)',[
-          {v:0,l:'0 portion(s)/semaine -> 0 g/j estime'},
-          {v:3.6,l:'1 portion(s)/semaine -> 3.6 g/j estime'},
-          {v:7.2,l:'2 portion(s)/semaine -> 7.2 g/j estime'},
-          {v:10.8,l:'3 portion(s)/semaine -> 10.8 g/j estime'},
-          {v:14.4,l:'4 portion(s)/semaine -> 14.4 g/j estime'},
-          {v:18,l:'5 portion(s)/semaine -> 18 g/j estime'},
-          {v:21.6,l:'6 portion(s)/semaine -> 21.6 g/j estime'},
-          {v:25.2,l:'7 portion(s)/semaine -> 25.2 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q005','150 g de poisson (nombre de portions)',[
-          {v:0,l:'0 portion(s)/semaine -> 0 g/j estime'},
-          {v:3.6,l:'1 portion(s)/semaine -> 3.6 g/j estime'},
-          {v:7.2,l:'2 portion(s)/semaine -> 7.2 g/j estime'},
-          {v:10.8,l:'3 portion(s)/semaine -> 10.8 g/j estime'},
-          {v:14.4,l:'4 portion(s)/semaine -> 14.4 g/j estime'},
-          {v:18,l:'5 portion(s)/semaine -> 18 g/j estime'},
-          {v:21.6,l:'6 portion(s)/semaine -> 21.6 g/j estime'},
-          {v:25.2,l:'7 portion(s)/semaine -> 25.2 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q006','200 ml de lait (nombre de portions)',[
-          {v:0,l:'0 portion(s)/jour -> 0 g/j estime'},
-          {v:7,l:'1 portion(s)/jour -> 7 g/j estime'},
-          {v:14,l:'2 portion(s)/jour -> 14 g/j estime'},
-          {v:21,l:'3 portion(s)/jour -> 21 g/j estime'},
-          {v:28,l:'4 portion(s)/jour -> 28 g/j estime'},
-          {v:35,l:'5 portion(s)/jour -> 35 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q007','1 yaourt (nombre de portions)',[
-          {v:0,l:'0 portion(s)/jour -> 0 g/j estime'},
-          {v:3.5,l:'1 portion(s)/jour -> 3.5 g/j estime'},
-          {v:7,l:'2 portion(s)/jour -> 7 g/j estime'},
-          {v:10.5,l:'3 portion(s)/jour -> 10.5 g/j estime'},
-          {v:14,l:'4 portion(s)/jour -> 14 g/j estime'},
-          {v:17.5,l:'5 portion(s)/jour -> 17.5 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q008','30 g de fromage (nombre de portions)',[
-          {v:0,l:'0 portion(s)/jour -> 0 g/j estime'},
-          {v:7,l:'1 portion(s)/jour -> 7 g/j estime'},
-          {v:14,l:'2 portion(s)/jour -> 14 g/j estime'},
-          {v:21,l:'3 portion(s)/jour -> 21 g/j estime'},
-          {v:28,l:'4 portion(s)/jour -> 28 g/j estime'},
-          {v:35,l:'5 portion(s)/jour -> 35 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q009','100 g de fromage blanc (nombre de portions)',[
-          {v:0,l:'0 portion(s)/jour -> 0 g/j estime'},
-          {v:7,l:'1 portion(s)/jour -> 7 g/j estime'},
-          {v:14,l:'2 portion(s)/jour -> 14 g/j estime'},
-          {v:21,l:'3 portion(s)/jour -> 21 g/j estime'},
-          {v:28,l:'4 portion(s)/jour -> 28 g/j estime'},
-          {v:35,l:'5 portion(s)/jour -> 35 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q010','50 g de pain (nombre de portions)',[
-          {v:0,l:'0 portion(s)/jour -> 0 g/j estime'},
-          {v:5,l:'1 portion(s)/jour -> 5 g/j estime'},
-          {v:10,l:'2 portion(s)/jour -> 10 g/j estime'},
-          {v:15,l:'3 portion(s)/jour -> 15 g/j estime'},
-          {v:20,l:'4 portion(s)/jour -> 20 g/j estime'},
-          {v:25,l:'5 portion(s)/jour -> 25 g/j estime'},
-          {v:30,l:'6 portion(s)/jour -> 30 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q011','1 biscotte (nombre de portions)',[
-          {v:0,l:'0 portion(s)/jour -> 0 g/j estime'},
-          {v:1.25,l:'1 portion(s)/jour -> 1.25 g/j estime'},
-          {v:2.5,l:'2 portion(s)/jour -> 2.5 g/j estime'},
-          {v:3.75,l:'3 portion(s)/jour -> 3.75 g/j estime'},
-          {v:5,l:'4 portion(s)/jour -> 5 g/j estime'},
-          {v:6.25,l:'5 portion(s)/jour -> 6.25 g/j estime'},
-          {v:7.5,l:'6 portion(s)/jour -> 7.5 g/j estime'},
-          {v:8.75,l:'7 portion(s)/jour -> 8.75 g/j estime'},
-          {v:10,l:'8 portion(s)/jour -> 10 g/j estime'},
-          {v:11.25,l:'9 portion(s)/jour -> 11.25 g/j estime'},
-          {v:12.5,l:'10 portion(s)/jour -> 12.5 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_Q012','30 g de cereales type Corn Flakes (nombre de portions)',[
-          {v:0,l:'0 portion(s)/jour -> 0 g/j estime'},
-          {v:5,l:'1 portion(s)/jour -> 5 g/j estime'},
-          {v:10,l:'2 portion(s)/jour -> 10 g/j estime'},
-          {v:15,l:'3 portion(s)/jour -> 15 g/j estime'},
-          {v:20,l:'4 portion(s)/jour -> 20 g/j estime'},
-          {v:25,l:'5 portion(s)/jour -> 25 g/j estime'},
-        ]),
-        qs('MONNIER_PROT_SEXE','Sexe (forfait proteique source)',[
-          {v:15,l:'Homme (+15 g/j)'},
-          {v:10,l:'Femme (+10 g/j)'},
-        ],{sourceIds:['MONNIER_PROT_Q013','MONNIER_PROT_Q014']}),
+        qs('MO1','Viande ou volaille : combien de portions par semaine ? (1 portion = 100-120 g)',
+          [{v:0,l:'0'},{v:1,l:'1-2'},{v:2,l:'3-4'},{v:3,l:'5-7'},{v:4,l:'8 ou plus'}]),
+        qs('MO2','Poisson : combien de portions par semaine ? (1 portion = 120-150 g)',
+          [{v:0,l:'0'},{v:1,l:'1-2'},{v:2,l:'3-4'},{v:3,l:'5-7'},{v:4,l:'8 ou plus'}]),
+        qs('MO3','Œufs : combien d\'unités par semaine ?',
+          [{v:0,l:'0'},{v:1,l:'1-2'},{v:2,l:'3-4'},{v:3,l:'5-7'},{v:4,l:'8 ou plus'}]),
+        qs('MO4','Produits laitiers (lait, yaourt, fromage) : combien de portions par jour ?',
+          [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4 ou plus'}]),
       ]},
-    { id:'B', titre:'Calories additionnelles',
+    { id:'B', titre:'Protéines végétales & Glucides',
       questions:[
-        qs('MONNIER_CAL_SUP_Q001','Grignotage modere (presence quotidienne)',[
-          {v:150,l:'Oui (grignotage modere: +150 kcal/j)'},
-          {v:0,l:'Non'},
-        ]),
-        qs('MONNIER_CAL_SUP_Q002','Grignotage important (presence quotidienne)',[
-          {v:300,l:'Oui (grignotage important: +300 kcal/j)'},
-          {v:0,l:'Non'},
-        ]),
-        qs('MONNIER_CAL_SUP_Q003','Verres de vin (120 ml)',[
-          {v:0,l:'0 verre(s)/jour -> +0 kcal/j'},
-          {v:70,l:'1 verre(s)/jour -> +70 kcal/j'},
-          {v:140,l:'2 verre(s)/jour -> +140 kcal/j'},
-          {v:210,l:'3 verre(s)/jour -> +210 kcal/j'},
-          {v:280,l:'4 verre(s)/jour -> +280 kcal/j'},
-          {v:350,l:'5 verre(s)/jour -> +350 kcal/j'},
-        ]),
-        qs('MONNIER_CAL_SUP_Q004','Verres de biere (120 ml)',[
-          {v:0,l:'0 verre(s)/jour -> +0 kcal/j'},
-          {v:70,l:'1 verre(s)/jour -> +70 kcal/j'},
-          {v:140,l:'2 verre(s)/jour -> +140 kcal/j'},
-          {v:210,l:'3 verre(s)/jour -> +210 kcal/j'},
-          {v:280,l:'4 verre(s)/jour -> +280 kcal/j'},
-          {v:350,l:'5 verre(s)/jour -> +350 kcal/j'},
-        ]),
-        qs('MONNIER_CAL_SUP_Q005','Verres de jus de fruits (120 ml)',[
-          {v:0,l:'0 verre(s)/jour -> +0 kcal/j'},
-          {v:70,l:'1 verre(s)/jour -> +70 kcal/j'},
-          {v:140,l:'2 verre(s)/jour -> +140 kcal/j'},
-          {v:210,l:'3 verre(s)/jour -> +210 kcal/j'},
-          {v:280,l:'4 verre(s)/jour -> +280 kcal/j'},
-          {v:350,l:'5 verre(s)/jour -> +350 kcal/j'},
-        ]),
-        qs('MONNIER_CAL_SUP_Q006','Aperitifs (30 ml)',[
-          {v:0,l:'0 unite(s)/jour -> +0 kcal/j'},
-          {v:70,l:'1 unite(s)/jour -> +70 kcal/j'},
-          {v:140,l:'2 unite(s)/jour -> +140 kcal/j'},
-          {v:210,l:'3 unite(s)/jour -> +210 kcal/j'},
-          {v:280,l:'4 unite(s)/jour -> +280 kcal/j'},
-          {v:350,l:'5 unite(s)/jour -> +350 kcal/j'},
-        ]),
-        qs('MONNIER_CAL_SUP_Q007','Tarte salee',[
-          {v:0,l:'0 portion(s)/semaine -> +0 kcal/sem'},
-          {v:50,l:'1 portion(s)/semaine -> +50 kcal/sem'},
-          {v:100,l:'2 portion(s)/semaine -> +100 kcal/sem'},
-          {v:150,l:'3 portion(s)/semaine -> +150 kcal/sem'},
-          {v:200,l:'4 portion(s)/semaine -> +200 kcal/sem'},
-          {v:250,l:'5 portion(s)/semaine -> +250 kcal/sem'},
-          {v:300,l:'6 portion(s)/semaine -> +300 kcal/sem'},
-          {v:350,l:'7 portion(s)/semaine -> +350 kcal/sem'},
-        ]),
-        qs('MONNIER_CAL_SUP_Q008','Charcuterie (entree salee)',[
-          {v:0,l:'0 portion(s)/semaine -> +0 kcal/sem'},
-          {v:50,l:'1 portion(s)/semaine -> +50 kcal/sem'},
-          {v:100,l:'2 portion(s)/semaine -> +100 kcal/sem'},
-          {v:150,l:'3 portion(s)/semaine -> +150 kcal/sem'},
-          {v:200,l:'4 portion(s)/semaine -> +200 kcal/sem'},
-          {v:250,l:'5 portion(s)/semaine -> +250 kcal/sem'},
-          {v:300,l:'6 portion(s)/semaine -> +300 kcal/sem'},
-          {v:350,l:'7 portion(s)/semaine -> +350 kcal/sem'},
-        ]),
-        qs('MONNIER_CAL_SUP_Q009','Tarte sucree / gateaux',[
-          {v:0,l:'0 portion(s)/semaine -> +0 kcal/sem'},
-          {v:50,l:'1 portion(s)/semaine -> +50 kcal/sem'},
-          {v:100,l:'2 portion(s)/semaine -> +100 kcal/sem'},
-          {v:150,l:'3 portion(s)/semaine -> +150 kcal/sem'},
-          {v:200,l:'4 portion(s)/semaine -> +200 kcal/sem'},
-          {v:250,l:'5 portion(s)/semaine -> +250 kcal/sem'},
-          {v:300,l:'6 portion(s)/semaine -> +300 kcal/sem'},
-          {v:350,l:'7 portion(s)/semaine -> +350 kcal/sem'},
-        ]),
-        qs('MONNIER_CAL_SUP_Q010','Creme glacee ou autres sucreries',[
-          {v:0,l:'0 portion(s)/semaine -> +0 kcal/sem'},
-          {v:50,l:'1 portion(s)/semaine -> +50 kcal/sem'},
-          {v:100,l:'2 portion(s)/semaine -> +100 kcal/sem'},
-          {v:150,l:'3 portion(s)/semaine -> +150 kcal/sem'},
-          {v:200,l:'4 portion(s)/semaine -> +200 kcal/sem'},
-          {v:250,l:'5 portion(s)/semaine -> +250 kcal/sem'},
-          {v:300,l:'6 portion(s)/semaine -> +300 kcal/sem'},
-          {v:350,l:'7 portion(s)/semaine -> +350 kcal/sem'},
-        ]),
-        qs('MONNIER_CAL_SUP_Q011','Repas festif',[
-          {v:0,l:'0 repas/semaine -> +0 kcal/sem'},
-          {v:200,l:'1 repas/semaine -> +200 kcal/sem'},
-          {v:400,l:'2 repas/semaine -> +400 kcal/sem'},
-          {v:600,l:'3 repas/semaine -> +600 kcal/sem'},
-        ]),
+        qs('MO5','Légumineuses (lentilles, pois, haricots) : portions par semaine ?',
+          [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2-3'},{v:3,l:'4-5'},{v:4,l:'6 ou plus'}]),
+        qs('MO6','Féculents (pain, pâtes, riz, pommes de terre) : portions par jour ?',
+          [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4 ou plus'}]),
+        qs('MO7','Fruits et légumes confondus : nombre de portions par jour ?',
+          [{v:0,l:'0-1'},{v:1,l:'2'},{v:2,l:'3-4'},{v:3,l:'5-6'},{v:4,l:'7 ou plus'}]),
+      ]},
+    { id:'C', titre:'Matières grasses & Produits sucrés',
+      questions:[
+        qs('MO8','Matières grasses ajoutées (huile, beurre, sauce) : cuillères à soupe par jour ?',
+          [{v:0,l:'0-1'},{v:1,l:'2-3'},{v:2,l:'4-5'},{v:3,l:'6-7'},{v:4,l:'8 ou plus'}]),
+        qs('MO9','Produits sucrés (desserts, sodas, confiseries) : portions par jour ?',
+          [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4 ou plus'}]),
+      ]},
+    { id:'D', titre:'Contexte',
+      questions:[
+        qs('MO10','Votre niveau d\'activité physique global est :',
+          [{v:1,l:'Très sédentaire (bureau, peu de marche)'},{v:2,l:'Peu actif (quelques marches)'},{v:3,l:'Modérément actif (sport 1-2x/sem)'},{v:4,l:'Actif (sport 3-4x/sem)'},{v:5,l:'Très actif (sport quotidien / travail physique)'}]),
       ]},
   ],
   scoring:{
     type:'subscore',
     subScores:[
-      {id:'MONNIER_PROT', label:'Apports proteiques estimes (g/jour)', items:['MONNIER_PROT_Q001','MONNIER_PROT_Q002','MONNIER_PROT_Q003','MONNIER_PROT_Q004','MONNIER_PROT_Q005','MONNIER_PROT_Q006','MONNIER_PROT_Q007','MONNIER_PROT_Q008','MONNIER_PROT_Q009','MONNIER_PROT_Q010','MONNIER_PROT_Q011','MONNIER_PROT_Q012','MONNIER_PROT_SEXE'], max:480.4},
-      {id:'MONNIER_CAL_SUP', label:'Calories additionnelles (kcal)', items:['MONNIER_CAL_SUP_Q001','MONNIER_CAL_SUP_Q002','MONNIER_CAL_SUP_Q003','MONNIER_CAL_SUP_Q004','MONNIER_CAL_SUP_Q005','MONNIER_CAL_SUP_Q006','MONNIER_CAL_SUP_Q007','MONNIER_CAL_SUP_Q008','MONNIER_CAL_SUP_Q009','MONNIER_CAL_SUP_Q010','MONNIER_CAL_SUP_Q011'], max:3850},
-    ],
-    note:'Source Monnier: calories de base = (proteines g/j) x 24; calories totales = calories de base + calories additionnelles. Ce calcul final reste clinique.'
+      {id:'P_AN', label:'Apports en protéines animales (index)', items:['MO1','MO2','MO3','MO4'], max:16},
+      {id:'P_VG', label:'Apports en protéines végétales (index)', items:['MO5'], max:4},
+      {id:'GL',   label:'Apports glucidiques (index)', items:['MO6','MO7'], max:8},
+      {id:'LIP',  label:'Apports lipidiques (index)', items:['MO8'], max:4},
+      {id:'SU',   label:'Produits sucrés (index)', items:['MO9'], max:4},
+    ]
   }
 },
+
 
 // ════════════════════════════════════════════════════════
 // GASTRO-ENTÉROLOGIE
@@ -2085,13 +1829,13 @@ Q_MOD_02: {
 // ════════════════════════════════════════════════════════
 
 Q_NEU_02: {
-  id:'Q_NEU_02', titre:'MADRS — Échelle de dépression de Montgomery-Åsberg (auto-évaluation)',
+  id:'Q_NEU_02', titre:'MADRS — Échelle de dépression de Montgomery-Åsberg',
   // CORR 23/06/2026 :
   //   - Options corrigées : 7 niveaux (0-6) → 4 niveaux (0/2/4/6) conformes PDF SIIN
   //   - Item MA1 'Tristesse apparente' restauré (absent de la version précédente)
   //   - Item MA10 'Fatigue' supprimé (fantôme — absent PDF SIIN et MADRS originale)
   // Référence : Montgomery & Åsberg (1979). Br J Psychiatry, 134, 382-389.
-  instructions:'Pour chaque item, choisissez la réponse qui décrit le mieux comment vous vous êtes senti(e) au cours des 3 derniers jours.',
+  instructions:'Échelle à administrer par un praticien. Cotez chaque item de 0 à 6 selon l\'intensité observée ou rapportée.',
   sections:[
     { id:'A', titre:'Humeur & Pensées',
       questions:[
@@ -2101,19 +1845,19 @@ Q_NEU_02: {
           [{v:0,l:'Pas du tout triste'},{v:2,l:'Tristesse passagère'},{v:4,l:'Triste la plupart du temps'},{v:6,l:'Tristesse permanente insupportable'}]),
         qs('MA3','Tension intérieure : je me sens tendu(e), anxieux(se), angoissé(e)',
           [{v:0,l:'Serein(e), calme'},{v:2,l:'Tensions passagères'},{v:4,l:'Tension ou anxiété quasi-permanente'},{v:6,l:'Panique ou effroi insupportable'}]),
-        qs('MA4','Difficultés de concentration',
-          [{v:0,l:'Aucune difficulté'},{v:2,l:'Légères difficultés passagères'},{v:4,l:'Difficultés importantes réduisant ma productivité'},{v:6,l:'Incapacité totale de concentration'}]),
-        qs('MA5','Lassitude — difficulté à démarrer des activités',
-          [{v:0,l:'Pas du tout'},{v:2,l:'Légère difficulté'},{v:4,l:'Démarrage difficile pour les activités simples'},{v:6,l:'Prostration totale'}]),
+        qs('MA4','Réduction du sommeil',
+          [{v:0,l:'Sommeil habituel'},{v:2,l:'Légère difficulté à m\'endormir ou sommeil réduit'},{v:4,l:'Sommeil réduit de 2 à 4 heures'},{v:6,l:'Moins de 2 heures de sommeil'}]),
+        qs('MA5','Réduction de l\'appétit',
+          [{v:0,l:'Appétit normal'},{v:2,l:'Légère réduction de l\'appétit'},{v:4,l:'Besoin de me forcer à manger'},{v:6,l:'Alimentation nulle — ne s\'alimente que sous contrainte'}]),
       ]},
     { id:'B', titre:'Énergie & Fonctions vitales',
       questions:[
-        qs('MA6','Incapacité à ressentir — émoussement affectif',
+        qs('MA6','Difficultés de concentration',
+          [{v:0,l:'Aucune difficulté'},{v:2,l:'Légères difficultés passagères'},{v:4,l:'Difficultés importantes réduisant l\'activité'},{v:6,l:'Incapacité totale de concentration'}]),
+        qs('MA7','Lassitude — difficulté à démarrer des activités',
+          [{v:0,l:'Pas du tout'},{v:2,l:'Légère difficulté'},{v:4,l:'Démarrage difficile pour les activités simples'},{v:6,l:'Prostration totale'}]),
+        qs('MA8','Incapacité à ressentir — émoussement affectif',
           [{v:0,l:'Intérêt et plaisir normaux'},{v:2,l:'Légère réduction d\'intérêt'},{v:4,l:'Indifférence émotionnelle notable'},{v:6,l:'Vide affectif complet'}]),
-        qs('MA7','Troubles du sommeil',
-          [{v:0,l:'Sommeil habituel'},{v:2,l:'Légère difficulté à m\'endormir ou sommeil réduit'},{v:4,l:'Sommeil réduit de 2 à 4 heures'},{v:6,l:'Moins de 2 heures de sommeil'}]),
-        qs('MA8','Appétit réduit',
-          [{v:0,l:'Appétit normal'},{v:2,l:'Légère réduction de l\'appétit'},{v:4,l:'Besoin de me forcer à manger'},{v:6,l:'Alimentation nulle — ne s\'alimente que sous contrainte'}]),
         qs('MA9','Pensées pessimistes ou idées de culpabilité',
           [{v:0,l:'Aucune'},{v:2,l:'Doutes passagers sur soi ou auto-critique'},{v:4,l:'Idées de culpabilité ou convictions d\'avoir causé du tort'},{v:6,l:'Conviction délirante de culpabilité ou de faute grave'}]),
       ]},
@@ -2127,53 +1871,59 @@ Q_NEU_02: {
   scoring:{
     type:'sum', maxTotal:60,
     interpretation:[
+      // Source : Montgomery & Asberg (1979), MADRS 10 items, score /60 ; seuils usuels 0-6, 7-19, 20-34, >=35.
       {min:0, max:6,  label:'Absence de dépression', color:'success', protocol:'Pas d\'indication thérapeutique spécifique'},
-      {min:7, max:18, label:'Dépression légère',      color:'info',    protocol:'Suivi micronutritionnel — axe sérotoninergique à évaluer'},
-      {min:19,max:35, label:'Dépression modérée',     color:'warning', protocol:'Bilan complet + soutien psychologique + micronutrition ciblée'},
-      {min:36,max:60, label:'Dépression sévère',      color:'danger',  protocol:'Orientation psychiatrique urgente — prise en charge pluridisciplinaire'},
+      {min:7, max:19, label:'Dépression légère',      color:'info',    protocol:'Suivi micronutritionnel — axe sérotoninergique à évaluer'},
+      {min:20,max:34, label:'Dépression modérée',     color:'warning', protocol:'Bilan complet + soutien psychologique + micronutrition ciblée'},
+      {min:35,max:60, label:'Dépression sévère',      color:'danger',  protocol:'Orientation psychiatrique urgente — prise en charge pluridisciplinaire'},
     ]
   }
 },
 
 Q_NEU_03: {
   id:'Q_NEU_03', titre:'SIGH-SAD-SA — Auto-évaluation humeur saisonnière',
-  instructions:'Pour chaque question, choisissez une seule proposition décrivant le mieux votre état de la semaine écoulée.',
+  instructions:'Pour les questions suivantes, entourez le numéro d’une seule proposition de chaque série qui décrit au mieux votre état de la semaine écoulée et notez le score dans la colonne adaptée : Groupe A ou Groupe B. Si votre état a changé lors des derniers jours, entourez la proposition qui décrit au mieux votre état actuel. Avant de choisir une proposition dans chaque série, lisez-les toutes afin de vous assurer de choisir la plus adéquate.',
   sections:[
     { id:'A', titre:'Items SIGH-SAD-SA (1 à 25)',
+      description:'Dans cette échelle, « normalement » signifie lorsque vous vous sentez bien ou le mieux possible pour vous.',
       questions:[
-        qs('SIGH_Q001','QUESTION 1',[{v:0,l:'Je ne me suis pas du tout senti(e) triste ou déprimé(e).'},{v:1,l:'Je me suis senti(e) légèrement triste ou déprimé(e).'},{v:2,l:'Je me suis senti(e) triste ou déprimé(e).'},{v:3,l:'Je me suis senti(e) et j’ai eu l’air très déprimé(e) ou d’autres l’ont dit.'},{v:4,l:'J’étais incapable de penser à autre chose qu’à combien je me sens mal ou déprimé(e).'}],{groupe:'A'}),
-        qs('SIGH_Q002','QUESTION 2',[{v:0,l:'Je me suis occupé(e) et j’étais intéressé(e) par mes activités.'},{v:1,l:'Je n’étais pas aussi intéressé(e) par mes activités qu’habituellement.'},{v:2,l:'J’étais sans aucun doute moins intéressé(e) que normalement par mes activités et il a fallu que je me force pour les réaliser.'},{v:3,l:'Je n’ai pas fait grand-chose tellement je me suis senti(e) mal.'},{v:4,l:'J’ai interrompu presque toutes mes activités : je reste juste assis(e) ou je dors presque toute la journée.'}],{groupe:'A'}),
-        qs('SIGH_Q003','QUESTION 3',[{v:0,l:'J’étais normalement intéressé(e) à entrer en relation avec autrui.'},{v:1,l:'J’ai toujours interagi avec autrui, mais cela m’intéressait moins.'},{v:2,l:'J’ai moins interagi avec d’autres personnes dans des situations sociales.'},{v:3,l:'J’ai moins interagi avec d’autres personnes à la maison ou au travail.'},{v:4,l:'Je me suis entièrement replié(e) sur moi-même à la maison ou au travail.'}],{groupe:'B'}),
-        qs('SIGH_Q004','QUESTION 4',[{v:0,l:'Mes intérêts sexuels sont restés plus ou moins pareils ou sont plus grands que normalement.'},{v:1,l:'Mes intérêts sexuels sont moins grands que normalement.'},{v:2,l:'Mes intérêts sexuels sont beaucoup moins grands que normalement.'}],{groupe:'A'}),
-        qs('SIGH_Q005','QUESTION 5',[{v:0,l:'Mon appétit est resté normal ou a augmenté.'},{v:1,l:'J’ai eu moins d’appétit que normalement, mais j’ai mangé sans que personne m’incite à le faire.'},{v:2,l:'J’ai eu tellement peu d’appétit que je n’ai pas mangé régulièrement sauf lorsque quelqu’un m’incitait à le faire.'}],{groupe:'A'}),
-        qs('SIGH_Q006','QUESTION 6',[{v:0,l:'Je ne pense pas avoir maigri depuis que je suis déprimé(e) ou, si j’ai perdu du poids, j’ai commencé à le récupérer.'},{v:1,l:'J’ai probablement perdu un peu de poids, que je n’ai pas du tout repris, parce que je n’avais pas envie de manger.'},{v:2,l:'J’ai sans aucun doute perdu du poids, que je n’ai pas du tout repris, parce que je n’avais pas envie de manger.'}],{groupe:'A'}),
-        qs('SIGH_Q007','QUESTION 7',[{v:0,l:'Je n’ai pas pris de poids par rapport à mon poids normal.'},{v:1,l:'J’ai probablement pris du poids, 1 kilo ou plus, et mon poids actuel dépasse mon poids normal.'},{v:2,l:'J’ai sans aucun doute pris du poids, 1 kilo ou plus, et mon poids actuel dépasse mon poids normal.'}],{groupe:'B'}),
-        qs('SIGH_Q008','QUESTION 8',[{v:0,l:'Mon appétit a été normal ou moindre que normalement.'},{v:1,l:'J’avais envie de manger un peu plus que normalement.'},{v:2,l:'J’avais envie de manger plus que normalement.'},{v:3,l:'J’avais envie de manger beaucoup plus que normalement.'}],{groupe:'B'}),
-        qs('SIGH_Q009','QUESTION 9',[{v:0,l:'Je n’ai pas mangé plus que normalement.'},{v:1,l:'J’ai mangé un peu plus que normalement.'},{v:2,l:'J’ai mangé plus que normalement.'},{v:3,l:'J’ai mangé beaucoup plus que normalement.'}],{groupe:'B'}),
-        qs('SIGH_Q010','QUESTION 10',[{v:0,l:'Je n’ai pas eu envie ou je n’ai pas mangé plus de sucreries ou de féculents que normalement.'},{v:1,l:'J’ai eu un peu plus envie ou j’ai mangé un peu plus de sucreries ou de féculents que normalement.'},{v:2,l:'J’ai eu beaucoup plus envie ou j’ai mangé beaucoup plus de sucreries ou de féculents que normalement.'},{v:3,l:'J’ai eu une envie irrésistible de manger des sucreries ou des féculents.'}],{groupe:'B'}),
-        qs('SIGH_Q011','QUESTION 11',[{v:0,l:'Je n’ai pas eu de difficultés à m’endormir le soir.'},{v:1,l:'Certains soirs, il m’a fallu plus d’une demi-heure pour m’endormir.'},{v:2,l:'J’ai eu des difficultés d’endormissement tous les soirs.'}],{groupe:'A'}),
-        qs('SIGH_Q012','QUESTION 12',[{v:0,l:'Je ne me suis pas réveillé(e) en pleine nuit, ou si j’ai dû me lever pour aller aux toilettes, je me suis rendormi(e) directement.'},{v:1,l:'Mon sommeil était agité et perturbé durant la nuit.'},{v:2,l:'Je me suis réveillé(e) pendant la nuit sans être capable de me rendormir, ou je me suis levé(e) en pleine nuit, pas uniquement pour aller aux toilettes.'}],{groupe:'A'}),
-        qs('SIGH_Q013','QUESTION 13',[{v:0,l:'Je me suis réveillé(e) plus tard que prévu ou à une heure raisonnable dans la matinée.'},{v:1,l:'Je me suis réveillé(e) très tôt le matin, mais j’étais capable de me rendormir.'},{v:2,l:'Je me suis réveillé(e) très tôt le matin sans être capable de me rendormir, notamment une fois sorti(e) du lit.'}],{groupe:'A'}),
-        qs('SIGH_Q014','QUESTION 14',[{v:0,l:'Je n’ai pas dormi plus que ce dont j’ai l’habitude quand je me sens normal.'},{v:1,l:'J’ai dormi au moins une heure de plus que ce dont j’ai l’habitude quand je me sens normal.'},{v:2,l:'J’ai dormi au moins deux heures de plus que ce dont j’ai l’habitude quand je me sens normal.'},{v:3,l:'J’ai dormi au moins trois heures de plus que ce dont j’ai l’habitude quand je me sens normal.'},{v:4,l:'J’ai dormi au moins quatre heures de plus que ce dont j’ai l’habitude quand je me sens normal.'}],{groupe:'B'}),
-        qs('SIGH_Q015','QUESTION 15',[{v:0,l:'Je n’ai pas eu une sensation de lourdeur au niveau des membres, du dos ou de la tête.'},{v:1,l:'J’ai eu quelques fois une sensation de lourdeur au niveau des membres, du dos ou de la tête.'},{v:2,l:'J’ai eu souvent une sensation de lourdeur au niveau des membres, du dos ou de la tête.'}],{groupe:'A/B'}),
-        qs('SIGH_Q016','QUESTION 16',[{v:0,l:'Je n’ai pas eu des problèmes de lombalgies, de maux de tête ou de douleurs musculaires.'},{v:1,l:'J’ai eu quelques fois des problèmes de lombalgies, de maux de tête ou de douleurs musculaires.'},{v:2,l:'J’ai eu souvent des problèmes de lombalgies, de maux de tête ou de douleurs musculaires.'}],{groupe:'A/B'}),
-        qs('SIGH_Q017','QUESTION 17',[{v:0,l:'Je ne me suis pas senti(e) plus fatigué(e) que normalement.'},{v:1,l:'Je me suis senti(e) un peu plus fatigué(e) que normalement.'},{v:2,l:'Je me suis senti(e) plus fatigué(e) que normalement, au moins quelques heures par jour.'},{v:3,l:'Je me suis senti(e) fatigué(e) la plupart du temps durant la plupart des jours.'},{v:4,l:'J’ai ressenti une fatigue envahissante tout le temps.'}],{groupe:'A/B'}),
-        qs('SIGH_Q018','QUESTION 18',[{v:0,l:'Je ne me suis pas fait de critiques ou je ne me suis pas senti(e) comme un(e) raté(e), comme ayant laissé tomber d’autres personnes ou coupable d’erreurs passées.'},{v:1,l:'Je me suis senti(e) comme un(e) raté(e) ou comme si j’avais laissé tomber d’autres personnes.'},{v:2,l:'Je me suis senti(e) très coupable ou j’ai beaucoup pensé aux erreurs ou actes condamnables que j’ai commises.'},{v:3,l:'Je pense que mon état dépressif est une punition pour quelque chose de mal que j’ai commis.'},{v:4,l:'J’ai entendu des voix m’accusant d’avoir commis quelque chose de mal, ou j’ai vu des scènes de terreur qualifiées d’irréelles par autrui.'}],{groupe:'A'}),
-        qs('SIGH_Q019','QUESTION 19',[{v:0,l:'Je n’ai pas pensé à mourir, à me faire du mal ou à me tuer, ou que la vie ne vaut pas la peine d’être vécue.'},{v:1,l:'J’ai pensé que la vie ne valait pas la peine d’être vécue ou qu’il vaudrait mieux être mort.'},{v:2,l:'J’ai pensé à mourir ou j’ai souhaité être mort.'},{v:3,l:'J’ai pensé à me suicider ou j’ai fait quelque chose afin de me blesser.'},{v:4,l:'J’ai essayé de me suicider.'}],{groupe:'A'}),
-        qs('SIGH_Q020','QUESTION 20',[{v:0,l:'Je ne me suis pas senti(e) particulièrement tendu(e), irritable ou fort soucieux(se).'},{v:1,l:'Je me suis senti(e) plutôt tendu(e) ou irritable.'},{v:2,l:'Je me suis préoccupé(e) de choses insignifiantes dont je ne me préoccuperais pas d’ordinaire ou j’ai été excessivement tendu(e) ou irritable.'},{v:3,l:'D’autres remarquent que j’ai l’air tendu(e), irritable ou inquiet(e).'},{v:4,l:'Je me sens tendu(e), irritable ou inquiet(e) tout le temps.'}],{groupe:'A'}),
-        qs('SIGH_Q021','QUESTION 21',[{v:0,l:'Je n’ai coché aucun des symptômes physiques cités.'},{v:1,l:'Dans l’ensemble, le(s) symptôme(s) m’ont causé que très peu d’ennuis.'},{v:2,l:'Dans l’ensemble, le(s) symptôme(s) m’ont causé quelques ennuis.'},{v:3,l:'Dans l’ensemble, le(s) symptôme(s) m’ont causé beaucoup d’ennuis.'},{v:4,l:'Dans l’ensemble, le(s) symptôme(s) a(ont) altéré mes capacités de fonctionnement.'}],{groupe:'A'}),
-        qs('SIGH_Q022','QUESTION 22',[{v:0,l:'Je ne me suis pas beaucoup préoccupé(e) de ma santé physique.'},{v:1,l:'Je me suis soucié(e) de tomber malade physiquement.'},{v:2,l:'Je me suis tracassé(e) la plupart du temps à propos de ma santé physique.'},{v:3,l:'Je me suis fréquemment plaint(e) de mon état physique, ou j’ai demandé beaucoup d’aide.'},{v:4,l:'Je suis certain(e) que je souffre d’une maladie physique, même si les médecins me disent le contraire.'}],{groupe:'A'}),
-        qs('SIGH_Q023','QUESTION 23',[{v:0,l:'Mon débit de langage et de pensée était normal.'},{v:1,l:'Mon langage et mes mouvements étaient légèrement ralentis ou ma pensée était légèrement ralentie, ce qui perturbait mes capacités de concentration.'},{v:2,l:'Mes mouvements, mon langage ou mes pensées étaient un peu plus ralentis que normalement et d’autres personnes l’ont remarqué.'},{v:3,l:'Mes mouvements étaient nettement ralentis, ou mon langage et mes pensées étaient tellement ralentis que j’avais des difficultés à tenir une conversation.'},{v:4,l:'Mes mouvements ou mon langage et mes pensées étaient tellement ralentis que j’avais des difficultés à penser ou à parler.'}],{groupe:'A'}),
-        qs('SIGH_Q024','QUESTION 24',[{v:0,l:'Je n’ai pas été agité(e) ou sans repos.'},{v:1,l:'J’avais des difficultés à rester en place, ou de temps en temps je jouais avec mes mains, mes cheveux ou autre chose.'},{v:2,l:'Je ne tenais pas en place, ou je jouais souvent avec mes mains, mes cheveux ou autre chose.'},{v:3,l:'J’ai eu des difficultés à rester assis(e) tranquille, et j’avais besoin de bouger la majeure partie du temps.'},{v:4,l:'J’étais incapable de rester assis(e) tranquille ou je me suis tordu(e) les mains, rongé mes ongles, arraché mes cheveux, ou mordu les lèvres presque tout le temps.'}],{groupe:'A'}),
-        qs('SIGH_Q025','QUESTION 25',[{v:0,l:'Je n’ai pas ce genre de baisses ou mes baisses perdurent jusqu’à l’heure du coucher.'},{v:1,l:'Habituellement, les baisses temporaires étaient seulement d’intensité légère.'},{v:2,l:'Habituellement, les baisses temporaires étaient d’intensité modérée.'},{v:3,l:'Habituellement, les baisses temporaires étaient d’intensité sévère.'}],{groupe:'B'}),
+        qs("SIGH_Q001","QUESTION 1",[{v:0,l:"Je ne me suis pas du tout senti(e) triste ou déprimé(e)."},{v:1,l:"Je me suis senti(e) légèrement triste ou déprimé(e)."},{v:2,l:"Je me suis senti(e) triste ou déprimé(e)."},{v:3,l:"Je me suis senti(e) et j'ai eu l'air très déprimé(e) ou d'autres l'ont dit."},{v:4,l:"J'étais incapable de penser à autre chose qu'à combien je me sens mal ou déprimé(e)."}],{groupe:"A"}),
+        qs("SIGH_Q002","QUESTION 2",[{v:0,l:"Je me suis occupé(e) et j'étais intéressé(e) par mes activités."},{v:1,l:"Je n'étais pas aussi intéressé(e) par mes activités qu'habituellement."},{v:2,l:"J'étais sans aucun doute moins intéressé(e) que normalement par mes activités et il a fallu que je me force pour les réaliser."},{v:3,l:"Je n'ai pas fait grand-chose tellement je me suis senti(e) mal."},{v:4,l:"J'ai interrompu presque toutes mes activités : je reste juste assis(e) ou je dors presque toute la journée."}],{groupe:"A"}),
+        qs("SIGH_Q003","QUESTION 3",[{v:0,l:"J'étais normalement intéressé(e) à entrer en relation avec autrui."},{v:1,l:"J'ai toujours interagi avec autrui, mais cela m'intéressait moins."},{v:2,l:"J'ai moins interagi avec d'autres personnes dans des situations sociales."},{v:3,l:"J'ai moins interagi avec d'autres personnes à la maison ou au travail."},{v:4,l:"Je me suis entièrement replié(e) sur moi-même à la maison ou au travail."}],{groupe:"B"}),
+        qs("SIGH_Q004","QUESTION 4",[{v:0,l:"Mes intérêts sexuels sont restés plus ou moins pareils ou sont plus grands que normalement."},{v:1,l:"Mes intérêts sexuels sont moins grands que normalement."},{v:2,l:"Mes intérêts sexuels sont beaucoup moins grands que normalement."}],{groupe:"A"}),
+        qs("SIGH_Q005","QUESTION 5",[{v:0,l:"Mon appétit est resté normal ou a augmenté."},{v:1,l:"J'ai eu moins d'appétit que normalement, mais j'ai mangé sans que personne m'incite à le faire."},{v:2,l:"J'ai eu tellement peu d'appétit que je n'ai pas mangé régulièrement sauf lorsque quelqu'un m'incitait à le faire."}],{groupe:"A"}),
+        qs("SIGH_Q006","QUESTION 6",[{v:0,l:"Je ne pense pas avoir maigri depuis que je suis déprimé(e) ou, si j'ai perdu du poids, j'ai commencé à le récupérer."},{v:1,l:"J'ai probablement perdu un peu de poids, que je n'ai pas du tout repris, parce que je n'avais pas envie de manger."},{v:2,l:"J'ai sans aucun doute perdu du poids, que je n'ai pas du tout repris, parce que je n'avais pas envie de manger."}],{groupe:"A"}),
+        qs("SIGH_Q007","QUESTION 7",[{v:0,l:"Je n'ai pas pris de poids par rapport à mon poids normal."},{v:1,l:"J’ai probablement pris du poids, 1 kilo ou plus, et mon poids actuel dépasse mon poids normal."},{v:2,l:"J’ai sans aucun doute pris du poids, 1 kilo ou plus, et mon poids actuel dépasse mon poids normal."}],{groupe:"B"}),
+        qs("SIGH_Q008","QUESTION 8",[{v:0,l:"Mon appétit a été normal ou moindre que normalement."},{v:1,l:"J'avais envie de manger un peu plus que normalement."},{v:2,l:"J'avais envie de manger plus que normalement."},{v:3,l:"J'avais envie de manger beaucoup plus que normalement."}],{groupe:"B"}),
+        qs("SIGH_Q009","QUESTION 9",[{v:0,l:"Je n'ai pas mangé plus que normalement."},{v:1,l:"J'ai mangé un peu plus que normalement."},{v:2,l:"J'ai mangé plus que normalement."},{v:3,l:"J'ai mangé beaucoup plus que normalement."}],{groupe:"B"}),
+        qs("SIGH_Q010","QUESTION 10",[{v:0,l:"Je n'ai pas eu envie ou je n'ai pas mangé plus de sucreries ou de féculents que normalement."},{v:1,l:"J'ai eu un peu plus envie ou j'ai mangé un peu plus de sucreries ou de féculents que normalement."},{v:2,l:"J'ai eu beaucoup plus envie ou j'ai mangé beaucoup plus de sucreries ou de féculents que normalement."},{v:3,l:"J'ai eu une envie irrésistible de manger des sucreries ou des féculents."}],{groupe:"B"}),
+        qs("SIGH_Q011","QUESTION 11",[{v:0,l:"Je n'ai pas eu de difficultés à m'endormir le soir."},{v:1,l:"Certains soirs, il m'a fallu plus d'une demi-heure pour m'endormir."},{v:2,l:"J'ai eu des difficultés d'endormissement tous les soirs."}],{groupe:"A"}),
+        qs("SIGH_Q012","QUESTION 12",[{v:0,l:"Je ne me suis pas réveillé(e) en pleine nuit, ou si j'ai dû me lever pour aller aux toilettes, je me suis rendormi(e) directement."},{v:1,l:"Mon sommeil était agité et perturbé durant la nuit."},{v:2,l:"Je me suis réveillé(e) pendant la nuit sans être capable de me rendormir, ou je me suis levé(e) en pleine nuit, pas uniquement pour aller aux toilettes."}],{groupe:"A"}),
+        qs("SIGH_Q013","QUESTION 13",[{v:0,l:"Je me suis réveillé(e) plus tard que prévu ou à une heure raisonnable dans la matinée."},{v:1,l:"Je me suis réveillé(e) très tôt le matin, mais j'étais capable de me rendormir."},{v:2,l:"Je me suis réveillé(e) très tôt le matin sans être capable de me rendormir, notamment une fois sorti(e) du lit."}],{groupe:"A"}),
+        qs("SIGH_Q014","QUESTION 14",[{v:0,l:"Je n'ai pas dormi plus que ce dont j'ai l'habitude quand je me sens normal."},{v:1,l:"J'ai dormi au moins une heure de plus que ce dont j'ai l'habitude quand je me sens normal."},{v:2,l:"J'ai dormi au moins deux heures de plus que ce dont j'ai l'habitude quand je me sens normal."},{v:3,l:"J'ai dormi au moins trois heures de plus que ce dont j'ai l'habitude quand je me sens normal."},{v:4,l:"J'ai dormi au moins quatre heures de plus que ce dont j'ai l'habitude quand je me sens normal."}],{groupe:"B"}),
+        qs("SIGH_Q015","QUESTION 15",[{v:0,l:"Je n'ai pas eu une sensation de lourdeur au niveau des membres, du dos ou de la tête."},{v:1,l:"J'ai eu quelques fois une sensation de lourdeur au niveau des membres, du dos ou de la tête."},{v:2,l:"J'ai eu souvent une sensation de lourdeur au niveau des membres, du dos ou de la tête."}],{groupe:"A_B"}),
+        qs("SIGH_Q016","QUESTION 16",[{v:0,l:"Je n'ai pas eu des problèmes de lombalgies, de maux de tête ou de douleurs musculaires."},{v:1,l:"J'ai eu quelques fois des problèmes de lombalgies, de maux de tête ou de douleurs musculaires."},{v:2,l:"J'ai eu souvent des problèmes de lombalgies, de maux de tête ou de douleurs musculaires."}],{groupe:"A_B"}),
+        qs("SIGH_Q017","QUESTION 17",[{v:0,l:"Je ne me suis pas senti(e) plus fatigué(e) que normalement."},{v:1,l:"Je me suis senti(e) un peu plus fatigué(e) que normalement."},{v:2,l:"Je me suis senti(e) plus fatigué(e) que normalement, au moins quelques heures par jour."},{v:3,l:"Je me suis senti(e) fatigué(e) la plupart du temps durant la plupart des jours."},{v:4,l:"J'ai ressenti une fatigue envahissante tout le temps."}],{groupe:"A_B"}),
+        qs("SIGH_Q018","QUESTION 18",[{v:0,l:"Je ne me suis pas fait de critiques ou je ne me suis pas senti(e) comme un(e) raté(e), comme ayant laissé tomber d'autres personnes ou coupable d'erreurs passées."},{v:1,l:"Je me suis senti(e) comme un(e) raté(e) ou comme si j'avais laissé tomber d'autres personnes."},{v:2,l:"Je me suis senti(e) très coupable ou j'ai beaucoup pensé aux erreurs ou actes condamnables que j'ai commises."},{v:3,l:"Je pense que mon état dépressif est une punition pour quelque chose de mal que j’ai commis."},{v:4,l:"J'ai entendu des voix m'accusant d'avoir commis quelque chose de mal, ou j'ai vu des scènes de terreur qualifiées d'irréelles par autrui."}],{groupe:"A"}),
+        qs("SIGH_Q019","QUESTION 19",[{v:0,l:"Je n'ai pas pensé à mourir, à me faire du mal ou à me tuer, ou que la vie ne vaut pas la peine d'être vécue."},{v:1,l:"J’ai pensé que la vie ne valait pas la peine d’être vécue ou qu’il vaudrait mieux être mort."},{v:2,l:"J'ai pensé à mourir ou j'ai souhaité être mort."},{v:3,l:"J'ai pensé à me suicider ou j'ai fait quelque chose afin de me blesser."},{v:4,l:"J'ai essayé de me suicider."}],{groupe:"A"}),
+        qs("SIGH_Q020","QUESTION 20",[{v:0,l:"Je ne me suis pas senti(e) particulièrement tendu(e), irritable ou fort soucieux(se)."},{v:1,l:"Je me suis senti(e) plutôt tendu(e) ou irritable."},{v:2,l:"Je me suis préoccupé(e) de choses insignifiantes dont je ne me préoccuperais pas d'ordinaire ou j'ai été excessivement tendu(e) ou irritable."},{v:3,l:"D'autres remarquent que j'ai l'air tendu(e), irritable ou inquiet(e)."},{v:4,l:"Je me sens tendu(e), irritable ou inquiet(e) tout le temps."}],{groupe:"A"}),
+        qs("SIGH_Q021","QUESTION 21",[{v:0,l:"Je n'ai coché aucun des symptômes physiques cités."},{v:1,l:"Dans l'ensemble, le(s) symptôme(s) m'ont causé que très peu d'ennuis."},{v:2,l:"Dans l'ensemble, le(s) symptôme(s) m'ont causé quelques ennuis."},{v:3,l:"Dans l'ensemble, le(s) symptôme(s) m'ont causé beaucoup d'ennuis."},{v:4,l:"Dans l'ensemble, le(s) symptôme(s) a(ont) altéré mes capacités de fonctionnement."}],{groupe:"A"}),
+        qs("SIGH_Q022","QUESTION 22",[{v:0,l:"Je ne me suis pas beaucoup préoccupé(e) de ma santé physique."},{v:1,l:"Je me suis soucié(e) de tomber malade physiquement."},{v:2,l:"Je me suis tracassé(e) la plupart du temps à propos de ma santé physique."},{v:3,l:"Je me suis fréquemment plaint(e) de mon état physique, ou j'ai demandé beaucoup d'aide."},{v:4,l:"Je suis certain(e) que je souffre d’une maladie physique, même si les médecins me disent le contraire."}],{groupe:"A"}),
+        qs("SIGH_Q023","QUESTION 23",[{v:0,l:"Mon débit de langage et de pensée était normal."},{v:1,l:"Mon langage et mes mouvements étaient légèrement ralentis ou ma pensée était légèrement ralentie, ce qui perturbait mes capacités de concentration."},{v:2,l:"Mes mouvements, mon langage ou mes pensées étaient un peu plus ralentis que normalement et d'autres personnes l'ont remarqué."},{v:3,l:"Mes mouvements étaient nettement ralentis, ou mon langage et mes pensées étaient tellement ralentis que j'avais des difficultés à tenir une conversation."},{v:4,l:"Mes mouvements ou mon langage et mes pensées étaient tellement ralentis que j'avais des difficultés à penser ou à parler."}],{groupe:"A"}),
+        qs("SIGH_Q024","QUESTION 24",[{v:0,l:"Je n'ai pas été agité(e) ou sans repos."},{v:1,l:"J'avais des difficultés à rester en place, ou de temps en temps je jouais avec mes mains, mes cheveux ou autre chose."},{v:2,l:"Je ne tenais pas en place, ou je jouais souvent avec mes mains, mes cheveux ou autre chose."},{v:3,l:"J'ai eu des difficultés à rester assis(e) tranquille, et j'avais besoin de bouger la majeure partie du temps."},{v:4,l:"J'étais incapable de rester assis(e) tranquille ou je me suis tordu(e) les mains, rongé mes ongles, arraché mes cheveux, ou mordu les lèvres presque tout le temps."}],{groupe:"A"}),
+        qs("SIGH_Q025","QUESTION 25",[{v:0,l:"Je n'ai pas ce genre de baisses ou mes baisses perdurent jusqu'à l'heure du coucher."},{v:1,l:"Habituellement, les baisses temporaires étaient seulement d'intensité légère."},{v:2,l:"Habituellement, les baisses temporaires étaient d'intensité modérée."},{v:3,l:"Habituellement, les baisses temporaires étaient d'intensité sévère."}],{groupe:"B"})
       ]},
   ],
   scoring:{
-    type:'sum_no_interpretation', maxTotal:78,
-    note:'Cotation source à deux groupes (A et B) avec règle spécifique pour Q15-Q17 (score global corrigé) et total A+B. Les items incluent la métadonnée groupe (A, B ou A/B).'
+    type:'sigh_sad_sa',
+    certification:{source:'drive',status:'certifie'},
+    groupA:['SIGH_Q001','SIGH_Q002','SIGH_Q004','SIGH_Q005','SIGH_Q006','SIGH_Q011','SIGH_Q012','SIGH_Q013','SIGH_Q018','SIGH_Q019','SIGH_Q020','SIGH_Q021','SIGH_Q022','SIGH_Q023','SIGH_Q024'],
+    groupB:['SIGH_Q003','SIGH_Q007','SIGH_Q008','SIGH_Q009','SIGH_Q010','SIGH_Q014','SIGH_Q025'],
+    dualItems:['SIGH_Q015','SIGH_Q016','SIGH_Q017'],
+    maxTotal:74,
+    note:'Source Drive SIGH-SAD-SA : les questions 15 à 17 donnent un score corrigé unique reporté dans le groupe A et dans le groupe B. Si le maximum vaut 2, score corrigé = 1 ; si le score le plus élevé est 3 ou 4 à la question 17, score corrigé = 2.'
   }
 },
-
 
 Q_NEU_06: {
   id:'Q_NEU_06', titre:'Questionnaire cognitif SIIN — Évaluation fonctionnelle',
@@ -3130,57 +2880,136 @@ Q_PED_02: {
 },
 
 Q_PED_03: {
-  id:'Q_PED_03', titre:'Échelle de Conners — Version Parents (TDAH, forme courte)',
-  instructions:'Ce questionnaire est destiné aux PARENTS. Évaluez le comportement de votre enfant au cours du dernier mois. 0 = Pas du tout · 1 = Un peu · 2 = Souvent · 3 = Très souvent.',
+  id:'Q_PED_03', titre:"Échelle d'évaluation Conners 3 pour le parent",
+  instructions:"Voici des choses que des parents peuvent dire de leurs enfants. Répondre en décrivant l'enfant et ce qui s'est passé au cours du dernier mois. Lire attentivement chaque item puis indiquer à quel point il décrit bien l'enfant. Encerclez seulement une réponse pour chaque item. Il est important de répondre à tous les items. Donner la meilleure réponse possible pour les items jugés difficiles.",
   sections:[
-    { id:'A', titre:'Opposition et comportement',
+    { id:"A", titre:"Items 1 à 36",
+      description:'0 = Pas vrai du tout · 1 = Un peu vrai · 2 = Assez vrai · 3 = Très vrai',
       questions:[
-        q('CP1','S\'emporte facilement et de manière imprévisible',   [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP2','Excitable, impulsif(ve)',                            [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP3','Dérange les autres enfants',                         [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP4','N\'achève pas ce qu\'il/elle commence — courte attention', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP5','Agité(e), toujours en mouvement',                    [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP6','Inattentif(ve), facilement distrait(e)',              [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP7','N\'achève pas les devoirs ou tâches demandées',      [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
+        q("CP001","Est heureux(se), joyeux(se) et a une attitude positive.",O_CONNERS),
+        q("CP002","Oublie durant ses activités quotidiennes.",O_CONNERS),
+        q("CP003","Parle trop.",O_CONNERS),
+        q("CP004","S'inquiète de beaucoup de choses.",O_CONNERS),
+        q("CP005","Son orthographe est de mauvaise qualité.",O_CONNERS),
+        q("CP006","Il/elle sèche des cours, absent de l'école sans autorisation.",O_CONNERS),
+        q("CP007","Ne comprend pas ce qu'il/elle lit.",O_CONNERS),
+        q("CP008","Il est agréable d'être avec lui/elle.",O_CONNERS),
+        q("CP009","Mémorise bien les faits.",O_CONNERS),
+        q("CP010","N'est pas invité/e à jouer ou à sortir avec les autres.",O_CONNERS),
+        q("CP011","A forcé quelqu'un à avoir des activités sexuelles.",O_CONNERS),
+        q("CP012","A de la difficulté à demeurer concentré/e sur une chose à la fois.",O_CONNERS),
+        q("CP013","N'a pas d'amis/es.",O_CONNERS),
+        q("CP014","Se met en colère.",O_CONNERS),
+        q("CP015","Oublie des choses déjà apprises.",O_CONNERS),
+        q("CP016","Intimide, menace ou fait peur aux autres.",O_CONNERS),
+        q("CP017","Se sent sans valeur.",O_CONNERS),
+        q("CP018","Je ne peux pas comprendre ce qui le/la rend heureux/se.",O_CONNERS),
+        q("CP019","A la bougeotte, gigote.",O_CONNERS),
+        q("CP020","A de la difficulté à contrôler ses inquiétudes.",O_CONNERS),
+        q("CP021","Blâme les autres pour ses erreurs ou ses mauvais comportements.",O_CONNERS),
+        q("CP022","Est sans cœur et cruel/le.",O_CONNERS),
+        q("CP023","A une brève capacité d'attention.",O_CONNERS),
+        q("CP024","A de la difficulté à garder ses amis/es.",O_CONNERS),
+        q("CP025","Pleure souvent et facilement.",O_CONNERS),
+        q("CP026","Ne peut pas faire les choses correctement.",O_CONNERS),
+        q("CP027","Se sert d'une arme, par exemple un bâton, une brique, une bouteille brisée, un couteau ou une arme à feu.",O_CONNERS),
+        q("CP028","Évite ou n'aime pas les choses qui demandent beaucoup d'efforts et qui ne sont pas amusantes.",O_CONNERS),
+        q("CP029","Son humeur change rapidement et de manière radicale.",O_CONNERS),
+        q("CP030","Initie délibérément des batailles avec les autres.",O_CONNERS),
+        q("CP031","Fait des erreurs.",O_CONNERS),
+        q("CP032","Il est difficile de lui plaire ou de l'amuser.",O_CONNERS),
+        q("CP033","Dit la vérité, ne dit même pas de petits mensonges.",O_CONNERS),
+        q("CP034","Ne termine pas ce qu'il/elle commence.",O_CONNERS),
+        q("CP035","Ne semble pas écouter ce qui lui est dit.",O_CONNERS),
+        q("CP036","A de la difficulté en lecture.",O_CONNERS)
       ]},
-    { id:'B', titre:'Inattention et apprentissage',
+    { id:"B", titre:"Items 37 à 72",
+      description:'0 = Pas vrai du tout · 1 = Un peu vrai · 2 = Assez vrai · 3 = Très vrai',
       questions:[
-        q('CP8','Difficultés à se concentrer sur les devoirs',        [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP9','Oublie les instructions ou les consignes données',   [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP10','Perd ses affaires (cartable, clés, matériel scolaire)', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP11','A du mal à organiser ses tâches et activités',      [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP12','Évite le travail qui demande un effort soutenu',    [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP13','Difficulté à attendre son tour dans les jeux',      [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP14','Répond avant la fin de la question',                [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
+        q("CP037","A de la difficulté à débuter des tâches ou des projets.",O_CONNERS),
+        q("CP038","Doit travailler très fort pour compléter les tâches difficiles.",O_CONNERS),
+        q("CP039","Blesse physiquement les gens.",O_CONNERS),
+        q("CP040","Il faut répondre à ses demandes immédiatement : est facilement frustré.",O_CONNERS),
+        q("CP041","Est cruel/le envers les animaux.",O_CONNERS),
+        q("CP042","Il est difficile de le/la motiver, même avec des friandises ou de l'argent.",O_CONNERS),
+        q("CP043","Donne la réponse avant la fin de la question.",O_CONNERS),
+        q("CP044","A de la difficulté à se concentrer.",O_CONNERS),
+        q("CP045","Bouge constamment.",O_CONNERS),
+        q("CP046","Ment pour blesser les gens.",O_CONNERS),
+        q("CP047","Ne porte pas attention aux détails, fait des fautes d'inattention.",O_CONNERS),
+        q("CP048","Est en colère et éprouve du ressentiment.",O_CONNERS),
+        q("CP049","A de la difficulté à passer d'une activité à une autre.",O_CONNERS),
+        q("CP050","Excitable, impulsif/ve.",O_CONNERS),
+        q("CP051","A besoin d'explications supplémentaires sur les consignes.",O_CONNERS),
+        q("CP052","Devient surstimulé/e.",O_CONNERS),
+        q("CP053","Apprend les informations de manière séparée ; ne saisit pas la vue d'ensemble.",O_CONNERS),
+        q("CP054","Agit comme s'il/si elle était animé/e par un moteur.",O_CONNERS),
+        q("CP055","Dit la première chose qui lui vient à l'esprit.",O_CONNERS),
+        q("CP056","Ment afin d'éviter de faire certaines choses ou afin d'obtenir les choses qu'il/elle veut.",O_CONNERS),
+        q("CP057","Essaie de se venger.",O_CONNERS),
+        q("CP058","Vole en cachette, par exemple vol à l'étalage ou falsification.",O_CONNERS),
+        q("CP059","Embête ou ennuie délibérément les autres.",O_CONNERS),
+        q("CP060","Lit lentement et avec beaucoup d'efforts.",O_CONNERS),
+        q("CP061","A de la difficulté à attendre son tour.",O_CONNERS),
+        q("CP062","Est parmi les derniers à être choisi par une équipe ou pour un jeu.",O_CONNERS),
+        q("CP063","Complète ses projets à la dernière minute.",O_CONNERS),
+        q("CP064","Interagit bien avec les autres enfants.",O_CONNERS),
+        q("CP065","Endommage ou détruit volontairement les choses des autres.",O_CONNERS),
+        q("CP066","Semble fatigué/e, a peu d'énergie.",O_CONNERS),
+        q("CP067","Inattentif/ve, facilement distrait/e.",O_CONNERS),
+        q("CP068","Ne suit pas les consignes, même lorsqu'il/elle les comprend et essaie de coopérer.",O_CONNERS),
+        q("CP069","Court ou grimpe quand il/elle ne devrait pas le faire.",O_CONNERS),
+        q("CP070","Semble « sur les nerfs », nerveux/se, tendu/e.",O_CONNERS),
+        q("CP071","Est bruyant/e lors des jeux et des temps libres.",O_CONNERS),
+        q("CP072","Planifie bien les choses.",O_CONNERS)
       ]},
-    { id:'C', titre:'Hyperactivité à la maison',
+    { id:"C", titre:"Items 73 à 108",
+      description:'0 = Pas vrai du tout · 1 = Un peu vrai · 2 = Assez vrai · 3 = Très vrai',
       questions:[
-        q('CP15','Bouge sans cesse les mains ou les pieds',           [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP16','Quitte son siège à table ou dans d\'autres situations', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP17','Court ou grimpe de manière excessive',              [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP18','A du mal à jouer ou s\'occuper calmement',          [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP19','Parle excessivement',                               [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP20','Interrompt les conversations ou s\'immisce',        [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-      ]},
-    { id:'D', titre:'Index TDAH Parents',
-      questions:[
-        q('CP21','Relations difficiles avec les autres enfants',       [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP22','Changements d\'humeur rapides et imprévisibles',    [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP23','Facilement frustré(e)',                             [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP24','Résultats scolaires en dessous des capacités',      [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP25','Difficultés à démarrer ou terminer les devoirs',    [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP26','Manque de persévérance pour les tâches difficiles', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-        q('CP27','Perturbateur(trice) à la maison',                   [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
-      ]},
+        q("CP073","Est irritable et facilement embêté/e par les autres.",O_CONNERS),
+        q("CP074","Se comporte comme un ange.",O_CONNERS),
+        q("CP075","Oublie de remettre ses travaux complétés.",O_CONNERS),
+        q("CP076","S'enfuit de la maison pour au moins une nuit, fugue.",O_CONNERS),
+        q("CP077","S'ennuie.",O_CONNERS),
+        q("CP078","A délibérément mis le feu afin de causer des dommages.",O_CONNERS),
+        q("CP079","Ne complète pas ses travaux scolaires ou ses tâches, même lorsqu'il/elle les comprend et qu'il/elle essaie de coopérer.",O_CONNERS),
+        q("CP080","Est patient/e et satisfait/e même lorsqu'il/elle attend longtemps.",O_CONNERS),
+        q("CP081","A des crises de colère.",O_CONNERS),
+        q("CP082","N'a plus de plaisir ou d'intérêt pour les activités.",O_CONNERS),
+        q("CP083","Menace de blesser les autres.",O_CONNERS),
+        q("CP084","A de la difficulté à organiser des tâches ou des activités.",O_CONNERS),
+        q("CP085","Dérange les autres enfants.",O_CONNERS),
+        q("CP086","Jure ou utilise un langage inapproprié.",O_CONNERS),
+        q("CP087","N'arrive pas à saisir l'arithmétique.",O_CONNERS),
+        q("CP088","Abandonne facilement les tâches difficiles.",O_CONNERS),
+        q("CP089","Est déjà entré/e par effraction dans la maison, l'édifice ou la voiture de quelqu'un.",O_CONNERS),
+        q("CP090","Est désordonné/e et désorganisé/e.",O_CONNERS),
+        q("CP091","Sort tard le soir, même si c'est contre les règles.",O_CONNERS),
+        q("CP092","Ne sait pas comment se faire des amis/es.",O_CONNERS),
+        q("CP093","Quitte son siège lorsqu'il/elle devrait rester assis/e.",O_CONNERS),
+        q("CP094","Refuse activement de faire ce que les adultes lui demandent.",O_CONNERS),
+        q("CP095","A de la difficulté à demeurer concentré/e sur un travail ou un jeu pour une longue période de temps.",O_CONNERS),
+        q("CP096","Vole en confrontant quelqu'un, par exemple agression, vol de sac à main ou vol à main armée.",O_CONNERS),
+        q("CP097","Perd des choses, par exemple des travaux scolaires, des crayons, des livres, des outils ou des jouets.",O_CONNERS),
+        q("CP098","Gigote ou se tortille sur son siège.",O_CONNERS),
+        q("CP099","Agité/e ou hyperactif/ve.",O_CONNERS),
+        q("CP100","Devient irritable lorsqu'anxieux/se.",O_CONNERS),
+        q("CP101","Est facilement distrait/e par ce qu'il/elle voit ou entend.",O_CONNERS),
+        q("CP102","S'obstine avec les adultes.",O_CONNERS),
+        q("CP103","Est triste, morose ou irritable durant plusieurs journées consécutives.",O_CONNERS),
+        q("CP104","Interrompt les autres, par exemple leurs conversations ou leurs jeux.",O_CONNERS),
+        q("CP105","Est parfait/e en tout point.",O_CONNERS),
+        q("CP106","Les problèmes de votre enfant affectent gravement ses travaux scolaires ou ses notes.",O_CONNERS),
+        q("CP107","Les problèmes de votre enfant affectent gravement ses amitiés ou ses relations.",O_CONNERS),
+        q("CP108","Les problèmes de votre enfant affectent gravement votre vie familiale.",O_CONNERS)
+      ]}
   ],
   scoring:{
-    type:'subscore',
-    subScores:[
-      {id:'OPP',label:'Opposition / Impulsivité',items:['CP1','CP2','CP3','CP5','CP6'],max:15},
-      {id:'INA',label:'Inattention',              items:['CP4','CP7','CP8','CP9','CP10','CP11','CP12','CP13','CP14'],max:27},
-      {id:'HYP',label:'Hyperactivité',            items:['CP15','CP16','CP17','CP18','CP19','CP20'],max:18},
-      {id:'IDX',label:'Index TDAH Parents',       items:['CP21','CP22','CP23','CP24','CP25','CP26','CP27'],max:21},
-    ]
+    type:'sum_items',
+    certification:{source:'drive',status:'certifie'},
+    items:['CP001','CP002','CP003','CP004','CP005','CP006','CP007','CP008','CP009','CP010','CP011','CP012','CP013','CP014','CP015','CP016','CP017','CP018','CP019','CP020','CP021','CP022','CP023','CP024','CP025','CP026','CP027','CP028','CP029','CP030','CP031','CP032','CP033','CP034','CP035','CP036','CP037','CP038','CP039','CP040','CP041','CP042','CP043','CP044','CP045','CP046','CP047','CP048','CP049','CP050','CP051','CP052','CP053','CP054','CP055','CP056','CP057','CP058','CP059','CP060','CP061','CP062','CP063','CP064','CP065','CP066','CP067','CP068','CP069','CP070','CP071','CP072','CP073','CP074','CP075','CP076','CP077','CP078','CP079','CP080','CP081','CP082','CP083','CP084','CP085','CP086','CP087','CP088','CP089','CP090','CP091','CP092','CP093','CP094','CP095','CP096','CP097','CP098','CP099','CP100','CP101','CP102','CP103','CP104','CP105','CP106','CP107','CP108'],
+    maxTotal:324,
+    note:"Source Drive Conners 3 Parent : 108 items cotés 0-3 en somme brute. Les deux questions ouvertes Q109/Q110 et les informations administratives ne sont pas codées ici car l'UI patient ne prend pas en charge les champs texte dans le catalogue. Aucune conversion T-score automatisée sans tables normatives validées."
   }
 },
 
@@ -3190,126 +3019,120 @@ Q_PED_03: {
 // ════════════════════════════════════════════════════════
 
 Q_CAN_01: {
-  id:'Q_CAN_01', titre:'QLQ-C30 — Qualité de vie EORTC (cancer)',
-  instructions:'Ce questionnaire nous intéresse à vous et à votre santé. Veuillez répondre vous-même à toutes les questions en entourant le chiffre qui s\'applique le mieux à votre situation. Il n\'y a pas de bonne ou mauvaise réponse.',
+  id:'Q_CAN_01', titre:'Questionnaire QLQ-C30',
+  instructions:'Nous nous intéressons à vous et à votre santé. Répondez vous-même à toutes les questions en marquant le chiffre qui correspond le mieux à votre situation. Il n’y a pas de bonne ou de mauvaise réponse. Ces informations sont strictement confidentielles.',
   sections:[
-    { id:'A', titre:'Capacités fonctionnelles (au cours de la semaine passée)',
+    { id:'A', titre:'Cochez la case qui convient',
       description:'1 = Pas du tout · 2 = Un peu · 3 = Assez · 4 = Beaucoup',
       questions:[
-        q('QL1','Avez-vous des difficultés à faire des efforts physiques importants, comme porter un lourd sac à provisions ou une valise ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL2','Avez-vous des difficultés à faire une longue promenade ?',            [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL3','Avez-vous des difficultés à faire une courte promenade hors de chez vous ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL4','Êtes-vous obligé(e) de rester au lit ou dans un fauteuil pendant la journée ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL5','Avez-vous besoin d\'aide pour manger, vous habiller, faire votre toilette ou utiliser les toilettes ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL1","Avez-vous des difficultés à faire certains efforts physiques pénibles comme porter un sac à provisions chargé ou une valise ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL2","Avez-vous des difficultés à faire une longue promenade ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL3","Avez-vous des difficultés à faire un petit tour dehors ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL4","Etes-vous obligé(e) de rester au lit ou dans un fauteuil pendant la journée ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL5","Avez-vous besoin d’aide pour manger, vous habiller, faire votre toilette ou aller aux toilettes ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}])
       ]},
-    { id:'B', titre:'Activités quotidiennes et loisirs',
+    { id:'B', titre:'Au cours de la semaine passée',
       description:'1 = Pas du tout · 2 = Un peu · 3 = Assez · 4 = Beaucoup',
       questions:[
-        q('QL6','Avez-vous été gêné(e) pour faire votre travail ou vos activités habituelles ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL7','Avez-vous été gêné(e) dans vos activités de loisirs ?',                [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL8','Avez-vous eu le souffle court ?',                                       [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL9','Avez-vous eu mal ?',                                                    [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL10','Avez-vous eu besoin de repos ?',                                       [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL6","Avez-vous été gêné(e) pour effectuer votre travail ou vos activités de tous les jours ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL7","Avez-vous été gêné(e) dans vos activités de loisirs ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL8","Avez-vous le souffle court ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL9","Avez-vous ressenti de la douleur ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL10","Avez-vous eu besoin de repos ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL11","Avez-vous eu des difficultés à dormir ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL12","Vous êtes-vous senti(e) faible ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL13","Avez-vous manqué d’appétit ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL14","Avez-vous eu des nausées (mal au cœur) ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL15","Avez-vous vomi ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL16","Avez-vous été constipée ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL17","Avez-vous eu de la diarrhée ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL18","Avez-vous été fatigué(e) ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL19","Des douleurs ont-elles perturbé vos activités quotidiennes ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL20","Avez-vous eu des difficultés à vous concentrer sur certaines choses, par exemple, pour lire le journal ou regarder la télévision ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL21","Vous êtes-vous senti(e) tendu(e) ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL22","Vous êtes-vous fait du souci ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL23","Vous êtes-vous senti(e) irritable ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL24","Vous êtes-vous senti(e) déprimé(e) ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL25","Avez-vous des difficultés à vous souvenir de certaines choses ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL26","Votre état physique ou votre traitement médical vous ont-ils gêné(e) dans votre vie familiale ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL27","Votre état physique ou votre traitement médical vous ont-ils gêné(e) dans vos activités sociales (ex : sortie entre amis, cinéma…) ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("QL28","Votre état physique ou votre traitement médical vous ont-ils causé des problèmes financiers ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}])
       ]},
-    { id:'C', titre:'Symptômes physiques',
-      description:'1 = Pas du tout · 2 = Un peu · 3 = Assez · 4 = Beaucoup',
+    { id:'C', titre:'Échelle globale subjective',
+      description:'Pour les questions suivantes, veuillez répondre en marquant le chiffre entre 1 et 7 qui s’applique le mieux à votre situation.',
       questions:[
-        q('QL11','Avez-vous eu des difficultés pour dormir ?',                           [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL12','Avez-vous eu une sensation de faiblesse ?',                            [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL13','Avez-vous manqué d\'appétit ?',                                        [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL14','Avez-vous eu des nausées ?',                                           [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL15','Avez-vous vomi ?',                                                     [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL16','Avez-vous été constipé(e) ?',                                          [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL17','Avez-vous eu de la diarrhée ?',                                        [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL18','Étiez-vous fatigué(e) ?',                                              [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL19','La douleur a-t-elle entravé vos activités quotidiennes ?',             [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL20','Avez-vous eu des difficultés à vous concentrer sur certaines choses, comme lire un journal ou regarder la télévision ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL21','Vous êtes-vous senti(e) tendu(e) ?',                                  [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL22','Vous êtes-vous fait(e) du souci ?',                                   [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL23','Vous êtes-vous senti(e) irritable ?',                                  [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL24','Vous êtes-vous senti(e) déprimé(e) ?',                                [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL25','Avez-vous eu des difficultés à vous souvenir de certaines choses ?',  [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL26','Votre état physique ou votre traitement médical ont-ils perturbé votre vie de famille ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL27','Votre état physique ou votre traitement médical ont-ils perturbé vos activités sociales ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('QL28','Votre état physique ou votre traitement médical vous ont-ils causé des difficultés financières ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-      ]},
-    { id:'D', titre:'Qualité de vie globale (la semaine passée)',
-      description:'1 = Très mauvaise · 7 = Excellente',
-      questions:[
-        qs('QL29','Comment évalueriez-vous votre état de santé global au cours de la semaine passée ?',
+        qs("QL29","Comment évalueriez-vous votre état de santé au cours de la semaine passée ?",
           [{v:1,l:'1 — Très mauvais'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4'},{v:5,l:'5'},{v:6,l:'6'},{v:7,l:'7 — Excellent'}]),
-        qs('QL30','Comment évalueriez-vous votre qualité de vie globale au cours de la semaine passée ?',
-          [{v:1,l:'1 — Très mauvaise'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4'},{v:5,l:'5'},{v:6,l:'6'},{v:7,l:'7 — Excellente'}]),
+        qs("QL30","Comment évalueriez-vous l’ensemble de votre qualité de vie au cours de la semaine passée ?",
+          [{v:1,l:'1 — Très mauvais'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4'},{v:5,l:'5'},{v:6,l:'6'},{v:7,l:'7 — Excellent'}])
       ]},
   ],
   scoring:{
-    type:'subscore',
-    subScores:[
-      {id:'PF',  label:'Fonction physique',    items:['QL1','QL2','QL3','QL4','QL5'], max:20},
-      {id:'RF',  label:'Fonction dans les rôles', items:['QL6','QL7'], max:8},
-      {id:'EF',  label:'Fonction émotionnelle', items:['QL21','QL22','QL23','QL24'], max:16},
-      {id:'CF',  label:'Fonction cognitive',   items:['QL20','QL25'], max:8},
-      {id:'SF',  label:'Fonction sociale',     items:['QL26','QL27'], max:8},
-      {id:'FA',  label:'Fatigue',              items:['QL10','QL12','QL18'], max:12},
-      {id:'NV',  label:'Nausées/Vomissements', items:['QL14','QL15'], max:8},
-      {id:'PA',  label:'Douleur',              items:['QL9','QL19'], max:8},
-      {id:'QL',  label:'Qualité de vie globale', items:['QL29','QL30'], max:14},
+    type:'sum_items',
+    certification:{source:'drive',status:'ambigu'},
+    items:['QL1','QL2','QL3','QL4','QL5','QL6','QL7','QL8','QL9','QL10','QL11','QL12','QL13','QL14','QL15','QL16','QL17','QL18','QL19','QL20','QL21','QL22','QL23','QL24','QL25','QL26','QL27','QL28'],
+    maxTotal:112,
+    note:'Source Drive QLQ-C30 : score brut de la première partie détaillée Q001-Q028, cotée 28-112. Q029-Q030 complètent le recueil global subjectif hors score détaillé. Point de vigilance source : seuil < 28 incohérent avec un score minimal de 28.',
+    interpretation:[
+      {min:0, max:28, label:'Aucun problème signalé (seuil source < 28 incohérent)', color:'success'},
+      {min:29,max:56, label:'Rares problèmes occasionnels', color:'info'},
+      {min:57,max:84, label:'Problèmes à prendre en compte', color:'warning'},
+      {min:85,max:112,label:'Problèmes ayant un fort impact au quotidien', color:'danger'},
     ]
   }
 },
 
 Q_CAN_02: {
-  id:'Q_CAN_02', titre:'QLQ-BR23 — Module cancer du sein (EORTC)',
-  instructions:'Ce module complémentaire au QLQ-C30 porte sur des symptômes spécifiques au cancer du sein et à son traitement. Répondez pour la semaine passée.',
+  id:'Q_CAN_02', titre:'Questionnaire QLQ-BR23',
+  instructions:'Les patients rapportent parfois les symptômes ou problèmes suivants. Pourriez-vous indiquer, s’il vous plaît, si, durant la semaine passée, vous avez été affecté(e) par l’un de ces symptômes ou problèmes.',
   sections:[
-    { id:'A', titre:'Symptômes liés au traitement',
+    { id:'A', titre:'Au cours de la semaine passée',
       description:'1 = Pas du tout · 2 = Un peu · 3 = Assez · 4 = Beaucoup',
       questions:[
-        q('BR1','Avez-vous eu la bouche sèche ?',                      [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),  // COR_BR23_01
-        q('BR2','La nourriture avait-elle un goût inhabituel ?',        [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),  // COR_BR23_02
-        q('BR3','Vos yeux ont-ils été irrités (douleur ou larmoiements) ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('BR4','Avez-vous perdu des cheveux ?',                        [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('BR5','Cela vous a-t-il perturbé(e) de perdre vos cheveux ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}],{conditionnel:'BR4>=2'}), // COR_BR23_15
-        q('BR6','Vous êtes-vous senti(e) malade ou dans un mauvais état de santé ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('BR7','Avez-vous eu des bouffées de chaleur ?',              [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('BR8','Avez-vous eu des maux de tête ?',                     [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR1","Avez-vous eu la bouche sèche ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR2","La nourriture et la boisson avaient-elles un goût inhabituel ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR3","Est-ce que vos yeux étaient irrités, larmoyants, ou douloureux ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR4","Avez-vous perdu des cheveux ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR5","Répondez à cette question uniquement si vous avez perdu des cheveux : la perte de vos cheveux vous a-t-elle contrariée ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}],{conditionnel:'BR4>=2'}),
+        q("BR6","Vous êtes-vous sentie malade ou souffrante ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR7","Avez-vous eu des bouffées de chaleur ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR8","Avez-vous eu mal à la tête ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR9","Vous êtes-vous sentie moins attirante du fait de votre maladie ou de votre traitement ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR10","Vous êtes-vous sentie moins féminine du fait de votre maladie ou de votre traitement ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR11","Avez-vous trouvé difficile de vous regarder nue ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR12","Votre corps vous a-t-il déplu ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR13","Vous êtes-vous inquiétée pour votre santé pour l’avenir ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}])
       ]},
-    { id:'B', titre:'Image corporelle et perspectives d\'avenir',
+    { id:'B', titre:'Au cours des 4 dernières semaines',
       description:'1 = Pas du tout · 2 = Un peu · 3 = Assez · 4 = Beaucoup',
       questions:[
-        q('BR9', 'Vous êtes-vous sentie moins attirante du fait de votre maladie ?',    [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]), // COR_BR23_03
-        q('BR10','Vous êtes-vous sentie moins féminine du fait de votre maladie ?',     [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]), // COR_BR23_04
-        q('BR11','Avez-vous du mal à vous regarder nue ?',                               [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]), // COR_BR23_05
-        q('BR12','Votre corps vous a-t-il déplu ?',                                      [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]), // COR_BR23_06
-        q('BR13','Vous êtes-vous inquiétée pour votre santé ou votre avenir ?',          [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]), // COR_BR23_07/11 — FUT
-        q('BR14','Vous êtes-vous intéressée à la sexualité ?',                           [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]), // COR_BR23_08
-        q('BR15','Avez-vous eu une activité sexuelle ? (avec ou sans rapports)',          [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]), // COR_BR23_09
-        q('BR16','Avez-vous pris du plaisir dans vos activités sexuelles ?',             [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}],{conditionnel:'BR15>=2'}), // COR_BR23_10/14
+        q("BR14","Dans quelle mesure vous êtes-vous intéressée à la sexualité ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR15","Avez-vous eu une activité sexuelle quelconque (avec ou sans rapport) ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR16","Répondez à cette question uniquement si vous avez eu une activité sexuelle : dans quelle mesure l’activité sexuelle vous a-t-elle procuré du plaisir ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}],{conditionnel:'BR15>=2'})
       ]},
-    { id:'C', titre:'Symptômes du bras et du sein',
+    { id:'C', titre:'Au cours de la semaine passée',
       description:'1 = Pas du tout · 2 = Un peu · 3 = Assez · 4 = Beaucoup',
       questions:[
-        q('BR17','Avez-vous eu des douleurs dans votre bras ou votre épaule ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('BR18','Avez-vous eu un gonflement du bras ou de la main ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('BR19','Était-il difficile de lever le bras ou de le bouger latéralement ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('BR20','Avez-vous eu des douleurs dans la région du sein affecté ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('BR21','La région du sein affecté a-t-elle été gonflée ?',   [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('BR22','La région du sein affecté a-t-elle été hypersensible ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
-        q('BR23','Avez-vous eu des problèmes cutanés dans la région du sein affecté (démangeaisons, sécheresse, desquamation) ?', [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR17","Avez-vous eu mal au bras ou à l’épaule ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR18","Avez-vous eu la main ou le bras enflé ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR19","Avez-vous eu du mal à lever le bras ou à le déplacer latéralement ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR20","Avez-vous ressenti des douleurs dans la région du sein traité ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR21","La région de votre sein traité était-elle enflée ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR22","La région de votre sein traité était-elle particulièrement sensible ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}]),
+        q("BR23","Avez-vous eu des problèmes de peau dans la région de votre sein traité (démangeaisons, peau qui pèle, peau sèche) ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}])
       ]},
   ],
   scoring:{
-    // 15 corrections certifiées v2 — 23/06/2026
-    type:'subscore',
-    subScores:[
-      {id:'SYTT',label:'Effets secondaires traitement systémique',items:['BR1','BR2','BR3','BR6','BR7','BR8'],max:24},
-      {id:'AL',  label:'Alopécie',items:['BR4','BR5'],max:8,conditionnel:'BR5:BR4>=2'},       // COR_BR23_13
-      {id:'BI',  label:'Image corporelle',items:['BR9','BR10','BR11','BR12'],max:16},
-      {id:'FUT', label:'Perspectives d\'avenir',items:['BR13'],max:4},                         // COR_BR23_11
-      {id:'SEF', label:'Fonctionnement sexuel',items:['BR14','BR15'],max:8},                   // COR_BR23_12
-      {id:'SEJ', label:'Satisfaction sexuelle',items:['BR16'],max:4,conditionnel:'BR16:BR15>=2'}, // COR_BR23_14
-      {id:'ARM', label:'Symptômes du bras',items:['BR17','BR18','BR19'],max:12},
-      {id:'BS',  label:'Symptômes du sein',items:['BR20','BR21','BR22','BR23'],max:16},
+    type:'sum_items',
+    certification:{source:'drive',status:'ambigu'},
+    items:['BR1','BR2','BR3','BR4','BR5','BR6','BR7','BR8','BR9','BR10','BR11','BR12','BR13','BR14','BR15','BR16','BR17','BR18','BR19','BR20','BR21','BR22','BR23'],
+    maxTotal:92,
+    note:'Source Drive QLQ-BR23 : somme brute Q001-Q023, cotée 23-92. Les items Q005 et Q016 sont conditionnels ; la source ne précise pas de cotation stricte quand ils sont masqués, ils sont donc retournés en notApplicable.',
+    interpretation:[
+      {min:0, max:13, label:'Aucun problème signalé (seuil source < 14 incohérent)', color:'success'},
+      {min:14,max:46, label:'Rares problèmes occasionnels', color:'info'},
+      {min:47,max:69, label:'Problèmes à prendre en compte', color:'warning'},
+      {min:70,max:92, label:'Problèmes ayant un fort impact au quotidien', color:'danger'},
     ]
   }
 },
@@ -3435,6 +3258,67 @@ export function calculateScore(idQ, answers) {
     return {type:'sum_no_interpretation', total, maxTotal: sc.maxTotal, interpretation: null};
   }
 
+
+  // ── SUM_ITEMS (source Drive) ─────────────────────────
+  if (sc.type === 'sum_items') {
+    const items = sc.items || allQ.map(q => q.id);
+    let total = 0;
+    let missing = 0;
+    const missingIds = [];
+    const notApplicable = [];
+    items.forEach(id => {
+      const q = allQ.find(q => q.id === id);
+      if (q && q.conditionnel && !evalConditionnel(q.conditionnel)) {
+        notApplicable.push(id);
+        return;
+      }
+      const v = getVal(id);
+      if (v === null) {
+        missing++;
+        missingIds.push(id);
+        return;
+      }
+      total += v;
+    });
+    const interp = sc.interpretation ? interpretRanges(total, sc.interpretation) : null;
+    return {type:'sum_items', total, maxTotal: sc.maxTotal, missing, missingIds, notApplicable, interpretation: interp, note: sc.note || null, certification: sc.certification || null};
+  }
+
+  // ── SIGH-SAD-SA (source Drive) ───────────────────────
+  if (sc.type === 'sigh_sad_sa') {
+    const scoreIds = [...(sc.groupA || []), ...(sc.groupB || []), ...(sc.dualItems || [])];
+    const missingIds = scoreIds.filter(id => getVal(id) === null);
+    const sumIds = ids => ids.reduce((sum, id) => sum + (getVal(id) || 0), 0);
+    const q15 = getVal('SIGH_Q015') || 0;
+    const q16 = getVal('SIGH_Q016') || 0;
+    const q17 = getVal('SIGH_Q017') || 0;
+    const dualRawMax = Math.max(q15, q16, q17);
+    let scoreDual1517 = dualRawMax;
+    if (q17 >= 3 && q17 >= q15 && q17 >= q16) scoreDual1517 = 2;
+    else if (dualRawMax === 2) scoreDual1517 = 1;
+    const scoreGroupeA = sumIds(sc.groupA || []) + scoreDual1517;
+    const scoreGroupeB = sumIds(sc.groupB || []) + scoreDual1517;
+    const total = scoreGroupeA + scoreGroupeB;
+    return {
+      type:'sigh_sad_sa',
+      scoreGroupeA,
+      scoreGroupeB,
+      scoreDual1517,
+      dualRawMax,
+      total,
+      maxTotal: sc.maxTotal,
+      missing: missingIds.length,
+      missingIds,
+      subScores:[
+        {id:'A', label:'Groupe A', total: scoreGroupeA},
+        {id:'B', label:'Groupe B', total: scoreGroupeB},
+        {id:'Q15_Q17', label:'Score corrigé questions 15 à 17', total: scoreDual1517},
+      ],
+      note: sc.note || null,
+      certification: sc.certification || null
+    };
+  }
+
   // ── BMS_AVERAGE ──────────────────────────────────────
   if (sc.type === 'bms_average') {
     const items = allQ.map(q => q.id);
@@ -3492,6 +3376,7 @@ export function calculateScore(idQ, answers) {
     });
     const globalTotal = subResults.reduce((s, r) => s + r.total, 0);
 
+    // Sortie enrichie pour Monnier : calories de base = protéines (g/j) x 24
     if (def.id === 'Q_ALI_03') {
       const prot = subResults.find(s => s.id === 'MONNIER_PROT');
       const calSup = subResults.find(s => s.id === 'MONNIER_CAL_SUP');
@@ -3513,6 +3398,51 @@ export function calculateScore(idQ, answers) {
     }
 
     return {type:'subscore', subScores: subResults, total: globalTotal};
+  }
+
+  // ── EORTC QLQ ───────────────────────────────────────
+  // Source : EORTC scoring manuals. Raw score = moyenne des items renseignés ;
+  // score 0-100 direct = ((RS-1)/range)*100 ; inverse = (1-(RS-1)/range)*100.
+  if (sc.type === 'eortc') {
+    const subResults = sc.subScores.map(sub => {
+      const activeItems = sub.items.filter(id => {
+        const q = allQ.find(q => q.id === id);
+        return !(q && q.conditionnel && !evalConditionnel(q.conditionnel));
+      });
+      let rawTotal = 0;
+      let answered = 0;
+      activeItems.forEach(id => {
+        const v = getVal(id);
+        if (v === null) return;
+        rawTotal += v;
+        answered++;
+      });
+      const rawMean = answered ? rawTotal / answered : null;
+      const range = sub.range || 3;
+      let score = null;
+      if (rawMean !== null) {
+        const direct = ((rawMean - 1) / range) * 100;
+        score = sub.transform === 'inverse' ? 100 - direct : direct;
+        score = Number(Math.max(0, Math.min(100, score)).toFixed(1));
+      }
+      return {
+        id: sub.id,
+        label: sub.label,
+        total: score,
+        score,
+        rawTotal,
+        rawMean: rawMean === null ? null : Number(rawMean.toFixed(2)),
+        answered,
+        missing: activeItems.length - answered,
+        max: 100,
+        transform: sub.transform
+      };
+    });
+    const scored = subResults.filter(r => r.score !== null);
+    const total = scored.length
+      ? Number((scored.reduce((sum, r) => sum + r.score, 0) / scored.length).toFixed(1))
+      : null;
+    return {type:'eortc', subScores: subResults, total, maxTotal:100};
   }
 
   // ── GROUP_MAJORITY (Q_STR_01) ────────────────────────
@@ -4017,4 +3947,3 @@ export function calculateScore(idQ, answers) {
   return {error: `Type de scoring non implémenté : ${sc.type}`};
 
 } // fin calculateScore
-

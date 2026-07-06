@@ -88,7 +88,7 @@ model SyntheseIA {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  patient       Patient        @relation(fields: [idPatient], references: [idPatient])
+  patient       Patient         @relation(fields: [idPatient], references: [idPatient])
   auditEntrees  AuditSynthese[]
   bookletEnvois BookletEnvoi[]
 
@@ -163,4 +163,186 @@ model NutrientAxisWeight {
   neuroAxis NeuroAxis @relation(fields: [axisCode], references: [axisCode])
 
   @@map("nutrient_axis_weight")
+}
+
+// Moteur d'intention clinique — couche clinique propriétaire (référentiel,
+// aucune donnée patient). V1 simplifiée : mapping direct 1 ingrédient par
+// règle, sans options interchangeables ni conflits symétriques (différés
+// V2). Cf. docs/claude/MOTEUR_INTENTION_CLINIQUE_CONTEXTE.md.
+
+model SupplementIngredient {
+  id        String   @id @default(cuid())
+  code      String   @unique @map("code")
+  nomFr     String   @map("nom_fr")
+  actif     Boolean  @default(true) @map("actif")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  formes               SupplementIngredientForme[]
+  clinicalRules        ClinicalRule[]
+  functionalThresholds IngredientFunctionalThreshold[]
+
+  @@map("supplement_ingredients")
+}
+
+model SupplementIngredientForme {
+  id           String   @id @default(cuid())
+  ingredientId String   @map("ingredient_id")
+  code         String   @map("code")
+  labelFr      String   @map("label_fr")
+  actif        Boolean  @default(true) @map("actif")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  ingredient    SupplementIngredient @relation(fields: [ingredientId], references: [id])
+  clinicalRules ClinicalRule[]
+
+  @@unique([ingredientId, code])
+  @@map("supplement_ingredient_formes")
+}
+
+model SupplementSourceReference {
+  id        String   @id @default(cuid())
+  citation  String   @map("citation")
+  lienUrl   String?  @map("lien_url")
+  actif     Boolean  @default(true) @map("actif")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  clinicalRules        ClinicalRule[]
+  functionalThresholds IngredientFunctionalThreshold[]
+
+  @@map("supplement_source_references")
+}
+
+model SupplementSafetyAlert {
+  id           String   @id @default(cuid())
+  code         String   @unique @map("code")
+  messageFr    String   @map("message_fr")
+  niveauAlerte String   @map("niveau_alerte")
+  actif        Boolean  @default(true) @map("actif")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  functionalThresholds IngredientFunctionalThreshold[]
+
+  @@map("supplement_safety_alerts")
+}
+
+model ClinicalIntentTag {
+  id            String   @id @default(cuid())
+  code          String   @unique @map("code")
+  labelFr       String   @map("label_fr")
+  categorie     String   @map("categorie")
+  synonymes     String[] @default([]) @map("synonymes")
+  actif         Boolean  @default(true) @map("actif")
+  notesInternes String?  @map("notes_internes")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  clinicalRules ClinicalRule[]
+
+  @@index([categorie])
+  @@map("clinical_intent_tags")
+}
+
+model ClinicalCriterion {
+  id        String   @id @default(cuid())
+  code      String   @unique @map("code")
+  labelFr   String   @map("label_fr")
+  categorie String?  @map("categorie")
+  actif     Boolean  @default(true) @map("actif")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("clinical_criteria")
+}
+
+model FunctionalCategory {
+  id          String   @id @default(cuid())
+  code        String   @unique @map("code")
+  labelFr     String   @map("label_fr")
+  description String?  @map("description")
+  actif       Boolean  @default(true) @map("actif")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  functionalThresholds IngredientFunctionalThreshold[]
+
+  @@map("functional_categories")
+}
+
+model ClinicalRule {
+  id                      String @id @default(cuid())
+  intentTagId             String @map("intent_tag_id")
+  typeRegle               String @map("type_regle")
+  poids                   Int    @map("poids")
+  justification           String @map("justification")
+  conditionSupplementaire Json?  @map("condition_supplementaire")
+
+  ingredientId            String  @map("ingredient_id")
+  formePrefereeId         String? @map("forme_preferee_id")
+  doseCibleBasse          Float?  @map("dose_cible_basse")
+  doseCibleHaute          Float?  @map("dose_cible_haute")
+  gradePreuveScientifique String  @map("grade_preuve_scientifique")
+  sourceReferenceId       String  @map("source_reference_id")
+
+  versionRegle Int       @default(1) @map("version_regle")
+  actif        Boolean   @default(true) @map("actif")
+  creeLe       DateTime  @default(now()) @map("cree_le")
+  validePar    String?   @map("valide_par")
+  valideLe     DateTime? @map("valide_le")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  intentTag       ClinicalIntentTag          @relation(fields: [intentTagId], references: [id])
+  ingredient      SupplementIngredient       @relation(fields: [ingredientId], references: [id])
+  formePreferee   SupplementIngredientForme? @relation(fields: [formePrefereeId], references: [id])
+  sourceReference SupplementSourceReference  @relation(fields: [sourceReferenceId], references: [id])
+
+  @@index([intentTagId])
+  @@index([ingredientId])
+  @@map("clinical_rules")
+}
+
+model IngredientFunctionalThreshold {
+  id                       String   @id @default(cuid())
+  ingredientId             String   @map("ingredient_id")
+  categorieFonctionnelleId String   @map("categorie_fonctionnelle_id")
+  seuilDoseBasse           Float?   @map("seuil_dose_basse")
+  seuilDoseHaute           Float?   @map("seuil_dose_haute")
+  unite                    String   @map("unite")
+  contexteAdditionnel      Json?    @map("contexte_additionnel")
+  gradePreuveScientifique  String   @map("grade_preuve_scientifique")
+  sourceReferenceId        String   @map("source_reference_id")
+  basculeRisque            Boolean  @default(false) @map("bascule_risque")
+  safetyAlertId            String?  @map("safety_alert_id")
+  actif                    Boolean  @default(true) @map("actif")
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt @map("updated_at")
+
+  ingredient             SupplementIngredient      @relation(fields: [ingredientId], references: [id])
+  categorieFonctionnelle FunctionalCategory        @relation(fields: [categorieFonctionnelleId], references: [id])
+  sourceReference        SupplementSourceReference @relation(fields: [sourceReferenceId], references: [id])
+  safetyAlert            SupplementSafetyAlert?    @relation(fields: [safetyAlertId], references: [id])
+
+  @@index([ingredientId, categorieFonctionnelleId])
+  @@map("ingredient_functional_thresholds")
+}
+
+model ProtocolReviewFlag {
+  id                     String    @id @default(cuid())
+  protocolDraftId        String    @map("protocol_draft_id")
+  typeFlag               String    @map("type_flag")
+  ingredientsConcernes   String[]  @default([]) @map("ingredients_concernes")
+  niveauAlerte           String    @map("niveau_alerte")
+  message                String    @map("message")
+  suggestionAction       String    @map("suggestion_action")
+  statut                 String    @default("ouvert") @map("statut")
+  justificationPraticien String?   @map("justification_praticien")
+  traitePar              String?   @map("traite_par")
+  traiteLe               DateTime? @map("traite_le")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  @@index([protocolDraftId])
+  @@map("protocol_review_flags")
 }
