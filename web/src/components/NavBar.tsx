@@ -36,6 +36,12 @@ export function NavBar({ email }: NavBarProps) {
         >
           Synthèse IA
         </Link>
+        <Link
+          href="/dashboard/parametres"
+          className="text-sm text-muted-foreground hover:text-foreground transition"
+        >
+          Paramètres
+        </Link>
         <span className="text-sm text-muted-foreground hidden sm:block">{email}</span>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
