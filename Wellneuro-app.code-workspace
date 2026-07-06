@@ -27,7 +27,8 @@
     "tailwindCSS.includeLanguages": {
       "typescript": "javascript",
       "typescriptreact": "javascript"
-    }
+    },
+    "claudeCodeChat.permissions.yoloMode": true
   },
   "extensions": {
     "recommendations": [

@@ -65,7 +65,7 @@ Variables obligatoires côté Vercel :
 - `NEXTAUTH_SECRET`
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
-- `DATABASE_URL` (pooler Supabase)
+- `DATABASE_URL` (pooler Supabase, avec `sslmode=require` et `uselibpqcompat=true`)
 - `SHEET_ID` (encore utilisé par plusieurs routes praticien, voir ci-dessus)
 - `SMTP_URL`
 - `ANTHROPIC_API_KEY`

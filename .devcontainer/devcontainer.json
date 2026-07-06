@@ -2,6 +2,10 @@
   "name": "wellneuro-app — Dev",
   "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
   "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": true
+    },
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "postCreateCommand": "cd web && npm install",
@@ -15,7 +19,9 @@
       ]
     }
   },
-  "forwardPorts": [3000],
+  "forwardPorts": [
+    3000
+  ],
   "portsAttributes": {
     "3000": {
       "label": "Next.js dev",
@@ -24,5 +30,12 @@
   },
   "remoteEnv": {
     "NODE_ENV": "development"
-  }
+  },
+  "privileged": true,
+  "securityOpt": [
+    "seccomp=unconfined"
+  ],
+  "runArgs": [
+    "--init"
+  ]
 }
