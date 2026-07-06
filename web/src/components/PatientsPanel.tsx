@@ -40,6 +40,33 @@ function StatusBadge({ value }: { value: string }) {
   return <Badge variant={variant}>{status}</Badge>;
 }
 
+type ScoreCertification = {
+  source?: string;
+  status?: string;
+};
+
+function getArrayField(scores: Record<string, unknown> | null, key: string): string[] {
+  const value = scores?.[key];
+  return Array.isArray(value) ? value.map(String) : [];
+}
+
+function certificationBadge(certification: ScoreCertification | null) {
+  if (!certification) return null;
+  if (certification.source === 'drive' && certification.status === 'certifie') {
+    return { label: 'Certifié Drive', variant: 'success' as BadgeVariant };
+  }
+  if (certification.source === 'drive' && certification.status === 'ambigu') {
+    return { label: 'Drive ambigu', variant: 'warning' as BadgeVariant };
+  }
+  if (certification.status === 'a_verifier') {
+    return { label: 'À vérifier', variant: 'warning' as BadgeVariant };
+  }
+  if (certification.status === 'non_score') {
+    return { label: 'Non scoré', variant: 'neutral' as BadgeVariant };
+  }
+  return { label: 'Non certifié', variant: 'neutral' as BadgeVariant };
+}
+
 type EditPatientState = {
   idPatient: string;
   telephone: string;
@@ -443,27 +470,57 @@ export function PatientsPanel() {
                     <th className="px-4 py-2 text-left">Questionnaire</th>
                     <th className="px-4 py-2 text-left">Score</th>
                     <th className="px-4 py-2 text-left">Interprétation</th>
+                    <th className="px-4 py-2 text-left">Qualité</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {reponses.map(r => (
-                    <tr key={r.idReponse} className="border-t border-border">
-                      <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">
-                        {r.dateSoumission ? new Date(r.dateSoumission).toLocaleDateString('fr-FR') : '—'}
-                      </td>
-                      <td className="px-4 py-2 font-medium">{r.titre || r.idQuestionnaire || '—'}</td>
-                      <td className="px-4 py-2">
-                        {r.scorePrincipal !== null ? (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                            {r.scorePrincipal}
-                          </span>
-                        ) : '—'}
-                      </td>
-                      <td className="px-4 py-2 text-muted-foreground max-w-xs truncate" title={r.interpretation}>
-                        {r.interpretation || '—'}
-                      </td>
-                    </tr>
-                  ))}
+                  {reponses.map(r => {
+                    const scores = r.scoresParsed;
+                    const certification = certificationBadge((scores?.certification as ScoreCertification | undefined) ?? null);
+                    const missingIds = getArrayField(scores, 'missingIds');
+                    const notApplicable = getArrayField(scores, 'notApplicable');
+                    const note = typeof scores?.note === 'string' ? scores.note : '';
+                    return (
+                      <tr key={r.idReponse} className="border-t border-border align-top">
+                        <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">
+                          {r.dateSoumission ? new Date(r.dateSoumission).toLocaleDateString('fr-FR') : '—'}
+                        </td>
+                        <td className="px-4 py-2 font-medium">
+                          <div>{r.titre || r.idQuestionnaire || '—'}</div>
+                          {note && (
+                            <div className="mt-1 text-xs font-normal text-muted-foreground max-w-md" title={note}>
+                              {note}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-2">
+                          {r.scorePrincipal !== null ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                              {r.scorePrincipal}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-2 text-muted-foreground max-w-xs truncate" title={r.interpretation}>
+                          {r.interpretation || '—'}
+                        </td>
+                        <td className="px-4 py-2">
+                          <div className="flex flex-wrap gap-1.5">
+                            {certification ? (
+                              <Badge variant={certification.variant}>{certification.label}</Badge>
+                            ) : (
+                              <Badge variant="neutral">Historique</Badge>
+                            )}
+                            {missingIds.length > 0 && (
+                              <Badge variant="warning">{missingIds.length} manquant(s)</Badge>
+                            )}
+                            {notApplicable.length > 0 && (
+                              <Badge variant="neutral">{notApplicable.length} n/a</Badge>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
