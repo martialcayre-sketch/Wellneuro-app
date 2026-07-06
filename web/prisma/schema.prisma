@@ -125,3 +125,42 @@ model BookletEnvoi {
 
   @@map("booklet_envois")
 }
+
+// Boussole alimentaire — couche clinique propriétaire (référentiel, aucune
+// donnée patient). Cf. docs/claude/BOUSSOLE_ALIMENTAIRE_CONTEXTE.md §2.2, §5.2.
+model NeuroAxis {
+  id             String   @id @default(cuid())
+  axisCode       String   @unique @map("axis_code")
+  labelPatient   String   @map("label_patient")
+  labelPraticien String   @map("label_praticien")
+  description    String?  @map("description")
+  besoinNiveau1  Int?     @map("besoin_niveau1")
+  besoinNiveau2  Int?     @map("besoin_niveau2")
+  niveauPreuve   String   @map("niveau_preuve")
+  versionMapping String   @default("v1") @map("version_mapping")
+  actif          Boolean  @default(true) @map("actif")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  poids NutrientAxisWeight[]
+
+  @@map("neuro_axis")
+}
+
+model NutrientAxisWeight {
+  id             String   @id @default(cuid())
+  axisCode       String   @map("axis_code")
+  nutrientCode   String   @map("nutrient_code")
+  direction      String   @map("direction")
+  poids          Float    @map("poids")
+  cofacteurGroup String?  @map("cofacteur_group")
+  sourceRef      String   @map("source_ref")
+  seuilReference String?  @map("seuil_reference")
+  versionMapping String   @default("v1") @map("version_mapping")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  neuroAxis NeuroAxis @relation(fields: [axisCode], references: [axisCode])
+
+  @@map("nutrient_axis_weight")
+}
