@@ -102,3 +102,27 @@ commit/push de la branche.
 courte dédiée à ce squelette une fois validé ; anticiper la bascule vers
 le R8 officiel (magic link + passkeys, E3) en réutilisant le gating déjà
 posé ici plutôt qu'en le redupliquant.
+
+## 2026-07-06 — R8-lite mergé en prod + Boussole §9 tranché + schéma neuro_axis
+
+**Décisions prises** : R8-lite (consentement/verrouillage) commité, mergé
+et poussé sur `main`. Les 12 décisions ouvertes de `BOUSSOLE_ALIMENTAIRE_CONTEXTE.md`
+§9 tranchées avec l'utilisateur : MVP en vertical slice (besoin 1 seul,
+~12 aliments vedettes), pondération clinique du besoin 2 (fer/B9/B12
+prioritaires), 3 axes Niveau 2 nommés dès V1 (Calme/stress,
+Microbiote/digestif, Clarté cognitive), signaux Niveau 2 affichés au
+patient dès V1, chronobiologie différée après le MVP. Branche
+`feat/e1-neuro-axes-schema` livrée : tables `neuro_axis` et
+`nutrient_axis_weight`, migration appliquée en local, mergée sur `main`.
+
+**Options écartées** : `web/src/lib/questions.ts` (rewrite + conversion
+CRLF) et `clone_env_vars.py` exclus de tous les commits — travaux non
+liés, laissés tels quels dans l'arbre.
+
+**Prochaine action prioritaire** : `feat/e1-mapping-seed-v1`, scopée au
+seul besoin 1 (vertical slice).
+
+**Questions ouvertes** : sort de `questions.ts`/`clone_env_vars.py` ;
+`seuil_reference` en `String?` vs `Float?` (choisi String pour préserver
+l'unité, à reconfirmer) ; contrainte d'exclusivité besoin_niveau1/2 non
+posée en base (validation applicative seulement).
