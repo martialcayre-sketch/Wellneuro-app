@@ -132,6 +132,53 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
   }
 }
 
+export type PatchAssignationResponse = {
+  success: boolean;
+  error?: string;
+  reason?: 'unauthenticated' | 'invalid_payload' | 'not_found' | 'exception';
+};
+
+// PATCH /api/praticien/assignations — déverrouillage manuel des réponses (R8-lite)
+export async function PATCH(req: Request): Promise<NextResponse<PatchAssignationResponse>> {
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json(
+      { success: false, reason: 'unauthenticated', error: 'Session absente.' },
+      { status: 401 }
+    );
+  }
+
+  let payload: { idAssignation?: string };
+  try {
+    payload = (await req.json()) as { idAssignation?: string };
+  } catch {
+    return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
+  }
+
+  const idAssignation = (payload.idAssignation ?? '').trim();
+  if (!idAssignation) {
+    return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'Identifiant requis.' }, { status: 400 });
+  }
+
+  try {
+    const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
+    if (!ass) {
+      return NextResponse.json({ success: false, reason: 'not_found', error: 'Assignation introuvable.' }, { status: 404 });
+    }
+    await prisma.assignation.update({
+      where: { idAssignation },
+      data: { statutReponses: 'deverrouille' },
+    });
+    return NextResponse.json({ success: true });
+  } catch {
+    return NextResponse.json({
+      success: false,
+      reason: 'exception',
+      error: 'Erreur technique lors du déverrouillage.',
+    });
+  }
+}
+
 async function sendAssignmentEmail(
   patientEmail: string,
   titreQuestionnaire: string,

@@ -41,6 +41,13 @@ model Assignation {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  consentement             String    @default("non_donne") @map("consentement")
+  consentementHorodatage   DateTime? @map("consentement_horodatage")
+  consentementVersion      String?   @map("consentement_version")
+  consentementRetraitDate  DateTime? @map("consentement_retrait_date")
+  statutReponses           String    @default("non_rempli") @map("statut_reponses")
+  dateDerniereModification DateTime? @map("date_derniere_modification")
+
   patient Patient @relation(fields: [idPatient], references: [idPatient])
 
   @@map("assignations")

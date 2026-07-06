@@ -5,7 +5,7 @@ import { isDeadlineExpired } from '@/lib/patient-access';
 
 export type PatientQuestionnaireResponse =
   | { ok: true; assignation: AssignationInfo; questionnaire: unknown }
-  | { ok: false; reason: 'not_found' | 'already_done' | 'expired' | 'invalid' | 'exception'; error: string };
+  | { ok: false; reason: 'not_found' | 'expired' | 'invalid' | 'exception'; error: string };
 
 type AssignationInfo = {
   idAssignation: string;
@@ -16,6 +16,8 @@ type AssignationInfo = {
   dateLimite: string | null;
   notes: string | null;
   statut: string;
+  consentement: string;
+  statutReponses: string;
 };
 
 // GET /api/patient/questionnaire?id=ASS...&email=...
@@ -40,10 +42,10 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
     if (ass.emailPatient.toLowerCase() !== emailRaw) {
       return NextResponse.json({ ok: false, reason: 'not_found', error: 'Adresse email non reconnue pour ce questionnaire.' }, { status: 404 });
     }
-    if (ass.statut === 'Complété') {
-      return NextResponse.json({ ok: false, reason: 'already_done', error: 'Ce questionnaire a déjà été complété.' }, { status: 409 });
-    }
-    if (isDeadlineExpired(ass.dateLimite)) {
+    // La date limite ne bloque que le remplissage/modification, pas la consultation
+    // des réponses déjà verrouillées (droit de consultation permanent, R8-lite).
+    const bloqueParDeadline = ass.statutReponses !== 'verrouille' && ass.statutReponses !== 'modification_demandee';
+    if (bloqueParDeadline && isDeadlineExpired(ass.dateLimite)) {
       return NextResponse.json({ ok: false, reason: 'expired', error: 'Ce lien de questionnaire a expiré.' }, { status: 410 });
     }
 
@@ -58,6 +60,8 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
       dateLimite: ass.dateLimite ?? null,
       notes: ass.notes ?? null,
       statut: ass.statut,
+      consentement: ass.consentement,
+      statutReponses: ass.statutReponses,
     };
 
     return NextResponse.json({ ok: true, assignation: assignationInfo, questionnaire });

@@ -7,7 +7,7 @@ import type {
   PatchPatientResponse,
   PatientsApiResponse,
 } from '@/app/api/praticien/patients/route';
-import type { CreateAssignationResponse } from '@/app/api/praticien/assignations/route';
+import type { CreateAssignationResponse, PatchAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
 import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/praticien/reponses/route';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
@@ -56,6 +56,7 @@ export function PatientsPanel() {
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
   const [reponses, setReponses] = useState<ReponseQuestionnaire[]>([]);
   const [loadingReponses, setLoadingReponses] = useState(false);
+  const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null); // idPatient en attente de confirmation
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -159,6 +160,21 @@ export function PatientsPanel() {
       setReponses(d.reponses ?? []);
     } catch { setReponses([]); }
     finally { setLoadingReponses(false); }
+  };
+
+  const onDebloquer = async (idAssignation: string) => {
+    setDeverrouillageId(idAssignation);
+    try {
+      const r = await fetch('/api/praticien/assignations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idAssignation }),
+      });
+      const json = (await r.json()) as PatchAssignationResponse;
+      if (json.success) await loadData();
+    } finally {
+      setDeverrouillageId(null);
+    }
   };
 
   const openEdit = (p: PatientsApiResponse['patients'][number]) => {
@@ -397,6 +413,22 @@ export function PatientsPanel() {
             </h3>
             {loadingReponses && <span className="text-xs text-muted-foreground">Chargement...</span>}
           </div>
+          {(data?.assignations ?? [])
+            .filter(a => a.emailPatient === selectedEmail && a.statutReponses === 'modification_demandee')
+            .map(a => (
+              <div key={a.idAssignation} className="px-4 py-3 border-b border-border flex items-center justify-between gap-3 bg-orange-50">
+                <span className="text-sm text-orange-800">
+                  Demande de modification — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
+                </span>
+                <button
+                  onClick={() => onDebloquer(a.idAssignation)}
+                  disabled={deverrouillageId === a.idAssignation}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600 text-white disabled:opacity-60"
+                >
+                  {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}
+                </button>
+              </div>
+            ))}
           {!loadingReponses && reponses.length === 0 && (
             <div className="px-4 py-4 text-sm text-muted-foreground">
               Aucun questionnaire complété pour ce patient.

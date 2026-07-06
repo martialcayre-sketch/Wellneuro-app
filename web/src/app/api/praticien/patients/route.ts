@@ -22,6 +22,7 @@ type Assignation = {
   titre: string;
   dateAssignation: string;
   statut: string;
+  statutReponses: string;
 };
 
 export type PatientsApiResponse = {
@@ -96,6 +97,7 @@ export async function GET(): Promise<NextResponse<PatientsApiResponse>> {
       titre: a.titre,
       dateAssignation: a.dateAssignation.toISOString(),
       statut: a.statut,
+      statutReponses: a.statutReponses,
     }));
 
     return NextResponse.json({ patients, assignations });

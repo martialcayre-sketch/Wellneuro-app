@@ -50,10 +50,11 @@ export async function POST(req: Request): Promise<NextResponse<PatientSubmitResp
     if (!ass || ass.emailPatient.toLowerCase() !== email.toLowerCase()) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Assignation non reconnue.' }, { status: 403 });
     }
-    if (ass.statut === 'Complété') {
+    if (ass.statutReponses === 'verrouille' || ass.statutReponses === 'modification_demandee') {
       return NextResponse.json({ ok: false, reason: 'already_done', error: 'Ce questionnaire a déjà été complété.' }, { status: 409 });
     }
-    if (isDeadlineExpired(ass.dateLimite)) {
+    // Un déverrouillage explicite du praticien passe outre la date limite d'origine.
+    if (ass.statutReponses !== 'deverrouille' && isDeadlineExpired(ass.dateLimite)) {
       return NextResponse.json({ ok: false, reason: 'expired', error: 'Ce lien de questionnaire a expiré.' }, { status: 410 });
     }
 
@@ -99,7 +100,7 @@ export async function POST(req: Request): Promise<NextResponse<PatientSubmitResp
     // Mettre à jour le statut de l'assignation
     await prisma.assignation.update({
       where: { idAssignation },
-      data: { statut: 'Complété' },
+      data: { statut: 'Complété', statutReponses: 'verrouille', dateDerniereModification: now },
     });
 
     // Accusé de réception email (best-effort, ne bloque pas)
