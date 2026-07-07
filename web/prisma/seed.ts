@@ -8,6 +8,10 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { withSupabaseSslMode } from '../src/lib/postgres';
 import { verifierMoteurEquilibre } from '../src/lib/equilibre/score.check';
+import { verifierObjetsCliniques } from '../src/lib/equilibre/objetsCliniques.check';
+import { verifierMomentum } from '../src/lib/equilibre/momentum.check';
+import { verifierNiveauxPreuve } from '../src/lib/equilibre/evidence.check';
+import { verifierDepuisPrisma } from '../src/lib/equilibre/depuisPrisma.check';
 
 const DATABASE_URL =
   process.env.DATABASE_URL ??
@@ -296,6 +300,10 @@ async function seed() {
   // N'écrit rien en base — purement du calcul en mémoire.
   if (process.env.SEED_VERIFY_EQUILIBRE_SCORE === '1') {
     verifierMoteurEquilibre();
+    verifierObjetsCliniques();
+    verifierMomentum();
+    verifierNiveauxPreuve();
+    verifierDepuisPrisma();
   }
 }
 

@@ -42,6 +42,10 @@ const config: Config = {
           500: 'var(--gold-500)',
           300: 'var(--gold-300)',
         },
+        violet: {
+          600: 'var(--violet-600)',
+          300: 'var(--violet-300)',
+        },
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],

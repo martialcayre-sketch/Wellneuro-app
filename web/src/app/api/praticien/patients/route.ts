@@ -25,9 +25,17 @@ type Assignation = {
   statutReponses: string;
 };
 
+export type PatientsPagination = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
 export type PatientsApiResponse = {
   patients: Patient[];
   assignations: Assignation[];
+  pagination?: PatientsPagination;
   unavailable?: boolean;
   reason?: 'unauthenticated' | 'exception';
 };
@@ -62,7 +70,14 @@ async function nextIdPatient(): Promise<string> {
   return `PAT${String(maxId + 1).padStart(3, '0')}`;
 }
 
-export async function GET(): Promise<NextResponse<PatientsApiResponse>> {
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 100;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+export async function GET(req: Request): Promise<NextResponse<PatientsApiResponse>> {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json(
@@ -71,7 +86,51 @@ export async function GET(): Promise<NextResponse<PatientsApiResponse>> {
     );
   }
 
+  // `page` absent = comportement historique (liste complète, non paginée),
+  // conservé pour les appelants qui ont besoin de tous les patients (ex.
+  // le sélecteur de la nouvelle assignation). `page` présent = pagination
+  // serveur avec recherche/tri, pour l'affichage tabulaire.
+  const { searchParams } = new URL(req.url);
+  const pageParam = Number(searchParams.get('page'));
+  const isPaginated = Number.isInteger(pageParam) && pageParam >= 1;
+
   try {
+    if (isPaginated) {
+      const page = pageParam;
+      const pageSize = clamp(Number(searchParams.get('pageSize')) || DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
+      const search = (searchParams.get('search') ?? '').trim().slice(0, 200);
+      const sortBy = searchParams.get('sortBy') === 'email' ? 'email' : 'nom';
+
+      const where = search
+        ? {
+            OR: [
+              { nom: { contains: search, mode: 'insensitive' as const } },
+              { prenom: { contains: search, mode: 'insensitive' as const } },
+              { email: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {};
+      const orderBy =
+        sortBy === 'email'
+          ? [{ email: 'asc' as const }]
+          : [{ nom: 'asc' as const }, { prenom: 'asc' as const }];
+
+      const [dbPatients, total, dbAssignations] = await Promise.all([
+        prisma.patient.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
+        prisma.patient.count({ where }),
+        prisma.assignation.findMany({
+          orderBy: { dateAssignation: 'desc' },
+          take: MAX_ASSIGNATIONS,
+        }),
+      ]);
+
+      return NextResponse.json({
+        patients: dbPatients.map(patientToDto),
+        assignations: dbAssignations.map(assignationToDto),
+        pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
+      });
+    }
+
     const [dbPatients, dbAssignations] = await Promise.all([
       prisma.patient.findMany({ orderBy: [{ nom: 'asc' }, { prenom: 'asc' }] }),
       prisma.assignation.findMany({
@@ -80,27 +139,10 @@ export async function GET(): Promise<NextResponse<PatientsApiResponse>> {
       }),
     ]);
 
-    const patients: Patient[] = dbPatients.map(p => ({
-      idPatient: p.idPatient,
-      email: p.email,
-      prenom: p.prenom,
-      nom: p.nom,
-      telephone: p.telephone ?? '',
-      actif: p.actif ? 'OUI' : 'NON',
-    }));
-
-    const assignations: Assignation[] = dbAssignations.map(a => ({
-      idAssignation: a.idAssignation,
-      idPatient: a.idPatient,
-      emailPatient: a.emailPatient,
-      idQuestionnaire: a.idQuestionnaire,
-      titre: a.titre,
-      dateAssignation: a.dateAssignation.toISOString(),
-      statut: a.statut,
-      statutReponses: a.statutReponses,
-    }));
-
-    return NextResponse.json({ patients, assignations });
+    return NextResponse.json({
+      patients: dbPatients.map(patientToDto),
+      assignations: dbAssignations.map(assignationToDto),
+    });
   } catch (err) {
     console.error('[patients GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json({
@@ -110,6 +152,39 @@ export async function GET(): Promise<NextResponse<PatientsApiResponse>> {
       reason: 'exception',
     });
   }
+}
+
+function patientToDto(p: { idPatient: string; email: string; prenom: string; nom: string; telephone: string | null; actif: boolean }): Patient {
+  return {
+    idPatient: p.idPatient,
+    email: p.email,
+    prenom: p.prenom,
+    nom: p.nom,
+    telephone: p.telephone ?? '',
+    actif: p.actif ? 'OUI' : 'NON',
+  };
+}
+
+function assignationToDto(a: {
+  idAssignation: string;
+  idPatient: string;
+  emailPatient: string;
+  idQuestionnaire: string;
+  titre: string;
+  dateAssignation: Date;
+  statut: string;
+  statutReponses: string;
+}): Assignation {
+  return {
+    idAssignation: a.idAssignation,
+    idPatient: a.idPatient,
+    emailPatient: a.emailPatient,
+    idQuestionnaire: a.idQuestionnaire,
+    titre: a.titre,
+    dateAssignation: a.dateAssignation.toISOString(),
+    statut: a.statut,
+    statutReponses: a.statutReponses,
+  };
 }
 
 export async function POST(req: Request): Promise<NextResponse<CreatePatientResponse>> {

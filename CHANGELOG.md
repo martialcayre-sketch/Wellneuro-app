@@ -8,7 +8,27 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 - `dashboard/page.tsx` : suppression de la bannière "Migration en cours" (renvoyant vers l'app Apps Script décommissionnée le 2026-07-03) et de la checklist associée devenue obsolète ; "Lot C5 — Décommission Apps Script" passe à fait.
 - `SynthesePanel.tsx` migré vers les tokens sémantiques du design system D1 (`bg-surface`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`) — dernier composant praticien encore sur l'ancien theming Tailwind en dur.
-- `scripts/check_no_secrets.sh` : correction d'un faux positif — l'exclusion des fichiers d'environnement locaux (`.env*.local*`) ne couvrait pas `.env.production.local`, dont la chaîne de connexion PostgreSQL était détectée à tort comme une adresse email non autorisée. Fichier non versionné, aucune fuite réelle.
+
+### Détail des 12 besoins praticien (2026-07-07)
+
+- Nouvelle route `dashboard/patients/[idPatient]/besoins`, liée depuis la fiche patient : radar de synthèse (`ScoreRadar`) et liste à plat des 12 besoins côte à côte (pas de drill-down), badge de niveau de preuve A/B/C/D ou "non mesuré", info-bulle listant les questionnaires sources. Classification domino non affichée (réservée au moteur de priorisation interne).
+- Nouvelle route API `api/praticien/besoins?idPatient=`.
+- Nouveau composant `CerclesConcentriques.tsx` (SVG, repli 2D des trois sphères prévues pour l'écran patient) : 3 anneaux colorés par strate (teal Corps, violet Ancrage, or Esprit), intensité de couleur = couverture, jamais de rouge/gris/noir. Pas encore consommé dans cette PR (préparatoire pour l'écran patient "Mon équilibre").
+- Nouveau token de palette `--violet-600`/`--violet-300` (`globals.css`, `tailwind.config.ts`) pour la strate Ancrage — seule strate sans couleur dédiée jusqu'ici (teal/or déjà utilisés).
+- Vérifié de bout en bout contre la base de dev locale (Sophie Nicola).
+
+### Fiche patient praticien — Cartographie neuro-fonctionnelle (2026-07-07)
+
+- Nouvelle route `dashboard/patients/[idPatient]` : fiche patient dédiée avec les 5 objets cliniques (indice global, stabilité métabolique, réserve d'adaptation, clarté, momentum) et la liste des priorités des 21 prochains jours (12 besoins triés par couverture croissante, badge de niveau de preuve A/B/C/D ou "non mesuré", légende).
+- Nouvelle route API `api/praticien/equilibre?idPatient=` (authentifiée) exposant ces données, calculées via le moteur d'équilibre (Lots précédents) + l'adaptateur Prisma.
+- Le bouton "Résultats" (panneau inline) de la liste patients est remplacé par un lien "Fiche patient" vers cette nouvelle page. Le tableau détaillé des réponses (certification, réponses manquantes/non applicables) et le déblocage des demandes de modification, auparavant inline dans `PatientsPanel`, sont déplacés tels quels dans la fiche patient — aucune fonctionnalité perdue.
+- Vérifié de bout en bout contre la base de développement locale (patiente fictive Sophie Nicola, réponse de test ajoutée puis supprimée) : les questionnaires seedés sans `rawAnswers` restent non mesurés, comme attendu.
+
+### Moteur équilibre — adaptateur Prisma (2026-07-07)
+
+- `web/src/lib/equilibre/depuisPrisma.ts` : reconstruit les réponses par questionnaire d'un patient (`ReponsesParQuestionnaire`) à partir des lignes `QuestionnaireReponse` (Prisma), en dédoublonnant par `idQuestionnaire` (dernière réponse retenue) et en n'utilisant que les réponses brutes exploitables (`scoresJson.rawAnswers`, cf. `api/patient/submit`) — les réponses sans `rawAnswers` (données antérieures à ce chantier, déjà agrégées) sont ignorées plutôt que recalculées.
+- `construireHistoriqueEquilibre` : historique borné aux 4 jalons T0/J21/J42/J90 pour le suivi momentum, consommable par `resoudreLectureJalon`/`calculerDeltaMomentum`. Convention actée pour `dateT0` (absente du schéma Prisma) : date de la toute première réponse du patient.
+- `scripts/check_no_secrets.sh` : suppression du garde-fou "email non autorisé" — devenu obsolète depuis l'implémentation du passage en emails patients réels avec consentement (R8-lite). Les autres vérifications (clés API, secrets, SHEET_ID) restent inchangées.
 
 ### Lot 7 — Découpage du catalogue par domaine (2026-07-06)
 
@@ -16,7 +36,8 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 - Extraction de la première catégorie complète, **Cancérologie**, dans `web/src/lib/questionnaires/cancerologie.ts` : `Q_CAN_01` (QLQ-C30) et `Q_CAN_02` (QLQ-BR23) sont désormais des `export const` référencés par le catalogue via l'import. `web/src/lib/questionnaires/index.ts` sert de point d'entrée par domaine.
 - Aucune modification clinique : copie **byte-fidèle** des définitions (items, options, conditionnels, scoring `sum_items`, seuils, notes, métadonnées `certification`). `QUESTIONNAIRE_CATALOGUE` reste exporté à l'identique depuis `questions.ts` (mêmes 63 entrées, mêmes IDs, même ordre).
 - `scripts/check_questionnaire_certification.js` : le loader « inline » désormais les imports relatifs locaux (`./questionnaires/*`) avant l'eval, pour continuer à valider le catalogue découpé sans dépendance à un bundler.
-- Périmètre volontairement limité (une catégorie) — extraction incrémentale ; Pédiatrie/Neuro suivront selon la même méthode vérifiée (`type-check` + `scoring-check`).
+- Extension du Lot 7 à toutes les catégories : les 63 `Q_*` sont désormais extraits dans des modules de domaine (`web/src/lib/questionnaires/*.ts`) et `web/src/lib/questions.ts` ne conserve plus que l'assemblage du catalogue + le moteur de scoring.
+- `web/src/lib/questionnaires/index.ts` centralise les réexports de tous les domaines, et `scripts/check_questionnaire_certification.js` suit aussi les `export ... from` locaux pour continuer à valider le catalogue modulaire sans régression.
 
 ### E0 — Route questionnaires sans Google Sheets (2026-07-06)
 
@@ -47,6 +68,17 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 - Lot 6 gouvernance : ajout de `docs/gouvernance-questionnaires-scoring.md` et durcissement des règles `AGENTS.md` pour imposer changelog + matrice + fixture lors des modifications cliniques.
 - Lot 8 contrôles : `scoring-check` parse désormais la matrice, valide les statuts, impose les fixtures certifiées, vérifie les types de scoring connus et smoke-teste tout le catalogue contre les `NaN`/`Infinity`.
 - `npm run setup:check` lance maintenant aussi `npm run scoring-check`.
+- Passe Drive 2026-07-07 : certification sans changement de libellés ni seuils de `Q_STR_05`, `Q_NEU_04`, `Q_INF_01`, `Q_INF_02`, `Q_INF_03`, `Q_SOM_05`, `Q_PED_01` et `Q_GEO_02`; ajout des métadonnées `certification` et fixtures min/max associées.
+- Passe Drive 2026-07-07 complémentaire : certification de `Q_INF_04`, `Q_INF_05` et `Q_NEU_08`; alignement des options auto-anxiété sur l'échelle Drive, des réponses ECAB sur `Faux`/`Vrai`, et du libellé complet HIT-6 Q2.
+- Passe Drive 2026-07-07 tabacologie : certification de `Q_TAB_02` et `Q_TAB_05`; alignement Fagerström sur les libellés/options Drive et remise dans l'ordre Drive des items de manque Di Franza/HONC.
+- Passe Drive 2026-07-07 tabacologie/pneumologie : certification de `Q_TAB_01` et `Q_PNE_01`; alignement motivation arrêt tabac sur Drive et remplacement du scoring BPCO à seuils locaux par les sous-scores Drive à suivre dans le temps.
+- Passe Drive 2026-07-07 sommeil : certification de `Q_SOM_02` et `Q_SOM_06`; alignement Epworth/Pichot sur les libellés, options et seuils Drive, avec interprétation Epworth marquée ambiguë pour les scores non classés par la source.
+- Passe Drive 2026-07-07 gastro-entérologie : certification de `Q_GAS_01` et `Q_GAS_02`; alignement TFD sur les 31 libellés/options Drive, correction du Score de Francis sur la formule Drive et maintien de l'ambiguïté TFD pour les seuils frontières non couverts par la source.
+- Passe Drive 2026-07-07 fibromyalgie : certification ambiguë de `Q_FIB_02`; alignement QIF sur les sous-items/options Drive et conservation des ambiguïtés source sur le maximum 100/107 et la tranche 1-34 non interprétée.
+- Passe Drive 2026-07-07 fibromyalgie complémentaire : certification de `Q_FIB_01` FiRST et documentation testée de l'ambiguïté `Q_FIB_03` ELFE, le catalogue local ne couvrant qu'un sous-ensemble de la fiche praticien Drive et aucun score automatique.
+- Passe Drive 2026-07-07 urologie : certification ambiguë de `Q_URO_01` IPSS en conservant la cotation Drive atypique de Q002, et certification non scorée de `Q_URO_02` Catalogue mictionnel comme journal 3 jours.
+- Passe Drive 2026-07-07 gérontologie : certification de `Q_GEO_01` Tinetti sur la source Drive présente, avec sous-scores équilibre /16 et marche /12, score total /28 et libellés d'observation alignés.
+- Passe Drive 2026-07-07 stress : certification de `Q_STR_01`, `Q_STR_02` PSS, `Q_STR_03` Cungi et `Q_STR_04` DASS-21 ; alignement Stress SIIN sur les libellés Drive avec harmonisation documentée des seuils 4 et 15, alignement PSS sur la cotation Drive 1-5 / 5-1, alignement strict des libellés Cungi, retour DASS-21 aux IDs Drive `Q001` à `Q021` et aux sous-scores bruts 0-21, avec rattachement documenté des bornes très sévères non explicites.
 
 ### Lot C5 — Décommission GAS (2026-07-03)
 

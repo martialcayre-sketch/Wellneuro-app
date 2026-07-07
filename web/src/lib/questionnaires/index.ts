@@ -1,14 +1,18 @@
 // @ts-nocheck
 /* eslint-disable */
-// ═══════════════════════════════════════════════════════════════════════════════
-// Wellneuro — Point d'entrée des modules de catalogue par domaine (lot 7)
-// ═══════════════════════════════════════════════════════════════════════════════
-// Réexporte les helpers partagés et les questionnaires extraits de
-// `web/src/lib/questions.ts`. Le catalogue global reste assemblé et exporté par
-// `questions.ts` (`QUESTIONNAIRE_CATALOGUE`) : cet index n'est qu'une commodité
-// d'accès aux définitions par domaine. L'extraction est incrémentale — seuls les
-// domaines déjà déplacés apparaissent ici.
-// ═══════════════════════════════════════════════════════════════════════════════
-
 export * from './shared';
-export { Q_CAN_01, Q_CAN_02 } from './cancerologie';
+export * from './cancerologie';
+export * from './stress';
+export * from './sommeil';
+export * from './inflammation';
+export * from './intestin-gastro';
+export * from './fibromyalgie';
+export * from './neuropsychologie';
+export * from './cardiologie';
+export * from './tabacologie';
+export * from './pneumologie';
+export * from './urologie';
+export * from './pediatrie';
+export * from './mode-de-vie';
+export * from './alimentaire';
+export * from './gerontologie';
