@@ -10,6 +10,16 @@ function createPrismaClient(): PrismaClient {
   }
   const connectionString = withSupabaseSslMode(rawConnectionString);
   const ssl = supabasePoolSsl(rawConnectionString);
+
+  // Diagnostic non sensible (hôte uniquement) — aide à valider la config TLS en prod.
+  let hostForLog = 'non-parseable';
+  try {
+    hostForLog = new URL(rawConnectionString).hostname || 'vide';
+  } catch {
+    /* URL non parseable : conservée masquée */
+  }
+  console.log(`[prisma] connexion db host=${hostForLog} tlsNoVerify=${ssl ? 'oui' : 'non'}`);
+
   const pool = new Pool({ connectionString, ssl });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
