@@ -19,6 +19,14 @@
   --cream-100: #fbf9f5;
   --cream-50: #f4efe6;
 
+  /* Violet — strate "Ancrage" (cercles concentriques Mon équilibre /
+   * Cartographie neuro-fonctionnelle, cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md
+   * §6). Couleur catégorielle fixe (ne varie pas par thème patient/praticien,
+   * contrairement aux tokens sémantiques --color-*), au même titre que
+   * --teal-500/--gold-500 pour Corps/Esprit. */
+  --violet-600: #6b5b95;
+  --violet-300: #c9c0e0;
+
   /* Compat : couleurs historiques du Lot 0, consommées telles quelles
    * par des composants existants (login, NavBar, MetricsSection,
    * PatientsPanel, SynthesePanel) via var(--primary)/var(--accent).
