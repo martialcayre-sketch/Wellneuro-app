@@ -156,3 +156,13 @@ de la section R9 actuelle).
 par biomarqueur (niveau C sur donnée niveau A) ; poids exacts du score de
 priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 écran détail des 12 besoins côté praticien (non conçu).
+
+## 2026-07-07 — Lot 7 finalisé + décommission Sheets/OAuth
+
+**Décisions prises** : Lot 7 terminé et poussé sur main avec extraction complète du catalogue questionnaires en modules de domaine, conservation des IDs et validation scoring-check + type-check. Audit des dépendances Google Sheets réalisé : seule la route de migration historique restait active côté runtime. Décommission engagée : suppression de la route migrate-historique, retrait du scope OAuth spreadsheets et nettoyage des types de session JWT associés.
+
+**Options écartées** : maintien d’un scope OAuth large « au cas où » (rejeté pour réduction de surface de risque) ; conservation d’une route de migration non appelée en routine (rejetée pour dette technique et ambiguïté opérationnelle).
+
+**Prochaine action prioritaire** : pousser le commit de décommission et aligner la documentation technique sur l’état réel (README, AGENTS, CLAUDE, roadmap).
+
+**Questions ouvertes** : faut-il conserver un mécanisme de remigration manuel hors runtime applicatif (script admin dédié) ?
