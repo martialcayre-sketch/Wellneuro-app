@@ -141,7 +141,8 @@ async function sendPackEmail(
       `Bonjour,\n\n` +
       `Votre praticien vous invite à compléter les questionnaires du pack « ${packNom} » avant votre consultation :\n` +
       `${liste}${dateInfo}${noteInfo}\n\n` +
-      `Commencez ici :\n${link}\n\n` +
+      `Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente du pack et les remplir dans l'ordre de votre choix.\n\n` +
+      `Accéder à vos questionnaires :\n${link}\n\n` +
       `L'équipe Wellneuro`,
   });
 }
