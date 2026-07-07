@@ -35,13 +35,24 @@ function localImportPaths(source, dir) {
   return out;
 }
 
+function stripDuplicateQuestionHelpers(source) {
+  if (!source.includes('QUESTIONNAIRE_CATALOGUE')) return source;
+  const duplicateNames = new Set(['O_RPS', 'O_JPT', 'O_04', 'O_03jt', 'O_YN', 'O_UPPS', 'O_YOUNG', 'O_BMS', 'O_CUNGI', 'O_PAS', 'O_ZARIT', 'O_DASS', 'O_CONNERS']);
+  return source.split('\n').filter(line => {
+    const constMatch = line.match(/^const ([A-Za-z0-9_]+)\s*=/);
+    if (constMatch && duplicateNames.has(constMatch[1])) return false;
+    if (/^function q(n|s)?\(/.test(line)) return false;
+    return true;
+  }).join('\n');
+}
+
 function inlineModule(file, seen, parts) {
   const abs = path.resolve(file);
   if (seen.has(abs)) return;
   seen.add(abs);
   const source = fs.readFileSync(abs, 'utf8');
   for (const dep of localImportPaths(source, path.dirname(abs))) inlineModule(dep, seen, parts);
-  parts.push(stripModuleSource(source));
+  parts.push(stripDuplicateQuestionHelpers(stripModuleSource(source)));
 }
 
 function loadQuestionsModule() {
@@ -81,9 +92,18 @@ const certifiedFixtures = new Set([
   'Q_INF_03',
   'Q_INF_04',
   'Q_INF_05',
+  'Q_MOD_03',
+  'Q_NEU_01',
   'Q_NEU_03',
   'Q_NEU_04',
+  'Q_NEU_07',
   'Q_NEU_08',
+  'Q_NEU_09',
+  'Q_NEU_11',
+  'Q_NEU_02',
+  'Q_NEU_05',
+  'Q_NEU_10',
+  'Q_NEU_12',
   'Q_PED_01',
   'Q_PED_03',
   'Q_PNE_01',
@@ -95,6 +115,8 @@ const certifiedFixtures = new Set([
   'Q_STR_03',
   'Q_STR_04',
   'Q_STR_05',
+  'Q_STR_06',
+  'Q_STR_08',
   'Q_TAB_01',
   'Q_TAB_02',
   'Q_TAB_05',
@@ -210,6 +232,7 @@ const supportedScoringTypes = new Set([
   'idtas_ae',
   'journal',
   'karasek',
+  'plaintes_actuelles',
   'psqi',
   'qif',
   'sigh_sad_sa',
@@ -276,6 +299,39 @@ sighSpecial.SIGH_Q017 = 4;
 assertEqual(calculateScore('Q_NEU_03', sighSpecial).scoreDual1517, 2, 'Q_NEU_03 règle spéciale Q15-Q17');
 assertEqual(questions('Q_NEU_03').length, 25, 'Q_NEU_03 doit contenir 25 items');
 assertCertification(calculateScore('Q_NEU_03', fillByOptionBoundary('Q_NEU_03', 'min')), 'certifie', 'Q_NEU_03');
+
+assertEqual(calculateScore('Q_NEU_01', fill('Q_NEU_01', 0)).total, 0, 'Q_NEU_01 score minimal');
+assertEqual(calculateScore('Q_NEU_01', fill('Q_NEU_01', 3)).total, 39, 'Q_NEU_01 score maximal');
+assertEqual(calculateScore('Q_NEU_01', fill('Q_NEU_01', 0)).interpretation.label, "Variation de l'humeur considérée comme physiologique", 'Q_NEU_01 seuil minimal rattaché');
+assertEqual(calculateScore('Q_NEU_01', fill('Q_NEU_01', 2)).interpretation.label, 'Dépression avérée', 'Q_NEU_01 seuil dépression avérée');
+assertEqual(questions('Q_NEU_01').length, 13, 'Q_NEU_01 doit contenir 13 items');
+assertEqual(optionLabels('Q_NEU_01', 'B7'), [
+  'Je ne pense pas à me faire du mal.',
+  'Je pense que la mort me libérerait.',
+  "J'ai des plans précis pour me suicider.",
+  'Si je le pouvais, je me tuerais.',
+], 'Q_NEU_01 options vigilance suicide Drive');
+assert(calculateScore('Q_NEU_01', fill('Q_NEU_01', 0)).note.includes('score calculable 0'), 'Q_NEU_01 doit documenter le rattachement du score 0');
+assertCertification(calculateScore('Q_NEU_01', fill('Q_NEU_01', 0)), 'certifie', 'Q_NEU_01');
+
+const hadMin = calculateScore('Q_NEU_11', fill('Q_NEU_11', 0));
+const hadMax = calculateScore('Q_NEU_11', fill('Q_NEU_11', 3));
+assertEqual(hadMin.subScores.map(score => score.total), [0, 0], 'Q_NEU_11 sous-scores minimaux');
+assertEqual(hadMax.subScores.map(score => score.total), [21, 21], 'Q_NEU_11 sous-scores maximaux');
+assertEqual(hadMax.total, 42, 'Q_NEU_11 score total maximal');
+assertEqual(hadMax.subScores.map(score => score.interpretation.label), ['Symptomatologie certaine', 'Symptomatologie certaine'], 'Q_NEU_11 seuils hauts');
+assertEqual(optionLabels('Q_NEU_11', 'A3'), ['Oui, très nettement', "Oui, mais ce n'est pas très grave", "Un peu, mais cela ne m'inquiète pas", 'Pas du tout'], 'Q_NEU_11 options A3 Drive');
+assertEqual(optionLabels('Q_NEU_11', 'D10'), ['Plus du tout', "Je n'y accorde pas autant d'attention que je le devrais", "Il se peut que je n'y fasse plus autant attention", "J'y prête autant d'attention que par le passé"], 'Q_NEU_11 options D10 Drive');
+assert(calculateScore('Q_NEU_11', fill('Q_NEU_11', 0)).note.includes('ordre alterné historique'), 'Q_NEU_11 doit documenter l’ordre conservé');
+assertCertification(hadMin, 'certifie', 'Q_NEU_11');
+
+assertEqual(calculateScore('Q_MOD_03', fill('Q_MOD_03', 1)).total, 7, 'Q_MOD_03 score minimal');
+assertEqual(calculateScore('Q_MOD_03', fill('Q_MOD_03', 10)).total, 70, 'Q_MOD_03 score maximal');
+assertEqual(calculateScore('Q_MOD_03', fill('Q_MOD_03', 4)).average, 4, 'Q_MOD_03 moyenne globale');
+assertEqual(calculateScore('Q_MOD_03', fill('Q_MOD_03', 10)).subScores.map(score => score.total), [10, 10, 10, 10, 10, 10, 10], 'Q_MOD_03 domaines maximaux');
+assertEqual(calculateScore('Q_MOD_03', fill('Q_MOD_03', 10)).interpretation.label, 'Intensité très élevée', 'Q_MOD_03 lecture descriptive haute');
+assertEqual(questions('Q_MOD_03').map(question => question.id), ['Q001', 'Q002', 'Q003', 'Q004', 'Q005', 'Q006', 'Q007'], 'Q_MOD_03 identifiants Drive');
+assertCertification(calculateScore('Q_MOD_03', fill('Q_MOD_03', 1)), 'certifie', 'Q_MOD_03');
 
 const stressSiinScore4 = fill('Q_STR_01', 0);
 stressSiinScore4.A1 = 2;
@@ -405,10 +461,55 @@ assertEqual(calculateScore('Q_STR_05', fill('Q_STR_05', 7)).total, 70, 'Q_STR_05
 assertEqual(calculateScore('Q_STR_05', fill('Q_STR_05', 7)).average, 7, 'Q_STR_05 moyenne maximale');
 assertCertification(calculateScore('Q_STR_05', fill('Q_STR_05', 1)), 'certifie', 'Q_STR_05');
 
+assertEqual(questions('Q_STR_06').map(question => question.id), [
+  'Q001', 'Q002', 'Q003', 'Q004', 'Q005', 'Q006', 'Q007', 'Q008',
+  'Q009', 'Q010', 'Q011', 'Q012', 'Q013', 'Q014', 'Q015', 'Q016',
+  'Q017', 'Q018', 'Q019', 'Q020', 'Q021', 'Q022', 'Q023', 'Q024',
+  'Q025', 'Q026', 'Q027', 'Q028', 'Q029', 'Q030', 'Q031', 'Q032',
+], 'Q_STR_06 identifiants Drive');
+assertEqual(calculateScore('Q_STR_06', fill('Q_STR_06', 1)).subScores.map(score => score.total), [12, 42, 8, 12], 'Q_STR_06 scores tout à 1 Drive avec inversions');
+assertEqual(calculateScore('Q_STR_06', fill('Q_STR_06', 4)).subScores.map(score => score.total), [33, 78, 32, 18], 'Q_STR_06 scores tout à 4 Drive avec inversions');
+const karasekIso = fill('Q_STR_06', 1);
+['Q010', 'Q011', 'Q012', 'Q014', 'Q015', 'Q016', 'Q017', 'Q018'].forEach(id => { karasekIso[id] = 4; });
+karasekIso.Q013 = 1;
+['Q001', 'Q003', 'Q004', 'Q005', 'Q007', 'Q008', 'Q009'].forEach(id => { karasekIso[id] = 1; });
+karasekIso.Q002 = 4;
+karasekIso.Q006 = 4;
+assertEqual(calculateScore('Q_STR_06', karasekIso).jobStrain, true, 'Q_STR_06 job strain Drive');
+assertEqual(calculateScore('Q_STR_06', karasekIso).isoStrain, true, 'Q_STR_06 isostrain Drive');
+assertCertification(calculateScore('Q_STR_06', fill('Q_STR_06', 1)), 'certifie', 'Q_STR_06');
+
+assertEqual(questions('Q_STR_08').length, 25, 'Q_STR_08 doit contenir 25 items');
+assertEqual(questions('Q_STR_08').map(question => question.id), [
+  'Q001', 'Q002', 'Q003', 'Q004', 'Q005', 'Q006', 'Q007', 'Q008',
+  'Q009', 'Q010', 'Q011', 'Q012', 'Q013', 'Q014', 'Q015', 'Q016',
+  'Q017', 'Q018', 'Q019', 'Q020', 'Q021', 'Q022', 'Q023', 'Q024', 'Q025',
+], 'Q_STR_08 identifiants Drive');
+assertEqual(optionLabels('Q_STR_08', 'Q001'), ['Pas du tout vrai', 'Peu souvent vrai', 'Souvent vrai', 'Toujours vrai'], 'Q_STR_08 options Drive');
+assertEqual(calculateScore('Q_STR_08', fill('Q_STR_08', 1)).total, 25, 'Q_STR_08 score minimal');
+assertEqual(calculateScore('Q_STR_08', fill('Q_STR_08', 4)).total, 100, 'Q_STR_08 score maximal');
+assertEqual(calculateScore('Q_STR_08', fill('Q_STR_08', 3)).interpretation.label, 'Addiction élevée au travail', 'Q_STR_08 seuil haut');
+assertCertification(calculateScore('Q_STR_08', fill('Q_STR_08', 1)), 'certifie', 'Q_STR_08');
+
 assertEqual(calculateScore('Q_NEU_04', fill('Q_NEU_04', 0)).total, 0, 'Q_NEU_04 score minimal');
 assertEqual(calculateScore('Q_NEU_04', fill('Q_NEU_04', 1)).total, 5, 'Q_NEU_04 score maximal');
 assertEqual(calculateScore('Q_NEU_04', fill('Q_NEU_04', 1)).interpretation.label, 'Risque de trouble du comportement alimentaire — consultation recommandée', 'Q_NEU_04 seuil positif');
 assertCertification(calculateScore('Q_NEU_04', fill('Q_NEU_04', 0)), 'certifie', 'Q_NEU_04');
+
+assertEqual(questions('Q_NEU_07').map(question => question.id), ['Q001', 'Q002', 'Q003', 'Q004', 'Q005', 'Q006', 'Q007', 'Q008', 'Q009', 'Q010'], 'Q_NEU_07 identifiants Drive');
+assertEqual(optionLabels('Q_NEU_07', 'Q009'), ['Non', "Oui, mais pas dans l'année passée", "Oui, au cours de l'année dernière"], 'Q_NEU_07 options Q009 Drive');
+assertEqual(calculateScore('Q_NEU_07', fill('Q_NEU_07', 0)).total, 0, 'Q_NEU_07 score minimal');
+assertEqual(calculateScore('Q_NEU_07', fill('Q_NEU_07', 4)).total, 40, 'Q_NEU_07 score maximal');
+const auditFemmeRisque = fill('Q_NEU_07', 0);
+auditFemmeRisque.Q001 = 2;
+auditFemmeRisque.Q002 = 2;
+auditFemmeRisque.Q003 = 2;
+auditFemmeRisque.sexe = 'femme';
+assertEqual(calculateScore('Q_NEU_07', auditFemmeRisque).interpretation.label, 'Consommation à risque ou à problème', 'Q_NEU_07 seuil femme 6');
+const auditHommeFaible = {...auditFemmeRisque, sexe: 'homme'};
+assertEqual(calculateScore('Q_NEU_07', auditHommeFaible).interpretation.label, 'Risque faible ou anodin', 'Q_NEU_07 seuil homme 6');
+assertEqual(calculateScore('Q_NEU_07', fill('Q_NEU_07', 4)).interpretation.label, 'Alcoolodépendance probable', 'Q_NEU_07 seuil haut');
+assertCertification(calculateScore('Q_NEU_07', fill('Q_NEU_07', 0)), 'certifie', 'Q_NEU_07');
 
 assertEqual(calculateScore('Q_INF_01', fill('Q_INF_01', 0)).total, 0, 'Q_INF_01 score minimal');
 assertEqual(calculateScore('Q_INF_01', fill('Q_INF_01', 4)).total, 96, 'Q_INF_01 score maximal');
@@ -441,6 +542,51 @@ assertEqual(calculateScore('Q_NEU_08', fill('Q_NEU_08', 1)).total, 9, 'Q_NEU_08 
 assertEqual(calculateScore('Q_NEU_08', ecabMax).total, 10, 'Q_NEU_08 score maximal avec item 10 inversé');
 assertEqual(optionLabels('Q_NEU_08', 'EC1'), ['Faux', 'Vrai'], 'Q_NEU_08 options vrai/faux');
 assertCertification(calculateScore('Q_NEU_08', ecabMax), 'certifie', 'Q_NEU_08');
+
+assertEqual(questions('Q_NEU_09').length, 22, 'Q_NEU_09 doit contenir 22 items');
+assertEqual(questions('Q_NEU_09').map(question => question.id), [
+  'Q001', 'Q002', 'Q003', 'Q004', 'Q005', 'Q006', 'Q007', 'Q008',
+  'Q009', 'Q010', 'Q011', 'Q012', 'Q013', 'Q014', 'Q015', 'Q016',
+  'Q017', 'Q018', 'Q019', 'Q020', 'Q021', 'Q022',
+], 'Q_NEU_09 identifiants Drive');
+assertEqual(optionLabels('Q_NEU_09', 'Q001'), ['Jamais', 'Rarement', 'Quelques fois', 'Assez souvent', 'Presque toujours'], 'Q_NEU_09 options Drive');
+assertEqual(calculateScore('Q_NEU_09', fill('Q_NEU_09', 0)).total, 0, 'Q_NEU_09 score minimal');
+assertEqual(calculateScore('Q_NEU_09', fill('Q_NEU_09', 4)).total, 88, 'Q_NEU_09 score maximal');
+assertEqual(calculateScore('Q_NEU_09', fill('Q_NEU_09', 4)).interpretation.label, 'Fardeau sévère', 'Q_NEU_09 seuil haut');
+assertCertification(calculateScore('Q_NEU_09', fill('Q_NEU_09', 0)), 'certifie', 'Q_NEU_09');
+
+assertEqual(questions('Q_NEU_02').map(question => question.id), ['Q001', 'Q002', 'Q003', 'Q004', 'Q005', 'Q006', 'Q007', 'Q008', 'Q009', 'Q010'], 'Q_NEU_02 identifiants Drive');
+assertEqual(calculateScore('Q_NEU_02', fill('Q_NEU_02', 0)).total, 0, 'Q_NEU_02 score minimal');
+assertEqual(calculateScore('Q_NEU_02', fill('Q_NEU_02', 6)).total, 60, 'Q_NEU_02 score maximal');
+assertEqual(calculateScore('Q_NEU_02', fill('Q_NEU_02', 0)).interpretation.label, 'Pas de troubles dépressifs', 'Q_NEU_02 seuil bas');
+assertEqual(calculateScore('Q_NEU_02', fill('Q_NEU_02', 6)).interpretation.label, 'Dépression sévère', 'Q_NEU_02 seuil haut');
+assertCertification(calculateScore('Q_NEU_02', fill('Q_NEU_02', 0)), 'certifie', 'Q_NEU_02');
+
+assertEqual(questions('Q_NEU_05').length, 45, 'Q_NEU_05 doit contenir 45 items');
+const uppsMin = calculateScore('Q_NEU_05', fill('Q_NEU_05', 1));
+const uppsMax = calculateScore('Q_NEU_05', fill('Q_NEU_05', 4));
+assertEqual(uppsMin.subScores.map(s => s.total), [45, 11, 16, 48], 'Q_NEU_05 sous-scores réponse=1');
+assertEqual(uppsMax.subScores.map(s => s.total), [15, 44, 34, 12], 'Q_NEU_05 sous-scores réponse=4');
+assertCertification(uppsMin, 'certifie', 'Q_NEU_05');
+
+assertEqual(questions('Q_NEU_10').map(question => question.id), ['Q001', 'Q002', 'Q003', 'Q004', 'Q005', 'Q006', 'Q007', 'Q008', 'Q009', 'Q010', 'Q011', 'Q012', 'Q013', 'Q014', 'Q015', 'Q016', 'Q017', 'Q018', 'Q019', 'Q020'], 'Q_NEU_10 identifiants Drive');
+assertEqual(calculateScore('Q_NEU_10', fill('Q_NEU_10', 0)).total, 0, 'Q_NEU_10 score minimal');
+assertEqual(calculateScore('Q_NEU_10', fill('Q_NEU_10', 5)).total, 100, 'Q_NEU_10 score maximal');
+assertEqual(calculateScore('Q_NEU_10', fill('Q_NEU_10', 5)).interpretation.label, 'Situation non maîtrisée ; réaction nécessaire', 'Q_NEU_10 seuil haut');
+assertCertification(calculateScore('Q_NEU_10', fill('Q_NEU_10', 0)), 'certifie', 'Q_NEU_10');
+
+const idtasZero = fill('Q_NEU_12', 0);
+const idtasMax = fill('Q_NEU_12', 0);
+['IA1','IA2','IA3','IA4','IA5','IA6','IA7','IA8','IA9'].forEach(id => idtasMax[id] = 1);
+['IG1','IG2','IG3','IG4','IG5','IG6'].forEach(id => idtasMax[id] = 4);
+['IS1','IS2','IS3','IS4','IS5','IS6','IS7','IS8','IS9'].forEach(id => idtasMax[id] = 1);
+const idtasZeroScore = calculateScore('Q_NEU_12', idtasZero);
+const idtasMaxScore = calculateScore('Q_NEU_12', idtasMax);
+assertEqual(idtasZeroScore.gssScore, 0, 'Q_NEU_12 GSS minimal');
+assertEqual(idtasMaxScore.gssScore, 24, 'Q_NEU_12 GSS maximal');
+assertEqual(idtasMaxScore.parts[0].probableMajorDepression, true, 'Q_NEU_12 dépistage dépressif au-delà du seuil');
+assertEqual(idtasMaxScore.interpretation.label, 'Forte probabilité de trouble affectif saisonnier clinique', 'Q_NEU_12 seuil GSS haut');
+assertCertification(idtasZeroScore, 'certifie', 'Q_NEU_12');
 
 assertEqual(calculateScore('Q_SOM_02', fill('Q_SOM_02', 0)).total, 0, 'Q_SOM_02 score minimal');
 assertEqual(calculateScore('Q_SOM_02', fill('Q_SOM_02', 3)).total, 24, 'Q_SOM_02 score maximal');
