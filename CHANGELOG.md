@@ -4,6 +4,14 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Écran patient « Mon équilibre » (2026-07-07)
+
+- Le portail patient (`patient/[idAssignation]`) gagne deux nouveaux écrans dans son parcours existant (pas de nouvelle authentification, pas de nouvelle route Next) : accessibles via un bouton "Voir Mon équilibre" depuis l'écran de consultation (réponses verrouillées).
+  - **Mon équilibre** (`MonEquilibreAccueil.tsx`) : indicateur circulaire (indice global), tendance de momentum (hausse/stable/baisse — jamais le delta chiffré ni les niveaux de preuve, réservés praticien), frise de trajectoire, 2-3 priorités en langage patient (`libellePatient`, jamais de jargon clinique).
+  - **Mes 12 besoins** (`MonEquilibreDetail.tsx`) : réutilise `CerclesConcentriques` en mode patient (légende simplifiée par strate, sans niveau de preuve).
+- Nouvelle route API `api/patient/equilibre?id=&email=` (même vérification d'accès que `api/patient/reponses`) : expose uniquement des données patient-safe.
+- Dette signalée, hors périmètre de ce lot : le reste du portail patient (`EmailGate`, `ConsentScreen`, `GenericQuestionnaire`) reste en Tailwind bleu en dur, pas encore migré vers les tokens D1 — ces deux nouveaux écrans sont les premiers du portail patient à les utiliser.
+
 ### Détail des 12 besoins praticien (2026-07-07)
 
 - Nouvelle route `dashboard/patients/[idPatient]/besoins`, liée depuis la fiche patient : radar de synthèse (`ScoreRadar`) et liste à plat des 12 besoins côte à côte (pas de drill-down), badge de niveau de preuve A/B/C/D ou "non mesuré", info-bulle listant les questionnaires sources. Classification domino non affichée (réservée au moteur de priorisation interne).
