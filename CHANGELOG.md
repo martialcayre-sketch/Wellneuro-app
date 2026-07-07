@@ -4,6 +4,12 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Moteur équilibre — adaptateur Prisma (2026-07-07)
+
+- `web/src/lib/equilibre/depuisPrisma.ts` : reconstruit les réponses par questionnaire d'un patient (`ReponsesParQuestionnaire`) à partir des lignes `QuestionnaireReponse` (Prisma), en dédoublonnant par `idQuestionnaire` (dernière réponse retenue) et en n'utilisant que les réponses brutes exploitables (`scoresJson.rawAnswers`, cf. `api/patient/submit`) — les réponses sans `rawAnswers` (données antérieures à ce chantier, déjà agrégées) sont ignorées plutôt que recalculées.
+- `construireHistoriqueEquilibre` : historique borné aux 4 jalons T0/J21/J42/J90 pour le suivi momentum, consommable par `resoudreLectureJalon`/`calculerDeltaMomentum`. Convention actée pour `dateT0` (absente du schéma Prisma) : date de la toute première réponse du patient.
+- `scripts/check_no_secrets.sh` : suppression du garde-fou "email non autorisé" — devenu obsolète depuis l'implémentation du passage en emails patients réels avec consentement (R8-lite). Les autres vérifications (clés API, secrets, SHEET_ID) restent inchangées.
+
 ### Lot 7 — Découpage du catalogue par domaine (2026-07-06)
 
 - Amorce du refactor de `web/src/lib/questions.ts` : les jeux d'options standards (`O_*`) et les fabriques d'items (`q`/`qn`/`qs`) sont déplacés dans `web/src/lib/questionnaires/shared.ts` et importés par `questions.ts`.

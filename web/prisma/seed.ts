@@ -11,6 +11,7 @@ import { verifierMoteurEquilibre } from '../src/lib/equilibre/score.check';
 import { verifierObjetsCliniques } from '../src/lib/equilibre/objetsCliniques.check';
 import { verifierMomentum } from '../src/lib/equilibre/momentum.check';
 import { verifierNiveauxPreuve } from '../src/lib/equilibre/evidence.check';
+import { verifierDepuisPrisma } from '../src/lib/equilibre/depuisPrisma.check';
 
 const DATABASE_URL =
   process.env.DATABASE_URL ??
@@ -302,6 +303,7 @@ async function seed() {
     verifierObjetsCliniques();
     verifierMomentum();
     verifierNiveauxPreuve();
+    verifierDepuisPrisma();
   }
 }
 
