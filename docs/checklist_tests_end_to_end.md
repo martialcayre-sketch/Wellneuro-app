@@ -65,6 +65,12 @@ Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogné.
 
 ## Contrôle post-déploiement (Vercel)
 
+Commande de vérification rapide avant/pendant bascule:
+
+```bash
+bash scripts/release_go_no_go.sh --url https://app.wellneuro.fr
+```
+
 1. Déployer `main` puis confirmer le statut `Ready` sur Vercel.
 2. Vérifier que le domaine `app.wellneuro.fr` répond sans `404`.
 3. Vérifier le flux OAuth via `https://app.wellneuro.fr/login`.

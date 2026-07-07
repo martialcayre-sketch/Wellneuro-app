@@ -43,6 +43,27 @@ Colle le BASE64 du step précédent et appuie sur **Ctrl+D**.
 
 ## Security
 
+### `release_go_no_go.sh` - go/no-go technique production
+
+Exécute les garde-fous de bascule en une commande:
+
+1. `bash scripts/check_no_secrets.sh`
+2. `cd web && npm run type-check`
+3. `cd web && NODE_ENV=production npm run build`
+4. smoke HTTP sur l'URL de prod (`/login`, `/`)
+
+Usage:
+
+```bash
+bash scripts/release_go_no_go.sh --url https://app.wellneuro.fr
+```
+
+Option:
+
+```bash
+bash scripts/release_go_no_go.sh --skip-http
+```
+
 - ❌ Ne committe JAMAIS `.clasprc.json` (credentials personnels)
 - ❌ Ne partage JAMAIS le BASE64 des credentials
 - ✓ `.clasp.json` est safe (pas de secrets)

@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/Badge';
 
 interface NavBarProps {
   email: string;
+  buildLabel: string;
 }
 
-export function NavBar({ email }: NavBarProps) {
+export function NavBar({ email, buildLabel }: NavBarProps) {
   return (
     <header className="bg-surface border-b border-border px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -16,6 +17,7 @@ export function NavBar({ email }: NavBarProps) {
           Wellneuro
         </span>
         <Badge variant="neutral">Espace praticien — v2</Badge>
+        <Badge variant="warning">{buildLabel}</Badge>
       </div>
       <div className="flex items-center gap-4">
         <Link

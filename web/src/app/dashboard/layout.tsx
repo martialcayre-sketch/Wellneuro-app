@@ -6,12 +6,15 @@ import type { ReactNode } from 'react';
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession(authOptions);
+  const commitSha = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.NEXT_PUBLIC_APP_VERSION ?? 'local';
+  const buildLabel = `build ${commitSha.slice(0, 7)}`;
+
   if (!session) {
     redirect('/login');
   }
   return (
     <div data-theme="praticien" className="min-h-screen bg-background text-foreground">
-      <NavBar email={session.user?.email ?? ''} />
+      <NavBar email={session.user?.email ?? ''} buildLabel={buildLabel} />
       <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
     </div>
   );

@@ -35,7 +35,16 @@ npm run dev                        # http://localhost:3000
 bash scripts/check_no_secrets.sh
 cd web && npm run type-check
 cd web && npm run lint
+bash scripts/release_go_no_go.sh
 ```
+
+Commande rapide de bascule (go/no-go technique):
+
+```bash
+bash scripts/release_go_no_go.sh --url https://app.wellneuro.fr
+```
+
+Ajouter `--skip-http` si vous voulez ignorer le smoke HTTP (ex: environnement hors-ligne).
 
 ## Setup Supabase Prisma Vercel
 
