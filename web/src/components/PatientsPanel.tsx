@@ -77,6 +77,9 @@ export function PatientsPanel() {
     dateLimite: '',
     notes: '',
   });
+  // Filtre catégorie du sélecteur de questionnaire ('' = Toutes). Purement
+  // côté client : restreint la liste sans appel réseau ni migration.
+  const [categorieFilter, setCategorieFilter] = useState('');
 
   const loadData = async () => {
     const r = await fetch('/api/praticien/patients');
@@ -271,6 +274,14 @@ export function PatientsPanel() {
   const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
   const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground disabled:opacity-60';
 
+  // Catégories distinctes (tri alphabétique FR) pour le filtre d'assignation.
+  const categories = Array.from(new Set(questionnaires.map(q => q.categorie).filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b, 'fr'),
+  );
+  const questionnairesFiltres = categorieFilter
+    ? questionnaires.filter(q => q.categorie === categorieFilter)
+    : questionnaires;
+
   return (
     <div className="flex flex-col gap-6">
 
@@ -306,9 +317,24 @@ export function PatientsPanel() {
               <option key={p.idPatient} value={p.email}>{`${p.prenom} ${p.nom} — ${p.email}`}</option>
             ))}
           </select>
+          <select
+            value={categorieFilter}
+            onChange={e => {
+              setCategorieFilter(e.target.value);
+              // Réinitialise le questionnaire sélectionné s'il n'est plus visible.
+              setAssignationForm(p => ({ ...p, idQuestionnaire: '' }));
+            }}
+            className={inputCls}
+            aria-label="Filtrer par catégorie"
+          >
+            <option value="">Toutes les catégories</option>
+            {categories.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
           <select required value={assignationForm.idQuestionnaire} onChange={e => setAssignationForm(p => ({ ...p, idQuestionnaire: e.target.value }))} className={inputCls}>
             <option value="">Questionnaire *</option>
-            {questionnaires.map(q => (
+            {questionnairesFiltres.map(q => (
               <option key={q.id} value={q.id}>{`${q.titre} (${q.categorie})`}</option>
             ))}
           </select>
