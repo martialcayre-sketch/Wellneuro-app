@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { Badge } from './Badge';
 
 export type PatientRowData = {
@@ -12,8 +13,6 @@ export type PatientRowData = {
 export function PatientRow({
   patient,
   onEdit,
-  onToggleResultats,
-  resultatsOuverts,
   onDelete,
   confirmationSuppression,
   onDemanderSuppression,
@@ -22,8 +21,6 @@ export function PatientRow({
 }: {
   patient: PatientRowData;
   onEdit: (patient: PatientRowData) => void;
-  onToggleResultats: (email: string) => void;
-  resultatsOuverts: boolean;
   onDelete: (idPatient: string) => void;
   confirmationSuppression: boolean;
   onDemanderSuppression: (idPatient: string) => void;
@@ -46,12 +43,12 @@ export function PatientRow({
         </button>
       </td>
       <td className="px-4 py-2">
-        <button
-          onClick={() => onToggleResultats(patient.email)}
-          className={`text-xs hover:underline ${resultatsOuverts ? 'text-accent font-medium' : 'text-muted-foreground hover:text-foreground'}`}
+        <Link
+          href={`/dashboard/patients/${encodeURIComponent(patient.idPatient)}`}
+          className="text-xs text-muted-foreground hover:text-foreground hover:underline"
         >
-          {resultatsOuverts ? 'Masquer' : 'Résultats'}
-        </button>
+          Fiche patient
+        </Link>
       </td>
       <td className="px-4 py-2">
         {confirmationSuppression ? (
