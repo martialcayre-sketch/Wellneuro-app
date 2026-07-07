@@ -1,7 +1,7 @@
 import { PrismaClient } from '@/generated/prisma';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { withSupabaseSslMode } from '@/lib/postgres';
+import { withSupabaseSslMode, supabasePoolSsl } from '@/lib/postgres';
 
 function createPrismaClient(): PrismaClient {
   const rawConnectionString = process.env.DATABASE_URL;
@@ -9,7 +9,8 @@ function createPrismaClient(): PrismaClient {
     throw new Error('DATABASE_URL est absent de web/.env.local');
   }
   const connectionString = withSupabaseSslMode(rawConnectionString);
-  const pool = new Pool({ connectionString });
+  const ssl = supabasePoolSsl(rawConnectionString);
+  const pool = new Pool({ connectionString, ssl });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }

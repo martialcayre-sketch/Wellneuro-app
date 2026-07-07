@@ -6,7 +6,7 @@
 import { PrismaClient } from '../src/generated/prisma';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { withSupabaseSslMode } from '../src/lib/postgres';
+import { withSupabaseSslMode, supabasePoolSsl } from '../src/lib/postgres';
 import { verifierMoteurEquilibre } from '../src/lib/equilibre/score.check';
 import { verifierObjetsCliniques } from '../src/lib/equilibre/objetsCliniques.check';
 import { verifierMomentum } from '../src/lib/equilibre/momentum.check';
@@ -17,7 +17,10 @@ const DATABASE_URL =
   process.env.DATABASE_URL ??
   'postgresql://node@localhost:5433/wellneuro_dev?host=/home/node/pgdata&schema=public';
 
-const pool = new Pool({ connectionString: withSupabaseSslMode(DATABASE_URL) });
+const pool = new Pool({
+  connectionString: withSupabaseSslMode(DATABASE_URL),
+  ssl: supabasePoolSsl(DATABASE_URL),
+});
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
