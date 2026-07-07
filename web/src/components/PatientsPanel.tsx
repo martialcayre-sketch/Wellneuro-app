@@ -10,6 +10,10 @@ import type {
 } from '@/app/api/praticien/patients/route';
 import type { CreateAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
+import type { QuestionnairesRegistryApiResponse } from '@/app/api/praticien/questionnaires/registry/route';
+import type { CreateConsultationResponse } from '@/app/api/praticien/consultations/route';
+import type { TokenActionResponse } from '@/app/api/praticien/token/route';
+import { MOTIFS_CONSULTATION } from '@/lib/consultation/motifs';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { PatientRow } from '@/components/ui/PatientRow';
 import { Pagination } from '@/components/ui/Pagination';
@@ -51,9 +55,16 @@ type EditPatientState = {
   actif: 'OUI' | 'NON';
 };
 
+type SuggestedPackSelection = {
+  registryPackId: string;
+  titre: string;
+  nonce: number;
+};
+
 export function PatientsPanel() {
   const [data, setData] = useState<PatientsApiResponse | null>(null);
   const [questionnaires, setQuestionnaires] = useState<QuestionnairesApiResponse['questionnaires']>([]);
+  const [registry, setRegistry] = useState<QuestionnairesRegistryApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingAssignation, setSavingAssignation] = useState(false);
@@ -81,6 +92,13 @@ export function PatientsPanel() {
   // Filtre catégorie du sélecteur de questionnaire ('' = Toutes). Purement
   // côté client : restreint la liste sans appel réseau ni migration.
   const [categorieFilter, setCategorieFilter] = useState('');
+  const [categorieView, setCategorieView] = useState<'fonctionnelle' | 'historique'>('fonctionnelle');
+  // Consultation / accès portail patient.
+  const [consultationForm, setConsultationForm] = useState({ idPatient: '', motif: '' });
+  const [savingConsultation, setSavingConsultation] = useState(false);
+  const [tokenAction, setTokenAction] = useState<'resend' | 'revoke' | null>(null);
+  const [consultationFeedback, setConsultationFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [suggestedPackSelection, setSuggestedPackSelection] = useState<SuggestedPackSelection | null>(null);
 
   const loadData = async () => {
     const r = await fetch('/api/praticien/patients');
@@ -118,11 +136,29 @@ export function PatientsPanel() {
     setQuestionnaires(json.questionnaires ?? []);
   };
 
+  const loadRegistry = async () => {
+    const r = await fetch('/api/praticien/questionnaires/registry');
+    const json = (await r.json()) as QuestionnairesRegistryApiResponse;
+    setRegistry(json);
+  };
+
   useEffect(() => {
-    Promise.all([loadData(), loadQuestionnaires()])
+    Promise.all([loadData(), loadQuestionnaires(), loadRegistry()])
       .catch(() => setData({ patients: [], assignations: [], unavailable: true, reason: 'exception' }))
       .finally(() => setLoading(false));
   }, []);
+
+  const categoriesRegistry = registry?.categories ?? [];
+  const packsRegistry = registry?.packs ?? [];
+  const categoryById = new Map<string, (typeof categoriesRegistry)[number]>(
+    categoriesRegistry.map(c => [c.id as string, c]),
+  );
+  const packById = new Map<string, (typeof packsRegistry)[number]>(
+    packsRegistry.map(p => [p.id as string, p]),
+  );
+
+  const getFunctionalCategoryLabel = (id: string): string => categoryById.get(id)?.titre ?? id;
+  const getFunctionalCategoryPhase = (id: string): 'mvp' | 'phase_2' => categoryById.get(id)?.phase ?? 'phase_2';
 
   // Recherche/tri changés : revient en page 1 et recharge (debounce sur la
   // recherche pour éviter une requête par frappe clavier). Ignoré au premier
@@ -205,6 +241,80 @@ export function PatientsPanel() {
     }
   };
 
+  const onCreateConsultation = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSavingConsultation(true);
+    setConsultationFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/consultations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: consultationForm.idPatient, motif: consultationForm.motif }),
+      });
+      const json = (await r.json()) as CreateConsultationResponse;
+      if (!r.ok || !json.success) {
+        setConsultationFeedback({ ok: false, msg: erreurLisible(json.reason, json.error) });
+        return;
+      }
+      setConsultationFeedback({ ok: true, msg: `Consultation créée, lien d’accès envoyé au patient.` });
+      setConsultationForm({ idPatient: '', motif: '' });
+    } catch {
+      setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    } finally {
+      setSavingConsultation(false);
+    }
+  };
+
+  const onResendToken = async () => {
+    if (!consultationForm.idPatient) {
+      setConsultationFeedback({ ok: false, msg: 'Sélectionnez un patient.' });
+      return;
+    }
+    setTokenAction('resend');
+    setConsultationFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: consultationForm.idPatient, action: 'resend' }),
+      });
+      const json = (await r.json()) as TokenActionResponse;
+      setConsultationFeedback(
+        !r.ok || !json.success
+          ? { ok: false, msg: erreurLisible(json.reason, json.error) }
+          : { ok: true, msg: 'Lien d’accès renvoyé au patient.' }
+      );
+    } catch {
+      setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    } finally {
+      setTokenAction(null);
+    }
+  };
+
+  const onRevokeToken = async () => {
+    if (!consultationForm.idPatient) {
+      setConsultationFeedback({ ok: false, msg: 'Sélectionnez un patient.' });
+      return;
+    }
+    setTokenAction('revoke');
+    setConsultationFeedback(null);
+    try {
+      const r = await fetch(`/api/praticien/token?idPatient=${encodeURIComponent(consultationForm.idPatient)}`, {
+        method: 'DELETE',
+      });
+      const json = (await r.json()) as TokenActionResponse;
+      setConsultationFeedback(
+        !r.ok || !json.success
+          ? { ok: false, msg: erreurLisible(json.reason, json.error) }
+          : { ok: true, msg: 'Accès au portail révoqué.' }
+      );
+    } catch {
+      setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    } finally {
+      setTokenAction(null);
+    }
+  };
+
   const openEdit = (p: PatientsApiResponse['patients'][number]) => {
     setEditState({ idPatient: p.idPatient, telephone: p.telephone, actif: p.actif === 'OUI' ? 'OUI' : 'NON' });
     setEditFeedback(null);
@@ -276,12 +386,29 @@ export function PatientsPanel() {
   const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground disabled:opacity-60';
 
   // Catégories distinctes (tri alphabétique FR) pour le filtre d'assignation.
-  const categories = Array.from(new Set(questionnaires.map(q => q.categorie).filter(Boolean))).sort((a, b) =>
-    a.localeCompare(b, 'fr'),
-  );
+  const categories = categorieView === 'fonctionnelle'
+    ? Array.from(new Set(questionnaires.map(q => q.categorieFonctionnellePrincipale).filter(Boolean))).sort((a, b) =>
+      getFunctionalCategoryLabel(a).localeCompare(getFunctionalCategoryLabel(b), 'fr'),
+    )
+    : Array.from(new Set(questionnaires.map(q => q.categorie).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b, 'fr'),
+    );
+
   const questionnairesFiltres = categorieFilter
-    ? questionnaires.filter(q => q.categorie === categorieFilter)
+    ? questionnaires.filter(q =>
+      categorieView === 'fonctionnelle'
+        ? q.categorieFonctionnellePrincipale === categorieFilter
+        : q.categorie === categorieFilter,
+    )
     : questionnaires;
+
+  const questionnaireSelectionne = questionnaires.find(q => q.id === assignationForm.idQuestionnaire) ?? null;
+  const packsSuggeres = (questionnaireSelectionne?.packsRecommandes ?? []).map(packId => ({
+    id: packId,
+    titre: packById.get(packId)?.titre ?? packId,
+    phase: packById.get(packId)?.phase ?? 'phase_2',
+    niveau: packById.get(packId)?.niveau ?? 'approfondissement',
+  }));
 
   return (
     <div className="flex flex-col gap-6">
@@ -308,6 +435,45 @@ export function PatientsPanel() {
         </form>
       </div>
 
+      {/* Consultation / accès portail patient */}
+      <div className="bg-surface border border-border rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-foreground mb-1">Consultation &amp; accès patient</h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Envoie au patient un lien d’accès permanent à son espace : consentement, fiche de renseignements,
+          anamnèse, puis assignation automatique du pack de base.
+        </p>
+        <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateConsultation}>
+          <select required value={consultationForm.idPatient} onChange={e => setConsultationForm(p => ({ ...p, idPatient: e.target.value }))} className={inputCls}>
+            <option value="">Patient *</option>
+            {(data?.patients ?? []).map(p => (
+              <option key={p.idPatient} value={p.idPatient}>{`${p.prenom} ${p.nom} — ${p.email}`}</option>
+            ))}
+          </select>
+          <select value={consultationForm.motif} onChange={e => setConsultationForm(p => ({ ...p, motif: e.target.value }))} className={inputCls} aria-label="Motif de consultation">
+            <option value="">Motif de consultation (optionnel)</option>
+            {MOTIFS_CONSULTATION.map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+          <div className="flex flex-wrap items-center gap-3 md:col-span-2">
+            <button type="submit" disabled={savingConsultation || tokenAction !== null} className={btnPrimary}>
+              {savingConsultation ? 'Envoi...' : 'Créer une consultation & envoyer le lien'}
+            </button>
+            <button type="button" onClick={onResendToken} disabled={savingConsultation || tokenAction !== null} className="px-3 py-2 rounded-lg text-sm text-foreground border border-border disabled:opacity-60">
+              {tokenAction === 'resend' ? 'Envoi...' : 'Renvoyer le lien'}
+            </button>
+            <button type="button" onClick={onRevokeToken} disabled={savingConsultation || tokenAction !== null} className="px-3 py-2 rounded-lg text-sm text-red-500 border border-border disabled:opacity-60">
+              {tokenAction === 'revoke' ? 'Révocation...' : 'Révoquer l’accès'}
+            </button>
+            {consultationFeedback && (
+              <span className={`text-sm ${consultationFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>
+                {consultationFeedback.msg}
+              </span>
+            )}
+          </div>
+        </form>
+      </div>
+
       {/* Nouvelle assignation */}
       <div className="bg-surface border border-border rounded-xl p-4">
         <h3 className="text-sm font-semibold text-foreground mb-3">Nouvelle assignation questionnaire</h3>
@@ -317,6 +483,19 @@ export function PatientsPanel() {
             {(data?.patients ?? []).map(p => (
               <option key={p.idPatient} value={p.email}>{`${p.prenom} ${p.nom} — ${p.email}`}</option>
             ))}
+          </select>
+          <select
+            value={categorieView}
+            onChange={e => {
+              setCategorieView(e.target.value as 'fonctionnelle' | 'historique');
+              setCategorieFilter('');
+              setAssignationForm(p => ({ ...p, idQuestionnaire: '' }));
+            }}
+            className={inputCls}
+            aria-label="Type de catégories"
+          >
+            <option value="fonctionnelle">Catégories fonctionnelles (recommandé)</option>
+            <option value="historique">Catégories historiques</option>
           </select>
           <select
             value={categorieFilter}
@@ -330,15 +509,50 @@ export function PatientsPanel() {
           >
             <option value="">Toutes les catégories</option>
             {categories.map(c => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>
+                {categorieView === 'fonctionnelle'
+                  ? `${getFunctionalCategoryLabel(c)}${getFunctionalCategoryPhase(c) === 'mvp' ? ' (MVP)' : ''}`
+                  : c}
+              </option>
             ))}
           </select>
           <select required value={assignationForm.idQuestionnaire} onChange={e => setAssignationForm(p => ({ ...p, idQuestionnaire: e.target.value }))} className={inputCls}>
             <option value="">Questionnaire *</option>
             {questionnairesFiltres.map(q => (
-              <option key={q.id} value={q.id}>{`${q.titre} (${q.categorie})`}</option>
+              <option key={q.id} value={q.id}>
+                {`${q.titre} (${categorieView === 'fonctionnelle' ? getFunctionalCategoryLabel(q.categorieFonctionnellePrincipale) : q.categorie})`}
+              </option>
             ))}
           </select>
+          <div className="md:col-span-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
+            <p className="text-xs text-muted-foreground mb-1">Packs suggérés</p>
+            {!questionnaireSelectionne ? (
+              <p className="text-xs text-muted-foreground">Sélectionnez un questionnaire pour voir les packs recommandés.</p>
+            ) : packsSuggeres.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Aucun pack recommandé pour ce questionnaire.</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {packsSuggeres.map(pack => (
+                  <button
+                    key={pack.id}
+                    type="button"
+                    onClick={() =>
+                      setSuggestedPackSelection({
+                        registryPackId: pack.id,
+                        titre: pack.titre,
+                        nonce: Date.now(),
+                      })
+                    }
+                    className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-1 text-xs text-foreground hover:bg-muted"
+                  >
+                    <span>{pack.titre}</span>
+                    <span className="text-muted-foreground">· {pack.niveau}</span>
+                    {pack.phase === 'mvp' && <span className="text-muted-foreground">· MVP</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <input type="date" value={assignationForm.dateLimite} onChange={e => setAssignationForm(p => ({ ...p, dateLimite: e.target.value }))} className={inputCls} />
           <input value={assignationForm.notes} onChange={e => setAssignationForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notes praticien (optionnel)" className={inputCls} maxLength={500} />
           <div className="flex items-center gap-3 md:col-span-2">
@@ -357,6 +571,8 @@ export function PatientsPanel() {
       {/* Packs de questionnaires */}
       <PacksPanel
         questionnaires={questionnaires}
+        registry={registry}
+        suggestedPackSelection={suggestedPackSelection}
         patients={(data?.patients ?? []).map(p => ({ email: p.email, prenom: p.prenom, nom: p.nom }))}
       />
 

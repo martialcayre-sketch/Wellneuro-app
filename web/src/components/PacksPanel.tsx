@@ -4,19 +4,29 @@ import { useEffect, useState } from 'react';
 import type { Pack, PacksApiResponse, MutatePackResponse } from '@/app/api/praticien/packs/route';
 import type { AssignPackResponse } from '@/app/api/praticien/packs/assign/route';
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
+import type { QuestionnairesRegistryApiResponse } from '@/app/api/praticien/questionnaires/registry/route';
 import { Badge } from '@/components/ui/Badge';
 
 type Questionnaire = QuestionnairesApiResponse['questionnaires'][number];
 type PatientLite = { email: string; prenom: string; nom: string };
+type SuggestedPackSelection = {
+  registryPackId: string;
+  titre: string;
+  nonce: number;
+};
 
 const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
 const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground disabled:opacity-60';
 
 export function PacksPanel({
   questionnaires,
+  registry,
+  suggestedPackSelection,
   patients,
 }: {
   questionnaires: Questionnaire[];
+  registry: QuestionnairesRegistryApiResponse | null;
+  suggestedPackSelection: SuggestedPackSelection | null;
   patients: PatientLite[];
 }) {
   const [packs, setPacks] = useState<Pack[]>([]);
@@ -31,6 +41,7 @@ export function PacksPanel({
   const [thematique, setThematique] = useState('');
   const [description, setDescription] = useState('');
   const [categorieFilter, setCategorieFilter] = useState('');
+  const [categorieView, setCategorieView] = useState<'fonctionnelle' | 'historique'>('fonctionnelle');
   const [selectedQids, setSelectedQids] = useState<Set<string>>(new Set());
 
   // Formulaire d'assignation groupée
@@ -52,11 +63,57 @@ export function PacksPanel({
     loadPacks();
   }, []);
 
-  const categories = Array.from(new Set(questionnaires.map(q => q.categorie).filter(Boolean))).sort((a, b) =>
-    a.localeCompare(b, 'fr'),
+  useEffect(() => {
+    if (!suggestedPackSelection) return;
+
+    const normalize = (value: string) =>
+      value
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+
+    const target = normalize(suggestedPackSelection.titre);
+    const actifs = packs.filter(p => p.actif);
+
+    const match =
+      actifs.find(p => normalize(p.nom) === target) ??
+      actifs.find(p => normalize(p.nom).includes(target) || target.includes(normalize(p.nom)));
+
+    if (!match) {
+      setAssignFeedback({
+        ok: false,
+        msg: `Le pack suggéré « ${suggestedPackSelection.titre} » n'existe pas encore parmi les packs actifs.`,
+      });
+      return;
+    }
+
+    setAssignForm(prev => ({ ...prev, idPack: match.idPack }));
+    setAssignFeedback({ ok: true, msg: `Pack « ${match.nom} » préselectionné pour l'assignation.` });
+  }, [packs, suggestedPackSelection]);
+
+  const categoriesRegistry = registry?.categories ?? [];
+  const categoryById = new Map<string, (typeof categoriesRegistry)[number]>(
+    categoriesRegistry.map(c => [c.id as string, c]),
   );
+
+  const getFunctionalCategoryLabel = (id: string): string => categoryById.get(id)?.titre ?? id;
+  const getFunctionalCategoryPhase = (id: string): 'mvp' | 'phase_2' => categoryById.get(id)?.phase ?? 'phase_2';
+
+  const categories = categorieView === 'fonctionnelle'
+    ? Array.from(new Set(questionnaires.map(q => q.categorieFonctionnellePrincipale).filter(Boolean))).sort((a, b) =>
+      getFunctionalCategoryLabel(a).localeCompare(getFunctionalCategoryLabel(b), 'fr'),
+    )
+    : Array.from(new Set(questionnaires.map(q => q.categorie).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b, 'fr'),
+    );
+
   const questionnairesFiltres = categorieFilter
-    ? questionnaires.filter(q => q.categorie === categorieFilter)
+    ? questionnaires.filter(q =>
+      categorieView === 'fonctionnelle'
+        ? q.categorieFonctionnellePrincipale === categorieFilter
+        : q.categorie === categorieFilter,
+    )
     : questionnaires;
 
   const toggleQid = (id: string) => {
@@ -114,6 +171,31 @@ export function PacksPanel({
     }
   };
 
+  const onToggleDefaut = async (idPack: string, nomPack: string, parDefaut: boolean) => {
+    setFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/packs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPack, parDefaut }),
+      });
+      const json = (await r.json()) as MutatePackResponse;
+      if (!r.ok || !json.success) {
+        setFeedback({ ok: false, msg: json.error ?? 'Erreur lors de la mise à jour du pack.' });
+        return;
+      }
+      setFeedback({
+        ok: true,
+        msg: parDefaut
+          ? `Pack « ${nomPack} » défini comme pack de base.`
+          : `Pack « ${nomPack} » n’est plus le pack de base.`,
+      });
+      await loadPacks();
+    } catch {
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    }
+  };
+
   const onAssignPack = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setAssigning(true);
@@ -156,11 +238,28 @@ export function PacksPanel({
           </div>
 
           <div className="flex items-center gap-3">
+            <label className="text-xs text-muted-foreground">Vue catégories</label>
+            <select
+              value={categorieView}
+              onChange={e => {
+                setCategorieView(e.target.value as 'fonctionnelle' | 'historique');
+                setCategorieFilter('');
+              }}
+              className={inputCls}
+              aria-label="Type de catégories"
+            >
+              <option value="fonctionnelle">Fonctionnelles (recommandé)</option>
+              <option value="historique">Historiques</option>
+            </select>
             <label className="text-xs text-muted-foreground">Filtrer les questionnaires</label>
             <select value={categorieFilter} onChange={e => setCategorieFilter(e.target.value)} className={inputCls} aria-label="Filtrer par catégorie">
               <option value="">Toutes les catégories</option>
               {categories.map(c => (
-                <option key={c} value={c}>{c}</option>
+                <option key={c} value={c}>
+                  {categorieView === 'fonctionnelle'
+                    ? `${getFunctionalCategoryLabel(c)}${getFunctionalCategoryPhase(c) === 'mvp' ? ' (MVP)' : ''}`
+                    : c}
+                </option>
               ))}
             </select>
             <span className="text-xs text-muted-foreground">{selectedQids.size} sélectionné(s)</span>
@@ -171,7 +270,9 @@ export function PacksPanel({
               <label key={q.id} className="flex items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
                 <input type="checkbox" checked={selectedQids.has(q.id)} onChange={() => toggleQid(q.id)} />
                 <span>{q.titre}</span>
-                <span className="text-xs text-muted-foreground">({q.categorie})</span>
+                <span className="text-xs text-muted-foreground">
+                  ({categorieView === 'fonctionnelle' ? getFunctionalCategoryLabel(q.categorieFonctionnellePrincipale) : q.categorie})
+                </span>
               </label>
             ))}
           </div>
@@ -199,23 +300,33 @@ export function PacksPanel({
             {packs.map(p => (
               <li key={p.idPack} className="flex items-start justify-between gap-3 border border-border rounded-lg px-3 py-2">
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium text-foreground">{p.nom}</span>
                     {p.thematique && <span className="text-xs text-muted-foreground">· {p.thematique}</span>}
                     <Badge variant={p.actif ? 'success' : 'neutral'}>{p.actif ? 'Actif' : 'Inactif'}</Badge>
+                    {p.parDefaut && <Badge variant="warning">Pack de base</Badge>}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
                     {p.qids.length} questionnaire(s) : {p.qids.map(id => titreParId.get(id) ?? id).join(', ')}
                   </p>
                 </div>
                 {p.actif && (
-                  <button
-                    type="button"
-                    onClick={() => onDesactiver(p.idPack, p.nom)}
-                    className="text-xs text-red-400 hover:underline shrink-0"
-                  >
-                    Désactiver
-                  </button>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => onToggleDefaut(p.idPack, p.nom, !p.parDefaut)}
+                      className="text-xs text-foreground hover:underline"
+                    >
+                      {p.parDefaut ? 'Retirer par défaut' : 'Définir par défaut'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDesactiver(p.idPack, p.nom)}
+                      className="text-xs text-red-400 hover:underline"
+                    >
+                      Désactiver
+                    </button>
+                  </div>
                 )}
               </li>
             ))}
