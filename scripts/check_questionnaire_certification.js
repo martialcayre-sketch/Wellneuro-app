@@ -15,16 +15,20 @@ const mappingPath = path.join(root, 'docs/questionnaires-drive-mapping.md');
 function stripModuleSource(source) {
   return source
     .replace(/^\s*import\s+[^;]*?from\s+['"]\.[^'"]*['"];?\s*$/gm, '')
+    .replace(/^\s*export\s+\*\s+from\s+['"]\.[^'"]*['"];?\s*$/gm, '')
+    .replace(/^\s*export\s+\{[^}]*\}\s+from\s+['"]\.[^'"]*['"];?\s*$/gm, '')
     .replace(/^export\s+(const|function|class|let|var)\b/gm, '$1')
     .replace(/^export\s+default\s+/gm, '');
 }
 
 function localImportPaths(source, dir) {
-  const re = /import\s+[^;]*?from\s+['"](\.[^'"]*)['"]/g;
+  const re = /(import\s+[^;]*?from\s+['"](\.[^'"]*)['"])|(export\s+(?:\*|\{[^}]*\})\s+from\s+['"](\.[^'"]*)['"])/g;
   const out = [];
   let match;
   while ((match = re.exec(source))) {
-    let abs = path.resolve(dir, match[1]);
+    const rel = match[2] || match[4];
+    if (!rel) continue;
+    let abs = path.resolve(dir, rel);
     if (!abs.endsWith('.ts')) abs += '.ts';
     out.push(abs);
   }
