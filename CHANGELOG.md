@@ -4,6 +4,14 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Écran patient « Mon équilibre » (2026-07-07)
+
+- Le portail patient (`patient/[idAssignation]`) gagne deux nouveaux écrans dans son parcours existant (pas de nouvelle authentification, pas de nouvelle route Next) : accessibles via un bouton "Voir Mon équilibre" depuis l'écran de consultation (réponses verrouillées).
+  - **Mon équilibre** (`MonEquilibreAccueil.tsx`) : indicateur circulaire (indice global), tendance de momentum (hausse/stable/baisse — jamais le delta chiffré ni les niveaux de preuve, réservés praticien), frise de trajectoire, 2-3 priorités en langage patient (`libellePatient`, jamais de jargon clinique).
+  - **Mes 12 besoins** (`MonEquilibreDetail.tsx`) : réutilise `CerclesConcentriques` en mode patient (légende simplifiée par strate, sans niveau de preuve).
+- Nouvelle route API `api/patient/equilibre?id=&email=` (même vérification d'accès que `api/patient/reponses`) : expose uniquement des données patient-safe.
+- Dette signalée, hors périmètre de ce lot : le reste du portail patient (`EmailGate`, `ConsentScreen`, `GenericQuestionnaire`) reste en Tailwind bleu en dur, pas encore migré vers les tokens D1 — ces deux nouveaux écrans sont les premiers du portail patient à les utiliser.
+
 ### Nettoyage dashboard praticien — D1 (2026-07-07)
 
 - `dashboard/page.tsx` : suppression de la bannière "Migration en cours" (renvoyant vers l'app Apps Script décommissionnée le 2026-07-03) et de la checklist associée devenue obsolète ; "Lot C5 — Décommission Apps Script" passe à fait.

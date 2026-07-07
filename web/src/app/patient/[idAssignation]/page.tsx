@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import type { PatientQuestionnaireResponse } from '@/app/api/patient/questionnaire/route';
 import type { PatientSubmitResponse } from '@/app/api/patient/submit/route';
+import { MonEquilibreAccueil } from '@/components/patient/MonEquilibreAccueil';
+import { MonEquilibreDetail } from '@/components/patient/MonEquilibreDetail';
 
 // ─── types catalogue ────────────────────────────────────────────────────────
 type QuestionOption = { v: number; l: string };
@@ -215,10 +217,11 @@ function ConsentScreen({ idAssignation, email, onAccepted }: {
 }
 
 // ─── écran de consultation (réponses verrouillées) ──────────────────────────
-function ConsultationScreen({ idAssignation, email, statutReponses }: {
+function ConsultationScreen({ idAssignation, email, statutReponses, onVoirEquilibre }: {
   idAssignation: string;
   email: string;
   statutReponses: string;
+  onVoirEquilibre: () => void;
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -270,6 +273,14 @@ function ConsultationScreen({ idAssignation, email, statutReponses }: {
             Vos réponses sont verrouillées en lecture seule.
           </p>
         )}
+        <button
+          type="button"
+          onClick={onVoirEquilibre}
+          className="w-full mb-3 py-2.5 px-4 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors"
+        >
+          Voir Mon équilibre
+        </button>
+
         {demandeEnvoyee ? (
           <p className="text-sm text-blue-700 bg-blue-50 rounded-lg px-4 py-3">
             Votre demande de modification a été transmise à votre praticien.
@@ -598,6 +609,8 @@ type Step =
   | { name: 'consent'; email: string; data: VerifiedData }
   | { name: 'consultation'; email: string; data: VerifiedData }
   | { name: 'questionnaire'; email: string; data: VerifiedData }
+  | { name: 'equilibre'; email: string; data: VerifiedData }
+  | { name: 'equilibre-detail'; email: string; data: VerifiedData }
   | { name: 'success' };
 
 function stepAfterVerification(email: string, data: VerifiedData): Step {
@@ -645,6 +658,30 @@ export default function PatientQuestionnairePage() {
         idAssignation={data.assignation.idAssignation}
         email={email}
         statutReponses={data.assignation.statutReponses}
+        onVoirEquilibre={() => setStep({ name: 'equilibre', email, data })}
+      />
+    );
+  }
+
+  if (step.name === 'equilibre') {
+    const { email, data } = step;
+    return (
+      <MonEquilibreAccueil
+        idAssignation={data.assignation.idAssignation}
+        email={email}
+        onVoirDetail={() => setStep({ name: 'equilibre-detail', email, data })}
+        onRetour={() => setStep({ name: 'consultation', email, data })}
+      />
+    );
+  }
+
+  if (step.name === 'equilibre-detail') {
+    const { email, data } = step;
+    return (
+      <MonEquilibreDetail
+        idAssignation={data.assignation.idAssignation}
+        email={email}
+        onRetour={() => setStep({ name: 'equilibre', email, data })}
       />
     );
   }
