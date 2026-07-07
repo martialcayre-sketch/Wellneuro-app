@@ -11,11 +11,12 @@ import {
 import { calculerNiveauxPreuveTousLesBesoins } from '@/lib/equilibre/evidence';
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
 import { calculerObjetsCliniques } from '@/lib/equilibre/objetsCliniques';
-import type { JalonMomentum, NiveauPreuveBesoin, ResultatMomentum } from '@/lib/equilibre/types';
+import type { JalonMomentum, NiveauPreuveBesoin, ResultatMomentum, StrateCode } from '@/lib/equilibre/types';
 
 export type PrioriteBesoin = {
   besoin: number;
   libellePraticien: string;
+  strate: StrateCode; // CORPS | ANCRAGE | ESPRIT — pour la viz cercles concentriques
   couverture: number | null; // 0-100, plus haut = mieux
   niveauPreuve: NiveauPreuveBesoin;
 };
@@ -93,6 +94,7 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
     const priorites: PrioriteBesoin[] = BESOINS.map(b => ({
       besoin: b.id,
       libellePraticien: b.libellePraticien,
+      strate: b.strate,
       couverture: versCent(couverturesParBesoin.get(b.id) ?? null),
       niveauPreuve: niveauxPreuve[b.id],
     })).sort((a, b) => {

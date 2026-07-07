@@ -10,6 +10,7 @@ import type { ResultatMomentum } from '@/lib/equilibre/types';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { EvidenceBadge } from '@/components/ui/EvidenceBadge';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
 
 type ScoreCertification = { source?: string; status?: string };
 
@@ -177,6 +178,23 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
           <ObjetGauge label="Réserve d'adaptation" value={objetsCliniques.reserveAdaptation} />
           <ObjetGauge label="Clarté" value={objetsCliniques.clarte} />
           <MomentumCard momentum={objetsCliniques.momentum} />
+        </div>
+      </section>
+
+      {/* Vue d'ensemble de l'équilibre — cercles concentriques par strate */}
+      <section>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Vue d'ensemble de l'équilibre
+        </h3>
+        <div className="bg-surface border border-border rounded-xl p-4 flex justify-center">
+          <CerclesConcentriques
+            besoins={priorites.map(p => ({
+              id: p.besoin,
+              libelle: p.libellePraticien,
+              strate: p.strate,
+              couverture: p.couverture,
+            }))}
+          />
         </div>
       </section>
 
