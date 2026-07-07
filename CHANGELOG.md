@@ -4,6 +4,12 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Nettoyage dashboard praticien — D1 (2026-07-07)
+
+- `dashboard/page.tsx` : suppression de la bannière "Migration en cours" (renvoyant vers l'app Apps Script décommissionnée le 2026-07-03) et de la checklist associée devenue obsolète ; "Lot C5 — Décommission Apps Script" passe à fait.
+- `SynthesePanel.tsx` migré vers les tokens sémantiques du design system D1 (`bg-surface`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`) — dernier composant praticien encore sur l'ancien theming Tailwind en dur.
+- `scripts/check_no_secrets.sh` : correction d'un faux positif — l'exclusion des fichiers d'environnement locaux (`.env*.local*`) ne couvrait pas `.env.production.local`, dont la chaîne de connexion PostgreSQL était détectée à tort comme une adresse email non autorisée. Fichier non versionné, aucune fuite réelle.
+
 ### Lot 7 — Découpage du catalogue par domaine (2026-07-06)
 
 - Amorce du refactor de `web/src/lib/questions.ts` : les jeux d'options standards (`O_*`) et les fabriques d'items (`q`/`qn`/`qs`) sont déplacés dans `web/src/lib/questionnaires/shared.ts` et importés par `questions.ts`.
