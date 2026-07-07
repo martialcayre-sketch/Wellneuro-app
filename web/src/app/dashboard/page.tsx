@@ -1,6 +1,14 @@
+import Link from 'next/link';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { MetricsSection } from '@/components/MetricsSection';
+import { PatientsATraiter } from '@/components/PatientsATraiter';
+
+const ACCES_RAPIDES = [
+  { href: '/dashboard/patients', label: 'Patients', desc: 'Gérer les patients et les assignations' },
+  { href: '/dashboard/synthese', label: 'Synthèse IA', desc: 'Générer et consulter les synthèses' },
+  { href: '/dashboard/parametres', label: 'Paramètres', desc: 'Configurer votre espace praticien' },
+];
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -25,34 +33,31 @@ export default async function DashboardPage() {
         <MetricsSection />
       </section>
 
-      {/* Prochaines étapes */}
+      {/* Accès rapides */}
       <section>
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          Feuille de route migration
+          Accès rapides
         </h3>
-        <ol className="flex flex-col gap-2 text-sm text-foreground">
-          {[
-            { done: true, label: 'Lot 0 — Scaffold Next.js + auth Google' },
-            { done: true, label: 'Lot 0 — Layout protégé + login page' },
-            { done: true, label: 'Lot C2 — Connexion API lecture seule (métriques)' },
-            { done: true, label: 'Lot C3 — Page patients et assignations' },
-            { done: true, label: 'Lot C4 — Synthèse IA et booklet' },
-            { done: true, label: 'Lot C5 — Décommission Apps Script' },
-          ].map(({ done, label }, i) => (
-            <li key={i} className="flex items-center gap-3">
-              <span
-                className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                  done
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-400'
-                }`}
-              >
-                {done ? '✓' : i + 1}
-              </span>
-              <span className={done ? 'line-through text-gray-400' : ''}>{label}</span>
-            </li>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {ACCES_RAPIDES.map(({ href, label, desc }) => (
+            <Link
+              key={href}
+              href={href}
+              className="bg-surface text-surface-foreground rounded-xl border border-border p-5 shadow-sm hover:border-primary transition flex flex-col gap-1"
+            >
+              <span className="text-base font-semibold text-foreground">{label} →</span>
+              <span className="text-xs text-muted-foreground">{desc}</span>
+            </Link>
           ))}
-        </ol>
+        </div>
+      </section>
+
+      {/* Patients à traiter */}
+      <section>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Patients à traiter
+        </h3>
+        <PatientsATraiter />
       </section>
     </div>
   );
