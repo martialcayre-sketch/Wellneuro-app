@@ -50,6 +50,22 @@ export type ResultatEquilibre = {
   versionScore: string;
 };
 
+// Jalons de suivi longitudinal T0/J21/J42/J90, glissants depuis la date T0
+// réelle du patient (docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md §2).
+export type JalonMomentum = 'T0' | 'J21' | 'J42' | 'J90';
+
+export type LectureDatee = {
+  date: Date;
+  valeur: number;
+};
+
+export type TendanceMomentum = 'hausse' | 'stable' | 'baisse';
+
+export type ResultatMomentum = {
+  delta: number;
+  tendance: TendanceMomentum;
+};
+
 // A = questionnaire clinique validé · B = référentiel neuronutrition (SIIN/DNSM)
 // C = biologie fonctionnelle interprétative · D = hypothèse WellNeuro.
 // Cf. docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md.

@@ -1,4 +1,4 @@
-import type { BesoinDefinition, NiveauPreuve, SourceQuestionnaire, StrateCode } from './types';
+import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire, StrateCode } from './types';
 
 // Cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md — méthodologie actée pour
 // l'indicateur "Mon équilibre" (patient) / "Cartographie neuro-fonctionnelle"
@@ -72,6 +72,15 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
   11: [],
   12: [{ idQuestionnaire: 'Q_INF_03', sousScore: 'ME', max: 40, inverser: true }],
 };
+
+// Jalons glissants (feat/e2-momentum-tracking) : nombre de jours depuis la
+// date T0 réelle du patient, pas des dates calendaires fixes — un retard
+// patient ne doit pas invalider le jalon suivant.
+export const JOURS_JALON: Record<JalonMomentum, number> = { T0: 0, J21: 21, J42: 42, J90: 90 };
+
+// Tolérance de départ (±8 jours), explicitement ajustable selon retour
+// d'expérience patient réel — cf. docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md §3.
+export const TOLERANCE_JOURS_JALON = 8;
 
 // Niveau de preuve par source (feat/e2-evidence-levels, cf.
 // docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md) : A = questionnaire
