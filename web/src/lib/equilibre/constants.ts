@@ -1,4 +1,4 @@
-import type { BesoinDefinition, JalonMomentum, SourceQuestionnaire, StrateCode } from './types';
+import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire, StrateCode } from './types';
 
 // Cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md — méthodologie actée pour
 // l'indicateur "Mon équilibre" (patient) / "Cartographie neuro-fonctionnelle"
@@ -81,3 +81,35 @@ export const JOURS_JALON: Record<JalonMomentum, number> = { T0: 0, J21: 21, J42:
 // Tolérance de départ (±8 jours), explicitement ajustable selon retour
 // d'expérience patient réel — cf. docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md §3.
 export const TOLERANCE_JOURS_JALON = 8;
+
+// Niveau de preuve par source (feat/e2-evidence-levels, cf.
+// docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md) : A = questionnaire
+// clinique internationalement validé (PSQI, HAD, PSS-10, Pichot...), B =
+// référentiel neuronutrition SIIN/DNST (pas de validation psychométrique
+// tierce indépendante, mais référentiel clinique interne établi), C =
+// biologie fonctionnelle (aucune source actuelle n'est en C — biomarqueurs
+// hors périmètre v1), D = hypothèse WellNeuro.
+//
+// PROPOSITION INITIALE, PAS ENCORE VALIDÉE CLINIQUEMENT : ce mapping a été
+// dérivé du statut de validation connu de chaque échelle, pas confirmé par
+// un praticien. À faire valider avant tout affichage en production —
+// contrairement au reste de ce fichier, ceci n'est pas encore une décision
+// actée au même titre que POIDS_STRATE ou BESOIN_SOURCES.
+export const NIVEAU_PREUVE_PAR_SOURCE: Record<string, NiveauPreuve> = {
+  Q_ALI_01: 'B',
+  Q_SOM_06: 'A',
+  Q_GAS_01: 'B',
+  Q_INF_01: 'B',
+  Q_SOM_01: 'A',
+  Q_MOD_01: 'B',
+  Q_NEU_11: 'A',
+  Q_STR_01: 'B',
+  Q_STR_02: 'A',
+  Q_STR_03: 'B',
+  Q_INF_03: 'B',
+};
+
+// Ordre du plus faible au plus fort — sert à déterminer "le niveau le plus
+// faible parmi les sources d'un besoin" (règle actée : jamais de dilution
+// d'une source faible par une source plus robuste sur le même besoin).
+export const RANG_PREUVE: Record<NiveauPreuve, number> = { D: 0, C: 1, B: 2, A: 3 };

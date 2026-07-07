@@ -65,3 +65,18 @@ export type ResultatMomentum = {
   delta: number;
   tendance: TendanceMomentum;
 };
+
+// A = questionnaire clinique validé · B = référentiel neuronutrition (SIIN/DNSM)
+// C = biologie fonctionnelle interprétative · D = hypothèse WellNeuro.
+// Cf. docs/claude/E2_EVIDENCE_LEVELS_MOMENTUM_CONTEXTE.md.
+export type NiveauPreuve = 'A' | 'B' | 'C' | 'D';
+
+// Besoin sans aucune source répondue : distinct de 'D', jamais à confondre
+// (un besoin non mesuré n'a par définition aucune preuve, même faible).
+export type NiveauPreuveBesoin = NiveauPreuve | 'NON_MESURE';
+
+export type SourcePreuve = {
+  idQuestionnaire: string;
+  sousScore?: string;
+  grade: NiveauPreuve | null;
+};
