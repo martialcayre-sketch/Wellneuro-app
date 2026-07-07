@@ -4,7 +4,6 @@ export * from './shared';
 export * from './cancerologie';
 export * from './stress';
 export * from './sommeil';
-export * from './inflammation';
 export * from './intestin-gastro';
 export * from './fibromyalgie';
 export * from './neuropsychologie';

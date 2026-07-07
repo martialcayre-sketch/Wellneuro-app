@@ -4,6 +4,17 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Refonte UX praticien — lots A→D (2026-07-07)
+
+- **Lot A — Dashboard (`dashboard/page.tsx`)** : suppression du bloc statique « Feuille de route migration » (Lot 0→C5, tout coché, devenu mort) ; ajout de « Accès rapides » (cartes-liens vers Patients / Synthèse IA / Paramètres) et « Patients à traiter » (liste courte des questionnaires en attente, statut ≠ « Complété », dérivée de l'API `praticien/patients` — nouveau composant client `PatientsATraiter`). Aucun changement d'API ni de schéma.
+- **Lot B — Filtre catégorie à l'assignation (`PatientsPanel.tsx`)** : `<select>` « catégorie » (valeurs distinctes de `questionnaires[].categorie`, tri FR) devant le sélecteur de questionnaire du formulaire « Nouvelle assignation ». Filtrage côté client ; « Toutes les catégories » par défaut ; réinitialisation du questionnaire sélectionné au changement de catégorie.
+- **Lot C — Vue d'ensemble équilibre sur la fiche patient (`FichePatientPanel.tsx`)** : section « Vue d'ensemble de l'équilibre » rendant `CerclesConcentriques` (3 anneaux Corps/Ancrage/Esprit) à partir des 12 besoins déjà chargés. La route `api/praticien/equilibre` expose désormais `strate` sur `PrioriteBesoin` (dérivée de `BESOINS`, aucun calcul/seuil clinique modifié) — évite un second appel réseau. Les 5 objets cliniques restent en place.
+- **Lot D — Packs de questionnaires éditables** : portage du modèle « Packs » du GAS legacy vers Next.js/Prisma.
+  - Nouveau modèle Prisma `Pack` (`id_pack`, `nom`, `thematique`, `description`, `qids String[]`, `actif`, timestamps) + migration `20260707150000_add_pack_model` (table `packs` + RLS deny-all, cohérent avec `enable_rls_security`). **Migration appliquée en prod Supabase.**
+  - Nouvelles routes API `api/praticien/packs` (CRUD : liste, création, mise à jour, désactivation soft `actif=false`) et `api/praticien/packs/assign` (assignation groupée : N assignations depuis un pack, statut « En attente », notes par défaut « Pack &lt;nom&gt; », + un seul email récapitulatif best-effort).
+  - Nouveau composant `PacksPanel.tsx` (création avec sélection de questionnaires filtrée par catégorie, liste + désactivation, assignation à un patient) monté dans `PatientsPanel`. `createPublicId` accepte désormais le préfixe `'PACK'`.
+- Livré en 4 PR séparées (#26–#29), mergées sur `main` et déployées en prod ; contrôle visuel praticien validé.
+
 ### Écran patient « Mon équilibre » (2026-07-07)
 
 - Le portail patient (`patient/[idAssignation]`) gagne deux nouveaux écrans dans son parcours existant (pas de nouvelle authentification, pas de nouvelle route Next) : accessibles via un bouton "Voir Mon équilibre" depuis l'écran de consultation (réponses verrouillées).
@@ -62,6 +73,12 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ### Certification questionnaires et scorings (2026-07-06)
 
+- Passe Drive 2026-07-07 neuro-psychologie aidants : certification de `Q_NEU_09` Zarit ; alignement sur les 22 items Drive `Q001` à `Q022`, échelle 0-4 et seuils de fardeau 0-20 / 21-40 / 41-60 / 61-88.
+- Passe Drive 2026-07-07 neuro-psychologie addictions : certification de `Q_NEU_07` AUDIT alcool ; alignement sur les IDs Drive `Q001` à `Q010`, options `0/2/4` pour Q009-Q010, score 0-40 et seuils différenciés femme/homme testés.
+- Passe Drive 2026-07-07 stress complémentaire : certification de `Q_STR_06` Karasek et `Q_STR_08` WART ; alignement strict sur les IDs Drive `Q001`..., formules Karasek avec items inversés, Job strain/Isostrain, et seuils WART 25-54 / 55-69 / 70-100.
+- Passe Drive 2026-07-07 catégorisation : suppression de la catégorie Inflammation au profit de Neuro-psychologie, maintien de Stress comme catégorie autonome (`Q_STR_*`), AUDIT alcool conservé uniquement en Neuro-psychologie (`Q_NEU_07`), et remplacement de `Q_MOD_03` par Plaintes actuelles / troubles ressentis depuis le MD Drive, avec scoring descriptif 7-70 et fixture certifiée.
+- Passe Drive 2026-07-07 neuro-psychologie : certification de `Q_NEU_01` BDI et `Q_NEU_11` HAD ; alignement des libellés HAD divergents, métadonnées `certification` et fixtures min/max ajoutées, avec rattachement documenté du score BDI 0 au premier seuil Drive.
+- Passe Drive 2026-07-07 neuro-psychologie complémentaire : certification de `Q_NEU_02` MADRS, `Q_NEU_05` UPPS, `Q_NEU_10` Dépendance à Internet et `Q_NEU_12` IDTAS-AE ; alignement strict sur les IDs Drive `Q001`..., seuils MADRS 0-6/8-18/20-35/36-60 (scores 7 et 19 non classés par la source), sous-échelles et items renversés UPPS conformes à la cotation professionnelle Drive (sans seuil clinique, absent de la source), et réordonnancement des items Poids/Appétit/Énergie de la partie 2 IDTAS-AE. Correction technique associée : les moteurs de scoring `upps` et `idtas_ae` ne propageaient pas les métadonnées `certification`/`note` vers le résultat, désormais alignés sur les autres types de scoring.
 - Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUESTIONNAIRES MD`, hors `00_index_*`. Les versions officielles externes ne priment pas sur Drive dans cette certification.
 - Ajout de `docs/questionnaires-drive-mapping.md` : table de mapping `Q_*` ↔ MD Drive, avec statuts explicites pour les bonus, doublons, historiques ou absents Drive.
 - `Q_NEU_03` : restauration du SIGH-SAD-SA Drive complet, 25 questions, groupes A/B et règle spéciale Q15-Q17. Ajout du moteur `sigh_sad_sa` avec score groupe A, score groupe B, total et note source.

@@ -236,6 +236,9 @@ Q_NEU_11,
 Q_NEU_12,
 
 
+Q_STR_06,
+
+
 Q_STR_08,
 
 
@@ -304,8 +307,11 @@ Q_SOM_06: {
 },
 
 
+Q_SOM_07,
+
+
 // ════════════════════════════════════════════════════════
-// INFLAMMATION & IMMUNITÉ
+// NEURO-PSYCHOLOGIE — neurovégétatif, céphalées, neurotransmetteurs
 // ════════════════════════════════════════════════════════
 
 Q_INF_01: {
@@ -1077,6 +1083,9 @@ Q_NEU_08: {
 Q_SOM_03,
 
 
+Q_SOM_04,
+
+
 Q_SOM_05: {
   id:'Q_SOM_05', titre:'Questionnaire de Matinalité-Vespéralité de Horne & Östberg (MEQ)',
   instructions:'Pour chaque question, choisissez la réponse qui vous correspond le mieux. Il n\'y a pas de bonne ou mauvaise réponse — pensez à vos préférences réelles.',
@@ -1368,6 +1377,9 @@ Q_GEO_06,
 Q_TAB_03,
 
 
+Q_TAB_04,
+
+
 Q_TAB_05: {
   id:'Q_TAB_05', titre:'Di Franza — Dépendance à la nicotine chez l\'adolescent (HONC)',
   instructions:'Ce questionnaire évalue la dépendance à la nicotine. Répondez par OUI ou NON.',
@@ -1537,6 +1549,36 @@ export function calculateScore(idQ, answers) {
     const items = allQ.map(q => q.id);
     const {total} = sumItems(items, []);
     return {type:'sum_no_interpretation', total, maxTotal: sc.maxTotal, interpretation: null, certification: sc.certification || null};
+  }
+
+
+  // ── PLAINTES ACTUELLES (source Drive) ─────────────────
+  if (sc.type === 'plaintes_actuelles') {
+    const items = allQ.map(q => q.id);
+    const {total} = sumItems(items, []);
+    const average = Number((total / items.length).toFixed(1));
+    const interp = interpretRanges(average, sc.interpretation);
+    const subScores = (sc.domains || []).map(domain => {
+      const value = getVal(domain.item);
+      return {
+        id: domain.id,
+        label: domain.label,
+        total: value,
+        max: 10,
+        interpretation: value === null ? null : interpretRanges(value, sc.interpretation),
+      };
+    });
+    return {
+      type:'plaintes_actuelles',
+      total,
+      average,
+      minTotal: sc.minTotal || 7,
+      maxTotal: sc.maxTotal || 70,
+      subScores,
+      interpretation: interp,
+      note: sc.note || null,
+      certification: sc.certification || null,
+    };
   }
 
 
@@ -1757,7 +1799,9 @@ export function calculateScore(idQ, answers) {
         {id:'A', label:'Anxiété', total: scoreA, max:21, interpretation: interpHad(scoreA,'A')},
         {id:'D', label:'Dépression', total: scoreD, max:21, interpretation: interpHad(scoreD,'D')},
       ],
-      total: scoreA + scoreD
+      total: scoreA + scoreD,
+      note: sc.note || null,
+      certification: sc.certification || null
     };
   }
 
@@ -1856,21 +1900,29 @@ export function calculateScore(idQ, answers) {
       return {id: sub.id, label: sub.label, total, max: sub.items.length * 4};
     });
     const globalTotal = subResults.reduce((s, r) => s + r.total, 0);
-    return {type:'upps', subScores: subResults, total: globalTotal};
+    return {type:'upps', subScores: subResults, total: globalTotal, note: sc.note || null, certification: sc.certification || null};
   }
 
   // ── KARASEK (Q_STR_06) ───────────────────────────────
   if (sc.type === 'karasek') {
+    const karasekValue = (id, reversedItems = []) => {
+      const value = getVal(id);
+      if (value === null) return 0;
+      return reversedItems.includes(id) ? 5 - value : value;
+    };
+    const sumKarasek = (items, reversedItems = []) =>
+      items.reduce((sum, id) => sum + karasekValue(id, reversedItems), 0);
+
     const latDef = sc.weightedLatitude || null;
     let latWeighted = null;
     if (latDef) {
-      const {total: auto} = sumItems(latDef.autonomieItems || [], []);
-      const {total: usage} = sumItems(latDef.usageItems || [], []);
+      const auto = sumKarasek(latDef.autonomieItems || [], latDef.reversedAutonomieItems || []);
+      const usage = sumKarasek(latDef.usageItems || [], latDef.reversedUsageItems || []);
       latWeighted = (4 * auto) + (2 * usage);
     }
 
     const subResults = sc.subScores.map(sub => {
-      const rawTotal = sumItems(sub.items, []).total;
+      const rawTotal = sumKarasek(sub.items, sub.reversedItems || []);
       const total = sub.id === 'LAT' && latWeighted !== null ? latWeighted : rawTotal;
       let atRisk = false;
       if (typeof sub.seuil === 'number' && sub.seuilDir) {
@@ -1888,7 +1940,7 @@ export function calculateScore(idQ, answers) {
                  : jobStrain ? {label:'Job Strain — stress professionnel',color:'warning'}
                  : dem&&dem.atRisk ? {label:'Forte demande psychologique',color:'info'}
                  : {label:'Situation professionnelle équilibrée',color:'success'};
-    return {type:'karasek', subScores:subResults, jobStrain, isoStrain, interpretation:interp};
+    return {type:'karasek', subScores:subResults, jobStrain, isoStrain, interpretation:interp, note: sc.note || null, certification: sc.certification || null};
   }
 
   // ── ECAB ─────────────────────────────────────────────
@@ -1933,7 +1985,7 @@ export function calculateScore(idQ, answers) {
       };
     }
 
-    return {type:'audit', total, maxTotal: sc.maxTotal || 40, interpretation};
+    return {type:'audit', total, maxTotal: sc.maxTotal || 40, interpretation, note: sc.note || null, certification: sc.certification || null};
   }
 
   // ── IDTAS-AE ─────────────────────────────────────────
@@ -2006,6 +2058,8 @@ export function calculateScore(idQ, answers) {
       ],
       gssScore,
       interpretation: gssInterpretation,
+      note: sc.note || null,
+      certification: sc.certification || null,
     };
   }
 

@@ -25,20 +25,20 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 | `Q_STR_03` | `questionnaire_stress_cungi.md` | certifié | certifié | n/a | certifié | certifié | certifié | Cungi, 11 items, score interne professionnel 0-55 |
 | `Q_STR_04` | `questionnaire_stress_dass21.md` | certifié | certifié | n/a | certifié | certifié | certifié | DASS-21, 21 items, sous-scores bruts 0-21 ; seuils Drive 14/10/17 harmonisés en très sévère |
 | `Q_STR_05` | `questionnaire_stress_bms_burnout.md` | certifié | certifié | n/a | certifié | certifié | certifié | BMS, 10 items, moyenne 1-7 et score brut 10-70 |
-| `Q_STR_06` | `questionnaire_stress_karasek.md` | mappé | mappé | n/a | mappé | mappé | à faire | Karasek |
-| `Q_STR_08` | `questionnaire_wart_addiction_travail.md` | mappé | mappé | n/a | mappé | mappé | à faire | WART |
-| `Q_NEU_01` | `bdi_echelle_de_depression_de_beck.md` | mappé | mappé | n/a | mappé | mappé | à faire | BDI |
-| `Q_NEU_02` | `madrs_echelle_depression.md` | mappé | mappé | n/a | à vérifier | à vérifier | à faire | Corrections externes récentes à réarbitrer contre Drive si besoin clinique |
+| `Q_STR_06` | `questionnaire_stress_karasek.md` | certifié | certifié | n/a | certifié | ambigu | certifié | Karasek, 32 items Q001-Q032, formules Drive avec inversions ; seuil latitude 70/72 conservé en note, Job strain sur <72 |
+| `Q_STR_08` | `questionnaire_wart_addiction_travail.md` | certifié | certifié | n/a | certifié | certifié | certifié | WART, 25 items, score 25-100, seuils 25-54 / 55-69 / 70-100 |
+| `Q_NEU_01` | `bdi_echelle_de_depression_de_beck.md` | certifié | certifié | n/a | certifié | certifié | certifié | BDI, 13 items, score 0-39 ; score 0 rattaché au premier seuil Drive 1-10 |
+| `Q_NEU_02` | `madrs_echelle_depression.md` | certifié | certifié | n/a | certifié | ambigu | certifié | MADRS, 10 items Q001-Q010, score 0-60 ; scores 7 et 19 non classés par la grille source |
 | `Q_NEU_03` | `questionnaire_sigh_sad_sa.md` | certifié | certifié | n/a | certifié | n/a | certifié | 25 items, groupes A/B, règle Q15-Q17 Drive |
 | `Q_NEU_04` | `questionnaire_scoff.md` | certifié | certifié | n/a | certifié | certifié | certifié | SCOFF, 5 items oui/non, seuil positif ≥ 2 |
-| `Q_NEU_05` | `questionnaire_upps_impulsivite.md` | mappé | mappé | n/a | mappé | mappé | à faire | UPPS |
+| `Q_NEU_05` | `questionnaire_upps_impulsivite.md` | certifié | certifié | n/a | certifié | n/a | certifié | UPPS, 45 items Q001-Q045, 4 sous-échelles avec items renversés ; aucun seuil clinique fourni par la source |
 | `Q_NEU_06` | aucun MD Drive équivalent identifié | historique | historique | n/a | historique | historique | à faire | Questionnaire cognitif SIIN, absent Drive |
-| `Q_NEU_07` | `questionnaire_audit_alcool.md` | mappé | mappé | n/a | mappé | mappé | à faire | AUDIT alcool |
+| `Q_NEU_07` | `questionnaire_audit_alcool.md` | certifié | certifié | n/a | certifié | certifié | certifié | AUDIT alcool, 10 items Q001-Q010, score 0-40, seuils différenciés femme/homme |
 | `Q_NEU_08` | `ecab_echelle_cognitive_attachement_benzodiazepines.md` | certifié | certifié | n/a | certifié | certifié | certifié | ECAB, 10 items vrai/faux, item 10 inversé, seuil ≥ 6 |
-| `Q_NEU_09` | `zarit_grille_charge_proches_aidants.md` | mappé | mappé | n/a | mappé | mappé | à faire | Zarit |
-| `Q_NEU_10` | `dependance_a_internet.md` | mappé | mappé | n/a | mappé | mappé | à faire | Internet |
-| `Q_NEU_11` | `questionnaire_had.md` | mappé | mappé | n/a | mappé | mappé | à faire | HAD |
-| `Q_NEU_12` | `idtas_ae_depression_trouble_affectif_saisonnier.md` | mappé | mappé | n/a | mappé | mappé | à faire | IDTAS-AE |
+| `Q_NEU_09` | `zarit_grille_charge_proches_aidants.md` | certifié | certifié | n/a | certifié | certifié | certifié | Zarit, 22 items Q001-Q022, score 0-88, seuils fardeau léger à sévère |
+| `Q_NEU_10` | `dependance_a_internet.md` | certifié | certifié | n/a | certifié | certifié | certifié | Dépendance à Internet, 20 items Q001-Q020, score 0-100, seuils <50 / 50-79 / >79 |
+| `Q_NEU_11` | `questionnaire_had.md` | certifié | certifié | n/a | certifié | certifié | certifié | HAD, 14 items, sous-scores anxiété/dépression 0-21 ; ordre alterné historique conservé comme autorisé par Drive |
+| `Q_NEU_12` | `idtas_ae_depression_trouble_affectif_saisonnier.md` | certifié | certifié | n/a | certifié | certifié | certifié | IDTAS-AE, 4 parties (dépistage 9 items, GSS 6 items /24, comptage mensuel listes A/B, symptômes hivernaux 9 items) ; identifiants internes conservés (IA/IG/IMA/IMB/IS) au lieu des IDs composés P1_Q00x du Drive |
 | `Q_SOM_01` | `sommeil_05_psqi_pittsburgh.md` | mappé | mappé | n/a | mappé | mappé | à faire | PSQI |
 | `Q_SOM_02` | `sommeil_03_epworth_somnolence.md` | certifié | certifié | n/a | certifié | ambigu | certifié | Epworth, score 0-24 ; interprétation Drive incomplète pour les scores 6 et 15 |
 | `Q_SOM_03` | `sommeil_04_berlin_apnee_sommeil.md` | mappé | mappé | n/a | mappé | mappé | à faire | Berlin |
@@ -74,7 +74,7 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 | `Q_ALI_03` | `questionnaire_monnier_apports_caloriques_proteiques_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Monnier |
 | `Q_MOD_01` | `questionnaire_contextuel_mode_de_vie_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Mode de vie contexte |
 | `Q_MOD_02` | `questionnaire_activite_depense_energetique_globale_siin_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Activité globale |
-| `Q_MOD_03` | `audit_alcool.md` | doublon | doublon | n/a | doublon | doublon | à faire | Doublon métier de l'AUDIT alcool, conservé côté Mode de vie |
+| `Q_MOD_03` | `questionnaire_plaintes_actuelles_troubles_ressentis.md` | certifié | certifié | n/a | certifié | certifié | certifié | Plaintes actuelles, 7 échelles 1-10, score total 7-70 et moyenne descriptive 1-10 sans seuil diagnostique |
 | `Q_GEO_01` | `gerontologie_01_tinetti_equilibre_marche.md` | certifié | certifié | n/a | certifié | certifié | certifié | Tinetti, observateur, équilibre /16 + marche /12, score total /28 |
 | `Q_GEO_02` | `gerontologie_02_sarcopenie.md` | certifié | certifié | n/a | certifié | certifié | certifié | SARC-F, 5 items, score 0-10, seuil risque ≥ 4 |
 | `Q_GEO_03` | aucun MD Drive équivalent identifié | historique | historique | n/a | historique | historique | à faire | AQ Alzheimer, absent Drive |

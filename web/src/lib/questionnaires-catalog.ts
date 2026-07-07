@@ -14,9 +14,10 @@
 //
 // Note d'historique : certaines entrées héritées (`Q_SOM_08`, `Q_STR_07`) ont
 // été remplacées dans le catalogue de scoring (respectivement par `Q_NEU_12` et
-// `Q_NEU_11`). Elles sont conservées telles quelles ici pour préserver à
-// l'identique la liste offerte en production. Toute recuration relève d'une
-// tâche clinique dédiée (documentation `CHANGELOG.md` requise).
+// `Q_NEU_11`). Elles restent exposées pour préserver la liste offerte en
+// production, avec les catégories affichées selon le regroupement courant.
+// Toute recuration relève d'une tâche clinique dédiée (documentation
+// `CHANGELOG.md` requise).
 
 export type QuestionnaireCatalogEntry = {
   id: string;
@@ -28,10 +29,6 @@ export type QuestionnaireCatalogEntry = {
 };
 
 export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
-  // ── PLAINTES ────────────────────────────────────────────────────────────────
-  { id: 'Q_PLAINTES', titre: 'Questionnaire Plaintes Actuelles', categorie: 'Plaintes',
-    description: `Évaluez votre niveau de gêne pour 7 symptômes courants au cours des 30 derniers jours (échelle 1–10).`, duree: '5 min', actif: true },
-
   // ── ALIMENTAIRE ─────────────────────────────────────────────────────────────
   { id: 'Q_ALI_01', titre: 'Questionnaire Alimentaire SIIN', categorie: 'Alimentaire',
     description: `Évaluez la qualité globale de votre alimentation : légumes, fruits, protéines, graisses, sucres et comportements alimentaires.`, duree: '15 min', actif: true },
@@ -67,8 +64,8 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Évaluez vos habitudes de vie : activité physique, sédentarité, rythmes biologiques, stimulants et hydratation.`, duree: '10 min', actif: true },
   { id: 'Q_MOD_02', titre: 'Activité et dépense énergétique globale SIIN', categorie: 'Mode de vie',
     description: `Estimez votre dépense énergétique quotidienne (kcal/jour) selon votre niveau d'activité au travail et en dehors.`, duree: '5 min', actif: true },
-  { id: 'Q_MOD_03', titre: `AUDIT — Dépistage de la consommation d'alcool`, categorie: 'Mode de vie',
-    description: `Évaluez votre consommation d'alcool et dépistez une consommation à risque ou une dépendance (10 items, score /40).`, duree: '5 min', actif: true },
+  { id: 'Q_MOD_03', titre: 'Mes plaintes actuelles et troubles ressentis', categorie: 'Mode de vie',
+    description: `Évaluez l'intensité actuelle de 7 plaintes : fatigue, douleurs, digestion, surpoids, insomnie, moral et mobilité (échelle 1–10).`, duree: '5 min', actif: true },
 
   // ── NEURO-PSYCHOLOGIE ───────────────────────────────────────────────────────
   { id: 'Q_INF_04', titre: 'HIT-6 — Impact de la migraine', categorie: 'Neuro-psychologie',
@@ -112,10 +109,10 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   { id: 'Q_PED_01', titre: 'Échelle de Matinalité-Vespéralité Enfant — Dr Caci', categorie: 'Pédiatrie',
     description: `Évaluez le chronotype de l'enfant : profil matin ou soir (10 items, score 10–43).`, duree: '5 min', actif: true },
 
-  // ── RHUMATOLOGIE ────────────────────────────────────────────────────────────
-  { id: 'Q_INF_01', titre: `Questionnaire d'hyperexcitabilité SIIN`, categorie: 'Rhumatologie',
+  // ── NEURO-PSYCHOLOGIE ────────────────────────────────────────────────────────────
+  { id: 'Q_INF_01', titre: `Questionnaire d'hyperexcitabilité SIIN`, categorie: 'Neuro-psychologie',
     description: `Évaluez les signes d'hyperexcitabilité neuro-musculaire : crampes, spasmes, palpitations, sensibilités (24 items).`, duree: '10 min', actif: true },
-  { id: 'Q_INF_02', titre: 'Hypersensibilité au déficit en magnésium — Spasmophilie', categorie: 'Rhumatologie',
+  { id: 'Q_INF_02', titre: 'Hypersensibilité au déficit en magnésium — Spasmophilie', categorie: 'Neuro-psychologie',
     description: `Identifiez les signes de déficit en magnésium et de spasmophilie (13 items, score /52).`, duree: '5 min', actif: true },
 
   // ── SOMMEIL ─────────────────────────────────────────────────────────────────
@@ -136,11 +133,13 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   { id: 'Q_SOM_08', titre: 'IDTAS-AE — Dépression & Trouble Affectif Saisonnier', categorie: 'Sommeil',
     description: `Évaluez la présence d'une dépression saisonnière et ses variations mensuelles.`, duree: '15 min', actif: true },
 
-  // ── STRESS ──────────────────────────────────────────────────────────────────
-  { id: 'Q_INF_03', titre: 'Dopamine · Noradrénaline · Sérotonine · Mélatonine — SIIN', categorie: 'Stress',
+  // ── NEURO-PSYCHOLOGIE ──────────────────────────────────────────────────────────────────
+  { id: 'Q_INF_03', titre: 'Dopamine · Noradrénaline · Sérotonine · Mélatonine — SIIN', categorie: 'Neuro-psychologie',
     description: `Évaluez les signes d'insuffisance en neurotransmetteurs sur 4 axes (4×10 questions).`, duree: '15 min', actif: true },
-  { id: 'Q_INF_05', titre: `Questionnaire d'auto-évaluation de l'anxiété`, categorie: 'Stress',
+  { id: 'Q_INF_05', titre: `Questionnaire d'auto-évaluation de l'anxiété`, categorie: 'Neuro-psychologie',
     description: `Évaluez vos symptômes d'anxiété somatique au cours des 7 derniers jours (11 items).`, duree: '5 min', actif: true },
+
+  // ── STRESS ───────────────────────────────────────────────────────────────────────────────
   { id: 'Q_STR_01', titre: 'Questionnaire de stress SIIN', categorie: 'Stress',
     description: `Évaluez votre niveau de stress et ses manifestations (fatigue, tension, somatisation). Protocole dopaminergique/sérotoninergique/mixte.`, duree: '15 min', actif: true },
   { id: 'Q_STR_02', titre: 'PSS-10 — Échelle de stress perçu de Cohen', categorie: 'Stress',

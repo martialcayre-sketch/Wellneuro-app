@@ -4,20 +4,20 @@ import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PA
 
 export const Q_NEU_11 = {
   id:'Q_NEU_11', titre:'HAD — Échelle Hospitalière Anxiété-Dépression',
-  instructions:'Lisez chaque question et entourez la réponse qui exprime le mieux ce que vous avez ressenti au cours de la semaine passée. Ne vous attardez pas sur la réponse à faire.',
+  instructions:'Répondez aux questions en cochant la réponse qui vous correspond le plus, en considérant vos états d’humeur au cours de ces dernières semaines.',
   sections:[
     { id:'AD', titre:'Questions sur votre vécu cette semaine',
       questions:[
         {id:'A1',texte:"Je me sens tendu(e) ou énervé(e)",type:'likert',options:[{v:3,l:'La plupart du temps'},{v:2,l:'Souvent'},{v:1,l:'De temps en temps'},{v:0,l:'Jamais'}]},
         {id:'D2',texte:"Je prends plaisir aux mêmes choses qu'autrefois",type:'likert',options:[{v:0,l:'Oui, tout autant'},{v:1,l:'Pas autant'},{v:2,l:'Un peu seulement'},{v:3,l:'Presque plus'}]},
-        {id:'A3',texte:"J'ai une sensation de peur comme si quelque chose d'horrible allait m'arriver",type:'likert',options:[{v:3,l:'Oui, très nettement'},{v:2,l:'Oui, mais ce n\'est pas trop grave'},{v:1,l:'Un peu, mais ça ne m\'inquiète pas'},{v:0,l:'Pas du tout'}]},
+        {id:'A3',texte:"J'ai une sensation de peur comme si quelque chose d'horrible allait m'arriver",type:'likert',options:[{v:3,l:'Oui, très nettement'},{v:2,l:'Oui, mais ce n\'est pas très grave'},{v:1,l:'Un peu, mais cela ne m\'inquiète pas'},{v:0,l:'Pas du tout'}]},
         {id:'D4',texte:"Je ris facilement et vois le bon côté des choses",type:'likert',options:[{v:0,l:'Autant que par le passé'},{v:1,l:'Plus autant qu\'avant'},{v:2,l:'Vraiment moins qu\'avant'},{v:3,l:'Plus du tout'}]},
         {id:'A5',texte:"Je me fais du souci",type:'likert',options:[{v:3,l:'Très souvent'},{v:2,l:'Assez souvent'},{v:1,l:'Occasionnellement'},{v:0,l:'Très occasionnellement'}]},
         {id:'D6',texte:"Je suis de bonne humeur",type:'likert',options:[{v:3,l:'Jamais'},{v:2,l:'Rarement'},{v:1,l:'Assez souvent'},{v:0,l:'La plupart du temps'}]},
         {id:'A7',texte:"Je peux rester tranquillement assis(e) à ne rien faire et me sentir décontracté(e)",type:'likert',options:[{v:0,l:'Oui quoi qu\'il arrive'},{v:1,l:'Oui en général'},{v:2,l:'Rarement'},{v:3,l:'Jamais'}]},
         {id:'D8',texte:"J'ai l'impression de fonctionner au ralenti",type:'likert',options:[{v:3,l:'Presque toujours'},{v:2,l:'Très souvent'},{v:1,l:'Parfois'},{v:0,l:'Jamais'}]},
         {id:'A9',texte:"J'éprouve des sensations de peur et j'ai l'estomac noué",type:'likert',options:[{v:0,l:'Jamais'},{v:1,l:'Parfois'},{v:2,l:'Assez souvent'},{v:3,l:'Très souvent'}]},
-        {id:'D10',texte:"Je ne m'intéresse plus à mon apparence",type:'likert',options:[{v:3,l:'Plus du tout'},{v:2,l:'Je n\'y accorde pas autant d\'attention'},{v:1,l:'Il se peut que je n\'y fasse plus autant attention'},{v:0,l:'J\'y prête autant d\'attention que par le passé'}]},
+        {id:'D10',texte:"Je ne m'intéresse plus à mon apparence",type:'likert',options:[{v:3,l:'Plus du tout'},{v:2,l:'Je n\'y accorde pas autant d\'attention que je le devrais'},{v:1,l:'Il se peut que je n\'y fasse plus autant attention'},{v:0,l:'J\'y prête autant d\'attention que par le passé'}]},
         {id:'A11',texte:"J'ai la bougeotte et n'arrive pas à tenir en place",type:'likert',options:[{v:3,l:'Oui c\'est tout à fait le cas'},{v:2,l:'Un peu'},{v:1,l:'Pas tellement'},{v:0,l:'Pas du tout'}]},
         {id:'D12',texte:"Je me réjouis d'avance à l'idée de faire certaines choses",type:'likert',options:[{v:0,l:'Autant qu\'auparavant'},{v:1,l:'Un peu moins qu\'avant'},{v:2,l:'Bien moins qu\'avant'},{v:3,l:'Presque jamais'}]},
         {id:'A13',texte:"J'éprouve des sensations soudaines de panique",type:'likert',options:[{v:3,l:'Vraiment très souvent'},{v:2,l:'Assez souvent'},{v:1,l:'Pas très souvent'},{v:0,l:'Jamais'}]},
@@ -28,9 +28,11 @@ export const Q_NEU_11 = {
     type:'had',
     subscalesA:['A1','A3','A5','A7','A9','A11','A13'],
     subscalesD:['D2','D4','D6','D8','D10','D12','D14'],
+    certification:{source:'drive',status:'certifie'},
+    note:'Source Drive HAD : le Markdown regroupe les 7 items anxiété puis les 7 items dépression ; l’ordre alterné historique est conservé côté interface, comme autorisé par la note de conversion.',
     interpretation:[
-      {subscale:'A',ranges:[{min:0,max:7,label:'Absence d\'anxiété',color:'success'},{min:8,max:10,label:'Anxiété douteuse',color:'warning'},{min:11,max:21,label:'Anxiété avérée',color:'danger'}]},
-      {subscale:'D',ranges:[{min:0,max:7,label:'Absence de dépression',color:'success'},{min:8,max:10,label:'Dépression douteuse',color:'warning'},{min:11,max:21,label:'Dépression avérée',color:'danger'}]},
+      {subscale:'A',ranges:[{min:0,max:7,label:'Absence de symptomatologie',color:'success'},{min:8,max:10,label:'Symptomatologie douteuse',color:'warning'},{min:11,max:21,label:'Symptomatologie certaine',color:'danger'}]},
+      {subscale:'D',ranges:[{min:0,max:7,label:'Absence de symptomatologie',color:'success'},{min:8,max:10,label:'Symptomatologie douteuse',color:'warning'},{min:11,max:21,label:'Symptomatologie certaine',color:'danger'}]},
     ]
   }
 };
@@ -58,12 +60,12 @@ export const Q_NEU_12 = {
     { id:'P2', titre:'Partie 2 — Échelle Globale de Saisonnalité (GSS)',
       description:'Pour chaque aspect de votre vie, indiquez dans quelle mesure il varie selon les saisons (0 = aucun changement, 4 = changement très important).',
       questions:[
-        qs('IG1','Sommeil',         [{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement très important'}]),
-        qs('IG2','Activité sociale',[{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement très important'}]),
-        qs('IG3','Humeur générale', [{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement très important'}]),
-        qs('IG4','Niveau d\'énergie',[{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement très important'}]),
-        qs('IG5','Appétit',         [{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement très important'}]),
-        qs('IG6','Poids',           [{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement très important'}]),
+        qs('IG1','Sommeil',         [{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement extrême'}]),
+        qs('IG2','Activité sociale',[{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement extrême'}]),
+        qs('IG3','Humeur générale', [{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement extrême'}]),
+        qs('IG4','Poids',           [{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement extrême'}]),
+        qs('IG5','Appétit',         [{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement extrême'}]),
+        qs('IG6','Niveau d\'énergie',[{v:0,l:'Aucun changement'},{v:1,l:'Léger changement'},{v:2,l:'Changement modéré'},{v:3,l:'Changement important'},{v:4,l:'Changement extrême'}]),
       ]},
     { id:'P3A', titre:'Partie 3A — Comptage mensuel (Liste A)',
       description:'Pour chaque mois, entrez le nombre de sélections (0 à 6) de la liste A.',
@@ -113,6 +115,8 @@ export const Q_NEU_12 = {
   ],
   scoring:{
     type:'idtas_ae',
+    certification:{source:'drive',status:'certifie'},
+    note:'Source Drive : idtas_ae_depression_trouble_affectif_saisonnier.md. Identifiants internes IA/IG/IMA/IMB/IS conservés (au lieu des IDs composés P1_Q00x du Drive) pour compatibilité avec le moteur `idtas_ae` existant ; correspondance 1 pour 1 par ordre. Point de vigilance clinique Drive : toute réponse positive à IA9 (pensées de mort/auto-agression) nécessite une appréciation clinique immédiate.',
     parts:[
       {id:'P1', type:'count_oui',  items:['IA1','IA2','IA3','IA4','IA5','IA6','IA7','IA8','IA9'], maxTotal:9,  label:'Dépistage dépressif'},
       {id:'P2', type:'sum',        items:['IG1','IG2','IG3','IG4','IG5','IG6'], maxTotal:24, label:'Score GSS'},
@@ -158,9 +162,11 @@ export const Q_NEU_01 = {
   scoring:{
     type:'sum',
     maxTotal:39,
+    certification:{source:'drive',status:'certifie'},
+    note:'Source Drive BDI : la table d’interprétation commence à 1 ; le score calculable 0 est rattaché au premier niveau pour éviter un résultat non interprété.',
     interpretation:[
       {min:0, max:10, label:'Variation de l\'humeur considérée comme physiologique', color:'success'},
-      {min:11,max:16, label:'Troubles bénins de l\'humeur', color:'info'},
+      {min:11,max:16, label:'Troubles bénins de l\'humeur mais corrections à apporter', color:'info'},
       {min:17,max:20, label:'Cas limite de dépression clinique', color:'warning'},
       {min:21,max:30, label:'Dépression avérée', color:'danger'},
       {min:31,max:39, label:'Dépression grave', color:'danger'},
@@ -183,6 +189,7 @@ export const Q_NEU_04 = {
   scoring:{
     type:'sum',
     maxTotal:5,
+    certification:{source:'drive',status:'certifie'},
     interpretation:[
       {min:0,max:1,label:'Risque faible',color:'success'},
       {min:2,max:5,label:'Risque de trouble du comportement alimentaire — consultation recommandée',color:'danger'},
@@ -190,253 +197,248 @@ export const Q_NEU_04 = {
   }
 };
 export const Q_NEU_05 = {
-  id:'Q_NEU_05', titre:'UPPS — Comportement impulsif',
-  instructions:'Pour chaque affirmation, indiquez dans quelle mesure vous êtes en accord ou en désaccord.',
+  id:'Q_NEU_05', titre:'UPPS — Questionnaire d\'impulsivité',
+  // Certification Drive 2026-07-07 : alignement strict sur questionnaire_upps_impulsivite.md
+  // (IDs Q001-Q045, libellés source). Sous-échelles et items renversés conformes à la
+  // cotation professionnelle Drive ; pas de seuil d'interprétation, la source n'en fournit aucun.
+  instructions:'Pour chaque affirmation, indiquez à quel degré vous êtes d\'accord ou non avec l\'énoncé.',
   sections:[
     { id:'1',titre:'Affirmations 1 à 9',
       questions:[
-        q('U1',"J'ai une attitude réservée et prudente dans la vie",O_UPPS),
-        q('U2',"J'ai des difficultés à contrôler mes impulsions",O_UPPS),
-        q('U3',"Je recherche généralement des expériences et sensations nouvelles et excitantes",O_UPPS),
-        q('U4',"Je préfère généralement mener les choses jusqu'au bout",O_UPPS),
-        q('U5',"Ma manière de penser est d'habitude réfléchie et méticuleuse",O_UPPS),
-        q('U6',"Quand je suis très content(e), je peux me conduire d'une façon que, plus tard, je regretterai",O_UPPS),
-        q('U7',"J'aime les sports et jeux dans lesquels il faut réagir rapidement",O_UPPS),
-        q('U8',"J'ai tendance à abandonner facilement",O_UPPS),
-        q('U9',"Je me considère comme une personne prudente",O_UPPS),
+        q('Q001',"J'ai une attitude réservée et prudente dans la vie.",O_UPPS),
+        q('Q002',"J'ai des difficultés à contrôler mes impulsions.",O_UPPS),
+        q('Q003',"Je recherche généralement des expériences et sensations nouvelles et excitantes.",O_UPPS),
+        q('Q004',"Je préfère généralement mener les choses jusqu'au bout.",O_UPPS),
+        q('Q005',"Ma manière de penser est d'habitude réfléchie et méticuleuse.",O_UPPS),
+        q('Q006',"J'ai des difficultés à résister à mes envies, pour la nourriture, les cigarettes, etc.",O_UPPS),
+        q('Q007',"J'essayerais tout.",O_UPPS),
+        q('Q008',"J'ai tendance à abandonner facilement.",O_UPPS),
+        q('Q009',"Je ne suis pas de ces gens qui parlent sans réfléchir.",O_UPPS),
       ]},
     { id:'2',titre:'Affirmations 10 à 18',
       questions:[
-        q('U10',"Je m'implique souvent dans des situations dont j'aimerais ensuite pouvoir me sortir",O_UPPS),
-        q('U11',"J'apprécierais des « sensations fortes » régulières",O_UPPS),
-        q('U12',"Je n'aime vraiment pas les tâches inachevées",O_UPPS),
-        q('U13',"Je préfère m'interrompre et réfléchir avant d'agir",O_UPPS),
-        q('U14',"Quand je suis contrarié(e), il m'arrive souvent de ne pas penser aux conséquences de mes actes",O_UPPS),
-        q('U15',"J'aimerais faire de la randonnée dans les Rocheuses",O_UPPS),
-        q('U16',"Une fois que j'ai commencé un projet, je déteste m'interrompre",O_UPPS),
-        q('U17',"Je n'aime pas commencer un projet avant de savoir comment procéder",O_UPPS),
-        q('U18',"Quand je ne suis pas bien moralement, il m'arrive souvent de faire des choses que je regrette pour tenter de me sentir mieux",O_UPPS),
+        q('Q010',"Je m'implique souvent dans des situations dont j'aimerais pouvoir me sortir par la suite.",O_UPPS),
+        q('Q011',"J'aime les sports et les jeux dans lesquels on doit choisir son prochain mouvement très rapidement.",O_UPPS),
+        q('Q012',"Je n'aime vraiment pas les tâches inachevées.",O_UPPS),
+        q('Q013',"Je préfère m'interrompre et réfléchir avant d'agir.",O_UPPS),
+        q('Q014',"Quand je ne me sens pas bien, je fais souvent des choses que je regrette ensuite, afin de me sentir mieux tout de suite.",O_UPPS),
+        q('Q015',"Ça me plairait de faire du ski nautique.",O_UPPS),
+        q('Q016',"Une fois que je commence quelque chose, je déteste m'interrompre.",O_UPPS),
+        q('Q017',"Je n'aime pas commencer un projet avant de savoir exactement comment procéder.",O_UPPS),
+        q('Q018',"Parfois quand je ne me sens pas bien, je ne parviens pas à arrêter ce que je suis en train de faire même si cela me fait me sentir plus mal.",O_UPPS),
       ]},
     { id:'3',titre:'Affirmations 19 à 27',
       questions:[
-        q('U19',"J'aime prendre des risques",O_UPPS),
-        q('U20',"Je me concentre facilement",O_UPPS),
-        q('U21',"J'aimerais faire du parachutisme",O_UPPS),
-        q('U22',"Je travaille d'habitude jusqu'à ce que j'achève un travail avant de commencer autre chose",O_UPPS),
-        q('U23',"Je pense généralement avec soin avant d'agir",O_UPPS),
-        q('U24',"Quand je suis en période de stress, il m'arrive souvent d'agir sans réfléchir",O_UPPS),
-        q('U25',"Je me réjouis de nouvelles expériences et de sensations, même si elles me font un peu peur",O_UPPS),
-        q('U26',"Je m'assure de m'organiser de façon à ce que les choses soient faites à temps",O_UPPS),
-        q('U27',"J'aime prendre des décisions suite à un raisonnement mûri",O_UPPS),
+        q('Q019',"J'éprouve du plaisir à prendre des risques.",O_UPPS),
+        q('Q020',"Je me concentre facilement.",O_UPPS),
+        q('Q021',"J'aimerais faire du saut en parachute.",O_UPPS),
+        q('Q022',"J'achève ce que je commence.",O_UPPS),
+        q('Q023',"J'ai tendance à valoriser et à suivre une approche rationnelle et « sensée » des choses.",O_UPPS),
+        q('Q024',"Quand je suis contrarié(e), j'agis souvent sans réfléchir.",O_UPPS),
+        q('Q025',"Je me réjouis des expériences et sensations nouvelles même si elles sont un peu effrayantes et non-conformistes.",O_UPPS),
+        q('Q026',"Je m'organise de façon à ce que les choses soient faites à temps.",O_UPPS),
+        q('Q027',"D'habitude je me décide après un raisonnement bien mûri.",O_UPPS),
       ]},
     { id:'4',titre:'Affirmations 28 à 36',
       questions:[
-        q('U28',"Quand quelqu'un me tient tête, il m'arrive de me disputer avec lui car je n'arrive pas à contrôler ma réaction",O_UPPS),
-        q('U29',"Je suis en général sûr(e) de moi avant d'agir",O_UPPS),
-        q('U30',"Je suis une personne productive qui finit toujours son travail",O_UPPS),
-        q('U31',"Je me considère généralement comme une personne prudente",O_UPPS),
-        q('U32',"J'ai du mal à résister à mes impulsions quand j'ai des émotions fortes",O_UPPS),
-        q('U33',"J'aime les jeux de sensations fortes",O_UPPS), // CORR 23/06/2026 : 'aimais' → 'aime'
-        q('U34',"Une fois que j'ai commencé un projet, je le termine toujours",O_UPPS),
-        q('U35',"Je préfère généralement faire les choses de façon réfléchie",O_UPPS),
-        q('U36',"Quand je suis contrarié(e), bien des fois je dis des choses et je m'en repens par la suite",O_UPPS),
+        q('Q028',"Quand je me sens rejeté(e), je dis souvent des choses que je regrette ensuite.",O_UPPS),
+        q('Q029',"J'aimerais apprendre à conduire un avion.",O_UPPS),
+        q('Q030',"Je suis une personne productive qui termine toujours son travail.",O_UPPS),
+        q('Q031',"Je suis une personne prudente.",O_UPPS),
+        q('Q032',"C'est difficile pour moi de me retenir d'agir selon mes sentiments.",O_UPPS),
+        q('Q033',"J'aime parfois faire des choses qui sont un petit peu effrayantes.",O_UPPS),
+        q('Q034',"Une fois que je commence un projet, je le termine presque toujours.",O_UPPS),
+        q('Q035',"Avant de m'impliquer dans une nouvelle situation, je préfère savoir ce que je dois en attendre.",O_UPPS),
+        q('Q036',"J'aggrave souvent les choses parce que j'agis sans réfléchir quand je suis contrarié(e).",O_UPPS),
       ]},
     { id:'5',titre:'Affirmations 37 à 45',
       questions:[
-        q('U37',"J'aimerais faire du ski sur des pentes très raides",O_UPPS),
-        q('U38',"Il y a souvent tant de petites tâches à accomplir que je les ignore toutes simplement",O_UPPS),
-        q('U39',"Généralement, je réfléchis soigneusement avant de faire quoi que ce soit",O_UPPS),
-        q('U40',"Je valorise une approche rationnelle par rapport à toute situation",O_UPPS),
-        q('U41',"Quand je suis bouleversé(e), mes émotions envahissent souvent ma pensée au point que je ne parviens pas à trouver d'idées",O_UPPS),
-        q('U42',"J'aimerais apprendre à faire de la plongée sous-marine",O_UPPS),
-        q('U43',"Je suis en général toujours capable de maîtriser mes impulsions",O_UPPS),
-        q('U44',"Je voudrais faire des tours de circuit en voiture de course",O_UPPS),
-        q('U45',"Quand je suis en colère, la plupart du temps je dis et fais des choses dont je me repens plus tard",O_UPPS),
+        q('Q037',"J'aimerais ressentir la sensation de skier très vite sur des pentes raides.",O_UPPS),
+        q('Q038',"Il y a tant de petites tâches qui doivent être faites que parfois je les ignore simplement toutes.",O_UPPS),
+        q('Q039',"D'habitude je réfléchis soigneusement avant de faire quoi que ce soit.",O_UPPS),
+        q('Q040',"Avant de me décider, je considère tous les avantages et inconvénients.",O_UPPS),
+        q('Q041',"Quand la discussion s'échauffe, je dis souvent des choses que je regrette ensuite.",O_UPPS),
+        q('Q042',"J'aimerais aller faire de la plongée sous-marine.",O_UPPS),
+        q('Q043',"Je suis toujours capable de maîtriser mes émotions.",O_UPPS),
+        q('Q044',"J'aimerais conduire vite.",O_UPPS),
+        q('Q045',"Parfois je fais des choses sur un coup de tête que je regrette par la suite.",O_UPPS),
       ]}
   ],
   scoring:{
     type:'upps',
-    // Source PDF UPPS : items marqués (R) = renversés
+    certification:{source:'drive',status:'certifie'},
+    note:'Source Drive : `R` = item renversé (recotation 1↔4, 2↔3), un score élevé par sous-échelle traduisant un niveau plus élevé d\'impulsivité. Aucun seuil clinique n\'est fourni par la source ; aucune interprétation en paliers n\'est donc produite.',
+    // Cotation professionnelle Drive : items renversés marqués (R) par sous-échelle.
     subScores:[
-      {id:'U',label:'Urgence',items:['U2','U6','U10','U14','U18','U24','U28','U32','U36','U41','U43','U45'],reversed:['U2','U6','U10','U14','U18','U24','U28','U32','U36','U41','U45']},
-      {id:'PM',label:'Manque de préméditation',items:['U1','U5','U9','U13','U17','U23','U27','U31','U35','U39','U40'],reversed:[]},
-      {id:'PE',label:'Manque de persévérance',items:['U4','U8','U12','U16','U20','U22','U26','U30','U34','U38'],reversed:['U8','U38']},
-      {id:'RS',label:'Recherche de sensations',items:['U3','U7','U11','U15','U19','U21','U25','U29','U33','U37','U42','U44'],reversed:['U3','U7','U11','U15','U19','U21','U25','U29','U33','U37','U42','U44']},
+      {id:'U',label:'Urgence',items:['Q002','Q006','Q010','Q014','Q018','Q024','Q028','Q032','Q036','Q041','Q043','Q045'],reversed:['Q002','Q006','Q010','Q014','Q018','Q024','Q028','Q032','Q036','Q041','Q045']},
+      {id:'PM',label:'Manque de préméditation',items:['Q001','Q005','Q009','Q013','Q017','Q023','Q027','Q031','Q035','Q039','Q040'],reversed:[]},
+      {id:'PE',label:'Manque de persévérance',items:['Q004','Q008','Q012','Q016','Q020','Q022','Q026','Q030','Q034','Q038'],reversed:['Q008','Q038']},
+      {id:'RS',label:'Recherche de sensations',items:['Q003','Q007','Q011','Q015','Q019','Q021','Q025','Q029','Q033','Q037','Q042','Q044'],reversed:['Q003','Q007','Q011','Q015','Q019','Q021','Q025','Q029','Q033','Q037','Q042','Q044']},
     ]
   }
 };
 export const Q_NEU_07 = {
-  id:'Q_NEU_07', titre:'AUDIT — Test d\'identification des troubles liés à l\'alcool',
-  instructions:'Répondez à chacune de ces questions en cochant la réponse la plus exacte.',
+  id:'Q_NEU_07', titre:'AUDIT — Alcohol Use Disorders Identification Test',
+  instructions:'Pour chaque question, cochez la réponse correspondant le mieux à votre situation. Chaque réponse correspond à une valeur de score de 0 à 4.',
   sections:[
-    { id:'A', titre:'Consommation d\'alcool',
+    { id:'A', titre:'Consommation d’alcool',
       questions:[
-        q('A1',"À quelle fréquence vous arrive-t-il de consommer des boissons contenant de l'alcool ?",
-          [{v:0,l:'Jamais'},{v:1,l:'1 fois par mois ou moins'},{v:2,l:'2 à 4 fois par mois'},{v:3,l:'2 à 3 fois par semaine'},{v:4,l:'4 fois ou plus par semaine'}]),
-        q('A2',"Combien de verres standard buvez-vous au cours d'une journée ordinaire où vous buvez de l'alcool ?",
-          [{v:0,l:'1 ou 2'},{v:1,l:'3 ou 4'},{v:2,l:'5 ou 6'},{v:3,l:'7 à 9'},{v:4,l:'10 ou plus'}]),
-        q('A3',"Au cours d'une même occasion, combien de fois vous arrive-t-il de boire 6 verres ou plus ?",
-          [{v:0,l:'Jamais'},{v:1,l:'Moins d\'une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
+        q('Q001',"À quelle fréquence vous arrive-t-il de consommer des boissons contenant de l'alcool ?",[{v:0,l:'Jamais'},{v:1,l:'Au moins 1 fois par mois'},{v:2,l:'2 à 4 fois par mois'},{v:3,l:'2 à 3 fois par semaine'},{v:4,l:'4 fois ou plus par semaine'}]),
+        q('Q002',"Combien de verres standards buvez-vous au cours d'une journée ordinaire où vous buvez de l'alcool ?",[{v:0,l:'1 ou 2'},{v:1,l:'3 ou 4'},{v:2,l:'4 ou 5'},{v:3,l:'7 à 9'},{v:4,l:'10 ou plus'}]),
+        q('Q003',"Au cours d'une même occasion, combien de fois vous arrive-t-il de boire six verres standards ou plus ?",[{v:0,l:'Jamais'},{v:1,l:'Moins d’une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
       ]},
-    { id:'B', titre:'Comportement face à l\'alcool',
+    { id:'B', titre:'Comportement face à l’alcool',
       questions:[
-        q('A4',"Au cours de l'année écoulée, combien de fois avez-vous constaté que vous n'étiez plus capable de vous arrêter de boire après avoir commencé ?",
-          [{v:0,l:'Jamais'},{v:1,l:'Moins d\'une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
-        q('A5',"Au cours de l'année écoulée, combien de fois le fait d'avoir bu de l'alcool vous a-t-il empêché de faire ce qu'on attendait normalement de vous ?",
-          [{v:0,l:'Jamais'},{v:1,l:'Moins d\'une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
-        q('A6',"Au cours de l'année écoulée, combien de fois avez-vous eu besoin d'une première verre le matin pour vous remettre d'aplomb ?",
-          [{v:0,l:'Jamais'},{v:1,l:'Moins d\'une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
-        q('A7',"Au cours de l'année écoulée, combien de fois avez-vous eu un sentiment de culpabilité ou des remords après avoir bu ?",
-          [{v:0,l:'Jamais'},{v:1,l:'Moins d\'une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
-        q('A8',"Au cours de l'année écoulée, combien de fois avez-vous été incapable de vous souvenir de ce qui s'était passé la nuit d'avant parce que vous aviez bu ?",
-          [{v:0,l:'Jamais'},{v:1,l:'Moins d\'une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
+        q('Q004',"Dans les 12 derniers mois, combien de fois avez-vous observé que vous n'étiez plus capable de vous arrêter de boire après avoir commencé ?",[{v:0,l:'Jamais'},{v:1,l:'Moins d’une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
+        q('Q005',"Dans les 12 derniers mois, combien de fois le fait d'avoir bu de l'alcool vous a-t-il empêché de faire ce qu'on attendait normalement de vous ?",[{v:0,l:'Jamais'},{v:1,l:'Moins d’une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
+        q('Q006',"Dans les 12 derniers mois, combien de fois, après une période de forte consommation, avez-vous dû boire de l'alcool dès le matin pour vous remettre en forme ?",[{v:0,l:'Jamais'},{v:1,l:'Moins d’une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
+        q('Q007',"Dans les 12 derniers mois, combien de fois avez-vous eu un sentiment de culpabilité ou de regret après avoir bu ?",[{v:0,l:'Jamais'},{v:1,l:'Moins d’une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
+        q('Q008',"Dans les 12 derniers mois, combien de fois avez-vous été incapable de vous souvenir de ce qui s'était passé la nuit précédente parce que vous aviez bu ?",[{v:0,l:'Jamais'},{v:1,l:'Moins d’une fois par mois'},{v:2,l:'1 fois par mois'},{v:3,l:'1 fois par semaine'},{v:4,l:'Tous les jours ou presque'}]),
       ]},
     { id:'C', titre:'Conséquences de la consommation',
       questions:[
-        q('A9',"Avez-vous été blessé(e) ou quelqu'un d'autre a-t-il été blessé parce que vous aviez bu ?",
-          [{v:0,l:'Non'},{v:2,l:'Oui, mais pas au cours de l\'année écoulée'},{v:4,l:'Oui, au cours de l\'année écoulée'}]),
-        q('A10',"Est-ce qu'un membre de votre famille, un médecin ou un autre professionnel de santé s'est préoccupé de votre consommation d'alcool ou vous a suggéré de la diminuer ?",
-          [{v:0,l:'Non'},{v:2,l:'Oui, mais pas au cours de l\'année écoulée'},{v:4,l:'Oui, au cours de l\'année écoulée'}]),
+        q('Q009',"Vous êtes-vous blessé ou avez-vous blessé quelqu'un parce que vous aviez bu ?",[{v:0,l:'Non'},{v:2,l:"Oui, mais pas dans l'année passée"},{v:4,l:"Oui, au cours de l'année dernière"}]),
+        q('Q010',"Est-ce qu'un parent, un ami, un médecin ou un autre professionnel de santé s'est déjà préoccupé de votre consommation d'alcool et vous a conseillé de la diminuer ?",[{v:0,l:'Non'},{v:2,l:"Oui, mais pas dans l'année passée"},{v:4,l:"Oui, au cours de l'année dernière"}]),
       ]}
   ],
   scoring:{
     type:'audit',
     maxTotal:40,
+    certification:{source:'drive',status:'certifie'},
+    note:'Source Drive : seuils différenciés femme/homme pour les scores <13 ; sans sexe transmis, le moteur retourne une interprétation à préciser.',
     interpretation:[
+      {min:0,max:5,label:'Risque faible ou anodin chez la femme',color:'success'},
+      {min:0,max:6,label:'Risque faible ou anodin chez l’homme',color:'success'},
+      {min:6,max:12,label:'Consommation à risque ou à problème chez la femme',color:'warning'},
+      {min:7,max:12,label:'Consommation à risque ou à problème chez l’homme',color:'warning'},
       {min:13,max:40,label:'Alcoolodépendance probable',color:'danger'},
     ]
   }
 };
 export const Q_NEU_09 = {
-  id:'Q_NEU_09', titre:'Échelle de Zarit — Fardeau de l\'aidant',
-  instructions:'Ce questionnaire concerne les personnes qui s\'occupent d\'un proche malade ou dépendant. Pour chaque question, indiquez à quelle fréquence vous ressentez cela.',
+  id:'Q_NEU_09', titre:'Échelle de Zarit — Fardeau de l’aidant',
+  instructions:'Après chaque affirmation, indiquez à quelle fréquence vous ressentez cet état.',
   sections:[
-    { id:'A', titre:'Partie 1 — Ressenti et relations',
+    { id:'A', titre:'Charge ressentie du proche aidant',
+      description:'0 = Jamais · 1 = Rarement · 2 = Quelques fois · 3 = Assez souvent · 4 = Presque toujours',
       questions:[
-        q('Z1',"Vous sentez-vous débordé(e) en raison du temps que vous consacrez à votre proche ?",O_ZARIT),
-        q('Z2',"Estimez-vous que votre vie sociale souffre du temps que vous consacrez à votre proche ?",O_ZARIT),
-        q('Z3',"Vous sentez-vous fatigué(e) à cause des soins que vous apportez à votre proche ?",O_ZARIT),
-        q('Z4',"Vous sentez-vous stressé(e) entre soigner votre proche et assumer vos autres responsabilités familiales ou professionnelles ?",O_ZARIT),
-        q('Z5',"Sentez-vous de la tension dans vos relations avec votre proche ?",O_ZARIT),
-        q('Z6',"Votre santé souffre-t-elle à cause de votre implication auprès de votre proche ?",O_ZARIT),
-        q('Z7',"Avez-vous l'impression de ne pas avoir assez de temps pour vous ?",O_ZARIT),
-        q('Z8',"Avez-vous l'impression de ne pas avoir assez de temps pour vos amis ?",O_ZARIT),
-        q('Z9',"Avez-vous l'impression que votre proche dépend de vous pour ses soins ?",O_ZARIT),
-        q('Z10',"Vous sentez-vous sous pression lorsque vous êtes avec votre proche ?",O_ZARIT),
-        q('Z11',"Avez-vous l'impression que votre vie privée souffre à cause des soins que vous apportez à votre proche ?",O_ZARIT),
-      ]},
-    { id:'B', titre:'Partie 2 — Vie sociale et économique',
-      questions:[
-        q('Z12',"Vous sentez-vous limité(e) dans vos activités sociales à cause de votre engagement dans les soins ?",O_ZARIT),
-        q('Z13',"Vous sentez-vous mal à l'aise de recevoir des amis à la maison à cause de votre proche ?",O_ZARIT),
-        q('Z14',"Pensez-vous que votre proche attend que vous vous occupiez de lui/elle comme si vous étiez la seule personne sur qui il/elle peut compter ?",O_ZARIT),
-        q('Z15',"Pensez-vous que vous n'avez pas suffisamment d'argent pour prendre soin de votre proche en plus de vos autres dépenses ?",O_ZARIT),
-        q('Z16',"Pensez-vous que vous ne serez pas capable de continuer à prendre soin de votre proche encore longtemps ?",O_ZARIT),
-        q('Z17',"Avez-vous le sentiment d'avoir perdu le contrôle de votre vie depuis que vous vous occupez de votre proche ?",O_ZARIT),
-        q('Z18',"Souhaiteriez-vous pouvoir laisser le soin de votre proche à quelqu'un d'autre ?",O_ZARIT),
-        q('Z19',"Vous sentez-vous incertain(e) sur ce qu'il y a lieu de faire pour votre proche ?",O_ZARIT),
-        q('Z20',"Pensez-vous que vous devriez faire davantage pour votre proche ?",O_ZARIT),
-        q('Z21',"Pensez-vous que vous pourriez mieux vous occuper de votre proche ?",O_ZARIT),
-        q('Z22',"Dans l'ensemble, à quel point vous sentez-vous surchargé(e) par la responsabilité de prendre soin de votre proche ?",O_ZARIT),
+        q('Q001',"Sentir que votre parent vous demande plus d’aide qu’il n’en a besoin ?",O_ZARIT),
+        q('Q002',"Sentir que le temps consacré à votre parent ne vous en laisse pas assez pour vous ?",O_ZARIT),
+        q('Q003',"Vous sentir tiraillé entre les besoins de votre parent et vos autres responsabilités familiales ou professionnelles ?",O_ZARIT),
+        q('Q004',"Vous sentir embarrassé par le(s) comportement(s) de votre parent ?",O_ZARIT),
+        q('Q005',"Vous sentir en colère quand vous êtes en présence de votre parent ?",O_ZARIT),
+        q('Q006',"Sentir que votre parent nuit à vos relations avec d’autres membres de la famille ?",O_ZARIT),
+        q('Q007',"Avoir peur de ce que l’avenir réserve à votre parent ?",O_ZARIT),
+        q('Q008',"Sentir que votre parent est dépendant de vous ?",O_ZARIT),
+        q('Q009',"Vous sentir tendu en présence de votre parent ?",O_ZARIT),
+        q('Q010',"Sentir que votre santé s’est détériorée à cause de votre implication auprès de votre parent ?",O_ZARIT),
+        q('Q011',"Sentir que vous n’avez pas autant d’intimité que vous aimeriez à cause de votre parent ?",O_ZARIT),
+        q('Q012',"Sentir que votre vie sociale s’est détériorée du fait que vous prenez soin de votre parent ?",O_ZARIT),
+        q('Q013',"Vous sentir mal à l’aise de recevoir des amis à cause de votre parent ?",O_ZARIT),
+        q('Q014',"Sentir que votre parent semble s’attendre à ce que vous preniez soin de lui comme si vous étiez la seule personne sur qui il puisse compter ?",O_ZARIT),
+        q('Q015',"Sentir que vous n’avez pas assez d’argent pour prendre soin de votre parent encore longtemps compte tenu de vos dépenses ?",O_ZARIT),
+        q('Q016',"Sentir que vous ne serez plus capable de prendre soin de votre parent encore bien longtemps ?",O_ZARIT),
+        q('Q017',"Sentir que vous avez perdu le contrôle de votre vie depuis la maladie de votre parent ?",O_ZARIT),
+        q('Q018',"Souhaiter pouvoir laisser le soin de votre parent à quelqu’un d’autre ?",O_ZARIT),
+        q('Q019',"Sentir que vous ne savez pas trop quoi faire pour votre parent ?",O_ZARIT),
+        q('Q020',"Sentir que vous devriez en faire plus pour votre parent ?",O_ZARIT),
+        q('Q021',"Sentir que vous pourriez donner de meilleurs soins à votre parent ?",O_ZARIT),
+        q('Q022',"En fin de compte, vous arrive-t-il de sentir que les soins à votre parent sont une charge, un fardeau ?",O_ZARIT),
       ]}
   ],
   scoring:{
     type:'sum',
     maxTotal:88,
+    certification:{source:'drive',status:'certifie'},
     interpretation:[
-      {min:0,max:20,label:'Pas de fardeau',color:'success'},
-      {min:21,max:40,label:'Fardeau léger',color:'info'},
-      {min:41,max:60,label:'Fardeau modéré',color:'warning'},
+      {min:0,max:20,label:'Fardeau léger',color:'success'},
+      {min:21,max:40,label:'Fardeau léger à modéré',color:'info'},
+      {min:41,max:60,label:'Fardeau modéré à sévère',color:'warning'},
       {min:61,max:88,label:'Fardeau sévère',color:'danger'},
     ]
   }
 };
 export const Q_NEU_10 = {
-  id:'Q_NEU_10', titre:'Dépendance à Internet — Échelle de Young',
-  instructions:'Pour chaque affirmation, indiquez à quelle fréquence elle s\'applique à vous.',
+  id:'Q_NEU_10', titre:'Dépendance à Internet',
+  instructions:'Ce questionnaire ne prend en compte que le temps consacré à Internet pour les loisirs. Pour chaque affirmation, indiquez la fréquence correspondante.',
   sections:[
-    { id:'A', titre:'Rapport à l\'utilisation d\'Internet',
+    { id:'A', titre:'Usage d’Internet pour les loisirs',
+      description:'0 = Jamais · 1 = Rarement · 2 = De temps en temps · 3 = Régulièrement · 4 = Souvent · 5 = Toujours',
       questions:[
-        q('I1',"Combien de fois vous arrive-t-il de rester en ligne plus longtemps que vous ne le prévoyiez ?",O_YOUNG),
-        q('I2',"Négligez-vous les tâches domestiques pour passer plus de temps en ligne ?",O_YOUNG),
-        q('I3',"Préférez-vous l'excitation d'Internet à l'intimité avec votre partenaire ?",O_YOUNG),
-        q('I4',"Vous arrive-t-il de nouer des relations en ligne avec d'autres utilisateurs d'Internet ?",O_YOUNG),
-        q('I5',"Votre entourage se plaint-il du temps que vous passez en ligne ?",O_YOUNG),
-        q('I6',"Vos résultats scolaires ou professionnels souffrent-ils de votre utilisation d'Internet ?",O_YOUNG),
-        q('I7',"Vérifiez-vous vos e-mails avant d'autres choses prioritaires ?",O_YOUNG),
-        q('I8',"La performance d'Internet affecte-t-elle votre travail ?",O_YOUNG),
-        q('I9',"Vous mettez-vous sur la défensive ou gardez-vous le secret quant au temps que vous passez sur Internet ?",O_YOUNG),
-        q('I10',"Est-ce qu'Internet vous permet de chasser les idées noires de votre esprit ?",O_YOUNG),
-        q('I11',"Vous retrouvez-vous à anticiper la prochaine fois que vous serez en ligne ?",O_YOUNG),
-        q('I12',"Craignez-vous que la vie sans Internet soit ennuyeuse, vide et sans joie ?",O_YOUNG),
-        q('I13',"Vous énervez-vous si quelqu'un vous dérange quand vous êtes en ligne ?",O_YOUNG),
-        q('I14',"Dormez-vous peu à cause du temps passé en ligne la nuit ?",O_YOUNG),
-        q('I15',"Vous sentez-vous préoccupé(e) par Internet quand vous n'êtes pas connecté(e) ?",O_YOUNG),
-        q('I16',"Vous arrive-t-il de dire « encore cinq minutes » quand vous êtes en ligne ?",O_YOUNG),
-        q('I17',"Avez-vous essayé de réduire le temps passé en ligne et n'avez-vous pas réussi ?",O_YOUNG),
-        q('I18',"Essayez-vous de cacher le temps passé sur Internet ?",O_YOUNG),
-        q('I19',"Préférez-vous passer du temps sur Internet plutôt que de sortir avec des amis ?",O_YOUNG),
-        q('I20',"Vous sentez-vous déprimé(e), irritable ou nerveux(se) quand vous n'êtes pas connecté(e) et cela s'estompe-t-il quand vous êtes en ligne ?",O_YOUNG),
+        q('Q001',"À quelle fréquence vous arrive-t-il de rester sur Internet plus longtemps que prévu ?",O_YOUNG),
+        q('Q002',"Vous arrive-t-il de négliger vos tâches quotidiennes afin de rester plus longtemps sur le Net ?",O_YOUNG),
+        q('Q003',"Vous arrive-t-il de préférer surfer sur Internet plutôt que de sortir avec des ami(e)s ?",O_YOUNG),
+        q('Q004',"Vous arrive-t-il de manquer de sommeil à cause du temps passé sur Internet ?",O_YOUNG),
+        q('Q005',"Votre entourage se plaint-il du temps que vous consacrez à Internet ?",O_YOUNG),
+        q('Q006',"Votre travail ou vos études souffrent-ils du temps que vous consacrez à Internet ?",O_YOUNG),
+        q('Q007',"Vous arrive-t-il de vous imaginer en train de surfer sur Internet pour vous distraire d'une préoccupation ou d'une contrariété ?",O_YOUNG),
+        q('Q008',"Vos performances professionnelles diminuent-elles à cause du temps que vous passez sur Internet ?",O_YOUNG),
+        q('Q009',"Vous arrive-t-il de mentir lorsqu'on vous demande ce que vous êtes occupé à faire sur Internet ?",O_YOUNG),
+        q('Q010',"Vous arrive-t-il de relever votre boîte électronique alors que vous avez des priorités plus importantes ?",O_YOUNG),
+        q('Q011',"Vous arrive-t-il de constater que vous ne pensez plus qu'à Internet avant même d'y être connecté ?",O_YOUNG),
+        q('Q012',"Vous arrive-t-il de penser que la vie serait ennuyeuse, vide et triste sans Internet ?",O_YOUNG),
+        q('Q013',"Lorsque quelqu'un vous dérange quand vous êtes sur Internet, ressentez-vous de l'agacement ou l'envoyez-vous promener ?",O_YOUNG),
+        q('Q014',"Vous arrive-t-il de faire de nouvelles connaissances par Internet ?",O_YOUNG),
+        q('Q015',"Vous arrive-t-il de fantasmer à propos d'Internet ou d'y penser lorsque vous n'êtes pas en ligne ?",O_YOUNG),
+        q('Q016',"Vous arrive-t-il de vous dire \"juste quelques minutes de plus\" lorsque le moment est venu de vous déconnecter ?",O_YOUNG),
+        q('Q017',"Vous arrive-t-il de ne pas respecter vos engagements pour passer davantage de temps sur Internet ?",O_YOUNG),
+        q('Q018',"Mentez-vous à propos du temps que vous passez sur le Net ?",O_YOUNG),
+        q('Q019',"Vous arrive-t-il de préférer surfer sur Internet plutôt que de passer un moment en compagnie de votre meilleur(e) ami(e) ou de votre partenaire ?",O_YOUNG),
+        q('Q020',"Avez-vous remarqué que votre cafard ou votre nervosité disparaissait dès que vous vous trouviez sur Internet ?",O_YOUNG),
       ]}
   ],
   scoring:{
     type:'sum',
     maxTotal:100,
+    certification:{source:'drive',status:'certifie'},
+    note:'Source Drive : questionnaire adulte centré sur Internet pour les loisirs ; à interpréter avec prudence et avec l’entretien clinique.',
     interpretation:[
-      {min:0,max:49,label:'Pas d\'inquiétude à avoir',color:'success'},
-      {min:50,max:79,label:'Attention — essayer de modérer la fréquentation du Net',color:'warning'},
-      {min:80,max:100,label:'Situation non maîtrisée — réaction nécessaire',color:'danger'},
+      {min:0,max:49,label:'Pas d’inquiétude à avoir',color:'success'},
+      {min:50,max:79,label:'Attention : essayer de modérer la fréquentation du Net',color:'warning'},
+      {min:80,max:100,label:'Situation non maîtrisée ; réaction nécessaire',color:'danger'},
     ]
   }
 };
 export const Q_NEU_02 = {
-  id:'Q_NEU_02', titre:'MADRS — Échelle de dépression de Montgomery-Åsberg',
-  // CORR 23/06/2026 :
-  //   - Options corrigées : 7 niveaux (0-6) → 4 niveaux (0/2/4/6) conformes PDF SIIN
-  //   - Item MA1 'Tristesse apparente' restauré (absent de la version précédente)
-  //   - Item MA10 'Fatigue' supprimé (fantôme — absent PDF SIIN et MADRS originale)
+  id:'Q_NEU_02', titre:'MADRS — Échelle de dépression de Montgomery et Åsberg',
+  // Certification Drive 2026-07-07 : alignement strict sur madrs_echelle_depression.md
+  // (IDs Q001-Q010, options 0/2/4/6, libellés et seuils source).
   // Référence : Montgomery & Åsberg (1979). Br J Psychiatry, 134, 382-389.
-  instructions:'Échelle à administrer par un praticien. Cotez chaque item de 0 à 6 selon l\'intensité observée ou rapportée.',
+  instructions:'Pour chaque dimension, sélectionnez la proposition qui correspond le mieux à l\'état ressenti. Les réponses sont cotées 0, 2, 4 ou 6 points.',
   sections:[
-    { id:'A', titre:'Humeur & Pensées',
+    { id:'A', titre:'Questions 1 à 10',
       questions:[
-        qs('MA1','Tristesse apparente : j\'ai l\'air triste, abattu(e)',
-          [{v:0,l:'Aucune tristesse apparente'},{v:2,l:'Paraît découragé(e) ou triste par moments'},{v:4,l:'Tristesse ou désespoir apparents permanents'},{v:6,l:'Tristesse, découragement ou désespoir extrêmes'}]),
-        qs('MA2','Tristesse exprimée : je me sens triste, abattu(e)',
-          [{v:0,l:'Pas du tout triste'},{v:2,l:'Tristesse passagère'},{v:4,l:'Triste la plupart du temps'},{v:6,l:'Tristesse permanente insupportable'}]),
-        qs('MA3','Tension intérieure : je me sens tendu(e), anxieux(se), angoissé(e)',
-          [{v:0,l:'Serein(e), calme'},{v:2,l:'Tensions passagères'},{v:4,l:'Tension ou anxiété quasi-permanente'},{v:6,l:'Panique ou effroi insupportable'}]),
-        qs('MA4','Réduction du sommeil',
-          [{v:0,l:'Sommeil habituel'},{v:2,l:'Légère difficulté à m\'endormir ou sommeil réduit'},{v:4,l:'Sommeil réduit de 2 à 4 heures'},{v:6,l:'Moins de 2 heures de sommeil'}]),
-        qs('MA5','Réduction de l\'appétit',
-          [{v:0,l:'Appétit normal'},{v:2,l:'Légère réduction de l\'appétit'},{v:4,l:'Besoin de me forcer à manger'},{v:6,l:'Alimentation nulle — ne s\'alimente que sous contrainte'}]),
-      ]},
-    { id:'B', titre:'Énergie & Fonctions vitales',
-      questions:[
-        qs('MA6','Difficultés de concentration',
-          [{v:0,l:'Aucune difficulté'},{v:2,l:'Légères difficultés passagères'},{v:4,l:'Difficultés importantes réduisant l\'activité'},{v:6,l:'Incapacité totale de concentration'}]),
-        qs('MA7','Lassitude — difficulté à démarrer des activités',
-          [{v:0,l:'Pas du tout'},{v:2,l:'Légère difficulté'},{v:4,l:'Démarrage difficile pour les activités simples'},{v:6,l:'Prostration totale'}]),
-        qs('MA8','Incapacité à ressentir — émoussement affectif',
-          [{v:0,l:'Intérêt et plaisir normaux'},{v:2,l:'Légère réduction d\'intérêt'},{v:4,l:'Indifférence émotionnelle notable'},{v:6,l:'Vide affectif complet'}]),
-        qs('MA9','Pensées pessimistes ou idées de culpabilité',
-          [{v:0,l:'Aucune'},{v:2,l:'Doutes passagers sur soi ou auto-critique'},{v:4,l:'Idées de culpabilité ou convictions d\'avoir causé du tort'},{v:6,l:'Conviction délirante de culpabilité ou de faute grave'}]),
-      ]},
-    { id:'C', titre:'Pensées suicidaires',
-      questions:[
-        qs('MA10_SUI','Idées de mort ou de suicide',
-          // Note : renommé MA10_SUI pour éviter la confusion avec l'item fantôme MA10
-          [{v:0,l:'Aucune'},{v:2,l:'La vie semble vide ou sans intérêt'},{v:4,l:'Idées suicidaires fréquentes avec plan élaboré'},{v:6,l:'Tentative de suicide imminente'}]),
+        qs('Q001','Tristesse apparente',
+          [{v:0,l:'Pas de tristesse.'},{v:2,l:'Semble découragé mais peut se dérider sans difficulté.'},{v:4,l:'Paraît triste et malheureux la plupart du temps.'},{v:6,l:'Semble malheureux tout le temps. Extrêmement découragé.'}]),
+        qs('Q002','Tristesse exprimée',
+          [{v:0,l:'Tristesse occasionnelle en rapport avec les circonstances.'},{v:2,l:'Triste ou cafardeux, mais se déride sans difficulté.'},{v:4,l:'Sentiment envahissant de tristesse ou de dépression.'},{v:6,l:'Tristesse, désespoir ou découragement permanents ou sans fluctuation.'}]),
+        qs('Q003','Tension intérieure',
+          [{v:0,l:'Calme. Tension intérieure seulement passagère.'},{v:2,l:'Sentiments occasionnels d\'irritabilité et de malaise mal défini.'},{v:4,l:'Sentiments continuels de tension intérieure ou panique intermittente que le malade ne peut maîtriser qu\'avec difficulté.'},{v:6,l:'Effroi ou angoisse sans relâche. Panique envahissante.'}]),
+        qs('Q004','Réduction du sommeil',
+          [{v:0,l:'Dort comme d\'habitude.'},{v:2,l:'Légère difficulté à s\'endormir ou sommeil légèrement réduit. Léger ou agité.'},{v:4,l:'Sommeil réduit ou interrompu au moins deux heures.'},{v:6,l:'Moins de deux ou trois heures de sommeil.'}]),
+        qs('Q005','Réduction de l\'appétit',
+          [{v:0,l:'Appétit normal ou augmenté.'},{v:2,l:'Appétit légèrement réduit.'},{v:4,l:'Pas d\'appétit. Nourriture sans goût.'},{v:6,l:'Ne mange que si on le persuade.'}]),
+        qs('Q006','Difficultés de concentration',
+          [{v:0,l:'Pas de difficulté de concentration.'},{v:2,l:'Difficultés occasionnelles à rassembler ses pensées.'},{v:4,l:'Difficultés à se concentrer et à maintenir son attention, ce qui réduit la capacité à lire ou à soutenir une conversation.'},{v:6,l:'Incapacité de lire ou de converser sans grande difficulté.'}]),
+        qs('Q007','Lassitude',
+          [{v:0,l:'Guère de difficultés à se mettre en route ; pas de lenteur.'},{v:2,l:'Difficultés à commencer des activités.'},{v:4,l:'Difficultés à commencer des activités routinières qui sont poursuivies avec effort.'},{v:6,l:'Grande lassitude. Incapable de faire quoi que ce soit sans aide.'}]),
+        qs('Q008','Incapacité à ressentir',
+          [{v:0,l:'Intérêt normal pour le monde environnant et pour les gens.'},{v:2,l:'Capacité réduite à prendre plaisir à ses intérêts habituels.'},{v:4,l:'Perte d\'intérêt pour le monde environnant. Perte de sentiment pour les amis et les connaissances.'},{v:6,l:'Sentiment d\'être paralysé émotionnellement, incapacité à ressentir de la colère, du chagrin ou du plaisir, et impossibilité complète ou même douloureuse de ressentir quelque chose pour les proches, parents et amis.'}]),
+        qs('Q009','Pensées pessimistes',
+          [{v:0,l:'Pas de pensées pessimistes.'},{v:2,l:'Idées intermittentes d\'échec, d\'auto-accusation et d\'autodépréciation.'},{v:4,l:'Auto-accusations persistantes ou idées de culpabilité ou péché précises, mais encore rationnelles. Pessimisme croissant à propos du futur.'},{v:6,l:'Idées délirantes de ruine, de remords ou péché inexpiable. Auto-accusations absurdes et inébranlables.'}]),
+        qs('Q010','Idées de suicide',
+          [{v:0,l:'Jouit de la vie ou la prend comme elle vient.'},{v:2,l:'Fatigué de la vie, idées de suicide seulement passagères.'},{v:4,l:'Il vaudrait mieux être mort. Les idées de suicide sont courantes et le suicide est considéré comme une solution possible, mais sans projet ou intention précis.'},{v:6,l:'Projets explicites de suicide si l\'occasion se présente. Préparatifs de suicide.'}]),
       ]},
   ],
   scoring:{
     type:'sum', maxTotal:60,
+    certification:{source:'drive',status:'certifie'},
+    note:'Source Drive : les scores 7 et 19 ne sont pas explicitement classés par la grille source (0-6, 8-18, 20-35, 36-60) ; ils restent donc sans interprétation attribuée. Point de vigilance clinique Drive : tout item Q010 positif nécessite une appréciation clinique immédiate, indépendamment du score total.',
     interpretation:[
-      // Source : Montgomery & Asberg (1979), MADRS 10 items, score /60 ; seuils usuels 0-6, 7-19, 20-34, >=35.
-      {min:0, max:6,  label:'Absence de dépression', color:'success', protocol:'Pas d\'indication thérapeutique spécifique'},
-      {min:7, max:19, label:'Dépression légère',      color:'info',    protocol:'Suivi micronutritionnel — axe sérotoninergique à évaluer'},
-      {min:20,max:34, label:'Dépression modérée',     color:'warning', protocol:'Bilan complet + soutien psychologique + micronutrition ciblée'},
-      {min:35,max:60, label:'Dépression sévère',      color:'danger',  protocol:'Orientation psychiatrique urgente — prise en charge pluridisciplinaire'},
+      {min:0, max:6,  label:'Pas de troubles dépressifs', color:'success', protocol:'Pas d\'indication thérapeutique spécifique'},
+      {min:8, max:18, label:'Dépression légère',      color:'info',    protocol:'Suivi micronutritionnel — axe sérotoninergique à évaluer'},
+      {min:20,max:35, label:'Dépression moyenne',     color:'warning', protocol:'Bilan complet + soutien psychologique + micronutrition ciblée'},
+      {min:36,max:60, label:'Dépression sévère',      color:'danger',  protocol:'Orientation psychiatrique urgente — prise en charge pluridisciplinaire'},
     ]
   }
 };
@@ -551,6 +553,232 @@ export const Q_NEU_08 = {
     interpretation:[
       {min:0,max:5, label:'Attachement cognitif non confirmé par le seuil de l\'échelle',color:'success'},
       {min:6,max:10,label:'Attachement aux benzodiazépines validé (dépendance à confirmer cliniquement)',color:'danger'},
+    ]
+  }
+};
+
+
+// ── NEURO-PSYCHOLOGIE — neurovégétatif, céphalées, neurotransmetteurs ─────
+export const Q_INF_01 = {
+  id:'Q_INF_01', titre:'Questionnaire d\'hyperexcitabilité SIIN',
+  instructions:'Pour chaque symptôme, indiquez à quelle fréquence vous le ressentez.',
+  sections:[
+    { id:'A', titre:'Symptômes neuromusculaires',
+      description:"0 = Jamais · 1 = Rarement · 2 = Parfois · 3 = Souvent · 4 = Très souvent",
+      questions:[
+        q('H1',"J'ai facilement des crampes",O_04),
+        q('H2',"Mes paupières tressautent",O_04),
+        q('H3',"J'ai des fourmillements aux extrémités, autour des lèvres",O_04),
+        q('H4',"J'ai souvent des serrements ou une boule au niveau de la gorge",O_04),
+        q('H5',"J'ai des spasmes gastriques, des crampes d'estomac",O_04),
+        q('H6',"J'ai de l'aérophagie, des éructations, du reflux",O_04),
+        q('H7',"J'ai des spasmes intestinaux, des coliques, des ballonnements",O_04),
+        q('H8',"J'ai des spasmes, des douleurs abdominales avant les règles",O_04),
+      ]},
+    { id:'B', titre:'Symptômes cardio-respiratoires & sensoriels',
+      questions:[
+        q('H9',"Je ressens souvent une crispation de la mâchoire",O_04),
+        q('H10',"J'ai des acouphènes, des bruits dans les oreilles",O_04),
+        q('H11',"J'ai des douleurs musculaires diffuses autour des articulations, des douleurs lombaires si je suis fatigué(e)",O_04),
+        q('H12',"Je ressens une fatigue plus importante le matin que le soir",O_04),
+        q('H13',"J'ai des palpitations cardiaques, des extrasystoles",O_04),
+        q('H14',"Ma fréquence cardiaque est souvent élevée sans effort",O_04),
+        q('H15',"Je ressens une sensation d'oppression respiratoire",O_04),
+        q('H16',"J'ai des troubles du sommeil",O_04),
+      ]},
+    { id:'C', titre:'Sensibilité & terrain allergique',
+      questions:[
+        q('H17',"J'ai un sommeil léger, je me réveille au moindre bruit",O_04),
+        q('H18',"Je suis vite fatigué(e) et irritable, agacé(e)",O_04),
+        q('H19',"J'ai l'impression d'être vite stressé(e)",O_04),
+        q('H20',"J'ai une grande sensibilité aux bruits, les bruits m'énervent et me fatiguent",O_04),
+        q('H21',"J'ai une grande sensibilité à l'environnement général (lumière, changements climatiques, ondes, appareils électroménagers)",O_04),
+        q('H22',"J'ai la peau qui réagit, qui gratte ou picote très facilement",O_04),
+        q('H23',"Ma peau marque facilement et réagit avec des rougeurs",O_04),
+        q('H24',"J'ai un terrain allergique (rhume des foins, conjonctivites, asthme…)",O_04),
+      ]}
+  ],
+  scoring:{
+    type:'sum',
+    maxTotal:96,
+    interpretation:[
+      {min:0,max:24,label:'Hyperexcitabilité absente ou légère',color:'success'},
+      {min:25,max:48,label:'Hyperexcitabilité modérée',color:'warning'},
+      {min:49,max:72,label:'Hyperexcitabilité importante',color:'danger'},
+      {min:73,max:96,label:'Hyperexcitabilité sévère',color:'dark'},
+    ]
+  }
+};
+export const Q_INF_02 = {
+  id:'Q_INF_02', titre:'Questionnaire de dépistage magnésium / spasmophilie SIIN',
+  instructions:'Pour chaque symptôme, indiquez sa fréquence habituelle.',
+  sections:[
+    { id:'A', titre:'Symptômes de déficit en magnésium',
+      description:"0 = Non · 1 = Rarement · 2 = Parfois · 3 = Souvent · 4 = Très souvent (max 52)",
+      questions:[
+        q('M1',"Crampes, fourmillements",O_04),
+        q('M2',"Spasmes au niveau de la gorge (boule dans la gorge)",O_04),
+        q('M3',"Spasmes gastriques (crampes, aérophagie)",O_04),
+        q('M4',"Spasmes intestinaux (colites, ballonnements)",O_04),
+        q('M5',"Spasmes de l'utérus (douleurs prémenstruelles)",O_04),
+        q('M6',"Crispation des mâchoires",O_04),
+        q('M7',"Phosphènes ou acouphènes",O_04),
+        q('M8',"Douleurs musculaires et articulaires",O_04),
+        q('M9',"Asthénie paradoxale : fatigue matinale plus grande que fatigue du soir",O_04),
+        q('M10',"Tachycardie, extrasystoles, éréthysme cardiaque",O_04),
+        q('M11',"Oppression respiratoire",O_04),
+        q('M12',"Troubles du sommeil",O_04),
+        q('M13',"Grande sensibilité à l'environnement (bruit, lumière, personnes, météo, appareils électroménagers)",O_04),
+      ]}
+  ],
+  scoring:{
+    type:'sum',
+    maxTotal:52,
+    interpretation:[
+      {min:0,max:12,label:'Pas de déficit en magnésium',color:'success'},
+      {min:13,max:26,label:'Déficit modéré possible',color:'warning'},
+      {min:27,max:52,label:'Déficit probable — supplémentation recommandée',color:'danger'},
+    ]
+  }
+};
+export const Q_INF_03 = {
+  id:'Q_INF_03', titre:'DNST SIIN — Dopamine, Noradrénaline, Sérotonine, Mélatonine',
+  instructions:'Pour chaque affirmation, indiquez à quel point elle correspond à votre vécu actuel ou habituel.',
+  sections:[
+    { id:'DA', titre:'Dopamine — Énergie & motivation',
+      description:"0 = Jamais · 1 = Parfois / rarement · 2 = Régulièrement · 3 = Fréquemment · 4 = Invalidant",
+      questions:[
+        q('D1',"J'ai des difficultés à me lever le matin",O_JPT),
+        q('D2',"J'ai du mal à commencer une action",O_JPT),
+        q('D3',"Je me sens moins créatif(ve), moins imaginatif(ve) que je ne l'ai été",O_JPT),
+        q('D4',"Je ressens de la fatigue avant même de commencer à agir",O_JPT),
+        q('D5',"Je porte moins d'intérêt à mes loisirs, mes activités",O_JPT),
+        q('D6',"J'ai moins de désir sexuel et amoureux",O_JPT),
+        q('D7',"Mon sommeil est agité physiquement, je remue beaucoup",O_JPT),
+        q('D8',"Je n'ai plus tellement de nouveaux projets",O_JPT),
+        q('D9',"J'ai du mal à me concentrer, à suivre le fil de ma pensée",O_JPT),
+        q('D10',"Je cherche souvent mes mots",O_JPT),
+      ]},
+    { id:'NA', titre:'Noradrénaline — Confiance & persévérance',
+      questions:[
+        q('N1',"J'ai une mauvaise opinion de moi-même",O_JPT),
+        q('N2',"Je manque de confiance",O_JPT),
+        q('N3',"J'ai souvent le sentiment de ne pas être à la hauteur",O_JPT),
+        q('N4',"J'ai besoin de sentir l'approbation des autres",O_JPT),
+        q('N5',"J'ai besoin d'être aimé(e), rassuré(e)",O_JPT),
+        q('N6',"Je ne persévère pas, je suis vite découragé(e)",O_JPT),
+        q('N7',"Je me sens moralement fatigué(e)",O_JPT),
+        q('N8',"Je prends rarement plaisir à ce que je fais",O_JPT),
+        q('N9',"Je ne suis pas digne d'être aimé(e)",O_JPT),
+        q('N10',"Je me sens triste, sans joie, sans plaisir",O_JPT),
+      ]},
+    { id:'SE', titre:'Sérotonine — Humeur & impulsivité',
+      questions:[
+        q('S1',"Je suis irritable, impulsif(ve), et vite en colère",O_JPT),
+        q('S2',"Je suis impatient(e), je ne supporte pas d'attendre",O_JPT),
+        q('S3',"Je ne supporte pas les contraintes",O_JPT),
+        q('S4',"Je suis attiré(e) vers le sucré, le chocolat en fin de journée",O_JPT),
+        q('S5',"Je me sens dépendant(e) facilement (tabac, alcool, drogues, sports...)",O_JPT),
+        q('S6',"J'ai du mal à prendre du recul, à rester zen",O_JPT),
+        q('S7',"J'ai du mal à trouver le sommeil, à me rendormir la nuit",O_JPT),
+        q('S8',"Je me sens vite vulnérable au stress, au bruit",O_JPT),
+        q('S9',"Je suis susceptible, un rien m'agace",O_JPT),
+        q('S10',"Je change très vite d'humeur",O_JPT),
+      ]},
+    { id:'ME', titre:'Mélatonine — Rythme & socialisation',
+      questions:[
+        q('ME1',"Je me sens marginal(e), exclu(e), mal à l'aise dans un groupe",O_JPT),
+        q('ME2',"Je suis plutôt discret(e) et en retrait en société",O_JPT),
+        q('ME3',"J'ai un sommeil « fragile »",O_JPT),
+        q('ME4',"J'ai du mal à aller me coucher le soir",O_JPT),
+        q('ME5',"Je n'aime pas partager des confidences, je suis discret(e), réservé(e)",O_JPT),
+        q('ME6',"Je ne suis pas très conciliant(e) ni adaptable",O_JPT),
+        q('ME7',"Mes rythmes de vie sont souvent irréguliers ou décalés",O_JPT),
+        q('ME8',"J'ai du mal à me mettre à la place des autres, à les comprendre",O_JPT),
+        q('ME9',"J'ai plutôt du mal à m'exprimer, à partager",O_JPT),
+        q('ME10',"Je supporte mal les décalages horaires",O_JPT),
+      ]}
+  ],
+  scoring:{
+    type:'subscore',
+    subScores:[
+      {id:'DA',label:'Dopamine',items:['D1','D2','D3','D4','D5','D6','D7','D8','D9','D10'],max:40},
+      {id:'NA',label:'Noradrénaline',items:['N1','N2','N3','N4','N5','N6','N7','N8','N9','N10'],max:40},
+      {id:'SE',label:'Sérotonine',items:['S1','S2','S3','S4','S5','S6','S7','S8','S9','S10'],max:40},
+      {id:'ME',label:'Mélatonine',items:['ME1','ME2','ME3','ME4','ME5','ME6','ME7','ME8','ME9','ME10'],max:40},
+    ],
+    interpretation:[
+      {subscale:'*',ranges:[
+        {min:0,max:9,label:'Peu perturbé',color:'success'},
+        {min:10,max:19,label:'Perturbations probables',color:'warning'},
+        {min:20,max:40,label:'Fortement perturbé',color:'danger'},
+      ]}
+    ]
+  }
+};
+export const Q_INF_04 = {
+  id:'Q_INF_04', titre:'HIT-6 — Test d\'impact des céphalées',
+  instructions:'Pour chacune des questions suivantes, entourez la réponse qui décrit le mieux l\'impact de vos maux de tête sur votre vie.',
+  sections:[
+    { id:'A', titre:'Impact de vos maux de tête sur votre quotidien',
+      questions:[
+        q('H1',"Lorsque vous avez des maux de tête, la douleur est-elle intense ?",
+          [{v:6,l:'Jamais'},{v:8,l:'Rarement'},{v:10,l:'De temps en temps'},{v:11,l:'Très souvent'},{v:13,l:'Tout le temps'}]),
+        q('H2',"Votre capacité à effectuer vos activités quotidiennes habituelles (travail, études, tâches ménagères) est-elle limitée à cause de vos maux de tête ?",
+          [{v:6,l:'Jamais'},{v:8,l:'Rarement'},{v:10,l:'De temps en temps'},{v:11,l:'Très souvent'},{v:13,l:'Tout le temps'}]),
+        q('H3',"Lorsque vous avez des maux de tête, souhaiteriez-vous avoir la possibilité de vous allonger ?",
+          [{v:6,l:'Jamais'},{v:8,l:'Rarement'},{v:10,l:'De temps en temps'},{v:11,l:'Très souvent'},{v:13,l:'Tout le temps'}]),
+        q('H4',"Au cours de ces 4 dernières semaines, vous êtes-vous senti(e) trop fatigué(e) pour travailler ou effectuer vos activités quotidiennes à cause de vos maux de tête ?",
+          [{v:6,l:'Jamais'},{v:8,l:'Rarement'},{v:10,l:'De temps en temps'},{v:11,l:'Très souvent'},{v:13,l:'Tout le temps'}]),
+        q('H5',"Au cours de ces 4 dernières semaines, avez-vous éprouvé un sentiment de « ras-le-bol » ou d'agacement à cause de vos maux de tête ?",
+          [{v:6,l:'Jamais'},{v:8,l:'Rarement'},{v:10,l:'De temps en temps'},{v:11,l:'Très souvent'},{v:13,l:'Tout le temps'}]),
+        q('H6',"Au cours de ces 4 dernières semaines, votre capacité à vous concentrer sur votre travail ou vos activités quotidiennes a-t-elle été limitée à cause de vos maux de tête ?",
+          [{v:6,l:'Jamais'},{v:8,l:'Rarement'},{v:10,l:'De temps en temps'},{v:11,l:'Très souvent'},{v:13,l:'Tout le temps'}]),
+      ]}
+  ],
+  scoring:{
+    type:'sum',
+    maxTotal:78,
+    interpretation:[
+      {min:0,max:49,label:'Peu ou pas d\'impact',color:'success'},
+      {min:50,max:55,label:'Impact modéré',color:'warning'},
+      {min:56,max:59,label:'Impact important',color:'danger'},
+      {min:60,max:78,label:'Impact sévère',color:'dark'},
+    ]
+  }
+};
+export const Q_INF_05 = {
+  id:'Q_INF_05', titre:'Auto-évaluation de l\'anxiété',
+  instructions:'Au cours des 7 derniers jours, dans quelle mesure avez-vous été gêné(e) par chacun des problèmes suivants ?',
+  sections:[
+    { id:'A', titre:'Symptômes des 7 derniers jours',
+      questions:[
+        q('X1',"Nervosité ou sensation de tremblements intérieurs",O_04),
+        q('X2',"Nausées, douleurs ou malaises d'estomac",O_04),
+        q('X3',"Impression d'être effrayé(e) subitement et sans raison",O_04),
+        q('X4',"Palpitations ou impression que votre cœur bat fort ou plus vite",O_04),
+        q('X5',"Difficulté importante à vous endormir",O_04),
+        q('X6',"Difficulté à vous détendre",O_04),
+        q('X7',"Tendance à sursauter facilement",O_04),
+        q('X8',"Tendance à être facilement irritable ou importuné(e)",O_04),
+        q('X9',"Incapacité à vous libérer de pensées obsédantes",O_04),
+        q('X10',"Tendance à vous éveiller très tôt le matin et à rester éveillé(e)",O_04),
+        q('X11',"Vous sentir nerveux(se) lorsque vous êtes seul(e)",O_04),
+      ]}
+  ],
+  // Certifié v2 — 23/06/2026 — Conforme PDF PRO SIIN Auto-anxiété_def_Pro.pdf
+  // CORRECTION CRITIQUE : scoring 'sum' (max 44) remplacé par 'count_threshold'
+  // Le score = nombre d'items cotés ≥ 3 (Beaucoup ou Extrêmement) · max 11
+  // Score 6 inclus dans 'critique' — confirmé Dr Cayre 23/06/2026
+  scoring:{
+    type:'count_threshold',
+    threshold:3,
+    maxTotal:11,
+    interpretation:[
+      {min:0,  max:1,  label:"Peu ou pas d'anxiété",       color:'success'},
+      {min:2,  max:3,  label:"Niveau d'anxiété modéré",    color:'warning'},
+      {min:4,  max:5,  label:"Niveau d'anxiété important", color:'danger'},
+      {min:6,  max:11, label:"Niveau d'anxiété critique",  color:'dark'},
     ]
   }
 };
