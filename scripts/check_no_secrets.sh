@@ -11,9 +11,7 @@ GREP_EXCLUDES=(
   --exclude-dir='generated'
   --exclude-dir='pgdata'
   --exclude='check_no_secrets.sh'
-  --exclude='*.env.local'
-  --exclude='.env.local'
-  --exclude='*.env.local.example'
+  --exclude='.env*.local*'
   --exclude='package-lock.json'
   --exclude='*.lock'
 )
