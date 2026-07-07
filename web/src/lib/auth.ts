@@ -13,8 +13,8 @@ export const authOptions: AuthOptions = {
         params: {
           // Forcer le choix du compte à chaque connexion
           prompt: 'select_account',
-          // Profil + lecture/écriture Sheets (Lot C2 métriques, Lot C3 création patients/assignations)
-          scope: 'openid email profile https://www.googleapis.com/auth/spreadsheets',
+          // Profil Google uniquement (plus de dépendance runtime à Google Sheets)
+          scope: 'openid email profile',
         },
       },
     }),
@@ -34,17 +34,9 @@ export const authOptions: AuthOptions = {
       if (session.user && token.email) {
         session.user.email = token.email;
       }
-      // Exposer l'access_token pour l'API Sheets (Lot C2)
-      if (token.accessToken) {
-        session.accessToken = token.accessToken;
-      }
       return session;
     },
-    async jwt({ token, account, profile }) {
-      // Stocker l'access_token Google lors de la connexion initiale
-      if (account?.access_token) {
-        token.accessToken = account.access_token;
-      }
+    async jwt({ token, profile }) {
       if (profile?.email) {
         token.email = profile.email;
       }
