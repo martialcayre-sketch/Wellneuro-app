@@ -53,6 +53,23 @@ model Assignation {
   @@map("assignations")
 }
 
+// Pack : bundle nommé de questionnaires (qids) assignable en une fois à un
+// patient. Éditable en base par le praticien. Portage du modèle GAS legacy
+// (feuille « Packs » : ID_Pack, Nom, Thématique, Description, QIDs_JSON, Actif).
+model Pack {
+  id          String   @id @default(cuid())
+  idPack      String   @unique @map("id_pack")
+  nom         String   @map("nom")
+  thematique  String?  @map("thematique")
+  description String?  @map("description")
+  qids        String[] @default([]) @map("qids")
+  actif       Boolean  @default(true) @map("actif")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("packs")
+}
+
 model QuestionnaireReponse {
   id              String   @id @default(cuid())
   idReponse       String   @unique @map("id_reponse")

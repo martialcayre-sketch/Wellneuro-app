@@ -13,6 +13,7 @@ import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnair
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { PatientRow } from '@/components/ui/PatientRow';
 import { Pagination } from '@/components/ui/Pagination';
+import { PacksPanel } from '@/components/PacksPanel';
 
 const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -352,6 +353,12 @@ export function PatientsPanel() {
           </div>
         </form>
       </div>
+
+      {/* Packs de questionnaires */}
+      <PacksPanel
+        questionnaires={questionnaires}
+        patients={(data?.patients ?? []).map(p => ({ email: p.email, prenom: p.prenom, nom: p.nom }))}
+      />
 
       {/* Édition patient inline */}
       {editState && (
