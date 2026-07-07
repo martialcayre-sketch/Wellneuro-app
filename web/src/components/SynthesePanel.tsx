@@ -41,7 +41,7 @@ const PRIORITE_LABEL: Record<string, string> = {
   faible: 'Faible',
 };
 
-const inputCls = 'bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm';
+const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
 const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60';
 
 export function SynthesePanel() {
@@ -200,8 +200,8 @@ export function SynthesePanel() {
     <div className="flex flex-col gap-6">
 
       {/* Sélection patient */}
-      <div className="bg-white border border-gray-200 rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Patient</h3>
+      <div className="bg-surface border border-border rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-foreground mb-3">Patient</h3>
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={selectedPatient}
@@ -219,8 +219,7 @@ export function SynthesePanel() {
             <button
               onClick={onGenerate}
               disabled={generating}
-              className={btnPrimary}
-              style={{ backgroundColor: 'var(--primary)' }}
+              className={`${btnPrimary} bg-primary`}
             >
               {generating ? 'Génération en cours...' : 'Générer une synthèse IA'}
             </button>
@@ -233,33 +232,33 @@ export function SynthesePanel() {
 
       {/* Liste des synthèses */}
       {selectedPatient && (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-700">
+        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border">
+            <h3 className="text-sm font-semibold text-foreground">
               Synthèses de {patient ? `${patient.prenom} ${patient.nom}` : selectedPatient}
-              <span className="ml-2 text-gray-400 font-normal">({syntheses.length})</span>
+              <span className="ml-2 text-muted-foreground font-normal">({syntheses.length})</span>
             </h3>
           </div>
           {loading ? (
-            <div className="px-4 py-4 text-sm text-gray-500">Chargement...</div>
+            <div className="px-4 py-4 text-sm text-muted-foreground">Chargement...</div>
           ) : syntheses.length === 0 ? (
-            <div className="px-4 py-4 text-sm text-gray-400">Aucune synthèse pour ce patient.</div>
+            <div className="px-4 py-4 text-sm text-muted-foreground">Aucune synthèse pour ce patient.</div>
           ) : (
-            <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-border">
               {syntheses.map(s => (
                 <div key={s.idSynthese} className="px-4 py-3 flex flex-wrap gap-3 items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_COLOR[s.statut] ?? 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_COLOR[s.statut] ?? 'bg-muted text-muted-foreground'}`}>
                       {STATUT_LABEL[s.statut] ?? s.statut}
                     </span>
-                    <span className="text-sm text-gray-600">
+                    <span className="text-sm text-muted-foreground">
                       {new Date(s.dateGeneration).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
-                    <span className="text-xs text-gray-400">{s.modele}</span>
+                    <span className="text-xs text-muted-foreground">{s.modele}</span>
                   </div>
                   <button
                     onClick={() => { setSelectedSynthese(s); setNotes(s.notesPraticien ?? ''); setBookletHtml(null); setBookletInfo(null); setFeedback(null); }}
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs text-accent hover:underline"
                   >
                     Voir / gérer
                   </button>
@@ -272,40 +271,40 @@ export function SynthesePanel() {
 
       {/* Détail synthèse sélectionnée */}
       {selectedSynthese && (
-        <div className="bg-white border border-gray-200 rounded-xl p-4 flex flex-col gap-4">
+        <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-700">
+            <h3 className="text-sm font-semibold text-foreground">
               Synthèse {selectedSynthese.idSynthese}
-              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_COLOR[selectedSynthese.statut] ?? 'bg-gray-100 text-gray-600'}`}>
+              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_COLOR[selectedSynthese.statut] ?? 'bg-muted text-muted-foreground'}`}>
                 {STATUT_LABEL[selectedSynthese.statut] ?? selectedSynthese.statut}
               </span>
             </h3>
-            <button onClick={() => { setSelectedSynthese(null); setBookletHtml(null); }} className="text-xs text-gray-400 hover:text-gray-600">
+            <button onClick={() => { setSelectedSynthese(null); setBookletHtml(null); }} className="text-xs text-muted-foreground hover:text-foreground">
               Fermer
             </button>
           </div>
 
           {/* Résumé praticien */}
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Résumé praticien</p>
-            <p className="text-sm text-gray-700 leading-relaxed">{selectedSynthese.syntheseJson.resume_praticien}</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Résumé praticien</p>
+            <p className="text-sm text-foreground leading-relaxed">{selectedSynthese.syntheseJson.resume_praticien}</p>
           </div>
 
           {/* Axes prioritaires */}
           {selectedSynthese.syntheseJson.axes_prioritaires?.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Axes prioritaires</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Axes prioritaires</p>
               <div className="flex flex-col gap-2">
                 {selectedSynthese.syntheseJson.axes_prioritaires.map((axe, i) => (
-                  <div key={i} className="bg-gray-50 border border-gray-100 rounded-lg p-3">
+                  <div key={i} className="bg-muted border border-border rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-gray-800">{axe.axe}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITE_COLOR[axe.niveau_priorite] ?? 'bg-gray-100 text-gray-600'}`}>
+                      <span className="text-sm font-medium text-foreground">{axe.axe}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITE_COLOR[axe.niveau_priorite] ?? 'bg-muted text-muted-foreground'}`}>
                         {PRIORITE_LABEL[axe.niveau_priorite] ?? axe.niveau_priorite}
                       </span>
                     </div>
                     {axe.arguments?.length > 0 && (
-                      <ul className="text-xs text-gray-600 list-disc pl-4 space-y-0.5">
+                      <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-0.5">
                         {axe.arguments.map((a, j) => <li key={j}>{a}</li>)}
                       </ul>
                     )}
@@ -318,19 +317,19 @@ export function SynthesePanel() {
           {/* Points de vigilance */}
           {selectedSynthese.syntheseJson.points_de_vigilance?.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Points de vigilance</p>
-              <ul className="text-sm text-gray-700 list-disc pl-4 space-y-0.5">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Points de vigilance</p>
+              <ul className="text-sm text-foreground list-disc pl-4 space-y-0.5">
                 {selectedSynthese.syntheseJson.points_de_vigilance.map((p, i) => <li key={i}>{p}</li>)}
               </ul>
             </div>
           )}
 
           {/* Limites */}
-          <p className="text-xs text-gray-400 italic">{selectedSynthese.syntheseJson.limites}</p>
+          <p className="text-xs text-muted-foreground italic">{selectedSynthese.syntheseJson.limites}</p>
 
           {/* Actions validation */}
           {selectedSynthese.statut === 'Brouillon_IA' && (
-            <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+            <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
               <button onClick={() => onAction(selectedSynthese.idSynthese, 'valider')} disabled={saving} className={`${btnPrimary} bg-green-600`}>
                 {saving ? '...' : 'Valider la synthèse'}
               </button>
@@ -342,8 +341,8 @@ export function SynthesePanel() {
 
           {/* Notes praticien */}
           {(selectedSynthese.statut === 'Validee_Praticien' || selectedSynthese.statut === 'Corrigee_Praticien') && (
-            <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
-              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Note / correction praticien</label>
+            <div className="pt-2 border-t border-border flex flex-col gap-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Note / correction praticien</label>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
@@ -352,7 +351,7 @@ export function SynthesePanel() {
                 placeholder="Ajoutez une note ou une correction à inclure dans le booklet..."
                 className={`${inputCls} resize-y`}
               />
-              <button onClick={() => onAction(selectedSynthese.idSynthese, 'annoter')} disabled={saving} className={`${btnPrimary} self-start`} style={{ backgroundColor: 'var(--primary)' }}>
+              <button onClick={() => onAction(selectedSynthese.idSynthese, 'annoter')} disabled={saving} className={`${btnPrimary} bg-primary self-start`}>
                 {saving ? '...' : 'Enregistrer la note'}
               </button>
             </div>
@@ -360,8 +359,8 @@ export function SynthesePanel() {
 
           {/* Booklet */}
           {(selectedSynthese.statut === 'Validee_Praticien' || selectedSynthese.statut === 'Corrigee_Praticien') && (
-            <div className="pt-2 border-t border-gray-100 flex flex-col gap-3">
-              <h4 className="text-sm font-semibold text-gray-700">Booklet patient</h4>
+            <div className="pt-2 border-t border-border flex flex-col gap-3">
+              <h4 className="text-sm font-semibold text-foreground">Booklet patient</h4>
               <button
                 onClick={() => onLoadBooklet(selectedSynthese.idSynthese)}
                 disabled={loadingBooklet}
@@ -377,11 +376,11 @@ export function SynthesePanel() {
                       Booklet déjà envoyé à {bookletInfo.emailMasque ?? 'patient'}.
                     </div>
                   )}
-                  <div className="border border-gray-200 rounded-lg overflow-hidden" style={{ height: 480 }}>
+                  <div className="border border-border rounded-lg overflow-hidden" style={{ height: 480 }}>
                     <iframe srcDoc={bookletHtml} title="Prévisualisation booklet" className="w-full h-full" sandbox="allow-same-origin" />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                    <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
                       <input type="checkbox" checked={relectureConfirmee} onChange={e => setRelectureConfirmee(e.target.checked)} />
                       J&apos;ai relu et validé le booklet ci-dessus avant envoi au patient.
                     </label>

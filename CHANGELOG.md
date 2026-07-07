@@ -12,6 +12,11 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 - Nouvelle route API `api/patient/equilibre?id=&email=` (même vérification d'accès que `api/patient/reponses`) : expose uniquement des données patient-safe.
 - Dette signalée, hors périmètre de ce lot : le reste du portail patient (`EmailGate`, `ConsentScreen`, `GenericQuestionnaire`) reste en Tailwind bleu en dur, pas encore migré vers les tokens D1 — ces deux nouveaux écrans sont les premiers du portail patient à les utiliser.
 
+### Nettoyage dashboard praticien — D1 (2026-07-07)
+
+- `dashboard/page.tsx` : suppression de la bannière "Migration en cours" (renvoyant vers l'app Apps Script décommissionnée le 2026-07-03) et de la checklist associée devenue obsolète ; "Lot C5 — Décommission Apps Script" passe à fait.
+- `SynthesePanel.tsx` migré vers les tokens sémantiques du design system D1 (`bg-surface`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`) — dernier composant praticien encore sur l'ancien theming Tailwind en dur.
+
 ### Détail des 12 besoins praticien (2026-07-07)
 
 - Nouvelle route `dashboard/patients/[idPatient]/besoins`, liée depuis la fiche patient : radar de synthèse (`ScoreRadar`) et liste à plat des 12 besoins côte à côte (pas de drill-down), badge de niveau de preuve A/B/C/D ou "non mesuré", info-bulle listant les questionnaires sources. Classification domino non affichée (réservée au moteur de priorisation interne).
