@@ -72,3 +72,26 @@ export function supabasePoolSsl(
   }
   return { rejectUnauthorized: false };
 }
+
+/**
+ * Retire les paramètres SSL de la chaîne de connexion (`sslmode`,
+ * `uselibpqcompat`, `ssl`).
+ *
+ * En runtime (Node 24 sur Vercel), l'adaptateur `@prisma/adapter-pg` en mode
+ * libpq-compat dérive la config SSL depuis la chaîne et **écrase l'option `ssl`
+ * du Pool** — ce qui réintroduit la vérification de la chaîne auto-signée
+ * Supabase et casse toutes les requêtes. En nettoyant ces paramètres, on force
+ * `pg` à n'utiliser que l'option `ssl: { rejectUnauthorized: false }` passée au
+ * Pool (le serveur exige TLS, donc l'option suffit à l'activer sans vérifier).
+ */
+export function stripSslParams(connectionString: string): string {
+  try {
+    const url = new URL(connectionString);
+    for (const p of ['sslmode', 'uselibpqcompat', 'ssl']) {
+      url.searchParams.delete(p);
+    }
+    return url.toString();
+  } catch {
+    return connectionString;
+  }
+}
