@@ -8,9 +8,8 @@ import type {
   PatientsApiResponse,
   PatientsPagination,
 } from '@/app/api/praticien/patients/route';
-import type { CreateAssignationResponse, PatchAssignationResponse } from '@/app/api/praticien/assignations/route';
+import type { CreateAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
-import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/praticien/reponses/route';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { PatientRow } from '@/components/ui/PatientRow';
 import { Pagination } from '@/components/ui/Pagination';
@@ -45,33 +44,6 @@ function StatusBadge({ value }: { value: string }) {
   return <Badge variant={variant}>{status}</Badge>;
 }
 
-type ScoreCertification = {
-  source?: string;
-  status?: string;
-};
-
-function getArrayField(scores: Record<string, unknown> | null, key: string): string[] {
-  const value = scores?.[key];
-  return Array.isArray(value) ? value.map(String) : [];
-}
-
-function certificationBadge(certification: ScoreCertification | null) {
-  if (!certification) return null;
-  if (certification.source === 'drive' && certification.status === 'certifie') {
-    return { label: 'Certifié Drive', variant: 'success' as BadgeVariant };
-  }
-  if (certification.source === 'drive' && certification.status === 'ambigu') {
-    return { label: 'Drive ambigu', variant: 'warning' as BadgeVariant };
-  }
-  if (certification.status === 'a_verifier') {
-    return { label: 'À vérifier', variant: 'warning' as BadgeVariant };
-  }
-  if (certification.status === 'non_score') {
-    return { label: 'Non scoré', variant: 'neutral' as BadgeVariant };
-  }
-  return { label: 'Non certifié', variant: 'neutral' as BadgeVariant };
-}
-
 type EditPatientState = {
   idPatient: string;
   telephone: string;
@@ -85,10 +57,6 @@ export function PatientsPanel() {
   const [saving, setSaving] = useState(false);
   const [savingAssignation, setSavingAssignation] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
-  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
-  const [reponses, setReponses] = useState<ReponseQuestionnaire[]>([]);
-  const [loadingReponses, setLoadingReponses] = useState(false);
-  const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null); // idPatient en attente de confirmation
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -230,34 +198,6 @@ export function PatientsPanel() {
       setAssignationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
     } finally {
       setSavingAssignation(false);
-    }
-  };
-
-  const loadReponses = async (email: string) => {
-    if (selectedEmail === email) { setSelectedEmail(null); setReponses([]); return; }
-    setSelectedEmail(email);
-    setReponses([]);
-    setLoadingReponses(true);
-    try {
-      const r = await fetch(`/api/praticien/reponses?email=${encodeURIComponent(email)}`);
-      const d = await r.json() as ReponsesApiResponse;
-      setReponses(d.reponses ?? []);
-    } catch { setReponses([]); }
-    finally { setLoadingReponses(false); }
-  };
-
-  const onDebloquer = async (idAssignation: string) => {
-    setDeverrouillageId(idAssignation);
-    try {
-      const r = await fetch('/api/praticien/assignations', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idAssignation }),
-      });
-      const json = (await r.json()) as PatchAssignationResponse;
-      if (json.success) await loadData();
-    } finally {
-      setDeverrouillageId(null);
     }
   };
 
@@ -463,8 +403,6 @@ export function PatientsPanel() {
                   key={p.idPatient}
                   patient={{ ...p, actif: p.actif === 'OUI' ? 'OUI' : 'NON' }}
                   onEdit={openEdit}
-                  onToggleResultats={loadReponses}
-                  resultatsOuverts={selectedEmail === p.email}
                   onDelete={onDelete}
                   confirmationSuppression={confirmDelete === p.idPatient}
                   onDemanderSuppression={setConfirmDelete}
@@ -481,103 +419,6 @@ export function PatientsPanel() {
           </div>
         )}
       </div>
-
-      {/* Résultats questionnaires du patient sélectionné */}
-      {selectedEmail && (
-        <div className="bg-surface border border-accent rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted">
-            <h3 className="text-sm font-semibold text-foreground">
-              Résultats questionnaires — {selectedEmail}
-            </h3>
-            {loadingReponses && <span className="text-xs text-muted-foreground">Chargement...</span>}
-          </div>
-          {(data?.assignations ?? [])
-            .filter(a => a.emailPatient === selectedEmail && a.statutReponses === 'modification_demandee')
-            .map(a => (
-              <div key={a.idAssignation} className="px-4 py-3 border-b border-border flex items-center justify-between gap-3 bg-orange-50">
-                <span className="text-sm text-orange-800">
-                  Demande de modification — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
-                </span>
-                <button
-                  onClick={() => onDebloquer(a.idAssignation)}
-                  disabled={deverrouillageId === a.idAssignation}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600 text-white disabled:opacity-60"
-                >
-                  {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}
-                </button>
-              </div>
-            ))}
-          {!loadingReponses && reponses.length === 0 && (
-            <div className="px-4 py-4 text-sm text-muted-foreground">
-              Aucun questionnaire complété pour ce patient.
-            </div>
-          )}
-          {reponses.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-muted text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-2 text-left">Date</th>
-                    <th className="px-4 py-2 text-left">Questionnaire</th>
-                    <th className="px-4 py-2 text-left">Score</th>
-                    <th className="px-4 py-2 text-left">Interprétation</th>
-                    <th className="px-4 py-2 text-left">Qualité</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reponses.map(r => {
-                    const scores = r.scoresParsed;
-                    const certification = certificationBadge((scores?.certification as ScoreCertification | undefined) ?? null);
-                    const missingIds = getArrayField(scores, 'missingIds');
-                    const notApplicable = getArrayField(scores, 'notApplicable');
-                    const note = typeof scores?.note === 'string' ? scores.note : '';
-                    return (
-                      <tr key={r.idReponse} className="border-t border-border align-top">
-                        <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">
-                          {r.dateSoumission ? new Date(r.dateSoumission).toLocaleDateString('fr-FR') : '—'}
-                        </td>
-                        <td className="px-4 py-2 font-medium">
-                          <div>{r.titre || r.idQuestionnaire || '—'}</div>
-                          {note && (
-                            <div className="mt-1 text-xs font-normal text-muted-foreground max-w-md" title={note}>
-                              {note}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-2">
-                          {r.scorePrincipal !== null ? (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                              {r.scorePrincipal}
-                            </span>
-                          ) : '—'}
-                        </td>
-                        <td className="px-4 py-2 text-muted-foreground max-w-xs truncate" title={r.interpretation}>
-                          {r.interpretation || '—'}
-                        </td>
-                        <td className="px-4 py-2">
-                          <div className="flex flex-wrap gap-1.5">
-                            {certification ? (
-                              <Badge variant={certification.variant}>{certification.label}</Badge>
-                            ) : (
-                              <Badge variant="neutral">Historique</Badge>
-                            )}
-                            {missingIds.length > 0 && (
-                              <Badge variant="warning">{missingIds.length} manquant(s)</Badge>
-                            )}
-                            {notApplicable.length > 0 && (
-                              <Badge variant="neutral">{notApplicable.length} n/a</Badge>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Tableau assignations */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden">

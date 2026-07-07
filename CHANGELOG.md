@@ -4,6 +4,13 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Fiche patient praticien — Cartographie neuro-fonctionnelle (2026-07-07)
+
+- Nouvelle route `dashboard/patients/[idPatient]` : fiche patient dédiée avec les 5 objets cliniques (indice global, stabilité métabolique, réserve d'adaptation, clarté, momentum) et la liste des priorités des 21 prochains jours (12 besoins triés par couverture croissante, badge de niveau de preuve A/B/C/D ou "non mesuré", légende).
+- Nouvelle route API `api/praticien/equilibre?idPatient=` (authentifiée) exposant ces données, calculées via le moteur d'équilibre (Lots précédents) + l'adaptateur Prisma.
+- Le bouton "Résultats" (panneau inline) de la liste patients est remplacé par un lien "Fiche patient" vers cette nouvelle page. Le tableau détaillé des réponses (certification, réponses manquantes/non applicables) et le déblocage des demandes de modification, auparavant inline dans `PatientsPanel`, sont déplacés tels quels dans la fiche patient — aucune fonctionnalité perdue.
+- Vérifié de bout en bout contre la base de développement locale (patiente fictive Sophie Nicola, réponse de test ajoutée puis supprimée) : les questionnaires seedés sans `rawAnswers` restent non mesurés, comme attendu.
+
 ### Moteur équilibre — adaptateur Prisma (2026-07-07)
 
 - `web/src/lib/equilibre/depuisPrisma.ts` : reconstruit les réponses par questionnaire d'un patient (`ReponsesParQuestionnaire`) à partir des lignes `QuestionnaireReponse` (Prisma), en dédoublonnant par `idQuestionnaire` (dernière réponse retenue) et en n'utilisant que les réponses brutes exploitables (`scoresJson.rawAnswers`, cf. `api/patient/submit`) — les réponses sans `rawAnswers` (données antérieures à ce chantier, déjà agrégées) sont ignorées plutôt que recalculées.
