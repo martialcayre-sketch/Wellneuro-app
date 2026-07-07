@@ -167,57 +167,12 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 
 **Questions ouvertes** : faut-il conserver un mécanisme de remigration manuel hors runtime applicatif (script admin dédié) ?
 
-## 2026-07-07 — Chantier "Mon équilibre"/"Cartographie neuro-fonctionnelle" livré (6 lots)
+## 2026-07-07 — Parcours patient packs débloqué (accès multi-questionnaires)
 
-**Décisions prises** : 6 PR mergées sur `main` (#12-#21) — nettoyage dashboard/SynthesePanel (D1), merge des 5 branches en attente (pagination, paramètres, preuve, momentum, objets cliniques), adaptateur Prisma → moteur d'équilibre, fiche patient praticien (5 objets cliniques), écran détail 12 besoins (radar+liste), écran patient "Mon équilibre" en extension du flux existant (cercles concentriques 2D). Parcours patient vérifié par capture d'écran (Playwright) ; praticien vérifié par API/code seulement (pas de session Google ici).
+**Décisions prises** : correction du parcours patient pour les packs afin d’éviter la saisie séquentielle forcée. Ajout d’une API `GET /api/patient/assignations` (auth via `idAssignation + email`) qui retourne toutes les assignations du patient et marque celles à saisir. Intégration d’un panneau « Questionnaires en attente » sur le portail patient, cliquable et mobile-compatible, visible pendant consentement, saisie, consultation et après envoi. Ajout d’un compteur « Restants » plus visible. Texte email pack clarifié : un seul lien donne accès à tous les questionnaires en attente.
 
-**Options écartées** : rendu 3D (repli 2D) ; nouvelle authentification E3 (flux existant réutilisé) ; garde-fou email de `check_no_secrets.sh` (obsolète, R8-lite).
+**Options écartées** : imposer un ordre linéaire des questionnaires (trop long/dissuasif) ; ouvrir un flux séparé dédié packs (plus lourd, inutile ici).
 
-**Prochaine action prioritaire** : avant prod réelle, faire vérifier visuellement les écrans praticien par l'utilisateur (session Google réelle).
+**Prochaine action prioritaire** : validation E2E en prod avec un pack de base (Plaintes, Mode de vie, Alimentaire, DNSM) et vérification UX mobile sur téléphone réel.
 
-**Questions ouvertes** : convention `dateT0` à valider cliniquement ; teinte rouge du badge niveau D à reconsidérer ; migration D1 du reste du portail patient non faite.
-
-## 2026-07-07 — Mise en prod réelle : RLS, seed prod, PR #22
-
-**Décisions prises** : constat que le code (`main` HEAD `2e473ce`) et le schéma (4 migrations) étaient déjà en prod (auto-déploiement Vercel + `migrate status` = up to date). Travail réel = sécuriser/peupler/valider. Faille RLS (19 tables exposées via clé anon) corrigée : migration `enable_rls_security` créée + appliquée en prod (deny-all, Prisma en direct non impacté) → advisor CRITICAL résolu. Seed prod lancé sur décision explicite malgré la mention « ne jamais exécuter en prod » : 3 patients fictifs `PAT_SEED_*` + 15 réponses (upsert idempotent). Go/No-Go = GO technique. PR #22 (RLS + libellés UI « Google Sheets »→PostgreSQL).
-
-**Options écartées** : staging Supabase isolé (test direct en prod choisi) ; seed des référentiels neuro/supplément/clinique (aucune source + aucun écran ne les lit).
-
-**Prochaine action prioritaire** : merger PR #22 puis validation E2E praticien en session Google réelle (patients seedés Sophie/Jennifer/Michel).
-
-**Questions ouvertes** : suppression des 3 patients de test après validation ? `ANTHROPIC_API_KEY` présente côté Vercel prod (synthèse IA) ?
-
-## 2026-07-07 — Incident TLS Prisma résolu + cadrage refonte UX praticien
-
-**Décisions prises** : PR #22 mergée (RLS). Incident prod découvert en validant : dashboard praticien cassé (metrics/patients/synthèse) — Prisma ne se connectait pas à Supabase en runtime Vercel (Node 24), `self-signed certificate in certificate chain`, bug préexistant depuis le 05/07, **sans rapport avec RLS** (rôle `postgres` = bypassrls). Cause : `@prisma/adapter-pg` en libpq-compat dérive le TLS depuis `sslmode` dans l'URL et écrase l'option `ssl` du Pool. Correctif `stripSslParams()` (le TLS n'est piloté que par `ssl:{rejectUnauthorized:false}`) — PR #23→#25, prod rétablie (sonde `/api/patient/questionnaire` = 404 propre). Cadrage refonte UX en 5 lots (dashboard, filtre catégorie, viz équilibre praticien, packs éditables en base, Ciqual/compléments différé) → doc `docs/claude/CONTEXTE_REFONTE_UX_PRATICIEN_2026-07-07.md`.
-
-**Options écartées** : correctifs TLS #23 (host-gated) et #24 (gating conditionnel) insuffisants sur Node 24 ; catalogue packs en code (préféré éditable en base) ; `NODE_TLS_REJECT_UNAUTHORIZED=0` (repli non requis).
-
-**Prochaine action prioritaire** : Lot A — refonte dashboard (retirer la feuille de route obsolète Lot 0→C5).
-
-**Questions ouvertes** : retrait du log diag `[prisma] connexion db …` ; planning épic Ciqual R1/R2 ; migration Prisma `Pack` (Lot D) à confirmer.
-
-## 2026-07-07 — Refonte UX praticien livrée (lots A→D) + migration prod packs
-
-**Décisions prises** : refonte cadrée en 4 lots, une PR par lot, toutes mergées
-sur `main` (auto-déploiement Vercel). #26 Lot A (dashboard : feuille de route
-morte retirée → « Accès rapides » + « Patients à traiter », composant
-`PatientsATraiter`). #27 Lot B (filtre catégorie client dans l'assignation).
-#28 Lot C (viz **cercles concentriques** sur la fiche patient — choix acté vs
-radar ; `strate` ajoutée à `PrioriteBesoin`). #29 Lot D (packs éditables :
-modèle Prisma `Pack`, API CRUD + `packs/assign`, UI `PacksPanel`). Migration
-`add_pack_model` **appliquée en prod** via Supabase MCP (5432 direct injoignable
-d'ici) + `_prisma_migrations` réconcilié (checksum = sha256 du .sql, méthode
-vérifiée) ; RLS deny-all sur `packs`, advisor OK.
-
-**Options écartées** : viz radar 12 axes (repli cercles) ; `prisma migrate
-deploy` direct (port 5432 injoignable) ; différer Lot D (utilisateur a autorisé
-la migration prod) ; toucher au `CHANGELOG.md` (en édition parallèle).
-
-**Prochaine action prioritaire** : vérif visuelle des 4 écrans praticien en
-session Google réelle + test fonctionnel packs (créer → assigner → N
-assignations) ; ajouter l'entrée `CHANGELOG.md` du Lot D.
-
-**Questions ouvertes** : Lot E (Ciqual + compléments) — plan dédié à faire ;
-retrait du log diag `[prisma] connexion db …` ; suppression des 3 patients de
-test après validation.
+**Questions ouvertes** : faut-il rendre configurable l’ordre d’affichage des questionnaires par pack côté praticien ?
