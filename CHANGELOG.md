@@ -4,6 +4,14 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Lot 7 — Découpage du catalogue par domaine (2026-07-06)
+
+- Amorce du refactor de `web/src/lib/questions.ts` : les jeux d'options standards (`O_*`) et les fabriques d'items (`q`/`qn`/`qs`) sont déplacés dans `web/src/lib/questionnaires/shared.ts` et importés par `questions.ts`.
+- Extraction de la première catégorie complète, **Cancérologie**, dans `web/src/lib/questionnaires/cancerologie.ts` : `Q_CAN_01` (QLQ-C30) et `Q_CAN_02` (QLQ-BR23) sont désormais des `export const` référencés par le catalogue via l'import. `web/src/lib/questionnaires/index.ts` sert de point d'entrée par domaine.
+- Aucune modification clinique : copie **byte-fidèle** des définitions (items, options, conditionnels, scoring `sum_items`, seuils, notes, métadonnées `certification`). `QUESTIONNAIRE_CATALOGUE` reste exporté à l'identique depuis `questions.ts` (mêmes 63 entrées, mêmes IDs, même ordre).
+- `scripts/check_questionnaire_certification.js` : le loader « inline » désormais les imports relatifs locaux (`./questionnaires/*`) avant l'eval, pour continuer à valider le catalogue découpé sans dépendance à un bundler.
+- Périmètre volontairement limité (une catégorie) — extraction incrémentale ; Pédiatrie/Neuro suivront selon la même méthode vérifiée (`type-check` + `scoring-check`).
+
 ### E0 — Route questionnaires sans Google Sheets (2026-07-06)
 
 - `api/praticien/questionnaires` ne lit plus l'API Google Sheets (`Questionnaires!A:F` via `SHEET_ID` + token OAuth) : la liste est désormais servie depuis un catalogue statique en code, `web/src/lib/questionnaires-catalog.ts`.

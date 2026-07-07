@@ -8,11 +8,42 @@ const root = path.resolve(__dirname, '..');
 const questionsPath = path.join(root, 'web/src/lib/questions.ts');
 const mappingPath = path.join(root, 'docs/questionnaires-drive-mapping.md');
 
-function loadQuestionsModule() {
-  const source = fs.readFileSync(questionsPath, 'utf8')
-    .replace('export const QUESTIONNAIRE_CATALOGUE', 'const QUESTIONNAIRE_CATALOGUE')
-    .replace('export function calculateScore', 'function calculateScore');
+// Le catalogue est découpé par domaine (lot 7) : `questions.ts` importe des
+// modules locaux (`./questionnaires/*`). Ce check évalue le catalogue comme un
+// script autonome ; il faut donc « inliner » ces imports relatifs locaux (déps
+// d'abord, dédupliquées) avant l'eval, puis retirer les mots-clés `export`.
+function stripModuleSource(source) {
+  return source
+    .replace(/^\s*import\s+[^;]*?from\s+['"]\.[^'"]*['"];?\s*$/gm, '')
+    .replace(/^export\s+(const|function|class|let|var)\b/gm, '$1')
+    .replace(/^export\s+default\s+/gm, '');
+}
 
+function localImportPaths(source, dir) {
+  const re = /import\s+[^;]*?from\s+['"](\.[^'"]*)['"]/g;
+  const out = [];
+  let match;
+  while ((match = re.exec(source))) {
+    let abs = path.resolve(dir, match[1]);
+    if (!abs.endsWith('.ts')) abs += '.ts';
+    out.push(abs);
+  }
+  return out;
+}
+
+function inlineModule(file, seen, parts) {
+  const abs = path.resolve(file);
+  if (seen.has(abs)) return;
+  seen.add(abs);
+  const source = fs.readFileSync(abs, 'utf8');
+  for (const dep of localImportPaths(source, path.dirname(abs))) inlineModule(dep, seen, parts);
+  parts.push(stripModuleSource(source));
+}
+
+function loadQuestionsModule() {
+  const parts = [];
+  inlineModule(questionsPath, new Set(), parts);
+  const source = parts.join('\n');
   return new Function(`${source}\nreturn { QUESTIONNAIRE_CATALOGUE, calculateScore };`)();
 }
 
