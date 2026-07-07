@@ -6,7 +6,7 @@ export default function DashboardSynthesePage() {
       <div>
         <h2 className="text-2xl font-bold text-foreground">Synthèse IA & Booklet</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Génération IA à partir des résultats questionnaires — validation praticien obligatoire avant envoi (Lot C4)
+          Génération IA à partir des résultats questionnaires — validation praticien obligatoire avant envoi
         </p>
       </div>
       <SynthesePanel />

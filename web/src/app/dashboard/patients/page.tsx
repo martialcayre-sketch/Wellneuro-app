@@ -6,7 +6,7 @@ export default function DashboardPatientsPage() {
       <div>
         <h2 className="text-2xl font-bold text-foreground">Patients & assignations</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Création patient + lecture des assignations depuis Google Sheets (Lot C3 en cours)
+          Gestion patients et assignations via PostgreSQL (Prisma)
         </p>
       </div>
       <PatientsPanel />
