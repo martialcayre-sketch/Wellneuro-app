@@ -1,17 +1,22 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   CreatePatientResponse,
   DeletePatientResponse,
   PatchPatientResponse,
   PatientsApiResponse,
+  PatientsPagination,
 } from '@/app/api/praticien/patients/route';
 import type { CreateAssignationResponse, PatchAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
 import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/praticien/reponses/route';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { PatientRow } from '@/components/ui/PatientRow';
+import { Pagination } from '@/components/ui/Pagination';
+
+const PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 300;
 
 type SortBy = 'nom' | 'email';
 type StatutFilter = '' | 'Complété' | 'En attente';
@@ -89,6 +94,10 @@ export function PatientsPanel() {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('nom');
   const [statutFilter, setStatutFilter] = useState<StatutFilter>('');
+  const [page, setPage] = useState(1);
+  const [tablePatients, setTablePatients] = useState<PatientsApiResponse['patients']>([]);
+  const [pagination, setPagination] = useState<PatientsPagination | null>(null);
+  const [loadingTable, setLoadingTable] = useState(true);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [assignationFeedback, setAssignationFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [editFeedback, setEditFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -107,6 +116,30 @@ export function PatientsPanel() {
     setData(json);
   };
 
+  // Pagination côté serveur (skip/take) : source de vérité pour le tableau
+  // affiché. `data.patients` (chargé sans pagination par loadData) reste la
+  // liste complète utilisée par le sélecteur "Nouvelle assignation".
+  const loadPatientsTable = async (targetPage: number, currentSearch: string, currentSortBy: SortBy) => {
+    setLoadingTable(true);
+    try {
+      const params = new URLSearchParams({
+        page: String(targetPage),
+        pageSize: String(PAGE_SIZE),
+        sortBy: currentSortBy,
+      });
+      if (currentSearch.trim()) params.set('search', currentSearch.trim());
+      const r = await fetch(`/api/praticien/patients?${params.toString()}`);
+      const json = (await r.json()) as PatientsApiResponse;
+      setTablePatients(json.patients ?? []);
+      setPagination(json.pagination ?? null);
+    } catch {
+      setTablePatients([]);
+      setPagination(null);
+    } finally {
+      setLoadingTable(false);
+    }
+  };
+
   const loadQuestionnaires = async () => {
     const r = await fetch('/api/praticien/questionnaires');
     const json = (await r.json()) as QuestionnairesApiResponse;
@@ -118,6 +151,30 @@ export function PatientsPanel() {
       .catch(() => setData({ patients: [], assignations: [], unavailable: true, reason: 'exception' }))
       .finally(() => setLoading(false));
   }, []);
+
+  // Recherche/tri changés : revient en page 1 et recharge (debounce sur la
+  // recherche pour éviter une requête par frappe clavier). Ignoré au premier
+  // rendu : le chargement initial est déjà couvert par l'effet [page].
+  const isFirstSearchRender = useRef(true);
+  useEffect(() => {
+    if (isFirstSearchRender.current) {
+      isFirstSearchRender.current = false;
+      return;
+    }
+    const timeout = setTimeout(() => {
+      setPage(1);
+      loadPatientsTable(1, search, sortBy);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, sortBy]);
+
+  useEffect(() => {
+    loadPatientsTable(page, search, sortBy);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  const refreshPatients = () => Promise.all([loadData(), loadPatientsTable(page, search, sortBy)]);
 
   const onCreatePatient = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -136,7 +193,7 @@ export function PatientsPanel() {
       }
       setFeedback({ ok: true, msg: `Patient ${form.prenom} ${form.nom} créé.` });
       setForm({ prenom: '', nom: '', email: '', telephone: '', dateNaissance: '' });
-      await loadData();
+      await refreshPatients();
     } catch {
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
     } finally {
@@ -219,7 +276,7 @@ export function PatientsPanel() {
       if (!r.ok || !json.success) {
         setFeedback({ ok: false, msg: json.error ?? 'Erreur lors de la suppression.' });
       } else {
-        await loadData();
+        await refreshPatients();
       }
     } catch {
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
@@ -244,7 +301,7 @@ export function PatientsPanel() {
         return;
       }
       setEditFeedback({ ok: true, msg: 'Patient mis à jour.' });
-      await loadData();
+      await refreshPatients();
       setTimeout(() => setEditState(null), 800);
     } catch {
       setEditFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
@@ -252,19 +309,6 @@ export function PatientsPanel() {
       setSavingEdit(false);
     }
   };
-
-  const filteredPatients = useMemo(() => {
-    const list = data?.patients ?? [];
-    const q = search.toLowerCase().trim();
-    const searched = q
-      ? list.filter(p => `${p.prenom} ${p.nom} ${p.email}`.toLowerCase().includes(q))
-      : list;
-    return [...searched].sort((a, b) =>
-      sortBy === 'email'
-        ? a.email.localeCompare(b.email)
-        : `${a.nom} ${a.prenom}`.localeCompare(`${b.nom} ${b.prenom}`)
-    );
-  }, [data?.patients, search, sortBy]);
 
   const filteredAssignations = useMemo(() => {
     const list = data?.assignations ?? [];
@@ -387,7 +431,9 @@ export function PatientsPanel() {
             <option value="email">Tri : email</option>
           </select>
         </div>
-        <div className="text-sm text-muted-foreground">{filteredPatients.length} patient(s)</div>
+        <div className="text-sm text-muted-foreground">
+          {pagination ? `${pagination.total} patient(s)` : '—'}
+        </div>
       </div>
 
       {/* Tableau patients */}
@@ -409,10 +455,10 @@ export function PatientsPanel() {
               </tr>
             </thead>
             <tbody>
-              {filteredPatients.length === 0 && (
+              {!loadingTable && tablePatients.length === 0 && (
                 <tr><td colSpan={7} className="px-4 py-4 text-center text-muted-foreground">Aucun patient.</td></tr>
               )}
-              {filteredPatients.map(p => (
+              {tablePatients.map(p => (
                 <PatientRow
                   key={p.idPatient}
                   patient={{ ...p, actif: p.actif === 'OUI' ? 'OUI' : 'NON' }}
@@ -429,6 +475,11 @@ export function PatientsPanel() {
             </tbody>
           </table>
         </div>
+        {pagination && pagination.totalPages > 1 && (
+          <div className="px-4 py-3 border-t border-border">
+            <Pagination page={pagination.page} totalPages={pagination.totalPages} onPageChange={setPage} />
+          </div>
+        )}
       </div>
 
       {/* Résultats questionnaires du patient sélectionné */}
