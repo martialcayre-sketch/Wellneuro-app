@@ -4,6 +4,14 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Détail des 12 besoins praticien (2026-07-07)
+
+- Nouvelle route `dashboard/patients/[idPatient]/besoins`, liée depuis la fiche patient : radar de synthèse (`ScoreRadar`) et liste à plat des 12 besoins côte à côte (pas de drill-down), badge de niveau de preuve A/B/C/D ou "non mesuré", info-bulle listant les questionnaires sources. Classification domino non affichée (réservée au moteur de priorisation interne).
+- Nouvelle route API `api/praticien/besoins?idPatient=`.
+- Nouveau composant `CerclesConcentriques.tsx` (SVG, repli 2D des trois sphères prévues pour l'écran patient) : 3 anneaux colorés par strate (teal Corps, violet Ancrage, or Esprit), intensité de couleur = couverture, jamais de rouge/gris/noir. Pas encore consommé dans cette PR (préparatoire pour l'écran patient "Mon équilibre").
+- Nouveau token de palette `--violet-600`/`--violet-300` (`globals.css`, `tailwind.config.ts`) pour la strate Ancrage — seule strate sans couleur dédiée jusqu'ici (teal/or déjà utilisés).
+- Vérifié de bout en bout contre la base de dev locale (Sophie Nicola).
+
 ### Fiche patient praticien — Cartographie neuro-fonctionnelle (2026-07-07)
 
 - Nouvelle route `dashboard/patients/[idPatient]` : fiche patient dédiée avec les 5 objets cliniques (indice global, stabilité métabolique, réserve d'adaptation, clarté, momentum) et la liste des priorités des 21 prochains jours (12 besoins triés par couverture croissante, badge de niveau de preuve A/B/C/D ou "non mesuré", légende).
