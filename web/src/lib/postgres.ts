@@ -8,6 +8,27 @@ function isSupabaseHost(host: string): boolean {
   return h.endsWith('.supabase.com') || h.endsWith('.supabase.co');
 }
 
+/**
+ * Une connexion locale de développement (localhost / 127.0.0.1 / socket Unix
+ * via `?host=`) ne doit PAS se voir imposer de TLS.
+ */
+function isLocalConnection(connectionString: string): boolean {
+  try {
+    const url = new URL(connectionString);
+    const host = url.hostname.toLowerCase();
+    return (
+      host === 'localhost' ||
+      host === '127.0.0.1' ||
+      host === '::1' ||
+      host === '' ||
+      url.searchParams.has('host') // socket Unix (ex: ?host=/home/node/pgdata)
+    );
+  } catch {
+    // URL non parseable : on ne peut pas conclure « local » → on suppose distant.
+    return false;
+  }
+}
+
 export function withSupabaseSslMode(connectionString: string): string {
   try {
     const url = new URL(connectionString);
@@ -29,23 +50,25 @@ export function withSupabaseSslMode(connectionString: string): string {
 }
 
 /**
- * Option `ssl` à passer au `Pool` node-postgres pour un hôte Supabase.
- * La connexion reste chiffrée (TLS) mais on ne vérifie pas la chaîne de
- * certificats auto-signée — sinon `pg` échoue avec
+ * Option `ssl` à passer au `Pool` node-postgres.
+ *
+ * Toute base distante (Supabase et, par défaut, tout ce qui n'est pas une
+ * connexion locale) reçoit `{ rejectUnauthorized: false }` : la connexion reste
+ * chiffrée (TLS) mais on ne vérifie pas la chaîne de certificats auto-signée
+ * de Supabase — sinon `pg` échoue avec
  * « Error opening a TLS connection: self-signed certificate in certificate chain ».
- * Renvoie `undefined` hors Supabase : comportement par défaut inchangé.
+ *
+ * On ne se fie PAS à un match d'hôte `.supabase.*` : en prod, `DATABASE_URL`
+ * peut prendre une forme inattendue (ou contenir des caractères qui font échouer
+ * `new URL()`), ce qui laissait `pg` vérifier la chaîne et cassait toutes les
+ * requêtes. On renvoie donc l'option pour tout ce qui n'est pas explicitement
+ * local ; `undefined` en local (pas de TLS forcé).
  */
 export function supabasePoolSsl(
   connectionString: string,
 ): { rejectUnauthorized: false } | undefined {
-  try {
-    const url = new URL(connectionString);
-    if (isSupabaseHost(url.hostname)) {
-      return { rejectUnauthorized: false };
-    }
-  } catch {
-    // Hôte non parseable : pas d'option SSL forcée.
+  if (isLocalConnection(connectionString)) {
+    return undefined;
   }
-
-  return undefined;
+  return { rejectUnauthorized: false };
 }
