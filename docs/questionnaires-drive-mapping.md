@@ -20,53 +20,53 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 
 | ID code | Source MD Drive | Items | Options | Conditionnels | Scoring | Interprétation | Tests | Notes |
 |---|---|---:|---:|---:|---:|---:|---:|---|
-| `Q_STR_01` | `questionnaire_stress_siin.md` | mappé | mappé | n/a | mappé | mappé | à faire | Stress SIIN |
-| `Q_STR_02` | `questionnaire_stress_cohen_pss.md` | mappé | mappé | n/a | mappé | mappé | à faire | PSS |
-| `Q_STR_03` | `questionnaire_stress_cungi.md` | mappé | mappé | n/a | mappé | mappé | à faire | Cungi |
-| `Q_STR_04` | `questionnaire_stress_dass21.md` | mappé | mappé | n/a | mappé | mappé | à faire | DASS-21 |
-| `Q_STR_05` | `questionnaire_stress_bms_burnout.md` | mappé | mappé | n/a | mappé | mappé | à faire | BMS |
+| `Q_STR_01` | `questionnaire_stress_siin.md` | certifié | certifié | n/a | certifié | certifié | certifié | Stress SIIN, 21 items, score 0-42 ; seuils Drive 4 et 15 harmonisés sans trou automatique |
+| `Q_STR_02` | `questionnaire_stress_cohen_pss.md` | certifié | certifié | n/a | certifié | certifié | certifié | PSS, 10 items, score 10-50 ; score 27 rattaché au seuil haut pour couvrir la borne Drive non explicite |
+| `Q_STR_03` | `questionnaire_stress_cungi.md` | certifié | certifié | n/a | certifié | certifié | certifié | Cungi, 11 items, score interne professionnel 0-55 |
+| `Q_STR_04` | `questionnaire_stress_dass21.md` | certifié | certifié | n/a | certifié | certifié | certifié | DASS-21, 21 items, sous-scores bruts 0-21 ; seuils Drive 14/10/17 harmonisés en très sévère |
+| `Q_STR_05` | `questionnaire_stress_bms_burnout.md` | certifié | certifié | n/a | certifié | certifié | certifié | BMS, 10 items, moyenne 1-7 et score brut 10-70 |
 | `Q_STR_06` | `questionnaire_stress_karasek.md` | mappé | mappé | n/a | mappé | mappé | à faire | Karasek |
 | `Q_STR_08` | `questionnaire_wart_addiction_travail.md` | mappé | mappé | n/a | mappé | mappé | à faire | WART |
 | `Q_NEU_01` | `bdi_echelle_de_depression_de_beck.md` | mappé | mappé | n/a | mappé | mappé | à faire | BDI |
 | `Q_NEU_02` | `madrs_echelle_depression.md` | mappé | mappé | n/a | à vérifier | à vérifier | à faire | Corrections externes récentes à réarbitrer contre Drive si besoin clinique |
 | `Q_NEU_03` | `questionnaire_sigh_sad_sa.md` | certifié | certifié | n/a | certifié | n/a | certifié | 25 items, groupes A/B, règle Q15-Q17 Drive |
-| `Q_NEU_04` | `questionnaire_scoff.md` | mappé | mappé | n/a | mappé | mappé | à faire | SCOFF |
+| `Q_NEU_04` | `questionnaire_scoff.md` | certifié | certifié | n/a | certifié | certifié | certifié | SCOFF, 5 items oui/non, seuil positif ≥ 2 |
 | `Q_NEU_05` | `questionnaire_upps_impulsivite.md` | mappé | mappé | n/a | mappé | mappé | à faire | UPPS |
 | `Q_NEU_06` | aucun MD Drive équivalent identifié | historique | historique | n/a | historique | historique | à faire | Questionnaire cognitif SIIN, absent Drive |
 | `Q_NEU_07` | `questionnaire_audit_alcool.md` | mappé | mappé | n/a | mappé | mappé | à faire | AUDIT alcool |
-| `Q_NEU_08` | `ecab_echelle_cognitive_attachement_benzodiazepines.md` | mappé | mappé | n/a | mappé | mappé | à faire | ECAB |
+| `Q_NEU_08` | `ecab_echelle_cognitive_attachement_benzodiazepines.md` | certifié | certifié | n/a | certifié | certifié | certifié | ECAB, 10 items vrai/faux, item 10 inversé, seuil ≥ 6 |
 | `Q_NEU_09` | `zarit_grille_charge_proches_aidants.md` | mappé | mappé | n/a | mappé | mappé | à faire | Zarit |
 | `Q_NEU_10` | `dependance_a_internet.md` | mappé | mappé | n/a | mappé | mappé | à faire | Internet |
 | `Q_NEU_11` | `questionnaire_had.md` | mappé | mappé | n/a | mappé | mappé | à faire | HAD |
 | `Q_NEU_12` | `idtas_ae_depression_trouble_affectif_saisonnier.md` | mappé | mappé | n/a | mappé | mappé | à faire | IDTAS-AE |
 | `Q_SOM_01` | `sommeil_05_psqi_pittsburgh.md` | mappé | mappé | n/a | mappé | mappé | à faire | PSQI |
-| `Q_SOM_02` | `sommeil_03_epworth_somnolence.md` | mappé | mappé | n/a | mappé | mappé | à faire | Epworth |
+| `Q_SOM_02` | `sommeil_03_epworth_somnolence.md` | certifié | certifié | n/a | certifié | ambigu | certifié | Epworth, score 0-24 ; interprétation Drive incomplète pour les scores 6 et 15 |
 | `Q_SOM_03` | `sommeil_04_berlin_apnee_sommeil.md` | mappé | mappé | n/a | mappé | mappé | à faire | Berlin |
 | `Q_SOM_04` | `sommeil_02_irls_jambes_sans_repos.md` | mappé | mappé | n/a | mappé | mappé | à faire | IRLS |
-| `Q_SOM_05` | `sommeil_06_chronotype_horne.md` | mappé | mappé | n/a | mappé | mappé | à faire | Horne |
-| `Q_SOM_06` | `sommeil_01_fatigue_pichot.md` | mappé | mappé | n/a | mappé | mappé | à faire | Pichot |
+| `Q_SOM_05` | `sommeil_06_chronotype_horne.md` | certifié | certifié | n/a | certifié | certifié | certifié | Horne & Östberg, 19 items, score 16-86 |
+| `Q_SOM_06` | `sommeil_01_fatigue_pichot.md` | certifié | certifié | n/a | certifié | certifié | certifié | Pichot, 8 items, score 0-32, seuil Drive > 22 |
 | `Q_SOM_07` | `sommeil_07_mfi_fatigue_multidimensionnelle.md` | mappé | mappé | n/a | mappé | mappé | à faire | MFI |
-| `Q_INF_01` | `questionnaire_hyperexcitabilite.md` | mappé | mappé | n/a | mappé | mappé | à faire | Hyperexcitabilité |
-| `Q_INF_02` | `questionnaire_hypersensibilite_deficit_magnesium.md` | mappé | mappé | n/a | mappé | mappé | à faire | Magnésium |
-| `Q_INF_03` | `questionnaire_dnsm_neurotransmetteurs.md` | mappé | mappé | n/a | mappé | mappé | à faire | DNSM |
-| `Q_INF_04` | `hit_patients_migraineux.md` | mappé | mappé | n/a | mappé | mappé | à faire | HIT migraine |
-| `Q_INF_05` | `auto_anxiete_questionnaire_auto_evaluation.md` | mappé | mappé | n/a | mappé | mappé | à faire | Auto-anxiété |
-| `Q_GAS_01` | `gastro_04_troubles_fonctionnels_digestifs_intestinaux.md` | mappé | mappé | n/a | mappé | mappé | à faire | TFD |
-| `Q_GAS_02` | `gastro_03_score_francis.md` | mappé | mappé | n/a | mappé | mappé | à faire | Francis |
+| `Q_INF_01` | `questionnaire_hyperexcitabilite.md` | certifié | certifié | n/a | certifié | certifié | certifié | Hyperexcitabilité, 24 items, score 0-96 |
+| `Q_INF_02` | `questionnaire_hypersensibilite_deficit_magnesium.md` | certifié | certifié | n/a | certifié | certifié | certifié | Magnésium, 13 items, score 0-52 |
+| `Q_INF_03` | `questionnaire_dnsm_neurotransmetteurs.md` | certifié | certifié | n/a | certifié | certifié | certifié | DNSM, 40 items, 4 sous-scores 0-40 |
+| `Q_INF_04` | `hit_patients_migraineux.md` | certifié | certifié | n/a | certifié | certifié | certifié | HIT-6, 6 items, score 36-78 |
+| `Q_INF_05` | `auto_anxiete_questionnaire_auto_evaluation.md` | certifié | certifié | n/a | certifié | certifié | certifié | Auto-anxiété, 11 items, compte des réponses ≥ 3 |
+| `Q_GAS_01` | `gastro_04_troubles_fonctionnels_digestifs_intestinaux.md` | certifié | certifié | n/a | certifié | ambigu | certifié | TFD, 31 items, score 0-93, seuils frontières Drive incomplets |
+| `Q_GAS_02` | `gastro_03_score_francis.md` | certifié | certifié | n/a | certifié | certifié | certifié | Francis, 2 questions filtres non scorées + 5 composants, score 0-500 |
 | `Q_GAS_03` | `gastro_01_selles_enfant_nourrisson.md` | mappé | mappé | n/a | mappé | mappé | à faire | Bristol enfant |
-| `Q_FIB_01` | `questionnaire_first_fibromyalgie_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | FIRST |
-| `Q_FIB_02` | `questionnaire_qif_impact_fibromyalgie_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | QIF |
-| `Q_FIB_03` | `liste_elfe_evaluation_fibromyalgie_contexte_praticien.md` | mappé | mappé | n/a | mappé | mappé | à faire | ELFE praticien |
+| `Q_FIB_01` | `questionnaire_first_fibromyalgie_contexte.md` | certifié | certifié | n/a | certifié | certifié | certifié | FiRST, 6 items oui/non, seuil positif ≥ 5 |
+| `Q_FIB_02` | `questionnaire_qif_impact_fibromyalgie_contexte.md` | certifié | certifié | n/a | certifié | ambigu | certifié | QIF, score opérationnel 0-100, source ambiguë sur max 100-107 et tranche 1-34 |
+| `Q_FIB_03` | `liste_elfe_evaluation_fibromyalgie_contexte_praticien.md` | ambigu | ambigu | n/a | non scoré | n/a | certifié | ELFE praticien, catalogue local sous-ensemble de la fiche Drive complète, aucun score automatique |
 | `Q_CAR_01` | `questionnaire_troubles_fonctionnels_cardio_metaboliques.md` | mappé | mappé | n/a | mappé | mappé | à faire | Cardio-métabolique |
-| `Q_TAB_01` | `questionnaire_lagrue_legeron_motivation_arret_tabac.md` | mappé | mappé | n/a | mappé | mappé | à faire | Motivation arrêt tabac |
-| `Q_TAB_02` | `questionnaire_fagerstrom_dependance_nicotine.md` | mappé | mappé | n/a | mappé | mappé | à faire | Fagerström |
+| `Q_TAB_01` | `questionnaire_lagrue_legeron_motivation_arret_tabac.md` | certifié | certifié | n/a | certifié | certifié | certifié | Motivation arrêt tabac, 4 items, score 0-23 |
+| `Q_TAB_02` | `questionnaire_fagerstrom_dependance_nicotine.md` | certifié | certifié | n/a | certifié | certifié | certifié | Fagerström, 6 items, score 0-10 |
 | `Q_TAB_03` | `questionnaire_qct2_gilliard_comportement_tabagique.md` | mappé | mappé | n/a | mappé | mappé | à faire | QCT2 |
 | `Q_TAB_04` | `questionnaire_dependance_cannabis.md` | mappé | mappé | n/a | mappé | mappé | à faire | Cannabis |
-| `Q_TAB_05` | `questionnaire_di_franza_nicotine_adolescents.md` | mappé | mappé | n/a | mappé | mappé | à faire | Di Franza |
-| `Q_PNE_01` | `questionnaire_bpco_pneumologie.md` | mappé | mappé | n/a | mappé | mappé | à faire | BPCO |
-| `Q_URO_01` | `01_ipss_international_prostate_score_symptom.md` | mappé | mappé | n/a | mappé | mappé | à faire | IPSS |
-| `Q_URO_02` | `02_catalogue_mictionnel.md` | mappé | mappé | n/a | non scoré | n/a | à faire | Catalogue mictionnel |
-| `Q_PED_01` | `pediatrie_01_matinalite_vesperalite_enfant.md` | mappé | mappé | n/a | mappé | mappé | à faire | Chronotype enfant |
+| `Q_TAB_05` | `questionnaire_di_franza_nicotine_adolescents.md` | certifié | certifié | n/a | certifié | certifié | certifié | Di Franza/HONC, 10 items oui/non, seuil perte d'autonomie ≥ 4 |
+| `Q_PNE_01` | `questionnaire_bpco_pneumologie.md` | certifié | certifié | n/a | certifié | n/a | certifié | BPCO, score total 0-33 + sous-scores fonctionnel/psychologique/relationnel, sans seuil fixe Drive |
+| `Q_URO_01` | `01_ipss_international_prostate_score_symptom.md` | certifié | certifié | n/a | certifié | ambigu | certifié | IPSS, Q002 cotée 0/2/3/4/5/6 dans Drive, total source 36 vs interprétation 0-35 |
+| `Q_URO_02` | `02_catalogue_mictionnel.md` | certifié | certifié | n/a | non scoré | n/a | certifié | Catalogue mictionnel, journal 3 jours, aucun score automatique |
+| `Q_PED_01` | `pediatrie_01_matinalite_vesperalite_enfant.md` | certifié | certifié | n/a | certifié | n/a | certifié | Chronotype enfant, 10 items, score brut 10-43 sans interprétation automatisée |
 | `Q_PED_02` | `pediatrie_03_conners_enseignant_ctrs_rs.md` | mappé | mappé | n/a | mappé | mappé | à faire | Conners enseignant |
 | `Q_PED_03` | `pediatrie_02_conners_parent.md` | certifié | certifié | n/a | certifié | n/a | certifié | 108 items scorés, somme brute 0-324, pas de T-score sans tables normatives |
 | `Q_ALI_01` | `questionnaire_alimentaire_siin_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Alimentaire SIIN |
@@ -75,8 +75,8 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 | `Q_MOD_01` | `questionnaire_contextuel_mode_de_vie_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Mode de vie contexte |
 | `Q_MOD_02` | `questionnaire_activite_depense_energetique_globale_siin_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Activité globale |
 | `Q_MOD_03` | `audit_alcool.md` | doublon | doublon | n/a | doublon | doublon | à faire | Doublon métier de l'AUDIT alcool, conservé côté Mode de vie |
-| `Q_GEO_01` | `gerontologie_01_tinetti_equilibre_marche.md` | mappé | mappé | n/a | mappé | mappé | à faire | Tinetti |
-| `Q_GEO_02` | `gerontologie_02_sarcopenie.md` | mappé | mappé | n/a | mappé | mappé | à faire | Sarcopénie |
+| `Q_GEO_01` | `gerontologie_01_tinetti_equilibre_marche.md` | certifié | certifié | n/a | certifié | certifié | certifié | Tinetti, observateur, équilibre /16 + marche /12, score total /28 |
+| `Q_GEO_02` | `gerontologie_02_sarcopenie.md` | certifié | certifié | n/a | certifié | certifié | certifié | SARC-F, 5 items, score 0-10, seuil risque ≥ 4 |
 | `Q_GEO_03` | aucun MD Drive équivalent identifié | historique | historique | n/a | historique | historique | à faire | AQ Alzheimer, absent Drive |
 | `Q_GEO_04` | `mmse_mini_mental_state_examination_greco.md` | mappé | mappé | n/a | mappé | mappé | à faire | MMSE |
 | `Q_GEO_05` | `questionnaire_reperage_troubles_dementiels_qdrs.md` | mappé | mappé | n/a | mappé | mappé | à faire | QDRS |

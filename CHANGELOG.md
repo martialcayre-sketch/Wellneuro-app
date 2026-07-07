@@ -42,6 +42,17 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 - Lot 6 gouvernance : ajout de `docs/gouvernance-questionnaires-scoring.md` et durcissement des règles `AGENTS.md` pour imposer changelog + matrice + fixture lors des modifications cliniques.
 - Lot 8 contrôles : `scoring-check` parse désormais la matrice, valide les statuts, impose les fixtures certifiées, vérifie les types de scoring connus et smoke-teste tout le catalogue contre les `NaN`/`Infinity`.
 - `npm run setup:check` lance maintenant aussi `npm run scoring-check`.
+- Passe Drive 2026-07-07 : certification sans changement de libellés ni seuils de `Q_STR_05`, `Q_NEU_04`, `Q_INF_01`, `Q_INF_02`, `Q_INF_03`, `Q_SOM_05`, `Q_PED_01` et `Q_GEO_02`; ajout des métadonnées `certification` et fixtures min/max associées.
+- Passe Drive 2026-07-07 complémentaire : certification de `Q_INF_04`, `Q_INF_05` et `Q_NEU_08`; alignement des options auto-anxiété sur l'échelle Drive, des réponses ECAB sur `Faux`/`Vrai`, et du libellé complet HIT-6 Q2.
+- Passe Drive 2026-07-07 tabacologie : certification de `Q_TAB_02` et `Q_TAB_05`; alignement Fagerström sur les libellés/options Drive et remise dans l'ordre Drive des items de manque Di Franza/HONC.
+- Passe Drive 2026-07-07 tabacologie/pneumologie : certification de `Q_TAB_01` et `Q_PNE_01`; alignement motivation arrêt tabac sur Drive et remplacement du scoring BPCO à seuils locaux par les sous-scores Drive à suivre dans le temps.
+- Passe Drive 2026-07-07 sommeil : certification de `Q_SOM_02` et `Q_SOM_06`; alignement Epworth/Pichot sur les libellés, options et seuils Drive, avec interprétation Epworth marquée ambiguë pour les scores non classés par la source.
+- Passe Drive 2026-07-07 gastro-entérologie : certification de `Q_GAS_01` et `Q_GAS_02`; alignement TFD sur les 31 libellés/options Drive, correction du Score de Francis sur la formule Drive et maintien de l'ambiguïté TFD pour les seuils frontières non couverts par la source.
+- Passe Drive 2026-07-07 fibromyalgie : certification ambiguë de `Q_FIB_02`; alignement QIF sur les sous-items/options Drive et conservation des ambiguïtés source sur le maximum 100/107 et la tranche 1-34 non interprétée.
+- Passe Drive 2026-07-07 fibromyalgie complémentaire : certification de `Q_FIB_01` FiRST et documentation testée de l'ambiguïté `Q_FIB_03` ELFE, le catalogue local ne couvrant qu'un sous-ensemble de la fiche praticien Drive et aucun score automatique.
+- Passe Drive 2026-07-07 urologie : certification ambiguë de `Q_URO_01` IPSS en conservant la cotation Drive atypique de Q002, et certification non scorée de `Q_URO_02` Catalogue mictionnel comme journal 3 jours.
+- Passe Drive 2026-07-07 gérontologie : certification de `Q_GEO_01` Tinetti sur la source Drive présente, avec sous-scores équilibre /16 et marche /12, score total /28 et libellés d'observation alignés.
+- Passe Drive 2026-07-07 stress : certification de `Q_STR_01`, `Q_STR_02` PSS, `Q_STR_03` Cungi et `Q_STR_04` DASS-21 ; alignement Stress SIIN sur les libellés Drive avec harmonisation documentée des seuils 4 et 15, alignement PSS sur la cotation Drive 1-5 / 5-1, alignement strict des libellés Cungi, retour DASS-21 aux IDs Drive `Q001` à `Q021` et aux sous-scores bruts 0-21, avec rattachement documenté des bornes très sévères non explicites.
 
 ### Lot C5 — Décommission GAS (2026-07-03)
 
