@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { anthropic, CLAUDE_MODEL, SYSTEM_PROMPT_SYNTHESE, validateSyntheseSchema, sanitizeAuditError, maskEmail } from '@/lib/anthropic';
+import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 
 type ReponseInput = {
   titre: string;
@@ -20,6 +21,7 @@ function buildUserMessage(reponses: ReponseInput[], prenom: string, nom: string)
     scores: r.scores,
     scorePrincipal: r.scorePrincipal,
     interpretation: r.interpretation,
+    miniSynthese: buildMiniSynthese(r.scores),
   }));
   return `Patient : ${prenom} ${nom}\nNombre de questionnaires complétés : ${filtered.length}\n\nRésultats des questionnaires :\n${JSON.stringify(filtered, null, 2)}`;
 }

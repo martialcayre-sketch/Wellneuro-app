@@ -7,6 +7,8 @@ import type { PatientsApiResponse } from '@/app/api/praticien/patients/route';
 import type { PatchAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/praticien/reponses/route';
 import type { ResultatMomentum } from '@/lib/equilibre/types';
+import type { ScoreSubScore } from '@/lib/scoring/types';
+import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { EvidenceBadge } from '@/components/ui/EvidenceBadge';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
@@ -34,6 +36,11 @@ function certificationBadge(certification: ScoreCertification | null) {
     return { label: 'Non scoré', variant: 'neutral' as BadgeVariant };
   }
   return { label: 'Non certifié', variant: 'neutral' as BadgeVariant };
+}
+
+function interpColorToVariant(color?: string): BadgeVariant {
+  if (color === 'success' || color === 'warning' || color === 'danger') return color;
+  return 'neutral';
 }
 
 function ObjetGauge({ label, value }: { label: string; value: number | null }) {
@@ -285,6 +292,10 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
                     const missingIds = getArrayField(scores, 'missingIds');
                     const notApplicable = getArrayField(scores, 'notApplicable');
                     const note = typeof scores?.note === 'string' ? scores.note : '';
+                    const subScores = Array.isArray(scores?.subScores)
+                      ? (scores!.subScores as ScoreSubScore[])
+                      : [];
+                    const miniSynthese = buildMiniSynthese(scores);
                     return (
                       <tr key={r.idReponse} className="border-t border-border align-top">
                         <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">
@@ -292,6 +303,11 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
                         </td>
                         <td className="px-4 py-2 font-medium">
                           <div>{r.titre || r.idQuestionnaire || '—'}</div>
+                          {miniSynthese && (
+                            <div className="mt-1 text-xs font-normal italic text-foreground/80 max-w-md" title={miniSynthese}>
+                              Synthèse : {miniSynthese}
+                            </div>
+                          )}
                           {note && (
                             <div className="mt-1 text-xs font-normal text-muted-foreground max-w-md" title={note}>
                               {note}
@@ -299,14 +315,44 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
                           )}
                         </td>
                         <td className="px-4 py-2">
-                          {r.scorePrincipal !== null ? (
+                          {subScores.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              {subScores.map(sub => (
+                                <div key={sub.id} className="flex items-center gap-2 whitespace-nowrap">
+                                  <span className="text-xs text-muted-foreground">{sub.label}</span>
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                    {sub.total ?? '—'}
+                                    {typeof sub.max === 'number' ? `/${sub.max}` : ''}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : r.scorePrincipal !== null ? (
                             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                               {r.scorePrincipal}
                             </span>
                           ) : '—'}
                         </td>
-                        <td className="px-4 py-2 text-muted-foreground max-w-xs truncate" title={r.interpretation}>
-                          {r.interpretation || '—'}
+                        <td className="px-4 py-2 text-muted-foreground max-w-xs">
+                          {subScores.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              {subScores.map(sub => (
+                                <div key={sub.id}>
+                                  {sub.interpretation?.label ? (
+                                    <Badge variant={interpColorToVariant(sub.interpretation.color)}>
+                                      {sub.interpretation.label}
+                                    </Badge>
+                                  ) : (
+                                    <span>—</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="block truncate" title={r.interpretation}>
+                              {r.interpretation || '—'}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-2">
                           <div className="flex flex-wrap gap-1.5">
