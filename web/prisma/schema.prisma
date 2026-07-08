@@ -113,6 +113,119 @@ model Pack {
   @@map("packs")
 }
 
+// Registre normalisé questionnaires/catégories/packs (phase 2).
+// Ne remplace pas immédiatement la table legacy `packs`; sert de base pour
+// migration progressive vers un modèle relationnel traçable.
+model QuestionnaireCategory {
+  id             String   @id @default(cuid())
+  code           String   @unique @map("code")
+  labelFr        String   @map("label_fr")
+  description    String?  @map("description")
+  ordreAffichage Int      @default(0) @map("ordre_affichage")
+  actif          Boolean  @default(true) @map("actif")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  questionnairesPrincipaux QuestionnaireDefinition[]
+  secondaires             QuestionnaireSecondaryCategory[]
+
+  @@map("questionnaire_categories")
+}
+
+model QuestionnaireDefinition {
+  id                    String   @id @default(cuid())
+  questionnaireId       String   @unique @map("questionnaire_id")
+  slug                  String   @unique @map("slug")
+  titre                 String   @map("titre")
+  categoriePrincipaleId String   @map("categorie_principale_id")
+  niveau                String   @map("niveau")
+  publicCible           String   @map("public_cible")
+  versionPatient        Boolean  @default(true) @map("version_patient")
+  versionPro            Boolean  @default(true) @map("version_pro")
+  sourceMdPath          String?  @map("source_md_path")
+  conversionJson        Boolean  @default(true) @map("conversion_json")
+  actif                 Boolean  @default(true) @map("actif")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  categoriePrincipale QuestionnaireCategory          @relation(fields: [categoriePrincipaleId], references: [id])
+  categoriesSecondaires QuestionnaireSecondaryCategory[]
+  packItems             QuestionnairePackQuestionnaire[]
+
+  @@index([questionnaireId])
+  @@index([categoriePrincipaleId])
+  @@map("questionnaires")
+}
+
+model QuestionnaireSecondaryCategory {
+  id                String   @id @default(cuid())
+  questionnaireId   String   @map("questionnaire_id")
+  categorieId       String   @map("categorie_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  questionnaire QuestionnaireDefinition @relation(fields: [questionnaireId], references: [id])
+  categorie     QuestionnaireCategory   @relation(fields: [categorieId], references: [id])
+
+  @@unique([questionnaireId, categorieId])
+  @@index([categorieId])
+  @@map("questionnaire_secondary_categories")
+}
+
+model QuestionnairePack {
+  id            String   @id @default(cuid())
+  packId        String   @unique @map("pack_id")
+  titre         String   @map("titre")
+  description   String?  @map("description")
+  niveau        String   @map("niveau")
+  usageClinique String?  @map("usage_clinique")
+  ordreAffichage Int     @default(0) @map("ordre_affichage")
+  actif         Boolean  @default(true) @map("actif")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  questionnaires QuestionnairePackQuestionnaire[]
+  triggers       QuestionnairePackTrigger[]
+
+  @@map("questionnaire_packs")
+}
+
+model QuestionnairePackQuestionnaire {
+  id              String   @id @default(cuid())
+  packId          String   @map("pack_id")
+  questionnaireId String   @map("questionnaire_id")
+  ordre           Int      @default(0) @map("ordre")
+  obligatoire     Boolean  @default(true) @map("obligatoire")
+  conditionAffichage Json? @map("condition_affichage")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  pack          QuestionnairePack       @relation(fields: [packId], references: [id])
+  questionnaire QuestionnaireDefinition @relation(fields: [questionnaireId], references: [id])
+
+  @@unique([packId, questionnaireId])
+  @@index([questionnaireId])
+  @@map("pack_questionnaires")
+}
+
+model QuestionnairePackTrigger {
+  id          String   @id @default(cuid())
+  packId      String   @map("pack_id")
+  triggerType String   @map("trigger_type")
+  triggerKey  String   @map("trigger_key")
+  operator    String   @map("operator")
+  valueJson   Json?    @map("value_json")
+  valueText   String?  @map("value_text")
+  priority    Int      @default(0) @map("priority")
+  actif       Boolean  @default(true) @map("actif")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  pack QuestionnairePack @relation(fields: [packId], references: [id])
+
+  @@index([packId])
+  @@index([triggerType, triggerKey])
+  @@map("pack_triggers")
+}
+
 model QuestionnaireReponse {
   id              String   @id @default(cuid())
   idReponse       String   @unique @map("id_reponse")
