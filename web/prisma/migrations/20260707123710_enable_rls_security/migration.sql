@@ -27,4 +27,17 @@ ALTER TABLE "public"."functional_categories" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."clinical_rules" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."ingredient_functional_thresholds" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."protocol_review_flags" ENABLE ROW LEVEL SECURITY;
-ALTER TABLE "public"."_prisma_migrations" ENABLE ROW LEVEL SECURITY;
+
+-- `_prisma_migrations` n'existe pas dans la shadow database créée par
+-- `prisma migrate dev` (Prisma ne l'y réplique pas), ce qui faisait échouer la
+-- vérification de drift (P3006). On rend l'activation RLS conditionnelle :
+-- appliquée sur les bases réelles (où la table existe), ignorée dans la shadow.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_tables
+    WHERE schemaname = 'public' AND tablename = '_prisma_migrations'
+  ) THEN
+    EXECUTE 'ALTER TABLE "public"."_prisma_migrations" ENABLE ROW LEVEL SECURITY';
+  END IF;
+END $$;

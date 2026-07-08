@@ -403,7 +403,7 @@ function AnamneseForm({ token, email, motifInitial, onDone }: {
 }
 
 // ─── étape : terminé / accès questionnaires ─────────────────────────────────
-function DoneScreen({ premiereAssignation }: { premiereAssignation: string | null }) {
+function DoneScreen({ token, premiereAssignation }: { token: string; premiereAssignation: string | null }) {
   return (
     <div className="w-full max-w-md">
       <div className={`${card} text-center`}>
@@ -420,7 +420,7 @@ function DoneScreen({ premiereAssignation }: { premiereAssignation: string | nul
             : 'Votre praticien mettra vos questionnaires à disposition prochainement.'}
         </p>
         {premiereAssignation && (
-          <a href={`/patient/${premiereAssignation}`} className={`${btnCls} inline-block`}>
+          <a href={`/portail/${token}/questionnaires`} className={`${btnCls} inline-block`}>
             Accéder à mes questionnaires
           </a>
         )}
@@ -504,5 +504,5 @@ export default function PortailPage() {
     );
   }
 
-  return <DoneScreen premiereAssignation={step.premiereAssignation} />;
+  return <DoneScreen token={token} premiereAssignation={step.premiereAssignation} />;
 }

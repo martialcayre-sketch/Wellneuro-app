@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { readPatientSession } from '@/lib/patient-session';
 
 export type PatientReponsesResponse =
   | { ok: true; titre: string; dateReponse: string; scores: unknown; statutReponses: string }
@@ -10,7 +11,8 @@ export async function GET(req: Request): Promise<NextResponse<PatientReponsesRes
   try {
     const { searchParams } = new URL(req.url);
     const idAssignation = (searchParams.get('id') ?? '').trim();
-    const emailRaw = (searchParams.get('email') ?? '').trim().toLowerCase();
+    // Identité : cookie de session portail en priorité, sinon email en query (compat legacy).
+    const emailRaw = (readPatientSession(req)?.email ?? searchParams.get('email') ?? '').trim().toLowerCase();
 
     if (!idAssignation || !/^[A-Za-z0-9_-]+$/.test(idAssignation) || idAssignation.length > 64) {
       return NextResponse.json({ ok: false, reason: 'invalid', error: 'Identifiant invalide.' }, { status: 400 });

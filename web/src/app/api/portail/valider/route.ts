@@ -6,6 +6,7 @@ import {
   resolvePortailPatient,
   consultationCourante,
   CONSENTEMENT_VERSION,
+  FINALITE_CONSENTEMENT,
 } from '@/lib/consultation/portail';
 import { normaliserAnamnese, ANAMNESE_CHAMP_REQUIS } from '@/lib/consultation/anamnese';
 import { assignPackToPatient } from '@/lib/consultation/assignBasePack';
@@ -87,7 +88,11 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
       emailPatient: patient.email,
       qids: pack.qids,
       packNom: pack.nom,
-      options: { consentementDonne: true, consentementVersion: CONSENTEMENT_VERSION },
+      options: {
+        consentementDonne: true,
+        consentementVersion: CONSENTEMENT_VERSION,
+        idConsultation: consultation.idConsultation,
+      },
     });
 
     await prisma.consultation.update({
@@ -99,6 +104,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
         dateValidation: new Date(),
         idPackAssigne: pack.idPack,
         consentementVersion: consultation.consentementVersion ?? CONSENTEMENT_VERSION,
+        finaliteConsentement: consultation.finaliteConsentement ?? FINALITE_CONSENTEMENT,
       },
     });
 

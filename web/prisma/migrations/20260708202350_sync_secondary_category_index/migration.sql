@@ -1,0 +1,2 @@
+-- RenameIndex
+ALTER INDEX "questionnaire_secondary_categories_questionnaire_id_categorie_i" RENAME TO "questionnaire_secondary_categories_questionnaire_id_categor_key";

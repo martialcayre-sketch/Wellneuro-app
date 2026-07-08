@@ -2,6 +2,12 @@ import { prisma } from '@/lib/prisma';
 
 export const CONSENTEMENT_VERSION = 'v1';
 
+// Finalité RGPD du consentement recueilli au niveau de la consultation. Sert de
+// portée : tant que la finalité (et la version) ne changent pas, le consentement
+// couvre les questionnaires du pack sans nouveau recueil (P6).
+export const FINALITE_CONSENTEMENT =
+  'Accompagnement bien-être et suivi neuronutrition personnalisé (hors diagnostic médical).';
+
 // Validation partagée des identifiants du portail patient (token + email).
 // Le token identifie le patient (non révoqué) ; l'email pré-enregistré par le
 // praticien sert de second facteur. Aucune session NextAuth côté patient.

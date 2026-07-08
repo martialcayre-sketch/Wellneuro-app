@@ -23,6 +23,8 @@ type Assignation = {
   dateAssignation: string;
   statut: string;
   statutReponses: string;
+  correctionCommentaire: string | null;
+  correctionDemandeeDate: string | null;
 };
 
 export type PatientsPagination = {
@@ -174,6 +176,8 @@ function assignationToDto(a: {
   dateAssignation: Date;
   statut: string;
   statutReponses: string;
+  correctionCommentaire: string | null;
+  correctionDemandeeDate: Date | null;
 }): Assignation {
   return {
     idAssignation: a.idAssignation,
@@ -184,6 +188,8 @@ function assignationToDto(a: {
     dateAssignation: a.dateAssignation.toISOString(),
     statut: a.statut,
     statutReponses: a.statutReponses,
+    correctionCommentaire: a.correctionCommentaire ?? null,
+    correctionDemandeeDate: a.correctionDemandeeDate ? a.correctionDemandeeDate.toISOString() : null,
   };
 }
 

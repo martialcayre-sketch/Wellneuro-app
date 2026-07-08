@@ -6,6 +6,7 @@ import {
   resolvePortailPatient,
   consultationCourante,
   CONSENTEMENT_VERSION,
+  FINALITE_CONSENTEMENT,
 } from '@/lib/consultation/portail';
 
 export type PortailConsentementResponse = { ok: true } | { ok: false; reason: string; error: string };
@@ -44,6 +45,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailConsenteme
           consentement: 'donne',
           consentementHorodatage: new Date(),
           consentementVersion: CONSENTEMENT_VERSION,
+          finaliteConsentement: FINALITE_CONSENTEMENT,
         },
       });
     }

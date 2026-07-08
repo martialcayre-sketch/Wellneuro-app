@@ -6,6 +6,11 @@ import {
   resolvePortailPatient,
   consultationCourante,
 } from '@/lib/consultation/portail';
+import {
+  PORTAIL_COOKIE_NAME,
+  PORTAIL_COOKIE_OPTIONS,
+  signPatientSession,
+} from '@/lib/patient-session';
 
 export type PortailConsultationState = {
   idConsultation: string;
@@ -50,7 +55,7 @@ export async function GET(req: Request): Promise<NextResponse<PortailSessionResp
       select: { idAssignation: true },
     });
 
-    return NextResponse.json({
+    const res = NextResponse.json<PortailSessionResponse>({
       ok: true,
       patient: { prenom: patient.prenom, nom: patient.nom, email: patient.email },
       consultation: consultation
@@ -65,6 +70,16 @@ export async function GET(req: Request): Promise<NextResponse<PortailSessionResp
         : null,
       premiereAssignation: premiere?.idAssignation ?? null,
     });
+
+    // Pose le cookie de session portail : l'email n'est saisi qu'ici, puis
+    // porté par le cookie signé pour les appels suivants (hub, questionnaires).
+    res.cookies.set(
+      PORTAIL_COOKIE_NAME,
+      signPatientSession({ idPatient: patient.idPatient, email: patient.email }),
+      PORTAIL_COOKIE_OPTIONS,
+    );
+
+    return res;
   } catch (err) {
     console.error('[portail/session GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });

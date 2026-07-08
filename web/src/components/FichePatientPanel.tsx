@@ -247,14 +247,19 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
       {assignationsModif.length > 0 && (
         <section className="bg-surface border border-accent rounded-xl overflow-hidden">
           {assignationsModif.map(a => (
-            <div key={a.idAssignation} className="px-4 py-3 border-b border-border last:border-b-0 flex items-center justify-between gap-3 bg-orange-50">
-              <span className="text-sm text-orange-800">
-                Demande de modification — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
-              </span>
+            <div key={a.idAssignation} className="px-4 py-3 border-b border-border last:border-b-0 flex items-start justify-between gap-3 bg-orange-50">
+              <div className="min-w-0">
+                <span className="text-sm text-orange-800">
+                  Demande de correction — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
+                </span>
+                {a.correctionCommentaire && (
+                  <p className="text-xs text-orange-700 mt-1 italic">« {a.correctionCommentaire} »</p>
+                )}
+              </div>
               <button
                 onClick={() => onDebloquer(a.idAssignation)}
                 disabled={deverrouillageId === a.idAssignation}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600 text-white disabled:opacity-60"
+                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600 text-white disabled:opacity-60"
               >
                 {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}
               </button>

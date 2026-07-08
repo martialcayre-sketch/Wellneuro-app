@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isDeadlineExpired } from '@/lib/patient-access';
+import { readPatientSession } from '@/lib/patient-session';
 
 const CONSENTEMENT_VERSION = 'v1';
 
@@ -12,6 +13,7 @@ type ConsentementPayload = {
   idAssignation?: string;
   email?: string;
   action?: 'donner' | 'demander_modification';
+  commentaire?: string;
 };
 
 // POST /api/patient/consentement
@@ -23,7 +25,9 @@ export async function POST(req: Request): Promise<NextResponse<PatientConsenteme
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
   }
 
-  const { idAssignation, email } = payload;
+  const { idAssignation } = payload;
+  // Identité : cookie de session portail en priorité, sinon email du corps (compat legacy).
+  const email = readPatientSession(req)?.email ?? payload.email;
   const action = payload.action ?? 'donner';
 
   if (!idAssignation || !email) {
@@ -67,9 +71,15 @@ export async function POST(req: Request): Promise<NextResponse<PatientConsenteme
     if (ass.statutReponses !== 'verrouille') {
       return NextResponse.json({ ok: false, reason: 'invalid_state', error: 'Demande non applicable dans l\'état actuel.' }, { status: 409 });
     }
+    // Commentaire facultatif du patient (P5), borné.
+    const commentaire = (payload.commentaire ?? '').trim().slice(0, 1000);
     await prisma.assignation.update({
       where: { idAssignation },
-      data: { statutReponses: 'modification_demandee' },
+      data: {
+        statutReponses: 'modification_demandee',
+        correctionCommentaire: commentaire || null,
+        correctionDemandeeDate: new Date(),
+      },
     });
     return NextResponse.json({ ok: true });
   } catch (err) {

@@ -15,6 +15,11 @@ export type PackAssignmentOptions = {
    */
   consentementDonne?: boolean;
   consentementVersion?: string | null;
+  /**
+   * Consultation dont le consentement couvre ces assignations (P6). Stocké en
+   * lien souple sur chaque assignation pour tracer la portée du consentement.
+   */
+  idConsultation?: string | null;
 };
 
 export type CreatedAssignation = { idAssignation: string; titre: string };
@@ -53,6 +58,7 @@ export async function assignPackToPatient(params: {
         dateLimite,
         statut: 'En attente',
         notes,
+        idConsultation: options?.idConsultation ?? null,
         ...(options?.consentementDonne
           ? {
               consentement: 'donne',

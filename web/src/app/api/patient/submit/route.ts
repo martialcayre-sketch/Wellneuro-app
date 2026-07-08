@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { calculateScore } from '@/lib/questions';
 import { createPublicId } from '@/lib/ids';
 import { isDeadlineExpired } from '@/lib/patient-access';
+import { readPatientSession } from '@/lib/patient-session';
 import nodemailer from 'nodemailer';
 
 export type PatientSubmitResponse =
@@ -26,7 +27,9 @@ export async function POST(req: Request): Promise<NextResponse<PatientSubmitResp
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
   }
 
-  const { idAssignation, email, answers } = payload;
+  const { idAssignation, answers } = payload;
+  // Identité : cookie de session portail en priorité, sinon email du corps (compat legacy).
+  const email = readPatientSession(req)?.email ?? payload.email;
 
   if (!idAssignation || !answers || !email) {
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Données manquantes.' }, { status: 400 });

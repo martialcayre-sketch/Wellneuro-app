@@ -1,0 +1,101 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+// Écran de consultation en lecture seule (réponses verrouillées) + demande de
+// modification. Composant présentationnel : la navigation « Mon équilibre » est
+// confiée à onVoirEquilibre.
+export function ConsultationScreen({ idAssignation, email, statutReponses, onVoirEquilibre }: {
+  idAssignation: string;
+  email: string;
+  statutReponses: string;
+  onVoirEquilibre: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [reponse, setReponse] = useState<{ titre: string; dateReponse: string } | null>(null);
+  const [demandeEnvoyee, setDemandeEnvoyee] = useState(statutReponses === 'modification_demandee');
+  const [demandeLoading, setDemandeLoading] = useState(false);
+  const [commentaire, setCommentaire] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`/api/patient/reponses?id=${encodeURIComponent(idAssignation)}&email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        if (!data.ok) { setError(data.error); }
+        else { setReponse({ titre: data.titre, dateReponse: data.dateReponse }); }
+      } catch {
+        setError('Erreur réseau. Réessayez.');
+      } finally {
+        setLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleDemande = async () => {
+    setDemandeLoading(true);
+    try {
+      const res = await fetch('/api/patient/consentement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idAssignation, email, action: 'demander_modification', commentaire: commentaire.trim() }),
+      });
+      const data = await res.json();
+      if (data.ok) setDemandeEnvoyee(true);
+    } finally {
+      setDemandeLoading(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-md">
+      <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8 text-center">
+        <h2 className="text-lg font-bold text-gray-900 mb-2">Vos réponses</h2>
+        {loading && <p className="text-sm text-gray-500">Chargement…</p>}
+        {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error}</p>}
+        {reponse && (
+          <p className="text-sm text-gray-600 mb-6">
+            « {reponse.titre} » — envoyé le{' '}
+            {new Date(reponse.dateReponse).toLocaleDateString('fr-FR')}.<br />
+            Vos réponses sont verrouillées en lecture seule.
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={onVoirEquilibre}
+          className="w-full mb-3 py-2.5 px-4 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors"
+        >
+          Voir Mon équilibre
+        </button>
+
+        {demandeEnvoyee ? (
+          <p className="text-sm text-blue-700 bg-blue-50 rounded-lg px-4 py-3">
+            Votre demande de modification a été transmise à votre praticien. En attente de validation par votre praticien.
+          </p>
+        ) : (
+          <div className="space-y-2 text-left">
+            <label className="block text-sm text-gray-700">Précisez ce que vous souhaitez corriger <span className="text-gray-400">(facultatif)</span></label>
+            <textarea
+              value={commentaire}
+              onChange={e => setCommentaire(e.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="Ex. je me suis trompé·e à la question sur le sommeil…"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={handleDemande}
+              disabled={demandeLoading}
+              className="w-full py-2.5 px-4 border border-blue-600 text-blue-700 rounded-lg font-medium text-sm hover:bg-blue-50 disabled:opacity-50 transition-colors"
+            >
+              {demandeLoading ? 'Envoi…' : 'Demander une correction'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
