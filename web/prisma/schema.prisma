@@ -20,11 +20,51 @@ model Patient {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
+  // Token d'accès permanent au portail patient (/portail/[token]).
+  // Révocable par le praticien ou sur demande du patient. La reconnexion se
+  // fait via ce token + l'email pré-enregistré (email = second facteur).
+  accessToken          String?   @unique @map("access_token")
+  accessTokenRevoked   Boolean   @default(false) @map("access_token_revoked")
+  accessTokenCreatedAt DateTime? @map("access_token_created_at")
+
   assignations          Assignation[]
   questionnaireReponses QuestionnaireReponse[]
   synthesiesIA          SyntheseIA[]
+  consultations         Consultation[]
 
   @@map("patients")
+}
+
+// Consultation : dossier d'onboarding d'un patient (historisable — N par
+// patient). Porte le consentement, la fiche signalétique, l'anamnèse et le
+// motif. À la validation, déclenche l'assignation du pack de base.
+model Consultation {
+  id             String @id @default(cuid())
+  idConsultation String @unique @map("id_consultation")
+  idPatient      String @map("id_patient")
+  emailPatient   String @map("email_patient")
+  praticienEmail String @map("praticien_email")
+
+  // creee -> en_cours -> validee
+  statut String  @default("creee") @map("statut")
+  motif  String? @map("motif")
+
+  consentement           String    @default("non_donne") @map("consentement")
+  consentementHorodatage DateTime? @map("consentement_horodatage")
+  consentementVersion    String?   @map("consentement_version")
+
+  ficheSignaletique Json? @map("fiche_signaletique")
+  anamnese          Json? @map("anamnese")
+
+  dateValidation DateTime? @map("date_validation")
+  idPackAssigne  String?   @map("id_pack_assigne")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@map("consultations")
 }
 
 model Assignation {
@@ -64,6 +104,9 @@ model Pack {
   description String?  @map("description")
   qids        String[] @default([]) @map("qids")
   actif       Boolean  @default(true) @map("actif")
+  // Pack de base assigné automatiquement en fin d'onboarding (« BASE DE
+  // CONSULTATION »). Un seul pack parDefaut actif à la fois (garanti applicativement).
+  parDefaut   Boolean  @default(false) @map("par_defaut")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

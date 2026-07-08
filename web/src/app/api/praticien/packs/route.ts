@@ -12,6 +12,7 @@ export type Pack = {
   description: string | null;
   qids: string[];
   actif: boolean;
+  parDefaut: boolean;
 };
 
 export type PacksApiResponse = {
@@ -41,6 +42,7 @@ type PatchPackPayload = {
   description?: string;
   qids?: unknown;
   actif?: boolean;
+  parDefaut?: boolean;
 };
 
 const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>;
@@ -71,6 +73,7 @@ export async function GET(): Promise<NextResponse<PacksApiResponse>> {
       description: p.description,
       qids: p.qids,
       actif: p.actif,
+      parDefaut: p.parDefaut,
     }));
     return NextResponse.json({ packs });
   } catch {
@@ -147,6 +150,7 @@ export async function PATCH(req: Request): Promise<NextResponse<MutatePackRespon
     description?: string | null;
     qids?: string[];
     actif?: boolean;
+    parDefaut?: boolean;
   } = {};
   if (payload.nom !== undefined) {
     const nom = payload.nom.trim().slice(0, 120);
@@ -165,13 +169,22 @@ export async function PATCH(req: Request): Promise<NextResponse<MutatePackRespon
     data.qids = qids;
   }
   if (payload.actif !== undefined) data.actif = Boolean(payload.actif);
+  if (payload.parDefaut !== undefined) data.parDefaut = Boolean(payload.parDefaut);
 
   try {
     const existant = await prisma.pack.findUnique({ where: { idPack } });
     if (!existant) {
       return NextResponse.json({ success: false, reason: 'not_found', error: 'Pack introuvable.' }, { status: 404 });
     }
-    await prisma.pack.update({ where: { idPack }, data });
+    // Un seul pack par défaut à la fois : on démarque les autres avant de marquer celui-ci.
+    if (data.parDefaut === true) {
+      await prisma.$transaction([
+        prisma.pack.updateMany({ where: { parDefaut: true, NOT: { idPack } }, data: { parDefaut: false } }),
+        prisma.pack.update({ where: { idPack }, data }),
+      ]);
+    } else {
+      await prisma.pack.update({ where: { idPack }, data });
+    }
     return NextResponse.json({ success: true, idPack });
   } catch {
     return NextResponse.json({ success: false, reason: 'exception', error: 'Erreur technique lors de la mise à jour du pack.' });

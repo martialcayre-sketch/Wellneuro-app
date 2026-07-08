@@ -4,6 +4,21 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Portail patient — token d'accès permanent & onboarding consultation (2026-07-07)
+
+- **Objectif** : le praticien envoie au patient un lien d'accès **permanent** (révocable) ouvrant un onboarding structuré — consentement → fiche signalétique → anamnèse hiérarchisée (portant le **motif de consultation**) — au terme duquel le **pack de base par défaut** est assigné automatiquement. Reconnexion via l'email pré-enregistré par le praticien (second facteur). Aucune session NextAuth côté patient.
+- **Pack de base** : le pack « Base de consultation » (prod) est marqué `par_defaut=true` ; le résolveur de `valider` prend `parDefaut` actif en priorité (repli sur le nom). *Note : ce pack ne contient que 3 questionnaires en prod à ce jour — à compléter côté praticien pour atteindre le périmètre visé.*
+- **Schéma** (migration `20260707160000_patient_portail_consultations`, **appliquée en prod Supabase** + local) :
+  - `Patient` : `access_token` (unique), `access_token_revoked`, `access_token_created_at` (token portail permanent, révocable).
+  - `Pack` : `par_defaut` (désigne le pack de base ; un seul actif à la fois, garanti applicativement).
+  - Nouveau modèle `Consultation` (`consultations`, RLS deny-all cohérent avec `enable_rls_security`) : historisable, porte statut (`creee`→`en_cours`→`validee`), motif, consentement + horodatage/version, `fiche_signaletique` (JSON), `anamnese` (JSON), `date_validation`, `id_pack_assigne`.
+- **Fondations** (`lib/consultation/`) : `motifs.ts` (liste enrichable des grandes catégories d'intervention), `fiche.ts` / `anamnese.ts` (structures + normalisation défensive), `portail.ts` (résolution token+email partagée, `CONSENTEMENT_VERSION`), `email.ts` (lien portail best-effort SMTP), `assignBasePack.ts` (fan-out pack → assignations avec consentement pré-donné). `createPublicId` accepte `'CONS'` et `'TOK'`.
+- **Anamnèse resserrée** (adaptée neuronutrition) : volontairement non redondante avec le pack de base (qui score déjà plaintes/douleurs, mode de vie, alimentaire, DNSM). Ne garde que repères corporels, motif & attentes, histoire des troubles, signaux d'alerte, antécédents, et **traitements/compléments en saisie répétable** (plusieurs médicaments/compléments). Champs `text`/`textarea`/`radio`/`checkbox-multi` + groupes répétables. L'exploitation praticien (axes, biologie, phases 21 j) reste hors périmètre patient.
+- **API praticien** : `api/praticien/token` (POST émettre/renvoyer, DELETE révoquer), `api/praticien/consultations` (POST créer une consultation + assurer le token + envoyer le lien, GET historique) ; `api/praticien/packs` PATCH accepte `parDefaut` (démarque les autres).
+- **API portail** (token+email, sans session) : `api/portail/{session,consentement,fiche,valider}`. `valider` enregistre l'anamnèse, résout le pack de base (`parDefaut` actif, repli sur le nom « BASE DE CONSULTATION ») et assigne le pack.
+- **UI** : nouvelle route `portail/[token]` (state machine gate→consent→fiche→anamnèse→terminé, formulaires dédiés) + `portail/layout.tsx`. Côté praticien, `PatientsPanel` gagne une carte « Consultation & accès patient » (créer/envoyer, renvoyer, révoquer) ; `PacksPanel` un bouton « Définir par défaut » + badge « Pack de base ». Le flux `/patient/[idAssignation]` existant est inchangé.
+- Vérifié : `type-check` propre (périmètre feature), routes compilées, endpoints portail/praticien testés au runtime (validation, auth token+email, résolution DB). Parcours « happy-path » (création des assignations) non rejoué en base partagée pour ne pas écrire de données ni toucher le pack de base réel — logique factorisée depuis `packs/assign` déjà éprouvé.
+
 ### Refonte UX praticien — lots A→D (2026-07-07)
 
 - **Lot A — Dashboard (`dashboard/page.tsx`)** : suppression du bloc statique « Feuille de route migration » (Lot 0→C5, tout coché, devenu mort) ; ajout de « Accès rapides » (cartes-liens vers Patients / Synthèse IA / Paramètres) et « Patients à traiter » (liste courte des questionnaires en attente, statut ≠ « Complété », dérivée de l'API `praticien/patients` — nouveau composant client `PatientsATraiter`). Aucun changement d'API ni de schéma.
