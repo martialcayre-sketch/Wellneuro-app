@@ -1,10 +1,14 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
+import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { anthropic, CLAUDE_MODEL, SYSTEM_PROMPT_SYNTHESE, validateSyntheseSchema, sanitizeAuditError, maskEmail } from '@/lib/anthropic';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
+import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
+
+const VERSION_PROMPT = 'v2';
 
 type ReponseInput = {
   titre: string;
@@ -14,7 +18,7 @@ type ReponseInput = {
   interpretation: string | null;
 };
 
-function buildUserMessage(reponses: ReponseInput[], prenom: string, nom: string): string {
+function buildUserMessage(reponses: ReponseInput[], prenom: string, nom: string, contexte: string): string {
   const filtered = reponses.map(r => ({
     titre: r.titre,
     date: r.date,
@@ -23,7 +27,24 @@ function buildUserMessage(reponses: ReponseInput[], prenom: string, nom: string)
     interpretation: r.interpretation,
     miniSynthese: buildMiniSynthese(r.scores),
   }));
-  return `Patient : ${prenom} ${nom}\nNombre de questionnaires complétés : ${filtered.length}\n\nRésultats des questionnaires :\n${JSON.stringify(filtered, null, 2)}`;
+  const blocContexte = contexte
+    ? `## Contexte anamnestique et signalétique du patient\n\n${contexte}`
+    : '## Contexte anamnestique et signalétique du patient\n\nContexte anamnestique non renseigné pour ce patient.';
+  return `Patient : ${prenom} ${nom}\nNombre de questionnaires complétés : ${filtered.length}\n\n${blocContexte}\n\n## Résultats des questionnaires\n\n${JSON.stringify(filtered, null, 2)}`;
+}
+
+// Fusionne les points de vigilance déterministes (garantis) en tête de ceux
+// produits par le LLM, en dédupliquant de façon insensible à la casse.
+function fusionnerVigilance(deterministes: string[], llm: string[]): string[] {
+  const vus = new Set<string>();
+  const out: string[] = [];
+  for (const item of [...deterministes, ...llm]) {
+    const cle = item.trim().toLowerCase();
+    if (!cle || vus.has(cle)) continue;
+    vus.add(cle);
+    out.push(item.trim());
+  }
+  return out;
 }
 
 // GET /api/praticien/synthese?idPatient=PAT001
@@ -115,7 +136,25 @@ export async function POST(req: Request) {
       interpretation: r.interpretation,
     }));
 
-    const userMessage = buildUserMessage(reponsesInput, patient.prenom, patient.nom);
+    // Contexte clinique (fiche signalétique + anamnèse) — une seule anamnèse par
+    // patient, portée par sa consultation. Best-effort : la synthèse fonctionne
+    // avec les questionnaires seuls si aucune consultation renseignée.
+    let contexteClinique = '';
+    let vigilanceDeterministe: string[] = [];
+    try {
+      const consultation = await prisma.consultation.findFirst({
+        where: { idPatient, NOT: { anamnese: { equals: Prisma.DbNull } } },
+        orderBy: { createdAt: 'desc' },
+      });
+      if (consultation) {
+        contexteClinique = buildContexteClinique(consultation.ficheSignaletique, consultation.anamnese);
+        vigilanceDeterministe = extraireVigilanceDeterministe(consultation.anamnese);
+      }
+    } catch (ctxErr) {
+      console.error('[synthese POST] Contexte clinique indisponible:', ctxErr instanceof Error ? ctxErr.message : String(ctxErr));
+    }
+
+    const userMessage = buildUserMessage(reponsesInput, patient.prenom, patient.nom, contexteClinique);
 
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
@@ -143,6 +182,9 @@ export async function POST(req: Request) {
     }
 
     const synthese = validateSyntheseSchema(parsed);
+    // Garantit la présence des vigilances déterministes (signaux d'alerte,
+    // traitements) en tête, même si le LLM les a omises.
+    synthese.points_de_vigilance = fusionnerVigilance(vigilanceDeterministe, synthese.points_de_vigilance);
     idSynthese = createPublicId('SYN');
 
     const record = await prisma.syntheseIA.create({
@@ -151,9 +193,9 @@ export async function POST(req: Request) {
         idPatient,
         emailPatient: patient.email,
         modele: CLAUDE_MODEL,
-        versionPrompt: 'v1',
+        versionPrompt: VERSION_PROMPT,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        donneesEntree: reponsesInput as any,
+        donneesEntree: { reponses: reponsesInput, contexteClinique, vigilanceDeterministe } as any,
         syntheseJson: synthese,
         statut: 'Brouillon_IA',
       },
@@ -164,7 +206,7 @@ export async function POST(req: Request) {
         idSynthese,
         idPatient,
         modele: CLAUDE_MODEL,
-        versionPrompt: 'v1',
+        versionPrompt: VERSION_PROMPT,
         statut: 'OK',
       },
     });
@@ -186,7 +228,7 @@ export async function POST(req: Request) {
           idSynthese,
           idPatient,
           modele: CLAUDE_MODEL,
-          versionPrompt: 'v1',
+          versionPrompt: VERSION_PROMPT,
           statut: 'Erreur',
           erreurCourte: sanitizeAuditError(msg),
         },

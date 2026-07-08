@@ -4,6 +4,17 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Synthèse IA du premier bilan — enrichissement par le contexte anamnestique (2026-07-08)
+
+- **Objectif** : la synthèse IA (`api/praticien/synthese`) ne s'appuyait que sur les scores de questionnaires. Elle exploite désormais la **fiche signalétique** et l'**anamnèse** déjà saisies via le portail patient (blobs JSON sur `Consultation`, jusqu'ici jamais relus) pour produire une synthèse mieux contextualisée. **Purement additif : aucune migration Prisma, aucune UI nouvelle.**
+- **Nouveau module déterministe** `lib/consultation/contexteClinique.ts` (dans l'esprit de `lib/scoring/miniSynthese.ts`, aucune logique clinique nouvelle) :
+  - `buildContexteClinique(fiche, anamnese)` → bloc texte français lisible du **cœur clinique** (motif & attentes, histoire des troubles, antécédents, IMC calculé, contexte de vie : sommeil/activité/alimentation/profession). Écarte le bruit administratif (composition du foyer, nombre d'enfants).
+  - `extraireVigilanceDeterministe(anamnese)` → points de vigilance **garantis** (signaux d'alerte médicaux cochés, traitements/automédication/compléments en cours), indépendants du LLM.
+- **Garde-fous cliniques** (approche déterministe + IA) : les signaux d'alerte et traitements sont fusionnés **en tête de `points_de_vigilance`** même si le LLM les omet. Le contexte est aussi injecté dans le prompt pour enrichir le raisonnement.
+- **System prompt v2** (`SYSTEM_PROMPT_SYNTHESE`) : nouvelle section « Contexte anamnestique et signalétique » (motif/attentes cadrent les axes ; histoire/antécédents/contexte de vie nuancent ; signaux d'alerte → vigilance + avis médical ; médicaments/compléments → vigilance interaction **sans dosage, ajout ni arrêt**). Garde-fous déontologiques conservés. `versionPrompt`/`_schema_version` passent à `v2` ; `donneesEntree` trace désormais le contexte clinique (traçabilité).
+- **Rattachement** : une seule anamnèse par patient → récupérée par `idPatient` (consultation portant `anamnese != null`, la plus récente). Dégradation gracieuse : la synthèse fonctionne avec les questionnaires seuls si aucun contexte n'est renseigné.
+- **Format de sortie JSON inchangé** (`SyntheseSchema`) → `SynthesePanel` et la route booklet restent compatibles, aucune modif front. Périmètre hors lot (phase 2) : compte rendu de fin de consultation (synthèse longitudinale).
+
 ### Portail patient — token d'accès permanent & onboarding consultation (2026-07-07)
 
 - **Objectif** : le praticien envoie au patient un lien d'accès **permanent** (révocable) ouvrant un onboarding structuré — consentement → fiche signalétique → anamnèse hiérarchisée (portant le **motif de consultation**) — au terme duquel le **pack de base par défaut** est assigné automatiquement. Reconnexion via l'email pré-enregistré par le praticien (second facteur). Aucune session NextAuth côté patient.

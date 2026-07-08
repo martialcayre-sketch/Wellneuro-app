@@ -176,3 +176,43 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Prochaine action prioritaire** : validation E2E en prod avec un pack de base (Plaintes, Mode de vie, Alimentaire, DNSM) et vérification UX mobile sur téléphone réel.
 
 **Questions ouvertes** : faut-il rendre configurable l’ordre d’affichage des questionnaires par pack côté praticien ?
+
+## 2026-07-08 — Portail patient : token d'accès permanent + onboarding consultation
+
+**Décisions** : token permanent révocable sur `Patient` + nouvelle route `/portail/[token]` (distincte du flux `/patient`) ; nouveau modèle `Consultation` (historisable) portant consentement/fiche/anamnèse/motif ; anamnèse en formulaire dédié **resserré** (repères, motif & attentes, histoire, signaux d'alerte, antécédents, traitements/compléments répétables) ; motif de consultation placé dans l'anamnèse (pas la fiche) ; pack de base = « Base de consultation » marqué `par_defaut`. Livré en prod : commit `51f6951`, migration Supabase appliquée, Vercel READY (`app.wellneuro.fr`), smoke test OK. A réparé au passage un build prod cassé (`Module not found: @/lib/consultation/motifs`).
+
+**Options écartées** : réutiliser le lien d'assignation (→ token dédié, sémantique « permanent jusqu'à révocation ») ; anamnèse via `GenericQuestionnaire` (→ formulaire sur-mesure) ; anamnèse complète (→ resserrée, car redondante avec le pack : plaintes/douleurs, mode de vie, alimentaire, DNSM).
+
+**Prochaine action prioritaire** : compléter le pack « Base de consultation » (3 qids seulement en prod) une fois « plaintes actuelles / douleurs ressenties » intégrées à la base de questionnaires.
+
+**Questions ouvertes** : enrichir `MOTIFS_CONSULTATION` (1er RDV, suivi…) ; valider les champs exacts fiche/anamnèse avec le praticien.
+
+## 2026-07-08 — Packs fonctionnels, seed prod et migration Prisma registre
+
+**Décisions** : livraison UI/API des catégories fonctionnelles + registre packs, commit/push `a5877ce`, déploiement prod validé (GO technique). Seed prod de 6 packs de base dans `packs` pour rendre la liste visible. Lancement d’une migration Prisma propre “registre normalisé” (tables `questionnaire_categories`, `questionnaires`, `questionnaire_secondary_categories`, `questionnaire_packs`, `pack_questionnaires`, `pack_triggers`) et push du commit `1d30a5d`.
+
+**Options écartées** : migration “big bang” immédiate au début (reportée pour réduire le risque), puis abandon d’un `prisma migrate deploy` bloqué pooler au profit d’une application SQL transactionnelle enregistrée dans `_prisma_migrations`.
+
+**Prochaine action prioritaire** : brancher progressivement l’application sur le modèle relationnel (lecture/écriture packs/triggers) avec rétrocompatibilité `packs.qids`.
+
+**Questions ouvertes** : stratégie de décommission de `packs.qids` ; calendrier de migration des données registre (catégories/questionnaires/triggers) vers le nouveau schéma.
+
+## 2026-07-08 — Scoring DNSM par neuromédiateur + mini-synthèse déterministe
+
+**Décisions** : (1) Correction affichage DNSM (`Q_INF_03`) dans la fiche patient — la table de scoring était déjà correcte (4 sous-scores DA/NA/SE/ME) et consommée par le moteur « Mon équilibre » ; le bug était purement d'affichage (`FichePatientPanel` ne montrait que le total général 0-160). La table « Détail technique » rend désormais le détail par neuromédiateur (score/40 + badge d'interprétation coloré). (2) Ajout d'une mini-synthèse **déterministe** par questionnaire (`lib/scoring/miniSynthese.ts` → `buildMiniSynthese`), affichée sous chaque titre et injectée dans l'input de la synthèse IA globale (`buildUserMessage`). Aucune génération IA par questionnaire, aucune migration Prisma (front/logique uniquement).
+
+**Options écartées** : IA par questionnaire et approche hybride (→ déterministe : gratuit, instantané, cohérent, auditable, conforme au cadre déontologique).
+
+**Prochaine action prioritaire** : validation visuelle navigateur (session OAuth praticien) sur un patient fictif ayant complété DNSM + un questionnaire simple.
+
+**Questions ouvertes** : exposer la mini-synthèse côté portail patient en masquant `protocol` (contenu praticien) ?
+
+## 2026-07-08 — Synthèse IA du premier bilan nourrie par fiche + anamnèse
+
+**Décisions prises** : brancher la fiche signalétique et l'anamnèse (blobs JSON sur `Consultation`, jamais relus jusqu'ici) sur la synthèse IA — purement additif, aucune migration, aucune modif front. Nouveau module déterministe `lib/consultation/contexteClinique.ts` (`buildContexteClinique` + `extraireVigilanceDeterministe`), dans l'esprit de `miniSynthese.ts`. Approche **déterministe + IA** pour les signaux d'alerte/traitements : fusionnés en tête de `points_de_vigilance`, garantis même si le LLM les omet. Contexte injecté en texte lisible (pas JSON brut). Périmètre = cœur clinique (motif, histoire, antécédents, IMC, contexte de vie), bruit administratif écarté. Anamnèse récupérée par `idPatient` (pas de rattachement pack). System prompt → v2 (garde-fous conservés). Livré : `contexteClinique.ts` + route synthèse + `anthropic.ts` + CHANGELOG. Vérifié : type-check, check_no_secrets, 16 assertions déterministes.
+
+**Options écartées** : JSON brut (→ texte déterministe, lisible/économe) ; IA seule sur les red flags (→ déterministe garanti) ; rattachement pack↔anamnèse (→ inutile, synthèse déjà patient-level) ; inclure le compte rendu de fin de consultation (→ phase 2 : nouveau modèle + UI + migration).
+
+**Prochaine action prioritaire** : test e2e navigateur (session OAuth praticien) sur patient fictif avec anamnèse + questionnaires — vérifier motif reflété, signaux d'alerte en vigilance, dégradation gracieuse sans anamnèse.
+
+**Questions ouvertes** : exposer ce contexte dans le booklet patient ? Attaquer la phase 2 (compte rendu de fin de consultation → synthèse longitudinale) ?
