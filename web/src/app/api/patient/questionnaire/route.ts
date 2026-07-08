@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { isDeadlineExpired } from '@/lib/patient-access';
+import { readPatientSession } from '@/lib/patient-session';
 
 export type PatientQuestionnaireResponse =
   | { ok: true; assignation: AssignationInfo; questionnaire: unknown }
   | { ok: false; reason: 'not_found' | 'expired' | 'invalid' | 'exception'; error: string };
 
-type AssignationInfo = {
+export type AssignationInfo = {
   idAssignation: string;
   idPatient: string;
   emailPatient: string;
@@ -25,7 +26,9 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
   try {
     const { searchParams } = new URL(req.url);
     const idAssignation = (searchParams.get('id') ?? '').trim();
-    const emailRaw = (searchParams.get('email') ?? '').trim().toLowerCase();
+    // Identité : cookie de session portail en priorité, sinon email en query
+    // (compat liens email legacy /patient/[idAssignation]).
+    const emailRaw = (readPatientSession(req)?.email ?? searchParams.get('email') ?? '').trim().toLowerCase();
 
     if (!idAssignation || !/^[A-Za-z0-9_-]+$/.test(idAssignation) || idAssignation.length > 64) {
       return NextResponse.json({ ok: false, reason: 'invalid', error: 'Identifiant invalide.' }, { status: 400 });

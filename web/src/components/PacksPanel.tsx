@@ -32,9 +32,13 @@ export function PacksPanel({
   const [packs, setPacks] = useState<Pack[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [editFeedback, setEditFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [assignFeedback, setAssignFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
   const [assigning, setAssigning] = useState(false);
+  const [editingPackId, setEditingPackId] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   // Formulaire de création de pack
   const [nom, setNom] = useState('');
@@ -43,6 +47,15 @@ export function PacksPanel({
   const [categorieFilter, setCategorieFilter] = useState('');
   const [categorieView, setCategorieView] = useState<'fonctionnelle' | 'historique'>('fonctionnelle');
   const [selectedQids, setSelectedQids] = useState<Set<string>>(new Set());
+
+  // Formulaire d'édition de pack (modal dédiée)
+  const [editNom, setEditNom] = useState('');
+  const [editThematique, setEditThematique] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editCategorieFilter, setEditCategorieFilter] = useState('');
+  const [editCategorieView, setEditCategorieView] = useState<'fonctionnelle' | 'historique'>('fonctionnelle');
+  const [editSelectedQids, setEditSelectedQids] = useState<Set<string>>(new Set());
+  const [editOnlyPackSelection, setEditOnlyPackSelection] = useState(true);
 
   // Formulaire d'assignation groupée
   const [assignForm, setAssignForm] = useState({ idPack: '', emailPatient: '', dateLimite: '', notes: '' });
@@ -108,6 +121,14 @@ export function PacksPanel({
       a.localeCompare(b, 'fr'),
     );
 
+  const editCategories = editCategorieView === 'fonctionnelle'
+    ? Array.from(new Set(questionnaires.map(q => q.categorieFonctionnellePrincipale).filter(Boolean))).sort((a, b) =>
+      getFunctionalCategoryLabel(a).localeCompare(getFunctionalCategoryLabel(b), 'fr'),
+    )
+    : Array.from(new Set(questionnaires.map(q => q.categorie).filter(Boolean))).sort((a, b) =>
+      a.localeCompare(b, 'fr'),
+    );
+
   const questionnairesFiltres = categorieFilter
     ? questionnaires.filter(q =>
       categorieView === 'fonctionnelle'
@@ -115,6 +136,18 @@ export function PacksPanel({
         : q.categorie === categorieFilter,
     )
     : questionnaires;
+
+  const editQuestionnairesFiltresBruts = editCategorieFilter
+    ? questionnaires.filter(q =>
+      editCategorieView === 'fonctionnelle'
+        ? q.categorieFonctionnellePrincipale === editCategorieFilter
+        : q.categorie === editCategorieFilter,
+    )
+    : questionnaires;
+
+  const editQuestionnairesFiltres = editOnlyPackSelection
+    ? editQuestionnairesFiltresBruts.filter(q => editSelectedQids.has(q.id))
+    : editQuestionnairesFiltresBruts;
 
   const toggleQid = (id: string) => {
     setSelectedQids(prev => {
@@ -125,9 +158,18 @@ export function PacksPanel({
     });
   };
 
+  const toggleEditQid = (id: string) => {
+    setEditSelectedQids(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const titreParId = new Map(questionnaires.map(q => [q.id, q.titre]));
 
-  const onCreatePack = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmitPack = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
     setFeedback(null);
@@ -152,6 +194,41 @@ export function PacksPanel({
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const onSubmitEditPack = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingPackId) return;
+
+    setSavingEdit(true);
+    setEditFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/packs', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idPack: editingPackId,
+          nom: editNom,
+          thematique: editThematique,
+          description: editDescription,
+          qids: Array.from(editSelectedQids),
+        }),
+      });
+      const json = (await r.json()) as MutatePackResponse;
+      if (!r.ok || !json.success) {
+        setEditFeedback({ ok: false, msg: json.error ?? 'Erreur lors de la modification du pack.' });
+        return;
+      }
+      setFeedback({ ok: true, msg: `Pack « ${editNom} » modifié.` });
+      setEditFeedback(null);
+      setEditModalOpen(false);
+      setEditingPackId(null);
+      await loadPacks();
+    } catch {
+      setEditFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -224,13 +301,41 @@ export function PacksPanel({
   };
 
   const packsActifs = packs.filter(p => p.actif);
+  const onEditPack = (pack: Pack) => {
+    setEditingPackId(pack.idPack);
+    setEditNom(pack.nom);
+    setEditThematique(pack.thematique ?? '');
+    setEditDescription(pack.description ?? '');
+    const qidsSet = new Set(pack.qids);
+    setEditSelectedQids(qidsSet);
+    setEditCategorieView('fonctionnelle');
+    const premierQid = pack.qids[0];
+    const premiereCategorie = questionnaires.find(q => q.id === premierQid)?.categorieFonctionnellePrincipale ?? '';
+    setEditCategorieFilter(premiereCategorie);
+    setEditOnlyPackSelection(true);
+    setEditFeedback(null);
+    setEditModalOpen(true);
+  };
+
+  const onCancelEditPack = () => {
+    setEditModalOpen(false);
+    setEditingPackId(null);
+    setEditNom('');
+    setEditThematique('');
+    setEditDescription('');
+    setEditCategorieFilter('');
+    setEditCategorieView('fonctionnelle');
+    setEditSelectedQids(new Set());
+    setEditOnlyPackSelection(true);
+    setEditFeedback(null);
+  };
 
   return (
     <div className="flex flex-col gap-4">
       {/* Création d'un pack */}
       <div className="bg-surface border border-border rounded-xl p-4">
         <h3 className="text-sm font-semibold text-foreground mb-3">Nouveau pack de questionnaires</h3>
-        <form className="flex flex-col gap-3" onSubmit={onCreatePack}>
+        <form className="flex flex-col gap-3" onSubmit={onSubmitPack}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <input required value={nom} onChange={e => setNom(e.target.value)} placeholder="Nom du pack *" className={inputCls} maxLength={120} />
             <input value={thematique} onChange={e => setThematique(e.target.value)} placeholder="Thématique (optionnel)" className={inputCls} maxLength={120} />
@@ -310,24 +415,33 @@ export function PacksPanel({
                     {p.qids.length} questionnaire(s) : {p.qids.map(id => titreParId.get(id) ?? id).join(', ')}
                   </p>
                 </div>
-                {p.actif && (
-                  <div className="flex items-center gap-3 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => onToggleDefaut(p.idPack, p.nom, !p.parDefaut)}
-                      className="text-xs text-foreground hover:underline"
-                    >
-                      {p.parDefaut ? 'Retirer par défaut' : 'Définir par défaut'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onDesactiver(p.idPack, p.nom)}
-                      className="text-xs text-red-400 hover:underline"
-                    >
-                      Désactiver
-                    </button>
-                  </div>
-                )}
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onEditPack(p)}
+                    className="text-xs text-foreground hover:underline"
+                  >
+                    Modifier
+                  </button>
+                  {p.actif && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => onToggleDefaut(p.idPack, p.nom, !p.parDefaut)}
+                        className="text-xs text-foreground hover:underline"
+                      >
+                        {p.parDefaut ? 'Retirer par défaut' : 'Définir par défaut'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onDesactiver(p.idPack, p.nom)}
+                        className="text-xs text-red-400 hover:underline"
+                      >
+                        Désactiver
+                      </button>
+                    </>
+                  )}
+                </div>
               </li>
             ))}
           </ul>
@@ -362,6 +476,101 @@ export function PacksPanel({
           </div>
         </form>
       </div>
+
+      {editModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+          <div className="w-full max-w-4xl bg-surface border border-border rounded-xl p-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <h3 className="text-sm font-semibold text-foreground">Modifier un pack de questionnaires</h3>
+              <button type="button" onClick={onCancelEditPack} className="text-xs text-muted-foreground hover:underline">
+                Fermer
+              </button>
+            </div>
+
+            <form className="flex flex-col gap-3" onSubmit={onSubmitEditPack}>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input required value={editNom} onChange={e => setEditNom(e.target.value)} placeholder="Nom du pack *" className={inputCls} maxLength={120} />
+                <input value={editThematique} onChange={e => setEditThematique(e.target.value)} placeholder="Thématique (optionnel)" className={inputCls} maxLength={120} />
+                <input value={editDescription} onChange={e => setEditDescription(e.target.value)} placeholder="Description (optionnel)" className={inputCls} maxLength={500} />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="text-xs text-muted-foreground">Vue catégories</label>
+                <select
+                  value={editCategorieView}
+                  onChange={e => {
+                    setEditCategorieView(e.target.value as 'fonctionnelle' | 'historique');
+                    setEditCategorieFilter('');
+                  }}
+                  className={inputCls}
+                  aria-label="Type de catégories édition"
+                >
+                  <option value="fonctionnelle">Fonctionnelles (recommandé)</option>
+                  <option value="historique">Historiques</option>
+                </select>
+                <label className="text-xs text-muted-foreground">Filtrer les questionnaires</label>
+                <select
+                  value={editCategorieFilter}
+                  onChange={e => setEditCategorieFilter(e.target.value)}
+                  className={inputCls}
+                  aria-label="Filtrer par catégorie édition"
+                >
+                  <option value="">Toutes les catégories</option>
+                  {editCategories.map(c => (
+                    <option key={c} value={c}>
+                      {editCategorieView === 'fonctionnelle'
+                        ? `${getFunctionalCategoryLabel(c)}${getFunctionalCategoryPhase(c) === 'mvp' ? ' (MVP)' : ''}`
+                        : c}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setEditOnlyPackSelection(prev => !prev)}
+                  className="px-3 py-2 rounded-lg text-xs border border-border text-foreground hover:bg-muted/40"
+                >
+                  {editOnlyPackSelection ? 'Afficher tous les questionnaires' : 'Revenir aux questionnaires du pack'}
+                </button>
+                <span className="text-xs text-muted-foreground">{editSelectedQids.size} sélectionné(s)</span>
+              </div>
+
+              <div className="max-h-64 overflow-y-auto border border-border rounded-lg p-2 flex flex-col gap-1">
+                {editQuestionnairesFiltres.length === 0 ? (
+                  <p className="text-xs text-muted-foreground px-1 py-1">
+                    Aucun questionnaire dans ce préfiltre. Basculez sur « Afficher tous les questionnaires » pour en ajouter.
+                  </p>
+                ) : (
+                  editQuestionnairesFiltres.map(q => (
+                    <label key={q.id} className="flex items-center gap-2 text-sm text-foreground hover:bg-muted/50 rounded px-1 py-0.5 cursor-pointer">
+                      <input type="checkbox" checked={editSelectedQids.has(q.id)} onChange={() => toggleEditQid(q.id)} />
+                      <span>{q.titre}</span>
+                      <span className="text-xs text-muted-foreground">
+                        ({editCategorieView === 'fonctionnelle' ? getFunctionalCategoryLabel(q.categorieFonctionnellePrincipale) : q.categorie})
+                      </span>
+                    </label>
+                  ))
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button type="submit" disabled={savingEdit || editSelectedQids.size === 0 || !editNom.trim()} className={btnPrimary}>
+                  {savingEdit ? 'Enregistrement...' : 'Enregistrer les modifications'}
+                </button>
+                <button
+                  type="button"
+                  onClick={onCancelEditPack}
+                  className="px-3 py-2 rounded-lg text-sm text-muted-foreground border border-border"
+                >
+                  Annuler
+                </button>
+                {editFeedback && (
+                  <span className={`text-sm ${editFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>{editFeedback.msg}</span>
+                )}
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

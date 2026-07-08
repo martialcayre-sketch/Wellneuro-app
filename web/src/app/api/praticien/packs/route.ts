@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import type { Prisma } from '@/generated/prisma';
 
 export type Pack = {
   idPack: string;
@@ -46,6 +47,56 @@ type PatchPackPayload = {
 };
 
 const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>;
+
+const DEFAULT_REGISTRY_PACK_NIVEAU = 'approfondissement';
+
+async function syncPackToRegistry(tx: Prisma.TransactionClient, pack: {
+  idPack: string;
+  nom: string;
+  description: string | null;
+  actif: boolean;
+  qids: string[];
+}) {
+  const registryPack = await tx.questionnairePack.upsert({
+    where: { packId: pack.idPack },
+    create: {
+      packId: pack.idPack,
+      titre: pack.nom,
+      description: pack.description,
+      niveau: DEFAULT_REGISTRY_PACK_NIVEAU,
+      actif: pack.actif,
+    },
+    update: {
+      titre: pack.nom,
+      description: pack.description,
+      actif: pack.actif,
+    },
+    select: { id: true },
+  });
+
+  const definitions = await tx.questionnaireDefinition.findMany({
+    where: { questionnaireId: { in: pack.qids } },
+    select: { id: true, questionnaireId: true },
+  });
+
+  const definitionIdByQid = new Map(definitions.map(d => [d.questionnaireId, d.id]));
+  const items = pack.qids
+    .map((qid, index) => {
+      const questionnaireId = definitionIdByQid.get(qid);
+      if (!questionnaireId) return null;
+      return {
+        packId: registryPack.id,
+        questionnaireId,
+        ordre: index,
+      };
+    })
+    .filter((item): item is { packId: string; questionnaireId: string; ordre: number } => item !== null);
+
+  await tx.questionnairePackQuestionnaire.deleteMany({ where: { packId: registryPack.id } });
+  if (items.length > 0) {
+    await tx.questionnairePackQuestionnaire.createMany({ data: items });
+  }
+}
 
 // Ne garde que des ids de questionnaire existants, dédupliqués, bornés.
 function normaliserQids(input: unknown): string[] {
@@ -109,15 +160,24 @@ export async function POST(req: Request): Promise<NextResponse<MutatePackRespons
 
   try {
     const idPack = createPublicId('PACK');
-    await prisma.pack.create({
-      data: {
-        idPack,
-        nom,
-        thematique: thematique || null,
-        description: description || null,
-        qids,
-        actif: true,
-      },
+    await prisma.$transaction(async tx => {
+      const created = await tx.pack.create({
+        data: {
+          idPack,
+          nom,
+          thematique: thematique || null,
+          description: description || null,
+          qids,
+          actif: true,
+        },
+      });
+      await syncPackToRegistry(tx, {
+        idPack: created.idPack,
+        nom: created.nom,
+        description: created.description,
+        actif: created.actif,
+        qids: created.qids,
+      });
     });
     return NextResponse.json({ success: true, idPack });
   } catch {
@@ -177,14 +237,19 @@ export async function PATCH(req: Request): Promise<NextResponse<MutatePackRespon
       return NextResponse.json({ success: false, reason: 'not_found', error: 'Pack introuvable.' }, { status: 404 });
     }
     // Un seul pack par défaut à la fois : on démarque les autres avant de marquer celui-ci.
-    if (data.parDefaut === true) {
-      await prisma.$transaction([
-        prisma.pack.updateMany({ where: { parDefaut: true, NOT: { idPack } }, data: { parDefaut: false } }),
-        prisma.pack.update({ where: { idPack }, data }),
-      ]);
-    } else {
-      await prisma.pack.update({ where: { idPack }, data });
-    }
+    await prisma.$transaction(async tx => {
+      if (data.parDefaut === true) {
+        await tx.pack.updateMany({ where: { parDefaut: true, NOT: { idPack } }, data: { parDefaut: false } });
+      }
+      const updated = await tx.pack.update({ where: { idPack }, data });
+      await syncPackToRegistry(tx, {
+        idPack: updated.idPack,
+        nom: updated.nom,
+        description: updated.description,
+        actif: updated.actif,
+        qids: updated.qids,
+      });
+    });
     return NextResponse.json({ success: true, idPack });
   } catch {
     return NextResponse.json({ success: false, reason: 'exception', error: 'Erreur technique lors de la mise à jour du pack.' });
@@ -208,7 +273,16 @@ export async function DELETE(req: Request): Promise<NextResponse<MutatePackRespo
     if (!existant) {
       return NextResponse.json({ success: false, reason: 'not_found', error: 'Pack introuvable.' }, { status: 404 });
     }
-    await prisma.pack.update({ where: { idPack }, data: { actif: false } });
+    await prisma.$transaction(async tx => {
+      const updated = await tx.pack.update({ where: { idPack }, data: { actif: false } });
+      await syncPackToRegistry(tx, {
+        idPack: updated.idPack,
+        nom: updated.nom,
+        description: updated.description,
+        actif: updated.actif,
+        qids: updated.qids,
+      });
+    });
     return NextResponse.json({ success: true, idPack });
   } catch {
     return NextResponse.json({ success: false, reason: 'exception', error: 'Erreur technique lors de la suppression du pack.' });
