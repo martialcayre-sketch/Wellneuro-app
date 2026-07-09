@@ -216,3 +216,13 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Prochaine action prioritaire** : test e2e navigateur (session OAuth praticien) sur patient fictif avec anamnèse + questionnaires — vérifier motif reflété, signaux d'alerte en vigilance, dégradation gracieuse sans anamnèse.
 
 **Questions ouvertes** : exposer ce contexte dans le booklet patient ? Attaquer la phase 2 (compte rendu de fin de consultation → synthèse longitudinale) ?
+
+## 2026-07-09 — Réalignement documentaire (R0) + préparation R1
+
+**Décisions prises** : retour au dev par une séquence de consolidation (R0 → R6, cf. `docs/roadmap.md`) plutôt que par une nouvelle brique métier. Lot R0 livré : réalignement de `README.md`, `AGENTS.md`, `CLAUDE.md` (racine, inclus sur décision utilisateur), `docs/roadmap.md`, `docs/claude/PROJET_CONTEXTE.md`. Audit code confirmant que **Google Sheets est entièrement retiré du runtime** (zéro occurrence de `SHEET_ID`/`sheets.googleapis.com`/`spreadsheets`/`googleapis` dans `web/src`, scope OAuth = `openid email profile`, route `migrate-historique` absente du disque) : les docs affirmaient encore l'inverse. Documentés à l'état réel : portail patient permanent `/portail/[token]` (flux principal) + hub « Mes questionnaires », `/patient/[idAssignation]` requalifié legacy, cookie signé `wn_portail`, modèle `Consultation`, registre relationnel packs/questionnaires, synthèse IA enrichie fiche+anamnèse. Checklist E2E R1 préparée (nouvelle « Phase 0 » dans la checklist de tests end-to-end).
+
+**Options écartées** : ouvrir un chantier évolutif (compléments clean label, RAG SIIN, protocole 21 jours, enrichissement synthèse IA) avant validation du flux central ; supprimer les mentions d'hygiène `SHEET_ID` (conservées : garde-fou `check_no_secrets.sh` légitime) ; toucher au code (R0 = docs pures, zéro changement runtime).
+
+**Prochaine action prioritaire** : R1 — exécuter la checklist « Phase 0 » E2E du parcours patient unifié sur un patient fictif (Sophie Nicola / Jennifer Martin / Michel Dogné), validation mobile incluse.
+
+**Questions ouvertes** : compléter le pack « Base de consultation » (R2) ; calendrier de bascule lecture packs → registre relationnel puis décommission `packs.qids` (R3) ; harmonisation UX patient tokens design system (R4).

@@ -3,7 +3,39 @@
 Exécuter cette checklist avec des données fictives uniquement.
 Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogné.
 
-## Phase 1 — Parcours questionnaire (portail patient)
+## Phase 0 — Parcours patient unifié (portail permanent `/portail/[token]`) — lot R1
+
+Flux patient principal. À exécuter en R1 avant tout nouveau chantier.
+
+- [ ] Créer ou sélectionner un patient fictif depuis `/dashboard/patients`.
+- [ ] Créer / envoyer un accès portail (token) au patient.
+- [ ] Ouvrir `/portail/[token]`.
+- [ ] Saisir l'email **une seule fois** (vérifier qu'il n'est pas redemandé ensuite).
+- [ ] Donner le consentement (groupé, tracé).
+- [ ] Compléter la fiche signalétique.
+- [ ] Compléter l'anamnèse (motif & attentes, histoire, signaux d'alerte, antécédents, traitements/compléments).
+- [ ] Valider l'onboarding.
+- [ ] Vérifier la redirection vers le hub « Mes questionnaires ».
+- [ ] Ouvrir un questionnaire au choix.
+- [ ] Sauvegarder un brouillon, quitter puis revenir → vérifier la restauration du brouillon.
+- [ ] Réinitialiser un questionnaire **non transmis** (vérifier que le reset est bien limité au non-transmis).
+- [ ] Transmettre un questionnaire au praticien → vérifier le verrouillage.
+- [ ] Consulter les réponses verrouillées.
+- [ ] Demander une correction avec commentaire.
+- [ ] Vérifier l'affichage de la demande côté praticien (fiche patient).
+- [ ] Déverrouiller manuellement côté praticien.
+- [ ] Corriger et retransmettre côté patient.
+
+Critères de validation :
+
+- [ ] Pas de ressaisie répétée de l'email ; aucun email exposé en URL.
+- [ ] Consentement non redemandé inutilement.
+- [ ] Navigation libre entre questionnaires depuis le hub.
+- [ ] Statuts compréhensibles (jamais codés par la seule couleur).
+- [ ] Rendu mobile utilisable (téléphone réel).
+- [ ] Aucune donnée réelle exportée ou committée.
+
+## Phase 1 — Parcours questionnaire (flux patient legacy `/patient/[idAssignation]`)
 
 - [ ] Créer un patient fictif depuis `/dashboard/patients`.
 - [ ] Assigner un questionnaire au patient fictif.

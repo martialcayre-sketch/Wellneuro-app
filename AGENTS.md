@@ -6,14 +6,15 @@ Wellneuro NNPP2 est une application de consultation en neuronutrition en product
 
 Le déploiement Google Apps Script (GAS) historique a été décommissionné le 2026-07-03 (lot C5) : web app et déclencheurs arrêtés côté console Apps Script. Le code est conservé pour référence dans `archive/gas-legacy/` mais n'est plus exécuté ni maintenu.
 
-**Point de vigilance** : le décommissionnement du déploiement GAS ne signifie pas que Google Sheets a disparu du périmètre applicatif. Plusieurs routes Next.js appellent encore directement l'API Google Sheets (voir ci-dessous) en parallèle de PostgreSQL. Ne pas présumer que ces routes sont mortes sans vérifier.
+**Décommission Google Sheets terminée (2026-07-07)** : la dépendance à l'API Google Sheets a été entièrement retirée du runtime. Le scope OAuth se limite à `openid email profile` (`web/src/lib/auth.ts`), la route `migrate-historique` a été supprimée, et toutes les routes praticien lisent/écrivent exclusivement PostgreSQL via Prisma. Aucune route n'appelle plus `sheets.googleapis.com`.
 
 ## Architecture actuelle
 
 - `web/src/app/dashboard/*` : portail praticien (auth Google via NextAuth, restreint au domaine `@wellneuro.fr`)
-- `web/src/app/patient/[idAssignation]` : portail patient public (email gate, pas d'auth Google)
-- `web/src/app/api/*` : routes serveur (patients, assignations, questionnaires, synthèse IA, booklet)
-  - `api/praticien/metrics`, `api/praticien/patients`, `api/praticien/assignations`, `api/praticien/questionnaires`, `api/praticien/reponses`, `api/praticien/migrate-historique` lisent/écrivent encore directement Google Sheets (`SHEET_ID` + token OAuth du praticien) en plus de PostgreSQL — dette technique héritée du strangler pattern, pas encore nettoyée
+- `web/src/app/portail/[token]` : portail patient permanent (token d'accès révocable, cookie signé `wn_portail`, onboarding consentement/fiche/anamnèse, hub « Mes questionnaires ») — flux patient principal
+- `web/src/app/patient/[idAssignation]` : ancien flux patient (email gate, pas d'auth Google) — conservé en compatibilité (legacy)
+- `web/src/app/api/*` : routes serveur — praticien (patients, assignations, questionnaires, reponses, metrics, packs, consultations, token, synthèse IA, booklet) et portail patient (`api/portail/*` : session, consentement, fiche, assignations, valider)
+  - Toutes ces routes s'appuient sur PostgreSQL via Prisma (plus aucun appel Google Sheets)
 - `web/prisma/schema.prisma` : schéma PostgreSQL (Patient, Assignation, QuestionnaireReponse, SyntheseIA, BookletEnvoi, ...)
 - `web/src/lib/questions.ts` : catalogue des questionnaires et moteur de scoring
 - `web/src/lib/auth.ts`, `web/src/lib/prisma.ts` : auth et client base de données

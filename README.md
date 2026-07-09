@@ -6,10 +6,13 @@ La migration depuis le MVP Google Apps Script (GAS) a débuté le 2026-06-29 et 
 
 ## Périmètre actuel
 
-- Application dans `web/` : portail praticien (`/dashboard/*`) et portail patient (`/patient/[idAssignation]`).
+- Application dans `web/` :
+  - **Portail praticien** (`/dashboard/*`) : gestion patients, assignation de questionnaires, packs, synthèse IA, booklets.
+  - **Portail patient permanent** (`/portail/[token]`) : espace patient unifié avec token d'accès révocable, onboarding (consentement, fiche signalétique, anamnèse) et hub « Mes questionnaires ». C'est le flux patient principal.
+  - **Flux patient legacy** (`/patient/[idAssignation]`) : conservé en compatibilité (accès par lien d'assignation + email gate).
 - Authentification praticien via Google / NextAuth, restreinte au domaine `@wellneuro.fr`.
-- PostgreSQL (Prisma) est la base cible pour patients, assignations, réponses, synthèses IA et booklets.
-- **Point de vigilance** : certaines routes API (`metrics`, `patients`, `assignations`, `questionnaires`, `reponses`, `migrate-historique`) interrogent encore directement l'API Google Sheets via `SHEET_ID` en parallèle de PostgreSQL. Le déploiement GAS (web app + déclencheurs) est arrêté, mais cette dépendance Sheets côté Next.js n'est pas encore retirée — voir `docs/claude/PROJET_CONTEXTE.md`.
+- PostgreSQL (Prisma) est l'**unique** base de données runtime : patients, assignations, réponses, consultations, synthèses IA et booklets.
+- **Google Sheets / OAuth Sheets : décommissionnés côté runtime** (2026-07-07). Le scope OAuth se limite à `openid email profile`, plus aucune route n'appelle l'API Google Sheets, et la route `migrate-historique` a été supprimée. Le code GAS reste archivé (référence uniquement) dans `archive/gas-legacy/`.
 
 ## Sécurité indispensable
 
@@ -75,7 +78,6 @@ Variables obligatoires côté Vercel :
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `DATABASE_URL` (pooler Supabase, avec `sslmode=require` et `uselibpqcompat=true`)
-- `SHEET_ID` (encore utilisé par plusieurs routes praticien, voir ci-dessus)
 - `SMTP_URL`
 - `ANTHROPIC_API_KEY`
 

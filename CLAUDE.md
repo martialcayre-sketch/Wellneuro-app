@@ -15,7 +15,7 @@ Wellneuro-app est une application de consultation en neuronutrition en productio
 
 Le déploiement Google Apps Script (GAS) historique a été décommissionné le 2026-07-03 (web app + déclencheurs arrêtés) ; le code est archivé dans `archive/gas-legacy/` à titre de référence et n'est plus exécuté.
 
-**Attention** : certaines routes Next.js (`api/praticien/metrics`, `api/praticien/patients`, `api/praticien/assignations`, `api/praticien/questionnaires`, `api/praticien/reponses`, `api/praticien/migrate-historique`) interrogent encore directement l'API Google Sheets via `SHEET_ID` + le token OAuth du praticien, en parallèle de PostgreSQL (écriture best-effort). Google Sheets n'est donc pas totalement retiré du périmètre applicatif malgré la décommission du déploiement GAS — voir `docs/claude/PROJET_CONTEXTE.md`.
+**Décommission Google Sheets terminée (2026-07-07)** : la dépendance à l'API Google Sheets a été entièrement retirée du runtime. Le scope OAuth se limite désormais à `openid email profile`, la route `migrate-historique` a été supprimée, et toutes les routes praticien (`metrics`, `patients`, `assignations`, `questionnaires`, `reponses`, `packs`…) lisent/écrivent exclusivement PostgreSQL via Prisma. `SHEET_ID` n'est plus une variable d'environnement requise. Le code GAS reste archivé dans `archive/gas-legacy/` (référence seule) — voir `docs/claude/PROJET_CONTEXTE.md`.
 
 Priorité absolue : stabilité de l'application en production, pas de nouvelle migration technologique sans demande explicite.
 
