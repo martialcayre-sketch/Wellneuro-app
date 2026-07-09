@@ -26,7 +26,13 @@ function createPrismaClient(): PrismaClient {
     `[prisma] connexion db host=${hostForLog} tlsNoVerify=${ssl ? 'oui' : 'non'} sslmodeDansUrl=${sslmodeReste}`,
   );
 
-  const pool = new Pool({ connectionString, ssl });
+  // `max: 1` : chaque instance serverless (Lambda) ne doit garder qu'une seule
+  // connexion physique vers le pooler Supabase (Supavisor, mode transaction).
+  // Sans cette borne, `pg.Pool` ouvre par défaut jusqu'à 10 connexions par
+  // instance ; plusieurs routes/instances en parallèle épuisent alors le
+  // budget de connexions du pooler, qui répond par une erreur
+  // « authentication failed » trompeuse au lieu d'un message de saturation.
+  const pool = new Pool({ connectionString, ssl, max: 1 });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
