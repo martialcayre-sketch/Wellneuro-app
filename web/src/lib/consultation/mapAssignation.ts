@@ -1,4 +1,7 @@
 import { isDeadlineExpired } from '@/lib/patient-access';
+import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
+
+const DUREE_PAR_ID = new Map(QUESTIONNAIRES_CATALOG.map(q => [q.id, q.duree]));
 
 // Représentation patient-safe d'une assignation, partagée entre
 // /api/patient/assignations (ancré sur un id) et /api/portail/assignations
@@ -11,6 +14,7 @@ export type AssignationPatient = {
   statutReponses: string;
   dateLimite: string | null;
   estEnAttenteSaisie: boolean;
+  duree: string | null;
 };
 
 type AssignationSource = {
@@ -40,5 +44,6 @@ export function mapAssignationPatient(a: AssignationSource): AssignationPatient 
     statutReponses: a.statutReponses,
     dateLimite: a.dateLimite ?? null,
     estEnAttenteSaisie,
+    duree: DUREE_PAR_ID.get(a.idQuestionnaire) ?? null,
   };
 }

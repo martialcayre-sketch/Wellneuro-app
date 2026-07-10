@@ -32,8 +32,8 @@ Principe directeur : **consolider avant d'évoluer**. Ordre recommandé, chaque 
 | Lot | Objet | Statut |
 |---|---|---|
 | **R0** | Réalignement documentaire (docs au niveau réel du code : décommission Sheets, portail patient unifié, registre relationnel, synthèse IA enrichie) | 🟡 En cours |
-| **R1** | Validation E2E du parcours patient unifié (`/portail/[token]`) sur patient fictif — voir `docs/checklist_tests_end_to_end.md`, Phase 0 | ⏳ Prochaine action |
-| **R2** | Finalisation du pack « Base de consultation » (contenu, ordre, anti-doublon anamnèse, rendu mobile, `par_defaut`) | ⏳ À faire |
+| **R1** | Validation E2E du parcours patient unifié (`/portail/[token]`) sur patient fictif — voir `docs/checklist_tests_end_to_end.md`, Phase 0 | ✅ Validé (2026-07-10) — reste le test tactile sur téléphone réel |
+| **R2** | Finalisation du pack « Base de consultation » (contenu, ordre, anti-doublon anamnèse, rendu mobile, `par_defaut`) | ✅ Validé (2026-07-10) |
 | **R3** | Transition progressive vers le registre relationnel (lecture primaire `questionnaire_packs`, fallback `packs.qids`, rapport d'écarts, aucune migration destructive) | ⏳ À faire |
 | **R4** | Harmonisation UX patient / design system (tokens deep teal / champagne gold, statut jamais codé par la seule couleur, mobile first) | ⏳ À faire |
 | **R5** | Validation de la synthèse IA enrichie (scénarios fiche/anamnèse/alerte/traitements/DNSM, dégradation gracieuse) | ⏳ À faire |

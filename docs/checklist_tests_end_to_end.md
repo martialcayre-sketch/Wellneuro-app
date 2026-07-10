@@ -9,8 +9,10 @@ Flux patient principal. À exécuter en R1 avant tout nouveau chantier.
 
 > Exécution R1 du 2026-07-09 — environnement A (prod `app.wellneuro.fr`), patient
 > fictif Michel Dogné (`PAT_SEED_03`). Étapes API/serveur validées par pilotage
-> HTTP ; restent à valider en navigateur : redirection vers le hub, brouillon et
-> réinitialisation (localStorage, côté client uniquement), rendu mobile réel.
+> HTTP. Complément du 2026-07-10 : étapes navigateur validées en Chromium headless
+> (Playwright, desktop + émulation iPhone 13) sur le même patient fictif —
+> 21/22 vérifications PASS. Seul reste à faire sur téléphone réel : la validation
+> tactile finale (l'émulation ne remplace pas le device).
 
 - [x] Créer ou sélectionner un patient fictif depuis `/dashboard/patients`.
 - [x] Créer / envoyer un accès portail (token) au patient.
@@ -20,10 +22,10 @@ Flux patient principal. À exécuter en R1 avant tout nouveau chantier.
 - [x] Compléter la fiche signalétique (contrôle des champs requis vérifié : 400 si incomplet).
 - [x] Compléter l'anamnèse (motif & attentes, histoire, signaux d'alerte, antécédents, traitements/compléments).
 - [x] Valider l'onboarding (4 assignations créées depuis le pack par défaut « Base de consultation »).
-- [ ] Vérifier la redirection vers le hub « Mes questionnaires ». *(navigateur)*
+- [x] Vérifier la redirection vers le hub « Mes questionnaires ». *(navigateur — lien « Accéder à mes questionnaires » après onboarding ; rechargement du hub sans re-saisie email via cookie session)*
 - [x] Ouvrir un questionnaire au choix.
-- [ ] Sauvegarder un brouillon, quitter puis revenir → vérifier la restauration du brouillon. *(navigateur — brouillon 100 % localStorage)*
-- [ ] Réinitialiser un questionnaire **non transmis** (vérifier que le reset est bien limité au non-transmis). *(navigateur — reset 100 % localStorage)*
+- [x] Sauvegarder un brouillon, quitter puis revenir → vérifier la restauration du brouillon. *(navigateur — clé `wellneuro:draft:{idAssignation}`, badge « Brouillon enregistré » + bouton « Reprendre » au hub, réponses restaurées)*
+- [x] Réinitialiser un questionnaire **non transmis** (vérifier que le reset est bien limité au non-transmis). *(navigateur — brouillon vidé, badge redevenu « À compléter » ; un questionnaire transmis s'ouvre en lecture seule, sans boutons brouillon/reset)*
 - [x] Transmettre un questionnaire au praticien → vérifier le verrouillage (retransmission refusée en 409).
 - [x] Consulter les réponses verrouillées (via cookie de session, sans email en URL).
 - [x] Demander une correction avec commentaire (commentaire + horodatage tracés en base).
@@ -33,11 +35,11 @@ Flux patient principal. À exécuter en R1 avant tout nouveau chantier.
 
 Critères de validation :
 
-- [x] Pas de ressaisie répétée de l'email ; aucun email exposé en URL de page. *(Nuance : l'appel XHR `GET /api/portail/session` porte token + email en query string — invisible dans la barre d'adresse mais présent dans les logs d'accès ; passage en POST à envisager.)*
+- [x] Pas de ressaisie répétée de l'email ; aucun email exposé en URL de page. *(`/api/portail/session` est passé en POST JSON — vérifié en navigateur le 2026-07-10 : aucune query string sur l'appel session. Constat résiduel : la vue « Consulter » (réponses verrouillées) appelle encore `GET /api/patient/reponses?…&email=…` avec l'email en query string — même classe de problème, correctif à prévoir hors lot de validation.)*
 - [x] Consentement non redemandé inutilement (hérité au niveau assignation).
 - [x] Navigation libre entre questionnaires depuis le hub (aucun ordre imposé).
 - [x] Statuts compréhensibles (badges textuels : « À compléter », « Transmis au praticien », « Correction demandée », « Déverrouillé par le praticien » — jamais la seule couleur).
-- [ ] Rendu mobile utilisable (téléphone réel).
+- [ ] Rendu mobile utilisable (téléphone réel). *(Émulation iPhone 13 validée le 2026-07-10 : aucun débordement horizontal, boutons ≥ 38 px, badges textuels lisibles ; titres de questionnaires tronqués sur mobile — amélioration UX à considérer en R4. Le passage sur téléphone réel reste à faire.)*
 - [x] Aucune donnée réelle exportée ou committée.
 
 ## Phase 1 — Parcours questionnaire (flux patient legacy `/patient/[idAssignation]`)

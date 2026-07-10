@@ -37,9 +37,15 @@ export async function GET(req: Request): Promise<NextResponse<PortailAssignation
 
     // idPatient (issu de la session vérifiée) est la clé fiable ; on n'ajoute pas
     // de filtre email pour éviter les écarts de casse en base.
+    // Tri secondaire sur `createdAt` : les questionnaires d'un même pack
+    // partagent une `dateAssignation` identique (assignBasePack.ts fige un
+    // seul `new Date()` avant la boucle), mais `createdAt` croît dans l'ordre
+    // exact de la boucle sur `qids` — ce qui départage les égalités en
+    // respectant l'ordre du pack, sans changer le tri des assignations
+    // individuelles (dateAssignation distincte, quasi jamais à égalité).
     const assignationsDb = await prisma.assignation.findMany({
       where: { idPatient: session.idPatient },
-      orderBy: [{ dateAssignation: 'desc' }],
+      orderBy: [{ dateAssignation: 'desc' }, { createdAt: 'asc' }],
     });
 
     const assignations: AssignationPatient[] = assignationsDb.map(mapAssignationPatient);

@@ -256,3 +256,45 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Prochaine action prioritaire** : tests navigateur restants — redirection hub, brouillon/reset (localStorage), rendu mobile réel — puis R2.
 
 **Questions ouvertes** : passer `GET /api/portail/session` en POST (token+email en query string, visibles dans les logs d'accès) ; exposer le lien portail dans le frontend praticien (aujourd'hui envoi email uniquement).
+
+## 2026-07-10 — R1 — session portail sans email en URL
+
+**Décisions prises** : bascule de `/api/portail/session` en `POST` JSON et adaptation de l’écran `/portail/[token]` pour garder l’email hors de l’URL. Vérification ciblée OK sur les deux fichiers modifiés.
+
+**Options écartées** : conserver le `GET` avec query string ; élargir le périmètre à d’autres routes R1.
+
+**Fichiers modifiés** : `web/src/app/api/portail/session/route.ts`, `web/src/app/portail/[token]/page.tsx`.
+
+**Risques résiduels** : la validation navigateur complète reste à refaire après ce changement; le reste du flux R1 n’a pas été retouché.
+
+**Prochaine action prioritaire** : reprendre la checklist navigateur R1 sur `/portail/[token]`, puis poursuivre vers R2.
+
+**Questions ouvertes** : aucune nouvelle question fonctionnelle ; seulement confirmer que le POST suffit côté logs/proxy.
+
+## 2026-07-10 — [R1] Clôture — validation navigateur du portail patient (Playwright, prod)
+
+**Décisions prises** : validation des 3 étapes navigateur restantes de la Phase 0 en Chromium headless (Playwright installé hors dépôt, scratchpad) sur prod, patient fictif Michel Dogné (`PAT_SEED_03`), token lu en base en mémoire uniquement (autorisation utilisateur explicite). 21/22 PASS : session POST sans query string, hub accessible et rechargeable sans re-saisie email (cookie), brouillon localStorage sauvegardé/restauré (`wellneuro:draft:*`), reset limité au non-transmis (badge redevenu « À compléter », vue transmise en lecture seule), émulation iPhone 13 sans débordement horizontal. Checklist et roadmap mises à jour (R1 ✅, R2 prochaine action).
+
+**Options écartées** : correctifs de code pendant le lot (validation pure) ; environnement local complet.
+
+**Fichiers modifiés** : `docs/checklist_tests_end_to_end.md`, `docs/roadmap.md`, `docs/claude/SESSION_LOG.md`.
+
+**Risques résiduels** : `GET /api/patient/reponses?…&email=…` expose encore l'email en query string dans la vue « Consulter » (même classe que le GET session corrigé — correctif à planifier) ; test tactile sur téléphone réel non fait (émulation seulement) ; titres de questionnaires tronqués sur mobile (à traiter en R4).
+
+**Prochaine action prioritaire** : R2 — finalisation du pack « Base de consultation » ; au passage, corriger le passage de l'email en query string sur `/api/patient/reponses`.
+
+**Questions ouvertes** : le correctif `reponses` doit-il couvrir aussi les autres routes `api/patient/*` appelées avec `email` en repli ?
+
+## 2026-07-10 — [R2] Finalisation du pack « Base de consultation »
+
+**Décisions prises** : investigation (3 agents Explore en parallèle) sur le registre packs/catalogue, l'UI praticien d'assignation et le hub patient. Constat clé : le pack de base (`Pack.parDefaut`) était **déjà complété en prod** le 2026-07-09 via `PacksPanel` — les 4 questionnaires cibles documentés depuis le 2026-07-08 (Plaintes `Q_MOD_03`, Mode de vie `Q_MOD_01`, Alimentaire `Q_ALI_01`, DNSM `Q_INF_03`, ≈45 min) y sont déjà dans le bon ordre ; vérifié en lecture seule via un script Prisma ad hoc (miroir de `lib/prisma.ts`, adaptateur `pg`), aucune écriture prod nécessaire. Anti-doublon anamnèse garanti par conception (anamnèse volontairement resserrée pour ne pas recouper ces 4 thèmes) — aucun changement requis côté anamnèse. Complété côté code : (1) tri secondaire `createdAt asc` dans `api/portail/assignations` et `api/patient/assignations` pour fiabiliser l'ordre d'affichage intra-pack (les questionnaires d'un même pack partageaient une `dateAssignation` figée, ordre auparavant non garanti) ; (2) `AssignationPatient.duree` ajouté (résolu depuis `questionnaires-catalog.ts`, jusque-là réservé au praticien), affiché par item et en total pour la section « À compléter » du hub ; (3) titre de carte questionnaire en `line-clamp-2` (au lieu de `truncate`) pour éviter la coupure du titre DNSM (61 caractères) sur mobile — décision utilisateur explicite de traiter ce point maintenant plutôt que de le laisser pour R4.
+
+**Options écartées** : écriture prod du contenu du pack (finalement inutile, déjà fait) ; changer le sens global du tri (`desc`→`asc`) du hub (aurait modifié le comportement pour toutes les assignations, pas seulement les packs) — préféré un tri secondaire ciblé ; toucher `assignBasePack.ts`/`packs/assign/route.ts` (l'ordre se répare entièrement côté lecture, sans toucher l'écriture) ; bascule vers le registre relationnel `QuestionnairePack` (hors périmètre, réservé à R3) ; correctif de l'email en query string sur `/api/patient/reponses` (risque résiduel distinct, non traité ici).
+
+**Fichiers modifiés** : `web/src/app/api/portail/assignations/route.ts`, `web/src/app/api/patient/assignations/route.ts`, `web/src/lib/consultation/mapAssignation.ts`, `web/src/app/portail/[token]/questionnaires/page.tsx`, `CHANGELOG.md`, `docs/roadmap.md` (R1 et R2 passés à ✅, la mise à jour R1 avait été omise lors de la clôture précédente).
+
+**Risques résiduels** : `GET /api/patient/reponses?…&email=…` toujours en query string (reporté, cf. entrée précédente) ; pas de validation navigateur réelle de ce lot (vérifié par `type-check` + `check_no_secrets` + relecture manuelle du diff, pas de test Playwright) ; le script de lecture Prisma ad hoc a été supprimé après usage (non commité, scratchpad).
+
+**Prochaine action prioritaire** : R3 — transition progressive vers le registre relationnel packs/questionnaires (lecture primaire `questionnaire_packs`, fallback `packs.qids`).
+
+**Questions ouvertes** : la mise à jour visuelle du hub (durée + titre 2 lignes) mérite-t-elle une vérification navigateur avant de considérer R2 définitivement clos ?

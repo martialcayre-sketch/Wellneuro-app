@@ -4,6 +4,14 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### R2 — Pack « Base de consultation » finalisé + lisibilité patient (2026-07-10)
+
+- **Constat** : le pack de base (`Pack.parDefaut`) était déjà complété en prod (2026-07-09, via l'UI praticien `PacksPanel`) avec les 4 questionnaires cibles documentés depuis le 2026-07-08 — `Q_MOD_03` (Plaintes, 5 min), `Q_MOD_01` (Mode de vie SIIN, 10 min), `Q_ALI_01` (Alimentaire SIIN, 15 min), `Q_INF_03` (DNSM, 15 min), soit ≈45 min. Anti-doublon anamnèse garanti par conception (anamnèse volontairement resserrée pour ne pas recouper ces 4 thèmes). Aucune écriture en base n'a été nécessaire pour ce lot — seule la documentation (`SESSION_LOG.md`/`roadmap.md`) était en retard sur l'état réel.
+- **Ordre d'affichage déterministe** : les questionnaires d'un même pack partageaient une `dateAssignation` identique (assignation en boucle avec un seul horodatage figé dans `assignBasePack.ts`), rendant leur ordre d'affichage non garanti dans le hub. Ajout d'un tri secondaire `createdAt asc` (qui croît naturellement dans l'ordre de la boucle d'assignation) dans `api/portail/assignations` et `api/patient/assignations` — aucun changement côté assignation.
+- **Durée estimée côté patient** : `AssignationPatient` expose désormais `duree` (résolue depuis `lib/questionnaires-catalog.ts`, jusqu'ici réservé au praticien). Affichée par questionnaire dans le hub, et en total pour la section « À compléter ».
+- **Lisibilité mobile** : le titre de carte questionnaire (`truncate` une ligne) passe en `line-clamp-2` dans le hub — le titre DNSM (61 caractères) ne se coupe plus.
+- Vérifié : `type-check` propre, `check_no_secrets` OK. Aucune migration Prisma/SQL, aucune modification de scoring clinique.
+
 ### Synthèse IA du premier bilan — enrichissement par le contexte anamnestique (2026-07-08)
 
 - **Objectif** : la synthèse IA (`api/praticien/synthese`) ne s'appuyait que sur les scores de questionnaires. Elle exploite désormais la **fiche signalétique** et l'**anamnèse** déjà saisies via le portail patient (blobs JSON sur `Consultation`, jusqu'ici jamais relus) pour produire une synthèse mieux contextualisée. **Purement additif : aucune migration Prisma, aucune UI nouvelle.**

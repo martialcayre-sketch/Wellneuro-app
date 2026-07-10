@@ -40,6 +40,13 @@ function affichage(a: AssignationPatient, avecBrouillon: boolean): Affichage {
   };
 }
 
+// Extrait le nombre de minutes d'une durée catalogue du type "5 min".
+function parseDureeMinutes(duree: string | null): number {
+  if (!duree) return 0;
+  const m = duree.match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : 0;
+}
+
 const GROUPES: { cle: Groupe; titre: string }[] = [
   { cle: 'a_completer', titre: 'À compléter' },
   { cle: 'correction', titre: 'Correction demandée' },
@@ -101,7 +108,9 @@ export default function QuestionnairesHubPage() {
   }
 
   const enriched = assignations.map(a => ({ a, aff: affichage(a, brouillons.has(a.idAssignation)) }));
-  const aCompleter = enriched.filter(e => e.aff.groupe === 'a_completer').length;
+  const aCompleterItems = enriched.filter(e => e.aff.groupe === 'a_completer');
+  const aCompleter = aCompleterItems.length;
+  const dureeACompleterMin = aCompleterItems.reduce((somme, e) => somme + parseDureeMinutes(e.a.duree), 0);
   const transmis = enriched.filter(e => e.aff.groupe === 'transmis' || e.aff.groupe === 'correction').length;
   const total = assignations.length;
 
@@ -115,7 +124,7 @@ export default function QuestionnairesHubPage() {
         </p>
         <div className="flex flex-wrap gap-3 mt-3 text-sm">
           <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-3 py-1 font-medium">
-            {aCompleter} à compléter
+            {aCompleter} à compléter{dureeACompleterMin > 0 ? ` · ≈ ${dureeACompleterMin} min` : ''}
           </span>
           <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-3 py-1">
             {transmis}/{total} transmis
@@ -141,9 +150,10 @@ export default function QuestionnairesHubPage() {
               {items.map(({ a, aff }) => (
                 <div key={a.idAssignation} className={`${card} flex items-center justify-between gap-4`}>
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{a.titre || a.idQuestionnaire}</p>
+                    <p className="font-medium text-gray-900 line-clamp-2">{a.titre || a.idQuestionnaire}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       {aff.badge}
+                      {a.duree ? ` · ${a.duree}` : ''}
                       {a.dateLimite ? ` · à rendre avant le ${a.dateLimite}` : ''}
                     </p>
                   </div>

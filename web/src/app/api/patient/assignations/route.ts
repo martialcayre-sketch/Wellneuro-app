@@ -30,12 +30,14 @@ export async function GET(req: Request): Promise<NextResponse<PatientAssignation
       );
     }
 
+    // Tri secondaire createdAt : voir commentaire dans api/portail/assignations
+    // (ordre stable au sein d'un même pack, dateAssignation identique).
     const assignationsDb = await prisma.assignation.findMany({
       where: {
         idPatient: ass.idPatient,
         emailPatient: ass.emailPatient,
       },
-      orderBy: [{ dateAssignation: 'desc' }],
+      orderBy: [{ dateAssignation: 'desc' }, { createdAt: 'asc' }],
     });
 
     const assignations: AssignationPatient[] = assignationsDb.map(mapAssignationPatient);
