@@ -364,3 +364,17 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Prochaine action prioritaire** : R10 avec l'utilisateur (arbitrages produit : définition de R6, exposition du lien portail côté praticien, calendrier décommission `packs.qids`), ou R7/R8 (hygiène repo, CI/tests) si préféré en premier.
 
 **Questions ouvertes** : celles de R10, toujours en suspens.
+
+## 2026-07-10 — [R7] Hygiène repo/doc
+
+**Décisions prises** : `/wn-r6` a été interrompu (R6 gelé tant que R0→R5 non validés, et sa définition même est disputée — R10) ; `/wn-auto` a déterminé R7 comme prochain lot conservateur, non bloqué, avec preuves concrètes déjà présentes dans l'arbre de travail. Exécuté les 4 sous-points documentés : (1) `.gitattributes` ajouté (`text=auto eol=lf`, `*.sh` explicite) et commit du diff CRLF→LF déjà présent sur les 5 scripts (`scripts/*.sh`, vérifié `--ignore-all-space` sans changement de logique, en attente depuis R9) ; (2) `docs/claude/REGLES_CRITIQUES.md` corrigé — retrait de `SHEET_ID` de la liste des variables sensibles requises et remplacement de la note obsolète (Sheets « encore requis ») par le constat réel de décommission (2026-07-07) ; (3) nettoyage racine : `.clasp.example.json`, `.claspignore` et `package-lock.json` (stub vide) supprimés du dépôt (décision utilisateur explicite : suppression plutôt que déplacement vers `archive/gas-legacy/`), `wellneuro_claude_automation_kit.zip` supprimé du disque (non tracké git, décision utilisateur explicite) ; (4) mémoire persistante Claude Code (`memory/`) peuplée avec 6 mémoires (format SESSION_LOG, dry-run avant écriture prod, patients fictifs autorisés, pas de migration sans confirmation, UI en français, préférence utilisateur pour un périmètre minimal vérifiable) — vide jusqu'ici malgré l'historique riche du log.
+
+**Options écartées** : déplacer les fichiers clasp vers `archive/gas-legacy/` plutôt que les supprimer (option initialement proposée, écartée par l'utilisateur — GAS déjà décommissionné et archivé ailleurs) ; garder `wellneuro_claude_automation_kit.zip` ou seulement l'ignorer (écarté par l'utilisateur, suppression directe demandée) ; toute action sur R0/R5/R6/R10 (hors périmètre de ce lot, strictement hygiène repo/doc).
+
+**Fichiers modifiés** : `.gitattributes` (nouveau), `scripts/check_no_secrets.sh`, `scripts/export-clasp-creds.sh`, `scripts/import-clasp-creds.sh`, `scripts/release_go_no_go.sh`, `scripts/setup_supabase_prisma.sh` (fins de ligne uniquement), `docs/claude/REGLES_CRITIQUES.md`, `docs/roadmap.md` (R7 → ✅). Supprimés : `.clasp.example.json`, `.claspignore`, `package-lock.json` (racine). Mémoire Claude Code peuplée hors dépôt git (`memory/MEMORY.md` + 6 fichiers).
+
+**Risques résiduels** : aucun identifié — lot strictement documentaire/hygiène, aucune logique applicative touchée. Le faux positif `check_no_secrets.sh` sur `docs/roadmap.md:48` (mention `SHEET_ID`) devrait maintenant disparaître avec le statut R7 passé à ✅ et la ligne demeurant une mention historique documentaire, à revérifier après commit.
+
+**Prochaine action prioritaire** : R10 avec l'utilisateur (arbitrages produit : définition de R6, exposition du lien portail côté praticien, calendrier décommission `packs.qids`), ou R8 (CI/tests) si préféré en premier ; R0/R5 restent la voie de reprise vers un R6 débloqué.
+
+**Questions ouvertes** : celles de R10, toujours en suspens.

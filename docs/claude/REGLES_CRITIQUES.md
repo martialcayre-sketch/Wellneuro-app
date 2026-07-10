@@ -20,11 +20,11 @@ Seuls patients fictifs nommes autorises:
 
 ## 3) Regle secrets et configuration
 
-Toute configuration sensible (`DATABASE_URL`, `SHEET_ID`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`) passe uniquement par des variables d'environnement (`web/.env.local` en dev, variables Vercel en production).
+Toute configuration sensible (`DATABASE_URL`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`) passe uniquement par des variables d'environnement (`web/.env.local` en dev, variables Vercel en production).
 
 Jamais en dur dans le code.
 
-Note : `SHEET_ID` reste requis — plusieurs routes praticien (`metrics`, `patients`, `assignations`, `questionnaires`, `reponses`, `migrate-historique`) interrogent encore directement l'API Google Sheets en parallele de PostgreSQL malgre la decommission du deploiement Apps Script.
+Note : la decommission Google Sheets est terminee (2026-07-07) — toutes les routes praticien (`metrics`, `patients`, `assignations`, `questionnaires`, `reponses`, `packs`...) lisent/ecrivent exclusivement PostgreSQL via Prisma, la route `migrate-historique` a ete supprimee, et `SHEET_ID` n'est plus une variable d'environnement requise. Voir `docs/claude/PROJET_CONTEXTE.md`.
 
 ## 4) Contraintes cliniques
 

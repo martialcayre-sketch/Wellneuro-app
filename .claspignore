@@ -1,7 +1,0 @@
-# Avec rootDir=src/gas dans .clasp.json, seuls les fichiers
-# de src/gas/ sont poussés. Ce fichier exclut le superflu.
-**/**
-!appsscript.json
-!Code.gs
-!Questions.gs
-!index.html
