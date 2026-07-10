@@ -226,3 +226,33 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Prochaine action prioritaire** : R1 — exécuter la checklist « Phase 0 » E2E du parcours patient unifié sur un patient fictif (Sophie Nicola / Jennifer Martin / Michel Dogné), validation mobile incluse.
 
 **Questions ouvertes** : compléter le pack « Base de consultation » (R2) ; calendrier de bascule lecture packs → registre relationnel puis décommission `packs.qids` (R3) ; harmonisation UX patient tokens design system (R4).
+
+## 2026-07-09 — Setup CLI Supabase local + vérification Prisma
+
+**Décisions prises** : installation du CLI Supabase dans le conteneur, authentification CLI validée, initialisation locale dans `web/supabase/`, liaison du workspace `web` au projet Supabase `ohnbmypinamzzfhqymlt`, puis démarrage local Supabase avec migration `20260701174726_remote_schema.sql` appliquée. Vérification Prisma réalisée contre la DB locale `127.0.0.1:54322` : connectivité OK et 10 migrations Prisma locales détectées comme non appliquées sur cette base fraîche.
+
+**Options écartées** : aucun changement Prisma/SQL distant ; pas de `prisma migrate dev` ni de migration destructive ; pas d’usage de secrets en dur, uniquement le login CLI.
+
+**Prochaine action prioritaire** : décider si la base locale doit rester un miroir Supabase minimal ou recevoir aussi les migrations Prisma du dépôt pour tests applicatifs complets.
+
+**Questions ouvertes** : faut-il supprimer l’avertissement `supabase/seed.sql` absent ; veut-on standardiser une procédure locale Supabase + Prisma dans la doc projet ?
+
+## 2026-07-09 — Configuration DATABASE_URL dev et checks de reprise
+
+**Décisions prises** : configuration de `DATABASE_URL` en local via terminal avec saisie masquée du mot de passe, écriture dans `web/.env.local` (jamais affichée, jamais commit). Vérification non intrusive de présence de la variable, puis validation Prisma (`npx prisma validate`) réussie. Exécution des contrôles de reprise disponibles : `npm run type-check` et `npm run scoring-check` (OK, 63 questionnaires certifiés).
+
+**Options écartées** : partage du secret dans le chat ; affichage de la valeur dans les logs ; modification de schéma/migrations Prisma.
+
+**Prochaine action prioritaire** : lancer la reprise des tests fonctionnels/E2E du parcours praticien/patient avec cette configuration locale.
+
+**Questions ouvertes** : ajouter un script `npm run test` unifié dans `web/package.json` pour standardiser la commande de validation ?
+
+## 2026-07-10 — [R1] Validation E2E du parcours patient unifié (prod)
+
+**Décisions prises** : exécution de la Phase 0 en environnement A (prod, patient fictif Michel Dogné `PAT_SEED_03`, lecture SQL du token autorisée). Flux complet validé par pilotage HTTP : email gate (403/200, cookie signé `wn_portail`, email saisi une fois), garde d'ordre consentement→fiche→anamnèse, validation créant 4 assignations du pack par défaut, transmission Q_MOD_03 avec score serveur, verrouillage (409), demande de correction commentée tracée en base, déverrouillage praticien, retransmission corrigée re-verrouillée. Checklist Phase 0 cochée (14/17 étapes, 5/6 critères). Base locale préparée au passage (migrations via `scripts/wn-local-migrate.sh`, verrouillé 127.0.0.1).
+
+**Options écartées** : environnement local complet (bascule prod demandée en cours de lot) ; correctifs de code pendant le lot (validation pure).
+
+**Prochaine action prioritaire** : tests navigateur restants — redirection hub, brouillon/reset (localStorage), rendu mobile réel — puis R2.
+
+**Questions ouvertes** : passer `GET /api/portail/session` en POST (token+email en query string, visibles dans les logs d'accès) ; exposer le lien portail dans le frontend praticien (aujourd'hui envoi email uniquement).

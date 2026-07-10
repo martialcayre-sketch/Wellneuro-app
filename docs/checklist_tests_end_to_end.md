@@ -7,33 +7,38 @@ Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogné.
 
 Flux patient principal. À exécuter en R1 avant tout nouveau chantier.
 
-- [ ] Créer ou sélectionner un patient fictif depuis `/dashboard/patients`.
-- [ ] Créer / envoyer un accès portail (token) au patient.
-- [ ] Ouvrir `/portail/[token]`.
-- [ ] Saisir l'email **une seule fois** (vérifier qu'il n'est pas redemandé ensuite).
-- [ ] Donner le consentement (groupé, tracé).
-- [ ] Compléter la fiche signalétique.
-- [ ] Compléter l'anamnèse (motif & attentes, histoire, signaux d'alerte, antécédents, traitements/compléments).
-- [ ] Valider l'onboarding.
-- [ ] Vérifier la redirection vers le hub « Mes questionnaires ».
-- [ ] Ouvrir un questionnaire au choix.
-- [ ] Sauvegarder un brouillon, quitter puis revenir → vérifier la restauration du brouillon.
-- [ ] Réinitialiser un questionnaire **non transmis** (vérifier que le reset est bien limité au non-transmis).
-- [ ] Transmettre un questionnaire au praticien → vérifier le verrouillage.
-- [ ] Consulter les réponses verrouillées.
-- [ ] Demander une correction avec commentaire.
-- [ ] Vérifier l'affichage de la demande côté praticien (fiche patient).
-- [ ] Déverrouiller manuellement côté praticien.
-- [ ] Corriger et retransmettre côté patient.
+> Exécution R1 du 2026-07-09 — environnement A (prod `app.wellneuro.fr`), patient
+> fictif Michel Dogné (`PAT_SEED_03`). Étapes API/serveur validées par pilotage
+> HTTP ; restent à valider en navigateur : redirection vers le hub, brouillon et
+> réinitialisation (localStorage, côté client uniquement), rendu mobile réel.
+
+- [x] Créer ou sélectionner un patient fictif depuis `/dashboard/patients`.
+- [x] Créer / envoyer un accès portail (token) au patient.
+- [x] Ouvrir `/portail/[token]`.
+- [x] Saisir l'email **une seule fois** (vérifier qu'il n'est pas redemandé ensuite).
+- [x] Donner le consentement (groupé, tracé — version + finalité horodatées).
+- [x] Compléter la fiche signalétique (contrôle des champs requis vérifié : 400 si incomplet).
+- [x] Compléter l'anamnèse (motif & attentes, histoire, signaux d'alerte, antécédents, traitements/compléments).
+- [x] Valider l'onboarding (4 assignations créées depuis le pack par défaut « Base de consultation »).
+- [ ] Vérifier la redirection vers le hub « Mes questionnaires ». *(navigateur)*
+- [x] Ouvrir un questionnaire au choix.
+- [ ] Sauvegarder un brouillon, quitter puis revenir → vérifier la restauration du brouillon. *(navigateur — brouillon 100 % localStorage)*
+- [ ] Réinitialiser un questionnaire **non transmis** (vérifier que le reset est bien limité au non-transmis). *(navigateur — reset 100 % localStorage)*
+- [x] Transmettre un questionnaire au praticien → vérifier le verrouillage (retransmission refusée en 409).
+- [x] Consulter les réponses verrouillées (via cookie de session, sans email en URL).
+- [x] Demander une correction avec commentaire (commentaire + horodatage tracés en base).
+- [x] Vérifier l'affichage de la demande côté praticien (fiche patient).
+- [x] Déverrouiller manuellement côté praticien.
+- [x] Corriger et retransmettre côté patient (nouvelle version relue, re-verrouillage effectif).
 
 Critères de validation :
 
-- [ ] Pas de ressaisie répétée de l'email ; aucun email exposé en URL.
-- [ ] Consentement non redemandé inutilement.
-- [ ] Navigation libre entre questionnaires depuis le hub.
-- [ ] Statuts compréhensibles (jamais codés par la seule couleur).
+- [x] Pas de ressaisie répétée de l'email ; aucun email exposé en URL de page. *(Nuance : l'appel XHR `GET /api/portail/session` porte token + email en query string — invisible dans la barre d'adresse mais présent dans les logs d'accès ; passage en POST à envisager.)*
+- [x] Consentement non redemandé inutilement (hérité au niveau assignation).
+- [x] Navigation libre entre questionnaires depuis le hub (aucun ordre imposé).
+- [x] Statuts compréhensibles (badges textuels : « À compléter », « Transmis au praticien », « Correction demandée », « Déverrouillé par le praticien » — jamais la seule couleur).
 - [ ] Rendu mobile utilisable (téléphone réel).
-- [ ] Aucune donnée réelle exportée ou committée.
+- [x] Aucune donnée réelle exportée ou committée.
 
 ## Phase 1 — Parcours questionnaire (flux patient legacy `/patient/[idAssignation]`)
 
