@@ -67,11 +67,11 @@ La dépendance à l'API Google Sheets a été **entièrement retirée du runtime
 
 ## Registre relationnel questionnaires / packs
 
-Deux couches coexistent pendant la transition (lot R3) :
-1. Modèle historique simple `Pack.qids`.
+Deux couches coexistent, en transition maîtrisée (lot R3, livré le 2026-07-10, commit `3f367a7`) :
+1. Modèle historique simple `Pack.qids` — reste la source d'édition praticien (`PacksPanel.tsx`).
 2. Registre normalisé : `questionnaire_categories`, `questionnaires`, `questionnaire_secondary_categories`, `questionnaire_packs`, `pack_questionnaires`, `pack_triggers`.
 
-La synchronisation legacy → registre existe déjà dans la route `packs`. Objectif R3 : lecture primaire depuis le registre, fallback temporaire `packs.qids`, décommission de `packs.qids` seulement après validation (aucune migration destructive).
+Les routes d'assignation (`portail/valider`, `praticien/packs/assign`) lisent désormais en priorité le registre via `resolvePackQuestionnaireIds` (`web/src/lib/consultation/packRegistry.ts`), qui ne fait confiance au registre que si son ensemble de qids correspond exactement au `qids` legacy du pack — sinon fallback automatique sur `packs.qids`. Cohérence vérifiable via `npm run check:pack-registry`. Aucun calendrier de décommission de `packs.qids` à ce stade (statut « surveillance », tranché en R10).
 
 ## Synthèse IA enrichie (fiche + anamnèse)
 
@@ -79,8 +79,8 @@ La synthèse IA du premier bilan est nourrie, en plus des scores de questionnair
 
 ## Sécurité, RGPD, clinique — invariants
 
-- Patients fictifs autorisés dans le dépôt : **Sophie Nicola, Jennifer Martin, Michel Dogne**. Aucun autre nom, aucune donnée patient réelle.
-- Secrets et configuration sensible (`DATABASE_URL`, `SHEET_ID`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`) uniquement via variables d'environnement (`web/.env.local` en dev, variables Vercel en prod) — jamais en dur, jamais commitées.
+- Patients fictifs autorisés dans le dépôt : **Sophie Nicola, Jennifer Martin, Michel Dogné**. Aucun autre nom, aucune donnée patient réelle.
+- Secrets et configuration sensible (`DATABASE_URL`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`) uniquement via variables d'environnement (`web/.env.local` en dev, variables Vercel en prod) — jamais en dur, jamais commitées. `SHEET_ID` n'est plus requis (décommission Sheets, voir plus haut).
 - Ne pas modifier la logique clinique ou les seuils de scoring sans demande explicite documentée dans `CHANGELOG.md`.
 - Vérification avant tout commit : `bash scripts/check_no_secrets.sh` et `cd web && npm run type-check`.
 - Détail complet : `docs/securite_rgpd.md`, `docs/claude/REGLES_CRITIQUES.md`.
@@ -91,8 +91,10 @@ La synthèse IA du premier bilan est nourrie, en plus des scores de questionnair
 
 ## Ce qui reste ouvert (hors périmètre sauf demande explicite)
 
-- **R2** : compléter le pack « Base de consultation » (contenu, ordre, anti-doublon anamnèse, rendu mobile).
-- **R3** : faire du registre relationnel la source de lecture principale des packs, puis décommission de `packs.qids` (aucune migration destructive).
+- **R6** : stabilisation build/tests/go-no-go (`.claude/skills/wn-r6/SKILL.md` fait foi, tranché en R10) — gelé jusqu'à validation de R0.
+- **R8** : filet de sécurité technique (CI GitHub Actions, tests unitaires vitest, tests Playwright commités) — piste indépendante, non bloquante.
+- Calendrier de décommission de `packs.qids` : statut « surveillance », pas de date fixée (R10).
+- Curation de `QuestionnaireDefinition.niveau` / `.publicCible` : statut « surveillance », pas d'usage applicatif à ce jour (R10).
 - Pagination patients/assignations si le volume dépasse ~100 lignes.
 - Hébergement HDS certifié (nécessaire uniquement si données de santé réelles en production).
 - RAG SIIN complet (le prompt système utilise un mini-corpus, pas le corpus plein).

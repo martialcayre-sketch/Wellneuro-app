@@ -31,13 +31,13 @@ Principe directeur : **consolider avant d'évoluer**. Ordre recommandé, chaque 
 
 | Lot | Objet | Statut |
 |---|---|---|
-| **R0** | Réalignement documentaire (docs au niveau réel du code : décommission Sheets, portail patient unifié, registre relationnel, synthèse IA enrichie) | 🟡 En cours |
+| **R0** | Réalignement documentaire (docs au niveau réel du code : décommission Sheets, portail patient unifié, registre relationnel, synthèse IA enrichie) | ✅ Validé (2026-07-10) — `docs/claude/PROJET_CONTEXTE.md` corrigé (registre relationnel décrit comme livré, R2/R3 retirés des points ouverts, incohérence `SHEET_ID`, typo patient fictif) |
 | **R1** | Validation E2E du parcours patient unifié (`/portail/[token]`) sur patient fictif — voir `docs/checklist_tests_end_to_end.md`, Phase 0 | ✅ Validé (2026-07-10) — reste le test tactile sur téléphone réel |
 | **R2** | Finalisation du pack « Base de consultation » (contenu, ordre, anti-doublon anamnèse, rendu mobile, `par_defaut`) | ✅ Validé (2026-07-10) |
 | **R3** | Transition progressive vers le registre relationnel (lecture primaire `questionnaire_packs`, fallback `packs.qids`, rapport d'écarts, aucune migration destructive) | ✅ Livré (2026-07-10, commit `3f367a7`) — statut corrigé le 2026-07-10, était resté à tort « à faire » ; validation navigateur des routes d'assignation manquante → R9 |
 | **R4** | Harmonisation UX patient / design system (tokens deep teal / champagne gold, statut jamais codé par la seule couleur, mobile first) | ✅ Livré (2026-07-10, commit `eaad01a`) — statut corrigé le 2026-07-10, était resté à tort « à faire » ; validation navigateur réelle manquante → R9 |
 | **R5** | Validation de la synthèse IA enrichie (scénarios fiche/anamnèse/alerte/traitements/DNSM, dégradation gracieuse) | ✅ Validé (2026-07-10, audit statique 7/7 conforme, aucun correctif requis) |
-| **R6** | Stabilisation build/tests/go-no-go (aligné sur `.claude/skills/wn-r6/SKILL.md` : type-check, lint, scoring-check, no-secrets, build, vérification ciblée parcours patient, diff review) — pas de nouvelle fonctionnalité | 🔒 Gelé tant que R0→R5 non validés |
+| **R6** | Stabilisation build/tests/go-no-go (aligné sur `.claude/skills/wn-r6/SKILL.md` : type-check, lint, scoring-check, no-secrets, build, vérification ciblée parcours patient, diff review) — pas de nouvelle fonctionnalité | ✅ GO (2026-07-10) — type-check/scoring-check/build OK, no-secrets faux positif connu, lint non configuré (dette pré-existante → R8), pas de test navigateur réel |
 
 ## Piste technique transverse — R7 / R8 (fiabilisation, indépendante de la séquence produit R0→R6)
 

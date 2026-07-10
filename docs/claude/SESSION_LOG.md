@@ -392,3 +392,31 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Prochaine action prioritaire** : R6 (stabilisation build/tests/go-no-go, `.claude/skills/wn-r6/SKILL.md`) — désormais déblocable, R0→R5 tous validés/livrés ; R8 (CI/tests) reste une alternative indépendante.
 
 **Questions ouvertes** : aucune nouvelle ; R0 reste marqué « 🟡 En cours » dans `docs/roadmap.md` sans blocage identifié sur R5 — à clarifier si cela doit être formellement clos avant R6.
+
+## 2026-07-10 — [R0] Réalignement documentaire — clôture
+
+**Décisions prises** : à la demande de l'utilisateur (« clarifie R0 »), audit de `docs/claude/PROJET_CONTEXTE.md` contre l'état réel du code, périmètre strictement documentaire conformément à `.claude/skills/wn-r0/SKILL.md` (lecture/écriture limitées à `README.md`, `AGENTS.md`, `docs/roadmap.md`, `docs/claude/PROJET_CONTEXTE.md`, `docs/claude/SESSION_LOG.md`). `README.md` et `AGENTS.md` déjà alignés (décommission Sheets, portail patient, flux legacy) — aucune modification nécessaire. Trois contradictions corrigées dans `PROJET_CONTEXTE.md` : (1) section « Registre relationnel questionnaires/packs » décrivait R3 comme un objectif futur alors qu'il est livré (commit `3f367a7`) — reformulée pour refléter la lecture primaire réelle via `resolvePackQuestionnaireIds` et le statut « surveillance » de la décommission de `packs.qids` ; (2) section « Ce qui reste ouvert » listait encore R2/R3 comme ouverts (tous deux validés le 2026-07-10) — remplacés par les points réellement ouverts (R6, R8, calendrier `packs.qids`, curation `niveau`/`publicCible`) ; (3) incohérence interne : `SHEET_ID` listé comme secret requis dans la section sécurité alors que la même page indique juste au-dessus qu'il n'est plus requis depuis la décommission Sheets — retiré de la liste des secrets requis. Corrigé au passage : typo « Michel Dogne » → « Michel Dogné ». `docs/roadmap.md` : R0 passé à ✅ Validé, et R6 passé de « 🔒 Gelé tant que R0→R5 non validés » à « ⏳ Débloqué — à faire » puisque R0→R5 sont désormais tous validés.
+
+**Options écartées** : reformuler entièrement `PROJET_CONTEXTE.md` (hors périmètre — seules les sections objectivement contradictoires avec le code ont été touchées, conformément à la règle de changement minimal) ; toucher à `web/src/**` ou tout code applicatif (interdit explicite du skill wn-r0).
+
+**Fichiers modifiés** : `docs/claude/PROJET_CONTEXTE.md`, `docs/roadmap.md`.
+
+**Risques résiduels** : aucun identifié — lot strictement documentaire, aucune logique applicative touchée.
+
+**Prochaine action prioritaire** : R6 (stabilisation build/tests/go-no-go, `.claude/skills/wn-r6/SKILL.md`) est maintenant débloqué ; R8 (CI/tests) reste une alternative indépendante.
+
+**Questions ouvertes** : aucune.
+
+## 2026-07-10 — [R6] Stabilisation build/tests — go
+
+**Décisions prises** : exécution des vérifications du skill `wn-r6` (type-check, lint, scoring-check, no-secrets, build, diff review) sur l'état de la branche `main` avec le diff R0 non commité. Type-check et scoring-check OK sans erreur. `npm run lint` non exécutable : aucune configuration ESLint dans le repo (`.eslintrc`/`eslint.config.*` absents), `next lint` demande une configuration interactive au premier lancement — pré-existant, non lié à ce lot. `check_no_secrets.sh` : faux positif connu `SHEET_ID` (texte documentaire, déjà signalé en R7/R9/R0), aucun secret réel. Build (`npm run build`) : échec initial reproductible au prerendering (`useContext` null, `<Html>` import hors `_document`) sur `/dashboard`, `/login`, `/`, `/404`, `/500` — root cause identifiée : `NODE_ENV=development` forcé dans le shell de cet environnement de dev (Next.js avait déjà émis un avertissement "non-standard NODE_ENV value" en tout début de build). Build relancé avec `NODE_ENV` neutralisé (`env -u NODE_ENV npm run build`) : succès complet, 35/35 pages générées. Cause confirmée comme un artefact d'environnement local, sans lien avec le code (la prod Vercel ne force pas `NODE_ENV`). Vérification ciblée du parcours patient restée une relecture de code (pas de navigateur disponible, limite déjà connue depuis R1/R4). Diff review : seuls les 3 fichiers documentaires du lot R0 modifiés depuis le début, rien d'applicatif. **Verdict : GO**, aucun correctif de code nécessaire.
+
+**Options écartées** : configurer ESLint pour débloquer `npm run lint` (hors périmètre du lot — pas de nouvelle fonctionnalité/outillage sans demande explicite, signalé comme point à traiter en R8) ; corriger `NODE_ENV` de façon permanente dans le repo (ex. script wrapper) — problème d'environnement local, pas de code, pas de correctif committable pertinent identifié pour l'instant.
+
+**Fichiers modifiés** : aucun fichier applicatif ; ce lot n'a produit qu'un diagnostic (voir R0 pour le diff documentaire réellement en attente de commit).
+
+**Risques résiduels** : lint reste indisponible en l'état (dette pré-existante, non nouvelle) ; pas de test navigateur réel du parcours patient dans cet environnement.
+
+**Prochaine action prioritaire** : committer le diff R0 (toujours en attente) ; envisager R8 (CI/tests, y compris configuration ESLint et build en CI) comme prochain chantier indépendant.
+
+**Questions ouvertes** : aucune nouvelle.
