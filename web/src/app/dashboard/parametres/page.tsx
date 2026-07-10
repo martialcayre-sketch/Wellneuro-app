@@ -1,11 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
-
-// Miroir du littéral 'v1' utilisé dans api/praticien/synthese/route.ts —
-// à synchroniser manuellement si cette valeur change là-bas (pas de
-// constante partagée en v1 pour rester dans le périmètre de ce lot).
-const VERSION_PROMPT_ACTUEL = 'v1';
+import { VERSION_PROMPT_SYNTHESE } from '@/lib/anthropic';
 
 export default async function ParametresPage() {
   const session = await getServerSession(authOptions);
@@ -37,7 +33,7 @@ export default async function ParametresPage() {
           </div>
           <div className="flex justify-between py-1.5 border-b border-border">
             <dt className="text-muted-foreground">Version des prompts de synthèse</dt>
-            <dd className="text-foreground">{VERSION_PROMPT_ACTUEL}</dd>
+            <dd className="text-foreground">{VERSION_PROMPT_SYNTHESE}</dd>
           </div>
         </dl>
         <p className="mt-3 text-xs text-muted-foreground">

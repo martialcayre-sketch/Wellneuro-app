@@ -4,6 +4,26 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Cache documentaire clinique V1 — préparation technique (2026-07-10)
+
+- Découpage du prompt système de synthèse en blocs stables explicites
+  (gouvernance + contrat JSON), avec versionnement applicatif explicite :
+  `VERSION_PROMPT_SYNTHESE`, `VERSION_SCHEMA_SYNTHESE`, `VERSION_CORPUS_SYNTHESE`.
+- Ajout d'un snapshot applicatif `corpus-clinique-v1` avec empreinte
+  `SHA-256` pour traçabilité d'audit (`web/src/lib/clinical/corpusSyntheseV1.ts`).
+- Garde-fou d'activation : le corpus clinique reste désactivé tant que la
+  validation clinique externe n'est pas confirmée, même si le flag runtime
+  d'activation est présent.
+- Route synthèse enrichie sans migration Prisma : persistance des métadonnées
+  prompt/corpus et des métriques cache Anthropic non sensibles dans
+  `donneesEntree` (`input_tokens`, `output_tokens`,
+  `cache_creation_input_tokens`, `cache_read_input_tokens`).
+- Alignement UI gouvernance : la page paramètres affiche désormais la version
+  de prompt réellement utilisée par la route de synthèse.
+- Ajout du script `npm run prompt-cache-check` (endpoint Anthropic token
+  counting) pour vérifier le seuil du modèle réel et l'état de préparation du
+  préfixe stable avant activation.
+
 ### R2 — Pack « Base de consultation » finalisé + lisibilité patient (2026-07-10)
 
 - **Constat** : le pack de base (`Pack.parDefaut`) était déjà complété en prod (2026-07-09, via l'UI praticien `PacksPanel`) avec les 4 questionnaires cibles documentés depuis le 2026-07-08 — `Q_MOD_03` (Plaintes, 5 min), `Q_MOD_01` (Mode de vie SIIN, 10 min), `Q_ALI_01` (Alimentaire SIIN, 15 min), `Q_INF_03` (DNSM, 15 min), soit ≈45 min. Anti-doublon anamnèse garanti par conception (anamnèse volontairement resserrée pour ne pas recouper ces 4 thèmes). Aucune écriture en base n'a été nécessaire pour ce lot — seule la documentation (`SESSION_LOG.md`/`roadmap.md`) était en retard sur l'état réel.

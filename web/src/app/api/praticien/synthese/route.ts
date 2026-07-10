@@ -4,11 +4,20 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
-import { anthropic, CLAUDE_MODEL, SYSTEM_PROMPT_SYNTHESE, validateSyntheseSchema, sanitizeAuditError, maskEmail } from '@/lib/anthropic';
+import {
+  anthropic,
+  CLAUDE_MODEL,
+  SYSTEM_PROMPT_SYNTHESE,
+  VERSION_CORPUS_SYNTHESE,
+  VERSION_PROMPT_SYNTHESE,
+  VERSION_SCHEMA_SYNTHESE,
+  validateSyntheseSchema,
+  sanitizeAuditError,
+} from '@/lib/anthropic';
+import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
+import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
-
-const VERSION_PROMPT = 'v2';
 
 type ReponseInput = {
   titre: string;
@@ -163,6 +172,19 @@ export async function POST(req: Request) {
       messages: [{ role: 'user', content: userMessage }],
     });
 
+    const usage = (response.usage ?? {}) as {
+      input_tokens?: number;
+      output_tokens?: number;
+      cache_creation_input_tokens?: number;
+      cache_read_input_tokens?: number;
+    };
+    const metricsCache = {
+      input_tokens: usage.input_tokens ?? 0,
+      output_tokens: usage.output_tokens ?? 0,
+      cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
+      cache_read_input_tokens: usage.cache_read_input_tokens ?? 0,
+    };
+
     if (response.stop_reason === 'max_tokens') {
       throw new Error('La synthèse IA a été tronquée (réponse trop longue). Réessayez.');
     }
@@ -193,9 +215,23 @@ export async function POST(req: Request) {
         idPatient,
         emailPatient: patient.email,
         modele: CLAUDE_MODEL,
-        versionPrompt: VERSION_PROMPT,
+        versionPrompt: VERSION_PROMPT_SYNTHESE,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        donneesEntree: { reponses: reponsesInput, contexteClinique, vigilanceDeterministe } as any,
+        donneesEntree: {
+          reponses: reponsesInput,
+          contexteClinique,
+          vigilanceDeterministe,
+          metadonneesPrompt: {
+            versionPrompt: VERSION_PROMPT_SYNTHESE,
+            versionSchema: VERSION_SCHEMA_SYNTHESE,
+            versionCorpus: VERSION_CORPUS_SYNTHESE,
+            corpusSha256: CORPUS_CLINIQUE_SHA256,
+            corpusActif: CORPUS_CLINIQUE_ACTIF,
+            corpusValidationExterne: CORPUS_CLINIQUE_METADATA.validationExterne,
+            corpusDateValidation: CORPUS_CLINIQUE_METADATA.dateValidation,
+          },
+          metriquesAnthropic: metricsCache,
+        } as any,
         syntheseJson: synthese,
         statut: 'Brouillon_IA',
       },
@@ -206,7 +242,7 @@ export async function POST(req: Request) {
         idSynthese,
         idPatient,
         modele: CLAUDE_MODEL,
-        versionPrompt: VERSION_PROMPT,
+        versionPrompt: VERSION_PROMPT_SYNTHESE,
         statut: 'OK',
       },
     });
@@ -228,7 +264,7 @@ export async function POST(req: Request) {
           idSynthese,
           idPatient,
           modele: CLAUDE_MODEL,
-          versionPrompt: VERSION_PROMPT,
+          versionPrompt: VERSION_PROMPT_SYNTHESE,
           statut: 'Erreur',
           erreurCourte: sanitizeAuditError(msg),
         },

@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256, CORPUS_CLINIQUE_SYNTHESE_V1 } from '@/lib/clinical/corpusSyntheseV1';
 
 export const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -6,7 +7,11 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
-export const SYSTEM_PROMPT_SYNTHESE = `Tu es un assistant d'aide à la synthèse en neuronutrition. Tu aides un praticien formé SIIN à organiser les résultats de questionnaires validés remplis par un patient avant sa consultation.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v3';
+export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
+export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
+
+export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synthèse en neuronutrition. Tu aides un praticien formé SIIN à organiser les résultats de questionnaires validés remplis par un patient avant sa consultation.
 
 ## Cadre déontologique
 
@@ -35,8 +40,9 @@ Les données patient incluent, quand elles ont été renseignées, un contexte a
 - Le champ narratif_patient s'adresse au patient (langage accessible, bienveillant, sans jargon médical).
 - Utilise uniquement les formulations prudentes : « hypothèse », « axe à explorer », « priorité clinique probable », « point de vigilance », « à confirmer par l'entretien ».
 - Ne formule jamais de diagnostic ferme ni de conclusion définitive.
+`;
 
-## Format de sortie
+export const SYSTEM_PROMPT_CONTRAT_JSON = `## Format de sortie
 
 Réponds exclusivement en JSON valide, sans texte avant ni après. Structure exacte :
 
@@ -55,6 +61,24 @@ Réponds exclusivement en JSON valide, sans texte avant ni après. Structure exa
   "narratif_patient": "Texte bienveillant résumant la situation pour le patient, sans jargon.",
   "limites": "Synthèse générée par IA sans corpus SIIN complet — à valider par le praticien."
 }`;
+
+// Activation volontairement bloquée tant que le corpus n'a pas été validé
+// cliniquement en externe (go/no-go documentaire).
+export const CORPUS_CLINIQUE_ACTIF =
+  process.env.WN_ENABLE_CORPUS_CLINIQUE_V1 === '1' && CORPUS_CLINIQUE_METADATA.validationExterne;
+
+export function buildSystemPromptSynthese(): string {
+  const blocs = [SYSTEM_PROMPT_GOUVERNANCE];
+
+  if (CORPUS_CLINIQUE_ACTIF) {
+    blocs.push(`## Référentiel clinique versionné\nVersion: ${VERSION_CORPUS_SYNTHESE}\nSHA-256: ${CORPUS_CLINIQUE_SHA256}\n\n${CORPUS_CLINIQUE_SYNTHESE_V1}`);
+  }
+
+  blocs.push(SYSTEM_PROMPT_CONTRAT_JSON);
+  return blocs.join('\n\n');
+}
+
+export const SYSTEM_PROMPT_SYNTHESE = buildSystemPromptSynthese();
 
 export type SyntheseSchema = {
   resume_praticien: string;
@@ -84,7 +108,7 @@ export function validateSyntheseSchema(obj: unknown): SyntheseSchema {
     limites: typeof o?.limites === 'string'
       ? o.limites
       : 'Synthèse générée par IA sans corpus SIIN complet — à valider par le praticien.',
-    _schema_version: 'v2',
+    _schema_version: VERSION_SCHEMA_SYNTHESE,
   };
 }
 
