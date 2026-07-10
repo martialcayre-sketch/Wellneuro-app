@@ -13,7 +13,7 @@ if ! command -v node >/dev/null 2>&1; then
   exit 1
 fi
 
-for skill in wn-auto wn-r0 wn-r1 wn-r2 wn-r3 wn-r4 wn-r5 wn-r6 wn-finish wn-review; do
+for skill in wn-auto wn-r0 wn-r1 wn-r2 wn-r3 wn-r4 wn-r5 wn-r6 wn-docs wn-finish wn-review; do
   if [ ! -f ".claude/skills/$skill/SKILL.md" ]; then
     echo "ERREUR: skill manquant: $skill"
     exit 1
