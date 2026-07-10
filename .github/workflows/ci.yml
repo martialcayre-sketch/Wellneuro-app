@@ -10,7 +10,6 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
-      NODE_ENV: production
       DATABASE_URL: postgresql://ci_user:ci_password@localhost:5432/wellneuro_ci
       NEXTAUTH_SECRET: ci-placeholder-secret-not-used-in-prod
       NEXTAUTH_URL: http://localhost:3000
@@ -31,6 +30,10 @@ jobs:
       - name: Install dependencies
         working-directory: web
         run: npm ci
+
+      - name: Generate Prisma client
+        working-directory: web
+        run: npx prisma generate
 
       - name: Type-check
         working-directory: web
