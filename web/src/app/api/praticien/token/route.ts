@@ -15,7 +15,7 @@ export type TokenActionResponse = {
 
 type TokenPayload = {
   idPatient?: string;
-  action?: 'issue' | 'resend';
+  action?: 'issue' | 'resend' | 'lien';
 };
 
 function lienPortail(accessToken: string): string {
@@ -25,7 +25,9 @@ function lienPortail(accessToken: string): string {
 
 // POST /api/praticien/token — émet (ou réémet) et envoie le lien du portail
 // patient. Le token est permanent : « issue » le crée s'il est absent et lève
-// une éventuelle révocation ; « resend » renvoie le lien existant.
+// une éventuelle révocation ; « resend » renvoie le lien existant ; « lien »
+// fait la même chose que « resend » mais sans déclencher l'envoi d'email
+// (utilisé pour la copie du lien côté dashboard praticien).
 export async function POST(req: Request): Promise<NextResponse<TokenActionResponse>> {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -40,7 +42,7 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
   }
 
   const idPatient = (payload.idPatient ?? '').trim();
-  const action = payload.action === 'resend' ? 'resend' : 'issue';
+  const action = payload.action === 'resend' ? 'resend' : payload.action === 'lien' ? 'lien' : 'issue';
   if (!idPatient) {
     return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'Identifiant patient requis.' }, { status: 400 });
   }
@@ -72,9 +74,11 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
     }
 
     const lien = lienPortail(accessToken);
-    sendPortailLinkEmail(patient.email, patient.prenom, lien).catch(
-      e => console.error('[praticien/token POST] email:', (e as Error).message)
-    );
+    if (action !== 'lien') {
+      sendPortailLinkEmail(patient.email, patient.prenom, lien).catch(
+        e => console.error('[praticien/token POST] email:', (e as Error).message)
+      );
+    }
 
     return NextResponse.json({ success: true, accessToken, lien });
   } catch {

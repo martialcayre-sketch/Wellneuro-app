@@ -96,7 +96,7 @@ export function PatientsPanel() {
   // Consultation / accès portail patient.
   const [consultationForm, setConsultationForm] = useState({ idPatient: '', motif: '' });
   const [savingConsultation, setSavingConsultation] = useState(false);
-  const [tokenAction, setTokenAction] = useState<'resend' | 'revoke' | null>(null);
+  const [tokenAction, setTokenAction] = useState<'resend' | 'revoke' | 'copier' | null>(null);
   const [consultationFeedback, setConsultationFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [suggestedPackSelection, setSuggestedPackSelection] = useState<SuggestedPackSelection | null>(null);
 
@@ -291,6 +291,33 @@ export function PatientsPanel() {
     }
   };
 
+  const onCopierLien = async () => {
+    if (!consultationForm.idPatient) {
+      setConsultationFeedback({ ok: false, msg: 'Sélectionnez un patient.' });
+      return;
+    }
+    setTokenAction('copier');
+    setConsultationFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: consultationForm.idPatient, action: 'lien' }),
+      });
+      const json = (await r.json()) as TokenActionResponse;
+      if (!r.ok || !json.success || !json.lien) {
+        setConsultationFeedback({ ok: false, msg: erreurLisible(json.reason, json.error) });
+        return;
+      }
+      await navigator.clipboard.writeText(json.lien);
+      setConsultationFeedback({ ok: true, msg: 'Lien copié dans le presse-papiers.' });
+    } catch {
+      setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    } finally {
+      setTokenAction(null);
+    }
+  };
+
   const onRevokeToken = async () => {
     if (!consultationForm.idPatient) {
       setConsultationFeedback({ ok: false, msg: 'Sélectionnez un patient.' });
@@ -461,6 +488,9 @@ export function PatientsPanel() {
             </button>
             <button type="button" onClick={onResendToken} disabled={savingConsultation || tokenAction !== null} className="px-3 py-2 rounded-lg text-sm text-foreground border border-border disabled:opacity-60">
               {tokenAction === 'resend' ? 'Envoi...' : 'Renvoyer le lien'}
+            </button>
+            <button type="button" onClick={onCopierLien} disabled={savingConsultation || tokenAction !== null} className="px-3 py-2 rounded-lg text-sm text-foreground border border-border disabled:opacity-60">
+              {tokenAction === 'copier' ? 'Copie...' : 'Copier le lien'}
             </button>
             <button type="button" onClick={onRevokeToken} disabled={savingConsultation || tokenAction !== null} className="px-3 py-2 rounded-lg text-sm text-red-500 border border-border disabled:opacity-60">
               {tokenAction === 'revoke' ? 'Révocation...' : 'Révoquer l’accès'}
