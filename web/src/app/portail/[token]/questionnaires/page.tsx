@@ -5,16 +5,18 @@ import { useParams, useRouter } from 'next/navigation';
 import type { PortailAssignationsResponse } from '@/app/api/portail/assignations/route';
 import type { AssignationPatient } from '@/lib/consultation/mapAssignation';
 import { hasDraft } from '@/lib/questionnaire-draft';
+import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 
-const card = 'bg-white rounded-2xl shadow-sm border border-blue-100 p-5';
-const btnCls = 'inline-flex items-center justify-center py-2 px-4 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors';
-const btnGhost = 'inline-flex items-center justify-center py-2 px-4 bg-white text-blue-700 border border-blue-200 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors';
+const card = 'bg-white rounded-2xl shadow-sm border border-border p-5';
+const btnCls = 'inline-flex items-center justify-center py-2 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity';
+const btnGhost = 'inline-flex items-center justify-center py-2 px-4 bg-white text-primary border border-primary/30 rounded-lg font-medium text-sm hover:bg-primary/10 transition-colors';
 
 type Groupe = 'a_completer' | 'correction' | 'transmis' | 'expire';
 
 type Affichage = {
   groupe: Groupe;
   badge: string;
+  badgeVariant: BadgeVariant;
   action: string | null; // libellé du bouton, null si non cliquable
   ghost?: boolean;
 };
@@ -22,20 +24,21 @@ type Affichage = {
 // Dérive l'affichage patient à partir des statuts de l'assignation.
 function affichage(a: AssignationPatient, avecBrouillon: boolean): Affichage {
   if (a.statutReponses === 'verrouille') {
-    return { groupe: 'transmis', badge: 'Transmis au praticien', action: 'Consulter', ghost: true };
+    return { groupe: 'transmis', badge: 'Transmis au praticien', badgeVariant: 'info', action: 'Consulter', ghost: true };
   }
   if (a.statutReponses === 'modification_demandee') {
-    return { groupe: 'correction', badge: 'Correction demandée', action: 'Consulter', ghost: true };
+    return { groupe: 'correction', badge: 'Correction demandée', badgeVariant: 'warning', action: 'Consulter', ghost: true };
   }
   if (a.statutReponses === 'deverrouille') {
-    return { groupe: 'a_completer', badge: 'Déverrouillé par le praticien', action: 'Corriger' };
+    return { groupe: 'a_completer', badge: 'Déverrouillé par le praticien', badgeVariant: 'warning', action: 'Corriger' };
   }
   if (!a.estEnAttenteSaisie) {
-    return { groupe: 'expire', badge: 'Expiré', action: null };
+    return { groupe: 'expire', badge: 'Expiré', badgeVariant: 'neutral', action: null };
   }
   return {
     groupe: 'a_completer',
     badge: avecBrouillon ? 'Brouillon enregistré' : 'À compléter',
+    badgeVariant: 'neutral',
     action: avecBrouillon ? 'Reprendre' : 'Commencer',
   };
 }
@@ -123,7 +126,7 @@ export default function QuestionnairesHubPage() {
           Vous pouvez les compléter dans l’ordre qui vous convient. Votre praticien recevra uniquement les questionnaires transmis.
         </p>
         <div className="flex flex-wrap gap-3 mt-3 text-sm">
-          <span className="inline-flex items-center rounded-full bg-blue-50 text-blue-700 px-3 py-1 font-medium">
+          <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 font-medium">
             {aCompleter} à compléter{dureeACompleterMin > 0 ? ` · ≈ ${dureeACompleterMin} min` : ''}
           </span>
           <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-600 px-3 py-1">
@@ -149,13 +152,17 @@ export default function QuestionnairesHubPage() {
             <div className="space-y-3">
               {items.map(({ a, aff }) => (
                 <div key={a.idAssignation} className={`${card} flex items-center justify-between gap-4`}>
-                  <div className="min-w-0">
+                  <div className={`min-w-0 ${aff.groupe === 'expire' ? 'opacity-60' : ''}`}>
                     <p className="font-medium text-gray-900 line-clamp-2">{a.titre || a.idQuestionnaire}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {aff.badge}
-                      {a.duree ? ` · ${a.duree}` : ''}
-                      {a.dateLimite ? ` · à rendre avant le ${a.dateLimite}` : ''}
-                    </p>
+                    <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5">
+                      <Badge variant={aff.badgeVariant}>{aff.badge}</Badge>
+                      {(a.duree || a.dateLimite) && (
+                        <span className="text-xs text-gray-500">
+                          {a.duree ?? ''}
+                          {a.dateLimite ? `${a.duree ? ' · ' : ''}à rendre avant le ${a.dateLimite}` : ''}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   {aff.action ? (
                     <a

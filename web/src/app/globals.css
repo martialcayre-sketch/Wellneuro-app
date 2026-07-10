@@ -19,6 +19,15 @@
   --cream-100: #fbf9f5;
   --cream-50: #f4efe6;
 
+  /* Équivalents RGB (canaux séparés par des espaces) des couleurs
+   * sémantiques ci-dessous — requis par Tailwind pour générer les
+   * modificateurs d'opacité (ex. bg-primary/10) sur des couleurs pilotées
+   * par variable CSS. Tenus synchronisés manuellement avec --teal-700 et
+   * --gold-600/--gold-500 ci-dessus. */
+  --teal-700-rgb: 31 94 91;
+  --gold-600-rgb: 184 146 62;
+  --gold-500-rgb: 201 162 75;
+
   /* Violet — strate "Ancrage" (cercles concentriques Mon équilibre /
    * Cartographie neuro-fonctionnelle, cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md
    * §6). Couleur catégorielle fixe (ne varie pas par thème patient/praticien,
@@ -57,8 +66,10 @@
   --muted-foreground: #4a6367;
   --border: #d8e2e1;
   --color-primary: var(--teal-700);
+  --color-primary-rgb: var(--teal-700-rgb);
   --color-primary-foreground: #ffffff;
   --color-accent: var(--gold-600);
+  --color-accent-rgb: var(--gold-600-rgb);
   --color-accent-foreground: #16323a;
 }
 
@@ -76,7 +87,9 @@
   --muted-foreground: var(--teal-200);
   --border: #24444a;
   --color-primary: var(--teal-700);
+  --color-primary-rgb: var(--teal-700-rgb);
   --color-primary-foreground: var(--cream-50);
   --color-accent: var(--gold-500);
+  --color-accent-rgb: var(--gold-500-rgb);
   --color-accent-foreground: var(--teal-950);
 }

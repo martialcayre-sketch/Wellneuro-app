@@ -96,7 +96,7 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
         {/* En-tête */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-2 text-xs text-gray-400">
@@ -104,18 +104,18 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
             <span>{progress}% complété</span>
           </div>
           <div className="w-full h-1.5 bg-gray-100 rounded-full">
-            <div className="h-1.5 bg-blue-500 rounded-full transition-all" style={{ width: `${progress}%` }} />
+            <div className="h-1.5 bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
           </div>
           <h2 className="text-lg font-bold text-gray-900 mt-4">{questionnaire.titre}</h2>
           {currentSection === 0 && questionnaire.instructions && (
             <p className="text-sm text-gray-500 mt-1">{questionnaire.instructions}</p>
           )}
-          {section.titre && <p className="text-sm font-semibold text-blue-700 mt-3">{section.titre}</p>}
+          {section.titre && <p className="text-sm font-semibold text-primary mt-3">{section.titre}</p>}
           {section.description && <p className="text-xs text-gray-400 mt-0.5">{section.description}</p>}
         </div>
 
         {assignation.notes && currentSection === 0 && (
-          <div className="mb-4 px-4 py-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+          <div className="mb-4 px-4 py-3 bg-primary/10 rounded-lg text-sm text-primary">
             <span className="font-medium">Note de votre praticien : </span>{assignation.notes}
           </div>
         )}
@@ -131,7 +131,7 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
           ))}
 
           {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error}</p>}
-          {brouillonMessage && <p className="text-blue-700 text-sm bg-blue-50 rounded-lg px-4 py-2">{brouillonMessage}</p>}
+          {brouillonMessage && <p className="text-primary text-sm bg-primary/10 rounded-lg px-4 py-2">{brouillonMessage}</p>}
 
           <div className="flex gap-3">
             {currentSection > 0 && (
@@ -146,7 +146,7 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
             <button
               type="submit"
               disabled={!sectionAnswered || submitting}
-              className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               {submitting ? 'Envoi…' : isLast ? 'Transmettre au praticien' : 'Suivant →'}
             </button>
@@ -157,7 +157,7 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
             <button
               type="button"
               onClick={handleSauvegarder}
-              className="flex-1 py-2 px-4 text-sm text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              className="flex-1 py-2 px-4 text-sm text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors"
             >
               Sauvegarder le brouillon
             </button>

@@ -36,7 +36,7 @@ export function ConsentScreen({ idAssignation, email, onAccepted }: {
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
         <h1 className="text-xl font-bold text-gray-900 mb-4">Avant de commencer</h1>
 
         <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
@@ -93,7 +93,7 @@ export function ConsentScreen({ idAssignation, email, onAccepted }: {
             type="checkbox"
             checked={checked}
             onChange={e => setChecked(e.target.checked)}
-            className="mt-1 accent-blue-600"
+            className="mt-1 accent-primary"
           />
           <span className="text-sm text-gray-800">
             J&apos;ai lu ces informations et j&apos;accepte que mes réponses
@@ -108,7 +108,7 @@ export function ConsentScreen({ idAssignation, email, onAccepted }: {
           type="button"
           onClick={handleContinue}
           disabled={!checked || loading}
-          className="w-full mt-6 py-2.5 px-4 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          className="w-full mt-6 py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {loading ? 'Enregistrement…' : 'Continuer vers le questionnaire'}
         </button>

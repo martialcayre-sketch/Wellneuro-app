@@ -7,9 +7,9 @@ export const metadata: Metadata = {
 
 export default function PortailLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex flex-col">
-      <header className="py-4 px-6 border-b border-blue-100 bg-white/80 backdrop-blur">
-        <span className="text-blue-900 font-semibold text-lg">Wellneuro</span>
+    <div className="min-h-screen bg-gradient-to-b from-background to-white flex flex-col">
+      <header className="py-4 px-6 border-b border-border bg-white/80 backdrop-blur">
+        <span className="text-primary font-semibold text-lg">Wellneuro</span>
       </header>
       <main className="flex-1 flex flex-col items-center px-4 py-8">
         {children}

@@ -16,9 +16,9 @@ export function QuestionField({ question, value, onChange }: {
           {question.options.map(opt => (
             <label
               key={opt.v}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border cursor-pointer transition-colors text-sm ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-colors text-sm ${
                 value === String(opt.v)
-                  ? 'border-blue-500 bg-blue-50 text-blue-800'
+                  ? 'border-primary bg-primary/10 text-primary'
                   : 'border-gray-200 hover:border-gray-300 text-gray-700'
               }`}
             >
@@ -28,7 +28,7 @@ export function QuestionField({ question, value, onChange }: {
                 value={String(opt.v)}
                 checked={value === String(opt.v)}
                 onChange={() => onChange(String(opt.v))}
-                className="accent-blue-600"
+                className="accent-primary"
               />
               <span>{opt.l}</span>
             </label>
@@ -39,7 +39,7 @@ export function QuestionField({ question, value, onChange }: {
         <select
           value={value}
           onChange={e => onChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="">— Choisissez —</option>
           {question.options.map(opt => (
@@ -56,7 +56,7 @@ export function QuestionField({ question, value, onChange }: {
             step={question.step ?? 1}
             value={value}
             onChange={e => onChange(e.target.value)}
-            className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           />
           {question.unit && <span className="text-sm text-gray-500">{question.unit}</span>}
           {question.min !== undefined && question.max !== undefined && (

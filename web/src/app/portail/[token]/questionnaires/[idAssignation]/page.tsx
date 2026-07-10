@@ -19,7 +19,7 @@ function EnTete({ token, titre, badge }: { token: string; titre: string; badge?:
     <div className="w-full max-w-2xl mb-4">
       <a
         href={`/portail/${token}/questionnaires`}
-        className="inline-flex items-center gap-1 text-sm text-blue-700 hover:underline"
+        className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
       >
         ← Mes questionnaires
       </a>
@@ -68,7 +68,7 @@ export default function PortailQuestionnairePage() {
   if (status === 'loading') {
     return (
       <div className="w-full max-w-2xl">
-        <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
           <p className="text-gray-500 text-sm">Chargement du questionnaire…</p>
         </div>
       </div>
@@ -79,7 +79,7 @@ export default function PortailQuestionnairePage() {
     return (
       <div className="w-full max-w-2xl">
         <EnTete token={token} titre="Questionnaire" />
-        <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
           <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error || 'Questionnaire introuvable.'}</p>
         </div>
       </div>
@@ -142,7 +142,7 @@ export default function PortailQuestionnairePage() {
 
   // 3) Saisie. Bandeau de rappel : consentement déjà couvert par le suivi.
   const rappelConsentement = (
-    <div className="w-full max-w-2xl mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs text-blue-800">
+    <div className="w-full max-w-2xl mb-4 rounded-xl border border-border bg-primary/10 px-4 py-3 text-xs text-primary">
       Ce questionnaire entre dans le cadre de votre suivi Wellneuro déjà accepté. Vous pouvez demander la modification ou la suppression de vos données auprès de votre praticien.
     </div>
   );

@@ -20,7 +20,7 @@ function Frise({ trajectoire }: { trajectoire: { date: string; valeur: number }[
         {trajectoire.map((t, i) => (
           <div key={i} className="flex flex-col items-center gap-1 flex-1">
             <div
-              className="w-full max-w-[10px] rounded-full bg-blue-400"
+              className="w-full max-w-[10px] rounded-full bg-accent"
               style={{ height: `${Math.max(8, (t.valeur / max) * 48)}px` }}
             />
           </div>
@@ -59,7 +59,7 @@ export function MonEquilibreAccueil({
   if (loading) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8 text-center text-sm text-gray-500">
+        <div className="bg-white rounded-2xl shadow-sm border border-border p-8 text-center text-sm text-gray-500">
           Chargement de Mon équilibre…
         </div>
       </div>
@@ -69,14 +69,14 @@ export function MonEquilibreAccueil({
   if (!data || 'ok' in data) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8 text-center">
+        <div className="bg-white rounded-2xl shadow-sm border border-border p-8 text-center">
           <p className="text-sm text-gray-600">
             {data && 'error' in data ? data.error : 'Impossible de charger Mon équilibre pour le moment.'}
           </p>
           <button
             type="button"
             onClick={onRetour}
-            className="w-full mt-6 py-2.5 px-4 border border-blue-600 text-blue-700 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
+            className="w-full mt-6 py-2.5 px-4 border border-primary text-primary rounded-lg font-medium text-sm hover:bg-primary/10 transition-colors"
           >
             ← Retour
           </button>
@@ -93,7 +93,7 @@ export function MonEquilibreAccueil({
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
         <h1 className="text-xl font-bold text-gray-900 mb-6 text-center">Mon équilibre</h1>
 
         <div className="flex justify-center mb-4">
@@ -107,7 +107,7 @@ export function MonEquilibreAccueil({
         </div>
 
         {momentum && (
-          <p className="text-sm text-blue-700 bg-blue-50 rounded-lg px-4 py-2 text-center mb-4">
+          <p className="text-sm text-primary bg-primary/10 rounded-lg px-4 py-2 text-center mb-4">
             {TENDANCE_LABEL[momentum.tendance]}
           </p>
         )}
@@ -130,7 +130,7 @@ export function MonEquilibreAccueil({
         <button
           type="button"
           onClick={onVoirDetail}
-          className="w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors mb-3"
+          className="w-full py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity mb-3"
         >
           Voir le détail de mes 12 besoins
         </button>

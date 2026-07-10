@@ -96,11 +96,11 @@ export function PlaintesForm({ assignation, email, onDone }: {
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
         <h2 className="text-lg font-bold text-gray-900 mb-1">{assignation.titre}</h2>
         <p className="text-sm text-gray-500 mb-6">Évaluez chaque dimension de 1 (pas de gêne) à 10 (gêne maximale).</p>
         {assignation.notes && (
-          <div className="mb-6 px-4 py-3 bg-blue-50 rounded-lg text-sm text-blue-800">
+          <div className="mb-6 px-4 py-3 bg-primary/10 rounded-lg text-sm text-primary">
             <span className="font-medium">Note de votre praticien : </span>{assignation.notes}
           </div>
         )}
@@ -109,13 +109,13 @@ export function PlaintesForm({ assignation, email, onDone }: {
             <div key={p.key}>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium text-gray-700">{p.icon} {p.label}</span>
-                <span className="text-sm font-bold text-blue-700 w-6 text-right">{values[p.key]}</span>
+                <span className="text-sm font-bold text-primary w-6 text-right">{values[p.key]}</span>
               </div>
               <input
                 type="range" min={1} max={10} step={1}
                 value={values[p.key]}
                 onChange={e => { const n = Number(e.target.value); setValues(v => ({ ...v, [p.key]: n })); setBrouillonMessage(''); }}
-                className="w-full accent-blue-600"
+                className="w-full accent-primary"
               />
               <div className="flex justify-between text-xs text-gray-400 mt-0.5">
                 <span>1 — Pas de gêne</span><span>10 — Gêne maximale</span>
@@ -123,10 +123,10 @@ export function PlaintesForm({ assignation, email, onDone }: {
             </div>
           ))}
           {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error}</p>}
-          {brouillonMessage && <p className="text-blue-700 text-sm bg-blue-50 rounded-lg px-4 py-2">{brouillonMessage}</p>}
+          {brouillonMessage && <p className="text-primary text-sm bg-primary/10 rounded-lg px-4 py-2">{brouillonMessage}</p>}
           <button
             type="submit" disabled={submitting}
-            className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {submitting ? 'Envoi en cours…' : 'Transmettre au praticien'}
           </button>
@@ -135,7 +135,7 @@ export function PlaintesForm({ assignation, email, onDone }: {
             <button
               type="button"
               onClick={handleSauvegarder}
-              className="flex-1 py-2 px-4 text-sm text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              className="flex-1 py-2 px-4 text-sm text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors"
             >
               Sauvegarder le brouillon
             </button>

@@ -51,7 +51,7 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8 text-center">
+      <div className="bg-white rounded-2xl shadow-sm border border-border p-8 text-center">
         <h2 className="text-lg font-bold text-gray-900 mb-2">Vos réponses</h2>
         {loading && <p className="text-sm text-gray-500">Chargement…</p>}
         {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error}</p>}
@@ -65,13 +65,13 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
         <button
           type="button"
           onClick={onVoirEquilibre}
-          className="w-full mb-3 py-2.5 px-4 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors"
+          className="w-full mb-3 py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity"
         >
           Voir Mon équilibre
         </button>
 
         {demandeEnvoyee ? (
-          <p className="text-sm text-blue-700 bg-blue-50 rounded-lg px-4 py-3">
+          <p className="text-sm text-primary bg-primary/10 rounded-lg px-4 py-3">
             Votre demande de modification a été transmise à votre praticien. En attente de validation par votre praticien.
           </p>
         ) : (
@@ -83,13 +83,13 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
               rows={3}
               maxLength={1000}
               placeholder="Ex. je me suis trompé·e à la question sur le sommeil…"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
             />
             <button
               type="button"
               onClick={handleDemande}
               disabled={demandeLoading}
-              className="w-full py-2.5 px-4 border border-blue-600 text-blue-700 rounded-lg font-medium text-sm hover:bg-blue-50 disabled:opacity-50 transition-colors"
+              className="w-full py-2.5 px-4 border border-primary text-primary rounded-lg font-medium text-sm hover:bg-primary/10 disabled:opacity-50 transition-colors"
             >
               {demandeLoading ? 'Envoi…' : 'Demander une correction'}
             </button>

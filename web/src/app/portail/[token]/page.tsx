@@ -10,9 +10,9 @@ import type { AnamneseChamp, AnamneseValeurs } from '@/lib/consultation/anamnese
 
 type Verified = Extract<PortailSessionResponse, { ok: true }>;
 
-const card = 'bg-white rounded-2xl shadow-sm border border-blue-100 p-8';
-const inputCls = 'w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
-const btnCls = 'w-full py-2.5 px-4 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 disabled:opacity-50 transition-colors';
+const card = 'bg-white rounded-2xl shadow-sm border border-border p-8';
+const inputCls = 'w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary';
+const btnCls = 'w-full py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity';
 const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
 
 // ─── étape : email gate ─────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
           </div>
         </div>
         <label className="flex items-start gap-3 mt-6 cursor-pointer">
-          <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} className="mt-1 accent-blue-600" />
+          <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} className="mt-1 accent-primary" />
           <span className="text-sm text-gray-800">
             J’ai lu ces informations et j’accepte que mes données soient collectées et utilisées dans les conditions décrites ci-dessus.
           </span>
@@ -198,7 +198,7 @@ function FicheForm({ token, email, onDone }: {
         ))}
 
         <label className="flex items-start gap-3 cursor-pointer">
-          <input type="checkbox" checked={mentions} onChange={e => setMentions(e.target.checked)} className="mt-1 accent-blue-600" />
+          <input type="checkbox" checked={mentions} onChange={e => setMentions(e.target.checked)} className="mt-1 accent-primary" />
           <span className="text-sm text-gray-700">
             Je certifie l’exactitude des informations fournies. Elles sont traitées de manière confidentielle et
             uniquement dans le cadre de mon suivi (données personnelles, sans finalité de diagnostic médical).
@@ -235,7 +235,7 @@ function ChampSimple({ champ, valeur, onChange, requis }: {
                 key={opt}
                 type="button"
                 onClick={() => onChange(actif ? '' : opt)}
-                className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${actif ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400'}`}
+                className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${actif ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-gray-700 border-gray-300 hover:border-primary/60'}`}
               >
                 {opt}
               </button>
@@ -256,7 +256,7 @@ function ChampSimple({ champ, valeur, onChange, requis }: {
         <div className="flex flex-col gap-1.5">
           {(champ.options ?? []).map(opt => (
             <label key={opt} className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
-              <input type="checkbox" checked={selection.includes(opt)} onChange={() => toggle(opt)} className="mt-0.5 accent-blue-600" />
+              <input type="checkbox" checked={selection.includes(opt)} onChange={() => toggle(opt)} className="mt-0.5 accent-primary" />
               <span>{opt}</span>
             </label>
           ))}
@@ -388,7 +388,7 @@ function AnamneseForm({ token, email, motifInitial, onDone }: {
                 <button
                   type="button"
                   onClick={() => ajouterEntree(groupe.id)}
-                  className="text-sm text-blue-600 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50"
+                  className="text-sm text-primary border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/10"
                 >
                   + {groupe.ajoutLabel}
                 </button>

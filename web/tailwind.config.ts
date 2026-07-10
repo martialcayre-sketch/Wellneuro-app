@@ -21,11 +21,11 @@ const config: Config = {
         },
         border: 'var(--border)',
         primary: {
-          DEFAULT: 'var(--color-primary)',
+          DEFAULT: 'rgb(var(--color-primary-rgb) / <alpha-value>)',
           foreground: 'var(--color-primary-foreground)',
         },
         accent: {
-          DEFAULT: 'var(--color-accent)',
+          DEFAULT: 'rgb(var(--color-accent-rgb) / <alpha-value>)',
           foreground: 'var(--color-accent-foreground)',
         },
         // Palette de marque brute, disponible pour des usages ponctuels

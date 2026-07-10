@@ -34,7 +34,7 @@ export function MonEquilibreDetail({
   if (loading) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8 text-center text-sm text-gray-500">
+        <div className="bg-white rounded-2xl shadow-sm border border-border p-8 text-center text-sm text-gray-500">
           Chargement…
         </div>
       </div>
@@ -44,14 +44,14 @@ export function MonEquilibreDetail({
   if (!data || 'ok' in data) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8 text-center">
+        <div className="bg-white rounded-2xl shadow-sm border border-border p-8 text-center">
           <p className="text-sm text-gray-600">
             {data && 'error' in data ? data.error : 'Impossible de charger le détail pour le moment.'}
           </p>
           <button
             type="button"
             onClick={onRetour}
-            className="w-full mt-6 py-2.5 px-4 border border-blue-600 text-blue-700 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
+            className="w-full mt-6 py-2.5 px-4 border border-primary text-primary rounded-lg font-medium text-sm hover:bg-primary/10 transition-colors"
           >
             ← Retour
           </button>
@@ -64,7 +64,7 @@ export function MonEquilibreDetail({
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="bg-white rounded-2xl shadow-sm border border-blue-100 p-8">
+      <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
         <h1 className="text-xl font-bold text-gray-900 mb-1 text-center">Mes 12 besoins</h1>
         <p className="text-sm text-gray-500 text-center mb-6">
           Survolez un besoin pour le mettre en évidence.
@@ -92,7 +92,7 @@ export function MonEquilibreDetail({
               onMouseEnter={() => setHoveredId(b.id)}
               onMouseLeave={() => setHoveredId(null)}
               className={`text-sm rounded-lg px-3 py-2 cursor-default transition-colors ${
-                hoveredId === b.id ? 'bg-blue-50 text-blue-800 font-medium' : 'bg-gray-50 text-gray-700'
+                hoveredId === b.id ? 'bg-primary/10 text-primary font-medium' : 'bg-gray-50 text-gray-700'
               }`}
             >
               {b.libellePatient}
@@ -101,7 +101,7 @@ export function MonEquilibreDetail({
         </ul>
 
         {besoinSurvole && (
-          <p className="text-sm text-blue-700 bg-blue-50 rounded-lg px-4 py-2 text-center mb-4">
+          <p className="text-sm text-primary bg-primary/10 rounded-lg px-4 py-2 text-center mb-4">
             {besoinSurvole.libellePatient}
           </p>
         )}
