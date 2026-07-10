@@ -19,5 +19,6 @@ Argument : `$ARGUMENTS`
 3. Sinon, utiliser la roadmap R0-R6.
 4. En cas d’ambiguïté, choisir audit/documentation/test.
 5. Ne pas modifier le code dans ce premier passage.
+6. Si le lot implique des modifications, déléguer le plan technique détaillé au mode Plan avant toute édition.
 
-Présenter : action choisie, justification, fichiers indispensables, interdits, plan court et critères de validation.
+Présenter : action choisie, justification, fichiers indispensables, interdits, plan court, critères de validation, puis une instruction explicite : « Passer en mode Plan avant toute modification ».

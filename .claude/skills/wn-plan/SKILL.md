@@ -15,6 +15,7 @@ Tâche : `$ARGUMENTS`
 
 - Lire d’abord `CLAUDE.md`, la dernière entrée de `SESSION_LOG.md` et uniquement les fichiers nécessaires.
 - Ne modifier aucun fichier.
+- Ce skill cadre la tâche ; il ne remplace pas le mode Plan pour la planification technique détaillée.
 - Vérifier l’état réel du dépôt avant d’accepter une hypothèse.
 - Choisir le changement minimal.
 - Identifier explicitement toute migration, logique clinique, donnée sensible ou dépendance production.
@@ -31,3 +32,4 @@ Tâche : `$ARGUMENTS`
 8. Tests minimaux puis tests complets.
 9. Critères de done.
 10. Go/no-go pour commencer.
+11. Instruction finale explicite : « Passer en mode Plan avant toute modification ».

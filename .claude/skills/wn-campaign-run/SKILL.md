@@ -16,10 +16,11 @@ Arguments : `$ARGUMENTS`
 
 - Lire la campagne et le prochain lot incomplet.
 - Vérifier que ses hypothèses correspondent au dépôt réel.
-- Présenter le plan et s’arrêter avant toute modification.
+- Présenter le plan stratégique du lot, déléguer le plan technique détaillé au mode Plan, puis s’arrêter avant toute modification.
 
 ## Mode `apply`
 
+- N’exécuter `apply` qu’après un plan technique validé en mode Plan.
 - Modifier seulement les fichiers nécessaires au lot.
 - Ne pas élargir le périmètre.
 - Ne jamais lancer migration, écriture Supabase, déploiement ou changement clinique sans confirmation distincte.

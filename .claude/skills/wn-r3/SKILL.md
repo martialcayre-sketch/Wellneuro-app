@@ -27,7 +27,8 @@ suppression destructive de packs.qids, migration non confirmée. Toujours : aucu
 ## Méthode
 
 - Par défaut : audit et plan sans modification.
-- Avec `apply` : changement minimal dans le périmètre.
+- Si des modifications deviennent nécessaires : passer en mode Plan avant toute édition.
+- Avec `apply` : changement minimal dans le périmètre, uniquement après plan validé en mode Plan.
 - Avec `verify` : lecture seule et go/no-go.
 - Vérifier le dépôt réel avant toute affirmation.
 - Terminer par validations, fichiers modifiés, risques et prochaine action.

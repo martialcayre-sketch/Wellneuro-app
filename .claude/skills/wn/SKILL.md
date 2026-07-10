@@ -20,6 +20,7 @@ Demande : `$ARGUMENTS`
 - Sans argument : afficher un menu compact des commandes `/wn-*` et indiquer la prochaine action probable.
 - Avec une demande : choisir une seule route principale.
 - Préférer audit, plan et test avant développement.
+- Si une modification de code est envisagée, imposer explicitement le passage en mode Plan avant toute édition.
 - Ne pas dupliquer le travail d’un skill spécialisé.
 - Ne jamais interpréter cette commande comme une autorisation de migration, d’écriture Supabase, de déploiement ou de modification clinique.
 
@@ -37,4 +38,4 @@ Routes possibles :
 - reprise de contexte : `/wn-context` ou `/wn-handoff` ;
 - campagne historique R0-R6 : `/wn-auto`.
 
-Répondre avec : route choisie, raison en une phrase, première action sûre.
+Répondre avec : route choisie, raison en une phrase, première action sûre, et instruction explicite de passage en mode Plan avant modification si le lot peut impliquer des edits.

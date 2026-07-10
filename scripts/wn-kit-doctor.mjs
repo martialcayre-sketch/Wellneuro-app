@@ -44,7 +44,7 @@ for (const managed of managedRoots) {
     for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
       const full = path.join(current, entry.name);
       if (entry.isDirectory()) stack.push(full);
-      else {
+      else if (entry.isFile()) {
         const text = fs.readFileSync(full, "utf8");
         for (const needle of forbidden.slice(1)) {
           if (text.includes(needle)) {

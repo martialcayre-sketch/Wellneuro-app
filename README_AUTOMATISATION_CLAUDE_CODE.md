@@ -58,11 +58,20 @@ Pour relire le diff sans modifier :
 - Les instructions lourdes ne sont chargées que quand la commande est utilisée.
 - Les hooks bloquent par défaut les actions dangereuses : `.env`, migrations, `prisma/schema.prisma`, commandes destructrices.
 - `SESSION_LOG.md` devient la mémoire courte entre les lots.
+- Les commandes WN orchestrent le chantier (stratégie) ; le mode Plan reste la planification technique détaillée avant toute modification.
+
+## Workflow recommandé (minimal)
+
+1. Lancer `/wn` ou `/wn-auto` pour choisir le lot, le périmètre, les risques et les critères d’acceptation.
+2. Passer en mode Plan avant toute modification de code.
+3. Valider le plan technique proposé.
+4. Exécuter les changements bornés au lot validé.
+5. Clôturer avec `/wn-finish`.
 
 ## Commandes utiles
 
 ### `/wn-auto`
-Détermine le prochain lot probable depuis `SESSION_LOG.md`, `docs/roadmap.md` et l’état Git. Commence en mode audit/plan, sans modification automatique large.
+Détermine le prochain lot probable depuis `SESSION_LOG.md`, `docs/roadmap.md` et l’état Git. Produit un cadrage stratégique et délègue explicitement le plan technique au mode Plan avant toute modification.
 
 ### `/wn-r0`
 Réalignement documentaire ponctuel uniquement.
