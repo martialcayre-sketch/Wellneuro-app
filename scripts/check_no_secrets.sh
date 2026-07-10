@@ -25,11 +25,7 @@ check_pattern() {
   fi
 }
 
-if grep -rnE "${GREP_EXCLUDES[@]}" "SHEET_ID.*[A-Za-z0-9_-]{25,}" . 2>/dev/null; then
-  echo "ERREUR: SHEET_ID potentiellement écrit en dur." >&2
-  status=1
-fi
-
+check_pattern "SHEET_ID"          "SHEET_ID[[:space:]]*[:=][[:space:]]*['\"]?[A-Za-z0-9_-]{25,}"
 check_pattern "ANTHROPIC_API_KEY" "ANTHROPIC_API_KEY[[:space:]]*[:=][[:space:]]*['\"]?[A-Za-z0-9_-]{10,}"
 check_pattern "CLAUDE_API_KEY"    "CLAUDE_API_KEY[[:space:]]*[:=][[:space:]]*['\"]?[A-Za-z0-9_-]{10,}"
 check_pattern "client_secret"     "client_secret[[:space:]]*[:=][[:space:]]*['\"]?[A-Za-z0-9_-]{10,}"
