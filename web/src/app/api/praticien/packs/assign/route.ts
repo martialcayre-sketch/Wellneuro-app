@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import nodemailer from 'nodemailer';
 
 type AssignPackPayload = {
@@ -78,8 +79,10 @@ export async function POST(req: Request): Promise<NextResponse<AssignPackRespons
     const nowIso = new Date().toISOString();
     const cree: { idAssignation: string; titre: string }[] = [];
 
+    const { qids } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
+
     // Une assignation par questionnaire du pack (ids inexistants ignorés).
-    for (const idQuestionnaire of pack.qids) {
+    for (const idQuestionnaire of qids) {
       const questionnaire = catalogue[idQuestionnaire];
       if (!questionnaire) continue;
       const idAssignation = createPublicId('ASS');

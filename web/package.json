@@ -19,7 +19,10 @@
     "supabase:db:push": "supabase db push",
     "supabase:migration:new": "supabase migration new",
     "setup:check": "npm run prisma:generate && npm run type-check && npm run scoring-check",
-    "scoring-check": "node ../scripts/check_questionnaire_certification.js"
+    "scoring-check": "node ../scripts/check_questionnaire_certification.js",
+    "backfill:pack-registry:dry-run": "node prisma/runWithAlias.js prisma/backfillQuestionnaireRegistry.ts --dry-run",
+    "backfill:pack-registry:apply": "node prisma/runWithAlias.js prisma/backfillQuestionnaireRegistry.ts --apply",
+    "check:pack-registry": "node prisma/runWithAlias.js prisma/checkPackRegistryConsistency.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.107.0",

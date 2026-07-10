@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
-import type { Prisma } from '@/generated/prisma';
+import { syncPackToRegistry } from '@/lib/consultation/packRegistry';
 
 export type Pack = {
   idPack: string;
@@ -47,56 +47,6 @@ type PatchPackPayload = {
 };
 
 const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>;
-
-const DEFAULT_REGISTRY_PACK_NIVEAU = 'approfondissement';
-
-async function syncPackToRegistry(tx: Prisma.TransactionClient, pack: {
-  idPack: string;
-  nom: string;
-  description: string | null;
-  actif: boolean;
-  qids: string[];
-}) {
-  const registryPack = await tx.questionnairePack.upsert({
-    where: { packId: pack.idPack },
-    create: {
-      packId: pack.idPack,
-      titre: pack.nom,
-      description: pack.description,
-      niveau: DEFAULT_REGISTRY_PACK_NIVEAU,
-      actif: pack.actif,
-    },
-    update: {
-      titre: pack.nom,
-      description: pack.description,
-      actif: pack.actif,
-    },
-    select: { id: true },
-  });
-
-  const definitions = await tx.questionnaireDefinition.findMany({
-    where: { questionnaireId: { in: pack.qids } },
-    select: { id: true, questionnaireId: true },
-  });
-
-  const definitionIdByQid = new Map(definitions.map(d => [d.questionnaireId, d.id]));
-  const items = pack.qids
-    .map((qid, index) => {
-      const questionnaireId = definitionIdByQid.get(qid);
-      if (!questionnaireId) return null;
-      return {
-        packId: registryPack.id,
-        questionnaireId,
-        ordre: index,
-      };
-    })
-    .filter((item): item is { packId: string; questionnaireId: string; ordre: number } => item !== null);
-
-  await tx.questionnairePackQuestionnaire.deleteMany({ where: { packId: registryPack.id } });
-  if (items.length > 0) {
-    await tx.questionnairePackQuestionnaire.createMany({ data: items });
-  }
-}
 
 // Ne garde que des ids de questionnaire existants, dédupliqués, bornés.
 function normaliserQids(input: unknown): string[] {

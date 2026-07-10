@@ -10,6 +10,7 @@ import {
 } from '@/lib/consultation/portail';
 import { normaliserAnamnese, ANAMNESE_CHAMP_REQUIS } from '@/lib/consultation/anamnese';
 import { assignPackToPatient } from '@/lib/consultation/assignBasePack';
+import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { isMotifValide } from '@/lib/consultation/motifs';
 
 export type PortailValiderResponse =
@@ -83,10 +84,11 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
     }
 
     // Assignation du pack de base (consentement déjà donné au niveau consultation).
+    const { qids } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
     const cree = await assignPackToPatient({
       idPatientBusiness: patient.idPatient,
       emailPatient: patient.email,
-      qids: pack.qids,
+      qids,
       packNom: pack.nom,
       options: {
         consentementDonne: true,
