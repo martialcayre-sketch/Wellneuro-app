@@ -32,6 +32,14 @@ ou lancer un lot précis :
 /wn-r6
 ```
 
+Pour entretenir la base documentaire :
+
+```text
+/wn-docs
+/wn-docs apply
+/wn-docs verify
+```
+
 À la fin d’un lot :
 
 ```text
@@ -57,7 +65,7 @@ Pour relire le diff sans modifier :
 Détermine le prochain lot probable depuis `SESSION_LOG.md`, `docs/roadmap.md` et l’état Git. Commence en mode audit/plan, sans modification automatique large.
 
 ### `/wn-r0`
-Réalignement documentaire uniquement.
+Réalignement documentaire ponctuel uniquement.
 
 ### `/wn-r1`
 Validation E2E du parcours patient unifié, sans modification.
@@ -76,6 +84,15 @@ Validation synthèse IA enrichie.
 
 ### `/wn-r6`
 Stabilisation build, tests, go/no-go.
+
+### `/wn-docs`
+Entretien documentaire récurrent, indépendant des lots R0-R6 :
+
+- `/wn-docs` ou `/wn-docs audit` réalise un audit en lecture seule ;
+- `/wn-docs apply` applique uniquement les corrections documentaires sûres ;
+- `/wn-docs verify` contrôle le résultat sans modification.
+
+Le skill vérifie la fidélité des documents au dépôt, les liens, contradictions, doublons et candidats à l’archivage. Il ne supprime, ne déplace et ne fusionne jamais un fichier sans confirmation distincte.
 
 ### `/wn-finish`
 Produit une entrée courte pour `docs/claude/SESSION_LOG.md` et liste les prochaines actions.
