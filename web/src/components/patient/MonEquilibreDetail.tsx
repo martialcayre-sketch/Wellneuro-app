@@ -16,7 +16,7 @@ export function MonEquilibreDetail({
   onRetour,
 }: {
   idAssignation: string;
-  email: string;
+  email?: string;
   onRetour: () => void;
 }) {
   const [data, setData] = useState<PatientEquilibreResponse | null>(null);
@@ -24,7 +24,8 @@ export function MonEquilibreDetail({
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch(`/api/patient/equilibre?id=${encodeURIComponent(idAssignation)}&email=${encodeURIComponent(email)}`)
+    const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
+    fetch(`/api/patient/equilibre?id=${encodeURIComponent(idAssignation)}${emailQuery}`)
       .then(r => r.json())
       .then((d: PatientEquilibreResponse) => setData(d))
       .catch(() => setData({ ok: false, reason: 'exception', error: 'Erreur réseau.' }))

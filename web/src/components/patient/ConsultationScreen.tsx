@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 // confiée à onVoirEquilibre.
 export function ConsultationScreen({ idAssignation, email, statutReponses, onVoirEquilibre }: {
   idAssignation: string;
-  email: string;
+  email?: string;
   statutReponses: string;
   onVoirEquilibre: () => void;
 }) {
@@ -21,7 +21,8 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(`/api/patient/reponses?id=${encodeURIComponent(idAssignation)}&email=${encodeURIComponent(email)}`);
+        const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
+        const res = await fetch(`/api/patient/reponses?id=${encodeURIComponent(idAssignation)}${emailQuery}`);
         const data = await res.json();
         if (!data.ok) { setError(data.error); }
         else { setReponse({ titre: data.titre, dateReponse: data.dateReponse }); }

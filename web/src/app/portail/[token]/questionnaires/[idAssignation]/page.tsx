@@ -87,8 +87,10 @@ export default function PortailQuestionnairePage() {
   }
 
   const { assignation } = data;
-  // La session cookie porte l'email ; les composants factorisés le passent
-  // encore en repli aux appels API, mais le cookie prime côté serveur.
+  // La session cookie porte déjà l'email côté serveur. On ne le repasse ici
+  // qu'aux composants qui l'envoient en corps de requête POST (Consent/Plaintes/
+  // GenericQuestionnaire) ; les composants en GET (Consultation/MonEquilibre*)
+  // n'en ont plus besoin, pour éviter de l'exposer en query string.
   const email = assignation.emailPatient;
   const retourHub = () => router.push(`/portail/${token}/questionnaires`);
 
@@ -112,7 +114,6 @@ export default function PortailQuestionnairePage() {
       return (
         <MonEquilibreAccueil
           idAssignation={assignation.idAssignation}
-          email={email}
           onVoirDetail={() => setVue('equilibre-detail')}
           onRetour={() => setVue('principal')}
         />
@@ -122,7 +123,6 @@ export default function PortailQuestionnairePage() {
       return (
         <MonEquilibreDetail
           idAssignation={assignation.idAssignation}
-          email={email}
           onRetour={() => setVue('equilibre')}
         />
       );
@@ -132,7 +132,6 @@ export default function PortailQuestionnairePage() {
         <EnTete token={token} titre={assignation.titre} badge="Transmis au praticien" />
         <ConsultationScreen
           idAssignation={assignation.idAssignation}
-          email={email}
           statutReponses={assignation.statutReponses}
           onVoirEquilibre={() => setVue('equilibre')}
         />

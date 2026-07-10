@@ -41,7 +41,7 @@ export function MonEquilibreAccueil({
   onRetour,
 }: {
   idAssignation: string;
-  email: string;
+  email?: string;
   onVoirDetail: () => void;
   onRetour: () => void;
 }) {
@@ -49,7 +49,8 @@ export function MonEquilibreAccueil({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`/api/patient/equilibre?id=${encodeURIComponent(idAssignation)}&email=${encodeURIComponent(email)}`)
+    const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
+    fetch(`/api/patient/equilibre?id=${encodeURIComponent(idAssignation)}${emailQuery}`)
       .then(r => r.json())
       .then((d: PatientEquilibreResponse) => setData(d))
       .catch(() => setData({ ok: false, reason: 'exception', error: 'Erreur réseau.' }))
