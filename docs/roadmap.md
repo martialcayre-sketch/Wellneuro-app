@@ -36,7 +36,7 @@ Principe directeur : **consolider avant d'évoluer**. Ordre recommandé, chaque 
 | **R2** | Finalisation du pack « Base de consultation » (contenu, ordre, anti-doublon anamnèse, rendu mobile, `par_defaut`) | ✅ Validé (2026-07-10) |
 | **R3** | Transition progressive vers le registre relationnel (lecture primaire `questionnaire_packs`, fallback `packs.qids`, rapport d'écarts, aucune migration destructive) | ✅ Livré (2026-07-10, commit `3f367a7`) — statut corrigé le 2026-07-10, était resté à tort « à faire » ; validation navigateur des routes d'assignation manquante → R9 |
 | **R4** | Harmonisation UX patient / design system (tokens deep teal / champagne gold, statut jamais codé par la seule couleur, mobile first) | ✅ Livré (2026-07-10, commit `eaad01a`) — statut corrigé le 2026-07-10, était resté à tort « à faire » ; validation navigateur réelle manquante → R9 |
-| **R5** | Validation de la synthèse IA enrichie (scénarios fiche/anamnèse/alerte/traitements/DNSM, dégradation gracieuse) | ⏳ À faire |
+| **R5** | Validation de la synthèse IA enrichie (scénarios fiche/anamnèse/alerte/traitements/DNSM, dégradation gracieuse) | ✅ Validé (2026-07-10, audit statique 7/7 conforme, aucun correctif requis) |
 | **R6** | Stabilisation build/tests/go-no-go (aligné sur `.claude/skills/wn-r6/SKILL.md` : type-check, lint, scoring-check, no-secrets, build, vérification ciblée parcours patient, diff review) — pas de nouvelle fonctionnalité | 🔒 Gelé tant que R0→R5 non validés |
 
 ## Piste technique transverse — R7 / R8 (fiabilisation, indépendante de la séquence produit R0→R6)
