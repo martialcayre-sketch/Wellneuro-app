@@ -191,7 +191,7 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
       {/* Vue d'ensemble de l'équilibre — cercles concentriques par strate */}
       <section>
         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          Vue d'ensemble de l'équilibre
+          Vue d&apos;ensemble de l&apos;équilibre
         </h3>
         <div className="bg-surface border border-border rounded-xl p-4 flex justify-center">
           <CerclesConcentriques

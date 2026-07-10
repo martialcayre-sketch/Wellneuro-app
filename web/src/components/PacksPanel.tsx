@@ -399,7 +399,7 @@ export function PacksPanel({
         {loading ? (
           <p className="text-sm text-muted-foreground">Chargement des packs...</p>
         ) : packs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun pack pour l'instant.</p>
+          <p className="text-sm text-muted-foreground">Aucun pack pour l&apos;instant.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {packs.map(p => (
