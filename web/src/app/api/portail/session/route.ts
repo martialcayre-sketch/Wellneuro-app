@@ -30,11 +30,19 @@ export type PortailSessionResponse =
     }
   | { ok: false; reason: string; error: string };
 
-// GET /api/portail/session?token=...&email=... — « login » du portail patient.
-export async function GET(req: Request): Promise<NextResponse<PortailSessionResponse>> {
-  const url = new URL(req.url);
-  const token = (url.searchParams.get('token') ?? '').trim();
-  const email = (url.searchParams.get('email') ?? '').trim().toLowerCase();
+type Payload = { token?: string; email?: string };
+
+// POST /api/portail/session — « login » du portail patient.
+export async function POST(req: Request): Promise<NextResponse<PortailSessionResponse>> {
+  let payload: Payload;
+  try {
+    payload = (await req.json()) as Payload;
+  } catch {
+    return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
+  }
+
+  const token = (payload.token ?? '').trim();
+  const email = (payload.email ?? '').trim().toLowerCase();
 
   if (!isTokenValide(token) || !isEmailValide(email)) {
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiants invalides.' }, { status: 400 });

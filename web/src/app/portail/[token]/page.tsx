@@ -26,7 +26,11 @@ function EmailGate({ token, onVerified }: { token: string; onVerified: (email: s
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`/api/portail/session?token=${encodeURIComponent(token)}&email=${encodeURIComponent(email.trim().toLowerCase())}`);
+      const res = await fetch('/api/portail/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, email: email.trim().toLowerCase() }),
+      });
       const data = (await res.json()) as PortailSessionResponse;
       if (!data.ok) setError(data.error);
       else onVerified(email.trim().toLowerCase(), data);
