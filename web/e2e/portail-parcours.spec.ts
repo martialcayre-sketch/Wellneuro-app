@@ -1,0 +1,245 @@
+// Parcours Phase 0 du portail patient (docs/checklist_tests_end_to_end.md) —
+// formalisation Playwright committée d'un parcours déjà validé manuellement
+// le 2026-07-10 (21/22 items, exécution ad hoc jamais committée). Objectif du
+// lot R8 (suite) : ne plus "réinstaller puis jeter" ces tests à chaque lot.
+//
+// Un seul test.describe.serial séquentiel sur le patient fictif Michel Dogné
+// (PAT_SEED_03), seul autorisé avec Sophie Nicola et Jennifer Martin.
+// Prérequis local : voir web/e2e/README.md (DB de dev + npm run prisma:seed +
+// NEXTAUTH_SECRET). Aucune opération SQL destructive : uniquement des lignes
+// Assignation/Consultation créées par un run de test précédent, jamais les
+// données historiques du seed (cf. helpers/db.ts).
+import { test, expect, type Page } from '@playwright/test';
+import { resetPortailState, closePrisma } from './helpers/db';
+import { praticienSessionCookie } from './helpers/auth';
+
+const PATIENT = {
+  idPatient: 'PAT_SEED_03',
+  email: 'michel.dogne@fictif.wellneuro.fr',
+};
+
+// Remplit génériquement la section de questionnaire actuellement affichée
+// (radios/select/number) sans dépendre du contenu exact d'un questionnaire
+// donné du catalogue — le pack "Base de consultation" peut évoluer.
+async function remplirSectionCourante(page: Page): Promise<void> {
+  const radioNames = await page
+    .locator('form input[type="radio"]')
+    .evaluateAll(inputs => Array.from(new Set(inputs.map(i => (i as HTMLInputElement).name))));
+  for (const name of radioNames) {
+    await page.locator(`form input[type="radio"][name="${name}"]`).first().check();
+  }
+
+  const selects = page.locator('form select');
+  for (let i = 0; i < (await selects.count()); i++) {
+    await selects.nth(i).selectOption({ index: 1 });
+  }
+
+  const numbers = page.locator('form input[type="number"]');
+  const numberCount = await numbers.count();
+  for (let i = 0; i < numberCount; i++) {
+    const input = numbers.nth(i);
+    const min = await input.getAttribute('min');
+    await input.fill(min && min.trim() !== '' ? min : '1');
+  }
+}
+
+// Répond section par section jusqu'à la transmission finale. Le bouton
+// "Transmettre au praticien" déclenche un window.confirm — accepté par le
+// handler 'dialog' enregistré dans le test.
+async function repondreEtTransmettre(page: Page): Promise<void> {
+  for (let section = 0; section < 30; section++) {
+    await remplirSectionCourante(page);
+    const bouton = page.getByRole('button', { name: /Suivant →|Transmettre au praticien/ });
+    try {
+      await expect(bouton).toBeEnabled({ timeout: 3000 });
+    } catch {
+      const diag = await page.evaluate(() => {
+        const radios = Array.from(document.querySelectorAll('form input[type=radio]')) as HTMLInputElement[];
+        const radioNames = Array.from(new Set(radios.map(r => r.name)));
+        const uncheckedRadioGroups = radioNames.filter(n => !radios.some(r => r.name === n && r.checked));
+        const selects = Array.from(document.querySelectorAll('form select')) as HTMLSelectElement[];
+        const emptySelects = selects.filter(s => !s.value).length;
+        const numbers = Array.from(document.querySelectorAll('form input[type=number]')) as HTMLInputElement[];
+        const emptyNumbers = numbers.filter(n => n.value === '').length;
+        return { radioNames, uncheckedRadioGroups, selectCount: selects.length, emptySelects, numberCount: numbers.length, emptyNumbers };
+      });
+      throw new Error(`Section non complétée par le remplissage générique : ${JSON.stringify(diag)}`);
+    }
+    const label = (await bouton.textContent()) ?? '';
+    await bouton.click();
+    if (label.includes('Transmettre')) return;
+    if (section === 29) throw new Error('Questionnaire trop long pour la limite de sécurité du test.');
+  }
+}
+
+test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patient fictif)', () => {
+  let portailUrl: string;
+  let idAssignation: string;
+  let idQuestionnaire: string;
+
+  test.beforeAll(async () => {
+    await resetPortailState(PATIENT.idPatient);
+  });
+
+  test.afterAll(async () => {
+    await closePrisma();
+  });
+
+  test('gate, consentement, fiche, anamnèse, onboarding, questionnaire, verrouillage, correction, déblocage, re-soumission', async ({
+    page,
+    context,
+  }) => {
+    page.on('dialog', dialog => dialog.accept());
+
+    await test.step('Provisionnement — le praticien crée la consultation (mêmes conditions que la réalité : un patient sans consultation n\'a rien à voir sur le portail)', async () => {
+      // Le login OAuth Google réel n'est pas automatisé (fragile, hors
+      // périmètre du parcours patient) : cookie de session NextAuth signé
+      // directement, pattern standard pour tester une app NextAuth. Cookie
+      // posé une seule fois : reste valide pour toute la suite du test,
+      // y compris l'étape "Déblocage côté praticien" plus bas.
+      await context.addCookies([await praticienSessionCookie()]);
+      const res = await page.request.post('/api/praticien/consultations', {
+        data: { idPatient: PATIENT.idPatient },
+      });
+      expect(res.ok()).toBe(true);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      portailUrl = `/portail/${json.accessToken}`;
+    });
+
+    await test.step('Gate email', async () => {
+      await page.goto(portailUrl);
+      await expect(page.getByRole('heading', { name: 'Votre espace patient' })).toBeVisible();
+      await page.getByPlaceholder('votre@email.fr').fill(PATIENT.email);
+      await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/portail/session') && res.status() === 200),
+        page.getByRole('button', { name: 'Accéder à mon espace' }).click(),
+      ]);
+    });
+
+    await test.step('Consentement', async () => {
+      await expect(page.getByRole('heading', { name: 'Avant de commencer' })).toBeVisible();
+      await page.getByLabel(/ai lu ces informations/i).check();
+      await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/portail/consentement') && res.status() === 200),
+        page.getByRole('button', { name: 'Donner mon consentement' }).click(),
+      ]);
+    });
+
+    await test.step('Fiche signalétique', async () => {
+      await expect(page.getByRole('heading', { name: 'Fiche de renseignements' })).toBeVisible();
+      await page
+        .locator('label:has-text("Situation familiale") + select')
+        .selectOption({ label: 'Marié·e / Pacsé·e' });
+      await page.locator('label:has-text("Profession") + input').fill('Retraité');
+      await page.getByLabel(/exactitude des informations fournies/i).check();
+      await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/portail/fiche') && res.status() === 200),
+        page.getByRole('button', { name: /anamnèse/i }).click(),
+      ]);
+    });
+
+    await test.step('Anamnèse', async () => {
+      await expect(page.getByRole('heading', { name: 'Anamnèse' })).toBeVisible();
+      await page
+        .locator('label:has-text("amène aujourd") + textarea')
+        .fill('Fatigue persistante depuis plusieurs mois, difficultés de concentration.');
+      await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/portail/valider') && res.status() === 200),
+        page.getByRole('button', { name: /Valider et accéder à mes questionnaires/i }).click(),
+      ]);
+    });
+
+    await test.step('Onboarding — accès au hub des questionnaires', async () => {
+      await expect(page.getByText('Merci !')).toBeVisible();
+      await page.getByRole('link', { name: 'Accéder à mes questionnaires' }).click();
+      await expect(page.getByRole('heading', { name: 'Mes questionnaires' })).toBeVisible();
+    });
+
+    await test.step('Ouverture du premier questionnaire à compléter', async () => {
+      const premier = page.getByRole('link', { name: 'Commencer' }).first();
+      await expect(premier).toBeVisible();
+      const [reponse] = await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/patient/questionnaire?id=') && res.status() === 200),
+        premier.click(),
+      ]);
+      const json = await reponse.json();
+      idAssignation = json.assignation.idAssignation;
+      idQuestionnaire = json.assignation.idQuestionnaire;
+    });
+
+    await test.step('Sauvegarde de brouillon puis réinitialisation (local uniquement)', async () => {
+      await remplirSectionCourante(page);
+      await page.getByRole('button', { name: 'Sauvegarder le brouillon' }).click();
+      await expect(page.getByText('Brouillon enregistré sur cet appareil')).toBeVisible();
+      await page.getByRole('button', { name: 'Réinitialiser ce questionnaire' }).click();
+    });
+
+    await test.step('Réponses et transmission au praticien (200)', async () => {
+      await repondreEtTransmettre(page);
+      await expect(page).toHaveURL(new RegExp(`${portailUrl}/questionnaires$`));
+      await expect(page.getByText('Transmis au praticien').first()).toBeVisible();
+    });
+
+    await test.step('Tentative de re-soumission côté serveur (409)', async () => {
+      // Un `answers` non vide est requis pour passer la validation 400 du
+      // payload avant d'atteindre la vérification d'état "already_done" (409)
+      // — le contenu importe peu, ce chemin ne relit jamais les réponses.
+      const resubmit = await page.request.post('/api/patient/submit', {
+        data: {
+          idAssignation,
+          idPatient: PATIENT.idPatient,
+          email: PATIENT.email,
+          idQuestionnaire,
+          answers: { PLACEHOLDER: 1 },
+        },
+      });
+      expect(resubmit.status()).toBe(409);
+      const json = await resubmit.json();
+      expect(json.reason).toBe('already_done');
+    });
+
+    await test.step('Vue verrouillée en lecture seule', async () => {
+      const consulter = page.getByRole('link', { name: 'Consulter' }).first();
+      const [reponsesReq] = await Promise.all([
+        page.waitForRequest(req => req.url().includes('/api/patient/reponses')),
+        consulter.click(),
+      ]);
+      await expect(page.getByText('verrouillées en lecture seule')).toBeVisible();
+      // docs/checklist_tests_end_to_end.md documentait encore un email exposé
+      // en query string sur cette route (point résiduel du run manuel du
+      // 2026-07-10). Constaté ici : déjà corrigé par le lot R9 (email retiré
+      // de ConsultationScreen, session cookie uniquement) — la doc était en
+      // retard sur le code, pas l'inverse.
+      expect(reponsesReq.url()).not.toContain('email=');
+    });
+
+    await test.step('Demande de correction', async () => {
+      await page
+        .getByPlaceholder(/je me suis trompé/i)
+        .fill('Je me suis trompé à la première question, merci de me laisser corriger.');
+      await page.getByRole('button', { name: 'Demander une correction' }).click();
+      await expect(page.getByText(/a été transmise à votre praticien/)).toBeVisible();
+    });
+
+    await test.step('Déblocage côté praticien', async () => {
+      // Cookie de session praticien déjà posé à l'étape de provisionnement.
+      await page.goto(`/dashboard/patients/${PATIENT.idPatient}`);
+      await expect(page.getByText(/Demande de correction/)).toBeVisible();
+      await page.getByRole('button', { name: 'Débloquer' }).click();
+      await expect(page.getByText(/Demande de correction/)).toHaveCount(0);
+    });
+
+    await test.step('Re-soumission après déblocage', async () => {
+      await page.goto(`${portailUrl}/questionnaires`);
+      await expect(page.getByText('Déverrouillé par le praticien')).toBeVisible();
+      await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/patient/questionnaire?id=') && res.status() === 200),
+        page.getByRole('link', { name: 'Corriger' }).first().click(),
+      ]);
+      await repondreEtTransmettre(page);
+      await expect(page).toHaveURL(new RegExp(`${portailUrl}/questionnaires$`));
+      await expect(page.getByText('Transmis au praticien').first()).toBeVisible();
+    });
+  });
+});
