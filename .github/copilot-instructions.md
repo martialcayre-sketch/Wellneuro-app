@@ -1,45 +1,38 @@
-# Copilot Instructions — Wellneuro NNPP2
+# Instructions WellNeuro pour GitHub Copilot
 
-Ce fichier est l'équivalent pour GitHub Copilot de `CLAUDE.md` (racine du dépôt), lu par Claude Code. Copilot ne lit pas `CLAUDE.md` : les règles utiles sont reformulées ici. En cas de divergence future entre les deux fichiers, `CLAUDE.md` fait foi et celui-ci doit être resynchronisé à la main.
+WellNeuro est une application de santé en neuronutrition basée sur Next.js 14 App Router, TypeScript, Prisma, PostgreSQL Supabase, NextAuth et Vercel.
 
-## Stack
+Lire `AGENTS.md`, `CLAUDE.md` et `docs/claude/PROJET_CONTEXTE.md` avant une tâche structurante.
 
-- Next.js 14 (App Router)
-- Prisma + PostgreSQL (Supabase)
-- NextAuth — OAuth Google restreint au domaine `@wellneuro.fr`
-- Déploiement Vercel (`app.wellneuro.fr`)
+## Invariants
 
-## Règles non négociables
+- Ne jamais inclure de secret, token, mot de passe ou chaîne de connexion.
+- Ne jamais lire, afficher ou modifier un fichier `.env*`.
+- Tous les textes d’interface sont en français.
+- Changement minimal : aucun refactor, renommage ou réorganisation hors demande.
+- Aucune migration Prisma/SQL, modification de `schema.prisma` ou écriture Supabase sans demande explicite et confirmation distincte.
+- Aucune modification de scoring, seuil ou logique clinique sans demande explicite et traçabilité dans `CHANGELOG.md`.
+- Seuls les patients fictifs Sophie Nicola, Jennifer Martin et Michel Dogne peuvent apparaître dans les exemples, tests ou données de démo.
+- Ne jamais reproduire une donnée patient réelle rencontrée dans un fichier, un log ou un message.
+- Le code principal est dans `web/`.
+- Le portail patient principal est `/portail/[token]`; `/patient/[idAssignation]` est legacy.
+- Le runtime utilise PostgreSQL via Prisma ; Google Sheets et GAS sont historiques uniquement.
 
-- **Jamais de secret en dur** : clés API, tokens, mots de passe. Utiliser les variables d'environnement (`web/.env.local` en dev, variables Vercel en production — jamais committés).
-- **UI en français** : tout texte visible par l'utilisateur (labels, messages d'erreur, placeholders) est en français.
-- **Changements minimaux** : ne pas refactorer au-delà de ce qui est demandé. Pas de renommage, réorganisation de fichiers ou changement de style de code non sollicité.
-- **Pas de migration Prisma sans demande explicite** : ne jamais lancer `prisma migrate dev`, `prisma db push`, ou modifier `schema.prisma` sans confirmation explicite.
-- **Pas de SQL destructif** sans confirmation explicite (DROP, DELETE sans WHERE, TRUNCATE).
-- **Pas de modification de la logique clinique ou des seuils** sans demande explicite et documentation dans `CHANGELOG.md`.
-- **Données patients** : seuls Sophie Nicola, Jennifer Martin, Michel Dogné peuvent apparaître dans le code, les seeds, les tests ou les données de démo. Ne jamais générer, dériver ou compléter des données patient réelles.
+## Façon de travailler
 
-## Début de session
+Avant de modifier :
 
-Si `docs/claude/SESSION_LOG.md` existe dans le dépôt, le lire (dernière entrée) avant de traiter la première demande de la session — silencieusement, sans le résumer sauf si c'est demandé.
+1. vérifier l’état réel du dépôt ;
+2. résumer l’objectif et le périmètre ;
+3. identifier les fichiers nécessaires ;
+4. choisir les tests adaptés ;
+5. signaler immédiatement migration, sécurité, données patients ou logique clinique.
 
-## Fin de session — journal (mode agent uniquement)
+Après modification :
 
-Si le mode agent (édition de fichiers) est actif et qu'un "résumé de session" est demandé : produire le résumé (<150 mots — décisions prises, options écartées et pourquoi, prochaine action prioritaire, questions ouvertes), puis l'ajouter en fin de `docs/claude/SESSION_LOG.md` (append, jamais d'écrasement), précédé d'un titre `## [date] — [sujet]`. Pas de confirmation nécessaire pour cet ajout.
+- montrer les fichiers touchés ;
+- exécuter les validations pertinentes ;
+- expliquer les limites et tests manuels ;
+- ne jamais déclarer un test réussi s’il n’a pas été exécuté.
 
-En mode Ask/Edit sans accès fichier, proposer le résumé au format ci-dessus et indiquer qu'il doit être collé manuellement dans `docs/claude/SESSION_LOG.md`.
-
-## Documentation de référence
-
-- `docs/claude/PROJET_CONTEXTE.md` — contexte projet et état actuel
-- `docs/claude/REGLES_CRITIQUES.md` — sécurité, RGPD, contraintes cliniques
-- `docs/claude/WORKFLOW_DEVELOPPEMENT.md` — workflow de dev
-- `docs/claude/ROADMAP_AGENT_PLAN.md` — roadmap produit (séries D/R/E)
-- `docs/claude/SESSION_LOG.md` — journal des sessions précédentes
-
-## Avant de committer
-
-- Vérifier qu'aucun secret n'a été introduit (`bash scripts/check_no_secrets.sh`).
-- Vérifier que les textes UI ajoutés sont en français.
-- Ne pas committer de fichier `.env*`.
-- Pas de régression visible dans le parcours praticien ou patient.
+Pour une tâche complexe, utiliser les prompts ou agents WellNeuro présents dans `.github/prompts` et `.github/agents`.

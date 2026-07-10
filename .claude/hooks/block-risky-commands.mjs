@@ -1,31 +1,43 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
+import fs from "node:fs";
 
-const input = fs.readFileSync(0, 'utf8');
+if (process.env.WN_ALLOW_RISKY_COMMAND === "1") process.exit(0);
+
 let data = {};
-try { data = JSON.parse(input); } catch { process.exit(0); }
+try {
+  data = JSON.parse(fs.readFileSync(0, "utf8"));
+} catch {
+  process.exit(0);
+}
 
-const command = String(data.tool_input?.command || '').toLowerCase();
+const original = String(data.tool_input?.command || "");
+const command = original.toLowerCase();
 if (!command) process.exit(0);
 
 const risky = [
-  /rm\s+-rf\s+\/?/,
-  /git\s+reset\s+--hard/,
-  /git\s+push\s+--force/,
-  /prisma\s+migrate/,
-  /supabase\s+db\s+(push|reset|diff)/,
-  /drop\s+table/,
-  /truncate\s+table/,
-  /delete\s+from\s+[^;]+/,
-  /cat\s+\.env/,
-  /type\s+\.env/,
-  /printenv/,
-  /env\s*\|/
+  /\brm\s+-rf\s+(\/|\*|\.($|\s)|~)/,
+  /\bgit\s+reset\s+--hard\b/,
+  /\bgit\s+push\b[^\n]*--force(?:-with-lease)?\b/,
+  /\bgit\s+clean\s+-[^\n]*[fdx][^\n]*\b(?!.*\s-n)/,
+  /\bgit\s+(checkout|restore)\s+--?\s*\.\s*$/,
+  /\bprisma\s+(migrate|db\s+push|db\s+execute)\b/,
+  /\bsupabase\s+db\s+(push|reset|diff)\b/,
+  /\b(drop\s+(table|database|schema)|truncate\s+table)\b/,
+  /\bdelete\s+from\s+[^;\n]+(?:;|$)/,
+  /\b(cat|type|more|get-content)\s+[^\n]*\.env\b/,
+  /\bprintenv\b/,
+  /\benv\s*\|/,
+  /\bset\s*\|\s*(grep|findstr)\b/
 ];
 
 for (const pattern of risky) {
   if (pattern.test(command)) {
-    console.error(`Commande bloquée par WellNeuro: "${data.tool_input.command}". Raison: commande destructrice, migration, lecture de secret ou action nécessitant une confirmation explicite.`);
+    console.error(
+      `Commande bloquée par WellNeuro : ${original}. ` +
+      `Elle est destructive, touche aux migrations ou peut exposer des secrets. ` +
+      `Après confirmation explicite seulement, utiliser une session dédiée avec ` +
+      `WN_ALLOW_RISKY_COMMAND=1.`
+    );
     process.exit(2);
   }
 }

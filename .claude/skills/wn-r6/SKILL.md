@@ -1,39 +1,33 @@
 ---
-description: Lot R6 WellNeuro — stabilisation build, tests, go/no-go et documentation de release.
+description: Lot R6 — stabilisation WellNeuro.
+argument-hint: "[plan|apply|verify]"
+disable-model-invocation: true
+effort: medium
 ---
 
-# LOT R6 — Stabilisation / release go-no-go
+# R6 — stabilisation
 
-## Contexte injecté
-
-!`test -f docs/claude/SESSION_LOG.md && tail -n 80 docs/claude/SESSION_LOG.md || true`
+!`test -f docs/claude/SESSION_LOG.md && tail -n 70 docs/claude/SESSION_LOG.md || true`
 !`git status --short`
+
+Argument : `$ARGUMENTS`
 
 ## Objectif
 
-Stabiliser la branche après R0-R5 et produire un go/no-go clair.
+Exécuter les contrôles de release et produire un go/no-go documenté.
 
-## Vérifications
+## Périmètre
 
-- Type-check.
-- Lint si disponible.
-- Scoring-check si disponible.
-- Script no-secrets si disponible.
-- Build si environnement compatible.
-- Vérification ciblée parcours patient.
-- Diff review.
+anti-secrets, type-check, scoring-check, build, smoke, E2E critique.
 
 ## Interdits
 
-- Pas de nouvelle fonctionnalité.
-- Pas de refactor.
-- Pas de migration.
-- Pas de changement clinique.
+déploiement automatique, migration, correction hors périmètre. Toujours : aucun secret, aucune donnée patient réelle ; exemples limités à Sophie Nicola, Jennifer Martin et Michel Dogne.
 
-## Sortie attendue
+## Méthode
 
-- Résultat des commandes.
-- Fichiers modifiés depuis le début du lot.
-- Bugs bloquants / non bloquants.
-- Go / no-go.
-- Entrée SESSION_LOG proposée.
+- Par défaut : audit et plan sans modification.
+- Avec `apply` : changement minimal dans le périmètre.
+- Avec `verify` : lecture seule et go/no-go.
+- Vérifier le dépôt réel avant toute affirmation.
+- Terminer par validations, fichiers modifiés, risques et prochaine action.

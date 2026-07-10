@@ -1,38 +1,33 @@
 ---
-description: Lot R3 WellNeuro — transition progressive vers registre relationnel avec fallback legacy.
+description: Lot R3 — registre relationnel WellNeuro.
+argument-hint: "[plan|apply|verify]"
+disable-model-invocation: true
+effort: medium
 ---
 
-# LOT R3 — Registre relationnel packs/questionnaires
+# R3 — registre relationnel
 
-## Contexte injecté
-
-!`test -f docs/claude/SESSION_LOG.md && tail -n 80 docs/claude/SESSION_LOG.md || true`
+!`test -f docs/claude/SESSION_LOG.md && tail -n 70 docs/claude/SESSION_LOG.md || true`
 !`git status --short`
+
+Argument : `$ARGUMENTS`
 
 ## Objectif
 
-Faire lire progressivement les packs depuis le registre relationnel, avec fallback temporaire sur `packs.qids`.
+Faire du registre relationnel la lecture principale avec fallback legacy temporaire.
 
-## Contraintes fortes
+## Périmètre
 
-- Ne pas supprimer `packs.qids`.
-- Ne pas créer de migration destructive.
-- Ne pas changer l’expérience praticien si non nécessaire.
-- Préserver l’assignation existante.
-- Changement minimal et réversible.
+routes packs/questionnaires, fallback, observabilité, tests de compatibilité.
+
+## Interdits
+
+suppression destructive de packs.qids, migration non confirmée. Toujours : aucun secret, aucune donnée patient réelle ; exemples limités à Sophie Nicola, Jennifer Martin et Michel Dogne.
 
 ## Méthode
 
-1. Lire les routes et services qui lisent les packs.
-2. Identifier source actuelle : `packs.qids`, `questionnaire_packs`, `pack_questionnaires`.
-3. Proposer un plan de lecture primaire registre + fallback legacy.
-4. Attendre validation avant modification.
-5. Ajouter ou proposer un rapport non destructif de cohérence si utile.
-6. Vérifier aucun questionnaire perdu.
-
-## Sortie attendue
-
-- Fichiers lus/modifiés.
-- Stratégie fallback.
-- Risques résiduels.
-- Commandes de test.
+- Par défaut : audit et plan sans modification.
+- Avec `apply` : changement minimal dans le périmètre.
+- Avec `verify` : lecture seule et go/no-go.
+- Vérifier le dépôt réel avant toute affirmation.
+- Terminer par validations, fichiers modifiés, risques et prochaine action.

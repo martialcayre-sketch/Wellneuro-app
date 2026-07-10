@@ -1,49 +1,33 @@
 ---
-description: Lot R2 WellNeuro — finalisation du pack Base de consultation avec changements minimaux.
+description: Lot R2 — pack Base de consultation WellNeuro.
+argument-hint: "[plan|apply|verify]"
+disable-model-invocation: true
+effort: medium
 ---
 
-# LOT R2 — Pack « Base de consultation »
+# R2 — pack Base de consultation
 
-## Contexte injecté
-
-!`test -f docs/claude/SESSION_LOG.md && tail -n 80 docs/claude/SESSION_LOG.md || true`
+!`test -f docs/claude/SESSION_LOG.md && tail -n 70 docs/claude/SESSION_LOG.md || true`
 !`git status --short`
+
+Argument : `$ARGUMENTS`
 
 ## Objectif
 
-Stabiliser le pack « Base de consultation » comme socle clinique du premier rendez-vous.
+Compléter et valider le pack de consultation avec anti-doublon et ordre cohérent.
 
-## À vérifier
+## Périmètre
 
-- Questionnaires réellement disponibles dans le catalogue.
-- IDs utilisables.
-- Ordre d’affichage.
-- Durée totale estimée.
-- Lisibilité patient.
-- Doublons avec fiche signalétique/anamnèse.
-- Pack assignable côté praticien.
-- Pack visible côté patient.
-
-## Périmètre probable
-
-- Registre questionnaires/packs.
-- UI praticien d’assignation si nécessaire.
-- UI patient hub si nécessaire.
-- Documentation si nécessaire.
+registre questionnaires/packs, UX assignation, rendu mobile, tests ciblés.
 
 ## Interdits
 
-- Pas de migration Prisma/SQL.
-- Pas de suppression `packs.qids`.
-- Pas de refonte UI globale.
-- Pas de modification scoring clinique.
-- Pas d’ajout de moteur clinique.
+migration sans confirmation, logique clinique improvisée. Toujours : aucun secret, aucune donnée patient réelle ; exemples limités à Sophie Nicola, Jennifer Martin et Michel Dogne.
 
 ## Méthode
 
-1. Lire `SESSION_LOG.md` dernière entrée.
-2. Identifier les fichiers strictement nécessaires.
-3. Présenter un plan et attendre validation avant modification.
-4. Faire le changement minimal.
-5. Vérifier build/type-check si possible.
-6. Donner diff résumé et prochaine étape.
+- Par défaut : audit et plan sans modification.
+- Avec `apply` : changement minimal dans le périmètre.
+- Avec `verify` : lecture seule et go/no-go.
+- Vérifier le dépôt réel avant toute affirmation.
+- Terminer par validations, fichiers modifiés, risques et prochaine action.

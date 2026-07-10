@@ -1,43 +1,25 @@
 ---
-description: Clôture un lot WellNeuro en générant une entrée SESSION_LOG courte, un résumé diff et la prochaine action.
+description: Clôture un lot WellNeuro : validations, mise à jour du statut de campagne et entrée courte dans SESSION_LOG.
+argument-hint: "[sujet]"
+disable-model-invocation: true
+effort: medium
 ---
 
-# WellNeuro — clôture de lot
-
-## Contexte injecté
-
-Dernière entrée session :
-
-!`test -f docs/claude/SESSION_LOG.md && tail -n 80 docs/claude/SESSION_LOG.md || true`
-
-Diff stat :
-
-!`git diff --stat`
-
-Fichiers modifiés :
+# WellNeuro — fin de lot
 
 !`git status --short`
+!`git diff --stat`
+!`node scripts/wn-campaign.mjs next --quiet 2>/dev/null || true`
 
-## Mission
+Sujet : `$ARGUMENTS`
 
-1. Résume le lot réalisé en moins de 120 mots.
-2. Propose une entrée prête à coller dans `docs/claude/SESSION_LOG.md`.
-3. Si tu as l’autorisation de modifier la documentation, ajoute cette entrée à `docs/claude/SESSION_LOG.md` uniquement.
-4. Liste :
+1. Vérifier que le périmètre est respecté.
+2. Résumer les validations réellement exécutées.
+3. Mettre à jour le lot actif s’il existe.
+4. Ajouter à `docs/claude/SESSION_LOG.md` une entrée de moins de 150 mots :
    - décisions prises ;
-   - options écartées ;
-   - fichiers modifiés ;
-   - risques résiduels ;
-   - prochaine action prioritaire.
-5. Ne modifie aucun code applicatif.
-
-## Format attendu
-
-```md
-## YYYY-MM-DD — [Lot] [Titre]
-
-Décisions prises : ...
-Options écartées : ...
-Prochaine action prioritaire : ...
-Questions ouvertes : ...
-```
+   - options écartées et raison ;
+   - prochaine action prioritaire ;
+   - questions ouvertes.
+5. Ne jamais réécrire les entrées précédentes.
+6. Produire ensuite un handoff court.

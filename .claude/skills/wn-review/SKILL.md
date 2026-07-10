@@ -1,34 +1,31 @@
 ---
-description: Revue token-économe du diff WellNeuro, avec risques, tests à lancer et conformité aux règles projet.
+description: Revue indépendante et en lecture seule du diff WellNeuro : bugs, sécurité, données patients, régressions et tests manquants.
+argument-hint: "[zone ou commit]"
+disable-model-invocation: true
+context: fork
+agent: Explore
+effort: high
 ---
 
-# WellNeuro — revue du diff
-
-## Contexte injecté
+# WellNeuro — revue
 
 !`git diff --stat`
 !`git diff --name-only`
 !`git status --short`
 
-## Mission
+Argument : `$ARGUMENTS`
 
-Relis les changements non commités sans modifier les fichiers.
+Examiner d’abord le diff, puis seulement le contexte nécessaire.
 
-Vérifie :
+Priorité des constats :
 
-- Aucun secret.
-- Aucun patient réel.
-- Patients fictifs uniquement si exemples : Sophie Nicola, Jennifer Martin, Michel Dogne.
-- UI en français.
-- Pas de migration non demandée.
-- Pas de modification scoring clinique non demandée.
-- Pas de refactor hors périmètre.
-- Cohérence avec le lot en cours.
+1. bug ou perte de données ;
+2. secret, auth, RGPD, donnée patient ;
+3. migration ou changement clinique non autorisé ;
+4. régression fonctionnelle ;
+5. test manquant ;
+6. dette non bloquante.
 
-## Sortie attendue
+Ne pas modifier les fichiers.
 
-- Résumé en 5 lignes maximum.
-- Risques bloquants.
-- Risques non bloquants.
-- Tests à lancer.
-- Go / no-go pour clôture du lot.
+Sortie : résumé, constats bloquants avec fichier/ligne, constats non bloquants, tests, go/no-go.
