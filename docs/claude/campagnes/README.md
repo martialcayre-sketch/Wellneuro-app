@@ -36,3 +36,14 @@ Voir : [PROGRAMME_WELLNEURO_3_0.md](PROGRAMME_WELLNEURO_3_0.md)
 2. **Campagne active** : Ouvrir `2026-07-11-*/CAMPAGNE.md`
 3. **Prochain lot** : `/wn-campaign next` (affiche LOT-NN-titre.md)
 4. **Reprise contexte** : `/wn-context` ou `/wn-handoff`
+
+## WN-AUTO — Orchestration GitHub et boucles autonomes
+
+> Campagne de structuration documentaire pour l’automatisation sous contraintes. Cette campagne n’entre pas
+> dans la chaîne produit C0-C5 et reste indépendante de l’ordre d’exécution principal.
+
+| Campagne | Statut | But | Dépendance |
+|---|---|---|---|
+| WN-AUTO | Terminée (cadre documentaire) | Préparer l’orchestrateur GitHub permanent, les boucles test/réparation, la revue indépendante et les gates de release | C0, socle documentaire |
+
+Répertoire : `2026-07-11-wn-auto-orchestration-github-boucles-autonomes/`

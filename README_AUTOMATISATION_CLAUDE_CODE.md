@@ -17,20 +17,18 @@ scripts/wn-check-automation.sh
 Dans Claude Code, taper ensuite seulement :
 
 ```text
-/wn-auto
+/wn-campaign-run
 ```
 
-ou lancer un lot précis :
+ou afficher le prochain lot :
 
 ```text
-/wn-r0
-/wn-r1
-/wn-r2
-/wn-r3
-/wn-r4
-/wn-r5
-/wn-r6
+/wn-campaign next
+/wn-plan
 ```
+
+Les commandes historiques `/wn-r0` à `/wn-r6` sont conservées en compatibilité mais redirigées vers le flux
+campagnes. Elles ne sont plus le chemin principal.
 
 Pour entretenir la base documentaire :
 
@@ -62,7 +60,7 @@ Pour relire le diff sans modifier :
 
 ## Workflow recommandé (minimal)
 
-1. Lancer `/wn` ou `/wn-auto` pour choisir le lot, le périmètre, les risques et les critères d’acceptation.
+1. Lancer `/wn-campaign-run` pour charger la campagne active et le prochain lot.
 2. Passer en mode Plan avant toute modification de code.
 3. Valider le plan technique proposé.
 4. Exécuter les changements bornés au lot validé.
@@ -70,29 +68,32 @@ Pour relire le diff sans modifier :
 
 ## Commandes utiles
 
-### `/wn-auto`
-Détermine le prochain lot probable depuis `SESSION_LOG.md`, `docs/roadmap.md` et l’état Git. Produit un cadrage stratégique et délègue explicitement le plan technique au mode Plan avant toute modification.
+### `/wn-campaign-run`
+Charge la campagne active, affiche le prochain lot et cadre l'exécution bornée du lot en cours.
+
+### `/wn-plan`
+Prépare le plan d'implémentation détaillé avant toute modification.
 
 ### `/wn-r0`
-Réalignement documentaire ponctuel uniquement.
+Commande legacy redirigée vers le flux campagnes.
 
 ### `/wn-r1`
-Validation E2E du parcours patient unifié, sans modification.
+Commande legacy redirigée vers le flux campagnes.
 
 ### `/wn-r2`
-Finalisation du pack « Base de consultation ».
+Commande legacy redirigée vers le flux campagnes.
 
 ### `/wn-r3`
-Transition progressive vers le registre relationnel avec fallback legacy.
+Commande legacy redirigée vers le flux campagnes.
 
 ### `/wn-r4`
-Harmonisation UX patient / design system.
+Commande legacy redirigée vers le flux campagnes.
 
 ### `/wn-r5`
-Validation synthèse IA enrichie.
+Commande legacy redirigée vers le flux campagnes.
 
 ### `/wn-r6`
-Stabilisation build, tests, go/no-go.
+Commande legacy redirigée vers le flux campagnes.
 
 ### `/wn-docs`
 Entretien documentaire récurrent, indépendant des lots R0-R6 :
@@ -108,4 +109,4 @@ Produit une entrée courte pour `docs/claude/SESSION_LOG.md` et liste les procha
 
 ## Attention
 
-Ce kit n’ajoute aucun secret, aucune migration, aucune donnée patient réelle. Les patients fictifs autorisés restent uniquement : Sophie Nicola, Jennifer Martin, Michel Dogne.
+Ce kit n’ajoute aucun secret, aucune migration, aucune donnée patient réelle. Les patients fictifs autorisés restent uniquement : Sophie Nicola, Jennifer Martin, Michel Dogné.
