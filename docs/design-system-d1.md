@@ -172,7 +172,33 @@ auth/session). Voir `ROADMAP_AGENT_PLAN.md` section 3 pour la liste
 complète et les garde-fous transverses (accessibilité, definition of
 done par lot).
 
-## 6. Traçabilité
+## 6. Réconciliation tokens UX 3.0 (LOT-01, campagne C0-UX)
+
+Comparaison des tokens sémantiques proposés en §11.1 de
+`docs/claude/campagnes/2026-07-11-refonte-ux-shell-3-0/sources/UX_WELLNEURO_3_0.md` avec les
+tokens réellement livrés par D1. Règle appliquée : réutiliser le nom D1 existant quand un
+équivalent fonctionnel existe déjà, ajout **additif** uniquement pour les écarts réels, jamais de
+renommage ni de suppression d'un token existant.
+
+| Proposé (§11.1) | Existant D1 | Décision |
+|---|---|---|
+| `surface-app` | `background` | Conservé tel quel — pas d'ajout. |
+| `surface-panel` | `surface` | Conservé tel quel — pas d'ajout. |
+| `surface-elevated` | aucun | **Ajouté** : `--color-surface-elevated` / `bg-surface-elevated`. En thème patient, identique au blanc de `surface` (l'élévation y est portée par l'ombre/la bordure, pas la couleur) ; en thème praticien, plus clair que `surface` (`--teal-900`). |
+| `surface-patient` | aucun | **Non ajouté** — redondant avec l'architecture par thème (`[data-theme="patient"]` joue déjà ce rôle via `surface`). Un token dédié dupliquerait la logique de thème existante. |
+| `text-primary` | `foreground` | Conservé tel quel — pas d'ajout. |
+| `text-secondary` | aucun exact | **Non ajouté** dans ce lot, faute de consommateur identifié (D1 n'a qu'un seul niveau de texte atténué, `muted-foreground`). À réévaluer si LOT-02/03 de C0-UX en démontre un besoin réel. |
+| `text-muted` | `muted-foreground` | Conservé tel quel — pas d'ajout. |
+| `accent-primary` | `color-primary` | Conservé tel quel — pas d'ajout. |
+| `accent-secondary` | `color-accent` | Conservé tel quel — pas d'ajout. |
+| `status-success` / `-warning` / `-danger` / `-info` | aucun (Badge utilise des couleurs Tailwind auto-contenues) | **Ajoutés** : `--color-status-success/warning/danger/info` / `text-status-*`, `bg-status-*`, calibrés AA par thème. Non câblés dans `Badge.tsx` dans ce lot (hors périmètre LOT-01). |
+| `border-subtle` | `border` | Conservé tel quel — pas d'ajout. |
+| `focus-ring` | aucun | **Ajouté** : `--color-focus-ring` / `ring-focus`, `text-focus-ring`… (`--teal-700` en thème patient, `--gold-500` en thème praticien) — nécessaire aux garde-fous accessibilité (focus clavier) de C0-UX. |
+
+Garde-fou vérifié : `--primary`/`--accent` historiques (consommés en dur par `SynthesePanel.tsx`,
+non migré) ne sont pas affectés par cet ajout — espace de noms `--color-*` toujours distinct.
+
+## 7. Traçabilité
 
 | Lot | PR |
 |---|---|

@@ -71,6 +71,16 @@
   --color-accent: var(--gold-600);
   --color-accent-rgb: var(--gold-600-rgb);
   --color-accent-foreground: #16323a;
+
+  /* Réconciliation UX 3.0 (LOT-01, additif — cf. docs/design-system-d1.md
+   * section « Réconciliation tokens UX 3.0 »). Élévation gérée surtout via
+   * ombre/bordure en thème clair (surface déjà au blanc maximal). */
+  --color-surface-elevated: #ffffff;
+  --color-status-success: #15803d;
+  --color-status-warning: #92400e;
+  --color-status-danger: #b91c1c;
+  --color-status-info: #1d4ed8;
+  --color-focus-ring: var(--teal-700);
 }
 
 /*
@@ -92,4 +102,12 @@
   --color-accent: var(--gold-500);
   --color-accent-rgb: var(--gold-500-rgb);
   --color-accent-foreground: var(--teal-950);
+
+  /* Réconciliation UX 3.0 (LOT-01, additif). */
+  --color-surface-elevated: #1a3a40;
+  --color-status-success: #4ade80;
+  --color-status-warning: #fbbf24;
+  --color-status-danger: #f87171;
+  --color-status-info: #60a5fa;
+  --color-focus-ring: var(--gold-500);
 }

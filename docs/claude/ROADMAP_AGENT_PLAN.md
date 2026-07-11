@@ -20,18 +20,18 @@
 - Migration GAS → Next.js **terminée** (lots 0, C2–C5, livrés au 2026-07-03).
 - `app.wellneuro.fr` (Vercel) est l'unique point d'entrée production.
 - Code GAS archivé dans `archive/gas-legacy/` — gelé, ne jamais modifier.
-- Portail praticien (`/dashboard/*`) et portail patient par lien non
-  prédictible (`/patient/[idAssignation]`) fonctionnels.
+- Portail praticien (`/dashboard/*`) et portail patient permanent
+  (`/portail/[token]`, flux principal) fonctionnels ; le flux
+  `/patient/[idAssignation]` est conservé en compatibilité legacy.
 - Synthèse IA (Anthropic SDK, prompt caching préparé) et envoi booklet livrés.
 - 67 questionnaires portés avec moteur de scoring (`web/src/lib/questions.ts`).
+- Pilotage opérationnel actif : architecture campagnes C0/C0-UX/C1…C5
+  (`docs/claude/campagnes/README.md`, `docs/claude/campagnes/ACTIVE_CAMPAIGN.md`).
 
 ### Dette technique prioritaire (bloquante avant empilement de modules)
 
-- **Bascule Sheets → PostgreSQL exclusif** : 6 routes praticien appellent
-  encore l'API Google Sheets (`metrics`, `patients`, `assignations`,
-  `questionnaires`, `reponses`, `migrate-historique`) en double écriture
-  best-effort. Toute tâche touchant ces routes doit tenir compte des deux
-  sources tant que la bascule n'est pas faite.
+- **Décommission Sheets/OAuth** : terminée (2026-07-07) ; aucune route
+  praticien n'appelle encore Google Sheets côté runtime.
 - Pagination patients/assignations si volume > ~100 lignes.
 
 ---

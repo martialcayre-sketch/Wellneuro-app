@@ -30,6 +30,7 @@ Routes possibles :
 - série de développements : `/wn-campaign` ;
 - reprise du prochain lot : `/wn-campaign-run` ;
 - documentation : `/wn-docs` ;
+- compaction du journal de session : `/wn-compact-sessionlog` ;
 - bug : `/wn-debug` ;
 - validation : `/wn-test` ;
 - revue : `/wn-review` ;

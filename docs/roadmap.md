@@ -12,6 +12,12 @@
 
 `app.wellneuro.fr` est l'unique point d'entrée en production.
 
+## Pilotage actif — architecture campagnes (2026-07-11)
+
+- Le pilotage opérationnel des évolutions produit est désormais structuré par campagnes (`C0`, `C0-UX`, `C1`…`C5`) dans `docs/claude/campagnes/*`.
+- La campagne active fait foi pour l'ordre d'exécution courant : `docs/claude/campagnes/ACTIVE_CAMPAIGN.md`.
+- Cette roadmap conserve le suivi de consolidation technique (historique C0/C2/C3/C4/C5 et lots R0→R10).
+
 ## Décommission Google Sheets — ✅ Résolu (2026-07-07)
 
 - Les routes praticien (`metrics`, `patients`, `assignations`, `questionnaires`, `reponses`, `packs`…) lisent/écrivent désormais **exclusivement PostgreSQL** via Prisma. Plus aucun appel à `sheets.googleapis.com`.
@@ -21,7 +27,7 @@
 
 ## Dette technique restante
 
-- **Registre relationnel packs/questionnaires** : faire du registre normalisé (`questionnaire_packs`, `pack_questionnaires`…) la source de lecture principale, avec fallback temporaire `packs.qids`, puis décommission de `packs.qids` (lot R3).
+- **Registre relationnel packs/questionnaires** : lot R3 **livré** (lecture primaire registre + fallback `packs.qids`). Reste en surveillance via `npm run check:pack-registry`; aucun calendrier de décommission de `packs.qids` à ce stade (décision R10).
 - Pagination patients/assignations : nécessaire si le volume dépasse ~100 lignes.
 - Fallback `http://localhost:3000` sur `NEXTAUTH_URL` dans `api/praticien/assignations/route.ts` (signalé dans le runbook du 2026-07-01) — vérifier qu'il ne peut pas produire de lien incorrect en production.
 
@@ -46,7 +52,7 @@ Décidée le 2026-07-10 suite à une revue critique de l'organisation du projet 
 | Lot | Objet | Statut |
 |---|---|---|
 | **R7** | Hygiène repo/doc : `.gitattributes` (fin de ligne LF), réalignement de `docs/claude/REGLES_CRITIQUES.md` (mention obsolète Sheets/`SHEET_ID` encore requis, à corriger pour cohérence avec `PROJET_CONTEXTE.md`), nettoyage racine (`.clasp.example.json`/`.claspignore` → `archive/gas-legacy/` ou suppression, `wellneuro_claude_automation_kit.zip`, `package-lock.json` racine stub), peuplement de la mémoire persistante Claude Code (`memory/`) avec les invariants déjà validés (dry-run avant écriture prod, format SESSION_LOG) | ✅ Livré (2026-07-10) |
-| **R8** | Filet de sécurité technique : CI GitHub Actions minimale (type-check + `scoring-check` + `check_no_secrets.sh` + lint, sans secrets prod dans un premier temps), tests unitaires (vitest) sur les fonctions déterministes existantes (scoring, `miniSynthese.ts`, `contexteClinique.ts`, `resolvePackQuestionnaireIds`), formalisation en tests Playwright commités des parcours critiques (session portail, verrouillage/déverrouillage réponse) au lieu de les réinstaller puis jeter à chaque lot (cf. risques résiduels R1/R4) | ✅ Livré (2026-07-10) — ESLint+CI (partiel, commit `ac1eb60`) puis Vitest (32 tests, étape CI ajoutée) + Playwright committé (`web/e2e/portail-parcours.spec.ts`, exécuté réellement en Chromium contre la DB de dev). `resolvePackQuestionnaireIds` sans test unitaire dédié (décision explicite, couvert par Playwright) ; `scoring-check` et Playwright restent hors CI (décision explicite, provisionnement DB en CI = chantier séparé) ; iPhone 13/WebKit jamais exécuté réellement (limite sandbox, à confirmer en local) |
+| **R8** | Filet de sécurité technique : CI GitHub Actions minimale (type-check + `scoring-check` + `check_no_secrets.sh` + lint, sans secrets prod dans un premier temps), tests unitaires (vitest) sur les fonctions déterministes existantes (scoring, `miniSynthese.ts`, `contexteClinique.ts`, `resolvePackQuestionnaireIds`), formalisation en tests Playwright commités des parcours critiques (session portail, verrouillage/déverrouillage réponse) au lieu de les réinstaller puis jeter à chaque lot (cf. risques résiduels R1/R4) | ✅ Livré (2026-07-11, mis à jour depuis 2026-07-10 — voir SESSION_LOG R8.2/R8.3) — ESLint+CI (partiel, commit `ac1eb60`) puis Vitest (**61 tests, 9 fichiers**, migration complète depuis les anciens `.check.ts` supprimés) + Playwright committé (`web/e2e/portail-parcours.spec.ts`, `web/e2e/dashboard-praticien.spec.ts`) **désormais exécuté en CI réelle** (service PostgreSQL provisionné dans `.github/workflows/ci.yml`, `prisma migrate deploy` + seed avant les tests). `resolvePackQuestionnaireIds` sans test unitaire dédié (décision explicite, couvert par Playwright) ; `scoring-check` reste hors CI (décision explicite) ; iPhone 13/WebKit jamais exécuté en conditions CI réelles (à confirmer au prochain run) |
 
 > Définition de **R6** tranchée le 2026-07-10 (R10, point 1) : c'est celle de `.claude/skills/wn-r6/SKILL.md` qui fait foi (stabilisation build/tests/go-no-go). Le contenu « moteur clinique avancé » (priorisation, protocoles 21 jours, boussole alimentaire, compléments clean label) précédemment décrit sous R6 n'est pas perdu : il est déjà couvert par les modules produit de `docs/claude/ROADMAP_AGENT_PLAN.md` (série D/R — protocole 21j, arborescence `corpus/`).
 

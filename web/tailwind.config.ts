@@ -14,6 +14,7 @@ const config: Config = {
         surface: {
           DEFAULT: 'var(--surface)',
           foreground: 'var(--surface-foreground)',
+          elevated: 'var(--color-surface-elevated)',
         },
         muted: {
           DEFAULT: 'var(--muted)',
@@ -45,6 +46,15 @@ const config: Config = {
         violet: {
           600: 'var(--violet-600)',
           300: 'var(--violet-300)',
+        },
+        status: {
+          success: 'var(--color-status-success)',
+          warning: 'var(--color-status-warning)',
+          danger: 'var(--color-status-danger)',
+          info: 'var(--color-status-info)',
+        },
+        focus: {
+          ring: 'var(--color-focus-ring)',
         },
       },
       fontFamily: {

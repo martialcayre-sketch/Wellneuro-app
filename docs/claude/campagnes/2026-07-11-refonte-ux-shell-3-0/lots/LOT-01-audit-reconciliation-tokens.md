@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "audit-reconciliation-tokens"
-statut: "à_faire"
+statut: "fait"
 dépend_de: "LOT-00"
 ---
 
@@ -48,10 +48,10 @@ consommateurs.
 
 ## Étapes
 
-- [ ] Construire le tableau de correspondance token proposé ↔ token existant.
-- [ ] Décider, pour chaque écart, extension additive vs conservation du nom D1.
-- [ ] Si ajout de code : vérifier qu'aucun token existant n'est modifié.
-- [ ] Documenter la décision dans `docs/design-system-d1.md`.
+- [x] Construire le tableau de correspondance token proposé ↔ token existant.
+- [x] Décider, pour chaque écart, extension additive vs conservation du nom D1.
+- [x] Si ajout de code : vérifier qu'aucun token existant n'est modifié.
+- [x] Documenter la décision dans `docs/design-system-d1.md`.
 
 ## Tests
 
@@ -71,4 +71,11 @@ Vérification visuelle : les pages déjà migrées D1 (`NavBar`, `dashboard/layo
 
 ## Résultats
 
-À compléter à la clôture.
+Tableau de correspondance complet rédigé dans `docs/design-system-d1.md` (section 6,
+« Réconciliation tokens UX 3.0 »). Sur 15 tokens proposés en §11.1 : 7 déjà couverts par un
+équivalent D1 (pas d'ajout), 5 ajoutés en additif (`--color-surface-elevated`,
+`--color-status-success/warning/danger/info`, `--color-focus-ring` + entrées Tailwind
+correspondantes dans `web/tailwind.config.ts`), 2 écarts volontairement non ajoutés et justifiés
+(`surface-patient` — redondant avec l'architecture par thème ; `text-secondary` — pas de
+consommateur identifié, différé à LOT-02/03). Aucun token D1 existant modifié ; garde-fou
+`--primary`/`--accent` historiques (`SynthesePanel.tsx`) vérifié intact.

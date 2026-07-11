@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "cadrage-arbitrage-questions-ouvertes"
-statut: "à_faire"
+statut: "fait"
 dépend_de: "aucun"
 ---
 
@@ -50,11 +50,12 @@ deux thèmes.
 
 ## Étapes
 
-- [ ] Lister les routes réelles sous `web/src/app/dashboard/` pour vérifier la correspondance avec le rail
+- [x] Lister les routes réelles sous `web/src/app/dashboard/` pour vérifier la correspondance avec le rail
       proposé.
-- [ ] Trancher chaque question ouverte listée ci-dessus.
-- [ ] Rédiger le wireframe texte des 3 largeurs × 2 thèmes.
-- [ ] Faire valider le wireframe avant de passer à LOT-01.
+- [x] Trancher chaque question ouverte listée ci-dessus.
+- [x] Rédiger le wireframe texte des 3 largeurs (thème praticien sombre — cf. `LOT-00-arbitrage.md` §2.7
+      pour l'arbitrage sur la portée « deux thèmes »).
+- [x] Faire valider le wireframe avant de passer à LOT-01.
 
 ## Tests
 
@@ -68,4 +69,9 @@ Aucun (lot sans code).
 
 ## Résultats
 
-À compléter à la clôture.
+Arbitrage rédigé dans `LOT-00-arbitrage.md` (correspondance routes réelles ↔ navigation, réponses aux 7
+questions ouvertes, wireframe texte desktop/tablette/mobile en thème praticien sombre). Écart notable :
+le rail se limite aux 4 routes réelles (Accueil, Patients, Synthèse IA, Paramètres) — Équilibre/Packs/
+Biologie du document source sont exclus faute de route existante, hors périmètre de C0-UX.
+
+**Validé par l'utilisateur le 2026-07-11.** Passage à LOT-01.

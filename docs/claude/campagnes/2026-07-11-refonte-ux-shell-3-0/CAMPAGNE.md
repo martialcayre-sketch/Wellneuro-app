@@ -4,7 +4,7 @@ titre: "Refonte UX shell praticien 3.0"
 statut: "à_faire"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-11"
-lot_courant: "LOT-00"
+lot_courant: "LOT-02"
 ---
 
 # Refonte UX shell praticien 3.0
@@ -91,8 +91,8 @@ ceux déjà livrés par la série D1 (`docs/design-system-d1.md`).
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Cadrage et arbitrage des questions ouvertes (maquette validée, zéro code) | à_faire | aucun |
-| LOT-01 | Audit et réconciliation des tokens sémantiques | à_faire | LOT-00 |
+| LOT-00 | Cadrage et arbitrage des questions ouvertes (maquette validée, zéro code) | fait | aucun |
+| LOT-01 | Audit et réconciliation des tokens sémantiques | fait | LOT-00 |
 | LOT-02 | Shell desktop/tablette (rail gauche + barre de commande) | à_faire | LOT-01 |
 | LOT-03 | Navigation mobile (bottom nav + bottom sheet) | à_faire | LOT-02 |
 | LOT-04 | Validation et handoff vers C1 | à_faire | LOT-03 |
@@ -108,8 +108,8 @@ script — la commande ci-dessus reproduirait le squelette et les sources import
 
 ## Done de campagne
 
-- [ ] La maquette du shell (desktop/tablette/mobile) est validée et les questions ouvertes tranchées.
-- [ ] Les tokens sémantiques sont réconciliés et documentés dans `docs/design-system-d1.md`.
+- [x] La maquette du shell (desktop/tablette/mobile) est validée et les questions ouvertes tranchées.
+- [x] Les tokens sémantiques sont réconciliés et documentés dans `docs/design-system-d1.md`.
 - [ ] Le shell est implémenté sans changement de route ni de logique métier.
 - [ ] La navigation mobile respecte les zones tactiles et l'absence de dépendance au survol.
 - [ ] Les 3 patients fictifs sont visibles dans les deux thèmes et les trois largeurs (desktop/tablette/mobile).

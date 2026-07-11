@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Corrections documentaires minimales"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-01"
 ---
 
@@ -47,10 +47,10 @@ Documentation cohérente et minimale, sans changement fonctionnel.
 
 ## Étapes
 
-- [ ] Préparer un diff documentaire minimal.
-- [ ] Vérifier qu'aucune décision non prouvée n'est ajoutée.
-- [ ] Relire les liens et chemins.
-- [ ] Exécuter le contrôle secrets par prudence.
+- [x] Préparer un diff documentaire minimal.
+- [x] Vérifier qu'aucune décision non prouvée n'est ajoutée.
+- [x] Relire les liens et chemins.
+- [x] Exécuter le contrôle secrets par prudence.
 
 ## Tests
 
@@ -62,9 +62,9 @@ Documentation cohérente et minimale, sans changement fonctionnel.
 
 ## Critères de done
 
-- [ ] La dette Sheets/OAuth est décrite correctement.
-- [ ] La roadmap distingue acquis, dette réelle et backlog.
-- [ ] Le diff ne touche que la documentation.
+- [x] La dette Sheets/OAuth est décrite correctement (déjà exacte, aucune correction requise — cf. LOT-00/LOT-01).
+- [x] La roadmap distingue acquis, dette réelle et backlog (ligne R8 corrigée).
+- [x] Le diff ne touche que la documentation.
 
 ## Risques / points de vigilance
 
@@ -72,4 +72,18 @@ Documentation cohérente et minimale, sans changement fonctionnel.
 
 ## Résultats
 
-À compléter à la clôture du lot : fichiers modifiés, commandes exécutées, captures, écarts, dette restante et décision de poursuite.
+**Clôturé le 2026-07-11.** Seule divergence trouvée par LOT-00 : la ligne R8 du tableau R0→R10 (dupliquée dans `docs/ROADMAP_TECHNIQUE.md:55` et `docs/roadmap.md:55`) affirmait « Vitest (32 tests) … Playwright reste hors CI », contredit par les entrées SESSION_LOG du 2026-07-11 (R8.2 : Playwright intégré en CI réelle avec service PostgreSQL ; R8.3 : Vitest passé à 61 tests, `.check.ts` supprimés).
+
+**Fichiers modifiés** :
+- `docs/ROADMAP_TECHNIQUE.md` (ligne R8) : état mis à jour (61 tests/9 fichiers, Playwright en CI réelle, source SESSION_LOG R8.2/R8.3).
+- `docs/roadmap.md` (ligne R8, texte dupliqué) : identique.
+- `lots/LOT-00-audit-sources-verite.md`, `lots/LOT-01-verification-routes-sheets-oauth.md`, `lots/LOT-02-corrections-documentaires-minimales.md` (ce fichier) : statuts et sections Résultats complétés.
+- `CAMPAGNE.md` : `lot_courant` avancé, tableau des lots mis à jour.
+
+**Commandes exécutées** : `bash scripts/check_no_secrets.sh` (à consigner ci-dessous après exécution).
+
+**Écarts** : aucun autre écart trouvé (cf. matrice LOT-00, points 1 à 5 confirmés exacts). Point #7 (suppression non committée de `PROJET_CONTEXTE_MINIMAL.md`/`README_MINIMAL.md`) laissé ouvert, hors périmètre de cette campagne.
+
+**Dette restante** : aucune dette documentaire connue sur le périmètre audité (Sheets/OAuth, registre relationnel, portail unifié, synthèse IA, patients fictifs, statut R8).
+
+**Décision de poursuite** : GO pour LOT-03 (validation et handoff vers la campagne suivante).
