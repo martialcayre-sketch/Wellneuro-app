@@ -21,14 +21,14 @@ test.describe('Praticien Dashboard', () => {
     await expect(page).toHaveTitle(/Dashboard|Praticien/i); // Adjust title expectation
     
     // Vérifie que le titre du dashboard est visible
-    const mainHeading = page.locator('h1, h2').filter({ hasText: /Dashboard|Espace praticien|Bienvenue/i });
+    const mainHeading = page.locator('h1, h2').filter({ hasText: /Dashboard|Espace praticien|Bienvenue|Bonjour/i });
     await expect(mainHeading.first()).toBeVisible({ timeout: 10000 });
 
     // Vérifie que les liens de navigation principaux sont visibles
     const patientLink = page.locator('a:has-text("Patients")');
     const syntheseLink = page.locator('a:has-text("Synthèse")');
     
-    await expect(patientLink.or(page.locator('a[href*="patients"]'))).toBeVisible({ timeout: 5000 });
+    await expect(patientLink.or(page.locator('a[href*="patients"]')).first()).toBeVisible({ timeout: 5000 });
   });
 
   test('navigate to patients section', async ({ page }) => {
