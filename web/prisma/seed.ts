@@ -7,10 +7,6 @@ import { PrismaClient } from '../src/generated/prisma';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { withSupabaseSslMode, supabasePoolSsl } from '../src/lib/postgres';
-import { verifierObjetsCliniques } from '../src/lib/equilibre/objetsCliniques.check';
-import { verifierMomentum } from '../src/lib/equilibre/momentum.check';
-import { verifierNiveauxPreuve } from '../src/lib/equilibre/evidence.check';
-import { verifierDepuisPrisma } from '../src/lib/equilibre/depuisPrisma.check';
 
 const DATABASE_URL =
   process.env.DATABASE_URL ??
@@ -298,16 +294,9 @@ async function seed() {
 
   console.log('\nSeed terminé.');
 
-  // Vérification zéro-dépendance du moteur "Mon équilibre" (feat/e2-scoring-engine).
-  // N'écrit rien en base — purement du calcul en mémoire.
-  // Le score du moteur (score.ts) est désormais couvert par
-  // web/src/lib/equilibre/score.test.ts (Vitest) et n'est plus vérifié ici.
-  if (process.env.SEED_VERIFY_EQUILIBRE_SCORE === '1') {
-    verifierObjetsCliniques();
-    verifierMomentum();
-    verifierNiveauxPreuve();
-    verifierDepuisPrisma();
-  }
+  // Vérification zéro-dépendance du moteur "Mon équilibre" est maintenant
+  // couverte par Vitest (packRegistryLogic.test.ts, objetsCliniques.test.ts, etc.).
+  // Cette variable env n'est plus utilisée.
 }
 
 seed()
