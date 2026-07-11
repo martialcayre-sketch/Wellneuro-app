@@ -472,3 +472,17 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Prochaine action prioritaire** : committer ce lot (aucun commit fait par l'agent dans cette session) ; envisager Vitest sur `resolvePackQuestionnaireIds` (sous-logique pure si extraction possible) ou Playwright-en-CI comme chantiers séparés si souhaité.
 
 **Questions ouvertes** : aucune nouvelle.
+
+## 2026-07-11 — Clôture R8 (suite) : commit
+
+**Décisions prises** : R8 (suite) livré et committé (`fec6def`) — 32 tests Vitest (scoring, mini-synthèse, contexte clinique, pipeline équilibre porté depuis `score.check.ts` supprimé) + parcours Playwright committé du portail patient, exécuté réellement en Chromium contre la DB de dev (3 bugs de test corrigés au passage, pas de bug applicatif). Étape Vitest ajoutée à la CI. Avant de committer, `git status` a révélé des changements sans rapport (wn-campaign, SKILL.md divers, dossier `nw_campaign_writer_autoname_kit/` vide) issus d'une autre session concurrente sur `main` — périmètre du commit clarifié avec l'utilisateur : uniquement les 16 fichiers du lot R8, rien d'autre.
+
+**Options écartées** : committer aussi les fichiers wn-campaign (hors périmètre, tranché par l'utilisateur).
+
+**Fichiers modifiés** : voir commit `fec6def` (détail dans l'entrée précédente).
+
+**Risques résiduels** : iPhone 13/WebKit jamais exécuté réellement (limite sandbox) ; Playwright hors CI (décision explicite) ; les changements wn-campaign restent non committés dans l'arbre de travail, à la charge de l'autre session.
+
+**Prochaine action prioritaire** : aucune côté R8 ; reprendre R10/R8-Vitest sur `resolvePackQuestionnaireIds` ou Playwright-en-CI si souhaité comme chantier séparé.
+
+**Questions ouvertes** : aucune.
