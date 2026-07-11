@@ -502,7 +502,7 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 - **Phase 4** (commit `d01f696`) : Archive templates → déplacement `SESSION_LOG_ENTRY_EXEMPLE.md` + `SESSION_LOG_ENTRY_2026-07-09.md` vers `docs/archive/templates/`, `.gitkeep` pour préservation structure.
 - **Clôture** (commit `8ee3a4c`) : Finalisation changements résiduels (campagne.md, suppressions fichiers).
 
-**Validations exécutées** : 
+**Validations exécutées** :
 - ✅ `bash scripts/check_no_secrets.sh` → OK, aucun secret détecté
 - ✅ `cd web && npm run type-check` → pas d'erreur TypeScript
 - ✅ Git push → tous 8 commits (5 de Doc-Assainissement + 3 précédents) poussés vers `origin/main`
@@ -517,5 +517,36 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Options écartées** : aucun contact utilisateur durant phases (autonomie par demande explicite) ; approche alternative Options B/C du spec ignorées (Option A sélectionnée par principe changement minimal).
 
 **Prochaine action prioritaire** : aucune — campagne terminée. Utilisateur peut évaluer archives et structure le 2026-07-12 retour.
+
+**Questions ouvertes** : aucune.
+
+## 2026-07-11 — R8.1 : Tests Vitest sur `resolveQidsLogic` (logique pure pack)
+
+**Décisions prises** : lot R8.1 livré et committé (`53805e9`) — extraction fonction pure + tests déterministes. Stratégie « extraction pure » retenue (robustesse long terme vs. vitesse court terme). Logique : créer `packRegistryLogic.ts` avec fonction pure `resolveQidsLogic(registryQids, legacyQids)` (zéro dépendance Prisma), refactoriser `resolvePackQuestionnaireIds()` pour l'utiliser, créer `packRegistryLogic.test.ts` avec 8 cas de test Vitest (nominal + 7 edge cases).
+
+**Cas de test couverts** :
+1. Registry vide → null (fallback legacy)
+2. Registry = legacy (nominal) → registryQids avec ordre préservé
+3. Registry ⊃ legacy (superset) → null
+4. Registry ⊂ legacy (subset) → null
+5. Registry ≠ legacy (contenu différent) → null
+6. Registry existant, legacy vide → null
+7. Registry et legacy tous deux vides → null
+8. Bonus : ordre registry préservé (cardinal 3, legacy ordre différent)
+
+**Validations exécutées** :
+- ✅ 8 nouveaux tests Vitest passe
+- ✅ 32 tests existants toujours verts (zéro régression)
+- ✅ Total : 40 tests passent
+- ✅ TypeScript : zéro erreur
+- ✅ Fonction pure = reproductible en local + CI (zéro dépendance externe)
+
+**Fichiers créés** : `web/src/lib/consultation/packRegistryLogic.ts`, `web/src/lib/consultation/packRegistryLogic.test.ts`.
+
+**Fichiers modifiés** : `web/src/lib/consultation/packRegistry.ts` (import + utilisation `resolveQidsLogic`).
+
+**Options écartées** : approche mock Prisma (test nominal seulement, moins robuste) → extraction pure préférée (réutilisable, zéro dépendance).
+
+**Prochaine action prioritaire** : R8.2 (Playwright-en-CI) ou R8.3 (consolidation `.check.ts`) selon priorité utilisateur ; R10 (arbitrages produit) si préféré en premier.
 
 **Questions ouvertes** : aucune.
