@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@/generated/prisma';
+import { resolveQidsLogic } from './packRegistryLogic';
 
 export const DEFAULT_REGISTRY_PACK_NIVEAU = 'approfondissement';
 
@@ -79,11 +80,9 @@ export async function resolvePackQuestionnaireIds(pack: {
 
   if (registryPack) {
     const registryQids = registryPack.questionnaires.map(item => item.questionnaire.questionnaireId);
-    const registrySet = new Set(registryQids);
-    const legacySet = new Set(pack.qids);
-    const sameMembers = registrySet.size === legacySet.size && pack.qids.every(qid => registrySet.has(qid));
-    if (registryQids.length > 0 && sameMembers) {
-      return { qids: registryQids, source: 'registry' };
+    const resolved = resolveQidsLogic(registryQids, pack.qids);
+    if (resolved !== null) {
+      return { qids: resolved, source: 'registry' };
     }
   }
 
