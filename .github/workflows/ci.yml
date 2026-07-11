@@ -9,9 +9,24 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: wellneuro_ci
+          POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=en_US.UTF-8
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     env:
       DATABASE_URL: postgresql://ci_user:ci_password@localhost:5432/wellneuro_ci
-      NEXTAUTH_SECRET: ci-placeholder-secret-not-used-in-prod
+      NEXTAUTH_SECRET: ci-test-secret-r8-2-playwright-automation
       NEXTAUTH_URL: http://localhost:3000
       GOOGLE_CLIENT_ID: ci-placeholder
       GOOGLE_CLIENT_SECRET: ci-placeholder
@@ -31,9 +46,21 @@ jobs:
         working-directory: web
         run: npm ci
 
+      - name: Install Playwright browsers
+        working-directory: web
+        run: npx playwright install --with-deps chromium
+
       - name: Generate Prisma client
         working-directory: web
         run: npx prisma generate
+
+      - name: Setup database schema
+        working-directory: web
+        run: npx prisma migrate deploy
+
+      - name: Seed test data
+        working-directory: web
+        run: npm run prisma:seed
 
       - name: Type-check
         working-directory: web
@@ -50,3 +77,15 @@ jobs:
       - name: Build
         working-directory: web
         run: npm run build
+
+      - name: E2E tests (Playwright)
+        working-directory: web
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: web/playwright-report/
+          retention-days: 7
