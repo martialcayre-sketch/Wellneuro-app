@@ -89,7 +89,8 @@ Contrôle OAuth Google Cloud Console (production) :
 ## Documentation
 
 - Contexte projet et état actuel : `docs/claude/PROJET_CONTEXTE.md`
-- Roadmap : `docs/roadmap.md`
+- Roadmap technique (consolidation R0→R10) : `docs/ROADMAP_TECHNIQUE.md`
+- Roadmap produit (séries D/R/E) : `docs/ROADMAP_PRODUIT.md`
 - Sécurité RGPD : `docs/securite_rgpd.md`
 - Checklist de validation end-to-end : `docs/checklist_tests_end_to_end.md`
 - Runbook incident Vercel/DNS : `docs/claude/CONTEXTE_SESSION_VERCEL_2026-07-01.md`

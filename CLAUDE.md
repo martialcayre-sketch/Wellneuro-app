@@ -50,7 +50,8 @@ Priorité absolue : stabilité de l'application en production, pas de nouvelle m
 - Workflow de dev : `docs/claude/WORKFLOW_DEVELOPPEMENT.md`
 - Templates de prompts : `docs/claude/TEMPLATES_PROMPTS.md`
 - Runbook incident Vercel/DNS : `docs/claude/CONTEXTE_SESSION_VERCEL_2026-07-01.md`
-- Roadmap produit consolidée (séries D/R/E, priorités) : `docs/claude/ROADMAP_AGENT_PLAN.md`
+- Roadmap technique (consolidation R0→R10) : `docs/ROADMAP_TECHNIQUE.md`
+- Roadmap produit (séries D/R/E, priorités) : `docs/ROADMAP_PRODUIT.md`
 
 ## Commandes utiles
 
