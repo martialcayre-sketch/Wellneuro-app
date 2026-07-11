@@ -129,3 +129,15 @@
 **Prochaine action prioritaire** : LOT-03 (navigation mobile), sur instruction explicite.
 
 **Questions ouvertes** : aucune nouvelle.
+
+## [2026-07-11] — Campagne C0-UX : LOT-03 (navigation mobile), clôturé
+
+**Décisions prises** : `MobileBottomNav.tsx` créé (barre basse 4 entrées Accueil/Patients/Synthèses/Plus + bottom sheet Paramètres, sans props). Coupure à trois breakpoints introduite dans `NavBar.tsx` (rail `≥1024px` inchangé, panneau ☰ resserré à `768–1024px`, nav basse `<768px` nouvelle) — le code n'avait qu'une coupure à deux niveaux sur `lg` auparavant. Sheet accessible (Escape, focus géré) volontairement non rétrofitée sur le panneau ☰ existant (hors périmètre).
+
+**Validations exécutées** : `type-check`, `check_no_secrets.sh`, capture manuelle 375/900/1100px (aucune régression LOT-02), 3 patients de démo confirmés sur mobile, nouveau test Playwright (4/4 sur `Desktop Chromium`). `/wn-review` : GO, aucun bloquant (dette non bloquante déjà documentée dans le lot : pas de focus trap, duplication `isActive`).
+
+**Options écartées** : rétrofit clavier/focus sur le panneau ☰ tablette (LOT-02) — hors périmètre, risque de régression.
+
+**Prochaine action prioritaire** : LOT-04 (validation et handoff vers C1), sur instruction explicite.
+
+**Questions ouvertes** : aucune nouvelle. iPhone 13/WebKit non exécutable en local (limitation d'environnement préexistante, OK en CI).
