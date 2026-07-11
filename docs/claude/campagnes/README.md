@@ -1,41 +1,37 @@
-# Campagnes de développement
+# WellNeuro 3.0 — Campagnes autonomes
 
-Chaque campagne possède son propre dossier (souvent daté), un `BRIEF.md`, un `BRIEF_COMPILED.md`, un `CAMPAIGN_DRAFT.md`, un `CAMPAGNE.md` et des lots.
+> Programme de développement par campagnes (C0-C5).  
+> Dernier update : 2026-07-11
 
-Création :
+## Ordre d'exécution
+
+| # | Campagne | Status | Dépendances | Lots |
+|---|----------|--------|-------------|------|
+| C0 | Alignement documentaire | **ACTIVE** | — | 4 |
+| C1 | Décision clinique 21j | Prête | C0 | 7 |
+| C2 | Persistance J7/J14/J21 | Prête | C1 + confirmation | 3 |
+| C3 | Fiches conseils | Prête | C1 | 5 |
+| C4 | Compléments clean label | Prête | C1 + C3 | 6 |
+| C5 | Boussole alimentaire | Prête | C1 + validation | 6 |
+
+## Campagne active
+
+Voir : [ACTIVE_CAMPAIGN.md](ACTIVE_CAMPAIGN.md)
+
+## Prochaine action
 
 ```bash
-node scripts/wn-campaign.mjs create "Nom" --lots 5
+/wn-campaign-run      # Affiche le prochain lot
+/wn-campaign next     # Alias court
 ```
 
-Création depuis des notes Markdown :
+## Programme complet
 
-```bash
-node scripts/wn-campaign.mjs create "Nom" --source ./brainstorms/nom --auto-final --activate
-```
+Voir : [PROGRAMME_WELLNEURO_3_0.md](PROGRAMME_WELLNEURO_3_0.md)
 
-État :
+## Guide de lecture
 
-```bash
-node scripts/wn-campaign.mjs status
-node scripts/wn-campaign.mjs next
-```
-
-Options principales (`create`) :
-
-- `--source <dossier>` : importe des fichiers `.md` de brainstorming.
-- `--slug <slug>` : force le nom technique.
-- `--prefix-date` : préfixe le dossier par la date.
-- `--init-only` : crée uniquement le dossier et un canevas `00_brainstorm.md`.
-- `--auto-final` : crée `CAMPAGNE.md` (utile notamment avec `--init-only`).
-- `--activate` : met à jour `docs/claude/campagnes/ACTIVE_CAMPAIGN.md`.
-- `--overwrite` : autorise l'écrasement des artefacts générés.
-
-Méthode recommandée :
-
-1. Préparer la campagne et le lot via `/wn` ou `/wn-auto`.
-2. Passer en mode Plan pour le plan technique détaillé avant toute modification.
-3. Exécuter seulement après validation du plan.
-4. Clôturer avec `/wn-finish`.
-
-Statuts autorisés : `à_faire`, `en_cours`, `bloqué`, `terminé`, `abandonné`.
+1. **Première visite** : Lire PROGRAMME_WELLNEURO_3_0.md
+2. **Campagne active** : Ouvrir `2026-07-11-*/CAMPAGNE.md`
+3. **Prochain lot** : `/wn-campaign next` (affiche LOT-NN-titre.md)
+4. **Reprise contexte** : `/wn-context` ou `/wn-handoff`
