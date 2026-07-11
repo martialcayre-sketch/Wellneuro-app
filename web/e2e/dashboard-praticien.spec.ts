@@ -24,10 +24,16 @@ test.describe('Praticien Dashboard', () => {
     const mainHeading = page.locator('h1, h2').filter({ hasText: /Dashboard|Espace praticien|Bienvenue|Bonjour/i });
     await expect(mainHeading.first()).toBeVisible({ timeout: 10000 });
 
+    // Sur les largeurs < lg (tablette portrait/mobile), la navigation est repliée
+    // derrière le bouton ☰ (panneau overlay, LOT-02) : on l'ouvre si présent.
+    const menuToggle = page.getByRole('button', { name: 'Ouvrir la navigation' });
+    if (await menuToggle.isVisible()) {
+      await menuToggle.click();
+    }
+
     // Vérifie que les liens de navigation principaux sont visibles
     const patientLink = page.locator('a:has-text("Patients")');
-    const syntheseLink = page.locator('a:has-text("Synthèse")');
-    
+
     await expect(patientLink.or(page.locator('a[href*="patients"]')).first()).toBeVisible({ timeout: 5000 });
   });
 
