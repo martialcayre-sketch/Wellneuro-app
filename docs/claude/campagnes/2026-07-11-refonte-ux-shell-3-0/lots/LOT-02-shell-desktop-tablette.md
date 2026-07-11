@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "shell-desktop-tablette"
-statut: "à_faire"
+statut: "fait"
 dépend_de: "LOT-01"
 ---
 
@@ -55,11 +55,11 @@ dans le thème praticien sombre, avec les libellés/icônes tranchés en LOT-00.
 
 ## Étapes
 
-- [ ] Vérifier les hypothèses du wireframe LOT-00 contre les routes réelles.
-- [ ] Implémenter le rail gauche + barre de commande (desktop).
-- [ ] Adapter le comportement tablette (rail compact paysage, rétractable portrait).
-- [ ] Vérifier le focus clavier et l'état actif de chaque entrée.
-- [ ] Capturer les 3 patients fictifs dans le thème praticien sombre.
+- [x] Vérifier les hypothèses du wireframe LOT-00 contre les routes réelles.
+- [x] Implémenter le rail gauche + barre de commande (desktop).
+- [x] Adapter le comportement tablette (rail compact paysage, rétractable portrait).
+- [x] Vérifier le focus clavier et l'état actif de chaque entrée.
+- [x] Capturer les 3 patients fictifs dans le thème praticien sombre.
 
 ## Tests
 
@@ -79,4 +79,28 @@ Vérification manuelle : navigation clavier complète (Tab/Entrée), aucune rég
 
 ## Résultats
 
-À compléter à la clôture.
+Implémenté : `web/src/components/NavBar.tsx` reconstruit depuis le wireframe LOT-00 (barre de commande
+simplifiée + rail persistant compact ⇄ étendu mémorisé en `localStorage`, panneau overlay dédié pour
+tablette portrait/mobile), nouveau composant présentationnel `web/src/components/ui/SidebarRail.tsx`
+partagé entre les deux rendus. Aucune entrée hors périmètre (Packs/Équilibre/Biologie réservées LOT-03,
+non ajoutées). `signOut` et routes inchangés.
+
+Incident de coordination pendant l'implémentation : une fusion concurrente (`e5259f1`, autre session) a
+temporairement réintroduit une ébauche antérieure non conforme (cassait le type-check, réintroduisait le
+contenu hors périmètre) ; réconcilié en réappliquant la version conforme au plan approuvé (`359524d`).
+
+Un bug réel (préexistant, indépendant de ce lot) a été détecté et corrigé dans
+`web/e2e/dashboard-praticien.spec.ts` : l'assertion `.first()` résolvait toujours le lien du rail masqué par
+CSS sur mobile plutôt que celui du panneau overlay ouvert — corrigé par un filtre `:visible` (`60cd871`).
+
+Vérification manuelle (captures + script Playwright ad hoc, `NEXTAUTH_SECRET` local temporaire) :
+- Rail compact/étendu desktop, persistance `localStorage` confirmée après rechargement.
+- Panneau overlay tablette portrait (834×1112) et mobile (390×844) fonctionnels.
+- Parcours clavier complet (Tab) : recherche → Profil ▾ → 4 liens du rail (labels et `aria-current`
+  corrects) → bascule compact/étendu → contenu principal ; icône 🔔 exclue de la tabulation (décorative).
+- Bug détecté et corrigé pendant cette vérification : en rail compact, "Patients" et "Paramètres"
+  affichaient tous deux "PA" (slice automatique des 2 premières lettres) — remplacé par des abréviations
+  explicites (AC/PT/SY/PM) dans `SidebarRail.tsx` (`db0c670`).
+
+CI GitHub Actions verte sur `db0c670` (type-check, lint, build, Vitest, Playwright Desktop Chromium +
+iPhone 13).
