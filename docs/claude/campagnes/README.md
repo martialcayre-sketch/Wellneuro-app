@@ -1,6 +1,6 @@
 # WellNeuro 3.0 — Campagnes autonomes
 
-> Programme de développement par campagnes (C0-C5).  
+> Programme de développement par campagnes (C0-C5).
 > Dernier update : 2026-07-11
 
 ## Ordre d'exécution

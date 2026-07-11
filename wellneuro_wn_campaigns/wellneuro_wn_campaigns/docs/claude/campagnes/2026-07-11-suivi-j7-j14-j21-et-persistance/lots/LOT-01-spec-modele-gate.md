@@ -1,0 +1,72 @@
+---
+id: "LOT-01"
+titre: "Spécification du modèle et gate migration"
+statut: "à_faire"
+dépend_de: "LOT-00"
+---
+
+# LOT-01 — Spécification du modèle et gate migration
+
+## But
+
+Formaliser le schéma cible, API et stratégie de migration sans l’exécuter.
+
+## Résultat observable
+
+ADR/modèle validé et checklist de confirmation.
+
+## Périmètre
+
+- Spécifier CarePlan, CarePlanPhase, CareAction, validation, check-in et éventuellement snapshot.
+- Définir index, relations, statuts et suppression.
+- Prévoir compatibilité avec protocole local V1.
+
+## Hors périmètre
+
+- Modifier schema.prisma
+- Lancer Prisma migrate
+
+## Fichiers probables
+
+- docs/claude/**
+- web/prisma/schema.prisma en lecture seulement
+- types protocole existants
+
+## Interdits
+
+- Tous les textes d’interface utilisateur sont en français.
+- Aucun secret, jeton, mot de passe ou identifiant sensible en dur.
+- Aucune donnée patient réelle dans le code, les exemples, les maquettes, les seeds ou les tests.
+- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogne.
+- Aucune migration Prisma/SQL et aucune écriture Supabase sans demande explicite et confirmation distincte.
+- Changements minimaux : pas de refactor global hors périmètre du lot.
+- Aucune modification des seuils, pondérations ou règles cliniques sans instruction explicite, versionnage et trace documentaire.
+- L’IA produit des brouillons ; le praticien valide avant toute diffusion patient.
+
+## Étapes
+
+- [ ] Écrire diagramme et contrats.
+- [ ] Comparer alternatives stocker/calculer snapshots.
+- [ ] Valider minimisation des données.
+- [ ] Obtenir confirmation explicite.
+
+## Tests
+
+- `bash scripts/check_no_secrets.sh`
+- `cd web && npm run type-check`
+- `cd web && npm run scoring-check` lorsque le lot touche indirectement l’affichage des scores
+- Smoke test navigateur avec Sophie Nicola, Jennifer Martin et Michel Dogne
+- Vérification mobile/tablette lorsque le lot touche une interface
+
+## Critères de done
+
+- [ ] La migration est estimable et réversible.
+- [ ] La confirmation est consignée avant LOT-02.
+
+## Risques / points de vigilance
+
+- Transformer le modèle V1 en plateforme générique trop tôt.
+
+## Résultats
+
+À compléter à la clôture du lot : fichiers modifiés, commandes exécutées, captures, écarts, dette restante et décision de poursuite.

@@ -1,0 +1,13 @@
+{
+  "title": "Fiches conseils contextuelles V1",
+  "generatedAt": "2026-07-11T00:00:00.000Z",
+  "campaignDir": "docs/claude/campagnes/2026-07-11-fiches-conseils-contextuelles-v1",
+  "sourceDir": "wellneuro_code_assistant_library",
+  "sourceFiles": [
+    "sources/09_SPEC_DOCUMENTS_MULTI_DESTINATAIRES.md",
+    "sources/11_BACKLOG_MODULES_AVANCES.md",
+    "sources/12_GARDE_FOUS_CLINIQUES_RGPD_SECURITE.md",
+    "sources/09_DOCUMENTS_BOOKLETS_MULTI_DESTINATAIRES.md"
+  ],
+  "generatedFor": "/wn"
+}

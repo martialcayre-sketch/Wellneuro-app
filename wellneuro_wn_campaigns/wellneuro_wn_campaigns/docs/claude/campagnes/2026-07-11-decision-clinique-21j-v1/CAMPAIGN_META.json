@@ -1,0 +1,17 @@
+{
+  "title": "Décision clinique 21 jours V1 — cockpit et protocole minimal",
+  "generatedAt": "2026-07-11T00:00:00.000Z",
+  "campaignDir": "docs/claude/campagnes/2026-07-11-decision-clinique-21j-v1",
+  "sourceDir": "wellneuro_code_assistant_library",
+  "sourceFiles": [
+    "sources/03_HIERARCHISATION_STRATEGIQUE.md",
+    "sources/05_VERTICAL_SLICE_1_FICHE_PATIENT_COCKPIT_PROTOCOLE.md",
+    "sources/06_SPEC_UX_COCKPIT_PRATICIEN.md",
+    "sources/07_SPEC_PROTOCOLE_21J_MINIMAL.md",
+    "sources/09_SPEC_DOCUMENTS_MULTI_DESTINATAIRES.md",
+    "sources/10_SPEC_DONNEES_MANQUANTES_SIGNAUX_DISCORDANTS.md",
+    "sources/12_GARDE_FOUS_CLINIQUES_RGPD_SECURITE.md",
+    "sources/14_DEFINITION_OF_DONE.md"
+  ],
+  "generatedFor": "/wn"
+}
