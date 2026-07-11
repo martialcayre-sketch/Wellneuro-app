@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { SidebarRail } from '@/components/ui/SidebarRail';
+import { MobileBottomNav } from '@/components/ui/MobileBottomNav';
 
 const RAIL_STORAGE_KEY = 'wn-rail-expanded';
 
@@ -59,7 +60,7 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
           aria-expanded={isDrawerOpen}
           aria-controls="wn-rail-drawer"
           aria-label="Ouvrir la navigation"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring lg:hidden"
+          className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring md:flex lg:hidden"
         >
           <span aria-hidden="true">☰</span>
         </button>
@@ -143,11 +144,11 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
           )}
         </aside>
 
-        <main className="min-w-0 flex-1 pb-6 lg:pb-8">{children}</main>
+        <main className="min-w-0 flex-1 pb-24 md:pb-6 lg:pb-8">{children}</main>
       </div>
 
       {isDrawerOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden" role="presentation">
+        <div className="fixed inset-0 z-50 hidden md:flex lg:hidden" role="presentation">
           <button
             type="button"
             aria-label="Fermer la navigation"
@@ -178,6 +179,8 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
           </section>
         </div>
       )}
+
+      <MobileBottomNav />
     </div>
   );
 }
