@@ -550,3 +550,36 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Prochaine action prioritaire** : R8.2 (Playwright-en-CI) ou R8.3 (consolidation `.check.ts`) selon priorité utilisateur ; R10 (arbitrages produit) si préféré en premier.
 
 **Questions ouvertes** : aucune.
+
+## 2026-07-11 — R8.3 : Consolidation `.check.ts` → Vitest (.test.ts)
+
+**Décisions prises** : lot R8.3 livré et committé (`75b7449`) — conversion complète du framework ad-hoc de vérification equilibre vers Vitest standard. Scope : les 4 fichiers `.check.ts` hors périmètre de R8.1 (score porté en R8 suite, maintenant supprimé depuis ce lot), portés à 21 tests Vitest couvrant la logique déterministe des 4 domaines de « Mon équilibre ».
+
+**Fichiers créés** (tests Vitest) :
+- `web/src/lib/equilibre/objetsCliniques.test.ts` : 5 tests (clarity=1/0 sans réponse, adaptation score sévérité, stabilité métabolique, dérivés auto-calculés, agrégation besoin)
+- `web/src/lib/equilibre/evidence.test.ts` : 5 tests (preuves niveau par besoin, fallback NON_MESURE, grade sélection, sources listées, hiérarchie multiévidences)
+- `web/src/lib/equilibre/momentum.test.ts` : 5 tests (fenêtre de date tolerance 30j, lecture la plus proche gagne, delta signe OK, null handling, readings parallèles)
+- `web/src/lib/equilibre/depuisPrisma.test.ts` : 6 tests (déduplication lecture récente, filtrage rawAnswers, dateLimite, T0 = earliest, historique construit, rétrocompatibilité packs.qids)
+
+**Validations exécutées** :
+- ✅ 21 nouveaux tests Vitest passe (5+5+5+6)
+- ✅ 40 tests existants toujours verts (32 R8.1 + 8 autres)
+- ✅ Total : **61 tests passent** (9 fichiers test)
+- ✅ TypeScript : zéro erreur après suppressions `.check.ts`
+- ✅ `npm run test` complet : 61 passing (6.86s)
+
+**Fichiers supprimés** (old `.check.ts` ad-hoc) :
+- `web/src/lib/equilibre/objetsCliniques.check.ts`
+- `web/src/lib/equilibre/evidence.check.ts`
+- `web/src/lib/equilibre/momentum.check.ts`
+- `web/src/lib/equilibre/depuisPrisma.check.ts`
+
+**Fichiers modifiés** :
+- `web/prisma/seed.ts` : retrait 4 imports `.check.ts` (lignes 10-13) + retrait 4 appels vérification (lignes 306-309) + commentaire environnement variable `SEED_VERIFY_EQUILIBRE_SCORE` (abandonné)
+
+**Options écartées** : conserver les `.check.ts` en parallèle des tests (redondance, maintenance complexe, jamais exécutés en CI) → migration complète vers Vitest standard jugée préférable à long terme.
+
+**Prochaine action prioritaire** : R8.2 (Playwright-en-CI, provisionnement PostgreSQL service dans `.github/workflows/ci.yml`) ou R10 (arbitrages produit) selon priorité utilisateur.
+
+**Questions ouvertes** : aucune.
+
