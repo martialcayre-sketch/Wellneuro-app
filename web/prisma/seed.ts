@@ -253,6 +253,20 @@ const REPONSES_MICHEL = [
   },
 ];
 
+// Pack de base assigné automatiquement en fin d'onboarding portail
+// (`/api/portail/valider`). Reflète le pack `parDefaut` réel (contenu figé
+// R2, 2026-07-10) — sans lui, une base fraîchement provisionnée (CI, nouvel
+// environnement de dev) n'a aucun pack et l'onboarding échoue.
+const PACK_BASE = {
+  idPack: 'PACK_SEED_BASE',
+  nom: 'Base de consultation',
+  thematique: null,
+  description: null,
+  qids: ['Q_MOD_03', 'Q_MOD_01', 'Q_ALI_01', 'Q_INF_03'],
+  actif: true,
+  parDefaut: true,
+};
+
 async function seed() {
   console.log('Seed démarré...\n');
 
@@ -263,6 +277,18 @@ async function seed() {
       create: patient,
     });
     console.log(`Patient créé/existant : ${patient.prenom} ${patient.nom} (${patient.idPatient})`);
+  }
+
+  const parDefautExistant = await prisma.pack.findFirst({ where: { parDefaut: true, actif: true } });
+  if (!parDefautExistant) {
+    await prisma.pack.upsert({
+      where: { idPack: PACK_BASE.idPack },
+      update: {},
+      create: PACK_BASE,
+    });
+    console.log(`Pack par défaut créé : ${PACK_BASE.nom} (${PACK_BASE.idPack})`);
+  } else {
+    console.log(`Pack par défaut déjà présent : ${parDefautExistant.nom} (${parDefautExistant.idPack})`);
   }
 
   const allReponses = [
