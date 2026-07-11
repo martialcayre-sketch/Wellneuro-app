@@ -1,0 +1,16 @@
+{
+  "title": "Décision clinique 21 jours V1",
+  "generatedAt": "2026-07-11T01:58:46.616Z",
+  "campaignDir": "docs/claude/campagnes/2026-07-11-decision-clinique-21-jours-v1",
+  "sourceDir": "wellneuro_wn_campaigns/wellneuro_wn_campaigns/docs/claude/campagnes/2026-07-11-decision-clinique-21j-v1",
+  "sourceFiles": [
+    "docs/claude/campagnes/2026-07-11-decision-clinique-21-jours-v1/sources/sources/03_HIERARCHISATION_STRATEGIQUE.md",
+    "docs/claude/campagnes/2026-07-11-decision-clinique-21-jours-v1/sources/sources/05_VERTICAL_SLICE_1_FICHE_PATIENT_COCKPIT_PROTOCOLE.md",
+    "docs/claude/campagnes/2026-07-11-decision-clinique-21-jours-v1/sources/sources/06_SPEC_UX_COCKPIT_PRATICIEN.md",
+    "docs/claude/campagnes/2026-07-11-decision-clinique-21-jours-v1/sources/sources/07_SPEC_PROTOCOLE_21J_MINIMAL.md",
+    "docs/claude/campagnes/2026-07-11-decision-clinique-21-jours-v1/sources/sources/09_SPEC_DOCUMENTS_MULTI_DESTINATAIRES.md",
+    "docs/claude/campagnes/2026-07-11-decision-clinique-21-jours-v1/sources/sources/10_SPEC_DONNEES_MANQUANTES_SIGNAUX_DISCORDANTS.md",
+    "docs/claude/campagnes/2026-07-11-decision-clinique-21-jours-v1/sources/sources/12_GARDE_FOUS_CLINIQUES_RGPD_SECURITE.md",
+    "docs/claude/campagnes/2026-07-11-decision-clinique-21-jours-v1/sources/sources/14_DEFINITION_OF_DONE.md"
+  ]
+}

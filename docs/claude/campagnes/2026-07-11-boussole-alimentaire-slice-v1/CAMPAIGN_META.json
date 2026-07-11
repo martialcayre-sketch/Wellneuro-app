@@ -1,0 +1,11 @@
+{
+  "title": "Boussole alimentaire slice V1",
+  "generatedAt": "2026-07-11T01:58:53.711Z",
+  "campaignDir": "docs/claude/campagnes/2026-07-11-boussole-alimentaire-slice-v1",
+  "sourceDir": "wellneuro_wn_campaigns/wellneuro_wn_campaigns/docs/claude/campagnes/2026-07-11-boussole-alimentaire-slice-v1",
+  "sourceFiles": [
+    "docs/claude/campagnes/2026-07-11-boussole-alimentaire-slice-v1/sources/sources/03_GPS_ALIMENTAIRE_BOUSSOLE.md",
+    "docs/claude/campagnes/2026-07-11-boussole-alimentaire-slice-v1/sources/sources/11_BACKLOG_MODULES_AVANCES.md",
+    "docs/claude/campagnes/2026-07-11-boussole-alimentaire-slice-v1/sources/sources/12_GARDE_FOUS_CLINIQUES_RGPD_SECURITE.md"
+  ]
+}
