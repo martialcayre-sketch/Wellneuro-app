@@ -44,6 +44,12 @@
 
 **Questions ouvertes** : `npm run prisma:seed` cassé (config `migrations.seed` manquante dans `prisma.config.ts`, Prisma 7) — non corrigé, hors périmètre de la branche ; choix futur d'un vrai framework de test si le moteur grossit.
 
+# Journal de session — Wellneuro NNPP2
+
+> **Archivage** : 4 entrées du 2026-07-04 au 2026-07-06 (premières) archivées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-06_early.md`.
+
+---
+
 ## 2026-07-06 — R8-lite lancé en avance : consentement, statuts, branche expérimentale
 
 **Décisions prises** : R8 avancé hors séquencement E3 via une branche
