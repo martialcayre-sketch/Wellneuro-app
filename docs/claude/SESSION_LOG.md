@@ -117,3 +117,15 @@
 **Prochaine action prioritaire** : LOT-02 de C0-UX (shell desktop/tablette), sur instruction explicite ; committer les redirections `wn-r0`…`wn-r6` + `CAMPAGNE.md` C0-UX en attente.
 
 **Questions ouvertes** : comptage de lots `wn-campaign.mjs` (0/6 vs 2/5 réels) à corriger si jugé utile ; sort des résidus non suivis (`PROJET_CONTEXTE_MINIMAL.md`, `README_MINIMAL.md`, `.worktrees/`).
+
+## [2026-07-11] — Campagne C0-UX : LOT-02 (shell desktop/tablette), clôturé
+
+**Décisions prises** : `NavBar` reconstruit depuis le wireframe LOT-00 (rail compact ⇄ étendu mémorisé en `localStorage`, panneau overlay tablette portrait/mobile, nouveau `SidebarRail.tsx` partagé). Une fusion concurrente d'une autre session (confirmée intentionnelle) a temporairement réintroduit une ébauche non conforme et cassé le type-check ; réconciliée en réappliquant la version approuvée. Deux bugs réels corrigés au passage : test Playwright dont l'assertion `.first()` ignorait la visibilité réelle (filtrage `:visible`), et abréviations "Patients"/"Paramètres" identiques ("PA") en rail compact.
+
+**Validations exécutées** : type-check, lint, `check_no_secrets.sh`, CI GitHub Actions verte (3 runs consécutifs), captures desktop/tablette/mobile, parcours clavier complet.
+
+**Options écartées** : reprendre du contenu de l'ébauche concurrente (hero header, badges, nav mobile prématurée) — hors périmètre LOT-00/LOT-02.
+
+**Prochaine action prioritaire** : LOT-03 (navigation mobile), sur instruction explicite.
+
+**Questions ouvertes** : aucune nouvelle.
