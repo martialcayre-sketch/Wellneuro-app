@@ -1,17 +1,29 @@
 import { defineConfig, devices } from '@playwright/test';
 import { config as loadEnv } from 'dotenv';
+import path from 'node:path';
 
 // Charge DATABASE_URL (et le reste) depuis web/.env.local si disponible (local),
 // sinon depuis les variables d'environnement du système (CI). Ceci permet à
 // helpers/db.ts (Prisma direct, hors process Next.js) et helpers/auth.ts
 // (NEXTAUTH_SECRET) de voir les mêmes valeurs que le serveur testé, que ce soit
 // en dev local (avec .env.local) ou en CI (avec variables d'environnement).
-const envResult = loadEnv({ path: '.env.local' });
-// Si le fichier .env.local n'existe pas (CI), loadEnv retourne un objet vide,
-// donc les variables d'environnement du système (via process.env) restent
-// utilisées par défaut — comportement attendu.
-if (!envResult.error) {
-  // .env.local trouvé et chargé, ses valeurs sont maintenant dans process.env
+const envCandidates = [
+  path.join(__dirname, '.env.local'),
+  path.join(__dirname, '..', '.env.local'),
+];
+
+for (const envPath of envCandidates) {
+  // Ne pas écraser les variables déjà présentes dans l'environnement shell.
+  loadEnv({ path: envPath, override: false });
+}
+
+if (!process.env.NEXTAUTH_SECRET) {
+  throw new Error(
+    [
+      'NEXTAUTH_SECRET manquant pour les tests Playwright.',
+      'Ajoutez NEXTAUTH_SECRET dans web/.env.local ou exportez-le dans le shell avant npm run test:e2e.',
+    ].join(' ')
+  );
 }
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000';

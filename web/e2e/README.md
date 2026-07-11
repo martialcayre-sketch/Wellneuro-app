@@ -23,9 +23,23 @@ cd web
 npm run test:e2e
 ```
 
+Alternative depuis la racine du dépôt:
+
+```bash
+npm --prefix web run test:e2e
+```
+
 Le serveur `npm run dev` est démarré automatiquement par
 `playwright.config.ts` si aucun serveur n'écoute déjà sur
 `PLAYWRIGHT_BASE_URL` (défaut `http://localhost:3000`).
+
+Le chargement des variables d'environnement est résolu via des chemins absolus:
+
+- priorité à `web/.env.local`;
+- fallback optionnel sur `.env.local` à la racine du dépôt;
+- les variables déjà exportées dans le shell restent prioritaires.
+
+Les tests échouent immédiatement si `NEXTAUTH_SECRET` est absent.
 
 ## Ce que fait le test
 
