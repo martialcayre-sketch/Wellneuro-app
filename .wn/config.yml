@@ -1,0 +1,38 @@
+version: 1
+
+project:
+  id: wellneuro
+  name: Wellneuro
+  root: .
+  application_root: web
+  default_branch: main
+  command_prefix: wn
+  compatible_aliases:
+    - nw
+
+paths:
+  state: .wn/state.json
+  campaigns_active: .wn/campaigns/active
+  campaigns_archive: .wn/campaigns/archive
+  templates: .wn/templates
+  reports: .wn/reports
+  documentation_config: .wn/documentation.yml
+
+git:
+  require_clean_tree_on_campaign_start: true
+  require_dedicated_branch: true
+  protected_branches:
+    - main
+
+safety:
+  forbid_real_patient_data: true
+  forbid_secrets: true
+  forbid_env_values: true
+  allowed_test_patients:
+    - Sophie Nicola
+    - Jennifer Martin
+    - Michel Dogné
+
+compatibility:
+  preserve_existing_skills: true
+  preserve_nw_alias: true

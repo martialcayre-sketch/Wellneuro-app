@@ -1,0 +1,82 @@
+version: 1
+
+sources_of_truth:
+  project_state: docs/PROJECT_STATE.md
+  roadmap_technique: docs/ROADMAP_TECHNIQUE.md
+  roadmap_produit: docs/ROADMAP_PRODUIT.md
+  decisions: docs/DECISIONS.md
+  runbook: docs/RUNBOOK.md
+  quality_gate: docs/QUALITY_GATE.md
+  rules: AGENTS.md
+  claude_context: CLAUDE.md
+
+maintained_documents:
+  README.md:
+    mode: protected_blocks
+    max_lines: 100
+    last_reviewed: null
+
+  ROADMAP.md:
+    mode: archived
+    note: "Remplacé par ROADMAP_TECHNIQUE.md et ROADMAP_PRODUIT.md (voir WN-Doc-Assainissement)"
+
+  AGENTS.md:
+    mode: canonical
+    max_lines: 100
+    last_reviewed: null
+
+  CLAUDE.md:
+    mode: thin_adapter
+    max_lines: 50
+    last_reviewed: null
+
+  docs/PROJECT_STATE.md:
+    mode: canonical
+    max_lines: 120
+    last_reviewed: "2026-07-11"
+
+  docs/DECISIONS.md:
+    mode: append_archive
+    max_active_entries: 15
+    archive_path: docs/archive/decisions/
+    last_reviewed: "2026-07-11"
+
+  docs/RUNBOOK.md:
+    mode: protected_sections
+    max_lines: 120
+    last_reviewed: "2026-07-11"
+
+  docs/QUALITY_GATE.md:
+    mode: derived
+    max_lines: 80
+    last_reviewed: "2026-07-11"
+
+  docs/claude/SESSION_LOG.md:
+    mode: append_archive
+    max_active_entries: 10
+    archive_path: docs/archive/sessions/
+    last_reviewed: "2026-07-11"
+    current_entries: 11
+    note: "À archiver 1 entrée > 10 lors de WN-Doc-Assainissement"
+
+conditional_documents:
+  CHANGELOG.md:
+    mode: append
+    triggers:
+      - user_visible_change
+      - clinical_change
+      - scoring_change
+      - security_change
+      - database_migration
+
+  docs/gouvernance-questionnaires-scoring.md:
+    mode: reference
+    triggers:
+      - questionnaire_change
+      - scoring_change
+
+  docs/questionnaires-drive-mapping.md:
+    mode: reference
+    triggers:
+      - questionnaire_change
+      - certification_change

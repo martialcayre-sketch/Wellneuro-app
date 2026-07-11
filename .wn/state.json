@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "project": {
+    "id": "wellneuro",
+    "name": "Wellneuro"
+  },
+  "status": "idle",
+  "active_campaign": null,
+  "active_lot": null,
+  "last_completed_lot": null,
+  "git": {
+    "branch": null,
+    "last_commit": null,
+    "dirty": null
+  },
+  "validation": {
+    "overall_status": "unknown",
+    "last_checked_at": null,
+    "checks": {}
+  },
+  "next_action": "Créer ou importer une campagne /wn",
+  "blocking_issues": [],
+  "recent_decision_ids": [],
+  "last_session": null,
+  "updated_at": null
+}
