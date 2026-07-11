@@ -102,6 +102,30 @@ Critères de validation :
   par la seule couleur (icône/motif/libellé requis).
 - [ ] `docs/design-system-d1.md` (D1-6) à jour avec les composants livrés.
 
+## Navigation du shell praticien — campagne C0-UX (LOT-02/LOT-03)
+
+> Vérifié le 2026-07-11 (LOT-04, validation) : rail gauche compact/étendu et
+> panneau tablette (`NavBar.tsx`), nav basse et bottom sheet mobile
+> (`MobileBottomNav.tsx`).
+
+- [x] Aucun débordement horizontal aux largeurs 375/768/1024/1440px sur
+  `/dashboard` (vérifié via capture Playwright, `scrollWidth` ≤ `clientWidth`).
+- [x] Aucune fonction de navigation ne dépend du seul survol (rail, panneau
+  ☰, nav basse et sheet « Plus » entièrement pilotables au clic/tap).
+- [x] Zones tactiles ≥ 44×44px sur tous les éléments interactifs de
+  navigation (rail, drawer, nav basse, sheet).
+- [x] Clavier : `Escape` ferme la sheet « Plus » et le panneau ☰, focus
+  rendu au déclencheur à la fermeture, `focus-visible:ring-focus-ring` sur
+  chaque élément interactif.
+- [ ] *Dette non bloquante* : pas de *focus trap* complet dans la sheet
+  mobile « Plus » (le focus peut sortir du panneau au Tab) — acceptée pour
+  LOT-04, à traiter hors périmètre de cette campagne si un besoin réel est
+  identifié.
+- [ ] Validation tactile sur mobile réel (au-delà de l'émulation Playwright) :
+  environnement de développement actuel sans device physique — même
+  limitation déjà actée pour le flux portail patient R1 (Phase 0
+  ci-dessus). À faire dès qu'un device réel est disponible.
+
 ## Contrôle post-déploiement (Vercel)
 
 Commande de vérification rapide avant/pendant bascule:

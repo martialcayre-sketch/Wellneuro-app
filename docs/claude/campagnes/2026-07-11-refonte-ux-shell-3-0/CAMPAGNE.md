@@ -1,7 +1,7 @@
 ---
 id: "2026-07-11-refonte-ux-shell-3-0"
 titre: "Refonte UX shell praticien 3.0"
-statut: "en_cours"
+statut: "terminé"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-11"
 lot_courant: "LOT-04"
@@ -91,7 +91,7 @@ ceux déjà livrés par la série D1 (`docs/design-system-d1.md`).
 | LOT-01 | Audit et réconciliation des tokens sémantiques | fait | LOT-00 |
 | LOT-02 | Shell desktop/tablette (rail gauche + barre de commande) | fait | LOT-01 |
 | LOT-03 | Navigation mobile (bottom nav + bottom sheet) | fait | LOT-02 |
-| LOT-04 | Validation et handoff vers C1 | à_faire | LOT-03 |
+| LOT-04 | Validation et handoff vers C1 | fait | LOT-03 |
 
 ## Commande `/wn` de reproduction
 
@@ -113,7 +113,42 @@ script — la commande ci-dessus reproduirait le squelette et les sources import
 - [x] Les 3 patients fictifs sont visibles dans les deux thèmes et les trois largeurs (desktop/tablette/mobile) —
       thème praticien sombre vérifié (seul thème concerné pour le shell praticien, cf. LOT-00-arbitrage §2.7) ;
       thème patient (portail) hors périmètre de cette campagne.
-- [ ] Le handoff indique clairement si C1 peut démarrer son travail de fiche patient dans le nouveau shell.
+- [x] Le handoff indique clairement si C1 peut démarrer son travail de fiche patient dans le nouveau shell.
+
+## Verdict LOT-04 — handoff vers C1
+
+**GO.** C1 (Décision clinique 21 jours V1) peut démarrer son travail sur la fiche patient cockpit à
+l'intérieur du nouveau shell (`NavBar.tsx` + `MobileBottomNav.tsx`).
+
+Vérification croisée des critères d'acceptation §17 de `sources/UX_WELLNEURO_3_0.md` (2026-07-11) :
+
+- [x] Fonctionne sans survol (rail, panneau ☰, nav basse et sheet « Plus » entièrement pilotables au
+      clic/tap).
+- [x] Utilisable au clavier (`Escape`, focus rendu au déclencheur, `focus-visible:ring-focus-ring` sur
+      chaque élément interactif de navigation).
+- [x] Zones tactiles suffisantes (≥ 44×44px, vérifié sur tous les contrôles de navigation).
+- [x] Pas de défilement horizontal non justifié (vérifié via capture Playwright à 375/768/1024/1440px sur
+      `/dashboard`, `scrollWidth` ≤ `clientWidth`).
+- [x] Ne masque aucune action clinique (périmètre limité à la navigation, contenu des pages inchangé).
+- [x] Différencie information, alerte et action (aucun nouvel élément de statut introduit par ce lot).
+- [x] N'augmente pas le nombre d'étapes sans bénéfice (accès direct rail/nav basse, un niveau
+      supplémentaire uniquement pour « Paramètres » en mobile, cohérent avec le nombre d'entrées
+      prioritaires limité).
+- [x] Respecte les thèmes praticien et patient (shell praticien = thème sombre uniquement ; portail
+      patient non touché par cette campagne).
+- [x] Utilise uniquement les patients fictifs autorisés (Sophie Nicola, Jennifer Martin, Michel Dogné —
+      `demoPatients` dans `NavBar.tsx`).
+- [x] Ne modifie pas la logique métier hors périmètre (routes, `signOut`, scoring inchangés).
+- [~] Testé sur au moins un mobile réel et une largeur desktop : desktop vérifié ; mobile réel **non**
+      testé dans cet environnement de développement (limitation d'environnement déjà actée pour le flux
+      portail patient R1, cf. `docs/checklist_tests_end_to_end.md` Phase 0). Émulation Playwright
+      (viewport 375px + suite `mobile bottom navigation`, 4/4 tests passants) utilisée en substitut.
+      **Non bloquant** pour ce GO ; validation sur device réel recommandée dès qu'un device est
+      disponible.
+
+Dette non bloquante déjà documentée (LOT-03) : pas de *focus trap* complet dans la sheet mobile
+« Plus » — n'empêche pas l'utilisation au clavier (Escape + retour de focus fonctionnels), à traiter
+hors périmètre de cette campagne si un besoin réel est identifié.
 
 ## Backlog ultérieur
 

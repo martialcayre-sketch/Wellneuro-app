@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "validation-handoff"
-statut: "à_faire"
+statut: "fait"
 dépend_de: "LOT-03"
 ---
 
@@ -49,11 +49,12 @@ nouveau shell.
 
 ## Étapes
 
-- [ ] Vérifier chaque critère d'acceptation §17 du document source.
-- [ ] Capturer les 3 patients fictifs dans les configurations requises.
-- [ ] Mettre à jour `docs/design-system-d1.md`.
-- [ ] Ajouter l'item de checklist E2E correspondant.
-- [ ] Rédiger le verdict go/no-go pour C1 et cocher les cases de `CAMPAGNE.md`.
+- [x] Vérifier chaque critère d'acceptation §17 du document source.
+- [x] Capturer les 3 patients fictifs dans les configurations requises.
+- [x] Mettre à jour `docs/design-system-d1.md` (déjà à jour depuis la clôture LOT-03 — vérifié exact,
+      aucune correction nécessaire).
+- [x] Ajouter l'item de checklist E2E correspondant.
+- [x] Rédiger le verdict go/no-go pour C1 et cocher les cases de `CAMPAGNE.md`.
 
 ## Tests
 
@@ -73,4 +74,18 @@ général du document source (§17).
 
 ## Résultats
 
-À compléter à la clôture.
+Les 11 critères d'acceptation §17 ont été vérifiés contre l'implémentation réelle
+(`NavBar.tsx`, `MobileBottomNav.tsx`, `SidebarRail.tsx`) : 10 conformes, 1 partiel (validation
+sur mobile réel non réalisable dans cet environnement de développement — émulation Playwright
+utilisée en substitut, non bloquant). Captures Playwright à 375/768/1024/1440px sur `/dashboard`
+confirmant l'absence de défilement horizontal et la cohérence visuelle des trois configurations
+(nav basse mobile, panneau ☰ tablette, rail desktop). Suite e2e complète (4/4, y compris le test
+dédié « mobile bottom navigation ») repassée avec succès. Entrée ajoutée à
+`docs/checklist_tests_end_to_end.md` (section « Navigation du shell praticien — campagne C0-UX »).
+Verdict **GO** pour C1 rédigé dans `CAMPAGNE.md`. `docs/design-system-d1.md` vérifié exact sans
+besoin de correction (déjà à jour depuis LOT-03). `docs/claude/campagnes/PROGRAMME_WELLNEURO_3_0.md`
+vérifié : le tableau des campagnes n'encode pas de statut littéral à mettre à jour, aucune
+modification nécessaire.
+
+Dette non bloquante reportée (déjà actée en LOT-03, non retraitée ici car hors périmètre LOT-04) :
+absence de *focus trap* complet dans la sheet mobile « Plus ».
