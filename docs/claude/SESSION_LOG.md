@@ -89,3 +89,17 @@
 **Prochaine action prioritaire** : LOT-00 de C0-UX (cadrage et arbitrage des questions ouvertes, zéro code), sur instruction explicite.
 
 **Questions ouvertes** : celles de `CAMPAGNE.md` de C0-UX (rail mémorisé, périmètre recherche globale, dashboard personnalisable, 4 entrées navigation mobile).
+
+## [2026-07-11] — Campagne C0-UX : LOT-01 (audit et réconciliation des tokens sémantiques)
+
+**Décisions prises** : tableau de correspondance complet entre les 15 tokens proposés en §11.1 du document source et les tokens D1 existants (`docs/design-system-d1.md` §6). 7 déjà couverts (pas d'ajout), 5 ajoutés en additif (`surface-elevated`, `status-success/warning/danger/info`, `focus-ring`), 2 volontairement non ajoutés et justifiés (`surface-patient` redondant avec l'architecture par thème, `text-secondary` sans consommateur identifié). Aucun token D1 existant renommé ou modifié ; garde-fou `--primary`/`--accent` (`SynthesePanel.tsx`) vérifié intact.
+
+**Validations exécutées** : `npm run type-check` OK, `check_no_secrets.sh` OK. Commit `401ae4a` (inclut aussi le reste de l'assainissement documentaire WN-Doc en attente).
+
+**Fichiers modifiés** : `web/src/app/globals.css`, `web/tailwind.config.ts`, `docs/design-system-d1.md`, lots/CAMPAGNE.md de C0-UX.
+
+**Écart signalé** : `docs/claude/PROJET_CONTEXTE_MINIMAL.md`/`README_MINIMAL.md` restent non suivis sur disque (suppression déjà indexée par ailleurs) — volontairement non ré-ajoutés au commit, à nettoyer si confirmé inutile.
+
+**Prochaine action prioritaire** : LOT-02 (shell desktop/tablette), sur instruction explicite.
+
+**Questions ouvertes** : aucune nouvelle.

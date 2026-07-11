@@ -1,7 +1,7 @@
 # Campagne active
 
 **Campagne** : C0-UX — Refonte UX shell praticien 3.0
-**Statut** : ACTIVE (LOT-00 à démarrer sur instruction explicite)
+**Statut** : ACTIVE (LOT-00 et LOT-01 faits, LOT-02 à démarrer sur instruction explicite)
 **Ordre** : 1/7 (après C0, terminée le 2026-07-11)
 **Date activation** : 2026-07-11
 
