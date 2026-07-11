@@ -141,3 +141,15 @@
 **Prochaine action prioritaire** : LOT-04 (validation et handoff vers C1), sur instruction explicite.
 
 **Questions ouvertes** : aucune nouvelle. iPhone 13/WebKit non exécutable en local (limitation d'environnement préexistante, OK en CI).
+
+## [2026-07-11] — Campagne C0-UX : LOT-04 (validation et handoff), clôturé — campagne terminée
+
+**Décisions prises** : les 11 critères d'acceptation §17 de `sources/UX_WELLNEURO_3_0.md` vérifiés contre l'implémentation réelle (`NavBar.tsx`, `MobileBottomNav.tsx`, `SidebarRail.tsx`) — 10 conformes, 1 partiel (mobile réel non testable dans cet environnement, émulation Playwright utilisée en substitut, non bloquant). Verdict **GO** rédigé dans `CAMPAGNE.md` : C1 peut démarrer son travail de fiche patient cockpit dans le nouveau shell. `docs/design-system-d1.md` vérifié exact (déjà à jour depuis LOT-03, aucune correction nécessaire). Entrée ajoutée à `docs/checklist_tests_end_to_end.md`. Campagne C0-UX marquée `terminé` (frontmatter `CAMPAGNE.md`).
+
+**Validations exécutées** : `type-check`, `check_no_secrets.sh`, captures Playwright à 375/768/1024/1440px sur `/dashboard` (aucun défilement horizontal), suite e2e complète repassée (4/4, dont le test dédié « mobile bottom navigation »).
+
+**Options écartées** : retraiter la dette non bloquante déjà actée en LOT-03 (absence de *focus trap* complet dans la sheet mobile « Plus ») — hors périmètre LOT-04. Modifier `PROGRAMME_WELLNEURO_3_0.md` — vérifié, le tableau des campagnes n'encode pas de statut littéral à corriger.
+
+**Prochaine action prioritaire** : C1 (Décision clinique 21 jours V1) peut démarrer, sur instruction explicite — sa dépendance « C0 + C0-UX » est désormais satisfaite.
+
+**Questions ouvertes** : validation tactile sur mobile réel toujours en attente (même limitation d'environnement que R1/LOT-03) ; à faire dès qu'un device physique est disponible, non bloquant.
