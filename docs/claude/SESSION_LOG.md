@@ -492,3 +492,30 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Prochaine action prioritaire** : aucune côté R8 ; reprendre R10/R8-Vitest sur `resolvePackQuestionnaireIds` ou Playwright-en-CI si souhaité comme chantier séparé.
 
 **Questions ouvertes** : aucune.
+
+## 2026-07-11 — Campagne WN-Doc-Assainissement (clôture)
+
+**Décisions prises** : autonomie exécutée des phases 1-4 pendant indisponibilité utilisateur ("enchaine 1 2 et 3, je revien demain") — **campagne entièrement complétée et pushée** vers `origin/main`. Phases :
+- **Phase 1** (commit `fcd1066`) : Split collision nomenclature roadmaps → `docs/ROADMAP_TECHNIQUE.md` (R0-R10, technique) + `docs/ROADMAP_PRODUIT.md` (D1, modules R/E, produit) ; archive `docs/archive/roadmap-updates/ROADMAP_R9_UPDATE_2026-07-11.md`.
+- **Phase 2** (commit `ffcf0d9`) : Mise à jour références → `CLAUDE.md`, `README.md` (pointent vers les 2 nouveaux roadmaps).
+- **Phase 3** (commit `16e2b58`) : Archive SESSION_LOG ancien → extraction 4 plus anciennes entrées (2026-07-04 à 2026-07-06 E0 committée) vers `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-06_early.md`, réduction active log 35 → 31 entrées, référence ajoutée au début de log actif.
+- **Phase 4** (commit `d01f696`) : Archive templates → déplacement `SESSION_LOG_ENTRY_EXEMPLE.md` + `SESSION_LOG_ENTRY_2026-07-09.md` vers `docs/archive/templates/`, `.gitkeep` pour préservation structure.
+- **Clôture** (commit `8ee3a4c`) : Finalisation changements résiduels (campagne.md, suppressions fichiers).
+
+**Validations exécutées** : 
+- ✅ `bash scripts/check_no_secrets.sh` → OK, aucun secret détecté
+- ✅ `cd web && npm run type-check` → pas d'erreur TypeScript
+- ✅ Git push → tous 8 commits (5 de Doc-Assainissement + 3 précédents) poussés vers `origin/main`
+- ✅ `git status` → working tree clean, branch up-to-date with origin/main
+
+**Fichiers nouveaux** : `docs/ROADMAP_TECHNIQUE.md`, `docs/ROADMAP_PRODUIT.md`, `docs/archive/roadmap-updates/ROADMAP_R9_UPDATE_2026-07-11.md`, `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-06_early.md`, `docs/archive/templates/SESSION_LOG_ENTRY_EXEMPLE.md`, `docs/archive/templates/SESSION_LOG_ENTRY_2026-07-09.md`, `docs/archive/templates/.gitkeep`.
+
+**Fichiers modifiés** : `CLAUDE.md` (2 lignes roadmaps), `README.md` (2 lignes roadmaps), `docs/claude/SESSION_LOG.md` (35 → 31 entrées + référence archive), `.wn/campaigns/active/wn-doc-assainissement/campagne.md` (état transition phases).
+
+**Fichiers supprimés** : `docs/claude/SESSION_LOG_ENTRY_EXEMPLE.md`, `docs/claude/reprise/SESSION_LOG_ENTRY_2026-07-09.md` (archivés).
+
+**Options écartées** : aucun contact utilisateur durant phases (autonomie par demande explicite) ; approche alternative Options B/C du spec ignorées (Option A sélectionnée par principe changement minimal).
+
+**Prochaine action prioritaire** : aucune — campagne terminée. Utilisateur peut évaluer archives et structure le 2026-07-12 retour.
+
+**Questions ouvertes** : aucune.
