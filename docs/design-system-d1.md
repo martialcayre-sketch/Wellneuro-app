@@ -163,6 +163,23 @@ committée) dans les deux thèmes.
 | `web/src/components/SynthesePanel.tsx` | **non migré** | Aucun lot D1 ne le couvre à ce jour |
 | `web/src/app/patient/**` | patient (clair, implicite) | Aucun changement requis (thème par défaut) |
 
+### Shell praticien C0-UX / LOT-02
+
+Le shell praticien réorganisé dans `web/src/components/NavBar.tsx` et
+`web/src/app/dashboard/layout.tsx` réutilise uniquement les tokens D1
+existants et leurs combinaisons de surface:
+
+- `bg-background` pour le conteneur racine du thème praticien;
+- `bg-surface` et `bg-surface/95` pour l'enveloppe du header et les cartes du rail;
+- `border-border` pour les séparateurs et contours;
+- `bg-primary/10`, `text-primary` et `text-primary-foreground` pour les repères actifs;
+- `text-muted-foreground` pour les libellés secondaires;
+- `Badge` pour les états, les repères de build et les raccourcis non cliniques.
+
+Le lot actuel reste volontairement sans nouvelle primitive UI: la navigation
+desktop/tablette repose sur le header de commande, le rail gauche compact et des
+liens `Link` standards, afin de conserver une base simple pour le futur lot mobile.
+
 ## 5. Interdits D1 (rappel)
 
 Pas de theme-provider/contexte JS, pas de `next-themes`, pas de toggle

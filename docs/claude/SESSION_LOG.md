@@ -103,3 +103,17 @@
 **Prochaine action prioritaire** : LOT-02 (shell desktop/tablette), sur instruction explicite.
 
 **Questions ouvertes** : aucune nouvelle.
+
+## [2026-07-11] — CI GitHub Actions verte (R8.2) + synchronisation statut C0-UX
+
+**Décisions prises** : les 5 causes indépendantes de l'échec systématique de la CI Playwright (« 6 failed, 2 passed » en boucle depuis l'activation R8.2) diagnostiquées et corrigées une à une, chacune vérifiée sur un run CI réel avant de passer à la suivante : (1) WebKit non installé (`ci.yml`), (2) assertion de titre dashboard obsolète, (3) violation strict-mode Playwright révélée par (2), (4) `prisma db seed` silencieusement no-op en Prisma 7 faute de `migrations.seed` dans `prisma.config.ts` (404 `patient_not_found`), (5) pack par défaut « Base de consultation » jamais créé par du code (seulement via l'UI praticien sur la base de dev) — absent d'une base CI fraîche, d'où un 404 `pack_not_found` pris pour un timeout de 120s par le test. Run `29163220360` : **succès, 4m34s**. Par ailleurs, via `/wn-review` : désynchronisation `CAMPAIGN_META.json`/`CAMPAGNE.md` de C0-UX corrigée (`statut: "en_cours"` dans le frontmatter, seule source lue par `wn-campaign.mjs`).
+
+**Validations exécutées** : `gh run view --log-failed` à chaque itération, `npm run type-check`, `bash scripts/check_no_secrets.sh`, `npm run prisma:seed` en local (garde anti-doublon vérifiée sur la base de dev existante), `node scripts/wn-campaign.mjs status`.
+
+**Fichiers modifiés** : `.github/workflows/ci.yml`, `web/e2e/dashboard-praticien.spec.ts`, `web/prisma.config.ts`, `web/prisma/seed.ts`, `docs/claude/campagnes/2026-07-11-refonte-ux-shell-3-0/CAMPAGNE.md`.
+
+**Options écartées** : corriger le comptage `0/6 lots` de `wn-campaign.mjs` pour C0-UX (désync distincte détectée par `/wn-review`, hors périmètre de cette demande) ; nettoyer `PROJET_CONTEXTE_MINIMAL.md`/`README_MINIMAL.md`/`​.worktrees/` (résidus déjà signalés en 07-11, décision laissée à l'utilisateur).
+
+**Prochaine action prioritaire** : LOT-02 de C0-UX (shell desktop/tablette), sur instruction explicite ; committer les redirections `wn-r0`…`wn-r6` + `CAMPAGNE.md` C0-UX en attente.
+
+**Questions ouvertes** : comptage de lots `wn-campaign.mjs` (0/6 vs 2/5 réels) à corriger si jugé utile ; sort des résidus non suivis (`PROJET_CONTEXTE_MINIMAL.md`, `README_MINIMAL.md`, `.worktrees/`).

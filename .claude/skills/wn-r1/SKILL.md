@@ -1,34 +1,25 @@
 ---
-description: Lot R1 — validation E2E patient WellNeuro.
+description: LEGACY R1 — alias historique. En cas de doublon fonctionnel, redirige vers le flux campagnes WellNeuro.
 argument-hint: "[plan|apply|verify]"
 disable-model-invocation: true
-effort: medium
+effort: low
 ---
 
-# R1 — validation E2E patient
+# R1 — legacy (redirigé)
 
-!`test -f docs/claude/SESSION_LOG.md && tail -n 70 docs/claude/SESSION_LOG.md || true`
+!`test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 !`git status --short`
 
 Argument : `$ARGUMENTS`
 
-## Objectif
+Ce skill est conservé pour compatibilité historique.
 
-Valider le parcours patient unifié de bout en bout sans ajouter de fonctionnalité.
+En cas de doublon fonctionnel, utiliser le flux canonique :
 
-## Périmètre
+- reprise de lot : `/wn-campaign-run` ;
+- cadrage : `/wn-plan` ;
+- exécution bornée : `/wn-campaign-run apply` (uniquement après plan validé).
 
-portail, consentement, fiche, anamnèse, hub, brouillon, transmission, correction, mobile.
+Interdits inchangés : pas de migration, pas d'écriture Supabase, pas de changement clinique sans validation explicite.
 
-## Interdits
-
-migration, refactor, scoring, donnée réelle. Toujours : aucun secret, aucune donnée patient réelle ; exemples limités à Sophie Nicola, Jennifer Martin et Michel Dogne.
-
-## Méthode
-
-- Par défaut : audit et plan sans modification.
-- Si des modifications deviennent nécessaires : passer en mode Plan avant toute édition.
-- Avec `apply` : changement minimal dans le périmètre, uniquement après plan validé en mode Plan.
-- Avec `verify` : lecture seule et go/no-go.
-- Vérifier le dépôt réel avant toute affirmation.
-- Terminer par validations, fichiers modifiés, risques et prochaine action.
+Sortie attendue : rappeler la redirection, proposer le prochain lot actif et exiger le passage en mode Plan avant toute modification.

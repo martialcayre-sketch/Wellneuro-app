@@ -1,7 +1,7 @@
 ---
 id: "2026-07-11-refonte-ux-shell-3-0"
 titre: "Refonte UX shell praticien 3.0"
-statut: "à_faire"
+statut: "en_cours"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-11"
 lot_courant: "LOT-02"
@@ -71,10 +71,6 @@ ceux déjà livrés par la série D1 (`docs/design-system-d1.md`).
 - Faut-il conserver le tableau patients comme mode expert (question posée ici pour le shell, tranchée
   fonctionnellement par C3/annuaire) ?
 - Quelles sont les quatre entrées prioritaires de la navigation mobile praticien ?
-- `docs/claude/campagnes/ACTIVE_CAMPAIGN.md` pointe actuellement vers
-  `2026-07-11-boussole-alimentaire-slice-v1` alors que `README.md` indique C0 active (artefact du script de
-  génération, cf. commit `b114c9a`) — signalé ici pour mémoire, correction laissée à la campagne C0
-  (alignement documentaire), pas traitée par C0-UX.
 
 ## Dépendances
 
