@@ -69,6 +69,35 @@ bash scripts/release_go_no_go.sh --skip-http
 - ✓ `.clasp.json` est safe (pas de secrets)
 - ✓ `.deploy-id` est safe (ID public du déploiement)
 
+## Orchestration WN
+
+### `wn-github-orchestrator.mjs` - socle d'orchestration GitHub
+
+Produit un état local de triage à partir de `.wn/state.json`, `.wn/orchestrator.json` et, si disponible, de `gh`.
+Le script ne modifie rien.
+
+Usage:
+
+```bash
+node scripts/wn-github-orchestrator.mjs
+```
+
+Mode JSON:
+
+```bash
+node scripts/wn-github-orchestrator.mjs --json
+```
+
+Sans accès GitHub:
+
+```bash
+node scripts/wn-github-orchestrator.mjs --no-gh
+```
+
+| File | Purpose | Status | Commit? |
+|------|---------|--------|---------|
+| `.wn/orchestrator.json` | Politique machine-readable du socle d'orchestration | ✓ Safe | **YES** |
+
 ## Supabase + Prisma
 
 ### `setup_supabase_prisma.sh` — Setup complet Docker + migration 5432

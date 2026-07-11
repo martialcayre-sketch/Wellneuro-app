@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "project": {
+    "id": "wellneuro",
+    "name": "Wellneuro"
+  },
+  "branch_policy": {
+    "default_branch": "main",
+    "branch_prefix": "wn/",
+    "require_dedicated_branch": true,
+    "require_clean_tree_before_action": true
+  },
+  "issue_policy": {
+    "open_issue_limit": 10,
+    "ready_labels": ["wn:ready", "ready"],
+    "blocked_labels": ["wn:blocked", "blocked"],
+    "campaign_labels": ["wn:campaign", "campaign"]
+  },
+  "pr_policy": {
+    "draft_by_default": true,
+    "prefer_small_prs": true,
+    "require_validation_before_write": true
+  },
+  "workflow": {
+    "source_of_truth": [
+      ".wn/state.json",
+      ".wn/config.yml",
+      "docs/claude/campagnes/ACTIVE_CAMPAIGN.md"
+    ],
+    "recommended_order": ["clean_tree", "branch_choice", "issue_triage", "pr_readiness"]
+  }
+}

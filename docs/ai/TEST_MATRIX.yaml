@@ -1,0 +1,30 @@
+version: 1
+project: WellNeuro Autonomous Engineering System
+tests:
+  quick:
+    - formatage
+    - lint ciblé
+    - type-check ciblé
+    - tests unitaires ciblés
+    - detection de secrets
+    - controle des fichiers interdits
+  release:
+    - formatage
+    - lint
+    - type-check
+    - tests unitaires
+    - tests d'integration
+    - build Next.js
+    - Playwright
+    - detection de secrets
+    - controle des fichiers interdits
+  gating:
+    green:
+      auto_allowed: true
+      required: [quick]
+    orange:
+      auto_allowed: false
+      required: [quick, review]
+    red:
+      auto_allowed: false
+      required: [analysis_only]
