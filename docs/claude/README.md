@@ -2,7 +2,15 @@
 
 Ce dossier fournit les fichiers Markdown nécessaires pour donner à Claude IA un cadre fiable sur ce dépôt.
 
-## Fichiers
+## 📋 Campagnes WellNeuro 3.0 (C0-C5)
+
+**[Voir structure des campagnes autonomes](campagnes/README.md)** — programme de développement par lots atomiques.
+
+- Campagne active : [ACTIVE_CAMPAIGN.md](campagnes/ACTIVE_CAMPAIGN.md)
+- Programme complet : [PROGRAMME_WELLNEURO_3_0.md](campagnes/PROGRAMME_WELLNEURO_3_0.md)
+- Navigation rapide : `node scripts/wn-campaign.mjs next` ou `/wn-campaign next`
+
+## Fichiers de contexte IA
 
 - `PROJET_CONTEXTE.md` : contexte projet à jour — stack, architecture, dette technique, ce qui reste ouvert. **À lire en premier.**
 - `REGLES_CRITIQUES.md` : sécurité, RGPD, contraintes cliniques et anti-régressions.

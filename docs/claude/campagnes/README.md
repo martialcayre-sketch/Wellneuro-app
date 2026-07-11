@@ -8,11 +8,11 @@
 | # | Campagne | Status | Dépendances | Lots |
 |---|----------|--------|-------------|------|
 | C0 | Alignement documentaire | **ACTIVE** | — | 4 |
-| C1 | Décision clinique 21j | Prête | C0 | 7 |
-| C2 | Persistance J7/J14/J21 | Prête | C1 + confirmation | 3 |
+| C1 | Décision clinique 21j | Prête | C0 | 5 |
+| C2 | Persistance J7/J14/J21 | Prête | C1 + confirmation | 5 |
 | C3 | Fiches conseils | Prête | C1 | 5 |
-| C4 | Compléments clean label | Prête | C1 + C3 | 6 |
-| C5 | Boussole alimentaire | Prête | C1 + validation | 6 |
+| C4 | Compléments clean label | Prête | C1 + C3 | 5 |
+| C5 | Boussole alimentaire | Prête | C1 + validation | 5 |
 
 ## Campagne active
 
