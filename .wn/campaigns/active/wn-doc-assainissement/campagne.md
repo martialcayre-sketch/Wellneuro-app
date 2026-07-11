@@ -1,7 +1,7 @@
 # Campagne : Assainissement documentaire
 
-> Créée par : WN-0 (2026-07-11)  
-> Statut : À lancer après WN-0E  
+> Créée par : WN-0 (2026-07-11)
+> Statut : À lancer après WN-0E
 > Objectif : Clarifier hiérarchie roadmaps, archiver contenu obsolète, synchroniser liens
 
 ## Contexte
