@@ -1,0 +1,39 @@
+version: 1
+project: WellNeuro Autonomous Engineering System
+risks:
+  - name: clinique
+    level: rouge
+    rule: modification d'une règle clinique, d'un seuil ou d'une décision automatisée
+    requires: validation humaine explicite
+  - name: donnees_patient
+    level: rouge
+    rule: manipulation de donnees patient reelles ou export sensible
+    requires: validation humaine explicite
+  - name: migrations
+    level: rouge
+    rule: migration Prisma ou SQL
+    requires: confirmation distincte
+  - name: supabase_write
+    level: rouge
+    rule: ecriture ou modification Supabase
+    requires: autorisation explicite
+  - name: auth
+    level: rouge
+    rule: modification de l'authentification ou des droits
+    requires: validation humaine explicite
+  - name: production_deploy
+    level: rouge
+    rule: deploiement en production
+    requires: approbation humaine
+  - name: fonctionnalite
+    level: orange
+    rule: nouvelle fonctionnalite ou changement important de parcours
+    requires: review humaine avant fusion
+  - name: documentation
+    level: vert
+    rule: documentation et maintenance de liens
+    requires: verification de cohérence
+  - name: tests
+    level: vert
+    rule: ajout ou amélioration de tests deterministes
+    requires: execution des contrôles ciblés

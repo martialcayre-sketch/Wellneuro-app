@@ -13,9 +13,10 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     redirect('/login');
   }
   return (
-    <div data-theme="praticien" className="min-h-screen bg-background text-foreground">
-      <NavBar email={session.user?.email ?? ''} buildLabel={buildLabel} />
-      <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
+    <div data-theme="praticien">
+      <NavBar email={session.user?.email ?? ''} buildLabel={buildLabel}>
+        {children}
+      </NavBar>
     </div>
   );
 }

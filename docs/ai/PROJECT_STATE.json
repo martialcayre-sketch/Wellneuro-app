@@ -1,0 +1,9 @@
+{
+  "activeCampaign": "2026-07-11-alignement-documentaire-etat-reel",
+  "currentLot": "LOT-00",
+  "lastValidatedCommit": "9eb8ce0",
+  "stack": ["Next.js 14", "Prisma", "PostgreSQL", "NextAuth"],
+  "productionWriteAllowed": false,
+  "databaseMigrationAllowed": false,
+  "notes": "Socle de gouvernance LOT-00. Aucune autonomie rouge n'est autorisee sans validation humaine."
+}

@@ -1,0 +1,11 @@
+version: 1
+project: WellNeuro Autonomous Engineering System
+forbidden_operations:
+  - migration_prisma
+  - migration_sql
+  - supabase_write
+  - secret_in_code
+  - patient_real_data
+  - auth_change_without_validation
+  - production_deploy_without_approval
+  - clinical_rule_change_without_validation
