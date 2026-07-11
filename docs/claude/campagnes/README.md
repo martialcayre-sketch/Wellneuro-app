@@ -8,7 +8,8 @@
 | # | Campagne | Status | Dépendances | Lots |
 |---|----------|--------|-------------|------|
 | C0 | Alignement documentaire | **ACTIVE** | — | 4 |
-| C1 | Décision clinique 21j | Prête | C0 | 5 |
+| C0-UX | Refonte UX shell praticien 3.0 | Prête | C0 | 5 |
+| C1 | Décision clinique 21j | Prête | C0 + C0-UX | 5 |
 | C2 | Persistance J7/J14/J21 | Prête | C1 + confirmation | 5 |
 | C3 | Fiches conseils | Prête | C1 | 5 |
 | C4 | Compléments clean label | Prête | C1 + C3 | 5 |

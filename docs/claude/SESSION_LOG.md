@@ -623,3 +623,17 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 **Prochaine action prioritaire** : observer le premier run réel du workflow CI sur GitHub après push ; en parallèle, envisager R8.4 (specs supplémentaires : synthèse IA, pack management) ou R10 (arbitrages produit) selon priorité utilisateur.
 
 **Questions ouvertes** : aucune.
+
+## 2026-07-11 — Intégration de la refonte UX dans le programme de campagnes WN3.0 (C0-UX)
+
+**Décisions prises** : création de la campagne `C0-UX` (`docs/claude/campagnes/2026-07-11-refonte-ux-shell-3-0/`), rédigée à la main sur le modèle de C0 (CAMPAGNE.md, BRIEF, lots LOT-00→04, sources), pour rattacher `docs/claude/UX_WELLNEURO_3_0.md` au programme WN3.0. Insérée entre C0 et C1 sans renumérotation (label non conflictuel), périmètre restreint aux phases UX-0/UX-1 du document (shell praticien : rail gauche, barre de commande, navigation mobile, tokens sémantiques) — le dashboard/annuaire/fiche patient/portail (UX-2 à UX-5) restent dans C1/C3/C4/C5, qui ont déjà leurs propres specs UX. Dépendance de C1 mise à jour (`C0` → `C0 + C0-UX`). `PROGRAMME_WELLNEURO_3_0.md` et `README.md` mis à jour en conséquence. Aucun code applicatif touché (lots 02/03 restent `à_faire`).
+
+**Options écartées** : renumérotation C1→C2…C5→C6 (rejetée, changement plus large que nécessaire) ; périmètre complet du document UX-0→UX-5 dans cette seule campagne (rejeté, aurait dupliqué le travail UX déjà scopé dans C1/C4/C5) ; correction de l'incohérence `ACTIVE_CAMPAIGN.md` (pointe vers C5 au lieu de C0) — signalée dans `CAMPAGNE.md` de C0-UX, non corrigée (relève de C0 elle-même).
+
+**Fichiers modifiés** : `docs/claude/campagnes/PROGRAMME_WELLNEURO_3_0.md`, `docs/claude/campagnes/README.md`, nouveau dossier `docs/claude/campagnes/2026-07-11-refonte-ux-shell-3-0/` (9 fichiers), `docs/claude/UX_WELLNEURO_3_0.md` (ajouté au suivi git).
+
+**Validations exécutées** : JSON valide (`CAMPAIGN_META.json`), `bash scripts/check_no_secrets.sh` OK, seuls Sophie Nicola/Jennifer Martin/Michel Dogne référencés, `cd web && npm run type-check` sans régression.
+
+**Prochaine action prioritaire** : exécuter LOT-00 de C0-UX (cadrage et arbitrage des questions ouvertes du shell) une fois C0 validé, avant de démarrer C1.
+
+**Questions ouvertes** : celles listées dans `CAMPAGNE.md` de C0-UX (état du rail mémorisé ou non, périmètre de la recherche globale, dashboard personnalisable, 4 entrées de la navigation mobile praticien).
