@@ -101,8 +101,13 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       const res = await page.request.post('/api/praticien/consultations', {
         data: { idPatient: PATIENT.idPatient },
       });
+      // Diagnostic temporaire (échec CI non reproduit localement, cf.
+      // SESSION_LOG) : trace le statut et le corps réels avant l'assertion,
+      // à retirer une fois la cause confirmée.
+      const bodyText = await res.text();
+      console.log(`[diag] POST /api/praticien/consultations → ${res.status()} ${bodyText}`);
       expect(res.ok()).toBe(true);
-      const json = await res.json();
+      const json = JSON.parse(bodyText);
       expect(json.success).toBe(true);
       portailUrl = `/portail/${json.accessToken}`;
     });
