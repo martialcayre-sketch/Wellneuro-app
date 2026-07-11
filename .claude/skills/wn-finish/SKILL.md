@@ -9,7 +9,7 @@ effort: medium
 
 !`git status --short`
 !`git diff --stat`
-!`node scripts/wn-campaign.mjs next --quiet 2>/dev/null || true`
+!`test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 
 Sujet : `$ARGUMENTS`
 

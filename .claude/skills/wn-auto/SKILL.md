@@ -8,7 +8,7 @@ effort: low
 # WellNeuro — reprise automatique
 
 !`test -f docs/claude/SESSION_LOG.md && tail -n 80 docs/claude/SESSION_LOG.md || true`
-!`node scripts/wn-campaign.mjs next --quiet 2>/dev/null || true`
+!`test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 !`test -f docs/roadmap.md && grep -nE 'R[0-6]|Priorité|prochaine' docs/roadmap.md | head -n 70 || true`
 !`git status --short`
 

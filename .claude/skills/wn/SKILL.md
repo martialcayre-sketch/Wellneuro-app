@@ -11,7 +11,7 @@ effort: low
 
 !`git status --short`
 !`test -f docs/claude/SESSION_LOG.md && tail -n 45 docs/claude/SESSION_LOG.md || true`
-!`node scripts/wn-campaign.mjs next --quiet 2>/dev/null || true`
+!`test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 
 Demande : `$ARGUMENTS`
 

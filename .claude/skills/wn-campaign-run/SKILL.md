@@ -7,7 +7,7 @@ effort: high
 
 # WellNeuro — exécution de campagne
 
-!`node scripts/wn-campaign.mjs next --quiet 2>/dev/null || true`
+!`test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 !`git status --short`
 
 Arguments : `$ARGUMENTS`
