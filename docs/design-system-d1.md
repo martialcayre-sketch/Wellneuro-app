@@ -180,6 +180,18 @@ Le lot actuel reste volontairement sans nouvelle primitive UI: la navigation
 desktop/tablette repose sur le header de commande, le rail gauche compact et des
 liens `Link` standards, afin de conserver une base simple pour le futur lot mobile.
 
+### Navigation mobile C0-UX / LOT-03
+
+`web/src/components/ui/MobileBottomNav.tsx` (barre basse + bottom sheet « Plus »,
+visible uniquement `<768px`) réutilise exclusivement les tokens déjà listés
+ci-dessus: `bg-surface/95` et le halo `backdrop-blur` du header pour la barre,
+`bg-surface-elevated` pour le panneau de la sheet (même traitement que le
+panneau ☰ tablette et le menu profil), `bg-primary`/`text-primary-foreground`
+pour l'état actif, `text-muted-foreground` pour l'inactif, et
+`focus-visible:ring-focus-ring` sur chaque élément interactif. Aucun nouveau
+token n'a été nécessaire. Le panneau ☰ tablette existant (768–1024px) n'a pas
+été retouché par ce lot.
+
 ## 5. Interdits D1 (rappel)
 
 Pas de theme-provider/contexte JS, pas de `next-themes`, pas de toggle

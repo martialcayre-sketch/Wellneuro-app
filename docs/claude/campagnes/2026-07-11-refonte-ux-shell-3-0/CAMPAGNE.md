@@ -4,7 +4,7 @@ titre: "Refonte UX shell praticien 3.0"
 statut: "en_cours"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-11"
-lot_courant: "LOT-03"
+lot_courant: "LOT-04"
 ---
 
 # Refonte UX shell praticien 3.0
@@ -90,7 +90,7 @@ ceux déjà livrés par la série D1 (`docs/design-system-d1.md`).
 | LOT-00 | Cadrage et arbitrage des questions ouvertes (maquette validée, zéro code) | fait | aucun |
 | LOT-01 | Audit et réconciliation des tokens sémantiques | fait | LOT-00 |
 | LOT-02 | Shell desktop/tablette (rail gauche + barre de commande) | fait | LOT-01 |
-| LOT-03 | Navigation mobile (bottom nav + bottom sheet) | à_faire | LOT-02 |
+| LOT-03 | Navigation mobile (bottom nav + bottom sheet) | fait | LOT-02 |
 | LOT-04 | Validation et handoff vers C1 | à_faire | LOT-03 |
 
 ## Commande `/wn` de reproduction
@@ -107,10 +107,12 @@ script — la commande ci-dessus reproduirait le squelette et les sources import
 - [x] La maquette du shell (desktop/tablette/mobile) est validée et les questions ouvertes tranchées.
 - [x] Les tokens sémantiques sont réconciliés et documentés dans `docs/design-system-d1.md`.
 - [x] Le shell est implémenté sans changement de route ni de logique métier (LOT-02, desktop/tablette ;
-      navigation mobile dédiée en `bottom nav` restant LOT-03, secours actuel via panneau ☰ conforme aux
-      zones tactiles et sans dépendance au survol).
-- [ ] La navigation mobile respecte les zones tactiles et l'absence de dépendance au survol.
-- [ ] Les 3 patients fictifs sont visibles dans les deux thèmes et les trois largeurs (desktop/tablette/mobile).
+      LOT-03, navigation basse mobile dédiée `<768px`, conforme aux zones tactiles et sans dépendance
+      au survol).
+- [x] La navigation mobile respecte les zones tactiles et l'absence de dépendance au survol.
+- [x] Les 3 patients fictifs sont visibles dans les deux thèmes et les trois largeurs (desktop/tablette/mobile) —
+      thème praticien sombre vérifié (seul thème concerné pour le shell praticien, cf. LOT-00-arbitrage §2.7) ;
+      thème patient (portail) hors périmètre de cette campagne.
 - [ ] Le handoff indique clairement si C1 peut démarrer son travail de fiche patient dans le nouveau shell.
 
 ## Backlog ultérieur

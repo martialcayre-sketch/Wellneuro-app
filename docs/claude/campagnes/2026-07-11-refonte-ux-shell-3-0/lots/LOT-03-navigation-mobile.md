@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "navigation-mobile"
-statut: "à_faire"
+statut: "fait"
 dépend_de: "LOT-02"
 ---
 
@@ -47,10 +47,10 @@ ouvre une bottom sheet listant les entrées secondaires tranchées en LOT-00.
 
 ## Étapes
 
-- [ ] Implémenter la navigation basse (breakpoint mobile).
-- [ ] Implémenter la bottom sheet du menu « Plus ».
-- [ ] Vérifier les zones tactiles (taille, espacement) sur un viewport mobile réel ou émulé.
-- [ ] Capturer les 3 patients fictifs sur viewport mobile, thème praticien sombre.
+- [x] Implémenter la navigation basse (breakpoint mobile).
+- [x] Implémenter la bottom sheet du menu « Plus ».
+- [x] Vérifier les zones tactiles (taille, espacement) sur un viewport mobile réel ou émulé.
+- [x] Capturer les 3 patients fictifs sur viewport mobile, thème praticien sombre.
 
 ## Tests
 
@@ -70,4 +70,38 @@ mesurées ≥ 44×44 px, aucune action essentielle cachée derrière un survol.
 
 ## Résultats
 
-À compléter à la clôture.
+Navigation basse mobile implémentée dans `web/src/components/ui/MobileBottomNav.tsx` (nouveau,
+sans props, auto-suffisant) et câblée dans `NavBar.tsx`. Constat de départ : le code n'avait
+qu'une coupure à deux niveaux sur `lg` (1024px) ; introduction d'une coupure à trois niveaux —
+rail persistant `≥1024px` (inchangé), panneau ☰ tablette existant borné à `768–1024px` (classes
+`hidden md:flex lg:hidden` sur le bouton ☰ et le panneau, contre `lg:hidden` non borné
+auparavant), navigation basse `<768px` (nouvelle).
+
+4 entrées conformes à l'arbitrage LOT-00 §2.5 : Accueil / Patients / Synthèses / Plus, « Plus »
+ouvrant une bottom sheet contenant uniquement Paramètres. Sheet accessible : `role="dialog"`,
+`aria-modal`, fermeture par Escape/clic fond/✕/navigation, focus déplacé sur le lien Paramètres à
+l'ouverture et restauré sur le bouton « Plus » à la fermeture — comportement clavier volontairement
+ajouté au nouveau composant seulement, sans rétrofit sur le panneau ☰ existant (hors périmètre,
+risque de régression LOT-02). Tokens réutilisés uniquement (`bg-surface-elevated`,
+`bg-primary`/`text-primary-foreground`, `text-muted-foreground`, `focus-ring`), documenté dans
+`docs/design-system-d1.md` (nouvelle sous-section « Navigation mobile C0-UX / LOT-03 »).
+
+**Validations exécutées** : `npm run type-check` OK, `check_no_secrets.sh` OK. Vérification
+manuelle (capture Playwright ponctuelle, non committée) aux trois paliers 375/900/1100px : mobile
+affiche uniquement la nav basse (rail et ☰ absents), tablette conserve le panneau ☰ intact,
+desktop conserve le rail persistant intact — aucune régression LOT-02. Cible tactile mesurée
+≥44px sur les liens de la barre basse. Les 3 patients fictifs (Sophie Nicola, Jennifer Martin,
+Michel Dogne) confirmés visibles sur `/dashboard/patients` en viewport mobile, thème praticien
+sombre. Nouveau test Playwright dans `dashboard-praticien.spec.ts` (`mobile bottom navigation`) :
+4 passed sur le projet `Desktop Chromium` (viewport mobile forcé via `test.use`). Projet `iPhone
+13` (WebKit) non exécutable dans cet environnement local (bibliothèques système WebKit absentes,
+limitation préexistante déjà notée lors de R8/R8.2 — WebKit fonctionne en CI, qui a les
+dépendances installées depuis R8.2).
+
+**Fichiers modifiés** : `web/src/components/ui/MobileBottomNav.tsx` (nouveau),
+`web/src/components/NavBar.tsx`, `web/e2e/dashboard-praticien.spec.ts`,
+`docs/design-system-d1.md`.
+
+**Dette non bloquante** : le panneau ☰ tablette (LOT-02) n'a pas de gestion Escape/focus au
+clavier, contrairement à la nouvelle bottom sheet — incohérence mineure documentée, pas corrigée
+dans ce lot (hors périmètre).
