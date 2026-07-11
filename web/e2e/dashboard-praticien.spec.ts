@@ -31,10 +31,10 @@ test.describe('Praticien Dashboard', () => {
       await menuToggle.click();
     }
 
-    // Vérifie que les liens de navigation principaux sont visibles
-    const patientLink = page.locator('a:has-text("Patients")');
-
-    await expect(patientLink.or(page.locator('a[href*="patients"]')).first()).toBeVisible({ timeout: 5000 });
+    // Vérifie qu'un lien vers Patients est visible (rail persistant sur desktop,
+    // panneau overlay sur mobile) : ":visible" exclut le rail persistant masqué
+    // par CSS sur mobile, qui resterait sinon le premier match du DOM.
+    await expect(page.locator('a[href*="patients"]:visible').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('navigate to patients section', async ({ page }) => {
