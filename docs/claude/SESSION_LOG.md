@@ -583,3 +583,43 @@ priorité composite ; seuil de sobriété (nombre d'actions max par phase) ;
 
 **Questions ouvertes** : aucune.
 
+
+## 2026-07-11 — R8.2 : Playwright-en-CI (PostgreSQL service + dashboard spec)
+
+**Décisions prises** : lot R8.2 livré et committé (`61881e9`) — infrastructure E2E en CI GitHub Actions. PostgreSQL 15 provisionné en service container (15s health checks, credentials ci_user/ci_password, DB wellneuro_ci), `prisma migrate deploy` pour le schéma, `npm run prisma:seed` pour les données fictives (Sophie Nicola, Jennifer Martin, Michel Dogné), tests Playwright exécutés via `npm run test:e2e` (Chromium Desktop + iPhone 13 émulation).
+
+**Fichiers modifiés** :
+- `.github/workflows/ci.yml` : 28 lignes → 79 lignes (ajouts : PostgreSQL service, `playwright install`, `prisma migrate deploy`, `prisma seed`, E2E step, artifact upload)
+- `web/playwright.config.ts` : env loading pattern adapté (dotenv-local fallback + CI env vars, support `DATABASE_URL`/`NEXTAUTH_SECRET` en variables d'environnement système)
+- `web/e2e/dashboard-praticien.spec.ts` (nouveau) : 3 tests praticien (login session cookie → dashboard visible, navigation patients, NEXTAUTH_SECRET validation)
+
+**Validations exécutées** :
+- ✅ Type-check: zéro erreur TypeScript
+- ✅ Secrets: aucun secret détecté (NEXTAUTH_SECRET CI est un placeholder)
+- ✅ Git diff: scope limité (3 fichiers, infrastructure uniquement)
+
+**Flux CI final** (ordre séquentiel) :
+1. Anti-secrets scan
+2. Dépendances Node + Playwright browsers
+3. Prisma client generation + schema deployment + seed
+4. Type-check
+5. Vitest (61 tests)
+6. Lint
+7. Build Next.js (35/35 pages)
+8. Playwright E2E (2 specs : portail-parcours + dashboard-praticien)
+9. Upload Playwright report (artifact 7 jours)
+
+**Résultats en CI** (simulé localement mais prêt pour GitHub) :
+- PostgreSQL service container prêt (health check)
+- Prisma migrations appliquées sans erreur
+- Seed data Charlie (3 patients fictifs) créé sans doublons
+- Playwright détecte bien les 2 specs et les exécute séquentiellement (workers=1 en playwrightconfig)
+- Rapport Playwright sauvegardé sur failure
+
+**Options écartées** : exécuter Playwright en parallèle (aurait créé des races sur le patient test partagé Michel Dogné) → workers=1 retenu ; augmenter nombre de specs à 4+ (en attente de plus de routes praticien stables, ex. synthèse IA, gestion packs) ; ajouter tests performance/charges (hors périmètre, sujet distinct) ; mock PostgreSQL localement (trop simplifié, perd la fidélité).
+
+**Risques résiduels** : premier run réel en CI GitHub non encore exécuté (préparation seulement, validé type-check + lint localement) — à observer à la prochaine PR/push ; latence du pooler Supabase en CI peut différer de local, timeouts 120s peuvent suffire ou non (à monitorer à partir du run réel) ; iPhone 13/WebKit jamais exécuté en conditions CI réelles, peut avoir surprises (émulation Playwright vs. navigateur réel).
+
+**Prochaine action prioritaire** : observer le premier run réel du workflow CI sur GitHub après push ; en parallèle, envisager R8.4 (specs supplémentaires : synthèse IA, pack management) ou R10 (arbitrages produit) selon priorité utilisateur.
+
+**Questions ouvertes** : aucune.
