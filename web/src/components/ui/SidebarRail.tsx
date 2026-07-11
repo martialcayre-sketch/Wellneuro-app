@@ -4,10 +4,10 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const navigationItems = [
-  { href: '/dashboard', label: 'Accueil' },
-  { href: '/dashboard/patients', label: 'Patients' },
-  { href: '/dashboard/synthese', label: 'Synthèse IA' },
-  { href: '/dashboard/parametres', label: 'Paramètres' },
+  { href: '/dashboard', label: 'Accueil', abbr: 'AC' },
+  { href: '/dashboard/patients', label: 'Patients', abbr: 'PT' },
+  { href: '/dashboard/synthese', label: 'Synthèse IA', abbr: 'SY' },
+  { href: '/dashboard/parametres', label: 'Paramètres', abbr: 'PM' },
 ] as const;
 
 interface SidebarRailProps {
@@ -44,7 +44,7 @@ export function SidebarRail({ collapsed, onNavigate }: SidebarRailProps) {
                 active ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
               }`}
             >
-              {item.label.slice(0, 2).toUpperCase()}
+              {item.abbr}
             </span>
             {!collapsed && (
               <span className={`min-w-0 flex-1 truncate text-sm font-medium ${active ? 'text-foreground' : ''}`}>

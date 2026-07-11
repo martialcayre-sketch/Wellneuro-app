@@ -10,3 +10,5 @@ tsconfig.tsbuildinfo
 /src/generated/prisma
 .vercel
 .env*
+test-results/
+playwright-report/
