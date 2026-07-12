@@ -1,19 +1,17 @@
 {
   "name": "wellneuro-app — Dev",
-  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest",
-      "moby": false
-    },
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "1.1.0"
+    }
   },
   "postCreateCommand": "cd web && npm install",
-  "postStartCommand": "mkdir -p /home/node/.codex /home/node/.claude",
+  "postStartCommand": "bash .devcontainer/post-start.sh",
   "mounts": [
-    "source=wellneuro-vscode-server,target=/home/node/.vscode-server,type=volume",
-    "source=wellneuro-codex-home,target=/home/node/.codex,type=volume",
-    "source=wellneuro-claude-home,target=/home/node/.claude,type=volume"
+    "source=${localWorkspaceFolderBasename}-vscode-server,target=/home/node/.vscode-server,type=volume",
+    "source=${localWorkspaceFolderBasename}-codex-home,target=/home/node/.codex,type=volume",
+    "source=${localWorkspaceFolderBasename}-claude-home,target=/home/node/.claude,type=volume"
   ],
   "customizations": {
     "vscode": {
@@ -41,10 +39,6 @@
     "CODEX_HOME": "/home/node/.codex",
     "CLAUDE_HOME": "/home/node/.claude"
   },
-  "privileged": true,
-  "securityOpt": [
-    "seccomp=unconfined"
-  ],
   "runArgs": [
     "--init"
   ]
