@@ -134,17 +134,23 @@ Le choix utilisateur praticien est `auto | light | dark`. `auto` suit le systèm
 
 ## Commande `/wn` de reproduction
 
+La commande ci-dessous sert uniquement à reproduire le squelette depuis les sources dans un autre contexte. Ne pas l'exécuter sur ce dossier existant sans `--overwrite` et sans intention explicite de régénération.
+
 ```text
 /wn-campaign creer "Hybrid Clinical et expérience questionnaires patient" --source docs/claude/campagnes/2026-07-12-hybrid-clinical-experience-questionnaires/sources --lots 8 --slug hybrid-clinical-experience-questionnaires --prefix-date --auto-final
 ```
 
-Pour activer cette campagne plus tard, uniquement après arbitrage de la priorité avec C1 :
+## Activation de la campagne existante
 
-```text
-/wn-campaign creer "Hybrid Clinical et expérience questionnaires patient" --source docs/claude/campagnes/2026-07-12-hybrid-clinical-experience-questionnaires/sources --lots 8 --slug hybrid-clinical-experience-questionnaires --prefix-date --auto-final --activate
-```
+Le skill actuel ne fournit pas de sous-commande dédiée `activate <id>` pour une campagne déjà créée. Au moment du démarrage :
 
-Ne pas exécuter `--activate` automatiquement depuis cette branche documentaire : `ACTIVE_CAMPAIGN.md` doit être réconcilié manuellement avec l'état réel des campagnes au moment du démarrage.
+1. exécuter `/wn-campaign status` ;
+2. réconcilier l'état réel avec `docs/claude/SESSION_LOG.md` ;
+3. mettre à jour manuellement `docs/claude/campagnes/ACTIVE_CAMPAIGN.md` pour pointer vers cette campagne ;
+4. vérifier `/wn-campaign next` ;
+5. démarrer LOT-00 uniquement sur instruction explicite.
+
+Ne pas recréer la campagne pour l'activer et ne pas écraser automatiquement le pointeur actuel depuis cette branche documentaire.
 
 ## Definition of Done de campagne
 
