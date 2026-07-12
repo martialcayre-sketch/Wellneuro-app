@@ -1,49 +1,31 @@
-# WellNeuro 3.0 — Campagnes autonomes
+# Campagnes WellNeuro — index
 
-> Programme de développement par campagnes (C0-C5).
-> Dernier update : 2026-07-11
+> Mis à jour le 2026-07-12. Les frontières, invariants et arbitrages sont
+> dans `docs/claude/REGISTRE_FRONTIERES.md` (source normative). La séquence
+> est dans `PROGRAMME_WELLNEURO_3_0.md`. Statuts « cadrée » = décisions et
+> frontières figées, lots détaillés compilés en N+1 (une campagne d'avance).
 
-## Ordre d'exécution
-
-| # | Campagne | Status | Dépendances | Lots |
-|---|----------|--------|-------------|------|
-| C0 | Alignement documentaire | **ACTIVE** | — | 4 |
-| C0-UX | Refonte UX shell praticien 3.0 | Prête | C0 | 5 |
-| C1 | Décision clinique 21j | Prête | C0 + C0-UX | 5 |
-| C2 | Persistance J7/J14/J21 | Prête | C1 + confirmation | 5 |
-| C3 | Fiches conseils | Prête | C1 | 5 |
-| C4 | Compléments clean label | Prête | C1 + C3 | 5 |
-| C5 | Boussole alimentaire | Prête | C1 + validation | 5 |
+| Ordre | Campagne | Statut | Dépendance | Lots |
+|---|---|---|---|---|
+| C0 | Alignement documentaire | **terminée** | — | 4 |
+| C0-UX | Shell praticien 3.0 | **terminée** — socle livré, direction visuelle remplacée par HC-F | C0 | 6 |
+| HC-F | Hybrid Clinical Foundation | à_faire (PR #31 amendée) | C0-UX | 6 |
+| C1 | Décision clinique 21 jours V1 | compilée, à_faire | HC-F LOT-02 | 7 |
+| QX | Expérience questionnaires | compilée, à_faire | HC-F LOT-01+04 | 5 |
+| C3 | Documents contextuels multi-destinataires V1 | cadrée | C1 | N+1 |
+| C2A | Points d'étape + persistance minimale | cadrée | C1 + gate migration | N+1 |
+| C2B | Trajectoire et ajustement | cadrée | C2A + données réelles | N+1 |
+| C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : data-first ; C4B : C1 | N+1 |
+| C5 | Boussole alimentaire (C5A/C5B) | cadrée | socle : data-first ; flux : C1 | N+1 |
+| WN-AUTO | Orchestration | terminée | — | — |
 
 ## Campagne active
 
 Voir : [ACTIVE_CAMPAIGN.md](ACTIVE_CAMPAIGN.md)
 
-## Prochaine action
+## Reprise de session
 
-```bash
-/wn-campaign-run      # Affiche le prochain lot
-/wn-campaign next     # Alias court
-```
-
-## Programme complet
-
-Voir : [PROGRAMME_WELLNEURO_3_0.md](PROGRAMME_WELLNEURO_3_0.md)
-
-## Guide de lecture
-
-1. **Première visite** : Lire PROGRAMME_WELLNEURO_3_0.md
-2. **Campagne active** : Ouvrir `2026-07-11-*/CAMPAGNE.md`
-3. **Prochain lot** : `/wn-campaign next` (affiche LOT-NN-titre.md)
-4. **Reprise contexte** : `/wn-context` ou `/wn-handoff`
-
-## WN-AUTO — Orchestration GitHub et boucles autonomes
-
-> Campagne de structuration documentaire pour l’automatisation sous contraintes. Cette campagne n’entre pas
-> dans la chaîne produit C0-C5 et reste indépendante de l’ordre d’exécution principal.
-
-| Campagne | Statut | But | Dépendance |
-|---|---|---|---|
-| WN-AUTO | Terminée (cadre documentaire) | Préparer l’orchestrateur GitHub permanent, les boucles test/réparation, la revue indépendante et les gates de release | C0, socle documentaire |
-
-Répertoire : `2026-07-11-wn-auto-orchestration-github-boucles-autonomes/`
+1. Lire la dernière entrée de `docs/claude/SESSION_LOG.md`.
+2. Vérifier `ACTIVE_CAMPAIGN.md` et le registre.
+3. Ouvrir le `CAMPAGNE.md` de la campagne active.
+4. `/wn-campaign status` puis `/wn-campaign next`.

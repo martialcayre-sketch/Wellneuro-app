@@ -1,6 +1,11 @@
 # Feuille de route consolidée — WellNeuro NNPP2
 # Fichier de contexte pour agent de planification
 
+> **Document gelé le 2026-07-12** en vision historique / backlog. Les
+> invariants (section 2) et consignes agent (section 8) ont migré dans
+> `docs/claude/REGISTRE_FRONTIERES.md` §1-2, qui fait foi. La séquence
+> d'exécution fait foi dans `campagnes/PROGRAMME_WELLNEURO_3_0.md`.
+
 > Rédigé le 2026-07-04. Ce document consolide la roadmap produit complète
 > (série D existante + modules R issus du brainstorm + séquencement E).
 > Il complète `docs/claude/PROJET_CONTEXTE.md` qui fait foi pour
@@ -200,7 +205,8 @@ logique de PatientsPanel.
   (`/patient/besoins`) avec visualisation des 12 besoins en sphères
   concentriques organiques, accessible depuis l'accueil, jamais imposé par
   défaut.
-- Côté praticien : dashboard dense thème sombre, 5 objets cliniques
+- Côté praticien : dashboard dense, charte Hybrid Clinical claire (rail
+  sombre structurel, espace de travail clair) — cf. HC-F, 5 objets cliniques
   (indice global, stabilité métabolique, réserve d'adaptation, clarté,
   momentum) et priorités des 21 prochains jours sourcées avec leurs
   niveaux de preuve.
