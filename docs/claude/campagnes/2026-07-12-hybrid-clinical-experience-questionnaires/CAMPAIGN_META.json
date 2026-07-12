@@ -1,0 +1,21 @@
+{
+  "title": "Hybrid Clinical et expérience questionnaires patient",
+  "id": "2026-07-12-hybrid-clinical-experience-questionnaires",
+  "generatedAt": "2026-07-12T00:00:00.000Z",
+  "campaignDir": "docs/claude/campagnes/2026-07-12-hybrid-clinical-experience-questionnaires",
+  "status": "a_faire",
+  "ordre": "C0-UX-HC",
+  "priorite": "haute — avant toute nouvelle extension visuelle structurante",
+  "risque": "moyen à élevé (UX transversale + intégrité psychométrique)",
+  "dependances": ["C0-UX", "design-system-d1"],
+  "bloquant": false,
+  "lots_count": 8,
+  "sourceFiles": [
+    "sources/00_DECISION_ET_VISION.md",
+    "sources/01_REFERENCE_HYBRID_CLINICAL.md",
+    "sources/02_STANDARD_UX_QUESTIONNAIRES_PATIENT.md",
+    "sources/03_GARDE_FOUS_PSYCHOMETRIQUES.md",
+    "sources/04_GOUVERNANCE_UX_FUTURE.md"
+  ],
+  "created_at": "2026-07-12"
+}
