@@ -9,7 +9,6 @@
   "postCreateCommand": "cd web && npm install",
   "postStartCommand": "bash .devcontainer/post-start.sh",
   "mounts": [
-    "source=${localWorkspaceFolderBasename}-vscode-server,target=/home/node/.vscode-server,type=volume",
     "source=${localWorkspaceFolderBasename}-codex-home,target=/home/node/.codex,type=volume",
     "source=${localWorkspaceFolderBasename}-claude-home,target=/home/node/.claude,type=volume"
   ],
