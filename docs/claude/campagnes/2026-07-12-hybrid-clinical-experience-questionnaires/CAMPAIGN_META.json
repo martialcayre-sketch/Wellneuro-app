@@ -1,5 +1,5 @@
 {
-  "title": "Hybrid Clinical et expérience questionnaires patient",
+  "title": "HC-F — Hybrid Clinical Foundation",
   "id": "2026-07-12-hybrid-clinical-experience-questionnaires",
   "generatedAt": "2026-07-12T00:00:00.000Z",
   "campaignDir": "docs/claude/campagnes/2026-07-12-hybrid-clinical-experience-questionnaires",
@@ -7,9 +7,9 @@
   "ordre": "C0-UX-HC",
   "priorite": "haute — avant toute nouvelle extension visuelle structurante",
   "risque": "moyen à élevé (UX transversale + intégrité psychométrique + expérience clinique avancée)",
-  "dependances": ["C0-UX", "design-system-d1", "coordination-C1-pour-decisions-et-protocoles"],
+  "dependances": ["C0-UX"],
   "bloquant": false,
-  "lots_count": 8,
+  "lots_count": 6,
   "sourceFiles": [
     "sources/00_DECISION_ET_VISION.md",
     "sources/01_REFERENCE_HYBRID_CLINICAL.md",

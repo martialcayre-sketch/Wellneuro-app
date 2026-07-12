@@ -47,7 +47,7 @@ Chaque innovation doit fournir :
 - Données partagées avec le patient :
 - Données réservées au praticien :
 - Accessibilité : clavier, lecteur d'écran, zoom, reduced motion
-- Données de démo : Sophie Nicola | Jennifer Martin | Michel Dogné
+- Données de démo : Sophie Nicola | Jennifer Martin | Michel Dogne
 - Dépendance psychométrique : aucune | layout_only | stricte
 - Source de décision : donnée | règle | IA | praticien | mixte
 - Niveau de maturité : prototype | spécifié | livrable | différé

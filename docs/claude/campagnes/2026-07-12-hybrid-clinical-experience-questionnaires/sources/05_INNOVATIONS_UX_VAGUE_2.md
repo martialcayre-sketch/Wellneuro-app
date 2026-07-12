@@ -76,7 +76,7 @@ La timeline devient la colonne vertébrale temporelle du dossier :
 - consultations ;
 - questionnaires ;
 - synthèses ;
-- bilans biologiques prescrits et reçus ;
+- explorations biologiques suggérées et résultats reçus ;
 - protocoles et phases de 21 jours ;
 - compléments ;
 - documents ;
