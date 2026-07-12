@@ -10,7 +10,10 @@ Le test réel de l'interface a mis en évidence un écart entre conformité tech
 - trop de cartes et de bordures concurrentes ;
 - hiérarchie insuffisante entre information, décision et action ;
 - portail patient fonctionnel mais encore long, monotone et administratif ;
-- questionnaires rendus avec une logique uniforme, peu adaptée aux instruments longs ou aux contextes de fatigue, douleur, stress ou déficit attentionnel.
+- questionnaires rendus avec une logique uniforme, peu adaptée aux instruments longs ou aux contextes de fatigue, douleur, stress ou déficit attentionnel ;
+- dossier patient encore trop organisé par modules plutôt que par épisode de soins et prochaine décision ;
+- absence d'un mode consultation réellement focalisé ;
+- suivi longitudinal, comparaison avant/après et prévisualisation patient encore insuffisamment structurés.
 
 ## 2. Vision validée
 
@@ -24,7 +27,13 @@ Le test réel de l'interface a mis en évidence un écart entre conformité tech
 - grille d'alignement stricte ;
 - réduction du nombre de cadres ;
 - une action principale identifiable par zone ;
-- cockpit orienté « prochaine décision utile ».
+- cockpit orienté « prochaine décision utile » ;
+- double niveau de lecture : synthèse immédiate puis détail expert ;
+- mode consultation sans distraction ;
+- timeline clinique longitudinale ;
+- cartes de décision explicables ;
+- comparaison avant / maintenant ;
+- prévisualisation fidèle de la vue patient.
 
 ### Patient — Patient Zen clair
 
@@ -35,7 +44,10 @@ Le test réel de l'interface a mis en évidence un écart entre conformité tech
 - progression et prochaine étape explicites ;
 - rassurance sur la sauvegarde, la confidentialité et la suite du parcours ;
 - interactions tactiles larges ;
-- absence de tableau horizontal sur mobile.
+- absence de tableau horizontal sur mobile ;
+- résumé de ce qui a changé depuis la dernière visite ;
+- confort de lecture simple ;
+- distinction claire entre réponses conservées localement et données réellement transmises.
 
 ## 3. Architecture technique cible
 
@@ -57,6 +69,8 @@ type ColorModePreference = 'auto' | 'light' | 'dark';
 - préférence persistée dans `localStorage` ;
 - script pré-hydratation pour éviter le flash de thème ;
 - aucune migration Prisma nécessaire.
+
+Les préférences patient de confort de lecture peuvent rester locales si elles ne contiennent aucune donnée clinique.
 
 ## 4. Choix de bibliothèques
 
@@ -174,16 +188,100 @@ Aucune catégorie ne doit être inférée automatiquement à partir du seul type
 - limiter les animations et respecter `prefers-reduced-motion` ;
 - prévoir les usages avec fatigue, douleur, dyslexie, tremblements, déficits visuels ou attentionnels.
 
-## 10. Migration progressive
+## 10. Innovations UX — Vague 2
 
-1. Inventorier et classifier les questionnaires.
+### P1 — À prototyper et arbitrer dans la campagne
+
+#### Mode consultation
+
+Vue focalisée des mêmes données : identité patient, motif, attentes, signal principal, vigilances, notes, prochaine décision et clôture. Aucun second dossier, aucune captation audio implicite.
+
+#### Double niveau de lecture
+
+La première couche répond à « qu'est-ce qui compte maintenant ? ». La seconde donne accès aux scores, sources, calculs, historique et limites.
+
+#### Timeline clinique
+
+Chronologie unifiée des consultations, questionnaires, synthèses, biologie, protocoles, documents et corrections. Chaque entrée distingue événement, décision et résultat.
+
+#### Carte de décision clinique
+
+Une proposition doit montrer justification, données contributives, niveau de confiance, limites, données manquantes et source. Toute validation reste humaine.
+
+#### Comparateur avant / maintenant
+
+Le suivi des phases de 21 jours doit afficher les dates, conditions et comparabilité. Aucune tendance ne doit être extrapolée avec des données insuffisantes.
+
+#### Prévisualisation patient
+
+Depuis les synthèses, protocoles et documents, afficher fidèlement ce qui sera partagé. Les informations internes doivent être exclues par contrat.
+
+### P2 — À intégrer lorsqu'elles restent compatibles avec les lots
+
+- palette de commandes `Ctrl/Cmd + K` sans remplacer la navigation ;
+- vues opérationnelles fixes ;
+- états vides actionnables ;
+- distinction `Enregistrer / Valider / Envoyer` ;
+- réversibilité et historique ;
+- résumé de session patient ;
+- réglages simples de confort de lecture ;
+- statut de sauvegarde et connexion explicite ;
+- lexique éditorial praticien/patient ;
+- constructeur visuel de protocoles 21 jours si compatible avec C1.
+
+### P3 — Architecture prête, implémentation différée
+
+- dashboard entièrement personnalisable ;
+- recherche globale multimodule ;
+- carte corporelle riche ;
+- visualisations longitudinales avancées ;
+- véritable test adaptatif CAT.
+
+## 11. Règles de conception avancée
+
+### États vides
+
+Ils expliquent pourquoi la zone est vide, si cela est normal et quelle action est possible.
+
+### Densité contextuelle
+
+- dashboard synthétique ;
+- annuaire plus dense ;
+- fiche progressive ;
+- consultation calme ;
+- configuration experte ;
+- patient peu dense.
+
+### Motion
+
+Autoriser seulement les transitions qui expliquent une ouverture, un déplacement, une sauvegarde, un changement de statut ou une progression.
+
+### Couleurs
+
+- teal : action/navigation ;
+- gold : progression ou repère rare ;
+- vert : succès confirmé ;
+- orange : attention ;
+- rouge : danger/erreur/destruction ;
+- violet : catégorie clinique documentée.
+
+### Lexique
+
+Le langage patient évite les termes techniques internes. Les messages doivent indiquer ce qui s'est passé, ce qui est conservé et ce que le patient doit faire ensuite.
+
+## 12. Migration progressive
+
+1. Inventorier et classifier les écrans, questionnaires et innovations.
 2. Construire les primitives sans modifier le catalogue clinique.
-3. Migrer trois questionnaires pilotes : court, long répétitif, interne conditionnel.
-4. Valider scoring, navigation, reprise et accessibilité.
-5. Étendre par lots de catégories.
-6. Interdire tout nouveau renderer local hors du moteur commun.
+3. Prototyper mode consultation, carte de décision et timeline avec les patients fictifs autorisés.
+4. Migrer trois questionnaires pilotes : court, long répétitif, interne conditionnel.
+5. Valider scoring, navigation, reprise et accessibilité.
+6. Ajouter le comparateur et la prévisualisation sur un parcours pilote.
+7. Étendre par lots de catégories et surfaces.
+8. Interdire tout nouveau renderer ou pattern clinique local hors du moteur commun.
+9. Maintenir les capacités P3 dans un backlog gouverné.
 
-## 11. Références méthodologiques à consulter pendant l'implémentation
+## 13. Références méthodologiques à consulter pendant l'implémentation
 
 - FDA, *Guidance for Industry — Patient-Reported Outcome Measures: Use in Medical Product Development to Support Labeling Claims*, décembre 2009.
 - W3C, *Web Content Accessibility Guidelines (WCAG) 2.2* et ressources WAI sur les formulaires.
