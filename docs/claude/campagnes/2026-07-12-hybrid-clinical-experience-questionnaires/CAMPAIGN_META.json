@@ -6,8 +6,8 @@
   "status": "a_faire",
   "ordre": "C0-UX-HC",
   "priorite": "haute — avant toute nouvelle extension visuelle structurante",
-  "risque": "moyen à élevé (UX transversale + intégrité psychométrique)",
-  "dependances": ["C0-UX", "design-system-d1"],
+  "risque": "moyen à élevé (UX transversale + intégrité psychométrique + expérience clinique avancée)",
+  "dependances": ["C0-UX", "design-system-d1", "coordination-C1-pour-decisions-et-protocoles"],
   "bloquant": false,
   "lots_count": 8,
   "sourceFiles": [
@@ -15,7 +15,32 @@
     "sources/01_REFERENCE_HYBRID_CLINICAL.md",
     "sources/02_STANDARD_UX_QUESTIONNAIRES_PATIENT.md",
     "sources/03_GARDE_FOUS_PSYCHOMETRIQUES.md",
-    "sources/04_GOUVERNANCE_UX_FUTURE.md"
+    "sources/04_GOUVERNANCE_UX_FUTURE.md",
+    "sources/05_INNOVATIONS_UX_VAGUE_2.md"
   ],
-  "created_at": "2026-07-12"
+  "innovationPriorities": {
+    "P1": [
+      "mode_consultation",
+      "double_niveau_lecture",
+      "timeline_clinique",
+      "carte_decision",
+      "comparateur_avant_maintenant",
+      "previsualisation_patient"
+    ],
+    "P2": [
+      "palette_commandes",
+      "vues_operationnelles",
+      "confiance_et_reprise_patient",
+      "lexique_ux",
+      "constructeur_21_jours_a_arbitrer_avec_C1"
+    ],
+    "P3": [
+      "personnalisation_dashboard",
+      "recherche_globale_multimodule",
+      "visualisations_complexes",
+      "CAT_reel"
+    ]
+  },
+  "created_at": "2026-07-12",
+  "updated_at": "2026-07-12"
 }
