@@ -118,9 +118,13 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
     });
 
     // Email patient avec lien questionnaire (best-effort)
-    sendAssignmentEmail(emailPatient, titre, dateLimite, notes, idAssignation).catch(
-      e => console.error('[assignations POST] email patient:', (e as Error).message)
-    );
+    try {
+      // En serverless, on attend explicitement la promesse pour eviter que
+      // l'envoi best-effort soit interrompu juste apres la reponse HTTP.
+      await sendAssignmentEmail(emailPatient, titre, dateLimite, notes, idAssignation);
+    } catch (e) {
+      console.error('[assignations POST] email patient:', (e as Error).message);
+    }
 
     return NextResponse.json({ success: true, idAssignation });
   } catch {
