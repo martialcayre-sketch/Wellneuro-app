@@ -33,9 +33,13 @@ instruction explicite, pas dans ce lot.
 - **Tokens/couleurs** : `globals.css` définit une palette brute
   (`--teal-*`, `--gold-*`, `--cream-*`, `--violet-*`) puis des tokens
   sémantiques par `[data-theme]`. Tokens historiques `--primary: #1a3a5c` /
-  `--accent: #4a9d8f` toujours consommés en dur par `SynthesePanel.tsx`
-  (non migré). Aucun hex code en dur dans `NavBar/SidebarRail/MobileBottomNav`
-  — ces trois composants sont déjà entièrement tokenisés.
+  `--accent: #4a9d8f` conservés par prudence mais **sans consommateur
+  restant** — correction du 2026-07-12 (revue HC-F LOT-01) :
+  `SynthesePanel.tsx` n'utilise en réalité que des tokens sémantiques
+  (`bg-surface`, `text-foreground`, `bg-primary`, `text-accent`, etc.),
+  contrairement à ce qu'affirmait cette section initialement. Aucun hex
+  code en dur dans `NavBar/SidebarRail/MobileBottomNav` — ces trois
+  composants sont déjà entièrement tokenisés.
 - **Pages praticien** (`web/src/app/dashboard/**`) :
 
   | Route | Complexité visuelle |
@@ -44,7 +48,7 @@ instruction explicite, pas dans ce lot.
   | `/dashboard/patients` | déléguée à `PatientsPanel` |
   | `/dashboard/patients/[idPatient]` | déléguée à `FichePatientPanel` (déjà substantielle : score, badges preuve, cercles concentriques, objets cliniques, momentum) |
   | `/dashboard/patients/[idPatient]/besoins` | déléguée à `DetailBesoinsPanel` |
-  | `/dashboard/synthese` | déléguée à `SynthesePanel` — **non migré**, tokens Lot 0 |
+  | `/dashboard/synthese` | déléguée à `SynthesePanel` — tokens sémantiques uniquement (corrigé le 2026-07-12, cf. note ci-dessus) |
   | `/dashboard/parametres` | simple, deux blocs `<dl>` lecture seule |
 
 ## 3. Portail patient réel

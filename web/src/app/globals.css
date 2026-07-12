@@ -36,11 +36,14 @@
   --violet-600: #6b5b95;
   --violet-300: #c9c0e0;
 
-  /* Compat : couleurs historiques du Lot 0, consommées telles quelles
-   * par des composants existants (login, NavBar, MetricsSection,
-   * PatientsPanel, SynthesePanel) via var(--primary)/var(--accent).
-   * Ne pas modifier ici — la migration vers la nouvelle palette se fait
-   * composant par composant dans les lots D1-3/D1-4/D1-5. */
+  /* Compat : couleurs historiques du Lot 0. Vérifié lors de la revue
+   * HC-F LOT-01 (2026-07-12) : plus aucun composant de web/src ne les
+   * consomme (`grep -rn "var(--primary)\|var(--accent)" web/src` ne
+   * retourne que ce commentaire) — tous les consommateurs historiques
+   * (login, NavBar, MetricsSection, PatientsPanel, SynthesePanel) sont
+   * déjà migrés vers les tokens sémantiques --color-*. Conservées par
+   * prudence (namespace toujours distinct), ne pas modifier sans
+   * nouvelle vérification. */
   --primary: #1a3a5c;
   --accent: #4a9d8f;
 }
@@ -126,6 +129,7 @@
   --rail-background: var(--teal-950);
   --rail-surface: var(--teal-900);
   --rail-foreground: var(--cream-50);
+  --rail-muted: #16383d;
   --rail-muted-foreground: var(--teal-200);
   --rail-border: #24444a;
   --rail-primary: var(--teal-700);

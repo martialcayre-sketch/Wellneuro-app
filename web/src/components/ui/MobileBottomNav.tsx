@@ -61,7 +61,7 @@ export function MobileBottomNav() {
             >
               <span
                 className={`flex h-6 w-6 items-center justify-center rounded-lg text-[10px] font-semibold ${
-                  active ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-surface text-rail-foreground'
+                  active ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
                 }`}
               >
                 {item.abbr}
@@ -85,7 +85,7 @@ export function MobileBottomNav() {
           <span
             aria-hidden="true"
             className={`flex h-6 w-6 items-center justify-center rounded-lg text-[10px] font-semibold ${
-              isMoreActive ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-surface text-rail-foreground'
+              isMoreActive ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
             }`}
           >
             •••
@@ -133,12 +133,12 @@ export function MobileBottomNav() {
               className={`group flex min-h-[44px] items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
                 isMoreActive
                   ? 'border-rail-primary/20 bg-rail-primary/10'
-                  : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail-surface hover:text-rail-foreground'
+                  : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail hover:text-rail-foreground'
               }`}
             >
               <span
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${
-                  isMoreActive ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-surface text-rail-foreground'
+                  isMoreActive ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
                 }`}
               >
                 PM

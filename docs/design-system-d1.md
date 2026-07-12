@@ -39,13 +39,14 @@ utilisables directement : `bg-background`, `text-foreground`,
 `bg-surface`, `border-border`, `bg-primary text-primary-foreground`, etc.
 
 **Important — collision évitée avec les tokens historiques** : les
-variables CSS `--primary`/`--accent` existaient depuis le Lot 0 et sont
-encore consommées en dur (`style={{ color: 'var(--primary)' }}`) par
-`SynthesePanel.tsx` (non migré, hors périmètre D1 à ce jour). Les
-nouveaux tokens sémantiques utilisent donc un espace de noms distinct
-(`--color-primary`, `--color-accent`, etc.) pour ne jamais re-teinter
-ces usages historiques par erreur. Ne pas fusionner ces deux espaces de
-noms sans avoir migré tous les consommateurs historiques.
+variables CSS `--primary`/`--accent` existaient depuis le Lot 0. Vérifié
+lors de la revue HC-F LOT-01 (2026-07-12) : plus aucun composant ne les
+consomme (tous les consommateurs historiques, dont `SynthesePanel.tsx`,
+sont déjà migrés vers les tokens sémantiques) — corrige une inexactitude
+propagée depuis l'audit LOT-00 qui affirmait `SynthesePanel.tsx` non
+migré. Les nouveaux tokens sémantiques gardent néanmoins un espace de
+noms distinct (`--color-primary`, `--color-accent`, etc.) par prudence.
+Ne pas fusionner ces deux espaces de noms sans nouvelle vérification.
 
 ### Rail de navigation (tokens fixes, HC-F LOT-01)
 
@@ -60,6 +61,7 @@ dans `globals.css` :
 | `--rail-background` | `var(--teal-950)` | ex-`--background` praticien |
 | `--rail-surface` | `var(--teal-900)` | ex-`--surface` praticien |
 | `--rail-foreground` | `var(--cream-50)` | ex-`--foreground` praticien |
+| `--rail-muted` | `#16383d` | ex-`--muted` praticien — badge d'icône inactif, distinct de `--rail-surface` (conteneur) |
 | `--rail-muted-foreground` | `var(--teal-200)` | ex-`--muted-foreground` praticien |
 | `--rail-border` | `#24444a` | ex-`--border` praticien |
 | `--rail-primary` (+ `-rgb`) | `var(--teal-700)` | ex-`--color-primary` praticien |
@@ -69,10 +71,15 @@ dans `globals.css` :
 Ces valeurs sont une reprise à l'identique de l'ancien thème praticien
 sombre — leur contraste AA/AAA était déjà vérifié (cf. tableau de
 contraste, section 2) et n'a pas été recalculé, seulement re-scopé.
-Classes Tailwind : `bg-rail`, `bg-rail-surface`, `text-rail-foreground`,
-`text-rail-muted-foreground`, `border-rail-border`, `bg-rail-primary`
-(+ `/10` etc.), `text-rail-primary-foreground`, `text-rail-accent`,
-`ring-rail-focus-ring`.
+Classes Tailwind : `bg-rail`, `bg-rail-surface`, `bg-rail-muted`,
+`text-rail-foreground`, `text-rail-muted-foreground`, `border-rail-border`,
+`bg-rail-primary` (+ `/10` etc.), `text-rail-primary-foreground`,
+`text-rail-accent`, `ring-rail-focus-ring`.
+
+**Ne pas confondre `bg-rail-surface` (conteneur : aside, barre basse,
+tiroir/sheet) et `bg-rail-muted` (badge d'icône inactif à l'intérieur de
+ce conteneur)** — utiliser le même token pour les deux rend le badge
+invisible sur son fond.
 
 **Le header praticien (logo, recherche, notifications, profil) n'utilise
 pas ces tokens** — il reste sur les tokens sémantiques ambiants
@@ -201,7 +208,7 @@ committée) dans les deux thèmes.
 | `web/src/components/MetricsSection.tsx` | praticien (clair) | D1-4, re-thémé clair par HC-F LOT-01 |
 | `web/src/components/PatientsPanel.tsx` | praticien (clair) | D1-5, re-thémé clair par HC-F LOT-01 |
 | `web/src/app/dashboard/patients/page.tsx`, `.../synthese/page.tsx` (titres) | praticien (clair) | D1-5 (même correctif de contraste que D1-3), re-thémé clair par HC-F LOT-01 |
-| `web/src/components/SynthesePanel.tsx` | **non migré** (tokens legacy `--primary`/`--accent`, toujours sombres) | Aucun lot D1 ni HC-F LOT-01 ne le couvre — dette connue, `/dashboard/synthese` visuellement incohérent (titre clair, panneau sombre) jusqu'à sa migration (prévue HC-F LOT-03) |
+| `web/src/components/SynthesePanel.tsx` | praticien (clair) | Vérifié lors de la revue HC-F LOT-01 : consomme exclusivement des tokens sémantiques D1 (`bg-surface`, `border-border`, `text-foreground`, `text-muted-foreground`, `bg-primary`, `text-accent`, `bg-muted`), aucune référence à `var(--primary)`/`var(--accent)` legacy — hérite du praticien clair comme les autres composants migrés, sans action requise. Corrige une inexactitude de l'audit initial LOT-00 (`AUDIT_UI_REEL.md`) |
 | `web/src/app/patient/**` | patient (clair, implicite) | Aucun changement requis (thème par défaut) |
 
 ### Shell praticien C0-UX / LOT-02

@@ -14,7 +14,7 @@ Classement des écrans réels par priorité de migration vers le shell premium
 | `/dashboard/patients` (`PatientsPanel`) | Non audité en détail (délégation) | À auditer avant chiffrage | Vague 2 |
 | `/dashboard/patients/[idPatient]` (`FichePatientPanel`) | Substantiel (score, badges, cercles, momentum) — **base réelle de C1** | Élevé — C1 va construire dessus, éviter de migrer visuellement avant l'articulation C1/LOT-03 | **Différée après LOT-00 arbitrage C1** |
 | `/dashboard/patients/[idPatient]/besoins` (`DetailBesoinsPanel`) | Non audité en détail | À auditer | Vague 2 |
-| `/dashboard/synthese` (`SynthesePanel`) | **Non migré** — tokens Lot 0 en dur (`--primary`/`--accent`) | Élevé (contraste, tokens legacy) | **Vague 1** (dette connue à résorber) |
+| `/dashboard/synthese` (`SynthesePanel`) | Déjà tokenisé (tokens sémantiques uniquement, vérifié HC-F LOT-01 le 2026-07-12 — corrige l'affirmation initiale « non migré ») | Faible — hérite automatiquement du thème praticien clair, aucune action requise | **Vague 1** (déjà couvert par la bascule de tokens LOT-01) |
 
 ## Portail patient
 

@@ -35,6 +35,7 @@ const config: Config = {
           DEFAULT: 'var(--rail-background)',
           surface: 'var(--rail-surface)',
           foreground: 'var(--rail-foreground)',
+          muted: 'var(--rail-muted)',
           'muted-foreground': 'var(--rail-muted-foreground)',
           border: 'var(--rail-border)',
           primary: {
