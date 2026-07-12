@@ -192,14 +192,26 @@ pour l'état actif, `text-muted-foreground` pour l'inactif, et
 token n'a été nécessaire. Le panneau ☰ tablette existant (768–1024px) n'a pas
 été retouché par ce lot.
 
-## 5. Interdits D1 (rappel)
+## 5. Interdits et autorisations (amendé le 2026-07-12, direction Hybrid Clinical)
 
-Pas de theme-provider/contexte JS, pas de `next-themes`, pas de toggle
-utilisateur, pas de Storybook, pas d'abstraction Radix massive, pas de
-refonte de la logique métier (`PatientsPanel`, routes API, scoring,
-auth/session). Voir `ROADMAP_AGENT_PLAN.md` section 3 pour la liste
-complète et les garde-fous transverses (accessibilité, definition of
-done par lot).
+**Autorisés depuis le 2026-07-12** (levée d'interdits actée, cf.
+`docs/claude/REGISTRE_FRONTIERES.md` §A5) :
+
+- primitives **Radix UI / shadcn/ui sélectionnées**, uniquement pour les
+  comportements complexes accessibles : dialog, alert dialog, sheet,
+  dropdown, tabs, tooltip, command palette — jamais d'abstraction massive ni
+  d'esthétique de bibliothèque importée telle quelle ;
+- **Lucide React** pour les icônes ;
+- **Motion**, uniquement lorsqu'une transition explique un changement d'état
+  ou de structure.
+
+**Sans objet depuis la décision « tout en mode clair »** : theme-provider /
+contexte JS de thème, `next-themes`, toggle utilisateur de thème. Le thème
+est structurel (`data-theme="praticien|patient"`, tous deux clairs, rail
+praticien sombre structurel) — il n'existe aucun mode utilisateur.
+
+**Restent interdits** : Storybook, WebGL, migration de framework, refonte de
+la logique de `PatientsPanel`, données patient réelles, secrets en dur.
 
 ## 6. Réconciliation tokens UX 3.0 (LOT-01, campagne C0-UX)
 

@@ -7,6 +7,12 @@ mise_à_jour: "2026-07-11"
 lot_courant: "LOT-04"
 ---
 
+> **Note du 2026-07-12** : socle technique livré (navigation responsive,
+> rail, navigation mobile, clavier/focus, tests Playwright multi-largeurs) —
+> **direction visuelle remplacée par Hybrid Clinical (HC-F)**. Les interdits
+> de thème énoncés ici sont caducs (cf. registre §A5). Les tests restent le
+> filet de non-régression ; le design ne sert plus de cible. Ne pas rouvrir.
+
 # Refonte UX shell praticien 3.0
 
 ## Objectif

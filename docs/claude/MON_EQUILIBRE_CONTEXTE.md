@@ -130,7 +130,8 @@ Principe directeur : vue dense assumée, le praticien est un professionnel
 formé, l'objectif est l'explicabilité et la décision clinique rapide, pas
 l'apaisement émotionnel.
 
-- Thème sombre (cohérent avec le shell praticien déjà livré en D1).
+- Dashboard dense, charte Hybrid Clinical claire (rail sombre structurel,
+  espace de travail clair) — cf. HC-F.
 - **5 objets cliniques** sur le dashboard patient (vue praticien) :
   1. Indice global (non décisionnel seul)
   2. Stabilité métabolique (ex-"surchauffe", polarité corrigée)
