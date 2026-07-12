@@ -165,3 +165,15 @@
 **Prochaine action prioritaire** : merger #31, #32 puis #33 dans cet ordre, puis activer HC-F LOT-00 sur instruction explicite.
 
 **Questions ouvertes** : `lots/LOT-07…` (HC-F) désaligné avec la nouvelle table à 6 lots, laissé en l'état, à trancher.
+
+## [2026-07-12] — Campagne HC-F : recalage des lots, LOT-00 et LOT-01 clôturés (PR #34, #35)
+
+**Décisions prises** : lots HC-F recalés sur l'amendement de `CAMPAGNE.md` (LOT-07→LOT-05, retrait Jour/Nuit et questionnaires de LOT-00/01/02). LOT-00 exécuté (audit réel, arbitrages validés par l'utilisateur, `LOT-03` rédigé). Correctif sécurité séparé : `api/patient/reponses` n'exposait pas de score patient filtré, corrigé. LOT-01 exécuté : thème praticien basculé au clair, navigation restée sombre via nouveau namespace `--rail-*`. Revue indépendante (PR #35) : 2 constats corrigés (badge rail invisible sur son fond, note documentaire `SynthesePanel.tsx` inexacte).
+
+**Validations exécutées** : `type-check`, `lint`, `check_no_secrets.sh`, e2e (`dashboard-praticien`, `portail-parcours`) verts ; vérifications visuelles manuelles ; CI GitHub Actions verte avant chaque merge (PR #34, #35).
+
+**Options écartées** : aucune hors périmètre déjà documenté.
+
+**Prochaine action prioritaire** : LOT-02 (shell premium, icônes Lucide) — autorisé explicitement par l'utilisateur.
+
+**Questions ouvertes** : captures de référence LOT-00 non produites (outil indisponible) ; `.gitignore` local non commité, hors périmètre de cette session.

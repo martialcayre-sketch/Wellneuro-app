@@ -4,7 +4,7 @@ titre: "HC-F — Hybrid Clinical Foundation"
 statut: "à_faire"
 créée_le: "2026-07-12"
 mise_à_jour: "2026-07-12"
-lot_courant: "LOT-02 (en attente d'autorisation explicite)"
+lot_courant: "LOT-02 (autorisé le 2026-07-12, démarrage)"
 ---
 
 # HC-F — Hybrid Clinical Foundation
