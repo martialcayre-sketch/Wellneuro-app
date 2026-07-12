@@ -9,7 +9,7 @@ dépend_de: ["LOT-01"]
 
 ## But
 
-Remplacer le shell brouillon par une structure premium, géométriquement cohérente et extensible.
+Remplacer le shell brouillon par une structure premium, géométriquement cohérente et extensible, puis préparer les accélérateurs praticien sans afficher d'affordance factice.
 
 ## Périmètre
 
@@ -18,6 +18,7 @@ Remplacer le shell brouillon par une structure premium, géométriquement cohér
 - navigation desktop/tablette/mobile ;
 - vraies icônes Lucide ;
 - profil, notifications et recherche uniquement si fonctionnels ;
+- palette de commandes si son périmètre est validé en LOT-00 ;
 - alignements, largeurs, densité et responsive ;
 - conservation des routes et de l'authentification.
 
@@ -27,8 +28,9 @@ Remplacer le shell brouillon par une structure premium, géométriquement cohér
 - `web/src/components/ui/SidebarRail.tsx`
 - `web/src/components/ui/MobileBottomNav.tsx`
 - nouveaux composants de navigation ciblés
+- éventuel composant `CommandPalette`
 - `web/src/app/dashboard/layout.tsx`
-- `web/package.json` / lockfile pour Lucide si validé
+- `web/package.json` / lockfile pour Lucide et primitive command si validés
 - tests Playwright du shell
 
 ## Interdits
@@ -39,7 +41,9 @@ Remplacer le shell brouillon par une structure premium, géométriquement cohér
 - ne pas conserver une recherche ou cloche factice ;
 - ne pas créer de nouvelles routes métier dans ce lot ;
 - ne pas refondre les pages internes ;
-- ne pas introduire une bibliothèque UI massive.
+- ne pas introduire une bibliothèque UI massive ;
+- ne pas permettre une action destructive directe depuis la palette ;
+- ne pas stocker dans l'historique local de la palette des données patient sensibles.
 
 ## Géométrie cible
 
@@ -51,6 +55,21 @@ Remplacer le shell brouillon par une structure premium, géométriquement cohér
 - alignement vertical partagé avec le header ;
 - largeur compacte calculée à partir des contenus réels, pas d'une valeur inférieure aux paddings ;
 - breakpoints documentés et testés.
+
+## Palette de commandes
+
+Si validée en LOT-00 :
+
+- raccourci `Ctrl/Cmd + K` ;
+- recherche patients et navigation vers fonctions réellement disponibles ;
+- commandes françaises ;
+- droits et disponibilité respectés ;
+- aucune suppression, transmission ou prescription immédiate ;
+- confirmation ou écran intermédiaire pour les actions engageantes ;
+- alternative complète par navigation visible ;
+- fermeture par `Escape` et retour du focus.
+
+Une palette partielle ou simulée ne doit pas être livrée. Si la recherche globale réelle n'est pas disponible, réduire le périmètre ou différer.
 
 ## Étapes
 
@@ -64,7 +83,8 @@ Remplacer le shell brouillon par une structure premium, géométriquement cohér
 8. Rendre les notifications réellement fonctionnelles ou les retirer temporairement.
 9. Réconcilier tablette drawer et mobile bottom navigation.
 10. Gérer focus trap via primitive accessible si nécessaire.
-11. Tester Jour, Nuit et Auto.
+11. Implémenter la palette uniquement si son contrat et ses sources de données sont validés.
+12. Tester Jour, Nuit et Auto.
 
 ## Tests
 
@@ -78,7 +98,8 @@ Remplacer le shell brouillon par une structure premium, géométriquement cohér
 - zones tactiles ;
 - routes actives ;
 - état rail mémorisé si conservé ;
-- mode Jour/Nuit sans décalage de layout.
+- mode Jour/Nuit sans décalage de layout ;
+- palette : résultats corrects, absence d'action destructive directe et aucune donnée sensible persistée.
 
 ## Done
 
@@ -86,6 +107,7 @@ Remplacer le shell brouillon par une structure premium, géométriquement cohér
 - [ ] Icônes cohérentes et centrées.
 - [ ] Aucune affordance factice.
 - [ ] Navigation responsive validée.
+- [ ] Palette livrée de façon complète ou différée explicitement.
 - [ ] Tests E2E verts.
 - [ ] Captures comparatives documentées.
 - [ ] LOT-03 autorisé.
