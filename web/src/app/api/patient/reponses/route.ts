@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { readPatientSession } from '@/lib/patient-session';
 
 export type PatientReponsesResponse =
-  | { ok: true; titre: string; dateReponse: string; scores: unknown; statutReponses: string }
+  | { ok: true; titre: string; dateReponse: string; statutReponses: string }
   | { ok: false; reason: string; error: string };
 
 // GET /api/patient/reponses?id=ASS...&email=...
@@ -29,6 +29,7 @@ export async function GET(req: Request): Promise<NextResponse<PatientReponsesRes
     const reponse = await prisma.questionnaireReponse.findFirst({
       where: { idAssignation },
       orderBy: { dateReponse: 'desc' },
+      select: { titre: true, dateReponse: true },
     });
     if (!reponse) {
       return NextResponse.json({ ok: false, reason: 'not_found', error: 'Aucune réponse enregistrée pour ce questionnaire.' }, { status: 404 });
@@ -38,7 +39,6 @@ export async function GET(req: Request): Promise<NextResponse<PatientReponsesRes
       ok: true,
       titre: reponse.titre,
       dateReponse: reponse.dateReponse.toISOString(),
-      scores: reponse.scoresJson,
       statutReponses: ass.statutReponses,
     });
   } catch (err) {
