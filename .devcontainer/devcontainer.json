@@ -9,13 +9,21 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
   "postCreateCommand": "cd web && npm install",
+  "postStartCommand": "mkdir -p /home/node/.codex /home/node/.claude",
+  "mounts": [
+    "source=wellneuro-vscode-server,target=/home/node/.vscode-server,type=volume",
+    "source=wellneuro-codex-home,target=/home/node/.codex,type=volume",
+    "source=wellneuro-claude-home,target=/home/node/.claude,type=volume"
+  ],
   "customizations": {
     "vscode": {
       "extensions": [
         "esbenp.prettier-vscode",
         "dbaeumer.vscode-eslint",
         "bradlc.vscode-tailwindcss",
-        "github.vscode-pull-request-github"
+        "github.vscode-pull-request-github",
+        "openai.chatgpt",
+        "anthropic.claude-code"
       ]
     }
   },
@@ -29,7 +37,9 @@
     }
   },
   "remoteEnv": {
-    "NODE_ENV": "development"
+    "NODE_ENV": "development",
+    "CODEX_HOME": "/home/node/.codex",
+    "CLAUDE_HOME": "/home/node/.claude"
   },
   "privileged": true,
   "securityOpt": [
