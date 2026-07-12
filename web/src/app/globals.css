@@ -36,11 +36,14 @@
   --violet-600: #6b5b95;
   --violet-300: #c9c0e0;
 
-  /* Compat : couleurs historiques du Lot 0, consommées telles quelles
-   * par des composants existants (login, NavBar, MetricsSection,
-   * PatientsPanel, SynthesePanel) via var(--primary)/var(--accent).
-   * Ne pas modifier ici — la migration vers la nouvelle palette se fait
-   * composant par composant dans les lots D1-3/D1-4/D1-5. */
+  /* Compat : couleurs historiques du Lot 0. Vérifié lors de la revue
+   * HC-F LOT-01 (2026-07-12) : plus aucun composant de web/src ne les
+   * consomme (`grep -rn "var(--primary)\|var(--accent)" web/src` ne
+   * retourne que ce commentaire) — tous les consommateurs historiques
+   * (login, NavBar, MetricsSection, PatientsPanel, SynthesePanel) sont
+   * déjà migrés vers les tokens sémantiques --color-*. Conservées par
+   * prudence (namespace toujours distinct), ne pas modifier sans
+   * nouvelle vérification. */
   --primary: #1a3a5c;
   --accent: #4a9d8f;
 }
@@ -84,30 +87,54 @@
 }
 
 /*
- * Thème praticien — sombre, appliqué via [data-theme="praticien"] (D1-3).
- * Contraste texte/fond vérifié AA/AAA (texte principal ~14.6:1,
- * texte atténué ~8.7:1, accent or ~7:1) — cf. audit D1.
+ * Thème praticien — clair depuis la décision Hybrid Clinical Foundation
+ * (2026-07-12, « tout en mode clair », cf. docs/design-system-d1.md §2) :
+ * mêmes valeurs vérifiées AA que le thème patient pour la surface, le
+ * texte, les statuts et le focus — seule la présence du rail de
+ * navigation (tokens --rail-* ci-dessous) distingue visuellement les deux
+ * rôles désormais. Simplification délibérée plutôt qu'une nouvelle
+ * calibration de contraste non vérifiée.
  */
 [data-theme='praticien'] {
-  --background: var(--teal-950);
-  --foreground: var(--cream-50);
-  --surface: var(--teal-900);
-  --surface-foreground: var(--cream-50);
-  --muted: #16383d;
-  --muted-foreground: var(--teal-200);
-  --border: #24444a;
+  --background: var(--cream-100);
+  --foreground: #16323a;
+  --surface: #ffffff;
+  --surface-foreground: #16323a;
+  --muted: #e7eeee;
+  --muted-foreground: #4a6367;
+  --border: #d8e2e1;
   --color-primary: var(--teal-700);
   --color-primary-rgb: var(--teal-700-rgb);
-  --color-primary-foreground: var(--cream-50);
-  --color-accent: var(--gold-500);
-  --color-accent-rgb: var(--gold-500-rgb);
-  --color-accent-foreground: var(--teal-950);
+  --color-primary-foreground: #ffffff;
+  --color-accent: var(--gold-600);
+  --color-accent-rgb: var(--gold-600-rgb);
+  --color-accent-foreground: #16323a;
 
   /* Réconciliation UX 3.0 (LOT-01, additif). */
-  --color-surface-elevated: #1a3a40;
-  --color-status-success: #4ade80;
-  --color-status-warning: #fbbf24;
-  --color-status-danger: #f87171;
-  --color-status-info: #60a5fa;
-  --color-focus-ring: var(--gold-500);
+  --color-surface-elevated: #ffffff;
+  --color-status-success: #15803d;
+  --color-status-warning: #92400e;
+  --color-status-danger: #b91c1c;
+  --color-status-info: #1d4ed8;
+  --color-focus-ring: var(--teal-700);
+
+  /*
+   * Rail de navigation — reste structurellement sombre (aside desktop,
+   * barre basse mobile, tiroir tablette) même si le reste du thème
+   * praticien est clair. Reprend à l'identique les valeurs de l'ancien
+   * thème praticien sombre, déjà vérifiées AA/AAA (texte principal
+   * ~14.6:1, texte atténué ~8.7:1, accent or ~7:1) — cf. audit D1, aucun
+   * nouveau calcul de contraste nécessaire.
+   */
+  --rail-background: var(--teal-950);
+  --rail-surface: var(--teal-900);
+  --rail-foreground: var(--cream-50);
+  --rail-muted: #16383d;
+  --rail-muted-foreground: var(--teal-200);
+  --rail-border: #24444a;
+  --rail-primary: var(--teal-700);
+  --rail-primary-rgb: var(--teal-700-rgb);
+  --rail-primary-foreground: var(--cream-50);
+  --rail-accent: var(--gold-500);
+  --rail-focus-ring: var(--gold-500);
 }

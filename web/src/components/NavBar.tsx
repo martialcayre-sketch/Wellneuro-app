@@ -109,34 +109,34 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
             expanded ? 'lg:w-64' : 'lg:w-16'
           }`}
         >
-          <div className="rounded-[1.5rem] border border-border bg-surface p-3 shadow-sm">
+          <div className="rounded-[1.5rem] border border-rail-border bg-rail-surface p-3 shadow-sm">
             <SidebarRail collapsed={!expanded} />
             <button
               type="button"
               onClick={toggleExpanded}
               aria-expanded={expanded}
               aria-label={expanded ? 'Réduire la navigation' : 'Étendre la navigation'}
-              className="mt-2 flex h-11 w-11 items-center justify-center rounded-xl border border-border text-muted-foreground transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="mt-2 flex h-11 w-11 items-center justify-center rounded-xl border border-rail-border text-rail-muted-foreground transition hover:text-rail-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring"
             >
               <span aria-hidden="true">{expanded ? '‹' : '›'}</span>
             </button>
           </div>
 
           {expanded && (
-            <section className="rounded-[1.5rem] border border-border bg-surface p-4 shadow-sm">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            <section className="rounded-[1.5rem] border border-rail-border bg-rail-surface p-4 shadow-sm">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-rail-muted-foreground">
                 Patients de démonstration
               </p>
               <div className="space-y-2">
                 {demoPatients.map((patient) => (
                   <div
                     key={patient.name}
-                    className="flex items-center gap-3 rounded-2xl border border-border bg-background px-3 py-3"
+                    className="flex items-center gap-3 rounded-2xl border border-rail-border bg-rail px-3 py-3"
                   >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rail-primary/10 text-sm font-semibold text-rail-primary">
                       {initials(patient.name)}
                     </div>
-                    <p className="truncate text-sm font-medium text-foreground">{patient.name}</p>
+                    <p className="truncate text-sm font-medium text-rail-foreground">{patient.name}</p>
                   </div>
                 ))}
               </div>
@@ -160,17 +160,17 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
             role="dialog"
             aria-modal="true"
             aria-labelledby="wn-rail-drawer-title"
-            className="relative z-10 flex h-full w-72 max-w-[80vw] flex-col gap-4 border-r border-border bg-surface-elevated p-4 shadow-xl"
+            className="relative z-10 flex h-full w-72 max-w-[80vw] flex-col gap-4 border-r border-rail-border bg-rail-surface p-4 shadow-xl"
           >
             <div className="flex items-center justify-between">
-              <h2 id="wn-rail-drawer-title" className="text-sm font-semibold text-foreground">
+              <h2 id="wn-rail-drawer-title" className="text-sm font-semibold text-rail-foreground">
                 Navigation
               </h2>
               <button
                 type="button"
                 aria-label="Fermer la navigation"
                 onClick={() => setIsDrawerOpen(false)}
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-rail-border text-rail-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring"
               >
                 <span aria-hidden="true">✕</span>
               </button>

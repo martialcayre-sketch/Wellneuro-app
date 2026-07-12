@@ -33,21 +33,21 @@ export function SidebarRail({ collapsed, onNavigate }: SidebarRailProps) {
             onClick={onNavigate}
             aria-current={active ? 'page' : undefined}
             aria-label={collapsed ? item.label : undefined}
-            className={`group flex items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+            className={`group flex items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
               active
-                ? 'border-primary/20 bg-primary/10'
-                : 'border-transparent text-muted-foreground hover:border-border hover:bg-background hover:text-foreground'
+                ? 'border-rail-primary/20 bg-rail-primary/10'
+                : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail hover:text-rail-foreground'
             }`}
           >
             <span
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${
-                active ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                active ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
               }`}
             >
               {item.abbr}
             </span>
             {!collapsed && (
-              <span className={`min-w-0 flex-1 truncate text-sm font-medium ${active ? 'text-foreground' : ''}`}>
+              <span className={`min-w-0 flex-1 truncate text-sm font-medium ${active ? 'text-rail-foreground' : ''}`}>
                 {item.label}
               </span>
             )}

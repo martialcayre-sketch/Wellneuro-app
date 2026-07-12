@@ -7,8 +7,11 @@ courant) — ce document se concentre sur le design system lui-même.
 
 Identité visuelle : **deep teal + champagne gold**, premium clinique,
 scientifique mais accessible. Deux thèmes fixes selon le rôle (pas de
-préférence utilisateur togglable) : sombre pour le praticien, clair
-pour le patient. Mobile first.
+préférence utilisateur togglable), **tous deux clairs** depuis la décision
+Hybrid Clinical Foundation du 2026-07-12 (abandon du mode Nuit/Auto) : seule
+la navigation praticien (rail desktop, barre basse mobile, tiroir tablette)
+reste structurellement sombre, via un jeu de tokens dédié (`--rail-*`,
+section 1bis) indépendant de `data-theme`. Mobile first.
 
 ## 1. Tokens (`web/tailwind.config.ts` + `web/src/app/globals.css`)
 
@@ -36,13 +39,52 @@ utilisables directement : `bg-background`, `text-foreground`,
 `bg-surface`, `border-border`, `bg-primary text-primary-foreground`, etc.
 
 **Important — collision évitée avec les tokens historiques** : les
-variables CSS `--primary`/`--accent` existaient depuis le Lot 0 et sont
-encore consommées en dur (`style={{ color: 'var(--primary)' }}`) par
-`SynthesePanel.tsx` (non migré, hors périmètre D1 à ce jour). Les
-nouveaux tokens sémantiques utilisent donc un espace de noms distinct
-(`--color-primary`, `--color-accent`, etc.) pour ne jamais re-teinter
-ces usages historiques par erreur. Ne pas fusionner ces deux espaces de
-noms sans avoir migré tous les consommateurs historiques.
+variables CSS `--primary`/`--accent` existaient depuis le Lot 0. Vérifié
+lors de la revue HC-F LOT-01 (2026-07-12) : plus aucun composant ne les
+consomme (tous les consommateurs historiques, dont `SynthesePanel.tsx`,
+sont déjà migrés vers les tokens sémantiques) — corrige une inexactitude
+propagée depuis l'audit LOT-00 qui affirmait `SynthesePanel.tsx` non
+migré. Les nouveaux tokens sémantiques gardent néanmoins un espace de
+noms distinct (`--color-primary`, `--color-accent`, etc.) par prudence.
+Ne pas fusionner ces deux espaces de noms sans nouvelle vérification.
+
+### Rail de navigation (tokens fixes, HC-F LOT-01)
+
+Depuis la décision « tout clair, rail sombre structurel », la navigation
+praticien (`SidebarRail.tsx`, `MobileBottomNav.tsx`, et les enveloppes
+aside/tiroir de `NavBar.tsx`) ne suit plus `data-theme` : elle consomme un
+namespace dédié, toujours sombre, défini sous `[data-theme='praticien']`
+dans `globals.css` :
+
+| Token CSS | Valeur | Équivalent |
+|---|---|---|
+| `--rail-background` | `var(--teal-950)` | ex-`--background` praticien |
+| `--rail-surface` | `var(--teal-900)` | ex-`--surface` praticien |
+| `--rail-foreground` | `var(--cream-50)` | ex-`--foreground` praticien |
+| `--rail-muted` | `#16383d` | ex-`--muted` praticien — badge d'icône inactif, distinct de `--rail-surface` (conteneur) |
+| `--rail-muted-foreground` | `var(--teal-200)` | ex-`--muted-foreground` praticien |
+| `--rail-border` | `#24444a` | ex-`--border` praticien |
+| `--rail-primary` (+ `-rgb`) | `var(--teal-700)` | ex-`--color-primary` praticien |
+| `--rail-primary-foreground` | `var(--cream-50)` | ex-`--color-primary-foreground` praticien |
+| `--rail-accent` / `--rail-focus-ring` | `var(--gold-500)` | ex-`--color-accent`/`--color-focus-ring` praticien |
+
+Ces valeurs sont une reprise à l'identique de l'ancien thème praticien
+sombre — leur contraste AA/AAA était déjà vérifié (cf. tableau de
+contraste, section 2) et n'a pas été recalculé, seulement re-scopé.
+Classes Tailwind : `bg-rail`, `bg-rail-surface`, `bg-rail-muted`,
+`text-rail-foreground`, `text-rail-muted-foreground`, `border-rail-border`,
+`bg-rail-primary` (+ `/10` etc.), `text-rail-primary-foreground`,
+`text-rail-accent`, `ring-rail-focus-ring`.
+
+**Ne pas confondre `bg-rail-surface` (conteneur : aside, barre basse,
+tiroir/sheet) et `bg-rail-muted` (badge d'icône inactif à l'intérieur de
+ce conteneur)** — utiliser le même token pour les deux rend le badge
+invisible sur son fond.
+
+**Le header praticien (logo, recherche, notifications, profil) n'utilise
+pas ces tokens** — il reste sur les tokens sémantiques ambiants
+(`bg-surface`, `text-foreground`, etc.), désormais clairs comme le reste
+de l'espace de travail.
 
 ### Typographie
 
@@ -60,23 +102,28 @@ Chargées dans `web/src/app/layout.tsx` (racine), disponibles partout.
 
 Activés via l'attribut `data-theme` posé sur un conteneur racine — pas
 de contexte JS, pas de `next-themes`, pas de toggle (interdit D1) : le
-thème est fixe selon le rôle, pas une préférence utilisateur.
+thème est fixe selon le rôle, pas une préférence utilisateur. Depuis
+HC-F LOT-01, `praticien` et `patient` partagent **les mêmes valeurs de
+tokens sémantiques** (simplification délibérée, contraste déjà vérifié
+pour l'un vaut pour l'autre) ; seule la présence du rail de navigation
+(section 1, tokens `--rail-*`) distingue visuellement les deux rôles.
 
 | Thème | Sélecteur | Où il est posé |
 |---|---|---|
 | **Patient** (clair, défaut) | `:root`, `[data-theme="patient"]` | Défaut implicite — `web/src/app/patient/**` n'a pas encore besoin de le poser explicitement |
-| **Praticien** (sombre) | `[data-theme="praticien"]` | `web/src/app/dashboard/layout.tsx` (conteneur racine du shell), `web/src/app/login/page.tsx` (les deux états, chargement et principal) |
+| **Praticien** (clair, rail de navigation sombre structurel via tokens `--rail-*` dédiés) | `[data-theme="praticien"]` | `web/src/app/dashboard/layout.tsx` (conteneur racine du shell), `web/src/app/login/page.tsx` (les deux états, chargement et principal) |
 
 Contrastes vérifiés (WCAG, ratio de luminance relative) :
 
 | Paire | Thème | Ratio | Seuil AA |
 |---|---|---|---|
-| `foreground` / `background` | praticien | ~14.6:1 | ✅ (texte normal 4.5:1) |
-| `foreground` / `background` | patient | ~12.9:1 | ✅ |
-| `muted-foreground` / `background` | praticien | ~8.7:1 | ✅ |
-| `accent` (texte) / `surface` | praticien | ~6-7:1 | ✅ |
-| `accent` (texte) / `surface` | patient | ~4.65:1 | ✅ (limite) |
-| `primary` (texte) / `surface` ou `background` | praticien | ~1.9-2.3:1 | ❌ — **ne jamais utiliser `text-primary` comme texte sur fond sombre** ; `primary` n'est conçu que pour un fond de bouton (`bg-primary` + `text-primary-foreground`) |
+| `foreground` / `background` | praticien et patient (valeurs partagées) | ~12.9:1 | ✅ (texte normal 4.5:1) |
+| `muted-foreground` / `background` | praticien et patient | ~4.6:1 (`#4a6367` / `#fbf9f5`) | ✅ |
+| `accent` (texte) / `surface` | praticien et patient | ~4.65:1 | ✅ (limite) |
+| `rail-foreground` / `rail-background` | rail (les deux rôles) | ~14.6:1 | ✅ — reprise à l'identique de l'ancien praticien sombre |
+| `rail-muted-foreground` / `rail-background` | rail | ~8.7:1 | ✅ |
+| `rail-accent` (texte) / `rail-surface` | rail | ~6-7:1 | ✅ |
+| `primary` (texte) / `surface` ou `background` | praticien et patient | ~1.9-2.3:1 | ❌ — **ne jamais utiliser `text-primary` comme texte sur fond clair** ; `primary` n'est conçu que pour un fond de bouton (`bg-primary` + `text-primary-foreground`) |
 
 ## 3. Composants (`web/src/components/ui/`)
 
@@ -153,26 +200,34 @@ committée) dans les deux thèmes.
 
 | Page / composant | Thème appliqué | Lot |
 |---|---|---|
-| `web/src/components/NavBar.tsx` | praticien (sombre) | D1-3 |
-| `web/src/app/dashboard/layout.tsx` | praticien (sombre) | D1-3 |
-| `web/src/app/login/page.tsx` | praticien (sombre) | D1-3 |
-| `web/src/app/dashboard/page.tsx` (titre + feuille de route) | praticien (sombre) | D1-3 (élargi après détection d'un défaut de contraste) |
-| `web/src/components/MetricsSection.tsx` | praticien (sombre) | D1-4 |
-| `web/src/components/PatientsPanel.tsx` | praticien (sombre) | D1-5 |
-| `web/src/app/dashboard/patients/page.tsx`, `.../synthese/page.tsx` (titres) | praticien (sombre) | D1-5 (même correctif de contraste que D1-3) |
-| `web/src/components/SynthesePanel.tsx` | **non migré** | Aucun lot D1 ne le couvre à ce jour |
+| `web/src/components/NavBar.tsx` (header hors rail) | praticien (clair) | D1-3, re-thémé clair par HC-F LOT-01 |
+| `web/src/components/ui/SidebarRail.tsx`, `web/src/components/ui/MobileBottomNav.tsx`, aside/tiroir de `NavBar.tsx` | rail (sombre structurel, tokens `--rail-*` dédiés) | HC-F LOT-01 |
+| `web/src/app/dashboard/layout.tsx` | praticien (clair) | D1-3, re-thémé clair par HC-F LOT-01 |
+| `web/src/app/login/page.tsx` | praticien (clair) | D1-3, re-thémé clair par HC-F LOT-01 |
+| `web/src/app/dashboard/page.tsx` (titre + feuille de route) | praticien (clair) | D1-3 (élargi après détection d'un défaut de contraste), re-thémé clair par HC-F LOT-01 |
+| `web/src/components/MetricsSection.tsx` | praticien (clair) | D1-4, re-thémé clair par HC-F LOT-01 |
+| `web/src/components/PatientsPanel.tsx` | praticien (clair) | D1-5, re-thémé clair par HC-F LOT-01 |
+| `web/src/app/dashboard/patients/page.tsx`, `.../synthese/page.tsx` (titres) | praticien (clair) | D1-5 (même correctif de contraste que D1-3), re-thémé clair par HC-F LOT-01 |
+| `web/src/components/SynthesePanel.tsx` | praticien (clair) | Vérifié lors de la revue HC-F LOT-01 : consomme exclusivement des tokens sémantiques D1 (`bg-surface`, `border-border`, `text-foreground`, `text-muted-foreground`, `bg-primary`, `text-accent`, `bg-muted`), aucune référence à `var(--primary)`/`var(--accent)` legacy — hérite du praticien clair comme les autres composants migrés, sans action requise. Corrige une inexactitude de l'audit initial LOT-00 (`AUDIT_UI_REEL.md`) |
 | `web/src/app/patient/**` | patient (clair, implicite) | Aucun changement requis (thème par défaut) |
 
 ### Shell praticien C0-UX / LOT-02
+
+> **Note HC-F LOT-01** : description historique, valable au moment de
+> C0-UX. Depuis HC-F LOT-01, le header décrit ci-dessous reste sur ces
+> tokens (désormais clairs) mais le rail/les cartes de navigation sont
+> passés sur le namespace `--rail-*` dédié (section 1, « Rail de
+> navigation ») pour rester sombres — voir section 4 pour le détail par
+> fichier.
 
 Le shell praticien réorganisé dans `web/src/components/NavBar.tsx` et
 `web/src/app/dashboard/layout.tsx` réutilise uniquement les tokens D1
 existants et leurs combinaisons de surface:
 
 - `bg-background` pour le conteneur racine du thème praticien;
-- `bg-surface` et `bg-surface/95` pour l'enveloppe du header et les cartes du rail;
-- `border-border` pour les séparateurs et contours;
-- `bg-primary/10`, `text-primary` et `text-primary-foreground` pour les repères actifs;
+- `bg-surface` et `bg-surface/95` pour l'enveloppe du header;
+- `border-border` pour les séparateurs et contours du header;
+- `bg-primary/10`, `text-primary` et `text-primary-foreground` pour les repères actifs du header;
 - `text-muted-foreground` pour les libellés secondaires;
 - `Badge` pour les états, les repères de build et les raccourcis non cliniques.
 
@@ -182,15 +237,18 @@ liens `Link` standards, afin de conserver une base simple pour le futur lot mobi
 
 ### Navigation mobile C0-UX / LOT-03
 
+> **Note HC-F LOT-01** : description historique. `MobileBottomNav.tsx` est
+> passé sur le namespace `--rail-*` (barre basse et bottom sheet incluses)
+> — voir section 1 « Rail de navigation » et section 4.
+
 `web/src/components/ui/MobileBottomNav.tsx` (barre basse + bottom sheet « Plus »,
-visible uniquement `<768px`) réutilise exclusivement les tokens déjà listés
+visible uniquement `<768px`) réutilisait exclusivement les tokens déjà listés
 ci-dessus: `bg-surface/95` et le halo `backdrop-blur` du header pour la barre,
 `bg-surface-elevated` pour le panneau de la sheet (même traitement que le
 panneau ☰ tablette et le menu profil), `bg-primary`/`text-primary-foreground`
 pour l'état actif, `text-muted-foreground` pour l'inactif, et
-`focus-visible:ring-focus-ring` sur chaque élément interactif. Aucun nouveau
-token n'a été nécessaire. Le panneau ☰ tablette existant (768–1024px) n'a pas
-été retouché par ce lot.
+`focus-visible:ring-focus-ring` sur chaque élément interactif. Le panneau ☰
+tablette existant (768–1024px) n'avait pas été retouché par ce lot.
 
 ## 5. Interdits et autorisations (amendé le 2026-07-12, direction Hybrid Clinical)
 

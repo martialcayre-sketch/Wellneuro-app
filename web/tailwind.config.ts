@@ -29,6 +29,22 @@ const config: Config = {
           DEFAULT: 'rgb(var(--color-accent-rgb) / <alpha-value>)',
           foreground: 'var(--color-accent-foreground)',
         },
+        // Rail de navigation praticien — toujours sombre, indépendant de
+        // data-theme (cf. docs/design-system-d1.md, section « Rail de navigation »).
+        rail: {
+          DEFAULT: 'var(--rail-background)',
+          surface: 'var(--rail-surface)',
+          foreground: 'var(--rail-foreground)',
+          muted: 'var(--rail-muted)',
+          'muted-foreground': 'var(--rail-muted-foreground)',
+          border: 'var(--rail-border)',
+          primary: {
+            DEFAULT: 'rgb(var(--rail-primary-rgb) / <alpha-value>)',
+            foreground: 'var(--rail-primary-foreground)',
+          },
+          accent: 'var(--rail-accent)',
+          'focus-ring': 'var(--rail-focus-ring)',
+        },
         // Palette de marque brute, disponible pour des usages ponctuels
         // en dehors des rôles sémantiques ci-dessus.
         teal: {
