@@ -1,7 +1,7 @@
 ---
 id: "LOT-00-audit-arbitrages"
 titre: "Audit réel, classification et arbitrages"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: []
 ---
 
@@ -90,11 +90,17 @@ dépend_de: []
 
 ## Done
 
-- [ ] Audit approuvé.
-- [ ] Écrans pilotes sélectionnés.
-- [ ] Contrats d'instanciation des 3 mécanismes arbitrés.
-- [ ] Articulation avec C1 documentée.
-- [ ] Capacités différées identifiées.
-- [ ] `lots/LOT-03-*.md` rédigé et validé par l'utilisateur.
-- [ ] Aucun code modifié.
-- [ ] LOT-01 autorisé explicitement.
+- [x] Audit approuvé (arbitrages validés par l'utilisateur, cf. `ARBITRAGES_LOT_00.md`).
+- [x] Écrans pilotes sélectionnés (vague 1, cf. `MATRICE_ECRANS_MIGRATION.md`).
+- [x] Contrats d'instanciation des 3 mécanismes arbitrés (cf. `CONTRATS_UX_P1.md`).
+- [x] Articulation avec C1 documentée (`AUDIT_UI_REEL.md` §5).
+- [x] Capacités différées identifiées (`ARBITRAGES_LOT_00.md` §5).
+- [x] `lots/LOT-03-*.md` rédigé et validé par l'utilisateur.
+- [x] Aucun code modifié par ce lot (le correctif `api/patient/reponses` est un correctif de sécurité séparé, hors HC-F, validé explicitement par l'utilisateur).
+- [ ] LOT-01 autorisé explicitement — en attente d'instruction séparée.
+
+## Note
+
+Captures de référence avant changement non produites (pas d'outil de
+capture navigateur dans cette session) — à produire si jugées nécessaires
+avant LOT-02, cf. `ARBITRAGES_LOT_00.md`.
