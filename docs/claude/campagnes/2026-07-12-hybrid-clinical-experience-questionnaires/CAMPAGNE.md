@@ -18,9 +18,15 @@ Transformer la direction Hybrid Clinical validée en standard UX durable pour We
 - portail patient clair fixe, chaleureux, calme et médicalement rassurant ;
 - expérience de questionnaires moins lourde, moins monotone et mieux adaptée aux formats longs ;
 - innovation d'affichage sans altération du texte, du sens, du codage ou de la validité des instruments ;
+- expérience clinique avancée : mode consultation, timeline, cartes de décision, comparaison avant/après et prévisualisation patient ;
+- productivité et sécurité : palette de commandes, états vides actionnables, réversibilité et vues opérationnelles ;
 - socle de gouvernance imposant cette direction aux modules futurs.
 
-Cette campagne ne doit pas être traitée comme une simple retouche graphique. Elle définit une architecture d'expérience commune aux interfaces praticien et patient, avec une couche spécifique de sécurité psychométrique pour les questionnaires.
+Cette campagne ne doit pas être traitée comme une simple retouche graphique. Elle définit une architecture d'expérience commune aux interfaces praticien et patient, avec une couche spécifique de sécurité psychométrique pour les questionnaires et une seconde vague d'innovations cliniques hiérarchisées.
+
+## Règle directrice
+
+> Chaque écran doit aider à comprendre, décider ou agir. Tout élément qui ne remplit aucune de ces fonctions doit être retiré, regroupé ou relégué.
 
 ## Résultat observable
 
@@ -32,7 +38,12 @@ Cette campagne ne doit pas être traitée comme une simple retouche graphique. E
 4. Les questionnaires utilisent un moteur de rendu par profils d'expérience : focus, micro-lots, sections guidées, grilles compactes limitées, saisie conditionnelle et résumé avant transmission.
 5. L'ordre des réponses n'est jamais mélangé arbitrairement. Toute randomisation est déclarée, déterministe, stable pendant une tentative, testée et limitée aux options nominales réellement non ordonnées.
 6. Les échelles validées conservent par défaut l'ordre de leurs items, l'ordre de leurs réponses, leurs libellés, leurs bornes, leur temporalité et leur logique de scoring.
-7. Les innovations futures doivent déclarer leur rôle, thème, densité, comportement mobile, action principale, états, accessibilité et politique psychométrique.
+7. Les surfaces praticien disposent d'une double profondeur : lecture immédiate puis lecture experte.
+8. Le mode consultation, la carte de décision et la timeline clinique disposent au minimum d'un prototype validé et d'un contrat d'intégration.
+9. Le suivi à 21 jours prévoit une comparaison avant/maintenant avec dates, comparabilité et limites explicites.
+10. Le praticien peut prévisualiser ce que recevra le patient sans exposer les données internes.
+11. Le portail patient explique ce qui a changé, ce qui est sauvegardé et la prochaine action attendue.
+12. Les innovations futures doivent déclarer leur rôle, thème, densité, comportement mobile, action principale, états, accessibilité, politique psychométrique et niveau de maturité.
 
 ## Contraintes non négociables
 
@@ -51,6 +62,8 @@ Cette campagne ne doit pas être traitée comme une simple retouche graphique. E
 - Pas de tableau horizontal comme rendu patient mobile par défaut.
 - Pas de changement de thème patient automatique dans cette campagne : le portail patient reste clair fixe.
 - Pas de Storybook, de framework UI massif, de WebGL ou de migration de framework sans demande séparée.
+- Aucune innovation complexe ne passe directement de l'idée au code métier : contrat UX et prototype requis.
+- Aucune proposition IA, prescription, transmission ou action clinique n'est exécutée sans validation humaine explicite.
 
 ## Décisions validées
 
@@ -80,6 +93,38 @@ Le choix utilisateur praticien est `auto | light | dark`. `auto` suit le systèm
 - Utiliser Motion uniquement lorsqu'une transition explique un changement d'état ou de structure.
 - Ne pas importer une esthétique générique de bibliothèque telle quelle.
 
+### Expérience clinique avancée
+
+Priorité P1 :
+
+- mode consultation sans distraction ;
+- double niveau de lecture ;
+- timeline clinique longitudinale ;
+- carte de décision avec justification, confiance, limites et données manquantes ;
+- comparateur avant / maintenant ;
+- prévisualisation de la vue patient.
+
+Priorité P2 :
+
+- palette de commandes praticien ;
+- vues opérationnelles utiles ;
+- états vides actionnables ;
+- prévention des erreurs et réversibilité ;
+- résumé de session patient ;
+- confort de lecture ;
+- état de sauvegarde et de connexion explicite ;
+- lexique éditorial WellNeuro.
+
+Priorité P3, à préparer sans implémentation prématurée :
+
+- personnalisation avancée du dashboard ;
+- recherche globale étendue ;
+- visualisations complexes ;
+- carte corporelle riche ;
+- véritable CAT avec banque d'items calibrée.
+
+Le constructeur visuel de protocoles 21 jours est P2 mais dépend de l'état réel de C1. Il doit être prototypé ou confié à une campagne dédiée si son implémentation élargit trop LOT-03.
+
 ### Questionnaires
 
 - Le scoring s'appuie sur les identifiants et valeurs (`id`, `v`), jamais sur la position visuelle.
@@ -100,6 +145,8 @@ Le choix utilisateur praticien est `auto | light | dark`. `auto` suit le systèm
 - Refonte des documents PDF/booklets au-delà de l'application des tokens visuels communs.
 - Personnalisation complète du dashboard par glisser-déposer.
 - Application immédiate de toutes les variantes UX à tous les questionnaires sans phase d'inventaire et classification.
+- Enregistrement audio, transcription ou captation implicite en mode consultation.
+- Implémentation complète du constructeur de protocoles si elle nécessite une évolution métier profonde hors C1.
 
 ## Questions à trancher dans LOT-00
 
@@ -110,6 +157,10 @@ Le choix utilisateur praticien est `auto | light | dark`. `auto` suit le systèm
 - Quels questionnaires internes WellNeuro peuvent recevoir des interactions plus innovantes ?
 - Quelle donnée locale permet de stabiliser la randomisation sans modifier le schéma de base ?
 - Faut-il conserver un mode expert « tableau » côté praticien tout en imposant les cartes côté patient mobile ?
+- Quel périmètre minimal du mode consultation apporte une valeur réelle sans dupliquer la fiche patient ?
+- Quelles données réelles existent déjà pour alimenter une timeline sans inventer d'événements ?
+- Le comparateur avant/maintenant peut-il garantir la comparabilité des mesures pilotes ?
+- Le constructeur 21 jours reste-t-il dans LOT-03 ou devient-il une campagne liée à C1 ?
 
 ## Dépendances
 
@@ -118,19 +169,20 @@ Le choix utilisateur praticien est `auto | light | dark`. `auto` suit le systèm
 - Les routes et parcours patient existants doivent rester compatibles.
 - Les tests Playwright existants constituent le filet de non-régression initial.
 - Les travaux C1 sur la décision clinique doivent consommer les nouvelles primitives lorsqu'ils touchent l'interface, sans être bloqués par les lots purement documentaires.
+- Les cartes de décision, comparateurs et protocoles doivent utiliser les contrats cliniques de C1 lorsqu'ils existent, sans en inventer un modèle parallèle.
 
 ## Lots
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Audit réel, classification des écrans et arbitrages | à_faire | aucun |
+| LOT-00 | Audit réel, classification des écrans, questionnaires et innovations | à_faire | aucun |
 | LOT-01 | Tokens Hybrid Clinical et contrôleur Auto/Jour/Nuit | à_faire | LOT-00 |
-| LOT-02 | Shell premium praticien, icônes et alignements | à_faire | LOT-01 |
-| LOT-03 | Hiérarchie des surfaces praticien et cockpit patient | à_faire | LOT-02 |
-| LOT-04 | Portail patient clair, parcours et composants de confiance | à_faire | LOT-01 |
-| LOT-05 | Moteur de rendu des questionnaires par profils d'expérience | à_faire | LOT-04 |
+| LOT-02 | Shell premium, palette de commandes, icônes et alignements | à_faire | LOT-01 |
+| LOT-03 | Surfaces praticien, mode consultation et expérience clinique avancée | à_faire | LOT-02 |
+| LOT-04 | Portail patient clair, confiance, reprise et confort | à_faire | LOT-01 |
+| LOT-05 | Moteur de rendu des questionnaires et formulaires adaptatifs | à_faire | LOT-04 |
 | LOT-06 | Randomisation contrôlée et intégrité psychométrique | à_faire | LOT-05 |
-| LOT-07 | Validation transverse, documentation canonique et handoff futur | à_faire | LOT-02 à LOT-06 |
+| LOT-07 | Validation transverse, lexique, gouvernance et handoff futur | à_faire | LOT-02 à LOT-06 |
 
 ## Commande `/wn` de reproduction
 
@@ -161,7 +213,13 @@ Ne pas recréer la campagne pour l'activer et ne pas écraser automatiquement le
 - [ ] Au moins trois profils de rendu questionnaire utilisés sur des instruments pilotes appropriés.
 - [ ] Aucun questionnaire validé n'a changé de contenu, d'ordre ou de scoring sans autorisation documentée.
 - [ ] Les politiques de randomisation sont explicites, déterministes et couvertes par tests.
+- [ ] Le mode consultation, la timeline et la carte de décision disposent d'un prototype et d'un arbitrage documenté.
+- [ ] La comparaison avant/maintenant n'affiche que des mesures comparables avec dates et limites.
+- [ ] La prévisualisation patient protège les informations internes.
+- [ ] Le portail patient distingue clairement conservation locale, synchronisation et transmission.
+- [ ] Les états vides, erreurs et confirmations sont actionnables et cohérents.
 - [ ] Les tests existants restent verts; les parcours clavier, tactile et lecteur d'écran sont documentés.
 - [ ] Les futures pages/modules disposent d'une checklist de conformité Hybrid Clinical.
+- [ ] Un lexique UX praticien/patient est livré.
 - [ ] `docs/design-system-d1.md` ou son successeur canonique est mis à jour.
-- [ ] Le handoff final indique les dettes restantes et la stratégie de migration progressive.
+- [ ] Le handoff final indique les dettes restantes, capacités différées et stratégie de migration progressive.
