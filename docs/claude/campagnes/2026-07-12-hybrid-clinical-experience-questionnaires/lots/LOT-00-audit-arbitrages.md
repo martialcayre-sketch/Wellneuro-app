@@ -1,7 +1,7 @@
 ---
 id: "LOT-00-audit-arbitrages"
 titre: "Audit réel, classification et arbitrages"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: []
 ---
 
@@ -9,17 +9,16 @@ dépend_de: []
 
 ## But
 
-Établir la source de vérité avant tout code : écrans, composants, tokens, incohérences d'alignement, profils de questionnaires, contraintes psychométriques et faisabilité des innovations de vague 2.
+Établir la source de vérité avant tout code : écrans, composants, tokens, incohérences d'alignement et faisabilité des mécanismes transverses HC-F (mode consultation, double niveau de lecture, prévisualisation patient). Le catalogue de questionnaires, la timeline, la carte de décision, le comparateur avant/maintenant et le constructeur 21 jours sont hors périmètre HC-F (→ QX et C1/C2, cf. `CAMPAGNE.md`).
 
 ## Périmètre
 
 - shell praticien ;
 - dashboard, patients, fiche patient, synthèse ;
 - portail patient : gate, consentement, fiche, anamnèse, hub, saisie, lecture seule, correction ;
-- catalogue de questionnaires et types ;
 - tests Playwright/Vitest existants ;
 - design system D1 et tokens historiques ;
-- données et composants disponibles pour le mode consultation, la timeline, les cartes de décision, le comparateur et la prévisualisation patient ;
+- données et composants disponibles pour le mode consultation et la prévisualisation patient ;
 - états de sauvegarde, réseau, brouillon, validation et envoi ;
 - lexique actuel praticien/patient.
 
@@ -33,8 +32,6 @@ dépend_de: []
 - `web/src/app/dashboard/**`
 - `web/src/app/portail/[token]/**`
 - `web/src/components/patient/**`
-- `web/src/lib/questionnaire-types.ts`
-- `web/src/lib/questions.ts`
 - `web/e2e/**`
 - `docs/design-system-d1.md`
 - documents C1 relatifs à la décision clinique 21 jours, en lecture seule documentaire.
@@ -57,40 +54,29 @@ dépend_de: []
 4. Mesurer la géométrie réelle du shell : largeur du rail, padding, dimensions d'icônes, lignes et breakpoints.
 5. Recenser les couleurs directes et tokens historiques encore consommés.
 6. Classifier les pages praticien par priorité de migration.
-7. Construire l'inventaire des questionnaires : longueur, sections, types de réponses, caractère validé/interne, sensibilité, risque de fatigue.
-8. Affecter provisoirement une politique psychométrique, avec `strict` par défaut en cas d'incertitude.
-9. Choisir trois questionnaires pilotes : court, long répétitif, interne flexible.
-10. Cartographier les données déjà disponibles pour la timeline et distinguer événement, décision et résultat.
-11. Auditer les contrats C1 existants pour éviter un modèle parallèle de carte de décision ou protocole 21 jours.
-12. Définir le périmètre minimal du mode consultation sans duplication de la fiche patient.
-13. Identifier les mesures réellement comparables pour un pilote avant/maintenant.
-14. Auditer les frontières de données entre vue praticien et vue patient.
-15. Recenser les termes techniques ou ambigus à intégrer au futur lexique UX.
-16. Classer chaque innovation de vague 2 : `livrable`, `prototype`, `spécification` ou `différée`.
-17. Trancher les questions ouvertes de `CAMPAGNE.md`.
-18. Produire wireframes, prototypes ciblés et matrices de migration validables.
+7. Auditer les contrats C1 existants pour éviter un modèle parallèle de carte de décision ou protocole 21 jours.
+8. Définir le périmètre minimal du mode consultation sans duplication de la fiche patient.
+9. Auditer les frontières de données entre vue praticien et vue patient.
+10. Recenser les termes techniques ou ambigus à intégrer au futur lexique UX.
+11. Trancher les questions ouvertes de `CAMPAGNE.md`.
+12. Rédiger `lots/LOT-03-*.md` (surfaces praticien génériques + contrats d'instanciation des 3 mécanismes) à partir des arbitrages de ce lot — ce fichier n'existe pas encore, à valider explicitement par l'utilisateur avant LOT-02.
+13. Produire wireframes, prototypes ciblés et matrices de migration validables.
 
 ## Arbitrages obligatoires
 
 - pages de première vague ;
-- emplacement du contrôle Auto/Jour/Nuit ;
 - périmètre et déclenchement du mode consultation ;
-- structure minimale de la timeline ;
-- contrat de carte de décision et articulation avec C1 ;
-- règles de comparabilité avant/maintenant ;
 - stratégie de prévisualisation patient ;
 - palette de commandes : livrée ou différée ;
-- constructeur 21 jours : LOT-03 ou campagne dédiée ;
 - capacités P3 explicitement différées.
 
 ## Livrables
 
 - `AUDIT_UI_REEL.md` ;
 - `MATRICE_ECRANS_MIGRATION.md` ;
-- `INVENTAIRE_QUESTIONNAIRES_UX.md` ;
-- `MATRICE_INNOVATIONS_VAGUE_2.md` ;
 - `CONTRATS_UX_P1.md` ;
 - `ARBITRAGES_LOT_00.md` ;
+- `lots/LOT-03-*.md` (rédigé, en attente de validation utilisateur) ;
 - captures de référence avant changement.
 
 ## Tests / validations
@@ -98,19 +84,23 @@ dépend_de: []
 - aucune donnée réelle détectée ;
 - routes et composants confirmés contre le dépôt ;
 - mesures d'alignement documentées ;
-- chaque questionnaire pilote possède un niveau de liberté ;
-- chaque innovation P1 possède un statut, un bénéfice, un risque et des prérequis ;
+- chaque mécanisme (mode consultation, double niveau de lecture, prévisualisation patient) possède un contrat d'instanciation ;
 - aucune donnée nécessaire à un prototype n'est inventée ;
 - validation utilisateur des arbitrages avant LOT-01.
 
 ## Done
 
-- [ ] Audit approuvé.
-- [ ] Écrans pilotes sélectionnés.
-- [ ] Questionnaires pilotes sélectionnés.
-- [ ] Politiques psychométriques provisoires documentées.
-- [ ] Innovations P1 arbitrées.
-- [ ] Articulation avec C1 documentée.
-- [ ] Capacités différées identifiées.
-- [ ] Aucun code modifié.
-- [ ] LOT-01 autorisé explicitement.
+- [x] Audit approuvé (arbitrages validés par l'utilisateur, cf. `ARBITRAGES_LOT_00.md`).
+- [x] Écrans pilotes sélectionnés (vague 1, cf. `MATRICE_ECRANS_MIGRATION.md`).
+- [x] Contrats d'instanciation des 3 mécanismes arbitrés (cf. `CONTRATS_UX_P1.md`).
+- [x] Articulation avec C1 documentée (`AUDIT_UI_REEL.md` §5).
+- [x] Capacités différées identifiées (`ARBITRAGES_LOT_00.md` §5).
+- [x] `lots/LOT-03-*.md` rédigé et validé par l'utilisateur.
+- [x] Aucun code modifié par ce lot (le correctif `api/patient/reponses` est un correctif de sécurité séparé, hors HC-F, validé explicitement par l'utilisateur).
+- [ ] LOT-01 autorisé explicitement — en attente d'instruction séparée.
+
+## Note
+
+Captures de référence avant changement non produites (pas d'outil de
+capture navigateur dans cette session) — à produire si jugées nécessaires
+avant LOT-02, cf. `ARBITRAGES_LOT_00.md`.

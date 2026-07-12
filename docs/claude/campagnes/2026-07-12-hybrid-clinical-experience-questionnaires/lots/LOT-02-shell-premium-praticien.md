@@ -84,7 +84,7 @@ Une palette partielle ou simulée ne doit pas être livrée. Si la recherche glo
 9. Réconcilier tablette drawer et mobile bottom navigation.
 10. Gérer focus trap via primitive accessible si nécessaire.
 11. Implémenter la palette uniquement si son contrat et ses sources de données sont validés.
-12. Tester Jour, Nuit et Auto.
+12. Tester le mode clair unique (praticien et patient).
 
 ## Tests
 
@@ -98,7 +98,7 @@ Une palette partielle ou simulée ne doit pas être livrée. Si la recherche glo
 - zones tactiles ;
 - routes actives ;
 - état rail mémorisé si conservé ;
-- mode Jour/Nuit sans décalage de layout ;
+- mode clair unique sans décalage de layout ;
 - palette : résultats corrects, absence d'action destructive directe et aucune donnée sensible persistée.
 
 ## Done
