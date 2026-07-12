@@ -153,3 +153,15 @@
 **Prochaine action prioritaire** : C1 (Décision clinique 21 jours V1) peut démarrer, sur instruction explicite — sa dépendance « C0 + C0-UX » est désormais satisfaite.
 
 **Questions ouvertes** : validation tactile sur mobile réel toujours en attente (même limitation d'environnement que R1/LOT-03) ; à faire dès qu'un device physique est disponible, non bloquant.
+
+## [2026-07-12] — Intégration livraison « ux campagne » (réalignement programme 3.0)
+
+**Décisions prises** : livraison externe (registre de frontières) intégrée en 3 PR, discipline imposée par la livraison. PR #31 amendée : HC-F remplacée (tout clair, questionnaires → QX nouvelle), LOT-03 **supprimé** (contenu non fourni), LOT-05/06 supprimés, vocabulaire corrigé. PR #32 : `REGISTRE_FRONTIERES.md` (nouveau) + réalignement PROGRAMME/ACTIVE_CAMPAIGN/README + 4 amendements. PR #33 : C1 compilée, C2-C5 cadrées (N+1). Push forcé de #31 fait par l'utilisateur (hook sécurité).
+
+**Validations exécutées** : `check_no_secrets.sh` par PR, grep vocabulaire interdit, `git diff --stat` limité à `docs/`, SHA distant = local après push.
+
+**Options écartées** : réécrire `LOT-03` HC-F au lieu de le supprimer — contenu non spécifié par la livraison.
+
+**Prochaine action prioritaire** : merger #31, #32 puis #33 dans cet ordre, puis activer HC-F LOT-00 sur instruction explicite.
+
+**Questions ouvertes** : `lots/LOT-07…` (HC-F) désaligné avec la nouvelle table à 6 lots, laissé en l'état, à trancher.
