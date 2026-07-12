@@ -47,7 +47,7 @@ export function MobileBottomNav() {
     <>
       <nav
         aria-label="Navigation principale"
-        className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch border-t border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch border-t border-rail-border bg-rail-surface/95 backdrop-blur supports-[backdrop-filter]:bg-rail-surface/85 md:hidden"
       >
         {primaryItems.map((item) => {
           const active = isActive(item.href);
@@ -57,16 +57,16 @@ export function MobileBottomNav() {
               key={item.href}
               href={item.href}
               aria-current={active ? 'page' : undefined}
-              className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring"
             >
               <span
                 className={`flex h-6 w-6 items-center justify-center rounded-lg text-[10px] font-semibold ${
-                  active ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                  active ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-surface text-rail-foreground'
                 }`}
               >
                 {item.abbr}
               </span>
-              <span className={`text-[11px] font-medium ${active ? 'text-foreground' : 'text-muted-foreground'}`}>
+              <span className={`text-[11px] font-medium ${active ? 'text-rail-foreground' : 'text-rail-muted-foreground'}`}>
                 {item.label}
               </span>
             </Link>
@@ -80,17 +80,17 @@ export function MobileBottomNav() {
           aria-expanded={isMoreOpen}
           aria-controls="wn-more-sheet"
           aria-label="Plus"
-          className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="flex min-h-[44px] flex-1 flex-col items-center justify-center gap-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring"
         >
           <span
             aria-hidden="true"
             className={`flex h-6 w-6 items-center justify-center rounded-lg text-[10px] font-semibold ${
-              isMoreActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+              isMoreActive ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-surface text-rail-foreground'
             }`}
           >
             •••
           </span>
-          <span className={`text-[11px] font-medium ${isMoreActive ? 'text-foreground' : 'text-muted-foreground'}`}>
+          <span className={`text-[11px] font-medium ${isMoreActive ? 'text-rail-foreground' : 'text-rail-muted-foreground'}`}>
             Plus
           </span>
         </button>
@@ -109,18 +109,18 @@ export function MobileBottomNav() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="wn-more-sheet-title"
-            className="relative z-10 w-full rounded-t-[1.5rem] border-t border-border bg-surface-elevated p-4 shadow-xl"
+            className="relative z-10 w-full rounded-t-[1.5rem] border-t border-rail-border bg-rail-surface p-4 shadow-xl"
           >
-            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-border" aria-hidden="true" />
+            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-rail-border" aria-hidden="true" />
             <div className="mb-2 flex items-center justify-between">
-              <h2 id="wn-more-sheet-title" className="text-sm font-semibold text-foreground">
+              <h2 id="wn-more-sheet-title" className="text-sm font-semibold text-rail-foreground">
                 Menu
               </h2>
               <button
                 type="button"
                 aria-label="Fermer le menu"
                 onClick={closeMore}
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-rail-border text-rail-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring"
               >
                 <span aria-hidden="true">✕</span>
               </button>
@@ -130,20 +130,20 @@ export function MobileBottomNav() {
               href="/dashboard/parametres"
               onClick={closeMore}
               aria-current={isMoreActive ? 'page' : undefined}
-              className={`group flex min-h-[44px] items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+              className={`group flex min-h-[44px] items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
                 isMoreActive
-                  ? 'border-primary/20 bg-primary/10'
-                  : 'border-transparent text-muted-foreground hover:border-border hover:bg-background hover:text-foreground'
+                  ? 'border-rail-primary/20 bg-rail-primary/10'
+                  : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail-surface hover:text-rail-foreground'
               }`}
             >
               <span
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${
-                  isMoreActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                  isMoreActive ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-surface text-rail-foreground'
                 }`}
               >
                 PM
               </span>
-              <span className={`min-w-0 flex-1 truncate text-sm font-medium ${isMoreActive ? 'text-foreground' : ''}`}>
+              <span className={`min-w-0 flex-1 truncate text-sm font-medium ${isMoreActive ? 'text-rail-foreground' : ''}`}>
                 Paramètres
               </span>
             </Link>
