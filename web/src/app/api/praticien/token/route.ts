@@ -75,9 +75,13 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
 
     const lien = lienPortail(accessToken);
     if (action !== 'lien') {
-      sendPortailLinkEmail(patient.email, patient.prenom, lien).catch(
-        e => console.error('[praticien/token POST] email:', (e as Error).message)
-      );
+      try {
+        // En serverless, on attend explicitement la promesse pour eviter que
+        // l'envoi best-effort soit interrompu juste apres la reponse HTTP.
+        await sendPortailLinkEmail(patient.email, patient.prenom, lien);
+      } catch (e) {
+        console.error('[praticien/token POST] email:', (e as Error).message);
+      }
     }
 
     return NextResponse.json({ success: true, accessToken, lien });
