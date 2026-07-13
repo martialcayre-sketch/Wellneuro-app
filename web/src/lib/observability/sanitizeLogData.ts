@@ -7,27 +7,34 @@ const MAX_STRING_LENGTH = 300;
 const REDACTED = '[redacted]';
 const BLOCKED_KEYS = new Set([
   'token',
-  'accessToken',
-  'refreshToken',
+  'secret',
+  'clientsecret',
+  'accesstoken',
+  'refreshtoken',
   'password',
   'authorization',
   'cookie',
-  'set-cookie',
+  'setcookie',
   'email',
+  'emailpatient',
   'prenom',
   'nom',
   'phone',
   'telephone',
-  'birthDate',
-  'dateNaissance',
+  'birthdate',
+  'datenaissance',
   'anamnese',
-  'rawAnswers',
+  'rawanswers',
   'answers',
   'prompt',
-  'systemPrompt',
+  'systemprompt',
   'narratif_patient',
   'resume_praticien',
 ]);
+
+function normalizeSensitiveKey(key: string): string {
+  return key.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
 
 function sanitizeString(input: string): string {
   const compact = input.slice(0, MAX_STRING_LENGTH);
@@ -65,7 +72,7 @@ function sanitizeAny(value: unknown, depth: number): unknown {
     const entries = Object.entries(value as Record<string, unknown>).slice(0, MAX_ENTRIES);
 
     for (const [key, item] of entries) {
-      if (BLOCKED_KEYS.has(key)) {
+      if (BLOCKED_KEYS.has(normalizeSensitiveKey(key))) {
         out[key] = REDACTED;
         continue;
       }

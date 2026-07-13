@@ -10,15 +10,31 @@ describe('sanitizeLogData', () => {
   it('masque les clés sensibles dans metadata', () => {
     const out = sanitizeMetadata({
       email: 'test@wellneuro.fr',
+      emailPatient: 'patient@wellneuro.fr',
       token: 'abc123',
-      nested: { authorization: 'Bearer qwerty' },
+      access_token: 'snake-access-secret',
+      accessToken: 'access-secret',
+      rawAnswers: { q1: 'oui' },
+      raw_answers: { q2: 'non' },
+      systemPrompt: 'secret clinical prompt',
+      system_prompt: 'secret clinical prompt 2',
+      secret: 'super-secret',
+      nested: { authorization: 'Bearer qwerty', 'Set-Cookie': 'sid=abc' },
       ok: true,
     });
 
     expect(out).toEqual({
       email: '[redacted]',
+      emailPatient: '[redacted]',
       token: '[redacted]',
-      nested: { authorization: '[redacted]' },
+      access_token: '[redacted]',
+      accessToken: '[redacted]',
+      rawAnswers: '[redacted]',
+      raw_answers: '[redacted]',
+      systemPrompt: '[redacted]',
+      system_prompt: '[redacted]',
+      secret: '[redacted]',
+      nested: { authorization: '[redacted]', 'Set-Cookie': '[redacted]' },
       ok: true,
     });
   });
