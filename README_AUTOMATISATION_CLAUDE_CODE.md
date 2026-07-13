@@ -66,6 +66,15 @@ Pour relire le diff sans modifier :
 4. Exécuter les changements bornés au lot validé.
 5. Clôturer avec `/wn-finish`.
 
+## Organisation Git cible
+
+- Une campagne vit sur une branche dédiée, stable pendant toute sa durée.
+- Chaque lot vit sur une branche dérivée de la branche de campagne.
+- La PR d’un lot cible la branche de campagne, jamais `main`.
+- La PR finale de campagne cible `main` une fois tous les lots validés.
+- Cette convention est active à partir du lot suivant la validation de LOT-04.
+- Les commandes d’orchestration doivent afficher explicitement la campagne active, la branche de campagne, la branche du lot courant et la cible de merge attendue.
+
 ## Commandes utiles
 
 ### `/wn-campaign-run`

@@ -23,6 +23,13 @@
 
 Voir : [ACTIVE_CAMPAIGN.md](ACTIVE_CAMPAIGN.md)
 
+## Convention de travail
+
+- Une campagne est l’unité d’intégration Git.
+- Une branche de campagne sert de base commune à tous les lots de la campagne.
+- Une branche de lot est dérivée de la branche de campagne.
+- Une PR de lot cible la branche de campagne ; une PR finale de campagne cible `main`.
+
 ## Reprise de session
 
 1. Lire la dernière entrée de `docs/claude/SESSION_LOG.md`.

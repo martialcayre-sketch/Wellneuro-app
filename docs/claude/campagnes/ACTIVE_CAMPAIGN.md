@@ -18,6 +18,13 @@
 3. C1 est compilée et prête ; elle démarre après HC-F LOT-02.
 4. QX démarre après HC-F LOT-01 + LOT-04, parallélisable avec C1.
 
+## Organisation Git cible
+
+- Une campagne aura sa branche d’intégration dédiée.
+- Chaque lot partira d’une branche dérivée de cette branche de campagne.
+- La PR d’un lot visera la branche de campagne, puis la PR finale visera `main`.
+- Cette organisation est active à partir du lot suivant la validation de LOT-04.
+
 ## Prochaine action
 
 ```bash

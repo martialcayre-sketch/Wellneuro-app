@@ -30,6 +30,10 @@ d'exécution.
 - Le patient reçoit une version calme et concrète.
 - Le suivi distingue effet, tolérance et adhésion.
 
+## Convention d’exécution
+
+Chaque campagne est exécutée sur une branche d’intégration dédiée. Les lots de la campagne sont menés sur des branches dérivées de cette branche, et leurs PR visent d’abord la branche de campagne avant la PR finale vers `main`.
+
 ## Programme de campagnes
 
 | Ordre | Campagne | Dossier | Résultat | Statut | Dépendance |
