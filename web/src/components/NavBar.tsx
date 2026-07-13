@@ -108,7 +108,8 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
         <Dialog.Portal>
           {/* data-theme requis ici : Radix portale vers document.body, hors du
               conteneur [data-theme="praticien"] posé par dashboard/layout.tsx —
-              sans cet attribut, les tokens --rail- et --foreground ne résolvent à rien. */}
+              sans cet attribut, les tokens --rail- ne résolvent à rien (--foreground
+              reste défini sur :root, donc pas affecté). */}
           <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 hidden bg-foreground/35 md:block lg:hidden" />
           <Dialog.Content
             data-theme="praticien"

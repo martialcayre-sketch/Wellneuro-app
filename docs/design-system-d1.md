@@ -278,9 +278,11 @@ utilisation réelle des autorisations de la section 5).
 shell** : `Dialog.Portal` (comme tout portail Radix) rend son contenu
 dans `document.body` par défaut, **hors** du conteneur
 `[data-theme="praticien"]` posé par `dashboard/layout.tsx`. Les tokens
-`--rail-*`, `--foreground`, etc. sont scopés à ce sélecteur et ne
-résolvent à rien pour un contenu porté ailleurs dans le DOM (fond
-transparent, contenu de la page visible au travers). **Solution
+`--rail-*` sont scopés uniquement à ce sélecteur (contrairement à
+`--foreground` et consorts, également définis sur `:root` — ceux-là
+restent donc résolus même hors du conteneur) et ne résolvent à rien pour
+un contenu porté ailleurs dans le DOM (fond transparent, contenu de la
+page visible au travers). **Solution
 appliquée** : poser `data-theme="praticien"` directement sur
 `Dialog.Overlay` et `Dialog.Content` (l'attribut sur l'élément lui-même
 suffit, le sélecteur CSS n'exige pas un ancêtre). À reproduire pour
