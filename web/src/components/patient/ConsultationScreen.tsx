@@ -5,11 +5,17 @@ import { useEffect, useState } from 'react';
 // Écran de consultation en lecture seule (réponses verrouillées) + demande de
 // modification. Composant présentationnel : la navigation « Mon équilibre » est
 // confiée à onVoirEquilibre.
-export function ConsultationScreen({ idAssignation, email, statutReponses, onVoirEquilibre }: {
+//
+// `fetchUrl`/`readOnlyPreview` sont additifs pour le mécanisme
+// PrévisualisationPatient (HC-F LOT-03) : par défaut (props absents), le
+// comportement du portail réel est strictement inchangé.
+export function ConsultationScreen({ idAssignation, email, statutReponses, onVoirEquilibre, fetchUrl, readOnlyPreview }: {
   idAssignation: string;
   email?: string;
   statutReponses: string;
   onVoirEquilibre: () => void;
+  fetchUrl?: string;
+  readOnlyPreview?: boolean;
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -22,7 +28,8 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
     (async () => {
       try {
         const emailQuery = email ? `&email=${encodeURIComponent(email)}` : '';
-        const res = await fetch(`/api/patient/reponses?id=${encodeURIComponent(idAssignation)}${emailQuery}`);
+        const url = fetchUrl ?? `/api/patient/reponses?id=${encodeURIComponent(idAssignation)}${emailQuery}`;
+        const res = await fetch(url);
         const data = await res.json();
         if (!data.ok) { setError(data.error); }
         else { setReponse({ titre: data.titre, dateReponse: data.dateReponse }); }
@@ -63,38 +70,46 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
             Vos réponses sont verrouillées en lecture seule.
           </p>
         )}
-        <button
-          type="button"
-          onClick={onVoirEquilibre}
-          className="w-full mb-3 py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity"
-        >
-          Voir Mon équilibre
-        </button>
-
-        {demandeEnvoyee ? (
-          <p className="text-sm text-primary bg-primary/10 rounded-lg px-4 py-3">
-            Votre demande de modification a été transmise à votre praticien. En attente de validation par votre praticien.
+        {readOnlyPreview ? (
+          <p className="text-sm text-muted-foreground bg-muted rounded-lg px-4 py-3">
+            Aperçu praticien — vue identique à celle du patient.
           </p>
         ) : (
-          <div className="space-y-2 text-left">
-            <label className="block text-sm text-gray-700">Précisez ce que vous souhaitez corriger <span className="text-gray-400">(facultatif)</span></label>
-            <textarea
-              value={commentaire}
-              onChange={e => setCommentaire(e.target.value)}
-              rows={3}
-              maxLength={1000}
-              placeholder="Ex. je me suis trompé·e à la question sur le sommeil…"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+          <>
             <button
               type="button"
-              onClick={handleDemande}
-              disabled={demandeLoading}
-              className="w-full py-2.5 px-4 border border-primary text-primary rounded-lg font-medium text-sm hover:bg-primary/10 disabled:opacity-50 transition-colors"
+              onClick={onVoirEquilibre}
+              className="w-full mb-3 py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity"
             >
-              {demandeLoading ? 'Envoi…' : 'Demander une correction'}
+              Voir Mon équilibre
             </button>
-          </div>
+
+            {demandeEnvoyee ? (
+              <p className="text-sm text-primary bg-primary/10 rounded-lg px-4 py-3">
+                Votre demande de modification a été transmise à votre praticien. En attente de validation par votre praticien.
+              </p>
+            ) : (
+              <div className="space-y-2 text-left">
+                <label className="block text-sm text-gray-700">Précisez ce que vous souhaitez corriger <span className="text-gray-400">(facultatif)</span></label>
+                <textarea
+                  value={commentaire}
+                  onChange={e => setCommentaire(e.target.value)}
+                  rows={3}
+                  maxLength={1000}
+                  placeholder="Ex. je me suis trompé·e à la question sur le sommeil…"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={handleDemande}
+                  disabled={demandeLoading}
+                  className="w-full py-2.5 px-4 border border-primary text-primary rounded-lg font-medium text-sm hover:bg-primary/10 disabled:opacity-50 transition-colors"
+                >
+                  {demandeLoading ? 'Envoi…' : 'Demander une correction'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

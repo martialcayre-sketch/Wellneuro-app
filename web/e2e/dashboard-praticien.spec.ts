@@ -127,6 +127,46 @@ test.describe('Praticien Dashboard', () => {
     });
   });
 
+  test('accueil : 3 cartes accès rapides avec icône (HC-F LOT-03)', async ({ page }) => {
+    const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
+    await page.context().addCookies([sessionCookie]);
+    await page.goto('/dashboard');
+
+    // Scopé à la section « Accès rapides » : le rail de navigation a aussi un
+    // lien « Patients », qui matcherait sinon la même regex (strict mode).
+    const accesRapides = page.locator('section', { hasText: 'Accès rapides' });
+    for (const label of ['Patients', 'Synthèse IA', 'Paramètres']) {
+      const card = accesRapides.getByRole('link', { name: new RegExp(label) });
+      await expect(card).toBeVisible();
+      await expect(card.locator('svg')).toBeVisible();
+    }
+  });
+
+  test('paramètres : blocs profil et gouvernance clinique (HC-F LOT-03)', async ({ page }) => {
+    const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
+    await page.context().addCookies([sessionCookie]);
+    await page.goto('/dashboard/parametres');
+
+    await expect(page.getByRole('heading', { name: 'Profil praticien' })).toBeVisible();
+    // Scopé à <main> : l'email apparaît aussi dans le menu « Profil » du rail.
+    await expect(page.getByRole('main').getByText(PRATICIEN_EMAIL)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Gouvernance clinique' })).toBeVisible();
+    await expect(page.getByText('Version du moteur d’équilibre')).toBeVisible();
+  });
+
+  test('patients : formulaire de création patient utilisable après refactor (HC-F LOT-03)', async ({ page }) => {
+    const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
+    await page.context().addCookies([sessionCookie]);
+    await page.goto('/dashboard/patients');
+
+    await expect(page.getByPlaceholder('Prénom *', { exact: true })).toBeVisible();
+    // { exact: true } : « Prénom * » contient « nom * » comme sous-chaîne,
+    // ce qui matcherait sinon les deux champs (strict mode).
+    await expect(page.getByPlaceholder('Nom *', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Créer le patient' })).toBeVisible();
+    await expect(page.getByRole('table').first()).toBeVisible();
+  });
+
   test('session expires on missing NEXTAUTH_SECRET', async ({ page }) => {
     // Test de sensibilité : sans NEXTAUTH_SECRET, la fabrication du cookie échoue
     const originalSecret = process.env.NEXTAUTH_SECRET;

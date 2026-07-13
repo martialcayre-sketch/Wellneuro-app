@@ -1,10 +1,9 @@
 # CONTRATS_UX_P1 — LOT-00 HC-F
 
-Brouillon des contrats d'instanciation des 3 mécanismes transverses que
-HC-F doit livrer **vides et testés** (aucun contenu clinique, cf.
-`CAMPAGNE.md` : « HC-F ne conçoit aucun contenu clinique »). **À valider par
-l'utilisateur avant LOT-02** — ce sont des propositions, pas des décisions
-actées.
+Contrats d'instanciation des 3 mécanismes transverses que HC-F doit livrer
+**vides et testés** (aucun contenu clinique, cf. `CAMPAGNE.md` : « HC-F ne
+conçoit aucun contenu clinique »). **Validés par l'utilisateur le
+2026-07-13** dans le cadrage de LOT-03 — ce ne sont plus des propositions.
 
 ## 1. `ModeConsultation`
 
@@ -29,9 +28,11 @@ type ConsultationModeProps = {
 Page d'instanciation de référence : `dashboard/patients/[idPatient]`
 (la seule où le mode a un sens aujourd'hui, cf. `FichePatientPanel.tsx`).
 
-**Question ouverte pour arbitrage** : le déclenchement se fait-il par un
-bouton dans le header de fiche patient, ou par un raccourci clavier
-également ? (cf. `ARBITRAGES_LOT_00.md`)
+**Arbitrage retenu (LOT-03)** : déclenchement par un bouton dans la ligne
+d'en-tête existante de `FichePatientPanel.tsx`, pas de raccourci clavier
+dans cette première itération (ajoutable sans coût plus tard). Le `useState`
+de contrôle (`active`/`onToggle`) vit dans `FichePatientPanel.tsx`, pas dans
+le mécanisme lui-même.
 
 ## 2. Double niveau de lecture
 
@@ -78,8 +79,27 @@ type PatientPreviewProps = {
 ```
 
 Page d'instanciation de référence : `dashboard/patients/[idPatient]`
-(bouton « Voir ce que recevra le patient »).
+(bouton « Voir ce que recevra le patient », ajouté dans la ligne d'en-tête de
+`FichePatientPanel.tsx`, à côté du toggle `ModeConsultation`).
 
 **Garde-fou explicite** : toute divergence entre la prévisualisation et le
 portail réel doit être documentée et testée (déjà exigé par `CAMPAGNE.md`
 LOT-04).
+
+**Résolution du point d'authentification (LOT-03)** : `ConsultationScreen.tsx`
+s'auto-fetch via `/api/patient/reponses`, qui identifie le demandeur par
+cookie de session portail — une session praticien NextAuth ne peut pas
+satisfaire cette route telle quelle. Résolu par :
+
+1. Une **nouvelle** route praticien-authentifiée (aucune modification des
+   routes `api/patient/*` existantes, conforme aux interdits du lot) :
+   `api/praticien/apercu-patient/reponses` — gate `getServerSession`, même
+   `select` Prisma patient-safe (`titre`/`dateReponse`), même forme de
+   réponse que `api/patient/reponses`.
+2. Deux props optionnels additifs sur `ConsultationScreen.tsx` (`fetchUrl`,
+   `readOnlyPreview`) — comportement portail réel strictement inchangé par
+   défaut (props absents).
+3. Le bouton « Voir Mon équilibre » est masqué en mode `readOnlyPreview` :
+   `MonEquilibreAccueil/Detail` a le même problème d'auto-fetch patient-only
+   et n'est pas traité dans ce lot (cf. `MATRICE_ECRANS_MIGRATION.md`, déjà
+   classé Vague 2).

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Stethoscope } from 'lucide-react';
 import type { EquilibreApiResponse, PrioriteBesoin } from '@/app/api/praticien/equilibre/route';
 import type { PatientsApiResponse } from '@/app/api/praticien/patients/route';
 import type { PatchAssignationResponse } from '@/app/api/praticien/assignations/route';
@@ -13,6 +14,8 @@ import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { EvidenceBadge } from '@/components/ui/EvidenceBadge';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
+import { ModeConsultation } from '@/components/ui/ModeConsultation';
+import { PatientPreview } from '@/components/PatientPreview';
 
 type ScoreCertification = { source?: string; status?: string };
 
@@ -98,6 +101,7 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
   const [loadingReponses, setLoadingReponses] = useState(true);
   const [assignationsModif, setAssignationsModif] = useState<PatientsApiResponse['assignations']>([]);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
+  const [modeConsultationActif, setModeConsultationActif] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -161,17 +165,34 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
   }
 
   const { patient, objetsCliniques, priorites } = data;
+  const derniereAssignationId = reponses[0]?.idAssignation || null;
 
   return (
+    <ModeConsultation active={modeConsultationActif} onToggle={() => setModeConsultationActif(false)}>
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
           <p className="text-sm text-muted-foreground mt-1">{patient.email}</p>
         </div>
-        <Link href="/dashboard/patients" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
-          ← Retour aux patients
-        </Link>
+        <div className="flex items-center gap-3">
+          {derniereAssignationId && (
+            <PatientPreview patientId={idPatient} assignationId={derniereAssignationId} />
+          )}
+          {!modeConsultationActif && (
+            <button
+              type="button"
+              onClick={() => setModeConsultationActif(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary"
+            >
+              <Stethoscope size={16} strokeWidth={2} />
+              Mode consultation
+            </button>
+          )}
+          <Link href="/dashboard/patients" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
+            ← Retour aux patients
+          </Link>
+        </div>
       </div>
 
       {/* Cartographie neuro-fonctionnelle — 5 objets cliniques */}
@@ -384,5 +405,6 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
         </div>
       </section>
     </div>
+    </ModeConsultation>
   );
 }

@@ -214,6 +214,43 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       expect(reponsesReq.url()).not.toContain('email=');
     });
 
+    await test.step('Aperçu praticien de la vue patient (mécanisme PrévisualisationPatient, HC-F LOT-03)', async () => {
+      // Réutilise l'assignation verrouillée déjà obtenue ci-dessus plutôt que
+      // de reprovisionner un parcours complet — cookie praticien déjà posé à
+      // l'étape de provisionnement.
+      const portailConsultationUrl = page.url();
+
+      await page.goto(`/dashboard/patients/${PATIENT.idPatient}`);
+      await page.getByRole('button', { name: 'Voir ce que recevra le patient' }).click();
+
+      const dialog = page.getByRole('dialog', { name: 'Aperçu — vue patient' });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByText('verrouillées en lecture seule')).toBeVisible();
+      await expect(dialog.getByText('Aperçu praticien — vue identique à celle du patient.')).toBeVisible();
+      // readOnlyPreview masque la demande de correction et « Voir Mon équilibre » :
+      // un praticien ne doit jamais pouvoir déclencher une action patient depuis l'aperçu.
+      await expect(dialog.getByRole('button', { name: 'Demander une correction' })).toHaveCount(0);
+      await expect(dialog.getByRole('button', { name: 'Voir Mon équilibre' })).toHaveCount(0);
+
+      await page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
+
+      // Garde-fou patient-safe : le corps JSON brut de la route (pas seulement
+      // ce que l'UI affiche) ne doit jamais exposer scoresJson/scorePrincipal/
+      // interpretation — même si le composant ne les lit pas aujourd'hui.
+      const res = await page.request.get(
+        `/api/praticien/apercu-patient/reponses?id=${encodeURIComponent(idAssignation)}`
+      );
+      expect(res.ok()).toBe(true);
+      const json = await res.json();
+      expect(json.ok).toBe(true);
+      expect(Object.keys(json).sort()).toEqual(['dateReponse', 'ok', 'statutReponses', 'titre'].sort());
+
+      // Retour sur le portail patient pour la suite du parcours séquentiel.
+      await page.goto(portailConsultationUrl);
+      await expect(page.getByText('verrouillées en lecture seule')).toBeVisible();
+    });
+
     await test.step('Demande de correction', async () => {
       await page
         .getByPlaceholder(/je me suis trompé/i)

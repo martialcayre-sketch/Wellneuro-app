@@ -17,6 +17,9 @@ import { MOTIFS_CONSULTATION } from '@/lib/consultation/motifs';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { PatientRow } from '@/components/ui/PatientRow';
 import { Pagination } from '@/components/ui/Pagination';
+import { Input } from '@/components/ui/Input';
+import { Select } from '@/components/ui/Select';
+import { Button } from '@/components/ui/Button';
 import { PacksPanel } from '@/components/PacksPanel';
 
 const PAGE_SIZE = 10;
@@ -409,9 +412,6 @@ export function PatientsPanel() {
     );
   }
 
-  const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
-  const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium bg-primary text-primary-foreground disabled:opacity-60';
-
   // Catégories distinctes (tri alphabétique FR) pour le filtre d'assignation.
   const categories = categorieView === 'fonctionnelle'
     ? Array.from(new Set(questionnaires.map(q => q.categorieFonctionnellePrincipale).filter(Boolean))).sort((a, b) =>
@@ -444,15 +444,15 @@ export function PatientsPanel() {
       <div className="bg-surface border border-border rounded-xl p-4">
         <h3 className="text-sm font-semibold text-foreground mb-3">Nouveau patient</h3>
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreatePatient}>
-          <input required value={form.prenom} onChange={e => setForm(p => ({ ...p, prenom: e.target.value }))} placeholder="Prénom *" className={inputCls} maxLength={100} />
-          <input required value={form.nom} onChange={e => setForm(p => ({ ...p, nom: e.target.value }))} placeholder="Nom *" className={inputCls} maxLength={100} />
-          <input required type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="Email *" className={inputCls} maxLength={254} />
-          <input value={form.telephone} onChange={e => setForm(p => ({ ...p, telephone: e.target.value }))} placeholder="Téléphone" className={inputCls} maxLength={30} />
-          <input type="date" value={form.dateNaissance} onChange={e => setForm(p => ({ ...p, dateNaissance: e.target.value }))} className={inputCls} />
+          <Input required value={form.prenom} onChange={e => setForm(p => ({ ...p, prenom: e.target.value }))} placeholder="Prénom *" maxLength={100} />
+          <Input required value={form.nom} onChange={e => setForm(p => ({ ...p, nom: e.target.value }))} placeholder="Nom *" maxLength={100} />
+          <Input required type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="Email *" maxLength={254} />
+          <Input value={form.telephone} onChange={e => setForm(p => ({ ...p, telephone: e.target.value }))} placeholder="Téléphone" maxLength={30} />
+          <Input type="date" value={form.dateNaissance} onChange={e => setForm(p => ({ ...p, dateNaissance: e.target.value }))} />
           <div className="flex items-center gap-3">
-            <button type="submit" disabled={saving} className={btnPrimary}>
+            <Button type="submit" disabled={saving}>
               {saving ? 'Création...' : 'Créer le patient'}
-            </button>
+            </Button>
             {feedback && (
               <span className={`text-sm ${feedback.ok ? 'text-green-600' : 'text-red-400'}`}>
                 {feedback.msg}
@@ -470,31 +470,31 @@ export function PatientsPanel() {
           anamnèse, puis assignation automatique du pack de base.
         </p>
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateConsultation}>
-          <select required value={consultationForm.idPatient} onChange={e => setConsultationForm(p => ({ ...p, idPatient: e.target.value }))} className={inputCls}>
+          <Select required value={consultationForm.idPatient} onChange={e => setConsultationForm(p => ({ ...p, idPatient: e.target.value }))}>
             <option value="">Patient *</option>
             {(data?.patients ?? []).map(p => (
               <option key={p.idPatient} value={p.idPatient}>{`${p.prenom} ${p.nom} — ${p.email}`}</option>
             ))}
-          </select>
-          <select value={consultationForm.motif} onChange={e => setConsultationForm(p => ({ ...p, motif: e.target.value }))} className={inputCls} aria-label="Motif de consultation">
+          </Select>
+          <Select value={consultationForm.motif} onChange={e => setConsultationForm(p => ({ ...p, motif: e.target.value }))} aria-label="Motif de consultation">
             <option value="">Motif de consultation (optionnel)</option>
             {MOTIFS_CONSULTATION.map(m => (
               <option key={m} value={m}>{m}</option>
             ))}
-          </select>
+          </Select>
           <div className="flex flex-wrap items-center gap-3 md:col-span-2">
-            <button type="submit" disabled={savingConsultation || tokenAction !== null} className={btnPrimary}>
+            <Button type="submit" disabled={savingConsultation || tokenAction !== null}>
               {savingConsultation ? 'Envoi...' : 'Créer une consultation & envoyer le lien'}
-            </button>
-            <button type="button" onClick={onResendToken} disabled={savingConsultation || tokenAction !== null} className="px-3 py-2 rounded-lg text-sm text-foreground border border-border disabled:opacity-60">
+            </Button>
+            <Button type="button" variant="outline" onClick={onResendToken} disabled={savingConsultation || tokenAction !== null}>
               {tokenAction === 'resend' ? 'Envoi...' : 'Renvoyer le lien'}
-            </button>
-            <button type="button" onClick={onCopierLien} disabled={savingConsultation || tokenAction !== null} className="px-3 py-2 rounded-lg text-sm text-foreground border border-border disabled:opacity-60">
+            </Button>
+            <Button type="button" variant="outline" onClick={onCopierLien} disabled={savingConsultation || tokenAction !== null}>
               {tokenAction === 'copier' ? 'Copie...' : 'Copier le lien'}
-            </button>
-            <button type="button" onClick={onRevokeToken} disabled={savingConsultation || tokenAction !== null} className="px-3 py-2 rounded-lg text-sm text-red-500 border border-border disabled:opacity-60">
+            </Button>
+            <Button type="button" variant="danger" onClick={onRevokeToken} disabled={savingConsultation || tokenAction !== null}>
               {tokenAction === 'revoke' ? 'Révocation...' : 'Révoquer l’accès'}
-            </button>
+            </Button>
             {consultationFeedback && (
               <span className={`text-sm ${consultationFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>
                 {consultationFeedback.msg}
@@ -508,33 +508,31 @@ export function PatientsPanel() {
       <div className="bg-surface border border-border rounded-xl p-4">
         <h3 className="text-sm font-semibold text-foreground mb-3">Nouvelle assignation questionnaire</h3>
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateAssignation}>
-          <select required value={assignationForm.emailPatient} onChange={e => setAssignationForm(p => ({ ...p, emailPatient: e.target.value }))} className={inputCls}>
+          <Select required value={assignationForm.emailPatient} onChange={e => setAssignationForm(p => ({ ...p, emailPatient: e.target.value }))}>
             <option value="">Patient *</option>
             {(data?.patients ?? []).map(p => (
               <option key={p.idPatient} value={p.email}>{`${p.prenom} ${p.nom} — ${p.email}`}</option>
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
             value={categorieView}
             onChange={e => {
               setCategorieView(e.target.value as 'fonctionnelle' | 'historique');
               setCategorieFilter('');
               setAssignationForm(p => ({ ...p, idQuestionnaire: '' }));
             }}
-            className={inputCls}
             aria-label="Type de catégories"
           >
             <option value="fonctionnelle">Catégories fonctionnelles (recommandé)</option>
             <option value="historique">Catégories historiques</option>
-          </select>
-          <select
+          </Select>
+          <Select
             value={categorieFilter}
             onChange={e => {
               setCategorieFilter(e.target.value);
               // Réinitialise le questionnaire sélectionné s'il n'est plus visible.
               setAssignationForm(p => ({ ...p, idQuestionnaire: '' }));
             }}
-            className={inputCls}
             aria-label="Filtrer par catégorie"
           >
             <option value="">Toutes les catégories</option>
@@ -545,15 +543,15 @@ export function PatientsPanel() {
                   : c}
               </option>
             ))}
-          </select>
-          <select required value={assignationForm.idQuestionnaire} onChange={e => setAssignationForm(p => ({ ...p, idQuestionnaire: e.target.value }))} className={inputCls}>
+          </Select>
+          <Select required value={assignationForm.idQuestionnaire} onChange={e => setAssignationForm(p => ({ ...p, idQuestionnaire: e.target.value }))}>
             <option value="">Questionnaire *</option>
             {questionnairesFiltres.map(q => (
               <option key={q.id} value={q.id}>
                 {`${q.titre} (${categorieView === 'fonctionnelle' ? getFunctionalCategoryLabel(q.categorieFonctionnellePrincipale) : q.categorie})`}
               </option>
             ))}
-          </select>
+          </Select>
           <div className="md:col-span-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
             <p className="text-xs text-muted-foreground mb-1">Packs suggérés</p>
             {!questionnaireSelectionne ? (
@@ -583,12 +581,12 @@ export function PatientsPanel() {
               </div>
             )}
           </div>
-          <input type="date" value={assignationForm.dateLimite} onChange={e => setAssignationForm(p => ({ ...p, dateLimite: e.target.value }))} className={inputCls} />
-          <input value={assignationForm.notes} onChange={e => setAssignationForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notes praticien (optionnel)" className={inputCls} maxLength={500} />
+          <Input type="date" value={assignationForm.dateLimite} onChange={e => setAssignationForm(p => ({ ...p, dateLimite: e.target.value }))} />
+          <Input value={assignationForm.notes} onChange={e => setAssignationForm(p => ({ ...p, notes: e.target.value }))} placeholder="Notes praticien (optionnel)" maxLength={500} />
           <div className="flex items-center gap-3 md:col-span-2">
-            <button type="submit" disabled={savingAssignation} className={btnPrimary}>
+            <Button type="submit" disabled={savingAssignation}>
               {savingAssignation ? 'Création...' : 'Créer l’assignation'}
-            </button>
+            </Button>
             {assignationFeedback && (
               <span className={`text-sm ${assignationFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>
                 {assignationFeedback.msg}
@@ -615,22 +613,22 @@ export function PatientsPanel() {
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex flex-col gap-1">
               <label className="text-xs text-muted-foreground">Téléphone</label>
-              <input value={editState.telephone} onChange={e => setEditState(s => s ? { ...s, telephone: e.target.value } : s)} className={inputCls} maxLength={30} placeholder="Téléphone" />
+              <Input value={editState.telephone} onChange={e => setEditState(s => s ? { ...s, telephone: e.target.value } : s)} maxLength={30} placeholder="Téléphone" />
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-xs text-muted-foreground">Actif</label>
-              <select value={editState.actif} onChange={e => setEditState(s => s ? { ...s, actif: e.target.value as 'OUI' | 'NON' } : s)} className={inputCls}>
+              <Select value={editState.actif} onChange={e => setEditState(s => s ? { ...s, actif: e.target.value as 'OUI' | 'NON' } : s)}>
                 <option value="OUI">Actif</option>
                 <option value="NON">Inactif</option>
-              </select>
+              </Select>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={onSaveEdit} disabled={savingEdit} className={btnPrimary}>
+              <Button onClick={onSaveEdit} disabled={savingEdit}>
                 {savingEdit ? 'Enregistrement...' : 'Enregistrer'}
-              </button>
-              <button onClick={() => setEditState(null)} className="px-3 py-2 rounded-lg text-sm text-muted-foreground border border-border">
+              </Button>
+              <Button variant="outline" onClick={() => setEditState(null)}>
                 Annuler
-              </button>
+              </Button>
             </div>
             {editFeedback && (
               <span className={`text-sm ${editFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>
@@ -644,11 +642,11 @@ export function PatientsPanel() {
       {/* Barre recherche / tri */}
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher (nom, prénom, email)" className={`w-full sm:w-72 ${inputCls}`} />
-          <select value={sortBy} onChange={e => setSortBy(e.target.value as SortBy)} className={inputCls}>
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Rechercher (nom, prénom, email)" className="w-full sm:w-72" />
+          <Select value={sortBy} onChange={e => setSortBy(e.target.value as SortBy)}>
             <option value="nom">Tri : nom</option>
             <option value="email">Tri : email</option>
-          </select>
+          </Select>
         </div>
         <div className="text-sm text-muted-foreground">
           {pagination ? `${pagination.total} patient(s)` : '—'}
