@@ -1,7 +1,7 @@
 ---
 id: "LOT-03-surfaces-mecanismes"
 titre: "Surfaces praticien génériques et mécanismes transverses"
-statut: "en_cours"
+statut: "terminé"
 dépend_de: ["LOT-02"]
 ---
 
@@ -112,3 +112,11 @@ d'instanciation documenté dans `CONTRATS_UX_P1.md`.
   test Playwright dédié (formulaire de création patient rendu et visible
   après refactor) ; les flux d'assignation et d'édition inline n'ont pas été
   exercés manuellement au-delà des tests automatisés existants.
+
+### Clôture
+
+Mergé sur `main` via PR [#40](https://github.com/martialcayre-sketch/Wellneuro-app/pull/40)
+(merge commit `28f9fe5`), CI GitHub Actions verte (`verify`, `devcontainer-smoke`,
+Vercel preview). Revue indépendante (`/wn-review`) : go, 3 constats non
+bloquants corrigés avant merge (sélecteurs Playwright ambigus, `.vercel/`
+absent du `.gitignore` racine).

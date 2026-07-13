@@ -189,3 +189,15 @@
 **Prochaine action prioritaire** : LOT-03 (surfaces génériques + mécanismes transverses), à autoriser explicitement.
 
 **Questions ouvertes** : cas limite non testé — redimensionnement tablette→desktop tiroir ouvert (le contenu du dialog reste focusable bien que masqué par CSS) ; jugé non bloquant par la revue.
+
+## [2026-07-13] — Campagne HC-F : LOT-03 clôturé (PR #40)
+
+**Décisions prises** : 3 mécanismes livrés (`ModeConsultation`, `TwoLevelReading`, `PrévisualisationPatient`), refactor complet de `PatientsPanel.tsx` vers des composants `Input`/`Select`/`Button` partagés, restylage `/dashboard` et `/dashboard/parametres`. `PrévisualisationPatient` réutilise `ConsultationScreen.tsx` (props additifs) via une nouvelle route practicien `api/praticien/apercu-patient/reponses`, miroir patient-safe — contourne le fait que ce composant s'auto-fetch via un cookie de session portail inutilisable depuis le dashboard.
+
+**Options écartées** : aucune hors périmètre déjà documenté.
+
+**Validations** : type-check/lint/check_no_secrets/Vitest verts ; Playwright 13/13 (Desktop Chromium, WebKit non exécutable localement). CI verte, revue indépendante go (3 constats non bloquants corrigés).
+
+**Prochaine action prioritaire** : LOT-04 (portail patient clair), à autoriser explicitement.
+
+**Questions ouvertes** : aucune nouvelle.
