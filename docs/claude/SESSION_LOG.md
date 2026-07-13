@@ -213,3 +213,15 @@
 **Prochaine action prioritaire** : revalidation e2e/manuelle humaine (mobile/zoom/clavier/lecteur d'écran/thème/prévisualisation) avant d'autoriser LOT-05.
 
 **Questions ouvertes** : aucune nouvelle.
+
+## [2026-07-13] — Campagne HC-F : LOT-05 livré (PR #43), verdict GO avec dettes
+
+**Décisions prises** : branche `lot-05` détectée recréée par erreur depuis l'ancienne base commune avec `lot-04` (23 fichiers/~900 lignes de LOT-04 absents) — corrigée par rebase sur la pointe réelle de LOT-04 (`9218d07`), force-push après confirmation explicite (hook `block-risky-commands.mjs`). Revalidation e2e de la porte laissée ouverte par LOT-04 menée à son terme (pas seulement tentée) : 4 échecs Desktop Chromium diagnostiqués (`wn-debugger`) comme la même classe de problème d'environnement déjà rencontrée en LOT-03 (synthèse d'événements souris CDP bloquante en headless dans ce sandbox) ; contournement LOT-03 réappliqué (`xvfb-run -a … --headed`, après installation du paquet système `xauth` manquant) → **13/13 Desktop Chromium verts**. WebKit/iPhone 13 reste non exécutable (librairies système manquantes, cause distincte confirmée, limitation pré-existante acceptée). Livrables produits : `LEXIQUE_UX_WELLNEURO.md`, `HANDOFF_FUTURES_IMPLANTATIONS.md`, `MATRICE_MIGRATION_UX.md`, `DETTE_UX_RESIDUELLE.md`, `VALIDATION_FINALE.md` ; `design-system-d1.md` amendé (§4bis mécanismes transverses canonisés, traçabilité LOT-00 à LOT-05) ; `checklist_tests_end_to_end.md` amendé (section Campagne HC-F). Divergence documentaire signalée sans être corrigée globalement : orthographe « Dogne »/« Dogné » incohérente entre la décision HC-F du 2026-07-12 et `CLAUDE.md`/le code de test réel — 1 occurrence interne à la campagne corrigée (`AUDIT_UI_REEL.md`), le reste (16 fichiers hors `archive/`, dont du code de test) laissé en l'état par prudence (risque de casser des seeds DB sans vérification).
+
+**Validations exécutées** : `check_no_secrets.sh`, `type-check`, `lint`, Vitest (14/14, 77/77), e2e Desktop Chromium (13/13) verts. WebKit/iPhone 13 rouge (limitation d'environnement, non applicative). `package-lock.json` auto-patché par `npm`/`playwright` restauré (`git checkout`) avant commit, comme en LOT-04.
+
+**Options écartées** : corriger globalement l'orthographe « Dogné »/« Dogne » dans le code de test et `CLAUDE.md` — hors périmètre LOT-05, risque de régression sur des seeds DB non vérifiées ; installer les ~30 dépendances système manquantes pour WebKit — disproportionné pour un lot documentaire.
+
+**Prochaine action prioritaire** : validation explicite de l'utilisateur pour clôturer la campagne HC-F (dernière case `Done` de LOT-05 et statut `CAMPAGNE.md` volontairement laissés non cochés) ; push du rebase + de ce commit depuis un terminal utilisateur (`WN_ALLOW_RISKY_COMMAND=1 git push --force-with-lease`, hook bloquant depuis l'agent) ; ensuite C1 et QX peuvent démarrer en parallèle (dépendances HC-F satisfaites).
+
+**Questions ouvertes** : arbitrer la divergence « Dogne »/« Dogné » à l'échelle du projet (aligner tout sur une forme unique, y compris `CLAUDE.md` et les seeds de test) ou acter qu'elle reste propre à HC-F.
