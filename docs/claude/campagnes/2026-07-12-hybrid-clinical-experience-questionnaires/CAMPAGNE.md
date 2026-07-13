@@ -4,7 +4,7 @@ titre: "HC-F — Hybrid Clinical Foundation"
 statut: "à_faire"
 créée_le: "2026-07-12"
 mise_à_jour: "2026-07-12"
-lot_courant: "LOT-02 (autorisé le 2026-07-12, démarrage)"
+lot_courant: "LOT-03 (en attente d'autorisation explicite)"
 ---
 
 # HC-F — Hybrid Clinical Foundation
@@ -71,7 +71,7 @@ Invariants du registre §1, plus :
 |---|---|---|---|
 | LOT-00 | Audit réel et arbitrages : géométrie du shell C0-UX, tokens consommés, classification des pages praticien en vagues de migration, frontières de données praticien/patient, lexique existant. Arbitrages : pages de première vague ; palette de commandes livrée ou différée ; contrats d'instanciation des 3 mécanismes validés par l'utilisateur | terminé | — |
 | LOT-01 | Tokens Hybrid Clinical clairs : `tailwind.config.ts` + `globals.css`, thème praticien clair (rail sombre structurel) + patient clair, amendement effectif de `docs/design-system-d1.md` | terminé | LOT-00 |
-| LOT-02 | Shell premium : rail avec icônes Lucide, alignements mesurés, palette de commandes (si arbitrée livrable), états vides actionnables | à_faire | LOT-01 |
+| LOT-02 | Shell premium : rail avec icônes Lucide, alignements mesurés, palette de commandes (si arbitrée livrable), états vides actionnables | terminé | LOT-01 |
 | LOT-03 | Surfaces praticien génériques (dashboard, annuaire — coquilles) + livraison des 3 mécanismes avec contrats d'instanciation. **Prérequis** : `feat/e0-patients-pagination` mergée avant restylage de l'annuaire | à_faire | LOT-02 |
 | LOT-04 | Portail patient clair : onboarding, hub, lecture seule, correction (textes de consentement R8-lite **figés**, restylage uniquement), états de sauvegarde/connexion explicites, confort de lecture | à_faire | LOT-01 |
 | LOT-05 | Gouvernance et handoff : lexique UX, checklist de conformité Hybrid Clinical des modules futurs, mise à jour du document design system canonique, handoff vers C1/QX | à_faire | LOT-02 à LOT-04 |

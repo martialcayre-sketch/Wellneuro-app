@@ -201,7 +201,7 @@ committée) dans les deux thèmes.
 | Page / composant | Thème appliqué | Lot |
 |---|---|---|
 | `web/src/components/NavBar.tsx` (header hors rail) | praticien (clair) | D1-3, re-thémé clair par HC-F LOT-01 |
-| `web/src/components/ui/SidebarRail.tsx`, `web/src/components/ui/MobileBottomNav.tsx`, aside/tiroir de `NavBar.tsx` | rail (sombre structurel, tokens `--rail-*` dédiés) | HC-F LOT-01 |
+| `web/src/components/ui/SidebarRail.tsx`, `web/src/components/ui/MobileBottomNav.tsx`, aside/tiroir de `NavBar.tsx` | rail (sombre structurel, tokens `--rail-*` dédiés) ; icônes Lucide + overlays Radix Dialog depuis LOT-02 | HC-F LOT-01, LOT-02 |
 | `web/src/app/dashboard/layout.tsx` | praticien (clair) | D1-3, re-thémé clair par HC-F LOT-01 |
 | `web/src/app/login/page.tsx` | praticien (clair) | D1-3, re-thémé clair par HC-F LOT-01 |
 | `web/src/app/dashboard/page.tsx` (titre + feuille de route) | praticien (clair) | D1-3 (élargi après détection d'un défaut de contraste), re-thémé clair par HC-F LOT-01 |
@@ -250,6 +250,46 @@ pour l'état actif, `text-muted-foreground` pour l'inactif, et
 `focus-visible:ring-focus-ring` sur chaque élément interactif. Le panneau ☰
 tablette existant (768–1024px) n'avait pas été retouché par ce lot.
 
+### Shell premium praticien — HC-F LOT-02
+
+**Lucide React** et **`@radix-ui/react-dialog`** adoptés (première
+utilisation réelle des autorisations de la section 5).
+
+- Icônes : les abréviations texte (`AC`/`PT`/`SY`/`PM`) et emojis (`☰`,
+  `🔔`, `▾`, `‹›`, `✕`, `•••`) sont remplacés par des icônes Lucide
+  (`LayoutDashboard`, `Users`, `Sparkles`, `Settings`, `Menu`,
+  `ChevronDown`, `PanelLeftClose`/`PanelLeftOpen`, `X`, `MoreHorizontal`),
+  taille 20–21px, `strokeWidth={2}` uniforme. Zone d'icône du rail
+  harmonisée à 44×44px (`h-11 w-11`, était `h-10 w-10`).
+- Recherche et cloche de notification retirées du header (affordances non
+  fonctionnelles, aucune route/API correspondante — interdit explicite du
+  lot plutôt que de les simuler).
+- Carte « Patients de démonstration » retirée du rail étendu (interdit
+  explicite : pas de patients de démo dans le rail permanent).
+- Tiroir tablette (`NavBar.tsx`) et bottom sheet mobile
+  (`MobileBottomNav.tsx`) reconstruits sur `Dialog.Root`/`Dialog.Portal`/
+  `Dialog.Content` de Radix au lieu d'overlays faits main : focus trap
+  complet, fermeture Escape, retour de focus au déclencheur et
+  `aria-modal` obtenus nativement. Corrige une vraie lacune du tiroir
+  tablette (qui n'avait ni Escape, ni focus trap, ni retour de focus
+  avant ce lot).
+
+**Piège à connaître pour toute future primitive Radix portée par ce
+shell** : `Dialog.Portal` (comme tout portail Radix) rend son contenu
+dans `document.body` par défaut, **hors** du conteneur
+`[data-theme="praticien"]` posé par `dashboard/layout.tsx`. Les tokens
+`--rail-*`, `--foreground`, etc. sont scopés à ce sélecteur et ne
+résolvent à rien pour un contenu porté ailleurs dans le DOM (fond
+transparent, contenu de la page visible au travers). **Solution
+appliquée** : poser `data-theme="praticien"` directement sur
+`Dialog.Overlay` et `Dialog.Content` (l'attribut sur l'élément lui-même
+suffit, le sélecteur CSS n'exige pas un ancêtre). À reproduire pour
+toute nouvelle primitive portée (dropdown, tooltip, alert dialog…) tant
+que les tokens restent scopés par attribut plutôt que globaux.
+
+Palette de commandes : confirmée différée (arbitrage LOT-00), non
+livrée dans ce lot.
+
 ## 5. Interdits et autorisations (amendé le 2026-07-12, direction Hybrid Clinical)
 
 **Autorisés depuis le 2026-07-12** (levée d'interdits actée, cf.
@@ -258,8 +298,9 @@ tablette existant (768–1024px) n'avait pas été retouché par ce lot.
 - primitives **Radix UI / shadcn/ui sélectionnées**, uniquement pour les
   comportements complexes accessibles : dialog, alert dialog, sheet,
   dropdown, tabs, tooltip, command palette — jamais d'abstraction massive ni
-  d'esthétique de bibliothèque importée telle quelle ;
-- **Lucide React** pour les icônes ;
+  d'esthétique de bibliothèque importée telle quelle ; **`@radix-ui/react-dialog`
+  adopté en HC-F LOT-02** (tiroir tablette, sheet mobile — section 4) ;
+- **Lucide React** pour les icônes ; **adopté en HC-F LOT-02** (section 4) ;
 - **Motion**, uniquement lorsqu'une transition explique un changement d'état
   ou de structure.
 
