@@ -177,3 +177,15 @@
 **Prochaine action prioritaire** : LOT-02 (shell premium, icônes Lucide) — autorisé explicitement par l'utilisateur.
 
 **Questions ouvertes** : captures de référence LOT-00 non produites (outil indisponible) ; `.gitignore` local non commité, hors périmètre de cette session.
+
+## [2026-07-13] — Campagne HC-F : LOT-02 clôturé (PR #37)
+
+**Décisions prises** : icônes texte/emoji du shell (`AC`/`PT`/`SY`/`PM`, ☰, 🔔, ▾, ‹›, ✕, •••) remplacées par Lucide React ; recherche, cloche et carte « Patients de démonstration » retirées (affordances non fonctionnelles/interdites). Tiroir tablette et sheet mobile migrés vers `@radix-ui/react-dialog` (focus trap réel, corrige une lacune du tiroir qui n'avait ni Escape ni focus trap). Bug découvert en implémentant : `Dialog.Portal` rend hors de `[data-theme="praticien"]`, les tokens `--rail-*` ne résolvaient à rien (fond transparent) — corrigé en posant `data-theme="praticien"` sur `Dialog.Overlay`/`Dialog.Content`, documenté dans `design-system-d1.md`. Revue indépendante (PR #37) : test manquant sur le tiroir tablette (jamais exercé à viewport tablette) et imprécision doc (`--foreground` déjà sur `:root`) — corrigés.
+
+**Validations exécutées** : `type-check`, `lint`, `check_no_secrets.sh`, e2e (`dashboard-praticien` 5/5 dont le nouveau test tiroir, `portail-parcours`) verts ; vérifications visuelles manuelles ; CI verte avant merge.
+
+**Options écartées** : palette de commandes — confirmée différée (arbitrage LOT-00), non révisée.
+
+**Prochaine action prioritaire** : LOT-03 (surfaces génériques + mécanismes transverses), à autoriser explicitement.
+
+**Questions ouvertes** : cas limite non testé — redimensionnement tablette→desktop tiroir ouvert (le contenu du dialog reste focusable bien que masqué par CSS) ; jugé non bloquant par la revue.
