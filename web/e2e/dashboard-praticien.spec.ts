@@ -93,6 +93,40 @@ test.describe('Praticien Dashboard', () => {
     });
   });
 
+  test.describe('tablet drawer navigation', () => {
+    // 768–1023px : le rail persistant (lg) est caché, la navigation basse
+    // (<768px) ne l'est pas encore — seul le tiroir ☰ (LOT-02, Radix Dialog)
+    // donne accès à la navigation dans cette plage.
+    test.use({ viewport: { width: 900, height: 1024 } });
+
+    test('opens an accessible, opaque drawer via the menu trigger, closable with Escape', async ({ page }) => {
+      const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
+      await page.context().addCookies([sessionCookie]);
+
+      await page.goto('/dashboard');
+
+      const menuToggle = page.getByRole('button', { name: 'Ouvrir la navigation' });
+      await expect(menuToggle).toBeVisible();
+      await menuToggle.click();
+
+      const drawer = page.getByRole('dialog', { name: 'Navigation' });
+      await expect(drawer).toBeVisible();
+      await expect(drawer.getByRole('link', { name: 'Patients' })).toBeVisible();
+
+      // Régression verrouillée : Dialog.Portal (Radix) rend hors du conteneur
+      // [data-theme="praticien"] dont dépendent les tokens --rail-* — sans
+      // data-theme="praticien" posé directement sur Dialog.Content, ce fond
+      // reste transparent (page visible au travers) au lieu du rail sombre.
+      const backgroundColor = await drawer.evaluate((el) => getComputedStyle(el).backgroundColor);
+      expect(backgroundColor).not.toBe('rgba(0, 0, 0, 0)');
+      expect(backgroundColor).not.toBe('transparent');
+
+      await page.keyboard.press('Escape');
+      await expect(drawer).toBeHidden();
+      await expect(menuToggle).toBeFocused();
+    });
+  });
+
   test('session expires on missing NEXTAUTH_SECRET', async ({ page }) => {
     // Test de sensibilité : sans NEXTAUTH_SECRET, la fabrication du cookie échoue
     const originalSecret = process.env.NEXTAUTH_SECRET;

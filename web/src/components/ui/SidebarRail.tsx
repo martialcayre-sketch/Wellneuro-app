@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { LayoutDashboard, Users, Sparkles, Settings, type LucideIcon } from 'lucide-react';
 
-const navigationItems = [
-  { href: '/dashboard', label: 'Accueil', abbr: 'AC' },
-  { href: '/dashboard/patients', label: 'Patients', abbr: 'PT' },
-  { href: '/dashboard/synthese', label: 'Synthèse IA', abbr: 'SY' },
-  { href: '/dashboard/parametres', label: 'Paramètres', abbr: 'PM' },
-] as const;
+const navigationItems: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/dashboard', label: 'Accueil', icon: LayoutDashboard },
+  { href: '/dashboard/patients', label: 'Patients', icon: Users },
+  { href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles },
+  { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
+];
 
 interface SidebarRailProps {
   collapsed: boolean;
@@ -25,6 +26,7 @@ export function SidebarRail({ collapsed, onNavigate }: SidebarRailProps) {
     <nav className="space-y-1">
       {navigationItems.map((item) => {
         const active = isActive(item.href);
+        const Icon = item.icon;
 
         return (
           <Link
@@ -40,11 +42,11 @@ export function SidebarRail({ collapsed, onNavigate }: SidebarRailProps) {
             }`}
           >
             <span
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
                 active ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
               }`}
             >
-              {item.abbr}
+              <Icon aria-hidden="true" size={20} strokeWidth={2} />
             </span>
             {!collapsed && (
               <span className={`min-w-0 flex-1 truncate text-sm font-medium ${active ? 'text-rail-foreground' : ''}`}>

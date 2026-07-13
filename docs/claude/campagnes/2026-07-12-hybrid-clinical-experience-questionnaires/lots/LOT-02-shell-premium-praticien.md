@@ -1,7 +1,7 @@
 ---
 id: "LOT-02-shell-premium-praticien"
 titre: "Shell premium praticien, icônes et alignements"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: ["LOT-01"]
 ---
 
@@ -103,11 +103,23 @@ Une palette partielle ou simulée ne doit pas être livrée. Si la recherche glo
 
 ## Done
 
-- [ ] Rail pleine hauteur validé.
-- [ ] Icônes cohérentes et centrées.
-- [ ] Aucune affordance factice.
-- [ ] Navigation responsive validée.
-- [ ] Palette livrée de façon complète ou différée explicitement.
-- [ ] Tests E2E verts.
-- [ ] Captures comparatives documentées.
-- [ ] LOT-03 autorisé.
+- [x] Rail pleine hauteur validé (desktop, tiroir tablette, barre basse mobile).
+- [x] Icônes cohérentes et centrées (Lucide, 20–21px, `strokeWidth={2}`, zone 44×44 sur le rail desktop/tiroir).
+- [x] Aucune affordance factice (recherche/cloche retirées, carte de démo retirée).
+- [x] Navigation responsive validée (desktop/tablette/mobile).
+- [x] Palette de commandes différée explicitement (arbitrage LOT-00, non livrée).
+- [x] Tests E2E verts (`dashboard-praticien.spec.ts` 4/4, `portail-parcours.spec.ts`).
+- [x] Captures comparatives documentées (vérification visuelle manuelle desktop/tablette/mobile, tiroir et sheet ouverts).
+- [ ] LOT-03 autorisé — en attente d'instruction explicite séparée.
+
+## Résultats
+
+- Lucide React et `@radix-ui/react-dialog` installés et adoptés (première utilisation réelle des autorisations `design-system-d1.md` §5).
+- Tiroir tablette et sheet mobile reconstruits sur `Dialog.Root`/`Dialog.Portal`/`Dialog.Content` Radix : focus trap complet, Escape, retour de focus obtenus nativement — corrige une lacune réelle du tiroir tablette (n'avait ni Escape ni focus trap avant ce lot).
+- Bug découvert et corrigé pendant l'implémentation : `Dialog.Portal` rend hors du conteneur `[data-theme="praticien"]`, les tokens `--rail-*` ne résolvaient à rien (fond transparent, page visible au travers). Corrigé en posant `data-theme="praticien"` directement sur `Dialog.Overlay`/`Dialog.Content` — documenté dans `design-system-d1.md` comme piège à éviter pour toute future primitive Radix portée.
+- `docs/design-system-d1.md` amendé (section 4 : traçabilité ; nouvelle sous-section « Shell premium praticien — HC-F LOT-02 » ; section 5 : primitives marquées adoptées).
+
+## Corrections apportées pendant la revue (PR #37)
+
+- Constat de la revue indépendante : le tiroir tablette (cœur de ce lot) n'était exercé par aucun test automatisé — le test existant clique sur le déclencheur `☰` sans jamais forcer un viewport tablette (768–1023px), donc la branche n'était jamais parcourue en CI. Corrigé : nouveau test `e2e/dashboard-praticien.spec.ts` (« tablet drawer navigation », viewport 900×1024) qui ouvre le tiroir, vérifie que son fond n'est pas transparent (verrouille la régression `data-theme` corrigée pendant l'implémentation), et vérifie Escape + retour de focus.
+- Imprécision documentaire corrigée : `--foreground` reste défini sur `:root` (donc non affecté par le problème de portail Radix) — seuls les tokens `--rail-*` nécessitaient le correctif `data-theme="praticien"`. Corrigé dans `design-system-d1.md` et les commentaires de code.
