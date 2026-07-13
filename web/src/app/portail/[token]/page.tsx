@@ -28,6 +28,36 @@ type WizardDraftKind = 'fiche' | 'anamnese';
 // un délai, au lieu d'être conservé indéfiniment.
 const WIZARD_DRAFT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
+type WizardDraftValidator<T> = (value: unknown) => value is T;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isStringRecord(value: unknown): value is Record<string, string> {
+  if (!isPlainObject(value)) return false;
+  return Object.values(value).every(v => typeof v === 'string');
+}
+
+function isAnamneseValeursRecord(value: unknown): value is AnamneseValeurs {
+  if (!isPlainObject(value)) return false;
+  return Object.values(value).every((v) => {
+    if (typeof v === 'string') return true;
+    if (!Array.isArray(v)) return false;
+    return v.every((item) => {
+      if (typeof item === 'string') return true;
+      if (!isPlainObject(item)) return false;
+      return Object.values(item).every(field => typeof field === 'string');
+    });
+  });
+}
+
+function isAnamneseWizardDraft(value: unknown): value is { valeurs: AnamneseValeurs; motif: string } {
+  if (!isPlainObject(value)) return false;
+  if (typeof value.motif !== 'string') return false;
+  return isAnamneseValeursRecord(value.valeurs);
+}
+
 function wizardDraftKey(kind: WizardDraftKind, token: string): string {
   return `wellneuro:wizard-draft:${kind}:${token}`;
 }
@@ -35,7 +65,7 @@ function wizardDraftSavedAtKey(kind: WizardDraftKind, token: string): string {
   return `wellneuro:wizard-draft-meta:${kind}:${token}`;
 }
 
-function readWizardDraft<T>(kind: WizardDraftKind, token: string): T | null {
+function readWizardDraft<T>(kind: WizardDraftKind, token: string, validate: WizardDraftValidator<T>): T | null {
   if (typeof window === 'undefined') return null;
   try {
     const savedAt = readWizardDraftSavedAt(kind, token);
@@ -43,8 +73,10 @@ function readWizardDraft<T>(kind: WizardDraftKind, token: string): T | null {
       clearWizardDraft(kind, token);
       return null;
     }
-    const raw = window.localStorage.getItem(wizardDraftKey(kind, token));
-    return raw ? (JSON.parse(raw) as T) : null;
+    const raw = window.sessionStorage.getItem(wizardDraftKey(kind, token));
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return validate(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -52,8 +84,8 @@ function readWizardDraft<T>(kind: WizardDraftKind, token: string): T | null {
 function writeWizardDraft(kind: WizardDraftKind, token: string, value: unknown): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(wizardDraftKey(kind, token), JSON.stringify(value));
-    window.localStorage.setItem(wizardDraftSavedAtKey(kind, token), new Date().toISOString());
+    window.sessionStorage.setItem(wizardDraftKey(kind, token), JSON.stringify(value));
+    window.sessionStorage.setItem(wizardDraftSavedAtKey(kind, token), new Date().toISOString());
   } catch {
     /* quota / mode privé : on n'interrompt pas la saisie */
   }
@@ -61,7 +93,7 @@ function writeWizardDraft(kind: WizardDraftKind, token: string, value: unknown):
 function readWizardDraftSavedAt(kind: WizardDraftKind, token: string): Date | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(wizardDraftSavedAtKey(kind, token));
+    const raw = window.sessionStorage.getItem(wizardDraftSavedAtKey(kind, token));
     if (!raw) return null;
     const date = new Date(raw);
     return Number.isNaN(date.getTime()) ? null : date;
@@ -72,8 +104,8 @@ function readWizardDraftSavedAt(kind: WizardDraftKind, token: string): Date | nu
 function clearWizardDraft(kind: WizardDraftKind, token: string): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.removeItem(wizardDraftKey(kind, token));
-    window.localStorage.removeItem(wizardDraftSavedAtKey(kind, token));
+    window.sessionStorage.removeItem(wizardDraftKey(kind, token));
+    window.sessionStorage.removeItem(wizardDraftSavedAtKey(kind, token));
   } catch {
     /* no-op */
   }
@@ -201,7 +233,7 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
 function FicheForm({ token, email, onDone }: {
   token: string; email: string; onDone: () => void;
 }) {
-  const [valeurs, setValeurs] = useState<Record<string, string>>(() => readWizardDraft('fiche', token) ?? {});
+  const [valeurs, setValeurs] = useState<Record<string, string>>(() => readWizardDraft('fiche', token, isStringRecord) ?? {});
   const [mentions, setMentions] = useState(false);
   const [sectionIndex, setSectionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -382,7 +414,7 @@ function AnamneseForm({ token, email, motifInitial, onDone }: {
   token: string; email: string; motifInitial: string | null; onDone: (premiereAssignation: string | null) => void;
 }) {
   type AnamneseDraft = { valeurs: AnamneseValeurs; motif: string };
-  const draft = readWizardDraft<AnamneseDraft>('anamnese', token);
+  const draft = readWizardDraft<AnamneseDraft>('anamnese', token, isAnamneseWizardDraft);
   const [valeurs, setValeurs] = useState<AnamneseValeurs>(() => draft?.valeurs ?? {});
   const [motif, setMotif] = useState(() => draft?.motif ?? motifInitial ?? '');
   const [sectionIndex, setSectionIndex] = useState(0);
