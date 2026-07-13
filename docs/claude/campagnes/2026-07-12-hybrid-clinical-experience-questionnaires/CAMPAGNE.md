@@ -6,7 +6,7 @@ créée_le: "2026-07-12"
 mise_à_jour: "2026-07-13"
 lot_courant: "LOT-05"
 branche_campagne: "campaign/hc-f-hybrid-clinical-foundation/integration"
-branche_lot_courant: "campaign/hc-f-hybrid-clinical-foundation/integration/lot-05"
+branche_lot_courant: "campaign/hc-f-hybrid-clinical-foundation/lot-05"
 cible_pr_lot: "campaign/hc-f-hybrid-clinical-foundation/integration"
 cible_pr_campagne: "main"
 ---

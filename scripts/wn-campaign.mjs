@@ -81,6 +81,9 @@ function parseFrontmatter(text) {
 }
 function lotBranchName(campaignBranch, lotId) {
   const suffix = String(lotId || "lot-00").toLowerCase().replace(/[^a-z0-9-]+/g, "-");
+  if (campaignBranch.endsWith("/integration")) {
+    return `${campaignBranch.slice(0, -"/integration".length)}/${suffix}`;
+  }
   return `${campaignBranch}/${suffix}`;
 }
 function defaultCampaignBranch(campaignId) {
