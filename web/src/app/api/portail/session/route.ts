@@ -11,6 +11,13 @@ import {
   PORTAIL_COOKIE_OPTIONS,
   signPatientSession,
 } from '@/lib/patient-session';
+import { logger } from '@/lib/observability/logger';
+import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import {
+  createRequestContext,
+  finalizeLogContext,
+  withCorrelationHeader,
+} from '@/lib/observability/requestContext';
 
 export type PortailConsultationState = {
   idConsultation: string;
@@ -33,25 +40,44 @@ export type PortailSessionResponse =
 type Payload = { token?: string; email?: string };
 
 // POST /api/portail/session — « login » du portail patient.
-export async function POST(req: Request): Promise<NextResponse<PortailSessionResponse>> {
+export async function POST(req: Request): Promise<NextResponse> {
+  const requestContext = createRequestContext(req);
   let payload: Payload;
   try {
     payload = (await req.json()) as Payload;
   } catch {
-    return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
+    logger.warn({
+      event: EVENT_CODES.PORTAIL_SESSION_INVALID_PAYLOAD,
+      domain: 'PORTAIL_PATIENT',
+      message: 'Payload invalide sur ouverture de session portail',
+      context: finalizeLogContext(requestContext, { statusCode: 400, retryable: false }),
+    });
+    return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 }), requestContext);
   }
 
   const token = (payload.token ?? '').trim();
   const email = (payload.email ?? '').trim().toLowerCase();
 
   if (!isTokenValide(token) || !isEmailValide(email)) {
-    return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiants invalides.' }, { status: 400 });
+    logger.security({
+      event: EVENT_CODES.PORTAIL_SESSION_INVALID_PAYLOAD,
+      domain: 'SECURITY',
+      message: 'Tentative portail avec identifiants invalides',
+      context: finalizeLogContext(requestContext, { statusCode: 400, retryable: false }),
+    });
+    return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiants invalides.' }, { status: 400 }), requestContext);
   }
 
   try {
     const patient = await resolvePortailPatient(token, email);
     if (!patient) {
-      return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 });
+      logger.security({
+        event: EVENT_CODES.PORTAIL_SESSION_FORBIDDEN,
+        domain: 'SECURITY',
+        message: 'Accès portail refusé',
+        context: finalizeLogContext(requestContext, { statusCode: 403, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 }), requestContext);
     }
 
     const consultation = await consultationCourante(patient.idPatient);
@@ -87,9 +113,15 @@ export async function POST(req: Request): Promise<NextResponse<PortailSessionRes
       PORTAIL_COOKIE_OPTIONS,
     );
 
-    return res;
+    return withCorrelationHeader(res, requestContext);
   } catch (err) {
-    console.error('[portail/session GET]', err instanceof Error ? err.message : String(err));
-    return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });
+    logger.error({
+      event: EVENT_CODES.PORTAIL_SESSION_EXCEPTION,
+      domain: 'PORTAIL_PATIENT',
+      message: 'Échec ouverture session portail',
+      context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
+      error: err,
+    });
+    return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 }), requestContext);
   }
 }

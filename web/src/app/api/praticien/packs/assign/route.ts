@@ -6,6 +6,13 @@ import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import nodemailer from 'nodemailer';
+import { logger } from '@/lib/observability/logger';
+import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import {
+  createRequestContext,
+  finalizeLogContext,
+  withCorrelationHeader,
+} from '@/lib/observability/requestContext';
 
 type AssignPackPayload = {
   idPack?: string;
@@ -26,17 +33,30 @@ const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre:
 
 // POST /api/praticien/packs/assign — assigne tous les questionnaires d'un pack
 // à un patient (N assignations), puis envoie un seul email récapitulatif.
-export async function POST(req: Request): Promise<NextResponse<AssignPackResponse>> {
+export async function POST(req: Request): Promise<NextResponse> {
+  const requestContext = createRequestContext(req);
   const session = await getServerSession(authOptions);
   if (!session) {
-    return NextResponse.json({ success: false, reason: 'unauthenticated', error: 'Session absente.' }, { status: 401 });
+    logger.security({
+      event: EVENT_CODES.AUTH_PRACTICIEN_UNAUTHORIZED,
+      domain: 'AUTH',
+      message: 'Session praticien absente sur assignation pack',
+      context: finalizeLogContext(requestContext, { statusCode: 401, retryable: false }),
+    });
+    return withCorrelationHeader(NextResponse.json({ success: false, reason: 'unauthenticated', error: 'Session absente.' }, { status: 401 }), requestContext);
   }
 
   let payload: AssignPackPayload;
   try {
     payload = (await req.json()) as AssignPackPayload;
   } catch {
-    return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
+    logger.warn({
+      event: EVENT_CODES.ASSIGNATION_PACK_INVALID_PAYLOAD,
+      domain: 'ASSIGNATION',
+      message: 'Payload invalide sur assignation de pack',
+      context: finalizeLogContext(requestContext, { statusCode: 400, retryable: false }),
+    });
+    return withCorrelationHeader(NextResponse.json({ success: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 }), requestContext);
   }
 
   const idPack = (payload.idPack ?? '').trim();
@@ -48,31 +68,43 @@ export async function POST(req: Request): Promise<NextResponse<AssignPackRespons
   const isDateValid = !dateLimite || /^\d{4}-\d{2}-\d{2}$/.test(dateLimite);
 
   if (!idPack || !emailPatient || !isEmailValid || !isDateValid) {
-    return NextResponse.json(
+    logger.warn({
+      event: EVENT_CODES.ASSIGNATION_PACK_INVALID_PAYLOAD,
+      domain: 'ASSIGNATION',
+      message: 'Validation payload échouée pour assignation pack',
+      context: finalizeLogContext(requestContext, { statusCode: 400, retryable: false }),
+    });
+    return withCorrelationHeader(NextResponse.json(
       {
         success: false,
         reason: 'invalid_payload',
         error: !idPack ? 'Pack requis.' : !isEmailValid ? 'Email patient invalide.' : 'Date limite invalide (AAAA-MM-JJ).',
       },
       { status: 400 }
-    );
+    ), requestContext);
   }
 
   try {
     const patient = await prisma.patient.findUnique({ where: { email: emailPatient } });
     if (!patient || !patient.actif) {
-      return NextResponse.json(
+      return withCorrelationHeader(NextResponse.json(
         { success: false, reason: 'patient_not_found', error: 'Patient introuvable (email non présent/actif).' },
         { status: 404 }
-      );
+      ), requestContext);
     }
 
     const pack = await prisma.pack.findUnique({ where: { idPack } });
     if (!pack || !pack.actif || pack.qids.length === 0) {
-      return NextResponse.json(
+      logger.warn({
+        event: EVENT_CODES.ASSIGNATION_PACK_RESOLUTION_FAILED,
+        domain: 'ASSIGNATION',
+        message: 'Pack introuvable, inactif ou vide',
+        context: finalizeLogContext(requestContext, { statusCode: 404, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json(
         { success: false, reason: 'pack_not_found', error: 'Pack introuvable, inactif ou vide.' },
         { status: 404 }
-      );
+      ), requestContext);
     }
 
     const notesPack = notes || `Pack ${pack.nom}`;
@@ -104,20 +136,39 @@ export async function POST(req: Request): Promise<NextResponse<AssignPackRespons
     }
 
     if (cree.length === 0) {
-      return NextResponse.json(
+      logger.warn({
+        event: EVENT_CODES.ASSIGNATION_PACK_RESOLUTION_FAILED,
+        domain: 'ASSIGNATION',
+        message: 'Aucun questionnaire valide résolu dans le pack',
+        context: finalizeLogContext(requestContext, { statusCode: 404, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json(
         { success: false, reason: 'pack_not_found', error: 'Aucun questionnaire valide dans ce pack.' },
         { status: 404 }
-      );
+      ), requestContext);
     }
 
     // Un seul email récapitulatif (best-effort), lien vers la première assignation.
     sendPackEmail(emailPatient, pack.nom, cree, dateLimite, notes).catch(
-      e => console.error('[packs/assign POST] email patient:', (e as Error).message)
+      e => logger.error({
+        event: EVENT_CODES.ASSIGNATION_PACK_EMAIL_FAILED,
+        domain: 'EMAIL',
+        message: 'Échec envoi email assignation pack',
+        context: finalizeLogContext(requestContext, { retryable: true }),
+        error: e,
+      })
     );
 
-    return NextResponse.json({ success: true, count: cree.length, packNom: pack.nom });
-  } catch {
-    return NextResponse.json({ success: false, reason: 'exception', error: "Erreur technique lors de l'assignation du pack." });
+    return withCorrelationHeader(NextResponse.json({ success: true, count: cree.length, packNom: pack.nom }), requestContext);
+  } catch (err) {
+    logger.error({
+      event: EVENT_CODES.ASSIGNATION_PACK_EXCEPTION,
+      domain: 'ASSIGNATION',
+      message: 'Erreur technique lors de l assignation du pack',
+      context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
+      error: err,
+    });
+    return withCorrelationHeader(NextResponse.json({ success: false, reason: 'exception', error: "Erreur technique lors de l'assignation du pack." }), requestContext);
   }
 }
 
