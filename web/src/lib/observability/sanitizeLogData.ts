@@ -34,7 +34,7 @@ function sanitizeString(input: string): string {
   return compact
     .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '[email]')
     .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [redacted]')
-    .replace(/(?:token|secret|password)=([^\s&]+)/gi, '$1=[redacted]')
+    .replace(/\b(token|secret|password)=([^\s&]+)/gi, '$1=[redacted]')
     .replace(/\b([A-Za-z0-9_-]{24,})\b/g, '[id]');
 }
 

@@ -29,4 +29,15 @@ describe('sanitizeLogData', () => {
     expect(out.type).toBe('Error');
     expect(out.message).not.toContain('test@wellneuro.fr');
   });
+
+  it('masque les secrets encodés dans une chaîne libre', () => {
+    const err = new Error('token=abc123 secret=qwerty password=letmein');
+    const out = sanitizeError(err);
+    expect(out.message).toContain('token=[redacted]');
+    expect(out.message).toContain('secret=[redacted]');
+    expect(out.message).toContain('password=[redacted]');
+    expect(out.message).not.toContain('abc123');
+    expect(out.message).not.toContain('qwerty');
+    expect(out.message).not.toContain('letmein');
+  });
 });
