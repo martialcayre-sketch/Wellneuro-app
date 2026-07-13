@@ -1,7 +1,7 @@
 ---
 id: "LOT-05-gouvernance-handoff"
 titre: "Gouvernance et handoff"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: ["LOT-02", "LOT-03", "LOT-04"]
 ---
 
