@@ -1,31 +1,39 @@
 ---
 id: "LOT-02"
-titre: "implementation"
+titre: "Cockpit — lecture"
 statut: "à_faire"
 dépend_de: "LOT-01"
 ---
 
-# LOT-02 — implementation
+# LOT-02 — Cockpit — lecture
 
 ## But
 
-À compléter.
+Construire la lecture praticien du cockpit depuis les API publiques de Mon
+équilibre, sans réimplémenter les calculs.
 
 ## Résultat observable
 
-À compléter.
+La fiche affiche PatientHeader, radar retenu, 12 besoins, preuves A/B/C/D,
+cinq objets cliniques et momentum comparable.
 
 ## Périmètre
 
-À compléter.
+- composants de lecture du cockpit ;
+- second niveau pour sources, limites et détails ;
+- états non mesuré, chargement, vide et erreur.
 
 ## Hors périmètre
 
-À compléter.
+- décision et protocole ;
+- recalcul de Mon équilibre ;
+- exposition patient des notes internes.
 
 ## Fichiers probables
 
-À compléter.
+- `web/src/lib/equilibre/`
+- fiche patient praticien
+- mécanisme `TwoLevelReading` fourni par HC-F
 
 ## Interdits
 
@@ -44,11 +52,14 @@ dépend_de: "LOT-01"
 
 ## Tests
 
-À compléter.
+Tests unitaires des adaptateurs, tests composants et E2E praticien ciblé.
 
 ## Critères de done
 
-À compléter.
+- score identique avant/après adaptation ;
+- provenance et limites visibles ;
+- aucun calcul dupliqué ;
+- navigation clavier et contraste conformes.
 
 ## Résultats
 

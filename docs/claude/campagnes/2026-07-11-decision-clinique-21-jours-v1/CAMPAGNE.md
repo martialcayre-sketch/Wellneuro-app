@@ -98,7 +98,7 @@ confirmation distincte (si le protocole exige un modèle, lot dédié
 ## Definition of Done
 
 - [ ] Flux complet comprendre → décider → 3 actions → prévisualiser → valider
-      démontré sur Sophie Nicola, Jennifer Martin et Michel Dogne.
+      démontré sur Sophie Nicola, Jennifer Martin et Michel Dogné.
 - [ ] Chaque élément de décision porte sa provenance A/B/C/D ou « non mesuré ».
 - [ ] Données manquantes et discordances visibles avant la décision, jamais
       après.

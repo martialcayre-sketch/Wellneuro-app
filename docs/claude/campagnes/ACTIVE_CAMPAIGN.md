@@ -17,6 +17,9 @@
    HC-F sont satisfaites (voir
    `2026-07-12-hybrid-clinical-experience-questionnaires/HANDOFF_FUTURES_IMPLANTATIONS.md`).
    Parallélisables. Démarrage sur instruction explicite.
+2. La proposition WN Ultimate v2 reste traçable sous
+   `docs/claude/propositions/wn-ultimate-v2/` ; seuls les arbitrages promus
+   dans les documents normatifs sont exécutables.
 
 ## Organisation Git cible
 
@@ -27,7 +30,7 @@
 ## Prochaine action
 
 ```bash
-/wn-campaign status
+/wn-campaign next
 ```
 
 ## Navigation
@@ -36,3 +39,4 @@
 - [Registre de frontières](../REGISTRE_FRONTIERES.md)
 - [HC-F (terminée)](2026-07-12-hybrid-clinical-experience-questionnaires/CAMPAGNE.md)
 - [C1](2026-07-11-decision-clinique-21-jours-v1/CAMPAGNE.md)
+- [Proposition WN Ultimate v2](../propositions/wn-ultimate-v2/README.md)

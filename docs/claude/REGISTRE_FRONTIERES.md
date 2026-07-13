@@ -125,8 +125,8 @@
   Playwright), tokens D1 amendés.
 - **Décisions actées** : A2, A5 ; LOT-03 historique dégonflé (cockpit, carte,
   timeline, comparateur, constructeur → intrants C1/C2).
-- **Statut** : compilée (cette livraison), exécution après merge PR #31
-  amendée.
+- **Statut** : en cours au 2026-07-13 ; LOT-00 à LOT-04 terminés, LOT-05
+  gouvernance et handoff suivant.
 
 ### QX — Expérience questionnaires (`2026-07-12-qx-experience-questionnaires`)
 
@@ -234,6 +234,11 @@
   jamais automatiquement un questionnaire validé.
 
 ### Différés (hors campagnes, entrées de registre)
+
+> **Proposition WN Ultimate v2** : intégrée en quarantaine documentaire dans
+> `docs/claude/propositions/wn-ultimate-v2/`. Elle ne modifie pas les
+> frontières de ce registre. En particulier, sa répartition C5A/C5B et son
+> journal alimentaire exigent un arbitrage produit/clinique distinct.
 
 - **Hybrid Patient** (ex-E4) : dashboard patient, frise longitudinale
   (contrat A4), carnet de bord. Dépend de HC-F + C1 + auth.

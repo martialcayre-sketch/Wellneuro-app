@@ -1,6 +1,6 @@
 # Campagnes WellNeuro — index
 
-> Mis à jour le 2026-07-12. Les frontières, invariants et arbitrages sont
+> Mis à jour le 2026-07-13. Les frontières, invariants et arbitrages sont
 > dans `docs/claude/REGISTRE_FRONTIERES.md` (source normative). La séquence
 > est dans `PROGRAMME_WELLNEURO_3_0.md`. Statuts « cadrée » = décisions et
 > frontières figées, lots détaillés compilés en N+1 (une campagne d'avance).
@@ -9,7 +9,7 @@
 |---|---|---|---|---|
 | C0 | Alignement documentaire | **terminée** | — | 4 |
 | C0-UX | Shell praticien 3.0 | **terminée** — socle livré, direction visuelle remplacée par HC-F | C0 | 6 |
-| HC-F | Hybrid Clinical Foundation | à_faire (PR #31 amendée) | C0-UX | 6 |
+| HC-F | Hybrid Clinical Foundation | **en cours — 5/6 lots terminés** | C0-UX | 6 |
 | C1 | Décision clinique 21 jours V1 | compilée, à_faire | HC-F LOT-02 | 7 |
 | QX | Expérience questionnaires | compilée, à_faire | HC-F LOT-01+04 | 5 |
 | C3 | Documents contextuels multi-destinataires V1 | cadrée | C1 | N+1 |
@@ -22,6 +22,10 @@
 ## Campagne active
 
 Voir : [ACTIVE_CAMPAIGN.md](ACTIVE_CAMPAIGN.md)
+
+Le pack WN Ultimate v2 est intégré comme proposition non exécutable dans
+[`../propositions/wn-ultimate-v2/`](../propositions/wn-ultimate-v2/README.md).
+Il ne change pas l'ordre des campagnes sans arbitrage explicite.
 
 ## Convention de travail
 
