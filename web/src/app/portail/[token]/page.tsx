@@ -1,19 +1,83 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import type { PortailSessionResponse, PortailConsultationState } from '@/app/api/portail/session/route';
 import { MOTIFS_CONSULTATION } from '@/lib/consultation/motifs';
 import { FICHE_SECTIONS, FICHE_CHAMPS_REQUIS } from '@/lib/consultation/fiche';
 import { ANAMNESE_SECTIONS, ANAMNESE_CHAMP_REQUIS } from '@/lib/consultation/anamnese';
 import type { AnamneseChamp, AnamneseValeurs } from '@/lib/consultation/anamnese';
+import { PatientCard } from '@/components/patient/ui/PatientCard';
+import { PatientButton } from '@/components/patient/ui/PatientButton';
+import { PatientField, patientInputClassName } from '@/components/patient/ui/PatientField';
+import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import { SaveStatusIndicator, type SaveError } from '@/components/patient/SaveStatusIndicator';
+import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
 
 type Verified = Extract<PortailSessionResponse, { ok: true }>;
 
-const card = 'bg-white rounded-2xl shadow-sm border border-border p-8';
-const inputCls = 'w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary';
-const btnCls = 'w-full py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity';
-const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
+// ─── autosave locale minimale (gate/fiche/anamnèse n'ont pas de idAssignation
+// avant l'onboarding — clé scopée par token plutôt que par assignation, sur le
+// même principe que web/src/lib/questionnaire-draft.ts). ────────────────────
+type WizardDraftKind = 'fiche' | 'anamnese';
+
+// Fiche/anamnèse contiennent des données d'identité et de santé (plus
+// sensibles qu'un simple brouillon de réponses) sur un lien token parfois
+// utilisé depuis un appareil partagé : le brouillon local expire donc après
+// un délai, au lieu d'être conservé indéfiniment.
+const WIZARD_DRAFT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
+function wizardDraftKey(kind: WizardDraftKind, token: string): string {
+  return `wellneuro:wizard-draft:${kind}:${token}`;
+}
+function wizardDraftSavedAtKey(kind: WizardDraftKind, token: string): string {
+  return `wellneuro:wizard-draft-meta:${kind}:${token}`;
+}
+
+function readWizardDraft<T>(kind: WizardDraftKind, token: string): T | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const savedAt = readWizardDraftSavedAt(kind, token);
+    if (savedAt && Date.now() - savedAt.getTime() > WIZARD_DRAFT_TTL_MS) {
+      clearWizardDraft(kind, token);
+      return null;
+    }
+    const raw = window.localStorage.getItem(wizardDraftKey(kind, token));
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+function writeWizardDraft(kind: WizardDraftKind, token: string, value: unknown): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(wizardDraftKey(kind, token), JSON.stringify(value));
+    window.localStorage.setItem(wizardDraftSavedAtKey(kind, token), new Date().toISOString());
+  } catch {
+    /* quota / mode privé : on n'interrompt pas la saisie */
+  }
+}
+function readWizardDraftSavedAt(kind: WizardDraftKind, token: string): Date | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(wizardDraftSavedAtKey(kind, token));
+    if (!raw) return null;
+    const date = new Date(raw);
+    return Number.isNaN(date.getTime()) ? null : date;
+  } catch {
+    return null;
+  }
+}
+function clearWizardDraft(kind: WizardDraftKind, token: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(wizardDraftKey(kind, token));
+    window.localStorage.removeItem(wizardDraftSavedAtKey(kind, token));
+  } catch {
+    /* no-op */
+  }
+}
 
 // ─── étape : email gate ─────────────────────────────────────────────────────
 function EmailGate({ token, onVerified }: { token: string; onVerified: (email: string, data: Verified) => void }) {
@@ -21,7 +85,7 @@ function EmailGate({ token, onVerified }: { token: string; onVerified: (email: s
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -39,27 +103,26 @@ function EmailGate({ token, onVerified }: { token: string; onVerified: (email: s
     } finally {
       setLoading(false);
     }
-  }, [token, email, onVerified]);
+  };
 
   return (
-    <div className="w-full max-w-md">
-      <div className={card}>
-        <div className="text-center mb-6">
-          <h1 className="text-xl font-bold text-gray-900">Votre espace patient</h1>
-          <p className="text-gray-500 text-sm mt-2">Confirmez l’adresse email enregistrée par votre praticien pour accéder à votre espace.</p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className={labelCls}>Adresse email</label>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoFocus placeholder="votre@email.fr" className={inputCls} />
-          </div>
-          {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error}</p>}
-          <button type="submit" disabled={loading || !email.trim()} className={btnCls}>
-            {loading ? 'Vérification…' : 'Accéder à mon espace'}
-          </button>
-        </form>
-      </div>
-    </div>
+    <PatientCard as="form" onSubmit={handleSubmit} maxWidth="md" className="space-y-4">
+      <PatientPageHeader
+        center
+        title="Votre espace patient"
+        subtitle="Confirmez l’adresse email enregistrée par votre praticien pour accéder à votre espace."
+      />
+      <PatientField label="Adresse email">
+        <input
+          type="email" value={email} onChange={e => setEmail(e.target.value)}
+          required autoFocus placeholder="votre@email.fr" className={patientInputClassName}
+        />
+      </PatientField>
+      {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
+      <PatientButton type="submit" variant="primary" disabled={!email.trim()} loading={loading} loadingLabel="Vérification…" className="w-full">
+        Accéder à mon espace
+      </PatientButton>
+    </PatientCard>
   );
 }
 
@@ -89,65 +152,82 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
   };
 
   return (
-    <div className="w-full max-w-2xl">
-      <div className={card}>
-        <h1 className="text-xl font-bold text-gray-900 mb-4">Avant de commencer</h1>
-        <div className="space-y-4 text-sm text-gray-700 leading-relaxed">
-          <p>
-            Votre praticien vous ouvre l’accès à votre espace patient Wellneuro, un outil
-            d’accompagnement bien-être et de suivi personnalisé.
-          </p>
-          <div>
-            <p className="font-semibold text-gray-900">Ce que nous collectons</p>
-            <p>Vos renseignements (situation, mode de vie), votre anamnèse et vos réponses aux questionnaires de suivi, ainsi que les dates associées.</p>
-          </div>
-          <div>
-            <p className="font-semibold text-gray-900">Pourquoi</p>
-            <p>Ces informations permettent à votre praticien de mieux comprendre votre situation et de vous proposer un accompagnement adapté. Il ne s’agit pas d’un outil de diagnostic médical.</p>
-          </div>
-          <div>
-            <p className="font-semibold text-gray-900">Qui peut voir vos informations</p>
-            <p>Seul votre praticien y a accès. Elles ne sont partagées avec aucun tiers.</p>
-          </div>
-          <div>
-            <p className="font-semibold text-gray-900">Vos droits</p>
-            <ul className="list-disc list-inside space-y-1">
-              <li>Accéder à vos informations à tout moment via ce même lien.</li>
-              <li>Demander la modification ou la suppression de vos données auprès de votre praticien.</li>
-              <li>Retirer votre consentement à tout moment.</li>
-            </ul>
-          </div>
+    <PatientCard>
+      <PatientPageHeader title="Avant de commencer" />
+      <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
+        <p>
+          Votre praticien vous ouvre l’accès à votre espace patient Wellneuro, un outil
+          d’accompagnement bien-être et de suivi personnalisé.
+        </p>
+        <div>
+          <p className="font-semibold text-foreground">Ce que nous collectons</p>
+          <p>Vos renseignements (situation, mode de vie), votre anamnèse et vos réponses aux questionnaires de suivi, ainsi que les dates associées.</p>
         </div>
-        <label className="flex items-start gap-3 mt-6 cursor-pointer">
-          <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} className="mt-1 accent-primary" />
-          <span className="text-sm text-gray-800">
-            J’ai lu ces informations et j’accepte que mes données soient collectées et utilisées dans les conditions décrites ci-dessus.
-          </span>
-        </label>
-        {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2 mt-4">{error}</p>}
-        <button type="button" onClick={handleContinue} disabled={!checked || loading} className={`${btnCls} mt-6`}>
-          {loading ? 'Enregistrement…' : 'Donner mon consentement'}
-        </button>
+        <div>
+          <p className="font-semibold text-foreground">Pourquoi</p>
+          <p>Ces informations permettent à votre praticien de mieux comprendre votre situation et de vous proposer un accompagnement adapté. Il ne s’agit pas d’un outil de diagnostic médical.</p>
+        </div>
+        <div>
+          <p className="font-semibold text-foreground">Qui peut voir vos informations</p>
+          <p>Seul votre praticien y a accès. Elles ne sont partagées avec aucun tiers.</p>
+        </div>
+        <div>
+          <p className="font-semibold text-foreground">Vos droits</p>
+          <ul className="list-disc list-inside space-y-1">
+            <li>Accéder à vos informations à tout moment via ce même lien.</li>
+            <li>Demander la modification ou la suppression de vos données auprès de votre praticien.</li>
+            <li>Retirer votre consentement à tout moment.</li>
+          </ul>
+        </div>
       </div>
-    </div>
+      <label className="flex items-start gap-3 mt-6 cursor-pointer">
+        <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} className="mt-1 accent-primary" />
+        <span className="text-sm text-foreground">
+          J’ai lu ces informations et j’accepte que mes données soient collectées et utilisées dans les conditions décrites ci-dessus.
+        </span>
+      </label>
+      {error && <div className="mt-4"><PatientInlineMessage tone="error">{error}</PatientInlineMessage></div>}
+      <PatientButton
+        variant="primary" disabled={!checked} loading={loading} loadingLabel="Enregistrement…"
+        onClick={handleContinue} className="w-full mt-6"
+      >
+        Donner mon consentement
+      </PatientButton>
+    </PatientCard>
   );
 }
 
-// ─── étape : fiche signalétique ─────────────────────────────────────────────
+// ─── étape : fiche signalétique (paginée section par section) ──────────────
 function FicheForm({ token, email, onDone }: {
   token: string; email: string; onDone: () => void;
 }) {
-  const [valeurs, setValeurs] = useState<Record<string, string>>({});
+  const [valeurs, setValeurs] = useState<Record<string, string>>(() => readWizardDraft('fiche', token) ?? {});
   const [mentions, setMentions] = useState(false);
+  const [sectionIndex, setSectionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [savedAt, setSavedAt] = useState<Date | null>(() => readWizardDraftSavedAt('fiche', token));
+  const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
+  const premierRendu = useRef(true);
+
+  useEffect(() => {
+    if (premierRendu.current) { premierRendu.current = false; return; }
+    writeWizardDraft('fiche', token, valeurs);
+    setSavedAt(readWizardDraftSavedAt('fiche', token));
+  }, [valeurs, token]);
 
   const set = (id: string, v: string) => setValeurs(prev => ({ ...prev, [id]: v }));
   const requisManquant = FICHE_CHAMPS_REQUIS.some(id => !(valeurs[id] ?? '').trim());
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const section = FICHE_SECTIONS[sectionIndex];
+  const isLastSection = sectionIndex === FICHE_SECTIONS.length - 1;
+  const sectionRequisManquant = section.champs.some(
+    champ => FICHE_CHAMPS_REQUIS.includes(champ.id) && !(valeurs[champ.id] ?? '').trim(),
+  );
+
+  const soumettre = async () => {
     setError('');
+    setSaveError(undefined);
     setLoading(true);
     try {
       const res = await fetch('/api/portail/fiche', {
@@ -156,65 +236,88 @@ function FicheForm({ token, email, onDone }: {
         body: JSON.stringify({ token, email, fiche: valeurs }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
-      if (!data.ok) setError(data.error ?? 'Erreur. Réessayez.');
-      else onDone();
+      if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); setSaveError('submission-incomplete'); }
+      else { clearWizardDraft('fiche', token); onDone(); }
     } catch {
       setError('Erreur réseau. Réessayez.');
+      setSaveError('network');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSectionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLastSection) { setSectionIndex(i => i + 1); window.scrollTo(0, 0); return; }
+    void soumettre();
+  };
+
   return (
-    <div className="w-full max-w-2xl">
-      <form onSubmit={handleSubmit} className={`${card} space-y-6`}>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Fiche de renseignements</h1>
-          <p className="text-gray-500 text-sm mt-1">Ces informations aident votre praticien à personnaliser votre suivi.</p>
-        </div>
+    <PatientCard as="form" onSubmit={handleSectionSubmit} className="space-y-6">
+      <div>
+        <div className="text-xs text-muted-foreground/70 mb-2">Section {sectionIndex + 1} / {FICHE_SECTIONS.length}</div>
+        <PatientPageHeader
+          title="Fiche de renseignements"
+          subtitle="Ces informations aident votre praticien à personnaliser votre suivi."
+        />
+      </div>
 
-        {FICHE_SECTIONS.map(section => (
-          <fieldset key={section.id} className="space-y-3">
-            <legend className="text-sm font-semibold text-gray-900">{section.titre}</legend>
-            {section.champs.map(champ => {
-              const requis = FICHE_CHAMPS_REQUIS.includes(champ.id);
-              return (
-                <div key={champ.id}>
-                  <label className={labelCls}>{champ.label}{requis && ' *'}</label>
-                  {champ.type === 'select' ? (
-                    <select value={valeurs[champ.id] ?? ''} onChange={e => set(champ.id, e.target.value)} required={requis} className={inputCls}>
-                      <option value="">Sélectionnez…</option>
-                      {(champ.options ?? []).map(o => <option key={o} value={o}>{o}</option>)}
-                    </select>
-                  ) : champ.type === 'textarea' ? (
-                    <textarea value={valeurs[champ.id] ?? ''} onChange={e => set(champ.id, e.target.value)} placeholder={champ.placeholder} rows={3} className={inputCls} />
-                  ) : (
-                    <input type="text" value={valeurs[champ.id] ?? ''} onChange={e => set(champ.id, e.target.value)} required={requis} placeholder={champ.placeholder} className={inputCls} />
-                  )}
-                </div>
-              );
-            })}
-          </fieldset>
-        ))}
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-semibold text-foreground">{section.titre}</legend>
+        {section.champs.map(champ => {
+          const requis = FICHE_CHAMPS_REQUIS.includes(champ.id);
+          return (
+            <PatientField key={champ.id} label={champ.label} requis={requis}>
+              {champ.type === 'select' ? (
+                <select value={valeurs[champ.id] ?? ''} onChange={e => set(champ.id, e.target.value)} required={requis} className={patientInputClassName}>
+                  <option value="">Sélectionnez…</option>
+                  {(champ.options ?? []).map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              ) : champ.type === 'textarea' ? (
+                <textarea value={valeurs[champ.id] ?? ''} onChange={e => set(champ.id, e.target.value)} placeholder={champ.placeholder} rows={3} className={patientInputClassName} />
+              ) : (
+                <input type="text" value={valeurs[champ.id] ?? ''} onChange={e => set(champ.id, e.target.value)} required={requis} placeholder={champ.placeholder} className={patientInputClassName} />
+              )}
+            </PatientField>
+          );
+        })}
+      </fieldset>
 
+      {isLastSection && (
         <label className="flex items-start gap-3 cursor-pointer">
           <input type="checkbox" checked={mentions} onChange={e => setMentions(e.target.checked)} className="mt-1 accent-primary" />
-          <span className="text-sm text-gray-700">
+          <span className="text-sm text-muted-foreground">
             Je certifie l’exactitude des informations fournies. Elles sont traitées de manière confidentielle et
             uniquement dans le cadre de mon suivi (données personnelles, sans finalité de diagnostic médical).
           </span>
         </label>
+      )}
 
-        {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error}</p>}
-        <button type="submit" disabled={loading || requisManquant || !mentions} className={btnCls}>
-          {loading ? 'Enregistrement…' : 'Continuer vers l’anamnèse'}
-        </button>
-      </form>
-    </div>
+      {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
+      <SaveStatusIndicator savedAt={savedAt} error={saveError} />
+
+      <div className="flex gap-3">
+        {sectionIndex > 0 && (
+          <PatientButton
+            variant="neutral" className="flex-1"
+            onClick={() => { setSectionIndex(i => i - 1); window.scrollTo(0, 0); }}
+          >
+            ← Précédent
+          </PatientButton>
+        )}
+        <PatientButton
+          type="submit" variant="primary" className="flex-1"
+          disabled={isLastSection ? (loading || requisManquant || !mentions) : sectionRequisManquant}
+          loading={loading} loadingLabel="Enregistrement…"
+        >
+          {isLastSection ? 'Continuer vers l’anamnèse' : 'Suivant →'}
+        </PatientButton>
+      </div>
+    </PatientCard>
   );
 }
 
-// ─── étape : anamnèse hiérarchisée ──────────────────────────────────────────
+// ─── étape : anamnèse hiérarchisée (paginée section par section) ───────────
 // Rendu d'un champ simple (text / textarea / radio / checkbox-multi).
 function ChampSimple({ champ, valeur, onChange, requis }: {
   champ: AnamneseChamp;
@@ -225,8 +328,7 @@ function ChampSimple({ champ, valeur, onChange, requis }: {
   if (champ.type === 'radio') {
     const courant = typeof valeur === 'string' ? valeur : '';
     return (
-      <div>
-        <label className={labelCls}>{champ.label}{requis && ' *'}</label>
+      <PatientField label={champ.label} requis={requis}>
         <div className="flex flex-wrap gap-2">
           {(champ.options ?? []).map(opt => {
             const actif = courant === opt;
@@ -235,14 +337,14 @@ function ChampSimple({ champ, valeur, onChange, requis }: {
                 key={opt}
                 type="button"
                 onClick={() => onChange(actif ? '' : opt)}
-                className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${actif ? 'bg-primary text-primary-foreground border-primary' : 'bg-white text-gray-700 border-gray-300 hover:border-primary/60'}`}
+                className={`px-3 py-1.5 rounded-lg border text-sm transition-colors ${actif ? 'bg-primary text-primary-foreground border-primary' : 'bg-surface text-muted-foreground border-border hover:border-primary/60'}`}
               >
                 {opt}
               </button>
             );
           })}
         </div>
-      </div>
+      </PatientField>
     );
   }
 
@@ -251,40 +353,50 @@ function ChampSimple({ champ, valeur, onChange, requis }: {
     const toggle = (opt: string) =>
       onChange(selection.includes(opt) ? selection.filter(o => o !== opt) : [...selection, opt]);
     return (
-      <div>
-        <label className={labelCls}>{champ.label}{requis && ' *'}</label>
+      <PatientField label={champ.label} requis={requis}>
         <div className="flex flex-col gap-1.5">
           {(champ.options ?? []).map(opt => (
-            <label key={opt} className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
+            <label key={opt} className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer">
               <input type="checkbox" checked={selection.includes(opt)} onChange={() => toggle(opt)} className="mt-0.5 accent-primary" />
               <span>{opt}</span>
             </label>
           ))}
         </div>
-      </div>
+      </PatientField>
     );
   }
 
   const str = typeof valeur === 'string' ? valeur : '';
   return (
-    <div>
-      <label className={labelCls}>{champ.label}{requis && ' *'}{champ.suffixe && <span className="text-gray-400 font-normal"> ({champ.suffixe})</span>}</label>
+    <PatientField label={champ.label} requis={requis} suffixe={champ.suffixe}>
       {champ.type === 'textarea' ? (
-        <textarea value={str} onChange={e => onChange(e.target.value)} required={requis} placeholder={champ.placeholder} rows={3} className={inputCls} />
+        <textarea value={str} onChange={e => onChange(e.target.value)} required={requis} placeholder={champ.placeholder} rows={3} className={patientInputClassName} />
       ) : (
-        <input type="text" value={str} onChange={e => onChange(e.target.value)} required={requis} placeholder={champ.placeholder} className={inputCls} />
+        <input type="text" value={str} onChange={e => onChange(e.target.value)} required={requis} placeholder={champ.placeholder} className={patientInputClassName} />
       )}
-    </div>
+    </PatientField>
   );
 }
 
 function AnamneseForm({ token, email, motifInitial, onDone }: {
   token: string; email: string; motifInitial: string | null; onDone: (premiereAssignation: string | null) => void;
 }) {
-  const [valeurs, setValeurs] = useState<AnamneseValeurs>({});
-  const [motif, setMotif] = useState(motifInitial ?? '');
+  type AnamneseDraft = { valeurs: AnamneseValeurs; motif: string };
+  const draft = readWizardDraft<AnamneseDraft>('anamnese', token);
+  const [valeurs, setValeurs] = useState<AnamneseValeurs>(() => draft?.valeurs ?? {});
+  const [motif, setMotif] = useState(() => draft?.motif ?? motifInitial ?? '');
+  const [sectionIndex, setSectionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [savedAt, setSavedAt] = useState<Date | null>(() => readWizardDraftSavedAt('anamnese', token));
+  const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
+  const premierRendu = useRef(true);
+
+  useEffect(() => {
+    if (premierRendu.current) { premierRendu.current = false; return; }
+    writeWizardDraft('anamnese', token, { valeurs, motif });
+    setSavedAt(readWizardDraftSavedAt('anamnese', token));
+  }, [valeurs, motif, token]);
 
   const setChamp = (id: string, v: string | string[]) => setValeurs(prev => ({ ...prev, [id]: v }));
 
@@ -308,9 +420,17 @@ function AnamneseForm({ token, email, motifInitial, onDone }: {
   const requisValeur = valeurs[ANAMNESE_CHAMP_REQUIS];
   const requisManquant = typeof requisValeur !== 'string' || !requisValeur.trim();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const section = ANAMNESE_SECTIONS[sectionIndex];
+  const isLastSection = sectionIndex === ANAMNESE_SECTIONS.length - 1;
+  const sectionRequisManquant = (section.champs ?? []).some(champ => {
+    if (champ.id !== ANAMNESE_CHAMP_REQUIS) return false;
+    const v = valeurs[champ.id];
+    return typeof v !== 'string' || !v.trim();
+  });
+
+  const soumettre = async () => {
     setError('');
+    setSaveError(undefined);
     setLoading(true);
     try {
       const res = await fetch('/api/portail/valider', {
@@ -319,117 +439,134 @@ function AnamneseForm({ token, email, motifInitial, onDone }: {
         body: JSON.stringify({ token, email, anamnese: valeurs, motif }),
       });
       const data = (await res.json()) as { ok: boolean; error?: string; premiereAssignation?: string | null };
-      if (!data.ok) setError(data.error ?? 'Erreur. Réessayez.');
-      else onDone(data.premiereAssignation ?? null);
+      if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); setSaveError('submission-incomplete'); }
+      else { clearWizardDraft('anamnese', token); onDone(data.premiereAssignation ?? null); }
     } catch {
       setError('Erreur réseau. Réessayez.');
+      setSaveError('network');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <div className="w-full max-w-2xl">
-      <form onSubmit={handleSubmit} className={`${card} space-y-6`}>
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Anamnèse</h1>
-          <p className="text-gray-500 text-sm mt-1">Décrivez votre situation. Ces éléments complètent vos questionnaires et guideront votre accompagnement.</p>
-        </div>
+  const handleSectionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLastSection) { setSectionIndex(i => i + 1); window.scrollTo(0, 0); return; }
+    void soumettre();
+  };
 
-        <div>
-          <label className={labelCls}>Motif de consultation</label>
-          <select value={motif} onChange={e => setMotif(e.target.value)} className={inputCls}>
+  return (
+    <PatientCard as="form" onSubmit={handleSectionSubmit} className="space-y-6">
+      <div>
+        <div className="text-xs text-muted-foreground/70 mb-2">Section {sectionIndex + 1} / {ANAMNESE_SECTIONS.length}</div>
+        <PatientPageHeader
+          title="Anamnèse"
+          subtitle="Décrivez votre situation. Ces éléments complètent vos questionnaires et guideront votre accompagnement."
+        />
+      </div>
+
+      {sectionIndex === 0 && (
+        <PatientField label="Motif de consultation">
+          <select value={motif} onChange={e => setMotif(e.target.value)} className={patientInputClassName}>
             <option value="">Sélectionnez un motif (optionnel)</option>
             {MOTIFS_CONSULTATION.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
-        </div>
+        </PatientField>
+      )}
 
-        {ANAMNESE_SECTIONS.map(section => (
-          <fieldset key={section.id} className="space-y-4">
-            <legend className="text-sm font-semibold text-gray-900">{section.titre}</legend>
-            {section.description && <p className="text-xs text-gray-500 -mt-2">{section.description}</p>}
+      <fieldset className="space-y-4">
+        <legend className="text-sm font-semibold text-foreground">{section.titre}</legend>
+        {section.description && <p className="text-xs text-muted-foreground/70 -mt-2">{section.description}</p>}
 
-            {(section.champs ?? []).map(champ => (
-              <ChampSimple
-                key={champ.id}
-                champ={champ}
-                valeur={valeurs[champ.id] as string | string[] | undefined}
-                onChange={v => setChamp(champ.id, v)}
-                requis={champ.id === ANAMNESE_CHAMP_REQUIS}
-              />
-            ))}
-
-            {(section.groupes ?? []).map(groupe => (
-              <div key={groupe.id} className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{groupe.label}</p>
-                  {groupe.description && <p className="text-xs text-gray-500">{groupe.description}</p>}
-                </div>
-                {entrees(groupe.id).map((entree, index) => (
-                  <div key={index} className="rounded-lg border border-gray-200 p-3 space-y-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      {groupe.champs.map(champ => (
-                        <div key={champ.id}>
-                          <label className="block text-xs text-gray-500 mb-1">{champ.label}</label>
-                          <input
-                            type="text"
-                            value={entree[champ.id] ?? ''}
-                            onChange={e => setEntreeChamp(groupe.id, index, champ.id, e.target.value)}
-                            className={inputCls}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                    <button type="button" onClick={() => supprimerEntree(groupe.id, index)} className="text-xs text-red-500 hover:underline">
-                      Supprimer cette ligne
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => ajouterEntree(groupe.id)}
-                  className="text-sm text-primary border border-primary/30 rounded-lg px-3 py-1.5 hover:bg-primary/10"
-                >
-                  + {groupe.ajoutLabel}
-                </button>
-              </div>
-            ))}
-          </fieldset>
+        {(section.champs ?? []).map(champ => (
+          <ChampSimple
+            key={champ.id}
+            champ={champ}
+            valeur={valeurs[champ.id] as string | string[] | undefined}
+            onChange={v => setChamp(champ.id, v)}
+            requis={champ.id === ANAMNESE_CHAMP_REQUIS}
+          />
         ))}
 
-        {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error}</p>}
-        <button type="submit" disabled={loading || requisManquant} className={btnCls}>
-          {loading ? 'Validation…' : 'Valider et accéder à mes questionnaires'}
-        </button>
-      </form>
-    </div>
+        {(section.groupes ?? []).map(groupe => (
+          <div key={groupe.id} className="space-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">{groupe.label}</p>
+              {groupe.description && <p className="text-xs text-muted-foreground/70">{groupe.description}</p>}
+            </div>
+            {entrees(groupe.id).map((entree, index) => (
+              <div key={index} className="rounded-lg border border-border p-3 space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {groupe.champs.map(champ => (
+                    <div key={champ.id}>
+                      <label className="block text-xs text-muted-foreground/70 mb-1">{champ.label}</label>
+                      <input
+                        type="text"
+                        value={entree[champ.id] ?? ''}
+                        onChange={e => setEntreeChamp(groupe.id, index, champ.id, e.target.value)}
+                        className={patientInputClassName}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <PatientButton variant="danger-text" onClick={() => supprimerEntree(groupe.id, index)}>
+                  Supprimer cette ligne
+                </PatientButton>
+              </div>
+            ))}
+            <PatientButton variant="ghost" onClick={() => ajouterEntree(groupe.id)}>
+              + {groupe.ajoutLabel}
+            </PatientButton>
+          </div>
+        ))}
+      </fieldset>
+
+      {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
+      <SaveStatusIndicator savedAt={savedAt} error={saveError} />
+
+      <div className="flex gap-3">
+        {sectionIndex > 0 && (
+          <PatientButton
+            variant="neutral" className="flex-1"
+            onClick={() => { setSectionIndex(i => i - 1); window.scrollTo(0, 0); }}
+          >
+            ← Précédent
+          </PatientButton>
+        )}
+        <PatientButton
+          type="submit" variant="primary" className="flex-1"
+          disabled={isLastSection ? (loading || requisManquant) : sectionRequisManquant}
+          loading={loading} loadingLabel="Validation…"
+        >
+          {isLastSection ? 'Valider et accéder à mes questionnaires' : 'Suivant →'}
+        </PatientButton>
+      </div>
+    </PatientCard>
   );
 }
 
 // ─── étape : terminé / accès questionnaires ─────────────────────────────────
 function DoneScreen({ token, premiereAssignation }: { token: string; premiereAssignation: string | null }) {
   return (
-    <div className="w-full max-w-md">
-      <div className={`${card} text-center`}>
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-50 mb-4">
-          <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Merci !</h2>
-        <p className="text-gray-600 text-sm leading-relaxed mb-6">
-          Vos renseignements ont bien été transmis à votre praticien.<br />
-          {premiereAssignation
-            ? 'Vos questionnaires de suivi sont maintenant disponibles.'
-            : 'Votre praticien mettra vos questionnaires à disposition prochainement.'}
-        </p>
-        {premiereAssignation && (
-          <a href={`/portail/${token}/questionnaires`} className={`${btnCls} inline-block`}>
-            Accéder à mes questionnaires
-          </a>
-        )}
+    <PatientCard maxWidth="md" className="text-center">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-status-success/10 mb-4">
+        <svg className="w-8 h-8 text-status-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
       </div>
-    </div>
+      <h2 className="text-xl font-bold text-foreground mb-2">Merci !</h2>
+      <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+        Vos renseignements ont bien été transmis à votre praticien.<br />
+        {premiereAssignation
+          ? 'Vos questionnaires de suivi sont maintenant disponibles.'
+          : 'Votre praticien mettra vos questionnaires à disposition prochainement.'}
+      </p>
+      {premiereAssignation && (
+        <a href={`/portail/${token}/questionnaires`} className="inline-block py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity">
+          Accéder à mes questionnaires
+        </a>
+      )}
+    </PatientCard>
   );
 }
 
@@ -471,42 +608,56 @@ export default function PortailPage() {
 
   if (step.name === 'consent') {
     return (
-      <ConsentScreen
-        token={token}
-        email={email}
-        onAccepted={() => {
-          const next = consultation ? { ...consultation, consentementDonne: true } : null;
-          setConsultation(next);
-          setStep(prochaineEtape(next, premiere));
-        }}
-      />
+      <div className="w-full max-w-2xl space-y-4">
+        <PatientJourneyProgress steps={buildJourneySteps(1)} />
+        <ConsentScreen
+          token={token}
+          email={email}
+          onAccepted={() => {
+            const next = consultation ? { ...consultation, consentementDonne: true } : null;
+            setConsultation(next);
+            setStep(prochaineEtape(next, premiere));
+          }}
+        />
+      </div>
     );
   }
 
   if (step.name === 'fiche') {
     return (
-      <FicheForm
-        token={token}
-        email={email}
-        onDone={() => {
-          const next = consultation ? { ...consultation, ficheRemplie: true } : null;
-          setConsultation(next);
-          setStep(prochaineEtape(next, premiere));
-        }}
-      />
+      <div className="w-full max-w-2xl space-y-4">
+        <PatientJourneyProgress steps={buildJourneySteps(2)} />
+        <FicheForm
+          token={token}
+          email={email}
+          onDone={() => {
+            const next = consultation ? { ...consultation, ficheRemplie: true } : null;
+            setConsultation(next);
+            setStep(prochaineEtape(next, premiere));
+          }}
+        />
+      </div>
     );
   }
 
   if (step.name === 'anamnese') {
     return (
-      <AnamneseForm
-        token={token}
-        email={email}
-        motifInitial={consultation?.motif ?? null}
-        onDone={pa => setStep({ name: 'done', premiereAssignation: pa ?? premiere })}
-      />
+      <div className="w-full max-w-2xl space-y-4">
+        <PatientJourneyProgress steps={buildJourneySteps(3)} />
+        <AnamneseForm
+          token={token}
+          email={email}
+          motifInitial={consultation?.motif ?? null}
+          onDone={pa => setStep({ name: 'done', premiereAssignation: pa ?? premiere })}
+        />
+      </div>
     );
   }
 
-  return <DoneScreen token={token} premiereAssignation={step.premiereAssignation} />;
+  return (
+    <div className="w-full max-w-md space-y-4">
+      <PatientJourneyProgress steps={buildJourneySteps(4)} />
+      <DoneScreen token={token} premiereAssignation={step.premiereAssignation} />
+    </div>
+  );
 }

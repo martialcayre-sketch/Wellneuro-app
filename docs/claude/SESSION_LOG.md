@@ -201,3 +201,15 @@
 **Prochaine action prioritaire** : LOT-04 (portail patient clair), à autoriser explicitement.
 
 **Questions ouvertes** : aucune nouvelle.
+
+## [2026-07-13] — Campagne HC-F : LOT-04 clôturé (revue appliquée, GO)
+
+**Décisions prises** : LOT-04 implémenté (primitives partagées, pagination fiche/anamnèse, autosave wizard, hub orienté action, dialogs accessibles, confort de lecture). Revue indépendante : 4 constats non bloquants corrigés — TTL 30 jours sur le brouillon wizard (RGPD), test unitaire `portail-visite.test.ts` ajouté, garde-fou d'annulation restauré dans le hub, reset `status='loading'` sur Réessayer du dispatcher. Second passage `/wn-review` : verdict **GO**, 2 constats résiduels non bloquants acceptés (brouillon non chiffré, validation de forme JSON manquante).
+
+**Validations exécutées** : type-check, Vitest (14/14 fichiers, 77/77 tests), eslint, check_no_secrets verts ; e2e Playwright non exécutable dans ce sandbox (blocage réseau polices Google, pré-existant, documenté).
+
+**Options écartées** : rejouer l'e2e après les correctifs — aucune information nouvelle attendue, aucun ne touche les polices/`layout.tsx`.
+
+**Prochaine action prioritaire** : revalidation e2e/manuelle humaine (mobile/zoom/clavier/lecteur d'écran/thème/prévisualisation) avant d'autoriser LOT-05.
+
+**Questions ouvertes** : aucune nouvelle.

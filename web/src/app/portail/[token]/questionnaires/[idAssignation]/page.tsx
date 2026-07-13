@@ -10,10 +10,15 @@ import { ConsentScreen } from '@/components/patient/ConsentScreen';
 import { ConsultationScreen } from '@/components/patient/ConsultationScreen';
 import { PlaintesForm } from '@/components/patient/PlaintesForm';
 import { GenericQuestionnaire } from '@/components/patient/GenericQuestionnaire';
+import { PatientCard } from '@/components/patient/ui/PatientCard';
+import { PatientErrorState } from '@/components/patient/PatientErrorState';
 
 type VerifiedData = Extract<PatientQuestionnaireResponse, { ok: true }>;
 
-// En-tête compact avec retour vers le hub.
+// En-tête compact avec retour vers le hub. Le badge reflète le statut réel de
+// l'assignation (HC-F LOT-04, Étape 8 : harmoniser lecture seule et
+// correction) — auparavant toujours "Transmis au praticien" même en
+// correction demandée, incohérent avec le badge déjà correct du hub.
 function EnTete({ token, titre, badge }: { token: string; titre: string; badge?: string }) {
   return (
     <div className="w-full max-w-2xl mb-4">
@@ -24,8 +29,8 @@ function EnTete({ token, titre, badge }: { token: string; titre: string; badge?:
         ← Mes questionnaires
       </a>
       <div className="flex items-center justify-between gap-3 mt-2">
-        <h1 className="text-lg font-bold text-gray-900 truncate">{titre}</h1>
-        {badge && <span className="text-xs text-gray-500 shrink-0">{badge}</span>}
+        <h1 className="text-lg font-bold text-foreground truncate">{titre}</h1>
+        {badge && <span className="text-xs text-muted-foreground shrink-0">{badge}</span>}
       </div>
     </div>
   );
@@ -42,6 +47,7 @@ export default function PortailQuestionnairePage() {
   const [vue, setVue] = useState<'principal' | 'equilibre' | 'equilibre-detail'>('principal');
 
   const charger = useCallback(async () => {
+    setStatus('loading');
     try {
       const res = await fetch(`/api/patient/questionnaire?id=${encodeURIComponent(idAssignation)}`);
       if (res.status === 400 || res.status === 401) {
@@ -67,11 +73,9 @@ export default function PortailQuestionnairePage() {
 
   if (status === 'loading') {
     return (
-      <div className="w-full max-w-2xl">
-        <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
-          <p className="text-gray-500 text-sm">Chargement du questionnaire…</p>
-        </div>
-      </div>
+      <PatientCard>
+        <p className="text-muted-foreground text-sm">Chargement du questionnaire…</p>
+      </PatientCard>
     );
   }
 
@@ -79,9 +83,12 @@ export default function PortailQuestionnairePage() {
     return (
       <div className="w-full max-w-2xl">
         <EnTete token={token} titre="Questionnaire" />
-        <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
-          <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error || 'Questionnaire introuvable.'}</p>
-        </div>
+        <PatientCard>
+          <PatientErrorState
+            message={error || 'Questionnaire introuvable.'}
+            onReessayer={() => void charger()}
+          />
+        </PatientCard>
       </div>
     );
   }
@@ -129,7 +136,11 @@ export default function PortailQuestionnairePage() {
     }
     return (
       <div className="w-full max-w-2xl">
-        <EnTete token={token} titre={assignation.titre} badge="Transmis au praticien" />
+        <EnTete
+          token={token}
+          titre={assignation.titre}
+          badge={assignation.statutReponses === 'modification_demandee' ? 'Correction demandée' : 'Transmis au praticien'}
+        />
         <ConsultationScreen
           idAssignation={assignation.idAssignation}
           statutReponses={assignation.statutReponses}
@@ -160,9 +171,12 @@ export default function PortailQuestionnairePage() {
     return (
       <div className="w-full max-w-2xl">
         <EnTete token={token} titre={assignation.titre} />
-        <div className="bg-white rounded-2xl shadow-sm border border-orange-100 p-8 text-center">
-          <p className="text-orange-700">Ce questionnaire n&apos;est pas encore disponible en ligne. Contactez votre praticien.</p>
-        </div>
+        <PatientCard className="text-center">
+          <PatientErrorState
+            message="Ce questionnaire n'est pas encore disponible en ligne."
+            aide="Contactez votre praticien pour en savoir plus."
+          />
+        </PatientCard>
       </div>
     );
   }

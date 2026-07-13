@@ -1,7 +1,7 @@
 ---
 id: "LOT-04-portail-patient-clair"
 titre: "Portail patient clair, confiance, reprise et confort"
-statut: "à_faire"
+statut: "terminé — revue appliquée, e2e Playwright à revalider hors sandbox"
 dépend_de: ["LOT-01"]
 ---
 
@@ -184,13 +184,41 @@ Le rendu utilisé par `Voir ce que recevra le patient` doit partager les mêmes 
 
 ## Done
 
-- [ ] Portail entièrement cohérent visuellement.
-- [ ] Parcours global compréhensible.
-- [ ] Hub orienté prochaine action.
-- [ ] Résumé de session fondé sur des états réels.
-- [ ] Sauvegarde et transmission clairement distinguées.
-- [ ] Confort de lecture simple et accessible.
-- [ ] États vides et erreurs actionnables.
-- [ ] Mobile et accessibilité validés.
-- [ ] Tests existants verts.
-- [ ] LOT-05 autorisé.
+- [x] Portail entièrement cohérent visuellement.
+- [x] Parcours global compréhensible.
+- [x] Hub orienté prochaine action.
+- [x] Résumé de session fondé sur des états réels.
+- [x] Sauvegarde et transmission clairement distinguées.
+- [x] Confort de lecture simple et accessible.
+- [x] États vides et erreurs actionnables.
+- [ ] Mobile et accessibilité validés — non vérifié visuellement (voir Résultats, limite d'environnement).
+- [ ] Tests existants verts — `type-check`/Vitest verts ; e2e Playwright non exécutable jusqu'au bout dans ce sandbox (voir Résultats).
+- [ ] LOT-05 autorisé — en attente de revalidation e2e/manuelle par un humain avant autorisation.
+
+## Résultats
+
+**Fichiers modifiés/créés** (voir diff complet pour le détail) :
+- Nouveaux composants partagés : `web/src/components/patient/ui/{PatientCard,PatientButton,PatientField,PatientInlineMessage,PatientPageHeader}.tsx`, `web/src/components/patient/{PatientJourneyProgress,SaveStatusIndicator,PatientErrorState,PatientConfirmDialog,ReadingComfortControl}.tsx`, `web/src/lib/portail-visite.ts`.
+- Modifiés : `web/src/lib/questionnaire-draft.ts` (horodatage additif), `web/src/app/globals.css` (tokens RGB status danger/success/warning pour les fonds teintés + règles confort de lecture), `web/tailwind.config.ts` (status.danger/success/warning passés en `rgb(... / <alpha-value>)`), `web/src/app/portail/layout.tsx`, `web/src/app/portail/[token]/page.tsx` (wizard : primitives, pagination interne fiche/anamnèse, autosave locale, repère de parcours), `web/src/app/portail/[token]/questionnaires/page.tsx` (hub : action recommandée, résumé de visite, sections secondaires repliables), `web/src/app/portail/[token]/questionnaires/[idAssignation]/page.tsx` (badge dynamique, états d'erreur), `web/src/components/patient/{ConsentScreen,ConsultationScreen,PlaintesForm,GenericQuestionnaire}.tsx`, `web/src/components/ui/Badge.tsx`.
+- `web/e2e/portail-parcours.spec.ts` mis à jour en continu (dialogs de confirmation, pagination fiche/anamnèse, ouverture des sections repliées) plutôt qu'en bloc final, conformément au séquencement prévu.
+
+**Décisions actées pendant l'implémentation** (cf. plan validé) : pagination interne section par section pour fiche/anamnèse ; 3 réglages de confort de lecture seulement (pas de contraste renforcé) ; autosave locale minimale ajoutée au wizard ; fusion des deux `ConsentScreen` limitée au chrome (textes légaux distincts conservés) ; bug mineur corrigé — le badge d'en-tête du dispatcher affichait toujours « Transmis au praticien », y compris en correction demandée.
+
+**Validations exécutées et vertes** : `npm run type-check`, `npm run test` (Vitest, 13 fichiers/71 tests), `bash scripts/check_no_secrets.sh`.
+
+**Écart / dette — validation e2e et manuelle bloquée par l'environnement** : le sandbox d'exécution de cette session n'a pas d'accès réseau sortant vers Google Fonts ; or `web/src/app/layout.tsx` (préexistant, hors périmètre de ce lot) charge Inter/Lora via `next/font/google`. Conséquence constatée : toute page de l'app ne termine jamais son chargement de polices dans ce sandbox, ce qui bloque les mécanismes d'attente de Playwright (capture d'écran, clic, `waitForResponse`) sur n'importe quelle route, praticien ou patient. Triangulé par trois vérifications indépendantes : (1) `npx playwright test e2e/portail-parcours.spec.ts` échoue à l'étape « Gate email » avec un timeout de 120 s en attendant la réponse de `/api/portail/session`, de façon identique sur ce lot et sur `main` non modifié (branche stashée puis restaurée pour le test) ; (2) un appel `curl` direct sur la même route répond correctement (403 attendu) en ~4 s, ce qui exclut un blocage serveur ; (3) un script Playwright autonome, hors suite de test, confirme que même une simple capture d'écran de la page gate se bloque sur « waiting for fonts to load ». Ce point est donc antérieur à HC-F et indépendant de ce lot — à traiter séparément (ex. self-host des polices ou config réseau du sandbox), pas dans le périmètre LOT-04.
+En conséquence : le parcours e2e complet, les vérifications manuelles navigateur (375 px, zoom 200 %, clavier, lecteur d'écran, thème forcé sombre, cohérence avec la prévisualisation praticien) n'ont pas pu être exécutées dans cette session. Le code a été relu attentivement (types stricts, textes préservés, contrats de props inchangés pour `ConsultationScreen`/`PatientPreview`) mais n'a pas été observé tourner dans un navigateur réel.
+
+**Effet de bord constaté et corrigé en cours de route** : plusieurs commandes (`npm run dev`, `npx playwright test`) ont déclenché un patch automatique de `web/package-lock.json` (dépendances SWC manquantes) ; ce fichier a été systématiquement restauré (`git checkout`) pour ne pas introduire une régénération de lockfile hors périmètre.
+
+**Décision de poursuite recommandée** : ne pas autoriser LOT-05 avant qu'un humain (ou une session avec accès réseau complet) ait rejoué `cd web && npm run test:e2e` et fait les vérifications manuelles listées dans le plan (mobile/zoom/clavier/lecteur d'écran/thème/prévisualisation praticien). Le code est prêt pour cette revalidation ; aucun blocage connu côté logique applicative.
+
+**Corrections appliquées suite à `/wn-review`** :
+- **RGPD** : le brouillon local du wizard (fiche/anamnèse, `web/src/app/portail/[token]/page.tsx`) contient des données d'identité/santé plus sensibles qu'un brouillon de réponses classique, sur un lien token parfois utilisé depuis un appareil partagé, et n'expirait jamais. Ajout d'une expiration de 30 jours (`WIZARD_DRAFT_TTL_MS`) : le brouillon expiré est purgé silencieusement à la prochaine lecture, sans changer le texte légal de `ConsentScreen` (hors périmètre de ce lot sans validation séparée) ni casser la reprise normale (délai largement suffisant pour reprendre une saisie interrompue).
+- **Couverture de test** : ajout de `web/src/lib/portail-visite.test.ts` (première visite sans instantané, nouveau questionnaire, correction demandée, déverrouillage, statut inchangé, isolation par token) — 6 tests, tous verts.
+- **Dette hub** : restauration du garde-fou d'annulation (`annuleRef`) dans `charger()` du hub questionnaires (`.../questionnaires/page.tsx`), perdu lors du passage à `useCallback` — une réponse tardive après démontage du composant n'écrase plus l'état.
+- **Dette dispatcher** : `charger()` de `.../questionnaires/[idAssignation]/page.tsx` repasse désormais `status` à `'loading'` au début de chaque tentative (y compris un « Réessayer ») : l'écran de chargement remplace l'écran d'erreur pendant la nouvelle requête, ce qui donne un retour visuel et empêche mécaniquement les clics multiples (le bouton disparaît avec l'écran d'erreur).
+
+**Validations post-correction** : `npm run type-check` (OK), `npm run test` (14 fichiers/77 tests verts, +1 fichier/+6 tests), `eslint` sur les fichiers touchés (aucune erreur), `bash scripts/check_no_secrets.sh` (OK), `web/package-lock.json` toujours propre. L'e2e Playwright n'a pas été rejoué : les 4 corrections ne touchent ni `layout.tsx` ni le chargement des polices, donc le blocage réseau sandbox documenté ci-dessus s'appliquerait de façon identique et n'apporterait aucune information nouvelle.
+
+**Verdict `/wn-review` final : GO.** Aucun constat bloquant. 2 constats résiduels non bloquants acceptés en l'état : le brouillon wizard reste non chiffré (mitigé par le TTL) ; `readWizardDraft` ne valide pas la forme du JSON parsé contrairement à `questionnaire-draft.ts` (incohérence mineure sans conséquence pratique). Le Go reste conditionné à la revalidation e2e/manuelle hors sandbox avant d'autoriser LOT-05.
