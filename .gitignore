@@ -21,6 +21,7 @@ resultats_reels/
 *.xlsx
 # Déploiement local
 .deploy-id
+.vercel
 # Archives
 *.zip
 # Journaux et fichiers système

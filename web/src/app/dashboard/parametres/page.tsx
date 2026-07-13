@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { User, ShieldCheck } from 'lucide-react';
 import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
 import { VERSION_PROMPT_SYNTHESE } from '@/lib/anthropic';
 
@@ -15,7 +16,10 @@ export default async function ParametresPage() {
       </div>
 
       <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Profil praticien</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
+          <User size={16} strokeWidth={2} className="text-muted-foreground" aria-hidden="true" />
+          Profil praticien
+        </h3>
         <dl className="text-sm">
           <div className="flex justify-between py-1.5 border-b border-border">
             <dt className="text-muted-foreground">Email</dt>
@@ -25,7 +29,10 @@ export default async function ParametresPage() {
       </div>
 
       <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Gouvernance clinique</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
+          <ShieldCheck size={16} strokeWidth={2} className="text-muted-foreground" aria-hidden="true" />
+          Gouvernance clinique
+        </h3>
         <dl className="text-sm">
           <div className="flex justify-between py-1.5 border-b border-border">
             <dt className="text-muted-foreground">Version du moteur d’équilibre</dt>
