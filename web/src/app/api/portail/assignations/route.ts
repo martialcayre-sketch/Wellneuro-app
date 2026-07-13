@@ -2,6 +2,13 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { readPatientSession } from '@/lib/patient-session';
 import { mapAssignationPatient, type AssignationPatient } from '@/lib/consultation/mapAssignation';
+import { logger } from '@/lib/observability/logger';
+import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import {
+  createRequestContext,
+  finalizeLogContext,
+  withCorrelationHeader,
+} from '@/lib/observability/requestContext';
 
 export type PortailAssignationsResponse =
   | {
@@ -13,13 +20,20 @@ export type PortailAssignationsResponse =
 
 // GET /api/portail/assignations — toutes les assignations du patient de la
 // session portail (cookie signé wn_portail). Alimente le hub « Mes questionnaires ».
-export async function GET(req: Request): Promise<NextResponse<PortailAssignationsResponse>> {
+export async function GET(req: Request): Promise<NextResponse> {
+  const requestContext = createRequestContext(req);
   const session = readPatientSession(req);
   if (!session) {
-    return NextResponse.json(
+    logger.security({
+      event: EVENT_CODES.PORTAIL_ASSIGNATIONS_UNAUTHORIZED,
+      domain: 'SECURITY',
+      message: 'Session portail absente ou expirée',
+      context: finalizeLogContext(requestContext, { statusCode: 401, retryable: false }),
+    });
+    return withCorrelationHeader(NextResponse.json(
       { ok: false, reason: 'unauthorized', error: 'Session expirée. Reconnectez-vous depuis votre lien.' },
       { status: 401 },
-    );
+    ), requestContext);
   }
 
   try {
@@ -29,10 +43,16 @@ export async function GET(req: Request): Promise<NextResponse<PortailAssignation
     });
     // Le patient doit toujours être actif et non révoqué, même avec un cookie valide.
     if (!patient || !patient.actif || patient.accessTokenRevoked || patient.email.toLowerCase() !== session.email) {
-      return NextResponse.json(
+      logger.security({
+        event: EVENT_CODES.PORTAIL_ASSIGNATIONS_UNAUTHORIZED,
+        domain: 'SECURITY',
+        message: 'Accès portail révoqué ou incohérent',
+        context: finalizeLogContext(requestContext, { statusCode: 401, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json(
         { ok: false, reason: 'unauthorized', error: 'Accès non reconnu ou révoqué.' },
         { status: 401 },
-      );
+      ), requestContext);
     }
 
     // idPatient (issu de la session vérifiée) est la clé fiable ; on n'ajoute pas
@@ -50,13 +70,19 @@ export async function GET(req: Request): Promise<NextResponse<PortailAssignation
 
     const assignations: AssignationPatient[] = assignationsDb.map(mapAssignationPatient);
 
-    return NextResponse.json({
+    return withCorrelationHeader(NextResponse.json({
       ok: true,
       patient: { prenom: patient.prenom, nom: patient.nom },
       assignations,
-    });
+    }), requestContext);
   } catch (err) {
-    console.error('[portail/assignations GET]', err instanceof Error ? err.message : String(err));
-    return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });
+    logger.error({
+      event: EVENT_CODES.PORTAIL_ASSIGNATIONS_QUERY_FAILED,
+      domain: 'PORTAIL_PATIENT',
+      message: 'Échec récupération assignations portail',
+      context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
+      error: err,
+    });
+    return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 }), requestContext);
   }
 }

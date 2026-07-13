@@ -18,6 +18,13 @@ import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
 import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
+import { logger } from '@/lib/observability/logger';
+import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import {
+  createRequestContext,
+  finalizeLogContext,
+  withCorrelationHeader,
+} from '@/lib/observability/requestContext';
 
 type ReponseInput = {
   titre: string;
@@ -59,14 +66,23 @@ function fusionnerVigilance(deterministes: string[], llm: string[]): string[] {
 // GET /api/praticien/synthese?idPatient=PAT001
 // Liste des synthèses d'un patient
 export async function GET(req: Request) {
+  const requestContext = createRequestContext(req);
   const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+  if (!session) {
+    logger.security({
+      event: EVENT_CODES.AUTH_PRACTICIEN_UNAUTHORIZED,
+      domain: 'AUTH',
+      message: 'Accès synthèse sans session praticien',
+      context: finalizeLogContext(requestContext, { statusCode: 401, retryable: false }),
+    });
+    return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+  }
 
   const { searchParams } = new URL(req.url);
   const idPatient = (searchParams.get('idPatient') ?? '').trim();
 
   if (!idPatient) {
-    return NextResponse.json({ syntheses: [] });
+    return withCorrelationHeader(NextResponse.json({ syntheses: [] }), requestContext);
   }
 
   try {
@@ -85,25 +101,40 @@ export async function GET(req: Request) {
       },
     });
 
-    return NextResponse.json({ syntheses });
+    return withCorrelationHeader(NextResponse.json({ syntheses }), requestContext);
   } catch (err) {
-    console.error('[synthese GET] Exception:', err instanceof Error ? err.message : String(err));
-    return NextResponse.json({ error: 'Erreur technique.' }, { status: 500 });
+    logger.error({
+      event: EVENT_CODES.SYNTHESE_GET_EXCEPTION,
+      domain: 'SYNTHESE_IA',
+      message: 'Échec lecture synthèses patient',
+      context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
+      error: err,
+    });
+    return withCorrelationHeader(NextResponse.json({ error: 'Erreur technique.' }, { status: 500 }), requestContext);
   }
 }
 
 // POST /api/praticien/synthese
 // Génère une nouvelle synthèse IA pour un patient
 export async function POST(req: Request) {
+  const requestContext = createRequestContext(req);
   const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+  if (!session) {
+    logger.security({
+      event: EVENT_CODES.AUTH_PRACTICIEN_UNAUTHORIZED,
+      domain: 'AUTH',
+      message: 'Génération synthèse sans session praticien',
+      context: finalizeLogContext(requestContext, { statusCode: 401, retryable: false }),
+    });
+    return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json(
+    return withCorrelationHeader(NextResponse.json(
       { error: 'ANTHROPIC_API_KEY absente. Ajoutez-la dans web/.env.local.' },
       { status: 503 }
-    );
+    ), requestContext);
   }
 
   let idPatient: string;
@@ -111,18 +142,18 @@ export async function POST(req: Request) {
     const body = (await req.json()) as { idPatient?: string };
     idPatient = (body.idPatient ?? '').trim();
   } catch {
-    return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
+    return withCorrelationHeader(NextResponse.json({ error: 'JSON invalide.' }, { status: 400 }), requestContext);
   }
 
   if (!idPatient || idPatient.length > 64 || !/^[A-Za-z0-9_-]+$/.test(idPatient)) {
-    return NextResponse.json({ error: 'idPatient invalide.' }, { status: 400 });
+    return withCorrelationHeader(NextResponse.json({ error: 'idPatient invalide.' }, { status: 400 }), requestContext);
   }
 
   let idSynthese = '';
   try {
     const patient = await prisma.patient.findUnique({ where: { idPatient } });
     if (!patient) {
-      return NextResponse.json({ error: 'Patient introuvable.' }, { status: 404 });
+      return withCorrelationHeader(NextResponse.json({ error: 'Patient introuvable.' }, { status: 404 }), requestContext);
     }
 
     const reponses = await prisma.questionnaireReponse.findMany({
@@ -131,10 +162,10 @@ export async function POST(req: Request) {
     });
 
     if (reponses.length === 0) {
-      return NextResponse.json(
+      return withCorrelationHeader(NextResponse.json(
         { error: 'Aucun résultat de questionnaire disponible pour ce patient.' },
         { status: 422 }
-      );
+      ), requestContext);
     }
 
     const reponsesInput: ReponseInput[] = reponses.map(r => ({
@@ -160,7 +191,13 @@ export async function POST(req: Request) {
         vigilanceDeterministe = extraireVigilanceDeterministe(consultation.anamnese);
       }
     } catch (ctxErr) {
-      console.error('[synthese POST] Contexte clinique indisponible:', ctxErr instanceof Error ? ctxErr.message : String(ctxErr));
+      logger.warn({
+        event: EVENT_CODES.SYNTHESE_POST_CONTEXT_UNAVAILABLE,
+        domain: 'SYNTHESE_IA',
+        message: 'Contexte clinique indisponible, fallback questionnaires seuls',
+        context: finalizeLogContext(requestContext, { retryable: true }),
+        error: ctxErr,
+      });
     }
 
     const userMessage = buildUserMessage(reponsesInput, patient.prenom, patient.nom, contexteClinique);
@@ -247,16 +284,22 @@ export async function POST(req: Request) {
       },
     });
 
-    return NextResponse.json({
+    return withCorrelationHeader(NextResponse.json({
       success: true,
       idSynthese: record.idSynthese,
       synthese,
       modele: CLAUDE_MODEL,
       dateGeneration: record.dateGeneration.toISOString(),
-    });
+    }), requestContext);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[synthese POST] Exception:', msg);
+    logger.error({
+      event: EVENT_CODES.SYNTHESE_POST_EXCEPTION,
+      domain: 'SYNTHESE_IA',
+      message: 'Erreur lors de la génération de synthèse IA',
+      context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
+      error: err,
+    });
 
     if (idSynthese) {
       await prisma.auditSynthese.create({
@@ -271,18 +314,19 @@ export async function POST(req: Request) {
       }).catch(() => {});
     }
 
-    return NextResponse.json(
+    return withCorrelationHeader(NextResponse.json(
       { error: 'Erreur lors de la génération de la synthèse. Réessayez.' },
       { status: 500 }
-    );
+    ), requestContext);
   }
 }
 
 // PATCH /api/praticien/synthese
 // Valider, rejeter ou annoter une synthèse
 export async function PATCH(req: Request) {
+  const requestContext = createRequestContext(req);
   const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+  if (!session) return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
 
   type PatchBody = {
     idSynthese?: string;
@@ -294,7 +338,7 @@ export async function PATCH(req: Request) {
   try {
     body = (await req.json()) as PatchBody;
   } catch {
-    return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
+    return withCorrelationHeader(NextResponse.json({ error: 'JSON invalide.' }, { status: 400 }), requestContext);
   }
 
   const idSynthese = (body.idSynthese ?? '').trim();
@@ -302,13 +346,13 @@ export async function PATCH(req: Request) {
   const notes = (body.notes ?? '').trim().slice(0, 2000);
 
   if (!idSynthese || !action) {
-    return NextResponse.json({ error: 'idSynthese et action sont requis.' }, { status: 400 });
+    return withCorrelationHeader(NextResponse.json({ error: 'idSynthese et action sont requis.' }, { status: 400 }), requestContext);
   }
 
   try {
     const existing = await prisma.syntheseIA.findUnique({ where: { idSynthese } });
     if (!existing) {
-      return NextResponse.json({ error: 'Synthèse introuvable.' }, { status: 404 });
+      return withCorrelationHeader(NextResponse.json({ error: 'Synthèse introuvable.' }, { status: 404 }), requestContext);
     }
 
     let statut = existing.statut;
@@ -319,7 +363,7 @@ export async function PATCH(req: Request) {
     } else if (action === 'annoter') {
       statut = existing.statut === 'Validee_Praticien' && notes ? 'Corrigee_Praticien' : existing.statut;
     } else {
-      return NextResponse.json({ error: 'Action invalide.' }, { status: 400 });
+      return withCorrelationHeader(NextResponse.json({ error: 'Action invalide.' }, { status: 400 }), requestContext);
     }
 
     await prisma.syntheseIA.update({
@@ -331,9 +375,15 @@ export async function PATCH(req: Request) {
       },
     });
 
-    return NextResponse.json({ success: true, statut });
+    return withCorrelationHeader(NextResponse.json({ success: true, statut }), requestContext);
   } catch (err) {
-    console.error('[synthese PATCH] Exception:', err instanceof Error ? err.message : String(err));
-    return NextResponse.json({ error: 'Erreur technique.' }, { status: 500 });
+    logger.error({
+      event: EVENT_CODES.SYNTHESE_PATCH_EXCEPTION,
+      domain: 'SYNTHESE_IA',
+      message: 'Erreur lors de la mise à jour de synthèse',
+      context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
+      error: err,
+    });
+    return withCorrelationHeader(NextResponse.json({ error: 'Erreur technique.' }, { status: 500 }), requestContext);
   }
 }
