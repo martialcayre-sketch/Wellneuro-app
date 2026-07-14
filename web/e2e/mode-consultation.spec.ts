@@ -18,14 +18,18 @@ test.describe('Mode consultation (fiche patient)', () => {
       await page.goto(`/dashboard/patients/${PATIENT_ID}`);
       const missing = page.getByRole('heading', { name: 'Données manquantes' });
       const decision = page.getByRole('heading', { name: 'Décision clinique' });
+      const protocol = page.getByRole('heading', { name: 'Protocole 21 jours' });
       const coverage = page.getByRole('heading', { name: 'Couverture des 12 besoins' });
       await expect(missing).toBeVisible();
       await expect(decision).toBeVisible();
       await expect(page.getByText('Décision clinique non préparée')).toBeVisible();
+      await expect(protocol).toBeVisible();
+      await expect(page.getByText('Protocole indisponible — priorité praticien non sélectionnée')).toBeVisible();
       await expect(coverage).toBeVisible();
       const headings = await page.locator('h3').allTextContents();
       expect(headings.indexOf('Données manquantes')).toBeLessThan(headings.indexOf('Décision clinique'));
-      expect(headings.indexOf('Décision clinique')).toBeLessThan(headings.indexOf('Couverture des 12 besoins'));
+      expect(headings.indexOf('Décision clinique')).toBeLessThan(headings.indexOf('Protocole 21 jours'));
+      expect(headings.indexOf('Protocole 21 jours')).toBeLessThan(headings.indexOf('Couverture des 12 besoins'));
     }
   });
 
