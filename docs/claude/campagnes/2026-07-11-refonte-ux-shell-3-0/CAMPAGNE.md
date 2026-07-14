@@ -142,7 +142,7 @@ Vérification croisée des critères d'acceptation §17 de `sources/UX_WELLNEURO
       prioritaires limité).
 - [x] Respecte les thèmes praticien et patient (shell praticien = thème sombre uniquement ; portail
       patient non touché par cette campagne).
-- [x] Utilise uniquement les patients fictifs autorisés (Sophie Nicola, Jennifer Martin, Michel Dogné —
+- [x] Utilise uniquement les patients fictifs autorisés (Sophie Nicola, Jennifer Martin, Michel Dogne —
       `demoPatients` dans `NavBar.tsx`).
 - [x] Ne modifie pas la logique métier hors périmètre (routes, `signOut`, scoring inchangés).
 - [~] Testé sur au moins un mobile réel et une largeur desktop : desktop vérifié ; mobile réel **non**

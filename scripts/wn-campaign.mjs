@@ -61,6 +61,46 @@ function has(name) {
 function normalizeSpaces(value) {
   return value.replace(/\s+/g, " ").trim();
 }
+function parseFrontmatter(text) {
+  if (!text.startsWith("---\n")) return {};
+  const end = text.indexOf("\n---", 4);
+  if (end < 0) return {};
+  const block = text.slice(4, end);
+  const data = {};
+  for (const rawLine of block.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const sep = line.indexOf(":");
+    if (sep < 0) continue;
+    const key = line.slice(0, sep).trim();
+    let value = line.slice(sep + 1).trim();
+    value = value.replace(/^['\"]/, "").replace(/['\"]$/, "");
+    data[key] = value;
+  }
+  return data;
+}
+function lotBranchName(campaignBranch, lotId) {
+  const suffix = String(lotId || "lot-00").toLowerCase().replace(/[^a-z0-9-]+/g, "-");
+  if (campaignBranch.endsWith("/integration")) {
+    return `${campaignBranch.slice(0, -"/integration".length)}/${suffix}`;
+  }
+  return `${campaignBranch}/${suffix}`;
+}
+function defaultCampaignBranch(campaignId) {
+  return `campaign/${campaignId}/integration`;
+}
+function normalizeStatus(value) {
+  return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+}
+function isDoneStatus(value) {
+  return normalizeStatus(value).startsWith("termine");
+}
+function isAbandonedStatus(value) {
+  return normalizeStatus(value).startsWith("abandon");
+}
+function isClosedStatus(value) {
+  return isDoneStatus(value) || isAbandonedStatus(value);
+}
 function slugify(value) {
   return value
     .normalize("NFD")
@@ -289,8 +329,9 @@ function readCampaigns() {
       const campaign = path.join(dir, "CAMPAGNE.md");
       if (!fs.existsSync(campaign)) return null;
       const text = fs.readFileSync(campaign, "utf8");
-      const status = text.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu";
-      const title = text.match(/^#\s+(.+)$/m)?.[1] || entry.name;
+      const frontmatter = parseFrontmatter(text);
+      const status = frontmatter.statut || text.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu";
+      const title = frontmatter.titre || text.match(/^#\s+(.+)$/m)?.[1] || entry.name;
       const lotsDir = path.join(dir, "lots");
       const lots = fs.existsSync(lotsDir)
         ? fs.readdirSync(lotsDir).filter((f) => f.endsWith(".md")).sort()
@@ -303,19 +344,31 @@ function readCampaigns() {
           title: lotText.match(/^#\s+(.+)$/m)?.[1] || file
         };
       });
-      return { dir, name: entry.name, status, title, lots: lotData };
+      return {
+        dir,
+        name: entry.name,
+        status,
+        title,
+        lots: lotData,
+        lotCourant: frontmatter.lot_courant || "",
+        brancheCampagne: frontmatter.branche_campagne || "",
+        brancheLotCourant: frontmatter.branche_lot_courant || "",
+        ciblePrLot: frontmatter.cible_pr_lot || "",
+        ciblePrCampagne: frontmatter.cible_pr_campagne || ""
+      };
     })
     .filter(Boolean)
     .sort((a, b) => b.name.localeCompare(a.name));
 }
 function activeCampaign() {
   const campaigns = readCampaigns();
-  return campaigns.find((c) => !["terminé", "abandonne", "abandonné"].includes(c.status))
+  return campaigns.find((c) => !isClosedStatus(c.status) && c.lots.length > 0)
+    || campaigns.find((c) => !isClosedStatus(c.status))
     || campaigns[0];
 }
 function nextLot(campaign) {
   if (!campaign) return null;
-  return campaign.lots.find((lot) => !["terminé", "abandonne", "abandonné"].includes(lot.status));
+  return campaign.lots.find((lot) => !isClosedStatus(lot.status));
 }
 function createCampaign() {
   ensureBase();
@@ -405,6 +458,7 @@ function createCampaign() {
     `| ${lot.id} | ${lot.title} | à_faire | ${i === 0 ? "—" : lots[i - 1].id} |`
   ).join("\n");
 
+  const campaignBranch = defaultCampaignBranch(dirname);
   const campaignText = `---
 id: "${dirname}"
 titre: "${title.replaceAll('"', "'")}"
@@ -412,6 +466,10 @@ statut: "à_faire"
 créée_le: "${dateIso()}"
 mise_à_jour: "${dateIso()}"
 lot_courant: "${lots[0].id}"
+branche_campagne: "${campaignBranch}"
+branche_lot_courant: "${lotBranchName(campaignBranch, lots[0].id)}"
+cible_pr_lot: "${campaignBranch}"
+cible_pr_campagne: "main"
 ---
 
 # ${title}
@@ -545,8 +603,17 @@ function status() {
     return;
   }
   for (const c of campaigns) {
-    const done = c.lots.filter((l) => l.status === "terminé").length;
+    const done = c.lots.filter((l) => isDoneStatus(l.status)).length;
     console.log(`${c.name} | ${c.status} | ${done}/${c.lots.length} lots | ${c.title}`);
+    const gitInfo = [
+      c.brancheCampagne ? `campagne=${c.brancheCampagne}` : "",
+      c.brancheLotCourant ? `lot=${c.brancheLotCourant}` : "",
+      c.ciblePrLot ? `pr_lot->${c.ciblePrLot}` : "",
+      c.ciblePrCampagne ? `pr_campagne->${c.ciblePrCampagne}` : ""
+    ].filter(Boolean);
+    if (gitInfo.length) {
+      console.log(`  git | ${gitInfo.join(" | ")}`);
+    }
   }
 }
 function showNext(quiet = false) {
@@ -558,6 +625,16 @@ function showNext(quiet = false) {
   }
   if (!lot) {
     console.log(`${path.relative(cwd, campaign.dir)} | aucun lot incomplet`);
+    return;
+  }
+  const lotBranch = campaign.brancheLotCourant || (campaign.brancheCampagne ? lotBranchName(campaign.brancheCampagne, lot.file.split("-").slice(0, 2).join("-")) : "");
+  const targetBranch = campaign.ciblePrLot || campaign.brancheCampagne;
+  const extras = [
+    lotBranch ? `branche_lot=${lotBranch}` : "",
+    targetBranch ? `cible_pr_lot=${targetBranch}` : ""
+  ].filter(Boolean).join(" | ");
+  if (extras) {
+    console.log(`${path.relative(cwd, campaign.dir)} | ${lot.file} | ${lot.status} | ${extras}`);
     return;
   }
   console.log(`${path.relative(cwd, campaign.dir)} | ${lot.file} | ${lot.status}`);

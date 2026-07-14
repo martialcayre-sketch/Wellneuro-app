@@ -8,7 +8,7 @@ Règles impératives :
 - Aucun secret en dur.
 - Tous les textes UI en français.
 - Aucune donnée patient réelle.
-- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin, Michel Dogné.
+- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin, Michel Dogne.
 - Pas de migration Prisma/SQL/Supabase sans demande explicite et confirmation.
 - Changements minimaux, pas de refactor large.
 - Supabase en lecture seule sauf demande explicite d’écriture.

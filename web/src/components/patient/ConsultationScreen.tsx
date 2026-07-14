@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { PatientCard } from '@/components/patient/ui/PatientCard';
+import { PatientButton } from '@/components/patient/ui/PatientButton';
+import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 
 // Écran de consultation en lecture seule (réponses verrouillées) + demande de
 // modification. Composant présentationnel : la navigation « Mon équilibre » est
@@ -58,60 +61,49 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
   };
 
   return (
-    <div className="w-full max-w-md">
-      <div className="bg-white rounded-2xl shadow-sm border border-border p-8 text-center">
-        <h2 className="text-lg font-bold text-gray-900 mb-2">Vos réponses</h2>
-        {loading && <p className="text-sm text-gray-500">Chargement…</p>}
-        {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error}</p>}
-        {reponse && (
-          <p className="text-sm text-gray-600 mb-6">
-            « {reponse.titre} » — envoyé le{' '}
-            {new Date(reponse.dateReponse).toLocaleDateString('fr-FR')}.<br />
-            Vos réponses sont verrouillées en lecture seule.
-          </p>
-        )}
-        {readOnlyPreview ? (
-          <p className="text-sm text-muted-foreground bg-muted rounded-lg px-4 py-3">
-            Aperçu praticien — vue identique à celle du patient.
-          </p>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={onVoirEquilibre}
-              className="w-full mb-3 py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity"
-            >
-              Voir Mon équilibre
-            </button>
+    <PatientCard maxWidth="md" className="text-center">
+      <h2 className="text-lg font-bold text-foreground mb-2">Vos réponses</h2>
+      {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
+      {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
+      {reponse && (
+        <p className="text-sm text-muted-foreground mb-6">
+          « {reponse.titre} » — envoyé le{' '}
+          {new Date(reponse.dateReponse).toLocaleDateString('fr-FR')}.<br />
+          Vos réponses sont verrouillées en lecture seule.
+        </p>
+      )}
+      {readOnlyPreview ? (
+        <p className="text-sm text-muted-foreground bg-muted rounded-lg px-4 py-3">
+          Aperçu praticien — vue identique à celle du patient.
+        </p>
+      ) : (
+        <>
+          <PatientButton variant="primary" onClick={onVoirEquilibre} className="w-full mb-3">
+            Voir Mon équilibre
+          </PatientButton>
 
-            {demandeEnvoyee ? (
-              <p className="text-sm text-primary bg-primary/10 rounded-lg px-4 py-3">
-                Votre demande de modification a été transmise à votre praticien. En attente de validation par votre praticien.
-              </p>
-            ) : (
-              <div className="space-y-2 text-left">
-                <label className="block text-sm text-gray-700">Précisez ce que vous souhaitez corriger <span className="text-gray-400">(facultatif)</span></label>
-                <textarea
-                  value={commentaire}
-                  onChange={e => setCommentaire(e.target.value)}
-                  rows={3}
-                  maxLength={1000}
-                  placeholder="Ex. je me suis trompé·e à la question sur le sommeil…"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <button
-                  type="button"
-                  onClick={handleDemande}
-                  disabled={demandeLoading}
-                  className="w-full py-2.5 px-4 border border-primary text-primary rounded-lg font-medium text-sm hover:bg-primary/10 disabled:opacity-50 transition-colors"
-                >
-                  {demandeLoading ? 'Envoi…' : 'Demander une correction'}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+          {demandeEnvoyee ? (
+            <p className="text-sm text-primary bg-primary/10 rounded-lg px-4 py-3">
+              Votre demande de modification a été transmise à votre praticien. En attente de validation par votre praticien.
+            </p>
+          ) : (
+            <div className="space-y-2 text-left">
+              <label className="block text-sm text-muted-foreground">Précisez ce que vous souhaitez corriger <span className="text-muted-foreground/70">(facultatif)</span></label>
+              <textarea
+                value={commentaire}
+                onChange={e => setCommentaire(e.target.value)}
+                rows={3}
+                maxLength={1000}
+                placeholder="Ex. je me suis trompé·e à la question sur le sommeil…"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <PatientButton variant="ghost" onClick={handleDemande} loading={demandeLoading} loadingLabel="Envoi…" className="w-full">
+                Demander une correction
+              </PatientButton>
+            </div>
+          )}
+        </>
+      )}
+    </PatientCard>
   );
 }

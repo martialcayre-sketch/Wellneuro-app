@@ -3,7 +3,7 @@
 // le 2026-07-10 (21/22 items, exécution ad hoc jamais committée). Objectif du
 // lot R8 (suite) : ne plus "réinstaller puis jeter" ces tests à chaque lot.
 //
-// Un seul test.describe.serial séquentiel sur le patient fictif Michel Dogné
+// Un seul test.describe.serial séquentiel sur le patient fictif Michel Dogne
 // (PAT_SEED_03), seul autorisé avec Sophie Nicola et Jennifer Martin.
 // Prérequis local : voir web/e2e/README.md (DB de dev + npm run prisma:seed +
 // NEXTAUTH_SECRET). Aucune opération SQL destructive : uniquement des lignes
@@ -43,9 +43,23 @@ async function remplirSectionCourante(page: Page): Promise<void> {
   }
 }
 
-// Répond section par section jusqu'à la transmission finale. Le bouton
-// "Transmettre au praticien" déclenche un window.confirm — accepté par le
-// handler 'dialog' enregistré dans le test.
+// Répond section par section jusqu'à la transmission finale. Depuis HC-F
+// LOT-04 (Étape 10), le bouton "Transmettre au praticien" ouvre un dialog de
+// confirmation accessible (PatientConfirmDialog, Radix) au lieu d'un
+// window.confirm natif — il faut cliquer explicitement son bouton
+// "Transmettre" pour valider.
+// Depuis HC-F LOT-04 (Étape 6), les sections "Transmis au praticien" /
+// "Correction demandée" / "Expiré" du hub sont repliées par défaut sous un
+// <details> natif (sections secondaires, l'action recommandée les remplace
+// en première lecture) — il faut ouvrir la section avant d'y chercher un
+// texte ou un lien.
+async function ouvrirSectionSecondaire(page: Page, titre: string): Promise<void> {
+  const summary = page.locator('summary', { hasText: titre });
+  if (await summary.count() === 0) return;
+  const details = summary.locator('xpath=..');
+  if (await details.getAttribute('open') === null) await summary.click();
+}
+
 async function repondreEtTransmettre(page: Page): Promise<void> {
   for (let section = 0; section < 30; section++) {
     await remplirSectionCourante(page);
@@ -67,12 +81,15 @@ async function repondreEtTransmettre(page: Page): Promise<void> {
     }
     const label = (await bouton.textContent()) ?? '';
     await bouton.click();
-    if (label.includes('Transmettre')) return;
+    if (label.includes('Transmettre')) {
+      await page.getByRole('dialog').getByRole('button', { name: 'Transmettre' }).click();
+      return;
+    }
     if (section === 29) throw new Error('Questionnaire trop long pour la limite de sécurité du test.');
   }
 }
 
-test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patient fictif)', () => {
+test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogne, patient fictif)', () => {
   let portailUrl: string;
   let idAssignation: string;
   let idQuestionnaire: string;
@@ -126,12 +143,17 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       ]);
     });
 
-    await test.step('Fiche signalétique', async () => {
+    await test.step('Fiche signalétique (paginée section par section depuis HC-F LOT-04)', async () => {
       await expect(page.getByRole('heading', { name: 'Fiche de renseignements' })).toBeVisible();
+      // Section 1/3 — Cellule familiale.
       await page
         .locator('label:has-text("Situation familiale") + select')
         .selectOption({ label: 'Marié·e / Pacsé·e' });
+      await page.getByRole('button', { name: 'Suivant →' }).click();
+      // Section 2/3 — Profession.
       await page.locator('label:has-text("Profession") + input').fill('Retraité');
+      await page.getByRole('button', { name: 'Suivant →' }).click();
+      // Section 3/3 — Mode de vie (aucun champ requis) + mentions + envoi.
       await page.getByLabel(/exactitude des informations fournies/i).check();
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/portail/fiche') && res.status() === 200),
@@ -139,11 +161,22 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       ]);
     });
 
-    await test.step('Anamnèse', async () => {
+    await test.step('Anamnèse (paginée section par section depuis HC-F LOT-04)', async () => {
       await expect(page.getByRole('heading', { name: 'Anamnèse' })).toBeVisible();
+      // Section 1/6 — Repères corporels (aucun champ requis).
+      await page.getByRole('button', { name: 'Suivant →' }).click();
+      // Section 2/6 — Motif et attentes (seul champ requis de toute l'anamnèse).
       await page
         .locator('label:has-text("amène aujourd") + textarea')
         .fill('Fatigue persistante depuis plusieurs mois, difficultés de concentration.');
+      await page.getByRole('button', { name: 'Suivant →' }).click();
+      // Section 3/6 — Histoire des troubles.
+      await page.getByRole('button', { name: 'Suivant →' }).click();
+      // Section 4/6 — Signaux à signaler.
+      await page.getByRole('button', { name: 'Suivant →' }).click();
+      // Section 5/6 — Antécédents.
+      await page.getByRole('button', { name: 'Suivant →' }).click();
+      // Section 6/6 — Traitements et compléments + envoi.
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/portail/valider') && res.status() === 200),
         page.getByRole('button', { name: /Valider et accéder à mes questionnaires/i }).click(),
@@ -173,11 +206,13 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await page.getByRole('button', { name: 'Sauvegarder le brouillon' }).click();
       await expect(page.getByText('Brouillon enregistré sur cet appareil')).toBeVisible();
       await page.getByRole('button', { name: 'Réinitialiser ce questionnaire' }).click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Réinitialiser' }).click();
     });
 
     await test.step('Réponses et transmission au praticien (200)', async () => {
       await repondreEtTransmettre(page);
       await expect(page).toHaveURL(new RegExp(`${portailUrl}/questionnaires$`));
+      await ouvrirSectionSecondaire(page, 'Transmis au praticien');
       await expect(page.getByText('Transmis au praticien').first()).toBeVisible();
     });
 
@@ -200,6 +235,7 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
     });
 
     await test.step('Vue verrouillée en lecture seule', async () => {
+      await ouvrirSectionSecondaire(page, 'Transmis au praticien');
       const consulter = page.getByRole('link', { name: 'Consulter' }).first();
       const [reponsesReq] = await Promise.all([
         page.waitForRequest(req => req.url().includes('/api/patient/reponses')),
@@ -276,6 +312,7 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       ]);
       await repondreEtTransmettre(page);
       await expect(page).toHaveURL(new RegExp(`${portailUrl}/questionnaires$`));
+      await ouvrirSectionSecondaire(page, 'Transmis au praticien');
       await expect(page.getByText('Transmis au praticien').first()).toBeVisible();
     });
   });

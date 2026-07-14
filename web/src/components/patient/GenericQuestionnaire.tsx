@@ -4,8 +4,13 @@ import { useEffect, useRef, useState } from 'react';
 import type { AssignationInfo } from '@/app/api/patient/questionnaire/route';
 import type { PatientSubmitResponse } from '@/app/api/patient/submit/route';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
-import { clearDraft, readDraft, writeDraft } from '@/lib/questionnaire-draft';
+import { clearDraft, readDraft, readDraftSavedAt, writeDraft } from '@/lib/questionnaire-draft';
 import { QuestionField } from './QuestionField';
+import { PatientCard } from '@/components/patient/ui/PatientCard';
+import { PatientButton } from '@/components/patient/ui/PatientButton';
+import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
+import { SaveStatusIndicator, type SaveError } from '@/components/patient/SaveStatusIndicator';
+import { PatientConfirmDialog } from '@/components/patient/PatientConfirmDialog';
 
 // Questionnaire générique piloté par le catalogue, section par section.
 // Composant présentationnel : la navigation (retour hub / succès) est confiée
@@ -21,13 +26,16 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
   const [answers, setAnswers] = useState<Record<string, string>>(() => readDraft(assignation.idAssignation) ?? {});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [brouillonMessage, setBrouillonMessage] = useState('');
+  const [savedAt, setSavedAt] = useState<Date | null>(() => readDraftSavedAt(assignation.idAssignation));
+  const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
+  const [confirmDialog, setConfirmDialog] = useState<'reset' | 'submit' | null>(null);
   const premierRendu = useRef(true);
 
   // Autosave local à chaque changement de réponse (sauf premier rendu).
   useEffect(() => {
     if (premierRendu.current) { premierRendu.current = false; return; }
     writeDraft(assignation.idAssignation, answers);
+    setSavedAt(readDraftSavedAt(assignation.idAssignation));
   }, [answers, assignation.idAssignation]);
 
   const section = sections[currentSection];
@@ -42,28 +50,26 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isLast) { setCurrentSection(s => s + 1); window.scrollTo(0, 0); }
-    else {
-      if (!window.confirm('Transmettre vos réponses à votre praticien ? Après transmission, elles seront verrouillées.')) return;
-      handleSubmit();
-    }
+    else { setConfirmDialog('submit'); }
   };
 
   const handleSauvegarder = () => {
     writeDraft(assignation.idAssignation, answers);
-    setBrouillonMessage('Brouillon enregistré sur cet appareil. Il ne sera transmis au praticien qu’après validation.');
+    setSavedAt(readDraftSavedAt(assignation.idAssignation));
   };
 
-  const handleReinitialiser = () => {
-    if (!window.confirm('Cette action effacera les réponses non transmises de ce questionnaire. Elle ne supprimera aucune réponse déjà envoyée à votre praticien.')) return;
+  const confirmerReinitialiser = () => {
     clearDraft(assignation.idAssignation);
     setAnswers({});
     setCurrentSection(0);
-    setBrouillonMessage('');
+    setSavedAt(null);
+    setSaveError(undefined);
     window.scrollTo(0, 0);
   };
 
-  const handleSubmit = async () => {
+  const confirmerTransmission = async () => {
     setError('');
+    setSaveError(undefined);
     setSubmitting(true);
     try {
       const numericAnswers: Record<string, number> = {};
@@ -83,10 +89,11 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
         }),
       });
       const data = (await res.json()) as PatientSubmitResponse;
-      if (!data.ok) { setError(data.error); }
+      if (!data.ok) { setError(data.error); setSaveError('submission-incomplete'); }
       else { clearDraft(assignation.idAssignation); onDone(); }
     } catch {
       setError('Erreur réseau. Réessayez.');
+      setSaveError('network');
     } finally {
       setSubmitting(false);
     }
@@ -95,83 +102,89 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
   if (!section) return null;
 
   return (
-    <div className="w-full max-w-2xl">
-      <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
-        {/* En-tête */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2 text-xs text-gray-400">
-            <span>Partie {currentSection + 1} / {sections.length}</span>
-            <span>{progress}% complété</span>
-          </div>
-          <div className="w-full h-1.5 bg-gray-100 rounded-full">
-            <div className="h-1.5 bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
-          </div>
-          <h2 className="text-lg font-bold text-gray-900 mt-4">{questionnaire.titre}</h2>
-          {currentSection === 0 && questionnaire.instructions && (
-            <p className="text-sm text-gray-500 mt-1">{questionnaire.instructions}</p>
-          )}
-          {section.titre && <p className="text-sm font-semibold text-primary mt-3">{section.titre}</p>}
-          {section.description && <p className="text-xs text-gray-400 mt-0.5">{section.description}</p>}
+    <PatientCard as="form" onSubmit={handleNext} className="space-y-6">
+      {/* En-tête */}
+      <div>
+        <div className="flex justify-between items-center mb-2 text-xs text-muted-foreground/70">
+          <span>Partie {currentSection + 1} / {sections.length}</span>
+          <span>{progress}% complété</span>
         </div>
-
-        {assignation.notes && currentSection === 0 && (
-          <div className="mb-4 px-4 py-3 bg-primary/10 rounded-lg text-sm text-primary">
-            <span className="font-medium">Note de votre praticien : </span>{assignation.notes}
-          </div>
+        <div className="w-full h-1.5 bg-muted rounded-full">
+          <div className="h-1.5 bg-accent rounded-full transition-all" style={{ width: `${progress}%` }} />
+        </div>
+        <h2 className="text-lg font-bold text-foreground mt-4">{questionnaire.titre}</h2>
+        {currentSection === 0 && questionnaire.instructions && (
+          <p className="text-sm text-muted-foreground mt-1">{questionnaire.instructions}</p>
         )}
-
-        <form onSubmit={handleNext} className="space-y-6">
-          {section.questions.map(q => (
-            <QuestionField
-              key={q.id}
-              question={q}
-              value={answers[q.id] ?? ''}
-              onChange={val => { setAnswers(a => ({ ...a, [q.id]: val })); setBrouillonMessage(''); }}
-            />
-          ))}
-
-          {error && <p className="text-red-600 text-sm bg-red-50 rounded-lg px-4 py-2">{error}</p>}
-          {brouillonMessage && <p className="text-primary text-sm bg-primary/10 rounded-lg px-4 py-2">{brouillonMessage}</p>}
-
-          <div className="flex gap-3">
-            {currentSection > 0 && (
-              <button
-                type="button"
-                onClick={() => { setCurrentSection(s => s - 1); window.scrollTo(0, 0); }}
-                className="flex-1 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors"
-              >
-                ← Précédent
-              </button>
-            )}
-            <button
-              type="submit"
-              disabled={!sectionAnswered || submitting}
-              className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity"
-            >
-              {submitting ? 'Envoi…' : isLast ? 'Transmettre au praticien' : 'Suivant →'}
-            </button>
-          </div>
-
-          {/* Actions brouillon */}
-          <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-gray-100">
-            <button
-              type="button"
-              onClick={handleSauvegarder}
-              className="flex-1 py-2 px-4 text-sm text-primary border border-primary/30 rounded-lg hover:bg-primary/10 transition-colors"
-            >
-              Sauvegarder le brouillon
-            </button>
-            <button
-              type="button"
-              onClick={handleReinitialiser}
-              className="flex-1 py-2 px-4 text-sm text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Réinitialiser ce questionnaire
-            </button>
-          </div>
-          <p className="text-xs text-gray-400">Ce brouillon est conservé uniquement sur cet appareil.</p>
-        </form>
+        {section.titre && <p className="text-sm font-semibold text-primary mt-3">{section.titre}</p>}
+        {section.description && <p className="text-xs text-muted-foreground/70 mt-0.5">{section.description}</p>}
       </div>
-    </div>
+
+      {assignation.notes && currentSection === 0 && (
+        <div className="px-4 py-3 bg-primary/10 rounded-lg text-sm text-primary">
+          <span className="font-medium">Note de votre praticien : </span>{assignation.notes}
+        </div>
+      )}
+
+      {section.questions.map(q => (
+        <QuestionField
+          key={q.id}
+          question={q}
+          value={answers[q.id] ?? ''}
+          onChange={val => setAnswers(a => ({ ...a, [q.id]: val }))}
+        />
+      ))}
+
+      {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
+      <SaveStatusIndicator savedAt={savedAt} error={saveError} />
+
+      <div className="flex gap-3">
+        {currentSection > 0 && (
+          <PatientButton
+            variant="neutral"
+            className="flex-1"
+            onClick={() => { setCurrentSection(s => s - 1); window.scrollTo(0, 0); }}
+          >
+            ← Précédent
+          </PatientButton>
+        )}
+        <PatientButton
+          type="submit"
+          variant="primary"
+          className="flex-1"
+          disabled={!sectionAnswered}
+          loading={submitting}
+          loadingLabel="Envoi…"
+        >
+          {isLast ? 'Transmettre au praticien' : 'Suivant →'}
+        </PatientButton>
+      </div>
+
+      {/* Actions brouillon */}
+      <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-border">
+        <PatientButton variant="ghost" onClick={handleSauvegarder} className="flex-1">
+          Sauvegarder le brouillon
+        </PatientButton>
+        <PatientButton variant="neutral" onClick={() => setConfirmDialog('reset')} className="flex-1">
+          Réinitialiser ce questionnaire
+        </PatientButton>
+      </div>
+      <p className="text-xs text-muted-foreground/70">Ce brouillon est conservé uniquement sur cet appareil.</p>
+
+      <PatientConfirmDialog
+        open={confirmDialog === 'reset'}
+        onOpenChange={open => setConfirmDialog(open ? 'reset' : null)}
+        message="Cette action effacera les réponses non transmises de ce questionnaire. Elle ne supprimera aucune réponse déjà envoyée à votre praticien."
+        confirmLabel="Réinitialiser"
+        onConfirm={confirmerReinitialiser}
+      />
+      <PatientConfirmDialog
+        open={confirmDialog === 'submit'}
+        onOpenChange={open => setConfirmDialog(open ? 'submit' : null)}
+        message="Transmettre vos réponses à votre praticien ? Après transmission, elles seront verrouillées."
+        confirmLabel="Transmettre"
+        onConfirm={confirmerTransmission}
+      />
+    </PatientCard>
   );
 }

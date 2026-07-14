@@ -18,7 +18,7 @@ Les seuls patients nommés autorisés dans le dépôt sont fictifs :
 
 - Sophie Nicola ;
 - Jennifer Martin ;
-- Michel Dogné.
+- Michel Dogne.
 
 ## Identifiants techniques
 

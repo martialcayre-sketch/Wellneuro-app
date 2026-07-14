@@ -31,7 +31,7 @@ safety:
   allowed_test_patients:
     - Sophie Nicola
     - Jennifer Martin
-    - Michel Dogné
+    - Michel Dogne
 
 compatibility:
   preserve_existing_skills: true

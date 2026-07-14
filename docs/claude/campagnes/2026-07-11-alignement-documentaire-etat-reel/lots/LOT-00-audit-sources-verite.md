@@ -77,7 +77,7 @@ Une matrice `affirmation → source → date → confiance → vérification req
 | 2 | Registre relationnel (`questionnaire_packs`) livré, lecture primaire + fallback `packs.qids` | `PROJET_CONTEXTE.md:74`, `ROADMAP_TECHNIQUE.md:30` | `schema.prisma:184-217` + `packRegistry.ts:67-90` (`resolvePackQuestionnaireIds`) confirmés, callers vérifiés | Confirmé |
 | 3 | Portail patient unifié `/portail/[token]` | `PROJET_CONTEXTE.md` | Route existe (`web/src/app/portail/[token]/`) | Confirmé |
 | 4 | Synthèse IA enrichie (`contexteClinique.ts`) | `PROJET_CONTEXTE.md:78` | Module existe, description conforme | Confirmé |
-| 5 | Patients fictifs = uniquement Sophie Nicola, Jennifer Martin, Michel Dogné, aucune variante | `PROJET_CONTEXTE.md:82` | Confirmé, aucun autre nom/typo | Confirmé |
+| 5 | Patients fictifs = uniquement Sophie Nicola, Jennifer Martin, Michel Dogne, aucune variante | `PROJET_CONTEXTE.md:82` | Confirmé, aucun autre nom/typo | Confirmé |
 | 6 | R8 (filet de sécurité technique) : « Vitest (32 tests) … Playwright reste hors CI » | `ROADMAP_TECHNIQUE.md:55` et `docs/roadmap.md:55` (texte dupliqué) | Contredit par SESSION_LOG 2026-07-11 (R8.2/R8.3) : Playwright intégré en CI réelle, Vitest passé à 61 tests | Écart confirmé → corrigé en LOT-02 |
 | 7 | Suppression de `docs/claude/PROJET_CONTEXTE_MINIMAL.md` et `README_MINIMAL.md` | `git status` | Ajoutés au commit `2ba80dc`, mis en suppression avant cette session — confirmé intentionnel par l'utilisateur en session (2026-07-11) | Confirmé |
 
