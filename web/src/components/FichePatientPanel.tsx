@@ -18,6 +18,7 @@ import { ModeConsultation } from '@/components/ui/ModeConsultation';
 import { PatientPreview } from '@/components/PatientPreview';
 import { MissingDataPanel } from '@/components/patient-cockpit/MissingDataPanel';
 import { DecisionSummaryCard } from '@/components/patient-cockpit/DecisionSummaryCard';
+import { ProtocolMiniBuilder } from '@/components/patient-cockpit/ProtocolMiniBuilder';
 
 type ScoreCertification = { source?: string; status?: string };
 
@@ -232,6 +233,7 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
           runtime ClinicalSnapshot/ClinicalReview sera branché dans un lot dédié. */}
       <MissingDataPanel missingData={null} discordances={null} />
       <DecisionSummaryCard decisionCard={null} />
+      <ProtocolMiniBuilder decisionCard={null} />
 
       {/* Couvertures descriptives — aucune priorité clinique n'est déduite ici. */}
       <section>

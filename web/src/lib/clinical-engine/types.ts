@@ -5,6 +5,7 @@ export const VERSION_MAPPING_BESOINS = 'besoins-v1' as const;
 export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v1' as const;
 export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
 export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;
+export const VERSION_PROTOCOL_DRAFT = 'c1-protocol-draft-v1' as const;
 
 export type MeasurementUnit = 'ratio' | 'score_100' | 'delta';
 
@@ -258,6 +259,57 @@ export type DecisionCard = {
   discordanceFindingIds: string[];
   safetyFindingIds: string[];
   abstention: AbstentionAssessment;
+  limitations: string[];
+  inputHash: string;
+};
+
+export type ProtocolActionType =
+  | 'food'
+  | 'chronobiology'
+  | 'calming_routine'
+  | 'gentle_activity'
+  | 'hydration'
+  | 'advice_sheet'
+  | 'biological_exploration'
+  | 'supplement_exploration';
+
+export type ProtocolAction = {
+  actionId: string;
+  type: ProtocolActionType;
+  title: string;
+  idealPlan: string;
+  minimalPlan: string;
+  rescuePlan: string;
+  limitations: string[];
+};
+
+export type TherapeuticLoad = {
+  level: 'light' | 'moderate' | 'loaded' | 'excessive';
+  source: 'practitioner';
+  justification: string | null;
+};
+
+export type ProtocolReview = {
+  reviewedAt: string;
+  reviewerRole: 'practitioner';
+  confirmation: 'content_reviewed';
+};
+
+export type ProtocolDraft = {
+  protocolDraftId: string;
+  decisionCardId: string;
+  decisionCardInputHash: string;
+  selectedPriorityId: string;
+  createdAt: string;
+  updatedAt: string;
+  version: typeof VERSION_PROTOCOL_DRAFT;
+  status: 'draft' | 'practitioner_reviewed';
+  purpose: string;
+  followUpCriterion: string;
+  adviceSheetRef: string | null;
+  actions: ProtocolAction[];
+  therapeuticLoad: TherapeuticLoad;
+  review: ProtocolReview | null;
   limitations: string[];
   inputHash: string;
 };

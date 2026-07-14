@@ -371,3 +371,24 @@ cadrer LOT-04 (`ProtocolDraft`) en mode Plan.
 
 **Questions ouvertes** : validation clinique du barème et de la charge avant
 toute activation de protocole.
+
+## [2026-07-14] — Campagne C1 : LOT-04 clôturé
+
+**Décisions prises** : `ProtocolDraft` reste local, non persisté et limité à
+trois actions. La charge est déclarée par le praticien, jamais calculée ; le
+niveau excessif exige une justification. « Relu » ne signifie ni actif ni
+diffusé, et toute modification remet le protocole en brouillon.
+
+**Validations exécutées** : 12 tests ciblés, 140 tests globaux, `type-check`,
+lint, certification des 63 questionnaires, contrôle anti-secrets,
+`git diff --check` et revue indépendante GO. Playwright reste bloqué localement
+faute de `NEXTAUTH_SECRET`.
+
+**Options écartées** : barème automatique, API, persistance, migration,
+posologie, produit et diffusion patient — non validés ou hors périmètre.
+
+**Prochaine action prioritaire** : publier LOT-04 vers l'intégration C1, puis
+cadrer LOT-05 en mode Plan.
+
+**Questions ouvertes** : alimentation runtime depuis `DecisionCard` et bornes
+exactes de la validation de diffusion LOT-05.
