@@ -4,9 +4,9 @@ titre: "C1 — Décision clinique 21 jours V1"
 statut: "en_cours"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-14"
-lot_courant: "LOT-02"
+lot_courant: "LOT-03"
 branche_campagne: "campaign/decision-clinique-21-jours-v1/integration"
-branche_lot_courant: "campaign/decision-clinique-21-jours-v1/lot-02"
+branche_lot_courant: "campaign/decision-clinique-21-jours-v1/lot-03"
 cible_pr_lot: "campaign/decision-clinique-21-jours-v1/integration"
 cible_pr_campagne: "main"
 ---
@@ -100,7 +100,7 @@ la sortie de LOT-02.
 |---|---|---|---|
 | LOT-00 | Audit des données réelles disponibles (assignations, réponses, synthèses, statuts R8-lite) ; vérification du registre contre l'état du dépôt ; arbitrage radar (défaut : option A) ; cartographie de ce que la fiche patient actuelle affiche déjà | terminé | HC-F LOT-02 |
 | LOT-01 | Contrats purs : AssessmentEpisode proposé/confirmé, adaptateurs Mon équilibre/questionnaires, ClinicalSnapshot minimal typé, versions, unités et hash canonique ; aucune persistance | terminé | LOT-00 |
-| LOT-02 | Signaux, données manquantes, discordances, sécurité et abstention ; validation praticien obligatoire des règles/seuils avant activation | à_faire | LOT-01 |
+| LOT-02 | Signaux, données manquantes, discordances, sécurité et abstention ; validation praticien obligatoire des règles/seuils avant activation | terminé | LOT-01 |
 | LOT-03 | DecisionCard : priorité proposée, candidats classés, priorité sélectionnée, provenance, contre-factuels et cockpit de décision | à_faire | LOT-02 |
 | LOT-04 | ProtocolDraft : 3 actions max après validation du barème, plans idéal/minimal/secours, charge, intention d'exploration complément, jamais de statut actif | à_faire | LOT-03 |
 | LOT-05 | Instanciations `ModeConsultation` et `PrévisualisationPatient`, validation praticien et synthèse ; rien d'interne dans le rendu patient | à_faire | LOT-04 |

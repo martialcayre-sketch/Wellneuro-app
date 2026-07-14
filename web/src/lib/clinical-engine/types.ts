@@ -3,6 +3,7 @@ import type { JalonMomentum, NiveauPreuveBesoin, StrateCode } from '../equilibre
 export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as const;
 export const VERSION_MAPPING_BESOINS = 'besoins-v1' as const;
 export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v1' as const;
+export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
 
 export type MeasurementUnit = 'ratio' | 'score_100' | 'delta';
 
@@ -128,6 +129,85 @@ export type ClinicalSnapshot = {
   };
   sourceRefs: ClinicalSourceRef[];
   versions: ClinicalSnapshotVersions;
+  limitations: string[];
+  inputHash: string;
+};
+
+export type QualitativeConfidence = 'solide' | 'probable' | 'fragile' | 'à_documenter';
+export type MissingDataPriority = 'critical_for_decision' | 'useful_not_urgent' | 'optional' | null;
+
+export type ClinicalFindingProvenance = {
+  responseIds: string[];
+  needIds: number[];
+  clinicalObjectCodes: ClinicalObjectCode[];
+};
+
+export type CandidateClinicalRuleRef = {
+  ruleId: string;
+  version: string;
+  lifecycle: 'candidate';
+};
+
+export type ValidatedClinicalRuleRef = {
+  ruleId: string;
+  version: string;
+  lifecycle: 'clinically_validated';
+  validation: {
+    validatedAt: string;
+    validatorRole: 'practitioner';
+    sourceReference: string;
+  };
+};
+
+export type ClinicalRuleRef = CandidateClinicalRuleRef | ValidatedClinicalRuleRef;
+
+type ClinicalFindingBase = {
+  findingId: string;
+  confidence: QualitativeConfidence;
+  provenance: ClinicalFindingProvenance;
+  ruleId: string | null;
+  limitations: string[];
+};
+
+export type MissingDataFinding = ClinicalFindingBase & {
+  kind: 'missing_data';
+  priority: MissingDataPriority;
+  uncertaintyExplanation: string;
+  potentialDecisionImpact: string;
+};
+
+export type DiscordanceFinding = ClinicalFindingBase & {
+  kind: 'discordance';
+  audience: 'practitioner_only';
+  interpretation: 'point_to_explore';
+  signal: string;
+  questionToExplore: string;
+  possibleProtocolImpact: string;
+  ruleId: string;
+};
+
+export type SafetyFinding = ClinicalFindingBase & {
+  kind: 'safety';
+  disposition: 'requires_practitioner_review';
+  rationale: string;
+  ruleId: string;
+};
+
+export type AbstentionAssessment =
+  | { status: 'not_evaluated'; ruleIds: []; limitations: string[] }
+  | { status: 'not_required' | 'required'; ruleIds: string[]; limitations: string[] };
+
+export type ClinicalReview = {
+  reviewId: string;
+  snapshotId: string;
+  snapshotInputHash: string;
+  createdAt: string;
+  version: typeof VERSION_CLINICAL_REVIEW;
+  rules: ClinicalRuleRef[];
+  missingData: MissingDataFinding[];
+  discordances: DiscordanceFinding[];
+  safetyFindings: SafetyFinding[];
+  abstention: AbstentionAssessment;
   limitations: string[];
   inputHash: string;
 };
