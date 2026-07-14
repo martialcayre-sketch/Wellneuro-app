@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import type { PatientSession } from '@/lib/patient-session';
+import { isPatientSessionBoundToToken, type PatientSession } from '@/lib/patient-session';
 
 export const CONSENTEMENT_VERSION = 'v1';
 
@@ -39,6 +39,7 @@ export async function resolvePortailPatientFromSession(token: string, session: P
   if (!patient || patient.accessTokenRevoked || !patient.actif) return null;
   if (patient.idPatient !== session.idPatient) return null;
   if (patient.email.toLowerCase() !== session.email) return null;
+  if (!patient.accessToken || !isPatientSessionBoundToToken(session, patient.accessToken)) return null;
   return patient;
 }
 

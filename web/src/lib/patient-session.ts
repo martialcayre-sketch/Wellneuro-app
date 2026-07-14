@@ -28,9 +28,11 @@ export const PORTAIL_COOKIE_OPTIONS = {
 export type PatientSession = {
   idPatient: string;
   email: string;
+  accessTokenFingerprint: string;
 };
 
 type SessionPayload = PatientSession & { exp: number };
+type PatientSessionInput = Omit<PatientSession, 'accessTokenFingerprint'> & { accessToken: string };
 
 function getSecret(): string {
   const secret = process.env.NEXTAUTH_SECRET;
@@ -50,14 +52,30 @@ function sign(payloadB64: string): string {
   return createHmac('sha256', getSecret()).update(payloadB64).digest('base64url');
 }
 
+function fingerprintAccessToken(accessToken: string): string {
+  return createHmac('sha256', getSecret())
+    .update(`portail-access-token:${accessToken}`)
+    .digest('base64url');
+}
+
+export function isPatientSessionBoundToToken(
+  session: PatientSession,
+  accessToken: string,
+): boolean {
+  const expected = Buffer.from(fingerprintAccessToken(accessToken));
+  const provided = Buffer.from(session.accessTokenFingerprint);
+  return expected.length === provided.length && timingSafeEqual(expected, provided);
+}
+
 /**
  * Sérialise et signe une session patient. Renvoie la valeur à stocker dans le
  * cookie `wn_portail`, au format `<payloadBase64Url>.<signatureBase64Url>`.
  */
-export function signPatientSession({ idPatient, email }: PatientSession): string {
+export function signPatientSession({ idPatient, email, accessToken }: PatientSessionInput): string {
   const payload: SessionPayload = {
     idPatient,
     email: email.toLowerCase(),
+    accessTokenFingerprint: fingerprintAccessToken(accessToken),
     exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
   };
   const payloadB64 = base64url(JSON.stringify(payload));
@@ -90,8 +108,13 @@ export function verifyPatientSession(raw: string | null | undefined): PatientSes
   try {
     const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as SessionPayload;
     if (!payload || typeof payload.idPatient !== 'string' || typeof payload.email !== 'string') return null;
+    if (typeof payload.accessTokenFingerprint !== 'string') return null;
     if (typeof payload.exp !== 'number' || payload.exp * 1000 < Date.now()) return null;
-    return { idPatient: payload.idPatient, email: payload.email.toLowerCase() };
+    return {
+      idPatient: payload.idPatient,
+      email: payload.email.toLowerCase(),
+      accessTokenFingerprint: payload.accessTokenFingerprint,
+    };
   } catch {
     return null;
   }
@@ -126,10 +149,7 @@ export async function isSessionAuthorizedForAssignment(
     where: { idPatient: session.idPatient },
     select: { actif: true, accessToken: true, accessTokenRevoked: true, email: true },
   });
-  return Boolean(
-    patient?.actif
-    && Boolean(patient.accessToken)
-    && !patient.accessTokenRevoked
-    && patient.email.toLowerCase() === session.email,
-  );
+  if (!patient?.actif || !patient.accessToken || patient.accessTokenRevoked) return false;
+  return patient.email.toLowerCase() === session.email
+    && isPatientSessionBoundToToken(session, patient.accessToken);
 }

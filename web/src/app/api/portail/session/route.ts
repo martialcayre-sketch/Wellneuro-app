@@ -116,7 +116,11 @@ export async function POST(req: Request): Promise<NextResponse> {
     // porté par le cookie signé pour les appels suivants (hub, questionnaires).
     res.cookies.set(
       PORTAIL_COOKIE_NAME,
-      signPatientSession({ idPatient: patient.idPatient, email: patient.email }),
+      signPatientSession({
+        idPatient: patient.idPatient,
+        email: patient.email,
+        accessToken: token,
+      }),
       PORTAIL_COOKIE_OPTIONS,
     );
 
