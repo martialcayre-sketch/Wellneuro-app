@@ -19,7 +19,7 @@ import type { ReponsesParQuestionnaire, ResultatEquilibre, SourceQuestionnaire }
 //   du patient, laissé à l'intégration API qui appellera calculerEquilibre à
 //   chaque date résolue.
 
-const SOURCES_STABILITE_METABOLIQUE: SourceQuestionnaire[] = [
+export const SOURCES_STABILITE_METABOLIQUE: SourceQuestionnaire[] = [
   { idQuestionnaire: 'Q_INF_01', max: 96, inverser: true }, // hyperexcitabilité SIIN
   { idQuestionnaire: 'Q_INF_02', max: 52, inverser: true }, // magnésium/spasmophilie SIIN
 ];
