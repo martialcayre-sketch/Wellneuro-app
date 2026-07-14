@@ -52,9 +52,7 @@ jobs:
         run: bash scripts/check_no_secrets.sh
 
       - name: Campaign rules audit (blocking)
-        # Les dérives du miroir restent visibles dans le rapport, mais seront
-        # rendues bloquantes seulement après sa réconciliation dédiée.
-        run: node scripts/wn-campaign-audit.mjs --fail-on-warning-codes closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
+        run: node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
 
       - uses: actions/setup-node@v4
         with:
