@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "npm run prisma:generate && next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "next lint",
     "type-check": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
@@ -37,10 +37,11 @@
     "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.20.0",
     "lucide-react": "^1.24.0",
-    "next": "16.2.10",
-    "next-auth": "^4.24.14",
-    "nodemailer": "^9.0.3",
+    "next": "14.2.5",
+    "next-auth": "^4.24.7",
+    "nodemailer": "^7.0.13",
     "pg": "^8.22.0",
+    "prisma": "^7.8.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^3.9.2"
@@ -51,24 +52,16 @@
     "@types/node": "^20.14.0",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@typescript-eslint/eslint-plugin": "^8.64.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@vitejs/plugin-react": "^6.0.3",
     "autoprefixer": "^10.4.19",
     "dotenv": "^17.4.2",
-    "eslint": "^9.0.0",
-    "eslint-config-next": "16.2.10",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.5",
     "jsdom": "^29.1.1",
-    "postcss": "^8.5.19",
-    "prisma": "^7.8.0",
+    "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",
     "typescript": "^5.4.5",
     "vitest": "^4.1.10"
-  },
-  "overrides": {
-    "@prisma/dev": "0.24.14",
-    "next": {
-      "postcss": "8.5.19"
-    },
-    "uuid": "11.1.1"
   }
 }

@@ -4,24 +4,6 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
-### Suivi Prisma dédié (2026-07-14)
-
-- Correction du résidu `npm audit` lié au runtime Prisma sans migration de
-  version majeure: ajout d'un override npm `@prisma/dev@0.24.14` dans
-  [web/package.json](web/package.json), ce qui supprime la chaîne vulnérable
-  remontée via `@hono/node-server`.
-- Vérifié après installation: `npm audit --omit=dev` retourne 0 vulnérabilité.
-- Aucun changement de logique clinique, de schéma Prisma ou d'API applicative.
-
-### Lots dépendances web 1→3 (2026-07-14)
-
-- Chaînage en une seule PR des remédiations de dépendances web prioritaires :
-  `next` et `eslint-config-next` vers `14.2.35`, `postcss` vers `8.5.19`,
-  `next-auth` vers `4.24.14`, `nodemailer` vers `9.0.3`, avec override
-  transitive `uuid@11.1.1` pour retirer la vulnérabilité signalée par `npm
-  audit` sans changer le code applicatif.
-- Aucun changement de logique clinique, de schéma Prisma ou de flux patient.
-
 ### C1 — Décision clinique 21 jours V1 (2026-07-14)
 
 - Ajout des contrats purs et versionnés `AssessmentEpisode`,
