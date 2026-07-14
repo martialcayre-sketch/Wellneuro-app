@@ -313,3 +313,22 @@ périmètre C1/QX).
 **Prochaine action prioritaire** : préparer LOT-04 dans un worktree dédié après intégration de LOT-03.
 
 **Questions ouvertes** : aucune.
+
+## [2026-07-14] — Campagne QX terminée
+
+**Décisions prises** : LOT-04 valide l'absence de régression du renderer
+`micro_batch` de `Q_NEU_03` et clôt QX. Seul ce renderer reste activé ; les
+profils `focus`, `guided_sections` et `compact_repeated_scale` conservent leurs
+gates de certification documentées.
+
+**Validations exécutées** : tests ciblés 21/21, Vitest 130/130, type-check,
+lint, build, scoring 63/63, anti-secrets, inventaire identique, CI PostgreSQL
+et Playwright PR #63 (`29331961153`), essai manuel Chrome PC à 375 px, zoom
+200 %, clavier et Narrateur Windows.
+
+**Options écartées** : activation de renderers non certifiés, mélange
+d'options, changement clinique, Prisma ou API.
+
+**Prochaine action prioritaire** : poursuivre C1, campagne primaire.
+
+**Questions ouvertes** : aucune.

@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Validation et handoff"
-statut: "en_cours"
+statut: "terminé"
 dépend_de: "LOT-03"
 ---
 
@@ -26,5 +26,6 @@ Prouver l'absence de régression clinique et valider les parcours mobile/desktop
 - Aucun nouveau renderer activé ; `Q_NEU_03` reste l'unique pilote actif.
 - Tests ciblés 21/21, suite Vitest 130/130, type-check, lint, build production,
   scoring-check, anti-secrets, audit de campagne et `git diff --check` conformes.
-- CI PostgreSQL/Playwright LOT-04 et contrôle manuel restent à consigner avant
-  passage du statut à `terminé`.
+- CI PostgreSQL/Playwright PR #63 (`29331961153`) verte ; contrôle manuel du
+  2026-07-14 conforme sur Chrome PC, 375 px, zoom 200 %, clavier et Narrateur
+  Windows.

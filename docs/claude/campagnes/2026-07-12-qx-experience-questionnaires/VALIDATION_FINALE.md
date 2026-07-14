@@ -19,9 +19,9 @@ catalogue clinique, ni le payload, ni le scoring, ni la persistance serveur.
 | Reprise sans saut d'une partie incomplète | `GenericQuestionnaire.test.tsx` | Conforme |
 | Résumé ordonné et correction ciblée | `GenericQuestionnaire.test.tsx` | Conforme |
 | Erreur réseau sans perte puis nouvelle tentative | `GenericQuestionnaire.test.tsx` | Conforme |
-| Session portail restaurée et questionnaires A puis B sans nouveau gate | `portail-parcours.spec.ts` | Preuve de base : PR #55, run CI `29327376064` vert ; à reconfirmer sur la CI LOT-04 |
+| Session portail restaurée et questionnaires A puis B sans nouveau gate | `portail-parcours.spec.ts` | Conforme — PR #63, run CI `29331961153` |
 | Inventaire des 63 questionnaires reproductible | sortie de `qx-questionnaire-inventory.mjs` comparée au document versionné | Conforme |
-| Desktop, 375 px, zoom 200 %, clavier et lecteur d'écran | contrôle manuel | À consigner avant clôture |
+| Desktop, 375 px, zoom 200 %, clavier et lecteur d'écran | contrôle manuel du 2026-07-14 | Conforme — Chrome PC et Narrateur Windows |
 
 ## Invariants cliniques et contractuels
 
@@ -48,18 +48,19 @@ catalogue clinique, ni le payload, ni le scoring, ni la persistance serveur.
 - Anti-secrets et `git diff --check` : conformes.
 - Audit de campagne : conforme ; deux avertissements historiques de lot LOT-00
   dupliqué dans une autre campagne restent hors périmètre.
-- CI PostgreSQL et Playwright dédiée à LOT-04 : à exécuter sur la PR.
+- CI PostgreSQL et Playwright LOT-04 : conforme sur la PR #63, run
+  `29331961153`.
 
 ## Décision
 
-Le GO final exige encore la CI PostgreSQL/Playwright dédiée, le contrôle
-manuel consigné et une revue indépendante sans constat bloquant.
+Les preuves automatiques et manuelles sont conformes. La clôture reste
+conditionnée à la revue indépendante finale et à la CI du commit de clôture.
 
 ## Contrôle manuel à consigner
 
-- [ ] Desktop : parcours complet, reprise, résumé, correction et nouvelle tentative.
-- [ ] Largeur 375 px : aucune cible tronquée ni aucun débordement horizontal.
-- [ ] Zoom 200 % : contenu et navigation restent utilisables sans débordement.
-- [ ] Clavier seul : ordre naturel, radios utilisables et focus visible/replacé.
-- [ ] Lecteur d'écran : titres, groupes radio, progression, erreurs et dialogue annoncés.
-- [ ] Portail : questionnaire A puis B et retour au hub sans nouvelle saisie d'email.
+- [x] Desktop Chrome sur PC : parcours complet, reprise, résumé, correction et nouvelle tentative.
+- [x] Largeur 375 px : aucune cible tronquée ni aucun débordement horizontal.
+- [x] Zoom 200 % : contenu et navigation restent utilisables sans débordement.
+- [x] Clavier seul : ordre naturel, radios utilisables et focus visible/replacé.
+- [x] Narrateur Windows : titres, groupes radio, progression, erreurs et dialogue annoncés.
+- [x] Portail : questionnaire A puis B et retour au hub sans nouvelle saisie d'email.
