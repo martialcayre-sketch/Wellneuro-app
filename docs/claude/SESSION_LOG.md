@@ -289,3 +289,23 @@ complet.
 
 **Questions ouvertes** : aucune ; aucun lot de campagne concerné (hors
 périmètre C1/QX).
+
+## [2026-07-14] — Campagne C1 : LOT-00 clôturé
+
+**Décisions prises** : audit statique des entrées C1 terminé ; option A
+confirmée (3 strates 60/20/20 sur la fiche patient, cinq objets cliniques en
+lecture synthétique séparée). Les limites de clés, réponses historiques,
+version de score, épisode, synthèses et preuves sont transmises à LOT-01.
+PR #49 fusionnée dans la branche d'intégration ; état actif avancé à LOT-01.
+
+**Validations exécutées** : `git diff --check`, contrôle anti-secrets, revue
+indépendante GO et checks Vercel verts. Tests applicatifs non applicables au
+diff documentaire.
+
+**Options écartées** : migration, persistance, modification clinique et
+implémentation cockpit — hors périmètre LOT-00.
+
+**Prochaine action prioritaire** : cadrer LOT-01 en mode Plan depuis la branche
+d'intégration C1 à jour.
+
+**Questions ouvertes** : validation clinique future du mapping A/B/C/D.
