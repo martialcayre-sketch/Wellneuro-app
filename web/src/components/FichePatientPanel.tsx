@@ -16,6 +16,10 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
 import { PatientPreview } from '@/components/PatientPreview';
+import { MissingDataPanel } from '@/components/patient-cockpit/MissingDataPanel';
+import { DecisionSummaryCard } from '@/components/patient-cockpit/DecisionSummaryCard';
+import { ProtocolMiniBuilder } from '@/components/patient-cockpit/ProtocolMiniBuilder';
+import { ProtocolConsultationPanel } from '@/components/patient-cockpit/ProtocolConsultationPanel';
 
 type ScoreCertification = { source?: string; status?: string };
 
@@ -170,12 +174,12 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
   return (
     <ModeConsultation active={modeConsultationActif} onToggle={() => setModeConsultationActif(false)}>
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h2 className="text-2xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
-          <p className="text-sm text-muted-foreground mt-1">{patient.email}</p>
+          <p className="mt-1 break-all text-sm text-muted-foreground">{patient.email}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {derniereAssignationId && (
             <PatientPreview patientId={idPatient} assignationId={derniereAssignationId} />
           )}
@@ -183,7 +187,7 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
             <button
               type="button"
               onClick={() => setModeConsultationActif(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               <Stethoscope size={16} strokeWidth={2} />
               Mode consultation
@@ -226,11 +230,18 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
         </div>
       </section>
 
-      {/* Priorités des 21 prochains jours */}
+      {/* Les manques et bloqueurs précèdent toujours la décision. Le flux
+          runtime ClinicalSnapshot/ClinicalReview sera branché dans un lot dédié. */}
+      <MissingDataPanel missingData={null} discordances={null} />
+      <DecisionSummaryCard decisionCard={null} />
+      <ProtocolMiniBuilder decisionCard={null} />
+      <ProtocolConsultationPanel decisionCard={null} protocolDraft={null} />
+
+      {/* Couvertures descriptives — aucune priorité clinique n'est déduite ici. */}
       <section>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Priorités des 21 prochains jours
+            Couverture des 12 besoins
           </h3>
           <Link
             href={`/dashboard/patients/${encodeURIComponent(idPatient)}/besoins`}

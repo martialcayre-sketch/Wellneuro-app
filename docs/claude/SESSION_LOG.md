@@ -290,6 +290,146 @@ complet.
 **Questions ouvertes** : aucune ; aucun lot de campagne concerné (hors
 périmètre C1/QX).
 
+## [2026-07-14] — Campagne C1 : LOT-00 clôturé
+
+**Décisions prises** : audit statique des entrées C1 terminé ; option A
+confirmée (3 strates 60/20/20 sur la fiche patient, cinq objets cliniques en
+lecture synthétique séparée). Les limites de clés, réponses historiques,
+version de score, épisode, synthèses et preuves sont transmises à LOT-01.
+PR #49 fusionnée dans la branche d'intégration ; état actif avancé à LOT-01.
+
+**Validations exécutées** : `git diff --check`, contrôle anti-secrets, revue
+indépendante GO et checks Vercel verts. Tests applicatifs non applicables au
+diff documentaire.
+
+**Options écartées** : migration, persistance, modification clinique et
+implémentation cockpit — hors périmètre LOT-00.
+
+**Prochaine action prioritaire** : cadrer LOT-01 en mode Plan depuis la branche
+d'intégration C1 à jour.
+
+**Questions ouvertes** : validation clinique future du mapping A/B/C/D.
+
+## [2026-07-14] — Campagne C1 : LOT-01 clôturé
+
+**Décisions prises** : contrats purs `AssessmentEpisode` et
+`ClinicalSnapshot` livrés avec adaptateurs vers le moteur `equilibre`, unités,
+versions, provenance, fraîcheur et hash canonique. L'absence et les réponses
+incomplètes ne deviennent jamais zéro. PR #51 fusionnée dans l'intégration C1.
+
+**Validations exécutées** : 55 tests Vitest ciblés, `type-check`, lint,
+certification des 63 questionnaires, contrôle anti-secrets, `git diff --check`,
+revue indépendante GO et checks Vercel verts.
+
+**Options écartées** : persistance, migration, route API, `DecisionCard`,
+`ProtocolDraft` et toute modification clinique — hors périmètre LOT-01.
+
+**Prochaine action prioritaire** : cadrer C1 LOT-02 en mode Plan depuis la
+branche d'intégration actualisée.
+
+**Questions ouvertes** : validation clinique future des règles et seuils de
+signaux, discordances, sécurité et abstention de LOT-02.
+
+## [2026-07-14] — Campagne C1 : LOT-02 clôturé
+
+**Décisions prises** : `ClinicalReview` livre un socle déclaratif pour les
+données manquantes, discordances praticien-only, sécurité et abstention. Les
+absences structurelles restent `à_documenter`, sans zéro ni criticité
+automatique. Les règles candidates sont inactives et toute validation déclarée
+exige un praticien.
+
+**Validations exécutées** : 63 tests Vitest ciblés, `type-check`, lint,
+certification des 63 questionnaires, contrôle anti-secrets, `git diff --check`
+et revue indépendante GO.
+
+**Options écartées** : règle ou seuil clinique, interface, `DecisionCard`,
+persistance, migration et écriture Supabase — hors périmètre LOT-02.
+
+**Prochaine action prioritaire** : publier LOT-02 vers l'intégration C1, puis
+cadrer LOT-03 en mode Plan.
+
+**Questions ouvertes** : validation clinique des règles de priorité avant
+toute activation dans LOT-03 ; aucune règle n'est actuellement activée.
+
+## [2026-07-14] — Campagne C1 : LOT-03 clôturé
+
+**Décisions prises** : `DecisionCard` reste un brouillon déterministe et
+explicable. Les candidats exigent une règle cliniquement validée, la sélection
+appartient au praticien et tout bloqueur retire la proposition. La fiche
+distingue revue absente et absence de manque qualifié, avant la décision.
+
+**Validations exécutées** : 10 tests ciblés, 128 tests globaux, `type-check`,
+lint, certification des 63 questionnaires, contrôle anti-secrets,
+`git diff --check` et revue indépendante GO. Playwright ajouté mais non exécuté
+localement faute de `NEXTAUTH_SECRET`.
+
+**Options écartées** : priorité automatique, règle clinique, API, persistance,
+migration, IA et diffusion patient — hors périmètre ou non validées.
+
+**Prochaine action prioritaire** : publier LOT-03 vers l'intégration C1, puis
+cadrer LOT-04 (`ProtocolDraft`) en mode Plan.
+
+**Questions ouvertes** : validation clinique du barème et de la charge avant
+toute activation de protocole.
+
+## [2026-07-14] — Campagne C1 : LOT-04 clôturé
+
+**Décisions prises** : `ProtocolDraft` reste local, non persisté et limité à
+trois actions. La charge est déclarée par le praticien, jamais calculée ; le
+niveau excessif exige une justification. « Relu » ne signifie ni actif ni
+diffusé, et toute modification remet le protocole en brouillon.
+
+**Validations exécutées** : 12 tests ciblés, 140 tests globaux, `type-check`,
+lint, certification des 63 questionnaires, contrôle anti-secrets,
+`git diff --check` et revue indépendante GO. Playwright reste bloqué localement
+faute de `NEXTAUTH_SECRET`.
+
+**Options écartées** : barème automatique, API, persistance, migration,
+posologie, produit et diffusion patient — non validés ou hors périmètre.
+
+**Prochaine action prioritaire** : publier LOT-04 vers l'intégration C1, puis
+cadrer LOT-05 en mode Plan.
+
+**Questions ouvertes** : alimentation runtime depuis `DecisionCard` et bornes
+exactes de la validation de diffusion LOT-05.
+
+## [2026-07-14] — Campagne C1 : LOT-05 clôturé
+
+**Décisions prises** : `PatientProtocolView` projette par liste blanche les
+objets relus. La validation locale, liée aux hashes, déverrouille seulement
+l’aperçu ; « relu », « validé pour diffusion » et « non transmis » restent
+distincts. La fiche demeure indisponible sans flux runtime C1.
+
+**Validations exécutées** : 10 tests ciblés, 150 tests globaux, `type-check`,
+lint, certification des 63 questionnaires, contrôle anti-secrets,
+`git diff --check` et revue indépendante GO. Playwright non exécuté faute de
+`NEXTAUTH_SECRET`.
+
+**Options écartées** : calcul de charge, API, persistance, impression et envoi
+patient — hors périmètre ou non validés.
+
+**Prochaine action prioritaire** : publier LOT-05 vers l’intégration C1, puis
+cadrer LOT-06 en mode Plan.
+
+**Questions ouvertes** : branchement runtime et preuve persistée de
+transmission, réservés à des lots ultérieurs.
+
+## [2026-07-14] — Campagne C1 : clôture technique
+
+**Décisions prises** : C1 et LOT-06 sont clôturés avec trois verdicts séparés :
+GO technique, ergonomie humaine à valider, NO-GO runtime, activation et
+diffusion. La CI de la PR #60 a réussi anti-secrets, audit campagne,
+type-check, Vitest, lint, build et Playwright ; Vercel est vert.
+
+**Options écartées** : aucun runtime, persistance, activation, transmission ou
+succès ergonomique implicite ; ces preuves n’existent pas dans C1.
+
+**Prochaine action prioritaire** : promouvoir QX et cadrer QX/LOT-02 en mode
+Plan depuis son intégration actualisée.
+
+**Questions ouvertes** : protocole chronométré avec un praticien et téléphone
+physique ; construction serveur et preuve persistée de transmission pour C2/C3.
+
 ## [2026-07-14] — Campagne QX : LOT-02 terminé
 
 **Décisions prises** : renderer `micro_batch` activé uniquement pour `Q_NEU_03`, en neuf lots visuels conservant strictement les 25 items, leurs options, le payload et le scoring. Navigation, reprise de brouillon, progression et accessibilité clavier/lecteur d’écran couvertes.
@@ -329,6 +469,6 @@ et Playwright PR #63 (`29331961153`), essai manuel Chrome PC à 375 px, zoom
 **Options écartées** : activation de renderers non certifiés, mélange
 d'options, changement clinique, Prisma ou API.
 
-**Prochaine action prioritaire** : poursuivre C1, campagne primaire.
+**Prochaine action prioritaire** : choisir explicitement la prochaine campagne à activer.
 
 **Questions ouvertes** : aucune.

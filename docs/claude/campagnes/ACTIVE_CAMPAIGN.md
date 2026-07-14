@@ -1,17 +1,8 @@
 # Campagnes actives
 
-## Activité primaire
+Aucune campagne active.
 
-**Campagne** : 2026-07-11-decision-clinique-21-jours-v1
-**Titre** : C1 — Décision clinique 21 jours V1
-**Statut** : active
-**Lot actif** : LOT-00
-
-## Activités parallèles
-
-Aucune campagne parallèle active.
-
-**Statut global** : active
+**Statut global** : idle
 **Mise à jour** : 2026-07-14
 
-> La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.
+> La source de vérité machine est `.wn/state.json`.

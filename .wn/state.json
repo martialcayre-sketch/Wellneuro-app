@@ -4,10 +4,10 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "active",
-  "active_campaign": "2026-07-11-decision-clinique-21-jours-v1",
-  "active_lot": "LOT-00",
-  "last_completed_lot": "HC-F/LOT-05",
+  "status": "idle",
+  "active_campaign": null,
+  "active_lot": null,
+  "last_completed_lot": "QX/LOT-04",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -15,19 +15,20 @@
   },
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-14T01:30:00.000Z",
+    "last_checked_at": "2026-07-14T11:18:08.000Z",
     "checks": {
-      "orchestration": "6/6 campaign state tests passed; 19/19 WN tests passed",
-      "type_check": "passed",
+      "orchestration": "campaign audit passed in PR #60 CI; devcontainer smoke passed",
+      "type_check": "passed in PR #60 CI; 64 targeted C1 tests and global Vitest passed; lint and build passed",
       "scoring_certification": "63 questionnaires passed",
-      "no_secrets": "passed",
+      "no_secrets": "passed in PR #60 CI",
+      "e2e": "Playwright passed in PR #60 CI; desktop, tablet and mobile C1 viewports covered",
       "corpus_registry": "391 unique opaque sourceIds passed"
     }
   },
-  "next_action": "Poursuivre C1/LOT-00 sur sa branche dédiée.",
+  "next_action": "Choisir explicitement la prochaine campagne à activer.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-14T12:31:42Z",
+  "updated_at": "2026-07-14T18:21:27Z",
   "parallel_campaigns": []
 }

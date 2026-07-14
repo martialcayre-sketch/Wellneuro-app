@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Tests, documentation et handoff"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-05"
 ---
 
@@ -59,4 +59,21 @@ audiences praticien/patient.
 
 ## Résultats
 
-À compléter à la clôture.
+Replay des six contrats C1, contrôles de frontière d’audience et corrections
+tactiles bornées aux surfaces C1 livrés. Handoff C2/C3, grille ergonomique
+humaine et matrice E2E ajoutés.
+
+Validations locales acquises : 64 tests ciblés, `type-check`, lint,
+certification des 63 questionnaires, contrôle anti-secrets, audit de
+campagnes, `git diff --check` et revue indépendante GO. La CI de la PR #60 a
+ensuite réussi l’anti-secrets, l’audit campagne, le `type-check`, Vitest
+global, lint, build et Playwright. Vercel et le smoke test devcontainer sont
+également verts.
+
+Deux avertissements CI sont non bloquants : les actions Node.js 20 sont
+forcées sur Node.js 24 et aucun fichier `web/playwright-report/` n’était
+présent à téléverser après le succès Playwright. La grille praticien
+chronométrée et le test sur téléphone physique ne sont pas exécutés.
+
+Verdict final : **GO technique** ; **ergonomie humaine à valider** ;
+**NO-GO runtime, activation et diffusion**.

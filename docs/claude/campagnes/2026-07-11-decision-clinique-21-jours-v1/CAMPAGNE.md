@@ -1,12 +1,12 @@
 ---
 id: "2026-07-11-decision-clinique-21-jours-v1"
 titre: "C1 — Décision clinique 21 jours V1"
-statut: "à_faire"
+statut: "terminée"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-13"
-lot_courant: "LOT-00"
+mise_à_jour: "2026-07-14"
+lot_courant: "LOT-06"
 branche_campagne: "campaign/decision-clinique-21-jours-v1/integration"
-branche_lot_courant: "campaign/decision-clinique-21-jours-v1/lot-00"
+branche_lot_courant: "campaign/decision-clinique-21-jours-v1/lot-06"
 cible_pr_lot: "campaign/decision-clinique-21-jours-v1/integration"
 cible_pr_campagne: "main"
 ---
@@ -24,6 +24,11 @@ cible_pr_campagne: "main"
 
 Le vertical slice produit central : une fiche patient cockpit qui transforme
 les données en décision de 21 jours.
+
+> Verdict final C1 : **GO technique**, **ergonomie humaine à valider** et
+> **NO-GO runtime, activation et diffusion**. La CI de la PR #60 prouve les
+> contrats et parcours automatisés ; elle ne remplace pas le protocole
+> chronométré avec un praticien ni les responsabilités runtime de C2/C3.
 
 ```text
 Réponses → épisode proposé/confirmé → ClinicalSnapshot
@@ -98,13 +103,13 @@ la sortie de LOT-02.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Audit des données réelles disponibles (assignations, réponses, synthèses, statuts R8-lite) ; vérification du registre contre l'état du dépôt ; arbitrage radar (défaut : option A) ; cartographie de ce que la fiche patient actuelle affiche déjà | à_faire | HC-F LOT-02 |
-| LOT-01 | Contrats purs : AssessmentEpisode proposé/confirmé, adaptateurs Mon équilibre/questionnaires, ClinicalSnapshot minimal typé, versions, unités et hash canonique ; aucune persistance | à_faire | LOT-00 |
-| LOT-02 | Signaux, données manquantes, discordances, sécurité et abstention ; validation praticien obligatoire des règles/seuils avant activation | à_faire | LOT-01 |
-| LOT-03 | DecisionCard : priorité proposée, candidats classés, priorité sélectionnée, provenance, contre-factuels et cockpit de décision | à_faire | LOT-02 |
-| LOT-04 | ProtocolDraft : 3 actions max après validation du barème, plans idéal/minimal/secours, charge, intention d'exploration complément, jamais de statut actif | à_faire | LOT-03 |
-| LOT-05 | Instanciations `ModeConsultation` et `PrévisualisationPatient`, validation praticien et synthèse ; rien d'interne dans le rendu patient | à_faire | LOT-04 |
-| LOT-06 | Tests, documentation et go/no-go sur les 3 patients fictifs ; handoff C3/C2 | à_faire | LOT-05 |
+| LOT-00 | Audit des données réelles disponibles (assignations, réponses, synthèses, statuts R8-lite) ; vérification du registre contre l'état du dépôt ; arbitrage radar (défaut : option A) ; cartographie de ce que la fiche patient actuelle affiche déjà | terminé | HC-F LOT-02 |
+| LOT-01 | Contrats purs : AssessmentEpisode proposé/confirmé, adaptateurs Mon équilibre/questionnaires, ClinicalSnapshot minimal typé, versions, unités et hash canonique ; aucune persistance | terminé | LOT-00 |
+| LOT-02 | Signaux, données manquantes, discordances, sécurité et abstention ; validation praticien obligatoire des règles/seuils avant activation | terminé | LOT-01 |
+| LOT-03 | DecisionCard : priorité proposée, candidats classés, priorité sélectionnée, provenance, contre-factuels et cockpit de décision | terminé | LOT-02 |
+| LOT-04 | ProtocolDraft : 3 actions max après validation du barème, plans idéal/minimal/secours, charge, intention d'exploration complément, jamais de statut actif | terminé | LOT-03 |
+| LOT-05 | Instanciations `ModeConsultation` et `PrévisualisationPatient`, validation praticien et synthèse ; rien d'interne dans le rendu patient | terminé | LOT-04 |
+| LOT-06 | Tests, documentation et go/no-go sur les 3 patients fictifs ; handoff C3/C2 | terminé | LOT-05 |
 
 ## Hors périmètre
 
@@ -117,10 +122,11 @@ confirmation distincte (si le protocole exige un modèle, lot dédié
 ## Definition of Done
 
 - [ ] Flux complet comprendre → décider → 3 actions → prévisualiser → valider
-      démontré sur Sophie Nicola, Jennifer Martin et Michel Dogné.
-- [ ] Chaque élément de décision porte sa provenance A/B/C/D ou « non mesuré ».
-- [ ] Données manquantes et discordances visibles avant la décision, jamais
+      à chronométrer avec un praticien ; les fixtures techniques et patients
+      fictifs ne valent pas validation ergonomique humaine.
+- [x] Chaque élément de décision porte sa provenance A/B/C/D ou « non mesuré ».
+- [x] Données manquantes et discordances visibles avant la décision, jamais
       après.
-- [ ] Aucun envoi sans validation praticien ; brouillon explicite.
-- [ ] Arbitrage radar documenté ; aucune occurrence de terme banni.
-- [ ] Formules nouvelles versionnées et tracées dans `CHANGELOG.md`.
+- [x] Aucun envoi sans validation praticien ; brouillon explicite.
+- [x] Arbitrage radar documenté ; aucune occurrence de terme banni.
+- [x] Formules nouvelles versionnées et tracées dans `CHANGELOG.md`.
