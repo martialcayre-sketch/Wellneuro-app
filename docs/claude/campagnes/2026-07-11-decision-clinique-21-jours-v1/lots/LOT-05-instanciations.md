@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Instanciations et aperçu patient"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-04"
 ---
 
@@ -49,4 +49,17 @@ Tests composants, contrats d'audience et E2E sur les trois patients fictifs.
 
 ## Résultats
 
-À compléter à la clôture.
+Implémentation clôturée : contrat pur `PatientProtocolView` versionné,
+approbation praticien liée aux hashes et projection par liste blanche. Le
+résumé praticien distingue « relu », « validé pour diffusion » et « non
+transmis » ; l’aperçu local ne montre que la priorité, la raison d’être, les
+plans minimaux, la fiche éventuelle et le critère J21.
+
+La fiche de production conserve un état indisponible tant que le flux runtime
+`DecisionCard` / `ProtocolDraft` n’est pas branché. Aucun calcul de charge,
+appel réseau, stockage ou envoi n’a été ajouté.
+
+Validations : 10 tests ciblés et 150 tests globaux, `type-check`, lint,
+certification des 63 questionnaires, contrôle anti-secrets et
+`git diff --check`. Playwright non exécuté localement faute de
+`NEXTAUTH_SECRET` ; le scénario bureau, tablette et mobile a été étendu.

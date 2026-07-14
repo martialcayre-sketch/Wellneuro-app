@@ -4,6 +4,20 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### C1 — Décision clinique 21 jours V1 (2026-07-14)
+
+- Ajout des contrats purs et versionnés `AssessmentEpisode`,
+  `ClinicalSnapshot`, `ClinicalReview`, `DecisionCard`, `ProtocolDraft` et
+  `PatientProtocolView`, sans persistance ni activation runtime.
+- Le cockpit praticien distingue données manquantes, décision, brouillon de
+  protocole, revue et validation locale pour diffusion. La charge reste
+  déclarée par le praticien et n’est jamais calculée.
+- La projection patient est construite par liste blanche et demeure
+  `not_transmitted`. Aucun détail praticien, appel IA, API de diffusion ou
+  changement de scoring n’est ajouté.
+- Le verdict de campagne sépare validation technique, validation ergonomique
+  humaine et capacité runtime d’activation/diffusion.
+
 ### Architecture clinique 3.2 — réconciliation WN Ultimate v2 (2026-07-13)
 
 - Promotion documentaire des contrats `AssessmentEpisode`,

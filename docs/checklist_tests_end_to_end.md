@@ -181,6 +181,46 @@ Critères de validation :
     acceptée, sans lien avec le code livré par HC-F (voir
     `DETTE_UX_RESIDUELLE.md`).
 
+## Campagne C1 — Décision clinique 21 jours V1
+
+### Matrice de preuve
+
+| Invariant | Contrat / surface | Preuve | Audience |
+|---|---|---|---|
+| Épisode explicitement confirmé | `AssessmentEpisode` | tests unitaires + replay C1 | Praticien |
+| Absence jamais transformée en zéro | `ClinicalSnapshot` / `ClinicalReview` | tests unitaires + replay C1 | Praticien |
+| Abstention et sécurité bloquent la suite | `DecisionCard` | tests unitaires + replay C1 | Praticien |
+| Priorité sélectionnée par le praticien | `DecisionCard` | tests unitaires + replay C1 | Praticien |
+| Trois actions maximum, charge déclarée | `ProtocolDraft` | tests unitaires + replay C1 | Praticien |
+| Modification après revue → brouillon | `ProtocolDraft` | tests unitaires + replay C1 | Praticien |
+| Approbation liée aux hashes | `PatientProtocolView` | tests unitaires + replay C1 | Les deux |
+| Détails internes exclus | projection par liste blanche | tests contrat et composant | Patient |
+| Aucun envoi implicite | cockpit / réseau | test composant + Playwright | Les deux |
+
+### Validation LOT-06
+
+- [x] Tests ciblés des six contrats, du replay et des composants C1 : 64/64.
+- [x] `type-check`, lint et `scoring-check` locaux.
+- [x] Vitest global réussi dans la CI de la PR #60.
+- [x] Build et Playwright réussis dans la CI de la PR #60 ; la collecte locale
+  restait bloquée par `NEXTAUTH_SECRET` absent, sans secret factice.
+- [x] Contrôle anti-secrets, audit de campagnes et `git diff --check`.
+- [x] Playwright C1 sur 390×844, 900×1024 et 1280×800.
+- [x] Aucun débordement horizontal ni contrôle C1 inférieur à 44 px.
+- [x] Bascule consultation au clavier, sans dépendance au survol.
+- [x] Aucune requête mutante lors des interactions C1 locales.
+- [x] Aperçu questionnaire et demandes de correction sans régression.
+- [x] Revue indépendante audience, clinique, données patients et runtime :
+  GO local, aucun constat bloquant.
+
+### Verdicts
+
+- **Technique** : **GO**, CI complète de la PR #60 réussie.
+- **Ergonomie humaine** : à valider avec
+  `GRILLE_VALIDATION_ERGONOMIQUE_C1.md` ; non substituable par Playwright.
+- **Activation / diffusion runtime** : **NO-GO** tant que C2 ne fournit pas
+  construction serveur, persistance, audit et preuve de transmission.
+
 ## Contrôle post-déploiement (Vercel)
 
 Commande de vérification rapide avant/pendant bascule:
