@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import type { DecisionCard, ProtocolAction, ProtocolActionType, TherapeuticLoad } from '@/lib/clinical-engine/types';
-import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
 
 const ACTION_LABELS: Record<ProtocolActionType, string> = {
   food: 'Alimentation',
@@ -35,14 +34,21 @@ export function ProtocolMiniBuilder({ decisionCard }: { decisionCard: DecisionCa
   const [message, setMessage] = useState<string | null>(null);
   const [nextActionId, setNextActionId] = useState(1);
 
-  if (!decisionCard?.selectedMainPriority) {
+  const decisionBlocked = decisionCard !== null && (
+    decisionCard.abstention.status !== 'not_required' || decisionCard.safetyFindingIds.length > 0
+  );
+  if (!decisionCard?.selectedMainPriority || decisionBlocked) {
     return (
       <section aria-labelledby="protocol-builder-title">
         <h3 id="protocol-builder-title" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
           Protocole 21 jours
         </h3>
         <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-sm font-semibold text-foreground">Protocole indisponible — priorité praticien non sélectionnée</p>
+          <p className="text-sm font-semibold text-foreground">
+            {decisionBlocked
+              ? 'Protocole indisponible — bloqueurs décisionnels à revoir'
+              : 'Protocole indisponible — priorité praticien non sélectionnée'}
+          </p>
           <p className="mt-1 text-sm text-muted-foreground">Le protocole restera local et inactif jusqu’à cette sélection.</p>
         </div>
       </section>
@@ -79,20 +85,21 @@ export function ProtocolMiniBuilder({ decisionCard }: { decisionCard: DecisionCa
   };
 
   const review = () => {
-    const now = new Date().toISOString();
-    try {
-      buildProtocolDraft({
-        protocolDraftId: 'local-protocol-draft', decisionCard, createdAt: now, updatedAt: now,
-        purpose, followUpCriterion, actions,
-        therapeuticLoad: { level: loadLevel, source: 'practitioner', justification: loadJustification || null },
-        review: { reviewedAt: now, reviewerRole: 'practitioner', confirmation: 'content_reviewed' },
-      });
-      setReviewed(true);
-      setMessage('Brouillon relu par le praticien — non activé et non transmis.');
-    } catch (error) {
+    const missingActionField = actions.some(action => (
+      !action.title.trim() || !action.idealPlan.trim() || !action.minimalPlan.trim() || !action.rescuePlan.trim()
+    ));
+    if (!purpose.trim() || !followUpCriterion.trim() || actions.length === 0 || missingActionField) {
       setReviewed(false);
-      setMessage(error instanceof Error ? error.message : 'Brouillon incomplet.');
+      setMessage('Brouillon incomplet : renseignez la raison d’être, le critère J21 et tous les plans d’au moins une action.');
+      return;
     }
+    if (loadLevel === 'excessive' && !loadJustification.trim()) {
+      setReviewed(false);
+      setMessage('Une charge excessive exige une justification du praticien.');
+      return;
+    }
+    setReviewed(true);
+    setMessage('Brouillon relu par le praticien — non activé et non transmis.');
   };
 
   return (
