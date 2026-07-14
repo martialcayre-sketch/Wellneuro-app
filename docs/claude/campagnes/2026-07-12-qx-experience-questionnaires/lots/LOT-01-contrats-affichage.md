@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Contrats d'affichage"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-00"
 ---
 
@@ -20,7 +20,13 @@ Livrer un registre UX séparé du catalogue clinique et les types purs `DisplayP
 
 ## Done
 
-- [ ] Aucun champ UX n'est ajouté à `questions.ts` ni envoyé au scoring.
-- [ ] Seul `Q_NEU_03` est activable à ce stade.
-- [ ] Type-check et tests ciblés passent.
+- [x] Aucun champ UX n'est ajouté à `questions.ts` ni envoyé au scoring.
+- [x] Seul `Q_NEU_03` est activable à ce stade.
+- [x] Type-check et tests ciblés passent.
 
+## Résultats
+
+- Registre séparé livré dans `web/src/lib/questionnaire-display.ts`.
+- Quatre tests couvrent fallback strict/fixe, gates des pilotes, absence de
+  mélange et nettoyage du payload.
+- `type-check`, test ciblé et `scoring-check` passent.

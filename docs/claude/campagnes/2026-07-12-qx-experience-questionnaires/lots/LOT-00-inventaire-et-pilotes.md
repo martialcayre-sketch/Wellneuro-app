@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Inventaire et pilotes"
-statut: "en_cours"
+statut: "terminé"
 dépend_de: "HC-F LOT-05 terminé"
 ---
 
@@ -25,8 +25,13 @@ dépend_de: "HC-F LOT-05 terminé"
 
 ## Tests et done
 
-- [ ] 63 identifiants uniques inventoriés.
-- [ ] Toute entrée sans exception explicite retombe sur `strict` et `fixed`.
-- [ ] Les quatre pilotes et leurs gates sont traçables.
-- [ ] Le catalogue clinique reste inchangé.
+- [x] 63 identifiants uniques inventoriés.
+- [x] Toute entrée sans exception explicite retombe sur `strict` et `fixed`.
+- [x] Les quatre pilotes et leurs gates sont traçables.
+- [x] Le catalogue clinique reste inchangé.
 
+## Résultats
+
+- Générateur reproductible : `scripts/qx-questionnaire-inventory.mjs`.
+- Inventaire : 63 lignes, 63 identifiants uniques.
+- Scoring-check : 63 questionnaires validés, scoring inchangé.
