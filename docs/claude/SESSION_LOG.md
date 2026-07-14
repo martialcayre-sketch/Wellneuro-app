@@ -392,3 +392,24 @@ cadrer LOT-05 en mode Plan.
 
 **Questions ouvertes** : alimentation runtime depuis `DecisionCard` et bornes
 exactes de la validation de diffusion LOT-05.
+
+## [2026-07-14] — Campagne C1 : LOT-05 clôturé
+
+**Décisions prises** : `PatientProtocolView` projette par liste blanche les
+objets relus. La validation locale, liée aux hashes, déverrouille seulement
+l’aperçu ; « relu », « validé pour diffusion » et « non transmis » restent
+distincts. La fiche demeure indisponible sans flux runtime C1.
+
+**Validations exécutées** : 10 tests ciblés, 150 tests globaux, `type-check`,
+lint, certification des 63 questionnaires, contrôle anti-secrets,
+`git diff --check` et revue indépendante GO. Playwright non exécuté faute de
+`NEXTAUTH_SECRET`.
+
+**Options écartées** : calcul de charge, API, persistance, impression et envoi
+patient — hors périmètre ou non validés.
+
+**Prochaine action prioritaire** : publier LOT-05 vers l’intégration C1, puis
+cadrer LOT-06 en mode Plan.
+
+**Questions ouvertes** : branchement runtime et preuve persistée de
+transmission, réservés à des lots ultérieurs.

@@ -19,6 +19,7 @@ import { PatientPreview } from '@/components/PatientPreview';
 import { MissingDataPanel } from '@/components/patient-cockpit/MissingDataPanel';
 import { DecisionSummaryCard } from '@/components/patient-cockpit/DecisionSummaryCard';
 import { ProtocolMiniBuilder } from '@/components/patient-cockpit/ProtocolMiniBuilder';
+import { ProtocolConsultationPanel } from '@/components/patient-cockpit/ProtocolConsultationPanel';
 
 type ScoreCertification = { source?: string; status?: string };
 
@@ -234,6 +235,7 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
       <MissingDataPanel missingData={null} discordances={null} />
       <DecisionSummaryCard decisionCard={null} />
       <ProtocolMiniBuilder decisionCard={null} />
+      <ProtocolConsultationPanel decisionCard={null} protocolDraft={null} />
 
       {/* Couvertures descriptives — aucune priorité clinique n'est déduite ici. */}
       <section>

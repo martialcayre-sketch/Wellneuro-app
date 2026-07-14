@@ -6,6 +6,7 @@ export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v1' as const;
 export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
 export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;
 export const VERSION_PROTOCOL_DRAFT = 'c1-protocol-draft-v1' as const;
+export const VERSION_PATIENT_PROTOCOL_VIEW = 'c1-patient-protocol-view-v1' as const;
 
 export type MeasurementUnit = 'ratio' | 'score_100' | 'delta';
 
@@ -310,6 +311,40 @@ export type ProtocolDraft = {
   actions: ProtocolAction[];
   therapeuticLoad: TherapeuticLoad;
   review: ProtocolReview | null;
+  limitations: string[];
+  inputHash: string;
+};
+
+export type ProtocolDiffusionApproval = {
+  decisionCardInputHash: string;
+  protocolDraftInputHash: string;
+  approvedAt: string;
+  approvedBy: 'practitioner';
+  confirmation: 'content_approved_for_diffusion';
+};
+
+export type PatientProtocolAction = {
+  actionId: string;
+  type: ProtocolActionType;
+  title: string;
+  minimalPlan: string;
+};
+
+export type PatientProtocolView = {
+  decisionCardId: string;
+  decisionCardInputHash: string;
+  protocolDraftId: string;
+  protocolDraftInputHash: string;
+  selectedPriorityId: string;
+  priorityLabel: string;
+  version: typeof VERSION_PATIENT_PROTOCOL_VIEW;
+  diffusionStatus: 'approved_for_diffusion';
+  deliveryStatus: 'not_transmitted';
+  approvedAt: string;
+  purpose: string;
+  followUpCriterion: string;
+  adviceSheetRef: string | null;
+  actions: PatientProtocolAction[];
   limitations: string[];
   inputHash: string;
 };
