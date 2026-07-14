@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { readPatientSession } from '@/lib/patient-session';
+import { isPatientSessionBoundToToken, readPatientSession } from '@/lib/patient-session';
 import { mapAssignationPatient, type AssignationPatient } from '@/lib/consultation/mapAssignation';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -39,10 +39,24 @@ export async function GET(req: Request): Promise<NextResponse> {
   try {
     const patient = await prisma.patient.findUnique({
       where: { idPatient: session.idPatient },
-      select: { prenom: true, nom: true, email: true, actif: true, accessTokenRevoked: true },
+      select: {
+        prenom: true,
+        nom: true,
+        email: true,
+        actif: true,
+        accessToken: true,
+        accessTokenRevoked: true,
+      },
     });
     // Le patient doit toujours être actif et non révoqué, même avec un cookie valide.
-    if (!patient || !patient.actif || patient.accessTokenRevoked || patient.email.toLowerCase() !== session.email) {
+    if (
+      !patient
+      || !patient.actif
+      || !patient.accessToken
+      || patient.accessTokenRevoked
+      || patient.email.toLowerCase() !== session.email
+      || !isPatientSessionBoundToToken(session, patient.accessToken)
+    ) {
       logger.security({
         event: EVENT_CODES.PORTAIL_ASSIGNATIONS_UNAUTHORIZED,
         domain: 'SECURITY',

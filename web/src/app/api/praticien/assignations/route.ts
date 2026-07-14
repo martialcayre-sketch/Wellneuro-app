@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import nodemailer from 'nodemailer';
+import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
 
 type CreateAssignationPayload = {
   emailPatient?: string;
@@ -22,6 +23,7 @@ export type CreateAssignationResponse = {
     | 'unauthenticated'
     | 'invalid_payload'
     | 'patient_not_found'
+    | 'portal_revoked'
     | 'questionnaire_not_found'
     | 'exception';
 };
@@ -103,25 +105,40 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
     const titre = titrePayload || questionnaire.titre || idQuestionnaire;
     const nowIso = new Date().toISOString();
 
-    await prisma.assignation.create({
-      data: {
-        idAssignation,
-        idPatient,
-        emailPatient,
-        idQuestionnaire,
-        titre,
-        dateAssignation: new Date(nowIso),
-        dateLimite: dateLimite || null,
-        statut: 'En attente',
-        notes: notes || null,
-      },
-    });
+    let portalUrl: string;
+    try {
+      portalUrl = await withActivePortalAccess(patient.idPatient, async (tx, access) => {
+        await tx.assignation.create({
+          data: {
+            idAssignation,
+            idPatient,
+            emailPatient,
+            idQuestionnaire,
+            titre,
+            dateAssignation: new Date(nowIso),
+            dateLimite: dateLimite || null,
+            statut: 'En attente',
+            notes: notes || null,
+          },
+        });
+        return access.url;
+      });
+    } catch (error) {
+      if (error instanceof PortalAccessError && error.reason === 'portal_revoked') {
+        return NextResponse.json({
+          success: false,
+          reason: 'portal_revoked',
+          error: 'L’accès portail de ce patient est révoqué. Réémettez-le explicitement avant de créer une assignation.',
+        }, { status: 409 });
+      }
+      throw error;
+    }
 
     // Email patient avec lien questionnaire (best-effort)
     try {
       // En serverless, on attend explicitement la promesse pour eviter que
       // l'envoi best-effort soit interrompu juste apres la reponse HTTP.
-      await sendAssignmentEmail(emailPatient, titre, dateLimite, notes, idAssignation);
+      await sendAssignmentEmail(emailPatient, titre, dateLimite, notes, portalUrl);
     } catch (e) {
       console.error('[assignations POST] email patient:', (e as Error).message);
     }
@@ -188,12 +205,10 @@ async function sendAssignmentEmail(
   titreQuestionnaire: string,
   dateLimite: string,
   notes: string,
-  idAssignation: string
+  portalUrl: string
 ) {
   const smtpUrl = process.env.SMTP_URL;
   if (!smtpUrl) return;
-  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  const link = `${baseUrl}/patient/${idAssignation}`;
   const transport = nodemailer.createTransport(smtpUrl);
   const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
   const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
@@ -205,7 +220,7 @@ async function sendAssignmentEmail(
       `Bonjour,\n\n` +
       `Votre praticien vous invite à compléter le questionnaire suivant avant votre consultation :\n` +
       `« ${titreQuestionnaire} »${dateInfo}${noteInfo}\n\n` +
-      `Accédez à votre questionnaire ici :\n${link}\n\n` +
+      `Accédez à votre espace patient ici :\n${portalUrl}\n\n` +
       `L'équipe Wellneuro`,
   });
 }
