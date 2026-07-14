@@ -269,7 +269,7 @@ Accueil praticien
 │ Patients à traiter          │ │ Activité récente            │
 │ Sophie Nicola               │ │ Pack envoyé                 │
 │ Jennifer Martin             │ │ Synthèse générée            │
-│ Michel Dogne                │ │ Réponses complétées         │
+│ Michel Dogné                │ │ Réponses complétées         │
 └─────────────────────────────┘ └─────────────────────────────┘
 ```
 
@@ -384,7 +384,7 @@ Toute donnée de démonstration doit utiliser exclusivement :
 
 - Sophie Nicola ;
 - Jennifer Martin ;
-- Michel Dogne.
+- Michel Dogné.
 
 ---
 

@@ -16,7 +16,7 @@ Interdits dans Git:
 Seuls patients fictifs nommes autorises:
 - Sophie Nicola
 - Jennifer Martin
-- Michel Dogne
+- Michel Dogné
 
 ## 3) Regle secrets et configuration
 

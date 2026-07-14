@@ -11,7 +11,7 @@
 - Éviter : « diagnostic », « ordonnance », « prescription automatique », « traitement prescrit par l’app ».
 - Le praticien valide toujours avant diffusion patient.
 - L’IA explique, reformule, hiérarchise et prépare ; elle ne diagnostique pas, ne prescrit pas et ne calcule pas seule.
-- Patients fictifs uniquement dans les exemples : Sophie Nicola, Jennifer Martin, Michel Dogne.
+- Patients fictifs uniquement dans les exemples : Sophie Nicola, Jennifer Martin, Michel Dogné.
 - Pas de données patient réelles dans les maquettes, prompts, seeds ou captures.
 - Pas de secret en dur.
 - Aucune migration Prisma/SQL sans demande explicite et confirmation.

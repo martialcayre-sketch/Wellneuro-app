@@ -91,8 +91,8 @@ côté patient — toujours passer par ce tableau.
 - « prescription », « ordonnance », « diagnostic », « NeuroScore » —
   interdits projet (`REGISTRE_FRONTIERES.md` §1), y compris en dehors du
   périmètre HC-F.
-- « Dogné » (avec accent) — orthographe fautive du patient fictif ; la forme
-  correcte est **Michel Dogne** (sans accent).
+- Toute variante sans accent de **Michel Dogné** — la forme avec accent est
+  normative depuis l'arbitrage documentaire du 2026-07-14.
 - Score brut, valeur clinique ou statut technique interne affiché sans
   traduction patient (cf. tableau des statuts ci-dessus).
 - Délai de traitement promis et non maîtrisé (« sous 48h », etc.) pour les

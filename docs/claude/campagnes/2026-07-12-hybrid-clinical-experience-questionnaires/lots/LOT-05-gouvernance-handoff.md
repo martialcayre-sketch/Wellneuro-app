@@ -197,12 +197,10 @@ confirmée, limitation pré-existante déjà acceptée depuis C0-UX LOT-03).
 Dettes non bloquantes listées dans `DETTE_UX_RESIDUELLE.md`.
 
 **Correction complémentaire (post-verdict initial)** : la divergence
-orthographique « Dogne »/« Dogné », d'abord signalée sans être corrigée par
-prudence, a été résolue après vérification de la donnée réelle
-(`web/prisma/seed.ts:47`, `nom: 'Dogne'`, sans accent) et confirmation que
-le code de test ne compare cette chaîne dans aucune assertion (seulement
-commentaires et un libellé de `describe`). 17 fichiers projet-wide alignés
-sur la forme sans accent (liste complète dans `DETTE_UX_RESIDUELLE.md`).
+orthographique a reçu un nouvel arbitrage le 2026-07-14. La forme normative
+est **Michel Dogné**, conformément à `AGENTS.md`; le seed fictif, les tests et
+la documentation active ont été réalignés. Cet amendement ne change pas le
+verdict clinique ni fonctionnel du LOT-05.
 `docs/claude/SESSION_LOG.md` non rétro-modifié (journal append-only).
 Validations (`type-check`, `lint`, `test`, `test:e2e` Desktop Chromium)
 relancées après correctif — voir résultats mis à jour ci-dessous.

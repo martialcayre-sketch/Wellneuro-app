@@ -1,14 +1,14 @@
 # Checklist de validation end-to-end (Next.js)
 
 Exécuter cette checklist avec des données fictives uniquement.
-Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogne.
+Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogné.
 
 ## Phase 0 — Parcours patient unifié (portail permanent `/portail/[token]`) — lot R1
 
 Flux patient principal. À exécuter en R1 avant tout nouveau chantier.
 
 > Exécution R1 du 2026-07-09 — environnement A (prod `app.wellneuro.fr`), patient
-> fictif Michel Dogne (`PAT_SEED_03`). Étapes API/serveur validées par pilotage
+> fictif Michel Dogné (`PAT_SEED_03`). Étapes API/serveur validées par pilotage
 > HTTP. Complément du 2026-07-10 : étapes navigateur validées en Chromium headless
 > (Playwright, desktop + émulation iPhone 13) sur le même patient fictif —
 > 21/22 vérifications PASS. Seul reste à faire sur téléphone réel : la validation

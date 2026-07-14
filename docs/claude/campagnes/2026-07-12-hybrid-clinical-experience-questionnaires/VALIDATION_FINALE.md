@@ -67,11 +67,10 @@ C1, QX, ni sur le contenu clinique — hors périmètre par construction
 
 ## Vérification patients fictifs
 
-Seuls Sophie Nicola, Jennifer Martin et Michel Dogne apparaissent dans les
-livrables produits par ce lot. La divergence documentaire « Dogné »/« Dogne »
-a été résolue dans ce lot : la donnée réelle (`web/prisma/seed.ts`) confirme
-la forme sans accent, et les 17 fichiers projet concernés (dont le code de
-test) ont été alignés — voir `DETTE_UX_RESIDUELLE.md`.
+Seuls Sophie Nicola, Jennifer Martin et Michel Dogné apparaissent dans les
+livrables produits par ce lot. L'arbitrage initial sans accent a été
+supersédé le 2026-07-14 : `AGENTS.md`, le seed fictif et les tests retiennent
+désormais la forme normative **Michel Dogné**.
 
 ## Mécanismes transverses — qualification
 
@@ -103,10 +102,8 @@ visuelles) n'a été faite dans cette session — les équivalents automatisés
 existent mais ne remplacent pas un contrôle humain ; (2) plusieurs dettes
 de code mineures listées dans `DETTE_UX_RESIDUELLE.md` restent ouvertes
 (persistance serveur du brouillon, `email` en query string legacy, WebKit
-non exécutable localement). La divergence documentaire « Dogné »/« Dogne »,
-signalée initialement comme réserve, a été résolue dans ce lot après
-vérification de la donnée réelle (`web/prisma/seed.ts`) et n'entre plus
-dans ce compte.
+non exécutable localement). La divergence orthographique, arbitrée de nouveau
+le 2026-07-14 en faveur de **Michel Dogné**, n'entre plus dans ce compte.
 
 Aucune de ces réserves ne bloque le handoff vers C1/QX (aucune dépendance
 technique bloquante identifiée, cf. `HANDOFF_FUTURES_IMPLANTATIONS.md`).

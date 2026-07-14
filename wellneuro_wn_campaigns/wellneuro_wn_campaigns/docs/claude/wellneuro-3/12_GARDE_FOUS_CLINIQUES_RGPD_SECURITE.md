@@ -16,7 +16,7 @@ Dans le dépôt, les exemples et seeds, seuls ces patients fictifs peuvent appar
 ```text
 Sophie Nicola
 Jennifer Martin
-Michel Dogne
+Michel Dogné
 ```
 
 Ne jamais inventer ou afficher de données patient réelles.

@@ -26,7 +26,7 @@ GitHub et revue indépendante, sans toucher à la logique métier.
 - Aucun secret en dur.
 - Documentation et messages en français.
 - Aucune donnée patient réelle.
-- Patients fictifs limités à Sophie Nicola, Jennifer Martin et Michel Dogne.
+- Patients fictifs limités à Sophie Nicola, Jennifer Martin et Michel Dogné.
 - Aucune migration Prisma/SQL sans confirmation distincte.
 - Aucune écriture Supabase.
 - Aucune modification clinique, d’authentification ou de droits sans validation explicite.

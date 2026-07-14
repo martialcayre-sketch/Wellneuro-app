@@ -29,7 +29,7 @@
 
 - ✅ UI française uniquement
 - ✅ Pas de secret en dur (variables d'env seulement)
-- ✅ Patients fictifs : Sophie Nicola, Jennifer Martin, Michel Dogne
+- ✅ Patients fictifs : Sophie Nicola, Jennifer Martin, Michel Dogné
 - ✅ Pas de modif clinique/scoring sans demande explicite + `CHANGELOG.md`
 - ✅ Pas de migration Prisma sans confirmation distincte
 

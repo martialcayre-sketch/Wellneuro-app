@@ -14,6 +14,7 @@ tests/wellneuro/
 ├── fixtures/
 │   └── scoring-golden.json
 └── evals/
+  ├── campaign-rules-conformance.test.mjs
   ├── context-pack-corpus.test.mjs
   └── context-pack-density.test.mjs
 ```
@@ -25,3 +26,5 @@ tests/wellneuro/
 - Aucun test du banc permanent ne doit dépendre d’une donnée patient réelle.
 - Les scénarios utilisent uniquement des structures minimales et des valeurs
   fictives.
+- La conformité structurelle des campagnes est contrôlée par
+  `campaign-rules-conformance.test.mjs` et `scripts/wn-campaign-audit.mjs`.

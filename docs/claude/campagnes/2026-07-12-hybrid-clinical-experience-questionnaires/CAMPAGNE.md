@@ -61,7 +61,7 @@ agir ; tout le reste est retiré, regroupé ou relégué.
 
 Invariants du registre §1, plus :
 
-- patients fictifs : Sophie Nicola, Jennifer Martin, **Michel Dogne** (sans
+- patients fictifs : Sophie Nicola, Jennifer Martin, **Michel Dogné** (sans
   accent — corriger les deux occurrences fautives de la version initiale) ;
 - vocabulaire : remplacer les occurrences « prescription(s) » / « prescrits »
   de la version initiale par le vocabulaire réglementaire ;
@@ -112,8 +112,6 @@ refonte auth, routes API métier, scoring.
       pré-existante et non applicative — voir `DETTE_UX_RESIDUELLE.md`) ;
       parcours clavier documentés et testés (Escape, focus trap, retour de
       focus).
-- [x] Aucune occurrence de vocabulaire banni ni de « Dogné » dans la
-      campagne, ni dans le reste du dépôt : divergence documentaire
-      résolue en LOT-05 après vérification de la donnée réelle
-      (`web/prisma/seed.ts`, forme sans accent) — 17 fichiers alignés,
-      voir `DETTE_UX_RESIDUELLE.md`.
+- [x] Vocabulaire banni absent. L'arbitrage orthographique initial du LOT-05
+      a été supersédé lors de la réconciliation du 2026-07-14 : la forme
+      normative est désormais **Michel Dogné**, conformément à `AGENTS.md`.

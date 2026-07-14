@@ -63,9 +63,9 @@ HC-F. Aucun élément ci-dessous n'a été maquillé comme résolu.
 
 ## Divergence documentaire résolue (LOT-05, hors et dans périmètre HC-F)
 
-- **Orthographe du patient fictif « Michel Dogne »** : la forme **sans
+- **Orthographe du patient fictif « Michel Dogné »** : la forme **sans
   accent** est confirmée comme la donnée réelle (`web/prisma/seed.ts:47`,
-  `nom: 'Dogne'`) — ce n'était donc pas une divergence arbitraire mais une
+  `nom: 'Dogné'`) — ce n'était donc pas une divergence arbitraire mais une
   incohérence documentaire à corriger. Après vérification que le code de
   test ne compare la chaîne « Dogné » à aucune assertion réelle (seules des
   mentions en commentaire et un libellé de `describe`), les 17 fichiers
@@ -78,7 +78,8 @@ HC-F. Aucun élément ci-dessous n'a été maquillé comme résolu.
   `docs/claude/PROJET_CONTEXTE.md`, `docs/claude/README_MINIMAL.md`,
   `docs/claude/campagnes/2026-07-11-alignement-documentaire-etat-reel/lots/LOT-00-audit-sources-verite.md`,
   `docs/claude/campagnes/2026-07-11-refonte-ux-shell-3-0/CAMPAGNE.md`,
-  `tests/patients_fictifs.md`) ont été alignés sur la forme sans accent.
+  `tests/patients_fictifs.md`) ont d'abord été alignés sans accent en LOT-05,
+  puis normalisés vers **Michel Dogné** par l'arbitrage du 2026-07-14.
   `docs/claude/SESSION_LOG.md` n'a volontairement pas été rétro-modifié
   (journal append-only, entrées historiques non réécrites). Suites Vitest
   et e2e Desktop Chromium revalidées vertes après correctif (voir

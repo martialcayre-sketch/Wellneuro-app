@@ -33,17 +33,21 @@ function parseActiveCampaignView(text) {
     };
   }
 
-  const campaignMatch = trimmed.match(/\*\*Campagne\*\*\s*:\s*(.+)/i);
-  const titleMatch = trimmed.match(/\*\*Titre\*\*\s*:\s*(.+)/i);
-  const statusMatch = trimmed.match(/\*\*Statut\*\*\s*:\s*(.+)/i);
-  const lotMatch = trimmed.match(/\*\*Lot actif\*\*\s*:\s*(.+)/i);
+  const primaryBlock = trimmed.match(/## Activité primaire([\s\S]*?)(?=\n## |$)/i)?.[1] || trimmed;
+  const parallelBlock = trimmed.match(/## Activités parallèles([\s\S]*?)(?=\n\*\*Statut global|$)/i)?.[1] || "";
+  const campaignMatch = primaryBlock.match(/\*\*Campagne\*\*\s*:\s*(.+)/i);
+  const titleMatch = primaryBlock.match(/\*\*Titre\*\*\s*:\s*(.+)/i);
+  const statusMatch = primaryBlock.match(/\*\*Statut\*\*\s*:\s*(.+)/i) || trimmed.match(/\*\*Statut global\*\*\s*:\s*(.+)/i);
+  const lotMatch = primaryBlock.match(/\*\*Lot actif\*\*\s*:\s*(.+)/i);
   const updatedAtMatch = trimmed.match(/\*\*Mise à jour\*\*\s*:\s*(.+)/i);
+  const parallelCampaignIds = [...parallelBlock.matchAll(/^###\s+(.+)$/gim)].map((match) => stripQuotes(match[1]));
   return {
     activeCampaignId: campaignMatch ? stripQuotes(campaignMatch[1]) : null,
     activeCampaignTitle: titleMatch ? stripQuotes(titleMatch[1]) : null,
     activeLot: lotMatch ? stripQuotes(lotMatch[1]) : null,
     status: statusMatch ? stripQuotes(statusMatch[1]) : null,
     updatedAt: updatedAtMatch ? stripQuotes(updatedAtMatch[1]) : null,
+    parallelCampaignIds,
     sourceOfTruthMentioned: /source de vérité machine est `\.wn\/state\.json`/i.test(trimmed),
   };
 }
@@ -71,6 +75,7 @@ export function readCampaignTruth(root = process.cwd()) {
     activeCampaignViewPath: resolvePath(root, ["docs", "claude", "campagnes", "ACTIVE_CAMPAIGN.md"]),
     activeCampaignId: state.active_campaign ?? null,
     activeLot: state.active_lot ?? null,
+    parallelCampaigns: Array.isArray(state.parallel_campaigns) ? state.parallel_campaigns : [],
     campaignStatus: state.status ?? "unknown",
     updatedAt: state.updated_at ?? null,
     state,

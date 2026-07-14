@@ -1,10 +1,14 @@
 ---
 id: "2026-07-12-qx-experience-questionnaires"
 titre: "QX — Expérience questionnaires patient"
-statut: "à_faire"
+statut: "en_cours"
 créée_le: "2026-07-12"
-mise_à_jour: "2026-07-12"
+mise_à_jour: "2026-07-14"
 lot_courant: "LOT-00"
+branche_campagne: "campaign/qx-experience-questionnaires/integration"
+branche_lot_courant: "campaign/qx-experience-questionnaires/lot-00"
+cible_pr_lot: "campaign/qx-experience-questionnaires/integration"
+cible_pr_campagne: "main"
 ---
 
 # QX — Expérience questionnaires patient
@@ -55,8 +59,8 @@ existantes.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Inventaire UX des questionnaires (longueur, sections, types, validé/interne, sensibilité, fatigue) ; affectation provisoire des politiques (`strict` par défaut) ; confirmation des 3 pilotes parmi les familles auditées (un court, un long répétitif, un interne flexible si disponible — sinon 3 parmi les 4 autorisés) | à_faire | HC-F LOT-01 |
-| LOT-01 | Contrats : `DisplayPolicy` (administration, renderer, itemOrder fixe, optionOrder, pinnedValues) + `OptionOrderPolicy` en spécification ; tests de non-régression du payload | à_faire | LOT-00 |
+| LOT-00 | Inventaire des 63 questionnaires, politiques strictes et cadrage des pilotes | en_cours | HC-F LOT-05 terminé |
+| LOT-01 | Registre d'affichage et contrats purs, sans branchement UI | à_faire | LOT-00 |
 | LOT-02 | Profils de rendu sur pilotes : `focus`, `micro_batch`, `guided_sections`, `compact_repeated_scale` ; saisie conditionnelle ; adaptation mobile (jamais de tableau horizontal par défaut) | à_faire | LOT-01 + HC-F LOT-04 |
 | LOT-03 | Reprise, sauvegarde et résumé : état de brouillon explicite, résumé avant transmission, distinction conservation locale / synchronisation / transmission | à_faire | LOT-02 |
 | LOT-04 | Validation psychométrique et handoff : payload identique avant/après vérifié par tests, scoring inchangé (assertions), documentation de l'inventaire, critères d'extension aux familles non pilotes | à_faire | LOT-03 |

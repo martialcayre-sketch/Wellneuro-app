@@ -47,7 +47,7 @@ Respecte strictement les contraintes suivantes :
 - Reste strictement dans ce périmètre : pas de seed de données ici (branche
   suivante), pas de moteur de calcul, pas d'UI.
 
-Utilise les patients fictifs Sophie Nicola, Jennifer Martin ou Michel Dogne
+Utilise les patients fictifs Sophie Nicola, Jennifer Martin ou Michel Dogné
 pour tout exemple.
 ```
 

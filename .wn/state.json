@@ -1,13 +1,13 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "project": {
     "id": "wellneuro",
     "name": "Wellneuro"
   },
   "status": "active",
-  "active_campaign": "2026-07-12-hybrid-clinical-experience-questionnaires",
-  "active_lot": "LOT-05",
-  "last_completed_lot": "LOT-04",
+  "active_campaign": "2026-07-11-decision-clinique-21-jours-v1",
+  "active_lot": "LOT-00",
+  "last_completed_lot": "HC-F/LOT-05",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -15,18 +15,25 @@
   },
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-13T00:00:00.000Z",
+    "last_checked_at": "2026-07-14T01:30:00.000Z",
     "checks": {
-      "orchestration": "4/4 passed",
+      "orchestration": "6/6 campaign state tests passed; 19/19 WN tests passed",
       "type_check": "passed",
       "scoring_certification": "63 questionnaires passed",
       "no_secrets": "passed",
       "corpus_registry": "391 unique opaque sourceIds passed"
     }
   },
-  "next_action": "Clôturer HC-F LOT-05 sur instruction explicite, puis démarrer C1 ou QX.",
+  "next_action": "Poursuivre C1/LOT-00 et QX/LOT-00 en parallèle sur leurs branches d'intégration respectives.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-14T00:47:18Z"
+  "updated_at": "2026-07-14T01:22:05Z",
+  "parallel_campaigns": [
+    {
+      "campaign_id": "2026-07-12-qx-experience-questionnaires",
+      "active_lot": "LOT-00",
+      "status": "active"
+    }
+  ]
 }

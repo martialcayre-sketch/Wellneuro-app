@@ -195,6 +195,7 @@ Généré : ${data.generatedAt}
 - ID campagne active : ${data.machineState.activeCampaignId || "aucune"}
 - Titre campagne active : ${data.machineState.view?.activeCampaignTitle || "aucun"}
 - Lot actif : ${data.machineState.activeLot || "aucun"}
+- Campagnes parallèles : ${data.machineState.parallelCampaigns.length ? data.machineState.parallelCampaigns.map((entry) => `${entry.campaign_id}/${entry.active_lot || "aucun"}`).join(", ") : "aucune"}
 - Statut machine : ${data.machineState.campaignStatus}
 - Mise à jour : ${data.machineState.updatedAt || "inconnue"}
 

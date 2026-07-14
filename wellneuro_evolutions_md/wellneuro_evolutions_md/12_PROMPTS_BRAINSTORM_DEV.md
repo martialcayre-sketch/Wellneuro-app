@@ -3,7 +3,7 @@
 ## Prompt global brainstorming produit
 
 ```text
-Tu es expert produit santé numérique, UX clinique, neuronutrition et architecture SaaS. Aide-moi à faire évoluer WellNeuro vers un système longitudinal d’aide à la décision neuronutritionnelle. Respecte ces invariants : interface française, pas de diagnostic automatique, pas de prescription automatique, validation praticien obligatoire, patients fictifs uniquement Sophie Nicola/Jennifer Martin/Michel Dogne. Propose des idées créatives mais implémentables, en distinguant V1, V2 et vision long terme.
+Tu es expert produit santé numérique, UX clinique, neuronutrition et architecture SaaS. Aide-moi à faire évoluer WellNeuro vers un système longitudinal d’aide à la décision neuronutritionnelle. Respecte ces invariants : interface française, pas de diagnostic automatique, pas de prescription automatique, validation praticien obligatoire, patients fictifs uniquement Sophie Nicola/Jennifer Martin/Michel Dogné. Propose des idées créatives mais implémentables, en distinguant V1, V2 et vision long terme.
 ```
 
 ## Prompt architecture fonctionnelle

@@ -48,7 +48,7 @@ dans le thème praticien sombre, avec les libellés/icônes tranchés en LOT-00.
 ## Interdits
 
 - Pas de secret.
-- Pas de donnée patient réelle (seuls Sophie Nicola, Jennifer Martin, Michel Dogne en démonstration).
+- Pas de donnée patient réelle (seuls Sophie Nicola, Jennifer Martin, Michel Dogné en démonstration).
 - Pas de migration ou écriture Supabase.
 - Pas de changement de route, de `signOut`, ou de logique métier.
 - Aucun état ou action critique dépendant uniquement du survol.

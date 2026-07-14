@@ -189,7 +189,7 @@ J42 : énergie mitochondriale à explorer
 ## Prompt agent dev
 
 ```text
-Tu travailles sur WellNeuro. Conçois le module “Profil fonctionnel consolidé” sans implémenter de diagnostic. Respecte les invariants projet : UI française, aucune donnée patient réelle, patients fictifs uniquement Sophie Nicola/Jennifer Martin/Michel Dogne, pas de migration sans confirmation. Propose une architecture UX et des objets conceptuels pour relier questionnaires, Mon équilibre, protocole, check-ins, nutrition, compléments, biologie et messagerie. L’objectif est d’aider le praticien à comprendre la trajectoire du patient et à préparer la prochaine décision J21.
+Tu travailles sur WellNeuro. Conçois le module “Profil fonctionnel consolidé” sans implémenter de diagnostic. Respecte les invariants projet : UI française, aucune donnée patient réelle, patients fictifs uniquement Sophie Nicola/Jennifer Martin/Michel Dogné, pas de migration sans confirmation. Propose une architecture UX et des objets conceptuels pour relier questionnaires, Mon équilibre, protocole, check-ins, nutrition, compléments, biologie et messagerie. L’objectif est d’aider le praticien à comprendre la trajectoire du patient et à préparer la prochaine décision J21.
 ```
 
 ## Questions ouvertes

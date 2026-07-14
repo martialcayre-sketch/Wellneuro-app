@@ -15,7 +15,7 @@ A completer : etat actuel, decision de depart, dependances, hypotheses.
 - UI en francais.
 - Aucun secret en dur.
 - Aucune donnee patient reelle.
-- Exemples limites a Sophie Nicola, Jennifer Martin et Michel Dogne.
+- Exemples limites a Sophie Nicola, Jennifer Martin et Michel Dogné.
 - Aucune migration Prisma/SQL ou ecriture Supabase sans confirmation distincte.
 - Changements minimaux.
 

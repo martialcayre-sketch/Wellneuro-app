@@ -29,7 +29,7 @@ ceux déjà livrés par la série D1 (`docs/design-system-d1.md`).
   ouvertes du document source tranchées, avant tout code.
 - Le shell praticien implémenté (`NavBar.tsx` + `web/src/app/dashboard/layout.tsx`), visible dans les deux
   thèmes, sur desktop/tablette/mobile, avec les 3 patients fictifs (Sophie Nicola, Jennifer Martin,
-  Michel Dogne) comme données de démonstration.
+  Michel Dogné) comme données de démonstration.
 - `docs/design-system-d1.md` mis à jour pour refléter les tokens et composants de shell ajoutés.
 - Un handoff explicite indiquant si C1 (Décision clinique 21 jours V1) peut démarrer son travail sur la fiche
   patient cockpit à l'intérieur du nouveau shell.
@@ -39,7 +39,7 @@ ceux déjà livrés par la série D1 (`docs/design-system-d1.md`).
 - Tous les textes d'interface utilisateur sont en français.
 - Aucun secret, jeton, mot de passe ou identifiant sensible en dur.
 - Aucune donnée patient réelle dans le code, les exemples, les maquettes, les seeds ou les tests.
-- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogne.
+- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogné.
 - Aucune migration Prisma/SQL et aucune écriture Supabase sans demande explicite et confirmation distincte.
 - Changements minimaux : pas de refactor global hors périmètre du lot ; routes, `signOut` et logique
   métier existante inchangés.
@@ -142,7 +142,7 @@ Vérification croisée des critères d'acceptation §17 de `sources/UX_WELLNEURO
       prioritaires limité).
 - [x] Respecte les thèmes praticien et patient (shell praticien = thème sombre uniquement ; portail
       patient non touché par cette campagne).
-- [x] Utilise uniquement les patients fictifs autorisés (Sophie Nicola, Jennifer Martin, Michel Dogne —
+- [x] Utilise uniquement les patients fictifs autorisés (Sophie Nicola, Jennifer Martin, Michel Dogné —
       `demoPatients` dans `NavBar.tsx`).
 - [x] Ne modifie pas la logique métier hors périmètre (routes, `signOut`, scoring inchangés).
 - [~] Testé sur au moins un mobile réel et une largeur desktop : desktop vérifié ; mobile réel **non**

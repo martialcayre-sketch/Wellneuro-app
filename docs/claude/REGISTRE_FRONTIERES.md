@@ -17,7 +17,7 @@
 
 - Aucun secret en dur ; variables d'environnement uniquement.
 - Patients fictifs exclusifs : **Sophie Nicola, Jennifer Martin, Michel
-  Dogne** (sans accent). Aucune donnée patient réelle, jamais.
+  Dogné** (avec accent). Aucune donnée patient réelle, jamais.
 - Interface 100 % en français.
 - Vocabulaire réglementaire : « recommandation », « protocole personnalisé »,
   « indice de suivi », « explorations à discuter avec le médecin traitant ».

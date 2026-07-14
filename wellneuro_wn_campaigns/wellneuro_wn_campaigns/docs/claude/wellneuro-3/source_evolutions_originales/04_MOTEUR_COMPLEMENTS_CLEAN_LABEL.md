@@ -148,7 +148,7 @@ Le moteur propose :
 ## UX praticien
 
 ```text
-Compléments — Michel Dogne
+Compléments — Michel Dogné
 
 Objectif actif :
 stabilité glycémique + stress
@@ -199,5 +199,5 @@ inconfort digestif, somnolence inhabituelle, doute sur la prise.
 ## Prompt agent dev
 
 ```text
-Conçois le module “Bibliothèque compléments clean label” pour WellNeuro. Il doit aider le praticien à sélectionner des compléments selon objectifs, formes biodisponibles, additifs, contraintes patient et cohérence globale du protocole. L’app ne prescrit pas automatiquement. Propose la structure de fiches, filtres, badges, moteur de vigilance, UX praticien/patient et critères d’acceptation. Utilise uniquement les patients fictifs Sophie Nicola, Jennifer Martin et Michel Dogne.
+Conçois le module “Bibliothèque compléments clean label” pour WellNeuro. Il doit aider le praticien à sélectionner des compléments selon objectifs, formes biodisponibles, additifs, contraintes patient et cohérence globale du protocole. L’app ne prescrit pas automatiquement. Propose la structure de fiches, filtres, badges, moteur de vigilance, UX praticien/patient et critères d’acceptation. Utilise uniquement les patients fictifs Sophie Nicola, Jennifer Martin et Michel Dogné.
 ```

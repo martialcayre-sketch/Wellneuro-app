@@ -168,7 +168,7 @@ l'apaisement émotionnel.
   ("recommandation", "indice de suivi", "protocole personnalisé" — jamais
   "diagnostic", "prescription", "ordonnance").
 - Patients fictifs exclusivement : Sophie Nicola, Jennifer Martin,
-  Michel Dogne.
+  Michel Dogné.
 - Aucune migration Prisma/SQL sans confirmation explicite.
 - Aucun secret en dur.
 - Un composant = une branche = une PR ; ne jamais mélanger moteur de

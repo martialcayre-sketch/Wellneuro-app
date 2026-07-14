@@ -145,11 +145,12 @@ function checkState() {
   } else {
     try {
       const state = parseJson(stateFile);
-      stateValid = state.schema_version === 1;
+      stateValid = state.schema_version === 1 || state.schema_version === 2;
       stateDetail = `schema_version=${state.schema_version}`;
       c.add(".wn/state.json parse", stateValid, stateDetail);
-      c.add("schema_version=1", state.schema_version === 1);
+      c.add("schema_version supported", stateValid);
       c.add("active_campaign coherent", state.active_campaign === null || typeof state.active_campaign === "string");
+      c.add("parallel_campaigns coherent", state.schema_version === 1 || (Array.isArray(state.parallel_campaigns) && state.parallel_campaigns.every((entry) => typeof entry?.campaign_id === "string" && (entry.active_lot === null || typeof entry.active_lot === "string"))));
     } catch (e) {
       c.add(".wn/state.json parse", false, e.message);
     }
@@ -161,7 +162,10 @@ function checkState() {
     const viewCampaignId = truth.view?.activeCampaignId ?? null;
     const viewLot = truth.view?.activeLot ?? null;
     const sourceOfTruthMentioned = expectedCampaignId ? Boolean(truth.view?.sourceOfTruthMentioned) : true;
-    c.add("ACTIVE_CAMPAIGN.md synced", expectedCampaignId === viewCampaignId && expectedLot === viewLot && sourceOfTruthMentioned, expectedCampaignId ? `${expectedCampaignId} / ${expectedLot || "aucun"}` : "idle");
+    const expectedParallelIds = truth.parallelCampaigns.map((entry) => entry.campaign_id).sort();
+    const viewParallelIds = [...(truth.view?.parallelCampaignIds || [])].sort();
+    const parallelSynced = JSON.stringify(expectedParallelIds) === JSON.stringify(viewParallelIds);
+    c.add("ACTIVE_CAMPAIGN.md synced", expectedCampaignId === viewCampaignId && expectedLot === viewLot && parallelSynced && sourceOfTruthMentioned, expectedCampaignId ? `${expectedCampaignId} / ${expectedLot || "aucun"} + ${expectedParallelIds.length} parallèle(s)` : "idle");
     c.add("machine state readable", truth.sourceOfTruthPath.endsWith(path.join(".wn", "state.json")));
     c.add("active campaign title present", expectedCampaignId ? Boolean(truth.view?.activeCampaignTitle) : true, truth.view?.status || "idle");
   }

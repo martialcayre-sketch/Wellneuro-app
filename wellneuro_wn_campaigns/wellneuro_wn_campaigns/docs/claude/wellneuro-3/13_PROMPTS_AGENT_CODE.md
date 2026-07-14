@@ -3,7 +3,7 @@
 ## Prompt de cadrage général
 
 ```text
-Tu travailles sur le dépôt WellNeuro-app. Respecte strictement : Next.js 14 App Router, TypeScript, Tailwind, Prisma, NextAuth. Tous les textes UI doivent être en français. Aucun secret en dur. Patients fictifs uniquement : Sophie Nicola, Jennifer Martin, Michel Dogne. Pas de migration Prisma/SQL sans confirmation explicite. Ne modifie pas les seuils cliniques ou le scoring sans demande explicite. Le praticien valide toujours avant diffusion patient. Propose une branche courte avec objectif, fichiers probables, hors périmètre, étapes, risques, critères d’acceptation et tests.
+Tu travailles sur le dépôt WellNeuro-app. Respecte strictement : Next.js 14 App Router, TypeScript, Tailwind, Prisma, NextAuth. Tous les textes UI doivent être en français. Aucun secret en dur. Patients fictifs uniquement : Sophie Nicola, Jennifer Martin, Michel Dogné. Pas de migration Prisma/SQL sans confirmation explicite. Ne modifie pas les seuils cliniques ou le scoring sans demande explicite. Le praticien valide toujours avant diffusion patient. Propose une branche courte avec objectif, fichiers probables, hors périmètre, étapes, risques, critères d’acceptation et tests.
 ```
 
 ## Prompt Phase 0 — alignement roadmap

@@ -100,7 +100,7 @@ Crée le composant d'écran d'accueil patient "Mon équilibre" :
 
 Consomme le moteur d'équilibre (feat/e2-scoring-engine) pour les données,
 ne réimplémente aucun calcul côté composant. Interface 100 % en français.
-Utilise Sophie Nicola, Jennifer Martin ou Michel Dogne comme données
+Utilise Sophie Nicola, Jennifer Martin ou Michel Dogné comme données
 d'exemple. Reste strictement dans ce périmètre : pas de modification du
 moteur, pas de vue praticien.
 ```

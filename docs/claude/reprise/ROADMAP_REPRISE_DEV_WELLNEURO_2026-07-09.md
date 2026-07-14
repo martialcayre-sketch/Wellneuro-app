@@ -55,7 +55,7 @@ Utiliser uniquement :
 
 - Sophie Nicola ;
 - Jennifer Martin ;
-- Michel Dogne.
+- Michel Dogné.
 
 ### Parcours à tester
 

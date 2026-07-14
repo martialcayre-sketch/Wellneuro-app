@@ -118,4 +118,4 @@ Produit une entrée courte pour `docs/claude/SESSION_LOG.md` et liste les procha
 
 ## Attention
 
-Ce kit n’ajoute aucun secret, aucune migration, aucune donnée patient réelle. Les patients fictifs autorisés restent uniquement : Sophie Nicola, Jennifer Martin, Michel Dogne.
+Ce kit n’ajoute aucun secret, aucune migration, aucune donnée patient réelle. Les patients fictifs autorisés restent uniquement : Sophie Nicola, Jennifer Martin, Michel Dogné.

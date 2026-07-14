@@ -72,9 +72,37 @@ test("une campagne _prepared exige puis accepte une activation explicite", () =>
   const state = JSON.parse(fs.readFileSync(path.join(root, ".wn", "state.json"), "utf8"));
   assert.equal(state.active_campaign, "campaign-b");
   assert.equal(state.active_lot, "LOT-00");
+  assert.equal(state.schema_version, 2);
   const view = fs.readFileSync(path.join(root, "docs", "claude", "campagnes", "ACTIVE_CAMPAIGN.md"), "utf8");
   assert.match(view, /source de vérité machine est `\.wn\/state\.json`/);
   assert.match(view, /Campagne préparée/);
+});
+
+test("une campagne parallèle cohabite avec la primaire et next peut la cibler", () => {
+  const root = setup();
+  assert.equal(run(root, "activate", "campaign-a", "--lot", "LOT-01").status, 0);
+  const activation = run(root, "activate", "campaign-b", "--lot", "LOT-00", "--parallel");
+  assert.equal(activation.status, 0, activation.stderr);
+  const state = JSON.parse(fs.readFileSync(path.join(root, ".wn", "state.json"), "utf8"));
+  assert.equal(state.active_campaign, "campaign-a");
+  assert.deepEqual(state.parallel_campaigns, [{ campaign_id: "campaign-b", active_lot: "LOT-00", status: "active" }]);
+  const result = run(root, "next", "--campaign", "campaign-b");
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /campaign-b.*LOT-00-audit\.md/s);
+  const view = fs.readFileSync(path.join(root, "docs", "claude", "campagnes", "ACTIVE_CAMPAIGN.md"), "utf8");
+  assert.match(view, /Activité primaire[\s\S]*campaign-a/);
+  assert.match(view, /Activités parallèles[\s\S]*campaign-b/);
+});
+
+test("deactivate <id> retire seulement la campagne ciblée", () => {
+  const root = setup();
+  assert.equal(run(root, "activate", "campaign-a").status, 0);
+  assert.equal(run(root, "activate", "campaign-b", "--parallel").status, 0);
+  const result = run(root, "deactivate", "campaign-b");
+  assert.equal(result.status, 0, result.stderr);
+  const state = JSON.parse(fs.readFileSync(path.join(root, ".wn", "state.json"), "utf8"));
+  assert.equal(state.active_campaign, "campaign-a");
+  assert.deepEqual(state.parallel_campaigns, []);
 });
 
 test("next suit exclusivement le lot déclaré dans state.json", () => {

@@ -78,7 +78,7 @@ instruction explicite, pas dans ce lot.
   lecture seule. », « Votre demande de modification a été transmise… en
   attente de validation par votre praticien. »
 - **Tests** : `web/e2e/portail-parcours.spec.ts` (245 lignes, patient fictif
-  Michel Dogne) couvre tout le parcours séquentiel jusqu'au déblocage/
+  Michel Dogné) couvre tout le parcours séquentiel jusqu'au déblocage/
   re-soumission après correction.
 
 ## 4. Point de risque de frontière de données (à signaler, hors périmètre HC-F)

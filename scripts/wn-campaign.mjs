@@ -399,16 +399,37 @@ function nextLot(campaign) {
   if (!campaign) return null;
   return campaign.lots.find((lot) => !isClosedStatus(lot.status));
 }
-function writeActiveCampaignView(campaign, lotId) {
+function normalizedParallelCampaigns(state = readMachineState()) {
+  if (!Array.isArray(state.parallel_campaigns)) return [];
+  return state.parallel_campaigns.filter((entry) => entry && typeof entry.campaign_id === "string");
+}
+function campaignActivity(campaignId, state = readMachineState()) {
+  if (state.active_campaign === campaignId) return { kind: "primary", activeLot: state.active_lot || null };
+  const parallel = normalizedParallelCampaigns(state).find((entry) => entry.campaign_id === campaignId);
+  return parallel ? { kind: "parallel", activeLot: parallel.active_lot || null } : null;
+}
+function writeActiveCampaignView() {
   ensureBase();
   const machineState = readMachineState();
-  const activeCampaignId = campaign?.name || machineState.active_campaign || "";
-  const activeLot = lotId || machineState.active_lot || "";
-  const status = machineState.status || (activeCampaignId ? "active" : "idle");
+  const campaigns = readCampaigns();
+  const activeCampaignId = machineState.active_campaign || "";
+  const primary = campaigns.find((campaign) => campaign.name === activeCampaignId);
+  const parallels = normalizedParallelCampaigns(machineState).map((entry) => ({
+    ...entry,
+    campaign: campaigns.find((campaign) => campaign.name === entry.campaign_id)
+  }));
+  const hasActivity = Boolean(activeCampaignId || parallels.length);
+  const status = machineState.status || (hasActivity ? "active" : "idle");
   const updatedAt = (machineState.updated_at || new Date().toISOString()).slice(0, 10);
-  const content = activeCampaignId
-    ? `# Campagne active\n\n**Campagne** : ${activeCampaignId}\n**Titre** : ${campaign?.title || activeCampaignId}\n**Statut** : ${status}\n**Lot actif** : ${activeLot || "aucun"}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`.\n`
-    : `# Campagne active\n\nAucune campagne active.\n\n**Statut** : ${status}\n**Mise à jour** : ${updatedAt}\n`;
+  const primaryBlock = activeCampaignId
+    ? `## Activité primaire\n\n**Campagne** : ${activeCampaignId}\n**Titre** : ${primary?.title || activeCampaignId}\n**Statut** : active\n**Lot actif** : ${machineState.active_lot || "aucun"}\n`
+    : "## Activité primaire\n\nAucune campagne primaire active.\n";
+  const parallelBlock = parallels.length
+    ? parallels.map((entry) => `### ${entry.campaign_id}\n\n**Titre** : ${entry.campaign?.title || entry.campaign_id}\n**Statut** : ${entry.status || "active"}\n**Lot actif** : ${entry.active_lot || "aucun"}`).join("\n\n")
+    : "Aucune campagne parallèle active.";
+  const content = hasActivity
+    ? `# Campagnes actives\n\n${primaryBlock}\n## Activités parallèles\n\n${parallelBlock}\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.\n`
+    : `# Campagnes actives\n\nAucune campagne active.\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`.\n`;
   fs.writeFileSync(path.join(baseDir, "ACTIVE_CAMPAIGN.md"), content, "utf8");
 }
 function createCampaign() {
@@ -629,13 +650,14 @@ dépend_de: "${depends}"
   if (activate) {
     writeMachineState({
       ...(readMachineState() || {}),
-      schema_version: 1,
+      schema_version: 2,
       status: "active",
       active_campaign: dirname,
       active_lot: lots[0].id,
+      parallel_campaigns: normalizedParallelCampaigns(),
       updated_at: `${new Date().toISOString().slice(0, 19)}Z`
     });
-    writeActiveCampaignView({ name: dirname, title }, lots[0].id);
+    writeActiveCampaignView();
   }
 
   console.log(`Campagne créée : ${path.relative(cwd, campaignDir)}`);
@@ -648,7 +670,7 @@ dépend_de: "${depends}"
 function activateCampaign() {
   const campaignId = args[1];
   if (!campaignId || campaignId.startsWith("--")) {
-    console.error("ID de campagne requis : activate <campaign-id> [--lot LOT-00]");
+    console.error("ID de campagne requis : activate <campaign-id> [--lot LOT-00] [--parallel]");
     process.exit(1);
   }
   const lotId = flag("--lot", "");
@@ -659,28 +681,56 @@ function activateCampaign() {
     process.exit(2);
   }
   const activeLot = lotId || campaign.lotCourant || nextLot(campaign)?.file?.split("-").slice(0, 2).join("-") || null;
+  const state = readMachineState() || {};
+  const parallel = has("--parallel");
+  let parallelCampaigns = normalizedParallelCampaigns(state).filter((entry) => entry.campaign_id !== campaignId);
+  if (parallel) {
+    if (state.active_campaign === campaignId) {
+      console.error(`La campagne primaire ne peut pas aussi être parallèle : ${campaignId}`);
+      process.exit(3);
+    }
+    parallelCampaigns.push({ campaign_id: campaignId, active_lot: activeLot, status: "active" });
+  } else {
+    parallelCampaigns = parallelCampaigns.filter((entry) => entry.campaign_id !== campaignId);
+  }
   writeMachineState({
-    ...(readMachineState() || {}),
-    schema_version: 1,
+    ...state,
+    schema_version: 2,
     status: "active",
-    active_campaign: campaignId,
-    active_lot: activeLot,
+    active_campaign: parallel ? state.active_campaign || null : campaignId,
+    active_lot: parallel ? state.active_lot || null : activeLot,
+    parallel_campaigns: parallelCampaigns,
     updated_at: `${new Date().toISOString().slice(0, 19)}Z`
   });
-  writeActiveCampaignView(campaign, activeLot || "");
-  console.log(`Campagne active : ${campaignId}`);
+  writeActiveCampaignView();
+  console.log(`Campagne ${parallel ? "parallèle " : ""}active : ${campaignId}`);
 }
 function deactivateCampaign() {
-  writeMachineState({
-    ...(readMachineState() || {}),
-    schema_version: 1,
-    status: "idle",
-    active_campaign: null,
-    active_lot: null,
-    updated_at: `${new Date().toISOString().slice(0, 19)}Z`
-  });
-  writeActiveCampaignView(null, "");
-  console.log("Campagne désactivée.");
+  const campaignId = args[1] && !args[1].startsWith("--") ? args[1] : null;
+  const state = readMachineState() || {};
+  let activeCampaign = state.active_campaign || null;
+  let activeLot = state.active_lot || null;
+  let parallelCampaigns = normalizedParallelCampaigns(state);
+  if (!campaignId) {
+    activeCampaign = null;
+    activeLot = null;
+    parallelCampaigns = [];
+  } else if (activeCampaign === campaignId) {
+    const promoted = parallelCampaigns.shift();
+    activeCampaign = promoted?.campaign_id || null;
+    activeLot = promoted?.active_lot || null;
+  } else {
+    const before = parallelCampaigns.length;
+    parallelCampaigns = parallelCampaigns.filter((entry) => entry.campaign_id !== campaignId);
+    if (before === parallelCampaigns.length) {
+      console.error(`Campagne non active : ${campaignId}`);
+      process.exit(2);
+    }
+  }
+  const statusValue = activeCampaign || parallelCampaigns.length ? "active" : "idle";
+  writeMachineState({ ...state, schema_version: 2, status: statusValue, active_campaign: activeCampaign, active_lot: activeLot, parallel_campaigns: parallelCampaigns, updated_at: `${new Date().toISOString().slice(0, 19)}Z` });
+  writeActiveCampaignView();
+  console.log(campaignId ? `Campagne désactivée : ${campaignId}` : "Toutes les campagnes sont désactivées.");
 }
 function status() {
   const campaigns = readCampaigns();
@@ -689,8 +739,9 @@ function status() {
     return;
   }
   for (const c of campaigns) {
+    const activity = campaignActivity(c.name);
     const done = c.lots.filter((l) => isDoneStatus(l.status)).length;
-    console.log(`${c.name} | ${c.status} | ${done}/${c.lots.length} lots | ${c.title}`);
+    console.log(`${c.name} | ${c.status} | ${done}/${c.lots.length} lots | ${activity?.kind || "inactive"} | ${c.title}`);
     const gitInfo = [
       c.brancheCampagne ? `campagne=${c.brancheCampagne}` : "",
       c.brancheLotCourant ? `lot=${c.brancheLotCourant}` : "",
@@ -703,8 +754,18 @@ function status() {
   }
 }
 function showNext(quiet = false) {
-  const campaign = activeCampaign();
-  const lot = nextLot(campaign);
+  const requestedCampaignId = flag("--campaign", "");
+  const campaigns = readCampaigns();
+  const campaign = requestedCampaignId ? campaigns.find((candidate) => candidate.name === requestedCampaignId) : activeCampaign();
+  const activity = campaign ? campaignActivity(campaign.name) : null;
+  if (requestedCampaignId && !activity) {
+    console.error(`Campagne non active : ${requestedCampaignId}`);
+    process.exit(2);
+  }
+  const selectedLotId = activity?.activeLot;
+  const lot = selectedLotId
+    ? campaign?.lots.find((candidate) => candidate.file.startsWith(`${selectedLotId}-`) || candidate.file === `${selectedLotId}.md`)
+    : nextLot(campaign);
   if (!campaign) {
     if (!quiet) console.log("Aucune campagne active dans .wn/state.json");
     return;
@@ -741,6 +802,10 @@ switch (command) {
     break;
   case "next":
     showNext(has("--quiet"));
+    break;
+  case "sync":
+    writeActiveCampaignView();
+    console.log(`Vue synchronisée : ${path.relative(cwd, path.join(baseDir, "ACTIVE_CAMPAIGN.md"))}`);
     break;
   case "status":
   default:

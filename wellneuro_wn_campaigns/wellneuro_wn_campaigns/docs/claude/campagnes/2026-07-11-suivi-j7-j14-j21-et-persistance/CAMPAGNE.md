@@ -22,7 +22,7 @@ Après validation praticien, le protocole est retrouvé, son historique est tra�
 - Tous les textes d’interface utilisateur sont en français.
 - Aucun secret, jeton, mot de passe ou identifiant sensible en dur.
 - Aucune donnée patient réelle dans le code, les exemples, les maquettes, les seeds ou les tests.
-- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogne.
+- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogné.
 - Aucune migration Prisma/SQL et aucune écriture Supabase sans demande explicite et confirmation distincte.
 - Changements minimaux : pas de refactor global hors périmètre du lot.
 - Aucune modification des seuils, pondérations ou règles cliniques sans instruction explicite, versionnage et trace documentaire.

@@ -45,7 +45,7 @@
 
 - Aucun secret en dur ; variables d'environnement uniquement.
 - Patients fictifs autorisés exclusivement : **Sophie Nicola, Jennifer
-  Martin, Michel Dogne**. Aucune donnée patient réelle, jamais.
+  Martin, Michel Dogné**. Aucune donnée patient réelle, jamais.
 - Aucune modification de logique clinique / seuils de scoring sans demande
   explicite documentée dans `CHANGELOG.md`.
 - Interface 100 % en français.
@@ -92,7 +92,7 @@ logique de PatientsPanel.
   cliniques (`ScoreThreshold` et équivalents) ne doivent jamais reposer
   uniquement sur la couleur (ajouter icône, motif ou libellé).
 - **Definition of done par lot** : avant merge, capture d'écran des 3
-  patients fictifs (Sophie Nicola, Jennifer Martin, Michel Dogne) dans le
+  patients fictifs (Sophie Nicola, Jennifer Martin, Michel Dogné) dans le
   mode concerné (dark praticien / clair patient) + item ciblé ajouté à
   `docs/checklist_tests_end_to_end.md`.
 - **Décision technique préalable à D1-2b** : choix de la librairie de

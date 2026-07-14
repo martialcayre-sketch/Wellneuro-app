@@ -9,5 +9,5 @@ applyTo: "web/src/app/**/*.tsx,web/src/components/**/*.tsx,web/src/**/*.css"
 - Concevoir tactile et mobile avant les interactions dépendant du survol.
 - Préserver accessibilité clavier, focus visible, contrastes et libellés explicites.
 - Ne pas créer un nouveau composant si un composant `web/src/components/ui` répond déjà au besoin.
-- Utiliser uniquement Sophie Nicola, Jennifer Martin ou Michel Dogne dans les données d’exemple.
+- Utiliser uniquement Sophie Nicola, Jennifer Martin ou Michel Dogné dans les données d’exemple.
 - Ne pas modifier l’API, le scoring ou Prisma pour résoudre uniquement un problème visuel.

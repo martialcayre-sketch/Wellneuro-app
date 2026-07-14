@@ -91,7 +91,7 @@ manuelle (capture Playwright ponctuelle, non committée) aux trois paliers 375/9
 affiche uniquement la nav basse (rail et ☰ absents), tablette conserve le panneau ☰ intact,
 desktop conserve le rail persistant intact — aucune régression LOT-02. Cible tactile mesurée
 ≥44px sur les liens de la barre basse. Les 3 patients fictifs (Sophie Nicola, Jennifer Martin,
-Michel Dogne) confirmés visibles sur `/dashboard/patients` en viewport mobile, thème praticien
+Michel Dogné) confirmés visibles sur `/dashboard/patients` en viewport mobile, thème praticien
 sombre. Nouveau test Playwright dans `dashboard-praticien.spec.ts` (`mobile bottom navigation`) :
 4 passed sur le projet `Desktop Chromium` (viewport mobile forcé via `test.use`). Projet `iPhone
 13` (WebKit) non exécutable dans cet environnement local (bibliothèques système WebKit absentes,

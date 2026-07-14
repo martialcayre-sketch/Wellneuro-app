@@ -92,7 +92,7 @@ d'instanciation documenté dans `CONTRATS_UX_P1.md`.
   distante, **13/13 verts** (projet Desktop Chromium) : `dashboard-praticien.spec.ts`
   (8, dont les 3 nouvelles assertions de non-régression), `mode-consultation.spec.ts`,
   `patient-preview.spec.ts` (401/400/404), `portail-parcours.spec.ts` (parcours
-  complet Michel Dogne, y compris la nouvelle étape « Aperçu praticien de la
+  complet Michel Dogné, y compris la nouvelle étape « Aperçu praticien de la
   vue patient » — dialog, texte patient-safe, masquage correction/équilibre,
   forme JSON de la nouvelle route). Projet iPhone 13 (WebKit) non exécutable
   dans cet environnement (limitation préexistante déjà documentée, OK en CI).
