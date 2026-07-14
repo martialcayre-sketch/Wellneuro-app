@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AssignationInfo } from '@/app/api/patient/questionnaire/route';
 import type { PatientSubmitResponse } from '@/app/api/patient/submit/route';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
+import { getEnabledRenderer, getMicroBatches } from '@/lib/questionnaire-display';
 import { clearDraft, readDraft, readDraftSavedAt, writeDraft } from '@/lib/questionnaire-draft';
 import { QuestionField } from './QuestionField';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
@@ -30,6 +31,20 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
   const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
   const [confirmDialog, setConfirmDialog] = useState<'reset' | 'submit' | null>(null);
   const premierRendu = useRef(true);
+  const batchTitleRef = useRef<HTMLHeadingElement>(null);
+  const previousPage = useRef(0);
+
+  const renderer = getEnabledRenderer(questionnaire.id);
+  const microBatches = getMicroBatches(questionnaire.id);
+  const allQuestions = useMemo(
+    () => sections.flatMap(questionnaireSection => questionnaireSection.questions),
+    [sections],
+  );
+  const questionsById = useMemo(
+    () => new Map(allQuestions.map(question => [question.id, question])),
+    [allQuestions],
+  );
+  const isMicroBatch = renderer === 'micro_batch' && microBatches.length > 0;
 
   // Autosave local à chaque changement de réponse (sauf premier rendu).
   useEffect(() => {
@@ -38,17 +53,33 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
     setSavedAt(readDraftSavedAt(assignation.idAssignation));
   }, [answers, assignation.idAssignation]);
 
-  const section = sections[currentSection];
-  const progress = Math.round(((currentSection) / sections.length) * 100);
-  const isLast = currentSection === sections.length - 1;
+  useEffect(() => {
+    if (isMicroBatch && previousPage.current !== currentSection) {
+      batchTitleRef.current?.focus();
+    }
+    previousPage.current = currentSection;
+  }, [currentSection, isMicroBatch]);
 
-  const sectionAnswered = section?.questions.every(q => {
+  const section = isMicroBatch ? sections[0] : sections[currentSection];
+  const activeQuestionIds = isMicroBatch ? microBatches[currentSection] : undefined;
+  const activeQuestions = isMicroBatch
+    ? (activeQuestionIds ?? []).map(id => questionsById.get(id)).filter((question): question is NonNullable<typeof question> => Boolean(question))
+    : (section?.questions ?? []);
+  const pageCount = isMicroBatch ? microBatches.length : sections.length;
+  const answeredCount = allQuestions.filter(question => answers[question.id] !== undefined && answers[question.id] !== '').length;
+  const progress = isMicroBatch
+    ? Math.round((answeredCount / allQuestions.length) * 100)
+    : Math.round(((currentSection) / sections.length) * 100);
+  const isLast = currentSection === pageCount - 1;
+
+  const sectionAnswered = activeQuestions.every(q => {
     if (q.conditionnel) return true; // questions conditionnelles = optionnelles
     return answers[q.id] !== undefined && answers[q.id] !== '';
   });
 
   const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!sectionAnswered) return;
     if (!isLast) { setCurrentSection(s => s + 1); window.scrollTo(0, 0); }
     else { setConfirmDialog('submit'); }
   };
@@ -99,17 +130,27 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
     }
   };
 
-  if (!section) return null;
+  if (!section || activeQuestions.length === 0) return null;
 
   return (
     <PatientCard as="form" onSubmit={handleNext} className="space-y-6">
       {/* En-tête */}
       <div>
         <div className="flex justify-between items-center mb-2 text-xs text-muted-foreground/70">
-          <span>Partie {currentSection + 1} / {sections.length}</span>
-          <span>{progress}% complété</span>
+          <span>Partie {currentSection + 1} / {pageCount}</span>
+          <span aria-live={isMicroBatch ? 'polite' : undefined}>
+            {isMicroBatch ? `${answeredCount} réponses sur ${allQuestions.length}` : `${progress}% complété`}
+          </span>
         </div>
-        <div className="w-full h-1.5 bg-muted rounded-full">
+        <div
+          className="w-full h-1.5 bg-muted rounded-full"
+          role="progressbar"
+          aria-label="Progression du questionnaire"
+          aria-valuemin={0}
+          aria-valuemax={isMicroBatch ? allQuestions.length : 100}
+          aria-valuenow={isMicroBatch ? answeredCount : progress}
+          aria-valuetext={isMicroBatch ? `${answeredCount} réponses sur ${allQuestions.length}` : `${progress} % complété`}
+        >
           <div className="h-1.5 bg-accent rounded-full transition-all" style={{ width: `${progress}%` }} />
         </div>
         <h2 className="text-lg font-bold text-foreground mt-4">{questionnaire.titre}</h2>
@@ -118,6 +159,17 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
         )}
         {section.titre && <p className="text-sm font-semibold text-primary mt-3">{section.titre}</p>}
         {section.description && <p className="text-xs text-muted-foreground/70 mt-0.5">{section.description}</p>}
+        {isMicroBatch && (
+          <h3
+            ref={batchTitleRef}
+            tabIndex={-1}
+            className="mt-3 text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            Questions {allQuestions.indexOf(activeQuestions[0]) + 1}
+            {activeQuestions.length > 1 && ` à ${allQuestions.indexOf(activeQuestions[activeQuestions.length - 1]) + 1}`}
+            {' '}sur {allQuestions.length}
+          </h3>
+        )}
       </div>
 
       {assignation.notes && currentSection === 0 && (
@@ -126,14 +178,21 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
         </div>
       )}
 
-      {section.questions.map(q => (
+      {activeQuestions.map(q => (
         <QuestionField
           key={q.id}
           question={q}
           value={answers[q.id] ?? ''}
           onChange={val => setAnswers(a => ({ ...a, [q.id]: val }))}
+          displaySelectAsRadioCards={isMicroBatch}
         />
       ))}
+
+      {isMicroBatch && !sectionAnswered && (
+        <p className="text-xs text-muted-foreground" role="status">
+          Répondez à toutes les questions de cette partie pour continuer.
+        </p>
+      )}
 
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
       <SaveStatusIndicator savedAt={savedAt} error={saveError} />

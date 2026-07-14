@@ -30,6 +30,22 @@ export type DisplayPolicy = Readonly<{
   gate?: string;
 }>;
 
+export type MicroBatchDefinition = readonly (readonly string[])[];
+
+const MICRO_BATCH_REGISTRY: Readonly<Record<string, MicroBatchDefinition>> = Object.freeze({
+  Q_NEU_03: Object.freeze([
+    Object.freeze(['SIGH_Q001', 'SIGH_Q002', 'SIGH_Q003']),
+    Object.freeze(['SIGH_Q004', 'SIGH_Q005', 'SIGH_Q006', 'SIGH_Q007']),
+    Object.freeze(['SIGH_Q008', 'SIGH_Q009', 'SIGH_Q010']),
+    Object.freeze(['SIGH_Q011', 'SIGH_Q012', 'SIGH_Q013']),
+    Object.freeze(['SIGH_Q014']),
+    Object.freeze(['SIGH_Q015', 'SIGH_Q016']),
+    Object.freeze(['SIGH_Q017', 'SIGH_Q018', 'SIGH_Q019', 'SIGH_Q020', 'SIGH_Q021']),
+    Object.freeze(['SIGH_Q022', 'SIGH_Q023', 'SIGH_Q024']),
+    Object.freeze(['SIGH_Q025']),
+  ]),
+});
+
 const STRICT_DEFAULT_POLICY: DisplayPolicy = Object.freeze({
   administration: 'strict',
   renderer: 'standard',
@@ -81,6 +97,12 @@ export function getDisplayPolicy(questionnaireId: string): DisplayPolicy {
 export function getEnabledRenderer(questionnaireId: string): RendererProfile {
   const policy = getDisplayPolicy(questionnaireId);
   return policy.activation === 'enabled' ? policy.renderer : 'standard';
+}
+
+export function getMicroBatches(questionnaireId: string): MicroBatchDefinition {
+  return getEnabledRenderer(questionnaireId) === 'micro_batch'
+    ? (MICRO_BATCH_REGISTRY[questionnaireId] ?? Object.freeze([]))
+    : Object.freeze([]);
 }
 
 export type QuestionnaireAnswerValue = string | number;
