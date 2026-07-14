@@ -18,6 +18,8 @@ describe('TwoLevelReading', () => {
 
     const toggle = screen.getByRole('button', { name: 'Voir le détail' });
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.className).toContain('min-h-11');
+    expect(toggle.className).toContain('focus-visible:ring');
 
     fireEvent.click(toggle);
 

@@ -42,9 +42,11 @@ describe('ProtocolConsultationPanel', () => {
     expect(screen.getByText('Non validé pour diffusion')).not.toBeNull();
     expect(screen.getByText('Non transmis')).not.toBeNull();
     expect(screen.getByText(/Aperçu verrouillé/)).not.toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Valider pour diffusion' }));
+    const approval = screen.getByRole('button', { name: 'Valider pour diffusion' });
+    expect(approval.className).toContain('min-h-11');
+    fireEvent.click(approval);
     expect(screen.getByText('Validé pour diffusion')).not.toBeNull();
-    expect(screen.getByRole('button', { name: 'Ouvrir l’aperçu patient' })).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Ouvrir l’aperçu patient' }).className).toContain('min-h-11');
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
   });

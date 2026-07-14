@@ -29,6 +29,9 @@ test.describe('Mode consultation (fiche patient)', () => {
       await expect(closing).toBeVisible();
       await expect(page.getByText(/Aperçu du protocole indisponible/)).toBeVisible();
       await expect(coverage).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      const modeButtonBox = await page.getByRole('button', { name: 'Mode consultation' }).boundingBox();
+      expect(modeButtonBox?.height).toBeGreaterThanOrEqual(44);
       const headings = await page.locator('h3').allTextContents();
       expect(headings.indexOf('Données manquantes')).toBeLessThan(headings.indexOf('Décision clinique'));
       expect(headings.indexOf('Décision clinique')).toBeLessThan(headings.indexOf('Protocole 21 jours'));
@@ -47,15 +50,25 @@ test.describe('Mode consultation (fiche patient)', () => {
     const fiche = page.locator('[data-mode-consultation]');
     await expect(fiche).toHaveCount(0);
 
-    await activer.click();
+    const mutatingRequests: string[] = [];
+    page.on('request', request => {
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method())) mutatingRequests.push(request.url());
+    });
+    await activer.focus();
+    await page.keyboard.press('Enter');
 
     const ficheActive = page.locator('[data-mode-consultation="actif"]');
     await expect(ficheActive).toBeVisible();
     await expect(activer).toBeHidden();
 
-    await page.getByRole('button', { name: 'Quitter' }).click();
+    const quitter = page.getByRole('button', { name: 'Quitter' });
+    const quitBox = await quitter.boundingBox();
+    expect(quitBox?.height).toBeGreaterThanOrEqual(44);
+    await quitter.focus();
+    await page.keyboard.press('Enter');
 
     await expect(page.locator('[data-mode-consultation]')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Mode consultation' })).toBeVisible();
+    expect(mutatingRequests).toEqual([]);
   });
 });

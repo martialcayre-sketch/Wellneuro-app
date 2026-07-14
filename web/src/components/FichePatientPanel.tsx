@@ -174,12 +174,12 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
   return (
     <ModeConsultation active={modeConsultationActif} onToggle={() => setModeConsultationActif(false)}>
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h2 className="text-2xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
-          <p className="text-sm text-muted-foreground mt-1">{patient.email}</p>
+          <p className="mt-1 break-all text-sm text-muted-foreground">{patient.email}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {derniereAssignationId && (
             <PatientPreview patientId={idPatient} assignationId={derniereAssignationId} />
           )}
@@ -187,7 +187,7 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
             <button
               type="button"
               onClick={() => setModeConsultationActif(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary"
+              className="flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               <Stethoscope size={16} strokeWidth={2} />
               Mode consultation

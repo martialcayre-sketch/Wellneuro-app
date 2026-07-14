@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Tests, documentation et handoff"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-05"
 ---
 
@@ -59,4 +59,18 @@ audiences praticien/patient.
 
 ## Résultats
 
-À compléter à la clôture.
+Implémentation en cours de validation : replay des six contrats C1, contrôles
+de frontière d’audience et corrections tactiles bornées aux surfaces C1.
+Handoff C2/C3, grille ergonomique humaine et matrice E2E ajoutés.
+
+Validations locales acquises : 64 tests ciblés, `type-check`, lint et
+certification des 63 questionnaires. La suite globale a exécuté toutes ses
+assertions lancées sans échec, mais plusieurs workers Vitest n’ont pas démarré
+dans le worktree partagé ; le verdict global, le build et Playwright restent
+à confirmer par le CI. Playwright local est bloqué explicitement par
+`NEXTAUTH_SECRET` absent. Contrôle anti-secrets, audit de campagnes,
+`git diff --check` et revue indépendante GO. La grille praticien chronométrée
+n’est pas exécutée.
+
+Verdict provisoire : GO technique conditionné au CI ; ergonomie à valider ;
+NO-GO activation et diffusion runtime.
