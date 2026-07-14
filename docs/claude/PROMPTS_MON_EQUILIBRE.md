@@ -166,8 +166,8 @@ côté praticien dans cette branche (non conçu à ce stade).
 ## 7. `docs/e2-equilibre-methodologie`
 
 ```
-Applique le contenu de docs/claude/ROADMAP_R9_UPDATE.md en remplaçant
-intégralement la section R9 actuelle de docs/claude/ROADMAP_AGENT_PLAN.md.
+Applique le contenu de docs/archive/roadmap-updates/ROADMAP_R9_UPDATE_2026-07-11.md
+en remplaçant intégralement la section R9 actuelle de docs/claude/ROADMAP_AGENT_PLAN.md.
 Vérifie qu'aucune occurrence de "NeuroScore" ou "Wellness Body Score" ne
 subsiste dans le fichier après la modification (grep -i neuroscore).
 Aucune autre section du roadmap ne doit être modifiée dans cette PR.

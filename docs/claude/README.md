@@ -30,7 +30,7 @@ Ce dossier fournit les fichiers Markdown nécessaires pour donner à Claude IA u
 
 ## Autres documents utiles du dépôt (hors ce dossier)
 
-- `docs/roadmap.md` : lots livrés et dette technique.
+- `docs/ROADMAP_TECHNIQUE.md` : lots livrés et dette technique.
 - `docs/securite_rgpd.md` : exigences RGPD et secrets.
 - `docs/checklist_tests_end_to_end.md` : validation manuelle E2E.
 - `CHANGELOG.md` : historique des évolutions fonctionnelles.

@@ -9,7 +9,9 @@
 > En cas de conflit : PROJET_CONTEXTE.md fait foi sur l'architecture
 > technique globale, ce fichier fait foi sur les décisions produit de
 > cette fonctionnalité jusqu'à intégration dans ROADMAP_AGENT_PLAN.md
-> (voir ROADMAP_R9_UPDATE.md, à substituer à la section R9 actuelle).
+> (mise à jour R9 déjà appliquée dans `docs/ROADMAP_PRODUIT.md` §R9 ;
+> texte d'origine archivé dans
+> `docs/archive/roadmap-updates/ROADMAP_R9_UPDATE_2026-07-11.md`).
 
 ---
 
