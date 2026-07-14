@@ -28,11 +28,11 @@
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-14T01:22:05Z",
+  "updated_at": "2026-07-14T01:30:21Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-07-12-qx-experience-questionnaires",
-      "active_lot": "LOT-00",
+      "active_lot": "LOT-02",
       "status": "active"
     }
   ]
