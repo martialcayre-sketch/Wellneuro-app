@@ -95,7 +95,8 @@ function normalizeStatus(value) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 function isDoneStatus(value) {
-  return normalizeStatus(value).startsWith("termine");
+  const status = normalizeStatus(value);
+  return status.startsWith("termine") || status.startsWith("livre") || status.startsWith("fait");
 }
 function isAbandonedStatus(value) {
   return normalizeStatus(value).startsWith("abandon");
