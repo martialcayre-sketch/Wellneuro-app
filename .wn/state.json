@@ -6,8 +6,8 @@
   },
   "status": "active",
   "active_campaign": "2026-07-11-decision-clinique-21-jours-v1",
-  "active_lot": "LOT-05",
-  "last_completed_lot": "C1/LOT-04",
+  "active_lot": "LOT-06",
+  "last_completed_lot": "C1/LOT-05",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -15,20 +15,20 @@
   },
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-14T09:31:56.000Z",
+    "last_checked_at": "2026-07-14T10:12:41.000Z",
     "checks": {
       "orchestration": "6/6 campaign state tests passed; 19/19 WN tests passed",
-      "type_check": "passed; 12 targeted LOT-04 tests and 140 global tests passed; lint passed",
+      "type_check": "passed; 10 targeted LOT-05 tests and 150 global tests passed; lint passed",
       "scoring_certification": "63 questionnaires passed",
       "no_secrets": "passed",
       "corpus_registry": "391 unique opaque sourceIds passed"
     }
   },
-  "next_action": "Publier et fusionner C1/LOT-04, puis cadrer C1/LOT-05 en mode Plan depuis l'intégration actualisée ; poursuivre QX/LOT-02 en parallèle.",
+  "next_action": "Publier et fusionner C1/LOT-05, puis cadrer C1/LOT-06 en mode Plan depuis l'intégration actualisée ; poursuivre QX/LOT-02 en parallèle.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-14T09:31:56Z",
+  "updated_at": "2026-07-14T10:12:41Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-07-12-qx-experience-questionnaires",
