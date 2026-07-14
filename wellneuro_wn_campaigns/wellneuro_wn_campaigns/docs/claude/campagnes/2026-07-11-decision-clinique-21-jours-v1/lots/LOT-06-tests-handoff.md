@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Tests, documentation et handoff"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-05"
 ---
 
@@ -59,4 +59,14 @@ audiences praticien/patient.
 
 ## Résultats
 
-À compléter à la clôture.
+Replay des six contrats, contrôles de frontière d’audience et corrections
+tactiles C1 livrés. La CI de la PR #60 a réussi anti-secrets, audit campagne,
+type-check, Vitest global, lint, build et Playwright ; Vercel et le smoke test
+devcontainer sont verts.
+
+Les avertissements Node.js 20 forcé sur Node.js 24 et l’absence de rapport
+Playwright à téléverser sont non bloquants. La grille praticien chronométrée et
+le téléphone physique ne sont pas exécutés.
+
+Verdict final : **GO technique** ; **ergonomie humaine à valider** ;
+**NO-GO runtime, activation et diffusion**.

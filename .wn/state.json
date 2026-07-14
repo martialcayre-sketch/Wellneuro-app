@@ -5,9 +5,9 @@
     "name": "Wellneuro"
   },
   "status": "active",
-  "active_campaign": "2026-07-11-decision-clinique-21-jours-v1",
-  "active_lot": "LOT-06",
-  "last_completed_lot": "C1/LOT-05",
+  "active_campaign": "2026-07-12-qx-experience-questionnaires",
+  "active_lot": "LOT-02",
+  "last_completed_lot": "C1/LOT-06",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -15,25 +15,20 @@
   },
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-14T10:12:41.000Z",
+    "last_checked_at": "2026-07-14T11:18:08.000Z",
     "checks": {
-      "orchestration": "6/6 campaign state tests passed; 19/19 WN tests passed",
-      "type_check": "passed; 10 targeted LOT-05 tests and 150 global tests passed; lint passed",
+      "orchestration": "campaign audit passed in PR #60 CI; devcontainer smoke passed",
+      "type_check": "passed in PR #60 CI; 64 targeted C1 tests and global Vitest passed; lint and build passed",
       "scoring_certification": "63 questionnaires passed",
-      "no_secrets": "passed",
+      "no_secrets": "passed in PR #60 CI",
+      "e2e": "Playwright passed in PR #60 CI; desktop, tablet and mobile C1 viewports covered",
       "corpus_registry": "391 unique opaque sourceIds passed"
     }
   },
-  "next_action": "Publier et fusionner C1/LOT-05, puis cadrer C1/LOT-06 en mode Plan depuis l'intégration actualisée ; poursuivre QX/LOT-02 en parallèle.",
+  "next_action": "Cadrer puis exécuter QX/LOT-02 en mode Plan depuis l'intégration QX actualisée.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-14T10:12:41Z",
-  "parallel_campaigns": [
-    {
-      "campaign_id": "2026-07-12-qx-experience-questionnaires",
-      "active_lot": "LOT-02",
-      "status": "active"
-    }
-  ]
+  "updated_at": "2026-07-14T11:30:20Z",
+  "parallel_campaigns": []
 }
