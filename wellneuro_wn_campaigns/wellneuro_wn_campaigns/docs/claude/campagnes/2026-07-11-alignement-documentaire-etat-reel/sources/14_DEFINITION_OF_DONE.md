@@ -16,7 +16,7 @@
 - Tous les textes UI en français.
 - Pas de secret.
 - Pas de changement de seuils/scoring sans validation.
-- Pas d’envoi patient automatique.
+- Pas d'envoi patient automatique.
 
 ## Qualité UI
 
@@ -47,10 +47,10 @@ vérification mobile
 parcours patient fictif
 ```
 
-## Critères d’acceptation génériques
+## Critères d'acceptation génériques
 
-- La branche répond à l’objectif annoncé.
-- Le comportement existant n’est pas cassé.
+- La branche répond à l'objectif annoncé.
+- Le comportement existant n'est pas cassé.
 - Les API existantes ne changent pas sans nécessité.
 - Les composants sont réutilisables.
 - Les textes sont clairs en français.

@@ -24,7 +24,7 @@ Le fichier `docs/roadmap.md` indique :
 
 ```text
 Migration GAS → Next.js terminée
-app.wellneuro.fr = unique point d’entrée production
+app.wellneuro.fr = unique point d'entrée production
 Lots livrés : scaffold, métriques, patients/assignations, IA/booklet, décommission GAS
 ```
 
@@ -34,17 +34,17 @@ Il mentionne encore une dette Google Sheets côté routes Next.js : `metrics`, `
 
 Le `SESSION_LOG.md` plus récent indique une décommission Sheets/OAuth plus avancée que `docs/roadmap.md`.
 
-Conclusion pour l’agent :
+Conclusion pour l'agent :
 
 ```text
 Ne pas supposer que la roadmap est parfaitement à jour.
-Avant toute tâche sur routes praticien ou OAuth, vérifier l’état réel du code.
-Si une divergence existe entre roadmap et code, documenter l’écart avant modification.
+Avant toute tâche sur routes praticien ou OAuth, vérifier l'état réel du code.
+Si une divergence existe entre roadmap et code, documenter l'écart avant modification.
 ```
 
 ## État produit déjà acquis
 
-L’app dispose déjà de briques importantes :
+L'app dispose déjà de briques importantes :
 
 - portail praticien ;
 - portail patient ;
@@ -64,7 +64,7 @@ L’app dispose déjà de briques importantes :
 
 ## Dette UX principale
 
-La dette n’est pas l’absence de React. React est déjà présent.
+La dette n'est pas l'absence de React. React est déjà présent.
 
 La dette principale est :
 
@@ -88,20 +88,12 @@ prioriser
 simplifier
 préparer une décision
 produire un plan 21 jours
-suivre l’adhésion
+suivre l'adhésion
 adapter à J21
 ```
 
 ## Recommandation structurante
 
-Ne pas recoder l’app.
+Ne pas recoder l'app.
 
 Faire une recomposition progressive :
-
-```text
-conserver le socle Prisma/Auth/API/scoring
-extraire des composants UI
-ajouter un moteur UX clinique
-ajouter un protocole minimal contrôlé
-puis seulement ensuite enrichir IA, clean label, Boussole et momentum
-```

@@ -10,10 +10,15 @@ import {
 
 const handler = NextAuth(authOptions);
 
-export async function GET(req: Request): Promise<Response> {
+// NextAuth v4 détecte le mode App Router via la présence de `params` sur le
+// second argument : l'omettre le fait retomber en mode Pages Router
+// (`req.query.nextauth`) et casse toute l'authentification en production.
+type RouteContext = { params: { nextauth: string[] } };
+
+export async function GET(req: Request, context: RouteContext): Promise<Response> {
 	const requestContext = createRequestContext(req);
 	try {
-		const response = await handler(req as never);
+		const response = await handler(req as never, context as never);
 		return withCorrelationHeader(response, requestContext);
 	} catch (error) {
 		logger.error({
@@ -27,10 +32,10 @@ export async function GET(req: Request): Promise<Response> {
 	}
 }
 
-export async function POST(req: Request): Promise<Response> {
+export async function POST(req: Request, context: RouteContext): Promise<Response> {
 	const requestContext = createRequestContext(req);
 	try {
-		const response = await handler(req as never);
+		const response = await handler(req as never, context as never);
 		return withCorrelationHeader(response, requestContext);
 	} catch (error) {
 		logger.error({

@@ -1,14 +1,13 @@
 {
-  "title": "Persistance du protocole et suivi J7/J14/J21",
-  "generatedAt": "2026-07-11T00:00:00.000Z",
+  "title": "Suivi J7/J14/J21 et persistance",
+  "generatedAt": "2026-07-11T01:58:48.506Z",
   "campaignDir": "docs/claude/campagnes/2026-07-11-suivi-j7-j14-j21-et-persistance",
-  "sourceDir": "wellneuro_code_assistant_library",
+  "sourceDir": "wellneuro_wn_campaigns/wellneuro_wn_campaigns/docs/claude/campagnes/2026-07-11-suivi-j7-j14-j21-et-persistance",
   "sourceFiles": [
-    "sources/07_SPEC_PROTOCOLE_21J_MINIMAL.md",
-    "sources/08_SPEC_COMPAGNON_PATIENT_MINIMAL.md",
-    "sources/14_DEFINITION_OF_DONE.md",
-    "sources/16_STRUCTURE_PROPOSEE_DANS_LE_REPO.md",
-    "sources/08_MOMENTUM_DECROCHAGE.md"
-  ],
-  "generatedFor": "/wn"
+    "docs/claude/campagnes/2026-07-11-suivi-j7-j14-j21-et-persistance/sources/sources/07_SPEC_PROTOCOLE_21J_MINIMAL.md",
+    "docs/claude/campagnes/2026-07-11-suivi-j7-j14-j21-et-persistance/sources/sources/08_MOMENTUM_DECROCHAGE.md",
+    "docs/claude/campagnes/2026-07-11-suivi-j7-j14-j21-et-persistance/sources/sources/08_SPEC_COMPAGNON_PATIENT_MINIMAL.md",
+    "docs/claude/campagnes/2026-07-11-suivi-j7-j14-j21-et-persistance/sources/sources/14_DEFINITION_OF_DONE.md",
+    "docs/claude/campagnes/2026-07-11-suivi-j7-j14-j21-et-persistance/sources/sources/16_STRUCTURE_PROPOSEE_DANS_LE_REPO.md"
+  ]
 }
