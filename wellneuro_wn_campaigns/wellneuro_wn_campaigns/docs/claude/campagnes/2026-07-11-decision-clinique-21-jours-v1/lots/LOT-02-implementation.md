@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Cockpit — lecture"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-01"
 ---
 
@@ -44,11 +44,11 @@ cinq objets cliniques et momentum comparable.
 
 ## Étapes
 
-- [ ] Vérifier les hypothèses.
-- [ ] Implémenter le changement minimal.
-- [ ] Exécuter les validations.
-- [ ] Relire le diff.
-- [ ] Documenter les résultats.
+- [x] Vérifier les hypothèses.
+- [x] Implémenter le changement minimal.
+- [x] Exécuter les validations.
+- [x] Relire le diff.
+- [x] Documenter les résultats.
 
 ## Tests
 
@@ -63,4 +63,35 @@ Tests unitaires des adaptateurs, tests composants et E2E praticien ciblé.
 
 ## Résultats
 
-À compléter à la clôture.
+La campagne compilée et `docs/claude/ARCHITECTURE_CLINIQUE_3_2.md` ont
+prévalu sur le texte historique « cockpit — lecture ». LOT-02 livre un socle
+TypeScript pur de revue clinique prudente ; l'interface cockpit reste hors
+périmètre.
+
+### Livrables
+
+- contrat versionné `ClinicalReview`, lié au snapshot et protégé par un hash
+  canonique indépendant de la locale ;
+- constats typés pour données manquantes, discordances praticien-only,
+  sécurité et abstention ;
+- projection des seules absences structurelles du snapshot avec statut
+  `à_documenter`, sans zéro, criticité ou conclusion automatique ;
+- provenance strictement bornée aux réponses, besoins et objets présents dans
+  le snapshot ;
+- règles candidates transportées mais inactives ; toute règle déclarée
+  validée exige une validation praticien contrôlée à l'exécution ;
+- abstention `not_evaluated` par défaut, jamais transformée implicitement en
+  `not_required`.
+
+### Validations
+
+- Vitest ciblé `clinical-engine` + `equilibre` : 9 fichiers, 63 tests verts ;
+- `npm run type-check` : OK ;
+- `npm run lint` : OK ;
+- `npm run scoring-check` : 63 questionnaires certifiés, OK ;
+- `bash scripts/check_no_secrets.sh` : OK ;
+- `git diff --check` : OK ;
+- revue indépendante `wn-review` : GO.
+
+Aucune interface, route API, migration Prisma/SQL, écriture Supabase, donnée
+patient réelle, règle, formule ou seuil clinique n'a été ajouté ou modifié.
