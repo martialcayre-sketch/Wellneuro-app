@@ -3,15 +3,16 @@
 import type { Question } from '@/lib/questionnaire-types';
 
 // Champ de question (likert / select / number). Composant présentationnel pur.
-export function QuestionField({ question, value, onChange }: {
+export function QuestionField({ question, value, onChange, displaySelectAsRadioCards = false }: {
   question: Question;
   value: string;
   onChange: (v: string) => void;
+  displaySelectAsRadioCards?: boolean;
 }) {
   return (
-    <div className="space-y-2">
-      <p className="text-sm font-medium text-gray-800">{question.texte}</p>
-      {question.type === 'likert' && question.options && (
+    <fieldset className="min-w-0 space-y-2">
+      <legend className="text-sm font-medium text-gray-800">{question.texte}</legend>
+      {(question.type === 'likert' || (question.type === 'select' && displaySelectAsRadioCards)) && question.options && (
         <div className="grid gap-2">
           {question.options.map(opt => (
             <label
@@ -30,12 +31,12 @@ export function QuestionField({ question, value, onChange }: {
                 onChange={() => onChange(String(opt.v))}
                 className="accent-primary"
               />
-              <span>{opt.l}</span>
+              <span className="min-w-0 break-words">{opt.l}</span>
             </label>
           ))}
         </div>
       )}
-      {question.type === 'select' && question.options && (
+      {question.type === 'select' && !displaySelectAsRadioCards && question.options && (
         <select
           value={value}
           onChange={e => onChange(e.target.value)}
@@ -64,6 +65,6 @@ export function QuestionField({ question, value, onChange }: {
           )}
         </div>
       )}
-    </div>
+    </fieldset>
   );
 }

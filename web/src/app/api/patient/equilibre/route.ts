@@ -9,7 +9,7 @@ import {
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
 import { calculerObjetsCliniques } from '@/lib/equilibre/objetsCliniques';
 import type { JalonMomentum, LectureDatee, ResultatMomentum, StrateCode } from '@/lib/equilibre/types';
-import { readPatientSession } from '@/lib/patient-session';
+import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 
 // Données patient-safe uniquement : jamais les niveaux de preuve A/B/C/D
 // (réservés praticien, cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md §3).
@@ -34,7 +34,8 @@ export async function GET(req: Request): Promise<NextResponse<PatientEquilibreRe
     const { searchParams } = new URL(req.url);
     const idAssignation = (searchParams.get('id') ?? '').trim();
     // Identité : cookie de session portail en priorité, sinon email en query (compat legacy).
-    const emailRaw = (readPatientSession(req)?.email ?? searchParams.get('email') ?? '').trim().toLowerCase();
+    const patientSession = readPatientSession(req);
+    const emailRaw = (patientSession?.email ?? searchParams.get('email') ?? '').trim().toLowerCase();
 
     if (!idAssignation || !/^[A-Za-z0-9_-]+$/.test(idAssignation) || idAssignation.length > 64) {
       return NextResponse.json({ ok: false, reason: 'invalid', error: 'Identifiant invalide.' }, { status: 400 });
@@ -44,7 +45,10 @@ export async function GET(req: Request): Promise<NextResponse<PatientEquilibreRe
     }
 
     const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
-    if (!ass || ass.emailPatient.toLowerCase() !== emailRaw) {
+    const accessAllowed = ass && (patientSession
+      ? await isSessionAuthorizedForAssignment(patientSession, ass)
+      : ass.emailPatient.toLowerCase() === emailRaw);
+    if (!ass || !accessAllowed) {
       return NextResponse.json({ ok: false, reason: 'not_found', error: 'Assignation non reconnue.' }, { status: 404 });
     }
 

@@ -429,3 +429,46 @@ Plan depuis son intégration actualisée.
 
 **Questions ouvertes** : protocole chronométré avec un praticien et téléphone
 physique ; construction serveur et preuve persistée de transmission pour C2/C3.
+
+## [2026-07-14] — Campagne QX : LOT-02 terminé
+
+**Décisions prises** : renderer `micro_batch` activé uniquement pour `Q_NEU_03`, en neuf lots visuels conservant strictement les 25 items, leurs options, le payload et le scoring. Navigation, reprise de brouillon, progression et accessibilité clavier/lecteur d’écran couvertes.
+
+**Validations exécutées** : Vitest ciblé 11/11, type-check, certification scoring des 63 questionnaires, contrôle anti-secrets, contrôle navigateur à 375 px et largeur équivalente au zoom 200 %, revue indépendante GO.
+
+**Options écartées** : autres renderers, mélange nominal, migration et persistance serveur — hors périmètre ou encore bloqués par certification.
+
+**Prochaine action prioritaire** : intégrer LOT-02 vers `campaign/qx-experience-questionnaires/integration`, puis ouvrir LOT-03 dans un worktree dédié.
+
+**Questions ouvertes** : aucune.
+
+## [2026-07-14] — Campagne QX : LOT-03 terminé
+
+**Décisions prises** : brouillon local V1 versionné avec réponses et page courante, reprise rétrocompatible sans saut de partie incomplète, résumé de complétude et correction ciblée avant transmission. Payload, conversion numérique et scoring restent strictement inchangés.
+
+**Validations exécutées** : Vitest ciblé 21/21, suite 100/100, type-check, certification scoring des 63 questionnaires, anti-secrets, `git diff --check` et revue indépendante GO. Focus du résumé couvert automatiquement ; contrôle manuel 375 px, zoom 200 % et lecteur d’écran reste à consigner.
+
+**Options écartées** : persistance serveur, migration Prisma, affichage des réponses sensibles et chantier d’identification/session patient — hors périmètre.
+
+**Prochaine action prioritaire** : préparer LOT-04 dans un worktree dédié après intégration de LOT-03.
+
+**Questions ouvertes** : aucune.
+
+## [2026-07-14] — Campagne QX terminée
+
+**Décisions prises** : LOT-04 valide l'absence de régression du renderer
+`micro_batch` de `Q_NEU_03` et clôt QX. Seul ce renderer reste activé ; les
+profils `focus`, `guided_sections` et `compact_repeated_scale` conservent leurs
+gates de certification documentées.
+
+**Validations exécutées** : tests ciblés 21/21, Vitest 130/130, type-check,
+lint, build, scoring 63/63, anti-secrets, inventaire identique, CI PostgreSQL
+et Playwright PR #63 (`29331961153`), essai manuel Chrome PC à 375 px, zoom
+200 %, clavier et Narrateur Windows.
+
+**Options écartées** : activation de renderers non certifiés, mélange
+d'options, changement clinique, Prisma ou API.
+
+**Prochaine action prioritaire** : choisir explicitement la prochaine campagne à activer.
+
+**Questions ouvertes** : aucune.

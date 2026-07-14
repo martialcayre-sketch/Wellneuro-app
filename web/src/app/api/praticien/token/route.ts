@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { sendPortailLinkEmail } from '@/lib/consultation/email';
+import { buildPortalUrl } from '@/lib/consultation/portal-access';
 
 export type TokenActionResponse = {
   success: boolean;
@@ -17,11 +18,6 @@ type TokenPayload = {
   idPatient?: string;
   action?: 'issue' | 'resend' | 'lien';
 };
-
-function lienPortail(accessToken: string): string {
-  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  return `${baseUrl}/portail/${accessToken}`;
-}
 
 // POST /api/praticien/token — émet (ou réémet) et envoie le lien du portail
 // patient. Le token est permanent : « issue » le crée s'il est absent et lève
@@ -73,7 +69,7 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
       await prisma.patient.update({ where: { idPatient }, data: { accessTokenRevoked: false } });
     }
 
-    const lien = lienPortail(accessToken);
+    const lien = buildPortalUrl(accessToken);
     if (action !== 'lien') {
       try {
         // En serverless, on attend explicitement la promesse pour eviter que

@@ -4,10 +4,10 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "active",
-  "active_campaign": "2026-07-12-qx-experience-questionnaires",
-  "active_lot": "LOT-02",
-  "last_completed_lot": "C1/LOT-06",
+  "status": "idle",
+  "active_campaign": null,
+  "active_lot": null,
+  "last_completed_lot": "QX/LOT-04",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -25,10 +25,10 @@
       "corpus_registry": "391 unique opaque sourceIds passed"
     }
   },
-  "next_action": "Cadrer puis exécuter QX/LOT-02 en mode Plan depuis l'intégration QX actualisée.",
+  "next_action": "Choisir explicitement la prochaine campagne à activer.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-14T11:30:20Z",
+  "updated_at": "2026-07-14T18:21:27Z",
   "parallel_campaigns": []
 }

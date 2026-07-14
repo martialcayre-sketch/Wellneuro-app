@@ -6,6 +6,7 @@ import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import nodemailer from 'nodemailer';
+import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -26,7 +27,7 @@ export type AssignPackResponse = {
   count?: number;
   packNom?: string;
   error?: string;
-  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'pack_not_found' | 'exception';
+  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'portal_revoked' | 'pack_not_found' | 'exception';
 };
 
 const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>;
@@ -109,33 +110,17 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     const notesPack = notes || `Pack ${pack.nom}`;
     const nowIso = new Date().toISOString();
-    const cree: { idAssignation: string; titre: string }[] = [];
-
     const { qids } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
-
-    // Une assignation par questionnaire du pack (ids inexistants ignorés).
-    for (const idQuestionnaire of qids) {
+    const aCreer = qids.flatMap(idQuestionnaire => {
       const questionnaire = catalogue[idQuestionnaire];
-      if (!questionnaire) continue;
-      const idAssignation = createPublicId('ASS');
-      const titre = questionnaire.titre || idQuestionnaire;
-      await prisma.assignation.create({
-        data: {
-          idAssignation,
-          idPatient: patient.idPatient,
-          emailPatient,
-          idQuestionnaire,
-          titre,
-          dateAssignation: new Date(nowIso),
-          dateLimite: dateLimite || null,
-          statut: 'En attente',
-          notes: notesPack,
-        },
-      });
-      cree.push({ idAssignation, titre });
-    }
+      return questionnaire ? [{
+        idAssignation: createPublicId('ASS'),
+        idQuestionnaire,
+        titre: questionnaire.titre || idQuestionnaire,
+      }] : [];
+    });
 
-    if (cree.length === 0) {
+    if (aCreer.length === 0) {
       logger.warn({
         event: EVENT_CODES.ASSIGNATION_PACK_RESOLUTION_FAILED,
         domain: 'ASSIGNATION',
@@ -148,8 +133,37 @@ export async function POST(req: Request): Promise<NextResponse> {
       ), requestContext);
     }
 
-    // Un seul email récapitulatif (best-effort), lien vers la première assignation.
-    sendPackEmail(emailPatient, pack.nom, cree, dateLimite, notes).catch(
+    let portalUrl: string;
+    try {
+      portalUrl = await withActivePortalAccess(patient.idPatient, async (tx, access) => {
+        for (const item of aCreer) {
+          await tx.assignation.create({
+            data: {
+              ...item,
+              idPatient: patient.idPatient,
+              emailPatient,
+              dateAssignation: new Date(nowIso),
+              dateLimite: dateLimite || null,
+              statut: 'En attente',
+              notes: notesPack,
+            },
+          });
+        }
+        return access.url;
+      });
+    } catch (error) {
+      if (error instanceof PortalAccessError && error.reason === 'portal_revoked') {
+        return withCorrelationHeader(NextResponse.json({
+          success: false,
+          reason: 'portal_revoked',
+          error: 'L’accès portail de ce patient est révoqué. Réémettez-le explicitement avant de créer une assignation.',
+        }, { status: 409 }), requestContext);
+      }
+      throw error;
+    }
+
+    // Un seul email récapitulatif (best-effort), lien vers le portail permanent.
+    sendPackEmail(emailPatient, pack.nom, aCreer, dateLimite, notes, portalUrl).catch(
       e => logger.error({
         event: EVENT_CODES.ASSIGNATION_PACK_EMAIL_FAILED,
         domain: 'EMAIL',
@@ -159,7 +173,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       })
     );
 
-    return withCorrelationHeader(NextResponse.json({ success: true, count: cree.length, packNom: pack.nom }), requestContext);
+    return withCorrelationHeader(NextResponse.json({ success: true, count: aCreer.length, packNom: pack.nom }), requestContext);
   } catch (err) {
     logger.error({
       event: EVENT_CODES.ASSIGNATION_PACK_EXCEPTION,
@@ -177,12 +191,11 @@ async function sendPackEmail(
   packNom: string,
   assignations: { idAssignation: string; titre: string }[],
   dateLimite: string,
-  notes: string
+  notes: string,
+  portalUrl: string,
 ) {
   const smtpUrl = process.env.SMTP_URL;
   if (!smtpUrl) return;
-  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  const link = `${baseUrl}/patient/${assignations[0].idAssignation}`;
   const liste = assignations.map(a => `• ${a.titre}`).join('\n');
   const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
   const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
@@ -196,7 +209,7 @@ async function sendPackEmail(
       `Votre praticien vous invite à compléter les questionnaires du pack « ${packNom} » avant votre consultation :\n` +
       `${liste}${dateInfo}${noteInfo}\n\n` +
       `Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente du pack et les remplir dans l'ordre de votre choix.\n\n` +
-      `Accéder à vos questionnaires :\n${link}\n\n` +
+      `Accéder à vos questionnaires :\n${portalUrl}\n\n` +
       `L'équipe Wellneuro`,
   });
 }

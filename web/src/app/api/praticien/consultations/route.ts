@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
+import { buildPortalUrl } from '@/lib/consultation/portal-access';
 import { isMotifValide } from '@/lib/consultation/motifs';
 import { sendPortailLinkEmail } from '@/lib/consultation/email';
 
@@ -34,11 +35,6 @@ type CreateConsultationPayload = {
   idPatient?: string;
   motif?: string;
 };
-
-function lienPortail(accessToken: string): string {
-  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  return `${baseUrl}/portail/${accessToken}`;
-}
 
 // GET /api/praticien/consultations?idPatient=... — historique des consultations d'un patient.
 export async function GET(req: Request): Promise<NextResponse<ConsultationsApiResponse>> {
@@ -128,7 +124,7 @@ export async function POST(req: Request): Promise<NextResponse<CreateConsultatio
       },
     });
 
-    const lien = lienPortail(accessToken);
+    const lien = buildPortalUrl(accessToken);
     try {
       // En serverless, on attend explicitement la promesse pour eviter que
       // l'envoi best-effort soit interrompu juste apres la reponse HTTP.

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isDeadlineExpired } from '@/lib/patient-access';
-import { readPatientSession } from '@/lib/patient-session';
+import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 
 const CONSENTEMENT_VERSION = 'v1';
 
@@ -27,7 +27,8 @@ export async function POST(req: Request): Promise<NextResponse<PatientConsenteme
 
   const { idAssignation } = payload;
   // Identité : cookie de session portail en priorité, sinon email du corps (compat legacy).
-  const email = readPatientSession(req)?.email ?? payload.email;
+  const patientSession = readPatientSession(req);
+  const email = patientSession?.email ?? payload.email;
   const action = payload.action ?? 'donner';
 
   if (!idAssignation || !email) {
@@ -45,7 +46,10 @@ export async function POST(req: Request): Promise<NextResponse<PatientConsenteme
 
   try {
     const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
-    if (!ass || ass.emailPatient.toLowerCase() !== email.toLowerCase()) {
+    const accessAllowed = ass && (patientSession
+      ? await isSessionAuthorizedForAssignment(patientSession, ass)
+      : ass.emailPatient.toLowerCase() === email.toLowerCase());
+    if (!ass || !accessAllowed) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Assignation non reconnue.' }, { status: 403 });
     }
     if (isDeadlineExpired(ass.dateLimite)) {

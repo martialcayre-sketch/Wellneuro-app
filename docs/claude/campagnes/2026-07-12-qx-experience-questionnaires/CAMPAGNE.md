@@ -1,12 +1,12 @@
 ---
 id: "2026-07-12-qx-experience-questionnaires"
 titre: "QX — Expérience questionnaires patient"
-statut: "en_cours"
+statut: "terminé"
 créée_le: "2026-07-12"
 mise_à_jour: "2026-07-14"
-lot_courant: "LOT-02"
+lot_courant: "LOT-04"
 branche_campagne: "campaign/qx-experience-questionnaires/integration"
-branche_lot_courant: "campaign/qx-experience-questionnaires/lot-02"
+branche_lot_courant: "campaign/qx-experience-questionnaires/lot-04"
 cible_pr_lot: "campaign/qx-experience-questionnaires/integration"
 cible_pr_campagne: "main"
 ---
@@ -61,9 +61,9 @@ existantes.
 |---|---|---|---|
 | LOT-00 | Inventaire des 63 questionnaires, politiques strictes et cadrage des pilotes | terminé | HC-F LOT-05 terminé |
 | LOT-01 | Registre d'affichage et contrats purs, sans branchement UI | terminé | LOT-00 |
-| LOT-02 | Profils de rendu sur pilotes : `focus`, `micro_batch`, `guided_sections`, `compact_repeated_scale` ; saisie conditionnelle ; adaptation mobile (jamais de tableau horizontal par défaut) | à_faire | LOT-01 + HC-F LOT-04 |
-| LOT-03 | Reprise, sauvegarde et résumé : état de brouillon explicite, résumé avant transmission, distinction conservation locale / synchronisation / transmission | à_faire | LOT-02 |
-| LOT-04 | Validation psychométrique et handoff : payload identique avant/après vérifié par tests, scoring inchangé (assertions), documentation de l'inventaire, critères d'extension aux familles non pilotes | à_faire | LOT-03 |
+| LOT-02 | Profils de rendu sur pilotes : `focus`, `micro_batch`, `guided_sections`, `compact_repeated_scale` ; saisie conditionnelle ; adaptation mobile (jamais de tableau horizontal par défaut) | terminé | LOT-01 + HC-F LOT-04 |
+| LOT-03 | Reprise, sauvegarde et résumé : état de brouillon explicite, résumé avant transmission, distinction conservation locale / synchronisation / transmission | terminé | LOT-02 |
+| LOT-04 | Validation psychométrique et handoff : payload identique avant/après vérifié par tests, scoring inchangé (assertions), documentation de l'inventaire, critères d'extension aux familles non pilotes | terminé | LOT-03 |
 
 ## Hors périmètre
 
@@ -73,9 +73,11 @@ formulaire d'anamnèse interne complexe si absent des pilotes.
 
 ## Definition of Done
 
-- [ ] Au moins trois profils de rendu en service sur les pilotes autorisés.
-- [ ] Payload et scoring identiques avant/après, prouvés par tests.
-- [ ] Politique psychométrique documentée pour 100 % du catalogue (même
+- [x] Les quatre profils sont spécifiés ; seul `micro_batch` est activé sur
+      `Q_NEU_03`. Les trois autres restent bloqués jusqu'à satisfaction de
+      leurs gates de certification et de validation.
+- [x] Payload et scoring identiques avant/après, prouvés par tests.
+- [x] Politique psychométrique documentée pour 100 % du catalogue (même
       provisoire).
-- [ ] `OptionOrderPolicy` spécifié, non implémenté, décision tracée.
-- [ ] Parcours mobile, clavier et lecteur d'écran documentés sur un pilote.
+- [x] `OptionOrderPolicy` spécifié, non implémenté, décision tracée.
+- [x] Parcours mobile, clavier et lecteur d'écran documentés sur un pilote.

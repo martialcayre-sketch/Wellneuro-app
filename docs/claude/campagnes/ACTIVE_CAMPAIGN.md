@@ -1,17 +1,8 @@
 # Campagnes actives
 
-## Activité primaire
+Aucune campagne active.
 
-**Campagne** : 2026-07-12-qx-experience-questionnaires
-**Titre** : QX — Expérience questionnaires patient
-**Statut** : active
-**Lot actif** : LOT-02
-
-## Activités parallèles
-
-Aucune campagne parallèle active.
-
-**Statut global** : active
+**Statut global** : idle
 **Mise à jour** : 2026-07-14
 
-> La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.
+> La source de vérité machine est `.wn/state.json`.

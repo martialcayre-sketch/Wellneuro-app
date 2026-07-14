@@ -63,7 +63,7 @@ async function ouvrirSectionSecondaire(page: Page, titre: string): Promise<void>
 async function repondreEtTransmettre(page: Page): Promise<void> {
   for (let section = 0; section < 30; section++) {
     await remplirSectionCourante(page);
-    const bouton = page.getByRole('button', { name: /Suivant →|Transmettre au praticien/ });
+    const bouton = page.getByRole('button', { name: /Suivant →|Voir le résumé|Transmettre au praticien/ });
     try {
       await expect(bouton).toBeEnabled({ timeout: 3000 });
     } catch {
@@ -81,6 +81,11 @@ async function repondreEtTransmettre(page: Page): Promise<void> {
     }
     const label = (await bouton.textContent()) ?? '';
     await bouton.click();
+    if (label.includes('Voir le résumé')) {
+      await page.getByRole('button', { name: 'Transmettre au praticien' }).click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Transmettre' }).click();
+      return;
+    }
     if (label.includes('Transmettre')) {
       await page.getByRole('dialog').getByRole('button', { name: 'Transmettre' }).click();
       return;
@@ -189,6 +194,14 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await expect(page.getByRole('heading', { name: 'Mes questionnaires' })).toBeVisible();
     });
 
+    await test.step('Session restaurée sur le portail sans nouvelle saisie email', async () => {
+      await page.goto(portailUrl);
+      await expect(page.getByPlaceholder('votre@email.fr')).toHaveCount(0);
+      await expect(page.getByText('Merci !')).toBeVisible();
+      await page.getByRole('link', { name: 'Accéder à mes questionnaires' }).click();
+      await expect(page.getByRole('heading', { name: 'Mes questionnaires' })).toBeVisible();
+    });
+
     await test.step('Ouverture du premier questionnaire à compléter', async () => {
       const premier = page.getByRole('link', { name: 'Commencer' }).first();
       await expect(premier).toBeVisible();
@@ -214,6 +227,19 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await expect(page).toHaveURL(new RegExp(`${portailUrl}/questionnaires$`));
       await ouvrirSectionSecondaire(page, 'Transmis au praticien');
       await expect(page.getByText('Transmis au praticien').first()).toBeVisible();
+    });
+
+    await test.step('Ouverture d’un autre questionnaire sans nouveau gate', async () => {
+      const suivant = page.getByRole('link', { name: 'Commencer' }).first();
+      await expect(suivant).toBeVisible();
+      await suivant.click();
+      await expect(page.getByPlaceholder('votre@email.fr')).toHaveCount(0);
+      await expect(page.getByRole('link', { name: '← Mes questionnaires' })).toBeVisible();
+      await page.getByRole('link', { name: '← Mes questionnaires' }).click();
+      // Attendre le rendu complet du hub : l'étape suivante ouvre la section
+      // repliée "Transmis au praticien", et ouvrirSectionSecondaire ne fait
+      // rien si le <summary> n'est pas encore monté (hub en cours de fetch).
+      await expect(page.getByRole('heading', { name: 'Mes questionnaires' })).toBeVisible();
     });
 
     await test.step('Tentative de re-soumission côté serveur (409)', async () => {

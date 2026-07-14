@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { readPatientSession } from '@/lib/patient-session';
+import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 import { mapAssignationPatient, type AssignationPatient } from '@/lib/consultation/mapAssignation';
 
 export type PatientAssignationsResponse =
@@ -13,7 +13,8 @@ export async function GET(req: Request): Promise<NextResponse<PatientAssignation
     const { searchParams } = new URL(req.url);
     const idAssignation = (searchParams.get('id') ?? '').trim();
     // Identité : cookie de session portail en priorité, sinon email en query (compat legacy).
-    const emailRaw = (readPatientSession(req)?.email ?? searchParams.get('email') ?? '').trim().toLowerCase();
+    const patientSession = readPatientSession(req);
+    const emailRaw = (patientSession?.email ?? searchParams.get('email') ?? '').trim().toLowerCase();
 
     if (!idAssignation || !/^[A-Za-z0-9_-]+$/.test(idAssignation) || idAssignation.length > 64) {
       return NextResponse.json({ ok: false, reason: 'invalid', error: 'Identifiant invalide.' }, { status: 400 });
@@ -23,7 +24,10 @@ export async function GET(req: Request): Promise<NextResponse<PatientAssignation
     }
 
     const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
-    if (!ass || ass.emailPatient.toLowerCase() !== emailRaw) {
+    const accessAllowed = ass && (patientSession
+      ? await isSessionAuthorizedForAssignment(patientSession, ass)
+      : ass.emailPatient.toLowerCase() === emailRaw);
+    if (!ass || !accessAllowed) {
       return NextResponse.json(
         { ok: false, reason: 'not_found', error: 'Assignation introuvable pour cet email.' },
         { status: 404 }
