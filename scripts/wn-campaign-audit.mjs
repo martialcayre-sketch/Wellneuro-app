@@ -125,6 +125,7 @@ function auditCampaign(rootRel, campaignDir, issues, warnings) {
 
   const lotFiles = listLotFiles(campaignDir);
   const lotStates = [];
+  const lotOrdinals = new Map();
   for (const lotFile of lotFiles) {
     const lotPath = path.join(campaignDir, "lots", lotFile);
     const lotFm = parseFrontmatter(readFileSafe(lotPath));
@@ -142,6 +143,17 @@ function auditCampaign(rootRel, campaignDir, issues, warnings) {
       id: lotFm.id || "",
       status: lotFm.statut || ""
     });
+    const ordinal = (lotFm.id || lotFile).match(/^LOT-\d{2}/)?.[0];
+    if (ordinal) {
+      const previous = lotOrdinals.get(ordinal);
+      if (previous) {
+        const target = isClosedStatus(fm.statut) ? warnings : issues;
+        const severity = target === warnings ? "warning" : "error";
+        target.push({ severity, code: "duplicate_lot_ordinal", path: lotRel, message: `${ordinal} dupliqué: ${previous}, ${lotFile}` });
+      } else {
+        lotOrdinals.set(ordinal, lotFile);
+      }
+    }
   }
 
   const campaignStatus = fm.statut || "";
@@ -360,6 +372,15 @@ function run() {
 
   for (const rootRel of roots) {
     const rootAbs = path.join(cwd, rootRel);
+    if (!fs.existsSync(rootAbs)) {
+      warnings.push({
+        severity: "warning",
+        code: "missing_audit_root",
+        path: rootRel,
+        message: `Racine d'audit absente: ${rootRel}`
+      });
+      continue;
+    }
     for (const campaignDir of listCampaignDirs(rootAbs)) {
       campaigns.push(auditCampaign(rootRel, campaignDir, issues, warnings));
     }

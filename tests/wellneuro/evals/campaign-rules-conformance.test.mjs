@@ -159,3 +159,30 @@ test("l'audit peut bloquer la CI sur tout warning", () => {
   const report = JSON.parse(run.stdout);
   assert.ok(report.summary.warnings > 0, "la fixture doit contenir au moins un warning");
 });
+
+test("l'audit signale une racine miroir absente", () => {
+  const root = setupRepo();
+  fs.rmSync(path.join(root, "wellneuro_wn_campaigns"), { recursive: true, force: true });
+
+  const run = runAudit(root, ["--fail-on-warning-codes", "missing_audit_root"]);
+  assert.equal(run.status, 1);
+  const report = JSON.parse(run.stdout);
+  assert.ok(report.warnings.some((item) => item.code === "missing_audit_root"));
+});
+
+test("l'audit refuse deux fichiers pour le même ordinal de lot", () => {
+  const root = setupRepo();
+  const duplicatePath = path.join(root, "docs", "claude", "campagnes", "campaign-a", "lots", "LOT-00-duplicate.md");
+  write(duplicatePath, `---
+id: "LOT-00-duplicate"
+statut: "à_faire"
+---
+
+# Doublon LOT-00
+`);
+
+  const run = runAudit(root);
+  assert.equal(run.status, 1);
+  const report = JSON.parse(run.stdout);
+  assert.ok(report.issues.some((item) => item.code === "duplicate_lot_ordinal"));
+});

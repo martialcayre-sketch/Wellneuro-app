@@ -119,7 +119,7 @@ node scripts/wn-campaign-audit.mjs --no-fail --format markdown --write docs/clau
 Mode CI bloquant sur les incohérences d'état et les dérives du miroir :
 
 ```bash
-node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
+node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
 ```
 
 Mode CI strict (bloque sur tout warning):
