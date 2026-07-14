@@ -268,3 +268,24 @@ worktrees isolés, selon l'ordre défini par `ARCHITECTURE_CLINIQUE_3_2.md`.
 
 **Questions ouvertes / gates** : validation clinique des seuils, marqueurs,
 axes, fiabilité et rétention ; corpus G0–G6 ; toute migration C2/G5.
+
+## [2026-07-14] — Incident production : auth NextAuth cassée (hotfix PR #45, test PR #46)
+
+**Décisions prises** : diagnostic — toutes les routes `/api/auth/*` en 500
+depuis le 2026-07-13 ~19:40 UTC ; cause racine PR #39 (wrapper observabilité
+appelant le handler NextAuth sans le contexte App Router), PR #44 hors de
+cause. Hotfix mergé (PR #45) : transmission du contexte
+`{ params: { nextauth } }`. Test de régression mergé (PR #46) : mock fidèle du
+dispatch next-auth v4 + alias `@/*` ajouté à `vitest.config.ts`. Prod rétablie
+à 00:53 UTC, vérifiée stable (session/csrf/providers 200, aucune erreur
+runtime résiduelle).
+
+**Options écartées** : rollback Vercel (aurait retiré LOT-04) ; test du vrai
+handler next-auth sous Vitest (exige l'AsyncLocalStorage d'un vrai serveur
+Next).
+
+**Prochaine action prioritaire** : vérification humaine d'un login Google
+complet.
+
+**Questions ouvertes** : aucune ; aucun lot de campagne concerné (hors
+périmètre C1/QX).
