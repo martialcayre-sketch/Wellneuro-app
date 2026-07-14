@@ -4,6 +4,23 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Architecture clinique 3.2 — réconciliation WN Ultimate v2 (2026-07-13)
+
+- Promotion documentaire des contrats `AssessmentEpisode`,
+  `ClinicalSnapshot`, `DecisionCard` et `ProtocolDraft`, sans code clinique ni
+  migration.
+- Frontières réconciliées : C1 prépare les brouillons, C2 possède
+  persistance/activation/longitudinal, JA possède le journal alimentaire,
+  C5A devient intrinsèque et C5B contextuel.
+- Ajout d'un registre sanitaire expurgé de 391 sources : droits à vérifier,
+  revue clinique non effectuée, aucun hash ni localisateur Drive versionné,
+  activation runtime interdite.
+- `.wn/state.json` devient l'autorité machine des campagnes ;
+  `ACTIVE_CAMPAIGN.md` est généré et aucune campagne, y compris `_prepared`,
+  n'est sélectionnée implicitement.
+- Aucun changement du scoring Mon équilibre, des questionnaires ou du schéma
+  Prisma.
+
 ### Cache documentaire clinique V1 — préparation technique (2026-07-10)
 
 - Découpage du prompt système de synthèse en blocs stables explicites

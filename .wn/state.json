@@ -4,23 +4,29 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "idle",
-  "active_campaign": null,
-  "active_lot": null,
-  "last_completed_lot": null,
+  "status": "active",
+  "active_campaign": "2026-07-12-hybrid-clinical-experience-questionnaires",
+  "active_lot": "LOT-05",
+  "last_completed_lot": "LOT-04",
   "git": {
     "branch": null,
     "last_commit": null,
     "dirty": null
   },
   "validation": {
-    "overall_status": "unknown",
-    "last_checked_at": null,
-    "checks": {}
+    "overall_status": "passed",
+    "last_checked_at": "2026-07-13T00:00:00.000Z",
+    "checks": {
+      "orchestration": "4/4 passed",
+      "type_check": "passed",
+      "scoring_certification": "63 questionnaires passed",
+      "no_secrets": "passed",
+      "corpus_registry": "391 unique opaque sourceIds passed"
+    }
   },
-  "next_action": "Créer ou importer une campagne /wn",
+  "next_action": "Clôturer HC-F LOT-05 sur instruction explicite, puis démarrer C1 ou QX.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": null
+  "updated_at": "2026-07-14T00:47:18Z"
 }

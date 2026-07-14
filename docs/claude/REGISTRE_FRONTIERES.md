@@ -144,7 +144,9 @@
 
 ### C1 — Décision clinique 21 jours V1 (`2026-07-11-decision-clinique-21-jours-v1`)
 
-- **Possède** : cockpit fiche patient (dont instanciations radar / 12
+- **Possède** : contrats TypeScript purs `AssessmentEpisode` proposé,
+  `ClinicalSnapshot`, `DecisionCard` et `ProtocolDraft` ; cockpit fiche
+  patient (dont instanciations radar / 12
   besoins / 5 objets / badges de preuve), carte de décision explicable,
   protocole 21 jours minimal (3 actions max, plan idéal/minimal/secours,
   charge thérapeutique), instanciations `ModeConsultation` et
@@ -152,19 +154,23 @@
 - **Consomme** : `web/src/lib/equilibre/` (score, evidence A/B/C/D,
   objetsCliniques, momentum via contrat public), primitives HC-F,
   synthèse IA existante.
-- **Décisions actées** : provenance exprimée en niveaux de preuve A/B/C/D
+- **Décisions actées** : provenance de mesure exprimée en niveaux de preuve A/B/C/D
   (aucun « score de confiance » continu) ; A4 ; aucune action clinique sans
-  validation humaine ; pas de persistance longitudinale (C2).
+  validation humaine ; proposition moteur distincte de la priorité
+  sélectionnée ; protocole limité au brouillon ; pas de persistance
+  longitudinale (C2). L'autorité documentaire des claims reste une dimension
+  séparée des preuves A/B/C/D.
 - **Statut** : compilée (cette livraison). Démarrage après HC-F LOT-02.
 
 ### C2 — Points d'étape et persistance (`2026-07-11-suivi-j7-j14-j21-et-persistance`)
 
-- **Possède** : journal de suivi, check-ins J7/J14/J21 (2-4 questions),
+- **Possède** : persistance des épisodes confirmés et des protocoles actifs,
+  journal d'événements de suivi, check-ins J7/J14/J21 (2-4 questions),
   lectures adhésion/tolérance/effet ressenti, résumé J21 (point de jonction
   A1), décisions structurées aux points d'étape.
 - **Consomme** : `momentum.ts` (jalons de mesure, jamais réimplémentés),
   identité par assignation R8-lite (existante en production), primitives
-  HC-F, contrats C1 (protocole actif).
+  HC-F, contrats C1 (épisode confirmé et protocole brouillon validé).
 - **Décisions actées** : A1 ; scission C2A (check-ins + persistance minimale,
   gate migration explicite) / C2B (trajectoire et aide à l'ajustement, après
   données réelles) ; **différés** : analyse émotionnelle libre de messages,
@@ -172,6 +178,7 @@
   pourcentage d'observance affiché au patient (formulation factuelle
   positive obligatoire) ; le déclencheur de la campagne auth dédiée est
   l'identité **inter-assignations**, pas C2A.
+- **Ne possède pas** : journal alimentaire ni ses agrégats (JA).
 - **Statut** : cadrée, lots à compiler N+1 (pendant l'exécution de QX/C3).
 
 ### C3 — Documents contextuels multi-destinataires V1 (`2026-07-11-fiches-conseils-contextuelles-v1`, renommée)
@@ -180,8 +187,9 @@
   destinataire (patient / médecin / praticien), états
   brouillon→relu→validé→envoyé, versionnage, aperçu deux colonnes
   (sources praticien / rendu destinataire), impression HTML.
-- **Consomme** : blocs validés de C1 (protocole, décision), C4 (fiches
-  compléments), C5 (fiches alimentaires) ; mécanisme
+- **Consomme** : snapshot, décision et protocole validés de C1, événements et
+  revues de phase de C2, blocs publiés de C4 (fiches compléments) et C5
+  (fiches alimentaires) ; mécanisme
   `PrévisualisationPatient` HC-F ; synthèse IA existante.
 - **Décisions actées** : C3 ne possède **aucun contenu clinique source** ;
   renommage acté (le contenu réel est un moteur de composition documentaire,
@@ -194,31 +202,52 @@
   excipients, sources, date de revue, statut de vérification — aucune donnée
   patient) ; C4B compatibilité protocole (objectif actif, contraintes,
   doublons, cumul, vigilance, alternatives).
-- **Consomme** : protocole actif C1, rendu documentaire C3, primitives HC-F.
+- **Consomme** : intention d'exploration validée en C1, protocole actif
+  persisté en C2, rendu documentaire C3, primitives HC-F et contrat neutre
+  intrinsèque/contextuel.
 - **Décisions actées** : **pas de score global dominant** — présentation
   multi-dimensions (qualité de formulation / compatibilité / données
   manquantes / dernière revue) ; provenance et fraîcheur obligatoires par
   produit ; justification toujours visible (anti-perception commerciale).
-- **Note de factorisation** : le modèle intrinsèque/contextuel est commun à
-  C4 et C5 — primitive partagée à concevoir une seule fois (porteur : la
-  première des deux campagnes compilée).
+- **Note de factorisation** : le modèle intrinsèque/contextuel est un contrat
+  de domaine neutre. C4 et C5 possèdent chacun leurs données, règles et
+  adaptateurs ; aucune des deux campagnes ne dépend techniquement de l'autre.
 - **Statut** : cadrée, lots à compiler N+1. C4A parallélisable en data-first.
 
 ### C5 — Boussole alimentaire (`2026-07-11-boussole-alimentaire-slice-v1`)
 
-- **Possède** : C5A « action alimentaire de la semaine » (une action, trois
-  exemples, deux substitutions, fiche « pourquoi », plan minimal, critère
-  observable) ; C5B assiettes vedettes et substitutions (préférences,
-  contraintes, coût, saisonnalité). Référentiel : acquis E1 (tables
+- **Possède** : C5A taxonomie, sources et profils alimentaires intrinsèques,
+  indépendants du patient ; C5B lecture contextuelle d'une priorité validée,
+  action alimentaire de la semaine, assiettes vedettes et substitutions.
+  Référentiel : acquis E1 (tables
   `neuro_axis`, `nutrient_axis_weight`, Ciqual).
-- **Consomme** : priorité sélectionnée en C1 (pour C5A — le référentiel et le
-  contenu sont data-first, seule la *sélection* dépend de C1), rendu C3,
-  charte patient HC-F.
+- **Consomme** : contrat neutre intrinsèque/contextuel ; priorité sélectionnée
+  en C1 et protocole actif C2 pour C5B ; rendu C3 et charte patient HC-F.
 - **Décisions actées** : différés — scan produit, panier temps réel, mode
   frigo, mode restaurant, analyse journée/semaine, recommandations
   automatiques complexes ; chronobiologie : aucune lecture de rythme sans
   heure de repas connue ; langage non culpabilisant.
+- **Ne possède pas** : journal alimentaire, projections vers les
+  questionnaires ou suivi longitudinal (JA/C2).
 - **Statut** : cadrée, lots à compiler N+1. Socle data parallélisable.
+
+> Migration de frontière du 2026-07-13 : les anciens libellés C5A « action
+> alimentaire » et C5B « assiettes/substitutions » sont remplacés par C5A
+> intrinsèque et C5B contextuel. Les capacités historiques ne sont pas
+> supprimées : elles sont regroupées dans C5B.
+
+### JA — Journal alimentaire 21 jours V1 (`2026-07-13-journal-alimentaire-21j-v1`)
+
+- **Possède** : observations alimentaires manuelles, correction/suppression,
+  couverture et fiabilité explicites, agrégats descriptifs et discordances.
+- **Consomme** : charte patient HC-F ; protocole actif C2 uniquement lors du
+  futur branchement persistant ; C5 peut lire ses observations publiées sans
+  posséder le journal.
+- **Décisions actées** : domaine TypeScript pur en premier ; modes quick,
+  favoris et copie seulement ; aucune projection vers `Q_ALI_01`/`Q_ALI_02`
+  et aucun score SIIN officiel. Les 25 marqueurs et neuf axes restent
+  candidats jusqu'à revue clinique documentée.
+- **Statut** : cadrée ; persistance bloquée par C2A et gate migration.
 
 ### C0-UX — Refonte shell 3.0 (`2026-07-11-refonte-ux-shell-3-0`)
 
@@ -235,10 +264,11 @@
 
 ### Différés (hors campagnes, entrées de registre)
 
-> **Proposition WN Ultimate v2** : intégrée en quarantaine documentaire dans
-> `docs/claude/propositions/wn-ultimate-v2/`. Elle ne modifie pas les
-> frontières de ce registre. En particulier, sa répartition C5A/C5B et son
-> journal alimentaire exigent un arbitrage produit/clinique distinct.
+> **WN Ultimate v2** : source d'audit conservée dans
+> `docs/claude/propositions/wn-ultimate-v2/`. Ses contrats et frontières
+> compatibles sont promus dans le présent registre et dans
+> `ARCHITECTURE_CLINIQUE_3_2.md`. Ses paramètres cliniques non sourcés restent
+> non exécutables.
 
 - **Hybrid Patient** (ex-E4) : dashboard patient, frise longitudinale
   (contrat A4), carnet de bord. Dépend de HC-F + C1 + auth.

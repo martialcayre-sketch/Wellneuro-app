@@ -237,3 +237,34 @@
 **Prochaine action prioritaire** : C1 et QX peuvent démarrer en parallèle (dépendances HC-F satisfaites, aucune restante).
 
 **Questions ouvertes** : aucune — la seule question ouverte du lot précédent (arbitrage Dogne/Dogné) est résolue.
+
+## [2026-07-13] — Réconciliation WN Ultimate v2 : architecture 3.2 promue
+
+**Décisions prises** : promotion conditionnelle de l'architecture, sans
+adoption des paramètres cliniques non sourcés. C1 porte les contrats purs et
+les brouillons ; C2 la persistance, l'activation et le longitudinal ; JA est
+créée comme campagne autonome ; C5A devient intrinsèque et C5B contextuel.
+La priorité moteur reste une proposition distincte de la sélection praticien.
+Le registre sanitaire versionne 391 notices sans URL/chemin/identifiant Drive,
+toutes avec droits à vérifier, revue non effectuée et aucun hash. Le dossier
+portable brut et ses ZIP restent hors Git.
+
+**Orchestration** : `.wn/state.json` devient l'autorité machine, initialisée
+sur HC-F LOT-05. `ACTIVE_CAMPAIGN.md` est une vue générée. Les commandes
+`activate`, `deactivate` et `sync` sont ajoutées ; aucune campagne non close ou
+rangée sous `_prepared` ne devient active implicitement.
+
+**Validations exécutées** : JSON du registre valide, 391 `sourceId` uniques,
+aucun champ localisateur ; tests unitaires orchestration 4/4 ; `type-check` ;
+certification de 63 questionnaires ; contrôle anti-secrets ; `git diff
+--check`.
+
+**Options écartées** : activation globale du corpus ; projection du journal
+vers `Q_ALI_01`/`Q_ALI_02` ; propriété du contrat intrinsèque/contextuel par C4
+ou C5 ; migration Prisma ; modification du 60/20/20 ou des seuils existants.
+
+**Prochaine action prioritaire** : démarrer C1 et QX en parallèle dans des
+worktrees isolés, selon l'ordre défini par `ARCHITECTURE_CLINIQUE_3_2.md`.
+
+**Questions ouvertes / gates** : validation clinique des seuils, marqueurs,
+axes, fiabilité et rétention ; corpus G0–G6 ; toute migration C2/G5.

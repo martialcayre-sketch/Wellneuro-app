@@ -3,7 +3,7 @@ id: "2026-07-11-suivi-j7-j14-j21-et-persistance"
 titre: "C2 — Points d'étape et persistance (C2A/C2B)"
 statut: "cadrée — lots à compiler N+1"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-12"
+mise_à_jour: "2026-07-13"
 lot_courant: "aucun"
 ---
 
@@ -40,6 +40,9 @@ J21 préparé pour la réévaluation.
 
 ### C2A — Check-ins et persistance minimale
 
+- Persistance des `AssessmentEpisode` confirmés par le praticien, des
+  protocoles validés devenus actifs et de leurs révisions. C1 ne crée que des
+  objets purs et des brouillons.
 - Check-in de 2 à 4 questions maximum : tolérance, ressenti, adhésion à
   l'action principale.
 - Sauvegarde et synchronisation **explicites** (états HC-F).
@@ -76,11 +79,13 @@ J21 préparé pour la réévaluation.
 ## Frontières
 
 **Possède** : journal de suivi, check-ins, lectures adhésion/tolérance/effet,
-résumé J21, décisions de point d'étape, timeline factuelle.
-**Consomme** : protocole actif (C1), `momentum.ts` (API publique), identité
+résumé J21, décisions de point d'étape, timeline factuelle. Ici, « journal de
+suivi » désigne le journal d'événements du protocole, jamais le journal
+alimentaire JA.
+**Consomme** : protocole brouillon validé de C1, `momentum.ts` (API publique), identité
 R8-lite, primitives HC-F, rendu documentaire C3 (pour le résumé J21 envoyé).
 **Ne possède pas** : score, jalons de mesure, contenu du protocole,
-documents.
+documents, saisie ou agrégats du journal alimentaire JA.
 
 ## Esquisse de lots (à compiler N+1)
 

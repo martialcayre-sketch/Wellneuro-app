@@ -3,7 +3,7 @@ id: "2026-07-11-fiches-conseils-contextuelles-v1"
 titre: "C3 — Documents contextuels multi-destinataires V1"
 statut: "cadrée — lots à compiler N+1"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-12"
+mise_à_jour: "2026-07-13"
 lot_courant: "aucun"
 ---
 
@@ -25,7 +25,8 @@ versionnage et impression HTML (PDF natif différé).
 
 **C3 ne possède aucun contenu clinique source.** Il reçoit des blocs validés :
 
-- protocole et décision → C1 ;
+- snapshot, décision et protocole validés → C1 ;
+- événements et revue de phase persistés → C2 ;
 - fiches compléments → C4 ;
 - fiches alimentaires → C5 ;
 - synthèse IA existante (validée praticien).
@@ -59,7 +60,7 @@ Action 21 jours               Ce que vous allez essayer
 
 ## Frontières
 
-**Consomme** : blocs C1/C4/C5, mécanisme HC-F, booklet existant (dont C3 est
+**Consomme** : blocs C1/C2/C4/C5, mécanisme HC-F, booklet existant (dont C3 est
 l'évolution — auditer l'existant `BookletEnvoi` avant de créer, ne pas
 empiler).
 **Ne possède pas** : contenu clinique, scoring, envoi email (réutilise

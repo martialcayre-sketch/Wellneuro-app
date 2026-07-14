@@ -3,7 +3,7 @@ id: "2026-07-11-complements-clean-label-v1"
 titre: "C4 — Compléments clean label (C4A/C4B)"
 statut: "cadrée — lots à compiler N+1"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-12"
+mise_à_jour: "2026-07-13"
 lot_courant: "aucun"
 ---
 
@@ -51,11 +51,10 @@ Dernière revue               8 juillet 2026
 - La justification est toujours visible (badge + fiche justificative) : une
   liste ordonnée sans justification serait perçue comme une recommandation
   commerciale.
-- **Primitive commune C4/C5** (registre) : le modèle « qualité intrinsèque
-  (calculée une fois, indépendante du patient) + lecture contextuelle (au
-  protocole actif) » est identique à celui de la Boussole alimentaire. La
-  première des deux campagnes compilée conçoit la primitive ; la seconde la
-  réutilise. Ne pas la construire deux fois.
+- **Contrat neutre C4/C5** (registre) : le modèle « qualité intrinsèque
+  indépendante du patient + lecture contextuelle » est défini dans un contrat
+  de domaine partagé. C4 et C5 possèdent leurs données, règles et adaptateurs
+  respectifs ; aucune ne devient propriétaire technique de l'autre.
 - Vocabulaire : « recommandation », « point de vigilance », « à discuter avec
   le médecin traitant ». Jamais de terminologie prescriptive.
 
@@ -63,8 +62,9 @@ Dernière revue               8 juillet 2026
 
 **Possède** : catalogue C4A, moteur de compatibilité C4B, fiches
 justificatives.
-**Consomme** : protocole actif (C1), rendu documentaire (C3), primitives
-HC-F, primitive intrinsèque/contextuel partagée avec C5.
+**Consomme** : intention d'exploration validée en C1, protocole actif C2,
+rendu documentaire C3, primitives HC-F et contrat neutre
+intrinsèque/contextuel partagé avec C5.
 **Différés** : scan code-barres patient (avec le scanner C5), interactions
 médicamenteuses exhaustives (signalement simple d'abord).
 

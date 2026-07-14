@@ -6,6 +6,8 @@ const args = process.argv.slice(2);
 const command = args[0] || "status";
 const cwd = process.cwd();
 const baseDir = path.join(cwd, "docs", "claude", "campagnes");
+const stateDir = path.join(cwd, ".wn");
+const statePath = path.join(stateDir, "state.json");
 const generatedNames = new Set([
   "BRIEF.md",
   "BRIEF_COMPILED.md",
@@ -115,6 +117,21 @@ function dateIso() {
 }
 function ensureBase() {
   fs.mkdirSync(baseDir, { recursive: true });
+}
+function ensureStateDir() {
+  fs.mkdirSync(stateDir, { recursive: true });
+}
+function readMachineState() {
+  if (!fs.existsSync(statePath)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(statePath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+function writeMachineState(nextState) {
+  ensureStateDir();
+  fs.writeFileSync(statePath, `${JSON.stringify(nextState, null, 2)}\n`, "utf8");
 }
 function firstHeading(text, fallback) {
   for (const line of text.split(/\r?\n/)) {
@@ -304,7 +321,7 @@ function writeCampaignDraft(campaignDir, campaignName) {
     lotDraftBlock(5, "UI / durcissement / securite", "Ameliorer les messages, validations, accessibilite et garde-fous."),
     lotDraftBlock(6, "Tests / documentation / go-no-go", "Verifier le build, la coherence fonctionnelle et documenter la decision."),
   ];
-  const text = `# Campagne WellNeuro - ${campaignName}\n\n_Draft genere le ${dateIso()} par scripts/wn-campaign.mjs._\n\n## Objectif general\n\nA completer a partir de BRIEF_COMPILED.md.\n\n## Contexte\n\nA completer : etat actuel, decision de depart, dependances, hypotheses.\n\n## Contraintes globales\n\n- UI en francais.\n- Aucun secret en dur.\n- Aucune donnee patient reelle.\n- Exemples limites a Sophie Nicola, Jennifer Martin et Michel Dogne.\n- Aucune migration Prisma/SQL ou ecriture Supabase sans confirmation distincte.\n- Changements minimaux.\n\n## Hors perimetre global\n\n- Refactor large sans demande explicite.\n\n## Backlog ulterieur\n\n- A completer.\n\n---\n\n${blocks.join("\n")}\n`;
+  const text = `# Campagne WellNeuro - ${campaignName}\n\n_Draft genere le ${dateIso()} par scripts/wn-campaign.mjs._\n\n## Objectif general\n\nA completer a partir de BRIEF_COMPILED.md.\n\n## Contexte\n\nA completer : etat actuel, decision de depart, dependances, hypotheses.\n\n## Contraintes globales\n\n- UI en francais.\n- Aucun secret en dur.\n- Aucune donnee patient reelle.\n- Exemples limites a Sophie Nicola, Jennifer Martin et Michel Dogné.\n- Aucune migration Prisma/SQL ou ecriture Supabase sans confirmation distincte.\n- Changements minimaux.\n\n## Hors perimetre global\n\n- Refactor large sans demande explicite.\n\n## Backlog ulterieur\n\n- A completer.\n\n---\n\n${blocks.join("\n")}\n`;
   fs.writeFileSync(path.join(campaignDir, "CAMPAIGN_DRAFT.md"), text, "utf8");
 }
 function writeCampaignMeta(campaignDir, campaignName, sourceDir, docs) {
@@ -322,46 +339,58 @@ function writeActiveCampaign(campaignName) {
 }
 function readCampaigns() {
   ensureBase();
-  return fs.readdirSync(baseDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => {
-      const dir = path.join(baseDir, entry.name);
-      const campaign = path.join(dir, "CAMPAGNE.md");
-      if (!fs.existsSync(campaign)) return null;
-      const text = fs.readFileSync(campaign, "utf8");
-      const frontmatter = parseFrontmatter(text);
-      const status = frontmatter.statut || text.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu";
-      const title = frontmatter.titre || text.match(/^#\s+(.+)$/m)?.[1] || entry.name;
-      const lotsDir = path.join(dir, "lots");
-      const lots = fs.existsSync(lotsDir)
-        ? fs.readdirSync(lotsDir).filter((f) => f.endsWith(".md")).sort()
-        : [];
-      const lotData = lots.map((file) => {
-        const lotText = fs.readFileSync(path.join(lotsDir, file), "utf8");
-        return {
-          file,
-          status: lotText.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu",
-          title: lotText.match(/^#\s+(.+)$/m)?.[1] || file
-        };
-      });
-      return {
-        dir,
-        name: entry.name,
-        status,
-        title,
-        lots: lotData,
-        lotCourant: frontmatter.lot_courant || "",
-        brancheCampagne: frontmatter.branche_campagne || "",
-        brancheLotCourant: frontmatter.branche_lot_courant || "",
-        ciblePrLot: frontmatter.cible_pr_lot || "",
-        ciblePrCampagne: frontmatter.cible_pr_campagne || ""
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.name.localeCompare(a.name));
+  const campaigns = [];
+  const stack = [baseDir];
+  while (stack.length) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "lots") continue;
+        stack.push(full);
+        const campaign = path.join(full, "CAMPAGNE.md");
+        if (!fs.existsSync(campaign)) continue;
+        const text = fs.readFileSync(campaign, "utf8");
+        const frontmatter = parseFrontmatter(text);
+        const status = frontmatter.statut || text.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu";
+        const title = frontmatter.titre || text.match(/^#\s+(.+)$/m)?.[1] || entry.name;
+        const lotsDir = path.join(full, "lots");
+        const lots = fs.existsSync(lotsDir)
+          ? fs.readdirSync(lotsDir).filter((f) => f.endsWith(".md")).sort()
+          : [];
+        const lotData = lots.map((file) => {
+          const lotText = fs.readFileSync(path.join(lotsDir, file), "utf8");
+          return {
+            file,
+            status: lotText.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu",
+            title: lotText.match(/^#\s+(.+)$/m)?.[1] || file
+          };
+        });
+        campaigns.push({
+          dir: full,
+          name: frontmatter.id || entry.name,
+          status,
+          title,
+          lots: lotData,
+          lotCourant: frontmatter.lot_courant || "",
+          brancheCampagne: frontmatter.branche_campagne || "",
+          brancheLotCourant: frontmatter.branche_lot_courant || "",
+          ciblePrLot: frontmatter.cible_pr_lot || "",
+          ciblePrCampagne: frontmatter.cible_pr_campagne || ""
+        });
+      }
+    }
+  }
+  return campaigns.sort((a, b) => b.name.localeCompare(a.name));
 }
 function activeCampaign() {
   const campaigns = readCampaigns();
+  const machineState = readMachineState();
+  if (Object.prototype.hasOwnProperty.call(machineState, "active_campaign")) {
+    const activeName = machineState.active_campaign || "";
+    if (!activeName) return null;
+    return campaigns.find((c) => c.name === activeName) || null;
+  }
   return campaigns.find((c) => !isClosedStatus(c.status) && c.lots.length > 0)
     || campaigns.find((c) => !isClosedStatus(c.status))
     || campaigns[0];
@@ -369,6 +398,18 @@ function activeCampaign() {
 function nextLot(campaign) {
   if (!campaign) return null;
   return campaign.lots.find((lot) => !isClosedStatus(lot.status));
+}
+function writeActiveCampaignView(campaign, lotId) {
+  ensureBase();
+  const machineState = readMachineState();
+  const activeCampaignId = campaign?.name || machineState.active_campaign || "";
+  const activeLot = lotId || machineState.active_lot || "";
+  const status = machineState.status || (activeCampaignId ? "active" : "idle");
+  const updatedAt = (machineState.updated_at || new Date().toISOString()).slice(0, 10);
+  const content = activeCampaignId
+    ? `# Campagne active\n\n**Campagne** : ${activeCampaignId}\n**Titre** : ${campaign?.title || activeCampaignId}\n**Statut** : ${status}\n**Lot actif** : ${activeLot || "aucun"}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`.\n`
+    : `# Campagne active\n\nAucune campagne active.\n\n**Statut** : ${status}\n**Mise à jour** : ${updatedAt}\n`;
+  fs.writeFileSync(path.join(baseDir, "ACTIVE_CAMPAIGN.md"), content, "utf8");
 }
 function createCampaign() {
   ensureBase();
@@ -487,7 +528,7 @@ cible_pr_campagne: "main"
 - Aucun secret en dur.
 - Tous les textes UI en français.
 - Aucun patient réel.
-- Exemples limités à Sophie Nicola, Jennifer Martin et Michel Dogne.
+- Exemples limités à Sophie Nicola, Jennifer Martin et Michel Dogné.
 - Aucune migration Prisma/SQL ou écriture Supabase sans confirmation distincte.
 - Changements minimaux.
 
@@ -586,7 +627,15 @@ dépend_de: "${depends}"
   });
 
   if (activate) {
-    writeActiveCampaign(dirname);
+    writeMachineState({
+      ...(readMachineState() || {}),
+      schema_version: 1,
+      status: "active",
+      active_campaign: dirname,
+      active_lot: lots[0].id,
+      updated_at: `${new Date().toISOString().slice(0, 19)}Z`
+    });
+    writeActiveCampaignView({ name: dirname, title }, lots[0].id);
   }
 
   console.log(`Campagne créée : ${path.relative(cwd, campaignDir)}`);
@@ -595,6 +644,43 @@ dépend_de: "${depends}"
   console.log(`Brief compilé : ${path.relative(cwd, path.join(campaignDir, "BRIEF_COMPILED.md"))}`);
   console.log(`Draft campagne : ${path.relative(cwd, path.join(campaignDir, "CAMPAIGN_DRAFT.md"))}`);
   if (activate) console.log(`Campagne active : ${path.relative(cwd, path.join(baseDir, "ACTIVE_CAMPAIGN.md"))}`);
+}
+function activateCampaign() {
+  const campaignId = args[1];
+  if (!campaignId || campaignId.startsWith("--")) {
+    console.error("ID de campagne requis : activate <campaign-id> [--lot LOT-00]");
+    process.exit(1);
+  }
+  const lotId = flag("--lot", "");
+  const campaigns = readCampaigns();
+  const campaign = campaigns.find((c) => c.name === campaignId);
+  if (!campaign) {
+    console.error(`Campagne introuvable : ${campaignId}`);
+    process.exit(2);
+  }
+  const activeLot = lotId || campaign.lotCourant || nextLot(campaign)?.file?.split("-").slice(0, 2).join("-") || null;
+  writeMachineState({
+    ...(readMachineState() || {}),
+    schema_version: 1,
+    status: "active",
+    active_campaign: campaignId,
+    active_lot: activeLot,
+    updated_at: `${new Date().toISOString().slice(0, 19)}Z`
+  });
+  writeActiveCampaignView(campaign, activeLot || "");
+  console.log(`Campagne active : ${campaignId}`);
+}
+function deactivateCampaign() {
+  writeMachineState({
+    ...(readMachineState() || {}),
+    schema_version: 1,
+    status: "idle",
+    active_campaign: null,
+    active_lot: null,
+    updated_at: `${new Date().toISOString().slice(0, 19)}Z`
+  });
+  writeActiveCampaignView(null, "");
+  console.log("Campagne désactivée.");
 }
 function status() {
   const campaigns = readCampaigns();
@@ -620,7 +706,7 @@ function showNext(quiet = false) {
   const campaign = activeCampaign();
   const lot = nextLot(campaign);
   if (!campaign) {
-    if (!quiet) console.log("Aucune campagne.");
+    if (!quiet) console.log("Aucune campagne active dans .wn/state.json");
     return;
   }
   if (!lot) {
@@ -646,6 +732,12 @@ switch (command) {
   case "creer":
   case "init":
     createCampaign();
+    break;
+  case "activate":
+    activateCampaign();
+    break;
+  case "deactivate":
+    deactivateCampaign();
     break;
   case "next":
     showNext(has("--quiet"));

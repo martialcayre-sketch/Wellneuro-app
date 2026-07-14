@@ -3,7 +3,7 @@ id: "2026-07-11-decision-clinique-21-jours-v1"
 titre: "C1 — Décision clinique 21 jours V1"
 statut: "à_faire"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-12"
+mise_à_jour: "2026-07-13"
 lot_courant: "LOT-00"
 ---
 
@@ -22,8 +22,9 @@ Le vertical slice produit central : une fiche patient cockpit qui transforme
 les données en décision de 21 jours.
 
 ```text
-PatientHeader → Signal clinique principal → Carte de décision explicable
-→ Données manquantes et limites → 3 actions maximum
+Réponses → épisode proposé/confirmé → ClinicalSnapshot
+→ priorité proposée puis sélectionnée → Carte de décision explicable
+→ Données manquantes et limites → protocole brouillon, 3 actions maximum
 → Plan idéal / minimal / secours → Prévisualisation patient
 → Validation praticien
 ```
@@ -33,8 +34,9 @@ détails (double niveau de lecture, mécanisme HC-F).
 
 ## Ce que C1 possède / consomme (registre A2)
 
-**Possède** : cockpit fiche patient ; carte de décision ; protocole 21 jours
-minimal ; file et flux de validation ; instanciations `ModeConsultation` et
+**Possède** : contrats TypeScript purs `AssessmentEpisode`,
+`ClinicalSnapshot`, `DecisionCard` et `ProtocolDraft` ; cockpit fiche patient ;
+carte de décision ; protocole 21 jours brouillon ; file et flux de validation ; instanciations `ModeConsultation` et
 `PrévisualisationPatient` ; instanciations des objets E2 (radar, détail 12
 besoins, 5 objets cliniques, momentum affiché).
 
@@ -45,7 +47,9 @@ statuts R8-lite (verrouillage, demandes de modification).
 
 ## Décisions actées
 
-- **Provenance = niveaux de preuve A/B/C/D** (+ badge « non mesuré »). Aucun
+- **Provenance de mesure = niveaux de preuve A/B/C/D** (+ badge « non
+  mesuré »). L'autorité scientifique/documentaire des claims est un axe
+  distinct. Aucun
   « niveau de confiance » continu — champ écarté le 2026-07-06, la carte de
   décision n'en réintroduit pas.
 - **Trois actions maximum** par phase 1, chacune avec plan idéal / minimal /
@@ -65,6 +69,16 @@ statuts R8-lite (verrouillage, demandes de modification).
   implémentation appartient à C2B.
 - Aucune proposition IA, transmission ou action clinique sans validation
   humaine explicite. Mode brouillon explicite sur le protocole.
+- Le moteur peut remplir `proposedMainPriority` et classer des candidats ;
+  seul `selectedMainPriority`, renseigné ou confirmé par le praticien, porte
+  la décision. Origine, cycle de vie, révisions et validation sont séparés.
+- Un `AssessmentEpisode` est proposé autour de T0/J21/J42/J90 avec la
+  tolérance existante de ±8 jours. Dispersion et réponses hors fenêtre sont
+  visibles ; la clôture exige confirmation/correction praticien.
+- C1 ne persiste ni épisode ni protocole actif. Cette responsabilité appartient
+  à C2 après gate migration.
+- Pour les compléments, C1 exprime uniquement une intention d'exploration :
+  aucun produit, forme ou dose avant les contrats validés de C4.
 
 ## Contraintes non négociables
 
@@ -73,19 +87,20 @@ vocabulaire « recommandation » exclusivement ; toute nouvelle formule
 (charge thérapeutique, priorité composite) documentée, versionnée
 (`versionScore`) et tracée dans `CHANGELOG.md` ; les poids exacts du score de
 priorité composite et le seuil de sobriété (nombre d'actions max par phase,
-défaut 3) sont des décisions cliniques à valider explicitement en LOT-01.
+défaut candidat 3) sont des décisions cliniques à valider explicitement avant
+la sortie de LOT-02.
 
 ## Lots
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Audit des données réelles disponibles (assignations, réponses, synthèses, statuts R8-lite) ; vérification du registre contre l'état du dépôt ; arbitrage radar (défaut : option A) ; cartographie de ce que la fiche patient actuelle affiche déjà | à_faire | HC-F LOT-02 |
-| LOT-01 | Contrats : carte de décision (justification, provenance A/B/C/D, limites, données manquantes) ; protocole 21 jours (3 actions, plans, charge) ; signaux convergents/discordants ; validation des poids/seuils cliniques par le praticien | à_faire | LOT-00 |
-| LOT-02 | Cockpit — lecture : PatientHeader, radar de synthèse, accès liste à plat des 12 besoins (score + badge preuve + tooltip questionnaires sources), 5 objets cliniques, momentum affiché (delta praticien chiffré) | à_faire | LOT-01 |
-| LOT-03 | Cockpit — décision : carte de décision, données manquantes/limites en premier niveau, signaux discordants, historique technique repliable (niveau expert) | à_faire | LOT-02 |
-| LOT-04 | Protocole 21 jours minimal : composition 3 actions max, plans idéal/minimal/secours, budget de charge, mode brouillon, file de validation | à_faire | LOT-03 |
-| LOT-05 | Instanciations : `ModeConsultation` (contenu = résumé décisionnel + 3 actions, jamais l'historique technique) ; `PrévisualisationPatient` côte à côte (frontière de données : rien d'interne praticien) ; résumé de clôture de consultation | à_faire | LOT-04 |
-| LOT-06 | Tests, documentation, go/no-go : parcours complet sur les 3 patients fictifs, critère « comprendre en 2 min / préparer en 10 min », `CHANGELOG.md`, handoff vers C3 (blocs documentaires) et C2 (protocole actif) | à_faire | LOT-05 |
+| LOT-01 | Contrats purs : AssessmentEpisode proposé/confirmé, adaptateurs Mon équilibre/questionnaires, ClinicalSnapshot minimal typé, versions, unités et hash canonique ; aucune persistance | à_faire | LOT-00 |
+| LOT-02 | Signaux, données manquantes, discordances, sécurité et abstention ; validation praticien obligatoire des règles/seuils avant activation | à_faire | LOT-01 |
+| LOT-03 | DecisionCard : priorité proposée, candidats classés, priorité sélectionnée, provenance, contre-factuels et cockpit de décision | à_faire | LOT-02 |
+| LOT-04 | ProtocolDraft : 3 actions max après validation du barème, plans idéal/minimal/secours, charge, intention d'exploration complément, jamais de statut actif | à_faire | LOT-03 |
+| LOT-05 | Instanciations `ModeConsultation` et `PrévisualisationPatient`, validation praticien et synthèse ; rien d'interne dans le rendu patient | à_faire | LOT-04 |
+| LOT-06 | Tests, documentation et go/no-go sur les 3 patients fictifs ; handoff C3/C2 | à_faire | LOT-05 |
 
 ## Hors périmètre
 

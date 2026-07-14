@@ -1,0 +1,128 @@
+[
+  {
+    "name": "stress SIIN au minimum",
+    "questionnaireId": "Q_STR_01",
+    "answers": {
+      "A1": 0,
+      "A2": 0,
+      "A3": 0,
+      "A4": 0,
+      "A5": 0,
+      "A6": 0,
+      "A7": 0,
+      "B8": 0,
+      "B9": 0,
+      "B10": 0,
+      "B11": 0,
+      "B12": 0,
+      "B13": 0,
+      "B14": 0,
+      "C15": 0,
+      "C16": 0,
+      "C17": 0,
+      "C18": 0,
+      "C19": 0,
+      "C20": 0,
+      "C21": 0
+    },
+    "expected": {
+      "type": "group_majority",
+      "total": 0,
+      "interpretation": {
+        "label": "Oriente vers les conseils de vie antistress",
+        "color": "success",
+        "protocol": "Conseils de vie antistress"
+      },
+      "miniSynthese": "Oriente vers les conseils de vie antistress — Orientation : Conseils de vie antistress"
+    }
+  },
+  {
+    "name": "stress perçu avec items inversés",
+    "questionnaireId": "Q_STR_02",
+    "answers": {
+      "P1": 1,
+      "P2": 1,
+      "P3": 1,
+      "P4": 1,
+      "P5": 1,
+      "P6": 1,
+      "P7": 1,
+      "P8": 1,
+      "P9": 1,
+      "P10": 1
+    },
+    "expected": {
+      "type": "sum",
+      "total": 10,
+      "interpretation": {
+        "label": "Bonne gestion du stress",
+        "color": "success",
+        "detail": "Capacités d'adaptation satisfaisantes — pas d'intervention prioritaire."
+      },
+      "miniSynthese": "Bonne gestion du stress. Capacités d'adaptation satisfaisantes — pas d'intervention prioritaire."
+    }
+  },
+  {
+    "name": "HAD anxiété avec perturbation modérée",
+    "questionnaireId": "Q_NEU_11",
+    "answers": {
+      "A1": 2,
+      "D2": 0,
+      "A3": 2,
+      "D4": 0,
+      "A5": 2,
+      "D6": 0,
+      "A7": 2,
+      "D8": 0,
+      "A9": 0,
+      "D10": 0,
+      "A11": 0,
+      "D12": 0,
+      "A13": 0,
+      "D14": 0
+    },
+    "expected": {
+      "type": "had",
+      "total": 8,
+      "subScores": {
+        "A": {
+          "total": 8,
+          "label": "Anxiété",
+          "interpretation": {
+            "label": "Symptomatologie douteuse",
+            "color": "warning"
+          }
+        },
+        "D": {
+          "total": 0,
+          "label": "Dépression",
+          "interpretation": {
+            "label": "Absence de symptomatologie",
+            "color": "success"
+          }
+        }
+      },
+      "miniSynthese": "Anxiété : symptomatologie douteuse"
+    }
+  },
+  {
+    "name": "SCOFF au maximum",
+    "questionnaireId": "Q_NEU_04",
+    "answers": {
+      "S1": 1,
+      "S2": 1,
+      "S3": 1,
+      "S4": 1,
+      "S5": 1
+    },
+    "expected": {
+      "type": "sum",
+      "total": 5,
+      "interpretation": {
+        "label": "Risque de trouble du comportement alimentaire — consultation recommandée",
+        "color": "danger"
+      },
+      "miniSynthese": "Risque de trouble du comportement alimentaire — consultation recommandée"
+    }
+  }
+]

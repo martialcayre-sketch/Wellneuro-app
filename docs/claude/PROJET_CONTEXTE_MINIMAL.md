@@ -58,14 +58,18 @@
 | ⏳ Pagination patients | Non implémentée (~100 lignes max) |
 | ⏳ Curation questionnaire.niveau/.publicCible | Surveillance, pas d'usage applicatif |
 
-### Prochaines étapes
+### Prochaines étapes — cible 3.2
 
-1. **C0** (Alignement documentaire) — vérifier doc/code cohérence
-2. **C1** (Décision clinique 21j) — cockpit praticien + protocole minimal
-3. **C2** (Persistance J7/J14/J21) — suivi longitudinal + migration gate
-4. **C3-C5** — fiches conseils, compléments, boussole alimentaire
+1. **HC-F LOT-05** — gouvernance et handoff
+2. **C1** — épisodes/snapshot, décision et protocole brouillon, sans Prisma
+3. **JA/C4A/C5A/QX** — chantiers purs ou data-first selon leurs gates
+4. **C2** — persistance/activation/longitudinal après gate migration
+5. **C3/C4B/C5B** — rendus et contextualisation après décision validée
 
-Voir [`campagnes/ACTIVE_CAMPAIGN.md`](campagnes/ACTIVE_CAMPAIGN.md) et [`campagnes/PROGRAMME_WELLNEURO_3_0.md`](campagnes/PROGRAMME_WELLNEURO_3_0.md).
+La source d'état machine est `.wn/state.json` ; voir sa vue
+[`campagnes/ACTIVE_CAMPAIGN.md`](campagnes/ACTIVE_CAMPAIGN.md),
+[`ARCHITECTURE_CLINIQUE_3_2.md`](ARCHITECTURE_CLINIQUE_3_2.md) et
+[`campagnes/PROGRAMME_WELLNEURO_3_0.md`](campagnes/PROGRAMME_WELLNEURO_3_0.md).
 
 ### Où chercher
 

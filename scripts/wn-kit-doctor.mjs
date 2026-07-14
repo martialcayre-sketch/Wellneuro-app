@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
+import { readCampaignTruth } from "./wn-state.mjs";
 
 const root = process.cwd();
 const mode = process.argv[2] || "check";
@@ -133,6 +134,7 @@ function checkDocumentation() {
 
 function checkState() {
   const c = new CheckList("STATE");
+  const truth = readCampaignTruth(root);
 
   const stateFile = readFile(".wn/state.json");
   let stateValid = false;
@@ -153,6 +155,17 @@ function checkState() {
     }
   }
 
+  if (truth.state && typeof truth.state === "object") {
+    const expectedCampaignId = truth.state.active_campaign ?? null;
+    const expectedLot = truth.state.active_lot ?? null;
+    const viewCampaignId = truth.view?.activeCampaignId ?? null;
+    const viewLot = truth.view?.activeLot ?? null;
+    const sourceOfTruthMentioned = expectedCampaignId ? Boolean(truth.view?.sourceOfTruthMentioned) : true;
+    c.add("ACTIVE_CAMPAIGN.md synced", expectedCampaignId === viewCampaignId && expectedLot === viewLot && sourceOfTruthMentioned, expectedCampaignId ? `${expectedCampaignId} / ${expectedLot || "aucun"}` : "idle");
+    c.add("machine state readable", truth.sourceOfTruthPath.endsWith(path.join(".wn", "state.json")));
+    c.add("active campaign title present", expectedCampaignId ? Boolean(truth.view?.activeCampaignTitle) : true, truth.view?.status || "idle");
+  }
+
   const configFile = readFile(".wn/config.yml");
   if (!configFile) {
     c.add(".wn/config.yml parse", false, "file not found");
@@ -165,6 +178,23 @@ function checkState() {
     }
   }
 
+  return c;
+}
+
+function checkBench() {
+  const c = new CheckList("BENCH");
+  const requiredDirs = [
+    "tests/wellneuro",
+    "tests/wellneuro/golden",
+    "tests/wellneuro/invariants",
+    "tests/wellneuro/fixtures",
+    "tests/wellneuro/evals"
+  ];
+  for (const rel of requiredDirs) {
+    c.add(rel, dirExists(rel));
+  }
+  c.add("tests/wellneuro/README.md", fileExists("tests/wellneuro/README.md"));
+  c.add("tests/wellneuro/source-of-truth.test.mjs", fileExists("tests/wellneuro/source-of-truth.test.mjs"));
   return c;
 }
 
@@ -252,6 +282,7 @@ function actionCheck() {
     checkStructure(),
     checkDocumentation(),
     checkState(),
+    checkBench(),
     checkTools(),
     checkGit(),
     checkNoSecrets()
@@ -283,7 +314,13 @@ function actionBootstrap() {
 
   // Check .wn structure
   const wn_dirs = [".wn", ".wn/campaigns/active", ".wn/campaigns/archive", ".wn/templates", ".wn/reports"];
+  const bench_dirs = ["tests/wellneuro", "tests/wellneuro/golden", "tests/wellneuro/invariants", "tests/wellneuro/fixtures", "tests/wellneuro/evals"];
   for (const d of wn_dirs) {
+    if (!dirExists(d)) {
+      plan.push(`mkdir -p ${d}`);
+    }
+  }
+  for (const d of bench_dirs) {
     if (!dirExists(d)) {
       plan.push(`mkdir -p ${d}`);
     }
@@ -300,7 +337,7 @@ function actionBootstrap() {
   }
 
   // Check docs
-  const docs = ["docs/PROJECT_STATE.md", "docs/DECISIONS.md", "docs/RUNBOOK.md", "docs/QUALITY_GATE.md"];
+  const docs = ["docs/PROJECT_STATE.md", "docs/DECISIONS.md", "docs/RUNBOOK.md", "docs/QUALITY_GATE.md", "docs/claude/campagnes/ACTIVE_CAMPAIGN.md"];
   for (const doc of docs) {
     if (!fileExists(doc)) {
       plan.push(`create ${doc} (template provided in WN-0)`);

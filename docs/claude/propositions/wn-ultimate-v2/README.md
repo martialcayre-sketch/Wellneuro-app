@@ -1,19 +1,20 @@
 ---
 id: "wn-ultimate-v2-integration"
-statut: "proposition_non_executable_a_valider"
-statut_integration: "proposition_non_executable_a_valider"
+statut: "source_auditee_partiellement_promue"
+statut_integration: "architecture_promue_regles_cliniques_bloquees"
 source_version: "2.0-portable"
 source_baseline: "main@d0d84d162b08c9b41604b7608f03ebdcc5517e4d"
 branche_integration: "docs/wn-ultimate-v2-reconciliation"
 integre_le: "2026-07-13"
 ---
 
-# WN Ultimate v2 — dossier de proposition intégré
+# WN Ultimate v2 — source auditée et réconciliée
 
-Ce dossier intègre le corpus documentaire du pack
-`WN_ULTIME_v2_PORTABLE` sans l'activer comme vérité clinique ou technique.
-Les documents normatifs existants, le code et les tests restent prioritaires
-tant qu'un arbitrage explicite n'a pas promu un document de ce dossier.
+Ce dossier conserve la source documentaire auditée du pack
+`WN_ULTIME_v2_PORTABLE`. Les contrats et frontières retenus ont été promus le
+2026-07-13 dans `docs/claude/ARCHITECTURE_CLINIQUE_3_2.md`, le registre de
+frontières et les campagnes normatives. Les paramètres cliniques non sourcés
+restent des propositions non exécutables.
 
 ## Garanties d'intégration
 
@@ -44,8 +45,9 @@ publication exige au minimum les gates G0 (droits) et G1 (contrats/taxonomie).
 
 ## Hiérarchie et statut
 
-Les fichiers `00` à `15` sont des propositions cohérentes entre elles. Ils
-ne remplacent pas automatiquement :
+Les fichiers `00` à `15` restent la trace amont. Le fichier `16` est un
+complément de maturité, pas une source clinique. En cas d'écart, ils ne
+remplacent pas :
 
 - `docs/claude/REGISTRE_FRONTIERES.md` ;
 - `docs/claude/campagnes/PROGRAMME_WELLNEURO_3_0.md` ;
@@ -58,22 +60,20 @@ ne remplacent pas automatiquement :
 | Sujet | État du pack | État retenu dans le dépôt |
 |---|---|---|
 | HC-F | LOT-04 et LOT-05 à terminer | LOT-04 terminé ; LOT-05 suivant |
-| Activation campagne | `ACTIVE_CAMPAIGN.md` doit être lu explicitement | constat confirmé ; correction technique dans une branche séparée |
-| C1 | sept lots réorganisés | contenu compatible, mais cinq fichiers de lots génériques restent à réaligner |
-| C5A/C5B | profils intrinsèques puis contexte/journal | proposition en conflit avec le registre actuel ; arbitrage produit requis |
-| Corpus 391 sources | manifeste candidat | quarantaine documentaire, aucun runtime |
-| Journal 25 marqueurs / neuf axes | présenté comme cible | décision clinique à valider avant code ou promotion canonique |
+| Activation campagne | état explicite requis | `.wn/state.json` retenu comme autorité ; `ACTIVE_CAMPAIGN.md` devient une vue générée |
+| C1 | sept lots réorganisés | contrats purs, priorité proposée/sélectionnée et protocole brouillon promus |
+| C5A/C5B | profils intrinsèques puis contexte/journal | C5A intrinsèque, C5B contextuel ; journal extrait vers JA |
+| Corpus 391 sources | manifeste candidat | registre sanitaire expurgé, aucun runtime |
+| Journal 25 marqueurs / neuf axes | présenté comme cible | JA promue, marqueurs/axes maintenus candidats jusqu'à validation clinique |
 | Dates | documents datés du 2026-07-14 | date source conservée, intégration datée du 2026-07-13 |
 
-## Gates avant promotion
+## Gates restant fermés
 
-1. Valider les frontières et objets cliniques proposés.
-2. Arbitrer la répartition C5A/C5B et la place du journal.
-3. Valider les décisions cliniques listées dans `10_DECISIONS_GATES.md`.
-4. Vérifier les droits et produire les hashes du registre des sources.
-5. Réconcilier physiquement les lots C1 avec son `CAMPAGNE.md`.
-6. Corriger l'activation explicite de `wn-campaign.mjs` dans une PR technique.
-7. Promouvoir les documents retenus un par un, avec revue et historique.
+1. Valider les décisions cliniques listées dans `10_DECISIONS_GATES.md`.
+2. Vérifier les droits et produire les hashes du registre des sources (G0).
+3. Valider taxonomie, extraction, claims/conflits et firewall (G1–G4).
+4. Autoriser séparément toute migration PostgreSQL/pgvector (G5).
+5. Donner le go/no-go praticien au pilote sommeil/chronobiologie (G6).
 
 ## Documents
 
@@ -93,12 +93,14 @@ ne remplacent pas automatiquement :
 - `13_TESTS_ET_ACCEPTATION.md` : stratégie de preuve.
 - `14_AUDIT_SOURCES.md` : audit du registre de sources.
 - `15_CARTE_IMPORT_GITHUB.md` : destinations après promotion.
+- `16_MATURITE_WN_AUTO.md` : couche de maturité WN-AUTO pour l’évaluation, le routage et les budgets.
 
 ## Éléments volontairement exclus
 
 - `MASTER.md`, doublon concaténé des documents individuels ;
 - `archives/previous_versions.zip` ;
 - `sources/*.zip` et le prototype journal ;
-- registres JSON originaux ou normalisés, faute de droits et de hashes validés ;
+- registres JSON originaux ou avec localisateurs internes ; seul le registre
+  sanitaire expurgé est versionné dans `docs/claude/corpus/` ;
 - proposition historique d'`ACTIVE_CAMPAIGN.md` ;
 - patch de code/outillage, réservé à une branche technique.

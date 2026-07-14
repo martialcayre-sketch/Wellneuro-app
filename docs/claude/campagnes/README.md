@@ -15,17 +15,19 @@
 | C3 | Documents contextuels multi-destinataires V1 | cadrée | C1 | N+1 |
 | C2A | Points d'étape + persistance minimale | cadrée | C1 + gate migration | N+1 |
 | C2B | Trajectoire et ajustement | cadrée | C2A + données réelles | N+1 |
-| C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : data-first ; C4B : C1 | N+1 |
-| C5 | Boussole alimentaire (C5A/C5B) | cadrée | socle : data-first ; flux : C1 | N+1 |
+| C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : intrinsèque ; C4B : C1/C2 | N+1 |
+| C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | cadrée | C5A : data-first ; C5B : C1/C2 | N+1 |
+| JA | Journal alimentaire 21 jours V1 | cadrée, règles candidates | domaine pur ; persistance : C2A + gate | N+1 |
 | WN-AUTO | Orchestration | terminée | — | — |
 
 ## Campagne active
 
 Voir : [ACTIVE_CAMPAIGN.md](ACTIVE_CAMPAIGN.md)
 
-Le pack WN Ultimate v2 est intégré comme proposition non exécutable dans
+Le pack WN Ultimate v2 reste disponible comme source d'audit dans
 [`../propositions/wn-ultimate-v2/`](../propositions/wn-ultimate-v2/README.md).
-Il ne change pas l'ordre des campagnes sans arbitrage explicite.
+Les arbitrages promus sont décrits dans
+[`../ARCHITECTURE_CLINIQUE_3_2.md`](../ARCHITECTURE_CLINIQUE_3_2.md).
 
 ## Convention de travail
 
@@ -37,6 +39,6 @@ Il ne change pas l'ordre des campagnes sans arbitrage explicite.
 ## Reprise de session
 
 1. Lire la dernière entrée de `docs/claude/SESSION_LOG.md`.
-2. Vérifier `ACTIVE_CAMPAIGN.md` et le registre.
+2. Vérifier `.wn/state.json`, puis sa vue générée `ACTIVE_CAMPAIGN.md` et le registre.
 3. Ouvrir le `CAMPAGNE.md` de la campagne active.
 4. `/wn-campaign status` puis `/wn-campaign next`.
