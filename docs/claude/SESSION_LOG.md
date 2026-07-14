@@ -225,3 +225,15 @@
 **Prochaine action prioritaire** : validation explicite de l'utilisateur pour clôturer la campagne HC-F (dernière case `Done` de LOT-05 et statut `CAMPAGNE.md` volontairement laissés non cochés) ; push du rebase + de ce commit depuis un terminal utilisateur (`WN_ALLOW_RISKY_COMMAND=1 git push --force-with-lease`, hook bloquant depuis l'agent) ; ensuite C1 et QX peuvent démarrer en parallèle (dépendances HC-F satisfaites).
 
 **Questions ouvertes** : arbitrer la divergence « Dogne »/« Dogné » à l'échelle du projet (aligner tout sur une forme unique, y compris `CLAUDE.md` et les seeds de test) ou acter qu'elle reste propre à HC-F.
+
+## [2026-07-14] — Campagne HC-F : LOT-05 finalisé, campagne clôturée
+
+**Décisions prises** : divergence « Dogne »/« Dogné » tranchée par l'utilisateur (aligner tout le projet). Vérification préalable de la donnée réelle (`web/prisma/seed.ts:47`, `nom: 'Dogne'`, sans accent) et confirmation qu'aucune assertion e2e ne compare la chaîne accentuée (seulement commentaires et un libellé `describe`) — correction donc sans risque pour les tests. 17 fichiers projet-wide alignés sur la forme sans accent (`CLAUDE.md`, `AGENTS.md`, `README.md`, `README_AUTOMATISATION_CLAUDE_CODE.md`, `.wn/config.yml`, docs `docs/claude/*`, `tests/patients_fictifs.md`, `web/playwright.config.ts`, `web/e2e/portail-parcours.spec.ts`, `web/e2e/helpers/db.ts`, `web/e2e/README.md`). `docs/claude/SESSION_LOG.md` volontairement non rétro-modifié (journal append-only). Autres dettes de `DETTE_UX_RESIDUELLE.md` passées en revue et laissées en l'état : toutes hors périmètre HC-F explicite (`CAMPAGNE.md` § Hors périmètre — routes API métier, auth, persistance serveur) ou limitations d'environnement non résolvables ici (WebKit). `DETTE_UX_RESIDUELLE.md`, `VALIDATION_FINALE.md`, `CAMPAGNE.md` et `lots/LOT-05-gouvernance-handoff.md` mis à jour pour refléter la résolution. Campagne HC-F marquée `terminée` (frontmatter `CAMPAGNE.md`), dernière case `Done` de LOT-05 cochée sur confirmation explicite de l'utilisateur.
+
+**Validations exécutées** : `check_no_secrets.sh`, `type-check`, `lint`, Vitest (14/14, 77/77), e2e Desktop Chromium (13/13, via `xvfb-run -a … --headed`) — tous verts après le correctif orthographique. `package-lock.json` auto-patché restauré avant commit.
+
+**Options écartées** : corriger les autres dettes de `DETTE_UX_RESIDUELLE.md` (persistance serveur, `email` en query string legacy, focus trap incomplet, WebKit) — toutes explicitement hors périmètre HC-F ou limitations d'environnement, pas des « constats résiduels » actionnables sans étendre le périmètre.
+
+**Prochaine action prioritaire** : C1 et QX peuvent démarrer en parallèle (dépendances HC-F satisfaites, aucune restante).
+
+**Questions ouvertes** : aucune — la seule question ouverte du lot précédent (arbitrage Dogne/Dogné) est résolue.

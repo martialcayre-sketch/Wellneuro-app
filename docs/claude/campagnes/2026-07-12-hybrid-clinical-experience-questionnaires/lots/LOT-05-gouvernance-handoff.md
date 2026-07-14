@@ -154,8 +154,9 @@ Le handoff doit indiquer :
       (`design-system-d1.md` §4bis).
 - [x] Handoff C1/QX documenté (`HANDOFF_FUTURES_IMPLANTATIONS.md` § Dépendances).
 - [x] Verdict final émis : **GO avec dettes** (`VALIDATION_FINALE.md`).
-- [ ] Campagne marquée terminée uniquement après validation explicite —
-      **en attente**, ne pas cocher sans confirmation de l'utilisateur.
+- [x] Campagne marquée terminée uniquement après validation explicite —
+      confirmée par l'utilisateur le 2026-07-14 ("si tout est au vert alors
+      campagne HC-F cloturée").
 
 ## Résultats
 
@@ -193,8 +194,15 @@ confirmée, limitation pré-existante déjà acceptée depuis C0-UX LOT-03).
 `lint`, Vitest (14/14, 77/77), e2e Desktop Chromium (13/13).
 
 **Verdict** : GO avec dettes (détail complet dans `VALIDATION_FINALE.md`).
-Dettes non bloquantes listées dans `DETTE_UX_RESIDUELLE.md`, dont une
-divergence documentaire signalée mais non corrigée (orthographe
-« Dogne »/« Dogné » incohérente entre `CLAUDE.md`/code de test et la
-décision HC-F du 2026-07-12 — hors périmètre de ce lot, risqué à corriger
-à l'aveugle dans du code de test sans vérifier les seeds DB).
+Dettes non bloquantes listées dans `DETTE_UX_RESIDUELLE.md`.
+
+**Correction complémentaire (post-verdict initial)** : la divergence
+orthographique « Dogne »/« Dogné », d'abord signalée sans être corrigée par
+prudence, a été résolue après vérification de la donnée réelle
+(`web/prisma/seed.ts:47`, `nom: 'Dogne'`, sans accent) et confirmation que
+le code de test ne compare cette chaîne dans aucune assertion (seulement
+commentaires et un libellé de `describe`). 17 fichiers projet-wide alignés
+sur la forme sans accent (liste complète dans `DETTE_UX_RESIDUELLE.md`).
+`docs/claude/SESSION_LOG.md` non rétro-modifié (journal append-only).
+Validations (`type-check`, `lint`, `test`, `test:e2e` Desktop Chromium)
+relancées après correctif — voir résultats mis à jour ci-dessous.

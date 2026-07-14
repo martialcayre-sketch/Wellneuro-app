@@ -3,7 +3,7 @@
 // le 2026-07-10 (21/22 items, exécution ad hoc jamais committée). Objectif du
 // lot R8 (suite) : ne plus "réinstaller puis jeter" ces tests à chaque lot.
 //
-// Un seul test.describe.serial séquentiel sur le patient fictif Michel Dogné
+// Un seul test.describe.serial séquentiel sur le patient fictif Michel Dogne
 // (PAT_SEED_03), seul autorisé avec Sophie Nicola et Jennifer Martin.
 // Prérequis local : voir web/e2e/README.md (DB de dev + npm run prisma:seed +
 // NEXTAUTH_SECRET). Aucune opération SQL destructive : uniquement des lignes
@@ -89,7 +89,7 @@ async function repondreEtTransmettre(page: Page): Promise<void> {
   }
 }
 
-test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patient fictif)', () => {
+test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogne, patient fictif)', () => {
   let portailUrl: string;
   let idAssignation: string;
   let idQuestionnaire: string;

@@ -68,11 +68,10 @@ C1, QX, ni sur le contenu clinique — hors périmètre par construction
 ## Vérification patients fictifs
 
 Seuls Sophie Nicola, Jennifer Martin et Michel Dogne apparaissent dans les
-livrables produits par ce lot. Une divergence pré-existante et hors
-périmètre est signalée (pas corrigée globalement) dans
-`DETTE_UX_RESIDUELLE.md` : orthographe « Dogné »/« Dogne » incohérente
-entre `CLAUDE.md`/le code de test (accent) et la décision HC-F du
-2026-07-12 (sans accent).
+livrables produits par ce lot. La divergence documentaire « Dogné »/« Dogne »
+a été résolue dans ce lot : la donnée réelle (`web/prisma/seed.ts`) confirme
+la forme sans accent, et les 17 fichiers projet concernés (dont le code de
+test) ont été alignés — voir `DETTE_UX_RESIDUELLE.md`.
 
 ## Mécanismes transverses — qualification
 
@@ -101,11 +100,13 @@ non résolue, pré-existante à HC-F, sans lien démontré avec le code livré.
 Ce n'est pas un GO plein car : (1) aucune vérification humaine directe
 (lecteur d'écran réel, zoom 200 %, device mobile physique, captures
 visuelles) n'a été faite dans cette session — les équivalents automatisés
-existent mais ne remplacent pas un contrôle humain ; (2) une divergence
-documentaire préexistante (orthographe du patient fictif) est signalée
-mais non résolue globalement, par prudence (risque de casser des données
-de test réelles sans vérification préalable) ; (3) plusieurs dettes de
-code mineures listées dans `DETTE_UX_RESIDUELLE.md` restent ouvertes.
+existent mais ne remplacent pas un contrôle humain ; (2) plusieurs dettes
+de code mineures listées dans `DETTE_UX_RESIDUELLE.md` restent ouvertes
+(persistance serveur du brouillon, `email` en query string legacy, WebKit
+non exécutable localement). La divergence documentaire « Dogné »/« Dogne »,
+signalée initialement comme réserve, a été résolue dans ce lot après
+vérification de la donnée réelle (`web/prisma/seed.ts`) et n'entre plus
+dans ce compte.
 
 Aucune de ces réserves ne bloque le handoff vers C1/QX (aucune dépendance
 technique bloquante identifiée, cf. `HANDOFF_FUTURES_IMPLANTATIONS.md`).

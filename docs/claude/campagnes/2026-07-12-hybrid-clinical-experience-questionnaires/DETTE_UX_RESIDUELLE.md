@@ -61,27 +61,28 @@ HC-F. Aucun élément ci-dessous n'a été maquillé comme résolu.
   `clientWidth` de la suite e2e couvrent l'absence de débordement horizontal
   aux largeurs 375/768/1024/1440px, mais pas un contrôle visuel humain.
 
-## Divergence documentaire signalée, non corrigée (hors périmètre HC-F)
+## Divergence documentaire résolue (LOT-05, hors et dans périmètre HC-F)
 
-- **Orthographe du patient fictif « Michel Dogne »/« Michel Dogné »** :
-  `CAMPAGNE.md`/`REGISTRE_FRONTIERES.md` (décision HC-F du 2026-07-12)
-  actent la forme **sans accent** comme correcte. Or `CLAUDE.md` (racine du
-  dépôt, non modifié par HC-F), `README.md`, plusieurs docs projet, et
-  surtout le **code de test réel**
-  (`web/e2e/portail-parcours.spec.ts`, `web/e2e/helpers/db.ts`,
-  `web/playwright.config.ts`) utilisent encore la forme **accentuée**. Un
-  seul résidu interne à la campagne a été corrigé dans ce lot
-  (`AUDIT_UI_REEL.md`) pour satisfaire le DoD `CAMPAGNE.md` (« aucune
-  occurrence de… « Dogné » dans la campagne »). Le reste (16 fichiers hors
-  `archive/`, dont du code de test et `CLAUDE.md` lui-même) est **signalé
-  ici sans être corrigé** : hors périmètre de LOT-05 (fichiers projet-wide,
-  pas de la campagne), et risqué à modifier à l'aveugle si un nom de patient
-  identique à l'accent près existe en base de données de dev/CI (le
-  changer dans le code de test sans vérifier la donnée réelle pourrait
-  casser des assertions). À trancher explicitement par l'utilisateur : soit
-  aligner tout le projet sur la forme sans accent (et vérifier les seeds
-  DB), soit acter que la décision HC-F ne s'applique qu'au contenu produit
-  par cette campagne.
+- **Orthographe du patient fictif « Michel Dogne »** : la forme **sans
+  accent** est confirmée comme la donnée réelle (`web/prisma/seed.ts:47`,
+  `nom: 'Dogne'`) — ce n'était donc pas une divergence arbitraire mais une
+  incohérence documentaire à corriger. Après vérification que le code de
+  test ne compare la chaîne « Dogné » à aucune assertion réelle (seules des
+  mentions en commentaire et un libellé de `describe`), les 17 fichiers
+  hors `archive/` et hors log historique (`web/playwright.config.ts`,
+  `web/e2e/portail-parcours.spec.ts`, `web/e2e/helpers/db.ts`,
+  `web/e2e/README.md`, `CLAUDE.md`, `AGENTS.md`, `README.md`,
+  `README_AUTOMATISATION_CLAUDE_CODE.md`, `.wn/config.yml`,
+  `docs/checklist_tests_end_to_end.md`, `docs/securite_rgpd.md`,
+  `docs/claude/CLAUDE_MD_MINIMAL_WELLNEURO.md`,
+  `docs/claude/PROJET_CONTEXTE.md`, `docs/claude/README_MINIMAL.md`,
+  `docs/claude/campagnes/2026-07-11-alignement-documentaire-etat-reel/lots/LOT-00-audit-sources-verite.md`,
+  `docs/claude/campagnes/2026-07-11-refonte-ux-shell-3-0/CAMPAGNE.md`,
+  `tests/patients_fictifs.md`) ont été alignés sur la forme sans accent.
+  `docs/claude/SESSION_LOG.md` n'a volontairement pas été rétro-modifié
+  (journal append-only, entrées historiques non réécrites). Suites Vitest
+  et e2e Desktop Chromium revalidées vertes après correctif (voir
+  `VALIDATION_FINALE.md`).
 
 ## Dette héritée non spécifique à HC-F
 

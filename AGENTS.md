@@ -32,7 +32,7 @@ Le déploiement Google Apps Script (GAS) historique a été décommissionné le 
 - Toute configuration sensible passe par les variables d'environnement : `web/.env.local` en développement (jamais commité), variables d'environnement Vercel en production
 - Ne jamais committer de données patients réelles
 - Ne jamais committer de clés API, fichiers `.env*` réels, identifiants Google, jetons OAuth, exports patients ou fichiers de résultats réels
-- Les seuls patients fictifs autorisés sont : Sophie Nicola, Jennifer Martin et Michel Dogné
+- Les seuls patients fictifs autorisés sont : Sophie Nicola, Jennifer Martin et Michel Dogne
 
 ## Règles RGPD et données de santé
 

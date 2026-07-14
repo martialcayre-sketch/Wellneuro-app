@@ -3,7 +3,7 @@
 Formalise en tests committés le parcours Phase 0 de
 `docs/checklist_tests_end_to_end.md` (déjà validé manuellement le 2026-07-10,
 jamais committé jusqu'ici). Tourne uniquement sur le patient fictif **Michel
-Dogné** (`PAT_SEED_03`) — jamais de donnée patient réelle.
+Dogne** (`PAT_SEED_03`) — jamais de donnée patient réelle.
 
 ## Prérequis locaux
 

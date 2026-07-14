@@ -1,7 +1,7 @@
 ---
 id: "2026-07-12-hybrid-clinical-experience-questionnaires"
 titre: "HC-F — Hybrid Clinical Foundation"
-statut: "en_cours"
+statut: "terminée"
 créée_le: "2026-07-12"
 mise_à_jour: "2026-07-13"
 lot_courant: "LOT-05"
@@ -78,7 +78,7 @@ Invariants du registre §1, plus :
 | LOT-02 | Shell premium : rail avec icônes Lucide, alignements mesurés, palette de commandes (si arbitrée livrable), états vides actionnables | terminé | LOT-01 |
 | LOT-03 | Surfaces praticien génériques (dashboard, annuaire — coquilles) + livraison des 3 mécanismes avec contrats d'instanciation. **Prérequis** : `feat/e0-patients-pagination` mergée avant restylage de l'annuaire | terminé | LOT-02 |
 | LOT-04 | Portail patient clair : onboarding, hub, lecture seule, correction (textes de consentement R8-lite **figés**, restylage uniquement), états de sauvegarde/connexion explicites, confort de lecture | terminé | LOT-01 |
-| LOT-05 | Gouvernance et handoff : lexique UX, checklist de conformité Hybrid Clinical des modules futurs, mise à jour du document design system canonique, handoff vers C1/QX | livré — GO avec dettes, campagne à clôturer sur validation explicite (voir `VALIDATION_FINALE.md`) | LOT-02 à LOT-04 |
+| LOT-05 | Gouvernance et handoff : lexique UX, checklist de conformité Hybrid Clinical des modules futurs, mise à jour du document design system canonique, handoff vers C1/QX | terminé — GO avec dettes, campagne clôturée le 2026-07-14 (voir `VALIDATION_FINALE.md`) | LOT-02 à LOT-04 |
 
 ## Hors périmètre
 
@@ -113,6 +113,7 @@ refonte auth, routes API métier, scoring.
       parcours clavier documentés et testés (Escape, focus trap, retour de
       focus).
 - [x] Aucune occurrence de vocabulaire banni ni de « Dogné » dans la
-      campagne (1 occurrence résiduelle corrigée en LOT-05 dans
-      `AUDIT_UI_REEL.md` ; divergence hors périmètre — code de test,
-      `CLAUDE.md` — signalée dans `DETTE_UX_RESIDUELLE.md`, non corrigée).
+      campagne, ni dans le reste du dépôt : divergence documentaire
+      résolue en LOT-05 après vérification de la donnée réelle
+      (`web/prisma/seed.ts`, forme sans accent) — 17 fichiers alignés,
+      voir `DETTE_UX_RESIDUELLE.md`.
