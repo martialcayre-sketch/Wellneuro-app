@@ -98,7 +98,7 @@ la sortie de LOT-02.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Audit des données réelles disponibles (assignations, réponses, synthèses, statuts R8-lite) ; vérification du registre contre l'état du dépôt ; arbitrage radar (défaut : option A) ; cartographie de ce que la fiche patient actuelle affiche déjà | à_faire | HC-F LOT-02 |
+| LOT-00 | Audit des données réelles disponibles (assignations, réponses, synthèses, statuts R8-lite) ; vérification du registre contre l'état du dépôt ; arbitrage radar (défaut : option A) ; cartographie de ce que la fiche patient actuelle affiche déjà | terminé | HC-F LOT-02 |
 | LOT-01 | Contrats purs : AssessmentEpisode proposé/confirmé, adaptateurs Mon équilibre/questionnaires, ClinicalSnapshot minimal typé, versions, unités et hash canonique ; aucune persistance | à_faire | LOT-00 |
 | LOT-02 | Signaux, données manquantes, discordances, sécurité et abstention ; validation praticien obligatoire des règles/seuils avant activation | à_faire | LOT-01 |
 | LOT-03 | DecisionCard : priorité proposée, candidats classés, priorité sélectionnée, provenance, contre-factuels et cockpit de décision | à_faire | LOT-02 |
