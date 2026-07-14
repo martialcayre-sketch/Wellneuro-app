@@ -9,11 +9,7 @@
 
 ## Activités parallèles
 
-### 2026-07-12-qx-experience-questionnaires
-
-**Titre** : QX — Expérience questionnaires patient
-**Statut** : active
-**Lot actif** : LOT-04
+Aucune campagne parallèle active.
 
 **Statut global** : active
 **Mise à jour** : 2026-07-14

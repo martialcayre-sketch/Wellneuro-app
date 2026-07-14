@@ -24,16 +24,10 @@
       "corpus_registry": "391 unique opaque sourceIds passed"
     }
   },
-  "next_action": "Poursuivre C1/LOT-00 et QX/LOT-00 en parallèle sur leurs branches d'intégration respectives.",
+  "next_action": "Poursuivre C1/LOT-00 sur sa branche dédiée.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-14T08:04:57Z",
-  "parallel_campaigns": [
-    {
-      "campaign_id": "2026-07-12-qx-experience-questionnaires",
-      "active_lot": "LOT-04",
-      "status": "active"
-    }
-  ]
+  "updated_at": "2026-07-14T12:31:42Z",
+  "parallel_campaigns": []
 }
