@@ -2,9 +2,13 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - "campaign/**/integration"
   pull_request:
-    branches: [main]
+    branches:
+      - main
+      - "campaign/**/integration"
 
 jobs:
   devcontainer-smoke:
