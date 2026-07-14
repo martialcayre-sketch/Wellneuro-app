@@ -236,6 +236,10 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await expect(page.getByPlaceholder('votre@email.fr')).toHaveCount(0);
       await expect(page.getByRole('link', { name: '← Mes questionnaires' })).toBeVisible();
       await page.getByRole('link', { name: '← Mes questionnaires' }).click();
+      // Attendre le rendu complet du hub : l'étape suivante ouvre la section
+      // repliée "Transmis au praticien", et ouvrirSectionSecondaire ne fait
+      // rien si le <summary> n'est pas encore monté (hub en cours de fetch).
+      await expect(page.getByRole('heading', { name: 'Mes questionnaires' })).toBeVisible();
     });
 
     await test.step('Tentative de re-soumission côté serveur (409)', async () => {
