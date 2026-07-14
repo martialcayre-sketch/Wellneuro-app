@@ -6,8 +6,8 @@
   },
   "status": "active",
   "active_campaign": "2026-07-11-decision-clinique-21-jours-v1",
-  "active_lot": "LOT-00",
-  "last_completed_lot": "HC-F/LOT-05",
+  "active_lot": "LOT-01",
+  "last_completed_lot": "C1/LOT-00",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -24,11 +24,11 @@
       "corpus_registry": "391 unique opaque sourceIds passed"
     }
   },
-  "next_action": "Poursuivre C1/LOT-00 et QX/LOT-00 en parallèle sur leurs branches d'intégration respectives.",
+  "next_action": "Cadrer C1/LOT-01 en mode Plan depuis la branche d'intégration C1 ; poursuivre QX/LOT-02 en parallèle.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-14T01:30:21Z",
+  "updated_at": "2026-07-14T03:13:07Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-07-12-qx-experience-questionnaires",

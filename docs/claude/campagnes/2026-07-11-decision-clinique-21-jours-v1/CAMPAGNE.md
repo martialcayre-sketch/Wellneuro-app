@@ -1,12 +1,12 @@
 ---
 id: "2026-07-11-decision-clinique-21-jours-v1"
 titre: "C1 — Décision clinique 21 jours V1"
-statut: "à_faire"
+statut: "en_cours"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-13"
-lot_courant: "LOT-00"
+mise_à_jour: "2026-07-14"
+lot_courant: "LOT-01"
 branche_campagne: "campaign/decision-clinique-21-jours-v1/integration"
-branche_lot_courant: "campaign/decision-clinique-21-jours-v1/lot-00"
+branche_lot_courant: "campaign/decision-clinique-21-jours-v1/lot-01"
 cible_pr_lot: "campaign/decision-clinique-21-jours-v1/integration"
 cible_pr_campagne: "main"
 ---
