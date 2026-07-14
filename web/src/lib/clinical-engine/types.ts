@@ -4,6 +4,7 @@ export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as con
 export const VERSION_MAPPING_BESOINS = 'besoins-v1' as const;
 export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v1' as const;
 export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
+export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;
 
 export type MeasurementUnit = 'ratio' | 'score_100' | 'delta';
 
@@ -207,6 +208,55 @@ export type ClinicalReview = {
   missingData: MissingDataFinding[];
   discordances: DiscordanceFinding[];
   safetyFindings: SafetyFinding[];
+  abstention: AbstentionAssessment;
+  limitations: string[];
+  inputHash: string;
+};
+
+export type DecisionPriorityCandidate = {
+  candidateId: string;
+  origin: 'engine';
+  label: string;
+  rank: number;
+  confidence: QualitativeConfidence;
+  ruleId: string;
+  rationale: string;
+  provenance: ClinicalFindingProvenance;
+  limitations: string[];
+};
+
+export type DecisionPrioritySelection = {
+  candidateId: string;
+  selectedAt: string;
+  selectedBy: 'practitioner';
+  rationale: string;
+};
+
+export type DecisionCounterfactual = {
+  counterfactualId: string;
+  candidateId: string;
+  condition: string;
+  expectedImpact: string;
+  provenance: ClinicalFindingProvenance;
+  limitations: string[];
+};
+
+export type DecisionCard = {
+  decisionCardId: string;
+  snapshotId: string;
+  snapshotInputHash: string;
+  reviewId: string;
+  reviewInputHash: string;
+  createdAt: string;
+  version: typeof VERSION_DECISION_CARD;
+  status: 'draft';
+  priorityCandidates: DecisionPriorityCandidate[];
+  proposedMainPriorityId: string | null;
+  selectedMainPriority: DecisionPrioritySelection | null;
+  counterfactuals: DecisionCounterfactual[];
+  missingDataFindingIds: string[];
+  discordanceFindingIds: string[];
+  safetyFindingIds: string[];
   abstention: AbstentionAssessment;
   limitations: string[];
   inputHash: string;

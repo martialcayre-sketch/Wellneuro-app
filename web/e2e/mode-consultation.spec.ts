@@ -7,6 +7,28 @@ import { praticienSessionCookie } from './helpers/auth';
 const PATIENT_ID = 'PAT_SEED_01';
 
 test.describe('Mode consultation (fiche patient)', () => {
+  test('affiche le cockpit prudent avant les couvertures sur bureau, tablette et mobile', async ({ page, context }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    for (const viewport of [
+      { width: 1280, height: 800 },
+      { width: 900, height: 1024 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto(`/dashboard/patients/${PATIENT_ID}`);
+      const missing = page.getByRole('heading', { name: 'Données manquantes' });
+      const decision = page.getByRole('heading', { name: 'Décision clinique' });
+      const coverage = page.getByRole('heading', { name: 'Couverture des 12 besoins' });
+      await expect(missing).toBeVisible();
+      await expect(decision).toBeVisible();
+      await expect(page.getByText('Décision clinique non préparée')).toBeVisible();
+      await expect(coverage).toBeVisible();
+      const headings = await page.locator('h3').allTextContents();
+      expect(headings.indexOf('Données manquantes')).toBeLessThan(headings.indexOf('Décision clinique'));
+      expect(headings.indexOf('Décision clinique')).toBeLessThan(headings.indexOf('Couverture des 12 besoins'));
+    }
+  });
+
   test('bascule la mise en page et revient à l\'état initial', async ({ page, context }) => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.goto(`/dashboard/patients/${PATIENT_ID}`);
