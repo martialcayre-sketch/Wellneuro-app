@@ -63,7 +63,7 @@ async function ouvrirSectionSecondaire(page: Page, titre: string): Promise<void>
 async function repondreEtTransmettre(page: Page): Promise<void> {
   for (let section = 0; section < 30; section++) {
     await remplirSectionCourante(page);
-    const bouton = page.getByRole('button', { name: /Suivant →|Transmettre au praticien/ });
+    const bouton = page.getByRole('button', { name: /Suivant →|Voir le résumé|Transmettre au praticien/ });
     try {
       await expect(bouton).toBeEnabled({ timeout: 3000 });
     } catch {
@@ -81,6 +81,11 @@ async function repondreEtTransmettre(page: Page): Promise<void> {
     }
     const label = (await bouton.textContent()) ?? '';
     await bouton.click();
+    if (label.includes('Voir le résumé')) {
+      await page.getByRole('button', { name: 'Transmettre au praticien' }).click();
+      await page.getByRole('dialog').getByRole('button', { name: 'Transmettre' }).click();
+      return;
+    }
     if (label.includes('Transmettre')) {
       await page.getByRole('dialog').getByRole('button', { name: 'Transmettre' }).click();
       return;

@@ -301,3 +301,15 @@ périmètre C1/QX).
 **Prochaine action prioritaire** : intégrer LOT-02 vers `campaign/qx-experience-questionnaires/integration`, puis ouvrir LOT-03 dans un worktree dédié.
 
 **Questions ouvertes** : aucune.
+
+## [2026-07-14] — Campagne QX : LOT-03 terminé
+
+**Décisions prises** : brouillon local V1 versionné avec réponses et page courante, reprise rétrocompatible sans saut de partie incomplète, résumé de complétude et correction ciblée avant transmission. Payload, conversion numérique et scoring restent strictement inchangés.
+
+**Validations exécutées** : Vitest ciblé 21/21, suite 100/100, type-check, certification scoring des 63 questionnaires, anti-secrets, `git diff --check` et revue indépendante GO. Focus du résumé couvert automatiquement ; contrôle manuel 375 px, zoom 200 % et lecteur d’écran reste à consigner.
+
+**Options écartées** : persistance serveur, migration Prisma, affichage des réponses sensibles et chantier d’identification/session patient — hors périmètre.
+
+**Prochaine action prioritaire** : préparer LOT-04 dans un worktree dédié après intégration de LOT-03.
+
+**Questions ouvertes** : aucune.
