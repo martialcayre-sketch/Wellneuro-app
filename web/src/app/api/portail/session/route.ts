@@ -4,12 +4,14 @@ import {
   isTokenValide,
   isEmailValide,
   resolvePortailPatient,
+  resolvePortailPatientFromSession,
   consultationCourante,
 } from '@/lib/consultation/portail';
 import {
   PORTAIL_COOKIE_NAME,
   PORTAIL_COOKIE_OPTIONS,
   signPatientSession,
+  readPatientSession,
 } from '@/lib/patient-session';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -58,7 +60,7 @@ export async function POST(req: Request): Promise<NextResponse> {
   const token = (payload.token ?? '').trim();
   const email = (payload.email ?? '').trim().toLowerCase();
 
-  if (!isTokenValide(token) || !isEmailValide(email)) {
+  if (!isTokenValide(token) || (email && !isEmailValide(email))) {
     logger.security({
       event: EVENT_CODES.PORTAIL_SESSION_INVALID_PAYLOAD,
       domain: 'SECURITY',
@@ -69,7 +71,12 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   try {
-    const patient = await resolvePortailPatient(token, email);
+    const existingSession = readPatientSession(req);
+    const patient = email
+      ? await resolvePortailPatient(token, email)
+      : existingSession
+        ? await resolvePortailPatientFromSession(token, existingSession)
+        : null;
     if (!patient) {
       logger.security({
         event: EVENT_CODES.PORTAIL_SESSION_FORBIDDEN,

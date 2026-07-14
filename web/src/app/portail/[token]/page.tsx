@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import type { PortailSessionResponse, PortailConsultationState } from '@/app/api/portail/session/route';
 import { MOTIFS_CONSULTATION } from '@/lib/consultation/motifs';
@@ -604,6 +604,7 @@ function DoneScreen({ token, premiereAssignation }: { token: string; premiereAss
 
 // ─── page principale ─────────────────────────────────────────────────────────
 type Step =
+  | { name: 'loading' }
   | { name: 'gate' }
   | { name: 'consent' }
   | { name: 'fiche' }
@@ -619,20 +620,53 @@ function prochaineEtape(c: PortailConsultationState | null, premiere: string | n
 
 export default function PortailPage() {
   const { token } = useParams<{ token: string }>();
-  const [step, setStep] = useState<Step>({ name: 'gate' });
+  const [step, setStep] = useState<Step>({ name: 'loading' });
   const [email, setEmail] = useState('');
   const [consultation, setConsultation] = useState<PortailConsultationState | null>(null);
   const [premiere, setPremiere] = useState<string | null>(null);
+
+  const appliquerSession = useCallback((data: Extract<PortailSessionResponse, { ok: true }>) => {
+    setEmail(data.patient.email.toLowerCase());
+    setConsultation(data.consultation);
+    setPremiere(data.premiereAssignation);
+    setStep(prochaineEtape(data.consultation, data.premiereAssignation));
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const response = await fetch('/api/portail/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token }),
+        });
+        const data = (await response.json()) as PortailSessionResponse;
+        if (!active) return;
+        if (data.ok) appliquerSession(data);
+        else setStep({ name: 'gate' });
+      } catch {
+        if (active) setStep({ name: 'gate' });
+      }
+    })();
+    return () => { active = false; };
+  }, [token, appliquerSession]);
+
+  if (step.name === 'loading') {
+    return (
+      <PatientCard maxWidth="md">
+        <p className="text-sm text-muted-foreground" role="status">Vérification de votre session…</p>
+      </PatientCard>
+    );
+  }
 
   if (step.name === 'gate') {
     return (
       <EmailGate
         token={token}
         onVerified={(mail, data) => {
-          setEmail(mail);
-          setConsultation(data.consultation);
-          setPremiere(data.premiereAssignation);
-          setStep(prochaineEtape(data.consultation, data.premiereAssignation));
+          void mail;
+          appliquerSession(data);
         }}
       />
     );

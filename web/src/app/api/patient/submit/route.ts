@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { calculateScore } from '@/lib/questions';
 import { createPublicId } from '@/lib/ids';
 import { isDeadlineExpired } from '@/lib/patient-access';
-import { readPatientSession } from '@/lib/patient-session';
+import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 import nodemailer from 'nodemailer';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -43,7 +43,8 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   const { idAssignation, answers } = payload;
   // Identité : cookie de session portail en priorité, sinon email du corps (compat legacy).
-  const email = readPatientSession(req)?.email ?? payload.email;
+  const patientSession = readPatientSession(req);
+  const email = patientSession?.email ?? payload.email;
 
   if (!idAssignation || !answers || !email) {
     logger.warn({
@@ -70,7 +71,10 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   try {
     const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
-    if (!ass || ass.emailPatient.toLowerCase() !== email.toLowerCase()) {
+    const accessAllowed = ass && (patientSession
+      ? await isSessionAuthorizedForAssignment(patientSession, ass)
+      : ass.emailPatient.toLowerCase() === email.toLowerCase());
+    if (!ass || !accessAllowed) {
       logger.security({
         event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_FORBIDDEN,
         domain: 'SECURITY',

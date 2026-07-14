@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'crypto';
+import { prisma } from '@/lib/prisma';
 
 // Session portail patient — cookie signé (HMAC-SHA256), sans dépendance externe.
 //
@@ -112,4 +113,23 @@ export function readPatientSession(req: Request): PatientSession | null {
     return verifyPatientSession(decodeURIComponent(part.slice(eq + 1).trim()));
   }
   return null;
+}
+
+/** Vérifie la propriété et l'état du portail lorsqu'une route utilise le cookie. */
+export async function isSessionAuthorizedForAssignment(
+  session: PatientSession | null,
+  assignation: { idPatient: string; emailPatient: string },
+): Promise<boolean> {
+  if (!session) return false;
+  if (session.idPatient !== assignation.idPatient) return false;
+  const patient = await prisma.patient.findUnique({
+    where: { idPatient: session.idPatient },
+    select: { actif: true, accessToken: true, accessTokenRevoked: true, email: true },
+  });
+  return Boolean(
+    patient?.actif
+    && Boolean(patient.accessToken)
+    && !patient.accessTokenRevoked
+    && patient.email.toLowerCase() === session.email,
+  );
 }
