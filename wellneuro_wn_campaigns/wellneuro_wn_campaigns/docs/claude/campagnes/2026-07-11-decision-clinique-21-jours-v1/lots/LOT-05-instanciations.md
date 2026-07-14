@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Instanciations et aperçu patient"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-04"
 ---
 

@@ -413,3 +413,19 @@ cadrer LOT-06 en mode Plan.
 
 **Questions ouvertes** : branchement runtime et preuve persistée de
 transmission, réservés à des lots ultérieurs.
+
+## [2026-07-14] — Campagne C1 : clôture technique
+
+**Décisions prises** : C1 et LOT-06 sont clôturés avec trois verdicts séparés :
+GO technique, ergonomie humaine à valider, NO-GO runtime, activation et
+diffusion. La CI de la PR #60 a réussi anti-secrets, audit campagne,
+type-check, Vitest, lint, build et Playwright ; Vercel est vert.
+
+**Options écartées** : aucun runtime, persistance, activation, transmission ou
+succès ergonomique implicite ; ces preuves n’existent pas dans C1.
+
+**Prochaine action prioritaire** : promouvoir QX et cadrer QX/LOT-02 en mode
+Plan depuis son intégration actualisée.
+
+**Questions ouvertes** : protocole chronométré avec un praticien et téléphone
+physique ; construction serveur et preuve persistée de transmission pour C2/C3.

@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Tests, documentation et handoff"
-statut: "en_cours"
+statut: "terminé"
 dépend_de: "LOT-05"
 ---
 
@@ -59,18 +59,21 @@ audiences praticien/patient.
 
 ## Résultats
 
-Implémentation en cours de validation : replay des six contrats C1, contrôles
-de frontière d’audience et corrections tactiles bornées aux surfaces C1.
-Handoff C2/C3, grille ergonomique humaine et matrice E2E ajoutés.
+Replay des six contrats C1, contrôles de frontière d’audience et corrections
+tactiles bornées aux surfaces C1 livrés. Handoff C2/C3, grille ergonomique
+humaine et matrice E2E ajoutés.
 
-Validations locales acquises : 64 tests ciblés, `type-check`, lint et
-certification des 63 questionnaires. La suite globale a exécuté toutes ses
-assertions lancées sans échec, mais plusieurs workers Vitest n’ont pas démarré
-dans le worktree partagé ; le verdict global, le build et Playwright restent
-à confirmer par le CI. Playwright local est bloqué explicitement par
-`NEXTAUTH_SECRET` absent. Contrôle anti-secrets, audit de campagnes,
-`git diff --check` et revue indépendante GO. La grille praticien chronométrée
-n’est pas exécutée.
+Validations locales acquises : 64 tests ciblés, `type-check`, lint,
+certification des 63 questionnaires, contrôle anti-secrets, audit de
+campagnes, `git diff --check` et revue indépendante GO. La CI de la PR #60 a
+ensuite réussi l’anti-secrets, l’audit campagne, le `type-check`, Vitest
+global, lint, build et Playwright. Vercel et le smoke test devcontainer sont
+également verts.
 
-Verdict provisoire : GO technique conditionné au CI ; ergonomie à valider ;
-NO-GO activation et diffusion runtime.
+Deux avertissements CI sont non bloquants : les actions Node.js 20 sont
+forcées sur Node.js 24 et aucun fichier `web/playwright-report/` n’était
+présent à téléverser après le succès Playwright. La grille praticien
+chronométrée et le test sur téléphone physique ne sont pas exécutés.
+
+Verdict final : **GO technique** ; **ergonomie humaine à valider** ;
+**NO-GO runtime, activation et diffusion**.
