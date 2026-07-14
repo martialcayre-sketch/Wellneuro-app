@@ -98,6 +98,37 @@ node scripts/wn-github-orchestrator.mjs --no-gh
 |------|---------|--------|---------|
 | `.wn/orchestrator.json` | Politique machine-readable du socle d'orchestration | ✓ Safe | **YES** |
 
+### `wn-campaign-audit.mjs` - audit de conformité des campagnes
+
+Vérifie les campagnes contre les règles WN-AUTO (frontmatter, lots, cohérence
+de `lot_courant`, métadonnées Git, cohérence avec `.wn/state.json`) et compare
+le référentiel principal au miroir `wellneuro_wn_campaigns`.
+
+Usage JSON (échec si erreur bloquante):
+
+```bash
+node scripts/wn-campaign-audit.mjs
+```
+
+Usage markdown (rapport versionnable):
+
+```bash
+node scripts/wn-campaign-audit.mjs --no-fail --format markdown --write docs/claude/campagnes/AUDIT_REGLES_CAMPAGNES.md
+```
+
+Mode CI bloquant sur les incohérences d'état, avant la réconciliation dédiée
+du miroir :
+
+```bash
+node scripts/wn-campaign-audit.mjs --fail-on-warning-codes closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
+```
+
+Mode CI strict (bloque sur tout warning):
+
+```bash
+node scripts/wn-campaign-audit.mjs --fail-on-warning
+```
+
 ## Supabase + Prisma
 
 ### `setup_supabase_prisma.sh` — Setup complet Docker + migration 5432
