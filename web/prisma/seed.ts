@@ -1,6 +1,6 @@
 /**
  * Seed de développement — patients fictifs uniquement.
- * Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogne.
+ * Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogné.
  * Aucune donnée réelle. Ne jamais exécuter en production.
  */
 import { PrismaClient } from '../src/generated/prisma';
@@ -44,7 +44,7 @@ const PATIENTS = [
     idPatient: 'PAT_SEED_03',
     email: 'michel.dogne@fictif.wellneuro.fr',
     prenom: 'Michel',
-    nom: 'Dogne',
+    nom: 'Dogné',
     dateNaissance: '1971-11-05',
     telephone: '06 99 00 11 22',
     praticienEmail: PRATICIEN,
@@ -186,7 +186,7 @@ const REPONSES_JENNIFER = [
   },
 ];
 
-// Michel Dogne : céphalées + stress perçu élevé + addiction travail
+// Michel Dogné : céphalées + stress perçu élevé + addiction travail
 const REPONSES_MICHEL = [
   {
     idReponse: 'REP_M03_INF04',

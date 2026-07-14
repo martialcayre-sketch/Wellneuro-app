@@ -14,7 +14,7 @@ _Généré le 2026-07-11 pour une campagne `/wn`._
 
 ## 2. Problème à résoudre
 
-- La roadmap historique mentionne encore une dette Google Sheets susceptible d’être déjà résolue.
+- La roadmap historique mentionne encore une dette Google Sheets susceptible d'être déjà résolue.
 - Le journal de session, le contexte projet et le code peuvent diverger.
 - Un agent de code pourrait redévelopper un module déjà livré ou modifier une route obsolète.
 
@@ -43,24 +43,24 @@ Documentation → inspection read-only du code → matrice des divergences → c
 
 ## 7. Contraintes projet
 
-- Tous les textes d’interface utilisateur sont en français.
+- Tous les textes d'interface utilisateur sont en français.
 - Aucun secret, jeton, mot de passe ou identifiant sensible en dur.
 - Aucune donnée patient réelle dans le code, les exemples, les maquettes, les seeds ou les tests.
-- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogne.
+- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogné.
 - Aucune migration Prisma/SQL et aucune écriture Supabase sans demande explicite et confirmation distincte.
 - Changements minimaux : pas de refactor global hors périmètre du lot.
 - Aucune modification des seuils, pondérations ou règles cliniques sans instruction explicite, versionnage et trace documentaire.
-- L’IA produit des brouillons ; le praticien valide avant toute diffusion patient.
+- L'IA produit des brouillons ; le praticien valide avant toute diffusion patient.
 
 ## 8. Risques et dépendances
 
-- Corriger la documentation à partir d’hypothèses non vérifiées
+- Corriger la documentation à partir d'hypothèses non vérifiées
 - Glisser vers une refonte de code
 - Supprimer une mention encore utile au legacy
 
 ## 9. Décisions prises
 
-- Aucun code métier n’est modifié dans cette campagne.
+- Aucun code métier n'est modifié dans cette campagne.
 - Le code réel et la dernière entrée du SESSION_LOG prévalent sur une roadmap ancienne.
 - Toute divergence est documentée avant correction.
 

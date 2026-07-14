@@ -1,12 +1,11 @@
 {
-  "title": "Bibliothèque compléments clean label V1",
-  "generatedAt": "2026-07-11T00:00:00.000Z",
+  "title": "Compléments clean label V1",
+  "generatedAt": "2026-07-11T01:58:51.978Z",
   "campaignDir": "docs/claude/campagnes/2026-07-11-complements-clean-label-v1",
-  "sourceDir": "wellneuro_code_assistant_library",
+  "sourceDir": "wellneuro_wn_campaigns/wellneuro_wn_campaigns/docs/claude/campagnes/2026-07-11-complements-clean-label-v1",
   "sourceFiles": [
-    "sources/11_BACKLOG_MODULES_AVANCES.md",
-    "sources/12_GARDE_FOUS_CLINIQUES_RGPD_SECURITE.md",
-    "sources/04_MOTEUR_COMPLEMENTS_CLEAN_LABEL.md"
-  ],
-  "generatedFor": "/wn"
+    "docs/claude/campagnes/2026-07-11-complements-clean-label-v1/sources/sources/04_MOTEUR_COMPLEMENTS_CLEAN_LABEL.md",
+    "docs/claude/campagnes/2026-07-11-complements-clean-label-v1/sources/sources/11_BACKLOG_MODULES_AVANCES.md",
+    "docs/claude/campagnes/2026-07-11-complements-clean-label-v1/sources/sources/12_GARDE_FOUS_CLINIQUES_RGPD_SECURITE.md"
+  ]
 }

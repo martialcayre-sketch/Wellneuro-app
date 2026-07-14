@@ -175,7 +175,9 @@ function recommend(snapshot) {
 
   if (snapshot.state?.active_campaign) {
     const lot = snapshot.state?.active_lot ? ` et lot ${snapshot.state.active_lot}` : "";
-    return `Campagne active détectée (${snapshot.state.active_campaign}${lot}) : poursuivre ce périmètre avant de déplacer le focus vers un autre issue.`;
+    const parallels = Array.isArray(snapshot.state.parallel_campaigns) ? snapshot.state.parallel_campaigns : [];
+    const parallelLabel = parallels.length ? `, en parallèle avec ${parallels.map((entry) => `${entry.campaign_id}${entry.active_lot ? `/${entry.active_lot}` : ""}`).join(", ")}` : "";
+    return `Campagne primaire détectée (${snapshot.state.active_campaign}${lot}${parallelLabel}) : poursuivre uniquement ces périmètres actifs avant de déplacer le focus vers un autre issue.`;
   }
 
   if (snapshot.issues.next) {
@@ -262,6 +264,8 @@ if (jsonMode) {
   console.log(`\n## État WN\n`);
   console.log(`- Campagne active : ${snapshot.state?.active_campaign || "aucune"}`);
   console.log(`- Lot actif : ${snapshot.state?.active_lot || "aucun"}`);
+  const parallelCampaigns = Array.isArray(snapshot.state?.parallel_campaigns) ? snapshot.state.parallel_campaigns : [];
+  console.log(`- Campagnes parallèles : ${parallelCampaigns.length ? parallelCampaigns.map((entry) => `${entry.campaign_id}/${entry.active_lot || "aucun"}`).join(", ") : "aucune"}`);
   console.log(`- Prochaine action : ${snapshot.state?.next_action || "non définie"}`);
   console.log(`\n## File GitHub\n`);
   if (snapshot.issues.open.length === 0) {

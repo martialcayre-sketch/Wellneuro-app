@@ -1,7 +1,7 @@
 // Accès DB direct pour le nettoyage des tests Playwright — même schéma de
 // connexion que web/prisma/seed.ts (imports relatifs, pas d'alias @/, ce
 // fichier n'est pas exécuté via le resolver Next.js).
-// N'agit que sur le patient fictif Michel Dogne (PAT_SEED_03, déjà seedé par
+// N'agit que sur le patient fictif Michel Dogné (PAT_SEED_03, déjà seedé par
 // `npm run prisma:seed`) : jamais de patient réel, jamais de DROP/TRUNCATE.
 // La provision de la consultation/du token d'accès passe par la vraie route
 // praticien (POST /api/praticien/consultations, cf. le spec) plutôt que par

@@ -1,95 +1,76 @@
 ---
 id: "2026-07-11-complements-clean-label-v1"
-titre: "Bibliothèque compléments clean label V1"
-statut: "à_faire"
+titre: "C4 — Compléments clean label (C4A/C4B)"
+statut: "cadrée — lots à compiler N+1"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-11"
-lot_courant: "LOT-00"
+mise_à_jour: "2026-07-13"
+lot_courant: "aucun"
 ---
 
-# Bibliothèque compléments clean label V1
+# C4 — Compléments clean label
+
+> Cadrage réel du 2026-07-12 (remplace le squelette). Lots détaillés compilés
+> en N+1. C4A est parallélisable en data-first dès la fin de C1 LOT-01.
 
 ## Objectif
 
-Livrer le vertical slice d’une bibliothèque clean label : quelques produits qualifiés, filtres essentiels, vigilance de doublons et intégration manuelle au protocole.
+Une bibliothèque de compléments à critères qualité explicites (formes
+biodisponibles, excipients, dosages cohérents), depuis laquelle le praticien
+compose ses recommandations, avec compatibilité vérifiée contre le protocole
+actif du patient.
 
-## Résultat observable
+## Scission actée
 
-Le praticien compare des produits qualifiés, voit les raisons, sélectionne manuellement et génère une fiche patient.
+### C4A — Catalogue de qualité intrinsèque (data-first, aucune donnée patient)
 
-## Contraintes non négociables
+Composition, actifs, formes, excipients, allergènes, labels, sources
+officielles (DGCCRF / Compl'Alim), date de dernière vérification, pays/marché,
+version de formulation, statut actif/inactif, réviseur, niveau de complétude,
+incertitudes. **Provenance et fraîcheur obligatoires par produit.**
 
-- Tous les textes d’interface utilisateur sont en français.
-- Aucun secret, jeton, mot de passe ou identifiant sensible en dur.
-- Aucune donnée patient réelle dans le code, les exemples, les maquettes, les seeds ou les tests.
-- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogne.
-- Aucune migration Prisma/SQL et aucune écriture Supabase sans demande explicite et confirmation distincte.
-- Changements minimaux : pas de refactor global hors périmètre du lot.
-- Aucune modification des seuils, pondérations ou règles cliniques sans instruction explicite, versionnage et trace documentaire.
-- L’IA produit des brouillons ; le praticien valide avant toute diffusion patient.
+### C4B — Compatibilité avec le protocole (dépend de C1)
 
-## Hors périmètre global
+Objectif actif, contraintes patient, doublons, dose cumulée, points de
+vigilance, tolérance antérieure, durée et réévaluation, alternatives.
+Signalement (jamais décision automatique) des interactions connues.
 
-- Base exhaustive
-- Commerce/affiliation
-- Scan code-barres
-- Décision automatique
-- Conseil médical exhaustif
+## Décisions actées
 
-## Décisions prises
-
-- V1 limitée à un petit nombre de catégories et produits qualifiés.
-- Statuts retenu/acceptable/à vérifier/exclu.
-- Aucune recommandation automatique ni prescription.
-- Les interactions sont des vigilances, jamais une garantie de sécurité.
-
-## Questions ouvertes
-
-- Source prioritaire Compl’Alim/DGCCRF ?
-- V1 statique ou persistance dédiée ?
-- Qui valide et revalide un produit ?
-
-## Dépendances
-
-- Campagnes `2026-07-11-decision-clinique-21j-v1` et `2026-07-11-fiches-conseils-contextuelles-v1` stabilisées.
-- Validation clinique du référentiel
-- Décision explicite avant toute migration éventuelle
-
-## Artefacts de préparation
-
-- `BRIEF_COMPILED.md` : synthèse structurée des sources.
-- `CAMPAIGN_DRAFT.md` : lecture séquentielle de la campagne.
-- `sources/` : documents d’origine utiles au lot.
-
-## Lots
-
-| Lot | Objet | Statut | Dépend de |
-|---|---|---|---|
-| LOT-00 | Cadrage des sources et du périmètre | à_faire | aucun |
-| LOT-01 | Modèle de qualification et règles déterministes | à_faire | LOT-00 |
-| LOT-02 | Catalogue V1 qualifié | à_faire | LOT-01 |
-| LOT-03 | UX praticien : filtres et comparaison | à_faire | LOT-02 |
-| LOT-04 | Cohérence protocole et fiche patient | à_faire | LOT-03 |
-| LOT-05 | Validation, maintenance et handoff | à_faire | LOT-04 |
-
-## Commande `/wn` de reproduction
+- **Pas de score global dominant.** Le « clean label score » unique est
+  écarté : il masque la qualité variable des sources, les reformulations,
+  l'incertitude sur certains additifs et le contexte patient. Présentation
+  multi-dimensions :
 
 ```text
-/wn creer "Bibliothèque compléments clean label V1" --source docs/claude/wellneuro-3 --slug complements-clean-label-v1 --lots 6 --auto-final
+Qualité de formulation       Bien documentée
+Compatibilité protocole      Compatible avec vigilance
+Données manquantes           Interaction médicamenteuse à vérifier
+Dernière revue               8 juillet 2026
 ```
 
-## Done de campagne
+- La justification est toujours visible (badge + fiche justificative) : une
+  liste ordonnée sans justification serait perçue comme une recommandation
+  commerciale.
+- **Contrat neutre C4/C5** (registre) : le modèle « qualité intrinsèque
+  indépendante du patient + lecture contextuelle » est défini dans un contrat
+  de domaine partagé. C4 et C5 possèdent leurs données, règles et adaptateurs
+  respectifs ; aucune ne devient propriétaire technique de l'autre.
+- Vocabulaire : « recommandation », « point de vigilance », « à discuter avec
+  le médecin traitant ». Jamais de terminologie prescriptive.
 
-- [ ] Périmètre réduit et maintenable.
-- [ ] Chaque produit a source, date et statut.
-- [ ] Filtres et badges expliqués.
-- [ ] Doublons simples détectés.
-- [ ] Sélection praticien manuelle.
-- [ ] Aucune allégation non tracée.
+## Frontières
 
-## Backlog ultérieur
+**Possède** : catalogue C4A, moteur de compatibilité C4B, fiches
+justificatives.
+**Consomme** : intention d'exploration validée en C1, protocole actif C2,
+rendu documentaire C3, primitives HC-F et contrat neutre
+intrinsèque/contextuel partagé avec C5.
+**Différés** : scan code-barres patient (avec le scanner C5), interactions
+médicamenteuses exhaustives (signalement simple d'abord).
 
-- Import automatisé
-- Scanner
-- Historique tolérance patient
-- Moteur interactions avancé
+## Esquisse de lots (à compiler N+1)
+
+LOT-00 audit sources open data + modèle de fiche produit →
+LOT-01 schéma catalogue C4A (lot `bloqué_confirmation` si migration) →
+LOT-02 ingestion + fiches → LOT-03 compatibilité C4B → LOT-04 intégration
+protocole/documents + validation.

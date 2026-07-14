@@ -1,97 +1,95 @@
 ---
 id: "2026-07-11-suivi-j7-j14-j21-et-persistance"
-titre: "Persistance du protocole et suivi J7/J14/J21"
-statut: "à_faire"
+titre: "C2 — Points d'étape et persistance (C2A/C2B)"
+statut: "cadrée — lots à compiler N+1"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-11"
-lot_courant: "LOT-00"
+mise_à_jour: "2026-07-13"
+lot_courant: "aucun"
 ---
 
-# Persistance du protocole et suivi J7/J14/J21
+# C2 — Points d'étape et persistance
+
+> Cadrage réel du 2026-07-12 (remplace le squelette). Conformément au
+> registre A3, les lots détaillés seront compilés quand C2A deviendra la
+> campagne N+1. Ce document fige les frontières et décisions ; les sources
+> (`07_SPEC_PROTOCOLE_21J…`, `08_MOMENTUM_DECROCHAGE.md`,
+> `08_SPEC_COMPAGNON_PATIENT…`) restent le matériau, à lire à travers les
+> décisions ci-dessous.
 
 ## Objectif
 
-Persister et versionner le protocole 21 jours validé, ajouter un suivi minimal J7/J14/J21 et exposer un compagnon patient calme.
+Donner au protocole 21 jours son suivi : check-ins patient très courts aux
+**points d'étape** J7/J14/J21, distinction effet ressenti / tolérance /
+adhésion / régularité, décisions structurées aux points d'étape, et résumé
+J21 préparé pour la réévaluation.
 
-## Résultat observable
+## Arbitrage fondateur (registre A1) — non renégociable en compilation
 
-Après validation praticien, le protocole est retrouvé, son historique est traçable, le patient voit son action du jour et les check-ins alimentent une décision J21.
+- Les points d'étape J7/J14/J21 sont un instrument de **pilotage** du
+  protocole. Ils ne produisent jamais de score, n'alimentent jamais
+  « Mon équilibre », et ne sont pas des jalons de mesure.
+- Les **jalons de mesure** T0/J21/J42/J90 restent la propriété exclusive de
+  `web/src/lib/equilibre/momentum.ts` — jamais réimplémentés ici.
+- **J21 = point de jonction.** Le « résumé J21 » est le seul objet croisant
+  les deux lectures (le score a-t-il bougé ? l'action a-t-elle été tenue ?
+  était-elle tolérée ?), via les contrats publics des deux côtés.
+- Vocabulaire verrouillé : « point d'étape » (praticien) / « rendez-vous de
+  suivi » (patient). « Jalon de mesure » est banni de ce contexte.
 
-## Contraintes non négociables
+## Scission actée
 
-- Tous les textes d’interface utilisateur sont en français.
-- Aucun secret, jeton, mot de passe ou identifiant sensible en dur.
-- Aucune donnée patient réelle dans le code, les exemples, les maquettes, les seeds ou les tests.
-- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogne.
-- Aucune migration Prisma/SQL et aucune écriture Supabase sans demande explicite et confirmation distincte.
-- Changements minimaux : pas de refactor global hors périmètre du lot.
-- Aucune modification des seuils, pondérations ou règles cliniques sans instruction explicite, versionnage et trace documentaire.
-- L’IA produit des brouillons ; le praticien valide avant toute diffusion patient.
+### C2A — Check-ins et persistance minimale
 
-## Hors périmètre global
+- Persistance des `AssessmentEpisode` confirmés par le praticien, des
+  protocoles validés devenus actifs et de leurs révisions. C1 ne crée que des
+  objets purs et des brouillons.
+- Check-in de 2 à 4 questions maximum : tolérance, ressenti, adhésion à
+  l'action principale.
+- Sauvegarde et synchronisation **explicites** (états HC-F).
+- Identité : l'assignation R8-lite existante suffit pour un suivi scopé à un
+  protocole. Le besoin d'identité **inter-assignations** déclenche la
+  campagne auth différée — pas l'inverse.
+- **Gate migration** : la persistance des check-ins exige un lot
+  `bloqué_confirmation` (migration Prisma soumise à confirmation explicite).
+  Trancher en compilation la question « V1 avec ou sans persistance » — une
+  campagne intitulée « persistance » ne peut pas rester ambiguë sur ce point.
+- Timeline factuelle uniquement : événements réels (assignation, réponse,
+  validation, envoi, check-in) — aucun événement inventé.
 
-- Biologie réelle
-- Messagerie libre
-- Notifications nombreuses
-- IA autonome patient
-- Boussole et compléments
+### C2B — Trajectoire et aide à l'ajustement (après données réelles)
 
-## Décisions prises
+- Momentum clinique **explicable** : consomme `momentum.ts` et le delta entre
+  jalons de mesure ; affichage praticien chiffré, patient en tendance +
+  phrase (décisions E2 existantes).
+- Comparateur avant/maintenant : jalons de mesure uniquement, comparabilité
+  `versionScore`, dates et limites explicites. (Spec issue de HC, propriété
+  C2B, composant visuel fourni par HC-F.)
+- Distinction effet / adhésion / tolérance ; suggestions d'allègement ;
+  alertes **déterministes et explicables** uniquement.
 
-- Le schéma est spécifié avant toute migration.
-- LOT-02 est bloqué jusqu’à confirmation explicite.
-- Une seule migration courte couvre le modèle validé.
-- Le check-in reste très court et non diagnostique.
-- Le patient voit une action principale, pas tout le cockpit.
+## Différés (décisions fermes)
 
-## Questions ouvertes
+- Analyse émotionnelle libre des messages patients.
+- Score automatique de risque de décrochage.
+- Notifications proactives autonomes.
+- Affichage d'un pourcentage d'observance au patient. Formulation factuelle
+  positive obligatoire : « Vous avez pu réaliser cette action trois jours
+  cette semaine », jamais « Adhésion : 43 % ».
 
-- Quel mécanisme d’auth patient est retenu pour l’espace persistant ?
-- Les snapshots J7/J14/J21 sont-ils calculés à la volée ou stockés ?
-- Quels événements créent une nouvelle version du protocole ?
+## Frontières
 
-## Dépendances
+**Possède** : journal de suivi, check-ins, lectures adhésion/tolérance/effet,
+résumé J21, décisions de point d'étape, timeline factuelle. Ici, « journal de
+suivi » désigne le journal d'événements du protocole, jamais le journal
+alimentaire JA.
+**Consomme** : protocole brouillon validé de C1, `momentum.ts` (API publique), identité
+R8-lite, primitives HC-F, rendu documentaire C3 (pour le résumé J21 envoyé).
+**Ne possède pas** : score, jalons de mesure, contenu du protocole,
+documents, saisie ou agrégats du journal alimentaire JA.
 
-- Campagne `2026-07-11-decision-clinique-21j-v1` terminée avec validation UX.
-- Confirmation explicite obligatoire avant LOT-02
-- Auth patient E3/R8 à vérifier
+## Esquisse de lots (à compiler N+1)
 
-## Artefacts de préparation
-
-- `BRIEF_COMPILED.md` : synthèse structurée des sources.
-- `CAMPAIGN_DRAFT.md` : lecture séquentielle de la campagne.
-- `sources/` : documents d’origine utiles au lot.
-
-## Lots
-
-| Lot | Objet | Statut | Dépend de |
-|---|---|---|---|
-| LOT-00 | Audit des flux et besoins de persistance | à_faire | aucun |
-| LOT-01 | Spécification du modèle et gate migration | à_faire | LOT-00 |
-| LOT-02 | Migration Prisma et API minimale — confirmation obligatoire | bloqué_confirmation | LOT-01 |
-| LOT-03 | Versionnement et validation du protocole | à_faire | LOT-02 |
-| LOT-04 | Check-ins et décision J21 | à_faire | LOT-03 |
-| LOT-05 | Compagnon patient minimal | à_faire | LOT-04 |
-| LOT-06 | Tests, rétrocompatibilité et handoff | à_faire | LOT-05 |
-
-## Commande `/wn` de reproduction
-
-```text
-/wn creer "Persistance protocole et suivi J7 J14 J21" --source docs/claude/wellneuro-3 --slug suivi-j7-j14-j21-et-persistance --lots 7 --auto-final
-```
-
-## Done de campagne
-
-- [ ] Migration explicitement confirmée et documentée.
-- [ ] Protocoles versionnés et récupérables.
-- [ ] Check-ins courts et non anxiogènes.
-- [ ] Décision J21 disponible côté praticien.
-- [ ] Compagnon patient utilisable mobile.
-- [ ] Tests de sécurité, droits et rétrocompatibilité réussis.
-
-## Backlog ultérieur
-
-- Notifications
-- Momentum avancé
-- Messagerie contextualisée
-- Documents archivés multi-destinataires
+LOT-00 audit persistance + arbitrage V1 avec/sans migration →
+LOT-01 contrat check-in + timeline factuelle → LOT-02 check-in patient +
+états de sauvegarde → LOT-03 vue praticien points d'étape + résumé J21 →
+LOT-04 validation. C2B : compilation séparée après données réelles.

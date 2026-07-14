@@ -6,6 +6,8 @@ const args = process.argv.slice(2);
 const command = args[0] || "status";
 const cwd = process.cwd();
 const baseDir = path.join(cwd, "docs", "claude", "campagnes");
+const stateDir = path.join(cwd, ".wn");
+const statePath = path.join(stateDir, "state.json");
 const generatedNames = new Set([
   "BRIEF.md",
   "BRIEF_COMPILED.md",
@@ -93,7 +95,8 @@ function normalizeStatus(value) {
   return String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 }
 function isDoneStatus(value) {
-  return normalizeStatus(value).startsWith("termine");
+  const status = normalizeStatus(value);
+  return status.startsWith("termine") || status.startsWith("livre") || status.startsWith("fait");
 }
 function isAbandonedStatus(value) {
   return normalizeStatus(value).startsWith("abandon");
@@ -115,6 +118,21 @@ function dateIso() {
 }
 function ensureBase() {
   fs.mkdirSync(baseDir, { recursive: true });
+}
+function ensureStateDir() {
+  fs.mkdirSync(stateDir, { recursive: true });
+}
+function readMachineState() {
+  if (!fs.existsSync(statePath)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(statePath, "utf8"));
+  } catch {
+    return {};
+  }
+}
+function writeMachineState(nextState) {
+  ensureStateDir();
+  fs.writeFileSync(statePath, `${JSON.stringify(nextState, null, 2)}\n`, "utf8");
 }
 function firstHeading(text, fallback) {
   for (const line of text.split(/\r?\n/)) {
@@ -304,7 +322,7 @@ function writeCampaignDraft(campaignDir, campaignName) {
     lotDraftBlock(5, "UI / durcissement / securite", "Ameliorer les messages, validations, accessibilite et garde-fous."),
     lotDraftBlock(6, "Tests / documentation / go-no-go", "Verifier le build, la coherence fonctionnelle et documenter la decision."),
   ];
-  const text = `# Campagne WellNeuro - ${campaignName}\n\n_Draft genere le ${dateIso()} par scripts/wn-campaign.mjs._\n\n## Objectif general\n\nA completer a partir de BRIEF_COMPILED.md.\n\n## Contexte\n\nA completer : etat actuel, decision de depart, dependances, hypotheses.\n\n## Contraintes globales\n\n- UI en francais.\n- Aucun secret en dur.\n- Aucune donnee patient reelle.\n- Exemples limites a Sophie Nicola, Jennifer Martin et Michel Dogne.\n- Aucune migration Prisma/SQL ou ecriture Supabase sans confirmation distincte.\n- Changements minimaux.\n\n## Hors perimetre global\n\n- Refactor large sans demande explicite.\n\n## Backlog ulterieur\n\n- A completer.\n\n---\n\n${blocks.join("\n")}\n`;
+  const text = `# Campagne WellNeuro - ${campaignName}\n\n_Draft genere le ${dateIso()} par scripts/wn-campaign.mjs._\n\n## Objectif general\n\nA completer a partir de BRIEF_COMPILED.md.\n\n## Contexte\n\nA completer : etat actuel, decision de depart, dependances, hypotheses.\n\n## Contraintes globales\n\n- UI en francais.\n- Aucun secret en dur.\n- Aucune donnee patient reelle.\n- Exemples limites a Sophie Nicola, Jennifer Martin et Michel Dogné.\n- Aucune migration Prisma/SQL ou ecriture Supabase sans confirmation distincte.\n- Changements minimaux.\n\n## Hors perimetre global\n\n- Refactor large sans demande explicite.\n\n## Backlog ulterieur\n\n- A completer.\n\n---\n\n${blocks.join("\n")}\n`;
   fs.writeFileSync(path.join(campaignDir, "CAMPAIGN_DRAFT.md"), text, "utf8");
 }
 function writeCampaignMeta(campaignDir, campaignName, sourceDir, docs) {
@@ -322,46 +340,58 @@ function writeActiveCampaign(campaignName) {
 }
 function readCampaigns() {
   ensureBase();
-  return fs.readdirSync(baseDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => {
-      const dir = path.join(baseDir, entry.name);
-      const campaign = path.join(dir, "CAMPAGNE.md");
-      if (!fs.existsSync(campaign)) return null;
-      const text = fs.readFileSync(campaign, "utf8");
-      const frontmatter = parseFrontmatter(text);
-      const status = frontmatter.statut || text.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu";
-      const title = frontmatter.titre || text.match(/^#\s+(.+)$/m)?.[1] || entry.name;
-      const lotsDir = path.join(dir, "lots");
-      const lots = fs.existsSync(lotsDir)
-        ? fs.readdirSync(lotsDir).filter((f) => f.endsWith(".md")).sort()
-        : [];
-      const lotData = lots.map((file) => {
-        const lotText = fs.readFileSync(path.join(lotsDir, file), "utf8");
-        return {
-          file,
-          status: lotText.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu",
-          title: lotText.match(/^#\s+(.+)$/m)?.[1] || file
-        };
-      });
-      return {
-        dir,
-        name: entry.name,
-        status,
-        title,
-        lots: lotData,
-        lotCourant: frontmatter.lot_courant || "",
-        brancheCampagne: frontmatter.branche_campagne || "",
-        brancheLotCourant: frontmatter.branche_lot_courant || "",
-        ciblePrLot: frontmatter.cible_pr_lot || "",
-        ciblePrCampagne: frontmatter.cible_pr_campagne || ""
-      };
-    })
-    .filter(Boolean)
-    .sort((a, b) => b.name.localeCompare(a.name));
+  const campaigns = [];
+  const stack = [baseDir];
+  while (stack.length) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (entry.name === "lots") continue;
+        stack.push(full);
+        const campaign = path.join(full, "CAMPAGNE.md");
+        if (!fs.existsSync(campaign)) continue;
+        const text = fs.readFileSync(campaign, "utf8");
+        const frontmatter = parseFrontmatter(text);
+        const status = frontmatter.statut || text.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu";
+        const title = frontmatter.titre || text.match(/^#\s+(.+)$/m)?.[1] || entry.name;
+        const lotsDir = path.join(full, "lots");
+        const lots = fs.existsSync(lotsDir)
+          ? fs.readdirSync(lotsDir).filter((f) => f.endsWith(".md")).sort()
+          : [];
+        const lotData = lots.map((file) => {
+          const lotText = fs.readFileSync(path.join(lotsDir, file), "utf8");
+          return {
+            file,
+            status: lotText.match(/^statut:\s*"?([^"\n]+)"?/m)?.[1] || "inconnu",
+            title: lotText.match(/^#\s+(.+)$/m)?.[1] || file
+          };
+        });
+        campaigns.push({
+          dir: full,
+          name: frontmatter.id || entry.name,
+          status,
+          title,
+          lots: lotData,
+          lotCourant: frontmatter.lot_courant || "",
+          brancheCampagne: frontmatter.branche_campagne || "",
+          brancheLotCourant: frontmatter.branche_lot_courant || "",
+          ciblePrLot: frontmatter.cible_pr_lot || "",
+          ciblePrCampagne: frontmatter.cible_pr_campagne || ""
+        });
+      }
+    }
+  }
+  return campaigns.sort((a, b) => b.name.localeCompare(a.name));
 }
 function activeCampaign() {
   const campaigns = readCampaigns();
+  const machineState = readMachineState();
+  if (Object.prototype.hasOwnProperty.call(machineState, "active_campaign")) {
+    const activeName = machineState.active_campaign || "";
+    if (!activeName) return null;
+    return campaigns.find((c) => c.name === activeName) || null;
+  }
   return campaigns.find((c) => !isClosedStatus(c.status) && c.lots.length > 0)
     || campaigns.find((c) => !isClosedStatus(c.status))
     || campaigns[0];
@@ -369,6 +399,39 @@ function activeCampaign() {
 function nextLot(campaign) {
   if (!campaign) return null;
   return campaign.lots.find((lot) => !isClosedStatus(lot.status));
+}
+function normalizedParallelCampaigns(state = readMachineState()) {
+  if (!Array.isArray(state.parallel_campaigns)) return [];
+  return state.parallel_campaigns.filter((entry) => entry && typeof entry.campaign_id === "string");
+}
+function campaignActivity(campaignId, state = readMachineState()) {
+  if (state.active_campaign === campaignId) return { kind: "primary", activeLot: state.active_lot || null };
+  const parallel = normalizedParallelCampaigns(state).find((entry) => entry.campaign_id === campaignId);
+  return parallel ? { kind: "parallel", activeLot: parallel.active_lot || null } : null;
+}
+function writeActiveCampaignView() {
+  ensureBase();
+  const machineState = readMachineState();
+  const campaigns = readCampaigns();
+  const activeCampaignId = machineState.active_campaign || "";
+  const primary = campaigns.find((campaign) => campaign.name === activeCampaignId);
+  const parallels = normalizedParallelCampaigns(machineState).map((entry) => ({
+    ...entry,
+    campaign: campaigns.find((campaign) => campaign.name === entry.campaign_id)
+  }));
+  const hasActivity = Boolean(activeCampaignId || parallels.length);
+  const status = machineState.status || (hasActivity ? "active" : "idle");
+  const updatedAt = (machineState.updated_at || new Date().toISOString()).slice(0, 10);
+  const primaryBlock = activeCampaignId
+    ? `## Activité primaire\n\n**Campagne** : ${activeCampaignId}\n**Titre** : ${primary?.title || activeCampaignId}\n**Statut** : active\n**Lot actif** : ${machineState.active_lot || "aucun"}\n`
+    : "## Activité primaire\n\nAucune campagne primaire active.\n";
+  const parallelBlock = parallels.length
+    ? parallels.map((entry) => `### ${entry.campaign_id}\n\n**Titre** : ${entry.campaign?.title || entry.campaign_id}\n**Statut** : ${entry.status || "active"}\n**Lot actif** : ${entry.active_lot || "aucun"}`).join("\n\n")
+    : "Aucune campagne parallèle active.";
+  const content = hasActivity
+    ? `# Campagnes actives\n\n${primaryBlock}\n## Activités parallèles\n\n${parallelBlock}\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.\n`
+    : `# Campagnes actives\n\nAucune campagne active.\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`.\n`;
+  fs.writeFileSync(path.join(baseDir, "ACTIVE_CAMPAIGN.md"), content, "utf8");
 }
 function createCampaign() {
   ensureBase();
@@ -487,7 +550,7 @@ cible_pr_campagne: "main"
 - Aucun secret en dur.
 - Tous les textes UI en français.
 - Aucun patient réel.
-- Exemples limités à Sophie Nicola, Jennifer Martin et Michel Dogne.
+- Exemples limités à Sophie Nicola, Jennifer Martin et Michel Dogné.
 - Aucune migration Prisma/SQL ou écriture Supabase sans confirmation distincte.
 - Changements minimaux.
 
@@ -586,7 +649,16 @@ dépend_de: "${depends}"
   });
 
   if (activate) {
-    writeActiveCampaign(dirname);
+    writeMachineState({
+      ...(readMachineState() || {}),
+      schema_version: 2,
+      status: "active",
+      active_campaign: dirname,
+      active_lot: lots[0].id,
+      parallel_campaigns: normalizedParallelCampaigns(),
+      updated_at: `${new Date().toISOString().slice(0, 19)}Z`
+    });
+    writeActiveCampaignView();
   }
 
   console.log(`Campagne créée : ${path.relative(cwd, campaignDir)}`);
@@ -596,6 +668,71 @@ dépend_de: "${depends}"
   console.log(`Draft campagne : ${path.relative(cwd, path.join(campaignDir, "CAMPAIGN_DRAFT.md"))}`);
   if (activate) console.log(`Campagne active : ${path.relative(cwd, path.join(baseDir, "ACTIVE_CAMPAIGN.md"))}`);
 }
+function activateCampaign() {
+  const campaignId = args[1];
+  if (!campaignId || campaignId.startsWith("--")) {
+    console.error("ID de campagne requis : activate <campaign-id> [--lot LOT-00] [--parallel]");
+    process.exit(1);
+  }
+  const lotId = flag("--lot", "");
+  const campaigns = readCampaigns();
+  const campaign = campaigns.find((c) => c.name === campaignId);
+  if (!campaign) {
+    console.error(`Campagne introuvable : ${campaignId}`);
+    process.exit(2);
+  }
+  const activeLot = lotId || campaign.lotCourant || nextLot(campaign)?.file?.split("-").slice(0, 2).join("-") || null;
+  const state = readMachineState() || {};
+  const parallel = has("--parallel");
+  let parallelCampaigns = normalizedParallelCampaigns(state).filter((entry) => entry.campaign_id !== campaignId);
+  if (parallel) {
+    if (state.active_campaign === campaignId) {
+      console.error(`La campagne primaire ne peut pas aussi être parallèle : ${campaignId}`);
+      process.exit(3);
+    }
+    parallelCampaigns.push({ campaign_id: campaignId, active_lot: activeLot, status: "active" });
+  } else {
+    parallelCampaigns = parallelCampaigns.filter((entry) => entry.campaign_id !== campaignId);
+  }
+  writeMachineState({
+    ...state,
+    schema_version: 2,
+    status: "active",
+    active_campaign: parallel ? state.active_campaign || null : campaignId,
+    active_lot: parallel ? state.active_lot || null : activeLot,
+    parallel_campaigns: parallelCampaigns,
+    updated_at: `${new Date().toISOString().slice(0, 19)}Z`
+  });
+  writeActiveCampaignView();
+  console.log(`Campagne ${parallel ? "parallèle " : ""}active : ${campaignId}`);
+}
+function deactivateCampaign() {
+  const campaignId = args[1] && !args[1].startsWith("--") ? args[1] : null;
+  const state = readMachineState() || {};
+  let activeCampaign = state.active_campaign || null;
+  let activeLot = state.active_lot || null;
+  let parallelCampaigns = normalizedParallelCampaigns(state);
+  if (!campaignId) {
+    activeCampaign = null;
+    activeLot = null;
+    parallelCampaigns = [];
+  } else if (activeCampaign === campaignId) {
+    const promoted = parallelCampaigns.shift();
+    activeCampaign = promoted?.campaign_id || null;
+    activeLot = promoted?.active_lot || null;
+  } else {
+    const before = parallelCampaigns.length;
+    parallelCampaigns = parallelCampaigns.filter((entry) => entry.campaign_id !== campaignId);
+    if (before === parallelCampaigns.length) {
+      console.error(`Campagne non active : ${campaignId}`);
+      process.exit(2);
+    }
+  }
+  const statusValue = activeCampaign || parallelCampaigns.length ? "active" : "idle";
+  writeMachineState({ ...state, schema_version: 2, status: statusValue, active_campaign: activeCampaign, active_lot: activeLot, parallel_campaigns: parallelCampaigns, updated_at: `${new Date().toISOString().slice(0, 19)}Z` });
+  writeActiveCampaignView();
+  console.log(campaignId ? `Campagne désactivée : ${campaignId}` : "Toutes les campagnes sont désactivées.");
+}
 function status() {
   const campaigns = readCampaigns();
   if (!campaigns.length) {
@@ -603,8 +740,9 @@ function status() {
     return;
   }
   for (const c of campaigns) {
+    const activity = campaignActivity(c.name);
     const done = c.lots.filter((l) => isDoneStatus(l.status)).length;
-    console.log(`${c.name} | ${c.status} | ${done}/${c.lots.length} lots | ${c.title}`);
+    console.log(`${c.name} | ${c.status} | ${done}/${c.lots.length} lots | ${activity?.kind || "inactive"} | ${c.title}`);
     const gitInfo = [
       c.brancheCampagne ? `campagne=${c.brancheCampagne}` : "",
       c.brancheLotCourant ? `lot=${c.brancheLotCourant}` : "",
@@ -617,10 +755,20 @@ function status() {
   }
 }
 function showNext(quiet = false) {
-  const campaign = activeCampaign();
-  const lot = nextLot(campaign);
+  const requestedCampaignId = flag("--campaign", "");
+  const campaigns = readCampaigns();
+  const campaign = requestedCampaignId ? campaigns.find((candidate) => candidate.name === requestedCampaignId) : activeCampaign();
+  const activity = campaign ? campaignActivity(campaign.name) : null;
+  if (requestedCampaignId && !activity) {
+    console.error(`Campagne non active : ${requestedCampaignId}`);
+    process.exit(2);
+  }
+  const selectedLotId = activity?.activeLot;
+  const lot = selectedLotId
+    ? campaign?.lots.find((candidate) => candidate.file.startsWith(`${selectedLotId}-`) || candidate.file === `${selectedLotId}.md`)
+    : nextLot(campaign);
   if (!campaign) {
-    if (!quiet) console.log("Aucune campagne.");
+    if (!quiet) console.log("Aucune campagne active dans .wn/state.json");
     return;
   }
   if (!lot) {
@@ -647,8 +795,18 @@ switch (command) {
   case "init":
     createCampaign();
     break;
+  case "activate":
+    activateCampaign();
+    break;
+  case "deactivate":
+    deactivateCampaign();
+    break;
   case "next":
     showNext(has("--quiet"));
+    break;
+  case "sync":
+    writeActiveCampaignView();
+    console.log(`Vue synchronisée : ${path.relative(cwd, path.join(baseDir, "ACTIVE_CAMPAIGN.md"))}`);
     break;
   case "status":
   default:

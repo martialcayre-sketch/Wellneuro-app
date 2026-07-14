@@ -51,7 +51,7 @@ Le dossier `source_evolutions_originales/` reprend les fichiers Markdown fournis
 
 - Interface utilisateur en français.
 - Pas de secret en dur.
-- Patients fictifs uniquement : Sophie Nicola, Jennifer Martin, Michel Dogne.
+- Patients fictifs uniquement : Sophie Nicola, Jennifer Martin, Michel Dogné.
 - Pas de donnée patient réelle dans les maquettes, prompts, seeds ou tests.
 - Pas de migration Prisma/SQL sans demande explicite et confirmation.
 - Pas de prescription automatique.

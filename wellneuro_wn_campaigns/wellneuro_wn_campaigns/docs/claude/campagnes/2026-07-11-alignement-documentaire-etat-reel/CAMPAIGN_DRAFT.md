@@ -2,13 +2,13 @@
 
 ## Objectif général
 
-Vérifier puis aligner `docs/roadmap.md`, `docs/claude/SESSION_LOG.md`, `docs/claude/PROJET_CONTEXTE.md` et l’état réel du code, sans modifier le comportement applicatif.
+Vérifier puis aligner `docs/roadmap.md`, `docs/claude/SESSION_LOG.md`, `docs/claude/PROJET_CONTEXTE.md` et l'état réel du code, sans modifier le comportement applicatif.
 
 ## Séquence recommandée
 
 ## LOT-00 — Audit des sources de vérité
 
-**Objectif :** Lire les documents canoniques et identifier les affirmations susceptibles d’être obsolètes.
+**Objectif :** Lire les documents canoniques et identifier les affirmations susceptibles d'être obsolètes.
 
 **Résultat :** Une matrice `affirmation → source → date → confiance → vérification requise`, sans modification.
 
@@ -18,7 +18,7 @@ Vérifier puis aligner `docs/roadmap.md`, `docs/claude/SESSION_LOG.md`, `docs/cl
 
 ## LOT-01 — Vérification read-only des routes Sheets et OAuth
 
-**Objectif :** Confirmer dans le code l’état réel de la décommission Google Sheets/OAuth.
+**Objectif :** Confirmer dans le code l'état réel de la décommission Google Sheets/OAuth.
 
 **Résultat :** Un inventaire exact des références restantes, avec impact et recommandation, sans modification.
 
@@ -28,7 +28,7 @@ Vérifier puis aligner `docs/roadmap.md`, `docs/claude/SESSION_LOG.md`, `docs/cl
 
 ## LOT-02 — Corrections documentaires minimales
 
-**Objectif :** Aligner uniquement les documents contradictoires avec l’état vérifié.
+**Objectif :** Aligner uniquement les documents contradictoires avec l'état vérifié.
 
 **Résultat :** Documentation cohérente et minimale, sans changement fonctionnel.
 
@@ -38,7 +38,7 @@ Vérifier puis aligner `docs/roadmap.md`, `docs/claude/SESSION_LOG.md`, `docs/cl
 
 ## LOT-03 — Validation et handoff
 
-**Objectif :** Clôturer l’alignement et transmettre un état de départ fiable.
+**Objectif :** Clôturer l'alignement et transmettre un état de départ fiable.
 
 **Résultat :** Un handoff court : état confirmé, dettes actives, fichiers canoniques et autorisation de lancer la campagne suivante.
 

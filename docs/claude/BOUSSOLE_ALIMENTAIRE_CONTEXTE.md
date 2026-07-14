@@ -12,7 +12,7 @@
 > fonctionnalité jusqu'à intégration dans `ROADMAP_AGENT_PLAN.md`.
 > Toute génération de code se fait ensuite branche par branche, sur demande
 > explicite, et toute migration sur confirmation explicite (règles projet).
-> Patients d'exemple autorisés : Sophie Nicola, Jennifer Martin, Michel Dogne.
+> Patients d'exemple autorisés : Sophie Nicola, Jennifer Martin, Michel Dogné.
 > Référence clinique associée : `docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md`.
 >
 > **Historique des révisions de ce document, dans l'ordre :**

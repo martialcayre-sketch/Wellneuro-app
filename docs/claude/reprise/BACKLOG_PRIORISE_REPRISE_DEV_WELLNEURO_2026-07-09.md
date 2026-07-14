@@ -66,7 +66,7 @@ Utiliser uniquement :
 
 - Sophie Nicola ;
 - Jennifer Martin ;
-- Michel Dogne.
+- Michel Dogné.
 
 Sortie attendue :
 

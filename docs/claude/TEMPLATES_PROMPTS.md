@@ -62,7 +62,7 @@ Ajoute un exemple fictif si necessaire.
 ```text
 A partir de la checklist E2E (`docs/checklist_tests_end_to_end.md`), prepare un plan de test manuel pour [scenario].
 Contrainte:
-- utiliser uniquement Sophie Nicola, Jennifer Martin ou Michel Dogne.
+- utiliser uniquement Sophie Nicola, Jennifer Martin ou Michel Dogné.
 Resultat attendu:
 - preconditions,
 - etapes,

@@ -1,9 +1,9 @@
 ---
 id: "2026-07-11-boussole-alimentaire-slice-v1"
-titre: "C5 — Boussole alimentaire (C5A/C5B)"
+titre: "C5 — Boussole alimentaire (intrinsèque/contextuel)"
 statut: "cadrée — lots à compiler N+1"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-12"
+mise_à_jour: "2026-07-13"
 lot_courant: "aucun"
 ---
 
@@ -24,13 +24,21 @@ non culpabilisant, avec distinction stricte entre l'aliment (score
 intrinsèque, indépendant du patient) et son usage dans le contexte (lecture
 contextuelle au protocole).
 
-## Scission actée
+## Scission actée — réconciliation 3.2
 
-### C5A — Action alimentaire de la semaine
+### C5A — Taxonomie et profils intrinsèques
 
-Le praticien sélectionne une priorité (issue de C1). Le patient reçoit : une
-action, trois exemples, deux substitutions, une fiche « pourquoi », un plan
-minimal, un critère simple à observer.
+Taxonomie, sources, mapping Ciqual, aliments vedettes et profils intrinsèques
+indépendants du patient. C5A est data-first et peut avancer sans donnée
+patient ni priorité clinique.
+
+### C5B — Lecture contextuelle et actions alimentaires
+
+Après sélection d'une priorité en C1 et activation du protocole en C2, le
+praticien peut préparer une action, trois exemples, deux substitutions, une
+fiche « pourquoi », un plan minimal et un critère simple à observer. C5B
+porte aussi les assiettes vedettes, préférences, allergies, contraintes,
+coût et saisonnalité.
 
 ```text
 Cette semaine
@@ -43,14 +51,9 @@ Plan minimal
 Une seule portion supplémentaire suffit pour commencer.
 ```
 
-**Data-first** : le référentiel (Ciqual, mapping, aliments vedettes, fiches)
-ne dépend pas de C1 et peut avancer en parallèle ; seule la *sélection* de la
-priorité en dépend. C5A-socle est donc parallélisable ; C5A-flux attend C1.
-
-### C5B — Assiettes et substitutions
-
-Assiettes vedettes, substitutions par famille, préférences, allergies et
-contraintes, coût, disponibilité saisonnière.
+> Historique : C5A désignait auparavant l'action hebdomadaire et C5B les
+> assiettes/substitutions. Ces capacités sont conservées et regroupées dans
+> C5B ; C5A désigne désormais exclusivement le socle intrinsèque.
 
 ## Décisions actées
 
@@ -66,8 +69,11 @@ contraintes, coût, disponibilité saisonnière.
   scan uniquement, avec mode dégradé).
 - Langage non culpabilisant, jamais de score alimentaire anxiogène affiché
   seul ; toujours l'alternative concrète avec le constat.
-- **Primitive commune C4/C5** : cf. fiche C4 — modèle intrinsèque/contextuel
-  conçu une seule fois.
+- **Contrat neutre C4/C5** : le modèle intrinsèque/contextuel est défini hors
+  des deux campagnes. Chacune possède ses données, règles et adaptateurs.
+- **Journal alimentaire** : campagne JA autonome. C5 peut consommer ses
+  observations publiées mais ne possède ni saisie, ni agrégats, ni
+  persistance du journal.
 
 ## Frontières
 
@@ -76,12 +82,12 @@ alimentaire, actions hebdomadaires, assiettes et substitutions, fiches
 « pourquoi ».
 **Consomme** : priorité C1, rendu documentaire C3, charte patient HC-F,
 acquis E1.
-**Ne possède pas** : protocole (C1), documents (C3), score « Mon équilibre ».
+**Ne possède pas** : décision/protocole (C1/C2), documents (C3), score « Mon
+équilibre », journal alimentaire (JA).
 
 ## Esquisse de lots (à compiler N+1)
 
-LOT-00 vérification des acquis E1 + arbitrage pondération interne besoin 2
-(équi vs clinique — pré-tranché clinique fer/B9/B12, à confirmer) →
-LOT-01 seed mapping besoin 1 (vertical slice 12 aliments) → LOT-02 fiches et
-actions hebdomadaires (socle data) → LOT-03 flux praticien→patient (après
-C1) → LOT-04 C5B assiettes/substitutions → LOT-05 validation.
+LOT-00 vérification sources/licences et contrat neutre → LOT-01 taxonomie et
+mapping intrinsèque pilote → LOT-02 profils intrinsèques C5A → LOT-03 lecture
+contextuelle C5B (après priorité C1 validée et protocole actif C2) → LOT-04
+actions/assiettes/substitutions → LOT-05 validation.

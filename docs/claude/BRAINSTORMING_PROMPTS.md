@@ -49,7 +49,7 @@ Copier-coller ce bloc en tête d'une nouvelle conversation quand le contexte com
 [CTX-NNPP2]
 Stack: Next.js 14 App Router, Prisma, PostgreSQL Supabase, NextAuth (OAuth @wellneuro.fr), Vercel.
 Règles: pas de secret en dur, textes UI français, changements minimaux, pas de migration non demandée.
-Patients fictifs autorisés: Sophie Nicola, Jennifer Martin, Michel Dogne.
+Patients fictifs autorisés: Sophie Nicola, Jennifer Martin, Michel Dogné.
 Référence doc: docs/claude/PROJET_CONTEXTE.md
 ```
 

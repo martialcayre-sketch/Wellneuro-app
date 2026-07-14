@@ -1,3 +1,9 @@
-# Brief — Boussole alimentaire — vertical slice V1
+# Brief — Boussole alimentaire slice V1
 
-Voir `BRIEF_COMPILED.md`, puis `CAMPAGNE.md`.
+## Brainstorming source
+
+Voir BRIEF_COMPILED.md.
+
+## Synthèse structurée
+
+Voir CAMPAIGN_DRAFT.md.

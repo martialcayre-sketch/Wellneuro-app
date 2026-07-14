@@ -24,7 +24,7 @@ Le projet WellNeuro est une application de neuronutrition clinique avec :
 - Seuls les patients fictifs autorisés sont :
   - Sophie Nicola ;
   - Jennifer Martin ;
-  - Michel Dogne.
+  - Michel Dogné.
 - Ne pas modifier la logique clinique ou les seuils de scoring sans demande explicite.
 - Ne pas faire de migration Prisma sans demande explicite et confirmation.
 - Changements minimaux, pas de refactor large.

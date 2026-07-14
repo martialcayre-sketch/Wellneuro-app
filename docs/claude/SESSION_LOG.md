@@ -237,3 +237,55 @@
 **Prochaine action prioritaire** : C1 et QX peuvent démarrer en parallèle (dépendances HC-F satisfaites, aucune restante).
 
 **Questions ouvertes** : aucune — la seule question ouverte du lot précédent (arbitrage Dogne/Dogné) est résolue.
+
+## [2026-07-13] — Réconciliation WN Ultimate v2 : architecture 3.2 promue
+
+**Décisions prises** : promotion conditionnelle de l'architecture, sans
+adoption des paramètres cliniques non sourcés. C1 porte les contrats purs et
+les brouillons ; C2 la persistance, l'activation et le longitudinal ; JA est
+créée comme campagne autonome ; C5A devient intrinsèque et C5B contextuel.
+La priorité moteur reste une proposition distincte de la sélection praticien.
+Le registre sanitaire versionne 391 notices sans URL/chemin/identifiant Drive,
+toutes avec droits à vérifier, revue non effectuée et aucun hash. Le dossier
+portable brut et ses ZIP restent hors Git.
+
+**Orchestration** : `.wn/state.json` devient l'autorité machine, initialisée
+sur HC-F LOT-05. `ACTIVE_CAMPAIGN.md` est une vue générée. Les commandes
+`activate`, `deactivate` et `sync` sont ajoutées ; aucune campagne non close ou
+rangée sous `_prepared` ne devient active implicitement.
+
+**Validations exécutées** : JSON du registre valide, 391 `sourceId` uniques,
+aucun champ localisateur ; tests unitaires orchestration 4/4 ; `type-check` ;
+certification de 63 questionnaires ; contrôle anti-secrets ; `git diff
+--check`.
+
+**Options écartées** : activation globale du corpus ; projection du journal
+vers `Q_ALI_01`/`Q_ALI_02` ; propriété du contrat intrinsèque/contextuel par C4
+ou C5 ; migration Prisma ; modification du 60/20/20 ou des seuils existants.
+
+**Prochaine action prioritaire** : démarrer C1 et QX en parallèle dans des
+worktrees isolés, selon l'ordre défini par `ARCHITECTURE_CLINIQUE_3_2.md`.
+
+**Questions ouvertes / gates** : validation clinique des seuils, marqueurs,
+axes, fiabilité et rétention ; corpus G0–G6 ; toute migration C2/G5.
+
+## [2026-07-14] — Incident production : auth NextAuth cassée (hotfix PR #45, test PR #46)
+
+**Décisions prises** : diagnostic — toutes les routes `/api/auth/*` en 500
+depuis le 2026-07-13 ~19:40 UTC ; cause racine PR #39 (wrapper observabilité
+appelant le handler NextAuth sans le contexte App Router), PR #44 hors de
+cause. Hotfix mergé (PR #45) : transmission du contexte
+`{ params: { nextauth } }`. Test de régression mergé (PR #46) : mock fidèle du
+dispatch next-auth v4 + alias `@/*` ajouté à `vitest.config.ts`. Prod rétablie
+à 00:53 UTC, vérifiée stable (session/csrf/providers 200, aucune erreur
+runtime résiduelle).
+
+**Options écartées** : rollback Vercel (aurait retiré LOT-04) ; test du vrai
+handler next-auth sous Vitest (exige l'AsyncLocalStorage d'un vrai serveur
+Next).
+
+**Prochaine action prioritaire** : vérification humaine d'un login Google
+complet.
+
+**Questions ouvertes** : aucune ; aucun lot de campagne concerné (hors
+périmètre C1/QX).

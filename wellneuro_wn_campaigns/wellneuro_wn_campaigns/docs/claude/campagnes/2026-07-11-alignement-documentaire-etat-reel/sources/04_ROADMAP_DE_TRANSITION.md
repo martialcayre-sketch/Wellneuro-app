@@ -1,4 +1,4 @@
-# 04 — Roadmap de transition depuis l’état actuel
+# 04 — Roadmap de transition depuis l'état actuel
 
 ## Principe
 
@@ -24,16 +24,16 @@ modules avancés
 
 ### Objectif
 
-Rendre la documentation cohérente avec l’état réel du dépôt.
+Rendre la documentation cohérente avec l'état réel du dépôt.
 
 ### Actions
 
 - Vérifier `docs/roadmap.md` versus `docs/claude/SESSION_LOG.md`.
-- Vérifier l’état réel des routes anciennement liées à Sheets.
+- Vérifier l'état réel des routes anciennement liées à Sheets.
 - Mettre à jour README, roadmap, contexte projet si nécessaire.
 - Ne pas changer de code métier dans cette phase.
 
-### Critères d’acceptation
+### Critères d'acceptation
 
 - Un agent de code sait quelle source fait foi.
 - Les dettes actives sont explicitement listées.
@@ -43,7 +43,7 @@ Rendre la documentation cohérente avec l’état réel du dépôt.
 
 ### Objectif
 
-Transformer l’espace praticien en cockpit de décision.
+Transformer l'espace praticien en cockpit de décision.
 
 ### Branches suggérées
 
@@ -97,67 +97,3 @@ feat/doctor-note-printable
 ### Objectif
 
 Créer un accueil patient longitudinal calme : priorité, action du jour, fiche, check-in.
-
-### Branches suggérées
-
-```text
-feat/patient-home-companion-v1
-feat/patient-checkin-ui-v1
-feat/patient-action-card-v1
-```
-
-### Remarque
-
-Le check-in peut d’abord être mocké ou local/non persistant. Persistance à confirmer ensuite.
-
-## Phase 5 — Fiches conseils contextuelles
-
-### Objectif
-
-Créer une petite bibliothèque validée de fiches simples.
-
-### Branches suggérées
-
-```text
-feat/advice-sheets-static-library
-feat/advice-sheet-in-protocol
-```
-
-## Phase 6 — Momentum J7/J14/J21
-
-### Objectif
-
-Transformer le suivi en décision : continuer, alléger, densifier, pivoter, explorer.
-
-### Branches suggérées
-
-```text
-feat/momentum-snapshots-v1
-feat/j21-decision-panel
-```
-
-## Phase 7 — Modules avancés
-
-### À lancer seulement après stabilisation
-
-- compléments clean label ;
-- Boussole alimentaire vertical slice ;
-- biologie raisonnée catalogue ;
-- messagerie contextualisée ;
-- copilotes IA spécialisés.
-
-## Ordre recommandé final
-
-```text
-0. Documentation et dette réelle
-1. Shell cockpit praticien
-2. Fiche patient découpée
-3. Résumé décisionnel
-4. Protocole 21 jours minimal
-5. Charge thérapeutique
-6. Documents validés
-7. Compagnon patient minimal
-8. Fiches conseils
-9. Momentum J21
-10. Clean label / Boussole / Messagerie / Biologie raisonnée
-```

@@ -106,7 +106,7 @@ envoyer un message court de soutien ou alléger le protocole.
 ## UX praticien
 
 ```text
-Momentum — Michel Dogne
+Momentum — Michel Dogné
 
 Progression :
 Sommeil +8

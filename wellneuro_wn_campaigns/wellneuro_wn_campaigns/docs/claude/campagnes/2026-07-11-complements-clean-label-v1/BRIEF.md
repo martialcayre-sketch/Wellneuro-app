@@ -1,3 +1,9 @@
-# Brief — Bibliothèque compléments clean label V1
+# Brief — Compléments clean label V1
 
-Voir `BRIEF_COMPILED.md`, puis `CAMPAGNE.md`.
+## Brainstorming source
+
+Voir BRIEF_COMPILED.md.
+
+## Synthèse structurée
+
+Voir CAMPAIGN_DRAFT.md.
