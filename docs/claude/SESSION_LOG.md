@@ -329,3 +329,24 @@ branche d'intégration actualisée.
 
 **Questions ouvertes** : validation clinique future des règles et seuils de
 signaux, discordances, sécurité et abstention de LOT-02.
+
+## [2026-07-14] — Campagne C1 : LOT-02 clôturé
+
+**Décisions prises** : `ClinicalReview` livre un socle déclaratif pour les
+données manquantes, discordances praticien-only, sécurité et abstention. Les
+absences structurelles restent `à_documenter`, sans zéro ni criticité
+automatique. Les règles candidates sont inactives et toute validation déclarée
+exige un praticien.
+
+**Validations exécutées** : 63 tests Vitest ciblés, `type-check`, lint,
+certification des 63 questionnaires, contrôle anti-secrets, `git diff --check`
+et revue indépendante GO.
+
+**Options écartées** : règle ou seuil clinique, interface, `DecisionCard`,
+persistance, migration et écriture Supabase — hors périmètre LOT-02.
+
+**Prochaine action prioritaire** : publier LOT-02 vers l'intégration C1, puis
+cadrer LOT-03 en mode Plan.
+
+**Questions ouvertes** : validation clinique des règles de priorité avant
+toute activation dans LOT-03 ; aucune règle n'est actuellement activée.
