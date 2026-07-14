@@ -309,3 +309,23 @@ implémentation cockpit — hors périmètre LOT-00.
 d'intégration C1 à jour.
 
 **Questions ouvertes** : validation clinique future du mapping A/B/C/D.
+
+## [2026-07-14] — Campagne C1 : LOT-01 clôturé
+
+**Décisions prises** : contrats purs `AssessmentEpisode` et
+`ClinicalSnapshot` livrés avec adaptateurs vers le moteur `equilibre`, unités,
+versions, provenance, fraîcheur et hash canonique. L'absence et les réponses
+incomplètes ne deviennent jamais zéro. PR #51 fusionnée dans l'intégration C1.
+
+**Validations exécutées** : 55 tests Vitest ciblés, `type-check`, lint,
+certification des 63 questionnaires, contrôle anti-secrets, `git diff --check`,
+revue indépendante GO et checks Vercel verts.
+
+**Options écartées** : persistance, migration, route API, `DecisionCard`,
+`ProtocolDraft` et toute modification clinique — hors périmètre LOT-01.
+
+**Prochaine action prioritaire** : cadrer C1 LOT-02 en mode Plan depuis la
+branche d'intégration actualisée.
+
+**Questions ouvertes** : validation clinique future des règles et seuils de
+signaux, discordances, sécurité et abstention de LOT-02.
