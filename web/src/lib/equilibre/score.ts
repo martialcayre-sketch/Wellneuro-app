@@ -25,8 +25,7 @@ export function clamp01(valeur: number): number {
 // resultat = retour hétérogène de calculateScore (30 formats de scoring
 // différents dans questions.ts) — on ne lit que .total ou .subScores[].total,
 // communs à tous les formats utilisés par BESOIN_SOURCES.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extraireValeurBrute(resultat: any, sousScore?: string): number | null {
+function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: string): number | null {
   if (!resultat || resultat.error) return null;
   if (sousScore) {
     const sub = Array.isArray(resultat.subScores)

@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-disable */
 // ─── IMPORTS CATALOGUE (lot 7) ──────────────────────────────────────────────
 import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_FIB_01, Q_FIB_02, Q_FIB_03, Q_GAS_01, Q_GAS_02, Q_GAS_03, Q_GEO_01, Q_GEO_02, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_INF_01, Q_INF_02, Q_INF_03, Q_INF_04, Q_INF_05, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_08, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_01, Q_PED_02, Q_PED_03, Q_PNE_01, Q_SOM_01, Q_SOM_02, Q_SOM_03, Q_SOM_04, Q_SOM_05, Q_SOM_06, Q_SOM_07, Q_STR_01, Q_STR_02, Q_STR_03, Q_STR_04, Q_STR_05, Q_STR_06, Q_STR_08, Q_TAB_01, Q_TAB_02, Q_TAB_03, Q_TAB_04, Q_TAB_05, Q_URO_01, Q_URO_02 } from './questionnaires/index';
 // ═══════════════════════════════════════════════════════════════════════════════

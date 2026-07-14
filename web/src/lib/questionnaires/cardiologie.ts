@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-disable */
 import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_ZARIT, O_DASS, O_CONNERS, q, qn, qs } from './shared';
 
 export const Q_CAR_01 = {
