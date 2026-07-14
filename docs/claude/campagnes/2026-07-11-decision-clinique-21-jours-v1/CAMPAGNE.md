@@ -4,9 +4,9 @@ titre: "C1 — Décision clinique 21 jours V1"
 statut: "en_cours"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-14"
-lot_courant: "LOT-05"
+lot_courant: "LOT-06"
 branche_campagne: "campaign/decision-clinique-21-jours-v1/integration"
-branche_lot_courant: "campaign/decision-clinique-21-jours-v1/lot-05"
+branche_lot_courant: "campaign/decision-clinique-21-jours-v1/lot-06"
 cible_pr_lot: "campaign/decision-clinique-21-jours-v1/integration"
 cible_pr_campagne: "main"
 ---
@@ -24,6 +24,9 @@ cible_pr_campagne: "main"
 
 Le vertical slice produit central : une fiche patient cockpit qui transforme
 les données en décision de 21 jours.
+
+> Verdict LOT-06 provisoire : GO technique conditionné à la matrice CI,
+> ergonomie humaine à valider, NO-GO activation et diffusion runtime.
 
 ```text
 Réponses → épisode proposé/confirmé → ClinicalSnapshot

@@ -35,6 +35,7 @@ describe('ProtocolMiniBuilder', () => {
     const { container } = render(<ProtocolMiniBuilder decisionCard={card()} />);
     const ui = within(container);
     const add = ui.getByRole('button', { name: 'Ajouter une action' });
+    expect(add.className).toContain('min-h-11');
     fireEvent.click(add); fireEvent.click(add); fireEvent.click(add);
     expect(ui.getByText('Actions (3/3)')).not.toBeNull();
     expect(add.hasAttribute('disabled')).toBe(true);

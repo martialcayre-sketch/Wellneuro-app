@@ -79,7 +79,7 @@ export function ProtocolConsultationPanel({
           ))}
         </ol>
         {!approved && (
-          <button type="button" onClick={approve} disabled={!eligible} className="mt-4 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+          <button type="button" onClick={approve} disabled={!eligible} className="mt-4 min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
             Valider pour diffusion
           </button>
         )}
@@ -96,7 +96,7 @@ export function ProtocolConsultationPanel({
           <p className="mt-2 text-sm text-muted-foreground">Aperçu verrouillé — validation pour diffusion requise.</p>
         ) : (
           <>
-            <button type="button" onClick={() => setPreviewOpen(open => !open)} aria-expanded={previewOpen} aria-controls="patient-protocol-preview-content" className="mt-3 rounded-lg border border-border px-3 py-2 text-sm font-medium">
+            <button type="button" onClick={() => setPreviewOpen(open => !open)} aria-expanded={previewOpen} aria-controls="patient-protocol-preview-content" className="mt-3 min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
               {previewOpen ? 'Fermer l’aperçu patient' : 'Ouvrir l’aperçu patient'}
             </button>
             {previewOpen && (

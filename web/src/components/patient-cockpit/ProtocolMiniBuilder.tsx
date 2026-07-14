@@ -127,7 +127,7 @@ export function ProtocolMiniBuilder({ decisionCard }: { decisionCard: DecisionCa
         <div>
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-foreground">Actions ({actions.length}/3)</span>
-            <button type="button" onClick={addAction} disabled={actions.length >= 3} className="rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50">Ajouter une action</button>
+            <button type="button" onClick={addAction} disabled={actions.length >= 3} className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50">Ajouter une action</button>
           </div>
           <div className="mt-3 grid gap-3">
             {actions.map((action, index) => (
@@ -148,7 +148,7 @@ export function ProtocolMiniBuilder({ decisionCard }: { decisionCard: DecisionCa
                     const labels = { title: 'Intitulé', idealPlan: 'Plan idéal', minimalPlan: 'Plan minimal', rescuePlan: 'Plan de secours' };
                     return <label key={field} className="text-xs">{labels[field]}<input aria-label={`${labels[field]} de l’action ${index + 1}`} value={action[field]} onChange={event => updateAction(action.actionId, { [field]: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-background p-2 text-sm" /></label>;
                   })}
-                  <button type="button" onClick={() => removeAction(action.actionId)} className="justify-self-start text-xs text-muted-foreground underline">Supprimer l’action</button>
+                  <button type="button" onClick={() => removeAction(action.actionId)} className="min-h-11 justify-self-start text-xs text-muted-foreground underline">Supprimer l’action</button>
                 </div>
               </fieldset>
             ))}
@@ -166,8 +166,8 @@ export function ProtocolMiniBuilder({ decisionCard }: { decisionCard: DecisionCa
 
       {message && <p role="status" className="mt-4 text-sm text-muted-foreground">{message}</p>}
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onClick={review} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">Marquer comme relu</button>
-        <button type="button" onClick={reset} className="rounded-lg border border-border px-3 py-2 text-sm">Réinitialiser</button>
+        <button type="button" onClick={review} className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">Marquer comme relu</button>
+        <button type="button" onClick={reset} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm">Réinitialiser</button>
       </div>
     </section>
   );
