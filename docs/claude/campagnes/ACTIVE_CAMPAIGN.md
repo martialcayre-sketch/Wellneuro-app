@@ -13,7 +13,7 @@
 
 **Titre** : QX — Expérience questionnaires patient
 **Statut** : active
-**Lot actif** : LOT-03
+**Lot actif** : LOT-04
 
 **Statut global** : active
 **Mise à jour** : 2026-07-14
