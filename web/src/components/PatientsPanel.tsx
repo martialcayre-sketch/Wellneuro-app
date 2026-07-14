@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   CreatePatientResponse,
   DeletePatientResponse,
@@ -112,7 +112,7 @@ export function PatientsPanel() {
   // Pagination côté serveur (skip/take) : source de vérité pour le tableau
   // affiché. `data.patients` (chargé sans pagination par loadData) reste la
   // liste complète utilisée par le sélecteur "Nouvelle assignation".
-  const loadPatientsTable = async (targetPage: number, currentSearch: string, currentSortBy: SortBy) => {
+  const loadPatientsTable = useCallback(async (targetPage: number, currentSearch: string, currentSortBy: SortBy) => {
     setLoadingTable(true);
     try {
       const params = new URLSearchParams({
@@ -131,7 +131,7 @@ export function PatientsPanel() {
     } finally {
       setLoadingTable(false);
     }
-  };
+  }, []);
 
   const loadQuestionnaires = async () => {
     const r = await fetch('/api/praticien/questionnaires');
@@ -177,13 +177,11 @@ export function PatientsPanel() {
       loadPatientsTable(1, search, sortBy);
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, sortBy]);
+  }, [search, sortBy, loadPatientsTable]);
 
   useEffect(() => {
     loadPatientsTable(page, search, sortBy);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [page, search, sortBy, loadPatientsTable]);
 
   const refreshPatients = () => Promise.all([loadData(), loadPatientsTable(page, search, sortBy)]);
 

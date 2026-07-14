@@ -42,8 +42,7 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
         setLoading(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [email, fetchUrl, idAssignation]);
 
   const handleDemande = async () => {
     setDemandeLoading(true);

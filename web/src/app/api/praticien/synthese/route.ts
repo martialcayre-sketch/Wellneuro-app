@@ -253,7 +253,6 @@ export async function POST(req: Request) {
         emailPatient: patient.email,
         modele: CLAUDE_MODEL,
         versionPrompt: VERSION_PROMPT_SYNTHESE,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         donneesEntree: {
           reponses: reponsesInput,
           contexteClinique,

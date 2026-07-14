@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { calculateScore } from '@/lib/questions';
 import { createPublicId } from '@/lib/ids';
@@ -120,8 +121,10 @@ export async function POST(req: Request): Promise<NextResponse> {
       typeof scores.total === 'number' ? scores.total :
       typeof scores.count === 'number' ? scores.count : null;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const scoresWithAnswers = { ...scores, rawAnswers: answers } as any;
+    const scoresWithAnswers = {
+      ...scores,
+      rawAnswers: answers,
+    } as Prisma.InputJsonValue;
 
     const idReponse = createPublicId('REP');
     const now = new Date();

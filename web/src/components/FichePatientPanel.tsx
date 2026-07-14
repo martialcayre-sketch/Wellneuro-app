@@ -135,7 +135,6 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
         );
       })
       .catch(() => setAssignationsModif([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   const onDebloquer = async (idAssignation: string) => {

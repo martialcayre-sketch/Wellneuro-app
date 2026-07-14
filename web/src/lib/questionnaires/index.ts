@@ -1,5 +1,4 @@
 // @ts-nocheck
-/* eslint-disable */
 export * from './shared';
 export * from './cancerologie';
 export * from './stress';
