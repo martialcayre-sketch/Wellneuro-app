@@ -1,91 +1,75 @@
 ---
 id: "2026-07-11-fiches-conseils-contextuelles-v1"
-titre: "Fiches conseils contextuelles V1"
-statut: "à_faire"
+titre: "C3 — Documents contextuels multi-destinataires V1"
+statut: "cadrée — lots à compiler N+1"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-11"
-lot_courant: "LOT-00"
+mise_à_jour: "2026-07-13"
+lot_courant: "aucun"
 ---
 
-# Fiches conseils contextuelles V1
+# C3 — Documents contextuels multi-destinataires V1
+
+> Cadrage réel du 2026-07-12. **Renommage acté** : l'ancien titre « Fiches
+> conseils contextuelles » ne correspondait pas au contenu — C3 est un moteur
+> de composition documentaire multi-destinataires. Le dossier conserve son id
+> pour ne pas casser les références ; le titre fait foi.
 
 ## Objectif
 
-Livrer un catalogue réduit de fiches validées, sélectionnables dans le protocole et lisibles côté patient.
+Une même source clinique validée, des rendus différents selon le
+destinataire (patient, médecin traitant, praticien), avec chaîne d'états
+brouillon → relu → validé → envoyé, validation humaine obligatoire,
+versionnage et impression HTML (PDF natif différé).
 
-## Résultat observable
+## Frontière fondatrice (registre A2)
 
-Le praticien choisit une fiche validée et le patient la consulte depuis son protocole avec une version imprimable.
+**C3 ne possède aucun contenu clinique source.** Il reçoit des blocs validés :
 
-## Contraintes non négociables
+- snapshot, décision et protocole validés → C1 ;
+- événements et revue de phase persistés → C2 ;
+- fiches compléments → C4 ;
+- fiches alimentaires → C5 ;
+- synthèse IA existante (validée praticien).
 
-- Tous les textes d’interface utilisateur sont en français.
-- Aucun secret, jeton, mot de passe ou identifiant sensible en dur.
-- Aucune donnée patient réelle dans le code, les exemples, les maquettes, les seeds ou les tests.
-- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogné.
-- Aucune migration Prisma/SQL et aucune écriture Supabase sans demande explicite et confirmation distincte.
-- Changements minimaux : pas de refactor global hors périmètre du lot.
-- Aucune modification des seuils, pondérations ou règles cliniques sans instruction explicite, versionnage et trace documentaire.
-- L’IA produit des brouillons ; le praticien valide avant toute diffusion patient.
+C3 possède : modèles documentaires, composants de sections, adaptation au
+destinataire, affichage de provenance, états de validation, aperçu avant
+envoi, versionnage et comparaison de versions, impression.
 
-## Hors périmètre global
+## Décisions actées
 
-- RAG
-- Génération IA temps réel
-- Bibliothèque exhaustive
-- Scan produit
-
-## Décisions prises
-
-- Commencer avec 8 à 12 fiches à forte valeur.
-- Contenu statique validé affichable sans IA à l’exécution.
-- Une seule fiche prioritaire par phase 1.
-- Aucun contenu patient non validé.
-
-## Questions ouvertes
-
-- Quel format canonique : Markdown frontmatter ou TypeScript ?
-- Quelles 8 premières fiches ?
-- Comment gérer le versionnage sans DB ?
-
-## Dépendances
-
-- Campagne `2026-07-11-decision-clinique-21j-v1` terminée ; persistance facultative mais recommandée.
-- Design system
-- Protocole V1
-
-## Artefacts de préparation
-
-- `BRIEF_COMPILED.md` : synthèse structurée des sources.
-- `CAMPAIGN_DRAFT.md` : lecture séquentielle de la campagne.
-- `sources/` : documents d’origine utiles au lot.
-
-## Lots
-
-| Lot | Objet | Statut | Dépend de |
-|---|---|---|---|
-| LOT-00 | Audit du corpus et sélection V1 | à_faire | aucun |
-| LOT-01 | Format canonique et catalogue statique | à_faire | LOT-00 |
-| LOT-02 | Sélection dans le protocole | à_faire | LOT-01 |
-| LOT-03 | Affichage patient et impression | à_faire | LOT-02 |
-| LOT-04 | Tests, documentation et handoff | à_faire | LOT-03 |
-
-## Commande `/wn` de reproduction
+- Vue de composition **deux colonnes** (innovation retenue de l'audit) :
 
 ```text
-/wn creer "Fiches conseils contextuelles V1" --source docs/claude/wellneuro-3 --slug fiches-conseils-contextuelles-v1 --lots 5 --auto-final
+Sources praticien             Aperçu destinataire
+─────────────────             ────────────────────
+Donnée déclarée               Ce que vous avez décrit
+Score calculé                 Ce que cela suggère
+Décision validée              Votre priorité actuelle
+Action 21 jours               Ce que vous allez essayer
 ```
 
-## Done de campagne
+- L'aperçu destinataire est une **instanciation du mécanisme
+  `PrévisualisationPatient`** de HC-F (frontière de données : aucune donnée
+  interne praticien dans un rendu patient ; adaptation de la règle pour le
+  destinataire médecin).
+- Vocabulaire réglementaire strict dans tous les rendus ; le rendu médecin
+  utilise « explorations à discuter », jamais de terminologie prescriptive.
+- Deux régimes de contenu jamais mélangés : statique validé (affichable sans
+  IA) / généré par IA (validation praticien obligatoire avant diffusion).
+- Badge « validé par votre praticien » sur tout document patient.
 
-- [ ] Catalogue réduit et sourcé.
-- [ ] Sélection praticien reliée au protocole.
-- [ ] Affichage patient accessible.
-- [ ] Impression simple.
-- [ ] Aucune IA requise à l’exécution.
+## Frontières
 
-## Backlog ultérieur
+**Consomme** : blocs C1/C2/C4/C5, mécanisme HC-F, booklet existant (dont C3 est
+l'évolution — auditer l'existant `BookletEnvoi` avant de créer, ne pas
+empiler).
+**Ne possède pas** : contenu clinique, scoring, envoi email (réutilise
+l'infrastructure existante), signature électronique (différée).
 
-- RAG corpus
-- Recommandations automatiques encadrées
-- Recettes Ciqual
+## Esquisse de lots (à compiler N+1)
+
+LOT-00 audit de l'existant booklet/synthèse + inventaire des blocs
+disponibles à la fin de C1 → LOT-01 modèles et contrat de bloc (provenance,
+état, version) → LOT-02 composition deux colonnes + états →
+LOT-03 rendus par destinataire + impression → LOT-04 validation et handoff
+(C4/C5 comme futurs fournisseurs de blocs).

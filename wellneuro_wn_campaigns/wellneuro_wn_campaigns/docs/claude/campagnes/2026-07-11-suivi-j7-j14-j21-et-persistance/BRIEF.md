@@ -1,3 +1,9 @@
-# Brief — Persistance du protocole et suivi J7/J14/J21
+# Brief — Suivi J7/J14/J21 et persistance
 
-Voir `BRIEF_COMPILED.md`, puis `CAMPAGNE.md`.
+## Brainstorming source
+
+Voir BRIEF_COMPILED.md.
+
+## Synthèse structurée
+
+Voir CAMPAIGN_DRAFT.md.

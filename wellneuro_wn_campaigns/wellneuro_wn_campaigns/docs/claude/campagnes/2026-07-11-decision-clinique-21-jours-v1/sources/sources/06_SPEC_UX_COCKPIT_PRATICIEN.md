@@ -68,11 +68,11 @@ DocumentBundlePanel
 
 Respecter le design system :
 
-- thème praticien sombre ;
+- thème praticien clair Hybrid Clinical (rail sombre structurel, espace de
+  travail clair) ;
 - deep teal + champagne gold ;
 - mobile/tablette first ;
-- tokens CSS existants ;
-- ne pas utiliser `text-primary` comme texte sur fond sombre ;
+- tokens CSS (tokens HC-F après LOT-01) ;
 - ne jamais signaler un état clinique par la couleur seule.
 
 ## Microcopy

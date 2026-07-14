@@ -1,101 +1,93 @@
 ---
 id: "2026-07-11-boussole-alimentaire-slice-v1"
-titre: "Boussole alimentaire — vertical slice V1"
-statut: "à_faire"
+titre: "C5 — Boussole alimentaire (intrinsèque/contextuel)"
+statut: "cadrée — lots à compiler N+1"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-11"
-lot_courant: "LOT-00"
+mise_à_jour: "2026-07-13"
+lot_courant: "aucun"
 ---
 
-# Boussole alimentaire — vertical slice V1
+# C5 — Boussole alimentaire
+
+> Cadrage réel du 2026-07-12 (remplace le squelette). S'appuie sur les acquis
+> E1 (tables `neuro_axis`, `nutrient_axis_weight`, migration appliquée) et
+> les décisions Boussole déjà tranchées (§9 du contexte, 2026-07-06) :
+> vertical slice besoin 1 (~12 aliments vedettes), pondération clinique du
+> besoin 2 (fer/B9/B12 prioritaires), 3 axes Niveau 2 nommés (Calme/stress,
+> Microbiote/digestif, Clarté cognitive), signaux Niveau 2 visibles patient
+> dès V1, chronobiologie différée.
 
 ## Objectif
 
-Livrer une preuve de valeur limitée : sélectionner un aliment vedette, calculer/charger son profil intrinsèque et afficher une lecture contextualisée par l’objectif actif.
+Traduire la priorité clinique en action alimentaire concrète, dans un langage
+non culpabilisant, avec distinction stricte entre l'aliment (score
+intrinsèque, indépendant du patient) et son usage dans le contexte (lecture
+contextuelle au protocole).
 
-## Résultat observable
+## Scission actée — réconciliation 3.2
 
-Pour Sophie Nicola, Jennifer Martin ou Michel Dogné fictifs, le même aliment reçoit une explication différente selon l’objectif, sans être qualifié de bon ou mauvais.
+### C5A — Taxonomie et profils intrinsèques
 
-## Contraintes non négociables
+Taxonomie, sources, mapping Ciqual, aliments vedettes et profils intrinsèques
+indépendants du patient. C5A est data-first et peut avancer sans donnée
+patient ni priorité clinique.
 
-- Tous les textes d’interface utilisateur sont en français.
-- Aucun secret, jeton, mot de passe ou identifiant sensible en dur.
-- Aucune donnée patient réelle dans le code, les exemples, les maquettes, les seeds ou les tests.
-- Patients fictifs autorisés uniquement : Sophie Nicola, Jennifer Martin et Michel Dogné.
-- Aucune migration Prisma/SQL et aucune écriture Supabase sans demande explicite et confirmation distincte.
-- Changements minimaux : pas de refactor global hors périmètre du lot.
-- Aucune modification des seuils, pondérations ou règles cliniques sans instruction explicite, versionnage et trace documentaire.
-- L’IA produit des brouillons ; le praticien valide avant toute diffusion patient.
+### C5B — Lecture contextuelle et actions alimentaires
 
-## Hors périmètre global
-
-- Scanner complet
-- Panier
-- Journal photo
-- Chronobiologie
-- Menus générés
-- Biologie
-- Score global aliment
-
-## Décisions prises
-
-- Le score intrinsèque ne dépend jamais du patient.
-- Le patient ne voit que la lecture contextuelle.
-- V1 = besoin 1, environ 12 aliments vedettes et substitutions simples.
-- Pas de panier, photo repas, semaine ou chronobiologie dans ce slice.
-- Aucune biologie dans le calcul.
-
-## Questions ouvertes
-
-- Stockage local/statique ou tables read-only après confirmation ?
-- Quels 12 aliments vedettes ?
-- Un produit OFF est-il nécessaire pour prouver le fallback dès V1 ?
-
-## Dépendances
-
-- Protocole V1 stable ; fiches conseils disponibles. Peut démarrer après `2026-07-11-decision-clinique-21j-v1`.
-- Mapping clinique validé
-- Attribution Ciqual
-- Confirmation distincte si ingestion DB/migration
-
-## Artefacts de préparation
-
-- `BRIEF_COMPILED.md` : synthèse structurée des sources.
-- `CAMPAIGN_DRAFT.md` : lecture séquentielle de la campagne.
-- `sources/` : documents d’origine utiles au lot.
-
-## Lots
-
-| Lot | Objet | Statut | Dépend de |
-|---|---|---|---|
-| LOT-00 | Cadrage clinique, sources et licences | à_faire | aucun |
-| LOT-01 | Mapping et normalisation versionnés | à_faire | LOT-00 |
-| LOT-02 | Jeu de données Ciqual du slice | à_faire | LOT-01 |
-| LOT-03 | Lecture contextuelle par objectif | à_faire | LOT-02 |
-| LOT-04 | UX praticien et patient | à_faire | LOT-03 |
-| LOT-05 | Substitutions et fiches aliments | à_faire | LOT-04 |
-| LOT-06 | Tests, validation clinique et handoff | à_faire | LOT-05 |
-
-## Commande `/wn` de reproduction
+Après sélection d'une priorité en C1 et activation du protocole en C2, le
+praticien peut préparer une action, trois exemples, deux substitutions, une
+fiche « pourquoi », un plan minimal et un critère simple à observer. C5B
+porte aussi les assiettes vedettes, préférences, allergies, contraintes,
+coût et saisonnalité.
 
 ```text
-/wn creer "Boussole alimentaire vertical slice V1" --source docs/claude/wellneuro-3 --slug boussole-alimentaire-slice-v1 --lots 7 --auto-final
+Cette semaine
+Ajouter deux sources d'oméga-3.
+
+Options
+Sardines · noix · huile de colza
+
+Plan minimal
+Une seule portion supplémentaire suffit pour commencer.
 ```
 
-## Done de campagne
+> Historique : C5A désignait auparavant l'action hebdomadaire et C5B les
+> assiettes/substitutions. Ces capacités sont conservées et regroupées dans
+> C5B ; C5A désigne désormais exclusivement le socle intrinsèque.
 
-- [ ] Mapping et normalisation versionnés.
-- [ ] 12 aliments maximum dans le slice.
-- [ ] Lecture contextuelle non culpabilisante.
-- [ ] Sources/fiabilité visibles.
-- [ ] Aucune dépendance à la biologie.
-- [ ] Tests déterministes et E2E réussis.
+## Décisions actées
 
-## Backlog ultérieur
+- Frontière de calcul inchangée : la Boussole calcule directement les seuls
+  besoins 1-3 (Classe 1) ; les besoins 4/5/9/10 sont croisés en signal
+  secondaire de niveau de preuve D, jamais calculés ici.
+- **Chronobiologie** : aucune lecture de rythme sans heure de repas connue —
+  pas de fausse précision. Différée après le MVP des besoins 1/2.
+- **Différés fermes** : scan produit, panier temps réel, mode frigo, mode
+  restaurant, analyse de journée et de semaine, recommandations automatiques
+  complexes. Le scanner n'est lancé qu'après stabilisation de Ciqual, du
+  mapping propriétaire et d'un cache OpenFoodFacts fiable (OFF = résolveur de
+  scan uniquement, avec mode dégradé).
+- Langage non culpabilisant, jamais de score alimentaire anxiogène affiché
+  seul ; toujours l'alternative concrète avec le constat.
+- **Contrat neutre C4/C5** : le modèle intrinsèque/contextuel est défini hors
+  des deux campagnes. Chacune possède ses données, règles et adaptateurs.
+- **Journal alimentaire** : campagne JA autonome. C5 peut consommer ses
+  observations publiées mais ne possède ni saisie, ni agrégats, ni
+  persistance du journal.
 
-- Produit OFF
-- Panier
-- Repas/journée/semaine
-- Chronobiologie
-- Liste de courses
+## Frontières
+
+**Possède** : référentiel scoré (intrinsèque), lecture contextuelle
+alimentaire, actions hebdomadaires, assiettes et substitutions, fiches
+« pourquoi ».
+**Consomme** : priorité C1, rendu documentaire C3, charte patient HC-F,
+acquis E1.
+**Ne possède pas** : décision/protocole (C1/C2), documents (C3), score « Mon
+équilibre », journal alimentaire (JA).
+
+## Esquisse de lots (à compiler N+1)
+
+LOT-00 vérification sources/licences et contrat neutre → LOT-01 taxonomie et
+mapping intrinsèque pilote → LOT-02 profils intrinsèques C5A → LOT-03 lecture
+contextuelle C5B (après priorité C1 validée et protocole actif C2) → LOT-04
+actions/assiettes/substitutions → LOT-05 validation.

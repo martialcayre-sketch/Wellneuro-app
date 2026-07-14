@@ -2,7 +2,7 @@
 
 ## Arbitrage principal
 
-Ne pas recoder WellNeuro. Recomposer progressivement l’UX et le moteur clinique.
+Ne pas recoder WellNeuro. Recomposer progressivement l'UX et le moteur clinique.
 
 ## Risque 1 — Big bang
 
@@ -18,7 +18,7 @@ Une branche = un périmètre. Commencer par vertical slice 1.
 
 ### Description
 
-Laisser penser que l’IA décide, prescrit ou diagnostique.
+Laisser penser que l'IA décide, prescrit ou diagnostique.
 
 ### Réponse
 
@@ -38,7 +38,7 @@ Charge thérapeutique obligatoire. Phase 1 = 3 actions maximum.
 
 ### Description
 
-Exposer scores, alertes, rouge, “risque de décrochage”, ou “non-observance”.
+Exposer scores, alertes, rouge, "risque de décrochage", ou "non-observance".
 
 ### Réponse
 

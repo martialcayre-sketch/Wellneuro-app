@@ -1,75 +1,339 @@
-# Draft de campagne — Persistance du protocole et suivi J7/J14/J21
+# Campagne WellNeuro - Suivi J7/J14/J21 et persistance
 
-## Objectif général
+_Draft genere le 2026-07-11 par scripts/wn-campaign.mjs._
 
-Persister et versionner le protocole 21 jours validé, ajouter un suivi minimal J7/J14/J21 et exposer un compagnon patient calme.
+## Objectif general
 
-## Séquence recommandée
+A completer a partir de BRIEF_COMPILED.md.
 
-## LOT-00 — Audit des flux et besoins de persistance
+## Contexte
 
-**Objectif :** Identifier exactement ce qui doit être stocké et les contraintes d’accès.
+A completer : etat actuel, decision de depart, dependances, hypotheses.
 
-**Résultat :** Contrat de persistance minimal et matrice des droits.
+## Contraintes globales
 
-**Dépend de :** aucun
+- UI en francais.
+- Aucun secret en dur.
+- Aucune donnee patient reelle.
+- Exemples limites a Sophie Nicola, Jennifer Martin et Michel Dogné.
+- Aucune migration Prisma/SQL ou ecriture Supabase sans confirmation distincte.
+- Changements minimaux.
 
----
+## Hors perimetre global
 
-## LOT-01 — Spécification du modèle et gate migration
+- Refactor large sans demande explicite.
 
-**Objectif :** Formaliser le schéma cible, API et stratégie de migration sans l’exécuter.
+## Backlog ulterieur
 
-**Résultat :** ADR/modèle validé et checklist de confirmation.
-
-**Dépend de :** LOT-00
-
----
-
-## LOT-02 — Migration Prisma et API minimale — confirmation obligatoire
-
-**Objectif :** Créer la persistance minimale validée.
-
-**Résultat :** Une migration courte, API protégée et données compatibles avec le protocole V1.
-
-**Dépend de :** LOT-01
+- A completer.
 
 ---
 
-## LOT-03 — Versionnement et validation du protocole
+## R0 - Audit / cadrage sans modification
 
-**Objectif :** Persister les versions et la validation praticien.
+### Objectif
 
-**Résultat :** Brouillon, validation, diffusion et historique traçables.
+Identifier l'existant, les fichiers concernes et les incertitudes, sans modifier le code.
 
-**Dépend de :** LOT-02
+### Perimetre autorise
+
+- A preciser a partir du brief compile.
+
+### Hors perimetre
+
+- Refactor global.
+- Modifications non necessaires au lot.
+- Migrations non confirmees explicitement.
+
+### Fichiers probables a lire
+
+- A identifier au debut du lot.
+
+### Fichiers modifiables pressentis
+
+- A preciser apres R0/R1.
+
+### Criteres d'acceptation
+
+- Critere observable a completer.
+- Le lot reste limite au perimetre annonce.
+- Les interdits globaux sont respectes.
+
+### Risques / points de vigilance
+
+- Risque de perimetre trop large.
+- Verifier les impacts legacy avant modification.
+
+### Commandes de verification
+
+```bash
+# A confirmer selon le repo apres R0
+cd web && npm run type-check
+```
 
 ---
 
-## LOT-04 — Check-ins et décision J21
+## R1 - Contrat fonctionnel / UX / E2E
 
-**Objectif :** Collecter tolérance/adhésion minimale et préparer la décision J21.
+### Objectif
 
-**Résultat :** Check-ins J7/J14/J21 et panneau décisionnel praticien.
+Definir le comportement attendu, les scenarios, les etats et les criteres d'acceptation.
 
-**Dépend de :** LOT-03
+### Perimetre autorise
+
+- A preciser a partir du brief compile.
+
+### Hors perimetre
+
+- Refactor global.
+- Modifications non necessaires au lot.
+- Migrations non confirmees explicitement.
+
+### Fichiers probables a lire
+
+- A identifier au debut du lot.
+
+### Fichiers modifiables pressentis
+
+- A preciser apres R0/R1.
+
+### Criteres d'acceptation
+
+- Critere observable a completer.
+- Le lot reste limite au perimetre annonce.
+- Les interdits globaux sont respectes.
+
+### Risques / points de vigilance
+
+- Risque de perimetre trop large.
+- Verifier les impacts legacy avant modification.
+
+### Commandes de verification
+
+```bash
+# A confirmer selon le repo apres R0
+cd web && npm run type-check
+```
 
 ---
 
-## LOT-05 — Compagnon patient minimal
+## R2 - Tranche verticale minimale
 
-**Objectif :** Exposer la priorité, l’action du jour, la fiche et le check-in sur mobile.
+### Objectif
 
-**Résultat :** Accueil patient calme lié au protocole actif.
+Livrer le scenario principal avec le plus petit nombre de changements.
 
-**Dépend de :** LOT-04
+### Perimetre autorise
+
+- A preciser a partir du brief compile.
+
+### Hors perimetre
+
+- Refactor global.
+- Modifications non necessaires au lot.
+- Migrations non confirmees explicitement.
+
+### Fichiers probables a lire
+
+- A identifier au debut du lot.
+
+### Fichiers modifiables pressentis
+
+- A preciser apres R0/R1.
+
+### Criteres d'acceptation
+
+- Critere observable a completer.
+- Le lot reste limite au perimetre annonce.
+- Les interdits globaux sont respectes.
+
+### Risques / points de vigilance
+
+- Risque de perimetre trop large.
+- Verifier les impacts legacy avant modification.
+
+### Commandes de verification
+
+```bash
+# A confirmer selon le repo apres R0
+cd web && npm run type-check
+```
 
 ---
 
-## LOT-06 — Tests, rétrocompatibilité et handoff
+## R3 - Donnees / integrations / persistance
 
-**Objectif :** Valider persistance, droits et parcours longitudinal.
+### Objectif
 
-**Résultat :** Rapport complet, rollback testé et décision pour les campagnes de contenu.
+Brancher les donnees et integrations necessaires apres validation du flux minimal.
 
-**Dépend de :** LOT-05
+### Perimetre autorise
+
+- A preciser a partir du brief compile.
+
+### Hors perimetre
+
+- Refactor global.
+- Modifications non necessaires au lot.
+- Migrations non confirmees explicitement.
+
+### Fichiers probables a lire
+
+- A identifier au debut du lot.
+
+### Fichiers modifiables pressentis
+
+- A preciser apres R0/R1.
+
+### Criteres d'acceptation
+
+- Critere observable a completer.
+- Le lot reste limite au perimetre annonce.
+- Les interdits globaux sont respectes.
+
+### Risques / points de vigilance
+
+- Risque de perimetre trop large.
+- Verifier les impacts legacy avant modification.
+
+### Commandes de verification
+
+```bash
+# A confirmer selon le repo apres R0
+cd web && npm run type-check
+```
+
+---
+
+## R4 - Compatibilite / legacy / cas limites
+
+### Objectif
+
+Securiser les anciens flux, fallbacks, redirections et cas limites.
+
+### Perimetre autorise
+
+- A preciser a partir du brief compile.
+
+### Hors perimetre
+
+- Refactor global.
+- Modifications non necessaires au lot.
+- Migrations non confirmees explicitement.
+
+### Fichiers probables a lire
+
+- A identifier au debut du lot.
+
+### Fichiers modifiables pressentis
+
+- A preciser apres R0/R1.
+
+### Criteres d'acceptation
+
+- Critere observable a completer.
+- Le lot reste limite au perimetre annonce.
+- Les interdits globaux sont respectes.
+
+### Risques / points de vigilance
+
+- Risque de perimetre trop large.
+- Verifier les impacts legacy avant modification.
+
+### Commandes de verification
+
+```bash
+# A confirmer selon le repo apres R0
+cd web && npm run type-check
+```
+
+---
+
+## R5 - UI / durcissement / securite
+
+### Objectif
+
+Ameliorer les messages, validations, accessibilite et garde-fous.
+
+### Perimetre autorise
+
+- A preciser a partir du brief compile.
+
+### Hors perimetre
+
+- Refactor global.
+- Modifications non necessaires au lot.
+- Migrations non confirmees explicitement.
+
+### Fichiers probables a lire
+
+- A identifier au debut du lot.
+
+### Fichiers modifiables pressentis
+
+- A preciser apres R0/R1.
+
+### Criteres d'acceptation
+
+- Critere observable a completer.
+- Le lot reste limite au perimetre annonce.
+- Les interdits globaux sont respectes.
+
+### Risques / points de vigilance
+
+- Risque de perimetre trop large.
+- Verifier les impacts legacy avant modification.
+
+### Commandes de verification
+
+```bash
+# A confirmer selon le repo apres R0
+cd web && npm run type-check
+```
+
+---
+
+## R6 - Tests / documentation / go-no-go
+
+### Objectif
+
+Verifier le build, la coherence fonctionnelle et documenter la decision.
+
+### Perimetre autorise
+
+- A preciser a partir du brief compile.
+
+### Hors perimetre
+
+- Refactor global.
+- Modifications non necessaires au lot.
+- Migrations non confirmees explicitement.
+
+### Fichiers probables a lire
+
+- A identifier au debut du lot.
+
+### Fichiers modifiables pressentis
+
+- A preciser apres R0/R1.
+
+### Criteres d'acceptation
+
+- Critere observable a completer.
+- Le lot reste limite au perimetre annonce.
+- Les interdits globaux sont respectes.
+
+### Risques / points de vigilance
+
+- Risque de perimetre trop large.
+- Verifier les impacts legacy avant modification.
+
+### Commandes de verification
+
+```bash
+# A confirmer selon le repo apres R0
+cd web && npm run type-check
+```
+
+---
+
