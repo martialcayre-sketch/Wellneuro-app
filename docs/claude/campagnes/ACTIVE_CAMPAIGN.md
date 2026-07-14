@@ -5,7 +5,7 @@
 **Campagne** : 2026-07-11-decision-clinique-21-jours-v1
 **Titre** : C1 — Décision clinique 21 jours V1
 **Statut** : active
-**Lot actif** : LOT-03
+**Lot actif** : LOT-04
 
 ## Activités parallèles
 

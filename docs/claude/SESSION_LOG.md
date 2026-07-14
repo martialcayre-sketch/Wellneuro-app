@@ -350,3 +350,24 @@ cadrer LOT-03 en mode Plan.
 
 **Questions ouvertes** : validation clinique des règles de priorité avant
 toute activation dans LOT-03 ; aucune règle n'est actuellement activée.
+
+## [2026-07-14] — Campagne C1 : LOT-03 clôturé
+
+**Décisions prises** : `DecisionCard` reste un brouillon déterministe et
+explicable. Les candidats exigent une règle cliniquement validée, la sélection
+appartient au praticien et tout bloqueur retire la proposition. La fiche
+distingue revue absente et absence de manque qualifié, avant la décision.
+
+**Validations exécutées** : 10 tests ciblés, 128 tests globaux, `type-check`,
+lint, certification des 63 questionnaires, contrôle anti-secrets,
+`git diff --check` et revue indépendante GO. Playwright ajouté mais non exécuté
+localement faute de `NEXTAUTH_SECRET`.
+
+**Options écartées** : priorité automatique, règle clinique, API, persistance,
+migration, IA et diffusion patient — hors périmètre ou non validées.
+
+**Prochaine action prioritaire** : publier LOT-03 vers l'intégration C1, puis
+cadrer LOT-04 (`ProtocolDraft`) en mode Plan.
+
+**Questions ouvertes** : validation clinique du barème et de la charge avant
+toute activation de protocole.

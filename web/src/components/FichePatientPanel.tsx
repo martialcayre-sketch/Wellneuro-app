@@ -16,6 +16,8 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
 import { PatientPreview } from '@/components/PatientPreview';
+import { MissingDataPanel } from '@/components/patient-cockpit/MissingDataPanel';
+import { DecisionSummaryCard } from '@/components/patient-cockpit/DecisionSummaryCard';
 
 type ScoreCertification = { source?: string; status?: string };
 
@@ -226,11 +228,16 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
         </div>
       </section>
 
-      {/* Priorités des 21 prochains jours */}
+      {/* Les manques et bloqueurs précèdent toujours la décision. Le flux
+          runtime ClinicalSnapshot/ClinicalReview sera branché dans un lot dédié. */}
+      <MissingDataPanel missingData={null} discordances={null} />
+      <DecisionSummaryCard decisionCard={null} />
+
+      {/* Couvertures descriptives — aucune priorité clinique n'est déduite ici. */}
       <section>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Priorités des 21 prochains jours
+            Couverture des 12 besoins
           </h3>
           <Link
             href={`/dashboard/patients/${encodeURIComponent(idPatient)}/besoins`}
