@@ -18,7 +18,7 @@ La migration depuis le MVP Google Apps Script (GAS) a débuté le 2026-06-29 et 
 
 - Ne jamais écrire de secret en dur dans le code (`DATABASE_URL`, `SHEET_ID`, clés API, secrets OAuth).
 - Ne jamais committer de données patients réelles, identifiants Google, clés API, exports CSV/XLSX, résultats biologiques ou questionnaires remplis réels.
-- Les patients Sophie Nicola, Jennifer Martin et Michel Dogné sont exclusivement des patients fictifs de test.
+- Les patients Sophie Nicola, Jennifer Martin et Michel Dogne sont exclusivement des patients fictifs de test.
 - Les liens patients doivent rester non prédictibles et expirables.
 - Tout HTML généré à partir de données patient, praticien ou IA doit être échappé avant rendu ou envoi.
 

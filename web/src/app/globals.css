@@ -27,6 +27,12 @@
   --teal-700-rgb: 31 94 91;
   --gold-600-rgb: 184 146 62;
   --gold-500-rgb: 201 162 75;
+  /* Idem pour les statuts danger/success/warning (HC-F LOT-04,
+   * PatientInlineMessage + Badge) — requis pour un fond teinté à 10%
+   * d'opacité plutôt qu'un aplat plein. */
+  --color-status-danger-rgb: 185 28 28;
+  --color-status-success-rgb: 21 128 61;
+  --color-status-warning-rgb: 146 64 14;
 
   /* Violet — strate "Ancrage" (cercles concentriques Mon équilibre /
    * Cartographie neuro-fonctionnelle, cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md
@@ -137,4 +143,29 @@
   --rail-primary-foreground: var(--cream-50);
   --rail-accent: var(--gold-500);
   --rail-focus-ring: var(--gold-500);
+}
+
+/*
+ * Confort de lecture patient (HC-F LOT-04, ReadingComfortControl) — 3
+ * réglages locaux, non cliniques, posés en attribut sur <html> (les unités
+ * `rem` Tailwind sont relatives à sa taille de police). Portée volontairement
+ * restreinte au portail : ces attributs ne sont jamais posés côté praticien.
+ */
+html[data-reading-comfort='large'] {
+  font-size: 112.5%;
+}
+
+html[data-reading-spacing='relaxed'] p,
+html[data-reading-spacing='relaxed'] li,
+html[data-reading-spacing='relaxed'] label {
+  line-height: 1.75 !important;
+}
+
+html[data-reading-motion='reduced'] *,
+html[data-reading-motion='reduced'] *::before,
+html[data-reading-motion='reduced'] *::after {
+  animation-duration: 0.001s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0.001s !important;
+  scroll-behavior: auto !important;
 }

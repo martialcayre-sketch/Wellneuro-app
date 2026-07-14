@@ -64,9 +64,9 @@ const config: Config = {
           300: 'var(--violet-300)',
         },
         status: {
-          success: 'var(--color-status-success)',
-          warning: 'var(--color-status-warning)',
-          danger: 'var(--color-status-danger)',
+          success: 'rgb(var(--color-status-success-rgb) / <alpha-value>)',
+          warning: 'rgb(var(--color-status-warning-rgb) / <alpha-value>)',
+          danger: 'rgb(var(--color-status-danger-rgb) / <alpha-value>)',
           info: 'var(--color-status-info)',
         },
         focus: {

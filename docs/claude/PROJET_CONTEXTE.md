@@ -79,7 +79,7 @@ La synthèse IA du premier bilan est nourrie, en plus des scores de questionnair
 
 ## Sécurité, RGPD, clinique — invariants
 
-- Patients fictifs autorisés dans le dépôt : **Sophie Nicola, Jennifer Martin, Michel Dogné**. Aucun autre nom, aucune donnée patient réelle.
+- Patients fictifs autorisés dans le dépôt : **Sophie Nicola, Jennifer Martin, Michel Dogne**. Aucun autre nom, aucune donnée patient réelle.
 - Secrets et configuration sensible (`DATABASE_URL`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`) uniquement via variables d'environnement (`web/.env.local` en dev, variables Vercel en prod) — jamais en dur, jamais commitées. `SHEET_ID` n'est plus requis (décommission Sheets, voir plus haut).
 - Ne pas modifier la logique clinique ou les seuils de scoring sans demande explicite documentée dans `CHANGELOG.md`.
 - Vérification avant tout commit : `bash scripts/check_no_secrets.sh` et `cd web && npm run type-check`.

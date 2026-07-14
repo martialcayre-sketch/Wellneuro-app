@@ -1,14 +1,14 @@
 # Checklist de validation end-to-end (Next.js)
 
 Exécuter cette checklist avec des données fictives uniquement.
-Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogné.
+Patients autorisés : Sophie Nicola, Jennifer Martin, Michel Dogne.
 
 ## Phase 0 — Parcours patient unifié (portail permanent `/portail/[token]`) — lot R1
 
 Flux patient principal. À exécuter en R1 avant tout nouveau chantier.
 
 > Exécution R1 du 2026-07-09 — environnement A (prod `app.wellneuro.fr`), patient
-> fictif Michel Dogné (`PAT_SEED_03`). Étapes API/serveur validées par pilotage
+> fictif Michel Dogne (`PAT_SEED_03`). Étapes API/serveur validées par pilotage
 > HTTP. Complément du 2026-07-10 : étapes navigateur validées en Chromium headless
 > (Playwright, desktop + émulation iPhone 13) sur le même patient fictif —
 > 21/22 vérifications PASS. Seul reste à faire sur téléphone réel : la validation
@@ -125,6 +125,61 @@ Critères de validation :
   environnement de développement actuel sans device physique — même
   limitation déjà actée pour le flux portail patient R1 (Phase 0
   ci-dessus). À faire dès qu'un device réel est disponible.
+
+## Campagne HC-F (Hybrid Clinical Foundation)
+
+- [x] **LOT-00** (audit et arbitrages) : audit réel du shell/tokens/pages,
+  classification en vagues de migration, contrats d'instanciation des 3
+  mécanismes validés par l'utilisateur. Documentaire — pas de suite de test
+  dédiée.
+- [x] **LOT-01** (tokens clairs, rail sombre structurel) : `type-check`,
+  `lint`, `check_no_secrets.sh`, e2e (`dashboard-praticien`,
+  `portail-parcours`) verts ; vérifications visuelles manuelles ; CI verte
+  avant merge (PR #35).
+- [x] **LOT-02** (shell premium, icônes Lucide, `@radix-ui/react-dialog`) :
+  `type-check`, `lint`, `check_no_secrets.sh`, e2e (`dashboard-praticien`
+  5/5 dont le test dédié tiroir tablette, `portail-parcours`) verts ;
+  vérifications visuelles manuelles ; CI verte avant merge (PR #37).
+- [x] **LOT-03** (surfaces génériques + 3 mécanismes transverses) :
+  `type-check`/`lint`/`check_no_secrets.sh`/Vitest verts ; Playwright
+  13/13 sur Desktop Chromium (WebKit non exécutable localement, limitation
+  d'environnement déjà actée) ; CI verte, revue indépendante GO (PR #40).
+- [x] **LOT-04** (portail patient clair) : `type-check`, Vitest (14/14
+  fichiers, 77/77 tests), `eslint`, `check_no_secrets.sh` verts ; e2e
+  Playwright non exécutable dans la session LOT-04 (blocage réseau sortant
+  vers Google Fonts, propre à ce sandbox — **résolu depuis**, voir LOT-05) ;
+  revue indépendante GO avec 4 constats corrigés (PR #42).
+- [x] **LOT-05** (gouvernance et handoff) : `type-check`, `lint`, Vitest
+  (14/14, 77/77), `check_no_secrets.sh` verts sur la branche rebasée sur la
+  pointe de LOT-04. Revalidation e2e menée à son terme (`npm run
+  test:e2e`, puis isolation par projet) :
+  - Premier run complet (Chromium headless) : 10/26 passés. 4 échecs
+    Desktop Chromium isolés et diagnostiqués (`wn-debugger`) : timeouts de
+    120 s sur `locator.click`, reproduits à l'identique avec un bouton HTML
+    statique sans aucun code applicatif — cause confirmée : le canal CDP
+    `Input` (synthèse de vrais événements souris) est anormalement
+    lent/bloquant en mode headless dans ce sandbox. **Même classe de
+    problème que celui déjà documenté et contourné en HC-F LOT-03**
+    (`requestAnimationFrame` ne se déclenchait jamais en headless).
+    Distinct et sans rapport avec l'ancien blocage réseau Google Fonts de
+    LOT-04 (celui-ci est bien résolu : `fonts.googleapis.com`/
+    `fonts.gstatic.com` répondent normalement).
+  - Contournement déjà établi en LOT-03 réappliqué : `xvfb-run -a npx
+    playwright test --project="Desktop Chromium" --headed` (après
+    installation du paquet système manquant `xauth`, requis par
+    `xvfb-run`). Résultat : **13/13 passés** (3,5 min). Aucune modification
+    de code applicatif nécessaire.
+  - WebKit/iPhone 13 (12 échecs, y compris rejoué sous Xvfb) : cause
+    distincte confirmée — librairies système manquantes
+    (`libgstreamer-1.0.so.0` et consorts), pas un problème de synthèse
+    d'événements. Limitation d'environnement déjà actée et acceptée depuis
+    C0-UX LOT-03/HC-F LOT-02/03 (« OK en CI »), non résolue ici (hors
+    périmètre : installer la longue liste de dépendances WebKit serait
+    disproportionné pour ce lot documentaire).
+  - **Porte e2e de LOT-04 levée sur Desktop Chromium** (13/13, preuve
+    ci-dessus) ; WebKit reste une dette d'environnement pré-existante et
+    acceptée, sans lien avec le code livré par HC-F (voir
+    `DETTE_UX_RESIDUELLE.md`).
 
 ## Contrôle post-déploiement (Vercel)
 

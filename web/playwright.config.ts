@@ -32,7 +32,7 @@ export default defineConfig({
   testDir: 'e2e',
   fullyParallel: false,
   // Un seul worker : le spec manipule directement l'état DB du patient fictif
-  // (Michel Dogné, PAT_SEED_03) — des runs concurrents sur le même patient
+  // (Michel Dogne, PAT_SEED_03) — des runs concurrents sur le même patient
   // se marcheraient dessus (reset/token/assignations partagés).
   workers: 1,
   reporter: 'list',

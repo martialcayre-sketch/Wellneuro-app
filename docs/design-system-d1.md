@@ -292,6 +292,71 @@ que les tokens restent scopés par attribut plutôt que globaux.
 Palette de commandes : confirmée différée (arbitrage LOT-00), non
 livrée dans ce lot.
 
+## 4bis. Mécanismes transverses (HC-F LOT-03, canonisés en LOT-05)
+
+Trois mécanismes livrés **vides** (aucun contenu clinique — HC-F ne conçoit
+aucun contenu clinique, cf. `CAMPAGNE.md`) avec un contrat d'instanciation
+stable. Contrats validés par l'utilisateur le 2026-07-13 dans le cadrage de
+LOT-03 (`docs/claude/campagnes/2026-07-12-hybrid-clinical-experience-questionnaires/CONTRATS_UX_P1.md`,
+source détaillée conservée pour l'historique de décision) ; cette section
+en est la version canonique et à jour.
+
+### `ModeConsultation` (`web/src/components/ui/ModeConsultation.tsx`)
+
+```ts
+type ConsultationModeProps = {
+  active: boolean;
+  onToggle: () => void;
+  children: React.ReactNode; // contenu instancié fourni par l'appelant (C1)
+};
+```
+
+Instancié dans `dashboard/patients/[idPatient]` (`FichePatientPanel.tsx`) :
+déclenché par un bouton dans la ligne d'en-tête existante ; l'état
+`active`/`onToggle` vit dans le composant appelant, pas dans le mécanisme.
+
+### Double niveau de lecture (`web/src/components/ui/TwoLevelReading.tsx`)
+
+```ts
+type TwoLevelReadingProps = {
+  summary: React.ReactNode;
+  detail: React.ReactNode;
+  defaultExpanded?: boolean;
+  label: string; // libellé accessible du contrôle d'expansion
+};
+```
+
+Mécanisme générique (résumé visible par défaut, détail sur demande),
+réutilisable pour tout contenu futur sans connaître son contenu clinique.
+Pas de page d'instanciation HC-F propre — à instancier par C1 avec un
+contenu factice neutre pour tout test isolé.
+
+### `PatientPreview` (`web/src/components/PatientPreview.tsx`)
+
+```ts
+type PatientPreviewProps = {
+  patientId: string;
+  assignationId: string;
+  // Rend ConsultationScreen.tsx en lecture seule via une route dédiée,
+  // avec les mêmes garde-fous patient-safe que le portail réel.
+};
+```
+
+Réutilise **les mêmes composants/tokens** que le portail patient réel
+(`ConsultationScreen.tsx`) pour que « Voir ce que recevra le patient » ne
+soit jamais un rendu divergent. S'appuie sur une route praticien-authentifiée
+dédiée (`api/praticien/apercu-patient/reponses`, gate `getServerSession`,
+même `select` Prisma patient-safe que `api/patient/reponses`) plutôt que de
+modifier les routes `api/patient/*` existantes. Deux props additifs sur
+`ConsultationScreen.tsx` (`fetchUrl`, `readOnlyPreview`) — comportement
+portail réel strictement inchangé par défaut. Instancié dans
+`dashboard/patients/[idPatient]` (bouton « Voir ce que recevra le patient »,
+`FichePatientPanel.tsx`). Toute divergence entre la prévisualisation et le
+portail réel doit être documentée et testée (garde-fou `CAMPAGNE.md` LOT-04).
+`MonEquilibreAccueil/Detail` a le même problème d'auto-fetch patient-only et
+n'est pas traité par ce mécanisme (classé Vague 2, cf.
+`MATRICE_ECRANS_MIGRATION.md`).
+
 ## 5. Interdits et autorisations (amendé le 2026-07-12, direction Hybrid Clinical)
 
 **Autorisés depuis le 2026-07-12** (levée d'interdits actée, cf.
@@ -352,3 +417,9 @@ non migré) ne sont pas affectés par cet ajout — espace de noms `--color-*` t
 | D1-5 | #8 |
 | D1-2b | #9 |
 | D1-6 | (ce document) |
+| HC-F LOT-00 (audit et arbitrages) | #34 |
+| HC-F LOT-01 (tokens clairs, rail sombre structurel) | #35 |
+| HC-F LOT-02 (shell premium, Lucide, Radix Dialog) | #37 |
+| HC-F LOT-03 (surfaces génériques, 3 mécanismes transverses) | #40 |
+| HC-F LOT-04 (portail patient clair) | #42 |
+| HC-F LOT-05 (gouvernance et handoff — section 4bis canonisée) | #43 |

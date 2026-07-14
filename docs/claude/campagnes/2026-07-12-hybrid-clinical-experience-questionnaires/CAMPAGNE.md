@@ -1,10 +1,14 @@
 ---
 id: "2026-07-12-hybrid-clinical-experience-questionnaires"
 titre: "HC-F — Hybrid Clinical Foundation"
-statut: "en_cours"
+statut: "terminée"
 créée_le: "2026-07-12"
-mise_à_jour: "2026-07-13"
-lot_courant: "LOT-04 (en attente d'autorisation explicite)"
+mise_à_jour: "2026-07-14"
+lot_courant: "LOT-05"
+branche_campagne: "campaign/hc-f-hybrid-clinical-foundation/integration"
+branche_lot_courant: "campaign/hc-f-hybrid-clinical-foundation/lot-05"
+cible_pr_lot: "campaign/hc-f-hybrid-clinical-foundation/integration"
+cible_pr_campagne: "main"
 ---
 
 # HC-F — Hybrid Clinical Foundation
@@ -73,8 +77,8 @@ Invariants du registre §1, plus :
 | LOT-01 | Tokens Hybrid Clinical clairs : `tailwind.config.ts` + `globals.css`, thème praticien clair (rail sombre structurel) + patient clair, amendement effectif de `docs/design-system-d1.md` | terminé | LOT-00 |
 | LOT-02 | Shell premium : rail avec icônes Lucide, alignements mesurés, palette de commandes (si arbitrée livrable), états vides actionnables | terminé | LOT-01 |
 | LOT-03 | Surfaces praticien génériques (dashboard, annuaire — coquilles) + livraison des 3 mécanismes avec contrats d'instanciation. **Prérequis** : `feat/e0-patients-pagination` mergée avant restylage de l'annuaire | terminé | LOT-02 |
-| LOT-04 | Portail patient clair : onboarding, hub, lecture seule, correction (textes de consentement R8-lite **figés**, restylage uniquement), états de sauvegarde/connexion explicites, confort de lecture | à_faire | LOT-01 |
-| LOT-05 | Gouvernance et handoff : lexique UX, checklist de conformité Hybrid Clinical des modules futurs, mise à jour du document design system canonique, handoff vers C1/QX | à_faire | LOT-02 à LOT-04 |
+| LOT-04 | Portail patient clair : onboarding, hub, lecture seule, correction (textes de consentement R8-lite **figés**, restylage uniquement), états de sauvegarde/connexion explicites, confort de lecture | terminé | LOT-01 |
+| LOT-05 | Gouvernance et handoff : lexique UX, checklist de conformité Hybrid Clinical des modules futurs, mise à jour du document design system canonique, handoff vers C1/QX | terminé — GO avec dettes, campagne clôturée le 2026-07-14 (voir `VALIDATION_FINALE.md`) | LOT-02 à LOT-04 |
 
 ## Hors périmètre
 
@@ -87,14 +91,29 @@ refonte auth, routes API métier, scoring.
 ## Definition of Done
 
 - [ ] Contrat visuel clair validé sur desktop, tablette et mobile (captures
-      des 3 patients fictifs).
-- [ ] Alignement géométrique du rail et des icônes vérifié par mesures.
-- [ ] Portail patient clair cohérent sur les 5 parcours (gate, consentement,
-      hub, saisie, correction) sans modification de texte figé.
-- [ ] Les 3 mécanismes livrés vides, testés, avec contrat d'instanciation
-      d'une page chacun.
-- [ ] `design-system-d1.md` (ou successeur canonique) amendé et à jour.
-- [ ] Lexique UX livré ; checklist de conformité opposable aux campagnes
-      suivantes.
-- [ ] Tests Playwright existants verts ; parcours clavier/tactile documentés.
-- [ ] Aucune occurrence de vocabulaire banni ni de « Dogné » dans la campagne.
+      des 3 patients fictifs) — **non produit** (outil de capture
+      indisponible en LOT-05, même limitation qu'en LOT-00) ; couvert
+      indirectement par les assertions e2e d'absence de débordement
+      horizontal aux largeurs de référence, pas par un contrôle visuel.
+- [x] Alignement géométrique du rail et des icônes vérifié par mesures
+      (contrastes AA/AAA calculés et zones tactiles ≥44px, LOT-01/LOT-02).
+- [x] Portail patient clair cohérent sur les 5 parcours (gate, consentement,
+      hub, saisie, correction) sans modification de texte figé — vérifié
+      par `portail-parcours.spec.ts` (13/13 verts, Desktop Chromium).
+- [x] Les 3 mécanismes livrés vides, testés, avec contrat d'instanciation
+      d'une page chacun (`design-system-d1.md` §4bis).
+- [x] `design-system-d1.md` (ou successeur canonique) amendé et à jour.
+- [x] Lexique UX livré ; checklist de conformité opposable aux campagnes
+      suivantes (`LEXIQUE_UX_WELLNEURO.md`, `HANDOFF_FUTURES_IMPLANTATIONS.md`).
+- [ ] Tests Playwright existants verts ; parcours clavier/tactile documentés
+      — **Desktop Chromium 13/13 verts** (revalidé en LOT-05, voir
+      `checklist_tests_end_to_end.md`) ; **WebKit/iPhone 13 toujours rouge**
+      (librairies système manquantes, limitation d'environnement
+      pré-existante et non applicative — voir `DETTE_UX_RESIDUELLE.md`) ;
+      parcours clavier documentés et testés (Escape, focus trap, retour de
+      focus).
+- [x] Aucune occurrence de vocabulaire banni ni de « Dogné » dans la
+      campagne, ni dans le reste du dépôt : divergence documentaire
+      résolue en LOT-05 après vérification de la donnée réelle
+      (`web/prisma/seed.ts`, forme sans accent) — 17 fichiers alignés,
+      voir `DETTE_UX_RESIDUELLE.md`.
