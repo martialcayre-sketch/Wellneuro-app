@@ -63,7 +63,7 @@ existantes.
 | LOT-01 | Registre d'affichage et contrats purs, sans branchement UI | terminé | LOT-00 |
 | LOT-02 | Profils de rendu sur pilotes : `focus`, `micro_batch`, `guided_sections`, `compact_repeated_scale` ; saisie conditionnelle ; adaptation mobile (jamais de tableau horizontal par défaut) | terminé | LOT-01 + HC-F LOT-04 |
 | LOT-03 | Reprise, sauvegarde et résumé : état de brouillon explicite, résumé avant transmission, distinction conservation locale / synchronisation / transmission | terminé | LOT-02 |
-| LOT-04 | Validation psychométrique et handoff : payload identique avant/après vérifié par tests, scoring inchangé (assertions), documentation de l'inventaire, critères d'extension aux familles non pilotes | à_faire | LOT-03 |
+| LOT-04 | Validation psychométrique et handoff : payload identique avant/après vérifié par tests, scoring inchangé (assertions), documentation de l'inventaire, critères d'extension aux familles non pilotes | en_cours | LOT-03 |
 
 ## Hors périmètre
 
@@ -73,7 +73,9 @@ formulaire d'anamnèse interne complexe si absent des pilotes.
 
 ## Definition of Done
 
-- [ ] Au moins trois profils de rendu en service sur les pilotes autorisés.
+- [ ] Les quatre profils sont spécifiés ; seul `micro_batch` est activé sur
+      `Q_NEU_03`. Les trois autres restent bloqués jusqu'à satisfaction de
+      leurs gates de certification et de validation.
 - [ ] Payload et scoring identiques avant/après, prouvés par tests.
 - [ ] Politique psychométrique documentée pour 100 % du catalogue (même
       provisoire).

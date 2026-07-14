@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Validation et handoff"
-statut: "à_faire"
+statut: "en_cours"
 dépend_de: "LOT-03"
 ---
 
@@ -17,3 +17,14 @@ Prouver l'absence de régression clinique et valider les parcours mobile/desktop
 - Scoring-check, type-check, anti-secrets et E2E ciblés passent.
 - Les gates d'extension à chaque nouveau renderer sont documentés.
 - Handoff produit sans migration ni donnée patient réelle.
+
+## Résultats
+
+- Matrice finale : `../VALIDATION_FINALE.md`.
+- Handoff et gates d'extension : `../HANDOFF_RENDERERS.md`.
+- Inventaire des 63 questionnaires régénéré à l'identique depuis le catalogue.
+- Aucun nouveau renderer activé ; `Q_NEU_03` reste l'unique pilote actif.
+- Tests ciblés 21/21, suite Vitest 130/130, type-check, lint, build production,
+  scoring-check, anti-secrets, audit de campagne et `git diff --check` conformes.
+- CI PostgreSQL/Playwright LOT-04 et contrôle manuel restent à consigner avant
+  passage du statut à `terminé`.
