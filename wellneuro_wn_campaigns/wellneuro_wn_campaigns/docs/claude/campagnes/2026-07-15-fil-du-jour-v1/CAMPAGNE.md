@@ -1,10 +1,10 @@
 ---
 id: "2026-07-15-fil-du-jour-v1"
 titre: "SP-FIL — Le Fil du jour v1"
-statut: "cadrée — lots compilés"
+statut: "terminée"
 créée_le: "2026-07-15"
 mise_à_jour: "2026-07-15"
-lot_courant: "aucun"
+lot_courant: "LOT-02"
 ---
 
 # SP-FIL — Le Fil du jour v1
@@ -51,8 +51,8 @@ pré-composé (SP-SPI ; le signal de reprise v1 est purement informatif).
 
 | Lot | Objet | Gate |
 |---|---|---|
-| SP-FIL-01 | La page Fil du jour : types de cartes, mapping données existantes, remplacement de l'accueil, tests unitaires du mapping | — |
-| SP-FIL-02 | Rail regroupé (« Le Fil », « Patients », « Instruments », « Paramètres ») + `MobileBottomNav` + adaptation `web/e2e/dashboard-praticien.spec.ts` | SP-FIL-01 |
+| LOT-01 | La page Fil du jour : types de cartes, mapping données existantes, remplacement de l'accueil, tests unitaires du mapping | — |
+| LOT-02 | Rail regroupé (« Le Fil », « Patients », « Instruments », « Paramètres ») + `MobileBottomNav` + adaptation `web/e2e/dashboard-praticien.spec.ts` | LOT-01 |
 
 ## Définition de done
 
