@@ -127,19 +127,17 @@ test.describe('Praticien Dashboard', () => {
     });
   });
 
-  test('accueil : 3 cartes accès rapides avec icône (HC-F LOT-03)', async ({ page }) => {
+  test('accueil : le Fil du jour remplace les accès rapides (SP-FIL LOT-01)', async ({ page }) => {
     const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
     await page.context().addCookies([sessionCookie]);
     await page.goto('/dashboard');
 
-    // Scopé à la section « Accès rapides » : le rail de navigation a aussi un
-    // lien « Patients », qui matcherait sinon la même regex (strict mode).
-    const accesRapides = page.locator('section', { hasText: 'Accès rapides' });
-    for (const label of ['Patients', 'Synthèse IA', 'Paramètres']) {
-      const card = accesRapides.getByRole('link', { name: new RegExp(label) });
-      await expect(card).toBeVisible();
-      await expect(card.locator('svg')).toBeVisible();
-    }
+    // La carte métriques « le cabinet en un coup d'œil » et le conteneur du
+    // Fil sont présents quel que soit l'état des données (cartes ou état
+    // vide) — les cartes elles-mêmes dépendent du seed.
+    await expect(page.getByRole('heading', { name: /coup d/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Le Fil', exact: true })).toBeVisible();
+    await expect(page.getByTestId('fil-du-jour')).toBeVisible({ timeout: 10000 });
   });
 
   test('paramètres : blocs profil et gouvernance clinique (HC-F LOT-03)', async ({ page }) => {
