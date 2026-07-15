@@ -11,7 +11,7 @@ export default async function ParametresPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Paramètres</h2>
+        <h2 className="font-display text-lg font-semibold text-foreground">Paramètres</h2>
         <p className="text-sm text-muted-foreground">Profil et gouvernance clinique — lecture seule.</p>
       </div>
 

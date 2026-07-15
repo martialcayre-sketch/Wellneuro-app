@@ -586,7 +586,7 @@ function DoneScreen({ token, premiereAssignation }: { token: string; premiereAss
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="text-xl font-bold text-foreground mb-2">Merci !</h2>
+      <h2 className="font-display text-xl font-bold text-foreground mb-2">Merci !</h2>
       <p className="text-muted-foreground text-sm leading-relaxed mb-6">
         Vos renseignements ont bien été transmis à votre praticien.<br />
         {premiereAssignation

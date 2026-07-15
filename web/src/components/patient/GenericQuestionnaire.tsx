@@ -182,7 +182,7 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
           <h2
             ref={summaryTitleRef}
             tabIndex={-1}
-            className="text-lg font-bold text-foreground mt-1 outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="font-display text-lg font-bold text-foreground mt-1 outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             Vérifiez votre questionnaire
           </h2>
@@ -271,7 +271,7 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
         >
           <div className="h-1.5 bg-accent rounded-full transition-all" style={{ width: `${progress}%` }} />
         </div>
-        <h2 className="text-lg font-bold text-foreground mt-4">{questionnaire.titre}</h2>
+        <h2 className="font-display text-lg font-bold text-foreground mt-4">{questionnaire.titre}</h2>
         {currentSection === 0 && questionnaire.instructions && (
           <p className="text-sm text-muted-foreground mt-1">{questionnaire.instructions}</p>
         )}

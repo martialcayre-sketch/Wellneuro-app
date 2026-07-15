@@ -61,7 +61,7 @@ export function ConsultationScreen({ idAssignation, email, statutReponses, onVoi
 
   return (
     <PatientCard maxWidth="md" className="text-center">
-      <h2 className="text-lg font-bold text-foreground mb-2">Vos réponses</h2>
+      <h2 className="font-display text-lg font-bold text-foreground mb-2">Vos réponses</h2>
       {loading && <p className="text-sm text-muted-foreground">Chargement…</p>}
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
       {reponse && (
