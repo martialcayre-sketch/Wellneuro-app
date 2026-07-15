@@ -1,7 +1,7 @@
 ---
 id: "2026-07-15-fil-du-jour-v1"
 titre: "SP-FIL — Le Fil du jour v1"
-statut: "en cours"
+statut: "terminée"
 créée_le: "2026-07-15"
 mise_à_jour: "2026-07-15"
 lot_courant: "LOT-02"
