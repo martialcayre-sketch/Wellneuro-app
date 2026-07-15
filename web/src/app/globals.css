@@ -34,13 +34,45 @@
   --color-status-success-rgb: 21 128 61;
   --color-status-warning-rgb: 146 64 14;
 
-  /* Violet — strate "Ancrage" (cercles concentriques Mon équilibre /
-   * Cartographie neuro-fonctionnelle, cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md
-   * §6). Couleur catégorielle fixe (ne varie pas par thème patient/praticien,
-   * contrairement aux tokens sémantiques --color-*), au même titre que
-   * --teal-500/--gold-500 pour Corps/Esprit. */
+  /* Violet — ancienne couleur de la strate "Ancrage" (remplacée par
+   * --viz-ancrage en A5-R1, cf. ci-dessous). Conservé en compat : le
+   * namespace Tailwind violet-* reste disponible, plus aucun composant du
+   * trio ne le consomme. */
   --violet-600: #6b5b95;
   --violet-300: #c9c0e0;
+
+  /* Palette « la Spirale » (révision A5-R1, 2026-07-15 —
+   * docs/design-system-d1.md §8, REGISTRE_FRONTIERES.md A5-R1).
+   * Praticien « Nuit spectrale » : indigo/menthe/solaire sur blanc froid,
+   * rail indigo-nuit. Patient « Forêt & cuivre » : forêt/cuivre sur ivoire.
+   * Jumeaux RGB requis par Tailwind (même règle que --teal-700-rgb). */
+  --night-950: #10162b;
+  --night-900: #151c38;
+  --night-800: #1b2342;
+  --night-border: #2a3358;
+  --indigo-600: #3d4a9e;
+  --indigo-600-rgb: 61 74 158;
+  --mint-600: #0d9488;
+  --mint-600-rgb: 13 148 136;
+  --solar-500: #e8a33d;
+  --solar-500-rgb: 232 163 61;
+  /* Encre solaire : seule forme du solaire autorisée pour du texte sur fond
+   * clair (5,51:1) — le solaire plein est à 2,03:1, réservé aux marques
+   * graphiques accompagnées d'une étiquette (règle de relief A5-R1). */
+  --solar-ink: #8a5b10;
+  --forest-600: #1e6f54;
+  --forest-600-rgb: 30 111 84;
+  --copper-500: #b25e38;
+  --copper-500-rgb: 178 94 56;
+  --copper-ink: #8f4526;
+
+  /* Trio catégoriel Corps/Ancrage/Esprit (A5-R1) — couleurs d'entité fixes,
+   * indépendantes des thèmes (cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md §6).
+   * Trio validé au validateur dataviz (CVD ΔE 48, chroma OK) ; le solaire
+   * (Esprit) n'est jamais porteur d'information sans étiquette textuelle. */
+  --viz-corps: var(--mint-600);
+  --viz-ancrage: var(--indigo-600);
+  --viz-esprit: var(--solar-500);
 
   /* Compat : couleurs historiques du Lot 0. Vérifié lors de la revue
    * HC-F LOT-01 (2026-07-12) : plus aucun composant de web/src ne les
@@ -62,59 +94,62 @@
  */
 
 /*
- * Thème patient — clair, appliqué par défaut et via [data-theme="patient"].
- * Contraste texte/fond vérifié AAA (~13:1).
+ * Thème patient — « le Jardin » (Forêt & cuivre, A5-R1), clair fixe,
+ * appliqué par défaut et via [data-theme="patient"].
+ * Contraste texte/fond vérifié AAA (14,86:1 — matrice design-system-d1 §8).
  */
 :root,
 [data-theme='patient'] {
-  --background: var(--cream-100);
-  --foreground: #16323a;
-  --surface: #ffffff;
-  --surface-foreground: #16323a;
-  --muted: #e7eeee;
-  --muted-foreground: #4a6367;
-  --border: #d8e2e1;
-  --color-primary: var(--teal-700);
-  --color-primary-rgb: var(--teal-700-rgb);
+  --background: #faf8f3;
+  --foreground: #2b2115;
+  --surface: #fffdf9;
+  --surface-foreground: #2b2115;
+  --muted: #efe8da;
+  --muted-foreground: #6e5f49;
+  --border: #e5dccb;
+  --color-primary: var(--forest-600);
+  --color-primary-rgb: var(--forest-600-rgb);
   --color-primary-foreground: #ffffff;
-  --color-accent: var(--gold-600);
-  --color-accent-rgb: var(--gold-600-rgb);
-  --color-accent-foreground: #16323a;
+  --color-accent: var(--copper-500);
+  --color-accent-rgb: var(--copper-500-rgb);
+  --color-accent-foreground: #ffffff;
 
   /* Réconciliation UX 3.0 (LOT-01, additif — cf. docs/design-system-d1.md
    * section « Réconciliation tokens UX 3.0 »). Élévation gérée surtout via
-   * ombre/bordure en thème clair (surface déjà au blanc maximal). */
+   * ombre/bordure en thème clair. */
   --color-surface-elevated: #ffffff;
   --color-status-success: #15803d;
   --color-status-warning: #92400e;
   --color-status-danger: #b91c1c;
   --color-status-info: #1d4ed8;
-  --color-focus-ring: var(--teal-700);
+  --color-focus-ring: var(--forest-600);
+
+  /* Typographies A5-R1 (chargées dans app/layout.tsx via next/font). */
+  --font-display: var(--font-bricolage), Georgia, 'Times New Roman', serif;
+  --font-body: var(--font-albert), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
 /*
- * Thème praticien — clair depuis la décision Hybrid Clinical Foundation
- * (2026-07-12, « tout en mode clair », cf. docs/design-system-d1.md §2) :
- * mêmes valeurs vérifiées AA que le thème patient pour la surface, le
- * texte, les statuts et le focus — seule la présence du rail de
- * navigation (tokens --rail-* ci-dessous) distingue visuellement les deux
- * rôles désormais. Simplification délibérée plutôt qu'une nouvelle
- * calibration de contraste non vérifiée.
+ * Thème praticien — « l'Observatoire » (Nuit spectrale, A5-R1). Structure
+ * A5 inchangée : espace de travail clair + rail sombre structurel. Teintes
+ * évoluées et re-vérifiées (matrice design-system-d1 §8) : texte/fond
+ * 14,72:1 AAA, muted 6,15:1 AA, blanc/indigo 7,86:1, encre/solaire 7,25:1.
  */
 [data-theme='praticien'] {
-  --background: var(--cream-100);
-  --foreground: #16323a;
+  --background: #f7f8fa;
+  --foreground: #1b2337;
   --surface: #ffffff;
-  --surface-foreground: #16323a;
-  --muted: #e7eeee;
-  --muted-foreground: #4a6367;
-  --border: #d8e2e1;
-  --color-primary: var(--teal-700);
-  --color-primary-rgb: var(--teal-700-rgb);
+  --surface-foreground: #1b2337;
+  --muted: #e9ebf2;
+  --muted-foreground: #535d7a;
+  --border: #dde1ec;
+  --color-primary: var(--indigo-600);
+  --color-primary-rgb: var(--indigo-600-rgb);
   --color-primary-foreground: #ffffff;
-  --color-accent: var(--gold-600);
-  --color-accent-rgb: var(--gold-600-rgb);
-  --color-accent-foreground: #16323a;
+  --color-accent: var(--solar-500);
+  --color-accent-rgb: var(--solar-500-rgb);
+  --color-accent-foreground: #1b2337;
 
   /* Réconciliation UX 3.0 (LOT-01, additif). */
   --color-surface-elevated: #ffffff;
@@ -122,27 +157,31 @@
   --color-status-warning: #92400e;
   --color-status-danger: #b91c1c;
   --color-status-info: #1d4ed8;
-  --color-focus-ring: var(--teal-700);
+  --color-focus-ring: var(--indigo-600);
+
+  /* Typographies A5-R1 (chargées dans app/layout.tsx via next/font). */
+  --font-display: var(--font-sora), 'Avenir Next', system-ui, sans-serif;
+  --font-body: var(--font-instrument), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
   /*
    * Rail de navigation — reste structurellement sombre (aside desktop,
-   * barre basse mobile, tiroir tablette) même si le reste du thème
-   * praticien est clair. Reprend à l'identique les valeurs de l'ancien
-   * thème praticien sombre, déjà vérifiées AA/AAA (texte principal
-   * ~14.6:1, texte atténué ~8.7:1, accent or ~7:1) — cf. audit D1, aucun
-   * nouveau calcul de contraste nécessaire.
+   * barre basse mobile, tiroir tablette), élément signature A5. Valeurs
+   * Nuit spectrale re-vérifiées (matrice design-system-d1 §8) : texte
+   * 14,72:1, texte atténué 5,64:1, accent solaire 7,76:1, texte sur
+   * primaire indigo 6,92:1.
    */
-  --rail-background: var(--teal-950);
-  --rail-surface: var(--teal-900);
-  --rail-foreground: var(--cream-50);
-  --rail-muted: #16383d;
-  --rail-muted-foreground: var(--teal-200);
-  --rail-border: #24444a;
-  --rail-primary: var(--teal-700);
-  --rail-primary-rgb: var(--teal-700-rgb);
-  --rail-primary-foreground: var(--cream-50);
-  --rail-accent: var(--gold-500);
-  --rail-focus-ring: var(--gold-500);
+  --rail-background: var(--night-900);
+  --rail-surface: var(--night-800);
+  --rail-foreground: #eef0fa;
+  --rail-muted: #1f2850;
+  --rail-muted-foreground: #8b94be;
+  --rail-border: var(--night-border);
+  --rail-primary: var(--indigo-600);
+  --rail-primary-rgb: var(--indigo-600-rgb);
+  --rail-primary-foreground: #eef0fa;
+  --rail-accent: var(--solar-500);
+  --rail-focus-ring: var(--solar-500);
 }
 
 /*

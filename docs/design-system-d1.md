@@ -423,3 +423,80 @@ non migré) ne sont pas affectés par cet ajout — espace de noms `--color-*` t
 | HC-F LOT-03 (surfaces génériques, 3 mécanismes transverses) | #40 |
 | HC-F LOT-04 (portail patient clair) | #42 |
 | HC-F LOT-05 (gouvernance et handoff — section 4bis canonisée) | #43 |
+
+## 8. Tokens v2 — « la Spirale » (révision A5-R1, 2026-07-15)
+
+Adoption de la direction artistique issue du brainstorming 5.0
+(`docs/claude/propositions/2026-07-15-wellneuro-5-0-spirale/`). La
+**structure A5 est conservée** (tout clair, rail sombre signature côté
+praticien, patient clair fixe, aucun toggle) ; seules les teintes et les
+typographies évoluent. Déploiement séquencé : lot praticien, puis lot
+patient, puis lot dataviz — chaque lot réversible par revert.
+
+### Correspondance des tokens (ancien → nouveau)
+
+| Rôle | Ancien | Praticien « Nuit spectrale » | Patient « Forêt & cuivre » |
+|---|---|---|---|
+| `--background` | cream-100 `#fbf9f5` | `#F7F8FA` | `#FAF8F3` |
+| `--foreground` | `#16323a` | `#1B2337` | `#2B2115` |
+| `--surface` | `#ffffff` | `#ffffff` | `#FFFDF9` |
+| `--muted` / `--muted-foreground` | `#e7eeee` / `#4a6367` | `#E9EBF2` / `#535D7A` | `#EFE8DA` / `#6E5F49` |
+| `--border` | `#d8e2e1` | `#DDE1EC` | `#E5DCCB` |
+| `--color-primary` | teal-700 `#1f5e5b` | indigo `#3D4A9E` | forêt `#1E6F54` |
+| `--color-accent` | gold-600 `#b8923e` | solaire `#E8A33D` (texte : `--solar-ink #8A5B10`) | cuivre `#B25E38` (texte : `--copper-ink #8F4526`) |
+| `--rail-background` / `--rail-surface` | teal-950/900 | night `#151C38` / `#1B2342` (dégradé vers `#10162B`) | — (pas de rail) |
+| `--rail-accent` | gold-500 | solaire `#E8A33D` | — |
+| Statuts / focus | inchangés | inchangés (focus → primaire du thème) | inchangés (focus → forêt) |
+| `--viz-corps/ancrage/esprit` | teal-500 / violet-600 / gold-500 | menthe `#0D9488` / indigo `#3D4A9E` / solaire `#E8A33D` (fixes, indépendants des thèmes) | idem |
+
+### Typographies (next/font, auto-hébergées au build)
+
+| Rôle | Praticien | Patient |
+|---|---|---|
+| `--font-display` | Sora (600/700) | Bricolage Grotesque (700) |
+| `--font-body` | Instrument Sans (400/600) | Albert Sans (400/600) |
+| `--font-mono` | IBM Plex Mono (400) | IBM Plex Mono (400) |
+
+Tailwind consomme désormais `sans → var(--font-body)`,
+`display → var(--font-display)`, `mono → var(--font-mono)` — les valeurs
+sont posées par thème dans `globals.css`.
+
+### Matrice de contraste (calculée le 2026-07-15, luminance WCAG 2.x)
+
+| Paire | Ratio | Verdict |
+|---|---|---|
+| Praticien texte `#1B2337` / fond `#F7F8FA` | 14,72:1 | AAA |
+| Praticien texte / surface blanche | 15,65:1 | AAA |
+| Praticien muted `#535D7A` / fond | 6,15:1 | AA (texte normal) |
+| Blanc / primaire indigo `#3D4A9E` | 7,86:1 | AAA |
+| Encre / accent solaire `#E8A33D` | 7,25:1 | AAA |
+| `--solar-ink #8A5B10` / fond clair | 5,51:1 | AA |
+| Statuts success/warning/danger/info / fond | 4,72 / 6,67 / 6,09 / 6,31 | AA |
+| Rail : texte `#EEF0FA` / night-900 | 14,72:1 | AAA |
+| Rail : muted `#8B94BE` / night-900 · night-950 | 5,64 / 6,04 | AA |
+| Rail : solaire / night-900 | 7,76:1 | AAA |
+| Rail : texte / primaire indigo | 6,92:1 | AA |
+| Patient texte `#2B2115` / fond `#FAF8F3` | 14,86:1 | **AAA** (promesse §2 tenue) |
+| Patient muted `#6E5F49` / fond | 5,83:1 | AA |
+| Blanc / primaire forêt `#1E6F54` | 6,07:1 | AA |
+| `--copper-ink #8F4526` / fond ivoire | 6,49:1 | AA |
+| Blanc / cuivre `#B25E38` | 4,61:1 | AA |
+| Cuivre / fond ivoire (graphique) | 4,35:1 | ≥ 3:1 |
+| Menthe / blanc · Indigo / blanc (graphique) | 3,74 / 7,86 | ≥ 3:1 |
+| **Solaire / fond clair (graphique)** | **2,03–2,16:1** | **< 3:1 — règle de relief obligatoire** : le solaire ne porte jamais une information sans étiquette textuelle directe (héritée de l'or historique) |
+
+### Règles
+
+- Jumeaux RGB (`--*-rgb`) maintenus synchronisés pour chaque couleur
+  sémantique (exigence Tailwind, cf. §1).
+- Le texte accent utilise `--solar-ink` / `--copper-ink`, jamais le solaire
+  ou le cuivre pleins en petite taille sur fond clair.
+- `ScoreZones` (point sur zones de seuil) dérive ses zones des bornes
+  d'interprétation reçues en props — aucun seuil n'est encodé dans le
+  composant ; le statut textuel est toujours affiché. Les bornes sont
+  fournies par l'API `reponses` (calcul serveur via `lib/scoring/ranges.ts`,
+  le catalogue complet ne rentre pas dans le bundle client).
+- **Écart assumé** : le gabarit HTML du booklet email
+  (`app/api/praticien/booklet/route.ts`) conserve sa palette autonome
+  (verts `#2d6a4f`…, antérieure à la DA) — les emails ont leurs propres
+  contraintes de rendu ; à basculer dans un lot dédié si souhaité.

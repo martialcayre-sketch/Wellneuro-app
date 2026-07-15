@@ -11,6 +11,7 @@ import type { ResultatMomentum } from '@/lib/equilibre/types';
 import type { ScoreSubScore } from '@/lib/scoring/types';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
+import { ScoreZones } from '@/components/ui/ScoreZones';
 import { EvidenceBadge } from '@/components/ui/EvidenceBadge';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
@@ -352,11 +353,21 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
                         </td>
                         <td className="px-4 py-2">
                           {subScores.length > 0 ? (
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-1.5">
                               {subScores.map(sub => (
                                 <div key={sub.id} className="flex items-center gap-2 whitespace-nowrap">
-                                  <span className="text-xs text-muted-foreground">{sub.label}</span>
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                  <span className="text-xs text-muted-foreground w-28 truncate" title={sub.label}>
+                                    {sub.label}
+                                  </span>
+                                  {typeof sub.total === 'number' && typeof sub.max === 'number' && (
+                                    <ScoreZones
+                                      value={sub.total}
+                                      max={sub.max}
+                                      ranges={r.subScoreRanges?.[sub.id] ?? null}
+                                      ariaLabel={`${sub.label} : ${sub.total} sur ${sub.max}${sub.interpretation?.label ? ` — ${sub.interpretation.label}` : ''}`}
+                                    />
+                                  )}
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                                     {sub.total ?? '—'}
                                     {typeof sub.max === 'number' ? `/${sub.max}` : ''}
                                   </span>
@@ -364,7 +375,7 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
                               ))}
                             </div>
                           ) : r.scorePrincipal !== null ? (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                               {r.scorePrincipal}
                             </span>
                           ) : '—'}

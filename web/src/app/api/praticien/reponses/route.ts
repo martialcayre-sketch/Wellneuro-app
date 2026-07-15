@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getSubScoreRanges, type ScoreRange } from '@/lib/scoring/ranges';
 
 export type ReponseQuestionnaire = {
   idReponse: string;
@@ -14,6 +15,9 @@ export type ReponseQuestionnaire = {
   scoresParsed: Record<string, unknown> | null;
   scorePrincipal: number | null;
   interpretation: string;
+  /* Bornes d'interprétation par sous-score, lues du catalogue côté serveur
+   * (A5-R1, affichage ScoreZones) — additif, null si non applicables. */
+  subScoreRanges: Record<string, ScoreRange[]> | null;
 };
 
 export type ReponsesApiResponse = {
@@ -51,6 +55,7 @@ export async function GET(req: Request): Promise<NextResponse<ReponsesApiRespons
       scoresParsed: (pg.scoresJson as Record<string, unknown>) ?? null,
       scorePrincipal: pg.scorePrincipal ?? null,
       interpretation: pg.interpretation ?? '',
+      subScoreRanges: getSubScoreRanges(pg.idQuestionnaire),
     }));
 
     return NextResponse.json({ reponses });

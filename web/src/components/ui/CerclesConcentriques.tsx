@@ -15,10 +15,12 @@ export type BesoinPoint = {
 // décoder) ; l'intensité (opacité) reflète la couverture, jamais un
 // changement de teinte vers le rouge/gris/noir — un creux reste dans la
 // même couleur, juste plus clair/transparent.
+// Couleurs d'entité fixes via les tokens --viz-* (révision A5-R1 « la
+// Spirale » : menthe/indigo/solaire) — jamais de teinte en dur ici.
 const COULEUR_STRATE: Record<StrateCode, string> = {
-  CORPS: 'var(--teal-500)',
-  ANCRAGE: 'var(--violet-600)',
-  ESPRIT: 'var(--gold-500)',
+  CORPS: 'var(--viz-corps)',
+  ANCRAGE: 'var(--viz-ancrage)',
+  ESPRIT: 'var(--viz-esprit)',
 };
 
 const RAYON_ANNEAU: Record<StrateCode, number> = {
