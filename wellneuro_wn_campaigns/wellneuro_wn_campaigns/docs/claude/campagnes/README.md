@@ -1,6 +1,6 @@
 # Campagnes WellNeuro — index
 
-> Mis à jour le 2026-07-13. Les frontières, invariants et arbitrages sont
+> Mis à jour le 2026-07-15. Les frontières, invariants et arbitrages sont
 > dans `docs/claude/REGISTRE_FRONTIERES.md` (source normative). La séquence
 > est dans `PROGRAMME_WELLNEURO_3_0.md`. Statuts « cadrée » = décisions et
 > frontières figées, lots détaillés compilés en N+1 (une campagne d'avance).
@@ -18,6 +18,7 @@
 | C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : intrinsèque ; C4B : C1/C2 | N+1 |
 | C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | cadrée | C5A : data-first ; C5B : C1/C2 | N+1 |
 | JA | Journal alimentaire 21 jours V1 | cadrée, règles candidates | domaine pur ; persistance : C2A + gate | N+1 |
+| TRUST | Information patient, consentements et sécurité relationnelle V1 | **cadrée — lots compilés, non activable sans gates** | transverse : HC-F + portail ; raccord QX/C1/C2/C3/auth | 8 |
 | WN-AUTO | Orchestration | terminée | — | — |
 
 ## Campagne active
@@ -28,6 +29,10 @@ Le pack WN Ultimate v2 reste disponible comme source d'audit dans
 [`../propositions/wn-ultimate-v2/`](../propositions/wn-ultimate-v2/README.md).
 Les arbitrages promus sont décrits dans
 [`../ARCHITECTURE_CLINIQUE_3_2.md`](../ARCHITECTURE_CLINIQUE_3_2.md).
+
+La campagne TRUST est transverse et documentaire à ce stade. Elle ne devient
+pas automatiquement la campagne active et n'autorise aucune migration, aucune
+activation de règle clinique ni aucun usage de données réelles.
 
 ## Convention de travail
 
