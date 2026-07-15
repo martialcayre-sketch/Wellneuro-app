@@ -6,7 +6,7 @@
   },
   "status": "inflight",
   "active_campaign": "2026-07-15-fil-du-jour-v1",
-  "active_lot": "LOT-01",
+  "active_lot": "LOT-02",
   "last_completed_lot": "QX/LOT-04",
   "git": {
     "branch": "campaign/fil-du-jour-v1",
@@ -25,10 +25,10 @@
       "corpus_registry": "391 unique opaque sourceIds passed"
     }
   },
-  "next_action": "Exécuter SP-FIL LOT-01 (Fil du jour) puis LOT-02 (rail regroupé).",
+  "next_action": "Terminer SP-FIL LOT-02 (rail regroupé) puis PR finale de campagne vers main.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-15T19:45:04Z",
+  "updated_at": "2026-07-15T19:53:11Z",
   "parallel_campaigns": []
 }

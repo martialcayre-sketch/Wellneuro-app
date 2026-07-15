@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Rail de navigation regroupé"
-statut: "à faire"
+statut: "en cours"
 dépend_de: "LOT-01"
 ---
 
