@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WellNeuro — Maquette cockpit praticien 4.0</title>
+<style>
+/* ==========================================================================
+   Maquette statique — proposition UX « Cockpit praticien 4.0 » (2026-07-15).
+   Données 100 % fictives : Sophie Nicola, Jennifer Martin, Michel Dogné.
+   Thème par défaut : clair A5 (décision actée — espace clair + rail sombre).
+   Variante sombre : exploratoire, outil de comparaison uniquement.
+   ========================================================================== */
+body { margin: 0; }
+
+.wn {
+  /* Palette de marque (reprise de web/src/app/globals.css) */
+  --teal-950:#0b2027; --teal-900:#102e33; --teal-700:#1f5e5b;
+  --teal-500:#2f8481; --teal-200:#a8bfc2;
+  --gold-600:#b8923e; --gold-500:#c9a24b; --gold-300:#e3cd8f;
+  --cream-100:#fbf9f5; --cream-50:#f4efe6;
+  --violet-600:#6b5b95; --violet-300:#c9c0e0;
+
+  /* Thème clair A5 (défaut) */
+  --bg:var(--cream-100); --fg:#16323a; --surface:#ffffff;
+  --muted:#e7eeee; --muted-fg:#4a6367; --border:#d8e2e1;
+  --primary:var(--teal-700); --primary-fg:#ffffff; --accent:var(--gold-600);
+  --ok:#15803d; --warn:#92400e; --danger:#b91c1c; --info:#1d4ed8;
+  --ok-bg:rgba(21,128,61,.09); --warn-bg:rgba(146,64,14,.09);
+  --danger-bg:rgba(185,28,28,.09); --info-bg:rgba(29,78,216,.07);
+  --neutral-bg:rgba(22,50,58,.06);
+  --rail-bg:var(--teal-950); --rail-surface:var(--teal-900);
+  --rail-fg:var(--cream-50); --rail-muted-fg:var(--teal-200);
+  --rail-border:#24444a; --rail-accent:var(--gold-500);
+  --viz-corps:var(--teal-500); --viz-ancrage:var(--violet-600); --viz-esprit:var(--gold-500);
+  --shadow:0 1px 2px rgba(11,32,39,.04),0 10px 28px rgba(11,32,39,.07);
+  --focus:var(--teal-700);
+  --font-body:Inter,"Segoe UI",ui-sans-serif,system-ui,sans-serif;
+  --font-display:Lora,Georgia,"Times New Roman",serif;
+  --radius:12px; --radius-lg:16px; --railw:248px;
+
+  font-family:var(--font-body); color:var(--fg); background:var(--bg);
+  min-height:100vh; display:grid; grid-template-columns:var(--railw) minmax(0,1fr);
+  transition:grid-template-columns .25s ease;
+  -webkit-font-smoothing:antialiased; line-height:1.5; font-size:14px;
+}
+
+/* Variante sombre — EXPLORATOIRE (révoquerait A5 si retenue) */
+.wn[data-mtheme="sombre"] {
+  --bg:var(--teal-950); --fg:var(--cream-50);
+  --surface:rgba(255,255,255,.045);
+  --muted:rgba(255,255,255,.07); --muted-fg:var(--teal-200);
+  --border:rgba(244,239,230,.13);
+  --primary:var(--teal-500); --primary-fg:#f5faf9; --accent:var(--gold-500);
+  --ok:#5cbd8f; --warn:#ddb15f; --danger:#e08787; --info:#82abde;
+  --ok-bg:rgba(92,189,143,.12); --warn-bg:rgba(221,177,95,.12);
+  --danger-bg:rgba(224,135,135,.12); --info-bg:rgba(130,171,222,.1);
+  --neutral-bg:rgba(244,239,230,.08);
+  --rail-bg:#07171d; --rail-surface:#0d242b;
+  --viz-corps:#4aa39e; --viz-ancrage:#9b8cc4; --viz-esprit:var(--gold-500);
+  --shadow:0 1px 2px rgba(0,0,0,.2),0 14px 36px rgba(0,0,0,.32);
+  --focus:var(--gold-500);
+  background:
+    radial-gradient(circle at 82% -8%, rgba(47,132,129,.16), transparent 36%),
+    radial-gradient(circle at 6% 108%, rgba(201,162,75,.07), transparent 30%),
+    var(--teal-950);
+}
+
+.wn *,.wn *::before,.wn *::after { box-sizing:border-box; }
+.wn :is(button,input,select,textarea) { font:inherit; color:inherit; }
+.wn button { cursor:pointer; background:none; border:0; padding:0; }
+.wn a { color:inherit; text-decoration:none; }
+.wn :is(a,button,input,select,textarea,[tabindex]):focus-visible {
+  outline:2px solid var(--focus); outline-offset:2px; border-radius:6px;
+}
+.wn .num { font-variant-numeric:tabular-nums; }
+@media (prefers-reduced-motion:reduce) {
+  .wn,.wn * { transition-duration:.001s!important; animation-duration:.001s!important; }
+}
+
+/* ---------- Rail (sombre, signature A5) ---------- */
+.rail {
+  position:sticky; top:0; height:100vh; z-index:40;
+  background:var(--rail-bg); color:var(--rail-fg);
+  border-right:1px solid var(--rail-border);
+  display:flex; flex-direction:column; overflow:hidden; white-space:nowrap;
+}
+.rail-brand { display:flex; align-items:center; gap:11px; min-height:64px; padding:0 14px; border-bottom:1px solid var(--rail-border); }
+.rail-mark {
+  width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center;
+  border-radius:11px; font-weight:700; letter-spacing:-.04em; font-size:14px;
+  color:var(--rail-accent); border:1px solid rgba(201,162,75,.35);
+  background:linear-gradient(150deg,rgba(201,162,75,.14),rgba(47,132,129,.1));
+}
+.rail-name strong { display:block; font-size:14px; }
+.rail-name span { display:block; font-size:10.5px; color:var(--rail-muted-fg); letter-spacing:.09em; text-transform:uppercase; margin-top:1px; }
+.rail-nav { padding:14px 10px; display:grid; gap:4px; }
+.rail-label { padding:10px 12px 4px; font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--rail-muted-fg); }
+.rail-item {
+  position:relative; display:grid; grid-template-columns:34px minmax(0,1fr) auto;
+  align-items:center; gap:8px; min-height:44px; padding:0 10px;
+  border-radius:10px; color:var(--rail-muted-fg); font-weight:550; font-size:13px;
+  text-align:left; width:100%;
+}
+.rail-item:hover { background:rgba(255,255,255,.05); color:var(--rail-fg); }
+.rail-item[aria-current="page"] { background:rgba(47,132,129,.2); color:var(--rail-fg); }
+.rail-item[aria-current="page"]::before {
+  content:""; position:absolute; left:-10px; width:3px; height:22px;
+  border-radius:0 3px 3px 0; background:var(--rail-accent);
+}
+.rail-count {
+  min-width:20px; height:20px; padding:0 6px; display:grid; place-items:center;
+  border-radius:999px; font-size:10.5px; font-weight:700;
+  background:rgba(201,162,75,.16); color:var(--rail-accent);
+}
+.rail-foot { margin-top:auto; padding:12px 10px; border-top:1px solid var(--rail-border); display:grid; gap:6px; }
+.rail-profile { display:grid; grid-template-columns:34px minmax(0,1fr); gap:9px; align-items:center; padding:7px 10px; border:1px solid var(--rail-border); border-radius:11px; }
+.rail-avatar { width:34px; height:34px; display:grid; place-items:center; border-radius:9px; background:var(--cream-50); color:var(--teal-950); font-size:11px; font-weight:750; }
+.rail-profile strong { display:block; font-size:11.5px; }
+.rail-profile span { display:block; font-size:10px; color:var(--rail-muted-fg); }
+.rail-collapse { display:flex; align-items:center; gap:8px; min-height:40px; padding:0 12px; border-radius:10px; color:var(--rail-muted-fg); font-size:12px; }
+.rail-collapse:hover { background:rgba(255,255,255,.05); color:var(--rail-fg); }
+
+.wn[data-rail="min"] { --railw:72px; }
+.wn[data-rail="min"] :is(.rail-name,.rail-label,.rail-count,.rail-profile div,.rail-collapse span,.rail-item span.txt) { display:none; }
+.wn[data-rail="min"] .rail-item { grid-template-columns:34px; justify-content:center; }
+
+/* ---------- Bandeau maquette + topbar ---------- */
+.workspace { min-width:0; display:flex; flex-direction:column; }
+.demo-strip {
+  font-size:11px; padding:5px 16px; text-align:center;
+  background:var(--neutral-bg); color:var(--muted-fg); border-bottom:1px solid var(--border);
+}
+.topbar {
+  position:sticky; top:0; z-index:30; min-height:64px;
+  display:flex; align-items:center; gap:12px; padding:8px 22px;
+  background:var(--bg); border-bottom:1px solid var(--border);
+}
+.search {
+  flex:1; max-width:480px; height:42px; display:flex; align-items:center; gap:9px;
+  padding:0 13px; border:1px solid var(--border); border-radius:11px; background:var(--surface);
+  color:var(--muted-fg); font-size:13px; text-align:left;
+}
+.search:hover { border-color:var(--primary); }
+.search kbd { margin-left:auto; padding:2px 7px; border:1px solid var(--border); border-radius:6px; font-size:10.5px; font-family:inherit; background:var(--neutral-bg); }
+.topbar-right { margin-left:auto; display:flex; align-items:center; gap:9px; }
+.theme-compare { display:flex; align-items:center; gap:3px; padding:3px; border:1px solid var(--border); border-radius:11px; background:var(--surface); }
+.theme-compare .tc-label { font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-fg); padding:0 7px; }
+.theme-compare button { height:32px; padding:0 11px; border-radius:8px; font-size:11.5px; font-weight:650; color:var(--muted-fg); display:flex; align-items:center; gap:6px; }
+.theme-compare button[aria-pressed="true"] { background:var(--primary); color:var(--primary-fg); }
+
+/* ---------- Boutons, badges, chips ---------- */
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  min-height:42px; padding:0 15px; border-radius:10px;
+  font-size:12.5px; font-weight:650; border:1px solid transparent;
+  transition:filter .15s ease,transform .15s ease;
+}
+.btn:hover { filter:brightness(1.05); }
+.btn-primary { background:var(--primary); color:var(--primary-fg); box-shadow:0 6px 16px rgba(31,94,91,.18); }
+.btn-secondary { background:var(--surface); border-color:var(--border); color:var(--fg); }
+.btn-ghost { color:var(--muted-fg); min-height:38px; }
+.btn-ghost:hover { background:var(--neutral-bg); color:var(--fg); }
+.btn-icon { width:42px; padding:0; }
+.btn-sm { min-height:34px; padding:0 11px; font-size:11.5px; }
+.btn[disabled] { opacity:.5; cursor:not-allowed; filter:none; }
+.badge {
+  display:inline-flex; align-items:center; gap:5px; min-height:24px; padding:1px 9px;
+  border-radius:999px; font-size:10.5px; font-weight:700;
+}
+.badge-ok { background:var(--ok-bg); color:var(--ok); }
+.badge-warn { background:var(--warn-bg); color:var(--warn); }
+.badge-danger { background:var(--danger-bg); color:var(--danger); }
+.badge-info { background:var(--info-bg); color:var(--info); }
+.badge-neutral { background:var(--neutral-bg); color:var(--muted-fg); }
+.evidence {
+  display:inline-flex; align-items:center; gap:5px; padding:1px 8px; min-height:22px;
+  border-radius:7px; font-size:10px; font-weight:650; background:var(--neutral-bg); color:var(--muted-fg);
+}
+.evidence b { font-size:10.5px; }
+.evidence.a b { color:var(--ok); } .evidence.b b { color:var(--fg); }
+.evidence.c b { color:var(--warn); } .evidence.d b { color:var(--danger); }
+
+.icon { width:19px; height:19px; stroke:currentColor; stroke-width:1.8; fill:none; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+.icon-sm { width:15px; height:15px; }
+
+/* ---------- Structure des vues ---------- */
+.main { width:min(1360px,100%); margin:0 auto; padding:26px 22px 90px; }
+.view { display:none; }
+.view.active { display:block; animation:vfade .22s ease; }
+@keyframes vfade { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
+.page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px; }
+.eyebrow { font-size:10.5px; font-weight:750; letter-spacing:.15em; text-transform:uppercase; color:var(--accent); }
+.page-head h1 { margin:6px 0 0; font-family:var(--font-display); font-weight:600; font-size:clamp(22px,2.6vw,30px); letter-spacing:-.01em; text-wrap:balance; }
+.page-sub { margin:7px 0 0; color:var(--muted-fg); font-size:13px; max-width:56ch; }
+.head-actions { display:flex; gap:9px; flex-wrap:wrap; }
+
+.panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+.panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:15px 18px 13px; border-bottom:1px solid var(--border); }
+.panel-head h2 { margin:0; font-size:13.5px; font-weight:700; }
+.panel-meta { font-size:11px; color:var(--muted-fg); }
+
+/* ---------- Vue Accueil ---------- */
+.tiles { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:18px; }
+.tile { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:15px 16px; box-shadow:var(--shadow); }
+.tile-label { font-size:11px; font-weight:650; color:var(--muted-fg); display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.tile-value { margin-top:9px; font-size:27px; font-weight:720; letter-spacing:-.03em; }
+.tile-note { margin-top:2px; font-size:10.5px; color:var(--muted-fg); }
+.home-grid { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(280px,.72fr); gap:16px; align-items:start; }
+
+.decision-row {
+  display:grid; grid-template-columns:4px 40px minmax(0,1fr) auto;
+  gap:13px; align-items:center; padding:13px 16px 13px 0; border-bottom:1px solid var(--border);
+}
+.decision-row:last-child { border-bottom:0; }
+.d-stripe { align-self:stretch; border-radius:0 3px 3px 0; }
+.avatar { width:40px; height:40px; display:grid; place-items:center; border-radius:11px; background:var(--neutral-bg); font-size:11px; font-weight:750; }
+.d-copy .d-top { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.d-copy strong { font-size:13px; }
+.d-copy p { margin:3px 0 0; font-size:12px; color:var(--muted-fg); }
+.d-copy small { display:block; margin-top:3px; font-size:10.5px; color:var(--muted-fg); }
+
+.feed { padding:4px 18px 14px; }
+.feed-item { position:relative; display:grid; grid-template-columns:26px minmax(0,1fr); gap:10px; padding-top:14px; }
+.feed-item:not(:last-child)::after { content:""; position:absolute; left:12px; top:40px; bottom:-12px; width:1px; background:var(--border); }
+.feed-dot { width:26px; height:26px; display:grid; place-items:center; border-radius:8px; background:var(--neutral-bg); color:var(--primary); }
+.feed-copy strong { display:block; font-size:11.5px; }
+.feed-copy p { margin:2px 0 0; font-size:11px; color:var(--muted-fg); }
+.feed-copy time { display:block; margin-top:2px; font-size:9.5px; color:var(--muted-fg); }
+
+/* ---------- Vue Patients ---------- */
+.toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:15px; }
+.toolbar .search { max-width:320px; height:40px; }
+.toolbar select { height:40px; padding:0 11px; border:1px solid var(--border); border-radius:10px; background:var(--surface); font-size:12.5px; color:var(--fg); }
+.seg { display:flex; padding:3px; gap:3px; border:1px solid var(--border); border-radius:11px; background:var(--surface); margin-left:auto; }
+.seg button { height:34px; padding:0 12px; border-radius:8px; font-size:11.5px; font-weight:650; color:var(--muted-fg); display:flex; align-items:center; gap:6px; }
+.seg button[aria-pressed="true"] { background:var(--primary); color:var(--primary-fg); }
+.cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:13px; }
+.pcard { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:11px; }
+.pcard-top { display:flex; gap:11px; align-items:center; }
+.pcard-top h3 { margin:0; font-size:14.5px; }
+.pcard-top p { margin:2px 0 0; font-size:11px; color:var(--muted-fg); }
+.pcard-next { display:flex; gap:8px; align-items:flex-start; padding:9px 11px; border-radius:10px; background:var(--neutral-bg); font-size:11.5px; }
+.pcard-next .icon { color:var(--accent); margin-top:1px; }
+.pcard-actions { display:flex; gap:8px; margin-top:auto; }
+.table-wrap { overflow-x:auto; }
+table.plist { width:100%; border-collapse:collapse; font-size:12.5px; }
+.plist th { text-align:left; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-fg); font-weight:650; padding:11px 14px; border-bottom:1px solid var(--border); }
+.plist td { padding:12px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.plist tr:last-child td { border-bottom:0; }
+.pagin { display:flex; align-items:center; justify-content:space-between; padding:11px 16px; font-size:11.5px; color:var(--muted-fg); }
+
+/* ---------- Drawer ---------- */
+.scrim { position:fixed; inset:0; z-index:70; background:rgba(11,32,39,.42); opacity:0; pointer-events:none; transition:opacity .2s ease; }
+.drawer {
+  position:fixed; top:0; right:0; bottom:0; z-index:71; width:min(420px,94vw);
+  background:var(--surface); border-left:1px solid var(--border); box-shadow:var(--shadow);
+  transform:translateX(102%); transition:transform .24s ease;
+  display:flex; flex-direction:column; color:var(--fg);
+}
+.wn.drawer-open .scrim { opacity:1; pointer-events:auto; }
+.wn.drawer-open .drawer { transform:none; }
+.drawer-head { display:flex; align-items:center; justify-content:space-between; padding:16px 18px; border-bottom:1px solid var(--border); }
+.drawer-head h2 { margin:0; font-size:15px; }
+.drawer-body { padding:18px; display:grid; gap:13px; overflow:auto; }
+.field label { display:block; font-size:11.5px; font-weight:650; margin-bottom:5px; }
+.field input { width:100%; height:42px; padding:0 12px; border:1px solid var(--border); border-radius:10px; background:var(--bg); }
+.drawer-foot { margin-top:auto; display:flex; gap:9px; padding:16px 18px; border-top:1px solid var(--border); }
+.hint { font-size:11px; color:var(--muted-fg); padding:9px 11px; border-radius:9px; background:var(--neutral-bg); }
+
+/* ---------- Palette de commandes ---------- */
+.palette { position:fixed; inset:0; z-index:80; display:none; background:rgba(11,32,39,.45); padding:12vh 16px 0; }
+.wn.palette-open .palette { display:block; }
+.palette-box { width:min(560px,100%); margin:0 auto; background:var(--surface); color:var(--fg); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden; }
+.palette-box input { width:100%; height:52px; padding:0 16px; border:0; border-bottom:1px solid var(--border); background:transparent; font-size:14px; }
+.palette-box input:focus { outline:none; }
+.palette-list { max-height:300px; overflow:auto; padding:7px; }
+.palette-item { display:flex; align-items:center; gap:10px; width:100%; min-height:44px; padding:0 11px; border-radius:9px; font-size:13px; text-align:left; color:var(--fg); }
+.palette-item:hover,.palette-item:focus-visible { background:var(--neutral-bg); }
+.palette-item .icon { color:var(--muted-fg); }
+.palette-hintbar { padding:8px 14px; font-size:10.5px; color:var(--muted-fg); border-top:1px solid var(--border); }
+
+/* ---------- Fiche patient ---------- */
+.phead { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:16px; align-items:center; padding:18px 20px; margin-bottom:14px;
+  background:linear-gradient(115deg,rgba(47,132,129,.09),transparent 55%,rgba(201,162,75,.07)),var(--surface);
+  border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+.phead-avatar { width:56px; height:56px; display:grid; place-items:center; border-radius:16px; background:var(--teal-700); color:#fff; font-size:16px; font-weight:750; }
+.phead h1 { margin:0; font-family:var(--font-display); font-weight:600; font-size:22px; }
+.phead p { margin:4px 0 0; font-size:11.5px; color:var(--muted-fg); }
+.phead-pills { display:flex; gap:6px; flex-wrap:wrap; margin-top:9px; }
+.phead-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.tabs { display:flex; gap:3px; padding:4px; border:1px solid var(--border); border-radius:12px; background:var(--surface); overflow-x:auto; margin-bottom:15px; }
+.tab { flex:none; min-height:38px; padding:0 13px; border-radius:9px; font-size:12px; font-weight:650; color:var(--muted-fg); }
+.tab[aria-selected="true"] { background:var(--primary); color:var(--primary-fg); }
+.tabpane { display:none; }
+.tabpane.active { display:block; }
+.fiche-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(280px,.72fr); gap:15px; align-items:start; }
+.fcol { display:grid; gap:15px; min-width:0; }
+
+.decision-card { padding:19px 20px; }
+.decision-card .d-chips { display:flex; gap:7px; flex-wrap:wrap; margin:11px 0 0; }
+.decision-title { margin:10px 0 0; font-family:var(--font-display); font-weight:600; font-size:19.5px; line-height:1.32; letter-spacing:-.005em; text-wrap:balance; }
+.decision-card > p.just { margin:11px 0 0; font-size:12.5px; color:var(--muted-fg); max-width:64ch; }
+.signals { margin:13px 0 0; padding:0; list-style:none; display:grid; gap:7px; }
+.signals li { display:flex; align-items:center; gap:9px; font-size:12.5px; flex-wrap:wrap; }
+.signals .icon { color:var(--ok); }
+.discord { display:flex; gap:10px; margin-top:14px; padding:11px 13px; border-radius:11px; background:var(--warn-bg); font-size:12px; }
+.discord .icon { color:var(--warn); margin-top:1px; }
+.discord b { color:var(--warn); }
+.lecture-toggle { display:flex; gap:3px; padding:3px; border:1px solid var(--border); border-radius:10px; background:var(--bg); width:max-content; margin-top:15px; }
+.lecture-toggle button { height:31px; padding:0 11px; border-radius:7px; font-size:11px; font-weight:650; color:var(--muted-fg); }
+.lecture-toggle button[aria-pressed="true"] { background:var(--surface); color:var(--fg); box-shadow:var(--shadow); }
+.expert { display:none; margin-top:13px; }
+.decision-card.expert-on .expert { display:block; }
+.expert table { width:100%; border-collapse:collapse; font-size:11.5px; }
+.expert th { text-align:left; font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted-fg); padding:7px 9px; border-bottom:1px solid var(--border); }
+.expert td { padding:8px 9px; border-bottom:1px solid var(--border); }
+
+.mlist { padding:6px 18px 15px; display:grid; }
+.mrow { display:grid; grid-template-columns:24px minmax(0,1fr) auto; gap:11px; align-items:start; padding:12px 0; border-bottom:1px solid var(--border); }
+.mrow:last-child { border-bottom:0; }
+.mrow .icon { color:var(--warn); margin-top:1px; }
+.mrow strong { display:block; font-size:12.5px; }
+.mrow p { margin:3px 0 0; font-size:11.5px; color:var(--muted-fg); max-width:58ch; }
+
+.profil-grid { display:grid; grid-template-columns:auto minmax(0,1fr); gap:20px; padding:17px 18px; align-items:center; }
+.gauge { display:grid; justify-items:center; gap:2px; }
+.gauge svg { display:block; }
+.gauge-val { font-size:24px; font-weight:720; letter-spacing:-.03em; margin-top:-32px; }
+.gauge-cap { font-size:10.5px; color:var(--muted-fg); text-align:center; }
+.profil-right { display:grid; gap:12px; min-width:0; }
+.mini-stats { display:flex; gap:18px; flex-wrap:wrap; }
+.mini-stat b { display:block; font-size:16px; letter-spacing:-.02em; }
+.mini-stat span { font-size:10.5px; color:var(--muted-fg); }
+.strates { display:grid; gap:8px; }
+.strate { display:grid; grid-template-columns:118px minmax(0,1fr) 42px; gap:10px; align-items:center; font-size:11.5px; }
+.strate .lab { color:var(--muted-fg); }
+.strate .lab b { color:var(--fg); font-weight:650; }
+.strate .track { height:10px; border-radius:99px; background:var(--muted); overflow:hidden; }
+.strate .fill { height:100%; border-radius:99px; }
+.strate .val { text-align:right; font-weight:650; }
+
+.proto { padding:18px 20px; }
+.proto-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.proto-crit { margin:13px 0 0; padding:11px 13px; border-radius:11px; background:var(--info-bg); font-size:12px; display:flex; gap:10px; }
+.proto-crit .icon { color:var(--info); margin-top:1px; }
+.actions3 { display:grid; gap:11px; margin-top:15px; }
+.action-card { border:1px solid var(--border); border-radius:13px; padding:13px 15px; background:var(--bg); }
+.action-top { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.action-n { width:26px; height:26px; display:grid; place-items:center; border-radius:8px; background:rgba(184,146,62,.14); color:var(--accent); font-weight:750; font-size:12px; }
+.action-top h3 { margin:0; font-size:13.5px; }
+.plans { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:11px; }
+.plan { padding:9px 11px; border-radius:10px; background:var(--surface); border:1px solid var(--border); font-size:11px; }
+.plan b { display:block; font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted-fg); margin-bottom:3px; }
+.chain { display:flex; align-items:center; gap:0; flex-wrap:wrap; margin-top:17px; }
+.chain-step { display:flex; align-items:center; gap:7px; font-size:11px; font-weight:650; color:var(--muted-fg); }
+.chain-dot { width:24px; height:24px; display:grid; place-items:center; border-radius:99px; background:var(--muted); color:var(--muted-fg); }
+.chain-step.done .chain-dot { background:var(--ok-bg); color:var(--ok); }
+.chain-step.done { color:var(--ok); }
+.chain-step.wait .chain-dot { background:var(--warn-bg); color:var(--warn); }
+.chain-step.wait { color:var(--warn); }
+.chain-sep { width:26px; height:1px; background:var(--border); margin:0 8px; }
+.proto-actions { display:flex; gap:9px; flex-wrap:wrap; margin-top:16px; align-items:center; }
+.proto-note { font-size:10.5px; color:var(--muted-fg); flex-basis:100%; }
+
+.aside { display:grid; gap:15px; min-width:0; }
+.vigil { padding:6px 18px 14px; }
+.vigil .mrow .icon { color:var(--danger); }
+.tl { padding:6px 18px 16px; }
+.tl-item { position:relative; display:grid; grid-template-columns:22px minmax(0,1fr); gap:10px; padding-top:13px; }
+.tl-item:not(:last-child)::after { content:""; position:absolute; left:10px; top:36px; bottom:-11px; width:1px; background:var(--border); }
+.tl-dot { width:22px; height:22px; border-radius:99px; display:grid; place-items:center; background:var(--ok-bg); color:var(--ok); }
+.tl-item.future .tl-dot { background:var(--muted); color:var(--muted-fg); }
+.tl-item.future { opacity:.75; }
+.tl-copy strong { display:block; font-size:11.5px; }
+.tl-copy p { margin:2px 0 0; font-size:10.5px; color:var(--muted-fg); }
+
+.empty { display:grid; justify-items:center; gap:9px; padding:40px 20px; text-align:center; }
+.empty .icon { width:26px; height:26px; color:var(--muted-fg); }
+.empty p { margin:0; font-size:12.5px; color:var(--muted-fg); max-width:44ch; }
+.qlist { padding:4px 18px 12px; }
+.qrow { display:flex; align-items:center; gap:11px; padding:12px 0; border-bottom:1px solid var(--border); font-size:12.5px; flex-wrap:wrap; }
+.qrow:last-child { border-bottom:0; }
+.qrow .grow { flex:1; min-width:140px; }
+.qrow small { display:block; color:var(--muted-fg); font-size:10.5px; margin-top:2px; }
+
+/* ---------- Mode consultation ---------- */
+.wn[data-consult="1"] .rail,.wn[data-consult="1"] .topbar,.wn[data-consult="1"] .demo-strip,.wn[data-consult="1"] .bottomnav { display:none; }
+.wn[data-consult="1"] { grid-template-columns:minmax(0,1fr); }
+.consult-bar { display:flex; align-items:center; gap:12px; padding:14px 22px; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:0; z-index:20; }
+.consult-bar .who { display:flex; align-items:center; gap:10px; }
+.consult-bar h1 { margin:0; font-size:15px; font-family:var(--font-display); font-weight:600; }
+.consult-bar p { margin:1px 0 0; font-size:10.5px; color:var(--muted-fg); }
+.consult-main { width:min(880px,100%); margin:0 auto; padding:30px 22px 80px; display:grid; gap:15px; }
+.signal { padding:24px 24px 22px; }
+.signal h2 { margin:9px 0 0; font-family:var(--font-display); font-weight:600; font-size:clamp(20px,2.4vw,26px); line-height:1.3; text-wrap:balance; }
+.signal p { margin:11px 0 0; color:var(--muted-fg); font-size:13px; max-width:62ch; }
+.consult-actions { padding:6px 18px 14px; }
+.ca-row { display:grid; grid-template-columns:26px minmax(0,1fr); gap:11px; padding:12px 0; border-bottom:1px solid var(--border); align-items:start; }
+.ca-row:last-child { border-bottom:0; }
+.ca-row strong { font-size:13px; }
+.ca-row p { margin:2px 0 0; font-size:11.5px; color:var(--muted-fg); }
+.next-decision { display:flex; gap:12px; align-items:center; padding:15px 18px; border-radius:var(--radius-lg); background:var(--primary); color:var(--primary-fg); box-shadow:var(--shadow); flex-wrap:wrap; }
+.next-decision .icon { color:var(--gold-300); }
+.next-decision strong { font-size:13.5px; }
+.next-decision p { margin:2px 0 0; font-size:11.5px; opacity:.85; }
+.next-decision .btn { margin-left:auto; background:#fff; color:var(--teal-950); }
+.notes textarea { width:100%; min-height:90px; padding:12px; border:1px solid var(--border); border-radius:11px; background:var(--bg); resize:vertical; font-size:13px; }
+
+/* ---------- Nav mobile ---------- */
+.bottomnav { display:none; }
+
+/* ---------- Responsive ---------- */
+@media (max-width:1120px) {
+  .home-grid,.fiche-grid { grid-template-columns:1fr; }
+  .tiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:760px) {
+  .wn { grid-template-columns:1fr; }
+  .rail { display:none; }
+  .topbar { padding:8px 14px; }
+  .theme-compare .tc-label { display:none; }
+  .main { padding:20px 14px 110px; }
+  .search kbd { display:none; }
+  .plans { grid-template-columns:1fr; }
+  .profil-grid { grid-template-columns:1fr; justify-items:start; }
+  .decision-row { grid-template-columns:4px minmax(0,1fr); }
+  .decision-row .avatar { display:none; }
+  .decision-row .btn { grid-column:2; justify-self:start; }
+  .phead { grid-template-columns:auto minmax(0,1fr); }
+  .phead-actions { grid-column:1/-1; justify-content:flex-start; }
+  .bottomnav {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:4px;
+    position:fixed; left:10px; right:10px; bottom:10px; z-index:60;
+    padding:6px; border-radius:16px; background:var(--rail-bg);
+    border:1px solid var(--rail-border); box-shadow:0 16px 40px rgba(0,0,0,.3);
+  }
+  .bottomnav button { display:grid; place-items:center; gap:2px; min-height:52px; border-radius:11px; color:var(--rail-muted-fg); font-size:9.5px; font-weight:650; }
+  .bottomnav button[aria-current="page"] { background:rgba(47,132,129,.22); color:var(--rail-fg); }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-check-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="m9 13 2 2 4-4.5"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.5 4.4 4.4 1.5-4.4 1.5L12 15l-1.5-4.6L6 8.9l4.5-1.5L12 3Z"/><path d="m18.5 14.5.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9.9-2.3Z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2.8 12h2.4M18.8 12h2.4M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4.1 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.1a2 2 0 0 0-3.4 0Z"/><path d="M12 9v5M12 17.5h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9.5 4v16"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5Z"/><path d="M9 11h6M9 14.5h4"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9 4.9-2.1Z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5a8.5 8.5 0 1 0 11 11Z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-user-plus" viewBox="0 0 24 24"><path d="M15 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8" cy="7" r="4"/><path d="M19 8v6M16 11h6"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></symbol>
+  <symbol id="i-rows" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.3h18M3 14.6h18"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></symbol>
+  <symbol id="i-focus" viewBox="0 0 24 24"><path d="M4 9V6a2 2 0 0 1 2-2h3M15 4h3a2 2 0 0 1 2 2v3M20 15v3a2 2 0 0 1-2 2h-3M9 20H6a2 2 0 0 1-2-2v-3"/><circle cx="12" cy="12" r="3"/></symbol>
+</svg>
+
+<div class="wn" id="wn" data-mtheme="clair" data-rail="max">
+
+  <aside class="rail" aria-label="Navigation principale">
+    <div class="rail-brand">
+      <div class="rail-mark">WN</div>
+      <div class="rail-name"><strong>WellNeuro</strong><span>Espace praticien</span></div>
+    </div>
+    <nav class="rail-nav">
+      <div class="rail-label">Espace clinique</div>
+      <button class="rail-item" data-nav="accueil" aria-current="page"><svg class="icon"><use href="#i-home"/></svg><span class="txt">Accueil</span></button>
+      <button class="rail-item" data-nav="patients"><svg class="icon"><use href="#i-users"/></svg><span class="txt">Patients</span></button>
+      <button class="rail-item" data-nav="fiche"><svg class="icon"><use href="#i-check-clip"/></svg><span class="txt">À valider</span><span class="rail-count">2</span></button>
+      <div class="rail-label">Production</div>
+      <button class="rail-item"><svg class="icon"><use href="#i-spark"/></svg><span class="txt">Synthèses IA</span><span class="rail-count">1</span></button>
+      <button class="rail-item"><svg class="icon"><use href="#i-file"/></svg><span class="txt">Protocoles &amp; documents</span></button>
+      <button class="rail-item"><svg class="icon"><use href="#i-settings"/></svg><span class="txt">Paramètres</span></button>
+    </nav>
+    <div class="rail-foot">
+      <div class="rail-profile">
+        <div class="rail-avatar">MC</div>
+        <div><strong>Praticien WellNeuro</strong><span>Session sécurisée</span></div>
+      </div>
+      <button class="rail-collapse" id="railToggle" aria-label="Replier la navigation"><svg class="icon"><use href="#i-panel"/></svg><span>Replier</span></button>
+    </div>
+  </aside>
+
+  <div class="workspace">
+    <div class="demo-strip">Maquette statique de proposition — données 100 % fictives (Sophie Nicola, Jennifer Martin, Michel Dogné). Aucune donnée réelle.</div>
+
+    <header class="topbar">
+      <button class="search" id="searchBtn" aria-label="Ouvrir la recherche et les commandes">
+        <svg class="icon icon-sm"><use href="#i-search"/></svg>
+        Rechercher un patient ou une action…
+        <kbd>Ctrl K</kbd>
+      </button>
+      <div class="topbar-right">
+        <div class="theme-compare" role="group" aria-label="Comparer les directions visuelles">
+          <span class="tc-label">Comparer</span>
+          <button id="themeClair" aria-pressed="true"><svg class="icon icon-sm"><use href="#i-sun"/></svg>Clair A5</button>
+          <button id="themeSombre" aria-pressed="false"><svg class="icon icon-sm"><use href="#i-moon"/></svg>Sombre (explo)</button>
+        </div>
+        <button class="btn btn-secondary btn-icon" aria-label="Notifications (3 non lues)"><svg class="icon"><use href="#i-bell"/></svg></button>
+        <button class="btn btn-primary"><svg class="icon icon-sm"><use href="#i-plus"/></svg><span>Nouvelle consultation</span></button>
+      </div>
+    </header>
+
+    <main class="main">
+
+      <!-- ================= VUE ACCUEIL ================= -->
+      <section class="view active" id="view-accueil" aria-label="Accueil">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Aujourd'hui</div>
+            <h1>Vos prochaines décisions utiles</h1>
+            <p class="page-sub">Classées par urgence clinique — le reste de l'activité ne réclame pas votre attention.</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-secondary" data-nav="patients"><svg class="icon icon-sm"><use href="#i-user-plus"/></svg>Nouveau patient</button>
+          </div>
+        </div>
+
+        <div class="tiles">
+          <div class="tile"><div class="tile-label">Décisions en attente<svg class="icon icon-sm"><use href="#i-compass"/></svg></div><div class="tile-value num">5</div><div class="tile-note">dont 1 demande patient</div></div>
+          <div class="tile"><div class="tile-label">Synthèses à relire<svg class="icon icon-sm"><use href="#i-spark"/></svg></div><div class="tile-value num">2</div><div class="tile-note">générées, en attente de validation</div></div>
+          <div class="tile"><div class="tile-label">Corrections demandées<svg class="icon icon-sm"><use href="#i-msg"/></svg></div><div class="tile-value num">1</div><div class="tile-note">reçue il y a 18 min</div></div>
+          <div class="tile"><div class="tile-label">Jalons sous 7 jours<svg class="icon icon-sm"><use href="#i-cal"/></svg></div><div class="tile-value num">3</div><div class="tile-note">J21 · Michel Dogné dans 3 jours</div></div>
+        </div>
+
+        <div class="home-grid">
+          <section class="panel" aria-label="File de décisions">
+            <div class="panel-head">
+              <h2>File de décisions</h2>
+              <span class="panel-meta">5 éléments · classés par prochaine décision utile</span>
+            </div>
+            <div>
+              <div class="decision-row">
+                <span class="d-stripe" style="background:var(--warn)"></span>
+                <div class="avatar">JM</div>
+                <div class="d-copy">
+                  <div class="d-top"><strong>Jennifer Martin</strong><span class="badge badge-warn"><svg class="icon icon-sm"><use href="#i-msg"/></svg>Correction demandée</span></div>
+                  <p>Souhaite corriger une réponse du questionnaire Sommeil avant votre lecture.</p>
+                  <small>Demande patient · reçue il y a 18 min</small>
+                </div>
+                <button class="btn btn-secondary btn-sm">Examiner</button>
+              </div>
+              <div class="decision-row">
+                <span class="d-stripe" style="background:var(--info)"></span>
+                <div class="avatar">SN</div>
+                <div class="d-copy">
+                  <div class="d-top"><strong>Sophie Nicola</strong><span class="badge badge-info"><svg class="icon icon-sm"><use href="#i-check-clip"/></svg>Bilan complet</span></div>
+                  <p>8 questionnaires sur 8 transmis — la décision clinique peut être préparée.</p>
+                  <small>Dernière réponse aujourd'hui à 09:12 · couverture des données 74 %</small>
+                </div>
+                <button class="btn btn-primary btn-sm" data-nav="fiche">Préparer la décision</button>
+              </div>
+              <div class="decision-row">
+                <span class="d-stripe" style="background:var(--ok)"></span>
+                <div class="avatar">MD</div>
+                <div class="d-copy">
+                  <div class="d-top"><strong>Michel Dogné</strong><span class="badge badge-ok"><svg class="icon icon-sm"><use href="#i-file"/></svg>Protocole à valider</span></div>
+                  <p>Brouillon 21 jours relu — en attente de votre validation pour diffusion.</p>
+                  <small>Relu hier à 18:42 · 3 actions · charge modérée</small>
+                </div>
+                <button class="btn btn-secondary btn-sm">Relire le protocole</button>
+              </div>
+              <div class="decision-row">
+                <span class="d-stripe" style="background:var(--accent)"></span>
+                <div class="avatar">MD</div>
+                <div class="d-copy">
+                  <div class="d-top"><strong>Michel Dogné</strong><span class="badge badge-neutral"><svg class="icon icon-sm"><use href="#i-cal"/></svg>Jalon J21</span></div>
+                  <p>Fin de la phase 1 dans 3 jours — préparer le point d'étape et la réévaluation.</p>
+                  <small>Protocole actif depuis le 27 juin</small>
+                </div>
+                <button class="btn btn-secondary btn-sm">Préparer le point d'étape</button>
+              </div>
+              <div class="decision-row">
+                <span class="d-stripe" style="background:var(--info)"></span>
+                <div class="avatar">SN</div>
+                <div class="d-copy">
+                  <div class="d-top"><strong>Sophie Nicola</strong><span class="badge badge-info"><svg class="icon icon-sm"><use href="#i-spark"/></svg>Synthèse à relire</span></div>
+                  <p>Synthèse IA générée — à valider avant toute diffusion au patient.</p>
+                  <small>Générée il y a 46 min · version prompt 3.2</small>
+                </div>
+                <button class="btn btn-secondary btn-sm">Relire</button>
+              </div>
+            </div>
+          </section>
+
+          <aside class="panel" aria-label="Activité récente">
+            <div class="panel-head"><h2>Activité récente</h2><span class="panel-meta">Événements utiles</span></div>
+            <div class="feed">
+              <div class="feed-item"><div class="feed-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></div><div class="feed-copy"><strong>Questionnaire transmis</strong><p>Sophie Nicola · Mode de vie (8/8)</p><time>Il y a 12 min</time></div></div>
+              <div class="feed-item"><div class="feed-dot"><svg class="icon icon-sm"><use href="#i-spark"/></svg></div><div class="feed-copy"><strong>Synthèse IA générée</strong><p>Sophie Nicola · en attente de relecture</p><time>Il y a 46 min</time></div></div>
+              <div class="feed-item"><div class="feed-dot"><svg class="icon icon-sm"><use href="#i-msg"/></svg></div><div class="feed-copy"><strong>Demande de correction</strong><p>Jennifer Martin · questionnaire Sommeil</p><time>Il y a 18 min</time></div></div>
+              <div class="feed-item"><div class="feed-dot"><svg class="icon icon-sm"><use href="#i-file"/></svg></div><div class="feed-copy"><strong>Brouillon de protocole relu</strong><p>Michel Dogné · phase 1 · 21 jours</p><time>Hier à 18:42</time></div></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ================= VUE PATIENTS ================= -->
+      <section class="view" id="view-patients" aria-label="Annuaire patients">
+        <div class="page-head">
+          <div>
+            <div class="eyebrow">Annuaire</div>
+            <h1>Patients</h1>
+            <p class="page-sub">Un annuaire, rien d'autre : la création, l'assignation et les packs s'ouvrent en panneau, à la demande.</p>
+          </div>
+          <div class="head-actions">
+            <button class="btn btn-primary" id="openDrawer"><svg class="icon icon-sm"><use href="#i-user-plus"/></svg>Nouveau patient</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button class="search"><svg class="icon icon-sm"><use href="#i-search"/></svg>Rechercher par nom ou email…</button>
+          <select aria-label="Filtrer par statut"><option>Tous les statuts</option><option>Suivi actif</option><option>En attente de réponses</option><option>Protocole en cours</option></select>
+          <div class="seg" role="group" aria-label="Mode d'affichage">
+            <button id="modeCards" aria-pressed="true"><svg class="icon icon-sm"><use href="#i-grid"/></svg>Cartes</button>
+            <button id="modeTable" aria-pressed="false"><svg class="icon icon-sm"><use href="#i-rows"/></svg>Tableau</button>
+          </div>
+        </div>
+
+        <div class="cards" id="patientsCards">
+          <article class="pcard">
+            <div class="pcard-top">
+              <div class="avatar">SN</div>
+              <div><h3>Sophie Nicola</h3><p>Consultation initiale · dernière activité aujourd'hui à 09:12</p></div>
+            </div>
+            <div><span class="badge badge-ok"><svg class="icon icon-sm"><use href="#i-check"/></svg>Suivi actif</span> <span class="badge badge-neutral num">8/8 questionnaires reçus</span></div>
+            <div class="pcard-next"><svg class="icon icon-sm"><use href="#i-compass"/></svg><span><b>Prochaine décision :</b> préparer la décision clinique — bilan complet, synthèse à relire.</span></div>
+            <div class="pcard-actions">
+              <button class="btn btn-primary btn-sm" data-nav="fiche">Ouvrir la fiche</button>
+              <button class="btn btn-secondary btn-sm">Assigner</button>
+              <button class="btn btn-ghost btn-sm" aria-label="Autres actions pour Sophie Nicola"><svg class="icon"><use href="#i-dots"/></svg></button>
+            </div>
+          </article>
+          <article class="pcard">
+            <div class="pcard-top">
+              <div class="avatar">JM</div>
+              <div><h3>Jennifer Martin</h3><p>Suivi · dernière activité il y a 18 min</p></div>
+            </div>
+            <div><span class="badge badge-warn"><svg class="icon icon-sm"><use href="#i-msg"/></svg>Correction demandée</span> <span class="badge badge-neutral num">5/6 questionnaires reçus</span></div>
+            <div class="pcard-next"><svg class="icon icon-sm"><use href="#i-compass"/></svg><span><b>Prochaine décision :</b> examiner la demande de correction du questionnaire Sommeil.</span></div>
+            <div class="pcard-actions">
+              <button class="btn btn-primary btn-sm">Examiner</button>
+              <button class="btn btn-secondary btn-sm">Ouvrir la fiche</button>
+              <button class="btn btn-ghost btn-sm" aria-label="Autres actions pour Jennifer Martin"><svg class="icon"><use href="#i-dots"/></svg></button>
+            </div>
+          </article>
+          <article class="pcard">
+            <div class="pcard-top">
+              <div class="avatar">MD</div>
+              <div><h3>Michel Dogné</h3><p>Protocole en cours · phase 1 · J18/21</p></div>
+            </div>
+            <div><span class="badge badge-info"><svg class="icon icon-sm"><use href="#i-file"/></svg>Protocole en cours</span> <span class="badge badge-neutral">Jalon J21 dans 3 jours</span></div>
+            <div class="pcard-next"><svg class="icon icon-sm"><use href="#i-compass"/></svg><span><b>Prochaine décision :</b> valider le protocole relu, puis préparer le point d'étape J21.</span></div>
+            <div class="pcard-actions">
+              <button class="btn btn-primary btn-sm">Relire le protocole</button>
+              <button class="btn btn-secondary btn-sm">Ouvrir la fiche</button>
+              <button class="btn btn-ghost btn-sm" aria-label="Autres actions pour Michel Dogné"><svg class="icon"><use href="#i-dots"/></svg></button>
+            </div>
+          </article>
+        </div>
+
+        <section class="panel" id="patientsTable" hidden aria-label="Patients en tableau">
+          <div class="table-wrap">
+            <table class="plist">
+              <thead><tr><th>Patient</th><th>Statut</th><th>Dernière activité</th><th>Prochaine décision</th><th></th></tr></thead>
+              <tbody>
+                <tr><td><strong>Sophie Nicola</strong></td><td><span class="badge badge-ok">Suivi actif</span></td><td>Aujourd'hui 09:12</td><td>Préparer la décision clinique</td><td><button class="btn btn-secondary btn-sm" data-nav="fiche">Ouvrir</button></td></tr>
+                <tr><td><strong>Jennifer Martin</strong></td><td><span class="badge badge-warn">Correction demandée</span></td><td>Il y a 18 min</td><td>Examiner la demande de correction</td><td><button class="btn btn-secondary btn-sm">Ouvrir</button></td></tr>
+                <tr><td><strong>Michel Dogné</strong></td><td><span class="badge badge-info">Protocole en cours</span></td><td>Hier 18:42</td><td>Valider le protocole · jalon J21</td><td><button class="btn btn-secondary btn-sm">Ouvrir</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagin"><span class="num">3 patients · page 1 sur 1</span><span>La pagination serveur existante est conservée.</span></div>
+        </section>
+      </section>
+
+      <!-- ================= VUE FICHE PATIENT ================= -->
+      <section class="view" id="view-fiche" aria-label="Fiche patient — Sophie Nicola">
+        <header class="phead">
+          <div class="phead-avatar">SN</div>
+          <div>
+            <div class="eyebrow">Fiche patient · épisode initial</div>
+            <h1>Sophie Nicola</h1>
+            <p>Consultation initiale · dernière activité aujourd'hui à 09:12</p>
+            <div class="phead-pills">
+              <span class="badge badge-ok"><svg class="icon icon-sm"><use href="#i-check"/></svg>Suivi actif</span>
+              <span class="badge badge-neutral num">8/8 questionnaires reçus</span>
+              <span class="badge badge-warn">Protocole : brouillon relu, non validé</span>
+            </div>
+          </div>
+          <div class="phead-actions">
+            <button class="btn btn-primary" id="enterConsult"><svg class="icon icon-sm"><use href="#i-focus"/></svg>Mode consultation</button>
+            <button class="btn btn-secondary"><svg class="icon icon-sm"><use href="#i-eye"/></svg>Voir ce que recevra le patient</button>
+            <button class="btn btn-secondary">Assigner</button>
+            <button class="btn btn-ghost btn-icon" aria-label="Autres actions"><svg class="icon"><use href="#i-dots"/></svg></button>
+          </div>
+        </header>
+
+        <div class="tabs" role="tablist" aria-label="Sections de la fiche">
+          <button class="tab" role="tab" aria-selected="true" data-tab="clinique">Vue clinique</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="questionnaires">Questionnaires</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="documents">Documents</button>
+          <button class="tab" role="tab" aria-selected="false" data-tab="historique">Historique</button>
+        </div>
+
+        <!-- Onglet Vue clinique -->
+        <div class="tabpane active" id="tab-clinique">
+          <div class="fiche-grid">
+            <div class="fcol">
+
+              <section class="panel decision-card" id="decisionCard" aria-label="Décision clinique">
+                <div class="eyebrow">Décision clinique — priorité de la phase 1</div>
+                <h2 class="decision-title">Restaurer la récupération : sommeil et régulation du stress avant toute intensification nutritionnelle.</h2>
+                <div class="d-chips">
+                  <span class="badge badge-neutral"><svg class="icon icon-sm"><use href="#i-compass"/></svg>Proposition du moteur : axe sommeil / rythme</span>
+                  <span class="badge badge-ok"><svg class="icon icon-sm"><use href="#i-check"/></svg>Sélection praticien — confirmée le 12 juillet</span>
+                </div>
+                <p class="just">La convergence des questionnaires oriente vers la récupération en premier lieu ; la stabilité du rythme veille-sommeil conditionne la réponse aux autres recommandations.</p>
+                <ul class="signals">
+                  <li><svg class="icon icon-sm"><use href="#i-check"/></svg>Indice sommeil dégradé (58/100), endormissement &gt; 45 min <span class="evidence a"><b>A</b> questionnaire validé</span></li>
+                  <li><svg class="icon icon-sm"><use href="#i-check"/></svg>Réserve d'adaptation diminuée, stress perçu élevé <span class="evidence a"><b>A</b> questionnaire validé</span></li>
+                  <li><svg class="icon icon-sm"><use href="#i-check"/></svg>Rythme alimentaire irrégulier le matin <span class="evidence b"><b>B</b> référentiel neuronutrition</span></li>
+                </ul>
+                <div class="discord">
+                  <svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                  <span><b>Signal discordant :</b> fatigue déclarée sévère (8/10) alors que l'indice sommeil reste modéré (58/100) — à explorer en consultation avant d'interpréter.</span>
+                </div>
+                <div class="lecture-toggle" role="group" aria-label="Niveau de lecture">
+                  <button id="lecRapide" aria-pressed="true">Lecture rapide</button>
+                  <button id="lecExperte" aria-pressed="false">Lecture experte</button>
+                </div>
+                <div class="expert">
+                  <table>
+                    <thead><tr><th>Instrument</th><th>Score</th><th>Version scoring</th><th>Preuve</th></tr></thead>
+                    <tbody>
+                      <tr><td>Sommeil et récupération</td><td class="num">58/100</td><td class="num">v2</td><td><span class="evidence a"><b>A</b></span></td></tr>
+                      <tr><td>Stress et adaptation</td><td class="num">47/100</td><td class="num">v2</td><td><span class="evidence a"><b>A</b></span></td></tr>
+                      <tr><td>Rythme alimentaire</td><td class="num">61/100</td><td class="num">v1</td><td><span class="evidence b"><b>B</b></span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              <section class="panel" aria-label="Données manquantes et limites">
+                <div class="panel-head"><h2>Ce qui manque pour décider sereinement</h2><span class="panel-meta">2 éléments</span></div>
+                <div class="mlist">
+                  <div class="mrow">
+                    <svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                    <div><strong>Chronotype non renseigné</strong><p>Le questionnaire dédié n'a pas été assigné — utile avant de fixer l'horaire de coucher cible.</p></div>
+                    <button class="btn btn-secondary btn-sm">Assigner</button>
+                  </div>
+                  <div class="mrow">
+                    <svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                    <div><strong>Biologie fonctionnelle non disponible</strong><p>Explorations à discuter avec le médecin traitant — hors périmètre de l'application à ce stade.</p></div>
+                    <span class="badge badge-neutral">Limite connue</span>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel" aria-label="Profil fonctionnel">
+                <div class="panel-head"><h2>Profil fonctionnel</h2><span class="panel-meta">Indice de suivi · version score v1 · couverture 74 %</span></div>
+                <div class="profil-grid">
+                  <div class="gauge">
+                    <svg width="150" height="86" viewBox="0 0 150 86" role="img" aria-label="Indice de suivi global : 61 sur 100">
+                      <path d="M14 78 A61 61 0 0 1 136 78" stroke="var(--muted)" stroke-width="11" fill="none" stroke-linecap="round"/>
+                      <path d="M14 78 A61 61 0 0 1 136 78" stroke="var(--primary)" stroke-width="11" fill="none" stroke-linecap="round" stroke-dasharray="116.9 191.6"/>
+                      <circle cx="95.7" cy="20.6" r="5" fill="var(--primary)" stroke="var(--surface)" stroke-width="2"/>
+                    </svg>
+                    <div class="gauge-val num">61<span style="font-size:12px;color:var(--muted-fg)">/100</span></div>
+                    <div class="gauge-cap">Indice de suivi global<br/>jamais interprété seul</div>
+                  </div>
+                  <div class="profil-right">
+                    <div class="mini-stats">
+                      <div class="mini-stat"><b class="num">−8</b><span>Momentum · 30 jours (v1)</span></div>
+                      <div class="mini-stat"><b class="num">74 %</b><span>Couverture des données</span></div>
+                      <div class="mini-stat"><b class="num">2</b><span>Fondations critiques actives</span></div>
+                    </div>
+                    <div class="strates" role="img" aria-label="Trois strates : Corps 54, Ancrage 66, Esprit 72 sur 100">
+                      <div class="strate"><span class="lab"><b>Corps</b> · 60 %</span><span class="track"><span class="fill" style="width:54%;background:var(--viz-corps)"></span></span><span class="val num">54</span></div>
+                      <div class="strate"><span class="lab"><b>Ancrage</b> · 20 %</span><span class="track"><span class="fill" style="width:66%;background:var(--viz-ancrage)"></span></span><span class="val num">66</span></div>
+                      <div class="strate"><span class="lab"><b>Esprit</b> · 20 %</span><span class="track"><span class="fill" style="width:72%;background:var(--viz-esprit)"></span></span><span class="val num">72</span></div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" style="justify-self:start">Voir les 12 besoins et leurs preuves<svg class="icon icon-sm"><use href="#i-arrow"/></svg></button>
+                  </div>
+                </div>
+              </section>
+
+              <section class="panel proto" aria-label="Protocole personnalisé 21 jours">
+                <div class="eyebrow">Protocole personnalisé · phase 1 · 21 jours</div>
+                <div class="proto-meta">
+                  <span class="badge badge-neutral">3 actions maximum</span>
+                  <span class="badge badge-neutral">Charge thérapeutique : modérée — choisie par vous</span>
+                </div>
+                <div class="proto-crit"><svg class="icon icon-sm"><use href="#i-info"/></svg><span><b>Critère de réussite J21 :</b> fatigue matinale &lt; 5/10 sur 5 jours consécutifs.</span></div>
+                <div class="actions3">
+                  <article class="action-card">
+                    <div class="action-top"><span class="action-n num">1</span><h3>Petit-déjeuner protéiné avant 9 h</h3><span class="badge badge-neutral">Alimentation</span></div>
+                    <div class="plans">
+                      <div class="plan"><b>Idéal</b>7 j/7, environ 20 g de protéines.</div>
+                      <div class="plan"><b>Minimal</b>4 j/7, sans culpabilité les autres jours.</div>
+                      <div class="plan"><b>Secours</b>Collation protéinée avant 10 h.</div>
+                    </div>
+                  </article>
+                  <article class="action-card">
+                    <div class="action-top"><span class="action-n num">2</span><h3>Régularité du coucher</h3><span class="badge badge-neutral">Hygiène de vie</span></div>
+                    <div class="plans">
+                      <div class="plan"><b>Idéal</b>Extinction des écrans à 22 h 30, coucher avant 23 h.</div>
+                      <div class="plan"><b>Minimal</b>Coucher avant 23 h 30, 5 j/7.</div>
+                      <div class="plan"><b>Secours</b>Lever à heure fixe, même après une mauvaise nuit.</div>
+                    </div>
+                  </article>
+                  <article class="action-card">
+                    <div class="action-top"><span class="action-n num">3</span><h3>Magnésium bisglycinate le soir</h3><span class="badge badge-neutral">Recommandation — complément</span></div>
+                    <div class="plans">
+                      <div class="plan"><b>Idéal</b>Prise quotidienne au dîner.</div>
+                      <div class="plan"><b>Minimal</b>5 j/7.</div>
+                      <div class="plan"><b>Secours</b>Reporter au lendemain, sans doubler la prise.</div>
+                    </div>
+                  </article>
+                </div>
+                <div class="chain" aria-label="Statut du protocole">
+                  <span class="chain-step done"><span class="chain-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span>Brouillon enregistré</span>
+                  <span class="chain-sep"></span>
+                  <span class="chain-step done"><span class="chain-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span>Relu par vous</span>
+                  <span class="chain-sep"></span>
+                  <span class="chain-step wait"><span class="chain-dot"><svg class="icon icon-sm"><use href="#i-clock"/></svg></span>Validé pour diffusion</span>
+                  <span class="chain-sep"></span>
+                  <span class="chain-step"><span class="chain-dot"><svg class="icon icon-sm"><use href="#i-clock"/></svg></span>Transmis</span>
+                </div>
+                <div class="proto-actions">
+                  <button class="btn btn-secondary">Enregistrer le brouillon</button>
+                  <button class="btn btn-primary">Valider pour diffusion</button>
+                  <button class="btn btn-secondary" disabled>Envoyer au patient</button>
+                  <span class="proto-note">La transmission au patient sera disponible après la campagne de persistance (C2) — aucune diffusion possible depuis cette maquette.</span>
+                </div>
+              </section>
+
+            </div>
+
+            <aside class="aside">
+              <section class="panel" aria-label="Vigilances">
+                <div class="panel-head"><h2>Vigilances</h2><span class="panel-meta">2</span></div>
+                <div class="mlist vigil">
+                  <div class="mrow">
+                    <svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                    <div><strong>Traitement en cours signalé</strong><p>À vérifier avant toute recommandation de complément — signalement, jamais de décision automatique.</p></div>
+                  </div>
+                  <div class="mrow">
+                    <svg class="icon icon-sm"><use href="#i-alert"/></svg>
+                    <div><strong>Signal discordant fatigue / sommeil</strong><p>À explorer en consultation (voir carte de décision).</p></div>
+                  </div>
+                </div>
+              </section>
+              <section class="panel" aria-label="Timeline clinique">
+                <div class="panel-head"><h2>Timeline clinique</h2><span class="panel-meta">Épisode initial</span></div>
+                <div class="tl">
+                  <div class="tl-item"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><div class="tl-copy"><strong>Questionnaires reçus (8/8)</strong><p>T0 · terminés aujourd'hui à 09:12</p></div></div>
+                  <div class="tl-item"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><div class="tl-copy"><strong>Synthèse IA générée</strong><p>En attente de votre relecture</p></div></div>
+                  <div class="tl-item"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><div class="tl-copy"><strong>Priorité confirmée</strong><p>Sélection praticien · 12 juillet</p></div></div>
+                  <div class="tl-item future"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-clock"/></svg></span><div class="tl-copy"><strong>Points d'étape J7 · J14 · J21</strong><p>Préfiguration du suivi (campagne C2)</p></div></div>
+                </div>
+              </section>
+            </aside>
+          </div>
+        </div>
+
+        <!-- Onglet Questionnaires -->
+        <div class="tabpane" id="tab-questionnaires">
+          <section class="panel">
+            <div class="panel-head"><h2>Questionnaires de l'épisode</h2><span class="panel-meta num">8 reçus · 0 en attente</span></div>
+            <div class="qlist">
+              <div class="qrow"><div class="grow"><strong>Sommeil et récupération</strong><small>Reçu aujourd'hui à 08:47 · score 58/100 · v2</small></div><span class="evidence a"><b>A</b> validé</span><button class="btn btn-secondary btn-sm">Consulter</button></div>
+              <div class="qrow"><div class="grow"><strong>Stress et adaptation</strong><small>Reçu aujourd'hui à 08:59 · score 47/100 · v2</small></div><span class="evidence a"><b>A</b> validé</span><button class="btn btn-secondary btn-sm">Consulter</button></div>
+              <div class="qrow"><div class="grow"><strong>Mode de vie</strong><small>Reçu aujourd'hui à 09:12 · non scoré (recueil qualitatif)</small></div><span class="evidence b"><b>B</b> référentiel</span><button class="btn btn-secondary btn-sm">Consulter</button></div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Onglet Documents -->
+        <div class="tabpane" id="tab-documents">
+          <section class="panel">
+            <div class="empty">
+              <svg class="icon"><use href="#i-file"/></svg>
+              <p><strong>Aucun document composé pour le moment.</strong><br/>Dès que la synthèse sera validée, vous pourrez composer ici le document patient et le courrier au médecin (campagne C3).</p>
+              <button class="btn btn-secondary btn-sm" disabled>Composer un document</button>
+            </div>
+          </section>
+        </div>
+
+        <!-- Onglet Historique -->
+        <div class="tabpane" id="tab-historique">
+          <section class="panel">
+            <div class="panel-head"><h2>Historique de l'épisode</h2></div>
+            <div class="tl" style="padding:6px 18px 16px">
+              <div class="tl-item"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><div class="tl-copy"><strong>Épisode initial proposé</strong><p>8 juillet · à la réception des premiers questionnaires</p></div></div>
+              <div class="tl-item"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><div class="tl-copy"><strong>Pack « Base de consultation » assigné</strong><p>8 juillet · 8 questionnaires</p></div></div>
+              <div class="tl-item"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><div class="tl-copy"><strong>Priorité confirmée par vous</strong><p>12 juillet · axe sommeil / rythme</p></div></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <!-- ================= VUE MODE CONSULTATION ================= -->
+      <section class="view" id="view-consult" aria-label="Mode consultation">
+        <div class="consult-bar">
+          <div class="who">
+            <div class="avatar">SN</div>
+            <div><h1>Sophie Nicola</h1><p>Mode consultation · les éléments secondaires sont masqués</p></div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:9px">
+            <button class="btn btn-secondary" id="exitConsult"><svg class="icon icon-sm"><use href="#i-x"/></svg>Quitter le mode consultation</button>
+          </div>
+        </div>
+        <div class="consult-main">
+          <section class="panel signal">
+            <div class="eyebrow">Signal principal</div>
+            <h2>Récupération dégradée : le sommeil et la régulation du stress passent avant toute intensification.</h2>
+            <p>Convergence de 2 questionnaires validés (preuve A) et du référentiel neuronutrition (preuve B). Couverture des données 74 % — le chronotype manque encore.</p>
+          </section>
+          <section class="panel" aria-label="Vigilances en consultation">
+            <div class="panel-head"><h2>Vigilances</h2><span class="panel-meta">2</span></div>
+            <div class="mlist vigil">
+              <div class="mrow"><svg class="icon icon-sm"><use href="#i-alert"/></svg><div><strong>Signal discordant fatigue / sommeil</strong><p>Fatigue déclarée 8/10 vs indice sommeil 58/100 — question à poser maintenant.</p></div></div>
+              <div class="mrow"><svg class="icon icon-sm"><use href="#i-alert"/></svg><div><strong>Traitement en cours signalé</strong><p>Vérifier la compatibilité avant d'évoquer le complément.</p></div></div>
+            </div>
+          </section>
+          <section class="panel consult-actions" aria-label="Les trois actions à présenter">
+            <div class="panel-head" style="padding-left:0;padding-right:0"><h2>Les 3 actions à présenter</h2><span class="panel-meta">Charge modérée · critère J21 : fatigue matinale &lt; 5/10</span></div>
+            <div class="ca-row"><span class="action-n num">1</span><div><strong>Petit-déjeuner protéiné avant 9 h</strong><p>Plan minimal : 4 j/7 · secours : collation protéinée avant 10 h.</p></div></div>
+            <div class="ca-row"><span class="action-n num">2</span><div><strong>Régularité du coucher</strong><p>Plan minimal : avant 23 h 30, 5 j/7 · secours : lever à heure fixe.</p></div></div>
+            <div class="ca-row"><span class="action-n num">3</span><div><strong>Magnésium bisglycinate le soir</strong><p>Recommandation à discuter — traitement en cours signalé.</p></div></div>
+          </section>
+          <div class="next-decision">
+            <svg class="icon"><use href="#i-compass"/></svg>
+            <div><strong>Prochaine décision utile</strong><p>Valider le protocole pour diffusion, puis convenir du point d'étape J7.</p></div>
+            <button class="btn">Préparer la suite</button>
+          </div>
+          <section class="panel notes" style="padding:16px 18px" aria-label="Notes de consultation">
+            <div class="eyebrow" style="margin-bottom:8px">Notes de consultation</div>
+            <textarea placeholder="Vos notes restent internes — jamais visibles du patient."></textarea>
+          </section>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Drawer nouveau patient -->
+  <div class="scrim" id="scrim"></div>
+  <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Nouveau patient">
+    <div class="drawer-head">
+      <h2>Nouveau patient</h2>
+      <button class="btn btn-ghost btn-icon" id="closeDrawer" aria-label="Fermer le panneau"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="drawer-body">
+      <div class="field"><label for="f-nom">Nom</label><input id="f-nom" type="text" placeholder="Nicola" /></div>
+      <div class="field"><label for="f-prenom">Prénom</label><input id="f-prenom" type="text" placeholder="Sophie" /></div>
+      <div class="field"><label for="f-email">Email</label><input id="f-email" type="email" placeholder="exemple@fictif.fr" /></div>
+      <p class="hint">L'assignation de questionnaires et le lien portail seront proposés juste après la création — plus de formulaires empilés en permanence sur l'annuaire.</p>
+    </div>
+    <div class="drawer-foot">
+      <button class="btn btn-primary" style="flex:1">Créer le patient</button>
+      <button class="btn btn-secondary" id="cancelDrawer">Annuler</button>
+    </div>
+  </aside>
+
+  <!-- Palette de commandes -->
+  <div class="palette" id="palette">
+    <div class="palette-box" role="dialog" aria-modal="true" aria-label="Recherche et commandes">
+      <input id="paletteInput" type="text" placeholder="Rechercher un patient, une action, un document…" />
+      <div class="palette-list" id="paletteList">
+        <button class="palette-item" data-nav="fiche"><svg class="icon icon-sm"><use href="#i-users"/></svg>Ouvrir la fiche de Sophie Nicola</button>
+        <button class="palette-item"><svg class="icon icon-sm"><use href="#i-msg"/></svg>Examiner la correction de Jennifer Martin</button>
+        <button class="palette-item"><svg class="icon icon-sm"><use href="#i-file"/></svg>Relire le protocole de Michel Dogné</button>
+        <button class="palette-item"><svg class="icon icon-sm"><use href="#i-cal"/></svg>Préparer le point d'étape J21 de Michel Dogné</button>
+        <button class="palette-item"><svg class="icon icon-sm"><use href="#i-spark"/></svg>Relire la synthèse de Sophie Nicola</button>
+        <button class="palette-item" data-nav="patients"><svg class="icon icon-sm"><use href="#i-user-plus"/></svg>Créer un nouveau patient</button>
+      </div>
+      <div class="palette-hintbar">Échap pour fermer · Ctrl K pour rouvrir — chaque action est aussi accessible par la navigation visible.</div>
+    </div>
+  </div>
+
+  <!-- Navigation mobile -->
+  <nav class="bottomnav" aria-label="Navigation mobile">
+    <button data-nav="accueil" aria-current="page"><svg class="icon"><use href="#i-home"/></svg>Accueil</button>
+    <button data-nav="patients"><svg class="icon"><use href="#i-users"/></svg>Patients</button>
+    <button data-nav="fiche"><svg class="icon"><use href="#i-check-clip"/></svg>À valider</button>
+    <button id="mobileMore"><svg class="icon"><use href="#i-dots"/></svg>Plus</button>
+  </nav>
+
+</div>
+
+<script>
+(function () {
+  var wn = document.getElementById('wn');
+
+  /* Navigation entre vues */
+  function show(name) {
+    ['accueil','patients','fiche','consult'].forEach(function (v) {
+      document.getElementById('view-' + v).classList.toggle('active', v === name);
+    });
+    document.querySelectorAll('[data-nav]').forEach(function (b) {
+      if (b.classList.contains('rail-item') || b.closest('.bottomnav')) {
+        if (b.dataset.nav === name) { b.setAttribute('aria-current','page'); }
+        else { b.removeAttribute('aria-current'); }
+      }
+    });
+    wn.removeAttribute('data-consult');
+    window.scrollTo({ top: 0 });
+  }
+  document.querySelectorAll('[data-nav]').forEach(function (b) {
+    b.addEventListener('click', function () { show(b.dataset.nav); closePalette(); });
+  });
+
+  /* Rail replié / étendu */
+  document.getElementById('railToggle').addEventListener('click', function () {
+    wn.dataset.rail = wn.dataset.rail === 'min' ? 'max' : 'min';
+  });
+
+  /* Comparateur de thème (outil de maquette — A5 reste la décision actée) */
+  function setTheme(t) {
+    wn.dataset.mtheme = t;
+    document.getElementById('themeClair').setAttribute('aria-pressed', String(t === 'clair'));
+    document.getElementById('themeSombre').setAttribute('aria-pressed', String(t === 'sombre'));
+  }
+  document.getElementById('themeClair').addEventListener('click', function () { setTheme('clair'); });
+  document.getElementById('themeSombre').addEventListener('click', function () { setTheme('sombre'); });
+
+  /* Annuaire : cartes / tableau */
+  function setMode(cards) {
+    document.getElementById('patientsCards').style.display = cards ? '' : 'none';
+    document.getElementById('patientsTable').hidden = cards;
+    document.getElementById('modeCards').setAttribute('aria-pressed', String(cards));
+    document.getElementById('modeTable').setAttribute('aria-pressed', String(!cards));
+  }
+  document.getElementById('modeCards').addEventListener('click', function () { setMode(true); });
+  document.getElementById('modeTable').addEventListener('click', function () { setMode(false); });
+
+  /* Drawer nouveau patient */
+  function openDrawer() { wn.classList.add('drawer-open'); document.getElementById('f-nom').focus(); }
+  function closeDrawer() { wn.classList.remove('drawer-open'); }
+  document.getElementById('openDrawer').addEventListener('click', openDrawer);
+  document.getElementById('closeDrawer').addEventListener('click', closeDrawer);
+  document.getElementById('cancelDrawer').addEventListener('click', closeDrawer);
+  document.getElementById('scrim').addEventListener('click', closeDrawer);
+
+  /* Lecture rapide / experte */
+  var dc = document.getElementById('decisionCard');
+  function setLecture(expert) {
+    dc.classList.toggle('expert-on', expert);
+    document.getElementById('lecRapide').setAttribute('aria-pressed', String(!expert));
+    document.getElementById('lecExperte').setAttribute('aria-pressed', String(expert));
+  }
+  document.getElementById('lecRapide').addEventListener('click', function () { setLecture(false); });
+  document.getElementById('lecExperte').addEventListener('click', function () { setLecture(true); });
+
+  /* Mode consultation */
+  document.getElementById('enterConsult').addEventListener('click', function () {
+    show('consult'); wn.dataset.consult = '1';
+  });
+  document.getElementById('exitConsult').addEventListener('click', function () {
+    wn.removeAttribute('data-consult'); show('fiche');
+  });
+
+  /* Palette de commandes */
+  var palette = document.getElementById('palette');
+  var paletteInput = document.getElementById('paletteInput');
+  function openPalette() { wn.classList.add('palette-open'); paletteInput.value = ''; filterPalette(); paletteInput.focus(); }
+  function closePalette() { wn.classList.remove('palette-open'); }
+  function filterPalette() {
+    var q = paletteInput.value.toLowerCase();
+    document.querySelectorAll('.palette-item').forEach(function (it) {
+      it.style.display = it.textContent.toLowerCase().indexOf(q) === -1 ? 'none' : '';
+    });
+  }
+  document.getElementById('searchBtn').addEventListener('click', openPalette);
+  paletteInput.addEventListener('input', filterPalette);
+  palette.addEventListener('click', function (e) { if (e.target === palette) closePalette(); });
+  document.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openPalette(); }
+    if (e.key === 'Escape') { closePalette(); closeDrawer(); }
+  });
+
+  /* Nav mobile « Plus » : bascule simple vers l'accueil des réglages (démo) */
+  document.getElementById('mobileMore').addEventListener('click', openPalette);
+})();
+</script>
+</body>
+</html>

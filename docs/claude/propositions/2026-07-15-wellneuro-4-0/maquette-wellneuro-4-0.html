@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WellNeuro 4.0 — La Boucle</title>
+<style>
+/* ==========================================================================
+   Maquette statique — proposition « WellNeuro 4.0 : La Boucle » (2026-07-15).
+   Prolonge la proposition « Cockpit praticien 4.0 » (2026-07-14) sans la
+   refaire. Données 100 % fictives : Sophie Nicola, Jennifer Martin, Michel
+   Dogné. Tokens repris à l'identique de web/src/app/globals.css.
+   ========================================================================== */
+body { margin: 0; }
+
+.wn {
+  --teal-950:#0b2027; --teal-900:#102e33; --teal-700:#1f5e5b;
+  --teal-500:#2f8481; --teal-200:#a8bfc2;
+  --gold-600:#b8923e; --gold-500:#c9a24b; --gold-300:#e3cd8f;
+  --cream-100:#fbf9f5; --cream-50:#f4efe6;
+  --violet-600:#6b5b95; --violet-300:#c9c0e0;
+
+  --bg:var(--cream-100); --fg:#16323a; --surface:#ffffff;
+  --muted:#e7eeee; --muted-fg:#4a6367; --border:#d8e2e1;
+  --primary:var(--teal-700); --primary-fg:#ffffff; --accent:var(--gold-600);
+  --ok:#15803d; --warn:#92400e; --danger:#b91c1c; --info:#1d4ed8;
+  --ok-bg:rgba(21,128,61,.09); --warn-bg:rgba(146,64,14,.09);
+  --danger-bg:rgba(185,28,28,.09); --info-bg:rgba(29,78,216,.07);
+  --neutral-bg:rgba(22,50,58,.06);
+  --rail-bg:var(--teal-950); --rail-surface:var(--teal-900);
+  --rail-fg:var(--cream-50); --rail-muted-fg:var(--teal-200);
+  --rail-border:#24444a; --rail-accent:var(--gold-500);
+  --viz-corps:var(--teal-500); --viz-ancrage:var(--violet-600); --viz-esprit:var(--gold-500);
+  --shadow:0 1px 2px rgba(11,32,39,.04),0 10px 28px rgba(11,32,39,.07);
+  --focus:var(--teal-700);
+  --font-body:Inter,"Segoe UI",ui-sans-serif,system-ui,sans-serif;
+  --font-display:Lora,Georgia,"Times New Roman",serif;
+  --radius:12px; --radius-lg:16px; --railw:248px;
+
+  font-family:var(--font-body); color:var(--fg); background:var(--bg);
+  min-height:100vh; -webkit-font-smoothing:antialiased; line-height:1.5; font-size:14px;
+}
+.wn *,.wn *::before,.wn *::after { box-sizing:border-box; }
+.wn :is(button,input,select,textarea) { font:inherit; color:inherit; }
+.wn button { cursor:pointer; background:none; border:0; padding:0; }
+.wn a { color:inherit; text-decoration:none; }
+.wn :is(a,button,input,select,textarea,[tabindex]):focus-visible { outline:2px solid var(--focus); outline-offset:2px; border-radius:6px; }
+.wn .num { font-variant-numeric:tabular-nums; }
+@media (prefers-reduced-motion:reduce) { .wn,.wn * { transition-duration:.001s!important; animation-duration:.001s!important; } }
+
+.icon { width:19px; height:19px; stroke:currentColor; stroke-width:1.8; fill:none; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+.icon-sm { width:15px; height:15px; }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:42px; padding:0 15px; border-radius:10px; font-size:12.5px; font-weight:650; border:1px solid transparent; transition:filter .15s ease; }
+.btn:hover { filter:brightness(1.05); }
+.btn-primary { background:var(--primary); color:var(--primary-fg); box-shadow:0 6px 16px rgba(31,94,91,.18); }
+.btn-secondary { background:var(--surface); border-color:var(--border); color:var(--fg); }
+.btn-ghost { color:var(--muted-fg); min-height:38px; }
+.btn-ghost:hover { background:var(--neutral-bg); color:var(--fg); }
+.btn-sm { min-height:34px; padding:0 11px; font-size:11.5px; }
+.btn[disabled] { opacity:.5; cursor:not-allowed; filter:none; }
+.badge { display:inline-flex; align-items:center; gap:5px; min-height:24px; padding:1px 9px; border-radius:999px; font-size:10.5px; font-weight:700; }
+.badge-ok { background:var(--ok-bg); color:var(--ok); }
+.badge-warn { background:var(--warn-bg); color:var(--warn); }
+.badge-danger { background:var(--danger-bg); color:var(--danger); }
+.badge-info { background:var(--info-bg); color:var(--info); }
+.badge-neutral { background:var(--neutral-bg); color:var(--muted-fg); }
+.evidence { display:inline-flex; align-items:center; gap:5px; padding:1px 8px; min-height:22px; border-radius:7px; font-size:10px; font-weight:650; background:var(--neutral-bg); color:var(--muted-fg); }
+.evidence b { font-size:10.5px; }
+.evidence.a b { color:var(--ok); } .evidence.c b { color:var(--warn); }
+.panel { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+.panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:15px 18px 13px; border-bottom:1px solid var(--border); }
+.panel-head h2 { margin:0; font-size:13.5px; font-weight:700; }
+.panel-meta { font-size:11px; color:var(--muted-fg); }
+.eyebrow { font-size:10.5px; font-weight:750; letter-spacing:.15em; text-transform:uppercase; color:var(--accent); }
+
+/* ---------- Bandeau démo + sélecteur d'espace ---------- */
+.demo-strip { font-size:11px; padding:6px 16px; text-align:center; background:var(--neutral-bg); color:var(--muted-fg); border-bottom:1px solid var(--border); }
+.space-switch-wrap { display:flex; justify-content:center; padding:12px 16px; border-bottom:1px solid var(--border); background:var(--surface); }
+.space-switch { display:flex; gap:3px; padding:3px; border:1px solid var(--border); border-radius:12px; background:var(--bg); }
+.space-switch button { display:flex; align-items:center; gap:8px; height:38px; padding:0 16px; border-radius:9px; font-size:12.5px; font-weight:650; color:var(--muted-fg); }
+.space-switch button[aria-pressed="true"] { background:var(--primary); color:var(--primary-fg); }
+.space { display:none; }
+.space.active { display:block; }
+
+/* ---------- Repère de Boucle (composant transverse) ---------- */
+.loop-rail { display:flex; align-items:center; gap:0; margin-top:12px; flex-wrap:wrap; }
+.loop-dot { width:9px; height:9px; border-radius:50%; background:var(--muted); flex:none; }
+.loop-dot.done { background:var(--teal-500); }
+.loop-dot.active { width:12px; height:12px; background:var(--accent); box-shadow:0 0 0 4px rgba(184,146,62,.16); }
+.loop-line { width:18px; height:1px; background:var(--border); }
+.loop-line.done { background:var(--teal-500); }
+.loop-label { margin-left:10px; font-size:11px; font-weight:700; color:var(--fg); white-space:nowrap; }
+.loop-label span { font-weight:500; color:var(--muted-fg); }
+
+/* ---------- Espace praticien : rail + topbar ---------- */
+#space-praticien.active { display:grid; grid-template-columns:var(--railw) minmax(0,1fr); }
+.rail { position:sticky; top:0; height:100vh; z-index:40; background:var(--rail-bg); color:var(--rail-fg); border-right:1px solid var(--rail-border); display:flex; flex-direction:column; overflow:hidden; white-space:nowrap; }
+.rail-brand { display:flex; align-items:center; gap:11px; min-height:64px; padding:0 14px; border-bottom:1px solid var(--rail-border); }
+.rail-mark { width:38px; height:38px; flex:0 0 38px; display:grid; place-items:center; border-radius:11px; font-weight:700; letter-spacing:-.04em; font-size:14px; color:var(--rail-accent); border:1px solid rgba(201,162,75,.35); background:linear-gradient(150deg,rgba(201,162,75,.14),rgba(47,132,129,.1)); }
+.rail-name strong { display:block; font-size:14px; }
+.rail-name span { display:block; font-size:10.5px; color:var(--rail-muted-fg); letter-spacing:.09em; text-transform:uppercase; margin-top:1px; }
+.rail-nav { padding:14px 10px; display:grid; gap:4px; }
+.rail-label { padding:10px 12px 4px; font-size:10px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--rail-muted-fg); }
+.rail-item { position:relative; display:grid; grid-template-columns:34px minmax(0,1fr) auto; align-items:center; gap:8px; min-height:44px; padding:0 10px; border-radius:10px; color:var(--rail-muted-fg); font-weight:550; font-size:13px; text-align:left; width:100%; }
+.rail-item:hover { background:rgba(255,255,255,.05); color:var(--rail-fg); }
+.rail-item[aria-current="page"] { background:rgba(47,132,129,.2); color:var(--rail-fg); }
+.rail-item[aria-current="page"]::before { content:""; position:absolute; left:-10px; width:3px; height:22px; border-radius:0 3px 3px 0; background:var(--rail-accent); }
+.rail-count { min-width:20px; height:20px; padding:0 6px; display:grid; place-items:center; border-radius:999px; font-size:10.5px; font-weight:700; background:rgba(201,162,75,.16); color:var(--rail-accent); }
+.rail-foot { margin-top:auto; padding:12px 10px; border-top:1px solid var(--rail-border); }
+.rail-profile { display:grid; grid-template-columns:34px minmax(0,1fr); gap:9px; align-items:center; padding:7px 10px; border:1px solid var(--rail-border); border-radius:11px; }
+.rail-avatar { width:34px; height:34px; display:grid; place-items:center; border-radius:9px; background:var(--cream-50); color:var(--teal-950); font-size:11px; font-weight:750; }
+.rail-profile strong { display:block; font-size:11.5px; }
+.rail-profile span { display:block; font-size:10px; color:var(--rail-muted-fg); }
+.workspace { min-width:0; }
+.topbar { position:sticky; top:0; z-index:30; min-height:60px; display:flex; align-items:center; gap:12px; padding:8px 22px; background:var(--bg); border-bottom:1px solid var(--border); }
+.p-tabs { display:flex; gap:3px; }
+.p-tabs button { height:38px; padding:0 13px; border-radius:9px; font-size:12px; font-weight:650; color:var(--muted-fg); }
+.p-tabs button[aria-current="page"] { background:var(--neutral-bg); color:var(--fg); }
+.main { width:min(1280px,100%); margin:0 auto; padding:24px 22px 80px; }
+.pview { display:none; }
+.pview.active { display:block; animation:vfade .2s ease; }
+@keyframes vfade { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:none} }
+.page-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:20px; }
+.page-head h1 { margin:6px 0 0; font-family:var(--font-display); font-weight:600; font-size:clamp(21px,2.4vw,27px); letter-spacing:-.01em; text-wrap:balance; }
+.page-sub { margin:7px 0 0; color:var(--muted-fg); font-size:12.5px; max-width:60ch; }
+.head-actions { display:flex; gap:9px; flex-wrap:wrap; }
+
+/* ---------- Accueil praticien (compact) ---------- */
+.tiles { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin-bottom:16px; }
+.tile { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px 15px; box-shadow:var(--shadow); }
+.tile-label { font-size:11px; font-weight:650; color:var(--muted-fg); }
+.tile-value { margin-top:8px; font-size:25px; font-weight:720; letter-spacing:-.03em; }
+.decision-row { display:grid; grid-template-columns:4px 40px minmax(0,1fr) auto; gap:13px; align-items:center; padding:13px 16px 13px 0; border-bottom:1px solid var(--border); }
+.decision-row:last-child { border-bottom:0; }
+.d-stripe { align-self:stretch; border-radius:0 3px 3px 0; }
+.avatar { width:40px; height:40px; display:grid; place-items:center; border-radius:11px; background:var(--neutral-bg); font-size:11px; font-weight:750; }
+.d-copy strong { font-size:13px; }
+.d-copy p { margin:3px 0 0; font-size:12px; color:var(--muted-fg); }
+.d-copy small { display:block; margin-top:3px; font-size:10.5px; color:var(--muted-fg); }
+
+/* ---------- Fiche patient (condensée + Suivi intégré) ---------- */
+.phead { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:16px; align-items:center; padding:17px 19px; margin-bottom:14px; background:linear-gradient(115deg,rgba(47,132,129,.09),transparent 55%,rgba(201,162,75,.07)),var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow); }
+.phead-avatar { width:52px; height:52px; display:grid; place-items:center; border-radius:15px; background:var(--teal-700); color:#fff; font-size:15px; font-weight:750; }
+.phead h1 { margin:0; font-family:var(--font-display); font-weight:600; font-size:20px; }
+.phead p { margin:4px 0 0; font-size:11.5px; color:var(--muted-fg); }
+.phead-pills { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.tabs { display:flex; gap:3px; padding:4px; border:1px solid var(--border); border-radius:12px; background:var(--surface); overflow-x:auto; margin-bottom:15px; }
+.tab { flex:none; min-height:38px; padding:0 13px; border-radius:9px; font-size:12px; font-weight:650; color:var(--muted-fg); }
+.tab[aria-selected="true"] { background:var(--primary); color:var(--primary-fg); }
+.tabpane { display:none; }
+.tabpane.active { display:block; }
+.decision-card { padding:18px 19px; }
+.decision-title { margin:9px 0 0; font-family:var(--font-display); font-weight:600; font-size:18px; line-height:1.32; text-wrap:balance; }
+.decision-card p.just { margin:10px 0 0; font-size:12.5px; color:var(--muted-fg); max-width:64ch; }
+.proto { padding:17px 19px; margin-top:15px; }
+.proto-meta { display:flex; gap:8px; flex-wrap:wrap; margin-top:9px; }
+.actions3 { display:grid; gap:10px; margin-top:14px; }
+.action-card { border:1px solid var(--border); border-radius:12px; padding:12px 14px; background:var(--bg); display:flex; gap:11px; align-items:flex-start; }
+.action-n { width:24px; height:24px; display:grid; place-items:center; border-radius:8px; background:rgba(184,146,62,.14); color:var(--accent); font-weight:750; font-size:11.5px; flex:none; }
+.action-card strong { font-size:13px; }
+.action-card p { margin:2px 0 0; font-size:11.5px; color:var(--muted-fg); }
+.lib-mini { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+
+/* ---------- Suivi & trajectoire ---------- */
+.suivi-grid { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.7fr); gap:15px; align-items:start; }
+.tl-full { padding:8px 19px 16px; }
+.tl-item { position:relative; display:grid; grid-template-columns:24px minmax(0,1fr) auto; gap:11px; padding-top:14px; align-items:start; }
+.tl-item:not(:last-child)::after { content:""; position:absolute; left:11px; top:38px; bottom:-12px; width:1px; background:var(--border); }
+.tl-dot { width:24px; height:24px; border-radius:99px; display:grid; place-items:center; background:var(--ok-bg); color:var(--ok); }
+.tl-item.future .tl-dot { background:var(--muted); color:var(--muted-fg); }
+.tl-item.future { opacity:.72; }
+.tl-copy strong { display:block; font-size:12.5px; }
+.tl-copy p { margin:2px 0 0; font-size:11px; color:var(--muted-fg); }
+.tl-copy time { font-size:10px; color:var(--muted-fg); }
+.compare { padding:16px 19px; }
+.compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; }
+.compare-col { border:1px solid var(--border); border-radius:11px; padding:12px 13px; }
+.compare-col h3 { margin:0 0 8px; font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted-fg); }
+.compare-row { display:flex; justify-content:space-between; font-size:12.5px; padding:6px 0; border-bottom:1px solid var(--border); }
+.compare-row:last-child { border-bottom:0; }
+.compare-delta { font-size:11px; font-weight:700; }
+.compare-delta.up { color:var(--ok); }
+.compare-delta.same { color:var(--muted-fg); }
+.compare-note { margin-top:11px; padding:9px 11px; border-radius:10px; background:var(--info-bg); font-size:11.5px; color:var(--fg); }
+.checkin-mini { padding:8px 19px 15px; }
+.ci-row { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.ci-row:last-child { border-bottom:0; }
+
+/* ---------- Bibliothèque (C4/C5) ---------- */
+.lib-tabs { display:flex; gap:3px; padding:4px; border:1px solid var(--border); border-radius:12px; background:var(--surface); margin-bottom:16px; width:max-content; }
+.lib-tabs button { height:38px; padding:0 15px; border-radius:9px; font-size:12.5px; font-weight:650; color:var(--muted-fg); display:flex; align-items:center; gap:7px; }
+.lib-tabs button[aria-selected="true"] { background:var(--primary); color:var(--primary-fg); }
+.libpane { display:none; }
+.libpane.active { display:block; }
+.lib-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:13px; }
+.lib-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:15px 16px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; }
+.lib-card-top { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; }
+.lib-card-top h3 { margin:0; font-size:13.5px; }
+.lib-card-top p { margin:2px 0 0; font-size:11px; color:var(--muted-fg); }
+.lib-meta { display:flex; gap:6px; flex-wrap:wrap; font-size:10.5px; color:var(--muted-fg); }
+.lib-compat { display:flex; gap:8px; align-items:flex-start; padding:9px 11px; border-radius:10px; background:var(--ok-bg); font-size:11.5px; }
+.lib-compat.warn { background:var(--warn-bg); }
+.lib-compat .icon { color:var(--ok); margin-top:1px; }
+.lib-compat.warn .icon { color:var(--warn); }
+.lib-source { font-size:10px; color:var(--muted-fg); border-top:1px solid var(--border); padding-top:8px; margin-top:2px; }
+
+/* ---------- Documents (C3) ---------- */
+.doc-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.doc-dest { display:flex; gap:3px; padding:3px; border:1px solid var(--border); border-radius:11px; background:var(--surface); }
+.doc-dest button { height:34px; padding:0 12px; border-radius:8px; font-size:11.5px; font-weight:650; color:var(--muted-fg); }
+.doc-dest button[aria-pressed="true"] { background:var(--primary); color:var(--primary-fg); }
+.doc-composer { display:grid; grid-template-columns:1fr 1fr; gap:0; border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; box-shadow:var(--shadow); }
+.doc-col { background:var(--surface); padding:18px 19px; min-width:0; }
+.doc-col.source { border-right:1px solid var(--border); background:var(--bg); }
+.doc-col-label { font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-fg); margin-bottom:12px; }
+.doc-block { margin-bottom:14px; padding-bottom:14px; border-bottom:1px solid var(--border); }
+.doc-block:last-child { border-bottom:0; margin-bottom:0; padding-bottom:0; }
+.doc-block h4 { margin:0 0 6px; font-size:12px; font-weight:700; }
+.doc-block p { margin:0; font-size:12px; color:var(--muted-fg); line-height:1.6; }
+.doc-provenance { font-size:9.5px; color:var(--muted-fg); margin-top:5px; }
+.doc-rendu-title { font-family:var(--font-display); font-weight:600; font-size:16px; margin:0 0 10px; }
+.doc-chain { display:flex; align-items:center; gap:0; flex-wrap:wrap; margin-top:16px; }
+.chain-step { display:flex; align-items:center; gap:6px; font-size:10.5px; font-weight:650; color:var(--muted-fg); }
+.chain-dot { width:20px; height:20px; display:grid; place-items:center; border-radius:99px; background:var(--muted); color:var(--muted-fg); }
+.chain-step.done .chain-dot { background:var(--ok-bg); color:var(--ok); }
+.chain-step.done { color:var(--ok); }
+.chain-sep { width:20px; height:1px; background:var(--border); margin:0 6px; }
+.doc-actions { display:flex; gap:9px; margin-top:16px; flex-wrap:wrap; padding:0 19px 18px; }
+
+/* ---------- Espace patient (mobile-first, clair fixe) ---------- */
+#space-patient.active { display:flex; justify-content:center; padding:26px 16px 40px; }
+.phone { width:min(390px,100%); background:var(--surface); border:1px solid var(--border); border-radius:28px; box-shadow:var(--shadow); overflow:hidden; }
+.phone-top { display:flex; align-items:center; gap:10px; padding:16px 18px 12px; }
+.phone-brand { width:30px; height:30px; display:grid; place-items:center; border-radius:9px; background:var(--teal-700); color:#fff; font-size:10px; font-weight:750; }
+.phone-top strong { font-size:12.5px; }
+.pview2 { display:none; padding:6px 18px 20px; }
+.pview2.active { display:block; animation:vfade .2s ease; }
+.p-hello { font-family:var(--font-display); font-weight:600; font-size:21px; margin:4px 0 0; }
+.p-sub { margin:5px 0 0; font-size:12px; color:var(--muted-fg); }
+
+/* Orb Mon équilibre */
+.orb-card { display:flex; flex-direction:column; align-items:center; padding:22px 18px 18px; margin-top:16px; border:1px solid var(--border); border-radius:20px; background:linear-gradient(160deg,rgba(47,132,129,.06),transparent 60%); }
+.orb-wrap { position:relative; width:172px; height:172px; }
+.orb-value { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.orb-value b { font-size:34px; font-weight:750; letter-spacing:-.03em; color:var(--teal-700); }
+.orb-value span { font-size:10.5px; color:var(--muted-fg); }
+.orb-delta { margin-top:10px; display:flex; align-items:center; gap:6px; font-size:12px; font-weight:650; color:var(--ok); }
+.p-priorities { list-style:none; margin:16px 0 0; padding:0; display:grid; gap:8px; width:100%; }
+.p-priorities li { display:flex; align-items:center; gap:9px; font-size:12.5px; padding:10px 12px; border-radius:11px; background:var(--bg); }
+.p-priorities .pn { width:22px; height:22px; border-radius:7px; background:rgba(184,146,62,.14); color:var(--gold-600); display:grid; place-items:center; font-size:11px; font-weight:750; flex:none; }
+.p-frise { display:flex; align-items:center; gap:0; margin-top:18px; width:100%; }
+.p-frise-step { display:flex; flex-direction:column; align-items:center; gap:5px; flex:1; }
+.p-frise-dot { width:12px; height:12px; border-radius:50%; background:var(--muted); }
+.p-frise-dot.done { background:var(--teal-500); }
+.p-frise-dot.active { background:var(--accent); width:14px; height:14px; }
+.p-frise-line { flex:1; height:1px; background:var(--border); margin-bottom:17px; }
+.p-frise-line.done { background:var(--teal-500); }
+.p-frise-step span { font-size:9.5px; color:var(--muted-fg); font-weight:650; }
+.p-link { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:16px; font-size:12px; color:var(--teal-700); font-weight:650; }
+
+/* Journal alimentaire */
+.ja-entry { border:1px solid var(--border); border-radius:14px; padding:13px 14px; margin-top:12px; }
+.ja-entry-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.ja-entry strong { font-size:12.5px; }
+.ja-entry time { font-size:10px; color:var(--muted-fg); }
+.ja-entry p { margin:6px 0 0; font-size:12px; color:var(--muted-fg); }
+.ja-favs { display:flex; gap:7px; flex-wrap:wrap; margin-top:14px; }
+.ja-fav { padding:7px 12px; border-radius:99px; border:1px solid var(--border); font-size:11.5px; background:var(--bg); }
+.ja-cta { display:flex; gap:9px; margin-top:16px; }
+.ja-cta .btn { flex:1; }
+.ja-empty-note { font-size:11px; color:var(--muted-fg); text-align:center; margin-top:10px; }
+
+/* Check-in */
+.checkin-card { border:1px solid var(--border); border-radius:16px; padding:16px; margin-top:14px; }
+.checkin-q { margin-bottom:14px; }
+.checkin-q:last-child { margin-bottom:0; }
+.checkin-q p { margin:0 0 8px; font-size:12.5px; font-weight:650; }
+.checkin-scale { display:flex; gap:6px; }
+.checkin-scale button { flex:1; height:38px; border:1px solid var(--border); border-radius:9px; font-size:11.5px; font-weight:650; color:var(--muted-fg); }
+.checkin-scale button[aria-pressed="true"] { background:var(--teal-700); color:#fff; border-color:var(--teal-700); }
+.checkin-done { display:flex; align-items:center; gap:9px; padding:12px 13px; border-radius:12px; background:var(--ok-bg); font-size:12px; color:var(--ok); margin-top:14px; }
+
+/* Documents patient */
+.pdoc-card { display:flex; gap:12px; align-items:flex-start; padding:13px 14px; border:1px solid var(--border); border-radius:14px; margin-top:11px; }
+.pdoc-icon { width:36px; height:36px; border-radius:10px; background:var(--info-bg); color:var(--info); display:grid; place-items:center; flex:none; }
+.pdoc-card strong { font-size:12.5px; }
+.pdoc-card p { margin:3px 0 0; font-size:11.5px; color:var(--muted-fg); }
+.pdoc-validated { display:inline-flex; align-items:center; gap:5px; margin-top:6px; font-size:10.5px; font-weight:700; color:var(--teal-700); }
+
+/* Bottom nav patient */
+.pbottom { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--border); }
+.pbottom button { display:flex; flex-direction:column; align-items:center; gap:3px; padding:11px 4px; font-size:9.5px; font-weight:650; color:var(--muted-fg); }
+.pbottom button[aria-current="page"] { color:var(--teal-700); }
+
+/* ---------- Questionnaires & packs ---------- */
+.q-layout { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(280px,.7fr); gap:15px; align-items:start; }
+.pack-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:11px; padding:14px 18px 16px; }
+.pack-card { border:1px solid var(--border); border-radius:12px; padding:13px 14px; background:var(--bg); display:flex; flex-direction:column; gap:8px; }
+.pack-card h3 { margin:0; font-size:12.5px; }
+.pack-card p { margin:0; font-size:11px; color:var(--muted-fg); }
+.q-list { padding:4px 18px 12px; }
+.q-row { display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border); font-size:12.5px; flex-wrap:wrap; }
+.q-row:last-child { border-bottom:0; }
+.q-row .grow { flex:1; min-width:150px; }
+.q-row small { display:block; color:var(--muted-fg); font-size:10.5px; margin-top:2px; }
+
+/* ---------- Équilibre praticien ---------- */
+.equi-grid { display:flex; gap:24px; padding:16px 19px; align-items:center; flex-wrap:wrap; }
+.gauge { display:grid; justify-items:center; }
+.gauge-val { font-size:22px; font-weight:720; letter-spacing:-.03em; margin-top:-30px; }
+.gauge-cap { font-size:10px; color:var(--muted-fg); text-align:center; }
+.strates { display:grid; gap:8px; flex:1; min-width:220px; }
+.strate { display:grid; grid-template-columns:110px minmax(0,1fr) 36px; gap:10px; align-items:center; font-size:11.5px; }
+.strate .lab { color:var(--muted-fg); } .strate .lab b { color:var(--fg); font-weight:650; }
+.strate .track { height:9px; border-radius:99px; background:var(--muted); overflow:hidden; }
+.strate .fill { height:100%; border-radius:99px; }
+.strate .val { text-align:right; font-weight:650; }
+.cercles { display:grid; justify-items:center; gap:4px; }
+.cercles span { font-size:10px; color:var(--muted-fg); }
+
+/* ---------- Échanges (module différé) ---------- */
+.deferred-banner { display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:12px; background:var(--warn-bg); font-size:12px; margin-bottom:15px; }
+.deferred-banner .icon { color:var(--warn); margin-top:1px; }
+.thread { padding:16px 19px; display:grid; gap:10px; }
+.msg { max-width:75%; padding:10px 13px; border-radius:13px; font-size:12.5px; }
+.msg.patient { background:var(--neutral-bg); justify-self:start; border-bottom-left-radius:4px; }
+.msg.praticien { background:var(--teal-700); color:#fff; justify-self:end; border-bottom-right-radius:4px; }
+.msg time { display:block; font-size:9.5px; opacity:.7; margin-top:4px; }
+.composer { display:flex; gap:9px; padding:0 19px 17px; }
+.composer input { flex:1; height:42px; padding:0 13px; border:1px solid var(--border); border-radius:10px; background:var(--bg); }
+
+/* ---------- Lectures par instrument (fiche) ---------- */
+.instr-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:15px; margin-top:15px; }
+.instr-grid .span2 { grid-column:1/-1; }
+.hbar { display:grid; grid-template-columns:132px minmax(0,1fr) 52px auto; gap:10px; align-items:center; font-size:11.5px; padding:5px 0; }
+.hbar .lab { color:var(--muted-fg); }
+.hbar .track { position:relative; height:8px; border-radius:99px; background:var(--muted); }
+.hbar .fill { position:absolute; inset:0 auto 0 0; border-radius:99px; background:var(--teal-500); }
+.hbar .tick { position:absolute; top:-3px; width:2px; height:14px; background:var(--fg); opacity:.4; border-radius:2px; }
+.hbar .val { text-align:right; font-weight:650; }
+.hbar .badge { justify-self:start; }
+.instr-note { font-size:10.5px; color:var(--muted-fg); border-top:1px solid var(--border); margin-top:11px; padding-top:9px; line-height:1.55; }
+.axes-cols { display:grid; grid-template-columns:1fr 1fr; gap:0 26px; padding:2px 0 6px; }
+.axe-group { padding:13px 18px 4px; min-width:0; }
+.axe-group h3 { margin:0 0 6px; font-size:10.5px; font-weight:750; letter-spacing:.1em; text-transform:uppercase; color:var(--muted-fg); }
+.axe-legend { font-size:9.5px; color:var(--muted-fg); margin:2px 0 6px; }
+.div-axis { position:relative; height:8px; border-radius:99px; background:var(--muted); }
+.div-axis .mid { position:absolute; left:50%; top:-3px; width:2px; height:14px; background:var(--muted-fg); opacity:.5; border-radius:2px; }
+.div-axis .marker { position:absolute; top:-3px; width:14px; height:14px; border-radius:50%; background:var(--fg); border:2px solid var(--surface); box-shadow:0 0 0 1px var(--border); transform:translateX(-50%); }
+
+/* ---------- Agenda & consultations ---------- */
+.agenda-week { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; padding:14px 18px 16px; }
+.aday { border:1px solid var(--border); border-radius:12px; background:var(--bg); padding:10px 9px 12px; min-height:150px; }
+.aday h3 { margin:0 0 8px; font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted-fg); text-align:center; }
+.aday.today { border-color:var(--teal-500); }
+.aday.today h3 { color:var(--teal-700); }
+.slot { border:1px solid var(--border); border-left:3px solid var(--teal-500); border-radius:9px; background:var(--surface); padding:8px 9px; font-size:10.5px; display:grid; gap:3px; justify-items:start; }
+.slot + .slot { margin-top:7px; }
+.slot time { font-weight:750; font-size:10px; color:var(--teal-700); }
+.slot strong { font-size:11px; }
+.slot span { color:var(--muted-fg); }
+
+/* ---------- Responsive ---------- */
+@media (max-width:1080px) {
+  .suivi-grid,.q-layout,.instr-grid,.axes-cols { grid-template-columns:1fr; }
+  .tiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .doc-composer { grid-template-columns:1fr; }
+  .doc-col.source { border-right:0; border-bottom:1px solid var(--border); }
+  .agenda-week { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .aday { min-height:0; }
+}
+@media (max-width:760px) {
+  #space-praticien.active { grid-template-columns:1fr; }
+  .rail { display:none; }
+  .main { padding:18px 14px 70px; }
+  .phead { grid-template-columns:auto minmax(0,1fr); }
+  .compare-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/><path d="M9.5 21v-6h5v6"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="m9 13 2 2 4-4.5"/></symbol>
+  <symbol id="i-arrows" viewBox="0 0 24 24"><path d="M17 2 21 6l-4 4"/><path d="M3 12v-1a5 5 0 0 1 5-5h13"/><path d="M7 22 3 18l4-4"/><path d="M21 12v1a5 5 0 0 1-5 5H3"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Z"/><path d="M19 16.5H6a2 2 0 0 0-2 2"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2.8 12h2.4M18.8 12h2.4M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 3 1.5 4.4 4.4 1.5-4.4 1.5L12 15l-1.5-4.6L6 8.9l4.5-1.5L12 3Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4.1 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.1a2 2 0 0 0-3.4 0Z"/><path d="M12 9v5M12 17.5h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></symbol>
+  <symbol id="i-utensils" viewBox="0 0 24 24"><path d="M7 3v6a2 2 0 0 0 2 2v10M7 3v18M11 3v8M4 3v8"/><path d="M17 3c-1.7 0-3 2-3 5s1.3 5 3 5v9"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.4 8.4-8 9-4.6-.6-8-4-8-9V6Z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2.1 4.9-4.9 2.1 2.1-4.9 4.9-2.1Z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5Z"/><path d="M9 11h6M9 14.5h4"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M8 3v4M16 3v4M3.5 10.5h17"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24"><path d="M10 3v6L4.7 17.9A2 2 0 0 0 6.4 21h11.2a2 2 0 0 0 1.7-3.1L14 9V3"/><path d="M8.5 3h7M7.2 15h9.6"/></symbol>
+</svg>
+
+<div class="wn" id="wn">
+  <div class="demo-strip">Maquette statique — proposition « La Boucle » (4.0). Données 100 % fictives (Sophie Nicola, Jennifer Martin, Michel Dogné). Deux espaces restent deux applications distinctes dans le produit réel ; le sélecteur ci-dessous n'est qu'un outil de démonstration.</div>
+
+  <div class="space-switch-wrap">
+    <div class="space-switch" role="group" aria-label="Espace">
+      <button id="btnPraticien" aria-pressed="true"><svg class="icon icon-sm"><use href="#i-users"/></svg>Espace praticien</button>
+      <button id="btnPatient" aria-pressed="false"><svg class="icon icon-sm"><use href="#i-home"/></svg>Espace patient</button>
+    </div>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- ESPACE PRATICIEN                                               -->
+  <!-- ============================================================= -->
+  <div class="space active" id="space-praticien">
+    <aside class="rail" aria-label="Navigation praticien">
+      <div class="rail-brand"><div class="rail-mark">WN</div><div class="rail-name"><strong>WellNeuro</strong><span>Espace praticien</span></div></div>
+      <nav class="rail-nav">
+        <div class="rail-label">Cycle patient</div>
+        <button class="rail-item" data-p="accueil" aria-current="page"><svg class="icon"><use href="#i-home"/></svg><span>Accueil</span></button>
+        <button class="rail-item" data-p="fiche"><svg class="icon"><use href="#i-clip"/></svg><span>Fiche patient</span></button>
+        <button class="rail-item" data-p="suivi"><svg class="icon"><use href="#i-arrows"/></svg><span>Suivi &amp; trajectoire</span></button>
+        <div class="rail-label">Données &amp; instruments</div>
+        <button class="rail-item" data-p="questionnaires"><svg class="icon"><use href="#i-layers"/></svg><span>Questionnaires &amp; packs</span><span class="rail-count">3</span></button>
+        <div class="rail-label">Interventions &amp; restitution</div>
+        <button class="rail-item" data-p="bibliotheque"><svg class="icon"><use href="#i-book"/></svg><span>Bibliothèque</span></button>
+        <button class="rail-item" data-p="documents"><svg class="icon"><use href="#i-file"/></svg><span>Documents</span><span class="rail-count">1</span></button>
+        <div class="rail-label">À venir</div>
+        <button class="rail-item" data-p="agenda"><svg class="icon"><use href="#i-cal"/></svg><span>Agenda &amp; consultations</span><span class="rail-count">différé</span></button>
+        <button class="rail-item" data-p="biologie"><svg class="icon"><use href="#i-flask"/></svg><span>Biologie fonctionnelle</span><span class="rail-count">différé</span></button>
+        <button class="rail-item" data-p="echanges"><svg class="icon"><use href="#i-msg"/></svg><span>Échanges</span><span class="rail-count">différé</span></button>
+        <div class="rail-label">Réglages</div>
+        <button class="rail-item"><svg class="icon"><use href="#i-settings"/></svg><span>Paramètres</span></button>
+      </nav>
+      <div class="rail-foot"><div class="rail-profile"><div class="rail-avatar">MC</div><div><strong>Praticien WellNeuro</strong><span>Session sécurisée</span></div></div></div>
+    </aside>
+
+    <div class="workspace">
+      <header class="topbar">
+        <nav class="p-tabs" aria-label="Vues rapides">
+          <button data-p="accueil" aria-current="page">Accueil</button>
+          <button data-p="fiche">Fiche</button>
+          <button data-p="suivi">Suivi</button>
+          <button data-p="questionnaires">Questionnaires</button>
+          <button data-p="bibliotheque">Bibliothèque</button>
+          <button data-p="documents">Documents</button>
+        </nav>
+      </header>
+
+      <main class="main">
+
+        <!-- Accueil -->
+        <section class="pview active" id="p-accueil">
+          <div class="page-head">
+            <div><div class="eyebrow">Aujourd'hui</div><h1>Vos prochaines décisions utiles</h1><p class="page-sub">La Boucle relie chaque écran à venir — Bibliothèque, Suivi, Documents — au même cycle : données, décision, actions, réévaluation.</p></div>
+          </div>
+          <div class="tiles">
+            <div class="tile"><div class="tile-label">Décisions en attente</div><div class="tile-value num">5</div></div>
+            <div class="tile"><div class="tile-label">Protocoles en cours</div><div class="tile-value num">3</div></div>
+            <div class="tile"><div class="tile-label">Rendez-vous de suivi reçus</div><div class="tile-value num">2</div></div>
+            <div class="tile"><div class="tile-label">Documents à composer</div><div class="tile-value num">1</div></div>
+          </div>
+          <section class="panel">
+            <div class="panel-head"><h2>File de décisions</h2><span class="panel-meta">Classée par prochaine décision utile</span></div>
+            <div>
+              <div class="decision-row"><span class="d-stripe" style="background:var(--info)"></span><div class="avatar">SN</div><div class="d-copy"><strong>Sophie Nicola</strong><p>Bilan complet — décision clinique prête à préparer.</p><small>8/8 questionnaires transmis</small></div><button class="btn btn-primary btn-sm" data-p="fiche">Préparer</button></div>
+              <div class="decision-row"><span class="d-stripe" style="background:var(--ok)"></span><div class="avatar">MD</div><div class="d-copy"><strong>Michel Dogné</strong><p>Rendez-vous de suivi J14 reçu — effet et tolérance à examiner.</p><small>Reçu ce matin à 07:40</small></div><button class="btn btn-secondary btn-sm" data-p="suivi">Examiner le suivi</button></div>
+              <div class="decision-row"><span class="d-stripe" style="background:var(--accent)"></span><div class="avatar">JM</div><div class="d-copy"><strong>Jennifer Martin</strong><p>Synthèse validée — composer le document destiné au médecin traitant.</p><small>Aucun document composé pour le moment</small></div><button class="btn btn-secondary btn-sm" data-p="documents">Composer</button></div>
+            </div>
+          </section>
+        </section>
+
+        <!-- Questionnaires & packs -->
+        <section class="pview" id="p-questionnaires">
+          <div class="page-head">
+            <div>
+              <div class="loop-rail" aria-label="Étape de la boucle : Données fiables">
+                <span class="loop-dot active"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span>
+                <span class="loop-label">Données fiables <span>· étape 1 sur 6 — tout le cycle commence ici</span></span>
+              </div>
+              <h1 style="margin-top:12px">Questionnaires &amp; packs</h1>
+              <p class="page-sub">La bibliothèque d'instruments, les packs et les assignations en cours. L'intégrité psychométrique reste verrouillée : les profils de rendu (QX) sont bornés aux familles auditées.</p>
+            </div>
+            <div class="head-actions"><button class="btn btn-primary"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Assigner à un patient</button></div>
+          </div>
+          <div class="q-layout">
+            <div style="display:grid;gap:15px;min-width:0">
+              <section class="panel">
+                <div class="panel-head"><h2>Packs de questionnaires</h2><span class="panel-meta">Assignation en un geste</span></div>
+                <div class="pack-grid">
+                  <article class="pack-card">
+                    <h3>Base de consultation</h3>
+                    <p>8 questionnaires · bilan initial</p>
+                    <div><span class="badge badge-neutral">Pack par défaut</span></div>
+                    <button class="btn btn-secondary btn-sm">Assigner ce pack</button>
+                  </article>
+                  <article class="pack-card">
+                    <h3>Suivi sommeil &amp; récupération</h3>
+                    <p>3 questionnaires · réévaluation ciblée</p>
+                    <div><span class="badge badge-neutral">Personnalisé</span></div>
+                    <button class="btn btn-secondary btn-sm">Assigner ce pack</button>
+                  </article>
+                  <article class="pack-card">
+                    <h3>Créer un pack</h3>
+                    <p>Composez un pack depuis la bibliothèque ci-dessous.</p>
+                    <button class="btn btn-ghost btn-sm"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Nouveau pack</button>
+                  </article>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Bibliothèque d'instruments</h2><span class="panel-meta num">63 instruments · scoring certifié</span></div>
+                <div class="q-list">
+                  <div class="q-row"><div class="grow"><strong>Sommeil et récupération</strong><small>Scoring v2 · instrument validé</small></div><span class="evidence a"><b>A</b> certifié</span><span class="badge badge-neutral">Rendu : sections</span><button class="btn btn-secondary btn-sm">Assigner</button></div>
+                  <div class="q-row"><div class="grow"><strong>Neurotransmetteurs (NEU_03)</strong><small>Scoring v2 · 25 items</small></div><span class="evidence a"><b>A</b> certifié</span><span class="badge badge-info">Rendu : micro-lots (QX)</span><button class="btn btn-secondary btn-sm">Assigner</button></div>
+                  <div class="q-row"><div class="grow"><strong>Alimentation (ALI_01)</strong><small>Scoring v1 · famille auditée QX</small></div><span class="evidence a"><b>A</b> certifié</span><span class="badge badge-neutral">Rendu : standard</span><button class="btn btn-secondary btn-sm">Assigner</button></div>
+                  <div class="q-row"><div class="grow"><strong>Mode de vie SIIN</strong><small>7 sous-scores · seuils par domaine</small></div><span class="evidence a"><b>A</b> certifié</span><span class="badge badge-neutral">Rendu : standard</span><button class="btn btn-secondary btn-sm">Assigner</button></div>
+                </div>
+              </section>
+            </div>
+            <aside class="panel">
+              <div class="panel-head"><h2>Assignations en cours</h2><span class="panel-meta num">3</span></div>
+              <div class="q-list">
+                <div class="q-row"><div class="grow"><strong>Sophie Nicola</strong><small>Base de consultation · 8/8 reçus</small></div><span class="badge badge-ok">Complet</span></div>
+                <div class="q-row"><div class="grow"><strong>Jennifer Martin</strong><small>Base de consultation · 5/6 reçus</small></div><span class="badge badge-warn">Correction demandée</span></div>
+                <div class="q-row"><div class="grow"><strong>Michel Dogné</strong><small>Suivi sommeil · relancé hier</small></div><span class="badge badge-neutral">En attente</span></div>
+                <div style="display:flex;gap:8px;padding:12px 0 4px;flex-wrap:wrap"><button class="btn btn-secondary btn-sm">Relancer</button><button class="btn btn-ghost btn-sm">Copier le lien portail</button></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- Fiche patient -->
+        <section class="pview" id="p-fiche">
+          <header class="phead">
+            <div class="phead-avatar">SN</div>
+            <div>
+              <div class="eyebrow">Fiche patient · épisode initial</div>
+              <h1>Sophie Nicola</h1>
+              <p>Consultation initiale · dernière activité aujourd'hui à 09:12</p>
+              <div class="phead-pills"><span class="badge badge-ok">Suivi actif</span><span class="badge badge-warn">Protocole : brouillon relu, non validé</span></div>
+            </div>
+            <div><button class="btn btn-secondary btn-sm">Voir ce que recevra le patient</button></div>
+          </header>
+          <div class="tabs" role="tablist">
+            <button class="tab" aria-selected="true" data-fiche="clinique">Vue clinique</button>
+            <button class="tab" aria-selected="false" data-fiche="suivi">Suivi de l'épisode</button>
+          </div>
+          <div class="tabpane active" id="fiche-clinique">
+            <section class="panel decision-card">
+              <div class="loop-rail" aria-label="Étape de la boucle : Décision clinique">
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot active"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span>
+                <span class="loop-label">Décision clinique <span>· étape 3 sur 6 de la boucle</span></span>
+              </div>
+              <div class="eyebrow" style="margin-top:14px">Priorité de la phase 1</div>
+              <h2 class="decision-title">Restaurer la récupération : sommeil et régulation du stress avant toute intensification nutritionnelle.</h2>
+              <p class="just">Convergence de 2 questionnaires validés (preuve A) et du référentiel neuronutrition (preuve B).</p>
+            </section>
+            <section class="panel" style="margin-top:15px">
+              <div class="panel-head"><h2>Mon équilibre — lecture praticien</h2><span class="panel-meta">Compréhension · couverture 74 % · version score v1</span></div>
+              <div class="equi-grid">
+                <div class="gauge">
+                  <svg width="150" height="86" viewBox="0 0 150 86" role="img" aria-label="Indice de suivi global : 61 sur 100">
+                    <path d="M14 78 A61 61 0 0 1 136 78" stroke="var(--muted)" stroke-width="11" fill="none" stroke-linecap="round"/>
+                    <path d="M14 78 A61 61 0 0 1 136 78" stroke="var(--primary)" stroke-width="11" fill="none" stroke-linecap="round" stroke-dasharray="116.9 191.6"/>
+                    <circle cx="95.7" cy="20.6" r="5" fill="var(--primary)" stroke="var(--surface)" stroke-width="2"/>
+                  </svg>
+                  <div class="gauge-val num">61<span style="font-size:11px;color:var(--muted-fg)">/100</span></div>
+                  <div class="gauge-cap">Indice de suivi global<br/>jamais interprété seul</div>
+                </div>
+                <div class="cercles">
+                  <svg width="120" height="120" viewBox="0 0 120 120" role="img" aria-label="Cercles concentriques des 12 besoins : Corps, Ancrage, Esprit">
+                    <circle cx="60" cy="60" r="50" fill="none" stroke="var(--viz-corps)" stroke-opacity=".28" stroke-width="1.5"/>
+                    <circle cx="60" cy="60" r="33" fill="none" stroke="var(--viz-ancrage)" stroke-opacity=".28" stroke-width="1.5"/>
+                    <circle cx="60" cy="60" r="16" fill="none" stroke="var(--viz-esprit)" stroke-opacity=".28" stroke-width="1.5"/>
+                    <circle cx="60" cy="10" r="5" fill="var(--viz-corps)" opacity=".55"/>
+                    <circle cx="103.3" cy="35" r="5" fill="var(--viz-corps)" opacity=".8"/>
+                    <circle cx="103.3" cy="85" r="5" fill="var(--viz-corps)" opacity=".45"/>
+                    <circle cx="60" cy="110" r="5" fill="var(--viz-corps)" opacity=".7"/>
+                    <circle cx="16.7" cy="85" r="5" fill="var(--viz-corps)" opacity=".6"/>
+                    <circle cx="16.7" cy="35" r="5" fill="var(--viz-corps)" opacity=".35"/>
+                    <circle cx="60" cy="27" r="5" fill="var(--viz-ancrage)" opacity=".75"/>
+                    <circle cx="88.6" cy="76.5" r="5" fill="var(--viz-ancrage)" opacity=".6"/>
+                    <circle cx="31.4" cy="76.5" r="5" fill="var(--viz-ancrage)" opacity=".85"/>
+                    <circle cx="60" cy="44" r="5" fill="var(--viz-esprit)" opacity=".8"/>
+                    <circle cx="73.9" cy="68" r="5" fill="var(--viz-esprit)" opacity=".7"/>
+                    <circle cx="46.1" cy="68" r="5" fill="var(--viz-esprit)" opacity=".65"/>
+                  </svg>
+                  <span>12 besoins · intensité = couverture</span>
+                </div>
+                <div class="strates" role="img" aria-label="Trois strates : Corps 54, Ancrage 66, Esprit 72 sur 100">
+                  <div class="strate"><span class="lab"><b>Corps</b> · 60 %</span><span class="track"><span class="fill" style="width:54%;background:var(--viz-corps)"></span></span><span class="val num">54</span></div>
+                  <div class="strate"><span class="lab"><b>Ancrage</b> · 20 %</span><span class="track"><span class="fill" style="width:66%;background:var(--viz-ancrage)"></span></span><span class="val num">66</span></div>
+                  <div class="strate"><span class="lab"><b>Esprit</b> · 20 %</span><span class="track"><span class="fill" style="width:72%;background:var(--viz-esprit)"></span></span><span class="val num">72</span></div>
+                  <button class="btn btn-ghost btn-sm" style="justify-self:start;margin-top:2px">Ouvrir les 12 besoins et leurs preuves<svg class="icon icon-sm" style="margin-left:4px"><use href="#i-arrows"/></svg></button>
+                </div>
+              </div>
+            </section>
+            <div class="instr-grid">
+              <section class="panel">
+                <div class="panel-head"><h2>Plaintes actuelles &amp; troubles ressentis</h2><span class="panel-meta num">33/70 · moyenne 4,7</span></div>
+                <div style="padding:12px 18px 15px">
+                  <div class="hbar"><span class="lab">Sommeil / insomnie</span><span class="track"><span class="fill" style="width:80%"></span></span><span class="val num">8/10</span><span class="badge badge-warn">Élevée</span></div>
+                  <div class="hbar"><span class="lab">Fatigue</span><span class="track"><span class="fill" style="width:70%"></span></span><span class="val num">7/10</span><span class="badge badge-warn">Élevée</span></div>
+                  <div class="hbar"><span class="lab">Moral / anxiété</span><span class="track"><span class="fill" style="width:60%"></span></span><span class="val num">6/10</span><span></span></div>
+                  <div class="hbar"><span class="lab">Digestion</span><span class="track"><span class="fill" style="width:40%"></span></span><span class="val num">4/10</span><span></span></div>
+                  <div class="hbar"><span class="lab">Douleurs</span><span class="track"><span class="fill" style="width:30%"></span></span><span class="val num">3/10</span><span></span></div>
+                  <div class="hbar"><span class="lab">Surpoids</span><span class="track"><span class="fill" style="width:30%"></span></span><span class="val num">3/10</span><span></span></div>
+                  <div class="hbar"><span class="lab">Mobilité</span><span class="track"><span class="fill" style="width:20%"></span></span><span class="val num">2/10</span><span></span></div>
+                  <div class="instr-note">Lecture descriptive, sans seuil : intensité moyenne 4,7/10 (modérée). Un tiret « T0 » apparaîtra sur chaque barre dès la première réévaluation — même instrument, même version de scoring.</div>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Mode de vie SIIN — 7 domaines</h2><span class="panel-meta">Seuils du référentiel par domaine</span></div>
+                <div style="padding:12px 18px 15px">
+                  <div class="hbar"><span class="lab">Sommeil</span><span class="track"><span class="fill" style="width:32%"></span></span><span class="val num">9/28</span><span class="badge badge-danger">Non satisfaisant</span></div>
+                  <div class="hbar"><span class="lab">Rythme biologique</span><span class="track"><span class="fill" style="width:46%"></span></span><span class="val num">13/28</span><span class="badge badge-warn">Insuffisant</span></div>
+                  <div class="hbar"><span class="lab">Adaptation &amp; stress</span><span class="track"><span class="fill" style="width:50%"></span></span><span class="val num">12/24</span><span class="badge badge-warn">Insuffisant</span></div>
+                  <div class="hbar"><span class="lab">Mode alimentaire</span><span class="track"><span class="fill" style="width:61%"></span></span><span class="val num">17/28</span><span class="badge badge-warn">Insuffisant</span></div>
+                  <div class="hbar"><span class="lab">Activité physique</span><span class="track"><span class="fill" style="width:75%"></span></span><span class="val num">15/20</span><span class="badge badge-ok">Satisfaisant</span></div>
+                  <div class="hbar"><span class="lab">Exposition toxiques</span><span class="track"><span class="fill" style="width:79%"></span></span><span class="val num">22/28</span><span class="badge badge-ok">Satisfaisant</span></div>
+                  <div class="hbar"><span class="lab">Relation aux autres</span><span class="track"><span class="fill" style="width:80%"></span></span><span class="val num">16/20</span><span class="badge badge-ok">Satisfaisant</span></div>
+                  <div class="instr-note">Le domaine Sommeil converge avec les plaintes (8/10) et fonde la priorité de phase 1 — la cohérence entre instruments est montrée, jamais recalculée.</div>
+                </div>
+              </section>
+              <section class="panel span2">
+                <div class="panel-head"><h2>Synthèse alimentaire — couvertures &amp; dérives estimées</h2><span class="panel-meta num">SIIN 24/42 · méditerranéen 6/14 · Monnier</span></div>
+                <div class="axes-cols">
+                  <div class="axe-group">
+                    <h3>Couvertures estimées</h3>
+                    <div class="axe-legend">Barre = part de l'objectif atteinte · tiret vertical = objectif</div>
+                    <div class="hbar"><span class="lab">Fibres &amp; végétaux</span><span class="track"><span class="fill" style="width:45%"></span></span><span class="val num">45 %</span><span class="badge badge-warn">À renforcer</span></div>
+                    <div class="hbar"><span class="lab">Assiette antioxydante</span><span class="track"><span class="fill" style="width:40%"></span></span><span class="val num">40 %</span><span class="badge badge-warn">À renforcer</span></div>
+                    <div class="hbar"><span class="lab">Micronutriments clés</span><span class="track"><span class="fill" style="width:50%"></span></span><span class="val num">50 %</span><span class="badge badge-warn">À renforcer</span></div>
+                    <div class="hbar"><span class="lab">Protéines</span><span class="track"><span class="fill" style="width:75%"></span></span><span class="val num">0,9 g/kg</span><span class="badge badge-ok">Correct</span></div>
+                    <div class="hbar"><span class="lab">Hydratation</span><span class="track"></span><span class="val num">—</span><span class="badge badge-neutral">À recueillir</span></div>
+                    <div class="instr-note" style="border-top:0;margin-top:6px;padding-top:0">Micronutriments clés (magnésium, folates, zinc) estimés par proxys végétaux / légumineuses / fruits à coque. L'hydratation n'est couverte par aucun item actuel — recueil à ajouter au questionnaire.</div>
+                  </div>
+                  <div class="axe-group">
+                    <h3>Dérives &amp; signaux — présumés</h3>
+                    <div class="axe-legend">Axe : ← versant défavorable · neutre · versant favorable →</div>
+                    <div class="hbar"><span class="lab">Assiette inflammatoire</span><span class="div-axis"><span class="mid"></span><span class="marker" style="left:30%"></span></span><span class="val num">−2</span><span class="badge badge-warn">Versant pro</span></div>
+                    <div class="hbar"><span class="lab">Charge acide (PRAL)</span><span class="div-axis"><span class="mid"></span><span class="marker" style="left:24%"></span></span><span class="val num">≈ +14</span><span class="badge badge-warn">Versant acide</span></div>
+                    <div class="hbar"><span class="lab">Ratio ω6/ω3 prédictif</span><span class="track"><span class="tick" style="left:33%"></span><span class="fill" style="width:80%"></span></span><span class="val num">≈ 12:1</span><span class="badge badge-warn">Objectif &lt; 5:1</span></div>
+                    <div class="hbar"><span class="lab">Indice ω-3 estimé</span><span class="track"><span class="fill" style="width:35%"></span></span><span class="val num">Bas</span><span class="badge badge-warn">Poisson gras &lt; 1×/sem</span></div>
+                    <div class="hbar"><span class="lab">Signal métabolique</span><span class="track"></span><span class="val num">—</span><span class="badge badge-info">À confirmer en biologie</span></div>
+                    <div class="instr-note" style="border-top:0;margin-top:6px;padding-top:0">Charge sucrée quotidienne + sédentarité : l'indice HOMA se mesure (glycémie + insulinémie à jeun), il ne se présume pas. <button class="btn btn-secondary btn-sm" data-p="biologie" style="margin-top:8px;display:inline-flex">Composer une demande d'analyses</button></div>
+                  </div>
+                </div>
+                <div class="instr-note" style="margin:0 18px 15px">Ces lectures sont dérivées des réponses déclarées — rien ici n'est une mesure biologique. Les règles de dérivation (indice ω-3, ratio ω6/ω3, PRAL, signal métabolique) restent à cadrer cliniquement avant tout branchement ; les scorings certifiés ne sont pas modifiés.</div>
+              </section>
+            </div>
+            <section class="panel proto">
+              <div class="eyebrow">Protocole personnalisé · phase 1 · 21 jours</div>
+              <div class="proto-meta"><span class="badge badge-neutral">3 actions maximum</span><span class="badge badge-neutral">Charge modérée</span></div>
+              <div class="actions3">
+                <div class="action-card">
+                  <span class="action-n num">1</span>
+                  <div><strong>Petit-déjeuner protéiné avant 9 h</strong><p>Plan minimal : 4 j/7.</p>
+                    <div class="lib-mini"><span class="evidence"><b>Bibliothèque</b> action alimentaire — voir la fiche « pourquoi »</span></div>
+                  </div>
+                </div>
+                <div class="action-card">
+                  <span class="action-n num">2</span>
+                  <div><strong>Magnésium bisglycinate le soir</strong><p>Recommandation — complément.</p>
+                    <div class="lib-mini"><span class="evidence a"><b>Compatible</b> avec le protocole actif</span></div>
+                  </div>
+                </div>
+              </div>
+              <button class="btn btn-ghost btn-sm" style="margin-top:12px" data-p="bibliotheque">Ouvrir la bibliothèque pour ajuster une action<svg class="icon icon-sm" style="margin-left:4px"><use href="#i-arrows"/></svg></button>
+            </section>
+          </div>
+          <div class="tabpane" id="fiche-suivi">
+            <p class="page-sub" style="margin-bottom:14px">Aperçu condensé — le détail complet vit dans <button class="btn-ghost" style="display:inline;font-weight:700;color:var(--teal-700)" data-p="suivi">Suivi &amp; trajectoire</button>.</p>
+            <section class="panel checkin-mini">
+              <div class="panel-head" style="padding-left:0;padding-right:0"><h2>Derniers rendez-vous de suivi</h2></div>
+              <div class="ci-row"><span>J7 — effet ressenti : léger mieux · tolérance : bonne</span><span class="badge badge-ok">Reçu</span></div>
+              <div class="ci-row"><span>J14 — effet ressenti : stable · adhésion : partielle</span><span class="badge badge-warn">À examiner</span></div>
+            </section>
+          </div>
+        </section>
+
+        <!-- Suivi & trajectoire -->
+        <section class="pview" id="p-suivi">
+          <div class="page-head">
+            <div>
+              <div class="loop-rail" aria-label="Étape de la boucle : Suivi puis réévaluation">
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot active"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span>
+                <span class="loop-label">Suivi <span>→ réévaluation au jalon J21</span></span>
+              </div>
+              <h1 style="margin-top:12px">Suivi &amp; trajectoire — Michel Dogné</h1>
+              <p class="page-sub">Points d'étape J7/J14/J21 (pilotage du protocole) et jalons de mesure T0/J21/J42/J90 (propriété du moteur équilibre) restent deux objets distincts, jamais confondus.</p>
+            </div>
+          </div>
+          <div class="suivi-grid">
+            <div style="display:grid;gap:15px">
+              <section class="panel compare">
+                <div class="panel-head" style="padding-left:0;padding-right:0"><h2>Comparateur avant / maintenant</h2><span class="panel-meta">Même instrument, même version de scoring</span></div>
+                <div class="compare-grid">
+                  <div class="compare-col"><h3>T0 · 27 juin</h3>
+                    <div class="compare-row"><span>Indice de suivi</span><span class="num">52/100</span></div>
+                    <div class="compare-row"><span>Fatigue matinale</span><span class="num">7/10</span></div>
+                  </div>
+                  <div class="compare-col"><h3>J14 · aujourd'hui</h3>
+                    <div class="compare-row"><span>Indice de suivi</span><span class="num">61/100 <span class="compare-delta up">+9</span></span></div>
+                    <div class="compare-row"><span>Fatigue matinale</span><span class="num">5/10 <span class="compare-delta up">−2</span></span></div>
+                  </div>
+                </div>
+                <div class="compare-note"><svg class="icon icon-sm" style="color:var(--info)"><use href="#i-info"/></svg> Adhésion partielle à l'action 2 (magnésium, 4 j/7 au lieu de 7 j/7) — à discuter avant de conclure à un effet complet.</div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Timeline clinique complète</h2><span class="panel-meta">Épisode + protocole</span></div>
+                <div class="tl-full">
+                  <div class="tl-item"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><div class="tl-copy"><strong>Questionnaires T0 reçus</strong><p>Base de consultation, 8/8</p></div><time>27 juin</time></div>
+                  <div class="tl-item"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><div class="tl-copy"><strong>Protocole validé pour diffusion</strong><p>3 actions, charge modérée</p></div><time>29 juin</time></div>
+                  <div class="tl-item"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><div class="tl-copy"><strong>Rendez-vous de suivi J7</strong><p>Effet léger mieux, tolérance bonne</p></div><time>6 juillet</time></div>
+                  <div class="tl-item"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span><div class="tl-copy"><strong>Rendez-vous de suivi J14</strong><p>Adhésion partielle signalée</p></div><time>13 juillet</time></div>
+                  <div class="tl-item future"><span class="tl-dot"><svg class="icon icon-sm"><use href="#i-clock"/></svg></span><div class="tl-copy"><strong>Jalon de mesure J21 (réévaluation)</strong><p>Résumé automatique préparé — moteur équilibre</p></div><time>dans 7 jours</time></div>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Journal alimentaire — observations partagées</h2><span class="panel-meta">Sans score · descriptif (JA)</span></div>
+                <div class="checkin-mini">
+                  <div class="ci-row"><span>Petit-déjeuner sauté 3 jours sur 7 cette semaine</span><span class="badge badge-neutral">Observation</span></div>
+                  <div class="ci-row"><span>Café après 16 h les jours où la fatigue est déclarée forte</span><span class="badge badge-warn">Discordance à explorer</span></div>
+                  <p style="font-size:10.5px;color:var(--muted-fg);margin:10px 0 4px">Seules les observations que le patient choisit de publier apparaissent ici — le journal reste sa propriété, sans note ni score.</p>
+                </div>
+              </section>
+            </div>
+            <aside class="panel">
+              <div class="panel-head"><h2>Momentum</h2><span class="panel-meta">30 jours</span></div>
+              <div style="padding:16px 19px"><div style="font-size:28px;font-weight:750;color:var(--ok)">+9</div><p style="font-size:11.5px;color:var(--muted-fg);margin-top:6px">Delta expliqué, jamais un score seul : porté par l'amélioration du sommeil, freiné par l'adhésion partielle au complément.</p></div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- Bibliothèque -->
+        <section class="pview" id="p-bibliotheque">
+          <div class="page-head">
+            <div>
+              <div class="loop-rail" aria-label="Étape de la boucle : Actions patient">
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot active"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span>
+                <span class="loop-label">Actions patient <span>· compléments &amp; alimentation</span></span>
+              </div>
+              <h1 style="margin-top:12px">Bibliothèque d'interventions</h1>
+              <p class="page-sub">Aucun score global unique (décision actée C4) : provenance, statut et compatibilité avec le protocole actif du patient ouvert, toujours explicites.</p>
+            </div>
+          </div>
+          <div class="lib-tabs" role="tablist">
+            <button aria-selected="true" data-lib="complements"><svg class="icon icon-sm"><use href="#i-shield"/></svg>Compléments</button>
+            <button aria-selected="false" data-lib="alimentation"><svg class="icon icon-sm"><use href="#i-utensils"/></svg>Boussole alimentaire</button>
+            <button aria-selected="false" data-lib="fiches"><svg class="icon icon-sm"><use href="#i-file"/></svg>Fiches conseils</button>
+          </div>
+          <div class="libpane active" id="lib-complements">
+            <div class="lib-grid">
+              <article class="lib-card">
+                <div class="lib-card-top"><div><h3>Magnésium bisglycinate</h3><p>Forme biodisponible · 300 mg élément/jour</p></div><span class="badge badge-neutral">Actif</span></div>
+                <div class="lib-meta"><span class="evidence"><b>Formulation</b> sans additif controversé</span><span class="evidence"><b>Dosage</b> cohérent SIIN</span></div>
+                <div class="lib-compat"><svg class="icon icon-sm"><use href="#i-check"/></svg><span>Compatible avec le protocole actif de Sophie Nicola — aucun doublon détecté.</span></div>
+                <div class="lib-source">Source DGCCRF / Compl'Alim · vérifié le 2 juillet 2026 · réviseur : équipe WellNeuro</div>
+              </article>
+              <article class="lib-card">
+                <div class="lib-card-top"><div><h3>Vitamine D3 + K2</h3><p>Forme huileuse · 2000 UI/jour</p></div><span class="badge badge-warn">À revérifier</span></div>
+                <div class="lib-meta"><span class="evidence c"><b>Fraîcheur</b> vérification &gt; 6 mois</span></div>
+                <div class="lib-compat warn"><svg class="icon icon-sm"><use href="#i-alert"/></svg><span>Signalement — traitement en cours déclaré par Michel Dogné : à vérifier, jamais de décision automatique.</span></div>
+                <div class="lib-source">Source DGCCRF / Compl'Alim · dernière vérification le 14 décembre 2025</div>
+              </article>
+            </div>
+          </div>
+          <div class="libpane" id="lib-alimentation">
+            <div class="lib-grid">
+              <article class="lib-card">
+                <div class="lib-card-top"><div><h3>Sardines à l'huile</h3><p>Aliment vedette · axe inflammation / oméga-3</p></div><span class="badge badge-neutral">Intrinsèque</span></div>
+                <div class="lib-meta"><span class="evidence"><b>Source</b> table Ciqual ANSES</span></div>
+                <div class="lib-compat"><svg class="icon icon-sm"><use href="#i-check"/></svg><span>Action hebdomadaire proposée : « 2 repas de poisson gras cette semaine » — plan minimal, sans culpabilisation.</span></div>
+                <div class="lib-source">Score intrinsèque indépendant du patient · lecture contextuelle activable une fois le protocole validé</div>
+              </article>
+              <article class="lib-card">
+                <div class="lib-card-top"><div><h3>Action alimentaire de la semaine</h3><p>Lecture contextuelle · Michel Dogné (protocole actif)</p></div><span class="badge badge-ok">Contextuel</span></div>
+                <div class="lib-compat"><svg class="icon icon-sm"><use href="#i-check"/></svg><span>« 2 repas de poisson gras cette semaine » — 3 exemples, 2 substitutions, plan minimal : 1 repas, critère observable : énergie en fin de matinée.</span></div>
+                <div class="lib-source">La boussole distingue toujours l'aliment (profil intrinsèque) de son usage pour ce patient (lecture contextuelle) — langage jamais culpabilisant</div>
+              </article>
+            </div>
+          </div>
+          <div class="libpane" id="lib-fiches">
+            <div class="lib-grid">
+              <article class="lib-card">
+                <div class="lib-card-top"><div><h3>Hygiène du sommeil — 7 leviers du soir</h3><p>Fiche conseil · lecture 4 min · langage patient</p></div><span class="badge badge-ok">Validée</span></div>
+                <div class="lib-meta"><span class="evidence"><b>Relue</b> le 8 juillet 2026</span><span class="evidence"><b>Version</b> 3</span></div>
+                <div class="lib-compat"><svg class="icon icon-sm"><use href="#i-check"/></svg><span>Cohérente avec la priorité sommeil du protocole de Sophie Nicola.</span></div>
+                <button class="btn btn-primary btn-sm">Envoyer à Sophie Nicola</button>
+                <div class="lib-source">L'envoi suit la chaîne Documents (Validé pour diffusion → Envoyé) et arrive dans « Mes documents » côté patient</div>
+              </article>
+              <article class="lib-card">
+                <div class="lib-card-top"><div><h3>Assiette anti-inflammatoire — une semaine</h3><p>Fiche conseil · 7 menus + liste de courses</p></div><span class="badge badge-ok">Validée</span></div>
+                <div class="lib-meta"><span class="evidence"><b>Relue</b> le 1 juillet 2026</span><span class="evidence"><b>Version</b> 2</span></div>
+                <div class="lib-compat"><svg class="icon icon-sm"><use href="#i-check"/></svg><span>S'appuie sur la boussole alimentaire — mêmes aliments vedettes, même langage non culpabilisant.</span></div>
+                <button class="btn btn-secondary btn-sm">Envoyer au patient…</button>
+                <div class="lib-source">Table Ciqual ANSES + référentiel neuronutrition</div>
+              </article>
+              <article class="lib-card">
+                <div class="lib-card-top"><div><h3>Hydratation au quotidien</h3><p>Fiche conseil · repères simples sur 21 jours</p></div><span class="badge badge-warn">Brouillon</span></div>
+                <div class="lib-meta"><span class="evidence c"><b>Relecture</b> requise avant envoi</span></div>
+                <div class="lib-compat warn"><svg class="icon icon-sm"><use href="#i-alert"/></svg><span>Une fiche en brouillon ne peut pas être envoyée — même règle de prévention d'erreurs que les documents.</span></div>
+                <button class="btn btn-secondary btn-sm" disabled>Envoyer au patient…</button>
+                <div class="lib-source">Complètera le recueil « hydratation » à ajouter au questionnaire alimentaire</div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <!-- Documents -->
+        <section class="pview" id="p-documents">
+          <div class="page-head">
+            <div>
+              <div class="loop-rail" aria-label="Pont entre décision et actions">
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot done"></span><span class="loop-line done"></span>
+                <span class="loop-dot active"></span><span class="loop-line active-line"></span>
+                <span class="loop-dot active"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span>
+                <span class="loop-label">Pont Décision → Actions <span>· aucun contenu clinique propre (C3)</span></span>
+              </div>
+              <h1 style="margin-top:12px">Documents — Jennifer Martin</h1>
+              <p class="page-sub">Une même source clinique validée, un rendu différent selon le destinataire.</p>
+            </div>
+          </div>
+          <div class="doc-toolbar">
+            <div class="doc-dest" role="group" aria-label="Destinataire">
+              <button aria-pressed="true" data-dest="patient">Patient</button>
+              <button aria-pressed="false" data-dest="medecin">Médecin traitant</button>
+              <button aria-pressed="false" data-dest="praticien">Note interne</button>
+            </div>
+          </div>
+          <div class="doc-composer">
+            <div class="doc-col source">
+              <div class="doc-col-label">Source praticien (validée)</div>
+              <div class="doc-block"><h4>Décision clinique</h4><p>Priorité : régulation du sommeil et du stress avant intensification nutritionnelle.</p><div class="doc-provenance">Provenance : C1 · validée le 12 juillet</div></div>
+              <div class="doc-block"><h4>Protocole</h4><p>3 actions, charge modérée, critère J21 : fatigue matinale &lt; 5/10.</p><div class="doc-provenance">Provenance : C1 · protocole validé pour diffusion</div></div>
+              <div class="doc-block"><h4>Compléments recommandés</h4><p>Magnésium bisglycinate, forme biodisponible, prise le soir.</p><div class="doc-provenance">Provenance : Bibliothèque C4 · fiche vérifiée le 2 juillet</div></div>
+            </div>
+            <div class="doc-col">
+              <div class="doc-col-label" id="destRenduLabel">Rendu — vue patient</div>
+              <p class="doc-rendu-title" id="destRenduTitle">Votre point sur les 21 prochains jours</p>
+              <p id="destRenduBody" style="font-size:12.5px;color:var(--muted-fg);line-height:1.7">Nous allons d'abord travailler votre sommeil et votre niveau de stress. Trois actions simples vous sont proposées, à votre rythme — un plan minimal existe toujours si une semaine est plus difficile.</p>
+            </div>
+          </div>
+          <div class="doc-chain">
+            <span class="chain-step done"><span class="chain-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span>Brouillon</span>
+            <span class="chain-sep"></span>
+            <span class="chain-step done"><span class="chain-dot"><svg class="icon icon-sm"><use href="#i-check"/></svg></span>Relu</span>
+            <span class="chain-sep"></span>
+            <span class="chain-step"><span class="chain-dot"><svg class="icon icon-sm"><use href="#i-clock"/></svg></span>Validé pour diffusion</span>
+            <span class="chain-sep"></span>
+            <span class="chain-step"><span class="chain-dot"><svg class="icon icon-sm"><use href="#i-clock"/></svg></span>Envoyé</span>
+          </div>
+          <div class="doc-actions">
+            <button class="btn btn-secondary">Enregistrer le brouillon</button>
+            <button class="btn btn-primary">Valider pour diffusion</button>
+            <button class="btn btn-secondary" disabled>Envoyer</button>
+          </div>
+          <p class="page-sub" style="margin-top:12px">À l'envoi, le patient retrouve le document dans « Mes documents », avec le badge « Validé par votre praticien » — l'envoi par email (booklet existant) reste disponible en parallèle.</p>
+        </section>
+
+        <!-- Échanges (module différé) -->
+        <section class="pview" id="p-echanges">
+          <div class="page-head">
+            <div>
+              <div class="eyebrow">Transverse — relie Actions et Suivi</div>
+              <h1 style="margin-top:6px">Échanges — messagerie sécurisée</h1>
+              <p class="page-sub">Emplacement réservé : ce module est différé au registre et n'a pas de calendrier.</p>
+            </div>
+          </div>
+          <div class="deferred-banner"><svg class="icon icon-sm"><use href="#i-alert"/></svg><span><b>Module différé.</b> La messagerie s'activera avec l'identité patient inter-assignations (magic link + passkeys) ; hébergement HDS recommandé. En attendant, les canaux officiels restent les documents validés et les rendez-vous de suivi — chaque échange y est tracé.</span></div>
+          <section class="panel">
+            <div class="panel-head"><h2>Fil — Sophie Nicola</h2><span class="panel-meta">Aperçu conceptuel, non contractuel</span></div>
+            <div class="thread">
+              <div class="msg patient">Bonjour, est-ce que je peux prendre le magnésium le matin plutôt que le soir ?<time>Hier, 19:22</time></div>
+              <div class="msg praticien">Bonne question — gardons la prise du soir pour l'instant, on en reparle à votre rendez-vous de suivi J14.<time>Hier, 20:05</time></div>
+              <div class="msg patient">D'accord, merci !<time>Hier, 20:11</time></div>
+            </div>
+            <div class="composer"><input type="text" placeholder="La rédaction sera disponible à l'activation du module…" disabled /><button class="btn btn-primary" disabled>Envoyer</button></div>
+          </section>
+        </section>
+
+        <!-- Agenda & consultations (module différé) -->
+        <section class="pview" id="p-agenda">
+          <div class="page-head">
+            <div>
+              <div class="eyebrow">Transverse — donne son tempo à la boucle</div>
+              <h1 style="margin-top:6px">Agenda &amp; consultations</h1>
+              <p class="page-sub">Chaque consultation naît d'une étape de la boucle et y retourne : la préparation lit les données, la conclusion produit la décision et les actions.</p>
+            </div>
+            <div class="head-actions"><button class="btn btn-primary" disabled>Planifier une consultation</button></div>
+          </div>
+          <div class="deferred-banner"><svg class="icon icon-sm"><use href="#i-alert"/></svg><span><b>Module différé.</b> Le workflow de rendez-vous est au registre des différés, sans déclencheur actif — cet écran fixe l'intention d'intégration, pas un calendrier de livraison.</span></div>
+          <div class="suivi-grid">
+            <section class="panel">
+              <div class="panel-head"><h2>Cette semaine</h2><span class="panel-meta">13 → 17 juillet</span></div>
+              <div class="agenda-week">
+                <div class="aday"><h3>Lun 13</h3></div>
+                <div class="aday"><h3>Mar 14</h3><div class="slot"><time>09:00</time><strong>Jennifer Martin</strong><span>Première consultation</span><span class="badge badge-warn">5/6 questionnaires reçus</span></div></div>
+                <div class="aday today"><h3>Mer 15 · auj.</h3><div class="slot"><time>11:00</time><strong>Michel Dogné</strong><span>Consultation de suivi — point d'étape J14</span><span class="badge badge-ok">Synthèse relue</span></div></div>
+                <div class="aday"><h3>Jeu 16</h3></div>
+                <div class="aday"><h3>Ven 17</h3><div class="slot"><time>14:00</time><strong>Sophie Nicola</strong><span>Restitution &amp; décision</span><span class="badge badge-neutral">Protocole en brouillon</span></div></div>
+              </div>
+            </section>
+            <aside style="display:grid;gap:15px">
+              <section class="panel">
+                <div class="panel-head"><h2>Prochaine consultation</h2></div>
+                <div style="padding:14px 18px 16px">
+                  <strong style="font-size:13px">Michel Dogné — aujourd'hui, 11:00</strong>
+                  <p style="font-size:11.5px;color:var(--muted-fg);margin:6px 0 12px">Point d'étape J14 : effet ressenti stable, adhésion partielle au complément — deux sujets à ouvrir.</p>
+                  <div style="display:grid;gap:8px"><button class="btn btn-primary btn-sm" data-p="suivi">Préparer : ouvrir le suivi</button><button class="btn btn-secondary btn-sm">Passer en mode consultation</button></div>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Ce que l'agenda relie</h2></div>
+                <div style="padding:12px 18px 16px;font-size:11.5px;color:var(--muted-fg);line-height:1.65">Première consultation ← données fiables · Restitution ← décision · Consultation de suivi ← points d'étape J7/J14/J21. Côté patient, le vocabulaire reste « rendez-vous de suivi ».</div>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+        <!-- Biologie fonctionnelle (module différé) -->
+        <section class="pview" id="p-biologie">
+          <div class="page-head">
+            <div>
+              <div class="loop-rail" aria-label="Étape de la boucle : Données fiables — versant mesuré">
+                <span class="loop-dot active"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span><span class="loop-line"></span>
+                <span class="loop-dot"></span>
+                <span class="loop-label">Données fiables <span>· étape 1 — versant mesuré : les questionnaires déclarent, la biologie objective</span></span>
+              </div>
+              <h1 style="margin-top:12px">Biologie fonctionnelle</h1>
+              <p class="page-sub">Bibliothèque d'analyses, packs thématiques, demandes et courriers — la composition et l'envoi passent par la chaîne Documents.</p>
+            </div>
+          </div>
+          <div class="deferred-banner"><svg class="icon icon-sm"><use href="#i-alert"/></svg><span><b>Module différé.</b> Le stockage de résultats biologiques réels attend un hébergement de données de santé (HDS). D'ici là : bibliothèque, packs et courriers se préparent — aucune valeur biologique n'est saisie ni stockée dans l'application.</span></div>
+          <div class="q-layout">
+            <div style="display:grid;gap:15px;min-width:0">
+              <section class="panel">
+                <div class="panel-head"><h2>Packs d'analyses par thématique</h2><span class="panel-meta">Composer une demande en un geste</span></div>
+                <div class="pack-grid">
+                  <article class="pack-card">
+                    <h3>Neuro-inflammation</h3>
+                    <p>CRP ultrasensible, homocystéine, index oméga-3 érythrocytaire… · 5 analyses</p>
+                    <div><span class="badge badge-neutral">Thématique</span></div>
+                    <button class="btn btn-secondary btn-sm">Composer la demande</button>
+                  </article>
+                  <article class="pack-card">
+                    <h3>Statut métabolique</h3>
+                    <p>Glycémie + insulinémie à jeun (calcul HOMA), HbA1c, triglycérides/HDL · 6 analyses</p>
+                    <div><span class="badge badge-info">Suggéré — signal de la fiche</span></div>
+                    <button class="btn btn-primary btn-sm">Composer la demande</button>
+                  </article>
+                  <article class="pack-card">
+                    <h3>Statut micronutritionnel</h3>
+                    <p>Vitamine D, ferritine + CRP, zinc, magnésium érythrocytaire, folates · 7 analyses</p>
+                    <div><span class="badge badge-neutral">Thématique</span></div>
+                    <button class="btn btn-secondary btn-sm">Composer la demande</button>
+                  </article>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Bibliothèque d'analyses</h2><span class="panel-meta">Références fonctionnelles + préparation patient</span></div>
+                <div class="q-list">
+                  <div class="q-row"><div class="grow"><strong>Index oméga-3 érythrocytaire</strong><small>Ratio ω6/ω3 mesuré · confronte l'estimation du questionnaire</small></div><span class="badge badge-neutral">Neuro-inflammation</span><button class="btn btn-secondary btn-sm">Ajouter</button></div>
+                  <div class="q-row"><div class="grow"><strong>Insulinémie à jeun</strong><small>Avec la glycémie → calcul HOMA · à jeun 12 h</small></div><span class="badge badge-neutral">Métabolique</span><button class="btn btn-secondary btn-sm">Ajouter</button></div>
+                  <div class="q-row"><div class="grow"><strong>Vitamine D (25-OH)</strong><small>Interprétation fonctionnelle · saisonnalité notée</small></div><span class="badge badge-neutral">Micronutrition</span><button class="btn btn-secondary btn-sm">Ajouter</button></div>
+                  <div class="q-row"><div class="grow"><strong>Ferritine + CRP ultrasensible</strong><small>Couple interprété ensemble — jamais la ferritine seule</small></div><span class="badge badge-neutral">Micronutrition</span><button class="btn btn-secondary btn-sm">Ajouter</button></div>
+                </div>
+              </section>
+            </div>
+            <aside style="display:grid;gap:15px">
+              <section class="panel">
+                <div class="panel-head"><h2>Demandes &amp; courriers</h2><span class="panel-meta num">2</span></div>
+                <div class="q-list">
+                  <div class="q-row"><div class="grow"><strong>Demande d'analyses — Statut métabolique</strong><small>Sophie Nicola · remise au patient pour son laboratoire</small></div><span class="badge badge-neutral">Brouillon</span></div>
+                  <div class="q-row"><div class="grow"><strong>Courrier médecin traitant</strong><small>Jennifer Martin · rendu « vue médecin » du composeur</small></div><span class="badge badge-ok">Validé</span></div>
+                  <div style="padding:12px 0 4px"><button class="btn btn-secondary btn-sm" data-p="documents">Ouvrir le composeur Documents</button></div>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Du présumé au mesuré</h2></div>
+                <div style="padding:12px 18px 16px;font-size:11.5px;color:var(--muted-fg);line-height:1.65">Les signaux estimés de la fiche (ratio ω6/ω3, signal métabolique) pré-remplissent la demande correspondante. Au retour du résultat, la fiche affichera « estimé » à côté de « mesuré » — jamais l'un à la place de l'autre.</div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Vocabulaire</h2></div>
+                <div style="padding:12px 18px 16px;font-size:11.5px;color:var(--muted-fg);line-height:1.65">Le document s'appelle « demande d'analyses », remise au patient pour son laboratoire ou son médecin traitant — la rédaction réglementée reste hors du champ de l'application, conformément au lexique du projet.</div>
+              </section>
+            </aside>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ============================================================= -->
+  <!-- ESPACE PATIENT                                                 -->
+  <!-- ============================================================= -->
+  <div class="space" id="space-patient">
+    <div class="phone">
+      <div class="phone-top"><div class="phone-brand">WN</div><strong>WellNeuro</strong></div>
+
+      <!-- Mon équilibre -->
+      <section class="pview2 active" id="pt-accueil">
+        <p class="p-hello">Bonjour Sophie</p>
+        <p class="p-sub">Voici où vous en êtes.</p>
+        <div class="orb-card">
+          <div class="orb-wrap">
+            <svg width="172" height="172" viewBox="0 0 172 172" role="img" aria-label="Mon équilibre : 61 sur 100">
+              <circle cx="86" cy="86" r="74" stroke="var(--muted)" stroke-width="12" fill="none"/>
+              <circle cx="86" cy="86" r="74" stroke="var(--teal-500)" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="284 465" transform="rotate(-90 86 86)"/>
+            </svg>
+            <div class="orb-value"><b class="num">61</b><span>sur 100</span></div>
+          </div>
+          <div class="orb-delta"><svg class="icon icon-sm"><use href="#i-check"/></svg>+9 depuis votre dernier point</div>
+          <ul class="p-priorities">
+            <li><span class="pn">1</span>Le sommeil est votre priorité en ce moment</li>
+            <li><span class="pn">2</span>Votre énergie du matin progresse</li>
+          </ul>
+          <div class="p-frise">
+            <div class="p-frise-step"><div class="p-frise-dot done"></div><span>T0</span></div>
+            <div class="p-frise-line done"></div>
+            <div class="p-frise-step"><div class="p-frise-dot active"></div><span>J21</span></div>
+            <div class="p-frise-line"></div>
+            <div class="p-frise-step"><div class="p-frise-dot"></div><span>J42</span></div>
+            <div class="p-frise-line"></div>
+            <div class="p-frise-step"><div class="p-frise-dot"></div><span>J90</span></div>
+          </div>
+          <button class="p-link">Voir le détail de mes 12 besoins<svg class="icon icon-sm"><use href="#i-arrows"/></svg></button>
+        </div>
+      </section>
+
+      <!-- Journal alimentaire -->
+      <section class="pview2" id="pt-journal">
+        <p class="p-hello" style="font-size:19px">Mon journal</p>
+        <p class="p-sub">Une observation simple, en moins de 15 secondes — sans note ni score.</p>
+        <div class="ja-entry"><div class="ja-entry-top"><strong>Petit-déjeuner</strong><time>Aujourd'hui, 8h05</time></div><p>Tartines, œuf, café</p></div>
+        <div class="ja-entry"><div class="ja-entry-top"><strong>Déjeuner</strong><time>Hier, 13h10</time></div><p>Salade de lentilles, saumon</p></div>
+        <div class="eyebrow" style="margin-top:16px">Vos favoris</div>
+        <div class="ja-favs"><button class="ja-fav">+ Petit-déjeuner habituel</button><button class="ja-fav">+ Déjeuner au bureau</button></div>
+        <div class="ja-cta"><button class="btn btn-primary"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Ajouter une observation</button></div>
+        <p class="ja-empty-note">Votre journal reste privé jusqu'à ce que vous choisissiez de le partager avec votre praticien.</p>
+      </section>
+
+      <!-- Mon suivi -->
+      <section class="pview2" id="pt-suivi">
+        <p class="p-hello" style="font-size:19px">Mon suivi</p>
+        <p class="p-sub">Rendez-vous de suivi J14 — 3 questions, moins d'une minute.</p>
+        <div class="checkin-card">
+          <div class="checkin-q"><p>Comment vous sentez-vous depuis 7 jours ?</p><div class="checkin-scale"><button>Moins bien</button><button aria-pressed="true">Stable</button><button>Mieux</button></div></div>
+          <div class="checkin-q"><p>Les actions proposées sont-elles faciles à tenir ?</p><div class="checkin-scale"><button>Difficile</button><button aria-pressed="true">Modéré</button><button>Facile</button></div></div>
+          <div class="checkin-q"><p>Une gêne ou un effet indésirable à signaler ?</p><div class="checkin-scale"><button aria-pressed="true">Non</button><button>Léger</button><button>Important</button></div></div>
+          <button class="btn btn-primary" style="width:100%;margin-top:6px">Envoyer à mon praticien</button>
+        </div>
+        <div class="checkin-done"><svg class="icon icon-sm"><use href="#i-check"/></svg>Rendez-vous J7 envoyé le 6 juillet</div>
+      </section>
+
+      <!-- Mes documents -->
+      <section class="pview2" id="pt-documents">
+        <p class="p-hello" style="font-size:19px">Mes documents</p>
+        <p class="p-sub">Toujours relus et validés par votre praticien avant de vous être transmis.</p>
+        <div class="pdoc-card"><div class="pdoc-icon"><svg class="icon icon-sm"><use href="#i-file"/></svg></div><div><strong>Votre point sur les 21 prochains jours</strong><p>Reçu le 12 juillet</p><span class="pdoc-validated"><svg class="icon icon-sm"><use href="#i-check"/></svg>Validé par votre praticien</span></div></div>
+      </section>
+
+      <nav class="pbottom" aria-label="Navigation">
+        <button data-pt="accueil" aria-current="page"><svg class="icon icon-sm"><use href="#i-home"/></svg>Accueil</button>
+        <button data-pt="journal"><svg class="icon icon-sm"><use href="#i-utensils"/></svg>Journal</button>
+        <button data-pt="suivi"><svg class="icon icon-sm"><use href="#i-arrows"/></svg>Suivi</button>
+        <button data-pt="documents"><svg class="icon icon-sm"><use href="#i-file"/></svg>Documents</button>
+      </nav>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var wn = document.getElementById('wn');
+
+  function setSpace(name) {
+    document.getElementById('space-praticien').classList.toggle('active', name === 'praticien');
+    document.getElementById('space-patient').classList.toggle('active', name === 'patient');
+    document.getElementById('btnPraticien').setAttribute('aria-pressed', String(name === 'praticien'));
+    document.getElementById('btnPatient').setAttribute('aria-pressed', String(name === 'patient'));
+  }
+  document.getElementById('btnPraticien').addEventListener('click', function () { setSpace('praticien'); });
+  document.getElementById('btnPatient').addEventListener('click', function () { setSpace('patient'); });
+
+  /* Navigation praticien (rail + tabs topbar partagent data-p) */
+  function showP(name) {
+    document.querySelectorAll('.pview').forEach(function (v) { v.classList.toggle('active', v.id === 'p-' + name); });
+    document.querySelectorAll('[data-p]').forEach(function (b) {
+      if (b.dataset.p === name) { b.setAttribute('aria-current', 'page'); } else { b.removeAttribute('aria-current'); }
+    });
+    window.scrollTo({ top: 0 });
+  }
+  document.querySelectorAll('[data-p]').forEach(function (b) { b.addEventListener('click', function () { showP(b.dataset.p); }); });
+
+  /* Onglets fiche patient */
+  document.querySelectorAll('[data-fiche]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('[data-fiche]').forEach(function (t) { t.setAttribute('aria-selected', String(t === b)); });
+      document.getElementById('fiche-clinique').classList.toggle('active', b.dataset.fiche === 'clinique');
+      document.getElementById('fiche-suivi').classList.toggle('active', b.dataset.fiche === 'suivi');
+    });
+  });
+
+  /* Onglets bibliothèque */
+  document.querySelectorAll('[data-lib]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('[data-lib]').forEach(function (t) { t.setAttribute('aria-selected', String(t === b)); });
+      document.querySelectorAll('.libpane').forEach(function (p) { p.classList.toggle('active', p.id === 'lib-' + b.dataset.lib); });
+    });
+  });
+
+  /* Composeur de documents : bascule de rendu par destinataire */
+  var rendus = {
+    patient: { label: 'Rendu — vue patient', title: 'Votre point sur les 21 prochains jours', body: 'Nous allons d’abord travailler votre sommeil et votre niveau de stress. Trois actions simples vous sont proposées, à votre rythme — un plan minimal existe toujours si une semaine est plus difficile.' },
+    medecin: { label: 'Rendu — vue médecin traitant', title: 'Point de situation — Jennifer Martin', body: 'Priorité retenue : régulation du sommeil et du stress. Protocole personnalisé de 21 jours engagé, 3 actions, sans interaction connue avec les traitements déclarés. Explorations biologiques complémentaires à discuter si utile.' },
+    praticien: { label: 'Rendu — note interne', title: 'Note de suivi interne', body: 'Rappel de contexte pour la prochaine consultation : signal discordant fatigue/sommeil non encore expliqué, adhésion à vérifier au prochain rendez-vous de suivi.' }
+  };
+  document.querySelectorAll('[data-dest]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('[data-dest]').forEach(function (t) { t.setAttribute('aria-pressed', String(t === b)); });
+      var r = rendus[b.dataset.dest];
+      document.getElementById('destRenduLabel').textContent = r.label;
+      document.getElementById('destRenduTitle').textContent = r.title;
+      document.getElementById('destRenduBody').textContent = r.body;
+    });
+  });
+
+  /* Navigation patient (bottom nav) */
+  function showPt(name) {
+    document.querySelectorAll('.pview2').forEach(function (v) { v.classList.toggle('active', v.id === 'pt-' + name); });
+    document.querySelectorAll('[data-pt]').forEach(function (b) {
+      if (b.dataset.pt === name) { b.setAttribute('aria-current', 'page'); } else { b.removeAttribute('aria-current'); }
+    });
+  }
+  document.querySelectorAll('[data-pt]').forEach(function (b) { b.addEventListener('click', function () { showPt(b.dataset.pt); }); });
+
+  /* Check-in : sélection d'une réponse par ligne */
+  document.querySelectorAll('.checkin-scale').forEach(function (row) {
+    row.querySelectorAll('button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        row.querySelectorAll('button').forEach(function (o) { o.setAttribute('aria-pressed', 'false'); });
+        b.setAttribute('aria-pressed', 'true');
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
