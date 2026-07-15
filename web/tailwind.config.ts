@@ -63,6 +63,35 @@ const config: Config = {
           600: 'var(--violet-600)',
           300: 'var(--violet-300)',
         },
+        // Palette « la Spirale » (A5-R1) — cf. docs/design-system-d1.md §8.
+        night: {
+          950: 'var(--night-950)',
+          900: 'var(--night-900)',
+          800: 'var(--night-800)',
+        },
+        indigo: {
+          600: 'rgb(var(--indigo-600-rgb) / <alpha-value>)',
+        },
+        mint: {
+          600: 'rgb(var(--mint-600-rgb) / <alpha-value>)',
+        },
+        solar: {
+          500: 'rgb(var(--solar-500-rgb) / <alpha-value>)',
+          ink: 'var(--solar-ink)',
+        },
+        forest: {
+          600: 'rgb(var(--forest-600-rgb) / <alpha-value>)',
+        },
+        copper: {
+          500: 'rgb(var(--copper-500-rgb) / <alpha-value>)',
+          ink: 'var(--copper-ink)',
+        },
+        // Trio catégoriel Corps/Ancrage/Esprit — fixe, indépendant des thèmes.
+        viz: {
+          corps: 'var(--viz-corps)',
+          ancrage: 'var(--viz-ancrage)',
+          esprit: 'var(--viz-esprit)',
+        },
         status: {
           success: 'rgb(var(--color-status-success-rgb) / <alpha-value>)',
           warning: 'rgb(var(--color-status-warning-rgb) / <alpha-value>)',
@@ -74,8 +103,13 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        display: ['var(--font-lora)', 'serif'],
+        // Rôles typographiques A5-R1 : les valeurs de --font-body /
+        // --font-display / --font-mono sont attribuées par thème dans
+        // globals.css (praticien : Sora/Instrument Sans/Plex Mono ;
+        // patient : Bricolage Grotesque/Albert Sans/Plex Mono).
+        sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       borderRadius: {
         sm: 'var(--radius-sm)',

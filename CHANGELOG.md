@@ -4,6 +4,21 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### DA « la Spirale » — adoption dans le design system (2026-07-15)
+
+- Révision A5-R1 actée au registre : structure A5 conservée (tout clair,
+  rail sombre signature, patient clair fixe), teintes et typographies
+  évoluées. Praticien « Nuit spectrale » (indigo/menthe/solaire, Sora +
+  Instrument Sans + IBM Plex Mono) ; patient « Forêt & cuivre » (forêt/
+  cuivre/ivoire, Bricolage Grotesque + Albert Sans). Tokens sémantiques
+  uniquement — aucun composant re-écrit pour la bascule de teintes.
+- Trio catégoriel Corps/Ancrage/Esprit remappé vers menthe/indigo/solaire
+  (validé accessibilité), consommé via les nouveaux tokens `--viz-*`.
+- Présentation des sous-scores : nouveau composant `ScoreZones` (point sur
+  zones de seuil, valeur T0 en point creux). **La logique clinique, les
+  scorings et les seuils sont strictement inchangés** — les zones sont
+  dérivées des bornes d'interprétation existantes, jamais ré-encodées.
+
 ### C1 — Décision clinique 21 jours V1 (2026-07-14)
 
 - Ajout des contrats purs et versionnés `AssessmentEpisode`,

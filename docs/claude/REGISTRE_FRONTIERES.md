@@ -111,6 +111,33 @@
 - À propager : R9 / `MON_EQUILIBRE_CONTEXTE.md` (« dashboard sombre » caduc),
   `06_SPEC_UX_COCKPIT_PRATICIEN.md` de C1 (idem).
 
+### A5-R1 — Révision : direction artistique « la Spirale » (décision utilisateur 2026-07-15)
+
+- **La structure A5 est strictement conservée** : tout en mode clair, rail
+  sombre structurel signature côté praticien, patient clair fixe, aucun
+  toggle de thème. Seules **les teintes et les typographies évoluent**.
+- DA double « l'Observatoire et le Jardin » (issue du brainstorming 5.0,
+  `docs/claude/propositions/2026-07-15-wellneuro-5-0-spirale/`) :
+  - **Praticien — Nuit spectrale** : rail indigo-nuit (`#151C38`/`#10162B`),
+    espace blanc froid `#F7F8FA`, primaire indigo `#3D4A9E`, données menthe
+    `#0D9488`, accent solaire `#E8A33D` (texte accent : `#8A5B10`).
+    Typographies : Sora (titres), Instrument Sans (texte), IBM Plex Mono
+    (valeurs/horodatages).
+  - **Patient — Forêt & cuivre** : fond ivoire `#FAF8F3`, primaire vert
+    forêt `#1E6F54`, accent cuivre `#B25E38`. Typographies : Bricolage
+    Grotesque (titres), Albert Sans (texte).
+- Palettes validées au validateur dataviz (2026-07-15) : trio praticien et
+  duo patient PASS ; **WARN contraste du solaire (2.1:1 sur blanc) → règle
+  de relief obligatoire** : le solaire ne porte jamais une information sans
+  étiquette textuelle directe (même règle que l'or historique).
+- **Trio catégoriel Corps/Ancrage/Esprit remappé** : Corps = menthe
+  `#0D9488`, Ancrage = indigo `#3D4A9E`, Esprit = solaire `#E8A33D`
+  (couleurs d'entité fixes, indépendantes des thèmes ; trio ALL CHECKS PASS).
+- Déploiement séquencé décidé : lot praticien d'abord, lot patient ensuite,
+  lot dataviz enfin — chaque lot réversible par revert.
+- À propager : `docs/design-system-d1.md` (section « Tokens v2 — Spirale »),
+  `MON_EQUILIBRE_CONTEXTE.md` §6 (couleurs des strates), `CHANGELOG.md`.
+
 ---
 
 ## 3. Fiches de frontières par campagne
