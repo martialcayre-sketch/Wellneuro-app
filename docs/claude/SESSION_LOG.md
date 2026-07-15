@@ -184,3 +184,23 @@ d'options, changement clinique, Prisma ou API.
 **Prochaine action prioritaire** : choisir explicitement la prochaine campagne à activer.
 
 **Questions ouvertes** : aucune.
+
+## [2026-07-15] — Typo display, programme 5.0, campagne SP-FIL
+
+**Décisions prises** : correctif `font-display` appliqué aux titres (PR #72 ;
+wordmark login passé au primaire, le solaire étant interdit en texte) ;
+disposition Spirale 5.0 actée au registre (A6) avec les cinq arbitrages —
+note de relecture en time-travel, seuil cabinet n ≥ 5, consentement écoute
+double niveau (gate CNIL inchangé), le Fil du jour remplace l'accueil,
+reprise avec pack pré-composé jamais auto-assigné ; programme 5.0 (PR #73)
+succède à la file 3.2. Campagne SP-FIL exécutée et clôturée (PR #74/#75/#76) :
+le Fil devient l'accueil praticien, rail regroupé.
+
+**Options écartées** : superposition accueil selon l'heure (imprévisible) ;
+écriture libre dans le passé (falsification du dossier).
+
+**Prochaine action prioritaire** : lever la validation ergonomique C1
+(gate SP-RUN) ou activer C2A (gate migration).
+
+**Questions ouvertes** : instruction CNIL/RGPD de l'écoute ambiante ;
+PR #71 TRUST ouverte en parallèle (miroir campagnes à resynchroniser).
