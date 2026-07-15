@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Le Fil du jour (accueil praticien)"
-statut: "en cours"
+statut: "terminé"
 dépend_de: "aucun"
 ---
 
