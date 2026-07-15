@@ -4,10 +4,12 @@ import { useEffect, useState } from 'react';
 import type { PatientEquilibreResponse } from '@/app/api/patient/equilibre/route';
 import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
 
+/* Couleurs d'entité fixes du trio (tokens --viz-*, révision A5-R1) —
+ * l'identité est toujours doublée par le libellé texte à côté du point. */
 const LEGENDE_STRATE: { strate: string; label: string; couleur: string }[] = [
-  { strate: 'CORPS', label: 'Corps', couleur: 'var(--teal-500)' },
-  { strate: 'ANCRAGE', label: 'Ancrage', couleur: 'var(--violet-600)' },
-  { strate: 'ESPRIT', label: 'Esprit', couleur: 'var(--gold-500)' },
+  { strate: 'CORPS', label: 'Corps', couleur: 'var(--viz-corps)' },
+  { strate: 'ANCRAGE', label: 'Ancrage', couleur: 'var(--viz-ancrage)' },
+  { strate: 'ESPRIT', label: 'Esprit', couleur: 'var(--viz-esprit)' },
 ];
 
 export function MonEquilibreDetail({

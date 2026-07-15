@@ -115,9 +115,12 @@ comme un effondrement.
     intermédiaire, Esprit au cœur), matière organique ondulante (effet de
     respiration continue, pas d'arêtes dures), rotation lente et
     indépendante par strate pour un effet d'orbite.
-  - Couleur distincte par strate (pas de dégradé unique à décoder) : teal
-    pour Corps, violet pour Ancrage, or/champagne pour Esprit — cohérent
-    avec la palette D1 (deep teal + champagne gold).
+  - Couleur distincte par strate (pas de dégradé unique à décoder) :
+    **menthe pour Corps, indigo pour Ancrage, solaire pour Esprit**
+    (révision A5-R1 « la Spirale », 2026-07-15 — tokens `--viz-corps` /
+    `--viz-ancrage` / `--viz-esprit`, trio validé accessibilité ; le
+    solaire n'est jamais porteur d'information sans étiquette textuelle).
+    Historique : teal/violet/or de la palette D1 d'origine.
   - 12 points de repère (un par besoin) répartis sur les surfaces
     (distribution de Fibonacci pour un espacement uniforme).
   - Survol d'un besoin dans une légende texte : le point 3D correspondant

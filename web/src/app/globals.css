@@ -34,11 +34,10 @@
   --color-status-success-rgb: 21 128 61;
   --color-status-warning-rgb: 146 64 14;
 
-  /* Violet — strate "Ancrage" (cercles concentriques Mon équilibre /
-   * Cartographie neuro-fonctionnelle, cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md
-   * §6). Couleur catégorielle fixe (ne varie pas par thème patient/praticien,
-   * contrairement aux tokens sémantiques --color-*), au même titre que
-   * --teal-500/--gold-500 pour Corps/Esprit. */
+  /* Violet — ancienne couleur de la strate "Ancrage" (remplacée par
+   * --viz-ancrage en A5-R1, cf. ci-dessous). Conservé en compat : le
+   * namespace Tailwind violet-* reste disponible, plus aucun composant du
+   * trio ne le consomme. */
   --violet-600: #6b5b95;
   --violet-300: #c9c0e0;
 
@@ -66,6 +65,14 @@
   --copper-500: #b25e38;
   --copper-500-rgb: 178 94 56;
   --copper-ink: #8f4526;
+
+  /* Trio catégoriel Corps/Ancrage/Esprit (A5-R1) — couleurs d'entité fixes,
+   * indépendantes des thèmes (cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md §6).
+   * Trio validé au validateur dataviz (CVD ΔE 48, chroma OK) ; le solaire
+   * (Esprit) n'est jamais porteur d'information sans étiquette textuelle. */
+  --viz-corps: var(--mint-600);
+  --viz-ancrage: var(--indigo-600);
+  --viz-esprit: var(--solar-500);
 
   /* Compat : couleurs historiques du Lot 0. Vérifié lors de la revue
    * HC-F LOT-01 (2026-07-12) : plus aucun composant de web/src ne les
