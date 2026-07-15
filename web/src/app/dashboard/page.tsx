@@ -18,7 +18,7 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-8">
       {/* En-tête */}
       <div>
-        <h2 className="text-2xl font-bold text-foreground">
+        <h2 className="font-display text-2xl font-bold text-foreground">
           Bonjour, {session?.user?.email?.split('@')[0] ?? 'Praticien'}
         </h2>
         <p className="text-sm text-muted-foreground mt-1">

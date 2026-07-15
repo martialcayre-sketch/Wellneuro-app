@@ -52,7 +52,7 @@ export function DetailBesoinsPanel({ idPatient }: { idPatient: string }) {
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
+          <h2 className="font-display text-2xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
           <p className="text-sm text-muted-foreground mt-1">Détail des 12 besoins</p>
         </div>
         <Link

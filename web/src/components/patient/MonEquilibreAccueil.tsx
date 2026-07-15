@@ -95,7 +95,7 @@ export function MonEquilibreAccueil({
   return (
     <div className="w-full max-w-md">
       <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
-        <h1 className="text-xl font-bold text-gray-900 mb-6 text-center">Mon équilibre</h1>
+        <h1 className="font-display text-xl font-bold text-gray-900 mb-6 text-center">Mon équilibre</h1>
 
         <div className="flex justify-center mb-4">
           {indiceGlobal !== null ? (
