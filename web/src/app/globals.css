@@ -87,39 +87,39 @@
  */
 
 /*
- * Thème patient — clair, appliqué par défaut et via [data-theme="patient"].
- * Contraste texte/fond vérifié AAA (~13:1).
+ * Thème patient — « le Jardin » (Forêt & cuivre, A5-R1), clair fixe,
+ * appliqué par défaut et via [data-theme="patient"].
+ * Contraste texte/fond vérifié AAA (14,86:1 — matrice design-system-d1 §8).
  */
 :root,
 [data-theme='patient'] {
-  --background: var(--cream-100);
-  --foreground: #16323a;
-  --surface: #ffffff;
-  --surface-foreground: #16323a;
-  --muted: #e7eeee;
-  --muted-foreground: #4a6367;
-  --border: #d8e2e1;
-  --color-primary: var(--teal-700);
-  --color-primary-rgb: var(--teal-700-rgb);
+  --background: #faf8f3;
+  --foreground: #2b2115;
+  --surface: #fffdf9;
+  --surface-foreground: #2b2115;
+  --muted: #efe8da;
+  --muted-foreground: #6e5f49;
+  --border: #e5dccb;
+  --color-primary: var(--forest-600);
+  --color-primary-rgb: var(--forest-600-rgb);
   --color-primary-foreground: #ffffff;
-  --color-accent: var(--gold-600);
-  --color-accent-rgb: var(--gold-600-rgb);
-  --color-accent-foreground: #16323a;
+  --color-accent: var(--copper-500);
+  --color-accent-rgb: var(--copper-500-rgb);
+  --color-accent-foreground: #ffffff;
 
   /* Réconciliation UX 3.0 (LOT-01, additif — cf. docs/design-system-d1.md
    * section « Réconciliation tokens UX 3.0 »). Élévation gérée surtout via
-   * ombre/bordure en thème clair (surface déjà au blanc maximal). */
+   * ombre/bordure en thème clair. */
   --color-surface-elevated: #ffffff;
   --color-status-success: #15803d;
   --color-status-warning: #92400e;
   --color-status-danger: #b91c1c;
   --color-status-info: #1d4ed8;
-  --color-focus-ring: var(--teal-700);
+  --color-focus-ring: var(--forest-600);
 
-  /* Typographies provisoires (A5-R1, lot praticien) : le patient reste sur
-   * Lora/Inter jusqu'à la bascule « Forêt & cuivre ». */
-  --font-display: var(--font-lora), Georgia, 'Times New Roman', serif;
-  --font-body: var(--font-inter), system-ui, sans-serif;
+  /* Typographies A5-R1 (chargées dans app/layout.tsx via next/font). */
+  --font-display: var(--font-bricolage), Georgia, 'Times New Roman', serif;
+  --font-body: var(--font-albert), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
