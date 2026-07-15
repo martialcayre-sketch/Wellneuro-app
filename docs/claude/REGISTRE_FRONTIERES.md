@@ -138,6 +138,38 @@
 - À propager : `docs/design-system-d1.md` (section « Tokens v2 — Spirale »),
   `MON_EQUILIBRE_CONTEXTE.md` §6 (couleurs des strates), `CHANGELOG.md`.
 
+### A6 — Disposition « la Spirale » 5.0 adoptée comme cible UX (décision utilisateur 2026-07-15)
+
+- La **disposition** 5.0 (Fil du jour, fiche-trajectoire/Spirale, copilote,
+  correspondance, « Ma spirale » patient) devient la cible UX des deux
+  fronts, livrée **par campagnes** selon
+  `campagnes/PROGRAMME_WELLNEURO_5_0.md` (qui succède à la file restante du
+  programme 3.2 et réintègre C2A/C2B/C3/C4/C5/JA sans les dupliquer).
+  Phasage identité-d'abord confirmé ; la Spirale est un objet de
+  **navigation, jamais un graphe**.
+- **Arbitrages des questions ouvertes** (détail :
+  `propositions/2026-07-15-wellneuro-5-0-spirale/ARBITRAGES_QUESTIONS_OUVERTES.md`) :
+  - **A6-1 Time-travel** : lecture du passé **+ note de relecture** —
+    toujours horodatée au présent, visuellement séparée, snapshot historique
+    immuable (objet `RelectureNote` à modéliser en C2A).
+  - **A6-2 Cabinet apprenant** : repère masqué sous **n ≥ 5 épisodes clos**,
+    `n=` toujours affiché, constante applicative ajustable.
+  - **A6-3 Écoute ambiante** : consentement **double niveau** (document
+    d'information signé une fois au dossier + activation explicite visible à
+    chaque séance, suspension à tout moment). Le **gate réglementaire
+    CNIL/RGPD préalable reste bloquant** pour tout développement du volet.
+  - **A6-4 Accueil praticien** : **le Fil du jour remplace l'accueil**
+    `/dashboard` ; les métriques actuelles deviennent une carte du Fil.
+  - **A6-5 Reprise patient** : pack de réévaluation **proposé + pré-composé**
+    d'après le dernier épisode (comparabilité), **jamais auto-assigné**.
+- Garde-fous 5.0 confirmés : jamais d'envoi automatique (chaîne Relu →
+  Validé → Envoyé), pas de gamification patient, pas de score de risque
+  chiffré ni pronostic nominatif, toute proposition du copilote sourcée
+  (instrument, date, version de scoring).
+- Gates hérités inchangés : SP-RUN exige la validation ergonomique C1 (NO-GO
+  runtime tant que non levée) ; C2A exige la confirmation explicite de
+  migration Prisma ; Phase C exige HDS (D6).
+
 ---
 
 ## 3. Fiches de frontières par campagne

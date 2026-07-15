@@ -12,10 +12,10 @@
 
 `app.wellneuro.fr` est l'unique point d'entrée en production.
 
-## Pilotage actif — architecture campagnes (2026-07-11)
+## Pilotage actif — architecture campagnes (2026-07-11, révisé 2026-07-15)
 
-- Le pilotage opérationnel des évolutions produit est désormais structuré par campagnes (`C0`, `C0-UX`, `C1`…`C5`) dans `docs/claude/campagnes/*`.
-- La campagne active fait foi pour l'ordre d'exécution courant : `docs/claude/campagnes/ACTIVE_CAMPAIGN.md`.
+- Le pilotage opérationnel des évolutions produit est désormais structuré par campagnes (`C0`, `C0-UX`, `C1`…`C5`, `SP-*`) dans `docs/claude/campagnes/*`.
+- La séquence des campagnes à venir est portée par `docs/claude/campagnes/PROGRAMME_WELLNEURO_5_0.md` (disposition « la Spirale », décision A6) ; la campagne active fait foi pour l'ordre d'exécution courant : `docs/claude/campagnes/ACTIVE_CAMPAIGN.md`.
 - Cette roadmap conserve le suivi de consolidation technique (historique C0/C2/C3/C4/C5 et lots R0→R10).
 
 ## Décommission Google Sheets — ✅ Résolu (2026-07-07)
