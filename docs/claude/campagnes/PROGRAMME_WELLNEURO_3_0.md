@@ -1,10 +1,14 @@
 # Synthèse du programme WellNeuro 3.2
 
-> Révision du 2026-07-13 — promeut les arbitrages réconciliés de WN Ultimate
+> Révision du 2026-07-15 — promeut les arbitrages réconciliés de WN Ultimate
 > v2 comme architecture cible 3.2, sans activer ses règles cliniques
 > candidates. Elle intègre aussi les arbitrages du brainstorm (registre de
 > frontières §2) : scission Hybrid Clinical / QX, redistribution du métier
 > vers C1/C2, compilation N+1, abandon du double mode Jour/Nuit (tout clair).
+> La campagne transverse TRUST est ajoutée comme cadre de l’information
+> patient, des choix, des droits, de la transparence IA et de la sécurité
+> relationnelle ; elle reste non activable avec des données réelles tant que
+> ses gates ne sont pas levés.
 > `docs/claude/REGISTRE_FRONTIERES.md` fait foi sur les frontières et
 > décisions actées ; ce fichier fait foi sur la séquence.
 
@@ -22,7 +26,8 @@ Répartition des rôles : HC-F fournit la grammaire visuelle ; C1 prépare le
 snapshot, la décision et le protocole brouillon ; C2 possède leur persistance,
 le temps et la trajectoire ; C3 la restitution ; C4 et C5 les bibliothèques
 d'intervention ; JA le journal alimentaire ; QX l'expérience de saisie ;
-WN-AUTO les garde-fous d'exécution.
+TRUST porte l’information normative, les choix, les droits, la transparence IA
+et la sécurité relationnelle ; WN-AUTO les garde-fous d'exécution.
 
 ## Ce que WellNeuro 3.0 doit prouver (inchangé)
 
@@ -32,6 +37,8 @@ WN-AUTO les garde-fous d'exécution.
 - Les données manquantes et discordances empêchent la surinterprétation.
 - Le patient reçoit une version calme et concrète.
 - Le suivi distingue effet, tolérance et adhésion.
+- Le patient comprend ce qui est déclaré, calculé, proposé, assisté par IA ou
+  validé, et peut retrouver ses informations et ses choix.
 
 ## Convention d’exécution
 
@@ -51,6 +58,7 @@ Chaque campagne est exécutée sur une branche d’intégration dédiée. Les lo
 | C2B | Trajectoire et aide à l'ajustement | idem | Momentum explicable, comparateur | cadrée | C2A + données réelles |
 | C4A / C5A | Catalogues intrinsèques compléments / alimentation | `…complements…` / `…boussole…` | Data-first via contrat neutre partagé | cadrées | C4B/C5B : C1 + protocole actif C2 |
 | **JA** | Journal alimentaire 21 jours V1 | `2026-07-13-journal-alimentaire-21j-v1` | Observations alimentaires manuelles, sans score ni proxy questionnaire | cadrée | domaine pur ; persistance : C2A + gate migration |
+| **TRUST** | Information patient, consentements et sécurité relationnelle V1 | `2026-07-15-trust-information-patient-droits-v1` | Premier accès, centre permanent, versionnement, droits, provenance, sécurité relationnelle | cadrée — lots compilés, non activable sans gates | transverse : HC-F + portail ; raccord QX/C1/C2/C3/auth |
 
 ## Architecture cible 3.2 promue
 
@@ -79,6 +87,12 @@ par les gates cliniques ; cette promotion ne modifie aucun scoring existant.
   certification n'est pas étendu.
 - **Séquencement E0** : `feat/e0-patients-pagination` se livre avant tout
   restylage de l'annuaire patients (HC-F/C1).
+- **TRUST — données réelles** : aucun texte patient, choix, signal de sécurité,
+  usage IA visible ou partage n’est activé sans validation juridique,
+  architecture d’hébergement adaptée, contrôle d’accès, isolation,
+  authentification, journalisation et runbook d’incident.
+- **TRUST — clinique** : aucune règle d’escalade n’est activée sans source,
+  propriétaire clinique, version, message déterministe, test et validation.
 
 ## Modules différés
 
