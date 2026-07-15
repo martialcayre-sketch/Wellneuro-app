@@ -241,6 +241,17 @@ logique de PatientsPanel.
 
 ## 6. Séquencement consolidé (série E)
 
+> **Révision 2026-07-15** : la séquence opérationnelle est désormais portée
+> par le programme de campagnes
+> [`docs/claude/campagnes/PROGRAMME_WELLNEURO_5_0.md`](claude/campagnes/PROGRAMME_WELLNEURO_5_0.md)
+> (disposition « la Spirale », décision A6 au registre des frontières).
+> Correspondances : E3 (auth patient R8) = campagne **IDP** ; E4 (dashboard
+> patient) ≈ **SP-SPI** (+ JA) ; E6 (protocole builder) alimenté par C4/C5 et
+> consommé par **SP-COP** ; E8 (biologie réelle) = Phase C, toujours
+> conditionnée à D6 (HDS). E5 (workflow RDV) reste un module futur du Fil du
+> jour. Les tableaux ci-dessous restent valables comme description des
+> périmètres, plus comme ordre d'exécution.
+
 Chaque lot E se découpe ensuite en branches courtes selon le schéma D1.
 
 ### Court terme

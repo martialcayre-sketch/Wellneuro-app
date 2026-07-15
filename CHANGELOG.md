@@ -4,6 +4,19 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Typographie display appliquée + programme « disposition 5.0 » (2026-07-15)
+
+- Correctif A5-R1 : la classe `font-display` (Sora praticien / Bricolage
+  Grotesque patient) est désormais appliquée aux titres (pages dashboard,
+  fiche patient, login, portail patient) — elle était mappée mais consommée
+  nulle part. Wordmark login passé de l'accent solaire (2,03:1, interdit en
+  texte par la règle de relief) au primaire indigo.
+- Gouvernance : décision A6 au registre — la disposition « la Spirale » 5.0
+  devient la cible UX des deux fronts, livrée par campagnes
+  (`docs/claude/campagnes/PROGRAMME_WELLNEURO_5_0.md`) ; les cinq questions
+  ouvertes du brainstorm sont arbitrées
+  (`ARBITRAGES_QUESTIONS_OUVERTES.md`). Aucun changement clinique.
+
 ### DA « la Spirale » — adoption dans le design system (2026-07-15)
 
 - Révision A5-R1 actée au registre : structure A5 conservée (tout clair,
