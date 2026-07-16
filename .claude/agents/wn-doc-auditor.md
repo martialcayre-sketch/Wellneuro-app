@@ -2,7 +2,7 @@
 name: wn-doc-auditor
 description: Compare la documentation WellNeuro à l’état réel du dépôt et détecte contradictions, doublons, liens cassés et documents obsolètes.
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: sonnet
 effort: medium
 ---
 

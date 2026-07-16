@@ -2,7 +2,7 @@
 name: wn-debugger
 description: Diagnostique les erreurs WellNeuro par hypothèses falsifiables et recherche la cause racine avant tout correctif.
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: opus
 effort: high
 ---
 

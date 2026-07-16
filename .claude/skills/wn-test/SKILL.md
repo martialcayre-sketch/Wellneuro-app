@@ -19,6 +19,11 @@ Argument : `$ARGUMENTS`
 4. Ne jamais créer de donnée patient réelle.
 5. Ne jamais lancer migration, seed production, écriture Supabase ou déploiement.
 6. En mode `quick`, s’arrêter après les validations ciblées.
-7. En mode `full`, exécuter aussi build et contrôles de release disponibles.
+7. En mode `full`, préférer `npm run test:worktree` depuis `web/` : réplique
+   complète du job CI `verify` (base éphémère isolée, gate de dérive
+   schéma↔migrations, e2e sur build de production). À défaut, build et
+   contrôles de release disponibles. La base éphémère locale créée par ce
+   script ne compte pas comme migration interdite (règle 5) : elle est
+   jetable, isolée et 100 % fictive.
 
 Rendre : commandes, résultats, échecs, cause probable, prochain test utile et go/no-go.
