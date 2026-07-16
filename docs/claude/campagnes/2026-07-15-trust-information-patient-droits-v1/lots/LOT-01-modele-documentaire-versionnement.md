@@ -1,7 +1,7 @@
 ---
 id: "LOT-01-modele-documentaire-versionnement"
 titre: "Modèle documentaire, versionnement et événements"
-statut: "à_faire — non démarré"
+statut: "terminé"
 dépend_de: ["LOT-00"]
 ---
 
