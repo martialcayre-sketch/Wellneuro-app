@@ -279,7 +279,7 @@ function buildBookletHTML(patientNom: string, dateDocument: string, s: SyntheseS
   <div class="notes-praticien">${notesPraticienHtml}</div>` : ''}
 
   <div class="footer">
-    Document généré après validation par votre praticien.<br>
+    Document préparé avec une assistance d’intelligence artificielle et validé par votre praticien.<br>
     Ce bilan ne constitue pas un diagnostic médical.<br>
     wellneuro.fr &nbsp;·&nbsp; ${dateDocumentHtml}
   </div>

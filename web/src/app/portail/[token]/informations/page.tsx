@@ -6,18 +6,22 @@ import { useParams, useRouter } from 'next/navigation';
 import type { TrustEtatResponse } from '@/app/api/portail/trust/etat/route';
 import { getDocumentCourant, REGISTRE_DOCUMENTS_TRUST } from '@/lib/trust/contenus/registre';
 import { DocumentTrust } from '@/components/patient/trust/DocumentTrust';
+import { MesChoix } from '@/components/patient/trust/MesChoix';
+import { SignalerProbleme } from '@/components/patient/trust/SignalerProbleme';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 
-const LIBELLE_FINALITE: Record<string, string> = {
-  partage_medecin_traitant: 'Partage avec le médecin traitant',
-  communications_non_essentielles: 'Communications non essentielles',
+const LIBELLE_CATEGORIE_SIGNALEMENT: Record<string, string> = {
+  effet_indesirable: 'Effet indésirable suspecté',
+  incident_confidentialite: 'Incident de confidentialité',
+  demande_droit: 'Demande de droit',
 };
-const LIBELLE_STATUT_CHOIX: Record<string, string> = {
-  accorde: 'Autorisé',
-  refuse: 'Refusé',
-  retire: 'Retiré',
+const LIBELLE_STATUT_TRAITEMENT: Record<string, string> = {
+  recu: 'Reçu',
+  en_cours: 'En cours d’examen',
+  traite: 'Traité',
+  clos: 'Clos',
 };
 
 const formatDate = (iso: string) =>
@@ -94,11 +98,6 @@ export default function InformationsPage() {
     return 'Version actuelle';
   };
 
-  const choixCourant = (finalite: string): string => {
-    const evenement = etat.choixCourants.find(c => c.finalite === finalite);
-    return evenement ? LIBELLE_STATUT_CHOIX[evenement.statut] ?? evenement.statut : 'Non autorisé';
-  };
-
   const documentsListes = [cadre, limites, donnees, ia, droits];
 
   return (
@@ -134,22 +133,33 @@ export default function InformationsPage() {
       </CarteCentre>
 
       <CarteCentre id="choix" titre="Mes choix et autorisations">
-        <dl className="divide-y divide-border text-sm">
-          {Object.entries(LIBELLE_FINALITE).map(([finalite, libelle]) => (
-            <div key={finalite} className="flex items-center justify-between gap-3 py-2">
-              <dt className="text-foreground">{libelle}</dt>
-              <dd className="text-muted-foreground">{choixCourant(finalite)}</dd>
-            </div>
-          ))}
-          <div className="flex items-center justify-between gap-3 py-2">
-            <dt className="text-foreground">Réutilisation secondaire de vos données</dt>
-            <dd className="text-muted-foreground">Non proposée</dd>
+        <MesChoix
+          token={token}
+          choixCourants={etat.choixCourants}
+          historiqueChoix={etat.historiqueChoix}
+          onChange={() => void charger()}
+        />
+      </CarteCentre>
+
+      <CarteCentre id="signaler" titre="Signaler un problème">
+        <SignalerProbleme token={token} onEnvoye={() => void charger()} />
+        {etat.signalements.length > 0 && (
+          <div className="pt-2">
+            <p className="text-sm font-semibold text-foreground mb-1">Mes signalements et demandes</p>
+            <ul className="divide-y divide-border text-sm">
+              {etat.signalements.map(s => (
+                <li key={`${s.categorie}-${s.soumisLe}`} className="py-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <span className="text-foreground">
+                    {LIBELLE_CATEGORIE_SIGNALEMENT[s.categorie] ?? s.categorie}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {formatDate(s.soumisLe)} — {LIBELLE_STATUT_TRAITEMENT[s.statutTraitement] ?? s.statutTraitement}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
-        </dl>
-        <p className="text-xs text-muted-foreground">
-          Aucun choix n’est précoché ; refuser un choix facultatif ne bloque jamais votre
-          accompagnement.
-        </p>
+        )}
       </CarteCentre>
 
       <CarteCentre id="documents" titre="Mes documents d’information">

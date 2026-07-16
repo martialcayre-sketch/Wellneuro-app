@@ -1,7 +1,7 @@
 ---
 id: "LOT-04-securite-clinique-nutrivigilance"
 titre: "Sécurité clinique et nutrivigilance"
-statut: "à_faire — non démarré"
+statut: "terminé"
 dépend_de: ["LOT-02"]
 ---
 

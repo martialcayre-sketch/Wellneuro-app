@@ -1,7 +1,7 @@
 ---
 id: "LOT-05-transparence-ia-provenance"
 titre: "Transparence IA, validation humaine et provenance"
-statut: "à_faire — non démarré"
+statut: "terminé"
 dépend_de: ["LOT-01"]
 ---
 

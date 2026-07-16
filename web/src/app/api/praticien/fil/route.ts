@@ -30,7 +30,12 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     const maintenant = new Date();
     const seuilRecence = new Date(maintenant.getTime() - RECENCE_REPONSE_JOURS * 24 * 60 * 60 * 1000);
 
-    const [syntheses, assignations, reponses, activites] = await Promise.all([
+    const filtreNonTraite = { statutTraitement: { in: ['recu', 'en_cours'] } };
+    const selectSignalement = { idPatient: true, soumisLe: true };
+    const [effets, incidents, droits, syntheses, assignations, reponses, activites] = await Promise.all([
+      prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
+      prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
+      prisma.trustRightsRequest.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
       prisma.syntheseIA.findMany({
         where: { statut: 'Brouillon_IA' },
         orderBy: { dateGeneration: 'desc' },
@@ -53,8 +58,15 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       }),
     ]);
 
+    const signalements = [
+      ...effets.map(e => ({ idPatient: e.idPatient, kind: 'effet_indesirable' as const, soumisLe: e.soumisLe })),
+      ...incidents.map(i => ({ idPatient: i.idPatient, kind: 'incident_confidentialite' as const, soumisLe: i.soumisLe })),
+      ...droits.map(d => ({ idPatient: d.idPatient, kind: 'demande_droit' as const, soumisLe: d.soumisLe })),
+    ];
+
     const idsConcernes = [
       ...new Set([
+        ...signalements.map(s => s.idPatient),
         ...syntheses.map(s => s.idPatient),
         ...assignations.map(a => a.idPatient),
         ...reponses.map(r => r.idPatient),
@@ -69,6 +81,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     const actifs = new Set(patients.map(p => p.idPatient));
 
     const cartes = construireFil({
+      signalements: signalements.filter(s => actifs.has(s.idPatient)),
       syntheses: syntheses.filter(s => actifs.has(s.idPatient)),
       assignations: assignations.filter(a => actifs.has(a.idPatient)),
       reponses: reponses.filter(r => actifs.has(r.idPatient)),
