@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlarmClock, Inbox, RotateCcw, Sparkles, type LucideIcon } from 'lucide-react';
+import { AlarmClock, Inbox, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { CarteFil, TypeCarteFil } from '@/lib/fil/cartes';
 
 /** Identité visuelle de chaque type de carte — l'icône double toujours le
  * libellé textuel (jamais la couleur seule, règle de relief A5-R1). */
 const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = {
+  signalement_trust: { libelle: 'Signalement', icon: ShieldCheck },
   synthese_a_valider: { libelle: 'À valider', icon: Sparkles },
   assignation_en_retard: { libelle: 'En retard', icon: AlarmClock },
   reponse_recente: { libelle: 'Reçu', icon: Inbox },

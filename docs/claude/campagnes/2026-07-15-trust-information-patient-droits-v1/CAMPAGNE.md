@@ -1,10 +1,10 @@
 ---
 id: "2026-07-15-trust-information-patient-droits-v1"
 titre: "TRUST — Information patient, consentements et sécurité relationnelle V1"
-statut: "cadrée — lots compilés, non activable sans gates"
+statut: "terminée — V1 en production, dettes ouvertes (DETTE_TRUST.md)"
 créée_le: "2026-07-15"
-mise_à_jour: "2026-07-15"
-lot_courant: "aucun"
+mise_à_jour: "2026-07-16"
+lot_courant: "LOT-07"
 ---
 
 # TRUST — Information patient, consentements et sécurité relationnelle V1
@@ -197,14 +197,14 @@ Cartes proposées :
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Audit de l’état réel, frontières et gates | à_faire | audit source + registre |
-| LOT-01 | Modèle documentaire, versionnement et événements | à_faire | LOT-00 |
-| LOT-02 | Premier accès et centre permanent | à_faire | LOT-01 + HC-F |
-| LOT-03 | Consentements, droits et cycle de vie du compte | à_faire | LOT-01 + LOT-02 |
-| LOT-04 | Sécurité clinique, alertes et nutrivigilance | à_faire | LOT-02 |
-| LOT-05 | Transparence IA, validation humaine et provenance | à_faire | LOT-01 + C1/C3 |
-| LOT-06 | Authentification, délégations, partage et notifications | à_faire | LOT-00 + auth existante |
-| LOT-07 | Accessibilité, tests, validation externe et handoff | à_faire | LOT-01 à LOT-06 |
+| LOT-00 | Audit de l’état réel, frontières et gates | terminé | audit source + registre |
+| LOT-01 | Modèle documentaire, versionnement et événements | terminé | LOT-00 |
+| LOT-02 | Premier accès et centre permanent | terminé | LOT-01 + HC-F |
+| LOT-03 | Consentements, droits et cycle de vie du compte | terminé (périmètre V1 — délégations et cycle de vie différés vers IDP) | LOT-01 + LOT-02 |
+| LOT-04 | Sécurité clinique, alertes et nutrivigilance | terminé (règle v1 + signalement + file praticien) | LOT-02 |
+| LOT-05 | Transparence IA, validation humaine et provenance | terminé | LOT-01 + C1/C3 |
+| LOT-06 | Authentification, délégations, partage et notifications | terminé (audit documentaire, handoff IDP) | LOT-00 + auth existante |
+| LOT-07 | Accessibilité, tests, validation externe et handoff | terminé (GO V1 avec dettes) | LOT-01 à LOT-06 |
 
 ## 8. Gates obligatoires
 

@@ -21,7 +21,7 @@
 | C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : intrinsèque ; C4B : C1/C2 | N+1 |
 | C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | cadrée | C5A : data-first ; C5B : C1/C2 | N+1 |
 | JA | Journal alimentaire 21 jours V1 | cadrée, règles candidates | domaine pur ; persistance : C2A + gate | N+1 |
-| TRUST | Information patient, consentements et sécurité relationnelle V1 | **cadrée — lots compilés, non activable sans gates** | transverse : HC-F + portail ; raccord QX/C1/C2/C3/auth ; nourrit IDP/SP-AMB | 8 |
+| TRUST | Information patient, consentements et sécurité relationnelle V1 | **terminée** (2026-07-16 — V1 en production, dettes DETTE_TRUST.md) | transverse : HC-F + portail ; raccord QX/C1/C2/C3/auth ; nourrit IDP/SP-AMB | 8 |
 | SP-TT / SP-COP / IDP / SP-SPI / SP-MET / SP-CAB / SP-AMB | Disposition 5.0 (suite) | à cadrer — séquence au programme 5.0 | voir programme | — |
 | WN-AUTO | Orchestration | terminée | — | — |
 

@@ -34,6 +34,13 @@ export async function resetPortailState(idPatient: string): Promise<void> {
   await prisma.assignation.deleteMany({ where: { idPatient } });
   await prisma.consultation.deleteMany({ where: { idPatient } });
   await prisma.questionnaireReponse.deleteMany({ where: { idPatient, idAssignation: { not: null } } });
+  // TRUST : purge des traces du patient fictif pour que la séquence « Avant
+  // de commencer » se représente à chaque run (idempotence du parcours).
+  await prisma.trustAcknowledgement.deleteMany({ where: { idPatient } });
+  await prisma.trustChoiceEvent.deleteMany({ where: { idPatient } });
+  await prisma.trustAdverseEffectReport.deleteMany({ where: { idPatient } });
+  await prisma.trustPrivacyIncident.deleteMany({ where: { idPatient } });
+  await prisma.trustRightsRequest.deleteMany({ where: { idPatient } });
 }
 
 export async function closePrisma(): Promise<void> {

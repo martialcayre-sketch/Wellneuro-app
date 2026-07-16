@@ -1,7 +1,7 @@
 ---
 id: "LOT-00-audit-frontieres-gates"
 titre: "Audit de l’état réel, frontières et gates"
-statut: "à_faire — non démarré"
+statut: "terminé"
 dépend_de: []
 ---
 

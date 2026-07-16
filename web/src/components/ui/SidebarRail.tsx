@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Sparkles, Settings, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Sparkles, Settings, ShieldCheck, type LucideIcon } from 'lucide-react';
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -15,7 +15,13 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
   { etiquette: null, items: [{ href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard }] },
   { etiquette: 'Suivi', items: [{ href: '/dashboard/patients', label: 'Patients', icon: Users }] },
   { etiquette: 'Instruments', items: [{ href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles }] },
-  { etiquette: 'Cabinet', items: [{ href: '/dashboard/parametres', label: 'Paramètres', icon: Settings }] },
+  {
+    etiquette: 'Cabinet',
+    items: [
+      { href: '/dashboard/droits', label: 'Confiance & droits', icon: ShieldCheck },
+      { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
+    ],
+  },
 ];
 
 interface SidebarRailProps {

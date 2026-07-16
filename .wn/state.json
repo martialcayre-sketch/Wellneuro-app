@@ -7,7 +7,7 @@
   "status": "idle",
   "active_campaign": null,
   "active_lot": null,
-  "last_completed_lot": "SP-FIL/LOT-02",
+  "last_completed_lot": "TRUST/LOT-07",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -15,20 +15,20 @@
   },
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-15T20:14:51Z",
+    "last_checked_at": "2026-07-16T11:59:57Z",
     "checks": {
-      "orchestration": "campaign audit passed locally and in PR #74/#75 CI",
-      "type_check": "passed locally and in PR #74/#75 CI; Vitest 206/206",
-      "scoring_certification": "unchanged (no clinical change in SP-FIL)",
-      "no_secrets": "passed locally and in CI",
-      "e2e": "Playwright passed in PR #74/#75 CI (accueil Fil adapté)",
-      "corpus_registry": "unchanged"
+      "orchestration": "campaign audit vert à chaque lot TRUST (#78-#82)",
+      "type_check": "vert ; Vitest 225/225 ; lint ; build production 43 pages",
+      "scoring_certification": "inchangé (aucun scoring modifié ; règle orientation EI v1 = aiguillage de message, validée praticien)",
+      "no_secrets": "vert",
+      "e2e": "Playwright vert (parcours portail avec Avant de commencer + centre permanent, desktop + mobile)",
+      "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Choisir la prochaine campagne du programme 5.0 (SP-RUN après validation ergonomique C1, ou C2A avec gate migration).",
+  "next_action": "Reprendre le programme 5.0 (SP-RUN après validation ergonomique C1, ou C2A avec gate migration).",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-15T20:14:51Z",
+  "updated_at": "2026-07-16T11:59:57Z",
   "parallel_campaigns": []
 }
