@@ -204,3 +204,25 @@ le Fil devient l'accueil praticien, rail regroupé.
 
 **Questions ouvertes** : instruction CNIL/RGPD de l'écoute ambiante ;
 PR #71 TRUST ouverte en parallèle (miroir campagnes à resynchroniser).
+
+## 2026-07-16 — TRUST V1 en production ; pipeline de déploiement automatisé
+
+**Décisions** : campagne TRUST transcrite intégralement (PR #78→#84 : contrats,
+contenus versionnés hashés, migration trust_v1, séquence « Avant de commencer »,
+centre permanent, choix, signalements, page praticien, clôture — 225 tests, e2e
+vert). Incident : la chaîne Vercel n'appliquait pas les migrations → PR #85 :
+`migrate deploy` au build de production (`vercel-build.sh`, `MIGRATE_DATABASE_URL`
+session pooler 5432, garde `VERCEL_ENV=production`, gate humain = revue de PR).
+trust_v1 appliquée (19:09), 5 tables RLS vérifiées, app.wellneuro.fr OK.
+Worktree TRUST et branches mergées nettoyées.
+
+**Options écartées** : fallback `DIRECT_URL` (valeur opaque, risque IPv6) ;
+CLI Supabase pour le schéma (double comptabilité vs `_prisma_migrations`).
+
+**Prochaine action prioritaire** : reprise programme 5.0 (validation ergonomique
+C1 pour SP-RUN, ou C2A avec gate migration).
+
+**Questions ouvertes** : branche `trust-v1-lot-migration` (0500a35 = seule copie
+committée de la réorg docs, aussi présente non committée dans l'arbre) ; worktree
+infra + `wip/playwright-worktree-isolation` (livrables test-worktree à statuer) ;
+purge `SHEET_ID` des variables Vercel.
