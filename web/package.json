@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run prisma:generate && next build",
+    "build": "bash scripts/vercel-build.sh",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
