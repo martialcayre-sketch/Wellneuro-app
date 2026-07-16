@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { ProtocolMiniBuilder } from './ProtocolMiniBuilder';
+import { ProtocolMiniBuilder, type RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 
 function card(): DecisionCard {
@@ -62,6 +62,34 @@ describe('ProtocolMiniBuilder', () => {
     expect(ui.getByText('Relu par le praticien')).not.toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+
+  it('émet le contenu du brouillon relu au parent via onReviewed', () => {
+    const onReviewed = vi.fn();
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} onReviewed={onReviewed} />);
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Marquer comme relu' }));
+    expect(onReviewed).toHaveBeenCalledTimes(1);
+    const soumission = onReviewed.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.purpose).toBe('Raison fixture');
+    expect(soumission.followUpCriterion).toBe('Critère fixture');
+    expect(soumission.actions).toHaveLength(1);
+    expect(soumission.actions[0].title).toBe('Action fixture');
+    expect(soumission.therapeuticLoad).toEqual({ level: 'light', source: 'practitioner', justification: null });
+    expect(ui.getByText('Relu par le praticien')).not.toBeNull();
+  });
+
+  it('n’émet rien via onReviewed quand le brouillon est incomplet', () => {
+    const onReviewed = vi.fn();
+    const { container } = render(<ProtocolMiniBuilder decisionCard={card()} onReviewed={onReviewed} />);
+    const ui = within(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Marquer comme relu' }));
+    expect(onReviewed).not.toHaveBeenCalled();
+    expect(ui.getByRole('status').textContent).toContain('Brouillon incomplet');
   });
 
   it('avertit avant de réinitialiser un brouillon local', () => {

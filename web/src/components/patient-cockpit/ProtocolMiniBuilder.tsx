@@ -3,6 +3,17 @@
 import { useState } from 'react';
 import type { DecisionCard, ProtocolAction, ProtocolActionType, TherapeuticLoad } from '@/lib/clinical-engine/types';
 
+// Contenu du brouillon au moment où le praticien le marque comme relu.
+// Émis tel quel : la construction du ProtocolDraft (validations et hashes du
+// moteur) appartient à l'appelant, côté serveur — le moteur clinique
+// (node:crypto) n'est pas embarquable dans le bundle client.
+export type RelectureProtocoleSoumission = {
+  purpose: string;
+  followUpCriterion: string;
+  actions: ProtocolAction[];
+  therapeuticLoad: TherapeuticLoad;
+};
+
 const ACTION_LABELS: Record<ProtocolActionType, string> = {
   food: 'Alimentation',
   chronobiology: 'Rythme / chronobiologie',
@@ -24,7 +35,16 @@ function emptyAction(actionId: string): ProtocolAction {
   };
 }
 
-export function ProtocolMiniBuilder({ decisionCard }: { decisionCard: DecisionCard | null }) {
+export function ProtocolMiniBuilder({
+  decisionCard,
+  onReviewed,
+}: {
+  decisionCard: DecisionCard | null;
+  // Optionnel : reçoit le contenu du brouillon quand le praticien le marque
+  // comme relu (après les validations locales). Sans cette prop, le
+  // composant garde son comportement historique (état purement local).
+  onReviewed?: (soumission: RelectureProtocoleSoumission) => void;
+}) {
   const [purpose, setPurpose] = useState('');
   const [followUpCriterion, setFollowUpCriterion] = useState('');
   const [actions, setActions] = useState<ProtocolAction[]>([]);
@@ -98,6 +118,12 @@ export function ProtocolMiniBuilder({ decisionCard }: { decisionCard: DecisionCa
       setMessage('Une charge excessive exige une justification du praticien.');
       return;
     }
+    onReviewed?.({
+      purpose,
+      followUpCriterion,
+      actions,
+      therapeuticLoad: { level: loadLevel, source: 'practitioner', justification: loadJustification.trim() || null },
+    });
     setReviewed(true);
     setMessage('Brouillon relu par le praticien — non activé et non transmis.');
   };

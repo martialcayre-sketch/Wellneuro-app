@@ -1,5 +1,28 @@
 import { FichePatientPanel } from '@/components/FichePatientPanel';
+import {
+  buildValidationErgoC1Fixture,
+  estModeValidationErgoActif,
+  type ValidationErgoC1Fixture,
+} from '@/lib/clinical-engine/validationErgoFixture';
 
-export default function FichePatientPage({ params }: { params: { idPatient: string } }) {
-  return <FichePatientPanel idPatient={params.idPatient} />;
+export default function FichePatientPage({
+  params,
+  searchParams,
+}: {
+  params: { idPatient: string };
+  searchParams?: { [key: string]: string | string[] | undefined };
+}) {
+  // Harnais de validation ergonomique C1 : actif uniquement en développement
+  // local avec `?validationErgo=c1` — en production ce calcul vaut toujours
+  // false et la fiche reste strictement identique. La fixture est construite
+  // ici, côté serveur : le moteur clinique (canonical.ts → node:crypto) ne
+  // peut pas être embarqué dans le bundle client.
+  const modeValidationErgo = estModeValidationErgoActif(
+    process.env.NODE_ENV,
+    searchParams?.validationErgo,
+  );
+  const fixtureValidationErgo: ValidationErgoC1Fixture | null = modeValidationErgo
+    ? buildValidationErgoC1Fixture()
+    : null;
+  return <FichePatientPanel idPatient={params.idPatient} fixtureValidationErgo={fixtureValidationErgo} />;
 }

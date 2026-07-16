@@ -27,6 +27,16 @@ praticien (grille : `../2026-07-11-decision-clinique-21-jours-v1/GRILLE_VALIDATI
 — **doit être réalisée par l'utilisateur** avant tout câblage. Cette campagne
 ne démarre pas tant que ce gate n'est pas levé explicitement.
 
+**Harnais disponible pour exécuter la grille** (2026-07-16) : la fixture C1
+exigée par la grille est fournie par
+`web/src/lib/clinical-engine/validationErgoFixture.ts`. En développement
+uniquement : lancer `npm run dev` puis ouvrir
+`/dashboard/patients/<idPatient>?validationErgo=c1` — le cockpit de la fiche
+patient est alors alimenté par la fixture (bandeau « données fictives »
+affiché, rien n'est sauvegardé ni transmis). Ce harnais est inerte en
+production et **ne lève pas le gate** : seul le verdict de l'utilisateur après
+exécution de la grille le lève.
+
 ## Frontières
 
 **Possède** : la construction runtime des objets C1 depuis les réponses
