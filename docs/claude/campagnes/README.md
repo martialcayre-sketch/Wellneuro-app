@@ -13,7 +13,7 @@
 | HC-F | Hybrid Clinical Foundation | **terminée** (2026-07-14, GO avec dettes — `DETTE_UX_RESIDUELLE.md`) | C0-UX | 6 |
 | C1 | Décision clinique 21 jours V1 | **terminée** (2026-07-14 — GO technique ; runtime/activation/diffusion : NO-GO, repris par SP-RUN) | HC-F LOT-02 | 7 |
 | QX | Expérience questionnaires | **terminée** (2026-07-14, renderer `micro_batch` seul activé) | HC-F LOT-01+04 | 5 |
-| **SP-FIL** | Le Fil du jour v1 | **cadrée — lots compilés** | — | 2 |
+| **SP-FIL** | Le Fil du jour v1 | **terminée** (2026-07-15 — accueil = Fil, rail regroupé, PR #74-#76) | — | 2 |
 | **SP-RUN** | Cockpit vivant (runtime C1) | cadrée — **gate humain** (validation ergonomique C1) | gate | N+1 |
 | C2A | Points d'étape + persistance minimale | cadrée | C1 ✓ + gate migration | N+1 |
 | C2B | Trajectoire et ajustement (→ Spirale) | cadrée | C2A + données réelles | N+1 |
@@ -21,6 +21,7 @@
 | C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : intrinsèque ; C4B : C1/C2 | N+1 |
 | C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | cadrée | C5A : data-first ; C5B : C1/C2 | N+1 |
 | JA | Journal alimentaire 21 jours V1 | cadrée, règles candidates | domaine pur ; persistance : C2A + gate | N+1 |
+| TRUST | Information patient, consentements et sécurité relationnelle V1 | **cadrée — lots compilés, non activable sans gates** | transverse : HC-F + portail ; raccord QX/C1/C2/C3/auth ; nourrit IDP/SP-AMB | 8 |
 | SP-TT / SP-COP / IDP / SP-SPI / SP-MET / SP-CAB / SP-AMB | Disposition 5.0 (suite) | à cadrer — séquence au programme 5.0 | voir programme | — |
 | WN-AUTO | Orchestration | terminée | — | — |
 
@@ -32,6 +33,10 @@ Le pack WN Ultimate v2 reste disponible comme source d'audit dans
 [`../propositions/wn-ultimate-v2/`](../propositions/wn-ultimate-v2/README.md).
 Les arbitrages promus sont décrits dans
 [`../ARCHITECTURE_CLINIQUE_3_2.md`](../ARCHITECTURE_CLINIQUE_3_2.md).
+
+La campagne TRUST est transverse et documentaire à ce stade. Elle ne devient
+pas automatiquement la campagne active et n'autorise aucune migration, aucune
+activation de règle clinique ni aucun usage de données réelles.
 
 ## Convention de travail
 
