@@ -13,7 +13,10 @@ describe('PortailPage — restauration de session', () => {
   });
 
   it('restaure une session valide sans afficher le gate email', async () => {
+    // `ok: true` : le code vérifie res.ok (Response réel) avant de parser —
+    // sans lui, le fetch trust/etat partirait en réessais bornés (lenteur).
     const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
       json: vi.fn().mockResolvedValue({
         ok: true,
         patient: { prenom: 'Sophie', nom: 'Nicola', email: 'sophie.nicola@example.test' },
