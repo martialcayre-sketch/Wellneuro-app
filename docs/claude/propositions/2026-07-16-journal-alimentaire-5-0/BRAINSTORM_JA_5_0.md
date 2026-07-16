@@ -29,6 +29,8 @@
 | Bibliothèque personnelle de solutions | **Concept au noyau, persistance gatée** : restitution intra-épisode ; la persistance inter-épisodes dépend d'IDP (conforme D6) |
 | Durée d'un tour | **Cible adaptative** : 21 jours par défaut, clôture anticipée possible quand la couverture est exploitable, prolongation/suspension par décision humaine |
 | Fermeture de boucle | **Les quatre idées retenues** : retour de décision, tour suivant préparé, charge perçue en clôture, trace depuis notification (conditionnée à D9) |
+| Architecture à deux régimes (doc 11) | **Actée** : régime A = évaluation observationnelle avant protocole (`DietaryObservationProfile`, gouvernée comme un instrument de mesure) ; régime B = expérimentation après protocole (le noyau essai/friction) ; quatre lectures déclaré/observé/vécu/interprété |
+| Modélisation des régimes | **Objet unique** : `FoodObservationEpisode` porte un régime `assessment \| experiment` — pas d'objets séparés |
 
 ## Le parti pris : on n'observe pas le patient, on teste la conception de l'action
 
@@ -135,6 +137,38 @@ décideur. S'y ajoutent, issus de cette session :
   modification du protocole ;
 - le retour de décision suit la chaîne Relu → Validé → Envoyé ;
 - le brouillon de reformulation n'est jamais visible du patient ni envoyé.
+
+## Complément de session — la synthèse finale (doc 11) : l'instrument à deux régimes
+
+Le doc `11_SYNTHESE_FINALE_INSTRUMENT_A_DEUX_REGIMES.md`, ajouté au pack en
+cours de session, réconcilie les visions : le journal n'est ni un relevé
+exhaustif ni un simple suivi d'observance, mais un **instrument longitudinal
+à deux régimes**.
+
+- **Régime A — évaluation avant protocole.** Ce que le brainstorm avait
+  nommé « panorama optionnel » est en réalité une finalité distincte :
+  construire un profil alimentaire *observé* (`DietaryObservationProfile` —
+  couverture, structure des prises, marqueurs, variabilité, limites,
+  provenance) qui éclaire le `ClinicalSnapshot` et la `DecisionCard`, là où
+  `Q_ALI_01`/`Q_ALI_02` ne donnent que le déclaré rétrospectif. Prescrit
+  explicitement, jamais imposé, et gouverné **comme un instrument de
+  mesure** (registre versionné, règles déterministes, fixtures de
+  certification — doc 11 §9).
+- **Régime B — expérimentation après protocole.** Le noyau essai/friction
+  acté ci-dessus, inchangé.
+- Même infrastructure de capture, provenance, couverture et correction ;
+  questions, métriques et règles d'interprétation distinctes par régime.
+- Les trois vérités s'élargissent en **quatre lectures jamais fusionnées** :
+  déclaré / observé / vécu / interprété.
+
+**Décisions utilisateur (2026-07-16)** : architecture à deux régimes
+**actée** ; **modélisation à objet unique** — `FoodObservationEpisode` porte
+un régime `assessment | experiment`, la fusion actée au brainstorm est
+préservée (pas de `DietaryAssessmentEpisode` ni `DietaryActionExperiment`
+séparés). Restent à arbitrer au gate JA-00 : questions du bilan
+observationnel, marqueurs suffisamment gouvernés pour un pilote, place du
+profil dans le `ClinicalSnapshot`, comparaison autorisée avec les
+questionnaires (doc 11 §12).
 
 ## Raccordement
 

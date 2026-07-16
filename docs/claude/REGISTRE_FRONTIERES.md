@@ -170,24 +170,38 @@
   runtime tant que non levée) ; C2A exige la confirmation explicite de
   migration Prisma ; Phase C exige HDS (D6).
 
-### A7 — Cap « Ma spirale alimentaire » : le journal devient un atelier d'essais (décision utilisateur 2026-07-16)
+### A7 — Cap « Ma spirale alimentaire » : instrument longitudinal à deux régimes (décision utilisateur 2026-07-16)
 
-- Le journal alimentaire 21 jours est **recadré 5.0** : son noyau n'est plus
-  la description des repas mais la **faisabilité d'une action validée** —
-  capture occasion/praticabilité/friction, budget d'attention, droit au
-  silence utile, essai non concluant utile, delta de décision. Détail :
-  `propositions/2026-07-16-journal-alimentaire-5-0/BRAINSTORM_JA_5_0.md`.
+- Le journal alimentaire 21 jours est **recadré 5.0** en **instrument
+  longitudinal à deux régimes** (synthèse finale doc 11 du pack, actée) :
+  - **Régime A — évaluation avant protocole** : profil alimentaire
+    observationnel (`DietaryObservationProfile` : couverture, structure des
+    prises, marqueurs, variabilité, limites, provenance) qui éclaire le
+    `ClinicalSnapshot` et la `DecisionCard` sans produire seul une conclusion
+    clinique. Prescrit explicitement par le praticien, jamais imposé.
+    Gouverné **comme un instrument de mesure** (registre versionné, règles
+    déterministes, fixtures de certification — doc 11 §9).
+  - **Régime B — expérimentation après protocole** (le noyau) :
+    **faisabilité d'une action validée** — capture
+    occasion/praticabilité/friction, budget d'attention, droit au silence
+    utile, essai non concluant utile, delta de décision.
+  Même infrastructure de capture/provenance/couverture/correction ; questions,
+  métriques et règles d'interprétation distinctes par régime. **Quatre
+  lectures jamais fusionnées** : déclaré / observé / vécu / interprété.
+  Détail : `propositions/2026-07-16-journal-alimentaire-5-0/BRAINSTORM_JA_5_0.md`.
 - **Noms actés** : patient « **Ma spirale alimentaire** » (vocabulaire
-  « essai » pour un tour), praticien « Trajectoire alimentaire », objet
-  technique `FoodObservationEpisode`. L'expérience est **l'épisode recadré**
-  (hypothèse + versions d'action idéale/simple/secours portées par
-  l'épisode) — pas d'objet `DietaryActionExperiment` séparé.
+  « essai » pour un tour), praticien « Trajectoire alimentaire ». **Un seul
+  objet technique** : `FoodObservationEpisode`, porteur d'un régime
+  `assessment | experiment` et, en régime B, de l'hypothèse et des versions
+  d'action idéale/simple/secours — pas d'objets `DietaryAssessmentEpisode`
+  ni `DietaryActionExperiment` séparés.
 - **Arbitrages D1–D12 du pack tous tranchés** (détail :
   `propositions/2026-07-16-journal-alimentaire-5-0/ARBITRAGES_JA_5_0.md`) :
-  - **A7-1 Politique par défaut (D2)** : **focalisée** sur l'action ;
-    panorama léger **optionnel** prescriptible au premier tour ; durée
-    **cible adaptative** (21 j par défaut, clôture anticipée quand la
-    couverture est exploitable, prolongation/suspension humaine).
+  - **A7-1 Politique par défaut (D2)** : en régime B, **focalisée** sur
+    l'action ; le panorama léger relève du **régime A**, prescrit
+    explicitement (jamais par défaut) ; durée **cible adaptative** (21 j par
+    défaut, clôture anticipée quand la couverture est exploitable,
+    prolongation/suspension humaine).
   - **A7-2 Suffisance (D3)** : règles d'observabilité **par type de
     question, versionnées** — jamais des seuils cliniques ; vocabulaire
     « couverture exploitable pour la revue ».
@@ -211,6 +225,12 @@
     production ; « jumeau » interdit dans l'UI.
   - **A7-10 Questionnaire J21 (D12)** : répétition `Q_ALI_01`/`Q_ALI_02`
     par **assignation explicite au protocole**, jamais automatique.
+  - **A7-11 Architecture à deux régimes (doc 11)** : actée, avec
+    **modélisation à objet unique** (régime porté par l'épisode). Restent à
+    arbitrer au gate JA-00 : questions du bilan observationnel, marqueurs
+    suffisamment gouvernés pour un pilote, place exacte du profil dans le
+    `ClinicalSnapshot`, comparaison autorisée avec `Q_ALI_01`/`Q_ALI_02`
+    (doc 11 §12).
 - **Boucle patient-praticien fermée** (ajouts de session, hors pack) :
   retour de décision au patient après la revue (chaîne Relu → Validé →
   Envoyé), tour suivant préparé (brouillon de reformulation visible
@@ -353,11 +373,13 @@
 
 ### JA — Ma spirale alimentaire (`2026-07-13-journal-alimentaire-21j-v1`, recadrée 5.0)
 
-- **Possède** : épisodes d'observation alimentaire (hypothèse, versions
-  d'action, fenêtres), traces occasion/praticabilité/friction, registre de
-  frictions versionné, correction/suppression événementielles, couverture et
-  limites explicites, constats directs d'adhésion, solutions intra-épisode,
-  plan minimal, agrégats descriptifs et discordances.
+- **Possède** : épisodes d'observation alimentaire à deux régimes
+  (`assessment` : profil observationnel `DietaryObservationProfile` ;
+  `experiment` : hypothèse, versions d'action, traces
+  occasion/praticabilité/friction), registre de frictions versionné,
+  correction/suppression événementielles, couverture et limites explicites,
+  constats directs d'adhésion, solutions intra-épisode, plan minimal,
+  agrégats descriptifs et discordances.
 - **Consomme** : charte patient HC-F ; protocole actif C2 uniquement lors du
   futur branchement persistant ; C5 peut lire ses observations publiées sans
   posséder le journal ; identité durable IDP pour la persistance des

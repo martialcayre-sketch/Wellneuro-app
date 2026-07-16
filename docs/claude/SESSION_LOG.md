@@ -251,10 +251,12 @@ du dépôt).
 ## 2026-07-16 — JA 5.0 : brainstorm, arbitrages D1–D12, actation A7
 
 **Décisions** : pack JA 5.0 intégré en
-`propositions/2026-07-16-journal-alimentaire-5-0/` ; cap acté = noyau
-essai/friction du doc de vision, fusionné (l'expérience = l'épisode recadré,
-pas d'objet séparé) ; nom « Ma spirale alimentaire », vocabulaire patient
-« essai » ; D1–D12 tous tranchés (focalisée par défaut, panorama optionnel,
+`propositions/2026-07-16-journal-alimentaire-5-0/` ; cap acté =
+**instrument à deux régimes** (doc 11, A7-11) : évaluation observationnelle
+avant protocole (`DietaryObservationProfile`) + essai/friction après
+protocole, objet unique `FoodObservationEpisode` porteur du régime, quatre
+lectures déclaré/observé/vécu/interprété ; nom « Ma spirale alimentaire »,
+vocabulaire patient « essai » ; D1–D12 tous tranchés (focalisée par défaut,
 durée cible adaptative, photo/voix différées avec politiques actées,
 solutions gatées IDP, constats directs — météo agrégée → SP-MET,
 notifications « pourquoi maintenant » + trace rapide, comparaison gatée,

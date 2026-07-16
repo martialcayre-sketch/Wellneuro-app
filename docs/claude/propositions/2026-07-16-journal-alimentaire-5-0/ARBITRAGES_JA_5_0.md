@@ -29,12 +29,13 @@ adaptative.
 | Hybride 21 j | Reco pack d'origine | Contredit le « panorama optionnel » acté |
 | Choix praticien sans défaut | Souplesse maximale | Charge de décision à chaque activation |
 
-**Décision : politique focalisée par défaut.** On n'observe que les
-occasions liées à l'action validée. L'hybride devient le mode obtenu quand
-le praticien prescrit le panorama optionnel au premier tour (schéma
-alimentaire peu documenté). La durée reste une cible adaptative (21 jours
-par défaut, clôture anticipée quand la couverture est exploitable,
-prolongation/suspension humaine).
+**Décision : politique focalisée par défaut.** En régime B, on n'observe
+que les occasions liées à l'action validée. Le panorama léger relève du
+**régime A** (évaluation observationnelle avant protocole — voir la section
+« Doc 11 » ci-dessous), prescrit explicitement par le praticien quand le
+schéma alimentaire est peu documenté, jamais par défaut. La durée reste une
+cible adaptative (21 jours par défaut, clôture anticipée quand la couverture
+est exploitable, prolongation/suspension humaine).
 
 ## D3 — Définition de l'observation suffisante
 
@@ -131,6 +132,35 @@ le praticien, assignée explicitement dans le protocole. Cohérent avec
 l'invariant « aucun envoi automatique » et l'arbitrage A6-5 (pack
 pré-composé jamais auto-assigné). La comparaison déclaré/observé n'est
 proposée que si la couverture est suffisante (doc 03 §8).
+
+## Doc 11 — Architecture à deux régimes (synthèse finale)
+
+**La question.** Le doc `11_SYNTHESE_FINALE_INSTRUMENT_A_DEUX_REGIMES.md`,
+ajouté au pack en cours de session, propose que le journal soit un
+instrument longitudinal à deux régimes : évaluation observationnelle avant
+protocole (régime A, sortie `DietaryObservationProfile`) et expérimentation
+d'action après protocole (régime B, le noyau acté).
+
+| Option | Pour | Contre |
+|---|---|---|
+| Acter les deux régimes, A7 amendé | Le panorama gagne un statut, une sortie canonique et une gouvernance d'instrument ; réconcilie doc 11 et registre | Réécriture partielle de l'A7 déjà consigné |
+| Garder A7 tel quel | Aucune réécriture | Doc 11 resterait en tension avec le registre |
+| Reporter au gate JA-00 | Décision prise avec l'audit | La PR partirait avec une ambiguïté connue |
+
+**Décision (utilisateur, 2026-07-16) : architecture à deux régimes actée,
+A7 amendé (A7-11).** Quatre lectures jamais fusionnées :
+déclaré / observé / vécu / interprété.
+
+**Modélisation : objet unique.** `FoodObservationEpisode` porte un régime
+`assessment | experiment` ; les sorties diffèrent par régime (profil
+observationnel vs cartographie de faisabilité). Pas de
+`DietaryAssessmentEpisode` ni de `DietaryActionExperiment` séparés — la
+fusion actée au brainstorm est préservée.
+
+**Restent à arbitrer au gate JA-00** (doc 11 §12) : questions du bilan
+observationnel, marqueurs suffisamment gouvernés pour un pilote, place du
+profil dans le `ClinicalSnapshot`, comparaison autorisée avec
+`Q_ALI_01`/`Q_ALI_02`, conditions de prudence/suspension/retrait.
 
 ## Récapitulatif des conséquences sur les lots
 
