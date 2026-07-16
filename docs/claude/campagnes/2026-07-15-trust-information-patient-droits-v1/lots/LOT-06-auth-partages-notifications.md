@@ -1,7 +1,7 @@
 ---
 id: "LOT-06-auth-partages-notifications"
 titre: "Authentification, délégations, partages et notifications"
-statut: "à_faire — non démarré"
+statut: "terminé"
 dépend_de: ["LOT-00"]
 ---
 

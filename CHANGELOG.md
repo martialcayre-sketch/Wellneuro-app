@@ -4,6 +4,26 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### TRUST V1 — information patient, consentements et sécurité relationnelle (2026-07-16)
+
+- Campagne TRUST exécutée de bout en bout (LOT-00 → LOT-07) : documents
+  d'information versionnés à hash verrouillé (le consentement est enfin lié
+  à son texte), séquence « Avant de commencer » (4 écrans, accusé de
+  lecture distinct de toute autorisation), centre permanent « Informations,
+  confidentialité et droits » accessible de toutes les pages, choix
+  facultatifs append-only avec retrait aussi simple que l'accord,
+  signalements structurés (effet indésirable, incident de confidentialité,
+  demandes de droits), file praticien « Confiance & droits » + cartes en
+  tête du Fil, notifications externes génériques.
+- Migration additive `trust_v1` (5 tables append-only, RLS deny-all),
+  appliquée par l'utilisateur après confirmation explicite.
+- **Aucun scoring ni seuil clinique modifié.** Nouvelle règle versionnée
+  `orientation-effet-indesirable v1` : aiguillage déterministe d'un message
+  d'orientation sur la sévérité déclarée par le patient (aucun calcul,
+  aucune causalité) — validée par le praticien en relecture de PR.
+- Gates non levés documentés (juridique externe, hébergement/sécurité,
+  panel humain) : `GATES_GO_NO_GO.md`, dettes datées dans `DETTE_TRUST.md`.
+
 ### Typographie display appliquée + programme « disposition 5.0 » (2026-07-15)
 
 - Correctif A5-R1 : la classe `font-display` (Sora praticien / Bricolage
