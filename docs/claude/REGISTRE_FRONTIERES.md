@@ -170,6 +170,62 @@
   runtime tant que non levée) ; C2A exige la confirmation explicite de
   migration Prisma ; Phase C exige HDS (D6).
 
+### A7 — Cap « Ma spirale alimentaire » : le journal devient un atelier d'essais (décision utilisateur 2026-07-16)
+
+- Le journal alimentaire 21 jours est **recadré 5.0** : son noyau n'est plus
+  la description des repas mais la **faisabilité d'une action validée** —
+  capture occasion/praticabilité/friction, budget d'attention, droit au
+  silence utile, essai non concluant utile, delta de décision. Détail :
+  `propositions/2026-07-16-journal-alimentaire-5-0/BRAINSTORM_JA_5_0.md`.
+- **Noms actés** : patient « **Ma spirale alimentaire** » (vocabulaire
+  « essai » pour un tour), praticien « Trajectoire alimentaire », objet
+  technique `FoodObservationEpisode`. L'expérience est **l'épisode recadré**
+  (hypothèse + versions d'action idéale/simple/secours portées par
+  l'épisode) — pas d'objet `DietaryActionExperiment` séparé.
+- **Arbitrages D1–D12 du pack tous tranchés** (détail :
+  `propositions/2026-07-16-journal-alimentaire-5-0/ARBITRAGES_JA_5_0.md`) :
+  - **A7-1 Politique par défaut (D2)** : **focalisée** sur l'action ;
+    panorama léger **optionnel** prescriptible au premier tour ; durée
+    **cible adaptative** (21 j par défaut, clôture anticipée quand la
+    couverture est exploitable, prolongation/suspension humaine).
+  - **A7-2 Suffisance (D3)** : règles d'observabilité **par type de
+    question, versionnées** — jamais des seuils cliniques ; vocabulaire
+    « couverture exploitable pour la revue ».
+  - **A7-3 Photo/voix (D4, D5)** : capture **différée** ; politiques actées
+    (traitement transitoire, suppression par défaut, choix TRUST explicite) ;
+    première expérimentation voix ciblée sur la description d'une friction.
+  - **A7-4 Solutions durables (D6)** : signatures = « solutions qui
+    fonctionnent pour moi » liées à un contexte ; intra-épisode au noyau,
+    **persistance inter-épisodes gatée par IDP**.
+  - **A7-5 Plan minimal (D7)** : activation libre patient 1/3/7 jours, sans
+    justification ; praticien : statut et période seuls.
+  - **A7-6 Météo (D8)** : **constats directs observables au noyau** ;
+    l'agrégation trois états est différée à **SP-MET** (praticien seul,
+    causes observables, jamais de score interne).
+  - **A7-7 Notifications (D9)** : contextuelles limitées avec « pourquoi
+    maintenant », plafonnées par le budget d'attention ; **trace depuis la
+    notification** actée comme cible.
+  - **A7-8 Comparaison multi-épisodes (D10)** : règle de compatibilité de
+    versions actée, activation différée (C2A + IDP).
+  - **A7-9 Vocabulaire simulateur (D11)** : « **simulateur d'action** » en
+    production ; « jumeau » interdit dans l'UI.
+  - **A7-10 Questionnaire J21 (D12)** : répétition `Q_ALI_01`/`Q_ALI_02`
+    par **assignation explicite au protocole**, jamais automatique.
+- **Boucle patient-praticien fermée** (ajouts de session, hors pack) :
+  retour de décision au patient après la revue (chaîne Relu → Validé →
+  Envoyé), tour suivant préparé (brouillon de reformulation visible
+  praticien seul, jamais auto-envoyé), charge perçue en clôture calibrant le
+  budget du tour suivant.
+- Garde-fous ajoutés : registre de frictions **versionné, à catégories
+  fermées, descriptif** ; le choix patient (troisième vérité
+  prévu/observé/choisi) est une préférence transmise, jamais une
+  auto-prescription.
+- Gates inchangés : audit clinique/RGPD (JA-00) premier ; persistance gatée
+  par C2A + confirmation explicite de migration ; aucune projection
+  automatique vers `Q_ALI_01`/`Q_ALI_02` ; aucun score SIIN officiel.
+  Périmètre 2026-07-16 : **documentaire seul** — aucun code, aucun lot
+  compilé.
+
 ---
 
 ## 3. Fiches de frontières par campagne
@@ -295,18 +351,26 @@
 > intrinsèque et C5B contextuel. Les capacités historiques ne sont pas
 > supprimées : elles sont regroupées dans C5B.
 
-### JA — Journal alimentaire 21 jours V1 (`2026-07-13-journal-alimentaire-21j-v1`)
+### JA — Ma spirale alimentaire (`2026-07-13-journal-alimentaire-21j-v1`, recadrée 5.0)
 
-- **Possède** : observations alimentaires manuelles, correction/suppression,
-  couverture et fiabilité explicites, agrégats descriptifs et discordances.
+- **Possède** : épisodes d'observation alimentaire (hypothèse, versions
+  d'action, fenêtres), traces occasion/praticabilité/friction, registre de
+  frictions versionné, correction/suppression événementielles, couverture et
+  limites explicites, constats directs d'adhésion, solutions intra-épisode,
+  plan minimal, agrégats descriptifs et discordances.
 - **Consomme** : charte patient HC-F ; protocole actif C2 uniquement lors du
   futur branchement persistant ; C5 peut lire ses observations publiées sans
-  posséder le journal.
-- **Décisions actées** : domaine TypeScript pur en premier ; modes quick,
-  favoris et copie seulement ; aucune projection vers `Q_ALI_01`/`Q_ALI_02`
-  et aucun score SIIN officiel. Les 25 marqueurs et neuf axes restent
-  candidats jusqu'à revue clinique documentée.
-- **Statut** : cadrée ; persistance bloquée par C2A et gate migration.
+  posséder le journal ; identité durable IDP pour la persistance des
+  solutions ; canal notifications pour la trace rapide.
+- **Décisions actées** : **A7** (cap essai/friction, D1–D12 tranchés) ;
+  domaine TypeScript pur en premier ; aucune projection automatique vers
+  `Q_ALI_01`/`Q_ALI_02` et aucun score SIIN officiel. Les 25 marqueurs et
+  neuf axes restent candidats jusqu'à revue clinique documentée (JA-00).
+- **Ne possède pas** : météo agrégée (SP-MET), capture photo/voix (différée),
+  comparaison multi-épisodes automatique, Nutrition Lab avancé, cabinet
+  apprenant.
+- **Statut** : recadrée 5.0 le 2026-07-16 (documentaire) ; persistance
+  bloquée par C2A et gate migration ; premier lot conditionné à JA-00.
 
 ### C0-UX — Refonte shell 3.0 (`2026-07-11-refonte-ux-shell-3-0`)
 

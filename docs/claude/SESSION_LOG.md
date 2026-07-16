@@ -226,3 +226,49 @@ C1 pour SP-RUN, ou C2A avec gate migration).
 committée de la réorg docs, aussi présente non committée dans l'arbre) ; worktree
 infra + `wip/playwright-worktree-isolation` (livrables test-worktree à statuer) ;
 purge `SHEET_ID` des variables Vercel.
+
+## 2026-07-16 (soir) — Outillage test-worktree, hygiène skills, réception pack JA 5.0
+
+**Décisions** : PR #87 mergée — validation CI locale par worktree, e2e sur
+build de production, réessais bornés du fetch `trust/etat`, cookie Secure
+dérivé de `NEXTAUTH_URL` (plus de `NODE_ENV`) ; cela statue les livrables
+test-worktree ouverts. PR #88 mergée — playbook repo-hygiene, routage
+modèle/effort des agents, skills `wn-model`/`wn-hygiene` ; fichiers du
+chantier embarqués par erreur retirés (cf66f30). Pack **Journal alimentaire
+5.0** (« Ma spirale alimentaire ») déposé non tracké à la racine : documentaire
+et prototypal, statut `proposition_a_arbitrer`, aucune migration ni règle
+clinique.
+
+**Options écartées** : non tracées (résumé reconstruit à froid depuis l'état
+du dépôt).
+
+**Prochaine action prioritaire** : arbitrer le pack JA 5.0
+(`docs/07_DECISIONS_A_ARBITRER.md`) — intégration au dépôt et périmètre.
+
+**Questions ouvertes** : purge `SHEET_ID` Vercel ; branche
+`trust-v1-lot-migration` ; instruction CNIL écoute ambiante.
+
+## 2026-07-16 — JA 5.0 : brainstorm, arbitrages D1–D12, actation A7
+
+**Décisions** : pack JA 5.0 intégré en
+`propositions/2026-07-16-journal-alimentaire-5-0/` ; cap acté = noyau
+essai/friction du doc de vision, fusionné (l'expérience = l'épisode recadré,
+pas d'objet séparé) ; nom « Ma spirale alimentaire », vocabulaire patient
+« essai » ; D1–D12 tous tranchés (focalisée par défaut, panorama optionnel,
+durée cible adaptative, photo/voix différées avec politiques actées,
+solutions gatées IDP, constats directs — météo agrégée → SP-MET,
+notifications « pourquoi maintenant » + trace rapide, comparaison gatée,
+« simulateur d'action », J21 par assignation explicite) ; boucle fermée
+(retour de décision, tour suivant préparé, charge perçue, trace depuis
+notification). Actation A7 au registre, fiche JA et campagne recadrées
+(lots JA-00 → JA5-05), programme et README à jour.
+
+**Options écartées** : vision complète docs 00–06 (jugée trop large par la
+synthèse critique du pack) ; `DietaryActionExperiment` séparé ; météo trois
+états au noyau.
+
+**Prochaine action prioritaire** : merger la PR d'actation, puis gate JA-00
+(audit clinique/RGPD) ou reprise SP-RUN/C2A.
+
+**Questions ouvertes** : inchangées (purge `SHEET_ID` Vercel, branche
+`trust-v1-lot-migration`, instruction CNIL écoute ambiante).
