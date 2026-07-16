@@ -134,10 +134,18 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       portailUrl = `/portail/${json.accessToken}`;
     });
 
+    let etatDebug: Promise<{ status: number; corps: string } | null> = Promise.resolve(null);
     await test.step('Gate email', async () => {
       await page.goto(portailUrl);
       await expect(page.getByRole('heading', { name: 'Votre espace patient' })).toBeVisible();
       await page.getByPlaceholder('votre@email.fr').fill(PATIENT.email);
+      // Instrumentation : capture la première réponse trust/etat suivant
+      // l'ouverture de session — diagnostique le saut silencieux de la
+      // séquence « Avant de commencer » observé en CI (iPhone + next start).
+      etatDebug = page
+        .waitForResponse(res => res.url().includes('/api/portail/trust/etat'), { timeout: 15_000 })
+        .then(async res => ({ status: res.status(), corps: await res.text().catch(() => '?') }))
+        .catch(() => null);
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/portail/session') && res.status() === 200),
         page.getByRole('button', { name: 'Accéder à mon espace' }).click(),
@@ -145,6 +153,7 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
     });
 
     await test.step('Avant de commencer (TRUST LOT-02) — 4 écrans, accusé de lecture', async () => {
+      console.log('[debug trust/etat]', JSON.stringify(await etatDebug));
       await expect(
         page.getByRole('heading', { name: 'Bienvenue dans votre espace Wellneuro' }),
       ).toBeVisible();
