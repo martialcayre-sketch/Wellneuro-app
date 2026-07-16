@@ -32,6 +32,12 @@ model Patient {
   synthesiesIA          SyntheseIA[]
   consultations         Consultation[]
 
+  trustAcknowledgements     TrustAcknowledgement[]
+  trustChoiceEvents         TrustChoiceEvent[]
+  trustAdverseEffectReports TrustAdverseEffectReport[]
+  trustPrivacyIncidents     TrustPrivacyIncident[]
+  trustRightsRequests       TrustRightsRequest[]
+
   @@map("patients")
 }
 
@@ -528,4 +534,110 @@ model ProtocolReviewFlag {
 
   @@index([protocolDraftId])
   @@map("protocol_review_flags")
+}
+
+// ─── TRUST V1 (campagne 2026-07-15-trust-information-patient-droits-v1) ─────
+// Traçabilité du cadre d'information patient (migration trust_v1, confirmée
+// explicitement par l'utilisateur le 2026-07-16). Tables ADDITIVES et
+// append-only : les événements (accusés, choix) ne sont jamais modifiés ni
+// supprimés ; seuls les statuts de traitement praticien des signalements
+// évoluent.
+
+// Accusé de lecture d'une version de document d'information — « j'ai pris
+// connaissance », distinct de toute autorisation. La version et son hash
+// (lib/trust/contenus/registre.ts) prouvent quel texte a été présenté.
+model TrustAcknowledgement {
+  id              String   @id @default(cuid())
+  idPatient       String   @map("id_patient")
+  documentKey     String   @map("document_key")
+  documentVersion String   @map("document_version")
+  contentHash     String   @map("content_hash")
+  type            String   @map("type") // presente | pris_connaissance
+  canal           String   @default("portail") @map("canal")
+  acteurRole      String   @default("patient") @map("acteur_role")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@unique([idPatient, documentKey, documentVersion, type], map: "trust_ack_patient_doc_version_type_key")
+  @@map("trust_acknowledgements")
+}
+
+// Événement de choix facultatif — append-only : un retrait n'écrase jamais
+// l'accord précédent, il le supplante (supersedesEventId).
+model TrustChoiceEvent {
+  id                String   @id @default(cuid())
+  idPatient         String   @map("id_patient")
+  finalite          String   @map("finalite") // partage_medecin_traitant | communications_non_essentielles
+  statut            String   @map("statut") // accorde | refuse | retire
+  documentVersion   String   @map("document_version")
+  supersedesEventId String?  @map("supersedes_event_id")
+  acteurRole        String   @default("patient") @map("acteur_role")
+  enregistreLe      DateTime @default(now()) @map("enregistre_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, finalite], map: "trust_choice_patient_finalite_idx")
+  @@map("trust_choice_events")
+}
+
+// Signalement d'effet indésirable suspecté — tel que déclaré par le patient,
+// sans déduction de causalité. L'orientation est produite par la règle
+// déterministe versionnée (lib/trust/securite.ts) et tracée avec sa version.
+model TrustAdverseEffectReport {
+  id                   String    @id @default(cuid())
+  idPatient            String    @map("id_patient")
+  produitLibelle       String    @map("produit_libelle")
+  doseDeclaree         String?   @map("dose_declaree")
+  debutPrise           String?   @map("debut_prise")
+  symptomes            String    @map("symptomes")
+  debutSymptomes       String?   @map("debut_symptomes")
+  produitsConcomitants String?   @map("produits_concomitants")
+  actionPrise          String    @default("ne_sait_pas") @map("action_prise") // aucune | reduit | arrete | ne_sait_pas
+  severiteDeclaree     String    @map("severite_declaree") // legere | moderee | severe | incertaine
+  orientation          String    @map("orientation")
+  regleId              String    @map("regle_id")
+  regleVersion         String    @map("regle_version")
+  statutTraitement     String    @default("recu") @map("statut_traitement") // recu | en_cours | traite | clos
+  examineLe            DateTime? @map("examine_le")
+  soumisLe             DateTime  @default(now()) @map("soumis_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([statutTraitement], map: "trust_aer_statut_idx")
+  @@map("trust_adverse_effect_reports")
+}
+
+// Incident de confidentialité signalé par le patient.
+model TrustPrivacyIncident {
+  id               String    @id @default(cuid())
+  idPatient        String    @map("id_patient")
+  categorie        String    @map("categorie")
+  description      String    @map("description")
+  statutTraitement String    @default("recu") @map("statut_traitement")
+  examineLe        DateTime? @map("examine_le")
+  soumisLe         DateTime  @default(now()) @map("soumis_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([statutTraitement], map: "trust_incident_statut_idx")
+  @@map("trust_privacy_incidents")
+}
+
+// Demande d'exercice de droits — l'interface ne promet jamais un droit
+// absolu ; chaque demande reçoit une réponse expliquant ce qui est possible.
+model TrustRightsRequest {
+  id               String    @id @default(cuid())
+  idPatient        String    @map("id_patient")
+  type             String    @map("type") // acces | rectification | effacement | limitation | opposition | portabilite | retrait_choix | information
+  description      String?   @map("description")
+  statutTraitement String    @default("recu") @map("statut_traitement")
+  reponse          String?   @map("reponse")
+  examineLe        DateTime? @map("examine_le")
+  soumisLe         DateTime  @default(now()) @map("soumis_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([statutTraitement], map: "trust_droits_statut_idx")
+  @@map("trust_rights_requests")
 }
