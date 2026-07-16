@@ -78,8 +78,38 @@ profils (Desktop Chromium + iPhone 13) :
 - La validation tactile sur téléphone réel (au-delà de l'émulation iPhone 13)
   reste hors périmètre de l'automatisation.
 
+## Exécution depuis un worktree git
+
+Avec `npm run test:e2e` seul, tous les worktrees (`.worktrees/*`) partagent la
+même `DATABASE_URL` et le même patient fictif Michel Dogné (`PAT_SEED_03`),
+dont l'état est réinitialisé par `resetPortailState` au début de chaque run —
+**un seul run e2e à la fois**, toutes copies du dépôt confondues.
+
+Pour valider plusieurs worktrees en parallèle sans contamination :
+`npm run test:worktree` (`scripts/wn-test-worktree.sh`) reproduit toute la
+séquence du job CI `verify` avec un PostgreSQL éphémère propre au worktree
+(ports dérivés du chemin, base recréée puis détruite à chaque run, seed
+fictif). Usage détaillé, options et overrides : en-tête de
+`scripts/wn-test-worktree.sh`.
+
+## Serveur testé : `next dev` ou build de production
+
+Par défaut, Playwright lance `next dev` (itération locale, réutilise un
+serveur déjà démarré). Avec `PLAYWRIGHT_WEB_SERVER=start`, il lance
+`next start` sur le build produit par `npm run build` : c'est le même artefact
+que le déploiement Vercel (bundles React prod, prerender identique) et les
+tests sont plus rapides — aucune compilation à la demande pendant le parcours.
+En mode `start`, le port doit être libre (pas de réutilisation silencieuse
+d'un `next dev` d'une autre branche). La CI et `npm run test:worktree`
+(séquence complète) utilisent ce mode ; `--fast` reste sur `next dev` car il
+ne construit pas de build.
+
 ## CI
 
-Ce spec **ne tourne pas en CI** pour l'instant (nécessiterait de provisionner
-une base Postgres et un `NEXTAUTH_SECRET` dans le workflow GitHub Actions) —
-décision explicite du lot R8 (suite), à revisiter séparément si besoin.
+Ce spec tourne en CI (job `verify` de `.github/workflows/ci.yml`) : service
+PostgreSQL éphémère, migrations Prisma, contrôle de dérive
+schéma↔migrations, seed fictif, puis Playwright contre le build de
+production (`PLAYWRIGHT_WEB_SERVER=start`) sur les deux projets
+(Chromium + WebKit). Les déclencheurs couvrent `main` et les branches
+`campaign/**/integration`. Pour reproduire localement la même séquence :
+`npm run test:worktree` (voir ci-dessus).

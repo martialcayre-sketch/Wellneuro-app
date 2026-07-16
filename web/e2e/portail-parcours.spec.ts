@@ -111,6 +111,11 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
     page,
     context,
   }) => {
+    // Parcours intégral (~2 min nominal depuis les étapes TRUST) : le budget
+    // global de 120 s est trop juste quand le premier passage paie la
+    // compilation à la demande de `next dev` (run local à froid). slow()
+    // triple le budget de ce seul test, sans toucher les autres.
+    test.slow();
     page.on('dialog', dialog => dialog.accept());
 
     await test.step('Provisionnement — le praticien crée la consultation (mêmes conditions que la réalité : un patient sans consultation n\'a rien à voir sur le portail)', async () => {
@@ -129,10 +134,18 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       portailUrl = `/portail/${json.accessToken}`;
     });
 
+    let etatDebug: Promise<{ status: number; corps: string } | null> = Promise.resolve(null);
     await test.step('Gate email', async () => {
       await page.goto(portailUrl);
       await expect(page.getByRole('heading', { name: 'Votre espace patient' })).toBeVisible();
       await page.getByPlaceholder('votre@email.fr').fill(PATIENT.email);
+      // Instrumentation : capture la première réponse trust/etat suivant
+      // l'ouverture de session — diagnostique le saut silencieux de la
+      // séquence « Avant de commencer » observé en CI (iPhone + next start).
+      etatDebug = page
+        .waitForResponse(res => res.url().includes('/api/portail/trust/etat'), { timeout: 15_000 })
+        .then(async res => ({ status: res.status(), corps: await res.text().catch(() => '?') }))
+        .catch(() => null);
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/portail/session') && res.status() === 200),
         page.getByRole('button', { name: 'Accéder à mon espace' }).click(),
@@ -140,6 +153,7 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
     });
 
     await test.step('Avant de commencer (TRUST LOT-02) — 4 écrans, accusé de lecture', async () => {
+      console.log('[debug trust/etat]', JSON.stringify(await etatDebug));
       await expect(
         page.getByRole('heading', { name: 'Bienvenue dans votre espace Wellneuro' }),
       ).toBeVisible();
@@ -232,11 +246,23 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
     await test.step('Ouverture du premier questionnaire à compléter', async () => {
       const premier = page.getByRole('link', { name: 'Commencer' }).first();
       await expect(premier).toBeVisible();
-      const [reponse] = await Promise.all([
-        page.waitForResponse(res => res.url().includes('/api/patient/questionnaire?id=') && res.status() === 200),
-        premier.click(),
-      ]);
-      const json = await reponse.json();
+      // Le hub se re-rend quand /api/portail/trust/etat résout (état « avant
+      // de commencer ») : un clic tombé entre deux rendus est perdu sans
+      // erreur (constaté en local sous charge — trace : aucune navigation,
+      // aucune requête). L'écoute de la réponse est armée avant le premier
+      // clic, puis le clic est retenté tant que l'URL n'a pas changé.
+      const reponsePromise = page.waitForResponse(
+        res => res.url().includes('/api/patient/questionnaire?id=') && res.status() === 200,
+        { timeout: 60_000 },
+      );
+      const surPageQuestionnaire = () => /\/questionnaires\/[^/?]+/.test(page.url());
+      await expect(async () => {
+        if (!surPageQuestionnaire()) {
+          await premier.click({ timeout: 2_000 });
+        }
+        expect(surPageQuestionnaire()).toBe(true);
+      }).toPass({ timeout: 30_000, intervals: [500, 1_000] });
+      const json = await (await reponsePromise).json();
       idAssignation = json.assignation.idAssignation;
       idQuestionnaire = json.assignation.idQuestionnaire;
     });

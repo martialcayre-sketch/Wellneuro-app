@@ -107,13 +107,23 @@ export default function QuestionnairesHubPage() {
   const annuleRef = useRef(false);
 
   useEffect(() => {
+    // Même durcissement que le wizard : une réponse non-ok peut n'être qu'un
+    // aléa transitoire (propagation de cookie, hoquet réseau) — brefs
+    // réessais bornés avant de dégrader, sinon la séquence serait sautée.
     void (async () => {
-      try {
-        const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(token)}`);
-        const etat = (await res.json()) as { ok: boolean; avantDeCommencerRequis?: boolean };
-        if (!annuleRef.current && etat.ok && etat.avantDeCommencerRequis) setAvantRequis(true);
-      } catch {
-        /* dégradation gracieuse */
+      for (let essai = 0; essai < 3; essai++) {
+        try {
+          const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(token)}`);
+          if (res.ok) {
+            const etat = (await res.json()) as { ok: boolean; avantDeCommencerRequis?: boolean };
+            if (!annuleRef.current && etat.ok && etat.avantDeCommencerRequis) setAvantRequis(true);
+            return;
+          }
+        } catch {
+          /* réessai ci-dessous */
+        }
+        if (annuleRef.current) return;
+        await new Promise(resolve => setTimeout(resolve, 300 * (essai + 1)));
       }
     })();
   }, [token]);

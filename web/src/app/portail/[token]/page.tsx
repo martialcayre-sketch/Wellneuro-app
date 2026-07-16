@@ -615,17 +615,26 @@ export default function PortailPage() {
     // Séquence TRUST « Avant de commencer » : requise tant que la version
     // courante du cadre n'a pas d'accusé de lecture (patients existants
     // inclus, une fois). Jamais bloquante en cas d'erreur réseau : le
-    // parcours de soin continue.
+    // parcours de soin continue. Une réponse non-ok juste après l'ouverture
+    // de session peut n'être qu'un défaut de propagation du cookie (WebKit,
+    // serveur rapide) : brefs réessais bornés avant de dégrader — sinon la
+    // séquence serait sautée en silence pour un simple aléa réseau.
     void (async () => {
-      try {
-        const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(String(token))}`);
-        const etat = (await res.json()) as { ok: boolean; avantDeCommencerRequis?: boolean };
-        if (etat.ok && etat.avantDeCommencerRequis) {
-          setStep({ name: 'avant' });
-          return;
+      for (let essai = 0; essai < 3; essai++) {
+        try {
+          const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(String(token))}`);
+          if (res.ok) {
+            const etat = (await res.json()) as { ok: boolean; avantDeCommencerRequis?: boolean };
+            if (etat.ok && etat.avantDeCommencerRequis) {
+              setStep({ name: 'avant' });
+              return;
+            }
+            break; // réponse saine : séquence non requise
+          }
+        } catch {
+          /* réessai ci-dessous */
         }
-      } catch {
-        /* dégradation gracieuse */
+        await new Promise(resolve => setTimeout(resolve, 300 * (essai + 1)));
       }
       setStep(prochaineEtape(data.consultation, data.premiereAssignation));
     })();
