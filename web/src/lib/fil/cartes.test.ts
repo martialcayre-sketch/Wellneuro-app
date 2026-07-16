@@ -3,6 +3,7 @@ import {
   cartesAssignationsEnRetard,
   cartesReponsesRecentes,
   cartesReprise,
+  cartesSignalementsTrust,
   cartesSynthesesAValider,
   construireFil,
   MAX_CARTES_PAR_TYPE,
@@ -91,7 +92,33 @@ describe('cartesReprise', () => {
   });
 });
 
+describe('cartesSignalementsTrust', () => {
+  it('mène vers la page Confiance & droits avec le bon libellé', () => {
+    const cartes = cartesSignalementsTrust(
+      [{ idPatient: 'P-JENNIFER', kind: 'effet_indesirable', soumisLe: new Date('2026-07-15T09:00:00') }],
+      NOMS,
+    );
+    expect(cartes).toHaveLength(1);
+    expect(cartes[0].titre).toBe('Effet indésirable suspecté');
+    expect(cartes[0].href).toBe('/dashboard/droits');
+    expect(cartes[0].patient).toBe('Jennifer Martin');
+  });
+});
+
 describe('construireFil', () => {
+  it('place les signalements en tête du Fil', () => {
+    const fil = construireFil({
+      signalements: [{ idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
+      syntheses: [{ idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
+      assignations: [],
+      reponses: [],
+      activites: [],
+      noms: NOMS,
+      maintenant: MAINTENANT,
+    });
+    expect(fil.map(c => c.type)).toEqual(['signalement_trust', 'synthese_a_valider']);
+  });
+
   it('ordonne le Fil : synthèses, retards, réponses, reprises', () => {
     const fil = construireFil({
       syntheses: [{ idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],

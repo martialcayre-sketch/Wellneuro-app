@@ -7,6 +7,7 @@
  */
 
 export type TypeCarteFil =
+  | 'signalement_trust'
   | 'synthese_a_valider'
   | 'assignation_en_retard'
   | 'reponse_recente'
@@ -24,6 +25,11 @@ export type CarteFil = {
   actionLabel: string;
 };
 
+export type SignalementRow = {
+  idPatient: string;
+  kind: 'effet_indesirable' | 'incident_confidentialite' | 'demande_droit';
+  soumisLe: Date;
+};
 export type ReponseRow = { idPatient: string; titre: string; dateReponse: Date };
 export type AssignationRow = { idPatient: string; titre: string; dateLimite: string | null; statut: string };
 export type SyntheseRow = { idPatient: string; dateGeneration: Date };
@@ -50,6 +56,34 @@ function parseDateLimite(dateLimite: string | null): Date | null {
   if (!dateLimite || !/^\d{4}-\d{2}-\d{2}$/.test(dateLimite)) return null;
   const d = new Date(`${dateLimite}T00:00:00`);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+const LIBELLE_SIGNALEMENT: Record<SignalementRow['kind'], string> = {
+  effet_indesirable: 'Effet indésirable suspecté',
+  incident_confidentialite: 'Incident de confidentialité',
+  demande_droit: 'Demande d’exercice de droit',
+};
+
+/** Signalements TRUST non traités : toujours en tête du Fil — c'est un
+ * patient qui attend une réponse humaine. */
+export function cartesSignalementsTrust(
+  signalements: SignalementRow[],
+  noms: Map<string, string>,
+): CarteFil[] {
+  return signalements
+    .slice()
+    .sort((a, b) => b.soumisLe.getTime() - a.soumisLe.getTime())
+    .slice(0, MAX_CARTES_PAR_TYPE)
+    .map(s => ({
+      type: 'signalement_trust' as const,
+      idPatient: s.idPatient,
+      patient: nomPatient(noms, s.idPatient),
+      titre: LIBELLE_SIGNALEMENT[s.kind],
+      pourquoi: `Déposé le ${formatDateFr(s.soumisLe)} — en attente de votre examen.`,
+      date: s.soumisLe.toISOString(),
+      href: '/dashboard/droits',
+      actionLabel: 'Examiner',
+    }));
 }
 
 export function cartesSynthesesAValider(
@@ -159,6 +193,7 @@ export function cartesReprise(
 
 /** Ordre du Fil : ce qui attend le praticien d'abord, les signaux ensuite. */
 export function construireFil(entrees: {
+  signalements?: SignalementRow[];
   syntheses: SyntheseRow[];
   assignations: AssignationRow[];
   reponses: ReponseRow[];
@@ -166,8 +201,9 @@ export function construireFil(entrees: {
   noms: Map<string, string>;
   maintenant: Date;
 }): CarteFil[] {
-  const { syntheses, assignations, reponses, activites, noms, maintenant } = entrees;
+  const { signalements = [], syntheses, assignations, reponses, activites, noms, maintenant } = entrees;
   return [
+    ...cartesSignalementsTrust(signalements, noms),
     ...cartesSynthesesAValider(syntheses, noms),
     ...cartesAssignationsEnRetard(assignations, noms, maintenant),
     ...cartesReponsesRecentes(reponses, noms, maintenant),

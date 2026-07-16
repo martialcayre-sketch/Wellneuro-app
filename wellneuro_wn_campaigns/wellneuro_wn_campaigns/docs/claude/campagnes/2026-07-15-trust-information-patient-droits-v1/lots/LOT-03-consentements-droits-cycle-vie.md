@@ -1,7 +1,7 @@
 ---
 id: "LOT-03-consentements-droits-cycle-vie"
 titre: "Consentements, droits et cycle de vie"
-statut: "à_faire — non démarré"
+statut: "terminé"
 dépend_de: ["LOT-01", "LOT-02"]
 ---
 

@@ -6,7 +6,7 @@
   },
   "status": "inflight",
   "active_campaign": "2026-07-15-trust-information-patient-droits-v1",
-  "active_lot": "LOT-02",
+  "active_lot": "LOT-05",
   "last_completed_lot": "SP-FIL/LOT-02",
   "git": {
     "branch": "campaign/trust-information-patient-droits-v1/integration",
@@ -29,6 +29,6 @@
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-16T11:31:40Z",
+  "updated_at": "2026-07-16T11:51:40Z",
   "parallel_campaigns": []
 }

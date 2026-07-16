@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { LayoutDashboard, Users, Sparkles, Settings, MoreHorizontal, X, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Sparkles, Settings, ShieldCheck, MoreHorizontal, X, type LucideIcon } from 'lucide-react';
 
 const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard },
@@ -22,7 +22,8 @@ export function MobileBottomNav() {
 
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === href : pathname?.startsWith(href);
-  const isMoreActive = pathname?.startsWith('/dashboard/parametres') ?? false;
+  const isMoreActive =
+    (pathname?.startsWith('/dashboard/parametres') || pathname?.startsWith('/dashboard/droits')) ?? false;
 
   return (
     <>
@@ -102,22 +103,44 @@ export function MobileBottomNav() {
               </div>
               <Dialog.Close asChild>
                 <Link
-                  href="/dashboard/parametres"
-                  aria-current={isMoreActive ? 'page' : undefined}
-                  className={`group flex min-h-[44px] items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
-                    isMoreActive
+                  href="/dashboard/droits"
+                  aria-current={pathname?.startsWith('/dashboard/droits') ? 'page' : undefined}
+                  className={`group mb-1 flex min-h-[44px] items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
+                    pathname?.startsWith('/dashboard/droits')
                       ? 'border-rail-primary/20 bg-rail-primary/10'
                       : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail hover:text-rail-foreground'
                   }`}
                 >
                   <span
                     className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                      isMoreActive ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
+                      pathname?.startsWith('/dashboard/droits')
+                        ? 'bg-rail-primary text-rail-primary-foreground'
+                        : 'bg-rail-muted text-rail-foreground'
+                    }`}
+                  >
+                    <ShieldCheck aria-hidden="true" size={20} strokeWidth={2} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">Confiance &amp; droits</span>
+                </Link>
+              </Dialog.Close>
+              <Dialog.Close asChild>
+                <Link
+                  href="/dashboard/parametres"
+                  aria-current={pathname?.startsWith('/dashboard/parametres') ? 'page' : undefined}
+                  className={`group flex min-h-[44px] items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
+                    pathname?.startsWith('/dashboard/parametres')
+                      ? 'border-rail-primary/20 bg-rail-primary/10'
+                      : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail hover:text-rail-foreground'
+                  }`}
+                >
+                  <span
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                      pathname?.startsWith('/dashboard/parametres') ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
                     }`}
                   >
                     <Settings aria-hidden="true" size={20} strokeWidth={2} />
                   </span>
-                  <span className={`min-w-0 flex-1 truncate text-sm font-medium ${isMoreActive ? 'text-rail-foreground' : ''}`}>
+                  <span className={`min-w-0 flex-1 truncate text-sm font-medium ${pathname?.startsWith('/dashboard/parametres') ? 'text-rail-foreground' : ''}`}>
                     Paramètres
                   </span>
                 </Link>
