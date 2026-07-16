@@ -150,9 +150,15 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await page.getByRole('button', { name: 'Je comprends le cadre' }).click();
       await page.getByRole('button', { name: 'Continuer' }).click();
       await expect(page.getByRole('heading', { name: 'Avant de commencer' })).toBeVisible();
-      // Trois confirmations distinctes — jamais de case « accepter tout ».
-      for (const caseConfirmation of await page.locator('input[type="checkbox"]').all()) {
-        await caseConfirmation.check();
+      // Trois confirmations distinctes, ciblées par libellé — jamais de case
+      // « accepter tout » (le sélecteur générique attraperait les cases
+      // masquées du contrôle de confort de lecture du header).
+      for (const libelle of [
+        /ne remplace pas un service d/,
+        /conclusion médicale/,
+        /mes données et mes choix/,
+      ]) {
+        await page.getByLabel(libelle).check();
       }
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/portail/trust/lecture') && res.status() === 200),
