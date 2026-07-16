@@ -69,40 +69,6 @@ bash scripts/release_go_no_go.sh --skip-http
 - ✓ `.clasp.json` est safe (pas de secrets)
 - ✓ `.deploy-id` est safe (ID public du déploiement)
 
-## Tests avant déploiement
-
-### `wn-test-worktree.sh` - réplique locale du job CI `verify`
-
-Rejoue toute la séquence CI dans le worktree courant avec un PostgreSQL
-éphémère isolé (ports dérivés du chemin, base recréée puis détruite à chaque
-run, seed 100 % fictif) — plusieurs worktrees peuvent valider en parallèle
-sans se contaminer. Ordre fail-fast : contrôles statiques (anti-secrets,
-audit campagnes, scoring, type-check, Vitest, lint) avant toute base, puis
-migrations, seed, build et Playwright.
-
-Gates de sûreté alignés sur la chaîne de déploiement
-(`web/scripts/vercel-build.sh` applique `migrate deploy` en production au
-build Vercel) :
-
-- **dérive schéma↔migrations** : `prisma migrate diff` compare la base
-  éphémère (construite uniquement par `migrate deploy`) à `schema.prisma` et
-  échoue si le schéma a évolué sans migration committée ;
-- **certification scoring** : les 63 questionnaires restent conformes à leurs
-  fixtures certifiées ;
-- **e2e sur build de production** (`next start`) : le même artefact que Vercel
-  déploie, sans compilation à la demande pendant les tests.
-
-Usage (depuis `web/`, de n'importe quel worktree) :
-
-```bash
-npm run test:worktree               # séquence CI complète
-npm run test:worktree -- --fast     # saute anti-secrets, audit, scoring, lint, build
-npm run test:worktree -- --keep-db  # conserve la base après le run
-```
-
-Overrides : `WN_PG_PORT`, `WN_APP_PORT`, `WN_PG_BIN`. Détails complets dans
-l'en-tête du script.
-
 ## Orchestration WN
 
 ### `wn-github-orchestrator.mjs` - socle d'orchestration GitHub
@@ -135,7 +101,8 @@ node scripts/wn-github-orchestrator.mjs --no-gh
 ### `wn-campaign-audit.mjs` - audit de conformité des campagnes
 
 Vérifie les campagnes contre les règles WN-AUTO (frontmatter, lots, cohérence
-de `lot_courant`, métadonnées Git, cohérence avec `.wn/state.json`).
+de `lot_courant`, métadonnées Git, cohérence avec `.wn/state.json`) et compare
+le référentiel principal au miroir `wellneuro_wn_campaigns`.
 
 Usage JSON (échec si erreur bloquante):
 
@@ -159,32 +126,6 @@ Mode CI strict (bloque sur tout warning):
 
 ```bash
 node scripts/wn-campaign-audit.mjs --fail-on-warning
-```
-
-### `repo-hygiene.sh` - hygiene documentaire multi-depots
-
-Execute un playbook standardise pour nettoyer un depot sans divergence de methode.
-
-Modes disponibles:
-
-- `audit-only`: lecture seule, produit l'inventaire et les fichiers de detection de doublons.
-- `apply-safe`: deplace les snapshots dates vers `docs/archive/*` et met a jour les references texte.
-- `report-pr`: genere un template de PR a partir des artefacts produits.
-
-Usage:
-
-```bash
-bash scripts/repo-hygiene.sh audit-only
-bash scripts/repo-hygiene.sh apply-safe --dry-run
-bash scripts/repo-hygiene.sh apply-safe
-bash scripts/repo-hygiene.sh report-pr
-```
-
-Options:
-
-```bash
-bash scripts/repo-hygiene.sh audit-only --root /path/to/repo --out .repo-hygiene
-bash scripts/repo-hygiene.sh report-pr --write .repo-hygiene/pr-template.md
 ```
 
 ## Supabase + Prisma
