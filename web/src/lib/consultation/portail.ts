@@ -1,7 +1,12 @@
 import { prisma } from '@/lib/prisma';
 import { isPatientSessionBoundToToken, type PatientSession } from '@/lib/patient-session';
 
-export const CONSENTEMENT_VERSION = 'v1';
+import { VERSION_CONSENTEMENT_COURANTE } from '@/lib/trust/contenus/registre';
+
+// Version du texte de consentement réellement présenté : liée au document
+// versionné TRUST `consentement_suivi` (le lien version <-> texte est réel
+// depuis TRUST LOT-02 ; les consentements v1 déjà recueillis restent valides).
+export const CONSENTEMENT_VERSION = VERSION_CONSENTEMENT_COURANTE;
 
 // Finalité RGPD du consentement recueilli au niveau de la consultation. Sert de
 // portée : tant que la finalité (et la version) ne changent pas, le consentement

@@ -139,8 +139,29 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       ]);
     });
 
-    await test.step('Consentement', async () => {
+    await test.step('Avant de commencer (TRUST LOT-02) — 4 écrans, accusé de lecture', async () => {
+      await expect(
+        page.getByRole('heading', { name: 'Bienvenue dans votre espace Wellneuro' }),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Continuer' }).click();
+      await expect(
+        page.getByRole('heading', { name: 'Un outil d’accompagnement, pas un service d’urgence' }),
+      ).toBeVisible();
+      await page.getByRole('button', { name: 'Je comprends le cadre' }).click();
+      await page.getByRole('button', { name: 'Continuer' }).click();
       await expect(page.getByRole('heading', { name: 'Avant de commencer' })).toBeVisible();
+      // Trois confirmations distinctes — jamais de case « accepter tout ».
+      for (const caseConfirmation of await page.locator('input[type="checkbox"]').all()) {
+        await caseConfirmation.check();
+      }
+      await Promise.all([
+        page.waitForResponse(res => res.url().includes('/api/portail/trust/lecture') && res.status() === 200),
+        page.getByRole('button', { name: 'J’ai pris connaissance de ces informations' }).click(),
+      ]);
+    });
+
+    await test.step('Consentement', async () => {
+      await expect(page.getByRole('heading', { name: 'Votre consentement au suivi' })).toBeVisible();
       await page.getByLabel(/ai lu ces informations/i).check();
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/portail/consentement') && res.status() === 200),
@@ -340,6 +361,23 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await expect(page).toHaveURL(new RegExp(`${portailUrl}/questionnaires$`));
       await ouvrirSectionSecondaire(page, 'Transmis au praticien');
       await expect(page.getByText('Transmis au praticien').first()).toBeVisible();
+    });
+
+    await test.step('Centre « Informations, confidentialité et droits » (TRUST LOT-02)', async () => {
+      // Lien permanent du pied de page, visible depuis toutes les pages.
+      await page.getByRole('link', { name: 'Confidentialité et droits' }).click();
+      await expect(
+        page.getByRole('heading', { name: 'Informations, confidentialité et droits' }),
+      ).toBeVisible();
+      // Version visible et état de lecture tracé par la séquence du début.
+      await expect(page.getByText('Version v1 — publiée le 2026-07-16').first()).toBeVisible();
+      await expect(page.getByText(/Pris connaissance le/).first()).toBeVisible();
+      // Accordéon accessible : les numéros d'urgence s'affichent à la demande.
+      await page.getByRole('group').filter({ hasText: 'En cas d’urgence' }).locator('summary').click();
+      await expect(page.getByText('15 — SAMU, urgence médicale')).toBeVisible();
+      // La séquence ne se représente pas : retour à l'espace sans blocage.
+      await page.getByRole('link', { name: '← Mon espace' }).click();
+      await expect(page.getByRole('heading', { name: 'Mes questionnaires' })).toBeVisible();
     });
   });
 });
