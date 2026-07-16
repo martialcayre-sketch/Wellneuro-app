@@ -173,28 +173,38 @@
 ### A7 — Cap « Ma spirale alimentaire » : instrument longitudinal à deux régimes (décision utilisateur 2026-07-16)
 
 - Le journal alimentaire 21 jours est **recadré 5.0** en **instrument
-  longitudinal à deux régimes** (synthèse finale doc 11 du pack, actée) :
-  - **Régime A — évaluation avant protocole** : profil alimentaire
-    observationnel (`DietaryObservationProfile` : couverture, structure des
-    prises, marqueurs, variabilité, limites, provenance) qui éclaire le
-    `ClinicalSnapshot` et la `DecisionCard` sans produire seul une conclusion
-    clinique. Prescrit explicitement par le praticien, jamais imposé.
-    Gouverné **comme un instrument de mesure** (registre versionné, règles
-    déterministes, fixtures de certification — doc 11 §9).
-  - **Régime B — expérimentation après protocole** (le noyau) :
+  longitudinal à trois régimes** (synthèse doc 11 actée, adaptée par le
+  contrepoint du 2026-07-16) :
+  - **Régime calibrage — bilan avant protocole**, borné (3–5 jours), à
+    **double calibrage** : clinique (structure et **heure** des prises,
+    empreintes de marqueurs, variabilité → `DietaryObservationProfile`
+    minimal éclairant le `ClinicalSnapshot` sans produire seul une
+    conclusion clinique) et produit (charge supportable, moments réalistes
+    → calibre le budget d'attention et la politique du régime essai).
+    Prescrit explicitement, jamais imposé. La gouvernance métrologique
+    complète (doc 11 §9) est **différée en lot conditionnel**, déclenché si
+    le profil pèse dans les décisions cliniques.
+  - **Régime essai — expérimentation après protocole** (le noyau) :
     **faisabilité d'une action validée** — capture
     occasion/praticabilité/friction, budget d'attention, droit au silence
     utile, essai non concluant utile, delta de décision.
+  - **Régime silence — protocole d'abstention** : zéro observation
+    prescrite ; l'épisode n'existe que comme ancre de conversation à la
+    revue. Sécurité pour les profils à risque, groupe contrôle naturel.
   Même infrastructure de capture/provenance/couverture/correction ; questions,
   métriques et règles d'interprétation distinctes par régime. **Quatre
   lectures jamais fusionnées** : déclaré / observé / vécu / interprété.
-  Détail : `propositions/2026-07-16-journal-alimentaire-5-0/BRAINSTORM_JA_5_0.md`.
+  Détail : `propositions/2026-07-16-journal-alimentaire-5-0/BRAINSTORM_JA_5_0.md`
+  et `12_CONTREPOINT_ET_ADAPTATION.md`.
 - **Noms actés** : patient « **Ma spirale alimentaire** » (vocabulaire
   « essai » pour un tour), praticien « Trajectoire alimentaire ». **Un seul
   objet technique** : `FoodObservationEpisode`, porteur d'un régime
-  `assessment | experiment` et, en régime B, de l'hypothèse et des versions
-  d'action idéale/simple/secours — pas d'objets `DietaryAssessmentEpisode`
-  ni `DietaryActionExperiment` séparés.
+  `calibrage | essai | silence` et, en régime essai, de l'hypothèse et des
+  versions d'action idéale/simple/secours — pas d'objets
+  `DietaryAssessmentEpisode` ni `DietaryActionExperiment` séparés. La
+  **carrière d'action** (proposée → essayée → adaptée → stabilisée →
+  intégrée/abandonnée-informative) est l'objet longitudinal à travers les
+  tours.
 - **Arbitrages D1–D12 du pack tous tranchés** (détail :
   `propositions/2026-07-16-journal-alimentaire-5-0/ARBITRAGES_JA_5_0.md`) :
   - **A7-1 Politique par défaut (D2)** : en régime B, **focalisée** sur
@@ -225,12 +235,35 @@
     production ; « jumeau » interdit dans l'UI.
   - **A7-10 Questionnaire J21 (D12)** : répétition `Q_ALI_01`/`Q_ALI_02`
     par **assignation explicite au protocole**, jamais automatique.
-  - **A7-11 Architecture à deux régimes (doc 11)** : actée, avec
-    **modélisation à objet unique** (régime porté par l'épisode). Restent à
-    arbitrer au gate JA-00 : questions du bilan observationnel, marqueurs
-    suffisamment gouvernés pour un pilote, place exacte du profil dans le
-    `ClinicalSnapshot`, comparaison autorisée avec `Q_ALI_01`/`Q_ALI_02`
-    (doc 11 §12).
+  - **A7-11 Architecture à régimes (doc 11, amendée le 2026-07-16)** :
+    actée avec **modélisation à objet unique** (régime porté par
+    l'épisode) ; le régime d'évaluation devient un **bilan de calibrage**
+    borné à double calibrage clinique + produit, métrologie complète
+    différée (lot conditionnel) ; un **régime silence** s'y ajoute. Restent
+    à arbitrer au gate JA-00 : questions du bilan, marqueurs suffisamment
+    gouvernés pour un pilote, place du profil dans le `ClinicalSnapshot`,
+    comparaison autorisée avec `Q_ALI_01`/`Q_ALI_02` (doc 11 §12).
+  - **A7-12 Ciqual** : registre de marqueurs JA **adossé aux codes des 191
+    aliments moyens Ciqual** (Anses, Etalab 2.0) dès JA-00, avec **les 12
+    aliments vedettes du slice C5 en sous-ensemble** ; aucune valeur
+    nutritionnelle ni score dans le JA — les valeurs ne sont consommées que
+    via le référentiel C5A quand il sera livré. Frontière inchangée : C5
+    possède le référentiel scoré, JA consomme.
+  - **A7-13 Assiettes** : **boucle recommandation ↔ essai actée** — l'action
+    validée d'un essai peut référencer une **assiette recommandée** (C5B) ;
+    les solutions confirmées du patient documentent la version réelle qui
+    tient ; sans dépendance à la table `assiette_type` (candidate C5B).
+    Vocabulaire : « recommandation », jamais « prescription » (R4).
+  - **A7-14 Adaptation contrepoint** (détail :
+    `propositions/2026-07-16-journal-alimentaire-5-0/12_CONTREPOINT_ET_ADAPTATION.md`) :
+    lot **JA-0T validation terrain** (5 entretiens patients E1/E5 + test
+    carte papier) avant le lot domaine ; **question du jour** (au plus une
+    question courte certains jours) ; **friction-agenda** (« 3 moments à
+    explorer » préparés pour la consultation) ; **revue = décision
+    pré-remplie** ; **parité papier** (carte A6) ; **delta de décision
+    instrumenté dès le premier lot** ; **affichage-avant-moteurs** (aucun
+    moteur avant preuve du besoin) ; **budget de charge global au niveau du
+    protocole** (contrainte à acter côté C2A, signalée ici).
 - **Boucle patient-praticien fermée** (ajouts de session, hors pack) :
   retour de décision au patient après la revue (chaîne Relu → Validé →
   Envoyé), tour suivant préparé (brouillon de reformulation visible
@@ -357,11 +390,15 @@
   Référentiel : acquis E1 (tables
   `neuro_axis`, `nutrient_axis_weight`, Ciqual).
 - **Consomme** : contrat neutre intrinsèque/contextuel ; priorité sélectionnée
-  en C1 et protocole actif C2 pour C5B ; rendu C3 et charte patient HC-F.
+  en C1 et protocole actif C2 pour C5B ; rendu C3 et charte patient HC-F ;
+  observations et **faisabilité publiées par JA** (solutions confirmées,
+  essais d'assiettes — boucle A7-13), sans posséder le journal.
 - **Décisions actées** : différés — scan produit, panier temps réel, mode
   frigo, mode restaurant, analyse journée/semaine, recommandations
   automatiques complexes ; chronobiologie : aucune lecture de rythme sans
-  heure de repas connue ; langage non culpabilisant.
+  heure de repas connue — **débloquable quand le bilan de calibrage JA
+  capture l'heure des prises et que C2A persiste** (A7-11/A7-12) ; langage
+  non culpabilisant.
 - **Ne possède pas** : journal alimentaire, projections vers les
   questionnaires ou suivi longitudinal (JA/C2).
 - **Statut** : cadrée, lots à compiler N+1. Socle data parallélisable.
@@ -373,26 +410,35 @@
 
 ### JA — Ma spirale alimentaire (`2026-07-13-journal-alimentaire-21j-v1`, recadrée 5.0)
 
-- **Possède** : épisodes d'observation alimentaire à deux régimes
-  (`assessment` : profil observationnel `DietaryObservationProfile` ;
-  `experiment` : hypothèse, versions d'action, traces
-  occasion/praticabilité/friction), registre de frictions versionné,
-  correction/suppression événementielles, couverture et limites explicites,
-  constats directs d'adhésion, solutions intra-épisode, plan minimal,
-  agrégats descriptifs et discordances.
+- **Possède** : épisodes d'observation alimentaire à trois régimes
+  (`calibrage` : bilan borné 3–5 j → profil observationnel
+  `DietaryObservationProfile` minimal + calibrage de charge ; `essai` :
+  hypothèse, versions d'action, traces occasion/praticabilité/friction ;
+  `silence` : abstention prescrite, ancre de conversation), carrière
+  d'action, registre de frictions versionné, correction/suppression
+  événementielles, couverture et limites explicites, constats directs
+  d'adhésion, solutions intra-épisode, plan minimal, parité papier (carte
+  A6), agrégats descriptifs et discordances.
 - **Consomme** : charte patient HC-F ; protocole actif C2 uniquement lors du
-  futur branchement persistant ; C5 peut lire ses observations publiées sans
-  posséder le journal ; identité durable IDP pour la persistance des
-  solutions ; canal notifications pour la trace rapide.
-- **Décisions actées** : **A7** (cap essai/friction, D1–D12 tranchés) ;
-  domaine TypeScript pur en premier ; aucune projection automatique vers
-  `Q_ALI_01`/`Q_ALI_02` et aucun score SIIN officiel. Les 25 marqueurs et
-  neuf axes restent candidats jusqu'à revue clinique documentée (JA-00).
+  futur branchement persistant ; **codes des aliments moyens Ciqual**
+  (référence documentaire A7-12 ; les valeurs viendront du référentiel
+  C5A) ; **assiettes recommandées C5B** (référence dans l'action, A7-13) ;
+  C5 peut lire ses observations publiées sans posséder le journal ;
+  identité durable IDP pour la persistance des solutions ; canal
+  notifications pour la trace rapide.
+- **Décisions actées** : **A7** (D1–D12 tranchés, A7-11 amendé calibrage,
+  A7-12 Ciqual, A7-13 assiettes, A7-14 contrepoint) ; domaine TypeScript
+  pur en premier ; **aucun moteur avant preuve du besoin** ; aucune
+  projection automatique vers `Q_ALI_01`/`Q_ALI_02`, aucun score SIIN
+  officiel, aucune valeur nutritionnelle. Les marqueurs restent candidats
+  jusqu'à revue clinique documentée (JA-00, adossement aliments moyens
+  Ciqual, 12 vedettes du slice C5 incluses).
 - **Ne possède pas** : météo agrégée (SP-MET), capture photo/voix (différée),
   comparaison multi-épisodes automatique, Nutrition Lab avancé, cabinet
-  apprenant.
-- **Statut** : recadrée 5.0 le 2026-07-16 (documentaire) ; persistance
-  bloquée par C2A et gate migration ; premier lot conditionné à JA-00.
+  apprenant, référentiel nutritionnel scoré (C5A), assiettes types (C5B).
+- **Statut** : recadrée 5.0 le 2026-07-16, adaptée par contrepoint le même
+  jour (documentaire) ; persistance bloquée par C2A et gate migration ;
+  premier lot domaine conditionné à **JA-00 + JA-0T** (validation terrain).
 
 ### C0-UX — Refonte shell 3.0 (`2026-07-11-refonte-ux-shell-3-0`)
 

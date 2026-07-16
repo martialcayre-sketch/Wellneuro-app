@@ -162,20 +162,84 @@ observationnel, marqueurs suffisamment gouvernés pour un pilote, place du
 profil dans le `ClinicalSnapshot`, comparaison autorisée avec
 `Q_ALI_01`/`Q_ALI_02`, conditions de prudence/suspension/retrait.
 
+**Amendement (adaptation du 2026-07-16)** : la gouvernance métrologique
+complète du régime A (doc 11 §9 — fixtures de certification, tests de
+reproductibilité) n'est plus exigée à la conception ; elle devient un **lot
+ultérieur conditionnel**, déclenché si le profil observationnel commence à
+peser dans les décisions cliniques. Voir la section suivante.
+
+## Adaptation du 2026-07-16 (contrepoint critique)
+
+**La question.** Après l'actation A7, l'utilisateur a demandé une vision
+critique indépendante du produit (au-delà des docs 00–11), puis son
+intégration au plan de campagne — en gardant un outil de mesure/calibrage
+pré-protocole et en raccordant les notes Ciqual et assiettes de la Boussole.
+Détail complet : `12_CONTREPOINT_ET_ADAPTATION.md`.
+
+**Décisions (utilisateur, 2026-07-16), actées A7-11 amendé + A7-12 à
+A7-14 :**
+
+- **Régime A → « bilan de calibrage »** borné (3–5 jours), double calibrage
+  clinique (structure/heure des prises, empreintes, variabilité → profil
+  minimal) et produit (charge supportable, moments réalistes → calibre le
+  budget et la politique du régime B). Affichage d'abord, aucun moteur.
+  Options écartées : métrologie complète dès la conception (coût fixe
+  d'instrument-grade disproportionné pour un cabinet) ; simple trame
+  d'entretien (perdrait l'heure des prises et le calibrage produit).
+- **Ciqual — codes aliments moyens** : registre de marqueurs JA adossé aux
+  codes des 191 aliments moyens Ciqual (Etalab 2.0) dès JA-00 ; aucune
+  valeur nutritionnelle ni score dans le JA ; valeurs consommées via C5A
+  quand livré ; **12 aliments vedettes du slice C5 ⊂ marqueurs JA**.
+  Options écartées : dépendance dure à C5A (couple deux campagnes
+  indépendantes) ; marqueurs propres sans Ciqual (deux vocabulaires à
+  réconcilier ensuite).
+- **Boucle assiettes ↔ essais actée** : l'action d'un essai peut référencer
+  une assiette recommandée (C5B) ; les solutions confirmées documentent la
+  version réelle ; vocabulaire « recommandation », jamais « prescription »
+  (R4). Sans dépendance à la table `assiette_type` (candidate).
+- **Briques du contrepoint, toutes retenues** : lot JA-0T validation terrain
+  (5 entretiens patients E1/E5 + test carte papier) avant le domaine ;
+  carrière d'action (objet longitudinal à travers les tours) ; régime
+  « silence » (protocole d'abstention) ; parité papier ; question du jour ;
+  friction-agenda (« 3 moments à explorer ») ; revue = décision pré-remplie ;
+  delta de décision instrumenté dès le premier lot ;
+  affichage-avant-moteurs ; budget de charge global au protocole (contrainte
+  à acter côté C2A).
+- **Articulation C5** : fiche C5 complétée (consomme la faisabilité publiée
+  par JA ; note chronobiologie débloquée par le calibrage) ; C5A signalée
+  comme candidat naturel de prochaine campagne data, sans séquencement
+  imposé.
+
+**Conséquence structurelle** : l'épisode passe à **trois régimes** —
+`calibrage | essai | silence`.
+
 ## Récapitulatif des conséquences sur les lots
 
-- Le noyau (futur premier lot de la campagne JA recadrée) porte : capture
-  occasion/praticabilité/friction, registre de frictions versionné à
-  catégories fermées, hypothèse et versions d'action sur l'épisode, budget
-  d'attention, droit au silence, plan minimal (D7), constats directs (D8),
-  trois vérités avec choix patient, delta de décision, solutions
-  intra-épisode (D6), retour de décision, tour suivant préparé, charge
-  perçue en clôture.
+Le tableau des lots fait foi dans
+`campagnes/2026-07-13-journal-alimentaire-21j-v1/CAMPAGNE.md`
+(JA-00, JA-0T, JA5-01 → JA5-05). En synthèse :
+
+- **JA-00** (audit clinique/RGPD) reste premier et absorbe la sélection du
+  registre de marqueurs adossé aux aliments moyens Ciqual (12 vedettes du
+  slice C5 incluses) et les arbitrages calibrage restants (doc 11 §12
+  allégé).
+- **JA-0T** (validation terrain, parallèle à JA-00) : 5 entretiens patients
+  E1/E5 + test de la carte papier ; go/no-go du noyau avant toute ligne de
+  domaine.
+- Le lot domaine (**JA5-01**) porte : épisode à trois régimes
+  (calibrage/essai/silence), carrière d'action, question du jour compilée,
+  capture occasion/praticabilité/friction, registre de frictions versionné,
+  budget d'attention, droit au silence, plan minimal (D7), constats directs
+  (D8), quatre lectures, delta de décision, solutions intra-épisode (D6) —
+  **restitution simple, aucun moteur**.
+- Retour de décision, tour suivant préparé et charge perçue arrivent avec
+  les parcours (JA5-02/03) et l'activation (JA5-05, avec le budget de
+  charge global protocole).
 - Restent différés avec gate : photo (D4), voix (D5), persistance des
   solutions (D6/IDP), météo agrégée (D8/SP-MET), trace depuis notification
   (D9/canal notifications), comparaison multi-épisodes (D10/C2A+IDP),
-  simulateur d'action (D11/Nutrition Lab).
-- Invariants inchangés : gate d'audit clinique/RGPD (JA-00) premier ;
-  persistance gatée par C2A + confirmation explicite de migration ; aucune
-  projection automatique vers `Q_ALI_01`/`Q_ALI_02` ; aucun score SIIN
-  officiel.
+  simulateur d'action (D11/Nutrition Lab), gouvernance métrologique
+  complète du calibrage (lot conditionnel).
+- Invariants inchangés : persistance gatée par C2A + confirmation explicite
+  de migration ; aucune projection automatique vers `Q_ALI_01`/`Q_ALI_02` ;
+  aucun score SIIN officiel ; aucune valeur nutritionnelle dans le JA.

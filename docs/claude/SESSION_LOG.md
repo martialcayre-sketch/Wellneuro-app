@@ -274,3 +274,28 @@ synthèse critique du pack) ; `DietaryActionExperiment` séparé ; météo trois
 
 **Questions ouvertes** : inchangées (purge `SHEET_ID` Vercel, branche
 `trust-v1-lot-migration`, instruction CNIL écoute ambiante).
+
+## 2026-07-16 — JA 5.0 : contrepoint, calibrage, Ciqual, assiettes, articulation C5
+
+**Décisions** : vision critique consignée (`12_CONTREPOINT_ET_ADAPTATION.md`)
+et intégrée au plan de campagne. L'épisode passe à **trois régimes** :
+bilan de **calibrage** borné 3–5 j (double calibrage clinique + produit,
+métrologie complète différée en lot conditionnel), **essai** (noyau
+friction), **silence** (abstention prescrite). Marqueurs adossés aux **191
+aliments moyens Ciqual** (12 vedettes du slice C5 incluses), aucune valeur
+nutritionnelle dans le JA. **Boucle assiettes C5B ↔ essais** actée
+(« recommandation », jamais « prescription »). Lots réécrits : JA-00 +
+**JA-0T validation terrain** (5 entretiens, carte papier) avant JA5-01 ;
+carrière d'action, question du jour, friction-agenda, décision pré-remplie,
+parité papier, delta instrumenté, affichage-avant-moteurs. Fiche C5
+complétée (faisabilité JA, chronobiologie débloquable) ; budget de charge
+global signalé vers C2A.
+
+**Options écartées** : régime A métrologique dès la conception ; dépendance
+dure à C5A ; assiettes hors JA.
+
+**Prochaine action prioritaire** : merger la PR #89 ; puis JA-00/JA-0T, ou
+activer C5A (candidat naturel de prochaine campagne data).
+
+**Questions ouvertes** : inchangées (SHEET_ID, trust-v1-lot-migration,
+CNIL écoute ambiante).
