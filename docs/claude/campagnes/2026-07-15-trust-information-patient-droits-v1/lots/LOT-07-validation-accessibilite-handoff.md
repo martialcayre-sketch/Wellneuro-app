@@ -1,7 +1,7 @@
 ---
 id: "LOT-07-validation-accessibilite-handoff"
 titre: "Validation, accessibilité et handoff"
-statut: "à_faire — non démarré"
+statut: "terminé"
 dépend_de: ["LOT-01", "LOT-02", "LOT-03", "LOT-04", "LOT-05", "LOT-06"]
 ---
 
