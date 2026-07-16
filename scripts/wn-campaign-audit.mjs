@@ -6,8 +6,7 @@ const cwd = process.cwd();
 const args = process.argv.slice(2);
 
 const defaultRoots = [
-  "docs/claude/campagnes",
-  "wellneuro_wn_campaigns/wellneuro_wn_campaigns/docs/claude/campagnes"
+  "docs/claude/campagnes"
 ];
 
 const requiredCampaignFields = ["id", "titre", "statut", "lot_courant"];

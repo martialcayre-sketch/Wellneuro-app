@@ -17,9 +17,13 @@ const SESSION_TTL_SECONDS = 12 * 60 * 60;
 
 export const PORTAIL_COOKIE_OPTIONS = {
   httpOnly: true,
-  // En production (https sur Vercel) le cookie est Secure ; en dev http local
-  // on le laisse non-Secure pour qu'il soit bien posé/renvoyé par le navigateur.
-  secure: process.env.NODE_ENV === 'production',
+  // Secure par défaut (production https sur Vercel, ou NEXTAUTH_URL absente) ;
+  // non-Secure uniquement quand NEXTAUTH_URL est explicitement en http —
+  // même convention que NextAuth. NODE_ENV n'est pas le bon signal : les e2e
+  // de parité production (`next start`, PLAYWRIGHT_WEB_SERVER=start) tournent
+  // avec NODE_ENV=production mais sur http://localhost, où WebKit refuse de
+  // stocker un cookie Secure (Chromium le tolère sur localhost).
+  secure: !(process.env.NEXTAUTH_URL ?? 'https://').startsWith('http://'),
   sameSite: 'lax' as const,
   path: '/',
   maxAge: SESSION_TTL_SECONDS,

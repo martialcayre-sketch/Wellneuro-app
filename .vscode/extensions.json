@@ -7,9 +7,8 @@
     "github.copilot-chat",
     "openai.chatgpt",
     "anthropic.claude-code",
-    "ms-vscode-remote.remote-containers"
-  ],
-  "unwantedRecommendations": [
+    "ms-vscode-remote.remote-containers",
     "growthjack.claude-code-usage"
-  ]
+  ],
+  "unwantedRecommendations": []
 }
