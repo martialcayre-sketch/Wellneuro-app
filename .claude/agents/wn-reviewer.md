@@ -2,7 +2,7 @@
 name: wn-reviewer
 description: Révise indépendamment les changements WellNeuro pour trouver bugs, risques sécurité, régressions et tests manquants.
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: opus
 effort: high
 ---
 

@@ -2,7 +2,7 @@
 name: wn-explorer
 description: Explore le dépôt WellNeuro en lecture seule et retourne des preuves ciblées sans modifier les fichiers.
 tools: Read, Grep, Glob, Bash
-model: inherit
+model: haiku
 effort: low
 ---
 

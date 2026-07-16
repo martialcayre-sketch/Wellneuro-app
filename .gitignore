@@ -28,3 +28,7 @@ resultats_reels/
 *.log
 .DS_Store
 Thumbs.db
+.env*
+
+# Artefacts régénérables du playbook scripts/repo-hygiene.sh (audit-only)
+.repo-hygiene*/
