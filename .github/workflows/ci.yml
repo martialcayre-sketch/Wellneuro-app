@@ -58,6 +58,11 @@ jobs:
       - name: Campaign rules audit (blocking)
         run: node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
 
+      # Protège la logique clinique : les 63 questionnaires doivent rester
+      # conformes à leurs fixtures de scoring certifiées.
+      - name: Scoring certification (63 questionnaires, blocking)
+        run: node scripts/check_questionnaire_certification.js
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -80,6 +85,21 @@ jobs:
         working-directory: web
         run: npx prisma migrate deploy
 
+      # Gate avant déploiement : en production, seul le SQL des migrations
+      # committées est appliqué (web/scripts/vercel-build.sh). Si schema.prisma
+      # a évolué sans migration, le client Prisma déployé attendrait un schéma
+      # que la base n'aura jamais. La base CI vient d'être construite uniquement
+      # par `migrate deploy` : l'introspecter (--from-config-datasource lit
+      # DATABASE_URL) équivaut à rejouer les migrations. Échec (code 2) si elle
+      # diverge de schema.prisma.
+      - name: Migration drift check (schema.prisma vs migrations)
+        working-directory: web
+        run: |
+          npx prisma migrate diff \
+            --from-config-datasource \
+            --to-schema prisma/schema.prisma \
+            --exit-code
+
       - name: Seed test data
         working-directory: web
         run: npm run prisma:seed
@@ -100,8 +120,13 @@ jobs:
         working-directory: web
         run: npm run build
 
-      - name: E2E tests (Playwright)
+      # E2E contre le build de production produit à l'étape précédente : plus
+      # rapide (pas de compilation à la demande de next dev) et plus fidèle au
+      # déploiement Vercel (bundles React prod, prerender identique).
+      - name: E2E tests (Playwright, production build)
         working-directory: web
+        env:
+          PLAYWRIGHT_WEB_SERVER: start
         run: npm run test:e2e
 
       - name: Upload Playwright report

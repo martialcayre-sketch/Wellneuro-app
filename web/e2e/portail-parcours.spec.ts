@@ -111,6 +111,11 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
     page,
     context,
   }) => {
+    // Parcours intégral (~2 min nominal depuis les étapes TRUST) : le budget
+    // global de 120 s est trop juste quand le premier passage paie la
+    // compilation à la demande de `next dev` (run local à froid). slow()
+    // triple le budget de ce seul test, sans toucher les autres.
+    test.slow();
     page.on('dialog', dialog => dialog.accept());
 
     await test.step('Provisionnement — le praticien crée la consultation (mêmes conditions que la réalité : un patient sans consultation n\'a rien à voir sur le portail)', async () => {
@@ -232,11 +237,23 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
     await test.step('Ouverture du premier questionnaire à compléter', async () => {
       const premier = page.getByRole('link', { name: 'Commencer' }).first();
       await expect(premier).toBeVisible();
-      const [reponse] = await Promise.all([
-        page.waitForResponse(res => res.url().includes('/api/patient/questionnaire?id=') && res.status() === 200),
-        premier.click(),
-      ]);
-      const json = await reponse.json();
+      // Le hub se re-rend quand /api/portail/trust/etat résout (état « avant
+      // de commencer ») : un clic tombé entre deux rendus est perdu sans
+      // erreur (constaté en local sous charge — trace : aucune navigation,
+      // aucune requête). L'écoute de la réponse est armée avant le premier
+      // clic, puis le clic est retenté tant que l'URL n'a pas changé.
+      const reponsePromise = page.waitForResponse(
+        res => res.url().includes('/api/patient/questionnaire?id=') && res.status() === 200,
+        { timeout: 60_000 },
+      );
+      const surPageQuestionnaire = () => /\/questionnaires\/[^/?]+/.test(page.url());
+      await expect(async () => {
+        if (!surPageQuestionnaire()) {
+          await premier.click({ timeout: 2_000 });
+        }
+        expect(surPageQuestionnaire()).toBe(true);
+      }).toPass({ timeout: 30_000, intervals: [500, 1_000] });
+      const json = await (await reponsePromise).json();
       idAssignation = json.assignation.idAssignation;
       idQuestionnaire = json.assignation.idQuestionnaire;
     });

@@ -23,6 +23,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:worktree": "bash ../scripts/wn-test-worktree.sh",
     "backfill:pack-registry:dry-run": "node prisma/runWithAlias.js prisma/backfillQuestionnaireRegistry.ts --dry-run",
     "backfill:pack-registry:apply": "node prisma/runWithAlias.js prisma/backfillQuestionnaireRegistry.ts --apply",
     "check:pack-registry": "node prisma/runWithAlias.js prisma/checkPackRegistryConsistency.ts",
