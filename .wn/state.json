@@ -4,12 +4,12 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "idle",
-  "active_campaign": null,
-  "active_lot": null,
+  "status": "inflight",
+  "active_campaign": "2026-07-15-trust-information-patient-droits-v1",
+  "active_lot": "LOT-00",
   "last_completed_lot": "SP-FIL/LOT-02",
   "git": {
-    "branch": null,
+    "branch": "campaign/trust-information-patient-droits-v1/integration",
     "last_commit": null,
     "dirty": null
   },
@@ -25,10 +25,10 @@
       "corpus_registry": "unchanged"
     }
   },
-  "next_action": "Choisir la prochaine campagne du programme 5.0 (SP-RUN après validation ergonomique C1, ou C2A avec gate migration).",
+  "next_action": "Exécuter les lots TRUST LOT-00 → LOT-07 puis PR finale vers main.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-15T20:14:51Z",
+  "updated_at": "2026-07-16T10:20:34Z",
   "parallel_campaigns": []
 }

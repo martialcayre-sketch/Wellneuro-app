@@ -1,8 +1,8 @@
 # Campagnes actives
 
-Aucune campagne active.
+- **TRUST — Information patient, consentements et sécurité relationnelle V1** (`2026-07-15-trust-information-patient-droits-v1`) — lot courant : LOT-00
 
-**Statut global** : idle
-**Mise à jour** : 2026-07-15
+**Statut global** : inflight
+**Mise à jour** : 2026-07-16
 
 > La source de vérité machine est `.wn/state.json`.
