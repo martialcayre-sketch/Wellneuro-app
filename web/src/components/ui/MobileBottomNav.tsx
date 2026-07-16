@@ -7,7 +7,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { LayoutDashboard, Users, Sparkles, Settings, MoreHorizontal, X, type LucideIcon } from 'lucide-react';
 
 const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: '/dashboard', label: 'Accueil', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard },
   { href: '/dashboard/patients', label: 'Patients', icon: Users },
   { href: '/dashboard/synthese', label: 'Synthèses', icon: Sparkles },
 ];

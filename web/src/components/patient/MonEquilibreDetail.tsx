@@ -68,7 +68,7 @@ export function MonEquilibreDetail({
   return (
     <div className="w-full max-w-2xl">
       <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
-        <h1 className="text-xl font-bold text-gray-900 mb-1 text-center">Mes 12 besoins</h1>
+        <h1 className="font-display text-xl font-bold text-gray-900 mb-1 text-center">Mes 12 besoins</h1>
         <p className="text-sm text-gray-500 text-center mb-6">
           Survolez un besoin pour le mettre en évidence.
         </p>

@@ -7,7 +7,7 @@
   "status": "idle",
   "active_campaign": null,
   "active_lot": null,
-  "last_completed_lot": "QX/LOT-04",
+  "last_completed_lot": "SP-FIL/LOT-02",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -15,20 +15,20 @@
   },
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-14T11:18:08.000Z",
+    "last_checked_at": "2026-07-15T20:14:51Z",
     "checks": {
-      "orchestration": "campaign audit passed in PR #60 CI; devcontainer smoke passed",
-      "type_check": "passed in PR #60 CI; 64 targeted C1 tests and global Vitest passed; lint and build passed",
-      "scoring_certification": "63 questionnaires passed",
-      "no_secrets": "passed in PR #60 CI",
-      "e2e": "Playwright passed in PR #60 CI; desktop, tablet and mobile C1 viewports covered",
-      "corpus_registry": "391 unique opaque sourceIds passed"
+      "orchestration": "campaign audit passed locally and in PR #74/#75 CI",
+      "type_check": "passed locally and in PR #74/#75 CI; Vitest 206/206",
+      "scoring_certification": "unchanged (no clinical change in SP-FIL)",
+      "no_secrets": "passed locally and in CI",
+      "e2e": "Playwright passed in PR #74/#75 CI (accueil Fil adapté)",
+      "corpus_registry": "unchanged"
     }
   },
-  "next_action": "Choisir explicitement la prochaine campagne à activer.",
+  "next_action": "Choisir la prochaine campagne du programme 5.0 (SP-RUN après validation ergonomique C1, ou C2A avec gate migration).",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-14T18:21:27Z",
+  "updated_at": "2026-07-15T20:14:51Z",
   "parallel_campaigns": []
 }

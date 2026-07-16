@@ -1,5 +1,11 @@
 # Synthèse du programme WellNeuro 3.2
 
+> **⚠️ Succession (2026-07-15)** : la séquence des campagnes restantes est
+> désormais portée par [`PROGRAMME_WELLNEURO_5_0.md`](PROGRAMME_WELLNEURO_5_0.md)
+> (disposition « la Spirale », décision A6 au registre). Ce document reste la
+> référence des campagnes livrées (C0 → QX) et de la décision stratégique
+> 3.x ; sa table « Programme de campagnes » est périmée pour la file à venir.
+
 > Révision du 2026-07-15 — promeut les arbitrages réconciliés de WN Ultimate
 > v2 comme architecture cible 3.2, sans activer ses règles cliniques
 > candidates. Elle intègre aussi les arbitrages du brainstorm (registre de

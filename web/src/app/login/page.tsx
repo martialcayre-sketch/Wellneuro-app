@@ -25,7 +25,7 @@ export default function LoginPage() {
       <div className="max-w-sm w-full bg-surface rounded-2xl shadow-lg p-8 flex flex-col items-center gap-6">
         {/* Logo / titre */}
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-accent">
+          <h1 className="font-display text-2xl font-bold text-primary">
             Wellneuro
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Espace praticien</p>
