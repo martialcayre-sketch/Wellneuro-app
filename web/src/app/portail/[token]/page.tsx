@@ -14,6 +14,9 @@ import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessa
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { SaveStatusIndicator, type SaveError } from '@/components/patient/SaveStatusIndicator';
 import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
+import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
+import { DocumentTrust } from '@/components/patient/trust/DocumentTrust';
+import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 
 type Verified = Extract<PortailSessionResponse, { ok: true }>;
 
@@ -183,34 +186,13 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
     }
   };
 
+  // Texte sourcé depuis le document versionné consentement_suivi (TRUST
+  // LOT-02) : la version stockée en base correspond enfin au texte affiché.
   return (
     <PatientCard>
-      <PatientPageHeader title="Avant de commencer" />
-      <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
-        <p>
-          Votre praticien vous ouvre l’accès à votre espace patient Wellneuro, un outil
-          d’accompagnement bien-être et de suivi personnalisé.
-        </p>
-        <div>
-          <p className="font-semibold text-foreground">Ce que nous collectons</p>
-          <p>Vos renseignements (situation, mode de vie), votre anamnèse et vos réponses aux questionnaires de suivi, ainsi que les dates associées.</p>
-        </div>
-        <div>
-          <p className="font-semibold text-foreground">Pourquoi</p>
-          <p>Ces informations permettent à votre praticien de mieux comprendre votre situation et de vous proposer un accompagnement adapté. Il ne s’agit pas d’un outil de diagnostic médical.</p>
-        </div>
-        <div>
-          <p className="font-semibold text-foreground">Qui peut voir vos informations</p>
-          <p>Seul votre praticien y a accès. Elles ne sont partagées avec aucun tiers.</p>
-        </div>
-        <div>
-          <p className="font-semibold text-foreground">Vos droits</p>
-          <ul className="list-disc list-inside space-y-1">
-            <li>Accéder à vos informations à tout moment via ce même lien.</li>
-            <li>Demander la modification ou la suppression de vos données auprès de votre praticien.</li>
-            <li>Retirer votre consentement à tout moment.</li>
-          </ul>
-        </div>
+      <PatientPageHeader title="Votre consentement au suivi" />
+      <div className="mt-2">
+        <DocumentTrust document={getDocumentCourant('consentement_suivi')} />
       </div>
       <label className="flex items-start gap-3 mt-6 cursor-pointer">
         <input type="checkbox" checked={checked} onChange={e => setChecked(e.target.checked)} className="mt-1 accent-primary" />
@@ -606,6 +588,7 @@ function DoneScreen({ token, premiereAssignation }: { token: string; premiereAss
 type Step =
   | { name: 'loading' }
   | { name: 'gate' }
+  | { name: 'avant' } // séquence TRUST « Avant de commencer », avant tout recueil
   | { name: 'consent' }
   | { name: 'fiche' }
   | { name: 'anamnese' }
@@ -629,8 +612,24 @@ export default function PortailPage() {
     setEmail(data.patient.email.toLowerCase());
     setConsultation(data.consultation);
     setPremiere(data.premiereAssignation);
-    setStep(prochaineEtape(data.consultation, data.premiereAssignation));
-  }, []);
+    // Séquence TRUST « Avant de commencer » : requise tant que la version
+    // courante du cadre n'a pas d'accusé de lecture (patients existants
+    // inclus, une fois). Jamais bloquante en cas d'erreur réseau : le
+    // parcours de soin continue.
+    void (async () => {
+      try {
+        const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(String(token))}`);
+        const etat = (await res.json()) as { ok: boolean; avantDeCommencerRequis?: boolean };
+        if (etat.ok && etat.avantDeCommencerRequis) {
+          setStep({ name: 'avant' });
+          return;
+        }
+      } catch {
+        /* dégradation gracieuse */
+      }
+      setStep(prochaineEtape(data.consultation, data.premiereAssignation));
+    })();
+  }, [token]);
 
   useEffect(() => {
     let active = true;
@@ -669,6 +668,17 @@ export default function PortailPage() {
           appliquerSession(data);
         }}
       />
+    );
+  }
+
+  if (step.name === 'avant') {
+    return (
+      <div className="w-full max-w-2xl space-y-4">
+        <AvantDeCommencer
+          token={token}
+          onDone={() => setStep(prochaineEtape(consultation, premiere))}
+        />
+      </div>
     );
   }
 

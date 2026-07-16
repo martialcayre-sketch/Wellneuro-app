@@ -12,6 +12,7 @@ import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
 import { detecterChangementsEtMettreAJour, type ChangementVisite } from '@/lib/portail-visite';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
+import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 
 type Groupe = 'a_completer' | 'correction' | 'transmis' | 'expire';
 
@@ -97,9 +98,25 @@ export default function QuestionnairesHubPage() {
   const [assignations, setAssignations] = useState<AssignationPatient[]>([]);
   const [brouillons, setBrouillons] = useState<Set<string>>(new Set());
   const [changements, setChangements] = useState<ChangementVisite[]>([]);
+  // Séquence TRUST « Avant de commencer » pour les patients existants : une
+  // fois au prochain accès, tant que la version courante du cadre n'a pas
+  // d'accusé de lecture. Jamais bloquante en cas d'erreur réseau.
+  const [avantRequis, setAvantRequis] = useState(false);
   // Garde-fou : ignorer une réponse tardive si le composant a été démonté
   // (navigation rapide) pendant que le fetch était en vol.
   const annuleRef = useRef(false);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch(`/api/portail/trust/etat?token=${encodeURIComponent(token)}`);
+        const etat = (await res.json()) as { ok: boolean; avantDeCommencerRequis?: boolean };
+        if (!annuleRef.current && etat.ok && etat.avantDeCommencerRequis) setAvantRequis(true);
+      } catch {
+        /* dégradation gracieuse */
+      }
+    })();
+  }, [token]);
 
   const charger = useCallback(async () => {
     setState({ status: 'loading' });
@@ -152,6 +169,14 @@ export default function QuestionnairesHubPage() {
       <PatientCard padding="sm">
         <PatientErrorState message={state.error ?? 'Une erreur est survenue.'} onReessayer={() => void charger()} />
       </PatientCard>
+    );
+  }
+
+  if (avantRequis) {
+    return (
+      <div className="w-full max-w-2xl space-y-4">
+        <AvantDeCommencer token={token} onDone={() => setAvantRequis(false)} />
+      </div>
     );
   }
 

@@ -4,7 +4,7 @@ titre: "TRUST — Information patient, consentements et sécurité relationnelle
 statut: "en cours"
 créée_le: "2026-07-15"
 mise_à_jour: "2026-07-15"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 ---
 
 # TRUST — Information patient, consentements et sécurité relationnelle V1
@@ -199,7 +199,7 @@ Cartes proposées :
 |---|---|---|---|
 | LOT-00 | Audit de l’état réel, frontières et gates | terminé | audit source + registre |
 | LOT-01 | Modèle documentaire, versionnement et événements | terminé | LOT-00 |
-| LOT-02 | Premier accès et centre permanent | à_faire | LOT-01 + HC-F |
+| LOT-02 | Premier accès et centre permanent | terminé | LOT-01 + HC-F |
 | LOT-03 | Consentements, droits et cycle de vie du compte | à_faire | LOT-01 + LOT-02 |
 | LOT-04 | Sécurité clinique, alertes et nutrivigilance | à_faire | LOT-02 |
 | LOT-05 | Transparence IA, validation humaine et provenance | à_faire | LOT-01 + C1/C3 |

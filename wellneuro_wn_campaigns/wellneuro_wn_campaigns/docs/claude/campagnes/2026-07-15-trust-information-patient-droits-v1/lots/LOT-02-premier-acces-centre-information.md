@@ -1,7 +1,7 @@
 ---
 id: "LOT-02-premier-acces-centre-information"
 titre: "Premier accès et centre permanent"
-statut: "à_faire — non démarré"
+statut: "terminé"
 dépend_de: ["LOT-01"]
 ---
 
