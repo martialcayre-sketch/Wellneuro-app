@@ -1,10 +1,10 @@
 ---
 id: "2026-07-13-journal-alimentaire-21j-v1"
 titre: "JA — Ma spirale alimentaire (journal alimentaire recadré 5.0)"
-statut: "en cours — JA5-03 implémenté localement (sans persistance)"
+statut: "en cours — JA5-04 démarré (API de persistance JA, sans migration)"
 créée_le: "2026-07-13"
 mise_à_jour: "2026-07-17"
-lot_courant: "LOT-03"
+lot_courant: "LOT-04"
 ---
 
 # JA — Ma spirale alimentaire
@@ -120,7 +120,7 @@ restitution simple bat le calcul).
 | JA5-01 (`lots/LOT-02-domaine-typescript-ja5-01.md`, **prêt — exécutable**) | Domaine TypeScript pur : épisode à trois régimes, carrière d'action, question du jour compilée, calibrage (profil minimal + charge), capture occasion/praticabilité/friction, budget d'attention, delta de décision, constats directs, quatre lectures, tests Vitest — restitution simple, **aucun moteur** — amendé par les enseignements JA-0T | JA-00 + JA-0T — **levés le 2026-07-17** |
 | JA5-02 | Parcours patient : question du jour, plan minimal, solutions intra-épisode, parité papier (carte A6 imprimable + saisie praticien en 30 s) | **terminé (local, 2026-07-17)** |
 | JA5-03 | Parcours praticien : bilan de calibrage restitué, « 3 moments à explorer » (friction-agenda), revue = décision pré-remplie (Accepter/Modifier), action référençant une assiette recommandée | **terminé (local, 2026-07-17)** |
-| JA5-04 | Persistance : épisodes, événements, solutions, carrière d'action, RLS patient-scopé, audit append-only | C2A + confirmation migration explicite |
+| JA5-04 | Persistance : épisodes, événements, solutions, carrière d'action, RLS patient-scopé, audit append-only | **en cours (API démarrée sans migration, 2026-07-17)** |
 | JA5-05 | Activation : liaison protocole actif, jalons, PhaseReview avec delta, retour de décision, charge perçue, budget de charge global protocole (avec C2A) | JA5-04 |
 
 Différés hors campagne, chacun avec son gate propre : capture photo/voix
