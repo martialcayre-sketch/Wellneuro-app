@@ -69,6 +69,15 @@ type PatientFoodObservationDraft = {
   solutions: IntraEpisodeSolution[];
 };
 
+type PatientDecision = {
+  milestone: 'J7' | 'J14' | 'J21';
+  feedbackPatient: string;
+  deltaDecision: string;
+  chargePercue: 'faible' | 'moderee' | 'elevee';
+  budgetChargeGlobal: number;
+  reviewedAt: string;
+};
+
 function draftKey(token: string): string {
   return `wellneuro:ja5-02:patient:${token}`;
 }
@@ -163,6 +172,8 @@ export function PatientFoodObservationPanel({ token }: { token: string }) {
   const [frictionCode, setFrictionCode] = useState('');
   const [motLibre, setMotLibre] = useState('');
   const [solutionInput, setSolutionInput] = useState('');
+  const [decision, setDecision] = useState<PatientDecision | null>(null);
+  const [decisionLoading, setDecisionLoading] = useState<boolean>(true);
   const [error, setError] = useState('');
 
   const couverture = useMemo(
@@ -175,6 +186,42 @@ export function PatientFoodObservationPanel({ token }: { token: string }) {
   useEffect(() => {
     writeDraft(token, { budget, traces, pauses, plans, solutions });
   }, [budget, traces, pauses, plans, solutions, token]);
+
+  useEffect(() => {
+    let mounted = true;
+    setDecisionLoading(true);
+
+    const loadDecision = async () => {
+      try {
+        const res = await fetch('/api/portail/ja/decision', {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+        });
+        const json = (await res.json()) as {
+          ok: boolean;
+          hasDecision?: boolean;
+          decision?: PatientDecision | null;
+        };
+        if (!mounted) return;
+        if (!res.ok || !json.ok || !json.hasDecision) {
+          setDecision(null);
+          return;
+        }
+        setDecision(json.decision ?? null);
+      } catch {
+        if (!mounted) return;
+        setDecision(null);
+      } finally {
+        if (mounted) setDecisionLoading(false);
+      }
+    };
+
+    void loadDecision();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const updateBudget = (value: number) => {
     setBudget(value);
@@ -272,6 +319,17 @@ export function PatientFoodObservationPanel({ token }: { token: string }) {
       {draftRestored && (
         <PatientInlineMessage tone="info">Brouillon local restauré sur cet appareil.</PatientInlineMessage>
       )}
+
+      {decisionLoading ? (
+        <PatientInlineMessage tone="info">Mise à jour de la décision praticien en cours…</PatientInlineMessage>
+      ) : decision ? (
+        <PatientCard padding="sm" className="space-y-2 border-primary/20" data-testid="ja-patient-decision-active">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Décision active du praticien</p>
+          <p className="text-sm text-foreground">Jalon {decision.milestone} · charge perçue {decision.chargePercue} · budget global {decision.budgetChargeGlobal}.</p>
+          <p className="text-sm text-foreground">{decision.feedbackPatient}</p>
+          <p className="text-xs text-muted-foreground">Ajustement de la décision: {decision.deltaDecision}</p>
+        </PatientCard>
+      ) : null}
 
       <div className="flex justify-end">
         <PatientButton data-testid="ja-patient-reset-local" variant="danger-text" onClick={resetLocalDraft}>

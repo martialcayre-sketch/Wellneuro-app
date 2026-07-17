@@ -38,6 +38,32 @@ export type JaObservationSnapshot = {
   careersCount: number;
 };
 
+export type JaMilestone = 'J7' | 'J14' | 'J21';
+export type JaChargePercue = 'faible' | 'moderee' | 'elevee';
+
+export type JaActivationInput = {
+  idPatient: string;
+  draftId: string;
+  milestone: JaMilestone;
+  deltaDecision: string;
+  feedbackPatient: string;
+  chargePercue: JaChargePercue;
+  budgetChargeGlobal: number;
+};
+
+export type JaActivationSummary = {
+  draftId: string;
+  sourceDraftId: string;
+  idPatient: string;
+  episodeId: string;
+  milestone: JaMilestone;
+  deltaDecision: string;
+  feedbackPatient: string;
+  chargePercue: JaChargePercue;
+  budgetChargeGlobal: number;
+  reviewedAt: string;
+};
+
 function ensurePatientId(value: string): string {
   const trimmed = value.trim();
   if (!/^[A-Za-z0-9_-]{1,64}$/.test(trimmed)) {
@@ -61,6 +87,19 @@ function buildDecisionCardId(episodeId: string): string {
 function buildDraftId(episodeId: string, atIso: string): string {
   const shortHash = canonicalSha256({ episodeId, atIso }).slice(0, 16);
   return `JA_DRAFT_${shortHash}`;
+}
+
+function isJaMilestone(value: string): value is JaMilestone {
+  return value === 'J7' || value === 'J14' || value === 'J21';
+}
+
+function isChargePercue(value: string): value is JaChargePercue {
+  return value === 'faible' || value === 'moderee' || value === 'elevee';
+}
+
+function buildActivationDraftId(episodeId: string, atIso: string): string {
+  const shortHash = canonicalSha256({ episodeId, atIso, scope: 'activation' }).slice(0, 16);
+  return `JA_ACT_${shortHash}`;
 }
 
 export async function saveJaObservationSnapshot(input: JaObservationSnapshotInput): Promise<JaObservationSnapshot> {
@@ -153,7 +192,7 @@ export async function listJaObservationSnapshots(idPatientRaw: string, limit = 1
     },
   });
 
-  return rows.map((row) => {
+  return rows.map((row: { id: string; idPatient: string; supersedesDraftId: string | null; createdAt: Date; payload: unknown }) => {
     const data = row.payload as {
       actor?: 'praticien' | 'patient';
       episode?: { episodeId?: string };
@@ -178,4 +217,176 @@ export async function listJaObservationSnapshots(idPatientRaw: string, limit = 1
       careersCount: Array.isArray(data.actionCareer) ? data.actionCareer.length : 0,
     };
   });
+}
+
+export async function activateJaObservationSnapshot(input: JaActivationInput): Promise<JaActivationSummary> {
+  const idPatient = ensurePatientId(input.idPatient);
+  const sourceDraftId = ensureDraftId(input.draftId);
+  const deltaDecision = input.deltaDecision.trim();
+  const feedbackPatient = input.feedbackPatient.trim();
+  const budgetChargeGlobal = Number(input.budgetChargeGlobal);
+
+  if (!isJaMilestone(input.milestone)) {
+    throw new TypeError('Jalon invalide. Valeurs attendues: J7, J14, J21.');
+  }
+  if (!isChargePercue(input.chargePercue)) {
+    throw new TypeError('Charge perçue invalide. Valeurs attendues: faible, moderee, elevee.');
+  }
+  if (deltaDecision.length < 10) {
+    throw new TypeError('Le delta de décision doit contenir au moins 10 caractères.');
+  }
+  if (feedbackPatient.length < 10) {
+    throw new TypeError('Le retour patient doit contenir au moins 10 caractères.');
+  }
+  if (!Number.isFinite(budgetChargeGlobal) || budgetChargeGlobal < 1 || budgetChargeGlobal > 21) {
+    throw new TypeError('Le budget de charge global doit être compris entre 1 et 21.');
+  }
+
+  const source = await prisma.protocolDraft.findFirst({
+    where: {
+      id: sourceDraftId,
+      idPatient,
+      contractVersion: JA_FOOD_OBSERVATION_CONTRACT_VERSION,
+      selectedPriorityId: JA_SELECTED_PRIORITY_ID,
+    },
+    select: {
+      id: true,
+      idPatient: true,
+      payload: true,
+    },
+  });
+
+  if (!source) {
+    throw new TypeError('Snapshot JA introuvable pour ce patient.');
+  }
+
+  const sourcePayload = source.payload as {
+    episode?: { episodeId?: string };
+    actor?: 'praticien' | 'patient';
+    traces?: unknown[];
+    pauses?: unknown[];
+    plans?: unknown[];
+    solutions?: unknown[];
+    actionCareer?: unknown[];
+    activation?: unknown;
+  };
+  const episodeId = sourcePayload.episode?.episodeId;
+  if (!episodeId) {
+    throw new TypeError('Snapshot JA invalide: épisode manquant.');
+  }
+
+  const reviewedAt = new Date().toISOString();
+  const nextPayload = {
+    ...sourcePayload,
+    activation: {
+      milestone: input.milestone,
+      reviewedAt,
+      deltaDecision,
+      feedbackPatient,
+      chargePercue: input.chargePercue,
+      budgetChargeGlobal,
+    },
+  };
+
+  const nextHash = canonicalSha256(nextPayload);
+  const nextDraftId = buildActivationDraftId(episodeId, reviewedAt);
+
+  const created = await prisma.protocolDraft.create({
+    data: {
+      id: nextDraftId,
+      idPatient,
+      assessmentEpisodeId: null,
+      decisionCardId: buildDecisionCardId(episodeId),
+      decisionCardInputHash: nextHash,
+      snapshotInputHash: nextHash,
+      reviewInputHash: nextHash,
+      selectedPriorityId: JA_SELECTED_PRIORITY_ID,
+      status: 'practitioner_reviewed',
+      payload: nextPayload as unknown as object,
+      inputHash: nextHash,
+      contractVersion: JA_FOOD_OBSERVATION_CONTRACT_VERSION,
+      supersedesDraftId: sourceDraftId,
+      reviewedAt: new Date(reviewedAt),
+    },
+    select: {
+      id: true,
+      idPatient: true,
+      payload: true,
+      reviewedAt: true,
+    },
+  });
+
+  const activation = (created.payload as { activation?: JaActivationSummary }).activation;
+  if (!activation || !created.reviewedAt) {
+    throw new TypeError('Activation JA invalide après persistance.');
+  }
+
+  return {
+    draftId: created.id,
+    sourceDraftId,
+    idPatient: created.idPatient,
+    episodeId,
+    milestone: activation.milestone,
+    deltaDecision: activation.deltaDecision,
+    feedbackPatient: activation.feedbackPatient,
+    chargePercue: activation.chargePercue,
+    budgetChargeGlobal: activation.budgetChargeGlobal,
+    reviewedAt: created.reviewedAt.toISOString(),
+  };
+}
+
+export async function getLatestJaActivation(idPatientRaw: string): Promise<JaActivationSummary | null> {
+  const idPatient = ensurePatientId(idPatientRaw);
+
+  const row = await prisma.protocolDraft.findFirst({
+    where: {
+      idPatient,
+      contractVersion: JA_FOOD_OBSERVATION_CONTRACT_VERSION,
+      selectedPriorityId: JA_SELECTED_PRIORITY_ID,
+      status: 'practitioner_reviewed',
+    },
+    orderBy: { reviewedAt: 'desc' },
+    select: {
+      id: true,
+      idPatient: true,
+      supersedesDraftId: true,
+      reviewedAt: true,
+      payload: true,
+    },
+  });
+
+  if (!row) return null;
+  const payload = row.payload as {
+    episode?: { episodeId?: string };
+    activation?: {
+      milestone?: string;
+      deltaDecision?: string;
+      feedbackPatient?: string;
+      chargePercue?: string;
+      budgetChargeGlobal?: number;
+    };
+  };
+
+  const episodeId = payload.episode?.episodeId;
+  const activation = payload.activation;
+  if (!episodeId || !activation || !row.reviewedAt) return null;
+  if (!activation.milestone || !activation.deltaDecision || !activation.feedbackPatient || !activation.chargePercue) {
+    return null;
+  }
+  if (!isJaMilestone(activation.milestone) || !isChargePercue(activation.chargePercue)) {
+    return null;
+  }
+
+  return {
+    draftId: row.id,
+    sourceDraftId: row.supersedesDraftId ?? row.id,
+    idPatient: row.idPatient,
+    episodeId,
+    milestone: activation.milestone,
+    deltaDecision: activation.deltaDecision,
+    feedbackPatient: activation.feedbackPatient,
+    chargePercue: activation.chargePercue,
+    budgetChargeGlobal: Number(activation.budgetChargeGlobal ?? 0),
+    reviewedAt: row.reviewedAt.toISOString(),
+  };
 }

@@ -1,13 +1,24 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PatientFoodObservationPanel } from './PatientFoodObservationPanel';
 
 describe('PatientFoodObservationPanel', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/portail/ja/decision')) {
+        return new Response(JSON.stringify({ ok: true, hasDecision: false, decision: null }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: false, error: 'Route test non mockée' }), { status: 404 });
+    }));
+  });
+
   afterEach(() => {
     cleanup();
     window.sessionStorage.clear();
+    vi.unstubAllGlobals();
   });
 
   it('demande une friction pour une trace partielle/empêchee', () => {

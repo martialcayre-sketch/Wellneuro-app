@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Persistance API JA5-04"
-statut: "en_cours"
+statut: "termine"
 ---
 
 # LOT-04 — Persistance API JA5-04
