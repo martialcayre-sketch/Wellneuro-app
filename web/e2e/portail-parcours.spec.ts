@@ -413,3 +413,24 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
     });
   });
 });
+
+test('route patient : accès Ma spirale alimentaire (JA5-02)', async ({ page, context }) => {
+  const sessionCookie = await praticienSessionCookie();
+  await context.addCookies([sessionCookie]);
+
+  const creation = await page.request.post('/api/praticien/consultations', {
+    data: { idPatient: PATIENT.idPatient },
+  });
+  expect(creation.ok()).toBe(true);
+  const creationJson = await creation.json();
+  const token = creationJson.accessToken as string;
+
+  const portailSession = await page.request.post('/api/portail/session', {
+    data: { token, email: PATIENT.email },
+  });
+  expect(portailSession.ok()).toBe(true);
+
+  await page.goto(`/portail/${token}/alimentation`);
+  await expect(page).toHaveURL(new RegExp(`/portail/${token}/alimentation$`));
+  await expect(page.getByRole('heading', { name: 'Ma spirale alimentaire' })).toBeVisible();
+});

@@ -227,6 +227,12 @@ export function FichePatientPanel({
               Mode consultation
             </button>
           )}
+          <Link
+            href={`/dashboard/patients/${encodeURIComponent(idPatient)}/alimentation`}
+            className="text-sm text-primary hover:underline"
+          >
+            Trajectoire alimentaire
+          </Link>
           <Link href="/dashboard/patients" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
             ← Retour aux patients
           </Link>
