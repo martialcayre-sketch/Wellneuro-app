@@ -1,7 +1,7 @@
 ---
 id: "2026-07-15-cockpit-vivant"
 titre: "SP-RUN — Cockpit vivant (runtime C1)"
-statut: "en cours — SP-RUN-01 terminé"
+statut: "en cours — SP-RUN-02 implémenté, E2E CI en attente"
 créée_le: "2026-07-15"
 mise_à_jour: "2026-07-17"
 lot_courant: "aucun"
@@ -77,6 +77,25 @@ Sans règle clinique validée supplémentaire, l'abstention reste
 Aucune écriture, migration, persistance, activation ou diffusion n'est
 réalisée. SP-RUN-02 possède le geste UI de confirmation et le branchement du
 cockpit.
+
+## État SP-RUN-02
+
+La fiche patient charge désormais la proposition T0 en lecture seule, affiche
+les réponses dans et hors fenêtre sans exposer les scores, puis exige une
+confirmation explicite, y compris pour un épisode vide. Une proposition
+périmée est rechargée automatiquement et doit être confirmée à nouveau.
+
+Après confirmation, la revue et la carte réelles alimentent le cockpit. La
+décision reste explicitement suspendue avec une abstention `not_evaluated` ;
+le constructeur de protocole et l'aperçu patient restent indisponibles. Le
+mode `validationErgo=c1` conserve la fixture prioritaire et n'appelle jamais
+le runtime réel.
+
+Les tests composants/intégration, Vitest global, type-check, lint, build,
+scoring, audit campagnes et anti-secrets sont validés localement. L'E2E
+PostgreSQL isolé est ajouté mais ne sera exécuté qu'en CI : conformément au
+périmètre de livraison, SP-RUN-02 n'est donc pas marqué terminé et la branche
+n'est ni publiée ni fusionnée.
 
 ## Définition de done
 

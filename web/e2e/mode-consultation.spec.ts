@@ -71,4 +71,19 @@ test.describe('Mode consultation (fiche patient)', () => {
     await expect(page.getByRole('button', { name: 'Mode consultation' })).toBeVisible();
     expect(mutatingRequests).toEqual([]);
   });
+
+  test('confirme T0 et maintient le protocole indisponible sur bureau et mobile', async ({ page, context }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    for (const viewport of [{ width: 1280, height: 800 }, { width: 390, height: 844 }]) {
+      await page.setViewportSize(viewport);
+      await page.goto(`/dashboard/patients/${PATIENT_ID}`);
+      const confirm = page.getByRole('button', { name: 'Confirmer l’épisode T0' });
+      await expect(confirm).toBeVisible();
+      await confirm.click();
+      await expect(page.getByText(/Épisode T0 confirmé/)).toBeVisible();
+      await expect(page.getByText('Aucune priorité proposée')).toBeVisible();
+      await expect(page.getByText('Protocole indisponible — bloqueurs décisionnels à revoir')).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    }
+  });
 });

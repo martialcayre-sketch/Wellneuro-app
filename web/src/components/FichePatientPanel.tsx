@@ -17,10 +17,7 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
 import { PatientPreview } from '@/components/PatientPreview';
-import { MissingDataPanel } from '@/components/patient-cockpit/MissingDataPanel';
-import { DecisionSummaryCard } from '@/components/patient-cockpit/DecisionSummaryCard';
-import { ProtocolMiniBuilder } from '@/components/patient-cockpit/ProtocolMiniBuilder';
-import { ProtocolConsultationPanel } from '@/components/patient-cockpit/ProtocolConsultationPanel';
+import { ClinicalRuntimeSection } from '@/components/patient-cockpit/ClinicalRuntimeSection';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { RelectureProtocoleSoumission } from '@/components/patient-cockpit/ProtocolMiniBuilder';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
@@ -267,28 +264,20 @@ export function FichePatientPanel({
         </div>
       </section>
 
-      {/* Les manques et bloqueurs précèdent toujours la décision. Le flux
-          runtime ClinicalSnapshot/ClinicalReview sera branché dans un lot dédié.
-          En mode validation ergonomique (dev uniquement), la fixture C1 prend
-          la place des null le temps d'exécuter la grille. */}
+      {/* Les manques et bloqueurs précèdent toujours la décision. En mode
+          validation ergonomique, la fixture reste prioritaire et aucun appel
+          au runtime PostgreSQL n'est déclenché. */}
       {fixtureErgo && (
         <div role="status" className="bg-orange-50 border border-accent rounded-xl px-4 py-3 text-sm text-orange-800">
           Mode validation ergonomique — données fictives (fixture C1). Aucune sauvegarde, aucun envoi.
           {erreurErgo && <span className="block mt-1 font-medium">Erreur du harnais : {erreurErgo}</span>}
         </div>
       )}
-      <MissingDataPanel
-        missingData={fixtureErgo ? fixtureErgo.review.missingData : null}
-        discordances={fixtureErgo ? fixtureErgo.review.discordances : null}
-      />
-      <DecisionSummaryCard decisionCard={fixtureErgo ? fixtureErgo.decisionCard : null} />
-      <ProtocolMiniBuilder
-        decisionCard={fixtureErgo ? fixtureErgo.decisionCard : null}
-        onReviewed={fixtureErgo ? relectureErgo : undefined}
-      />
-      <ProtocolConsultationPanel
-        decisionCard={fixtureErgo ? fixtureErgo.decisionCard : null}
-        protocolDraft={fixtureErgo ? protocolDraftErgo : null}
+      <ClinicalRuntimeSection
+        idPatient={idPatient}
+        fixture={fixtureErgo}
+        protocolDraft={protocolDraftErgo}
+        onFixtureReviewed={relectureErgo}
       />
 
       {/* Couvertures descriptives — aucune priorité clinique n'est déduite ici. */}
