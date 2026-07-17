@@ -11,6 +11,14 @@ humain. Une émulation Playwright ne constitue pas une validation ergonomique.
   données entièrement fictives.
 - Fournir une fixture C1 préparée contenant des manques documentés, une
   priorité sélectionnée et trois actions fictives complètes.
+- **Support prêt à l'emploi (harnais dev, PR #90)** : en local
+  (`cd web && npm run dev`), ouvrir la fiche d'un patient avec le paramètre
+  `?validationErgo=c1` — la fixture déterministe (manques documentés,
+  discordance, priorité sélectionnée, protocole relu à trois actions) est
+  construite côté serveur (`validationErgoFixture.ts`) et injectée dans la
+  vraie fiche patient. Développement uniquement : la route
+  `/api/dev/validation-ergo` répond 404 en production. Téléphone physique
+  recommandé (réseau local).
 - Ne donner aucune explication du cockpit avant le départ du chronomètre.
 - Chronométrer séparément compréhension et préparation.
 
