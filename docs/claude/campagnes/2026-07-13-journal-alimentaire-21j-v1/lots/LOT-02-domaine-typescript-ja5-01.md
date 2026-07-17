@@ -1,15 +1,16 @@
 ---
 id: "LOT-02"
 titre: "JA5-01 — Domaine TypeScript pur (noyau amendé par le terrain)"
-statut: "compilé — bloqué par gate JA-00 (JA-0T levé le 2026-07-17)"
-gate: "JA-00 (validation praticien) + JA-0T (GO obtenu le 2026-07-17)"
+statut: "prêt — gates JA-00 et JA-0T levés le 2026-07-17, exécutable"
+gate: "levés — JA-00 (PR #98, 2026-07-17) + JA-0T (GO, 2026-07-17)"
 ---
 
 # LOT-02 (alias JA5-01) — Domaine TypeScript pur
 
 > Id outillage : `LOT-02` ; alias programme **JA5-01**. Compilé le
-> 2026-07-17 après le GO terrain de JA-0T. **Ne pas exécuter avant la levée
-> du gate JA-00** (`LOT-00-audit-clinique-rgpd-ja-00.md`).
+> 2026-07-17 après le GO terrain de JA-0T. Gate JA-00 levé le 2026-07-17
+> (PR #98) : **lot exécutable**. (Référence historique : levée
+> du gate via `LOT-00-audit-clinique-rgpd-ja-00.md`, section Validation.)
 
 ## Objet
 
