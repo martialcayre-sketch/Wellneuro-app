@@ -111,3 +111,48 @@ describe('ProtocolMiniBuilder', () => {
     expect(container.textContent).toContain('aucun produit, forme, marque ou dose');
   });
 });
+
+describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
+  it('n’affiche jamais « enregistrée » tant que le serveur n’a pas confirmé', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="idle" />,
+    );
+    const ui = within(container);
+    expect(ui.getByRole('button', { name: 'Enregistrer la version' })).not.toBeNull();
+    expect(ui.getByText(/Brouillon local — non enregistré/)).not.toBeNull();
+    expect(ui.queryByText(/Version enregistrée/)).toBeNull();
+  });
+
+  it('transmet la soumission validée à onSaveVersion', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSaveVersion).toHaveBeenCalledTimes(1);
+    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.purpose).toBe('Raison fixture');
+    expect(soumission.actions).toHaveLength(1);
+  });
+
+  it('signale les modifications locales après un enregistrement confirmé', () => {
+    const { container, rerender } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="saved" />);
+    expect(ui.getByText(/Version enregistrée sur le serveur/)).not.toBeNull();
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Objectif révisé' } });
+    expect(ui.getByText(/Modifications locales non enregistrées/)).not.toBeNull();
+  });
+});

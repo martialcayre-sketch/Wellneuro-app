@@ -128,6 +128,7 @@ describe('GET /api/praticien/protocoles', () => {
     prisma.protocolDraft.findMany.mockResolvedValue([
       {
         id: 'DRA_1',
+        decisionCardId: 'DEC_1',
         status: 'practitioner_reviewed',
         createdAt: new Date('2026-01-03T00:00:00.000Z'),
         reviewedAt: new Date('2026-01-03T00:00:00.000Z'),
@@ -135,9 +136,16 @@ describe('GET /api/praticien/protocoles', () => {
       },
     ]);
     const res = await GET(new Request('http://localhost/api/praticien/protocoles?idPatient=PAT_1'));
-    const json = (await res.json()) as { ok: boolean; protocoles: Array<{ protocolDraftId: string; milestone: string }> };
+    const json = (await res.json()) as {
+      ok: boolean;
+      protocoles: Array<{ versionId: string; protocolDraftId: string; milestone: string }>;
+    };
     expect(res.status).toBe(200);
-    expect(json.protocoles[0]).toMatchObject({ protocolDraftId: 'DRA_1', milestone: 'T0' });
+    expect(json.protocoles[0]).toMatchObject({
+      versionId: 'DRA_1',
+      protocolDraftId: 'proto_DEC_1',
+      milestone: 'T0',
+    });
     expect(prisma.protocolDraft.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { idPatient: 'PAT_1' } }),
     );
