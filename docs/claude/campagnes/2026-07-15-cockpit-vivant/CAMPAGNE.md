@@ -1,7 +1,7 @@
 ---
 id: "2026-07-15-cockpit-vivant"
 titre: "SP-RUN — Cockpit vivant (runtime C1)"
-statut: "en cours — SP-RUN-02 implémenté, E2E CI en attente"
+statut: "terminé — SP-RUN-02 validé en CI"
 créée_le: "2026-07-15"
 mise_à_jour: "2026-07-17"
 lot_courant: "aucun"
@@ -62,7 +62,7 @@ des contrats ou des règles cliniques C1.
 |---|---|---|
 | SP-RUN-00 | Validation ergonomique praticien (grille C1) + décisions d'ajustement UI éventuelles — **terminé le 2026-07-17** | **levé** |
 | SP-RUN-01 | Route serveur snapshot/review/décision depuis les réponses réelles (lecture seule, versions tracées) — **terminé le 2026-07-17** | SP-RUN-00 ✓ |
-| SP-RUN-02 | Branchement cockpit + états vides/abstention + tests | SP-RUN-01 |
+| SP-RUN-02 | Branchement cockpit + états vides/abstention + tests — **terminé le 2026-07-17** | SP-RUN-01 ✓ |
 
 ## Résultat SP-RUN-01
 
@@ -92,10 +92,10 @@ mode `validationErgo=c1` conserve la fixture prioritaire et n'appelle jamais
 le runtime réel.
 
 Les tests composants/intégration, Vitest global, type-check, lint, build,
-scoring, audit campagnes et anti-secrets sont validés localement. L'E2E
-PostgreSQL isolé est ajouté mais ne sera exécuté qu'en CI : conformément au
-périmètre de livraison, SP-RUN-02 n'est donc pas marqué terminé et la branche
-n'est ni publiée ni fusionnée.
+scoring, audit campagnes et anti-secrets sont validés. L'E2E PostgreSQL isolé
+sur patient fictif, bureau et mobile, a réussi dans la CI de la PR #100. La
+campagne SP-RUN est terminée ; aucune persistance, migration, règle clinique
+ou diffusion patient n'a été ajoutée.
 
 ## Définition de done
 

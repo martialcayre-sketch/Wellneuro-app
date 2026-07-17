@@ -357,3 +357,23 @@ puis compiler JA5-01 ; committer/PR les relevés.
 
 **Questions ouvertes** : inchangées (gate migration C2A LOT-02,
 trust-v1-lot-migration, CNIL écoute ambiante).
+
+## 2026-07-17 — SP-RUN-02 cockpit runtime terminé
+
+**Décisions** : la fiche patient charge et confirme explicitement l'épisode
+T0, puis affiche la revue et la carte C1 réelles. Les réponses hors fenêtre
+restent sélectionnables sans exposer les scores. Proposition périmée,
+épisode vide et indisponibilités sont traités. L'abstention reste
+`not_evaluated` ; protocole et aperçu demeurent bloqués.
+
+**Options écartées** : persistance, jalons post-T0, priorité automatique,
+diffusion patient et refonte générale.
+
+**Validations** : CI PR #100 verte, dont E2E PostgreSQL isolé sur patient
+fictif en bureau/mobile ; tests, build, scoring et anti-secrets réussis.
+
+**Prochaine action prioritaire** : reprendre C2A LOT-00 ; LOT-02 reste soumis
+à confirmation de migration.
+
+**Questions ouvertes** : future refonte à revalider séparément ; gate C2A
+LOT-02 ; trust-v1-lot-migration ; CNIL écoute ambiante.

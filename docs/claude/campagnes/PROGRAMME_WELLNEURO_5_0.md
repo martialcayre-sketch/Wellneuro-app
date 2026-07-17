@@ -43,7 +43,7 @@ lots en branches dérivées ; PR de lot → branche de campagne ; PR finale →
 | # | Campagne | Dossier | Front | Contenu | Gate / dépendance |
 |---|---|---|---|---|---|
 | 1 | **SP-FIL** — Fil du jour v1 | `2026-07-15-fil-du-jour-v1` | praticien | Le Fil devient l'accueil `/dashboard` (cartes « pourquoi maintenant » sur données existantes, métriques en carte), rail regroupé | aucune (données existantes, sans migration) |
-| 2 | **SP-RUN** — Cockpit vivant | `2026-07-15-cockpit-vivant` | praticien | Câbler le runtime C1 : `ClinicalSnapshot`/`ClinicalReview`/`DecisionCard` calculés depuis les vraies réponses (le cockpit est aujourd'hui branché sur `null`) | **gate levé le 2026-07-17** (validation ergonomique réussie sur l'interface actuelle) |
+| 2 | **SP-RUN** — Cockpit vivant | `2026-07-15-cockpit-vivant` | praticien | Runtime C1 et cockpit branchés en lecture seule, avec confirmation T0 explicite et décision prudente | **terminé le 2026-07-17** (validation ergonomique et CI E2E réussies) |
 | 3 | **C2A** — Épisodes & persistance | `2026-07-11-suivi-j7-j14-j21-et-persistance` | deux | Persistance `AssessmentEpisode`/`ProtocolDraft`/check-ins J7-J14-J21 + `RelectureNote` (décision A6-1) | **gate migration Prisma** (confirmation explicite) ; C1 ✓ |
 | 4 | **C2B** — Trajectoire & Spirale | idem (volet B) | praticien | Fiche-trajectoire : la Spirale comme index temporel des épisodes, comparateur multi-épisodes (même instrument, même version), momentum explicable | C2A |
 | 5 | **SP-TT** — Time-travel | à cadrer | praticien | Fiche rechargée à une date passée (snapshots immuables) + **note de relecture** horodatée au présent | C2A + C2B |
