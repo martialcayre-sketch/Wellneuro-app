@@ -11,6 +11,12 @@ humain. Une émulation Playwright ne constitue pas une validation ergonomique.
   données entièrement fictives.
 - Fournir une fixture C1 préparée contenant des manques documentés, une
   priorité sélectionnée et trois actions fictives complètes.
+- **Support prêt à l'emploi** : la page `/dashboard/demo-c1` (connexion
+  praticien requise) monte le cockpit complet sur une fixture Sophie Nicola
+  conforme — Épreuve 1 (manque critique, discordance, priorité sélectionnée,
+  protocole relu non transmis) et Épreuve 2 (constructeur vierge). En local :
+  `cd web && npm run dev` puis `http://localhost:3000/dashboard/demo-c1` ;
+  téléphone physique recommandé (réseau local ou déploiement preview).
 - Ne donner aucune explication du cockpit avant le départ du chronomètre.
 - Chronométrer séparément compréhension et préparation.
 
