@@ -2,8 +2,9 @@
 
 ## Statut
 
-**Non exécutée.** Cette grille exige un praticien réel et un chronométrage
-humain. Une émulation Playwright ne constitue pas une validation ergonomique.
+**Exécutée avec succès le 2026-07-17.** Cette grille a été réalisée par un
+praticien réel avec chronométrage humain sur l'interface actuelle. Le gate
+ergonomique SP-RUN est levé.
 
 ## Préparation
 
@@ -47,13 +48,14 @@ revue, validation et transmission, et sans tentative d’envoi.
 
 | Élément | Résultat |
 |---|---|
-| Praticien / date | Non renseigné |
-| Patient fictif | Non renseigné |
-| Compréhension | Non exécutée |
-| Durée compréhension | Non renseignée |
-| Préparation | Non exécutée |
-| Durée préparation | Non renseignée |
-| Observations | Non renseignées |
+| Praticien / date | Martial CAYRE / 2026-07-17 |
+| Patient fictif | Sophie Nicola |
+| Compréhension | Réussie, sans erreur, hésitation ni aide |
+| Durée compréhension | 1 minute |
+| Préparation | Réussie, sans confusion entre revue, validation et transmission, sans tentative d'envoi |
+| Durée préparation | 5 minutes |
+| Observations | Tout est conforme sur l'interface actuelle. La refonte d'interface n'est pas encore réalisée et n'est pas validée par cette séance. |
 
-Sans relevé réel réussi, le verdict est **ergonomie à valider**. Il ne doit
-jamais être converti implicitement en GO.
+Verdict : **GO ergonomique sur l'interface actuelle**. Le relevé réel
+satisfait les deux seuils et lève explicitement le gate SP-RUN. Toute refonte
+ultérieure devra faire l'objet de sa propre validation proportionnée.

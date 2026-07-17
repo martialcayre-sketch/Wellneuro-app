@@ -299,3 +299,61 @@ activer C5A (candidat naturel de prochaine campagne data).
 
 **Questions ouvertes** : inchangées (SHEET_ID, trust-v1-lot-migration,
 CNIL écoute ambiante).
+## 2026-07-17 — Gate ergonomique C1 levé
+
+**Décisions** : Martial CAYRE a exécuté la grille C1 avec Sophie Nicola,
+patiente fictive. Compréhension réussie en 1 minute et préparation en 5
+minutes, sans erreur, aide, confusion ni tentative d'envoi. Verdict : **GO
+ergonomique sur l'interface actuelle** ; SP-RUN-00 est terminé.
+
+**Options écartées** : étendre ce GO à la refonte d'interface, qui n'est pas
+encore réalisée et devra être validée séparément.
+
+**Prochaine action prioritaire** : compiler SP-RUN-01, sans modifier les
+contrats ni les règles cliniques C1. C2A continue en parallèle sur LOT-00.
+
+**Questions ouvertes** : confirmation de migration C2A LOT-02 toujours
+requise ; périmètre et validation de la future refonte ;
+trust-v1-lot-migration ; CNIL écoute ambiante.
+
+## 2026-07-17 — SP-RUN-01 runtime clinique livré
+
+**Décisions** : route authentifiée `/api/praticien/cockpit` en deux temps :
+proposition T0/J21/J42/J90 hashée, puis confirmation praticien explicite et
+calcul en mémoire de Snapshot/Review/DecisionCard. Les réponses et la dernière
+anamnèse validée sont lues par sélections Prisma minimales. Sans règles
+validées, abstention `not_evaluated` et aucune priorité proposée.
+
+**Options écartées** : confirmation automatique (contraire à C1) ; attente de
+C2A ; persistance ou migration.
+
+**Validations** : 12 tests ciblés, 63 tests clinical-engine, type-check,
+scoring-check (63 questionnaires), anti-secrets et diff-check réussis.
+
+**Prochaine action prioritaire** : SP-RUN-02, geste UI de confirmation puis
+branchement du cockpit et états vides/abstention.
+
+**Questions ouvertes** : gate migration C2A LOT-02 inchangé ; future refonte
+à revalider séparément ; trust-v1-lot-migration ; CNIL écoute ambiante.
+
+## 2026-07-17 — JA-0T terminé : 5 entretiens, GO noyau
+
+**Décisions** : cinq entretiens JA-0T menés et consignés (P1…P5, contextes
+génériques seuls) dans LOT-01 ; verdict **GO noyau** — cases suffisantes
+5/5, budget ≥ 3 traces/sem (4 nets + P5 au seuil), « aide » 5/5, retour de
+décision 5/5. Six enseignements actés, dont trois amendements au noyau
+avant JA5-01 : 4ᵉ option « adapté/partiel/oublié » + mot libre court
+(saturation 5/5), silence patient jamais présenté comme signal négatif,
+budget personnalisable (2-3 à 7/sem). Statut du lot : terminé.
+
+**Options écartées** : report au registre des frontières (le cap ne bouge
+pas) ; compilation JA5-01 immédiate sans amender JA-00.
+
+**Validations** : anti-secrets OK ; contrôle anonymat OK (aucun nom,
+contextes génériques).
+
+**Prochaine action prioritaire** : intégrer les amendements 1-3 à JA-00,
+puis compiler JA5-01 ; committer/PR les relevés.
+
+**Questions ouvertes** : inchangées (gate migration C2A LOT-02,
+trust-v1-lot-migration, CNIL écoute ambiante).
