@@ -1,7 +1,7 @@
 ---
 id: "2026-07-15-cockpit-vivant"
 titre: "SP-RUN — Cockpit vivant (runtime C1)"
-statut: "en cours — SP-RUN-01 terminé"
+statut: "terminé — SP-RUN-02 validé en CI"
 créée_le: "2026-07-15"
 mise_à_jour: "2026-07-17"
 lot_courant: "aucun"
@@ -62,7 +62,7 @@ des contrats ou des règles cliniques C1.
 |---|---|---|
 | SP-RUN-00 | Validation ergonomique praticien (grille C1) + décisions d'ajustement UI éventuelles — **terminé le 2026-07-17** | **levé** |
 | SP-RUN-01 | Route serveur snapshot/review/décision depuis les réponses réelles (lecture seule, versions tracées) — **terminé le 2026-07-17** | SP-RUN-00 ✓ |
-| SP-RUN-02 | Branchement cockpit + états vides/abstention + tests | SP-RUN-01 |
+| SP-RUN-02 | Branchement cockpit + états vides/abstention + tests — **terminé le 2026-07-17** | SP-RUN-01 ✓ |
 
 ## Résultat SP-RUN-01
 
@@ -77,6 +77,25 @@ Sans règle clinique validée supplémentaire, l'abstention reste
 Aucune écriture, migration, persistance, activation ou diffusion n'est
 réalisée. SP-RUN-02 possède le geste UI de confirmation et le branchement du
 cockpit.
+
+## État SP-RUN-02
+
+La fiche patient charge désormais la proposition T0 en lecture seule, affiche
+les réponses dans et hors fenêtre sans exposer les scores, puis exige une
+confirmation explicite, y compris pour un épisode vide. Une proposition
+périmée est rechargée automatiquement et doit être confirmée à nouveau.
+
+Après confirmation, la revue et la carte réelles alimentent le cockpit. La
+décision reste explicitement suspendue avec une abstention `not_evaluated` ;
+le constructeur de protocole et l'aperçu patient restent indisponibles. Le
+mode `validationErgo=c1` conserve la fixture prioritaire et n'appelle jamais
+le runtime réel.
+
+Les tests composants/intégration, Vitest global, type-check, lint, build,
+scoring, audit campagnes et anti-secrets sont validés. L'E2E PostgreSQL isolé
+sur patient fictif, bureau et mobile, a réussi dans la CI de la PR #100. La
+campagne SP-RUN est terminée ; aucune persistance, migration, règle clinique
+ou diffusion patient n'a été ajoutée.
 
 ## Définition de done
 

@@ -14,7 +14,7 @@
 | C1 | Décision clinique 21 jours V1 | **terminée** (2026-07-14 — GO technique ; runtime/activation/diffusion : NO-GO, repris par SP-RUN) | HC-F LOT-02 | 7 |
 | QX | Expérience questionnaires | **terminée** (2026-07-14, renderer `micro_batch` seul activé) | HC-F LOT-01+04 | 5 |
 | **SP-FIL** | Le Fil du jour v1 | **terminée** (2026-07-15 — accueil = Fil, rail regroupé, PR #74-#76) | — | 2 |
-| **SP-RUN** | Cockpit vivant (runtime C1) | **en cours** — SP-RUN-01 runtime lecture seule terminé le 2026-07-17 | SP-RUN-02 | N+1 |
+| **SP-RUN** | Cockpit vivant (runtime C1) | **terminée** — runtime et branchement cockpit validés le 2026-07-17 | — | N+1 |
 | C2A | Points d'étape + persistance minimale | **en cours** — compilée (2026-07-16), gate migration à confirmer avant LOT-02 | C1 ✓ + gate migration | 7 |
 | C2B | Trajectoire et ajustement (→ Spirale) | cadrée | C2A + données réelles | N+1 |
 | C3 | Documents contextuels (→ fil de correspondance) | cadrée | C1 ✓ | N+1 |
