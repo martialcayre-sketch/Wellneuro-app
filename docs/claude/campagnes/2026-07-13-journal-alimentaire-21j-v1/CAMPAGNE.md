@@ -1,10 +1,10 @@
 ---
 id: "2026-07-13-journal-alimentaire-21j-v1"
 titre: "JA — Ma spirale alimentaire (journal alimentaire recadré 5.0)"
-statut: "recadrée 5.0 + adaptation contrepoint — règles cliniques candidates"
+statut: "en compilation — JA-0T terminé (GO), gate JA-00 à lever"
 créée_le: "2026-07-13"
-mise_à_jour: "2026-07-16"
-lot_courant: "aucun"
+mise_à_jour: "2026-07-17"
+lot_courant: "LOT-00"
 ---
 
 # JA — Ma spirale alimentaire
@@ -90,6 +90,18 @@ restitution simple bat le calcul).
   parité papier, delta de décision instrumenté dès le premier lot,
   affichage-avant-moteurs, budget de charge global au protocole (contrainte
   signalée vers C2A).
+- **JA-0T terrain (2026-07-17)** : GO noyau (5 entretiens, aucun critère
+  no-go — voir Enseignements de `lots/LOT-01-validation-terrain-ja-0t.md`).
+  Amendements actés : 4ᵉ option de trace « adapté / partiel / oublié » +
+  mot libre court optionnel (saturation 5/5) ; sémantique du silence
+  patient — l'absence de trace n'est jamais présentée au praticien comme un
+  signal négatif, canal « je n'ai pas pu cette semaine » ; budget
+  d'attention personnalisable (fourchette réelle 2-3 à 7 traces/sem).
+  Anti-patterns confirmés par le vécu : comptage/pesée, objectifs chiffrés
+  affichés, classement bon/mauvais, alertes culpabilisantes, rappels
+  multiples, tout commentaire sur le poids ou l'apparence. Retour de
+  décision court et concret ; téléphone (< 1 min, un seul rappel
+  désactivable), carte papier en repli.
 - Boucle patient-praticien fermée : retour de décision (Relu → Validé →
   Envoyé), tour suivant préparé (praticien seul), charge perçue en clôture.
 - Domaine TypeScript pur avant toute persistance.
@@ -103,9 +115,9 @@ restitution simple bat le calcul).
 
 | Lot | Objet | Gate |
 |---|---|---|
-| JA-00 | Audit clinique/RGPD : registre de marqueurs adossé aux 191 aliments moyens Ciqual (12 vedettes du slice C5 incluses), registre de frictions, couverture, rétention, critères de prudence relationnelle (doc 09 §4.7), arbitrages calibrage restants (doc 11 §12 allégé : questions du bilan, marqueurs pilotes, place du profil dans le ClinicalSnapshot, comparaison questionnaires) | validation praticien |
-| JA-0T | Validation terrain : 5 entretiens patients (E1 boucle courte, E5 acceptabilité — doc 09 §6), test de la carte papier A6, enseignements consignés | — (parallèle à JA-00) ; go/no-go du noyau |
-| JA5-01 | Domaine TypeScript pur : épisode à trois régimes, carrière d'action, question du jour compilée, calibrage (profil minimal + charge), capture occasion/praticabilité/friction, budget d'attention, delta de décision, constats directs, quatre lectures, tests Vitest — restitution simple, **aucun moteur** | JA-00 + JA-0T |
+| JA-00 (`lots/LOT-00-audit-clinique-rgpd-ja-00.md`, compilé) | Audit clinique/RGPD : registre de marqueurs adossé aux 191 aliments moyens Ciqual (12 vedettes du slice C5 incluses), registre de frictions, couverture, rétention, critères de prudence relationnelle (doc 09 §4.7), arbitrages calibrage restants (doc 11 §12 allégé : questions du bilan, marqueurs pilotes, place du profil dans le ClinicalSnapshot, comparaison questionnaires) | validation praticien |
+| JA-0T (`lots/LOT-01-validation-terrain-ja-0t.md`, **terminé — GO** 2026-07-17) | Validation terrain : 5 entretiens patients (E1 boucle courte, E5 acceptabilité — doc 09 §6), test de la carte papier A6, enseignements consignés | — (parallèle à JA-00) ; go/no-go du noyau : **GO** |
+| JA5-01 (`lots/LOT-02-domaine-typescript-ja5-01.md`, compilé) | Domaine TypeScript pur : épisode à trois régimes, carrière d'action, question du jour compilée, calibrage (profil minimal + charge), capture occasion/praticabilité/friction, budget d'attention, delta de décision, constats directs, quatre lectures, tests Vitest — restitution simple, **aucun moteur** — amendé par les enseignements JA-0T | JA-00 + JA-0T (JA-0T levé) |
 | JA5-02 | Parcours patient : question du jour, plan minimal, solutions intra-épisode, parité papier (carte A6 imprimable + saisie praticien en 30 s) | JA5-01 |
 | JA5-03 | Parcours praticien : bilan de calibrage restitué, « 3 moments à explorer » (friction-agenda), revue = décision pré-remplie (Accepter/Modifier), action référençant une assiette recommandée | JA5-02 |
 | JA5-04 | Persistance : épisodes, événements, solutions, carrière d'action, RLS patient-scopé, audit append-only | C2A + confirmation migration explicite |
