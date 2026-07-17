@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "JA5-01 — Domaine TypeScript pur (noyau amendé par le terrain)"
-statut: "prêt — gates JA-00 et JA-0T levés le 2026-07-17, exécutable"
+statut: "livré — domaine implémenté le 2026-07-17 dans web/src/lib/food-observation/"
 gate: "levés — JA-00 (PR #98, 2026-07-17) + JA-0T (GO, 2026-07-17)"
 ---
 
@@ -107,3 +107,19 @@ fixer à l'exécution), sans toucher au runtime existant.
   « recommandation » (jamais « prescription » — R4).
 - Aucun secret, aucune donnée patient réelle ; seuls Sophie Nicola,
   Jennifer Martin, Michel Dogné dans les fixtures de test.
+
+## Livraison (2026-07-17)
+
+Domaine livré dans `web/src/lib/food-observation/` (module pur, aucun
+import Prisma/Next, importable sans effet de bord) :
+
+- `types.ts` (épisode à trois régimes, trace à 4 issues, carrière d'action,
+  budget 2-7, delta de décision, quatre lectures, profil de calibrage non
+  scoré), `frictionRegistry.ts` (F1-F8 v1, mot libre ≤ 80 caractères),
+  `markerRegistry.ts` (12 vedettes, sans code Ciqual), `labels.ts`
+  (français ; « recommandation », jamais « prescription »), `episode.ts`,
+  `trace.ts`, `actionCareer.ts`, `decisionDelta.ts`, `restitution.ts`
+  (neutralité du silence garantie à la construction), `index.ts`.
+- 50 tests Vitest co-localisés (6 fichiers) couvrant tous les critères de
+  done ; `npm run type-check`, suite complète (303 tests) et anti-secrets
+  réussis. Budget par défaut : 3 traces/semaine (politique focalisée D2).
