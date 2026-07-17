@@ -1,13 +1,30 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PractitionerFoodObservationPanel } from './PractitionerFoodObservationPanel';
 
 describe('PractitionerFoodObservationPanel', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('/api/praticien/ja/activation') && (init?.method ?? 'GET') === 'GET') {
+        return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
+      }
+      if (url.includes('/api/praticien/ja/observations')) {
+        return new Response(JSON.stringify({ ok: true, snapshot: { draftId: 'JA_DRAFT_1' } }), { status: 201 });
+      }
+      if (url.includes('/api/praticien/ja/activation') && init?.method === 'POST') {
+        return new Response(JSON.stringify({ ok: true, activation: { draftId: 'JA_ACT_1' } }), { status: 201 });
+      }
+      return new Response(JSON.stringify({ ok: false, error: 'Route test non mockée' }), { status: 404 });
+    }));
+  });
+
   afterEach(() => {
     cleanup();
     window.sessionStorage.clear();
+    vi.unstubAllGlobals();
   });
 
   it('affiche le constat direct initial sans trace', () => {

@@ -58,6 +58,20 @@ type PractitionerFoodObservationDraft = {
   assietteCode: string;
 };
 
+type JaMilestone = 'J7' | 'J14' | 'J21';
+type JaChargePercue = 'faible' | 'moderee' | 'elevee';
+
+type JaActivationSummary = {
+  draftId: string;
+  sourceDraftId: string;
+  milestone: JaMilestone;
+  deltaDecision: string;
+  feedbackPatient: string;
+  chargePercue: JaChargePercue;
+  budgetChargeGlobal: number;
+  reviewedAt: string;
+};
+
 const ASSIETTES_RECOMMANDEES: Array<{ code: string; label: string }> = [
   { code: 'ASSIETTE_PETIT_DEJEUNER_SIMPLE', label: 'Assiette recommandée — Petit-déjeuner simple' },
   { code: 'ASSIETTE_DEJEUNER_EXTERIEUR', label: 'Assiette recommandée — Déjeuner extérieur' },
@@ -161,6 +175,14 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     () => initialDraft?.decisionNote ?? defaultDecisionNote(ASSIETTES_RECOMMANDEES[0].code)
   );
   const [reviewSummary, setReviewSummary] = useState<string>('');
+  const [milestone, setMilestone] = useState<JaMilestone>('J7');
+  const [feedbackPatient, setFeedbackPatient] = useState<string>('');
+  const [chargePercue, setChargePercue] = useState<JaChargePercue>('moderee');
+  const [budgetChargeGlobal, setBudgetChargeGlobal] = useState<number>(7);
+  const [activation, setActivation] = useState<JaActivationSummary | null>(null);
+  const [activationInfo, setActivationInfo] = useState<string>('');
+  const [activationLoading, setActivationLoading] = useState<boolean>(false);
+  const [activationSubmitting, setActivationSubmitting] = useState<boolean>(false);
   const [issue, setIssue] = useState<TraceIssue>('fait');
   const [frictionCode, setFrictionCode] = useState('');
   const [motLibre, setMotLibre] = useState('');
@@ -178,6 +200,40 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   useEffect(() => {
     writeDraft(idPatient, { traces, decisionMode, decisionNote, assietteCode });
   }, [idPatient, traces, decisionMode, decisionNote, assietteCode]);
+
+  useEffect(() => {
+    let mounted = true;
+    setActivationLoading(true);
+    setActivationInfo('');
+
+    const loadActivation = async () => {
+      try {
+        const res = await fetch(`/api/praticien/ja/activation?idPatient=${encodeURIComponent(idPatient)}`, {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+        });
+        const json = (await res.json()) as { ok: boolean; activation?: JaActivationSummary | null; error?: string };
+        if (!mounted) return;
+        if (!res.ok || !json.ok) {
+          setActivationInfo(json.error ?? 'Activation JA indisponible pour le moment.');
+          setActivation(null);
+          return;
+        }
+        setActivation(json.activation ?? null);
+      } catch {
+        if (!mounted) return;
+        setActivationInfo('Activation JA indisponible pour le moment.');
+      } finally {
+        if (mounted) setActivationLoading(false);
+      }
+    };
+
+    void loadActivation();
+    return () => {
+      mounted = false;
+    };
+  }, [idPatient]);
 
   const enregistrerTrace = () => {
     setError('');
@@ -231,6 +287,83 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     const assiette = ASSIETTES_RECOMMANDEES.find((item) => item.code === assietteCode);
     const modeLabel = decisionMode === 'accepter' ? 'Accepté' : 'Modifié';
     setReviewSummary(`${modeLabel} — ${assiette?.label ?? assietteCode}. ${decisionNote}`);
+  };
+
+  const activerDecision = async () => {
+    if (decisionNote.trim().length < 10) {
+      setError('Ajoutez une note de décision d au moins 10 caractères avant activation.');
+      return;
+    }
+    if (feedbackPatient.trim().length < 10) {
+      setError('Ajoutez un retour patient de 10 caractères minimum.');
+      return;
+    }
+
+    setError('');
+    setActivationInfo('');
+    setActivationSubmitting(true);
+
+    try {
+      const snapshotRes = await fetch('/api/praticien/ja/observations', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idPatient,
+          episode,
+          traces,
+          pauses: [],
+          plans: [],
+          solutions: [],
+          actionCareer: [],
+        }),
+      });
+
+      const snapshotJson = (await snapshotRes.json()) as {
+        ok: boolean;
+        snapshot?: { draftId: string };
+        error?: string;
+      };
+
+      if (!snapshotRes.ok || !snapshotJson.ok || !snapshotJson.snapshot?.draftId) {
+        setError(snapshotJson.error ?? 'Impossible de créer le snapshot JA.');
+        return;
+      }
+
+      const activationRes = await fetch('/api/praticien/ja/activation', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idPatient,
+          draftId: snapshotJson.snapshot.draftId,
+          milestone,
+          deltaDecision: decisionNote,
+          feedbackPatient,
+          chargePercue,
+          budgetChargeGlobal,
+        }),
+      });
+
+      const activationJson = (await activationRes.json()) as {
+        ok: boolean;
+        activation?: JaActivationSummary;
+        error?: string;
+      };
+
+      if (!activationRes.ok || !activationJson.ok || !activationJson.activation) {
+        setError(activationJson.error ?? 'Impossible d activer la décision JA.');
+        return;
+      }
+
+      setActivation(activationJson.activation);
+      setActivationInfo('Décision activée et rendue disponible sur le portail patient.');
+      setReviewSummary(`Activation ${activationJson.activation.milestone} validée.`);
+    } catch {
+      setError('Erreur réseau pendant l activation JA.');
+    } finally {
+      setActivationSubmitting(false);
+    }
   };
 
   return (
@@ -424,6 +557,82 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             {reviewSummary}
           </p>
         )}
+
+        <div className="rounded-lg border border-border/70 bg-muted/30 p-3 space-y-3" data-testid="ja-praticien-activation">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Activation protocole JA5-05</p>
+
+          <label className="block text-sm text-muted-foreground">
+            Jalon de phase
+            <select
+              data-testid="ja-praticien-activation-milestone"
+              className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+              value={milestone}
+              onChange={(e) => setMilestone(e.target.value as JaMilestone)}
+            >
+              <option value="J7">J7</option>
+              <option value="J14">J14</option>
+              <option value="J21">J21</option>
+            </select>
+          </label>
+
+          <label className="block text-sm text-muted-foreground">
+            Retour patient (visible portail)
+            <textarea
+              data-testid="ja-praticien-feedback-patient"
+              className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground min-h-20"
+              value={feedbackPatient}
+              onChange={(e) => setFeedbackPatient(e.target.value)}
+              placeholder="Exemple: cette version est mieux tenue sur les jours chargés"
+            />
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm text-muted-foreground">
+              Charge perçue
+              <select
+                data-testid="ja-praticien-charge-percue"
+                className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                value={chargePercue}
+                onChange={(e) => setChargePercue(e.target.value as JaChargePercue)}
+              >
+                <option value="faible">Faible</option>
+                <option value="moderee">Modérée</option>
+                <option value="elevee">Élevée</option>
+              </select>
+            </label>
+
+            <label className="block text-sm text-muted-foreground">
+              Budget charge global (1-21)
+              <input
+                data-testid="ja-praticien-budget-global"
+                type="number"
+                min={1}
+                max={21}
+                className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+                value={budgetChargeGlobal}
+                onChange={(e) => setBudgetChargeGlobal(Number(e.target.value || 1))}
+              />
+            </label>
+          </div>
+
+          <button
+            data-testid="ja-praticien-activer-decision"
+            type="button"
+            onClick={activerDecision}
+            disabled={activationSubmitting}
+            className="w-full sm:w-auto rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-60"
+          >
+            {activationSubmitting ? 'Activation en cours…' : 'Activer la décision JA'}
+          </button>
+
+          {activationLoading && <p className="text-xs text-muted-foreground">Chargement de l activation en cours…</p>}
+          {activationInfo && <p className="text-xs text-primary">{activationInfo}</p>}
+          {activation && (
+            <p className="text-xs text-foreground rounded-lg border border-border px-3 py-2" data-testid="ja-praticien-activation-summary">
+              Activation active: {activation.milestone} · charge {activation.chargePercue} · budget {activation.budgetChargeGlobal}.
+            </p>
+          )}
+        </div>
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-historique">
@@ -444,7 +653,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </section>
 
       <section className="bg-muted border border-border rounded-xl p-4 text-xs text-muted-foreground">
-        Version locale de travail JA5-03: aucune ecriture base, aucune migration, aucune diffusion patient automatique.
+        Version JA5-05: activation praticien et restitution patient via API, sans migration Prisma.
       </section>
     </div>
   );
