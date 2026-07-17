@@ -21,6 +21,9 @@ import { MissingDataPanel } from '@/components/patient-cockpit/MissingDataPanel'
 import { DecisionSummaryCard } from '@/components/patient-cockpit/DecisionSummaryCard';
 import { ProtocolMiniBuilder } from '@/components/patient-cockpit/ProtocolMiniBuilder';
 import { ProtocolConsultationPanel } from '@/components/patient-cockpit/ProtocolConsultationPanel';
+import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
+import type { RelectureProtocoleSoumission } from '@/components/patient-cockpit/ProtocolMiniBuilder';
+import type { ProtocolDraft } from '@/lib/clinical-engine/types';
 
 type ScoreCertification = { source?: string; status?: string };
 
@@ -99,7 +102,13 @@ function LegendeNiveauxPreuve() {
   );
 }
 
-export function FichePatientPanel({ idPatient }: { idPatient: string }) {
+export function FichePatientPanel({
+  idPatient,
+  fixtureValidationErgo = null,
+}: {
+  idPatient: string;
+  fixtureValidationErgo?: ValidationErgoC1Fixture | null;
+}) {
   const [data, setData] = useState<EquilibreApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [reponses, setReponses] = useState<ReponseQuestionnaire[]>([]);
@@ -107,6 +116,34 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
   const [assignationsModif, setAssignationsModif] = useState<PatientsApiResponse['assignations']>([]);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
+  // Harnais de validation ergonomique C1 (dev uniquement — voir
+  // validationErgoFixture.ts) : la fixture est construite côté serveur par la
+  // page et reçue en prop ; le brouillon relu (Épreuve 2) est construit par le
+  // moteur via la route dev /api/dev/validation-ergo. Rien n'est sauvegardé
+  // ni transmis au patient.
+  const fixtureErgo = fixtureValidationErgo;
+  const [protocolDraftErgo, setProtocolDraftErgo] = useState<ProtocolDraft | null>(null);
+  const [erreurErgo, setErreurErgo] = useState<string | null>(null);
+
+  const relectureErgo = (soumission: RelectureProtocoleSoumission) => {
+    fetch('/api/dev/validation-ergo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(soumission),
+    })
+      .then(async r => {
+        const payload = await r.json();
+        if (!r.ok || !payload.protocolDraft) {
+          throw new Error(typeof payload.error === 'string' ? payload.error : 'Réponse inattendue.');
+        }
+        setProtocolDraftErgo(payload.protocolDraft as ProtocolDraft);
+        setErreurErgo(null);
+      })
+      .catch((error: unknown) => {
+        setProtocolDraftErgo(null);
+        setErreurErgo(error instanceof Error ? error.message : 'Impossible de construire le brouillon relu.');
+      });
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -231,11 +268,28 @@ export function FichePatientPanel({ idPatient }: { idPatient: string }) {
       </section>
 
       {/* Les manques et bloqueurs précèdent toujours la décision. Le flux
-          runtime ClinicalSnapshot/ClinicalReview sera branché dans un lot dédié. */}
-      <MissingDataPanel missingData={null} discordances={null} />
-      <DecisionSummaryCard decisionCard={null} />
-      <ProtocolMiniBuilder decisionCard={null} />
-      <ProtocolConsultationPanel decisionCard={null} protocolDraft={null} />
+          runtime ClinicalSnapshot/ClinicalReview sera branché dans un lot dédié.
+          En mode validation ergonomique (dev uniquement), la fixture C1 prend
+          la place des null le temps d'exécuter la grille. */}
+      {fixtureErgo && (
+        <div role="status" className="bg-orange-50 border border-accent rounded-xl px-4 py-3 text-sm text-orange-800">
+          Mode validation ergonomique — données fictives (fixture C1). Aucune sauvegarde, aucun envoi.
+          {erreurErgo && <span className="block mt-1 font-medium">Erreur du harnais : {erreurErgo}</span>}
+        </div>
+      )}
+      <MissingDataPanel
+        missingData={fixtureErgo ? fixtureErgo.review.missingData : null}
+        discordances={fixtureErgo ? fixtureErgo.review.discordances : null}
+      />
+      <DecisionSummaryCard decisionCard={fixtureErgo ? fixtureErgo.decisionCard : null} />
+      <ProtocolMiniBuilder
+        decisionCard={fixtureErgo ? fixtureErgo.decisionCard : null}
+        onReviewed={fixtureErgo ? relectureErgo : undefined}
+      />
+      <ProtocolConsultationPanel
+        decisionCard={fixtureErgo ? fixtureErgo.decisionCard : null}
+        protocolDraft={fixtureErgo ? protocolDraftErgo : null}
+      />
 
       {/* Couvertures descriptives — aucune priorité clinique n'est déduite ici. */}
       <section>
