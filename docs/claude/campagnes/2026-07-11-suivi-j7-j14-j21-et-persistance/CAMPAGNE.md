@@ -4,7 +4,7 @@ titre: "C2 — Points d'étape et persistance (C2A/C2B)"
 statut: "en_cours — compilée, gate migration à confirmer avant LOT-02"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-17"
-lot_courant: "LOT-03"
+lot_courant: "LOT-04"
 ---
 
 # C2 — Points d'étape et persistance
@@ -98,7 +98,7 @@ sont remplacés) :
 | LOT-00 | Audit des flux et besoins de persistance | **terminé** (2026-07-17) |
 | LOT-01 | Spécification du modèle et gate migration | **terminé** (2026-07-17) |
 | LOT-02 | Migration Prisma et API minimale | **terminé** (2026-07-17, gate levé) |
-| LOT-03 | Versionnement et validation du protocole | à_faire |
+| LOT-03 | Versionnement et validation du protocole | **livré** (2026-07-17, PR #103 Part A + #107 Part B ; CI PR à confirmer) |
 | LOT-04 | Check-ins et décision J21 | à_faire |
 | LOT-05 | Compagnon patient minimal | à_faire |
 | LOT-06 | Tests, rétrocompatibilité et handoff | à_faire |
