@@ -15,7 +15,7 @@
 | QX | Expérience questionnaires | **terminée** (2026-07-14, renderer `micro_batch` seul activé) | HC-F LOT-01+04 | 5 |
 | **SP-FIL** | Le Fil du jour v1 | **terminée** (2026-07-15 — accueil = Fil, rail regroupé, PR #74-#76) | — | 2 |
 | **SP-RUN** | Cockpit vivant (runtime C1) | cadrée — **gate humain** (validation ergonomique C1) | gate | N+1 |
-| C2A | Points d'étape + persistance minimale | cadrée | C1 ✓ + gate migration | N+1 |
+| C2A | Points d'étape + persistance minimale | **en cours** — compilée (2026-07-16), gate migration à confirmer avant LOT-02 | C1 ✓ + gate migration | 7 |
 | C2B | Trajectoire et ajustement (→ Spirale) | cadrée | C2A + données réelles | N+1 |
 | C3 | Documents contextuels (→ fil de correspondance) | cadrée | C1 ✓ | N+1 |
 | C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : intrinsèque ; C4B : C1/C2 | N+1 |

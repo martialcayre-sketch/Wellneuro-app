@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-suivi-j7-j14-j21-et-persistance"
 titre: "C2 — Points d'étape et persistance (C2A/C2B)"
-statut: "cadrée — lots à compiler N+1"
+statut: "en_cours — compilée, gate migration à confirmer avant LOT-02"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-13"
-lot_courant: "aucun"
+mise_à_jour: "2026-07-16"
+lot_courant: "LOT-00"
 ---
 
 # C2 — Points d'étape et persistance
@@ -87,9 +87,32 @@ R8-lite, primitives HC-F, rendu documentaire C3 (pour le résumé J21 envoyé).
 **Ne possède pas** : score, jalons de mesure, contenu du protocole,
 documents, saisie ou agrégats du journal alimentaire JA.
 
-## Esquisse de lots (à compiler N+1)
+## Compilation (2026-07-16) — volet C2A
 
-LOT-00 audit persistance + arbitrage V1 avec/sans migration →
-LOT-01 contrat check-in + timeline factuelle → LOT-02 check-in patient +
-états de sauvegarde → LOT-03 vue praticien points d'étape + résumé J21 →
-LOT-04 validation. C2B : compilation séparée après données réelles.
+Les lots détaillés sont compilés dans `lots/` depuis les brouillons
+`sources/lots/` (les squelettes auto-générés LOT-00-cadrage…LOT-04-validation
+sont remplacés) :
+
+| Lot | Objet | Statut |
+|---|---|---|
+| LOT-00 | Audit des flux et besoins de persistance | à_faire |
+| LOT-01 | Spécification du modèle et gate migration | à_faire |
+| LOT-02 | Migration Prisma et API minimale | **bloqué_confirmation** |
+| LOT-03 | Versionnement et validation du protocole | à_faire |
+| LOT-04 | Check-ins et décision J21 | à_faire |
+| LOT-05 | Compagnon patient minimal | à_faire |
+| LOT-06 | Tests, rétrocompatibilité et handoff | à_faire |
+
+Décisions de compilation :
+
+- **V1 avec persistance** (la question ouverte du cadrage est tranchée),
+  l'exécution restant suspendue au gate migration : sans confirmation
+  humaine explicite et distincte, la campagne s'arrête à la spec LOT-01 sans
+  toucher `schema.prisma`.
+- **Nommage registre 5.0** (ADR) : `AssessmentEpisode`, `ProtocolDraft`,
+  `ProtocolCheckin`, `RelectureNote` (A6-1) — voir
+  `SPEC_LOT-01_MODELE_PERSISTANCE.md` (proposition document-only rédigée à
+  la compilation, à valider en LOT-00/LOT-01 ; contient la checklist de
+  confirmation du gate, section 6).
+
+C2B : compilation séparée après données réelles.
