@@ -1,8 +1,8 @@
 ---
 id: "LOT-00"
 titre: "JA-00 — Audit clinique/RGPD des registres et arbitrages calibrage"
-statut: "audit préparé — propositions soumises à validation praticien"
-gate: "validation praticien (aucune implémentation avant levée)"
+statut: "terminé — validé praticien le 2026-07-17 (PR #98), gate levé"
+gate: "levé le 2026-07-17 — validation praticien (approbation PR #98)"
 ---
 
 # LOT-00 (alias JA-00) — Audit clinique/RGPD
@@ -169,11 +169,11 @@ suppression ni de renumérotation pendant un épisode en cours.
 
 | Section | Verdict praticien (valider / modifier) | Date |
 |---|---|---|
-| A1 Marqueurs | | |
-| A2 Frictions v1 | | |
-| A3 Couverture/rétention | | |
-| A4 Prudence relationnelle | | |
-| A5 Arbitrages calibrage | | |
+| A1 Marqueurs | Validé (approbation PR #98) | 2026-07-17 |
+| A2 Frictions v1 | Validé (approbation PR #98) | 2026-07-17 |
+| A3 Couverture/rétention | Validé (approbation PR #98) | 2026-07-17 |
+| A4 Prudence relationnelle | Validé (approbation PR #98) | 2026-07-17 |
+| A5 Arbitrages calibrage | Validé (approbation PR #98) | 2026-07-17 |
 
 **Levée du gate** : les cinq sections validées (mention datée ci-dessus ou
 approbation de la PR d'audit consignée ici) ⇒ gate JA-00 levé ⇒ JA5-01
