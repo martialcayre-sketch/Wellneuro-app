@@ -19,7 +19,7 @@ test.describe('Praticien Dashboard', () => {
 
     // Vérifie que la page est chargée et que les éléments clés sont présents
     await expect(page).toHaveTitle(/Dashboard|Praticien/i); // Adjust title expectation
-    
+
     // Vérifie que le titre du dashboard est visible
     const mainHeading = page.locator('h1, h2').filter({ hasText: /Dashboard|Espace praticien|Bienvenue|Bonjour/i });
     await expect(mainHeading.first()).toBeVisible({ timeout: 10000 });
@@ -47,7 +47,7 @@ test.describe('Praticien Dashboard', () => {
 
     // Vérifie que la page patients est chargée
     await expect(page).toHaveURL(/.*\/dashboard\/patients/);
-    
+
     // Attends un élément indicatif de contenu chargé
     // (peut être une liste vide initialement, un titre, etc.)
     const content = page.locator('main, [role="main"], article');
@@ -163,6 +163,15 @@ test.describe('Praticien Dashboard', () => {
     await expect(page.getByPlaceholder('Nom *', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Créer le patient' })).toBeVisible();
     await expect(page.getByRole('table').first()).toBeVisible();
+  });
+
+  test('route praticien : accès Trajectoire alimentaire (JA5-02)', async ({ page }) => {
+    const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
+    await page.context().addCookies([sessionCookie]);
+
+    await page.goto('/dashboard/patients/PAT_SEED_03/alimentation');
+    await expect(page).toHaveURL(/\/dashboard\/patients\/PAT_SEED_03\/alimentation$/);
+    await expect(page.getByRole('heading', { name: 'Trajectoire alimentaire' })).toBeVisible();
   });
 
   test('session expires on missing NEXTAUTH_SECRET', async ({ page }) => {

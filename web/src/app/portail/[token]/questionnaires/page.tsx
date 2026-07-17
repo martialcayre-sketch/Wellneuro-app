@@ -205,6 +205,18 @@ export default function QuestionnairesHubPage() {
         title="Mes questionnaires"
         subtitle={`${patient ? `Bonjour ${patient.prenom}. ` : ''}Vous pouvez les compléter dans l’ordre qui vous convient. Votre praticien recevra uniquement les questionnaires transmis.`}
       />
+      <PatientCard padding="sm" className="border-primary/30">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Ma spirale alimentaire</p>
+        <p className="text-sm text-foreground">
+          Journal d’essai court pour préparer votre prochain point d’étape, sans détailler tous les repas.
+        </p>
+        <a
+          href={`/portail/${token}/alimentation`}
+          className={`mt-3 inline-flex items-center justify-center ${patientButtonClassName('ghost')}`}
+        >
+          Ouvrir Ma spirale alimentaire
+        </a>
+      </PatientCard>
       <div className="flex flex-wrap gap-3 -mt-3 text-sm">
         <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 font-medium">
           {aCompleter} à compléter{dureeACompleterMin > 0 ? ` · ≈ ${dureeACompleterMin} min` : ''}
