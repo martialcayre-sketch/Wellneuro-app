@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte d'essai — Ma spirale alimentaire (A6)</title>
+<style>
+  :root {
+    --encre: #1f2a24;
+    --sourdine: #5c6b62;
+    --trait: #b9c4bc;
+    --fond: #fffdf8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: Georgia, "Times New Roman", serif;
+    background: #e8e6e0;
+    color: var(--encre);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px;
+    justify-content: center;
+  }
+  .carte {
+    width: 105mm;
+    height: 148mm;
+    background: var(--fond);
+    border: 1px solid var(--trait);
+    padding: 7mm 7mm 5mm;
+    display: flex;
+    flex-direction: column;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  h1 {
+    font-size: 11pt;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .sous-titre { font-size: 7.5pt; color: var(--sourdine); margin-top: 1mm; }
+  .champ {
+    font-size: 8pt;
+    margin-top: 3mm;
+    display: flex;
+    gap: 2mm;
+    align-items: baseline;
+  }
+  .champ .ligne {
+    flex: 1;
+    border-bottom: 0.4pt solid var(--sourdine);
+    min-height: 4mm;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 4mm;
+    font-size: 7pt;
+  }
+  th, td {
+    border: 0.4pt solid var(--trait);
+    padding: 1.2mm 1mm;
+    text-align: center;
+    vertical-align: middle;
+  }
+  th {
+    font-weight: 700;
+    font-size: 6.5pt;
+    color: var(--sourdine);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  td.jour {
+    font-weight: 700;
+    width: 9mm;
+    font-size: 7.5pt;
+  }
+  .cases { white-space: nowrap; font-size: 7pt; }
+  .case {
+    display: inline-block;
+    width: 3.2mm;
+    height: 3.2mm;
+    border: 0.6pt solid var(--encre);
+    vertical-align: middle;
+    margin-right: 0.8mm;
+  }
+  .etiquette { font-size: 6.3pt; color: var(--encre); margin-right: 1.6mm; }
+  .frictions td { text-align: left; font-size: 6.3pt; padding: 1mm 1.5mm; }
+  .pied {
+    margin-top: auto;
+    padding-top: 2.5mm;
+    border-top: 0.4pt solid var(--trait);
+    font-size: 6.5pt;
+    color: var(--sourdine);
+    line-height: 1.45;
+  }
+  @media print {
+    body { background: none; padding: 0; gap: 0; }
+    .carte { border: 0.4pt dashed var(--trait); }
+    @page { margin: 5mm; }
+  }
+</style>
+</head>
+<body>
+  <div class="carte">
+    <h1>Ma spirale alimentaire — semaine d'essai</h1>
+    <p class="sous-titre">Quelques repères suffisent. Une case vide n'est jamais une faute.</p>
+
+    <div class="champ"><span>Ce que nous essayons :</span><span class="ligne"></span></div>
+    <div class="champ"><span>Semaine du :</span><span class="ligne" style="max-width:30mm"></span></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Jour</th>
+          <th>L'occasion s'est<br>présentée ?</th>
+          <th>C'était faisable ?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="jour">L</td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">non</span></td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">en adaptant</span><span class="case"></span><span class="etiquette">pas ce jour</span></td></tr>
+        <tr><td class="jour">M</td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">non</span></td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">en adaptant</span><span class="case"></span><span class="etiquette">pas ce jour</span></td></tr>
+        <tr><td class="jour">M</td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">non</span></td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">en adaptant</span><span class="case"></span><span class="etiquette">pas ce jour</span></td></tr>
+        <tr><td class="jour">J</td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">non</span></td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">en adaptant</span><span class="case"></span><span class="etiquette">pas ce jour</span></td></tr>
+        <tr><td class="jour">V</td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">non</span></td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">en adaptant</span><span class="case"></span><span class="etiquette">pas ce jour</span></td></tr>
+        <tr><td class="jour">S</td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">non</span></td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">en adaptant</span><span class="case"></span><span class="etiquette">pas ce jour</span></td></tr>
+        <tr><td class="jour">D</td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">non</span></td><td class="cases"><span class="case"></span><span class="etiquette">oui</span><span class="case"></span><span class="etiquette">en adaptant</span><span class="case"></span><span class="etiquette">pas ce jour</span></td></tr>
+      </tbody>
+    </table>
+
+    <table class="frictions">
+      <tbody>
+        <tr>
+          <td>
+            <strong>Qu'est-ce qui a surtout compté cette semaine ?</strong> (entourez, plusieurs choix possibles)<br>
+            temps &nbsp;·&nbsp; pas disponible &nbsp;·&nbsp; appétit &nbsp;·&nbsp; coût &nbsp;·&nbsp; repas partagé &nbsp;·&nbsp; oubli &nbsp;·&nbsp; autre : ________
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Ce qui a aidé :</strong> ______________________________________________</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="pied">
+      Ces repères servent uniquement à préparer votre prochain rendez-vous.
+      Rien n'est noté sur vous : on regarde si <em>l'action</em> est réalisable
+      dans votre vie, pas si vous avez « bien fait ». Semaine chargée ?
+      Rapportez la carte vide, c'est une information utile aussi.
+    </p>
+  </div>
+</body>
+</html>
