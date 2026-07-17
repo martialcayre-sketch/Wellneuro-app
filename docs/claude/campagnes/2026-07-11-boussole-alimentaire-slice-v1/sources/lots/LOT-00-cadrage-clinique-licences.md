@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Cadrage clinique, sources et licences"
-statut: "à_faire"
+statut: "livré — validation praticien via revue de PR"
 dépend_de: "aucun"
 ---
 
@@ -44,10 +44,10 @@ Spécification clinique du slice et liste de 12 aliments maximum.
 
 ## Étapes
 
-- [ ] Valider distinction intrinsèque/contextuel.
-- [ ] Choisir aliments.
-- [ ] Définir libellés patient.
-- [ ] Documenter sources.
+- [x] Valider distinction intrinsèque/contextuel.
+- [x] Choisir aliments (liste candidate de 12, validation praticien requise).
+- [x] Définir libellés patient (principes non absolus ; noms de fiches au lot UX).
+- [x] Documenter sources (Ciqual/Etalab 2.0 ; OFF/ODbL différé hors slice data).
 
 ## Tests
 
@@ -59,8 +59,8 @@ Spécification clinique du slice et liste de 12 aliments maximum.
 
 ## Critères de done
 
-- [ ] Aucun axe hors slice n’est inclus.
-- [ ] Vocabulaire non absolu.
+- [x] Aucun axe hors slice n’est inclus.
+- [x] Vocabulaire non absolu.
 
 ## Risques / points de vigilance
 
@@ -68,4 +68,16 @@ Spécification clinique du slice et liste de 12 aliments maximum.
 
 ## Résultats
 
-À compléter à la clôture du lot : fichiers modifiés, commandes exécutées, captures, écarts, dette restante et décision de poursuite.
+- **Livrable** : `../../SPEC_SLICE_BESOIN_1_LOT-00.md` — distinction
+  intrinsèque/contextuel confirmée, 5 variables besoin 1 (constituants
+  Ciqual), liste **candidate** de 12 aliments vedettes (+ alternatives),
+  libellés patient non absolus, licences documentées (Ciqual Etalab 2.0
+  avec attribution ; OFF/ODbL différé hors slice data ; preuve niveau B).
+- **Commandes** : `bash scripts/check_no_secrets.sh` (vert) ;
+  `type-check`/`scoring-check` non applicables (aucun code touché) ; smoke
+  test navigateur non applicable (aucune interface touchée).
+- **Écarts** : aucun code Ciqual ni valeur embarqués (résolus au LOT-02
+  depuis la table officielle — « aucune valeur inventée »).
+- **Dette / suite** : validation praticien de la liste = revue de cette PR ;
+  toute substitution à répercuter sur A7-12 (marqueurs JA). Poursuite :
+  LOT-01 (mapping et normalisation, versionné).

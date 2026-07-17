@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-boussole-alimentaire-slice-v1"
 titre: "C5 — Boussole alimentaire (intrinsèque/contextuel)"
-statut: "cadrée — lots à compiler N+1"
+statut: "en_cours — LOT-00 livré (validation praticien via revue de PR)"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-13"
-lot_courant: "aucun"
+mise_à_jour: "2026-07-17"
+lot_courant: "LOT-01"
 ---
 
 # C5 — Boussole alimentaire
