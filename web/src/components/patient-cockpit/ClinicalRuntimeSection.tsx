@@ -4,12 +4,20 @@ import { useCallback, useEffect, useState } from 'react';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
-import type { RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
+import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import { EpisodeConfirmationPanel } from './EpisodeConfirmationPanel';
 import { MissingDataPanel } from './MissingDataPanel';
 import { DecisionSummaryCard } from './DecisionSummaryCard';
 import { ProtocolMiniBuilder } from './ProtocolMiniBuilder';
 import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
+import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
+
+type VersionsApiResponse = {
+  ok: boolean;
+  active: { versionId: string } | null;
+  history: ProtocolVersionItem[];
+  error?: string;
+};
 
 type RuntimeError = 'session' | 'patient' | 'technical';
 
@@ -29,6 +37,25 @@ export function ClinicalRuntimeSection({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<RuntimeError | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Versionnement persistant (C2A LOT-03) — actif hors mode fixture uniquement.
+  const [versions, setVersions] = useState<ProtocolVersionItem[]>([]);
+  const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<ProtocolSaveState>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const loadVersions = useCallback(async (decisionCardId: string) => {
+    try {
+      const response = await fetch(
+        `/api/praticien/protocoles/versions?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
+      );
+      const payload = (await response.json()) as VersionsApiResponse;
+      if (!response.ok || !payload.ok) return;
+      setVersions(payload.history);
+      setActiveVersionId(payload.active?.versionId ?? null);
+    } catch {
+      // L'historique est indicatif : un échec de lecture ne bloque pas la saisie.
+    }
+  }, [idPatient]);
 
   const loadProposal = useCallback(async (stale = false) => {
     if (fixture) return;
@@ -95,6 +122,46 @@ export function ClinicalRuntimeSection({
     }
   };
 
+  // Charge l'historique des versions dès que le runtime réel est prêt.
+  const readyDecisionCardId =
+    !fixture && runtime?.status === 'ready' ? runtime.decisionCard.decisionCardId : null;
+  useEffect(() => {
+    if (readyDecisionCardId) void loadVersions(readyDecisionCardId);
+  }, [readyDecisionCardId, loadVersions]);
+
+  // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
+  // d'envoi patient). Anti-écrasement via baseVersionId → 409 version_stale.
+  const saveVersion = async (submission: RelectureProtocoleSoumission) => {
+    if (fixture || !runtime || runtime.status !== 'ready') return;
+    const episode = runtime.snapshot.assessmentEpisode;
+    const decisionCard = runtime.decisionCard;
+    setSaveState('saving');
+    setSaveError(null);
+    try {
+      const response = await fetch('/api/praticien/protocoles/versions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ episode, decisionCard, submission, baseVersionId: activeVersionId }),
+      });
+      const payload = (await response.json()) as { ok: boolean; error?: string };
+      if (response.status === 409) {
+        setSaveState('stale');
+        await loadVersions(decisionCard.decisionCardId);
+        return;
+      }
+      if (!response.ok || !payload.ok) {
+        setSaveState('error');
+        setSaveError(payload.error ?? 'Échec de l’enregistrement.');
+        return;
+      }
+      setSaveState('saved');
+      await loadVersions(decisionCard.decisionCardId);
+    } catch {
+      setSaveState('error');
+      setSaveError('Erreur technique lors de l’enregistrement.');
+    }
+  };
+
   const review = fixture?.review ?? (runtime?.status === 'ready' ? runtime.review : null);
   const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
 
@@ -128,8 +195,15 @@ export function ClinicalRuntimeSection({
 
       <MissingDataPanel missingData={review?.missingData ?? null} discordances={review?.discordances ?? null} />
       <DecisionSummaryCard decisionCard={decisionCard} />
-      <ProtocolMiniBuilder decisionCard={decisionCard} onReviewed={fixture ? onFixtureReviewed : undefined} />
+      <ProtocolMiniBuilder
+        decisionCard={decisionCard}
+        onReviewed={fixture ? onFixtureReviewed : undefined}
+        onSaveVersion={fixture ? undefined : saveVersion}
+        saveState={saveState}
+        saveError={saveError}
+      />
       <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
+      {!fixture && <ProtocolVersionHistory versions={versions} />}
     </>
   );
 }

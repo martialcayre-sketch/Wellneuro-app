@@ -79,4 +79,45 @@ est identifiable sans ambiguïté.
 
 ## Résultats
 
-À compléter à la clôture du lot : fichiers modifiés, commandes exécutées, captures, écarts, dette restante et décision de poursuite.
+### Part A — versionnement + validation « Relu » (2026-07-17, sans migration)
+
+Livrée sur la branche `feat/c2a-lot-03-versionnement`. Aucun changement de
+`schema.prisma` ni de migration (colonnes figées §8.9 suffisantes).
+
+- **Couche `web/src/lib/protocol/`** : `versioning.ts` (`deriveVersionId`,
+  `deriveProtocolDraftId`, `resolveActiveVersion`, `clinicalContentHash`,
+  `isClinicalChange`, `toEpisodeCreateInput`, `toDraftCreateInput`) et
+  `fromPrisma.ts` (`reconstructProtocolDraft` avec re-vérification d'empreinte —
+  comble le trou LOT-02). Tests unitaires dédiés.
+- **Route `POST/GET /api/praticien/protocoles/versions`** : versions append-only
+  chaînées (`supersedes_draft_id` enfin écrit), id de ligne dérivé
+  `${protocolDraftId}#${inputHash}` (déviation §8.6 assumée, contrat réutilisant
+  l'id ; regroupement par `decision_card_id`). Changement clinique = comparaison
+  d'un `clinicalContentHash` **sans horodatage** (une simple re-sauvegarde n'est
+  pas une version). Anti-écrasement `baseVersionId` → **409 `version_stale`**.
+  Reprise des validations `not_confirmed`/`draft_invalid`. GET = version active +
+  historique, borné à l'`idPatient`.
+- **Refactor route LOT-02** vers `toDraftCreateInput`/`toEpisodeCreateInput`
+  (comportement idempotent inchangé) ; GET expose `versionId` + `protocolDraftId`
+  logique.
+- **UI cockpit** : `ProtocolMiniBuilder` gagne un bouton **« Enregistrer la
+  version »** explicite + état de sauvegarde (jamais « Enregistré » avant
+  confirmation serveur ; « Modifications locales non enregistrées » après édition).
+  `ClinicalRuntimeSection` branche le vrai chemin persistant (POST/GET versions,
+  gestion 409, `ProtocolVersionHistory`). Le mode fixture dev reste isolé (aucune
+  sauvegarde). Aucun envoi patient.
+
+**Validations Part A** : type-check ✅ · vitest 334/334 ✅ · lint ✅ ·
+scoring-check (63) ✅ · anti-secrets ✅ · audit campagnes ✅.
+
+### Part B — persistance « Validé pour diffusion » (à venir, 2ᵉ gate migration)
+
+Reste à livrer : table additive `protocol_diffusion_approvals` (contrat
+`ProtocolDiffusionApproval`) + route diffusion + bascule UI. **Nécessite une
+session dédiée** relancée avec `WN_ALLOW_PROTECTED_WRITE=1` +
+`WN_ALLOW_RISKY_COMMAND=1`. « Envoyé »/transmission différé à LOT-05.
+
+### Décision de poursuite
+
+LOT-03 **partiellement livré** (Part A). Statut maintenu `à_faire` jusqu'à Part B
+(gate). Aucun envoi automatique introduit ; moteur clinique inchangé.
