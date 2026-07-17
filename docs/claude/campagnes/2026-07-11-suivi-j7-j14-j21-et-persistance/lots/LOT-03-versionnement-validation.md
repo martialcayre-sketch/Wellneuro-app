@@ -110,14 +110,40 @@ Livrée sur la branche `feat/c2a-lot-03-versionnement`. Aucun changement de
 **Validations Part A** : type-check ✅ · vitest 334/334 ✅ · lint ✅ ·
 scoring-check (63) ✅ · anti-secrets ✅ · audit campagnes ✅.
 
-### Part B — persistance « Validé pour diffusion » (à venir, 2ᵉ gate migration)
+### Part B — persistance « Validé pour diffusion » (2026-07-17, 2ᵉ gate levé)
 
-Reste à livrer : table additive `protocol_diffusion_approvals` (contrat
-`ProtocolDiffusionApproval`) + route diffusion + bascule UI. **Nécessite une
-session dédiée** relancée avec `WN_ALLOW_PROTECTED_WRITE=1` +
-`WN_ALLOW_RISKY_COMMAND=1`. « Envoyé »/transmission différé à LOT-05.
+Gate migration confirmé par l'utilisateur ; session dédiée relancée avec
+`WN_ALLOW_PROTECTED_WRITE=1` + `WN_ALLOW_RISKY_COMMAND=1`.
+
+- **Migration additive `20260717130000_c2a_diffusion_v1`** : table
+  `protocol_diffusion_approvals` (mapping 1:1 du contrat `ProtocolDiffusionApproval`),
+  FK → `patients(id_patient)` et `protocol_drafts(id)` `ON DELETE RESTRICT`, RLS
+  deny-all sans policy (motif `trust_v1`/`c2a_persistance_v1`). Générée par
+  `prisma migrate diff` (parité schéma↔migration par construction) ; RLS ajoutée à
+  la main. Aucune table existante modifiée ; rollback = `DROP TABLE`.
+- **Couche `web/src/lib/protocol/diffusion.ts`** : `validateDiffusionApproval`
+  (invariants sans recharger la DecisionCard : version relue, ancrage par hash,
+  approbation postérieure à la relecture, confirmation praticien),
+  `resolveActiveApproval` (tête de chaîne append-only), `isApprovalStale`
+  (caduque dès qu'une nouvelle version est enregistrée). Tests unitaires.
+- **Route `POST/GET /api/praticien/protocoles/diffusion`** : persiste
+  l'approbation ancrée sur la version (`protocol_draft_input_hash`), append-only
+  chaînée (`supersedes_approval_id`), idempotente ; accès borné à l'`idPatient`
+  (404 inter-patient). GET = approbation active + indicateur de caducité. Tests.
+- **UI** : `ProtocolDiffusionPanel` (état « Validé pour diffusion / Non validé »,
+  toujours « Non transmis », re-validation si caduque). `ClinicalRuntimeSection`
+  charge l'état de diffusion et POSTe l'approbation ; une nouvelle version rend
+  l'approbation caduque.
+
+**« Envoyé »/transmission différé à LOT-05** (le contrat n'a que le littéral
+`not_transmitted` ; aucun canal patient). **Jamais d'envoi automatique.**
+
+**Validations Part B** : type-check ✅ · vitest (protocole+cockpit 67) ✅ ·
+`prisma validate` ✅ · gate de dérive schéma↔migrations sur base éphémère
+(`test:worktree`) ✅.
 
 ### Décision de poursuite
 
-LOT-03 **partiellement livré** (Part A). Statut maintenu `à_faire` jusqu'à Part B
-(gate). Aucun envoi automatique introduit ; moteur clinique inchangé.
+LOT-03 **livré** (Part A + Part B). La migration se déploiera en production via
+`migrate deploy` au merge sur `main` (pipeline Vercel), jamais à la main. Moteur
+clinique inchangé ; aucun envoi automatique introduit.

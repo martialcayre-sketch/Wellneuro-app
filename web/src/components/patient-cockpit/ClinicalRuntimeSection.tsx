@@ -11,12 +11,19 @@ import { DecisionSummaryCard } from './DecisionSummaryCard';
 import { ProtocolMiniBuilder } from './ProtocolMiniBuilder';
 import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
+import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 
 type VersionsApiResponse = {
   ok: boolean;
   active: { versionId: string } | null;
   history: ProtocolVersionItem[];
   error?: string;
+};
+
+type DiffusionApiResponse = {
+  ok: boolean;
+  approval: { protocolDraftInputHash: string; approvedAt: string } | null;
+  stale: boolean;
 };
 
 type RuntimeError = 'session' | 'patient' | 'technical';
@@ -42,6 +49,25 @@ export function ClinicalRuntimeSection({
   const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<ProtocolSaveState>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Validation « pour diffusion » (C2A LOT-03 Part B).
+  const [approvedAt, setApprovedAt] = useState<string | null>(null);
+  const [approvalStale, setApprovalStale] = useState(false);
+  const [diffusionState, setDiffusionState] = useState<DiffusionState>('idle');
+  const [diffusionError, setDiffusionError] = useState<string | null>(null);
+
+  const loadDiffusion = useCallback(async (decisionCardId: string) => {
+    try {
+      const response = await fetch(
+        `/api/praticien/protocoles/diffusion?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
+      );
+      const payload = (await response.json()) as DiffusionApiResponse;
+      if (!response.ok || !payload.ok) return;
+      setApprovedAt(payload.approval?.approvedAt ?? null);
+      setApprovalStale(payload.stale);
+    } catch {
+      // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
+    }
+  }, [idPatient]);
 
   const loadVersions = useCallback(async (decisionCardId: string) => {
     try {
@@ -122,12 +148,16 @@ export function ClinicalRuntimeSection({
     }
   };
 
-  // Charge l'historique des versions dès que le runtime réel est prêt.
+  // Charge l'historique des versions et l'état de diffusion dès que le runtime
+  // réel est prêt.
   const readyDecisionCardId =
     !fixture && runtime?.status === 'ready' ? runtime.decisionCard.decisionCardId : null;
   useEffect(() => {
-    if (readyDecisionCardId) void loadVersions(readyDecisionCardId);
-  }, [readyDecisionCardId, loadVersions]);
+    if (readyDecisionCardId) {
+      void loadVersions(readyDecisionCardId);
+      void loadDiffusion(readyDecisionCardId);
+    }
+  }, [readyDecisionCardId, loadVersions, loadDiffusion]);
 
   // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
   // d'envoi patient). Anti-écrasement via baseVersionId → 409 version_stale.
@@ -155,15 +185,52 @@ export function ClinicalRuntimeSection({
         return;
       }
       setSaveState('saved');
+      // Une nouvelle version rend l'approbation précédente caduque : recharger.
       await loadVersions(decisionCard.decisionCardId);
+      await loadDiffusion(decisionCard.decisionCardId);
     } catch {
       setSaveState('error');
       setSaveError('Erreur technique lors de l’enregistrement.');
     }
   };
 
+  // Validation explicite « pour diffusion » de la version active relue. Jamais
+  // d'envoi patient : l'approbation ne fait qu'attester le contenu.
+  const approveForDiffusion = async () => {
+    if (fixture || !readyDecisionCardId) return;
+    const activeVersion = versions.find((version) => version.isActive);
+    if (!activeVersion || activeVersion.status !== 'practitioner_reviewed') return;
+    setDiffusionState('saving');
+    setDiffusionError(null);
+    try {
+      const response = await fetch('/api/praticien/protocoles/diffusion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idPatient,
+          decisionCardId: readyDecisionCardId,
+          protocolDraftInputHash: activeVersion.inputHash,
+        }),
+      });
+      const payload = (await response.json()) as { ok: boolean; error?: string };
+      if (!response.ok || !payload.ok) {
+        setDiffusionState('error');
+        setDiffusionError(payload.error ?? 'Échec de la validation.');
+        return;
+      }
+      setDiffusionState('idle');
+      await loadDiffusion(readyDecisionCardId);
+    } catch {
+      setDiffusionState('error');
+      setDiffusionError('Erreur technique lors de la validation.');
+    }
+  };
+
   const review = fixture?.review ?? (runtime?.status === 'ready' ? runtime.review : null);
   const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
+  const activeReviewedVersion = versions.find(
+    (version) => version.isActive && version.status === 'practitioner_reviewed',
+  );
 
   return (
     <>
@@ -204,6 +271,17 @@ export function ClinicalRuntimeSection({
       />
       <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
       {!fixture && <ProtocolVersionHistory versions={versions} />}
+      {!fixture && versions.length > 0 && (
+        <ProtocolDiffusionPanel
+          canApprove={Boolean(activeReviewedVersion)}
+          approved={approvedAt !== null}
+          stale={approvalStale}
+          approvedAt={approvedAt}
+          state={diffusionState}
+          error={diffusionError}
+          onApprove={approveForDiffusion}
+        />
+      )}
     </>
   );
 }

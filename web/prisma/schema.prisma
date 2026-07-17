@@ -38,9 +38,10 @@ model Patient {
   trustPrivacyIncidents     TrustPrivacyIncident[]
   trustRightsRequests       TrustRightsRequest[]
 
-  assessmentEpisodes AssessmentEpisode[]
-  protocolDrafts     ProtocolDraft[]
-  protocolCheckins   ProtocolCheckin[]
+  assessmentEpisodes         AssessmentEpisode[]
+  protocolDrafts             ProtocolDraft[]
+  protocolCheckins           ProtocolCheckin[]
+  protocolDiffusionApprovals ProtocolDiffusionApproval[]
 
   @@map("patients")
 }
@@ -696,9 +697,10 @@ model ProtocolDraft {
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  patient  Patient            @relation(fields: [idPatient], references: [idPatient])
-  episode  AssessmentEpisode? @relation(fields: [assessmentEpisodeId], references: [id])
-  checkins ProtocolCheckin[]
+  patient             Patient                     @relation(fields: [idPatient], references: [idPatient])
+  episode             AssessmentEpisode?          @relation(fields: [assessmentEpisodeId], references: [id])
+  checkins            ProtocolCheckin[]
+  diffusionApprovals  ProtocolDiffusionApproval[]
 
   @@index([idPatient, createdAt], map: "c2a_draft_patient_created_idx")
   @@index([decisionCardId], map: "c2a_draft_decision_card_idx")
@@ -728,4 +730,30 @@ model ProtocolCheckin {
   @@index([protocolDraftId], map: "c2a_checkin_draft_idx")
   @@index([idAssignation], map: "c2a_checkin_assignation_idx")
   @@map("protocol_checkins")
+}
+
+// Approbation praticien « pour diffusion » (C2A LOT-03 Part B). Mapping 1:1 du
+// contrat ProtocolDiffusionApproval : « Validé pour diffusion », distinct de la
+// relecture (reviewed_at). Append-only chaîné (supersedes_approval_id) — jamais
+// de réécriture. Ancrée par protocol_draft_input_hash : caduque dès qu'une
+// nouvelle version du protocole est enregistrée. Ne déclenche AUCUN envoi
+// patient (transmission différée à un lot ultérieur).
+model ProtocolDiffusionApproval {
+  id                     String   @id @default(cuid()) @map("id")
+  idPatient              String   @map("id_patient")
+  protocolDraftId        String   @map("protocol_draft_id")
+  decisionCardInputHash  String   @map("decision_card_input_hash")
+  protocolDraftInputHash String   @map("protocol_draft_input_hash")
+  approvedAt             DateTime @map("approved_at")
+  approvedBy             String   @default("practitioner") @map("approved_by")
+  confirmation           String   @map("confirmation") // content_approved_for_diffusion
+  supersedesApprovalId   String?  @map("supersedes_approval_id")
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  patient Patient       @relation(fields: [idPatient], references: [idPatient])
+  draft   ProtocolDraft @relation(fields: [protocolDraftId], references: [id])
+
+  @@index([idPatient], map: "c2a_diffusion_patient_idx")
+  @@index([protocolDraftId], map: "c2a_diffusion_draft_idx")
+  @@map("protocol_diffusion_approvals")
 }
