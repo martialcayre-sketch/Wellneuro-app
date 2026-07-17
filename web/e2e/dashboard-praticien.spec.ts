@@ -165,13 +165,20 @@ test.describe('Praticien Dashboard', () => {
     await expect(page.getByRole('table').first()).toBeVisible();
   });
 
-  test('route praticien : accès Trajectoire alimentaire (JA5-02)', async ({ page }) => {
+  test('route praticien : accès Trajectoire alimentaire (JA5-03)', async ({ page }) => {
     const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
     await page.context().addCookies([sessionCookie]);
 
     await page.goto('/dashboard/patients/PAT_SEED_03/alimentation');
     await expect(page).toHaveURL(/\/dashboard\/patients\/PAT_SEED_03\/alimentation$/);
     await expect(page.getByRole('heading', { name: 'Trajectoire alimentaire' })).toBeVisible();
+    await expect(page.getByTestId('ja-praticien-calibrage')).toBeVisible();
+    await expect(page.getByTestId('ja-praticien-moments-explorer')).toBeVisible();
+    await expect(page.getByTestId('ja-praticien-revue-decision')).toBeVisible();
+
+    await page.getByTestId('ja-praticien-assiette').selectOption('ASSIETTE_SOIR_LEGER');
+    await page.getByTestId('ja-praticien-valider-revue').click();
+    await expect(page.getByTestId('ja-praticien-review-summary')).toContainText('Accepté');
   });
 
   test('session expires on missing NEXTAUTH_SECRET', async ({ page }) => {

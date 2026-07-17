@@ -6,6 +6,7 @@ import {
   FRICTIONS,
   LABELS_CONSTATS_DIRECTS,
   LABELS_ISSUE_TRACE,
+  type FrictionCode,
   createAttentionBudget,
   createEpisode,
   createTrialTrace,
@@ -52,7 +53,48 @@ function buildEpisode(patientId: string): FoodObservationEpisode {
 
 type PractitionerFoodObservationDraft = {
   traces: TrialTrace[];
+  decisionMode: 'accepter' | 'modifier';
+  decisionNote: string;
+  assietteCode: string;
 };
+
+const ASSIETTES_RECOMMANDEES: Array<{ code: string; label: string }> = [
+  { code: 'ASSIETTE_PETIT_DEJEUNER_SIMPLE', label: 'Assiette recommandée — Petit-déjeuner simple' },
+  { code: 'ASSIETTE_DEJEUNER_EXTERIEUR', label: 'Assiette recommandée — Déjeuner extérieur' },
+  { code: 'ASSIETTE_SOIR_LEGER', label: 'Assiette recommandée — Soir léger' },
+];
+
+function defaultDecisionNote(assietteCode: string): string {
+  const assiette = ASSIETTES_RECOMMANDEES.find((item) => item.code === assietteCode);
+  const label = assiette?.label ?? ASSIETTES_RECOMMANDEES[0].label;
+  return `Décision proposée : poursuivre l’essai avec ${label.toLowerCase()} pendant 7 jours.`;
+}
+
+function topMomentsToExplore(traces: TrialTrace[]): string[] {
+  const counts = new Map<FrictionCode, number>();
+  traces.forEach((trace) => {
+    if (!trace.frictionCode) return;
+    const current = counts.get(trace.frictionCode) ?? 0;
+    counts.set(trace.frictionCode, current + 1);
+  });
+
+  const ordered = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([code]) => FRICTIONS[code]);
+
+  if (ordered.length === 3) {
+    return ordered;
+  }
+
+  const fallback = [
+    'Le matin, quand le rythme démarre vite',
+    'Le déjeuner hors de chez soi',
+    'Le soir en cas de fatigue',
+  ];
+
+  return [...ordered, ...fallback].slice(0, 3);
+}
 
 function draftKey(idPatient: string): string {
   return `wellneuro:ja5-02:praticien:${idPatient}`;
@@ -65,7 +107,19 @@ function readDraft(idPatient: string): PractitionerFoodObservationDraft | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PractitionerFoodObservationDraft>;
     if (!Array.isArray(parsed.traces)) return null;
-    return { traces: parsed.traces };
+    const decisionMode = parsed.decisionMode === 'modifier' ? 'modifier' : 'accepter';
+    const assietteCode = typeof parsed.assietteCode === 'string' && parsed.assietteCode.length > 0
+      ? parsed.assietteCode
+      : ASSIETTES_RECOMMANDEES[0].code;
+    const decisionNote = typeof parsed.decisionNote === 'string'
+      ? parsed.decisionNote
+      : defaultDecisionNote(assietteCode);
+    return {
+      traces: parsed.traces,
+      decisionMode,
+      decisionNote,
+      assietteCode,
+    };
   } catch {
     return null;
   }
@@ -93,14 +147,26 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   const [initialDraft] = useState<PractitionerFoodObservationDraft | null>(() => readDraft(idPatient));
   const [draftRestored, setDraftRestored] = useState<boolean>(() => {
     if (!initialDraft) return false;
-    return initialDraft.traces.length > 0;
+    return initialDraft.traces.length > 0 || initialDraft.decisionNote.length > 0;
   });
   const [episode] = useState<FoodObservationEpisode>(() => buildEpisode(idPatient));
   const [traces, setTraces] = useState<TrialTrace[]>(() => initialDraft?.traces ?? []);
+  const [decisionMode, setDecisionMode] = useState<'accepter' | 'modifier'>(
+    () => initialDraft?.decisionMode ?? 'accepter'
+  );
+  const [assietteCode, setAssietteCode] = useState<string>(
+    () => initialDraft?.assietteCode ?? ASSIETTES_RECOMMANDEES[0].code
+  );
+  const [decisionNote, setDecisionNote] = useState<string>(
+    () => initialDraft?.decisionNote ?? defaultDecisionNote(ASSIETTES_RECOMMANDEES[0].code)
+  );
+  const [reviewSummary, setReviewSummary] = useState<string>('');
   const [issue, setIssue] = useState<TraceIssue>('fait');
   const [frictionCode, setFrictionCode] = useState('');
   const [motLibre, setMotLibre] = useState('');
   const [error, setError] = useState('');
+
+  const momentsToExplore = useMemo(() => topMomentsToExplore(traces), [traces]);
 
   const constats = useMemo(() => listDirectFindings({
     joursSansTrace: traces.length === 0 ? 7 : 0,
@@ -110,8 +176,8 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   }), [traces]);
 
   useEffect(() => {
-    writeDraft(idPatient, { traces });
-  }, [idPatient, traces]);
+    writeDraft(idPatient, { traces, decisionMode, decisionNote, assietteCode });
+  }, [idPatient, traces, decisionMode, decisionNote, assietteCode]);
 
   const enregistrerTrace = () => {
     setError('');
@@ -138,11 +204,33 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   const resetLocalDraft = () => {
     clearDraft(idPatient);
     setTraces([]);
+    setDecisionMode('accepter');
+    setAssietteCode(ASSIETTES_RECOMMANDEES[0].code);
+    setDecisionNote(defaultDecisionNote(ASSIETTES_RECOMMANDEES[0].code));
+    setReviewSummary('');
     setIssue('fait');
     setFrictionCode('');
     setMotLibre('');
     setError('');
     setDraftRestored(false);
+  };
+
+  const onAssietteChange = (value: string) => {
+    setAssietteCode(value);
+    if (decisionMode === 'accepter') {
+      setDecisionNote(defaultDecisionNote(value));
+    }
+  };
+
+  const validerRevue = () => {
+    if (decisionMode === 'modifier' && decisionNote.trim().length < 10) {
+      setError('En mode Modifier, ajoute une note de décision plus précise (10 caractères minimum).');
+      return;
+    }
+    setError('');
+    const assiette = ASSIETTES_RECOMMANDEES.find((item) => item.code === assietteCode);
+    const modeLabel = decisionMode === 'accepter' ? 'Accepté' : 'Modifié';
+    setReviewSummary(`${modeLabel} — ${assiette?.label ?? assietteCode}. ${decisionNote}`);
   };
 
   return (
@@ -151,7 +239,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         <div>
           <h2 className="font-display text-2xl font-bold text-foreground">Trajectoire alimentaire</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Prototype JA5-02 local: saisie praticien en 30 secondes, sans persistance.
+            Prototype JA5-03 local: revue praticien guidée, sans persistance.
           </p>
         </div>
         <Link href={`/dashboard/patients/${encodeURIComponent(idPatient)}`} className="text-sm text-muted-foreground hover:underline">
@@ -251,6 +339,93 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         )}
       </section>
 
+      <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-calibrage">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bilan de calibrage restitué</h3>
+        <p className="text-sm text-foreground">Structure observée: 3 prises principales, variabilité surtout le soir.</p>
+        <p className="text-sm text-foreground">Charge supportable déclarée: 3 traces par semaine.</p>
+        <p className="text-sm text-muted-foreground">Marqueurs saillants: petit-déjeuner sauté, dîner tardif, collation de fatigue.</p>
+      </section>
+
+      <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-moments-explorer">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 moments à explorer</h3>
+        <ul className="space-y-1 text-sm text-foreground">
+          {momentsToExplore.map((moment) => (
+            <li key={moment}>• {moment}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-revue-decision">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Revue pré-remplie (Accepter / Modifier)</h3>
+
+        <label className="block text-sm text-muted-foreground">
+          Action liée à une assiette recommandée
+          <select
+            data-testid="ja-praticien-assiette"
+            className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground"
+            value={assietteCode}
+            onChange={(e) => onAssietteChange(e.target.value)}
+          >
+            {ASSIETTES_RECOMMANDEES.map((assiette) => (
+              <option key={assiette.code} value={assiette.code}>{assiette.label}</option>
+            ))}
+          </select>
+        </label>
+
+        <fieldset className="space-y-2" data-testid="ja-praticien-decision-mode">
+          <legend className="text-sm text-muted-foreground">Décision praticien</legend>
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <input
+              type="radio"
+              name="decision-mode"
+              value="accepter"
+              checked={decisionMode === 'accepter'}
+              onChange={() => {
+                setDecisionMode('accepter');
+                setDecisionNote(defaultDecisionNote(assietteCode));
+              }}
+            />
+            Accepter
+          </label>
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <input
+              type="radio"
+              name="decision-mode"
+              value="modifier"
+              checked={decisionMode === 'modifier'}
+              onChange={() => setDecisionMode('modifier')}
+            />
+            Modifier
+          </label>
+        </fieldset>
+
+        <label className="block text-sm text-muted-foreground">
+          Note de décision
+          <textarea
+            data-testid="ja-praticien-decision-note"
+            className="w-full mt-1 px-3 py-2 border border-border rounded-lg bg-surface text-foreground min-h-24"
+            value={decisionNote}
+            onChange={(e) => setDecisionNote(e.target.value)}
+            placeholder="Exemple: version simple maintenue, secours activé sur les dîners tardifs"
+          />
+        </label>
+
+        <button
+          data-testid="ja-praticien-valider-revue"
+          type="button"
+          onClick={validerRevue}
+          className="w-full sm:w-auto rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:opacity-90"
+        >
+          Valider la revue locale
+        </button>
+
+        {reviewSummary && (
+          <p className="text-sm text-foreground rounded-lg border border-border px-3 py-2" data-testid="ja-praticien-review-summary">
+            {reviewSummary}
+          </p>
+        )}
+      </section>
+
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-historique">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Historique local</h3>
         {traces.length === 0 ? (
@@ -269,7 +444,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </section>
 
       <section className="bg-muted border border-border rounded-xl p-4 text-xs text-muted-foreground">
-        Version locale de travail JA5-02: aucune ecriture base, aucune migration, aucune diffusion patient automatique.
+        Version locale de travail JA5-03: aucune ecriture base, aucune migration, aucune diffusion patient automatique.
       </section>
     </div>
   );

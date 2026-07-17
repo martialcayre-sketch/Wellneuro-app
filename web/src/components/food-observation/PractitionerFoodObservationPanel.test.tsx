@@ -30,7 +30,7 @@ describe('PractitionerFoodObservationPanel', () => {
     fireEvent.click(screen.getByTestId('ja-praticien-enregistrer'));
 
     expect(screen.queryByText(/précise la friction/i)).toBeNull();
-    expect(screen.getByText(/Pas le temps, journée trop chargée/i)).toBeTruthy();
+    expect(screen.getAllByText(/Pas le temps, journée trop chargée/i).length).toBeGreaterThan(0);
   });
 
   it('restaure l’historique local après remount', () => {
@@ -53,5 +53,29 @@ describe('PractitionerFoodObservationPanel', () => {
     fireEvent.click(screen.getByTestId('ja-praticien-reset-local'));
     expect(screen.queryByText('Brouillon local restauré sur cet appareil.')).toBeNull();
     expect(screen.getByText('Aucune trace praticien enregistrée.')).toBeTruthy();
+  });
+
+  it('pré-remplit la revue en mode Accepter avec assiette recommandée', () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+
+    fireEvent.change(screen.getByTestId('ja-praticien-assiette'), {
+      target: { value: 'ASSIETTE_SOIR_LEGER' },
+    });
+    fireEvent.click(screen.getByTestId('ja-praticien-valider-revue'));
+
+    expect(screen.getByTestId('ja-praticien-review-summary').textContent).toMatch(/Accepté/i);
+    expect(screen.getByTestId('ja-praticien-review-summary').textContent).toMatch(/soir léger/i);
+  });
+
+  it('demande une note explicite en mode Modifier', () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+
+    fireEvent.click(screen.getByLabelText('Modifier'));
+    fireEvent.change(screen.getByTestId('ja-praticien-decision-note'), {
+      target: { value: 'Court' },
+    });
+    fireEvent.click(screen.getByTestId('ja-praticien-valider-revue'));
+
+    expect(screen.getByText(/note de décision plus précise/i)).toBeTruthy();
   });
 });
