@@ -462,3 +462,35 @@ prod via `migrate deploy` au merge de la branche sur `main`.
 **Questions ouvertes** : merge/déploiement de la branche LOT-02 ; `relecture_notes`
 différée à SP-TT ; nettoyage email-gate ; future refonte à revalider ; CNIL écoute
 ambiante.
+
+## [2026-07-17] — C2A LOT-03 livré (versionnement + validation diffusion)
+
+**Décisions** : LOT-03 découpé et livré en deux PR. **Part A (#103, sans
+migration)** : versionnement append-only du protocole côté persistance (le contrat
+réutilisant `protocolDraftId`, id de ligne = `protocolDraftId#inputHash`,
+`supersedes_draft_id` enfin écrit, changement clinique via `clinicalContentHash` sans
+horodatage, 409 `version_stale`), nouvelle couche `lib/protocol/`, route
+`/versions`, UI « Enregistrer la version » explicite + historique. **Part B (#107,
+2ᵉ gate migration levé)** : migration additive `c2a_diffusion_v1` (table
+`protocol_diffusion_approvals`), `lib/protocol/diffusion.ts`, route `/diffusion`
+(approbation ancrée par hash, caduque si nouvelle version), `ProtocolDiffusionPanel`.
+
+**Options écartées** : persister le snapshot ; table `patient_protocol_views` ;
+conflater l'approbation dans `protocol_drafts` (§8.6) ; envoi patient (différé LOT-05).
+
+**Incident de session** : deux sessions Claude Code (extension sans flags / terminal
+avec flags) ; le commit Part A avait été laissé sur une branche réinitialisée,
+récupéré via reflog puis rebasé sur `main`. Garde-fous `WN_ALLOW_*` respectés (jamais
+contournés) — migration faite en session dédiée.
+
+**Validations** : type-check ✅, vitest (protocole+cockpit 67) ✅, `prisma validate`
+✅, **gate de dérive schéma↔migrations vert sur base éphémère** (`migrate deploy` +
+`migrate diff` + seed). E2E local ROUGE (crash serveur `next dev` sous contraintes
+conteneur + arbre pollué par changements JA5-02 non commités, non liés au code
+LOT-03) → autorité = CI des PR.
+
+**Prochaine action prioritaire** : surveiller la CI de #103 puis #107 ; merger
+Part A avant Part B (re-cibler #107 sur `main`). Puis C2A LOT-04 (check-ins J21).
+
+**Questions ouvertes** : CI des PR #103/#107 ; « Envoyé »/transmission (LOT-05) ;
+trust-v1-lot-migration ; CNIL écoute ambiante.
