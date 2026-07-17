@@ -169,3 +169,228 @@ l'activation de campagne, ni un « ok » général ne valent confirmation) :
 Tant que cette checklist n'est pas cochée : LOT-02 reste
 `bloqué_confirmation`, `schema.prisma` et `web/prisma/migrations/` restent
 intouchés.
+
+---
+
+## 7. Amendements issus de l'audit LOT-00 (2026-07-17)
+
+> L'audit LOT-00 (`lots/LOT-00-audit-flux-persistance.md`, section Résultats) a
+> confronté les sections 1 à 6 au code réel. La proposition reste **globalement
+> valide** ; les points ci-dessous la corrigent là où elle contredit le code. Les
+> sections d'origine ne sont pas réécrites (traçabilité proposition → audit). Les
+> constats 2, 3 et 4 touchent la provenance/sécurité et **doivent être tranchés en
+> LOT-01 avant la levée du gate**.
+
+1. **`assessment_episodes.input_hash` — à corriger (§3).** Le
+   `ConfirmedAssessmentEpisode` (`web/src/lib/clinical-engine/assessmentEpisode.ts`)
+   n'a **pas** de hash propre : c'est une sélection de réponses. Le hash canonique
+   naît sur le `ClinicalSnapshot` (`clinicalSnapshot.ts`). → Retirer `input_hash` de
+   la table épisode, ou le remplacer explicitement par le `proposalHash` runtime
+   (`runtimeFromPrisma.ts`) sous un nom non ambigu. Corriger aussi `contract_version` :
+   l'épisode se rattache à `objets-cliniques-v1`, pas à `c1-clinical-snapshot-v1`.
+
+2. **Provenance de hash pendante — à trancher (§3, §4).** La table `protocol_drafts`
+   référence `decision_card_input_hash` alors que DecisionCard/Review/Snapshot ne
+   sont pas persistés (choix « snapshot recalculable »). La chaîne d'intégrité
+   (`snapshot → review → decision_card → protocol_draft`) devient invérifiable sans
+   recalcul. → **Option A** : persister a minima l'`input_hash` de la DecisionCard
+   (petite table de provenance). **Option B** : documenter que la vérification exige
+   un recalcul depuis les réponses. À décider en LOT-01.
+
+3. **Lecture patient de `protocol_drafts` — à corriger (§4).** La matrice accorde au
+   patient `read` sur `protocol_drafts` « via `PatientProtocolView` », mais
+   `PatientProtocolView` (`patientProtocolView.ts`, `c1-patient-protocol-view-v1`)
+   est un **objet dérivé distinct** et aucune table `patient_protocol_views` n'existe
+   dans la spec. → Le patient ne lit **jamais** `protocol_drafts`. Ajouter une vue
+   patient (persistée à la diffusion, ou dérivée à la volée) et retirer la ligne
+   patient de `protocol_drafts` dans la matrice §4.
+
+4. **Autorisation des check-ins non modélisée — à corriger (§3, §4).** La session
+   portail est scopée **par assignation** (`isSessionAuthorizedForAssignment`,
+   `web/src/lib/patient-session.ts`), or `protocol_checkins` ne porte pas
+   d'`id_assignation`. → Documenter le chemin d'autorisation d'écriture
+   (`session.idPatient` → `protocol_checkins.id_patient`) et **exclure explicitement**
+   le chemin legacy email-gate (email + idAssignation sans token) de toute écriture
+   de check-in. Envisager une colonne `id_assignation` pour rattacher le check-in à
+   l'assignation active.
+
+5. **Unicité `(protocol_draft_id, point_etape)` vs append-only — à corriger (§3).**
+   La contrainte d'unicité empêche toute correction patient d'un check-in, ce qui
+   contredit le principe append-only (§2). → Préférer une correction = **nouvelle
+   ligne chaînée** (colonne `supersedes_checkin_id`, pattern `trust_choice_events`)
+   plutôt qu'une unicité stricte.
+
+6. **PK = identifiant du contrat (§2, §3).** Plutôt que `id @default(cuid())`,
+   utiliser l'`*Id` déjà porté par l'objet C1 (`assessmentEpisodeId`,
+   `protocolDraftId`, …) comme clé primaire, pour préserver la provenance
+   (hash-chain) et rendre les écritures **idempotentes**. Le pattern `trust_*` génère
+   un cuid car ses événements n'ont pas d'id métier amont ; ici il en existe un.
+
+7. **`relecture_notes` : report recommandé à SP-TT (§3, §6).** Aucun contrat
+   `RelectureNote` n'existe dans le code (`web/src/lib/`). L'option §3/§6 « différer à
+   SP-TT » est **retenue par l'audit** : première migration plus étroite (3 tables :
+   épisodes, drafts, check-ins), sans impact sur les autres. La checklist §6 (case
+   « `relecture_notes` incluse ou différée ») penche donc vers **différée**.
+
+8. **Granularité praticien — hypothèse à consigner (§4).** L'audit confirme un modèle
+   **mono-praticien** : tout praticien authentifié du domaine voit tous les patients
+   (`getServerSession` + `if(!session)`, aucun filtre par identité). La matrice §4 est
+   correcte à cette hypothèse près, qui doit être **explicitée** et non traitée comme
+   un oubli.
+
+**Conséquence sur le gate (§6).** La première case de la checklist (« spec validée,
+amendée le cas échéant par LOT-00/LOT-01 ») ne pourra être cochée qu'après arbitrage
+des constats 2, 3, 4 en LOT-01. La deuxième case (`relecture_notes` incluse/différée)
+est éclairée par le constat 7 (recommandation : différée).
+
+---
+
+## 8. Décisions LOT-01 — arbitrage des constats (2026-07-17)
+
+> Audit LOT-00 **validé par l'utilisateur** le 2026-07-17. Ce chapitre **tranche**
+> les 8 constats et fige le schéma cible. Il **prime** sur les sections 3 et 4 en cas
+> d'écart (celles-ci restent la trace de la proposition initiale). Toujours
+> document-seul : `schema.prisma` et `web/prisma/migrations/` restent intouchés
+> jusqu'à la levée du gate (§6).
+
+### 8.0 Store vs recalculer les snapshots — **recalculer, ancré par hash**
+
+Le `ClinicalSnapshot`, la `ClinicalReview` et la `DecisionCard` **ne sont pas
+persistés** en V1. Ils sont recalculables depuis (a) l'`assessment_episodes.payload`
+(sélection de réponses figée par le praticien) et (b) les `questionnaire_reponses`
+déjà en base. La provenance est **ancrée** par les hashes de la chaîne, stockés en
+colonnes sur `protocol_drafts` (voir 8.2). Vérifier = recalculer et comparer les
+hashes ; une divergence **signale** que les réponses sous-jacentes ont changé depuis
+(propriété recherchée, pas un défaut). La comparabilité inter-versions du moteur est
+portée par les colonnes `contract_version`.
+
+- **Alternative écartée** — persister le snapshot en JSONB : duplique une donnée
+  dérivée des réponses (contre la minimisation §2) et fige une plateforme générique
+  trop tôt (point de vigilance LOT-01). Non retenue.
+
+### 8.1 Constat 1 — hash de l'épisode
+
+`assessment_episodes` **ne porte pas** `input_hash` (le `ConfirmedAssessmentEpisode`
+est une sélection, sans hash moteur propre). À la place :
+- `payload` JSONB : `ConfirmedAssessmentEpisode` canonique.
+- `payload_hash` TEXT : `canonicalSha256(payload)` calculé **à la persistance**
+  (intégrité + idempotence de l'écriture), explicitement **pas** une preuve moteur.
+- `contract_version` = `objets-cliniques-v1` (étiqueté à la persistance ; l'objet ne
+  porte pas de champ version).
+
+### 8.2 Constat 2 — provenance de hash → **Option A-lite (colonnes d'ancrage, sans tables dérivées)**
+
+Pas de table `decision_cards`/`clinical_reviews`/`clinical_snapshots`. Les ancres de
+provenance sont des **colonnes** sur `protocol_drafts` :
+`snapshot_input_hash`, `review_input_hash`, `decision_card_id`,
+`decision_card_input_hash`, plus l'`input_hash` **propre** du `ProtocolDraft` (celui-ci
+en a un réel, `protocolDraft.ts`). Cela rend la chaîne
+`épisode → snapshot → review → decision_card → draft` **vérifiable par recalcul** sans
+persister d'objets dérivés. Cohérent avec 8.0.
+
+### 8.3 Constat 3 — vue patient → **dérivée à la volée, pas de table**
+
+Le patient **ne lit jamais** `protocol_drafts`. La `PatientProtocolView`
+(`patientProtocolView.ts`, `c1-patient-protocol-view-v1`) est **dérivée côté serveur**
+à la lecture, à partir du `protocol_draft` persisté, et seule cette vue est renvoyée.
+Aucune table `patient_protocol_views` en V1. La lecture patient est conditionnée à
+`status = practitioner_reviewed` (le gating de diffusion complet relève de LOT-03).
+- **Alternative écartée** — persister une table `patient_protocol_views` : 4ᵉ table +
+  synchronisation prématurée, contre la minimisation. Non retenue.
+
+### 8.4 Constat 4 — autorisation des check-ins → **colonne `id_assignation`, email-gate exclu**
+
+`protocol_checkins` porte `id_assignation TEXT` (FK → `assignations(id_assignation)`,
+clé `@unique` confirmée au schéma). Écriture autorisée **uniquement** via cookie
+portail authentifié dont `isSessionAuthorizedForAssignment` réussit pour cette
+assignation **et** `session.idPatient === protocol_checkins.id_patient`. Le **chemin
+legacy email-gate** (email + idAssignation sans token) est **explicitement interdit**
+en écriture de check-in. Les règles R8-lite (deadline/verrou) gouvernent la
+disponibilité de l'écriture.
+
+### 8.5 Constat 5 — unicité vs append-only → **append-only chaîné**
+
+Pas de contrainte d'unicité `(protocol_draft_id, point_etape)`. Une correction est une
+**nouvelle ligne** avec `supersedes_checkin_id` (pattern `trust_choice_events`). Le
+check-in « courant » d'un point d'étape = la dernière ligne non supplantée pour
+`(protocol_draft_id, point_etape)`. Index non-unique `(protocol_draft_id, point_etape)`.
+
+### 8.6 Constat 6 — clés primaires → **id du contrat quand il existe**
+
+- `assessment_episodes.id` = `assessmentEpisodeId` du contrat.
+- `protocol_drafts.id` = `protocolDraftId` du contrat.
+- `protocol_checkins.id` = cuid généré (aucun contrat `ProtocolCheckin` amont).
+
+Objectif : provenance + **idempotence** des écritures pour les objets déjà identifiés.
+
+### 8.7 Constat 7 — `relecture_notes` → **différée à SP-TT**
+
+La première migration C2A ne crée **que 3 tables** : `assessment_episodes`,
+`protocol_drafts`, `protocol_checkins`. `relecture_notes` sort du périmètre C2A et est
+reportée à SP-TT (aucun contrat `RelectureNote` n'existe encore). La section 3 de la
+spec conserve sa description à titre de référence pour SP-TT.
+
+### 8.8 Constat 8 — granularité praticien → **hypothèse V1 consignée**
+
+Modèle **mono-praticien** acté comme hypothèse explicite de la V1 : aucune colonne de
+scoping par praticien. Un besoin multi-praticien déclencherait une campagne dédiée, pas
+une rustine sur ce modèle.
+
+### 8.9 Schéma cible figé (document seul — 3 tables, aucun DDL exécuté)
+
+Conventions communes (pattern `20260716120000_trust_v1`) : PK `id TEXT`, FK
+`id_patient TEXT → patients(id_patient) ON DELETE RESTRICT ON UPDATE CASCADE`,
+`TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP`, RLS `ENABLE` deny-all **sans policy** (accès
+applicatif via Prisma en connexion directe). Migration **additive unique**
+`c2a_persistance_v1`.
+
+**`assessment_episodes`** — PK `id` (=`assessmentEpisodeId`) · `id_patient` FK ·
+`milestone` (T0/J21/J42/J90, réf. `momentum.ts`) · `target_at` · `confirmed_at` ·
+`payload` JSONB · `payload_hash` · `contract_version` (`objets-cliniques-v1`) ·
+`created_at`. Index : `(id_patient, milestone)`, `(id_patient, confirmed_at)`.
+
+**`protocol_drafts`** — PK `id` (=`protocolDraftId`) · `id_patient` FK ·
+`assessment_episode_id` FK NULL → `assessment_episodes(id)` · `decision_card_id` ·
+`decision_card_input_hash` · `snapshot_input_hash` · `review_input_hash` ·
+`selected_priority_id` · `status` (`draft`/`practitioner_reviewed` ; diffusion en
+LOT-03) · `payload` JSONB · `input_hash` (propre au draft) ·
+`contract_version` (`c1-protocol-draft-v1`) · `supersedes_draft_id` NULL ·
+`reviewed_at` NULL · `created_at` · `updated_at`. Index : `(id_patient, created_at)`,
+`(decision_card_id)`, `(supersedes_draft_id)`.
+
+**`protocol_checkins`** — PK `id` (cuid) · `id_patient` FK ·
+`id_assignation` FK → `assignations(id_assignation)` · `protocol_draft_id` FK →
+`protocol_drafts(id)` · `point_etape` (`J7`/`J14`/`J21`) · `reponses` JSONB (2-4
+réponses courtes, libellés français) · `canal` DEFAULT `'portail'` ·
+`supersedes_checkin_id` NULL · `soumis_le` DEFAULT CURRENT_TIMESTAMP.
+Index : `(id_patient, point_etape)`, `(protocol_draft_id)`, `(id_assignation)`.
+**Aucune contrainte d'unicité** (append-only chaîné, 8.5).
+
+**Rollback** : `DROP TABLE` des 3 nouvelles tables uniquement (aucune table existante
+touchée) ; l'application reste fonctionnelle sans elles tant que les routes LOT-02+ ne
+sont pas mergées (déploiement séquencé : migration d'abord, routes ensuite).
+
+### 8.10 Matrice create/read/update — version arbitrée
+
+| Table | Praticien (NextAuth) | Patient (cookie portail + assignation vérifiée, hors email-gate) |
+|---|---|---|
+| `assessment_episodes` | create / read | — |
+| `protocol_drafts` | create (nouvelle version) / read | — (jamais en direct) |
+| vue patient (dérivée, non persistée) | — | read (sa seule assignation, `status = practitioner_reviewed`) |
+| `protocol_checkins` | read | create / read (ses check-ins, assignation vérifiée) |
+
+Aucune mise à jour destructive ; corrections append-only ; aucune suppression en V1.
+Hypothèse mono-praticien (8.8).
+
+### 8.11 Checklist de confirmation du gate — mise à jour
+
+Remplace l'intention de la §6 sur les deux premiers points :
+- [ ] Spec validée : sections 1-5 **telles qu'amendées par §7 et arbitrées par §8**.
+- [ ] `relecture_notes` : **différée à SP-TT** (8.7) — migration C2A = **3 tables**.
+- [ ] Migration confirmée : **additive-only, une seule migration**, nom `c2a_persistance_v1`.
+- [ ] Environnement confirmé : base éphémère d'abord, production via pipeline Vercel au merge uniquement.
+- [ ] Rollback (§5 / 8.9) lu et accepté.
+
+Tant que l'utilisateur n'a pas coché ces points **par un message distinct**, LOT-02
+reste `bloqué_confirmation` ; `schema.prisma` et `web/prisma/migrations/` restent
+intouchés.
