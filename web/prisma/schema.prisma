@@ -38,6 +38,10 @@ model Patient {
   trustPrivacyIncidents     TrustPrivacyIncident[]
   trustRightsRequests       TrustRightsRequest[]
 
+  assessmentEpisodes AssessmentEpisode[]
+  protocolDrafts     ProtocolDraft[]
+  protocolCheckins   ProtocolCheckin[]
+
   @@map("patients")
 }
 
@@ -104,7 +108,8 @@ model Assignation {
   correctionCommentaire  String?   @map("correction_commentaire")
   correctionDemandeeDate DateTime? @map("correction_demandee_date")
 
-  patient Patient @relation(fields: [idPatient], references: [idPatient])
+  patient          Patient           @relation(fields: [idPatient], references: [idPatient])
+  protocolCheckins ProtocolCheckin[]
 
   @@map("assignations")
 }
@@ -143,7 +148,7 @@ model QuestionnaireCategory {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   questionnairesPrincipaux QuestionnaireDefinition[]
-  secondaires             QuestionnaireSecondaryCategory[]
+  secondaires              QuestionnaireSecondaryCategory[]
 
   @@map("questionnaire_categories")
 }
@@ -164,7 +169,7 @@ model QuestionnaireDefinition {
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
-  categoriePrincipale QuestionnaireCategory          @relation(fields: [categoriePrincipaleId], references: [id])
+  categoriePrincipale   QuestionnaireCategory            @relation(fields: [categoriePrincipaleId], references: [id])
   categoriesSecondaires QuestionnaireSecondaryCategory[]
   packItems             QuestionnairePackQuestionnaire[]
 
@@ -174,10 +179,10 @@ model QuestionnaireDefinition {
 }
 
 model QuestionnaireSecondaryCategory {
-  id                String   @id @default(cuid())
-  questionnaireId   String   @map("questionnaire_id")
-  categorieId       String   @map("categorie_id")
-  createdAt         DateTime @default(now()) @map("created_at")
+  id              String   @id @default(cuid())
+  questionnaireId String   @map("questionnaire_id")
+  categorieId     String   @map("categorie_id")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   questionnaire QuestionnaireDefinition @relation(fields: [questionnaireId], references: [id])
   categorie     QuestionnaireCategory   @relation(fields: [categorieId], references: [id])
@@ -188,16 +193,16 @@ model QuestionnaireSecondaryCategory {
 }
 
 model QuestionnairePack {
-  id            String   @id @default(cuid())
-  packId        String   @unique @map("pack_id")
-  titre         String   @map("titre")
-  description   String?  @map("description")
-  niveau        String   @map("niveau")
-  usageClinique String?  @map("usage_clinique")
-  ordreAffichage Int     @default(0) @map("ordre_affichage")
-  actif         Boolean  @default(true) @map("actif")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(cuid())
+  packId         String   @unique @map("pack_id")
+  titre          String   @map("titre")
+  description    String?  @map("description")
+  niveau         String   @map("niveau")
+  usageClinique  String?  @map("usage_clinique")
+  ordreAffichage Int      @default(0) @map("ordre_affichage")
+  actif          Boolean  @default(true) @map("actif")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
   questionnaires QuestionnairePackQuestionnaire[]
   triggers       QuestionnairePackTrigger[]
@@ -206,13 +211,13 @@ model QuestionnairePack {
 }
 
 model QuestionnairePackQuestionnaire {
-  id              String   @id @default(cuid())
-  packId          String   @map("pack_id")
-  questionnaireId String   @map("questionnaire_id")
-  ordre           Int      @default(0) @map("ordre")
-  obligatoire     Boolean  @default(true) @map("obligatoire")
-  conditionAffichage Json? @map("condition_affichage")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id                 String   @id @default(cuid())
+  packId             String   @map("pack_id")
+  questionnaireId    String   @map("questionnaire_id")
+  ordre              Int      @default(0) @map("ordre")
+  obligatoire        Boolean  @default(true) @map("obligatoire")
+  conditionAffichage Json?    @map("condition_affichage")
+  createdAt          DateTime @default(now()) @map("created_at")
 
   pack          QuestionnairePack       @relation(fields: [packId], references: [id])
   questionnaire QuestionnaireDefinition @relation(fields: [questionnaireId], references: [id])
@@ -640,4 +645,87 @@ model TrustRightsRequest {
 
   @@index([statutTraitement], map: "trust_droits_statut_idx")
   @@map("trust_rights_requests")
+}
+
+// ─── C2A PERSISTANCE V1 (campagne 2026-07-11-suivi-j7-j14-j21-et-persistance) ─
+// Persistance minimale du suivi 21 jours (migration c2a_persistance_v1, spec
+// SPEC_LOT-01_MODELE_PERSISTANCE.md §8, gate confirmé par l'utilisateur le
+// 2026-07-17). Tables ADDITIVES. Snapshot/review/decision-card NON persistés
+// (recalculables) ; provenance ancrée par hashes. Corrections append-only.
+
+// Épisode d'évaluation CONFIRMÉ par le praticien (les propositions restent en
+// mémoire). PK = assessmentEpisodeId du contrat C1 (provenance + idempotence).
+// Pas d'input_hash moteur : l'épisode est une sélection, pas une preuve hashée.
+model AssessmentEpisode {
+  id              String   @id @map("id")
+  idPatient       String   @map("id_patient")
+  milestone       String   @map("milestone") // T0 | J21 | J42 | J90 (réf. momentum.ts)
+  targetAt        DateTime @map("target_at")
+  confirmedAt     DateTime @map("confirmed_at")
+  payload         Json     @map("payload")
+  payloadHash     String   @map("payload_hash")
+  contractVersion String   @map("contract_version") // objets-cliniques-v1
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  patient        Patient         @relation(fields: [idPatient], references: [idPatient])
+  protocolDrafts ProtocolDraft[]
+
+  @@index([idPatient, milestone], map: "c2a_episode_patient_milestone_idx")
+  @@index([idPatient, confirmedAt], map: "c2a_episode_patient_confirmed_idx")
+  @@map("assessment_episodes")
+}
+
+// Version append-only du protocole 21 jours. PK = protocolDraftId du contrat.
+// Colonnes d'ancrage de provenance (chaîne snapshot→review→decision-card) sans
+// persister les objets dérivés. Correction = nouvelle ligne (supersedesDraftId).
+model ProtocolDraft {
+  id                    String    @id @map("id")
+  idPatient             String    @map("id_patient")
+  assessmentEpisodeId   String?   @map("assessment_episode_id")
+  decisionCardId        String    @map("decision_card_id")
+  decisionCardInputHash String    @map("decision_card_input_hash")
+  snapshotInputHash     String    @map("snapshot_input_hash")
+  reviewInputHash       String    @map("review_input_hash")
+  selectedPriorityId    String    @map("selected_priority_id")
+  status                String    @default("draft") @map("status") // draft | practitioner_reviewed
+  payload               Json      @map("payload")
+  inputHash             String    @map("input_hash")
+  contractVersion       String    @map("contract_version") // c1-protocol-draft-v1
+  supersedesDraftId     String?   @map("supersedes_draft_id")
+  reviewedAt            DateTime? @map("reviewed_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  patient  Patient            @relation(fields: [idPatient], references: [idPatient])
+  episode  AssessmentEpisode? @relation(fields: [assessmentEpisodeId], references: [id])
+  checkins ProtocolCheckin[]
+
+  @@index([idPatient, createdAt], map: "c2a_draft_patient_created_idx")
+  @@index([decisionCardId], map: "c2a_draft_decision_card_idx")
+  @@index([supersedesDraftId], map: "c2a_draft_supersedes_idx")
+  @@map("protocol_drafts")
+}
+
+// Check-in patient J7/J14/J21 — instrument de pilotage, jamais un score ni un
+// jalon de mesure (arbitrage A1). Écriture via session portail vérifiée
+// (assignation) ; chemin legacy email-gate exclu. Append-only chaîné.
+model ProtocolCheckin {
+  id                  String   @id @default(cuid()) @map("id")
+  idPatient           String   @map("id_patient")
+  idAssignation       String   @map("id_assignation")
+  protocolDraftId     String   @map("protocol_draft_id")
+  pointEtape          String   @map("point_etape") // J7 | J14 | J21
+  reponses            Json     @map("reponses")
+  canal               String   @default("portail") @map("canal")
+  supersedesCheckinId String?  @map("supersedes_checkin_id")
+  soumisLe            DateTime @default(now()) @map("soumis_le")
+
+  patient     Patient       @relation(fields: [idPatient], references: [idPatient])
+  assignation Assignation   @relation(fields: [idAssignation], references: [idAssignation])
+  draft       ProtocolDraft @relation(fields: [protocolDraftId], references: [id])
+
+  @@index([idPatient, pointEtape], map: "c2a_checkin_patient_point_idx")
+  @@index([protocolDraftId], map: "c2a_checkin_draft_idx")
+  @@index([idAssignation], map: "c2a_checkin_assignation_idx")
+  @@map("protocol_checkins")
 }

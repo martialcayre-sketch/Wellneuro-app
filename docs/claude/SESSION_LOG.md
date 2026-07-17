@@ -377,3 +377,88 @@ fictif en bureau/mobile ; tests, build, scoring et anti-secrets réussis.
 
 **Questions ouvertes** : future refonte à revalider séparément ; gate C2A
 LOT-02 ; trust-v1-lot-migration ; CNIL écoute ambiante.
+
+## [2026-07-17] — C2A LOT-00 : audit des flux et besoins de persistance clos
+
+**Décisions** : audit document-seul mené en lecture seule (contrats
+`clinical-engine`, auth praticien/patient, pattern Prisma `trust_*`). Livrables :
+matrice create/read/update par acteur, données minimales J7/J14/J21 (2-4 réponses,
+aucune biologie, aucun champ narratif libre), et 8 constats amendant
+`SPEC_LOT-01_MODELE_PERSISTANCE.md` (addendum daté, sections d'origine préservées).
+Constats clés : `input_hash` erroné sur `assessment_episodes` (l'épisode n'a pas de
+hash propre) ; provenance de hash pendante si DecisionCard/Review non persistés ;
+lecture patient de `protocol_drafts` à remplacer par une vue patient dédiée ;
+autorisation check-in à modéliser hors email-gate ; unicité vs append-only ; PK =
+id du contrat ; report recommandé de `relecture_notes` à SP-TT ; modèle
+mono-praticien à consigner. LOT-00 passé `terminé`, `active_lot` → LOT-01.
+
+**Options écartées** : se conformer à la spec (le lot exige de la corriger) ;
+inclure `relecture_notes` en V1 (aucun contrat `RelectureNote` n'existe) ; toucher
+au schéma (gate LOT-02 verrouillé).
+
+**Validations** : `wn-campaign-audit` vert, anti-secrets vert, `git diff web/prisma`
+vide, `state.json` JSON valide, vue ACTIVE_CAMPAIGN resynchronisée.
+
+**Prochaine action prioritaire** : C2A LOT-01 — spécifier le modèle et arbitrer les
+constats 2, 3, 4 (provenance, vue patient, autorisation check-ins) avant toute levée
+du gate. LOT-02 reste `bloqué_confirmation`.
+
+**Questions ouvertes** : gate migration C2A LOT-02 (checklist SPEC §6 non cochée) ;
+future refonte à revalider séparément ; trust-v1-lot-migration ; CNIL écoute ambiante.
+
+## [2026-07-17] — C2A LOT-01 : spécification figée, constats tranchés
+
+**Décisions** : audit LOT-00 validé par l'utilisateur ; les 8 constats structurants
+et le choix stocker/recalculer sont tranchés en `SPEC_LOT-01_MODELE_PERSISTANCE.md`
+**§8** (prime sur §3-4). Snapshots : **recalculer, ancré par hash** (pas de tables
+dérivées) ; épisode sans `input_hash` (payload + payload_hash) ; provenance = colonnes
+d'ancrage sur `protocol_drafts` ; vue patient **dérivée à la volée** (aucune table) ;
+check-in avec `id_assignation` et email-gate exclu en écriture ; append-only chaîné
+(pas d'unicité) ; PK = id du contrat (cuid pour check-ins) ; `relecture_notes`
+**différée à SP-TT** → migration C2A = **3 tables** ; hypothèse mono-praticien
+consignée. Schéma cible figé (§8.9), matrice CRU arbitrée (§8.10), checklist gate
+actualisée (§8.11). LOT-01 `terminé`, `active_lot` → LOT-02.
+
+**Options écartées** : persister le snapshot (duplication de donnée dérivée) ; table
+`patient_protocol_views` (4ᵉ table prématurée) ; inclure `relecture_notes` en V1.
+
+**Validations** : type-check vert, `wn-campaign-audit` vert, anti-secrets vert,
+`git diff web/prisma` vide, `state.json` JSON valide, vue ACTIVE_CAMPAIGN resync.
+
+**Prochaine action prioritaire** : **LOT-02 reste `bloqué_confirmation`**. Il n'est
+déverrouillé que si l'utilisateur coche la checklist §8.11 (migration additive unique
+`c2a_persistance_v1`, 3 tables, rollback = DROP des 3 tables) **par un message
+distinct**. Aucun DDL ni modification de `schema.prisma` d'ici là.
+
+**Questions ouvertes** : gate migration C2A LOT-02 (checklist §8.11 non cochée) ;
+future refonte à revalider séparément ; trust-v1-lot-migration ; CNIL écoute ambiante.
+
+## [2026-07-17] — C2A LOT-02 : migration Prisma + API minimale (gate levé)
+
+**Décisions** : gate migration levé (checklist SPEC §8.11 cochée par l'utilisateur).
+Exécution en session dédiée (flags `WN_ALLOW_PROTECTED_WRITE`/`WN_ALLOW_RISKY_COMMAND`),
+branche `feat/c2a-lot-02-persistance-prisma`. Migration additive unique
+`20260717120000_c2a_persistance_v1` : 3 tables (`assessment_episodes`,
+`protocol_drafts`, `protocol_checkins`), FK RESTRICT/SET NULL, RLS deny-all.
+SQL généré par `migrate diff` datamodel→datamodel (aucune base touchée) + RLS
+manuel. Routes minimales : praticien `POST/GET /api/praticien/protocoles`
+(persistance idempotente, cohérence de provenance) ; patient
+`GET /api/patient/protocole` (session portail vérifiée, email-gate exclu, aucune
+donnée de `protocol_drafts` exposée).
+
+**Options écartées** : `migrate dev`/`db push` sur base partagée (généré hors base) ;
+routes d'écriture check-ins et versionnement (LOT-04/LOT-03) ; contournement des
+hooks de protection (relance en session dédiée à la place).
+
+**Validations** : `test:worktree` verte 11 min 23 s — **gate de dérive
+schéma↔migrations OK**, `migrate deploy` OK, Vitest 315/315 (dont 10 nouveaux :
+autorisé/interdit/**inter-patient**), lint, build, E2E Playwright 30/30. type-check,
+`prisma validate`, anti-secrets verts.
+
+**Prochaine action prioritaire** : **LOT-03** (versionnement et validation du
+protocole : statuts de diffusion, vue patient dérivée). La migration se déploie en
+prod via `migrate deploy` au merge de la branche sur `main`.
+
+**Questions ouvertes** : merge/déploiement de la branche LOT-02 ; `relecture_notes`
+différée à SP-TT ; nettoyage email-gate ; future refonte à revalider ; CNIL écoute
+ambiante.

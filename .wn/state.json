@@ -6,7 +6,7 @@
   },
   "status": "active",
   "active_campaign": "2026-07-11-suivi-j7-j14-j21-et-persistance",
-  "active_lot": "LOT-00",
+  "active_lot": "LOT-03",
   "last_completed_lot": "TRUST/LOT-07",
   "git": {
     "branch": null,
@@ -25,10 +25,10 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Reprendre le programme 5.0 (SP-RUN après validation ergonomique C1, ou C2A avec gate migration).",
+  "next_action": "C2A LOT-03 : versionnement et validation du protocole (statuts de diffusion, vue patient dérivée). LOT-02 terminé sur la branche feat/c2a-lot-02-persistance-prisma (migration additive c2a_persistance_v1, test:worktree vert, gate de dérive OK) ; la migration se déploiera en prod via migrate deploy au merge sur main.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-16T23:03:13Z",
+  "updated_at": "2026-07-17T02:00:00Z",
   "parallel_campaigns": []
 }

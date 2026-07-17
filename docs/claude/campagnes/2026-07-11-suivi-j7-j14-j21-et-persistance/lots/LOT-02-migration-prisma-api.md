@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Migration Prisma et API minimale — confirmation obligatoire"
-statut: "bloqué_confirmation"
+statut: "terminé"
 dépend_de: "LOT-01"
 ---
 
@@ -61,12 +61,12 @@ compatibles avec le protocole V1.
 
 ## Étapes
 
-- [ ] Vérifier la confirmation explicite (checklist LOT-01 cochée par l'utilisateur).
-- [ ] Créer la migration en environnement prévu (base éphémère
+- [x] Vérifier la confirmation explicite (checklist LOT-01 cochée par l'utilisateur).
+- [x] Créer la migration en environnement prévu (base éphémère
       `test:worktree` d'abord ; production uniquement via le pipeline Vercel
       `migrate deploy` au merge).
-- [ ] Ajouter la validation serveur.
-- [ ] Tester droits et rollback.
+- [x] Ajouter la validation serveur.
+- [x] Tester droits et rollback.
 
 ## Tests
 
@@ -78,15 +78,69 @@ compatibles avec le protocole V1.
 
 ## Critères de done
 
-- [ ] Migration confirmée, unique et additive.
-- [ ] Aucun accès inter-patient.
-- [ ] Rollback/documentation disponibles.
+- [x] Migration confirmée, unique et additive.
+- [x] Aucun accès inter-patient.
+- [x] Rollback/documentation disponibles.
 
 ## Risques / points de vigilance
 
 - Migration sans confirmation.
 - Contrôle d'accès insuffisant.
 
-## Résultats
+## Résultats (2026-07-17)
 
-À compléter à la clôture du lot : fichiers modifiés, commandes exécutées, captures, écarts, dette restante et décision de poursuite.
+Gate migration **levé** : l'utilisateur a coché la checklist SPEC §8.11 par un
+message distinct. Exécution en session dédiée (`WN_ALLOW_PROTECTED_WRITE=1` +
+`WN_ALLOW_RISKY_COMMAND=1`), sur la branche `feat/c2a-lot-02-persistance-prisma`.
+
+### Migration
+
+- Migration **additive unique** `20260717120000_c2a_persistance_v1` : 3 tables
+  (`assessment_episodes`, `protocol_drafts`, `protocol_checkins`), index, FK
+  `ON DELETE RESTRICT/SET NULL ON UPDATE CASCADE`, RLS deny-all sans policy
+  (ajout manuel comme trust_v1). Aucune table existante modifiée.
+- SQL généré par `prisma migrate diff` (datamodel→datamodel, **sans toucher de
+  base**) puis complété du bloc RLS ; jamais `migrate dev`/`db push` sur une base
+  partagée. Production : uniquement via pipeline Vercel `migrate deploy` au merge.
+- **Rollback** : `DROP TABLE` des 3 nouvelles tables (documenté SPEC §8.9).
+
+### Schéma et modèles
+
+- `web/prisma/schema.prisma` : modèles `AssessmentEpisode`, `ProtocolDraft`,
+  `ProtocolCheckin` + back-relations `Patient`/`Assignation`. PK = id du contrat
+  pour épisodes/drafts, cuid pour check-ins (§8.6). Provenance ancrée par colonnes
+  de hash sur `protocol_drafts` (§8.2). `prisma validate` + `generate` verts.
+
+### Routes API et contrôles d'accès
+
+- **Praticien** `web/src/app/api/praticien/protocoles/route.ts` : `POST` persiste
+  un épisode confirmé + un protocole relu (idempotent par id de contrat ;
+  vérifie la cohérence de provenance draft↔decision-card et les statuts
+  `confirmed`/`practitioner_reviewed`) ; `GET ?idPatient=` liste bornée au patient.
+  Garde `getServerSession(authOptions)`.
+- **Patient** `web/src/app/api/patient/protocole/route.ts` : `GET ?id=<assignation>`
+  scopé par session portail vérifiée (`isSessionAuthorizedForAssignment`),
+  **email-gate exclu** (§8.4) ; ne renvoie que des métadonnées minimales, jamais
+  le contenu de `protocol_drafts` (§8.3). Le contenu diffusable relève de LOT-03/05.
+
+### Validations
+
+- `npm run test:worktree` (réplique CI complète) **verte en 11 min 23 s** :
+  anti-secrets, audit campagnes, scoring (63), type-check, Vitest **315/315**,
+  lint, PostgreSQL éphémère, `migrate deploy`, **gate de dérive schéma↔migrations
+  vert**, seed fictif, build production, E2E Playwright **30/30** (Chromium+WebKit).
+- 10 tests ciblés ajoutés (autorisé / non authentifié / provenance incohérente /
+  non relu / non confirmé / **inter-patient refusé**).
+
+### Écarts / dette
+
+- Routes d'**écriture** de check-ins et versionnement du protocole : hors périmètre
+  LOT-02, traités en LOT-03 (versionnement/validation) et LOT-04 (check-ins J21).
+- `relecture_notes` différée à SP-TT (§8.7) ; nettoyage du chemin legacy email-gate
+  (hors C2A) ; besoin multi-praticien (campagne dédiée).
+
+### Décision de poursuite
+
+LOT-02 clos. La migration n'est **pas encore déployée en production** : elle
+s'appliquera via `migrate deploy` au merge de la branche sur `main` (pipeline
+Vercel). Poursuite : **LOT-03** (versionnement et validation du protocole).
