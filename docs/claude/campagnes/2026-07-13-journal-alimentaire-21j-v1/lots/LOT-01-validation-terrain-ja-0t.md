@@ -1,11 +1,14 @@
 ---
-id: "JA-0T"
-titre: "Validation terrain — entretiens patients et carte papier"
+id: "LOT-01"
+titre: "JA-0T — Validation terrain (entretiens patients et carte papier)"
 statut: "prêt — entretiens à mener"
-gate: "aucun (parallèle à JA-00) ; produit le go/no-go du noyau"
+gate: "aucun (parallèle à LOT-00/JA-00) ; produit le go/no-go du noyau"
 ---
 
-# JA-0T — Validation terrain
+# LOT-01 (alias JA-0T) — Validation terrain
+
+> Id outillage : `LOT-01` (format requis par l'audit de campagne) ; le
+> programme et le registre désignent ce lot sous l'alias **JA-0T**.
 
 > Lot acté par l'adaptation contrepoint (A7-14) : cinq entretiens patients
 > avant toute ligne de code du domaine, pour tester les hypothèses E1
