@@ -9,6 +9,7 @@ export type ProtocolVersionItem = {
   status: string;
   createdAt: string;
   reviewedAt: string | null;
+  inputHash: string;
   isActive: boolean;
 };
 

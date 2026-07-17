@@ -5,7 +5,7 @@
 **Campagne** : 2026-07-11-suivi-j7-j14-j21-et-persistance
 **Titre** : C2 — Points d'étape et persistance (C2A/C2B)
 **Statut** : active
-**Lot actif** : LOT-03
+**Lot actif** : LOT-04
 
 ## Activités parallèles
 
