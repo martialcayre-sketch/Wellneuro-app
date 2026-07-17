@@ -3,8 +3,8 @@ id: "2026-07-11-suivi-j7-j14-j21-et-persistance"
 titre: "C2 — Points d'étape et persistance (C2A/C2B)"
 statut: "en_cours — compilée, gate migration à confirmer avant LOT-02"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-16"
-lot_courant: "LOT-00"
+mise_à_jour: "2026-07-17"
+lot_courant: "LOT-03"
 ---
 
 # C2 — Points d'étape et persistance
@@ -95,9 +95,9 @@ sont remplacés) :
 
 | Lot | Objet | Statut |
 |---|---|---|
-| LOT-00 | Audit des flux et besoins de persistance | à_faire |
-| LOT-01 | Spécification du modèle et gate migration | à_faire |
-| LOT-02 | Migration Prisma et API minimale | **bloqué_confirmation** |
+| LOT-00 | Audit des flux et besoins de persistance | **terminé** (2026-07-17) |
+| LOT-01 | Spécification du modèle et gate migration | **terminé** (2026-07-17) |
+| LOT-02 | Migration Prisma et API minimale | **terminé** (2026-07-17, gate levé) |
 | LOT-03 | Versionnement et validation du protocole | à_faire |
 | LOT-04 | Check-ins et décision J21 | à_faire |
 | LOT-05 | Compagnon patient minimal | à_faire |
