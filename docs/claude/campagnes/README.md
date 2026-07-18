@@ -15,8 +15,8 @@
 | QX | Expérience questionnaires | **terminée** (2026-07-14, renderer `micro_batch` seul activé) | HC-F LOT-01+04 | 5 |
 | **SP-FIL** | Le Fil du jour v1 | **terminée** (2026-07-15 — accueil = Fil, rail regroupé, PR #74-#76) | — | 2 |
 | **SP-RUN** | Cockpit vivant (runtime C1) | **terminée** — runtime et branchement cockpit validés le 2026-07-17 | — | N+1 |
-| C2A | Points d'étape + persistance minimale | **en cours** — compilée (2026-07-16), gate migration à confirmer avant LOT-02 | C1 ✓ + gate migration | 7 |
-| C2B | Trajectoire et ajustement (→ Spirale) | cadrée | C2A + données réelles | N+1 |
+| C2A | Points d'étape + persistance minimale | **terminée** (2026-07-18 — 7 lots en prod, gate migration levé) | C1 ✓ | 7 |
+| C2B | Trajectoire et ajustement (→ Spirale) | **terminée** (2026-07-18 — LOT-07→09 en prod, sans migration ; gate modèle multi-cycles différé) | C2A ✓ | 3 |
 | C3 | Documents contextuels (→ fil de correspondance) | cadrée | C1 ✓ | N+1 |
 | C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : intrinsèque ; C4B : C1/C2 | N+1 |
 | C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | en_cours — LOT-00 livré (spec slice besoin 1, 12 vedettes candidates) | C5A : data-first ; C5B : C1/C2 | N+1 |
