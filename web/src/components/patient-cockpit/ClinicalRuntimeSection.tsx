@@ -16,6 +16,9 @@ import { J21DecisionPanel } from './J21DecisionPanel';
 import { TrajectoirePanel } from './TrajectoirePanel';
 import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
+import type { FoodCompassActionRef } from '@/lib/food-compass/types';
+import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
+import { useC5Enabled } from './C5FeatureProvider';
 
 type VersionsApiResponse = {
   ok: boolean;
@@ -43,6 +46,7 @@ export function ClinicalRuntimeSection({
   protocolDraft: ProtocolDraft | null;
   onFixtureReviewed: (submission: RelectureProtocoleSoumission) => void;
 }) {
+  const c5Enabled = useC5Enabled();
   const [runtime, setRuntime] = useState<CockpitRuntimeApiResponse | null>(null);
   const [loading, setLoading] = useState(!fixture);
   const [submitting, setSubmitting] = useState(false);
@@ -61,6 +65,10 @@ export function ClinicalRuntimeSection({
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
   const [resumeJ21, setResumeJ21] = useState<ResumeJ21 | null>(null);
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
+  const [foodCompassSelection, setFoodCompassSelection] = useState<{
+    foodLabel: string;
+    actionRef: FoodCompassActionRef;
+  } | null>(null);
 
   const loadTrajectoire = useCallback(async () => {
     try {
@@ -192,6 +200,10 @@ export function ClinicalRuntimeSection({
     }
   }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadTrajectoire]);
 
+  useEffect(() => {
+    setFoodCompassSelection(null);
+  }, [readyDecisionCardId, activeVersionId]);
+
   // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
   // d'envoi patient). Anti-écrasement via baseVersionId → 409 version_stale.
   const saveVersion = async (submission: RelectureProtocoleSoumission) => {
@@ -295,6 +307,13 @@ export function ClinicalRuntimeSection({
 
       <MissingDataPanel missingData={review?.missingData ?? null} discordances={review?.discordances ?? null} />
       <DecisionSummaryCard decisionCard={decisionCard} />
+      {c5Enabled && !fixture && readyDecisionCardId && (
+        <PractitionerFoodCompassObservatory
+          idPatient={idPatient}
+          decisionCardId={readyDecisionCardId}
+          onInsert={setFoodCompassSelection}
+        />
+      )}
       <div id="protocol-version-builder">
         <ProtocolMiniBuilder
           decisionCard={decisionCard}
@@ -302,6 +321,8 @@ export function ClinicalRuntimeSection({
           onSaveVersion={fixture ? undefined : saveVersion}
           saveState={saveState}
           saveError={saveError}
+          foodCompassSelection={foodCompassSelection}
+          onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
         />
       </div>
       <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />

@@ -86,3 +86,58 @@ export function reviewFoodCompassProtocolV2(input: {
   const { protocolDraftId: _protocolDraftId, inputHash: _inputHash, ...hashInput } = withoutHash;
   return { ...withoutHash, inputHash: canonicalSha256(hashInput) };
 }
+
+export function buildFoodCompassProtocolV2FromSource(input: {
+  sourceProtocolDraft: ProtocolDraft;
+  targetProtocolDraft: ProtocolDraft;
+  actions: ProtocolDraft['actions'];
+  c5Enabled: boolean;
+}): ProtocolDraft {
+  if (!input.c5Enabled) throw new TypeError('C5 est désactivée.');
+  if (recomputeDraftInputHash(input.sourceProtocolDraft) !== input.sourceProtocolDraft.inputHash
+    || recomputeDraftInputHash(input.targetProtocolDraft) !== input.targetProtocolDraft.inputHash) {
+    throw new TypeError('Empreinte protocole incohérente.');
+  }
+  assertProtocolDraftC5Structure(input.sourceProtocolDraft);
+  assertProtocolDraftC5Structure(input.targetProtocolDraft);
+  if (input.targetProtocolDraft.version !== 'c1-protocol-draft-v1'
+    || input.targetProtocolDraft.status !== 'practitioner_reviewed'
+    || input.actions.length !== input.targetProtocolDraft.actions.length) {
+    throw new TypeError('Cible protocole V2 invalide.');
+  }
+  if (input.targetProtocolDraft.protocolDraftId !== input.sourceProtocolDraft.protocolDraftId
+    || input.targetProtocolDraft.selectedPriorityId !== input.sourceProtocolDraft.selectedPriorityId) {
+    throw new TypeError('La cible C5 doit conserver le protocole et la priorité de sa source.');
+  }
+  const refsByActionId = new Map(input.actions.map(action => [action.actionId, action.foodCompassRef]));
+  const targetIds = new Set(input.targetProtocolDraft.actions.map(action => action.actionId));
+  if (input.actions.some(action => !targetIds.has(action.actionId))) {
+    throw new TypeError('Action C5 étrangère à la cible.');
+  }
+  const actions = input.targetProtocolDraft.actions.map(action => {
+    const foodCompassRef = refsByActionId.get(action.actionId);
+    if (foodCompassRef) {
+      if (action.type !== 'food') throw new TypeError('Une référence C5 exige une action alimentaire.');
+      assertFoodCompassActionRef(foodCompassRef, {
+        protocolDraftId: input.sourceProtocolDraft.protocolDraftId,
+        selectedPriorityId: input.sourceProtocolDraft.selectedPriorityId,
+      });
+      if (foodCompassRef.sourceProtocolInputHash !== input.sourceProtocolDraft.inputHash) {
+        throw new TypeError('La référence C5 est caduque pour le protocole source.');
+      }
+    }
+    return { ...action, foodCompassRef: foodCompassRef ? { ...foodCompassRef } : undefined };
+  });
+  if (!actions.some(action => action.foodCompassRef !== undefined)) {
+    throw new TypeError('Aucune référence C5 à insérer.');
+  }
+  const withoutHash = {
+    ...input.targetProtocolDraft,
+    version: VERSION_PROTOCOL_DRAFT_V2,
+    actions,
+  };
+  const { protocolDraftId: _protocolDraftId, inputHash: _inputHash, ...hashInput } = withoutHash;
+  const result = { ...withoutHash, inputHash: canonicalSha256(hashInput) };
+  assertProtocolDraftC5Structure(result);
+  return result;
+}

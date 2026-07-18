@@ -4,6 +4,8 @@ import {
   estModeValidationErgoActif,
   type ValidationErgoC1Fixture,
 } from '@/lib/clinical-engine/validationErgoFixture';
+import { isC5Enabled } from '@/lib/food-compass';
+import { C5FeatureProvider } from '@/components/patient-cockpit/C5FeatureProvider';
 
 export default function FichePatientPage({
   params,
@@ -24,5 +26,9 @@ export default function FichePatientPage({
   const fixtureValidationErgo: ValidationErgoC1Fixture | null = modeValidationErgo
     ? buildValidationErgoC1Fixture()
     : null;
-  return <FichePatientPanel idPatient={params.idPatient} fixtureValidationErgo={fixtureValidationErgo} />;
+  return (
+    <C5FeatureProvider enabled={isC5Enabled(process.env.WN_C5_ENABLED)}>
+      <FichePatientPanel idPatient={params.idPatient} fixtureValidationErgo={fixtureValidationErgo} />
+    </C5FeatureProvider>
+  );
 }

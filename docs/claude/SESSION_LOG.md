@@ -685,6 +685,26 @@ projection patient sur simple chaîne d'approbation ou diffusion automatique.
 
 **Questions ouvertes** : aucune pour LOT-03 ; C5 reste inactive à `4/8`.
 
+## 2026-07-18 — C5 LOT-04 Observatoire praticien
+
+**Livré** : Boussole chiffrée, sourcée et tabulaire dans le cockpit, bornée au
+fil `decisionCardId`. Le contexte priorité/protocole, le PRAL, les poids
+nominaux, les versions et le manifeste hashé sont visibles. L'insertion reste
+manuelle ; le serveur reconstruit la référence depuis Ciqual et refuse forge,
+staleness, référentiel incomplet ou changement de priorité.
+
+**Validations** : 513 tests, typage, build production, scoring-check,
+anti-secrets, diff-check et revue indépendante GO. Deux warnings lint
+historiques hors C5. Aucun schéma, import, migration ou activation.
+
+**Options écartées** : confiance dans la référence fournie par le navigateur,
+choix du dernier protocole du patient et diffusion automatique.
+
+**Prochaine action** : LOT-05 — Jardin patient qualitatif. C5 reste inactive à
+`5/8`; clavier, zoom 200 % et contraste seront contrôlés au go/no-go LOT-07.
+
+**Questions ouvertes** : aucune pour LOT-04.
+
 ## 2026-07-18 — C3 exécutée (Documents contextuels multi-destinataires V1)
 
 **Décisions** : campagne C3 exécutée intégralement — 5 lots = 5 PR

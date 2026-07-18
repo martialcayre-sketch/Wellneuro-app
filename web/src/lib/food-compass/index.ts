@@ -3,6 +3,7 @@ export * from './distribution';
 export * from './featureFlag';
 export * from './intrinsic';
 export * from './mapping';
+export * from './manifest';
 export * from './protocol';
 export * from './refValidation';
 export * from './types';

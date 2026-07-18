@@ -18,6 +18,15 @@ import {
   toEpisodeCreateInput,
 } from '@/lib/protocol/versioning';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
+import {
+  C5_DATASET_VERSION,
+  C5_PRACTITIONER_FOODS,
+  assertFoodCompassActionRef,
+  buildFoodCompassProtocolV2FromSource,
+  isC5Enabled,
+  type CiqualNutrientDatum,
+} from '@/lib/food-compass';
+import { buildPractitionerFoodCompassReference } from '@/lib/food-compass/practitionerReference';
 
 // Versionnement du protocole 21 jours (C2A LOT-03). Chaque enregistrement
 // explicite d'un CHANGEMENT CLINIQUE crée une ligne append-only chaînée
@@ -68,7 +77,7 @@ const ID_PATTERN = /^[A-Za-z0-9_:.#-]+$/;
 export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { ok: false, reason: 'unauthenticated', error: 'Authentification requise.' },
         { status: 401 },
@@ -108,6 +117,15 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     const idPatient = episode.patientId;
     const decisionCardId = decisionCard.decisionCardId;
     const protocolDraftId = deriveProtocolDraftId(decisionCardId);
+    const patient = await prisma.patient.findUnique({
+      where: { idPatient }, select: { praticienEmail: true },
+    });
+    if (!patient || patient.praticienEmail.toLowerCase() !== session.user.email.toLowerCase()) {
+      return NextResponse.json(
+        { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
+        { status: 403 },
+      );
+    }
 
     // Fil de versions de ce protocole logique (borné au patient).
     const rows = await prisma.protocolDraft.findMany({
@@ -127,14 +145,96 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
 
     let activeDraft = null;
     if (active) {
-      activeDraft = reconstructProtocolDraft(active.payload, active.inputHash);
+      try {
+        activeDraft = reconstructProtocolDraft(active.payload, active.inputHash);
+      } catch {
+        return NextResponse.json(
+          { ok: false, reason: 'protocol_stale', error: 'Version active du protocole incohérente.' },
+          { status: 409 },
+        );
+      }
     }
 
     // Construction serveur : validations + hash du moteur clinique.
     const now = new Date().toISOString();
     let draft;
     try {
-      draft = buildProtocolDraft({
+      const submittedActions = submission.actions ?? [];
+      const hasC5Reference = submittedActions.some(action => action.foodCompassRef !== undefined);
+      if (hasC5Reference && !activeDraft) {
+        throw new TypeError('Une référence C5 exige un protocole source actif.');
+      }
+      if (hasC5Reference && !isC5Enabled(process.env.WN_C5_ENABLED)) {
+        throw new TypeError('C5 est désactivée.');
+      }
+      const verifiedActions = [] as ProtocolAction[];
+      for (const action of submittedActions) {
+        const submittedRef = action.foodCompassRef;
+        if (submittedRef === undefined) {
+          verifiedActions.push(action);
+          continue;
+        }
+        assertFoodCompassActionRef(submittedRef, {
+          protocolDraftId: (activeDraft as NonNullable<typeof activeDraft>).protocolDraftId,
+          selectedPriorityId: (activeDraft as NonNullable<typeof activeDraft>).selectedPriorityId,
+        });
+        const foodRefMatch = /^ciqual-2025-v1:(\d{1,6})$/.exec(submittedRef.foodRef);
+        const manifest = foodRefMatch
+          ? C5_PRACTITIONER_FOODS.find(food => food.foodRef === foodRefMatch[1])
+          : undefined;
+        if (!foodRefMatch || !manifest) {
+          throw new TypeError('Référence alimentaire C5 hors manifeste ou incompatible.');
+        }
+        let nutrientRows;
+        try {
+          nutrientRows = await prisma.ciqualNutrientValue.findMany({
+            where: { datasetVersion: C5_DATASET_VERSION, ciqualCode: manifest.foodRef },
+            orderBy: { nutrientCode: 'asc' },
+          });
+        } catch (caught) {
+          console.error('[praticien/protocoles/versions C5]', caught instanceof Error ? caught.message : String(caught));
+          return NextResponse.json(
+            { ok: false, reason: 'reference_unavailable', error: 'Référentiel alimentaire temporairement indisponible.' },
+            { status: 503 },
+          );
+        }
+        if (nutrientRows.length !== 16
+          || new Set(nutrientRows.map(row => row.nutrientCode)).size !== 16) {
+          return NextResponse.json(
+            { ok: false, reason: 'reference_incomplete', error: 'Référentiel alimentaire incomplet.' },
+            { status: 503 },
+          );
+        }
+        const rows: CiqualNutrientDatum[] = nutrientRows.map(row => ({
+          datasetVersion: row.datasetVersion,
+          ciqualCode: row.ciqualCode,
+          nutrientCode: row.nutrientCode,
+          value: row.value === null ? null : Number(row.value),
+          valueStatus: row.valueStatus as CiqualNutrientDatum['valueStatus'],
+          unit: row.unit as CiqualNutrientDatum['unit'],
+          sourceRef: row.sourceRef,
+          sourceHash: row.sourceHash,
+        }));
+        let expected;
+        try {
+          expected = buildPractitionerFoodCompassReference({
+            ciqualCode: manifest.foodRef,
+            foodLabel: manifest.label,
+            rows,
+            activeProtocol: activeDraft as NonNullable<typeof activeDraft>,
+          }).actionRef;
+        } catch {
+          return NextResponse.json(
+            { ok: false, reason: 'reference_incomplete', error: 'Référentiel alimentaire incomplet ou incohérent.' },
+            { status: 503 },
+          );
+        }
+        if (!expected || expected.refHash !== submittedRef.refHash) {
+          throw new TypeError('La référence C5 ne correspond pas aux données officielles et au protocole actif.');
+        }
+        verifiedActions.push({ ...action, foodCompassRef: expected });
+      }
+      const baseDraft = buildProtocolDraft({
         protocolDraftId,
         decisionCard,
         createdAt: activeDraft ? activeDraft.createdAt : now,
@@ -142,11 +242,19 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         purpose: submission.purpose ?? '',
         followUpCriterion: submission.followUpCriterion ?? '',
         adviceSheetRef: submission.adviceSheetRef ?? null,
-        actions: submission.actions ?? [],
+        actions: verifiedActions.map(({ foodCompassRef: _foodCompassRef, ...action }) => action),
         therapeuticLoad: submission.therapeuticLoad as TherapeuticLoad,
         limitations: submission.limitations ?? [],
         review: { reviewedAt: now, reviewerRole: 'practitioner', confirmation: 'content_reviewed' },
       });
+      draft = hasC5Reference
+        ? buildFoodCompassProtocolV2FromSource({
+            sourceProtocolDraft: activeDraft as NonNullable<typeof activeDraft>,
+            targetProtocolDraft: baseDraft,
+            actions: verifiedActions,
+            c5Enabled: true,
+          })
+        : baseDraft;
     } catch (err) {
       return NextResponse.json(
         { ok: false, reason: 'draft_invalid', error: err instanceof Error ? err.message : 'Protocole invalide.' },
@@ -222,7 +330,7 @@ type GetResponse =
 export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { ok: false, reason: 'unauthenticated', error: 'Authentification requise.' },
         { status: 401 },
@@ -242,6 +350,16 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       return NextResponse.json(
         { ok: false, reason: 'invalid', error: 'Identifiant de carte de décision invalide.' },
         { status: 400 },
+      );
+    }
+
+    const patient = await prisma.patient.findUnique({
+      where: { idPatient }, select: { praticienEmail: true },
+    });
+    if (!patient || patient.praticienEmail.toLowerCase() !== session.user.email.toLowerCase()) {
+      return NextResponse.json(
+        { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
+        { status: 403 },
       );
     }
 
