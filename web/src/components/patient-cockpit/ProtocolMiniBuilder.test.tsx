@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ProtocolMiniBuilder, type RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
+import type { FoodCompassActionRef } from '@/lib/food-compass';
 
 function card(): DecisionCard {
   return {
@@ -109,6 +110,25 @@ describe('ProtocolMiniBuilder', () => {
     fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
     fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'supplement_exploration' } });
     expect(container.textContent).toContain('aucun produit, forme, marque ou dose');
+  });
+
+  it('n’insère une référence Boussole qu’après une action manuelle explicite', () => {
+    const actionRef = { foodRef: '26034', refHash: 'ref-hash' } as FoodCompassActionRef;
+    const onClear = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        foodCompassSelection={{ foodLabel: 'Sardine', actionRef }}
+        onClearFoodCompassSelection={onClear}
+      />,
+    );
+    const ui = within(container);
+    expect(ui.getByText('Actions (0/3)')).not.toBeNull();
+    expect(ui.getByText(/Sélection Boussole prête : Sardine/)).not.toBeNull();
+    fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
+    expect(ui.getByText('Actions (1/3)')).not.toBeNull();
+    expect((ui.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value).toBe('Sardine');
+    expect(onClear).toHaveBeenCalledTimes(1);
   });
 });
 

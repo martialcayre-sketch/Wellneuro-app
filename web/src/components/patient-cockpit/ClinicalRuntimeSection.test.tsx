@@ -7,6 +7,7 @@ import type { ProposedAssessmentEpisode } from '@/lib/clinical-engine/types';
 import { buildValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import { ClinicalRuntimeSection } from './ClinicalRuntimeSection';
 import { EpisodeConfirmationPanel } from './EpisodeConfirmationPanel';
+import { C5FeatureProvider } from './C5FeatureProvider';
 
 const proposal: ProposedAssessmentEpisode = {
   assessmentEpisodeId: 'episode-T0',
@@ -146,5 +147,24 @@ describe('ClinicalRuntimeSection', () => {
       />,
     );
     await waitFor(() => expect(fetchMock).not.toHaveBeenCalled());
+  });
+
+  it('n’affiche l’Observatoire que lorsque le flag serveur est actif', async () => {
+    const fixture = buildValidationErgoC1Fixture();
+    const ready: CockpitRuntimeApiResponse = {
+      status: 'ready', snapshot: fixture.snapshot, review: fixture.review, decisionCard: fixture.decisionCard,
+    };
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ready });
+    vi.stubGlobal('fetch', fetchMock);
+    const { rerender } = render(
+      <ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />,
+    );
+    expect(screen.queryByRole('heading', { name: /Boussole alimentaire/ })).toBeNull();
+    rerender(
+      <C5FeatureProvider enabled>
+        <ClinicalRuntimeSection idPatient="PAT_TEST" fixture={null} protocolDraft={null} onFixtureReviewed={vi.fn()} />
+      </C5FeatureProvider>,
+    );
+    expect(await screen.findByRole('heading', { name: /Boussole alimentaire/ })).toBeTruthy();
   });
 });

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { DecisionCard, ProtocolAction, ProtocolActionType, TherapeuticLoad } from '@/lib/clinical-engine/types';
+import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 
 // Contenu du brouillon au moment où le praticien le marque comme relu.
 // Émis tel quel : la construction du ProtocolDraft (validations et hashes du
@@ -46,6 +47,8 @@ export function ProtocolMiniBuilder({
   onSaveVersion,
   saveState = 'idle',
   saveError = null,
+  foodCompassSelection = null,
+  onClearFoodCompassSelection,
 }: {
   decisionCard: DecisionCard | null;
   // Optionnel : reçoit le contenu du brouillon quand le praticien le marque
@@ -58,6 +61,8 @@ export function ProtocolMiniBuilder({
   onSaveVersion?: (soumission: RelectureProtocoleSoumission) => void;
   saveState?: ProtocolSaveState;
   saveError?: string | null;
+  foodCompassSelection?: { foodLabel: string; actionRef: FoodCompassActionRef } | null;
+  onClearFoodCompassSelection?: () => void;
 }) {
   const [purpose, setPurpose] = useState('');
   const [followUpCriterion, setFollowUpCriterion] = useState('');
@@ -101,6 +106,19 @@ export function ProtocolMiniBuilder({
     markDirty();
     setActions(previous => [...previous, emptyAction(`action-${nextActionId}`)]);
     setNextActionId(value => value + 1);
+  };
+
+  const insertFoodCompassAction = () => {
+    if (!foodCompassSelection || actions.length >= 3) return;
+    markDirty();
+    setActions(previous => [...previous, {
+      ...emptyAction(`action-${nextActionId}`),
+      title: foodCompassSelection.foodLabel,
+      foodCompassRef: foodCompassSelection.actionRef,
+    }]);
+    setNextActionId(value => value + 1);
+    setMessage('Référence Boussole ajoutée au brouillon — complétez les trois plans puis enregistrez manuellement.');
+    onClearFoodCompassSelection?.();
   };
 
   const updateAction = (actionId: string, patch: Partial<ProtocolAction>) => {
@@ -188,6 +206,17 @@ export function ProtocolMiniBuilder({
             <span className="text-sm font-medium text-foreground">Actions ({actions.length}/3)</span>
             <button type="button" onClick={addAction} disabled={actions.length >= 3} className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50">Ajouter une action</button>
           </div>
+          {foodCompassSelection && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 p-2 text-sm">
+              <span>Sélection Boussole prête : {foodCompassSelection.foodLabel}</span>
+              <button type="button" onClick={insertFoodCompassAction} disabled={actions.length >= 3} className="min-h-11 rounded-lg border border-slate-900 px-3 py-2 disabled:opacity-50">
+                Insérer manuellement
+              </button>
+              <button type="button" onClick={onClearFoodCompassSelection} className="min-h-11 px-2 py-2 text-muted-foreground underline">
+                Écarter cette sélection
+              </button>
+            </div>
+          )}
           <div className="mt-3 grid gap-3">
             {actions.map((action, index) => (
               <fieldset key={action.actionId} className="rounded-lg border border-border p-3">

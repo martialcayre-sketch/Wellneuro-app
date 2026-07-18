@@ -4,6 +4,21 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### C5 LOT-04 — UX praticien « Observatoire » (2026-07-18)
+
+- Ajout d'une Boussole en lecture seule dans le cockpit praticien, sans nouvelle
+  navigation : profil intrinsèque chiffré et tabulaire, PRAL, poids nominaux,
+  complétude, provenance, versions, limites et manifeste des 12 vedettes hashé.
+- La lecture contextuelle est bornée au fil de protocole affiché et expose la
+  priorité ainsi que la version source avant toute préparation d'insertion.
+- L'insertion reste doublement explicite et manuelle. La référence est
+  reconstruite côté serveur depuis Ciqual 2025 et le protocole actif ; les
+  références forgées, caduques, incomplètes ou liées à une autre priorité sont
+  rejetées, puis le protocole V2 final est revalidé.
+- Ajout des contrôles d'ownership sur la lecture et l'écriture de l'historique
+  des versions de protocole. Aucune diffusion patient automatique, migration,
+  import ou activation ; C5 passe à 5/8 et reste désactivée.
+
 ### C5 LOT-03 — moteurs et contrats versionnés (2026-07-18)
 
 - Ajout des contrats C5A/C5B déterministes : profil intrinsèque chiffré,
