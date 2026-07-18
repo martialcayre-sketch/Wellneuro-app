@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Rendus par destinataire et impression HTML"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-02"
 ---
 
@@ -64,11 +64,16 @@ praticien voit le rendu complet sourcé. Chaque rendu s'imprime en HTML propre.
 
 ## Étapes
 
-- [ ] Filtres de rendu patient / médecin / praticien (frontière de données).
-- [ ] Garde de vocabulaire (médecin : « explorations à discuter »).
-- [ ] Badge patient « validé par votre praticien ».
-- [ ] Impression HTML paramétrée par destinataire (`buildBookletHTML` étendu).
-- [ ] Réemploi de l'envoi existant ; tests par destinataire.
+- [x] Filtres de rendu patient / médecin / praticien (frontière de données) :
+      `renderDocumentHtml` + adaptateur `blocsDepuisSynthese` (field-filter par
+      construction).
+- [x] Garde de vocabulaire (médecin : « explorations à discuter ») : `vocabulaire.ts`.
+- [x] Badge patient « Validé par votre praticien ».
+- [x] Impression HTML paramétrée par destinataire ; `buildBookletHTML` **extrait**
+      (verbatim) dans `lib/documents/bookletHtml.ts` et réemployé par la route.
+- [~] Réemploi de l'envoi existant : l'infra nodemailer/`SMTP_URL` reste inchangée ;
+      le branchement d'un canal d'envoi C3 par destinataire est reporté au LOT-04
+      (parcours E2E) — aucune route recréée ici.
 
 ## Tests
 
@@ -80,10 +85,10 @@ praticien voit le rendu complet sourcé. Chaque rendu s'imprime en HTML propre.
 
 ## Critères de done
 
-- [ ] Trois rendus distincts, frontière de données tenue par destinataire.
-- [ ] Vocabulaire réglementaire respecté (médecin non prescriptif).
-- [ ] Impression HTML par destinataire ; PDF explicitement différé.
-- [ ] Aucune migration.
+- [x] Trois rendus distincts, frontière de données tenue par destinataire (tests).
+- [x] Vocabulaire réglementaire respecté (médecin non prescriptif ; garde + test).
+- [x] Impression HTML par destinataire ; PDF explicitement différé.
+- [x] Aucune migration.
 
 ## Risques / points de vigilance
 
@@ -96,4 +101,29 @@ praticien voit le rendu complet sourcé. Chaque rendu s'imprime en HTML propre.
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-07-18. Rendus par destinataire (domaine pur, aucune migration) :
+
+- **`rendu.ts` — `renderDocumentHtml(document, destinataire, options?)`** : document
+  HTML autonome imprimable (CSS inline, `escapeHtml` sur toute valeur dynamique).
+  Patient → badge « Validé par votre praticien », aucun champ interne ; médecin →
+  cadre « explorations à discuter » (échange confraternel) ; praticien → rendu
+  complet. Ne rend que les blocs diffusables (garde de régime + field-filter).
+- **`depuisSynthese.ts` — `blocsDepuisSynthese(source)`** : adaptateur PUR
+  `SyntheseIA` (contenu validé) → blocs C3, field-filtré **par construction**
+  (narratif → patient/médecin ; axes → médecin « piste à explorer », jamais patient ;
+  vigilance → médecin « signal à discuter » ; questions → praticien seul). Provenance
+  ancrée sur `versionPrompt`+date (faute d'`inputHash` sur `SyntheseIA`). Un statut
+  non validé rend tous les blocs non diffusables (garde de régime IA).
+- **`vocabulaire.ts`** : garde de registre prescriptif (`contientTermePrescriptif`,
+  `assertRenduMedecinNonPrescriptif`).
+- **Extraction `buildBookletHTML`** (principe « ne pas empiler ») : déplacée verbatim
+  dans `lib/documents/bookletHtml.ts`, réemployée par `booklet/route.ts` (import),
+  comportement inchangé, et désormais **couverte par des tests** (elle ne l'était pas).
+
+Validations : `type-check` vert ; `vitest` **35/35** (documents) dont rendu patient
+sans champ interne, rendu médecin sans terme prescriptif, badge patient, échappement
+HTML, régime IA non validé jamais diffusé. `check_no_secrets` OK.
+
+Report assumé (→ LOT-04) : branchement d'un canal d'envoi/route C3 par destinataire
+et parcours de bout en bout ; **fil bidirectionnel médecin** (discordance 5.0)
+reporté au handoff — ce lot ne livre que le **rendu sortant** médecin.
