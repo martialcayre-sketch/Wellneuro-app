@@ -172,12 +172,20 @@ Décision du 2026-07-18 : **normalisation validée sans correction**.
 ## Décision sur les données insuffisantes
 
 Règle spécifique PRAL validée le 2026-07-18 : si un seul intrant exact manque,
-aucune valeur n'est imputée et `pralStatus = insufficient_data`. Le profil
-nutritionnel de 90 % est alors renormalisé à 100 % et la complétude exposée
-reste 90 %. Une assiette contenant un aliment ou une portion PRAL non résolue
-ne produit ni PRAL total ni PRAL partiel. `pralStatus` décrit le marqueur ; le
-profil global prend alors le statut `partial_data` puisque le PRAL est
-facultatif.
+aucune valeur n'est imputée et `pralStatus = insufficient_data`. Une assiette
+contenant un aliment ou une portion PRAL non résolue ne produit ni PRAL total
+ni PRAL partiel. `pralStatus` décrit le marqueur ; le statut du profil suit
+alors la priorité suivante :
+
+1. si une composante obligatoire manque, `profileStatus = insufficient_data`
+   et aucun score agrégé n'est produit ;
+2. si le PRAL est la seule composante indisponible, le profil nutritionnel de
+   90 % est renormalisé à 100 %, `profileStatus = partial_data` et la
+   complétude vaut 90 % ;
+3. si le PRAL et une autre composante facultative manquent, le profil est
+   `partial_data`, les poids disponibles sont renormalisés et la complétude est
+   la somme de leurs poids effectifs originaux, donc strictement inférieure à
+   90 %.
 
 - [x] Une composante obligatoire non numérique produit insufficient_data.
 - [x] Une composante exclue ne participe jamais au calcul.
@@ -212,6 +220,10 @@ impose une nouvelle validation avant diffusion.
 
 Décision du 2026-07-18 : **versions et persistance future validées**.
 
+Ces identifiants sont figés pour la seconde passe mais restent non publiables
+et non activés tant que les p5/p95 PRAL réels et les vecteurs pondérés signés
+ne sont pas rattachés au contrat.
+
 ## Avis final
 
 Choisir exactement un avis :
@@ -243,7 +255,8 @@ Travaux encore requis avant de terminer LOT-01 :
 
 1. calculer les p5/p95 PRAL réels sur Ciqual 2025 V1 ;
 2. recalculer et faire signer les vecteurs pondérés des 12 vedettes ;
-3. inscrire la décision clinique dans CHANGELOG.md ;
-4. proposer la clôture de LOT-01, sans produire de code C5.
+3. rattacher à chaque liaison sa source et son niveau de preuve ;
+4. inscrire la décision clinique dans CHANGELOG.md ;
+5. proposer la clôture de LOT-01, sans produire de code C5.
 
 LOT-01 n'est pas terminé par le présent avis. C5 reste inactive à 1/8.

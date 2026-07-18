@@ -112,8 +112,10 @@ Décisions consignées :
 - calcul PRAL fixé par 100 g en C5A, puis par total et densité pondérée par les
   portions en C5B ;
 - en cas d'intrant PRAL non exact, aucune imputation ni valeur partielle :
-  `pralStatus = insufficient_data`, `profileStatus = partial_data`, sous-profil
-  nutritionnel renormalisé et complétude 90 % ;
+  `pralStatus = insufficient_data` ; si seul le PRAL manque,
+  `profileStatus = partial_data` et complétude 90 % ; avec un autre facultatif
+  manquant, complétude égale aux poids disponibles ; avec un obligatoire
+  manquant, `profileStatus = insufficient_data` et aucun score ;
 - noyau obligatoire validé : protéines 25000, fibres 34100, AG saturés 40302,
   AG monoinsaturés 40303 et AG polyinsaturés 40304 ;
 - sucres 32000, ALA 41833, EPA 42053, DHA 42263, sel 10004 et PRAL facultatifs
@@ -126,11 +128,13 @@ Décisions consignées :
   renormalisation, complétude pondérée et liste des absences ;
 - versions validées : `equilibre_assiette`, `ciqual-2025-v1`,
   `c5a-b1-mapping-v1`, `c5a-b1-score-v1` et
-  `c5a-pral-remer-manz-v1`, sous identité append-only.
+  `c5a-pral-remer-manz-v1`, sous identité append-only ; identifiants figés mais
+  non publiables avant rattachement des p5/p95 PRAL et vecteurs signés.
 
 Le gate clinique est acquis. La seconde passe reste requise pour calculer les
-p5/p95 PRAL réels, produire et faire signer les vecteurs pondérés, inscrire la
-décision clinique dans CHANGELOG.md et proposer ensuite la clôture.
+p5/p95 PRAL réels, produire et faire signer les vecteurs pondérés, rattacher
+les sources et niveaux de preuve par liaison, inscrire la décision clinique
+dans CHANGELOG.md et proposer ensuite la clôture.
 
 **Statut : validation_clinique_acquise — seconde_passe_documentaire_requise.**
 LOT-01 n'est pas terminé et la campagne reste inactive à 1/8 lot terminé.

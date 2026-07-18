@@ -150,11 +150,14 @@ les cinq intrants PRAL exacts ou si sa portion n'est pas valide, aucun PRAL
 partiel d'assiette n'est produit.
 
 Dans ce cas, `pralStatus = insufficient_data`, sans conversion en zéro ni
-imputation. Le sous-profil nutritionnel disponible, qui représente 90 % du
-contrat complet, est renormalisé de 90 à 100 % et la complétude exposée est
-fixée à 90 %. Le profil global prend le statut `partial_data` puisque le PRAL
-est facultatif. Cette règle spécifique s'applique au sein de la politique
-globale validée de données insuffisantes décrite plus bas.
+imputation. Si le PRAL est la seule composante indisponible, le sous-profil
+nutritionnel de 90 % est renormalisé à 100 %, le profil global prend le statut
+`partial_data` et la complétude vaut 90 %. Si une autre composante facultative
+manque également, la complétude est la somme des poids effectifs originaux
+réellement disponibles, donc inférieure à 90 %, puis ces poids sont
+renormalisés. Si une composante obligatoire manque, le profil global est
+`insufficient_data` et aucun score agrégé n'est produit, quel que soit le
+statut PRAL.
 
 La formule PRAL est versionnée sous **c5a-pral-remer-manz-v1**. Elle n'est pas
 activée par ce document.
@@ -263,6 +266,10 @@ Toute évolution de `datasetVersion`, `mappingVersion`, `scoreVersion` ou
 `pralFormulaVersion` rend les profils et diffusions antérieurs `stale` sans les
 supprimer et impose une nouvelle validation avant diffusion.
 
+Les identifiants validés sont figés pour la seconde passe mais ne deviennent
+ni publiables ni activables avant rattachement des p5/p95 PRAL réels et des
+vecteurs pondérés signés.
+
 ## Gate clinique acquis
 
 Martial CAYRE, praticien valideur responsable de la gouvernance clinique
@@ -270,6 +277,7 @@ WellNeuro, a validé le présent contrat le 2026-07-18 sous la référence
 **C5-LOT01-VALIDATION-MC-2026-07-18-v1**.
 
 La seconde passe doit encore calculer les p5/p95 PRAL réels, produire et faire
-signer les vecteurs pondérés attendus des 12 vedettes, puis documenter la
-décision clinique dans CHANGELOG.md avant toute proposition de clôture.
-LOT-01 n'est pas terminé et C5 reste inactive.
+signer les vecteurs pondérés attendus des 12 vedettes, rattacher à chaque
+liaison sa source et son niveau de preuve, puis documenter la décision clinique
+dans CHANGELOG.md avant toute proposition de clôture. LOT-01 n'est pas terminé
+et C5 reste inactive.
