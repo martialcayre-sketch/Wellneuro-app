@@ -99,9 +99,9 @@ sont remplacés) :
 | LOT-01 | Spécification du modèle et gate migration | **terminé** (2026-07-17) |
 | LOT-02 | Migration Prisma et API minimale | **terminé** (2026-07-17, gate levé) |
 | LOT-03 | Versionnement et validation du protocole | **livré** (2026-07-17, PR #103 Part A + #107 Part B ; CI PR à confirmer) |
-| LOT-04 | Check-ins et décision J21 | à_faire |
-| LOT-05 | Compagnon patient minimal | à_faire |
-| LOT-06 | Tests, rétrocompatibilité et handoff | à_faire |
+| LOT-04 | Check-ins et décision J21 | **livré** (2026-07-18, sans migration ; branche `feat/c2a-lot-04-checkins`) |
+| LOT-05 | Compagnon patient minimal | **livré** (2026-07-18, borné R8-lite ; sans migration) |
+| LOT-06 | Tests, rétrocompatibilité et handoff | **livré** (2026-07-18 ; PR C2A LOT-04→06 à ouvrir, E2E autorité CI) |
 
 Décisions de compilation :
 

@@ -494,3 +494,92 @@ Part A avant Part B (re-cibler #107 sur `main`). Puis C2A LOT-04 (check-ins J21)
 
 **Questions ouvertes** : CI des PR #103/#107 ; « Envoyé »/transmission (LOT-05) ;
 trust-v1-lot-migration ; CNIL écoute ambiante.
+
+## [2026-07-17] — C2A LOT-03 : merges exécutés, en production
+
+**Décisions** : « à faire côté humain » exécuté. #103 Part A squash-mergé sur `main`
+(déploiement prod + migration additive `c2a_diffusion_v1` appliquée). Part B livré via
+**nouvelle PR #109** (rebase propre sur `main`, diff limité à Part B), squash-mergée.
+
+**Options écartées / pourquoi** : force-pusher #107 — impossible (hook
+`block-risky-commands`, non contourné) ; rouvrir #107 — impossible (sa branche de base
+supprimée au merge de #103 l'a orphelinée/fermée), d'où #109 ; working-tree JA5-03 non
+commité **discardé** (déjà sur `main` via #104/#108, régressait CAMPAGNE.md).
+
+**Validations exécutées** : CI #109 `verify` (dont e2e `dashboard-praticien`) ✅ 4m33s,
+`devcontainer-smoke` ✅ — lève le doute e2e local ROUGE de la session précédente.
+Déploiement prod `main` : Vercel ✅, migration appliquée.
+
+**Prochaine action prioritaire** : C2A LOT-04 (check-ins J7/J14/J21 + résumé J21 ;
+table `protocol_checkins` déjà présente depuis LOT-02).
+
+**Questions ouvertes** : JA5 activation non commité (agent parallèle) à committer par son
+owner ; « Envoyé »/transmission (LOT-05) ; trust-v1-lot-migration ; CNIL écoute ambiante.
+
+## [2026-07-18] — C2A LOT-04 livré (check-ins J7/J14/J21 + résumé J21)
+
+**Décisions de cadrage** (validées) : (1) décision J21 **sans nouvelle table** — panneau
+praticien lecture seule + 6 labels comme actions guidées vers le versionnement/diffusion
+existants ; (2) **slice patient complète** (API + formulaire + tendance) ; (3) check-in à
+**4 questions** (adhésion, tolérance, énergie, sommeil). **Aucune migration** (table
+`protocol_checkins` déjà présente depuis LOT-02).
+
+**Réalisé** : `lib/protocol/checkinDomain.ts` (domaine pur : catalogue, validation,
+planification J7/J14/J21 ±3 j, chaînage append-only) + `checkins.ts` (persistance) +
+`resumeJ21.ts` (point de jonction momentum + check-ins). Route patient
+`api/portail/protocole/checkin` (cookie portail obligatoire, email-gate exclu §8.4,
+assignation d'ancrage résolue serveur, point d'étape imposé par le calendrier de diffusion).
+Route praticien `api/praticien/protocoles/checkins` (check-ins + résumé J21). UI :
+`patient-companion/ProtocolCheckinForm` + `ProtocolCheckinTrend` (tendance factuelle, aucun
+%), sous-route `portail/[token]/suivi` + lien hub ; `patient-cockpit/J21DecisionPanel` monté
+dans `ClinicalRuntimeSection`.
+
+**Validations** : type-check ✅, Vitest **100/100** (48 nouveaux), `next lint` ✅,
+`scoring-check` ✅, anti-secrets ✅, `git status web/prisma/` vide (aucune migration).
+
+**Alignement 5.0** (vérifié) : C2A réaffirmé par le programme « la Spirale » (gate Phase A') ;
+LOT-05 borné R8-lite (accueil du protocole actif ≠ accueil de trajectoire « Ma spirale » =
+SP-SPI, Phase B/IDP). À porter au handoff : discordances `RelectureNote` (A6-1, C2A vs SP-TT)
+et budget de charge (A7-14).
+
+**Options écartées** : nouvelle table de décision J21 (gate migration) ; UI patient différée
+à LOT-05 ; recompute clinique côté patient pour la vue protocole.
+
+**Dette** : score du résumé J21 = null en V1 (aucun historique d'équilibre daté branché sur
+`momentum.ts` — relève de C2B) ; modèle patient mono-protocole.
+
+**Prochaine action** : LOT-05 (compagnon patient minimal borné R8-lite), puis LOT-06
+(tests/handoff), puis 1 PR LOT-04→06 avec pause avant merge.
+
+## [2026-07-18] — C2A LOT-05 + LOT-06 : clôture d'implémentation de la campagne
+
+**LOT-05 (compagnon patient minimal, borné R8-lite)** : route `GET /api/portail/protocole`
+dérivant une **vue patient-safe** du protocole diffusé (payload du draft, §8.3 ; miroir de
+`PatientProtocolAction` — jamais idealPlan/rescuePlan/interne) ; helpers portail factorisés
+(`lib/protocol/portailProtocol.ts`, réutilisés par la route check-in) ; `PatientCompanionHome`
+(action du jour, accès fiche + rendez-vous de suivi, tendance factuelle, mode « jour
+difficile », états sans-protocole/check-in dû/fin de cycle) monté en tête du hub portail.
+Garde-fou 5.0 : accueil du **protocole actif**, jamais « Ma spirale » (= SP-SPI, Phase B/IDP).
+
+**LOT-06 (tests/rétro/handoff)** : Vitest **complet 418/418 ✅**, type-check/lint/scoring/
+anti-secrets ✅, gate de dérive **satisfait par construction** (aucun changement
+`schema.prisma`/migrations). `test:worktree` arrêté en fail-fast à l'audit campagnes sur une
+erreur **JA non commitée** (`active_lot_missing`, `lot_courant=—`) — hors périmètre, exclue de
+mes commits ; committed HEAD JA valide (`LOT-05`) → CI de la PR propre. Handoff rédigé
+(C2B : score J21 via momentum ; SP-SPI : accueil trajectoire post-IDP ; SP-TT : relecture_notes
+différée). **Discordances 5.0 consignées** : `RelectureNote` (A6-1 « en C2A » vs différée SP-TT)
+et budget de charge (A7-14) — à arbitrer, futur gate migration.
+
+**Alignement 5.0** : revue effectuée sur demande — 5.0 « la Spirale » **réaffirme C2A** (gate
+Phase A'), ne le supersède pas ; le compagnon reste protocole-scoped, l'accueil de trajectoire
+est SP-SPI.
+
+**Options écartées** : recompute clinique côté patient (fragile au staleness) → vue dérivée du
+payload ; toucher/committer les fichiers JA parallèles ; merge automatique en prod.
+
+**Prochaine action** : commits par lot (fichiers **C2A uniquement**) sur
+`feat/c2a-lot-04-checkins`, push, 1 PR base `main`, **PAUSE avant merge** (confirmation
+explicite ; déploiement prod Vercel, aucune migration). Ensuite : C2B ou campagne data (C5A).
+
+**Questions ouvertes** : confirmation merge→prod de la PR C2A ; arbitrage RelectureNote /
+budget de charge ; fichiers JA parallèles à committer par leur owner.
