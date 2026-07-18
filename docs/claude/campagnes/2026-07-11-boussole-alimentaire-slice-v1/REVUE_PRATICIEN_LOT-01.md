@@ -7,6 +7,7 @@ date_avis: "2026-07-18"
 valideur: "Martial CAYRE"
 role_valideur: "praticien valideur responsable de la gouvernance clinique WellNeuro"
 validation_ref: "C5-LOT01-VALIDATION-MC-2026-07-18-v1"
+preuve_git: "20c4119be10cc67c9be875746647b9a4bfe54004"
 ---
 
 # C5 LOT-01 — revue praticien du mapping clinique
@@ -230,8 +231,8 @@ Date de l'avis : **2026-07-18**
 Référence de la preuve de validation :
 **C5-LOT01-VALIDATION-MC-2026-07-18-v1**
 
-La preuve Git est rattachée à cette référence dans le frontmatter après le
-commit documentaire qui porte la présente validation.
+La preuve Git rattachée à cette référence est le commit documentaire dont le
+hash complet figure dans le frontmatter.
 
 ## Statut actuel
 
