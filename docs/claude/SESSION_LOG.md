@@ -785,3 +785,24 @@ flag `false`, non destructif. Verdict patient acté conditionnel, dettes non maq
 
 **Prochaine action** : merger la PR LOT-07, définir `WN_C5_ENABLED=true` en prod +
 redéployer, smoke test boussole ≠ 404, puis lever les dettes du volet patient.
+
+## 2026-07-18 — Audit UX 5.0, poste de pilotage & A5-R2 (PR #138 mergée)
+
+**Décisions** : SP-RUN posé étalon de conformité 5.0 ; direction « poste de
+pilotage clinique » actée au registre (**A6-R1** : cockpit borné à l'écran,
+cycle clinique en colonne vertébrale, instruments à tiroir, métriques actives,
+patient séquentiel, typo remontée) ; canvas mid-tone « ardoise & sable » acté
+(**A5-R2**, documentation seule — `globals.css` intact). Livrés : audit de
+conformité du front UX, proposition + maquette autonome
+(`propositions/2026-07-18-refonte-ux-5-0/`), alignement additif dans les 12
+`CAMPAGNE.md`, design-system §9, CHANGELOG.
+
+**Options écartées** : retour palette teal/or 4.0 (périmée) ; re-spécification
+profonde des campagnes (risque sur contrats figés) ; application immédiate au
+code (réservée Vague 1).
+
+**Prochaine action** : lot Vague 1 (tokens portail patient, métriques actives,
+cockpit borné, typo, A5-R2 dans `globals.css`), en synergie avec D-C5-04.
+
+**Questions ouvertes** : cadrage des 7 campagnes UX (SP-COP, SP-TT, IDP,
+SP-SPI, SP-MET, SP-CAB, SP-AMB) ; suivi des dettes C5 D-C5-01→04 à l'activation.
