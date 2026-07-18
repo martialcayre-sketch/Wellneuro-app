@@ -7,6 +7,7 @@ import {
   deriveVersionId,
   isClinicalChange,
   resolveActiveVersion,
+  toDraftCreateInput,
   type PersistedVersionRow,
 } from './versioning';
 
@@ -105,5 +106,25 @@ describe('isClinicalChange / clinicalContentHash', () => {
   it('considère toujours une première version comme un changement', () => {
     const a = draftAt('2026-01-02T00:00:00.000Z');
     expect(isClinicalChange(null, a)).toBe(true);
+  });
+
+  it('persiste la date réelle de revue, distincte de la dernière modification', () => {
+    const draft = buildProtocolDraft({
+      protocolDraftId: deriveProtocolDraftId('DEC_1'), decisionCard,
+      createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-02T00:00:00.000Z',
+      purpose: 'Stabiliser le matin', followUpCriterion: 'Critère observable.',
+      therapeuticLoad: { level: 'light', source: 'practitioner', justification: null },
+      actions: [action],
+      review: {
+        reviewedAt: '2026-01-03T00:00:00.000Z',
+        reviewerRole: 'practitioner', confirmation: 'content_reviewed',
+      },
+    });
+    const input = toDraftCreateInput({
+      id: 'version-1', draft, decisionCard,
+      episode: { patientId: 'patient-fixture', assessmentEpisodeId: 'episode-fixture' } as never,
+      supersedesDraftId: null,
+    });
+    expect(input.reviewedAt?.toISOString()).toBe('2026-01-03T00:00:00.000Z');
   });
 });

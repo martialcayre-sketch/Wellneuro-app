@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Moteurs et contrats versionnés"
-statut: "à_faire"
+statut: "terminé — moteurs et contrats versionnés"
 dépend_de: "LOT-01 validé + LOT-02 intègre"
 ---
 
@@ -46,11 +46,11 @@ et fixtures validées en LOT-01.
 
 ## Étapes
 
-- [ ] Écrire les contrats et validateurs de version.
-- [ ] Implémenter le calcul intrinsèque pur.
-- [ ] Implémenter la projection contextuelle pure.
-- [ ] Ajouter l'adaptateur protocole V1/V2 et l'invalidation.
-- [ ] Couvrir les cas limites et publier les contrats.
+- [x] Écrire les contrats et validateurs de version.
+- [x] Implémenter le calcul intrinsèque pur.
+- [x] Implémenter la projection contextuelle pure.
+- [x] Ajouter l'adaptateur protocole V1/V2 et l'invalidation.
+- [x] Couvrir les cas limites et publier les contrats.
 
 ## Tests
 
@@ -71,4 +71,24 @@ fabriquer silencieusement des versions ou des références absentes.
 
 ## Résultats
 
-À renseigner lors de la clôture du lot.
+- Contrats purs publiés sous `web/src/lib/food-compass/` : profil intrinsèque,
+  lecture contextuelle, référence d'action, vue patient qualitative et
+  référence d'assiette.
+- Mapping clinique signé appliqué sans imputation : noyau obligatoire bloquant,
+  constituants facultatifs renormalisés, PRAL Remer–Manz et poids 90/10.
+- Distribution V1 scellée sur les 3 484 aliments, le MD5 officiel et les
+  p5/p95 signés. Le contrôle d'intégration reconstruit les 12 vedettes depuis
+  les XML officiels : deux profils complets et dix partiels, résultats identiques
+  aux fixtures praticien.
+- Payload protocole V1 conservé en lecture. Une référence C5 exige un V2,
+  l'identifiant et l'empreinte exacts du protocole source, une action
+  alimentaire, une revue praticien et une approbation ultérieure ancrée.
+- Toute modification remet le protocole en brouillon et rend l'approbation
+  antérieure caduque. La projection patient refuse les profils partiels ainsi
+  que tout score, pourcentage ou classement dans les textes.
+- Flag `WN_C5_ENABLED` fail-closed : seule la valeur exacte `true` active le
+  chemin ; la variable reste absente en Production et C5 demeure inactive.
+- Vérifications : 451 tests unitaires, typage, scoring, lint, build, contrôle
+  anti-secrets, audit documentaire et revue indépendante.
+
+LOT-03 est terminé. C5 passe à `4/8`, reste inactive et poursuit avec LOT-04.

@@ -669,3 +669,18 @@ LOT-07 et le gate final restent requis.
 
 **Questions ouvertes** : aucune pour LOT-02 ; activation Production toujours
 soumise à une instruction explicite après LOT-07.
+
+## 2026-07-18 — C5 LOT-03 moteurs et contrats versionnés
+
+**Décisions** : contrats C5 purs livrés avec mapping clinique signé, PRAL
+Remer–Manz, distribution Ciqual 2025 scellée et protocole V2. La référence C5
+est liée à l'identifiant et au hash du protocole source ; la vue patient exige
+un V2 relu puis approuvé et reste strictement qualitative. Les XML officiels
+reproduisent les 12 fixtures signées (2 complètes, 10 partielles).
+
+**Option écartée** : toute distribution partielle, référence transférable,
+projection patient sur simple chaîne d'approbation ou diffusion automatique.
+
+**Prochaine action** : LOT-04 — UX praticien « Observatoire ».
+
+**Questions ouvertes** : aucune pour LOT-03 ; C5 reste inactive à `4/8`.

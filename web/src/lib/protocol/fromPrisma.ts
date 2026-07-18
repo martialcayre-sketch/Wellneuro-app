@@ -1,5 +1,10 @@
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
-import type { ProtocolDraft } from '@/lib/clinical-engine/types';
+import {
+  VERSION_PROTOCOL_DRAFT,
+  VERSION_PROTOCOL_DRAFT_V2,
+  type ProtocolDraft,
+} from '@/lib/clinical-engine/types';
+import { assertProtocolDraftC5Structure } from '@/lib/food-compass/refValidation';
 
 // Reconstruction d'un `ProtocolDraft` depuis le `payload` JSONB persisté, avec
 // re-vérification d'intégrité (comble le trou LOT-02 : aucun code ne revalidait
@@ -32,11 +37,19 @@ export function reconstructProtocolDraft(
   if (typeof draft.protocolDraftId !== 'string' || typeof draft.inputHash !== 'string') {
     throw new ProtocolPayloadIntegrityError('Payload de protocole incomplet.');
   }
+  if (draft.version !== VERSION_PROTOCOL_DRAFT && draft.version !== VERSION_PROTOCOL_DRAFT_V2) {
+    throw new ProtocolPayloadIntegrityError('Version de payload protocole inconnue.');
+  }
   const recomputed = recomputeDraftInputHash(draft);
   if (recomputed !== draft.inputHash || draft.inputHash !== expectedInputHash) {
     throw new ProtocolPayloadIntegrityError(
       'Empreinte du protocole incohérente avec le payload stocké.',
     );
+  }
+  try {
+    assertProtocolDraftC5Structure(draft);
+  } catch {
+    throw new ProtocolPayloadIntegrityError('Structure ou référence C5 du protocole invalide.');
   }
   return draft;
 }

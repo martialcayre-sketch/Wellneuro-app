@@ -4,6 +4,22 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### C5 LOT-03 — moteurs et contrats versionnés (2026-07-18)
+
+- Ajout des contrats C5A/C5B déterministes : profil intrinsèque chiffré,
+  lecture contextuelle, référence d'action, vue patient qualitative et
+  référence d'assiette, tous versionnés et hashés.
+- Application du mapping clinique signé `equilibre_assiette`, du PRAL
+  Remer–Manz et de la pondération 90/10 sans imputation. La distribution est
+  scellée sur Ciqual 2025 V1 ; un contrôle depuis les XML officiels reproduit
+  les 12 fixtures praticien signées.
+- Ajout du payload protocole V2 pour les références C5, avec compatibilité V1,
+  ancrage sur l'identifiant et l'empreinte du protocole source, retour en
+  brouillon à chaque modification et invalidation des approbations antérieures.
+- La vue patient exige un V2 réellement relu et approuvé, refuse les profils
+  partiels et ne contient aucun score, pourcentage ou classement. C5 reste
+  désactivée par défaut via `WN_C5_ENABLED=false` et passe à 4/8.
+
 ### C5 LOT-02 — migration du référentiel Ciqual (2026-07-18)
 
 - Ajout du modèle PostgreSQL/Prisma `CiqualNutrientValue`, versionné par

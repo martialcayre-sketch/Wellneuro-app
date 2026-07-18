@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-boussole-alimentaire-slice-v1"
 titre: "C5 — Boussole alimentaire WellNeuro 5.0"
-statut: "en cours — LOT-02 terminé, LOT-03 à faire, inactive"
+statut: "en cours — LOT-03 terminé, LOT-04 à faire, inactive"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-18"
-lot_courant: "LOT-03"
+lot_courant: "LOT-04"
 ---
 
 # C5 — Boussole alimentaire WellNeuro 5.0
@@ -50,7 +50,7 @@ Le dossier sources/ reste un matériau historique non exécutable.
 | LOT-00 | Audit et contrat C5 5.0 | **terminé — conformité 5.0 cadrée** | aucun |
 | LOT-01 | Mapping clinique et gate de validation | **terminé — validation clinique et vecteurs signés** | gate acquis |
 | LOT-02 | Référentiel Ciqual et gate migration | **terminé — référentiel ciqual importé et intègre** | migration et import appliqués ; intégrité, RLS et advisors vérifiés |
-| LOT-03 | Moteurs et contrats versionnés | à_faire | LOT-01 validé et LOT-02 intègre |
+| LOT-03 | Moteurs et contrats versionnés | **terminé — contrats déterministes et protocole V2** | LOT-01 validé et LOT-02 intègre |
 | LOT-04 | UX praticien « Observatoire » | à_faire | LOT-03 |
 | LOT-05 | UX patient « Jardin » | à_faire | LOT-04 et protocole approuvé |
 | LOT-06 | Assiettes, substitutions et pont JA | à_faire | LOT-03 et contrat JA publié |
@@ -84,8 +84,8 @@ le go/no-go final reste découpé entre C5A, C5B praticien et C5B patient.
 - **GO import** : confirmation distincte acquise sous la référence
   `C5-LOT02-IMPORT-MC-2026-07-18-v1` ; 55 744 lignes importées et contrôlées
   en Production, déclencheur temporaire retiré.
-- **GO LOT-03** : référentiel complet et intègre ; C5 est à `3/8` et reste
-  inactive.
+- **GO LOT-04** : moteurs déterministes, références versionnées et compatibilité
+  protocole V1/V2 vérifiés ; C5 est à `4/8` et reste inactive.
 - **NO-GO activation** : C5 reste inactive tant que les lots applicatifs et le
   go/no-go LOT-07 ne sont pas terminés et explicitement validés.
 - **NO-GO patient** : sans praticien validateur, protocole diffusé et référentiel

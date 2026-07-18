@@ -116,6 +116,10 @@ export function toDraftCreateInput(params: {
     inputHash: draft.inputHash,
     contractVersion: draft.version,
     supersedesDraftId,
-    reviewedAt: draft.status === 'practitioner_reviewed' ? new Date(draft.updatedAt) : null,
+    reviewedAt: draft.status === 'practitioner_reviewed'
+      // Les nouveaux contrats conservent la date exacte de revue. Le repli sur
+      // updatedAt maintient la lecture des anciens payloads déjà persistés.
+      ? new Date(draft.review?.reviewedAt ?? draft.updatedAt)
+      : null,
   };
 }
