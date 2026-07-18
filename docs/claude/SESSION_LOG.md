@@ -806,3 +806,24 @@ cockpit borné, typo, A5-R2 dans `globals.css`), en synergie avec D-C5-04.
 
 **Questions ouvertes** : cadrage des 7 campagnes UX (SP-COP, SP-TT, IDP,
 SP-SPI, SP-MET, SP-CAB, SP-AMB) ; suivi des dettes C5 D-C5-01→04 à l'activation.
+
+## [2026-07-18] — C5 LOT-07 : activation production confirmée
+
+**Décisions** : activation C5 exécutée sur autorisation explicite du responsable —
+`WN_C5_ENABLED=true` posé dans Vercel Production + redéploiement (`o1f0xy3re`,
+aliasé `app.wellneuro.fr`). Verdict C5B patient acté GO **conditionnel**, dettes
+humaines non maquillées (`DETTE_C5.md`, D-C5-01→04).
+
+**Options écartées** : signature clinique distincte (responsable a autorisé à acter
+directement) ; implémentation préalable a11y/E2E boussole (reportée en dettes pour
+ne pas retarder l'activation).
+
+**Validation** : 573 tests, type-check, lint, scoring, prisma validate, audit,
+anti-secrets, advisors sans alerte bloquante, CI verte (PR #137). Smoke test prod :
+route boussole non authentifiée 404→**401** ⇒ flag actif en production.
+
+**Prochaine action** : lever les dettes du volet patient (accessibilité, E2E
+boussole des 3 fixtures) avant élargissement multi-praticien.
+
+**Questions ouvertes** : rétro-compatibilité des références d'assiette lors d'un
+futur `c5b-plate-catalog-v2`.
