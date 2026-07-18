@@ -407,7 +407,7 @@
 - **Décisions actées** : C3 ne possède **aucun contenu clinique source** ;
   renommage acté (le contenu réel est un moteur de composition documentaire,
   pas des « fiches conseils »).
-- **Statut** : cadrée, lots à compiler N+1.
+- **Statut** : compilée (2026-07-18 — 5 lots dans `lots/`, à exécuter N+1). Discordance 5.0 « fil de correspondance » (réponse médecin, sans HDS) portée au handoff LOT-04.
 
 ### C4 — Compléments clean label (`2026-07-11-complements-clean-label-v1`)
 
