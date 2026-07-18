@@ -279,6 +279,9 @@ export async function activateJaObservationSnapshot(input: JaActivationInput): P
   if (!episodeId) {
     throw new TypeError('Snapshot JA invalide: épisode manquant.');
   }
+  if (sourcePayload.actor !== 'praticien') {
+    throw new TypeError('Activation JA réservée aux snapshots praticien.');
+  }
 
   const reviewedAt = new Date().toISOString();
   const nextPayload = {
