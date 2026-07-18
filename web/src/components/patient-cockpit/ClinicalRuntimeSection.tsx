@@ -12,6 +12,8 @@ import { ProtocolMiniBuilder } from './ProtocolMiniBuilder';
 import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
+import { J21DecisionPanel } from './J21DecisionPanel';
+import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
 
 type VersionsApiResponse = {
   ok: boolean;
@@ -54,6 +56,21 @@ export function ClinicalRuntimeSection({
   const [approvalStale, setApprovalStale] = useState(false);
   const [diffusionState, setDiffusionState] = useState<DiffusionState>('idle');
   const [diffusionError, setDiffusionError] = useState<string | null>(null);
+  // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
+  const [resumeJ21, setResumeJ21] = useState<ResumeJ21 | null>(null);
+
+  const loadCheckins = useCallback(async (decisionCardId: string) => {
+    try {
+      const response = await fetch(
+        `/api/praticien/protocoles/checkins?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
+      );
+      const payload = (await response.json()) as { ok: boolean; resume?: ResumeJ21 };
+      if (!response.ok || !payload.ok) return;
+      setResumeJ21(payload.resume ?? null);
+    } catch {
+      // Le résumé est indicatif : un échec de lecture ne bloque pas le cockpit.
+    }
+  }, [idPatient]);
 
   const loadDiffusion = useCallback(async (decisionCardId: string) => {
     try {
@@ -156,8 +173,9 @@ export function ClinicalRuntimeSection({
     if (readyDecisionCardId) {
       void loadVersions(readyDecisionCardId);
       void loadDiffusion(readyDecisionCardId);
+      void loadCheckins(readyDecisionCardId);
     }
-  }, [readyDecisionCardId, loadVersions, loadDiffusion]);
+  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins]);
 
   // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
   // d'envoi patient). Anti-écrasement via baseVersionId → 409 version_stale.
@@ -262,13 +280,15 @@ export function ClinicalRuntimeSection({
 
       <MissingDataPanel missingData={review?.missingData ?? null} discordances={review?.discordances ?? null} />
       <DecisionSummaryCard decisionCard={decisionCard} />
-      <ProtocolMiniBuilder
-        decisionCard={decisionCard}
-        onReviewed={fixture ? onFixtureReviewed : undefined}
-        onSaveVersion={fixture ? undefined : saveVersion}
-        saveState={saveState}
-        saveError={saveError}
-      />
+      <div id="protocol-version-builder">
+        <ProtocolMiniBuilder
+          decisionCard={decisionCard}
+          onReviewed={fixture ? onFixtureReviewed : undefined}
+          onSaveVersion={fixture ? undefined : saveVersion}
+          saveState={saveState}
+          saveError={saveError}
+        />
+      </div>
       <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
       {!fixture && <ProtocolVersionHistory versions={versions} />}
       {!fixture && versions.length > 0 && (
@@ -280,6 +300,14 @@ export function ClinicalRuntimeSection({
           state={diffusionState}
           error={diffusionError}
           onApprove={approveForDiffusion}
+        />
+      )}
+      {!fixture && readyDecisionCardId && (
+        <J21DecisionPanel
+          resume={resumeJ21}
+          onAjuster={() =>
+            document.getElementById('protocol-version-builder')?.scrollIntoView({ behavior: 'smooth' })
+          }
         />
       )}
     </>
