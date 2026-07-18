@@ -407,7 +407,7 @@
 - **Décisions actées** : C3 ne possède **aucun contenu clinique source** ;
   renommage acté (le contenu réel est un moteur de composition documentaire,
   pas des « fiches conseils »).
-- **Statut** : compilée (2026-07-18 — 5 lots dans `lots/`, à exécuter N+1). Discordance 5.0 « fil de correspondance » (réponse médecin, sans HDS) portée au handoff LOT-04.
+- **Statut** : **V1 exécutée** (2026-07-18 — LOT-00 à LOT-04 en prod, sans migration ; domaine `web/src/lib/documents/`, composition deux colonnes, rendus par destinataire, impression HTML). Discordance 5.0 « fil de correspondance » (réponse médecin, sans HDS) : rendu médecin **sortant** livré ; **fil bidirectionnel reporté** à une extension à cadrer (handoff LOT-04). Persistance option (b) non ouverte (gate migration).
 
 ### C4 — Compléments clean label (`2026-07-11-complements-clean-label-v1`)
 

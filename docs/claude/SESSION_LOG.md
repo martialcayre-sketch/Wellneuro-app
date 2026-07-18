@@ -704,3 +704,24 @@ choix du dernier protocole du patient et diffusion automatique.
 `5/8`; clavier, zoom 200 % et contraste seront contrôlés au go/no-go LOT-07.
 
 **Questions ouvertes** : aucune pour LOT-04.
+
+## 2026-07-18 — C3 exécutée (Documents contextuels multi-destinataires V1)
+
+**Décisions** : campagne C3 exécutée intégralement — 5 lots = 5 PR
+(#122/#123/#124/#125/#127), un lot → `main`, merge autonome sur CI verte, via
+worktrees propres depuis `origin/main` (aucun fichier C5/JA d'autres owners
+touché). Persistance V1 = **option (a) sans persistance** → aucune migration.
+Domaine pur `web/src/lib/documents/` (contrat de bloc, machine d'états,
+versionnage = tuple) ; composition deux colonnes ; rendus par destinataire
+(field-filter, badge patient, médecin non prescriptif) ; `buildBookletHTML`
+**extrait** et réemployé. Vitest documents 38/38.
+
+**Options écartées** : persistance (b) (gate migration non ouvert) ; fil
+bidirectionnel médecin (discordance 5.0) reporté au handoff LOT-04 ; montage en
+page de production reporté.
+
+**Prochaine action** : monter C3 au cockpit praticien (route + page) ou cadrer le
+fil de correspondance médecin.
+
+**Questions ouvertes** : accès/authentification médecin et régime de conservation
+pour le fil bidirectionnel.

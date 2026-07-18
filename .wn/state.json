@@ -7,7 +7,7 @@
   "status": "idle",
   "active_campaign": null,
   "active_lot": null,
-  "last_completed_lot": "C2B/LOT-09",
+  "last_completed_lot": "C3/LOT-04",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -25,10 +25,10 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Campagne C2 (C2A + C2B) terminée et en prod : C2A LOT-00→06 (#110 et antérieurs), C2B #112/#113/#114 ; cadrage du gate modèle multi-cycles ouvert (#115, propositions/2026-07-18-gate-modele-multi-cycles/). Gate migration multi-cycles différé (A8-5-ii) jusqu'à données réelles ≥ 2 cycles. Prochaine campagne candidate à compiler (règle N+1) : C3 — Correspondance (2026-07-11-fiches-conseils-contextuelles-v1), dépendance C1 satisfaite. Campagnes C5 (boussole) et JA actives en parallèle, pilotées par d'autres owners (worktrees dédiés).",
+  "next_action": "Campagne C3 — Documents contextuels multi-destinataires V1 EXÉCUTÉE et en prod : LOT-00 audit (#122), LOT-01 domaine web/src/lib/documents/ (#123), LOT-02 composition deux colonnes (#124), LOT-03 rendus par destinataire + impression HTML (#125), LOT-04 validation E2E + handoff (#127). Sans migration (persistance option (a)) ; frontière A2 tenue. Reports : montage en page + route d'envoi C3 ; fil bidirectionnel médecin (discordance 5.0) à cadrer ; persistance option (b) sous gate migration non ouvert. Gate modèle multi-cycles (C2B, A8-5-ii) toujours différé. Campagnes C5 (boussole) et JA actives en parallèle, pilotées par d'autres owners (worktrees dédiés).",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-18T00:00:00Z",
+  "updated_at": "2026-07-18T12:45:00Z",
   "parallel_campaigns": []
 }
