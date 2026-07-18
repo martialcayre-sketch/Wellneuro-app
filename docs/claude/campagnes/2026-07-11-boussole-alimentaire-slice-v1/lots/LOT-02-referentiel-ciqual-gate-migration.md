@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Référentiel Ciqual et gate migration"
-statut: "en_attente_confirmation_migration"
+statut: "migration_verifiee — en_attente_deploiement"
 dépend_de: "LOT-01 terminé"
 ---
 
@@ -49,8 +49,9 @@ manifeste des vedettes, fixtures et rapports d'intégrité.
 
 ## Étapes
 
-- [ ] Produire le plan de migration et le vérifier en base éphémère.
-- [ ] Obtenir la confirmation migration, appliquer via l'historique Prisma.
+- [x] Produire le plan de migration et le vérifier en base éphémère.
+- [x] Obtenir la confirmation migration et créer la migration dans l'historique Prisma.
+- [ ] Déployer la migration par le pipeline Prisma/Vercel après revue.
 - [ ] Produire le dry-run d'import et les contrôles de hash, lignes et unités.
 - [ ] Obtenir une confirmation distincte pour l'import.
 - [ ] Importer transactionnellement puis publier le rapport d'intégrité.
@@ -89,8 +90,9 @@ Une source incomplète ne doit jamais être compensée par une valeur inventée.
   réservées et constituants figés.
 - Source temporaire vérifiée le 2026-07-18 : `compo.xml`, MD5
   `2da725585946434df320d8041631998b`, sans donnée brute ajoutée au dépôt.
-- Historique de migration unique confirmé dans `web/prisma/migrations/` ; aucun
-  historique concurrent `supabase/migrations/`.
+- Historique exécutable unique confirmé dans `web/prisma/migrations/`. Le
+  fichier historique vide de 0 octet sous `web/supabase/migrations/` n'est pas
+  utilisé et aucun nouveau fichier n'y est créé.
 - Prisma 7.8.0 valide le schéma existant. Supabase CLI 2.109.1 est disponible.
 
 ### Plan de migration soumis à confirmation
@@ -154,8 +156,22 @@ descriptifs ; le calcul PRAL validé utilise `25000`, `10120`, `10150`,
 Le futur import restera en dry-run par défaut. Sa création puis son exécution
 `--apply` restent soumises au gate d'import distinct, après migration validée.
 
-### État du gate
+### Confirmation et migration vérifiée
 
-LOT-02 attend la **confirmation explicite de migration**. La confirmation
-d'import ne sera demandée qu'après migration testée et dry-run de l'outil
-d'import vérifié. C5 demeure inactive à `2/8`.
+- confirmation humaine reçue le 2026-07-18 : « Je confirme la migration C5
+  LOT-02 selon le plan documenté. » ;
+- référence : `C5-LOT02-MIGRATION-MC-2026-07-18-v1` ;
+- schéma Prisma étendu avec `CiqualNutrientValue` et identité composite
+  `axisCode + versionMapping` ;
+- migration unique :
+  `20260718100010_c5_ciqual_reference_v1/migration.sql` ;
+- deux replays PostgreSQL 17 vierges réussis, avec puis sans rôles Data API ;
+- dérive Prisma nulle ; RLS active ; aucune policy ; aucun grant
+  `anon`/`authenticated` ; lecture `anon` refusée ;
+- contraintes de statut, valeur, unité, unicité et relation versionnée
+  exercées avec succès.
+
+Le détail reproductible figure dans `RAPPORT_MIGRATION_LOT-02.md`. La migration
+n'est pas encore déployée sur Supabase Production et aucune donnée Ciqual n'a
+été importée. La confirmation d'import ne sera demandée qu'après déploiement
+contrôlé et dry-run de l'outil d'import. C5 demeure inactive à `2/8`.

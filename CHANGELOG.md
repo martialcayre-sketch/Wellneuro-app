@@ -4,6 +4,22 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### C5 LOT-02 — migration du référentiel Ciqual (2026-07-18)
+
+- Ajout du modèle PostgreSQL/Prisma `CiqualNutrientValue`, versionné par
+  dataset, aliment et constituant, avec valeur exacte décimale nullable,
+  statut explicite, unité, provenance et empreinte source.
+- Contraintes SQL fermées pour les statuts et unités, cohérence
+  valeur/statut, valeurs non négatives et unicité composite.
+- Identité clinique `NeuroAxis` rendue append-only par
+  `axisCode + versionMapping`; les poids se rattachent désormais à cette même
+  identité versionnée.
+- RLS deny-all activée sur la nouvelle table, sans policy ni privilège Data
+  API pour `anon` ou `authenticated`.
+- Migration confirmée sous la référence
+  `C5-LOT02-MIGRATION-MC-2026-07-18-v1`, rejouée sur PostgreSQL éphémère avec
+  dérive Prisma nulle. Aucun import Ciqual ni activation C5 dans cette étape.
+
 ### C5 LOT-01 — seconde passe documentaire clinique (2026-07-18)
 
 - Calcul reproductible du PRAL Remer–Manz sur Ciqual 2025 V1 : 2 347/3 484

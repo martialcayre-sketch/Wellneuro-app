@@ -325,7 +325,7 @@ model BookletEnvoi {
 // donnée patient). Cf. docs/claude/BOUSSOLE_ALIMENTAIRE_CONTEXTE.md §2.2, §5.2.
 model NeuroAxis {
   id             String   @id @default(cuid())
-  axisCode       String   @unique @map("axis_code")
+  axisCode       String   @map("axis_code")
   labelPatient   String   @map("label_patient")
   labelPraticien String   @map("label_praticien")
   description    String?  @map("description")
@@ -339,6 +339,7 @@ model NeuroAxis {
 
   poids NutrientAxisWeight[]
 
+  @@unique([axisCode, versionMapping], map: "neuro_axis_axis_version_key")
   @@map("neuro_axis")
 }
 
@@ -355,9 +356,30 @@ model NutrientAxisWeight {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
-  neuroAxis NeuroAxis @relation(fields: [axisCode], references: [axisCode])
+  neuroAxis NeuroAxis @relation(fields: [axisCode, versionMapping], references: [axisCode, versionMapping])
 
+  @@unique([axisCode, versionMapping, nutrientCode], map: "nutrient_axis_weight_axis_version_nutrient_key")
   @@map("nutrient_axis_weight")
+}
+
+// Valeurs officielles Ciqual — référentiel C5A versionné, sans donnée patient.
+// Les contraintes de statut/valeur/unité et la posture RLS deny-all sont
+// renforcées dans la migration SQL LOT-02.
+model CiqualNutrientValue {
+  id             String   @id @default(cuid())
+  ciqualCode     String   @map("ciqual_code")
+  nutrientCode   String   @map("nutrient_code")
+  value          Decimal? @db.Decimal(14, 6)
+  valueStatus    String   @map("value_status")
+  unit           String
+  datasetVersion String   @map("dataset_version")
+  sourceRef      String   @map("source_ref")
+  sourceHash     String   @map("source_hash")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([datasetVersion, ciqualCode, nutrientCode], map: "ciqual_nutrient_values_dataset_food_nutrient_key")
+  @@index([datasetVersion, ciqualCode], map: "ciqual_nutrient_values_dataset_food_idx")
+  @@map("ciqual_nutrient_values")
 }
 
 // Moteur d'intention clinique — couche clinique propriétaire (référentiel,
