@@ -652,3 +652,20 @@ et `migrations/` intacts. Registre **non touché** (A8-6 promu seulement après 
 `versionScore` par épisode, backfill) quand ≥ 2 cycles réels comparables existeront.
 
 **Question ouverte** : modèle retenu — colonne vs table dédiée.
+
+## 2026-07-18 — C5 LOT-02 import Ciqual Production
+
+**Décisions** : import `ciqual-2025-v1` confirmé sous
+`C5-LOT02-IMPORT-MC-2026-07-18-v1`, livré par PR #120 puis exécuté en
+Production après advisors sans anomalie. Résultat : 55 744 lignes, 3 484
+aliments, 16 constituants, un hash ; RLS active, zéro policy/grant Data API.
+Le déclencheur temporaire a été retiré et C5 reste inactive.
+
+**Option écartée** : exposer ou activer C5 avec le référentiel seul ; LOT-03 à
+LOT-07 et le gate final restent requis.
+
+**Prochaine action** : LOT-03 — moteurs et contrats versionnés, derrière
+`WN_C5_ENABLED=false` par défaut.
+
+**Questions ouvertes** : aucune pour LOT-02 ; activation Production toujours
+soumise à une instruction explicite après LOT-07.

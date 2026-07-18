@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Référentiel Ciqual et gate migration"
-statut: "import_confirme — importeur_verifie — en_attente_deploiement"
+statut: "terminé — référentiel ciqual importé et intègre"
 dépend_de: "LOT-01 terminé"
 ---
 
@@ -54,7 +54,7 @@ manifeste des vedettes, fixtures et rapports d'intégrité.
 - [x] Déployer la migration par le pipeline Prisma/Vercel après revue.
 - [x] Produire le dry-run d'import et les contrôles de hash, lignes et unités.
 - [x] Obtenir une confirmation distincte pour l'import.
-- [ ] Importer transactionnellement puis publier le rapport d'intégrité.
+- [x] Importer transactionnellement puis publier le rapport d'intégrité.
 
 ## Tests
 
@@ -214,6 +214,31 @@ n'est donc pas déclaré acquis et devra être exécuté avant la clôture du lo
 - le déclencheur Vercel Production lance les advisors Supabase avant l'import
   et refuse toute référence différente.
 
-Le rapport reproductible figure dans `RAPPORT_IMPORT_LOT-02.md`. À ce stade,
-l'import de production n'a pas encore été exécuté et LOT-02 reste ouvert. C5
-demeure inactive à `2/8`.
+Le rapport reproductible figure dans `RAPPORT_IMPORT_LOT-02.md`. Cette étape a
+établi le GO opératoire préalable ; LOT-02 demeurait alors ouvert et C5
+inactive à `2/8` jusqu'à la preuve Production ci-dessous.
+
+### Import Production et clôture
+
+- PR `#120` fusionnée sur `main` au commit
+  `3de796d6996cf2278d061fb90a0bfa126e434a65` après CI complète verte
+  (`29642559010`) et revue indépendante GO ;
+- premier déploiement Production sans déclencheur
+  `dpl_EsJUiN1sAF8cxEeVBG7yz8ubih2v`, état `Ready` : préflight réussi,
+  aucune migration en attente et aucun import exécuté ;
+- déclencheur temporaire exact ajouté uniquement au scope Production, puis
+  redéploiement `dpl_ABbUM7Cq1QoVyaXmvThuWBmbcbqs` ;
+- advisors Supabase avant écriture : `results: []`, aucun avertissement ni
+  erreur ;
+- import transactionnel validé : **55 744** insertions, **3 484** aliments,
+  **16** constituants, **1** hash source, RLS active, zéro policy et zéro grant
+  Data API ;
+- comparaison stricte ligne par ligne acquise avant COMMIT ; no-op idempotent
+  strict exercé par le contrat CI sur la même version ;
+- déclencheur Production retiré immédiatement après le COMMIT et absence
+  vérifiée ; `WN_C5_ENABLED` demeure absent ;
+- déploiement `Ready`, alias `https://app.wellneuro.fr`, redirection `/login`
+  et réponse HTTP 200.
+
+LOT-02 est terminé. C5 passe à `3/8`, reste inactive et poursuit avec LOT-03.
+Aucun UPDATE, DELETE, DROP, score patient ou diffusion C5 n'a été effectué.
