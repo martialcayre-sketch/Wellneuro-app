@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Validation, tests de bout en bout et handoff"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-03"
 ---
 
@@ -56,10 +56,11 @@ d'extension (C4/C5, fil médecin, PDF, persistance).
 
 ## Étapes
 
-- [ ] Tests de bout en bout V1 (composition → rendus → impression → envoi).
-- [ ] Contrat d'extension bloc pour C4/C5 (documentaire).
-- [ ] Handoff : dettes, fil médecin 5.0, PDF, persistance.
-- [ ] Mettre à jour la fiche campagne (statut) ; pointeur registre si nécessaire.
+- [x] Tests de bout en bout V1 (composition → états → rendus par destinataire) :
+      `web/src/lib/documents/parcours.test.ts`.
+- [x] Contrat d'extension bloc pour C4/C5 (documentaire) : `../HANDOFF_LOT-04.md` §2.
+- [x] Handoff : dettes (montage, persistance, PDF), fil médecin 5.0 tranché/reporté.
+- [x] Mettre à jour la fiche campagne (statut → terminée) ; pointeur registre.
 
 ## Tests
 
@@ -69,11 +70,11 @@ d'extension (C4/C5, fil médecin, PDF, persistance).
 
 ## Critères de done
 
-- [ ] Parcours V1 testé de bout en bout.
-- [ ] Contrat C4/C5 documenté (sans implémentation).
-- [ ] Handoff et dettes consignés ; discordance 5.0 « fil de correspondance » tranchée
-      ou explicitement reportée.
-- [ ] Aucune migration.
+- [x] Parcours V1 testé de bout en bout (domaine : synthèse → blocs → états → rendus).
+- [x] Contrat C4/C5 documenté (sans implémentation).
+- [x] Handoff et dettes consignés ; discordance 5.0 « fil de correspondance »
+      **explicitement reportée** (rendu sortant V1 livré ; fil bidirectionnel à cadrer).
+- [x] Aucune migration.
 
 ## Risques / points de vigilance
 
@@ -83,4 +84,21 @@ d'extension (C4/C5, fil médecin, PDF, persistance).
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-07-18 — **clôture de C3 V1**. Handoff complet :
+[`../HANDOFF_LOT-04.md`](../HANDOFF_LOT-04.md).
+
+- **Parcours E2E (domaine)** `web/src/lib/documents/parcours.test.ts` : synthèse
+  validée → `blocsDepuisSynthese` → `assemblerDocument` → machine d'états jusqu'à
+  « envoyé » → `renderDocumentHtml` patient/médecin/praticien. Vérifie la **frontière
+  de données** sur tout le parcours (champ interne jamais côté patient/médecin ;
+  synthèse non validée → aucune diffusion).
+- **Contrat d'extension bloc C4/C5** documenté (handoff §2) : provenance ancrée sur
+  une vérité déjà persistée, régime + garde IA, field-filter, pattern
+  `blocsDepuisX` pur. **Sans implémentation** (frontière A2).
+- **Dettes** (handoff §3) : montage en page + route d'envoi C3 ; persistance
+  option (b) sous gate migration non ouvert ; PDF natif ; signature ; auth médecin.
+- **Discordance 5.0** (handoff §4) : rendu médecin **sortant** livré en V1 ; **fil
+  bidirectionnel** (sans HDS) **reporté** à une campagne/lot d'extension dédié.
+
+Validations : `type-check` vert ; `vitest` documents **38/38** ; `scoring-check`
+vert ; `check_no_secrets` OK ; audit campagnes vert (flags CI). Aucune migration.
