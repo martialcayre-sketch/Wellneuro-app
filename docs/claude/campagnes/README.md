@@ -17,7 +17,7 @@
 | **SP-RUN** | Cockpit vivant (runtime C1) | **terminée** — runtime et branchement cockpit validés le 2026-07-17 | — | N+1 |
 | C2A | Points d'étape + persistance minimale | **terminée** (2026-07-18 — 7 lots en prod, gate migration levé) | C1 ✓ | 7 |
 | C2B | Trajectoire et ajustement (→ Spirale) | **terminée** (2026-07-18 — LOT-07→09 en prod, sans migration ; gate modèle multi-cycles différé) | C2A ✓ | 3 |
-| C3 | Documents contextuels (→ fil de correspondance) | cadrée | C1 ✓ | N+1 |
+| C3 | Documents contextuels (→ fil de correspondance) | **compilée** (2026-07-18 — 5 lots, à exécuter N+1) | C1 ✓ | 5 |
 | C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : intrinsèque ; C4B : C1/C2 | N+1 |
 | C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | cadrée — LOT-00 et LOT-01 terminés (2/8), LOT-02 en attente de confirmation migration, inactive | C5A : référentiel Ciqual après gates migration/import ; C5B : C1/C2 actifs | 8 |
 | JA | Ma spirale alimentaire (journal recadré 5.0) | recadrée 5.0 + adaptation contrepoint (2026-07-16, A7 — trois régimes : calibrage/essai/silence), règles candidates | audit JA-00 + terrain JA-0T ; domaine pur ; persistance : C2A + gate | N+1 |
