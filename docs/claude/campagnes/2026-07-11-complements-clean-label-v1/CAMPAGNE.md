@@ -74,3 +74,12 @@ LOT-00 audit sources open data + modèle de fiche produit →
 LOT-01 schéma catalogue C4A (lot `bloqué_confirmation` si migration) →
 LOT-02 ingestion + fiches → LOT-03 compatibilité C4B → LOT-04 intégration
 protocole/documents + validation.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- Bibliothèque compléments en **instrument à tiroir** consultable depuis la zone focale (protocole) ; présentation multi-dimensions **sans score global dominant** inchangée.
+- Canvas **ardoise** A5-R2 — différé au lot d'implémentation.

@@ -500,3 +500,49 @@ sont posées par thème dans `globals.css`.
   (`app/api/praticien/booklet/route.ts`) conserve sa palette autonome
   (verts `#2d6a4f`…, antérieure à la DA) — les emails ont leurs propres
   contraintes de rendu ; à basculer dans un lot dédié si souhaité.
+
+## 9. Tokens v3 — A5-R2 « ardoise & sable » (mid-tone, 2026-07-18)
+
+Révision A5-R2 (registre) : le **canvas de fond s'approfondit** pour donner du
+relief aux cartes claires, sans basculer en thème sombre. La structure A5/A5-R1
+est conservée (rail nuit signature praticien, patient clair fixe, **aucun
+toggle**) ; seuls `--background` et le calibrage `--surface`/`--muted`/`--border`
+évoluent. **Acté en documentation, non appliqué au code** tant qu'un lot
+d'implémentation revert-safe n'est pas ouvert (`globals.css` inchangé).
+
+### Correspondance des tokens (v2 → v3)
+
+| Rôle | v2 praticien | v3 praticien | v2 patient | v3 patient |
+|---|---|---|---|---|
+| `--background` (canvas) | `#F7F8FA` | **`#D3D8E6`** (ardoise) | `#FAF8F3` | **`#EAE0CC`** (sable) |
+| `--surface` (cartes) | `#ffffff` | `#ffffff` (relief : ombre + bord) | `#FFFDF9` | `#FFFDF9` |
+| `--muted` | `#E9EBF2` | `#E3E7F1` (recalibré) | `#EFE8DA` | `#F0E7D6` (recalibré) |
+| `--border` | `#DDE1EC` | `#C4CBDD` (plus marqué) | `#E5DCCB` | `#DCCFB6` |
+| `--rail-*` | night | **inchangé** | — | — |
+| `--color-primary` / `--color-accent` | indigo / solaire | **inchangés** | forêt / cuivre | **inchangés** |
+| `--viz-corps/ancrage/esprit` | trio fixe | **inchangé** | trio fixe | **inchangé** |
+
+### Matrice de contraste A5-R2 (calculée le 2026-07-18, luminance WCAG 2.x)
+
+| Paire | Ratio | Verdict |
+|---|---|---|
+| Praticien texte `#1B2337` / canvas ardoise `#D3D8E6` | 10,98:1 | AAA |
+| Praticien texte / carte blanche `#FFFFFF` | 15,65:1 | AAA |
+| Praticien muted `#535D7A` / canvas ardoise | 4,59:1 | AA |
+| Patient texte `#2B2115` / canvas sable `#EAE0CC` | 12,04:1 | AAA |
+| Patient texte / carte crème `#FFFDF9` | ≈ 15,5:1 | AAA |
+| Patient muted `#6E5F49` / canvas sable | 4,72:1 | AA |
+| Primaire / accent / statuts / rail / dataviz | inchangés (posés sur cartes & boutons) | cf. §8 |
+
+### Règles
+
+- **Point de vigilance** : le canvas mid-tone abaisse le contraste du texte
+  *muted* (de ~6,1:1 sur quasi-blanc à ~4,6:1 sur ardoise/sable) — il **reste
+  AA** pour le texte normal, mais toute réduction de taille du texte secondaire
+  devra être re-vérifiée au lot d'implémentation.
+- La **règle de relief solaire** (§8) et le **trio d'entité** restent inchangés.
+- Les cartes portent une **ombre** (`0 8px 24px rgba(16,22,43,.08)`) pour se
+  détacher du canvas — le relief remplace la frontière par le seul bord.
+- Direction d'interface associée : **poste de pilotage** (registre A6-R1) —
+  cockpit borné, métriques actives, instruments à tiroir. Maquette :
+  `docs/claude/propositions/2026-07-18-refonte-ux-5-0/maquette-cible-ux-5-0.html`.

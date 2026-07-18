@@ -110,3 +110,12 @@ le go/no-go final reste découpé entre C5A, C5B praticien et C5B patient.
 - docs/claude/REGISTRE_FRONTIERES.md
 - docs/claude/campagnes/PROGRAMME_WELLNEURO_5_0.md
 - docs/claude/propositions/2026-07-16-journal-alimentaire-5-0/ARBITRAGES_JA_5_0.md
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- Les UX livrées **« Observatoire » (LOT-04, praticien)** et **« Jardin » (LOT-05, patient)** sont alignées sur la direction : côté praticien, la boussole devient un **instrument à tiroir** du poste de pilotage (chiffres, sources et versions visibles) ; côté patient, la restitution reste **séquentielle et qualitative, sans score**. Frontières C5A/C5B et verdicts LOT-07 **inchangés**.
+- Canvas mid-tone (ardoise / sable) et typographie remontée — différés au lot d'implémentation Vague 1 (revue visuelle D-C5-04 en synergie).

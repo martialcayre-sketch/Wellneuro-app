@@ -138,6 +138,29 @@
 - À propager : `docs/design-system-d1.md` (section « Tokens v2 — Spirale »),
   `MON_EQUILIBRE_CONTEXTE.md` §6 (couleurs des strates), `CHANGELOG.md`.
 
+### A5-R2 — Révision : canvas mid-tone « ardoise & sable » (décision utilisateur 2026-07-18)
+
+- La structure A5/A5-R1 est **strictement conservée** : rail nuit structurel
+  signature côté praticien, patient clair fixe, **aucun toggle**. Seul le
+  **canvas de fond s'approfondit** — ni blanc, ni sombre — pour donner du
+  relief aux cartes claires (le quasi-blanc `#F7F8FA`/`#FAF8F3` était jugé
+  trop clair).
+- **Praticien — l'Observatoire** : canvas **ardoise froide `#D3D8E6`**,
+  surfaces/cartes blanches `#FFFFFF` en relief (ombre + bord), rail nuit
+  `#151C38`/`#10162B` **inchangé**, primaire indigo `#3D4A9E`, accent solaire
+  `#E8A33D` (règle de relief maintenue).
+- **Patient — le Jardin** : canvas **sable `#EAE0CC`**, surfaces/cartes crème
+  `#FFFDF9`, primaire vert forêt `#1E6F54`, accent cuivre `#B25E38`.
+- Accessibilité (§1) : contraste AA re-vérifié — texte encre `#1B2337` /
+  ardoise = 10,98:1 (AAA) ; `#2B2115` / sable = 12,04:1 (AAA) ; textes muted
+  ≈ 4,6-4,7:1 (AA). Matrice complète : `design-system-d1.md` §9. **Point de
+  vigilance** : le mid-tone abaisse le contraste du texte *muted* (de ~6,1 à
+  ~4,6:1) mais reste AA.
+- Statut : **acté en documentation, non appliqué au code** (`globals.css`
+  inchangé) tant qu'un lot d'implémentation revert-safe n'est pas ouvert.
+  À propager : `design-system-d1.md` §9, `CHANGELOG.md`, maquette
+  `propositions/2026-07-18-refonte-ux-5-0/`.
+
 ### A6 — Disposition « la Spirale » 5.0 adoptée comme cible UX (décision utilisateur 2026-07-15)
 
 - La **disposition** 5.0 (Fil du jour, fiche-trajectoire/Spirale, copilote,
@@ -169,6 +192,37 @@
 - Gates hérités inchangés : SP-RUN exige la validation ergonomique C1 (NO-GO
   runtime tant que non levée) ; C2A exige la confirmation explicite de
   migration Prisma ; Phase C exige HDS (D6).
+
+### A6-R1 — Révision : le poste de pilotage clinique (décision utilisateur 2026-07-18)
+
+- La disposition A6 est précisée par un **principe d'interface opposable** :
+  le cockpit praticien cesse d'être une page à défilement (constat mesuré :
+  14-16 panneaux empilés, 4-7 hauteurs d'écran) et devient un **poste de
+  pilotage borné à la hauteur d'écran**, organisé autour du **cycle clinique
+  3.x comme colonne vertébrale de navigation** — le « Repère de Boucle »
+  promu de décoration à structure ; la **phase due** est mise en avant (zone
+  focale actionnable) ; on navigue **par phase, jamais par scroll**.
+- **Divulgation progressive** : tout contenu dense (12 besoins, momentum,
+  détail des réponses) s'ouvre en **instrument à tiroir** (pop-up/drawer,
+  patron existant `PatientPreview`) **au clic** (invariant §1 : aucune
+  fonction critique au seul survol), puis se referme.
+- **Métriques actives** : chaque indicateur d'accueil est un **point d'accès
+  cliquable** vers sa page/liste, jamais un affichage passif.
+- **Signaux vivants** : le cockpit affiche la position sur la Spirale et les
+  **deltas depuis le tour précédent** (« au tour dernier, décision X →
+  tenue / adhésion / tolérance ») — mécanisme 5.0 « le décidé devient
+  appris ». Constats **sourcés et datés** ; aucun score, aucune prédiction.
+- Côté patient (« le Jardin »), principe **inverse** : une étape à la fois
+  (séquentiel, pas de hub empilé), la Spirale montrée comme construction,
+  jamais un tableau de bord ni un score.
+- Typographie : échelle **remontée** (corps 16px, titres de section en
+  `font-display`, hiérarchie display ≥ 28px) ; `ReadingComfortControl` monté
+  sur les deux fronts.
+- Portée : direction UX opposable, livrée **par campagnes** (Vague 1
+  dette/IA atteignable sans migration ; Vagues 2+ rattachées à
+  SP-COP/SP-TT/C2B/SP-MET/SP-SPI/IDP). Détail et maquette :
+  `propositions/2026-07-18-refonte-ux-5-0/`. **Aucune modification de logique
+  clinique ni de seuils.**
 
 ### A7 — Cap « Ma spirale alimentaire » : instrument longitudinal à deux régimes (décision utilisateur 2026-07-16)
 

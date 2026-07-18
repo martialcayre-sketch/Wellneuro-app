@@ -112,3 +112,12 @@ Décisions de compilation :
 
 Exécution : au fil de l'eau, **un lot = une PR** (règle N+1), migration-free sauf
 gate explicite.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- Composeur documentaire en **instrument focalisé** ; correspondance accessible depuis le poste de pilotage ; aperçu deux colonnes et chaîne brouillon→relu→validé→envoyé **inchangés**.
+- Canvas **ardoise** praticien / restitution patient sable — différés au lot d'implémentation.

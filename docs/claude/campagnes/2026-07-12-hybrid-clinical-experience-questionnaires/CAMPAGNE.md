@@ -115,3 +115,12 @@ refonte auth, routes API métier, scoring.
 - [x] Vocabulaire banni absent. L'arbitrage orthographique initial du LOT-05
       a été supersédé lors de la réconciliation du 2026-07-14 : la forme
       normative est désormais **Michel Dogné**, conformément à `AGENTS.md`.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- Le socle DA/shell accueille **A5-R2** (canvas mid-tone) et le patron d'**instrument à tiroir** (réemploi de `PatientPreview`/Radix) ; `ReadingComfortControl` étendu aux **deux fronts** ; échelle typographique remontée. Mécanismes A2 inchangés.
+- Canvas mid-tone (ardoise / sable) — différé au lot d'implémentation.

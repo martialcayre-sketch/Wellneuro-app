@@ -130,3 +130,12 @@ confirmation distincte (si le protocole exige un modèle, lot dédié
 - [x] Aucun envoi sans validation praticien ; brouillon explicite.
 - [x] Arbitrage radar documenté ; aucune occurrence de terme banni.
 - [x] Formules nouvelles versionnées et tracées dans `CHANGELOG.md`.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- La fiche cockpit C1 se réorganise en **poste de pilotage** (phase due, instruments à tiroir) — contrats purs et niveaux de preuve A/B/C/D **inchangés** ; l'aperçu patient reste **sans score**.
+- Canvas **ardoise** A5-R2 et typographie remontée — différés au lot d'implémentation.

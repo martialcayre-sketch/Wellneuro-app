@@ -146,3 +146,12 @@ Aucune des questions techniques n'exige un nouveau moteur ni une migration — l
 (`momentum.ts` + `depuisPrisma.ts`) est déjà branché sur `api/praticien/equilibre`.
 Exécution des lots : au fil de l'eau, un lot = une PR (règle N+1), après données
 réelles selon A8-5.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- Fiche-trajectoire en **poste de pilotage** (Spirale-index navigable — le comparateur LOT-09 devient un **instrument à tiroir** —, **deltas** « au tour dernier, décision X → tenue/adhésion/tolérance ») ; check-ins patient **séquentiels**. A1 et A8 inchangés : aucun score, aucun % d'observance affiché au patient.
+- Canvas mid-tone (ardoise / sable) — différé au lot d'implémentation, sans migration.

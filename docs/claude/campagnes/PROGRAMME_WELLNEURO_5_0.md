@@ -33,6 +33,13 @@ la 5.0 est sa couche d'interface et de mémoire.
   développement.
 - Vocabulaire réglementaire inchangé (« recommandation », « protocole »,
   jamais « prescription », « ordonnance », « diagnostic »).
+- **Direction d'interface (2026-07-18 — registre A6-R1 + A5-R2)** : cockpit
+  praticien **borné à l'écran** (poste de pilotage : cycle clinique en colonne
+  vertébrale, phase due allumée, instruments à tiroir), **métriques actives**,
+  patient **séquentiel** ; canvas **mid-tone** ardoise/sable (cartes claires en
+  relief, aucun toggle) ; typographie remontée. Actée en documentation, livrée
+  par campagnes (Vague 1 sans migration). Détail et maquette :
+  `../propositions/2026-07-18-refonte-ux-5-0/`.
 
 ## Séquence
 
