@@ -47,7 +47,7 @@ liaison clinique. Il ne remplace pas le `code_confiance` A à D de chaque teneur
 Ciqual. Les directions et les poids restent des décisions de gouvernance
 WellNeuro : aucune source externe citée ne prescrit ces coefficients.
 
-| Liaison | Direction validée | Source primaire | Preuve WN | Limite d'interprétation |
+| Liaison | Direction validée | Source officielle ou de référence | Preuve WN | Limite d'interprétation |
 |---|---|---|:---:|---|
 | Protéines 25000 | favorable | [Anses — rôle et apports recommandés](https://www.anses.fr/fr/content/proteines-role-sources-et-apports-recommandes) | B | La référence d'apport ne prescrit ni une relation alimentaire monotone ni le poids WellNeuro de 18 %. |
 | Sucres 32000 | limitante | [Anses — sucres dans l'alimentation](https://www.anses.fr/fr/content/sucres-dans-lalimentation) | B | Le constituant Ciqual est un proxy intrinsèque WellNeuro ; il ne doit pas être présenté comme une mesure des seuls sucres libres. |
@@ -260,12 +260,23 @@ Pour une teneur numérique exacte x du constituant i :
 5. donnée non numérique : composante indisponible, jamais imputée.
 
 La normalisation est faite avant pondération afin de rendre comparables les
-grammes et milligrammes. Pour un profil dont le noyau obligatoire est complet :
+grammes et milligrammes. Pour un profil dont le noyau obligatoire est complet,
+l'enveloppe PRAL reste plafonnée à 10 % même lorsqu'un autre constituant
+facultatif manque :
 
-1. `availableWeight = somme(w_i)` pour les seules composantes exactes ;
-2. `renormalizedWeight_i = w_i / availableWeight x 100` ;
-3. `weightedContribution_i = a_i x renormalizedWeight_i` ;
-4. `expectedAggregate = somme(weightedContribution_i)`.
+1. si le PRAL est exact, `availableNutrientWeight = somme(w_i)` pour les seules
+   composantes nutritionnelles exactes, puis
+   `renormalizedWeight_i = w_i / availableNutrientWeight x 90` ;
+2. dans ce cas, le poids PRAL reste exactement 10 % et
+   `expectedAggregate = somme(a_i x renormalizedWeight_i) + pralAlignment x 10` ;
+3. si le PRAL est indisponible, les seules composantes nutritionnelles exactes
+   sont renormalisées sur 100 % :
+   `renormalizedWeight_i = w_i / availableNutrientWeight x 100` ;
+4. `completenessPct` demeure la somme des poids effectifs originaux disponibles,
+   calculée avant toute renormalisation.
+
+Cette règle préserve simultanément l'architecture 90/10 et le plafond PRAL
+validé. Le PRAL ne peut donc jamais dépasser 10 points dans l'agrégat.
 
 Les agrégats à six décimales et les contributions attendues sont consignés
 dans `VECTEURS_12_VEDETTES_LOT-01.md`. Ce sont des fixtures praticien soumises

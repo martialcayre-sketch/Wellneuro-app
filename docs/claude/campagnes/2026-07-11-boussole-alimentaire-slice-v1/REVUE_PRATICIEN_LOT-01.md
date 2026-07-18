@@ -271,17 +271,17 @@ Référence exacte à relire : **C5-LOT01-VECTEURS-2026-07-18-v1**.
 | Vedette | Statut | Complétude | PRAL mEq/100 g | Agrégat attendu |
 |---|---|---:|---:|---:|
 | Sardine 26034 | complet | 100 % | 9,68100 | 61,734453 |
-| Maquereau 26051 | partiel | 91,0 % | 7,95664 | 57,349934 |
+| Maquereau 26051 | partiel | 91,0 % | 7,95664 | 57,667221 |
 | Huile d'olive 17270 | partiel | 64,8 % | indisponible | 39,252210 |
 | Huile de colza 17130 | partiel | 76,5 % | indisponible | 38,757805 |
-| Lentilles 20360 | partiel | 88,3 % | 4,92470 | 63,017903 |
-| Pois chiches 20507 | partiel | 88,3 % | 3,60190 | 63,389136 |
-| Noix 15005 | partiel | 74,8 % | 6,19200 | 69,428859 |
+| Lentilles 20360 | partiel | 88,3 % | 4,92470 | 63,335628 |
+| Pois chiches 20507 | partiel | 88,3 % | 3,60190 | 63,627915 |
+| Noix 15005 | partiel | 74,8 % | 6,19200 | 70,715749 |
 | Flocons d'avoine 32140 | complet | 100 % | 8,72000 | 57,685279 |
-| Pain complet 7110 | partiel | 88,3 % | 2,75360 | 53,251106 |
-| Brocoli 20351 | partiel | 88,3 % | -1,89590 | 51,426199 |
-| Épinards 20027 | partiel | 84,7 % | -8,50240 | 45,262720 |
-| Myrtille 13028 | partiel | 93,7 % | -0,98070 | 42,825435 |
+| Pain complet 7110 | partiel | 88,3 % | 2,75360 | 53,284213 |
+| Brocoli 20351 | partiel | 88,3 % | -1,89590 | 51,135050 |
+| Épinards 20027 | partiel | 84,7 % | -8,50240 | 44,158973 |
+| Myrtille 13028 | partiel | 93,7 % | -0,98070 | 42,643487 |
 
 Le tableau conserve l'ordre canonique et ne constitue pas un classement. Les
 profils basés sur des ensembles de composantes différents ne sont pas
@@ -300,5 +300,10 @@ Avis actuel : **À SIGNER**.
 La signature ultérieure doit citer la référence
 `C5-LOT01-VECTEURS-2026-07-18-v1` et le hash `preuve_git_vecteurs`. Toute
 modification des valeurs après signature imposera une nouvelle référence.
+
+La preuve Git est bornée aux six livrables autorisés de cette passe et au
+commit distinct qui rattache son hash. Elle n'atteste pas un snapshot autonome
+de l'ensemble de C5 : les autres travaux de recadrage déjà présents dans
+l'arbre restent hors périmètre et ne sont ni indexés ni modifiés ici.
 
 LOT-01 n'est pas terminé par le présent avis. C5 reste inactive à 1/8.
