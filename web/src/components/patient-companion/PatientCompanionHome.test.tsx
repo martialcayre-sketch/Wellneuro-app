@@ -43,6 +43,28 @@ describe('PatientCompanionHome', () => {
     expect(screen.getByText('Ma fiche conseils')).toBeTruthy();
   });
 
+  it('intègre le résumé Boussole qualitatif du protocole approuvé', async () => {
+    mockFetch(
+      {
+        ok: true, protocoleDiffuse: true, finDeCycle: false,
+        vue: {
+          ...vue,
+          boussoles: [{
+            foodRef: '26034', foodLabel: 'Sardine',
+            qualitativeSummary: 'Cet aliment fait partie de l’action relue avec votre praticien.',
+            reasons: ['Raison qualitative.'], sourceLabel: 'Table Ciqual, Anses',
+            limitations: ['Limite qualitative.'], alternative: null,
+          }],
+        },
+      },
+      { ok: true, protocoleDiffuse: true, pointEtapeOuvert: null, points: [] },
+    );
+    render(<PatientCompanionHome token="TOK" />);
+    expect(await screen.findByRole('heading', { name: 'Ma Boussole alimentaire' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Comprendre cette lecture' }).getAttribute('href'))
+      .toBe('/portail/TOK/alimentation/boussole/26034');
+  });
+
   it('révèle un message rassurant en mode « jour difficile »', async () => {
     mockFetch(
       { ok: true, protocoleDiffuse: true, finDeCycle: false, vue },

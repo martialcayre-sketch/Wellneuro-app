@@ -3,6 +3,11 @@ import { prisma } from '@/lib/prisma';
 import { authorizePortail, resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
 import type { ProtocolActionType } from '@/lib/clinical-engine/types';
+import type { ProtocolDiffusionApproval } from '@/lib/clinical-engine/types';
+import { isC5Enabled } from '@/lib/food-compass/featureFlag';
+import { resolvePatientFoodCompassView } from '@/lib/food-compass/patientReference';
+import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe';
+import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 
 // Vue patient du protocole diffusé actif (C2A LOT-05, compagnon minimal). DÉRIVÉE
 // À LA VOLÉE côté serveur (§8.3) : le patient ne lit jamais `protocol_drafts`.
@@ -22,6 +27,7 @@ type VueProtocole = {
   followUpCriterion: string;
   adviceSheetRef: string | null;
   actionPrincipale: ActionPrincipale | null;
+  boussoles: PatientFoodCompassSafeView[];
 };
 
 type GetResponse =
@@ -60,6 +66,30 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // Intégrité du payload re-vérifiée en lecture (défense en profondeur).
     const draft = reconstructProtocolDraft(row.payload, row.inputHash);
     const principale = draft.actions[0] ?? null;
+    const approval: ProtocolDiffusionApproval = {
+      decisionCardInputHash: diffuse.decisionCardInputHash,
+      protocolDraftInputHash: diffuse.protocolDraftInputHash,
+      approvedAt: diffuse.approvedAt.toISOString(),
+      approvedBy: diffuse.approvedBy as 'practitioner',
+      confirmation: diffuse.confirmation as 'content_approved_for_diffusion',
+    };
+    const seenFoodRefs = new Set<string>();
+    const actionRefs = draft.actions
+      .map(action => action.foodCompassRef)
+      .filter((ref): ref is FoodCompassActionRef => {
+        if (!ref || seenFoodRefs.has(ref.foodRef)) return false;
+        seenFoodRefs.add(ref.foodRef);
+        return true;
+      });
+    const boussoles = isC5Enabled(process.env.WN_C5_ENABLED)
+      ? (await Promise.all(actionRefs.map(actionRef => resolvePatientFoodCompassView({
+            idPatient: auth.idPatient,
+            approvedDraft: draft,
+            approval,
+            actionRef,
+          }))))
+          .filter((view): view is PatientFoodCompassSafeView => view !== null)
+      : [];
 
     const vue: VueProtocole = {
       purpose: draft.purpose,
@@ -68,6 +98,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       actionPrincipale: principale
         ? { type: principale.type, title: principale.title, minimalPlan: principale.minimalPlan }
         : null,
+      boussoles,
     };
 
     const finDeCycle =

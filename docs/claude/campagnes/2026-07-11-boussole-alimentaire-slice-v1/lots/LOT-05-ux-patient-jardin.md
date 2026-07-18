@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "UX patient Jardin"
-statut: "à_faire"
+statut: "terminé — UX patient Jardin qualitative et isolée"
 dépend_de: "LOT-04 + protocole approuvé"
 ---
 
@@ -46,11 +46,11 @@ autorisation par action diffusée et tests E2E.
 
 ## Étapes
 
-- [ ] Figer le vocabulaire qualitatif patient.
-- [ ] Implémenter l'autorisation depuis le protocole diffusé.
-- [ ] Ajouter le résumé aux deux surfaces existantes.
-- [ ] Ajouter le zoom profond sans item principal.
-- [ ] Tester isolation, accessibilité et langage non culpabilisant.
+- [x] Figer le vocabulaire qualitatif patient.
+- [x] Implémenter l'autorisation depuis le protocole diffusé.
+- [x] Ajouter le résumé aux deux surfaces existantes.
+- [x] Ajouter le zoom profond sans item principal.
+- [x] Tester isolation, accessibilité et langage non culpabilisant.
 
 ## Tests
 
@@ -72,4 +72,23 @@ patient, protocole diffusé, action et foodRef dans une même décision serveur.
 
 ## Résultats
 
-À renseigner lors de la clôture du lot.
+- La Boussole est intégrée au protocole actif et à l'espace alimentation, avec
+  un zoom profond par aliment et sans nouvelle navigation principale.
+- La route portail exige le cookie signé, un suivi actif, la dernière version
+  V2 relue puis approuvée, l'action alimentaire correspondante et une référence
+  reconstruite depuis le référentiel Ciqual officiel. Une absence, une
+  révocation, une version caduque, un autre patient ou un profil partiel
+  produisent une réponse 404 identique, sans énumération.
+- La projection patient contient exclusivement le libellé, une lecture
+  qualitative, ses raisons, la source, les limites et une alternative nullable.
+  Aucun score, percentile, rang, poids, PRAL, hash ou version interne ne sort du
+  serveur. Les doublons d'un même aliment sont éliminés.
+- Le changement de token patient vide immédiatement l'état local avant une
+  nouvelle lecture, en défense supplémentaire sur appareil partagé.
+- Validation : 93 fichiers et 536 tests Vitest, type-check, build production,
+  scoring-check, audit documentaire, anti-secrets et diff-check verts. Revue
+  indépendante : GO, aucun P0/P1. Le lint conserve deux warnings historiques
+  hors C5 dans `GenericQuestionnaire`.
+- Les contrôles humains finaux clavier, zoom 200 %, contraste et appareils sont
+  regroupés dans le go/no-go LOT-07. Aucune alternative n'est inventée avant le
+  catalogue validé du LOT-06 ; le champ reste donc absent lorsque non disponible.

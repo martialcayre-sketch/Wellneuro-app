@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
+    patient: { findUnique: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn(), create: vi.fn() },
   },
@@ -36,7 +37,10 @@ function postRequest(body: unknown): Request {
 const body = { idPatient: 'PAT_1', decisionCardId: 'DEC_1', protocolDraftInputHash: 'HASH_V1' };
 
 describe('POST /api/praticien/protocoles/diffusion', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
+  });
 
   it('refuse un praticien non authentifié (401)', async () => {
     getServerSession.mockResolvedValue(null);
@@ -51,6 +55,14 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
     const res = await POST(postRequest(body));
     expect(res.status).toBe(404);
     expect(prisma.protocolDiffusionApproval.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse le patient d’un autre praticien (403)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
+    const res = await POST(postRequest(body));
+    expect(res.status).toBe(403);
+    expect(prisma.protocolDraft.findUnique).not.toHaveBeenCalled();
   });
 
   it('rejette l’accès inter-patient (404)', async () => {
@@ -99,7 +111,10 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
 });
 
 describe('GET /api/praticien/protocoles/diffusion', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
+  });
 
   it('retourne l’approbation active et sa caducité', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
@@ -125,5 +140,13 @@ describe('GET /api/praticien/protocoles/diffusion', () => {
     const json = (await res.json()) as { approval: null; stale: boolean };
     expect(json.approval).toBeNull();
     expect(json.stale).toBe(false);
+  });
+
+  it('refuse la lecture du patient d’un autre praticien (403)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
+    const res = await GET(new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1'));
+    expect(res.status).toBe(403);
+    expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
   });
 });

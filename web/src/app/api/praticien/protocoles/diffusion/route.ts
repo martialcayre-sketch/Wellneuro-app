@@ -36,7 +36,7 @@ function isNonEmptyString(v: unknown): v is string {
 export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { ok: false, reason: 'unauthenticated', error: 'Authentification requise.' },
         { status: 401 },
@@ -58,6 +58,16 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       return NextResponse.json(
         { ok: false, reason: 'invalid', error: 'idPatient, decisionCardId et protocolDraftInputHash sont requis.' },
         { status: 400 },
+      );
+    }
+
+    const patient = await prisma.patient.findUnique({
+      where: { idPatient }, select: { praticienEmail: true },
+    });
+    if (!patient || patient.praticienEmail.toLowerCase() !== session.user.email.toLowerCase()) {
+      return NextResponse.json(
+        { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
+        { status: 403 },
       );
     }
 
@@ -149,7 +159,7 @@ type GetResponse =
 export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
   try {
     const session = await getServerSession(authOptions);
-    if (!session) {
+    if (!session?.user?.email) {
       return NextResponse.json(
         { ok: false, reason: 'unauthenticated', error: 'Authentification requise.' },
         { status: 401 },
@@ -169,6 +179,16 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       return NextResponse.json(
         { ok: false, reason: 'invalid', error: 'Identifiant de carte de décision invalide.' },
         { status: 400 },
+      );
+    }
+
+    const patient = await prisma.patient.findUnique({
+      where: { idPatient }, select: { praticienEmail: true },
+    });
+    if (!patient || patient.praticienEmail.toLowerCase() !== session.user.email.toLowerCase()) {
+      return NextResponse.json(
+        { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
+        { status: 403 },
       );
     }
 

@@ -7,6 +7,8 @@ import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import type { PointEtape } from '@/lib/protocol/checkinDomain';
 import { ProtocolCheckinTrend, type PointEtat } from './ProtocolCheckinTrend';
+import { PatientFoodCompassSummary } from '@/components/patient-food-compass/PatientFoodCompassSummary';
+import type { PatientFoodCompassSafeView } from '@/lib/food-compass/patientSafe';
 
 // Accueil compagnon du PROTOCOLE ACTIF (C2A LOT-05), borné R8-lite. Ce que le
 // patient doit savoir en ~10 s : sa raison, son action du jour, l'accès à sa
@@ -19,6 +21,7 @@ type VueProtocole = {
   followUpCriterion: string;
   adviceSheetRef: string | null;
   actionPrincipale: { type: string; title: string; minimalPlan: string } | null;
+  boussoles?: PatientFoodCompassSafeView[];
 };
 type ProtocoleResponse =
   | { ok: true; protocoleDiffuse: boolean; finDeCycle: boolean; vue: VueProtocole | null }
@@ -99,6 +102,8 @@ export function PatientCompanionHome({ token }: { token: string }) {
           <p className="mt-1 text-sm text-muted-foreground">{action.minimalPlan}</p>
         </div>
       )}
+
+      <PatientFoodCompassSummary token={token} items={vue.boussoles ?? []} />
 
       {/* Accès : rendez-vous de suivi (mis en avant si dû) + fiche. */}
       <div className="flex flex-wrap gap-2.5">

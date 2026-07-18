@@ -5,6 +5,7 @@ const { prisma } = vi.hoisted(() => ({
     assignation: { findFirst: vi.fn() },
     patient: { findUnique: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn() },
+    protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
     protocolCheckin: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   },
 }));
@@ -53,10 +54,20 @@ function mockDiffusedProtocol(): void {
       id: 'appr_1',
       protocolDraftId: 'proto_DEC_1#hash',
       protocolDraftInputHash: 'hash',
+      decisionCardInputHash: 'decision-hash',
+      approvedBy: 'practitioner',
+      confirmation: 'content_approved_for_diffusion',
       supersedesApprovalId: null,
       createdAt: approvedAt,
       approvedAt,
     },
+  ]);
+  prisma.protocolDraft.findUnique.mockResolvedValue({
+    decisionCardId: 'DEC_1', decisionCardInputHash: 'decision-hash', inputHash: 'hash',
+    status: 'practitioner_reviewed', reviewedAt: new Date(0),
+  });
+  prisma.protocolDraft.findMany.mockResolvedValue([
+    { id: 'proto_DEC_1#hash', inputHash: 'hash', supersedesDraftId: null, createdAt: approvedAt },
   ]);
 }
 
