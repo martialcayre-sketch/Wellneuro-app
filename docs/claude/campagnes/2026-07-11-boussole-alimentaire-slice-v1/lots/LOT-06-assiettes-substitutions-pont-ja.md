@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Assiettes, substitutions et pont JA"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-03 + contrat JA publié"
 ---
 
