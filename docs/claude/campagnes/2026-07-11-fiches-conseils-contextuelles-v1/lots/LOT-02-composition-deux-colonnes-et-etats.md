@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Composition deux colonnes et machine d'états"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-01"
 ---
 
@@ -70,11 +70,14 @@ action explicite du praticien.
 
 ## Étapes
 
-- [ ] Composant deux colonnes (sources ↔ aperçu), provenance par bloc.
-- [ ] Câbler l'aperçu sur le mécanisme `PrévisualisationPatient`.
-- [ ] Machine d'états + actions explicites + badge.
-- [ ] Réemploi `buildBookletHTML` comme rendu d'aperçu.
-- [ ] Tests (rendu, transitions, absence de fuite de données praticien).
+- [x] Composant deux colonnes (sources ↔ aperçu), provenance par bloc.
+- [x] Aperçu par destinataire (field-filter du domaine LOT-01) ; câblage sur le vrai
+      `PrévisualisationPatient` (rendu portail) reporté au LOT-03 avec le rendu HTML.
+- [x] Machine d'états + actions explicites + badge.
+- [~] Réemploi `buildBookletHTML` comme rendu d'aperçu : reporté au LOT-03 (extraction
+      de `buildBookletHTML`, aujourd'hui module-privé) — l'aperçu LOT-02 est un rendu
+      React deux colonnes.
+- [x] Tests (rendu, transitions, absence de fuite de données praticien).
 
 ## Tests
 
@@ -85,10 +88,10 @@ action explicite du praticien.
 
 ## Critères de done
 
-- [ ] Vue deux colonnes fonctionnelle, provenance visible par bloc.
-- [ ] États `brouillon→relu→validé→envoyé` avec validation humaine.
-- [ ] Aucune fuite de donnée interne praticien dans l'aperçu.
-- [ ] Aucune migration.
+- [x] Vue deux colonnes fonctionnelle, provenance visible par bloc.
+- [x] États `brouillon→relu→validé→envoyé` avec validation humaine.
+- [x] Aucune fuite de donnée interne praticien dans l'aperçu (test dédié).
+- [x] Aucune migration.
 
 ## Risques / points de vigilance
 
@@ -97,4 +100,23 @@ action explicite du praticien.
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-07-18. Composant `web/src/components/patient-cockpit/DocumentComposer.tsx`
+(client, 100 % français, aucune migration) :
+
+- **Vue deux colonnes** : « Sources praticien » (type + `contenu.praticien` +
+  badge de provenance `source · version`) ↔ « Aperçu destinataire »
+  (`blocsPourDestinataire` + `contenuPourDestinataire` du domaine LOT-01).
+- **Sélecteur de destinataire** patient / médecin / praticien ; l'aperçu s'adapte,
+  et n'affiche **jamais** le champ interne praticien pour patient/médecin
+  (field-filter — test dédié).
+- **Machine d'états** `brouillon→relu→validé→envoyé` via `avancerEtat`, avec badge
+  d'état et actions explicites ; le passage à « validé » n'a lieu que sur clic
+  (`parActionPraticien`), jamais automatiquement. L'état vit dans la session
+  (V1 sans persistance).
+- Tests jsdom **4/4** ; `npm run type-check` vert ; `check_no_secrets` OK.
+
+Reports assumés (→ LOT-03) : l'**extraction de `buildBookletHTML`** (module-privé)
+et le câblage sur le **vrai** `PrévisualisationPatient` (rendu portail /
+impression HTML) sont livrés au LOT-03, avec les rendus par destinataire. Le
+composant n'est pas encore monté dans une page de production : montage + adaptateurs
+de blocs réels (SyntheseIA/cockpit → `Bloc`) au LOT-03.
