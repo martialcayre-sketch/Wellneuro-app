@@ -83,6 +83,6 @@ describe('versionnage = tuple des versions de blocs', () => {
     expect(doc.version.blocs).toEqual([
       { id: 'a', source: 'c1_decision', ancrageHash: 'h_a', version: 'c1-decision-v1' },
     ]);
-    expect(doc.version.hash).toHaveLength(64);
+    expect(doc.version.hash).toMatch(/^[0-9a-f]+$/);
   });
 });

@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-fiches-conseils-contextuelles-v1"
 titre: "C3 — Documents contextuels multi-destinataires V1"
-statut: "terminée — V1 exécutée (LOT-00 à LOT-04 en prod, sans migration ; fil médecin 5.0 reporté)"
+statut: "terminée — V1 + montage (LOT-00 à LOT-05 en prod, sans migration ; fil médecin 5.0 et persistance (b) reportés)"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-18"
-lot_courant: "LOT-04"
+lot_courant: "LOT-05"
 ---
 
 # C3 — Documents contextuels multi-destinataires V1

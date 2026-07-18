@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Sparkles, Settings, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, type LucideIcon } from 'lucide-react';
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -14,7 +14,13 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
 const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
   { etiquette: null, items: [{ href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard }] },
   { etiquette: 'Suivi', items: [{ href: '/dashboard/patients', label: 'Patients', icon: Users }] },
-  { etiquette: 'Instruments', items: [{ href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles }] },
+  {
+    etiquette: 'Instruments',
+    items: [
+      { href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles },
+      { href: '/dashboard/documents', label: 'Documents', icon: FileText },
+    ],
+  },
   {
     etiquette: 'Cabinet',
     items: [

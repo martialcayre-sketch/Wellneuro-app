@@ -34,6 +34,8 @@ export const EVENT_CODES = {
 
   BOOKLET_GET_EXCEPTION: 'BOOKLET.PREVIEW.FAILED',
   BOOKLET_SEND_EXCEPTION: 'BOOKLET.SEND.FAILED',
+
+  DOCUMENT_COMPOSE_EXCEPTION: 'PRATICIEN.DOCUMENT_C3.COMPOSE_FAILED',
 } as const satisfies Record<string, EventCode>;
 
 export type KnownEventCode = (typeof EVENT_CODES)[keyof typeof EVENT_CODES];
