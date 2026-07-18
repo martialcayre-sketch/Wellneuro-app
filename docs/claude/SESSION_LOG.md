@@ -806,3 +806,21 @@ cockpit borné, typo, A5-R2 dans `globals.css`), en synergie avec D-C5-04.
 
 **Questions ouvertes** : cadrage des 7 campagnes UX (SP-COP, SP-TT, IDP,
 SP-SPI, SP-MET, SP-CAB, SP-AMB) ; suivi des dettes C5 D-C5-01→04 à l'activation.
+
+## 2026-07-18 — Clôture branche C2B lot-09 (side-line dépassée)
+
+**Décisions** : suppression de `feat/c2b-lot-09-trajectoire` (tip `d86f4f6`),
+side-line divergente depuis le fork `928c616` — LOT-09, proposition gate
+multi-cycles et filtre JA `status:'draft'` déjà présents sur le tronc C5. Deux
+commits de clôture y avaient été posés (`docs(c2b)` handoff gate, `feat(ja)`
+durcissement activation) puis abandonnés avec la branche. Constat associé :
+Ciqual désormais injecté sur `main` (migration
+`20260718100010_c5_ciqual_reference_v1`).
+
+**Options écartées** : merger la branche (réintroduirait 13 commits `docs(c5)`
+LOT-01 divergents) ; patch pleine-fichier (écraserait la garde `patientId` de C5).
+
+**Prochaine action** : porter la seule garde non répliquée — JA
+`actor !== 'praticien'` (reflog `d86f4f6`) — sur le tronc C5, ou l'abandonner.
+
+**Questions ouvertes** : garde `actor` — porter ou abandonner définitivement ?
