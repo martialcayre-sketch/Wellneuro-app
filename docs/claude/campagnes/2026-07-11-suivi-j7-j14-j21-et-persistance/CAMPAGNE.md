@@ -127,7 +127,7 @@ Arbitrage C2B tranché (revue utilisateur du 2026-07-18) et acté au registre so
 |---|---|---|
 | LOT-07 | Score du résumé J21 — branchement momentum (lève dette LOT-04) | **livré** (2026-07-18, sans migration ; branche `feat/c2b-lot-07-score-j21`) |
 | LOT-08 | Ancrage T0 par épisode (prérequis comparateur) | **livré** (2026-07-18, sans migration ; branche `feat/c2b-lot-08-t0-episode`) |
-| LOT-09 | Comparateur multi-épisodes (Spirale-index praticien) | **compilé** (2026-07-18, migration-free) |
+| LOT-09 | Comparateur multi-épisodes (Spirale-index praticien) | **livré** (2026-07-18, réalisation read-only, sans migration ; branche `feat/c2b-lot-09-trajectoire`) |
 
 Décisions de compilation (registre A8) :
 
