@@ -583,3 +583,26 @@ explicite ; déploiement prod Vercel, aucune migration). Ensuite : C2B ou campag
 
 **Questions ouvertes** : confirmation merge→prod de la PR C2A ; arbitrage RelectureNote /
 budget de charge ; fichiers JA parallèles à committer par leur owner.
+
+## [2026-07-18] — C2B arbitrage + compilation des lots (docs)
+
+**Décisions (registre A8, revue utilisateur)** : A8-1 T0 **par épisode** côté
+praticien, T0 global conservé pour « Mon équilibre » ; A8-2 jalon sans couverture →
+« jalon non mesuré », jamais un 0 ; A8-3 garde `versionScore` = bloc « non
+comparable (score recalibré le …) », jamais de delta inter-version ; A8-4 C2B =
+constats déterministes directs seuls, l'agrégat 3 états reste SP-MET ; A8-5
+activation en deux temps (score J21 dès 1 cycle réel ; comparateur dès ≥2 épisodes).
+
+**Réalisé** : `ARBITRAGES_C2B.md` + bloc **A8** au `REGISTRE_FRONTIERES.md` ; 3 lots
+compilés (docs, migration-free) dans la campagne C2 — LOT-07 (score J21, lève dette
+LOT-04), LOT-08 (T0 par épisode), LOT-09 (comparateur multi-épisodes). `.wn/state.json`
++ `CAMPAGNE.md` mis à jour (lot_courant LOT-07). **Aucun code, aucune migration.**
+
+**Options écartées** : compiler l'implémentation (documentaire d'abord, N+1) ; merge
+prod direct (PAUSE avant merge demandée) ; balayer l'arbre pollué (boussole/JA hors
+périmètre, laissés à leurs owners).
+
+**Prochaine action** : PR de compilation C2B base `main`, **PAUSE avant merge**.
+
+**Questions ouvertes** : confirmation merge→prod ; source exacte du T0 d'épisode
+(`confirmedAt` vs `targetAt`, LOT-08) ; volume réel de réponses portant `rawAnswers`.

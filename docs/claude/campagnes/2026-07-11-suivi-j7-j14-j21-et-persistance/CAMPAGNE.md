@@ -3,8 +3,8 @@ id: "2026-07-11-suivi-j7-j14-j21-et-persistance"
 titre: "C2 — Points d'étape et persistance (C2A/C2B)"
 statut: "en_cours — compilée, gate migration à confirmer avant LOT-02"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-17"
-lot_courant: "LOT-04"
+mise_à_jour: "2026-07-18"
+lot_courant: "LOT-07"
 ---
 
 # C2 — Points d'étape et persistance
@@ -115,4 +115,34 @@ Décisions de compilation :
   la compilation, à valider en LOT-00/LOT-01 ; contient la checklist de
   confirmation du gate, section 6).
 
-C2B : compilation séparée après données réelles.
+## Compilation (2026-07-18) — volet C2B
+
+Arbitrage C2B tranché (revue utilisateur du 2026-07-18) et acté au registre sous
+**A8** ; détail dans
+`docs/claude/propositions/2026-07-18-c2b-trajectoire-spirale/` (`BRAINSTORM_C2B.md`,
+`NOTE_TECHNIQUE_MOMENTUM.md`, `ARBITRAGES_C2B.md`). Les lots C2B sont compilés dans
+`lots/` (documentaire, **aucun code, aucune migration**) :
+
+| Lot | Objet | Statut |
+|---|---|---|
+| LOT-07 | Score du résumé J21 — branchement momentum (lève dette LOT-04) | **compilé** (2026-07-18, migration-free) |
+| LOT-08 | Ancrage T0 par épisode (prérequis comparateur) | **compilé** (2026-07-18, migration-free) |
+| LOT-09 | Comparateur multi-épisodes (Spirale-index praticien) | **compilé** (2026-07-18, migration-free) |
+
+Décisions de compilation (registre A8) :
+
+- **A8-1** T0 **par épisode** côté praticien, T0 global conservé pour « Mon
+  équilibre ».
+- **A8-2** Jalon sans couverture → « jalon non mesuré » explicite, jamais un 0.
+- **A8-3** Garde `versionScore` : bloc « non comparable (score recalibré le …) »,
+  jamais de delta inter-version.
+- **A8-4** C2B = constats déterministes directs seulement ; l'agrégat 3 états reste
+  SP-MET.
+- **A8-5** Activation en deux temps : score J21 dès 1 cycle réel (LOT-07) ;
+  comparateur dès ≥ 2 épisodes comparables (LOT-09). Distinct du seuil cohorte
+  `n ≥ 5` (SP-CAB, hors C2B).
+
+Aucune des questions techniques n'exige un nouveau moteur ni une migration — le moteur
+(`momentum.ts` + `depuisPrisma.ts`) est déjà branché sur `api/praticien/equilibre`.
+Exécution des lots : au fil de l'eau, un lot = une PR (règle N+1), après données
+réelles selon A8-5.
