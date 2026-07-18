@@ -2,15 +2,19 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { construireHistoriqueEquilibre, resoudreDateT0 } from '@/lib/equilibre/depuisPrisma';
 import { listCheckins, type CheckinRow } from '@/lib/protocol/checkins';
 import { buildResumeJ21, type ResumeJ21 } from '@/lib/protocol/resumeJ21';
 
 // Lecture praticien des check-ins J7/J14/J21 + résumé J21 « point de jonction »
 // (C2A LOT-04). Le praticien distingue adhésion et effet à partir des réponses ;
-// le résumé croise l'action tenue/tolérée (check-ins) et, quand un historique
-// d'équilibre existe, le mouvement du score via `momentum.ts` (jalons de mesure,
-// propriété exclusive de momentum.ts). En V1 le volet score reste null : aucune
-// lecture d'équilibre datée n'est branchée ici (le résumé demeure honnête).
+// le résumé croise l'action tenue/tolérée (check-ins) et le mouvement du score via
+// `momentum.ts` (jalons de mesure, propriété exclusive de momentum.ts).
+// C2B LOT-07 : le momentum réel est branché (historique d'équilibre daté du
+// patient), donc le volet score cesse d'être null dès qu'un cycle T0+J21 mesuré
+// existe ; sans cycle mesurable il reste null (jamais un 0 inventé), le résumé
+// demeurant honnête. Ancrage T0 global (resoudreDateT0), identique à
+// api/praticien/equilibre ; l'ancrage par épisode relève de C2B LOT-08.
 // Hypothèse mono-praticien (§8.8) : garde de session sans scope par identité,
 // cohérent avec les routes /versions et /diffusion.
 
@@ -57,8 +61,21 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const all = await listCheckins(idPatient);
     const checkins = all.filter((c) => filIds.has(c.protocolDraftId));
 
-    // V1 : score omis (aucun historique d'équilibre daté branché) → score null.
-    const resume = buildResumeJ21({ checkins });
+    // C2B LOT-07 : brancher le momentum réel du patient (jalons de mesure lus via
+    // l'API publique de momentum.ts, jamais réimplémentés). Un jalon sans
+    // couverture est omis par construireHistoriqueEquilibre (jamais un 0) ; sans
+    // T0, momentum = null et le résumé conserve un score null honnête.
+    const reponsesDb = await prisma.questionnaireReponse.findMany({
+      where: { idPatient },
+      select: { idQuestionnaire: true, dateReponse: true, scoresJson: true },
+      orderBy: { dateReponse: 'asc' },
+    });
+    const dateT0 = resoudreDateT0(reponsesDb);
+    const momentum = dateT0
+      ? { dateT0, lectures: construireHistoriqueEquilibre(reponsesDb) }
+      : null;
+
+    const resume = buildResumeJ21({ checkins, momentum });
 
     return NextResponse.json({ ok: true, checkins, resume });
   } catch (err) {

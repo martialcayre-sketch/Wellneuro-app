@@ -6,8 +6,8 @@
   },
   "status": "active",
   "active_campaign": "2026-07-11-suivi-j7-j14-j21-et-persistance",
-  "active_lot": "LOT-07",
-  "last_completed_lot": "C2A/LOT-06",
+  "active_lot": "LOT-08",
+  "last_completed_lot": "C2B/LOT-07",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -25,7 +25,7 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "C2A LOT-04→06 mergé en prod (PR #110). C2B arbitré (registre A8) et lots compilés le 2026-07-18 : LOT-07 (score J21 — branchement momentum, lève dette LOT-04), LOT-08 (T0 par épisode), LOT-09 (comparateur multi-épisodes) — tous migration-free, documentaire seul. Prochain : PR de compilation C2B (docs) base main, PAUSE avant merge ; puis exécution LOT-07 au fil de l'eau (règle N+1, après données réelles selon A8-5).",
+  "next_action": "C2B arbitré (registre A8) + lots compilés (#111 mergé). LOT-07 (score J21 — branchement momentum) exécuté le 2026-07-18 sur branche feat/c2b-lot-07-score-j21, sans migration : la route praticien checkins charge les questionnaire_reponses, construit { dateT0, lectures } et alimente buildResumeJ21 → volet score J21 non-null dès qu'un cycle T0+J21 mesuré existe. Validations vertes (type-check, Vitest 423/423, scoring-check, lint, anti-secrets). Prochain : PR LOT-07 base main, PAUSE avant merge. Ensuite LOT-08 (T0 par épisode, A8-1) puis LOT-09 (comparateur multi-épisodes, A8-2/A8-3), au fil de l'eau (règle N+1, après données réelles A8-5).",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,

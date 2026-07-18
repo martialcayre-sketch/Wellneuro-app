@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "Score du résumé J21 — branchement momentum"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-06"
 volet: "C2B"
 ---
@@ -88,3 +88,22 @@ praticien affiche un score de momentum sourcé (tendance + `|delta|` + date +
   ignorées) — traité pleinement en LOT-08/09 (A8-2).
 - Ne pas confondre point d'étape (check-in) et jalon de mesure (score) : le résumé
   J21 est le seul point de jonction (A1).
+
+## Résultats
+
+**Livré le 2026-07-18** (branche `feat/c2b-lot-07-score-j21`, **sans migration**).
+
+`api/praticien/protocoles/checkins/route.ts` charge désormais les
+`questionnaire_reponses` du patient, résout le T0 global (`resoudreDateT0`) et
+construit l'historique d'équilibre daté (`construireHistoriqueEquilibre`), puis passe
+`{ dateT0, lectures }` à `buildResumeJ21`. Le volet score du résumé J21 cesse d'être
+`null` dès qu'un cycle T0+J21 mesuré existe ; sans T0/couverture il reste `null`
+(jamais un 0 inventé). Aucun changement du moteur (`momentum.ts` /
+`depuisPrisma.ts`), aucun changement côté patient, `versionScore` inchangé.
+
+**Validations** : type-check ✅, Vitest **423/423** (2 tests de route : cas sans
+cycle → score null conservé ; cas cycle mesuré → score non-null), `scoring-check` ✅,
+anti-secrets ✅, `git status web/prisma/` vide.
+
+Ancrage T0 **global** (comme `api/praticien/equilibre`) ; l'ancrage **par épisode**
+et le comparateur multi-épisodes relèvent de LOT-08 puis LOT-09.
