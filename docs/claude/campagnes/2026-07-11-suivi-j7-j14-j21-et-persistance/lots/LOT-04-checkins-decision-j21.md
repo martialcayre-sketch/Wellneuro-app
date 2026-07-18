@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Check-ins et décision J21"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-03"
 ---
 

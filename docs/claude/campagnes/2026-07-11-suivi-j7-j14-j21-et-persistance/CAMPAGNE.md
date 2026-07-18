@@ -1,7 +1,7 @@
 ---
 id: "2026-07-11-suivi-j7-j14-j21-et-persistance"
 titre: "C2 — Points d'étape et persistance (C2A/C2B)"
-statut: "en_cours — compilée, gate migration à confirmer avant LOT-02"
+statut: "terminée — C2A + C2B livrés en prod (gate migration levé) ; gate modèle multi-cycles différé (cadrage ouvert)"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-18"
 lot_courant: "LOT-09"
@@ -98,10 +98,10 @@ sont remplacés) :
 | LOT-00 | Audit des flux et besoins de persistance | **terminé** (2026-07-17) |
 | LOT-01 | Spécification du modèle et gate migration | **terminé** (2026-07-17) |
 | LOT-02 | Migration Prisma et API minimale | **terminé** (2026-07-17, gate levé) |
-| LOT-03 | Versionnement et validation du protocole | **livré** (2026-07-17, PR #103 Part A + #107 Part B ; CI PR à confirmer) |
+| LOT-03 | Versionnement et validation du protocole | **livré** (2026-07-17, PR #103 Part A + #107 Part B, mergées) |
 | LOT-04 | Check-ins et décision J21 | **livré** (2026-07-18, sans migration ; branche `feat/c2a-lot-04-checkins`) |
 | LOT-05 | Compagnon patient minimal | **livré** (2026-07-18, borné R8-lite ; sans migration) |
-| LOT-06 | Tests, rétrocompatibilité et handoff | **livré** (2026-07-18 ; PR C2A LOT-04→06 à ouvrir, E2E autorité CI) |
+| LOT-06 | Tests, rétrocompatibilité et handoff | **livré** (2026-07-18 ; PR C2A LOT-04→06 mergée #110) |
 
 Décisions de compilation :
 
@@ -125,9 +125,9 @@ Arbitrage C2B tranché (revue utilisateur du 2026-07-18) et acté au registre so
 
 | Lot | Objet | Statut |
 |---|---|---|
-| LOT-07 | Score du résumé J21 — branchement momentum (lève dette LOT-04) | **livré** (2026-07-18, sans migration ; branche `feat/c2b-lot-07-score-j21`) |
-| LOT-08 | Ancrage T0 par épisode (prérequis comparateur) | **livré** (2026-07-18, sans migration ; branche `feat/c2b-lot-08-t0-episode`) |
-| LOT-09 | Comparateur multi-épisodes (Spirale-index praticien) | **livré** (2026-07-18, réalisation read-only, sans migration ; branche `feat/c2b-lot-09-trajectoire`) |
+| LOT-07 | Score du résumé J21 — branchement momentum (lève dette LOT-04) | **livré en prod** (2026-07-18, sans migration ; PR #112 mergée) |
+| LOT-08 | Ancrage T0 par épisode (prérequis comparateur) | **livré en prod** (2026-07-18, sans migration ; PR #113 mergée) |
+| LOT-09 | Comparateur multi-épisodes (Spirale-index praticien) | **livré en prod** (2026-07-18, réalisation read-only, sans migration ; PR #114 mergée). Report assumé : vraie comparaison ≥ 2 cycles → gate modèle multi-cycles, cadrage ouvert (`propositions/2026-07-18-gate-modele-multi-cycles/`, PR #115). |
 
 Décisions de compilation (registre A8) :
 
