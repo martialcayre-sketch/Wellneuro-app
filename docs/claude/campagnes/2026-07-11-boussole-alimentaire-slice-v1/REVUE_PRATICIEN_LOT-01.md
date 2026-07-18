@@ -12,7 +12,7 @@ clarification_git: "471f71461f74e9eabdedabc02f9e6e35d529d138"
 vecteurs_ref: "C5-LOT01-VECTEURS-2026-07-18-v1"
 avis_gate_clinique: "VALIDÉ"
 avis_vecteurs_pondérés: "À SIGNER"
-preuve_git_vecteurs: "en_attente_du_commit_documentaire"
+preuve_git_vecteurs: "b86ee6cbbbefbdf9c2bc91db4ea3426aae645466"
 ---
 
 # C5 LOT-01 — revue praticien du mapping clinique
