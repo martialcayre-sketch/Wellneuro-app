@@ -7,12 +7,12 @@ confirmation de migration, ni confirmation d'import, ni activation C5.
 
 ## État observé
 
-- C5 est inactive à `2/8` ; la migration LOT-02 est appliquée en Production et
-  l'import distinct a été confirmé sous
-  `C5-LOT02-IMPORT-MC-2026-07-18-v1`.
-- L'importeur est isolé sur `campaign/c5-lot02-ciqual-import`, créée depuis
-  `origin/main`. Les modifications C2, JA et applicatives hors C5 ne font pas
-  partie de son diff.
+- C5 est inactive à `3/8` ; migration et import LOT-02 sont appliqués et
+  vérifiés en Production sous leurs confirmations distinctes.
+- L'importeur a été développé sur `campaign/c5-lot02-ciqual-import`, puis
+  fusionné dans `main` par la PR `#120`. La présente passe post-import est
+  documentaire ; les modifications C2, JA et applicatives hors C5 restent hors
+  de son diff.
 - Aucun usage de `WN_C5_ENABLED` n'existe encore dans le code applicatif ; le
   verrou n'est pour l'instant qu'une exigence documentaire.
 - La CI fournit PostgreSQL 15, rejoue toutes les migrations Prisma, contrôle la
@@ -24,9 +24,9 @@ confirmation de migration, ni confirmation d'import, ni activation C5.
   Production ; sa valeur chiffrée n'a pas été lue ni consignée.
 - `WN_C5_ENABLED` est absent de l'environnement Vercel Production, ce qui doit
   rester équivalent à `false` dans l'implémentation.
-- La migration `20260718100010_c5_ciqual_reference_v1` a été rejouée avec
-  succès par le pipeline Production ; l'import de données n'a pas encore été
-  exécuté.
+- La migration `20260718100010_c5_ciqual_reference_v1` et les 55 744 lignes
+  `ciqual-2025-v1` sont présentes ; RLS, grants, advisors, volumes et hash ont
+  été contrôlés avant COMMIT.
 - Le smoke HTTP de `https://app.wellneuro.fr/` redirige vers `/login`, qui
   répond HTTP 200 ; l'application existante est disponible avant travaux C5.
 - Le dry-run officiel et le replay PostgreSQL éphémère de l'importeur
@@ -61,7 +61,7 @@ confirmation de migration, ni confirmation d'import, ni activation C5.
 | Gate | Preuve minimale | État |
 |---|---|---|
 | Migration LOT-02 | confirmation humaine, migration relue, PostgreSQL éphémère et dérive nulle | appliquée et vérifiée en Production |
-| Import LOT-02 | confirmation distincte, MD5 source, dry-run 55 744 lignes, cible vide pour la version | confirmé ; importeur vérifié hors Production, exécution en attente |
+| Import LOT-02 | confirmation distincte, MD5 source, dry-run 55 744 lignes, cible vide pour la version | appliqué et intègre en Production ; déclencheur retiré |
 | C5A | référentiel intègre, moteurs déterministes, clinique et provenance vérifiées | non commencé |
 | C5B praticien | ownership, insertion manuelle, workflow de validation et absence de diffusion automatique | non commencé |
 | C5B patient | protocole diffusé, isolation 404, aucun score numérique, accessibilité | non commencé |
@@ -80,7 +80,6 @@ confirmation de migration, ni confirmation d'import, ni activation C5.
 
 ## Situation actuelle
 
-**GO conditionnel pour livrer l'importeur après revue et CI vertes, puis
-exécuter l'import confirmé avec le déclencheur Production à usage unique.**
-C5 reste inactive : l'import n'autorise ni les lots applicatifs suivants, ni
-l'activation, qui demeure une décision humaine ultérieure et distincte.
+**GO LOT-03.** Le référentiel LOT-02 est intègre et son déclencheur Production
+a été retiré. C5 reste inactive : l'import n'autorise pas l'activation, qui
+demeure une décision humaine ultérieure et distincte après LOT-07.

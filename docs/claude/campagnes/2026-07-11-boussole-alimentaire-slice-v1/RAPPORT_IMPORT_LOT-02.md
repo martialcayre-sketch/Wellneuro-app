@@ -6,8 +6,7 @@ Dataset : `ciqual-2025-v1`
 
 Référence de confirmation : `C5-LOT02-IMPORT-MC-2026-07-18-v1`
 
-État : importeur vérifié hors production ; import Production non encore
-exécuté.
+État : import Production terminé, intègre et non activé.
 
 ## Autorisation
 
@@ -80,16 +79,26 @@ y compris les zéros publiés comme tels, portent une valeur.
   insertions, no-op strict puis valeur corrompue refusée ; nettoyage limité à
   la base PostgreSQL éphémère.
 
-## Déploiement prévu
+## Preuve Production
 
-1. Fusionner l'importeur après CI et revue du diff.
-2. Ajouter temporairement la référence confirmée au scope Production Vercel.
-3. Redéployer le commit fusionné : préflight, migrations, advisors, import,
-   build.
-4. Vérifier le rapport d'intégrité dans les logs et le smoke test public.
-5. Retirer immédiatement le déclencheur d'import.
-6. Consigner le commit, le déploiement et le résultat Production dans une
-   seconde passe documentaire.
+| Preuve | Résultat |
+|---|---|
+| PR / commit | `#120` / `3de796d6996cf2278d061fb90a0bfa126e434a65` |
+| CI | `29642559010`, tous les jobs verts |
+| déploiement sans déclencheur | `dpl_EsJUiN1sAF8cxEeVBG7yz8ubih2v`, `Ready`, aucun import |
+| déploiement d'import | `dpl_ABbUM7Cq1QoVyaXmvThuWBmbcbqs`, `Ready` |
+| advisors Supabase | `results: []` avant écriture |
+| insertions | 55 744, `idempotentNoop = false` |
+| cible | 55 744 lignes, 3 484 aliments, 16 constituants, 1 hash source |
+| sécurité | RLS active, 0 policy, 0 grant Data API |
+| déclencheur | retiré immédiatement ; absence vérifiée |
+| activation | `WN_C5_ENABLED` absent, C5 inactive |
+| smoke | `https://app.wellneuro.fr/` → `/login`, HTTP 200 |
+
+La comparaison stricte de chaque ligne a été exécutée avant COMMIT. Le no-op
+strict et le refus d'une cible corrompue ont été exercés dans le contrat CI
+versionné sur la même version du dataset. Les logs Production ont redigé la
+référence de confirmation.
 
 Le rollback applicatif demeure sans objet tant que C5 est inactive. Toute
 suppression des lignes importées nécessiterait une nouvelle confirmation

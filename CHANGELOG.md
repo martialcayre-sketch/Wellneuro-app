@@ -26,7 +26,11 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   confirmé sous `C5-LOT02-IMPORT-MC-2026-07-18-v1`. Le dry-run officiel et le
   replay PostgreSQL éphémère produisent 55 744 lignes pour 3 484 aliments et
   16 constituants ; une seconde exécution est un no-op et une cible partielle
-  est refusée. L'import Production reste à exécuter ; C5 demeure inactive.
+  est refusée. Import Production exécuté au commit
+  `3de796d6996cf2278d061fb90a0bfa126e434a65` après advisors sans anomalie :
+  55 744 lignes, 3 484 aliments, 16 constituants et un hash source ; RLS active,
+  zéro policy et zéro grant Data API. Le déclencheur temporaire a été retiré,
+  LOT-02 est terminé et C5 passe à 3/8 en restant inactive.
 
 ### C5 LOT-01 — seconde passe documentaire clinique (2026-07-18)
 
