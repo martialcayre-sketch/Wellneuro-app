@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-boussole-alimentaire-slice-v1"
 titre: "C5 — Boussole alimentaire WellNeuro 5.0"
-statut: "en cours — LOT-06 terminé, LOT-07 à faire, inactive"
+statut: "terminée — 8/8, trois verdicts émis, activation production demandée"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-18"
-lot_courant: "LOT-07"
+lot_courant: "aucun"
 ---
 
 # C5 — Boussole alimentaire WellNeuro 5.0
@@ -54,7 +54,7 @@ Le dossier sources/ reste un matériau historique non exécutable.
 | LOT-04 | UX praticien « Observatoire » | **terminé — UX praticien Observatoire** | LOT-03 acquis |
 | LOT-05 | UX patient « Jardin » | **terminé — UX patient Jardin qualitative et isolée** | LOT-04 et protocole approuvé |
 | LOT-06 | Assiettes, substitutions et pont JA | **terminé — catalogue C5B versionné et pont faisabilité JA (lecture seule)** | LOT-03 et contrat JA publié |
-| LOT-07 | Validation, conformité et handoff | à_faire | LOT-04, LOT-05 et LOT-06 |
+| LOT-07 | Validation, conformité et handoff | **terminé — trois verdicts émis, dossier de preuves et handoff (`VALIDATION_FINALE_C5.md`)** | LOT-04, LOT-05 et LOT-06 |
 
 ## Séquence
 
@@ -91,10 +91,17 @@ le go/no-go final reste découpé entre C5A, C5B praticien et C5B patient.
   de faisabilité JA en lecture seule (`ja-action-feasibility-v1`, factuel, praticien-
   validé) ; aucune substitution automatique, opt-out par défaut, profil C5A intact et
   aucune migration ; C5 passe à `7/8` et reste inactive.
-- **NO-GO activation** : C5 reste inactive tant que les lots applicatifs et le
-  go/no-go LOT-07 ne sont pas terminés et explicitement validés.
-- **NO-GO patient** : sans praticien validateur, protocole diffusé et référentiel
-  complet et intègre.
+- **GO LOT-07 (clôture)** : validation, conformité et handoff livrés
+  (`VALIDATION_FINALE_C5.md`, `MATRICE_CONFORMITE_ET_TESTS_C5.md`, `HANDOFF_C5.md`,
+  `ACTIVATION_RUNBOOK_C5.md`, `DETTE_C5.md`) ; matrice technique verte (573 tests),
+  advisors sans alerte bloquante. C5 passe à `8/8`.
+- **Trois verdicts indépendants** : **C5A GO**, **C5B praticien GO**, **C5B patient
+  GO conditionnel** (dettes humaines D-C5-01→04 ouvertes : accessibilité, E2E boussole
+  des 3 fixtures, vocabulaire, revue visuelle). C5B patient ne peut être GO sans C5A
+  intègre et C5B praticien validé — condition satisfaite.
+- **Activation production** : demandée par le responsable (Martial CAYRE, session
+  2026-07-18). Mécanique : `WN_C5_ENABLED=true` dans Vercel Production + redéploiement
+  (`ACTIVATION_RUNBOOK_C5.md`). Rollback = flag `false` (non destructif, aucun DROP/DELETE).
 
 ## Références exécutables
 

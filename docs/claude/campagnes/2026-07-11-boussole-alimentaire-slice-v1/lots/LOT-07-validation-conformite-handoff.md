@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "Validation, conformité et handoff"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-04 + LOT-05 + LOT-06"
 ---
 
@@ -46,11 +46,18 @@ CAMPAGNE.md, CHANGELOG.md et SESSION_LOG.md lors de la clôture réelle.
 
 ## Étapes
 
-- [ ] Exécuter la matrice clinique, données, API, compatibilité et sécurité.
-- [ ] Exécuter les parcours E2E Sophie, Jennifer et Michel.
-- [ ] Auditer accessibilité et vocabulaire.
-- [ ] Émettre trois verdicts go/no-go avec dettes bloquantes.
-- [ ] Produire le handoff et, seulement sur instruction, le plan d'activation.
+- [x] Exécuter la matrice clinique, données, API, compatibilité et sécurité
+  (`MATRICE_CONFORMITE_ET_TESTS_C5.md` ; 573 tests verts, advisors sans alerte
+  bloquante, gardes 404/403/isolation testées).
+- [ ] Exécuter les parcours E2E Sophie, Jennifer et Michel — **partiel** : le
+  portail générique (Michel) est rejoué en CI ; les parcours « boussole » des
+  trois fixtures ne sont pas écrits → **dette D-C5-02**.
+- [ ] Auditer accessibilité et vocabulaire — **non exécuté** (axe absent, lecteur
+  d'écran/zoom/contraste/vocabulaire = revue humaine) → **dettes D-C5-01/D-C5-03**.
+- [x] Émettre trois verdicts go/no-go avec dettes (`VALIDATION_FINALE_C5.md` :
+  C5A GO, C5B praticien GO, C5B patient GO conditionnel).
+- [x] Produire le handoff (`HANDOFF_C5.md`) et, sur instruction du responsable, le
+  plan d'activation (`ACTIVATION_RUNBOOK_C5.md`).
 
 ## Tests
 
@@ -73,4 +80,21 @@ isolation insuffisante ; les trois verdicts restent indépendants.
 
 ## Résultats
 
-À renseigner lors de la clôture du lot.
+Clôture le 2026-07-18 (arbre de preuve `81fad26`).
+
+- **Matrice technique verte** : type-check 0, lint 0 (2 warnings préexistants hors
+  C5), `npm run test` **573 tests / 102 fichiers**, scoring-check OK (63
+  questionnaires), `prisma validate` OK, anti-secrets OK, audit campagnes exit 0.
+- **Advisors Supabase** : sécurité = uniquement `rls_enabled_no_policy` (INFO) sur
+  toutes les tables, dont les tables C5A ; **0 alerte ERROR/WARN**. Performance =
+  `unindexed_foreign_keys` / `unused_index` (INFO), aucune bloquante.
+- **Sécurité routes C5** : flag→404, ownership praticien→403, isolation patient→404
+  testées (`MATRICE_CONFORMITE_ET_TESTS_C5.md` §4).
+- **Trois verdicts indépendants** (`VALIDATION_FINALE_C5.md`) : **C5A GO**,
+  **C5B praticien GO**, **C5B patient GO conditionnel** (dettes D-C5-01→04).
+- **Dettes** consignées (`DETTE_C5.md`), **handoff** (`HANDOFF_C5.md`) et **runbook
+  d'activation + rollback par flag** (`ACTIVATION_RUNBOOK_C5.md`) produits.
+- Migration/RLS/E2E rejoués par la **CI** (Postgres 15) sur la PR LOT-07.
+- Instruction d'activation explicite du responsable (Martial CAYRE) consignée.
+
+Preuve Git de clôture : renseignée au commit du lot dans `CAMPAGNE.md`.
