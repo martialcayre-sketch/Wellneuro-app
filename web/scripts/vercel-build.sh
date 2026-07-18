@@ -20,6 +20,9 @@ set -euo pipefail
 
 if [ "${VERCEL_ENV:-}" = "production" ]; then
   if [ -n "${MIGRATE_DATABASE_URL:-}" ]; then
+    echo "→ Préflight C5 LOT-02 en lecture seule…"
+    DATABASE_URL="$MIGRATE_DATABASE_URL" npx prisma db execute \
+      --file prisma/checks/c5_ciqual_production_preflight.sql
     echo "→ Application des migrations sur la base de production (migrate deploy)…"
     DATABASE_URL="$MIGRATE_DATABASE_URL" npx prisma migrate deploy
   else

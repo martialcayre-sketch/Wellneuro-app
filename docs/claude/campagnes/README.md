@@ -1,6 +1,6 @@
 # Campagnes WellNeuro — index
 
-> Mis à jour le 2026-07-15. Les frontières, invariants et arbitrages sont
+> Mis à jour le 2026-07-18. Les frontières, invariants et arbitrages sont
 > dans `docs/claude/REGISTRE_FRONTIERES.md` (source normative). La séquence
 > active est dans **`PROGRAMME_WELLNEURO_5_0.md`** (qui réintègre les
 > campagnes cadrées du programme 3.2 sans les dupliquer). Statuts « cadrée »
@@ -19,7 +19,7 @@
 | C2B | Trajectoire et ajustement (→ Spirale) | **terminée** (2026-07-18 — LOT-07→09 en prod, sans migration ; gate modèle multi-cycles différé) | C2A ✓ | 3 |
 | C3 | Documents contextuels (→ fil de correspondance) | cadrée | C1 ✓ | N+1 |
 | C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : intrinsèque ; C4B : C1/C2 | N+1 |
-| C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | en_cours — LOT-00 livré (spec slice besoin 1, 12 vedettes candidates) | C5A : data-first ; C5B : C1/C2 | N+1 |
+| C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | cadrée — LOT-00 et LOT-01 terminés (2/8), LOT-02 en attente de confirmation migration, inactive | C5A : référentiel Ciqual après gates migration/import ; C5B : C1/C2 actifs | 8 |
 | JA | Ma spirale alimentaire (journal recadré 5.0) | recadrée 5.0 + adaptation contrepoint (2026-07-16, A7 — trois régimes : calibrage/essai/silence), règles candidates | audit JA-00 + terrain JA-0T ; domaine pur ; persistance : C2A + gate | N+1 |
 | TRUST | Information patient, consentements et sécurité relationnelle V1 | **terminée** (2026-07-16 — V1 en production, dettes DETTE_TRUST.md) | transverse : HC-F + portail ; raccord QX/C1/C2/C3/auth ; nourrit IDP/SP-AMB | 8 |
 | SP-TT / SP-COP / IDP / SP-SPI / SP-MET / SP-CAB / SP-AMB | Disposition 5.0 (suite) | à cadrer — séquence au programme 5.0 | voir programme | — |

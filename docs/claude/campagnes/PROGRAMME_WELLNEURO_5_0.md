@@ -69,10 +69,12 @@ campagnes data-first intercalables selon disponibilité ; elles alimentent le
 protocole et le copilote sans dépendre de la disposition.
 
 Depuis A7-12 (2026-07-16), **C5A est le candidat naturel de prochaine
-campagne data** : son référentiel (LOT-00 cadrage licences + LOT-02 slice
-Ciqual) fonde à la fois le scoring de la Boussole et le vocabulaire de
-marqueurs du journal alimentaire (12 vedettes du slice ⊂ marqueurs JA).
-L'activation reste un choix explicite.
+campagne data**. Le cadrage 5.0 du 2026-07-18 compile huit lots : LOT-00 est
+terminé, LOT-01 attend une validation clinique humaine et LOT-02 sépare les
+gates migration et import. Le référentiel complet des constituants Ciqual
+validés fonde le profil intrinsèque ; les 12 vedettes forment seulement un
+manifeste et un sous-ensemble des marqueurs JA. C5 reste inactive et son
+activation demeure un choix explicite.
 
 ### Campagne transverse TRUST
 

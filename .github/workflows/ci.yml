@@ -100,6 +100,10 @@ jobs:
             --to-schema prisma/schema.prisma \
             --exit-code
 
+      - name: C5 LOT-02 migration contract
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/c5_ciqual_reference_v1.sql
+
       - name: Seed test data
         working-directory: web
         run: npm run prisma:seed

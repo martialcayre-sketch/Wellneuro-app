@@ -4,6 +4,38 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### C5 LOT-02 — migration du référentiel Ciqual (2026-07-18)
+
+- Ajout du modèle PostgreSQL/Prisma `CiqualNutrientValue`, versionné par
+  dataset, aliment et constituant, avec valeur exacte décimale nullable,
+  statut explicite, unité, provenance et empreinte source.
+- Contraintes SQL fermées pour les statuts et unités, cohérence
+  valeur/statut, valeurs non négatives et unicité composite.
+- Identité clinique `NeuroAxis` rendue append-only par
+  `axisCode + versionMapping`; les poids se rattachent désormais à cette même
+  identité versionnée.
+- RLS deny-all activée sur la nouvelle table, sans policy ni privilège Data
+  API pour `anon` ou `authenticated`.
+- Migration confirmée sous la référence
+  `C5-LOT02-MIGRATION-MC-2026-07-18-v1`, rejouée sur PostgreSQL éphémère avec
+  dérive Prisma nulle. Aucun import Ciqual ni activation C5 dans cette étape.
+
+### C5 LOT-01 — seconde passe documentaire clinique (2026-07-18)
+
+- Calcul reproductible du PRAL Remer–Manz sur Ciqual 2025 V1 : 2 347/3 484
+  aliments complets, `p5 = -8,70089` et `p95 = 14,69258 mEq/100 g`, sans
+  imputation des absences, traces ou valeurs sous limite.
+- Production des vecteurs pondérés attendus de la cohorte pilote des 12
+  aliments sous la référence `C5-LOT01-VECTEURS-2026-07-18-v1` : 12 noyaux
+  obligatoires complets, deux profils complets et dix profils partiels.
+- Sources primaires, limites d'interprétation et niveau de preuve WellNeuro B
+  rattachés aux liaisons du mapping `equilibre_assiette`.
+- Résultats signés le 2026-07-18 par Martial CAYRE sous la référence
+  `C5-LOT01-VECTEURS-2026-07-18-v1`, identifiée par
+  `fb138bd784431713c26d0e4d93053189c3359d99`. LOT-01 est terminé et C5 passe
+  à 2/8 tout en restant inactive ; aucun code, score patient, migration, import
+  ou activation n'est introduit.
+
 ### TRUST V1 — information patient, consentements et sécurité relationnelle (2026-07-16)
 
 - Campagne TRUST exécutée de bout en bout (LOT-00 → LOT-07) : documents
