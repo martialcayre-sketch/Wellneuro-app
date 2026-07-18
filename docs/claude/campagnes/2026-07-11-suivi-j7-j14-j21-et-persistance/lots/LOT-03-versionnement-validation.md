@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Versionnement et validation du protocole"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-02"
 ---
 

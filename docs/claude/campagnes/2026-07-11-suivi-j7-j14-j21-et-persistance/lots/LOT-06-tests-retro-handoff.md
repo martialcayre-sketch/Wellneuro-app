@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Tests, rétrocompatibilité et handoff"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-05"
 ---
 
