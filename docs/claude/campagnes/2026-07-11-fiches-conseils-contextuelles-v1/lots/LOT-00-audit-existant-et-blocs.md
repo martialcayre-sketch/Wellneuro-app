@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Audit de l'existant documentaire et inventaire des blocs"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "aucun"
 ---
 
@@ -111,9 +111,9 @@ sur la persistance V1.
 
 ## Critères de done
 
-- [ ] Matrice bloc → destinataire produite.
-- [ ] Décision persistance V1 figée (et, si (b), gate migration nommé et bloqué).
-- [ ] Liste explicite « réutiliser / étendre / créer » par brique.
+- [x] Matrice bloc → destinataire produite.
+- [x] Décision persistance V1 figée (option (a) sans persistance ; gate (b) non ouvert).
+- [x] Liste explicite « réutiliser / étendre / créer » par brique.
 
 ## Risques / points de vigilance
 
@@ -126,4 +126,22 @@ sur la persistance V1.
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-07-18. Dossier d'audit complet : [`../DOSSIER_AUDIT_LOT-00.md`](../DOSSIER_AUDIT_LOT-00.md).
+
+- **Cartographie existant** : `buildBookletHTML` (pur, module-privé, à extraire),
+  `escapeHtml` (`lib/html`), infra email inline nodemailer/`SMTP_URL` (pas de helper
+  partagé), `BookletEnvoi` (audit envoi), `PatientPreview` + route mirror
+  `apercu-patient` (frontière patient-safe structurelle), `versioning.ts` (patron
+  append-only à transposer).
+- **Inventaire des blocs** : C1 (snapshot/review/decisionCard) **recomposés en
+  mémoire** ; C2 (`ProtocolDraft`/`Diffusion`/`Checkin`/`trajectoire`) persistés
+  append-only ; `SyntheseIA` persistée. Provenance ancrée sur hash/versions existants.
+- **Matrice bloc → destinataire** produite (patient/médecin/praticien), avec
+  **field-filter** (pas row-filter, car `syntheseJson` mélange `resume_praticien` et
+  `narratif_patient`).
+- **Décision persistance V1 = option (a) sans persistance** figée (confirmée
+  utilisateur 2026-07-18) → **aucune migration**. Gate (b) non ouvert.
+- **Gaps** consignés (export `buildBookletHTML`, garde de statut en code, pas
+  d'`inputHash` synthèse, field-filter, email inline).
+- **Discordance 5.0** : rendu médecin **sortant** en V1 ; fil bidirectionnel reporté
+  au handoff LOT-04.
