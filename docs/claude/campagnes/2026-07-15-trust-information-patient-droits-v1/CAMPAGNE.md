@@ -298,3 +298,12 @@ connus et reflétés exactement dans l’information patient.
 - [ ] Les mineurs, représentants et aidants ont un modèle de délégation explicite.
 - [ ] Les tests couvrent accessibilité, sécurité, versionnement et frontière patient.
 - [ ] Un verdict GO / GO avec dettes / NO-GO est émis avant activation.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- « Avant de commencer » et le centre permanent des droits adoptent la **typographie remontée** et l'information **séquentielle** côté patient. Consentement lié au hash de son texte et gates go/no-go **inchangés**.
+- Canvas mid-tone (ardoise / sable) — différé au lot d'implémentation.

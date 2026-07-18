@@ -73,3 +73,12 @@ disponibles à la fin de C1 → LOT-01 modèles et contrat de bloc (provenance,
 état, version) → LOT-02 composition deux colonnes + états →
 LOT-03 rendus par destinataire + impression → LOT-04 validation et handoff
 (C4/C5 comme futurs fournisseurs de blocs).
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- Composeur documentaire en **instrument focalisé** ; correspondance accessible depuis le poste de pilotage ; aperçu deux colonnes et chaîne brouillon→relu→validé→envoyé **inchangés**.
+- Canvas **ardoise** praticien / restitution patient sable — différés au lot d'implémentation.

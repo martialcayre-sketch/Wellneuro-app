@@ -4,6 +4,25 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Direction UX 5.0 « poste de pilotage » + canvas mid-tone A5-R2 (2026-07-18)
+
+- Registre : arbitrages **A5-R2** (canvas mid-tone « ardoise & sable » —
+  praticien `#D3D8E6` / cartes blanches, patient `#EAE0CC` / cartes crème ;
+  structure A5 conservée, aucun toggle) et **A6-R1** (poste de pilotage :
+  cockpit borné à l'écran, cycle clinique en colonne vertébrale, instruments
+  à tiroir, métriques actives, patient séquentiel, typographie remontée).
+- `design-system-d1.md` §9 : tokens v3 + matrice de contraste A5-R2
+  (AA/AAA re-vérifié ; vigilance texte muted ~4,6:1).
+- Audit de conformité UX 5.0 du front praticien/patient :
+  `docs/claude/campagnes/AUDIT_CONFORMITE_UX_5_0_2026-07-18.md`.
+- Proposition + maquette autonome :
+  `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`.
+- Alignement additif de la direction dans les `CAMPAGNE.md` du front UX
+  (section « Direction UX 5.0 »).
+- **Aucun changement clinique, aucun seuil, aucun code applicatif** :
+  A5-R2/A6-R1 sont actés en documentation, non appliqués à `globals.css` ;
+  l'implémentation est livrée par campagnes (Vague 1 sans migration).
+
 ### TRUST V1 — information patient, consentements et sécurité relationnelle (2026-07-16)
 
 - Campagne TRUST exécutée de bout en bout (LOT-00 → LOT-07) : documents

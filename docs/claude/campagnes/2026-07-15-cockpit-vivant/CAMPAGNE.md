@@ -102,3 +102,12 @@ ou diffusion patient n'a été ajoutée.
 - Le cockpit affiche des objets calculés réels, versions de scoring citées.
 - Aucun changement des contrats C1 ni des seuils ; aucune persistance.
 - Vérifications standard + e2e mode consultation.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- Le cockpit runtime devient le cœur du **poste de pilotage borné** : cycle clinique en colonne vertébrale, zone focale de la phase due, **instruments à tiroir** (12 besoins, momentum, réponses) au lieu de l'empilement vertical. Objets calculés, abstention et confirmation T0 **inchangés**.
+- Canvas **ardoise** A5-R2 et **typographie remontée** — différés au lot d'implémentation, sans migration.

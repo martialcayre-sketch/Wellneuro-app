@@ -60,3 +60,12 @@ pré-composé (SP-SPI ; le signal de reprise v1 est purement informatif).
 - Aucune régression du parcours praticien (e2e verts en CI).
 - Vérifications : type-check, Vitest, lint, build production, anti-secrets.
 - Patients fictifs uniquement dans tests et seeds.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- Accueil praticien : **métriques actives** — chaque KPI et chaque carte du Fil est un point d'accès cliquable vers sa page, plus d'affichage passif.
+- Canvas **ardoise** A5-R2 et **typographie remontée** — application différée au lot d'implémentation, sans migration.

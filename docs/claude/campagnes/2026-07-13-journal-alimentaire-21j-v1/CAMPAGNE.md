@@ -129,3 +129,12 @@ persistance des solutions (IDP), comparaison multi-épisodes (C2A + IDP),
 Nutrition Lab et simulateur d'action, cabinet apprenant, **gouvernance
 métrologique complète du calibrage** (lot conditionnel — déclenché si le
 profil observationnel pèse dans les décisions cliniques).
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- Patient « Ma spirale alimentaire » : **séquentiel** (question du jour, une étape à la fois), **aucun score**, langage de construction ; praticien « Trajectoire alimentaire » consultable en **instrument** depuis le poste de pilotage. Arbitrages A7 (trois régimes, quatre lectures) **inchangés**.
+- Canvas **sable** patient / ardoise praticien — différés au lot d'implémentation, sans migration.

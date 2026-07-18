@@ -162,3 +162,9 @@ hors périmètre de cette campagne si un besoin réel est identifié.
   suivre dans C1/C3/C4/C5, pas dans une nouvelle campagne dédiée.
 - Phase UX-6 (préparation WellNeuro 4.0 — timeline longitudinale, affichage des sources IA) : campagne WN
   distincte, après stabilisation de C1→C5.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`.
+
+- Campagne **close, non rouverte** : direction visuelle déjà remplacée par HC-F. A5-R2 (canvas mid-tone) et A6-R1 (poste de pilotage) s'appliquent via HC-F et les campagnes actives, **pas ici**. Note d'alignement pour traçabilité seule.

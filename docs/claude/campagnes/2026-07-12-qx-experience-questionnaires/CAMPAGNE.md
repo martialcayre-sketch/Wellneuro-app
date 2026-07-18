@@ -81,3 +81,12 @@ formulaire d'anamnèse interne complexe si absent des pilotes.
       provisoire).
 - [x] `OptionOrderPolicy` spécifié, non implémenté, décision tracée.
 - [x] Parcours mobile, clavier et lecteur d'écran documentés sur un pilote.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- Rendu patient **séquentiel** renforcé (un écran = quelques questions, micro-lots) ; **typographie remontée** ; `ReadingComfortControl` monté sur le portail. Scoring sur `id`/`v` et garde-fous psychométriques **inchangés**.
+- Canvas **sable** A5-R2 — différé au lot d'implémentation.

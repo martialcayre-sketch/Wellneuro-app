@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<!--
+  Maquette cible « le poste de pilotage clinique » — WellNeuro 5.0 (A5-R2)
+  Autonome : CSS + SVG inline, aucun CDN, aucune police externe (stacks A5-R1 + fallback système), JS vanilla.
+  Démontre : cockpit praticien BORNÉ à l'écran (rail de phases + zone focale + instruments à tiroir),
+  métriques ACTIVES, portail patient SÉQUENTIEL, canvas mid-tone A5-R2, typo remontée.
+  Garde-fous : zéro score patient, statut jamais color-only, relief solaire étiqueté, tiroirs au clic,
+  patients fictifs uniquement. Ceci est une maquette statique de proposition — aucune donnée réelle.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WellNeuro 5.0 — Maquette cible « poste de pilotage »</title>
+<style>
+  :root{
+    --radius:14px; --radius-sm:10px; --radius-lg:18px;
+    --ok:#15803d; --warn:#92400e; --danger:#b91c1c; --info:#1d4ed8;
+    /* trio d'entité fixe (A5-R1) */
+    --viz-corps:#0D9488; --viz-ancrage:#3D4A9E; --viz-esprit:#E8A33D;
+    --shadow-card:0 1px 2px rgba(16,22,43,.06), 0 8px 24px rgba(16,22,43,.08);
+    --shadow-pop:0 12px 40px rgba(16,22,43,.22);
+    font-size:16px;
+  }
+  html[data-comfort="large"]{ font-size:18px; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:#0d1020; color:#111; font-family:system-ui, sans-serif; }
+
+  /* ---------- Thèmes par persona (A5-R2 mid-tone) ---------- */
+  .space{ display:none; min-height:100vh; }
+  .space.active{ display:block; }
+
+  .space.praticien{
+    --bg:#D3D8E6; --surface:#FFFFFF; --surface-2:#F4F6FB; --fg:#1B2337;
+    --muted:#E3E7F1; --muted-fg:#4a5578; --border:#C4CBDD; --border-strong:#AEB7CF;
+    --primary:#3D4A9E; --primary-fg:#ffffff; --accent:#E8A33D; --accent-ink:#8A5B10;
+    --rail-bg:linear-gradient(180deg,#151C38,#10162B); --rail-surface:#1B2342;
+    --rail-fg:#EEF0FA; --rail-muted:#8B94BE; --rail-accent:#E8A33D; --rail-border:#2A3358;
+    --font-display:'Sora','Segoe UI',system-ui,sans-serif;
+    --font-body:'Instrument Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    --data:#0D9488;
+    background:var(--bg); color:var(--fg); font-family:var(--font-body);
+  }
+  .space.patient{
+    --bg:#EAE0CC; --surface:#FFFDF9; --surface-2:#F6EFE0; --fg:#2B2115;
+    --muted-fg:#6E5F49; --border:#DCCFB6; --border-strong:#C9B996;
+    --primary:#1E6F54; --primary-fg:#ffffff; --accent:#B25E38; --accent-ink:#8F4526;
+    --font-display:'Bricolage Grotesque',system-ui,sans-serif;
+    --font-body:'Albert Sans',system-ui,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+    --data:#2F9E6E;
+    background:var(--bg); color:var(--fg); font-family:var(--font-body);
+  }
+
+  /* ---------- Barre de démo (hors produit) ---------- */
+  .demo{ position:sticky; top:0; z-index:50; display:flex; gap:12px; align-items:center;
+    padding:10px 18px; background:#10162B; color:#EEF0FA; font-family:system-ui,sans-serif; font-size:14px; }
+  .demo b{ font-weight:700; letter-spacing:.02em; }
+  .demo .seg{ display:inline-flex; background:#1B2342; border:1px solid #2A3358; border-radius:999px; padding:3px; }
+  .demo .seg button{ all:unset; cursor:pointer; padding:7px 16px; border-radius:999px; color:#B9C0E0; font-size:14px; min-height:40px; box-sizing:border-box; display:inline-flex; align-items:center; }
+  .demo .seg button[aria-pressed="true"]{ background:#E8A33D; color:#2a1c05; font-weight:600; }
+  .demo .spacer{ flex:1; }
+  .demo .comfort{ all:unset; cursor:pointer; padding:8px 14px; border:1px solid #2A3358; border-radius:10px; color:#B9C0E0; font-size:13px; min-height:40px; box-sizing:border-box; }
+  .demo .note{ color:#8B94BE; font-size:12.5px; }
+
+  /* ---------- PRATICIEN : shell rail + workspace ---------- */
+  .shell{ display:grid; grid-template-columns:232px 1fr; min-height:calc(100vh - 56px); }
+  .rail{ background:var(--rail-bg); color:var(--rail-fg); padding:20px 14px; display:flex; flex-direction:column; gap:6px; }
+  .rail .brand{ display:flex; align-items:center; gap:10px; font-family:var(--font-display); font-weight:700; font-size:18px; margin-bottom:18px; }
+  .rail .brand .logo{ width:34px; height:34px; border-radius:9px; background:rgba(232,163,61,.18); display:grid; place-items:center; color:var(--rail-accent); font-weight:800; }
+  .rail .grp{ color:var(--rail-muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; margin:14px 8px 4px; }
+  .rail a{ display:flex; align-items:center; gap:11px; padding:11px 12px; border-radius:11px; color:var(--rail-fg); text-decoration:none; font-size:15px; min-height:44px; box-sizing:border-box; }
+  .rail a .ic{ width:19px; height:19px; opacity:.85; }
+  .rail a.active{ background:rgba(232,163,61,.12); box-shadow:inset 3px 0 0 var(--rail-accent); }
+  .rail a.legacy{ opacity:.5; }
+  .rail a.legacy .tag{ margin-left:auto; font-size:10.5px; border:1px solid var(--rail-border); border-radius:6px; padding:1px 6px; }
+  .rail :focus-visible, .demo :focus-visible, .work :focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+
+  .work{ padding:22px 26px; overflow:hidden; }
+  .work h1{ font-family:var(--font-display); font-size:30px; line-height:1.1; margin:0 0 4px; letter-spacing:-.02em; }
+  .work .sub{ color:var(--muted-fg); font-size:15px; margin-bottom:18px; }
+  .tabs{ display:inline-flex; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:4px; margin-bottom:18px; }
+  .tabs button{ all:unset; cursor:pointer; padding:9px 16px; border-radius:9px; font-size:15px; color:var(--muted-fg); min-height:40px; box-sizing:border-box; display:inline-flex; align-items:center; }
+  .tabs button[aria-pressed="true"]{ background:var(--surface); color:var(--fg); font-weight:600; box-shadow:var(--shadow-card); }
+
+  .view{ display:none; } .view.active{ display:block; }
+
+  /* Métriques ACTIVES */
+  .metrics{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px; }
+  .metric{ all:unset; cursor:pointer; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow-card); display:flex; flex-direction:column; gap:6px; transition:transform .1s, box-shadow .1s; }
+  .metric:hover{ transform:translateY(-2px); box-shadow:var(--shadow-pop); border-color:var(--border-strong); }
+  .metric .k{ font-size:12.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted-fg); }
+  .metric .v{ font-family:var(--font-display); font-size:32px; font-weight:700; color:var(--primary); }
+  .metric .go{ font-size:13px; color:var(--accent-ink); }
+
+  .fil{ display:flex; flex-direction:column; gap:12px; max-width:760px; }
+  .fil .card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:15px 17px; box-shadow:var(--shadow-card); display:flex; gap:13px; align-items:flex-start; }
+  .fil .when{ font-family:var(--font-mono); font-size:13px; color:var(--muted-fg); min-width:56px; }
+  .fil .why{ font-size:14px; color:var(--muted-fg); margin-top:3px; }
+  .fil .card b{ font-size:15.5px; }
+
+  /* ---------- POSTE DE PILOTAGE (borné) ---------- */
+  .cockpit{ background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-lg); height:min(80vh,700px); display:grid; grid-template-rows:auto 1fr; overflow:hidden; box-shadow:var(--shadow-card); }
+  .traj{ display:flex; align-items:center; gap:18px; padding:14px 18px; background:var(--surface); border-bottom:1px solid var(--border); }
+  .traj .who{ font-family:var(--font-display); font-size:19px; font-weight:700; }
+  .traj .pos{ font-family:var(--font-mono); font-size:13px; color:var(--muted-fg); }
+  .spiral{ width:52px; height:52px; }
+  .chip{ display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border-radius:999px; font-size:13px; border:1px solid var(--border); background:var(--surface-2); min-height:34px; box-sizing:border-box; }
+  .chip .ic{ width:15px; height:15px; }
+  .chip.delta{ background:rgba(13,148,136,.10); border-color:rgba(13,148,136,.3); color:#0b6b62; }
+  .chip.due{ background:rgba(232,163,61,.14); border-color:rgba(232,163,61,.45); color:var(--accent-ink); font-weight:600; }
+
+  .cbody{ display:grid; grid-template-columns:210px 1fr 220px; min-height:0; }
+  /* Rail des 7 phases = colonne vertébrale */
+  .phases{ border-right:1px solid var(--border); padding:16px 12px; display:flex; flex-direction:column; gap:4px; overflow:auto; }
+  .phases .lbl{ font-size:11.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted-fg); margin:2px 8px 8px; }
+  .phase{ all:unset; cursor:pointer; display:flex; align-items:center; gap:10px; padding:10px 11px; border-radius:10px; font-size:14px; min-height:44px; box-sizing:border-box; }
+  .phase .dot{ width:10px; height:10px; border-radius:50%; background:var(--border-strong); flex:none; }
+  .phase.done .dot{ background:var(--ok); }
+  .phase.due{ background:rgba(232,163,61,.13); font-weight:600; box-shadow:inset 3px 0 0 var(--accent); }
+  .phase.due .dot{ background:var(--accent); }
+  .phase.blocked{ color:var(--muted-fg); }
+  .phase.blocked .dot{ background:var(--danger); }
+  .phase .st{ margin-left:auto; font-size:11px; color:var(--muted-fg); }
+
+  /* Zone focale = la phase due */
+  .focal{ padding:18px 20px; overflow:auto; }
+  .focal h2{ font-family:var(--font-display); font-size:20px; margin:0 0 3px; }
+  .focal .eyebrow{ font-size:12.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--accent-ink); font-weight:600; }
+  .decision{ background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--primary); border-radius:var(--radius); padding:15px 16px; margin:12px 0; box-shadow:var(--shadow-card); }
+  .decision .lead{ font-size:16px; font-weight:600; }
+  .decision .src{ font-family:var(--font-mono); font-size:12px; color:var(--muted-fg); margin-top:6px; }
+  .miss{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:13px 15px; margin:12px 0; }
+  .miss ul{ margin:8px 0 0; padding-left:18px; } .miss li{ margin:5px 0; font-size:14.5px; }
+  .steps{ counter-reset:s; display:flex; flex-direction:column; gap:8px; margin-top:10px; }
+  .step{ display:flex; gap:11px; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:11px 13px; font-size:14.5px; }
+  .step::before{ counter-increment:s; content:counter(s); width:26px; height:26px; border-radius:50%; background:var(--primary); color:#fff; display:grid; place-items:center; font-size:13px; font-weight:700; flex:none; }
+  .btn{ all:unset; cursor:pointer; background:var(--primary); color:var(--primary-fg); padding:11px 18px; border-radius:11px; font-size:15px; font-weight:600; display:inline-flex; align-items:center; gap:8px; min-height:44px; box-sizing:border-box; }
+  .btn.ghost{ background:transparent; color:var(--primary); border:1px solid var(--border-strong); }
+
+  /* Instruments à tiroir */
+  .instr{ border-left:1px solid var(--border); padding:16px 12px; display:flex; flex-direction:column; gap:9px; overflow:auto; }
+  .instr .lbl{ font-size:11.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted-fg); margin:2px 6px 4px; }
+  .tool{ all:unset; cursor:pointer; background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:12px 13px; display:flex; align-items:center; gap:10px; font-size:14px; min-height:48px; box-sizing:border-box; box-shadow:var(--shadow-card); }
+  .tool:hover{ border-color:var(--border-strong); }
+  .tool .ic{ width:18px; height:18px; color:var(--primary); }
+  .tool .arrow{ margin-left:auto; color:var(--muted-fg); }
+
+  /* Tiroir (pop-up au clic) */
+  .drawer{ position:absolute; inset:0; display:none; }
+  .drawer.open{ display:block; }
+  .drawer .ovl{ position:absolute; inset:0; background:rgba(16,22,43,.35); }
+  .drawer .pane{ position:absolute; top:0; right:0; height:100%; width:min(440px,86%); background:var(--surface); border-left:1px solid var(--border); box-shadow:var(--shadow-pop); padding:20px 22px; overflow:auto; }
+  .drawer .pane h3{ font-family:var(--font-display); font-size:19px; margin:0 0 2px; }
+  .drawer .close{ all:unset; cursor:pointer; position:absolute; top:14px; right:16px; width:40px; height:40px; border-radius:10px; display:grid; place-items:center; color:var(--muted-fg); }
+  .drawer .close:hover{ background:var(--surface-2); }
+  .needrow{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:14.5px; }
+  .needrow .track{ flex:1; height:8px; border-radius:6px; background:linear-gradient(90deg,rgba(185,28,28,.14),rgba(146,64,14,.14),rgba(21,128,61,.14)); position:relative; }
+  .needrow .track .pt{ position:absolute; top:-3px; width:14px; height:14px; border-radius:50%; background:var(--primary); border:2px solid var(--surface); }
+  .cockpit-wrap{ position:relative; }
+
+  /* ---------- PATIENT : séquentiel ---------- */
+  .pwrap{ max-width:560px; margin:0 auto; padding:26px 20px 60px; }
+  .phead{ text-align:center; margin-bottom:18px; }
+  .phead .logo{ font-family:var(--font-display); font-weight:700; font-size:20px; color:var(--primary); }
+  .journey{ display:flex; align-items:center; justify-content:center; gap:0; margin:14px 0 22px; }
+  .journey .st{ display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; }
+  .journey .st .d{ width:14px; height:14px; border-radius:50%; background:var(--border-strong); }
+  .journey .st.done .d{ background:var(--primary); }
+  .journey .st.now .d{ background:var(--accent); box-shadow:0 0 0 4px rgba(178,94,56,.18); }
+  .journey .st small{ font-size:11.5px; color:var(--muted-fg); }
+  .journey .bar{ height:2px; background:var(--border-strong); flex:1; margin-bottom:18px; }
+  .pcard{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:26px 24px; box-shadow:var(--shadow-card); text-align:center; }
+  .pcard h1{ font-family:var(--font-display); font-size:26px; margin:6px 0 4px; }
+  .pcard p{ font-size:16px; line-height:1.55; color:var(--muted-fg); }
+  .growth{ width:150px; height:150px; margin:8px auto 4px; }
+  .band{ display:inline-flex; align-items:center; gap:8px; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:9px 16px; font-size:15px; margin:8px 0; }
+  .band .ic{ width:17px; height:17px; color:var(--primary); }
+  .prio{ text-align:left; margin:16px 0; display:flex; flex-direction:column; gap:9px; }
+  .prio .it{ display:flex; gap:11px; align-items:center; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:13px 15px; font-size:15.5px; }
+  .prio .it .ic{ width:19px; height:19px; color:var(--accent-ink); flex:none; }
+  .pnav{ display:flex; gap:12px; justify-content:space-between; margin-top:20px; }
+  .pbtn{ all:unset; cursor:pointer; background:var(--primary); color:var(--primary-fg); padding:13px 22px; border-radius:12px; font-size:16px; font-weight:600; min-height:48px; box-sizing:border-box; display:inline-flex; align-items:center; gap:8px; }
+  .pbtn.ghost{ background:transparent; color:var(--primary); border:1px solid var(--border-strong); }
+  .patient :focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+  .badge-soon{ display:inline-block; font-size:11px; border:1px solid var(--border); border-radius:6px; padding:1px 7px; color:var(--muted-fg); margin-left:8px; vertical-align:middle; }
+  .foot{ text-align:center; font-size:12px; color:var(--muted-fg); margin-top:22px; }
+</style>
+</head>
+<body>
+
+<!-- Icônes SVG -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 6a3 3 0 0 1 0 6"/></symbol>
+  <symbol id="i-spiral" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 12a3 3 0 1 1 3 3c-3 0-5-2-5-5a6 6 0 0 1 11-2"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v4h4"/></symbol>
+  <symbol id="i-flask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3 8 4-16 3 8h4"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l4 4 10-10"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20c0-8 6-14 16-14 0 10-6 16-16 14z"/><path d="M4 20c4-6 8-8 12-9"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></symbol>
+</defs></svg>
+
+<!-- Barre de démo -->
+<div class="demo">
+  <b>WellNeuro 5.0</b><span class="note">Maquette cible « poste de pilotage » · A5-R2 · données fictives</span>
+  <span class="spacer"></span>
+  <span class="seg" role="group" aria-label="Espace">
+    <button id="b-prat" aria-pressed="true" onclick="setSpace('praticien')">Praticien</button>
+    <button id="b-pat" aria-pressed="false" onclick="setSpace('patient')">Patient</button>
+  </span>
+  <button class="comfort" onclick="toggleComfort()" aria-pressed="false" id="b-comfort">A+ Confort de lecture</button>
+</div>
+
+<!-- ===================== PRATICIEN ===================== -->
+<section class="space praticien active" id="space-praticien" data-space="praticien">
+  <div class="shell">
+    <nav class="rail" aria-label="Navigation praticien">
+      <div class="brand"><span class="logo">WN</span> WellNeuro</div>
+      <div class="grp">La Spirale</div>
+      <a class="active" href="#"><svg class="ic"><use href="#i-home"/></svg> Le Fil du jour</a>
+      <a href="#"><svg class="ic"><use href="#i-users"/></svg> Fiches-trajectoires</a>
+      <a href="#"><svg class="ic"><use href="#i-spiral"/></svg> Consultation copilote <span class="badge-soon" style="margin-left:auto">SP-COP</span></a>
+      <a href="#"><svg class="ic"><use href="#i-doc"/></svg> Correspondance <span class="badge-soon" style="margin-left:auto">C3</span></a>
+      <div class="grp">Héritage — inchangé</div>
+      <a class="legacy" href="#"><svg class="ic"><use href="#i-list"/></svg> Questionnaires <span class="tag">4.0</span></a>
+      <a class="legacy" href="#"><svg class="ic"><use href="#i-flask"/></svg> Bibliothèque <span class="tag">4.0</span></a>
+    </nav>
+
+    <main class="work">
+      <div class="tabs" role="group" aria-label="Vue">
+        <button id="t-accueil" aria-pressed="true" onclick="setPratView('accueil')">Accueil</button>
+        <button id="t-pilotage" aria-pressed="false" onclick="setPratView('pilotage')">Poste de pilotage</button>
+      </div>
+
+      <!-- Vue accueil : tour de contrôle, métriques ACTIVES -->
+      <div class="view active" id="v-accueil">
+        <h1>Le Fil du jour</h1>
+        <div class="sub">Mercredi 18 juillet — 3 patients demandent une attention aujourd'hui.</div>
+        <div class="metrics">
+          <button class="metric" onclick="setPratView('pilotage')"><span class="k">Patients actifs</span><span class="v">18</span><span class="go">Voir la file →</span></button>
+          <button class="metric" onclick="setPratView('pilotage')"><span class="k">Décisions dues</span><span class="v">3</span><span class="go">Ouvrir →</span></button>
+          <button class="metric" onclick="setPratView('pilotage')"><span class="k">Check-ins J7/J14</span><span class="v">5</span><span class="go">Voir →</span></button>
+          <button class="metric" onclick="setPratView('pilotage')"><span class="k">À relire</span><span class="v">2</span><span class="go">Relire →</span></button>
+        </div>
+        <div class="fil">
+          <div class="card"><span class="when">09:10</span><div><b>Sophie Nicola — décision de 21 jours à préparer</b><div class="why">Pourquoi maintenant : bilan complet reçu hier, fenêtre J14 ouverte.</div></div></div>
+          <div class="card"><span class="when">10:30</span><div><b>Jennifer Martin — check-in J7 reçu</b><div class="why">Pourquoi maintenant : adhésion signalée « fragile », à lire avant la séance.</div></div></div>
+          <div class="card"><span class="when">14:00</span><div><b>Michel Dogné — protocole à relire</b><div class="why">Pourquoi maintenant : brouillon prêt, en attente de validation pour diffusion.</div></div></div>
+        </div>
+        <p class="foot">Les métriques ci-dessus sont des points d'accès : chaque tuile ouvre sa page. Fini l'affichage passif.</p>
+      </div>
+
+      <!-- Vue pilotage : le cockpit BORNÉ -->
+      <div class="view" id="v-pilotage">
+        <h1 style="margin-bottom:12px">Sophie Nicola <span style="font-size:15px;color:var(--muted-fg);font-weight:400">· Fiche-trajectoire</span></h1>
+        <div class="cockpit-wrap">
+        <div class="cockpit">
+          <!-- Bandeau trajectoire -->
+          <div class="traj">
+            <svg class="spiral" viewBox="0 0 52 52" fill="none">
+              <path d="M26 26 a4 4 0 1 1 4 4 c-6 0 -10 -4 -10 -10 a13 13 0 0 1 24 -4" stroke="#0D9488" stroke-width="2.4"/>
+              <path d="M26 26 a9 9 0 0 1 15 -3" stroke="#3D4A9E" stroke-width="2.4" stroke-dasharray="3 3"/>
+              <circle cx="42" cy="20" r="3" fill="#E8A33D"/>
+            </svg>
+            <div>
+              <div class="who">Épisode 2 en cours</div>
+              <div class="pos">T0 + 14 j · vous êtes ici</div>
+            </div>
+            <span class="chip delta"><svg class="ic"><use href="#i-activity"/></svg> Au tour 1 : « marche 20 min » — tenue 4 j/7, bien tolérée</span>
+            <span class="spacer" style="flex:1"></span>
+            <span class="chip due"><svg class="ic"><use href="#i-sun"/></svg> Décision · à faire</span>
+          </div>
+
+          <div class="cbody">
+            <!-- Colonne vertébrale = cycle clinique -->
+            <div class="phases" role="tablist" aria-label="Cycle clinique">
+              <div class="lbl">Cycle clinique</div>
+              <button class="phase done"><span class="dot"></span> Patient <span class="st">✓</span></button>
+              <button class="phase done"><span class="dot"></span> Données fiables <span class="st">✓</span></button>
+              <button class="phase done"><span class="dot"></span> Compréhension <span class="st">✓</span></button>
+              <button class="phase due" aria-current="step"><span class="dot"></span> Décision 21 j <span class="st">à faire</span></button>
+              <button class="phase"><span class="dot"></span> Actions <span class="st">—</span></button>
+              <button class="phase"><span class="dot"></span> Suivi <span class="st">—</span></button>
+              <button class="phase blocked"><span class="dot"></span> Réévaluation <span class="st">J90</span></button>
+            </div>
+
+            <!-- Zone focale = la phase due -->
+            <div class="focal">
+              <div class="eyebrow">Phase due</div>
+              <h2>Décision de 21 jours</h2>
+              <div class="decision">
+                <div class="lead">Priorité proposée : soutenir le sommeil et l'ancrage du matin.</div>
+                <div class="src">source : SIIN sommeil /28 · NEU_03 v2 · calculé 18/07 · versionScore 1.4</div>
+              </div>
+              <div class="miss">
+                <b style="font-size:14.5px">Pour décider, il reste à confirmer</b>
+                <ul>
+                  <li>Tolérance à l'action précédente <span style="color:var(--ok)">— renseignée</span></li>
+                  <li>Fenêtre de disponibilité du matin <span style="color:var(--warn)">— à confirmer</span></li>
+                </ul>
+              </div>
+              <div class="eyebrow" style="margin-top:6px">Protocole — séquence guidée</div>
+              <div class="steps">
+                <div class="step">Raison d'être de l'action principale</div>
+                <div class="step">Critère observable à J21</div>
+                <div class="step">Plan idéal / minimal / secours</div>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:16px">
+                <button class="btn">Confirmer l'épisode T0 <svg class="ic" style="width:16px;height:16px"><use href="#i-arrow"/></svg></button>
+                <button class="btn ghost">S'abstenir (documenté)</button>
+              </div>
+            </div>
+
+            <!-- Instruments à tiroir -->
+            <div class="instr">
+              <div class="lbl">Instruments</div>
+              <button class="tool" onclick="openDrawer()"><svg class="ic"><use href="#i-list"/></svg> Les 12 besoins <svg class="arrow" style="width:16px;height:16px"><use href="#i-arrow"/></svg></button>
+              <button class="tool" onclick="openDrawer()"><svg class="ic"><use href="#i-activity"/></svg> Momentum <svg class="arrow" style="width:16px;height:16px"><use href="#i-arrow"/></svg></button>
+              <button class="tool" onclick="openDrawer()"><svg class="ic"><use href="#i-doc"/></svg> Détail des réponses <svg class="arrow" style="width:16px;height:16px"><use href="#i-arrow"/></svg></button>
+              <p style="font-size:12.5px;color:var(--muted-fg);margin-top:8px">Chaque instrument s'ouvre en tiroir puis se referme — la densité ne s'empile plus dans la page.</p>
+            </div>
+          </div>
+
+          <!-- Tiroir (ouvert par défaut en démonstration) -->
+          <div class="drawer open" id="drawer" role="dialog" aria-label="Les 12 besoins">
+            <div class="ovl" onclick="closeDrawer()"></div>
+            <div class="pane">
+              <button class="close" onclick="closeDrawer()" aria-label="Fermer"><svg style="width:20px;height:20px"><use href="#i-x"/></svg></button>
+              <div class="eyebrow" style="color:var(--accent-ink)">Instrument</div>
+              <h3>Les 12 besoins — point sur zones de seuil</h3>
+              <p style="font-size:13.5px;color:var(--muted-fg);margin:2px 0 14px">Point plein = aujourd'hui · point creux = T0. Zones aux vraies bornes du référentiel.</p>
+              <div class="needrow"><span style="min-width:120px">Sommeil</span><span class="track"><span class="pt" style="left:26%"></span></span></div>
+              <div class="needrow"><span style="min-width:120px">Stress</span><span class="track"><span class="pt" style="left:48%"></span></span></div>
+              <div class="needrow"><span style="min-width:120px">Énergie</span><span class="track"><span class="pt" style="left:66%"></span></span></div>
+              <div class="needrow"><span style="min-width:120px">Digestion</span><span class="track"><span class="pt" style="left:72%"></span></span></div>
+              <div class="needrow"><span style="min-width:120px">Ancrage matin</span><span class="track"><span class="pt" style="left:40%"></span></span></div>
+              <p style="font-size:12.5px;color:var(--muted-fg);margin-top:14px">Vue praticien : chiffres, sources et versions visibles. Aucune de ces valeurs n'atteint le patient.</p>
+            </div>
+          </div>
+        </div>
+        </div>
+        <p class="foot">Tout le cockpit tient dans l'écran. On navigue par phase du cycle clinique, pas par défilement.</p>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ===================== PATIENT ===================== -->
+<section class="space patient" id="space-patient" data-space="patient">
+  <div class="pwrap">
+    <div class="phead"><div class="logo">WellNeuro</div></div>
+    <div class="journey" aria-label="Votre parcours">
+      <div class="st done"><span class="d"></span><small>Accueil</small></div><div class="bar"></div>
+      <div class="st done"><span class="d"></span><small>Consentement</small></div><div class="bar"></div>
+      <div class="st done"><span class="d"></span><small>Questionnaires</small></div><div class="bar"></div>
+      <div class="st now"><span class="d"></span><small>Mon équilibre</small></div><div class="bar"></div>
+      <div class="st"><span class="d"></span><small>Suivi</small></div>
+    </div>
+
+    <div class="pcard">
+      <svg class="growth" viewBox="0 0 150 150" fill="none" aria-hidden="true">
+        <path d="M75 130 C75 90 55 80 45 70" stroke="#1E6F54" stroke-width="3" stroke-linecap="round"/>
+        <path d="M75 130 C75 100 95 92 108 84" stroke="#1E6F54" stroke-width="3" stroke-linecap="round"/>
+        <path d="M75 138 L75 60" stroke="#1E6F54" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M75 62 C68 44 78 30 92 26" stroke="#B25E38" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="92" cy="26" r="5" fill="#B25E38"/>
+        <path d="M45 70 q-6 -8 -2 -16" stroke="#1E6F54" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <h1>Votre équilibre se construit</h1>
+      <p>Depuis votre premier parcours, deux repères progressent. Voici où vous en êtes aujourd'hui.</p>
+      <div class="band"><svg class="ic"><use href="#i-leaf"/></svg> Confiance des observations : <b style="margin-left:4px">solide</b></div>
+      <div class="prio">
+        <div class="it"><svg class="ic"><use href="#i-sun"/></svg> Priorité du moment : retrouver un matin plus ancré.</div>
+        <div class="it"><svg class="ic"><use href="#i-leaf"/></svg> Ce qui a bien tenu : la marche de 20 minutes, 4 jours sur 7.</div>
+      </div>
+      <div class="pnav">
+        <button class="pbtn ghost">← Précédent</button>
+        <button class="pbtn">Continuer <svg style="width:17px;height:17px"><use href="#i-arrow"/></svg></button>
+      </div>
+    </div>
+    <p class="foot">Aucun score, aucun chiffre, aucune couleur d'alarme. Une étape à la fois. Votre journal reste privé.<br>Maquette statique — données fictives (Sophie Nicola). Ceci n'est pas un avis médical.</p>
+  </div>
+</section>
+
+<script>
+  function setSpace(s){
+    document.getElementById('space-praticien').classList.toggle('active', s==='praticien');
+    document.getElementById('space-patient').classList.toggle('active', s==='patient');
+    document.getElementById('b-prat').setAttribute('aria-pressed', s==='praticien');
+    document.getElementById('b-pat').setAttribute('aria-pressed', s==='patient');
+  }
+  function setPratView(v){
+    document.getElementById('v-accueil').classList.toggle('active', v==='accueil');
+    document.getElementById('v-pilotage').classList.toggle('active', v==='pilotage');
+    document.getElementById('t-accueil').setAttribute('aria-pressed', v==='accueil');
+    document.getElementById('t-pilotage').setAttribute('aria-pressed', v==='pilotage');
+  }
+  function openDrawer(){ document.getElementById('drawer').classList.add('open'); }
+  function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); }
+  function toggleComfort(){
+    var h=document.documentElement, on=h.getAttribute('data-comfort')==='large';
+    h.setAttribute('data-comfort', on?'normal':'large');
+    document.getElementById('b-comfort').setAttribute('aria-pressed', String(!on));
+  }
+</script>
+</body>
+</html>

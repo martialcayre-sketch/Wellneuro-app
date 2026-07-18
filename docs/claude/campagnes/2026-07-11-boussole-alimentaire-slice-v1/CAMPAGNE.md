@@ -91,3 +91,12 @@ LOT-00 vérification sources/licences et contrat neutre → LOT-01 taxonomie et
 mapping intrinsèque pilote → LOT-02 profils intrinsèques C5A → LOT-03 lecture
 contextuelle C5B (après priorité C1 validée et protocole actif C2) → LOT-04
 actions/assiettes/substitutions → LOT-05 validation.
+
+## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
+
+> Alignement additif. Voir `docs/claude/propositions/2026-07-18-refonte-ux-5-0/`
+> et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
+> **Aucun contrat clinique figé de cette campagne n'est modifié.**
+
+- **LOT-04 « Observatoire » (praticien)** adopte le poste de pilotage (instrument à tiroir ; chiffres, sources et versions visibles) ; **LOT-05 « Jardin » (patient)** adopte le principe **séquentiel** (restitution qualitative, **aucun score**). Frontières C5A/C5B **inchangées**.
+- Canvas mid-tone (ardoise / sable) — différé au lot d'implémentation.
