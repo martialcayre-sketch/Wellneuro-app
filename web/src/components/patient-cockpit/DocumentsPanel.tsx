@@ -1,0 +1,241 @@
+'use client';
+
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { PatientsPgApiResponse } from '@/app/api/praticien/patients-pg/route';
+import {
+  assemblerDocument,
+  renderDocumentHtml,
+  MODELE_SUIVI_21J,
+  type Bloc,
+  type Destinataire,
+} from '@/lib/documents';
+import { DocumentComposer } from '@/components/patient-cockpit/DocumentComposer';
+
+// Montage praticien de la composition documentaire C3 (LOT-05). Page dédiée
+// `/dashboard/documents`. Sélectionne une synthèse VALIDÉE, compose côté serveur
+// (route `GET /api/praticien/documents`), affiche la vue deux colonnes
+// (DocumentComposer), l'aperçu imprimable par destinataire, et réutilise l'envoi
+// booklet existant pour le patient. Aucune migration ; frontière de données tenue
+// par le domaine (field-filter). 100 % français.
+
+type SyntheseRecord = { idSynthese: string; statut: string; dateValidation: string | null };
+
+type DocumentApiResponse = {
+  ok: boolean;
+  patientNom: string;
+  dateDocument: string;
+  statut: string;
+  blocs: Bloc[];
+  error?: string;
+};
+
+const STATUTS_VALIDES = new Set(['Validee_Praticien', 'Corrigee_Praticien']);
+const DESTINATAIRES: Destinataire[] = ['patient', 'medecin', 'praticien'];
+const DESTINATAIRE_LABELS: Record<Destinataire, string> = {
+  patient: 'Patient',
+  medecin: 'Médecin traitant',
+  praticien: 'Praticien',
+};
+
+const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
+const btnBase = 'min-h-11 px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-60';
+
+export function DocumentsPanel() {
+  const [patients, setPatients] = useState<PatientsPgApiResponse['patients']>([]);
+  const [selectedPatient, setSelectedPatient] = useState('');
+  const [syntheses, setSyntheses] = useState<SyntheseRecord[]>([]);
+  const [selectedIdSynthese, setSelectedIdSynthese] = useState('');
+  const [doc, setDoc] = useState<DocumentApiResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [destinataireApercu, setDestinataireApercu] = useState<Destinataire>('patient');
+  const [relectureConfirmee, setRelectureConfirmee] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const apercuRef = useRef<HTMLIFrameElement>(null);
+
+  useEffect(() => {
+    fetch('/api/praticien/patients-pg')
+      .then((r) => r.json())
+      .then((d: PatientsPgApiResponse) => setPatients(d.patients ?? []))
+      .catch(() => {});
+  }, []);
+
+  async function onSelectPatient(idPatient: string) {
+    setSelectedPatient(idPatient);
+    setSelectedIdSynthese('');
+    setDoc(null);
+    setFeedback(null);
+    setSyntheses([]);
+    if (!idPatient) return;
+    try {
+      const r = await fetch(`/api/praticien/synthese?idPatient=${encodeURIComponent(idPatient)}`);
+      const d = (await r.json()) as { syntheses: SyntheseRecord[] };
+      setSyntheses((d.syntheses ?? []).filter((s) => STATUTS_VALIDES.has(s.statut)));
+    } catch {
+      setSyntheses([]);
+    }
+  }
+
+  async function onSelectSynthese(idSynthese: string) {
+    setSelectedIdSynthese(idSynthese);
+    setDoc(null);
+    setFeedback(null);
+    setRelectureConfirmee(false);
+    if (!idSynthese) return;
+    setLoading(true);
+    try {
+      const r = await fetch(`/api/praticien/documents?idSynthese=${encodeURIComponent(idSynthese)}`);
+      const d = (await r.json()) as DocumentApiResponse;
+      if (!r.ok || !d.ok) {
+        setFeedback({ ok: false, msg: d.error ?? 'Composition impossible.' });
+        return;
+      }
+      setDoc(d);
+    } catch {
+      setFeedback({ ok: false, msg: 'Erreur réseau lors de la composition.' });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const apercuHtml = useMemo(() => {
+    if (!doc) return null;
+    const composite = assemblerDocument({ modele: MODELE_SUIVI_21J, patientId: 'apercu', blocs: doc.blocs });
+    return renderDocumentHtml(composite, destinataireApercu, {
+      patientNom: doc.patientNom,
+      dateDocument: doc.dateDocument,
+    });
+  }, [doc, destinataireApercu]);
+
+  function onImprimer() {
+    apercuRef.current?.contentWindow?.print();
+  }
+
+  async function onEnvoyerPatient() {
+    if (!selectedIdSynthese || !relectureConfirmee) return;
+    setSending(true);
+    setFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/booklet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idSynthese: selectedIdSynthese, relectureConfirmee: true }),
+      });
+      const d = (await r.json()) as { success?: boolean; needsConfirmation?: boolean; warning?: string; error?: string };
+      if (d.needsConfirmation) {
+        setFeedback({ ok: false, msg: d.warning ?? 'Document déjà envoyé — confirmez le renvoi depuis l’écran Synthèse & Booklet.' });
+      } else if (d.success) {
+        setFeedback({ ok: true, msg: 'Document envoyé au patient.' });
+      } else {
+        setFeedback({ ok: false, msg: d.error ?? 'Envoi impossible.' });
+      }
+    } catch {
+      setFeedback({ ok: false, msg: 'Erreur réseau lors de l’envoi.' });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Sélection patient + synthèse validée */}
+      <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3">
+        <h3 className="text-sm font-semibold text-foreground">Patient et synthèse validée</h3>
+        <div className="flex flex-wrap gap-3">
+          <select value={selectedPatient} onChange={(e) => onSelectPatient(e.target.value)} className={`${inputCls} w-full sm:w-80`}>
+            <option value="">Sélectionner un patient</option>
+            {patients.map((p) => (
+              <option key={p.idPatient} value={p.idPatient}>{`${p.prenom} ${p.nom} — ${p.email}`}</option>
+            ))}
+          </select>
+          <select
+            value={selectedIdSynthese}
+            onChange={(e) => onSelectSynthese(e.target.value)}
+            disabled={!selectedPatient}
+            className={`${inputCls} w-full sm:w-80`}
+          >
+            <option value="">Sélectionner une synthèse validée</option>
+            {syntheses.map((s) => (
+              <option key={s.idSynthese} value={s.idSynthese}>
+                {`${s.idSynthese.slice(0, 10)}… — ${s.statut === 'Corrigee_Praticien' ? 'Corrigée' : 'Validée'}`}
+              </option>
+            ))}
+          </select>
+        </div>
+        {selectedPatient && syntheses.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Aucune synthèse validée pour ce patient. Validez une synthèse dans « Synthèse IA & Booklet » d’abord.
+          </p>
+        )}
+        {feedback && <p className={`text-sm ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>{feedback.msg}</p>}
+      </div>
+
+      {loading && <p className="text-sm text-muted-foreground">Composition en cours…</p>}
+
+      {doc && (
+        <>
+          {/* Vue de composition deux colonnes */}
+          <div className="bg-surface border border-border rounded-xl p-4">
+            <DocumentComposer modele={MODELE_SUIVI_21J} blocs={doc.blocs} />
+          </div>
+
+          {/* Aperçu imprimable par destinataire */}
+          <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-foreground">Aperçu imprimable</h3>
+              <div role="group" aria-label="Destinataire de l’aperçu imprimable" className="flex flex-wrap gap-2">
+                {DESTINATAIRES.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    aria-pressed={destinataireApercu === d}
+                    onClick={() => setDestinataireApercu(d)}
+                    className={`${btnBase} border ${destinataireApercu === d ? 'bg-slate-900 text-white' : 'bg-surface text-foreground'}`}
+                  >
+                    {DESTINATAIRE_LABELS[d]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <iframe
+              ref={apercuRef}
+              title={`Aperçu ${DESTINATAIRE_LABELS[destinataireApercu]}`}
+              srcDoc={apercuHtml ?? ''}
+              sandbox="allow-same-origin allow-modals"
+              className="w-full h-[420px] border border-border rounded-lg bg-white"
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <button type="button" onClick={onImprimer} className={`${btnBase} border bg-surface text-foreground`}>
+                Imprimer cet aperçu
+              </button>
+              {destinataireApercu === 'patient' && (
+                <>
+                  <label className="flex items-center gap-2 text-sm text-foreground">
+                    <input
+                      type="checkbox"
+                      checked={relectureConfirmee}
+                      onChange={(e) => setRelectureConfirmee(e.target.checked)}
+                    />
+                    J’ai relu et je valide l’envoi au patient
+                  </label>
+                  <button
+                    type="button"
+                    onClick={onEnvoyerPatient}
+                    disabled={!relectureConfirmee || sending}
+                    className={`${btnBase} bg-emerald-700 text-white`}
+                  >
+                    {sending ? 'Envoi…' : 'Envoyer au patient'}
+                  </button>
+                </>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Le rendu médecin et praticien s’imprime en HTML (PDF différé). L’envoi patient réutilise le canal
+              e-mail existant (booklet).
+            </p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
