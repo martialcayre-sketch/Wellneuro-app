@@ -725,3 +725,24 @@ fil de correspondance médecin.
 
 **Questions ouvertes** : accès/authentification médecin et régime de conservation
 pour le fil bidirectionnel.
+
+## 2026-07-18 — C3 reports post-V1 (montage + cadrages)
+
+**Décisions** : les 3 reports du handoff LOT-04 traités. (1) **Montage construit**
+(C3 LOT-05, #130) : route `GET /api/praticien/documents`, page `/dashboard/documents`
++ `DocumentsPanel`, aperçu/impression par destinataire, envoi patient réemployé
+(booklet) ; page dédiée (pas d'extension de l'écran Synthèse — zéro régression).
+Fix build : domaine `documents` rendu **isomorphe** (hash pur `hashStable`, retrait
+de `node:crypto` du bundle client, révélé au premier montage). (2) **Fil médecin**
+et (3) **persistance (b)** : **documentaires** — cadrage + gate `bloqué_confirmation`
+non ouvert, sous `propositions/2026-07-18-c3-*`.
+
+**Options écartées** : montage dans `SynthesePanel` (risque de régression sur le
+chemin d'envoi) ; ouverture du gate persistance (aucun besoin d'historique immuable
+confirmé) ; construction du fil bidirectionnel (accès/conservation médecin à arbitrer).
+
+**Prochaine action** : arbitrer le fil de correspondance médecin (identité + HDS +
+conservation) si le besoin se confirme.
+
+**Questions ouvertes** : identité/accès médecin (lien signé vs compte) ; base légale
+et durée de conservation d'un fil ; besoin réel d'un historique immuable (option b).

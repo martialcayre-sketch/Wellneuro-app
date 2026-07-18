@@ -407,7 +407,7 @@
 - **Décisions actées** : C3 ne possède **aucun contenu clinique source** ;
   renommage acté (le contenu réel est un moteur de composition documentaire,
   pas des « fiches conseils »).
-- **Statut** : **V1 + montage en prod** (2026-07-18 — LOT-00 à LOT-05 en prod, sans migration ; domaine `web/src/lib/documents/`, composition deux colonnes, rendus par destinataire, impression HTML, page `/dashboard/documents` + route `GET /api/praticien/documents`, envoi patient réemployé). Discordance 5.0 « fil de correspondance » (réponse médecin, sans HDS) : rendu médecin **sortant** livré ; **fil bidirectionnel reporté** (cadrage à venir). Persistance option (b) **non ouverte** (gate migration, à documenter).
+- **Statut** : **V1 + montage en prod** (2026-07-18 — LOT-00 à LOT-05 en prod, sans migration ; domaine `web/src/lib/documents/`, composition deux colonnes, rendus par destinataire, impression HTML, page `/dashboard/documents` + route `GET /api/praticien/documents`, envoi patient réemployé). Discordance 5.0 « fil de correspondance » (réponse médecin, sans HDS) : rendu médecin **sortant** livré ; **fil bidirectionnel reporté** — cadrage `propositions/2026-07-18-c3-fil-correspondance-medecin/`. Persistance option (b) **non ouverte** — gate `propositions/2026-07-18-c3-gate-persistance-documents/` (checklist non cochée, `bloqué_confirmation`).
 
 ### C4 — Compléments clean label (`2026-07-11-complements-clean-label-v1`)
 
