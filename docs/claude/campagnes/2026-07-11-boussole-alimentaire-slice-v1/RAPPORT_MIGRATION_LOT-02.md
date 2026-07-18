@@ -4,6 +4,9 @@ Date : 2026-07-18
 
 Référence de confirmation : `C5-LOT02-MIGRATION-MC-2026-07-18-v1`
 
+Preuve Git de la migration :
+`9538b78f346204c1b71091d21b669e0a99230088`
+
 État : migration créée et vérifiée, non déployée, import non autorisé.
 
 ## Autorisation

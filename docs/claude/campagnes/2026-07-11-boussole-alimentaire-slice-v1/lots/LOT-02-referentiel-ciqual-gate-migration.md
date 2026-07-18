@@ -161,6 +161,7 @@ Le futur import restera en dry-run par défaut. Sa création puis son exécution
 - confirmation humaine reçue le 2026-07-18 : « Je confirme la migration C5
   LOT-02 selon le plan documenté. » ;
 - référence : `C5-LOT02-MIGRATION-MC-2026-07-18-v1` ;
+- preuve Git : `9538b78f346204c1b71091d21b669e0a99230088` ;
 - schéma Prisma étendu avec `CiqualNutrientValue` et identité composite
   `axisCode + versionMapping` ;
 - migration unique :
