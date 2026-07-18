@@ -43,6 +43,11 @@ un **aperçu imprimable par destinataire** (patient / médecin / praticien) et p
 - **Nav** : entrée « Documents » dans `SidebarRail.tsx` (groupe Instruments) et le
   menu « Plus » de `MobileBottomNav.tsx`. Code d'événement d'observabilité
   `PRATICIEN.DOCUMENT_C3.COMPOSE_FAILED` ajouté.
+- **Domaine rendu isomorphe** : le versionnage (`documents/versioning.ts`) utilisait
+  `canonicalSha256` (`node:crypto`), non « bundlable » côté client. Comme le domaine
+  est désormais **monté** (composeur), le hash de version est remplacé par un hash
+  pur `hashStable` (`documents/hash.ts`, empreinte d'intégrité/égalité non
+  cryptographique). Le domaine `documents` devient client-safe.
 
 ## Hors périmètre
 

@@ -1,11 +1,13 @@
-import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
+import { hashStable } from './hash';
 import type { Bloc, VersionBloc, VersionDocument } from './types';
 
 // Versionnage du document composite (C3 LOT-01), transposé du patron append-only
 // de `web/src/lib/protocol/versioning.ts`. V1 = option (a) SANS persistance : la
 // version d'un document n'est PAS une ligne, c'est le TUPLE des versions de ses
-// blocs sources + un hash d'intégrité (via `canonicalSha256`, sans horodatage).
+// blocs sources + un hash d'intégrité (via `hashStable`, sans horodatage).
 // Deux compositions des mêmes versions de blocs → même hash (idempotence).
+// `hashStable` est PUR et isomorphe : le domaine est monté côté client (composeur),
+// il ne doit pas dépendre de `node:crypto` (cf. `hash.ts`).
 
 /** Version d'un bloc = ce sur quoi le versionnage du document raisonne. */
 export function versionDeBloc(bloc: Bloc): VersionBloc {
@@ -26,7 +28,7 @@ export function deriveVersionDocument(blocs: Bloc[]): VersionDocument {
   const versions = blocs
     .map(versionDeBloc)
     .sort((left, right) => (left.id < right.id ? -1 : left.id > right.id ? 1 : 0));
-  const hash = canonicalSha256(versions);
+  const hash = hashStable(versions);
   return { blocs: versions, hash };
 }
 

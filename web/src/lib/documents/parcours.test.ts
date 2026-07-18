@@ -43,7 +43,7 @@ describe('Parcours C3 V1 — composition → états → rendus', () => {
   it('mène un document de brouillon à envoyé par validation humaine', () => {
     const doc = parcoursValide();
     expect(doc.etat).toBe('envoye');
-    expect(doc.version.hash).toHaveLength(64);
+    expect(doc.version.hash).toMatch(/^[0-9a-f]+$/);
   });
 
   it('produit trois rendus distincts, frontière de données tenue', () => {
