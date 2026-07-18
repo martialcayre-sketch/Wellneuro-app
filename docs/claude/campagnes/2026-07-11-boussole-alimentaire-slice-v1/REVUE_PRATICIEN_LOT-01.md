@@ -16,7 +16,7 @@ preuve_git_vecteurs: "fb138bd784431713c26d0e4d93053189c3359d99"
 date_signature_vecteurs: "2026-07-18"
 valideur_signature_vecteurs: "Martial CAYRE"
 role_signature_vecteurs: "praticien valideur responsable de la gouvernance clinique WellNeuro"
-preuve_git_signature_vecteurs: "en_attente_du_commit_de_cloture"
+preuve_git_signature_vecteurs: "83cef58a8a3f1a237907da9ba50080492e560afb"
 ---
 
 # C5 LOT-01 — revue praticien du mapping clinique
