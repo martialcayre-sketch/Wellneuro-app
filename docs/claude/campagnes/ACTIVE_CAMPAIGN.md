@@ -1,17 +1,12 @@
 # Campagnes actives
 
-## Activité primaire
+Aucune campagne active.
 
-**Campagne** : 2026-07-11-suivi-j7-j14-j21-et-persistance
-**Titre** : C2 — Points d'étape et persistance (C2A/C2B)
-**Statut** : active
-**Lot actif** : LOT-03
+> Dernière clôture : campagne C5 « Boussole alimentaire » terminée `8/8`
+> (LOT-07, 2026-07-18) ; activation production demandée
+> (`WN_C5_ENABLED=true` Vercel, cf. `ACTIVATION_RUNBOOK_C5.md`).
 
-## Activités parallèles
+**Statut global** : idle
+**Mise à jour** : 2026-07-18
 
-Aucune campagne parallèle active.
-
-**Statut global** : active
-**Mise à jour** : 2026-07-17
-
-> La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.
+> La source de vérité machine est `.wn/state.json`.

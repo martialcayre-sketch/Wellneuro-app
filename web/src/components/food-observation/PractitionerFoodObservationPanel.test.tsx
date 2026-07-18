@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PractitionerFoodObservationPanel } from './PractitionerFoodObservationPanel';
 
@@ -82,6 +82,50 @@ describe('PractitionerFoodObservationPanel', () => {
 
     expect(screen.getByTestId('ja-praticien-review-summary').textContent).toMatch(/Accepté/i);
     expect(screen.getByTestId('ja-praticien-review-summary').textContent).toMatch(/soir léger/i);
+  });
+
+  it('permet explicitement de ne proposer aucune assiette', () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    expect((screen.getByTestId('ja-praticien-assiette') as HTMLSelectElement).value).toBe('');
+    fireEvent.click(screen.getByTestId('ja-praticien-valider-revue'));
+    expect(screen.getByTestId('ja-praticien-review-summary').textContent)
+      .toMatch(/Aucune assiette proposée/i);
+  });
+
+  it('ne diffuse rien après une simple revue locale', async () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    await waitFor(() => expect(fetch).toHaveBeenCalled());
+    fireEvent.change(screen.getByTestId('ja-praticien-assiette'), {
+      target: { value: 'ASSIETTE_SOIR_LEGER' },
+    });
+    fireEvent.click(screen.getByTestId('ja-praticien-valider-revue'));
+    const postCalls = vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'POST');
+    expect(postCalls).toHaveLength(0);
+  });
+
+  it('joint la référence C5B seulement lors de l’activation praticien explicite', async () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    fireEvent.change(screen.getByTestId('ja-praticien-assiette'), {
+      target: { value: 'ASSIETTE_SOIR_LEGER' },
+    });
+    fireEvent.change(screen.getByTestId('ja-praticien-feedback-patient'), {
+      target: { value: 'Cette version est plus simple les jours chargés.' },
+    });
+    fireEvent.click(screen.getByTestId('ja-praticien-activer-decision'));
+
+    await waitFor(() => {
+      const calls = vi.mocked(fetch).mock.calls;
+      expect(calls.some(([url, init]) => String(url).includes('/api/praticien/ja/observations')
+        && init?.method === 'POST')).toBe(true);
+    });
+    const observationCall = vi.mocked(fetch).mock.calls.find(([url, init]) =>
+      String(url).includes('/api/praticien/ja/observations') && init?.method === 'POST');
+    const body = JSON.parse(String(observationCall?.[1]?.body));
+    expect(body.episode.content.action.recommendedPlateRef).toMatchObject({
+      contractVersion: 'c5-recommended-plate-ref-v1',
+      plateCode: 'ASSIETTE_SOIR_LEGER',
+      catalogVersion: 'c5b-plate-catalog-v1',
+    });
   });
 
   it('demande une note explicite en mode Modifier', () => {

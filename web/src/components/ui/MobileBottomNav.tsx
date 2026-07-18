@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { LayoutDashboard, Users, Sparkles, Settings, ShieldCheck, MoreHorizontal, X, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, MoreHorizontal, X, type LucideIcon } from 'lucide-react';
 
 const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard },
@@ -23,7 +23,10 @@ export function MobileBottomNav() {
   const isActive = (href: string) =>
     href === '/dashboard' ? pathname === href : pathname?.startsWith(href);
   const isMoreActive =
-    (pathname?.startsWith('/dashboard/parametres') || pathname?.startsWith('/dashboard/droits')) ?? false;
+    (pathname?.startsWith('/dashboard/parametres') ||
+      pathname?.startsWith('/dashboard/droits') ||
+      pathname?.startsWith('/dashboard/documents')) ??
+    false;
 
   return (
     <>
@@ -101,6 +104,28 @@ export function MobileBottomNav() {
                   </button>
                 </Dialog.Close>
               </div>
+              <Dialog.Close asChild>
+                <Link
+                  href="/dashboard/documents"
+                  aria-current={pathname?.startsWith('/dashboard/documents') ? 'page' : undefined}
+                  className={`group mb-1 flex min-h-[44px] items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
+                    pathname?.startsWith('/dashboard/documents')
+                      ? 'border-rail-primary/20 bg-rail-primary/10'
+                      : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail hover:text-rail-foreground'
+                  }`}
+                >
+                  <span
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                      pathname?.startsWith('/dashboard/documents')
+                        ? 'bg-rail-primary text-rail-primary-foreground'
+                        : 'bg-rail-muted text-rail-foreground'
+                    }`}
+                  >
+                    <FileText aria-hidden="true" size={20} strokeWidth={2} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">Documents</span>
+                </Link>
+              </Dialog.Close>
               <Dialog.Close asChild>
                 <Link
                   href="/dashboard/droits"

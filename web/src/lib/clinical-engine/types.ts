@@ -1,4 +1,5 @@
 import type { JalonMomentum, NiveauPreuveBesoin, StrateCode } from '../equilibre/types';
+import type { FoodCompassActionRef } from '../food-compass/types';
 
 export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as const;
 export const VERSION_MAPPING_BESOINS = 'besoins-v1' as const;
@@ -6,6 +7,7 @@ export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v1' as const;
 export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
 export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;
 export const VERSION_PROTOCOL_DRAFT = 'c1-protocol-draft-v1' as const;
+export const VERSION_PROTOCOL_DRAFT_V2 = 'c1-protocol-draft-v2' as const;
 export const VERSION_PATIENT_PROTOCOL_VIEW = 'c1-patient-protocol-view-v1' as const;
 
 export type MeasurementUnit = 'ratio' | 'score_100' | 'delta';
@@ -282,6 +284,8 @@ export type ProtocolAction = {
   minimalPlan: string;
   rescuePlan: string;
   limitations: string[];
+  /** Référence C5 uniquement dans un payload protocole V2. */
+  foodCompassRef?: FoodCompassActionRef;
 };
 
 export type TherapeuticLoad = {
@@ -303,7 +307,7 @@ export type ProtocolDraft = {
   selectedPriorityId: string;
   createdAt: string;
   updatedAt: string;
-  version: typeof VERSION_PROTOCOL_DRAFT;
+  version: typeof VERSION_PROTOCOL_DRAFT | typeof VERSION_PROTOCOL_DRAFT_V2;
   status: 'draft' | 'practitioner_reviewed';
   purpose: string;
   followUpCriterion: string;

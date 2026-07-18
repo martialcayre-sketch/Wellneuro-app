@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { DecisionCard, ProtocolAction, ProtocolActionType, TherapeuticLoad } from '@/lib/clinical-engine/types';
+import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 
 // Contenu du brouillon au moment où le praticien le marque comme relu.
 // Émis tel quel : la construction du ProtocolDraft (validations et hashes du
@@ -13,6 +14,11 @@ export type RelectureProtocoleSoumission = {
   actions: ProtocolAction[];
   therapeuticLoad: TherapeuticLoad;
 };
+
+// État de sauvegalde serveur (C2A LOT-03). « Enregistré » n'est jamais affiché
+// tant que le serveur n'a pas confirmé (sémantique HC-F : conservé localement ≠
+// transmis/enregistré).
+export type ProtocolSaveState = 'idle' | 'saving' | 'saved' | 'stale' | 'error';
 
 const ACTION_LABELS: Record<ProtocolActionType, string> = {
   food: 'Alimentation',
@@ -38,12 +44,25 @@ function emptyAction(actionId: string): ProtocolAction {
 export function ProtocolMiniBuilder({
   decisionCard,
   onReviewed,
+  onSaveVersion,
+  saveState = 'idle',
+  saveError = null,
+  foodCompassSelection = null,
+  onClearFoodCompassSelection,
 }: {
   decisionCard: DecisionCard | null;
   // Optionnel : reçoit le contenu du brouillon quand le praticien le marque
   // comme relu (après les validations locales). Sans cette prop, le
   // composant garde son comportement historique (état purement local).
   onReviewed?: (soumission: RelectureProtocoleSoumission) => void;
+  // Optionnel (C2A LOT-03) : enregistre EXPLICITEMENT une version relue sur le
+  // serveur. Quand fournie, le bouton « Enregistrer la version » apparaît ;
+  // l'état de sauvegarde est piloté par `saveState`.
+  onSaveVersion?: (soumission: RelectureProtocoleSoumission) => void;
+  saveState?: ProtocolSaveState;
+  saveError?: string | null;
+  foodCompassSelection?: { foodLabel: string; actionRef: FoodCompassActionRef } | null;
+  onClearFoodCompassSelection?: () => void;
 }) {
   const [purpose, setPurpose] = useState('');
   const [followUpCriterion, setFollowUpCriterion] = useState('');
@@ -53,6 +72,7 @@ export function ProtocolMiniBuilder({
   const [reviewed, setReviewed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [nextActionId, setNextActionId] = useState(1);
+  const [editedSinceSave, setEditedSinceSave] = useState(false);
 
   const decisionBlocked = decisionCard !== null && (
     decisionCard.abstention.status !== 'not_required' || decisionCard.safetyFindingIds.length > 0
@@ -77,6 +97,7 @@ export function ProtocolMiniBuilder({
 
   const markDirty = () => {
     if (reviewed) setReviewed(false);
+    setEditedSinceSave(true);
     setMessage(null);
   };
 
@@ -85,6 +106,19 @@ export function ProtocolMiniBuilder({
     markDirty();
     setActions(previous => [...previous, emptyAction(`action-${nextActionId}`)]);
     setNextActionId(value => value + 1);
+  };
+
+  const insertFoodCompassAction = () => {
+    if (!foodCompassSelection || actions.length >= 3) return;
+    markDirty();
+    setActions(previous => [...previous, {
+      ...emptyAction(`action-${nextActionId}`),
+      title: foodCompassSelection.foodLabel,
+      foodCompassRef: foodCompassSelection.actionRef,
+    }]);
+    setNextActionId(value => value + 1);
+    setMessage('Référence Boussole ajoutée au brouillon — complétez les trois plans puis enregistrez manuellement.');
+    onClearFoodCompassSelection?.();
   };
 
   const updateAction = (actionId: string, patch: Partial<ProtocolAction>) => {
@@ -101,31 +135,48 @@ export function ProtocolMiniBuilder({
     const hasContent = purpose || followUpCriterion || actions.length > 0 || loadJustification;
     if (hasContent && !window.confirm('Effacer ce brouillon local non enregistré ?')) return;
     setPurpose(''); setFollowUpCriterion(''); setActions([]); setLoadLevel('light'); setLoadJustification('');
-    setReviewed(false); setMessage(null); setNextActionId(1);
+    setReviewed(false); setMessage(null); setNextActionId(1); setEditedSinceSave(false);
   };
 
-  const review = () => {
+  // Validations locales communes à « Marquer comme relu » et « Enregistrer la
+  // version ». Retourne la soumission ou null (en posant un message d'erreur).
+  const collectSubmission = (): RelectureProtocoleSoumission | null => {
     const missingActionField = actions.some(action => (
       !action.title.trim() || !action.idealPlan.trim() || !action.minimalPlan.trim() || !action.rescuePlan.trim()
     ));
     if (!purpose.trim() || !followUpCriterion.trim() || actions.length === 0 || missingActionField) {
       setReviewed(false);
       setMessage('Brouillon incomplet : renseignez la raison d’être, le critère J21 et tous les plans d’au moins une action.');
-      return;
+      return null;
     }
     if (loadLevel === 'excessive' && !loadJustification.trim()) {
       setReviewed(false);
       setMessage('Une charge excessive exige une justification du praticien.');
-      return;
+      return null;
     }
-    onReviewed?.({
+    return {
       purpose,
       followUpCriterion,
       actions,
       therapeuticLoad: { level: loadLevel, source: 'practitioner', justification: loadJustification.trim() || null },
-    });
+    };
+  };
+
+  const review = () => {
+    const submission = collectSubmission();
+    if (!submission) return;
+    onReviewed?.(submission);
     setReviewed(true);
     setMessage('Brouillon relu par le praticien — non activé et non transmis.');
+  };
+
+  const saveVersion = () => {
+    const submission = collectSubmission();
+    if (!submission) return;
+    setReviewed(true);
+    setEditedSinceSave(false);
+    setMessage(null);
+    onSaveVersion?.(submission);
   };
 
   return (
@@ -155,6 +206,17 @@ export function ProtocolMiniBuilder({
             <span className="text-sm font-medium text-foreground">Actions ({actions.length}/3)</span>
             <button type="button" onClick={addAction} disabled={actions.length >= 3} className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50">Ajouter une action</button>
           </div>
+          {foodCompassSelection && (
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 p-2 text-sm">
+              <span>Sélection Boussole prête : {foodCompassSelection.foodLabel}</span>
+              <button type="button" onClick={insertFoodCompassAction} disabled={actions.length >= 3} className="min-h-11 rounded-lg border border-slate-900 px-3 py-2 disabled:opacity-50">
+                Insérer manuellement
+              </button>
+              <button type="button" onClick={onClearFoodCompassSelection} className="min-h-11 px-2 py-2 text-muted-foreground underline">
+                Écarter cette sélection
+              </button>
+            </div>
+          )}
           <div className="mt-3 grid gap-3">
             {actions.map((action, index) => (
               <fieldset key={action.actionId} className="rounded-lg border border-border p-3">
@@ -191,8 +253,34 @@ export function ProtocolMiniBuilder({
       </div>
 
       {message && <p role="status" className="mt-4 text-sm text-muted-foreground">{message}</p>}
+      {onSaveVersion && (
+        <p role="status" className="mt-3 text-sm">
+          {editedSinceSave && saveState === 'saved'
+            ? <span className="text-orange-800">Modifications locales non enregistrées.</span>
+            : saveState === 'saving'
+              ? <span className="text-muted-foreground">Enregistrement en cours…</span>
+              : saveState === 'saved'
+                ? <span className="text-foreground font-medium">Version enregistrée sur le serveur — non transmise au patient.</span>
+                : saveState === 'stale'
+                  ? <span className="text-orange-800">La version active a changé ; rechargez l’historique avant d’enregistrer.</span>
+                  : saveState === 'error'
+                    ? <span className="text-red-700">{saveError ?? 'Échec de l’enregistrement.'}</span>
+                    : <span className="text-muted-foreground">Brouillon local — non enregistré.</span>}
+        </p>
+      )}
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onClick={review} className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">Marquer comme relu</button>
+        {onSaveVersion ? (
+          <button
+            type="button"
+            onClick={saveVersion}
+            disabled={saveState === 'saving'}
+            className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
+          >
+            Enregistrer la version
+          </button>
+        ) : (
+          <button type="button" onClick={review} className="min-h-11 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground">Marquer comme relu</button>
+        )}
         <button type="button" onClick={reset} className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm">Réinitialiser</button>
       </div>
     </section>

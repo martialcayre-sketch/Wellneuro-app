@@ -1,11 +1,11 @@
 # Audit de conformité UX 5.0 — front praticien & patient
 
-Date : 2026-07-18
-Branche d'audit : `audit-refonte/ux-5-0` (worktree isolé, basé sur `main` @ `4e6fddc`)
+Date : 2026-07-18 (rafraîchi le même jour après merge de `main` @ `003a835` — C2, C3 et C5 terminées entre-temps)
+Branche d'audit : `audit-refonte/ux-5-0` (worktree isolé)
 Périmètre : toutes les campagnes du Programme 5.0 touchant l'UX praticien ou patient.
 Étalon de conformité : **SP-RUN « Cockpit vivant »**.
 
-Verdict global : **le front UX est conforme au paradigme 5.0 dans ses contrats** ; les écarts sont de deux natures — (1) **fraîcheur documentaire** (main en retard sur des branches en vol) et **cadrage manquant** (7 campagnes UX sans `CAMPAGNE.md`) ; (2) **dette d'expérience** (le prod ne reproduit pas encore le concept : cockpit à long-scroll, portail patient à palette legacy, métriques passives, typographie petite). Le premier relève de la gouvernance, le second motive le livrable de refonte (`propositions/2026-07-18-refonte-ux-5-0/`).
+Verdict global : **le front UX est conforme au paradigme 5.0 dans ses contrats** ; les écarts restants sont de deux natures — (1) **cadrage manquant** (7 campagnes UX sans `CAMPAGNE.md`) ; (2) **dette d'expérience** (le prod ne reproduit pas encore le concept : cockpit à long-scroll, portail patient à palette legacy, métriques passives, typographie petite). Le premier relève de la gouvernance, le second motive le livrable de refonte (`propositions/2026-07-18-refonte-ux-5-0/`). Un troisième écart constaté en début d'audit (fraîcheur main↔branches) s'est résolu de lui-même le jour même (E1).
 
 > Aucun code, schéma, SQL, flag, seuil clinique ni `.wn/state.json` n'est modifié par cet audit. Les écarts sont **signalés**, pas corrigés.
 
@@ -55,10 +55,10 @@ SP-RUN (`2026-07-15-cockpit-vivant`, statut *terminé — SP-RUN-02 validé en C
 | **HC-F** — Hybrid Clinical Foundation | `2026-07-12-hybrid-clinical-experience-questionnaires` | deux | terminée |
 | **C1** — Décision clinique 21 j | `2026-07-11-decision-clinique-21-jours-v1` | praticien (+ aperçu patient) | terminée |
 | **QX** — Expérience questionnaires | `2026-07-12-qx-experience-questionnaires` | patient | terminé |
-| **C2** — Points d'étape & persistance | `2026-07-11-suivi-j7-j14-j21-et-persistance` | deux | **en_cours** (LOT-03, gate migration) |
-| **C3** — Documents contextuels | `2026-07-11-fiches-conseils-contextuelles-v1` | praticien (+ patient destinataire) | cadrée |
+| **C2** — Points d'étape & persistance | `2026-07-11-suivi-j7-j14-j21-et-persistance` | deux | terminée (C2A + C2B livrés en prod ; gate multi-cycles différé) |
+| **C3** — Documents contextuels | `2026-07-11-fiches-conseils-contextuelles-v1` | praticien (+ patient destinataire) | terminée (LOT-00→05 en prod ; fil médecin 5.0 reporté) |
 | **C4** — Compléments clean label | `2026-07-11-complements-clean-label-v1` | praticien | cadrée |
-| **C5** — Boussole alimentaire | `2026-07-11-boussole-alimentaire-slice-v1` | praticien + patient | **en_cours** (LOT-01) |
+| **C5** — Boussole alimentaire | `2026-07-11-boussole-alimentaire-slice-v1` | praticien + patient | terminée — 8/8, trois verdicts GO, activation demandée |
 | **JA** — Ma spirale alimentaire | `2026-07-13-journal-alimentaire-21j-v1` | patient + praticien | **en cours** (LOT-05) |
 | **TRUST** — Information patient & droits | `2026-07-15-trust-information-patient-droits-v1` | deux | terminée (NO-GO activation) |
 | C0-UX — Refonte shell 3.0 | `2026-07-11-refonte-ux-shell-3-0` | praticien | terminé (superseded HC-F) |
@@ -75,15 +75,16 @@ SP-RUN (`2026-07-15-cockpit-vivant`, statut *terminé — SP-RUN-02 validé en C
 - **QX** — *conforme*. Rendu séquentiel/micro-lots, scoring sur `id`/`v` jamais la position, garde-fous psychométriques ; pilotes bornés aux familles auditées.
 - **TRUST** — *conforme au cadrage, NO-GO activation*. Information à trois niveaux, consentement lié au hash de son texte, centre permanent des droits. Gates juridique/hébergement/panel non levés (documentés `DETTE_TRUST.md`) ; ne devient jamais automatiquement la campagne active.
 
+- **C2** — *conforme, livrée*. A1/A8 respectés (points d'étape ≠ jalons de mesure, jamais convertis en score ; garde `versionScore`, « jalon non mesuré » jamais un 0) ; C2A (gate migration levé après confirmation) + C2B LOT-07→09 livrés en prod sans nouvelle migration ; différés fermes tenus (score de décrochage, % d'observance patient). Gate modèle multi-cycles différé, cadrage ouvert.
+- **C5** — *conforme, livrée (8/8)*. Instrument de la Spirale, jamais graphe ni score patient ; validation clinique LOT-01 signée, gates migration/import confirmés séparément ; UX « Observatoire » (praticien) et « Jardin » (patient, strictement qualitatif) livrées ; **trois verdicts indépendants GO** (C5B patient GO conditionnel — dettes humaines D-C5-01→04 ouvertes) ; flag `WN_C5_ENABLED` fail-closed, activation production demandée par le responsable.
+- **C3** — *conforme, livrée*. Moteur de composition documentaire (aucun contenu clinique source), chaîne brouillon→relu→validé→envoyé, aperçu deux colonnes ; LOT-00→05 en prod sans migration. Fil de correspondance médecin 5.0 et persistance (b) **reportés**, non improvisés.
+
 ### Active / en cours
 
-- **C2** — *conforme, en vol*. A1 respecté (points d'étape ≠ jalons de mesure, jamais convertis en score) ; scission C2A (gate migration explicite) / C2B (après données réelles) ; différés fermes (score de décrochage, % d'observance patient). Sur `main`, LOT-03 en cours, gate migration à confirmer.
-- **C5** — *conforme au cadrage, LOT-01 bloqué*. Instrument de la Spirale, jamais graphe ni score patient ; C5A intrinsèque sans donnée patient ; LOT-01 attend une validation clinique humaine. Lots UX « Observatoire » (LOT-04) et « Jardin » (LOT-05) cadrés, non exécutés.
-- **JA** — *conforme au cadrage (A7)*. Instrument à trois régimes, quatre lectures jamais fusionnées, aucun score SIIN, aucune valeur nutritionnelle, faisabilité publiée sans altérer l'intrinsèque. Persistance gatée par C2A. LOT-05 (activation protocole) en cours sans migration.
+- **JA** — *conforme au cadrage (A7)*. Instrument à trois régimes, quatre lectures jamais fusionnées, aucun score SIIN, aucune valeur nutritionnelle, faisabilité publiée sans altérer l'intrinsèque. Persistance gatée par C2A. JA5-05 (activation protocole) en cours sans migration.
 
 ### Cadrées non livrées
 
-- **C3** — *conforme au cadrage*. Moteur de composition documentaire (aucun contenu clinique source), chaîne brouillon→relu→validé→envoyé, aperçu deux colonnes. Lots N+1.
 - **C4** — *conforme au cadrage*. Pas de score global dominant, provenance et fraîcheur obligatoires, justification anti-perception commerciale. Lots N+1.
 
 ### Superseded
@@ -94,7 +95,7 @@ SP-RUN (`2026-07-15-cockpit-vivant`, statut *terminé — SP-RUN-02 validé en C
 
 | Axe de l'étalon | SP-FIL | HC-F | C1 | C2 | C5 | JA | C3 | C4 | TRUST |
 |---|---|---|---|---|---|---|---|---|---|
-| Lecture seule / gate d'écriture explicite | ✓ | ✓ | ✓ | ✓ (gate migration) | ✓ (inactive) | ✓ (gate C2A) | ✓ | ✓ | ✓ (gates non levés) |
+| Lecture seule / gate d'écriture explicite | ✓ | ✓ | ✓ | ✓ (gate migration levé sur confirmation) | ✓ (flag fail-closed) | ✓ (gate C2A) | ✓ | ✓ | ✓ (gates non levés) |
 | Abstention / souveraineté clinique | n/a | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Sources/versions citées | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Zéro score patient | ✓ | ✓ | ✓ (aperçu) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -106,7 +107,7 @@ Aucune campagne du front ne diverge des axes de l'étalon **dans ses contrats**.
 
 | # | Écart | Nature | Sévérité | Référence |
 |---|---|---|---|---|
-| E1 | Sur `main`, `.wn/state.json`, `ACTIVE_CAMPAIGN.md` et la fiche C2 concordent (LOT-03) ; mais le travail C2B (LOT-07→09) est **en vol sur `feat/c2b-lot-09-trajectoire`, non mergé** → `main` documente un état antérieur à la réalité en cours. | Fraîcheur main↔branches | faible / informatif | A3 (compilation N+1) |
+| E1 | *(résolu le 2026-07-18 en cours d'audit)* : les livraisons C2B/C3/C5 ont été mergées sur `main` et `.wn/state.json` resynchronisé (`last_completed_lot: C5/LOT-07`, aucune campagne active). L'écart de fraîcheur main↔branches constaté au début de l'audit n'existe plus ; il illustre le rythme de livraison et la nécessité de dater tout constat d'état. | Fraîcheur main↔branches (clos) | résolu | A3 (compilation N+1) |
 | E2 | **7 campagnes UX inscrites au Programme sans `CAMPAGNE.md`** : SP-TT, SP-COP, IDP, SP-SPI, SP-MET, SP-CAB, SP-AMB. Frontières non figées → risque de dérive. | Cadrage manquant | moyenne | A3 ; PROGRAMME §Séquence |
 | E3 | **SP-AMB** (écoute ambiante) : gate CNIL/RGPD non instruit — doit rester **bloquant** avant tout développement. | Réglementaire (conforme tant que bloqué) | à surveiller | A6-3 |
 | E4 | **TRUST** terminée mais **NO-GO activation données réelles** (gates juridique/hébergement/panel non levés) + dettes `DETTE_TRUST.md`. | Gate non levé (documenté) | moyenne | Fiche TRUST |
@@ -124,6 +125,6 @@ Aucune campagne du front ne diverge des axes de l'étalon **dans ses contrats**.
 1. Résorber la dette d'expérience E6 via le livrable B (Vague 1 : achever la migration du portail patient, métriques actives, poste de pilotage borné, typo remontée).
 2. Cadrer un `CAMPAGNE.md` pour chaque campagne UX en attente (E2), en priorité SP-COP et SP-SPI (fort impact UX).
 3. Réconcilier l'en-tête de `design-system-d1.md` avec la palette A5-R1 réellement implémentée (E5).
-4. Après merge de `feat/c2b-*`, resynchroniser `.wn/state.json` / `ACTIVE_CAMPAIGN.md` (E1) — confirmation distincte.
+4. E1 est clos (livraisons C2B/C3/C5 mergées, état machine resynchronisé) ; suivre les **dettes humaines D-C5-01→04** (accessibilité, E2E, vocabulaire, revue visuelle) avant/pendant l'activation C5 — la revue visuelle D-C5-04 gagne à être traitée en synergie avec la Vague 1.
 
 *Fin de l'audit. Aucun fichier applicatif, schéma, flag ni état machine modifié.*

@@ -2,13 +2,16 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
-import {
-  VERSION_OBJETS_CLINIQUES,
-  type ConfirmedAssessmentEpisode,
-  type DecisionCard,
-  type ProtocolDraft,
+import type {
+  ConfirmedAssessmentEpisode,
+  DecisionCard,
+  ProtocolDraft,
 } from '@/lib/clinical-engine/types';
+import {
+  deriveProtocolDraftId,
+  toDraftCreateInput,
+  toEpisodeCreateInput,
+} from '@/lib/protocol/versioning';
 
 // Persistance minimale C2A (LOT-02). Le praticien authentifié persiste un
 // épisode CONFIRMÉ et un protocole RELU (practitioner_reviewed). Le snapshot,
@@ -96,42 +99,24 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
       );
     }
 
-    const idPatient = episode.patientId;
-    const reviewedAt = draft.status === 'practitioner_reviewed' ? new Date(draft.updatedAt) : null;
-
     // Transaction : épisode puis protocole, idempotents par identifiant de contrat.
+    // Le versionnement append-only (supersedes) relève de la route /versions
+    // (LOT-03) : ici l'id de ligne reste le protocolDraftId du contrat (LOT-02).
     await prisma.$transaction([
       prisma.assessmentEpisode.upsert({
         where: { id: episode.assessmentEpisodeId },
-        create: {
-          id: episode.assessmentEpisodeId,
-          idPatient,
-          milestone: episode.milestone,
-          targetAt: new Date(episode.targetAt),
-          confirmedAt: new Date(episode.confirmedAt),
-          payload: episode as unknown as object,
-          payloadHash: canonicalSha256(episode),
-          contractVersion: VERSION_OBJETS_CLINIQUES,
-        },
+        create: toEpisodeCreateInput(episode),
         update: {},
       }),
       prisma.protocolDraft.upsert({
         where: { id: draft.protocolDraftId },
-        create: {
+        create: toDraftCreateInput({
           id: draft.protocolDraftId,
-          idPatient,
-          assessmentEpisodeId: episode.assessmentEpisodeId,
-          decisionCardId: decisionCard.decisionCardId,
-          decisionCardInputHash: decisionCard.inputHash,
-          snapshotInputHash: decisionCard.snapshotInputHash,
-          reviewInputHash: decisionCard.reviewInputHash,
-          selectedPriorityId: draft.selectedPriorityId,
-          status: draft.status,
-          payload: draft as unknown as object,
-          inputHash: draft.inputHash,
-          contractVersion: draft.version,
-          reviewedAt,
-        },
+          draft,
+          decisionCard,
+          episode,
+          supersedesDraftId: null,
+        }),
         update: {},
       }),
     ]);
@@ -151,6 +136,7 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
 }
 
 type ListItem = {
+  versionId: string;
   protocolDraftId: string;
   status: string;
   milestone: string | null;
@@ -187,6 +173,7 @@ export async function GET(req: Request): Promise<NextResponse<ListResponse>> {
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
+        decisionCardId: true,
         status: true,
         createdAt: true,
         reviewedAt: true,
@@ -197,7 +184,8 @@ export async function GET(req: Request): Promise<NextResponse<ListResponse>> {
     return NextResponse.json({
       ok: true,
       protocoles: drafts.map((d) => ({
-        protocolDraftId: d.id,
+        versionId: d.id,
+        protocolDraftId: deriveProtocolDraftId(d.decisionCardId),
         status: d.status,
         milestone: d.episode?.milestone ?? null,
         createdAt: d.createdAt.toISOString(),

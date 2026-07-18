@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-fiches-conseils-contextuelles-v1"
 titre: "C3 — Documents contextuels multi-destinataires V1"
-statut: "cadrée — lots à compiler N+1"
+statut: "terminée — V1 + montage (LOT-00 à LOT-05 en prod, sans migration ; fil médecin 5.0 et persistance (b) reportés)"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-13"
-lot_courant: "aucun"
+mise_à_jour: "2026-07-18"
+lot_courant: "LOT-05"
 ---
 
 # C3 — Documents contextuels multi-destinataires V1
@@ -73,6 +73,45 @@ disponibles à la fin de C1 → LOT-01 modèles et contrat de bloc (provenance,
 état, version) → LOT-02 composition deux colonnes + états →
 LOT-03 rendus par destinataire + impression → LOT-04 validation et handoff
 (C4/C5 comme futurs fournisseurs de blocs).
+
+## Compilation (2026-07-18)
+
+Les lots détaillés sont compilés dans `lots/` depuis l'esquisse ci-dessus et le
+registre **A2** (les squelettes auto-générés LOT-00-cadrage…LOT-04-validation
+sont remplacés). **Documentaire — aucun code, aucune migration.** L'audit
+d'existant (LOT-00) est ancré sur les briques réelles réutilisables :
+`booklet/route.ts` + `buildBookletHTML`, `SyntheseIA` + `synthese/route.ts`,
+`PatientPreview` + route patient-safe `apercu-patient/reponses`, infra nodemailer,
+et les blocs C1 (`cockpit`) / C2 (`ProtocolDraft`, `ProtocolDiffusionApproval`,
+`ProtocolCheckin`, `trajectoire`).
+
+| Lot | Objet | Statut |
+|---|---|---|
+| LOT-00 | Audit de l'existant documentaire + inventaire des blocs | **à_faire** |
+| LOT-01 | Modèles documentaires et contrat de bloc (provenance/état/version) | **à_faire** |
+| LOT-02 | Composition deux colonnes + machine d'états | **à_faire** |
+| LOT-03 | Rendus par destinataire + impression HTML | **à_faire** |
+| LOT-04 | Validation, tests de bout en bout et handoff | **à_faire** |
+
+Décisions de compilation :
+
+- **Réutiliser, ne pas empiler** : C3 étend le pipeline synthèse→booklet vers un
+  moteur de composition multi-destinataires (frontière A2 : aucun contenu clinique
+  source).
+- **Question persistance V1 à trancher en LOT-00/LOT-01** : viser **(a) sans
+  persistance** (document recomposé à la demande, versionnage par tuple des
+  versions de blocs déjà persistés) ; la variante **(b) persistée** ouvre un lot
+  `bloqué_confirmation` (migration Prisma sous confirmation explicite et distincte).
+- **PDF natif différé** (impression HTML seule en V1) ; signature et
+  authentification médecin différées.
+- **Discordance 5.0 portée au handoff** : le programme recadre C3 en **« fil de
+  correspondance »** (réponse du médecin dans le fil, sans pièces jointes
+  biologiques = sans HDS). La compilation livre le **rendu sortant** multi-
+  destinataires ; le **fil bidirectionnel médecin** est une extension à arbitrer
+  (LOT-03/LOT-04), non improvisée.
+
+Exécution : au fil de l'eau, **un lot = une PR** (règle N+1), migration-free sauf
+gate explicite.
 
 ## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
 

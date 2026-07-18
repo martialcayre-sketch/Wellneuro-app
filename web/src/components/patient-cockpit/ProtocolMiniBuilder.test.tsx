@@ -3,6 +3,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ProtocolMiniBuilder, type RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
+import type { FoodCompassActionRef } from '@/lib/food-compass';
 
 function card(): DecisionCard {
   return {
@@ -109,5 +110,69 @@ describe('ProtocolMiniBuilder', () => {
     fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
     fireEvent.change(ui.getByLabelText('Type de l’action 1'), { target: { value: 'supplement_exploration' } });
     expect(container.textContent).toContain('aucun produit, forme, marque ou dose');
+  });
+
+  it('n’insère une référence Boussole qu’après une action manuelle explicite', () => {
+    const actionRef = { foodRef: '26034', refHash: 'ref-hash' } as FoodCompassActionRef;
+    const onClear = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder
+        decisionCard={card()}
+        foodCompassSelection={{ foodLabel: 'Sardine', actionRef }}
+        onClearFoodCompassSelection={onClear}
+      />,
+    );
+    const ui = within(container);
+    expect(ui.getByText('Actions (0/3)')).not.toBeNull();
+    expect(ui.getByText(/Sélection Boussole prête : Sardine/)).not.toBeNull();
+    fireEvent.click(ui.getByRole('button', { name: 'Insérer manuellement' }));
+    expect(ui.getByText('Actions (1/3)')).not.toBeNull();
+    expect((ui.getByLabelText('Intitulé de l’action 1') as HTMLInputElement).value).toBe('Sardine');
+    expect(onClear).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('ProtocolMiniBuilder — sauvegarde explicite (LOT-03)', () => {
+  it('n’affiche jamais « enregistrée » tant que le serveur n’a pas confirmé', () => {
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="idle" />,
+    );
+    const ui = within(container);
+    expect(ui.getByRole('button', { name: 'Enregistrer la version' })).not.toBeNull();
+    expect(ui.getByText(/Brouillon local — non enregistré/)).not.toBeNull();
+    expect(ui.queryByText(/Version enregistrée/)).toBeNull();
+  });
+
+  it('transmet la soumission validée à onSaveVersion', () => {
+    const onSaveVersion = vi.fn();
+    const { container } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={onSaveVersion} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    expect(onSaveVersion).toHaveBeenCalledTimes(1);
+    const soumission = onSaveVersion.mock.calls[0][0] as RelectureProtocoleSoumission;
+    expect(soumission.purpose).toBe('Raison fixture');
+    expect(soumission.actions).toHaveLength(1);
+  });
+
+  it('signale les modifications locales après un enregistrement confirmé', () => {
+    const { container, rerender } = render(
+      <ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="idle" />,
+    );
+    const ui = within(container);
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Raison fixture' } });
+    fireEvent.change(ui.getByLabelText('Critère observable à J21'), { target: { value: 'Critère fixture' } });
+    fireEvent.click(ui.getByRole('button', { name: 'Ajouter une action' }));
+    fillFirstAction(container);
+    fireEvent.click(ui.getByRole('button', { name: 'Enregistrer la version' }));
+    rerender(<ProtocolMiniBuilder decisionCard={card()} onSaveVersion={vi.fn()} saveState="saved" />);
+    expect(ui.getByText(/Version enregistrée sur le serveur/)).not.toBeNull();
+    fireEvent.change(ui.getByLabelText('Raison d’être'), { target: { value: 'Objectif révisé' } });
+    expect(ui.getByText(/Modifications locales non enregistrées/)).not.toBeNull();
   });
 });

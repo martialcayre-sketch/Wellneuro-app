@@ -4,12 +4,34 @@ import { useCallback, useEffect, useState } from 'react';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
-import type { RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
+import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import { EpisodeConfirmationPanel } from './EpisodeConfirmationPanel';
 import { MissingDataPanel } from './MissingDataPanel';
 import { DecisionSummaryCard } from './DecisionSummaryCard';
 import { ProtocolMiniBuilder } from './ProtocolMiniBuilder';
 import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
+import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
+import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
+import { J21DecisionPanel } from './J21DecisionPanel';
+import { TrajectoirePanel } from './TrajectoirePanel';
+import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
+import type { Trajectoire } from '@/lib/protocol/trajectoire';
+import type { FoodCompassActionRef } from '@/lib/food-compass/types';
+import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
+import { useC5Enabled } from './C5FeatureProvider';
+
+type VersionsApiResponse = {
+  ok: boolean;
+  active: { versionId: string } | null;
+  history: ProtocolVersionItem[];
+  error?: string;
+};
+
+type DiffusionApiResponse = {
+  ok: boolean;
+  approval: { protocolDraftInputHash: string; approvedAt: string } | null;
+  stale: boolean;
+};
 
 type RuntimeError = 'session' | 'patient' | 'technical';
 
@@ -24,11 +46,81 @@ export function ClinicalRuntimeSection({
   protocolDraft: ProtocolDraft | null;
   onFixtureReviewed: (submission: RelectureProtocoleSoumission) => void;
 }) {
+  const c5Enabled = useC5Enabled();
   const [runtime, setRuntime] = useState<CockpitRuntimeApiResponse | null>(null);
   const [loading, setLoading] = useState(!fixture);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<RuntimeError | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Versionnement persistant (C2A LOT-03) — actif hors mode fixture uniquement.
+  const [versions, setVersions] = useState<ProtocolVersionItem[]>([]);
+  const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
+  const [saveState, setSaveState] = useState<ProtocolSaveState>('idle');
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // Validation « pour diffusion » (C2A LOT-03 Part B).
+  const [approvedAt, setApprovedAt] = useState<string | null>(null);
+  const [approvalStale, setApprovalStale] = useState(false);
+  const [diffusionState, setDiffusionState] = useState<DiffusionState>('idle');
+  const [diffusionError, setDiffusionError] = useState<string | null>(null);
+  // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
+  const [resumeJ21, setResumeJ21] = useState<ResumeJ21 | null>(null);
+  const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
+  const [foodCompassSelection, setFoodCompassSelection] = useState<{
+    foodLabel: string;
+    actionRef: FoodCompassActionRef;
+  } | null>(null);
+
+  const loadTrajectoire = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/praticien/trajectoire?idPatient=${encodeURIComponent(idPatient)}`);
+      const payload = (await response.json()) as { ok: boolean; trajectoire?: Trajectoire };
+      if (!response.ok || !payload.ok) return;
+      setTrajectoire(payload.trajectoire ?? null);
+    } catch {
+      // La fiche-trajectoire est indicative : un échec de lecture ne bloque pas le cockpit.
+    }
+  }, [idPatient]);
+
+  const loadCheckins = useCallback(async (decisionCardId: string) => {
+    try {
+      const response = await fetch(
+        `/api/praticien/protocoles/checkins?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
+      );
+      const payload = (await response.json()) as { ok: boolean; resume?: ResumeJ21 };
+      if (!response.ok || !payload.ok) return;
+      setResumeJ21(payload.resume ?? null);
+    } catch {
+      // Le résumé est indicatif : un échec de lecture ne bloque pas le cockpit.
+    }
+  }, [idPatient]);
+
+  const loadDiffusion = useCallback(async (decisionCardId: string) => {
+    try {
+      const response = await fetch(
+        `/api/praticien/protocoles/diffusion?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
+      );
+      const payload = (await response.json()) as DiffusionApiResponse;
+      if (!response.ok || !payload.ok) return;
+      setApprovedAt(payload.approval?.approvedAt ?? null);
+      setApprovalStale(payload.stale);
+    } catch {
+      // L'état de diffusion est indicatif : un échec de lecture ne bloque pas.
+    }
+  }, [idPatient]);
+
+  const loadVersions = useCallback(async (decisionCardId: string) => {
+    try {
+      const response = await fetch(
+        `/api/praticien/protocoles/versions?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
+      );
+      const payload = (await response.json()) as VersionsApiResponse;
+      if (!response.ok || !payload.ok) return;
+      setVersions(payload.history);
+      setActiveVersionId(payload.active?.versionId ?? null);
+    } catch {
+      // L'historique est indicatif : un échec de lecture ne bloque pas la saisie.
+    }
+  }, [idPatient]);
 
   const loadProposal = useCallback(async (stale = false) => {
     if (fixture) return;
@@ -95,8 +187,95 @@ export function ClinicalRuntimeSection({
     }
   };
 
+  // Charge l'historique des versions et l'état de diffusion dès que le runtime
+  // réel est prêt.
+  const readyDecisionCardId =
+    !fixture && runtime?.status === 'ready' ? runtime.decisionCard.decisionCardId : null;
+  useEffect(() => {
+    if (readyDecisionCardId) {
+      void loadVersions(readyDecisionCardId);
+      void loadDiffusion(readyDecisionCardId);
+      void loadCheckins(readyDecisionCardId);
+      void loadTrajectoire();
+    }
+  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadTrajectoire]);
+
+  useEffect(() => {
+    setFoodCompassSelection(null);
+  }, [readyDecisionCardId, activeVersionId]);
+
+  // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
+  // d'envoi patient). Anti-écrasement via baseVersionId → 409 version_stale.
+  const saveVersion = async (submission: RelectureProtocoleSoumission) => {
+    if (fixture || !runtime || runtime.status !== 'ready') return;
+    const episode = runtime.snapshot.assessmentEpisode;
+    const decisionCard = runtime.decisionCard;
+    setSaveState('saving');
+    setSaveError(null);
+    try {
+      const response = await fetch('/api/praticien/protocoles/versions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ episode, decisionCard, submission, baseVersionId: activeVersionId }),
+      });
+      const payload = (await response.json()) as { ok: boolean; error?: string };
+      if (response.status === 409) {
+        setSaveState('stale');
+        await loadVersions(decisionCard.decisionCardId);
+        return;
+      }
+      if (!response.ok || !payload.ok) {
+        setSaveState('error');
+        setSaveError(payload.error ?? 'Échec de l’enregistrement.');
+        return;
+      }
+      setSaveState('saved');
+      // Une nouvelle version rend l'approbation précédente caduque : recharger.
+      await loadVersions(decisionCard.decisionCardId);
+      await loadDiffusion(decisionCard.decisionCardId);
+    } catch {
+      setSaveState('error');
+      setSaveError('Erreur technique lors de l’enregistrement.');
+    }
+  };
+
+  // Validation explicite « pour diffusion » de la version active relue. Jamais
+  // d'envoi patient : l'approbation ne fait qu'attester le contenu.
+  const approveForDiffusion = async () => {
+    if (fixture || !readyDecisionCardId) return;
+    const activeVersion = versions.find((version) => version.isActive);
+    if (!activeVersion || activeVersion.status !== 'practitioner_reviewed') return;
+    setDiffusionState('saving');
+    setDiffusionError(null);
+    try {
+      const response = await fetch('/api/praticien/protocoles/diffusion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idPatient,
+          decisionCardId: readyDecisionCardId,
+          protocolDraftInputHash: activeVersion.inputHash,
+        }),
+      });
+      const payload = (await response.json()) as { ok: boolean; error?: string };
+      if (!response.ok || !payload.ok) {
+        setDiffusionState('error');
+        setDiffusionError(payload.error ?? 'Échec de la validation.');
+        return;
+      }
+      setDiffusionState('idle');
+      await loadDiffusion(readyDecisionCardId);
+    } catch {
+      setDiffusionState('error');
+      setDiffusionError('Erreur technique lors de la validation.');
+    }
+  };
+
   const review = fixture?.review ?? (runtime?.status === 'ready' ? runtime.review : null);
   const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
+  const activeReviewedVersion = versions.find(
+    (version) => version.isActive && version.status === 'practitioner_reviewed',
+  );
 
   return (
     <>
@@ -128,8 +307,46 @@ export function ClinicalRuntimeSection({
 
       <MissingDataPanel missingData={review?.missingData ?? null} discordances={review?.discordances ?? null} />
       <DecisionSummaryCard decisionCard={decisionCard} />
-      <ProtocolMiniBuilder decisionCard={decisionCard} onReviewed={fixture ? onFixtureReviewed : undefined} />
+      {c5Enabled && !fixture && readyDecisionCardId && (
+        <PractitionerFoodCompassObservatory
+          idPatient={idPatient}
+          decisionCardId={readyDecisionCardId}
+          onInsert={setFoodCompassSelection}
+        />
+      )}
+      <div id="protocol-version-builder">
+        <ProtocolMiniBuilder
+          decisionCard={decisionCard}
+          onReviewed={fixture ? onFixtureReviewed : undefined}
+          onSaveVersion={fixture ? undefined : saveVersion}
+          saveState={saveState}
+          saveError={saveError}
+          foodCompassSelection={foodCompassSelection}
+          onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
+        />
+      </div>
       <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
+      {!fixture && <ProtocolVersionHistory versions={versions} />}
+      {!fixture && versions.length > 0 && (
+        <ProtocolDiffusionPanel
+          canApprove={Boolean(activeReviewedVersion)}
+          approved={approvedAt !== null}
+          stale={approvalStale}
+          approvedAt={approvedAt}
+          state={diffusionState}
+          error={diffusionError}
+          onApprove={approveForDiffusion}
+        />
+      )}
+      {!fixture && readyDecisionCardId && (
+        <J21DecisionPanel
+          resume={resumeJ21}
+          onAjuster={() =>
+            document.getElementById('protocol-version-builder')?.scrollIntoView({ behavior: 'smooth' })
+          }
+        />
+      )}
+      {!fixture && readyDecisionCardId && <TrajectoirePanel trajectoire={trajectoire} />}
     </>
   );
 }

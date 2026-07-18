@@ -1,3 +1,5 @@
+import type { RecommendedPlateRef } from '@/lib/food-compass/types';
+
 /**
  * Domaine du Journal alimentaire (JA5-01 / LOT-02) — TypeScript pur.
  *
@@ -54,6 +56,8 @@ export type TrialAction = {
   idealPlan: string;
   simplePlan: string;
   secoursPlan?: string;
+  /** Référence C5B optionnelle ; son absence conserve la compatibilité JA V1. */
+  recommendedPlateRef?: RecommendedPlateRef;
 };
 
 /** Contenu du régime essai : hypothèse + action versionnée. */

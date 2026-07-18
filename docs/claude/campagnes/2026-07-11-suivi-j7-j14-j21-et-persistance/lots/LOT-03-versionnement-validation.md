@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Versionnement et validation du protocole"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-02"
 ---
 
@@ -79,4 +79,71 @@ est identifiable sans ambiguïté.
 
 ## Résultats
 
-À compléter à la clôture du lot : fichiers modifiés, commandes exécutées, captures, écarts, dette restante et décision de poursuite.
+### Part A — versionnement + validation « Relu » (2026-07-17, sans migration)
+
+Livrée sur la branche `feat/c2a-lot-03-versionnement`. Aucun changement de
+`schema.prisma` ni de migration (colonnes figées §8.9 suffisantes).
+
+- **Couche `web/src/lib/protocol/`** : `versioning.ts` (`deriveVersionId`,
+  `deriveProtocolDraftId`, `resolveActiveVersion`, `clinicalContentHash`,
+  `isClinicalChange`, `toEpisodeCreateInput`, `toDraftCreateInput`) et
+  `fromPrisma.ts` (`reconstructProtocolDraft` avec re-vérification d'empreinte —
+  comble le trou LOT-02). Tests unitaires dédiés.
+- **Route `POST/GET /api/praticien/protocoles/versions`** : versions append-only
+  chaînées (`supersedes_draft_id` enfin écrit), id de ligne dérivé
+  `${protocolDraftId}#${inputHash}` (déviation §8.6 assumée, contrat réutilisant
+  l'id ; regroupement par `decision_card_id`). Changement clinique = comparaison
+  d'un `clinicalContentHash` **sans horodatage** (une simple re-sauvegarde n'est
+  pas une version). Anti-écrasement `baseVersionId` → **409 `version_stale`**.
+  Reprise des validations `not_confirmed`/`draft_invalid`. GET = version active +
+  historique, borné à l'`idPatient`.
+- **Refactor route LOT-02** vers `toDraftCreateInput`/`toEpisodeCreateInput`
+  (comportement idempotent inchangé) ; GET expose `versionId` + `protocolDraftId`
+  logique.
+- **UI cockpit** : `ProtocolMiniBuilder` gagne un bouton **« Enregistrer la
+  version »** explicite + état de sauvegarde (jamais « Enregistré » avant
+  confirmation serveur ; « Modifications locales non enregistrées » après édition).
+  `ClinicalRuntimeSection` branche le vrai chemin persistant (POST/GET versions,
+  gestion 409, `ProtocolVersionHistory`). Le mode fixture dev reste isolé (aucune
+  sauvegarde). Aucun envoi patient.
+
+**Validations Part A** : type-check ✅ · vitest 334/334 ✅ · lint ✅ ·
+scoring-check (63) ✅ · anti-secrets ✅ · audit campagnes ✅.
+
+### Part B — persistance « Validé pour diffusion » (2026-07-17, 2ᵉ gate levé)
+
+Gate migration confirmé par l'utilisateur ; session dédiée relancée avec
+`WN_ALLOW_PROTECTED_WRITE=1` + `WN_ALLOW_RISKY_COMMAND=1`.
+
+- **Migration additive `20260717130000_c2a_diffusion_v1`** : table
+  `protocol_diffusion_approvals` (mapping 1:1 du contrat `ProtocolDiffusionApproval`),
+  FK → `patients(id_patient)` et `protocol_drafts(id)` `ON DELETE RESTRICT`, RLS
+  deny-all sans policy (motif `trust_v1`/`c2a_persistance_v1`). Générée par
+  `prisma migrate diff` (parité schéma↔migration par construction) ; RLS ajoutée à
+  la main. Aucune table existante modifiée ; rollback = `DROP TABLE`.
+- **Couche `web/src/lib/protocol/diffusion.ts`** : `validateDiffusionApproval`
+  (invariants sans recharger la DecisionCard : version relue, ancrage par hash,
+  approbation postérieure à la relecture, confirmation praticien),
+  `resolveActiveApproval` (tête de chaîne append-only), `isApprovalStale`
+  (caduque dès qu'une nouvelle version est enregistrée). Tests unitaires.
+- **Route `POST/GET /api/praticien/protocoles/diffusion`** : persiste
+  l'approbation ancrée sur la version (`protocol_draft_input_hash`), append-only
+  chaînée (`supersedes_approval_id`), idempotente ; accès borné à l'`idPatient`
+  (404 inter-patient). GET = approbation active + indicateur de caducité. Tests.
+- **UI** : `ProtocolDiffusionPanel` (état « Validé pour diffusion / Non validé »,
+  toujours « Non transmis », re-validation si caduque). `ClinicalRuntimeSection`
+  charge l'état de diffusion et POSTe l'approbation ; une nouvelle version rend
+  l'approbation caduque.
+
+**« Envoyé »/transmission différé à LOT-05** (le contrat n'a que le littéral
+`not_transmitted` ; aucun canal patient). **Jamais d'envoi automatique.**
+
+**Validations Part B** : type-check ✅ · vitest (protocole+cockpit 67) ✅ ·
+`prisma validate` ✅ · gate de dérive schéma↔migrations sur base éphémère
+(`test:worktree`) ✅.
+
+### Décision de poursuite
+
+LOT-03 **livré** (Part A + Part B). La migration se déploiera en production via
+`migrate deploy` au merge sur `main` (pipeline Vercel), jamais à la main. Moteur
+clinique inchangé ; aucun envoi automatique introduit.

@@ -27,6 +27,9 @@
     "backfill:pack-registry:dry-run": "node prisma/runWithAlias.js prisma/backfillQuestionnaireRegistry.ts --dry-run",
     "backfill:pack-registry:apply": "node prisma/runWithAlias.js prisma/backfillQuestionnaireRegistry.ts --apply",
     "check:pack-registry": "node prisma/runWithAlias.js prisma/checkPackRegistryConsistency.ts",
+    "c5:ciqual:dry-run": "node prisma/runWithAlias.js prisma/importCiqual2025.ts",
+    "c5:ciqual:apply": "node prisma/runWithAlias.js prisma/importCiqual2025.ts --apply",
+    "c5:ciqual:test-integration": "bash scripts/test-c5-ciqual-import.sh",
     "prompt-cache-check": "node prisma/runWithAlias.js scripts/prompt-cache-check.ts"
   },
   "dependencies": {
@@ -45,7 +48,8 @@
     "prisma": "^7.8.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "recharts": "^3.9.2"
+    "recharts": "^3.9.2",
+    "saxes": "6.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

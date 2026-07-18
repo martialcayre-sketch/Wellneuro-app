@@ -23,6 +23,128 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   A5-R2/A6-R1 sont actés en documentation, non appliqués à `globals.css` ;
   l'implémentation est livrée par campagnes (Vague 1 sans migration).
 
+### C5 LOT-07 — Validation, conformité et handoff (2026-07-18)
+
+- Clôture de la tranche C5 « Boussole alimentaire » à `8/8`. Dossier de preuves
+  produit : `MATRICE_CONFORMITE_ET_TESTS_C5.md`, `VALIDATION_FINALE_C5.md`,
+  `DETTE_C5.md`, `HANDOFF_C5.md`, `ACTIVATION_RUNBOOK_C5.md`.
+- **Trois verdicts go/no-go indépendants** : C5A GO, C5B praticien GO, C5B patient
+  GO conditionnel (dettes humaines ouvertes : accessibilité, E2E boussole des trois
+  fixtures, vocabulaire, revue visuelle). Aucun verdict ne masque un volet en échec.
+- Matrice technique verte (type-check, lint, **573 tests**, scoring-check, prisma
+  validate) ; advisors Supabase sécurité/performance sans alerte bloquante (INFO) ;
+  gardes routes flag→404, ownership→403, isolation patient→404 testées.
+- **Aucun changement de code, aucune migration** : LOT-07 = validation + preuves.
+  Activation en production demandée par le responsable ; mécanique documentée :
+  `WN_C5_ENABLED=true` dans Vercel Production + redéploiement. Rollback = flag
+  `false` (non destructif, aucun DROP/DELETE).
+
+### C5 LOT-06 — Assiettes, substitutions et pont JA (2026-07-18)
+
+- Transfert de la propriété des assiettes recommandées vers un catalogue C5B
+  versionné et scellé (`c5b-plate-catalog-v1`, hashes par assiette). Aucune
+  composition inventée ; `RecommendedPlateRef` optionnelle sur `TrialAction`
+  (un épisode JA V1 reste lisible sans elle).
+- Substitutions bornées aux familles cliniques validées avec justification
+  praticien ; « aucune assiette proposée » est le défaut et la référence n'est
+  jointe qu'à l'activation praticien explicite. Aucune substitution automatique.
+- Pont JA en lecture seule via un contrat de faisabilité factuel
+  (`ja-action-feasibility-v1`) : comptes d'observations praticien-validés,
+  exposés séparément et sans altérer le profil intrinsèque C5A — aucun score,
+  percentile ni recommandation. Aucun seuil de scoring modifié.
+- Aucune migration Prisma ni changement de schéma (lecture du `ProtocolDraft`
+  `practitioner_reviewed` existant, avec vérification d'intégrité). C5 reste
+  inactive.
+
+### C5 LOT-05 — UX patient « Jardin » (2026-07-18)
+
+- Ajout d'une restitution Boussole strictement qualitative dans le protocole
+  actif et l'espace alimentation, avec zoom profond sans nouvelle navigation.
+- L'accès exige un portail authentifié, un suivi actif, la dernière version V2
+  relue puis approuvée et une action alimentaire correspondant à la référence
+  reconstruite depuis Ciqual. Les accès absents, caducs, révoqués ou
+  inter-patient répondent par le même 404.
+- La sortie patient exclut scores, percentiles, classements, poids, PRAL, hashes
+  et versions internes. Les profils partiels ne sont pas diffusés, les doublons
+  sont supprimés et aucune alternative n'est inventée.
+- Durcissement associé de l'ownership des approbations de diffusion et de la
+  détection des protocoles devenus caducs. C5 passe à 6/8 mais reste désactivée.
+
+### C5 LOT-04 — UX praticien « Observatoire » (2026-07-18)
+
+- Ajout d'une Boussole en lecture seule dans le cockpit praticien, sans nouvelle
+  navigation : profil intrinsèque chiffré et tabulaire, PRAL, poids nominaux,
+  complétude, provenance, versions, limites et manifeste des 12 vedettes hashé.
+- La lecture contextuelle est bornée au fil de protocole affiché et expose la
+  priorité ainsi que la version source avant toute préparation d'insertion.
+- L'insertion reste doublement explicite et manuelle. La référence est
+  reconstruite côté serveur depuis Ciqual 2025 et le protocole actif ; les
+  références forgées, caduques, incomplètes ou liées à une autre priorité sont
+  rejetées, puis le protocole V2 final est revalidé.
+- Ajout des contrôles d'ownership sur la lecture et l'écriture de l'historique
+  des versions de protocole. Aucune diffusion patient automatique, migration,
+  import ou activation ; C5 passe à 5/8 et reste désactivée.
+
+### C5 LOT-03 — moteurs et contrats versionnés (2026-07-18)
+
+- Ajout des contrats C5A/C5B déterministes : profil intrinsèque chiffré,
+  lecture contextuelle, référence d'action, vue patient qualitative et
+  référence d'assiette, tous versionnés et hashés.
+- Application du mapping clinique signé `equilibre_assiette`, du PRAL
+  Remer–Manz et de la pondération 90/10 sans imputation. La distribution est
+  scellée sur Ciqual 2025 V1 ; un contrôle depuis les XML officiels reproduit
+  les 12 fixtures praticien signées.
+- Ajout du payload protocole V2 pour les références C5, avec compatibilité V1,
+  ancrage sur l'identifiant et l'empreinte du protocole source, retour en
+  brouillon à chaque modification et invalidation des approbations antérieures.
+- La vue patient exige un V2 réellement relu et approuvé, refuse les profils
+  partiels et ne contient aucun score, pourcentage ou classement. C5 reste
+  désactivée par défaut via `WN_C5_ENABLED=false` et passe à 4/8.
+
+### C5 LOT-02 — migration du référentiel Ciqual (2026-07-18)
+
+- Ajout du modèle PostgreSQL/Prisma `CiqualNutrientValue`, versionné par
+  dataset, aliment et constituant, avec valeur exacte décimale nullable,
+  statut explicite, unité, provenance et empreinte source.
+- Contraintes SQL fermées pour les statuts et unités, cohérence
+  valeur/statut, valeurs non négatives et unicité composite.
+- Identité clinique `NeuroAxis` rendue append-only par
+  `axisCode + versionMapping`; les poids se rattachent désormais à cette même
+  identité versionnée.
+- RLS deny-all activée sur la nouvelle table, sans policy ni privilège Data
+  API pour `anon` ou `authenticated`.
+- Migration confirmée sous la référence
+  `C5-LOT02-MIGRATION-MC-2026-07-18-v1`, rejouée sur PostgreSQL éphémère avec
+  dérive Prisma nulle, puis appliquée en production par le pipeline Vercel au
+  commit `3c0019989cae3ed2b76d8b57de1a61a5a2348374`. Préflight réussi, migration
+  Prisma confirmée et smoke test HTTP 200. Aucun import Ciqual ni activation C5
+  dans cette étape.
+- Ajout de l'importeur transactionnel Ciqual, dry-run par défaut et fail-closed,
+  confirmé sous `C5-LOT02-IMPORT-MC-2026-07-18-v1`. Le dry-run officiel et le
+  replay PostgreSQL éphémère produisent 55 744 lignes pour 3 484 aliments et
+  16 constituants ; une seconde exécution est un no-op et une cible partielle
+  est refusée. Import Production exécuté au commit
+  `3de796d6996cf2278d061fb90a0bfa126e434a65` après advisors sans anomalie :
+  55 744 lignes, 3 484 aliments, 16 constituants et un hash source ; RLS active,
+  zéro policy et zéro grant Data API. Le déclencheur temporaire a été retiré,
+  LOT-02 est terminé et C5 passe à 3/8 en restant inactive.
+
+### C5 LOT-01 — seconde passe documentaire clinique (2026-07-18)
+
+- Calcul reproductible du PRAL Remer–Manz sur Ciqual 2025 V1 : 2 347/3 484
+  aliments complets, `p5 = -8,70089` et `p95 = 14,69258 mEq/100 g`, sans
+  imputation des absences, traces ou valeurs sous limite.
+- Production des vecteurs pondérés attendus de la cohorte pilote des 12
+  aliments sous la référence `C5-LOT01-VECTEURS-2026-07-18-v1` : 12 noyaux
+  obligatoires complets, deux profils complets et dix profils partiels.
+- Sources primaires, limites d'interprétation et niveau de preuve WellNeuro B
+  rattachés aux liaisons du mapping `equilibre_assiette`.
+- Résultats signés le 2026-07-18 par Martial CAYRE sous la référence
+  `C5-LOT01-VECTEURS-2026-07-18-v1`, identifiée par
+  `fb138bd784431713c26d0e4d93053189c3359d99`. LOT-01 est terminé et C5 passe
+  à 2/8 tout en restant inactive ; aucun code, score patient, migration, import
+  ou activation n'est introduit.
+
 ### TRUST V1 — information patient, consentements et sécurité relationnelle (2026-07-16)
 
 - Campagne TRUST exécutée de bout en bout (LOT-00 → LOT-07) : documents

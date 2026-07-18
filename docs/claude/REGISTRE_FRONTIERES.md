@@ -333,6 +333,51 @@
   Périmètre 2026-07-16 : **documentaire seul** — aucun code, aucun lot
   compilé.
 
+### A8 — C2B « Trajectoire & Spirale » : couche de lecture praticien, migration-free (décision utilisateur 2026-07-18)
+
+- **Parti pris.** C2B **n'invente aucune mesure** ; il rend le temps lisible
+  côté praticien. Tout le calcul reste dans `web/src/lib/equilibre`
+  (`momentum.ts` + `depuisPrisma.ts`, déjà branchés sur
+  `api/praticien/equilibre`). C2B = brancher les lectures existantes, les
+  rendre comparables sous garde de version, n'énoncer que des constats
+  **recalculables et sourcés** (instrument, date, `versionScore`). La Spirale
+  est l'**index** de ces lectures épisode par épisode, **jamais un graphe**
+  (A6). Aucune des questions techniques n'exige de nouveau moteur ni de
+  migration. Détail : `propositions/2026-07-18-c2b-trajectoire-spirale/`
+  (`BRAINSTORM_C2B.md`, `NOTE_TECHNIQUE_MOMENTUM.md`, `ARBITRAGES_C2B.md`).
+- **A8-1 Ancrage T0 (Q1)** : **T0 par épisode** pour le comparateur praticien
+  (`assessment_episodes.confirmed_at` du milestone `T0`, passé tel quel à
+  `resoudreLectureJalon`) ; la fiche patient « Mon équilibre » **conserve le
+  T0 global** (`resoudreDateT0`). Prérequis du comparateur multi-épisodes.
+  Source exacte (`confirmedAt` vs `targetAt`) et fenêtrage des réponses à
+  préciser en compilation.
+- **A8-2 Couverture (Q2)** : un jalon sans réponse exploitable
+  (`scoresJson.rawAnswers` absent) est affiché **« jalon non mesuré »** côté
+  praticien — jamais omis sans trace, jamais un 0 inventé (aligné A1).
+- **A8-3 Garde `versionScore` (Q3)** : le comparateur **ne soustrait jamais**
+  deux lectures de `versionScore` différents ; il affiche un bloc **« non
+  comparable (score recalibré le …) »**. `VERSION_SCORE_EQUILIBRE`
+  (`lib/equilibre/constants.ts`) bumpé à toute évolution poids/seuils/mapping.
+- **A8-4 Frontière C2B ↔ SP-MET (Q4)** : C2B = **constats déterministes
+  directs par point d'étape** uniquement (règles explicites, chacune sourcée) ;
+  l'**agrégat 3 états** (régulière/fragile/interrompue) reste **entièrement
+  SP-MET** (praticien seul, jamais côté patient, jamais un score interne).
+  Aucun pré-agrégat en C2B. Cohérent A7-6.
+- **A8-5 Activation (Q5)** : **deux temps** — (i) score du résumé J21 branché
+  dès **1 cycle réel** (T0 + J21 mesurés), migration-free, **lève la dette
+  LOT-04** (`buildResumeJ21` cesse de renvoyer `null`) ; (ii) comparateur
+  multi-épisodes dès **≥ 2 épisodes comparables** (même instrument, même
+  `versionScore`). Distinct du seuil cohorte **n ≥ 5** (SP-CAB, hors C2B).
+- **Ne possède pas / n'absorbe pas** : le score et les jalons (`lib/equilibre`) ;
+  la conversion point d'étape → score ou son injection dans « Mon équilibre » ;
+  la comparaison hors `versionScore` identique ou inter-instruments ; score de
+  risque, pronostic nominatif, envoi automatique, gamification, % d'observance
+  patient ; SP-MET, SP-CAB, SP-TT (time-travel), SP-SPI (accueil patient).
+- **Lots indicatifs (règle N+1)** : « score J21 » (branchement, candidat
+  naturel) → « T0 par épisode » (A8-1) → « comparateur multi-épisodes »
+  (garde A8-3 + « non mesuré » A8-2). Périmètre 2026-07-18 : **documentaire
+  seul** — aucun code, aucun lot compilé.
+
 ---
 
 ## 3. Fiches de frontières par campagne
@@ -416,7 +461,7 @@
 - **Décisions actées** : C3 ne possède **aucun contenu clinique source** ;
   renommage acté (le contenu réel est un moteur de composition documentaire,
   pas des « fiches conseils »).
-- **Statut** : cadrée, lots à compiler N+1.
+- **Statut** : **V1 + montage en prod** (2026-07-18 — LOT-00 à LOT-05 en prod, sans migration ; domaine `web/src/lib/documents/`, composition deux colonnes, rendus par destinataire, impression HTML, page `/dashboard/documents` + route `GET /api/praticien/documents`, envoi patient réemployé). Discordance 5.0 « fil de correspondance » (réponse médecin, sans HDS) : rendu médecin **sortant** livré ; **fil bidirectionnel reporté** — cadrage `propositions/2026-07-18-c3-fil-correspondance-medecin/`. Persistance option (b) **non ouverte** — gate `propositions/2026-07-18-c3-gate-persistance-documents/` (checklist non cochée, `bloqué_confirmation`).
 
 ### C4 — Compléments clean label (`2026-07-11-complements-clean-label-v1`)
 
@@ -443,6 +488,11 @@
   action alimentaire de la semaine, assiettes vedettes et substitutions.
   Référentiel : acquis E1 (tables
   `neuro_axis`, `nutrient_axis_weight`, Ciqual).
+- **Nature 5.0** : Instrument de la Spirale, jamais graphe ni moteur autonome.
+  Le praticien voit un profil intrinsèque chiffré, sourcé et versionné ; le
+  patient reçoit uniquement une restitution qualitative. Le référentiel cible
+  couvre tous les aliments Ciqual pour les constituants validés ; les 12
+  vedettes restent un manifeste et un sous-ensemble du registre JA.
 - **Consomme** : contrat neutre intrinsèque/contextuel ; priorité sélectionnée
   en C1 et protocole actif C2 pour C5B ; rendu C3 et charte patient HC-F ;
   observations et **faisabilité publiées par JA** (solutions confirmées,
@@ -455,7 +505,8 @@
   non culpabilisant.
 - **Ne possède pas** : journal alimentaire, projections vers les
   questionnaires ou suivi longitudinal (JA/C2).
-- **Statut** : cadrée, lots à compiler N+1. Socle data parallélisable.
+- **Statut** : cadrée, 8 lots compilés, LOT-00 terminé, inactive. LOT-01 reste
+  bloqué par validation clinique ; migration et import ont des gates distincts.
 
 > Migration de frontière du 2026-07-13 : les anciens libellés C5A « action
 > alimentaire » et C5B « assiettes/substitutions » sont remplacés par C5A

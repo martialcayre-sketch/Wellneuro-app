@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Compagnon patient minimal"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-04"
 ---
 
@@ -73,4 +73,35 @@ Accueil patient calme lié au protocole actif.
 
 ## Résultats
 
-À compléter à la clôture du lot : fichiers modifiés, commandes exécutées, captures, écarts, dette restante et décision de poursuite.
+**Livré le 2026-07-18** (branche `feat/c2a-lot-04-checkins`, **sans migration**).
+
+**Cadrage 5.0 (borné R8-lite)** : accueil du **protocole actif** dans le portail cookie
+`/portail/[token]`, **jamais** un accueil de trajectoire « Ma spirale » (= SP-SPI, Phase B,
+gaté IDP). Thème patient existant (« Jardin »), aucun score, aucun pourcentage d'observance.
+
+Fichiers créés :
+- `web/src/lib/protocol/portailProtocol.ts` — helpers partagés `authorizePortail` +
+  `resolveProtocoleDiffuse` (factorisés depuis la route check-in LOT-04, qui les réutilise).
+- `web/src/app/api/portail/protocole/route.ts` (GET) — **vue patient-safe dérivée à la volée**
+  du `protocol_draft` diffusé (§8.3) : `purpose`, `followUpCriterion`, `adviceSheetRef`,
+  `actionPrincipale {title, minimalPlan}` (miroir de `PatientProtocolAction` — jamais
+  `idealPlan`/`rescuePlan`/limitations internes/`therapeuticLoad`) + `finDeCycle`. Intégrité
+  re-vérifiée via `reconstructProtocolDraft`. + `route.test.ts` (401, inter-patient 404,
+  sans-protocole, vue dérivée sans fuite interne, finDeCycle).
+- `web/src/components/patient-companion/PatientCompanionHome.tsx` (+ test) — action du jour,
+  accès fiche + rendez-vous de suivi (CTA mis en avant si check-in dû), progression factuelle
+  (réutilise `ProtocolCheckinTrend`), mode « jour difficile » rassurant, états sans-protocole /
+  check-in dû / fin de cycle. Monté en tête du hub `portail/[token]/questionnaires/page.tsx`.
+
+Décision d'architecture : `buildPatientProtocolView` (`c1-patient-protocol-view-v1`) exige la
+**DecisionCard non persistée (§8.0)** ; plutôt que recomputer la chaîne clinique dans une route
+patient (fragile au staleness), on dérive le sous-ensemble patient-safe **directement du
+payload du draft**. Conséquence : `priorityLabel` **différé** ; `purpose` sert de titre patient.
+
+Validations : `type-check` ✅, Vitest ✅ (route 6 + compagnon 4 ; check-in non régressé après
+factorisation), `next lint` ✅.
+
+Écarts / dette : `priorityLabel` non exposé (DecisionCard non persistée) ; **état « terminé »**
+= heuristique `approvedAt + 24 j` (pas de flag de cycle en base — un vrai cycle de vie relève de
+C2B) ; modèle **mono-protocole**. L'accueil de **trajectoire** (« Ma spirale ») reste à faire en
+**SP-SPI** (post-IDP).

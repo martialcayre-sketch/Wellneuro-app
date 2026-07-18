@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-suivi-j7-j14-j21-et-persistance"
 titre: "C2 — Points d'étape et persistance (C2A/C2B)"
-statut: "en_cours — compilée, gate migration à confirmer avant LOT-02"
+statut: "terminée — C2A + C2B livrés en prod (gate migration levé) ; gate modèle multi-cycles différé (cadrage ouvert)"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-17"
-lot_courant: "LOT-03"
+mise_à_jour: "2026-07-18"
+lot_courant: "LOT-09"
 ---
 
 # C2 — Points d'étape et persistance
@@ -98,10 +98,10 @@ sont remplacés) :
 | LOT-00 | Audit des flux et besoins de persistance | **terminé** (2026-07-17) |
 | LOT-01 | Spécification du modèle et gate migration | **terminé** (2026-07-17) |
 | LOT-02 | Migration Prisma et API minimale | **terminé** (2026-07-17, gate levé) |
-| LOT-03 | Versionnement et validation du protocole | à_faire |
-| LOT-04 | Check-ins et décision J21 | à_faire |
-| LOT-05 | Compagnon patient minimal | à_faire |
-| LOT-06 | Tests, rétrocompatibilité et handoff | à_faire |
+| LOT-03 | Versionnement et validation du protocole | **livré** (2026-07-17, PR #103 Part A + #107 Part B, mergées) |
+| LOT-04 | Check-ins et décision J21 | **livré** (2026-07-18, sans migration ; branche `feat/c2a-lot-04-checkins`) |
+| LOT-05 | Compagnon patient minimal | **livré** (2026-07-18, borné R8-lite ; sans migration) |
+| LOT-06 | Tests, rétrocompatibilité et handoff | **livré** (2026-07-18 ; PR C2A LOT-04→06 mergée #110) |
 
 Décisions de compilation :
 
@@ -115,7 +115,37 @@ Décisions de compilation :
   la compilation, à valider en LOT-00/LOT-01 ; contient la checklist de
   confirmation du gate, section 6).
 
-C2B : compilation séparée après données réelles.
+## Compilation (2026-07-18) — volet C2B
+
+Arbitrage C2B tranché (revue utilisateur du 2026-07-18) et acté au registre sous
+**A8** ; détail dans
+`docs/claude/propositions/2026-07-18-c2b-trajectoire-spirale/` (`BRAINSTORM_C2B.md`,
+`NOTE_TECHNIQUE_MOMENTUM.md`, `ARBITRAGES_C2B.md`). Les lots C2B sont compilés dans
+`lots/` (documentaire, **aucun code, aucune migration**) :
+
+| Lot | Objet | Statut |
+|---|---|---|
+| LOT-07 | Score du résumé J21 — branchement momentum (lève dette LOT-04) | **livré en prod** (2026-07-18, sans migration ; PR #112 mergée) |
+| LOT-08 | Ancrage T0 par épisode (prérequis comparateur) | **livré en prod** (2026-07-18, sans migration ; PR #113 mergée) |
+| LOT-09 | Comparateur multi-épisodes (Spirale-index praticien) | **livré en prod** (2026-07-18, réalisation read-only, sans migration ; PR #114 mergée). Report assumé : vraie comparaison ≥ 2 cycles → gate modèle multi-cycles, cadrage ouvert (`propositions/2026-07-18-gate-modele-multi-cycles/`, PR #115). |
+
+Décisions de compilation (registre A8) :
+
+- **A8-1** T0 **par épisode** côté praticien, T0 global conservé pour « Mon
+  équilibre ».
+- **A8-2** Jalon sans couverture → « jalon non mesuré » explicite, jamais un 0.
+- **A8-3** Garde `versionScore` : bloc « non comparable (score recalibré le …) »,
+  jamais de delta inter-version.
+- **A8-4** C2B = constats déterministes directs seulement ; l'agrégat 3 états reste
+  SP-MET.
+- **A8-5** Activation en deux temps : score J21 dès 1 cycle réel (LOT-07) ;
+  comparateur dès ≥ 2 épisodes comparables (LOT-09). Distinct du seuil cohorte
+  `n ≥ 5` (SP-CAB, hors C2B).
+
+Aucune des questions techniques n'exige un nouveau moteur ni une migration — le moteur
+(`momentum.ts` + `depuisPrisma.ts`) est déjà branché sur `api/praticien/equilibre`.
+Exécution des lots : au fil de l'eau, un lot = une PR (règle N+1), après données
+réelles selon A8-5.
 
 ## Direction UX 5.0 — poste de pilotage & A5-R2 (aligné le 2026-07-18)
 
@@ -123,5 +153,5 @@ C2B : compilation séparée après données réelles.
 > et le registre (A6-R1 poste de pilotage, A5-R2 canvas mid-tone).
 > **Aucun contrat clinique figé de cette campagne n'est modifié.**
 
-- Fiche-trajectoire en **poste de pilotage** (Spirale-index navigable, **deltas** « au tour dernier, décision X → tenue/adhésion/tolérance ») ; check-ins patient **séquentiels**. A1 inchangé : aucun score, aucun % d'observance affiché au patient.
+- Fiche-trajectoire en **poste de pilotage** (Spirale-index navigable — le comparateur LOT-09 devient un **instrument à tiroir** —, **deltas** « au tour dernier, décision X → tenue/adhésion/tolérance ») ; check-ins patient **séquentiels**. A1 et A8 inchangés : aucun score, aucun % d'observance affiché au patient.
 - Canvas mid-tone (ardoise / sable) — différé au lot d'implémentation, sans migration.

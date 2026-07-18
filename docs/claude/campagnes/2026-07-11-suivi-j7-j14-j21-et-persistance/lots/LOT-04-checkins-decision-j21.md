@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Check-ins et décision J21"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-03"
 ---
 
@@ -82,4 +82,37 @@ praticien au point d'étape.
 
 ## Résultats
 
-À compléter à la clôture du lot : fichiers modifiés, commandes exécutées, captures, écarts, dette restante et décision de poursuite.
+**Livré le 2026-07-18** (branche `feat/c2a-lot-04-checkins`, **sans migration** — table
+`protocol_checkins` déjà présente depuis LOT-02).
+
+Décisions de cadrage (validées avec l'utilisateur) : (1) **décision J21 sans nouvelle
+table** — panneau praticien en lecture seule + labels comme actions guidées vers le
+versionnement/diffusion existants ; (2) **slice patient complète** (API + formulaire +
+tendance) ; (3) **check-in à 4 questions** (adhésion, tolérance, énergie, sommeil).
+
+Fichiers créés :
+- `web/src/lib/protocol/checkinDomain.ts` (domaine pur : catalogue, validation,
+  planification J7/J14/J21 ±3 j, chaînage append-only) + `checkins.ts` (persistance) +
+  `resumeJ21.ts` (point de jonction momentum + check-ins) — avec tests.
+- Route patient `web/src/app/api/portail/protocole/checkin/route.ts` (POST/GET, cookie
+  portail obligatoire, email-gate exclu §8.4, assignation d'ancrage résolue côté serveur,
+  point d'étape imposé par le calendrier de diffusion) + test.
+- Route praticien `web/src/app/api/praticien/protocoles/checkins/route.ts` (GET check-ins
+  + résumé J21, garde mono-praticien §8.8) + test.
+- UI patient `web/src/components/patient-companion/ProtocolCheckinForm.tsx` +
+  `ProtocolCheckinTrend.tsx` (tendance factuelle, aucun %), sous-route
+  `web/src/app/portail/[token]/suivi/page.tsx`.
+- UI praticien `web/src/components/patient-cockpit/J21DecisionPanel.tsx` (résumé + 6 labels)
+  + test, monté dans `ClinicalRuntimeSection.tsx` ; lien « rendez-vous de suivi » ajouté au
+  hub portail (`questionnaires/page.tsx`).
+
+Validations : `type-check` ✅, Vitest **100/100** sur les répertoires touchés (dont 48
+nouveaux : domaine, persistance, résumé, routes patient/praticien, panneau J21), `next lint`
+✅, `scoring-check` ✅ (aucun score touché), anti-secrets ✅, `git status web/prisma/` **vide**
+(aucune migration).
+
+Écarts / dette : le volet **score** du résumé J21 est `null` en V1 (aucun historique
+d'équilibre daté n'est branché sur `momentum.ts` ici) — le point de jonction reste honnête
+via les check-ins ; brancher les lectures d'équilibre relève de C2B. Modèle V1
+**mono-protocole** côté patient (approbation active la plus récente). Smoke test navigateur
+et CI de PR restent à exécuter avant merge.

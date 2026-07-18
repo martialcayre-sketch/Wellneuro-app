@@ -4,10 +4,10 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "active",
-  "active_campaign": "2026-07-11-suivi-j7-j14-j21-et-persistance",
-  "active_lot": "LOT-03",
-  "last_completed_lot": "TRUST/LOT-07",
+  "status": "idle",
+  "active_campaign": null,
+  "active_lot": null,
+  "last_completed_lot": "C5/LOT-07",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -25,10 +25,10 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "C2A LOT-03 : versionnement et validation du protocole (statuts de diffusion, vue patient dérivée). LOT-02 terminé sur la branche feat/c2a-lot-02-persistance-prisma (migration additive c2a_persistance_v1, test:worktree vert, gate de dérive OK) ; la migration se déploiera en prod via migrate deploy au merge sur main.",
+  "next_action": "Campagne C3 — Documents contextuels multi-destinataires V1 EXÉCUTÉE, montée et en prod : LOT-00→04 (domaine + composition + rendus + validation, #122/#123/#124/#125/#127), LOT-05 montage cockpit + route GET /api/praticien/documents + page /dashboard/documents + envoi patient réemployé (#130). Reports traités : montage construit ; fil bidirectionnel médecin (discordance 5.0) CADRÉ (propositions/2026-07-18-c3-fil-correspondance-medecin/, non tranché) ; persistance option (b) GATE NON OUVERT (propositions/2026-07-18-c3-gate-persistance-documents/, bloqué_confirmation). Sans migration ; frontière A2 tenue. Gate modèle multi-cycles (C2B, A8-5-ii) toujours différé. Prochaine action possible : arbitrer le fil médecin si le besoin se confirme, ou nouvelle campagne. Campagnes C5 (boussole) et JA actives en parallèle, pilotées par d'autres owners (worktrees dédiés).",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-17T02:00:00Z",
+  "updated_at": "2026-07-18T16:30:00Z",
   "parallel_campaigns": []
 }

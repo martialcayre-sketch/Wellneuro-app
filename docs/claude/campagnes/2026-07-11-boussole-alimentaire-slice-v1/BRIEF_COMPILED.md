@@ -1,5 +1,11 @@
 # Brief compile - Boussole alimentaire slice V1
 
+> **Statut 5.0 — historique non exécutable.** Ce brief provient des sources
+> importées et peut contenir le scan, OFF, des scores patient ou des modules
+> différés. CAMPAGNE.md, AUDIT_CONFORMITE_5_0.md et les huit lots canoniques
+> sont la référence exécutable. Le dossier sources/ est préservé sans être
+> normatif.
+
 _Genere le 2026-07-11 par scripts/wn-campaign.mjs._
 
 ## Identite de campagne
@@ -72,7 +78,8 @@ _Genere le 2026-07-11 par scripts/wn-campaign.mjs._
 
 ## 4. Parcours cible
 
-- A completer.
+- Référence exécutable : parcours praticien LOT-04, puis projection patient
+  LOT-05 après validation et diffusion du protocole.
 
 ## 5. Fonctionnalites candidates
 
@@ -128,7 +135,8 @@ _Genere le 2026-07-11 par scripts/wn-campaign.mjs._
 
 ## 8. Risques et dependances
 
-- A completer.
+- Risques et dépendances arbitrés dans AUDIT_CONFORMITE_5_0.md et dans les
+  sections dédiées de chacun des huit lots.
 
 ## 9. Decisions a prendre
 
