@@ -7,17 +7,18 @@ Référence de confirmation : `C5-LOT02-MIGRATION-MC-2026-07-18-v1`
 Preuve Git de la migration :
 `9538b78f346204c1b71091d21b669e0a99230088`
 
-État : migration créée, vérifiée et déployée en production ; import non
-autorisé.
+État : migration créée, vérifiée et déployée en production ; import confirmé
+séparément, vérifié hors production et pas encore exécuté sur la cible.
 
 ## Autorisation
 
 Confirmation humaine reçue : « Je confirme la migration C5 LOT-02 selon le
 plan documenté. »
 
-Cette confirmation couvre le schéma et la migration LOT-02. Elle ne couvre ni
-l'import Ciqual, ni l'activation C5, ni le déploiement des surfaces LOT-03 à
-LOT-07.
+Cette confirmation couvre le schéma et la migration LOT-02. L'import possède
+sa propre preuve `C5-LOT02-IMPORT-MC-2026-07-18-v1`, documentée dans
+`RAPPORT_IMPORT_LOT-02.md`. Aucune des deux confirmations ne couvre
+l'activation C5 ni le déploiement des surfaces LOT-03 à LOT-07.
 
 ## Contenu de la migration
 
@@ -138,6 +139,5 @@ obligatoire sur le projet lié après déploiement de la migration. L'environnem
 de travail ne possède ni liaison CLI au projet ni `SUPABASE_ACCESS_TOKEN` ; le
 contrôle n'est pas présenté comme acquis dans ce rapport.
 
-Le prochain acte est la préparation contrôlée de l'outil d'import, en dry-run
-par défaut. Sa création et son exécution feront l'objet du gate d'import et
-d'une confirmation humaine distincte avant toute écriture.
+Le prochain acte est le déploiement contrôlé de l'importeur puis l'exécution
+append-only confirmée. C5 reste inactive pendant cette opération.
