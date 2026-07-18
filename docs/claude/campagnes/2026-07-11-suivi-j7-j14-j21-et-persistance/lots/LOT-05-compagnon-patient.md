@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Compagnon patient minimal"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-04"
 ---
 
