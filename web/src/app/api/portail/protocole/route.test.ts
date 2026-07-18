@@ -1,19 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, reconstructProtocolDraft } = vi.hoisted(() => ({
+const { prisma, reconstructProtocolDraft, resolvePatientFoodCompassView } = vi.hoisted(() => ({
   prisma: {
     assignation: { findFirst: vi.fn() },
     patient: { findUnique: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn() },
-    protocolDraft: { findUnique: vi.fn() },
+    protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
   },
   reconstructProtocolDraft: vi.fn(),
+  resolvePatientFoodCompassView: vi.fn(),
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/protocol/fromPrisma', () => ({
   reconstructProtocolDraft,
   ProtocolPayloadIntegrityError: class ProtocolPayloadIntegrityError extends Error {},
 }));
+vi.mock('@/lib/food-compass/patientReference', () => ({ resolvePatientFoodCompassView }));
 
 import { signPatientSession } from '@/lib/patient-session';
 import { GET } from './route';
@@ -46,6 +48,7 @@ describe('GET /api/portail/protocole', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    process.env.WN_C5_ENABLED = 'false';
   });
 
   it('refuse sans session portail (401)', async () => {
@@ -74,9 +77,10 @@ describe('GET /api/portail/protocole', () => {
   it('dérive une vue patient-safe (title+minimalPlan uniquement) (200)', async () => {
     mockOwnerAuth();
     prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
-      { id: 'appr_1', protocolDraftId: 'proto_DEC#h', protocolDraftInputHash: 'h', supersedesApprovalId: null, createdAt: new Date(), approvedAt: new Date(Date.now() - 7 * 24 * 3600 * 1000) },
+      { id: 'appr_1', protocolDraftId: 'proto_DEC#h', protocolDraftInputHash: 'h', decisionCardInputHash: 'decision-hash', approvedBy: 'practitioner', confirmation: 'content_approved_for_diffusion', supersedesApprovalId: null, createdAt: new Date(), approvedAt: new Date(Date.now() - 7 * 24 * 3600 * 1000) },
     ]);
-    prisma.protocolDraft.findUnique.mockResolvedValue({ payload: {}, inputHash: 'h' });
+    prisma.protocolDraft.findUnique.mockResolvedValue({ payload: {}, inputHash: 'h', decisionCardId: 'DEC', decisionCardInputHash: 'decision-hash', status: 'practitioner_reviewed', reviewedAt: new Date(0) });
+    prisma.protocolDraft.findMany.mockResolvedValue([{ id: 'proto_DEC#h', inputHash: 'h', supersedesDraftId: null, createdAt: new Date() }]);
     reconstructProtocolDraft.mockReturnValue(draftDerive);
 
     const res = await GET(request(proprioCookie()));
@@ -96,13 +100,57 @@ describe('GET /api/portail/protocole', () => {
   it('marque finDeCycle au-delà de J21+tolérance', async () => {
     mockOwnerAuth();
     prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
-      { id: 'appr_1', protocolDraftId: 'proto_DEC#h', protocolDraftInputHash: 'h', supersedesApprovalId: null, createdAt: new Date(), approvedAt: new Date(Date.now() - 30 * 24 * 3600 * 1000) },
+      { id: 'appr_1', protocolDraftId: 'proto_DEC#h', protocolDraftInputHash: 'h', decisionCardInputHash: 'decision-hash', approvedBy: 'practitioner', confirmation: 'content_approved_for_diffusion', supersedesApprovalId: null, createdAt: new Date(), approvedAt: new Date(Date.now() - 30 * 24 * 3600 * 1000) },
     ]);
-    prisma.protocolDraft.findUnique.mockResolvedValue({ payload: {}, inputHash: 'h' });
+    prisma.protocolDraft.findUnique.mockResolvedValue({ payload: {}, inputHash: 'h', decisionCardId: 'DEC', decisionCardInputHash: 'decision-hash', status: 'practitioner_reviewed', reviewedAt: new Date(0) });
+    prisma.protocolDraft.findMany.mockResolvedValue([{ id: 'proto_DEC#h', inputHash: 'h', supersedesDraftId: null, createdAt: new Date() }]);
     reconstructProtocolDraft.mockReturnValue(draftDerive);
 
     const res = await GET(request(proprioCookie()));
     const json = (await res.json()) as { finDeCycle: boolean };
     expect(json.finDeCycle).toBe(true);
+  });
+
+  it('ajoute uniquement le résumé Boussole patient-safe du protocole approuvé', async () => {
+    process.env.WN_C5_ENABLED = 'true';
+    mockOwnerAuth();
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+      { id: 'appr_1', protocolDraftId: 'proto_DEC#h', protocolDraftInputHash: 'h', decisionCardInputHash: 'decision-hash', approvedBy: 'practitioner', confirmation: 'content_approved_for_diffusion', supersedesApprovalId: null, createdAt: new Date(), approvedAt: new Date() },
+    ]);
+    prisma.protocolDraft.findUnique.mockResolvedValue({ payload: {}, inputHash: 'h', decisionCardId: 'DEC', decisionCardInputHash: 'decision-hash', status: 'practitioner_reviewed', reviewedAt: new Date(0) });
+    prisma.protocolDraft.findMany.mockResolvedValue([{ id: 'proto_DEC#h', inputHash: 'h', supersedesDraftId: null, createdAt: new Date() }]);
+    const foodCompassRef = { foodRef: 'ciqual-2025-v1:26034', refHash: 'ref-hash' };
+    reconstructProtocolDraft.mockReturnValue({
+      ...draftDerive,
+      actions: [
+        { ...draftDerive.actions[0], foodCompassRef },
+        { ...draftDerive.actions[0], actionId: 'a2', foodCompassRef },
+      ],
+    });
+    const safe = {
+      foodRef: '26034', foodLabel: 'Sardine', qualitativeSummary: 'Lecture qualitative.',
+      reasons: ['Raison qualitative.'], sourceLabel: 'Table Ciqual, Anses',
+      limitations: ['Limite qualitative.'], alternative: null,
+    };
+    resolvePatientFoodCompassView.mockResolvedValue(safe);
+    const response = await GET(request(proprioCookie()));
+    const payload = await response.json();
+    expect(payload.vue.boussoles).toEqual([safe]);
+    expect(resolvePatientFoodCompassView).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(payload.vue.boussoles)).not.toMatch(/score|inputHash|refHash|%/i);
+  });
+
+  it('masque un protocole approuvé devenu caduc', async () => {
+    mockOwnerAuth();
+    prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
+      { id: 'appr_1', protocolDraftId: 'proto_DEC#h', protocolDraftInputHash: 'h', decisionCardInputHash: 'decision-hash', approvedBy: 'practitioner', confirmation: 'content_approved_for_diffusion', supersedesApprovalId: null, createdAt: new Date(), approvedAt: new Date() },
+    ]);
+    prisma.protocolDraft.findUnique.mockResolvedValue({ payload: {}, inputHash: 'h', decisionCardId: 'DEC', decisionCardInputHash: 'decision-hash', status: 'practitioner_reviewed', reviewedAt: new Date(0) });
+    prisma.protocolDraft.findMany.mockResolvedValue([
+      { id: 'proto_DEC#h2', inputHash: 'h2', supersedesDraftId: 'proto_DEC#h', createdAt: new Date() },
+      { id: 'proto_DEC#h', inputHash: 'h', supersedesDraftId: null, createdAt: new Date(0) },
+    ]);
+    const res = await GET(request(proprioCookie()));
+    expect(await res.json()).toMatchObject({ ok: true, protocoleDiffuse: false, vue: null });
   });
 });

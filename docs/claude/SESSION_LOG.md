@@ -746,3 +746,21 @@ conservation) si le besoin se confirme.
 
 **Questions ouvertes** : identité/accès médecin (lien signé vs compte) ; base légale
 et durée de conservation d'un fil ; besoin réel d'un historique immuable (option b).
+
+## 2026-07-18 — C5 LOT-05 Jardin patient
+
+**Livré** : résumé Boussole qualitatif dans le protocole et l'espace alimentation,
+avec zoom profond. L'autorisation serveur recoupe cookie signé, suivi actif,
+protocole V2 relu/approuvé non caduc, action et référence Ciqual reconstruite.
+Les profils partiels, références forgées, révocations et accès inter-patient
+répondent sans énumération. Aucun score, percentile, poids, PRAL, hash ou version
+interne n'est exposé.
+
+**Validations** : 536 tests, typage, build, scoring-check, audit, anti-secrets,
+diff-check et revue indépendante GO. Aucun schéma, import, migration ou activation.
+
+**Décision** : alternatives laissées absentes jusqu'au catalogue validé LOT-06 ;
+tests humains clavier/zoom/contraste regroupés au LOT-07.
+
+**Prochaine action** : LOT-06 — assiettes, substitutions et pont JA. C5 reste
+inactive à `6/8`.

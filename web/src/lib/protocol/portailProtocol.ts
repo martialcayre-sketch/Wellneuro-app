@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 import { resolveActiveApproval } from '@/lib/protocol/diffusion';
+import { resolveActiveVersion } from '@/lib/protocol/versioning';
 
 // Helpers partagés des routes patient portail du protocole (C2A LOT-04/05).
 // Auth : cookie portail obligatoire, chemin legacy email-gate exclu (§8.4).
@@ -32,7 +33,14 @@ export async function authorizePortail(req: Request): Promise<PortailAuth | Port
 // mono-protocole : la tête de chaîne la plus récente = protocole courant.
 export async function resolveProtocoleDiffuse(
   idPatient: string,
-): Promise<{ protocolDraftId: string; approvedAt: Date } | null> {
+): Promise<{
+  protocolDraftId: string;
+  protocolDraftInputHash: string;
+  decisionCardInputHash: string;
+  approvedAt: Date;
+  approvedBy: string;
+  confirmation: string;
+} | null> {
   const approvals = await prisma.protocolDiffusionApproval.findMany({
     where: { idPatient },
     select: {
@@ -42,11 +50,51 @@ export async function resolveProtocoleDiffuse(
       supersedesApprovalId: true,
       createdAt: true,
       approvedAt: true,
+      decisionCardInputHash: true,
+      approvedBy: true,
+      confirmation: true,
     },
   });
   const active = resolveActiveApproval(approvals);
   if (!active) return null;
   const row = approvals.find((a) => a.id === active.id);
   if (!row) return null;
-  return { protocolDraftId: row.protocolDraftId, approvedAt: row.approvedAt };
+  const approvedDraft = await prisma.protocolDraft.findUnique({
+    where: { id: row.protocolDraftId },
+    select: {
+      decisionCardId: true,
+      decisionCardInputHash: true,
+      inputHash: true,
+      status: true,
+      reviewedAt: true,
+    },
+  });
+  if (!approvedDraft
+    || approvedDraft.inputHash !== row.protocolDraftInputHash
+    || approvedDraft.decisionCardInputHash !== row.decisionCardInputHash
+    || approvedDraft.status !== 'practitioner_reviewed'
+    || approvedDraft.reviewedAt === null
+    || row.approvedBy !== 'practitioner'
+    || row.confirmation !== 'content_approved_for_diffusion'
+    || row.approvedAt.getTime() <= approvedDraft.reviewedAt.getTime()) {
+    return null;
+  }
+  const versions = await prisma.protocolDraft.findMany({
+    where: { idPatient, decisionCardId: approvedDraft.decisionCardId },
+    select: { id: true, inputHash: true, supersedesDraftId: true, createdAt: true },
+  });
+  const activeVersion = resolveActiveVersion(versions);
+  if (!activeVersion
+    || activeVersion.id !== row.protocolDraftId
+    || activeVersion.inputHash !== row.protocolDraftInputHash) {
+    return null;
+  }
+  return {
+    protocolDraftId: row.protocolDraftId,
+    protocolDraftInputHash: row.protocolDraftInputHash,
+    decisionCardInputHash: row.decisionCardInputHash,
+    approvedAt: row.approvedAt,
+    approvedBy: row.approvedBy,
+    confirmation: row.confirmation,
+  };
 }

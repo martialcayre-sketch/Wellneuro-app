@@ -4,6 +4,20 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### C5 LOT-05 — UX patient « Jardin » (2026-07-18)
+
+- Ajout d'une restitution Boussole strictement qualitative dans le protocole
+  actif et l'espace alimentation, avec zoom profond sans nouvelle navigation.
+- L'accès exige un portail authentifié, un suivi actif, la dernière version V2
+  relue puis approuvée et une action alimentaire correspondant à la référence
+  reconstruite depuis Ciqual. Les accès absents, caducs, révoqués ou
+  inter-patient répondent par le même 404.
+- La sortie patient exclut scores, percentiles, classements, poids, PRAL, hashes
+  et versions internes. Les profils partiels ne sont pas diffusés, les doublons
+  sont supprimés et aucune alternative n'est inventée.
+- Durcissement associé de l'ownership des approbations de diffusion et de la
+  détection des protocoles devenus caducs. C5 passe à 6/8 mais reste désactivée.
+
 ### C5 LOT-04 — UX praticien « Observatoire » (2026-07-18)
 
 - Ajout d'une Boussole en lecture seule dans le cockpit praticien, sans nouvelle
