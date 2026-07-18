@@ -54,6 +54,9 @@ function normalizeActions(actions: ProtocolAction[]): ProtocolAction[] {
     if (ids.has(actionId)) throw new TypeError(`Action dupliquée : ${actionId}.`);
     ids.add(actionId);
     if (!(ACTION_TYPES as readonly string[]).includes(action.type)) throw new TypeError('Type d’action inconnu.');
+    if (action.foodCompassRef !== undefined) {
+      throw new TypeError('Une référence C5 exige un payload protocole V2 explicite.');
+    }
     if (action.type === 'supplement_exploration') {
       const keys = Object.keys(action as unknown as Record<string, unknown>);
       if (keys.some(key => FORBIDDEN_SUPPLEMENT_FIELDS.includes(key.toLowerCase()))) {

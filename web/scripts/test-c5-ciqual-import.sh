@@ -57,6 +57,10 @@ curl --fail --silent --show-error --location \
   'https://entrepot.recherche.data.gouv.fr/api/access/datafile/666246' \
   --output "$constituents"
 
+node prisma/runWithAlias.js prisma/validateC5FoodCompassDistribution.ts \
+  --source "$composition" \
+  --const-source "$constituents"
+
 apply_import() {
   WN_C5_CIQUAL_IMPORT_CONFIRMATION="$confirmation" \
   MIGRATE_DATABASE_URL="$DATABASE_URL" \
