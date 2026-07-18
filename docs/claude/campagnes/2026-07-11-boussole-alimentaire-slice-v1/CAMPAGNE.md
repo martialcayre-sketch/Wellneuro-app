@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-boussole-alimentaire-slice-v1"
 titre: "C5 — Boussole alimentaire WellNeuro 5.0"
-statut: "cadrée — LOT-00 terminé, 8 lots compilés, inactive"
+statut: "cadrée — LOT-00 et LOT-01 terminés, 8 lots compilés, inactive"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-18"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 ---
 
 # C5 — Boussole alimentaire WellNeuro 5.0
@@ -48,7 +48,7 @@ Le dossier sources/ reste un matériau historique non exécutable.
 | Lot | Objet | Statut | Gate |
 |---|---|---|---|
 | LOT-00 | Audit et contrat C5 5.0 | **terminé — conformité 5.0 cadrée** | aucun |
-| LOT-01 | Mapping clinique et gate de validation | **validation_clinique_acquise — seconde_passe_documentaire_en_revue** | signature des vecteurs pondérés |
+| LOT-01 | Mapping clinique et gate de validation | **terminé — validation clinique et vecteurs signés** | gate acquis |
 | LOT-02 | Référentiel Ciqual et gate migration | **bloqué_confirmation** | gate migration puis gate import distincts |
 | LOT-03 | Moteurs et contrats versionnés | à_faire | LOT-01 validé et LOT-02 intègre |
 | LOT-04 | UX praticien « Observatoire » | à_faire | LOT-03 |
@@ -68,7 +68,7 @@ le go/no-go final reste découpé entre C5A, C5B praticien et C5B patient.
   .wn/state.json ne sont pas modifiés par ce cadrage.
 - Aucun code, SQL, changement Prisma, import Supabase ou activation dans le
   recadrage documentaire.
-- Aucun code C5 avant la clôture de LOT-01 après sa seconde passe documentaire.
+- Aucun code C5 hors lot d'implémentation ni avant les gates LOT-02 applicables.
 - Aucune migration ou import avant leurs confirmations distinctes en LOT-02.
 - Aucun seuil, poids, code constituant ou recommandation clinique inventé.
 - Aucune donnée patient réelle, aucun secret, aucune exposition inter-patient.
@@ -78,10 +78,9 @@ le go/no-go final reste découpé entre C5A, C5B praticien et C5B patient.
 
 ## Go / no-go actuel
 
-- **GO** : documentation et audit des huit lots.
-- **NO-GO code** : tant que LOT-01 n'est pas terminé après sa seconde passe
-  documentaire.
-- **NO-GO migration/import** : tant que chaque gate LOT-02 n'est pas confirmé.
+- **GO** : contrat clinique LOT-01 signé et documentation des huit lots.
+- **NO-GO code/migration/import** : tant que chaque gate LOT-02 applicable
+  n'est pas confirmé.
 - **NO-GO patient** : sans praticien validateur, protocole diffusé et référentiel
   complet et intègre.
 

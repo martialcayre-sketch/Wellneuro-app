@@ -1,7 +1,7 @@
 ---
 id: "c5-lot-01-revue-praticien"
 lot: "LOT-01"
-statut: "validé — seconde_passe_documentaire_en_revue"
+statut: "validé — vecteurs pondérés signés"
 date_préparation: "2026-07-18"
 date_avis: "2026-07-18"
 valideur: "Martial CAYRE"
@@ -11,8 +11,12 @@ preuve_git: "20c4119be10cc67c9be875746647b9a4bfe54004"
 clarification_git: "471f71461f74e9eabdedabc02f9e6e35d529d138"
 vecteurs_ref: "C5-LOT01-VECTEURS-2026-07-18-v1"
 avis_gate_clinique: "VALIDÉ"
-avis_vecteurs_pondérés: "À SIGNER"
+avis_vecteurs_pondérés: "VALIDÉ"
 preuve_git_vecteurs: "fb138bd784431713c26d0e4d93053189c3359d99"
+date_signature_vecteurs: "2026-07-18"
+valideur_signature_vecteurs: "Martial CAYRE"
+role_signature_vecteurs: "praticien valideur responsable de la gouvernance clinique WellNeuro"
+preuve_git_signature_vecteurs: "en_attente_du_commit_de_cloture"
 ---
 
 # C5 LOT-01 — revue praticien du mapping clinique
@@ -253,10 +257,10 @@ dans le frontmatter.
 
 ## Statut actuel
 
-**Avis du gate clinique VALIDÉ. Seconde passe documentaire produite et soumise
-à une signature distincte des vecteurs pondérés.**
+**Avis du gate clinique VALIDÉ. Seconde passe documentaire et vecteurs
+pondérés VALIDÉS par signature distincte.**
 
-## Seconde passe documentaire soumise à signature
+## Seconde passe documentaire signée
 
 Référence exacte à relire : **C5-LOT01-VECTEURS-2026-07-18-v1**.
 
@@ -291,19 +295,26 @@ comparables entre eux.
 
 Choisir exactement un avis après relecture du document détaillé :
 
-- [ ] **VALIDÉ** — les 12 vecteurs attendus peuvent être rattachés au contrat.
+- [x] **VALIDÉ** — les 12 vecteurs attendus sont rattachés au contrat.
 - [ ] **À CORRIGER** — indiquer les lignes et corrections demandées.
 - [ ] **REFUSÉ** — ne pas poursuivre la clôture de LOT-01.
 
-Avis actuel : **À SIGNER**.
+Avis rendu : **VALIDÉ**.
 
-La signature ultérieure doit citer la référence
-`C5-LOT01-VECTEURS-2026-07-18-v1` et le hash `preuve_git_vecteurs`. Toute
-modification des valeurs après signature imposera une nouvelle référence.
+Signature explicite reçue le 2026-07-18 de **Martial CAYRE**, praticien
+valideur responsable de la gouvernance clinique WellNeuro : « je signe et
+valide le document de référence ».
+
+La signature porte exclusivement sur
+`C5-LOT01-VECTEURS-2026-07-18-v1`, identifié par le hash
+`preuve_git_vecteurs`. Toute modification ultérieure des valeurs imposera une
+nouvelle référence et une nouvelle signature.
 
 La preuve Git est bornée aux six livrables autorisés de cette passe et au
 commit distinct qui rattache son hash. Elle n'atteste pas un snapshot autonome
 de l'ensemble de C5 : les autres travaux de recadrage déjà présents dans
 l'arbre restent hors périmètre et ne sont ni indexés ni modifiés ici.
 
-LOT-01 n'est pas terminé par le présent avis. C5 reste inactive à 1/8.
+Les critères de done de LOT-01 sont satisfaits. LOT-01 est terminé et C5 passe
+à 2/8 lots terminés tout en restant inactive. Migration et import demeurent
+bloqués par leurs confirmations distinctes en LOT-02.

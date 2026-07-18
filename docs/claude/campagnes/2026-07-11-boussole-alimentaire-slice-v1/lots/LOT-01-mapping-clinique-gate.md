@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Mapping clinique et gate de validation"
-statut: "validation_clinique_acquise — seconde_passe_documentaire_en_revue"
+statut: "terminé — validation clinique et vecteurs signés"
 dépend_de: "LOT-00"
 ---
 
@@ -47,8 +47,7 @@ et matrice de revue praticien.
 - [x] Résoudre les codes et unités depuis la source Ciqual officielle.
 - [x] Documenter direction, poids, preuve et justification de chaque liaison.
 - [x] Définir p5/p95, données manquantes et valeurs limites.
-- [ ] Calculer et faire relire les vecteurs attendus des 12 vedettes : calcul
-      terminé, signature distincte encore requise.
+- [x] Calculer et faire relire les vecteurs attendus des 12 vedettes.
 - [x] Versionner le contrat et recueillir la validation humaine explicite du
       gate initial.
 
@@ -59,11 +58,11 @@ incompatibles, données manquantes et versions incompatibles.
 
 ## Critères de done
 
-- Chaque entrée est sourcée et porte son niveau de preuve.
-- Les vecteurs des 12 vedettes ont un résultat attendu signé.
-- mappingVersion et scoreVersion sont figés.
-- La validation humaine est traçable et CHANGELOG.md est prêt si le lot conduit
-  ensuite à une modification clinique.
+- [x] Chaque entrée est sourcée et porte son niveau de preuve.
+- [x] Les vecteurs des 12 vedettes ont un résultat attendu signé.
+- [x] mappingVersion et scoreVersion sont figés.
+- [x] La validation humaine est traçable et `CHANGELOG.md` consigne la
+      décision clinique documentaire.
 
 ## Risques / points de vigilance
 
@@ -141,13 +140,19 @@ Seconde passe documentaire exécutée le 2026-07-18 :
 - deux profils complets et dix profils partiels, sans imputation ;
 - contributions pondérées et agrégats attendus consignés sous la référence
   `C5-LOT01-VECTEURS-2026-07-18-v1` ;
-- sources primaires, limites d'interprétation et niveau WellNeuro B rattachés
-  à chaque liaison ;
+- sources officielles ou de référence, limites d'interprétation et niveau
+  WellNeuro B rattachés à chaque liaison ;
 - entrée clinique documentaire ajoutée dans `CHANGELOG.md`, sans activation.
 
-Le gate clinique initial est acquis. La seconde passe est **en revue** : la
-signature distincte des vecteurs pondérés par Martial CAYRE reste requise avant
-toute clôture.
+Signature finale reçue le 2026-07-18 de Martial CAYRE, praticien valideur
+responsable de la gouvernance clinique WellNeuro : validation explicite du
+document de référence `C5-LOT01-VECTEURS-2026-07-18-v1`, identifié par
+`fb138bd784431713c26d0e4d93053189c3359d99`.
 
-**Statut : validation_clinique_acquise — seconde_passe_documentaire_en_revue.**
-LOT-01 n'est pas terminé et la campagne reste inactive à 1/8 lot terminé.
+La revue indépendante conclut **GO signature documentaire** : 12 agrégats
+reproduits à six décimales, PRAL plafonné à 10 %, aucune imputation, preuve Git
+et périmètre documentaire conformes.
+
+**Statut : terminé — validation clinique et vecteurs signés.** LOT-01 est
+terminé. La campagne passe à 2/8 lots terminés et reste inactive ; LOT-02 devient
+le prochain lot, avec gates migration et import toujours bloquants.

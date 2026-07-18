@@ -1,7 +1,7 @@
 ---
 id: "c5-lot-01-vecteurs-12-vedettes"
 lot: "LOT-01"
-statut: "seconde_passe_documentaire_en_revue — à signer"
+statut: "validé — signé"
 date: "2026-07-18"
 dataset: "ciqual-2025-v1"
 mapping_version: "c5a-b1-mapping-v1"
@@ -349,11 +349,15 @@ Composante absente : ALA. Agrégat attendu : **42,643487**.
 - Glucides 31000 et sodium 10110 demeurent descriptifs, sans poids ni
   contribution.
 
-## Gate de signature restant
+## Signature acquise
 
-Avis sur les vecteurs pondérés : **À SIGNER**.
+Avis sur les vecteurs pondérés : **VALIDÉ**.
 
-Le praticien doit valider, corriger ou refuser la référence
-`C5-LOT01-VECTEURS-2026-07-18-v1` en citant également son hash
-`preuve_git_vecteurs` inscrit dans `REVUE_PRATICIEN_LOT-01.md`. Cette signature
-seule permettra de proposer la clôture de LOT-01. C5 reste inactive à 1/8.
+Martial CAYRE, praticien valideur responsable de la gouvernance clinique
+WellNeuro, a signé explicitement ce document le 2026-07-18 sous la référence
+`C5-LOT01-VECTEURS-2026-07-18-v1`. Le contenu signé est identifié par le hash
+`fb138bd784431713c26d0e4d93053189c3359d99`.
+
+Cette signature clôt le gate documentaire de LOT-01. C5 passe à 2/8 lots
+terminés mais reste inactive ; elle n'autorise aucun code, import, migration ou
+diffusion patient.

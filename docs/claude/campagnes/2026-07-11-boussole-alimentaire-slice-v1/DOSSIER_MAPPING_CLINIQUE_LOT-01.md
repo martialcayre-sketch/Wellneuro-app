@@ -1,7 +1,7 @@
 ---
 id: "c5-lot-01-dossier-mapping-clinique"
 lot: "LOT-01"
-statut: "validé — seconde_passe_documentaire_en_revue"
+statut: "validé — LOT-01 terminé"
 date: "2026-07-18"
 ---
 
@@ -329,7 +329,11 @@ WellNeuro, a validé le présent contrat le 2026-07-18 sous la référence
 
 La seconde passe a calculé les p5/p95 PRAL réels, produit les vecteurs pondérés
 attendus des 12 vedettes, rattaché les sources et niveaux de preuve et consigné
-le changement clinique documentaire dans `CHANGELOG.md`. Les vecteurs restent
-**à signer** par Martial CAYRE sous la référence
-`C5-LOT01-VECTEURS-2026-07-18-v1`. LOT-01 n'est pas terminé et C5 reste
-inactive à 1/8.
+le changement clinique documentaire dans `CHANGELOG.md`. Martial CAYRE a signé
+les vecteurs le 2026-07-18 sous la référence
+`C5-LOT01-VECTEURS-2026-07-18-v1`, identifiée par le hash
+`fb138bd784431713c26d0e4d93053189c3359d99`.
+
+LOT-01 est terminé et C5 passe à 2/8 lots terminés. Les identifiants sont
+validés pour la suite documentaire et technique, mais C5 reste inactive :
+LOT-02 conserve ses gates séparés de migration et d'import.

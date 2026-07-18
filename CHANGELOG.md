@@ -14,9 +14,11 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   obligatoires complets, deux profils complets et dix profils partiels.
 - Sources primaires, limites d'interprétation et niveau de preuve WellNeuro B
   rattachés aux liaisons du mapping `equilibre_assiette`.
-- Résultats soumis à une signature distincte de Martial CAYRE. LOT-01 reste
-  ouvert, C5 inactive à 1/8 ; aucun code, score patient, migration, import ou
-  activation n'est introduit.
+- Résultats signés le 2026-07-18 par Martial CAYRE sous la référence
+  `C5-LOT01-VECTEURS-2026-07-18-v1`, identifiée par
+  `fb138bd784431713c26d0e4d93053189c3359d99`. LOT-01 est terminé et C5 passe
+  à 2/8 tout en restant inactive ; aucun code, score patient, migration, import
+  ou activation n'est introduit.
 
 ### TRUST V1 — information patient, consentements et sécurité relationnelle (2026-07-16)
 
