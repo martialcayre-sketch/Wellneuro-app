@@ -632,3 +632,23 @@ sur-ingénierie) ; report total de LOT-09 (perte de l'index utile déjà réalis
 
 **Questions ouvertes** : ouvrir le gate modèle multi-cycles (comparaison réelle) ;
 SP-SPI (accueil patient trajectoire) et SP-MET/SP-CAB/SP-TT restent hors C2B.
+
+## 2026-07-18 — Cadrage gate « modèle multi-cycles »
+
+Ouverture du cadrage du gate reporté par LOT-09 (A8-5-ii, handoff LOT-06) : la vraie
+comparaison côte à côte ≥ 2 cycles est bloquée par le modèle **mono-protocole** —
+`AssessmentEpisode` n'a **aucune clé de cycle** persistée, le cycle est déduit en
+mémoire (`milestone === 'T0'`), les jalons J21/J42/J90 sont re-dérivés par décalage,
+sans arête stockée vers leur T0.
+
+**Décisions** : livrable = **cadrage seul** (pose, ne tranche rien) au format
+**triptyque** (BRAINSTORM + NOTE_TECHNIQUE + ARBITRAGES) sous
+`propositions/2026-07-18-gate-modele-multi-cycles/`. Documentaire pur : `schema.prisma`
+et `migrations/` intacts. Registre **non touché** (A8-6 promu seulement après arbitrage).
+
+**Option écartée** : arbitrer/migrer maintenant (prématuré sans données réelles ≥ 2 cycles).
+
+**Prochaine action** : arbitrer Q1–Q5 (colonne `cycleId` vs table `ProtocolCycle`,
+`versionScore` par épisode, backfill) quand ≥ 2 cycles réels comparables existeront.
+
+**Question ouverte** : modèle retenu — colonne vs table dédiée.
