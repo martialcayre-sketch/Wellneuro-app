@@ -4,7 +4,7 @@ titre: "C2 — Points d'étape et persistance (C2A/C2B)"
 statut: "en_cours — compilée, gate migration à confirmer avant LOT-02"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-18"
-lot_courant: "LOT-09 (livré — C2B complet)"
+lot_courant: "LOT-09"
 ---
 
 # C2 — Points d'étape et persistance
