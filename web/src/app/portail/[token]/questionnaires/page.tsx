@@ -13,6 +13,7 @@ import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/
 import { detecterChangementsEtMettreAJour, type ChangementVisite } from '@/lib/portail-visite';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
+import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 
 type Groupe = 'a_completer' | 'correction' | 'transmis' | 'expire';
 
@@ -201,6 +202,7 @@ export default function QuestionnairesHubPage() {
   return (
     <div className="w-full max-w-2xl space-y-6">
       <PatientJourneyProgress steps={buildJourneySteps(4)} />
+      <PatientCompanionHome token={token} />
       <PatientPageHeader
         title="Mes questionnaires"
         subtitle={`${patient ? `Bonjour ${patient.prenom}. ` : ''}Vous pouvez les compléter dans l’ordre qui vous convient. Votre praticien recevra uniquement les questionnaires transmis.`}
@@ -215,6 +217,18 @@ export default function QuestionnairesHubPage() {
           className={`mt-3 inline-flex items-center justify-center ${patientButtonClassName('ghost')}`}
         >
           Ouvrir Ma spirale alimentaire
+        </a>
+      </PatientCard>
+      <PatientCard padding="sm" className="border-primary/30">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Mes rendez-vous de suivi</p>
+        <p className="text-sm text-foreground">
+          Quelques questions rapides à J7, J14 et J21 pour ajuster votre accompagnement avec votre praticien.
+        </p>
+        <a
+          href={`/portail/${token}/suivi`}
+          className={`mt-3 inline-flex items-center justify-center ${patientButtonClassName('ghost')}`}
+        >
+          Ouvrir mes rendez-vous de suivi
         </a>
       </PatientCard>
       <div className="flex flex-wrap gap-3 -mt-3 text-sm">
