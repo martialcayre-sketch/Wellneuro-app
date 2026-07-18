@@ -49,7 +49,7 @@ Le dossier sources/ reste un matériau historique non exécutable.
 |---|---|---|---|
 | LOT-00 | Audit et contrat C5 5.0 | **terminé — conformité 5.0 cadrée** | aucun |
 | LOT-01 | Mapping clinique et gate de validation | **terminé — validation clinique et vecteurs signés** | gate acquis |
-| LOT-02 | Référentiel Ciqual et gate migration | **bloqué_confirmation** | gate migration puis gate import distincts |
+| LOT-02 | Référentiel Ciqual et gate migration | **en_attente_confirmation_migration** | plan et dry-run source vérifiés ; gate migration puis gate import distincts |
 | LOT-03 | Moteurs et contrats versionnés | à_faire | LOT-01 validé et LOT-02 intègre |
 | LOT-04 | UX praticien « Observatoire » | à_faire | LOT-03 |
 | LOT-05 | UX patient « Jardin » | à_faire | LOT-04 et protocole approuvé |

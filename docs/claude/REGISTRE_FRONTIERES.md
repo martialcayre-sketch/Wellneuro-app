@@ -434,6 +434,11 @@
   action alimentaire de la semaine, assiettes vedettes et substitutions.
   Référentiel : acquis E1 (tables
   `neuro_axis`, `nutrient_axis_weight`, Ciqual).
+- **Nature 5.0** : Instrument de la Spirale, jamais graphe ni moteur autonome.
+  Le praticien voit un profil intrinsèque chiffré, sourcé et versionné ; le
+  patient reçoit uniquement une restitution qualitative. Le référentiel cible
+  couvre tous les aliments Ciqual pour les constituants validés ; les 12
+  vedettes restent un manifeste et un sous-ensemble du registre JA.
 - **Consomme** : contrat neutre intrinsèque/contextuel ; priorité sélectionnée
   en C1 et protocole actif C2 pour C5B ; rendu C3 et charte patient HC-F ;
   observations et **faisabilité publiées par JA** (solutions confirmées,
@@ -446,7 +451,8 @@
   non culpabilisant.
 - **Ne possède pas** : journal alimentaire, projections vers les
   questionnaires ou suivi longitudinal (JA/C2).
-- **Statut** : cadrée, lots à compiler N+1. Socle data parallélisable.
+- **Statut** : cadrée, 8 lots compilés, LOT-00 terminé, inactive. LOT-01 reste
+  bloqué par validation clinique ; migration et import ont des gates distincts.
 
 > Migration de frontière du 2026-07-13 : les anciens libellés C5A « action
 > alimentaire » et C5B « assiettes/substitutions » sont remplacés par C5A

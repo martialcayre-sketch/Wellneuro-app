@@ -1,6 +1,16 @@
 # Boussole alimentaire & Nutrition Lab — Contexte consolidé
 # Complète ROADMAP_AGENT_PLAN.md et PROJET_CONTEXTE.md
 
+> **Amendement WellNeuro 5.0 — 2026-07-18.** Ce document est conservé comme
+> blueprint historique. En cas de conflit, REGISTRE_FRONTIERES.md,
+> PROGRAMME_WELLNEURO_5_0.md et la campagne C5 à huit lots prévalent. Pour C5
+> V1 : scan et Open Food Facts sont différés ; le patient ne voit aucun score
+> numérique ; le praticien voit le profil intrinsèque chiffré, sourcé et
+> versionné ; le référentiel cible est PostgreSQL et couvre la distribution
+> Ciqual complète des constituants validés, tandis que les 12 vedettes forment
+> un manifeste séparé. L'espace praticien reste clair avec un rail sombre
+> « Nuit spectrale » ; l'espace patient reste « Jardin » clair.
+
 > Rédigé à partir de plusieurs sessions d'exploration (D0) sur l'intégration
 > Ciqual/OpenFoodFacts, le Nutrition Lab praticien et la fonctionnalité de
 > scan/lecture par aliment. Ce document est un **blueprint de conception**,
@@ -134,10 +144,11 @@ tenable :
   profil pour tout le monde), matérialisé en cache, recalculé uniquement sur
   bump de version. C'est ce que la décision §0.1 garantit : indépendant du patient.
 
-- **Score contextuel** — le score intrinsèque *lu à travers les axes actifs du
+- **Lecture contextuelle** — le profil intrinsèque *lu à travers la priorité C1
+  sélectionnée et le protocole C2 actif du
   protocole du patient*. Calculé à la lecture, très bon marché (pondération).
-  **C'est le seul niveau que le patient voit.** Jamais un profil brut, toujours
-  une lecture relative à son objectif.
+  Le patient voit seulement sa projection qualitative, jamais le score ou le
+  profil brut ; le détail chiffré reste réservé au praticien.
 
 Conséquence produit majeure : contrairement à Nutri-Score ou Yuka dont la note
 est identique pour tout le monde, **le même produit s'affiche différemment**
@@ -316,21 +327,21 @@ v1 ; il ne se compare jamais silencieusement à un v2. Toute modif du mapping ou
 de la formule = bump + trace `CHANGELOG.md` + validation praticien
 (logique clinique).
 
-### 2.5 Vertical slice V1 (périmètre resserré du MVP, décision §9.5)
+### 2.5 Vertical slice historique (supplanté pour C5 V1 par le cadrage 5.0)
 
 Le point d'entrée du chantier n'est pas la Phase A complète : c'est un
 **vertical slice étroit**, pour valider l'expérience de bout en bout (score
 intrinsèque → score contextuel → restitution patient) avant d'élargir aux 6
 axes et aux 191 aliments moyens.
 
-Périmètre du slice :
+Périmètre historique du slice :
 - **Un seul axe Niveau 1** : besoin 1 (équilibre de l'assiette) — le mieux
   cadré (index glycémique, oméga-3, ultra-transformés), déjà cross-référencé
   avec le score SIIN/90 existant.
-- **~12 aliments vedettes** (table Ciqual complète, pas les aliments moyens —
-  cohérent avec la règle §1.1 pour les fiches vedettes).
-- **1 produit scanné** via OFF, pour valider le fallback Ciqual et la lecture
-  contextuelle sur un cas réel.
+- **~12 aliments vedettes** comme manifeste d'exposition ; en 5.0, elles sont
+  un sous-ensemble du registre JA et ne bornent pas la distribution Ciqual.
+- **Scan OFF différé hors C5 V1** ; l'ancien cas du produit scanné n'est plus
+  un critère d'acceptation des huit lots.
 - **Chronobiologie (besoin 3) hors slice** (décision §9.10) : pas de
   `feat/e1-journal-chronobiologie` avant que le slice besoin 1 n'ait validé
   l'expérience. Le champ `meal_entry.heure` reste différé.
@@ -616,7 +627,11 @@ pour la partie patient. Aucune dépendance nouvelle inventée.
 | `feat/e2-intrinsic-score-engine` | Calcul + matérialisation `food_intrinsic_score`, `version_score` |
 | `feat/e2-contextual-score` | Lecture contextuelle par axes actifs du protocole |
 
-### Phase C — Nutrition Lab praticien (UI ; thème praticien sombre D1)
+### Phase C historique — Nutrition Lab praticien
+
+Le cadrage 5.0 remplace le thème sombre global par un espace de travail clair
+avec rail sombre de signature Nuit spectrale. Les radars et dataviz décrits
+ci-dessous sont différés hors V1, dont la restitution est textuelle et tabulaire.
 
 | Branche | Périmètre |
 |---|---|
@@ -668,9 +683,10 @@ décision, pas de liste de questions.
    confirmé — pas d'élargissement dans ce lot.
 4. **Normalisation** (→ §2.3) : min-max par axe sur percentiles p5/p95 Ciqual,
    confirmé — pas de seuils cliniques absolus.
-5. **Point d'entrée MVP** (→ §2.5) : **vertical slice étroit** — besoin 1
-   uniquement, ~12 aliments vedettes, 1 produit scanné — plutôt que la Phase A
-   complète d'abord.
+5. **Point d'entrée historique** (→ §2.5) : cette décision est supplantée par
+   le cadrage C5 5.0. Le besoin 1 et les 12 vedettes restent la tranche
+   éditoriale, mais le scan OFF est différé et la normalisation s'appuie sur la
+   distribution complète des constituants validés.
 6. **Répartition Ciqual moyens/complet** (→ §1.1) : règle proposée confirmée
    (journal libre → moyens, vedettes/scan → complet), pas de séparation
    stricte par module.

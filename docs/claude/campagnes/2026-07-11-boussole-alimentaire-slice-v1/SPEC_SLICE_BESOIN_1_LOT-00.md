@@ -1,11 +1,21 @@
 ---
 id: "spec-slice-besoin-1"
 lot: "LOT-00"
-statut: "livré — liste d'aliments candidate, validation praticien via revue de PR"
-date: "2026-07-17"
+statut: "amendé 5.0 — matériau clinique candidat, gate LOT-01 requis"
+date: "2026-07-18"
 ---
 
 # Spécification clinique du slice besoin 1 — LOT-00
+
+> **Amendement WellNeuro 5.0 — 2026-07-18.** CAMPAGNE.md,
+> AUDIT_CONFORMITE_5_0.md et le registre 5.0 prévalent sur les anciennes
+> hypothèses de ce document. Cette spécification conserve la liste candidate
+> et les sources, mais ne valide aucun code Ciqual, poids, seuil ou vecteur.
+> Le scan et Open Food Facts sont différés. Le référentiel cible n'est plus un
+> dataset statique limité aux vedettes : il couvre tous les aliments Ciqual
+> pour les seuls constituants validés en LOT-01, dans PostgreSQL après les
+> gates migration et import de LOT-02. Les 12 vedettes restent un manifeste
+> éditorial versionné séparément.
 
 > Livrable du LOT-00 (cadrage clinique, sources et licences) de la campagne
 > C5 Boussole alimentaire. Périmètre : le vertical slice V1 décidé au
@@ -89,8 +99,8 @@ JA-00).
 
 | Source | Licence | Usage dans le slice | Obligations |
 |---|---|---|---|
-| **Ciqual 2025** (Anses, table de composition nutritionnelle) | **Licence Ouverte Etalab 2.0** | Référentiel read-only : valeurs des 12 vedettes (LOT-02) | **Attribution** : « Source : Anses, table Ciqual 2025 » + version/date d'extraction tracées dans le dataset ; réutilisation libre, y compris commerciale |
-| **Open Food Facts** | **ODbL 1.0** | **Différé hors slice data** — le « 1 produit scanné » du slice sera instruit au lot UX ; si retenu : cache local, attribution obligatoire, partage à l'identique sur la base dérivée (le mapping propriétaire par-dessus n'est pas contaminé) | à documenter au moment de l'activation |
+| **Ciqual 2025** (Anses, table de composition nutritionnelle) | **Licence Ouverte Etalab 2.0** | Référentiel PostgreSQL futur : distribution complète pour les constituants LOT-01 ; manifeste séparé des 12 vedettes | **Attribution** : « Source : Anses, table Ciqual 2025 » + version/date d'extraction tracées ; réutilisation libre, y compris commerciale |
+| **Open Food Facts** | **ODbL 1.0** | **Différé hors C5 V1** : aucun scan, cache ou fallback OFF dans les huit lots | à réinstruire dans une campagne ultérieure avant toute activation |
 | Fiches vedettes SIIN + mapping WellNeuro | propriétaire | cœur différenciant, versionné | niveau de preuve **B** par défaut pour toute donnée nutritionnelle ; jamais A ni C |
 
 ## 6. Raccordements
@@ -101,8 +111,9 @@ JA-00).
   des deux côtés.
 - **LOT-01 (suivant)** : mapping et normalisation — définition versionnée
   du calcul intrinsèque besoin 1 à partir des variables du §2.
-- **LOT-02** : extraction des valeurs Ciqual des 12 vedettes (dataset
-  statique V1, reproductible, avec attribution, code qualité/source/version).
+- **LOT-02** : migration puis import, avec confirmations distinctes, de la
+  distribution Ciqual complète pour les constituants validés ; les 12 vedettes
+  sont résolues par un manifeste versionné séparé.
 
 ## 7. Hors périmètre (rappel)
 
