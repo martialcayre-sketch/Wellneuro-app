@@ -29,13 +29,18 @@ confirmation de migration, ni confirmation d'import, ni activation C5.
   `9d12edcf1a3ca6d1ef2fd547f3dfee36ffee87a3`.
 - Le smoke HTTP de `https://app.wellneuro.fr/` redirige vers `/login`, qui
   répond HTTP 200 ; l'application existante est disponible avant travaux C5.
+- Un worktree propre a ensuite été créé depuis le dernier `origin/main` dans
+  `/tmp/wellneuro-c5`, sur la branche
+  `campaign/c5-wellneuro-5-0/integration`. Les 11 commits documentaires C5 y
+  sont isolés ; l'arbre est propre et aucun commit C2/JA n'est présent dans la
+  différence avec `origin/main`.
 
 ## Décisions de livraison
 
-1. Ne jamais pousser, fusionner ou déployer directement la branche locale
-   actuelle.
-2. Créer un worktree C5 propre depuis `origin/main` et y porter uniquement les
-   commits et fichiers C5 vérifiés.
+1. Ne jamais pousser, fusionner ou déployer directement l'ancienne branche
+   locale C2B.
+2. Utiliser exclusivement le worktree et la branche C5 propres créés depuis
+   `origin/main` pour la suite de la campagne.
 3. Créer et tester la migration LOT-02 uniquement après confirmation explicite
    du gate migration.
 4. Faire valider la migration par PostgreSQL éphémère et le contrôle de dérive
