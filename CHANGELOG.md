@@ -38,6 +38,10 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   Activation en production demandée par le responsable ; mécanique documentée :
   `WN_C5_ENABLED=true` dans Vercel Production + redéploiement. Rollback = flag
   `false` (non destructif, aucun DROP/DELETE).
+- **Activation confirmée le 2026-07-18** : `WN_C5_ENABLED=true` défini en Vercel
+  Production et redéployé (déploiement aliasé `app.wellneuro.fr`). Smoke test :
+  la route boussole non authentifiée passe de `404` (flag off) à `401` (flag on)
+  ⇒ C5 active en production, avec les dettes du volet patient ouvertes.
 
 ### C5 LOT-06 — Assiettes, substitutions et pont JA (2026-07-18)
 
