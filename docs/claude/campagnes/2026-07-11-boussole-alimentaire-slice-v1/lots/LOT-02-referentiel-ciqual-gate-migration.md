@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Référentiel Ciqual et gate migration"
-statut: "migration_deployee — en_attente_gate_import"
+statut: "import_confirme — importeur_verifie — en_attente_deploiement"
 dépend_de: "LOT-01 terminé"
 ---
 
@@ -52,8 +52,8 @@ manifeste des vedettes, fixtures et rapports d'intégrité.
 - [x] Produire le plan de migration et le vérifier en base éphémère.
 - [x] Obtenir la confirmation migration et créer la migration dans l'historique Prisma.
 - [x] Déployer la migration par le pipeline Prisma/Vercel après revue.
-- [ ] Produire le dry-run d'import et les contrôles de hash, lignes et unités.
-- [ ] Obtenir une confirmation distincte pour l'import.
+- [x] Produire le dry-run d'import et les contrôles de hash, lignes et unités.
+- [x] Obtenir une confirmation distincte pour l'import.
 - [ ] Importer transactionnellement puis publier le rapport d'intégrité.
 
 ## Tests
@@ -194,3 +194,26 @@ contrôlé de l'outil d'import. C5 demeure inactive à `2/8`.
 Le contrôle `supabase db advisors` reste requis : l'environnement de travail
 ne possède ni liaison CLI au projet ni `SUPABASE_ACCESS_TOKEN`. Ce contrôle
 n'est donc pas déclaré acquis et devra être exécuté avant la clôture du lot.
+
+### Confirmation et importeur vérifié
+
+- confirmation humaine reçue le 2026-07-18 : « Je confirme l'import C5 LOT-02
+  de ciqual-2025-v1, append-only, 55 744 lignes, selon le dry-run documenté. » ;
+- référence stable : `C5-LOT02-IMPORT-MC-2026-07-18-v1` ;
+- importeur en dry-run par défaut ; `--apply` exige à la fois la référence CLI,
+  la variable de confirmation exacte et la connexion de migration ;
+- téléchargement temporaire depuis les fichiers officiels, MD5 composition
+  `2da725585946434df320d8041631998b` et constituants
+  `d8f2f25fdacb887bc993a6eeaf80f203` ;
+- dry-run reproduit : 3 484 aliments, 16 constituants, 55 744 lignes, zéro
+  doublon, précision maximale 6 décimales et volumes par statut conformes ;
+- replay PostgreSQL 17 : 55 744 lignes insérées dans une transaction, contrôle
+  3 484/16/1 hash, RLS active, zéro policy, zéro grant Data API ;
+- deuxième exécution : zéro insertion et no-op idempotent ; cible partielle
+  d'une ligne : refus fail-closed, sans ajout ;
+- le déclencheur Vercel Production lance les advisors Supabase avant l'import
+  et refuse toute référence différente.
+
+Le rapport reproductible figure dans `RAPPORT_IMPORT_LOT-02.md`. À ce stade,
+l'import de production n'a pas encore été exécuté et LOT-02 reste ouvert. C5
+demeure inactive à `2/8`.

@@ -22,6 +22,11 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   commit `3c0019989cae3ed2b76d8b57de1a61a5a2348374`. Préflight réussi, migration
   Prisma confirmée et smoke test HTTP 200. Aucun import Ciqual ni activation C5
   dans cette étape.
+- Ajout de l'importeur transactionnel Ciqual, dry-run par défaut et fail-closed,
+  confirmé sous `C5-LOT02-IMPORT-MC-2026-07-18-v1`. Le dry-run officiel et le
+  replay PostgreSQL éphémère produisent 55 744 lignes pour 3 484 aliments et
+  16 constituants ; une seconde exécution est un no-op et une cible partielle
+  est refusée. L'import Production reste à exécuter ; C5 demeure inactive.
 
 ### C5 LOT-01 — seconde passe documentaire clinique (2026-07-18)
 

@@ -104,6 +104,12 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/c5_ciqual_reference_v1.sql
 
+      - name: C5 LOT-02 import contract
+        working-directory: web
+        env:
+          WN_C5_CIQUAL_DESTRUCTIVE_TEST: wellneuro_ci
+        run: npm run c5:ciqual:test-integration
+
       - name: Seed test data
         working-directory: web
         run: npm run prisma:seed
