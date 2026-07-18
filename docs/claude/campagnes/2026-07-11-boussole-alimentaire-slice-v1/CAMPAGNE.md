@@ -1,93 +1,94 @@
 ---
 id: "2026-07-11-boussole-alimentaire-slice-v1"
-titre: "C5 — Boussole alimentaire (intrinsèque/contextuel)"
-statut: "en_cours — LOT-00 livré (validation praticien via revue de PR)"
+titre: "C5 — Boussole alimentaire WellNeuro 5.0"
+statut: "cadrée — LOT-00 terminé, 8 lots compilés, inactive"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-17"
+mise_à_jour: "2026-07-18"
 lot_courant: "LOT-01"
 ---
 
-# C5 — Boussole alimentaire
-
-> Cadrage réel du 2026-07-12 (remplace le squelette). S'appuie sur les acquis
-> E1 (tables `neuro_axis`, `nutrient_axis_weight`, migration appliquée) et
-> les décisions Boussole déjà tranchées (§9 du contexte, 2026-07-06) :
-> vertical slice besoin 1 (~12 aliments vedettes), pondération clinique du
-> besoin 2 (fer/B9/B12 prioritaires), 3 axes Niveau 2 nommés (Calme/stress,
-> Microbiote/digestif, Clarté cognitive), signaux Niveau 2 visibles patient
-> dès V1, chronobiologie différée.
+# C5 — Boussole alimentaire WellNeuro 5.0
 
 ## Objectif
 
-Traduire la priorité clinique en action alimentaire concrète, dans un langage
-non culpabilisant, avec distinction stricte entre l'aliment (score
-intrinsèque, indépendant du patient) et son usage dans le contexte (lecture
-contextuelle au protocole).
+Faire de C5 un Instrument de la Spirale qui éclaire une action alimentaire
+validée par le praticien. C5 n'est ni un graphe, ni un score patient, ni un
+moteur autonome de décision.
 
-## Scission actée — réconciliation 3.2
+## Contrat 5.0
 
-### C5A — Taxonomie et profils intrinsèques
-
-Taxonomie, sources, mapping Ciqual, aliments vedettes et profils intrinsèques
-indépendants du patient. C5A est data-first et peut avancer sans donnée
-patient ni priorité clinique.
-
-### C5B — Lecture contextuelle et actions alimentaires
-
-Après sélection d'une priorité en C1 et activation du protocole en C2, le
-praticien peut préparer une action, trois exemples, deux substitutions, une
-fiche « pourquoi », un plan minimal et un critère simple à observer. C5B
-porte aussi les assiettes vedettes, préférences, allergies, contraintes,
-coût et saisonnalité.
-
-```text
-Cette semaine
-Ajouter deux sources d'oméga-3.
-
-Options
-Sardines · noix · huile de colza
-
-Plan minimal
-Une seule portion supplémentaire suffit pour commencer.
-```
-
-> Historique : C5A désignait auparavant l'action hebdomadaire et C5B les
-> assiettes/substitutions. Ces capacités sont conservées et regroupées dans
-> C5B ; C5A désigne désormais exclusivement le socle intrinsèque.
-
-## Décisions actées
-
-- Frontière de calcul inchangée : la Boussole calcule directement les seuls
-  besoins 1-3 (Classe 1) ; les besoins 4/5/9/10 sont croisés en signal
-  secondaire de niveau de preuve D, jamais calculés ici.
-- **Chronobiologie** : aucune lecture de rythme sans heure de repas connue —
-  pas de fausse précision. Différée après le MVP des besoins 1/2.
-- **Différés fermes** : scan produit, panier temps réel, mode frigo, mode
-  restaurant, analyse de journée et de semaine, recommandations automatiques
-  complexes. Le scanner n'est lancé qu'après stabilisation de Ciqual, du
-  mapping propriétaire et d'un cache OpenFoodFacts fiable (OFF = résolveur de
-  scan uniquement, avec mode dégradé).
-- Langage non culpabilisant, jamais de score alimentaire anxiogène affiché
-  seul ; toujours l'alternative concrète avec le constat.
-- **Contrat neutre C4/C5** : le modèle intrinsèque/contextuel est défini hors
-  des deux campagnes. Chacune possède ses données, règles et adaptateurs.
-- **Journal alimentaire** : campagne JA autonome. C5 peut consommer ses
-  observations publiées mais ne possède ni saisie, ni agrégats, ni
-  persistance du journal.
+- C5A possède le profil intrinsèque d'un aliment : chiffré, sourcé, déterministe
+  et versionné, sans donnée patient.
+- C5B lit ce profil dans le contexte d'une priorité C1 sélectionnée et d'un
+  protocole C2 actif. Il ne change jamais le profil intrinsèque.
+- Le praticien voit les données chiffrées, leurs sources, versions et limites.
+- Le patient reçoit seulement une restitution qualitative, une raison, une
+  source, une limite et, si elle est validée, une alternative.
+- Les 12 aliments vedettes forment un manifeste d'exposition et un sous-ensemble
+  du registre de marqueurs JA. Ils ne limitent pas la distribution Ciqual
+  nécessaire au calcul.
+- Les assiettes versionnées appartiennent à C5B. JA publie uniquement une
+  faisabilité factuelle et praticien-validée.
+- Toute diffusion reste manuelle et suit Relu → Validé pour diffusion → Envoyé.
 
 ## Frontières
 
-**Possède** : référentiel scoré (intrinsèque), lecture contextuelle
-alimentaire, actions hebdomadaires, assiettes et substitutions, fiches
-« pourquoi ».
-**Consomme** : priorité C1, rendu documentaire C3, charte patient HC-F,
-acquis E1.
-**Ne possède pas** : décision/protocole (C1/C2), documents (C3), score « Mon
-équilibre », journal alimentaire (JA).
+| Domaine | C5 possède | C5 consomme | C5 ne possède pas |
+|---|---|---|---|
+| C5A | Référentiel Ciqual borné aux constituants validés, mapping et profils intrinsèques | Codes et valeurs Ciqual sourcés | Données patient, priorité, protocole |
+| C5B | Lecture contextuelle, catalogue d'assiettes, substitutions et vues Boussole | Priorité C1 sélectionnée, protocole C2 actif, faisabilité JA publiée | Décision C1, cycle C2, saisie/persistance JA |
+| Diffusion | Références versionnées et hashées intégrées au protocole | Workflow de validation praticien existant | Envoi autonome, document C3 |
 
-## Esquisse de lots (à compiler N+1)
+Le registre 5.0 et le présent cadrage prévalent sur les anciennes formulations
+du brief compilé, de la spécification LOT-00 et du contexte historique.
+Le dossier sources/ reste un matériau historique non exécutable.
 
-LOT-00 vérification sources/licences et contrat neutre → LOT-01 taxonomie et
-mapping intrinsèque pilote → LOT-02 profils intrinsèques C5A → LOT-03 lecture
-contextuelle C5B (après priorité C1 validée et protocole actif C2) → LOT-04
-actions/assiettes/substitutions → LOT-05 validation.
+## Lots canoniques
+
+| Lot | Objet | Statut | Gate |
+|---|---|---|---|
+| LOT-00 | Audit et contrat C5 5.0 | **terminé — conformité 5.0 cadrée** | aucun |
+| LOT-01 | Mapping clinique et gate de validation | **validation_clinique_acquise — seconde_passe_documentaire_requise** | p5/p95 PRAL, vecteurs pondérés et traçabilité clinique |
+| LOT-02 | Référentiel Ciqual et gate migration | **bloqué_confirmation** | gate migration puis gate import distincts |
+| LOT-03 | Moteurs et contrats versionnés | à_faire | LOT-01 validé et LOT-02 intègre |
+| LOT-04 | UX praticien « Observatoire » | à_faire | LOT-03 |
+| LOT-05 | UX patient « Jardin » | à_faire | LOT-04 et protocole approuvé |
+| LOT-06 | Assiettes, substitutions et pont JA | à_faire | LOT-03 et contrat JA publié |
+| LOT-07 | Validation, conformité et handoff | à_faire | LOT-04, LOT-05 et LOT-06 |
+
+## Séquence
+
+LOT-00 → LOT-01 → LOT-02 → LOT-03 → LOT-04 → LOT-05 et LOT-06 → LOT-07.
+LOT-05 et LOT-06 peuvent être exécutés séparément après leurs dépendances, mais
+le go/no-go final reste découpé entre C5A, C5B praticien et C5B patient.
+
+## Garde-fous globaux
+
+- C5 demeure inactive jusqu'à une activation explicite. ACTIVE_CAMPAIGN.md et
+  .wn/state.json ne sont pas modifiés par ce cadrage.
+- Aucun code, SQL, changement Prisma, import Supabase ou activation dans le
+  recadrage documentaire.
+- Aucun code C5 avant la clôture de LOT-01 après sa seconde passe documentaire.
+- Aucune migration ou import avant leurs confirmations distinctes en LOT-02.
+- Aucun seuil, poids, code constituant ou recommandation clinique inventé.
+- Aucune donnée patient réelle, aucun secret, aucune exposition inter-patient.
+- Déploiement futur derrière WN_C5_ENABLED=false par défaut.
+- Scan, Open Food Facts, chronobiologie, menus, panier, analyses journée/semaine,
+  biologie et documents C3 restent hors périmètre.
+
+## Go / no-go actuel
+
+- **GO** : documentation et audit des huit lots.
+- **NO-GO code** : tant que LOT-01 n'est pas terminé après sa seconde passe
+  documentaire.
+- **NO-GO migration/import** : tant que chaque gate LOT-02 n'est pas confirmé.
+- **NO-GO patient** : sans praticien validateur, protocole diffusé et référentiel
+  complet et intègre.
+
+## Références exécutables
+
+- AUDIT_CONFORMITE_5_0.md
+- SPEC_SLICE_BESOIN_1_LOT-00.md, amendée par le contrat 5.0
+- docs/claude/REGISTRE_FRONTIERES.md
+- docs/claude/campagnes/PROGRAMME_WELLNEURO_5_0.md
+- docs/claude/propositions/2026-07-16-journal-alimentaire-5-0/ARBITRAGES_JA_5_0.md
