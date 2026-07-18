@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Référentiel Ciqual et gate migration"
-statut: "migration_verifiee — en_attente_deploiement"
+statut: "migration_deployee — en_attente_gate_import"
 dépend_de: "LOT-01 terminé"
 ---
 
@@ -51,7 +51,7 @@ manifeste des vedettes, fixtures et rapports d'intégrité.
 
 - [x] Produire le plan de migration et le vérifier en base éphémère.
 - [x] Obtenir la confirmation migration et créer la migration dans l'historique Prisma.
-- [ ] Déployer la migration par le pipeline Prisma/Vercel après revue.
+- [x] Déployer la migration par le pipeline Prisma/Vercel après revue.
 - [ ] Produire le dry-run d'import et les contrôles de hash, lignes et unités.
 - [ ] Obtenir une confirmation distincte pour l'import.
 - [ ] Importer transactionnellement puis publier le rapport d'intégrité.
@@ -173,6 +173,24 @@ Le futur import restera en dry-run par défaut. Sa création puis son exécution
   exercées avec succès.
 
 Le détail reproductible figure dans `RAPPORT_MIGRATION_LOT-02.md`. La migration
-n'est pas encore déployée sur Supabase Production et aucune donnée Ciqual n'a
-été importée. La confirmation d'import ne sera demandée qu'après déploiement
-contrôlé et dry-run de l'outil d'import. C5 demeure inactive à `2/8`.
+est déployée sur Supabase Production et aucune donnée Ciqual n'a été importée
+par cette passe. La confirmation d'import ne sera demandée qu'après le dry-run
+contrôlé de l'outil d'import. C5 demeure inactive à `2/8`.
+
+### Déploiement de production contrôlé
+
+- PR `#117` fusionnée sur `main` le 2026-07-18 ; commit de fusion
+  `3c0019989cae3ed2b76d8b57de1a61a5a2348374` ;
+- déploiement Vercel Production `dpl_BrJGmRwcteZDSK3xPdZcV9XDPPoj`, état
+  `Ready`, alias `https://app.wellneuro.fr` ;
+- préflight SQL de production exécuté avec succès avant toute écriture ;
+- `prisma migrate deploy` a reconnu 14 migrations, appliqué
+  `20260718100010_c5_ciqual_reference_v1` et confirmé leur application
+  complète ;
+- smoke test public : redirection attendue vers `/login`, réponse HTTP 200 ;
+- aucun import, aucune activation C5 et aucune surface LOT-03 à LOT-07 dans ce
+  déploiement.
+
+Le contrôle `supabase db advisors` reste requis : l'environnement de travail
+ne possède ni liaison CLI au projet ni `SUPABASE_ACCESS_TOKEN`. Ce contrôle
+n'est donc pas déclaré acquis et devra être exécuté avant la clôture du lot.
