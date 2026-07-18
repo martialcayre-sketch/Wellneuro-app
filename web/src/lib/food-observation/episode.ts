@@ -7,6 +7,7 @@ import type {
   RegimeContent,
 } from './types';
 import { localDate, nonEmpty } from './validation';
+import { assertCurrentRecommendedPlateRef } from '@/lib/food-compass/plates';
 
 /**
  * Budget d'attention (amendement terrain n° 3) : 2 à 7 traces/semaine,
@@ -32,17 +33,59 @@ export function createAttentionBudget(tracesParSemaine?: number): AttentionBudge
 }
 
 function validateContent(content: RegimeContent): RegimeContent {
+  if (!content || !['essai', 'calibrage', 'silence'].includes(content.regime)) {
+    throw new TypeError('Régime JA invalide.');
+  }
   if (content.regime === 'essai') {
     nonEmpty(content.hypothese, 'hypothese');
     nonEmpty(content.action.actionId, 'action.actionId');
     nonEmpty(content.action.labelPatient, 'action.labelPatient');
     nonEmpty(content.action.idealPlan, 'action.idealPlan');
     nonEmpty(content.action.simplePlan, 'action.simplePlan');
+    if (content.action.recommendedPlateRef !== undefined) {
+      content.action.recommendedPlateRef = assertCurrentRecommendedPlateRef(
+        content.action.recommendedPlateRef,
+      );
+    }
   }
   if (content.regime === 'silence' && (content.observationPrescrite as boolean) !== false) {
     throw new TypeError('En régime silence, aucune observation n’est prescrite.');
   }
+  if (content.regime === 'calibrage'
+    && (!content.questionsBilan
+      || content.questionsBilan.structureDesPrises !== true
+      || content.questionsBilan.regulariteHoraires !== true
+      || content.questionsBilan.presenceMarqueursPertinents !== true
+      || !Array.isArray(content.marqueursPertinents))) {
+    throw new TypeError('Contenu de calibrage JA invalide.');
+  }
   return content;
+}
+
+/**
+ * Adaptateur borné des épisodes persistés/reçus. Une action JA V1 sans
+ * RecommendedPlateRef reste lisible ; une référence V2 doit appartenir au
+ * catalogue C5B courant. Aucune donnée historique n'est réécrite.
+ */
+export function readFoodObservationEpisode(value: unknown): FoodObservationEpisode {
+  if (!value || typeof value !== 'object') throw new TypeError('Épisode JA invalide.');
+  const episode = value as Partial<FoodObservationEpisode>;
+  nonEmpty(episode.episodeId ?? '', 'episodeId');
+  nonEmpty(episode.patientId ?? '', 'patientId');
+  localDate(episode.startDate ?? '', 'startDate');
+  localDate(episode.endDate ?? '', 'endDate');
+  if (episode.endDate! < episode.startDate!) throw new TypeError('Période JA invalide.');
+  if (!episode.content || !episode.budget
+    || episode.schemaVersion !== VERSION_SCHEMA_FOOD_OBSERVATION
+    || episode.frictionsVersion !== VERSION_REGISTRE_FRICTIONS) {
+    throw new TypeError('Contrat d’épisode JA invalide ou inconnu.');
+  }
+  if (!['prepare', 'actif', 'suspendu', 'clos'].includes(episode.statut ?? '')) {
+    throw new TypeError('Statut d’épisode JA invalide.');
+  }
+  createAttentionBudget(episode.budget.tracesParSemaine);
+  validateContent(episode.content);
+  return episode as FoodObservationEpisode;
 }
 
 export function createEpisode(input: {

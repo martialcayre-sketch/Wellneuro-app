@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
+  C5B_RECOMMENDED_PLATES,
+  getCurrentRecommendedPlateRef,
+  getRecommendedPlate,
+} from '@/lib/food-compass/plates';
+import {
   FRICTIONS,
   LABELS_CONSTATS_DIRECTS,
   LABELS_ISSUE_TRACE,
@@ -72,15 +77,12 @@ type JaActivationSummary = {
   reviewedAt: string;
 };
 
-const ASSIETTES_RECOMMANDEES: Array<{ code: string; label: string }> = [
-  { code: 'ASSIETTE_PETIT_DEJEUNER_SIMPLE', label: 'Assiette recommandée — Petit-déjeuner simple' },
-  { code: 'ASSIETTE_DEJEUNER_EXTERIEUR', label: 'Assiette recommandée — Déjeuner extérieur' },
-  { code: 'ASSIETTE_SOIR_LEGER', label: 'Assiette recommandée — Soir léger' },
-];
-
 function defaultDecisionNote(assietteCode: string): string {
-  const assiette = ASSIETTES_RECOMMANDEES.find((item) => item.code === assietteCode);
-  const label = assiette?.label ?? ASSIETTES_RECOMMANDEES[0].label;
+  const assiette = getRecommendedPlate(assietteCode);
+  if (!assiette) {
+    return 'Décision proposée : poursuivre l’essai sans substitution d’assiette automatique pendant 7 jours.';
+  }
+  const label = assiette.label;
   return `Décision proposée : poursuivre l’essai avec ${label.toLowerCase()} pendant 7 jours.`;
 }
 
@@ -122,9 +124,10 @@ function readDraft(idPatient: string): PractitionerFoodObservationDraft | null {
     const parsed = JSON.parse(raw) as Partial<PractitionerFoodObservationDraft>;
     if (!Array.isArray(parsed.traces)) return null;
     const decisionMode = parsed.decisionMode === 'modifier' ? 'modifier' : 'accepter';
-    const assietteCode = typeof parsed.assietteCode === 'string' && parsed.assietteCode.length > 0
+    const assietteCode = typeof parsed.assietteCode === 'string'
+      && (parsed.assietteCode === '' || getRecommendedPlate(parsed.assietteCode))
       ? parsed.assietteCode
-      : ASSIETTES_RECOMMANDEES[0].code;
+      : '';
     const decisionNote = typeof parsed.decisionNote === 'string'
       ? parsed.decisionNote
       : defaultDecisionNote(assietteCode);
@@ -169,10 +172,10 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     () => initialDraft?.decisionMode ?? 'accepter'
   );
   const [assietteCode, setAssietteCode] = useState<string>(
-    () => initialDraft?.assietteCode ?? ASSIETTES_RECOMMANDEES[0].code
+    () => initialDraft?.assietteCode ?? ''
   );
   const [decisionNote, setDecisionNote] = useState<string>(
-    () => initialDraft?.decisionNote ?? defaultDecisionNote(ASSIETTES_RECOMMANDEES[0].code)
+    () => initialDraft?.decisionNote ?? defaultDecisionNote('')
   );
   const [reviewSummary, setReviewSummary] = useState<string>('');
   const [milestone, setMilestone] = useState<JaMilestone>('J7');
@@ -261,8 +264,8 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     clearDraft(idPatient);
     setTraces([]);
     setDecisionMode('accepter');
-    setAssietteCode(ASSIETTES_RECOMMANDEES[0].code);
-    setDecisionNote(defaultDecisionNote(ASSIETTES_RECOMMANDEES[0].code));
+    setAssietteCode('');
+    setDecisionNote(defaultDecisionNote(''));
     setReviewSummary('');
     setIssue('fait');
     setFrictionCode('');
@@ -284,9 +287,9 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       return;
     }
     setError('');
-    const assiette = ASSIETTES_RECOMMANDEES.find((item) => item.code === assietteCode);
+    const assiette = getRecommendedPlate(assietteCode);
     const modeLabel = decisionMode === 'accepter' ? 'Accepté' : 'Modifié';
-    setReviewSummary(`${modeLabel} — ${assiette?.label ?? assietteCode}. ${decisionNote}`);
+    setReviewSummary(`${modeLabel} — ${assiette?.label ?? 'Aucune assiette proposée'}. ${decisionNote}`);
   };
 
   const activerDecision = async () => {
@@ -304,13 +307,27 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     setActivationSubmitting(true);
 
     try {
+      const episodeForSnapshot: FoodObservationEpisode = episode.content.regime === 'essai'
+        ? {
+            ...episode,
+            content: {
+              ...episode.content,
+              action: {
+                ...episode.content.action,
+                ...(assietteCode
+                  ? { recommendedPlateRef: getCurrentRecommendedPlateRef(assietteCode) }
+                  : {}),
+              },
+            },
+          }
+        : episode;
       const snapshotRes = await fetch('/api/praticien/ja/observations', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           idPatient,
-          episode,
+          episode: episodeForSnapshot,
           traces,
           pauses: [],
           plans: [],
@@ -499,11 +516,16 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             value={assietteCode}
             onChange={(e) => onAssietteChange(e.target.value)}
           >
-            {ASSIETTES_RECOMMANDEES.map((assiette) => (
-              <option key={assiette.code} value={assiette.code}>{assiette.label}</option>
+            <option value="">Aucune assiette proposée</option>
+            {C5B_RECOMMENDED_PLATES.map((assiette) => (
+              <option key={assiette.plateCode} value={assiette.plateCode}>{assiette.label}</option>
             ))}
           </select>
         </label>
+        <p className="text-xs text-muted-foreground">
+          Catalogue {C5B_RECOMMENDED_PLATES[0].catalogVersion}. Aucune famille clinique de substitution
+          n’est validée dans cette version : ne rien proposer reste le choix par défaut.
+        </p>
 
         <fieldset className="space-y-2" data-testid="ja-praticien-decision-mode">
           <legend className="text-sm text-muted-foreground">Décision praticien</legend>

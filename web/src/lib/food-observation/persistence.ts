@@ -8,6 +8,7 @@ import type {
   PatientPauseEvent,
   TrialTrace,
 } from '@/lib/food-observation/types';
+import { readFoodObservationEpisode } from '@/lib/food-observation/episode';
 
 export const JA_FOOD_OBSERVATION_CONTRACT_VERSION = 'ja-food-observation-v1' as const;
 const JA_SELECTED_PRIORITY_ID = 'JA_FOOD_OBSERVATION';
@@ -104,11 +105,15 @@ function buildActivationDraftId(episodeId: string, atIso: string): string {
 
 export async function saveJaObservationSnapshot(input: JaObservationSnapshotInput): Promise<JaObservationSnapshot> {
   const idPatient = ensurePatientId(input.idPatient);
+  const episode = readFoodObservationEpisode(input.episode);
+  if (episode.patientId !== idPatient) {
+    throw new TypeError('L’épisode JA n’appartient pas au patient demandé.');
+  }
   const capturedAt = new Date().toISOString();
   const payload = {
     actor: input.actor,
     capturedAt,
-    episode: input.episode,
+    episode,
     traces: input.traces,
     pauses: input.pauses,
     plans: input.plans,
@@ -116,7 +121,7 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
     actionCareer: input.actionCareer,
   };
 
-  const draftId = buildDraftId(input.episode.episodeId, capturedAt);
+  const draftId = buildDraftId(episode.episodeId, capturedAt);
   const payloadHash = canonicalSha256(payload);
   const supersedesDraftId = input.supersedesDraftId ? ensureDraftId(input.supersedesDraftId) : null;
 
@@ -159,7 +164,7 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
   return {
     draftId: row.id,
     idPatient: row.idPatient,
-    episodeId: data.episode?.episodeId ?? input.episode.episodeId,
+    episodeId: data.episode?.episodeId ?? episode.episodeId,
     createdAt: row.createdAt.toISOString(),
     supersedesDraftId: row.supersedesDraftId,
     actor: data.actor,

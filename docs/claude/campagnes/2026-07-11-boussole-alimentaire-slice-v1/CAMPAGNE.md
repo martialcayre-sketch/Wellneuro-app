@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-boussole-alimentaire-slice-v1"
 titre: "C5 — Boussole alimentaire WellNeuro 5.0"
-statut: "en cours — LOT-05 terminé, LOT-06 à faire, inactive"
+statut: "en cours — LOT-06 terminé, LOT-07 à faire, inactive"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-18"
-lot_courant: "LOT-06"
+lot_courant: "LOT-07"
 ---
 
 # C5 — Boussole alimentaire WellNeuro 5.0
@@ -53,7 +53,7 @@ Le dossier sources/ reste un matériau historique non exécutable.
 | LOT-03 | Moteurs et contrats versionnés | **terminé — contrats déterministes et protocole V2** | LOT-01 validé et LOT-02 intègre |
 | LOT-04 | UX praticien « Observatoire » | **terminé — UX praticien Observatoire** | LOT-03 acquis |
 | LOT-05 | UX patient « Jardin » | **terminé — UX patient Jardin qualitative et isolée** | LOT-04 et protocole approuvé |
-| LOT-06 | Assiettes, substitutions et pont JA | à_faire | LOT-03 et contrat JA publié |
+| LOT-06 | Assiettes, substitutions et pont JA | **terminé — catalogue C5B versionné et pont faisabilité JA (lecture seule)** | LOT-03 et contrat JA publié |
 | LOT-07 | Validation, conformité et handoff | à_faire | LOT-04, LOT-05 et LOT-06 |
 
 ## Séquence
@@ -84,9 +84,13 @@ le go/no-go final reste découpé entre C5A, C5B praticien et C5B patient.
 - **GO import** : confirmation distincte acquise sous la référence
   `C5-LOT02-IMPORT-MC-2026-07-18-v1` ; 55 744 lignes importées et contrôlées
   en Production, déclencheur temporaire retiré.
-- **GO LOT-06** : le Jardin patient est livré, strictement qualitatif, borné au
+- **GO LOT-05** : le Jardin patient est livré, strictement qualitatif, borné au
   protocole V2 approuvé et protégé contre l'énumération ou l'accès inter-patient ;
   C5 est à `6/8` et reste inactive.
+- **GO LOT-06** : catalogue d'assiettes C5B versionné (`c5b-plate-catalog-v1`) et pont
+  de faisabilité JA en lecture seule (`ja-action-feasibility-v1`, factuel, praticien-
+  validé) ; aucune substitution automatique, opt-out par défaut, profil C5A intact et
+  aucune migration ; C5 passe à `7/8` et reste inactive.
 - **NO-GO activation** : C5 reste inactive tant que les lots applicatifs et le
   go/no-go LOT-07 ne sont pas terminés et explicitement validés.
 - **NO-GO patient** : sans praticien validateur, protocole diffusé et référentiel

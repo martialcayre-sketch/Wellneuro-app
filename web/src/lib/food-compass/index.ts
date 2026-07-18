@@ -4,6 +4,7 @@ export * from './featureFlag';
 export * from './intrinsic';
 export * from './mapping';
 export * from './manifest';
+export * from './plates';
 export * from './protocol';
 export * from './refValidation';
 export * from './types';
