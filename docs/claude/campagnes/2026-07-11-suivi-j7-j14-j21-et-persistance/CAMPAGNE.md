@@ -4,7 +4,7 @@ titre: "C2 — Points d'étape et persistance (C2A/C2B)"
 statut: "en_cours — compilée, gate migration à confirmer avant LOT-02"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-18"
-lot_courant: "LOT-08"
+lot_courant: "LOT-09"
 ---
 
 # C2 — Points d'étape et persistance
@@ -126,7 +126,7 @@ Arbitrage C2B tranché (revue utilisateur du 2026-07-18) et acté au registre so
 | Lot | Objet | Statut |
 |---|---|---|
 | LOT-07 | Score du résumé J21 — branchement momentum (lève dette LOT-04) | **livré** (2026-07-18, sans migration ; branche `feat/c2b-lot-07-score-j21`) |
-| LOT-08 | Ancrage T0 par épisode (prérequis comparateur) | **compilé** (2026-07-18, migration-free) |
+| LOT-08 | Ancrage T0 par épisode (prérequis comparateur) | **livré** (2026-07-18, sans migration ; branche `feat/c2b-lot-08-t0-episode`) |
 | LOT-09 | Comparateur multi-épisodes (Spirale-index praticien) | **compilé** (2026-07-18, migration-free) |
 
 Décisions de compilation (registre A8) :

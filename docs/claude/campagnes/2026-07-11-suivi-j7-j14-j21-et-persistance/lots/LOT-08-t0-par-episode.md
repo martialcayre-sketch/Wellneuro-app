@@ -1,7 +1,7 @@
 ---
 id: "LOT-08"
 titre: "Ancrage T0 par épisode (prérequis comparateur)"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-07"
 volet: "C2B"
 ---
@@ -78,3 +78,27 @@ La fiche patient « Mon équilibre » reste strictement inchangée (T0 global).
   (A8-2), jamais un 0.
 - Frontière : cette lecture par épisode alimente le comparateur (LOT-09) mais ne
   compare rien elle-même.
+
+## Résultats
+
+**Livré le 2026-07-18** (branche `feat/c2b-lot-08-t0-episode`, **sans migration**).
+
+Source du T0 d'épisode **tranchée** : `assessment_episodes.confirmed_at` du **jalon
+`T0` confirmé le plus récent** (repli sur le T0 global `resoudreDateT0` quand aucun
+épisode T0 n'existe). Réalisation :
+
+- `lib/equilibre/depuisPrisma.ts` : `construireHistoriqueEquilibre(reponses,
+  ancreT0?)` — paramètre d'ancre **optionnel et rétro-compatible** (absent → T0
+  global inchangé). Le moteur de score (`calculerEquilibre`) et `versionScore` sont
+  intacts.
+- `api/praticien/protocoles/checkins/route.ts` : résout l'épisode T0
+  (`findFirst milestone:'T0' orderBy confirmedAt desc`) et ancre l'historique +
+  `buildResumeJ21` dessus ; repli T0 global sinon.
+- Fiche patient « Mon équilibre » (`api/patient/equilibre`) et
+  `api/praticien/equilibre` : **inchangés** (T0 global).
+
+**Validations** : type-check ✅, Vitest (route : épisode T0 utilisé quand présent,
+repli sinon ; `depuisPrisma` : l'ancre explicite déplace les jalons), scoring-check ✅,
+anti-secrets ✅, aucune migration.
+
+Le **comparateur multi-épisodes** (LOT-09) consomme cette lecture par épisode.

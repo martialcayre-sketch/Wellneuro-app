@@ -78,9 +78,15 @@ export function resoudreDateT0(reponses: ReponseBrute[]): Date | null {
  * réponses connues jusqu'à cette date et calcule l'indice global à ce
  * moment-là. Un jalon futur (pas encore atteint) ou sans aucune couverture
  * disponible à cette date est omis, jamais représenté par une valeur à 0.
+ *
+ * `ancreT0` optionnel (C2B LOT-08, registre A8-1) : ancre explicitement les
+ * jalons sur ce T0 plutôt que sur le T0 global (première réponse). Utilisé côté
+ * praticien pour ancrer les jalons au T0 confirmé d'un épisode
+ * (`assessment_episodes`). Absent → comportement inchangé (T0 global), pour la
+ * fiche patient « Mon équilibre ».
  */
-export function construireHistoriqueEquilibre(reponses: ReponseBrute[]): LectureDatee[] {
-  const dateT0 = resoudreDateT0(reponses);
+export function construireHistoriqueEquilibre(reponses: ReponseBrute[], ancreT0?: Date): LectureDatee[] {
+  const dateT0 = ancreT0 ?? resoudreDateT0(reponses);
   if (!dateT0) return [];
 
   const maintenant = new Date();
