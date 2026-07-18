@@ -1,7 +1,7 @@
 ---
 id: "2026-07-11-boussole-alimentaire-slice-v1"
 titre: "C5 — Boussole alimentaire WellNeuro 5.0"
-statut: "cadrée — LOT-00 et LOT-01 terminés, 8 lots compilés, inactive"
+statut: "en cours — LOT-02 migration déployée, import en attente, inactive"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-18"
 lot_courant: "LOT-02"
@@ -49,7 +49,7 @@ Le dossier sources/ reste un matériau historique non exécutable.
 |---|---|---|---|
 | LOT-00 | Audit et contrat C5 5.0 | **terminé — conformité 5.0 cadrée** | aucun |
 | LOT-01 | Mapping clinique et gate de validation | **terminé — validation clinique et vecteurs signés** | gate acquis |
-| LOT-02 | Référentiel Ciqual et gate migration | **migration_verifiee — en_attente_deploiement** | gate migration acquis ; replay et dérive conformes ; import non autorisé |
+| LOT-02 | Référentiel Ciqual et gate migration | **migration_deployee — en_attente_gate_import** | migration appliquée en production ; import non autorisé |
 | LOT-03 | Moteurs et contrats versionnés | à_faire | LOT-01 validé et LOT-02 intègre |
 | LOT-04 | UX praticien « Observatoire » | à_faire | LOT-03 |
 | LOT-05 | UX patient « Jardin » | à_faire | LOT-04 et protocole approuvé |
@@ -79,8 +79,10 @@ le go/no-go final reste découpé entre C5A, C5B praticien et C5B patient.
 ## Go / no-go actuel
 
 - **GO** : contrat clinique LOT-01 signé et documentation des huit lots.
-- **NO-GO code/migration/import** : tant que chaque gate LOT-02 applicable
-  n'est pas confirmé.
+- **GO migration** : confirmation acquise et migration appliquée en production
+  le 2026-07-18.
+- **NO-GO import** : l'import append-only exige encore sa confirmation humaine
+  distincte après préparation et contrôle de son dry-run exécutable.
 - **NO-GO patient** : sans praticien validateur, protocole diffusé et référentiel
   complet et intègre.
 

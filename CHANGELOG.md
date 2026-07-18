@@ -18,7 +18,10 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   API pour `anon` ou `authenticated`.
 - Migration confirmée sous la référence
   `C5-LOT02-MIGRATION-MC-2026-07-18-v1`, rejouée sur PostgreSQL éphémère avec
-  dérive Prisma nulle. Aucun import Ciqual ni activation C5 dans cette étape.
+  dérive Prisma nulle, puis appliquée en production par le pipeline Vercel au
+  commit `3c0019989cae3ed2b76d8b57de1a61a5a2348374`. Préflight réussi, migration
+  Prisma confirmée et smoke test HTTP 200. Aucun import Ciqual ni activation C5
+  dans cette étape.
 
 ### C5 LOT-01 — seconde passe documentaire clinique (2026-07-18)
 
