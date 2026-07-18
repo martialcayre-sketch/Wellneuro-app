@@ -1,7 +1,7 @@
 ---
 id: "LOT-09"
 titre: "Comparateur multi-épisodes (Spirale-index praticien)"
-statut: "à_faire"
+statut: "livré (réalisation read-only)"
 dépend_de: "LOT-08"
 volet: "C2B"
 ---
@@ -84,3 +84,41 @@ couverture affiche **« jalon non mesuré »**.
 - Ne pas déborder sur SP-MET/SP-CAB/SP-TT/SP-SPI (frontière A8).
 - Prérequis données : activer seulement dès que ≥ 2 épisodes comparables existent
   (A8-5-ii), distinct du seuil cohorte `n ≥ 5` (SP-CAB).
+
+## Résultats
+
+**Livré le 2026-07-18** (branche `feat/c2b-lot-09-trajectoire`, **sans migration**) —
+**réalisation read-only** décidée en revue utilisateur.
+
+Constats de cadrage (revue) qui ont borné la réalisation : la spec supposait un
+composant *compare* réutilisable (**inexistant** — panneau créé de zéro) et des
+données multi-cycles (le modèle `assessment_episodes` stocke des **lignes par
+jalon**, sans clé de cycle ; modèle **mono-protocole**, dette connue). D'où une
+réalisation **read-only honnête** : la Spirale s'« allume » quand les données
+existent, avec empty-state explicite sinon.
+
+Réalisé :
+- `lib/protocol/trajectoire.ts` (domaine pur) : `construireTrajectoire({ episodes,
+  reponses, versionScore })` → **index** de repères datés + **cycles** (un par
+  épisode T0, ancrés au T0 d'épisode via LOT-08) avec jalons T0/J21/J42/J90
+  (« non mesuré » A8-2, jamais un 0), momentum T0→dernier jalon mesuré, et garde de
+  comparabilité `resoudreComparaison` (aucun_cycle / un_seul_cycle /
+  versions_differentes **A8-3** / comparable **A8-5-ii**).
+- `api/praticien/trajectoire/route.ts` : GET lecture seule (session, patient,
+  épisodes, réponses) → `Trajectoire`.
+- `components/patient-cockpit/TrajectoirePanel.tsx` : panneau **read-only** (index
+  daté, « jalon non mesuré », momentum, bloc comparaison avec empty-state /
+  « non comparable »). **Jamais une courbe** (A6). Monté dans
+  `ClinicalRuntimeSection` sous le panneau J21 (runtime réel, hors fixture).
+
+**Frontière tenue** : n'absorbe pas SP-MET/SP-CAB/SP-TT/SP-SPI ; aucune écriture ;
+`versionScore` et moteur intacts.
+
+**Validations** : type-check ✅, Vitest (domaine : cycles/non-mesuré/garde A8-3 ;
+route : 401/400/404/200 ; panneau : empty-state, non-mesuré, non comparable),
+scoring-check ✅, lint ✅, anti-secrets ✅, aucune migration.
+
+**Report assumé** (hors périmètre read-only) : la vraie comparaison **côte à côte**
+multi-cycles reste théorique tant que le modèle mono-protocole n'autorise pas ≥ 2
+cycles réels — futur gate (modèle multi-cycles / migration), à ouvrir quand des
+données réelles ≥ 2 cycles existeront (A8-5-ii).

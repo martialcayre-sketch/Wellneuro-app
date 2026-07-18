@@ -7,7 +7,7 @@
   "status": "active",
   "active_campaign": "2026-07-11-suivi-j7-j14-j21-et-persistance",
   "active_lot": "LOT-09",
-  "last_completed_lot": "C2B/LOT-08",
+  "last_completed_lot": "C2B/LOT-09",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -25,7 +25,7 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "C2B : #111 (arbitrage A8 + lots) et #112 (LOT-07 score J21) mergés en prod. LOT-08 (T0 par épisode, A8-1) exécuté le 2026-07-18 sur branche feat/c2b-lot-08-t0-episode, sans migration : construireHistoriqueEquilibre accepte une ancre T0 optionnelle (rétro-compatible) ; la route praticien checkins ancre les jalons sur assessment_episodes.confirmed_at du jalon T0 le plus récent (repli T0 global). « Mon équilibre » patient inchangé. Prochain : PR LOT-08 base main. LOT-09 (comparateur multi-épisodes) : arbitrage de périmètre requis avant code — pas de composant compare existant, pas de clé de regroupement en cycles, modèle mono-protocole ; A8-5-ii gate ≥2 épisodes comparables. À trancher : réalisation minimale read-only (Spirale-index + empty-state) vs report.",
+  "next_action": "C2B complet en prod : #111 (arbitrage A8 + lots), #112 (LOT-07 score J21), #113 (LOT-08 T0 par épisode) mergés ; LOT-09 (comparateur multi-épisodes, réalisation read-only décidée en revue) exécuté le 2026-07-18 sur branche feat/c2b-lot-09-trajectoire, sans migration (domaine trajectoire.ts + route api/praticien/trajectoire + TrajectoirePanel read-only monté au cockpit). Prochain : PR LOT-09 base main. Report assumé : vraie comparaison côte à côte multi-cycles bloquée par le modèle mono-protocole (futur gate migration, A8-5-ii) ; SP-SPI/SP-MET/SP-CAB/SP-TT hors C2B.",
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,

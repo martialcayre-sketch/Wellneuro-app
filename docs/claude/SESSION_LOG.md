@@ -606,3 +606,29 @@ périmètre, laissés à leurs owners).
 
 **Questions ouvertes** : confirmation merge→prod ; source exacte du T0 d'épisode
 (`confirmedAt` vs `targetAt`, LOT-08) ; volume réel de réponses portant `rawAnswers`.
+
+## [2026-07-18] — C2B exécuté (LOT-07→09) : score J21, T0 par épisode, Fiche-trajectoire
+
+**Contexte** : après arbitrage A8 + compilation (#111), exécution des 3 lots C2B, tous
+**migration-free**, 1 lot = 1 PR, PAUSE/merge validés au fil de l'eau.
+
+**Livré** : **LOT-07** (#112) score du résumé J21 branché (momentum réel via
+depuisPrisma) — lève la dette LOT-04. **LOT-08** (#113) ancrage T0 **par épisode**
+côté praticien (`construireHistoriqueEquilibre(…, ancreT0?)` rétro-compatible ;
+« Mon équilibre » patient inchangé). **LOT-09** (PR en cours) **Fiche-trajectoire
+read-only** : domaine pur `trajectoire.ts` + route `api/praticien/trajectoire` +
+`TrajectoirePanel` monté au cockpit (Spirale-index daté, « jalon non mesuré » A8-2,
+garde versionScore A8-3, empty-state comparaison A8-5-ii ; jamais une courbe A6).
+
+**Décision de périmètre (revue)** : LOT-09 réalisé **read-only** plutôt que comparateur
+complet — car aucun composant *compare* préexistant et modèle **mono-protocole** (pas
+de clé de cycle). La vraie comparaison côte à côte multi-cycles est **reportée** à un
+futur gate (modèle multi-cycles / migration).
+
+**Options écartées** : comparateur complet + heuristique de regroupement (spéculatif,
+sur-ingénierie) ; report total de LOT-09 (perte de l'index utile déjà réalisable).
+
+**Prochaine action** : PR LOT-09 base main, PAUSE/merge selon CI verte.
+
+**Questions ouvertes** : ouvrir le gate modèle multi-cycles (comparaison réelle) ;
+SP-SPI (accueil patient trajectoire) et SP-MET/SP-CAB/SP-TT restent hors C2B.

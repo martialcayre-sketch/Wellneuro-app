@@ -13,7 +13,9 @@ import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 import { J21DecisionPanel } from './J21DecisionPanel';
+import { TrajectoirePanel } from './TrajectoirePanel';
 import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
+import type { Trajectoire } from '@/lib/protocol/trajectoire';
 
 type VersionsApiResponse = {
   ok: boolean;
@@ -58,6 +60,18 @@ export function ClinicalRuntimeSection({
   const [diffusionError, setDiffusionError] = useState<string | null>(null);
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
   const [resumeJ21, setResumeJ21] = useState<ResumeJ21 | null>(null);
+  const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
+
+  const loadTrajectoire = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/praticien/trajectoire?idPatient=${encodeURIComponent(idPatient)}`);
+      const payload = (await response.json()) as { ok: boolean; trajectoire?: Trajectoire };
+      if (!response.ok || !payload.ok) return;
+      setTrajectoire(payload.trajectoire ?? null);
+    } catch {
+      // La fiche-trajectoire est indicative : un échec de lecture ne bloque pas le cockpit.
+    }
+  }, [idPatient]);
 
   const loadCheckins = useCallback(async (decisionCardId: string) => {
     try {
@@ -174,8 +188,9 @@ export function ClinicalRuntimeSection({
       void loadVersions(readyDecisionCardId);
       void loadDiffusion(readyDecisionCardId);
       void loadCheckins(readyDecisionCardId);
+      void loadTrajectoire();
     }
-  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins]);
+  }, [readyDecisionCardId, loadVersions, loadDiffusion, loadCheckins, loadTrajectoire]);
 
   // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
   // d'envoi patient). Anti-écrasement via baseVersionId → 409 version_stale.
@@ -310,6 +325,7 @@ export function ClinicalRuntimeSection({
           }
         />
       )}
+      {!fixture && readyDecisionCardId && <TrajectoirePanel trajectoire={trajectoire} />}
     </>
   );
 }
