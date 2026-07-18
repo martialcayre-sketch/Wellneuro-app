@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getServerSession, prisma } = vi.hoisted(() => ({
+const { getServerSession, getLatestPublishedJaFeasibility, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
+  getLatestPublishedJaFeasibility: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
     ciqualNutrientValue: { findMany: vi.fn() },
@@ -12,6 +13,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
+vi.mock('@/lib/food-observation/feasibilityRepository', () => ({ getLatestPublishedJaFeasibility }));
 
 import { GET } from './route';
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
@@ -67,6 +69,7 @@ describe('GET /api/praticien/boussole', () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'martial@wellneuro.fr' });
     prisma.ciqualNutrientValue.findMany.mockResolvedValue(rows());
     prisma.protocolDraft.findMany.mockResolvedValue([]);
+    getLatestPublishedJaFeasibility.mockResolvedValue(null);
   });
 
   it('reste invisible lorsque C5 est désactivée', async () => {
@@ -85,6 +88,7 @@ describe('GET /api/praticien/boussole', () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
     expect((await GET(request())).status).toBe(403);
     expect(prisma.ciqualNutrientValue.findMany).not.toHaveBeenCalled();
+    expect(getLatestPublishedJaFeasibility).not.toHaveBeenCalled();
   });
 
   it('retourne 404 pour un aliment hors manifeste ou absent', async () => {
@@ -118,7 +122,29 @@ describe('GET /api/praticien/boussole', () => {
         datasetVersion: 'ciqual-2025-v1', mappingVersion: 'c5a-b1-mapping-v1',
       },
       reading: null, actionRef: null, insertionAllowed: false,
+      plateCatalog: { version: 'c5b-plate-catalog-v1' },
+      jaFeasibility: null,
     });
+  });
+
+  it('expose séparément une faisabilité JA publiée sans altérer le profil', async () => {
+    const feasibility = {
+      contractVersion: 'ja-action-feasibility-v1', publicationStatus: 'published',
+      episodeId: 'EP_1', actionId: 'ACTION_1', recommendedPlateRef: null,
+      facts: {
+        tracesRecorded: 3, opportunitiesObserved: 2, feasibleDeclarations: 1,
+        adaptedDeclarations: 1, blockedDeclarations: 1, noOpportunityDeclarations: 1,
+      },
+      limitations: ['Constats déclaratifs.'], validatedBy: 'practitioner',
+      validatedAt: '2026-07-18T12:00:00.000Z', sourceDraftId: 'JA_ACT_1',
+      sourceInputHash: 'a'.repeat(64), inputHash: 'b'.repeat(64),
+    };
+    getLatestPublishedJaFeasibility.mockResolvedValue(feasibility);
+    const response = await GET(request());
+    const payload = await response.json();
+    expect(payload.jaFeasibility).toEqual(feasibility);
+    expect(payload.profile.aggregateScore).toBe(61.734453);
+    expect(payload.alternatives).toEqual([]);
   });
 
   it('ancre l’insertion proposée sur le protocole actif exact', async () => {

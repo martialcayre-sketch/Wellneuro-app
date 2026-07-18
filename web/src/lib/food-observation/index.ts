@@ -2,6 +2,7 @@ export * from './actionCareer';
 export * from './decisionDelta';
 export * from './episode';
 export * from './frictionRegistry';
+export * from './feasibility';
 export * from './labels';
 export * from './markerRegistry';
 export * from './restitution';

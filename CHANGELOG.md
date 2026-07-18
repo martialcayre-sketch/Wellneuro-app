@@ -4,6 +4,23 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### C5 LOT-06 — Assiettes, substitutions et pont JA (2026-07-18)
+
+- Transfert de la propriété des assiettes recommandées vers un catalogue C5B
+  versionné et scellé (`c5b-plate-catalog-v1`, hashes par assiette). Aucune
+  composition inventée ; `RecommendedPlateRef` optionnelle sur `TrialAction`
+  (un épisode JA V1 reste lisible sans elle).
+- Substitutions bornées aux familles cliniques validées avec justification
+  praticien ; « aucune assiette proposée » est le défaut et la référence n'est
+  jointe qu'à l'activation praticien explicite. Aucune substitution automatique.
+- Pont JA en lecture seule via un contrat de faisabilité factuel
+  (`ja-action-feasibility-v1`) : comptes d'observations praticien-validés,
+  exposés séparément et sans altérer le profil intrinsèque C5A — aucun score,
+  percentile ni recommandation. Aucun seuil de scoring modifié.
+- Aucune migration Prisma ni changement de schéma (lecture du `ProtocolDraft`
+  `practitioner_reviewed` existant, avec vérification d'intégrité). C5 reste
+  inactive.
+
 ### C5 LOT-05 — UX patient « Jardin » (2026-07-18)
 
 - Ajout d'une restitution Boussole strictement qualitative dans le protocole

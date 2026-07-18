@@ -125,6 +125,7 @@ export function PractitionerFoodCompassObservatory({
               <div><dt className="inline font-medium text-foreground">Source : </dt><dd className="inline">{profile.sourceRef} — {profile.sourceHash}</dd></div>
               <div><dt className="inline font-medium text-foreground">Versions : </dt><dd className="inline">{profile.contractVersion} · {profile.datasetVersion} · {profile.mappingVersion} · {profile.scoreVersion} · {profile.pralVersion} · {profile.percentileVersion}</dd></div>
               <div><dt className="inline font-medium text-foreground">Manifeste praticien : </dt><dd className="inline">{payload.manifest.version} — {payload.manifest.hash}</dd></div>
+              <div><dt className="inline font-medium text-foreground">Catalogue d’assiettes C5B : </dt><dd className="inline">{payload.plateCatalog.version} — {payload.plateCatalog.hash}</dd></div>
             </dl>
             {profile.limitations.length > 0 && <ul className="list-disc pl-5 text-sm text-muted-foreground">{profile.limitations.map(limit => <li key={limit}>{limit}</li>)}</ul>}
             {payload.reading && (
@@ -142,7 +143,29 @@ export function PractitionerFoodCompassObservatory({
                 )}
               </div>
             )}
-            <p className="text-sm text-muted-foreground">Alternatives : aucune substitution validée dans LOT‑04.</p>
+            {payload.jaFeasibility && (
+              <div className="rounded-lg border border-border bg-background p-3 text-sm" data-testid="c5-ja-feasibility">
+                <h4 className="font-medium text-foreground">Faisabilité publiée par le Journal alimentaire</h4>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Épisode {payload.jaFeasibility.episodeId}, relu par le praticien le{' '}
+                  {new Date(payload.jaFeasibility.validatedAt).toLocaleDateString('fr-FR')}.
+                </p>
+                <dl className="mt-2 grid gap-1 text-xs text-muted-foreground">
+                  <div><dt className="inline font-medium text-foreground">Traces déclarées : </dt><dd className="inline">{payload.jaFeasibility.facts.tracesRecorded}</dd></div>
+                  <div><dt className="inline font-medium text-foreground">Occasions observées : </dt><dd className="inline">{payload.jaFeasibility.facts.opportunitiesObserved}</dd></div>
+                  <div><dt className="inline font-medium text-foreground">Déclarées faisables : </dt><dd className="inline">{payload.jaFeasibility.facts.feasibleDeclarations}</dd></div>
+                  <div><dt className="inline font-medium text-foreground">Déclarées adaptées : </dt><dd className="inline">{payload.jaFeasibility.facts.adaptedDeclarations}</dd></div>
+                  <div><dt className="inline font-medium text-foreground">Déclarées empêchées : </dt><dd className="inline">{payload.jaFeasibility.facts.blockedDeclarations}</dd></div>
+                </dl>
+                <ul className="mt-2 list-disc pl-5 text-xs text-muted-foreground">
+                  {payload.jaFeasibility.limitations.map(limit => <li key={limit}>{limit}</li>)}
+                </ul>
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground">
+              Substitutions : aucune famille clinique validée dans {payload.plateCatalog.version} ;
+              aucune proposition automatique.
+            </p>
             <button
               type="button"
               disabled={!payload.insertionAllowed || !payload.actionRef}

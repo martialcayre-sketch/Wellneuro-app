@@ -14,10 +14,14 @@ import {
   C5_PRACTITIONER_FOODS,
   C5_PRACTITIONER_MANIFEST_HASH,
   C5_PRACTITIONER_MANIFEST_VERSION,
+  C5B_PLATE_CATALOG_HASH,
+  C5B_PLATE_CATALOG_VERSION,
 } from '@/lib/food-compass';
 import { reconstructProtocolDraft } from '@/lib/protocol/fromPrisma';
 import { resolveActiveVersion } from '@/lib/protocol/versioning';
 import { buildPractitionerFoodCompassReference } from '@/lib/food-compass/practitionerReference';
+import { getLatestPublishedJaFeasibility } from '@/lib/food-observation/feasibilityRepository';
+import type { PublishedJaFeasibility } from '@/lib/food-observation/feasibility';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +31,8 @@ type SuccessResponse = {
   reading: ContextualFoodReading | null;
   actionRef: FoodCompassActionRef | null;
   manifest: { version: typeof C5_PRACTITIONER_MANIFEST_VERSION; hash: typeof C5_PRACTITIONER_MANIFEST_HASH };
+  plateCatalog: { version: typeof C5B_PLATE_CATALOG_VERSION; hash: typeof C5B_PLATE_CATALOG_HASH };
+  jaFeasibility: PublishedJaFeasibility | null;
   alternatives: [];
   insertionAllowed: boolean;
   insertionReason: string | null;
@@ -64,7 +70,7 @@ export async function GET(request: Request): Promise<NextResponse<PractitionerFo
       return error('forbidden', 'Patient non accessible pour ce praticien.', 403);
     }
 
-    const [nutrientRows, protocolRows] = await Promise.all([
+    const [nutrientRows, protocolRows, jaFeasibility] = await Promise.all([
       prisma.ciqualNutrientValue.findMany({
         where: { datasetVersion: C5_DATASET_VERSION, ciqualCode: foodRef },
         orderBy: { nutrientCode: 'asc' },
@@ -73,6 +79,10 @@ export async function GET(request: Request): Promise<NextResponse<PractitionerFo
         where: { idPatient, decisionCardId, status: 'practitioner_reviewed' },
         orderBy: { createdAt: 'desc' },
         select: { id: true, inputHash: true, payload: true, supersedesDraftId: true, createdAt: true },
+      }),
+      getLatestPublishedJaFeasibility(idPatient).catch(caught => {
+        console.error('[praticien/boussole JA]', caught instanceof Error ? caught.message : String(caught));
+        return null;
       }),
     ]);
     if (nutrientRows.length === 0) return error('food_not_found', 'Aliment absent du référentiel.', 404);
@@ -130,6 +140,8 @@ export async function GET(request: Request): Promise<NextResponse<PractitionerFo
       reading,
       actionRef,
       manifest: { version: C5_PRACTITIONER_MANIFEST_VERSION, hash: C5_PRACTITIONER_MANIFEST_HASH },
+      plateCatalog: { version: C5B_PLATE_CATALOG_VERSION, hash: C5B_PLATE_CATALOG_HASH },
+      jaFeasibility,
       alternatives: [],
       insertionAllowed,
       insertionReason: insertionAllowed

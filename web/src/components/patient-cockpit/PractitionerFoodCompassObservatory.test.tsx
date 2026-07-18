@@ -33,6 +33,12 @@ describe('PractitionerFoodCompassObservatory', () => {
         },
         actionRef, alternatives: [], insertionAllowed: true, insertionReason: null,
         manifest: { version: 'c5-practitioner-foods-manifest-v1', hash: 'manifest-hash' },
+        plateCatalog: { version: 'c5b-plate-catalog-v1', hash: 'plate-catalog-hash' },
+        jaFeasibility: {
+          episodeId: 'EP_1', validatedAt: '2026-07-18T12:00:00.000Z',
+          facts: { tracesRecorded: 3, opportunitiesObserved: 2, feasibleDeclarations: 1, adaptedDeclarations: 1, blockedDeclarations: 1 },
+          limitations: ['Constats déclaratifs uniquement.'],
+        },
       }),
     }));
     render(<PractitionerFoodCompassObservatory idPatient="PAT_TEST" decisionCardId="DEC_1" onInsert={onInsert} />);
@@ -46,6 +52,9 @@ describe('PractitionerFoodCompassObservatory', () => {
     expect(screen.getByText(/Décision manuelle/)).toBeTruthy();
     expect(screen.getByText(/9.681 mEq\/100 g/)).toBeTruthy();
     expect(screen.getByText(/c5-practitioner-foods-manifest-v1/)).toBeTruthy();
+    expect(screen.getAllByText(/c5b-plate-catalog-v1/)).toHaveLength(2);
+    expect(screen.getByTestId('c5-ja-feasibility').textContent).toMatch(/Traces déclarées.*3/);
+    expect(screen.getByText(/aucune famille clinique validée/i)).toBeTruthy();
     expect(fetch).toHaveBeenCalledWith(expect.stringContaining('decisionCardId=DEC_1'));
     expect(onInsert).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /Préparer l’insertion manuelle/ }));
@@ -66,6 +75,8 @@ describe('PractitionerFoodCompassObservatory', () => {
         },
         reading: null, actionRef: null, alternatives: [], insertionAllowed: false, insertionReason: 'Protocole requis.',
         manifest: { version: 'manifest-v1', hash: 'manifest-hash' },
+        plateCatalog: { version: 'c5b-plate-catalog-v1', hash: 'plate-catalog-hash' },
+        jaFeasibility: null,
       }),
     }));
     render(<PractitionerFoodCompassObservatory idPatient="PAT_TEST" decisionCardId="DEC_1" onInsert={onInsert} />);

@@ -6,9 +6,11 @@ import {
   cloreEpisode,
   createAttentionBudget,
   createEpisode,
+  readFoodObservationEpisode,
   reprendreEpisode,
   suspendreEpisode,
 } from './episode';
+import { getCurrentRecommendedPlateRef } from '@/lib/food-compass/plates';
 import type { CalibrageRegimeContent, EssaiRegimeContent, SilenceRegimeContent } from './types';
 
 const essaiContent: EssaiRegimeContent = {
@@ -83,6 +85,43 @@ describe('createEpisode', () => {
         content: { ...essaiContent, hypothese: '  ' },
       })
     ).toThrow(/requis/);
+  });
+
+  it('relit JA V1 sans assiette et JA V2 avec une référence C5B courante', () => {
+    const legacy = episodeEssai();
+    expect(readFoodObservationEpisode(legacy).content).toEqual(legacy.content);
+
+    const withPlate = createEpisode({
+      episodeId: 'ep-v2', patientId: 'patient-sophie-nicola',
+      startDate: '2026-07-20', endDate: '2026-08-10',
+      content: {
+        ...essaiContent,
+        action: {
+          ...essaiContent.action,
+          recommendedPlateRef: getCurrentRecommendedPlateRef('ASSIETTE_SOIR_LEGER'),
+        },
+      },
+    });
+    const read = readFoodObservationEpisode(withPlate);
+    expect(read.content.regime).toBe('essai');
+    if (read.content.regime === 'essai') {
+      expect(read.content.action.recommendedPlateRef?.plateCode).toBe('ASSIETTE_SOIR_LEGER');
+    }
+  });
+
+  it('refuse une référence d’assiette inconnue ou caduque', () => {
+    const current = getCurrentRecommendedPlateRef('ASSIETTE_SOIR_LEGER');
+    expect(() => createEpisode({
+      episodeId: 'ep-v2-bad', patientId: 'patient-sophie-nicola',
+      startDate: '2026-07-20', endDate: '2026-08-10',
+      content: {
+        ...essaiContent,
+        action: {
+          ...essaiContent.action,
+          recommendedPlateRef: { ...current, catalogVersion: 'catalog-v0' },
+        },
+      },
+    })).toThrow(/caduque/);
   });
 });
 
