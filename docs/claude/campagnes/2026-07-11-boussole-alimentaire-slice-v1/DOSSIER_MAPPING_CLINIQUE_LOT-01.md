@@ -1,7 +1,7 @@
 ---
 id: "c5-lot-01-dossier-mapping-clinique"
 lot: "LOT-01"
-statut: "validé — seconde passe documentaire requise"
+statut: "validé — seconde_passe_documentaire_en_revue"
 date: "2026-07-18"
 ---
 
@@ -39,6 +39,31 @@ La table principale contient 3 484 aliments et 74 constituants. Les fichiers
 ont été téléchargés dans un dossier temporaire uniquement ; aucune donnée brute
 Ciqual n'est ajoutée au dépôt. Attribution à conserver : « Anses. 2025. Table
 de composition nutritionnelle des aliments Ciqual ».
+
+## Matrice de justification clinique des liaisons
+
+Le niveau **B** ci-dessous est un niveau de preuve WellNeuro attaché à la
+liaison clinique. Il ne remplace pas le `code_confiance` A à D de chaque teneur
+Ciqual. Les directions et les poids restent des décisions de gouvernance
+WellNeuro : aucune source externe citée ne prescrit ces coefficients.
+
+| Liaison | Direction validée | Source primaire | Preuve WN | Limite d'interprétation |
+|---|---|---|:---:|---|
+| Protéines 25000 | favorable | [Anses — rôle et apports recommandés](https://www.anses.fr/fr/content/proteines-role-sources-et-apports-recommandes) | B | La référence d'apport ne prescrit ni une relation alimentaire monotone ni le poids WellNeuro de 18 %. |
+| Sucres 32000 | limitante | [Anses — sucres dans l'alimentation](https://www.anses.fr/fr/content/sucres-dans-lalimentation) | B | Le constituant Ciqual est un proxy intrinsèque WellNeuro ; il ne doit pas être présenté comme une mesure des seuls sucres libres. |
+| Fibres 34100 | favorable | [Anses — références nutritionnelles, rapport fibres](https://anses.fr/fr/system/files/NUT2012SA0103Ra-2.pdf) | B | L'apport satisfaisant de 30 g/j soutient la direction, pas un objectif par aliment ni le poids de 13,5 %. |
+| AG saturés 40302 | limitante | [Anses — lipides](https://www.anses.fr/fr/content/les-lipides) | B | Les AG saturés n'ont pas tous les mêmes effets ; C5 utilise le total Ciqual comme marqueur de modèle. |
+| AG monoinsaturés 40303 | favorable | [Anses — lipides](https://www.anses.fr/fr/content/les-lipides) | B | La référence Anses porte notamment sur l'acide oléique ; le total AGMI n'est pas une prescription monotone. |
+| AG polyinsaturés 40304 | favorable | [Anses — lipides](https://www.anses.fr/fr/content/les-lipides) | B | Le total AGPI agrège plusieurs acides gras ; la direction est une convention clinique WellNeuro bornée par le clamp. |
+| ALA 41833 | favorable | [Anses — lipides](https://www.anses.fr/fr/content/les-lipides) | B | La référence d'apport adulte ne prescrit pas le poids WellNeuro de 6,3 %. |
+| EPA 42053 | favorable | [Anses — lipides](https://www.anses.fr/fr/content/les-lipides) | B | La référence d'apport adulte ne prescrit pas le poids WellNeuro de 5,4 %. |
+| DHA 42263 | favorable | [Anses — lipides](https://www.anses.fr/fr/content/les-lipides) | B | La référence d'apport adulte ne prescrit pas le poids WellNeuro de 6,3 %. |
+| Sel 10004 | limitante | [Anses — références nutritionnelles du sodium](https://www.anses.fr/fr/content/les-references-nutritionnelles-en-vitamines-et-mineraux) | B | Le sel 10004 est le repère exclusif décidé par le gate ; le sodium 10110 reste descriptif et n'est pas réintroduit dans le score. |
+| PRAL dérivé | limitante | [Remer–Manz, 1995](https://pubmed.ncbi.nlm.nih.gov/7797810/) | B | Marqueur dérivé facultatif, jamais un aliment, une recommandation autonome ou une mesure clinique patient. |
+
+Ces liaisons servent uniquement au profil intrinsèque `equilibre_assiette`.
+Elles ne remplacent ni l'analyse de la ration quotidienne, ni le contexte C5B,
+ni la décision du praticien.
 
 ## Inventaire des constituants et décisions validées
 
@@ -126,9 +151,18 @@ officiel `const_2025_11_03.xml`, dont l'empreinte figure plus haut :
 | Potassium | 10190 | mg/100 g |
 | Calcium | 10200 | mg/100 g |
 
-Pour C5A, `pral100g` est exprimé en mEq/100 g. Les p5/p95 PRAL sont à calculer
-sur la distribution complète Ciqual 2025 V1, uniquement pour les aliments dont
-les cinq intrants sont des valeurs numériques exactes. La normalisation est
+Pour C5A, `pral100g` est exprimé en mEq/100 g. La seconde passe a calculé la
+distribution PRAL sur la table complète Ciqual 2025 V1, uniquement pour les
+aliments dont les cinq intrants sont des valeurs numériques exactes :
+
+- PRAL calculable : **2 347/3 484 aliments**, soit **67,4 %** ;
+- PRAL indisponible : **1 137/3 484 aliments**, sans imputation ;
+- `p5Pral = -8,70089 mEq/100 g` ;
+- `p95Pral = 14,69258 mEq/100 g` ;
+- quantiles par interpolation linéaire au rang `(n - 1) x p` ;
+- valeurs absentes, `traces` et `< x` exclues, jamais converties en zéro.
+
+La normalisation est
 `nPral = clamp((pral100g − p5Pral) / (p95Pral − p5Pral), 0, 1)` puis la
 contribution alignée est inversée : `pralAlignment = 1 − nPral`. Une valeur
 PRAL plus basse est donc plus favorable dans ce seul axe.
@@ -215,7 +249,7 @@ Les couvertures faibles d'ALA, EPA et DHA justifient leur statut facultatif de
 disponibilité. Elles ne diminuent ni leur poids validé lorsqu'une valeur exacte
 est disponible, ni leur importance clinique.
 
-## Formule validée pour la seconde passe
+## Formule appliquée dans la seconde passe
 
 Pour une teneur numérique exacte x du constituant i :
 
@@ -226,10 +260,16 @@ Pour une teneur numérique exacte x du constituant i :
 5. donnée non numérique : composante indisponible, jamais imputée.
 
 La normalisation est faite avant pondération afin de rendre comparables les
-grammes et milligrammes. La seconde passe documentaire est autorisée à calculer
-la moyenne pondérée des composantes disponibles selon la politique clinique
-signée, multipliée par 100. Aucun score agrégé réel n'est produit dans le
-présent document.
+grammes et milligrammes. Pour un profil dont le noyau obligatoire est complet :
+
+1. `availableWeight = somme(w_i)` pour les seules composantes exactes ;
+2. `renormalizedWeight_i = w_i / availableWeight x 100` ;
+3. `weightedContribution_i = a_i x renormalizedWeight_i` ;
+4. `expectedAggregate = somme(weightedContribution_i)`.
+
+Les agrégats à six décimales et les contributions attendues sont consignés
+dans `VECTEURS_12_VEDETTES_LOT-01.md`. Ce sont des fixtures praticien soumises
+à signature, jamais des scores patient ni un classement alimentaire.
 
 ## Politique validée de données manquantes
 
@@ -266,9 +306,9 @@ Toute évolution de `datasetVersion`, `mappingVersion`, `scoreVersion` ou
 `pralFormulaVersion` rend les profils et diffusions antérieurs `stale` sans les
 supprimer et impose une nouvelle validation avant diffusion.
 
-Les identifiants validés sont figés pour la seconde passe mais ne deviennent
-ni publiables ni activables avant rattachement des p5/p95 PRAL réels et des
-vecteurs pondérés signés.
+Les identifiants validés sont figés. Ils ne deviennent ni publiables ni
+activables avant la signature des vecteurs pondérés rattachés à la référence
+`C5-LOT01-VECTEURS-2026-07-18-v1`.
 
 ## Gate clinique acquis
 
@@ -276,8 +316,9 @@ Martial CAYRE, praticien valideur responsable de la gouvernance clinique
 WellNeuro, a validé le présent contrat le 2026-07-18 sous la référence
 **C5-LOT01-VALIDATION-MC-2026-07-18-v1**.
 
-La seconde passe doit encore calculer les p5/p95 PRAL réels, produire et faire
-signer les vecteurs pondérés attendus des 12 vedettes, rattacher à chaque
-liaison sa source et son niveau de preuve, puis documenter la décision clinique
-dans CHANGELOG.md avant toute proposition de clôture. LOT-01 n'est pas terminé
-et C5 reste inactive.
+La seconde passe a calculé les p5/p95 PRAL réels, produit les vecteurs pondérés
+attendus des 12 vedettes, rattaché les sources et niveaux de preuve et consigné
+le changement clinique documentaire dans `CHANGELOG.md`. Les vecteurs restent
+**à signer** par Martial CAYRE sous la référence
+`C5-LOT01-VECTEURS-2026-07-18-v1`. LOT-01 n'est pas terminé et C5 reste
+inactive à 1/8.

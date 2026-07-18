@@ -1,7 +1,7 @@
 ---
 id: "c5-lot-01-revue-praticien"
 lot: "LOT-01"
-statut: "validé — seconde passe documentaire requise"
+statut: "validé — seconde_passe_documentaire_en_revue"
 date_préparation: "2026-07-18"
 date_avis: "2026-07-18"
 valideur: "Martial CAYRE"
@@ -9,6 +9,10 @@ role_valideur: "praticien valideur responsable de la gouvernance clinique WellNe
 validation_ref: "C5-LOT01-VALIDATION-MC-2026-07-18-v1"
 preuve_git: "20c4119be10cc67c9be875746647b9a4bfe54004"
 clarification_git: "471f71461f74e9eabdedabc02f9e6e35d529d138"
+vecteurs_ref: "C5-LOT01-VECTEURS-2026-07-18-v1"
+avis_gate_clinique: "VALIDÉ"
+avis_vecteurs_pondérés: "À SIGNER"
+preuve_git_vecteurs: "en_attente_du_commit_documentaire"
 ---
 
 # C5 LOT-01 — revue praticien du mapping clinique
@@ -34,9 +38,8 @@ Documents à relire ensemble :
 - [x] Teneurs absentes, traces et sous limite exclues sans imputation.
 - [x] Aucun poids numérique déduit par l'agent ; la pondération ci-dessous
       provient de la décision explicite de gouvernance clinique.
-- [x] Aucun score alimentaire ou patient réel, vecteur pondéré final ou
-      classement produit ; seules des fixtures synthétiques de mécanique sont
-      documentées.
+- [x] Aucun score patient ni classement produit ; les agrégats pondérés de la
+      seconde passe sont uniquement des fixtures praticien soumises à signature.
 - [x] Aucun code, schéma, SQL, import ou activation modifié.
 
 ## Remarques consignées pendant la revue praticien
@@ -250,15 +253,52 @@ dans le frontmatter.
 
 ## Statut actuel
 
-**Avis VALIDÉ rendu. Le gate clinique est acquis et la seconde passe
-documentaire de LOT-01 est autorisée.**
+**Avis du gate clinique VALIDÉ. Seconde passe documentaire produite et soumise
+à une signature distincte des vecteurs pondérés.**
 
-Travaux encore requis avant de terminer LOT-01 :
+## Seconde passe documentaire soumise à signature
 
-1. calculer les p5/p95 PRAL réels sur Ciqual 2025 V1 ;
-2. recalculer et faire signer les vecteurs pondérés des 12 vedettes ;
-3. rattacher à chaque liaison sa source et son niveau de preuve ;
-4. inscrire la décision clinique dans CHANGELOG.md ;
-5. proposer la clôture de LOT-01, sans produire de code C5.
+Référence exacte à relire : **C5-LOT01-VECTEURS-2026-07-18-v1**.
+
+- [x] XML `compo_2025_11_03.xml` vérifié par MD5.
+- [x] PRAL exact calculé pour 2 347/3 484 aliments.
+- [x] Bornes PRAL : p5 = -8,70089 et p95 = 14,69258 mEq/100 g.
+- [x] 12/12 noyaux obligatoires complets.
+- [x] Deux profils complets et dix profils `partial_data`.
+- [x] Sources et limites rattachées à chaque liaison au niveau WellNeuro B.
+- [x] Aucune imputation, valeur sous limite convertie ou diffusion patient.
+
+| Vedette | Statut | Complétude | PRAL mEq/100 g | Agrégat attendu |
+|---|---|---:|---:|---:|
+| Sardine 26034 | complet | 100 % | 9,68100 | 61,734453 |
+| Maquereau 26051 | partiel | 91,0 % | 7,95664 | 57,349934 |
+| Huile d'olive 17270 | partiel | 64,8 % | indisponible | 39,252210 |
+| Huile de colza 17130 | partiel | 76,5 % | indisponible | 38,757805 |
+| Lentilles 20360 | partiel | 88,3 % | 4,92470 | 63,017903 |
+| Pois chiches 20507 | partiel | 88,3 % | 3,60190 | 63,389136 |
+| Noix 15005 | partiel | 74,8 % | 6,19200 | 69,428859 |
+| Flocons d'avoine 32140 | complet | 100 % | 8,72000 | 57,685279 |
+| Pain complet 7110 | partiel | 88,3 % | 2,75360 | 53,251106 |
+| Brocoli 20351 | partiel | 88,3 % | -1,89590 | 51,426199 |
+| Épinards 20027 | partiel | 84,7 % | -8,50240 | 45,262720 |
+| Myrtille 13028 | partiel | 93,7 % | -0,98070 | 42,825435 |
+
+Le tableau conserve l'ordre canonique et ne constitue pas un classement. Les
+profils basés sur des ensembles de composantes différents ne sont pas
+comparables entre eux.
+
+### Avis distinct sur les vecteurs pondérés
+
+Choisir exactement un avis après relecture du document détaillé :
+
+- [ ] **VALIDÉ** — les 12 vecteurs attendus peuvent être rattachés au contrat.
+- [ ] **À CORRIGER** — indiquer les lignes et corrections demandées.
+- [ ] **REFUSÉ** — ne pas poursuivre la clôture de LOT-01.
+
+Avis actuel : **À SIGNER**.
+
+La signature ultérieure doit citer la référence
+`C5-LOT01-VECTEURS-2026-07-18-v1` et le hash `preuve_git_vecteurs`. Toute
+modification des valeurs après signature imposera une nouvelle référence.
 
 LOT-01 n'est pas terminé par le présent avis. C5 reste inactive à 1/8.

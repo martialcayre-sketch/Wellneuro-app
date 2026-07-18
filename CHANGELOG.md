@@ -4,6 +4,20 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### C5 LOT-01 — seconde passe documentaire clinique (2026-07-18)
+
+- Calcul reproductible du PRAL Remer–Manz sur Ciqual 2025 V1 : 2 347/3 484
+  aliments complets, `p5 = -8,70089` et `p95 = 14,69258 mEq/100 g`, sans
+  imputation des absences, traces ou valeurs sous limite.
+- Production des vecteurs pondérés attendus de la cohorte pilote des 12
+  aliments sous la référence `C5-LOT01-VECTEURS-2026-07-18-v1` : 12 noyaux
+  obligatoires complets, deux profils complets et dix profils partiels.
+- Sources primaires, limites d'interprétation et niveau de preuve WellNeuro B
+  rattachés aux liaisons du mapping `equilibre_assiette`.
+- Résultats soumis à une signature distincte de Martial CAYRE. LOT-01 reste
+  ouvert, C5 inactive à 1/8 ; aucun code, score patient, migration, import ou
+  activation n'est introduit.
+
 ### TRUST V1 — information patient, consentements et sécurité relationnelle (2026-07-16)
 
 - Campagne TRUST exécutée de bout en bout (LOT-00 → LOT-07) : documents

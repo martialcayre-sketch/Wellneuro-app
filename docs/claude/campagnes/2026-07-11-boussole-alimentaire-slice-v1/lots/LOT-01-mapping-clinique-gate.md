@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Mapping clinique et gate de validation"
-statut: "validation_clinique_acquise — seconde_passe_documentaire_requise"
+statut: "validation_clinique_acquise — seconde_passe_documentaire_en_revue"
 dépend_de: "LOT-00"
 ---
 
@@ -44,11 +44,13 @@ et matrice de revue praticien.
 
 ## Étapes
 
-- [ ] Résoudre les codes et unités depuis la source Ciqual officielle.
-- [ ] Documenter direction, poids, preuve et justification de chaque liaison.
-- [ ] Définir p5/p95, données manquantes et valeurs limites.
-- [ ] Calculer et faire relire les vecteurs attendus des 12 vedettes.
-- [ ] Versionner le contrat et recueillir la validation humaine explicite.
+- [x] Résoudre les codes et unités depuis la source Ciqual officielle.
+- [x] Documenter direction, poids, preuve et justification de chaque liaison.
+- [x] Définir p5/p95, données manquantes et valeurs limites.
+- [ ] Calculer et faire relire les vecteurs attendus des 12 vedettes : calcul
+      terminé, signature distincte encore requise.
+- [x] Versionner le contrat et recueillir la validation humaine explicite du
+      gate initial.
 
 ## Tests
 
@@ -74,8 +76,8 @@ version et invalide les profils antérieurs.
 Passe documentaire préparatoire exécutée le 2026-07-18 :
 
 - dossier de mapping clinique : DOSSIER_MAPPING_CLINIQUE_LOT-01.md ;
-- références et vecteurs non pondérés des 12 vedettes :
-  VECTEURS_12_VEDETTES_LOT-01.md ;
+- manifeste préparatoire des 12 vedettes, désormais enrichi des vecteurs
+  pondérés de seconde passe : VECTEURS_12_VEDETTES_LOT-01.md ;
 - matrice de gate humain : REVUE_PRATICIEN_LOT-01.md ;
 - sources Ciqual 2025 V1 téléchargées uniquement en temporaire et empreintes
   officielles vérifiées ;
@@ -98,8 +100,8 @@ Décisions consignées :
 - protéines 25000 : inclusion et direction favorable validées ;
 - sel 10004 retenu et sodium 10110 exclu ;
 - normalisation p5/p95 validée sans correction ;
-- PRAL classé comme marqueur dérivé candidat de `equilibre_assiette`, jamais
-  comme aliment ou vedette.
+- PRAL validé comme marqueur dérivé de `equilibre_assiette`, jamais comme
+  aliment ou vedette.
 - pondération clinique validée : sous-profil nutritionnel 90 % et PRAL
   facultatif plafonné à 10 % ;
 - poids effectifs validés : protéines 18 %, sucres 9 %, fibres 13,5 %, AG
@@ -131,10 +133,21 @@ Décisions consignées :
   `c5a-pral-remer-manz-v1`, sous identité append-only ; identifiants figés mais
   non publiables avant rattachement des p5/p95 PRAL et vecteurs signés.
 
-Le gate clinique est acquis. La seconde passe reste requise pour calculer les
-p5/p95 PRAL réels, produire et faire signer les vecteurs pondérés, rattacher
-les sources et niveaux de preuve par liaison, inscrire la décision clinique
-dans CHANGELOG.md et proposer ensuite la clôture.
+Seconde passe documentaire exécutée le 2026-07-18 :
 
-**Statut : validation_clinique_acquise — seconde_passe_documentaire_requise.**
+- PRAL exact calculable pour 2 347/3 484 aliments, soit 67,4 % ;
+- bornes réelles `p5 = -8,70089` et `p95 = 14,69258 mEq/100 g` ;
+- 12/12 noyaux obligatoires complets ;
+- deux profils complets et dix profils partiels, sans imputation ;
+- contributions pondérées et agrégats attendus consignés sous la référence
+  `C5-LOT01-VECTEURS-2026-07-18-v1` ;
+- sources primaires, limites d'interprétation et niveau WellNeuro B rattachés
+  à chaque liaison ;
+- entrée clinique documentaire ajoutée dans `CHANGELOG.md`, sans activation.
+
+Le gate clinique initial est acquis. La seconde passe est **en revue** : la
+signature distincte des vecteurs pondérés par Martial CAYRE reste requise avant
+toute clôture.
+
+**Statut : validation_clinique_acquise — seconde_passe_documentaire_en_revue.**
 LOT-01 n'est pas terminé et la campagne reste inactive à 1/8 lot terminé.
