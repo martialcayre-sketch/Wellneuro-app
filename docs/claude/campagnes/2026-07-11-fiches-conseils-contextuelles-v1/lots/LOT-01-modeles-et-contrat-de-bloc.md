@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Modèles documentaires et contrat de bloc (provenance, état, version)"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-00"
 ---
 
@@ -65,11 +65,11 @@ clinique.
 
 ## Étapes
 
-- [ ] Figer la décision persistance (issue LOT-00).
-- [ ] Définir `types.ts` (Bloc, Provenance, ÉtatDocument, ModeleDocument).
-- [ ] Fabriques pures : `construireBloc`, `assemblerDocument`.
-- [ ] Garde de régime : un bloc IA non validé n'est jamais diffusable.
-- [ ] Tests domaine (provenance, transitions d'état, régime IA).
+- [x] Figer la décision persistance (issue LOT-00) : option (a) sans persistance.
+- [x] Définir `types.ts` (Bloc, Provenance, ÉtatDocument, ModeleDocument).
+- [x] Fabriques pures : `construireBloc`, `assemblerDocument`.
+- [x] Garde de régime : un bloc IA non validé n'est jamais diffusable.
+- [x] Tests domaine (provenance, transitions d'état, régime IA).
 
 ## Tests
 
@@ -80,9 +80,9 @@ clinique.
 
 ## Critères de done
 
-- [ ] Contrat de bloc et modèle documentaire typés et testés.
-- [ ] Provenance ancrée sur les hash/versions existants (aucune nouvelle vérité).
-- [ ] Aucune migration (ou gate (b) explicitement confirmé et nommé).
+- [x] Contrat de bloc et modèle documentaire typés et testés.
+- [x] Provenance ancrée sur les hash/versions existants (aucune nouvelle vérité).
+- [x] Aucune migration (option (a) retenue ; gate (b) non ouvert).
 
 ## Risques / points de vigilance
 
@@ -93,4 +93,26 @@ clinique.
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-07-18. Domaine pur `web/src/lib/documents/` créé (aucune UI, aucune
+migration) :
+
+- `types.ts` — `Bloc`, `ProvenanceBloc` (source + `ancrageHash` + `version` +
+  `statutSource`), `ContenuBloc` **par destinataire** (praticien requis ;
+  patient/médecin optionnels → field-filter), `RegimeBloc`
+  (`statique_valide`|`genere_ia`), `EtatDocument`
+  (`brouillon→relu→valide→envoye`), `ModeleDocument`, `VersionDocument`,
+  `DocumentComposite`.
+- `bloc.ts` — `construireBloc` (valide l'ancrage : aucune vérité C3),
+  `estBlocDiffusable` (garde de régime : bloc `genere_ia` diffusable seulement si
+  `statutSource ∈ {Validee_Praticien, Corrigee_Praticien}`),
+  `contenuPourDestinataire` / `blocsPourDestinataire` (field-filter).
+- `versioning.ts` — transposition du patron append-only de
+  `protocol/versioning.ts` : `deriveVersionDocument` = tuple des versions de blocs
+  + hash `canonicalSha256` (sans horodatage) ; `memeVersion` (comparaison).
+- `document.ts` — `assemblerDocument` (état initial `brouillon`, ordonné par
+  modèle), machine d'états `peutAvancer`/`avancerEtat` (progression d'une étape,
+  franchissement de `valide` seulement `parActionPraticien`).
+- `modele.ts` — catalogue (`MODELE_SUIVI_21J`, vue deux colonnes).
+
+Validations : `npm run type-check` vert ; `vitest` **19/19** (provenance conservée,
+transition invalide/saut refusée, bloc IA non validé exclu, version = tuple).
