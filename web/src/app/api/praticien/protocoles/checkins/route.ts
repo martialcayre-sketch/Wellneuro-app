@@ -13,8 +13,12 @@ import { buildResumeJ21, type ResumeJ21 } from '@/lib/protocol/resumeJ21';
 // C2B LOT-07 : le momentum réel est branché (historique d'équilibre daté du
 // patient), donc le volet score cesse d'être null dès qu'un cycle T0+J21 mesuré
 // existe ; sans cycle mesurable il reste null (jamais un 0 inventé), le résumé
-// demeurant honnête. Ancrage T0 global (resoudreDateT0), identique à
-// api/praticien/equilibre ; l'ancrage par épisode relève de C2B LOT-08.
+// demeurant honnête.
+// C2B LOT-08 (registre A8-1) : côté praticien, l'ancrage T0 est celui de
+// l'épisode confirmé (jalon T0 de `assessment_episodes`, `confirmedAt` le plus
+// récent) plutôt que le T0 global (première réponse). Sans épisode T0 confirmé,
+// repli sur le T0 global (resoudreDateT0), identique à api/praticien/equilibre.
+// La fiche patient « Mon équilibre » conserve, elle, le T0 global (inchangé).
 // Hypothèse mono-praticien (§8.8) : garde de session sans scope par identité,
 // cohérent avec les routes /versions et /diffusion.
 
@@ -61,8 +65,8 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const all = await listCheckins(idPatient);
     const checkins = all.filter((c) => filIds.has(c.protocolDraftId));
 
-    // C2B LOT-07 : brancher le momentum réel du patient (jalons de mesure lus via
-    // l'API publique de momentum.ts, jamais réimplémentés). Un jalon sans
+    // C2B LOT-07/08 : brancher le momentum réel du patient (jalons de mesure lus
+    // via l'API publique de momentum.ts, jamais réimplémentés). Un jalon sans
     // couverture est omis par construireHistoriqueEquilibre (jamais un 0) ; sans
     // T0, momentum = null et le résumé conserve un score null honnête.
     const reponsesDb = await prisma.questionnaireReponse.findMany({
@@ -70,9 +74,16 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       select: { idQuestionnaire: true, dateReponse: true, scoresJson: true },
       orderBy: { dateReponse: 'asc' },
     });
-    const dateT0 = resoudreDateT0(reponsesDb);
+    // LOT-08 : ancre T0 = jalon T0 confirmé le plus récent de l'épisode ; repli
+    // sur le T0 global quand aucun épisode T0 n'est confirmé.
+    const episodeT0 = await prisma.assessmentEpisode.findFirst({
+      where: { idPatient, milestone: 'T0' },
+      orderBy: { confirmedAt: 'desc' },
+      select: { confirmedAt: true },
+    });
+    const dateT0 = episodeT0?.confirmedAt ?? resoudreDateT0(reponsesDb);
     const momentum = dateT0
-      ? { dateT0, lectures: construireHistoriqueEquilibre(reponsesDb) }
+      ? { dateT0, lectures: construireHistoriqueEquilibre(reponsesDb, dateT0) }
       : null;
 
     const resume = buildResumeJ21({ checkins, momentum });

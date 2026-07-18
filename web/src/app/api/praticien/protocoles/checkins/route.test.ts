@@ -6,6 +6,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     protocolDraft: { findMany: vi.fn() },
     protocolCheckin: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
+    assessmentEpisode: { findFirst: vi.fn() },
   },
 }));
 
@@ -26,7 +27,11 @@ function request(query = 'idPatient=PAT_1&decisionCardId=DEC_1'): Request {
 }
 
 describe('GET /api/praticien/protocoles/checkins', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Par défaut : aucun épisode T0 confirmé → repli sur le T0 global (LOT-08).
+    prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
+  });
 
   it('refuse sans session (401)', async () => {
     getServerSession.mockResolvedValue(null);
@@ -90,5 +95,24 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     );
     expect(json.resume.score).not.toBeNull();
     expect(typeof json.resume.score?.delta).toBe('number');
+  });
+
+  it('ancre le T0 sur l’épisode confirmé quand il existe (C2B LOT-08)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.protocolDraft.findMany.mockResolvedValue([{ id: 'proto_DEC_1#h' }]);
+    prisma.protocolCheckin.findMany.mockResolvedValue([]);
+    // Épisode T0 confirmé : c'est lui qui ancre les jalons (pas la 1re réponse).
+    prisma.assessmentEpisode.findFirst.mockResolvedValue({ confirmedAt: new Date('2026-01-01T00:00:00.000Z') });
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { idQuestionnaire: 'Q_SOM_06', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_SOM_06 } },
+    ]);
+
+    const res = await GET(request());
+    const json = (await res.json()) as { resume: { score: { delta: number } | null } };
+    expect(res.status).toBe(200);
+    expect(prisma.assessmentEpisode.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { idPatient: 'PAT_1', milestone: 'T0' } }),
+    );
+    expect(json.resume.score).not.toBeNull();
   });
 });

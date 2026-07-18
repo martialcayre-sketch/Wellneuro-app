@@ -53,4 +53,24 @@ describe('depuisPrisma — adaptateur Prisma → moteur équilibre', () => {
     ]);
     expect(historiqueFutur.length).toBeLessThanOrEqual(1);
   });
+
+  it('ancreT0 explicite (LOT-08) ancre les jalons sur cette date, pas sur la 1re réponse', () => {
+    const premiereReponse = new Date('2026-01-10T00:00:00.000Z');
+    const reponses = [
+      { idQuestionnaire: 'Q_SOM_06', dateReponse: premiereReponse, scoresJson: { rawAnswers: RAW_ANSWERS_Q_SOM_06 } },
+    ];
+
+    // T0 global = 2026-01-10 → une lecture T0 datée du 2026-01-10 existe.
+    const global = construireHistoriqueEquilibre(reponses);
+    expect(global.some((l) => l.date.getTime() === premiereReponse.getTime())).toBe(true);
+
+    // Ancre T0 antérieure = 2026-01-01 → aucune réponse ≤ T0 ni ≤ J21(2026-01-22)?
+    // La réponse du 2026-01-10 est connue dès J21 (2026-01-22) → 1re lecture = J21,
+    // jamais une lecture au 2026-01-01 (jalon T0 sans couverture, omis).
+    const ancre = new Date('2026-01-01T00:00:00.000Z');
+    const ancree = construireHistoriqueEquilibre(reponses, ancre);
+    expect(ancree.some((l) => l.date.getTime() === ancre.getTime())).toBe(false);
+    expect(ancree.length).toBeGreaterThan(0);
+    expect(ancree[0].date.getTime()).toBe(new Date('2026-01-22T00:00:00.000Z').getTime());
+  });
 });
