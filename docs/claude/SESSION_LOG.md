@@ -764,3 +764,24 @@ tests humains clavier/zoom/contraste regroupés au LOT-07.
 
 **Prochaine action** : LOT-06 — assiettes, substitutions et pont JA. C5 reste
 inactive à `6/8`.
+
+## [2026-07-18] — C5 : LOT-06 et LOT-07, clôture et activation
+
+**Contexte** : reprise des worktrees C5/JA laissés en travail non commité.
+JA5-02 (LOT-03 harnais patient) et C5 LOT-06 (assiettes C5B + pont faisabilité JA)
+finalisés, mergés (#134/#135, #136). Puis LOT-07 C5 mené jusqu'à la clôture.
+
+**LOT-07 (validation, conformité, handoff)** : dossier de preuves produit
+(`MATRICE_CONFORMITE_ET_TESTS_C5.md`, `VALIDATION_FINALE_C5.md`, `DETTE_C5.md`,
+`HANDOFF_C5.md`, `ACTIVATION_RUNBOOK_C5.md`). Matrice verte (573 tests, type-check,
+lint, scoring-check, prisma validate) ; advisors Supabase sans alerte bloquante.
+Trois verdicts : **C5A GO, C5B praticien GO, C5B patient GO conditionnel** (dettes
+humaines D-C5-01→04 : accessibilité, E2E boussole des 3 fixtures, vocabulaire, revue
+visuelle). C5 passe à `8/8`.
+
+**Décision** : activation demandée par le responsable (Martial CAYRE). Mécanique =
+`WN_C5_ENABLED=true` dans Vercel Production + redéploiement (hors dépôt) ; rollback =
+flag `false`, non destructif. Verdict patient acté conditionnel, dettes non maquillées.
+
+**Prochaine action** : merger la PR LOT-07, définir `WN_C5_ENABLED=true` en prod +
+redéployer, smoke test boussole ≠ 404, puis lever les dettes du volet patient.

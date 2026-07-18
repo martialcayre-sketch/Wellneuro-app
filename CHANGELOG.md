@@ -4,6 +4,22 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### C5 LOT-07 — Validation, conformité et handoff (2026-07-18)
+
+- Clôture de la tranche C5 « Boussole alimentaire » à `8/8`. Dossier de preuves
+  produit : `MATRICE_CONFORMITE_ET_TESTS_C5.md`, `VALIDATION_FINALE_C5.md`,
+  `DETTE_C5.md`, `HANDOFF_C5.md`, `ACTIVATION_RUNBOOK_C5.md`.
+- **Trois verdicts go/no-go indépendants** : C5A GO, C5B praticien GO, C5B patient
+  GO conditionnel (dettes humaines ouvertes : accessibilité, E2E boussole des trois
+  fixtures, vocabulaire, revue visuelle). Aucun verdict ne masque un volet en échec.
+- Matrice technique verte (type-check, lint, **573 tests**, scoring-check, prisma
+  validate) ; advisors Supabase sécurité/performance sans alerte bloquante (INFO) ;
+  gardes routes flag→404, ownership→403, isolation patient→404 testées.
+- **Aucun changement de code, aucune migration** : LOT-07 = validation + preuves.
+  Activation en production demandée par le responsable ; mécanique documentée :
+  `WN_C5_ENABLED=true` dans Vercel Production + redéploiement. Rollback = flag
+  `false` (non destructif, aucun DROP/DELETE).
+
 ### C5 LOT-06 — Assiettes, substitutions et pont JA (2026-07-18)
 
 - Transfert de la propriété des assiettes recommandées vers un catalogue C5B

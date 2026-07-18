@@ -7,7 +7,7 @@
   "status": "idle",
   "active_campaign": null,
   "active_lot": null,
-  "last_completed_lot": "C3/LOT-05",
+  "last_completed_lot": "C5/LOT-07",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -29,6 +29,6 @@
   "blocking_issues": [],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-18T14:10:00Z",
+  "updated_at": "2026-07-18T16:30:00Z",
   "parallel_campaigns": []
 }
