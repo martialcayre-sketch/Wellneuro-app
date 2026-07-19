@@ -53,8 +53,25 @@ function decisionCard(): DecisionCard {
 type Options = {
   runtime?: 'ready' | 'proposal' | 'unauthenticated' | 'unavailable';
   assignationsModif?: boolean;
-  trajectoire?: 'ok' | '401';
+  trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure';
 };
+
+// Cycle de trajectoire : T0 toujours mesuré (l'ancre), J21 selon le scénario.
+// Un T0 confirmé seul ne constitue PAS une réévaluation (A8-2).
+function cycleTrajectoire(j21Mesure: boolean) {
+  return {
+    cycleId: 'ep_T0',
+    dateT0: '2026-06-01T00:00:00.000Z',
+    versionScore: 'v1',
+    jalons: [
+      { jalon: 'T0', mesure: true, valeur: 40, date: '2026-06-01T00:00:00.000Z' },
+      { jalon: 'J21', mesure: j21Mesure, valeur: j21Mesure ? 55 : null, date: j21Mesure ? '2026-06-22T00:00:00.000Z' : null },
+      { jalon: 'J42', mesure: false, valeur: null, date: null },
+      { jalon: 'J90', mesure: false, valeur: null, date: null },
+    ],
+    momentum: null,
+  };
+}
 
 function stubFetch(options: Options = {}) {
   const runtime = options.runtime ?? 'unavailable';
@@ -89,9 +106,23 @@ function stubFetch(options: Options = {}) {
       });
     }
     if (url.includes('/api/praticien/trajectoire')) {
-      return trajectoire === '401'
-        ? ok({ ok: false, reason: 'unauthenticated', error: 'Authentification requise.' }, 401)
-        : ok({ ok: true, trajectoire: { index: [], cycles: [], comparaison: { disponible: false, raison: 'un_seul_cycle' } } });
+      if (trajectoire === '401') {
+        return ok({ ok: false, reason: 'unauthenticated', error: 'Authentification requise.' }, 401);
+      }
+      const cycles =
+        trajectoire === 'cycleT0Seul'
+          ? [cycleTrajectoire(false)]
+          : trajectoire === 'cycleJ21Mesure'
+            ? [cycleTrajectoire(true)]
+            : [];
+      return ok({
+        ok: true,
+        trajectoire: {
+          index: [],
+          cycles,
+          comparaison: { disponible: false, raison: cycles.length > 0 ? 'un_seul_cycle' : 'aucun_cycle' },
+        },
+      });
     }
     // Runtime clinique C1.
     if (url.includes('/api/praticien/cockpit')) {
@@ -138,8 +169,9 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     const decision = screen.getByRole('tab', { name: /Décision 21 j/i });
     expect(decision.getAttribute('aria-selected')).toBe('true');
-    // Statut jamais porté par la seule couleur : un libellé texte accompagne l'icône.
-    expect(decision.textContent).toMatch(/en attente|à ouvrir|renseignée/);
+    // Statut jamais porté par la seule couleur : un libellé texte accompagne
+    // l'icône. Runtime indisponible ici → statut honnêtement « indéterminée ».
+    expect(decision.textContent).toMatch(/en attente|à ouvrir|renseignée|indéterminée/);
   });
 
   it('navigue de phase en phase au clic et au clavier, sans quitter la page', async () => {
@@ -240,5 +272,32 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(screen.getByText(/session a expiré/i)).toBeTruthy();
     expect(screen.queryByText(/Aucun épisode confirmé/i)).toBeNull();
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
+  });
+
+  it('phase Réévaluation : un échec de lecture de la trajectoire n’est pas « aucun épisode » (M2, chemin cockpit)', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: '401' });
+
+    fireEvent.click(screen.getByRole('tab', { name: /Réévaluation/i }));
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByText(/n'a pas pu être lue/i)).toBeTruthy();
+    expect(screen.queryByText(/Aucun épisode confirmé/i)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
+    // Le rail ne prétend rien : statut « indéterminée », jamais « à ouvrir ».
+    expect(screen.getByRole('tab', { name: /Réévaluation/i }).textContent).toContain('indéterminée');
+  });
+
+  it('statut Réévaluation : un T0 confirmé sans jalon mesuré ne vaut pas « renseignée »', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: 'cycleT0Seul' });
+
+    const onglet = screen.getByRole('tab', { name: /Réévaluation/i });
+    await waitFor(() => expect(onglet.textContent).toContain('à ouvrir'));
+    expect(onglet.textContent).not.toContain('renseignée');
+  });
+
+  it('statut Réévaluation : « renseignée » quand un jalon post-T0 est réellement mesuré', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: 'cycleJ21Mesure' });
+
+    const onglet = screen.getByRole('tab', { name: /Réévaluation/i });
+    await waitFor(() => expect(onglet.textContent).toContain('renseignée'));
   });
 });
