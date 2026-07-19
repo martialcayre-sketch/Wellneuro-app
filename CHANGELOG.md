@@ -4,6 +4,34 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — SP-COP LOT-01, pré-vol T-10 min (2026-07-19)
+
+- **La surface « Consultation copilote » existe.** L'entrée de rail était
+  réservée par la maquette 5.0 sur un lien mort ; elle mène désormais à un
+  écran réel (`/dashboard/copilote`). Sans patient sélectionné, la page propose
+  la liste des patients actifs — elle ne devine pas de qui il s'agit.
+- **Ce qui a changé depuis la dernière consultation validée**, chaque élément
+  daté et rattaché à sa source : réponses reçues, points d'étape, épisodes
+  confirmés, versions de protocole relues, validations pour diffusion, demandes
+  de correction du patient, signalements en attente. Sans consultation validée,
+  l'ancre le dit et tout l'historique est présenté — on ne suppose pas ce que le
+  praticien a déjà vu.
+- **Questions suggérées adossées aux faits** : chacune reformule un élément
+  présent dans la liste (tolérance « Difficilement », adhésion « Pas encore »,
+  demande de correction, signalement). **Aucune ne se déclenche sur une
+  absence** — ne pas savoir n'autorise pas à supposer. Un check-in au JSON
+  illisible ne produit donc aucune question.
+- **Lecture seule de bout en bout** : aucune écriture, aucune persistance, aucun
+  snapshot (refus doctrinal C2A) — la vue se reconstruit à chaque ouverture.
+  Vérifié en E2E par l'absence de toute requête mutante.
+- **Les discordances ne sont pas dupliquées** : elles restent lues au poste de
+  pilotage (phase Compréhension), avec un lien depuis le pré-vol. Une seconde
+  copie pourrait diverger de la première ; l'arbitrage est consigné dans le lot.
+- **Aucune écoute ambiante, aucun audio, aucune transcription** (SP-AMB reste
+  bloquée par son gate CNIL/RGPD).
+- 20 tests ajoutés (12 domaine, 8 route) + 2 parcours E2E. Aucune migration,
+  aucune logique clinique, aucun seuil.
+
 ### Vague 2 — cadrage des campagnes (2026-07-19)
 
 - **Cinq `CAMPAGNE.md` créés**, fermant l'écart **E2** de l'audit de conformité
