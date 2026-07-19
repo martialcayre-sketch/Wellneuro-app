@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import Link from 'next/link';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -35,6 +35,7 @@ import { DetailBesoinsPanel } from '@/components/DetailBesoinsPanel';
 import { PractitionerFoodObservationPanel } from '@/components/food-observation/PractitionerFoodObservationPanel';
 import {
   ClinicalRuntimeSection,
+  type EtatRuntimeClinique,
   type PhaseCycleClinique,
 } from '@/components/patient-cockpit/ClinicalRuntimeSection';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
@@ -233,8 +234,14 @@ export function FichePatientPanel({
   const [ongletActif, setOngletActif] = useState<OngletFiche>('cockpit');
   const [phaseActive, setPhaseActive] = useState<IdPhase>('decision');
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
-  const [trajectoireChargee, setTrajectoireChargee] = useState(false);
+  // « inconnue » tant qu'aucune lecture n'a abouti : un échec de lecture ne
+  // doit JAMAIS être présenté comme une absence d'épisode (affirmation fausse
+  // sur l'historique clinique).
+  const [etatTrajectoire, setEtatTrajectoire] = useState<'inconnue' | 'chargement' | 'chargee' | 'erreur'>('inconnue');
+  const [erreurTrajectoire, setErreurTrajectoire] = useState<string | null>(null);
+  const [etatRuntime, setEtatRuntime] = useState<EtatRuntimeClinique | null>(null);
   const refsPhases = useRef<(HTMLButtonElement | null)[]>([]);
+  const refsOnglets = useRef<(HTMLButtonElement | null)[]>([]);
   // Harnais de validation ergonomique C1 (dev uniquement — voir
   // validationErgoFixture.ts) : la fixture est construite côté serveur par la
   // page et reçue en prop ; le brouillon relu (Épreuve 2) est construit par le
@@ -294,15 +301,44 @@ export function FichePatientPanel({
       .catch(() => setAssignationsModif([]));
   }, [data]);
 
-  // Onglet « Trajectoire » : lecture seule, chargée à la première ouverture.
+  // Onglet « Trajectoire » : lecture seule. Une erreur de lecture est
+  // distinguée d'une absence d'épisode et reste rejouable (aucun verrou
+  // définitif posé avant la réponse).
+  const chargerTrajectoire = useCallback(async () => {
+    setEtatTrajectoire('chargement');
+    setErreurTrajectoire(null);
+    try {
+      const reponse = await fetch(`/api/praticien/trajectoire?idPatient=${encodeURIComponent(idPatient)}`);
+      const payload = (await reponse.json()) as {
+        ok?: boolean;
+        reason?: string;
+        trajectoire?: Trajectoire;
+      };
+      if (!reponse.ok || !payload?.ok) {
+        setEtatTrajectoire('erreur');
+        setErreurTrajectoire(
+          payload?.reason === 'unauthenticated'
+            ? 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous pour lire la trajectoire.'
+            : payload?.reason === 'patient_not_found'
+              ? 'Patient introuvable : la trajectoire n’a pas pu être lue.'
+              : 'La trajectoire n’a pas pu être lue (erreur technique). L’historique clinique de ce patient n’est pas affiché.',
+        );
+        return;
+      }
+      setTrajectoire(payload.trajectoire ?? null);
+      setEtatTrajectoire('chargee');
+    } catch {
+      setEtatTrajectoire('erreur');
+      setErreurTrajectoire(
+        'La trajectoire n’a pas pu être lue (erreur réseau). L’historique clinique de ce patient n’est pas affiché.',
+      );
+    }
+  }, [idPatient]);
+
   useEffect(() => {
-    if (ongletActif !== 'trajectoire' || trajectoireChargee) return;
-    setTrajectoireChargee(true);
-    fetch(`/api/praticien/trajectoire?idPatient=${encodeURIComponent(idPatient)}`)
-      .then(r => r.json())
-      .then((d: { ok?: boolean; trajectoire?: Trajectoire }) => setTrajectoire(d?.trajectoire ?? null))
-      .catch(() => setTrajectoire(null));
-  }, [ongletActif, trajectoireChargee, idPatient]);
+    if (ongletActif !== 'trajectoire' || etatTrajectoire !== 'inconnue') return;
+    void chargerTrajectoire();
+  }, [ongletActif, etatTrajectoire, chargerTrajectoire]);
 
   const onDebloquer = async (idAssignation: string) => {
     setDeverrouillageId(idAssignation);
@@ -337,6 +373,25 @@ export function FichePatientPanel({
     refsPhases.current[suivant]?.focus();
   };
 
+  // Navigation clavier des onglets in-fiche (tablist horizontal, tabindex
+  // roving) — sans quoi les onglets inactifs sortent de l'ordre de tabulation.
+  const onClavierOnglets = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    const suivant =
+      event.key === 'ArrowRight' || event.key === 'ArrowDown'
+        ? (index + 1) % ONGLETS.length
+        : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+          ? (index - 1 + ONGLETS.length) % ONGLETS.length
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? ONGLETS.length - 1
+              : null;
+    if (suivant === null) return;
+    event.preventDefault();
+    setOngletActif(ONGLETS[suivant].id);
+    refsOnglets.current[suivant]?.focus();
+  };
+
   if (loading) {
     return <div className="text-sm text-muted-foreground">Chargement de la fiche patient...</div>;
   }
@@ -359,13 +414,27 @@ export function FichePatientPanel({
     ? new Date(reponses[0].dateSoumission).toLocaleDateString('fr-FR')
     : null;
 
+  // Statuts du rail — dérivés de l'état réel (réponses reçues, demandes de
+  // correction, état remonté par le runtime clinique). Aucun statut inventé :
+  // en l'absence d'information, la phase reste « à ouvrir ».
   const statutPhase = (id: IdPhase): StatutPhase => {
-    if (id === 'patient') return 'fait';
+    if (id === 'patient') return assignationsModif.length > 0 ? 'en_attente' : 'fait';
     if (id === 'donnees') return reponses.length > 0 ? 'fait' : 'en_attente';
     if (id === 'comprehension') {
       return priorites.some(p => p.couverture !== null) ? 'fait' : 'en_attente';
     }
-    return 'a_ouvrir';
+    if (!etatRuntime) return 'a_ouvrir';
+    if (id === 'decision') return etatRuntime.episodeConfirme ? 'fait' : 'en_attente';
+    if (id === 'actions') {
+      if (etatRuntime.nombreVersions > 0) return 'fait';
+      return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
+    }
+    if (id === 'suivi') {
+      if (etatRuntime.suiviRenseigne) return 'fait';
+      return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
+    }
+    // Réévaluation : « faite » dès qu'un cycle daté existe dans la trajectoire.
+    return etatRuntime.nombreCyclesTrajectoire > 0 ? 'fait' : 'a_ouvrir';
   };
 
   const phaseCourante = PHASES.find(p => p.id === phaseActive) ?? PHASES[0];
@@ -597,6 +666,32 @@ export function FichePatientPanel({
       );
     }
 
+    // Phases branchées sur le runtime clinique. Quand aucun épisode n'est
+    // confirmé, `ClinicalRuntimeSection` ne rend rien pour Suivi / Réévaluation :
+    // on affiche un état vide explicite (le « pourquoi ») pour distinguer
+    // « rien à voir ici » d'un chargement en échec.
+    // `etatRuntime` à null = première mesure non encore remontée : le runtime
+    // affiche alors son propre bandeau de chargement / d'erreur, on n'ajoute rien.
+    const runtimePret = etatRuntime !== null && !etatRuntime.chargement && etatRuntime.erreur === null;
+
+    if (phaseActive === 'suivi' && runtimePret && !etatRuntime!.episodeConfirme) {
+      return (
+        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+          Une décision de 21 jours doit d’abord être ouverte pour suivre ce patient. Les points d’étape J7/J14/J21
+          apparaîtront ici une fois l’épisode confirmé.
+        </div>
+      );
+    }
+
+    if (phaseActive === 'reevaluation' && runtimePret && !etatRuntime!.episodeConfirme) {
+      return (
+        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+          La réévaluation (jalons T0 → J21 → J42 → J90) se construit après confirmation d’un épisode. Aucun cycle daté
+          n’est disponible pour l’instant.
+        </div>
+      );
+    }
+
     return null;
   };
 
@@ -630,11 +725,14 @@ export function FichePatientPanel({
 
       {/* Onglets in-fiche : plus de sous-vue en page pleine, plus de scroll. */}
       <div role="tablist" aria-label="Vues de la fiche patient" className="flex flex-wrap gap-1 rounded-xl border border-border bg-muted p-1">
-        {ONGLETS.map(onglet => {
+        {ONGLETS.map((onglet, index) => {
           const actif = ongletActif === onglet.id;
           return (
             <button
               key={onglet.id}
+              ref={element => {
+                refsOnglets.current[index] = element;
+              }}
               type="button"
               role="tab"
               id={`onglet-${onglet.id}`}
@@ -642,6 +740,7 @@ export function FichePatientPanel({
               aria-controls={`panneau-${onglet.id}`}
               tabIndex={actif ? 0 : -1}
               onClick={() => setOngletActif(onglet.id)}
+              onKeyDown={event => onClavierOnglets(event, index)}
               className={`min-h-11 rounded-lg px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
                 actif ? 'bg-surface font-semibold text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
               }`}
@@ -670,6 +769,8 @@ export function FichePatientPanel({
           aria-label="Poste de pilotage clinique"
           className="overflow-hidden rounded-2xl border border-border bg-muted shadow-sm lg:h-[min(80vh,700px)] lg:grid lg:grid-rows-[auto,1fr]"
         >
+          {/* En-tête du cockpit (bandeau + signaux permanents) = 1re rangée. */}
+          <div>
           {/* Bandeau trajectoire — toujours visible */}
           <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface px-4 py-3">
             <div className="min-w-0">
@@ -682,6 +783,34 @@ export function FichePatientPanel({
               <IconeStatut statut={statutPhase(phaseCourante.id)} />
               Phase affichée : {phaseCourante.libelle} — {LIBELLE_STATUT[statutPhase(phaseCourante.id)]}
             </span>
+          </div>
+
+          {/* Signal permanent (B2) : une demande de correction patient doit être
+              perceptible quelle que soit la phase affichée — sans quoi le
+              questionnaire reste verrouillé côté patient sans que le praticien
+              le voie. Le déblocage lui-même reste dans la phase Patient. */}
+          {assignationsModif.length > 0 && (
+            <div
+              role="status"
+              className="flex flex-wrap items-center gap-3 border-b border-accent bg-orange-50 px-4 py-2 text-sm text-orange-800"
+            >
+              <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+              <span className="min-w-0">
+                {assignationsModif.length === 1
+                  ? '1 demande de correction en attente de déblocage.'
+                  : `${assignationsModif.length} demandes de correction en attente de déblocage.`}
+              </span>
+              {phaseActive !== 'patient' && (
+                <button
+                  type="button"
+                  onClick={() => setPhaseActive('patient')}
+                  className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                >
+                  Ouvrir la phase Patient
+                </button>
+              )}
+            </div>
+          )}
           </div>
 
           <div className="lg:grid lg:min-h-0 lg:grid-cols-[13rem,1fr,15rem]">
@@ -746,6 +875,7 @@ export function FichePatientPanel({
                 onFixtureReviewed={relectureErgo}
                 phase={phaseCourante.runtime ?? 'aucune'}
                 onAjusterProtocole={() => setPhaseActive('actions')}
+                onEtatChange={setEtatRuntime}
               />
             </div>
 
@@ -794,7 +924,27 @@ export function FichePatientPanel({
       </div>
 
       <div role="tabpanel" id="panneau-trajectoire" aria-labelledby="onglet-trajectoire" hidden={ongletActif !== 'trajectoire'}>
-        {ongletActif === 'trajectoire' && <TrajectoirePanel trajectoire={trajectoire} />}
+        {ongletActif === 'trajectoire' &&
+          (etatTrajectoire === 'chargement' || etatTrajectoire === 'inconnue' ? (
+            <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+              Chargement de la trajectoire...
+            </div>
+          ) : etatTrajectoire === 'erreur' ? (
+            // Un échec de lecture n'est JAMAIS présenté comme « aucun épisode » :
+            // ce serait une affirmation fausse sur l'historique clinique.
+            <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-sm text-orange-800">
+              <span>{erreurTrajectoire}</span>
+              <button
+                type="button"
+                onClick={() => void chargerTrajectoire()}
+                className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                Réessayer
+              </button>
+            </div>
+          ) : (
+            <TrajectoirePanel trajectoire={trajectoire} />
+          ))}
       </div>
     </div>
     </ModeConsultation>
