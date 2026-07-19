@@ -4,6 +4,33 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — cadrage des campagnes (2026-07-19)
+
+- **Cinq `CAMPAGNE.md` créés**, fermant l'écart **E2** de l'audit de conformité
+  UX 5.0 (campagnes inscrites au Programme sans cadrage) : **SP-COP** (copilote
+  pré-vol & minute d'après), **SP-TT** (time-travel & note de relecture),
+  **SP-MET** (météo d'adhésion), **IDP** (identité patient durable), **SP-SPI**
+  (« Ma spirale » et reprise patient). Chacune fige objectif, frontières
+  (possède / consomme / ne possède pas), décisions actées, dépendances et lots.
+- **Fiches de frontières** correspondantes ajoutées au registre normatif
+  (`REGISTRE_FRONTIERES.md` §3). L'entrée différée « Auth patient
+  inter-assignations » sort des différés au profit de la campagne IDP.
+- **Gates identifiés et nommés** : G1 (refus persisté des cartes du Fil),
+  G2 (identité de cycle des épisodes), G3 (`relecture_notes`), G4 (identité
+  patient durable) — chacun exigeant une confirmation explicite distincte.
+  SP-MET et SP-TT-01 sont livrables **sans migration**.
+- **Deux rectifications doc↔code** :
+  1. la maquette cible ne badge que **deux** éléments (`SP-COP`, `C3`), tous
+     deux côté praticien, et non « les couches futures » — les six autres
+     lignes de la table « Vagues 2+ » n'ont aucune trace visuelle ; chaque
+     campagne devra produire ses propres maquettes ;
+  2. le Fil du jour **n'a aucune carte refusable** dans le code livré,
+     contrairement à ce qu'affirmait l'audit — le garde-fou 5.0 « chaque
+     automatisme reste refusable » n'est pas tenu sur cette surface, sa mise en
+     conformité est portée par le polissage SP-FIL (gate G1).
+- Documentation seule : **aucun code applicatif, aucun schéma, aucune migration,
+  aucun flag, aucun seuil clinique modifié**.
+
 ### Vague 2 — Spirale navigable et comparateur réel (C2B, 2026-07-19)
 
 - **L'index de la Spirale devient navigable.** `trajectoire.index` était calculé
