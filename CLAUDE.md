@@ -60,15 +60,28 @@ cd web && npm run dev              # serveur local
 cd web && npx prisma studio        # inspection DB en lecture seule (ne pas laisser ouvert en prod)
 cd web && npx prisma generate      # régénérer le client après modif du schéma
 cd web && npm run type-check       # vérification TypeScript
+cd web && npm test                 # tests unitaires Vitest (n'inclut PAS les E2E)
+cd web && npm run test:e2e         # parcours E2E Playwright seuls (démarre next dev)
+cd web && npm run test:worktree    # réplique locale du job CI verify, E2E inclus
 bash scripts/check_no_secrets.sh  # contrôle anti-secrets
 ```
+
+`test:worktree` provisionne un PostgreSQL éphémère et exporte son propre
+`NEXTAUTH_SECRET` de test : rien à préparer. Il vise Linux/Debian (installation
+via `apt-get`) — sur macOS, installer PostgreSQL puis exporter `WN_PG_BIN` vers
+le dossier contenant `initdb`. Prérequis et options : `web/e2e/README.md`.
 
 ## Avant de committer
 
 - Vérifier qu'aucun secret n'a été introduit (`bash scripts/check_no_secrets.sh`).
 - Vérifier que les textes UI ajoutés sont en français.
 - Ne pas committer de fichier `.env*`.
-- Pas de régression visible dans le parcours praticien ou patient.
+- Pas de régression visible dans le parcours praticien ou patient. Sur un
+  changement d'UI, le vérifier en rejouant les E2E (`npm run test:worktree`,
+  `-- --fast` pour une passe courte) : **une suite Vitest verte ne prouve rien
+  sur les parcours**, elle n'exécute pas Playwright.
+- Avant d'annoncer qu'une PR est prête à merger, lire son CI (`gh pr checks`) :
+  les E2E n'y sont pas couverts par `npm test`.
 
 ## Définition de done pour une tâche standard
 

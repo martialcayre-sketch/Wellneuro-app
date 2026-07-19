@@ -883,3 +883,24 @@ Postgres seedé + build prod aujourd'hui requis) — sinon « CI rouge » rester
 découverte tardive.
 
 **Questions ouvertes** : aucune bloquante.
+
+## 2026-07-19 — Rectification : les E2E étaient exécutables en local
+
+**Correction** : l'entrée précédente affirmait les E2E impossibles en local
+(« build prod + Postgres seedé + `NEXTAUTH_SECRET` »). Faux sur les quatre
+points. `web/e2e/README.md` documente la procédure, `npm run test:e2e` utilise
+`next dev`, et `scripts/wn-test-worktree.sh` — réplique locale du job CI
+`verify` — provisionne un PostgreSQL éphémère et exporte lui-même un
+`NEXTAUTH_SECRET` jetable. Je n'avais lu ni ce README ni les scripts npm.
+
+**Cause réelle de l'incident** : `CLAUDE.md` ne mentionnait ni E2E ni Playwright,
+et sa règle « pas de régression visible dans le parcours praticien ou patient »
+n'avait aucune commande attachée. Corrigé : commandes E2E ajoutées, plus la
+lecture du CI avant d'annoncer une PR prête.
+
+**Réserve machine** : sur ce Mac le harnais échoue encore (« PostgreSQL absent
+et sudo indisponible ») — il vise Debian/`apt-get` ; macOS exige PostgreSQL
+installé puis `WN_PG_BIN`.
+
+**Prochaine action** : ce setup mac, en remplacement de l'action précédente
+fondée sur un constat erroné.
