@@ -845,3 +845,41 @@ LOT-01 divergents) ; patch pleine-fichier (écraserait la garde `patientId` de C
 `actor !== 'praticien'` (reflog `d86f4f6`) — sur le tronc C5, ou l'abandonner.
 
 **Questions ouvertes** : garde `actor` — porter ou abandonner définitivement ?
+
+## 2026-07-19 — Clôture de la garde JA `actor` (question ouverte du 2026-07-18)
+
+**Décision** : question close. La garde non répliquée de la branche C2B supprimée
+a bien été portée sur le tronc par `2158581` (PR #142) :
+`web/src/lib/food-observation/persistence.ts:282` rejette toute source dont
+`actor !== 'praticien'`, garde posée après le contrôle `episodeId` — placement
+conforme à l'intention d'origine. Couverte par
+`persistence.activation.test.ts` (3 tests : refus `actor=patient`, refus sans
+`actor`, cas passant praticien) — rejoués ce jour, 3/3 verts.
+
+**Réserve** : l'objet `d86f4f6` (tip de la branche abandonnée) n'est plus
+accessible localement (GC), la comparaison exhaustive avec la side-line n'est
+donc plus possible. On s'appuie sur le constat du 2026-07-18 qui identifiait
+cette garde comme la **seule** non répliquée.
+
+**Prochaine action** : inchangée — point 4 « Poste de pilotage » de la Vague 1
+(cockpit borné de `FichePatientPanel`), dernier point restant après #144/#145.
+
+## 2026-07-19 — Vague 1 close : poste de pilotage mergé, E2E rattrapés, `main` protégée
+
+**Décisions** : #146 (cockpit) et #147 (finitions) mergés — merge commit pour le
+premier (préserve l'ancêtre du stack), squash pour le second. Découvert au
+merge : #146 laissait **6 E2E rouges**, les specs asservissant l'ancienne fiche
+linéaire alors que le cockpit affiche une phase à la fois. Specs adaptées à la navigation par
+phase (`8ba41a9`) : fonctionnalité intacte, aucun test supprimé (34 passed
+avant/après). Protection de `main` activée — check `verify` requis, sans rebase
+strict ni revue obligatoire.
+
+**Options écartées** : merger malgré l'E2E rouge (aurait poussé la régression en
+prod) ; force-push pour aligner le co-auteur (bloqué par hook) → squash à message
+explicite.
+
+**Prochaine action** : rendre les E2E lançables en local (`NEXTAUTH_SECRET` +
+Postgres seedé + build prod aujourd'hui requis) — sinon « CI rouge » restera une
+découverte tardive.
+
+**Questions ouvertes** : aucune bloquante.
