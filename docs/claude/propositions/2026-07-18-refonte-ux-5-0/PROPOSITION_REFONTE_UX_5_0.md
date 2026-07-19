@@ -107,7 +107,9 @@ Chantiers UI purs, une PR = un périmètre, réversibles :
 
 ## 9. La maquette cible
 
-`maquette-cible-ux-5-0.html` (autonome, CSP-safe) démontre les deux fronts à parité : praticien = accueil « tour de contrôle » (métriques cliquables + Fil) puis **poste de pilotage borné** (bandeau trajectoire, rail des 7 phases, zone focale + deltas, un instrument ouvert en tiroir) ; patient = étape focalisée avec fil séquentiel, sable/forêt, zéro bleu, aucun score. Les couches futures y sont **badgées « à venir · campagne X »**.
+`maquette-cible-ux-5-0.html` (autonome, CSP-safe) démontre les deux fronts à parité : praticien = accueil « tour de contrôle » (métriques cliquables + Fil) puis **poste de pilotage borné** (bandeau trajectoire, rail des 7 phases, zone focale + deltas, un instrument ouvert en tiroir) ; patient = étape focalisée avec fil séquentiel, sable/forêt, zéro bleu, aucun score.
+
+> **Rectification (2026-07-19, relecture d'exécution de la Vague 2)** : cette section affirmait que « les couches futures y sont badgées "à venir · campagne X" ». C'est inexact. La maquette ne porte que **deux** marqueurs `.badge-soon` — les entrées de rail `Consultation copilote · SP-COP` et `Correspondance · C3` (`maquette-cible-ux-5-0.html:228-229`) —, ils n'affichent que le code de campagne (pas la mention « à venir »), et **aucun n'existe côté patient ni dans le cockpit**. Les six autres lignes de la table « Vagues 2+ » (C2B, SP-TT, HDS, SP-MET, SP-SPI/IDP, QX) **n'ont aucune trace visuelle** dans la maquette. Conséquence de cadrage : chaque campagne de la Vague 2 produit ses propres maquettes ; la maquette 5.0 ne fournit que l'ossature d'accueil (rail, thème, typographie, patron de tiroir). Le badge `C3`, enfin, ne désigne pas la campagne C3 — terminée — mais son seul reliquat reporté, le fil de correspondance médecin.
 
 ## 10. Hors périmètre
 

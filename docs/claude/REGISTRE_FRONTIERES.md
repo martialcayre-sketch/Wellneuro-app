@@ -545,6 +545,104 @@
   jour (documentaire) ; persistance bloquée par C2A et gate migration ;
   premier lot domaine conditionné à **JA-00 + JA-0T** (validation terrain).
 
+### SP-COP — Copilote de consultation (`2026-07-19-sp-cop-copilote-consultation`)
+
+- **Possède** : la surface « Consultation copilote » ; la composition du pré-vol
+  T-10 min (changements depuis la dernière consultation, discordances,
+  questions suggérées) ; l'écran de clôture et le pré-remplissage
+  décision / protocole / document.
+- **Consomme** : runtime clinique C1 (`lib/clinical-engine/`,
+  `api/praticien/cockpit`), `ProtocolDraft` et `ProtocolDiffusionApproval`
+  (C2A), composition documentaire C3 (`lib/documents/`), patron « pourquoi
+  maintenant » (`lib/fil/cartes.ts`), patrons `ModeConsultation` /
+  `TwoLevelReading`.
+- **Décisions actées** : lecture seule recalculée, aucun snapshot persisté ;
+  toute affirmation cite instrument, date et `versionScore` ; discordances
+  `practitioner_only` ; pré-remplissage refusable, chaîne Relu → Validé pour
+  diffusion → Envoyé intacte ; brouillons append-only (`supersedesDraftId`) ;
+  **aucune migration**.
+- **Ne possède pas** : écoute ambiante, audio, transcription (SP-AMB, gate
+  CNIL/RGPD bloquant — A6-3) ; la logique clinique et les seuils (C1 souverain) ;
+  l'envoi effectif ; la météo d'adhésion (SP-MET) ; la lecture d'un état passé
+  (SP-TT) ; le comparateur multi-épisodes (C2B).
+- **Statut** : cadrée le 2026-07-19. Dépendances SP-RUN ✓, C2A ✓, C3 ✓.
+
+### SP-TT — Time-travel et note de relecture (`2026-07-19-sp-tt-time-travel-relecture`)
+
+- **Possède** : le paramètre `asOf` des lectures praticien et son cadrage ; le
+  bandeau d'état passé ; l'objet **note de relecture** (modèle, écriture,
+  affichage).
+- **Consomme** : `construireReponsesParQuestionnaire(reponses, dateLimite)`
+  (`lib/equilibre/depuisPrisma.ts`), la trajectoire C2B, les épisodes C2A.
+- **Décisions actées** : la lecture du passé est un **recalcul, jamais un
+  snapshot** (cohérent avec le refus doctrinal de C2A, `schema.prisma:676-677`) ;
+  mode passé strictement en lecture, seule exception la note ; note
+  **horodatée au présent**, jamais antidatée ; append-only ; praticien seul.
+  La table `relecture_notes` prévue par A6-1 a été **différée de C2A à SP-TT**
+  (`…suivi-j7-j14-j21-et-persistance/lots/LOT-01-spec-modele-gate.md:111`) :
+  elle constitue un **gate migration explicite**.
+- **Ne possède pas** : la persistance de snapshot / `ClinicalSnapshot` /
+  `DecisionCard` ; le comparateur (C2B) ; la diffusion ; toute lecture du passé
+  côté patient.
+- **Statut** : cadrée le 2026-07-19. Dépendances C2A ✓, C2B ✓.
+
+### SP-MET — Météo d'adhésion (`2026-07-19-sp-met-meteo-adhesion`)
+
+- **Possède** : la dérivation de l'agrégat **trois états**
+  (régulière / fragile / interrompue), la formulation de sa **cause observable
+  citée**, son affichage praticien et son état d'abstention.
+- **Consomme** : `ProtocolCheckin.reponses` (`lib/protocol/checkinDomain.ts`) —
+  `adhesion`, `tolerance`, `energie`, `sommeil` et les fenêtres J7/J14/J21 ±3 j.
+- **Décisions actées** : **calculé à la lecture, jamais persisté** — aucune
+  migration, conforme à `schema.prisma:733-734` (instrument de pilotage, jamais
+  un score ni un jalon, arbitrage A1) ; **praticien seul**, vérifié par test ;
+  jamais un pourcentage d'observance ; statut jamais porté par la seule
+  couleur ; **abstention honnête** — sans point d'étape exploitable l'état est
+  « indéterminée », jamais « interrompue » par défaut ; la cause est rapportée,
+  jamais interprétée.
+- **Ne possède pas** : les constats déterministes par point d'étape, qui
+  restent C2B (**A8-4**, symétrie stricte) ; toute diffusion patient ; les
+  repères de cohorte (SP-CAB, seuil `n ≥ 5`).
+- **Statut** : cadrée le 2026-07-19. Dépendance C2A ✓ ; JA enrichit plus tard
+  la matière observable sans conditionner la livraison.
+
+### IDP — Identité patient durable (`2026-07-19-idp-identite-patient-durable`)
+
+- **Possède** : le lien magique à usage unique et expirant (émission,
+  consommation, anti-rejeu), sa table de jetons, les passkeys en option, et la
+  **bascule progressive** depuis le token permanent.
+- **Consomme** : `lib/patient-session.ts` (cookie signé 12 h, conservé),
+  `lib/consultation/portail.ts`, le modèle documentaire versionné de TRUST.
+- **Décisions actées** : migration **additive seule**, `patients.access_token`
+  conservé ; **coexistence obligatoire** des deux chemins pendant la bascule ;
+  jeton stocké **haché**, expiration courte, consommation unique, rejeu refusé
+  et tracé ; **revue de sécurité obligatoire** avant merge ; **gate TRUST** —
+  livrable en préproduction, activation avec données réelles = décision
+  distincte, aujourd'hui NO-GO.
+- **Ne possède pas** : le contenu de l'espace patient (SP-SPI) ; la suppression
+  du chemin token permanent ; l'authentification praticien (NextAuth).
+- **Statut** : cadrée le 2026-07-19. Remplace l'entrée différée « Auth patient
+  inter-assignations » du présent registre.
+
+### SP-SPI — « Ma spirale » et reprise patient (`2026-07-19-sp-spi-ma-spirale-patient`)
+
+- **Possède** : l'accueil patient trajectoire, l'écran de reprise en douceur, la
+  proposition de pack de réévaluation.
+- **Consomme** : composants patient de la Vague 1
+  (`components/patient/ui/*`, `PatientJourneyProgress`, `ReadingComfortControl`,
+  `MonEquilibreAccueil.tsx`), l'identité durable IDP, les épisodes C2A. Le
+  signal de reprise du Fil praticien réserve déjà la campagne
+  (`lib/fil/cartes.ts:160-163`).
+- **Décisions actées** : **zéro score chiffré patient**, aucune gamification,
+  aucun pronostic, aucun classement ; **construction jamais dégradation** ;
+  statut jamais par la seule couleur ; pack de réévaluation **proposé et
+  refusable, jamais auto-assigné** ; reprise sans pression (ni compte à rebours
+  ni relance culpabilisante) ; vocabulaire réglementaire verrouillé.
+- **Ne possède pas** : l'authentification (IDP) ; la météo d'adhésion
+  (SP-MET, praticien seul) ; toute donnée réservée au praticien ; l'assignation,
+  qui reste un geste praticien.
+- **Statut** : cadrée le 2026-07-19. Dépend d'**IDP / LOT-01**.
+
 ### C0-UX — Refonte shell 3.0 (`2026-07-11-refonte-ux-shell-3-0`)
 
 - **Statut acté** : *socle technique livré — direction visuelle remplacée par
@@ -569,7 +667,8 @@
 - **Hybrid Patient** (ex-E4) : dashboard patient, frise longitudinale
   (contrat A4), carnet de bord. Dépend de HC-F + C1 + auth.
 - **Auth patient inter-assignations** (ex-E3/R8 complet) : magic link +
-  passkeys. Déclencheur : besoin d'identité inter-assignations (cf. C2).
+  passkeys. **Sortie des différés le 2026-07-19** — cadrée en campagne **IDP**
+  (`2026-07-19-idp-identite-patient-durable`), déclenchée par SP-SPI.
 - **Biologie réelle stockée** (ex-E8/R5 complet) : après HDS.
 - **OCR papier** (ex-« zéro saisie », candidat R10) : D0 fait, pilotes =
   familles auditées (ALI_01, ALI_03, NEU_03, MOD_02 — mêmes que QX).

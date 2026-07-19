@@ -68,7 +68,7 @@ SP-RUN (`2026-07-15-cockpit-vivant`, statut *terminé — SP-RUN-02 validé en C
 
 ### Livrées / terminées
 
-- **SP-FIL** — *conforme*. Le Fil du jour comme accueil praticien (A6-4) sur données existantes, sans migration ; cartes « pourquoi maintenant » refusables. Réserve d'expérience : les métriques restent passives (cf. §6).
+- **SP-FIL** — *conforme*. Le Fil du jour comme accueil praticien (A6-4) sur données existantes, sans migration ; cartes « pourquoi maintenant » ~~refusables~~ — **rectifié le 2026-07-19** : aucune carte n'est refusable dans le code livré (`web/src/components/fil/FilDuJour.tsx` n'expose qu'un lien d'action par carte ; la route `api/praticien/fil` est en lecture seule et ne porte aucune mutation). Le garde-fou 5.0 « chaque automatisme reste refusable » n'est donc **pas tenu** sur cette surface ; sa mise en conformité est portée par le polissage SP-FIL de la Vague 2 (gate migration G1, refus horodaté et réversible). Réserve d'expérience initiale : les métriques restent passives (cf. §6) — résorbée depuis par la Vague 1.
 - **SP-RUN** — *conforme (étalon)*. Voir §1.
 - **HC-F** — *conforme*. Socle DA (tout clair + rail sombre signature), mécanismes A2 (`ModeConsultation`, `PrévisualisationPatient`, double lecture), lexique et gouvernance. C'est la fondation que la refonte réemploie.
 - **C1** — *conforme*. Contrats purs, provenance en niveaux de preuve A/B/C/D (pas de « score de confiance » continu), validation humaine systématique, protocole borné au brouillon. Souveraineté clinique respectée.
