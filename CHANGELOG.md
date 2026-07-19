@@ -47,6 +47,18 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   soit — statut « indéterminée » jusqu'à résolution.
   Routes pleine page `.../besoins` et `.../alimentation` **conservées**
   (accès direct par URL), l'accès principal passant désormais par les onglets.
+- **Finitions poste de pilotage** (PR 4, suivi de revue) : (1) l'état vide de la
+  phase Réévaluation est reformulé de façon **structurelle** — l'absence de cycle
+  est rattachée à l'absence d'épisode confirmé, jamais présentée comme un
+  « résultat de lecture » de la trajectoire (qui n'est pas lue tant qu'aucun
+  épisode n'est confirmé) ; (2) le **signal de demande de correction** (B2) est
+  hissé au niveau de la fiche : il reste visible depuis **tous les onglets**
+  (« 12 besoins », « Alimentation », « Trajectoire »…), plus seulement le cockpit,
+  et son raccourci ramène au cockpit sur la phase Patient ; (3) **renforts de
+  couverture** — clavier des onglets (focus réel via `activeElement`, Origine/Fin,
+  bouclage), état Réévaluation sous erreur runtime (aucun état vide affirmé),
+  `index` de trajectoire réaliste dans le stub, assertions de statut durcies.
+  Pure présentation : aucune route, aucun contrat d'API, aucune logique clinique.
 - Aucune logique clinique, aucun seuil, aucune migration Prisma ; garde-fous 5.0
   respectés (statut jamais par la seule couleur, aucun score patient).
 

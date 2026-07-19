@@ -697,10 +697,15 @@ export function FichePatientPanel({
     }
 
     if (phaseActive === 'reevaluation' && runtimePret && !etatRuntime!.episodeConfirme) {
+      // Formulation STRUCTURELLE (non « résultat de lecture ») : sans épisode
+      // confirmé, la trajectoire n'est jamais lue — on n'affirme donc pas
+      // « aucun cycle disponible » (qui laisserait croire à un historique
+      // consulté puis trouvé vide), on rattache l'absence de cycle à l'absence
+      // d'épisode.
       return (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
-          La réévaluation (jalons T0 → J21 → J42 → J90) se construit après confirmation d’un épisode. Aucun cycle daté
-          n’est disponible pour l’instant.
+          La réévaluation (jalons T0 → J21 → J42 → J90) se construit après confirmation d’un épisode. Aucun épisode
+          n’étant confirmé, il n’y a pas encore de cycle daté à afficher.
         </div>
       );
     }
@@ -771,6 +776,38 @@ export function FichePatientPanel({
         </div>
       )}
 
+      {/* Signal permanent (B2) : une demande de correction patient doit rester
+          perceptible quel que soit l'ONGLET affiché (« Les 12 besoins »,
+          « Alimentation », « Trajectoire »…) et pas seulement dans le cockpit —
+          sans quoi le questionnaire reste verrouillé côté patient sans que le
+          praticien le voie. Hissé au niveau de la fiche pour cette raison. Le
+          déblocage lui-même reste dans la phase Patient du cockpit. */}
+      {assignationsModif.length > 0 && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-orange-50 px-4 py-2 text-sm text-orange-800"
+        >
+          <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <span className="min-w-0">
+            {assignationsModif.length === 1
+              ? '1 demande de correction en attente de déblocage.'
+              : `${assignationsModif.length} demandes de correction en attente de déblocage.`}
+          </span>
+          {!(ongletActif === 'cockpit' && phaseActive === 'patient') && (
+            <button
+              type="button"
+              onClick={() => {
+                setOngletActif('cockpit');
+                setPhaseActive('patient');
+              }}
+              className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Ouvrir la phase Patient
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ------------------------------ Poste de pilotage ------------------ */}
       <div
         role="tabpanel"
@@ -782,7 +819,9 @@ export function FichePatientPanel({
           aria-label="Poste de pilotage clinique"
           className="overflow-hidden rounded-2xl border border-border bg-muted shadow-sm lg:h-[min(80vh,700px)] lg:grid lg:grid-rows-[auto,1fr]"
         >
-          {/* En-tête du cockpit (bandeau + signaux permanents) = 1re rangée. */}
+          {/* En-tête du cockpit (bandeau trajectoire) = 1re rangée. Le signal
+              de correction (B2) est hissé au niveau de la fiche pour rester
+              visible depuis tous les onglets, pas seulement le cockpit. */}
           <div>
           {/* Bandeau trajectoire — toujours visible */}
           <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface px-4 py-3">
@@ -797,33 +836,6 @@ export function FichePatientPanel({
               Phase affichée : {phaseCourante.libelle} — {LIBELLE_STATUT[statutPhase(phaseCourante.id)]}
             </span>
           </div>
-
-          {/* Signal permanent (B2) : une demande de correction patient doit être
-              perceptible quelle que soit la phase affichée — sans quoi le
-              questionnaire reste verrouillé côté patient sans que le praticien
-              le voie. Le déblocage lui-même reste dans la phase Patient. */}
-          {assignationsModif.length > 0 && (
-            <div
-              role="status"
-              className="flex flex-wrap items-center gap-3 border-b border-accent bg-orange-50 px-4 py-2 text-sm text-orange-800"
-            >
-              <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
-              <span className="min-w-0">
-                {assignationsModif.length === 1
-                  ? '1 demande de correction en attente de déblocage.'
-                  : `${assignationsModif.length} demandes de correction en attente de déblocage.`}
-              </span>
-              {phaseActive !== 'patient' && (
-                <button
-                  type="button"
-                  onClick={() => setPhaseActive('patient')}
-                  className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-                >
-                  Ouvrir la phase Patient
-                </button>
-              )}
-            </div>
-          )}
           </div>
 
           <div className="lg:grid lg:min-h-0 lg:grid-cols-[13rem,1fr,15rem]">
