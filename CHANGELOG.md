@@ -4,6 +4,35 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — SP-MET, météo d'adhésion (2026-07-19)
+
+- **Signal d'adhésion à trois états** — régulière / fragile / interrompue —
+  dérivé **à la lecture** des points d'étape J7/J14/J21 déjà collectés
+  (`ProtocolCheckin.reponses`). Module de domaine **pur**
+  (`web/src/lib/protocol/adhesion.ts`), **aucune migration, aucun agrégat
+  persisté** : le schéma interdit doctrinalement d'en faire un score ou un jalon
+  (arbitrage A1).
+- **Règle explicite et exhaustive** : l'état vient de la réponse d'adhésion du
+  check-in **le plus récent** (tête de chaîne append-only — une correction du
+  patient remplace sa réponse, elle ne s'y ajoute pas). Une valeur d'adhésion
+  inconnue **abstient** au lieu de deviner.
+- **Abstention honnête** : sans point d'étape exploitable, l'état est
+  « indéterminée », et le panneau écrit qu'une absence de réponse **n'est pas
+  comptée comme une interruption**. Jamais « interrompue » par défaut.
+- **Cause observable citée, jamais interprétée** : les réponses du patient sont
+  rapportées verbatim, avec leur point d'étape et leur date. La tolérance est
+  rapportée quand elle n'est pas « Bien » — elle **éclaire sans pondérer**,
+  l'état ne change pas.
+- **Praticien seul** (A8-4, A7-6) : affiché en phase **Suivi** du poste de
+  pilotage, jamais côté patient. Un test structurel parcourt les surfaces
+  patient (`app/api/patient`, `app/api/portail`, `app/patient`, `app/portail`,
+  `components/patient*`) et échoue si le module ou le panneau y est importé un
+  jour.
+- **Ni score, ni pourcentage d'observance, ni classement** ; statut jamais porté
+  par la seule couleur (mot + symbole). La route praticien renvoyait déjà les
+  check-ins, le cockpit les ignorait : **aucun changement de contrat d'API**.
+- 17 tests ajoutés (11 domaine, 6 présentation).
+
 ### Lot Vague 1 — application UX 5.0 au code (2026-07-19)
 
 - **Portail patient legacy → tokens Jardin** (PR 1) : flux `/patient` migré des

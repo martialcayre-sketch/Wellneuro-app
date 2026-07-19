@@ -13,8 +13,11 @@ import { ProtocolConsultationPanel } from './ProtocolConsultationPanel';
 import { ProtocolVersionHistory, type ProtocolVersionItem } from './ProtocolVersionHistory';
 import { ProtocolDiffusionPanel, type DiffusionState } from './ProtocolDiffusionPanel';
 import { J21DecisionPanel } from './J21DecisionPanel';
+import { MeteoAdhesionPanel } from './MeteoAdhesionPanel';
 import { TrajectoirePanel } from './TrajectoirePanel';
 import type { ResumeJ21 } from '@/lib/protocol/resumeJ21';
+import { deriverMeteoAdhesion } from '@/lib/protocol/adhesion';
+import type { CheckinRow } from '@/lib/protocol/checkinDomain';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 import { PractitionerFoodCompassObservatory } from './PractitionerFoodCompassObservatory';
@@ -105,6 +108,9 @@ export function ClinicalRuntimeSection({
   const [diffusionError, setDiffusionError] = useState<string | null>(null);
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
   const [resumeJ21, setResumeJ21] = useState<ResumeJ21 | null>(null);
+  // Points d'étape bruts : la route les renvoyait déjà, le cockpit les ignorait.
+  // Ils alimentent la météo d'adhésion (SP-MET), dérivée à la lecture seule.
+  const [checkins, setCheckins] = useState<CheckinRow[]>([]);
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
   // « inconnue » tant qu'aucune lecture n'a abouti (aligné sur l'onglet
   // Trajectoire) : ni une requête EN VOL ni un échec ne doivent être présentés
@@ -141,9 +147,10 @@ export function ClinicalRuntimeSection({
       const response = await fetch(
         `/api/praticien/protocoles/checkins?idPatient=${encodeURIComponent(idPatient)}&decisionCardId=${encodeURIComponent(decisionCardId)}`,
       );
-      const payload = (await response.json()) as { ok: boolean; resume?: ResumeJ21 };
+      const payload = (await response.json()) as { ok: boolean; resume?: ResumeJ21; checkins?: CheckinRow[] };
       if (!response.ok || !payload.ok) return;
       setResumeJ21(payload.resume ?? null);
+      setCheckins(payload.checkins ?? []);
     } catch {
       // Le résumé est indicatif : un échec de lecture ne bloque pas le cockpit.
     }
@@ -446,6 +453,9 @@ export function ClinicalRuntimeSection({
           error={diffusionError}
           onApprove={approveForDiffusion}
         />
+      )}
+      {affiche('suivi') && !fixture && readyDecisionCardId && (
+        <MeteoAdhesionPanel meteo={deriverMeteoAdhesion(checkins)} />
       )}
       {affiche('suivi') && !fixture && readyDecisionCardId && (
         <J21DecisionPanel
