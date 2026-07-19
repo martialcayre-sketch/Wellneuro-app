@@ -4,6 +4,40 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — Spirale navigable et comparateur réel (C2B, 2026-07-19)
+
+- **L'index de la Spirale devient navigable.** `trajectoire.index` était calculé
+  depuis C2B LOT-09 (`lib/protocol/trajectoire.ts`) et **n'était rendu nulle
+  part** : conséquence, les épisodes J21/J42/J90 confirmés n'apparaissaient dans
+  aucun écran. Le panneau affiche désormais la liste des repères datés sous
+  forme de boutons ; sélectionner un repère met en avant le cycle qu'il
+  documente — **navigation, jamais un graphe** (A6).
+- **Rattachement honnête** (`rattacherReperesAuxCycles`, module de domaine pur) :
+  un repère est rattaché au **dernier T0 antérieur ou égal**, jamais à un cycle
+  postérieur. Un repère antérieur à tout T0 confirmé, ou dont la date est
+  illisible, reste **explicitement non rattaché** — il n'est pas rangé de force
+  dans le premier cycle.
+- **Le comparateur multi-épisodes devient une vraie grille.** Il n'affichait
+  qu'une phrase (« repères présentés côte à côte ci-dessus ») alors que le rendu
+  restait une pile verticale. Une table lignes = jalons / colonnes = cycles
+  présente les **valeurs** mesurées ; une case sans mesure affiche « jalon non
+  mesuré », jamais un 0 (A8-2). **Aucun écart inter-cycles n'est calculé** et le
+  panneau le déclare : ce serait une mesure dérivée nouvelle et non sourcée. La
+  garde A8-3 est inchangée — versions différentes ⇒ bloc « non comparable »,
+  aucune grille.
+- **Accessibilité** : repères en cibles ≥ 44 px, focus visible, `aria-pressed`
+  sur la sélection, `aria-current` sur le cycle mis en avant, mise en avant
+  **écrite en toutes lettres** (jamais la couleur seule) ; la grille défile dans
+  son conteneur, jamais la page.
+- **Première couverture E2E de la fiche-trajectoire** (`e2e/fiche-trajectoire.spec.ts`) :
+  l'onglet « Trajectoire » et la phase « Réévaluation » n'étaient joués par
+  aucun test de bout en bout. Les deux chemins vérifient que l'état vide est
+  rattaché à l'absence d'épisode et n'est jamais confondu avec un échec de
+  lecture. 10 tests unitaires ajoutés (rattachement des repères, grille du
+  comparateur, sélection/désélection).
+- Lecture seule : aucun contrat d'API, aucune route, aucune migration, aucune
+  logique clinique ni seuil modifiés.
+
 ### Lot Vague 1 — application UX 5.0 au code (2026-07-19)
 
 - **Portail patient legacy → tokens Jardin** (PR 1) : flux `/patient` migré des
