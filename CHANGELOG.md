@@ -4,6 +4,28 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — dette de tests du Fil du jour (SP-FIL, 2026-07-19)
+
+- **`FilDuJour` n'avait aucun test** alors qu'il est l'accueil praticien depuis
+  SP-FIL LOT-01. Ses quatre états de rendu (chargement, indisponible, vide,
+  liste) partagent le même `data-testid` : 6 tests les distinguent désormais par
+  leur **contenu**, dont la confusion à éviter — un échec de lecture annoncé
+  comme un fil vide (« rien à traiter » alors qu'on n'a rien pu lire).
+- **`GET /api/praticien/fil` n'avait aucun test** non plus : 5 tests couvrent la
+  session absente (401 + `unavailable`, jamais un fil vide silencieux), le fil
+  légitimement vide, l'exclusion des patients inactifs, la carte sourcée
+  (« pourquoi maintenant » + action), et la panne de lecture annoncée.
+- **E2E durci** : `dashboard-praticien.spec.ts` se contentait de la présence du
+  `data-testid`, si bien qu'il **passait aussi sur un Fil en erreur ou bloqué en
+  chargement**. Il exige désormais un état résolu — cartes ou état vide
+  explicite — et l'absence du message d'indisponibilité.
+- **Code mort retiré** : `PatientsATraiter.tsx`, sans import depuis SP-FIL
+  LOT-01 (son périmètre est absorbé par les cartes retards/réponses).
+- Aucune modification de comportement : tests, durcissement E2E et suppression
+  de code mort uniquement. La mise en conformité du garde-fou « chaque
+  automatisme reste refusable » relève du **gate G1** (migration), toujours
+  ouvert.
+
 ### Vague 2 — SP-COP LOT-01, pré-vol T-10 min (2026-07-19)
 
 - **La surface « Consultation copilote » existe.** L'entrée de rail était

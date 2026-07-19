@@ -133,11 +133,22 @@ test.describe('Praticien Dashboard', () => {
     await page.goto('/dashboard');
 
     // La carte métriques « le cabinet en un coup d'œil » et le conteneur du
-    // Fil sont présents quel que soit l'état des données (cartes ou état
-    // vide) — les cartes elles-mêmes dépendent du seed.
+    // Fil sont présents quel que soit l'état des données.
     await expect(page.getByRole('heading', { name: /coup d/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Le Fil', exact: true })).toBeVisible();
-    await expect(page.getByTestId('fil-du-jour')).toBeVisible({ timeout: 10000 });
+
+    const fil = page.getByTestId('fil-du-jour');
+    await expect(fil).toBeVisible({ timeout: 10000 });
+
+    // Les quatre états de rendu partagent ce `data-testid` : sa seule présence
+    // laissait passer un Fil en erreur ou bloqué en chargement. On exige donc
+    // un état RÉSOLU — cartes ou état vide explicite — et jamais l'état
+    // d'indisponibilité, qui signalerait une session ou une base cassée.
+    await expect(fil).not.toContainText('momentanément indisponible');
+    await expect(fil.locator('.animate-pulse')).toHaveCount(0);
+    await expect(
+      fil.locator('article').first().or(fil.getByText(/Rien n.appelle votre attention/)),
+    ).toBeVisible({ timeout: 10000 });
   });
 
   test('paramètres : blocs profil et gouvernance clinique (HC-F LOT-03)', async ({ page }) => {
