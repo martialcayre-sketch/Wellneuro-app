@@ -16,27 +16,34 @@ test.describe('Mode consultation (fiche patient)', () => {
     ]) {
       await page.setViewportSize(viewport);
       await page.goto(`/dashboard/patients/${PATIENT_ID}`);
-      const missing = page.getByRole('heading', { name: 'Données manquantes' });
-      const decision = page.getByRole('heading', { name: 'Décision clinique' });
-      const protocol = page.getByRole('heading', { name: 'Protocole 21 jours' });
-      const closing = page.getByRole('heading', { name: 'Clôture et aperçu patient' });
-      const coverage = page.getByRole('heading', { name: 'Couverture des 12 besoins' });
-      await expect(missing).toBeVisible();
-      await expect(decision).toBeVisible();
+
+      // Poste de pilotage (A6-R1) : une phase à la fois via le rail du cycle
+      // clinique. Les états prudents (aucune donnée qualifiée, aucune décision,
+      // aucun protocole) sont désormais répartis par phase, non plus empilés
+      // dans un défilement unique — on les vérifie phase par phase.
+      const rail = page.getByRole('tablist', { name: 'Cycle clinique' });
+      await expect(rail).toBeVisible();
+
+      // Décision (phase par défaut) : décision clinique non préparée.
+      await expect(page.getByRole('heading', { name: 'Décision clinique' })).toBeVisible();
       await expect(page.getByText('Décision clinique non préparée')).toBeVisible();
-      await expect(protocol).toBeVisible();
+
+      // Données : données manquantes non évaluées tant que rien n'est qualifié.
+      await rail.getByRole('tab', { name: /Données fiables/ }).click();
+      await expect(page.getByRole('heading', { name: 'Données manquantes' })).toBeVisible();
+
+      // Actions : protocole et clôture indisponibles (aucune priorité sélectionnée).
+      await rail.getByRole('tab', { name: /Actions/ }).click();
+      await expect(page.getByRole('heading', { name: 'Protocole 21 jours' })).toBeVisible();
       await expect(page.getByText('Protocole indisponible — priorité praticien non sélectionnée')).toBeVisible();
-      await expect(closing).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Clôture et aperçu patient' })).toBeVisible();
       await expect(page.getByText(/Aperçu du protocole indisponible/)).toBeVisible();
-      await expect(coverage).toBeVisible();
+
+      // Garde-fou responsive : jamais de défilement horizontal, quel que soit le
+      // viewport ; le bouton « Mode consultation » reste une cible tactile ≥ 44px.
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
       const modeButtonBox = await page.getByRole('button', { name: 'Mode consultation' }).boundingBox();
       expect(modeButtonBox?.height).toBeGreaterThanOrEqual(44);
-      const headings = await page.locator('h3').allTextContents();
-      expect(headings.indexOf('Données manquantes')).toBeLessThan(headings.indexOf('Décision clinique'));
-      expect(headings.indexOf('Décision clinique')).toBeLessThan(headings.indexOf('Protocole 21 jours'));
-      expect(headings.indexOf('Protocole 21 jours')).toBeLessThan(headings.indexOf('Clôture et aperçu patient'));
-      expect(headings.indexOf('Clôture et aperçu patient')).toBeLessThan(headings.indexOf('Couverture des 12 besoins'));
     }
   });
 
@@ -82,6 +89,9 @@ test.describe('Mode consultation (fiche patient)', () => {
       await confirm.click();
       await expect(page.getByText(/Épisode T0 confirmé/)).toBeVisible();
       await expect(page.getByText('Aucune priorité proposée')).toBeVisible();
+      // Le protocole vit dans la phase Actions : on l'ouvre pour vérifier qu'il
+      // reste indisponible tant que les bloqueurs décisionnels ne sont pas levés.
+      await page.getByRole('tablist', { name: 'Cycle clinique' }).getByRole('tab', { name: /Actions/ }).click();
       await expect(page.getByText('Protocole indisponible — bloqueurs décisionnels à revoir')).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     }
