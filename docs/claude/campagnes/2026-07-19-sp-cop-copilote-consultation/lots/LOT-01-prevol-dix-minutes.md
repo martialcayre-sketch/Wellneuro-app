@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Pré-vol T-10 min"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "aucun"
 ---
 
@@ -33,6 +33,14 @@ Sans matière, la vue le dit — elle n'invente rien.
 
 ## Hors périmètre
 
+- **Les discordances ne sont pas recopiées ici** (arbitrage d'exécution du
+  2026-07-19). Elles sont produites par le runtime clinique et déjà lues au
+  poste de pilotage, phase « Compréhension ». En faire une seconde composition
+  dans le pré-vol exigerait de dupliquer l'assemblage du `ClinicalSnapshot` de
+  `api/praticien/cockpit` — deux chemins qui pourraient diverger sur un objet
+  clinique. Le pré-vol **pointe** vers le poste de pilotage. Si le besoin d'un
+  résumé de discordances dans le pré-vol se confirme, il passera par une
+  extraction partagée, jamais par une copie.
 - Toute écriture, toute persistance, tout snapshot.
 - L'écoute ambiante, l'audio, la transcription (**SP-AMB**, gate CNIL/RGPD
   bloquant — A6-3).

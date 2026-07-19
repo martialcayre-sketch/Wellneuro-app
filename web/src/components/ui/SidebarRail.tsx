@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, Compass, type LucideIcon } from 'lucide-react';
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
@@ -13,7 +13,14 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
  */
 const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
   { etiquette: null, items: [{ href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard }] },
-  { etiquette: 'Suivi', items: [{ href: '/dashboard/patients', label: 'Patients', icon: Users }] },
+  {
+    etiquette: 'Suivi',
+    items: [
+      { href: '/dashboard/patients', label: 'Patients', icon: Users },
+      // Entrée réservée par la maquette 5.0, branchée par SP-COP LOT-01.
+      { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
+    ],
+  },
   {
     etiquette: 'Instruments',
     items: [
