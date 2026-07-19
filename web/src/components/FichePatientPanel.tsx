@@ -443,9 +443,10 @@ export function FichePatientPanel({
     }
     // Réévaluation : « renseignée » uniquement si un jalon POST-T0 (J21/J42/J90)
     // a réellement été mesuré (booléens `mesure` de la trajectoire, A8-2) — un
-    // T0 confirmé ouvre un cycle mais ne constitue pas une réévaluation. Si la
-    // lecture de la trajectoire a échoué, l'état est inconnu, pas affirmé.
-    if (etatRuntime.trajectoireErreur) return 'inconnu';
+    // T0 confirmé ouvre un cycle mais ne constitue pas une réévaluation. Tant que
+    // la lecture de la trajectoire n'a pas abouti (en vol) ou a échoué, l'état
+    // est inconnu, jamais affirmé « à ouvrir ».
+    if (etatRuntime.trajectoireErreur || etatRuntime.trajectoireEnLecture) return 'inconnu';
     return etatRuntime.reevaluationMesuree ? 'fait' : 'a_ouvrir';
   };
 

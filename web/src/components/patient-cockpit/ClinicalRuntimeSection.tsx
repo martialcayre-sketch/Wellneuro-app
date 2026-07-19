@@ -60,6 +60,9 @@ export type EtatRuntimeClinique = {
   // Vrai si la lecture de la trajectoire a échoué : le statut de la phase
   // Réévaluation est alors INCONNU, jamais affirmé.
   trajectoireErreur: boolean;
+  // Vrai tant que la lecture de la trajectoire n'a pas abouti (état initial ou
+  // requête en vol) : le statut Réévaluation reste INCONNU, jamais « à ouvrir ».
+  trajectoireEnLecture: boolean;
   // Une réévaluation n'est « renseignée » que si un jalon POST-T0 (J21/J42/J90)
   // a réellement été mesuré dans au moins un cycle — pure lecture des booléens
   // `jalons[].mesure` déjà produits par lib/protocol/trajectoire (A8-2). Un T0
@@ -103,27 +106,33 @@ export function ClinicalRuntimeSection({
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
   const [resumeJ21, setResumeJ21] = useState<ResumeJ21 | null>(null);
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
-  const [trajectoireErreur, setTrajectoireErreur] = useState(false);
+  // « inconnue » tant qu'aucune lecture n'a abouti (aligné sur l'onglet
+  // Trajectoire) : ni une requête EN VOL ni un échec ne doivent être présentés
+  // comme « aucun épisode confirmé » — affirmation fausse sur l'historique.
+  const [statutTrajectoire, setStatutTrajectoire] =
+    useState<'inconnue' | 'chargement' | 'chargee' | 'erreur'>('inconnue');
   const [foodCompassSelection, setFoodCompassSelection] = useState<{
     foodLabel: string;
     actionRef: FoodCompassActionRef;
   } | null>(null);
 
   const loadTrajectoire = useCallback(async () => {
-    // Un échec de lecture ne bloque pas le cockpit, mais il est SIGNALÉ :
-    // il ne doit jamais être présenté comme « aucun épisode confirmé »
-    // (affirmation fausse sur l'historique clinique).
+    // Un échec de lecture ne bloque pas le cockpit, mais il est SIGNALÉ, et la
+    // requête en vol est un état « chargement » explicite : ni l'un ni l'autre
+    // ne doivent être présentés comme « aucun épisode confirmé » (affirmation
+    // fausse sur l'historique clinique).
+    setStatutTrajectoire('chargement');
     try {
       const response = await fetch(`/api/praticien/trajectoire?idPatient=${encodeURIComponent(idPatient)}`);
       const payload = (await response.json()) as { ok: boolean; trajectoire?: Trajectoire };
       if (!response.ok || !payload.ok) {
-        setTrajectoireErreur(true);
+        setStatutTrajectoire('erreur');
         return;
       }
       setTrajectoire(payload.trajectoire ?? null);
-      setTrajectoireErreur(false);
+      setStatutTrajectoire('chargee');
     } catch {
-      setTrajectoireErreur(true);
+      setStatutTrajectoire('erreur');
     }
   }, [idPatient]);
 
@@ -259,6 +268,9 @@ export function ClinicalRuntimeSection({
   );
   const suiviRenseigne = resumeJ21 !== null;
   const nombreVersions = versions.length;
+  // Drapeaux dérivés (booléens value-stables : aucune boucle de rendu).
+  const trajectoireErreur = statutTrajectoire === 'erreur';
+  const trajectoireEnLecture = statutTrajectoire === 'inconnue' || statutTrajectoire === 'chargement';
   useEffect(() => {
     onEtatChange?.({
       chargement: loading,
@@ -267,6 +279,7 @@ export function ClinicalRuntimeSection({
       nombreVersions,
       suiviRenseigne,
       trajectoireErreur,
+      trajectoireEnLecture,
       reevaluationMesuree,
     });
   }, [
@@ -277,6 +290,7 @@ export function ClinicalRuntimeSection({
     nombreVersions,
     suiviRenseigne,
     trajectoireErreur,
+    trajectoireEnLecture,
     reevaluationMesuree,
   ]);
 
@@ -458,6 +472,12 @@ export function ClinicalRuntimeSection({
             >
               Réessayer
             </button>
+          </div>
+        ) : trajectoireEnLecture ? (
+          // Lecture en cours ≠ absence d'épisode : afficher un état « chargement »
+          // explicite, jamais « Aucun épisode confirmé » tant que rien n'est établi.
+          <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+            Chargement de la trajectoire&hellip;
           </div>
         ) : (
           <TrajectoirePanel trajectoire={trajectoire} />

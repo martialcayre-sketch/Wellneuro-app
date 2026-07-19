@@ -41,7 +41,10 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   **échec de lecture de la trajectoire** est distingué d'une absence d'épisode
   (message + « Réessayer ») sur les **deux chemins d'affichage** — onglet
   Trajectoire et phase Réévaluation du cockpit — sans jamais afficher
-  « aucun épisode » sur une erreur.
+  « aucun épisode » sur une erreur. La **requête en vol** est elle aussi un état
+  « chargement » explicite sur les deux chemins : pendant la lecture, ni le
+  panneau (« aucun épisode ») ni le rail (« à ouvrir ») n'affirment quoi que ce
+  soit — statut « indéterminée » jusqu'à résolution.
   Routes pleine page `.../besoins` et `.../alimentation` **conservées**
   (accès direct par URL), l'accès principal passant désormais par les onglets.
 - Aucune logique clinique, aucun seuil, aucune migration Prisma ; garde-fous 5.0

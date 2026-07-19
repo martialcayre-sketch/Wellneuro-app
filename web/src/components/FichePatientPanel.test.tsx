@@ -53,7 +53,7 @@ function decisionCard(): DecisionCard {
 type Options = {
   runtime?: 'ready' | 'proposal' | 'unauthenticated' | 'unavailable';
   assignationsModif?: boolean;
-  trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure';
+  trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'enVol';
 };
 
 // Cycle de trajectoire : T0 toujours mesuré (l'ancre), J21 selon le scénario.
@@ -106,6 +106,9 @@ function stubFetch(options: Options = {}) {
       });
     }
     if (url.includes('/api/praticien/trajectoire')) {
+      // Requête volontairement laissée EN VOL : simule la fenêtre transitoire
+      // pendant laquelle la lecture n'a pas encore abouti.
+      if (trajectoire === 'enVol') return new Promise(() => {});
       if (trajectoire === '401') {
         return ok({ ok: false, reason: 'unauthenticated', error: 'Authentification requise.' }, 401);
       }
@@ -284,6 +287,19 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
     // Le rail ne prétend rien : statut « indéterminée », jamais « à ouvrir ».
     expect(screen.getByRole('tab', { name: /Réévaluation/i }).textContent).toContain('indéterminée');
+  });
+
+  it('phase Réévaluation : pendant la lecture de la trajectoire, affiche « chargement » et pas « aucun épisode » (chemin cockpit)', async () => {
+    await rendreFiche({ runtime: 'ready', trajectoire: 'enVol' });
+
+    fireEvent.click(screen.getByRole('tab', { name: /Réévaluation/i }));
+    // Requête en vol : état « chargement » explicite, jamais une affirmation
+    // d'absence d'épisode, et le rail reste « indéterminée », pas « à ouvrir ».
+    expect(await screen.findByText(/Chargement de la trajectoire/i)).toBeTruthy();
+    expect(screen.queryByText(/Aucun épisode confirmé/i)).toBeNull();
+    const onglet = screen.getByRole('tab', { name: /Réévaluation/i });
+    expect(onglet.textContent).toContain('indéterminée');
+    expect(onglet.textContent).not.toContain('à ouvrir');
   });
 
   it('statut Réévaluation : un T0 confirmé sans jalon mesuré ne vaut pas « renseignée »', async () => {
