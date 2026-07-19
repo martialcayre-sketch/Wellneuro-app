@@ -16,6 +16,16 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   d'accueil `text-3xl`, en-tête patient `text-2xl`), **canvas mid-tone A5-R2**
   appliqué à `globals.css` (praticien `#D3D8E6`, patient `#EAE0CC` ; cartes
   inchangées), tokens de l'Observatory C5 réalignés (slate/red → rail/status).
+- **Poste de pilotage** (PR 3) : `FichePatientPanel` réorganisé en cockpit borné
+  à la hauteur d'écran (bandeau patient + rail des 7 phases du cycle clinique +
+  zone focale unique + instruments à tiroir), onglets in-fiche
+  (poste de pilotage / 12 besoins / alimentation / trajectoire) remplaçant la
+  navigation par scroll et les sous-vues en page pleine, trois instruments
+  denses (12 besoins, objets cliniques & momentum, détail des réponses) déplacés
+  en tiroir Radix ouvert **au clic** (patron `PatientPreview`) ; le runtime
+  clinique reste monté en permanence et n'est que **filtré par phase**
+  (`ClinicalRuntimeSection` : prop `phase` additive, défaut `tout` inchangé).
+  Aucun instrument n'a disparu ; rail et onglets navigables au clavier.
 - Aucune logique clinique, aucun seuil, aucune migration Prisma ; garde-fous 5.0
   respectés (statut jamais par la seule couleur, aucun score patient).
 
