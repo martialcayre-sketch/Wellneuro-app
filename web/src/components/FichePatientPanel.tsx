@@ -11,6 +11,7 @@ import {
   Circle,
   Clock,
   FileText,
+  HelpCircle,
   ListChecks,
   Stethoscope,
   X,
@@ -134,7 +135,9 @@ const ONGLETS: { id: OngletFiche; libelle: string }[] = [
 ];
 
 type IdPhase = 'patient' | 'donnees' | 'comprehension' | 'decision' | 'actions' | 'suivi' | 'reevaluation';
-type StatutPhase = 'fait' | 'en_attente' | 'a_ouvrir';
+// `inconnu` : l'état réel n'a pas pu être établi (runtime en chargement ou en
+// erreur) — on l'affiche tel quel plutôt que d'affirmer « à ouvrir ».
+type StatutPhase = 'fait' | 'en_attente' | 'a_ouvrir' | 'inconnu';
 
 // Colonne vertébrale = le cycle clinique 3.x. Une phase = une zone focale ;
 // on navigue par phase, jamais par défilement (A6-R1).
@@ -152,12 +155,14 @@ const LIBELLE_STATUT: Record<StatutPhase, string> = {
   fait: 'renseignée',
   en_attente: 'en attente',
   a_ouvrir: 'à ouvrir',
+  inconnu: 'indéterminée',
 };
 
 // Le statut n'est jamais porté par la seule couleur : icône + texte.
 function IconeStatut({ statut }: { statut: StatutPhase }) {
   if (statut === 'fait') return <Check aria-hidden="true" size={14} strokeWidth={2.5} className="text-status-success" />;
   if (statut === 'en_attente') return <Clock aria-hidden="true" size={14} strokeWidth={2} className="text-accent" />;
+  if (statut === 'inconnu') return <HelpCircle aria-hidden="true" size={14} strokeWidth={2} className="text-muted-foreground" />;
   return <Circle aria-hidden="true" size={14} strokeWidth={2} className="text-muted-foreground" />;
 }
 
@@ -423,7 +428,10 @@ export function FichePatientPanel({
     if (id === 'comprehension') {
       return priorites.some(p => p.couverture !== null) ? 'fait' : 'en_attente';
     }
-    if (!etatRuntime) return 'a_ouvrir';
+    // Phases dérivées du runtime : tant que son état n'est pas établi
+    // (première mesure absente, chargement en cours ou erreur), le statut est
+    // honnêtement « indéterminée » — jamais une affirmation par défaut.
+    if (!etatRuntime || etatRuntime.chargement || etatRuntime.erreur !== null) return 'inconnu';
     if (id === 'decision') return etatRuntime.episodeConfirme ? 'fait' : 'en_attente';
     if (id === 'actions') {
       if (etatRuntime.nombreVersions > 0) return 'fait';
@@ -433,8 +441,12 @@ export function FichePatientPanel({
       if (etatRuntime.suiviRenseigne) return 'fait';
       return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
     }
-    // Réévaluation : « faite » dès qu'un cycle daté existe dans la trajectoire.
-    return etatRuntime.nombreCyclesTrajectoire > 0 ? 'fait' : 'a_ouvrir';
+    // Réévaluation : « renseignée » uniquement si un jalon POST-T0 (J21/J42/J90)
+    // a réellement été mesuré (booléens `mesure` de la trajectoire, A8-2) — un
+    // T0 confirmé ouvre un cycle mais ne constitue pas une réévaluation. Si la
+    // lecture de la trajectoire a échoué, l'état est inconnu, pas affirmé.
+    if (etatRuntime.trajectoireErreur) return 'inconnu';
+    return etatRuntime.reevaluationMesuree ? 'fait' : 'a_ouvrir';
   };
 
   const phaseCourante = PHASES.find(p => p.id === phaseActive) ?? PHASES[0];

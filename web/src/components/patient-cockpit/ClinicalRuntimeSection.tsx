@@ -57,7 +57,14 @@ export type EtatRuntimeClinique = {
   episodeConfirme: boolean;
   nombreVersions: number;
   suiviRenseigne: boolean;
-  nombreCyclesTrajectoire: number;
+  // Vrai si la lecture de la trajectoire a échoué : le statut de la phase
+  // Réévaluation est alors INCONNU, jamais affirmé.
+  trajectoireErreur: boolean;
+  // Une réévaluation n'est « renseignée » que si un jalon POST-T0 (J21/J42/J90)
+  // a réellement été mesuré dans au moins un cycle — pure lecture des booléens
+  // `jalons[].mesure` déjà produits par lib/protocol/trajectoire (A8-2). Un T0
+  // confirmé seul ouvre un cycle mais ne constitue PAS une réévaluation.
+  reevaluationMesuree: boolean;
 };
 
 export function ClinicalRuntimeSection({
@@ -96,19 +103,27 @@ export function ClinicalRuntimeSection({
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
   const [resumeJ21, setResumeJ21] = useState<ResumeJ21 | null>(null);
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
+  const [trajectoireErreur, setTrajectoireErreur] = useState(false);
   const [foodCompassSelection, setFoodCompassSelection] = useState<{
     foodLabel: string;
     actionRef: FoodCompassActionRef;
   } | null>(null);
 
   const loadTrajectoire = useCallback(async () => {
+    // Un échec de lecture ne bloque pas le cockpit, mais il est SIGNALÉ :
+    // il ne doit jamais être présenté comme « aucun épisode confirmé »
+    // (affirmation fausse sur l'historique clinique).
     try {
       const response = await fetch(`/api/praticien/trajectoire?idPatient=${encodeURIComponent(idPatient)}`);
       const payload = (await response.json()) as { ok: boolean; trajectoire?: Trajectoire };
-      if (!response.ok || !payload.ok) return;
+      if (!response.ok || !payload.ok) {
+        setTrajectoireErreur(true);
+        return;
+      }
       setTrajectoire(payload.trajectoire ?? null);
+      setTrajectoireErreur(false);
     } catch {
-      // La fiche-trajectoire est indicative : un échec de lecture ne bloque pas le cockpit.
+      setTrajectoireErreur(true);
     }
   }, [idPatient]);
 
@@ -236,8 +251,12 @@ export function ClinicalRuntimeSection({
   }, [readyDecisionCardId, activeVersionId]);
 
   // Remontée de l'état observable (rail des phases). Dépendances primitives
-  // uniquement : aucune boucle de rendu.
-  const nombreCyclesTrajectoire = trajectoire?.cycles.length ?? 0;
+  // uniquement : aucune boucle de rendu. `reevaluationMesuree` ne fait que lire
+  // les booléens `mesure` déjà calculés par lib/protocol/trajectoire — aucune
+  // logique clinique nouvelle.
+  const reevaluationMesuree = (trajectoire?.cycles ?? []).some(cycle =>
+    cycle.jalons.some(jalon => jalon.jalon !== 'T0' && jalon.mesure),
+  );
   const suiviRenseigne = resumeJ21 !== null;
   const nombreVersions = versions.length;
   useEffect(() => {
@@ -247,7 +266,8 @@ export function ClinicalRuntimeSection({
       episodeConfirme: readyDecisionCardId !== null,
       nombreVersions,
       suiviRenseigne,
-      nombreCyclesTrajectoire,
+      trajectoireErreur,
+      reevaluationMesuree,
     });
   }, [
     onEtatChange,
@@ -256,7 +276,8 @@ export function ClinicalRuntimeSection({
     readyDecisionCardId,
     nombreVersions,
     suiviRenseigne,
-    nombreCyclesTrajectoire,
+    trajectoireErreur,
+    reevaluationMesuree,
   ]);
 
   // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
@@ -422,7 +443,25 @@ export function ClinicalRuntimeSection({
         />
       )}
       {affiche('reevaluation') && !fixture && readyDecisionCardId && (
-        <TrajectoirePanel trajectoire={trajectoire} />
+        trajectoireErreur ? (
+          // Échec de lecture ≠ absence d'épisode : ne jamais laisser
+          // TrajectoirePanel afficher « Aucun épisode confirmé » sur une erreur.
+          <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-sm text-orange-800">
+            <span>
+              La trajectoire n&apos;a pas pu être lue. L&apos;historique clinique de ce patient n&apos;est pas
+              affiché — aucune conclusion à en tirer.
+            </span>
+            <button
+              type="button"
+              onClick={() => void loadTrajectoire()}
+              className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : (
+          <TrajectoirePanel trajectoire={trajectoire} />
+        )
       )}
     </>
   );
