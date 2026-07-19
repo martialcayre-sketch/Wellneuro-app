@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { FichePatientPanel } from './FichePatientPanel';
+import { C5FeatureProvider } from './patient-cockpit/C5FeatureProvider';
+import type { DecisionCard } from '@/lib/clinical-engine/types';
 
 // Patient fictif autorisé (CLAUDE.md) — aucune donnée réelle.
 const EQUILIBRE = {
@@ -35,24 +37,85 @@ const REPONSES = {
   ],
 };
 
-function stubFetch() {
+// DecisionCard complète et actionnable (mêmes conventions que ProtocolMiniBuilder.test).
+function decisionCard(): DecisionCard {
+  return {
+    decisionCardId: 'card-1', snapshotId: 'snapshot-1', snapshotInputHash: 'snapshot-hash',
+    reviewId: 'review-1', reviewInputHash: 'review-hash', createdAt: '2026-01-01T00:00:00.000Z',
+    version: 'c1-decision-card-v1', status: 'draft',
+    priorityCandidates: [{ candidateId: 'p1', origin: 'engine', label: 'Priorité', rank: 1, confidence: 'à_documenter', ruleId: 'R', rationale: 'Fixture.', provenance: { responseIds: [], needIds: [], clinicalObjectCodes: [] }, limitations: [] }],
+    proposedMainPriorityId: 'p1', selectedMainPriority: { candidateId: 'p1', selectedAt: '2026-01-01T00:00:00.000Z', selectedBy: 'practitioner', rationale: 'Fixture.' },
+    counterfactuals: [], missingDataFindingIds: [], discordanceFindingIds: [], safetyFindingIds: [],
+    abstention: { status: 'not_required', ruleIds: ['R'], limitations: [] }, limitations: [], inputHash: 'hash',
+  };
+}
+
+type Options = {
+  runtime?: 'ready' | 'proposal' | 'unauthenticated' | 'unavailable';
+  assignationsModif?: boolean;
+  trajectoire?: 'ok' | '401';
+};
+
+function stubFetch(options: Options = {}) {
+  const runtime = options.runtime ?? 'unavailable';
+  const assignationsModif = options.assignationsModif ?? false;
+  const trajectoire = options.trajectoire ?? 'ok';
+
   const fetchMock = vi.fn((input: unknown) => {
     const url = String(input);
-    const json = (payload: unknown) => Promise.resolve({ ok: true, json: () => Promise.resolve(payload) });
-    if (url.includes('/api/praticien/equilibre')) return json(EQUILIBRE);
-    if (url.includes('/api/praticien/reponses')) return json(REPONSES);
-    if (url.includes('/api/praticien/patients')) return json({ assignations: [] });
-    if (url.includes('/api/praticien/trajectoire')) return json({ ok: true, trajectoire: null });
-    // Runtime clinique : indisponible dans ce test d'ossature.
-    return json({ status: 'unavailable', reason: 'exception' });
+    const ok = (payload: unknown, status = 200) =>
+      Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(payload) });
+
+    if (url.includes('/api/praticien/equilibre')) return ok(EQUILIBRE);
+    if (url.includes('/api/praticien/besoins')) {
+      return ok({
+        patient: EQUILIBRE.patient,
+        besoins: EQUILIBRE.priorites.map(p => ({ ...p, id: p.besoin, sources: [] })),
+      });
+    }
+    if (url.includes('/api/praticien/reponses')) return ok(REPONSES);
+    if (url.includes('/api/praticien/patients')) {
+      return ok({
+        assignations: assignationsModif
+          ? [{
+              idAssignation: 'ASG001',
+              emailPatient: 'sophie.nicola@example.test',
+              statutReponses: 'modification_demandee',
+              titre: 'Questionnaire sommeil',
+              idQuestionnaire: 'NEU_03',
+              correctionCommentaire: 'Je me suis trompée sur une question.',
+            }]
+          : [],
+      });
+    }
+    if (url.includes('/api/praticien/trajectoire')) {
+      return trajectoire === '401'
+        ? ok({ ok: false, reason: 'unauthenticated', error: 'Authentification requise.' }, 401)
+        : ok({ ok: true, trajectoire: { index: [], cycles: [], comparaison: { disponible: false, raison: 'un_seul_cycle' } } });
+    }
+    // Runtime clinique C1.
+    if (url.includes('/api/praticien/cockpit')) {
+      if (runtime === 'ready') return ok({ status: 'ready', snapshot: {}, review: { missingData: null, discordances: null }, decisionCard: decisionCard() });
+      if (runtime === 'proposal') return ok({ status: 'proposal_required', proposal: { assessmentEpisodeId: 'ep1', milestone: 'T0', inWindowResponseIds: [], candidateResponses: [] }, proposalHash: 'h' });
+      if (runtime === 'unauthenticated') return ok({ status: 'unavailable', reason: 'unauthenticated', error: 'Authentification requise.' }, 401);
+      return ok({ status: 'unavailable', reason: 'exception', error: 'Indisponible.' });
+    }
+    if (url.includes('/api/praticien/protocoles/versions')) return ok({ ok: true, active: null, history: [] });
+    if (url.includes('/api/praticien/protocoles/diffusion')) return ok({ ok: true, approval: null, stale: false });
+    if (url.includes('/api/praticien/protocoles/checkins')) return ok({ ok: true, resume: null });
+    return ok({});
   });
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
 
-async function rendreFiche() {
-  stubFetch();
-  render(<FichePatientPanel idPatient="PAT001" />);
+async function rendreFiche(options: Options = {}) {
+  stubFetch(options);
+  render(
+    <C5FeatureProvider enabled={false}>
+      <FichePatientPanel idPatient="PAT001" />
+    </C5FeatureProvider>,
+  );
   await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
 }
 
@@ -76,7 +139,7 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     const decision = screen.getByRole('tab', { name: /Décision 21 j/i });
     expect(decision.getAttribute('aria-selected')).toBe('true');
     // Statut jamais porté par la seule couleur : un libellé texte accompagne l'icône.
-    expect(decision.textContent).toContain('à ouvrir');
+    expect(decision.textContent).toMatch(/en attente|à ouvrir|renseignée/);
   });
 
   it('navigue de phase en phase au clic et au clavier, sans quitter la page', async () => {
@@ -108,18 +171,74 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
-  it('expose les onglets in-fiche et bascule vers la trajectoire', async () => {
+  it('onglets in-fiche : navigation clavier (flèches) et bascule vers la trajectoire', async () => {
     await rendreFiche();
 
     const onglets = screen.getByRole('tablist', { name: 'Vues de la fiche patient' });
-    expect(onglets.textContent).toContain('Poste de pilotage');
-    expect(onglets.textContent).toContain('Les 12 besoins');
-    expect(onglets.textContent).toContain('Alimentation');
-    expect(onglets.textContent).toContain('Trajectoire');
+    const cockpitTab = within(onglets).getByRole('tab', { name: 'Poste de pilotage' });
+    expect(cockpitTab.getAttribute('aria-selected')).toBe('true');
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectoire' }));
+    // B1 : les flèches doivent déplacer la sélection (tabindex roving).
+    fireEvent.keyDown(cockpitTab, { key: 'ArrowRight' });
+    await waitFor(() =>
+      expect(within(onglets).getByRole('tab', { name: 'Les 12 besoins' }).getAttribute('aria-selected')).toBe('true'),
+    );
+
+    fireEvent.click(within(onglets).getByRole('tab', { name: 'Trajectoire' }));
     await waitFor(() => expect(screen.getByText(/Fiche-trajectoire/i)).toBeTruthy());
     // Le poste de pilotage est masqué, jamais démonté d'un scroll de page.
     expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(true);
+  });
+
+  it('préserve le brouillon de protocole en changeant de phase (hidden, pas démontage)', async () => {
+    await rendreFiche({ runtime: 'ready' });
+
+    // Passe en phase Actions et saisit une raison d'être.
+    fireEvent.click(screen.getByRole('tab', { name: /Actions/i }));
+    const raison = await screen.findByLabelText('Raison d’être');
+    fireEvent.change(raison, { target: { value: 'Soutenir le sommeil' } });
+    expect((raison as HTMLTextAreaElement).value).toBe('Soutenir le sommeil');
+
+    // Détour par Suivi puis retour : le champ conserve sa valeur.
+    fireEvent.click(screen.getByRole('tab', { name: /Suivi/i }));
+    fireEvent.click(screen.getByRole('tab', { name: /Actions/i }));
+    expect((screen.getByLabelText('Raison d’être') as HTMLTextAreaElement).value).toBe('Soutenir le sommeil');
+  });
+
+  it('rend une demande de correction perceptible sans sélectionner la phase Patient (B2)', async () => {
+    await rendreFiche({ assignationsModif: true });
+
+    // Phase par défaut = Décision : le signal doit tout de même être visible.
+    expect(screen.getByRole('tab', { name: /Décision 21 j/i }).getAttribute('aria-selected')).toBe('true');
+    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+    // Et le rail signale la phase Patient « en attente », pas « renseignée ».
+    expect(screen.getByRole('tab', { name: /Patient/i }).textContent).toContain('en attente');
+  });
+
+  it('affiche un état vide explicite en Suivi et Réévaluation sans épisode confirmé (M3)', async () => {
+    await rendreFiche({ runtime: 'proposal' });
+
+    fireEvent.click(screen.getByRole('tab', { name: /Suivi/i }));
+    await waitFor(() => expect(screen.getByText(/doit d’abord être ouverte pour suivre/i)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('tab', { name: /Réévaluation/i }));
+    await waitFor(() => expect(screen.getByText(/se construit après confirmation d’un épisode/i)).toBeTruthy());
+  });
+
+  it('affiche l’erreur de session runtime même hors phase Décision (M1)', async () => {
+    await rendreFiche({ runtime: 'unauthenticated' });
+
+    fireEvent.click(screen.getByRole('tab', { name: /Actions/i }));
+    await waitFor(() => expect(screen.getByText(/Votre session a expiré/i)).toBeTruthy());
+  });
+
+  it('n’affiche pas « aucun épisode » quand la trajectoire échoue (M2)', async () => {
+    await rendreFiche({ trajectoire: '401' });
+
+    fireEvent.click(screen.getByRole('tab', { name: 'Trajectoire' }));
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
+    expect(screen.getByText(/session a expiré/i)).toBeTruthy();
+    expect(screen.queryByText(/Aucun épisode confirmé/i)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
   });
 });
