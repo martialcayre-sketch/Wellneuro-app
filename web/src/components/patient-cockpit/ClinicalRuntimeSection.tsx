@@ -35,16 +35,57 @@ type DiffusionApiResponse = {
 
 type RuntimeError = 'session' | 'patient' | 'technical';
 
+// Phases du cycle clinique 3.x (A6-R1). Le poste de pilotage n'affiche qu'une
+// phase à la fois ; `'tout'` (défaut) conserve l'empilement historique et reste
+// le comportement de référence hors cockpit.
+export type PhaseCycleClinique =
+  | 'tout'
+  | 'aucune'
+  | 'donnees'
+  | 'comprehension'
+  | 'decision'
+  | 'actions'
+  | 'suivi'
+  | 'reevaluation';
+
+// État observable du runtime, remonté au poste de pilotage pour que le rail
+// des phases reflète l'état réel (et non un statut inventé). Lecture seule :
+// aucun de ces champs ne modifie le comportement du runtime.
+export type EtatRuntimeClinique = {
+  chargement: boolean;
+  erreur: RuntimeError | null;
+  episodeConfirme: boolean;
+  nombreVersions: number;
+  suiviRenseigne: boolean;
+  // Vrai si la lecture de la trajectoire a échoué : le statut de la phase
+  // Réévaluation est alors INCONNU, jamais affirmé.
+  trajectoireErreur: boolean;
+  // Vrai tant que la lecture de la trajectoire n'a pas abouti (état initial ou
+  // requête en vol) : le statut Réévaluation reste INCONNU, jamais « à ouvrir ».
+  trajectoireEnLecture: boolean;
+  // Une réévaluation n'est « renseignée » que si un jalon POST-T0 (J21/J42/J90)
+  // a réellement été mesuré dans au moins un cycle — pure lecture des booléens
+  // `jalons[].mesure` déjà produits par lib/protocol/trajectoire (A8-2). Un T0
+  // confirmé seul ouvre un cycle mais ne constitue PAS une réévaluation.
+  reevaluationMesuree: boolean;
+};
+
 export function ClinicalRuntimeSection({
   idPatient,
   fixture,
   protocolDraft,
   onFixtureReviewed,
+  phase = 'tout',
+  onAjusterProtocole,
+  onEtatChange,
 }: {
   idPatient: string;
   fixture: ValidationErgoC1Fixture | null;
   protocolDraft: ProtocolDraft | null;
   onFixtureReviewed: (submission: RelectureProtocoleSoumission) => void;
+  phase?: PhaseCycleClinique;
+  onAjusterProtocole?: () => void;
+  onEtatChange?: (etat: EtatRuntimeClinique) => void;
 }) {
   const c5Enabled = useC5Enabled();
   const [runtime, setRuntime] = useState<CockpitRuntimeApiResponse | null>(null);
@@ -65,19 +106,33 @@ export function ClinicalRuntimeSection({
   // Résumé J21 « point de jonction » (C2A LOT-04) — lecture seule.
   const [resumeJ21, setResumeJ21] = useState<ResumeJ21 | null>(null);
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
+  // « inconnue » tant qu'aucune lecture n'a abouti (aligné sur l'onglet
+  // Trajectoire) : ni une requête EN VOL ni un échec ne doivent être présentés
+  // comme « aucun épisode confirmé » — affirmation fausse sur l'historique.
+  const [statutTrajectoire, setStatutTrajectoire] =
+    useState<'inconnue' | 'chargement' | 'chargee' | 'erreur'>('inconnue');
   const [foodCompassSelection, setFoodCompassSelection] = useState<{
     foodLabel: string;
     actionRef: FoodCompassActionRef;
   } | null>(null);
 
   const loadTrajectoire = useCallback(async () => {
+    // Un échec de lecture ne bloque pas le cockpit, mais il est SIGNALÉ, et la
+    // requête en vol est un état « chargement » explicite : ni l'un ni l'autre
+    // ne doivent être présentés comme « aucun épisode confirmé » (affirmation
+    // fausse sur l'historique clinique).
+    setStatutTrajectoire('chargement');
     try {
       const response = await fetch(`/api/praticien/trajectoire?idPatient=${encodeURIComponent(idPatient)}`);
       const payload = (await response.json()) as { ok: boolean; trajectoire?: Trajectoire };
-      if (!response.ok || !payload.ok) return;
+      if (!response.ok || !payload.ok) {
+        setStatutTrajectoire('erreur');
+        return;
+      }
       setTrajectoire(payload.trajectoire ?? null);
+      setStatutTrajectoire('chargee');
     } catch {
-      // La fiche-trajectoire est indicative : un échec de lecture ne bloque pas le cockpit.
+      setStatutTrajectoire('erreur');
     }
   }, [idPatient]);
 
@@ -204,6 +259,41 @@ export function ClinicalRuntimeSection({
     setFoodCompassSelection(null);
   }, [readyDecisionCardId, activeVersionId]);
 
+  // Remontée de l'état observable (rail des phases). Dépendances primitives
+  // uniquement : aucune boucle de rendu. `reevaluationMesuree` ne fait que lire
+  // les booléens `mesure` déjà calculés par lib/protocol/trajectoire — aucune
+  // logique clinique nouvelle.
+  const reevaluationMesuree = (trajectoire?.cycles ?? []).some(cycle =>
+    cycle.jalons.some(jalon => jalon.jalon !== 'T0' && jalon.mesure),
+  );
+  const suiviRenseigne = resumeJ21 !== null;
+  const nombreVersions = versions.length;
+  // Drapeaux dérivés (booléens value-stables : aucune boucle de rendu).
+  const trajectoireErreur = statutTrajectoire === 'erreur';
+  const trajectoireEnLecture = statutTrajectoire === 'inconnue' || statutTrajectoire === 'chargement';
+  useEffect(() => {
+    onEtatChange?.({
+      chargement: loading,
+      erreur: error,
+      episodeConfirme: readyDecisionCardId !== null,
+      nombreVersions,
+      suiviRenseigne,
+      trajectoireErreur,
+      trajectoireEnLecture,
+      reevaluationMesuree,
+    });
+  }, [
+    onEtatChange,
+    loading,
+    error,
+    readyDecisionCardId,
+    nombreVersions,
+    suiviRenseigne,
+    trajectoireErreur,
+    trajectoireEnLecture,
+    reevaluationMesuree,
+  ]);
+
   // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
   // d'envoi patient). Anti-écrasement via baseVersionId → 409 version_stale.
   const saveVersion = async (submission: RelectureProtocoleSoumission) => {
@@ -277,8 +367,18 @@ export function ClinicalRuntimeSection({
     (version) => version.isActive && version.status === 'practitioner_reviewed',
   );
 
+  // Filtre d'affichage par phase — purement présentationnel : les chargements,
+  // les états et les actions restent strictement identiques quelle que soit la
+  // phase affichée (aucun contrat d'API ni règle clinique n'est touché).
+  const affiche = (phaseInstrument: Exclude<PhaseCycleClinique, 'tout' | 'aucune'>) =>
+    phase === 'tout' || phase === phaseInstrument;
+
   return (
     <>
+      {/* Chargement, avis de rechargement et erreurs : JAMAIS filtrés par
+          phase — une session expirée doit être lisible même si le praticien
+          se trouve sur la phase Actions (sinon il saisit un protocole dans un
+          formulaire qui ne pourra pas s'enregistrer). */}
       {!fixture && loading && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
           Chargement de la proposition d&apos;épisode T0…
@@ -296,25 +396,32 @@ export function ClinicalRuntimeSection({
               : 'Erreur technique lors de la préparation du cockpit clinique.'}
         </div>
       )}
-      {!fixture && !loading && !error && runtime?.status === 'proposal_required' && (
+      {affiche('decision') && !fixture && !loading && !error && runtime?.status === 'proposal_required' && (
         <EpisodeConfirmationPanel proposal={runtime.proposal} submitting={submitting} onConfirm={confirm} />
       )}
-      {!fixture && runtime?.status === 'ready' && (
+      {affiche('decision') && !fixture && runtime?.status === 'ready' && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
           Épisode T0 confirmé. Décision suspendue : l&apos;abstention clinique n&apos;est pas encore évaluée.
         </div>
       )}
 
-      <MissingDataPanel missingData={review?.missingData ?? null} discordances={review?.discordances ?? null} />
-      <DecisionSummaryCard decisionCard={decisionCard} />
-      {c5Enabled && !fixture && readyDecisionCardId && (
-        <PractitionerFoodCompassObservatory
-          idPatient={idPatient}
-          decisionCardId={readyDecisionCardId}
-          onInsert={setFoodCompassSelection}
-        />
+      {affiche('donnees') && (
+        <MissingDataPanel missingData={review?.missingData ?? null} discordances={review?.discordances ?? null} />
       )}
-      <div id="protocol-version-builder">
+      {affiche('decision') && <DecisionSummaryCard decisionCard={decisionCard} />}
+      {/* Boussole alimentaire : montée dès que les gardes métier sont
+          satisfaites, puis seulement MASQUÉE hors phase Actions — la démonter
+          rejouerait son chargement et réinitialiserait l'aliment sélectionné. */}
+      {c5Enabled && !fixture && readyDecisionCardId && (
+        <div hidden={!affiche('actions')}>
+          <PractitionerFoodCompassObservatory
+            idPatient={idPatient}
+            decisionCardId={readyDecisionCardId}
+            onInsert={setFoodCompassSelection}
+          />
+        </div>
+      )}
+      <div id="protocol-version-builder" hidden={!affiche('actions')}>
         <ProtocolMiniBuilder
           decisionCard={decisionCard}
           onReviewed={fixture ? onFixtureReviewed : undefined}
@@ -325,9 +432,11 @@ export function ClinicalRuntimeSection({
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
         />
       </div>
-      <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
-      {!fixture && <ProtocolVersionHistory versions={versions} />}
-      {!fixture && versions.length > 0 && (
+      {affiche('actions') && (
+        <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
+      )}
+      {affiche('actions') && !fixture && <ProtocolVersionHistory versions={versions} />}
+      {affiche('actions') && !fixture && versions.length > 0 && (
         <ProtocolDiffusionPanel
           canApprove={Boolean(activeReviewedVersion)}
           approved={approvedAt !== null}
@@ -338,15 +447,42 @@ export function ClinicalRuntimeSection({
           onApprove={approveForDiffusion}
         />
       )}
-      {!fixture && readyDecisionCardId && (
+      {affiche('suivi') && !fixture && readyDecisionCardId && (
         <J21DecisionPanel
           resume={resumeJ21}
-          onAjuster={() =>
-            document.getElementById('protocol-version-builder')?.scrollIntoView({ behavior: 'smooth' })
+          onAjuster={
+            onAjusterProtocole ??
+            (() => document.getElementById('protocol-version-builder')?.scrollIntoView({ behavior: 'smooth' }))
           }
         />
       )}
-      {!fixture && readyDecisionCardId && <TrajectoirePanel trajectoire={trajectoire} />}
+      {affiche('reevaluation') && !fixture && readyDecisionCardId && (
+        trajectoireErreur ? (
+          // Échec de lecture ≠ absence d'épisode : ne jamais laisser
+          // TrajectoirePanel afficher « Aucun épisode confirmé » sur une erreur.
+          <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-sm text-orange-800">
+            <span>
+              La trajectoire n&apos;a pas pu être lue. L&apos;historique clinique de ce patient n&apos;est pas
+              affiché — aucune conclusion à en tirer.
+            </span>
+            <button
+              type="button"
+              onClick={() => void loadTrajectoire()}
+              className="min-h-9 self-start rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Réessayer
+            </button>
+          </div>
+        ) : trajectoireEnLecture ? (
+          // Lecture en cours ≠ absence d'épisode : afficher un état « chargement »
+          // explicite, jamais « Aucun épisode confirmé » tant que rien n'est établi.
+          <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+            Chargement de la trajectoire&hellip;
+          </div>
+        ) : (
+          <TrajectoirePanel trajectoire={trajectoire} />
+        )
+      )}
     </>
   );
 }

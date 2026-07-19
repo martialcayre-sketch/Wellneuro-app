@@ -16,6 +16,37 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   d'accueil `text-3xl`, en-tête patient `text-2xl`), **canvas mid-tone A5-R2**
   appliqué à `globals.css` (praticien `#D3D8E6`, patient `#EAE0CC` ; cartes
   inchangées), tokens de l'Observatory C5 réalignés (slate/red → rail/status).
+- **Poste de pilotage** (PR 3) : `FichePatientPanel` réorganisé en cockpit borné
+  à la hauteur d'écran (bandeau patient + rail des 7 phases du cycle clinique +
+  zone focale unique + instruments à tiroir), onglets in-fiche
+  (poste de pilotage / 12 besoins / alimentation / trajectoire) remplaçant la
+  navigation par scroll et les sous-vues en page pleine, trois instruments
+  denses (12 besoins, objets cliniques & momentum, détail des réponses) déplacés
+  en tiroir Radix ouvert **au clic** (patron `PatientPreview`) ; le runtime
+  clinique n'est que **filtré par phase** (`ClinicalRuntimeSection` : prop
+  `phase` additive, défaut `tout` inchangé). Aucun instrument n'a disparu.
+  Rail des phases **et** onglets in-fiche navigables au clavier (flèches /
+  Origine / Fin, `tabindex` roving). Le `ProtocolMiniBuilder` et la boussole
+  alimentaire restent montés (masqués via `hidden`, jamais démontés) : la
+  saisie de protocole en cours et l'aliment sélectionné sont **préservés** en
+  changeant de phase. Statuts du rail dérivés de l'état réel : réponses reçues,
+  demande de correction en attente, épisode confirmé, versions ; Réévaluation
+  « renseignée » **uniquement si un jalon post-T0 (J21/J42/J90) a réellement
+  été mesuré** (booléens `mesure` de la trajectoire — un T0 confirmé seul ne
+  suffit pas) ; runtime en chargement/erreur ou trajectoire illisible → statut
+  « **indéterminée** », jamais une affirmation par défaut. Une **demande de
+  correction patient** est signalée en permanence dans le bandeau, quelle que
+  soit la phase. Erreurs du runtime (dont session expirée) **hors filtre de
+  phase** ; états vides explicites en Suivi / Réévaluation sans épisode ; un
+  **échec de lecture de la trajectoire** est distingué d'une absence d'épisode
+  (message + « Réessayer ») sur les **deux chemins d'affichage** — onglet
+  Trajectoire et phase Réévaluation du cockpit — sans jamais afficher
+  « aucun épisode » sur une erreur. La **requête en vol** est elle aussi un état
+  « chargement » explicite sur les deux chemins : pendant la lecture, ni le
+  panneau (« aucun épisode ») ni le rail (« à ouvrir ») n'affirment quoi que ce
+  soit — statut « indéterminée » jusqu'à résolution.
+  Routes pleine page `.../besoins` et `.../alimentation` **conservées**
+  (accès direct par URL), l'accès principal passant désormais par les onglets.
 - Aucune logique clinique, aucun seuil, aucune migration Prisma ; garde-fous 5.0
   respectés (statut jamais par la seule couleur, aucun score patient).
 

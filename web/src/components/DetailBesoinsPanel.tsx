@@ -17,7 +17,16 @@ function LegendeNiveauxPreuve() {
   );
 }
 
-export function DetailBesoinsPanel({ idPatient }: { idPatient: string }) {
+// `enteteMasquee` : le panneau est monté dans un onglet in-fiche du poste de
+// pilotage, qui porte déjà l'identité du patient et le retour — l'en-tête
+// dupliqué est alors masqué. Route pleine page inchangée par défaut.
+export function DetailBesoinsPanel({
+  idPatient,
+  enteteMasquee = false,
+}: {
+  idPatient: string;
+  enteteMasquee?: boolean;
+}) {
   const [data, setData] = useState<BesoinsApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -50,18 +59,20 @@ export function DetailBesoinsPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-display text-2xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
-          <p className="text-sm text-muted-foreground mt-1">Détail des 12 besoins</p>
+      {!enteteMasquee && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
+            <p className="text-sm text-muted-foreground mt-1">Détail des 12 besoins</p>
+          </div>
+          <Link
+            href={`/dashboard/patients/${encodeURIComponent(idPatient)}`}
+            className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+          >
+            ← Retour à la fiche patient
+          </Link>
         </div>
-        <Link
-          href={`/dashboard/patients/${encodeURIComponent(idPatient)}`}
-          className="text-sm text-muted-foreground hover:text-foreground hover:underline"
-        >
-          ← Retour à la fiche patient
-        </Link>
-      </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <ScoreRadar data={radarData} />
