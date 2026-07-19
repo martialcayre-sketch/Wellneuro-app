@@ -118,10 +118,19 @@ function stubFetch(options: Options = {}) {
           : trajectoire === 'cycleJ21Mesure'
             ? [cycleTrajectoire(true)]
             : [];
+      // Index navigable RÉALISTE : un repère daté par jalon effectivement
+      // mesuré (T0 toujours, J21 selon le scénario), à l'image de
+      // `construireTrajectoire` qui projette les repères confirmés — jamais
+      // un `[]` en dur alors que des cycles existent.
+      const index = cycles.flatMap(cycle =>
+        cycle.jalons
+          .filter(jalon => jalon.mesure && jalon.date)
+          .map(jalon => ({ milestone: jalon.jalon, date: jalon.date })),
+      );
       return ok({
         ok: true,
         trajectoire: {
-          index: [],
+          index,
           cycles,
           comparaison: { disponible: false, raison: cycles.length > 0 ? 'un_seul_cycle' : 'aucun_cycle' },
         },
@@ -173,8 +182,10 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     const decision = screen.getByRole('tab', { name: /Décision 21 j/i });
     expect(decision.getAttribute('aria-selected')).toBe('true');
     // Statut jamais porté par la seule couleur : un libellé texte accompagne
-    // l'icône. Runtime indisponible ici → statut honnêtement « indéterminée ».
-    expect(decision.textContent).toMatch(/en attente|à ouvrir|renseignée|indéterminée/);
+    // l'icône. Runtime indisponible ici → l'état réel n'est pas établi, donc
+    // « indéterminée » (jamais une affirmation par défaut « à ouvrir »).
+    expect(decision.textContent).toContain('indéterminée');
+    expect(decision.textContent).not.toContain('à ouvrir');
   });
 
   it('navigue de phase en phase au clic et au clavier, sans quitter la page', async () => {
@@ -225,6 +236,47 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(true);
   });
 
+  it('onglets in-fiche : le focus suit la sélection, Origine/Fin et le bouclage (B1)', async () => {
+    await rendreFiche();
+
+    const onglets = screen.getByRole('tablist', { name: 'Vues de la fiche patient' });
+    const cockpit = within(onglets).getByRole('tab', { name: 'Poste de pilotage' });
+    const besoins = within(onglets).getByRole('tab', { name: 'Les 12 besoins' });
+    const trajectoire = within(onglets).getByRole('tab', { name: 'Trajectoire' });
+
+    // Seul l'onglet actif est dans l'ordre de tabulation (tabindex roving).
+    cockpit.focus();
+    expect(document.activeElement).toBe(cockpit);
+    expect(cockpit.getAttribute('tabindex')).toBe('0');
+    expect(besoins.getAttribute('tabindex')).toBe('-1');
+
+    // Flèche droite : la sélection ET le focus avancent d'un cran.
+    fireEvent.keyDown(cockpit, { key: 'ArrowRight' });
+    await waitFor(() => expect(document.activeElement).toBe(besoins));
+    expect(besoins.getAttribute('aria-selected')).toBe('true');
+    expect(besoins.getAttribute('tabindex')).toBe('0');
+    expect(cockpit.getAttribute('tabindex')).toBe('-1');
+
+    // Fin → dernier onglet ; Origine → premier onglet.
+    fireEvent.keyDown(besoins, { key: 'End' });
+    await waitFor(() => expect(document.activeElement).toBe(trajectoire));
+    expect(trajectoire.getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.keyDown(trajectoire, { key: 'Home' });
+    await waitFor(() => expect(document.activeElement).toBe(cockpit));
+    expect(cockpit.getAttribute('aria-selected')).toBe('true');
+
+    // Bouclage : flèche gauche depuis le premier → dernier onglet.
+    fireEvent.keyDown(cockpit, { key: 'ArrowLeft' });
+    await waitFor(() => expect(document.activeElement).toBe(trajectoire));
+    expect(trajectoire.getAttribute('aria-selected')).toBe('true');
+
+    // Bouclage : flèche droite depuis le dernier → premier onglet.
+    fireEvent.keyDown(trajectoire, { key: 'ArrowRight' });
+    await waitFor(() => expect(document.activeElement).toBe(cockpit));
+    expect(cockpit.getAttribute('aria-selected')).toBe('true');
+  });
+
   it('préserve le brouillon de protocole en changeant de phase (hidden, pas démontage)', async () => {
     await rendreFiche({ runtime: 'ready' });
 
@@ -258,6 +310,11 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     fireEvent.click(screen.getByRole('tab', { name: /Réévaluation/i }));
     await waitFor(() => expect(screen.getByText(/se construit après confirmation d’un épisode/i)).toBeTruthy());
+    // Formulation STRUCTURELLE : l'absence de cycle est rattachée à l'absence
+    // d'épisode, jamais présentée comme un « résultat de lecture » (la
+    // trajectoire n'est pas lue tant qu'aucun épisode n'est confirmé).
+    expect(screen.getByText(/pas encore de cycle daté à afficher/i)).toBeTruthy();
+    expect(screen.queryByText(/n’est disponible pour l’instant/i)).toBeNull();
   });
 
   it('affiche l’erreur de session runtime même hors phase Décision (M1)', async () => {
@@ -315,5 +372,37 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     const onglet = screen.getByRole('tab', { name: /Réévaluation/i });
     await waitFor(() => expect(onglet.textContent).toContain('renseignée'));
+  });
+
+  it('Réévaluation sous erreur runtime : aucun état vide affirmé, l’erreur prime (M3)', async () => {
+    await rendreFiche({ runtime: 'unauthenticated' });
+
+    fireEvent.click(screen.getByRole('tab', { name: /Réévaluation/i }));
+    // L'erreur de session s'affiche (hors filtre de phase, M1) et l'on n'affirme
+    // JAMAIS « pas d'épisode » quand l'état réel n'a pas pu être établi.
+    await waitFor(() => expect(screen.getByText(/Votre session a expiré/i)).toBeTruthy());
+    expect(screen.queryByText(/se construit après confirmation d’un épisode/i)).toBeNull();
+    expect(screen.queryByText(/pas encore de cycle daté à afficher/i)).toBeNull();
+    // Rail : statut « indéterminée », jamais « à ouvrir ».
+    const onglet = screen.getByRole('tab', { name: /Réévaluation/i });
+    expect(onglet.textContent).toContain('indéterminée');
+    expect(onglet.textContent).not.toContain('à ouvrir');
+  });
+
+  it('demande de correction : le signal reste visible depuis un onglet non-cockpit (B2)', async () => {
+    await rendreFiche({ assignationsModif: true });
+
+    // Visible sur l'onglet cockpit par défaut…
+    await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
+
+    // …et TOUJOURS visible une fois basculé sur « Les 12 besoins » (cockpit masqué).
+    fireEvent.click(screen.getByRole('tab', { name: 'Les 12 besoins' }));
+    await waitFor(() => expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(true));
+    expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy();
+
+    // Le raccourci ramène au cockpit sur la phase Patient.
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la phase Patient' }));
+    await waitFor(() => expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(false));
+    expect(screen.getByRole('tab', { name: /Patient/i }).getAttribute('aria-selected')).toBe('true');
   });
 });
