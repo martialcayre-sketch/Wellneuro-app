@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { construireTrajectoire, resoudreComparaison, type TrajectoireCycle, type TrajectoireEpisode } from './trajectoire';
+import {
+  construireTrajectoire,
+  rattacherReperesAuxCycles,
+  resoudreComparaison,
+  type TrajectoireCycle,
+  type TrajectoireEpisode,
+} from './trajectoire';
 
 // Même fixture rawAnswers que depuisPrisma.test.ts : produit un scoreGlobal non-null.
 const RAW = { P1: '2', P2: '2', P3: '1', P4: '1', P5: '1', P6: '1', P7: '1', P8: '1' };
@@ -71,5 +77,60 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
       disponible: true,
       raison: 'comparable',
     });
+  });
+});
+
+describe('rattacherReperesAuxCycles (index navigable)', () => {
+  const cycle = (id: string, dateT0: string): TrajectoireCycle => ({
+    cycleId: id,
+    dateT0,
+    versionScore: 'v1',
+    jalons: [],
+    momentum: null,
+  });
+
+  it('rattache chaque repère au dernier T0 antérieur ou égal', () => {
+    const reperes = rattacherReperesAuxCycles(
+      [
+        { milestone: 'T0', date: '2026-01-01T00:00:00.000Z' },
+        { milestone: 'J21', date: '2026-01-22T00:00:00.000Z' },
+        { milestone: 'T0', date: '2026-03-01T00:00:00.000Z' },
+        { milestone: 'J21', date: '2026-03-22T00:00:00.000Z' },
+      ],
+      [cycle('ep_a', '2026-01-01T00:00:00.000Z'), cycle('ep_b', '2026-03-01T00:00:00.000Z')],
+    );
+    expect(reperes.map((r) => r.cycleId)).toEqual(['ep_a', 'ep_a', 'ep_b', 'ep_b']);
+  });
+
+  it('un repère antérieur à tout T0 reste non rattaché, jamais rangé dans le premier cycle', () => {
+    const reperes = rattacherReperesAuxCycles(
+      [{ milestone: 'J21', date: '2025-12-01T00:00:00.000Z' }],
+      [cycle('ep_a', '2026-01-01T00:00:00.000Z')],
+    );
+    expect(reperes[0].cycleId).toBeNull();
+  });
+
+  it('ne rattache jamais un repère à un cycle postérieur', () => {
+    const reperes = rattacherReperesAuxCycles(
+      [{ milestone: 'J21', date: '2026-02-01T00:00:00.000Z' }],
+      [cycle('ep_b', '2026-03-01T00:00:00.000Z'), cycle('ep_a', '2026-01-01T00:00:00.000Z')],
+    );
+    // Ordre d'entrée volontairement non chronologique : le rattachement ne doit
+    // pas dépendre de l'ordre du tableau de cycles.
+    expect(reperes[0].cycleId).toBe('ep_a');
+  });
+
+  it('date illisible → repère non rattaché plutôt qu’une affectation devinée', () => {
+    const reperes = rattacherReperesAuxCycles(
+      [{ milestone: 'T0', date: 'pas-une-date' }],
+      [cycle('ep_a', '2026-01-01T00:00:00.000Z')],
+    );
+    expect(reperes[0].cycleId).toBeNull();
+  });
+
+  it('aucun cycle → aucun rattachement, mais les repères restent listés', () => {
+    const reperes = rattacherReperesAuxCycles([{ milestone: 'T0', date: '2026-01-01T00:00:00.000Z' }], []);
+    expect(reperes).toHaveLength(1);
+    expect(reperes[0].cycleId).toBeNull();
   });
 });

@@ -105,6 +105,42 @@ export function construireTrajectoire(input: {
   return { index, cycles, comparaison: resoudreComparaison(cycles) };
 }
 
+// Un repère de l'index, rattaché au cycle qu'il documente. Rendu navigable côté
+// UI (Vague 2) : l'index calculé depuis LOT-09 n'était affiché nulle part, si
+// bien que les épisodes J21/J42/J90 confirmés restaient invisibles.
+export type TrajectoireRepere = {
+  milestone: JalonMomentum;
+  date: string; // ISO
+  cycleId: string | null; // null = repère antérieur à tout T0 confirmé
+};
+
+// Rattache chaque repère au cycle ouvert par le dernier T0 antérieur ou égal.
+// Un repère n'est JAMAIS rattaché à un cycle postérieur : un jalon ne peut pas
+// documenter un cycle qui n'avait pas commencé. Sans T0 antérieur, il reste
+// explicitement non rattaché plutôt que rangé de force dans le premier cycle.
+export function rattacherReperesAuxCycles(
+  index: Trajectoire['index'],
+  cycles: TrajectoireCycle[],
+): TrajectoireRepere[] {
+  const ancres = cycles
+    .map((cycle) => ({ cycleId: cycle.cycleId, instant: new Date(cycle.dateT0).getTime() }))
+    .filter((ancre) => Number.isFinite(ancre.instant))
+    .sort((a, b) => a.instant - b.instant);
+
+  return index.map((repere) => {
+    const instant = new Date(repere.date).getTime();
+    if (!Number.isFinite(instant)) {
+      return { milestone: repere.milestone, date: repere.date, cycleId: null };
+    }
+    let cycleId: string | null = null;
+    for (const ancre of ancres) {
+      if (ancre.instant > instant) break;
+      cycleId = ancre.cycleId;
+    }
+    return { milestone: repere.milestone, date: repere.date, cycleId };
+  });
+}
+
 // Exporté pour test unitaire de la garde A8-3 (versions différentes → non
 // comparable) : construireTrajectoire fixe aujourd'hui un versionScore uniforme,
 // mais la garde doit rester correcte quand une future version en introduira.
