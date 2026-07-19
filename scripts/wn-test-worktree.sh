@@ -29,6 +29,12 @@
 # worktrees (campagnes en parallèle) peuvent valider sans se contaminer. La
 # base est recréée à chaque run (parité CI), données 100 % fictives via le seed.
 #
+# Plateformes : Linux/Debian (PostgreSQL installé au besoin via apt-get) et
+# macOS (PostgreSQL fourni par Homebrew, détecté automatiquement — installer
+# avec `brew install postgresql@15` pour la parité stricte avec le service CI).
+# Sur macOS aucune dépendance système Playwright n'est requise : `--with-deps`
+# ne concerne que les distributions Linux, donc aucun sudo n'est demandé.
+#
 # Divergence CI assumée : PostgreSQL Debian (17 sur trixie) vs postgres:15 en
 # CI. Les migrations sont du SQL standard rejoué par `migrate deploy` ; pour
 # une parité stricte, installer postgresql-15 via le dépôt PGDG et exporter
@@ -146,6 +152,24 @@ ensure_postgres() {
     PG_BIN="$WN_PG_BIN"
     return
   fi
+  # macOS : PostgreSQL vient de Homebrew — ni /usr/lib/postgresql ni apt-get.
+  # On privilégie postgresql@15 (version du service CI, parité stricte) puis on
+  # se rabat sur les autres formules, enfin sur un initdb déjà dans le PATH.
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    local prefix
+    for formula in postgresql@15 postgresql@16 postgresql@17 postgresql; do
+      prefix="$(brew --prefix "$formula" 2>/dev/null || true)"
+      if [[ -n "$prefix" && -x "$prefix/bin/initdb" ]]; then
+        PG_BIN="$prefix/bin"
+        return
+      fi
+    done
+    if command -v initdb >/dev/null 2>&1; then
+      PG_BIN="$(dirname "$(command -v initdb)")"
+      return
+    fi
+    die "PostgreSQL absent — installer avec : brew install postgresql@15 (version du CI)."
+  fi
   if ! compgen -G '/usr/lib/postgresql/*/bin/initdb' >/dev/null; then
     step "Installation de PostgreSQL (première exécution, ~1 min)"
     require_sudo "PostgreSQL absent et sudo indisponible — installer postgresql puis relancer."
@@ -166,6 +190,13 @@ ensure_node_modules() {
 
 ensure_playwright() {
   local version marker
+  # macOS : `--with-deps` n'installe des paquets système que sur les
+  # distributions Linux ; ici il n'y a rien à provisionner, donc pas de sudo
+  # (le cache navigateurs vit d'ailleurs dans ~/Library/Caches, pas ~/.cache).
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    (cd "$WEB" && npx playwright install chromium webkit)
+    return
+  fi
   version="$(node -p "require('$WEB/node_modules/@playwright/test/package.json').version")"
   marker="$HOME/.cache/ms-playwright/.wn-deps-$version"
   if [[ -f "$marker" ]]; then

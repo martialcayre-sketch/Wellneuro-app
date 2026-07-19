@@ -92,6 +92,13 @@ séquence du job CI `verify` avec un PostgreSQL éphémère propre au worktree
 fictif). Usage détaillé, options et overrides : en-tête de
 `scripts/wn-test-worktree.sh`.
 
+Contrairement à `npm run test:e2e`, cette commande **ne demande aucun prérequis
+de la liste ci-dessus** : elle provisionne sa propre base et exporte son propre
+`NEXTAUTH_SECRET` de test. Linux et macOS sont pris en charge ; sur macOS,
+PostgreSQL vient de Homebrew (`brew install postgresql@15`, version du CI) et
+est détecté automatiquement. La passe rapide `npm run test:worktree -- --fast`
+prend ~1 min 20 s et couvre les 34 tests E2E (Chromium + WebKit).
+
 ## Serveur testé : `next dev` ou build de production
 
 Par défaut, Playwright lance `next dev` (itération locale, réutilise un

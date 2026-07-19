@@ -67,9 +67,10 @@ bash scripts/check_no_secrets.sh  # contrôle anti-secrets
 ```
 
 `test:worktree` provisionne un PostgreSQL éphémère et exporte son propre
-`NEXTAUTH_SECRET` de test : rien à préparer. Il vise Linux/Debian (installation
-via `apt-get`) — sur macOS, installer PostgreSQL puis exporter `WN_PG_BIN` vers
-le dossier contenant `initdb`. Prérequis et options : `web/e2e/README.md`.
+`NEXTAUTH_SECRET` de test : aucun secret ni base à préparer. Linux et macOS pris
+en charge (PostgreSQL via `apt-get` ou Homebrew — `brew install postgresql@15`,
+la version du CI). La séquence rapide (`-- --fast`) tourne en ~1 min 20 s et
+exécute les 34 tests E2E. Prérequis et options : `web/e2e/README.md`.
 
 ## Avant de committer
 
