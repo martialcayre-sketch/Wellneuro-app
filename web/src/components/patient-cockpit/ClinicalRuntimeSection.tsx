@@ -35,16 +35,33 @@ type DiffusionApiResponse = {
 
 type RuntimeError = 'session' | 'patient' | 'technical';
 
+// Phases du cycle clinique 3.x (A6-R1). Le poste de pilotage n'affiche qu'une
+// phase à la fois ; `'tout'` (défaut) conserve l'empilement historique et reste
+// le comportement de référence hors cockpit.
+export type PhaseCycleClinique =
+  | 'tout'
+  | 'aucune'
+  | 'donnees'
+  | 'comprehension'
+  | 'decision'
+  | 'actions'
+  | 'suivi'
+  | 'reevaluation';
+
 export function ClinicalRuntimeSection({
   idPatient,
   fixture,
   protocolDraft,
   onFixtureReviewed,
+  phase = 'tout',
+  onAjusterProtocole,
 }: {
   idPatient: string;
   fixture: ValidationErgoC1Fixture | null;
   protocolDraft: ProtocolDraft | null;
   onFixtureReviewed: (submission: RelectureProtocoleSoumission) => void;
+  phase?: PhaseCycleClinique;
+  onAjusterProtocole?: () => void;
 }) {
   const c5Enabled = useC5Enabled();
   const [runtime, setRuntime] = useState<CockpitRuntimeApiResponse | null>(null);
@@ -277,17 +294,23 @@ export function ClinicalRuntimeSection({
     (version) => version.isActive && version.status === 'practitioner_reviewed',
   );
 
+  // Filtre d'affichage par phase — purement présentationnel : les chargements,
+  // les états et les actions restent strictement identiques quelle que soit la
+  // phase affichée (aucun contrat d'API ni règle clinique n'est touché).
+  const affiche = (phaseInstrument: Exclude<PhaseCycleClinique, 'tout' | 'aucune'>) =>
+    phase === 'tout' || phase === phaseInstrument;
+
   return (
     <>
-      {!fixture && loading && (
+      {affiche('decision') && !fixture && loading && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
           Chargement de la proposition d&apos;épisode T0…
         </div>
       )}
-      {!fixture && notice && (
+      {affiche('decision') && !fixture && notice && (
         <div role="status" className="rounded-xl border border-accent bg-orange-50 p-4 text-sm text-orange-800">{notice}</div>
       )}
-      {!fixture && error && (
+      {affiche('decision') && !fixture && error && (
         <div role="alert" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
           {error === 'session'
             ? 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.'
@@ -296,25 +319,27 @@ export function ClinicalRuntimeSection({
               : 'Erreur technique lors de la préparation du cockpit clinique.'}
         </div>
       )}
-      {!fixture && !loading && !error && runtime?.status === 'proposal_required' && (
+      {affiche('decision') && !fixture && !loading && !error && runtime?.status === 'proposal_required' && (
         <EpisodeConfirmationPanel proposal={runtime.proposal} submitting={submitting} onConfirm={confirm} />
       )}
-      {!fixture && runtime?.status === 'ready' && (
+      {affiche('decision') && !fixture && runtime?.status === 'ready' && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
           Épisode T0 confirmé. Décision suspendue : l&apos;abstention clinique n&apos;est pas encore évaluée.
         </div>
       )}
 
-      <MissingDataPanel missingData={review?.missingData ?? null} discordances={review?.discordances ?? null} />
-      <DecisionSummaryCard decisionCard={decisionCard} />
-      {c5Enabled && !fixture && readyDecisionCardId && (
+      {affiche('donnees') && (
+        <MissingDataPanel missingData={review?.missingData ?? null} discordances={review?.discordances ?? null} />
+      )}
+      {affiche('decision') && <DecisionSummaryCard decisionCard={decisionCard} />}
+      {affiche('actions') && c5Enabled && !fixture && readyDecisionCardId && (
         <PractitionerFoodCompassObservatory
           idPatient={idPatient}
           decisionCardId={readyDecisionCardId}
           onInsert={setFoodCompassSelection}
         />
       )}
-      <div id="protocol-version-builder">
+      <div id="protocol-version-builder" hidden={!affiche('actions')}>
         <ProtocolMiniBuilder
           decisionCard={decisionCard}
           onReviewed={fixture ? onFixtureReviewed : undefined}
@@ -325,9 +350,11 @@ export function ClinicalRuntimeSection({
           onClearFoodCompassSelection={() => setFoodCompassSelection(null)}
         />
       </div>
-      <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
-      {!fixture && <ProtocolVersionHistory versions={versions} />}
-      {!fixture && versions.length > 0 && (
+      {affiche('actions') && (
+        <ProtocolConsultationPanel decisionCard={decisionCard} protocolDraft={fixture ? protocolDraft : null} />
+      )}
+      {affiche('actions') && !fixture && <ProtocolVersionHistory versions={versions} />}
+      {affiche('actions') && !fixture && versions.length > 0 && (
         <ProtocolDiffusionPanel
           canApprove={Boolean(activeReviewedVersion)}
           approved={approvedAt !== null}
@@ -338,15 +365,18 @@ export function ClinicalRuntimeSection({
           onApprove={approveForDiffusion}
         />
       )}
-      {!fixture && readyDecisionCardId && (
+      {affiche('suivi') && !fixture && readyDecisionCardId && (
         <J21DecisionPanel
           resume={resumeJ21}
-          onAjuster={() =>
-            document.getElementById('protocol-version-builder')?.scrollIntoView({ behavior: 'smooth' })
+          onAjuster={
+            onAjusterProtocole ??
+            (() => document.getElementById('protocol-version-builder')?.scrollIntoView({ behavior: 'smooth' }))
           }
         />
       )}
-      {!fixture && readyDecisionCardId && <TrajectoirePanel trajectoire={trajectoire} />}
+      {affiche('reevaluation') && !fixture && readyDecisionCardId && (
+        <TrajectoirePanel trajectoire={trajectoire} />
+      )}
     </>
   );
 }
