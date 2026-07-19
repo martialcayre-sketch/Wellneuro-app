@@ -48,6 +48,18 @@ export type PhaseCycleClinique =
   | 'suivi'
   | 'reevaluation';
 
+// État observable du runtime, remonté au poste de pilotage pour que le rail
+// des phases reflète l'état réel (et non un statut inventé). Lecture seule :
+// aucun de ces champs ne modifie le comportement du runtime.
+export type EtatRuntimeClinique = {
+  chargement: boolean;
+  erreur: RuntimeError | null;
+  episodeConfirme: boolean;
+  nombreVersions: number;
+  suiviRenseigne: boolean;
+  nombreCyclesTrajectoire: number;
+};
+
 export function ClinicalRuntimeSection({
   idPatient,
   fixture,
@@ -55,6 +67,7 @@ export function ClinicalRuntimeSection({
   onFixtureReviewed,
   phase = 'tout',
   onAjusterProtocole,
+  onEtatChange,
 }: {
   idPatient: string;
   fixture: ValidationErgoC1Fixture | null;
@@ -62,6 +75,7 @@ export function ClinicalRuntimeSection({
   onFixtureReviewed: (submission: RelectureProtocoleSoumission) => void;
   phase?: PhaseCycleClinique;
   onAjusterProtocole?: () => void;
+  onEtatChange?: (etat: EtatRuntimeClinique) => void;
 }) {
   const c5Enabled = useC5Enabled();
   const [runtime, setRuntime] = useState<CockpitRuntimeApiResponse | null>(null);
@@ -221,6 +235,30 @@ export function ClinicalRuntimeSection({
     setFoodCompassSelection(null);
   }, [readyDecisionCardId, activeVersionId]);
 
+  // Remontée de l'état observable (rail des phases). Dépendances primitives
+  // uniquement : aucune boucle de rendu.
+  const nombreCyclesTrajectoire = trajectoire?.cycles.length ?? 0;
+  const suiviRenseigne = resumeJ21 !== null;
+  const nombreVersions = versions.length;
+  useEffect(() => {
+    onEtatChange?.({
+      chargement: loading,
+      erreur: error,
+      episodeConfirme: readyDecisionCardId !== null,
+      nombreVersions,
+      suiviRenseigne,
+      nombreCyclesTrajectoire,
+    });
+  }, [
+    onEtatChange,
+    loading,
+    error,
+    readyDecisionCardId,
+    nombreVersions,
+    suiviRenseigne,
+    nombreCyclesTrajectoire,
+  ]);
+
   // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
   // d'envoi patient). Anti-écrasement via baseVersionId → 409 version_stale.
   const saveVersion = async (submission: RelectureProtocoleSoumission) => {
@@ -302,15 +340,19 @@ export function ClinicalRuntimeSection({
 
   return (
     <>
-      {affiche('decision') && !fixture && loading && (
+      {/* Chargement, avis de rechargement et erreurs : JAMAIS filtrés par
+          phase — une session expirée doit être lisible même si le praticien
+          se trouve sur la phase Actions (sinon il saisit un protocole dans un
+          formulaire qui ne pourra pas s'enregistrer). */}
+      {!fixture && loading && (
         <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
           Chargement de la proposition d&apos;épisode T0…
         </div>
       )}
-      {affiche('decision') && !fixture && notice && (
+      {!fixture && notice && (
         <div role="status" className="rounded-xl border border-accent bg-orange-50 p-4 text-sm text-orange-800">{notice}</div>
       )}
-      {affiche('decision') && !fixture && error && (
+      {!fixture && error && (
         <div role="alert" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
           {error === 'session'
             ? 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.'
@@ -332,12 +374,17 @@ export function ClinicalRuntimeSection({
         <MissingDataPanel missingData={review?.missingData ?? null} discordances={review?.discordances ?? null} />
       )}
       {affiche('decision') && <DecisionSummaryCard decisionCard={decisionCard} />}
-      {affiche('actions') && c5Enabled && !fixture && readyDecisionCardId && (
-        <PractitionerFoodCompassObservatory
-          idPatient={idPatient}
-          decisionCardId={readyDecisionCardId}
-          onInsert={setFoodCompassSelection}
-        />
+      {/* Boussole alimentaire : montée dès que les gardes métier sont
+          satisfaites, puis seulement MASQUÉE hors phase Actions — la démonter
+          rejouerait son chargement et réinitialiserait l'aliment sélectionné. */}
+      {c5Enabled && !fixture && readyDecisionCardId && (
+        <div hidden={!affiche('actions')}>
+          <PractitionerFoodCompassObservatory
+            idPatient={idPatient}
+            decisionCardId={readyDecisionCardId}
+            onInsert={setFoodCompassSelection}
+          />
+        </div>
       )}
       <div id="protocol-version-builder" hidden={!affiche('actions')}>
         <ProtocolMiniBuilder
