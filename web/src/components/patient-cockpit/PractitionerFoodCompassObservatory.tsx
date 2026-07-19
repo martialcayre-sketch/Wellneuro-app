@@ -67,8 +67,8 @@ export function PractitionerFoodCompassObservatory({
 
   const profile = payload?.ok ? payload.profile : null;
   return (
-    <section aria-labelledby="c5-observatory-title" className="rounded-xl border border-slate-800 bg-surface overflow-hidden">
-      <div className="border-l-8 border-slate-900 p-4">
+    <section aria-labelledby="c5-observatory-title" className="rounded-xl border border-rail bg-surface overflow-hidden">
+      <div className="border-l-8 border-rail p-4">
         <h3 id="c5-observatory-title" className="font-display text-lg font-semibold text-foreground">Boussole alimentaire — Observatoire</h3>
         <p className="mt-1 text-sm text-muted-foreground">Lecture praticien chiffrée, sourcée et non diffusée automatiquement.</p>
         <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -77,11 +77,11 @@ export function PractitionerFoodCompassObservatory({
               {C5_PRACTITIONER_FOODS.map(food => <option key={food.foodRef} value={food.foodRef}>{food.label}</option>)}
             </select>
           </label>
-          <button type="button" onClick={inspect} disabled={loading} className="min-h-11 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+          <button type="button" onClick={inspect} disabled={loading} className="min-h-11 rounded-lg bg-rail px-4 py-2 text-sm font-medium text-rail-foreground disabled:opacity-50">
             {loading ? 'Lecture en cours…' : 'Consulter le profil'}
           </button>
         </div>
-        {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
+        {error && <p role="alert" className="mt-4 text-sm text-status-danger">{error}</p>}
         {profile && payload?.ok && (
           <div className="mt-5 grid gap-4">
             <h4 className="font-medium text-foreground">Profil de {profile.foodLabel}</h4>
@@ -170,7 +170,7 @@ export function PractitionerFoodCompassObservatory({
               type="button"
               disabled={!payload.insertionAllowed || !payload.actionRef}
               onClick={() => payload.actionRef && onInsert({ foodLabel: profile.foodLabel, actionRef: payload.actionRef })}
-              className="min-h-11 justify-self-start rounded-lg border border-slate-900 px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+              className="min-h-11 justify-self-start rounded-lg border border-rail px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
             >
               Préparer l’insertion manuelle dans le protocole
             </button>

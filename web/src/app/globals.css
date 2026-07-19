@@ -96,17 +96,19 @@
 /*
  * Thème patient — « le Jardin » (Forêt & cuivre, A5-R1), clair fixe,
  * appliqué par défaut et via [data-theme="patient"].
- * Contraste texte/fond vérifié AAA (14,86:1 — matrice design-system-d1 §8).
+ * Canvas approfondi « sable » (A5-R2, lot Vague 1) : --background/--muted/
+ * --border en mid-tone, --surface (cartes) inchangé. Contraste recalculé
+ * (matrice design-system-d1 §8/§9).
  */
 :root,
 [data-theme='patient'] {
-  --background: #faf8f3;
+  --background: #eae0cc;
   --foreground: #2b2115;
   --surface: #fffdf9;
   --surface-foreground: #2b2115;
-  --muted: #efe8da;
+  --muted: #f0e7d6;
   --muted-foreground: #6e5f49;
-  --border: #e5dccb;
+  --border: #dccfb6;
   --color-primary: var(--forest-600);
   --color-primary-rgb: var(--forest-600-rgb);
   --color-primary-foreground: #ffffff;
@@ -132,18 +134,19 @@
 
 /*
  * Thème praticien — « l'Observatoire » (Nuit spectrale, A5-R1). Structure
- * A5 inchangée : espace de travail clair + rail sombre structurel. Teintes
- * évoluées et re-vérifiées (matrice design-system-d1 §8) : texte/fond
- * 14,72:1 AAA, muted 6,15:1 AA, blanc/indigo 7,86:1, encre/solaire 7,25:1.
+ * A5 inchangée : espace de travail clair + rail sombre structurel. Canvas
+ * approfondi « ardoise » (A5-R2, lot Vague 1) : --background/--muted/--border
+ * en mid-tone, --surface (cartes) inchangé. Contraste recalculé (matrice
+ * design-system-d1 §8/§9).
  */
 [data-theme='praticien'] {
-  --background: #f7f8fa;
+  --background: #d3d8e6;
   --foreground: #1b2337;
   --surface: #ffffff;
   --surface-foreground: #1b2337;
-  --muted: #e9ebf2;
+  --muted: #e3e7f1;
   --muted-foreground: #535d7a;
-  --border: #dde1ec;
+  --border: #c4cbdd;
   --color-primary: var(--indigo-600);
   --color-primary-rgb: var(--indigo-600-rgb);
   --color-primary-foreground: #ffffff;

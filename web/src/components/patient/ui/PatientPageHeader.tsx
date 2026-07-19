@@ -20,7 +20,7 @@ export function PatientPageHeader({
   return (
     <div className={center ? 'text-center mb-6' : 'mb-1'}>
       <div className="flex items-center justify-between gap-3">
-        <Tag className={`font-display font-bold text-foreground ${as === 'h1' ? 'text-xl' : 'text-lg'}`}>{title}</Tag>
+        <Tag className={`font-display font-bold text-foreground ${as === 'h1' ? 'text-2xl' : 'text-lg'}`}>{title}</Tag>
         {accessory}
       </div>
       {subtitle && <p className="text-muted-foreground text-sm mt-2">{subtitle}</p>}

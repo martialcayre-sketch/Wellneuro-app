@@ -5,7 +5,10 @@ Référence des tokens et composants livrés par la série D1
 `docs/claude/PROJET_CONTEXTE.md` (qui fait foi sur l'état technique
 courant) — ce document se concentre sur le design system lui-même.
 
-Identité visuelle : **deep teal + champagne gold**, premium clinique,
+Identité visuelle **d'origine D1** : deep teal + champagne gold. **Caduque
+depuis A5-R1** (2026-07-15) — palette en vigueur : indigo/forêt + solaire/cuivre
+(§8, « tokens v2 »), avec le canvas mid-tone A5-R2 appliqué au lot Vague 1 (§9).
+Le parti pris reste premium clinique,
 scientifique mais accessible. Deux thèmes fixes selon le rôle (pas de
 préférence utilisateur togglable), **tous deux clairs** depuis la décision
 Hybrid Clinical Foundation du 2026-07-12 (abandon du mode Nuit/Auto) : seule
@@ -507,8 +510,9 @@ Révision A5-R2 (registre) : le **canvas de fond s'approfondit** pour donner du
 relief aux cartes claires, sans basculer en thème sombre. La structure A5/A5-R1
 est conservée (rail nuit signature praticien, patient clair fixe, **aucun
 toggle**) ; seuls `--background` et le calibrage `--surface`/`--muted`/`--border`
-évoluent. **Acté en documentation, non appliqué au code** tant qu'un lot
-d'implémentation revert-safe n'est pas ouvert (`globals.css` inchangé).
+évoluent. **Appliqué au code au lot Vague 1** (PR « shell praticien », 2026-07-19) :
+`globals.css` porte les valeurs v3 ci-dessous dans les deux thèmes, `--surface`
+(cartes) inchangé.
 
 ### Correspondance des tokens (v2 → v3)
 

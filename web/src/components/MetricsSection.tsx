@@ -71,13 +71,14 @@ export function MetricsSection() {
 
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-      <MetricCard label="Patients" value={fmt(data?.patients ?? null)} />
+      <MetricCard label="Patients" value={fmt(data?.patients ?? null)} href="/dashboard/patients" />
       <MetricCard
         label="Questionnaires en cours"
         value={fmt(data?.questionnairesEnCours ?? null)}
+        href="/dashboard/patients"
       />
-      <MetricCard label="Synthèses IA" value={fmt(data?.synthesiesIA ?? null)} />
-      <MetricCard label="Booklets envoyés" value={fmt(data?.bookletsEnvoyes ?? null)} />
+      <MetricCard label="Synthèses IA" value={fmt(data?.synthesiesIA ?? null)} href="/dashboard/synthese" />
+      <MetricCard label="Booklets envoyés" value={fmt(data?.bookletsEnvoyes ?? null)} href="/dashboard/synthese" />
     </div>
   );
 }
