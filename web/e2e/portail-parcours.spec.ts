@@ -377,6 +377,10 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
     await test.step('Déblocage côté praticien', async () => {
       // Cookie de session praticien déjà posé à l'étape de provisionnement.
       await page.goto(`/dashboard/patients/${PATIENT.idPatient}`);
+      // Poste de pilotage (A6-R1) : le déblocage d'une demande de correction vit
+      // dans la phase Patient (un bandeau permanent l'annonce quelle que soit la
+      // phase). On ouvre la phase Patient via le rail avant de débloquer.
+      await page.getByRole('tablist', { name: 'Cycle clinique' }).getByRole('tab', { name: /Patient/ }).click();
       await expect(page.getByText(/Demande de correction/)).toBeVisible();
       await page.getByRole('button', { name: 'Débloquer' }).click();
       await expect(page.getByText(/Demande de correction/)).toHaveCount(0);
