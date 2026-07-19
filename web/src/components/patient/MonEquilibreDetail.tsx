@@ -37,7 +37,7 @@ export function MonEquilibreDetail({
   if (loading) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-border p-8 text-center text-sm text-gray-500">
+        <div className="bg-surface rounded-2xl shadow-sm border border-border p-8 text-center text-sm text-muted-foreground">
           Chargement…
         </div>
       </div>
@@ -47,8 +47,8 @@ export function MonEquilibreDetail({
   if (!data || 'ok' in data) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-border p-8 text-center">
-          <p className="text-sm text-gray-600">
+        <div className="bg-surface rounded-2xl shadow-sm border border-border p-8 text-center">
+          <p className="text-sm text-muted-foreground">
             {data && 'error' in data ? data.error : 'Impossible de charger le détail pour le moment.'}
           </p>
           <button
@@ -67,9 +67,9 @@ export function MonEquilibreDetail({
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
-        <h1 className="font-display text-xl font-bold text-gray-900 mb-1 text-center">Mes 12 besoins</h1>
-        <p className="text-sm text-gray-500 text-center mb-6">
+      <div className="bg-surface rounded-2xl shadow-sm border border-border p-8">
+        <h1 className="font-display text-xl font-bold text-foreground mb-1 text-center">Mes 12 besoins</h1>
+        <p className="text-sm text-muted-foreground text-center mb-6">
           Survolez un besoin pour le mettre en évidence.
         </p>
 
@@ -81,7 +81,7 @@ export function MonEquilibreDetail({
 
         <div className="flex justify-center gap-4 mt-3 mb-6">
           {LEGENDE_STRATE.map(s => (
-            <span key={s.strate} className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span key={s.strate} className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.couleur }} />
               {s.label}
             </span>
@@ -95,7 +95,7 @@ export function MonEquilibreDetail({
               onMouseEnter={() => setHoveredId(b.id)}
               onMouseLeave={() => setHoveredId(null)}
               className={`text-sm rounded-lg px-3 py-2 cursor-default transition-colors ${
-                hoveredId === b.id ? 'bg-primary/10 text-primary font-medium' : 'bg-gray-50 text-gray-700'
+                hoveredId === b.id ? 'bg-primary/10 text-primary font-medium' : 'bg-muted text-foreground'
               }`}
             >
               {b.libellePatient}
@@ -112,7 +112,7 @@ export function MonEquilibreDetail({
         <button
           type="button"
           onClick={onRetour}
-          className="w-full py-2.5 px-4 border border-gray-300 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors"
+          className="w-full py-2.5 px-4 border border-border text-foreground rounded-lg font-medium text-sm hover:bg-muted transition-colors"
         >
           ← Retour à Mon équilibre
         </button>

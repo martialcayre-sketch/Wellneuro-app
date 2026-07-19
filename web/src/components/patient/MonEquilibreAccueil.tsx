@@ -15,7 +15,7 @@ function Frise({ trajectoire }: { trajectoire: { date: string; valeur: number }[
   const max = Math.max(...trajectoire.map(t => t.valeur), 1);
   return (
     <div className="mb-6">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Votre trajectoire</p>
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Votre trajectoire</p>
       <div className="flex items-end gap-2 h-16 px-1">
         {trajectoire.map((t, i) => (
           <div key={i} className="flex flex-col items-center gap-1 flex-1">
@@ -26,7 +26,7 @@ function Frise({ trajectoire }: { trajectoire: { date: string; valeur: number }[
           </div>
         ))}
       </div>
-      <div className="flex justify-between text-xs text-gray-400 px-1 mt-1">
+      <div className="flex justify-between text-xs text-muted-foreground/70 px-1 mt-1">
         <span>Début</span>
         <span>Aujourd&apos;hui</span>
       </div>
@@ -60,7 +60,7 @@ export function MonEquilibreAccueil({
   if (loading) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-border p-8 text-center text-sm text-gray-500">
+        <div className="bg-surface rounded-2xl shadow-sm border border-border p-8 text-center text-sm text-muted-foreground">
           Chargement de Mon équilibre…
         </div>
       </div>
@@ -70,8 +70,8 @@ export function MonEquilibreAccueil({
   if (!data || 'ok' in data) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-sm border border-border p-8 text-center">
-          <p className="text-sm text-gray-600">
+        <div className="bg-surface rounded-2xl shadow-sm border border-border p-8 text-center">
+          <p className="text-sm text-muted-foreground">
             {data && 'error' in data ? data.error : 'Impossible de charger Mon équilibre pour le moment.'}
           </p>
           <button
@@ -94,14 +94,14 @@ export function MonEquilibreAccueil({
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-white rounded-2xl shadow-sm border border-border p-8">
-        <h1 className="font-display text-xl font-bold text-gray-900 mb-6 text-center">Mon équilibre</h1>
+      <div className="bg-surface rounded-2xl shadow-sm border border-border p-8">
+        <h1 className="font-display text-xl font-bold text-foreground mb-6 text-center">Mon équilibre</h1>
 
         <div className="flex justify-center mb-4">
           {indiceGlobal !== null ? (
             <ScoreGauge value={indiceGlobal} label="Mon équilibre" />
           ) : (
-            <p className="text-sm text-gray-500 text-center py-6">
+            <p className="text-sm text-muted-foreground text-center py-6">
               Pas encore assez de réponses pour calculer votre indice.
             </p>
           )}
@@ -117,10 +117,10 @@ export function MonEquilibreAccueil({
 
         {priorites.length > 0 && (
           <div className="mb-6">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Vos priorités</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Vos priorités</p>
             <ul className="space-y-1.5">
               {priorites.map(p => (
-                <li key={p.id} className="text-sm text-gray-700 bg-gray-50 rounded-lg px-3 py-2">
+                <li key={p.id} className="text-sm text-foreground bg-muted rounded-lg px-3 py-2">
                   {p.libellePatient}
                 </li>
               ))}
@@ -138,7 +138,7 @@ export function MonEquilibreAccueil({
         <button
           type="button"
           onClick={onRetour}
-          className="w-full py-2.5 px-4 border border-gray-300 text-gray-700 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors"
+          className="w-full py-2.5 px-4 border border-border text-foreground rounded-lg font-medium text-sm hover:bg-muted transition-colors"
         >
           ← Retour
         </button>
