@@ -156,10 +156,10 @@
   ≈ 4,6-4,7:1 (AA). Matrice complète : `design-system-d1.md` §9. **Point de
   vigilance** : le mid-tone abaisse le contraste du texte *muted* (de ~6,1 à
   ~4,6:1) mais reste AA.
-- Statut : **acté en documentation, non appliqué au code** (`globals.css`
-  inchangé) tant qu'un lot d'implémentation revert-safe n'est pas ouvert.
-  À propager : `design-system-d1.md` §9, `CHANGELOG.md`, maquette
-  `propositions/2026-07-18-refonte-ux-5-0/`.
+- Statut : **appliqué au code** (lot Vague 1, PR « shell praticien »,
+  2026-07-19) — `globals.css` porte le canvas mid-tone
+  (`--background`/`--muted`/`--border`) dans les deux thèmes, `--surface`/cartes
+  inchangés. Matrice de contraste complète : `design-system-d1.md` §9.
 
 ### A6 — Disposition « la Spirale » 5.0 adoptée comme cible UX (décision utilisateur 2026-07-15)
 

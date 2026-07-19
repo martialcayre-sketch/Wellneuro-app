@@ -4,6 +4,21 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Lot Vague 1 — application UX 5.0 au code (2026-07-19)
+
+- **Portail patient legacy → tokens Jardin** (PR 1) : flux `/patient` migré des
+  couleurs en dur (bleu/gris) vers les tokens sémantiques, `ReadingComfortControl`
+  monté, hub « questionnaires en attente » rétrogradé sous le contenu d'étape,
+  `PlaintesForm` paginé (4 + 3 curseurs) — contrat de soumission inchangé.
+- **Shell praticien** (PR 2) : métriques du cabinet rendues actives (chaque carte
+  est un point d'accès vers `/dashboard/patients` ou `/dashboard/synthese`),
+  typographie remontée (nav 11→13 px, titres de section en `font-display`, titre
+  d'accueil `text-3xl`, en-tête patient `text-2xl`), **canvas mid-tone A5-R2**
+  appliqué à `globals.css` (praticien `#D3D8E6`, patient `#EAE0CC` ; cartes
+  inchangées), tokens de l'Observatory C5 réalignés (slate/red → rail/status).
+- Aucune logique clinique, aucun seuil, aucune migration Prisma ; garde-fous 5.0
+  respectés (statut jamais par la seule couleur, aucun score patient).
+
 ### Direction UX 5.0 « poste de pilotage » + canvas mid-tone A5-R2 (2026-07-18)
 
 - Registre : arbitrages **A5-R2** (canvas mid-tone « ardoise & sable » —

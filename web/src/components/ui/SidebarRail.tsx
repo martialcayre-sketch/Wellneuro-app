@@ -49,7 +49,7 @@ export function SidebarRail({ collapsed, onNavigate }: SidebarRailProps) {
             (collapsed ? (
               <div className="my-2 border-t border-rail-border" aria-hidden="true" />
             ) : (
-              <p className="px-3 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-rail-muted-foreground">
+              <p className="px-3 pt-4 pb-1 text-[13px] font-semibold uppercase tracking-wide text-rail-muted-foreground">
                 {groupe.etiquette}
               </p>
             ))}

@@ -20,17 +20,17 @@ export default async function DashboardPage() {
     <div className="flex flex-col gap-8">
       {/* En-tête */}
       <div>
-        <h2 className="font-display text-2xl font-bold text-foreground">
+        <h2 className="font-display text-3xl font-bold text-foreground">
           Bonjour, {session?.user?.email?.split('@')[0] ?? 'Praticien'}
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-base text-muted-foreground mt-1">
           Le Fil du jour — {dateDuJour}
         </p>
       </div>
 
       {/* Métriques (carte du Fil, décision A6-4) */}
       <section>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+        <h3 className="font-display text-lg font-semibold text-foreground mb-3">
           Le cabinet en un coup d&apos;œil
         </h3>
         <MetricsSection />
@@ -38,7 +38,7 @@ export default async function DashboardPage() {
 
       {/* Le Fil */}
       <section>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+        <h3 className="font-display text-lg font-semibold text-foreground mb-3">
           Le Fil
         </h3>
         <FilDuJour />
