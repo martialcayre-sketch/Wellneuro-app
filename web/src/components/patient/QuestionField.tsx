@@ -11,7 +11,7 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
 }) {
   return (
     <fieldset className="min-w-0 space-y-2">
-      <legend className="text-sm font-medium text-gray-800">{question.texte}</legend>
+      <legend className="text-sm font-medium text-foreground">{question.texte}</legend>
       {(question.type === 'likert' || (question.type === 'select' && displaySelectAsRadioCards)) && question.options && (
         <div className="grid gap-2">
           {question.options.map(opt => (
@@ -20,7 +20,7 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
               className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-colors text-sm ${
                 value === String(opt.v)
                   ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                  : 'border-border hover:border-primary/40 text-foreground'
               }`}
             >
               <input
@@ -40,7 +40,7 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
         <select
           value={value}
           onChange={e => onChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+          className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="">— Choisissez —</option>
           {question.options.map(opt => (
@@ -57,11 +57,11 @@ export function QuestionField({ question, value, onChange, displaySelectAsRadioC
             step={question.step ?? 1}
             value={value}
             onChange={e => onChange(e.target.value)}
-            className="w-32 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-32 px-3 py-2 border border-border rounded-lg text-sm bg-surface text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
-          {question.unit && <span className="text-sm text-gray-500">{question.unit}</span>}
+          {question.unit && <span className="text-sm text-muted-foreground">{question.unit}</span>}
           {question.min !== undefined && question.max !== undefined && (
-            <span className="text-xs text-gray-400">({question.min}–{question.max})</span>
+            <span className="text-xs text-muted-foreground/70">({question.min}–{question.max})</span>
           )}
         </div>
       )}

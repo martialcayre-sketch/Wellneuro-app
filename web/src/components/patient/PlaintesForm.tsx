@@ -21,6 +21,11 @@ const PLAINTES = [
   { key: 'mobilite',  label: 'Mobilité / douleurs musculaires', icon: '🦵' },
 ];
 
+// Pagination du questionnaire (4 + 3 curseurs) — réduit le défilement vertical
+// en présentant les dimensions en deux étapes. N'affecte ni le brouillon ni le
+// contrat de soumission : toutes les valeurs restent dans l'état du composant.
+const PAGES = [PLAINTES.slice(0, 4), PLAINTES.slice(4)];
+
 function valeursInitiales(idAssignation: string): Record<string, number> {
   const base = Object.fromEntries(PLAINTES.map(p => [p.key, 5]));
   const draft = readDraft(idAssignation);
@@ -45,6 +50,7 @@ export function PlaintesForm({ assignation, email, onDone }: {
   const [savedAt, setSavedAt] = useState<Date | null>(() => readDraftSavedAt(assignation.idAssignation));
   const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
   const [confirmDialog, setConfirmDialog] = useState<'reset' | 'submit' | null>(null);
+  const [page, setPage] = useState(0);
   const premierRendu = useRef(true);
 
   useEffect(() => {
@@ -108,18 +114,21 @@ export function PlaintesForm({ assignation, email, onDone }: {
     }
   };
 
+  const isDernierePage = page === PAGES.length - 1;
+
   return (
     <PatientCard as="form" onSubmit={handleSubmit} className="space-y-6">
       <div>
         <PatientPageHeader as="h2" title={assignation.titre} />
         <p className="text-sm text-muted-foreground mb-2">Évaluez chaque dimension de 1 (pas de gêne) à 10 (gêne maximale).</p>
+        <p className="text-xs font-medium text-muted-foreground/70">{`Étape ${page + 1} sur ${PAGES.length}`}</p>
       </div>
       {assignation.notes && (
         <div className="px-4 py-3 bg-primary/10 rounded-lg text-sm text-primary">
           <span className="font-medium">Note de votre praticien : </span>{assignation.notes}
         </div>
       )}
-      {PLAINTES.map(p => (
+      {PAGES[page].map(p => (
         <div key={p.key}>
           <div className="flex justify-between items-center mb-1">
             <span className="text-sm font-medium text-muted-foreground">{p.icon} {p.label}</span>
@@ -138,9 +147,22 @@ export function PlaintesForm({ assignation, email, onDone }: {
       ))}
       {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
       <SaveStatusIndicator savedAt={savedAt} error={saveError} />
-      <PatientButton type="submit" variant="primary" loading={submitting} loadingLabel="Envoi en cours…" className="w-full">
-        Transmettre au praticien
-      </PatientButton>
+      <div className="flex gap-2">
+        {page > 0 && (
+          <PatientButton type="button" variant="ghost" onClick={() => setPage(p => p - 1)} className="flex-1">
+            ← Précédent
+          </PatientButton>
+        )}
+        {isDernierePage ? (
+          <PatientButton type="submit" variant="primary" loading={submitting} loadingLabel="Envoi en cours…" className="flex-1">
+            Transmettre au praticien
+          </PatientButton>
+        ) : (
+          <PatientButton type="button" variant="primary" onClick={() => setPage(p => p + 1)} className="flex-1">
+            Suivant →
+          </PatientButton>
+        )}
+      </div>
 
       <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t border-border">
         <PatientButton variant="ghost" onClick={handleSauvegarder} className="flex-1">
