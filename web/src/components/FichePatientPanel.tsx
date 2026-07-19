@@ -1,14 +1,28 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, ReactNode } from 'react';
 import Link from 'next/link';
-import { Stethoscope } from 'lucide-react';
+import * as Dialog from '@radix-ui/react-dialog';
+import {
+  Activity,
+  Check,
+  ChevronRight,
+  Circle,
+  Clock,
+  FileText,
+  ListChecks,
+  Stethoscope,
+  X,
+  type LucideIcon,
+} from 'lucide-react';
 import type { EquilibreApiResponse, PrioriteBesoin } from '@/app/api/praticien/equilibre/route';
 import type { PatientsApiResponse } from '@/app/api/praticien/patients/route';
 import type { PatchAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/praticien/reponses/route';
 import type { ResultatMomentum } from '@/lib/equilibre/types';
 import type { ScoreSubScore } from '@/lib/scoring/types';
+import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
@@ -17,7 +31,13 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
 import { PatientPreview } from '@/components/PatientPreview';
-import { ClinicalRuntimeSection } from '@/components/patient-cockpit/ClinicalRuntimeSection';
+import { DetailBesoinsPanel } from '@/components/DetailBesoinsPanel';
+import { PractitionerFoodObservationPanel } from '@/components/food-observation/PractitionerFoodObservationPanel';
+import {
+  ClinicalRuntimeSection,
+  type PhaseCycleClinique,
+} from '@/components/patient-cockpit/ClinicalRuntimeSection';
+import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { RelectureProtocoleSoumission } from '@/components/patient-cockpit/ProtocolMiniBuilder';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
@@ -99,6 +119,103 @@ function LegendeNiveauxPreuve() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Poste de pilotage (A6-R1) — ossature
+// ---------------------------------------------------------------------------
+
+type OngletFiche = 'cockpit' | 'besoins' | 'alimentation' | 'trajectoire';
+
+const ONGLETS: { id: OngletFiche; libelle: string }[] = [
+  { id: 'cockpit', libelle: 'Poste de pilotage' },
+  { id: 'besoins', libelle: 'Les 12 besoins' },
+  { id: 'alimentation', libelle: 'Alimentation' },
+  { id: 'trajectoire', libelle: 'Trajectoire' },
+];
+
+type IdPhase = 'patient' | 'donnees' | 'comprehension' | 'decision' | 'actions' | 'suivi' | 'reevaluation';
+type StatutPhase = 'fait' | 'en_attente' | 'a_ouvrir';
+
+// Colonne vertébrale = le cycle clinique 3.x. Une phase = une zone focale ;
+// on navigue par phase, jamais par défilement (A6-R1).
+const PHASES: { id: IdPhase; libelle: string; runtime: PhaseCycleClinique | null }[] = [
+  { id: 'patient', libelle: 'Patient', runtime: null },
+  { id: 'donnees', libelle: 'Données fiables', runtime: 'donnees' },
+  { id: 'comprehension', libelle: 'Compréhension', runtime: 'comprehension' },
+  { id: 'decision', libelle: 'Décision 21 j', runtime: 'decision' },
+  { id: 'actions', libelle: 'Actions', runtime: 'actions' },
+  { id: 'suivi', libelle: 'Suivi', runtime: 'suivi' },
+  { id: 'reevaluation', libelle: 'Réévaluation', runtime: 'reevaluation' },
+];
+
+const LIBELLE_STATUT: Record<StatutPhase, string> = {
+  fait: 'renseignée',
+  en_attente: 'en attente',
+  a_ouvrir: 'à ouvrir',
+};
+
+// Le statut n'est jamais porté par la seule couleur : icône + texte.
+function IconeStatut({ statut }: { statut: StatutPhase }) {
+  if (statut === 'fait') return <Check aria-hidden="true" size={14} strokeWidth={2.5} className="text-status-success" />;
+  if (statut === 'en_attente') return <Clock aria-hidden="true" size={14} strokeWidth={2} className="text-accent" />;
+  return <Circle aria-hidden="true" size={14} strokeWidth={2} className="text-muted-foreground" />;
+}
+
+// Instrument à tiroir — patron Radix repris de `PatientPreview` : la densité
+// s'ouvre AU CLIC (jamais au survol) puis se referme.
+function InstrumentTiroir({
+  libelle,
+  description,
+  icone: Icone,
+  children,
+}: {
+  libelle: string;
+  description: string;
+  icone: LucideIcon;
+  children: ReactNode;
+}) {
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger asChild>
+        <button
+          type="button"
+          className="flex min-h-12 w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-left text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        >
+          <Icone aria-hidden="true" size={18} strokeWidth={2} className="shrink-0 text-primary" />
+          <span className="min-w-0 flex-1">{libelle}</span>
+          <ChevronRight aria-hidden="true" size={16} strokeWidth={2} className="shrink-0 text-muted-foreground" />
+        </button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        {/* data-theme requis : Radix portale hors de [data-theme="praticien"]
+            posé par dashboard/layout.tsx (cf. PatientPreview.tsx). */}
+        <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35" />
+        <Dialog.Content
+          data-theme="praticien"
+          className="fixed right-0 top-0 z-50 h-full w-full max-w-2xl overflow-y-auto border-l border-border bg-surface p-6 shadow-xl focus:outline-none"
+        >
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-wide text-solar-ink">Instrument</p>
+              <Dialog.Title className="font-display text-lg font-bold text-foreground">{libelle}</Dialog.Title>
+              <Dialog.Description className="mt-1 text-sm text-muted-foreground">{description}</Dialog.Description>
+            </div>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                aria-label={`Fermer l’instrument ${libelle}`}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <X aria-hidden="true" size={18} strokeWidth={2} />
+              </button>
+            </Dialog.Close>
+          </div>
+          {children}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 export function FichePatientPanel({
   idPatient,
   fixtureValidationErgo = null,
@@ -113,6 +230,11 @@ export function FichePatientPanel({
   const [assignationsModif, setAssignationsModif] = useState<PatientsApiResponse['assignations']>([]);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
+  const [ongletActif, setOngletActif] = useState<OngletFiche>('cockpit');
+  const [phaseActive, setPhaseActive] = useState<IdPhase>('decision');
+  const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
+  const [trajectoireChargee, setTrajectoireChargee] = useState(false);
+  const refsPhases = useRef<(HTMLButtonElement | null)[]>([]);
   // Harnais de validation ergonomique C1 (dev uniquement — voir
   // validationErgoFixture.ts) : la fixture est construite côté serveur par la
   // page et reçue en prop ; le brouillon relu (Épreuve 2) est construit par le
@@ -172,6 +294,16 @@ export function FichePatientPanel({
       .catch(() => setAssignationsModif([]));
   }, [data]);
 
+  // Onglet « Trajectoire » : lecture seule, chargée à la première ouverture.
+  useEffect(() => {
+    if (ongletActif !== 'trajectoire' || trajectoireChargee) return;
+    setTrajectoireChargee(true);
+    fetch(`/api/praticien/trajectoire?idPatient=${encodeURIComponent(idPatient)}`)
+      .then(r => r.json())
+      .then((d: { ok?: boolean; trajectoire?: Trajectoire }) => setTrajectoire(d?.trajectoire ?? null))
+      .catch(() => setTrajectoire(null));
+  }, [ongletActif, trajectoireChargee, idPatient]);
+
   const onDebloquer = async (idAssignation: string) => {
     setDeverrouillageId(idAssignation);
     try {
@@ -185,6 +317,24 @@ export function FichePatientPanel({
     } finally {
       setDeverrouillageId(null);
     }
+  };
+
+  // Navigation clavier du rail de phases (tablist vertical).
+  const onClavierRail = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    const suivant =
+      event.key === 'ArrowDown' || event.key === 'ArrowRight'
+        ? (index + 1) % PHASES.length
+        : event.key === 'ArrowUp' || event.key === 'ArrowLeft'
+          ? (index - 1 + PHASES.length) % PHASES.length
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? PHASES.length - 1
+              : null;
+    if (suivant === null) return;
+    event.preventDefault();
+    setPhaseActive(PHASES[suivant].id);
+    refsPhases.current[suivant]?.focus();
   };
 
   if (loading) {
@@ -204,13 +354,258 @@ export function FichePatientPanel({
 
   const { patient, objetsCliniques, priorites } = data;
   const derniereAssignationId = reponses[0]?.idAssignation || null;
+  const nomComplet = `${patient.prenom} ${patient.nom}`.trim();
+  const derniereReponse = reponses[0]?.dateSoumission
+    ? new Date(reponses[0].dateSoumission).toLocaleDateString('fr-FR')
+    : null;
+
+  const statutPhase = (id: IdPhase): StatutPhase => {
+    if (id === 'patient') return 'fait';
+    if (id === 'donnees') return reponses.length > 0 ? 'fait' : 'en_attente';
+    if (id === 'comprehension') {
+      return priorites.some(p => p.couverture !== null) ? 'fait' : 'en_attente';
+    }
+    return 'a_ouvrir';
+  };
+
+  const phaseCourante = PHASES.find(p => p.id === phaseActive) ?? PHASES[0];
+
+  // --- Contenus des instruments (tiroirs) -----------------------------------
+  const tableauBesoins = (
+    <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      <table className="min-w-full text-sm">
+        <thead className="bg-muted text-muted-foreground">
+          <tr>
+            <th className="px-4 py-2 text-left">Besoin</th>
+            <th className="px-4 py-2 text-left">Couverture</th>
+            <th className="px-4 py-2 text-left">Niveau de preuve</th>
+          </tr>
+        </thead>
+        <tbody>
+          {priorites.map((p: PrioriteBesoin) => (
+            <tr key={p.besoin} className="border-t border-border">
+              <td className="px-4 py-2">{p.libellePraticien}</td>
+              <td className="px-4 py-2 text-muted-foreground">{p.couverture !== null ? `${p.couverture}%` : '—'}</td>
+              <td className="px-4 py-2"><EvidenceBadge niveau={p.niveauPreuve} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="px-4 py-3 border-t border-border">
+        <LegendeNiveauxPreuve />
+      </div>
+    </div>
+  );
+
+  const cartesObjetsCliniques = (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <ObjetGauge label="Indice global" value={objetsCliniques.indiceGlobal} />
+      <ObjetGauge label="Stabilité métabolique" value={objetsCliniques.stabiliteMetabolique} />
+      <ObjetGauge label="Réserve d'adaptation" value={objetsCliniques.reserveAdaptation} />
+      <ObjetGauge label="Clarté" value={objetsCliniques.clarte} />
+      <MomentumCard momentum={objetsCliniques.momentum} />
+    </div>
+  );
+
+  const tableauReponses = (
+    <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      {loadingReponses ? (
+        <div className="px-4 py-4 text-sm text-muted-foreground">Chargement...</div>
+      ) : reponses.length === 0 ? (
+        <div className="px-4 py-4 text-sm text-muted-foreground">Aucun questionnaire complété pour ce patient.</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="bg-muted text-muted-foreground">
+              <tr>
+                <th className="px-4 py-2 text-left">Date</th>
+                <th className="px-4 py-2 text-left">Questionnaire</th>
+                <th className="px-4 py-2 text-left">Score</th>
+                <th className="px-4 py-2 text-left">Interprétation</th>
+                <th className="px-4 py-2 text-left">Qualité</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reponses.map(r => {
+                const scores = r.scoresParsed;
+                const certification = certificationBadge((scores?.certification as ScoreCertification | undefined) ?? null);
+                const missingIds = getArrayField(scores, 'missingIds');
+                const notApplicable = getArrayField(scores, 'notApplicable');
+                const note = typeof scores?.note === 'string' ? scores.note : '';
+                const subScores = Array.isArray(scores?.subScores)
+                  ? (scores!.subScores as ScoreSubScore[])
+                  : [];
+                const miniSynthese = buildMiniSynthese(scores);
+                return (
+                  <tr key={r.idReponse} className="border-t border-border align-top">
+                    <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">
+                      {r.dateSoumission ? new Date(r.dateSoumission).toLocaleDateString('fr-FR') : '—'}
+                    </td>
+                    <td className="px-4 py-2 font-medium">
+                      <div>{r.titre || r.idQuestionnaire || '—'}</div>
+                      {miniSynthese && (
+                        <div className="mt-1 text-xs font-normal italic text-foreground/80 max-w-md" title={miniSynthese}>
+                          Synthèse : {miniSynthese}
+                        </div>
+                      )}
+                      {note && (
+                        <div className="mt-1 text-xs font-normal text-muted-foreground max-w-md" title={note}>
+                          {note}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      {subScores.length > 0 ? (
+                        <div className="flex flex-col gap-1.5">
+                          {subScores.map(sub => (
+                            <div key={sub.id} className="flex items-center gap-2 whitespace-nowrap">
+                              <span className="text-xs text-muted-foreground w-28 truncate" title={sub.label}>
+                                {sub.label}
+                              </span>
+                              {typeof sub.total === 'number' && typeof sub.max === 'number' && (
+                                <ScoreZones
+                                  value={sub.total}
+                                  max={sub.max}
+                                  ranges={r.subScoreRanges?.[sub.id] ?? null}
+                                  ariaLabel={`${sub.label} : ${sub.total} sur ${sub.max}${sub.interpretation?.label ? ` — ${sub.interpretation.label}` : ''}`}
+                                />
+                              )}
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                                {sub.total ?? '—'}
+                                {typeof sub.max === 'number' ? `/${sub.max}` : ''}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : r.scorePrincipal !== null ? (
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                          {r.scorePrincipal}
+                        </span>
+                      ) : '—'}
+                    </td>
+                    <td className="px-4 py-2 text-muted-foreground max-w-xs">
+                      {subScores.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {subScores.map(sub => (
+                            <div key={sub.id}>
+                              {sub.interpretation?.label ? (
+                                <Badge variant={interpColorToVariant(sub.interpretation.color)}>
+                                  {sub.interpretation.label}
+                                </Badge>
+                              ) : (
+                                <span>—</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="block truncate" title={r.interpretation}>
+                          {r.interpretation || '—'}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex flex-wrap gap-1.5">
+                        {certification ? (
+                          <Badge variant={certification.variant}>{certification.label}</Badge>
+                        ) : (
+                          <Badge variant="neutral">Historique</Badge>
+                        )}
+                        {missingIds.length > 0 && (
+                          <Badge variant="warning">{missingIds.length} manquant(s)</Badge>
+                        )}
+                        {notApplicable.length > 0 && (
+                          <Badge variant="neutral">{notApplicable.length} n/a</Badge>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+
+  // --- Zone focale : contenu propre à la phase (hors runtime clinique) ------
+  const focalLocal = () => {
+    if (phaseActive === 'patient') {
+      return (
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-border bg-surface p-4">
+            <p className="text-sm text-foreground">{nomComplet}</p>
+            <p className="mt-1 break-all text-sm text-muted-foreground">{patient.email}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {derniereReponse
+                ? `Dernière réponse reçue le ${derniereReponse}.`
+                : 'Aucune réponse reçue pour l’instant.'}
+            </p>
+          </div>
+          {assignationsModif.length > 0 && (
+            <section aria-label="Demandes de correction en attente" className="bg-surface border border-accent rounded-xl overflow-hidden">
+              {assignationsModif.map(a => (
+                <div key={a.idAssignation} className="px-4 py-3 border-b border-border last:border-b-0 flex items-start justify-between gap-3 bg-orange-50">
+                  <div className="min-w-0">
+                    <span className="text-sm text-orange-800">
+                      Demande de correction — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
+                    </span>
+                    {a.correctionCommentaire && (
+                      <p className="text-xs text-orange-700 mt-1 italic">« {a.correctionCommentaire} »</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => onDebloquer(a.idAssignation)}
+                    disabled={deverrouillageId === a.idAssignation}
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600 text-white disabled:opacity-60"
+                  >
+                    {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}
+                  </button>
+                </div>
+              ))}
+            </section>
+          )}
+        </div>
+      );
+    }
+
+    if (phaseActive === 'donnees') {
+      return (
+        <div className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+          {loadingReponses
+            ? 'Chargement des réponses...'
+            : reponses.length === 0
+              ? 'Aucun questionnaire complété pour ce patient.'
+              : `${reponses.length} questionnaire(s) reçu(s). Le détail chiffré s’ouvre dans l’instrument « Détail des réponses ».`}
+        </div>
+      );
+    }
+
+    if (phaseActive === 'comprehension') {
+      return (
+        <div className="bg-surface border border-border rounded-xl p-4 flex justify-center">
+          <CerclesConcentriques
+            besoins={priorites.map(p => ({
+              id: p.besoin,
+              libelle: p.libellePraticien,
+              strate: p.strate,
+              couverture: p.couverture,
+            }))}
+          />
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <ModeConsultation active={modeConsultationActif} onToggle={() => setModeConsultationActif(false)}>
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="font-display text-2xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
+          <h2 className="font-display text-2xl font-bold text-foreground">{nomComplet}</h2>
           <p className="mt-1 break-all text-sm text-muted-foreground">{patient.email}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -227,253 +622,180 @@ export function FichePatientPanel({
               Mode consultation
             </button>
           )}
-          <Link
-            href={`/dashboard/patients/${encodeURIComponent(idPatient)}/alimentation`}
-            className="text-sm text-primary hover:underline"
-          >
-            Trajectoire alimentaire
-          </Link>
           <Link href="/dashboard/patients" className="text-sm text-muted-foreground hover:text-foreground hover:underline">
             ← Retour aux patients
           </Link>
         </div>
       </div>
 
-      {/* Cartographie neuro-fonctionnelle — 5 objets cliniques */}
-      <section>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          Cartographie neuro-fonctionnelle
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <ObjetGauge label="Indice global" value={objetsCliniques.indiceGlobal} />
-          <ObjetGauge label="Stabilité métabolique" value={objetsCliniques.stabiliteMetabolique} />
-          <ObjetGauge label="Réserve d'adaptation" value={objetsCliniques.reserveAdaptation} />
-          <ObjetGauge label="Clarté" value={objetsCliniques.clarte} />
-          <MomentumCard momentum={objetsCliniques.momentum} />
-        </div>
-      </section>
+      {/* Onglets in-fiche : plus de sous-vue en page pleine, plus de scroll. */}
+      <div role="tablist" aria-label="Vues de la fiche patient" className="flex flex-wrap gap-1 rounded-xl border border-border bg-muted p-1">
+        {ONGLETS.map(onglet => {
+          const actif = ongletActif === onglet.id;
+          return (
+            <button
+              key={onglet.id}
+              type="button"
+              role="tab"
+              id={`onglet-${onglet.id}`}
+              aria-selected={actif}
+              aria-controls={`panneau-${onglet.id}`}
+              tabIndex={actif ? 0 : -1}
+              onClick={() => setOngletActif(onglet.id)}
+              className={`min-h-11 rounded-lg px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                actif ? 'bg-surface font-semibold text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {onglet.libelle}
+            </button>
+          );
+        })}
+      </div>
 
-      {/* Vue d'ensemble de l'équilibre — cercles concentriques par strate */}
-      <section>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          Vue d&apos;ensemble de l&apos;équilibre
-        </h3>
-        <div className="bg-surface border border-border rounded-xl p-4 flex justify-center">
-          <CerclesConcentriques
-            besoins={priorites.map(p => ({
-              id: p.besoin,
-              libelle: p.libellePraticien,
-              strate: p.strate,
-              couverture: p.couverture,
-            }))}
-          />
-        </div>
-      </section>
-
-      {/* Les manques et bloqueurs précèdent toujours la décision. En mode
-          validation ergonomique, la fixture reste prioritaire et aucun appel
-          au runtime PostgreSQL n'est déclenché. */}
       {fixtureErgo && (
         <div role="status" className="bg-orange-50 border border-accent rounded-xl px-4 py-3 text-sm text-orange-800">
           Mode validation ergonomique — données fictives (fixture C1). Aucune sauvegarde, aucun envoi.
           {erreurErgo && <span className="block mt-1 font-medium">Erreur du harnais : {erreurErgo}</span>}
         </div>
       )}
-      <ClinicalRuntimeSection
-        idPatient={idPatient}
-        fixture={fixtureErgo}
-        protocolDraft={protocolDraftErgo}
-        onFixtureReviewed={relectureErgo}
-      />
 
-      {/* Couvertures descriptives — aucune priorité clinique n'est déduite ici. */}
-      <section>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            Couverture des 12 besoins
-          </h3>
-          <Link
-            href={`/dashboard/patients/${encodeURIComponent(idPatient)}/besoins`}
-            className="text-xs text-accent hover:underline"
-          >
-            Voir le détail des 12 besoins →
-          </Link>
-        </div>
-        <div className="bg-surface border border-border rounded-xl overflow-hidden">
-          <table className="min-w-full text-sm">
-            <thead className="bg-muted text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2 text-left">Besoin</th>
-                <th className="px-4 py-2 text-left">Couverture</th>
-                <th className="px-4 py-2 text-left">Niveau de preuve</th>
-              </tr>
-            </thead>
-            <tbody>
-              {priorites.map((p: PrioriteBesoin) => (
-                <tr key={p.besoin} className="border-t border-border">
-                  <td className="px-4 py-2">{p.libellePraticien}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{p.couverture !== null ? `${p.couverture}%` : '—'}</td>
-                  <td className="px-4 py-2"><EvidenceBadge niveau={p.niveauPreuve} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="px-4 py-3 border-t border-border">
-            <LegendeNiveauxPreuve />
+      {/* ------------------------------ Poste de pilotage ------------------ */}
+      <div
+        role="tabpanel"
+        id="panneau-cockpit"
+        aria-labelledby="onglet-cockpit"
+        hidden={ongletActif !== 'cockpit'}
+      >
+        <section
+          aria-label="Poste de pilotage clinique"
+          className="overflow-hidden rounded-2xl border border-border bg-muted shadow-sm lg:h-[min(80vh,700px)] lg:grid lg:grid-rows-[auto,1fr]"
+        >
+          {/* Bandeau trajectoire — toujours visible */}
+          <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface px-4 py-3">
+            <div className="min-w-0">
+              <p className="font-display text-base font-bold text-foreground">{nomComplet}</p>
+              <p className="text-xs text-muted-foreground">
+                {derniereReponse ? `Dernière réponse le ${derniereReponse}` : 'Aucune réponse reçue'}
+              </p>
+            </div>
+            <span className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-full border border-accent bg-accent/10 px-3 py-1 text-xs font-medium text-solar-ink">
+              <IconeStatut statut={statutPhase(phaseCourante.id)} />
+              Phase affichée : {phaseCourante.libelle} — {LIBELLE_STATUT[statutPhase(phaseCourante.id)]}
+            </span>
           </div>
-        </div>
-      </section>
 
-      {/* Demandes de modification en attente */}
-      {assignationsModif.length > 0 && (
-        <section className="bg-surface border border-accent rounded-xl overflow-hidden">
-          {assignationsModif.map(a => (
-            <div key={a.idAssignation} className="px-4 py-3 border-b border-border last:border-b-0 flex items-start justify-between gap-3 bg-orange-50">
-              <div className="min-w-0">
-                <span className="text-sm text-orange-800">
-                  Demande de correction — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
-                </span>
-                {a.correctionCommentaire && (
-                  <p className="text-xs text-orange-700 mt-1 italic">« {a.correctionCommentaire} »</p>
-                )}
+          <div className="lg:grid lg:min-h-0 lg:grid-cols-[13rem,1fr,15rem]">
+            {/* Rail des 7 phases = colonne vertébrale */}
+            <div
+              role="tablist"
+              aria-orientation="vertical"
+              aria-label="Cycle clinique"
+              className="flex gap-1 overflow-x-auto border-b border-border p-2 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-r"
+            >
+              <p className="hidden px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:block">
+                Cycle clinique
+              </p>
+              {PHASES.map((phase, index) => {
+                const actif = phaseActive === phase.id;
+                const statut = statutPhase(phase.id);
+                return (
+                  <button
+                    key={phase.id}
+                    ref={element => {
+                      refsPhases.current[index] = element;
+                    }}
+                    type="button"
+                    role="tab"
+                    id={`phase-${phase.id}`}
+                    aria-selected={actif}
+                    aria-controls="zone-focale"
+                    tabIndex={actif ? 0 : -1}
+                    onClick={() => setPhaseActive(phase.id)}
+                    onKeyDown={event => onClavierRail(event, index)}
+                    className={`flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                      actif ? 'bg-surface font-semibold text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <IconeStatut statut={statut} />
+                    <span className="min-w-0 flex-1">{phase.libelle}</span>
+                    <span className="text-xs text-muted-foreground">{LIBELLE_STATUT[statut]}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Zone focale unique */}
+            <div
+              role="tabpanel"
+              id="zone-focale"
+              aria-labelledby={`phase-${phaseCourante.id}`}
+              tabIndex={0}
+              className="flex flex-col gap-4 p-4 lg:min-h-0 lg:overflow-y-auto"
+            >
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-solar-ink">Zone focale</p>
+                <h3 className="font-display text-lg font-bold text-foreground">{phaseCourante.libelle}</h3>
               </div>
-              <button
-                onClick={() => onDebloquer(a.idAssignation)}
-                disabled={deverrouillageId === a.idAssignation}
-                className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600 text-white disabled:opacity-60"
-              >
-                {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}
-              </button>
+              {focalLocal()}
+              {/* Le runtime clinique reste monté en permanence : seul l'affichage
+                  est filtré par phase — aucun rechargement, aucun brouillon perdu. */}
+              <ClinicalRuntimeSection
+                idPatient={idPatient}
+                fixture={fixtureErgo}
+                protocolDraft={protocolDraftErgo}
+                onFixtureReviewed={relectureErgo}
+                phase={phaseCourante.runtime ?? 'aucune'}
+                onAjusterProtocole={() => setPhaseActive('actions')}
+              />
             </div>
-          ))}
-        </section>
-      )}
 
-      {/* Détail technique des réponses */}
-      <section>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          Détail technique des réponses
-        </h3>
-        <div className="bg-surface border border-border rounded-xl overflow-hidden">
-          {loadingReponses ? (
-            <div className="px-4 py-4 text-sm text-muted-foreground">Chargement...</div>
-          ) : reponses.length === 0 ? (
-            <div className="px-4 py-4 text-sm text-muted-foreground">Aucun questionnaire complété pour ce patient.</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-muted text-muted-foreground">
-                  <tr>
-                    <th className="px-4 py-2 text-left">Date</th>
-                    <th className="px-4 py-2 text-left">Questionnaire</th>
-                    <th className="px-4 py-2 text-left">Score</th>
-                    <th className="px-4 py-2 text-left">Interprétation</th>
-                    <th className="px-4 py-2 text-left">Qualité</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reponses.map(r => {
-                    const scores = r.scoresParsed;
-                    const certification = certificationBadge((scores?.certification as ScoreCertification | undefined) ?? null);
-                    const missingIds = getArrayField(scores, 'missingIds');
-                    const notApplicable = getArrayField(scores, 'notApplicable');
-                    const note = typeof scores?.note === 'string' ? scores.note : '';
-                    const subScores = Array.isArray(scores?.subScores)
-                      ? (scores!.subScores as ScoreSubScore[])
-                      : [];
-                    const miniSynthese = buildMiniSynthese(scores);
-                    return (
-                      <tr key={r.idReponse} className="border-t border-border align-top">
-                        <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">
-                          {r.dateSoumission ? new Date(r.dateSoumission).toLocaleDateString('fr-FR') : '—'}
-                        </td>
-                        <td className="px-4 py-2 font-medium">
-                          <div>{r.titre || r.idQuestionnaire || '—'}</div>
-                          {miniSynthese && (
-                            <div className="mt-1 text-xs font-normal italic text-foreground/80 max-w-md" title={miniSynthese}>
-                              Synthèse : {miniSynthese}
-                            </div>
-                          )}
-                          {note && (
-                            <div className="mt-1 text-xs font-normal text-muted-foreground max-w-md" title={note}>
-                              {note}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-2">
-                          {subScores.length > 0 ? (
-                            <div className="flex flex-col gap-1.5">
-                              {subScores.map(sub => (
-                                <div key={sub.id} className="flex items-center gap-2 whitespace-nowrap">
-                                  <span className="text-xs text-muted-foreground w-28 truncate" title={sub.label}>
-                                    {sub.label}
-                                  </span>
-                                  {typeof sub.total === 'number' && typeof sub.max === 'number' && (
-                                    <ScoreZones
-                                      value={sub.total}
-                                      max={sub.max}
-                                      ranges={r.subScoreRanges?.[sub.id] ?? null}
-                                      ariaLabel={`${sub.label} : ${sub.total} sur ${sub.max}${sub.interpretation?.label ? ` — ${sub.interpretation.label}` : ''}`}
-                                    />
-                                  )}
-                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                    {sub.total ?? '—'}
-                                    {typeof sub.max === 'number' ? `/${sub.max}` : ''}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : r.scorePrincipal !== null ? (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                              {r.scorePrincipal}
-                            </span>
-                          ) : '—'}
-                        </td>
-                        <td className="px-4 py-2 text-muted-foreground max-w-xs">
-                          {subScores.length > 0 ? (
-                            <div className="flex flex-col gap-1">
-                              {subScores.map(sub => (
-                                <div key={sub.id}>
-                                  {sub.interpretation?.label ? (
-                                    <Badge variant={interpColorToVariant(sub.interpretation.color)}>
-                                      {sub.interpretation.label}
-                                    </Badge>
-                                  ) : (
-                                    <span>—</span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <span className="block truncate" title={r.interpretation}>
-                              {r.interpretation || '—'}
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2">
-                          <div className="flex flex-wrap gap-1.5">
-                            {certification ? (
-                              <Badge variant={certification.variant}>{certification.label}</Badge>
-                            ) : (
-                              <Badge variant="neutral">Historique</Badge>
-                            )}
-                            {missingIds.length > 0 && (
-                              <Badge variant="warning">{missingIds.length} manquant(s)</Badge>
-                            )}
-                            {notApplicable.length > 0 && (
-                              <Badge variant="neutral">{notApplicable.length} n/a</Badge>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            {/* Instruments à tiroir */}
+            <div className="flex flex-col gap-2 border-t border-border p-3 lg:border-l lg:border-t-0 lg:overflow-y-auto">
+              <p className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Instruments</p>
+              <InstrumentTiroir
+                libelle="Les 12 besoins"
+                description="Couverture descriptive et niveau de preuve, par besoin. Aucune priorité clinique n’est déduite ici."
+                icone={ListChecks}
+              >
+                {tableauBesoins}
+                <p className="mt-3 text-sm text-muted-foreground">
+                  Le détail complet (radar, sources) est disponible dans l’onglet « Les 12 besoins ».
+                </p>
+              </InstrumentTiroir>
+              <InstrumentTiroir
+                libelle="Objets cliniques & momentum"
+                description="Cartographie neuro-fonctionnelle : les 5 objets cliniques et le momentum."
+                icone={Activity}
+              >
+                {cartesObjetsCliniques}
+              </InstrumentTiroir>
+              <InstrumentTiroir
+                libelle="Détail des réponses"
+                description="Détail technique des questionnaires reçus : scores, interprétations et qualité."
+                icone={FileText}
+              >
+                {tableauReponses}
+              </InstrumentTiroir>
+              <p className="px-1 text-xs text-muted-foreground">
+                Chaque instrument s’ouvre au clic puis se referme : la densité ne s’empile plus dans la page.
+              </p>
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      </div>
+
+      {/* ------------------------------ Onglets in-fiche ------------------- */}
+      <div role="tabpanel" id="panneau-besoins" aria-labelledby="onglet-besoins" hidden={ongletActif !== 'besoins'}>
+        {ongletActif === 'besoins' && <DetailBesoinsPanel idPatient={idPatient} enteteMasquee />}
+      </div>
+
+      <div role="tabpanel" id="panneau-alimentation" aria-labelledby="onglet-alimentation" hidden={ongletActif !== 'alimentation'}>
+        {ongletActif === 'alimentation' && <PractitionerFoodObservationPanel idPatient={idPatient} />}
+      </div>
+
+      <div role="tabpanel" id="panneau-trajectoire" aria-labelledby="onglet-trajectoire" hidden={ongletActif !== 'trajectoire'}>
+        {ongletActif === 'trajectoire' && <TrajectoirePanel trajectoire={trajectoire} />}
+      </div>
     </div>
     </ModeConsultation>
   );
