@@ -17,11 +17,11 @@ alors du temps à chasser un bug qui n'existe pas.
 ## Répartition des rôles
 
 | | **Mac** | **PC (Windows)** |
-|---|---|---|
+| --- | --- | --- |
 | Statut | Poste principal | Appoint / secours |
 | Rôle | **Validation et intégration** | **Édition et rédaction** |
-| E2E Playwright | **Exclusivité** | Interdit |
-| Merge vers `main` | Oui, après validation | Non |
+| E2E Playwright **local** | **Exclusivité** | Interdit |
+| Merge vers `main` | Oui | Oui, **via PR au CI vert** |
 
 Cette répartition n'est pas une hiérarchie : c'est une **spécialisation**. Le PC
 reste pleinement utile pour écrire du code, de la documentation, relire un diff
@@ -31,7 +31,7 @@ ou préparer une branche. Il ne porte simplement pas la responsabilité de dire
 ## Ce que chaque machine peut lancer
 
 | Commande | Mac | PC | Pourquoi |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `npm test` (Vitest) | ✅ | ✅ | **Aucune base requise** — vérifié : 596 tests passent sans `DATABASE_URL` |
 | `npm run type-check` | ✅ | ✅ | Analyse statique pure |
 | `npm run lint` | ✅ | ✅ | Analyse statique pure |
@@ -49,9 +49,12 @@ Le 🚫 est la seule interdiction stricte de ce document.
    copies du dépôt. Sur le Mac, `npm run test:worktree` fait exception : sa base
    est éphémère et ses ports sont dérivés du chemin du worktree, donc plusieurs
    worktrees peuvent valider **en parallèle** sans se contaminer.
-3. **Le PC ne merge pas vers `main`.** Il pousse des branches ; la validation et
-   le merge se font depuis le Mac. `main` est protégée : le check `verify` doit
-   être vert.
+3. **Le gardien de `main`, c'est le CI — pas la machine.** Le check `verify`
+   (E2E compris) tourne sur les runners GitHub à chaque PR, avec sa propre base
+   éphémère, quelle que soit la machine qui a poussé. Le PC peut donc merger une
+   PR dont `verify` est vert. En revanche, **ne jamais pousser directement sur
+   `main`** : `enforce_admins` étant désactivé, un push direct contourne le
+   check et court-circuite les E2E. Toujours passer par une PR.
 4. **`git pull` avant de commencer**, sur les deux machines. Un dépôt local en
    retard produit des conflits ou des merges parasites au moment de pousser.
 5. **Ne jamais annoncer qu'une PR est prête sans avoir lu son CI**
@@ -68,7 +71,21 @@ Le mode de travail nominal, quand les deux machines servent :
    (séquence rapide `-- --fast` : ~1 min 20 s, 34 tests E2E inclus).
 4. **Mac** — lire le CI (`gh pr checks`), puis merger.
 
-Un seul principe à retenir : **le PC propose, le Mac valide et intègre.**
+Un seul principe à retenir : **le PC propose, le Mac valide vite.**
+
+### Si le Mac n'est pas disponible
+
+Le PC n'est jamais bloqué. La validation locale du Mac est un **accélérateur**
+(~1 min 20 s au lieu d'un aller-retour CI de ~5 min), pas une autorisation.
+
+1. **PC** — `type-check`, `npm test`, `lint`, puis pousser la branche.
+2. **PC** — ouvrir la PR. Le CI GitHub lance `verify`, **E2E compris**, sur sa
+   propre base éphémère : aucune interaction avec la base partagée, donc aucun
+   risque de contamination.
+3. **PC** — attendre le vert (`gh pr checks 〈n°〉 --watch`), puis merger.
+
+C'est plus lent, pas moins sûr : la PR franchit exactement le même contrôle.
+Le seul interdit reste le push direct sur `main`, qui contournerait ce contrôle.
 
 ## Lever la restriction du PC
 
