@@ -50,6 +50,7 @@ Priorité absolue : stabilité de l'application en production, pas de nouvelle m
 - Workflow de dev : `docs/claude/WORKFLOW_DEVELOPPEMENT.md`
 - Templates de prompts : `docs/claude/TEMPLATES_PROMPTS.md`
 - Runbook incident Vercel/DNS : `docs/claude/CONTEXTE_SESSION_VERCEL_2026-07-01.md`
+- Rôles Mac / PC et garde-fous de test : `docs/ROLES_MACHINES.md`
 - Roadmap technique (consolidation R0→R10) : `docs/ROADMAP_TECHNIQUE.md`
 - Roadmap produit (séries D/R/E, priorités) : `docs/ROADMAP_PRODUIT.md`
 
@@ -71,6 +72,12 @@ bash scripts/check_no_secrets.sh  # contrôle anti-secrets
 en charge (PostgreSQL via `apt-get` ou Homebrew — `brew install postgresql@15`,
 la version du CI). La séquence rapide (`-- --fast`) tourne en ~1 min 20 s et
 exécute les 34 tests E2E. Prérequis et options : `web/e2e/README.md`.
+
+**Les E2E sont l'exclusivité du Mac.** `npm run test:e2e` réinitialise le patient
+fictif `PAT_SEED_03` dans la base pointée par `DATABASE_URL`, partagée entre les
+postes : deux runs simultanés s'effacent mutuellement leurs fixtures et
+produisent des échecs erratiques. Ne jamais le lancer depuis le PC, ni deux runs
+E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
 
 ## Avant de committer
 

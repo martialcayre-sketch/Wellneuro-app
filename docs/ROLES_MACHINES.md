@@ -1,0 +1,98 @@
+# Rôles des machines — Mac et PC en équipe
+
+Notice de coordination entre les deux postes de développement. À lire une fois
+sur chaque machine ; les règles « dures » sont non négociables car leur
+violation produit des échecs de test **erratiques et non reproductibles**.
+
+## Le risque concret, en une phrase
+
+Les tests E2E lancés via `npm run test:e2e` réinitialisent le patient fictif
+Michel Dogné (`PAT_SEED_03`) dans la base pointée par `DATABASE_URL`. Si les
+deux machines partagent cette base — ce que suggère `docs/TRANSFERT_ENV_MAC.md`,
+qui liste `DATABASE_URL` parmi les valeurs à transférer — **deux runs simultanés
+s'effacent mutuellement leurs fixtures en plein vol**. Les échecs qui en
+résultent ressemblent à de vraies régressions, mais n'en sont pas : on perd
+alors du temps à chasser un bug qui n'existe pas.
+
+## Répartition des rôles
+
+| | **Mac** | **PC (Windows)** |
+|---|---|---|
+| Statut | Poste principal | Appoint / secours |
+| Rôle | **Validation et intégration** | **Édition et rédaction** |
+| E2E Playwright | **Exclusivité** | Interdit |
+| Merge vers `main` | Oui, après validation | Non |
+
+Cette répartition n'est pas une hiérarchie : c'est une **spécialisation**. Le PC
+reste pleinement utile pour écrire du code, de la documentation, relire un diff
+ou préparer une branche. Il ne porte simplement pas la responsabilité de dire
+« c'est validé ».
+
+## Ce que chaque machine peut lancer
+
+| Commande | Mac | PC | Pourquoi |
+|---|---|---|---|
+| `npm test` (Vitest) | ✅ | ✅ | **Aucune base requise** — vérifié : 596 tests passent sans `DATABASE_URL` |
+| `npm run type-check` | ✅ | ✅ | Analyse statique pure |
+| `npm run lint` | ✅ | ✅ | Analyse statique pure |
+| `bash scripts/check_no_secrets.sh` | ✅ | ✅ | Lecture de fichiers seule |
+| `npm run test:worktree` | ✅ | ❌ | PostgreSQL **éphémère local** ; le script exige `/usr/lib/postgresql` + `apt-get` (Linux) ou Homebrew (macOS) — indisponible sur Windows natif |
+| `npm run test:e2e` | ⚠️ | 🚫 | Utilise la **base partagée** — un seul run à la fois, toutes machines confondues |
+
+Le 🚫 est la seule interdiction stricte de ce document.
+
+## Garde-fous
+
+1. **Les E2E sont l'exclusivité du Mac.** Ne jamais lancer `npm run test:e2e`
+   depuis le PC tant qu'il partage la `DATABASE_URL` du Mac.
+2. **Jamais deux runs E2E simultanés**, quelles que soient les machines et les
+   copies du dépôt. Sur le Mac, `npm run test:worktree` fait exception : sa base
+   est éphémère et ses ports sont dérivés du chemin du worktree, donc plusieurs
+   worktrees peuvent valider **en parallèle** sans se contaminer.
+3. **Le PC ne merge pas vers `main`.** Il pousse des branches ; la validation et
+   le merge se font depuis le Mac. `main` est protégée : le check `verify` doit
+   être vert.
+4. **`git pull` avant de commencer**, sur les deux machines. Un dépôt local en
+   retard produit des conflits ou des merges parasites au moment de pousser.
+5. **Ne jamais annoncer qu'une PR est prête sans avoir lu son CI**
+   (`gh pr checks`) : une suite Vitest verte ne prouve rien sur les parcours.
+
+## Protocole d'équipe
+
+Le mode de travail nominal, quand les deux machines servent :
+
+1. **PC** — écrire, corriger, documenter. Valider localement avec les trois
+   commandes sûres : `type-check`, `npm test`, `lint`.
+2. **PC** — committer et pousser la branche. Ouvrir la PR si besoin.
+3. **Mac** — `git pull`, puis validation complète : `npm run test:worktree`
+   (séquence rapide `-- --fast` : ~1 min 20 s, 34 tests E2E inclus).
+4. **Mac** — lire le CI (`gh pr checks`), puis merger.
+
+Un seul principe à retenir : **le PC propose, le Mac valide et intègre.**
+
+## Lever la restriction du PC
+
+Deux voies, si tu veux que le PC participe aussi aux E2E :
+
+- **WSL2 + Debian** (recommandé) — `npm run test:worktree` y fonctionne
+  nativement, avec sa base éphémère isolée. Le PC rejoint alors le pool de
+  validation sans aucun risque de contamination, et le parallélisme redevient
+  sûr.
+- **Une `DATABASE_URL` distincte** pour le PC (base de dev séparée) — lève le
+  conflit sur `npm run test:e2e`, mais ne donne pas l'isolation par worktree.
+
+Vérifier si le conflit existe réellement, sur chaque machine :
+
+```bash
+grep DATABASE_URL web/.env.local
+```
+
+Même hôte des deux côtés ⇒ la règle 1 s'applique. Hôtes différents ⇒ le risque
+de contamination disparaît.
+
+## Pour référence
+
+- Prérequis et options des tests E2E : `web/e2e/README.md`
+- Séquence de validation locale : en-tête de `scripts/wn-test-worktree.sh`
+- Setup des postes : `docs/CONTEXTE_VSCODE_PC_PARITE_CODESPACES.md`
+- Transfert des variables d'environnement : `docs/TRANSFERT_ENV_MAC.md`
