@@ -23,9 +23,22 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
   navigation par scroll et les sous-vues en page pleine, trois instruments
   denses (12 besoins, objets cliniques & momentum, détail des réponses) déplacés
   en tiroir Radix ouvert **au clic** (patron `PatientPreview`) ; le runtime
-  clinique reste monté en permanence et n'est que **filtré par phase**
-  (`ClinicalRuntimeSection` : prop `phase` additive, défaut `tout` inchangé).
-  Aucun instrument n'a disparu ; rail et onglets navigables au clavier.
+  clinique n'est que **filtré par phase** (`ClinicalRuntimeSection` : prop
+  `phase` additive, défaut `tout` inchangé). Aucun instrument n'a disparu.
+  Rail des phases **et** onglets in-fiche navigables au clavier (flèches /
+  Origine / Fin, `tabindex` roving). Le `ProtocolMiniBuilder` et la boussole
+  alimentaire restent montés (masqués via `hidden`, jamais démontés) : la
+  saisie de protocole en cours et l'aliment sélectionné sont **préservés** en
+  changeant de phase. Statuts du rail dérivés de l'état réel (réponses reçues,
+  demande de correction en attente, épisode confirmé, versions, trajectoire) —
+  jamais un statut par défaut ; une **demande de correction patient** est
+  signalée en permanence dans le bandeau, quelle que soit la phase. Erreurs du
+  runtime (dont session expirée) **hors filtre de phase** ; états vides
+  explicites en Suivi / Réévaluation sans épisode ; l'onglet Trajectoire
+  distingue un **échec de lecture** (message + « Réessayer ») d'une absence
+  d'épisode, sans jamais afficher « aucun épisode » sur une erreur.
+  Routes pleine page `.../besoins` et `.../alimentation` **conservées**
+  (accès direct par URL), l'accès principal passant désormais par les onglets.
 - Aucune logique clinique, aucun seuil, aucune migration Prisma ; garde-fous 5.0
   respectés (statut jamais par la seule couleur, aucun score patient).
 
