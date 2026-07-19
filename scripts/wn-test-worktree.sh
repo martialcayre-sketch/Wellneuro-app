@@ -257,9 +257,9 @@ export PORT="$APP_PORT"
 export VITEST_MAX_FORKS="${VITEST_MAX_FORKS:-4}"
 export VITEST_MAX_THREADS="${VITEST_MAX_THREADS:-4}"
 
-# Le devcontainer exporte NODE_ENV=development globalement (remoteEnv) ; la CI
-# ne définit pas NODE_ENV. Un NODE_ENV non standard pendant `next build` mélange
-# les builds React dev/prod et fait planter le prerender (useContext null) —
+# Un environnement shell hérité peut exporter NODE_ENV globalement ; la CI ne
+# le définit pas. Un NODE_ENV non standard pendant `next build` mélange les
+# builds React dev/prod et fait planter le prerender (useContext null) —
 # release_go_no_go.sh contourne déjà le même problème. On l'efface : next dev
 # et next build fixent chacun la bonne valeur.
 unset NODE_ENV

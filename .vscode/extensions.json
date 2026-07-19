@@ -3,12 +3,17 @@
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
     "bradlc.vscode-tailwindcss",
+    "davidanson.vscode-markdownlint",
+    "eamodio.gitlens",
     "github.copilot",
     "github.copilot-chat",
     "openai.chatgpt",
-    "anthropic.claude-code",
-    "ms-vscode-remote.remote-containers",
-    "growthjack.claude-code-usage"
+    "anthropic.claude-code"
   ],
-  "unwantedRecommendations": []
+  "unwantedRecommendations": [
+    "ms-vscode-remote.remote-containers",
+    "ms-azuretools.vscode-containers",
+    "growthjack.claude-code-usage",
+    "andrepimenta.claude-code-chat"
+  ]
 }

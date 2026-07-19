@@ -11,21 +11,6 @@ on:
       - "campaign/**/integration"
 
 jobs:
-  devcontainer-smoke:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Validate Dev Container configuration
-        run: npx --yes @devcontainers/cli read-configuration --workspace-folder .
-
-      - name: Build and start Dev Container (smoke)
-        run: npx --yes @devcontainers/cli up --workspace-folder . --skip-post-create
-
   verify:
     runs-on: ubuntu-latest
     services:

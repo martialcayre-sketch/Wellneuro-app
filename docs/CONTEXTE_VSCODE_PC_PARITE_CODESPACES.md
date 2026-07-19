@@ -1,149 +1,126 @@
-# Parité VS Code local ↔ Codespaces — Wellneuro-app
+# Environnement VS Code local — Wellneuro-app
 
-Objectif : reproduire exactement l'environnement Codespaces sur le PC local (même image, mêmes dépendances, mêmes extensions, mêmes settings, même port forwarding).
+Objectif : disposer d'un setup local natif, simple et stable, sans dépendance Docker ni Dev Container. L'environnement de référence est maintenant un poste principal en local, idéalement sur MacBook.
 
 ## Architecture du projet
 
 Le développement actif se fait uniquement dans `web/` (Next.js 14 + TypeScript + Tailwind CSS). Le code GAS historique est archivé dans `archive/gas-legacy/` : il n'est plus une couche active du projet, seulement une référence.
 
-## Option A — parité parfaite via Dev Container (recommandée)
+## Setup local de référence
 
 Prérequis :
 
 - VS Code (stable)
-- Docker Desktop (ou Docker Engine)
-- Extension `ms-vscode-remote.remote-containers`
+- Node.js 22.x
+- Git optionnellement accompagné de GitHub CLI (`gh`)
+
+Poste recommandé :
+
+- MacBook comme machine principale de développement
+- Windows seulement en secours temporaire
+- Chromebook réservé aux accès web ponctuels et intégrations IA distantes, pas au développement principal du dépôt
 
 Procédure :
 
 ```bash
 git clone https://github.com/martialcayre-sketch/wellneuro-app.git wellneuro-app
 cd wellneuro-app
-code .
-# Puis : Dev Containers: Reopen in Container
-```
-
-Vérification post-démarrage :
-
-```bash
-node -v          # doit afficher v22.x
-npm -v
-bash scripts/check_no_secrets.sh
-cd web && npm run type-check
-```
-
-## Option B — environnement natif (si Docker indisponible)
-
-Prérequis :
-
-- Node.js 22.x
-- GitHub CLI (`gh`) optionnel
-
-```bash
 cd web && npm install
-cp .env.local.example .env.local   # renseigner les valeurs, ne jamais committer
 ```
 
-Extensions VS Code à installer manuellement :
+Si l'application requiert des variables d'environnement locales, partir de `web/.env.local.example`, renseigner les valeurs attendues, puis ne jamais committer le fichier réel.
+
+## Extensions VS Code recommandées
 
 - `esbenp.prettier-vscode`
 - `dbaeumer.vscode-eslint`
 - `bradlc.vscode-tailwindcss`
-- `github.copilot` + `github.copilot-chat`
+- `davidanson.vscode-markdownlint`
+- `eamodio.gitlens`
+- `github.copilot`
+- `github.copilot-chat`
 - `openai.chatgpt`
 - `anthropic.claude-code`
 
+Extensions à éviter dans ce dépôt si tu n'en as pas un besoin explicite :
+
+- `ms-vscode-remote.remote-containers`
+- `ms-azuretools.vscode-containers`
+- `growthjack.claude-code-usage`
+- `andrepimenta.claude-code-chat`
+
 ## Settings VS Code — source de vérité
 
-`.vscode/settings.json` est la source de vérité appliquée dans **les deux environnements** (Codespaces ouvre le dossier directement, pas le fichier `.code-workspace`).
+`.vscode/settings.json` est la source de vérité des réglages partagés du dépôt.
 
-`Wellneuro-app.code-workspace` reprend les mêmes settings + ajoute les tâches de raccourci. Utiliser ce fichier en local pour accéder aux tâches depuis la palette.
+`Wellneuro-app.code-workspace` reprend ces réglages et ajoute des tâches de confort local. Utiliser ce fichier en local si tu veux retrouver rapidement les tâches depuis la palette.
 
-## Gouvernance de configuration (contrat d'équipe)
+## Gouvernance de configuration
 
-Pour éviter les divergences locales/remote, chaque type de configuration a une source de vérité unique :
+Chaque type de configuration a une source de vérité unique :
 
 | Type | Source de vérité | Rôle |
 | --- | --- | --- |
-| Runtime remote (image, volumes, bootstrap, extensions installées en conteneur) | `.devcontainer/devcontainer.json` | Reproductibilité Dev Container/Codespaces |
-| Réglages éditeur partagés du dépôt | `.vscode/settings.json` | Comportement commun local + remote |
-| Raccourcis de tâches et confort local (optionnel) | `Wellneuro-app.code-workspace` | Ouvrir vite les tâches sans redéfinir le runtime |
+| Runtime local (version Node, dépendances applicatives) | `web/package.json` et `web/package-lock.json` | Reproductibilité de l'environnement local |
+| Réglages éditeur partagés du dépôt | `.vscode/settings.json` | Comportement commun de l'éditeur |
+| Raccourcis de tâches et confort local | `Wellneuro-app.code-workspace` | Accès rapide aux tâches sans changer le runtime |
 | Extensions recommandées du dépôt | `.vscode/extensions.json` | Socle minimum proposé au développeur |
 
 Règle pratique :
 
 - ne pas dupliquer des réglages IA dans plusieurs fichiers ;
-- ne pas mettre dans le workspace des paramètres qui changent le runtime ;
+- ne pas mettre dans le workspace des paramètres qui changent le runtime applicatif ;
 - toute exception doit être documentée dans ce fichier.
-
-## Baseline extensions IA (local + remote)
-
-Baseline cible :
-
-- Copilot / Copilot Chat (fournis nativement par VS Code dans cet environnement) ;
-- Codex via `openai.chatgpt` ;
-- Claude Code via `anthropic.claude-code`.
-
-Décision pour les extensions "usage-only" :
-
-- `growthjack.claude-code-usage` n'est pas un runtime Claude Code ;
-- elle est classée "non baseline" (télémétrie/usage), donc non recommandée dans le dépôt ;
-- bénéfice : métriques d'usage ;
-- inconvénients : confusion fonctionnelle et bruit de diagnostic.
 
 ## Standard cross-repo (profil VS Code)
 
-Objectif : mêmes extensions quel que soit le dépôt, sans dupliquer la politique dans chaque repo.
+Objectif : mêmes extensions quel que soit le dépôt, sans recopier une politique différente dans chaque projet.
 
 Procédure recommandée :
 
-1. Créer un profil VS Code `Wellneuro Dev` (Extensions + Settings non sensibles).
-1. Y inclure le socle : Prettier, ESLint, Tailwind, Copilot, Copilot Chat, OpenAI ChatGPT, Claude Code, Remote Containers.
+1. Créer un profil VS Code `Wellneuro Dev` (extensions + settings non sensibles).
+1. Y inclure le socle : Prettier, ESLint, Tailwind, Copilot, Copilot Chat, OpenAI ChatGPT et Claude Code.
 1. Activer la synchronisation de profil sur les machines de travail.
-1. Garder ce dépôt comme source de vérité runtime (`.devcontainer`) et settings partagés (`.vscode/settings.json`).
 
 ## Persistance des sessions IA
 
-Le Dev Container persiste les emplacements suivants via volumes Docker :
+En local natif, les états et historiques d'outils IA restent dans les emplacements utilisateur habituels de la machine.
 
-- `/home/node/.vscode-server`
-- `/home/node/.codex`
-- `/home/node/.claude`
+Repères utiles :
 
-Matrice de persistance :
+- Codex : `~/.codex`
+- Claude Code : `~/.claude`
+- VS Code : profil et logs utilisateur de la machine
 
-| Donnée | Reopen container | Rebuild container | Nouveau poste |
-| --- | --- | --- | --- |
-| Historique VS Code Server | Conservé | Conservé (volume) | Non (sauf sync cloud) |
-| Données locales Codex (`~/.codex`) | Conservé | Conservé (volume) | Non |
-| Données locales Claude (`~/.claude`) | Conservé | Conservé (volume) | Non |
-| Session cloud Copilot/Claude/OpenAI | Conservée selon fournisseur | Conservée selon fournisseur | Conservée après reconnexion |
+Sur un nouveau poste, ces données ne suivent pas automatiquement le dépôt Git.
 
-## Diagnostic rapide (runbook)
+## Diagnostic rapide
+
+1. Vérifier la version de Node et npm :
+
+```bash
+node -v
+npm -v
+```
 
 1. Vérifier les extensions actives :
 
 ```bash
-code --list-extensions --show-versions | grep -Ei 'copilot|chatgpt|claude|anthropic|openai|github'
+code --list-extensions --show-versions
 ```
 
-1. Vérifier les chemins de persistance :
+1. Vérifier les contrôles de base du dépôt :
 
 ```bash
-ls -ld /home/node/.vscode-server /home/node/.codex /home/node/.claude
+bash scripts/check_no_secrets.sh
+cd web && npm run type-check
 ```
 
-1. Vérifier les variables runtime remote :
+1. Vérifier que l'environnement n'est plus pollué par Docker côté poste local :
 
 ```bash
-env | grep -E 'CODEX_HOME|CLAUDE_HOME|NODE_ENV'
-```
-
-1. Vérifier les erreurs d'extensions récentes :
-
-```bash
-find /home/node/.vscode-server/data/logs -maxdepth 2 -type d | tail -n 1
-# puis inspecter exthost1/* selon l'extension concernée
+docker --version
+# attendu : commande absente si Docker a été désinstallé volontairement
 ```
 
 ## Tâches disponibles (palette VS Code > Run Task)
@@ -162,8 +139,6 @@ cd web && npm run dev
 # Puis ouvrir http://localhost:3000
 ```
 
-En Codespaces, le port 3000 est forwardé automatiquement avec une notification.
-
 ## Routine avant tout commit
 
 ```bash
@@ -172,11 +147,17 @@ git diff
 cd web && npm run type-check
 ```
 
-## Définition de la parité parfaite
+## Définition de la parité attendue
 
-- Même image Node 22 (via Dev Container)
-- Mêmes dépendances (`web/node_modules` installé au bootstrap)
-- Même port 3000 forwardé
-- Mêmes extensions VS Code (Prettier, ESLint, Tailwind)
-- Mêmes settings éditeur (EOL, tabulations, formatage, ESLint TS)
-- Mêmes scripts de sécurité
+- Même version majeure de Node (`22.x`)
+- Mêmes dépendances applicatives installées depuis `web/package-lock.json`
+- Même port local de développement (`3000`)
+- Mêmes extensions VS Code recommandées
+- Mêmes settings éditeur partagés
+- Mêmes scripts de sécurité et de validation
+
+## Décision de setup recommandée
+
+- Développement principal : MacBook en local natif
+- Usage secondaire : accès distant léger depuis navigateur si nécessaire
+- Pas de dépendance Docker pour le flux quotidien
