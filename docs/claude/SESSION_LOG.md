@@ -932,3 +932,25 @@ passé) sont livrables tels quels.
 **Questions ouvertes** : arbitrage du fil de correspondance médecin (C3, reliquat
 reporté) ; routes `fil` et `metrics` ne filtrent pas sur `praticienEmail` — sans
 effet en mono-praticien, fuite dès le second compte.
+
+## 2026-07-20 — Gate G2 appliqué : identité de cycle des épisodes
+
+**Décisions** : G2 mergé (#155, `e7beec7`), migration additive
+`20260719120000_c2b_cycle_identity_v1` (`cycle_id`, `version_score` nullables).
+Enjeu réel : le `versionScore` était recalculé à la lecture depuis la constante
+courante, rendant la garde A8-3 **indéclenchable** ; il est désormais figé à la
+confirmation, et une version nulle donne `version_inconnue` au lieu d'être
+assimilée à la version courante.
+
+**Écartés** : `instrument_id` (composite pondéré — rien à y mettre) ; requête de
+cycle dupliquée dans les deux routes, remplacée par `resolveCycleId` pure.
+
+**Vérifié** : `test:worktree --fast` (PG éphémère, aucune dérive, 675 unitaires
++ 41 E2E), CI PR et `main` verts, Vercel prod vert, migration `finished_at`
+06:36:48 UTC sans rollback.
+
+**Prochaine action** : rebaser `fix/gardes-appartenance-praticien` sur `main` —
+la PR #154 porte le commit G2 en doublon.
+
+**Questions ouvertes** : backfill non compté (lecture prod bloquée) ; gates G1,
+G3 et G4 toujours ouverts.
