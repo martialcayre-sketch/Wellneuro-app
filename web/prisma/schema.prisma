@@ -42,6 +42,7 @@ model Patient {
   protocolDrafts             ProtocolDraft[]
   protocolCheckins           ProtocolCheckin[]
   protocolDiffusionApprovals ProtocolDiffusionApproval[]
+  relectureNotes             RelectureNote[]
 
   @@map("patients")
 }
@@ -783,4 +784,33 @@ model ProtocolDiffusionApproval {
   @@index([idPatient], map: "c2a_diffusion_patient_idx")
   @@index([protocolDraftId], map: "c2a_diffusion_draft_idx")
   @@map("protocol_diffusion_approvals")
+}
+
+// Note de relecture (SP-TT LOT-02, gate G3). Le praticien annote un état passé
+// qu'il vient de relire.
+//
+// DEUX DATES, jamais confondues : `instant_relu` est une DONNÉE — l'instant que
+// la note commente — tandis que `cree_le` est le moment de l'écriture, toujours
+// le présent, et c'est la BASE qui le pose (@default(now())), jamais
+// l'appelant. On n'écrit pas dans le passé, on écrit aujourd'hui à propos du
+// passé. C'est l'invariant du gate.
+//
+// Append-only chaîné (supersedes_note_id) : corriger une note crée une ligne,
+// la précédente reste lisible. Aucune réécriture, aucune suppression.
+//
+// PRATICIEN SEUL : aucune surface patient ne lit cette table — garde
+// structurelle dans `lib/praticien/relectureNote.test.ts`.
+model RelectureNote {
+  id               String   @id @default(cuid()) @map("id")
+  idPatient        String   @map("id_patient")
+  praticienEmail   String   @map("praticien_email")
+  instantRelu      DateTime @map("instant_relu")
+  texte            String   @map("texte")
+  supersedesNoteId String?  @map("supersedes_note_id")
+  creeLe           DateTime @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "sptt_relecture_note_patient_idx")
+  @@map("relecture_notes")
 }
