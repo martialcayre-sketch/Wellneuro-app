@@ -38,9 +38,27 @@ sans interruption et refuse toute écriture ou DDL ; les outils MCP mutants
 `.claude/settings.json`. Vérifier une migration déployée coûte donc une requête
 et rien d'autre :
 
+**Un nom de migration porte plusieurs lignes.** Un échec suivi d'un
+`migrate resolve --applied` laisse la ligne annulée en place et en ajoute une
+seconde (`applied_steps_count = 0`). Lire une ligne isolée fait donc conclure à
+tort qu'une migration manque — c'est arrivé le 2026-07-20 sur
+`r8_lite_consent_fields`, jugée non appliquée alors que ses colonnes existaient.
+Toujours agréger par nom :
+
 ```sql
-SELECT migration_name, finished_at, rolled_back_at FROM _prisma_migrations
-ORDER BY finished_at DESC NULLS FIRST LIMIT 5;
+SELECT migration_name,
+       bool_or(finished_at IS NOT NULL AND rolled_back_at IS NULL) AS appliquee,
+       count(*) AS tentatives, max(started_at) AS derniere
+FROM _prisma_migrations GROUP BY migration_name
+ORDER BY max(started_at) DESC LIMIT 5;
+```
+
+Une base saine ne rend rien à la requête inverse — celle qui liste les
+migrations dont *aucune* tentative n'a abouti :
+
+```sql
+SELECT migration_name FROM _prisma_migrations GROUP BY migration_name
+HAVING bool_or(finished_at IS NOT NULL AND rolled_back_at IS NULL) IS NOT TRUE;
 ```
 
 ## Garde-fous d'écriture

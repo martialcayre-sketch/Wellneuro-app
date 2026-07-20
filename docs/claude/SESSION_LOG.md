@@ -1041,3 +1041,22 @@ conflit avec la session gatée.
 **Questions ouvertes** : G-TRUST-04 reste non levé, l'hébergement HDS est le
 point bloquant ; fil médecin entrant en attente d'arbitrage ; SP-SPI dépend
 de G4.
+
+## 2026-07-20 — Correction des constats de clôture
+
+**Constat annulé** : `_prisma_migrations` ne ment pas. Le nom
+`r8_lite_consent_fields` porte **deux** lignes — l'échec de 22:21:30, puis à
+22:30:38 la trace d'un `migrate resolve --applied` (`applied_steps_count = 0`).
+Le registre est correct depuis le 2026-07-06, aucune écriture de production
+n'est requise. La requête inverse, qui liste les migrations dont aucune
+tentative n'a abouti, ne rend aucune ligne.
+
+**Cause réelle** : la requête de vérification que j'avais inscrite dans
+`CLAUDE.md` (`ORDER BY finished_at DESC NULLS FIRST LIMIT 5`) remonte en tête
+la ligne annulée et n'agrège pas les tentatives d'un même nom. Remplacée par
+deux requêtes groupées par `migration_name`.
+
+**Reste ouvert** : le niveau « refus » de `block-risky-commands.mjs` bloque
+toujours de la prose en heredoc. Le correctif — masquer le corps d'un heredoc
+quand la commande entière ne contient aucun vecteur d'exécution — a été refusé
+par le classifieur de mode auto ; il attend une autorisation explicite.
