@@ -50,7 +50,7 @@ Priorité absolue : stabilité de l'application en production, pas de nouvelle m
 - Workflow de dev : `docs/claude/WORKFLOW_DEVELOPPEMENT.md`
 - Templates de prompts : `docs/claude/TEMPLATES_PROMPTS.md`
 - Runbook incident Vercel/DNS : `docs/claude/CONTEXTE_SESSION_VERCEL_2026-07-01.md`
-- Rôles Mac / PC et garde-fous de test : `docs/ROLES_MACHINES.md`
+- Rôles des machines et des sessions (worktrees, garde-fous de test) : `docs/ROLES_MACHINES.md`
 - Roadmap technique (consolidation R0→R10) : `docs/ROADMAP_TECHNIQUE.md`
 - Roadmap produit (séries D/R/E, priorités) : `docs/ROADMAP_PRODUIT.md`
 
@@ -100,6 +100,8 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
 ## Début de session
 
 Si `docs/claude/SESSION_LOG.md` existe, lire sa dernière entrée avant de répondre à la première question de la session, sans qu'on ait besoin de le demander. Ne pas résumer ce contenu à voix haute sauf si c'est demandé — l'utiliser silencieusement comme contexte de reprise.
+
+**Une session = un worktree.** Avant d'écrire quoi que ce soit dans le dépôt, ouvrir son propre worktree (outil `EnterWorktree`, ou `git worktree add`). Plusieurs sessions peuvent travailler en parallèle, jamais dans la même copie : le 2026-07-20, deux sessions partageant le checkout principal ont produit une PR à deux périmètres et un commit atterri sur la branche d'une autre session. Ne jamais faire `git checkout` / `git switch` dans un worktree qu'une autre session utilise. `npm run test:worktree` est déjà conçu pour ce mode (ports et base éphémère dérivés du chemin du worktree). Détail : `docs/ROLES_MACHINES.md`.
 
 ## Fin de session
 

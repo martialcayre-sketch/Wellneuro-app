@@ -1,8 +1,36 @@
-# Rôles des machines — Mac et PC en équipe
+# Rôles des machines et des sessions
 
-Notice de coordination entre les deux postes de développement. À lire une fois
-sur chaque machine ; les règles « dures » sont non négociables car leur
-violation produit des échecs de test **erratiques et non reproductibles**.
+Notice de coordination entre les deux postes de développement **et entre les
+sessions d'assistant qui travaillent en parallèle**. À lire une fois sur chaque
+machine ; les règles « dures » sont non négociables car leur violation produit
+des échecs de test **erratiques et non reproductibles**, ou des pertes de
+travail silencieuses.
+
+## Une session = un worktree
+
+**Deux sessions ne partagent jamais la même copie de travail.** Le 2026-07-20,
+deux sessions travaillant dans le checkout principal ont produit, en une heure :
+
+- un commit qui a happé le travail en cours de l'autre session, d'où une PR à
+  deux périmètres (#154), fermée et refaite (#156) ;
+- une branche créée par une session pendant que l'autre committait : le commit
+  a atterri sur la mauvaise branche et le `push` a envoyé une branche vide
+  (SP-TT, récupéré par cherry-pick en #158).
+
+Rien n'a été perdu ces fois-là. La règle existe pour qu'il n'y ait pas de fois
+suivante.
+
+- Chaque session ouvre **son propre worktree** avant d'écrire quoi que ce soit.
+  Sous Claude Code : l'outil `EnterWorktree` (worktrees créés dans
+  `.claude/worktrees/`). En manuel : `git worktree add`.
+- **Ne jamais faire `git checkout` ou `git switch` dans un worktree qu'une autre
+  session utilise** — cela déplace son `HEAD` sous ses pieds.
+- La validation est déjà prévue pour ce mode : `npm run test:worktree` dérive
+  son port PostgreSQL et son port applicatif **du chemin du worktree**, avec
+  sondage en cas d'occupation. Plusieurs worktrees valident donc en parallèle
+  sans se contaminer (cf. l'en-tête de `scripts/wn-test-worktree.sh`).
+- Le checkout principal reste sur `main`, à jour, et ne sert pas de plan de
+  travail.
 
 ## Le risque concret, en une phrase
 
