@@ -66,7 +66,11 @@ HAVING bool_or(finished_at IS NOT NULL AND rolled_back_at IS NULL) IS NOT TRUE;
 Les hooks rendent trois verdicts, plus un mur unique :
 
 - **refus** — `.env*`, `.git/`, `node_modules/` ; commandes destructives ou
-  exposant des secrets. Sans dérogation pour les fichiers.
+  exposant des secrets. Sans dérogation pour les fichiers. Le scan porte sur la
+  commande brute, littéraux compris : `bash -c "rm -rf /"` est attrapé, et
+  `echo 'DROP TABLE'` l'est aussi — faux positif assumé. Seule exception, le
+  corps d'un heredoc dans une commande où rien ne sait exécuter quoi que ce
+  soit (`cat >> journal.md <<'FIN'`) est traité comme de la donnée.
 - **demande** — `schema.prisma`, `prisma/migrations/`, `supabase/migrations/` ;
   `prisma migrate`, `supabase db push`, push forcé. Autorisation en un clic,
   dans la session : c'est elle qui matérialise la « confirmation explicite »

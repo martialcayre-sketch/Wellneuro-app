@@ -1056,11 +1056,16 @@ tentative n'a abouti, ne rend aucune ligne.
 la ligne annulée et n'agrège pas les tentatives d'un même nom. Remplacée par
 deux requêtes groupées par `migration_name`.
 
-**Reste ouvert** : le niveau « refus » de `block-risky-commands.mjs` bloque
-toujours de la prose en heredoc. Le correctif — masquer le corps d'un heredoc
-quand la commande entière ne contient aucun vecteur d'exécution — a été refusé
-par le classifieur de mode auto ; il attend une autorisation explicite.
+**Second constat corrigé** : le niveau « refus » de `block-risky-commands.mjs`
+masque désormais le corps d'un heredoc lorsque la commande entière ne contient
+aucun vecteur d'exécution. On ne cherche pas qui consomme le heredoc —
+`cat <<EOF | bash` rendrait l'analyse fausse. Banc de test 10/10 : 3 cas de
+prose passent, 7 évasions restent refusées.
 
-**Prochaine action** : ouvrir la PR de `worktree-correction-constats`
-(`gh pr create` également refusé par le classifieur), puis statuer sur le
-correctif heredoc. La reprise de fond reste **G4**.
+**Écarté** : masquer aussi les littéraux entre quotes au niveau refus.
+`psql -c 'DROP TABLE patients'` doit rester bloqué ; le faux positif sur
+`echo 'DROP TABLE'` est assumé.
+
+**Prochaine action** : **G4**, déjà en cours dans le worktree `gates-g3-g1-g4`
+(migration `g4_portail_magic_links_v1` non commitée) — se coordonner avant d'y
+toucher.
