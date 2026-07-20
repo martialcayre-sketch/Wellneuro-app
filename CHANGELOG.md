@@ -4,6 +4,52 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Gate G4 — lien magique d'accès patient (IDP LOT-01, 2026-07-20)
+
+Gate confirmé explicitement par l'utilisateur le 2026-07-20. **Migration
+additive** : une table nouvelle, `patients.access_token` conservé intact.
+Rollback = abandon de la table.
+
+**Merger n'active rien** : tout est derrière `WN_G4_LIEN_MAGIQUE`, absent de
+l'environnement de production. Livrable de préproduction ; l'activation avec des
+données réelles reste une décision distincte, aujourd'hui **NO-GO** (gate TRUST).
+
+- **`portail_magic_links`** (`20260720200000_g4_portail_magic_links_v1`) — le
+  jeton **n'est pas en base** : seule son empreinte HMAC-SHA256 l'est
+  (`NEXTAUTH_SECRET`, préfixe de domaine). Un dump ne permet pas d'ouvrir un
+  espace. 24 h, usage unique, RLS deny-all.
+- **Consommation atomique** : `updateMany` filtré sur `consommeLe: null` — la
+  vérification et l'écriture sont une seule opération. Un `update` précédé d'une
+  lecture laisserait deux requêtes concurrentes consommer le même lien.
+- **Rejeu refusé et tracé en base** (`rejeux_refuses`,
+  `derniere_tentative_le`), pas seulement en log : un log Vercel est purgé, et
+  une trace purgée ne prouve plus rien le jour où on la cherche.
+- **Un seul message, un seul écran** pour consommé, expiré, inconnu et portail
+  révoqué — même URL, même code HTTP. Un test vérifie que les quatre refus
+  atterrissent au même endroit.
+- **Canal de redemande** `POST /api/portail/lien/demande` : réponse
+  rigoureusement identique — code, corps, en-têtes — que l'adresse existe ou
+  non, **y compris en panne**. Cadence bornée **en base** (3/h/patient) : un
+  compteur en mémoire ne borne rien en serverless.
+- **Le jeton ne part pas dans les logs.** `sanitizeUrl` conserve le chemin, et
+  ici le chemin *est* le jeton : la route journalise le gabarit
+  `/portail/lien/[jeton]`, jamais l'URL réelle. Un test garde cette
+  substitution.
+- **Coexistence** : le jeton permanent reste la clé de l'URL du portail et
+  l'ancrage du cookie de session — `isPatientSessionBoundToToken` et les routes
+  qui l'appellent ne changent pas, toutes les propriétés de révocation sont
+  préservées. Le parcours E2E existant n'est pas touché.
+- **`api/praticien/token` reçoit enfin sa garde d'appartenance**, sur le POST
+  comme sur le DELETE. C'était la dernière route praticien non gardée, laissée
+  à ce gate en #167 : émettre un lien d'accès — ou révoquer celui — du patient
+  d'un autre praticien était le pire trou restant de la surface.
+- **Le lien magique saute le gate e-mail** : recevoir le lien *dans* la boîte
+  prouve le contrôle de la boîte, ce que saisir l'adresse ne prouvait pas. Le
+  facteur est déplacé, pas supprimé.
+- **Tests** (20 unitaires + 3 E2E) : usage unique, atomicité, indistinction des
+  refus, absence du jeton dans les journaux et dans la réponse, drapeau éteint
+  ⇒ 404.
+
 ### Gate G1 — refus persisté des cartes du Fil (SP-FIL, 2026-07-20)
 
 Gate confirmé explicitement par l'utilisateur le 2026-07-20. **Migration
