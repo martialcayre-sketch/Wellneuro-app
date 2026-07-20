@@ -107,3 +107,27 @@ test("un corps de PR décrivant `prisma migrate deploy` ne demande rien", () => 
 test("l’enveloppe sûre laisse passer la séquence de test locale", () => {
   assert.equal(verdict("npm run test:worktree -- --fast"), "passe");
 });
+
+test("l’enveloppe sûre tolère un `cd … &&` de tête et une redirection", () => {
+  assert.equal(verdict("cd web && npm run test:worktree > /tmp/sortie.log 2>&1"), "passe");
+});
+
+test("l’enveloppe sûre couvre les scripts qui portent leur propre garde-fou", () => {
+  assert.equal(verdict("bash scripts/wn-local-migrate.sh"), "passe");
+});
+
+// ── La dérogation ne doit pas devenir un passe-partout ───────────────────────
+// Elle sortait auparavant en exit(0) avant TOUT contrôle, et se contrefaisait
+// avec un commentaire. Deux trous, deux tests.
+
+test("une destructive suivie de l’enveloppe en commentaire reste refusée", () => {
+  assert.equal(verdict("rm -rf / # npm run test:worktree"), "refus");
+});
+
+test("l’enveloppe en commentaire ne dispense pas du niveau « demande »", () => {
+  assert.equal(verdict("npx prisma migrate deploy # npm run test:worktree"), "demande");
+});
+
+test("l’enveloppe ne couvre pas ce qui la suit après un &&", () => {
+  assert.equal(verdict("npm run test:worktree && rm -rf /"), "refus");
+});

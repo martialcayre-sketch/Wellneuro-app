@@ -28,14 +28,28 @@ const brute = original.toLowerCase();
 
 // Scripts portant leur propre garde-fou interne, plus strict que ce hook :
 // base éphémère jetable pour l'un, refus de toute URL non-locale pour l'autre.
-// Sans cette sortie, `npm run test:worktree` déclencherait le motif « prisma
-// migrate » alors qu'il ne touche qu'un PostgreSQL temporaire.
+// Sans cette dérogation, `npm run test:worktree` déclencherait le motif
+// « prisma migrate » alors qu'il ne touche qu'un PostgreSQL temporaire.
+//
+// DEUX PROPRIÉTÉS, et l'absence de chacune était un trou :
+//
+// 1. La dérogation ne lève QUE le niveau « demande ». Elle sortait auparavant
+//    en `exit(0)` avant tout contrôle, refus compris : il suffisait d'écrire
+//    `rm -rf / # npm run test:worktree` pour traverser le garde-fou entier.
+//    Rien dans sa raison d'être ne justifiait qu'elle touche au refus.
+//
+// 2. Elle exige que la commande COMMENCE par l'invocation, un `cd … &&` de tête
+//    mis à part. Un motif cherché n'importe où se contrefait avec un
+//    commentaire : `npx prisma migrate deploy # npm run test:worktree`
+//    silencieusement autorisé, alors que c'est exactement ce que le niveau
+//    « demande » existe pour faire relire.
+const sansPrefixeCd = brute.replace(/^\s*cd\s+[^\s&;|]+\s*&&\s*/, "");
 const enveloppesSures = [
-  /\bscripts\/wn-test-worktree\.sh\b/,
-  /\bscripts\/wn-local-migrate\.sh\b/,
-  /\bnpm\s+run\s+test:worktree\b/
+  /^npm\s+run\s+test:worktree\b/,
+  /^(bash\s+)?scripts\/wn-test-worktree\.sh\b/,
+  /^(bash\s+)?scripts\/wn-local-migrate\.sh\b/
 ];
-if (enveloppesSures.some((motif) => motif.test(brute))) process.exit(0);
+const enveloppeSure = enveloppesSures.some((motif) => motif.test(sansPrefixeCd));
 
 // Un heredoc ne transporte du CODE que si quelque chose, dans la commande, sait
 // l'exécuter. `cat >> docs/claude/SESSION_LOG.md <<'ENTREE'` écrit un texte, et
@@ -122,7 +136,9 @@ for (const motif of refus) {
   }
 }
 
-for (const { motif, raison } of demande) {
+// La dérogation n'agit qu'ici : le niveau « refus » ci-dessus s'applique à
+// toutes les commandes, sans exception.
+for (const { motif, raison } of enveloppeSure ? [] : demande) {
   if (motif.test(masquee)) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
