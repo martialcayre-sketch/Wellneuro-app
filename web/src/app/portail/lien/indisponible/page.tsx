@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
-import { isG4LienMagiqueEnabled } from '@/lib/portail/featureFlag';
+import { isG4LienMagiqueEnabled, isG4RedemandePatientEnabled } from '@/lib/portail/featureFlag';
 import { MESSAGE_LIEN_INDISPONIBLE } from '@/lib/portail/lienMagique';
 import { DemandeLienForm } from '@/components/patient/DemandeLienForm';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
+import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 
 // Atterrissage unique de tous les refus de lien magique (gate G4) : consommé,
@@ -30,7 +31,16 @@ export default function LienIndisponiblePage() {
           title="Votre lien n’est plus valable"
           subtitle={MESSAGE_LIEN_INDISPONIBLE}
         />
-        <DemandeLienForm />
+        {/* Le titre et le message ne varient jamais : consommé, expiré, inconnu
+            ou révoqué se lisent pareil. Seule l'ACTION proposée dépend de
+            l'ouverture du canal public — jamais la raison du refus. */}
+        {isG4RedemandePatientEnabled() ? (
+          <DemandeLienForm />
+        ) : (
+          <PatientInlineMessage tone="info">
+            Demandez un nouveau lien à votre praticien : il vous en enverra un par e-mail.
+          </PatientInlineMessage>
+        )}
       </PatientCard>
     </div>
   );

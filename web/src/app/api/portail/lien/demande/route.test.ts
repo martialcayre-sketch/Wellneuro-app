@@ -48,13 +48,23 @@ describe('POST /api/portail/lien/demande', () => {
     vi.clearAllMocks();
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
     process.env.WN_G4_LIEN_MAGIQUE = 'true';
+    process.env.WN_G4_REDEMANDE_PATIENT = 'true';
     prisma.patient.findUnique.mockResolvedValue(PATIENT);
     prisma.portailMagicLink.count.mockResolvedValue(0);
     prisma.portailMagicLink.create.mockResolvedValue({});
   });
 
-  it('drapeau éteint : la route n’existe pas', async () => {
+  it('drapeau G4 éteint : la route n’existe pas', async () => {
     delete process.env.WN_G4_LIEN_MAGIQUE;
+    expect((await POST(requete(PATIENT.email))).status).toBe(404);
+    expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+  });
+
+  // Ce canal est public et non authentifié : il s'ouvre séparément, pour
+  // qu'allumer G4 n'expose pas d'emblée une surface publique sur des adresses
+  // réelles tant que le temps de réponse n'est pas égalisé.
+  it('G4 allumé mais redemande éteinte : la route n’existe toujours pas', async () => {
+    delete process.env.WN_G4_REDEMANDE_PATIENT;
     expect((await POST(requete(PATIENT.email))).status).toBe(404);
     expect(prisma.patient.findUnique).not.toHaveBeenCalled();
   });

@@ -40,6 +40,7 @@ function erreurLisible(reason?: string, fallback?: string): string {
     invalid_payload: fallback ?? 'Données invalides.',
     duplicate_email: 'Un patient avec cet email existe déjà.',
     patient_not_found: 'Patient introuvable.',
+    portal_revoked: 'Accès au portail révoqué : réactivez-le avant d’envoyer un lien.',
     questionnaire_not_found: 'Questionnaire introuvable.',
     exception: 'Erreur technique. Vérifiez le terminal Next.js.',
   };
@@ -64,7 +65,7 @@ type SuggestedPackSelection = {
   nonce: number;
 };
 
-export function PatientsPanel() {
+export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?: boolean }) {
   const [data, setData] = useState<PatientsApiResponse | null>(null);
   const [questionnaires, setQuestionnaires] = useState<QuestionnairesApiResponse['questionnaires']>([]);
   const [registry, setRegistry] = useState<QuestionnairesRegistryApiResponse | null>(null);
@@ -99,7 +100,7 @@ export function PatientsPanel() {
   // Consultation / accès portail patient.
   const [consultationForm, setConsultationForm] = useState({ idPatient: '', motif: '' });
   const [savingConsultation, setSavingConsultation] = useState(false);
-  const [tokenAction, setTokenAction] = useState<'resend' | 'revoke' | 'copier' | null>(null);
+  const [tokenAction, setTokenAction] = useState<'resend' | 'revoke' | 'copier' | 'lien_magique' | null>(null);
   const [consultationFeedback, setConsultationFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [suggestedPackSelection, setSuggestedPackSelection] = useState<SuggestedPackSelection | null>(null);
 
@@ -284,6 +285,36 @@ export function PatientsPanel() {
         !r.ok || !json.success
           ? { ok: false, msg: erreurLisible(json.reason, json.error) }
           : { ok: true, msg: 'Lien d’accès renvoyé au patient.' }
+      );
+    } catch {
+      setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    } finally {
+      setTokenAction(null);
+    }
+  };
+
+  // Lien magique (gate G4) — action de nature différente des trois autres, qui
+  // portent toutes le jeton permanent : celui-ci expire en 24 h et ne s'ouvre
+  // qu'une fois. Le libellé le dit, pour qu'on ne le confonde pas avec
+  // « Renvoyer le lien ».
+  const onEnvoyerLienMagique = async () => {
+    if (!consultationForm.idPatient) {
+      setConsultationFeedback({ ok: false, msg: 'Sélectionnez un patient.' });
+      return;
+    }
+    setTokenAction('lien_magique');
+    setConsultationFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: consultationForm.idPatient, action: 'lien_magique' }),
+      });
+      const json = (await r.json()) as TokenActionResponse;
+      setConsultationFeedback(
+        !r.ok || !json.success
+          ? { ok: false, msg: erreurLisible(json.reason, json.error) }
+          : { ok: true, msg: 'Lien à usage unique envoyé — valable 24 h.' }
       );
     } catch {
       setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
@@ -490,6 +521,11 @@ export function PatientsPanel() {
             <Button type="button" variant="outline" onClick={onCopierLien} disabled={savingConsultation || tokenAction !== null}>
               {tokenAction === 'copier' ? 'Copie...' : 'Copier le lien'}
             </Button>
+            {lienMagiqueActif && (
+              <Button type="button" variant="outline" onClick={onEnvoyerLienMagique} disabled={savingConsultation || tokenAction !== null}>
+                {tokenAction === 'lien_magique' ? 'Envoi...' : 'Envoyer un lien à usage unique (24 h)'}
+              </Button>
+            )}
             <Button type="button" variant="danger" onClick={onRevokeToken} disabled={savingConsultation || tokenAction !== null}>
               {tokenAction === 'revoke' ? 'Révocation...' : 'Révoquer l’accès'}
             </Button>

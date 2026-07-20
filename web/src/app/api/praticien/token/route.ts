@@ -14,7 +14,7 @@ export type TokenActionResponse = {
   accessToken?: string;
   lien?: string;
   error?: string;
-  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'forbidden' | 'exception';
+  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'forbidden' | 'portal_revoked' | 'exception';
 };
 
 type TokenPayload = {
@@ -88,10 +88,13 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
           { status: 404 }
         );
       }
+      // Motif distinct de `patient_not_found` : un portail révoqué est
+      // réactivable par le praticien, un patient introuvable ne l'est pas. Les
+      // confondre l'enverrait chercher le mauvais problème.
       if (patient.accessTokenRevoked) {
         return NextResponse.json(
-          { success: false, reason: 'patient_not_found', error: 'Accès portail révoqué.' },
-          { status: 404 }
+          { success: false, reason: 'portal_revoked', error: 'Accès portail révoqué.' },
+          { status: 409 }
         );
       }
       const jeton = creerJeton();
