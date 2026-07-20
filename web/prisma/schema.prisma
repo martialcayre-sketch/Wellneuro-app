@@ -688,6 +688,10 @@ model AssessmentEpisode {
   payload         Json     @map("payload")
   payloadHash     String   @map("payload_hash")
   contractVersion String   @map("contract_version") // objets-cliniques-v1
+  // Identité de cycle (C2B / Vague 2, gate G2). Nullables : une ligne héritée
+  // non rattachable reste NULL, jamais devinée.
+  cycleId         String?  @map("cycle_id")
+  versionScore    String?  @map("version_score") // figé à la mesure (A8-3)
   createdAt       DateTime @default(now()) @map("created_at")
 
   patient        Patient         @relation(fields: [idPatient], references: [idPatient])
@@ -695,6 +699,7 @@ model AssessmentEpisode {
 
   @@index([idPatient, milestone], map: "c2a_episode_patient_milestone_idx")
   @@index([idPatient, confirmedAt], map: "c2a_episode_patient_confirmed_idx")
+  @@index([idPatient, cycleId], map: "c2b_episode_cycle_idx")
   @@map("assessment_episodes")
 }
 

@@ -9,6 +9,7 @@ import type {
 } from '@/lib/clinical-engine/types';
 import {
   deriveProtocolDraftId,
+  resolveCycleId,
   toDraftCreateInput,
   toEpisodeCreateInput,
 } from '@/lib/protocol/versioning';
@@ -99,13 +100,26 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
       );
     }
 
+    // Identité de cycle (gate G2), résolue AVANT la transaction : un T0 ouvre son
+    // cycle, un jalon postérieur rejoint le dernier T0 antérieur du patient.
+    const cycleId = resolveCycleId({
+      episode,
+      t0Candidates:
+        episode.milestone === 'T0'
+          ? []
+          : await prisma.assessmentEpisode.findMany({
+              where: { idPatient: episode.patientId, milestone: 'T0' },
+              select: { id: true, cycleId: true, confirmedAt: true },
+            }),
+    });
+
     // Transaction : épisode puis protocole, idempotents par identifiant de contrat.
     // Le versionnement append-only (supersedes) relève de la route /versions
     // (LOT-03) : ici l'id de ligne reste le protocolDraftId du contrat (LOT-02).
     await prisma.$transaction([
       prisma.assessmentEpisode.upsert({
         where: { id: episode.assessmentEpisodeId },
-        create: toEpisodeCreateInput(episode),
+        create: toEpisodeCreateInput(episode, { cycleId }),
         update: {},
       }),
       prisma.protocolDraft.upsert({

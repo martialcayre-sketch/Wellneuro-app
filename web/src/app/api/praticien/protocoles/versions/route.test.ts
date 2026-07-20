@@ -5,7 +5,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     ciqualNutrientValue: { findMany: vi.fn() },
-    assessmentEpisode: { upsert: vi.fn() },
+    assessmentEpisode: { upsert: vi.fn(), findMany: vi.fn() },
     protocolDraft: { upsert: vi.fn(), findMany: vi.fn() },
     $transaction: vi.fn().mockResolvedValue([]),
   },
@@ -123,6 +123,7 @@ describe('POST /api/praticien/protocoles/versions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.$transaction.mockResolvedValue([]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     process.env.WN_C5_ENABLED = 'false';
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
     prisma.ciqualNutrientValue.findMany.mockResolvedValue(ciqualRows());

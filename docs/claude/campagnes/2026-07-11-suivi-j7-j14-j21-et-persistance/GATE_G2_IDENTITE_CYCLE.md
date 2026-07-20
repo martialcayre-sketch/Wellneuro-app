@@ -1,9 +1,19 @@
 # Gate G2 — identité de cycle des épisodes (dette de modèle C2B LOT-09)
 
-> Préparé le 2026-07-19, **non appliqué**. Gate confirmé explicitement par
-> l'utilisateur ; l'exécution attend une session lancée avec
+> Préparé le 2026-07-19, **appliqué le 2026-07-20** (branche
+> `feat/vague2-gate-g2-identite-cycle`), dans une session lancée avec
 > `WN_ALLOW_PROTECTED_WRITE=1` (hook `.claude/hooks/protect-wellneuro-files.mjs`,
 > qui protège `prisma/schema.prisma` et `prisma/migrations/`).
+>
+> **Écart assumé vs le plan ci-dessous** : la résolution du cycle est une
+> fonction PURE `resolveCycleId` dans `lib/protocol/versioning.ts` (les routes
+> lui passent les T0 déjà persistés du patient), plutôt qu'une requête écrite
+> deux fois. Une raison `version_inconnue` distincte de `versions_differentes` a
+> été ajoutée pour que l'UI puisse dire *pourquoi* elle ne compare pas.
+>
+> Vérification exécutée : `npm --prefix web run test:worktree -- --fast` —
+> migration appliquée sur PostgreSQL éphémère, **aucune dérive schéma ↔
+> migrations**, 674 tests unitaires et 41 E2E verts.
 
 ## Pourquoi
 

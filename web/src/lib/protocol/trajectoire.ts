@@ -14,10 +14,14 @@ import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
 const ORDRE_JALONS: readonly JalonMomentum[] = ['T0', 'J21', 'J42', 'J90'] as const;
 
 // Épisode confirmé (une ligne assessment_episodes) — un jalon, pas un cycle.
+// `cycleId` et `versionScore` sont STOCKÉS (gate G2) et donc nullables : une
+// ligne héritée non rattachable reste null, jamais devinée.
 export type TrajectoireEpisode = {
   id: string;
   milestone: JalonMomentum;
   confirmedAt: Date;
+  cycleId: string | null;
+  versionScore: string | null;
 };
 
 export type TrajectoireJalonLecture = {
@@ -30,9 +34,11 @@ export type TrajectoireJalonLecture = {
 // Un cycle = un épisode T0 confirmé (son ancre). Modèle mono-protocole actuel :
 // en pratique un seul cycle par patient tant qu'un 2ᵉ T0 n'est pas confirmé.
 export type TrajectoireCycle = {
-  cycleId: string; // id de l'épisode T0 ancre
+  cycleId: string; // id de cycle stocké, à défaut id de l'épisode T0 ancre
   dateT0: string; // ISO
-  versionScore: string;
+  // null = version de score inconnue (ligne antérieure au gate G2). Jamais
+  // assimilée à la version courante : ce serait rendre A8-3 indéclenchable.
+  versionScore: string | null;
   jalons: TrajectoireJalonLecture[];
   momentum: { tendance: TendanceMomentum; delta: number } | null; // T0 → dernier jalon mesuré
 };
@@ -40,14 +46,21 @@ export type TrajectoireCycle = {
 export type TrajectoireComparaison = {
   disponible: boolean;
   // aucun_cycle / un_seul_cycle : pas encore de quoi comparer (A8-5-ii) ;
-  // versions_differentes : « non comparable » (A8-3) ; comparable : ≥2 cycles v=.
-  raison: 'aucun_cycle' | 'un_seul_cycle' | 'versions_differentes' | 'comparable';
+  // versions_differentes et version_inconnue : « non comparable » (A8-3) ;
+  // comparable : ≥2 cycles de même version connue.
+  raison:
+    | 'aucun_cycle'
+    | 'un_seul_cycle'
+    | 'versions_differentes'
+    | 'version_inconnue'
+    | 'comparable';
 };
 
 export type Trajectoire = {
   // Index navigable : repères confirmés, datés, ordre chronologique. Jamais une
-  // courbe — une liste de points cliquables (rendue côté UI).
-  index: { milestone: JalonMomentum; date: string }[];
+  // courbe — une liste de points cliquables (rendue côté UI). `cycleId` est
+  // celui STOCKÉ sur l'épisode (gate G2) ; null → repli par date à la lecture.
+  index: { milestone: JalonMomentum; date: string; cycleId: string | null }[];
   cycles: TrajectoireCycle[];
   comparaison: TrajectoireComparaison;
 };
@@ -55,7 +68,6 @@ export type Trajectoire = {
 export function construireTrajectoire(input: {
   episodes: TrajectoireEpisode[];
   reponses: ReponseBrute[];
-  versionScore: string;
 }): Trajectoire {
   const episodesTriees = [...input.episodes].sort(
     (a, b) => a.confirmedAt.getTime() - b.confirmedAt.getTime(),
@@ -64,6 +76,7 @@ export function construireTrajectoire(input: {
   const index = episodesTriees.map((e) => ({
     milestone: e.milestone,
     date: e.confirmedAt.toISOString(),
+    cycleId: e.cycleId,
   }));
 
   const cycles: TrajectoireCycle[] = episodesTriees
@@ -94,9 +107,11 @@ export function construireTrajectoire(input: {
       const momentum = calculerDeltaMomentum(lectureT0, lectureRecente);
 
       return {
-        cycleId: t0.id,
+        // Le cycle d'un T0 est le sien : id stocké quand il existe, sinon son
+        // propre id (repli pour les lignes antérieures au gate G2).
+        cycleId: t0.cycleId ?? t0.id,
         dateT0: dateT0.toISOString(),
-        versionScore: input.versionScore,
+        versionScore: t0.versionScore,
         jalons,
         momentum: momentum ? { tendance: momentum.tendance, delta: momentum.delta } : null,
       };
@@ -114,8 +129,12 @@ export type TrajectoireRepere = {
   cycleId: string | null; // null = repère antérieur à tout T0 confirmé
 };
 
-// Rattache chaque repère au cycle ouvert par le dernier T0 antérieur ou égal.
-// Un repère n'est JAMAIS rattaché à un cycle postérieur : un jalon ne peut pas
+// Rattachement d'un repère à son cycle. Depuis le gate G2, le `cycleId` STOCKÉ
+// sur l'épisode fait foi ; le rattachement par date ci-dessous n'est plus qu'un
+// REPLI pour les lignes qui n'en portent pas (antérieures au gate, ou sans T0
+// antérieur au moment de leur confirmation).
+// Le repli rattache au cycle ouvert par le dernier T0 antérieur ou égal. Un
+// repère n'est JAMAIS rattaché à un cycle postérieur : un jalon ne peut pas
 // documenter un cycle qui n'avait pas commencé. Sans T0 antérieur, il reste
 // explicitement non rattaché plutôt que rangé de force dans le premier cycle.
 export function rattacherReperesAuxCycles(
@@ -128,6 +147,9 @@ export function rattacherReperesAuxCycles(
     .sort((a, b) => a.instant - b.instant);
 
   return index.map((repere) => {
+    if (repere.cycleId !== null) {
+      return { milestone: repere.milestone, date: repere.date, cycleId: repere.cycleId };
+    }
     const instant = new Date(repere.date).getTime();
     if (!Number.isFinite(instant)) {
       return { milestone: repere.milestone, date: repere.date, cycleId: null };
@@ -141,14 +163,19 @@ export function rattacherReperesAuxCycles(
   });
 }
 
-// Exporté pour test unitaire de la garde A8-3 (versions différentes → non
-// comparable) : construireTrajectoire fixe aujourd'hui un versionScore uniforme,
-// mais la garde doit rester correcte quand une future version en introduira.
+// Garde A8-3 : jamais de comparaison hors versionScore identique. Depuis le
+// gate G2 la version est LUE sur chaque épisode (figée à la confirmation) et
+// non plus recalculée depuis la constante courante — la garde est donc
+// réellement déclenchable.
 export function resoudreComparaison(cycles: TrajectoireCycle[]): TrajectoireComparaison {
   if (cycles.length === 0) return { disponible: false, raison: 'aucun_cycle' };
   if (cycles.length === 1) return { disponible: false, raison: 'un_seul_cycle' };
+  // Une version nulle n'est jamais assimilée à la version courante : on ne sait
+  // pas sous quelle calibration la mesure a été prise, donc on ne compare pas.
+  if (cycles.some((c) => c.versionScore === null)) {
+    return { disponible: false, raison: 'version_inconnue' };
+  }
   const versions = new Set(cycles.map((c) => c.versionScore));
-  // A8-3 : jamais de comparaison hors versionScore identique.
   if (versions.size > 1) return { disponible: false, raison: 'versions_differentes' };
   return { disponible: true, raison: 'comparable' };
 }

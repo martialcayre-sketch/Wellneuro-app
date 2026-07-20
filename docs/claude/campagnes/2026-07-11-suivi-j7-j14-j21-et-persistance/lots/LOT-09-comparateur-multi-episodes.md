@@ -122,3 +122,13 @@ scoring-check ✅, lint ✅, anti-secrets ✅, aucune migration.
 multi-cycles reste théorique tant que le modèle mono-protocole n'autorise pas ≥ 2
 cycles réels — futur gate (modèle multi-cycles / migration), à ouvrir quand des
 données réelles ≥ 2 cycles existeront (A8-5-ii).
+
+**Dette de modèle levée le 2026-07-20 — gate G2** (`GATE_G2_IDENTITE_CYCLE.md`,
+migration `20260719120000_c2b_cycle_identity_v1`). `assessment_episodes` porte
+désormais `cycle_id` et `version_score` (nullables). Deux conséquences sur ce
+lot : `construireTrajectoire` ne reçoit plus de `versionScore` uniforme — chaque
+cycle porte la version **figée à la confirmation**, ce qui rend la garde A8-3
+réellement déclenchable au lieu d'être structurellement morte ; et l'index porte
+le `cycleId` stocké, le rattachement par date livré en Vague 2 n'étant plus que
+le repli des lignes qui n'en ont pas. Une version nulle donne la raison
+`version_inconnue` : elle n'est jamais assimilée à la version courante.

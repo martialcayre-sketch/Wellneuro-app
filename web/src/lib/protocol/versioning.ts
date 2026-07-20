@@ -1,4 +1,5 @@
 import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
+import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
 import {
   VERSION_OBJETS_CLINIQUES,
   type ConfirmedAssessmentEpisode,
@@ -75,9 +76,47 @@ export function isClinicalChange(
   return clinicalContentHash(activeDraft) !== clinicalContentHash(nextDraft);
 }
 
+// Épisode T0 déjà persisté, tel que l'appelant le lit pour résoudre le cycle.
+export type T0Candidate = {
+  id: string;
+  cycleId: string | null;
+  confirmedAt: Date;
+};
+
+// Identité de cycle (gate G2). Fonction PURE : l'appelant fournit les T0 déjà
+// persistés du patient, elle désigne le cycle auquel le nouvel épisode
+// appartient. Un T0 ouvre son propre cycle ; un jalon postérieur rejoint le
+// dernier T0 antérieur ou égal à sa confirmation ; sans T0 antérieur il reste
+// `null` — jamais rattaché de force au premier cycle venu.
+export function resolveCycleId(params: {
+  episode: ConfirmedAssessmentEpisode;
+  t0Candidates: T0Candidate[];
+}): string | null {
+  const { episode, t0Candidates } = params;
+  if (episode.milestone === 'T0') return episode.assessmentEpisodeId;
+
+  const confirmedAt = new Date(episode.confirmedAt as string).getTime();
+  if (!Number.isFinite(confirmedAt)) return null;
+
+  const anterieurs = t0Candidates
+    .filter((t0) => t0.confirmedAt.getTime() <= confirmedAt)
+    .sort((a, b) => b.confirmedAt.getTime() - a.confirmedAt.getTime());
+
+  const ancre = anterieurs[0];
+  if (!ancre) return null;
+  // Une ligne héritée dont le cycle n'a pas été backfillé n'invente rien : on
+  // retombe sur son propre id, qui est par construction l'id du cycle qu'elle ouvre.
+  return ancre.cycleId ?? ancre.id;
+}
+
 // Mapping contrat → colonnes `assessment_episodes` (factorisé depuis la route
-// LOT-02, comportement inchangé).
-export function toEpisodeCreateInput(episode: ConfirmedAssessmentEpisode) {
+// LOT-02). `cycleId` est résolu par l'appelant (gate G2) ; `versionScore` est
+// figé à la confirmation — jamais recalculé à la lecture, sinon la garde A8-3
+// (« pas de comparaison hors version identique ») serait indéclenchable.
+export function toEpisodeCreateInput(
+  episode: ConfirmedAssessmentEpisode,
+  identiteCycle: { cycleId: string | null },
+) {
   return {
     id: episode.assessmentEpisodeId,
     idPatient: episode.patientId,
@@ -87,6 +126,8 @@ export function toEpisodeCreateInput(episode: ConfirmedAssessmentEpisode) {
     payload: episode as unknown as object,
     payloadHash: canonicalSha256(episode),
     contractVersion: VERSION_OBJETS_CLINIQUES,
+    cycleId: identiteCycle.cycleId,
+    versionScore: VERSION_SCORE_EQUILIBRE,
   };
 }
 
