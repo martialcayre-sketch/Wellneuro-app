@@ -4,7 +4,9 @@
 //
 //   REFUS   — inspecte la commande BRUTE, littéraux compris. Un faux positif
 //             coûte une reformulation ; un faux négatif coûte des données.
-//             `bash -c "rm -rf /"` doit donc rester attrapé.
+//             `bash -c "rm -rf /"` doit donc rester attrapé. Seule exception,
+//             détaillée plus bas : le corps d'un heredoc dans une commande où
+//             rien ne sait exécuter quoi que ce soit est de la donnée.
 //   DEMANDE — inspecte la commande dont les littéraux ont été MASQUÉS. Un corps
 //             de PR décrivant « prisma migrate deploy » est de la prose entre
 //             guillemets, jamais une exécution : c'est précisément le faux
@@ -26,14 +28,58 @@ const brute = original.toLowerCase();
 
 // Scripts portant leur propre garde-fou interne, plus strict que ce hook :
 // base éphémère jetable pour l'un, refus de toute URL non-locale pour l'autre.
-// Sans cette sortie, `npm run test:worktree` déclencherait le motif « prisma
-// migrate » alors qu'il ne touche qu'un PostgreSQL temporaire.
+// Sans cette dérogation, `npm run test:worktree` déclencherait le motif
+// « prisma migrate » alors qu'il ne touche qu'un PostgreSQL temporaire.
+//
+// DEUX PROPRIÉTÉS, et l'absence de chacune était un trou :
+//
+// 1. La dérogation ne lève QUE le niveau « demande ». Elle sortait auparavant
+//    en `exit(0)` avant tout contrôle, refus compris : il suffisait d'écrire
+//    `rm -rf / # npm run test:worktree` pour traverser le garde-fou entier.
+//    Rien dans sa raison d'être ne justifiait qu'elle touche au refus.
+//
+// 2. Elle exige que la commande COMMENCE par l'invocation, un `cd … &&` de tête
+//    mis à part. Un motif cherché n'importe où se contrefait avec un
+//    commentaire : `npx prisma migrate deploy # npm run test:worktree`
+//    silencieusement autorisé, alors que c'est exactement ce que le niveau
+//    « demande » existe pour faire relire.
+const sansPrefixeCd = brute.replace(/^\s*cd\s+[^\s&;|]+\s*&&\s*/, "");
 const enveloppesSures = [
-  /\bscripts\/wn-test-worktree\.sh\b/,
-  /\bscripts\/wn-local-migrate\.sh\b/,
-  /\bnpm\s+run\s+test:worktree\b/
+  /^npm\s+run\s+test:worktree\b/,
+  /^(bash\s+)?scripts\/wn-test-worktree\.sh\b/,
+  /^(bash\s+)?scripts\/wn-local-migrate\.sh\b/
 ];
-if (enveloppesSures.some((motif) => motif.test(brute))) process.exit(0);
+const enveloppeSure = enveloppesSures.some((motif) => motif.test(sansPrefixeCd));
+
+// Un heredoc ne transporte du CODE que si quelque chose, dans la commande, sait
+// l'exécuter. `cat >> docs/claude/SESSION_LOG.md <<'ENTREE'` écrit un texte, et
+// ce texte peut citer `rm -rf /` sans rien détruire. Le 2026-07-20 ce hook a
+// bloqué deux fois de la prose pour cette raison, dont le journal de session qui
+// décrivait le hook lui-même.
+//
+// On ne cherche pas à deviner QUI consomme le heredoc — `cat <<EOF | bash`
+// rendrait cette analyse fausse. On exige qu'aucun vecteur d'exécution
+// n'apparaisse dans la STRUCTURE de la commande : tout, sauf les corps de
+// heredoc.
+//
+// La distinction structure / corps est le cœur du contrôle, et la première
+// version de ce correctif ne la faisait pas : elle cherchait les vecteurs dans
+// la commande ENTIÈRE, corps compris. Or un corps de PR citant
+// `scripts/check_no_secrets.sh` contient `sh`, un journal citant
+// `npm run check` contient `npm` — le masquage se désactivait, et la prose
+// était de nouveau refusée. Exactement le cas que ce correctif vise.
+//
+// Seul le corps est masqué : la fin de la ligne d'ouverture est conservée,
+// sinon le `| bash` de `cat <<'EOF' | bash` disparaîtrait avec le corps et
+// deviendrait indétectable. C'est le cas qui compte le plus.
+const vecteursExecution =
+  /\b(bash|sh|zsh|ksh|dash|csh|tcsh|fish|eval|exec|source|xargs|psql|mysql|sqlite3?|python3?|perl|ruby|php|lua|rscript|osascript|node|deno|npm|npx|pnpm|yarn|make|go|cargo|java|docker|kubectl|ssh|awk|curl|wget)\b/;
+
+// $1 : `<<DELIM` et la suite de la ligne d'ouverture (pipes, redirections…).
+// $2 : le délimiteur, repris en arrière-référence pour trouver la fin du corps.
+const corpsHeredoc = /(<<-?\s*'?"?(\w+)'?"?[^\n]*\n)[\s\S]*?^\s*\2\s*$/gm;
+const structure = original.replace(corpsHeredoc, "$1 <<corps-masqué> ").toLowerCase();
+const bruteRefus = vecteursExecution.test(structure) ? brute : structure;
 
 // Masque le contenu des littéraux et des heredocs : ce qui reste est la
 // structure exécutable de la commande.
@@ -79,7 +125,7 @@ const demande = [
 ];
 
 for (const motif of refus) {
-  if (motif.test(brute)) {
+  if (motif.test(bruteRefus)) {
     console.error(
       `Commande bloquée par WellNeuro : ${original}. ` +
       `Elle est destructive ou peut exposer des secrets. ` +
@@ -90,7 +136,9 @@ for (const motif of refus) {
   }
 }
 
-for (const { motif, raison } of demande) {
+// La dérogation n'agit qu'ici : le niveau « refus » ci-dessus s'applique à
+// toutes les commandes, sans exception.
+for (const { motif, raison } of enveloppeSure ? [] : demande) {
   if (motif.test(masquee)) {
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
