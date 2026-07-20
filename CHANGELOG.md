@@ -4,6 +4,40 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Hébergement HDS — question instruite, et dérogation datée (2026-07-21)
+
+Aucun code. Ce qui change est l'état de la connaissance et une décision du
+responsable du traitement.
+
+- **L'exigence 1 de G-TRUST-04 n'est plus « à vérifier », elle est établie — et
+  négative.** Supabase et Vercel sont **absents de l'annuaire ANS des
+  hébergeurs certifiés HDS** (404 hébergeurs). La question posée publiquement à
+  Supabase le 2024-11-29 est **toujours sans réponse** vingt mois plus tard,
+  malgré cinq relances. Vercel est certifié SOC 2 Type II, ISO 27001:2022,
+  HIPAA et PCI DSS — aucun de ces cadres ne se substitue au HDS.
+- **Le référentiel HDS v2.0 est en vigueur depuis le 2026-05-16**, avec une
+  exigence de souveraineté restreignant le stockage à l'EEE. La base est à
+  Francfort : la localisation est acquise, la certification non.
+- **Un déplacement est techniquement peu coûteux.** Inventaire du dépôt :
+  aucune dépendance bloquante à Vercel (pas de `vercel.json`, `@vercel/*`, Edge
+  Runtime, middleware, Cron, ISR, `next/image`), aucun SDK `@supabase/*` au
+  runtime. Le poste lourd est le transfert de la base, pas le code. Équivalents
+  certifiés sur les six activités : Scalingo, Clever Cloud.
+- **Dérogation du responsable du traitement, datée du 2026-07-21 et bornée au
+  2026-10-21** : phase de test avec des personnes réelles, nouveaux dossiers
+  compris, malgré l'écart. Motifs invoqués : phase pré-opérationnelle,
+  information des participants, gratuité du service.
+- **Ce n'est pas une mise en conformité, et c'est écrit comme tel.** La
+  gratuité n'exonère pas de L1111-8 ; l'information des participants ne
+  décharge pas d'une obligation qui pèse sur le responsable et l'hébergeur.
+  L'invariant du registre « HDS obligatoire » n'est pas abrogé : il est
+  **suspendu, sciemment, pour un temps compté**. Sans reconduction écrite au
+  2026-10-21, il reprend son plein effet.
+- **Canal public de redemande ouvert** (`WN_G4_REDEMANDE_PATIENT`), ses deux
+  résidus ayant été fermés le jour même.
+- **Correction de fait au registre** : la mention « livrable en préproduction »
+  supposait une préproduction qui n'existe pas.
+
 ### Gate G4 — les deux résidus du canal de redemande (IDP LOT-02, 2026-07-21)
 
 Migration confirmée explicitement par l'utilisateur le 2026-07-21. **Migration

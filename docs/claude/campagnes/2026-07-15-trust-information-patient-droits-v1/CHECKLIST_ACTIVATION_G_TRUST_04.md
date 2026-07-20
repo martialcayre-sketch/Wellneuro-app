@@ -46,7 +46,7 @@ applique `prisma migrate deploy` sur la base Supabase de production au build de
 
 | # | Exigence | État | Preuve |
 |---|---|---|---|
-| 1 | Architecture d'hébergement adaptée | ❌ **Non** | Supabase + Vercel, certification HDS non établie (cf. ci-dessus) |
+| 1 | Architecture d'hébergement adaptée | ❌ **Non — établi le 2026-07-21** | Supabase et Vercel **absents de l'annuaire ANS des hébergeurs certifiés HDS**. Écart assumé par décision datée du responsable (voir plus bas) |
 | 2 | Contrôle d'accès centralisé | ⚠️ **Partiel** | Praticien : NextAuth + OAuth Google restreint à `@wellneuro.fr` (`web/src/lib/auth.ts`). Patient : jeton d'accès **permanent**, pas de compte, pas de révocation en libre-service |
 | 3 | Isolation multi-praticien | ⚠️ **Partiel — 30 routes sur 33** | cf. tableau ci-dessous |
 | 4 | Gestion des sessions et révocations | ⚠️ **Partiel — amélioré le 2026-07-21** | Cookie portail signé, durée bornée. **G4 activé en production** : lien haché en base, 24 h, usage unique, rejeu refusé et tracé. Mais le **jeton permanent subsiste et ne se périme toujours pas** — la coexistence des deux chemins est voulue pendant la bascule. L'exigence reste donc partielle : elle le sera jusqu'à la péremption des liens permanents, décision non prise |
@@ -104,6 +104,10 @@ Elle reste ❌. Le consentement n'y change rien, et rien d'autre n'a bougé : la
 réponse écrite de Supabase et de Vercel sur leur certification HDS **n'a pas
 été demandée**. C'est toujours le premier point à instruire, et il reste
 préalable aux six autres.
+
+> **Dépassé le 2026-07-21** par la section « Instruction de l'hébergement »
+> ci-dessous. Le paragraphe est conservé tel quel : il date l'état de la
+> connaissance au moment où il a été écrit.
 
 ### Ce que l'activation de G4 fait, et ne fait pas
 
@@ -205,14 +209,131 @@ base (RLS ou équivalent) si la garde applicative était un jour contournée.
    (Vercel, Supabase, Anthropic, SMTP, Google) — la liste est déjà établie en
    `GATES_GO_NO_GO.md:9`.
 
+## Instruction de l'hébergement — établie le 2026-07-21
+
+Le point 1 de la liste ci-dessus est **instruit**. Il ne dit plus « non
+vérifié » : il dit « vérifié, et négatif ».
+
+### Ce qui est établi
+
+- **Ni Supabase ni Vercel ne figurent à l'annuaire des hébergeurs certifiés
+  HDS** publié par l'Agence du Numérique en Santé, qui recense 404 hébergeurs.
+  L'absence de deux acteurs de cette taille n'est pas une lacune documentaire.
+- **Supabase n'a jamais répondu.** La question — prévoyez-vous une
+  certification HDS pour la France ? — lui a été posée publiquement le
+  2024-11-29 (discussion GitHub 30734), relancée par cinq utilisateurs
+  jusqu'en février 2026, dont un demandant « une réponse claire sur ce point
+  crucial ». La discussion est toujours marquée **non répondue**. La
+  documentation santé de Supabase ne traite que du HIPAA américain.
+- **Vercel est certifié SOC 2 Type II, ISO 27001:2022, HIPAA et PCI DSS** — et
+  pas HDS. Ce sont des cadres réels ; aucun ne se substitue à une certification
+  exigée par le code de la santé publique français.
+- **Le référentiel HDS v2.0 est pleinement en vigueur depuis le 2026-05-16**,
+  avec une exigence de souveraineté restreignant le stockage au territoire de
+  l'EEE. Le projet Supabase est en `eu-central-1` (Francfort), donc dans l'EEE :
+  cela règle la localisation, **pas** la certification, qui est distincte.
+- **Il existe des équivalents certifiés.** Scalingo (certificat 38436, LNE,
+  valable jusqu'au 2028-09-11) et Clever Cloud sont certifiés **sur les six
+  activités** en référentiel v2.0, avec PaaS *et* PostgreSQL managé sous le même
+  certificat, datacenters en France. Une migration réunirait donc chez un seul
+  hébergeur certifié ce qui est aujourd'hui réparti entre deux qui ne le sont
+  pas.
+
+### Coût technique d'un déplacement, mesuré le 2026-07-21
+
+Inventaire du dépôt : **aucune dépendance bloquante à Vercel**. Pas de
+`vercel.json`, pas de `@vercel/*`, pas d'Edge Runtime, pas de middleware, pas de
+Cron, pas d'ISR, pas de `next/image`. Les variables `VERCEL_*` lues dans le code
+ont toutes un repli déjà écrit. Aucun SDK `@supabase/*` au runtime : Supabase ne
+sert que de PostgreSQL managé, et Prisma parle à n'importe quel PostgreSQL.
+
+Restent : le script de build à renommer et sa condition `VERCEL_ENV` à remplacer,
+`prisma migrate deploy` à déplacer du build vers un hook de post-déploiement, une
+dizaine de variables à reporter, l'URI de redirection OAuth à ajouter, et
+`max: 1` dans `web/src/lib/prisma.ts` à relever (dimensionné pour le serverless).
+**Le poste lourd n'est pas le code : c'est le transfert de la base et la fenêtre
+de bascule**, sur des dossiers de personnes réelles.
+
+À traiter au passage : `web/src/lib/postgres.ts` renvoie
+`rejectUnauthorized: false` pour tout hôte non local — contournement du
+certificat Supabase qui annulerait une partie du bénéfice s'il était conservé.
+
+> Ces constats sont **factuels et sourcés**, mais rédigés par l'assistant, qui
+> n'est pas juriste. La qualification de la situation et les suites à donner
+> relèvent d'un conseil qualifié ou d'un DPO.
+
+## Décision du responsable du traitement — 2026-07-21
+
+**Décision rendue** par le responsable du traitement (`G-TRUST-02` : le
+praticien, `martialcayre@wellneuro.fr`), en connaissance des constats ci-dessus,
+qui lui ont été présentés le jour même.
+
+### Ce qui est autorisé
+
+Une **phase de test avec des personnes réelles**, incluant l'**enregistrement de
+nouveaux dossiers**. Motifs invoqués par le responsable : le caractère
+pré-opérationnel de la phase, l'**information des participants** — qui savent que
+l'hébergement n'est pas certifié HDS — et la **gratuité** du service.
+
+**Date de revue : 2026-10-21.** À cette échéance, soit l'hébergement a été
+déplacé, soit la décision est **reconduite explicitement**, datée et signée ici.
+Sans reconduction écrite, la règle du dépôt reprend : patients fictifs seuls.
+
+### Ce que cette décision n'est pas
+
+Elle est un **écart assumé, borné et daté** — pas une mise en conformité. La
+distinction n'est pas rhétorique, elle est ce qui la rend défendable : elle
+établit que le responsable savait, qu'il a borné, et depuis quand.
+
+En particulier, et il faut l'écrire parce que les deux arguments avancés sont
+naturels :
+
+- **La gratuité n'exonère pas.** L'article L1111-8 s'attache à l'hébergement de
+  données de santé pour une finalité de soin ou de suivi. Il ne comporte pas de
+  seuil de chiffre d'affaires ni d'exception pour service gratuit.
+- **L'information des participants ne décharge pas.** Elle est nécessaire au
+  RGPD — transparence, loyauté — et elle est à son crédit. Mais l'obligation de
+  recourir à un hébergeur certifié pèse sur le responsable et l'hébergeur ; ce
+  n'est pas un droit dont la personne dispose, donc pas un droit auquel elle
+  puisse renoncer pour eux. C'est le même raisonnement que pour le consentement,
+  développé plus haut.
+
+Cette décision **ne lève pas** les exigences 2 à 7, qui restent partielles et
+suivies dans ce document. Elle ne vaut pas non plus validation juridique : la
+dette « revue juridique / DPO externe » (`DETTE_TRUST.md`) reste ouverte, et son
+règlement est le premier point qui pourrait invalider ou confirmer ce qui
+précède.
+
+### Ce que l'assistant recommande d'y attacher — à confirmer par le responsable
+
+Ces points ne sont **pas** des décisions rendues : ils sont proposés, et
+n'engagent rien tant que le responsable ne les a pas écrits ici.
+
+1. **Tracer l'information délivrée** : date, forme et contenu exact de ce qui a
+   été dit aux participants sur l'hébergement, ainsi que la modalité de retrait.
+   Aujourd'hui cette information existe, mais n'est **consignée nulle part** —
+   or c'est elle qui porte la moitié de l'argumentaire de la décision.
+2. **Minimiser tant que dure l'écart** : ne pas collecter ce dont la phase de
+   test n'a pas besoin. Chaque donnée non collectée est une donnée qui n'est pas
+   hébergée hors cadre.
+3. **Effacement à la demande, sans condition ni délai d'instruction.**
+4. **Rester hors résultats biologiques réels** (Phase C du programme 5.0), déjà
+   la règle, et qui le devient d'autant plus ici.
+5. **Instruire la migration sans attendre la date de revue** : le coût technique
+   est faible, le délai réel est celui du transfert de base et du contrat.
+
 ## Qui lève ce gate
 
 **Pas l'assistant.** La levée est une décision du responsable du traitement
 (`G-TRUST-02` : le praticien), consignée ici avec sa date, ses pièces
 justificatives et le périmètre exact de ce qu'elle autorise.
 
-Tant que cette ligne n'est pas écrite, la règle applicable reste celle du
-dépôt : **patients fictifs exclusivement**.
+**Statut au 2026-07-21** : le gate n'est **pas levé** — les sept exigences ne
+sont pas satisfaites, et l'exigence 1 est désormais négative de façon établie.
+Ce qui est écrit ci-dessus est autre chose : une **dérogation datée et bornée**
+par laquelle le responsable autorise la phase de test malgré l'écart. La règle
+du dépôt — patients fictifs exclusivement — est suspendue dans ce périmètre et
+jusqu'au **2026-10-21**, pas abrogée.
 
 ## Raccordement
 
