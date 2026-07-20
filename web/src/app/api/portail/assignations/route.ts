@@ -13,7 +13,9 @@ import {
 export type PortailAssignationsResponse =
   | {
       ok: true;
-      patient: { prenom: string; nom: string };
+      // `idPatient` : même usage que sur `/api/portail/session` — nommer les
+      // traces locales du hub sans y recopier le jeton d'accès.
+      patient: { idPatient: string; prenom: string; nom: string };
       assignations: AssignationPatient[];
     }
   | { ok: false; reason: 'unauthorized' | 'exception'; error: string };
@@ -86,7 +88,7 @@ export async function GET(req: Request): Promise<NextResponse> {
 
     return withCorrelationHeader(NextResponse.json({
       ok: true,
-      patient: { prenom: patient.prenom, nom: patient.nom },
+      patient: { idPatient: session.idPatient, prenom: patient.prenom, nom: patient.nom },
       assignations,
     }), requestContext);
   } catch (err) {

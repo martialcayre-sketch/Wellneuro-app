@@ -33,7 +33,11 @@ export type PortailConsultationState = {
 export type PortailSessionResponse =
   | {
       ok: true;
-      patient: { prenom: string; nom: string; email: string };
+      // `idPatient` sert au navigateur à nommer ses brouillons locaux sans
+      // recopier le jeton d'accès dans le stockage : une identité qui survit
+      // au changement de lien (préalable G4). Aucune route portail n'accepte
+      // un `idPatient` venu du client — elles le lisent toutes du cookie.
+      patient: { idPatient: string; prenom: string; nom: string; email: string };
       consultation: PortailConsultationState | null;
       premiereAssignation: string | null;
     }
@@ -98,7 +102,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     const res = NextResponse.json<PortailSessionResponse>({
       ok: true,
-      patient: { prenom: patient.prenom, nom: patient.nom, email: patient.email },
+      patient: { idPatient: patient.idPatient, prenom: patient.prenom, nom: patient.nom, email: patient.email },
       consultation: consultation
         ? {
             idConsultation: consultation.idConsultation,
