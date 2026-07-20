@@ -4,6 +4,37 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Gate G1 — refus persisté des cartes du Fil (SP-FIL, 2026-07-20)
+
+Gate confirmé explicitement par l'utilisateur le 2026-07-20. **Migration
+additive** : une table nouvelle, aucun backfill. Rollback = abandon de la table.
+
+Le garde-fou 5.0 exige qu'une carte du Fil soit refusable, que le refus
+**persiste** et qu'il reste **réversible**. Aucun des trois n'était tenu.
+
+- **Prérequis livré à part** (migration-free) : une identité stable pour chaque
+  carte, ancrée sur sa ligne source. Voie (b) du dossier des gates, arbitrée
+  avec l'utilisateur — la clé composite `type + patient + date` aurait laissé
+  sans clé toute carte non datée et confondu deux cartes jumelles.
+- **`fil_card_rejections`** (`20260720130000_g1_fil_card_rejections_v1`) —
+  append-only chaîné : annuler un refus n'efface ni ne réécrit rien, c'est une
+  nouvelle ligne (`refusee = false`) qui supplante la précédente. RLS deny-all.
+- **Écart assumé au dossier** : celui-ci demandait à la fois une unicité
+  `(id_patient, carte_cle)` et un chaînage append-only. Les deux sont
+  incompatibles — une annulation est une seconde ligne sur la même clé, et
+  l'unicité la rendrait impossible. L'append-only l'emporte : c'est lui qui
+  porte la réversibilité exigée. L'index reste, la contrainte non.
+- **Route `POST /api/praticien/fil/refus`** — garde d'appartenance, idempotente,
+  aucun `UPDATE` ni `DELETE`. Une clé reçue d'un client n'est pas crue sur
+  parole : elle doit porter le préfixe d'un type de carte connu.
+- **Filtrage en un seul point de passage**, après `construireFil`, sur les
+  cartes déjà construites — jamais dans les 5 fonctions de production, ce
+  seraient 5 endroits à garder cohérents.
+- **Surface** : bouton « Écarter » par carte (cible ≥ 44 px) et **annulation
+  immédiate sans quitter l'écran**. Le serveur fait foi — une carte n'est
+  écartée à l'écran qu'une fois le refus accepté, sinon le praticien croirait
+  avoir écarté une carte qui reviendra.
+
 ### Gate G3 — notes de relecture (SP-TT LOT-02, 2026-07-20)
 
 Gate confirmé explicitement par l'utilisateur le 2026-07-20. **Migration

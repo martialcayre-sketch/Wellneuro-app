@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AlarmClock, Inbox, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
@@ -16,7 +16,7 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
   reprise: { libelle: 'Reprise', icon: RotateCcw },
 };
 
-function CarteDuFil({ carte }: { carte: CarteFil }) {
+function CarteDuFil({ carte, onEcarter }: { carte: CarteFil; onEcarter: () => void }) {
   const { libelle, icon: Icon } = TYPE_CARTE[carte.type];
   return (
     <article className="bg-surface text-surface-foreground rounded-xl border border-border p-4 shadow-sm flex items-start gap-3">
@@ -31,12 +31,43 @@ function CarteDuFil({ carte }: { carte: CarteFil }) {
         <p className="text-sm text-foreground mt-0.5 truncate">{carte.titre}</p>
         <p className="text-xs text-muted-foreground mt-1">{carte.pourquoi}</p>
       </div>
-      <Link
-        href={carte.href}
-        className="shrink-0 self-center text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
+      <div className="flex shrink-0 items-center gap-3 self-center">
+        <Link
+          href={carte.href}
+          className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
+        >
+          {carte.actionLabel} →
+        </Link>
+        {/* Écarter est un geste réversible : rien n'est supprimé, la carte
+            reste annulable juste après (garde-fou 5.0). */}
+        <button
+          type="button"
+          onClick={onEcarter}
+          aria-label={`Écarter cette carte — ${carte.titre}, ${carte.patient}`}
+          className="min-h-11 min-w-11 rounded-lg border border-border px-2 text-sm text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          Écarter
+        </button>
+      </div>
+    </article>
+  );
+}
+
+/** Trace laissée par une carte écartée : le refus n'est utile que s'il est
+ * annulable sans quitter l'écran. */
+function CarteEcartee({ carte, onAnnuler }: { carte: CarteFil; onAnnuler: () => void }) {
+  return (
+    <article className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3">
+      <p className="min-w-0 truncate text-sm text-muted-foreground">
+        Carte écartée — {carte.titre}, {carte.patient}
+      </p>
+      <button
+        type="button"
+        onClick={onAnnuler}
+        className="min-h-11 shrink-0 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
-        {carte.actionLabel} →
-      </Link>
+        Annuler
+      </button>
     </article>
   );
 }
@@ -47,6 +78,8 @@ function CarteDuFil({ carte }: { carte: CarteFil }) {
 export function FilDuJour() {
   const [data, setData] = useState<FilApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ecartees, setEcartees] = useState<string[]>([]);
+  const [erreurRefus, setErreurRefus] = useState('');
 
   useEffect(() => {
     fetch('/api/praticien/fil')
@@ -54,6 +87,30 @@ export function FilDuJour() {
       .then(setData)
       .catch(() => setData({ cartes: [], unavailable: true }))
       .finally(() => setLoading(false));
+  }, []);
+
+  // Le serveur fait foi : la carte n'est écartée à l'écran qu'une fois le refus
+  // accepté. Sinon le praticien croirait avoir écarté une carte qui reviendra
+  // au prochain chargement.
+  const basculerRefus = useCallback(async (carte: CarteFil, refusee: boolean) => {
+    setErreurRefus('');
+    try {
+      const reponse = await fetch('/api/praticien/fil/refus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: carte.idPatient, carteCle: carte.cle, refusee }),
+      });
+      const payload = (await reponse.json()) as { ok: boolean; error?: string };
+      if (!reponse.ok || !payload.ok) {
+        setErreurRefus(payload.error ?? 'Cette carte n’a pas pu être écartée.');
+        return;
+      }
+      setEcartees(prev =>
+        refusee ? [...prev, carte.cle] : prev.filter(cle => cle !== carte.cle),
+      );
+    } catch {
+      setErreurRefus('Cette carte n’a pas pu être écartée.');
+    }
   }, []);
 
   if (loading) {
@@ -84,9 +141,18 @@ export function FilDuJour() {
 
   return (
     <div data-testid="fil-du-jour" className="flex flex-col gap-3">
-      {data.cartes.map((carte, i) => (
-        <CarteDuFil key={carte.cle} carte={carte} />
-      ))}
+      {erreurRefus && (
+        <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-2 text-sm text-foreground">
+          {erreurRefus}
+        </p>
+      )}
+      {data.cartes.map(carte =>
+        ecartees.includes(carte.cle) ? (
+          <CarteEcartee key={carte.cle} carte={carte} onAnnuler={() => void basculerRefus(carte, false)} />
+        ) : (
+          <CarteDuFil key={carte.cle} carte={carte} onEcarter={() => void basculerRefus(carte, true)} />
+        ),
+      )}
     </div>
   );
 }

@@ -43,6 +43,7 @@ model Patient {
   protocolCheckins           ProtocolCheckin[]
   protocolDiffusionApprovals ProtocolDiffusionApproval[]
   relectureNotes             RelectureNote[]
+  filCardRejections          FilCardRejection[]
 
   @@map("patients")
 }
@@ -784,6 +785,39 @@ model ProtocolDiffusionApproval {
   @@index([idPatient], map: "c2a_diffusion_patient_idx")
   @@index([protocolDraftId], map: "c2a_diffusion_draft_idx")
   @@map("protocol_diffusion_approvals")
+}
+
+// Refus d'une carte du Fil (SP-FIL, gate G1). Le garde-fou 5.0 exige qu'une
+// carte soit refusable, que le refus PERSISTE (elle ne revient pas le
+// lendemain) et qu'il reste RÉVERSIBLE.
+//
+// `carte_cle` est l'identité de la carte, ancrée sur sa ligne source (voir
+// `lib/fil/cartes.ts`, `cleCarte`). Les cartes étant des projections
+// recalculées à chaque ouverture, c'est cette clé — et non la carte — qui est
+// désignée ici.
+//
+// Append-only chaîné : annuler un refus n'efface ni ne réécrit rien, c'est une
+// nouvelle ligne (`refusee = false`) qui supplante la précédente. L'état courant
+// est la tête de chaîne. C'est pourquoi il n'y a **pas** de contrainte d'unicité
+// sur (id_patient, carte_cle) : plusieurs lignes coexistent par construction,
+// et une unicité rendrait justement l'annulation impossible.
+//
+// Aucune ligne ne signifie « non refusée » — l'état de toutes les cartes avant
+// ce gate.
+model FilCardRejection {
+  id                    String   @id @default(cuid()) @map("id")
+  idPatient             String   @map("id_patient")
+  carteCle              String   @map("carte_cle")
+  refusee               Boolean  @default(true) @map("refusee")
+  refusePar             String   @map("refuse_par")
+  supersedesRejectionId String?  @map("supersedes_rejection_id")
+  refuseLe              DateTime @default(now()) @map("refuse_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, refuseLe], map: "g1_fil_rejection_patient_idx")
+  @@index([idPatient, carteCle], map: "g1_fil_rejection_cle_idx")
+  @@map("fil_card_rejections")
 }
 
 // Note de relecture (SP-TT LOT-02, gate G3). Le praticien annote un état passé

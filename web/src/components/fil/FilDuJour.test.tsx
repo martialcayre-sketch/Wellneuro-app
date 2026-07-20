@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CarteFil } from '@/lib/fil/cartes';
 import { FilDuJour } from './FilDuJour';
@@ -94,5 +94,79 @@ describe('FilDuJour — les quatre états de rendu', () => {
     render(<FilDuJour />);
     await waitFor(() => expect(screen.getByText('Signalement')).toBeTruthy());
     expect(screen.getByText('En retard')).toBeTruthy();
+  });
+});
+
+// G1 : le geste de refus. « Refusable », pas « supprimable » — l'annulation
+// fait partie du garde-fou, pas du confort.
+describe('FilDuJour — écarter une carte (G1)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  /** Le GET rend le Fil, le POST accepte le refus. */
+  function stubFilEtRefus(refusOk = true) {
+    const appels: { url: string; body?: unknown }[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, options?: { method?: string; body?: string }) => {
+        appels.push({ url, body: options?.body ? JSON.parse(options.body) : undefined });
+        if (options?.method === 'POST') {
+          return {
+            ok: refusOk,
+            json: async () =>
+              refusOk
+                ? { ok: true, carteCle: 'reponse_recente:REP_1', refusee: true, inchange: false }
+                : { ok: false, reason: 'exception', error: 'Erreur technique.' },
+          } as unknown as Response;
+        }
+        return {
+          ok: true,
+          json: async () => ({ cartes: [carte({ cle: 'reponse_recente:REP_1' })] }),
+        } as unknown as Response;
+      }),
+    );
+    return appels;
+  }
+
+  it('écarter envoie le refus au serveur, avec la clé de la carte', async () => {
+    const appels = stubFilEtRefus();
+    render(<FilDuJour />);
+
+    const bouton = await screen.findByRole('button', { name: /Écarter cette carte/ });
+    fireEvent.click(bouton);
+
+    await waitFor(() => expect(screen.getByText(/Carte écartée/)).toBeTruthy());
+    const refus = appels.find(a => a.url === '/api/praticien/fil/refus');
+    expect(refus?.body).toMatchObject({
+      idPatient: 'PAT_SEED_01',
+      carteCle: 'reponse_recente:REP_1',
+      refusee: true,
+    });
+  });
+
+  it('une carte écartée reste annulable sans quitter l’écran', async () => {
+    const appels = stubFilEtRefus();
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Écarter cette carte/ }));
+    const annuler = await screen.findByRole('button', { name: 'Annuler' });
+    fireEvent.click(annuler);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: /Écarter cette carte/ })).toBeTruthy());
+    expect(screen.queryByText(/Carte écartée/)).toBeNull();
+    // L'annulation passe par le serveur : elle ne se contente pas de réafficher.
+    const decisions = appels.filter(a => a.url === '/api/praticien/fil/refus');
+    expect(decisions.map(a => (a.body as { refusee: boolean }).refusee)).toEqual([true, false]);
+  });
+
+  it('si le serveur refuse l’écriture, la carte reste affichée et l’échec est dit', async () => {
+    stubFilEtRefus(false);
+    render(<FilDuJour />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Écarter cette carte/ }));
+
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(/Erreur technique/));
+    // Le praticien ne doit pas croire avoir écarté une carte qui reviendra.
+    expect(screen.getByRole('button', { name: /Écarter cette carte/ })).toBeTruthy();
+    expect(screen.queryByText(/Carte écartée/)).toBeNull();
   });
 });
