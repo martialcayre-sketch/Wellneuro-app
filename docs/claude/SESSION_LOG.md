@@ -1069,3 +1069,29 @@ prose passent, 7 évasions restent refusées.
 **Prochaine action** : **G4**, déjà en cours dans le worktree `gates-g3-g1-g4`
 (migration `g4_portail_magic_links_v1` non commitée) — se coordonner avant d'y
 toucher.
+
+## 2026-07-20 — Audit du travail des sessions parallèles
+
+**Constat principal** : le CHANGELOG de #167 annonce « 12 routes fermées, 25 sur
+31 ». Vérifié ligne par ligne sur `origin/main` : **cinq routes praticien
+manipulant de la donnée patient restent non gardées**. `booklet` GET et
+`besoins` sont explicitement revendiquées — la seconde comme « catalogue sans
+donnée patient », alors qu'elle prend `?idPatient` et rend prénom, nom et
+couverture clinique. `synthese` PATCH (écriture), `patients` GET/PATCH/DELETE
+(le registre complet) et `consultations` POST (qui lève un accès portail
+révoqué) ne sont pas mentionnées.
+
+**Calibration** : un seul compte praticien en production (17 patients). Aucune
+fuite active ; le risque est latent et se matérialise au second praticien. Le
+défaut est la fausse assurance, pas la brèche.
+
+**Clos entre-temps** : `praticien/token` est gardée par #172 (G4), garde posée
+avant l'effet sur POST et DELETE. Les quatre migrations du jour sont appliquées
+en production, une tentative chacune, strictement additives.
+
+**Prochaine action** : corriger le CHANGELOG (urgent, sans risque de conflit),
+puis fermer les cinq routes et ajouter un test de recensement des gardes.
+
+**Ouvert** : doctrine 403 vs 404 — le commit `1d6719b` impose le 404 partout, la
+docstring de `verifierAppartenancePatient` recommande l'inverse, et les routes
+G1/G3 suivent la docstring.
