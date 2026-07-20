@@ -32,3 +32,7 @@ Thumbs.db
 
 # Artefacts régénérables du playbook scripts/repo-hygiene.sh (audit-only)
 .repo-hygiene*/
+
+# Worktrees git locaux des sessions parallèles. Sans cette règle, un
+# `git add -A` les indexe comme liens git et les committe.
+.claude/worktrees/

@@ -36,6 +36,46 @@ jobs:
       GOOGLE_CLIENT_SECRET: ci-placeholder
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Nécessaire pour comparer le diff à sa base et détecter une PR
+          # purement documentaire (étape « Périmètre du diff » ci-dessous).
+          fetch-depth: 0
+
+      # Le nom du job reste `verify` : les règles de protection de branche
+      # continuent d'exiger exactement ce check, quel que soit le périmètre.
+      # Une PR documentaire n'a aucune raison d'installer des navigateurs et de
+      # rejouer les E2E — mais elle DOIT rester soumise à l'anti-secrets (un
+      # secret se colle aussi bien dans un .md) et à l'audit des campagnes (une
+      # modification documentaire est précisément ce qui casse les invariants de
+      # miroir). Ces deux contrôles restent donc inconditionnels.
+      - name: Périmètre du diff
+        id: scope
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+          fi
+          # Base inconnue (première poussée d'une branche, historique tronqué) :
+          # on ne devine pas, on traite le diff comme du code.
+          if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
+            echo "Base '${base}' introuvable → périmètre traité comme code."
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          fichiers="$(git diff --name-only "$base" HEAD)"
+          echo "Fichiers modifiés :"
+          echo "$fichiers"
+          # Volontairement PAS `grep -qv` : le grep BSD (macOS) en rend un statut
+          # faux, ce qui rendrait cette logique invérifiable en local même si
+          # elle passe sous le grep GNU du runner. On matérialise la liste.
+          hors_docs="$(printf '%s\n' "$fichiers" | grep -vE '(^docs/|\.md$)' || true)"
+          if [ -z "$fichiers" ] || [ -n "$hors_docs" ]; then
+            echo "docs_only=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs_only=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Diff purement documentaire — étapes de build et E2E sautées."
+          fi
 
       - name: Anti-secrets scan
         run: bash scripts/check_no_secrets.sh
@@ -49,24 +89,24 @@ jobs:
         run: node scripts/check_questionnaire_certification.js
 
       - uses: actions/setup-node@v4
+        if: steps.scope.outputs.docs_only != 'true'
         with:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: web/package-lock.json
 
       - name: Install dependencies
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm ci
 
-      - name: Install Playwright browsers
-        working-directory: web
-        run: npx playwright install --with-deps chromium webkit
-
       - name: Generate Prisma client
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npx prisma generate
 
       - name: Setup database schema
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npx prisma migrate deploy
 
@@ -78,6 +118,7 @@ jobs:
       # DATABASE_URL) équivaut à rejouer les migrations. Échec (code 2) si elle
       # diverge de schema.prisma.
       - name: Migration drift check (schema.prisma vs migrations)
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: |
           npx prisma migrate diff \
@@ -86,46 +127,69 @@ jobs:
             --exit-code
 
       - name: C5 LOT-02 migration contract
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npx prisma db execute --file prisma/checks/c5_ciqual_reference_v1.sql
 
       - name: C5 LOT-02 import contract
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         env:
           WN_C5_CIQUAL_DESTRUCTIVE_TEST: wellneuro_ci
         run: npm run c5:ciqual:test-integration
 
       - name: Seed test data
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm run prisma:seed
 
       - name: Type-check
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm run type-check
 
       - name: Unit tests (Vitest)
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm run test
 
       - name: Lint
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm run lint
 
       - name: Build
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm run build
 
-      # E2E contre le build de production produit à l'étape précédente : plus
-      # rapide (pas de compilation à la demande de next dev) et plus fidèle au
-      # déploiement Vercel (bundles React prod, prerender identique).
+      # Installation des navigateurs placée juste avant les E2E, et non en tête
+      # de job : tout échec statique (type-check, Vitest, lint, build) rendait
+      # sinon la main après avoir payé ~1 min de téléchargement inutile.
+      - name: Cache navigateurs Playwright
+        if: steps.scope.outputs.docs_only != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('web/package-lock.json') }}
+
+      - name: Install Playwright browsers
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx playwright install --with-deps chromium webkit
+
+      # E2E contre le build de production produit plus haut : plus rapide (pas
+      # de compilation à la demande de next dev) et plus fidèle au déploiement
+      # Vercel (bundles React prod, prerender identique).
       - name: E2E tests (Playwright, production build)
+        if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         env:
           PLAYWRIGHT_WEB_SERVER: start
         run: npm run test:e2e
 
       - name: Upload Playwright report
-        if: always()
+        if: always() && steps.scope.outputs.docs_only != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
