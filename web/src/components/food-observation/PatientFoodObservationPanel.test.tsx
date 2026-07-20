@@ -22,7 +22,7 @@ describe('PatientFoodObservationPanel', () => {
   });
 
   it('demande une friction pour une trace partielle/empêchee', () => {
-    render(<PatientFoodObservationPanel token="TOK_TEST" />);
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
 
     fireEvent.change(screen.getByTestId('ja-patient-issue'), {
       target: { value: 'partiel_empeche' },
@@ -33,7 +33,7 @@ describe('PatientFoodObservationPanel', () => {
   });
 
   it('affiche le silence utile quand le budget hebdomadaire est atteint', () => {
-    render(<PatientFoodObservationPanel token="TOK_TEST" />);
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
 
     fireEvent.change(screen.getByTestId('ja-patient-budget'), {
       target: { value: '2' },
@@ -45,7 +45,7 @@ describe('PatientFoodObservationPanel', () => {
   });
 
   it('ajoute une solution intra-épisode', () => {
-    render(<PatientFoodObservationPanel token="TOK_TEST" />);
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
 
     fireEvent.change(screen.getByTestId('ja-patient-solution-input'), {
       target: { value: 'Préparer la veille' },
@@ -56,7 +56,7 @@ describe('PatientFoodObservationPanel', () => {
   });
 
   it('restaure le brouillon local après remount', () => {
-    const { unmount } = render(<PatientFoodObservationPanel token="TOK_TEST" />);
+    const { unmount } = render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
 
     fireEvent.change(screen.getByTestId('ja-patient-budget'), {
       target: { value: '2' },
@@ -69,15 +69,37 @@ describe('PatientFoodObservationPanel', () => {
     fireEvent.click(screen.getByTestId('ja-patient-ajouter-solution'));
 
     unmount();
-    render(<PatientFoodObservationPanel token="TOK_TEST" />);
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
 
     expect(screen.getByText('Brouillon local restauré sur cet appareil.')).toBeTruthy();
     expect(screen.getByText('Rien à noter aujourd’hui, nous en savons assez.')).toBeTruthy();
     expect(screen.getByText('• Batch cuisine dimanche')).toBeTruthy();
   });
 
+  // Préalable G4 : le brouillon suit la personne, pas le lien. Une clé portant
+  // le jeton d'URL deviendrait introuvable au lien suivant — et écrirait un
+  // secret d'accès dans le stockage du navigateur.
+  it('nomme le brouillon d’après le patient, jamais d’après un jeton de lien', () => {
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
+
+    const cles = Object.keys(window.sessionStorage);
+    expect(cles).toContain('wellneuro:ja5-02:patient:PAT_TEST');
+    expect(cles.some(cle => cle.includes('TOK'))).toBe(false);
+  });
+
+  it('sans session, ne conserve rien et le dit plutôt que de le taire', () => {
+    render(<PatientFoodObservationPanel idPatient={null} />);
+
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
+
+    expect(screen.getByText(/ne sera pas conservé sur cet appareil/)).toBeTruthy();
+    expect(Object.keys(window.sessionStorage)).toEqual([]);
+  });
+
   it('réinitialise le brouillon local', () => {
-    render(<PatientFoodObservationPanel token="TOK_TEST" />);
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
 
     fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
     expect(screen.getByText(/· Je l’ai fait/i)).toBeTruthy();
