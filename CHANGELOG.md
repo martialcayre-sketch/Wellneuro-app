@@ -4,6 +4,36 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — SP-COP LOT-02, la minute d'après (2026-07-20)
+
+- **Écran de clôture de consultation** sur `/dashboard/copilote` : l'état de la
+  chaîne **Relu → Validé pour diffusion → Envoyé** pour le protocole de la
+  consultation qu'on vient de terminer, et ce qui la bloque. **Aucune migration.**
+- **Cet écran n'envoie rien et n'enregistre rien.** Il ne franchit aucune des
+  trois étapes : chacune se pose là où elle vit déjà
+  (`/api/praticien/protocoles`, `.../diffusion`). Dupliquer ces chemins d'écriture
+  ferait diverger deux vérités sur le même invariant. `pretPourDiffusion` est un
+  **constat**, jamais un déclencheur — un test vérifie que l'écran ne rend aucun
+  bouton ni formulaire, même chaîne complète.
+- **Une approbation ancrée sur une version supplantée est `caduque`, pas
+  absente** : l'étape a bien été franchie, mais le contenu a changé depuis. La
+  distinction est clinique — on ne redemande pas la même chose.
+- **Aucune étape n'est supposée franchie** : un statut `practitioner_reviewed`
+  sans date de relecture, une date illisible, ou une synthèse validée sans date
+  de validation ne valent pas franchissement. Un brouillon IA ou une synthèse
+  rejetée ne rend pas un document diffusable (garde de régime C3).
+- **Sans protocole enregistré**, les trois étapes sont `indisponible` et non
+  « à faire » : les afficher à faire laisserait croire qu'il suffit de cocher.
+- **Un échec de lecture n'est jamais présenté comme « tout est prêt »** — ce
+  serait une autorisation implicite à diffuser.
+- **Le chaînage append-only n'est pas réimplémenté** : la tête de fil des
+  versions et la tête de chaîne des approbations viennent de C2A
+  (`resolveActiveVersion`, `resolveActiveApproval`).
+- **Correction de périmètre (LOT-01)** : la page `/dashboard/copilote` listait
+  **tous** les patients actifs sans filtrer sur le praticien connecté. Elle
+  applique désormais `filtrePatientsDuPraticien`, comme les routes gardées en
+  #156, et la sélection d'un patient d'un autre praticien ne rend plus de fiche.
+
 ### Vague 2 — SP-TT LOT-01, lecture d'un état passé (2026-07-20)
 
 - **La fiche peut être relue à une date passée.** L'état est **recalculé** à
