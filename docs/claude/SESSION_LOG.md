@@ -1041,3 +1041,30 @@ conflit avec la session gatée.
 **Questions ouvertes** : G-TRUST-04 reste non levé, l'hébergement HDS est le
 point bloquant ; fil médecin entrant en attente d'arbitrage ; SP-SPI dépend
 de G4.
+
+## 2026-07-20 — Gates de la Vague 2 : G3, G1, et le préalable de G4
+
+**Décisions** : quatre PR mergées, deux migrations appliquées en production
+(vérifié : `relecture_notes` 17:34 UTC, `fil_card_rejections` 17:47, sans
+rollback). G3 — une note de relecture reçoit l'instant relu **dans son corps**,
+`cree_le` posé par la base : on écrit aujourd'hui à propos du passé, sans
+assouplir le refus `asOf` du cockpit. G1 — clé de carte livrée d'abord seule
+(#166), puis table et geste (#168). G4 — reclé des traces locales sur
+l'`idPatient` de session, à part de l'authentification.
+
+**Écarté** : l'unicité `(id_patient, carte_cle)` demandée par le dossier —
+incompatible avec l'append-only qui porte la réversibilité exigée ; écart
+documenté. Le jeton d'URL comme clé de stockage : c'est un secret d'accès.
+
+**Vérifié** : `test:worktree` complet avant chaque commit portant migration ;
+CI verte sur les quatre PR ; dérive schéma ↔ migrations nulle après fusion des
+deux modèles dans `schema.prisma`.
+
+**Prochaine action** : G4 lui-même — lien haché, 24 h, consommation unique,
+message unique au rejeu — avec revue de sécurité obligatoire avant merge.
+
+**Questions ouvertes** : quand les liens permanents déjà envoyés cessent d'être
+honorés, et la politique anti-énumération du canal de redemande — ni l'une ni
+l'autre n'est une décision technique. Le dossier des gates recensait deux
+traces locales ; il y en avait trois (`portail:derniere-visite`, en
+`localStorage`) : à corriger dans le dossier.
