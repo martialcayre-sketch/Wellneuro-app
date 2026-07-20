@@ -37,6 +37,67 @@ de la production.
   ouvrir une surface publique sur des adresses de personnes réelles reste une
   décision distincte, à consigner avec sa date et son périmètre.
 
+### Sécurité — isolation multi-praticien, trois routes fermées (2026-07-21)
+
+Aucune migration. Corrige trois écarts (E7, E8, E9) relevés par l'audit de
+conformité 5.0 du 2026-07-20. Garde réutilisée, déjà factorisée et appliquée
+ailleurs : `web/src/lib/praticien/appartenance.ts`.
+
+- **`POST /api/praticien/consultations` était le trou le plus grave** :
+  n'importe quel `idPatient` acceptait qu'on lève une révocation d'accès
+  existante et qu'on envoie le lien du portail au patient — sans vérifier
+  qu'il appartenait au praticien de la session. Guardé désormais comme
+  `token/route.ts`, avec un 404/403 distinct. Le `GET` (historique des
+  consultations) est scopé de même.
+- **`GET/PATCH/DELETE /api/praticien/patients`** renvoyaient, mutaient ou
+  désactivaient n'importe quel patient de la base, avec e-mail et téléphone.
+  Les quatre méthodes sont désormais scopées au praticien de la session
+  (paginé et non paginé).
+- **`GET /api/praticien/besoins`** renvoyait identité et couverture des besoins
+  pour tout `idPatient` fourni. Scopé (404 uniforme, pas de fuite d'existence).
+- **`CHECKLIST_ACTIVATION_G_TRUST_04.md`** corrigée : son exigence 3 annonçait
+  « 13 routes sur 31 » et classait à tort `consultations`/`patients` parmi les
+  gardées et `besoins` en « sans objet ». État réel documenté : 30 routes sur
+  33 portant de la donnée patient sont gardées ; 3 sont des catalogues globaux
+  sans objet. Le gate G-TRUST-04 reste non levé — l'isolation applicative ne
+  suffit pas à elle seule (pas de test d'isolation réel, pas de contrainte au
+  niveau base).
+
+### Gate G4 — activé en production (2026-07-21)
+
+Aucun code, aucune migration : bascule de drapeau et traçabilité.
+
+- **`WN_G4_LIEN_MAGIQUE=true`, Production seule**, sur le déploiement `092197a`.
+  Le lien magique — haché en base, 24 h, usage unique, rejeu refusé et tracé —
+  est actif ; le lien permanent continue de fonctionner, aucun patient n'a perdu
+  son accès.
+- **Vérifié sans toucher un dossier** : `/portail/lien/<jeton>` passe de 404 à
+  307 vers l'écran unique ; cet écran ne contient aucune occurrence de
+  « expiré », « consommé », « inconnu » ou « introuvable » ; le canal public de
+  redemande répond 404 ; `portail_magic_links` reste vide.
+- **Essai de bout en bout concluant** (`PAT006`, adresse du praticien) : un lien
+  émis, **le jeton absent de la base** (empreinte de 43 caractères seule),
+  consommé une fois, **5 rejeux refusés et tracés**, validité 24,00 h, origine
+  `praticien:…` enregistrée. Les sept invariants du gate tiennent en production.
+- **Runbook corrigé après cet essai** : il imposait la fixture `PAT_SEED_03`.
+  Or `michel.dogne@fictif.wellneuro.fr` **n'existe pas** — l'essai aurait validé
+  la route sans jamais tester l'envoi d'e-mail, soit la moitié de la chaîne. La
+  règle devient « une adresse relevant du praticien », jamais « la boîte d'un
+  tiers ».
+- **Le canal public de redemande reste fermé** (`WN_G4_REDEMANDE_PATIENT` non
+  posé) tant que le temps de réponse n'est pas égalisé et qu'aucune limitation
+  par IP n'existe.
+- **Corrigé pendant l'activation** : le drapeau avait d'abord été posé sur
+  **Preview et Production**. Les déploiements Preview lisant la base de
+  production — un seul projet Supabase, aucune préproduction —, des liens
+  magiques auraient pu être émis vers de vrais dossiers depuis n'importe quelle
+  URL de prévisualisation.
+- **Checklist G-TRUST-04 mise à jour** : la base de production contient des
+  dossiers de **personnes réelles** ayant consenti à une phase de test. Ce
+  consentement est une pièce du dossier RGPD ; il **ne satisfait pas
+  l'exigence 1** (hébergement HDS), qui reste ouverte. L'exigence 4 passe de
+  « partiel » à « partiel, amélioré ». **Le gate n'est pas levé.**
+
 ### Gate G4 — surface d'émission, et scission du drapeau (2026-07-20)
 
 Aucune migration. Prépare l'activation de G4, qui reste **éteint**.
