@@ -6,6 +6,42 @@
 > problème et les pistes ; **il ne tranche rien** — les décisions sont renvoyées à
 > une revue future (accès/identité médecin et régime de conservation à arbitrer).
 
+## Constat d'exécution (2026-07-20, clôture de la Vague 2)
+
+La Vague 2 devait livrer ce reliquat « sans pièces jointes ». Vérification faite
+dans le code, **le volet sortant est déjà livré et déjà sans pièces jointes —
+non par précaution, mais par construction** :
+
+- `ContenuBloc` (`web/src/lib/documents/types.ts`) ne porte que du **texte**, par
+  destinataire. Il n'existe **aucun champ de pièce jointe** dans le modèle
+  documentaire, et aucune notion de fichier dans tout `web/src/lib/documents/`.
+- `renderDocumentHtml(document, 'medecin', …)` (`rendu.ts`) échappe chaque
+  contenu (`escapeHtml`) et n'émet que du HTML autonome.
+- Le rendu médecin est **atteignable** depuis le cockpit praticien
+  (`DocumentsPanel.tsx`, `DocumentComposer.tsx`, destinataire `'medecin'`).
+
+Autrement dit, la garantie technique demandée en **question ouverte Q2** est
+déjà acquise pour le sortant : ajouter une pièce jointe exigerait d'étendre le
+type `ContenuBloc`, ce qu'aucun code ne fait. Ce n'est pas une politique qu'on
+peut contourner par erreur — c'est une absence de chemin.
+
+**Ce qui reste non livré est exactement le fil entrant** : recevoir et conserver
+la réponse du médecin. Et cela reste bloqué sur deux verrous distincts, dont
+aucun ne se lève par la mention « sans pièces jointes » :
+
+1. **Une migration Prisma** — un fil persisté est une nouvelle table, donc un
+   gate à confirmation explicite (garde-fou déjà posé plus bas dans ce
+   document).
+2. **Un arbitrage humain sur Q1 et Q3** — identité/accès du médecin, et
+   conservation (durée, base légale, effacement, journalisation). Ces réponses
+   engagent les données personnelles d'un tiers, le médecin, en plus de celles
+   du patient. Elles ne se déduisent d'aucun élément du dépôt.
+
+Décider ces points « au fil de l'implémentation » reviendrait à choisir une
+durée de conservation et un mode d'authentification par défaut d'arbitrage —
+c'est-à-dire à trancher sans le dire. Le reliquat reste donc **ouvert**, et la
+Vague 2 le referme comme tel plutôt que de livrer une demi-réponse.
+
 ## Audit express : livré vs théorique
 
 - **Livré (C3 V1, sans migration).** Le **rendu médecin sortant** : un document

@@ -954,3 +954,33 @@ la PR #154 porte le commit G2 en doublon.
 
 **Questions ouvertes** : backfill non compté (lecture prod bloquée) ; gates G1,
 G3 et G4 toujours ouverts.
+
+## 2026-07-20 — Clôture de la Vague 2 : ce qui est livré, ce qui reste bloqué
+
+**Livré** : discipline « une session = un worktree » posée dans `CLAUDE.md` et
+`ROLES_MACHINES.md` après deux collisions réelles (#159) ; lecture d'un état
+passé (#158) ; minute d'après SP-COP LOT-02 (#160) — état de la chaîne
+Relu → Validé → Envoyé, sans jamais la franchir ; clôture documentaire (#161).
+
+**Écarté** : dupliquer les chemins d'écriture de relecture et d'approbation dans
+la minute d'après — deux vérités sur le même invariant finissent par diverger,
+même argument que le refus de recopier les discordances dans le pré-vol.
+
+**Refusé** : modifier TRUST pour des « patients réels de test ». Un patient réel
+de test reste une personne réelle ; ses réponses sont des données de santé dès
+la première soumission. L'invariant du dépôt recopie le droit. Livré à la
+place : la checklist d'activation G-TRUST-04, dont **aucune** des sept exigences
+n'est satisfaite — le point bloquant est l'hébergement, pas le code.
+
+**Trouvé en lisant le code** : une carte du Fil n'a aucune identité (coût caché
+de G1) ; le couplage de G4 au jeton permanent est purement côté navigateur,
+vérification faite — le jeton n'entre jamais en base par le Journal Alimentaire.
+Les deux ouvrent un travail migration-free à faire avant les gates.
+
+**Prochaine action** : relancer une session avec `WN_ALLOW_PROTECTED_WRITE=1`
+depuis ce worktree pour G3, puis G1, puis G4. Dossier prêt :
+`docs/claude/GATES_VAGUE2_G1_G3_G4.md`.
+
+**Questions ouvertes** : arbitrage du fil médecin entrant (identité, conservation)
+— seul reliquat C3, le sortant étant déjà sans pièces jointes par construction ;
+isolation multi-praticien à 13 routes sur 31 ; SP-SPI en attente de G4.

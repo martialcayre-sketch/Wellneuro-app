@@ -4,6 +4,41 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — clôture : ce qui reste, et pourquoi (2026-07-20)
+
+Documentation seule, aucun code.
+
+- **Dossier des gates G1 / G3 / G4** (`docs/claude/GATES_VAGUE2_G1_G3_G4.md`) —
+  points d'ancrage vérifiés dans le code, migration envisagée, réversibilité et
+  arbitrages ouverts, pour que la session de levée soit courte. Deux constats
+  qui changent le coût :
+  - **G1** : une carte du Fil **n'a aucune identité**. Persister un refus
+    suppose d'abord de décider ce qui identifie une carte ; la clé composite
+    « type + patient + date » est fragile (la carte `reprise` est agrégée et sa
+    date peut être nulle). Remonter l'identifiant de la ligne source est
+    **migration-free** et peut être fait avant le gate.
+  - **G4** : le seul couplage au jeton permanent est **côté navigateur**
+    (brouillons locaux clés par le jeton). Vérifié : le panneau patient du
+    Journal Alimentaire ne persiste rien, et la route praticien rejette tout
+    épisode dont le `patientId` ne correspond pas à l'`idPatient`. Le jeton
+    n'entre jamais en base par cette voie. Reclé sur l'`idPatient` de session =
+    **migration-free**, à faire avant le gate.
+- **Checklist d'activation G-TRUST-04**
+  (`campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`)
+  — les sept exigences, une par une, avec leur état réel. **Aucune n'est
+  satisfaite** : le gate ne peut pas être levé par arbitrage partiel. Point
+  bloquant à instruire en premier : la **certification HDS** de l'hébergement,
+  à vérifier auprès des fournisseurs. Mesure de l'isolation multi-praticien :
+  **13 routes gardées sur 31**.
+- **Reliquat C3 — fil de correspondance médecin** : constat d'exécution ajouté
+  au cadrage. Le **volet sortant est déjà livré et déjà sans pièces jointes par
+  construction** — `ContenuBloc` ne porte que du texte, il n'existe aucun champ
+  de pièce jointe dans le modèle documentaire. La garantie technique demandée
+  en question ouverte Q2 est donc acquise pour le sortant. **Le fil entrant
+  reste ouvert** : il demande une migration ET un arbitrage humain sur
+  l'identité du médecin et la conservation des échanges — décider ces points
+  « au fil de l'implémentation » reviendrait à les trancher sans le dire.
+
 ### Vague 2 — SP-COP LOT-02, la minute d'après (2026-07-20)
 
 - **Écran de clôture de consultation** sur `/dashboard/copilote` : l'état de la
