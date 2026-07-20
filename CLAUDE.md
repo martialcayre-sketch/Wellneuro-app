@@ -27,6 +27,37 @@ Priorité absolue : stabilité de l'application en production, pas de nouvelle m
 - **Pas de migration Prisma sans demande explicite** : ne jamais lancer `prisma migrate dev`, `prisma db push`, ou modifier `schema.prisma` sans confirmation explicite dans la conversation.
 - **Pas de SQL destructif** sans confirmation explicite (DROP, DELETE sans WHERE, TRUNCATE).
 - **Pas de modification de la logique clinique ou des seuils** sans demande explicite et documentation dans `CHANGELOG.md`.
+- **La base de production ne se modifie que par une migration relue** : migration committée → PR relue → merge sur `main` → `web/scripts/vercel-build.sh`. Aucun autre chemin.
+
+## Lire la base de production
+
+Utiliser l'outil MCP Supabase `execute_sql` — jamais `psql`, ni une commande
+Bash. Un hook (`.claude/hooks/guard-supabase-mcp.mjs`) y autorise les lectures
+sans interruption et refuse toute écriture ou DDL ; les outils MCP mutants
+(`apply_migration`, `*_branch`, `pause_project`…) sont refusés par
+`.claude/settings.json`. Vérifier une migration déployée coûte donc une requête
+et rien d'autre :
+
+```sql
+SELECT migration_name, finished_at, rolled_back_at FROM _prisma_migrations
+ORDER BY finished_at DESC NULLS FIRST LIMIT 5;
+```
+
+## Garde-fous d'écriture
+
+Les hooks rendent trois verdicts, plus un mur unique :
+
+- **refus** — `.env*`, `.git/`, `node_modules/` ; commandes destructives ou
+  exposant des secrets. Sans dérogation pour les fichiers.
+- **demande** — `schema.prisma`, `prisma/migrations/`, `supabase/migrations/` ;
+  `prisma migrate`, `supabase db push`, push forcé. Autorisation en un clic,
+  dans la session : c'est elle qui matérialise la « confirmation explicite »
+  exigée plus haut.
+- **silence** — tout le reste.
+
+Il n'existe plus de variable d'environnement désactivant la protection des
+fichiers : `WN_ALLOW_PROTECTED_WRITE` neutralisait le hook pour la session
+entière et non pour la migration qui l'avait motivée.
 
 ## Données patients
 
@@ -60,12 +91,24 @@ Priorité absolue : stabilité de l'application en production, pas de nouvelle m
 cd web && npm run dev              # serveur local
 cd web && npx prisma studio        # inspection DB en lecture seule (ne pas laisser ouvert en prod)
 cd web && npx prisma generate      # régénérer le client après modif du schéma
-cd web && npm run type-check       # vérification TypeScript
+cd web && npm run check            # T1 : type-check + Vitest + anti-secrets indexés (~10 s)
 cd web && npm test                 # tests unitaires Vitest (n'inclut PAS les E2E)
 cd web && npm run test:e2e         # parcours E2E Playwright seuls (démarre next dev)
 cd web && npm run test:worktree    # réplique locale du job CI verify, E2E inclus
-bash scripts/check_no_secrets.sh  # contrôle anti-secrets
+bash scripts/check_no_secrets.sh          # anti-secrets, dépôt entier
+bash scripts/check_no_secrets.sh --staged # anti-secrets, lignes indexées seules
 ```
+
+### Trois paliers de validation
+
+| Palier | Commande | Durée | Quand |
+|---|---|---|---|
+| T1 | `npm run check` | ~10 s | après chaque édition |
+| T2 | `npm run test:worktree -- --fast` | ~1 min 20 | avant tout commit UI ou API |
+| T3 | `npm run test:worktree` | ~5 min | avant une PR portant migration, scoring ou clinique |
+
+Ne jamais relancer une suite pour en relire la sortie : rediriger une fois vers
+un fichier (`--reporter=dot`), puis relire ce fichier.
 
 `test:worktree` provisionne un PostgreSQL éphémère et exporte son propre
 `NEXTAUTH_SECRET` de test : aucun secret ni base à préparer. Linux et macOS pris
