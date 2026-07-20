@@ -985,6 +985,38 @@ depuis ce worktree pour G3, puis G1, puis G4. Dossier prêt :
 — seul reliquat C3, le sortant étant déjà sans pièces jointes par construction ;
 isolation multi-praticien à 13 routes sur 31 ; SP-SPI en attente de G4.
 
+## 2026-07-20 — Garde-fous : trois verdicts au lieu d'un mur (PR #162)
+
+**Déclencheur** : `WN_ALLOW_PROTECTED_WRITE=1` restait actif depuis le gate G2
+du matin — la variable désactive la session, pas l'action.
+
+**Décidé** : hooks à trois verdicts. Schéma et migrations passent du blocage dur
+à `permissionDecision: ask` ; la variable est supprimée. Le niveau refus lit la
+commande brute, le niveau demande la commande aux littéraux masqués — fin du
+faux positif sur les corps de PR. Le MCP Supabase, qui atteignait la production
+sans aucun hook, est limité aux lectures ; neuf outils mutants refusés.
+
+**Écarté** : découper le CI en jobs parallèles — changerait les noms des checks
+requis.
+
+**Vérifié** : `assessment_episodes` est VIDE ; le backfill G2 n'a rien rattaché.
+
+**Prochaine action** : G1. La consigne `WN_ALLOW_PROTECTED_WRITE=1` de l'entrée
+précédente est caduque.
+
+**Ouvert** : raccourci CI documentaire jamais exercé ; `_prisma_migrations` ment
+sur `r8_lite_consent_fields`.
+
+### Correctif (même session, après clôture)
+
+**Le raccourci CI a été exercé** : PR #164, documentaire, `verify` vert en **26 s**
+contre 5 min 23 s. Anti-secrets, audit campagnes et certification scoring ont
+tourné ; tout le reste sauté. Le point n'est plus ouvert.
+
+**G1 est déjà pris** : worktree `gates-g3-g1-g4` verrouillé sur
+`feat/g1-cle-carte-fil`, basé sur `ed3bfe0`. Ne pas le rouvrir depuis une autre
+session — c'est la collision de ce matin. Reprise libre : **G4**.
+
 ## 2026-07-20 — Isolation multi-praticien : 12 routes fermées
 
 **Décisions** : la garde d'appartenance (#156) est étendue à 12 routes
