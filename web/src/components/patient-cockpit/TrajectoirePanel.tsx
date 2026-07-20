@@ -101,7 +101,9 @@ export function TrajectoirePanel({ trajectoire }: { trajectoire: Trajectoire | n
                     {/* Jamais la couleur seule : la mise en avant est aussi écrite. */}
                     {misEnAvant && <span className="text-primary"> · repère sélectionné</span>}
                   </p>
-                  <span className="text-xs text-muted-foreground">version de score : {cycle.versionScore}</span>
+                  <span className="text-xs text-muted-foreground">
+                    version de score : {cycle.versionScore ?? 'inconnue'}
+                  </span>
                 </div>
                 <ul className="mt-2 space-y-1">
                   {cycle.jalons.map((jalon) => (
@@ -188,6 +190,12 @@ export function TrajectoirePanel({ trajectoire }: { trajectoire: Trajectoire | n
               <p className="mt-1 text-foreground">
                 Non comparable : les cycles n’utilisent pas la même version de score (score recalibré). Aucun écart
                 n’est calculé entre eux.
+              </p>
+            ) : trajectoire.comparaison.raison === 'version_inconnue' ? (
+              <p className="mt-1 text-foreground">
+                Non comparable : la version de score d’au moins un cycle est inconnue (mesure antérieure à
+                l’enregistrement de la version). Elle n’est pas supposée identique à la version courante, donc aucun
+                écart n’est calculé entre ces cycles.
               </p>
             ) : (
               <p className="mt-1 text-muted-foreground">Comparaison disponible dès un 2ᵉ cycle confirmé.</p>

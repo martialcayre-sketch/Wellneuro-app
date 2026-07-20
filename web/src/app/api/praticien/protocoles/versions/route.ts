@@ -14,6 +14,7 @@ import {
   deriveVersionId,
   isClinicalChange,
   resolveActiveVersion,
+  resolveCycleId,
   toDraftCreateInput,
   toEpisodeCreateInput,
 } from '@/lib/protocol/versioning';
@@ -277,10 +278,23 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     const versionId = deriveVersionId(protocolDraftId, draft.inputHash);
     const supersedesDraftId = active?.id ?? null;
 
+    // Identité de cycle (gate G2), résolue AVANT la transaction : un T0 ouvre son
+    // cycle, un jalon postérieur rejoint le dernier T0 antérieur du patient.
+    const cycleId = resolveCycleId({
+      episode,
+      t0Candidates:
+        episode.milestone === 'T0'
+          ? []
+          : await prisma.assessmentEpisode.findMany({
+              where: { idPatient: episode.patientId, milestone: 'T0' },
+              select: { id: true, cycleId: true, confirmedAt: true },
+            }),
+    });
+
     await prisma.$transaction([
       prisma.assessmentEpisode.upsert({
         where: { id: episode.assessmentEpisodeId },
-        create: toEpisodeCreateInput(episode),
+        create: toEpisodeCreateInput(episode, { cycleId }),
         update: {},
       }),
       prisma.protocolDraft.upsert({

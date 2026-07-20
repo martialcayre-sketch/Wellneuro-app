@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
-    assessmentEpisode: { upsert: vi.fn() },
+    assessmentEpisode: { upsert: vi.fn(), findMany: vi.fn() },
     protocolDraft: { upsert: vi.fn(), findMany: vi.fn() },
     $transaction: vi.fn().mockResolvedValue([]),
   },
@@ -54,6 +54,7 @@ describe('POST /api/praticien/protocoles', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.$transaction.mockResolvedValue([]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
   });
 
   it('refuse un praticien non authentifié (401)', async () => {
@@ -83,6 +84,55 @@ describe('POST /api/praticien/protocoles', () => {
           contractVersion: 'c1-protocol-draft-v1',
         }),
       }),
+    );
+  });
+
+  // Gate G2 — identité de cycle estampillée à l'écriture.
+  it('un T0 ouvre son propre cycle, sans interroger la base', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    await POST(postRequest({ episode, decisionCard, draft }));
+    expect(prisma.assessmentEpisode.findMany).not.toHaveBeenCalled();
+    expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ cycleId: 'EPI_1', versionScore: 'v1' }),
+      }),
+    );
+  });
+
+  it('un jalon postérieur rejoint le dernier T0 antérieur du patient', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0_A', cycleId: 'EPI_T0_A', confirmedAt: new Date('2025-11-01T00:00:00.000Z') },
+      { id: 'EPI_T0_B', cycleId: 'EPI_T0_B', confirmedAt: new Date('2026-01-01T00:00:00.000Z') },
+      // T0 postérieur au jalon : ne doit jamais l'absorber.
+      { id: 'EPI_T0_C', cycleId: 'EPI_T0_C', confirmedAt: new Date('2026-06-01T00:00:00.000Z') },
+    ]);
+    await POST(
+      postRequest({
+        episode: { ...episode, assessmentEpisodeId: 'EPI_J21', milestone: 'J21' },
+        decisionCard,
+        draft,
+      }),
+    );
+    expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ create: expect.objectContaining({ cycleId: 'EPI_T0_B' }) }),
+    );
+  });
+
+  it('un jalon sans aucun T0 antérieur reste non rattaché (cycleId null)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      { id: 'EPI_T0_C', cycleId: 'EPI_T0_C', confirmedAt: new Date('2026-06-01T00:00:00.000Z') },
+    ]);
+    await POST(
+      postRequest({
+        episode: { ...episode, assessmentEpisodeId: 'EPI_J21', milestone: 'J21' },
+        decisionCard,
+        draft,
+      }),
+    );
+    expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ create: expect.objectContaining({ cycleId: null }) }),
     );
   });
 

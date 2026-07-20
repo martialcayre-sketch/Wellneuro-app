@@ -4,6 +4,32 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — gate G2 : identité de cycle des épisodes (C2B, 2026-07-20)
+
+- **Migration additive** `20260719120000_c2b_cycle_identity_v1` : deux colonnes
+  **nullables** sur `assessment_episodes` (`cycle_id`, `version_score`) et un
+  index `c2b_episode_cycle_idx`. Aucun DROP, aucun renommage, aucune colonne
+  existante modifiée. Backfill : `version_score = 'v1'` (seule version jamais
+  émise, et la table lui est postérieure), un T0 ouvre son propre cycle, un
+  jalon postérieur rejoint le dernier T0 du **même** patient antérieur ou égal à
+  sa confirmation — une ligne sans T0 antérieur reste `NULL`, jamais devinée.
+- **La garde clinique A8-3 devient déclenchable.** Le `versionScore` était
+  recalculé à la lecture depuis la constante courante : `versions.size > 1` ne
+  pouvait jamais être vrai, donc « jamais de comparaison hors version
+  identique » ne protégeait rien. La version est désormais **figée à la
+  confirmation** et lue telle quelle ; une version nulle n'est **jamais**
+  assimilée à la version courante (nouvelle raison `version_inconnue`, bloc
+  « non comparable » dédié, et « version de score : inconnue » à l'affichage).
+- Les épisodes portent une **clé de cycle stockée** : elle prime sur le
+  rattachement par date, qui reste le repli pour les lignes qui n'en ont pas.
+- **Écarté** : la colonne `instrument_id`. Le score « Mon équilibre » est un
+  composite pondéré par strate, pas un instrument parmi d'autres — la colonne
+  n'aurait rien à contenir et aurait donné l'illusion d'une garde. Le vrai
+  risque de comparabilité (couvertures de questionnaires différentes entre
+  cycles) se calcule à la lecture et ne demande aucune migration.
+- Vérifié par `npm run test:worktree -- --fast` : migration appliquée sur
+  PostgreSQL éphémère, aucune dérive schéma ↔ migrations, 41 E2E verts.
+
 ### Vague 2 — dette de tests du Fil du jour (SP-FIL, 2026-07-19)
 
 - **`FilDuJour` n'avait aucun test** alors qu'il est l'accueil praticien depuis

@@ -24,7 +24,7 @@ function request(query = 'idPatient=PAT_1'): Request {
 describe('GET /api/praticien/trajectoire', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_1' });
+    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_1', praticienEmail: 'p@wellneuro.fr' });
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
   });
@@ -62,7 +62,13 @@ describe('GET /api/praticien/trajectoire', () => {
   it('un épisode T0 mesuré → un cycle avec jalons datés (200)', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.assessmentEpisode.findMany.mockResolvedValue([
-      { id: 'ep_T0', milestone: 'T0', confirmedAt: new Date('2026-01-01T00:00:00.000Z') },
+      {
+        id: 'ep_T0',
+        milestone: 'T0',
+        confirmedAt: new Date('2026-01-01T00:00:00.000Z'),
+        cycleId: 'ep_T0',
+        versionScore: 'v1',
+      },
     ]);
     prisma.questionnaireReponse.findMany.mockResolvedValue([
       { idQuestionnaire: 'Q_SOM_06', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW } },
@@ -75,5 +81,36 @@ describe('GET /api/praticien/trajectoire', () => {
     expect(json.trajectoire.cycles[0].cycleId).toBe('ep_T0');
     expect(json.trajectoire.cycles[0].versionScore).toBe('v1');
     expect(json.trajectoire.comparaison.raison).toBe('un_seul_cycle');
+  });
+
+  // Gate G2 : la route LIT la version stockée, elle ne la déduit plus de la
+  // constante courante. Une ligne héritée ressort donc « inconnue ».
+  it('épisode hérité sans identité de cycle → version inconnue, cycle non deviné (200)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.assessmentEpisode.findMany.mockResolvedValue([
+      {
+        id: 'ep_legacy',
+        milestone: 'T0',
+        confirmedAt: new Date('2026-01-01T00:00:00.000Z'),
+        cycleId: null,
+        versionScore: null,
+      },
+    ]);
+
+    const res = await GET(request());
+    const json = (await res.json()) as {
+      trajectoire: { index: { cycleId: string | null }[]; cycles: { cycleId: string; versionScore: string | null }[] };
+    };
+    expect(res.status).toBe(200);
+    expect(json.trajectoire.cycles[0].versionScore).toBeNull();
+    expect(json.trajectoire.cycles[0].cycleId).toBe('ep_legacy');
+    expect(json.trajectoire.index[0].cycleId).toBeNull();
+  });
+
+  it('sélectionne bien l’identité de cycle stockée', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    await GET(request());
+    const select = prisma.assessmentEpisode.findMany.mock.calls[0]?.[0]?.select;
+    expect(select).toMatchObject({ cycleId: true, versionScore: true });
   });
 });

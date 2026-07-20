@@ -22,7 +22,7 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
 
   it('un cycle : jalons datés, « non mesuré », et comparaison différée au 2e cycle', () => {
     const trajectoire: Trajectoire = {
-      index: [{ milestone: 'T0', date: '2026-01-01T00:00:00.000Z' }],
+      index: [{ milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_T0' }],
       cycles: [
         {
           cycleId: 'ep_T0',
@@ -63,9 +63,9 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
 describe('TrajectoirePanel — index navigable (Vague 2)', () => {
   const deuxCycles: Trajectoire = {
     index: [
-      { milestone: 'T0', date: '2026-01-01T00:00:00.000Z' },
-      { milestone: 'J21', date: '2026-01-22T00:00:00.000Z' },
-      { milestone: 'T0', date: '2026-03-01T00:00:00.000Z' },
+      { milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_a' },
+      { milestone: 'J21', date: '2026-01-22T00:00:00.000Z', cycleId: 'ep_a' },
+      { milestone: 'T0', date: '2026-03-01T00:00:00.000Z', cycleId: 'ep_b' },
     ],
     cycles: [
       {
@@ -124,7 +124,7 @@ describe('TrajectoirePanel — index navigable (Vague 2)', () => {
   it('repère antérieur à tout T0 : le panneau le dit, il n’invente aucun rattachement', () => {
     const trajectoire: Trajectoire = {
       ...deuxCycles,
-      index: [{ milestone: 'J21', date: '2025-12-01T00:00:00.000Z' }],
+      index: [{ milestone: 'J21', date: '2025-12-01T00:00:00.000Z', cycleId: null }],
     };
     render(<TrajectoirePanel trajectoire={trajectoire} />);
     const index = screen.getByRole('navigation', { name: /Index de la Spirale/i });
@@ -184,6 +184,21 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
   it('n’invente aucun écart entre cycles et le déclare', () => {
     render(<TrajectoirePanel trajectoire={comparable} />);
     expect(screen.getByText(/Aucun écart n’est calculé entre cycles/i)).toBeTruthy();
+  });
+
+  it('version inconnue : aucune grille, et le panneau dit « inconnue » plutôt que la version courante (gate G2)', () => {
+    render(
+      <TrajectoirePanel
+        trajectoire={{
+          ...comparable,
+          cycles: [comparable.cycles[0], { ...comparable.cycles[1], versionScore: null }],
+          comparaison: { disponible: false, raison: 'version_inconnue' },
+        }}
+      />,
+    );
+    expect(screen.queryByRole('table')).toBeNull();
+    expect(screen.getByText(/version de score : inconnue/i)).toBeTruthy();
+    expect(screen.getByText(/version de score d’au moins un cycle est inconnue/i)).toBeTruthy();
   });
 
   it('versions différentes : aucune grille, seulement le bloc « non comparable » (A8-3)', () => {
