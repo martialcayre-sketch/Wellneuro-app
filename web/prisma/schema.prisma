@@ -44,6 +44,7 @@ model Patient {
   protocolDiffusionApprovals ProtocolDiffusionApproval[]
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
+  portailMagicLinks          PortailMagicLink[]
 
   @@map("patients")
 }
@@ -726,10 +727,10 @@ model ProtocolDraft {
   createdAt             DateTime  @default(now()) @map("created_at")
   updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  patient             Patient                     @relation(fields: [idPatient], references: [idPatient])
-  episode             AssessmentEpisode?          @relation(fields: [assessmentEpisodeId], references: [id])
-  checkins            ProtocolCheckin[]
-  diffusionApprovals  ProtocolDiffusionApproval[]
+  patient            Patient                     @relation(fields: [idPatient], references: [idPatient])
+  episode            AssessmentEpisode?          @relation(fields: [assessmentEpisodeId], references: [id])
+  checkins           ProtocolCheckin[]
+  diffusionApprovals ProtocolDiffusionApproval[]
 
   @@index([idPatient, createdAt], map: "c2a_draft_patient_created_idx")
   @@index([decisionCardId], map: "c2a_draft_decision_card_idx")
@@ -847,4 +848,40 @@ model RelectureNote {
 
   @@index([idPatient, creeLe], map: "sptt_relecture_note_patient_idx")
   @@map("relecture_notes")
+}
+
+// Lien magique d'accès au portail patient (IDP LOT-01, gate G4).
+//
+// Remplace PROGRESSIVEMENT le jeton permanent `patients.access_token`, qui est
+// conservé : les deux chemins coexistent pendant la bascule, c'est une
+// exigence du registre. Cette table n'enlève rien, elle ajoute une entrée.
+//
+// LE JETON N'EST PAS ICI. Seule son empreinte HMAC-SHA256 est stockée
+// (`lib/portail/lienMagique.ts`, `empreinteJeton`) : un dump de la base ne
+// permet donc pas d'ouvrir un espace patient. L'unicité sert la recherche par
+// empreinte et interdit la collision.
+//
+// USAGE UNIQUE : `consomme_le` passe de null à un instant, une seule fois, dans
+// la même transaction que la lecture d'état — sinon deux requêtes concurrentes
+// consommeraient le même lien. Le rejeu n'est pas seulement refusé, il est
+// TRACÉ : `rejeux_refuses` et `derniere_tentative_le` gardent la preuve en base,
+// là où un log Vercel serait purgé.
+//
+// Aucune ligne ne signifie « aucun lien magique émis » — l'état de tous les
+// patients avant ce gate, et l'état attendu tant que le drapeau est éteint.
+model PortailMagicLink {
+  id                String    @id @default(cuid()) @map("id")
+  idPatient         String    @map("id_patient")
+  jetonEmpreinte    String    @unique @map("jeton_empreinte")
+  expireLe          DateTime  @map("expire_le")
+  consommeLe        DateTime? @map("consomme_le")
+  creePar           String    @map("cree_par")
+  creeLe            DateTime  @default(now()) @map("cree_le")
+  rejeuxRefuses     Int       @default(0) @map("rejeux_refuses")
+  derniereTentative DateTime? @map("derniere_tentative_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, creeLe], map: "g4_magic_link_patient_idx")
+  @@map("portail_magic_links")
 }

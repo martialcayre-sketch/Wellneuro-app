@@ -115,6 +115,10 @@ export default defineConfig({
     // PLAYWRIGHT_BASE_URL explicite), sinon Next.js retomberait sur :3000.
     command: `npm run ${webServerMode} -- -p ${new URL(baseURL).port || '3000'}`,
     url: baseURL,
+    // Gate G4 allumé pour les tests seulement. Le drapeau reste absent de
+    // l'environnement Vercel : le lien magique est donc couvert ici, et éteint
+    // en production — c'est ce que demande le NO-GO du registre.
+    env: { ...process.env, WN_G4_LIEN_MAGIQUE: 'true' } as Record<string, string>,
     // En mode start, exiger un port libre : réutiliser un serveur déjà lancé
     // risquerait de tester silencieusement un `next dev` (autre build, voire
     // autre branche) à la place du build de production attendu.

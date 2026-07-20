@@ -3,20 +3,23 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
-import { sendPortailLinkEmail } from '@/lib/consultation/email';
+import { buildMagicLinkUrl, sendMagicLinkEmail, sendPortailLinkEmail } from '@/lib/consultation/email';
 import { buildPortalUrl } from '@/lib/consultation/portal-access';
+import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { isG4LienMagiqueEnabled } from '@/lib/portail/featureFlag';
+import { creerJeton, empreinteJeton, expirationDepuis, originePraticien } from '@/lib/portail/lienMagique';
 
 export type TokenActionResponse = {
   success: boolean;
   accessToken?: string;
   lien?: string;
   error?: string;
-  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'exception';
+  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'forbidden' | 'exception';
 };
 
 type TokenPayload = {
   idPatient?: string;
-  action?: 'issue' | 'resend' | 'lien';
+  action?: 'issue' | 'resend' | 'lien' | 'lien_magique';
 };
 
 // POST /api/praticien/token — émet (ou réémet) et envoie le lien du portail
@@ -38,9 +41,32 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
   }
 
   const idPatient = (payload.idPatient ?? '').trim();
-  const action = payload.action === 'resend' ? 'resend' : payload.action === 'lien' ? 'lien' : 'issue';
+  const action =
+    payload.action === 'resend' ? 'resend'
+    : payload.action === 'lien' ? 'lien'
+    : payload.action === 'lien_magique' ? 'lien_magique'
+    : 'issue';
   if (!idPatient) {
     return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'Identifiant patient requis.' }, { status: 400 });
+  }
+
+  // Garde d'appartenance, posée ici : cette route était la seule laissée sans
+  // garde en #167, réservée à ce gate parce qu'elle en est un fichier cœur.
+  // Elle couvre les trois actions historiques comme la nouvelle — émettre ou
+  // renvoyer un lien d'accès au patient d'un autre praticien serait le pire
+  // trou de la surface praticien.
+  const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+  if (verdict === 'introuvable') {
+    return NextResponse.json(
+      { success: false, reason: 'patient_not_found', error: 'Patient introuvable ou inactif.' },
+      { status: 404 }
+    );
+  }
+  if (verdict === 'autre_praticien') {
+    return NextResponse.json(
+      { success: false, reason: 'forbidden', error: 'Patient non accessible.' },
+      { status: 403 }
+    );
   }
 
   try {
@@ -50,6 +76,42 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
         { success: false, reason: 'patient_not_found', error: 'Patient introuvable ou inactif.' },
         { status: 404 }
       );
+    }
+
+    // Lien magique (gate G4) : n'écrit pas dans `patients`, ne touche pas au
+    // jeton permanent. Les deux chemins coexistent — c'est l'exigence du
+    // registre, et c'est ce qui rend cette PR réversible.
+    if (action === 'lien_magique') {
+      if (!isG4LienMagiqueEnabled()) {
+        return NextResponse.json(
+          { success: false, reason: 'invalid_payload', error: 'Lien magique non activé.' },
+          { status: 404 }
+        );
+      }
+      if (patient.accessTokenRevoked) {
+        return NextResponse.json(
+          { success: false, reason: 'patient_not_found', error: 'Accès portail révoqué.' },
+          { status: 404 }
+        );
+      }
+      const jeton = creerJeton();
+      await prisma.portailMagicLink.create({
+        data: {
+          idPatient,
+          jetonEmpreinte: empreinteJeton(jeton),
+          expireLe: expirationDepuis(new Date()),
+          creePar: originePraticien(emailPraticien(session) ?? ''),
+        },
+      });
+      const lienMagique = buildMagicLinkUrl(jeton);
+      try {
+        await sendMagicLinkEmail(patient.email, patient.prenom, lienMagique);
+      } catch (e) {
+        console.error('[praticien/token lien_magique] email:', (e as Error).message);
+      }
+      // Le jeton est renvoyé au praticien qui vient de le faire émettre pour
+      // son propre patient — même exposition que `action: 'lien'` aujourd'hui.
+      return NextResponse.json({ success: true, lien: lienMagique });
     }
 
     let accessToken = patient.accessToken ?? '';
@@ -96,6 +158,16 @@ export async function DELETE(req: Request): Promise<NextResponse<TokenActionResp
   const idPatient = (new URL(req.url).searchParams.get('idPatient') ?? '').trim();
   if (!idPatient) {
     return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'Identifiant patient requis.' }, { status: 400 });
+  }
+
+  // Révoquer l'accès au portail du patient d'un autre praticien serait une
+  // coupure de soin à distance : la garde vaut ici autant que sur le POST.
+  const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+  if (verdict === 'introuvable') {
+    return NextResponse.json({ success: false, reason: 'patient_not_found', error: 'Patient introuvable.' }, { status: 404 });
+  }
+  if (verdict === 'autre_praticien') {
+    return NextResponse.json({ success: false, reason: 'forbidden', error: 'Patient non accessible.' }, { status: 403 });
   }
 
   try {
