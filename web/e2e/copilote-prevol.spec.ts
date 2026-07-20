@@ -59,3 +59,37 @@ test.describe('Consultation copilote — pré-vol', () => {
     ).toBe(true);
   });
 });
+
+test.describe('Lecture d’un état passé (SP-TT)', () => {
+  test('propose des repères datés et bande la lecture comme passée', async ({ page, context }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+
+    const requetesMutantes: string[] = [];
+    page.on('request', (requete) => {
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(requete.method())) {
+        requetesMutantes.push(`${requete.method()} ${requete.url()}`);
+      }
+    });
+
+    await page.goto(`/dashboard/copilote?idPatient=${PATIENT_ID}`);
+
+    const section = page.getByRole('region', { name: /Lire l’état de la fiche à une date passée/ });
+    await expect(section).toBeVisible();
+
+    // Les repères sont bornés aux événements réels du patient : ce sont des
+    // boutons, pas un sélecteur de date libre.
+    const repere = section.getByRole('button').first();
+    expect((await repere.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await repere.click();
+
+    // Bandeau non ambigu : on ne doit jamais confondre ce qu'on lit avec l'actuel.
+    await expect(page.getByText(/ce n’est pas l’état actuel du patient/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Revenir au présent' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Revenir au présent' }).click();
+    await expect(page.getByText(/ce n’est pas l’état actuel du patient/)).toHaveCount(0);
+
+    // Lire le passé n'écrit jamais.
+    expect(requetesMutantes).toEqual([]);
+  });
+});

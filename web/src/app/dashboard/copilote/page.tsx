@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { PreVolPanel } from '@/components/copilote/PreVolPanel';
+import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
 
 // Consultation copilote — pré-vol T-10 min (SP-COP LOT-01).
 // L'entrée de rail était réservée dans la maquette 5.0 sans écran derrière ;
@@ -33,6 +34,7 @@ export default async function CopilotePage({
           </p>
         </div>
         {patient && <PreVolPanel idPatient={idValide} />}
+        {patient && <LectureEtatPassePanel idPatient={idValide} />}
         <Link
           href="/dashboard/copilote"
           className="inline-flex min-h-11 w-fit items-center rounded-lg border border-border px-3 py-1 text-sm text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"

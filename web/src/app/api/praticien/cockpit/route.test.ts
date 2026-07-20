@@ -13,6 +13,8 @@ const { getServerSession, prisma, writes } = vi.hoisted(() => {
       patient: { findUnique: vi.fn(), findFirst: vi.fn(), update: writes.patientUpdate },
       questionnaireReponse: { findMany: vi.fn(), create: writes.responseCreate },
       consultation: { findFirst: vi.fn(), update: writes.consultationUpdate },
+      // Lu uniquement en lecture d'un état passé (SP-TT).
+      assessmentEpisode: { findMany: vi.fn() },
     },
   };
 });
@@ -184,5 +186,60 @@ describe('/api/praticien/cockpit', () => {
     expect(writes.patientUpdate).not.toHaveBeenCalled();
     expect(writes.responseCreate).not.toHaveBeenCalled();
     expect(writes.consultationUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('/api/praticien/cockpit — lecture d’un état passé (SP-TT)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findFirst.mockResolvedValue(patient);
+    prisma.questionnaireReponse.findMany.mockResolvedValue(responses);
+    prisma.consultation.findFirst.mockResolvedValue({ anamnese: {} });
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+  });
+
+  it('sans `asOf`, rien ne change : la lecture reste au présent', async () => {
+    const res = await GET(getRequest('idPatient=PAT_TEST'));
+    const payload = await res.json();
+    expect(res.status).toBe(200);
+    expect(payload.asOf ?? null).toBeNull();
+    // Les épisodes ne sont même pas lus tant qu'aucune date n'est demandée.
+    expect(prisma.assessmentEpisode.findMany).not.toHaveBeenCalled();
+    expect(payload.proposal.candidateResponses).toHaveLength(2);
+  });
+
+  it('à un repère connu, aucune donnée postérieure ne subsiste', async () => {
+    const res = await GET(getRequest('idPatient=PAT_TEST&asOf=2026-01-01T00:00:00.000Z'));
+    const payload = await res.json();
+    expect(res.status).toBe(200);
+    expect(payload.asOf).toBe('2026-01-01T00:00:00.000Z');
+    // La réponse du 22/01 n'existait pas le 01/01 : elle ne doit pas apparaître.
+    expect(payload.proposal.candidateResponses).toHaveLength(1);
+  });
+
+  it('une date arbitraire est refusée, jamais ramenée au présent en silence', async () => {
+    const res = await GET(getRequest('idPatient=PAT_TEST&asOf=2026-01-15T00:00:00.000Z'));
+    expect(res.status).toBe(400);
+    expect((await res.json()).reason).toBe('invalid_payload');
+  });
+
+  it('une date illisible est refusée', async () => {
+    const res = await GET(getRequest('idPatient=PAT_TEST&asOf=hier'));
+    expect(res.status).toBe(400);
+  });
+
+  it('aucune écriture n’est possible en mode passé', async () => {
+    const res = await POST(
+      new Request('http://localhost/api/praticien/cockpit?asOf=2026-01-01T00:00:00.000Z', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: 'PAT_TEST', milestone: 'T0' }),
+      }),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/état passé/);
+    // Le refus intervient AVANT toute lecture, donc avant toute écriture.
+    expect(prisma.patient.findFirst).not.toHaveBeenCalled();
   });
 });

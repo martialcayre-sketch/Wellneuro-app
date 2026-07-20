@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Lecture d'un état passé (paramètre asOf)"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "aucun"
 ---
 
@@ -75,4 +75,17 @@ passé, aucune action d'écriture n'est possible.
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-07-20, sans migration.
+
+Écart assumé par rapport au périmètre compilé : les bornes de `asOf` ne sont pas
+« les dates de jalons » mais **tous les repères réels du patient** — épisodes
+confirmés *et* réponses reçues, exposés par `GET /api/praticien/reperes`. Motif :
+`assessment_episodes` est vide en production, une borne limitée aux jalons aurait
+rendu la fonction inutilisable le jour de sa livraison. L'intention est tenue —
+la date reste bornée à des événements réels, jamais libre.
+
+Le verrouillage des écritures est porté par le **serveur** (`POST` refuse tout
+`asOf`, avant même de lire), et non par la désactivation des actions dans
+l'écran : la garantie ne dépend donc pas de l'interface. Le montage dans le
+cockpit lui-même reste à faire — la lecture passée est exposée sur la page
+Consultation copilote, surface déjà entièrement en lecture seule.

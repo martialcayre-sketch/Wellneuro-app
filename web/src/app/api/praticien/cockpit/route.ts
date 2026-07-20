@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { construireReperes, resoudreAsOf, tronquerA } from '@/lib/praticien/lectureAsOf';
 import { confirmAssessmentEpisode } from '@/lib/clinical-engine/assessmentEpisode';
 import { buildClinicalReview } from '@/lib/clinical-engine/clinicalReview';
 import { buildClinicalSnapshot } from '@/lib/clinical-engine/clinicalSnapshot';
@@ -32,6 +33,9 @@ export type CockpitRuntimeApiResponse =
       status: 'proposal_required';
       proposal: ProposedAssessmentEpisode;
       proposalHash: string;
+      // Instant de lecture quand la fiche est relue à une date passée (SP-TT).
+      // `null` ou absent = état présent, comportement historique.
+      asOf?: string | null;
     }
   | {
       status: 'ready';
@@ -59,7 +63,10 @@ function unavailable(reason: CockpitUnavailableReason, error: string, status: nu
 // `emailPraticien` scope la lecture au praticien connecté : un patient d'un
 // autre praticien est traité comme introuvable, ce qui évite d'en révéler
 // l'existence. Point de passage unique du GET comme du POST.
-async function loadRuntimeInputs(idPatient: string, emailPraticien: string) {
+// `asOfBrut` : lecture d'un état passé (SP-TT). Absent ⇒ présent, comportement
+// strictement inchangé. Présent ⇒ doit correspondre à un repère réel du patient,
+// sinon la lecture est refusée — jamais silencieusement ramenée au présent.
+async function loadRuntimeInputs(idPatient: string, emailPraticien: string, asOfBrut?: string | null) {
   const patient = await prisma.patient.findFirst({
     where: { idPatient, ...filtrePatientsDuPraticien(emailPraticien) },
     select: { idPatient: true, createdAt: true },
@@ -78,7 +85,23 @@ async function loadRuntimeInputs(idPatient: string, emailPraticien: string) {
       orderBy: [{ dateValidation: 'desc' }, { createdAt: 'desc' }],
     }),
   ]);
-  return adaptRuntimeInputs(patient, responses, consultation);
+
+  const episodes = asOfBrut
+    ? await prisma.assessmentEpisode.findMany({
+        where: { idPatient },
+        select: { milestone: true, confirmedAt: true },
+      })
+    : [];
+  const resolution = resoudreAsOf(asOfBrut, construireReperes({ episodes, reponses: responses }));
+  if (resolution.mode === 'refus') return { refus: resolution.raison } as const;
+
+  const asOf = resolution.mode === 'passe' ? resolution.date : null;
+  // Le passé est RECALCULÉ depuis les données brutes tronquées, jamais relu
+  // depuis un snapshot : aucune donnée postérieure ne peut fuir dans la lecture.
+  return {
+    ...adaptRuntimeInputs(patient, tronquerA(responses, asOf), consultation),
+    asOf: asOf ? asOf.toISOString() : null,
+  };
 }
 
 // GET /api/praticien/cockpit?idPatient=PAT001&milestone=T0
@@ -89,15 +112,21 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
   const searchParams = new URL(req.url).searchParams;
   const idPatient = (searchParams.get('idPatient') ?? '').trim();
   const milestoneRaw = searchParams.get('milestone') ?? 'T0';
+  const asOfBrut = searchParams.get('asOf');
   if (!idPatient || !isRuntimeMilestone(milestoneRaw)) {
     return unavailable('invalid_payload', 'Patient ou jalon invalide.', 400);
   }
 
   try {
-    const inputs = await loadRuntimeInputs(idPatient, emailPraticien(session) ?? '');
+    const inputs = await loadRuntimeInputs(idPatient, emailPraticien(session) ?? '', asOfBrut);
     if (!inputs) return unavailable('patient_not_found', 'Patient introuvable.', 404);
+    if ('refus' in inputs) {
+      // Une date hors repères n'est jamais ramenée au présent en silence : la
+      // lecture serait alors présentée comme passée tout en étant actuelle.
+      return unavailable('invalid_payload', 'Date de lecture inconnue pour ce patient.', 400);
+    }
     const { proposal, proposalHash } = proposeRuntimeEpisode(inputs, milestoneRaw);
-    return NextResponse.json({ status: 'proposal_required', proposal, proposalHash });
+    return NextResponse.json({ status: 'proposal_required', proposal, proposalHash, asOf: inputs.asOf });
   } catch (error) {
     console.error('[cockpit GET]', error instanceof Error ? error.message : String(error));
     return unavailable('exception', 'Erreur technique.', 500);
@@ -108,6 +137,12 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
 export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApiResponse>> {
   const session = await getServerSession(authOptions);
   if (!session) return unavailable('unauthenticated', 'Non authentifié.', 401);
+
+  // Le mode passé est strictement en lecture : on ne confirme jamais un épisode
+  // depuis un état qui n'est plus celui du patient (SP-TT).
+  if (new URL(req.url).searchParams.get('asOf')) {
+    return unavailable('invalid_payload', 'Aucune écriture possible en lecture d’un état passé.', 400);
+  }
 
   let payload: ConfirmCockpitEpisodePayload;
   try {
@@ -131,6 +166,7 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
   try {
     const inputs = await loadRuntimeInputs(idPatient, emailPraticien(session) ?? '');
     if (!inputs) return unavailable('patient_not_found', 'Patient introuvable.', 404);
+    if ('refus' in inputs) return unavailable('invalid_payload', 'Date de lecture inconnue pour ce patient.', 400);
     const current = proposeRuntimeEpisode(inputs, payload.milestone);
     if (current.proposalHash !== proposalHash) {
       return unavailable('proposal_stale', 'Les réponses ont changé. Rechargez la proposition.', 409);

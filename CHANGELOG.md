@@ -4,6 +4,30 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — SP-TT LOT-01, lecture d'un état passé (2026-07-20)
+
+- **La fiche peut être relue à une date passée.** L'état est **recalculé** à
+  partir des données brutes tronquées à cette date — **jamais relu depuis un
+  enregistrement**, conformément au refus doctrinal de persister
+  snapshot / review / decision-card (C2A). **Aucune migration.**
+- **La date n'est pas libre** : elle doit correspondre à un **repère réel** du
+  patient — épisode confirmé ou réponse reçue (`GET /api/praticien/reperes`).
+  C'est une navigation entre événements datés, pas un curseur temporel (A6), et
+  cela ferme la porte au sondage de l'historique par tâtonnement.
+- **Une date inconnue est refusée** (400), jamais ramenée au présent en
+  silence : la lecture serait alors présentée comme passée tout en étant
+  actuelle.
+- **Aucune écriture en mode passé** : `POST /api/praticien/cockpit` refuse dès
+  qu'un `asOf` est transmis, **avant toute lecture**. La garantie est portée par
+  le serveur, pas par l'écran.
+- **Comportement présent strictement inchangé** : sans `asOf`, la route se
+  comporte exactement comme avant et ne lit même pas les épisodes.
+- **Bandeau non ambigu** côté praticien (« vous lisez l'état du … — ce n'est pas
+  l'état actuel du patient ») et retour au présent en un geste, sur la page
+  Consultation copilote.
+- 18 tests ajoutés (13 domaine, 5 route) + 1 parcours E2E vérifiant qu'aucune
+  requête mutante n'est émise.
+
 ### Vague 2 — gardes d'appartenance praticien (2026-07-20)
 
 - **Constat initial rectifié.** Il avait été noté que `fil` et `metrics` ne
