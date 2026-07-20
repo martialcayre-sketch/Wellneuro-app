@@ -23,7 +23,8 @@ clair, pour les personnes **déjà** présentes en base. C'est l'exigence 4 du g
 Au 2026-07-20, la base de production porte **17 patients, 3 graines fictives,
 13 accès portail ouverts**, et le responsable a qualifié une partie des dossiers
 restants comme **de vraies personnes**. Cet état conditionne la prudence de la
-procédure : l'essai se fait sur une fixture, jamais sur un dossier réel.
+procédure : l'essai se fait sur un dossier dont l'adresse relève du praticien,
+jamais sur la boîte d'un tiers.
 
 ## Deux drapeaux, et ils ne s'allument pas ensemble
 
@@ -62,8 +63,8 @@ SELECT count(*) FROM portail_magic_links;  -- attendu : 0
    `WN_G4_LIEN_MAGIQUE=true` (Project → Settings → Environment Variables →
    Production). **Ne pas définir `WN_G4_REDEMANDE_PATIENT`.**
 2. **Redéployer** la production.
-3. **Essai sur `PAT_SEED_03` (Michel Dogné), et sur lui seul** :
-   - depuis `dashboard/patients`, sélectionner le patient fictif, cliquer
+3. **Essai sur un dossier de contrôle** — voir le correctif ci-dessous :
+   - depuis `dashboard/patients`, sélectionner ce dossier, cliquer
      « Envoyer un lien à usage unique (24 h) » ;
    - ouvrir le lien reçu : l'espace patient s'ouvre sans repasser par le gate
      e-mail ;
@@ -81,9 +82,26 @@ FROM portail_magic_links;
 -- attendu : 1 lien, 1 consommé, au moins 1 rejeu refusé
 ```
 
-**Aucun lien magique n'est envoyé à un dossier réel tant que l'essai n'est pas
-concluant.** L'extension aux dossiers réels est une décision distincte, à
+**Aucun lien magique n'est envoyé à la boîte d'un tiers tant que l'essai n'est
+pas concluant.** L'extension aux autres dossiers est une décision distincte, à
 consigner comme celle-ci.
+
+> **Correctif du 2026-07-21, écrit après le premier essai.** Ce runbook
+> prescrivait `PAT_SEED_03` (Michel Dogné) « et lui seul ». C'était non
+> seulement trop restrictif, mais **insuffisant** :
+> `michel.dogne@fictif.wellneuro.fr` **n'existe pas**. Un essai sur la fixture
+> valide la route et **ne teste jamais l'envoi d'e-mail** — soit la moitié de la
+> chaîne, et précisément celle que le patient voit en premier.
+>
+> Le dossier de contrôle doit donc porter une **adresse relevant du praticien
+> lui-même**. La précaution qui compte n'est pas « un patient fictif », c'est
+> « **aucune boîte d'un tiers** ».
+>
+> Premier essai réel : `PAT006`, adresse du praticien, 2026-07-21. Résultat en
+> base — 1 lien, empreinte de 43 caractères (le jeton n'est pas stocké),
+> consommé, **5 rejeux refusés et tracés**, validité 24,00 h, origine
+> `praticien:martialcayre@wellneuro.fr`. Les sept invariants du gate tiennent en
+> production.
 
 ## Rollback (immédiat, non destructif)
 

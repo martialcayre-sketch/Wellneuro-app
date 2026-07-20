@@ -16,6 +16,15 @@ Aucun code, aucune migration : bascule de drapeau et traçabilité.
   307 vers l'écran unique ; cet écran ne contient aucune occurrence de
   « expiré », « consommé », « inconnu » ou « introuvable » ; le canal public de
   redemande répond 404 ; `portail_magic_links` reste vide.
+- **Essai de bout en bout concluant** (`PAT006`, adresse du praticien) : un lien
+  émis, **le jeton absent de la base** (empreinte de 43 caractères seule),
+  consommé une fois, **5 rejeux refusés et tracés**, validité 24,00 h, origine
+  `praticien:…` enregistrée. Les sept invariants du gate tiennent en production.
+- **Runbook corrigé après cet essai** : il imposait la fixture `PAT_SEED_03`.
+  Or `michel.dogne@fictif.wellneuro.fr` **n'existe pas** — l'essai aurait validé
+  la route sans jamais tester l'envoi d'e-mail, soit la moitié de la chaîne. La
+  règle devient « une adresse relevant du praticien », jamais « la boîte d'un
+  tiers ».
 - **Le canal public de redemande reste fermé** (`WN_G4_REDEMANDE_PATIENT` non
   posé) tant que le temps de réponse n'est pas égalisé et qu'aucune limitation
   par IP n'existe.

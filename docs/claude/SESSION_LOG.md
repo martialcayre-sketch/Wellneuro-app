@@ -1150,21 +1150,22 @@ Ni l'une ni l'autre n'est technique. SP-SPI en dépend.
 
 ## 2026-07-21 — G4 activé en production
 
-**Décisions** : `WN_G4_LIEN_MAGIQUE=true`, **Production seule**, déploiement
-`092197a`. Vérifié : `/portail/lien/<jeton>` passe de 404 à 307 vers l'écran
-unique, le canal public répond 404, `portail_magic_links` reste vide. Une
-partie des dossiers de production sont de **vraies personnes** ayant consenti à
-une phase de test — consigné dans la checklist G-TRUST-04.
+**Décisions** : `WN_G4_LIEN_MAGIQUE=true`, **Production seule**. Essai concluant
+sur `PAT006` (adresse du praticien) : jeton absent de la base, consommé,
+**5 rejeux tracés**, 24,00 h. Le canal public reste fermé. Une partie des
+dossiers de production sont de **vraies personnes** ayant consenti à une phase
+de test — consigné dans la checklist G-TRUST-04.
 
 **Écarté** : traiter ce consentement comme satisfaisant l'exigence 1. Il couvre
-la licéité du traitement, pas la certification de l'hébergeur (CSP L1111-8,
-dont l'exigence de consentement a disparu en 2018). Alerte, pas avis juridique.
+la licéité du traitement, pas la certification de l'hébergeur (CSP L1111-8, dont
+cette exigence a disparu en 2018). Alerte, pas avis juridique.
 
-**Corrigé en route** : le drapeau avait été posé sur **Preview et Production**.
-Les Preview lisant la base de production, des liens auraient pu partir vers de
-vrais dossiers depuis une URL de prévisualisation.
+**Corrigés en route** : le drapeau posé sur **Preview**, qui lit la base de
+production — des liens auraient pu partir vers de vrais dossiers depuis une URL
+de prévisualisation. Et le runbook, qui imposait la fixture, dont l'adresse
+n'existe pas : l'envoi d'e-mail n'aurait jamais été testé.
 
-**Prochaine action** : essai du runbook sur `PAT_SEED_03`.
+**Prochaine action** : demander à Supabase et Vercel leur certification HDS.
 
-**Questions ouvertes** : certification HDS, jamais demandée. Péremption des
-liens permanents, non décidée. Les deux résidus du canal de redemande.
+**Questions ouvertes** : péremption des liens permanents ; les deux résidus du
+canal de redemande.
