@@ -49,13 +49,96 @@ applique `prisma migrate deploy` sur la base Supabase de production au build de
 | 1 | Architecture d'hébergement adaptée | ❌ **Non** | Supabase + Vercel, certification HDS non établie (cf. ci-dessus) |
 | 2 | Contrôle d'accès centralisé | ⚠️ **Partiel** | Praticien : NextAuth + OAuth Google restreint à `@wellneuro.fr` (`web/src/lib/auth.ts`). Patient : jeton d'accès **permanent**, pas de compte, pas de révocation en libre-service |
 | 3 | Isolation multi-praticien | ⚠️ **Partiel — 30 routes sur 33** | cf. tableau ci-dessous |
-| 4 | Gestion des sessions et révocations | ⚠️ **Partiel** | Cookie portail signé, durée bornée ; **le jeton patient ne se périme pas** et sa révocation est une manipulation manuelle en base (`docs/RUNBOOK.md`, « Révocation accès patient »). C'est précisément l'objet du gate **G4 / IDP** |
+| 4 | Gestion des sessions et révocations | ⚠️ **Partiel — amélioré le 2026-07-21** | Cookie portail signé, durée bornée. **G4 activé en production** : lien haché en base, 24 h, usage unique, rejeu refusé et tracé. Mais le **jeton permanent subsiste et ne se périme toujours pas** — la coexistence des deux chemins est voulue pendant la bascule. L'exigence reste donc partielle : elle le sera jusqu'à la péremption des liens permanents, décision non prise |
 | 5 | Journalisation | ⚠️ **Partiel** | `web/src/lib/observability/` : logger structuré, codes d'événement, assainissement des données (`sanitizeLogData.ts`), corrélation de requête. Couvre les **erreurs et refus d'accès**, pas les **accès légitimes** : il n'existe pas de piste d'audit « qui a lu quel dossier, quand » |
 | 6 | Réponse aux incidents | ⚠️ **Partiel** | `docs/RUNBOOK.md` couvre Vercel/DNS, OAuth, Supabase/Prisma, fuite de secret, révocation d'un accès patient. **Aucune procédure de violation de données** (qualification, délai de notification CNIL, information des personnes) |
 | 7 | Tests de sécurité documentés | ⚠️ **Partiel** | Tests d'autorisation par route (`web/src/app/api/**/route.test.ts`), garde structurelle SP-MET, refus d'écriture en lecture passée (SP-TT). **Aucun test d'intrusion, aucune revue de sécurité externe** |
 
 Aucune ligne n'est ✅. Le gate ne peut donc pas être levé par un arbitrage
 partiel : c'est un ET, pas un OU.
+
+## Mise à jour du 2026-07-21 — état constaté, et ce qu'il ne change pas
+
+### Ce qui est désormais établi de la base de production
+
+Relevé en lecture seule (MCP Supabase, agrégats sans donnée nominative) :
+**17 patients, dont 3 graines fictives**, et **13 accès portail ouverts**.
+Interrogé sur la qualification des 14 dossiers restants, le responsable a
+répondu qu'ils correspondent **au moins en partie à de vraies personnes**, et
+que celles-ci **ont donné leur consentement pour une phase de test**.
+
+La question posée en Vague 2 — « peut-on faire tester par de vraies
+personnes ? » — n'était donc pas prospective : **c'est déjà le cas**.
+
+### Le consentement recueilli, et sa portée exacte
+
+Le consentement est une **pièce réelle du dossier RGPD** : il documente la base
+légale du traitement et l'information des participants, tous deux listés comme
+manquants au point 7 de « Ce qu'il resterait à faire ». **À consigner
+formellement** ici par le responsable : date, forme, contenu de l'information
+délivrée, modalité de retrait.
+
+**Il ne satisfait pas l'exigence 1**, et ce point mérite d'être écrit
+explicitement parce que l'intuition inverse est naturelle :
+
+- le **consentement** (RGPD) porte sur la **licéité du traitement** — la
+  personne peut y consentir, c'est son droit ;
+- la **certification HDS** (CSP, art. L1111-8) porte sur **qui héberge** les
+  données et sous quelles garanties. C'est une obligation qui pèse sur le
+  responsable et sur l'hébergeur, **pas un droit dont la personne dispose** :
+  elle ne peut donc pas y renoncer pour eux.
+
+Nuance qui explique probablement l'intuition : **l'ancienne rédaction de
+L1111-8 exigeait effectivement le consentement exprès de la personne pour
+l'hébergement par un tiers.** Cette mention a été supprimée lors de la réforme
+de 2018 — précisément parce que le consentement n'était pas le bon instrument.
+
+> Ce paragraphe est une **alerte, pas un avis juridique**. Il est rédigé par
+> l'assistant, dont la connaissance a une date de coupure et qui n'est pas
+> juriste. **À faire confirmer par un conseil qualifié** avant toute décision
+> qui s'en réclamerait.
+
+### Exigence 1 : maintenue ouverte
+
+Elle reste ❌. Le consentement n'y change rien, et rien d'autre n'a bougé : la
+réponse écrite de Supabase et de Vercel sur leur certification HDS **n'a pas
+été demandée**. C'est toujours le premier point à instruire, et il reste
+préalable aux six autres.
+
+### Ce que l'activation de G4 fait, et ne fait pas
+
+**G4 a été activé en production le 2026-07-21** (`WN_G4_LIEN_MAGIQUE=true`,
+Production seule ; runbook et contrôles dans
+`campagnes/2026-07-19-idp-identite-patient-durable/ACTIVATION_RUNBOOK_G4.md`).
+
+- **Ce qu'il fait** : il substitue, pour les personnes déjà en base, un lien
+  haché expirant en 24 h et à usage unique au lien permanent stocké en clair.
+  C'est une amélioration de l'exigence 4, et elle profite immédiatement aux
+  13 accès ouverts.
+- **Ce qu'il ne fait pas** : il ne déplace pas une donnée, ne change pas
+  l'hébergeur, et **ne régularise rien**. Présenter son activation comme une
+  mise en conformité serait faux.
+- **Ce qui reste fermé** : le canal public de redemande
+  (`WN_G4_REDEMANDE_PATIENT`, non posé), tant que deux résidus de la revue de
+  sécurité ne sont pas traités — temps de réponse non égalisé, absence de
+  limitation par IP. Sur des adresses de personnes réelles, ces résidus ne sont
+  plus théoriques.
+
+### Correction de fait : il n'existe pas de préproduction
+
+Le registre porte pour G4 la mention « livrable en préproduction ». **Aucune
+préproduction n'existe** : il n'y a qu'un projet Supabase, et
+`web/scripts/vercel-build.sh` ne migre qu'en production. Les déploiements
+Preview lisent donc la base de production.
+
+Conséquence pratique, constatée le 2026-07-21 : `WN_G4_LIEN_MAGIQUE` avait été
+posée sur **Preview et Production**, ce qui aurait permis d'émettre des liens
+vers de vrais dossiers depuis n'importe quelle URL de prévisualisation. Corrigé
+le jour même. À garder en tête pour tout drapeau ultérieur.
+
+> Cette section constate, elle ne décide pas. **La levée du gate reste une
+> décision du responsable du traitement**, à écrire plus bas avec sa date, ses
+> pièces et son périmètre.
 
 ### Détail de l'exigence 3 — isolation multi-praticien
 

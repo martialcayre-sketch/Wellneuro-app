@@ -1146,3 +1146,26 @@ banc de hook committé, 27 cas — 20 passent sur la version d'avant.
 **Questions ouvertes** : péremption des liens permanents déjà envoyés, et
 acceptation des deux résidus (réponse non égalisée, pas de limitation par IP).
 Ni l'une ni l'autre n'est technique. SP-SPI en dépend.
+
+
+## 2026-07-21 — G4 activé en production
+
+**Décisions** : `WN_G4_LIEN_MAGIQUE=true`, **Production seule**. Essai concluant
+sur `PAT006` (adresse du praticien) : jeton absent de la base, consommé,
+**5 rejeux tracés**, 24,00 h. Le canal public reste fermé. Une partie des
+dossiers de production sont de **vraies personnes** ayant consenti à une phase
+de test — consigné dans la checklist G-TRUST-04.
+
+**Écarté** : traiter ce consentement comme satisfaisant l'exigence 1. Il couvre
+la licéité du traitement, pas la certification de l'hébergeur (CSP L1111-8, dont
+cette exigence a disparu en 2018). Alerte, pas avis juridique.
+
+**Corrigés en route** : le drapeau posé sur **Preview**, qui lit la base de
+production — des liens auraient pu partir vers de vrais dossiers depuis une URL
+de prévisualisation. Et le runbook, qui imposait la fixture, dont l'adresse
+n'existe pas : l'envoi d'e-mail n'aurait jamais été testé.
+
+**Prochaine action** : demander à Supabase et Vercel leur certification HDS.
+
+**Questions ouvertes** : péremption des liens permanents ; les deux résidus du
+canal de redemande.
