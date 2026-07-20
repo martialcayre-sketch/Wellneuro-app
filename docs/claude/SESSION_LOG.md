@@ -1042,6 +1042,60 @@ conflit avec la session gatée.
 point bloquant ; fil médecin entrant en attente d'arbitrage ; SP-SPI dépend
 de G4.
 
+## 2026-07-20 — Correction des constats de clôture
+
+**Constat annulé** : `_prisma_migrations` ne ment pas. Le nom
+`r8_lite_consent_fields` porte **deux** lignes — l'échec de 22:21:30, puis à
+22:30:38 la trace d'un `migrate resolve --applied` (`applied_steps_count = 0`).
+Le registre est correct depuis le 2026-07-06, aucune écriture de production
+n'est requise. La requête inverse, qui liste les migrations dont aucune
+tentative n'a abouti, ne rend aucune ligne.
+
+**Cause réelle** : la requête de vérification que j'avais inscrite dans
+`CLAUDE.md` (`ORDER BY finished_at DESC NULLS FIRST LIMIT 5`) remonte en tête
+la ligne annulée et n'agrège pas les tentatives d'un même nom. Remplacée par
+deux requêtes groupées par `migration_name`.
+
+**Second constat corrigé** : le niveau « refus » de `block-risky-commands.mjs`
+masque désormais le corps d'un heredoc lorsque la commande entière ne contient
+aucun vecteur d'exécution. On ne cherche pas qui consomme le heredoc —
+`cat <<EOF | bash` rendrait l'analyse fausse. Banc de test 10/10 : 3 cas de
+prose passent, 7 évasions restent refusées.
+
+**Écarté** : masquer aussi les littéraux entre quotes au niveau refus.
+`psql -c 'DROP TABLE patients'` doit rester bloqué ; le faux positif sur
+`echo 'DROP TABLE'` est assumé.
+
+**Prochaine action** : **G4**, déjà en cours dans le worktree `gates-g3-g1-g4`
+(migration `g4_portail_magic_links_v1` non commitée) — se coordonner avant d'y
+toucher.
+
+## 2026-07-20 — Audit du travail des sessions parallèles
+
+**Constat principal** : le CHANGELOG de #167 annonce « 12 routes fermées, 25 sur
+31 ». Vérifié ligne par ligne sur `origin/main` : **cinq routes praticien
+manipulant de la donnée patient restent non gardées**. `booklet` GET et
+`besoins` sont explicitement revendiquées — la seconde comme « catalogue sans
+donnée patient », alors qu'elle prend `?idPatient` et rend prénom, nom et
+couverture clinique. `synthese` PATCH (écriture), `patients` GET/PATCH/DELETE
+(le registre complet) et `consultations` POST (qui lève un accès portail
+révoqué) ne sont pas mentionnées.
+
+**Calibration** : un seul compte praticien en production (17 patients). Aucune
+fuite active ; le risque est latent et se matérialise au second praticien. Le
+défaut est la fausse assurance, pas la brèche.
+
+**Clos entre-temps** : `praticien/token` est gardée par #172 (G4), garde posée
+avant l'effet sur POST et DELETE. Les quatre migrations du jour sont appliquées
+en production, une tentative chacune, strictement additives.
+
+**Prochaine action** : corriger le CHANGELOG (urgent, sans risque de conflit),
+puis fermer les cinq routes et ajouter un test de recensement des gardes.
+
+**Ouvert** : doctrine 403 vs 404 — le commit `1d6719b` impose le 404 partout, la
+docstring de `verifierAppartenancePatient` recommande l'inverse, et les routes
+G1/G3 suivent la docstring.
+
 ## 2026-07-20 — Gates de la Vague 2 : G3, G1, et le préalable de G4
 
 **Décisions** : quatre PR mergées, deux migrations appliquées en production
