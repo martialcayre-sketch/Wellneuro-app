@@ -11,6 +11,7 @@ import {
 import { calculerNiveauxPreuveTousLesBesoins } from '@/lib/equilibre/evidence';
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
 import { calculerObjetsCliniques } from '@/lib/equilibre/objetsCliniques';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import type { JalonMomentum, NiveauPreuveBesoin, ResultatMomentum, StrateCode } from '@/lib/equilibre/types';
 
 export type PrioriteBesoin = {
@@ -55,8 +56,17 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
     return NextResponse.json({ unavailable: true, reason: 'invalid_payload' }, { status: 400 });
   }
 
+  const email = emailPraticien(session);
+  if (!email) {
+    return NextResponse.json({ unavailable: true, reason: 'unauthenticated' }, { status: 401 });
+  }
+
   try {
-    const patient = await prisma.patient.findUnique({ where: { idPatient } });
+    // Garde d'appartenance : le patient d'un autre praticien est traité comme
+    // introuvable, pas comme interdit — un 403 confirmerait son existence.
+    const patient = await prisma.patient.findFirst({
+      where: { idPatient, ...filtrePatientsDuPraticien(email) },
+    });
     if (!patient) {
       return NextResponse.json({ unavailable: true, reason: 'patient_not_found' }, { status: 404 });
     }

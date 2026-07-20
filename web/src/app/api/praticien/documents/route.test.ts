@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mocks des dépendances de la route (auth, prisma, observabilité).
-const findUnique = vi.fn();
+const findFirst = vi.fn();
 const findUniquePatient = vi.fn();
 
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { email: 'p@wellneuro.fr' } })) }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    syntheseIA: { findUnique: (...a: unknown[]) => findUnique(...a) },
+    syntheseIA: { findFirst: (...a: unknown[]) => findFirst(...a) },
     patient: { findUnique: (...a: unknown[]) => findUniquePatient(...a) },
   },
 }));
@@ -47,7 +47,7 @@ function syntheseFixture(statut: string) {
 }
 
 beforeEach(() => {
-  findUnique.mockReset();
+  findFirst.mockReset();
   findUniquePatient.mockReset();
   findUniquePatient.mockResolvedValue({ prenom: 'Sophie', nom: 'Nicola' });
 });
@@ -66,19 +66,19 @@ describe('GET /api/praticien/documents', () => {
   });
 
   it('404 si synthèse introuvable', async () => {
-    findUnique.mockResolvedValue(null);
+    findFirst.mockResolvedValue(null);
     const res = await GET(req('http://x/api/praticien/documents?idSynthese=SYN_1'));
     expect(res.status).toBe(404);
   });
 
   it('422 si synthèse non validée', async () => {
-    findUnique.mockResolvedValue(syntheseFixture('Brouillon_IA'));
+    findFirst.mockResolvedValue(syntheseFixture('Brouillon_IA'));
     const res = await GET(req('http://x/api/praticien/documents?idSynthese=SYN_1'));
     expect(res.status).toBe(422);
   });
 
   it('compose des blocs pour une synthèse validée', async () => {
-    findUnique.mockResolvedValue(syntheseFixture('Validee_Praticien'));
+    findFirst.mockResolvedValue(syntheseFixture('Validee_Praticien'));
     const res = await GET(req('http://x/api/praticien/documents?idSynthese=SYN_1'));
     expect(res.status).toBe(200);
     const body = await res.json();

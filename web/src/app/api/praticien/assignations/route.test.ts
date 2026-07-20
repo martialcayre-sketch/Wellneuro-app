@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { sendMail, prisma } = vi.hoisted(() => ({
   sendMail: vi.fn(),
   prisma: {
-    patient: { findUnique: vi.fn() },
+    patient: { findUnique: vi.fn(), findFirst: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -37,7 +37,7 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     vi.clearAllMocks();
     process.env.SMTP_URL = 'smtp://test';
     process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
-    prisma.patient.findUnique.mockResolvedValue(patient);
+    prisma.patient.findFirst.mockResolvedValue(patient);
     prisma.$transaction.mockImplementation((operation: (client: typeof tx) => unknown) => operation(tx));
     tx.$queryRaw.mockResolvedValue([{ actif: true, accessToken: patient.accessToken, accessTokenRevoked: false }]);
     tx.assignation.create.mockResolvedValue({});
@@ -55,7 +55,7 @@ describe('POST /api/praticien/assignations — lien portail', () => {
   });
 
   it('bloque avant écriture lorsque le portail est révoqué', async () => {
-    prisma.patient.findUnique.mockResolvedValue({ ...patient, accessTokenRevoked: true });
+    prisma.patient.findFirst.mockResolvedValue({ ...patient, accessTokenRevoked: true });
     tx.$queryRaw.mockResolvedValue([{ actif: true, accessToken: patient.accessToken, accessTokenRevoked: true }]);
     const response = await POST(request());
     expect(response.status).toBe(409);

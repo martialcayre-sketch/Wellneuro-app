@@ -984,3 +984,28 @@ depuis ce worktree pour G3, puis G1, puis G4. Dossier prêt :
 **Questions ouvertes** : arbitrage du fil médecin entrant (identité, conservation)
 — seul reliquat C3, le sortant étant déjà sans pièces jointes par construction ;
 isolation multi-praticien à 13 routes sur 31 ; SP-SPI en attente de G4.
+
+## 2026-07-20 — Isolation multi-praticien : 12 routes fermées
+
+**Décisions** : la garde d'appartenance (#156) est étendue à 12 routes
+praticien — le compte passe de 13 gardées sur 31 à 25. Trois d'entre elles
+agissaient sur le monde extérieur sans contrôle : `booklet` POST envoie un
+document au patient par e-mail, `assignations` et `packs/assign` déclenchent un
+e-mail, `synthese` POST transmet les réponses d'un patient à l'API Anthropic.
+La garde y est posée **avant** l'effet. `trust` PATCH passe de `update` à
+`updateMany` : `update` n'accepte pas de filtre sur la relation patient.
+
+**Écarté** : répondre 403 sur le patient d'un autre praticien — cela
+confirmerait son existence ; il est traité comme introuvable. `praticien/token`
+laissée non gardée à dessein : fichier cœur de G4, la toucher créerait un
+conflit avec la session gatée.
+
+**Vérifié** : anti-secrets, type-check, lint, Vitest (719), `test:worktree
+--fast` vert — 45 E2E, aucune dérive schéma ↔ migrations. Aucune migration.
+
+**Prochaine action** : la session gatée applique G3, puis G1, puis G4
+(`docs/claude/GATES_VAGUE2_G1_G3_G4.md`).
+
+**Questions ouvertes** : G-TRUST-04 reste non levé, l'hébergement HDS est le
+point bloquant ; fil médecin entrant en attente d'arbitrage ; SP-SPI dépend
+de G4.

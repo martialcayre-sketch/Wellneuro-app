@@ -6,6 +6,7 @@ import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import nodemailer from 'nodemailer';
 import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 
 type CreateAssignationPayload = {
   emailPatient?: string;
@@ -71,8 +72,21 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
     );
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return NextResponse.json(
+      { success: false, reason: 'unauthenticated', error: 'Non authentifié.' },
+      { status: 401 }
+    );
+  }
+
   try {
-    const patient = await prisma.patient.findUnique({ where: { email: emailPatient } });
+    // Garde d'appartenance : assigner un questionnaire déclenche un envoi
+    // d'e-mail au patient. Un patient d'un autre praticien est « introuvable »,
+    // exactement comme un e-mail inconnu.
+    const patient = await prisma.patient.findFirst({
+      where: { email: emailPatient, ...filtrePatientsDuPraticien(emailSession) },
+    });
 
     if (!patient || !patient.actif) {
       return NextResponse.json(
@@ -181,8 +195,20 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
     return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'Identifiant requis.' }, { status: 400 });
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return NextResponse.json(
+      { success: false, reason: 'unauthenticated', error: 'Session absente.' },
+      { status: 401 }
+    );
+  }
+
   try {
-    const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
+    // Garde d'appartenance : déverrouiller rouvre la saisie d'un questionnaire.
+    // L'assignation d'un autre praticien est introuvable.
+    const ass = await prisma.assignation.findFirst({
+      where: { idAssignation, patient: filtrePatientsDuPraticien(emailSession) },
+    });
     if (!ass) {
       return NextResponse.json({ success: false, reason: 'not_found', error: 'Assignation introuvable.' }, { status: 404 });
     }

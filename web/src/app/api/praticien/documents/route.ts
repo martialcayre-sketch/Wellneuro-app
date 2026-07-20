@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { type SyntheseSchema } from '@/lib/anthropic';
 import { blocsDepuisSynthese, STATUTS_SYNTHESE_VALIDES, type StatutSyntheseSource } from '@/lib/documents';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { logger } from '@/lib/observability/logger';
 import {
@@ -31,8 +32,18 @@ export async function GET(req: Request) {
     return withCorrelationHeader(NextResponse.json({ error: 'idSynthese requis.' }, { status: 400 }), requestContext);
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+  }
+
   try {
-    const synthese = await prisma.syntheseIA.findUnique({ where: { idSynthese } });
+    // Garde d'appartenance par la relation patient : la synthèse d'un patient
+    // d'un autre praticien est introuvable, et non « non validée » — la
+    // distinction renseignerait sur son existence et son état.
+    const synthese = await prisma.syntheseIA.findFirst({
+      where: { idSynthese, patient: filtrePatientsDuPraticien(emailSession) },
+    });
     if (!synthese) {
       return withCorrelationHeader(NextResponse.json({ error: 'Synthèse introuvable.' }, { status: 404 }), requestContext);
     }

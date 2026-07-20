@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
+    patient: { findUnique: vi.fn() },
     protocolDraft: { findMany: vi.fn() },
     protocolCheckin: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
@@ -29,6 +30,8 @@ function request(query = 'idPatient=PAT_1&decisionCardId=DEC_1'): Request {
 describe('GET /api/praticien/protocoles/checkins', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Par défaut, le patient appartient au praticien en session (garde d'appartenance).
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'p@wellneuro.fr' });
     // Par défaut : aucun épisode T0 confirmé → repli sur le T0 global (LOT-08).
     prisma.assessmentEpisode.findFirst.mockResolvedValue(null);
   });
