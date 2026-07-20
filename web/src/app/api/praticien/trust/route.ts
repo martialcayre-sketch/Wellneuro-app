@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import type { StatutTraitementSignalement } from '@/lib/trust/types';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 
 export type SignalementPraticien = {
   kind: 'effet_indesirable' | 'incident_confidentialite' | 'demande_droit';
@@ -28,12 +29,24 @@ export async function GET(): Promise<NextResponse<TrustPraticienResponse>> {
     return NextResponse.json({ ok: false, error: 'Non authentifié.' }, { status: 401 });
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return NextResponse.json({ ok: false, error: 'Non authentifié.' }, { status: 401 });
+  }
+
   try {
+    // Les trois files de signalements sont scopées par la relation patient : le
+    // filtre s'applique AVANT le `take`, sinon une file d'un autre praticien
+    // pourrait évincer les signalements du praticien connecté.
+    const duPraticien = { patient: filtrePatientsDuPraticien(emailSession) };
     const [effets, incidents, droits, patients] = await Promise.all([
-      prisma.trustAdverseEffectReport.findMany({ orderBy: { soumisLe: 'desc' }, take: 100 }),
-      prisma.trustPrivacyIncident.findMany({ orderBy: { soumisLe: 'desc' }, take: 100 }),
-      prisma.trustRightsRequest.findMany({ orderBy: { soumisLe: 'desc' }, take: 100 }),
-      prisma.patient.findMany({ select: { idPatient: true, prenom: true, nom: true } }),
+      prisma.trustAdverseEffectReport.findMany({ where: duPraticien, orderBy: { soumisLe: 'desc' }, take: 100 }),
+      prisma.trustPrivacyIncident.findMany({ where: duPraticien, orderBy: { soumisLe: 'desc' }, take: 100 }),
+      prisma.trustRightsRequest.findMany({ where: duPraticien, orderBy: { soumisLe: 'desc' }, take: 100 }),
+      prisma.patient.findMany({
+        where: filtrePatientsDuPraticien(emailSession),
+        select: { idPatient: true, prenom: true, nom: true },
+      }),
     ]);
     const noms = new Map(patients.map(p => [p.idPatient, `${p.prenom} ${p.nom}`.trim()]));
     const nom = (idPatient: string) => noms.get(idPatient) ?? 'Patient';
@@ -113,19 +126,37 @@ export async function PATCH(req: Request): Promise<NextResponse<TrustPatchRespon
     return NextResponse.json({ ok: false, error: 'Paramètres invalides.' }, { status: 400 });
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return NextResponse.json({ ok: false, error: 'Non authentifié.' }, { status: 401 });
+  }
+
   try {
+    // `updateMany` plutôt que `update` : il accepte un filtre sur la relation
+    // patient, là où `update` exige une clé unique seule. Le compte de lignes
+    // touchées vaut donc garde — zéro signifie « pas à ce praticien », et se
+    // présente comme un signalement introuvable.
     const donnees = { statutTraitement, examineLe: new Date() };
+    const duPraticien = { patient: filtrePatientsDuPraticien(emailSession) };
+    let touchees: number;
     if (kind === 'effet_indesirable') {
-      await prisma.trustAdverseEffectReport.update({ where: { id }, data: donnees });
+      ({ count: touchees } = await prisma.trustAdverseEffectReport.updateMany({
+        where: { id, ...duPraticien }, data: donnees,
+      }));
     } else if (kind === 'incident_confidentialite') {
-      await prisma.trustPrivacyIncident.update({ where: { id }, data: donnees });
+      ({ count: touchees } = await prisma.trustPrivacyIncident.updateMany({
+        where: { id, ...duPraticien }, data: donnees,
+      }));
     } else if (kind === 'demande_droit') {
-      await prisma.trustRightsRequest.update({
-        where: { id },
+      ({ count: touchees } = await prisma.trustRightsRequest.updateMany({
+        where: { id, ...duPraticien },
         data: { ...donnees, reponse: (payload.reponse ?? '').trim().slice(0, 2000) || undefined },
-      });
+      }));
     } else {
       return NextResponse.json({ ok: false, error: 'Type inconnu.' }, { status: 400 });
+    }
+    if (touchees === 0) {
+      return NextResponse.json({ ok: false, error: 'Signalement introuvable.' }, { status: 404 });
     }
     return NextResponse.json({ ok: true });
   } catch (err) {

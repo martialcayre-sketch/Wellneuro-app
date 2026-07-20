@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { type SyntheseSchema, maskEmail, sanitizeAuditError } from '@/lib/anthropic';
 import { buildBookletHTML } from '@/lib/documents/bookletHtml';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -101,9 +102,15 @@ export async function POST(req: Request) {
     ), requestContext);
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+
   try {
-    const synthese = await prisma.syntheseIA.findUnique({
-      where: { idSynthese },
+    // Garde d'appartenance AVANT tout envoi : c'est la route qui expédie
+    // réellement un document au patient. Sans elle, un praticien pourrait
+    // envoyer le booklet d'un patient qui n'est pas le sien.
+    const synthese = await prisma.syntheseIA.findFirst({
+      where: { idSynthese, patient: filtrePatientsDuPraticien(emailSession) },
       include: { bookletEnvois: { orderBy: { dateEnvoi: 'desc' }, take: 1 } },
     });
 

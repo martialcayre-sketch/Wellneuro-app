@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { construireHistoriqueEquilibre, resoudreDateT0 } from '@/lib/equilibre/depuisPrisma';
 import { listCheckins, type CheckinRow } from '@/lib/protocol/checkins';
 import { buildResumeJ21, type ResumeJ21 } from '@/lib/protocol/resumeJ21';
+import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 
 // Lecture praticien des check-ins J7/J14/J21 + résumé J21 « point de jonction »
 // (C2A LOT-04). Le praticien distingue adhésion et effet à partir des réponses ;
@@ -19,8 +20,8 @@ import { buildResumeJ21, type ResumeJ21 } from '@/lib/protocol/resumeJ21';
 // récent) plutôt que le T0 global (première réponse). Sans épisode T0 confirmé,
 // repli sur le T0 global (resoudreDateT0), identique à api/praticien/equilibre.
 // La fiche patient « Mon équilibre » conserve, elle, le T0 global (inchangé).
-// Hypothèse mono-praticien (§8.8) : garde de session sans scope par identité,
-// cohérent avec les routes /versions et /diffusion.
+// Garde d'appartenance appliquée, comme /versions et /diffusion : l'hypothèse
+// mono-praticien qui justifiait son absence n'est plus un motif suffisant.
 
 const ID_PATTERN = /^[A-Za-z0-9_:.#-]+$/;
 
@@ -52,6 +53,15 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       return NextResponse.json(
         { ok: false, reason: 'invalid', error: 'Identifiant de carte de décision invalide.' },
         { status: 400 },
+      );
+    }
+
+    // Garde d'appartenance : le patient d'un autre praticien est traité comme
+    // introuvable — un code distinct confirmerait son existence.
+    if ((await verifierAppartenancePatient(idPatient, emailPraticien(session))) !== 'accessible') {
+      return NextResponse.json(
+        { ok: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
+        { status: 404 },
       );
     }
 

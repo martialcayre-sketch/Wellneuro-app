@@ -13,6 +13,11 @@ import {
   toDraftCreateInput,
   toEpisodeCreateInput,
 } from '@/lib/protocol/versioning';
+import {
+  emailPraticien,
+  filtrePatientsDuPraticien,
+  verifierAppartenancePatient,
+} from '@/lib/praticien/appartenance';
 
 // Persistance minimale C2A (LOT-02). Le praticien authentifié persiste un
 // épisode CONFIRMÉ et un protocole RELU (practitioner_reviewed). Le snapshot,
@@ -100,6 +105,16 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
       );
     }
 
+    // Garde d'appartenance, AVANT toute écriture : sans elle, un praticien
+    // pourrait persister un épisode et un protocole sur le patient d'un autre.
+    const appartenance = await verifierAppartenancePatient(episode.patientId, emailPraticien(session));
+    if (appartenance !== 'accessible') {
+      return NextResponse.json(
+        { ok: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
+        { status: 404 },
+      );
+    }
+
     // Identité de cycle (gate G2), résolue AVANT la transaction : un T0 ouvre son
     // cycle, un jalon postérieur rejoint le dernier T0 antérieur du patient.
     const cycleId = resolveCycleId({
@@ -173,6 +188,14 @@ export async function GET(req: Request): Promise<NextResponse<ListResponse>> {
       );
     }
 
+    const emailSession = emailPraticien(session);
+    if (!emailSession) {
+      return NextResponse.json(
+        { ok: false, reason: 'unauthenticated', error: 'Authentification requise.' },
+        { status: 401 },
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const idPatient = (searchParams.get('idPatient') ?? '').trim();
     if (!idPatient || !/^[A-Za-z0-9_-]+$/.test(idPatient) || idPatient.length > 64) {
@@ -182,8 +205,11 @@ export async function GET(req: Request): Promise<NextResponse<ListResponse>> {
       );
     }
 
+    // Scope par la relation patient : les protocoles d'un patient d'un autre
+    // praticien ne remontent pas — la liste est vide, comme pour un patient
+    // sans protocole, sans révéler que celui-ci existe.
     const drafts = await prisma.protocolDraft.findMany({
-      where: { idPatient },
+      where: { idPatient, patient: filtrePatientsDuPraticien(emailSession) },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,
