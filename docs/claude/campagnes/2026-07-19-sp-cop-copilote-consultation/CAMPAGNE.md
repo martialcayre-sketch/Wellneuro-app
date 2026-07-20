@@ -1,10 +1,10 @@
 ---
 id: "2026-07-19-sp-cop-copilote-consultation"
 titre: "SP-COP — Copilote de consultation (pré-vol & minute d'après)"
-statut: "cadrée"
+statut: "livrée"
 créée_le: "2026-07-19"
-mise_à_jour: "2026-07-19"
-lot_courant: "LOT-01"
+mise_à_jour: "2026-07-20"
+lot_courant: "LOT-02"
 ---
 
 # SP-COP — Copilote de consultation (pré-vol & minute d'après)
@@ -62,8 +62,8 @@ C3 ✓ (composition documentaire). Toutes satisfaites au 2026-07-19.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-01 | Pré-vol T-10 min : surface branchée sur l'entrée de rail, changements depuis la dernière consultation, discordances sourcées, questions suggérées | à_faire | — |
-| LOT-02 | La minute d'après : clôture, décision / protocole / document pré-remplis, trois relectures, aucun envoi automatique | à_faire | LOT-01 |
+| LOT-01 | Pré-vol T-10 min : surface branchée sur l'entrée de rail, changements depuis la dernière consultation, discordances sourcées, questions suggérées | livré | — |
+| LOT-02 | La minute d'après : clôture, décision / protocole / document pré-remplis, trois relectures, aucun envoi automatique | livré | LOT-01 |
 
 ## Définition de done
 

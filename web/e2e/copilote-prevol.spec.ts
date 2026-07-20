@@ -51,12 +51,47 @@ test.describe('Consultation copilote — pré-vol', () => {
     expect(requetesMutantes).toEqual([]);
 
     // Les discordances restent lues au poste de pilotage — pas de seconde copie
-    // qui pourrait diverger.
-    await expect(page.getByRole('link', { name: /Ouvrir le poste de pilotage/ })).toBeVisible();
+    // qui pourrait diverger. Assertion attachée à la section du pré-vol : la
+    // minute d'après porte un lien de même libellé vers la même destination.
+    await expect(
+      page
+        .getByRole('region', { name: /Discordances et objets cliniques/ })
+        .getByRole('link', { name: /Ouvrir le poste de pilotage/ }),
+    ).toBeVisible();
 
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
     ).toBe(true);
+  });
+});
+
+test.describe('Consultation copilote — la minute d’après (SP-COP LOT-02)', () => {
+  test('montre l’état de la chaîne de diffusion sans jamais l’enclencher', async ({ page, context }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+
+    const requetesMutantes: string[] = [];
+    page.on('request', (requete) => {
+      if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(requete.method())) {
+        requetesMutantes.push(`${requete.method()} ${requete.url()}`);
+      }
+    });
+
+    await page.goto(`/dashboard/copilote?idPatient=${PATIENT_ID}`);
+
+    const panneau = page.locator('#panneau-cloture');
+    await expect(panneau.getByRole('heading', { name: 'La minute d’après' })).toBeVisible();
+
+    // Les trois étapes de la chaîne « Relu → Validé pour diffusion → Envoyé »
+    // sont toujours rendues, quel que soit l'avancement — jamais masquées.
+    await expect(panneau.getByText('Protocole relu')).toBeVisible();
+    await expect(panneau.getByText('Validé pour diffusion')).toBeVisible();
+    await expect(panneau.getByText('Document validé praticien')).toBeVisible();
+
+    // L'écran énonce lui-même qu'il n'envoie rien.
+    await expect(panneau.getByText(/n’envoie rien/)).toBeVisible();
+
+    // Et il tient parole : lire la clôture n'écrit jamais.
+    expect(requetesMutantes).toEqual([]);
   });
 });
 
