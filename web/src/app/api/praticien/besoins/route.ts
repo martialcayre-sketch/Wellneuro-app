@@ -8,6 +8,7 @@ import { calculerNiveauxPreuveTousLesBesoins, listerSourcesPreuveBesoin } from '
 import { calculerCouverturesTousLesBesoins } from '@/lib/equilibre/score';
 import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import type { NiveauPreuveBesoin, StrateCode } from '@/lib/equilibre/types';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 
 const TITRE_PAR_QUESTIONNAIRE = new Map(QUESTIONNAIRES_CATALOG.map(q => [q.id, q.titre]));
 
@@ -43,8 +44,17 @@ export async function GET(req: Request): Promise<NextResponse<BesoinsApiResponse
     return NextResponse.json({ unavailable: true, reason: 'invalid_payload' }, { status: 400 });
   }
 
+  const email = emailPraticien(session);
+  if (!email) {
+    return NextResponse.json({ unavailable: true, reason: 'unauthenticated' }, { status: 401 });
+  }
+
   try {
-    const patient = await prisma.patient.findUnique({ where: { idPatient } });
+    // Garde d'appartenance : « pas à vous » se rabat sur le 404 existant,
+    // sans confirmer l'existence du patient à un autre praticien.
+    const patient = await prisma.patient.findFirst({
+      where: { idPatient, ...filtrePatientsDuPraticien(email) },
+    });
     if (!patient) {
       return NextResponse.json({ unavailable: true, reason: 'patient_not_found' }, { status: 404 });
     }
