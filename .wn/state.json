@@ -7,7 +7,7 @@
   "status": "idle",
   "active_campaign": null,
   "active_lot": null,
-  "last_completed_lot": "C5/LOT-07",
+  "last_completed_lot": "SP-COP/LOT-02",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -15,20 +15,25 @@
   },
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-16T11:59:57Z",
+    "last_checked_at": "2026-07-20T11:00:00Z",
     "checks": {
-      "orchestration": "campaign audit vert à chaque lot TRUST (#78-#82)",
-      "type_check": "vert ; Vitest 225/225 ; lint ; build production 43 pages",
-      "scoring_certification": "inchangé (aucun scoring modifié ; règle orientation EI v1 = aiguillage de message, validée praticien)",
+      "orchestration": "audit campagnes vert (1 warning préexistant : LOT-00 dupliqué sur refonte-ux-shell-3-0)",
+      "type_check": "vert",
+      "scoring_certification": "inchangé (aucun scoring ni seuil modifié en Vague 2)",
       "no_secrets": "vert",
-      "e2e": "Playwright vert (parcours portail avec Avant de commencer + centre permanent, desktop + mobile)",
+      "e2e": "Playwright vert — 45 tests, test:worktree --fast en 1 min 17 s, base éphémère isolée",
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Campagne C3 — Documents contextuels multi-destinataires V1 EXÉCUTÉE, montée et en prod : LOT-00→04 (domaine + composition + rendus + validation, #122/#123/#124/#125/#127), LOT-05 montage cockpit + route GET /api/praticien/documents + page /dashboard/documents + envoi patient réemployé (#130). Reports traités : montage construit ; fil bidirectionnel médecin (discordance 5.0) CADRÉ (propositions/2026-07-18-c3-fil-correspondance-medecin/, non tranché) ; persistance option (b) GATE NON OUVERT (propositions/2026-07-18-c3-gate-persistance-documents/, bloqué_confirmation). Sans migration ; frontière A2 tenue. Gate modèle multi-cycles (C2B, A8-5-ii) toujours différé. Prochaine action possible : arbitrer le fil médecin si le besoin se confirme, ou nouvelle campagne. Campagnes C5 (boussole) et JA actives en parallèle, pilotées par d'autres owners (worktrees dédiés).",
-  "blocking_issues": [],
+  "next_action": "Vague 2 — livrée pour tout ce qui ne demande pas de migration : cadrage des 5 campagnes (#148), Spirale navigable et comparateur (#149), météo d'adhésion (#150), pré-vol copilote (#151), dette de tests du Fil (#152), gate G2 identité de cycle appliqué en base (#155), gardes d'appartenance praticien (#156), lecture d'un état passé (#158), discipline « une session = un worktree » (#159), minute d'après (#160). BLOQUÉ, en attente d'une session lancée avec WN_ALLOW_PROTECTED_WRITE=1 : gates G1 (refus des cartes du Fil), G3 (relecture_notes), G4 (identité patient durable) — dossier prêt dans docs/claude/GATES_VAGUE2_G1_G3_G4.md. SP-SPI dépend de G4 par décision de sa propre campagne. Reliquat C3 (fil médecin) : le volet sortant est livré et sans pièces jointes par construction ; le fil entrant reste ouvert, il demande une migration ET un arbitrage humain sur l'identité médecin et la conservation. G-TRUST-04 reste NON LEVÉ : aucune donnée patient réelle, checklist d'activation dans campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md.",
+  "blocking_issues": [
+    "Gates G1/G3/G4 : migration Prisma, session à relancer avec WN_ALLOW_PROTECTED_WRITE=1",
+    "SP-SPI : dépend de G4",
+    "Fil de correspondance médecin (C3) : arbitrage humain requis sur identité médecin et conservation",
+    "G-TRUST-04 non levé : hébergement HDS non établi, isolation multi-praticien partielle (13 routes sur 31)"
+  ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-18T16:30:00Z",
+  "updated_at": "2026-07-20T11:00:00Z",
   "parallel_campaigns": []
 }
