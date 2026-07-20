@@ -4,6 +4,35 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — isolation multi-praticien : 12 routes fermées (2026-07-20)
+
+Aucune migration. Exigence 3 du gate **G-TRUST-04**.
+
+- **12 routes praticien** appliquent désormais la garde d'appartenance
+  (`lib/praticien/appartenance.ts`, posée en #156) : `apercu-patient/reponses`,
+  `assignations` (POST et PATCH), `booklet` (GET et POST), `documents`,
+  `equilibre`, `packs/assign`, `patients-pg`, `protocoles` (GET et POST),
+  `protocoles/checkins`, `reponses`, `synthese` (GET et POST), `trust`
+  (GET et PATCH). Le compte passe de **13 routes gardées sur 31 à 25**.
+- **Trois routes agissaient sur le monde extérieur sans garde** :
+  `booklet` POST **envoie un document au patient par e-mail**, `assignations` et
+  `packs/assign` **déclenchent un e-mail d'assignation**, et `synthese` POST
+  **transmet les réponses d'un patient à l'API Anthropic**. La garde y est posée
+  **avant** l'effet, pas après.
+- **Le patient d'un autre praticien est traité comme introuvable**, jamais comme
+  interdit : un 403 confirmerait son existence. Même choix que `cockpit`.
+- **`trust` PATCH passe de `update` à `updateMany`** : `update` exige une clé
+  unique seule et n'accepte pas de filtre sur la relation patient. Le compte de
+  lignes touchées vaut garde — zéro se présente comme un signalement introuvable.
+- **`trust` GET filtre avant le `take: 100`**, sinon les signalements d'un autre
+  praticien pourraient évincer ceux du praticien connecté.
+- **Reste non gardée, volontairement** : `praticien/token`, laissée au gate
+  **G4** dont elle est un fichier cœur — la toucher ici créerait un conflit avec
+  la session qui applique les migrations. Les catalogues (`besoins`, `packs`,
+  `questionnaires`, `questionnaires/registry`) n'ont pas d'objet : aucune donnée
+  patient.
+- Sans effet en production — les 17 patients appartiennent au même praticien.
+
 ### Vague 2 — clôture : ce qui reste, et pourquoi (2026-07-20)
 
 Documentation seule, aucun code.

@@ -3,6 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSubScoreRanges, type ScoreRange } from '@/lib/scoring/ranges';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 
 export type ReponseQuestionnaire = {
   idReponse: string;
@@ -38,9 +39,17 @@ export async function GET(req: Request): Promise<NextResponse<ReponsesApiRespons
     return NextResponse.json({ reponses: [], error: 'email requis.' }, { status: 400 });
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return NextResponse.json({ reponses: [], error: 'Non authentifié.' }, { status: 401 });
+  }
+
   try {
+    // La route s'interroge par e-mail patient — une valeur devinable. Le scope
+    // passe donc par la relation patient : un e-mail qui ne désigne pas un
+    // patient du praticien rend une liste vide, comme un e-mail inconnu.
     const pgReponses = await prisma.questionnaireReponse.findMany({
-      where: { emailPatient: email },
+      where: { emailPatient: email, patient: filtrePatientsDuPraticien(emailSession) },
       orderBy: { dateReponse: 'desc' },
     });
 

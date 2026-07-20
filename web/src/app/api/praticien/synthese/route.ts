@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import {
   anthropic,
   CLAUDE_MODEL,
@@ -85,9 +86,16 @@ export async function GET(req: Request) {
     return withCorrelationHeader(NextResponse.json({ syntheses: [] }), requestContext);
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+  }
+
   try {
+    // Scope par la relation patient : une synthèse d'un patient d'un autre
+    // praticien ne remonte pas, plutôt que de remonter puis d'être filtrée.
     const syntheses = await prisma.syntheseIA.findMany({
-      where: { idPatient },
+      where: { idPatient, patient: filtrePatientsDuPraticien(emailSession) },
       orderBy: { dateGeneration: 'desc' },
       select: {
         idSynthese: true,
@@ -149,9 +157,20 @@ export async function POST(req: Request) {
     return withCorrelationHeader(NextResponse.json({ error: 'idPatient invalide.' }, { status: 400 }), requestContext);
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+  }
+
   let idSynthese = '';
   try {
-    const patient = await prisma.patient.findUnique({ where: { idPatient } });
+    // Garde d'appartenance avant tout appel au modèle : sans elle, générer une
+    // synthèse enverrait les réponses d'un patient d'un autre praticien à
+    // l'API Anthropic. Le patient d'un autre praticien est traité comme
+    // introuvable — un message distinct confirmerait son existence.
+    const patient = await prisma.patient.findFirst({
+      where: { idPatient, ...filtrePatientsDuPraticien(emailSession) },
+    });
     if (!patient) {
       return withCorrelationHeader(NextResponse.json({ error: 'Patient introuvable.' }, { status: 404 }), requestContext);
     }

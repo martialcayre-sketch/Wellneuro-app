@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 
 export type PatientsPgApiResponse = {
   patients: {
@@ -22,9 +23,14 @@ export async function GET(): Promise<NextResponse<PatientsPgApiResponse>> {
     return NextResponse.json({ patients: [], error: 'Non authentifié.' }, { status: 401 });
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return NextResponse.json({ patients: [], error: 'Non authentifié.' }, { status: 401 });
+  }
+
   try {
     const patients = await prisma.patient.findMany({
-      where: { actif: true },
+      where: { actif: true, ...filtrePatientsDuPraticien(emailSession) },
       orderBy: [{ nom: 'asc' }, { prenom: 'asc' }],
       select: {
         idPatient: true,

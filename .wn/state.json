@@ -30,10 +30,10 @@
     "Gates G1/G3/G4 : migration Prisma, session à relancer avec WN_ALLOW_PROTECTED_WRITE=1",
     "SP-SPI : dépend de G4",
     "Fil de correspondance médecin (C3) : arbitrage humain requis sur identité médecin et conservation",
-    "G-TRUST-04 non levé : hébergement HDS non établi, isolation multi-praticien partielle (13 routes sur 31)"
+    "G-TRUST-04 non levé : hébergement HDS non établi ; isolation multi-praticien à 25 routes gardées sur 31 (token/ laissée à G4)"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-20T11:00:00Z",
+  "updated_at": "2026-07-20T13:40:00Z",
   "parallel_campaigns": []
 }

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { getServerSession, prisma } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
   prisma: {
+    patient: { findUnique: vi.fn() },
     assessmentEpisode: { upsert: vi.fn(), findMany: vi.fn() },
     protocolDraft: { upsert: vi.fn(), findMany: vi.fn() },
     $transaction: vi.fn().mockResolvedValue([]),
@@ -55,6 +56,8 @@ describe('POST /api/praticien/protocoles', () => {
     vi.clearAllMocks();
     prisma.$transaction.mockResolvedValue([]);
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    // Par défaut, le patient appartient au praticien en session (garde d'appartenance).
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
   });
 
   it('refuse un praticien non authentifié (401)', async () => {
@@ -165,7 +168,10 @@ describe('POST /api/praticien/protocoles', () => {
 });
 
 describe('GET /api/praticien/protocoles', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+  });
 
   it('refuse un praticien non authentifié (401)', async () => {
     getServerSession.mockResolvedValue(null);
@@ -196,8 +202,31 @@ describe('GET /api/praticien/protocoles', () => {
       protocolDraftId: 'proto_DEC_1',
       milestone: 'T0',
     });
+    // La requête est bornée à l'idPatient ET scopée au praticien en session.
     expect(prisma.protocolDraft.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { idPatient: 'PAT_1' } }),
+      expect.objectContaining({
+        where: {
+          idPatient: 'PAT_1',
+          patient: { praticienEmail: { equals: 'praticien@wellneuro.fr', mode: 'insensitive' } },
+        },
+      }),
+    );
+  });
+
+  it('ne remonte rien pour le patient d’un autre praticien', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'autre@wellneuro.fr' } });
+    // Le scope est porté par la requête : la base ne rend aucune ligne.
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    const res = await GET(new Request('http://localhost/api/praticien/protocoles?idPatient=PAT_1'));
+    const json = (await res.json()) as { ok: boolean; protocoles: unknown[] };
+    expect(res.status).toBe(200);
+    expect(json.protocoles).toEqual([]);
+    expect(prisma.protocolDraft.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          patient: { praticienEmail: { equals: 'autre@wellneuro.fr', mode: 'insensitive' } },
+        }),
+      }),
     );
   });
 });
