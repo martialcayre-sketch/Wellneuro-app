@@ -3,21 +3,36 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Repere } from '@/lib/praticien/lectureAsOf';
 
-// Lecture d'un état passé (SP-TT LOT-01) — surface praticien, LECTURE SEULE.
+// Lecture d'un état passé (SP-TT LOT-01) — surface praticien.
 //
 // On ne relit pas un enregistrement : on **recalcule** l'état à partir des
 // données brutes tronquées à la date choisie. La date n'est pas libre — elle
 // doit correspondre à un repère réel du patient, ce qui fait de cette lecture
 // une navigation entre événements datés plutôt qu'un curseur temporel.
 //
-// Le serveur refuse toute écriture dès qu'un `asOf` est transmis : la garantie
-// ne dépend pas de cet écran.
+// L'état relu, lui, reste INTOUCHABLE : le serveur refuse toute écriture dès
+// qu'un `asOf` est transmis, et la garantie ne dépend pas de cet écran.
+//
+// Le dépôt de note (LOT-02) ne franchit pas cette ligne, il la souligne : la
+// note part sur une route dédiée qui reçoit l'instant relu **dans son corps,
+// comme une donnée**, et sa date d'écriture est le présent, posée par la base.
+// On n'écrit pas dans le passé, on écrit aujourd'hui à propos du passé — et
+// c'est ce que l'écran doit dire au praticien.
 
 type EtatLecture = 'inactif' | 'chargement' | 'chargee' | 'erreur';
+type EtatNote = 'repos' | 'envoi' | 'erreur';
 
 type PropositionDatee = {
   asOf?: string | null;
   proposal?: { candidateResponses?: unknown[]; milestone?: string };
+};
+
+type NoteRelecture = {
+  id: string;
+  instantRelu: string;
+  texte: string;
+  creeLe: string;
+  corrigeDepuisNoteId: string | null;
 };
 
 function formatDate(iso: string): string {
@@ -30,6 +45,10 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
   const [lecture, setLecture] = useState<PropositionDatee | null>(null);
   const [etat, setEtat] = useState<EtatLecture>('inactif');
   const [erreur, setErreur] = useState('');
+  const [notes, setNotes] = useState<NoteRelecture[]>([]);
+  const [brouillon, setBrouillon] = useState('');
+  const [etatNote, setEtatNote] = useState<EtatNote>('repos');
+  const [erreurNote, setErreurNote] = useState('');
 
   useEffect(() => {
     let annule = false;
@@ -48,10 +67,31 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
     };
   }, [idPatient]);
 
+  const chargerNotes = useCallback(
+    async (date: string) => {
+      try {
+        const reponse = await fetch(
+          `/api/praticien/relecture-notes?idPatient=${encodeURIComponent(idPatient)}&instantRelu=${encodeURIComponent(date)}`,
+        );
+        const payload = (await reponse.json()) as { ok: boolean; notes?: NoteRelecture[] };
+        if (reponse.ok && payload.ok) setNotes(payload.notes ?? []);
+      } catch {
+        // Les notes déjà déposées sont un rappel, pas une condition de lecture :
+        // leur absence n'empêche pas de relire l'état ni d'en déposer une.
+      }
+    },
+    [idPatient],
+  );
+
   const lireA = useCallback(
     async (date: string) => {
       setRepereActif(date);
       setEtat('chargement');
+      setNotes([]);
+      setBrouillon('');
+      setEtatNote('repos');
+      setErreurNote('');
+      void chargerNotes(date);
       try {
         const reponse = await fetch(
           `/api/praticien/cockpit?idPatient=${encodeURIComponent(idPatient)}&asOf=${encodeURIComponent(date)}`,
@@ -69,7 +109,7 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
         setEtat('erreur');
       }
     },
-    [idPatient],
+    [idPatient, chargerNotes],
   );
 
   const revenirAuPresent = useCallback(() => {
@@ -77,7 +117,38 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
     setLecture(null);
     setEtat('inactif');
     setErreur('');
+    setNotes([]);
+    setBrouillon('');
+    setEtatNote('repos');
+    setErreurNote('');
   }, []);
+
+  // Le dépôt de note ne passe PAS par le cockpit : route dédiée, instant relu
+  // dans le corps. Voir `api/praticien/relecture-notes/route.ts`.
+  const deposerNote = useCallback(async () => {
+    if (!repereActif || brouillon.trim().length === 0) return;
+    setEtatNote('envoi');
+    setErreurNote('');
+    try {
+      const reponse = await fetch('/api/praticien/relecture-notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient, instantRelu: repereActif, texte: brouillon }),
+      });
+      const payload = (await reponse.json()) as { ok: boolean; error?: string };
+      if (!reponse.ok || !payload.ok) {
+        setErreurNote(payload.error ?? 'La note n’a pas pu être enregistrée.');
+        setEtatNote('erreur');
+        return;
+      }
+      setBrouillon('');
+      setEtatNote('repos');
+      await chargerNotes(repereActif);
+    } catch {
+      setErreurNote('La note n’a pas pu être enregistrée.');
+      setEtatNote('erreur');
+    }
+  }, [idPatient, repereActif, brouillon, chargerNotes]);
 
   if (reperes.length === 0) return null;
 
@@ -88,7 +159,8 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
       </h3>
       <p className="mt-1 text-xs text-muted-foreground">
         L’état est <strong>recalculé</strong> à partir des données connues à cette date, jamais relu depuis un
-        enregistrement. Lecture seule : aucune action n’est possible depuis cet écran.
+        enregistrement. Il ne peut pas être modifié : aucune décision ne se prend depuis cet écran. Vous pouvez y
+        déposer une note — elle sera datée d’aujourd’hui.
       </p>
 
       <ul className="mt-3 flex flex-wrap gap-2">
@@ -139,6 +211,61 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
               {(lecture?.proposal?.candidateResponses?.length ?? 0) > 1 ? 's' : ''} de questionnaire étaient connues à
               cette date. Aucune donnée postérieure n’entre dans cette lecture.
             </p>
+          )}
+
+          {etat === 'chargee' && (
+            <div className="mt-4 border-t border-border pt-3">
+              <h4 className="text-sm font-semibold text-foreground">
+                Noter ce que vous observez sur cet état
+              </h4>
+              {/* La phrase qui porte tout le gate : deux dates, jamais confondues. */}
+              <p className="mt-1 text-xs text-muted-foreground">
+                Votre note porte sur l’état du {formatDate(repereActif)}, mais elle est écrite aujourd’hui : elle sera
+                datée du jour, jamais de la date relue. Elle reste entre praticiens — le patient ne la voit pas.
+              </p>
+
+              {notes.length > 0 && (
+                <ul className="mt-3 space-y-2">
+                  {notes.map((note) => (
+                    <li key={note.id} className="rounded-lg border border-border bg-surface p-2 text-sm text-foreground">
+                      <p className="whitespace-pre-wrap">{note.texte}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Écrite le {formatDate(note.creeLe)}
+                        {note.corrigeDepuisNoteId ? ' · corrige une note précédente' : ''}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <label htmlFor="note-relecture" className="mt-3 block text-xs font-medium text-foreground">
+                Note de relecture
+              </label>
+              <textarea
+                id="note-relecture"
+                value={brouillon}
+                onChange={(evenement) => setBrouillon(evenement.target.value)}
+                rows={3}
+                maxLength={4000}
+                placeholder="Ce que cet état passé éclaire aujourd’hui…"
+                className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              />
+
+              {etatNote === 'erreur' && (
+                <p role="alert" className="mt-2 text-sm text-foreground">
+                  {erreurNote}
+                </p>
+              )}
+
+              <button
+                type="button"
+                onClick={() => void deposerNote()}
+                disabled={brouillon.trim().length === 0 || etatNote === 'envoi'}
+                className="mt-2 min-h-11 rounded-lg border border-primary bg-primary/10 px-3 py-1 text-sm font-medium text-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                {etatNote === 'envoi' ? 'Enregistrement…' : 'Déposer la note (datée d’aujourd’hui)'}
+              </button>
+            </div>
           )}
 
           <button
