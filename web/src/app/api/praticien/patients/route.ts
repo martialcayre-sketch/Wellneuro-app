@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { emailPraticien, filtrePatientsDuPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 
 const MAX_ASSIGNATIONS = 40;
 
@@ -52,7 +53,7 @@ export type CreatePatientResponse = {
 export type PatchPatientResponse = {
   success: boolean;
   error?: string;
-  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'exception';
+  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'forbidden' | 'exception';
 };
 
 export type DeletePatientResponse = {
@@ -88,6 +89,14 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
     );
   }
 
+  const email = emailPraticien(session);
+  if (!email) {
+    return NextResponse.json(
+      { patients: [], assignations: [], unavailable: true, reason: 'unauthenticated' },
+      { status: 401 }
+    );
+  }
+
   // `page` absent = comportement historique (liste complète, non paginée),
   // conservé pour les appelants qui ont besoin de tous les patients (ex.
   // le sélecteur de la nouvelle assignation). `page` présent = pagination
@@ -103,15 +112,18 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
       const search = (searchParams.get('search') ?? '').trim().slice(0, 200);
       const sortBy = searchParams.get('sortBy') === 'email' ? 'email' : 'nom';
 
-      const where = search
-        ? {
-            OR: [
-              { nom: { contains: search, mode: 'insensitive' as const } },
-              { prenom: { contains: search, mode: 'insensitive' as const } },
-              { email: { contains: search, mode: 'insensitive' as const } },
-            ],
-          }
-        : {};
+      const where = {
+        ...filtrePatientsDuPraticien(email),
+        ...(search
+          ? {
+              OR: [
+                { nom: { contains: search, mode: 'insensitive' as const } },
+                { prenom: { contains: search, mode: 'insensitive' as const } },
+                { email: { contains: search, mode: 'insensitive' as const } },
+              ],
+            }
+          : {}),
+      };
       const orderBy =
         sortBy === 'email'
           ? [{ email: 'asc' as const }]
@@ -121,6 +133,7 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
         prisma.patient.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
         prisma.patient.count({ where }),
         prisma.assignation.findMany({
+          where: { patient: filtrePatientsDuPraticien(email) },
           orderBy: { dateAssignation: 'desc' },
           take: MAX_ASSIGNATIONS,
         }),
@@ -134,8 +147,9 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
     }
 
     const [dbPatients, dbAssignations] = await Promise.all([
-      prisma.patient.findMany({ orderBy: [{ nom: 'asc' }, { prenom: 'asc' }] }),
+      prisma.patient.findMany({ where: filtrePatientsDuPraticien(email), orderBy: [{ nom: 'asc' }, { prenom: 'asc' }] }),
       prisma.assignation.findMany({
+        where: { patient: filtrePatientsDuPraticien(email) },
         orderBy: { dateAssignation: 'desc' },
         take: MAX_ASSIGNATIONS,
       }),
@@ -339,6 +353,14 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
     );
   }
 
+  const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+  if (verdict === 'introuvable') {
+    return NextResponse.json({ success: false, reason: 'patient_not_found', error: 'Patient introuvable.' }, { status: 404 });
+  }
+  if (verdict === 'autre_praticien') {
+    return NextResponse.json({ success: false, reason: 'forbidden', error: 'Patient non accessible.' }, { status: 403 });
+  }
+
   try {
     await prisma.patient.update({
       where: { idPatient },
@@ -380,9 +402,16 @@ export async function DELETE(req: Request): Promise<NextResponse<DeletePatientRe
     return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'idPatient invalide.' }, { status: 400 });
   }
 
+  const email = emailPraticien(session);
+  if (!email) {
+    return NextResponse.json({ success: false, reason: 'unauthenticated', error: 'Session absente.' }, { status: 401 });
+  }
+
   try {
+    // `updateMany` plutôt que `update` : `count === 0` couvre à la fois
+    // « patient introuvable » et « pas le vôtre » sans confirmer lequel.
     const { count } = await prisma.patient.updateMany({
-      where: { idPatient },
+      where: { idPatient, ...filtrePatientsDuPraticien(email) },
       data: { actif: false },
     });
 

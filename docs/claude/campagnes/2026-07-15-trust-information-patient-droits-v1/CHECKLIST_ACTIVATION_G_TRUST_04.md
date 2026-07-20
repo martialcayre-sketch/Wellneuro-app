@@ -48,7 +48,7 @@ applique `prisma migrate deploy` sur la base Supabase de production au build de
 |---|---|---|---|
 | 1 | Architecture d'hébergement adaptée | ❌ **Non** | Supabase + Vercel, certification HDS non établie (cf. ci-dessus) |
 | 2 | Contrôle d'accès centralisé | ⚠️ **Partiel** | Praticien : NextAuth + OAuth Google restreint à `@wellneuro.fr` (`web/src/lib/auth.ts`). Patient : jeton d'accès **permanent**, pas de compte, pas de révocation en libre-service |
-| 3 | Isolation multi-praticien | ⚠️ **Partiel — 13 routes sur 31** | cf. tableau ci-dessous |
+| 3 | Isolation multi-praticien | ⚠️ **Partiel — 30 routes sur 33** | cf. tableau ci-dessous |
 | 4 | Gestion des sessions et révocations | ⚠️ **Partiel** | Cookie portail signé, durée bornée ; **le jeton patient ne se périme pas** et sa révocation est une manipulation manuelle en base (`docs/RUNBOOK.md`, « Révocation accès patient »). C'est précisément l'objet du gate **G4 / IDP** |
 | 5 | Journalisation | ⚠️ **Partiel** | `web/src/lib/observability/` : logger structuré, codes d'événement, assainissement des données (`sanitizeLogData.ts`), corrélation de requête. Couvre les **erreurs et refus d'accès**, pas les **accès légitimes** : il n'existe pas de piste d'audit « qui a lu quel dossier, quand » |
 | 6 | Réponse aux incidents | ⚠️ **Partiel** | `docs/RUNBOOK.md` couvre Vercel/DNS, OAuth, Supabase/Prisma, fuite de secret, révocation d'un accès patient. **Aucune procédure de violation de données** (qualification, délai de notification CNIL, information des personnes) |
@@ -59,28 +59,35 @@ partiel : c'est un ET, pas un OU.
 
 ### Détail de l'exigence 3 — isolation multi-praticien
 
-État au 2026-07-20, sur les 31 routes de `web/src/app/api/praticien/` :
+État au 2026-07-21, sur les **33** routes de `web/src/app/api/praticien/`.
+*Correction* : le compte « 13 sur 31 » ci-dessus datait du 2026-07-20 avant
+`main`, était déjà dépassé par #167 (12 routes fermées le jour même) et
+comptait deux routes en trop peu — l'audit de conformité 5.0 du 2026-07-20
+(E9) avait relevé que `consultations` et `patients` y figuraient à tort parmi
+les gardées, et `besoins` à tort en « sans objet ». Les trois ont depuis été
+fermées pour de bon (2026-07-21) ; le tableau ci-dessous reflète l'état réel.
 
-**Gardées** (13) — `boussole`, `cockpit`, `consultations`, `copilote/cloture`,
-`copilote/prevol`, `fil`, `ja/activation`, `ja/observations`, `metrics`,
-`patients`, `protocoles/diffusion`, `protocoles/versions`, `reperes`,
-`trajectoire`.
+**Gardées (30)** — la totalité des routes portant de la donnée patient. Via la
+garde factorisée `web/src/lib/praticien/appartenance.ts`
+(`filtrePatientsDuPraticien`, `verifierAppartenancePatient`) : `apercu-patient/reponses`,
+`assignations`, `besoins`, `booklet`, `cockpit`, `consultations`,
+`copilote/cloture`, `copilote/prevol`, `documents`, `equilibre`, `fil`,
+`fil/refus`, `metrics`, `packs/assign`, `patients`, `patients-pg`,
+`protocoles`, `protocoles/checkins`, `relecture-notes`, `reperes`, `reponses`,
+`synthese`, `token`, `trajectoire`, `trust`. Via une vérification inline
+équivalente, antérieure à l'extraction de la garde commune : `boussole`,
+`ja/activation`, `ja/observations`, `protocoles/diffusion`,
+`protocoles/versions`.
 
-**Non gardées portant de la donnée patient** (13) — `apercu-patient/reponses`,
-`assignations`, `booklet`, `documents`, `equilibre`, `packs/assign`,
-`patients-pg`, `protocoles`, `protocoles/checkins`, `reponses`, `synthese`,
-`token`, `trust`.
+**Sans objet (3)** — `packs`, `questionnaires`, `questionnaires/registry` :
+catalogues et référentiels globaux, sans `idPatient` ni donnée patient.
 
-**Non gardées sans objet** (5) — `besoins`, `packs`, `questionnaires`,
-`questionnaires/registry` : catalogues et référentiels, sans donnée patient.
-
-Le filtrage est aujourd'hui un **no-op fonctionnel** : les 17 patients de
-production appartiennent au même praticien. Il n'en reste pas moins que
-l'exigence n'est **pas** satisfaite, et qu'elle le sera d'autant moins vite
-qu'un deuxième praticien serait ouvert avant que les 13 routes restantes soient
-fermées. L'outillage existe déjà et rend chaque fermeture mécanique :
-`web/src/lib/praticien/appartenance.ts` (`filtrePatientsDuPraticien`,
-`verifierAppartenancePatient`).
+Le filtrage reste aujourd'hui un **no-op fonctionnel** : les patients de
+production appartiennent tous au même praticien. La fermeture des 33 routes ne
+lève pas à elle seule l'exigence 3 : elle n'a pas été éprouvée par un test
+d'isolation multi-praticien réel (deux comptes, deux portefeuilles de
+patients), et rien ne remplace encore l'absence de contrainte au niveau de la
+base (RLS ou équivalent) si la garde applicative était un jour contournée.
 
 ## Ce qui a été livré en Vague 2 et compte pour ce gate
 
@@ -97,8 +104,11 @@ fermées. L'outillage existe déjà et rend chaque fermeture mécanique :
 1. **Instruire l'hébergement.** Obtenir des fournisseurs une réponse écrite sur
    la certification HDS. Si négative — l'hypothèse la plus probable —, aucune
    suite applicative n'a de sens sans migration vers un hébergeur certifié.
-2. **Fermer les 13 routes restantes.** Mécanique, sans migration, avec
-   l'outillage existant.
+2. ~~Fermer les routes restantes.~~ Fait le 2026-07-21 (`besoins`,
+   `consultations`, `patients`) : les 30 routes portant de la donnée patient
+   sont désormais gardées. Reste, pour que l'exigence 3 soit tenue pour
+   satisfaite : un test d'isolation multi-praticien réel, et une décision sur
+   une contrainte au niveau base.
 3. **Livrer G4 / IDP.** Jeton haché, expirant, à consommation unique, rejeu
    refusé et tracé — c'est l'exigence 4, et la campagne IDP porte déjà la
    décision « **livrable en préproduction ; activation avec données réelles =
