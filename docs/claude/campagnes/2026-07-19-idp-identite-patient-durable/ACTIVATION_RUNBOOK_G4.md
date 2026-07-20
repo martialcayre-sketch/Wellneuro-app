@@ -34,14 +34,17 @@ jamais sur la boîte d'un tiers.
 | `WN_G4_REDEMANDE_PATIENT` | canal **public** `POST /api/portail/lien/demande` | **laissé absent** |
 
 Le canal de redemande est public et non authentifié. Sa réponse est
-indifférenciée, mais deux résidus de la revue de sécurité subsistent : **le temps
-de réponse n'est pas égalisé** et **il n'y a pas de limitation par IP**. Sur des
-adresses de personnes réelles, ce n'est plus théorique.
+indifférenciée, et les **deux résidus de la revue de sécurité sont fermés le
+2026-07-21** : le temps de réponse passe par un plancher commun à toutes les
+sorties, et les tentatives sont plafonnées par origine réseau, en base.
+
+Le drapeau reste néanmoins **absent** à l'activation de G4. Fermer les résidus
+lève l'obstacle technique, pas la décision : ouvrir une surface publique sur des
+adresses de personnes réelles se consigne à part, avec sa date et son périmètre.
 
 La coexistence des deux chemins le rend **non indispensable** : un patient dont
 le lien magique expire garde son lien permanent, et l'écran d'échec l'invite à
-demander un nouveau lien à son praticien. Ce canal s'ouvrira dans un lot dédié,
-une fois les deux résidus fermés.
+demander un nouveau lien à son praticien.
 
 ## Prérequis (à confirmer avant activation)
 

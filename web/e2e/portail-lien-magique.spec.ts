@@ -45,13 +45,22 @@ test('lien inconnu : même écran, même message qu’un lien déjà consommé',
 test('la redemande répond la même chose sur une adresse connue et une inconnue', async ({ page }) => {
   await page.goto('/portail/lien/indisponible');
 
-  const connue = await page.request.post('/api/portail/lien/demande', {
-    data: { email: PATIENT.email },
-  });
-  const inconnue = await page.request.post('/api/portail/lien/demande', {
-    data: { email: 'personne@example.test' },
-  });
+  const chronometrer = async (email: string) => {
+    const debut = Date.now();
+    const reponse = await page.request.post('/api/portail/lien/demande', { data: { email } });
+    return { reponse, dureeMs: Date.now() - debut };
+  };
 
-  expect(inconnue.status()).toBe(connue.status());
-  expect(await inconnue.text()).toBe(await connue.text());
+  const connue = await chronometrer(PATIENT.email);
+  const inconnue = await chronometrer('personne@example.test');
+
+  expect(inconnue.reponse.status()).toBe(connue.reponse.status());
+  expect(await inconnue.reponse.text()).toBe(await connue.reponse.text());
+
+  // La durée aussi doit se taire : l'adresse connue déclenche une écriture et un
+  // envoi, l'inconnue ne déclenche rien. Sans plancher, l'écart se mesure d'ici.
+  for (const { dureeMs } of [connue, inconnue]) {
+    expect(dureeMs).toBeGreaterThanOrEqual(1400);
+  }
+  expect(Math.abs(connue.dureeMs - inconnue.dureeMs)).toBeLessThan(500);
 });

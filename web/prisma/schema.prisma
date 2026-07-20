@@ -885,3 +885,28 @@ model PortailMagicLink {
   @@index([idPatient, creeLe], map: "g4_magic_link_patient_idx")
   @@map("portail_magic_links")
 }
+
+// Tentatives de redemande de lien, comptées par origine réseau (gate G4).
+//
+// POURQUOI UNE TABLE ET PAS UN COMPTEUR EN MÉMOIRE : plusieurs instances
+// serverless répondent en parallèle ; un compteur local ne borne rien. Et
+// `portail_magic_links` ne peut pas tenir ce rôle — une adresse inconnue n'y
+// crée aucune ligne, or c'est exactement la tentative à compter.
+//
+// AUCUNE RELATION VERS `patients`, DÉLIBÉRÉMENT. Pas de clé étrangère, pas de
+// colonne d'identifiant patient : aucune jointure ne doit pouvoir relier une
+// origine réseau à un dossier. La table sait combien, jamais pour qui.
+//
+// L'ADRESSE IP N'ENTRE PAS ICI. `empreinte_ip` est un HMAC-SHA256 (clé
+// NEXTAUTH_SECRET, préfixe « portail-demande-ip: »). Les lignes se purgent
+// au-delà de 24 h : passé la fenêtre de comptage, elles ne seraient plus qu'une
+// trace d'origine réseau conservée sans usage.
+model PortailDemandeTentative {
+  id          String   @id @default(cuid()) @map("id")
+  empreinteIp String   @map("empreinte_ip")
+  creeLe      DateTime @default(now()) @map("cree_le")
+
+  @@index([empreinteIp, creeLe], map: "g4_demande_ip_idx")
+  @@index([creeLe], map: "g4_demande_purge_idx")
+  @@map("portail_demande_tentatives")
+}
