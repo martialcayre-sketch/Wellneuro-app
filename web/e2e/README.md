@@ -97,7 +97,10 @@ de la liste ci-dessus** : elle provisionne sa propre base et exporte son propre
 `NEXTAUTH_SECRET` de test. Linux et macOS sont pris en charge ; sur macOS,
 PostgreSQL vient de Homebrew (`brew install postgresql@15`, version du CI) et
 est détecté automatiquement. La passe rapide `npm run test:worktree -- --fast`
-prend ~1 min 20 s et couvre les 34 tests E2E (Chromium + WebKit).
+prend ~1 min 20 s et couvre les 26 tests E2E source (Chromium + WebKit, soit
+jusqu'à 52 exécutions comptées par Playwright — un test par projet). C'est le
+compte source (`grep -c '^\s*test(' e2e/*.spec.ts`) qui fait foi dans cette
+documentation, pas le total d'exécutions rapporté par Playwright.
 
 ## Serveur testé : `next dev` ou build de production
 

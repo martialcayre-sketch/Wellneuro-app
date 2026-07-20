@@ -15,25 +15,24 @@
   },
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-20T11:00:00Z",
+    "last_checked_at": "2026-07-20T23:13:37Z",
     "checks": {
       "orchestration": "audit campagnes vert (1 warning préexistant : LOT-00 dupliqué sur refonte-ux-shell-3-0)",
       "type_check": "vert",
       "scoring_certification": "inchangé (aucun scoring ni seuil modifié en Vague 2)",
       "no_secrets": "vert",
-      "e2e": "Playwright vert — 45 tests, test:worktree --fast en 1 min 17 s, base éphémère isolée",
+      "e2e": "Playwright vert — 26 tests source (2 projets Chromium/iPhone 13, soit 52 exécutions), test:worktree en ~1 min, base éphémère isolée",
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Vague 2 — livrée pour tout ce qui ne demande pas de migration : cadrage des 5 campagnes (#148), Spirale navigable et comparateur (#149), météo d'adhésion (#150), pré-vol copilote (#151), dette de tests du Fil (#152), gate G2 identité de cycle appliqué en base (#155), gardes d'appartenance praticien (#156), lecture d'un état passé (#158), discipline « une session = un worktree » (#159), minute d'après (#160). BLOQUÉ, en attente d'une session lancée avec WN_ALLOW_PROTECTED_WRITE=1 : gates G1 (refus des cartes du Fil), G3 (relecture_notes), G4 (identité patient durable) — dossier prêt dans docs/claude/GATES_VAGUE2_G1_G3_G4.md. SP-SPI dépend de G4 par décision de sa propre campagne. Reliquat C3 (fil médecin) : le volet sortant est livré et sans pièces jointes par construction ; le fil entrant reste ouvert, il demande une migration ET un arbitrage humain sur l'identité médecin et la conservation. G-TRUST-04 reste NON LEVÉ : aucune donnée patient réelle, checklist d'activation dans campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md.",
+  "next_action": "Vague 2 — livrée pour tout ce qui ne demande pas de migration : cadrage des 5 campagnes (#148), Spirale navigable et comparateur (#149), météo d'adhésion (#150), pré-vol copilote (#151), dette de tests du Fil (#152), gate G2 identité de cycle appliqué en base (#155), gardes d'appartenance praticien (#156), lecture d'un état passé (#158), discipline « une session = un worktree » (#159), minute d'après (#160). Gates G1 (refus des cartes du Fil, #170) et G3 (relecture_notes, #163) appliqués en base, migrations vérifiées. Isolation multi-praticien : les 3 dernières routes patient-scoped fermées (#181, besoins/consultations/patients) — dénominateur réel 33 routes, 30 gardées, 3 sans objet (catalogues globaux). G4 et G-TRUST-04 : en évolution active dans une autre session ; ce fichier n'en est pas la source à jour — voir campagnes/2026-07-19-idp-identite-patient-durable/ACTIVATION_RUNBOOK_G4.md et campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md. SP-SPI dépend de G4 par décision de sa propre campagne. Reliquat C3 (fil médecin) : le volet sortant est livré et sans pièces jointes par construction ; le fil entrant reste ouvert, il demande une migration ET un arbitrage humain sur l'identité médecin et la conservation.",
   "blocking_issues": [
-    "Gates G1/G3/G4 : migration Prisma, session à relancer avec WN_ALLOW_PROTECTED_WRITE=1",
     "SP-SPI : dépend de G4",
     "Fil de correspondance médecin (C3) : arbitrage humain requis sur identité médecin et conservation",
-    "G-TRUST-04 non levé : hébergement HDS non établi ; isolation multi-praticien à 25 routes gardées sur 31 (token/ laissée à G4)"
+    "G-TRUST-04 : hébergement HDS non établi — état détaillé et à jour dans CHECKLIST_ACTIVATION_G_TRUST_04.md, en évolution active"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-20T13:40:00Z",
+  "updated_at": "2026-07-20T23:13:37Z",
   "parallel_campaigns": []
 }

@@ -47,6 +47,10 @@ Principe directeur : **consolider avant d'évoluer**. Ordre recommandé, chaque 
 
 ## Piste technique transverse — R7 / R8 (fiabilisation, indépendante de la séquence produit R0→R6)
 
+> Ce R8 (filet de sécurité CI, livré) ne doit pas être confondu avec le R8 de
+> `ROADMAP_PRODUIT.md` (authentification patient, campagne IDP, non livré) :
+> deux roadmaps, deux numérotations indépendantes.
+
 Décidée le 2026-07-10 suite à une revue critique de l'organisation du projet (process, outillage Claude Code, stack). Ces deux lots ne bloquent pas et ne sont pas bloqués par R3→R6 : exécutables à tout moment, y compris en parallèle du reste. Détail complet : entrée SESSION_LOG du 2026-07-10.
 
 | Lot | Objet | Statut |

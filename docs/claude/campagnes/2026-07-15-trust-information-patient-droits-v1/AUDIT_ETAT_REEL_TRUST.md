@@ -12,6 +12,14 @@ l'email pré-enregistré via `POST /api/portail/session`). Le flux legacy
 `/patient/[idAssignation]` subsiste en compatibilité (gelé, styles non
 tokenisés) — candidat au décommissionnement, hors périmètre TRUST V1.
 
+> **Rectification (2026-07-21, audit de conformité 5.0, E35)** : « gelé »
+> décrit l'absence d'évolution fonctionnelle propre, pas l'absence de tout
+> changement — le legacy partage des composants avec le portail (`ScoreGauge`,
+> `MonEquilibreAccueil`…) et reçoit donc les correctifs et la tokenisation
+> appliqués à ces composants partagés, sans développement dédié. `D-002`
+> (`docs/DECISIONS.md`) reste la décision normative : portail = flux
+> principal, legacy = compatibilité non augmentée.
+
 ## 2. Information déjà présentée au patient
 
 - **Écran de consentement du wizard** (`web/src/app/portail/[token]/page.tsx`,
