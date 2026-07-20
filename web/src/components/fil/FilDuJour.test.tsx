@@ -24,6 +24,7 @@ const carte = (partiel: Partial<CarteFil> = {}): CarteFil => ({
   date: '2026-07-17T10:00:00.000Z',
   href: '/dashboard/patients/PAT_SEED_01',
   actionLabel: 'Ouvrir la fiche',
+  cle: 'reponse_recente:REP_1',
   ...partiel,
 });
 

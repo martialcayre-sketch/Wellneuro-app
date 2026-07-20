@@ -85,7 +85,7 @@ export function FilDuJour() {
   return (
     <div data-testid="fil-du-jour" className="flex flex-col gap-3">
       {data.cartes.map((carte, i) => (
-        <CarteDuFil key={`${carte.type}-${carte.idPatient}-${i}`} carte={carte} />
+        <CarteDuFil key={carte.cle} carte={carte} />
       ))}
     </div>
   );

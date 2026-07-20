@@ -23,16 +23,46 @@ export type CarteFil = {
   date: string | null;
   href: string;
   actionLabel: string;
+  /** Identité stable de la carte — voir `cleCarte`. */
+  cle: string;
 };
 
+/**
+ * Identité d'une carte du Fil (prérequis de G1 — refus persisté).
+ *
+ * Les cartes sont des projections recalculées à chaque ouverture : sans clé,
+ * on ne peut pas dire ce qui a été refusé. La clé est **ancrée sur la ligne
+ * source**, pas sur un triplet `type + patient + date` : une carte sans date
+ * n'aurait pas de clé, et deux cartes de même type au même instant se
+ * confondraient — le refus « sauterait » et la carte reviendrait le lendemain.
+ *
+ * Une seule carte fait exception, `reprise`, qui est agrégée et n'a donc pas
+ * de ligne source : sa clé est `idPatient + date de référence`. Cette date ne
+ * bouge pas tant que le patient reste inactif — et s'il répond, la carte
+ * disparaît d'elle-même. La clé est donc stable exactement quand elle doit
+ * l'être.
+ */
+export function cleCarte(type: TypeCarteFil, identifiant: string): string {
+  return `${type}:${identifiant}`;
+}
+
 export type SignalementRow = {
+  /** Identifiant de la ligne source, dans sa table d'origine. */
+  id: string;
   idPatient: string;
   kind: 'effet_indesirable' | 'incident_confidentialite' | 'demande_droit';
   soumisLe: Date;
 };
-export type ReponseRow = { idPatient: string; titre: string; dateReponse: Date };
-export type AssignationRow = { idPatient: string; titre: string; dateLimite: string | null; statut: string };
-export type SyntheseRow = { idPatient: string; dateGeneration: Date };
+export type ReponseRow = { idReponse: string; idPatient: string; titre: string; dateReponse: Date };
+export type AssignationRow = {
+  idAssignation: string;
+  idPatient: string;
+  titre: string;
+  dateLimite: string | null;
+  statut: string;
+};
+export type SyntheseRow = { idSynthese: string; idPatient: string; dateGeneration: Date };
+/** Carte agrégée : pas de ligne source, donc pas d'identifiant à remonter. */
 export type DerniereActiviteRow = { idPatient: string; derniereReponse: Date };
 
 /** Fenêtre de « récence » d'une réponse reçue. */
@@ -83,6 +113,8 @@ export function cartesSignalementsTrust(
       date: s.soumisLe.toISOString(),
       href: '/dashboard/droits',
       actionLabel: 'Examiner',
+      // Trois tables sources distinctes : le `kind` les désambiguïse.
+      cle: cleCarte('signalement_trust', `${s.kind}:${s.id}`),
     }));
 }
 
@@ -103,6 +135,7 @@ export function cartesSynthesesAValider(
       date: s.dateGeneration.toISOString(),
       href: '/dashboard/synthese',
       actionLabel: 'Relire et valider',
+      cle: cleCarte('synthese_a_valider', s.idSynthese),
     }));
 }
 
@@ -131,6 +164,7 @@ export function cartesAssignationsEnRetard(
         date: limite.toISOString(),
         href: `/dashboard/patients/${a.idPatient}`,
         actionLabel: 'Ouvrir la fiche',
+        cle: cleCarte('assignation_en_retard', a.idAssignation),
       };
     });
 }
@@ -154,6 +188,7 @@ export function cartesReponsesRecentes(
       date: r.dateReponse.toISOString(),
       href: `/dashboard/patients/${r.idPatient}`,
       actionLabel: 'Consulter les réponses',
+      cle: cleCarte('reponse_recente', r.idReponse),
     }));
 }
 
@@ -187,6 +222,9 @@ export function cartesReprise(
         date: a.derniereReponse.toISOString(),
         href: `/dashboard/patients/${a.idPatient}`,
         actionLabel: 'Ouvrir la fiche',
+        // Seule carte agrégée du Fil : sa clé se fonde sur la date de référence
+        // à défaut de ligne source. Voir `cleCarte`.
+        cle: cleCarte('reprise', `${a.idPatient}:${a.derniereReponse.toISOString()}`),
       };
     });
 }
