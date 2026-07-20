@@ -4,7 +4,9 @@
 //
 //   REFUS   — inspecte la commande BRUTE, littéraux compris. Un faux positif
 //             coûte une reformulation ; un faux négatif coûte des données.
-//             `bash -c "rm -rf /"` doit donc rester attrapé.
+//             `bash -c "rm -rf /"` doit donc rester attrapé. Seule exception,
+//             détaillée plus bas : le corps d'un heredoc dans une commande où
+//             rien ne sait exécuter quoi que ce soit est de la donnée.
 //   DEMANDE — inspecte la commande dont les littéraux ont été MASQUÉS. Un corps
 //             de PR décrivant « prisma migrate deploy » est de la prose entre
 //             guillemets, jamais une exécution : c'est précisément le faux
@@ -34,6 +36,25 @@ const enveloppesSures = [
   /\bnpm\s+run\s+test:worktree\b/
 ];
 if (enveloppesSures.some((motif) => motif.test(brute))) process.exit(0);
+
+// Un heredoc ne transporte du CODE que si quelque chose, dans la commande, sait
+// l'exécuter. `cat >> docs/claude/SESSION_LOG.md <<'ENTREE'` écrit un texte, et
+// ce texte peut citer `rm -rf /` sans rien détruire. Le 2026-07-20 ce hook a
+// bloqué deux fois de la prose pour cette raison, dont le journal de session qui
+// décrivait le hook lui-même.
+//
+// Le test est volontairement grossier et conservateur : on ne cherche pas à
+// deviner QUI consomme le heredoc — `cat <<EOF | bash` rendrait cette analyse
+// fausse — on exige qu'AUCUN vecteur d'exécution n'apparaisse dans la commande
+// entière. Sans quoi le corps reste inspecté intégralement, et `bash -c` comme
+// `psql <<SQL … DROP TABLE …` restent attrapés.
+const vecteursExecution =
+  /\b(bash|sh|zsh|ksh|dash|eval|exec|source|xargs|psql|mysql|sqlite3?|python3?|perl|ruby|node|deno|npm|npx|pnpm|yarn|make|docker|kubectl|ssh|awk)\b/;
+
+const heredoc = /<<-?\s*'?"?(\w+)'?"?[\s\S]*?^\s*\1\s*$/gm;
+const bruteRefus = vecteursExecution.test(brute)
+  ? brute
+  : original.replace(heredoc, " <<données-masquées> ").toLowerCase();
 
 // Masque le contenu des littéraux et des heredocs : ce qui reste est la
 // structure exécutable de la commande.
@@ -79,7 +100,7 @@ const demande = [
 ];
 
 for (const motif of refus) {
-  if (motif.test(brute)) {
+  if (motif.test(bruteRefus)) {
     console.error(
       `Commande bloquée par WellNeuro : ${original}. ` +
       `Elle est destructive ou peut exposer des secrets. ` +
