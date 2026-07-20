@@ -4,6 +4,35 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Patient & accessibilité — six écarts de l'audit de conformité 5.0 (2026-07-21)
+
+Aucune migration, aucun changement de schéma. Corrige E10, E12, E13, E14, E15,
+E18 relevés par l'audit du 2026-07-20.
+
+- **E10 — plus de score chiffré affiché au patient.** `ScoreGauge` gagne
+  `showValue` (défaut `true`) ; le montage patient (`MonEquilibreAccueil`)
+  passe `showValue={false}` — la bande visuelle reste, le nombre disparaît.
+  Le montage praticien (`FichePatientPanel`) est inchangé. *Décision utilisateur
+  du 2026-07-21 : masquer le chiffre plutôt qu'acter une exception au registre.*
+- **E12** — le sous-titre « Version locale de travail JA5-02 » et la ligne
+  « Jalon · charge perçue · budget global » (identifiants et chiffres internes)
+  ne s'affichent plus dans la spirale alimentaire patient ; seul
+  `feedbackPatient`, écrit pour le patient, reste.
+- **E13** — « Mes 12 besoins » n'est plus la seule interaction *hover-only* du
+  dépôt : chaque besoin est désormais un bouton focusable (clavier/tactile), et
+  porte un libellé texte de couverture (« Bien couvert » / « Couverture
+  partielle » / « Peu couvert ») en plus de l'opacité de couleur.
+  Instruction reformulée en conséquence.
+- **E14** — cibles tactiles du portail patient relevées à 44 px minimum
+  (`PatientButton`, `ReadingComfortControl`, lien « Ouvrir » du hub legacy).
+- **E15** — la garde `assertRenduMedecinNonPrescriptif`, restée sans appelant en
+  production, est désormais posée dans `renderDocumentHtml` sur le rendu
+  médecin ; `DocumentsPanel` capture une éventuelle violation pour un message
+  actionnable plutôt qu'un aperçu qui plante.
+- **E18** — couleurs Tailwind brutes hors tokens retokenisées :
+  `FichePatientPanel` (`orange-*` → `status-warning`), `DocumentComposer` et
+  `DocumentsPanel` (`slate-*`/`white` → `foreground`/`surface`/`muted`).
+
 ### Gate G4 — les deux résidus du canal de redemande (IDP LOT-02, 2026-07-21)
 
 Migration confirmée explicitement par l'utilisateur le 2026-07-21. **Migration

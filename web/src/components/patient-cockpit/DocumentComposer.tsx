@@ -120,7 +120,7 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
             aria-pressed={destinataire === d}
             onClick={() => setDestinataire(d)}
             className={`min-h-11 rounded-md border px-3 py-2 text-sm ${
-              destinataire === d ? 'bg-slate-900 text-white' : 'bg-white'
+              destinataire === d ? 'bg-foreground text-surface' : 'bg-surface'
             }`}
           >
             {DESTINATAIRE_LABELS[d]}
@@ -130,34 +130,34 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div aria-label="Sources praticien" className="flex flex-col gap-3">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Sources praticien
           </h4>
           {document.blocs.map((bloc) => (
             <article key={bloc.id} className="rounded-md border p-3">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <span className="font-medium">{TYPE_LABELS[bloc.type]}</span>
-                <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+                <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                   {SOURCE_LABELS[bloc.provenance.source]} · {bloc.provenance.version}
                 </span>
               </div>
-              <p className="text-sm text-slate-700">{bloc.contenu.praticien}</p>
+              <p className="text-sm text-foreground">{bloc.contenu.praticien}</p>
             </article>
           ))}
         </div>
 
         <div aria-label="Aperçu destinataire" className="flex flex-col gap-3">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             Aperçu destinataire — {DESTINATAIRE_LABELS[destinataire]}
           </h4>
           {blocsVisibles.length === 0 ? (
-            <p className="rounded-md border border-dashed p-3 text-sm text-slate-500">
+            <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
               Aucun contenu diffusé à ce destinataire.
             </p>
           ) : (
             blocsVisibles.map((bloc) => (
               <article key={bloc.id} className="rounded-md border p-3">
-                <p className="text-sm text-slate-800">{contenuPourDestinataire(bloc, destinataire)}</p>
+                <p className="text-sm text-foreground">{contenuPourDestinataire(bloc, destinataire)}</p>
               </article>
             ))
           )}
@@ -180,7 +180,7 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
             {ACTION_LABELS[prochainEtat]}
           </button>
         ) : (
-          <span className="text-sm text-slate-500">Document envoyé — parcours terminé.</span>
+          <span className="text-sm text-muted-foreground">Document envoyé — parcours terminé.</span>
         )}
       </footer>
     </section>

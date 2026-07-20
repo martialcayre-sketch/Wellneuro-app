@@ -7,11 +7,14 @@ export function ScoreGauge({
   max = 100,
   label,
   zoneLabel,
+  showValue = true,
 }: {
   value: number;
   max?: number;
   label: string;
   zoneLabel?: string;
+  /** À désactiver côté patient : A6-R1 proscrit un score chiffré affiché au patient. */
+  showValue?: boolean;
 }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   const data = [{ name: label, pct }];
@@ -38,7 +41,7 @@ export function ScoreGauge({
           style={{ fill: 'var(--color-primary)' }}
         />
       </RadialBarChart>
-      <div className="-mt-10 text-2xl font-bold text-foreground">{value}</div>
+      {showValue && <div className="-mt-10 text-2xl font-bold text-foreground">{value}</div>}
       <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
       {zoneLabel && <span className="text-xs text-muted-foreground">{zoneLabel}</span>}
     </div>
