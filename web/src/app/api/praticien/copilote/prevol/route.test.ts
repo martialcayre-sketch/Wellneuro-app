@@ -29,7 +29,7 @@ describe('GET /api/praticien/copilote/prevol', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
-    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_1' });
+    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_1', praticienEmail: 'p@wellneuro.fr' });
     prisma.consultation.findFirst.mockResolvedValue(null);
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.protocolCheckin.findMany.mockResolvedValue([]);
@@ -56,6 +56,14 @@ describe('GET /api/praticien/copilote/prevol', () => {
     prisma.patient.findUnique.mockResolvedValue(null);
     const res = await GET(request());
     expect(res.status).toBe(404);
+  });
+
+  it('patient d’un autre praticien : 403, sans lire la moindre donnée liée', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_1', praticienEmail: 'autre@wellneuro.fr' });
+    const res = await GET(request());
+    expect(res.status).toBe(403);
+    expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
+    expect(prisma.protocolCheckin.findMany).not.toHaveBeenCalled();
   });
 
   it('patient sans historique : pré-vol vide et ancre explicite', async () => {

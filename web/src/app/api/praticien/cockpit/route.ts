@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { confirmAssessmentEpisode } from '@/lib/clinical-engine/assessmentEpisode';
 import { buildClinicalReview } from '@/lib/clinical-engine/clinicalReview';
 import { buildClinicalSnapshot } from '@/lib/clinical-engine/clinicalSnapshot';
@@ -55,9 +56,12 @@ function unavailable(reason: CockpitUnavailableReason, error: string, status: nu
   return NextResponse.json<CockpitRuntimeApiResponse>({ status: 'unavailable', reason, error }, { status });
 }
 
-async function loadRuntimeInputs(idPatient: string) {
-  const patient = await prisma.patient.findUnique({
-    where: { idPatient },
+// `emailPraticien` scope la lecture au praticien connecté : un patient d'un
+// autre praticien est traité comme introuvable, ce qui évite d'en révéler
+// l'existence. Point de passage unique du GET comme du POST.
+async function loadRuntimeInputs(idPatient: string, emailPraticien: string) {
+  const patient = await prisma.patient.findFirst({
+    where: { idPatient, ...filtrePatientsDuPraticien(emailPraticien) },
     select: { idPatient: true, createdAt: true },
   });
   if (!patient) return null;
@@ -90,7 +94,7 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
   }
 
   try {
-    const inputs = await loadRuntimeInputs(idPatient);
+    const inputs = await loadRuntimeInputs(idPatient, emailPraticien(session) ?? '');
     if (!inputs) return unavailable('patient_not_found', 'Patient introuvable.', 404);
     const { proposal, proposalHash } = proposeRuntimeEpisode(inputs, milestoneRaw);
     return NextResponse.json({ status: 'proposal_required', proposal, proposalHash });
@@ -125,7 +129,7 @@ export async function POST(req: Request): Promise<NextResponse<CockpitRuntimeApi
   }
 
   try {
-    const inputs = await loadRuntimeInputs(idPatient);
+    const inputs = await loadRuntimeInputs(idPatient, emailPraticien(session) ?? '');
     if (!inputs) return unavailable('patient_not_found', 'Patient introuvable.', 404);
     const current = proposeRuntimeEpisode(inputs, payload.milestone);
     if (current.proposalHash !== proposalHash) {

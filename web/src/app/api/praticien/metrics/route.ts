@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -43,11 +44,16 @@ export async function GET(req: Request): Promise<NextResponse> {
   }
 
   try {
+    // Métriques bornées au praticien en session. Les tables filles n'ont pas de
+    // `praticienEmail` : le scope passe par leur relation `patient`.
+    const duPraticien = filtrePatientsDuPraticien(emailPraticien(session) ?? '');
     const [patients, questionnairesEnCours, synthesiesIA, bookletsEnvoyes] = await Promise.all([
-      prisma.patient.count(),
-      prisma.assignation.count({ where: { statut: { not: 'Complété' } } }),
-      prisma.syntheseIA.count(),
-      prisma.bookletEnvoi.count(),
+      prisma.patient.count({ where: duPraticien }),
+      prisma.assignation.count({ where: { statut: { not: 'Complété' }, patient: duPraticien } }),
+      prisma.syntheseIA.count({ where: { patient: duPraticien } }),
+      // `booklet_envois` n'a pas de relation directe au patient : on passe par
+      // la synthèse dont il est issu.
+      prisma.bookletEnvoi.count({ where: { synthese: { patient: duPraticien } } }),
     ]);
 
     return withCorrelationHeader(NextResponse.json({ patients, questionnairesEnCours, synthesiesIA, bookletsEnvoyes }), requestContext);
