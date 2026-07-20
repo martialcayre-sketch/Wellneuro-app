@@ -35,6 +35,40 @@ Le garde-fou 5.0 exige qu'une carte du Fil soit refusable, que le refus
   écartée à l'écran qu'une fois le refus accepté, sinon le praticien croirait
   avoir écarté une carte qui reviendra.
 
+### Gate G3 — notes de relecture (SP-TT LOT-02, 2026-07-20)
+
+Gate confirmé explicitement par l'utilisateur le 2026-07-20. **Migration
+additive** : une table nouvelle, aucune table existante modifiée, aucun
+backfill. Rollback = abandon de la table, rien d'existant n'en dépend.
+
+Depuis la lecture d'un état passé (LOT-01, livré en #158), le praticien dépose
+une note sur ce qu'il vient de relire.
+
+- **`relecture_notes`** (`20260720120000_sptt_relecture_notes_v1`) — deux dates
+  qui ne doivent jamais être confondues : `instant_relu` est une **donnée** (ce
+  que la note commente), `cree_le` est le moment de l'écriture, **posé par la
+  base** (`DEFAULT CURRENT_TIMESTAMP`), jamais par l'application. Append-only
+  chaîné (`supersedes_note_id`) : corriger crée une ligne, la précédente reste
+  lisible. RLS deny-all, comme les tables C2A.
+- **Route dédiée `/api/praticien/relecture-notes`** (GET + POST) plutôt qu'un
+  POST sur `/cockpit`. Le refus d'écriture du cockpit en présence d'un `asOf`
+  n'est **pas assoupli** — il protège la confirmation d'épisode, qui ne doit
+  jamais partir d'un état périmé. La note reçoit l'instant relu **dans son
+  corps, comme une donnée** ; la route refuse d'ailleurs explicitement un
+  `?asOf=`. On n'écrit pas *dans* le passé, on écrit *aujourd'hui, à propos* du
+  passé.
+- L'instant relu est validé par `resoudreAsOf`, **la même règle que la
+  lecture** : une note ne peut commenter que ce qui est relisible, et une date
+  arbitraire reste refusée — sonder l'historique par tâtonnement n'est pas plus
+  permis en écriture qu'en lecture. Garde d'appartenance praticien appliquée.
+- **Surface** : `LectureEtatPassePanel` gagne le dépôt de note. Le texte
+  « lecture seule, aucune action possible » devient exact plutôt que faux dans
+  l'autre sens : l'état relu reste intouchable, la note est datée du jour.
+- **Tests** (28) : l'invariant du gate a le sien — ce qui part en base ne porte
+  aucune date d'écriture ; correction = nouvelle ligne, la précédente reste
+  lisible par sa chaîne ; garde structurelle « aucune surface patient ne lit
+  cette table ».
+
 ### Vague 2 — les traces locales du portail suivent le patient, plus le lien (2026-07-20)
 
 Aucune migration. Préalable au gate **G4** (identité patient durable), livré à part.
