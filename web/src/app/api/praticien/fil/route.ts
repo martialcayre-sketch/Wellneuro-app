@@ -8,6 +8,7 @@ import {
   RECENCE_REPONSE_JOURS,
   type CarteFil,
 } from '@/lib/fil/cartes';
+import { clesRefusees, filtrerCartesRefusees } from '@/lib/fil/refus';
 
 export type FilApiResponse = {
   cartes: CarteFil[];
@@ -103,7 +104,15 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       maintenant,
     });
 
-    return NextResponse.json({ cartes });
+    // Point de passage UNIQUE du refus (G1) : sur les cartes déjà construites,
+    // jamais dans les 5 fonctions de production — ce serait 5 endroits à garder
+    // cohérents. La lecture est bornée aux patients du praticien, comme le Fil.
+    const refus = await prisma.filCardRejection.findMany({
+      where: { idPatient: { in: [...actifs] } },
+      select: { id: true, carteCle: true, refusee: true, supersedesRejectionId: true, refuseLe: true },
+    });
+
+    return NextResponse.json({ cartes: filtrerCartesRefusees(cartes, clesRefusees(refus)) });
   } catch (err) {
     console.error('[fil GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json(
