@@ -4,6 +4,35 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — gardes d'appartenance praticien (2026-07-20)
+
+- **Constat initial rectifié.** Il avait été noté que `fil` et `metrics` ne
+  filtraient pas sur `praticienEmail` « contrairement à `patients` ». C'est
+  inexact : le **GET** de `patients` ne filtre pas non plus. L'état réel est une
+  **incohérence** — cinq routes appliquent une garde d'appartenance
+  (`boussole`, `ja/activation`, `ja/observations`, `protocoles/versions`,
+  `protocoles/diffusion`, 403 si le patient n'est pas celui du praticien), six
+  ne l'appliquaient pas (`fil`, `metrics`, `cockpit`, `trajectoire`,
+  `copilote/prevol`, `protocoles/checkins`).
+- **Vérification en base avant correctif** : les 17 patients de production
+  portent tous le même `praticienEmail`. Le filtrage est donc un **no-op strict
+  aujourd'hui** — aucun risque de vider le Fil ou les métriques — et rend les
+  routes sûres par construction si un second compte praticien apparaît.
+- **Garde factorisée** (`lib/praticien/appartenance.ts`) et appliquée :
+  - `fil` : le scope passe par la résolution des patients, qui borne déjà toutes
+    les cartes — une ligne suffit à borner tout le Fil ;
+  - `metrics` : les quatre compteurs sont scopés, via la relation `patient` pour
+    les tables filles (et via `synthese` pour `booklet_envois`, qui n'a pas de
+    relation directe) ;
+  - `cockpit` : le scope est posé dans le chargeur d'entrées, point de passage
+    unique du GET et du POST — un patient d'un autre praticien est traité comme
+    **introuvable**, sans révéler son existence ;
+  - `trajectoire` et `copilote/prevol` : **403** distinct du **404**, chaque
+    route conservant les codes HTTP qu'elle exposait déjà.
+- Comparaison **insensible à la casse** : `praticienEmail` est normalisé à la
+  création, rien ne le garantit pour une ligne héritée.
+- Aucune migration. Tests ajoutés sur les deux chemins 403.
+
 ### Vague 2 — gate G2 : identité de cycle des épisodes (C2B, 2026-07-20)
 
 - **Migration additive** `20260719120000_c2b_cycle_identity_v1` : deux colonnes

@@ -10,7 +10,7 @@ const { getServerSession, prisma, writes } = vi.hoisted(() => {
     getServerSession: vi.fn(),
     writes,
     prisma: {
-      patient: { findUnique: vi.fn(), update: writes.patientUpdate },
+      patient: { findUnique: vi.fn(), findFirst: vi.fn(), update: writes.patientUpdate },
       questionnaireReponse: { findMany: vi.fn(), create: writes.responseCreate },
       consultation: { findFirst: vi.fn(), update: writes.consultationUpdate },
     },
@@ -57,7 +57,7 @@ describe('/api/praticien/cockpit', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
-    prisma.patient.findUnique.mockResolvedValue(patient);
+    prisma.patient.findFirst.mockResolvedValue(patient);
     prisma.questionnaireReponse.findMany.mockResolvedValue(responses);
     prisma.consultation.findFirst.mockResolvedValue({
       anamnese: { motif_principal: 'Fatigue', objectif_prioritaire: 'Énergie', attentes: ['Comprendre'] },
@@ -72,7 +72,7 @@ describe('/api/praticien/cockpit', () => {
   });
 
   it('répond 404 pour un patient absent sans charger ses données liées', async () => {
-    prisma.patient.findUnique.mockResolvedValueOnce(null);
+    prisma.patient.findFirst.mockResolvedValueOnce(null);
     const response = await GET(getRequest());
     expect(response.status).toBe(404);
     expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();

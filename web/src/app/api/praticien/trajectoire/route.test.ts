@@ -49,6 +49,14 @@ describe('GET /api/praticien/trajectoire', () => {
     expect(res.status).toBe(404);
   });
 
+  it('patient d’un autre praticien : 403, distinct du 404 « introuvable »', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_1', praticienEmail: 'autre@wellneuro.fr' });
+    const res = await GET(request());
+    expect(res.status).toBe(403);
+    // La trajectoire n'est jamais lue pour un patient qui n'est pas le sien.
+    expect(prisma.assessmentEpisode.findMany).not.toHaveBeenCalled();
+  });
+
   it('sans épisode → trajectoire vide, comparaison indisponible (200)', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     const res = await GET(request());

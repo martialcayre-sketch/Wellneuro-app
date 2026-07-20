@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { construirePreVol, type EntreesPreVol, type PreVol } from '@/lib/copilote/prevol';
 
 // GET /api/praticien/copilote/prevol?idPatient= — pré-vol T-10 min (SP-COP
@@ -10,8 +11,8 @@ import { construirePreVol, type EntreesPreVol, type PreVol } from '@/lib/copilot
 // campagne (refus doctrinal du snapshot persisté, C2A).
 // La sélection et les libellés sont dans lib/copilote/prevol.ts (fonctions
 // pures, testées) ; cette route ne fait que lire et transmettre.
-// Hypothèse mono-praticien (§8.8), cohérente avec les routes voisines
-// (trajectoire, versions, diffusion) : garde de session sans scope par identité.
+// Garde d'appartenance appliquée : le patient doit appartenir au praticien
+// connecté, comme sur /versions, /diffusion, /boussole et /ja.
 
 export type PreVolApiResponse =
   | { ok: true; prevol: PreVol }
@@ -45,11 +46,17 @@ export async function GET(req: Request): Promise<NextResponse<PreVolApiResponse>
       );
     }
 
-    const patient = await prisma.patient.findUnique({ where: { idPatient } });
-    if (!patient) {
+    const appartenance = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+    if (appartenance === 'introuvable') {
       return NextResponse.json(
         { ok: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
         { status: 404 },
+      );
+    }
+    if (appartenance === 'autre_praticien') {
+      return NextResponse.json(
+        { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
+        { status: 403 },
       );
     }
 
