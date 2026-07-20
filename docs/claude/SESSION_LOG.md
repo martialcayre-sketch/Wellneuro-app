@@ -904,3 +904,31 @@ installé puis `WN_PG_BIN`.
 
 **Prochaine action** : ce setup mac, en remplacement de l'action précédente
 fondée sur un constat erroné.
+
+## 2026-07-19 — Vague 2 : cinq PR en production, quatre gates ouverts
+
+**Décisions** : Vague 2 exécutée en PR successives vers `main` (#148→#152), toutes
+mergées et déployées. #148 cadre les 5 campagnes manquantes (écart E2 de l'audit)
+et rectifie deux affirmations fausses : la maquette ne badge que 2 éléments, et le
+Fil n'a **aucune carte refusable** malgré le garde-fou 5.0. #149 rend l'index de la
+Spirale navigable (il était calculé et rendu nulle part — les épisodes J21/J42/J90
+n'apparaissaient dans aucun écran) et transforme le « comparateur » textuel en
+vraie grille. #150 dérive la météo d'adhésion des check-ins existants, sans
+migration. #151 branche le pré-vol T-10 min sur l'entrée de rail restée morte.
+#152 couvre le Fil, dont l'E2E passait sur un accueil cassé.
+
+**Options écartées** : colonne `instrument_id` (le score est un composite pondéré,
+elle n'aurait rien à contenir) ; recopie des discordances dans le pré-vol (deux
+assemblages du `ClinicalSnapshot` pourraient diverger — le pré-vol pointe vers le
+poste de pilotage) ; contournement des hooks de protection par Bash ou par
+édition de `settings.local.json`.
+
+**Prochaine action** : ouvrir une session `WN_ALLOW_PROTECTED_WRITE=1 claude` et
+appliquer le gate G2, entièrement préparé dans
+`campagnes/2026-07-11-suivi-j7-j14-j21-et-persistance/GATE_G2_IDENTITE_CYCLE.md`.
+Sans gate : SP-COP LOT-02 (minute d'après) et SP-TT LOT-01 (lecture d'un état
+passé) sont livrables tels quels.
+
+**Questions ouvertes** : arbitrage du fil de correspondance médecin (C3, reliquat
+reporté) ; routes `fil` et `metrics` ne filtrent pas sur `praticienEmail` — sans
+effet en mono-praticien, fuite dès le second compte.
