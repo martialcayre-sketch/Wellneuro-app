@@ -70,7 +70,7 @@ describe('GET /api/praticien/fil', () => {
   it('une réponse récente d’un patient actif produit une carte sourcée', async () => {
     const dateReponse = new Date();
     prisma.questionnaireReponse.findMany.mockResolvedValue([
-      { idPatient: 'PAT_SEED_01', idQuestionnaire: 'Q_1', dateReponse },
+      { idReponse: 'REP_1', idPatient: 'PAT_SEED_01', idQuestionnaire: 'Q_1', dateReponse },
     ]);
     prisma.patient.findMany.mockResolvedValue([
       { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
@@ -84,6 +84,25 @@ describe('GET /api/praticien/fil', () => {
     expect(carte.pourquoi).toBeTruthy();
     expect(carte.href).toBeTruthy();
     expect(carte.actionLabel).toBeTruthy();
+    // Prérequis de G1 : la carte est identifiée par sa ligne source.
+    expect(carte.cle).toBe('reponse_recente:REP_1');
+  });
+
+  // Sans l'identifiant dans le `select`, la clé vaudrait silencieusement
+  // « …:undefined » : toutes les cartes d'un même type se confondraient, et un
+  // refus persisté en emporterait d'autres. Le contrat se vérifie ici, à
+  // l'endroit où il peut être cassé par inadvertance.
+  it('chaque requête du Fil sélectionne l’identifiant de sa ligne source', async () => {
+    await GET();
+    const selectDe = (mock: { mock: { calls: { select?: Record<string, boolean> }[][] } }) =>
+      mock.mock.calls[0][0].select ?? {};
+
+    expect(selectDe(prisma.trustAdverseEffectReport.findMany).id).toBe(true);
+    expect(selectDe(prisma.trustPrivacyIncident.findMany).id).toBe(true);
+    expect(selectDe(prisma.trustRightsRequest.findMany).id).toBe(true);
+    expect(selectDe(prisma.syntheseIA.findMany).idSynthese).toBe(true);
+    expect(selectDe(prisma.assignation.findMany).idAssignation).toBe(true);
+    expect(selectDe(prisma.questionnaireReponse.findMany).idReponse).toBe(true);
   });
 
   it('une panne de lecture est annoncée, jamais présentée comme un fil vide', async () => {

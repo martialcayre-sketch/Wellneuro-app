@@ -22,8 +22,8 @@ describe('cartesSynthesesAValider', () => {
   it('trie par date décroissante et pointe vers la page synthèse', () => {
     const cartes = cartesSynthesesAValider(
       [
-        { idPatient: 'P-SOPHIE', dateGeneration: new Date('2026-07-10T09:00:00') },
-        { idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') },
+        { idSynthese: 'SYN_1', idPatient: 'P-SOPHIE', dateGeneration: new Date('2026-07-10T09:00:00') },
+        { idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') },
       ],
       NOMS,
     );
@@ -37,10 +37,10 @@ describe('cartesAssignationsEnRetard', () => {
   it('ne retient que les assignations non complétées dont la limite est dépassée', () => {
     const cartes = cartesAssignationsEnRetard(
       [
-        { idPatient: 'P-MICHEL', titre: 'Mode de vie SIIN', dateLimite: '2026-07-10', statut: 'En attente' },
-        { idPatient: 'P-SOPHIE', titre: 'Plaintes', dateLimite: '2026-07-10', statut: 'Complété' },
-        { idPatient: 'P-JENNIFER', titre: 'Alimentaire', dateLimite: '2026-07-20', statut: 'En attente' },
-        { idPatient: 'P-JENNIFER', titre: 'DNSM', dateLimite: null, statut: 'En attente' },
+        { idAssignation: 'ASG_1', idPatient: 'P-MICHEL', titre: 'Mode de vie SIIN', dateLimite: '2026-07-10', statut: 'En attente' },
+        { idAssignation: 'ASG_2', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateLimite: '2026-07-10', statut: 'Complété' },
+        { idAssignation: 'ASG_3', idPatient: 'P-JENNIFER', titre: 'Alimentaire', dateLimite: '2026-07-20', statut: 'En attente' },
+        { idAssignation: 'ASG_4', idPatient: 'P-JENNIFER', titre: 'DNSM', dateLimite: null, statut: 'En attente' },
       ],
       NOMS,
       MAINTENANT,
@@ -53,7 +53,7 @@ describe('cartesAssignationsEnRetard', () => {
 
   it('ignore les dates limites invalides', () => {
     const cartes = cartesAssignationsEnRetard(
-      [{ idPatient: 'P-MICHEL', titre: 'Q', dateLimite: 'hier', statut: 'En attente' }],
+      [{ idAssignation: 'ASG_5', idPatient: 'P-MICHEL', titre: 'Q', dateLimite: 'hier', statut: 'En attente' }],
       NOMS,
       MAINTENANT,
     );
@@ -64,11 +64,12 @@ describe('cartesAssignationsEnRetard', () => {
 describe('cartesReponsesRecentes', () => {
   it('ne retient que la fenêtre de récence et plafonne le nombre de cartes', () => {
     const recentes = Array.from({ length: 7 }, (_, i) => ({
+      idReponse: `REP_${i}`,
       idPatient: 'P-SOPHIE',
       titre: `Questionnaire ${i}`,
       dateReponse: new Date(`2026-07-1${4 - (i % 5)}T08:00:00`),
     }));
-    const vieille = { idPatient: 'P-MICHEL', titre: 'Ancien', dateReponse: new Date('2026-06-01T08:00:00') };
+    const vieille = { idReponse: 'REP_OLD', idPatient: 'P-MICHEL', titre: 'Ancien', dateReponse: new Date('2026-06-01T08:00:00') };
     const cartes = cartesReponsesRecentes([...recentes, vieille], NOMS, MAINTENANT);
     expect(cartes.length).toBe(MAX_CARTES_PAR_TYPE);
     expect(cartes.every(c => c.patient === 'Sophie Nicola')).toBe(true);
@@ -95,7 +96,7 @@ describe('cartesReprise', () => {
 describe('cartesSignalementsTrust', () => {
   it('mène vers la page Confiance & droits avec le bon libellé', () => {
     const cartes = cartesSignalementsTrust(
-      [{ idPatient: 'P-JENNIFER', kind: 'effet_indesirable', soumisLe: new Date('2026-07-15T09:00:00') }],
+      [{ id: 'SIG_1', idPatient: 'P-JENNIFER', kind: 'effet_indesirable', soumisLe: new Date('2026-07-15T09:00:00') }],
       NOMS,
     );
     expect(cartes).toHaveLength(1);
@@ -108,8 +109,8 @@ describe('cartesSignalementsTrust', () => {
 describe('construireFil', () => {
   it('place les signalements en tête du Fil', () => {
     const fil = construireFil({
-      signalements: [{ idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
-      syntheses: [{ idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
+      signalements: [{ id: 'SIG_2', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
+      syntheses: [{ idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
       assignations: [],
       reponses: [],
       activites: [],
@@ -121,12 +122,12 @@ describe('construireFil', () => {
 
   it('ordonne le Fil : synthèses, retards, réponses, reprises', () => {
     const fil = construireFil({
-      syntheses: [{ idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
+      syntheses: [{ idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
       assignations: [
-        { idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
+        { idAssignation: 'ASG_6', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
       ],
       reponses: [
-        { idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-14T08:00:00') },
+        { idReponse: 'REP_7', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-14T08:00:00') },
       ],
       activites: [{ idPatient: 'P-SOPHIE', derniereReponse: new Date('2025-08-01T08:00:00') }],
       noms: NOMS,
@@ -138,5 +139,81 @@ describe('construireFil', () => {
       'reponse_recente',
       'reprise',
     ]);
+  });
+});
+
+// Prérequis de G1 (refus persisté) : sans identité de carte, on ne peut pas
+// dire ce qui a été refusé. Ces tests protègent la propriété dont dépendra le
+// refus — une clé ancrée sur la ligne source, donc stable dans le temps et
+// distincte entre deux cartes jumelles.
+describe('identité des cartes (clé)', () => {
+  it('deux cartes de même type, même patient et même instant restent distinctes', () => {
+    const memeInstant = new Date('2026-07-14T08:00:00');
+    const cartes = cartesReponsesRecentes(
+      [
+        { idReponse: 'REP_A', idPatient: 'P-SOPHIE', titre: 'Sommeil', dateReponse: memeInstant },
+        { idReponse: 'REP_B', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: memeInstant },
+      ],
+      NOMS,
+      MAINTENANT,
+    );
+    // C'est exactement ce qu'une clé « type + patient + date » aurait confondu.
+    expect(new Set(cartes.map(c => c.cle)).size).toBe(2);
+  });
+
+  it('la clé ne bouge pas d’une ouverture du Fil à l’autre', () => {
+    const entree = {
+      syntheses: [{ idSynthese: 'SYN_9', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
+      assignations: [
+        { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
+      ],
+      reponses: [
+        { idReponse: 'REP_9', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-14T08:00:00') },
+      ],
+      activites: [{ idPatient: 'P-SOPHIE', derniereReponse: new Date('2025-08-01T08:00:00') }],
+      noms: NOMS,
+      maintenant: MAINTENANT,
+    };
+
+    const matin = construireFil(entree);
+    // Le lendemain : mêmes données sources, Fil rouvert. Un refus déposé la
+    // veille doit encore désigner les mêmes cartes.
+    const lendemain = construireFil({ ...entree, maintenant: new Date('2026-07-16T10:00:00') });
+
+    expect(lendemain.map(c => c.cle)).toEqual(matin.map(c => c.cle));
+  });
+
+  it('toute carte du Fil porte une clé non vide, préfixée par son type', () => {
+    const fil = construireFil({
+      signalements: [{ id: 'SIG_9', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
+      syntheses: [{ idSynthese: 'SYN_9', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
+      assignations: [
+        { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
+      ],
+      reponses: [
+        { idReponse: 'REP_9', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-14T08:00:00') },
+      ],
+      activites: [{ idPatient: 'P-SOPHIE', derniereReponse: new Date('2025-08-01T08:00:00') }],
+      noms: NOMS,
+      maintenant: MAINTENANT,
+    });
+
+    expect(fil).toHaveLength(5);
+    for (const carte of fil) {
+      expect(carte.cle.startsWith(`${carte.type}:`)).toBe(true);
+      expect(carte.cle.length).toBeGreaterThan(carte.type.length + 1);
+    }
+    expect(new Set(fil.map(c => c.cle)).size).toBe(fil.length);
+  });
+
+  it('la carte agrégée `reprise` garde sa clé tant que le patient reste inactif', () => {
+    const activites = [{ idPatient: 'P-SOPHIE', derniereReponse: new Date('2025-09-01T08:00:00') }];
+    const juillet = cartesReprise(activites, NOMS, MAINTENANT);
+    const aout = cartesReprise(activites, NOMS, new Date('2026-08-15T10:00:00'));
+
+    // Le « il y a N mois » change, la clé non : c'est la date de référence qui
+    // l'ancre, pas l'ancienneté calculée.
+    expect(aout[0].pourquoi).not.toBe(juillet[0].pourquoi);
+    expect(aout[0].cle).toBe(juillet[0].cle);
   });
 });
