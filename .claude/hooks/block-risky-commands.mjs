@@ -43,18 +43,29 @@ if (enveloppesSures.some((motif) => motif.test(brute))) process.exit(0);
 // bloqué deux fois de la prose pour cette raison, dont le journal de session qui
 // décrivait le hook lui-même.
 //
-// Le test est volontairement grossier et conservateur : on ne cherche pas à
-// deviner QUI consomme le heredoc — `cat <<EOF | bash` rendrait cette analyse
-// fausse — on exige qu'AUCUN vecteur d'exécution n'apparaisse dans la commande
-// entière. Sans quoi le corps reste inspecté intégralement, et `bash -c` comme
-// `psql <<SQL … DROP TABLE …` restent attrapés.
+// On ne cherche pas à deviner QUI consomme le heredoc — `cat <<EOF | bash`
+// rendrait cette analyse fausse. On exige qu'aucun vecteur d'exécution
+// n'apparaisse dans la STRUCTURE de la commande : tout, sauf les corps de
+// heredoc.
+//
+// La distinction structure / corps est le cœur du contrôle, et la première
+// version de ce correctif ne la faisait pas : elle cherchait les vecteurs dans
+// la commande ENTIÈRE, corps compris. Or un corps de PR citant
+// `scripts/check_no_secrets.sh` contient `sh`, un journal citant
+// `npm run check` contient `npm` — le masquage se désactivait, et la prose
+// était de nouveau refusée. Exactement le cas que ce correctif vise.
+//
+// Seul le corps est masqué : la fin de la ligne d'ouverture est conservée,
+// sinon le `| bash` de `cat <<'EOF' | bash` disparaîtrait avec le corps et
+// deviendrait indétectable. C'est le cas qui compte le plus.
 const vecteursExecution =
-  /\b(bash|sh|zsh|ksh|dash|eval|exec|source|xargs|psql|mysql|sqlite3?|python3?|perl|ruby|node|deno|npm|npx|pnpm|yarn|make|docker|kubectl|ssh|awk)\b/;
+  /\b(bash|sh|zsh|ksh|dash|csh|tcsh|fish|eval|exec|source|xargs|psql|mysql|sqlite3?|python3?|perl|ruby|php|lua|rscript|osascript|node|deno|npm|npx|pnpm|yarn|make|go|cargo|java|docker|kubectl|ssh|awk|curl|wget)\b/;
 
-const heredoc = /<<-?\s*'?"?(\w+)'?"?[\s\S]*?^\s*\1\s*$/gm;
-const bruteRefus = vecteursExecution.test(brute)
-  ? brute
-  : original.replace(heredoc, " <<données-masquées> ").toLowerCase();
+// $1 : `<<DELIM` et la suite de la ligne d'ouverture (pipes, redirections…).
+// $2 : le délimiteur, repris en arrière-référence pour trouver la fin du corps.
+const corpsHeredoc = /(<<-?\s*'?"?(\w+)'?"?[^\n]*\n)[\s\S]*?^\s*\2\s*$/gm;
+const structure = original.replace(corpsHeredoc, "$1 <<corps-masqué> ").toLowerCase();
+const bruteRefus = vecteursExecution.test(structure) ? brute : structure;
 
 // Masque le contenu des littéraux et des heredocs : ce qui reste est la
 // structure exécutable de la commande.

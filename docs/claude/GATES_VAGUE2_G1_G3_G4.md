@@ -1,22 +1,40 @@
 # Dossier des gates de la Vague 2 — G1, G3, G4
 
-> Rédigé le 2026-07-20, en clôture de la Vague 2. **Aucun de ces gates n'est
-> appliqué.** Ce dossier réunit ce qu'il faut avoir sous les yeux pour les
-> appliquer en une session courte : où ça s'ancre dans le code existant, ce que
-> la migration ajoute, ce qui reste à arbitrer, et ce que merger déclenche.
+> Rédigé le 2026-07-20, en clôture de la Vague 2, **avant** application. Mis à
+> jour le même jour, après. Ce dossier réunit ce qu'il faut avoir sous les yeux
+> pour appliquer un gate : où ça s'ancre dans le code existant, ce que la
+> migration ajoute, ce qui reste à arbitrer, et ce que merger déclenche.
 >
 > Modèle : `campagnes/2026-07-11-suivi-j7-j14-j21-et-persistance/GATE_G2_IDENTITE_CYCLE.md`,
 > le dossier du gate G2, appliqué le 2026-07-20 (#155).
 
-## Pourquoi ils n'ont pas été appliqués
+## Où en sont les trois gates
+
+| Gate | État | Livré par |
+|---|---|---|
+| **G1** | **appliqué** le 2026-07-20 | #166 (clé de carte, migration-free) puis #168 (table, route, geste) |
+| **G3** | **appliqué** le 2026-07-20 | #163 |
+| **G4** | **non appliqué** — préalable seul | #169 (reclé des traces locales, migration-free) |
+
+Migrations en production, vérifiées en base : `20260720120000_sptt_relecture_notes_v1`
+(17:34 UTC) et `20260720130000_g1_fil_card_rejections_v1` (17:47 UTC), aucune
+rollbackée.
+
+Les sections G1 et G3 ci-dessous sont conservées **telles qu'elles ont servi**,
+avec les écarts constatés à l'application signalés sur place. Elles valent
+désormais comme trace de décision, pas comme plan.
+
+## Ce que coûte l'ouverture d'un gate
 
 Les trois gates modifient `web/prisma/schema.prisma` et
-`web/prisma/migrations/`, protégés par `.claude/hooks/protect-wellneuro-files.mjs`.
-La levée demande une session lancée avec `WN_ALLOW_PROTECTED_WRITE=1` :
+`web/prisma/migrations/`. Ces chemins sont en **« demande »** dans les hooks :
+autorisation en un clic, dans la session, et c'est elle qui matérialise la
+« confirmation explicite » exigée par `CLAUDE.md`.
 
-```bash
-cd .claude/worktrees/vague2-cloture && WN_ALLOW_PROTECTED_WRITE=1 claude
-```
+> **Correctif 2026-07-20** — ce dossier indiquait de lancer la session avec
+> `WN_ALLOW_PROTECTED_WRITE=1`. **Cette variable n'existe plus** : elle
+> neutralisait le hook pour la session entière et non pour la migration qui
+> l'avait motivée. Ne pas la chercher, ne pas la réintroduire.
 
 Ce n'est pas une formalité. **Merger une PR de migration applique la migration
 sur la base Supabase de production** : `web/scripts/vercel-build.sh` exécute
@@ -38,6 +56,10 @@ magique, retirer le mécanisme lui retire son accès.
 ---
 
 ## G1 — Refus persisté des cartes du Fil
+
+> **Appliqué le 2026-07-20.** Voie **(b)** retenue, en deux temps : #166 donne
+> aux cartes une clé ancrée sur leur ligne source, sans migration ; #168 ajoute
+> la table, la route et le geste.
 
 **Ce que le garde-fou 5.0 exige et qui n'est pas tenu** : une carte du Fil doit
 être **refusable**, le refus doit **persister** (la carte ne revient pas le
@@ -98,6 +120,20 @@ nommés, chaînage append-only à la manière de `ProtocolDiffusionApproval`) :
 **Aucun backfill** : l'absence de ligne signifie « non refusée », ce qui est
 l'état actuel de toutes les cartes.
 
+> **Correctif 2026-07-20 — ce dossier demandait deux choses incompatibles.**
+> L'unicité `(id_patient, carte_cle)` et le chaînage append-only ne peuvent pas
+> coexister : une annulation **est** une seconde ligne sur la même clé, et
+> l'unicité la rendrait impossible.
+>
+> L'append-only l'emporte — c'est lui qui porte la **réversibilité** exigée par
+> le garde-fou, qui dit « refusable », pas « supprimable ». La table livrée n'a
+> donc **pas** de contrainte d'unicité ; l'index `(id_patient, carte_cle)`
+> reste, pour la lecture. L'écart est documenté dans le SQL, dans
+> `schema.prisma` et au CHANGELOG.
+>
+> Leçon pour le prochain dossier : « unicité » et « append-only » écrits dans la
+> même liste de colonnes sont un signal, pas un détail de rédaction.
+
 ### Points d'ancrage applicatifs
 
 - Filtre : **un seul point de passage**, après `construireFil()`
@@ -120,6 +156,10 @@ l'état actuel de toutes les cartes.
 ---
 
 ## G3 — `relecture_notes`
+
+> **Appliqué le 2026-07-20** (#163), conforme au dossier, sans écart. La route
+> dédiée `/api/praticien/relecture-notes` refuse explicitement un `?asOf=` :
+> l'instant relu se transmet dans le corps de la note.
 
 **Objet** : depuis la lecture d'un état passé (SP-TT LOT-01, livré en #158), le
 praticien dépose une note. Elle est **horodatée au présent**, jamais à la date
@@ -215,14 +255,31 @@ routes plus récentes (`/api/portail/*`, `/api/patient/protocole`,
 
 ### Ce qui casserait — vérifié, pas supposé
 
-Le seul couplage réel au jeton est **côté navigateur**, dans des brouillons
-locaux clés par le jeton d'URL :
+Le seul couplage réel au jeton est **côté navigateur**, dans des traces locales
+clées par le jeton d'URL :
 
 - brouillons d'assistant fiche et anamnèse — `wellneuro:wizard-draft:{…}:${token}`
-  (`app/portail/[token]/page.tsx`), conservés 30 jours ;
+  (`app/portail/[token]/page.tsx`), `sessionStorage` ;
 - brouillon du Journal Alimentaire — `wellneuro:ja5-02:patient:${token}`, et
   l'épisode local construit avec `patientId: token`, `episodeId: 'ja_' + token`
-  (`components/food-observation/PatientFoodObservationPanel.tsx:41-46`).
+  (`components/food-observation/PatientFoodObservationPanel.tsx`),
+  `sessionStorage` ;
+- **instantané « depuis la dernière visite »** du hub —
+  `wellneuro:portail:derniere-visite:${token}` (`lib/portail-visite.ts`),
+  **`localStorage`**.
+
+> **Correctif 2026-07-20 — ce dossier n'en recensait que deux.** La troisième,
+> l'instantané de visite, est **la plus exposée** : en `localStorage`, elle
+> survit à la fermeture de l'onglet. Elle gardait donc un **secret d'accès à
+> demeure** dans le navigateur du patient, là où les deux autres disparaissaient
+> avec l'onglet. C'est aussi celle que la rotation du lien pénalisait le plus :
+> « ce qui a changé depuis votre dernière visite » serait reparti de zéro à
+> chaque nouveau lien — au moment précis où la reprise à plusieurs mois en a le
+> plus besoin.
+>
+> L'inventaire initial avait été fait en cherchant les brouillons ; il fallait
+> chercher **tout ce qui s'écrit dans le navigateur**. La requête juste est
+> `localStorage|sessionStorage` sur `web/src`, pas « draft ».
 
 **Ce couplage ne touche aucune donnée persistée.** Vérification faite : le
 panneau patient du Journal Alimentaire ne fait qu'un appel réseau, un `GET` de
@@ -232,10 +289,20 @@ persistés passent par `/api/praticien/ja/observations`, côté praticien, où
 correspond pas à l'`idPatient`** (`lib/food-observation/persistence.ts:109`).
 Le jeton n'entre donc jamais en base par cette voie.
 
-Conséquence : faire tourner le jeton ferait perdre des **brouillons locaux**,
+Conséquence : faire tourner le jeton ferait perdre des **traces locales**,
 pas des données. C'est réel, mais borné — et **réparable sans migration**, en
 clé sur l'`idPatient` de la session plutôt que sur le jeton d'URL. Autant le
 faire avant le gate.
+
+> **Fait le 2026-07-20** (#169), avant le gate. Les trois traces portent
+> désormais l'`idPatient` de la session vérifiée. `/api/portail/session` et
+> `/api/portail/assignations` renvoient cet `idPatient` ; la page
+> `/portail/[token]/alimentation` le résout côté serveur depuis le cookie, si
+> bien que le jeton **ne descend plus du tout** jusqu'au panneau du Journal
+> Alimentaire. Sans session vérifiée, rien n'est lu ni écrit — et l'écran le
+> dit. Une garde structurelle (`lib/portail-identite-locale.guard.test.ts`) lit
+> les sources : la régression se réintroduirait par un `${token}` recopié, pas
+> par une logique fautive.
 
 Restent deux points d'attention hors navigateur :
 
@@ -260,15 +327,25 @@ Restent deux points d'attention hors navigateur :
 - **gate TRUST** : livrable en préproduction ; **activation avec données réelles
   = décision distincte, aujourd'hui NO-GO**.
 
+### Arbitrages rendus le 2026-07-20
+
+- **Durées** : lien valable **24 h**, à usage unique ; session portail
+  **inchangée**, 12 h glissantes.
+- **Rejeu** : **un message unique** pour lien consommé, expiré ou inconnu, avec
+  une action « redemander un lien ». Rien ne s'apprend en sondant, et la
+  personne comprend quoi faire.
+- **Ordre** : reclé des traces locales **d'abord et à part** (fait, #169), pour
+  que la PR du gate — qui touche l'authentification — reste au strict
+  nécessaire.
+
 ### Ce qui reste à arbitrer
 
-- **Durée de validité** du lien et **durée de la session** qu'il ouvre.
-- **Que faire du rejeu** : refus silencieux ou message explicite au patient ?
-  Un refus muet est incompréhensible pour la personne ; un message trop précis
-  renseigne un attaquant.
-- **Reprise à plusieurs mois** : c'est le besoin de SP-SPI. Un lien à expiration
-  courte suppose un moyen d'en redemander un — donc un canal (e-mail) et une
-  politique anti-énumération.
+- **Quand les liens permanents déjà envoyés cessent d'être honorés.** Introduire
+  une expiration ne les périme pas rétroactivement — c'est ce que garantit la
+  coexistence des deux chemins — mais la date de bascule reste à fixer, et
+  **ce n'est pas une décision technique**.
+- **La politique anti-énumération du canal de redemande.** Répondre la même
+  chose que l'adresse existe ou non, et borner la cadence.
 
 ### Pourquoi SP-SPI attend
 
@@ -280,15 +357,27 @@ campagne a explicitement écarté.
 
 ---
 
-## Ordre recommandé
+## Ordre — ce qui a été fait, ce qui reste
 
-1. **G1 voie (b), partie migration-free** — donner une clé stable aux cartes.
-   Sans gate, testable immédiatement.
-2. **G3** — le plus simple des trois, aucun arbitrage ouvert, et il complète
-   SP-TT dont le LOT-01 est déjà en production.
-3. **G1, partie migration** — table, route, geste de refus.
-4. **G4** — après revue de sécurité, en préproduction.
-5. **SP-SPI** — une fois G4 disponible.
+Le 2026-07-20, l'ordre effectif a été **G3, puis G1, puis le préalable de G4** :
+G3 d'abord parce qu'il n'avait aucun arbitrage ouvert, et G1 seulement une fois
+la clé de carte tranchée. Le découpage « partie migration-free d'abord » s'est
+vérifié deux fois — sur G1 (#166 avant #168) comme sur G4 (#169) : il laisse une
+PR de migration relisible pour ce qu'elle est.
+
+1. ~~**G1 voie (b), partie migration-free**~~ — fait (#166).
+2. ~~**G3**~~ — fait (#163).
+3. ~~**G1, partie migration**~~ — fait (#168).
+4. ~~**Préalable G4** — reclé des traces locales~~ — fait (#169).
+5. **G4** — reste à faire : lien haché en base, 24 h, consommation unique, rejeu
+   refusé et tracé. **Revue de sécurité obligatoire avant merge.** Livrable en
+   préproduction ; activation avec données réelles = décision distincte,
+   aujourd'hui **NO-GO** (gate TRUST).
+6. **SP-SPI** — une fois G4 disponible.
+
+Une casse connue attend l'étape 5 : `web/e2e/portail-parcours.spec.ts` réutilise
+le même jeton d'un bout à l'autre du parcours. La consommation unique le casse ;
+il devra consommer le lien une fois, puis naviguer au cookie.
 
 ## Raccordement
 

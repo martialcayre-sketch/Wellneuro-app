@@ -69,8 +69,12 @@ Les hooks rendent trois verdicts, plus un mur unique :
   exposant des secrets. Sans dérogation pour les fichiers. Le scan porte sur la
   commande brute, littéraux compris : `bash -c "rm -rf /"` est attrapé, et
   `echo 'DROP TABLE'` l'est aussi — faux positif assumé. Seule exception, le
-  corps d'un heredoc dans une commande où rien ne sait exécuter quoi que ce
-  soit (`cat >> journal.md <<'FIN'`) est traité comme de la donnée.
+  corps d'un heredoc est traité comme de la donnée lorsque **la structure de la
+  commande** — tout sauf les corps de heredoc — ne contient aucun interpréteur.
+  `cat >> journal.md <<'FIN'` écrit du texte ; `cat <<'FIN' | bash` reste
+  attrapé, le `| bash` étant sur la ligne d'ouverture. Ce que le corps *raconte*
+  n'entre pas dans la décision : un journal citant `npm run check` reste du
+  texte. Banc de test : `node --test .claude/hooks/block-risky-commands.test.mjs`.
 - **demande** — `schema.prisma`, `prisma/migrations/`, `supabase/migrations/` ;
   `prisma migrate`, `supabase db push`, push forcé. Autorisation en un clic,
   dans la session : c'est elle qui matérialise la « confirmation explicite »

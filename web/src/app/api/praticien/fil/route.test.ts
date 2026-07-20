@@ -10,6 +10,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     assignation: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn(), groupBy: vi.fn() },
     patient: { findMany: vi.fn() },
+    filCardRejection: { findMany: vi.fn() },
   },
 }));
 
@@ -36,6 +37,7 @@ describe('GET /api/praticien/fil', () => {
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.groupBy.mockResolvedValue([]);
     prisma.patient.findMany.mockResolvedValue([]);
+    prisma.filCardRejection.findMany.mockResolvedValue([]);
   });
 
   it('sans session : 401 et `unavailable`, jamais un fil vide silencieux', async () => {
@@ -70,7 +72,7 @@ describe('GET /api/praticien/fil', () => {
   it('une réponse récente d’un patient actif produit une carte sourcée', async () => {
     const dateReponse = new Date();
     prisma.questionnaireReponse.findMany.mockResolvedValue([
-      { idPatient: 'PAT_SEED_01', idQuestionnaire: 'Q_1', dateReponse },
+      { idReponse: 'REP_1', idPatient: 'PAT_SEED_01', idQuestionnaire: 'Q_1', dateReponse },
     ]);
     prisma.patient.findMany.mockResolvedValue([
       { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
@@ -84,6 +86,65 @@ describe('GET /api/praticien/fil', () => {
     expect(carte.pourquoi).toBeTruthy();
     expect(carte.href).toBeTruthy();
     expect(carte.actionLabel).toBeTruthy();
+    // Prérequis de G1 : la carte est identifiée par sa ligne source.
+    expect(carte.cle).toBe('reponse_recente:REP_1');
+  });
+
+  // Sans l'identifiant dans le `select`, la clé vaudrait silencieusement
+  // « …:undefined » : toutes les cartes d'un même type se confondraient, et un
+  // refus persisté en emporterait d'autres. Le contrat se vérifie ici, à
+  // l'endroit où il peut être cassé par inadvertance.
+  it('chaque requête du Fil sélectionne l’identifiant de sa ligne source', async () => {
+    await GET();
+    const selectDe = (mock: { mock: { calls: { select?: Record<string, boolean> }[][] } }) =>
+      mock.mock.calls[0][0].select ?? {};
+
+    expect(selectDe(prisma.trustAdverseEffectReport.findMany).id).toBe(true);
+    expect(selectDe(prisma.trustPrivacyIncident.findMany).id).toBe(true);
+    expect(selectDe(prisma.trustRightsRequest.findMany).id).toBe(true);
+    expect(selectDe(prisma.syntheseIA.findMany).idSynthese).toBe(true);
+    expect(selectDe(prisma.assignation.findMany).idAssignation).toBe(true);
+    expect(selectDe(prisma.questionnaireReponse.findMany).idReponse).toBe(true);
+  });
+
+  // G1 : le refus persiste côté serveur, il ne dépend pas de l'écran.
+  it('une carte refusée ne réapparaît pas au chargement suivant', async () => {
+    const dateReponse = new Date();
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { idReponse: 'REP_1', idPatient: 'PAT_SEED_01', idQuestionnaire: 'Q_1', dateReponse },
+    ]);
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
+    ]);
+    prisma.filCardRejection.findMany.mockResolvedValue([
+      {
+        id: 'r1',
+        carteCle: 'reponse_recente:REP_1',
+        refusee: true,
+        supersedesRejectionId: null,
+        refuseLe: new Date(),
+      },
+    ]);
+
+    const payload = await (await GET()).json();
+    expect(payload.cartes).toEqual([]);
+  });
+
+  it('un refus annulé laisse la carte revenir', async () => {
+    const dateReponse = new Date();
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      { idReponse: 'REP_1', idPatient: 'PAT_SEED_01', idQuestionnaire: 'Q_1', dateReponse },
+    ]);
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
+    ]);
+    prisma.filCardRejection.findMany.mockResolvedValue([
+      { id: 'r1', carteCle: 'reponse_recente:REP_1', refusee: true, supersedesRejectionId: null, refuseLe: new Date('2026-07-20T10:00:00.000Z') },
+      { id: 'r2', carteCle: 'reponse_recente:REP_1', refusee: false, supersedesRejectionId: 'r1', refuseLe: new Date('2026-07-20T10:05:00.000Z') },
+    ]);
+
+    const payload = await (await GET()).json();
+    expect(payload.cartes.map((c: { cle: string }) => c.cle)).toEqual(['reponse_recente:REP_1']);
   });
 
   it('une panne de lecture est annoncée, jamais présentée comme un fil vide', async () => {

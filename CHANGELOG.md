@@ -4,6 +4,149 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Gate G4 — lien magique d'accès patient (IDP LOT-01, 2026-07-20)
+
+Gate confirmé explicitement par l'utilisateur le 2026-07-20. **Migration
+additive** : une table nouvelle, `patients.access_token` conservé intact.
+Rollback = abandon de la table.
+
+**Merger n'active rien** : tout est derrière `WN_G4_LIEN_MAGIQUE`, absent de
+l'environnement de production. Livrable de préproduction ; l'activation avec des
+données réelles reste une décision distincte, aujourd'hui **NO-GO** (gate TRUST).
+
+- **`portail_magic_links`** (`20260720200000_g4_portail_magic_links_v1`) — le
+  jeton **n'est pas en base** : seule son empreinte HMAC-SHA256 l'est
+  (`NEXTAUTH_SECRET`, préfixe de domaine). Un dump ne permet pas d'ouvrir un
+  espace. 24 h, usage unique, RLS deny-all.
+- **Consommation atomique** : `updateMany` filtré sur `consommeLe: null` — la
+  vérification et l'écriture sont une seule opération. Un `update` précédé d'une
+  lecture laisserait deux requêtes concurrentes consommer le même lien.
+- **Rejeu refusé et tracé en base** (`rejeux_refuses`,
+  `derniere_tentative_le`), pas seulement en log : un log Vercel est purgé, et
+  une trace purgée ne prouve plus rien le jour où on la cherche.
+- **Un seul message, un seul écran** pour consommé, expiré, inconnu et portail
+  révoqué — même URL, même code HTTP. Un test vérifie que les quatre refus
+  atterrissent au même endroit.
+- **Canal de redemande** `POST /api/portail/lien/demande` : réponse
+  rigoureusement identique — code, corps, en-têtes — que l'adresse existe ou
+  non, **y compris en panne**. Cadence bornée **en base** (3/h/patient) : un
+  compteur en mémoire ne borne rien en serverless.
+- **Le jeton ne part pas dans les logs.** `sanitizeUrl` conserve le chemin, et
+  ici le chemin *est* le jeton : la route journalise le gabarit
+  `/portail/lien/[jeton]`, jamais l'URL réelle. Un test garde cette
+  substitution.
+- **Coexistence** : le jeton permanent reste la clé de l'URL du portail et
+  l'ancrage du cookie de session — `isPatientSessionBoundToToken` et les routes
+  qui l'appellent ne changent pas, toutes les propriétés de révocation sont
+  préservées. Le parcours E2E existant n'est pas touché.
+- **`api/praticien/token` reçoit enfin sa garde d'appartenance**, sur le POST
+  comme sur le DELETE. C'était la dernière route praticien non gardée, laissée
+  à ce gate en #167 : émettre un lien d'accès — ou révoquer celui — du patient
+  d'un autre praticien était le pire trou restant de la surface.
+- **Le lien magique saute le gate e-mail** : recevoir le lien *dans* la boîte
+  prouve le contrôle de la boîte, ce que saisir l'adresse ne prouvait pas. Le
+  facteur est déplacé, pas supprimé.
+- **Tests** (20 unitaires + 3 E2E) : usage unique, atomicité, indistinction des
+  refus, absence du jeton dans les journaux et dans la réponse, drapeau éteint
+  ⇒ 404.
+
+### Gate G1 — refus persisté des cartes du Fil (SP-FIL, 2026-07-20)
+
+Gate confirmé explicitement par l'utilisateur le 2026-07-20. **Migration
+additive** : une table nouvelle, aucun backfill. Rollback = abandon de la table.
+
+Le garde-fou 5.0 exige qu'une carte du Fil soit refusable, que le refus
+**persiste** et qu'il reste **réversible**. Aucun des trois n'était tenu.
+
+- **Prérequis livré à part** (migration-free) : une identité stable pour chaque
+  carte, ancrée sur sa ligne source. Voie (b) du dossier des gates, arbitrée
+  avec l'utilisateur — la clé composite `type + patient + date` aurait laissé
+  sans clé toute carte non datée et confondu deux cartes jumelles.
+- **`fil_card_rejections`** (`20260720130000_g1_fil_card_rejections_v1`) —
+  append-only chaîné : annuler un refus n'efface ni ne réécrit rien, c'est une
+  nouvelle ligne (`refusee = false`) qui supplante la précédente. RLS deny-all.
+- **Écart assumé au dossier** : celui-ci demandait à la fois une unicité
+  `(id_patient, carte_cle)` et un chaînage append-only. Les deux sont
+  incompatibles — une annulation est une seconde ligne sur la même clé, et
+  l'unicité la rendrait impossible. L'append-only l'emporte : c'est lui qui
+  porte la réversibilité exigée. L'index reste, la contrainte non.
+- **Route `POST /api/praticien/fil/refus`** — garde d'appartenance, idempotente,
+  aucun `UPDATE` ni `DELETE`. Une clé reçue d'un client n'est pas crue sur
+  parole : elle doit porter le préfixe d'un type de carte connu.
+- **Filtrage en un seul point de passage**, après `construireFil`, sur les
+  cartes déjà construites — jamais dans les 5 fonctions de production, ce
+  seraient 5 endroits à garder cohérents.
+- **Surface** : bouton « Écarter » par carte (cible ≥ 44 px) et **annulation
+  immédiate sans quitter l'écran**. Le serveur fait foi — une carte n'est
+  écartée à l'écran qu'une fois le refus accepté, sinon le praticien croirait
+  avoir écarté une carte qui reviendra.
+
+### Gate G3 — notes de relecture (SP-TT LOT-02, 2026-07-20)
+
+Gate confirmé explicitement par l'utilisateur le 2026-07-20. **Migration
+additive** : une table nouvelle, aucune table existante modifiée, aucun
+backfill. Rollback = abandon de la table, rien d'existant n'en dépend.
+
+Depuis la lecture d'un état passé (LOT-01, livré en #158), le praticien dépose
+une note sur ce qu'il vient de relire.
+
+- **`relecture_notes`** (`20260720120000_sptt_relecture_notes_v1`) — deux dates
+  qui ne doivent jamais être confondues : `instant_relu` est une **donnée** (ce
+  que la note commente), `cree_le` est le moment de l'écriture, **posé par la
+  base** (`DEFAULT CURRENT_TIMESTAMP`), jamais par l'application. Append-only
+  chaîné (`supersedes_note_id`) : corriger crée une ligne, la précédente reste
+  lisible. RLS deny-all, comme les tables C2A.
+- **Route dédiée `/api/praticien/relecture-notes`** (GET + POST) plutôt qu'un
+  POST sur `/cockpit`. Le refus d'écriture du cockpit en présence d'un `asOf`
+  n'est **pas assoupli** — il protège la confirmation d'épisode, qui ne doit
+  jamais partir d'un état périmé. La note reçoit l'instant relu **dans son
+  corps, comme une donnée** ; la route refuse d'ailleurs explicitement un
+  `?asOf=`. On n'écrit pas *dans* le passé, on écrit *aujourd'hui, à propos* du
+  passé.
+- L'instant relu est validé par `resoudreAsOf`, **la même règle que la
+  lecture** : une note ne peut commenter que ce qui est relisible, et une date
+  arbitraire reste refusée — sonder l'historique par tâtonnement n'est pas plus
+  permis en écriture qu'en lecture. Garde d'appartenance praticien appliquée.
+- **Surface** : `LectureEtatPassePanel` gagne le dépôt de note. Le texte
+  « lecture seule, aucune action possible » devient exact plutôt que faux dans
+  l'autre sens : l'état relu reste intouchable, la note est datée du jour.
+- **Tests** (28) : l'invariant du gate a le sien — ce qui part en base ne porte
+  aucune date d'écriture ; correction = nouvelle ligne, la précédente reste
+  lisible par sa chaîne ; garde structurelle « aucune surface patient ne lit
+  cette table ».
+
+### Vague 2 — les traces locales du portail suivent le patient, plus le lien (2026-07-20)
+
+Aucune migration. Préalable au gate **G4** (identité patient durable), livré à part.
+
+- **Trois traces du navigateur étaient nommées d'après le jeton d'URL** : les
+  brouillons du wizard fiche/anamnèse (`sessionStorage`), le brouillon du
+  Journal Alimentaire (`sessionStorage`), et l'instantané « depuis la dernière
+  visite » du hub (`localStorage`). Toutes portent désormais l'`idPatient` de la
+  session vérifiée.
+- **Le dossier des gates n'en recensait que deux.** La troisième —
+  `wellneuro:portail:derniere-visite:${token}` — est la plus exposée : en
+  `localStorage`, elle survit à la fermeture de l'onglet et gardait donc un
+  **secret d'accès à demeure** dans le navigateur.
+- **Deux raisons, dont une qui n'est pas cosmétique** : le jeton est un secret
+  d'accès et n'a rien à faire dans une clé de stockage ; et il est appelé à
+  changer (lien magique à consommation unique, G4) — une trace indexée dessus
+  devient introuvable au lien suivant, alors que la personne n'a pas changé.
+  C'est exactement la reprise à plusieurs mois qu'attend SP-SPI.
+- **`/api/portail/session` et `/api/portail/assignations` renvoient
+  l'`idPatient`** de la session. Aucune route portail n'accepte un `idPatient`
+  venu du client : elles le lisent toutes du cookie signé.
+- **La page `/portail/[token]/alimentation` résout l'identité côté serveur**,
+  depuis le cookie — le jeton ne descend plus jusqu'au panneau du Journal
+  Alimentaire, qui ne peut donc plus le réintroduire dans une clé.
+- **Pas d'identité, pas de trace** : sans session vérifiée, rien n'est lu ni
+  écrit — un compartiment commun mélangerait deux patients d'un même appareil.
+  Le panneau du Journal Alimentaire **le dit à l'écran** au lieu de laisser
+  croire à une sauvegarde.
+- **Garde structurelle** (`lib/portail-identite-locale.guard.test.ts`) : une
+  régression se réintroduirait par un `${token}` recopié, pas par une logique
+  fautive — le test lit donc les sources.
+
 ### Vague 2 — isolation multi-praticien : 12 routes fermées (2026-07-20)
 
 Aucune migration. Exigence 3 du gate **G-TRUST-04**.

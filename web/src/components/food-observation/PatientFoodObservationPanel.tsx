@@ -38,12 +38,15 @@ function makeId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function buildEpisode(token: string): FoodObservationEpisode {
+// L'épisode local porte l'`idPatient` de la session, jamais le jeton d'URL :
+// c'est aussi ce que `saveJaObservationSnapshot` exige côté serveur (il rejette
+// tout épisode dont le `patientId` ne correspond pas au patient).
+function buildEpisode(idPatient: string): FoodObservationEpisode {
   const start = new Date();
   const end = plusDays(start, 6);
   return createEpisode({
-    episodeId: `ja_${token}`,
-    patientId: token,
+    episodeId: `ja_${idPatient}`,
+    patientId: idPatient,
     startDate: dateLocale(start),
     endDate: dateLocale(end),
     budget: createAttentionBudget(3),
@@ -78,14 +81,20 @@ type PatientDecision = {
   reviewedAt: string;
 };
 
-function draftKey(token: string): string {
-  return `wellneuro:ja5-02:patient:${token}`;
+// Sans session portail vérifiée, il n'existe aucune identité stable à laquelle
+// rattacher un brouillon. La saisie reste possible, mais rien n'est conservé —
+// et le panneau le dit plutôt que de laisser croire à une sauvegarde. Le jeton
+// de l'URL ferait une clé : c'est précisément celle dont on se sépare.
+const EPISODE_SANS_SESSION = 'session-absente';
+
+function draftKey(idPatient: string): string {
+  return `wellneuro:ja5-02:patient:${idPatient}`;
 }
 
-function readDraft(token: string): PatientFoodObservationDraft | null {
-  if (typeof window === 'undefined') return null;
+function readDraft(idPatient: string | null): PatientFoodObservationDraft | null {
+  if (typeof window === 'undefined' || !idPatient) return null;
   try {
-    const raw = window.sessionStorage.getItem(draftKey(token));
+    const raw = window.sessionStorage.getItem(draftKey(idPatient));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<PatientFoodObservationDraft>;
     if (
@@ -109,26 +118,26 @@ function readDraft(token: string): PatientFoodObservationDraft | null {
   }
 }
 
-function writeDraft(token: string, draft: PatientFoodObservationDraft): void {
-  if (typeof window === 'undefined') return;
+function writeDraft(idPatient: string | null, draft: PatientFoodObservationDraft): void {
+  if (typeof window === 'undefined' || !idPatient) return;
   try {
-    window.sessionStorage.setItem(draftKey(token), JSON.stringify(draft));
+    window.sessionStorage.setItem(draftKey(idPatient), JSON.stringify(draft));
   } catch {
     // no-op: ne pas bloquer la saisie en cas de quota navigateur.
   }
 }
 
-function clearDraft(token: string): void {
-  if (typeof window === 'undefined') return;
+function clearDraft(idPatient: string | null): void {
+  if (typeof window === 'undefined' || !idPatient) return;
   try {
-    window.sessionStorage.removeItem(draftKey(token));
+    window.sessionStorage.removeItem(draftKey(idPatient));
   } catch {
     // no-op
   }
 }
 
-export function PatientFoodObservationPanel({ token }: { token: string }) {
-  const [initialDraft] = useState<PatientFoodObservationDraft | null>(() => readDraft(token));
+export function PatientFoodObservationPanel({ idPatient }: { idPatient: string | null }) {
+  const [initialDraft] = useState<PatientFoodObservationDraft | null>(() => readDraft(idPatient));
   const [draftRestored, setDraftRestored] = useState<boolean>(() => {
     if (!initialDraft) return false;
     return (
@@ -140,7 +149,7 @@ export function PatientFoodObservationPanel({ token }: { token: string }) {
     );
   });
   const [episode, setEpisode] = useState<FoodObservationEpisode>(() => {
-    const baseEpisode = buildEpisode(token);
+    const baseEpisode = buildEpisode(idPatient ?? EPISODE_SANS_SESSION);
     if (!initialDraft) return baseEpisode;
     let restoredBudget = baseEpisode.budget;
     try {
@@ -184,8 +193,8 @@ export function PatientFoodObservationPanel({ token }: { token: string }) {
   const silenceUtile = traces.length >= budget ? buildSilenceUtileMessage() : null;
 
   useEffect(() => {
-    writeDraft(token, { budget, traces, pauses, plans, solutions });
-  }, [budget, traces, pauses, plans, solutions, token]);
+    writeDraft(idPatient, { budget, traces, pauses, plans, solutions });
+  }, [budget, traces, pauses, plans, solutions, idPatient]);
 
   useEffect(() => {
     let mounted = true;
@@ -291,8 +300,8 @@ export function PatientFoodObservationPanel({ token }: { token: string }) {
   };
 
   const resetLocalDraft = () => {
-    clearDraft(token);
-    const baseEpisode = buildEpisode(token);
+    clearDraft(idPatient);
+    const baseEpisode = buildEpisode(idPatient ?? EPISODE_SANS_SESSION);
     setEpisode(baseEpisode);
     setBudget(baseEpisode.budget.tracesParSemaine);
     setTraces([]);
@@ -315,6 +324,12 @@ export function PatientFoodObservationPanel({ token }: { token: string }) {
         title="Ma spirale alimentaire"
         subtitle="Version locale de travail JA5-02: vous décrivez l’essai sans détailler tous les repas."
       />
+
+      {!idPatient && (
+        <PatientInlineMessage tone="info">
+          Votre session n’est pas ouverte : ce que vous saisissez ici ne sera pas conservé sur cet appareil.
+        </PatientInlineMessage>
+      )}
 
       {draftRestored && (
         <PatientInlineMessage tone="info">Brouillon local restauré sur cet appareil.</PatientInlineMessage>

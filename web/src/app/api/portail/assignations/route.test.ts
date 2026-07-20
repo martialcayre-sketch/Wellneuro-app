@@ -60,7 +60,7 @@ describe('GET /api/portail/assignations — liaison session au token', () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({
       ok: true,
-      patient: { prenom: patient.prenom, nom: patient.nom },
+      patient: { idPatient: patient.idPatient, prenom: patient.prenom, nom: patient.nom },
       assignations: [],
     });
   });

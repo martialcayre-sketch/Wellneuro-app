@@ -3,18 +3,25 @@
 // instantané précédent (localStorage) à l'état courant pour produire des
 // phrases factuelles en français — jamais un champ technique brut
 // (`statutReponses`) exposé tel quel, jamais d'écriture serveur.
+//
+// L'instantané est indexé par `idPatient` (identité de la session vérifiée) et
+// non par le jeton de l'URL. C'est la trace locale la plus durable du portail —
+// `localStorage` survit à la fermeture de l'onglet : un jeton en clé y
+// laisserait un secret d'accès à demeure, et « depuis la dernière visite »
+// repartirait de zéro à chaque changement de lien (gate G4), c'est-à-dire
+// précisément quand la reprise à plusieurs mois en aurait le plus besoin.
 
 export type VisiteSnapshotItem = { idAssignation: string; titre: string; statutReponses: string };
 export type ChangementVisite = { idAssignation: string; texte: string };
 
-function storageKey(token: string): string {
-  return `wellneuro:portail:derniere-visite:${token}`;
+function storageKey(idPatient: string): string {
+  return `wellneuro:portail:derniere-visite:${idPatient}`;
 }
 
-function readSnapshot(token: string): VisiteSnapshotItem[] | null {
+function readSnapshot(idPatient: string): VisiteSnapshotItem[] | null {
   if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(storageKey(token));
+    const raw = window.localStorage.getItem(storageKey(idPatient));
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? (parsed as VisiteSnapshotItem[]) : null;
@@ -23,10 +30,10 @@ function readSnapshot(token: string): VisiteSnapshotItem[] | null {
   }
 }
 
-function writeSnapshot(token: string, snapshot: VisiteSnapshotItem[]): void {
+function writeSnapshot(idPatient: string, snapshot: VisiteSnapshotItem[]): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(storageKey(token), JSON.stringify(snapshot));
+    window.localStorage.setItem(storageKey(idPatient), JSON.stringify(snapshot));
   } catch {
     /* mode privé / quota : le résumé de visite suivant sera simplement vide */
   }
@@ -36,8 +43,12 @@ function writeSnapshot(token: string, snapshot: VisiteSnapshotItem[]): void {
 // instantané pour la prochaine visite. Aucun changement détecté à la toute
 // première visite (pas d'instantané précédent) — comportement voulu, pas un
 // bug : il n'y a alors rien à comparer.
-export function detecterChangementsEtMettreAJour(token: string, courant: VisiteSnapshotItem[]): ChangementVisite[] {
-  const precedent = readSnapshot(token);
+export function detecterChangementsEtMettreAJour(idPatient: string, courant: VisiteSnapshotItem[]): ChangementVisite[] {
+  // Sans identité, on ne compare ni n'écrit : un instantané dans un
+  // compartiment commun mélangerait les visites de deux patients d'un même
+  // appareil, et annoncerait à l'un les questionnaires de l'autre.
+  if (!idPatient) return [];
+  const precedent = readSnapshot(idPatient);
   const changements: ChangementVisite[] = [];
 
   if (precedent) {
@@ -57,6 +68,6 @@ export function detecterChangementsEtMettreAJour(token: string, courant: VisiteS
     }
   }
 
-  writeSnapshot(token, courant);
+  writeSnapshot(idPatient, courant);
   return changements;
 }

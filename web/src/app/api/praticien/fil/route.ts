@@ -8,6 +8,7 @@ import {
   RECENCE_REPONSE_JOURS,
   type CarteFil,
 } from '@/lib/fil/cartes';
+import { clesRefusees, filtrerCartesRefusees } from '@/lib/fil/refus';
 
 export type FilApiResponse = {
   cartes: CarteFil[];
@@ -32,7 +33,11 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     const seuilRecence = new Date(maintenant.getTime() - RECENCE_REPONSE_JOURS * 24 * 60 * 60 * 1000);
 
     const filtreNonTraite = { statutTraitement: { in: ['recu', 'en_cours'] } };
-    const selectSignalement = { idPatient: true, soumisLe: true };
+    // Les identifiants de ligne source sont sélectionnés pour que chaque carte
+    // porte une identité stable (`cle`, cf. lib/fil/cartes.ts) : c'est ce qui
+    // rendra un refus persistant désignable, sans quoi il porterait sur une
+    // projection recalculée à chaque ouverture.
+    const selectSignalement = { id: true, idPatient: true, soumisLe: true };
     const [effets, incidents, droits, syntheses, assignations, reponses, activites] = await Promise.all([
       prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
       prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
@@ -41,17 +46,17 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         where: { statut: 'Brouillon_IA' },
         orderBy: { dateGeneration: 'desc' },
         take: 20,
-        select: { idPatient: true, dateGeneration: true },
+        select: { idSynthese: true, idPatient: true, dateGeneration: true },
       }),
       prisma.assignation.findMany({
         where: { statut: { not: 'Complété' }, dateLimite: { not: null } },
-        select: { idPatient: true, titre: true, dateLimite: true, statut: true },
+        select: { idAssignation: true, idPatient: true, titre: true, dateLimite: true, statut: true },
       }),
       prisma.questionnaireReponse.findMany({
         where: { dateReponse: { gte: seuilRecence } },
         orderBy: { dateReponse: 'desc' },
         take: 20,
-        select: { idPatient: true, titre: true, dateReponse: true },
+        select: { idReponse: true, idPatient: true, titre: true, dateReponse: true },
       }),
       prisma.questionnaireReponse.groupBy({
         by: ['idPatient'],
@@ -60,9 +65,9 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     ]);
 
     const signalements = [
-      ...effets.map(e => ({ idPatient: e.idPatient, kind: 'effet_indesirable' as const, soumisLe: e.soumisLe })),
-      ...incidents.map(i => ({ idPatient: i.idPatient, kind: 'incident_confidentialite' as const, soumisLe: i.soumisLe })),
-      ...droits.map(d => ({ idPatient: d.idPatient, kind: 'demande_droit' as const, soumisLe: d.soumisLe })),
+      ...effets.map(e => ({ id: e.id, idPatient: e.idPatient, kind: 'effet_indesirable' as const, soumisLe: e.soumisLe })),
+      ...incidents.map(i => ({ id: i.id, idPatient: i.idPatient, kind: 'incident_confidentialite' as const, soumisLe: i.soumisLe })),
+      ...droits.map(d => ({ id: d.id, idPatient: d.idPatient, kind: 'demande_droit' as const, soumisLe: d.soumisLe })),
     ];
 
     const idsConcernes = [
@@ -99,7 +104,15 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       maintenant,
     });
 
-    return NextResponse.json({ cartes });
+    // Point de passage UNIQUE du refus (G1) : sur les cartes déjà construites,
+    // jamais dans les 5 fonctions de production — ce serait 5 endroits à garder
+    // cohérents. La lecture est bornée aux patients du praticien, comme le Fil.
+    const refus = await prisma.filCardRejection.findMany({
+      where: { idPatient: { in: [...actifs] } },
+      select: { id: true, carteCle: true, refusee: true, supersedesRejectionId: true, refuseLe: true },
+    });
+
+    return NextResponse.json({ cartes: filtrerCartesRefusees(cartes, clesRefusees(refus)) });
   } catch (err) {
     console.error('[fil GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json(

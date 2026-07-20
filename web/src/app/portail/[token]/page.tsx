@@ -21,8 +21,15 @@ import { getDocumentCourant } from '@/lib/trust/contenus/registre';
 type Verified = Extract<PortailSessionResponse, { ok: true }>;
 
 // ─── autosave locale minimale (gate/fiche/anamnèse n'ont pas de idAssignation
-// avant l'onboarding — clé scopée par token plutôt que par assignation, sur le
-// même principe que web/src/lib/questionnaire-draft.ts). ────────────────────
+// avant l'onboarding — clé scopée par patient plutôt que par assignation, sur
+// le même principe que web/src/lib/questionnaire-draft.ts).
+//
+// La clé porte l'`idPatient` de la session vérifiée, jamais le jeton de l'URL.
+// Deux raisons : le jeton est un secret d'accès et n'a rien à faire dans le
+// stockage du navigateur ; et il est appelé à changer (lien magique à
+// consommation unique, gate G4) — un brouillon indexé dessus deviendrait
+// introuvable au lien suivant, alors que la personne, elle, n'a pas changé.
+// ────────────────────────────────────────────────────────────────────────────
 type WizardDraftKind = 'fiche' | 'anamnese';
 
 // Fiche/anamnèse contiennent des données d'identité et de santé (plus
@@ -61,22 +68,24 @@ function isAnamneseWizardDraft(value: unknown): value is { valeurs: AnamneseVale
   return isAnamneseValeursRecord(value.valeurs);
 }
 
-function wizardDraftKey(kind: WizardDraftKind, token: string): string {
-  return `wellneuro:wizard-draft:${kind}:${token}`;
+function wizardDraftKey(kind: WizardDraftKind, idPatient: string): string {
+  return `wellneuro:wizard-draft:${kind}:${idPatient}`;
 }
-function wizardDraftSavedAtKey(kind: WizardDraftKind, token: string): string {
-  return `wellneuro:wizard-draft-meta:${kind}:${token}`;
+function wizardDraftSavedAtKey(kind: WizardDraftKind, idPatient: string): string {
+  return `wellneuro:wizard-draft-meta:${kind}:${idPatient}`;
 }
 
-function readWizardDraft<T>(kind: WizardDraftKind, token: string, validate: WizardDraftValidator<T>): T | null {
-  if (typeof window === 'undefined') return null;
+// Pas d'identité, pas de brouillon : mieux vaut ne rien conserver qu'écrire
+// dans un compartiment commun à tous les patients de l'appareil.
+function readWizardDraft<T>(kind: WizardDraftKind, idPatient: string, validate: WizardDraftValidator<T>): T | null {
+  if (typeof window === 'undefined' || !idPatient) return null;
   try {
-    const savedAt = readWizardDraftSavedAt(kind, token);
+    const savedAt = readWizardDraftSavedAt(kind, idPatient);
     if (savedAt && Date.now() - savedAt.getTime() > WIZARD_DRAFT_TTL_MS) {
-      clearWizardDraft(kind, token);
+      clearWizardDraft(kind, idPatient);
       return null;
     }
-    const raw = window.sessionStorage.getItem(wizardDraftKey(kind, token));
+    const raw = window.sessionStorage.getItem(wizardDraftKey(kind, idPatient));
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     return validate(parsed) ? parsed : null;
@@ -84,19 +93,19 @@ function readWizardDraft<T>(kind: WizardDraftKind, token: string, validate: Wiza
     return null;
   }
 }
-function writeWizardDraft(kind: WizardDraftKind, token: string, value: unknown): void {
-  if (typeof window === 'undefined') return;
+function writeWizardDraft(kind: WizardDraftKind, idPatient: string, value: unknown): void {
+  if (typeof window === 'undefined' || !idPatient) return;
   try {
-    window.sessionStorage.setItem(wizardDraftKey(kind, token), JSON.stringify(value));
-    window.sessionStorage.setItem(wizardDraftSavedAtKey(kind, token), new Date().toISOString());
+    window.sessionStorage.setItem(wizardDraftKey(kind, idPatient), JSON.stringify(value));
+    window.sessionStorage.setItem(wizardDraftSavedAtKey(kind, idPatient), new Date().toISOString());
   } catch {
     /* quota / mode privé : on n'interrompt pas la saisie */
   }
 }
-function readWizardDraftSavedAt(kind: WizardDraftKind, token: string): Date | null {
-  if (typeof window === 'undefined') return null;
+function readWizardDraftSavedAt(kind: WizardDraftKind, idPatient: string): Date | null {
+  if (typeof window === 'undefined' || !idPatient) return null;
   try {
-    const raw = window.sessionStorage.getItem(wizardDraftSavedAtKey(kind, token));
+    const raw = window.sessionStorage.getItem(wizardDraftSavedAtKey(kind, idPatient));
     if (!raw) return null;
     const date = new Date(raw);
     return Number.isNaN(date.getTime()) ? null : date;
@@ -104,11 +113,11 @@ function readWizardDraftSavedAt(kind: WizardDraftKind, token: string): Date | nu
     return null;
   }
 }
-function clearWizardDraft(kind: WizardDraftKind, token: string): void {
-  if (typeof window === 'undefined') return;
+function clearWizardDraft(kind: WizardDraftKind, idPatient: string): void {
+  if (typeof window === 'undefined' || !idPatient) return;
   try {
-    window.sessionStorage.removeItem(wizardDraftKey(kind, token));
-    window.sessionStorage.removeItem(wizardDraftSavedAtKey(kind, token));
+    window.sessionStorage.removeItem(wizardDraftKey(kind, idPatient));
+    window.sessionStorage.removeItem(wizardDraftSavedAtKey(kind, idPatient));
   } catch {
     /* no-op */
   }
@@ -212,23 +221,23 @@ function ConsentScreen({ token, email, onAccepted }: { token: string; email: str
 }
 
 // ─── étape : fiche signalétique (paginée section par section) ──────────────
-function FicheForm({ token, email, onDone }: {
-  token: string; email: string; onDone: () => void;
+function FicheForm({ token, idPatient, email, onDone }: {
+  token: string; idPatient: string; email: string; onDone: () => void;
 }) {
-  const [valeurs, setValeurs] = useState<Record<string, string>>(() => readWizardDraft('fiche', token, isStringRecord) ?? {});
+  const [valeurs, setValeurs] = useState<Record<string, string>>(() => readWizardDraft('fiche', idPatient, isStringRecord) ?? {});
   const [mentions, setMentions] = useState(false);
   const [sectionIndex, setSectionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [savedAt, setSavedAt] = useState<Date | null>(() => readWizardDraftSavedAt('fiche', token));
+  const [savedAt, setSavedAt] = useState<Date | null>(() => readWizardDraftSavedAt('fiche', idPatient));
   const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
   const premierRendu = useRef(true);
 
   useEffect(() => {
     if (premierRendu.current) { premierRendu.current = false; return; }
-    writeWizardDraft('fiche', token, valeurs);
-    setSavedAt(readWizardDraftSavedAt('fiche', token));
-  }, [valeurs, token]);
+    writeWizardDraft('fiche', idPatient, valeurs);
+    setSavedAt(readWizardDraftSavedAt('fiche', idPatient));
+  }, [valeurs, idPatient]);
 
   const set = (id: string, v: string) => setValeurs(prev => ({ ...prev, [id]: v }));
   const requisManquant = FICHE_CHAMPS_REQUIS.some(id => !(valeurs[id] ?? '').trim());
@@ -251,7 +260,7 @@ function FicheForm({ token, email, onDone }: {
       });
       const data = (await res.json()) as { ok: boolean; error?: string };
       if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); setSaveError('submission-incomplete'); }
-      else { clearWizardDraft('fiche', token); onDone(); }
+      else { clearWizardDraft('fiche', idPatient); onDone(); }
     } catch {
       setError('Erreur réseau. Réessayez.');
       setSaveError('network');
@@ -392,25 +401,25 @@ function ChampSimple({ champ, valeur, onChange, requis }: {
   );
 }
 
-function AnamneseForm({ token, email, motifInitial, onDone }: {
-  token: string; email: string; motifInitial: string | null; onDone: (premiereAssignation: string | null) => void;
+function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
+  token: string; idPatient: string; email: string; motifInitial: string | null; onDone: (premiereAssignation: string | null) => void;
 }) {
   type AnamneseDraft = { valeurs: AnamneseValeurs; motif: string };
-  const draft = readWizardDraft<AnamneseDraft>('anamnese', token, isAnamneseWizardDraft);
+  const draft = readWizardDraft<AnamneseDraft>('anamnese', idPatient, isAnamneseWizardDraft);
   const [valeurs, setValeurs] = useState<AnamneseValeurs>(() => draft?.valeurs ?? {});
   const [motif, setMotif] = useState(() => draft?.motif ?? motifInitial ?? '');
   const [sectionIndex, setSectionIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [savedAt, setSavedAt] = useState<Date | null>(() => readWizardDraftSavedAt('anamnese', token));
+  const [savedAt, setSavedAt] = useState<Date | null>(() => readWizardDraftSavedAt('anamnese', idPatient));
   const [saveError, setSaveError] = useState<SaveError | undefined>(undefined);
   const premierRendu = useRef(true);
 
   useEffect(() => {
     if (premierRendu.current) { premierRendu.current = false; return; }
-    writeWizardDraft('anamnese', token, { valeurs, motif });
-    setSavedAt(readWizardDraftSavedAt('anamnese', token));
-  }, [valeurs, motif, token]);
+    writeWizardDraft('anamnese', idPatient, { valeurs, motif });
+    setSavedAt(readWizardDraftSavedAt('anamnese', idPatient));
+  }, [valeurs, motif, idPatient]);
 
   const setChamp = (id: string, v: string | string[]) => setValeurs(prev => ({ ...prev, [id]: v }));
 
@@ -454,7 +463,7 @@ function AnamneseForm({ token, email, motifInitial, onDone }: {
       });
       const data = (await res.json()) as { ok: boolean; error?: string; premiereAssignation?: string | null };
       if (!data.ok) { setError(data.error ?? 'Erreur. Réessayez.'); setSaveError('submission-incomplete'); }
-      else { clearWizardDraft('anamnese', token); onDone(data.premiereAssignation ?? null); }
+      else { clearWizardDraft('anamnese', idPatient); onDone(data.premiereAssignation ?? null); }
     } catch {
       setError('Erreur réseau. Réessayez.');
       setSaveError('network');
@@ -605,11 +614,16 @@ export default function PortailPage() {
   const { token } = useParams<{ token: string }>();
   const [step, setStep] = useState<Step>({ name: 'loading' });
   const [email, setEmail] = useState('');
+  // Identité de session : elle nomme les brouillons locaux. Toujours renseignée
+  // avant que fiche ou anamnèse ne s'affichent — ces étapes ne sont atteintes
+  // que par `appliquerSession`.
+  const [idPatient, setIdPatient] = useState('');
   const [consultation, setConsultation] = useState<PortailConsultationState | null>(null);
   const [premiere, setPremiere] = useState<string | null>(null);
 
   const appliquerSession = useCallback((data: Extract<PortailSessionResponse, { ok: true }>) => {
     setEmail(data.patient.email.toLowerCase());
+    setIdPatient(data.patient.idPatient);
     setConsultation(data.consultation);
     setPremiere(data.premiereAssignation);
     // Séquence TRUST « Avant de commencer » : requise tant que la version
@@ -714,6 +728,7 @@ export default function PortailPage() {
         <PatientJourneyProgress steps={buildJourneySteps(2)} />
         <FicheForm
           token={token}
+          idPatient={idPatient}
           email={email}
           onDone={() => {
             const next = consultation ? { ...consultation, ficheRemplie: true } : null;
@@ -731,6 +746,7 @@ export default function PortailPage() {
         <PatientJourneyProgress steps={buildJourneySteps(3)} />
         <AnamneseForm
           token={token}
+          idPatient={idPatient}
           email={email}
           motifInitial={consultation?.motif ?? null}
           onDone={pa => setStep({ name: 'done', premiereAssignation: pa ?? premiere })}
