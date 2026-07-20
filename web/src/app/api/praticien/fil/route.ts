@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import {
   construireFil,
   RECENCE_REPONSE_JOURS,
@@ -73,8 +74,14 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         ...activites.map(a => a.idPatient),
       ]),
     ];
+    // Toute carte dont le patient n'est pas dans ce résultat est écartée
+    // (filtre `actifs` plus bas) : scoper ici suffit à borner tout le Fil.
     const patients = await prisma.patient.findMany({
-      where: { idPatient: { in: idsConcernes }, actif: true },
+      where: {
+        idPatient: { in: idsConcernes },
+        actif: true,
+        ...filtrePatientsDuPraticien(emailPraticien(session) ?? ''),
+      },
       select: { idPatient: true, prenom: true, nom: true },
     });
     const noms = new Map(patients.map(p => [p.idPatient, `${p.prenom} ${p.nom}`.trim()]));
