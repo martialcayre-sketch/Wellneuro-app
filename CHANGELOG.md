@@ -4,6 +4,32 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Gate G4 — activé en production (2026-07-21)
+
+Aucun code, aucune migration : bascule de drapeau et traçabilité.
+
+- **`WN_G4_LIEN_MAGIQUE=true`, Production seule**, sur le déploiement `092197a`.
+  Le lien magique — haché en base, 24 h, usage unique, rejeu refusé et tracé —
+  est actif ; le lien permanent continue de fonctionner, aucun patient n'a perdu
+  son accès.
+- **Vérifié sans toucher un dossier** : `/portail/lien/<jeton>` passe de 404 à
+  307 vers l'écran unique ; cet écran ne contient aucune occurrence de
+  « expiré », « consommé », « inconnu » ou « introuvable » ; le canal public de
+  redemande répond 404 ; `portail_magic_links` reste vide.
+- **Le canal public de redemande reste fermé** (`WN_G4_REDEMANDE_PATIENT` non
+  posé) tant que le temps de réponse n'est pas égalisé et qu'aucune limitation
+  par IP n'existe.
+- **Corrigé pendant l'activation** : le drapeau avait d'abord été posé sur
+  **Preview et Production**. Les déploiements Preview lisant la base de
+  production — un seul projet Supabase, aucune préproduction —, des liens
+  magiques auraient pu être émis vers de vrais dossiers depuis n'importe quelle
+  URL de prévisualisation.
+- **Checklist G-TRUST-04 mise à jour** : la base de production contient des
+  dossiers de **personnes réelles** ayant consenti à une phase de test. Ce
+  consentement est une pièce du dossier RGPD ; il **ne satisfait pas
+  l'exigence 1** (hébergement HDS), qui reste ouverte. L'exigence 4 passe de
+  « partiel » à « partiel, amélioré ». **Le gate n'est pas levé.**
+
 ### Gate G4 — surface d'émission, et scission du drapeau (2026-07-20)
 
 Aucune migration. Prépare l'activation de G4, qui reste **éteint**.

@@ -1146,3 +1146,25 @@ banc de hook committé, 27 cas — 20 passent sur la version d'avant.
 **Questions ouvertes** : péremption des liens permanents déjà envoyés, et
 acceptation des deux résidus (réponse non égalisée, pas de limitation par IP).
 Ni l'une ni l'autre n'est technique. SP-SPI en dépend.
+
+
+## 2026-07-21 — G4 activé en production
+
+**Décisions** : `WN_G4_LIEN_MAGIQUE=true`, **Production seule**, déploiement
+`092197a`. Vérifié : `/portail/lien/<jeton>` passe de 404 à 307 vers l'écran
+unique, le canal public répond 404, `portail_magic_links` reste vide. Une
+partie des dossiers de production sont de **vraies personnes** ayant consenti à
+une phase de test — consigné dans la checklist G-TRUST-04.
+
+**Écarté** : traiter ce consentement comme satisfaisant l'exigence 1. Il couvre
+la licéité du traitement, pas la certification de l'hébergeur (CSP L1111-8,
+dont l'exigence de consentement a disparu en 2018). Alerte, pas avis juridique.
+
+**Corrigé en route** : le drapeau avait été posé sur **Preview et Production**.
+Les Preview lisant la base de production, des liens auraient pu partir vers de
+vrais dossiers depuis une URL de prévisualisation.
+
+**Prochaine action** : essai du runbook sur `PAT_SEED_03`.
+
+**Questions ouvertes** : certification HDS, jamais demandée. Péremption des
+liens permanents, non décidée. Les deux résidus du canal de redemande.
