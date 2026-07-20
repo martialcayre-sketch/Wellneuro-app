@@ -1060,3 +1060,7 @@ deux requêtes groupées par `migration_name`.
 toujours de la prose en heredoc. Le correctif — masquer le corps d'un heredoc
 quand la commande entière ne contient aucun vecteur d'exécution — a été refusé
 par le classifieur de mode auto ; il attend une autorisation explicite.
+
+**Prochaine action** : ouvrir la PR de `worktree-correction-constats`
+(`gh pr create` également refusé par le classifieur), puis statuer sur le
+correctif heredoc. La reprise de fond reste **G4**.
