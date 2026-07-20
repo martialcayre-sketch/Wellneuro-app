@@ -4,6 +4,34 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Gate G4 — surface d'émission, et scission du drapeau (2026-07-20)
+
+Aucune migration. Prépare l'activation de G4, qui reste **éteint**.
+
+- **Le praticien peut enfin émettre un lien magique** : bouton « Envoyer un lien
+  à usage unique (24 h) » dans `PatientsPanel`, à côté des trois actions du
+  jeton permanent, visible seulement drapeau allumé. L'action d'API existait
+  depuis #172 **sans aucune surface** — allumer le drapeau n'aurait rien ouvert
+  d'utilisable, et la page de redemande patient serait restée inatteignable.
+- **Deux drapeaux au lieu d'un.** `WN_G4_REDEMANDE_PATIENT` commande désormais
+  le canal **public** `POST /api/portail/lien/demande`, séparément de l'entrée
+  par lien magique. Sa réponse est indifférenciée, mais deux résidus subsistent —
+  temps de réponse non égalisé, pas de limitation par IP. La base de production
+  contenant des dossiers de **personnes réelles**, ces résidus portent sur de
+  vraies adresses : le canal reste fermé jusqu'à ce qu'ils soient traités. La
+  coexistence des deux chemins le permet — un patient dont le lien magique
+  expire garde son lien permanent.
+- **Le message de refus reste unique.** Seule l'action proposée change quand le
+  canal est fermé (« demandez un nouveau lien à votre praticien ») ; jamais la
+  raison du refus.
+- **Un portail révoqué ne se présente plus comme un patient introuvable** :
+  motif `portal_revoked` distinct, en 409. Les confondre envoyait le praticien
+  chercher le mauvais problème — un portail révoqué se réactive, un patient
+  introuvable non.
+- **Runbook d'activation** (`ACTIVATION_RUNBOOK_G4.md`) : essai sur la seule
+  fixture `PAT_SEED_03`, contrôle en base, rollback non destructif. Il rappelle
+  qu'il **ne lève pas G-TRUST-04**, dont le point bloquant est l'hébergement HDS.
+
 ### Gate G4 — lien magique d'accès patient (IDP LOT-01, 2026-07-20)
 
 Gate confirmé explicitement par l'utilisateur le 2026-07-20. **Migration

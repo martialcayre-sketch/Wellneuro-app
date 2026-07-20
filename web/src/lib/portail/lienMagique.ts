@@ -32,7 +32,7 @@ export const FENETRE_DEMANDES_MS = 60 * 60 * 1000;
  * ne puisse en dire une autre.
  */
 export const MESSAGE_LIEN_INDISPONIBLE =
-  'Ce lien n’est plus valable. Demandez-en un nouveau ci-dessous : vous le recevrez par e-mail.';
+  'Ce lien n’est plus valable. Vous pouvez en recevoir un nouveau par e-mail.';
 
 /**
  * La réponse du canal de redemande — la même que l'adresse corresponde ou non

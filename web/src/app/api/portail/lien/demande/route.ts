@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isEmailValide } from '@/lib/consultation/portail';
-import { isG4LienMagiqueEnabled } from '@/lib/portail/featureFlag';
+import { isG4LienMagiqueEnabled, isG4RedemandePatientEnabled } from '@/lib/portail/featureFlag';
 import {
   MESSAGE_DEMANDE_ENVOYEE,
   ORIGINE_PATIENT,
@@ -33,7 +33,10 @@ function reponseIndifferenciee(): NextResponse<DemandeLienResponse> {
 }
 
 export async function POST(req: Request): Promise<NextResponse<DemandeLienResponse> | NextResponse> {
-  if (!isG4LienMagiqueEnabled()) {
+  // DEUX drapeaux, et il faut les deux. Le canal est public et non authentifié :
+  // il s'ouvre séparément de l'entrée par lien magique, pour qu'allumer G4
+  // n'expose pas d'emblée une surface publique sur des adresses réelles.
+  if (!isG4LienMagiqueEnabled() || !isG4RedemandePatientEnabled()) {
     return new NextResponse(null, { status: 404 });
   }
 
