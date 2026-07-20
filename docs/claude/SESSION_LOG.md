@@ -1006,3 +1006,13 @@ précédente est caduque.
 
 **Ouvert** : raccourci CI documentaire jamais exercé ; `_prisma_migrations` ment
 sur `r8_lite_consent_fields`.
+
+### Correctif (même session, après clôture)
+
+**Le raccourci CI a été exercé** : PR #164, documentaire, `verify` vert en **26 s**
+contre 5 min 23 s. Anti-secrets, audit campagnes et certification scoring ont
+tourné ; tout le reste sauté. Le point n'est plus ouvert.
+
+**G1 est déjà pris** : worktree `gates-g3-g1-g4` verrouillé sur
+`feat/g1-cle-carte-fil`, basé sur `ed3bfe0`. Ne pas le rouvrir depuis une autre
+session — c'est la collision de ce matin. Reprise libre : **G4**.
