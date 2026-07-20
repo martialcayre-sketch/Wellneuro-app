@@ -6,6 +6,7 @@ import { createPublicId } from '@/lib/ids';
 import { buildPortalUrl } from '@/lib/consultation/portal-access';
 import { isMotifValide } from '@/lib/consultation/motifs';
 import { sendPortailLinkEmail } from '@/lib/consultation/email';
+import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 
 export type Consultation = {
   idConsultation: string;
@@ -28,7 +29,7 @@ export type CreateConsultationResponse = {
   accessToken?: string;
   lien?: string;
   error?: string;
-  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'exception';
+  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'forbidden' | 'exception';
 };
 
 type CreateConsultationPayload = {
@@ -46,9 +47,16 @@ export async function GET(req: Request): Promise<NextResponse<ConsultationsApiRe
   if (!idPatient) {
     return NextResponse.json({ consultations: [], unavailable: true, reason: 'invalid_payload' }, { status: 400 });
   }
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return NextResponse.json({ consultations: [], unavailable: true, reason: 'unauthenticated' }, { status: 401 });
+  }
   try {
+    // Garde d'appartenance : `Consultation` n'a pas de relation Prisma vers
+    // `Patient`, seulement la colonne `praticienEmail` écrite à la création
+    // (POST ci-dessous) — on scope directement dessus.
     const rows = await prisma.consultation.findMany({
-      where: { idPatient },
+      where: { idPatient, praticienEmail: emailSession },
       orderBy: { createdAt: 'desc' },
     });
     const consultations: Consultation[] = rows.map(c => ({
@@ -87,6 +95,22 @@ export async function POST(req: Request): Promise<NextResponse<CreateConsultatio
   }
   if (motifRaw && !isMotifValide(motifRaw)) {
     return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'Motif de consultation invalide.' }, { status: 400 });
+  }
+
+  // Garde d'appartenance : sans elle, un praticien pouvait lever la révocation
+  // d'accès et faire envoyer le lien du portail pour le patient d'un autre.
+  const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+  if (verdict === 'introuvable') {
+    return NextResponse.json(
+      { success: false, reason: 'patient_not_found', error: 'Patient introuvable ou inactif.' },
+      { status: 404 }
+    );
+  }
+  if (verdict === 'autre_praticien') {
+    return NextResponse.json(
+      { success: false, reason: 'forbidden', error: 'Patient non accessible.' },
+      { status: 403 }
+    );
   }
 
   try {
