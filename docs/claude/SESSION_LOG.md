@@ -1122,3 +1122,27 @@ honorés, et la politique anti-énumération du canal de redemande — ni l'une 
 l'autre n'est une décision technique. Le dossier des gates recensait deux
 traces locales ; il y en avait trois (`portail:derniere-visite`, en
 `localStorage`) : à corriger dans le dossier.
+
+
+
+## 2026-07-20 — G4 livré éteint, et audit des garde-fous
+
+**Décisions** : G4 mergé (#172) — lien magique haché, 24 h, usage unique, rejeu
+tracé en base — derrière `WN_G4_LIEN_MAGIQUE`, absent de Vercel. Vérifié en
+production : migration appliquée, `portail_magic_links` vide. Dossier des gates
+corrigé (#171). Audit de #173 : constats justes, mais son masquage des heredocs
+lisait le texte au lieu de la structure. #176 corrige, plus deux trous
+préexistants — dont une dérogation qui laissait passer `prisma migrate deploy`
+mis en commentaire.
+
+**Écarté** : sortir le jeton de l'URL du portail (le cœur d'authentification s'y
+noierait) ; merger #173.
+
+**Vérifié** : `test:worktree` complet avant chaque commit portant migration ;
+banc de hook committé, 27 cas — 20 passent sur la version d'avant.
+
+**Prochaine action** : décider l'activation de G4.
+
+**Questions ouvertes** : péremption des liens permanents déjà envoyés, et
+acceptation des deux résidus (réponse non égalisée, pas de limitation par IP).
+Ni l'une ni l'autre n'est technique. SP-SPI en dépend.
