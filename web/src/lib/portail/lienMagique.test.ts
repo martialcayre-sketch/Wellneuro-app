@@ -2,14 +2,23 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   DUREE_VALIDITE_MS,
   MESSAGE_LIEN_INDISPONIBLE,
+  PALIER_REPONSE_MS,
   PLAFOND_DEMANDES_PAR_HEURE,
+  PLAFOND_TENTATIVES_PAR_IP,
+  PLANCHER_REPONSE_MS,
+  RETENTION_TENTATIVES_MS,
   creerJeton,
   debutFenetreDemandes,
+  debutRetentionTentatives,
+  delaiAvantReponse,
   empreinteJeton,
+  empreinteOrigine,
   etatLien,
   expirationDepuis,
+  origineReseau,
   originePraticien,
   plafondAtteint,
+  plafondIpAtteint,
 } from './lienMagique';
 
 const MAINTENANT = new Date('2026-07-20T12:00:00.000Z');
@@ -131,5 +140,83 @@ describe('message unique', () => {
 describe('origine', () => {
   it('un lien émis par le praticien porte son adresse, en minuscules', () => {
     expect(originePraticien('Martial@Wellneuro.fr')).toBe('praticien:martial@wellneuro.fr');
+  });
+});
+
+describe('cadence par origine réseau', () => {
+  it('le 21ᵉ essai de l’heure est refusé, le 20ᵉ passe', () => {
+    expect(PLAFOND_TENTATIVES_PAR_IP).toBe(20);
+    expect(plafondIpAtteint(PLAFOND_TENTATIVES_PAR_IP)).toBe(false);
+    expect(plafondIpAtteint(PLAFOND_TENTATIVES_PAR_IP + 1)).toBe(true);
+  });
+
+  // Le plafond par patient ne borne pas l'énumération : mille adresses
+  // inconnues n'atteignent le plafond d'aucun patient. Les deux plafonds ne
+  // comptent donc pas la même chose, et ne peuvent pas se remplacer.
+  it('il est plus haut que celui d’un patient — une sortie réseau est partagée', () => {
+    expect(PLAFOND_TENTATIVES_PAR_IP).toBeGreaterThan(PLAFOND_DEMANDES_PAR_HEURE);
+  });
+
+  it('le premier élément de x-forwarded-for est le client, pas les relais', () => {
+    const entetes = new Headers({ 'x-forwarded-for': '203.0.113.7, 70.41.3.18, 150.172.238.178' });
+    expect(origineReseau(entetes)).toBe('203.0.113.7');
+  });
+
+  it('à défaut, x-real-ip ; sans en-tête, un seau unique — jamais une absence de plafond', () => {
+    expect(origineReseau(new Headers({ 'x-real-ip': '203.0.113.9' }))).toBe('203.0.113.9');
+    expect(origineReseau(new Headers())).toBe('origine-inconnue');
+    expect(origineReseau(new Headers({ 'x-forwarded-for': '  ' }))).toBe('origine-inconnue');
+  });
+
+  it('l’adresse n’est pas stockée : ce qu’on en garde ne permet pas de la retrouver', () => {
+    const empreinte = empreinteOrigine('203.0.113.7');
+    expect(empreinte).not.toContain('203.0.113.7');
+    expect(empreinte).toBe(empreinteOrigine('203.0.113.7'));
+    expect(empreinte).not.toBe(empreinteOrigine('203.0.113.8'));
+  });
+
+  // Domaines distincts : une empreinte calculée pour un jeton ne doit pas valoir
+  // pour une origine réseau, même clé et même algorithme.
+  it('l’empreinte d’origine ne vaut pas dans le domaine des jetons', () => {
+    expect(empreinteOrigine('valeur-commune')).not.toBe(empreinteJeton('valeur-commune'));
+  });
+
+  it('les tentatives se purgent au-delà de 24 h, bien après la fenêtre de comptage', () => {
+    expect(RETENTION_TENTATIVES_MS).toBe(24 * 60 * 60 * 1000);
+    expect(debutRetentionTentatives(MAINTENANT).toISOString()).toBe('2026-07-19T12:00:00.000Z');
+    expect(debutRetentionTentatives(MAINTENANT).getTime()).toBeLessThan(
+      debutFenetreDemandes(MAINTENANT).getTime(),
+    );
+  });
+});
+
+describe('plancher de réponse', () => {
+  it('un traitement instantané attend quand même le plancher', () => {
+    expect(delaiAvantReponse(0)).toBe(PLANCHER_REPONSE_MS);
+    expect(delaiAvantReponse(200)).toBe(PLANCHER_REPONSE_MS - 200);
+  });
+
+  // C'est l'écart que la route doit effacer : une adresse inconnue ne coûte
+  // presque rien, une adresse connue coûte une écriture et une poignée SMTP.
+  it('inconnue et connue sortent à la même seconde', () => {
+    const inconnue = 12 + delaiAvantReponse(12);
+    const connue = 900 + delaiAvantReponse(900);
+    expect(inconnue).toBe(connue);
+    expect(inconnue).toBe(PLANCHER_REPONSE_MS);
+  });
+
+  it('au-delà du plancher, le temps observable ne prend que des valeurs de palier', () => {
+    for (const ecoule of [1501, 1700, 1999, 2000, 2001, 4321]) {
+      const total = ecoule + delaiAvantReponse(ecoule);
+      expect(total % PALIER_REPONSE_MS).toBe(0);
+      expect(total).toBeGreaterThanOrEqual(ecoule);
+      expect(total - ecoule).toBeLessThan(PALIER_REPONSE_MS);
+    }
+  });
+
+  it('n’attend jamais un temps négatif', () => {
+    for (const ecoule of [0, 1500, 2000, 10_000]) {
+      expect(delaiAvantReponse(ecoule)).toBeGreaterThanOrEqual(0);
+    }
   });
 });

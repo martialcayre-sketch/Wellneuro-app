@@ -7,10 +7,16 @@ import {
   ORIGINE_PATIENT,
   creerJeton,
   debutFenetreDemandes,
+  debutRetentionTentatives,
+  delaiAvantReponse,
   empreinteJeton,
+  empreinteOrigine,
   expirationDepuis,
+  origineReseau,
   plafondAtteint,
+  plafondIpAtteint,
 } from '@/lib/portail/lienMagique';
+import { attendre } from '@/lib/portail/attente';
 import { buildMagicLinkUrl, sendMagicLinkEmail } from '@/lib/consultation/email';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -21,9 +27,12 @@ import { createRequestContext, finalizeLogContext } from '@/lib/observability/re
 // Sans ce canal, un lien de 24 h enfermerait dehors quiconque le laisse
 // expirer. C'est aussi ce qu'attend SP-SPI pour la reprise à plusieurs mois.
 //
-// LA RÉPONSE EST TOUJOURS LA MÊME — même code, même corps — que l'adresse
-// corresponde ou non à un espace patient. C'est tout l'objet de la route : sans
-// cela, elle deviendrait un oracle permettant d'énumérer les patients.
+// LA RÉPONSE EST TOUJOURS LA MÊME — même code, même corps, ET MÊME DURÉE — que
+// l'adresse corresponde ou non à un espace patient. C'est tout l'objet de la
+// route : sans cela, elle deviendrait un oracle permettant d'énumérer les
+// patients. Le temps compte autant que le corps : une adresse connue déclenche
+// une écriture et une poignée SMTP, une inconnue ne déclenche rien, et l'écart
+// se mesure.
 
 export type DemandeLienResponse = { ok: true; message: string } | { ok: false; error: string };
 
@@ -41,6 +50,7 @@ export async function POST(req: Request): Promise<NextResponse<DemandeLienRespon
   }
 
   const contexte = createRequestContext(req);
+  const debutMs = Date.now();
 
   let email = '';
   try {
@@ -51,12 +61,57 @@ export async function POST(req: Request): Promise<NextResponse<DemandeLienRespon
   }
 
   // Une adresse mal formée n'est pas une tentative d'énumération : on peut le
-  // dire sans rien révéler d'un patient.
+  // dire sans rien révéler d'un patient. Ces deux sorties se distinguent déjà
+  // par leur code — leur imposer le plancher ne protégerait rien.
   if (!isEmailValide(email)) {
     return NextResponse.json({ ok: false, error: 'Adresse e-mail invalide.' }, { status: 400 });
   }
 
+  const reponse = await traiterDemande(email, req, contexte);
+
+  // Le plancher est appliqué ici, sur le chemin de sortie unique : aucune
+  // branche ne peut lui échapper, pas même la panne.
+  await attendre(delaiAvantReponse(Date.now() - debutMs));
+  return reponse;
+}
+
+async function traiterDemande(
+  email: string,
+  req: Request,
+  contexte: ReturnType<typeof createRequestContext>,
+): Promise<NextResponse<DemandeLienResponse>> {
   try {
+    const maintenant = new Date();
+
+    // Cadence par ORIGINE RÉSEAU, comptée avant toute lecture de patient.
+    // Le plafond par patient plus bas ne borne pas l'énumération : essayer
+    // mille adresses inconnues n'atteint le plafond d'aucun patient, puisqu'il
+    // n'en touche aucun. C'est ce plafond-ci qui rend l'essai en masse
+    // impraticable — et il compte donc les tentatives, pas les envois.
+    const empreinteIp = empreinteOrigine(origineReseau(req.headers));
+    await prisma.portailDemandeTentative.create({ data: { empreinteIp } });
+    const tentativesRecentes = await prisma.portailDemandeTentative.count({
+      where: { empreinteIp, creeLe: { gte: debutFenetreDemandes(maintenant) } },
+    });
+
+    // Purge de ce qui est sorti de la fenêtre : au-delà, une ligne ne sert plus
+    // à compter, elle ne fait que conserver une origine réseau.
+    await prisma.portailDemandeTentative
+      .deleteMany({ where: { creeLe: { lt: debutRetentionTentatives(maintenant) } } })
+      .catch(() => undefined);
+
+    if (plafondIpAtteint(tentativesRecentes)) {
+      logger.security({
+        event: EVENT_CODES.PORTAIL_LIEN_DEMANDE,
+        domain: 'SECURITY',
+        message: 'Tentatives de demande au-delà du plafond par origine réseau',
+        context: finalizeLogContext(contexte, { statusCode: 200, retryable: false }),
+      });
+      // Rien n'est lu, rien n'est envoyé — et la réponse ne change pas : dire
+      // « trop de tentatives » confirmerait qu'on a bien compté quelque chose.
+      return reponseIndifferenciee();
+    }
+
     const patient = await prisma.patient.findUnique({
       where: { email },
       select: { idPatient: true, prenom: true, email: true, actif: true, accessTokenRevoked: true },
@@ -73,8 +128,6 @@ export async function POST(req: Request): Promise<NextResponse<DemandeLienRespon
       });
       return reponseIndifferenciee();
     }
-
-    const maintenant = new Date();
 
     // Cadence bornée EN BASE, pas en mémoire de processus : en serverless
     // plusieurs instances répondent, et un compteur local ne borne rien.

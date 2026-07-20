@@ -4,6 +4,39 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Gate G4 — les deux résidus du canal de redemande (IDP LOT-02, 2026-07-21)
+
+Migration confirmée explicitement par l'utilisateur le 2026-07-21. **Migration
+additive** : une table nouvelle, aucune table existante touchée. Rollback =
+abandon de la table. Le canal reste **fermé** — `WN_G4_REDEMANDE_PATIENT` absent
+de la production.
+
+- **Le temps de réponse ne dit plus rien.** Corps, code et en-têtes étaient déjà
+  identiques ; restait la durée — une adresse connue coûte une écriture et une
+  poignée SMTP, une adresse inconnue ne coûte rien, et l'écart se mesure. Toutes
+  les sorties indifférenciées passent désormais par un plancher commun (1,5 s),
+  appliqué sur un chemin de sortie unique pour qu'aucune branche ne lui échappe,
+  **pas même la panne**. Au-delà du plancher, le temps observable est arrondi au
+  palier de 500 ms : un envoi SMTP anormalement lent ne se lit plus comme une
+  mesure continue.
+- **Les tentatives sont plafonnées par origine réseau**, 20 par heure glissante,
+  comptées **en base** (`portail_demande_tentatives`). Le plafond par patient
+  (3/heure) ne bornait pas l'énumération : essayer mille adresses inconnues
+  n'atteint le plafond d'aucun patient, puisqu'il n'en touche aucun. Et
+  `portail_magic_links` ne pouvait pas tenir ce rôle — une adresse inconnue n'y
+  crée aucune ligne, or c'est exactement la tentative à compter.
+- **L'adresse IP n'est pas stockée**, seulement son empreinte HMAC (préfixe de
+  domaine distinct de celui des jetons). La table n'a **aucune relation vers
+  `patients`** : aucune jointure ne peut relier une origine réseau à un dossier.
+  Les lignes se purgent au-delà de 24 h — passé la fenêtre de comptage, elles ne
+  seraient plus qu'une trace d'origine réseau conservée sans usage.
+- **Le seuil est à 20, pas à 3** : une sortie réseau est partagée — un foyer, un
+  cabinet, un opérateur mobile. Il doit gêner l'énumération, jamais la deuxième
+  tentative d'un patient qui a mal recopié son adresse.
+- **Fermer les résidus ne lève pas la décision.** L'obstacle technique tombe ;
+  ouvrir une surface publique sur des adresses de personnes réelles reste une
+  décision distincte, à consigner avec sa date et son périmètre.
+
 ### Gate G4 — surface d'émission, et scission du drapeau (2026-07-20)
 
 Aucune migration. Prépare l'activation de G4, qui reste **éteint**.

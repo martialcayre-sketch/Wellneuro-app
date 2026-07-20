@@ -18,20 +18,20 @@ export function isG4LienMagiqueEnabled(value = process.env.WN_G4_LIEN_MAGIQUE): 
 // Second drapeau, pour le canal de redemande `POST /api/portail/lien/demande`.
 //
 // Ce canal est PUBLIC et NON AUTHENTIFIÉ. Sa réponse est indifférenciée — même
-// code, même corps, même en-têtes que l'adresse existe ou non — mais deux
-// résidus subsistent, documentés en revue de sécurité : le temps de réponse
-// n'est pas égalisé (un envoi SMTP réussi est plus lent qu'une absence d'envoi)
-// et il n'y a pas de limitation par IP.
+// code, même corps, mêmes en-têtes, ET MÊME DURÉE que l'adresse existe ou non.
 //
-// Tant que la base ne contenait que des fixtures, c'était théorique. Sur des
-// adresses de personnes réelles, ce ne l'est plus. Or la coexistence des deux
-// chemins d'accès rend ce canal NON INDISPENSABLE au démarrage : un patient
-// dont le lien magique expire garde son lien permanent. Il peut donc attendre
-// que les deux résidus soient fermés.
+// Les deux résidus relevés en revue de sécurité sont fermés le 2026-07-21 :
+// le temps de réponse passe par un plancher commun à toutes les sorties
+// (`delaiAvantReponse`), et les tentatives sont plafonnées par origine réseau
+// en base (`portail_demande_tentatives`) — le plafond par patient ne bornait
+// pas l'énumération, qui ne touche aucun patient.
 //
-// Séparé de `WN_G4_LIEN_MAGIQUE` pour cette raison seule : l'entrée par lien
-// magique peut s'allumer sans ouvrir une surface publique sur des adresses
-// réelles.
+// Le drapeau RESTE néanmoins séparé de `WN_G4_LIEN_MAGIQUE`, et pour la même
+// raison qu'à sa création : allumer l'entrée par lien magique ne doit pas
+// ouvrir d'office une surface publique sur des adresses réelles. Sa levée est
+// une décision distincte, à consigner — d'autant que la coexistence des deux
+// chemins d'accès le rend non indispensable : un patient dont le lien magique
+// expire garde son lien permanent.
 export function isG4RedemandePatientEnabled(value = process.env.WN_G4_REDEMANDE_PATIENT): boolean {
   return value === 'true';
 }
