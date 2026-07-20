@@ -95,7 +95,7 @@ export default function QuestionnairesHubPage() {
   const { token } = useParams<{ token: string }>();
   const router = useRouter();
   const [state, setState] = useState<{ status: 'loading' | 'ready' | 'error'; error?: string }>({ status: 'loading' });
-  const [patient, setPatient] = useState<{ prenom: string; nom: string } | null>(null);
+  const [patient, setPatient] = useState<{ idPatient: string; prenom: string; nom: string } | null>(null);
   const [assignations, setAssignations] = useState<AssignationPatient[]>([]);
   const [brouillons, setBrouillons] = useState<Set<string>>(new Set());
   const [changements, setChangements] = useState<ChangementVisite[]>([]);
@@ -151,7 +151,7 @@ export default function QuestionnairesHubPage() {
       // Comparaison locale à l'instantané de la visite précédente — purement
       // présentationnel, aucune écriture serveur (cf. lib/portail-visite.ts).
       setChangements(detecterChangementsEtMettreAJour(
-        token,
+        data.patient.idPatient,
         data.assignations.map(a => ({ idAssignation: a.idAssignation, titre: a.titre || a.idQuestionnaire, statutReponses: a.statutReponses })),
       ));
       setState({ status: 'ready' });

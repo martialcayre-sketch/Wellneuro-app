@@ -52,6 +52,14 @@ describe('POST /api/portail/session', () => {
     expect(response.headers.get('set-cookie')).toContain('wn_portail=');
   });
 
+  // Préalable G4 : c'est cette identité qui nomme les brouillons du navigateur,
+  // à la place du jeton d'URL. Sans elle, la reclé n'a pas de source.
+  it('renvoie l’identité de session, pour que le navigateur cesse de nommer ses brouillons d’après le jeton', async () => {
+    const response = await POST(request({ token: patient.accessToken, email: patient.email }));
+    const payload = await response.json();
+    expect(payload.patient.idPatient).toBe(patient.idPatient);
+  });
+
   it('restaure la session avec le token et le cookie, sans email', async () => {
     const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email, accessToken: patient.accessToken });
     const response = await POST(request({ token: patient.accessToken }, cookie));

@@ -4,6 +4,38 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Vague 2 — les traces locales du portail suivent le patient, plus le lien (2026-07-20)
+
+Aucune migration. Préalable au gate **G4** (identité patient durable), livré à part.
+
+- **Trois traces du navigateur étaient nommées d'après le jeton d'URL** : les
+  brouillons du wizard fiche/anamnèse (`sessionStorage`), le brouillon du
+  Journal Alimentaire (`sessionStorage`), et l'instantané « depuis la dernière
+  visite » du hub (`localStorage`). Toutes portent désormais l'`idPatient` de la
+  session vérifiée.
+- **Le dossier des gates n'en recensait que deux.** La troisième —
+  `wellneuro:portail:derniere-visite:${token}` — est la plus exposée : en
+  `localStorage`, elle survit à la fermeture de l'onglet et gardait donc un
+  **secret d'accès à demeure** dans le navigateur.
+- **Deux raisons, dont une qui n'est pas cosmétique** : le jeton est un secret
+  d'accès et n'a rien à faire dans une clé de stockage ; et il est appelé à
+  changer (lien magique à consommation unique, G4) — une trace indexée dessus
+  devient introuvable au lien suivant, alors que la personne n'a pas changé.
+  C'est exactement la reprise à plusieurs mois qu'attend SP-SPI.
+- **`/api/portail/session` et `/api/portail/assignations` renvoient
+  l'`idPatient`** de la session. Aucune route portail n'accepte un `idPatient`
+  venu du client : elles le lisent toutes du cookie signé.
+- **La page `/portail/[token]/alimentation` résout l'identité côté serveur**,
+  depuis le cookie — le jeton ne descend plus jusqu'au panneau du Journal
+  Alimentaire, qui ne peut donc plus le réintroduire dans une clé.
+- **Pas d'identité, pas de trace** : sans session vérifiée, rien n'est lu ni
+  écrit — un compartiment commun mélangerait deux patients d'un même appareil.
+  Le panneau du Journal Alimentaire **le dit à l'écran** au lieu de laisser
+  croire à une sauvegarde.
+- **Garde structurelle** (`lib/portail-identite-locale.guard.test.ts`) : une
+  régression se réintroduirait par un `${token}` recopié, pas par une logique
+  fautive — le test lit donc les sources.
+
 ### Vague 2 — isolation multi-praticien : 12 routes fermées (2026-07-20)
 
 Aucune migration. Exigence 3 du gate **G-TRUST-04**.
