@@ -7,6 +7,7 @@ import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import nodemailer from 'nodemailer';
 import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
+import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -85,8 +86,20 @@ export async function POST(req: Request): Promise<NextResponse> {
     ), requestContext);
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return withCorrelationHeader(NextResponse.json(
+      { success: false, reason: 'unauthenticated', error: 'Non authentifié.' },
+      { status: 401 }
+    ), requestContext);
+  }
+
   try {
-    const patient = await prisma.patient.findUnique({ where: { email: emailPatient } });
+    // Garde d'appartenance : assigner un pack déclenche un envoi d'e-mail au
+    // patient. Un patient d'un autre praticien est « introuvable ».
+    const patient = await prisma.patient.findFirst({
+      where: { email: emailPatient, ...filtrePatientsDuPraticien(emailSession) },
+    });
     if (!patient || !patient.actif) {
       return withCorrelationHeader(NextResponse.json(
         { success: false, reason: 'patient_not_found', error: 'Patient introuvable (email non présent/actif).' },
