@@ -1170,6 +1170,29 @@ n'existe pas : l'envoi d'e-mail n'aurait jamais été testé.
 **Questions ouvertes** : péremption des liens permanents ; les deux résidus du
 canal de redemande.
 
+## 2026-07-21 — G4 : les deux résidus du canal de redemande
+
+**Décisions** : les deux résidus sont fermés (#182, mergée). Plancher de réponse
+de 1,5 s sur **un chemin de sortie unique** — aucune branche ne peut y échapper,
+pas même la panne — et arrondi au palier de 500 ms au-delà. Plafond de 20
+tentatives/heure **par origine réseau**, en base : le plafond par patient ne
+bornait pas l'énumération, qui ne touche aucun patient. Migration additive
+confirmée explicitement ; le drapeau reste absent de la production.
+
+**Écarté** : compter dans `portail_magic_links` (une adresse inconnue n'y crée
+aucune ligne, or c'est la tentative à compter) ; un compteur en mémoire (le
+serverless en a plusieurs). Écarté aussi : traiter la fermeture des résidus
+comme valant décision d'ouvrir le canal.
+
+**Vérifié** : T3 complet — 843 tests, aucune dérive schéma ↔ migrations, 51 E2E ;
+en production, table créée, **0 clé étrangère vers `patients`**, RLS active, vide.
+
+**Prochaine action** : demander à Supabase et Vercel leur certification HDS.
+Inchangé depuis hier.
+
+**Questions ouvertes** : ouverture du canal public ; péremption des liens
+permanents ; LOT 4 (registre), qui revient au responsable.
+
 ## 2026-07-21 — HDS instruit, dérogation datée, TRUST clos pour la phase de test
 
 **Établi** : Supabase et Vercel sont **absents de l'annuaire ANS** (404
