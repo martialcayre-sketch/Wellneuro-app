@@ -1255,3 +1255,24 @@ tentative, `dossiers_effaces` sans clé étrangère, RLS active, vide.
 
 **Questions ouvertes** : migration d'hébergeur ; tracer l'information délivrée
 aux participants.
+
+## 2026-07-21 — Vague 2 : typographie praticien (E16) et cadrage E11
+
+**Décisions** : les deux écarts « moyenne » différés de l'audit 5.0, traités
+selon §12.6 « sans les improviser ». **E16** (#191) — balayage **sémantique**
+sur 31 fichiers praticien : corps 14 → 16 px sur le seul texte de lecture
+continue, 10 titres 24 → 30 px. **E11** (#192) — **cadrage seul** : dette
+rattachée au LOT-01 de SP-SPI, legacy hors périmètre (D-002).
+
+**Écarté** : le zoom global du thème (grossit badges et tableaux denses,
+n'atteint pas 28 px) ; `components/ui/**`, partagé avec le patient ;
+improviser E11, qui dépend d'IDP.
+
+**Vérifié** : T1, T2 (51/51 E2E), CI verte sur les deux PR puis sur `main`.
+Branches refaites depuis `origin/main` ; trois conflits de retokenisation
+résolus en gardant le token de `main`. **Non vérifié** : le rendu visuel,
+faute d'outil navigateur.
+
+**Prochaine action** : relecture visuelle humaine des écrans praticien.
+
+**Questions ouvertes** : réserves R1–R9 ; E17 et E18.
