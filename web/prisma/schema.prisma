@@ -17,6 +17,13 @@ model Patient {
   telephone      String?  @map("telephone")
   praticienEmail String   @map("praticien_email")
   actif          Boolean  @default(true) @map("actif")
+
+  // Clôture de suivi (IDP2) — le dossier reste, le patient garde sa LECTURE,
+  // et plus aucun questionnaire ne lui est assigné ni document envoyé.
+  // DISTINCT de `actif` : `actif: false` coupe l'accès au portail (voir
+  // `api/portail/lien/demande`), ce que la clôture ne doit précisément pas
+  // faire. Réversible : la reprise remet le champ à null.
+  suiviClotureLe DateTime? @map("suivi_cloture_le")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
@@ -909,4 +916,33 @@ model PortailDemandeTentative {
   @@index([empreinteIp, creeLe], map: "g4_demande_ip_idx")
   @@index([creeLe], map: "g4_demande_purge_idx")
   @@map("portail_demande_tentatives")
+}
+
+// Résidu laissé par un effacement de dossier (IDP2).
+//
+// L'application PROMET l'effacement au patient
+// (`lib/trust/contenus/registre.ts`). Quand il l'exerce, la ligne `patients` et
+// ses seize tables filles sont supprimées ; il ne subsiste que cette ligne, dont
+// le seul objet est que les comptages de l'historique clinique ne s'effondrent
+// pas.
+//
+// CE QU'ELLE NE PEUT PAS CONTENIR, par construction : aucun identifiant
+// patient, aucune clé étrangère, aucun prénom, aucune adresse. Le prénom
+// figurait dans la décision initiale du 2026-07-21 et en a été retiré le même
+// jour — sur quelques dizaines de dossiers, « prénom + trois lettres + année »
+// redevenait rapprochable d'une personne, et le mot « effacement » n'aurait pas
+// tenu. Même principe que `portail_demande_tentatives` : la table ne compte pas
+// sur la discipline pour rester anonyme, elle en est incapable.
+//
+// C'est aussi la SEULE trace qu'un effacement a eu lieu : la demande
+// enregistrée dans `trust_rights_requests` est supprimée par son propre
+// traitement.
+model DossierEfface {
+  id             String   @id @default(cuid()) @map("id")
+  anneeNaissance Int?     @map("annee_naissance")
+  initialesNom   String   @map("initiales_nom")
+  effaceLe       DateTime @default(now()) @map("efface_le")
+
+  @@index([effaceLe], map: "idp2_dossier_efface_date_idx")
+  @@map("dossiers_effaces")
 }

@@ -7,6 +7,7 @@ import { buildBookletHTML } from '@/lib/documents/bookletHtml';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import {
   createRequestContext,
   finalizeLogContext,
@@ -142,6 +143,17 @@ export async function POST(req: Request) {
 
     const syntheseData = synthese.syntheseJson as unknown as SyntheseSchema;
     const html = buildBookletHTML(patientNom, dateDocument, syntheseData, synthese.notesPraticien ?? '');
+
+    // Dossier au suivi clôturé : plus aucun document ne part. La garde porte
+    // sur l'ENVOI, pas sur l'aperçu — consulter le document d'un dossier clos
+    // reste légitime. Elle est dans la route et non dans l'écran, sinon un
+    // appel direct la contournerait.
+    if (patient && !accepteNouvelEnvoi(patient)) {
+      return withCorrelationHeader(NextResponse.json(
+        { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+        { status: 409 }
+      ), requestContext);
+    }
 
     // Envoi email via nodemailer (SMTP via compte noreply@wellneuro.fr)
     const smtpUrl = process.env.SMTP_URL;

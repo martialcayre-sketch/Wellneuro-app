@@ -10,6 +10,7 @@ import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/po
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import {
   createRequestContext,
   finalizeLogContext,
@@ -104,6 +105,15 @@ export async function POST(req: Request): Promise<NextResponse> {
       return withCorrelationHeader(NextResponse.json(
         { success: false, reason: 'patient_not_found', error: 'Patient introuvable (email non présent/actif).' },
         { status: 404 }
+      ), requestContext);
+    }
+
+    // Dossier au suivi clôturé : un pack entier est encore moins assignable
+    // qu'un questionnaire seul. Refus porté par la route, pas par l'écran.
+    if (!accepteNouvelEnvoi(patient)) {
+      return withCorrelationHeader(NextResponse.json(
+        { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+        { status: 409 }
       ), requestContext);
     }
 
