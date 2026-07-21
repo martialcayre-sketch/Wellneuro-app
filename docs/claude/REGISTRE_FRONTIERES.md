@@ -519,8 +519,14 @@
   non culpabilisant.
 - **Ne possède pas** : journal alimentaire, projections vers les
   questionnaires ou suivi longitudinal (JA/C2).
-- **Statut** : cadrée, 8 lots compilés, LOT-00 terminé, inactive. LOT-01 reste
-  bloqué par validation clinique ; migration et import ont des gates distincts.
+- **Statut** : **terminée et active** (2026-07-18) — 8 lots livrés, gates
+  migration et import levés séparément, trois verdicts émis.
+  `20260718100010_c5_ciqual_reference_v1` appliquée en production, 55 744
+  lignes Ciqual. `WN_C5_ENABLED` **actif**, mesuré le 2026-07-21 et non déduit
+  d'un document. *Rectification du 2026-07-21 (audit 5.0, E20)* : cette ligne
+  décrivait « cadrée, LOT-00 terminé, inactive, LOT-01 bloqué par validation
+  clinique » — l'état du cadrage du matin même, jamais relu après les
+  livraisons du soir.
 
 > Migration de frontière du 2026-07-13 : les anciens libellés C5A « action
 > alimentaire » et C5B « assiettes/substitutions » sont remplacés par C5A
