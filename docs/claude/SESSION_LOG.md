@@ -1350,3 +1350,28 @@ tentative, 13 accès ouverts, 0 écart de backfill.
 
 **Questions ouvertes** : LOT-04 porte une migration destructive, à ne pas
 enchaîner ; obligation RGPD de conservation (conseil qualifié).
+
+## 2026-07-21 — Audit 5.0 : quatre réserves fermées, C5 remise d'aplomb
+
+**Décisions** : quatre PR, un périmètre chacune. **#205** — R1 (le score ne
+descend plus au navigateur patient, garde à l'appui), R3 (`version` sur chaque
+fait du pré-vol, jamais reconstituée), E17. **#206** — le refus du pack SP-SPI
+est **persisté** : un refus éphémère ne survit ni à la déconnexion ni au
+changement d'appareil, et une proposition qui revient est une relance. **#208** —
+E20 : le dossier de campagne disait vrai, trois documents de pilotage portaient
+encore l'état du cadrage du matin. **#209** — migration `pack_propositions`
+seule, avant l'écran.
+
+**Écarté** : le refus en session ; `neuro_axis` vide comme preuve
+d'inachèvement — aucune de ces tables n'est lue par le runtime, le fait était
+vrai et la conclusion aurait été fausse.
+
+**Vérifié** : R5 se ferme **par mesure**, les trois drapeaux étant testables
+avant authentification — les trois sont actifs. T3 complet sur #209 (dont
+`migrate deploy` et la dérive schéma) ; CI verte sur les quatre. Garde
+d'effacement falsifiée : sans sa ligne, elle nomme `packProposition`.
+
+**Prochaine action** : relire et merger les quatre, puis l'écran SP-SPI.
+
+**Questions ouvertes** : R2, R4 (date de bascule des liens permanents), R6 ;
+relecture visuelle humaine des écrans praticien, toujours pas faite.
