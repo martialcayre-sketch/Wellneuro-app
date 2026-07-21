@@ -175,7 +175,7 @@ export function DocumentsPanel() {
             Aucune synthèse validée pour ce patient. Validez une synthèse dans « Synthèse IA & Booklet » d’abord.
           </p>
         )}
-        {feedback && <p className={`text-base ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>{feedback.msg}</p>}
+        {feedback && <p className={`text-base ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</p>}
       </div>
 
       {loading && <p className="text-sm text-muted-foreground">Composition en cours…</p>}
@@ -233,7 +233,7 @@ export function DocumentsPanel() {
                     type="button"
                     onClick={onEnvoyerPatient}
                     disabled={!relectureConfirmee || sending}
-                    className={`${btnBase} bg-emerald-700 text-white`}
+                    className={`${btnBase} bg-status-success text-white`}
                   >
                     {sending ? 'Envoi…' : 'Envoyer au patient'}
                   </button>

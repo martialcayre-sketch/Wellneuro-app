@@ -387,7 +387,7 @@ export function PacksPanel({
               {saving ? 'Création...' : 'Créer le pack'}
             </button>
             {feedback && (
-              <span className={`text-sm ${feedback.ok ? 'text-green-600' : 'text-red-400'}`}>{feedback.msg}</span>
+              <span className={`text-sm ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</span>
             )}
           </div>
         </form>
@@ -435,7 +435,7 @@ export function PacksPanel({
                       <button
                         type="button"
                         onClick={() => onDesactiver(p.idPack, p.nom)}
-                        className="text-xs text-red-400 hover:underline"
+                        className="text-xs text-status-danger hover:underline"
                       >
                         Désactiver
                       </button>
@@ -471,7 +471,7 @@ export function PacksPanel({
               {assigning ? 'Assignation...' : 'Assigner le pack'}
             </button>
             {assignFeedback && (
-              <span className={`text-sm ${assignFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>{assignFeedback.msg}</span>
+              <span className={`text-sm ${assignFeedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{assignFeedback.msg}</span>
             )}
           </div>
         </form>
@@ -564,7 +564,7 @@ export function PacksPanel({
                   Annuler
                 </button>
                 {editFeedback && (
-                  <span className={`text-sm ${editFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>{editFeedback.msg}</span>
+                  <span className={`text-sm ${editFeedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{editFeedback.msg}</span>
                 )}
               </div>
             </form>

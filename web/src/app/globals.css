@@ -29,10 +29,12 @@
   --gold-500-rgb: 201 162 75;
   /* Idem pour les statuts danger/success/warning (HC-F LOT-04,
    * PatientInlineMessage + Badge) — requis pour un fond teinté à 10%
-   * d'opacité plutôt qu'un aplat plein. */
+   * d'opacité plutôt qu'un aplat plein. `info` complète le quatuor
+   * (E18, badge « Corrigée » de SynthesePanel). */
   --color-status-danger-rgb: 185 28 28;
   --color-status-success-rgb: 21 128 61;
   --color-status-warning-rgb: 146 64 14;
+  --color-status-info-rgb: 29 78 216;
 
   /* Violet — ancienne couleur de la strate "Ancrage" (remplacée par
    * --viz-ancrage en A5-R1, cf. ci-dessous). Conservé en compat : le

@@ -165,7 +165,7 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
       </div>
 
       {erreur ? (
-        <p role="alert" className="text-base text-red-600">
+        <p role="alert" className="text-base text-status-danger">
           {erreur}
         </p>
       ) : null}
@@ -175,7 +175,7 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
           <button
             type="button"
             onClick={onAvancer}
-            className="min-h-11 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium text-white"
+            className="min-h-11 rounded-md bg-status-success px-4 py-2 text-sm font-medium text-white"
           >
             {ACTION_LABELS[prochainEtat]}
           </button>

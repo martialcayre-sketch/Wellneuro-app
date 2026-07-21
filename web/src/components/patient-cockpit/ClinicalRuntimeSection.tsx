@@ -392,7 +392,7 @@ export function ClinicalRuntimeSection({
         </div>
       )}
       {!fixture && notice && (
-        <div role="status" className="rounded-xl border border-accent bg-orange-50 p-4 text-base text-orange-800">{notice}</div>
+        <div role="status" className="rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">{notice}</div>
       )}
       {!fixture && error && (
         <div role="alert" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
@@ -470,7 +470,7 @@ export function ClinicalRuntimeSection({
         trajectoireErreur ? (
           // Échec de lecture ≠ absence d'épisode : ne jamais laisser
           // TrajectoirePanel afficher « Aucun épisode confirmé » sur une erreur.
-          <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-base text-orange-800">
+          <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
             <span>
               La trajectoire n&apos;a pas pu être lue. L&apos;historique clinique de ce patient n&apos;est pas
               affiché — aucune conclusion à en tirer.

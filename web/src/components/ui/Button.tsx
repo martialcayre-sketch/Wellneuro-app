@@ -5,7 +5,7 @@ export type ButtonVariant = 'primary' | 'outline' | 'danger';
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary: 'bg-primary text-primary-foreground hover:opacity-90',
   outline: 'text-foreground border border-border hover:bg-muted',
-  danger: 'text-red-500 border border-border hover:bg-red-50',
+  danger: 'text-status-danger border border-border hover:bg-status-danger/10',
 };
 
 export function Button({

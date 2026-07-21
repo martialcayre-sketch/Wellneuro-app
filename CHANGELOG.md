@@ -4,6 +4,39 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Couleurs de statut — E18 clos sur tout le front praticien (2026-07-21)
+
+Le lot « Patient & accessibilité » du jour a corrigé E18 **sur les lignes citées
+par l'audit** (`FichePatientPanel`, `DocumentComposer`, `DocumentsPanel`). Le
+défaut, lui, était une classe entière : 81 classes Tailwind brutes subsistaient
+dans 13 fichiers praticien, et le LOT-01b (#194) en a réintroduit deux dans des
+composants neufs, le lendemain de la correction. D'où une passe complète plus
+une garde, plutôt qu'une seconde liste de lignes.
+
+- **Retokenisation des 13 fichiers.** Messages de retour
+  (`text-green-600`/`text-red-400` → `text-status-success`/`text-status-danger`),
+  encarts d'alerte (`bg-orange-50`/`text-orange-800` →
+  `bg-status-warning/10`/`text-status-warning`), badges de statut et de priorité
+  de `SynthesePanel`, boutons de validation et d'envoi
+  (`bg-green-600`/`bg-emerald-700` → `bg-status-success`), variante `danger` du
+  `Button` partagé, item destructeur de `MenuActions`, encart d'erreur de
+  `DossierConfirmDialog`, encadré Boussole de `ProtocolMiniBuilder`
+  (`slate-*` → `border`/`muted`/`foreground`).
+- **Le contraste y gagne, ce n'est pas qu'une question de cohérence** : les
+  messages d'erreur passent de `text-red-400` (2,8:1 sur blanc, sous le seuil
+  AA) à `text-status-danger` (6,5:1) ; les boutons pleins de validation, de
+  `bg-green-600` + texte blanc (3,3:1) à `bg-status-success` (5,0:1).
+- **`--color-status-info` gagne son jumeau RGB**, comme les trois autres
+  statuts, seule façon d'obtenir le fond teinté à 10 % du badge « Corrigée »
+  plutôt qu'un aplat plein.
+- **Garde en test** (`lib/tokens-couleur.guard.test.ts`) : toute échelle
+  Tailwind brute réintroduite dans `web/src` fait échouer T1, en nommant le
+  fichier et les classes. Les échelles redéfinies dans `tailwind.config.ts`
+  (palette de marque : `teal-*`, `gold-*`, `night-*`, `indigo-600`…) restent
+  autorisées — elles pointent déjà sur une variable CSS.
+
+Aucune migration, aucun changement de schéma, aucun texte visible modifié.
+
 ### Cycle de vie du dossier — la surface (IDP2, LOT-01b, 2026-07-21)
 
 Le socle livré par le LOT-01a (#189) était complet et **inatteignable** : aucun

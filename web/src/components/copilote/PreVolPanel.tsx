@@ -64,7 +64,7 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
     // Un échec de lecture n'est jamais présenté comme « rien de nouveau » : ce
     // serait une affirmation fausse juste avant une consultation.
     return (
-      <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-base text-orange-800">
+      <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
         <span>{erreur} Rien ne peut être conclu de cet écran tant qu’il n’a pas été relu.</span>
         <button
           type="button"
