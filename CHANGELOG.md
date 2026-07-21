@@ -36,6 +36,23 @@ ensemble parce qu'ils n'ont en commun que d'être mécaniques.
 Aucune migration, aucun changement de schéma, aucun texte visible modifié côté
 patient.
 
+### Révoquer un accès ferme tout, et le dit (IDP2, LOT-02c, 2026-07-21)
+
+Deux écarts entre ce que le code faisait et ce qu'il disait.
+
+- **Les liens à usage unique en vol survivaient à une révocation.** Émis avant
+  elle, ils n'étaient gardés que par `accessTokenRevoked` : réémettre l'accès les
+  rendait exploitables, jusqu'à 24 h après. `DELETE /api/praticien/token` les date
+  désormais, **dans la même transaction** que la révocation — fermer le jeton sans
+  fermer les liens laissait exactement ce trou. Aucune migration : `etatLien`
+  refuse déjà sur cette date, et le patient lit le message unique.
+- **« Révoquer l'accès » partait sur un clic**, sans question, alors qu'elle coupe
+  désormais une session en cours. Le panneau énonçait pourtant la règle qu'il
+  violait — « toute action qui change ce à quoi le patient a accès passe par un
+  dialogue ». Confirmation simple, sans saisie (l'action est réversible), qui
+  énonce les trois effets et précise que **rouvrir l'accès ne rend pas les
+  sessions coupées**. L'échec s'affiche dans le dialogue, pas derrière l'overlay.
+
 ### Couleurs de statut — E18 clos sur tout le front praticien (2026-07-21)
 
 Le lot « Patient & accessibilité » du jour a corrigé E18 **sur les lignes citées

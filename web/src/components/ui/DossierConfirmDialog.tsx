@@ -20,7 +20,13 @@ import { Input } from '@/components/ui/Input';
 // cycle-de-vie/route.ts`). L'interface reflète le contrat serveur au lieu d'en
 // créer un second, qui aurait divergé.
 
-export type ModeConfirmation = 'cloture' | 'reprise' | 'effacement' | 'desactivation' | 'reactivation';
+export type ModeConfirmation =
+  | 'cloture'
+  | 'reprise'
+  | 'effacement'
+  | 'desactivation'
+  | 'reactivation'
+  | 'revocation';
 
 const CONFIRMATION_EFFACEMENT = 'EFFACER';
 
@@ -90,6 +96,7 @@ export function DossierConfirmDialog({
     reprise: `Rouvrir le suivi de ${nomPatient} ?`,
     desactivation: `Désactiver le dossier de ${nomPatient} ?`,
     reactivation: `Réactiver le dossier de ${nomPatient} ?`,
+    revocation: `Révoquer l’accès de ${nomPatient} au portail ?`,
   };
   const LIBELLES: Record<ModeConfirmation, string> = {
     effacement: 'Effacer définitivement',
@@ -97,6 +104,7 @@ export function DossierConfirmDialog({
     reprise: 'Rouvrir le suivi',
     desactivation: 'Désactiver le dossier',
     reactivation: 'Réactiver le dossier',
+    revocation: 'Révoquer l’accès',
   };
   const titre = TITRES[mode];
   const libelleConfirmer = LIBELLES[mode];
@@ -138,6 +146,32 @@ export function DossierConfirmDialog({
               Le patient perdra l’accès à son espace : ses liens cesseront de fonctionner et
               une nouvelle demande de lien lui sera refusée. Les données sont conservées et
               vous pouvez réactiver le dossier à tout moment.
+            </Dialog.Description>
+          )}
+
+          {/*
+            Ce que la révocation coupe a changé au LOT-02b : elle ne fermait
+            qu'un jeton, elle interrompt désormais une session en cours. Le
+            praticien doit le savoir avant de cliquer — un patient au milieu
+            d'un questionnaire perd sa place.
+          */}
+          {mode === 'revocation' && (
+            <Dialog.Description asChild>
+              <div className="mt-4 text-sm leading-relaxed text-foreground">
+                <p>Trois choses cessent immédiatement :</p>
+                <ul className="mt-2 list-disc space-y-0.5 pl-5 text-muted-foreground">
+                  <li>son lien d’accès au portail ne fonctionne plus ;</li>
+                  <li>
+                    sa session en cours est coupée — s’il est en train de répondre à un
+                    questionnaire, il perd sa place ;
+                  </li>
+                  <li>les liens à usage unique déjà envoyés deviennent inutilisables.</li>
+                </ul>
+                <p className="mt-2">
+                  Vous pourrez lui rouvrir l’accès en lui renvoyant un lien. Cela ne rendra
+                  pas les sessions coupées : il devra se reconnecter.
+                </p>
+              </div>
             </Dialog.Description>
           )}
 

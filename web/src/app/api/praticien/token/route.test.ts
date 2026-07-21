@@ -4,6 +4,10 @@ const { getServerSession, prisma, verifierAppartenancePatient } = vi.hoisted(() 
   getServerSession: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn(), update: vi.fn() },
+    portailMagicLink: { updateMany: vi.fn() },
+    // `$transaction` reçoit un tableau de promesses déjà construites : les
+    // exécuter suffit, et les appels sont enregistrés sur les mocks ci-dessus.
+    $transaction: vi.fn(async (operations: unknown[]) => Promise.all(operations)),
   },
   verifierAppartenancePatient: vi.fn(),
 }));
@@ -37,6 +41,7 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
     verifierAppartenancePatient.mockResolvedValue('ok');
     prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_1', accessToken: 'TOK_1' });
     prisma.patient.update.mockResolvedValue({});
+    prisma.portailMagicLink.updateMany.mockResolvedValue({ count: 0 });
   });
 
   // IDP2 LOT-02 : révoquer ferme le chemin par jeton ET les sessions de compte
@@ -53,6 +58,34 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
     expect(appel[0].where).toEqual({ idPatient: 'PAT_1' });
     expect(appel[0].data.accessTokenRevoked).toBe(true);
     expect(appel[0].data.sessionsInvalidesAvant.getTime()).toBeGreaterThanOrEqual(avant);
+  });
+
+  // LOT-02c — la troisième porte. Un lien à usage unique émis avant la
+  // révocation n'était gardé que par `accessTokenRevoked` : réémettre l'accès
+  // le rendait exploitable, jusqu'à 24 h après.
+  it('ferme les liens à usage unique encore en vol, dans la même transaction', async () => {
+    await DELETE(request());
+
+    const [appel] = prisma.portailMagicLink.updateMany.mock.calls as [
+      [{ where: { idPatient: string; consommeLe: null }; data: { consommeLe: Date } }],
+    ];
+    // `consommeLe: null` : un lien DÉJÀ consommé garde sa date d'origine — la
+    // trace ne doit pas être réécrite par une révocation postérieure.
+    expect(appel[0].where).toEqual({ idPatient: 'PAT_1', consommeLe: null });
+    expect(appel[0].data.consommeLe).toBeInstanceOf(Date);
+
+    // Les deux écritures tombent ensemble : fermer le jeton sans fermer les
+    // liens laisserait exactement le trou qu'on referme.
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+    const [operations] = prisma.$transaction.mock.calls[0] as [unknown[]];
+    expect(operations).toHaveLength(2);
+  });
+
+  it('date les deux écritures du même instant', async () => {
+    await DELETE(request());
+    const patch = prisma.patient.update.mock.calls[0][0] as { data: { sessionsInvalidesAvant: Date } };
+    const liens = prisma.portailMagicLink.updateMany.mock.calls[0][0] as { data: { consommeLe: Date } };
+    expect(liens.data.consommeLe.getTime()).toBe(patch.data.sessionsInvalidesAvant.getTime());
   });
 
   it('refuse sans session praticien, et n’écrit rien', async () => {
