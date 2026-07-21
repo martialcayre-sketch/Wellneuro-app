@@ -26,9 +26,20 @@
   § « Décision du responsable »). Sans reconduction écrite à cette date,
   l'invariant reprend son plein effet.
 - Interface 100 % en français.
-- Vocabulaire réglementaire : « recommandation », « protocole personnalisé »,
-  « indice de suivi », « explorations à discuter avec le médecin traitant ».
-  Interdits : « prescription », « ordonnance », « diagnostic », « NeuroScore ».
+- Vocabulaire réglementaire — **amendé le 2026-07-21** (décision utilisateur,
+  cadre consigné : docteur en pharmacie, label NEURONUTRITION SIIN, activité
+  sur un périmètre non réglementé — compléments alimentaires, hygiène de vie,
+  biologie fonctionnelle hors prescription médicale). Restent **interdits sans
+  dérogation** : « ordonnance », « diagnostic », « NeuroScore », et toute
+  référence à une spécialité médicale. « Prescription » cesse d'être un
+  interdit lexical global mais reste **proscrit dans toute surface patient**
+  (UI, booklet, documents diffusés) au profit de : « recommandation »,
+  « protocole personnalisé », « indice de suivi », « explorations à discuter
+  avec le médecin traitant ». Inchangé et non négociable : la qualification
+  dispositif médical s'évite **par conception** — finalité bien-être/suivi,
+  validation praticien systématique de tout contenu généré par IA avant
+  diffusion ; la finalité revendiquée du logiciel ne dépend pas des diplômes
+  de l'opérateur.
 - Aucune modification de logique clinique, seuil, cotation ou interprétation
   sans demande explicite documentée dans `CHANGELOG.md`, avec versionnage
   (`versionScore`, `versionPrompt`).
@@ -408,6 +419,46 @@
   naturel) → « T0 par épisode » (A8-1) → « comparateur multi-épisodes »
   (garde A8-3 + « non mesuré » A8-2). Périmètre 2026-07-18 : **documentaire
   seul** — aucun code, aucun lot compilé.
+
+### A9 — Corpus scientifique 5.0 : gates ouverts, modèle à deux couches (décision utilisateur 2026-07-21)
+
+- **G0 (droits) acté par l'utilisateur le 2026-07-21** : responsable du
+  traitement, docteur en pharmacie, détenteur du label NEURONUTRITION SIIN,
+  il confirme disposer des droits d'exploiter ses supports de cours SIIN dans
+  le corpus décisionnel de l'application. Ce verdict est global ; le passage
+  `rightsStatus: to_verify → verified` de chaque notice de
+  `docs/claude/corpus/source_registry.json` se fait **à l'ingestion de la
+  source, jamais en masse**.
+- **G1–G4 reconnus** dans la machine à états `NOTEBOOK_VALIDATIONS` du
+  pipeline Apps Script v1.5 : verdict CONFORME par notebook + preuve
+  (`evidence_url`) + validateur + date, exigés avant toute matérialisation.
+  La preuve suit désormais le chunk en base (`validation_evidence`, PR #196).
+- **G5 acté** par la PR #196 relue et corrigée (audit du 2026-07-21 : RLS,
+  chemin de migration unique `MIGRATE_DATABASE_URL`, embedding sans front
+  matter, traçabilité `llm_amendment_model`/`validation_evidence`).
+- **Corpus à deux couches** : couche source **verbatim, immuable, citée telle
+  quelle** ; couche **claims** (affirmations cliniques normalisées, révisées
+  par LLM, validées praticien, liées à leurs chunks sources). Un texte amendé
+  par LLM n'est jamais présenté comme le verbatim — c'est l'application au
+  corpus de « IA non sourcée interdite » (A6) et de la non-fusion des
+  lectures (A7). Base doctrinale :
+  `propositions/wn-ultimate-v2/00_SOURCE_MAITRE.md` (claims, §autorité).
+- **Typologie unique des lectures** : celle d'A7 fait foi — **déclaré /
+  observé / vécu / interprété**. La variante « intrinsèque / contextuel » du
+  brainstorm JA 5.0 est retirée du vocabulaire normatif.
+- **Extraction du stock** : double lecture croisée (couche texte pdftotext +
+  vision LLM) avec invariants déterministes bloquants (conservation des
+  nombres et unités, taux de couverture, cellules de tableaux). Scénario
+  acté : **croisé intégral Sonnet 5 + GPT-5.4**, batch, avant le 2026-08-31.
+  Chiffrage : `propositions/2026-07-21-corpus-wellneuro-5-0/BENCH_COUTS_EXTRACTION_CORPUS.md`.
+- **Apps Script corpus = appelant transitoire** de la production (D-004) :
+  il ingère le stock validé, puis s'éteint à l'ouverture de l'Atelier corpus
+  (`dashboard/corpus`). Aucune nouvelle dépendance Sheets côté runtime
+  applicatif (D-001 inchangée).
+- **Questions ouvertes** : champ `patient_identifiable` explicite produit par
+  `build_pack` (aujourd'hui codé en dur côté GAS) ; liste des notebooks
+  prioritaires pour l'ordre d'ingestion ; G6 (pilote sommeil/chronobiologie)
+  non ouvert.
 
 ---
 
