@@ -681,15 +681,35 @@
 - **Ne possède pas** : le contenu de l'espace patient (SP-SPI) ;
   l'authentification praticien, inchangée ; l'hébergement et la question HDS ;
   la suppression du lien magique, qui **devient** le second chemin de connexion.
-- **Questions ouvertes** : sort de l'e-mail dans le résidu (bloquant pour le lot
-  effacement) ; existence d'une obligation de conservation opposable à un
-  effacement (art. 17.3 RGPD — question de conseil, pas d'assistant) ; migration
-  des 13 accès portail ouverts ; Google devenant sous-traitant sur les patients.
-- **Risque de conception nommé** : deux surfaces d'authentification dans le même
-  NextAuth. Séparation stricte du rôle dans le jeton, et un test qui échoue si un
-  compte hors `@wellneuro.fr` atteint `/dashboard`.
-- **Statut** : cadrée le 2026-07-21, **aucun code écrit**. Motif d'ouverture :
-  l'application promet déjà l'effacement au patient
+- **Questions ouvertes** : ~~sort de l'e-mail dans le résidu~~ (close le
+  2026-07-21 par LOT-01a — `DossierEfface` ne porte ni e-mail ni empreinte) ;
+  existence d'une obligation de conservation opposable à un effacement
+  (art. 17.3 RGPD — question de conseil, pas d'assistant) ; migration des 13
+  accès portail ouverts (close pour LOT-02 par la lecture tolérante des deux
+  formats de cookie, **rouverte pour LOT-04**).
+- **Nouveau flux de données — Google sous-traitant sur les patients** (LOT-03a,
+  2026-07-21). Jusqu'ici Google n'était sous-traitant que sur le **praticien**
+  (OAuth `@wellneuro.fr`). Le chemin d'authentification patient lui fait
+  connaître qu'une adresse personnelle se connecte à une application de
+  neuronutrition. Ce qui borne l'exposition : **aucune donnée de santé ne
+  transite** — le scope reste `openid email profile` ; le chemin est **optionnel**,
+  le lien magique restant ouvert à qui ne veut pas de Google (D1) ; le **client
+  OAuth est distinct** de celui du praticien, audience et journalisation
+  séparées. À mettre en regard de l'objectif de réduction d'exposition à chaque
+  revue du registre.
+- **Risque de conception nommé, et sa réponse** : deux surfaces
+  d'authentification dans le même NextAuth. **Tranché le 2026-07-21 (LOT-03a)** :
+  le patient **n'entre jamais dans NextAuth** — Google est consommé en OIDC
+  direct par une route portail dédiée, aucun provider n'est ajouté à
+  `authOptions`, aucun cookie NextAuth n'est émis pour un patient. Motif : il
+  n'existe **ni `middleware.ts` ni helper `requirePraticien`**, et la garde
+  praticien est un `if (!session)` recopié sur **236 appels** à
+  `getServerSession` — un rôle mal départagé les ouvrirait tous. Le test qui
+  échoue si un compte hors `@wellneuro.fr` atteint `/dashboard` reste dû (LOT-03b,
+  écrit avant toute ligne d'authentification patient).
+- **Statut** : cadrée le 2026-07-21. **LOT-01 et LOT-02 livrés** le même jour ;
+  **LOT-03a** (spécification Google et arbitrage des rôles) écrit. Motif
+  d'ouverture : l'application promet déjà l'effacement au patient
   (`lib/trust/contenus/registre.ts:167`) et ne peut pas l'exécuter — le seul
   bouton « suppression » écrit `actif: false` et rien d'autre.
 

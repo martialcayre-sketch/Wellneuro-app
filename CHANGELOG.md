@@ -35,6 +35,40 @@ le fichier lu à chaque session.
 
 Documentation seule — aucun code, aucun fichier supprimé ni fusionné.
 
+### SP-SPI LOT-01 — le pack de réévaluation est proposé, et refusable (2026-07-21)
+
+Dernière pièce du lot : l'accueil « Mon parcours » et la reprise en douceur
+étaient livrés (#198), la migration `pack_propositions` aussi (#209). Manquait ce
+pour quoi la table existe.
+
+- **Proposé, jamais assigné.** Accepter dit « d'accord pour refaire le point »,
+  et n'écrit qu'une ligne. Aucune assignation n'est créée — c'est un geste
+  praticien, et un test le vérifie explicitement dans le cas « le patient
+  accepte », le seul où l'erreur serait tentante.
+- **Refusable sans conséquence, et la question ne revient pas.** C'est la raison
+  d'être de la donnée : une proposition qui réapparaît à chaque visite **est**
+  une relance, ce que la campagne s'interdit. Une réponse — acceptation comme
+  refus — referme la question pour ce pack.
+- **Pré-composé pour la comparabilité** (A6-5) : le pack proposé est celui que le
+  patient a déjà rempli, pour que les deux passages se comparent instrument par
+  instrument ; à défaut le pack par défaut ; sinon rien, plutôt qu'une
+  proposition arbitraire.
+- **Le GET n'écrit rien.** Afficher une proposition n'est pas un événement, et un
+  GET qui écrirait se déclencherait au moindre préchargement du navigateur. Le
+  seul point d'écriture est la réponse du patient, en append-only chaîné.
+- **Les deux réponses ont le même poids visuel** : refuser est un bouton, pas un
+  lien discret. Aucun chiffre, aucune échéance, aucun décompte de jours manqués.
+
+Bascule de reprise identique au Fil praticien (`SEUIL_REPRISE_MOIS`, importé et
+non redéfini) : un patient accueilli en reprise est exactement celui que le
+praticien voit signalé.
+
+**Non couvert, et dit comme tel** : le parcours E2E du refus. Le patient fictif du
+banc est provisionné neuf à chaque exécution, donc jamais « en reprise » — le
+couvrir suppose de changer la fixture partagée, pas le lot. Domaine, route et
+composant sont testés (30 tests) ; l'affichage réel pour un patient en reprise ne
+l'est pas.
+
 ### Le chemin retour du pack de réévaluation — migration seule (SP-SPI, 2026-07-21)
 
 Migration **seule**, sans écran : SP-SPI LOT-01 exigeait un pack « proposé et
