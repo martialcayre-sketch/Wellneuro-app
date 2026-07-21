@@ -1234,3 +1234,24 @@ PR1 (conflit `CHANGELOG.md` d'insertion, sans perte).
 
 **Questions ouvertes** : celles de l'audit (R1–R9), à arbitrer par le
 propriétaire produit.
+
+## 2026-07-21 — HDS tranché, et le droit à l'effacement devient exécutable
+
+**Décisions** : l'hébergement est **instruit et négatif** — Supabase et Vercel
+absents de l'annuaire ANS. Le responsable autorise la phase de test malgré
+l'écart, **bornée au 2026-10-21**. Canal public de redemande ouvert. Campagne
+IDP2 ouverte (#187) ; LOT-01a livré (#189) : clôture de suivi et **effacement
+réel**, l'application le promettant depuis TRUST sans rien derrière.
+
+**Écarté** : écrire la dérogation comme une conformité (la gratuité n'exonère
+pas de L1111-8) ; garder le prénom dans le résidu (rapprochable sur 17
+dossiers) ; conserver l'e-mail haché (une empreinte à clé reste testable) ;
+Facebook comme fournisseur d'identité.
+
+**Vérifié** : deux T3 complets ; en production, migration appliquée en une
+tentative, `dossiers_effaces` sans clé étrangère, RLS active, vide.
+
+**Prochaine action** : LOT-01b — menu regroupé et confirmations.
+
+**Questions ouvertes** : migration d'hébergeur ; tracer l'information délivrée
+aux participants.
