@@ -8,12 +8,12 @@ import { hasDraft } from '@/lib/questionnaire-draft';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { PatientCard, patientCardClassName } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
-import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
 import { detecterChangementsEtMettreAJour, type ChangementVisite } from '@/lib/portail-visite';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
+import { MonParcoursAccueil, type EtapeDuMoment } from '@/components/patient/MonParcoursAccueil';
 
 type Groupe = 'a_completer' | 'correction' | 'transmis' | 'expire';
 
@@ -66,10 +66,7 @@ const GROUPES: { cle: Groupe; titre: string }[] = [
 const GROUPES_SECONDAIRES = new Set<Groupe>(['correction', 'transmis', 'expire']);
 
 type Enrichi = { a: AssignationPatient; aff: Affichage };
-type ActionRecommandee =
-  | { kind: 'action'; idAssignation: string; cta: string }
-  | { kind: 'attente'; texte: string }
-  | { kind: 'stable' };
+type ActionRecommandee = EtapeDuMoment;
 
 // Une seule action mise en avant, en priorité une reprise de brouillon, sinon
 // le premier "à compléter" (Commencer/Corriger déverrouillé confondus,
@@ -77,6 +74,7 @@ type ActionRecommandee =
 // attente (non actionnable tant que le praticien ne l'a pas déverrouillée —
 // présentée en information, pas en CTA), sinon un état stable sans action.
 function calculerActionRecommandee(enriched: Enrichi[], brouillons: Set<string>): ActionRecommandee {
+  if (enriched.length === 0) return { kind: 'vide' };
   const brouillon = enriched.find(e => e.aff.groupe === 'a_completer' && brouillons.has(e.a.idAssignation));
   const cible = brouillon ?? enriched.find(e => e.aff.groupe === 'a_completer');
   if (cible) {
@@ -97,6 +95,7 @@ export default function QuestionnairesHubPage() {
   const [state, setState] = useState<{ status: 'loading' | 'ready' | 'error'; error?: string }>({ status: 'loading' });
   const [patient, setPatient] = useState<{ idPatient: string; prenom: string; nom: string } | null>(null);
   const [assignations, setAssignations] = useState<AssignationPatient[]>([]);
+  const [derniereReponseLe, setDerniereReponseLe] = useState<string | null>(null);
   const [brouillons, setBrouillons] = useState<Set<string>>(new Set());
   const [changements, setChangements] = useState<ChangementVisite[]>([]);
   // Séquence TRUST « Avant de commencer » pour les patients existants : une
@@ -147,6 +146,7 @@ export default function QuestionnairesHubPage() {
       }
       setPatient(data.patient);
       setAssignations(data.assignations);
+      setDerniereReponseLe(data.derniereReponseLe);
       setBrouillons(new Set(data.assignations.filter(a => hasDraft(a.idAssignation)).map(a => a.idAssignation)));
       // Comparaison locale à l'instantané de la visite précédente — purement
       // présentationnel, aucune écriture serveur (cf. lib/portail-visite.ts).
@@ -195,93 +195,74 @@ export default function QuestionnairesHubPage() {
   const aCompleterItems = enriched.filter(e => e.aff.groupe === 'a_completer');
   const aCompleter = aCompleterItems.length;
   const dureeACompleterMin = aCompleterItems.reduce((somme, e) => somme + parseDureeMinutes(e.a.duree), 0);
-  const transmis = enriched.filter(e => e.aff.groupe === 'transmis' || e.aff.groupe === 'correction').length;
-  const total = assignations.length;
   const actionRecommandee = calculerActionRecommandee(enriched, brouillons);
 
+  /*
+   * Disposition séquentielle (SP-SPI / LOT-01, résorption de l'écart E11).
+   *
+   * Avant : une dizaine de blocs autonomes empilés se disputaient l'attention
+   * — frise, compagnon, deux cartes d'accès, deux compteurs, l'action
+   * recommandée, les changements, puis quatre groupes de liste.
+   *
+   * Après : une seule chose est mise en avant, « Mon parcours », qui porte
+   * l'étape du moment. Tout le reste descend d'un cran — les accès secondaires
+   * deviennent une ligne de liens plutôt que des cartes concurrentes, et ce
+   * qui relève du détail passe sous `<details>`. Rien n'est retiré : c'est la
+   * hiérarchie qui change, pas le contenu.
+   */
   return (
     <div className="w-full max-w-2xl space-y-6">
       <PatientJourneyProgress steps={buildJourneySteps(4)} />
-      <PatientCompanionHome token={token} />
-      <PatientPageHeader
-        title="Mes questionnaires"
-        subtitle={`${patient ? `Bonjour ${patient.prenom}. ` : ''}Vous pouvez les compléter dans l’ordre qui vous convient. Votre praticien recevra uniquement les questionnaires transmis.`}
+
+      <MonParcoursAccueil
+        token={token}
+        prenom={patient?.prenom ?? null}
+        derniereReponseLe={derniereReponseLe}
+        etape={actionRecommandee}
       />
-      <PatientCard padding="sm" className="border-primary/30">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Ma spirale alimentaire</p>
-        <p className="text-sm text-foreground">
-          Journal d’essai court pour préparer votre prochain point d’étape, sans détailler tous les repas.
-        </p>
-        <a
-          href={`/portail/${token}/alimentation`}
-          className={`mt-3 inline-flex items-center justify-center ${patientButtonClassName('ghost')}`}
-        >
+
+      {/* Accès secondaires : une ligne de liens, plus deux cartes rivales. */}
+      <nav aria-label="Autres espaces" className="flex flex-wrap gap-3">
+        <a href={`/portail/${token}/alimentation`} className={patientButtonClassName('ghost')}>
           Ouvrir Ma spirale alimentaire
         </a>
-      </PatientCard>
-      <PatientCard padding="sm" className="border-primary/30">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Mes rendez-vous de suivi</p>
-        <p className="text-sm text-foreground">
-          Quelques questions rapides à J7, J14 et J21 pour ajuster votre accompagnement avec votre praticien.
-        </p>
-        <a
-          href={`/portail/${token}/suivi`}
-          className={`mt-3 inline-flex items-center justify-center ${patientButtonClassName('ghost')}`}
-        >
+        <a href={`/portail/${token}/suivi`} className={patientButtonClassName('ghost')}>
           Ouvrir mes rendez-vous de suivi
         </a>
-      </PatientCard>
-      <div className="flex flex-wrap gap-3 -mt-3 text-sm">
-        <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-3 py-1 font-medium">
-          {aCompleter} à compléter{dureeACompleterMin > 0 ? ` · ≈ ${dureeACompleterMin} min` : ''}
-        </span>
-        <span className="inline-flex items-center rounded-full bg-muted text-muted-foreground px-3 py-1">
-          {transmis}/{total} transmis
-        </span>
-      </div>
+      </nav>
 
-      {total === 0 && (
-        <PatientCard padding="sm">
-          <p className="text-muted-foreground text-sm">
-            Aucun questionnaire pour le moment. Votre praticien les mettra à disposition prochainement.
-          </p>
-        </PatientCard>
-      )}
-
-      {total > 0 && (
-        <PatientCard padding="sm" className="border-primary/30">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Action recommandée maintenant</p>
-          {actionRecommandee.kind === 'action' ? (
-            <>
-              <a
-                href={`/portail/${token}/questionnaires/${actionRecommandee.idAssignation}`}
-                className={`inline-flex items-center justify-center ${patientButtonClassName('primary')}`}
-              >
-                {actionRecommandee.cta}
-              </a>
-              <p className="text-xs text-muted-foreground mt-2">
-                Une fois transmis, un questionnaire est verrouillé et votre praticien en est informé.
-              </p>
-            </>
-          ) : actionRecommandee.kind === 'attente' ? (
-            <p className="text-sm text-muted-foreground">{actionRecommandee.texte}</p>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Vous avez transmis tous vos questionnaires disponibles. Votre praticien vous recontactera pour la suite.
-            </p>
-          )}
-        </PatientCard>
-      )}
+      {/*
+        L'accompagnement du protocole actif reste un objet distinct (il est
+        borné R8-lite et n'est pas l'accueil de trajectoire) : on le replie
+        plutôt que de le fondre dans « Mon parcours ».
+      */}
+      <details className="rounded-xl border border-border bg-surface p-4">
+        <summary className="cursor-pointer select-none text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Mon accompagnement
+        </summary>
+        <div className="mt-3">
+          <PatientCompanionHome token={token} />
+        </div>
+      </details>
 
       {changements.length > 0 && (
-        <PatientCard padding="sm">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Depuis votre dernière visite</p>
-          <ul className="space-y-1">
+        <details className="rounded-xl border border-border bg-surface p-4">
+          <summary className="cursor-pointer select-none text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Depuis votre dernière visite ({changements.length})
+          </summary>
+          <ul className="mt-3 space-y-1">
             {changements.map(c => (
-              <li key={c.idAssignation} className="text-sm text-foreground">{c.texte}</li>
+              <li key={c.idAssignation} className="text-base text-foreground">{c.texte}</li>
             ))}
           </ul>
-        </PatientCard>
+        </details>
+      )}
+
+      {aCompleter > 0 && (
+        <p className="text-sm text-muted-foreground">
+          {aCompleter === 1 ? 'Un questionnaire à compléter' : `${aCompleter} questionnaires à compléter`}
+          {dureeACompleterMin > 0 ? ` · ≈ ${dureeACompleterMin} min` : ''}
+        </p>
       )}
 
       {GROUPES.map(({ cle, titre }) => {

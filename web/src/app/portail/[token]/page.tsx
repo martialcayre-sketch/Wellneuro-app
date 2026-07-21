@@ -561,7 +561,7 @@ function AnamneseForm({ token, idPatient, email, motifInitial, onDone }: {
           disabled={isLastSection ? (loading || requisManquant) : sectionRequisManquant}
           loading={loading} loadingLabel="Validation…"
         >
-          {isLastSection ? 'Valider et accéder à mes questionnaires' : 'Suivant →'}
+          {isLastSection ? 'Valider et accéder à mon parcours' : 'Suivant →'}
         </PatientButton>
       </div>
     </PatientCard>
@@ -586,7 +586,7 @@ function DoneScreen({ token, premiereAssignation }: { token: string; premiereAss
       </p>
       {premiereAssignation && (
         <a href={`/portail/${token}/questionnaires`} className="inline-block py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 transition-opacity">
-          Accéder à mes questionnaires
+          Accéder à mon parcours
         </a>
       )}
     </PatientCard>

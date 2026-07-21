@@ -17,11 +17,17 @@ export type PortailAssignationsResponse =
       // traces locales du hub sans y recopier le jeton d'accès.
       patient: { idPatient: string; prenom: string; nom: string };
       assignations: AssignationPatient[];
+      // Date de la dernière réponse transmise (ISO), `null` si le patient n'a
+      // jamais répondu. Alimente l'accueil de reprise (SP-SPI / LOT-01) et
+      // reprend **la même horloge que le Fil praticien** — `max(dateReponse)`,
+      // pas la dernière connexion. Aucune donnée de score n'accompagne cette
+      // date : seule sa position dans le temps est racontée au patient.
+      derniereReponseLe: string | null;
     }
   | { ok: false; reason: 'unauthorized' | 'exception'; error: string };
 
 // GET /api/portail/assignations — toutes les assignations du patient de la
-// session portail (cookie signé wn_portail). Alimente le hub « Mes questionnaires ».
+// session portail (cookie signé wn_portail). Alimente l'accueil « Mon parcours » (SP-SPI).
 export async function GET(req: Request): Promise<NextResponse> {
   const requestContext = createRequestContext(req);
   const session = readPatientSession(req);
@@ -86,10 +92,20 @@ export async function GET(req: Request): Promise<NextResponse> {
 
     const assignations: AssignationPatient[] = assignationsDb.map(mapAssignationPatient);
 
+    // Horloge de la reprise : dernière réponse **transmise**, comme le Fil
+    // praticien (`api/praticien/fil/route.ts`, `_max.dateReponse`). Se
+    // connecter n'est pas participer — on ne date pas la reprise sur la visite.
+    // Sélection minimale : la date seule, jamais les scores de la réponse.
+    const derniereReponse = await prisma.questionnaireReponse.aggregate({
+      where: { idPatient: session.idPatient },
+      _max: { dateReponse: true },
+    });
+
     return withCorrelationHeader(NextResponse.json({
       ok: true,
       patient: { idPatient: session.idPatient, prenom: patient.prenom, nom: patient.nom },
       assignations,
+      derniereReponseLe: derniereReponse._max.dateReponse?.toISOString() ?? null,
     }), requestContext);
   } catch (err) {
     logger.error({
