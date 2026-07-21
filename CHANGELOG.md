@@ -36,6 +36,27 @@ ensemble parce qu'ils n'ont en commun que d'être mécaniques.
 Aucune migration, aucun changement de schéma, aucun texte visible modifié côté
 patient.
 
+### E20 — C5 réalignée sur ce qui a été livré (2026-07-21)
+
+Quatre sources décrivaient l'avancement de C5, trois se contredisaient avec la
+quatrième. Vérification faite, le dossier de campagne était le seul à dire vrai :
+les **huit lots** sont mergés sur `main` depuis le 2026-07-18 (PR #95,
+#117→#121, #126, #129, #132, #136, #137), la migration
+`20260718100010_c5_ciqual_reference_v1` est appliquée en production en une
+tentative, `ciqual_nutrient_values` porte 55 744 lignes, et `WN_C5_ENABLED` est
+**actif** — mesuré, pas déduit : la route praticien vérifie le drapeau avant
+l'authentification, et la production répond 401 là où un drapeau éteint rendrait
+404.
+
+`campagnes/README.md`, `PROGRAMME_WELLNEURO_5_0.md` et `REGISTRE_FRONTIERES.md`
+décrivaient tous trois l'état du **cadrage du 2026-07-18 au matin** et n'avaient
+jamais été relus après les livraisons du même jour. Ce n'était pas un désaccord
+sur les faits : un retard d'écriture à trois endroits, porté trois jours par des
+documents qui pilotent les reprises de session. Les trois sont réalignés, chacun
+portant sa rectification datée.
+
+Documentation seule — aucun code, aucun schéma, aucun drapeau modifié.
+
 ### Révoquer un accès ferme tout, et le dit (IDP2, LOT-02c, 2026-07-21)
 
 Deux écarts entre ce que le code faisait et ce qu'il disait.
