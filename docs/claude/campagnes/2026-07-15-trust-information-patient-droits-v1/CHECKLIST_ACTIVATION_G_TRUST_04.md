@@ -243,7 +243,7 @@ vérifié » : il dit « vérifié, et négatif ».
 
 Inventaire du dépôt : **aucune dépendance bloquante à Vercel**. Pas de
 `vercel.json`, pas de `@vercel/*`, pas d'Edge Runtime, pas de middleware, pas de
-Cron, pas d'ISR, pas de `next/image`. Les variables `VERCEL_*` lues dans le code
+Cron, pas d'ISR, pas d'import de `next/image` dans le code applicatif. Les variables `VERCEL_*` lues dans le code
 ont toutes un repli déjà écrit. Aucun SDK `@supabase/*` au runtime : Supabase ne
 sert que de PostgreSQL managé, et Prisma parle à n'importe quel PostgreSQL.
 

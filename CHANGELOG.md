@@ -4,7 +4,6 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
-<<<<<<< HEAD
 ### Hébergement HDS — question instruite, et dérogation datée (2026-07-21)
 
 Aucun code. Ce qui change est l'état de la connaissance et une décision du
@@ -21,9 +20,10 @@ responsable du traitement.
   Francfort : la localisation est acquise, la certification non.
 - **Un déplacement est techniquement peu coûteux.** Inventaire du dépôt :
   aucune dépendance bloquante à Vercel (pas de `vercel.json`, `@vercel/*`, Edge
-  Runtime, middleware, Cron, ISR, `next/image`), aucun SDK `@supabase/*` au
-  runtime. Le poste lourd est le transfert de la base, pas le code. Équivalents
-  certifiés sur les six activités : Scalingo, Clever Cloud.
+  Runtime, middleware, Cron, ISR ; pas d'import de `next/image` dans le code
+  applicatif), aucun SDK `@supabase/*` au runtime. Le poste lourd est le
+  transfert de la base, pas le code. Équivalents certifiés sur les six
+  activités : Scalingo, Clever Cloud.
 - **Dérogation du responsable du traitement, datée du 2026-07-21 et bornée au
   2026-10-21** : phase de test avec des personnes réelles, nouveaux dossiers
   compris, malgré l'écart. Motifs invoqués : phase pré-opérationnelle,
@@ -38,7 +38,7 @@ responsable du traitement.
   résidus ayant été fermés le jour même.
 - **Correction de fait au registre** : la mention « livrable en préproduction »
   supposait une préproduction qui n'existe pas.
-=======
+
 ### Gouvernance et cohérence documentaire — audit de conformité 5.0 (2026-07-21)
 
 Documentaire uniquement. Aucun code, schéma, migration ni flag modifié.
@@ -100,7 +100,6 @@ E18 relevés par l'audit du 2026-07-20.
 - **E18** — couleurs Tailwind brutes hors tokens retokenisées :
   `FichePatientPanel` (`orange-*` → `status-warning`), `DocumentComposer` et
   `DocumentsPanel` (`slate-*`/`white` → `foreground`/`surface`/`muted`).
->>>>>>> origin/main
 
 ### Gate G4 — les deux résidus du canal de redemande (IDP LOT-02, 2026-07-21)
 
