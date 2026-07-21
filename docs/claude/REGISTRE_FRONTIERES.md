@@ -231,7 +231,12 @@
   jamais un tableau de bord ni un score.
 - Typographie : échelle **remontée** (corps 16px, titres de section en
   `font-display`, hiérarchie display ≥ 28px) ; `ReadingComfortControl` monté
-  sur les deux fronts.
+  sur les **deux surfaces patient** — portail (`app/portail/layout.tsx`) et
+  legacy (`app/patient/layout.tsx`) —, **jamais côté praticien**. *Rectification
+  du 2026-07-21 (audit 5.0, E17)* : « monté sur les deux fronts » se lisait
+  comme praticien + patient, ce que le code n'a jamais fait. Le confort de
+  lecture est un réglage de la personne qui lit son propre parcours ; côté
+  praticien, la lisibilité relève de la typographie du poste de pilotage (E16).
 - Portée : direction UX opposable, livrée **par campagnes** (Vague 1
   dette/IA atteignable sans migration ; Vagues 2+ rattachées à
   SP-COP/SP-TT/C2B/SP-MET/SP-SPI/IDP). Détail et maquette :

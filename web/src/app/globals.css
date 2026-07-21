@@ -193,7 +193,10 @@
  * Confort de lecture patient (HC-F LOT-04, ReadingComfortControl) — 3
  * réglages locaux, non cliniques, posés en attribut sur <html> (les unités
  * `rem` Tailwind sont relatives à sa taille de police). Portée volontairement
- * restreinte au portail : ces attributs ne sont jamais posés côté praticien.
+ * restreinte aux surfaces patient — portail (`app/portail/layout.tsx`) et
+ * legacy (`app/patient/layout.tsx`) : ces attributs ne sont jamais posés côté
+ * praticien (audit 5.0, E17 — le commentaire disait « au portail » alors que le
+ * legacy le monte aussi).
  */
 html[data-reading-comfort='large'] {
   font-size: 112.5%;
