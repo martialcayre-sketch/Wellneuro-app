@@ -4,6 +4,40 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### R2 — où passe la frontière de la gamification patient (2026-07-21)
+
+L'audit 5.0 relevait la barre « X % complété » de `GenericQuestionnaire` et les
+compteurs « X réponses sur Y », sans trancher : ils relèvent « ou non de la
+gamification proscrite **selon la lecture retenue** ». La question restait
+ouverte parce que personne n'avait écrit où passe la ligne.
+
+**Arbitrage : ce n'est pas de la gamification.** Un indicateur d'avancement
+interne au formulaire ouvert est de la **navigation** — il dit ce qu'il reste à
+faire, comme un numéro de page. Il ne survit pas au questionnaire, ne s'accumule
+pas d'une séance à l'autre, ne compare à personne, ne récompense rien. Le
+retirer coûterait au patient (« combien de temps encore ? ») sans rien protéger.
+Il porte d'ailleurs déjà `role="progressbar"` et son `aria-valuetext`.
+
+**Est proscrit** ce qui récompense (félicitations, badge, niveau), accumule dans
+le temps (série de jours, total de questionnaires), compare (à d'autres, à soi
+hier, à un classement) ou fixe au patient un but qu'il n'a pas choisi. La
+frontière n'est pas le chiffre, c'est ce qu'on en fait.
+
+- **Frontière écrite** dans `REGISTRE_FRONTIERES.md`, à côté du garde-fou 5.0
+  qu'elle précise — sans quoi la prochaine lecture repartirait de zéro.
+- **Frontière tenue** par `lib/gamification-patient.guard.test.ts` : le
+  vocabulaire de jeu dans les surfaces patient fait échouer T1, en nommant
+  fichier, ligne et mot. Les fichiers de test sont hors périmètre — rien n'y est
+  rendu au patient, et ils portent justement les assertions qui interdisent ces
+  mots.
+- **Ce que la garde ne prouve pas**, et c'est écrit dans son en-tête : elle lit
+  du texte, pas des intentions. Une gamification écrite sans ces mots lui
+  échappe. Elle attrape le vocabulaire qui la signale — la façon dont ces choses
+  arrivent réellement, une phrase d'encouragement recopiée d'un produit grand
+  public.
+
+Aucun changement de comportement : rien n'est retiré ni ajouté à l'écran.
+
 ### R4 — la bascule des liens permanents devient posable (2026-07-21)
 
 Réserve R4 : le jeton permanent `patients.access_token` reste en clair en base,
@@ -136,7 +170,7 @@ patient.
 
 Quatre sources décrivaient l'avancement de C5, trois se contredisaient avec la
 quatrième. Vérification faite, le dossier de campagne était le seul à dire vrai :
-les **huit lots** sont mergés sur `main` depuis le 2026-07-18 (PR #95,
+les **huit lots** sont mergés sur `main` depuis le 2026-07-18 (PR #95, puis
 #117→#121, #126, #129, #132, #136, #137), la migration
 `20260718100010_c5_ciqual_reference_v1` est appliquée en production en une
 tentative, `ciqual_nutrient_values` porte 55 744 lignes, et `WN_C5_ENABLED` est
