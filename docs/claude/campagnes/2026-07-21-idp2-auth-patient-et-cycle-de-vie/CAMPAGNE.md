@@ -4,7 +4,7 @@ titre: "IDP2 — Compte patient et cycle de vie du dossier"
 statut: "en_cours"
 créée_le: "2026-07-21"
 mise_à_jour: "2026-07-21"
-lot_courant: "LOT-02"
+lot_courant: "LOT-03"
 ---
 
 # IDP2 — Compte patient et cycle de vie du dossier
@@ -115,9 +115,12 @@ invariants du registre, non négociables ici.
    *Réponse pour LOT-02 : lecture tolérante des deux formats de cookie, aucun
    accès rompu au déploiement (`lots/LOT-02-compte-patient.md`). La question
    reste ouverte pour LOT-04, qui retire le jeton permanent.*
-4. **Google devient sous-traitant sur les patients**, et non plus sur le seul
-   praticien. À porter à la liste du registre (`GATES_GO_NO_GO.md:9`) et à
-   mettre en regard de l'objectif de réduction d'exposition.
+4. ~~**Google devient sous-traitant sur les patients**~~, et non plus sur le seul
+   praticien. **Portée au registre le 2026-07-21** (`REGISTRE_FRONTIERES.md`,
+   entrée IDP2), par LOT-03a. Ce qui borne l'exposition, et qui est désormais
+   consigné : scope `openid email profile` — aucune donnée de santé ne transite ;
+   chemin **optionnel**, le lien magique restant ouvert à qui refuse Google ;
+   **client OAuth distinct** de celui du praticien.
 
 ## Risque de conception identifié
 
@@ -130,6 +133,17 @@ Cela se maîtrise, et se décide dès le départ : séparation stricte du rôle 
 le jeton, et **un test qui échoue** si un compte hors `@wellneuro.fr` atteint
 `/dashboard`. À écrire avant la première ligne d'authentification patient, pas
 après.
+
+**Tranché le 2026-07-21 (LOT-03a), et autrement que prévu ici.** L'inspection du
+dépôt a montré qu'il n'existe **ni `web/src/middleware.ts` ni helper
+`requirePraticien`** : la garde praticien est un `if (!session)` recopié sur
+**236 appels** à `getServerSession`. Faire dépendre la séparation d'un claim
+`role` reviendrait à faire dépendre la sécurité de l'exhaustivité de 236
+remplacements. La réponse retenue supprime la prémisse : **il n'y a pas deux
+surfaces dans le même NextAuth**, parce que le patient n'entre pas dans NextAuth
+du tout — Google est consommé en OIDC direct par une route portail dédiée, qui
+pose le cookie `wn_portail` existant. Le test reste dû, sous forme de garde
+structurelle (LOT-03b).
 
 ## Ce que la campagne ne possède pas
 
@@ -155,8 +169,13 @@ réversible seul.
   (`lots/LOT-02-compte-patient.md`) : 02a documentaire (#200), 02b découplage de
   session et migration `sessionsInvalidesAvant` déployée (#202), 02c fermeture
   des liens en vol et confirmation de révocation.
-- **LOT-03 — Google comme premier chemin**, avec la séparation stricte des rôles
-  et son test de non-régression.
+- **LOT-03 — Google comme premier chemin**, avec la séparation des rôles et son
+  test de non-régression. **Spécifié le 2026-07-21**
+  (`lots/LOT-03-google-premier-chemin.md`). L'arbitrage y est tranché : le
+  patient **n'entre jamais dans NextAuth** — Google en OIDC direct sur une route
+  portail dédiée, plutôt qu'un provider patient et un claim `role` à faire
+  respecter par 236 gardes recopiées à la main. Le risque devient impossible au
+  lieu d'être gardé.
 - **LOT-04 — Retrait du jeton permanent**, une fois les 13 accès migrés et
   seulement alors. Migration destructive sur `patients.access_token` : décision
   distincte, confirmation explicite.
