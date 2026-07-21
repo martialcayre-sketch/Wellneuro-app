@@ -34,6 +34,13 @@ model Patient {
   accessTokenRevoked   Boolean   @default(false) @map("access_token_revoked")
   accessTokenCreatedAt DateTime? @map("access_token_created_at")
 
+  // Coupe-circuit de session, propre au COMPTE et non au jeton (IDP2 LOT-02).
+  // Toute session portail émise avant cette date est refusée. Distinct de
+  // `accessTokenRevoked`, qui ne vit que tant que le jeton permanent existe :
+  // ce champ survit à son retrait (LOT-04). Une révocation pose les deux ; une
+  // réémission ne défait que le premier.
+  sessionsInvalidesAvant DateTime? @map("sessions_invalides_avant")
+
   assignations          Assignation[]
   questionnaireReponses QuestionnaireReponse[]
   synthesiesIA          SyntheseIA[]

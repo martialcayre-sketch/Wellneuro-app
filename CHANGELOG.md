@@ -37,6 +37,38 @@ une garde, plutôt qu'une seconde liste de lignes.
 
 Aucune migration, aucun changement de schéma, aucun texte visible modifié.
 
+### La session patient devient une session de compte (IDP2, LOT-02b, 2026-07-21)
+
+Le cookie du portail scellait l'empreinte du **jeton permanent** : la session
+n'appartenait pas au patient, elle appartenait au secret qui l'avait ouverte.
+Réémettre un lien d'accès déconnectait, et la révocation n'existait que par
+`patients.access_token` — colonne que le LOT-04 doit retirer.
+
+- **Migration additive** `sessions_invalides_avant` sur `patients` (nullable).
+  Une session porte sa date d'émission ; elle est refusée si cette colonne lui
+  est postérieure. Coupe-circuit propre au compte, qui survivra au retrait du
+  jeton permanent. Le backfill **transporte l'état de révocation existant, il
+  n'en crée aucun** : `access_token_created_at` reproduit à l'identique la
+  coupure qu'opérait la rotation du jeton, et les dossiers déjà révoqués le
+  restent quand la colonne `access_token` disparaîtra.
+- **`isPatientSessionBoundToToken` → `isSessionValideForPatient`.** La session
+  est validée contre le compte (identité, e-mail, activité, date de
+  révocation), plus contre un jeton. Réémettre un accès ne déconnecte donc
+  plus ; révoquer coupe toujours.
+- **Les cookies déjà émis restent valides.** La vérification accepte les deux
+  formats de charge : l'ancienne, sans date d'émission, voit la sienne
+  reconstruite depuis son expiration (la durée de vie est fixe). Aucun des
+  accès portail ouverts n'est rompu par le déploiement.
+- **« Révoquer l'accès » écrit désormais deux champs** : `accessTokenRevoked`
+  pour le chemin par jeton, `sessionsInvalidesAvant` pour les sessions déjà
+  ouvertes. Une réémission d'accès ne défait que le premier — une révocation ne
+  se défait plus par effet de bord.
+
+Vérifié : T3 complet (981 tests unitaires, 55 E2E, `migrate deploy` sur base
+éphémère, aucune dérive schéma ↔ migrations), `next lint` sans erreur, revue
+indépendante — dont les deux conditions de merge (le backfill ci-dessus) sont
+levées.
+
 ### Cycle de vie du dossier — la surface (IDP2, LOT-01b, 2026-07-21)
 
 Le socle livré par le LOT-01a (#189) était complet et **inatteignable** : aucun

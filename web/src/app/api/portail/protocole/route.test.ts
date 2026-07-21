@@ -23,11 +23,11 @@ import { GET } from './route';
 const assignation = { idAssignation: 'ASS_1', idPatient: 'PAT_PROPRIO', emailPatient: 'proprio@example.test' };
 
 function proprioCookie(): string {
-  return signPatientSession({ idPatient: assignation.idPatient, email: assignation.emailPatient, accessToken: 'TOK_PROPRIO' });
+  return signPatientSession({ idPatient: assignation.idPatient, email: assignation.emailPatient });
 }
 function mockOwnerAuth(): void {
   prisma.assignation.findFirst.mockResolvedValue(assignation);
-  prisma.patient.findUnique.mockResolvedValue({ actif: true, accessToken: 'TOK_PROPRIO', accessTokenRevoked: false, email: assignation.emailPatient });
+  prisma.patient.findUnique.mockResolvedValue({ idPatient: assignation.idPatient, actif: true, accessToken: 'TOK_PROPRIO', accessTokenRevoked: false, email: assignation.emailPatient });
 }
 function request(cookie?: string): Request {
   return new Request('http://localhost/api/portail/protocole', {
@@ -59,7 +59,7 @@ describe('GET /api/portail/protocole', () => {
 
   it('refuse l’accès inter-patient (404)', async () => {
     prisma.assignation.findFirst.mockResolvedValue(assignation);
-    const cookie = signPatientSession({ idPatient: 'PAT_INTRUS', email: assignation.emailPatient, accessToken: 'TOK' });
+    const cookie = signPatientSession({ idPatient: 'PAT_INTRUS', email: assignation.emailPatient });
     const res = await GET(request(cookie));
     expect(res.status).toBe(404);
   });

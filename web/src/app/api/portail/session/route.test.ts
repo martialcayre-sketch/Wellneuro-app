@@ -61,7 +61,7 @@ describe('POST /api/portail/session', () => {
   });
 
   it('restaure la session avec le token et le cookie, sans email', async () => {
-    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email, accessToken: patient.accessToken });
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
     const response = await POST(request({ token: patient.accessToken }, cookie));
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ok: true });
@@ -73,26 +73,31 @@ describe('POST /api/portail/session', () => {
   });
 
   it('refuse un cookie appartenant à un autre patient, même avec le même email', async () => {
-    const cookie = signPatientSession({ idPatient: 'PAT_AUTRE', email: patient.email, accessToken: patient.accessToken });
+    const cookie = signPatientSession({ idPatient: 'PAT_AUTRE', email: patient.email });
     const response = await POST(request({ token: patient.accessToken }, cookie));
     expect(response.status).toBe(403);
   });
 
   it('refuse un portail révoqué', async () => {
     prisma.patient.findUnique.mockResolvedValue({ ...patient, accessTokenRevoked: true });
-    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email, accessToken: patient.accessToken });
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
     expect((await POST(request({ token: patient.accessToken }, cookie))).status).toBe(403);
   });
 
-  it('refuse un ancien cookie après réémission du token et accepte le nouveau', async () => {
-    const oldCookie = signPatientSession({
-      idPatient: patient.idPatient, email: patient.email, accessToken: 'TOK_ANCIEN',
-    });
-    expect((await POST(request({ token: patient.accessToken }, oldCookie))).status).toBe(403);
+  // Comportement INVERSÉ par IDP2 LOT-02. La session appartient au compte, plus
+  // au jeton : réémettre un lien d'accès ne déconnecte plus.
+  it('survit à une réémission du jeton permanent', async () => {
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
+    prisma.patient.findUnique.mockResolvedValue({ ...patient, accessToken: 'TOK_REEMIS' });
+    expect((await POST(request({ token: 'TOK_REEMIS' }, cookie))).status).toBe(200);
+  });
 
-    const newCookie = signPatientSession({
-      idPatient: patient.idPatient, email: patient.email, accessToken: patient.accessToken,
+  it('refuse un cookie émis avant une révocation', async () => {
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
+    prisma.patient.findUnique.mockResolvedValue({
+      ...patient,
+      sessionsInvalidesAvant: new Date(Date.now() + 60_000),
     });
-    expect((await POST(request({ token: patient.accessToken }, newCookie))).status).toBe(200);
+    expect((await POST(request({ token: patient.accessToken }, cookie))).status).toBe(403);
   });
 });

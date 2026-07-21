@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, getLatestActivation, readPatientSession, isPatientSessionBoundToToken } = vi.hoisted(() => ({
+const { prisma, getLatestActivation, readPatientSession, isSessionValideForPatient } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
   },
   getLatestActivation: vi.fn(),
   readPatientSession: vi.fn(),
-  isPatientSessionBoundToToken: vi.fn(),
+  isSessionValideForPatient: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -15,7 +15,7 @@ vi.mock('@/lib/food-observation/persistence', () => ({
 }));
 vi.mock('@/lib/patient-session', () => ({
   readPatientSession,
-  isPatientSessionBoundToToken,
+  isSessionValideForPatient,
 }));
 
 import { GET } from './route';
@@ -30,7 +30,7 @@ describe('api/portail/ja/decision', () => {
       accessTokenRevoked: false,
       email: 'sophie.nicola@example.test',
     });
-    isPatientSessionBoundToToken.mockReturnValue(true);
+    isSessionValideForPatient.mockReturnValue(true);
   });
 
   it('GET refuse sans session portail', async () => {
@@ -76,8 +76,8 @@ describe('api/portail/ja/decision', () => {
     expect(json.decision.budgetChargeGlobal).toBe(11);
   });
 
-  it('GET refuse si la session n est plus liee au token courant', async () => {
-    isPatientSessionBoundToToken.mockReturnValue(false);
+  it('GET refuse si la session n est plus valide pour le compte', async () => {
+    isSessionValideForPatient.mockReturnValue(false);
 
     const res = await GET(new Request('http://localhost/api/portail/ja/decision'));
     expect(res.status).toBe(401);

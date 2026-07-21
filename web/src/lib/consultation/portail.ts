@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { isPatientSessionBoundToToken, type PatientSession } from '@/lib/patient-session';
+import { isSessionValideForPatient, type PatientSession } from '@/lib/patient-session';
 
 import { VERSION_CONSENTEMENT_COURANTE } from '@/lib/trust/contenus/registre';
 
@@ -41,10 +41,7 @@ export async function resolvePortailPatient(token: string, email: string): Promi
 
 export async function resolvePortailPatientFromSession(token: string, session: PatientSession): Promise<PortailPatient> {
   const patient = await prisma.patient.findUnique({ where: { accessToken: token } });
-  if (!patient || patient.accessTokenRevoked || !patient.actif) return null;
-  if (patient.idPatient !== session.idPatient) return null;
-  if (patient.email.toLowerCase() !== session.email) return null;
-  if (!patient.accessToken || !isPatientSessionBoundToToken(session, patient.accessToken)) return null;
+  if (!patient || !isSessionValideForPatient(session, patient)) return null;
   return patient;
 }
 
