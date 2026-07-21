@@ -12,6 +12,15 @@ const LEGENDE_STRATE: { strate: string; label: string; couleur: string }[] = [
   { strate: 'ESPRIT', label: 'Esprit', couleur: 'var(--viz-esprit)' },
 ];
 
+// Équivalent texte de la couverture : le cercle ne la porte que par l'opacité
+// de sa couleur, qui n'est ni lisible au clavier ni par un lecteur d'écran.
+function libelleCouverture(couverture: number | null): string {
+  if (couverture === null) return 'Pas encore de données';
+  if (couverture >= 70) return 'Bien couvert';
+  if (couverture >= 40) return 'Couverture partielle';
+  return 'Peu couvert';
+}
+
 export function MonEquilibreDetail({
   idAssignation,
   email,
@@ -70,7 +79,7 @@ export function MonEquilibreDetail({
       <div className="bg-surface rounded-2xl shadow-sm border border-border p-8">
         <h1 className="font-display text-xl font-bold text-foreground mb-1 text-center">Mes 12 besoins</h1>
         <p className="text-sm text-muted-foreground text-center mb-6">
-          Survolez un besoin pour le mettre en évidence.
+          Sélectionnez ou survolez un besoin pour le mettre en évidence.
         </p>
 
         <CerclesConcentriques
@@ -90,15 +99,20 @@ export function MonEquilibreDetail({
 
         <ul className="space-y-1.5 mb-6">
           {data.besoins.map(b => (
-            <li
-              key={b.id}
-              onMouseEnter={() => setHoveredId(b.id)}
-              onMouseLeave={() => setHoveredId(null)}
-              className={`text-sm rounded-lg px-3 py-2 cursor-default transition-colors ${
-                hoveredId === b.id ? 'bg-primary/10 text-primary font-medium' : 'bg-muted text-foreground'
-              }`}
-            >
-              {b.libellePatient}
+            <li key={b.id}>
+              <button
+                type="button"
+                onMouseEnter={() => setHoveredId(b.id)}
+                onMouseLeave={() => setHoveredId(null)}
+                onFocus={() => setHoveredId(b.id)}
+                onBlur={() => setHoveredId(null)}
+                className={`w-full min-h-11 flex items-center justify-between gap-3 text-left text-sm rounded-lg px-3 py-2 transition-colors ${
+                  hoveredId === b.id ? 'bg-primary/10 text-primary font-medium' : 'bg-muted text-foreground'
+                }`}
+              >
+                <span>{b.libellePatient}</span>
+                <span className="text-xs text-muted-foreground">{libelleCouverture(b.couverture)}</span>
+              </button>
             </li>
           ))}
         </ul>

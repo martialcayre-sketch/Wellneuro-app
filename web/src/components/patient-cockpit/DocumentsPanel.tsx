@@ -98,13 +98,21 @@ export function DocumentsPanel() {
     }
   }
 
-  const apercuHtml = useMemo(() => {
-    if (!doc) return null;
+  // `renderDocumentHtml` lève si un contenu médecin emploie un registre
+  // prescriptif (garde de vocabulaire, E15) : capturé ici pour un message
+  // actionnable plutôt qu'un aperçu qui plante.
+  const apercu = useMemo(() => {
+    if (!doc) return { html: null as string | null, erreur: null as string | null };
     const composite = assemblerDocument({ modele: MODELE_SUIVI_21J, patientId: 'apercu', blocs: doc.blocs });
-    return renderDocumentHtml(composite, destinataireApercu, {
-      patientNom: doc.patientNom,
-      dateDocument: doc.dateDocument,
-    });
+    try {
+      const html = renderDocumentHtml(composite, destinataireApercu, {
+        patientNom: doc.patientNom,
+        dateDocument: doc.dateDocument,
+      });
+      return { html, erreur: null as string | null };
+    } catch (e) {
+      return { html: null as string | null, erreur: e instanceof Error ? e.message : 'Aperçu indisponible.' };
+    }
   }, [doc, destinataireApercu]);
 
   function onImprimer() {
@@ -190,17 +198,20 @@ export function DocumentsPanel() {
                     type="button"
                     aria-pressed={destinataireApercu === d}
                     onClick={() => setDestinataireApercu(d)}
-                    className={`${btnBase} border ${destinataireApercu === d ? 'bg-slate-900 text-white' : 'bg-surface text-foreground'}`}
+                    className={`${btnBase} border ${destinataireApercu === d ? 'bg-foreground text-surface' : 'bg-surface text-foreground'}`}
                   >
                     {DESTINATAIRE_LABELS[d]}
                   </button>
                 ))}
               </div>
             </div>
+            {apercu.erreur && (
+              <p className="text-sm text-status-danger" role="alert">{apercu.erreur}</p>
+            )}
             <iframe
               ref={apercuRef}
               title={`Aperçu ${DESTINATAIRE_LABELS[destinataireApercu]}`}
-              srcDoc={apercuHtml ?? ''}
+              srcDoc={apercu.html ?? ''}
               sandbox="allow-same-origin allow-modals"
               className="w-full h-[420px] border border-border rounded-lg bg-white"
             />

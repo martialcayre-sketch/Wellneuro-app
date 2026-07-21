@@ -159,6 +159,10 @@ logique de PatientsPanel.
   comptabilité.
 
 ### R8 — Authentification patient MyWellneuro
+
+> Sigle partagé par erreur avec `ROADMAP_TECHNIQUE.md` R8 (filet de sécurité
+> CI, sans rapport, livré 2026-07-11) : les deux roadmaps numérotent
+> indépendamment. Ce R8-ci (produit) reste à faire ; campagne **IDP**.
 - Prérequis de tout l'espace patient persistant (dashboard, carnet de bord,
   messagerie).
 - Socle : **magic link email** ; surcouche : **passkeys (WebAuthn)**.

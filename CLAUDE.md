@@ -140,7 +140,8 @@ un fichier (`--reporter=dot`), puis relire ce fichier.
 `NEXTAUTH_SECRET` de test : aucun secret ni base à préparer. Linux et macOS pris
 en charge (PostgreSQL via `apt-get` ou Homebrew — `brew install postgresql@15`,
 la version du CI). La séquence rapide (`-- --fast`) tourne en ~1 min 20 s et
-exécute les 34 tests E2E. Prérequis et options : `web/e2e/README.md`.
+exécute les 26 tests E2E source (2 projets Chromium/iPhone 13, soit jusqu'à
+52 exécutions). Prérequis et options : `web/e2e/README.md`.
 
 **Les E2E sont l'exclusivité du Mac.** `npm run test:e2e` réinitialise le patient
 fictif `PAT_SEED_03` dans la base pointée par `DATABASE_URL`, partagée entre les

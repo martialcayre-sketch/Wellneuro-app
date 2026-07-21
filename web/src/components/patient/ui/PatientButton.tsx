@@ -3,9 +3,9 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 export type PatientButtonVariant = 'primary' | 'ghost' | 'neutral' | 'danger-text';
 
 const VARIANT_CLASSES: Record<PatientButtonVariant, string> = {
-  primary: 'py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity',
-  ghost: 'py-2.5 px-4 bg-surface text-primary border border-primary/30 rounded-lg font-medium text-sm hover:bg-primary/10 disabled:opacity-50 transition-colors',
-  neutral: 'py-2 px-4 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors',
+  primary: 'min-h-11 inline-flex items-center justify-center py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity',
+  ghost: 'min-h-11 inline-flex items-center justify-center py-2.5 px-4 bg-surface text-primary border border-primary/30 rounded-lg font-medium text-sm hover:bg-primary/10 disabled:opacity-50 transition-colors',
+  neutral: 'min-h-11 inline-flex items-center justify-center py-2 px-4 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors',
   'danger-text': 'text-xs text-status-danger hover:underline',
 };
 

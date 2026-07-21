@@ -1170,6 +1170,7 @@ n'existe pas : l'envoi d'e-mail n'aurait jamais été testé.
 **Questions ouvertes** : péremption des liens permanents ; les deux résidus du
 canal de redemande.
 
+<<<<<<< HEAD
 ## 2026-07-21 — HDS instruit, dérogation datée, TRUST clos pour la phase de test
 
 **Établi** : Supabase et Vercel sont **absents de l'annuaire ANS** (404
@@ -1190,3 +1191,25 @@ L1111-8, l'information des participants ne décharge pas. C'est consigné comme
 
 **Questions ouvertes** : migration d'hébergeur ; tracer l'information délivrée
 aux participants ; péremption des liens permanents.
+=======
+## 2026-07-21 — audit de conformité 5.0 : trois PR mergées
+
+**Décisions** : trois PR ciblées, sécurité d'abord. PR1 (#181) ferme 3 routes
+praticien non isolées (le plus grave : révocation/réémission d'accès portail
+pour le patient d'un autre) et recale G-TRUST-04 (13→30/33). PR2 (#183) :
+score masqué au patient (E10), vocabulaire interne retiré, focus clavier +
+libellé texte sur « Mes 12 besoins », cibles 44px, garde vocabulaire médecin,
+couleurs retokenisées. PR3 (#185) : statuts de campagne réalignés,
+`.wn/state.json` corrigé sans arbitrer G-TRUST-04 (autre session), miroir
+`wellneuro_wn_campaigns/` supprimé, incohérences documentaires réglées.
+
+**Écarté** : E11/E16 différés Vague 2 ; réserves R1–R9 non arbitrées.
+
+**Vérifié** : T1/T3 par PR, CI verte sur les trois ; PR2/PR3 rebasées après
+PR1 (conflit `CHANGELOG.md` d'insertion, sans perte).
+
+**Prochaine action** : reprendre G-TRUST-04 une fois l'autre session conclue.
+
+**Questions ouvertes** : celles de l'audit (R1–R9), à arbitrer par le
+propriétaire produit.
+>>>>>>> origin/main
