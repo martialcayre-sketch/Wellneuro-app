@@ -31,13 +31,15 @@ export async function verifyRagBatch(
       SELECT
         candidate.chunk_id,
         candidate.content_sha256,
-        1 - (candidate.embedding <=> expected.embedding) AS similarity
+        1 - (
+          candidate.embedding OPERATOR(extensions.<=>) expected.embedding
+        ) AS similarity
       FROM public.rag_corpus_chunks AS candidate
       WHERE candidate.active = true
         AND candidate.indexation_autorisee = true
         AND candidate.patient_identifiable = false
         AND candidate.compartment = 'ACTIF'
-      ORDER BY candidate.embedding <=> expected.embedding
+      ORDER BY candidate.embedding OPERATOR(extensions.<=>) expected.embedding
       LIMIT 1
     ) AS nearest ON true
     WHERE expected.batch_id = ${batchId}
