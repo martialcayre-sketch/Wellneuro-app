@@ -31,6 +31,14 @@ export type FaitPreVol = {
   // Instrument / objet concerné quand il en existe un (idQuestionnaire, jalon…).
   instrument: string | null;
   date: string; // ISO — toute affirmation est datée
+  // Version de l'instrument, quand la source en a figé une (audit 5.0, réserve
+  // R3 : l'invariant demande « instrument, date, version »). Seuls les épisodes
+  // confirmés *peuvent* en porter une, figée à la mesure
+  // (`assessment_episodes.version_score`, A8-3) — les lignes héritées, elles,
+  // sont à `null` et le restent. Partout ailleurs elle vaut `null` par
+  // construction : aucune version n'est reconstituée après coup, au même titre
+  // qu'aucun fait n'est supposé.
+  version: string | null;
 };
 
 export type AncrePreVol =
@@ -47,7 +55,7 @@ export type EntreesPreVol = {
   derniereConsultationValidee: Date | null;
   reponses: { idQuestionnaire: string; dateReponse: Date }[];
   pointsEtape: { pointEtape: string; soumisLe: Date; tolerance: string | null; adhesion: string | null }[];
-  episodes: { milestone: string; confirmedAt: Date }[];
+  episodes: { milestone: string; confirmedAt: Date; versionScore: string | null }[];
   protocolesRelus: { reviewedAt: Date }[];
   diffusionsApprouvees: { approvedAt: Date }[];
   demandesCorrection: { demandeeLe: Date }[];
@@ -73,6 +81,7 @@ export function construirePreVol(entrees: EntreesPreVol): PreVol {
       libelle: `Réponses reçues — ${reponse.idQuestionnaire}`,
       instrument: reponse.idQuestionnaire,
       date: reponse.dateReponse.toISOString(),
+      version: null,
     });
   }
 
@@ -83,6 +92,7 @@ export function construirePreVol(entrees: EntreesPreVol): PreVol {
       libelle: `Point d’étape ${point.pointEtape} renseigné`,
       instrument: point.pointEtape,
       date: point.soumisLe.toISOString(),
+      version: null,
     });
   }
 
@@ -93,6 +103,7 @@ export function construirePreVol(entrees: EntreesPreVol): PreVol {
       libelle: `Épisode ${episode.milestone} confirmé`,
       instrument: episode.milestone,
       date: episode.confirmedAt.toISOString(),
+      version: episode.versionScore,
     });
   }
 
@@ -103,6 +114,7 @@ export function construirePreVol(entrees: EntreesPreVol): PreVol {
       libelle: 'Version de protocole relue',
       instrument: null,
       date: protocole.reviewedAt.toISOString(),
+      version: null,
     });
   }
 
@@ -113,6 +125,7 @@ export function construirePreVol(entrees: EntreesPreVol): PreVol {
       libelle: 'Contenu validé pour diffusion',
       instrument: null,
       date: diffusion.approvedAt.toISOString(),
+      version: null,
     });
   }
 
@@ -123,6 +136,7 @@ export function construirePreVol(entrees: EntreesPreVol): PreVol {
       libelle: 'Demande de correction du patient',
       instrument: null,
       date: demande.demandeeLe.toISOString(),
+      version: null,
     });
   }
 
@@ -133,6 +147,7 @@ export function construirePreVol(entrees: EntreesPreVol): PreVol {
       libelle: 'Signalement du patient à traiter',
       instrument: null,
       date: signalement.soumisLe.toISOString(),
+      version: null,
     });
   }
 

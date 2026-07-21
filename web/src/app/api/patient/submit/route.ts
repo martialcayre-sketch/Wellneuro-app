@@ -14,8 +14,12 @@ import {
   withCorrelationHeader,
 } from '@/lib/observability/requestContext';
 
+// La réponse au navigateur patient ne porte PAS les scores (audit 5.0, réserve
+// R1) : le total et son libellé d'interprétation sont des données praticien.
+// Ils sont calculés et persistés côté serveur, jamais renvoyés à la surface
+// patient — une donnée transmise mais non affichée reste une donnée transmise.
 export type PatientSubmitResponse =
-  | { ok: true; scores: unknown; titre: string }
+  | { ok: true; titre: string }
   | { ok: false; reason: string; error: string };
 
 type SubmitPayload = {
@@ -162,7 +166,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       })
     );
 
-    return withCorrelationHeader(NextResponse.json({ ok: true, scores, titre }), requestContext);
+    return withCorrelationHeader(NextResponse.json({ ok: true, titre }), requestContext);
   } catch (err) {
     logger.error({
       event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_EXCEPTION,
