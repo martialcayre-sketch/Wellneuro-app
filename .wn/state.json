@@ -7,7 +7,7 @@
   "status": "en_cours",
   "active_campaign": "2026-07-21-idp2-auth-patient-et-cycle-de-vie",
   "active_lot": "LOT-02",
-  "last_completed_lot": "IDP2/LOT-01b",
+  "last_completed_lot": "IDP2/LOT-02c",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -25,7 +25,7 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Campagne active IDP2 (compte patient et cycle de vie du dossier), lot courant LOT-02 (compte patient, second chemin) : LOT-01 est livré en deux PR (#189 socle, #194 surface). LOT-02a (spécification, lots/LOT-02-compte-patient.md) écrit le 2026-07-21 ; il reste LOT-02b — découpler la session patient du jeton permanent, migration ADDITIVE sessionsInvalidesAvant sur patients, révocation réexprimée, lecture tolérante des cookies déjà émis (13 accès ouverts). Question ouverte 1 de la campagne (e-mail dans le résidu) close : DossierEfface ne porte ni e-mail ni empreinte. G4 est livré (#172) ET activé en production le 2026-07-21 (WN_G4_LIEN_MAGIQUE + WN_G4_REDEMANDE_PATIENT, #182). SP-SPI/LOT-01a (accueil séquentiel patient, écart E11) livré le 2026-07-21 (#198). Audit de conformité 5.0 : écarts de sécurité et de paradigme traités (#181, #183, #185), typographie praticien A6-R1 (#191), cadrage E11 (#192). Restent ouverts et non arbitrés : E17 (ReadingComfortControl praticien — le registre dit « les deux fronts », globals.css dit « portail seul »), E20 (C5 se déclare terminée 8/8 contre trois documents qui la disent inactive à 2/8), E23, E25, et les réserves R1 à R9. Reliquat C3 (fil médecin) : le volet sortant est livré ; le fil entrant demande une migration ET un arbitrage humain sur l'identité médecin et la conservation.",
+  "next_action": "Campagne active IDP2, lot courant LOT-02, TERMINE. Prochain lot LOT-03 (Google comme premier chemin patient, separation stricte des roles, test qui echoue si un compte hors @wellneuro.fr atteint /dashboard) : A SPECIFIER — aucun fichier lots/LOT-03-*.md n'existe, et l'audit refuse un lot_courant sans fichier. LOT-02 est livre en trois PR le 2026-07-21 : 02a documentaire (#200), 02b decouplage de la session patient du jeton permanent avec migration additive sessionsInvalidesAvant (#202) — appliquee en production en une tentative, backfill verifie (17 dossiers, 13 acces ouverts, 13 dates posees, 0 ecart avec access_token_created_at) —, 02c fermeture des liens magiques en vol lors d'une revocation et confirmation praticien. Question ouverte 1 de la campagne (e-mail dans le residu) close : DossierEfface ne porte ni e-mail ni empreinte. LOT-04 (retrait de patients.access_token) porte une migration DESTRUCTIVE : decision distincte, ne pas l'enchainer. SP-SPI/LOT-01a livre (#198).",
   "blocking_issues": [
     "Fil de correspondance médecin (C3) : arbitrage humain requis sur identité médecin et conservation",
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md",
@@ -33,6 +33,6 @@
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-21T18:00:00Z",
+  "updated_at": "2026-07-21T19:00:00Z",
   "parallel_campaigns": []
 }

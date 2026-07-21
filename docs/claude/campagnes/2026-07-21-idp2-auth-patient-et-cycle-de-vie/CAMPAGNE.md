@@ -151,9 +151,10 @@ réversible seul.
   avec ce qu'il promet déjà.
 - **LOT-02 — Compte patient, second chemin.** Le lien magique devient un moyen
   de connexion à un compte, plus un porteur d'accès. Aucune suppression du
-  chemin existant. **Spécifié** : `lots/LOT-02-compte-patient.md` (LOT-02a
-  documentaire ; LOT-02b porte le découplage de session et sa migration
-  additive `sessionsInvalidesAvant`).
+  chemin existant. **Livré** en trois PR le 2026-07-21
+  (`lots/LOT-02-compte-patient.md`) : 02a documentaire (#200), 02b découplage de
+  session et migration `sessionsInvalidesAvant` déployée (#202), 02c fermeture
+  des liens en vol et confirmation de révocation.
 - **LOT-03 — Google comme premier chemin**, avec la séparation stricte des rôles
   et son test de non-régression.
 - **LOT-04 — Retrait du jeton permanent**, une fois les 13 accès migrés et

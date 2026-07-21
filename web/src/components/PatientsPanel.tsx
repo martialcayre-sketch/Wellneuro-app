@@ -354,21 +354,31 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     }
   };
 
+  // Appelée UNIQUEMENT derrière la confirmation (LOT-02c) : un échec part donc
+  // dans `erreurConfirmation`, à l'intérieur du dialogue. Rendu ailleurs dans la
+  // page, il serait derrière l'overlay Radix et sous `aria-hidden` — le défaut
+  // que la revue du LOT-01b avait rattrapé sur l'effacement.
   const onRevokeToken = async (idPatient: string) => {
     setTokenAction('revoke');
+    setErreurConfirmation(null);
     setConsultationFeedback(null);
     try {
       const r = await fetch(`/api/praticien/token?idPatient=${encodeURIComponent(idPatient)}`, {
         method: 'DELETE',
       });
       const json = (await r.json()) as TokenActionResponse;
-      setConsultationFeedback(
-        !r.ok || !json.success
-          ? { ok: false, msg: erreurLisible(json.reason, json.error) }
-          : { ok: true, msg: 'Accès au portail révoqué.' }
-      );
+      if (!r.ok || !json.success) {
+        setErreurConfirmation(erreurLisible(json.reason, json.error));
+        return;
+      }
+      setConsultationFeedback({
+        ok: true,
+        msg: 'Accès révoqué : lien coupé, session en cours terminée, liens à usage unique annulés.',
+      });
+      setConfirmation(null);
+      await refreshPatients();
     } catch {
-      setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+      setErreurConfirmation('Erreur réseau. Réessayez.');
     } finally {
       setTokenAction(null);
     }
@@ -475,6 +485,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     try {
       if (mode === 'desactivation') await onToggleActif(patient.idPatient, 'NON');
       else if (mode === 'reactivation') await onToggleActif(patient.idPatient, 'OUI');
+      else if (mode === 'revocation') await onRevokeToken(patient.idPatient);
       else await onCycleDeVie(patient.idPatient, mode, saisie);
     } catch {
       setErreurConfirmation('Erreur réseau. Réessayez.');
@@ -488,6 +499,10 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   // désactivation, qui coupe l'accès au portail : avant ce lot elle demandait
   // déjà deux gestes (« Supprimer » puis « Confirmer »), la renommer ne
   // justifiait pas de lui retirer sa confirmation.
+  //
+  // La révocation y entre au LOT-02c. Elle échappait à cette règle que le code
+  // énonçait déjà : un clic, aucune question, alors qu'elle coupe désormais une
+  // session en cours et les liens à usage unique en vol.
   const demanderConfirmation = (mode: ModeConfirmation, patient: PatientRowData) => {
     setErreurConfirmation(null);
     setConfirmation({ mode, patient });
@@ -498,7 +513,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       case 'resend': return void onResendToken(patient.idPatient);
       case 'copier': return void onCopierLien(patient.idPatient);
       case 'lien_magique': return void onEnvoyerLienMagique(patient.idPatient);
-      case 'revoke': return void onRevokeToken(patient.idPatient);
+      case 'revoke': return demanderConfirmation('revocation', patient);
       case 'desactiver': return demanderConfirmation('desactivation', patient);
       case 'reactiver': return demanderConfirmation('reactivation', patient);
       case 'cloturer': return demanderConfirmation('cloture', patient);

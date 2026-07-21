@@ -178,14 +178,37 @@ export async function DELETE(req: Request): Promise<NextResponse<TokenActionResp
     if (!patient) {
       return NextResponse.json({ success: false, reason: 'patient_not_found', error: 'Patient introuvable.' }, { status: 404 });
     }
-    // Deux écritures, deux portées. `accessTokenRevoked` ferme le chemin par
-    // jeton ; `sessionsInvalidesAvant` ferme les sessions de compte déjà
-    // ouvertes — le seul des deux qui survivra au retrait du jeton (LOT-04),
-    // et le seul qu'une réémission d'accès ne défait pas.
-    await prisma.patient.update({
-      where: { idPatient },
-      data: { accessTokenRevoked: true, sessionsInvalidesAvant: new Date() },
-    });
+    // TROIS PORTES, ET RÉVOQUER LES FERME TOUTES.
+    //
+    // `accessTokenRevoked` ferme le chemin par jeton ; `sessionsInvalidesAvant`
+    // ferme les sessions de compte déjà ouvertes — le seul des trois qui
+    // survivra au retrait du jeton (LOT-04), et le seul qu'une réémission
+    // d'accès ne défait pas.
+    //
+    // Restaient les liens à usage unique **encore en vol** : émis avant la
+    // révocation, ils n'étaient gardés que par `ensureActivePortalAccess`, qui
+    // relit `accessTokenRevoked` — une réémission d'accès les rendait donc
+    // exploitables, jusqu'à 24 h après. Ils sont datés ici.
+    //
+    // `consommeLe` porte un lien qui n'a pas été consommé, et c'est délibéré :
+    // `etatLien` refuse déjà sur cette date, le patient lit le même message
+    // qu'un lien réellement consommé (`MESSAGE_LIEN_INDISPONIBLE`), et la trace
+    // de rejeu reste sur la même ligne. Une colonne de plus n'aurait rien
+    // changé au refus.
+    //
+    // Une transaction, parce que fermer le jeton sans fermer les liens laisse
+    // exactement le trou qu'on referme.
+    const maintenant = new Date();
+    await prisma.$transaction([
+      prisma.patient.update({
+        where: { idPatient },
+        data: { accessTokenRevoked: true, sessionsInvalidesAvant: maintenant },
+      }),
+      prisma.portailMagicLink.updateMany({
+        where: { idPatient, consommeLe: null },
+        data: { consommeLe: maintenant },
+      }),
+    ]);
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ success: false, reason: 'exception', error: "Erreur technique lors de la révocation." });

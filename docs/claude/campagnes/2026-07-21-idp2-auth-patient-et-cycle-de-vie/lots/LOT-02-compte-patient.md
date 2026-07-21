@@ -1,15 +1,16 @@
 ---
 id: "LOT-02"
 titre: "Compte patient, second chemin — la session cesse d'être un porteur"
-statut: "spécifié — LOT-02a écrit, LOT-02b à livrer"
+statut: "livré — 02a (#200), 02b (#202, migration déployée), 02c"
 dépend_de: "LOT-01 (livré)"
 ---
 
 # LOT-02 — Compte patient, second chemin
 
-> Écrit le 2026-07-21. Ce document spécifie ; il ne raconte pas encore une
-> livraison. LOT-02a **est** ce document et le réalignement documentaire qui
-> l'accompagne ; LOT-02b porte le code et sa migration, dans une PR distincte.
+> Écrit le 2026-07-21, complété le même jour après livraison. LOT-02a **est** ce
+> document et le réalignement documentaire qui l'accompagne ; LOT-02b porte le
+> découplage de session et sa migration ; LOT-02c ferme les liens en vol et pose
+> la confirmation qui manquait. Trois PR.
 
 ## But
 
@@ -118,6 +119,45 @@ une réémission du jeton ; `sessionsInvalidesAvant` postérieur à l'émission 
 refus, antérieur ⇒ accès ; patient inactif ⇒ refus ; le DELETE praticien pose
 bien la date ; chemin `/portail/[token]` intact (E2E).
 
+## LOT-02b — ce que la revue a rattrapé
+
+Une revue indépendante a rendu un **GO conditionnel** sur le code, et ses deux
+conditions portaient toutes deux sur ce que la migration *ne faisait pas* :
+
+- **Sans backfill, une révocation se défaisait au déploiement.** Un cookie déjà
+  émis n'a pas de date d'émission, et l'ancien modèle le tuait dès que le jeton
+  tournait. Colonne à `NULL` et empreinte cessant d'être lue : un cookie volé
+  avant une révocation redevenait valide jusqu'à 12 h. `access_token_created_at`
+  reproduit exactement l'ancienne coupure.
+- **Les dossiers déjà révoqués repartaient à `NULL`**, donc adossés au seul
+  booléen que le LOT-04 doit retirer. Ils reçoivent `now()`.
+
+Vérifié en production après déploiement : 17 dossiers, 13 accès ouverts, 13 dates
+posées, **0 écart** avec `access_token_created_at`, 0 dossier révoqué sans date.
+
+Un troisième constat, traité au passage : `isSessionValideForPatient` ne
+contrôlait pas le jeton, que cinq appelants revérifiaient à la main. Le contrôle
+est descendu dans la fonction — le LOT-04 n'aura plus qu'un endroit à modifier.
+
+## LOT-02c — la révocation ferme tout, et le dit
+
+Deux écarts entre ce que le code faisait et ce qu'il disait.
+
+**La troisième porte.** Un lien à usage unique émis *avant* une révocation n'était
+gardé que par `ensureActivePortalAccess`, qui relit `accessTokenRevoked` : une
+réémission d'accès le rendait exploitable, jusqu'à 24 h après. Le `DELETE` date
+désormais les liens en attente (`consommeLe`), dans la **même transaction** que la
+révocation. Aucune migration : `etatLien` refuse déjà sur cette date, et le patient
+lit le message unique — le même qu'un lien réellement consommé.
+
+**La confirmation manquante.** `PatientsPanel` énonçait la règle qu'il violait :
+« TOUTE action qui change ce à quoi le patient a accès passe par un dialogue »,
+et « Révoquer l'accès » partait sur un clic. Depuis le LOT-02b elle coupe une
+session en cours. Le dialogue — simple, sans saisie, l'action étant réversible —
+énonce les trois effets et précise que **réémettre ne rend pas les sessions
+coupées**. L'échec s'affiche dans le dialogue, pas derrière l'overlay : leçon du
+LOT-01b.
+
 ## Ce que ce lot ne fait pas
 
 - **Aucun provider patient dans `authOptions`.** Le risque de conception nommé
@@ -126,8 +166,5 @@ bien la date ; chemin `/portail/[token]` intact (E2E).
   faire qui le rende plus difficile, à commencer par y toucher.
 - Le retrait de `patients.access_token` et du secret dans l'URL (LOT-04,
   migration destructive, décision distincte).
-- Le renommage de la surface praticien : « Révoquer l'accès » cesse de signifier
-  « invalider un jeton », et le dire à l'écran est un lot d'UI (LOT-02c), pas un
-  lot d'authentification.
 - L'allumage de `WN_G4_REDEMANDE_PATIENT`, décision distincte.
 - Le contenu de l'espace patient (SP-SPI), l'auth praticien, l'hébergement HDS.

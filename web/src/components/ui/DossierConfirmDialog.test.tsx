@@ -168,3 +168,43 @@ describe('DossierConfirmDialog — clôture', () => {
     expect(screen.queryByRole('heading', { name: /ce qui est détruit/i })).toBeNull();
   });
 });
+
+// LOT-02c. Ce que révoquer coupe a changé au lot précédent : le dialogue doit
+// dire les trois effets, et surtout que réémettre ne rend pas une session
+// coupée — sans quoi le praticien croit l'action anodine et réversible en un
+// clic.
+describe('DossierConfirmDialog — révocation d’accès', () => {
+  function rendreRevocation(onConfirm = vi.fn()) {
+    render(
+      <DossierConfirmDialog
+        mode="revocation"
+        nomPatient={PATIENT}
+        open
+        onOpenChange={() => {}}
+        onConfirm={onConfirm}
+      />,
+    );
+    return onConfirm;
+  }
+
+  it('nomme le dossier et n’exige aucune saisie — l’action est réversible', () => {
+    const onConfirm = rendreRevocation();
+    expect(screen.getByRole('heading', { name: new RegExp(PATIENT) })).toBeTruthy();
+    expect(screen.queryByLabelText(/saisissez/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: /^révoquer l’accès$/i }));
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+
+  it('énonce les trois portes fermées', () => {
+    rendreRevocation();
+    expect(screen.getByText(/lien d’accès au portail ne fonctionne plus/i)).toBeTruthy();
+    expect(screen.getByText(/session en cours est coupée/i)).toBeTruthy();
+    expect(screen.getByText(/usage unique déjà envoyés/i)).toBeTruthy();
+  });
+
+  it('dit que rouvrir l’accès ne rend pas les sessions coupées', () => {
+    rendreRevocation();
+    expect(screen.getByText(/ne rendra pas les sessions coupées/i)).toBeTruthy();
+  });
+});
