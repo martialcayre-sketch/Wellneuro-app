@@ -4,6 +4,8 @@ import "dotenv/config";
 import { defineConfig } from "prisma/config";
 import { withSupabaseSslMode } from "./src/lib/postgres";
 
+const migrationUrl = process.env["DIRECT_URL"] || process.env["DATABASE_URL"];
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
@@ -11,6 +13,8 @@ export default defineConfig({
     seed: "node prisma/runWithAlias.js prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"] ? withSupabaseSslMode(process.env["DATABASE_URL"]) : undefined,
+    // Les migrations (notamment CREATE EXTENSION vector et HNSW) doivent
+    // privilégier la connexion directe Supabase. Le runtime reste sur le pooler.
+    url: migrationUrl ? withSupabaseSslMode(migrationUrl) : undefined,
   },
 });
