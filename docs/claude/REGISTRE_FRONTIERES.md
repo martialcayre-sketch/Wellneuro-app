@@ -203,6 +203,18 @@
   Validé → Envoyé), pas de gamification patient, pas de score de risque
   chiffré ni pronostic nominatif, toute proposition du copilote sourcée
   (instrument, date, version de scoring).
+- **Où passe la frontière de la gamification** (arbitrage du 2026-07-21,
+  réserve R2 de l'audit 5.0). Un indicateur d'avancement **interne à la tâche en
+  cours** — « X % complété » d'un questionnaire ouvert, « X réponses sur Y » —
+  est de la **navigation** : il dit ce qu'il reste à faire, comme un numéro de
+  page, et le retirer coûterait au patient sans rien protéger. Est proscrit ce
+  qui **récompense** (félicitations, badge, niveau), **accumule dans le temps**
+  (série de jours, total de questionnaires), **compare** (à d'autres, à soi-même
+  hier, à un classement) ou **fixe un but que le patient n'a pas choisi**. La
+  frontière n'est pas le chiffre : c'est ce qu'on en fait. Tenue par
+  `web/src/lib/gamification-patient.guard.test.ts`, qui échoue sur le
+  vocabulaire de jeu dans les surfaces patient — il attrape le mot, pas
+  l'intention, et ne prouve donc pas l'absence de gamification.
 - Gates hérités inchangés : SP-RUN exige la validation ergonomique C1 (NO-GO
   runtime tant que non levée) ; C2A exige la confirmation explicite de
   migration Prisma ; Phase C exige HDS (D6).
