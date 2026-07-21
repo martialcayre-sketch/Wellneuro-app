@@ -7,7 +7,7 @@ import type {
   PatientsApiResponse,
   PatientsPagination,
 } from '@/app/api/praticien/patients/route';
-import type { CycleDeVieResponse } from '@/app/api/praticien/patients/cycle-de-vie/route';
+import type { CycleDeVieAction, CycleDeVieResponse } from '@/app/api/praticien/patients/cycle-de-vie/route';
 import type { CreateAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
 import type { QuestionnairesRegistryApiResponse } from '@/app/api/praticien/questionnaires/registry/route';
@@ -405,7 +405,13 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   // Le paramètre porte la SAISIE, pas l'état du dialogue — d'où `saisie` et non
   // `confirmation` : nommé ainsi, il masquait l'état `confirmation`, donc le
   // dossier concerné, et le message final ne pouvait plus le consulter.
-  const onCycleDeVie = async (idPatient: string, mode: ModeConfirmation, saisie: string) => {
+  //
+  // Le mode est typé `CycleDeVieAction` — l'union de la ROUTE — et non
+  // `ModeConfirmation`, qui couvre aussi `desactivation`/`reactivation`. Ces
+  // deux-là passent par `PATCH` : les accepter ici les aurait laissées typées
+  // jusqu'à un 400 à l'exécution. Le dispatcher les écarte déjà, mais un garde
+  // qui ne vit que dans une branche `if` ne protège pas le prochain appelant.
+  const onCycleDeVie = async (idPatient: string, mode: CycleDeVieAction, saisie: string) => {
     // `confirmation` est le binding de CETTE fermeture de rendu : ni
     // `setConfirmation(null)` ni `refreshPatients()` ne le réassignent — ils
     // programment un rendu, qui produira une autre fermeture. La valeur reste
