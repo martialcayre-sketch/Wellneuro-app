@@ -41,8 +41,7 @@ export async function resolvePortailPatient(token: string, email: string): Promi
 
 export async function resolvePortailPatientFromSession(token: string, session: PatientSession): Promise<PortailPatient> {
   const patient = await prisma.patient.findUnique({ where: { accessToken: token } });
-  if (!patient || patient.accessTokenRevoked || !patient.actif) return null;
-  if (!isSessionValideForPatient(session, patient)) return null;
+  if (!patient || !isSessionValideForPatient(session, patient)) return null;
   return patient;
 }
 

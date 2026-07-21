@@ -16,10 +16,18 @@ vi.mock('@/lib/praticien/appartenance', () => ({
   emailPraticien: () => 'p@wellneuro.fr',
 }));
 
-import { DELETE } from './route';
+import { DELETE, POST } from './route';
 
 function request(query = 'idPatient=PAT_1'): Request {
   return new Request(`http://localhost/api/praticien/token?${query}`, { method: 'DELETE' });
+}
+
+function postRequest(body: Record<string, unknown>): Request {
+  return new Request('http://localhost/api/praticien/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
 }
 
 describe('DELETE /api/praticien/token — révocation d’accès', () => {
@@ -57,5 +65,25 @@ describe('DELETE /api/praticien/token — révocation d’accès', () => {
     verifierAppartenancePatient.mockResolvedValue('autre_praticien');
     expect((await DELETE(request())).status).toBe(403);
     expect(prisma.patient.update).not.toHaveBeenCalled();
+  });
+
+  // Propriété centrale du lot : une révocation ne se défait pas par effet de
+  // bord. Réémettre rouvre l'accès, mais les sessions d'avant restent mortes.
+  it('la réémission d’un accès n’efface pas la date de révocation', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: 'PAT_1',
+      email: 'sophie.nicola@example.test',
+      prenom: 'Sophie',
+      accessToken: 'TOK_1',
+      accessTokenRevoked: true,
+      sessionsInvalidesAvant: new Date('2026-07-21T10:00:00.000Z'),
+    });
+
+    await POST(postRequest({ idPatient: 'PAT_1', action: 'lien' }));
+
+    const appels = prisma.patient.update.mock.calls as [{ data: Record<string, unknown> }][];
+    for (const [appel] of appels) {
+      expect(appel.data).not.toHaveProperty('sessionsInvalidesAvant');
+    }
   });
 });

@@ -23,3 +23,24 @@
 -- second.
 
 ALTER TABLE "patients" ADD COLUMN "sessions_invalides_avant" TIMESTAMP(3);
+
+-- BACKFILL — il transporte l'état de révocation d'aujourd'hui, il n'en crée
+-- aucun. Sans lui, deux propriétés existantes se perdraient au déploiement.
+--
+-- 1) Les cookies déjà en circulation ne portent pas de date d'émission : elle
+--    est reconstruite depuis leur expiration. Sous l'ancien modèle, un tel
+--    cookie mourait dès que le jeton tournait — c'était la propriété annoncée
+--    au praticien. `access_token_created_at` la reproduit à l'identique : toute
+--    session antérieure au jeton courant tombe, toute session postérieure
+--    survit. Ne déconnecte donc personne dont l'accès est réellement ouvert.
+UPDATE "patients"
+SET "sessions_invalides_avant" = "access_token_created_at"
+WHERE "access_token_created_at" IS NOT NULL;
+
+-- 2) Un dossier déjà révoqué doit le rester quand le jeton permanent
+--    disparaîtra (LOT-04) : c'est ici, et seulement ici, que l'information
+--    « ce compte est révoqué » existe encore. Ces comptes n'ont par
+--    construction aucun accès ouvert.
+UPDATE "patients"
+SET "sessions_invalides_avant" = now()
+WHERE "access_token_revoked" = true;

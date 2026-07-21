@@ -144,6 +144,48 @@ describe('session patient', () => {
     await expect(isSessionAuthorizedForAssignment(session, assignment)).resolves.toBe(true);
   });
 
+  // Ce que le backfill de la migration protège. Un cookie ANCIEN FORMAT était
+  // tué par la rotation du jeton ; `sessionsInvalidesAvant` initialisée à
+  // `access_token_created_at` reproduit exactement cette coupure — sans quoi un
+  // cookie volé avant une révocation redeviendrait valide au déploiement.
+  it('un cookie ancien format ne survit pas à la rotation qui l’avait tué', async () => {
+    const assignment = { idPatient: 'PAT_1', emailPatient: 'patient@example.test' };
+    const exp = Math.floor(Date.now() / 1000) + TTL_SECONDS;
+    const ancien = verifyPatientSession(cookieAncienFormat('PAT_1', 'patient@example.test', exp));
+
+    // Jeton réémis APRÈS l'émission du cookie : la date reprise du backfill est
+    // postérieure, la session tombe.
+    patient.findUnique.mockResolvedValueOnce(compte({
+      accessToken: 'TOK_REEMIS',
+      sessionsInvalidesAvant: new Date(Date.now() + 1_000),
+    }));
+    await expect(isSessionAuthorizedForAssignment(ancien, assignment)).resolves.toBe(false);
+  });
+
+  it('coupe une session ouverte avant une révocation déjà passée', async () => {
+    // Séquence réelle, les deux dates dans le passé : émission à T0, révocation
+    // à T0 + 1 min, lecture à T0 + 2 min.
+    vi.useFakeTimers();
+    try {
+      const t0 = new Date('2026-07-21T10:00:00.000Z');
+      vi.setSystemTime(t0);
+      const session = verifyPatientSession(signPatientSession({
+        idPatient: 'PAT_1', email: 'patient@example.test',
+      }));
+
+      vi.setSystemTime(new Date(t0.getTime() + 2 * 60_000));
+      patient.findUnique.mockResolvedValue(compte({
+        sessionsInvalidesAvant: new Date(t0.getTime() + 60_000),
+      }));
+      await expect(isSessionAuthorizedForAssignment(
+        session,
+        { idPatient: 'PAT_1', emailPatient: 'patient@example.test' },
+      )).resolves.toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('isSessionValideForPatient refuse identité, e-mail ou compte inactif discordants', () => {
     const session = verifyPatientSession(signPatientSession({
       idPatient: 'PAT_1', email: 'patient@example.test',
@@ -152,5 +194,9 @@ describe('session patient', () => {
     expect(isSessionValideForPatient(session, compte({ idPatient: 'PAT_2' }))).toBe(false);
     expect(isSessionValideForPatient(session, compte({ email: 'autre@example.test' }))).toBe(false);
     expect(isSessionValideForPatient(session, compte({ actif: false }))).toBe(false);
+    // Portée du jeton, tenue par la fonction elle-même et non par ses appelants :
+    // un sixième appelant ne peut plus l'oublier.
+    expect(isSessionValideForPatient(session, compte({ accessToken: null }))).toBe(false);
+    expect(isSessionValideForPatient(session, compte({ accessTokenRevoked: true }))).toBe(false);
   });
 });

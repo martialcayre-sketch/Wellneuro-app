@@ -59,12 +59,7 @@ export async function GET(req: Request): Promise<NextResponse> {
       },
     });
     // Le patient doit toujours être actif et non révoqué, même avec un cookie valide.
-    if (
-      !patient
-      || !patient.accessToken
-      || patient.accessTokenRevoked
-      || !isSessionValideForPatient(session, patient)
-    ) {
+    if (!patient || !isSessionValideForPatient(session, patient)) {
       logger.security({
         event: EVENT_CODES.PORTAIL_ASSIGNATIONS_UNAUTHORIZED,
         domain: 'SECURITY',

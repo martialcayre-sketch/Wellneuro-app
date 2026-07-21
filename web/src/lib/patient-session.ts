@@ -69,11 +69,18 @@ function sign(payloadB64: string): string {
   return createHmac('sha256', getSecret()).update(payloadB64).digest('base64url');
 }
 
-/** État de compte lu en base, suffisant pour statuer sur une session. */
+/**
+ * État de compte lu en base, suffisant pour statuer sur une session. Les champs
+ * de jeton en font partie DÉLIBÉRÉMENT : une fonction nommée « la session
+ * est-elle valide » qui n'en tiendrait pas compte inviterait le prochain
+ * appelant à les oublier. Ils disparaîtront d'ici au LOT-04, en un seul endroit.
+ */
 export type PatientSessionAccount = {
   idPatient: string;
   email: string;
   actif: boolean;
+  accessToken: string | null;
+  accessTokenRevoked: boolean;
   sessionsInvalidesAvant: Date | null;
 };
 
@@ -89,6 +96,9 @@ export function isSessionValideForPatient(
   if (session.idPatient !== patient.idPatient) return false;
   if (!patient.actif) return false;
   if (patient.email.toLowerCase() !== session.email) return false;
+  // Tant que le chemin par jeton existe, un portail sans jeton ou révoqué reste
+  // fermé quoi que dise le cookie (retiré au LOT-04, ici et nulle part ailleurs).
+  if (!patient.accessToken || patient.accessTokenRevoked) return false;
   if (patient.sessionsInvalidesAvant && session.iat * 1000 <= patient.sessionsInvalidesAvant.getTime()) {
     return false;
   }
@@ -198,8 +208,5 @@ export async function isSessionAuthorizedForAssignment(
     },
   });
   if (!patient) return false;
-  // `accessToken` et `accessTokenRevoked` restent contrôlés tant que le chemin
-  // par jeton existe : ceinture et bretelles jusqu'à son retrait (LOT-04).
-  if (!patient.accessToken || patient.accessTokenRevoked) return false;
   return isSessionValideForPatient(session, patient);
 }

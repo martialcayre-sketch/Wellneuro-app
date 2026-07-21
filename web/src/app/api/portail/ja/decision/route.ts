@@ -33,8 +33,7 @@ async function resolveAuthorizedSession(req: Request): Promise<{ idPatient: stri
     },
   });
 
-  if (!patient || !patient.accessToken || patient.accessTokenRevoked) return null;
-  if (!isSessionValideForPatient(session, patient)) return null;
+  if (!patient || !isSessionValideForPatient(session, patient)) return null;
 
   return { idPatient: session.idPatient };
 }
