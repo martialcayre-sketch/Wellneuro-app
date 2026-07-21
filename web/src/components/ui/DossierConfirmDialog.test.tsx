@@ -136,6 +136,33 @@ describe('DossierConfirmDialog — clôture', () => {
     expect(screen.getByText(/accès en lecture à ses archives/i)).toBeTruthy();
   });
 
+  // Le menu laisse « Renvoyer le lien » actionnable sur un dossier clos, et
+  // c'est voulu (2026-07-21) : sans lien, la lecture des archives promise juste
+  // au-dessus serait inatteignable. Le praticien doit donc le lire ICI, avant
+  // de clôturer — sinon l'écran promet le silence et l'application envoie.
+  it('annonce que le lien d’accès reste envoyable après la clôture', () => {
+    rendreCloture();
+    expect(screen.getByText(/document de suivi/i)).toBeTruthy();
+    expect(screen.getByText(/renvoyer son lien d’accès/i)).toBeTruthy();
+  });
+
+  // Dossier désactivé : la lecture est déjà coupée par le portail. Promettre un
+  // renvoi de lien y serait un mensonge — la variante doit rester muette.
+  it('ne promet ni lecture ni lien sur un dossier désactivé', () => {
+    render(
+      <DossierConfirmDialog
+        mode="cloture"
+        nomPatient={PATIENT}
+        accesActif={false}
+        open
+        onOpenChange={() => {}}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/renvoyer son lien d’accès/i)).toBeNull();
+    expect(screen.getByText(/n’a plus accès à son espace/i)).toBeTruthy();
+  });
+
   it('ne présente aucune liste de destruction', () => {
     rendreCloture();
     expect(screen.queryByRole('heading', { name: /ce qui est détruit/i })).toBeNull();

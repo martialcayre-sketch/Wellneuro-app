@@ -27,11 +27,23 @@ l'application promet au patient en production.
 - **Le bouton « Supprimer » disparaît de l'écran.** Il appelait `DELETE` et
   écrivait `actif: false` : le mot désignait une désactivation. L'action rejoint
   le menu sous son vrai nom, « Désactiver le dossier », réversible dans le même
-  menu. La route `DELETE` reste en place, simplement plus appelée.
+  menu. La route `DELETE` est **supprimée** : sans appelant, et surtout portant
+  un verbe destructif sur une opération qui ne détruit rien, désormais voisine
+  d'un effacement qui détruit vraiment. Désactiver passe par
+  `PATCH { actif: 'NON' }`, effacer par `POST …/cycle-de-vie`.
 - **Statut à trois états, jamais par la seule couleur** : `Actif`,
   `Suivi clôturé`, `Inactif`, dérivés de `phaseDossier` déjà testé.
 - **Les actions d'accès restent ouvertes sur un dossier clos**, délibérément :
-  la clôture interdit les assignations et les envois, pas la lecture.
+  la clôture interdit les assignations et les envois de suivi, pas la lecture.
+  Le libellé du refus le dit maintenant — il promettait « aucun document
+  envoyé », ce qui contredisait la lecture des archives que la clôture garantit
+  par ailleurs : un patient ayant perdu son e-mail n'aurait plus eu de porte.
+  `MESSAGE_DOSSIER_CLOS` borne son refus aux « documents de suivi » et ne promet
+  rien sur l'accès : partagé par quatre routes, il sort aussi sur un dossier clos
+  **puis** désactivé, où le portail refuse déjà l'entrée. La nuance est portée là
+  où l'état est connu — le dialogue de clôture et le message de confirmation
+  branchent tous deux sur `actif` et annoncent le lien renvoyable, ou son
+  absence. Comportement inchangé, promesse tenable.
 - **Le DTO patient expose `suiviClotureLe`** — sans quoi l'écran ne pouvait pas
   distinguer un dossier clos d'un dossier désactivé.
 - **Correction** : `PATCH /api/praticien/patients` validait l'identifiant par

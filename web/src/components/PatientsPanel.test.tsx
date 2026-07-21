@@ -227,6 +227,45 @@ describe('PatientsPanel — cycle de vie du dossier (LOT-01b)', () => {
     expect(appels.some(a => a.url.includes('cycle-de-vie'))).toBe(false);
   });
 
+  // Le message de succès est le SEUL des trois textes de clôture que le
+  // praticien voit à chaque fois : le dialogue le précède, le refus n'arrive
+  // qu'en cas d'échec. Il n'était couvert par aucun test — c'est pour cela
+  // qu'il a continué de promettre « aucun envoi » quand tout le reste avait été
+  // corrigé le 2026-07-21. Il doit dire les deux choses : ce qui s'arrête, et
+  // que le lien d'accès reste renvoyable.
+  it('le message de clôture borne le refus au suivi et annonce le lien qui reste', async () => {
+    stubFetch({ surCycleDeVie: () => ({ success: true, action: 'cloture' }) });
+    render(<PatientsPanel />);
+    await ouvrirMenu();
+    fireEvent.click(item(/clôturer le suivi/i));
+    fireEvent.click(await screen.findByRole('button', { name: /^clôturer le suivi$/i }));
+
+    const message = await screen.findByText(/suivi clôturé\s*:/i);
+    expect(message.textContent).toMatch(/document de suivi/i);
+    expect(message.textContent).toMatch(/renvoyer son lien/i);
+    // Le refus doit rester BORNÉ : « aucun envoi » tout court reviendrait à la
+    // promesse absolue que ce lot retire. Seul « de document de suivi » l'excuse.
+    expect(message.textContent).not.toMatch(/aucun envoi(?! de document de suivi)/i);
+  });
+
+  // Même clôture, dossier déjà désactivé : le portail refuse déjà l'entrée,
+  // promettre un lien renvoyable y serait faux. Le message doit suivre la même
+  // condition que le dialogue, qui branche déjà sur `accesActif`.
+  it('sur un dossier désactivé, le message de clôture ne promet aucun accès', async () => {
+    stubFetch({
+      patient: { ...PATIENT, actif: 'NON' },
+      surCycleDeVie: () => ({ success: true, action: 'cloture' }),
+    });
+    render(<PatientsPanel />);
+    await ouvrirMenu();
+    fireEvent.click(item(/clôturer le suivi/i));
+    fireEvent.click(await screen.findByRole('button', { name: /^clôturer le suivi$/i }));
+
+    const message = await screen.findByText(/suivi clôturé\s*:/i);
+    expect(message.textContent).not.toMatch(/renvoyer son lien/i);
+    expect(message.textContent).toMatch(/sans accès au portail/i);
+  });
+
   it('un dossier clos propose la reprise, pas une seconde clôture', async () => {
     stubFetch({ patient: { ...PATIENT, suiviClotureLe: '2026-07-21T10:00:00.000Z' } });
     render(<PatientsPanel />);

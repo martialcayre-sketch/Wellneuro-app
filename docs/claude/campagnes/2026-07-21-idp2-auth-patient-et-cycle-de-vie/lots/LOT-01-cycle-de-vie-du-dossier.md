@@ -95,8 +95,8 @@ Ce qui a été livré :
   la lecture — le patient conserve ses archives.
 - **Correction trouvée en chemin** : `PATCH /api/praticien/patients` validait
   l'identifiant par `/^PAT\d+$/` et rejetait `PAT_SEED_03` ; « Modifier » était
-  donc inopérant sur le dossier de seed. Forme alignée sur `DELETE` et
-  `cycle-de-vie`, appartenance inchangée.
+  donc inopérant sur le dossier de seed. Forme alignée sur celle de
+  `cycle-de-vie` (et de `DELETE`, depuis retirée), appartenance inchangée.
 
 ### Ce que la revue indépendante a rattrapé
 
@@ -131,14 +131,31 @@ base partagée entre les postes et réinitialise `PAT_SEED_03` ; un parcours qui
 effacerait réellement ce dossier détruirait la fixture des autres sessions. Le
 parcours s'arrête à la confirmation inerte.
 
-### Questions laissées ouvertes
+### Les deux questions restées ouvertes, tranchées le 2026-07-21
 
-- **« Renvoyer le lien » sur un dossier clos envoie un e-mail.** La décision
-  « les actions d'accès restent ouvertes » visait la lecture ; le libellé de la
-  clôture promet « aucun document envoyé ». Un lien d'accès n'est pas un
-  document, mais c'est un envoi. À trancher.
-- **`DELETE /api/praticien/patients` n'est plus appelée.** Elle reste en place,
-  fonctionnelle et sans appelant. À retirer dans un lot suivant ou à conserver.
+- **« Renvoyer le lien » sur un dossier clos reste possible — c'est le libellé
+  qui change.** Le conflit était réel : la clôture promettait « aucun document
+  envoyé » *et* « le patient garde l'accès en lecture à ses archives ». Bloquer
+  l'envoi tenait la première promesse en cassant la seconde : un patient ayant
+  perdu son e-mail n'aurait plus eu aucune porte vers ses archives. Un lien
+  d'accès n'est pas un document de suivi. `MESSAGE_DOSSIER_CLOS` borne donc son
+  refus aux « documents de suivi » et ne promet **rien** sur l'accès : partagé
+  par quatre routes, il s'affiche aussi sur un dossier clos *puis* désactivé, où
+  le portail refuse déjà l'entrée — l'y dire ouvert serait faux. La nuance vit
+  là où l'état est connu : le dialogue de clôture et le message de confirmation
+  branchent tous deux sur `actif`, et annoncent le lien renvoyable ou son
+  absence. Le comportement du code est inchangé — seul ce qu'il promet l'est.
+
+  Dette assumée : aucun E2E ne vérifie « Renvoyer le lien » réussissant sur un
+  dossier clos. Le parcours toucherait `PAT_SEED_03`, fixture partagée entre les
+  postes. La couverture reste unitaire, aux deux libellés et au refus serveur.
+- **`DELETE /api/praticien/patients` est supprimée.** Sans appelant depuis que
+  « Supprimer » a rejoint le menu sous son vrai nom, et surtout : elle écrivait
+  `actif: false`. Un verbe `DELETE` qui ne détruit rien, voisin d'un effacement
+  qui détruit vraiment, est le genre d'ambiguïté qui produit un incident un an
+  plus tard. Désactiver passe par `PATCH { actif: 'NON' }`, effacer par
+  `POST …/cycle-de-vie`. Le commentaire laissé à sa place dit pourquoi elle
+  n'est pas là, pour qu'on ne la réintroduise pas par réflexe REST.
 
 ## Ce que ce lot ne fait pas
 

@@ -379,10 +379,9 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     setEditFeedback(null);
   };
 
-  // Activation / désactivation par PATCH, dans les deux sens. La route DELETE
-  // existe toujours mais n'est plus appelée : elle ne sait que désactiver, et
-  // son nom laissait croire à une suppression — précisément le malentendu que
-  // ce lot corrige.
+  // Activation / désactivation par PATCH, dans les deux sens. Il n'y a plus de
+  // route DELETE à appeler : elle ne savait que désactiver, et son nom laissait
+  // croire à une suppression — précisément le malentendu que ce lot corrige.
   const onToggleActif = async (idPatient: string, actif: 'OUI' | 'NON') => {
     setErreurConfirmation(null);
     const r = await fetch('/api/praticien/patients', {
@@ -403,7 +402,20 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     await refreshPatients();
   };
 
-  const onCycleDeVie = async (idPatient: string, mode: ModeConfirmation, confirmation: string) => {
+  // Le paramètre porte la SAISIE, pas l'état du dialogue — d'où `saisie` et non
+  // `confirmation` : nommé ainsi, il masquait l'état `confirmation`, donc le
+  // dossier concerné, et le message final ne pouvait plus le consulter.
+  const onCycleDeVie = async (idPatient: string, mode: ModeConfirmation, saisie: string) => {
+    // `confirmation` est le binding de CETTE fermeture de rendu : ni
+    // `setConfirmation(null)` ni `refreshPatients()` ne le réassignent — ils
+    // programment un rendu, qui produira une autre fermeture. La valeur reste
+    // donc valide jusqu'au bout de la fonction, et l'alias ci-dessous ne fait
+    // que nommer ce fait pour le lecteur.
+    //
+    // Ce qui garantit qu'il s'agit du BON dossier est ailleurs : l'unique
+    // appelant (`onConfirmerFinDeParcours`) refuse d'entrer sans `confirmation`
+    // et exclut la réentrance par `cycleEnCours`.
+    const confirmationEnCours = confirmation;
     const r = await fetch('/api/praticien/patients/cycle-de-vie', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -414,7 +426,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
         // si un jour l'activation du bouton régressait, le serveur refuserait
         // encore. Une constante en dur ferait de cette régression un
         // effacement.
-        ...(mode === 'effacement' ? { confirmation } : {}),
+        ...(mode === 'effacement' ? { confirmation: saisie } : {}),
       }),
     });
     const json = (await r.json()) as CycleDeVieResponse;
@@ -427,13 +439,21 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       );
       return;
     }
+    // Le message de clôture suit la MÊME condition que le dialogue qui vient de
+    // le précéder (`accesActif`) : sur un dossier désactivé, le portail refuse
+    // déjà le lien, et le lui promettre ici serait faux. C'est ce texte-là que
+    // le praticien lit systématiquement — les deux autres ne s'affichent qu'en
+    // amont ou en cas de refus.
+    const accesOuvert = confirmationEnCours?.patient.actif === 'OUI';
     setConsultationFeedback({
       ok: true,
       msg:
         mode === 'effacement'
           ? 'Dossier effacé définitivement. Il ne subsiste qu’une ligne anonyme.'
           : mode === 'cloture'
-            ? 'Suivi clôturé : plus aucune assignation ni aucun envoi.'
+            ? accesOuvert
+              ? 'Suivi clôturé : plus aucune assignation ni aucun envoi de document de suivi. Le patient garde l’accès à ses archives, et vous pouvez lui renvoyer son lien.'
+              : 'Suivi clôturé : plus aucune assignation ni aucun envoi de document de suivi. Le dossier reste désactivé, donc sans accès au portail.'
             : 'Suivi rouvert.',
     });
     setConfirmation(null);

@@ -114,12 +114,12 @@ export function DossierConfirmDialog({
             <Dialog.Description asChild>
               <div className="mt-4 text-sm leading-relaxed text-foreground">
                 <p>
-                  Plus aucun questionnaire ne lui sera assigné et plus aucun document ne lui
-                  sera envoyé.
+                  Plus aucun questionnaire ne lui sera assigné et plus aucun document de
+                  suivi ne lui sera envoyé.
                 </p>
                 <p className="mt-2">
                   {accesActif
-                    ? 'Le dossier reste en place et le patient conserve l’accès en lecture à ses archives. Vous pouvez rouvrir le suivi à tout moment.'
+                    ? 'Le dossier reste en place et le patient conserve l’accès en lecture à ses archives : vous pourrez toujours lui renvoyer son lien d’accès. Vous pouvez rouvrir le suivi à tout moment.'
                     : 'Le dossier reste en place, mais il est désactivé : le patient n’a plus accès à son espace. Réactivez le dossier pour lui rendre la lecture de ses archives.'}
                 </p>
               </div>

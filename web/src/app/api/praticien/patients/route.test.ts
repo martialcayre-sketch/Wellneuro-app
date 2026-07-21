@@ -12,7 +12,7 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
-import { GET, PATCH, DELETE } from './route';
+import { GET, PATCH } from './route';
 
 function get(query = ''): Request {
   return new Request(`http://localhost/api/praticien/patients${query ? `?${query}` : ''}`);
@@ -26,12 +26,8 @@ function patch(body: Record<string, unknown>): Request {
   });
 }
 
-function del(query: string): Request {
-  return new Request(`http://localhost/api/praticien/patients?${query}`, { method: 'DELETE' });
-}
-
 // Régression E7 — cette route renvoyait tous les patients de la base (e-mail,
-// téléphone inclus) et laissait PATCH/DELETE muter n'importe lequel, sans
+// téléphone inclus) et laissait PATCH muter n'importe lequel, sans
 // vérifier l'appartenance au praticien en session. Garde ajoutée 2026-07-21.
 describe('GET /api/praticien/patients', () => {
   beforeEach(() => {
@@ -147,27 +143,15 @@ describe('PATCH /api/praticien/patients', () => {
   });
 });
 
+// Il n'y a PAS de handler `DELETE` sur cette route, et ce test est là pour que
+// son absence échoue en CI si on le réintroduit. Le verbe existait, n'écrivait
+// que `actif: false`, et voisinerait aujourd'hui un effacement qui détruit
+// vraiment : un lecteur pressé confondrait les deux. Désactiver passe par
+// `PATCH { actif: 'NON' }`, effacer par `POST …/cycle-de-vie`. Un commentaire
+// seul n'aurait pas résisté au réflexe REST — celui-ci, si.
 describe('DELETE /api/praticien/patients', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
-  });
-
-  it('patient d’un autre praticien : le where scopé ne matche aucune ligne → 404', async () => {
-    // Simule le comportement réel de Postgres : le praticienEmail scopé exclut
-    // la ligne d'un autre praticien, updateMany ne touche rien.
-    prisma.patient.updateMany.mockResolvedValue({ count: 0 });
-    const res = await DELETE(del('idPatient=PAT_1'));
-    expect(res.status).toBe(404);
-    expect(prisma.patient.updateMany).toHaveBeenCalledWith({
-      where: { idPatient: 'PAT_1', praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' } },
-      data: { actif: false },
-    });
-  });
-
-  it('patient accessible : désactive (200)', async () => {
-    prisma.patient.updateMany.mockResolvedValue({ count: 1 });
-    const res = await DELETE(del('idPatient=PAT_1'));
-    expect(res.status).toBe(200);
+  it('n’existe pas : Next répond 405 en l’absence de handler', async () => {
+    const handlers = await import('./route');
+    expect('DELETE' in handlers).toBe(false);
   });
 });
