@@ -1299,3 +1299,25 @@ Rendu visuel toujours non contrôlé.
 
 **Questions ouvertes** : gate migration SP-SPI (chemin retour du pack) ; E17,
 E20, R1–R6.
+
+## 2026-07-21 — E18 : couleurs de statut tokenisées, et une garde
+
+**Décisions** : l'audit citait sept lignes, déjà corrigées ; le défaut était une
+classe entière — **81 classes Tailwind brutes dans 13 fichiers praticien**, dont
+deux réintroduites par le LOT-01b (#194) le lendemain de la correction. D'où
+#201 : passe complète (retour, alertes, badges, boutons, `Button`/`MenuActions`
+partagés) **plus une garde en test** qui fait échouer T1 sur toute échelle brute
+réintroduite dans `web/src`. `--color-status-info` gagne son jumeau RGB, sans
+quoi pas de fond teinté à 10 %.
+
+**Écarté** : une seconde liste de lignes sans garde — c'est exactement ce qui a
+laissé #194 régresser ; toucher `indigo-600` et consorts, redéfinis dans
+`tailwind.config.ts` sur des variables de marque.
+
+**Vérifié** : T1, T2 (972 unitaires + 55 E2E), CI verte, garde falsifiée.
+**Non vérifié** : le rendu visuel praticien, faute d'outil navigateur.
+
+**Prochaine action** : merger #201, puis SP-SPI / LOT-01.
+
+**Questions ouvertes** : relecture visuelle humaine des écrans praticien (E16 et
+E18 cumulés) ; gate migration SP-SPI ; E17, E20, R1–R6.

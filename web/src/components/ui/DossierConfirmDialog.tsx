@@ -225,7 +225,7 @@ export function DossierConfirmDialog({
           {erreur && (
             <p
               role="alert"
-              className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              className="mt-4 rounded-lg border border-status-danger/30 bg-status-danger/10 px-3 py-2 text-sm text-status-danger"
             >
               {erreur}
             </p>

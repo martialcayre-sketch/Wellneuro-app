@@ -52,7 +52,7 @@ export function ProtocolDiffusionPanel({
 
       <p className="mt-3 text-base">
         {approved && stale ? (
-          <span className="text-orange-800">
+          <span className="text-status-warning">
             Une nouvelle version a été enregistrée : la validation précédente est caduque. Re-validez la version active.
           </span>
         ) : approved && approvedAt ? (
@@ -71,7 +71,7 @@ export function ProtocolDiffusionPanel({
       </p>
 
       {state === 'error' && (
-        <p role="alert" className="mt-2 text-base text-red-700">{error ?? 'Échec de la validation.'}</p>
+        <p role="alert" className="mt-2 text-base text-status-danger">{error ?? 'Échec de la validation.'}</p>
       )}
 
       {onApprove && (canApprove || stale) && (

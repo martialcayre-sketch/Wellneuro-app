@@ -283,7 +283,7 @@ export function MenuActions({
                   element.desactive
                     ? 'cursor-not-allowed text-muted-foreground opacity-60'
                     : element.danger
-                      ? 'text-red-600 hover:bg-red-50'
+                      ? 'text-status-danger hover:bg-status-danger/10'
                       : 'text-foreground hover:bg-muted'
                 }`}
               >
