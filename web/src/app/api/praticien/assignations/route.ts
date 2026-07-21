@@ -7,6 +7,7 @@ import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import nodemailer from 'nodemailer';
 import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 
 type CreateAssignationPayload = {
   emailPatient?: string;
@@ -26,6 +27,9 @@ export type CreateAssignationResponse = {
     | 'patient_not_found'
     | 'portal_revoked'
     | 'questionnaire_not_found'
+    // Suivi clôturé : distinct de `patient_not_found`, sinon le praticien
+    // chercherait un dossier disparu au lieu de le rouvrir.
+    | 'dossier_cloture'
     | 'exception';
 };
 
@@ -96,6 +100,15 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
           error: 'Patient introuvable (email non présent/actif).',
         },
         { status: 404 }
+      );
+    }
+
+    // Dossier au suivi clôturé : on n'assigne plus rien. Le refus est ici,
+    // dans la route, et non dans l'écran — sinon un appel direct le contourne.
+    if (!accepteNouvelEnvoi(patient)) {
+      return NextResponse.json(
+        { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+        { status: 409 }
       );
     }
 
