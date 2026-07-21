@@ -33,14 +33,14 @@ const approvedAt = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 function proprioCookie(): string {
   return signPatientSession({
     idPatient: assignation.idPatient,
-    email: assignation.emailPatient,
-    accessToken: 'TOK_PROPRIO',
+    email: assignation.emailPatient
   });
 }
 
 function mockOwnerAuth(): void {
   prisma.assignation.findFirst.mockResolvedValue(assignation);
   prisma.patient.findUnique.mockResolvedValue({
+    idPatient: assignation.idPatient,
     actif: true,
     accessToken: 'TOK_PROPRIO',
     accessTokenRevoked: false,
@@ -97,7 +97,7 @@ describe('POST /api/portail/protocole/checkin', () => {
   it('refuse l’accès inter-patient (404)', async () => {
     // findFirst renvoie une assignation d'un AUTRE patient que la session.
     prisma.assignation.findFirst.mockResolvedValue(assignation);
-    const cookie = signPatientSession({ idPatient: 'PAT_INTRUS', email: assignation.emailPatient, accessToken: 'TOK' });
+    const cookie = signPatientSession({ idPatient: 'PAT_INTRUS', email: assignation.emailPatient });
     const res = await POST(postRequest(cookie, { reponses }));
     expect(res.status).toBe(404);
     expect(prisma.protocolCheckin.create).not.toHaveBeenCalled();

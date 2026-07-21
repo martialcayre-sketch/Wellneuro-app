@@ -30,7 +30,7 @@ const assignation = {
 };
 
 function cookieAutrePatient(): string {
-  return signPatientSession({ idPatient: 'PAT_AUTRE', email: assignation.emailPatient, accessToken: 'TOK_AUTRE' });
+  return signPatientSession({ idPatient: 'PAT_AUTRE', email: assignation.emailPatient });
 }
 
 function getRequest(path: string): Request {

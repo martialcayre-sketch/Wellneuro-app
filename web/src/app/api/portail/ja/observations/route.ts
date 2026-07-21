@@ -5,7 +5,7 @@ import {
   type JaObservationSnapshot,
   type JaObservationSnapshotInput,
 } from '@/lib/food-observation/persistence';
-import { isPatientSessionBoundToToken, readPatientSession } from '@/lib/patient-session';
+import { isSessionValideForPatient, readPatientSession } from '@/lib/patient-session';
 import { prisma } from '@/lib/prisma';
 
 type ErrorResponse = { ok: false; reason: string; error: string };
@@ -32,16 +32,16 @@ async function resolveAuthorizedSession(req: Request): Promise<{ idPatient: stri
   const patient = await prisma.patient.findUnique({
     where: { idPatient: session.idPatient },
     select: {
+      idPatient: true,
       actif: true,
       accessToken: true,
       accessTokenRevoked: true,
       email: true,
+      sessionsInvalidesAvant: true,
     },
   });
 
-  if (!patient || !patient.actif || !patient.accessToken || patient.accessTokenRevoked) return null;
-  if (patient.email.toLowerCase() !== session.email.toLowerCase()) return null;
-  if (!isPatientSessionBoundToToken(session, patient.accessToken)) return null;
+  if (!patient || !isSessionValideForPatient(session, patient)) return null;
 
   return { idPatient: session.idPatient };
 }

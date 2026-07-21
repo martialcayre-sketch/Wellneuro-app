@@ -36,6 +36,7 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
     prisma.assignation.findUnique.mockResolvedValue(assignation);
     prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
       actif: true,
       accessToken: 'TOK_TEST',
       accessTokenRevoked: false,
@@ -44,14 +45,14 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
   });
 
   it('autorise le propriétaire via cookie sans email dans l’URL', async () => {
-    const cookie = signPatientSession({ idPatient: assignation.idPatient, email: assignation.emailPatient, accessToken: 'TOK_TEST' });
+    const cookie = signPatientSession({ idPatient: assignation.idPatient, email: assignation.emailPatient });
     const response = await GET(request('', cookie));
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ok: true, assignation: { idPatient: assignation.idPatient } });
   });
 
   it('refuse un autre patient même lorsque son email est identique', async () => {
-    const cookie = signPatientSession({ idPatient: 'PAT_2', email: assignation.emailPatient, accessToken: 'TOK_TEST' });
+    const cookie = signPatientSession({ idPatient: 'PAT_2', email: assignation.emailPatient });
     expect((await GET(request('', cookie))).status).toBe(404);
   });
 

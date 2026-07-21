@@ -31,7 +31,7 @@ function request(cookie: string): Request {
   });
 }
 
-describe('GET /api/portail/assignations — liaison session au token', () => {
+describe('GET /api/portail/assignations — liaison session au compte', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
@@ -40,22 +40,27 @@ describe('GET /api/portail/assignations — liaison session au token', () => {
     prisma.questionnaireReponse.aggregate.mockResolvedValue({ _max: { dateReponse: null } });
   });
 
-  it('refuse un ancien cookie après réémission du token', async () => {
-    const oldCookie = signPatientSession({
+  // IDP2 LOT-02 : la révocation, et non plus la rotation du jeton, est ce qui
+  // coupe une session ouverte.
+  it('refuse un cookie émis avant une révocation', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      ...patient,
+      sessionsInvalidesAvant: new Date(Date.now() + 60_000),
+    });
+    const cookie = signPatientSession({
       idPatient: patient.idPatient,
       email: patient.email,
-      accessToken: 'TOK_ANCIEN',
     });
 
-    expect((await GET(request(oldCookie))).status).toBe(401);
+    expect((await GET(request(cookie))).status).toBe(401);
     expect(prisma.assignation.findMany).not.toHaveBeenCalled();
   });
 
-  it('accepte le cookie signé avec le token courant', async () => {
+  it('survit à une réémission du jeton permanent', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...patient, accessToken: 'TOK_REEMIS' });
     const currentCookie = signPatientSession({
       idPatient: patient.idPatient,
       email: patient.email,
-      accessToken: patient.accessToken,
     });
 
     const response = await GET(request(currentCookie));
@@ -76,8 +81,7 @@ describe('GET /api/portail/assignations — liaison session au token', () => {
     });
     const cookie = signPatientSession({
       idPatient: patient.idPatient,
-      email: patient.email,
-      accessToken: patient.accessToken,
+      email: patient.email
     });
 
     const corps = await (await GET(request(cookie))).json();
