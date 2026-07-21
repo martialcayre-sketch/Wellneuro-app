@@ -178,7 +178,14 @@ export async function DELETE(req: Request): Promise<NextResponse<TokenActionResp
     if (!patient) {
       return NextResponse.json({ success: false, reason: 'patient_not_found', error: 'Patient introuvable.' }, { status: 404 });
     }
-    await prisma.patient.update({ where: { idPatient }, data: { accessTokenRevoked: true } });
+    // Deux écritures, deux portées. `accessTokenRevoked` ferme le chemin par
+    // jeton ; `sessionsInvalidesAvant` ferme les sessions de compte déjà
+    // ouvertes — le seul des deux qui survivra au retrait du jeton (LOT-04),
+    // et le seul qu'une réémission d'accès ne défait pas.
+    await prisma.patient.update({
+      where: { idPatient },
+      data: { accessTokenRevoked: true, sessionsInvalidesAvant: new Date() },
+    });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ success: false, reason: 'exception', error: "Erreur technique lors de la révocation." });

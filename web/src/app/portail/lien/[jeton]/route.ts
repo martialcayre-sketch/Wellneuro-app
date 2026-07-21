@@ -123,17 +123,15 @@ export async function GET(
     });
 
     const res = NextResponse.redirect(new URL(`/portail/${acces.accessToken}`, req.url));
-    // Le cookie reste ancré sur le jeton permanent : `isPatientSessionBoundToToken`
-    // et les routes qui l'appellent ne changent pas, et toutes les propriétés de
-    // révocation d'aujourd'hui sont préservées (réémettre le jeton tue les
-    // cookies, `accessTokenRevoked` reste le coupe-circuit global). Cet ancrage
-    // sera à déplacer le jour où le jeton permanent disparaîtra — autre gate.
+    // Le cookie ouvre une session de COMPTE (IDP2 LOT-02) : il n'est plus ancré
+    // au jeton permanent, dont la réémission ne déconnecte donc plus. La
+    // révocation reste effective — elle pose `sessionsInvalidesAvant`, coupe-
+    // circuit qui survivra au retrait du jeton (LOT-04).
     res.cookies.set(
       PORTAIL_COOKIE_NAME,
       signPatientSession({
         idPatient: lien.idPatient,
         email: patient.email,
-        accessToken: acces.accessToken,
       }),
       PORTAIL_COOKIE_OPTIONS,
     );

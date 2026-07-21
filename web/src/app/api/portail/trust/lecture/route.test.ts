@@ -25,7 +25,7 @@ const patient = {
 
 function request(body: object, avecSession = true): Request {
   const cookie = avecSession
-    ? signPatientSession({ idPatient: patient.idPatient, email: patient.email, accessToken: patient.accessToken })
+    ? signPatientSession({ idPatient: patient.idPatient, email: patient.email })
     : null;
   return new Request('http://localhost/api/portail/trust/lecture', {
     method: 'POST',

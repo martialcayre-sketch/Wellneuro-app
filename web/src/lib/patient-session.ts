@@ -32,11 +32,24 @@ export const PORTAIL_COOKIE_OPTIONS = {
 export type PatientSession = {
   idPatient: string;
   email: string;
-  accessTokenFingerprint: string;
+  /** Date d'émission, en secondes epoch. Comparée à `sessionsInvalidesAvant`. */
+  iat: number;
 };
 
 type SessionPayload = PatientSession & { exp: number };
-type PatientSessionInput = Omit<PatientSession, 'accessTokenFingerprint'> & { accessToken: string };
+/**
+ * Ancien format de charge (avant IDP2 LOT-02) : la session était ancrée au
+ * jeton permanent et ne portait pas sa date d'émission. Les cookies déjà émis
+ * en production sont de cette forme — ils restent acceptés (voir
+ * `verifyPatientSession`).
+ */
+type LegacySessionPayload = {
+  idPatient: string;
+  email: string;
+  accessTokenFingerprint: string;
+  exp: number;
+};
+type PatientSessionInput = { idPatient: string; email: string };
 
 function getSecret(): string {
   const secret = process.env.NEXTAUTH_SECRET;
@@ -56,31 +69,53 @@ function sign(payloadB64: string): string {
   return createHmac('sha256', getSecret()).update(payloadB64).digest('base64url');
 }
 
-function fingerprintAccessToken(accessToken: string): string {
-  return createHmac('sha256', getSecret())
-    .update(`portail-access-token:${accessToken}`)
-    .digest('base64url');
-}
+/**
+ * État de compte lu en base, suffisant pour statuer sur une session. Les champs
+ * de jeton en font partie DÉLIBÉRÉMENT : une fonction nommée « la session
+ * est-elle valide » qui n'en tiendrait pas compte inviterait le prochain
+ * appelant à les oublier. Ils disparaîtront d'ici au LOT-04, en un seul endroit.
+ */
+export type PatientSessionAccount = {
+  idPatient: string;
+  email: string;
+  actif: boolean;
+  accessToken: string | null;
+  accessTokenRevoked: boolean;
+  sessionsInvalidesAvant: Date | null;
+};
 
-export function isPatientSessionBoundToToken(
+/**
+ * La session appartient-elle toujours à ce compte, et n'a-t-elle pas été
+ * révoquée ? Remplace l'ancien ancrage au jeton permanent : une réémission de
+ * jeton ne déconnecte plus, une révocation coupe (elle pose la date).
+ */
+export function isSessionValideForPatient(
   session: PatientSession,
-  accessToken: string,
+  patient: PatientSessionAccount,
 ): boolean {
-  const expected = Buffer.from(fingerprintAccessToken(accessToken));
-  const provided = Buffer.from(session.accessTokenFingerprint);
-  return expected.length === provided.length && timingSafeEqual(expected, provided);
+  if (session.idPatient !== patient.idPatient) return false;
+  if (!patient.actif) return false;
+  if (patient.email.toLowerCase() !== session.email) return false;
+  // Tant que le chemin par jeton existe, un portail sans jeton ou révoqué reste
+  // fermé quoi que dise le cookie (retiré au LOT-04, ici et nulle part ailleurs).
+  if (!patient.accessToken || patient.accessTokenRevoked) return false;
+  if (patient.sessionsInvalidesAvant && session.iat * 1000 <= patient.sessionsInvalidesAvant.getTime()) {
+    return false;
+  }
+  return true;
 }
 
 /**
  * Sérialise et signe une session patient. Renvoie la valeur à stocker dans le
  * cookie `wn_portail`, au format `<payloadBase64Url>.<signatureBase64Url>`.
  */
-export function signPatientSession({ idPatient, email, accessToken }: PatientSessionInput): string {
+export function signPatientSession({ idPatient, email }: PatientSessionInput): string {
+  const iat = Math.floor(Date.now() / 1000);
   const payload: SessionPayload = {
     idPatient,
     email: email.toLowerCase(),
-    accessTokenFingerprint: fingerprintAccessToken(accessToken),
-    exp: Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS,
+    iat,
+    exp: iat + SESSION_TTL_SECONDS,
   };
   const payloadB64 = base64url(JSON.stringify(payload));
   return `${payloadB64}.${sign(payloadB64)}`;
@@ -110,14 +145,26 @@ export function verifyPatientSession(raw: string | null | undefined): PatientSes
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
 
   try {
-    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as SessionPayload;
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as
+      Partial<SessionPayload & LegacySessionPayload>;
     if (!payload || typeof payload.idPatient !== 'string' || typeof payload.email !== 'string') return null;
-    if (typeof payload.accessTokenFingerprint !== 'string') return null;
     if (typeof payload.exp !== 'number' || payload.exp * 1000 < Date.now()) return null;
+
+    // Deux formats acceptés, et c'est délibéré : les cookies émis avant IDP2
+    // LOT-02 portent l'empreinte du jeton et pas de `iat`. Les refuser
+    // déconnecterait au déploiement les accès portail ouverts. Leur date
+    // d'émission se reconstruit exactement — la durée de vie est fixe.
+    const iat = typeof payload.iat === 'number'
+      ? payload.iat
+      : typeof payload.accessTokenFingerprint === 'string'
+        ? payload.exp - SESSION_TTL_SECONDS
+        : null;
+    if (iat === null) return null;
+
     return {
       idPatient: payload.idPatient,
       email: payload.email.toLowerCase(),
-      accessTokenFingerprint: payload.accessTokenFingerprint,
+      iat,
     };
   } catch {
     return null;
@@ -151,9 +198,15 @@ export async function isSessionAuthorizedForAssignment(
   if (session.idPatient !== assignation.idPatient) return false;
   const patient = await prisma.patient.findUnique({
     where: { idPatient: session.idPatient },
-    select: { actif: true, accessToken: true, accessTokenRevoked: true, email: true },
+    select: {
+      idPatient: true,
+      actif: true,
+      email: true,
+      accessToken: true,
+      accessTokenRevoked: true,
+      sessionsInvalidesAvant: true,
+    },
   });
-  if (!patient?.actif || !patient.accessToken || patient.accessTokenRevoked) return false;
-  return patient.email.toLowerCase() === session.email
-    && isPatientSessionBoundToToken(session, patient.accessToken);
+  if (!patient) return false;
+  return isSessionValideForPatient(session, patient);
 }
