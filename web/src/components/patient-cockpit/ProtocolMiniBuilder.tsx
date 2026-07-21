@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
 import type { DecisionCard, ProtocolAction, ProtocolActionType, TherapeuticLoad } from '@/lib/clinical-engine/types';
 import type { FoodCompassActionRef } from '@/lib/food-compass/types';
 
@@ -74,9 +75,7 @@ export function ProtocolMiniBuilder({
   const [nextActionId, setNextActionId] = useState(1);
   const [editedSinceSave, setEditedSinceSave] = useState(false);
 
-  const decisionBlocked = decisionCard !== null && (
-    decisionCard.abstention.status !== 'not_required' || decisionCard.safetyFindingIds.length > 0
-  );
+  const decisionBlocked = isDecisionBloquee(decisionCard);
   if (!decisionCard?.selectedMainPriority || decisionBlocked) {
     return (
       <section aria-labelledby="protocol-builder-title">

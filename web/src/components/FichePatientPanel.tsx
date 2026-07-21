@@ -13,6 +13,7 @@ import {
   FileText,
   HelpCircle,
   ListChecks,
+  ShieldAlert,
   Stethoscope,
   X,
   type LucideIcon,
@@ -803,6 +804,40 @@ export function FichePatientPanel({
               className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
             >
               Ouvrir la phase Patient
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Signal permanent : un protocole bloqué (abstention non levée ou finding
+          de sécurité) n'est détaillé que par ProtocolMiniBuilder, lequel vit
+          dans la phase Actions — or la fiche s'ouvre sur Décision. Le praticien
+          devait donc deviner qu'il fallait ouvrir un autre onglet pour
+          apprendre qu'il était bloqué. Même traitement que les erreurs runtime,
+          qui échappent déjà au filtre par phase : un bloqueur invisible est un
+          bloqueur ignoré. Le libellé diffère volontairement de celui du panneau
+          — deux nœuds portant le même texte casseraient le mode strict des E2E,
+          et le panneau reste la source détaillée. */}
+      {etatRuntime !== null
+        && !etatRuntime.chargement
+        && etatRuntime.erreur === null
+        && etatRuntime.decisionBloquee && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
+        >
+          <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <span className="min-w-0">Protocole bloqué — bloqueurs décisionnels à revoir.</span>
+          {!(ongletActif === 'cockpit' && phaseActive === 'actions') && (
+            <button
+              type="button"
+              onClick={() => {
+                setOngletActif('cockpit');
+                setPhaseActive('actions');
+              }}
+              className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Ouvrir la phase Actions
             </button>
           )}
         </div>

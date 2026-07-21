@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { CockpitRuntimeApiResponse } from '@/app/api/praticien/cockpit/route';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
+import { isDecisionBloquee } from '@/lib/clinical-engine/decisionGuards';
 import type { ProtocolSaveState, RelectureProtocoleSoumission } from './ProtocolMiniBuilder';
 import { EpisodeConfirmationPanel } from './EpisodeConfirmationPanel';
 import { MissingDataPanel } from './MissingDataPanel';
@@ -71,6 +72,11 @@ export type EtatRuntimeClinique = {
   // `jalons[].mesure` déjà produits par lib/protocol/trajectoire (A8-2). Un T0
   // confirmé seul ouvre un cycle mais ne constitue PAS une réévaluation.
   reevaluationMesuree: boolean;
+  // Vrai quand aucun protocole ne peut être proposé (abstention non levée ou
+  // finding de sécurité). Remonté pour que la fiche puisse le signaler hors de
+  // la phase Actions : le panneau qui le détaille y est masqué par défaut, et
+  // un bloqueur invisible est un bloqueur ignoré.
+  decisionBloquee: boolean;
 };
 
 export function ClinicalRuntimeSection({
@@ -278,6 +284,11 @@ export function ClinicalRuntimeSection({
   // Drapeaux dérivés (booléens value-stables : aucune boucle de rendu).
   const trajectoireErreur = statutTrajectoire === 'erreur';
   const trajectoireEnLecture = statutTrajectoire === 'inconnue' || statutTrajectoire === 'chargement';
+  // Remonté ici (et non plus bas avec `review`) parce que le tableau de
+  // dépendances de l'effet ci-dessous est évalué au rendu : une déclaration
+  // postérieure tomberait dans la zone morte temporelle.
+  const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
+  const decisionBloquee = isDecisionBloquee(decisionCard);
   useEffect(() => {
     onEtatChange?.({
       chargement: loading,
@@ -288,6 +299,7 @@ export function ClinicalRuntimeSection({
       trajectoireErreur,
       trajectoireEnLecture,
       reevaluationMesuree,
+      decisionBloquee,
     });
   }, [
     onEtatChange,
@@ -299,6 +311,7 @@ export function ClinicalRuntimeSection({
     trajectoireErreur,
     trajectoireEnLecture,
     reevaluationMesuree,
+    decisionBloquee,
   ]);
 
   // Enregistrement EXPLICITE d'une version relue (jamais silencieux, jamais
@@ -369,7 +382,6 @@ export function ClinicalRuntimeSection({
   };
 
   const review = fixture?.review ?? (runtime?.status === 'ready' ? runtime.review : null);
-  const decisionCard = fixture?.decisionCard ?? (runtime?.status === 'ready' ? runtime.decisionCard : null);
   const activeReviewedVersion = versions.find(
     (version) => version.isActive && version.status === 'practitioner_reviewed',
   );

@@ -4,6 +4,36 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Un protocole bloqué se voit sans changer d'onglet (2026-07-21)
+
+Le poste de pilotage (#146) a réparti le runtime clinique par phase, et la fiche
+s'ouvre sur **Décision**. Or le seul endroit qui annonce « Protocole
+indisponible — bloqueurs décisionnels à revoir » est `ProtocolMiniBuilder`, qui
+vit dans la phase **Actions**, masquée par défaut. Un praticien pouvait donc
+travailler une fiche sans apprendre qu'une abstention clinique non levée ou un
+finding de sécurité interdisait toute proposition — sauf à cliquer sur le bon
+onglet, sans rien qui l'y invite.
+
+Le code posait pourtant déjà le principe, pour les erreurs de session :
+« une session expirée doit être lisible même si le praticien se trouve sur la
+phase Actions ». Il n'avait simplement pas été étendu aux bloqueurs.
+
+- **Signal permanent dans la fiche**, sur le motif déjà en place pour les
+  demandes de correction (B2) : bandeau d'avertissement et raccourci « Ouvrir la
+  phase Actions », qui s'efface une fois sur place. Libellé volontairement
+  distinct de celui du panneau — le panneau reste la source détaillée, et deux
+  nœuds portant le même texte casseraient le mode strict des E2E.
+- **Rien n'est affirmé sur l'incertain.** Le bandeau ne s'affiche que si le
+  runtime a abouti : pendant le chargement ou sur erreur, ni « bloqué » ni
+  « non bloqué ». Même discipline que les statuts du rail.
+- **Une seule copie de la règle.** Le prédicat vivait inline dans
+  `ProtocolMiniBuilder` ; il devenait consommé à deux endroits, donc susceptible
+  de diverger. Extrait tel quel en `isDecisionBloquee`
+  (`lib/clinical-engine/decisionGuards.ts`), sans import de valeur pour ne pas
+  tirer `node:crypto` dans le bundle client — la fuite corrigée en C5 LOT-06.
+  Aucun seuil ni condition modifiés : `not_evaluated` bloque toujours au même
+  titre que `required`.
+
 ### R6 — les deux roadmaps, et le préfixe `R` qui en désigne trois (2026-07-21)
 
 Réserve R6 de l'audit 5.0 : le lot D1-0 demandait de « clarifier la relation
