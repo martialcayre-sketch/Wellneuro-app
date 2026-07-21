@@ -4,6 +4,37 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### R6 — les deux roadmaps, et le préfixe `R` qui en désigne trois (2026-07-21)
+
+Réserve R6 de l'audit 5.0 : le lot D1-0 demandait de « clarifier la relation
+(fusion ou dépréciation) » entre `ROADMAP_TECHNIQUE.md` et `ROADMAP_PRODUIT.md` ;
+la clarification existait, mais **implicite et non réciproque** — chaque fichier
+disait ce qu'il était, aucun ne nommait l'autre. Un lecteur ne pouvait donc pas
+savoir qu'ils ne se recouvrent pas.
+
+**Arbitrage : aucun des deux n'est déprécié.** Les périmètres sont disjoints —
+consolidation technique (lots R0→R10, dette, build, tests) d'un côté, priorités
+produit (séries D/R/E) de l'autre — et ni l'un ni l'autre ne fait foi sur l'état
+courant, qui reste `PROJET_CONTEXTE.md`. La frontière est désormais écrite **en
+tête des deux fichiers, chacun nommant l'autre**.
+
+**Le vrai risque était ailleurs.** En vérifiant, le préfixe `R` s'est révélé
+désigner **trois séries numérotées indépendamment** :
+
+| Écriture | Sens | Exemple |
+|---|---|---|
+| `R<n>` technique | lot de consolidation | **R6** = stabilisation build/tests |
+| `R<n>` produit | module fonctionnel | **R6** = workflow RDV complet |
+| `R<n>` audit | réserve de l'audit 5.0 | **R6** = double source roadmap |
+
+Trois « R6 » sans aucun rapport — et « R3 » désigne aussi bien le registre
+relationnel que les fiches conseils. La règle est donc de **toujours qualifier la
+série** (« R6 technique », « R6 produit », « R6 de l'audit 5.0 ») ; un `R6` nu
+est ambigu et doit être corrigé, pas deviné. Rappelée dans `CLAUDE.md`, qui est
+le fichier lu à chaque session.
+
+Documentation seule — aucun code, aucun fichier supprimé ni fusionné.
+
 ### Le chemin retour du pack de réévaluation — migration seule (SP-SPI, 2026-07-21)
 
 Migration **seule**, sans écran : SP-SPI LOT-01 exigeait un pack « proposé et

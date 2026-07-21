@@ -1,4 +1,30 @@
-# Roadmap Wellneuro NNPP2
+# Roadmap Wellneuro NNPP2 — consolidation technique
+
+> **Frontière avec `ROADMAP_PRODUIT.md`** (arbitrage du 2026-07-21, réserve R6
+> de l'audit 5.0). **Aucun des deux fichiers n'est déprécié** : ils ne parlent
+> pas de la même chose et ne se recouvrent pas.
+>
+> - **Ici** : la **consolidation technique** — historique de la migration
+>   GAS → Next.js (lots 0, C2→C5) et lots de reprise **R0 → R10** (dette, build,
+>   tests, fiabilisation). Rien qui décrive une fonctionnalité pour l'utilisateur.
+> - **Dans `ROADMAP_PRODUIT.md`** : les **priorités produit** — séries D, R et E,
+>   ce que l'application doit savoir faire.
+> - **Ni l'un ni l'autre ne fait foi sur l'état courant** : c'est
+>   `docs/claude/PROJET_CONTEXTE.md`. L'exécution, elle, est pilotée par les
+>   campagnes (`docs/claude/campagnes/`) et le registre de frontières.
+>
+> **Le piège, et la vraie raison de ce bloc.** Le préfixe `R` désigne **trois
+> séries distinctes** dans ce dépôt, numérotées indépendamment :
+>
+> | Écriture | Sens | Exemple |
+> |---|---|---|
+> | `R<n>` **technique** (ce fichier) | lot de consolidation | **R6** = stabilisation build/tests/go-no-go |
+> | `R<n>` **produit** (`ROADMAP_PRODUIT.md` §4) | module fonctionnel | **R6** = workflow RDV complet |
+> | `R<n>` **audit** (`campagnes/AUDIT_CONFORMITE_5_0_2026-07-20.md` §10) | réserve d'audit | **R6** = double source roadmap |
+>
+> Trois « R6 » sans rapport. **Toujours qualifier la série** en écrivant :
+> « R6 technique », « R6 produit », « R6 de l'audit 5.0 ». Un `R6` nu dans une
+> PR, un commit ou une session est ambigu et doit être corrigé, pas deviné.
 
 ## Migration GAS → Next.js — terminée (2026-06-29 → 2026-07-03)
 

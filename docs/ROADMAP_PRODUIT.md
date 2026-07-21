@@ -1,6 +1,27 @@
-# Feuille de route consolidée — WellNeuro NNPP2
+# Feuille de route consolidée — WellNeuro NNPP2 — priorités produit
 # Fichier de contexte pour agent de planification
 
+> **Frontière avec `ROADMAP_TECHNIQUE.md`** (arbitrage du 2026-07-21, réserve R6
+> de l'audit 5.0). **Aucun des deux fichiers n'est déprécié** : ils ne parlent
+> pas de la même chose et ne se recouvrent pas.
+>
+> - **Ici** : les **priorités produit** — séries D, R et E, ce que l'application
+>   doit savoir faire.
+> - **Dans `ROADMAP_TECHNIQUE.md`** : la **consolidation technique** —
+>   historique de la migration GAS → Next.js et lots de reprise R0 → R10 (dette,
+>   build, tests, fiabilisation).
+> - **Ni l'un ni l'autre ne fait foi sur l'état courant** : c'est
+>   `docs/claude/PROJET_CONTEXTE.md`. L'exécution est pilotée par les campagnes
+>   (`docs/claude/campagnes/`) et le registre de frontières.
+>
+> **Attention au préfixe `R`.** Il désigne **trois séries distinctes**, numérotées
+> indépendamment : `R6` **produit** (ci-dessous, §4) = workflow RDV complet ;
+> `R6` **technique** = stabilisation build/tests ; `R6` **de l'audit 5.0** =
+> double source roadmap, c'est-à-dire cette clarification même. **Toujours
+> qualifier la série** — un `R6` nu est ambigu et doit être corrigé, pas deviné.
+>
+> ---
+>
 > Rédigé le 2026-07-04. Ce document consolide la roadmap produit complète
 > (série D existante + modules R issus du brainstorm + séquencement E).
 > Il complète `docs/claude/PROJET_CONTEXTE.md` qui fait foi pour

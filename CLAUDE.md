@@ -111,6 +111,12 @@ entière et non pour la migration qui l'avait motivée.
 - Roadmap technique (consolidation R0→R10) : `docs/ROADMAP_TECHNIQUE.md`
 - Roadmap produit (séries D/R/E, priorités) : `docs/ROADMAP_PRODUIT.md`
 
+Les deux coexistent, aucune n'est dépréciée : périmètres disjoints, frontière
+écrite en tête de chacune. **Le préfixe `R` désigne trois séries sans rapport**
+— technique (R6 = stabilisation build/tests), produit (R6 = workflow RDV) et
+réserves d'audit (R6 = double source roadmap). Toujours qualifier la série ; un
+`R6` nu est ambigu.
+
 ## Commandes utiles
 
 ```bash
