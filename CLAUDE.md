@@ -165,6 +165,61 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
 - Avant d'annoncer qu'une PR est prête à merger, lire son CI (`gh pr checks`) :
   les E2E n'y sont pas couverts par `npm test`.
 
+## Revue, merge et suppression des branches — le ressort de Copilot
+
+**Décision du 2026-07-21.** La revue de code, le merge des PR et la suppression
+des branches appartiennent à **Copilot**. L'assistant ouvre la PR, vérifie que le
+CI est vert, annonce l'état — et s'arrête là.
+
+Deux raisons, données ensemble : un **regard différent** sur le code (une revue
+par l'agent qui vient de l'écrire est une relecture, pas une revue), et le **coût
+en tokens** — suivre un CI, relancer, merger puis nettoyer consomme des
+allers-retours pour un travail qu'un autre outil fait sans eux.
+
+En pratique : pas de `gh pr merge`, pas de `git push origin --delete`, pas de
+suppression de worktree rattaché à une PR ouverte. Le nettoyage post-merge n'est
+pas une tâche en attente côté assistant.
+
+**Effet de bord à connaître.** Quand le commit de tête d'une PR est attribué au
+bot Copilot (un merge de `main` résolu par lui, par exemple), GitHub met le run
+`pull_request` en `action_required` et **n'exécute rien** sans approbation
+humaine. `gh pr checks` n'affiche alors que les checks Vercel, **sans `verify`** :
+la PR paraît verte alors que la vérification n'a jamais tourné. Vérifier la
+présence de `verify`, et débloquer en poussant un commit sous le compte du dépôt
+— `POST /actions/runs/{id}/approve` ne s'applique qu'aux PR issues de forks.
+
+Une PR gelée ne peut pas être mergée pour autant : `verify` est un **check
+obligatoire** de la protection de `main`, et `enforce_admins` est actif depuis le
+2026-07-21 — **personne ne passe outre, propriétaire compris**. Un run gelé
+bloque donc le merge au lieu de ressembler à un succès. Pour un correctif
+d'urgence, il faut désactiver le réglage explicitement avant de merger
+(`gh api -X DELETE repos/<dépôt>/branches/main/protection/enforce_admins`), puis
+le remettre. Ce geste doit rester visible et rare.
+
+`strict` reste **désactivé** délibérément : une PR peut être mergée sans avoir
+été remise à jour sur `main`. Peu de PR tournent en parallèle ici, et l'activer
+imposerait une resynchronisation et un nouveau CI à chaque merge concurrent —
+friction quotidienne pour un incident rare.
+
+### L'exception : migration ou authentification
+
+Copilot revoit et merge **aussi** ces PR. Mais avant de lui passer la main, sur
+une PR qui porte une migration ou touche l'authentification :
+
+1. **Une passe de revue adversariale indépendante** (sous-agent `wn-reviewer`).
+   C'est elle qui a trouvé, le 2026-07-21 sur la PR #202, un backfill manquant
+   dont l'absence défaisait silencieusement une révocation d'accès. Il n'y avait
+   aucune ligne fautive à pointer : le défaut était ce que la migration **ne
+   faisait pas**. Une revue de diff ne voit pas cette classe-là.
+2. **Après le merge, vérifier la base de production** — la migration s'est-elle
+   appliquée, et le backfill a-t-il fait ce qu'il annonçait ? Une lecture
+   `execute_sql` suffit (voir « Lire la base de production » plus haut). Sans
+   cela, un `migrate deploy` échoué pendant le build Vercel ne se voit nulle
+   part.
+
+Le coût de ces deux gestes se compte en minutes ; celui d'un raté sur
+l'authentification ou une migration se compte en accès patients rompus.
+
 ## Définition de done pour une tâche standard
 
 - Changement limité au périmètre demandé.

@@ -1321,3 +1321,32 @@ laissé #194 régresser ; toucher `indigo-600` et consorts, redéfinis dans
 
 **Questions ouvertes** : relecture visuelle humaine des écrans praticien (E16 et
 E18 cumulés) ; gate migration SP-SPI ; E17, E20, R1–R6.
+
+## 2026-07-21 — IDP2 LOT-02 : le compte patient, et la revue confiée à Copilot
+
+**Livré** : LOT-02 en trois PR. 02a spécification (#200) ; **02b** (#202) — la
+session portail cesse d'être ancrée au jeton permanent, migration additive
+`sessionsInvalidesAvant`, lecture tolérante des cookies déjà émis ; **02c**
+(#203) — la révocation ferme aussi les liens magiques en vol, et passe enfin par
+une confirmation. Plus #204, le lint entré dans le palier T1, et #207.
+
+**Décisions** : révocation ancrée sur une colonne plutôt que sur
+`accessTokenRevoked`, qui disparaîtra au LOT-04. **Revue, merge et suppression
+des branches passent à Copilot** — regard différent, coût en tokens. Exception
+écrite : migration ou authentification gardent une revue adversariale avant, et
+une vérification de la base après.
+
+**Écarté** : l'option sans migration (LOT-04 aurait dû la refaire) ; `strict` sur
+`main` (friction quotidienne, incident rare).
+
+**Rattrapé** : la revue indépendante a trouvé un backfill manquant — sans lui,
+une révocation se défaisait au déploiement. Corrigé avant merge. `enforce_admins`
+activé : `verify` était déjà obligatoire, mais un admin passait outre.
+
+**Vérifié** : T3 complet, 990 unitaires, 55 E2E ; migration appliquée en une
+tentative, 13 accès ouverts, 0 écart de backfill.
+
+**Prochaine action** : spécifier LOT-03 (Google, séparation des rôles).
+
+**Questions ouvertes** : LOT-04 porte une migration destructive, à ne pas
+enchaîner ; obligation RGPD de conservation (conseil qualifié).
