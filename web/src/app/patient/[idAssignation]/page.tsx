@@ -172,7 +172,7 @@ function QuestionnairesEnAttentePanel({ idAssignation, email }: {
                     {!isCurrent && (
                       <a
                         href={`/patient/${encodeURIComponent(a.idAssignation)}`}
-                        className="shrink-0 inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-medium px-3 py-1.5 hover:opacity-90 transition-opacity"
+                        className="shrink-0 min-h-11 inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-xs font-medium px-3 py-1.5 hover:opacity-90 transition-opacity"
                       >
                         Ouvrir
                       </a>

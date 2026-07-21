@@ -322,7 +322,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
     <div className="w-full max-w-2xl space-y-6">
       <PatientPageHeader
         title="Ma spirale alimentaire"
-        subtitle="Version locale de travail JA5-02: vous décrivez l’essai sans détailler tous les repas."
+        subtitle="Vous décrivez l’essai sans détailler tous les repas."
       />
 
       {!idPatient && (
@@ -340,7 +340,6 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
       ) : decision ? (
         <PatientCard padding="sm" className="space-y-2 border-primary/20" data-testid="ja-patient-decision-active">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Décision active du praticien</p>
-          <p className="text-sm text-foreground">Jalon {decision.milestone} · charge perçue {decision.chargePercue} · budget global {decision.budgetChargeGlobal}.</p>
           <p className="text-sm text-foreground">{decision.feedbackPatient}</p>
           <p className="text-xs text-muted-foreground">Ajustement de la décision: {decision.deltaDecision}</p>
         </PatientCard>

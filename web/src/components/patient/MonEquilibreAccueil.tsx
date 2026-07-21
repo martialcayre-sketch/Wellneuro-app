@@ -99,7 +99,7 @@ export function MonEquilibreAccueil({
 
         <div className="flex justify-center mb-4">
           {indiceGlobal !== null ? (
-            <ScoreGauge value={indiceGlobal} label="Mon équilibre" />
+            <ScoreGauge value={indiceGlobal} label="Mon équilibre" showValue={false} />
           ) : (
             <p className="text-sm text-muted-foreground text-center py-6">
               Pas encore assez de réponses pour calculer votre indice.
