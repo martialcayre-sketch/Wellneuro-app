@@ -14,6 +14,7 @@ import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { MonParcoursAccueil, type EtapeDuMoment } from '@/components/patient/MonParcoursAccueil';
+import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 
 type Groupe = 'a_completer' | 'correction' | 'transmis' | 'expire';
 
@@ -220,6 +221,11 @@ export default function QuestionnairesHubPage() {
         derniereReponseLe={derniereReponseLe}
         etape={actionRecommandee}
       />
+
+      {/* Proposition de réévaluation : ne s'affiche qu'en reprise, et une seule
+          fois — la route décide, le composant ne rend rien sinon. Placée juste
+          après l'étape du moment pour ne pas la concurrencer. */}
+      <PropositionPackReevaluation />
 
       {/* Accès secondaires : une ligne de liens, plus deux cartes rivales. */}
       <nav aria-label="Autres espaces" className="flex flex-wrap gap-3">
