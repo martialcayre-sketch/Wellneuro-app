@@ -4,7 +4,7 @@ titre: "IDP2 — Compte patient et cycle de vie du dossier"
 statut: "en_cours"
 créée_le: "2026-07-21"
 mise_à_jour: "2026-07-21"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 ---
 
 # IDP2 — Compte patient et cycle de vie du dossier
@@ -96,19 +96,25 @@ invariants du registre, non négociables ici.
 
 ## Questions ouvertes — à trancher avant le lot concerné
 
-1. **L'e-mail dans le résidu.** Question posée le 2026-07-21, **restée sans
-   réponse**. Le supprimer rend l'effacement réel mais définitif : la personne
-   qui revient repart d'un dossier neuf, et rien ne dit qu'elle était déjà
-   passée. Le remplacer par une empreinte permet de reconnaître une
+1. ~~**L'e-mail dans le résidu.**~~ **Close le 2026-07-21 — tranchée dans les
+   faits par LOT-01a.** L'arbitrage était : le supprimer rend l'effacement réel
+   mais définitif ; le remplacer par une empreinte permet de reconnaître une
    réinscription, mais un résidu permettant encore de tester « telle adresse
-   était-elle en base ? » se défend mal comme un effacement. **Bloquant pour le
-   lot effacement.**
+   était-elle en base ? » se défend mal comme un effacement. **C'est la première
+   branche qui a été livrée** : `DossierEfface` (`web/prisma/schema.prisma`) ne
+   porte que `anneeNaissance`, `initialesNom` et `effaceLe` — ni e-mail, ni
+   empreinte, ni prénom, ni clé étrangère. Le dialogue d'effacement le promet
+   d'ailleurs explicitement au praticien (« même sous forme d'empreinte »,
+   LOT-01b). Rien à rouvrir : LOT-02 n'en dépend pas.
 2. **Obligation de conservation.** Le RGPD (art. 17.3) permet de refuser un
    effacement lorsqu'une obligation légale de conservation s'applique. Elle vaut
    pour un dossier de soin ; Wellneuro se positionne en bien-être et suivi.
    **Question pour un conseil qualifié, pas pour l'assistant.**
 3. **Sort des 13 accès portail ouverts** à la bascule vers le compte. Personne
    ne doit se retrouver dehors — même exigence de coexistence que pour G4.
+   *Réponse pour LOT-02 : lecture tolérante des deux formats de cookie, aucun
+   accès rompu au déploiement (`lots/LOT-02-compte-patient.md`). La question
+   reste ouverte pour LOT-04, qui retire le jeton permanent.*
 4. **Google devient sous-traitant sur les patients**, et non plus sur le seul
    praticien. À porter à la liste du registre (`GATES_GO_NO_GO.md:9`) et à
    mettre en regard de l'objectif de réduction d'exposition.
@@ -145,7 +151,9 @@ réversible seul.
   avec ce qu'il promet déjà.
 - **LOT-02 — Compte patient, second chemin.** Le lien magique devient un moyen
   de connexion à un compte, plus un porteur d'accès. Aucune suppression du
-  chemin existant.
+  chemin existant. **Spécifié** : `lots/LOT-02-compte-patient.md` (LOT-02a
+  documentaire ; LOT-02b porte le découplage de session et sa migration
+  additive `sessionsInvalidesAvant`).
 - **LOT-03 — Google comme premier chemin**, avec la séparation stricte des rôles
   et son test de non-régression.
 - **LOT-04 — Retrait du jeton permanent**, une fois les 13 accès migrés et
