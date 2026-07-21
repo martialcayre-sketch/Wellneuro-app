@@ -1,10 +1,15 @@
 import { notFound } from 'next/navigation';
-import { isG4LienMagiqueEnabled, isG4RedemandePatientEnabled } from '@/lib/portail/featureFlag';
+import {
+  isG4LienMagiqueEnabled,
+  isG4RedemandePatientEnabled,
+  isG5GooglePatientEnabled,
+} from '@/lib/portail/featureFlag';
 import { MESSAGE_LIEN_INDISPONIBLE } from '@/lib/portail/lienMagique';
 import { DemandeLienForm } from '@/components/patient/DemandeLienForm';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
+import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 
 // Atterrissage unique de tous les refus de lien magique (gate G4) : consommé,
 // expiré, inconnu, portail révoqué. Un seul écran, un seul message — c'est ce
@@ -40,6 +45,14 @@ export default function LienIndisponiblePage() {
           <PatientInlineMessage tone="info">
             Demandez un nouveau lien à votre praticien : il vous en enverra un par e-mail.
           </PatientInlineMessage>
+        )}
+        {/* Gate G5 : quand l'entrée par Google est ouverte, ce cul-de-sac cesse
+            d'en être un — la personne peut entrer sans attendre d'e-mail. Le
+            lien n'apparaît que si le chemin existe vraiment. */}
+        {isG5GooglePatientEnabled() && (
+          <a href="/portail/connexion" className={patientButtonClassName('ghost', 'w-full')}>
+            Continuer avec Google
+          </a>
         )}
       </PatientCard>
     </div>

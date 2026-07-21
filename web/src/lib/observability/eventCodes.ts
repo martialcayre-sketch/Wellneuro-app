@@ -20,6 +20,15 @@ export const EVENT_CODES = {
   PORTAIL_LIEN_REJEU_REFUSE: 'PORTAIL_PATIENT.LIEN_MAGIQUE.REJEU_REFUSE',
   PORTAIL_LIEN_DEMANDE: 'PORTAIL_PATIENT.LIEN_MAGIQUE.DEMANDE',
 
+  // Gate G5 — entrée patient par Google (IDP2 LOT-03c). Un seul code de refus
+  // pour tous les motifs : l'adresse inconnue, le portail révoqué et le jeton
+  // périmé se journalisent pareil. Les distinguer dans le log serait sans
+  // danger, mais deux codes appellent deux messages, et deux messages finissent
+  // par ressortir côté patient — c'est-à-dire un oracle.
+  PORTAIL_GOOGLE_CONNEXION: 'PORTAIL_PATIENT.GOOGLE.CONNEXION',
+  PORTAIL_GOOGLE_REFUS: 'PORTAIL_PATIENT.GOOGLE.REFUS',
+  PORTAIL_GOOGLE_EXCEPTION: 'PORTAIL_PATIENT.GOOGLE.EXCEPTION',
+
   // Fin de parcours d'un dossier (IDP2). L'effacement est journalisé SANS
   // identité : sa trace durable est la ligne `dossiers_effaces`, un log étant
   // purgeable — et un log qui nommerait le patient effacé serait une

@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Google comme premier chemin — et la séparation des rôles rendue structurelle"
-statut: "03a spécifié, 03b livré — 03c à écrire"
+statut: "03a, 03b et 03c livrés — 03d écrit, non exécuté"
 dépend_de: "LOT-02 (livré)"
 ---
 
@@ -127,12 +127,38 @@ Aucune migration Prisma : le compte est déjà la ligne `patients` (LOT-02).
   second provider dans `authOptions` (2 échecs), un `signIn` qui cesse de passer
   par `profilPraticienAutorise` (7 échecs), un `getServerSession` importé dans
   une route `/api/portail` (2 échecs).
-- **03c — le chemin Google patient.** Routes, drapeau éteint, journalisation sans
-  secret dans l'URL, bouton d'entrée, E2E. Une PR. T3 complet et **revue
-  adversariale indépendante** avant de passer la main (exception « migration ou
-  authentification » de `CLAUDE.md`).
-- **03d — activation.** Décision distincte et datée, avec les variables du client
-  OAuth patient. Ne fait pas partie du merge.
+- **03c — le chemin Google patient.** *Livré le 2026-07-21* — `lib/portail/
+  googleIdentite.ts`, `app/portail/google/route.ts` et son retour,
+  `app/portail/connexion/page.tsx`, drapeau `WN_G5_GOOGLE_PATIENT` éteint, codes
+  d'événement, E2E. 82 tests unitaires, 3 E2E. Falsifié six fois avant d'être
+  committé (voir plus bas). `lib/auth.ts` n'est pas touché.
+- **03d — activation.** *Runbook écrit le 2026-07-21, non exécuté* —
+  `../ACTIVATION_RUNBOOK_G5.md`. Décision distincte et datée, avec les variables
+  du client OAuth patient. Ne fait pas partie du merge, et ne peut pas l'être :
+  elle demande de créer un client OAuth chez Google et de poser deux secrets dans
+  Vercel.
+
+### Ce que 03c a coûté en falsifications
+
+Six atteintes délibérées, chacune restaurée aussitôt. Cinq ont fait échouer la
+suite comme prévu ; **la sixième l'a laissée verte, et c'est celle qui a servi.**
+
+| Atteinte | Échecs |
+|---|---|
+| la vérification `email_verified` disparaît | 4 |
+| l'audience (`aud`) n'est plus contrôlée | 3 |
+| le `nonce` n'est plus contrôlé | 2 |
+| le refus distingue l'adresse inconnue du portail révoqué | 2 |
+| le cookie d'aller n'est plus effacé | 6 |
+| **le `state` n'est plus vérifié au retour** | **0, puis 3** |
+
+Retirer la vérification du `state` — c'est-à-dire la protection anti-CSRF du
+retour — ne cassait rien : la route refusait quand même, mais sur une exception
+levée deux lignes plus bas, rattrapée par le `catch` final. Les tests
+constataient un refus et s'en satisfaisaient. Deux assertions ont été ajoutées
+pour distinguer un refus **délibéré** d'un refus **par plantage** : aucun appel à
+Google, et aucune entrée `logger.error`. La falsification échoue alors sur trois
+cas.
 
 ## Risques et garde-fous
 
@@ -144,6 +170,65 @@ Aucune migration Prisma : le compte est déjà la ligne `patients` (LOT-02).
 | Confusion des deux clients OAuth | Variables d'environnement distinctes, jamais de secret en dur |
 | Régression des 13 accès ouverts | `verifyPatientSession` n'est pas touché ; E2E des deux chemins existants |
 | Nouveau flux de données patient vers Google | Inscrit au registre en 03a, **avant** le code |
+
+## Revue adversariale du 2026-07-21 — ce qu'elle a changé
+
+Verdict : **GO conditionnel au merge, NO-GO à l'activation.** Aucun chemin
+d'usurpation, aucune fuite de secret, aucune régression sur les deux chemins
+existants ni sur la révocation. Ce qu'elle a trouvé, et qui est corrigé ici :
+
+| Constat | Traitement |
+|---|---|
+| **Le cookie de session n'était jamais décodé par les tests.** `toContain('wn_portail=')` constatait qu'*un* cookie était posé. Signer l'identité d'un autre dossier laissait la suite verte — à l'endroit précis où l'erreur ouvre l'espace de quelqu'un d'autre. | Le cookie est décodé et son `idPatient` et son `email` vérifiés. Falsifié : signer `PAT_AUTRE` fait échouer. Idem pour l'argument d'`ensureActivePortalAccess`. |
+| **La lecture d'un jeton d'identité était exportée.** Son nom se lit comme une validation, sa signature accepte un `string` de n'importe quelle provenance — or c'est la provenance qui autorise à ne pas vérifier la signature. Un futur appelant (Google One Tap) aurait offert l'usurpation pour le prix d'une charge base64. | La fonction devient privée. Le seul point d'entrée public est `identiteDepuisCode`, où le jeton n'existe pas comme paramètre : la propriété passe du commentaire au typage. Un test garde la surface exportée. |
+| **N'importe quel site pouvait effacer l'aller** d'une personne en cours de connexion, via `?error=`, traité avant la vérification du `state`. | Le cookie n'est plus effacé tant que l'aller n'est pas reconnu. |
+| **Pas de délai sur l'échange de code** — une fonction serverless qui attend indéfiniment occupe son quota. | `AbortSignal.timeout(10 s)`. |
+| **Les journaux annonçaient 302** là où `NextResponse.redirect` émet 307. | Corrigé. |
+| **Trois surfaces en 404 sans le drapeau, deux le prouvaient.** La page n'avait pas de test, et l'E2E tourne drapeau allumé. | `connexion/page.test.tsx` et `lien/indisponible/page.test.tsx`. |
+| **L'E2E acceptait deux destinations**, donc ne pouvait presque pas échouer. | Resserré : la configuration de test ne pose délibérément aucun client OAuth, la destination est connue. |
+| **Rien ne prévenait le patient** qu'il partait chez Google, alors que le registre l'inscrit comme sous-traitant nouveau. | Mention avant le clic, et rappel que l'autre chemin existe. |
+
+Vérifié en production le 2026-07-21, sur demande de la revue : **0 ligne sur 17**
+avec `email <> lower(email)`. L'hypothèse de normalisation sur laquelle repose la
+recherche par adresse tient — mais aucune contrainte ne l'impose, d'où un test
+qui fixe le comportement si une ligne à casse différente apparaissait.
+
+**Ce qui reste, et qui bloque l'activation (03d) :** une connexion Google ne
+laisse **aucune trace durable en base**, là où le lien magique écrit
+`consommeLe` et `rejeuxRefuses`. Le dépôt écrit lui-même l'argument
+(`portail/lien/[jeton]/route.ts`) : « un log Vercel est purgé, et une trace
+purgée ne prouve plus rien le jour où on la cherche ». Trois mois après, à la
+question « qui a ouvert ce dossier, quand, par quel chemin », il ne resterait
+rien. Cela demande une migration — donc un lot distinct, pas un ajout de
+dernière minute à celui-ci.
+
+Restent ouverts, à arbitrer et non à trancher en revue : `max_age` sur l'URL
+d'autorisation (poste partagé où la session Google reste ouverte), et l'absence
+de `noindex` sur la page d'entrée.
+
+## Interaction avec R4, constatée au rebasage du 2026-07-21
+
+La PR #214 a introduit `WN_PORTAIL_LIEN_PERMANENT_FIN` : passée cette date, un
+lien permanent n'est plus honoré. Elle n'est **pas posée** aujourd'hui, donc rien
+n'est cassé — mais le jour où elle le sera, elle coupera **plus que le lien
+permanent**.
+
+Le motif est mécanique. Les trois chemins d'entrée atterrissent sur la même URL,
+`/portail/<jeton permanent>` : le jeton reste la clé de l'espace, quel que soit
+ce qui a servi à prouver l'identité. Or `POST /api/portail/session` vérifie la
+bascule **avant** toute résolution et répond 410
+(`api/portail/session/route.ts:95`), et `resolvePortailPatientFromSession`
+renvoie `null` de la même façon (`lib/consultation/portail.ts:51`) — y compris
+pour un cookie `wn_portail` parfaitement valide, tout juste posé par le lien
+magique ou par Google.
+
+Autrement dit : **poser la date R4 aujourd'hui fermerait les trois chemins, pas
+un seul.** Ce n'est pas un défaut de ce lot — il n'y touche pas — ni vraiment un
+défaut de #214, dont le mécanisme est correct pour ce qu'il vise. C'est la
+conséquence de l'ancrage de l'URL au jeton permanent, et c'est **exactement ce
+que le LOT-04 doit défaire**. La correction appartient donc au LOT-04, avec le
+retrait du jeton ; l'inscrire ici sert à ce que personne ne pose la date en
+croyant ne couper qu'un chemin.
 
 ## Ce que ce lot ne fait pas
 
