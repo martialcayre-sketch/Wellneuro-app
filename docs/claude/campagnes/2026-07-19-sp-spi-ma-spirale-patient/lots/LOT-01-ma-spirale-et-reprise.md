@@ -50,15 +50,45 @@ sans conséquence. Aucun chiffre de score n'apparaît nulle part.
 
 - Pas de secret.
 - Pas de donnée patient réelle.
-- Pas de migration ni d'écriture Supabase.
+- **Aucune migration dans la PR d'écran.** Le retour du pack est persisté (voir
+  ci-dessous), mais sa migration est livrée **avant**, dans sa propre PR : une
+  PR de migration doit rester relisible pour ce qu'elle est. Aucune autre
+  écriture Supabase dans le lot.
 - **Aucun score chiffré, aucune gamification, aucun pronostic** côté patient.
 - Pas de refactor hors lot.
 
+## Le chemin retour du pack — arbitré le 2026-07-21
+
+La campagne pose que le pack est **proposé et refusable**. Le lot le posait
+aussi qu'il n'écrit rien. Les deux ensemble ne tiennent pas : un refus qu'on ne
+persiste pas revient à chaque visite, et une proposition qui revient à chaque
+visite **est** une relance — précisément ce que la campagne s'interdit
+(« aucune pression, pas de relance culpabilisante »).
+
+**Décision : le refus est persisté.** Un refus éphémère (session, cookie) aurait
+suffi à la démonstration, mais pas à la promesse : il ne survit ni à la
+déconnexion ni au changement d'appareil, et le praticien ne voit rien de ce que
+le patient a décliné.
+
+Conséquences, dans cet ordre :
+
+1. **Une PR de migration seule**, portant l'objet « proposition de pack » et sa
+   réponse (proposée / acceptée / déclinée, horodatée). Passe par le
+   garde-fou d'écriture : migration committée → PR relue → merge → build Vercel.
+2. **Puis la PR d'écran**, qui lit et écrit cet objet sans toucher au schéma.
+
+Ce que la persistance ne change pas : le pack reste **proposé**, jamais
+auto-assigné ; un refus reste **sans conséquence** pour le patient ; aucun
+compte à rebours, aucune relance ne se déduit d'un refus enregistré. La donnée
+sert à **ne pas redemander**, pas à insister.
+
 ## Étapes
 
+- [ ] Livrer la **migration seule** de l'objet « proposition de pack » (PR à part).
 - [ ] Rédiger les textes en français, ton non culpabilisant, relus mot à mot.
 - [ ] Monter l'accueil et la reprise à partir des composants existants.
-- [ ] Implémenter la proposition de pack (refusable, sans effet de bord).
+- [ ] Implémenter la proposition de pack : refusable, le refus est enregistré et
+      **n'a pas d'autre effet** — ni assignation, ni envoi, ni relance.
 - [ ] Vérifier les invariants patient par test.
 - [ ] Exécuter les validations, relire le diff, documenter.
 
@@ -66,8 +96,10 @@ sans conséquence. Aucun chiffre de score n'apparaît nulle part.
 
 - Unitaires : composition du récit, cas « aucune activité », cas « reprise ».
 - Garde-fou : aucun score chiffré, aucune donnée praticien dans la réponse
-  patient ; le pack proposé ne crée aucune assignation.
-- E2E : parcours patient complet, y compris le refus du pack.
+  patient ; le pack proposé ne crée aucune assignation ; un refus enregistré ne
+  déclenche ni envoi ni relance.
+- E2E : parcours patient complet, y compris le refus du pack — et le retour sur
+  l'écran après refus, qui ne redemande pas.
 - Accessibilité : contraste AA, cibles ≥ 44 px, focus visible, aucune fonction
   critique au seul survol.
 
