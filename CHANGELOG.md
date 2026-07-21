@@ -35,6 +35,40 @@ Le mode d'emploi et ses prérequis sont dans `GATES_VAGUE2_G1_G3_G4.md`, à
 l'endroit même où la question était posée. **Aucun changement de comportement
 tant que la variable n'est pas posée** — et elle ne l'est pas.
 
+### IDP2 LOT-03c — Google devient un chemin d'entrée patient, éteint (2026-07-21)
+
+Un patient pouvait entrer avec un lien reçu, permanent ou magique — pas sans.
+Google ouvre la porte qui manquait, en s'appuyant sur ce qu'il a déjà : le
+contrôle de sa boîte e-mail.
+
+- **Le patient n'entre jamais dans NextAuth**, et c'est le cœur du lot. Google
+  est consommé en OIDC direct par deux routes portail dédiées, qui posent le
+  même cookie maison `wn_portail` que le lien magique. Aucun provider n'est
+  ajouté à `authOptions`, `lib/auth.ts` n'est pas touché. Motif mesuré dans le
+  dépôt : il n'existe ni `middleware.ts` ni helper `requirePraticien`, et la
+  garde praticien est un `if (!session)` recopié sur **236 appels** à
+  `getServerSession` — un cookie NextAuth chez un patient les ouvrirait tous.
+  `lib/auth.roles.guard.test.ts` (LOT-03b) fait échouer la suite si cette
+  séparation se défait.
+- **Éteint au merge.** `WN_G5_GOOGLE_PATIENT` absent ⇒ les trois surfaces
+  répondent 404 et le portail se comporte exactement comme avant. L'allumage est
+  une décision datée : `ACTIVATION_RUNBOOK_G5.md`.
+- **Une seule sortie de refus.** Adresse inconnue, non vérifiée chez Google,
+  patient inactif, portail révoqué, état d'aller invalide, panne : même écran,
+  même message, même code. Rien ne s'apprend en sondant des adresses.
+- **`openid email`, et rien de plus** — la spécification 03a annonçait
+  `openid email profile` ; le nom et la photo du compte Google ne servent à
+  aucune ligne du dépôt. Réduction acquise à l'écriture, portée au registre.
+- **Ni le code d'autorisation ni le `state` n'entrent dans un journal** : la
+  route est journalisée sous son gabarit, jamais sous son URL réelle.
+
+**Ce que la falsification a trouvé.** Six atteintes délibérées ; cinq ont fait
+échouer la suite, la sixième non. Retirer la vérification du `state` — la
+protection anti-CSRF du retour — laissait tout vert : la route refusait quand
+même, mais sur une exception rattrapée par le `catch` final. Les tests
+constataient un refus et s'en satisfaisaient. Deux assertions distinguent
+désormais un refus délibéré d'un refus par plantage.
+
 ### SP-SPI LOT-01 — le pack de réévaluation est proposé, et refusable (2026-07-21)
 
 Dernière pièce du lot : l'accueil « Mon parcours » et la reprise en douceur

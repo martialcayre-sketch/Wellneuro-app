@@ -35,3 +35,18 @@ export function isG4LienMagiqueEnabled(value = process.env.WN_G4_LIEN_MAGIQUE): 
 export function isG4RedemandePatientEnabled(value = process.env.WN_G4_REDEMANDE_PATIENT): boolean {
   return value === 'true';
 }
+
+// Troisième drapeau — entrée patient par Google (gate G5, IDP2 LOT-03c).
+//
+// Éteint (défaut) : `/portail/connexion`, `/portail/google` et son retour
+// répondent 404. Le portail se comporte exactement comme avant le lot — les
+// deux chemins existants (jeton permanent, lien magique) sont seuls debout.
+//
+// Séparé des deux drapeaux G4 délibérément : Google est un chemin d'entrée
+// nouveau, avec un sous-traitant nouveau (inscrit au registre en 03a) et un
+// client OAuth qui doit exister avant que la route serve à quoi que ce soit.
+// Son allumage est le LOT-03d — une décision datée, pas un effet de bord de
+// merge.
+export function isG5GooglePatientEnabled(value = process.env.WN_G5_GOOGLE_PATIENT): boolean {
+  return value === 'true';
+}

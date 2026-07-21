@@ -692,7 +692,9 @@
   (OAuth `@wellneuro.fr`). Le chemin d'authentification patient lui fait
   connaître qu'une adresse personnelle se connecte à une application de
   neuronutrition. Ce qui borne l'exposition : **aucune donnée de santé ne
-  transite** — le scope reste `openid email profile` ; le chemin est **optionnel**,
+  transite** — le scope est `openid email`, **et non `openid email profile`**
+  comme annoncé en 03a : la réduction est acquise à l'écriture (LOT-03c), le
+  portail n'ayant d'usage ni du nom ni de la photo du compte Google ; le chemin est **optionnel**,
   le lien magique restant ouvert à qui ne veut pas de Google (D1) ; le **client
   OAuth est distinct** de celui du praticien, audience et journalisation
   séparées. À mettre en regard de l'objectif de réduction d'exposition à chaque
@@ -705,10 +707,18 @@
   n'existe **ni `middleware.ts` ni helper `requirePraticien`**, et la garde
   praticien est un `if (!session)` recopié sur **236 appels** à
   `getServerSession` — un rôle mal départagé les ouvrirait tous. Le test qui
-  échoue si un compte hors `@wellneuro.fr` atteint `/dashboard` reste dû (LOT-03b,
-  écrit avant toute ligne d'authentification patient).
+  échoue si un compte hors `@wellneuro.fr` atteint `/dashboard` est **livré**
+  (LOT-03b, `lib/auth.roles.guard.test.ts`, écrit et falsifié avant la première
+  ligne d'authentification patient).
+- **Drapeau G5 — l'activation reste une décision** (LOT-03c, 2026-07-21). Le
+  chemin Google est mergé **éteint** : `WN_G5_GOOGLE_PATIENT` absent, les routes
+  répondent 404 et le portail se comporte exactement comme avant le lot. Son
+  allumage, avec les variables du client OAuth patient
+  (`WN_GOOGLE_PATIENT_CLIENT_ID`, `WN_GOOGLE_PATIENT_CLIENT_SECRET`), est le
+  LOT-03d — décision datée du responsable, jamais un effet de bord de merge.
 - **Statut** : cadrée le 2026-07-21. **LOT-01 et LOT-02 livrés** le même jour ;
-  **LOT-03a** (spécification Google et arbitrage des rôles) écrit. Motif
+  **LOT-03a** (spécification Google et arbitrage des rôles), **LOT-03b** (garde
+  de séparation des rôles) et **LOT-03c** (chemin Google, éteint) livrés. Motif
   d'ouverture : l'application promet déjà l'effacement au patient
   (`lib/trust/contenus/registre.ts:167`) et ne peut pas l'exécuter — le seul
   bouton « suppression » écrit `actif: false` et rien d'autre.

@@ -122,6 +122,14 @@ export default defineConfig({
       ...process.env,
       WN_G4_LIEN_MAGIQUE: 'true',
       WN_G4_REDEMANDE_PATIENT: 'true',
+      // Gate G5 — entrée par Google (IDP2 LOT-03c). Même raison : allumé pour
+      // les tests, absent de Vercel. Le client OAuth patient, lui, n'est PAS
+      // configuré ici, et c'est délibéré : les tests couvrent l'état exact de
+      // la production après le merge — drapeau allumable, aucun secret posé —
+      // et vérifient que la route refuse alors proprement, sans jamais ouvrir
+      // de session. Le parcours complet chez Google n'est pas automatisable
+      // sans compte réel : il est couvert en unitaire, jeton d'identité forgé.
+      WN_G5_GOOGLE_PATIENT: 'true',
     } as Record<string, string>,
     // En mode start, exiger un port libre : réutiliser un serveur déjà lancé
     // risquerait de tester silencieusement un `next dev` (autre build, voire
