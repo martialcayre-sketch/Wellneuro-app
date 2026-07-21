@@ -213,14 +213,14 @@ export async function getRagHealth() {
     ORDER BY indexname
   `;
 
-  const count = counts[0] ?? { total: 0n, active: 0n, batches: 0n, sources: 0n };
+  const count = counts[0];
   return {
     pgvectorVersion: extension[0]?.extversion ?? null,
     chunks: {
-      total: Number(count.total),
-      active: Number(count.active),
-      batches: Number(count.batches),
-      sources: Number(count.sources),
+      total: count ? Number(count.total) : 0,
+      active: count ? Number(count.active) : 0,
+      batches: count ? Number(count.batches) : 0,
+      sources: count ? Number(count.sources) : 0,
     },
     indexes: indexes.map((row) => row.indexname),
   };
