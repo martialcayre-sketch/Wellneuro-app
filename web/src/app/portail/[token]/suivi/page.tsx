@@ -11,7 +11,7 @@ export default function PortailSuiviPage({ params }: { params: { token: string }
         href={`/portail/${params.token}/questionnaires`}
         className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
       >
-        ← Mes questionnaires
+        ← Mon parcours
       </Link>
       <ProtocolCheckinForm />
     </div>

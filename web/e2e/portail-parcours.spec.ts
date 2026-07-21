@@ -225,22 +225,22 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       // Section 6/6 — Traitements et compléments + envoi.
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/portail/valider') && res.status() === 200),
-        page.getByRole('button', { name: /Valider et accéder à mes questionnaires/i }).click(),
+        page.getByRole('button', { name: /Valider et accéder à mon parcours/i }).click(),
       ]);
     });
 
     await test.step('Onboarding — accès au hub des questionnaires', async () => {
       await expect(page.getByText('Merci !')).toBeVisible();
-      await page.getByRole('link', { name: 'Accéder à mes questionnaires' }).click();
-      await expect(page.getByRole('heading', { name: 'Mes questionnaires' })).toBeVisible();
+      await page.getByRole('link', { name: 'Accéder à mon parcours' }).click();
+      await expect(page.getByRole('heading', { name: 'Mon parcours' })).toBeVisible();
     });
 
     await test.step('Session restaurée sur le portail sans nouvelle saisie email', async () => {
       await page.goto(portailUrl);
       await expect(page.getByPlaceholder('votre@email.fr')).toHaveCount(0);
       await expect(page.getByText('Merci !')).toBeVisible();
-      await page.getByRole('link', { name: 'Accéder à mes questionnaires' }).click();
-      await expect(page.getByRole('heading', { name: 'Mes questionnaires' })).toBeVisible();
+      await page.getByRole('link', { name: 'Accéder à mon parcours' }).click();
+      await expect(page.getByRole('heading', { name: 'Mon parcours' })).toBeVisible();
     });
 
     await test.step('Ouverture du premier questionnaire à compléter', async () => {
@@ -287,12 +287,12 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await expect(suivant).toBeVisible();
       await suivant.click();
       await expect(page.getByPlaceholder('votre@email.fr')).toHaveCount(0);
-      await expect(page.getByRole('link', { name: '← Mes questionnaires' })).toBeVisible();
-      await page.getByRole('link', { name: '← Mes questionnaires' }).click();
+      await expect(page.getByRole('link', { name: '← Mon parcours' })).toBeVisible();
+      await page.getByRole('link', { name: '← Mon parcours' }).click();
       // Attendre le rendu complet du hub : l'étape suivante ouvre la section
       // repliée "Transmis au praticien", et ouvrirSectionSecondaire ne fait
       // rien si le <summary> n'est pas encore monté (hub en cours de fetch).
-      await expect(page.getByRole('heading', { name: 'Mes questionnaires' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Mon parcours' })).toBeVisible();
     });
 
     await test.step('Tentative de re-soumission côté serveur (409)', async () => {
@@ -413,7 +413,7 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       await expect(page.getByText('15 — SAMU, urgence médicale')).toBeVisible();
       // La séquence ne se représente pas : retour à l'espace sans blocage.
       await page.getByRole('link', { name: '← Mon espace' }).click();
-      await expect(page.getByRole('heading', { name: 'Mes questionnaires' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Mon parcours' })).toBeVisible();
     });
   });
 });

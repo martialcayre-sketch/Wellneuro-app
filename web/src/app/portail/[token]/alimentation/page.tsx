@@ -14,7 +14,7 @@ export default function PortailAlimentationPage({ params }: { params: { token: s
   return (
     <div className="w-full max-w-2xl space-y-4">
       <Link href={`/portail/${params.token}/questionnaires`} className="inline-flex items-center gap-1 text-sm text-primary hover:underline">
-        ← Mes questionnaires
+        ← Mon parcours
       </Link>
       <PatientFoodCompassProtocolSection token={params.token} />
       <PatientFoodObservationPanel idPatient={session?.idPatient ?? null} />

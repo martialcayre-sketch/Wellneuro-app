@@ -4,6 +4,7 @@ const { prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     assignation: { findMany: vi.fn() },
+    questionnaireReponse: { aggregate: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -36,6 +37,7 @@ describe('GET /api/portail/assignations — liaison session au token', () => {
     process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
     prisma.patient.findUnique.mockResolvedValue(patient);
     prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.questionnaireReponse.aggregate.mockResolvedValue({ _max: { dateReponse: null } });
   });
 
   it('refuse un ancien cookie après réémission du token', async () => {
@@ -62,6 +64,24 @@ describe('GET /api/portail/assignations — liaison session au token', () => {
       ok: true,
       patient: { idPatient: patient.idPatient, prenom: patient.prenom, nom: patient.nom },
       assignations: [],
+      derniereReponseLe: null,
     });
+  });
+
+  it('expose la date de dernière réponse, sans aucune donnée de score', async () => {
+    // Horloge de la reprise (SP-SPI / LOT-01) : seule la position dans le
+    // temps est racontée au patient — jamais le score de cette réponse.
+    prisma.questionnaireReponse.aggregate.mockResolvedValue({
+      _max: { dateReponse: new Date('2025-07-21T12:00:00.000Z') },
+    });
+    const cookie = signPatientSession({
+      idPatient: patient.idPatient,
+      email: patient.email,
+      accessToken: patient.accessToken,
+    });
+
+    const corps = await (await GET(request(cookie))).json();
+    expect(corps.derniereReponseLe).toBe('2025-07-21T12:00:00.000Z');
+    expect(JSON.stringify(corps)).not.toMatch(/score|interpretation/i);
   });
 });

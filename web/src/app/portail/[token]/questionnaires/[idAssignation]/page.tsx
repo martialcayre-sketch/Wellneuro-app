@@ -26,7 +26,7 @@ function EnTete({ token, titre, badge }: { token: string; titre: string; badge?:
         href={`/portail/${token}/questionnaires`}
         className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
       >
-        ← Mes questionnaires
+        ← Mon parcours
       </a>
       <div className="flex items-center justify-between gap-3 mt-2">
         <h1 className="font-display text-lg font-bold text-foreground truncate">{titre}</h1>
