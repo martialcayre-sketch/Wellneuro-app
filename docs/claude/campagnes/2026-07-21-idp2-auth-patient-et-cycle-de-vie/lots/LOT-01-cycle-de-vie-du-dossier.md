@@ -98,11 +98,47 @@ Ce qui a été livré :
   donc inopérant sur le dossier de seed. Forme alignée sur `DELETE` et
   `cycle-de-vie`, appartenance inchangée.
 
-Vérifié : T2 complet — 928 tests unitaires, 51 E2E, aucune dérive schéma ↔
-migrations. **Aucun E2E sur l'effacement**, délibérément : la suite tourne
-contre une base partagée entre les postes et réinitialise `PAT_SEED_03` ; un
-parcours qui effacerait réellement ce dossier détruirait la fixture des autres
-sessions.
+### Ce que la revue indépendante a rattrapé
+
+Elle a rendu un **no-go** sur la première version, à juste titre. Deux défauts
+tenaient la fonctionnalité en échec sans qu'aucun test ne s'en aperçoive :
+
+1. **Le menu était rogné.** Rendu en `absolute` dans une cellule, il était
+   coupé par le `overflow-x-auto` du tableau et le `overflow-hidden` de la
+   carte : sur les dernières lignes, les deux fins de parcours passaient sous le
+   bord. **jsdom ne calcule aucune géométrie** — 928 tests verts ne disaient
+   rien de cela. Corrigé par un portail sur `document.body` en `position:
+   fixed`, avec retournement vers le haut et hauteur bornée à l'espace libre. Un
+   E2E le verrouille désormais, sur la dernière ligne, sur deux profils.
+2. **L'échec d'une action irréversible était muet.** Le message partait dans une
+   carte située hors du dialogue : derrière l'overlay Radix, souvent hors écran,
+   et sous `aria-hidden`. Le test qui le « couvrait » passait au vert parce que
+   `getByText` interroge tout le document — il prouvait la présence, pas la
+   visibilité. Le message est maintenant **dans** le dialogue, en `role="alert"`,
+   et le test exige le confinement.
+
+Trois autres constats ont été repris dans la même passe : la désactivation avait
+perdu la confirmation qu'elle avait avant le lot ; le badge affichait « Suivi
+clôturé » seul sur un dossier aussi désactivé, laissant croire à une lecture qui
+n'existait pas ; et `POST /api/praticien/consultations` ne testait que `actif` —
+sur un dossier clôturé, il créait la consultation, **réactivait un jeton
+révoqué** et envoyait l'e-mail. Ce dernier trou est du LOT-01a, mais c'est ce
+lot qui le rendait atteignable : garde ajouté ici.
+
+Vérifié : T2 complet — 943 tests unitaires, 55 E2E, aucune dérive schéma ↔
+migrations. **Aucun E2E n'efface**, délibérément : la suite tourne contre une
+base partagée entre les postes et réinitialise `PAT_SEED_03` ; un parcours qui
+effacerait réellement ce dossier détruirait la fixture des autres sessions. Le
+parcours s'arrête à la confirmation inerte.
+
+### Questions laissées ouvertes
+
+- **« Renvoyer le lien » sur un dossier clos envoie un e-mail.** La décision
+  « les actions d'accès restent ouvertes » visait la lecture ; le libellé de la
+  clôture promet « aucun document envoyé ». Un lien d'accès n'est pas un
+  document, mais c'est un envoi. À trancher.
+- **`DELETE /api/praticien/patients` n'est plus appelée.** Elle reste en place,
+  fonctionnelle et sans appelant. À retirer dans un lot suivant ou à conserver.
 
 ## Ce que ce lot ne fait pas
 

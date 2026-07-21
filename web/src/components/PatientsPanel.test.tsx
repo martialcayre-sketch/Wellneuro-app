@@ -27,6 +27,16 @@ const PATIENT = {
   suiviClotureLe: null as string | null,
 };
 
+const AUTRE_PATIENT = {
+  idPatient: 'PAT_SEED_01',
+  prenom: 'Sophie',
+  nom: 'Nicola',
+  email: 'sophie.nicola@fictif.wellneuro.fr',
+  telephone: '',
+  actif: 'OUI',
+  suiviClotureLe: null as string | null,
+};
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -40,6 +50,9 @@ function stubFetch(options?: {
   surToken?: (body: unknown) => unknown;
   surCycleDeVie?: (body: unknown) => unknown;
   patient?: typeof PATIENT;
+  patients?: (typeof PATIENT)[];
+  /** Diffère la réponse du cycle de vie, pour éprouver la double soumission. */
+  delaiCycleDeVie?: number;
 }) {
   const appels: { url: string; method?: string; body?: unknown }[] = [];
   vi.stubGlobal(
@@ -48,6 +61,9 @@ function stubFetch(options?: {
       const body = init?.body ? JSON.parse(init.body) : undefined;
       appels.push({ url: String(url), method: init?.method, body });
       if (String(url).startsWith('/api/praticien/patients/cycle-de-vie')) {
+        if (options?.delaiCycleDeVie) {
+          await new Promise(resolve => setTimeout(resolve, options.delaiCycleDeVie));
+        }
         return {
           ok: true,
           json: async () => options?.surCycleDeVie?.(body) ?? { success: true, action: 'cloture' },
@@ -62,7 +78,7 @@ function stubFetch(options?: {
       return {
         ok: true,
         json: async () => ({
-          patients: [options?.patient ?? PATIENT],
+          patients: options?.patients ?? [options?.patient ?? PATIENT],
           questionnaires: [],
           packs: [],
           categories: [],
@@ -74,11 +90,15 @@ function stubFetch(options?: {
   return appels;
 }
 
-/** Les actions sur un dossier vivent dans le menu de sa ligne. */
-async function ouvrirMenu() {
-  const declencheur = await screen.findByRole('button', { name: /gérer le dossier/i });
-  fireEvent.click(declencheur);
-  return declencheur;
+/**
+ * Les actions sur un dossier vivent dans le menu de SA ligne. `rang` désigne
+ * la ligne : c'est ce qui permet de vérifier qu'une confirmation porte bien
+ * sur le patient dont on a ouvert le menu, et pas sur le premier du tableau.
+ */
+async function ouvrirMenu(rang = 0) {
+  const declencheurs = await screen.findAllByRole('button', { name: /gérer le dossier/i });
+  fireEvent.click(declencheurs[rang]);
+  return declencheurs[rang];
 }
 
 const item = (motif: RegExp) => screen.getByRole('menuitem', { name: motif });
@@ -230,16 +250,56 @@ describe('PatientsPanel — cycle de vie du dossier (LOT-01b)', () => {
     expect((item(/renvoyer le lien/i) as HTMLButtonElement).disabled).toBe(false);
   });
 
+  // Régression : la désactivation coupe l'accès au portail du patient. Avant
+  // ce lot, la même écriture demandait deux gestes (« Supprimer » puis
+  // « Confirmer ») ; la renommer ne justifiait pas de lui retirer sa garde.
+  it('la désactivation demande confirmation avant de couper l’accès', async () => {
+    const appels = stubFetch();
+    render(<PatientsPanel />);
+    await ouvrirMenu();
+    fireEvent.click(item(/désactiver le dossier/i));
+
+    await screen.findByRole('heading', { name: /désactiver le dossier de michel dogné/i });
+    expect(appels.some(a => a.method === 'PATCH')).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: /^désactiver le dossier$/i }));
+    await waitFor(() => {
+      const patch = appels.find(a => a.method === 'PATCH');
+      expect(patch?.body).toMatchObject({ idPatient: 'PAT_SEED_03', actif: 'NON' });
+    });
+  });
+
   it('un dossier inactif propose la réactivation, et l’envoie par PATCH', async () => {
     const appels = stubFetch({ patient: { ...PATIENT, actif: 'NON' } });
     render(<PatientsPanel />);
     await ouvrirMenu();
     fireEvent.click(item(/réactiver le dossier/i));
+    fireEvent.click(await screen.findByRole('button', { name: /^réactiver le dossier$/i }));
 
     await waitFor(() => {
       const patch = appels.find(a => a.method === 'PATCH');
       expect(patch?.body).toMatchObject({ idPatient: 'PAT_SEED_03', actif: 'OUI' });
     });
+  });
+
+  // Radix pose un voile et `aria-hidden` sur le reste du document : un message
+  // rendu hors du dialogue est derrière l'overlay, souvent hors du viewport, et
+  // muet pour un lecteur d'écran. Sur une action irréversible, l'échec serait
+  // alors silencieux. `getByText` seul ne prouve rien — on exige le
+  // confinement.
+  it('dit l’échec DANS le dialogue, qui reste ouvert', async () => {
+    stubFetch({
+      surCycleDeVie: () => ({ success: false, reason: 'exception', error: 'Erreur technique.' }),
+    });
+    render(<PatientsPanel />);
+    await ouvrirMenu();
+    fireEvent.click(item(/clôturer le suivi/i));
+    fireEvent.click(await screen.findByRole('button', { name: /^clôturer le suivi$/i }));
+
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.closest('[role="dialog"]')).not.toBeNull();
+    // Le dialogue reste ouvert : on doit pouvoir réessayer ou annuler.
+    expect(screen.getByRole('button', { name: /^clôturer le suivi$/i })).toBeTruthy();
   });
 
   it('rend lisible un refus serveur sur dossier clos', async () => {
@@ -251,6 +311,106 @@ describe('PatientsPanel — cycle de vie du dossier (LOT-01b)', () => {
     fireEvent.click(item(/clôturer le suivi/i));
     fireEvent.click(await screen.findByRole('button', { name: /^clôturer le suivi$/i }));
 
-    await waitFor(() => expect(screen.getByText(/suivi de ce dossier est clôturé/i)).toBeTruthy());
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toMatch(/suivi de ce dossier est clôturé/i);
+  });
+
+  // Le dialogue est unique pour tout le tableau : c'est là que se logerait un
+  // effacement porté sur le mauvais dossier.
+  it('la confirmation porte sur le patient dont le menu a été ouvert', async () => {
+    const appels = stubFetch({ patients: [PATIENT, AUTRE_PATIENT] });
+    render(<PatientsPanel />);
+    await ouvrirMenu(1);
+    fireEvent.click(item(/effacer définitivement/i));
+
+    await screen.findByRole('heading', { name: /sophie nicola/i });
+    fireEvent.change(screen.getByLabelText(/saisissez/i), { target: { value: 'EFFACER' } });
+    fireEvent.click(screen.getByRole('button', { name: /^effacer définitivement$/i }));
+
+    await waitFor(() => {
+      const appel = appels.find(a => a.url.includes('cycle-de-vie'));
+      expect(appel?.body).toMatchObject({ idPatient: 'PAT_SEED_01' });
+    });
+  });
+
+  it('une saisie abandonnée sur un dossier ne se reporte pas sur le suivant', async () => {
+    stubFetch({ patients: [PATIENT, AUTRE_PATIENT] });
+    render(<PatientsPanel />);
+    await ouvrirMenu(0);
+    fireEvent.click(item(/effacer définitivement/i));
+    fireEvent.change(await screen.findByLabelText(/saisissez/i), { target: { value: 'EFFACER' } });
+    fireEvent.click(screen.getByRole('button', { name: /annuler/i }));
+
+    await ouvrirMenu(1);
+    fireEvent.click(item(/effacer définitivement/i));
+    await screen.findByRole('heading', { name: /sophie nicola/i });
+    expect((screen.getByLabelText(/saisissez/i) as HTMLInputElement).value).toBe('');
+    expect((screen.getByRole('button', { name: /^effacer définitivement$/i }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('trois clics sur un effacement ne produisent qu’un seul appel', async () => {
+    const appels = stubFetch({ delaiCycleDeVie: 30 });
+    render(<PatientsPanel />);
+    await ouvrirMenu();
+    fireEvent.click(item(/effacer définitivement/i));
+    fireEvent.change(await screen.findByLabelText(/saisissez/i), { target: { value: 'EFFACER' } });
+
+    const bouton = screen.getByRole('button', { name: /^effacer définitivement$/i });
+    fireEvent.click(bouton);
+    fireEvent.click(bouton);
+    fireEvent.click(bouton);
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(appels.filter(a => a.url.includes('cycle-de-vie'))).toHaveLength(1);
+  });
+
+  // `phaseDossier` fait primer la clôture, ce qui est juste pour décider d'un
+  // envoi. Mais afficher le seul « Suivi clôturé » sur un dossier désactivé
+  // laisserait croire que le patient consulte encore ses archives.
+  it('un dossier clos ET désactivé affiche les deux états', async () => {
+    stubFetch({
+      patient: { ...PATIENT, actif: 'NON', suiviClotureLe: '2026-07-21T10:00:00.000Z' },
+    });
+    render(<PatientsPanel />);
+    await waitFor(() => expect(screen.getByText('Suivi clôturé')).toBeTruthy());
+    expect(screen.getByText('Inactif')).toBeTruthy();
+  });
+
+  it('ne promet pas la lecture des archives quand le dossier est désactivé', async () => {
+    stubFetch({ patient: { ...PATIENT, actif: 'NON' } });
+    render(<PatientsPanel />);
+    await ouvrirMenu();
+    fireEvent.click(item(/clôturer le suivi/i));
+    await screen.findByRole('heading', { name: /clôturer le suivi/i });
+
+    expect(screen.queryByText(/conserve l’accès en lecture/i)).toBeNull();
+    expect(screen.getByText(/n’a plus accès à son espace/i)).toBeTruthy();
+  });
+
+  // Les boutons remplacés portaient `disabled` pendant l'appel. Sans ce garde,
+  // deux ouvertures successives du menu envoient deux fois le même lien.
+  it('neutralise les actions d’accès pendant qu’un envoi est en vol', async () => {
+    const appels = stubFetch({
+      surToken: () => new Promise(resolve => setTimeout(() => resolve({ success: true }), 40)) as never,
+    });
+    render(<PatientsPanel />);
+    const declencheur = await ouvrirMenu();
+    fireEvent.click(item(/renvoyer le lien/i));
+
+    fireEvent.click(declencheur);
+    await waitFor(() =>
+      expect(item(/renvoyer le lien/i).getAttribute('aria-disabled')).toBe('true'),
+    );
+    fireEvent.click(item(/renvoyer le lien/i));
+
+    await waitFor(() => {
+      expect(appels.filter(a => a.url === '/api/praticien/token')).toHaveLength(1);
+    });
+  });
+
+  it('signale les dossiers clos dans le sélecteur de consultation', async () => {
+    stubFetch({ patient: { ...PATIENT, suiviClotureLe: '2026-07-21T10:00:00.000Z' } });
+    render(<PatientsPanel />);
+    await waitFor(() => expect(screen.getByText(/Michel Dogné.*\(suivi clôturé\)/)).toBeTruthy());
   });
 });

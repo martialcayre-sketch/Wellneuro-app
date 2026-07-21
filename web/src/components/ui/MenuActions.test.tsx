@@ -110,12 +110,58 @@ describe('MenuActions — clavier', () => {
     expect(aLeFocus(declencheur)).toBe(true);
   });
 
-  it('ferme sur Tab sans reprendre le focus', () => {
+  // Le focus doit revenir au DÉCLENCHEUR, pas tomber sur `document.body` :
+  // sinon la tabulation suivante repart du haut du document, ce qui renvoie au
+  // début de la page un utilisateur clavier arrivé au bas d'un tableau.
+  it('ferme sur Tab en reposant le focus sur le déclencheur', () => {
     const declencheur = rendre();
     fireEvent.keyDown(declencheur, { key: 'ArrowDown' });
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Tab' });
     expect(screen.queryByRole('menu')).toBeNull();
-    expect(aLeFocus(declencheur)).toBe(false);
+    expect(aLeFocus(declencheur)).toBe(true);
+    expect(document.activeElement).not.toBe(document.body);
+  });
+
+  // Un menu dont aucun item n'est actionnable laisse le focus sur le
+  // déclencheur : sans ce cas, plus rien au clavier ne savait le refermer.
+  it('se referme au clavier même sans item actionnable', () => {
+    const declencheur = rendre([{ type: 'groupe', libelle: 'Rien ici' }]);
+    fireEvent.keyDown(declencheur, { key: 'ArrowDown' });
+    expect(screen.getByRole('menu')).toBeTruthy();
+    fireEvent.keyDown(declencheur, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).toBeNull();
+    expect(aLeFocus(declencheur)).toBe(true);
+  });
+});
+
+// Le panneau est monté sur `document.body` : rendu dans la cellule, il était
+// rogné par le `overflow-x-auto` du tableau et le `overflow-hidden` de la
+// carte, et les items du bas — dont « Effacer définitivement » — devenaient
+// inatteignables sur les dernières lignes.
+describe('MenuActions — échappe aux conteneurs rognants', () => {
+  it('rend le panneau hors du conteneur du déclencheur', () => {
+    render(
+      <div style={{ overflow: 'hidden' }} data-testid="carte">
+        <MenuActions libelleDeclencheur="Gérer le dossier" elements={elements()} />
+      </div>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /gérer le dossier/i }));
+    const menu = screen.getByRole('menu');
+    expect(screen.getByTestId('carte').contains(menu)).toBe(false);
+    expect(menu.parentElement).toBe(document.body);
+  });
+
+  it('positionne le panneau en `fixed`, hors de tout flux rognable', () => {
+    fireEvent.click(rendre());
+    expect(screen.getByRole('menu').style.position).toBe('fixed');
+  });
+
+  // Le panneau vit ailleurs dans le DOM : le test « clic extérieur » doit
+  // continuer de l'épargner, sans quoi le menu se refermerait sous le doigt.
+  it('un clic dans le panneau ne le referme pas', () => {
+    fireEvent.click(rendre());
+    fireEvent.pointerDown(screen.getByRole('menu'));
+    expect(screen.queryByRole('menu')).toBeTruthy();
   });
 });
 
@@ -138,16 +184,26 @@ describe('MenuActions — sélection et fermeture', () => {
     expect(aLeFocus(declencheur)).toBe(false);
   });
 
-  it('n’active pas un item désactivé et ne le donne pas au clavier', () => {
+  // Motif ARIA menu : un item désactivé reste ATTEIGNABLE au clavier — sinon
+  // rien n'apprend qu'une action existe mais n'est pas disponible ici. C'est
+  // sa sélection qui est refusée, d'où `aria-disabled` et non `disabled`.
+  it('rend un item désactivé navigable mais non sélectionnable', () => {
     const surSelect = vi.fn();
     const declencheur = rendre([
       { type: 'action', id: 'x', libelle: 'Indisponible', onSelect: surSelect, desactive: true },
       { type: 'action', id: 'y', libelle: 'Disponible', onSelect: surSelect },
     ]);
     fireEvent.keyDown(declencheur, { key: 'ArrowDown' });
-    // Le premier item actionnable est le second de la liste.
-    expect(aLeFocus(screen.getByRole('menuitem', { name: 'Disponible' }))).toBe(true);
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Indisponible' }));
+    const indisponible = screen.getByRole('menuitem', { name: 'Indisponible' });
+    expect(aLeFocus(indisponible)).toBe(true);
+    expect(indisponible.getAttribute('aria-disabled')).toBe('true');
+
+    fireEvent.click(indisponible);
     expect(surSelect).not.toHaveBeenCalled();
+    expect(screen.queryByRole('menu')).toBeTruthy();
+
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'ArrowDown' });
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Disponible' }));
+    expect(surSelect).toHaveBeenCalledTimes(1);
   });
 });

@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/Input';
 // cycle-de-vie/route.ts`). L'interface reflète le contrat serveur au lieu d'en
 // créer un second, qui aurait divergé.
 
-export type ModeConfirmation = 'cloture' | 'reprise' | 'effacement';
+export type ModeConfirmation = 'cloture' | 'reprise' | 'effacement' | 'desactivation' | 'reactivation';
 
 const CONFIRMATION_EFFACEMENT = 'EFFACER';
 
@@ -44,18 +44,33 @@ const ABSENT_DU_RESIDU =
 export function DossierConfirmDialog({
   mode,
   nomPatient,
+  accesActif = true,
   open,
   onOpenChange,
   onConfirm,
   enCours = false,
+  erreur = null,
 }: {
   mode: ModeConfirmation;
   /** Affiché tel quel : la confirmation doit désigner un dossier, pas « ce patient ». */
   nomPatient: string;
+  /**
+   * `false` quand le dossier est désactivé. La clôture ne peut alors pas
+   * promettre au praticien que « le patient conserve l'accès en lecture » : le
+   * portail le refuse déjà.
+   */
+  accesActif?: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
+  /** Reçoit la saisie réelle, et non une constante : voir le champ plus bas. */
+  onConfirm: (confirmation: string) => void;
   enCours?: boolean;
+  /**
+   * Un échec DOIT être dit ici. Radix pose un voile et `aria-hidden` sur le
+   * reste du document : un message rendu ailleurs dans la page serait derrière
+   * l'overlay, souvent hors du viewport, et muet pour un lecteur d'écran.
+   */
+  erreur?: string | null;
 }) {
   const [saisie, setSaisie] = useState('');
 
@@ -69,17 +84,22 @@ export function DossierConfirmDialog({
   const estEffacement = mode === 'effacement';
   const confirmationValide = !estEffacement || saisie === CONFIRMATION_EFFACEMENT;
 
-  const titre = estEffacement
-    ? `Effacer définitivement le dossier de ${nomPatient} ?`
-    : mode === 'cloture'
-      ? `Clôturer le suivi de ${nomPatient} ?`
-      : `Rouvrir le suivi de ${nomPatient} ?`;
-
-  const libelleConfirmer = estEffacement
-    ? 'Effacer définitivement'
-    : mode === 'cloture'
-      ? 'Clôturer le suivi'
-      : 'Rouvrir le suivi';
+  const TITRES: Record<ModeConfirmation, string> = {
+    effacement: `Effacer définitivement le dossier de ${nomPatient} ?`,
+    cloture: `Clôturer le suivi de ${nomPatient} ?`,
+    reprise: `Rouvrir le suivi de ${nomPatient} ?`,
+    desactivation: `Désactiver le dossier de ${nomPatient} ?`,
+    reactivation: `Réactiver le dossier de ${nomPatient} ?`,
+  };
+  const LIBELLES: Record<ModeConfirmation, string> = {
+    effacement: 'Effacer définitivement',
+    cloture: 'Clôturer le suivi',
+    reprise: 'Rouvrir le suivi',
+    desactivation: 'Désactiver le dossier',
+    reactivation: 'Réactiver le dossier',
+  };
+  const titre = TITRES[mode];
+  const libelleConfirmer = LIBELLES[mode];
 
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
@@ -98,8 +118,9 @@ export function DossierConfirmDialog({
                   sera envoyé.
                 </p>
                 <p className="mt-2">
-                  Le dossier reste en place et le patient conserve l’accès en lecture à ses
-                  archives. Vous pouvez rouvrir le suivi à tout moment.
+                  {accesActif
+                    ? 'Le dossier reste en place et le patient conserve l’accès en lecture à ses archives. Vous pouvez rouvrir le suivi à tout moment.'
+                    : 'Le dossier reste en place, mais il est désactivé : le patient n’a plus accès à son espace. Réactivez le dossier pour lui rendre la lecture de ses archives.'}
                 </p>
               </div>
             </Dialog.Description>
@@ -109,6 +130,20 @@ export function DossierConfirmDialog({
             <Dialog.Description className="mt-4 text-sm leading-relaxed text-foreground">
               Les assignations de questionnaires et les envois de documents redeviennent
               possibles pour ce dossier.
+            </Dialog.Description>
+          )}
+
+          {mode === 'desactivation' && (
+            <Dialog.Description className="mt-4 text-sm leading-relaxed text-foreground">
+              Le patient perdra l’accès à son espace : ses liens cesseront de fonctionner et
+              une nouvelle demande de lien lui sera refusée. Les données sont conservées et
+              vous pouvez réactiver le dossier à tout moment.
+            </Dialog.Description>
+          )}
+
+          {mode === 'reactivation' && (
+            <Dialog.Description className="mt-4 text-sm leading-relaxed text-foreground">
+              Le patient retrouvera l’accès à son espace.
             </Dialog.Description>
           )}
 
@@ -153,13 +188,22 @@ export function DossierConfirmDialog({
             </>
           )}
 
+          {erreur && (
+            <p
+              role="alert"
+              className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+            >
+              {erreur}
+            </p>
+          )}
+
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={enCours}>
               Annuler
             </Button>
             <Button
               variant={estEffacement ? 'danger' : 'primary'}
-              onClick={onConfirm}
+              onClick={() => onConfirm(saisie)}
               disabled={!confirmationValide || enCours}
             >
               {enCours ? 'En cours…' : libelleConfirmer}

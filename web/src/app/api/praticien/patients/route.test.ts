@@ -131,6 +131,15 @@ describe('PATCH /api/praticien/patients', () => {
     expect(prisma.patient.update).toHaveBeenCalledOnce();
   });
 
+  // L'alphabet élargi ne doit pas devenir un contournement : l'appartenance
+  // reste vérifiée, y compris sur les identifiants à tiret bas.
+  it('un identifiant à tiret bas d’un autre praticien reste refusé (403)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_SEED_03', praticienEmail: 'autre@wellneuro.fr' });
+    const res = await PATCH(patch({ idPatient: 'PAT_SEED_03', actif: 'NON' }));
+    expect(res.status).toBe(403);
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+  });
+
   it('refuse toujours un identifiant hors alphabet (400, aucune écriture)', async () => {
     const res = await PATCH(patch({ idPatient: 'PAT001; DROP', actif: 'NON' }));
     expect(res.status).toBe(400);

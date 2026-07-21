@@ -39,10 +39,48 @@ l'application promet au patient en production.
   le dossier de seed. Forme alignée sur `DELETE` et `cycle-de-vie` ;
   l'appartenance au praticien reste vérifiée, inchangée.
 
-Vérifié : T2 complet — 928 tests unitaires (dont 35 ajoutés), 51 E2E, aucune
-dérive schéma ↔ migrations. **Aucun E2E sur l'effacement** : la suite s'exécute
-contre une base partagée et réinitialise `PAT_SEED_03` ; un parcours qui
-effacerait réellement ce dossier détruirait la fixture des autres postes.
+Corrigé après revue indépendante, avant toute mise en production :
+
+- **Le menu était rogné** par le `overflow-x-auto` du tableau et le
+  `overflow-hidden` de la carte : sur les dernières lignes, « Clôturer le
+  suivi » et « Effacer définitivement » passaient sous le bord et devenaient
+  inatteignables. Le panneau est monté sur `document.body` en `position: fixed`,
+  se retourne vers le haut quand le bas manque, et borne sa hauteur à l'espace
+  libre — sur écran court il défile au lieu de sortir de la fenêtre. Aucun test
+  unitaire ne pouvait l'attraper : jsdom ne calcule pas de géométrie. Un E2E
+  vérifie désormais que le dernier item du menu de la dernière ligne est
+  réellement dans le viewport, sans rien effacer.
+- **L'échec d'une action irréversible était muet.** Le message partait dans la
+  carte du haut, hors du dialogue : derrière l'overlay Radix, souvent hors
+  écran, et sous `aria-hidden` — donc invisible à un lecteur d'écran. Il
+  s'affiche maintenant **dans** le dialogue, en `role="alert"`.
+- **La désactivation avait perdu sa confirmation.** Elle coupe l'accès au
+  portail et demandait auparavant deux gestes ; la renommer ne justifiait pas de
+  la lui retirer. Elle passe par le dialogue, comme ses voisines.
+- **Le badge mentait sur un dossier clos ET désactivé** : il affichait « Suivi
+  clôturé » seul, laissant croire que le patient consultait encore ses archives.
+  Les deux états s'affichent désormais, et la confirmation de clôture ne promet
+  plus la lecture quand le dossier est désactivé.
+- **`POST /api/praticien/consultations` ne testait que `actif`** : sur un
+  dossier clôturé, la route créait la consultation, **réactivait un jeton
+  révoqué** et envoyait l'e-mail — en contradiction avec le message de clôture.
+  Garde manquant ajouté (409 `dossier_cloture`), comme l'avaient déjà
+  assignation, pack et envoi de booklet. Le sélecteur de consultation signale
+  aussi les dossiers clos.
+- Menus : `Tab` rend le focus au déclencheur au lieu de le perdre sur `body`,
+  `Échap` est écouté au niveau du document (un tap ne pose pas le focus sur
+  WebKit mobile), un item désactivé reste navigable en `aria-disabled` — motif
+  ARIA menu. Les actions d'accès sont neutralisées pendant un envoi en vol,
+  garde que portaient les boutons remplacés.
+- La saisie réelle de l'utilisateur remonte jusqu'au corps de la requête, au
+  lieu d'une constante `'EFFACER'` recopiée : une régression sur l'activation du
+  bouton ne deviendrait pas un effacement.
+
+Vérifié : T2 complet — 943 tests unitaires (dont 50 ajoutés), 55 E2E, aucune
+dérive schéma ↔ migrations. **Aucun E2E n'efface** : la suite s'exécute contre
+une base partagée et réinitialise `PAT_SEED_03` ; un parcours qui effacerait
+réellement ce dossier détruirait la fixture des autres postes. Le parcours
+d'effacement s'arrête à la confirmation inerte.
 
 ### Hébergement HDS — question instruite, et dérogation datée (2026-07-21)
 

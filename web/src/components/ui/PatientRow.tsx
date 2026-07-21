@@ -46,11 +46,18 @@ export function PatientRow({
   onEdit,
   onAction,
   lienMagiqueActif = false,
+  actionAccesEnCours = false,
 }: {
   patient: PatientRowData;
   onEdit: (patient: PatientRowData) => void;
   onAction: (action: ActionDossier, patient: PatientRowData) => void;
   lienMagiqueActif?: boolean;
+  /**
+   * Une action d'accès est en vol. Les boutons remplacés portaient ce garde ;
+   * sans lui, deux ouvertures successives du menu suffisent à envoyer deux
+   * fois le même lien au patient.
+   */
+  actionAccesEnCours?: boolean;
 }) {
   const phase = phaseDossier({
     actif: patient.actif === 'OUI',
@@ -68,8 +75,20 @@ export function PatientRow({
   // et c'est le serveur qui le dit (`api/portail/lien/demande`).
   const elements: ElementMenu[] = [
     { type: 'groupe', libelle: 'Accès au portail' },
-    { type: 'action', id: 'resend', libelle: 'Renvoyer le lien', onSelect: agir('resend') },
-    { type: 'action', id: 'copier', libelle: 'Copier le lien', onSelect: agir('copier') },
+    {
+      type: 'action',
+      id: 'resend',
+      libelle: 'Renvoyer le lien',
+      onSelect: agir('resend'),
+      desactive: actionAccesEnCours,
+    },
+    {
+      type: 'action',
+      id: 'copier',
+      libelle: 'Copier le lien',
+      onSelect: agir('copier'),
+      desactive: actionAccesEnCours,
+    },
     ...(lienMagiqueActif
       ? [
           {
@@ -77,10 +96,17 @@ export function PatientRow({
             id: 'lien_magique',
             libelle: 'Lien à usage unique (24 h)',
             onSelect: agir('lien_magique'),
+            desactive: actionAccesEnCours,
           },
         ]
       : []),
-    { type: 'action', id: 'revoke', libelle: 'Révoquer l’accès', onSelect: agir('revoke') },
+    {
+      type: 'action',
+      id: 'revoke',
+      libelle: 'Révoquer l’accès',
+      onSelect: agir('revoke'),
+      desactive: actionAccesEnCours,
+    },
     estInactif
       ? {
           type: 'action',
@@ -118,7 +144,15 @@ export function PatientRow({
       <td className="px-4 py-2">{patient.email || '—'}</td>
       <td className="px-4 py-2">{patient.telephone || '—'}</td>
       <td className="px-4 py-2">
-        <Badge variant={VARIANT_PHASE[phase]}>{LIBELLE_PHASE[phase]}</Badge>
+        {/* Les deux états se cumulent et ne se déduisent pas l'un de l'autre.
+            `phaseDossier` fait primer la clôture, ce qui est juste pour
+            décider d'un envoi — mais afficher le seul « Suivi clôturé » sur un
+            dossier désactivé laisserait croire que le patient consulte encore
+            ses archives, alors que le portail les lui refuse. */}
+        <span className="flex flex-wrap items-center gap-1">
+          <Badge variant={VARIANT_PHASE[phase]}>{LIBELLE_PHASE[phase]}</Badge>
+          {estClos && estInactif && <Badge variant="neutral">Inactif</Badge>}
+        </span>
       </td>
       <td className="px-4 py-2">
         <button
@@ -137,11 +171,7 @@ export function PatientRow({
         </Link>
       </td>
       <td className="px-4 py-2">
-        <MenuActions
-          libelleDeclencheur="Gérer le dossier"
-          elements={elements}
-          alignement="droite"
-        />
+        <MenuActions libelleDeclencheur="Gérer le dossier" elements={elements} />
       </td>
     </tr>
   );
