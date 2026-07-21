@@ -700,6 +700,8 @@
   (SP-MET, praticien seul) ; toute donnée réservée au praticien ; l'assignation,
   qui reste un geste praticien.
 - **Statut** : cadrée le 2026-07-19. Dépend d'**IDP / LOT-01**.
+- **Dette héritée** : E11 (audit 5.0, hub empilé côté portail) rattachée à
+  LOT-01 — détail dans `CAMPAGNE.md` de la campagne.
 
 ### C0-UX — Refonte shell 3.0 (`2026-07-11-refonte-ux-shell-3-0`)
 
