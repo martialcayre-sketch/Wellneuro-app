@@ -250,9 +250,12 @@ start_pg() {
 }
 
 create_db() {
-  # Mêmes identifiants jetables que le service postgres de ci.yml.
+  # Mêmes identifiants jetables que le service postgres de ci.yml. SUPERUSER :
+  # parité avec l'image Docker, dont POSTGRES_USER est superutilisateur — la
+  # migration pgvector exécute CREATE EXTENSION vector, refusé à un rôle
+  # ordinaire (extension non « trusted »).
   "$PG_BIN/psql" -h 127.0.0.1 -p "$PG_PORT" -U postgres -v ON_ERROR_STOP=1 -q \
-    -c "CREATE ROLE ci_user LOGIN PASSWORD 'ci_password'" \
+    -c "CREATE ROLE ci_user LOGIN SUPERUSER PASSWORD 'ci_password'" \
     -c "CREATE DATABASE wellneuro_ci OWNER ci_user"
 }
 

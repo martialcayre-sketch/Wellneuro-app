@@ -13,4 +13,12 @@ export default defineConfig({
   datasource: {
     url: process.env["DATABASE_URL"] ? withSupabaseSslMode(process.env["DATABASE_URL"]) : undefined,
   },
+  // `vector(1536)` reste un type d'extension manipulé en SQL brut. La table est
+  // créée par la migration versionnée mais exclue du diff Prisma déclaratif.
+  experimental: {
+    externalTables: true,
+  },
+  tables: {
+    external: ["public.rag_corpus_chunks"],
+  },
 });
