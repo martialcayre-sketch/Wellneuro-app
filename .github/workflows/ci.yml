@@ -37,17 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Nécessaire pour comparer le diff à sa base et détecter une PR
-          # purement documentaire (étape « Périmètre du diff » ci-dessous).
           fetch-depth: 0
 
-      # Le nom du job reste `verify` : les règles de protection de branche
-      # continuent d'exiger exactement ce check, quel que soit le périmètre.
-      # Une PR documentaire n'a aucune raison d'installer des navigateurs et de
-      # rejouer les E2E — mais elle DOIT rester soumise à l'anti-secrets (un
-      # secret se colle aussi bien dans un .md) et à l'audit des campagnes (une
-      # modification documentaire est précisément ce qui casse les invariants de
-      # miroir). Ces deux contrôles restent donc inconditionnels.
       - name: Périmètre du diff
         id: scope
         run: |
@@ -56,8 +47,6 @@ jobs:
           else
             base="${{ github.event.before }}"
           fi
-          # Base inconnue (première poussée d'une branche, historique tronqué) :
-          # on ne devine pas, on traite le diff comme du code.
           if ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
             echo "Base '${base}' introuvable → périmètre traité comme code."
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
@@ -66,9 +55,6 @@ jobs:
           fichiers="$(git diff --name-only "$base" HEAD)"
           echo "Fichiers modifiés :"
           echo "$fichiers"
-          # Volontairement PAS `grep -qv` : le grep BSD (macOS) en rend un statut
-          # faux, ce qui rendrait cette logique invérifiable en local même si
-          # elle passe sous le grep GNU du runner. On matérialise la liste.
           hors_docs="$(printf '%s\n' "$fichiers" | grep -vE '(^docs/|\.md$)' || true)"
           if [ -z "$fichiers" ] || [ -n "$hors_docs" ]; then
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
@@ -83,8 +69,6 @@ jobs:
       - name: Campaign rules audit (blocking)
         run: node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
 
-      # Protège la logique clinique : les 63 questionnaires doivent rester
-      # conformes à leurs fixtures de scoring certifiées.
       - name: Scoring certification (63 questionnaires, blocking)
         run: node scripts/check_questionnaire_certification.js
 
@@ -110,13 +94,6 @@ jobs:
         working-directory: web
         run: npx prisma migrate deploy
 
-      # Gate avant déploiement : en production, seul le SQL des migrations
-      # committées est appliqué (web/scripts/vercel-build.sh). Si schema.prisma
-      # a évolué sans migration, le client Prisma déployé attendrait un schéma
-      # que la base n'aura jamais. La base CI vient d'être construite uniquement
-      # par `migrate deploy` : l'introspecter (--from-config-datasource lit
-      # DATABASE_URL) équivaut à rejouer les migrations. Échec (code 2) si elle
-      # diverge de schema.prisma.
       - name: Migration drift check (schema.prisma vs migrations)
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
@@ -146,7 +123,19 @@ jobs:
       - name: Type-check
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
-        run: npm run type-check
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run type-check 2>&1 | tee typecheck.log
+
+      - name: Upload type-check diagnostics
+        if: always() && steps.scope.outputs.docs_only != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: typecheck-log
+          path: web/typecheck.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Unit tests (Vitest)
         if: steps.scope.outputs.docs_only != 'true'
@@ -163,9 +152,6 @@ jobs:
         working-directory: web
         run: npm run build
 
-      # Installation des navigateurs placée juste avant les E2E, et non en tête
-      # de job : tout échec statique (type-check, Vitest, lint, build) rendait
-      # sinon la main après avoir payé ~1 min de téléchargement inutile.
       - name: Cache navigateurs Playwright
         if: steps.scope.outputs.docs_only != 'true'
         uses: actions/cache@v4
@@ -178,9 +164,6 @@ jobs:
         working-directory: web
         run: npx playwright install --with-deps chromium webkit
 
-      # E2E contre le build de production produit plus haut : plus rapide (pas
-      # de compilation à la demande de next dev) et plus fidèle au déploiement
-      # Vercel (bundles React prod, prerender identique).
       - name: E2E tests (Playwright, production build)
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
