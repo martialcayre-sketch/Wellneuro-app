@@ -1,5 +1,6 @@
 import { escapeHtml } from '@/lib/html';
 import { blocsPourDestinataire, contenuPourDestinataire } from './bloc';
+import { assertRenduMedecinNonPrescriptif } from './vocabulaire';
 import type { Destinataire, DocumentComposite } from './types';
 
 // Rendu HTML paramétré par destinataire (C3 LOT-03). PUR (string → string), sur le
@@ -69,6 +70,13 @@ export function renderDocumentHtml(
           })
           .join('\n')
       : '<div class="bloc"><em>Aucun contenu diffusé à ce destinataire.</em></div>';
+
+  // Garde en code (E15) : la docstring de la garde promettait un appel avant
+  // diffusion, resté sans appelant en production. Posée ici, au chokepoint que
+  // traverse tout rendu médecin, sur le contenu réellement diffusé.
+  if (destinataire === 'medecin') {
+    assertRenduMedecinNonPrescriptif(corps);
+  }
 
   return `<!doctype html>
 <html lang="fr">

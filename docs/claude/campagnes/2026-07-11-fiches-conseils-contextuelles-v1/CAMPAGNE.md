@@ -87,11 +87,12 @@ et les blocs C1 (`cockpit`) / C2 (`ProtocolDraft`, `ProtocolDiffusionApproval`,
 
 | Lot | Objet | Statut |
 |---|---|---|
-| LOT-00 | Audit de l'existant documentaire + inventaire des blocs | **à_faire** |
-| LOT-01 | Modèles documentaires et contrat de bloc (provenance/état/version) | **à_faire** |
-| LOT-02 | Composition deux colonnes + machine d'états | **à_faire** |
-| LOT-03 | Rendus par destinataire + impression HTML | **à_faire** |
-| LOT-04 | Validation, tests de bout en bout et handoff | **à_faire** |
+| LOT-00 | Audit de l'existant documentaire + inventaire des blocs | **livré** |
+| LOT-01 | Modèles documentaires et contrat de bloc (provenance/état/version) | **livré** |
+| LOT-02 | Composition deux colonnes + machine d'états | **livré** |
+| LOT-03 | Rendus par destinataire + impression HTML | **livré** |
+| LOT-04 | Validation, tests de bout en bout et handoff | **livré** |
+| LOT-05 | Montage cockpit + route de composition et envoi réemployé | **livré** |
 
 Décisions de compilation :
 

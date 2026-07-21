@@ -1,9 +1,9 @@
 ---
 id: "2026-07-19-sp-tt-time-travel-relecture"
 titre: "SP-TT — Time-travel et note de relecture"
-statut: "cadrée"
+statut: "livrée"
 créée_le: "2026-07-19"
-mise_à_jour: "2026-07-19"
+mise_à_jour: "2026-07-21"
 lot_courant: "LOT-01"
 ---
 
@@ -61,8 +61,8 @@ C2A ✓ (épisodes persistés), C2B ✓ (trajectoire lisible).
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-01 | Paramètre `asOf` sur les lectures praticien + bandeau d'état passé + retour au présent — **sans migration** | à_faire | — |
-| LOT-02 | Note de relecture : table `relecture_notes` append-only + saisie et affichage — **gate migration G3, confirmation explicite** | à_faire | LOT-01 |
+| LOT-01 | Paramètre `asOf` sur les lectures praticien + bandeau d'état passé + retour au présent — **sans migration** | livré | — |
+| LOT-02 | Note de relecture : table `relecture_notes` append-only + saisie et affichage — **gate migration G3, confirmation explicite** | livré (sans lot compilé séparé — doctrine N+1/A3 ; migration `20260720120000_sptt_relecture_notes_v1`, #163) | LOT-01 |
 
 ## Définition de done
 

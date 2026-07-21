@@ -628,19 +628,19 @@ export function FichePatientPanel({
           {assignationsModif.length > 0 && (
             <section aria-label="Demandes de correction en attente" className="bg-surface border border-accent rounded-xl overflow-hidden">
               {assignationsModif.map(a => (
-                <div key={a.idAssignation} className="px-4 py-3 border-b border-border last:border-b-0 flex items-start justify-between gap-3 bg-orange-50">
+                <div key={a.idAssignation} className="px-4 py-3 border-b border-border last:border-b-0 flex items-start justify-between gap-3 bg-status-warning/10">
                   <div className="min-w-0">
-                    <span className="text-sm text-orange-800">
+                    <span className="text-sm text-status-warning">
                       Demande de correction — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
                     </span>
                     {a.correctionCommentaire && (
-                      <p className="text-xs text-orange-700 mt-1 italic">« {a.correctionCommentaire} »</p>
+                      <p className="text-xs text-status-warning mt-1 italic">« {a.correctionCommentaire} »</p>
                     )}
                   </div>
                   <button
                     onClick={() => onDebloquer(a.idAssignation)}
                     disabled={deverrouillageId === a.idAssignation}
-                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-orange-600 text-white disabled:opacity-60"
+                    className="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-status-warning text-white disabled:opacity-60"
                   >
                     {deverrouillageId === a.idAssignation ? 'Déblocage...' : 'Débloquer'}
                   </button>
@@ -770,7 +770,7 @@ export function FichePatientPanel({
       </div>
 
       {fixtureErgo && (
-        <div role="status" className="bg-orange-50 border border-accent rounded-xl px-4 py-3 text-sm text-orange-800">
+        <div role="status" className="bg-status-warning/10 border border-accent rounded-xl px-4 py-3 text-sm text-status-warning">
           Mode validation ergonomique — données fictives (fixture C1). Aucune sauvegarde, aucun envoi.
           {erreurErgo && <span className="block mt-1 font-medium">Erreur du harnais : {erreurErgo}</span>}
         </div>
@@ -785,7 +785,7 @@ export function FichePatientPanel({
       {assignationsModif.length > 0 && (
         <div
           role="status"
-          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-orange-50 px-4 py-2 text-sm text-orange-800"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-sm text-status-warning"
         >
           <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
           <span className="min-w-0">
@@ -957,7 +957,7 @@ export function FichePatientPanel({
           ) : etatTrajectoire === 'erreur' ? (
             // Un échec de lecture n'est JAMAIS présenté comme « aucun épisode » :
             // ce serait une affirmation fausse sur l'historique clinique.
-            <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-sm text-orange-800">
+            <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-sm text-status-warning">
               <span>{erreurTrajectoire}</span>
               <button
                 type="button"

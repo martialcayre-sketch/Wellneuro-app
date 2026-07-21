@@ -4,6 +4,68 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Gouvernance et cohérence documentaire — audit de conformité 5.0 (2026-07-21)
+
+Documentaire uniquement. Aucun code, schéma, migration ni flag modifié.
+Corrige E19, E21, C3 (table de lots), E22, E24, E26, E28, E29, E30, E31, E33,
+E34, E35 relevés par l'audit du 2026-07-20.
+
+- **Statuts de campagne réalignés sur le réel** : SP-TT et SP-MET passent
+  `cadrée` → `livrée` (code shipé, lots marqués `livré`) ; la table de lots de
+  C3 (5 lignes `à_faire` alors que le frontmatter dit « en prod ») réalignée,
+  LOT-05 ajouté ; `campagnes/README.md` corrigé pour SP-COP/SP-TT/SP-MET.
+- **`.wn/state.json`** (E26) : `updated_at` rafraîchi, `WN_ALLOW_PROTECTED_WRITE`
+  (variable supprimée) retiré, G1/G3 marqués appliqués, isolation alignée sur
+  30/33 (#181), compte E2E corrigé. G4/G-TRUST-04 volontairement **non
+  arbitrés ici** — en évolution active dans une autre session ; le fichier
+  renvoie vers `CHECKLIST_ACTIVATION_G_TRUST_04.md`/`ACTIVATION_RUNBOOK_G4.md`
+  comme source à jour plutôt que d'asserter un statut.
+- **Vues régénérées** via leurs générateurs (jamais éditées à la main) :
+  `ACTIVE_CAMPAIGN.md` (`wn-campaign.mjs sync`) et
+  `AUDIT_REGLES_CAMPAGNES.md` (`wn-campaign-audit.mjs --write`), tous deux
+  après correction des sources qu'ils dérivent.
+- **Miroir `wellneuro_wn_campaigns/` supprimé** (257 fichiers) : copie figée au
+  2026-07-16 se déclarant « synchronisée », sans aucun générateur, absente des
+  5 campagnes de Vague 2 ; récupérable via l'historique git si besoin.
+- **Comptage E2E corrigé** (E34) : 34/45 → **26 tests source** (2 projets, 52
+  exécutions Playwright) dans `CLAUDE.md`, `ROLES_MACHINES.md`,
+  `web/e2e/README.md`, `.wn/state.json`.
+- **Petites incohérences** : titre A7 « deux régimes » → « trois régimes »
+  (contredisait son propre corps) ; inventaire de schéma de
+  `PROJET_CONTEXTE.md` reformulé sans énumération périssable ; collision de
+  sigle « R8 » entre les deux roadmaps désambiguïsée par note croisée ; §10 de
+  la proposition UX 5.0 et note TRUST sur le legacy rectifiées par blockquote
+  daté, dans le style déjà en usage dans ces documents.
+
+### Patient & accessibilité — six écarts de l'audit de conformité 5.0 (2026-07-21)
+
+Aucune migration, aucun changement de schéma. Corrige E10, E12, E13, E14, E15,
+E18 relevés par l'audit du 2026-07-20.
+
+- **E10 — plus de score chiffré affiché au patient.** `ScoreGauge` gagne
+  `showValue` (défaut `true`) ; le montage patient (`MonEquilibreAccueil`)
+  passe `showValue={false}` — la bande visuelle reste, le nombre disparaît.
+  Le montage praticien (`FichePatientPanel`) est inchangé. *Décision utilisateur
+  du 2026-07-21 : masquer le chiffre plutôt qu'acter une exception au registre.*
+- **E12** — le sous-titre « Version locale de travail JA5-02 » et la ligne
+  « Jalon · charge perçue · budget global » (identifiants et chiffres internes)
+  ne s'affichent plus dans la spirale alimentaire patient ; seul
+  `feedbackPatient`, écrit pour le patient, reste.
+- **E13** — « Mes 12 besoins » n'est plus la seule interaction *hover-only* du
+  dépôt : chaque besoin est désormais un bouton focusable (clavier/tactile), et
+  porte un libellé texte de couverture (« Bien couvert » / « Couverture
+  partielle » / « Peu couvert ») en plus de l'opacité de couleur.
+  Instruction reformulée en conséquence.
+- **E14** — cibles tactiles du portail patient relevées à 44 px minimum
+  (`PatientButton`, `ReadingComfortControl`, lien « Ouvrir » du hub legacy).
+- **E15** — la garde `assertRenduMedecinNonPrescriptif`, restée sans appelant en
+  production, est désormais posée dans `renderDocumentHtml` sur le rendu
+  médecin ; `DocumentsPanel` capture une éventuelle violation pour un message
+  actionnable plutôt qu'un aperçu qui plante.
+- **E18** — couleurs Tailwind brutes hors tokens retokenisées :
+  `FichePatientPanel` (`orange-*` → `status-warning`), `DocumentComposer` et
+  `DocumentsPanel` (`slate-*`/`white` → `foreground`/`surface`/`muted`).
+
 ### Gate G4 — les deux résidus du canal de redemande (IDP LOT-02, 2026-07-21)
 
 Migration confirmée explicitement par l'utilisateur le 2026-07-21. **Migration

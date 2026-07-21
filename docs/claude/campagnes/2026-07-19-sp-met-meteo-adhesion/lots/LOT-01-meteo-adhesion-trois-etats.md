@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Météo d'adhésion : trois états et cause observable"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "aucun"
 ---
 

@@ -90,7 +90,7 @@ export function ReadingComfortControl() {
 
   return (
     <details className="relative">
-      <summary className="list-none cursor-pointer select-none text-xs text-muted-foreground hover:text-foreground rounded-lg border border-border px-3 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
+      <summary className="min-h-11 inline-flex items-center list-none cursor-pointer select-none text-xs text-muted-foreground hover:text-foreground rounded-lg border border-border px-3 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">
         Confort de lecture
       </summary>
       <div className="absolute right-0 mt-2 w-64 rounded-xl border border-border bg-surface shadow-lg p-4 space-y-3 z-40">

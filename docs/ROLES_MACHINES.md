@@ -96,7 +96,7 @@ Le mode de travail nominal, quand les deux machines servent :
    commandes sûres : `type-check`, `npm test`, `lint`.
 2. **PC** — committer et pousser la branche. Ouvrir la PR si besoin.
 3. **Mac** — `git pull`, puis validation complète : `npm run test:worktree`
-   (séquence rapide `-- --fast` : ~1 min 20 s, 34 tests E2E inclus).
+   (séquence rapide `-- --fast` : ~1 min 20 s, 26 tests E2E source inclus).
 4. **Mac** — lire le CI (`gh pr checks`), puis merger.
 
 Un seul principe à retenir : **le PC propose, le Mac valide vite.**
