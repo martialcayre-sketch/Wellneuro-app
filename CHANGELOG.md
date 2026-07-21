@@ -4,6 +4,37 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Le chemin retour du pack de réévaluation — migration seule (SP-SPI, 2026-07-21)
+
+Migration **seule**, sans écran : SP-SPI LOT-01 exigeait un pack « proposé et
+refusable » et s'interdisait dans le même document toute écriture. Les deux ne
+tiennent pas ensemble — un refus qu'on ne persiste pas revient à chaque visite,
+et une proposition qui revient **est** une relance, ce que la campagne
+s'interdit. Arbitré le 2026-07-21 : le refus est persisté, et sa migration passe
+avant l'écran, dans sa propre PR.
+
+- **`pack_propositions`** — append-only chaînée (`supersedes_proposition_id`),
+  comme `trust_choice_events` et `fil_card_rejections` : répondre crée une
+  seconde ligne qui supplante la première, laquelle reste lisible. Donc **aucune
+  contrainte d'unicité** sur `(id_patient, id_pack)` — elle rendrait la réponse
+  impossible.
+- **`id_pack` n'est pas une clé étrangère** vers `packs` : la ligne consigne ce
+  qui a été proposé au moment où ça l'a été, et doit survivre à la désactivation
+  du pack. Même principe que `version_score` figée à la mesure ; une clé
+  étrangère ferait dépendre une trace passée d'un référentiel présent.
+- **`acteur_role` n'est jamais déduit de `statut`** : qui écrit et ce qui est
+  écrit restent deux choses.
+- **RLS deny-all** activée, cohérente avec `trust_v1` et les tables C2A.
+- **L'effacement suit** (`lib/patient/effacement.ts`) : la clé étrangère est en
+  `RESTRICT`, une table fille oubliée aurait fait échouer le droit à
+  l'effacement sur tout dossier ayant reçu une proposition. La garde structurelle
+  du dépôt — celle qui dérive la liste des tables du schéma plutôt que d'une
+  mémoire — le nomme quand on l'omet ; vérifié en la falsifiant.
+
+Additive uniquement : une table nouvelle, aucun backfill, aucune table existante
+modifiée. Rollback = abandon de la table. **Aucun écran, aucune route** : rien ne
+lit ni n'écrit encore cette table.
+
 ### Révoquer un accès ferme tout, et le dit (IDP2, LOT-02c, 2026-07-21)
 
 Deux écarts entre ce que le code faisait et ce qu'il disait.

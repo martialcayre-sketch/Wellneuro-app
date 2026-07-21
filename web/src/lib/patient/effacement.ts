@@ -86,6 +86,7 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.filCardRejections = (await tx.filCardRejection.deleteMany({ where: par })).count;
     supprimees.relectureNotes = (await tx.relectureNote.deleteMany({ where: par })).count;
     supprimees.portailMagicLinks = (await tx.portailMagicLink.deleteMany({ where: par })).count;
+    supprimees.packPropositions = (await tx.packProposition.deleteMany({ where: par })).count;
 
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.

@@ -59,6 +59,7 @@ model Patient {
   relectureNotes             RelectureNote[]
   filCardRejections          FilCardRejection[]
   portailMagicLinks          PortailMagicLink[]
+  packPropositions           PackProposition[]
 
   @@map("patients")
 }
@@ -952,4 +953,45 @@ model DossierEfface {
 
   @@index([effaceLe], map: "idp2_dossier_efface_date_idx")
   @@map("dossiers_effaces")
+}
+
+// Proposition de pack de réévaluation (SP-SPI LOT-01). Le pack est PROPOSÉ au
+// patient qui revient après une absence — jamais assigné : l'assignation reste
+// un geste praticien, et cette table n'en crée aucune.
+//
+// POURQUOI ELLE EXISTE. Le lot s'interdisait toute écriture et exigeait en même
+// temps un pack refusable. Les deux ne tiennent pas ensemble : un refus qu'on
+// ne persiste pas revient à chaque visite, et une proposition qui revient EST
+// une relance — ce que la campagne s'interdit explicitement. La donnée sert donc
+// à NE PAS REDEMANDER, jamais à insister.
+//
+// CE QU'ELLE NE DÉCLENCHE PAS : aucune assignation, aucun envoi d'e-mail, aucun
+// compte à rebours, aucune relance. Un refus reste sans conséquence pour le
+// patient — c'est un invariant de la campagne, pas une propriété de cette table.
+//
+// Append-only chaîné (supersedes_proposition_id), comme `trust_choice_events` et
+// `fil_card_rejections` : répondre à une proposition crée une SECONDE ligne qui
+// supplante la première, laquelle reste lisible. Aucune réécriture, aucune
+// suppression, et donc aucune contrainte d'unicité sur (id_patient, id_pack) —
+// elle rendrait la réponse impossible. Les index servent la lecture seule.
+//
+// `id_pack` n'est PAS une clé étrangère vers `packs` : la proposition consigne
+// ce qui a été proposé au moment où ça l'a été, et doit survivre à la
+// désactivation du pack — même raison que `version_score` figée à la mesure.
+model PackProposition {
+  id                      String   @id @default(cuid()) @map("id")
+  idPatient               String   @map("id_patient")
+  idPack                  String   @map("id_pack")
+  statut                  String   @map("statut") // proposee | acceptee | declinee
+  // « systeme » pose la proposition, « patient » y répond. Jamais déduit de la
+  // valeur de `statut` : qui écrit et ce qui est écrit restent deux choses.
+  acteurRole              String   @map("acteur_role")
+  supersedesPropositionId String?  @map("supersedes_proposition_id")
+  enregistreLe            DateTime @default(now()) @map("enregistre_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, enregistreLe], map: "sp_spi_pack_proposition_patient_idx")
+  @@index([idPatient, idPack], map: "sp_spi_pack_proposition_pack_idx")
+  @@map("pack_propositions")
 }
