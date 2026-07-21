@@ -92,6 +92,48 @@ describe('POST /api/portail/session', () => {
     expect((await POST(request({ token: 'TOK_REEMIS' }, cookie))).status).toBe(200);
   });
 
+  // Bascule des liens permanents (R4). La date se pose en variable
+  // d'environnement : elle n'est ni compilée, ni en base, ni par patient.
+  describe('bascule des liens permanents', () => {
+    const FIN = 'WN_PORTAIL_LIEN_PERMANENT_FIN';
+    beforeEach(() => {
+      delete process.env[FIN];
+    });
+
+    it('sans variable, rien ne change — c’est le comportement d’aujourd’hui', async () => {
+      const response = await POST(request({ token: patient.accessToken, email: patient.email }));
+      expect(response.status).toBe(200);
+    });
+
+    it('avant la date, l’accès reste ouvert', async () => {
+      process.env[FIN] = new Date(Date.now() + 86_400_000).toISOString();
+      expect((await POST(request({ token: patient.accessToken, email: patient.email }))).status).toBe(200);
+    });
+
+    it('après la date, 410 et un message qui oriente, sans toucher la base', async () => {
+      process.env[FIN] = new Date(Date.now() - 1_000).toISOString();
+      const response = await POST(request({ token: patient.accessToken, email: patient.email }));
+
+      expect(response.status).toBe(410);
+      const corps = await response.json();
+      expect(corps).toMatchObject({ ok: false, reason: 'lien_permanent_expire' });
+      // Le message ne dit pas « révoqué » : après la bascule, ce serait faire
+      // croire à chaque patient que son dossier est fermé.
+      expect(corps.error).toMatch(/n’est plus valable/);
+      expect(corps.error).not.toMatch(/révoqu/i);
+      // Aucune lecture du jeton : rien ne peut distinguer un jeton connu d'un
+      // jeton inconnu après la bascule.
+      expect(prisma.patient.findUnique).not.toHaveBeenCalled();
+    });
+
+    // Fail-open assumé : une faute de frappe dans la date ne met personne
+    // dehors. Le contraire verrouillerait la production sur une coquille.
+    it('une date illisible laisse l’accès ouvert', async () => {
+      process.env[FIN] = 'bientôt';
+      expect((await POST(request({ token: patient.accessToken, email: patient.email }))).status).toBe(200);
+    });
+  });
+
   it('refuse un cookie émis avant une révocation', async () => {
     const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
     prisma.patient.findUnique.mockResolvedValue({
