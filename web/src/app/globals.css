@@ -211,3 +211,24 @@ html[data-reading-motion='reduced'] *::after {
   transition-duration: 0.001s !important;
   scroll-behavior: auto !important;
 }
+
+/*
+ * Préférence système « réduire les animations » (R9c de l'audit 5.0). Le
+ * réglage manuel ci-dessus est patient seul ; la préférence exprimée au niveau
+ * du système d'exploitation, elle, vaut pour **les deux fronts** — un
+ * praticien qui l'a activée n'avait jusqu'ici aucun moyen, ni automatique ni
+ * manuel, de l'obtenir dans le dashboard.
+ *
+ * Mêmes règles que le réglage manuel, volontairement : ce qui est réduit ne
+ * dépend pas de la façon dont la réduction a été demandée.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.001s !important;
+    scroll-behavior: auto !important;
+  }
+}

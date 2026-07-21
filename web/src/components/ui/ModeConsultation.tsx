@@ -28,7 +28,7 @@ export function ModeConsultation({
           onClick={onToggle}
           className="flex min-h-11 items-center gap-1 rounded-lg px-2 py-1 font-medium hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
-          <X size={14} strokeWidth={2} />
+          <X aria-hidden="true" size={14} strokeWidth={2} />
           Quitter
         </button>
       </div>
