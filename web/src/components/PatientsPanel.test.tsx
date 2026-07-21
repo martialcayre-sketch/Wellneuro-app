@@ -453,3 +453,68 @@ describe('PatientsPanel — cycle de vie du dossier (LOT-01b)', () => {
     await waitFor(() => expect(screen.getByText(/Michel Dogné.*\(suivi clôturé\)/)).toBeTruthy());
   });
 });
+
+// La révocation partait sur un clic, sans question. Depuis le LOT-02b elle
+// coupe une session en cours et les liens à usage unique en vol : elle rejoint
+// la règle que le panneau énonçait déjà — toute action qui change ce à quoi le
+// patient a accès passe par un dialogue.
+describe('PatientsPanel — révocation d’accès (LOT-02c)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('demande confirmation avant tout appel, et dit ce qui est coupé', async () => {
+    const appels = stubFetch();
+    render(<PatientsPanel />);
+    await ouvrirMenu();
+    fireEvent.click(item(/révoquer l’accès/i));
+
+    await screen.findByRole('heading', { name: /révoquer l’accès de michel dogné/i });
+    expect(screen.getByText(/session en cours est coupée/i)).toBeTruthy();
+    expect(screen.getByText(/usage unique déjà envoyés/i)).toBeTruthy();
+    // Rien n'est parti tant que le praticien n'a pas confirmé.
+    expect(appels.some(a => a.method === 'DELETE')).toBe(false);
+  });
+
+  it('annuler n’appelle rien', async () => {
+    const appels = stubFetch();
+    render(<PatientsPanel />);
+    await ouvrirMenu();
+    fireEvent.click(item(/révoquer l’accès/i));
+    await screen.findByRole('heading', { name: /révoquer l’accès/i });
+
+    fireEvent.click(screen.getByRole('button', { name: /annuler/i }));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: /révoquer l’accès de/i })).toBeNull());
+    expect(appels.some(a => a.method === 'DELETE')).toBe(false);
+  });
+
+  it('confirmer révoque une fois, et le message nomme les trois portes fermées', async () => {
+    const appels = stubFetch();
+    render(<PatientsPanel />);
+    await ouvrirMenu();
+    fireEvent.click(item(/révoquer l’accès/i));
+    fireEvent.click(await screen.findByRole('button', { name: /^révoquer l’accès$/i }));
+
+    await waitFor(() => {
+      const revocations = appels.filter(a => a.method === 'DELETE');
+      expect(revocations).toHaveLength(1);
+      expect(revocations[0].url).toContain('PAT_SEED_03');
+    });
+
+    const message = await screen.findByText(/accès révoqué\s*:/i);
+    expect(message.textContent).toMatch(/session en cours/i);
+    expect(message.textContent).toMatch(/usage unique/i);
+  });
+
+  // Leçon du LOT-01b : un message rendu hors du dialogue passe derrière
+  // l'overlay Radix et sous `aria-hidden`. L'échec doit être DANS le dialogue.
+  it('un refus s’affiche dans le dialogue, qui reste ouvert', async () => {
+    stubFetch({ surToken: () => ({ success: false, reason: 'forbidden', error: 'Patient non accessible.' }) });
+    render(<PatientsPanel />);
+    await ouvrirMenu();
+    fireEvent.click(item(/révoquer l’accès/i));
+    fireEvent.click(await screen.findByRole('button', { name: /^révoquer l’accès$/i }));
+
+    const alerte = await screen.findByRole('alert');
+    expect(alerte.textContent).toMatch(/pas accessible depuis votre compte/i);
+    expect(screen.getByRole('heading', { name: /révoquer l’accès de/i })).toBeTruthy();
+  });
+});
