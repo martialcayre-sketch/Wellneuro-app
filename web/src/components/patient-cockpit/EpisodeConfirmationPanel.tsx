@@ -33,12 +33,12 @@ export function EpisodeConfirmationPanel({
       <h3 id="episode-confirmation-title" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
         Confirmation de l’épisode T0
       </h3>
-      <p className="mt-2 text-sm text-muted-foreground">
+      <p className="mt-2 text-base text-muted-foreground">
         Vérifiez les questionnaires à inclure. Cette confirmation reste en mémoire et ne modifie aucune donnée.
       </p>
 
       {proposal.candidateResponses.length === 0 ? (
-        <div role="status" className="mt-3 rounded-lg border border-border bg-muted p-3 text-sm text-muted-foreground">
+        <div role="status" className="mt-3 rounded-lg border border-border bg-muted p-3 text-base text-muted-foreground">
           Aucune réponse disponible. Confirmez explicitement pour produire une revue prudente des données manquantes.
         </div>
       ) : (

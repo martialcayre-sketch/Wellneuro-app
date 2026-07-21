@@ -6,8 +6,8 @@ export default function DroitsPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h2 className="font-display text-2xl font-bold text-foreground">Confiance &amp; droits</h2>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h2 className="font-display text-3xl font-bold text-foreground">Confiance &amp; droits</h2>
+        <p className="text-base text-muted-foreground mt-1">
           Signalements d’effets indésirables, incidents de confidentialité et demandes de droits
           déposés par vos patients. Rien ne se supprime : les statuts évoluent.
         </p>

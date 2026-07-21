@@ -63,14 +63,14 @@ export function TrustPanel() {
   }
   if (!data.ok) {
     return (
-      <div className="bg-muted border border-border rounded-xl p-4 text-sm text-muted-foreground">
+      <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">
         {data.error}
       </div>
     );
   }
   if (data.signalements.length === 0) {
     return (
-      <div className="bg-surface border border-border rounded-xl p-6 text-sm text-muted-foreground shadow-sm">
+      <div className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-sm">
         Aucun signalement ni demande pour le moment. Les dépôts des patients (effets indésirables,
         incidents de confidentialité, demandes de droits) apparaîtront ici et dans le Fil.
       </div>
@@ -92,7 +92,7 @@ export function TrustPanel() {
             </div>
             <span className="text-xs text-muted-foreground">{formatDate(s.soumisLe)}</span>
           </div>
-          <p className="text-sm text-foreground mt-2">{s.resume}</p>
+          <p className="text-base text-foreground mt-2">{s.resume}</p>
           {s.detail && <p className="text-xs text-muted-foreground mt-1">{s.detail}</p>}
           {s.orientation && (
             <p className="text-xs text-muted-foreground mt-1">

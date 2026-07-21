@@ -46,7 +46,7 @@ export function J21DecisionPanel({
       </h3>
 
       {/* Point de jonction : score (momentum) + action (check-ins). */}
-      <div className="mt-3 space-y-1 text-sm">
+      <div className="mt-3 space-y-1 text-base">
         <p className="text-foreground">
           Score « Mon équilibre » :{' '}
           {resume?.score ? (
@@ -99,7 +99,7 @@ export function J21DecisionPanel({
 
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Autres décisions</p>
-          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+          <ul className="mt-2 space-y-1 text-base text-muted-foreground">
             {AUTRES.map((item) => (
               <li key={item.titre}>
                 <span className="font-medium text-foreground">{item.titre}</span> — {item.description}

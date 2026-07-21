@@ -392,10 +392,10 @@ export function ClinicalRuntimeSection({
         </div>
       )}
       {!fixture && notice && (
-        <div role="status" className="rounded-xl border border-accent bg-orange-50 p-4 text-sm text-orange-800">{notice}</div>
+        <div role="status" className="rounded-xl border border-accent bg-orange-50 p-4 text-base text-orange-800">{notice}</div>
       )}
       {!fixture && error && (
-        <div role="alert" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+        <div role="alert" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
           {error === 'session'
             ? 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.'
             : error === 'patient'
@@ -407,7 +407,7 @@ export function ClinicalRuntimeSection({
         <EpisodeConfirmationPanel proposal={runtime.proposal} submitting={submitting} onConfirm={confirm} />
       )}
       {affiche('decision') && !fixture && runtime?.status === 'ready' && (
-        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
           Épisode T0 confirmé. Décision suspendue : l&apos;abstention clinique n&apos;est pas encore évaluée.
         </div>
       )}
@@ -470,7 +470,7 @@ export function ClinicalRuntimeSection({
         trajectoireErreur ? (
           // Échec de lecture ≠ absence d'épisode : ne jamais laisser
           // TrajectoirePanel afficher « Aucun épisode confirmé » sur une erreur.
-          <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-sm text-orange-800">
+          <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-base text-orange-800">
             <span>
               La trajectoire n&apos;a pas pu être lue. L&apos;historique clinique de ce patient n&apos;est pas
               affiché — aucune conclusion à en tirer.

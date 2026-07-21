@@ -141,7 +141,7 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
                   {SOURCE_LABELS[bloc.provenance.source]} · {bloc.provenance.version}
                 </span>
               </div>
-              <p className="text-sm text-foreground">{bloc.contenu.praticien}</p>
+              <p className="text-base text-foreground">{bloc.contenu.praticien}</p>
             </article>
           ))}
         </div>
@@ -151,13 +151,13 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
             Aperçu destinataire — {DESTINATAIRE_LABELS[destinataire]}
           </h4>
           {blocsVisibles.length === 0 ? (
-            <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+            <p className="rounded-md border border-dashed p-3 text-base text-muted-foreground">
               Aucun contenu diffusé à ce destinataire.
             </p>
           ) : (
             blocsVisibles.map((bloc) => (
               <article key={bloc.id} className="rounded-md border p-3">
-                <p className="text-sm text-foreground">{contenuPourDestinataire(bloc, destinataire)}</p>
+                <p className="text-base text-foreground">{contenuPourDestinataire(bloc, destinataire)}</p>
               </article>
             ))
           )}
@@ -165,7 +165,7 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
       </div>
 
       {erreur ? (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-base text-red-600">
           {erreur}
         </p>
       ) : null}

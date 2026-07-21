@@ -397,16 +397,16 @@ export function PacksPanel({
       <div className="bg-surface border border-border rounded-xl p-4">
         <h3 className="text-sm font-semibold text-foreground mb-3">Packs existants</h3>
         {loading ? (
-          <p className="text-sm text-muted-foreground">Chargement des packs...</p>
+          <p className="text-base text-muted-foreground">Chargement des packs...</p>
         ) : packs.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun pack pour l&apos;instant.</p>
+          <p className="text-base text-muted-foreground">Aucun pack pour l&apos;instant.</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {packs.map(p => (
               <li key={p.idPack} className="flex items-start justify-between gap-3 border border-border rounded-lg px-3 py-2">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium text-foreground">{p.nom}</span>
+                    <span className="text-base font-medium text-foreground">{p.nom}</span>
                     {p.thematique && <span className="text-xs text-muted-foreground">· {p.thematique}</span>}
                     <Badge variant={p.actif ? 'success' : 'neutral'}>{p.actif ? 'Actif' : 'Inactif'}</Badge>
                     {p.parDefaut && <Badge variant="warning">Pack de base</Badge>}

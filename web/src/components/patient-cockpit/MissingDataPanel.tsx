@@ -23,11 +23,11 @@ export function MissingDataPanel({
       </h3>
       <div className="flex flex-col gap-3">
         {missingData === null ? (
-          <div className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
             Données manquantes non évaluées. Une revue clinique doit être préparée par le praticien.
           </div>
         ) : missingData.length === 0 ? (
-          <div className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
             Aucune donnée manquante qualifiée à ce stade.
           </div>
         ) : missingData.map(finding => (
@@ -38,8 +38,8 @@ export function MissingDataPanel({
                 {finding.priority ? PRIORITY_LABELS[finding.priority] : 'À documenter'}
               </span>
             </div>
-            <p className="mt-2 text-sm text-foreground">{finding.uncertaintyExplanation}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{finding.potentialDecisionImpact}</p>
+            <p className="mt-2 text-base text-foreground">{finding.uncertaintyExplanation}</p>
+            <p className="mt-1 text-base text-muted-foreground">{finding.potentialDecisionImpact}</p>
           </article>
         ))}
 

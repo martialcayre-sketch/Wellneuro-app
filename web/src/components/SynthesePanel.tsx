@@ -226,7 +226,7 @@ export function SynthesePanel() {
           )}
         </div>
         {feedback && (
-          <p className={`mt-2 text-sm ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>{feedback.msg}</p>
+          <p className={`mt-2 text-base ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>{feedback.msg}</p>
         )}
       </div>
 
@@ -240,9 +240,9 @@ export function SynthesePanel() {
             </h3>
           </div>
           {loading ? (
-            <div className="px-4 py-4 text-sm text-muted-foreground">Chargement...</div>
+            <div className="px-4 py-4 text-base text-muted-foreground">Chargement...</div>
           ) : syntheses.length === 0 ? (
-            <div className="px-4 py-4 text-sm text-muted-foreground">Aucune synthèse pour ce patient.</div>
+            <div className="px-4 py-4 text-base text-muted-foreground">Aucune synthèse pour ce patient.</div>
           ) : (
             <div className="divide-y divide-border">
               {syntheses.map(s => (
@@ -287,7 +287,7 @@ export function SynthesePanel() {
           {/* Résumé praticien */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Résumé praticien</p>
-            <p className="text-sm text-foreground leading-relaxed">{selectedSynthese.syntheseJson.resume_praticien}</p>
+            <p className="text-base text-foreground leading-relaxed">{selectedSynthese.syntheseJson.resume_praticien}</p>
           </div>
 
           {/* Axes prioritaires */}
@@ -298,7 +298,7 @@ export function SynthesePanel() {
                 {selectedSynthese.syntheseJson.axes_prioritaires.map((axe, i) => (
                   <div key={i} className="bg-muted border border-border rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-foreground">{axe.axe}</span>
+                      <span className="text-base font-medium text-foreground">{axe.axe}</span>
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITE_COLOR[axe.niveau_priorite] ?? 'bg-muted text-muted-foreground'}`}>
                         {PRIORITE_LABEL[axe.niveau_priorite] ?? axe.niveau_priorite}
                       </span>
@@ -318,7 +318,7 @@ export function SynthesePanel() {
           {selectedSynthese.syntheseJson.points_de_vigilance?.length > 0 && (
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Points de vigilance</p>
-              <ul className="text-sm text-foreground list-disc pl-4 space-y-0.5">
+              <ul className="text-base text-foreground list-disc pl-4 space-y-0.5">
                 {selectedSynthese.syntheseJson.points_de_vigilance.map((p, i) => <li key={i}>{p}</li>)}
               </ul>
             </div>
@@ -404,7 +404,7 @@ export function SynthesePanel() {
           )}
 
           {feedback && (
-            <p className={`text-sm ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>{feedback.msg}</p>
+            <p className={`text-base ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>{feedback.msg}</p>
           )}
         </div>
       )}

@@ -58,7 +58,7 @@ export function MetricsSection() {
     const message = data.reason ? reasonText[data.reason] : 'Cause inconnue.';
 
     return (
-      <div className="bg-muted border border-border rounded-xl p-4 text-sm text-muted-foreground">
+      <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">
         Métriques indisponibles.{' '}
         <span className="text-muted-foreground">
           {message}

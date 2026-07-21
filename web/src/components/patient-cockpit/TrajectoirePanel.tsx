@@ -84,7 +84,7 @@ export function TrajectoirePanel({ trajectoire }: { trajectoire: Trajectoire | n
       )}
 
       {!trajectoire || trajectoire.cycles.length === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">Aucun épisode confirmé pour l’instant.</p>
+        <p className="mt-3 text-base text-muted-foreground">Aucun épisode confirmé pour l’instant.</p>
       ) : (
         <div className="mt-3 space-y-4">
           {trajectoire.cycles.map((cycle) => {
@@ -107,7 +107,7 @@ export function TrajectoirePanel({ trajectoire }: { trajectoire: Trajectoire | n
                 </div>
                 <ul className="mt-2 space-y-1">
                   {cycle.jalons.map((jalon) => (
-                    <li key={jalon.jalon} className="text-sm text-muted-foreground">
+                    <li key={jalon.jalon} className="text-base text-muted-foreground">
                       <span className="font-medium text-foreground">{LABEL_JALON[jalon.jalon]}</span>{' '}
                       {jalon.mesure && jalon.valeur !== null && jalon.date ? (
                         <>· indice {jalon.valeur} · {formatDate(jalon.date)}</>
@@ -118,7 +118,7 @@ export function TrajectoirePanel({ trajectoire }: { trajectoire: Trajectoire | n
                   ))}
                 </ul>
                 {cycle.momentum && (
-                  <p className="mt-2 text-sm text-foreground">
+                  <p className="mt-2 text-base text-foreground">
                     Momentum T0 → dernier jalon mesuré :{' '}
                     <span className="font-medium">{LABEL_TENDANCE[cycle.momentum.tendance]}</span>{' '}
                     <span className="text-muted-foreground">(écart {Math.abs(cycle.momentum.delta)})</span>
@@ -129,7 +129,7 @@ export function TrajectoirePanel({ trajectoire }: { trajectoire: Trajectoire | n
           })}
 
           {/* Comparateur multi-épisodes — s'active à partir de 2 cycles (A8-5-ii). */}
-          <div className="rounded-lg bg-muted/40 p-3 text-sm">
+          <div className="rounded-lg bg-muted/40 p-3 text-base">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Comparaison multi-épisodes</p>
             {trajectoire.comparaison.disponible ? (
               <>

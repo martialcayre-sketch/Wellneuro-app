@@ -387,8 +387,8 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="font-display text-2xl font-bold text-foreground">Trajectoire alimentaire</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h2 className="font-display text-3xl font-bold text-foreground">Trajectoire alimentaire</h2>
+          <p className="text-base text-muted-foreground mt-1">
             Prototype JA5-03 local: revue praticien guidée, sans persistance.
           </p>
         </div>
@@ -398,7 +398,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       </div>
 
       {draftRestored && (
-        <p className="rounded-lg px-4 py-2 text-sm text-primary bg-primary/10" data-testid="ja-praticien-restored-info">
+        <p className="rounded-lg px-4 py-2 text-base text-primary bg-primary/10" data-testid="ja-praticien-restored-info">
           Brouillon local restauré sur cet appareil.
         </p>
       )}
@@ -464,7 +464,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           />
         </label>
 
-        {error && <p className="text-sm text-status-danger">{error}</p>}
+        {error && <p className="text-base text-status-danger">{error}</p>}
 
         <button
           data-testid="ja-praticien-enregistrer"
@@ -479,9 +479,9 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-constats">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Constats directs</h3>
         {constats.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun constat direct pour l’instant.</p>
+          <p className="text-base text-muted-foreground">Aucun constat direct pour l’instant.</p>
         ) : (
-          <ul className="space-y-1 text-sm text-foreground">
+          <ul className="space-y-1 text-base text-foreground">
             {constats.map((constat) => (
               <li key={constat.code}>• {LABELS_CONSTATS_DIRECTS[constat.code]}</li>
             ))}
@@ -491,14 +491,14 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-3" data-testid="ja-praticien-calibrage">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bilan de calibrage restitué</h3>
-        <p className="text-sm text-foreground">Structure observée: 3 prises principales, variabilité surtout le soir.</p>
-        <p className="text-sm text-foreground">Charge supportable déclarée: 3 traces par semaine.</p>
-        <p className="text-sm text-muted-foreground">Marqueurs saillants: petit-déjeuner sauté, dîner tardif, collation de fatigue.</p>
+        <p className="text-base text-foreground">Structure observée: 3 prises principales, variabilité surtout le soir.</p>
+        <p className="text-base text-foreground">Charge supportable déclarée: 3 traces par semaine.</p>
+        <p className="text-base text-muted-foreground">Marqueurs saillants: petit-déjeuner sauté, dîner tardif, collation de fatigue.</p>
       </section>
 
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-moments-explorer">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">3 moments à explorer</h3>
-        <ul className="space-y-1 text-sm text-foreground">
+        <ul className="space-y-1 text-base text-foreground">
           {momentsToExplore.map((moment) => (
             <li key={moment}>• {moment}</li>
           ))}
@@ -575,7 +575,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         </button>
 
         {reviewSummary && (
-          <p className="text-sm text-foreground rounded-lg border border-border px-3 py-2" data-testid="ja-praticien-review-summary">
+          <p className="text-base text-foreground rounded-lg border border-border px-3 py-2" data-testid="ja-praticien-review-summary">
             {reviewSummary}
           </p>
         )}
@@ -660,7 +660,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       <section className="bg-surface border border-border rounded-xl p-4 space-y-2" data-testid="ja-praticien-historique">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Historique local</h3>
         {traces.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucune trace praticien enregistrée.</p>
+          <p className="text-base text-muted-foreground">Aucune trace praticien enregistrée.</p>
         ) : (
           <ul className="space-y-2 text-sm max-h-80 overflow-y-auto pr-1">
             {traces.map((trace) => (

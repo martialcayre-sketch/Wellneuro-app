@@ -171,11 +171,11 @@ export function DocumentsPanel() {
           </select>
         </div>
         {selectedPatient && syntheses.length === 0 && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             Aucune synthèse validée pour ce patient. Validez une synthèse dans « Synthèse IA & Booklet » d’abord.
           </p>
         )}
-        {feedback && <p className={`text-sm ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>{feedback.msg}</p>}
+        {feedback && <p className={`text-base ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>{feedback.msg}</p>}
       </div>
 
       {loading && <p className="text-sm text-muted-foreground">Composition en cours…</p>}

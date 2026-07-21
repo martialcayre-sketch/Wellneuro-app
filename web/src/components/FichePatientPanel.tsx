@@ -203,7 +203,7 @@ function InstrumentTiroir({
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-solar-ink">Instrument</p>
               <Dialog.Title className="font-display text-lg font-bold text-foreground">{libelle}</Dialog.Title>
-              <Dialog.Description className="mt-1 text-sm text-muted-foreground">{description}</Dialog.Description>
+              <Dialog.Description className="mt-1 text-base text-muted-foreground">{description}</Dialog.Description>
             </div>
             <Dialog.Close asChild>
               <button
@@ -398,7 +398,7 @@ export function FichePatientPanel({
   };
 
   if (loading) {
-    return <div className="text-sm text-muted-foreground">Chargement de la fiche patient...</div>;
+    return <div className="text-base text-muted-foreground">Chargement de la fiche patient...</div>;
   }
 
   if (!data || 'unavailable' in data) {
@@ -409,7 +409,7 @@ export function FichePatientPanel({
         : reason === 'unauthenticated'
           ? 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.'
           : 'Erreur technique. Vérifiez le terminal Next.js.';
-    return <div className="bg-muted border border-border rounded-xl p-4 text-sm text-muted-foreground">{message}</div>;
+    return <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">{message}</div>;
   }
 
   const { patient, objetsCliniques, priorites } = data;
@@ -492,9 +492,9 @@ export function FichePatientPanel({
   const tableauReponses = (
     <div className="bg-surface border border-border rounded-xl overflow-hidden">
       {loadingReponses ? (
-        <div className="px-4 py-4 text-sm text-muted-foreground">Chargement...</div>
+        <div className="px-4 py-4 text-base text-muted-foreground">Chargement...</div>
       ) : reponses.length === 0 ? (
-        <div className="px-4 py-4 text-sm text-muted-foreground">Aucun questionnaire complété pour ce patient.</div>
+        <div className="px-4 py-4 text-base text-muted-foreground">Aucun questionnaire complété pour ce patient.</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
@@ -617,9 +617,9 @@ export function FichePatientPanel({
       return (
         <div className="flex flex-col gap-4">
           <div className="rounded-xl border border-border bg-surface p-4">
-            <p className="text-sm text-foreground">{nomComplet}</p>
-            <p className="mt-1 break-all text-sm text-muted-foreground">{patient.email}</p>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="text-base text-foreground">{nomComplet}</p>
+            <p className="mt-1 break-all text-base text-muted-foreground">{patient.email}</p>
+            <p className="mt-2 text-base text-muted-foreground">
               {derniereReponse
                 ? `Dernière réponse reçue le ${derniereReponse}.`
                 : 'Aucune réponse reçue pour l’instant.'}
@@ -630,7 +630,7 @@ export function FichePatientPanel({
               {assignationsModif.map(a => (
                 <div key={a.idAssignation} className="px-4 py-3 border-b border-border last:border-b-0 flex items-start justify-between gap-3 bg-status-warning/10">
                   <div className="min-w-0">
-                    <span className="text-sm text-status-warning">
+                    <span className="text-base text-status-warning">
                       Demande de correction — <span className="font-medium">{a.titre || a.idQuestionnaire}</span>
                     </span>
                     {a.correctionCommentaire && (
@@ -654,7 +654,7 @@ export function FichePatientPanel({
 
     if (phaseActive === 'donnees') {
       return (
-        <div className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
           {loadingReponses
             ? 'Chargement des réponses...'
             : reponses.length === 0
@@ -689,7 +689,7 @@ export function FichePatientPanel({
 
     if (phaseActive === 'suivi' && runtimePret && !etatRuntime!.episodeConfirme) {
       return (
-        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
           Une décision de 21 jours doit d’abord être ouverte pour suivre ce patient. Les points d’étape J7/J14/J21
           apparaîtront ici une fois l’épisode confirmé.
         </div>
@@ -703,7 +703,7 @@ export function FichePatientPanel({
       // consulté puis trouvé vide), on rattache l'absence de cycle à l'absence
       // d'épisode.
       return (
-        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+        <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
           La réévaluation (jalons T0 → J21 → J42 → J90) se construit après confirmation d’un épisode. Aucun épisode
           n’étant confirmé, il n’y a pas encore de cycle daté à afficher.
         </div>
@@ -718,7 +718,7 @@ export function FichePatientPanel({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="font-display text-2xl font-bold text-foreground">{nomComplet}</h2>
+          <h2 className="font-display text-3xl font-bold text-foreground">{nomComplet}</h2>
           <p className="mt-1 break-all text-sm text-muted-foreground">{patient.email}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -770,7 +770,7 @@ export function FichePatientPanel({
       </div>
 
       {fixtureErgo && (
-        <div role="status" className="bg-status-warning/10 border border-accent rounded-xl px-4 py-3 text-sm text-status-warning">
+        <div role="status" className="bg-status-warning/10 border border-accent rounded-xl px-4 py-3 text-base text-status-warning">
           Mode validation ergonomique — données fictives (fixture C1). Aucune sauvegarde, aucun envoi.
           {erreurErgo && <span className="block mt-1 font-medium">Erreur du harnais : {erreurErgo}</span>}
         </div>
@@ -785,7 +785,7 @@ export function FichePatientPanel({
       {assignationsModif.length > 0 && (
         <div
           role="status"
-          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-sm text-status-warning"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
         >
           <Clock aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
           <span className="min-w-0">
@@ -913,7 +913,7 @@ export function FichePatientPanel({
                 icone={ListChecks}
               >
                 {tableauBesoins}
-                <p className="mt-3 text-sm text-muted-foreground">
+                <p className="mt-3 text-base text-muted-foreground">
                   Le détail complet (radar, sources) est disponible dans l’onglet « Les 12 besoins ».
                 </p>
               </InstrumentTiroir>
@@ -951,13 +951,13 @@ export function FichePatientPanel({
       <div role="tabpanel" id="panneau-trajectoire" aria-labelledby="onglet-trajectoire" hidden={ongletActif !== 'trajectoire'}>
         {ongletActif === 'trajectoire' &&
           (etatTrajectoire === 'chargement' || etatTrajectoire === 'inconnue' ? (
-            <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+            <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
               Chargement de la trajectoire...
             </div>
           ) : etatTrajectoire === 'erreur' ? (
             // Un échec de lecture n'est JAMAIS présenté comme « aucun épisode » :
             // ce serait une affirmation fausse sur l'historique clinique.
-            <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-sm text-status-warning">
+            <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
               <span>{erreurTrajectoire}</span>
               <button
                 type="button"

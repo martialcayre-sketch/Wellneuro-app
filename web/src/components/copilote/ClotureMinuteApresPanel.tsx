@@ -56,7 +56,7 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       <div
         id="panneau-cloture"
         role="status"
-        className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground"
+        className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground"
       >
         Lecture de l’état de clôture&hellip;
       </div>
@@ -70,7 +70,7 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       <div
         id="panneau-cloture"
         role="alert"
-        className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-sm text-orange-800"
+        className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-base text-orange-800"
       >
         <span>{erreur} Rien ne peut être diffusé tant que cet état n’a pas été relu.</span>
         <button
@@ -99,13 +99,13 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       </p>
 
       {cloture.decision ? (
-        <p className="mt-3 text-sm text-foreground">
+        <p className="mt-3 text-base text-foreground">
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Décision</span> ·
           priorité retenue <strong>{cloture.decision.selectedPriorityId}</strong>, enregistrée le{' '}
           {formatDate(cloture.decision.enregistreLe)}.
         </p>
       ) : (
-        <p className="mt-3 text-sm text-muted-foreground">
+        <p className="mt-3 text-base text-muted-foreground">
           Aucune décision enregistrée pour ce patient : il n’y a pas de consultation à clôturer.
         </p>
       )}
@@ -133,8 +133,8 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
 
       {cloture.blocages.length > 0 && (
         <div className="mt-3 rounded-lg border border-accent bg-orange-50 p-3">
-          <p className="text-sm font-medium text-orange-800">Rien ne peut être diffusé en l’état.</p>
-          <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-orange-800">
+          <p className="text-base font-medium text-orange-800">Rien ne peut être diffusé en l’état.</p>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-base text-orange-800">
             {cloture.blocages.map((blocage) => (
               <li key={blocage}>{blocage}</li>
             ))}
@@ -143,7 +143,7 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       )}
 
       {cloture.pretPourDiffusion && (
-        <p className="mt-3 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-800">
+        <p className="mt-3 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-base text-emerald-800">
           Les trois étapes sont franchies sur la version active. L’envoi reste une action distincte, à déclencher
           depuis la fiche du patient — il ne part pas d’ici.
         </p>

@@ -430,12 +430,12 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   }, [data?.assignations, statutFilter]);
 
   if (loading) {
-    return <div className="text-sm text-muted-foreground">Chargement des données patients...</div>;
+    return <div className="text-base text-muted-foreground">Chargement des données patients...</div>;
   }
 
   if (data?.unavailable) {
     return (
-      <div className="bg-muted border border-border rounded-xl p-4 text-sm text-muted-foreground">
+      <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">
         {erreurLisible(data.reason)}
       </div>
     );

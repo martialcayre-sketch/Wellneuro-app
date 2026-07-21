@@ -54,7 +54,7 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
 
   if (etat === 'chargement') {
     return (
-      <div role="status" className="rounded-xl border border-border bg-surface p-4 text-sm text-muted-foreground">
+      <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
         Lecture du pré-vol&hellip;
       </div>
     );
@@ -64,7 +64,7 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
     // Un échec de lecture n'est jamais présenté comme « rien de nouveau » : ce
     // serait une affirmation fausse juste avant une consultation.
     return (
-      <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-sm text-orange-800">
+      <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-base text-orange-800">
         <span>{erreur} Rien ne peut être conclu de cet écran tant qu’il n’a pas été relu.</span>
         <button
           type="button"
@@ -90,13 +90,13 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
         </p>
 
         {prevol.faits.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">
+          <p className="mt-3 text-base text-muted-foreground">
             Aucun élément nouveau depuis cette date.
           </p>
         ) : (
           <ul className="mt-3 space-y-2">
             {prevol.faits.map((fait, position) => (
-              <li key={`${fait.source}-${fait.date}-${position}`} className="text-sm text-foreground">
+              <li key={`${fait.source}-${fait.date}-${position}`} className="text-base text-foreground">
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   {LIBELLE_SOURCE[fait.source]}
                 </span>{' '}
@@ -113,13 +113,13 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
           Questions suggérées
         </h3>
         {prevol.questionsSuggerees.length === 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="mt-2 text-base text-muted-foreground">
             Aucune question suggérée : rien dans les éléments ci-dessus n’en appelle une.
           </p>
         ) : (
           <ul className="mt-2 space-y-1">
             {prevol.questionsSuggerees.map((question) => (
-              <li key={question} className="text-sm text-foreground">
+              <li key={question} className="text-base text-foreground">
                 {question}
               </li>
             ))}
@@ -134,7 +134,7 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
         <h3 id="prevol-ailleurs" className="text-sm font-semibold text-foreground">
           Discordances et objets cliniques
         </h3>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-base text-muted-foreground">
           Ils restent lus dans le poste de pilotage, phase « Compréhension » — le pré-vol n’en fait pas une seconde
           copie, qui pourrait diverger de la première.
         </p>
