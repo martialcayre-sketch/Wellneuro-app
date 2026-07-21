@@ -38,7 +38,7 @@ const REPONSES = {
 };
 
 // DecisionCard complète et actionnable (mêmes conventions que ProtocolMiniBuilder.test).
-function decisionCard(): DecisionCard {
+function decisionCard(surcharges: Partial<DecisionCard> = {}): DecisionCard {
   return {
     decisionCardId: 'card-1', snapshotId: 'snapshot-1', snapshotInputHash: 'snapshot-hash',
     reviewId: 'review-1', reviewInputHash: 'review-hash', createdAt: '2026-01-01T00:00:00.000Z',
@@ -47,6 +47,7 @@ function decisionCard(): DecisionCard {
     proposedMainPriorityId: 'p1', selectedMainPriority: { candidateId: 'p1', selectedAt: '2026-01-01T00:00:00.000Z', selectedBy: 'practitioner', rationale: 'Fixture.' },
     counterfactuals: [], missingDataFindingIds: [], discordanceFindingIds: [], safetyFindingIds: [],
     abstention: { status: 'not_required', ruleIds: ['R'], limitations: [] }, limitations: [], inputHash: 'hash',
+    ...surcharges,
   };
 }
 
@@ -54,6 +55,8 @@ type Options = {
   runtime?: 'ready' | 'proposal' | 'unauthenticated' | 'unavailable';
   assignationsModif?: boolean;
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'enVol';
+  // « bloquee » = abstention clinique non levée : aucun protocole proposable.
+  decision?: 'actionnable' | 'bloquee';
 };
 
 // Cycle de trajectoire : T0 toujours mesuré (l'ancre), J21 selon le scénario.
@@ -77,6 +80,10 @@ function stubFetch(options: Options = {}) {
   const runtime = options.runtime ?? 'unavailable';
   const assignationsModif = options.assignationsModif ?? false;
   const trajectoire = options.trajectoire ?? 'ok';
+  const carte =
+    options.decision === 'bloquee'
+      ? decisionCard({ abstention: { status: 'required', ruleIds: ['R'], limitations: [] } })
+      : decisionCard();
 
   const fetchMock = vi.fn((input: unknown) => {
     const url = String(input);
@@ -138,7 +145,7 @@ function stubFetch(options: Options = {}) {
     }
     // Runtime clinique C1.
     if (url.includes('/api/praticien/cockpit')) {
-      if (runtime === 'ready') return ok({ status: 'ready', snapshot: {}, review: { missingData: null, discordances: null }, decisionCard: decisionCard() });
+      if (runtime === 'ready') return ok({ status: 'ready', snapshot: {}, review: { missingData: null, discordances: null }, decisionCard: carte });
       if (runtime === 'proposal') return ok({ status: 'proposal_required', proposal: { assessmentEpisodeId: 'ep1', milestone: 'T0', inWindowResponseIds: [], candidateResponses: [] }, proposalHash: 'h' });
       if (runtime === 'unauthenticated') return ok({ status: 'unavailable', reason: 'unauthenticated', error: 'Authentification requise.' }, 401);
       return ok({ status: 'unavailable', reason: 'exception', error: 'Indisponible.' });
@@ -404,5 +411,44 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la phase Patient' }));
     await waitFor(() => expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(false));
     expect(screen.getByRole('tab', { name: /Patient/i }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  // Le détail du blocage vit dans ProtocolMiniBuilder, phase Actions — or la
+  // fiche s'ouvre sur Décision. Sans ce signal, le praticien ne peut pas savoir
+  // qu'il est bloqué sans changer d'onglet au hasard.
+  it('bloqueurs décisionnels : le signal est visible dès la phase Décision', async () => {
+    await rendreFiche({ runtime: 'ready', decision: 'bloquee' });
+
+    await waitFor(() => expect(screen.getByText(/Protocole bloqué — bloqueurs décisionnels à revoir/i)).toBeTruthy());
+    // On est bien resté sur la phase par défaut : le signal n'a rien déplacé.
+    expect(screen.getByRole('tab', { name: /Décision 21 j/i }).getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('bloqueurs décisionnels : le raccourci ouvre la phase Actions puis s’efface', async () => {
+    await rendreFiche({ runtime: 'ready', decision: 'bloquee' });
+    await waitFor(() => expect(screen.getByText(/Protocole bloqué/i)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la phase Actions' }));
+    expect(screen.getByRole('tab', { name: /Actions/i }).getAttribute('aria-selected')).toBe('true');
+
+    // Une fois sur place, le raccourci n'a plus d'objet — le signal, lui, reste.
+    expect(screen.queryByRole('button', { name: 'Ouvrir la phase Actions' })).toBeNull();
+    expect(screen.getByText(/Protocole bloqué/i)).toBeTruthy();
+  });
+
+  it('bloqueurs décisionnels : aucun signal quand la décision est actionnable', async () => {
+    await rendreFiche({ runtime: 'ready', decision: 'actionnable' });
+
+    await waitFor(() => expect(screen.getByRole('tablist', { name: 'Cycle clinique' })).toBeTruthy());
+    expect(screen.queryByText(/Protocole bloqué/i)).toBeNull();
+  });
+
+  // Même discipline que le rail des phases : tant que le runtime n'a pas
+  // abouti, on n'affirme rien — ni « bloqué », ni « pas bloqué ».
+  it('bloqueurs décisionnels : rien n’est affirmé quand le runtime est en erreur', async () => {
+    await rendreFiche({ runtime: 'unauthenticated' });
+
+    await waitFor(() => expect(screen.getByText(/Votre session a expiré/i)).toBeTruthy());
+    expect(screen.queryByText(/Protocole bloqué/i)).toBeNull();
   });
 });
