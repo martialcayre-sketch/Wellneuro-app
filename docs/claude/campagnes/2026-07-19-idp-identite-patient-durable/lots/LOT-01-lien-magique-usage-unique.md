@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Lien magique à usage unique et expirant"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "aucun"
 ---
 
