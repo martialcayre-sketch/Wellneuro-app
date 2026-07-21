@@ -1,9 +1,9 @@
 ---
 id: "2026-07-19-sp-met-meteo-adhesion"
 titre: "SP-MET — Météo d'adhésion"
-statut: "cadrée"
+statut: "livrée"
 créée_le: "2026-07-19"
-mise_à_jour: "2026-07-19"
+mise_à_jour: "2026-07-21"
 lot_courant: "LOT-01"
 ---
 
@@ -62,7 +62,7 @@ d'étape.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-01 | Dérivation trois états + cause observable citée + affichage praticien (phase Suivi) — **sans migration** | à_faire | — |
+| LOT-01 | Dérivation trois états + cause observable citée + affichage praticien (phase Suivi) — **sans migration** | livré | — |
 
 ## Définition de done
 

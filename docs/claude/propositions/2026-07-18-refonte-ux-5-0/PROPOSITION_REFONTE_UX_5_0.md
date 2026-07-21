@@ -114,3 +114,8 @@ Chantiers UI purs, une PR = un périmètre, réversibles :
 ## 10. Hors périmètre
 
 Aucun code applicatif, `globals.css`, schéma Prisma, seuil clinique ni flag modifié dans cette proposition. A5-R2 et A6-R1 sont **actés en documentation** (registre + design-system + changelog) mais **pas appliqués au code** : l'implémentation de la Vague 1 est une suite, campagne par campagne.
+
+> **Rectification (2026-07-21, audit de conformité 5.0, E29)** : la dernière
+> phrase décrit l'état à la date de cette proposition (2026-07-18). La Vague 1
+> est depuis livrée (`CHANGELOG.md`, entrées du 2026-07-19) : A5-R2 et A6-R1
+> sont désormais appliqués au code, pas seulement actés en documentation.

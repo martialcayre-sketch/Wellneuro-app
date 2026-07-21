@@ -33,7 +33,7 @@ Production : `https://app.wellneuro.fr` (Vercel).
 - `web/src/lib/questions.ts` — catalogue des questionnaires (67, portés depuis `Questions.gs`) et moteur de scoring
 - `web/src/lib/auth.ts` — configuration NextAuth
 - `web/src/lib/prisma.ts` — client Prisma
-- `web/prisma/schema.prisma` — schéma de données : `Patient`, `Assignation`, `QuestionnaireReponse`, `SyntheseIA`, `AuditSynthese`, `BookletEnvoi`
+- `web/prisma/schema.prisma` — schéma de données (40 modèles au 2026-07-21 ; `grep -c '^model ' web/prisma/schema.prisma` pour un compte à jour plutôt qu'une énumération qui périme à chaque migration)
 - `archive/gas-legacy/` — ancien code Google Apps Script (`Code.gs`, `Questions.gs`, `index.html`, `appsscript.json`), gelé, référence historique uniquement
 
 ## État de la migration

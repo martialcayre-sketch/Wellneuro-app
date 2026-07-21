@@ -22,9 +22,9 @@
 | C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | cadrée — LOT-00 et LOT-01 terminés (2/8), LOT-02 en attente de confirmation migration, inactive | C5A : référentiel Ciqual après gates migration/import ; C5B : C1/C2 actifs | 8 |
 | JA | Ma spirale alimentaire (journal recadré 5.0) | recadrée 5.0 + adaptation contrepoint (2026-07-16, A7 — trois régimes : calibrage/essai/silence), règles candidates | audit JA-00 + terrain JA-0T ; domaine pur ; persistance : C2A + gate | N+1 |
 | TRUST | Information patient, consentements et sécurité relationnelle V1 | **terminée** (2026-07-16 — V1 en production, dettes DETTE_TRUST.md) | transverse : HC-F + portail ; raccord QX/C1/C2/C3/auth ; nourrit IDP/SP-AMB | 8 |
-| **SP-COP** | Copilote de consultation (pré-vol & minute d'après) | cadrée (2026-07-19) | SP-RUN ✓ + C2A ✓ + C3 ✓ | 2 |
-| **SP-TT** | Time-travel et note de relecture | cadrée (2026-07-19) | C2A ✓ + C2B ✓ ; **gate migration** `relecture_notes` | 2 |
-| **SP-MET** | Météo d'adhésion | cadrée (2026-07-19) | C2A ✓ (sans migration) | 1 |
+| **SP-COP** | Copilote de consultation (pré-vol & minute d'après) | **livrée** (2026-07-19) | SP-RUN ✓ + C2A ✓ + C3 ✓ | 2 |
+| **SP-TT** | Time-travel et note de relecture | **livrée** (2026-07-21 — gate migration `relecture_notes`/G3 appliquée) | C2A ✓ + C2B ✓ | 2 |
+| **SP-MET** | Météo d'adhésion | **livrée** (2026-07-21) | C2A ✓ (sans migration) | 1 |
 | **IDP** | Identité patient durable | cadrée (2026-07-19) | **gate migration + revue de sécurité** ; activation bloquée par TRUST | 2 |
 | **SP-SPI** | « Ma spirale » et reprise patient | cadrée (2026-07-19) | IDP / LOT-01 | 1 |
 | SP-CAB / SP-AMB | Disposition 5.0 (suite) | à cadrer — séquence au programme 5.0 | SP-CAB : `n ≥ 5` épisodes clos ; SP-AMB : **gate CNIL/RGPD bloquant** | — |

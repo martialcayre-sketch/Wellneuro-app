@@ -224,7 +224,7 @@
   `propositions/2026-07-18-refonte-ux-5-0/`. **Aucune modification de logique
   clinique ni de seuils.**
 
-### A7 — Cap « Ma spirale alimentaire » : instrument longitudinal à deux régimes (décision utilisateur 2026-07-16)
+### A7 — Cap « Ma spirale alimentaire » : instrument longitudinal à trois régimes (décision utilisateur 2026-07-16)
 
 - Le journal alimentaire 21 jours est **recadré 5.0** en **instrument
   longitudinal à trois régimes** (synthèse doc 11 actée, adaptée par le
