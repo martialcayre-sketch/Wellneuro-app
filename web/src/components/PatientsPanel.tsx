@@ -611,7 +611,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
               {saving ? 'Création...' : 'Créer le patient'}
             </Button>
             {feedback && (
-              <span className={`text-sm ${feedback.ok ? 'text-green-600' : 'text-red-400'}`}>
+              <span className={`text-sm ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>
                 {feedback.msg}
               </span>
             )}
@@ -655,7 +655,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
             <span
               role="status"
               aria-live="polite"
-              className={`text-sm ${consultationFeedback?.ok ? 'text-green-600' : 'text-red-400'}`}
+              className={`text-sm ${consultationFeedback?.ok ? 'text-status-success' : 'text-status-danger'}`}
             >
               {consultationFeedback?.msg ?? ''}
             </span>
@@ -747,7 +747,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
               {savingAssignation ? 'Création...' : 'Créer l’assignation'}
             </Button>
             {assignationFeedback && (
-              <span className={`text-sm ${assignationFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>
+              <span className={`text-sm ${assignationFeedback.ok ? 'text-status-success' : 'text-status-danger'}`}>
                 {assignationFeedback.msg}
               </span>
             )}
@@ -790,7 +790,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
               </Button>
             </div>
             {editFeedback && (
-              <span className={`text-sm ${editFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>
+              <span className={`text-sm ${editFeedback.ok ? 'text-status-success' : 'text-status-danger'}`}>
                 {editFeedback.msg}
               </span>
             )}

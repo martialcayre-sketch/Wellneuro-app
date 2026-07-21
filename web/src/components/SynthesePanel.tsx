@@ -23,16 +23,16 @@ const STATUT_LABEL: Record<string, string> = {
 };
 
 const STATUT_COLOR: Record<string, string> = {
-  Brouillon_IA: 'bg-amber-100 text-amber-700',
-  Validee_Praticien: 'bg-green-100 text-green-700',
-  Corrigee_Praticien: 'bg-blue-100 text-blue-700',
-  Rejetee: 'bg-red-100 text-red-700',
+  Brouillon_IA: 'bg-status-warning/10 text-status-warning',
+  Validee_Praticien: 'bg-status-success/10 text-status-success',
+  Corrigee_Praticien: 'bg-status-info/10 text-status-info',
+  Rejetee: 'bg-status-danger/10 text-status-danger',
 };
 
 const PRIORITE_COLOR: Record<string, string> = {
-  eleve: 'bg-red-100 text-red-700',
-  modere: 'bg-amber-100 text-amber-700',
-  faible: 'bg-green-100 text-green-700',
+  eleve: 'bg-status-danger/10 text-status-danger',
+  modere: 'bg-status-warning/10 text-status-warning',
+  faible: 'bg-status-success/10 text-status-success',
 };
 
 const PRIORITE_LABEL: Record<string, string> = {
@@ -226,7 +226,7 @@ export function SynthesePanel() {
           )}
         </div>
         {feedback && (
-          <p className={`mt-2 text-base ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>{feedback.msg}</p>
+          <p className={`mt-2 text-base ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</p>
         )}
       </div>
 
@@ -330,10 +330,10 @@ export function SynthesePanel() {
           {/* Actions validation */}
           {selectedSynthese.statut === 'Brouillon_IA' && (
             <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-              <button onClick={() => onAction(selectedSynthese.idSynthese, 'valider')} disabled={saving} className={`${btnPrimary} bg-green-600`}>
+              <button onClick={() => onAction(selectedSynthese.idSynthese, 'valider')} disabled={saving} className={`${btnPrimary} bg-status-success`}>
                 {saving ? '...' : 'Valider la synthèse'}
               </button>
-              <button onClick={() => onAction(selectedSynthese.idSynthese, 'rejeter')} disabled={saving} className={`${btnPrimary} bg-red-500`}>
+              <button onClick={() => onAction(selectedSynthese.idSynthese, 'rejeter')} disabled={saving} className={`${btnPrimary} bg-status-danger`}>
                 {saving ? '...' : 'Rejeter'}
               </button>
             </div>
@@ -372,7 +372,7 @@ export function SynthesePanel() {
               {bookletHtml && (
                 <div className="flex flex-col gap-3">
                   {bookletInfo?.dejaEnvoye && (
-                    <div className="text-xs bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-amber-700">
+                    <div className="text-xs bg-status-warning/10 border border-status-warning/30 rounded-lg px-3 py-2 text-status-warning">
                       Booklet déjà envoyé à {bookletInfo.emailMasque ?? 'patient'}.
                     </div>
                   )}
@@ -385,7 +385,7 @@ export function SynthesePanel() {
                       J&apos;ai relu et validé le booklet ci-dessus avant envoi au patient.
                     </label>
                     {bookletInfo?.dejaEnvoye && (
-                      <label className="flex items-center gap-2 text-sm text-amber-700 cursor-pointer">
+                      <label className="flex items-center gap-2 text-sm text-status-warning cursor-pointer">
                         <input type="checkbox" checked={forceSend} onChange={e => setForceSend(e.target.checked)} />
                         Confirmer le renvoi (déjà envoyé précédemment).
                       </label>
@@ -393,7 +393,7 @@ export function SynthesePanel() {
                     <button
                       onClick={() => onSend(selectedSynthese.idSynthese)}
                       disabled={sending || !relectureConfirmee}
-                      className={`${btnPrimary} self-start bg-green-600`}
+                      className={`${btnPrimary} self-start bg-status-success`}
                     >
                       {sending ? 'Envoi en cours...' : 'Envoyer au patient'}
                     </button>
@@ -404,7 +404,7 @@ export function SynthesePanel() {
           )}
 
           {feedback && (
-            <p className={`text-base ${feedback.ok ? 'text-green-600' : 'text-red-600'}`}>{feedback.msg}</p>
+            <p className={`text-base ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</p>
           )}
         </div>
       )}

@@ -96,7 +96,7 @@ const config: Config = {
           success: 'rgb(var(--color-status-success-rgb) / <alpha-value>)',
           warning: 'rgb(var(--color-status-warning-rgb) / <alpha-value>)',
           danger: 'rgb(var(--color-status-danger-rgb) / <alpha-value>)',
-          info: 'var(--color-status-info)',
+          info: 'rgb(var(--color-status-info-rgb) / <alpha-value>)',
         },
         focus: {
           ring: 'var(--color-focus-ring)',

@@ -12,9 +12,9 @@ import type { Cloture, StatutEtape } from '@/lib/copilote/minuteApres';
 // n'envoie pas » — jusqu'au bout, aucun bouton d'ici ne fait partir un contenu.
 
 const MARQUE_STATUT: Record<StatutEtape, { texte: string; classe: string }> = {
-  faite: { texte: 'Fait', classe: 'border-emerald-300 bg-emerald-50 text-emerald-800' },
-  a_faire: { texte: 'À faire', classe: 'border-accent bg-orange-50 text-orange-800' },
-  caduque: { texte: 'Caduc', classe: 'border-accent bg-orange-50 text-orange-800' },
+  faite: { texte: 'Fait', classe: 'border-status-success/40 bg-status-success/10 text-status-success' },
+  a_faire: { texte: 'À faire', classe: 'border-accent bg-status-warning/10 text-status-warning' },
+  caduque: { texte: 'Caduc', classe: 'border-accent bg-status-warning/10 text-status-warning' },
   indisponible: { texte: 'Sans objet', classe: 'border-border bg-muted text-muted-foreground' },
 };
 
@@ -70,7 +70,7 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       <div
         id="panneau-cloture"
         role="alert"
-        className="flex flex-col gap-3 rounded-xl border border-accent bg-orange-50 p-4 text-base text-orange-800"
+        className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning"
       >
         <span>{erreur} Rien ne peut être diffusé tant que cet état n’a pas été relu.</span>
         <button
@@ -132,9 +132,9 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       </ul>
 
       {cloture.blocages.length > 0 && (
-        <div className="mt-3 rounded-lg border border-accent bg-orange-50 p-3">
-          <p className="text-base font-medium text-orange-800">Rien ne peut être diffusé en l’état.</p>
-          <ul className="mt-1 list-disc space-y-1 pl-5 text-base text-orange-800">
+        <div className="mt-3 rounded-lg border border-accent bg-status-warning/10 p-3">
+          <p className="text-base font-medium text-status-warning">Rien ne peut être diffusé en l’état.</p>
+          <ul className="mt-1 list-disc space-y-1 pl-5 text-base text-status-warning">
             {cloture.blocages.map((blocage) => (
               <li key={blocage}>{blocage}</li>
             ))}
@@ -143,7 +143,7 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       )}
 
       {cloture.pretPourDiffusion && (
-        <p className="mt-3 rounded-lg border border-emerald-300 bg-emerald-50 p-3 text-base text-emerald-800">
+        <p className="mt-3 rounded-lg border border-status-success/40 bg-status-success/10 p-3 text-base text-status-success">
           Les trois étapes sont franchies sur la version active. L’envoi reste une action distincte, à déclencher
           depuis la fiche du patient — il ne part pas d’ici.
         </p>

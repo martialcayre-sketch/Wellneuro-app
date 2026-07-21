@@ -207,9 +207,9 @@ export function ProtocolMiniBuilder({
             <button type="button" onClick={addAction} disabled={actions.length >= 3} className="min-h-11 rounded-lg border border-border px-3 py-1.5 text-sm disabled:opacity-50">Ajouter une action</button>
           </div>
           {foodCompassSelection && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-slate-300 bg-slate-50 p-2 text-sm">
+            <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted p-2 text-sm">
               <span>Sélection Boussole prête : {foodCompassSelection.foodLabel}</span>
-              <button type="button" onClick={insertFoodCompassAction} disabled={actions.length >= 3} className="min-h-11 rounded-lg border border-slate-900 px-3 py-2 disabled:opacity-50">
+              <button type="button" onClick={insertFoodCompassAction} disabled={actions.length >= 3} className="min-h-11 rounded-lg border border-foreground px-3 py-2 disabled:opacity-50">
                 Insérer manuellement
               </button>
               <button type="button" onClick={onClearFoodCompassSelection} className="min-h-11 px-2 py-2 text-muted-foreground underline">
@@ -256,15 +256,15 @@ export function ProtocolMiniBuilder({
       {onSaveVersion && (
         <p role="status" className="mt-3 text-base">
           {editedSinceSave && saveState === 'saved'
-            ? <span className="text-orange-800">Modifications locales non enregistrées.</span>
+            ? <span className="text-status-warning">Modifications locales non enregistrées.</span>
             : saveState === 'saving'
               ? <span className="text-muted-foreground">Enregistrement en cours…</span>
               : saveState === 'saved'
                 ? <span className="text-foreground font-medium">Version enregistrée sur le serveur — non transmise au patient.</span>
                 : saveState === 'stale'
-                  ? <span className="text-orange-800">La version active a changé ; rechargez l’historique avant d’enregistrer.</span>
+                  ? <span className="text-status-warning">La version active a changé ; rechargez l’historique avant d’enregistrer.</span>
                   : saveState === 'error'
-                    ? <span className="text-red-700">{saveError ?? 'Échec de l’enregistrement.'}</span>
+                    ? <span className="text-status-danger">{saveError ?? 'Échec de l’enregistrement.'}</span>
                     : <span className="text-muted-foreground">Brouillon local — non enregistré.</span>}
         </p>
       )}
