@@ -31,16 +31,17 @@ jamais sur la boîte d'un tiers.
 | Drapeau | Ce qu'il ouvre | À l'activation |
 |---|---|---|
 | `WN_G4_LIEN_MAGIQUE` | entrée `/portail/lien/[jeton]`, action praticien d'émission | **`true`** |
-| `WN_G4_REDEMANDE_PATIENT` | canal **public** `POST /api/portail/lien/demande` | **laissé absent** |
+| `WN_G4_REDEMANDE_PATIENT` | canal **public** `POST /api/portail/lien/demande` | **`true` depuis le 2026-07-21** |
 
 Le canal de redemande est public et non authentifié. Sa réponse est
 indifférenciée, et les **deux résidus de la revue de sécurité sont fermés le
-2026-07-21** : le temps de réponse passe par un plancher commun à toutes les
-sorties, et les tentatives sont plafonnées par origine réseau, en base.
+2026-07-21** (#182) : le temps de réponse passe par un plancher commun à toutes
+les sorties, et les tentatives sont plafonnées par origine réseau, en base.
 
-Le drapeau reste néanmoins **absent** à l'activation de G4. Fermer les résidus
-lève l'obstacle technique, pas la décision : ouvrir une surface publique sur des
-adresses de personnes réelles se consigne à part, avec sa date et son périmètre.
+**Ouvert par décision du responsable le 2026-07-21**, une fois ces deux résidus
+fermés et vérifiés en production. Les deux drapeaux ont donc été posés à des
+dates distinctes et pour des motifs distincts — c'était l'intérêt de les
+séparer.
 
 La coexistence des deux chemins le rend **non indispensable** : un patient dont
 le lien magique expire garde son lien permanent, et l'écran d'échec l'invite à
@@ -105,6 +106,40 @@ consigner comme celle-ci.
 > consommé, **5 rejeux refusés et tracés**, validité 24,00 h, origine
 > `praticien:martialcayre@wellneuro.fr`. Les sept invariants du gate tiennent en
 > production.
+
+## Ouverture du canal public de redemande (2026-07-21)
+
+Décision du responsable, consignée dans
+`campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`.
+
+1. **Poser la variable** dans Vercel **Production seule** — jamais Preview, qui
+   lit la base de production :
+   `WN_G4_REDEMANDE_PATIENT=true`. La créer **non sensible** : une variable
+   masquée n'est plus relisible, ce qui empêche de vérifier sa valeur après coup.
+2. **Redéployer** la production.
+3. **Vérifier la fermeture par le comportement**, sans toucher à un dossier :
+
+```bash
+# Adresse inexistante : réponse indifférenciée, et jamais avant 1,5 s.
+curl -s -o /dev/null -w '%{http_code} %{time_total}s\n' \
+  -X POST https://app.wellneuro.fr/api/portail/lien/demande \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"personne-qui-nexiste-pas@example.test"}'
+# attendu : 200, et un temps ≥ 1,5 s
+```
+
+4. **Contrôle en base** (MCP Supabase, lecture seule) — la table de cadence ne
+   porte aucune identité :
+
+```sql
+SELECT count(*) AS tentatives, count(DISTINCT empreinte_ip) AS origines
+FROM portail_demande_tentatives;
+```
+
+**Rollback propre à ce canal** : supprimer `WN_G4_REDEMANDE_PATIENT` et
+redéployer. La route repasse en 404 ; l'entrée par lien magique et les liens
+permanents ne sont pas affectés. Les lignes de `portail_demande_tentatives` se
+purgent seules au-delà de 24 h.
 
 ## Rollback (immédiat, non destructif)
 
