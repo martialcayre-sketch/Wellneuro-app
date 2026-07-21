@@ -165,6 +165,29 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
 - Avant d'annoncer qu'une PR est prête à merger, lire son CI (`gh pr checks`) :
   les E2E n'y sont pas couverts par `npm test`.
 
+## Revue, merge et suppression des branches — le ressort de Copilot
+
+**Décision du 2026-07-21.** La revue de code, le merge des PR et la suppression
+des branches appartiennent à **Copilot**. L'assistant ouvre la PR, vérifie que le
+CI est vert, annonce l'état — et s'arrête là.
+
+Deux raisons, données ensemble : un **regard différent** sur le code (une revue
+par l'agent qui vient de l'écrire est une relecture, pas une revue), et le **coût
+en tokens** — suivre un CI, relancer, merger puis nettoyer consomme des
+allers-retours pour un travail qu'un autre outil fait sans eux.
+
+En pratique : pas de `gh pr merge`, pas de `git push origin --delete`, pas de
+suppression de worktree rattaché à une PR ouverte. Le nettoyage post-merge n'est
+pas une tâche en attente côté assistant.
+
+**Effet de bord à connaître.** Quand le commit de tête d'une PR est attribué au
+bot Copilot (un merge de `main` résolu par lui, par exemple), GitHub met le run
+`pull_request` en `action_required` et **n'exécute rien** sans approbation
+humaine. `gh pr checks` n'affiche alors que les checks Vercel, **sans `verify`** :
+la PR paraît verte alors que la vérification n'a jamais tourné. Vérifier la
+présence de `verify`, et débloquer en poussant un commit sous le compte du dépôt
+— `POST /actions/runs/{id}/approve` ne s'applique qu'aux PR issues de forks.
+
 ## Définition de done pour une tâche standard
 
 - Changement limité au périmètre demandé.
