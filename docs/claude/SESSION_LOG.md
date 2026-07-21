@@ -1258,33 +1258,21 @@ aux participants.
 
 ## 2026-07-21 — Vague 2 : typographie praticien (E16) et cadrage E11
 
-**Décisions** : les deux écarts « moyenne » différés de l'audit 5.0 traités
-selon la recommandation §12.6, « sans les improviser ». **E16** (#191) —
-balayage **sémantique** de la typo praticien vers A6-R1 sur 31 fichiers :
-corps `text-sm` (14 px) → `text-base` (16 px) sur le seul texte de lecture
-continue, 10 titres `text-2xl` (24 px) → `text-3xl` (30 px), dont
-l'incohérence de la page Paramètres (restée en `text-lg`). **E11** (#192) —
-**cadrage documentaire seul** : dette rattachée au LOT-01 de SP-SPI, portail
-résorbable, legacy hors périmètre (D-002).
+**Décisions** : les deux écarts « moyenne » différés de l'audit 5.0, traités
+selon §12.6 « sans les improviser ». **E16** (#191) — balayage **sémantique**
+sur 31 fichiers praticien : corps 14 → 16 px sur le seul texte de lecture
+continue, 10 titres 24 → 30 px. **E11** (#192) — **cadrage seul** : dette
+rattachée au LOT-01 de SP-SPI, legacy hors périmètre (D-002).
 
-**Écarté** : le zoom global `[data-theme='praticien'] { font-size }` — brutal,
-il grossit badges et tableaux denses et n'atteint pas 28 px sur les displays ;
-toucher `components/ui/**` (partagé avec le patient) ; improviser la résorption
-d'E11, qui appartient à SP-SPI et dépend d'IDP.
+**Écarté** : le zoom global du thème (grossit badges et tableaux denses,
+n'atteint pas 28 px) ; `components/ui/**`, partagé avec le patient ;
+improviser E11, qui dépend d'IDP.
 
-**Incident de rebase** : le worktree avait 5 commits de retard et
-`PatientsPanel.tsx` avait été réécrit sur `main`. Branches reconstruites depuis
-`origin/main` ; trois conflits réels avec une retokenisation de couleurs déjà
-mergée (`FichePatientPanel`, `PatientsPanel`, `DocumentComposer`), résolus en
-**gardant le token de `main`** et en n'appliquant que la taille.
-
-**Vérifié** : T1 et T2 (51/51 E2E, bureau + iPhone 13) sur la branche finale ;
-CI verte sur les deux PR puis sur `main` ; production répond. **Non vérifié** :
-le rendu visuel — aucune capture produite, faute d'outil navigateur dans la
-session. La preuve porte sur la non-régression fonctionnelle, pas sur les
-proportions.
+**Vérifié** : T1, T2 (51/51 E2E), CI verte sur les deux PR puis sur `main`.
+Branches refaites depuis `origin/main` ; trois conflits de retokenisation
+résolus en gardant le token de `main`. **Non vérifié** : le rendu visuel,
+faute d'outil navigateur.
 
 **Prochaine action** : relecture visuelle humaine des écrans praticien.
 
-**Questions ouvertes** : les réserves R1–R9 de l'audit, toujours non arbitrées ;
-E17 (`ReadingComfortControl` praticien) et E18 (couleurs brutes) restent ouverts.
+**Questions ouvertes** : réserves R1–R9 ; E17 et E18.
