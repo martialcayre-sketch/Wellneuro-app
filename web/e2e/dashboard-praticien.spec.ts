@@ -176,6 +176,83 @@ test.describe('Praticien Dashboard', () => {
     await expect(page.getByRole('table').first()).toBeVisible();
   });
 
+  // IDP2 LOT-01b. Le menu « Gérer le dossier » est rendu dans une cellule du
+  // tableau, elle-même dans un `overflow-x-auto` contenu dans une carte
+  // `overflow-hidden` : un panneau positionné en `absolute` y était ROGNÉ, et
+  // sur les dernières lignes « Effacer définitivement » devenait inatteignable.
+  // Aucun test unitaire ne peut l'attraper — jsdom ne calcule pas de géométrie.
+  // D'où ce parcours, qui n'efface RIEN : il ouvre le menu de la DERNIÈRE
+  // ligne et exige que le dernier item soit réellement dans le viewport.
+  test('patients : le menu de la dernière ligne n’est pas rogné par le tableau', async ({ page }) => {
+    const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
+    await page.context().addCookies([sessionCookie]);
+    await page.goto('/dashboard/patients');
+
+    const declencheurs = page.getByRole('button', { name: 'Gérer le dossier' });
+    await expect(declencheurs.first()).toBeVisible({ timeout: 10000 });
+    await declencheurs.last().click();
+
+    const menu = page.getByRole('menu', { name: 'Gérer le dossier' });
+    await expect(menu).toBeVisible();
+    // Le panneau lui-même tient dans la fenêtre : c'est ce qui manquait quand
+    // il était rogné par la carte, et ce qui manquerait encore s'il débordait
+    // simplement par le bas.
+    await expect(menu).toBeInViewport();
+
+    // Le dernier item du menu, celui qui était sous le bord de la carte. Sur un
+    // écran court le panneau défile en interne — ce qui est acceptable, à la
+    // différence d'un rognage : l'item reste ATTEIGNABLE.
+    const effacer = menu.getByRole('menuitem', { name: 'Effacer définitivement' });
+    await effacer.scrollIntoViewIfNeeded();
+    await expect(effacer).toBeVisible();
+    await expect(effacer).toBeInViewport();
+
+    // Cible tactile ≥ 44 px (registre §1).
+    const box = await effacer.boundingBox();
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+
+    // Échap referme et rend le focus au déclencheur.
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(declencheurs.last()).toBeFocused();
+  });
+
+  // La confirmation d'effacement est le dernier obstacle avant une destruction
+  // sans retour : on vérifie qu'elle existe et qu'elle est inerte, SANS jamais
+  // la confirmer — la base est partagée entre les postes et `PAT_SEED_03` est
+  // une fixture des autres suites.
+  test('patients : la confirmation d’effacement nomme le dossier et reste inerte', async ({ page }) => {
+    const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
+    await page.context().addCookies([sessionCookie]);
+    await page.goto('/dashboard/patients');
+
+    const declencheurs = page.getByRole('button', { name: 'Gérer le dossier' });
+    await expect(declencheurs.first()).toBeVisible({ timeout: 10000 });
+    await declencheurs.first().click();
+    const item = page.getByRole('menuitem', { name: 'Effacer définitivement' });
+    await item.scrollIntoViewIfNeeded();
+    await item.click();
+
+    const dialogue = page.getByRole('dialog');
+    await expect(dialogue).toBeVisible();
+    // `.first()` : le dialogue porte aussi les intitulés « Ce qui est détruit »
+    // et « Ce qui subsiste », vérifiés juste en dessous.
+    await expect(dialogue.getByRole('heading').first()).toContainText(
+      'Effacer définitivement le dossier de',
+    );
+    await expect(dialogue.getByRole('heading', { name: 'Ce qui est détruit' })).toBeVisible();
+    await expect(dialogue.getByRole('heading', { name: 'Ce qui subsiste' })).toBeVisible();
+
+    const confirmer = dialogue.getByRole('button', { name: 'Effacer définitivement' });
+    await expect(confirmer).toBeDisabled();
+    await dialogue.getByLabel(/saisissez/i).fill('effacer');
+    await expect(confirmer).toBeDisabled();
+
+    // On s'arrête ici, délibérément : on n'efface pas une fixture partagée.
+    await dialogue.getByRole('button', { name: 'Annuler' }).click();
+    await expect(dialogue).toBeHidden();
+  });
+
   test('route praticien : accès Trajectoire alimentaire (JA5-03)', async ({ page }) => {
     const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
     await page.context().addCookies([sessionCookie]);

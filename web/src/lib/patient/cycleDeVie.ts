@@ -4,7 +4,13 @@
 //
 // - CLÔTURE DE SUIVI — le dossier reste, le patient garde l'accès en lecture
 //   à ses archives. Plus aucune assignation de questionnaire, plus aucun envoi
-//   de document. Réversible.
+//   de document de suivi. Réversible.
+//
+//   LE LIEN D'ACCÈS AU PORTAIL, LUI, RESTE ENVOYABLE — décision du 2026-07-21.
+//   Ce n'est pas une exception de confort : la clôture promet la lecture des
+//   archives, et un patient qui a perdu son e-mail n'a pas d'autre porte. La
+//   bloquer aurait tenu la lettre (« aucun envoi ») en cassant la promesse
+//   qu'elle sert. Un lien d'accès n'est pas un document de suivi.
 // - EFFACEMENT — les données partent, l'accès avec. Il ne subsiste qu'un
 //   résidu non identifiant. Irréversible.
 //
@@ -25,7 +31,13 @@ export type PhaseDossier = 'en_suivi' | 'suivi_cloture' | 'desactive';
 
 /**
  * La clôture prime sur la désactivation : un dossier clos puis désactivé reste
- * « clos » du point de vue du patient, qui conserve sa lecture.
+ * « clos » quant à ce qu'il accepte — plus aucune assignation, plus aucun envoi
+ * de suivi.
+ *
+ * Elle NE dit rien de l'accès du patient : celui-ci dépend de `actif` seul, et
+ * un dossier clos-puis-désactivé n'ouvre plus le portail. Ne pas dériver une
+ * promesse de lecture de cette fonction — c'est l'erreur que le libellé de
+ * `MESSAGE_DOSSIER_CLOS` a faite le 2026-07-21.
  */
 export function phaseDossier(etat: EtatDossier): PhaseDossier {
   if (etat.suiviClotureLe) return 'suivi_cloture';
@@ -46,8 +58,20 @@ export function accepteNouvelEnvoi(etat: EtatDossier): boolean {
 }
 
 /** Le refus opposé au praticien. Une seule formulation, un seul endroit. */
+/**
+ * CETTE CONSTANTE NE PROMET RIEN SUR L'ACCÈS, et c'est délibéré.
+ *
+ * Elle est partagée par quatre routes qui n'ont pas toutes le dossier complet
+ * sous la main, et `phaseDossier` fait primer la clôture sur la désactivation :
+ * un dossier clos PUIS désactivé produit ce message alors que le portail lui
+ * refuse déjà toute entrée. Une phrase du type « l'accès reste ouvert » y serait
+ * donc fausse dans un état parfaitement atteignable.
+ *
+ * Ce qui subsiste est dit là où l'état est connu : le dialogue de clôture et le
+ * message de confirmation branchent tous deux sur `actif`.
+ */
 export const MESSAGE_DOSSIER_CLOS =
-  'Le suivi de ce dossier est clôturé : aucun questionnaire ne peut être assigné, aucun document envoyé. Rouvrez le suivi pour reprendre.';
+  'Le suivi de ce dossier est clôturé : aucun questionnaire ne peut être assigné, aucun document de suivi envoyé. Rouvrez le suivi pour reprendre.';
 
 export const RAISON_DOSSIER_CLOS = 'dossier_cloture';
 

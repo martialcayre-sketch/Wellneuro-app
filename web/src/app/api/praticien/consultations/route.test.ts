@@ -109,4 +109,24 @@ describe('POST /api/praticien/consultations', () => {
     });
     expect(sendPortailLinkEmail).toHaveBeenCalledOnce();
   });
+
+  // Cette route CRÉE une consultation, réactive au besoin un jeton révoqué et
+  // envoie un e-mail : soit exactement ce que la clôture de suivi interdit. Le
+  // garde manquait ici alors qu'assignation, pack et envoi de booklet
+  // l'avaient déjà — et le libellé de la clôture promet au praticien
+  // qu'aucun document ne partira.
+  it('dossier au suivi clôturé : 409, aucun e-mail, aucun jeton relevé', async () => {
+    prisma.patient.findUnique.mockResolvedValue({
+      ...patient,
+      suiviClotureLe: new Date('2026-07-21T10:00:00.000Z'),
+    });
+    const res = await POST(postRequest({ idPatient: 'PAT_1' }));
+    expect(res.status).toBe(409);
+    const json = (await res.json()) as { reason: string };
+    // Distinct de `patient_not_found` : le dossier existe et vous est accessible.
+    expect(json.reason).toBe('dossier_cloture');
+    expect(prisma.patient.update).not.toHaveBeenCalled();
+    expect(prisma.consultation.create).not.toHaveBeenCalled();
+    expect(sendPortailLinkEmail).not.toHaveBeenCalled();
+  });
 });

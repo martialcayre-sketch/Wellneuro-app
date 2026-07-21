@@ -7,6 +7,7 @@ import { buildPortalUrl } from '@/lib/consultation/portal-access';
 import { isMotifValide } from '@/lib/consultation/motifs';
 import { sendPortailLinkEmail } from '@/lib/consultation/email';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 
 export type Consultation = {
   idConsultation: string;
@@ -29,7 +30,15 @@ export type CreateConsultationResponse = {
   accessToken?: string;
   lien?: string;
   error?: string;
-  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'forbidden' | 'exception';
+  reason?:
+    | 'unauthenticated'
+    | 'invalid_payload'
+    | 'patient_not_found'
+    | 'forbidden'
+    // Distinct de `patient_not_found` : le dossier existe et vous est
+    // accessible, c'est son suivi qui est clos.
+    | 'dossier_cloture'
+    | 'exception';
 };
 
 type CreateConsultationPayload = {
@@ -119,6 +128,19 @@ export async function POST(req: Request): Promise<NextResponse<CreateConsultatio
       return NextResponse.json(
         { success: false, reason: 'patient_not_found', error: 'Patient introuvable ou inactif.' },
         { status: 404 }
+      );
+    }
+
+    // Dossier clos : cette route CRÉE une consultation, réactive au besoin un
+    // jeton révoqué et envoie un e-mail au patient — soit exactement ce que la
+    // clôture interdit. Le garde manquait ici alors qu'assignation, pack et
+    // envoi de booklet l'avaient déjà : une interdiction incomplète est une
+    // interdiction contournable, et le libellé de la clôture promet au
+    // praticien qu'aucun document ne partira.
+    if (!accepteNouvelEnvoi(patient)) {
+      return NextResponse.json(
+        { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
+        { status: 409 }
       );
     }
 

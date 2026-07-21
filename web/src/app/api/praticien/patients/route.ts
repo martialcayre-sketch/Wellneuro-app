@@ -13,6 +13,10 @@ type Patient = {
   nom: string;
   telephone: string;
   actif: string;
+  // Clôture de suivi (IDP2). DISTINCT de `actif` : un dossier clos garde son
+  // accès en lecture, un dossier inactif le perd. L'écran ne peut pas déduire
+  // l'un de l'autre — d'où ce champ, et non un booléen de plus.
+  suiviClotureLe: string | null;
 };
 
 type Assignation = {
@@ -56,11 +60,13 @@ export type PatchPatientResponse = {
   reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'forbidden' | 'exception';
 };
 
-export type DeletePatientResponse = {
-  success: boolean;
-  error?: string;
-  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'exception';
-};
+// Il n'y a PAS de `DeletePatientResponse` ni de handler `DELETE` ici, et c'est
+// délibéré (2026-07-21, LOT-01b). La route existait, n'avait plus d'appelant
+// depuis que « Supprimer » a rejoint le menu sous son vrai nom, et surtout elle
+// écrivait `actif: false` : un verbe DELETE qui ne détruisait rien, désormais
+// voisin d'un effacement qui détruit vraiment. Désactiver un dossier se fait
+// par `PATCH { actif: 'NON' }`, qui dit ce qu'il fait ; l'effacement par
+// `POST /api/praticien/patients/cycle-de-vie`.
 
 // Prochain idPatient au format PATnnn, dérivé du max courant en base.
 async function nextIdPatient(): Promise<string> {
@@ -170,7 +176,15 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
   }
 }
 
-function patientToDto(p: { idPatient: string; email: string; prenom: string; nom: string; telephone: string | null; actif: boolean }): Patient {
+function patientToDto(p: {
+  idPatient: string;
+  email: string;
+  prenom: string;
+  nom: string;
+  telephone: string | null;
+  actif: boolean;
+  suiviClotureLe: Date | null;
+}): Patient {
   return {
     idPatient: p.idPatient,
     email: p.email,
@@ -178,6 +192,7 @@ function patientToDto(p: { idPatient: string; email: string; prenom: string; nom
     nom: p.nom,
     telephone: p.telephone ?? '',
     actif: p.actif ? 'OUI' : 'NON',
+    suiviClotureLe: p.suiviClotureLe ? p.suiviClotureLe.toISOString() : null,
   };
 }
 
@@ -291,6 +306,7 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
         nom,
         telephone,
         actif: 'OUI',
+        suiviClotureLe: null,
       },
     });
   } catch (err) {
@@ -340,7 +356,11 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
   const telephone = (payload.telephone ?? '').trim().slice(0, 30);
   const actif = payload.actif;
 
-  if (!idPatient || !/^PAT\d+$/.test(idPatient)) {
+  // Même forme d'identifiant que `DELETE` (plus bas) et que la route
+  // `cycle-de-vie` : `/^PAT\d+$/` rejetait les identifiants à tiret bas, dont
+  // le patient fictif `PAT_SEED_03` — « Modifier » était donc inopérant sur le
+  // dossier de seed. L'appartenance reste vérifiée juste en dessous.
+  if (!idPatient || !/^[A-Za-z0-9_-]+$/.test(idPatient)) {
     return NextResponse.json(
       { success: false, reason: 'invalid_payload', error: 'idPatient invalide.' },
       { status: 400 }
@@ -384,44 +404,5 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
       reason: 'exception',
       error: 'Erreur technique lors de la modification du patient.',
     });
-  }
-}
-
-// DELETE /api/praticien/patients?idPatient=PAT001
-// Désactive le patient en PostgreSQL (soft-delete, préserve l'historique clinique)
-export async function DELETE(req: Request): Promise<NextResponse<DeletePatientResponse>> {
-  const session = await getServerSession(authOptions);
-  if (!session) {
-    return NextResponse.json({ success: false, reason: 'unauthenticated', error: 'Session absente.' }, { status: 401 });
-  }
-
-  const { searchParams } = new URL(req.url);
-  const idPatient = (searchParams.get('idPatient') ?? '').trim();
-
-  if (!idPatient || !/^[A-Za-z0-9_-]+$/.test(idPatient)) {
-    return NextResponse.json({ success: false, reason: 'invalid_payload', error: 'idPatient invalide.' }, { status: 400 });
-  }
-
-  const email = emailPraticien(session);
-  if (!email) {
-    return NextResponse.json({ success: false, reason: 'unauthenticated', error: 'Session absente.' }, { status: 401 });
-  }
-
-  try {
-    // `updateMany` plutôt que `update` : `count === 0` couvre à la fois
-    // « patient introuvable » et « pas le vôtre » sans confirmer lequel.
-    const { count } = await prisma.patient.updateMany({
-      where: { idPatient, ...filtrePatientsDuPraticien(email) },
-      data: { actif: false },
-    });
-
-    if (count === 0) {
-      return NextResponse.json({ success: false, reason: 'patient_not_found', error: 'Patient introuvable.' }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error('[patients DELETE]', err instanceof Error ? err.message : String(err));
-    return NextResponse.json({ success: false, reason: 'exception', error: 'Erreur technique lors de la suppression.' });
   }
 }

@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Cycle de vie du dossier — clôture de suivi et effacement"
-statut: "en_cours"
+statut: "livré — socle (#189) et surface, les deux PR du lot"
 dépend_de: "aucun"
 ---
 
@@ -53,17 +53,109 @@ Schéma, effacement réel, refus portés par les routes, tests.
 Vérifié : T3 complet — 893 tests unitaires, aucune dérive schéma ↔ migrations,
 51 E2E.
 
-## LOT-01b — la surface (à faire)
+## LOT-01b — la surface (livré)
 
-- **Menu regroupé** remplaçant les cinq boutons d'accès de `PatientsPanel` :
-  le panneau doit s'alléger en gagnant ces deux actions, pas s'alourdir.
-  Actions de fin de parcours dans le même menu, **séparées visuellement**.
-- **Confirmations asymétriques** : simple pour la clôture, réversible ;
-  renforcée pour l'effacement — elle **nomme le patient**, liste ce qui est
-  détruit, liste ce qui subsiste, et demande un geste qu'un clic distrait ne
-  produit pas.
-- Accessibilité : menu clavier complet, cibles ≥ 44×44 px, aucune action
-  signalée par la seule couleur.
+Deux décisions ont précisé le cadrage au moment d'écrire, l'une et l'autre
+tranchées par l'utilisateur le 2026-07-21 :
+
+- **Le menu vit sur la ligne du tableau**, pas dans la carte du haut. La
+  maquette D8 le dessinait ainsi, mais les cinq boutons qu'il remplace vivaient
+  dans la carte « Consultation & accès patient », pilotée par un sélecteur. Le
+  menu descend donc sur la ligne **et** la carte perd sa rangée de boutons — pas
+  de doublon. Le détour « choisir un patient dans une liste, puis agir »
+  disparaît.
+- **« Supprimer » est absorbé dans le menu**, sous son vrai nom. Ce bouton
+  appelait `DELETE` et écrivait `actif: false` : c'était une désactivation
+  nommée suppression. Le laisser à côté d'un vrai « Effacer définitivement »
+  aurait rendu les deux illisibles.
+
+Ce qui a été livré :
+
+- **Menu « Gérer le dossier »** (`components/ui/MenuActions.tsx`, neuf) — deux
+  groupes séparés visuellement, clavier complet (`↓`/`↑`/`Début`/`Fin`, `Échap`
+  **rendant le focus au déclencheur**, `Tab` sortant), `role="menu"`, fermeture
+  au clic extérieur sans vol de focus, cibles ≥ 44×44 px, action destructrice
+  signalée par un libellé explicite et un glyphe — jamais par la seule couleur.
+  Écrit à la main plutôt qu'avec `@radix-ui/react-dropdown-menu` : ce menu ouvre
+  la seule action irréversible de l'application, il **doit** être couvert, et
+  les menus Radix se testent mal en jsdom. Le `Dialog` Radix, lui, était déjà
+  une dépendance et sert aux confirmations.
+- **Confirmations asymétriques** (`components/ui/DossierConfirmDialog.tsx`,
+  neuf) — la clôture énonce ce qui s'arrête et ce qui reste ; l'effacement nomme
+  le patient, liste ce qui est détruit et ce qui subsiste, précise que l'e-mail
+  ne subsiste pas **même sous forme d'empreinte**, et exige la saisie de
+  `EFFACER`. Ce mot n'est pas un garde inventé pour l'écran : c'est la valeur
+  que la route exige déjà dans son corps. Le champ se vide à la réouverture.
+- **Statut à trois états** — `Actif`, `Suivi clôturé`, `Inactif`, dérivés de
+  `phaseDossier` plutôt que réimplémentés.
+- **Le DTO patient expose `suiviClotureLe`.** Il ne le faisait pas : l'écran ne
+  pouvait pas distinguer un dossier clos d'un dossier désactivé.
+- **Point tranché à l'usage** : sur un dossier clos, les actions d'accès au
+  portail restent **actives**. D4 interdit les assignations et les envois, pas
+  la lecture — le patient conserve ses archives.
+- **Correction trouvée en chemin** : `PATCH /api/praticien/patients` validait
+  l'identifiant par `/^PAT\d+$/` et rejetait `PAT_SEED_03` ; « Modifier » était
+  donc inopérant sur le dossier de seed. Forme alignée sur celle de
+  `cycle-de-vie` (et de `DELETE`, depuis retirée), appartenance inchangée.
+
+### Ce que la revue indépendante a rattrapé
+
+Elle a rendu un **no-go** sur la première version, à juste titre. Deux défauts
+tenaient la fonctionnalité en échec sans qu'aucun test ne s'en aperçoive :
+
+1. **Le menu était rogné.** Rendu en `absolute` dans une cellule, il était
+   coupé par le `overflow-x-auto` du tableau et le `overflow-hidden` de la
+   carte : sur les dernières lignes, les deux fins de parcours passaient sous le
+   bord. **jsdom ne calcule aucune géométrie** — 928 tests verts ne disaient
+   rien de cela. Corrigé par un portail sur `document.body` en `position:
+   fixed`, avec retournement vers le haut et hauteur bornée à l'espace libre. Un
+   E2E le verrouille désormais, sur la dernière ligne, sur deux profils.
+2. **L'échec d'une action irréversible était muet.** Le message partait dans une
+   carte située hors du dialogue : derrière l'overlay Radix, souvent hors écran,
+   et sous `aria-hidden`. Le test qui le « couvrait » passait au vert parce que
+   `getByText` interroge tout le document — il prouvait la présence, pas la
+   visibilité. Le message est maintenant **dans** le dialogue, en `role="alert"`,
+   et le test exige le confinement.
+
+Trois autres constats ont été repris dans la même passe : la désactivation avait
+perdu la confirmation qu'elle avait avant le lot ; le badge affichait « Suivi
+clôturé » seul sur un dossier aussi désactivé, laissant croire à une lecture qui
+n'existait pas ; et `POST /api/praticien/consultations` ne testait que `actif` —
+sur un dossier clôturé, il créait la consultation, **réactivait un jeton
+révoqué** et envoyait l'e-mail. Ce dernier trou est du LOT-01a, mais c'est ce
+lot qui le rendait atteignable : garde ajouté ici.
+
+Vérifié : T2 complet — 943 tests unitaires, 55 E2E, aucune dérive schéma ↔
+migrations. **Aucun E2E n'efface**, délibérément : la suite tourne contre une
+base partagée entre les postes et réinitialise `PAT_SEED_03` ; un parcours qui
+effacerait réellement ce dossier détruirait la fixture des autres sessions. Le
+parcours s'arrête à la confirmation inerte.
+
+### Les deux questions restées ouvertes, tranchées le 2026-07-21
+
+- **« Renvoyer le lien » sur un dossier clos reste possible — c'est le libellé
+  qui change.** Le conflit était réel : la clôture promettait « aucun document
+  envoyé » *et* « le patient garde l'accès en lecture à ses archives ». Bloquer
+  l'envoi tenait la première promesse en cassant la seconde : un patient ayant
+  perdu son e-mail n'aurait plus eu aucune porte vers ses archives. Un lien
+  d'accès n'est pas un document de suivi. `MESSAGE_DOSSIER_CLOS` borne donc son
+  refus aux « documents de suivi » et ne promet **rien** sur l'accès : partagé
+  par quatre routes, il s'affiche aussi sur un dossier clos *puis* désactivé, où
+  le portail refuse déjà l'entrée — l'y dire ouvert serait faux. La nuance vit
+  là où l'état est connu : le dialogue de clôture et le message de confirmation
+  branchent tous deux sur `actif`, et annoncent le lien renvoyable ou son
+  absence. Le comportement du code est inchangé — seul ce qu'il promet l'est.
+
+  Dette assumée : aucun E2E ne vérifie « Renvoyer le lien » réussissant sur un
+  dossier clos. Le parcours toucherait `PAT_SEED_03`, fixture partagée entre les
+  postes. La couverture reste unitaire, aux deux libellés et au refus serveur.
+- **`DELETE /api/praticien/patients` est supprimée.** Sans appelant depuis que
+  « Supprimer » a rejoint le menu sous son vrai nom, et surtout : elle écrivait
+  `actif: false`. Un verbe `DELETE` qui ne détruit rien, voisin d'un effacement
+  qui détruit vraiment, est le genre d'ambiguïté qui produit un incident un an
+  plus tard. Désactiver passe par `PATCH { actif: 'NON' }`, effacer par
+  `POST …/cycle-de-vie`. Le commentaire laissé à sa place dit pourquoi elle
+  n'est pas là, pour qu'on ne la réintroduise pas par réflexe REST.
 
 ## Ce que ce lot ne fait pas
 

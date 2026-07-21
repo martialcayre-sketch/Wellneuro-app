@@ -40,6 +40,26 @@ describe('ce qu’un dossier clos n’accepte plus', () => {
     expect(MESSAGE_DOSSIER_CLOS).toMatch(/clôturé/i);
     expect(MESSAGE_DOSSIER_CLOS).toMatch(/Rouvrez/i);
   });
+
+  // Décision du 2026-07-21. Le message a d'abord dit « aucun document envoyé »,
+  // au singulier absolu, alors que le lien d'accès au portail reste envoyable —
+  // sans quoi la lecture des archives, que la clôture PROMET, deviendrait
+  // inatteignable pour un patient ayant perdu son e-mail. Le refus doit donc se
+  // borner aux documents DE SUIVI.
+  it('le message borne son refus aux documents de suivi', () => {
+    expect(MESSAGE_DOSSIER_CLOS).toMatch(/document de suivi/i);
+    expect(MESSAGE_DOSSIER_CLOS).not.toMatch(/aucun envoi(?! de document de suivi)/i);
+    expect(MESSAGE_DOSSIER_CLOS).not.toMatch(/aucun document envoyé/i);
+  });
+
+  // Et il ne promet RIEN sur l'accès : partagé par quatre routes, il s'affiche
+  // aussi sur un dossier clos PUIS désactivé, où le portail refuse déjà tout.
+  // Une promesse de lecture y serait fausse. Voir le commentaire de la
+  // constante — la nuance est portée par le dialogue, qui connaît `actif`.
+  it('le message ne promet aucun accès, faute de connaître l’état du dossier', () => {
+    expect(MESSAGE_DOSSIER_CLOS).not.toMatch(/archives/i);
+    expect(MESSAGE_DOSSIER_CLOS).not.toMatch(/accès/i);
+  });
 });
 
 describe('année de naissance', () => {
