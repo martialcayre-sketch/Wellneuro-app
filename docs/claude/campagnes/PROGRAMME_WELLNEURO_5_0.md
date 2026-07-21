@@ -75,13 +75,28 @@ C4 (compléments clean label) et C5 (boussole alimentaire) restent des
 campagnes data-first intercalables selon disponibilité ; elles alimentent le
 protocole et le copilote sans dépendre de la disposition.
 
-Depuis A7-12 (2026-07-16), **C5A est le candidat naturel de prochaine
-campagne data**. Le cadrage 5.0 du 2026-07-18 compile huit lots : LOT-00 est
-terminé, LOT-01 attend une validation clinique humaine et LOT-02 sépare les
-gates migration et import. Le référentiel complet des constituants Ciqual
-validés fonde le profil intrinsèque ; les 12 vedettes forment seulement un
-manifeste et un sous-ensemble des marqueurs JA. C5 reste inactive et son
-activation demeure un choix explicite.
+**C5 est livrée et active** (2026-07-18). Le cadrage 5.0 du même jour compilait
+huit lots ; les huit ont été livrés dans la foulée — moteurs et contrats
+versionnés (`web/src/lib/food-compass/`), routes praticien et portail, UI des
+deux côtés, validation et handoff. La migration
+`20260718100010_c5_ciqual_reference_v1` est appliquée en production et
+`ciqual_nutrient_values` porte 55 744 lignes. Le référentiel complet des
+constituants Ciqual validés fonde le profil intrinsèque ; les 12 vedettes
+forment seulement un manifeste et un sous-ensemble des marqueurs JA.
+
+L'activation reste **un choix explicite**, porté par `WN_C5_ENABLED`
+(fail-closed : seule la valeur exacte `true` ouvre la campagne,
+`web/src/lib/food-compass/featureFlag.ts`). Ce drapeau est **actif en
+production** — mesuré le 2026-07-21, et non déduit d'un document : la route
+praticien vérifie le drapeau *avant* l'authentification, et la production répond
+401 là où un drapeau éteint rendrait 404.
+
+> **Rectification du 2026-07-21 (audit 5.0, E20).** Ce paragraphe décrivait
+> encore l'état du cadrage du 2026-07-18 au matin — « LOT-00 terminé, LOT-01
+> attend une validation clinique, C5 reste inactive » — et n'avait pas été relu
+> après les livraisons du même jour. Trois documents de pilotage ont porté cet
+> état périmé pendant trois jours, contre un dossier de campagne qui disait vrai.
+> L'écart n'était pas un désaccord sur les faits : c'était un retard d'écriture.
 
 ### Campagne transverse TRUST
 
