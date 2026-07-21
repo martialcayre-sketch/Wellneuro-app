@@ -646,6 +646,42 @@
 - **Statut** : cadrée le 2026-07-19. Remplace l'entrée différée « Auth patient
   inter-assignations » du présent registre.
 
+### IDP2 — Compte patient et cycle de vie du dossier (`2026-07-21-idp2-auth-patient-et-cycle-de-vie`)
+
+- **Possède** : l'authentification patient par compte (Google + lien magique),
+  les deux états de fin de parcours — **clôture de suivi** et **effacement** —,
+  leur surface praticien regroupée, et le retrait final du jeton permanent.
+- **Consomme** : le lien magique d'IDP (`lib/portail/lienMagique.ts`, livré et
+  activé le 2026-07-21), `lib/patient-session.ts`, NextAuth (`lib/auth.ts`), la
+  garde d'appartenance (`lib/praticien/appartenance.ts`), le canal de demande
+  de droits de TRUST (`trust_rights_requests`).
+- **Décisions actées (2026-07-21)** : **Google + lien magique**, aucun autre
+  fournisseur d'identité ; **Facebook écarté** — il apprendrait à un acteur
+  publicitaire que la personne utilise une application de santé, sans ajouter
+  de couverture ; **clôture et effacement coexistent** comme deux états
+  distincts ; un dossier clos **n'accepte ni assignation ni envoi de document**,
+  et ces refus sont **portés par les routes, jamais par l'écran seul** ;
+  **résidu après effacement** = année de naissance, prénom, trois premières
+  lettres du nom, **appliqué au seul effacement** (aucune transformation des
+  dossiers actifs) ; **un menu unique** remplace les cinq boutons d'accès du
+  panneau praticien, les actions de fin de parcours y étant séparées
+  visuellement ; **confirmation asymétrique** — simple pour la clôture,
+  renforcée et nominative pour l'effacement.
+- **Ne possède pas** : le contenu de l'espace patient (SP-SPI) ;
+  l'authentification praticien, inchangée ; l'hébergement et la question HDS ;
+  la suppression du lien magique, qui **devient** le second chemin de connexion.
+- **Questions ouvertes** : sort de l'e-mail dans le résidu (bloquant pour le lot
+  effacement) ; existence d'une obligation de conservation opposable à un
+  effacement (art. 17.3 RGPD — question de conseil, pas d'assistant) ; migration
+  des 13 accès portail ouverts ; Google devenant sous-traitant sur les patients.
+- **Risque de conception nommé** : deux surfaces d'authentification dans le même
+  NextAuth. Séparation stricte du rôle dans le jeton, et un test qui échoue si un
+  compte hors `@wellneuro.fr` atteint `/dashboard`.
+- **Statut** : cadrée le 2026-07-21, **aucun code écrit**. Motif d'ouverture :
+  l'application promet déjà l'effacement au patient
+  (`lib/trust/contenus/registre.ts:167`) et ne peut pas l'exécuter — le seul
+  bouton « suppression » écrit `actif: false` et rien d'autre.
+
 ### SP-SPI — « Ma spirale » et reprise patient (`2026-07-19-sp-spi-ma-spirale-patient`)
 
 - **Possède** : l'accueil patient trajectoire, l'écran de reprise en douceur, la
