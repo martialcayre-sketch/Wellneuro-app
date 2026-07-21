@@ -349,6 +349,32 @@ Restent deux points d'attention hors navigateur :
   une expiration ne les périme pas rétroactivement — c'est ce que garantit la
   coexistence des deux chemins — mais la date de bascule reste à fixer, et
   **ce n'est pas une décision technique**.
+
+  **Le mécanisme, lui, est livré** (2026-07-21, réserve R4 de l'audit 5.0). La
+  date se pose en variable d'environnement Vercel, **sans déploiement de code ni
+  migration** :
+
+  ```ini
+  WN_PORTAIL_LIEN_PERMANENT_FIN = 2026-10-21
+  ```
+
+  - Absente — l'état actuel — **rien ne change** : les liens permanents restent
+    honorés. La bascule est **fail-open**, à l'inverse des drapeaux de gate : un
+    gate fermé par défaut cache une fonctionnalité, une bascule fermée par
+    défaut met les patients dehors au premier déploiement où la variable
+    manquerait. Une valeur illisible est traitée comme une absence, et
+    journalisée (`PORTAIL_PATIENT.LIEN_PERMANENT.BASCULE_ILLISIBLE`).
+  - Posée et atteinte, `POST /api/portail/session` répond **410** avec « Ce lien
+    d'accès n'est plus valable. Demandez-en un nouveau… » et **sans lire la
+    base** : après la bascule, aucune réponse ne distingue un jeton connu d'un
+    jeton inconnu.
+  - La bascule est **globale**. Fermer l'accès d'un seul dossier reste une
+    révocation (`access_token_revoked`), qui existe déjà et n'est pas le sujet.
+
+  Prérequis avant de poser la date : G4 actif (il l'est, mesuré le 2026-07-21),
+  canal de redemande ouvert (idem), et les patients informés — la bascule coupe
+  un accès en cours d'usage. Reste donc entière la seule question qui l'a
+  toujours été : **quelle date**, et qui prévient.
 - **La politique anti-énumération du canal de redemande.** Répondre la même
   chose que l'adresse existe ou non, et borner la cadence.
 

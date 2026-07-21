@@ -15,7 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:15
+        # Image PostgreSQL 15 + extension pgvector précompilée : la migration
+        # 20260721090000_add_pgvector_rag exécute CREATE EXTENSION vector.
+        image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: ci_user
           POSTGRES_PASSWORD: ci_password
@@ -146,7 +148,21 @@ jobs:
       - name: Type-check
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
-        run: npm run type-check
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run type-check 2>&1 | tee typecheck.log
+
+      # Le log complet du type-check est conservé en artefact : le tronquage
+      # des annotations GitHub masquait des erreurs TS sur les gros diffs.
+      - name: Upload type-check diagnostics
+        if: always() && steps.scope.outputs.docs_only != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: typecheck-log
+          path: web/typecheck.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Unit tests (Vitest)
         if: steps.scope.outputs.docs_only != 'true'

@@ -35,6 +35,37 @@ le fichier lu à chaque session.
 
 Documentation seule — aucun code, aucun fichier supprimé ni fusionné.
 
+### R4 — la bascule des liens permanents devient posable (2026-07-21)
+
+Réserve R4 : le jeton permanent `patients.access_token` reste en clair en base,
+et G4 n'est pas encore le seul chemin d'accès. La date à laquelle les liens déjà
+envoyés cessent d'être honorés était signalée depuis le 2026-07-20 comme « pas
+une décision technique » — et attendait depuis, faute de mécanisme pour
+l'appliquer.
+
+**Ce qui est livré n'est pas la date : c'est ce qui la rend applicable.** Elle se
+pose en variable d'environnement Vercel, `WN_PORTAIL_LIEN_PERMANENT_FIN`
+(date ISO), **sans déploiement de code ni migration**. La décision reste entière
+et au propriétaire produit ; elle ne dépend plus d'une livraison.
+
+- **Fail-open, à l'inverse des drapeaux de gate.** `WN_G4_LIEN_MAGIQUE` et
+  `WN_C5_ENABLED` sont fail-closed : absents, ils ferment. Celui-ci fait
+  l'inverse — absent, les liens restent honorés. Un gate fermé par défaut cache
+  une fonctionnalité ; une bascule fermée par défaut **met les patients dehors**
+  au premier déploiement où la variable manquerait. Une date illisible est
+  traitée comme une absence, et journalisée plutôt qu'avalée.
+- **Vérifiée avant toute lecture en base** : après la bascule, aucune réponse ne
+  distingue un jeton connu d'un jeton inconnu.
+- **Un message qui oriente, pas qui inquiète** : `410` et « Ce lien d'accès n'est
+  plus valable. Demandez-en un nouveau… ». Réutiliser « accès non reconnu ou
+  révoqué » aurait fait croire à chaque patient que son dossier est fermé.
+- **Globale, jamais par dossier** : fermer l'accès d'un seul patient reste une
+  révocation (`access_token_revoked`), qui existe déjà.
+
+Le mode d'emploi et ses prérequis sont dans `GATES_VAGUE2_G1_G3_G4.md`, à
+l'endroit même où la question était posée. **Aucun changement de comportement
+tant que la variable n'est pas posée** — et elle ne l'est pas.
+
 ### SP-SPI LOT-01 — le pack de réévaluation est proposé, et refusable (2026-07-21)
 
 Dernière pièce du lot : l'accueil « Mon parcours » et la reprise en douceur

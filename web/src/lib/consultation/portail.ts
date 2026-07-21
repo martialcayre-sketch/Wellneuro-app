@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { isSessionValideForPatient, type PatientSession } from '@/lib/patient-session';
+import { lienPermanentHonore } from '@/lib/portail/lienPermanent';
 
 import { VERSION_CONSENTEMENT_COURANTE } from '@/lib/trust/contenus/registre';
 
@@ -29,9 +30,16 @@ export type PortailPatient = Awaited<ReturnType<typeof prisma.patient.findUnique
 
 /**
  * Résout le patient depuis le token + email. Renvoie null si le token est
- * inconnu, révoqué, ou si l'email ne correspond pas.
+ * inconnu, révoqué, si l'email ne correspond pas, ou si la bascule des liens
+ * permanents est passée (R4).
+ *
+ * La bascule est vérifiée EN PREMIER et sans toucher la base : passée, le jeton
+ * permanent n'est plus un moyen d'identification, et rien ne justifie d'aller le
+ * chercher. C'est aussi ce qui garantit qu'aucune réponse ne pourra distinguer
+ * un jeton connu d'un jeton inconnu après la bascule.
  */
 export async function resolvePortailPatient(token: string, email: string): Promise<PortailPatient> {
+  if (!lienPermanentHonore()) return null;
   const patient = await prisma.patient.findUnique({ where: { accessToken: token } });
   if (!patient) return null;
   if (patient.accessTokenRevoked || !patient.actif) return null;
@@ -40,6 +48,7 @@ export async function resolvePortailPatient(token: string, email: string): Promi
 }
 
 export async function resolvePortailPatientFromSession(token: string, session: PatientSession): Promise<PortailPatient> {
+  if (!lienPermanentHonore()) return null;
   const patient = await prisma.patient.findUnique({ where: { accessToken: token } });
   if (!patient || !isSessionValideForPatient(session, patient)) return null;
   return patient;
