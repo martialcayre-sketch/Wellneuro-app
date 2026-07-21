@@ -70,7 +70,7 @@ export function PractitionerFoodCompassObservatory({
     <section aria-labelledby="c5-observatory-title" className="rounded-xl border border-rail bg-surface overflow-hidden">
       <div className="border-l-8 border-rail p-4">
         <h3 id="c5-observatory-title" className="font-display text-lg font-semibold text-foreground">Boussole alimentaire — Observatoire</h3>
-        <p className="mt-1 text-sm text-muted-foreground">Lecture praticien chiffrée, sourcée et non diffusée automatiquement.</p>
+        <p className="mt-1 text-base text-muted-foreground">Lecture praticien chiffrée, sourcée et non diffusée automatiquement.</p>
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <label className="text-sm font-medium">Aliment vedette
             <select value={foodRef} disabled={loading} onChange={event => changeFood(event.target.value)} className="mt-1 block min-h-11 rounded-lg border border-border bg-background px-3 disabled:opacity-50">
@@ -81,7 +81,7 @@ export function PractitionerFoodCompassObservatory({
             {loading ? 'Lecture en cours…' : 'Consulter le profil'}
           </button>
         </div>
-        {error && <p role="alert" className="mt-4 text-sm text-status-danger">{error}</p>}
+        {error && <p role="alert" className="mt-4 text-base text-status-danger">{error}</p>}
         {profile && payload?.ok && (
           <div className="mt-5 grid gap-4">
             <h4 className="font-medium text-foreground">Profil de {profile.foodLabel}</h4>
@@ -162,7 +162,7 @@ export function PractitionerFoodCompassObservatory({
                 </ul>
               </div>
             )}
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               Substitutions : aucune famille clinique validée dans {payload.plateCatalog.version} ;
               aucune proposition automatique.
             </p>
@@ -174,7 +174,7 @@ export function PractitionerFoodCompassObservatory({
             >
               Préparer l’insertion manuelle dans le protocole
             </button>
-            {!payload.insertionAllowed && payload.insertionReason && <p className="text-sm text-muted-foreground">{payload.insertionReason}</p>}
+            {!payload.insertionAllowed && payload.insertionReason && <p className="text-base text-muted-foreground">{payload.insertionReason}</p>}
           </div>
         )}
       </div>

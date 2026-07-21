@@ -28,7 +28,7 @@ function CarteDuFil({ carte, onEcarter }: { carte: CarteFil; onEcarter: () => vo
           <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{libelle}</span>
           <span className="text-sm font-semibold text-foreground">{carte.patient}</span>
         </div>
-        <p className="text-sm text-foreground mt-0.5 truncate">{carte.titre}</p>
+        <p className="text-base text-foreground mt-0.5 truncate">{carte.titre}</p>
         <p className="text-xs text-muted-foreground mt-1">{carte.pourquoi}</p>
       </div>
       <div className="flex shrink-0 items-center gap-3 self-center">
@@ -58,7 +58,7 @@ function CarteDuFil({ carte, onEcarter }: { carte: CarteFil; onEcarter: () => vo
 function CarteEcartee({ carte, onAnnuler }: { carte: CarteFil; onAnnuler: () => void }) {
   return (
     <article className="flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3">
-      <p className="min-w-0 truncate text-sm text-muted-foreground">
+      <p className="min-w-0 truncate text-base text-muted-foreground">
         Carte écartée — {carte.titre}, {carte.patient}
       </p>
       <button
@@ -124,7 +124,7 @@ export function FilDuJour() {
 
   if (!data || data.unavailable) {
     return (
-      <div data-testid="fil-du-jour" className="bg-muted border border-border rounded-xl p-4 text-sm text-muted-foreground">
+      <div data-testid="fil-du-jour" className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">
         Le Fil est momentanément indisponible. Rechargez la page ou vérifiez votre session.
       </div>
     );
@@ -132,7 +132,7 @@ export function FilDuJour() {
 
   if (data.cartes.length === 0) {
     return (
-      <div data-testid="fil-du-jour" className="bg-surface border border-border rounded-xl p-6 text-sm text-muted-foreground shadow-sm">
+      <div data-testid="fil-du-jour" className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-sm">
         Rien n&apos;appelle votre attention pour le moment. Le Fil se remplit à mesure
         que les réponses, les échéances et les synthèses arrivent.
       </div>
@@ -142,7 +142,7 @@ export function FilDuJour() {
   return (
     <div data-testid="fil-du-jour" className="flex flex-col gap-3">
       {erreurRefus && (
-        <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-2 text-sm text-foreground">
+        <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-2 text-base text-foreground">
           {erreurRefus}
         </p>
       )}

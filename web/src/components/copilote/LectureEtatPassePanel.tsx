@@ -189,24 +189,24 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
         <div className="mt-3 rounded-lg border border-accent bg-accent/5 p-3">
           {/* Bandeau permanent : on ne doit jamais confondre ce que l'on lit
               avec l'état actuel du patient. */}
-          <p className="text-sm font-medium text-solar-ink">
+          <p className="text-base font-medium text-solar-ink">
             Vous lisez l’état du {formatDate(repereActif)} — ce n’est pas l’état actuel du patient.
           </p>
 
           {etat === 'chargement' && (
-            <p role="status" className="mt-2 text-sm text-muted-foreground">
+            <p role="status" className="mt-2 text-base text-muted-foreground">
               Recalcul de l’état&hellip;
             </p>
           )}
 
           {etat === 'erreur' && (
-            <p role="alert" className="mt-2 text-sm text-foreground">
+            <p role="alert" className="mt-2 text-base text-foreground">
               {erreur} Rien ne peut être conclu de cet écran tant qu’il n’a pas été relu.
             </p>
           )}
 
           {etat === 'chargee' && (
-            <p className="mt-2 text-sm text-foreground">
+            <p className="mt-2 text-base text-foreground">
               {lecture?.proposal?.candidateResponses?.length ?? 0} réponse
               {(lecture?.proposal?.candidateResponses?.length ?? 0) > 1 ? 's' : ''} de questionnaire étaient connues à
               cette date. Aucune donnée postérieure n’entre dans cette lecture.
@@ -227,7 +227,7 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
               {notes.length > 0 && (
                 <ul className="mt-3 space-y-2">
                   {notes.map((note) => (
-                    <li key={note.id} className="rounded-lg border border-border bg-surface p-2 text-sm text-foreground">
+                    <li key={note.id} className="rounded-lg border border-border bg-surface p-2 text-base text-foreground">
                       <p className="whitespace-pre-wrap">{note.texte}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         Écrite le {formatDate(note.creeLe)}
@@ -248,11 +248,11 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
                 rows={3}
                 maxLength={4000}
                 placeholder="Ce que cet état passé éclaire aujourd’hui…"
-                className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="mt-1 w-full rounded-lg border border-border bg-surface p-2 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               />
 
               {etatNote === 'erreur' && (
-                <p role="alert" className="mt-2 text-sm text-foreground">
+                <p role="alert" className="mt-2 text-base text-foreground">
                   {erreurNote}
                 </p>
               )}

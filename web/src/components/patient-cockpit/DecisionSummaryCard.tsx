@@ -11,8 +11,8 @@ export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCa
           Décision clinique
         </h3>
         <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-sm font-semibold text-foreground">Décision clinique non préparée</p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="text-base font-semibold text-foreground">Décision clinique non préparée</p>
+          <p className="mt-1 text-base text-muted-foreground">
             Les données doivent être qualifiées et la décision validée par le praticien avant toute recommandation.
           </p>
         </div>

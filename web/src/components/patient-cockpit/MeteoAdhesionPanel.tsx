@@ -55,7 +55,7 @@ export function MeteoAdhesionPanel({ meteo }: { meteo: MeteoAdhesion }) {
       </p>
 
       {meteo.etat === 'indeterminee' ? (
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-2 text-base text-muted-foreground">
           Aucun point d’étape exploitable pour l’instant. L’absence de réponse ne dit rien de l’adhésion : elle n’est
           pas comptée comme une interruption.
         </p>
@@ -63,7 +63,7 @@ export function MeteoAdhesionPanel({ meteo }: { meteo: MeteoAdhesion }) {
         <>
           <ul className="mt-2 space-y-1">
             {meteo.faitsObserves.map((fait) => (
-              <li key={fait} className="text-sm text-foreground">
+              <li key={fait} className="text-base text-foreground">
                 {fait}
               </li>
             ))}

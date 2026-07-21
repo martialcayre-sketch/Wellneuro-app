@@ -40,7 +40,7 @@ export function DetailBesoinsPanel({
   }, [idPatient]);
 
   if (loading) {
-    return <div className="text-sm text-muted-foreground">Chargement du détail des besoins...</div>;
+    return <div className="text-base text-muted-foreground">Chargement du détail des besoins...</div>;
   }
 
   if (!data || 'unavailable' in data) {
@@ -51,7 +51,7 @@ export function DetailBesoinsPanel({
         : reason === 'unauthenticated'
           ? 'Votre session a expiré. Déconnectez-vous puis reconnectez-vous.'
           : 'Erreur technique. Vérifiez le terminal Next.js.';
-    return <div className="bg-muted border border-border rounded-xl p-4 text-sm text-muted-foreground">{message}</div>;
+    return <div className="bg-muted border border-border rounded-xl p-4 text-base text-muted-foreground">{message}</div>;
   }
 
   const { patient, besoins } = data;
@@ -62,8 +62,8 @@ export function DetailBesoinsPanel({
       {!enteteMasquee && (
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-display text-2xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
-            <p className="text-sm text-muted-foreground mt-1">Détail des 12 besoins</p>
+            <h2 className="font-display text-3xl font-bold text-foreground">{`${patient.prenom} ${patient.nom}`.trim()}</h2>
+            <p className="text-base text-muted-foreground mt-1">Détail des 12 besoins</p>
           </div>
           <Link
             href={`/dashboard/patients/${encodeURIComponent(idPatient)}`}

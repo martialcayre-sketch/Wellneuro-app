@@ -84,12 +84,12 @@ export function ProtocolMiniBuilder({
           Protocole 21 jours
         </h3>
         <div className="rounded-xl border border-border bg-surface p-4">
-          <p className="text-sm font-semibold text-foreground">
+          <p className="text-base font-semibold text-foreground">
             {decisionBlocked
               ? 'Protocole indisponible — bloqueurs décisionnels à revoir'
               : 'Protocole indisponible — priorité praticien non sélectionnée'}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">Le protocole restera local et inactif jusqu’à cette sélection.</p>
+          <p className="mt-1 text-base text-muted-foreground">Le protocole restera local et inactif jusqu’à cette sélection.</p>
         </div>
       </section>
     );
@@ -252,9 +252,9 @@ export function ProtocolMiniBuilder({
         <p className="text-xs text-muted-foreground">Charge : {LOAD_LABELS[loadLevel]} — saisie manuelle, aucun calcul automatique.</p>
       </div>
 
-      {message && <p role="status" className="mt-4 text-sm text-muted-foreground">{message}</p>}
+      {message && <p role="status" className="mt-4 text-base text-muted-foreground">{message}</p>}
       {onSaveVersion && (
-        <p role="status" className="mt-3 text-sm">
+        <p role="status" className="mt-3 text-base">
           {editedSinceSave && saveState === 'saved'
             ? <span className="text-orange-800">Modifications locales non enregistrées.</span>
             : saveState === 'saving'
