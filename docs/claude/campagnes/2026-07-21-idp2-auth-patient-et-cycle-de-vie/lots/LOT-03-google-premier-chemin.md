@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Google comme premier chemin — et la séparation des rôles rendue structurelle"
-statut: "spécifié — 03a"
+statut: "03a spécifié, 03b livré — 03c à écrire"
 dépend_de: "LOT-02 (livré)"
 ---
 
@@ -121,8 +121,12 @@ Aucune migration Prisma : le compte est déjà la ligne `patients` (LOT-02).
 - **03a — cette spécification.** Documentaire, une PR. Porte au registre le fait
   que Google devient sous-traitant sur les patients (question ouverte 4 de la
   campagne).
-- **03b — la garde d'abord.** Le test de séparation des rôles, écrit avant toute
-  ligne d'authentification patient. Une PR.
+- **03b — la garde d'abord.** *Livré le 2026-07-21* —
+  `lib/auth.roles.guard.test.ts`, 53 cas, écrit avant toute ligne
+  d'authentification patient. Falsifié trois fois avant d'être committé : un
+  second provider dans `authOptions` (2 échecs), un `signIn` qui cesse de passer
+  par `profilPraticienAutorise` (7 échecs), un `getServerSession` importé dans
+  une route `/api/portail` (2 échecs).
 - **03c — le chemin Google patient.** Routes, drapeau éteint, journalisation sans
   secret dans l'URL, bouton d'entrée, E2E. Une PR. T3 complet et **revue
   adversariale indépendante** avant de passer la main (exception « migration ou

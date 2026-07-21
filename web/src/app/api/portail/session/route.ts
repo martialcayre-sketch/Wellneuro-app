@@ -13,6 +13,7 @@ import {
   signPatientSession,
   readPatientSession,
 } from '@/lib/patient-session';
+import { lienPermanentHonore, lireBascule } from '@/lib/portail/lienPermanent';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -72,6 +73,44 @@ export async function POST(req: Request): Promise<NextResponse> {
       context: finalizeLogContext(requestContext, { statusCode: 400, retryable: false }),
     });
     return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiants invalides.' }, { status: 400 }), requestContext);
+  }
+
+  // Bascule des liens permanents (R4). Vérifiée avant toute lecture en base :
+  // passée, le jeton n'identifie plus personne. Le message le dit franchement et
+  // oriente vers le canal de redemande — après la bascule, « accès non reconnu
+  // ou révoqué » ferait croire à chaque patient que son dossier est fermé.
+  // Aucune fuite : la bascule est globale, sa mention n'apprend rien sur
+  // l'existence d'une adresse ni d'un jeton.
+  const bascule = lireBascule();
+  if (bascule.etat === 'invalide') {
+    // Une bascule illisible laisse les liens ouverts (fail-open assumé) : elle
+    // ne doit pas pour autant passer inaperçue.
+    logger.error({
+      event: EVENT_CODES.PORTAIL_LIEN_PERMANENT_BASCULE_ILLISIBLE,
+      domain: 'SECURITY',
+      message: 'WN_PORTAIL_LIEN_PERMANENT_FIN illisible — liens permanents laissés ouverts',
+      context: finalizeLogContext(requestContext, { retryable: false }),
+    });
+  }
+  if (!lienPermanentHonore(new Date(), bascule)) {
+    logger.security({
+      event: EVENT_CODES.PORTAIL_LIEN_PERMANENT_BASCULE,
+      domain: 'SECURITY',
+      message: 'Accès par lien permanent refusé — bascule atteinte',
+      context: finalizeLogContext(requestContext, { statusCode: 410, retryable: false }),
+    });
+    return withCorrelationHeader(
+      NextResponse.json(
+        {
+          ok: false,
+          reason: 'lien_permanent_expire',
+          error:
+            'Ce lien d’accès n’est plus valable. Demandez-en un nouveau depuis la page d’accès, ou à votre praticien.',
+        },
+        { status: 410 },
+      ),
+      requestContext,
+    );
   }
 
   try {
