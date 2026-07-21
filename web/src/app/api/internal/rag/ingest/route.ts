@@ -4,6 +4,7 @@ import { getRagConfig } from '@/lib/rag/config';
 import { createEmbeddings } from '@/lib/rag/embeddings';
 import { upsertRagChunks } from '@/lib/rag/store';
 import { parseRagIngestPayload } from '@/lib/rag/validation';
+import { verifyRagBatch } from '@/lib/rag/verification';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,14 +40,32 @@ export async function POST(req: Request) {
       );
     }
 
+    const batchId = batchIds[0];
     const embeddings = await createEmbeddings(payload.chunks.map((chunk) => chunk.content));
     const indexed = await upsertRagChunks(payload.chunks, embeddings);
+    const retrieval = await verifyRagBatch(
+      batchId,
+      payload.chunks.map((chunk) => chunk.chunkId),
+    );
+
+    if (!retrieval.ok) {
+      return NextResponse.json(
+        {
+          error: 'RAG_RETRIEVAL_TEST_FAILED',
+          batchId,
+          indexedCount: indexed.length,
+          retrieval,
+        },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({
       ok: true,
-      batchId: batchIds[0],
+      batchId,
       status: 'INDEXE_RAG_PRODUCTION',
       indexedCount: indexed.length,
+      retrieval,
       chunks: indexed,
     });
   } catch (error) {
