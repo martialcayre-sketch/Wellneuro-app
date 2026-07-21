@@ -84,13 +84,29 @@ sert à **ne pas redemander**, pas à insister.
 
 ## Étapes
 
-- [ ] Livrer la **migration seule** de l'objet « proposition de pack » (PR à part).
-- [ ] Rédiger les textes en français, ton non culpabilisant, relus mot à mot.
-- [ ] Monter l'accueil et la reprise à partir des composants existants.
-- [ ] Implémenter la proposition de pack : refusable, le refus est enregistré et
+- [x] Livrer la **migration seule** de l'objet « proposition de pack » (PR à part) — #209.
+- [x] Rédiger les textes en français, ton non culpabilisant, relus mot à mot.
+- [x] Monter l'accueil et la reprise à partir des composants existants — livré
+      par #198 (« Mon parcours »), qui résorbe E11 par la même occasion.
+- [x] Implémenter la proposition de pack : refusable, le refus est enregistré et
       **n'a pas d'autre effet** — ni assignation, ni envoi, ni relance.
-- [ ] Vérifier les invariants patient par test.
-- [ ] Exécuter les validations, relire le diff, documenter.
+- [x] Vérifier les invariants patient par test (unitaires, route, composant).
+- [ ] **E2E du refus** — non livré, voir « Reste à faire » ci-dessous.
+- [x] Exécuter les validations, relire le diff, documenter.
+
+### Reste à faire
+
+**Le parcours E2E du refus n'est pas couvert.** Le patient fictif du banc E2E
+(`PAT_SEED_03`) est provisionné neuf à chaque exécution : il n'a par construction
+aucune réponse vieille de six mois, et n'est donc jamais « en reprise ». Couvrir
+le refus de bout en bout suppose de fabriquer une réponse antidatée dans la
+fixture — faisable, mais c'est un changement du banc partagé, pas du lot.
+
+Ce qui est couvert à la place : le domaine (`packReevaluation.test.ts`), la route
+dans ses deux sens (`pack-reevaluation/route.test.ts`, dont « n'assigne rien même
+quand le patient accepte ») et le composant, y compris le refus, l'accusé et
+l'échec d'enregistrement. **Ce qui n'est pas prouvé** : que l'écran s'affiche
+réellement pour un vrai patient en reprise, dans un vrai navigateur.
 
 ## Tests
 
