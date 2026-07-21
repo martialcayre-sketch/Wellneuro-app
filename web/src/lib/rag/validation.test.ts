@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  embeddingTextForChunk,
   normalizeWellneuroText,
   parseRagIngestPayload,
   sha256WellneuroText,
@@ -44,6 +45,29 @@ describe('validation ingestion RAG', () => {
   it('refuse un hash divergent', () => {
     const chunk = { ...validChunk(), contentSha256: '0'.repeat(64) };
     expect(() => parseRagIngestPayload({ chunks: [chunk] })).toThrow(/HASH_MISMATCH/);
+  });
+
+  it('dépouille le front matter pour l’embedding, hash intact sur le texte complet', () => {
+    const chunk = validChunk();
+    expect(embeddingTextForChunk(chunk.content)).toBe('Contenu de test.\n');
+    expect(sha256WellneuroText(chunk.content)).toBe(chunk.contentSha256);
+  });
+
+  it('refuse un chunk réduit à son front matter', () => {
+    const content = normalizeWellneuroText('---\nchunk_id: WN-CH-0056-001\n---\n');
+    const chunk = { ...validChunk(), content, contentSha256: sha256WellneuroText(content) };
+    expect(() => parseRagIngestPayload({ chunks: [chunk] })).toThrow(/vide/);
+  });
+
+  it('transporte les champs de traçabilité optionnels', () => {
+    const chunk = {
+      ...validChunk(),
+      llmAmendmentModel: 'gpt-5',
+      validationEvidence: 'https://drive.google.com/pv-lot-013',
+    };
+    const payload = parseRagIngestPayload({ chunks: [chunk] });
+    expect(payload.chunks[0].llmAmendmentModel).toBe('gpt-5');
+    expect(payload.chunks[0].validationEvidence).toBe('https://drive.google.com/pv-lot-013');
   });
 
   it('refuse les chunks d’audit par leur identifiant et leur compartiment', () => {

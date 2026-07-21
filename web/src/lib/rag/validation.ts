@@ -21,6 +21,10 @@ export type RagChunkInput = {
   content: string;
   contentSha256: string;
   sourceDriveId?: string;
+  /** Modèle LLM ayant amendé le texte, s'il diffère du verbatim source. */
+  llmAmendmentModel?: string;
+  /** Référence de la preuve de validation NotebookLM (URL ou identifiant PV). */
+  validationEvidence?: string;
   metadata?: Record<string, unknown>;
   compartment: 'ACTIF';
   indexationAutorisee: true;
@@ -43,6 +47,20 @@ export function normalizeWellneuroText(input: string): string {
 
 export function sha256WellneuroText(input: string): string {
   return createHash('sha256').update(normalizeWellneuroText(input), 'utf8').digest('hex');
+}
+
+/**
+ * Texte soumis à l'embedding : le corps du chunk, sans le front matter YAML.
+ * Le hash d'intégrité porte sur le texte complet, mais vectoriser le YAML
+ * (identique entre chunks d'une même source) rapprocherait artificiellement
+ * des chunks distincts et ferait échouer le test de récupération du lot.
+ * Même sémantique que stripFrontMatterForRag_ côté Apps Script.
+ */
+export function embeddingTextForChunk(input: string): string {
+  const normalized = normalizeWellneuroText(input);
+  if (!normalized.startsWith('---\n')) return normalized;
+  const end = normalized.indexOf('\n---\n', 4);
+  return end < 0 ? normalized : normalized.slice(end + 5);
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -79,6 +97,8 @@ function parseChunk(value: unknown, index: number): RagChunkInput {
   const content = requiredString(chunk, 'content');
   const contentSha256 = requiredString(chunk, 'contentSha256').toLowerCase();
   const sourceDriveId = optionalString(chunk, 'sourceDriveId');
+  const llmAmendmentModel = optionalString(chunk, 'llmAmendmentModel');
+  const validationEvidence = optionalString(chunk, 'validationEvidence');
 
   if (!BATCH_RE.test(batchId)) throw new Error(`chunks[${index}].batchId invalide.`);
   if (!SOURCE_RE.test(sourceId)) throw new Error(`chunks[${index}].sourceId invalide.`);
@@ -104,6 +124,9 @@ function parseChunk(value: unknown, index: number): RagChunkInput {
       `chunks[${index}] HASH_MISMATCH attendu=${contentSha256} obtenu=${calculatedHash}.`,
     );
   }
+  if (!embeddingTextForChunk(normalized).trim()) {
+    throw new Error(`chunks[${index}].content est vide une fois le front matter retiré.`);
+  }
 
   const metadataValue = chunk.metadata;
   if (
@@ -124,6 +147,8 @@ function parseChunk(value: unknown, index: number): RagChunkInput {
     content: normalized,
     contentSha256,
     sourceDriveId,
+    llmAmendmentModel,
+    validationEvidence,
     metadata: (metadataValue as Record<string, unknown> | undefined) ?? {},
     compartment: 'ACTIF',
     indexationAutorisee: true,

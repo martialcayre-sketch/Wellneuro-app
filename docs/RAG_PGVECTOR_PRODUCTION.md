@@ -27,13 +27,23 @@ Configurer dans Development, Preview et Production selon le besoin :
 - `RAG_EMBEDDING_MODEL` : `text-embedding-3-small` par défaut.
 - `RAG_EMBEDDING_DIMENSIONS` : obligatoirement `1536` pour cette migration.
 - `DATABASE_URL` : pooler Supabase pour le runtime Vercel.
-- `DIRECT_URL` : connexion directe Supabase pour Prisma Migrate.
+
+Ne **pas** créer de variable `DIRECT_URL` dans Vercel : les migrations de
+production passent exclusivement par `MIGRATE_DATABASE_URL` (scope Production,
+URL Supabase en session mode, port 5432), appliquée par
+`web/scripts/vercel-build.sh` lors du build. C'est le seul chemin autorisé —
+voir « La base de production ne se modifie que par une migration relue »
+(`CLAUDE.md`).
 
 Aucune valeur réelle ne doit être ajoutée au dépôt, aux journaux ou aux procès-verbaux.
 
 ## Migration
 
-Depuis un environnement disposant de la connexion directe Supabase :
+En production : merge sur `main` → build Vercel → `web/scripts/vercel-build.sh`
+applique `prisma migrate deploy` via `MIGRATE_DATABASE_URL`. Aucune commande
+manuelle.
+
+En local ou CI (base éphémère uniquement) :
 
 ```bash
 cd web

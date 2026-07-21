@@ -11,12 +11,11 @@ export async function GET(req: Request) {
   try {
     config = getRagConfig();
   } catch (error) {
+    // Avant authentification, aucun détail : le motif exact (secret absent,
+    // clé manquante…) ne doit pas être appris par un appelant anonyme.
+    console.error('RAG health : configuration invalide —', error);
     return NextResponse.json(
-      {
-        ok: false,
-        configured: false,
-        error: error instanceof Error ? error.message : 'RAG non configuré.',
-      },
+      { ok: false, configured: false, error: 'RAG de production non configuré.' },
       { status: 503 },
     );
   }

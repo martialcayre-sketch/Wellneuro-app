@@ -3,7 +3,7 @@ import { isAuthorizedRagRequest } from '@/lib/rag/auth';
 import { getRagConfig } from '@/lib/rag/config';
 import { createEmbeddings } from '@/lib/rag/embeddings';
 import { upsertRagChunks } from '@/lib/rag/store';
-import { parseRagIngestPayload } from '@/lib/rag/validation';
+import { embeddingTextForChunk, parseRagIngestPayload } from '@/lib/rag/validation';
 import { verifyRagBatch } from '@/lib/rag/verification';
 
 export const runtime = 'nodejs';
@@ -13,10 +13,9 @@ export async function POST(req: Request) {
   try {
     getRagConfig();
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'RAG non configuré.' },
-      { status: 503 },
-    );
+    // Avant authentification, aucun détail sur la cause exacte.
+    console.error('RAG ingest : configuration invalide —', error);
+    return NextResponse.json({ error: 'RAG de production non configuré.' }, { status: 503 });
   }
 
   if (!isAuthorizedRagRequest(req)) {
@@ -41,7 +40,11 @@ export async function POST(req: Request) {
     }
 
     const batchId = batchIds[0];
-    const embeddings = await createEmbeddings(payload.chunks.map((chunk) => chunk.content));
+    // L'embedding porte sur le corps seul ; le hash d'intégrité reste calculé
+    // sur le texte complet (front matter compris) — voir embeddingTextForChunk.
+    const embeddings = await createEmbeddings(
+      payload.chunks.map((chunk) => embeddingTextForChunk(chunk.content)),
+    );
     const indexed = await upsertRagChunks(payload.chunks, embeddings);
     const retrieval = await verifyRagBatch(
       batchId,

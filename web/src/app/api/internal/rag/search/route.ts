@@ -28,10 +28,9 @@ export async function POST(req: Request) {
   try {
     getRagConfig();
   } catch (error) {
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'RAG non configuré.' },
-      { status: 503 },
-    );
+    // Avant authentification, aucun détail sur la cause exacte.
+    console.error('RAG search : configuration invalide —', error);
+    return NextResponse.json({ error: 'RAG de production non configuré.' }, { status: 503 });
   }
 
   if (!isAuthorizedRagRequest(req)) {

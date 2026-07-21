@@ -16,6 +16,10 @@ CREATE TABLE public.rag_corpus_chunks (
   content text NOT NULL,
   content_sha256 char(64) NOT NULL,
   source_drive_id text,
+  -- Traçabilité : un chunk révisé par LLM n'est jamais confondu avec le
+  -- verbatim source, et la preuve de validation NotebookLM suit le chunk.
+  llm_amendment_model text,
+  validation_evidence text,
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   embedding_model text NOT NULL,
   embedding_dimensions integer NOT NULL DEFAULT 1536,
@@ -42,6 +46,12 @@ CREATE TABLE public.rag_corpus_chunks (
 
 COMMENT ON TABLE public.rag_corpus_chunks IS
   'Chunks actifs WellNeuro validés NotebookLM et indexés pour le RAG. Données patient interdites.';
+
+-- RLS activé sans policy : refus par défaut pour anon/authenticated via
+-- PostgREST (le schéma public hérite de privilèges larges par default ACL).
+-- Le runtime lit/écrit via Prisma en connexion Postgres directe qui contourne
+-- RLS — cohérent avec trust_v1, les tables C2A et portail_magic_links.
+ALTER TABLE public.rag_corpus_chunks ENABLE ROW LEVEL SECURITY;
 
 CREATE INDEX rag_corpus_chunks_embedding_hnsw_idx
   ON public.rag_corpus_chunks
@@ -108,3 +118,21 @@ AS $$
   ORDER BY c.embedding <=> query_embedding
   LIMIT greatest(1, least(match_count, 50));
 $$;
+
+-- La recherche vectorielle est interne : la default ACL du schéma public
+-- accorde EXECUTE à anon/authenticated, on le retire explicitement. Seul le
+-- rôle de connexion Prisma (postgres) conserve l'exécution. Conditionnel car
+-- ces rôles n'existent que sur Supabase, pas dans le PostgreSQL de la CI.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    REVOKE EXECUTE ON FUNCTION public.match_wellneuro_rag_chunks(
+      extensions.vector, integer, double precision, text, text[], text[]
+    ) FROM anon;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    REVOKE EXECUTE ON FUNCTION public.match_wellneuro_rag_chunks(
+      extensions.vector, integer, double precision, text, text[], text[]
+    ) FROM authenticated;
+  END IF;
+END $$;
