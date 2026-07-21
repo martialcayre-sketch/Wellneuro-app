@@ -4,6 +4,46 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Cycle de vie du dossier — la surface (IDP2, LOT-01b, 2026-07-21)
+
+Le socle livré par le LOT-01a (#189) était complet et **inatteignable** : aucun
+appel à `/api/praticien/patients/cycle-de-vie` n'existait dans l'interface. Le
+praticien ne pouvait donc ni clôturer un suivi, ni exécuter l'effacement que
+l'application promet au patient en production.
+
+- **Menu « Gérer le dossier » par ligne du tableau patients**, remplaçant les
+  cinq boutons d'accès de la carte du haut. Deux groupes séparés visuellement :
+  accès au portail, et fin de parcours. Composant maison
+  (`components/ui/MenuActions.tsx`) plutôt que `@radix-ui/react-dropdown-menu` :
+  les menus Radix se testent mal en jsdom, or ce menu ouvre la seule action
+  irréversible de l'application. Clavier complet, `role="menu"`, `Échap` rendant
+  le focus au déclencheur, cibles ≥ 44×44 px.
+- **Confirmations asymétriques** (`components/ui/DossierConfirmDialog.tsx`).
+  Clôture : simple, énonçant ce qui s'arrête et ce qui reste. Effacement : elle
+  **nomme le patient**, liste ce qui est détruit **et** ce qui subsiste, dit que
+  l'e-mail ne subsiste pas même sous forme d'empreinte, et exige la saisie du
+  mot `EFFACER` — la valeur exacte que la route exige déjà côté serveur, pour
+  que l'écran reflète le contrat au lieu d'en créer un second.
+- **Le bouton « Supprimer » disparaît de l'écran.** Il appelait `DELETE` et
+  écrivait `actif: false` : le mot désignait une désactivation. L'action rejoint
+  le menu sous son vrai nom, « Désactiver le dossier », réversible dans le même
+  menu. La route `DELETE` reste en place, simplement plus appelée.
+- **Statut à trois états, jamais par la seule couleur** : `Actif`,
+  `Suivi clôturé`, `Inactif`, dérivés de `phaseDossier` déjà testé.
+- **Les actions d'accès restent ouvertes sur un dossier clos**, délibérément :
+  la clôture interdit les assignations et les envois, pas la lecture.
+- **Le DTO patient expose `suiviClotureLe`** — sans quoi l'écran ne pouvait pas
+  distinguer un dossier clos d'un dossier désactivé.
+- **Correction** : `PATCH /api/praticien/patients` validait l'identifiant par
+  `/^PAT\d+$/` et rejetait donc `PAT_SEED_03` — « Modifier » était inopérant sur
+  le dossier de seed. Forme alignée sur `DELETE` et `cycle-de-vie` ;
+  l'appartenance au praticien reste vérifiée, inchangée.
+
+Vérifié : T2 complet — 928 tests unitaires (dont 35 ajoutés), 51 E2E, aucune
+dérive schéma ↔ migrations. **Aucun E2E sur l'effacement** : la suite s'exécute
+contre une base partagée et réinitialise `PAT_SEED_03` ; un parcours qui
+effacerait réellement ce dossier détruirait la fixture des autres postes.
+
 ### Hébergement HDS — question instruite, et dérogation datée (2026-07-21)
 
 Aucun code. Ce qui change est l'état de la connaissance et une décision du

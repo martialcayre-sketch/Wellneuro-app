@@ -3,19 +3,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   CreatePatientResponse,
-  DeletePatientResponse,
   PatchPatientResponse,
   PatientsApiResponse,
   PatientsPagination,
 } from '@/app/api/praticien/patients/route';
+import type { CycleDeVieResponse } from '@/app/api/praticien/patients/cycle-de-vie/route';
 import type { CreateAssignationResponse } from '@/app/api/praticien/assignations/route';
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
 import type { QuestionnairesRegistryApiResponse } from '@/app/api/praticien/questionnaires/registry/route';
 import type { CreateConsultationResponse } from '@/app/api/praticien/consultations/route';
 import type { TokenActionResponse } from '@/app/api/praticien/token/route';
 import { MOTIFS_CONSULTATION } from '@/lib/consultation/motifs';
+import { MESSAGE_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
-import { PatientRow } from '@/components/ui/PatientRow';
+import { PatientRow, type ActionDossier, type PatientRowData } from '@/components/ui/PatientRow';
+import { DossierConfirmDialog, type ModeConfirmation } from '@/components/ui/DossierConfirmDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -40,7 +42,11 @@ function erreurLisible(reason?: string, fallback?: string): string {
     invalid_payload: fallback ?? 'Données invalides.',
     duplicate_email: 'Un patient avec cet email existe déjà.',
     patient_not_found: 'Patient introuvable.',
+    forbidden: 'Ce dossier n’est pas accessible depuis votre compte.',
     portal_revoked: 'Accès au portail révoqué : réactivez-le avant d’envoyer un lien.',
+    // Refus servis par le cycle de vie du dossier (IDP2, LOT-01a).
+    dossier_cloture: MESSAGE_DOSSIER_CLOS,
+    confirmation_manquante: 'Effacement non confirmé : aucune donnée n’a été touchée.',
     questionnaire_not_found: 'Questionnaire introuvable.',
     exception: 'Erreur technique. Vérifiez le terminal Next.js.',
   };
@@ -73,8 +79,10 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   const [saving, setSaving] = useState(false);
   const [savingAssignation, setSavingAssignation] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null); // idPatient en attente de confirmation
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Fin de parcours en attente de confirmation. Un seul dialogue pour tout le
+  // tableau : dix lignes ne doivent pas produire dix dialogues dans le DOM.
+  const [confirmation, setConfirmation] = useState<{ mode: ModeConfirmation; patient: PatientRowData } | null>(null);
+  const [cycleEnCours, setCycleEnCours] = useState(false);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('nom');
   const [statutFilter, setStatutFilter] = useState<StatutFilter>('');
@@ -267,18 +275,18 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     }
   };
 
-  const onResendToken = async () => {
-    if (!consultationForm.idPatient) {
-      setConsultationFeedback({ ok: false, msg: 'Sélectionnez un patient.' });
-      return;
-    }
+  // Les quatre actions d'accès prennent désormais leur patient en paramètre :
+  // elles sont déclenchées depuis le menu d'une LIGNE, et non plus depuis le
+  // sélecteur de la carte consultation. Le garde « Sélectionnez un patient »
+  // n'a plus d'objet — une ligne désigne toujours un dossier.
+  const onResendToken = async (idPatient: string) => {
     setTokenAction('resend');
     setConsultationFeedback(null);
     try {
       const r = await fetch('/api/praticien/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idPatient: consultationForm.idPatient, action: 'resend' }),
+        body: JSON.stringify({ idPatient, action: 'resend' }),
       });
       const json = (await r.json()) as TokenActionResponse;
       setConsultationFeedback(
@@ -297,18 +305,14 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   // portent toutes le jeton permanent : celui-ci expire en 24 h et ne s'ouvre
   // qu'une fois. Le libellé le dit, pour qu'on ne le confonde pas avec
   // « Renvoyer le lien ».
-  const onEnvoyerLienMagique = async () => {
-    if (!consultationForm.idPatient) {
-      setConsultationFeedback({ ok: false, msg: 'Sélectionnez un patient.' });
-      return;
-    }
+  const onEnvoyerLienMagique = async (idPatient: string) => {
     setTokenAction('lien_magique');
     setConsultationFeedback(null);
     try {
       const r = await fetch('/api/praticien/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idPatient: consultationForm.idPatient, action: 'lien_magique' }),
+        body: JSON.stringify({ idPatient, action: 'lien_magique' }),
       });
       const json = (await r.json()) as TokenActionResponse;
       setConsultationFeedback(
@@ -323,18 +327,14 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     }
   };
 
-  const onCopierLien = async () => {
-    if (!consultationForm.idPatient) {
-      setConsultationFeedback({ ok: false, msg: 'Sélectionnez un patient.' });
-      return;
-    }
+  const onCopierLien = async (idPatient: string) => {
     setTokenAction('copier');
     setConsultationFeedback(null);
     try {
       const r = await fetch('/api/praticien/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idPatient: consultationForm.idPatient, action: 'lien' }),
+        body: JSON.stringify({ idPatient, action: 'lien' }),
       });
       const json = (await r.json()) as TokenActionResponse;
       if (!r.ok || !json.success || !json.lien) {
@@ -350,15 +350,11 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     }
   };
 
-  const onRevokeToken = async () => {
-    if (!consultationForm.idPatient) {
-      setConsultationFeedback({ ok: false, msg: 'Sélectionnez un patient.' });
-      return;
-    }
+  const onRevokeToken = async (idPatient: string) => {
     setTokenAction('revoke');
     setConsultationFeedback(null);
     try {
-      const r = await fetch(`/api/praticien/token?idPatient=${encodeURIComponent(consultationForm.idPatient)}`, {
+      const r = await fetch(`/api/praticien/token?idPatient=${encodeURIComponent(idPatient)}`, {
         method: 'DELETE',
       });
       const json = (await r.json()) as TokenActionResponse;
@@ -374,27 +370,93 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     }
   };
 
-  const openEdit = (p: PatientsApiResponse['patients'][number]) => {
+  const openEdit = (p: PatientRowData) => {
     setEditState({ idPatient: p.idPatient, telephone: p.telephone, actif: p.actif === 'OUI' ? 'OUI' : 'NON' });
     setEditFeedback(null);
-    setConfirmDelete(null);
   };
 
-  const onDelete = async (idPatient: string) => {
-    setDeletingId(idPatient);
-    setConfirmDelete(null);
+  // Activation / désactivation par PATCH, dans les deux sens. La route DELETE
+  // existe toujours mais n'est plus appelée : elle ne sait que désactiver, et
+  // son nom laissait croire à une suppression — précisément le malentendu que
+  // ce lot corrige.
+  const onToggleActif = async (idPatient: string, actif: 'OUI' | 'NON') => {
+    setConsultationFeedback(null);
     try {
-      const r = await fetch(`/api/praticien/patients?idPatient=${encodeURIComponent(idPatient)}`, { method: 'DELETE' });
-      const json = (await r.json()) as DeletePatientResponse;
+      const r = await fetch('/api/praticien/patients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient, actif }),
+      });
+      const json = (await r.json()) as PatchPatientResponse;
       if (!r.ok || !json.success) {
-        setFeedback({ ok: false, msg: json.error ?? 'Erreur lors de la suppression.' });
-      } else {
-        await refreshPatients();
+        setConsultationFeedback({ ok: false, msg: erreurLisible(json.reason, json.error) });
+        return;
       }
+      setConsultationFeedback({
+        ok: true,
+        msg: actif === 'OUI' ? 'Dossier réactivé.' : 'Dossier désactivé : l’accès au portail est coupé.',
+      });
+      await refreshPatients();
     } catch {
-      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+      setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    }
+  };
+
+  const onCycleDeVie = async (idPatient: string, mode: ModeConfirmation) => {
+    setCycleEnCours(true);
+    setConsultationFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/patients/cycle-de-vie', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idPatient,
+          action: mode === 'effacement' ? 'effacement' : mode,
+          // Reprend mot pour mot ce que la route exige dans son corps : le
+          // serveur refuse un effacement non confirmé, l'écran ne fait que
+          // refléter ce contrat.
+          ...(mode === 'effacement' ? { confirmation: 'EFFACER' } : {}),
+        }),
+      });
+      const json = (await r.json()) as CycleDeVieResponse;
+      if (!r.ok || !json.success) {
+        setConsultationFeedback({
+          ok: false,
+          msg: erreurLisible(json.success === false ? json.reason : undefined, json.success === false ? json.error : undefined),
+        });
+        return;
+      }
+      setConsultationFeedback({
+        ok: true,
+        msg:
+          mode === 'effacement'
+            ? 'Dossier effacé définitivement. Il ne subsiste qu’une ligne anonyme.'
+            : mode === 'cloture'
+              ? 'Suivi clôturé : plus aucune assignation ni aucun envoi.'
+              : 'Suivi rouvert.',
+      });
+      setConfirmation(null);
+      await refreshPatients();
+    } catch {
+      setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
     } finally {
-      setDeletingId(null);
+      setCycleEnCours(false);
+    }
+  };
+
+  // Un seul point d'entrée pour le menu d'une ligne. Les trois actions de fin
+  // de parcours passent par un dialogue ; les autres partent directement.
+  const onActionDossier = (action: ActionDossier, patient: PatientRowData) => {
+    switch (action) {
+      case 'resend': return void onResendToken(patient.idPatient);
+      case 'copier': return void onCopierLien(patient.idPatient);
+      case 'lien_magique': return void onEnvoyerLienMagique(patient.idPatient);
+      case 'revoke': return void onRevokeToken(patient.idPatient);
+      case 'desactiver': return void onToggleActif(patient.idPatient, 'NON');
+      case 'reactiver': return void onToggleActif(patient.idPatient, 'OUI');
+      case 'cloturer': return setConfirmation({ mode: 'cloture', patient });
+      case 'rouvrir': return setConfirmation({ mode: 'reprise', patient });
+      case 'effacer': return setConfirmation({ mode: 'effacement', patient });
     }
   };
 
@@ -469,6 +531,20 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   return (
     <div className="flex flex-col gap-6">
 
+      {/* Confirmation de fin de parcours — un seul dialogue pour le tableau */}
+      {confirmation && (
+        <DossierConfirmDialog
+          mode={confirmation.mode}
+          nomPatient={`${confirmation.patient.prenom} ${confirmation.patient.nom}`.trim()}
+          open
+          onOpenChange={ouvert => {
+            if (!ouvert && !cycleEnCours) setConfirmation(null);
+          }}
+          enCours={cycleEnCours}
+          onConfirm={() => onCycleDeVie(confirmation.patient.idPatient, confirmation.mode)}
+        />
+      )}
+
       {/* Nouveau patient */}
       <div className="bg-surface border border-border rounded-xl p-4">
         <h3 className="text-sm font-semibold text-foreground mb-3">Nouveau patient</h3>
@@ -493,10 +569,11 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
 
       {/* Consultation / accès portail patient */}
       <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-1">Consultation &amp; accès patient</h3>
+        <h3 className="text-sm font-semibold text-foreground mb-1">Nouvelle consultation</h3>
         <p className="text-xs text-muted-foreground mb-3">
-          Envoie au patient un lien d’accès permanent à son espace : consentement, fiche de renseignements,
-          anamnèse, puis assignation automatique du pack de base.
+          Ouvre une consultation et envoie au patient son lien d’accès : consentement, fiche de
+          renseignements, anamnèse, puis assignation automatique du pack de base. Les actions sur un
+          dossier existant sont dans « Gérer le dossier », au bout de sa ligne.
         </p>
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateConsultation}>
           <Select required value={consultationForm.idPatient} onChange={e => setConsultationForm(p => ({ ...p, idPatient: e.target.value }))}>
@@ -514,20 +591,6 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
           <div className="flex flex-wrap items-center gap-3 md:col-span-2">
             <Button type="submit" disabled={savingConsultation || tokenAction !== null}>
               {savingConsultation ? 'Envoi...' : 'Créer une consultation & envoyer le lien'}
-            </Button>
-            <Button type="button" variant="outline" onClick={onResendToken} disabled={savingConsultation || tokenAction !== null}>
-              {tokenAction === 'resend' ? 'Envoi...' : 'Renvoyer le lien'}
-            </Button>
-            <Button type="button" variant="outline" onClick={onCopierLien} disabled={savingConsultation || tokenAction !== null}>
-              {tokenAction === 'copier' ? 'Copie...' : 'Copier le lien'}
-            </Button>
-            {lienMagiqueActif && (
-              <Button type="button" variant="outline" onClick={onEnvoyerLienMagique} disabled={savingConsultation || tokenAction !== null}>
-                {tokenAction === 'lien_magique' ? 'Envoi...' : 'Envoyer un lien à usage unique (24 h)'}
-              </Button>
-            )}
-            <Button type="button" variant="danger" onClick={onRevokeToken} disabled={savingConsultation || tokenAction !== null}>
-              {tokenAction === 'revoke' ? 'Révocation...' : 'Révoquer l’accès'}
             </Button>
             {consultationFeedback && (
               <span className={`text-sm ${consultationFeedback.ok ? 'text-green-600' : 'text-red-400'}`}>
@@ -714,11 +777,8 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
                   key={p.idPatient}
                   patient={{ ...p, actif: p.actif === 'OUI' ? 'OUI' : 'NON' }}
                   onEdit={openEdit}
-                  onDelete={onDelete}
-                  confirmationSuppression={confirmDelete === p.idPatient}
-                  onDemanderSuppression={setConfirmDelete}
-                  onAnnulerSuppression={() => setConfirmDelete(null)}
-                  suppressionEnCours={deletingId === p.idPatient}
+                  onAction={onActionDossier}
+                  lienMagiqueActif={lienMagiqueActif}
                 />
               ))}
             </tbody>

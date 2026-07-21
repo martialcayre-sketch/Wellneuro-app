@@ -13,6 +13,10 @@ type Patient = {
   nom: string;
   telephone: string;
   actif: string;
+  // Clôture de suivi (IDP2). DISTINCT de `actif` : un dossier clos garde son
+  // accès en lecture, un dossier inactif le perd. L'écran ne peut pas déduire
+  // l'un de l'autre — d'où ce champ, et non un booléen de plus.
+  suiviClotureLe: string | null;
 };
 
 type Assignation = {
@@ -170,7 +174,15 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
   }
 }
 
-function patientToDto(p: { idPatient: string; email: string; prenom: string; nom: string; telephone: string | null; actif: boolean }): Patient {
+function patientToDto(p: {
+  idPatient: string;
+  email: string;
+  prenom: string;
+  nom: string;
+  telephone: string | null;
+  actif: boolean;
+  suiviClotureLe: Date | null;
+}): Patient {
   return {
     idPatient: p.idPatient,
     email: p.email,
@@ -178,6 +190,7 @@ function patientToDto(p: { idPatient: string; email: string; prenom: string; nom
     nom: p.nom,
     telephone: p.telephone ?? '',
     actif: p.actif ? 'OUI' : 'NON',
+    suiviClotureLe: p.suiviClotureLe ? p.suiviClotureLe.toISOString() : null,
   };
 }
 
@@ -291,6 +304,7 @@ export async function POST(req: Request): Promise<NextResponse<CreatePatientResp
         nom,
         telephone,
         actif: 'OUI',
+        suiviClotureLe: null,
       },
     });
   } catch (err) {
@@ -340,7 +354,11 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchPatientResp
   const telephone = (payload.telephone ?? '').trim().slice(0, 30);
   const actif = payload.actif;
 
-  if (!idPatient || !/^PAT\d+$/.test(idPatient)) {
+  // Même forme d'identifiant que `DELETE` (plus bas) et que la route
+  // `cycle-de-vie` : `/^PAT\d+$/` rejetait les identifiants à tiret bas, dont
+  // le patient fictif `PAT_SEED_03` — « Modifier » était donc inopérant sur le
+  // dossier de seed. L'appartenance reste vérifiée juste en dessous.
+  if (!idPatient || !/^[A-Za-z0-9_-]+$/.test(idPatient)) {
     return NextResponse.json(
       { success: false, reason: 'invalid_payload', error: 'idPatient invalide.' },
       { status: 400 }

@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Cycle de vie du dossier — clôture de suivi et effacement"
-statut: "en_cours"
+statut: "livré — socle (#189) et surface, les deux PR du lot"
 dépend_de: "aucun"
 ---
 
@@ -53,17 +53,56 @@ Schéma, effacement réel, refus portés par les routes, tests.
 Vérifié : T3 complet — 893 tests unitaires, aucune dérive schéma ↔ migrations,
 51 E2E.
 
-## LOT-01b — la surface (à faire)
+## LOT-01b — la surface (livré)
 
-- **Menu regroupé** remplaçant les cinq boutons d'accès de `PatientsPanel` :
-  le panneau doit s'alléger en gagnant ces deux actions, pas s'alourdir.
-  Actions de fin de parcours dans le même menu, **séparées visuellement**.
-- **Confirmations asymétriques** : simple pour la clôture, réversible ;
-  renforcée pour l'effacement — elle **nomme le patient**, liste ce qui est
-  détruit, liste ce qui subsiste, et demande un geste qu'un clic distrait ne
-  produit pas.
-- Accessibilité : menu clavier complet, cibles ≥ 44×44 px, aucune action
-  signalée par la seule couleur.
+Deux décisions ont précisé le cadrage au moment d'écrire, l'une et l'autre
+tranchées par l'utilisateur le 2026-07-21 :
+
+- **Le menu vit sur la ligne du tableau**, pas dans la carte du haut. La
+  maquette D8 le dessinait ainsi, mais les cinq boutons qu'il remplace vivaient
+  dans la carte « Consultation & accès patient », pilotée par un sélecteur. Le
+  menu descend donc sur la ligne **et** la carte perd sa rangée de boutons — pas
+  de doublon. Le détour « choisir un patient dans une liste, puis agir »
+  disparaît.
+- **« Supprimer » est absorbé dans le menu**, sous son vrai nom. Ce bouton
+  appelait `DELETE` et écrivait `actif: false` : c'était une désactivation
+  nommée suppression. Le laisser à côté d'un vrai « Effacer définitivement »
+  aurait rendu les deux illisibles.
+
+Ce qui a été livré :
+
+- **Menu « Gérer le dossier »** (`components/ui/MenuActions.tsx`, neuf) — deux
+  groupes séparés visuellement, clavier complet (`↓`/`↑`/`Début`/`Fin`, `Échap`
+  **rendant le focus au déclencheur**, `Tab` sortant), `role="menu"`, fermeture
+  au clic extérieur sans vol de focus, cibles ≥ 44×44 px, action destructrice
+  signalée par un libellé explicite et un glyphe — jamais par la seule couleur.
+  Écrit à la main plutôt qu'avec `@radix-ui/react-dropdown-menu` : ce menu ouvre
+  la seule action irréversible de l'application, il **doit** être couvert, et
+  les menus Radix se testent mal en jsdom. Le `Dialog` Radix, lui, était déjà
+  une dépendance et sert aux confirmations.
+- **Confirmations asymétriques** (`components/ui/DossierConfirmDialog.tsx`,
+  neuf) — la clôture énonce ce qui s'arrête et ce qui reste ; l'effacement nomme
+  le patient, liste ce qui est détruit et ce qui subsiste, précise que l'e-mail
+  ne subsiste pas **même sous forme d'empreinte**, et exige la saisie de
+  `EFFACER`. Ce mot n'est pas un garde inventé pour l'écran : c'est la valeur
+  que la route exige déjà dans son corps. Le champ se vide à la réouverture.
+- **Statut à trois états** — `Actif`, `Suivi clôturé`, `Inactif`, dérivés de
+  `phaseDossier` plutôt que réimplémentés.
+- **Le DTO patient expose `suiviClotureLe`.** Il ne le faisait pas : l'écran ne
+  pouvait pas distinguer un dossier clos d'un dossier désactivé.
+- **Point tranché à l'usage** : sur un dossier clos, les actions d'accès au
+  portail restent **actives**. D4 interdit les assignations et les envois, pas
+  la lecture — le patient conserve ses archives.
+- **Correction trouvée en chemin** : `PATCH /api/praticien/patients` validait
+  l'identifiant par `/^PAT\d+$/` et rejetait `PAT_SEED_03` ; « Modifier » était
+  donc inopérant sur le dossier de seed. Forme alignée sur `DELETE` et
+  `cycle-de-vie`, appartenance inchangée.
+
+Vérifié : T2 complet — 928 tests unitaires, 51 E2E, aucune dérive schéma ↔
+migrations. **Aucun E2E sur l'effacement**, délibérément : la suite tourne
+contre une base partagée entre les postes et réinitialise `PAT_SEED_03` ; un
+parcours qui effacerait réellement ce dossier détruirait la fixture des autres
+sessions.
 
 ## Ce que ce lot ne fait pas
 

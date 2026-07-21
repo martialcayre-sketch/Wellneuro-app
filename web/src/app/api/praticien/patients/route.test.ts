@@ -60,6 +60,36 @@ describe('GET /api/praticien/patients', () => {
     );
   });
 
+  // Sans ce champ, l'écran ne peut pas distinguer un dossier clos d'un dossier
+  // désactivé : le premier conserve la lecture, le second la perd.
+  it('expose l’état de clôture du suivi, en ISO ou null', async () => {
+    prisma.patient.findMany.mockResolvedValue([
+      {
+        idPatient: 'PAT_SEED_03',
+        email: 'michel.dogne@fictif.wellneuro.fr',
+        prenom: 'Michel',
+        nom: 'Dogné',
+        telephone: null,
+        actif: true,
+        suiviClotureLe: new Date('2026-07-21T10:00:00.000Z'),
+      },
+      {
+        idPatient: 'PAT_SEED_01',
+        email: 'sophie.nicola@fictif.wellneuro.fr',
+        prenom: 'Sophie',
+        nom: 'Nicola',
+        telephone: null,
+        actif: true,
+        suiviClotureLe: null,
+      },
+    ]);
+    const json = (await (await GET(get())).json()) as {
+      patients: { idPatient: string; suiviClotureLe: string | null }[];
+    };
+    expect(json.patients[0].suiviClotureLe).toBe('2026-07-21T10:00:00.000Z');
+    expect(json.patients[1].suiviClotureLe).toBeNull();
+  });
+
   it('liste paginée : scope aussi le where de recherche', async () => {
     await GET(get('page=1&search=Nicola'));
     const where = prisma.patient.findMany.mock.calls[0][0].where;
@@ -88,6 +118,23 @@ describe('PATCH /api/praticien/patients', () => {
     const res = await PATCH(patch({ idPatient: 'PAT001', actif: 'NON' }));
     expect(res.status).toBe(200);
     expect(prisma.patient.update).toHaveBeenCalledOnce();
+  });
+
+  // La forme `/^PAT\d+$/` rejetait les identifiants à tiret bas, dont le
+  // patient fictif `PAT_SEED_03` : « Modifier » était inopérant sur le dossier
+  // de seed, et le menu de LOT-01b passe par cette même route pour activer et
+  // désactiver un dossier.
+  it('accepte un identifiant à tiret bas (PAT_SEED_03)', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_SEED_03', praticienEmail: 'p@wellneuro.fr' });
+    const res = await PATCH(patch({ idPatient: 'PAT_SEED_03', actif: 'OUI' }));
+    expect(res.status).toBe(200);
+    expect(prisma.patient.update).toHaveBeenCalledOnce();
+  });
+
+  it('refuse toujours un identifiant hors alphabet (400, aucune écriture)', async () => {
+    const res = await PATCH(patch({ idPatient: 'PAT001; DROP', actif: 'NON' }));
+    expect(res.status).toBe(400);
+    expect(prisma.patient.update).not.toHaveBeenCalled();
   });
 });
 
