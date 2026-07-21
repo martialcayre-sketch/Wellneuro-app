@@ -29,8 +29,7 @@ const patient = {
 function request(body: object): Request {
   const cookie = signPatientSession({
     idPatient: patient.idPatient,
-    email: patient.email,
-    accessToken: patient.accessToken,
+    email: patient.email
   });
   return new Request('http://localhost/api/portail/trust/signalement', {
     method: 'POST',

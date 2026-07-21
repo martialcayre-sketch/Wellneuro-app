@@ -123,7 +123,6 @@ export async function POST(req: Request): Promise<NextResponse> {
       signPatientSession({
         idPatient: patient.idPatient,
         email: patient.email,
-        accessToken: token,
       }),
       PORTAIL_COOKIE_OPTIONS,
     );

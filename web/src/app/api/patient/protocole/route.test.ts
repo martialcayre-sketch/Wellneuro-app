@@ -44,8 +44,7 @@ describe('GET /api/patient/protocole', () => {
     // Session d'un AUTRE patient que le propriétaire de l'assignation.
     const cookie = signPatientSession({
       idPatient: 'PAT_INTRUS',
-      email: assignation.emailPatient,
-      accessToken: 'TOK_INTRUS',
+      email: assignation.emailPatient
     });
     const res = await GET(request(cookie));
     const json = (await res.json()) as { reason?: string };
@@ -57,6 +56,7 @@ describe('GET /api/patient/protocole', () => {
   it('renvoie le statut du protocole relu au patient propriétaire (200)', async () => {
     prisma.assignation.findUnique.mockResolvedValue(assignation);
     prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
       actif: true,
       accessToken: 'TOK_PROPRIO',
       accessTokenRevoked: false,
@@ -68,8 +68,7 @@ describe('GET /api/patient/protocole', () => {
     });
     const cookie = signPatientSession({
       idPatient: assignation.idPatient,
-      email: assignation.emailPatient,
-      accessToken: 'TOK_PROPRIO',
+      email: assignation.emailPatient
     });
     const res = await GET(request(cookie));
     const json = (await res.json()) as { ok: boolean; hasReviewedProtocol: boolean; status: string | null };
