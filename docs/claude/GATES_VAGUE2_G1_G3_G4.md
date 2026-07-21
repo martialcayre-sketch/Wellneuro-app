@@ -14,11 +14,16 @@
 |---|---|---|
 | **G1** | **appliqué** le 2026-07-20 | #166 (clé de carte, migration-free) puis #168 (table, route, geste) |
 | **G3** | **appliqué** le 2026-07-20 | #163 |
-| **G4** | **non appliqué** — préalable seul | #169 (reclé des traces locales, migration-free) |
+| **G4** | **appliqué** le 2026-07-20, **activé en production** le 2026-07-21 | #169 (préalable, reclé des traces locales) puis #172 (lien magique) et #182 (canal de redemande) |
 
 Migrations en production, vérifiées en base : `20260720120000_sptt_relecture_notes_v1`
-(17:34 UTC) et `20260720130000_g1_fil_card_rejections_v1` (17:47 UTC), aucune
-rollbackée.
+(17:34 UTC), `20260720130000_g1_fil_card_rejections_v1` (17:47 UTC) et
+`20260720200000_g4_portail_magic_links_v1`, aucune rollbackée.
+
+G4 est livré **éteint** (drapeau `WN_G4_LIEN_MAGIQUE`), puis allumé en
+Production le 2026-07-21 avec `WN_G4_REDEMANDE_PATIENT` — détail, essai réel et
+rollback dans
+`campagnes/2026-07-19-idp-identite-patient-durable/ACTIVATION_RUNBOOK_G4.md`.
 
 Les sections G1 et G3 ci-dessous sont conservées **telles qu'elles ont servi**,
 avec les écarts constatés à l'application signalés sur place. Elles valent
@@ -369,15 +374,16 @@ PR de migration relisible pour ce qu'elle est.
 2. ~~**G3**~~ — fait (#163).
 3. ~~**G1, partie migration**~~ — fait (#168).
 4. ~~**Préalable G4** — reclé des traces locales~~ — fait (#169).
-5. **G4** — reste à faire : lien haché en base, 24 h, consommation unique, rejeu
-   refusé et tracé. **Revue de sécurité obligatoire avant merge.** Livrable en
-   préproduction ; activation avec données réelles = décision distincte,
-   aujourd'hui **NO-GO** (gate TRUST).
-6. **SP-SPI** — une fois G4 disponible.
+5. ~~**G4** — lien haché en base, 24 h, consommation unique, rejeu refusé et
+   tracé~~ — fait (#172), revue de sécurité passée, livré **éteint** puis
+   **activé en production le 2026-07-21** (#182 pour le canal de redemande).
+6. **SP-SPI** — **débloqué** : G4 est disponible et activé.
 
-Une casse connue attend l'étape 5 : `web/e2e/portail-parcours.spec.ts` réutilise
-le même jeton d'un bout à l'autre du parcours. La consommation unique le casse ;
-il devra consommer le lien une fois, puis naviguer au cookie.
+La casse annoncée à l'étape 5 a bien eu lieu et a été traitée :
+`web/e2e/portail-parcours.spec.ts` réutilisait le même jeton d'un bout à l'autre
+du parcours, ce que la consommation unique interdit. Le parcours consomme
+désormais le lien une fois puis navigue au cookie, et un test dédié
+`web/e2e/portail-lien-magique.spec.ts` couvre l'usage unique et le rejeu.
 
 ## Raccordement
 

@@ -1,9 +1,9 @@
 ---
 id: "2026-07-19-idp-identite-patient-durable"
 titre: "IDP — Identité patient durable"
-statut: "cadrée"
+statut: "livrée"
 créée_le: "2026-07-19"
-mise_à_jour: "2026-07-19"
+mise_à_jour: "2026-07-21"
 lot_courant: "LOT-01"
 ---
 
@@ -67,8 +67,8 @@ revue de sécurité.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-01 | Lien magique à usage unique et expirant : table de jetons, émission, consommation, coexistence avec le token permanent — **gate migration G4 + revue de sécurité** | à_faire | — |
-| LOT-02 | Passkeys (WebAuthn) — option, différable sans bloquer SP-SPI | à_faire | LOT-01 |
+| LOT-01 | Lien magique à usage unique et expirant : table de jetons, émission, consommation, coexistence avec le token permanent — **gate migration G4 + revue de sécurité** | livré (#172, migration `20260720200000_g4_portail_magic_links_v1` ; **activé en production le 2026-07-21**, cf. `ACTIVATION_RUNBOOK_G4.md`) | — |
+| LOT-02 | Passkeys (WebAuthn) — option, différable sans bloquer SP-SPI | non compilé (option, doctrine N+1/A3) | LOT-01 |
 
 ## Définition de done
 

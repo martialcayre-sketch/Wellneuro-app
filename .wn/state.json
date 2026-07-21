@@ -4,10 +4,10 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "idle",
-  "active_campaign": null,
-  "active_lot": null,
-  "last_completed_lot": "SP-COP/LOT-02",
+  "status": "en_cours",
+  "active_campaign": "2026-07-21-idp2-auth-patient-et-cycle-de-vie",
+  "active_lot": "LOT-01",
+  "last_completed_lot": "IDP2/LOT-01a",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -15,24 +15,24 @@
   },
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-20T23:13:37Z",
+    "last_checked_at": "2026-07-21T10:45:00Z",
     "checks": {
-      "orchestration": "audit campagnes vert (1 warning préexistant : LOT-00 dupliqué sur refonte-ux-shell-3-0)",
+      "orchestration": "audit campagnes vert — 20 campagnes, 0 erreur, 1 warning préexistant (LOT-00 dupliqué sur refonte-ux-shell-3-0)",
       "type_check": "vert",
-      "scoring_certification": "inchangé (aucun scoring ni seuil modifié en Vague 2)",
+      "scoring_certification": "inchangé (aucun scoring ni seuil modifié depuis la Vague 2)",
       "no_secrets": "vert",
-      "e2e": "Playwright vert — 26 tests source (2 projets Chromium/iPhone 13, soit 52 exécutions), test:worktree en ~1 min, base éphémère isolée",
+      "e2e": "Playwright vert — 26 tests source sur 2 projets (Chromium bureau + iPhone 13), soit 52 exécutions, 1 skip ; test:worktree --fast en ~1 min 30, base éphémère isolée",
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Vague 2 — livrée pour tout ce qui ne demande pas de migration : cadrage des 5 campagnes (#148), Spirale navigable et comparateur (#149), météo d'adhésion (#150), pré-vol copilote (#151), dette de tests du Fil (#152), gate G2 identité de cycle appliqué en base (#155), gardes d'appartenance praticien (#156), lecture d'un état passé (#158), discipline « une session = un worktree » (#159), minute d'après (#160). Gates G1 (refus des cartes du Fil, #170) et G3 (relecture_notes, #163) appliqués en base, migrations vérifiées. Isolation multi-praticien : les 3 dernières routes patient-scoped fermées (#181, besoins/consultations/patients) — dénominateur réel 33 routes, 30 gardées, 3 sans objet (catalogues globaux). G4 et G-TRUST-04 : en évolution active dans une autre session ; ce fichier n'en est pas la source à jour — voir campagnes/2026-07-19-idp-identite-patient-durable/ACTIVATION_RUNBOOK_G4.md et campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md. SP-SPI dépend de G4 par décision de sa propre campagne. Reliquat C3 (fil médecin) : le volet sortant est livré et sans pièces jointes par construction ; le fil entrant reste ouvert, il demande une migration ET un arbitrage humain sur l'identité médecin et la conservation.",
+  "next_action": "Campagne active IDP2 (compte patient et cycle de vie du dossier), lot courant LOT-01 : LOT-01a livré (#189 — clôture de suivi, effacement réel, table dossiers_efface), LOT-01b (menu regroupé et confirmations) en revue au moment de cette écriture — ne pas le reprendre sans vérifier son état. G4 est livré (#172) ET activé en production le 2026-07-21 (WN_G4_LIEN_MAGIQUE + WN_G4_REDEMANDE_PATIENT, #182) : la dépendance de SP-SPI est donc levée, et SP-SPI/LOT-01 est le seul lot à_faire non bloqué du dépôt — il porte aussi la résorption de l'écart E11 (hub empilé portail). Audit de conformité 5.0 : écarts de sécurité et de paradigme traités (#181, #183, #185), typographie praticien A6-R1 (#191), cadrage E11 (#192). Restent ouverts et non arbitrés : E17 (ReadingComfortControl praticien — le registre dit « les deux fronts », globals.css dit « portail seul »), E20 (C5 se déclare terminée 8/8 contre trois documents qui la disent inactive à 2/8), E23, E25, et les réserves R1 à R9. Reliquat C3 (fil médecin) : le volet sortant est livré ; le fil entrant demande une migration ET un arbitrage humain sur l'identité médecin et la conservation.",
   "blocking_issues": [
-    "SP-SPI : dépend de G4",
     "Fil de correspondance médecin (C3) : arbitrage humain requis sur identité médecin et conservation",
-    "G-TRUST-04 : hébergement HDS non établi — état détaillé et à jour dans CHECKLIST_ACTIVATION_G_TRUST_04.md, en évolution active"
+    "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md",
+    "E20 : contradiction non arbitrée sur l'état réel de la campagne C5 (terminée 8/8 vs inactive 2/8) — décision du propriétaire produit"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-20T23:13:37Z",
+  "updated_at": "2026-07-21T10:45:00Z",
   "parallel_campaigns": []
 }

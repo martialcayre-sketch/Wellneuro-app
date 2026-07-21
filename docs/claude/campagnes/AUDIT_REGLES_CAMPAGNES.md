@@ -1,7 +1,7 @@
 # Audit de conformité des campagnes
 
-- Date: 2026-07-20T23:25:54.232Z
-- Campagnes auditées: 19
+- Date: 2026-07-21T10:34:47.630Z
+- Campagnes auditées: 20
 - Erreurs: 0
 - Warnings: 1
 - Statut global: PASS
@@ -37,8 +37,9 @@
 - 2026-07-15-cockpit-vivant | terminé — SP-RUN-02 validé en CI | lot_courant=aucun | lots=0 | docs/claude/campagnes/2026-07-15-cockpit-vivant/CAMPAGNE.md
 - 2026-07-15-fil-du-jour-v1 | terminée | lot_courant=LOT-02 | lots=2 | docs/claude/campagnes/2026-07-15-fil-du-jour-v1/CAMPAGNE.md
 - 2026-07-15-trust-information-patient-droits-v1 | terminée — V1 en production, dettes ouvertes (DETTE_TRUST.md) | lot_courant=LOT-07 | lots=8 | docs/claude/campagnes/2026-07-15-trust-information-patient-droits-v1/CAMPAGNE.md
-- 2026-07-19-idp-identite-patient-durable | cadrée | lot_courant=LOT-01 | lots=1 | docs/claude/campagnes/2026-07-19-idp-identite-patient-durable/CAMPAGNE.md
+- 2026-07-19-idp-identite-patient-durable | livrée | lot_courant=LOT-01 | lots=1 | docs/claude/campagnes/2026-07-19-idp-identite-patient-durable/CAMPAGNE.md
 - 2026-07-19-sp-cop-copilote-consultation | livrée | lot_courant=LOT-02 | lots=2 | docs/claude/campagnes/2026-07-19-sp-cop-copilote-consultation/CAMPAGNE.md
 - 2026-07-19-sp-met-meteo-adhesion | livrée | lot_courant=LOT-01 | lots=1 | docs/claude/campagnes/2026-07-19-sp-met-meteo-adhesion/CAMPAGNE.md
 - 2026-07-19-sp-spi-ma-spirale-patient | cadrée | lot_courant=LOT-01 | lots=1 | docs/claude/campagnes/2026-07-19-sp-spi-ma-spirale-patient/CAMPAGNE.md
 - 2026-07-19-sp-tt-time-travel-relecture | livrée | lot_courant=LOT-01 | lots=1 | docs/claude/campagnes/2026-07-19-sp-tt-time-travel-relecture/CAMPAGNE.md
+- 2026-07-21-idp2-auth-patient-et-cycle-de-vie | en_cours | lot_courant=LOT-01 | lots=1 | docs/claude/campagnes/2026-07-21-idp2-auth-patient-et-cycle-de-vie/CAMPAGNE.md
