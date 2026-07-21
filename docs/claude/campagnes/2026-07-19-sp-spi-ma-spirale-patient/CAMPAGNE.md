@@ -43,6 +43,12 @@ qui reste un geste praticien.
 - Le statut n'est **jamais porté par la seule couleur**.
 - Le pack de réévaluation est **proposé et refusable** : aucune auto-assignation,
   aucun envoi automatique.
+- **Le refus est persisté** (arbitré le 2026-07-21). Un refus non enregistré
+  reviendrait à chaque visite, et une proposition qui revient est une relance —
+  ce que la campagne s'interdit. La donnée sert à **ne pas redemander**, jamais
+  à insister : elle ne déclenche ni envoi, ni compte à rebours, ni relance. La
+  migration qui la porte est livrée dans sa propre PR, avant l'écran
+  (`lots/LOT-01-ma-spirale-et-reprise.md`, « Le chemin retour du pack »).
 - La reprise n'exerce **aucune pression** : pas de compte à rebours, pas de
   relance culpabilisante, pas de « vous avez manqué X jours ».
 - Vocabulaire réglementaire verrouillé (« recommandation », « protocole
