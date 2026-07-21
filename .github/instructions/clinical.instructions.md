@@ -9,5 +9,6 @@ applyTo: "web/src/lib/questions/**,web/src/lib/equilibre/**,web/src/lib/consulta
 - Les vigilances déterministes ne doivent pas pouvoir être supprimées par une sortie LLM.
 - Conserver les niveaux de preuve et l’audit trail.
 - Ne pas extrapoler depuis une seule source ou un questionnaire isolé.
-- Documenter toute modification clinique dans `CHANGELOG.md`.
+- Documenter toute modification clinique dans un fragment `changelog.d/`
+  (replié dans `CHANGELOG.md` à la consolidation — voir `changelog.d/README.md`).
 - Utiliser uniquement des données fictives autorisées dans les tests.

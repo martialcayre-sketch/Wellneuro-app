@@ -11,7 +11,7 @@ Lire `AGENTS.md`, `CLAUDE.md` et `docs/claude/PROJET_CONTEXTE.md` avant une tâc
 - Tous les textes d’interface sont en français.
 - Changement minimal : aucun refactor, renommage ou réorganisation hors demande.
 - Aucune migration Prisma/SQL, modification de `schema.prisma` ou écriture Supabase sans demande explicite et confirmation distincte.
-- Aucune modification de scoring, seuil ou logique clinique sans demande explicite et traçabilité dans `CHANGELOG.md`.
+- Aucune modification de scoring, seuil ou logique clinique sans demande explicite et traçabilité dans un fragment `changelog.d/` (replié dans `CHANGELOG.md` — voir `changelog.d/README.md`).
 - Seuls les patients fictifs Sophie Nicola, Jennifer Martin et Michel Dogné peuvent apparaître dans les exemples, tests ou données de démo.
 - Ne jamais reproduire une donnée patient réelle rencontrée dans un fichier, un log ou un message.
 - Le code principal est dans `web/`.
