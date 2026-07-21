@@ -1,3 +1,12 @@
+---
+id: "2026-07-21-idp2-auth-patient-et-cycle-de-vie"
+titre: "IDP2 — Compte patient et cycle de vie du dossier"
+statut: "en_cours"
+créée_le: "2026-07-21"
+mise_à_jour: "2026-07-21"
+lot_courant: "LOT-01"
+---
+
 # IDP2 — Compte patient et cycle de vie du dossier
 
 > Cadrage ouvert le 2026-07-21, sur décision de l'utilisateur. **Aucun code
