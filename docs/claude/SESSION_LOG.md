@@ -1276,3 +1276,26 @@ faute d'outil navigateur.
 **Prochaine action** : relecture visuelle humaine des écrans praticien.
 
 **Questions ouvertes** : réserves R1–R9 ; E17 et E18.
+
+## 2026-07-21 — Quatre lots : gouvernance, a11y/sécurité, accueil patient
+
+**Décisions** : quatre chantiers, une PR chacun. **#195** — la chaîne
+d'autorité décrivait un dépôt périmé, au point d'envoyer cette session sur une
+action déjà prise ailleurs : E19 résiduel (IDP), E27, E24, IDP2 enregistrée.
+**#197** — `prefers-reduced-motion` absent du dépôt, trois `aria-hidden`
+manquants, et `auth.ts` qui déduisait le domaine du seul texte de l'e-mail.
+**#198** — accueil séquentiel « Mon parcours » (résorbe E11) et reprise, dont
+le seuil est **importé** du Fil praticien plutôt que redéfini : sinon les deux
+surfaces se contrediraient.
+
+**Écarté** : `hd` strict — verrouillerait la production si Google cessait de le
+renvoyer ; « Ma spirale » — collision avec le journal alimentaire ; la
+migration dans #198 — isolée dans une PR relisible.
+
+**Vérifié** : T1 partout, T2 (51/51 E2E) sur le code, CI verte sur les quatre.
+Rendu visuel toujours non contrôlé.
+
+**Prochaine action** : E18, débloqué par le merge de #194.
+
+**Questions ouvertes** : gate migration SP-SPI (chemin retour du pack) ; E17,
+E20, R1–R6.
