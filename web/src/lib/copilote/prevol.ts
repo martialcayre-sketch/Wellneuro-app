@@ -33,9 +33,11 @@ export type FaitPreVol = {
   date: string; // ISO — toute affirmation est datée
   // Version de l'instrument, quand la source en a figé une (audit 5.0, réserve
   // R3 : l'invariant demande « instrument, date, version »). Seuls les épisodes
-  // confirmés en portent une, figée à la mesure (`assessment_episodes.
-  // version_score`, A8-3). Ailleurs elle reste `null` : aucune version n'est
-  // reconstituée après coup, au même titre qu'aucun fait n'est supposé.
+  // confirmés *peuvent* en porter une, figée à la mesure
+  // (`assessment_episodes.version_score`, A8-3) — les lignes héritées, elles,
+  // sont à `null` et le restent. Partout ailleurs elle vaut `null` par
+  // construction : aucune version n'est reconstituée après coup, au même titre
+  // qu'aucun fait n'est supposé.
   version: string | null;
 };
 

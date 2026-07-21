@@ -76,7 +76,14 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
     expect(corps.ok).toBe(true);
     expect(corps.titre).toBe(assignation.titre);
     expect(Object.keys(corps).sort()).toEqual(['ok', 'titre']);
-    expect(JSON.stringify(corps)).not.toMatch(/score|interpretation|total/i);
+
+    // Filet en profondeur, et non redondant avec la ligne ci-dessus : celle-ci
+    // borne les clés de premier niveau, celui-là attrape un score enfoui sous
+    // une clé au nom anodin. `titre` en est exclu — il porte le libellé du
+    // questionnaire, et un intitulé contenant « score » ferait échouer le test
+    // sans qu'aucune donnée n'ait fuité.
+    const { titre: _titre, ...horsTitre } = corps;
+    expect(JSON.stringify(horsTitre)).not.toMatch(/score|interpretation|total/i);
   });
 
   it('calcule et persiste le score malgré tout', async () => {
