@@ -79,7 +79,9 @@ export async function GET(req: Request): Promise<NextResponse<PreVolApiResponse>
         }),
         prisma.assessmentEpisode.findMany({
           where: { idPatient },
-          select: { milestone: true, confirmedAt: true },
+          // `versionScore` est figé à la mesure (A8-3) : le pré-vol le
+          // transporte tel quel, `null` compris sur les lignes héritées.
+          select: { milestone: true, confirmedAt: true, versionScore: true },
         }),
         prisma.protocolDraft.findMany({
           where: { idPatient, reviewedAt: { not: null } },

@@ -35,6 +35,38 @@ Additive uniquement : une table nouvelle, aucun backfill, aucune table existante
 modifiée. Rollback = abandon de la table. **Aucun écran, aucune route** : rien ne
 lit ni n'écrit encore cette table.
 
+### Trois réserves de l'audit 5.0 fermées — R1, R3, E17 (2026-07-21)
+
+Les trois constats de l'audit qui ne demandaient aucun arbitrage produit, traités
+ensemble parce qu'ils n'ont en commun que d'être mécaniques.
+
+- **R1 — le score ne descend plus au navigateur patient.**
+  `POST /api/patient/submit` renvoyait l'objet `scores` complet, total et
+  libellé d'interprétation compris. Aucun client ne le lisait :
+  `GenericQuestionnaire` et `PlaintesForm` ne consultent que `data.ok`. Une
+  donnée transmise mais non affichée reste une donnée transmise — elle est dans
+  la réponse HTTP, lisible dans l'onglet réseau. Le calcul et la persistance ne
+  bougent pas : c'est la seule réponse qui maigrit. Une garde
+  (`api/patient/submit/route.test.ts`) échoue si un score y réapparaît, quel que
+  soit le nom de la clé.
+- **R3 — le pré-vol du copilote porte sa version.** L'invariant demande
+  « instrument, date, version » ; `FaitPreVol` s'arrêtait aux deux premiers. Le
+  champ `version` existe désormais sur chaque fait, alimenté par
+  `assessment_episodes.version_score` (figée à la mesure, A8-3) pour les épisodes
+  confirmés, et **`null` partout ailleurs** : aucune source ne fige de version
+  pour une réponse de questionnaire ou un point d'étape, et rien ne se
+  reconstitue après coup. L'écran n'affiche la mention que si elle existe —
+  l'absence de version se lit comme une absence, jamais comme « v1 ».
+- **E17 — deux textes faux dans deux sens opposés.** Le registre écrivait
+  `ReadingComfortControl` « monté sur les deux fronts » (compris : praticien +
+  patient) ; le commentaire de `globals.css` le disait « restreint au portail »
+  alors que le legacy `/patient` le monte aussi. Le code, lui, n'a jamais varié :
+  les **deux surfaces patient**, jamais le praticien. Les deux textes s'alignent
+  sur ce que fait le code ; rien n'est monté ni démonté.
+
+Aucune migration, aucun changement de schéma, aucun texte visible modifié côté
+patient.
+
 ### E20 — C5 réalignée sur ce qui a été livré (2026-07-21)
 
 Quatre sources décrivaient l'avancement de C5, trois se contredisaient avec la

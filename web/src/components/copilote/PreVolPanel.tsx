@@ -102,6 +102,11 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
                 </span>{' '}
                 · {fait.libelle}{' '}
                 <span className="text-muted-foreground">· {formatDate(fait.date)}</span>
+                {/* La version n'est affichée que si la source en a figé une :
+                    son absence se lit comme une absence, jamais comme « v1 ». */}
+                {fait.version && (
+                  <span className="text-muted-foreground"> · version {fait.version}</span>
+                )}
               </li>
             ))}
           </ul>

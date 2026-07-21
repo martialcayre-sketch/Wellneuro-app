@@ -53,7 +53,7 @@ describe('construirePreVol (SP-COP LOT-01)', () => {
     const prevol = construirePreVol(
       entrees({
         reponses: [{ idQuestionnaire: 'Q1', dateReponse: new Date('2026-01-01T00:00:00.000Z') }],
-        episodes: [{ milestone: 'T0', confirmedAt: new Date('2026-03-01T00:00:00.000Z') }],
+        episodes: [{ milestone: 'T0', confirmedAt: new Date('2026-03-01T00:00:00.000Z'), versionScore: 'v1' }],
         pointsEtape: [
           { pointEtape: 'J7', soumisLe: new Date('2026-02-01T00:00:00.000Z'), tolerance: 'bien', adhesion: 'tous_les_jours' },
         ],
@@ -74,6 +74,27 @@ describe('construirePreVol (SP-COP LOT-01)', () => {
       source: 'signalement',
       date: '2026-03-02T09:00:00.000Z',
     });
+  });
+
+  // Audit 5.0, réserve R3 : l'invariant demande « instrument, date, version ».
+  // La version existe donc sur chaque fait, mais n'est jamais reconstituée : là
+  // où la source n'en a figé aucune, elle vaut `null` et l'écran n'affiche rien.
+  it('la version accompagne le fait quand la source en a figé une, jamais autrement', () => {
+    const prevol = construirePreVol(
+      entrees({
+        episodes: [
+          { milestone: 'T0', confirmedAt: new Date('2026-03-01T00:00:00.000Z'), versionScore: 'equilibre-v1' },
+          { milestone: 'J21', confirmedAt: new Date('2026-02-01T00:00:00.000Z'), versionScore: null },
+        ],
+        reponses: [{ idQuestionnaire: 'Q1', dateReponse: new Date('2026-01-01T00:00:00.000Z') }],
+      }),
+    );
+    expect(prevol.faits.map((f) => [f.source, f.version])).toEqual([
+      ['episode_confirme', 'equilibre-v1'],
+      ['episode_confirme', null],
+      ['reponse_questionnaire', null],
+    ]);
+    expect(prevol.faits.every((f) => 'version' in f)).toBe(true);
   });
 
   it('une date illisible est écartée plutôt que rangée en tête', () => {
