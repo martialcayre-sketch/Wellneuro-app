@@ -17,7 +17,14 @@
 
 - Aucun secret en dur ; variables d'environnement uniquement.
 - Patients fictifs exclusifs : **Sophie Nicola, Jennifer Martin, Michel
-  Dogné** (avec accent). Aucune donnée patient réelle, jamais.
+  Dogné** (avec accent). Aucune donnée patient réelle, jamais — **dans le code,
+  les seeds, les tests et les données de démonstration**. Cette portée-là reste
+  entière et sans dérogation.
+  **Suspendu pour la base de production seule**, du 2026-07-21 au **2026-10-21**,
+  par décision datée du responsable du traitement autorisant une phase de test
+  avec des personnes réelles (`campagnes/2026-07-15-trust-information-patient-droits-v1/CHECKLIST_ACTIVATION_G_TRUST_04.md`,
+  § « Décision du responsable »). Sans reconduction écrite à cette date,
+  l'invariant reprend son plein effet.
 - Interface 100 % en français.
 - Vocabulaire réglementaire : « recommandation », « protocole personnalisé »,
   « indice de suivi », « explorations à discuter avec le médecin traitant ».
@@ -28,7 +35,14 @@
 - Éviter par conception la qualification dispositif médical : finalité
   bien-être/suivi, validation praticien systématique de tout contenu généré
   par IA avant diffusion.
-- HDS obligatoire avant tout stockage de données de santé réelles.
+- HDS obligatoire avant tout stockage de données de santé réelles. **Écart
+  constaté et assumé depuis le 2026-07-21** : Supabase et Vercel sont **absents
+  de l'annuaire ANS des hébergeurs certifiés** (404 hébergeurs recensés ;
+  vérifié le 2026-07-21). Le responsable du traitement a autorisé une phase de
+  test malgré cet écart, **bornée au 2026-10-21**. Ce n'est pas une mise en
+  conformité : l'invariant reste vrai, il est enfreint sciemment et pour un
+  temps compté. Migration vers un hébergeur certifié à instruire — équivalents
+  disponibles (Scalingo, Clever Cloud : six activités, référentiel v2.0).
 - 1 tâche = 1 branche courte = 1 PR = 1 périmètre. Jamais de mélange
   design / clinique / IA / corpus / infra dans une même PR.
 - Aucune migration Prisma/SQL et aucune écriture Supabase sans demande
@@ -617,8 +631,16 @@
   conservé ; **coexistence obligatoire** des deux chemins pendant la bascule ;
   jeton stocké **haché**, expiration courte, consommation unique, rejeu refusé
   et tracé ; **revue de sécurité obligatoire** avant merge ; **gate TRUST** —
-  livrable en préproduction, activation avec données réelles = décision
-  distincte, aujourd'hui NO-GO.
+  activation avec données réelles = décision distincte.
+  **Corrigé le 2026-07-21** : ce paragraphe portait « livrable en
+  préproduction ». **Aucune préproduction n'existe** — un seul projet Supabase,
+  et `web/scripts/vercel-build.sh` ne migre qu'en production ; les déploiements
+  Preview lisent donc la base de production. La mention a induit en erreur le
+  2026-07-21, un drapeau ayant été posé sur Preview *et* Production.
+  **Statut réel au 2026-07-21** : G4 est **activé en production**
+  (`WN_G4_LIEN_MAGIQUE`), le canal public de redemande également
+  (`WN_G4_REDEMANDE_PATIENT`), par décision datée du responsable — le NO-GO
+  antérieur est levé dans ce périmètre et jusqu'au 2026-10-21.
 - **Ne possède pas** : le contenu de l'espace patient (SP-SPI) ; la suppression
   du chemin token permanent ; l'authentification praticien (NextAuth).
 - **Statut** : cadrée le 2026-07-19. Remplace l'entrée différée « Auth patient

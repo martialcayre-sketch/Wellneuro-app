@@ -1170,6 +1170,27 @@ n'existe pas : l'envoi d'e-mail n'aurait jamais été testé.
 **Questions ouvertes** : péremption des liens permanents ; les deux résidus du
 canal de redemande.
 
+## 2026-07-21 — HDS instruit, dérogation datée, TRUST clos pour la phase de test
+
+**Établi** : Supabase et Vercel sont **absents de l'annuaire ANS** (404
+hébergeurs certifiés). La question posée à Supabase le 2024-11-29 est toujours
+sans réponse. HDS v2.0 en vigueur depuis le 2026-05-16. Scalingo et Clever Cloud
+sont certifiés sur les six activités. Inventaire du dépôt : **aucune dépendance
+bloquante à Vercel**, aucun SDK Supabase au runtime — le coût d'un déplacement
+est le transfert de base, pas le code.
+
+**Décision du responsable** : phase de test avec personnes réelles, nouveaux
+dossiers compris, **bornée au 2026-10-21**. Canal public de redemande ouvert.
+
+**Écarté** : écrire cela comme une conformité. La gratuité n'exonère pas de
+L1111-8, l'information des participants ne décharge pas. C'est consigné comme
+**écart assumé et compté** — l'invariant est suspendu, pas abrogé.
+
+**Prochaine action** : poser `WN_G4_REDEMANDE_PATIENT` en Production seule.
+
+**Questions ouvertes** : migration d'hébergeur ; tracer l'information délivrée
+aux participants ; péremption des liens permanents.
+
 ## 2026-07-21 — audit de conformité 5.0 : trois PR mergées
 
 **Décisions** : trois PR ciblées, sécurité d'abord. PR1 (#181) ferme 3 routes
