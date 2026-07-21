@@ -117,7 +117,7 @@ entière et non pour la migration qui l'avait motivée.
 cd web && npm run dev              # serveur local
 cd web && npx prisma studio        # inspection DB en lecture seule (ne pas laisser ouvert en prod)
 cd web && npx prisma generate      # régénérer le client après modif du schéma
-cd web && npm run check            # T1 : type-check + Vitest + anti-secrets indexés (~10 s)
+cd web && npm run check            # T1 : type-check + lint + Vitest + anti-secrets indexés (~15 s)
 cd web && npm test                 # tests unitaires Vitest (n'inclut PAS les E2E)
 cd web && npm run test:e2e         # parcours E2E Playwright seuls (démarre next dev)
 cd web && npm run test:worktree    # réplique locale du job CI verify, E2E inclus
@@ -129,9 +129,13 @@ bash scripts/check_no_secrets.sh --staged # anti-secrets, lignes indexées seule
 
 | Palier | Commande | Durée | Quand |
 |---|---|---|---|
-| T1 | `npm run check` | ~10 s | après chaque édition |
+| T1 | `npm run check` | ~15 s | après chaque édition |
 | T2 | `npm run test:worktree -- --fast` | ~1 min 20 | avant tout commit UI ou API |
 | T3 | `npm run test:worktree` | ~5 min | avant une PR portant migration, scoring ou clinique |
+
+**Le lint est dans les trois paliers depuis le 2026-07-21.** Il n'y était pas :
+le CI le lançait, `npm run check` non, et une PR verte en local cassait en CI
+(LOT-01b). Un palier qui ne couvre pas ce que le CI vérifie ne protège de rien.
 
 Ne jamais relancer une suite pour en relire la sortie : rediriger une fois vers
 un fichier (`--reporter=dot`), puis relire ce fichier.
