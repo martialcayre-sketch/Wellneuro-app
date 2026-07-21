@@ -17,5 +17,17 @@ Ultimate v2. Il s'agit d'un inventaire documentaire, pas d'un corpus runtime.
 - Toute migration PostgreSQL/pgvector exige G5 ; le pilote
   sommeil/chronobiologie exige G6.
 
+## État des gates (2026-07-21)
+
+- **G0 acté** par décision utilisateur du 2026-07-21 (verdict global sur les
+  droits des supports SIIN — `docs/claude/REGISTRE_FRONTIERES.md`, A9). Le
+  passage `rightsStatus: verified` de chaque notice se fait **à l'ingestion
+  de la source**, jamais en masse : une notice non ingérée reste `to_verify`.
+- **G1–G4** : portés par la machine à états `NOTEBOOK_VALIDATIONS` (verdict
+  CONFORME + preuve + validateur + date, par notebook).
+- **G5 acté** par la PR #196 (migration `20260721090000_add_pgvector_rag`,
+  relue et corrigée après audit).
+- **G6** : non ouvert.
+
 La date source déclarée par le pack est le 2026-07-14. L'audit et
 l'intégration réels ont été réalisés le 2026-07-13.

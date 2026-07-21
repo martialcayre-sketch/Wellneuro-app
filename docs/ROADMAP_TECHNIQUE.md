@@ -74,7 +74,9 @@ Points mineurs pré-R0, non bloquants, à traiter opportunément (R7 ou un futur
 ## Hors périmètre (sauf demande explicite)
 
 - Hébergement HDS certifié (requis si données de santé réelles en production)
-- Import massif PDF SIIN / RAG vectoriel complet (corpus plein, pas mini-corpus)
+- ~~Import massif PDF SIIN / RAG vectoriel complet~~ — **entré au périmètre le
+  2026-07-21** sur demande explicite (D-004, registre A9) : infrastructure
+  pgvector PR #196, extraction croisée du stock, Atelier corpus à venir.
 - Génération PDF native (actuellement HTML + impression navigateur)
 - Signature électronique praticien sur le booklet
 - Coaching patient autonome
