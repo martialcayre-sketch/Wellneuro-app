@@ -19,7 +19,7 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
 function CarteDuFil({ carte, onEcarter }: { carte: CarteFil; onEcarter: () => void }) {
   const { libelle, icon: Icon } = TYPE_CARTE[carte.type];
   return (
-    <article className="bg-surface text-surface-foreground rounded-xl border border-border p-4 shadow-sm flex items-start gap-3">
+    <article className="bg-surface text-surface-foreground rounded-xl border border-border p-4 shadow-card flex items-start gap-3">
       <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
         <Icon size={18} strokeWidth={2} aria-hidden="true" />
       </span>
@@ -116,8 +116,8 @@ export function FilDuJour() {
   if (loading) {
     return (
       <div data-testid="fil-du-jour" className="flex flex-col gap-3">
-        <div className="bg-surface rounded-xl border border-border p-4 animate-pulse h-20 shadow-sm" />
-        <div className="bg-surface rounded-xl border border-border p-4 animate-pulse h-20 shadow-sm" />
+        <div className="bg-surface rounded-xl border border-border p-4 animate-pulse h-20 shadow-card" />
+        <div className="bg-surface rounded-xl border border-border p-4 animate-pulse h-20 shadow-card" />
       </div>
     );
   }
@@ -132,7 +132,7 @@ export function FilDuJour() {
 
   if (data.cartes.length === 0) {
     return (
-      <div data-testid="fil-du-jour" className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-sm">
+      <div data-testid="fil-du-jour" className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
         Rien n&apos;appelle votre attention pour le moment. Le Fil se remplit à mesure
         que les réponses, les échéances et les synthèses arrivent.
       </div>

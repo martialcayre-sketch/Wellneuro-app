@@ -59,7 +59,7 @@ export function TrustPanel() {
   };
 
   if (!data) {
-    return <div className="bg-surface rounded-xl border border-border p-5 animate-pulse h-32 shadow-sm" />;
+    return <div className="bg-surface rounded-xl border border-border p-5 animate-pulse h-32 shadow-card" />;
   }
   if (!data.ok) {
     return (
@@ -70,7 +70,7 @@ export function TrustPanel() {
   }
   if (data.signalements.length === 0) {
     return (
-      <div className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-sm">
+      <div className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
         Aucun signalement ni demande pour le moment. Les dépôts des patients (effets indésirables,
         incidents de confidentialité, demandes de droits) apparaîtront ici et dans le Fil.
       </div>
@@ -80,7 +80,7 @@ export function TrustPanel() {
   return (
     <div className="flex flex-col gap-3">
       {data.signalements.map(s => (
-        <article key={s.id} className="bg-surface text-surface-foreground rounded-xl border border-border p-4 shadow-sm">
+        <article key={s.id} className="bg-surface text-surface-foreground rounded-xl border border-border p-4 shadow-card">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
             <div className="flex items-baseline gap-2 min-w-0">
               <Badge variant={BADGE_STATUT[s.statutTraitement] ?? 'neutral'}>

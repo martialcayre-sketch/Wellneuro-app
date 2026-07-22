@@ -3,9 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --radius-sm: 0.5rem;
-  --radius: 0.75rem;
-  --radius-lg: 1rem;
+  /* Rayons 5.0 (maquette cible 2026-07-18) : 10 / 14 / 18 px. */
+  --radius-sm: 0.625rem;
+  --radius: 0.875rem;
+  --radius-lg: 1.125rem;
+
+  /* Ombres 5.0 : carte au repos / pop-up et survol (tiroirs, cartes
+   * actives). Consommées via les utilitaires Tailwind shadow-card et
+   * shadow-pop (tailwind.config.ts). */
+  --shadow-card: 0 1px 2px rgba(16, 22, 43, 0.06), 0 8px 24px rgba(16, 22, 43, 0.08);
+  --shadow-pop: 0 12px 40px rgba(16, 22, 43, 0.22);
 
   /* Palette de marque — deep teal + champagne gold */
   --teal-950: #0b2027;
@@ -187,6 +194,20 @@
   --rail-primary-foreground: #eef0fa;
   --rail-accent: var(--solar-500);
   --rail-focus-ring: var(--solar-500);
+}
+
+/*
+ * Focus clavier 5.0 — épaisseur et décalage de la maquette cible (3px,
+ * offset 2px), couleur portée par --color-focus-ring (indigo praticien /
+ * forêt patient — le solaire plein est à 2,03:1 sur blanc, insuffisant pour
+ * un indicateur non textuel, cf. règle de relief A5-R1). :focus-visible
+ * seul : pas d'anneau au clic souris.
+ */
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
 }
 
 /*

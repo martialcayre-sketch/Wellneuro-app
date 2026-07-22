@@ -91,15 +91,18 @@ de l'espace de travail.
 
 ### Typographie
 
-- `font-sans` (Inter, `--font-inter`) : texte courant.
-- `font-display` (Lora, `--font-display`) : titres.
+**Caduque depuis A5-R1** — Inter/Lora ont été remplacées par les cinq
+familles « la Spirale » attribuées par thème (praticien : Sora/Instrument
+Sans ; patient : Bricolage Grotesque/Albert Sans ; mono partagée IBM Plex
+Mono), voir §8. L'échelle de tailles est définie en §10 (socle 5.0).
 
 Chargées dans `web/src/app/layout.tsx` (racine), disponibles partout.
 
 ### Radius
 
-`rounded-sm` / `rounded` (`DEFAULT`) / `rounded-lg` → `--radius-sm`
-(0.5rem) / `--radius` (0.75rem) / `--radius-lg` (1rem).
+`rounded-sm` / `rounded` (`DEFAULT`) / `rounded-lg` → `--radius-sm` /
+`--radius` / `--radius-lg`. Valeurs d'origine D1 (0.5/0.75/1 rem)
+**remplacées au socle 5.0** par 10/14/18 px, voir §10.
 
 ## 2. Thèmes
 
@@ -550,3 +553,52 @@ toggle**) ; seuls `--background` et le calibrage `--surface`/`--muted`/`--border
 - Direction d'interface associée : **poste de pilotage** (registre A6-R1) —
   cockpit borné, métriques actives, instruments à tiroir. Maquette :
   `docs/claude/propositions/2026-07-18-refonte-ux-5-0/maquette-cible-ux-5-0.html`.
+
+## 10. Tokens v4 — socle refonte visuelle 5.0 (lot V1, 2026-07-22)
+
+La Vague 1 du 2026-07-19 avait posé les canvas A5-R2 sans porter l'anatomie
+de la maquette cible (typo restée à 13-14px, ombres et rayons d'origine D1).
+Le lot V1 du chantier « refonte visuelle totale 5.0 » pose le socle manquant ;
+les lots suivants (V2+) portent l'anatomie écran par écran.
+
+### Échelle typographique (`tailwind.config.ts`, `theme.extend.fontSize`)
+
+La « typo remontée » de la maquette cible se fait au niveau des tokens —
+`text-sm` passe de 14 à 15 px, `text-xs` de 12 à 12,5 px — sans toucher les
+composants. Paliers :
+
+| Classe | Taille | Usage maquette |
+|---|---|---|
+| `text-2xs` | 11,5px | statuts du rail de phases, labels de jauge |
+| `text-xs` | 12,5px | eyebrows, labels uppercase (tracking .06em) |
+| `text-13` | 13px | chips, mono (heures, sources, positions) |
+| `text-14` | 14px | UI dense (rail de phases, tableaux) |
+| `text-sm` | 15px | nav, boutons, onglets, sous-titres |
+| `text-base` | 16px | corps (line-height 1.55) |
+| `text-metric` | 32px | valeurs de métriques (`font-display`) |
+
+Les valeurs arbitraires `text-[13px]`/`text-[14px]` sont proscrites —
+utiliser `text-13`/`text-14` (pilotables centralement).
+
+### Rayons
+
+`--radius-sm` 10px · `--radius` 14px · `--radius-lg` 18px (valeurs exactes
+de la maquette cible).
+
+### Ombres
+
+| Token | Valeur | Usage |
+|---|---|---|
+| `--shadow-card` (`shadow-card`) | `0 1px 2px rgba(16,22,43,.06), 0 8px 24px rgba(16,22,43,.08)` | carte au repos, onglet actif |
+| `--shadow-pop` (`shadow-pop`) | `0 12px 40px rgba(16,22,43,.22)` | survol de carte active, tiroirs, pop-ups |
+
+`shadow-sm` est réservé aux micro-éléments (point de curseur `ScoreZones`) ;
+les cartes utilisent `shadow-card`. `bg-white` en dur est proscrit —
+toujours `bg-surface`.
+
+### Focus clavier
+
+Règle globale `@layer base` : `:focus-visible { outline: 3px solid
+var(--color-focus-ring); outline-offset: 2px; }` — épaisseur et décalage de
+la maquette, couleur indigo (praticien) / forêt (patient). Le solaire plein
+est exclu comme indicateur de focus (2,03:1 sur blanc, < 3:1 requis).

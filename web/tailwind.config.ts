@@ -111,6 +111,27 @@ const config: Config = {
         display: ['var(--font-display)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
+      // Échelle typographique 5.0 (refonte visuelle, maquette cible
+      // 2026-07-18) : la « typo remontée » se fait ici, au niveau des tokens —
+      // sm passe de 14 à 15px, xs de 12 à 12.5px. Les paliers intermédiaires
+      // text-13/text-14 remplacent les valeurs arbitraires text-[13px]/
+      // text-[14px] pour rester pilotables centralement. `metric` porte les
+      // valeurs de métriques (32px display).
+      fontSize: {
+        '2xs': ['0.71875rem', { lineHeight: '1.35' }], // 11.5px — statuts, labels de jauge
+        xs: ['0.78125rem', { lineHeight: '1.4' }], // 12.5px — eyebrows, labels uppercase
+        '13': ['0.8125rem', { lineHeight: '1.45' }], // 13px — chips, mono (heures, sources)
+        '14': ['0.875rem', { lineHeight: '1.5' }], // 14px — UI dense (rails, tableaux)
+        sm: ['0.9375rem', { lineHeight: '1.5' }], // 15px — nav, boutons, sous-titres
+        base: ['1rem', { lineHeight: '1.55' }], // 16px — corps
+        metric: ['2rem', { lineHeight: '1.1' }], // 32px — valeurs de métriques
+      },
+      // Ombres 5.0 : --shadow-card au repos, --shadow-pop au survol/pop-up
+      // (tiroirs, cartes actives). Valeurs définies dans globals.css.
+      boxShadow: {
+        card: 'var(--shadow-card)',
+        pop: 'var(--shadow-pop)',
+      },
       borderRadius: {
         sm: 'var(--radius-sm)',
         DEFAULT: 'var(--radius)',

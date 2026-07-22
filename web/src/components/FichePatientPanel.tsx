@@ -761,7 +761,7 @@ export function FichePatientPanel({
               onClick={() => setOngletActif(onglet.id)}
               onKeyDown={event => onClavierOnglets(event, index)}
               className={`min-h-11 rounded-lg px-4 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
-                actif ? 'bg-surface font-semibold text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                actif ? 'bg-surface font-semibold text-foreground shadow-card' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {onglet.libelle}
@@ -852,7 +852,7 @@ export function FichePatientPanel({
       >
         <section
           aria-label="Poste de pilotage clinique"
-          className="overflow-hidden rounded-2xl border border-border bg-muted shadow-sm lg:h-[min(80vh,700px)] lg:grid lg:grid-rows-[auto,1fr]"
+          className="overflow-hidden rounded-2xl border border-border bg-muted shadow-card lg:h-[min(80vh,700px)] lg:grid lg:grid-rows-[auto,1fr]"
         >
           {/* En-tête du cockpit (bandeau trajectoire) = 1re rangée. Le signal
               de correction (B2) est hissé au niveau de la fiche pour rester
@@ -902,7 +902,7 @@ export function FichePatientPanel({
                     onClick={() => setPhaseActive(phase.id)}
                     onKeyDown={event => onClavierRail(event, index)}
                     className={`flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
-                      actif ? 'bg-surface font-semibold text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                      actif ? 'bg-surface font-semibold text-foreground shadow-card' : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     <IconeStatut statut={statut} />

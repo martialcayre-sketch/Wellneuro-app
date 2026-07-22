@@ -60,7 +60,7 @@ export function MonEquilibreAccueil({
   if (loading) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-surface rounded-2xl shadow-sm border border-border p-8 text-center text-sm text-muted-foreground">
+        <div className="bg-surface rounded-2xl shadow-card border border-border p-8 text-center text-sm text-muted-foreground">
           Chargement de Mon équilibre…
         </div>
       </div>
@@ -70,7 +70,7 @@ export function MonEquilibreAccueil({
   if (!data || 'ok' in data) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-surface rounded-2xl shadow-sm border border-border p-8 text-center">
+        <div className="bg-surface rounded-2xl shadow-card border border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
             {data && 'error' in data ? data.error : 'Impossible de charger Mon équilibre pour le moment.'}
           </p>
@@ -94,7 +94,7 @@ export function MonEquilibreAccueil({
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-surface rounded-2xl shadow-sm border border-border p-8">
+      <div className="bg-surface rounded-2xl shadow-card border border-border p-8">
         <h1 className="font-display text-xl font-bold text-foreground mb-6 text-center">Mon équilibre</h1>
 
         <div className="flex justify-center mb-4">
