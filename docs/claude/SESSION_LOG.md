@@ -1399,3 +1399,26 @@ praticien livrées (relecture visuelle enfin faite).
 
 **Questions ouvertes** : E2E du refus (fixture antidatée) ; #218 et #221 (autres
 sessions) ; date de bascule R4 ; migration destructive IDP2 LOT-04.
+
+## 2026-07-22 — SP-SPI : le trou E2E de #216 comblé, et le CHANGELOG désamorcé
+
+**Décisions** : deux livrables. (1) **CHANGELOG par fragments** (#222) — chaque
+entrée pose un fichier `changelog.d/AAAA-MM-JJ-slug.md` au lieu d'éditer le haut
+de `CHANGELOG.md` ; script de repli testé (7 cas), cause des cinq conflits
+d'insertion de la veille supprimée. (2) **E2E du refus de pack** (#224) — le seul
+trou explicite de #216 : la proposition s'affiche, se décline, ne revient pas au
+rechargement ; vert sur Chromium et iPhone 13. SP-SPI LOT-01 est complet.
+
+**Écarté** : mettre `PAT_SEED_03` en reprise (partagé, specs parallèles) au profit
+de Jennifer `PAT_SEED_02`, isolée ; migrer tout l'historique CHANGELOG ; toucher
+IDP2 LOT-03 (session concurrente, G5 déjà sur main) et #218 (worktree verrouillé).
+
+**Vérifié** : sept PR de la veille mergées ; #222 et #224 CI verte, mergées ;
+T2 complet (1189 unitaires, E2E deux projets). Premier run E2E buté sur un
+démarrage lent de next dev sous charge — flake, pas régression.
+
+**Prochaine action** : IDP2 LOT-03 (à spécifier, autre session) ou décision de la
+date de bascule R4.
+
+**Questions ouvertes** : #218 et #221 (autres sessions) ; date R4 ; migration
+destructive IDP2 LOT-04.

@@ -91,22 +91,27 @@ sert à **ne pas redemander**, pas à insister.
 - [x] Implémenter la proposition de pack : refusable, le refus est enregistré et
       **n'a pas d'autre effet** — ni assignation, ni envoi, ni relance.
 - [x] Vérifier les invariants patient par test (unitaires, route, composant).
-- [ ] **E2E du refus** — non livré, voir « Reste à faire » ci-dessous.
+- [x] **E2E du refus** — livré le 2026-07-22 (#224).
 - [x] Exécuter les validations, relire le diff, documenter.
 
-### Reste à faire
+### L'E2E du refus — livré (2026-07-22, #224)
 
-**Le parcours E2E du refus n'est pas couvert.** Le patient fictif du banc E2E
-(`PAT_SEED_03`) est provisionné neuf à chaque exécution : il n'a par construction
-aucune réponse vieille de six mois, et n'est donc jamais « en reprise ». Couvrir
-le refus de bout en bout suppose de fabriquer une réponse antidatée dans la
-fixture — faisable, mais c'est un changement du banc partagé, pas du lot.
+Le parcours de bout en bout est désormais couvert
+(`e2e/portail-pack-reevaluation.spec.ts`). L'obstacle initial n'était pas le banc
+mais le **choix du patient** : `PAT_SEED_03` (Michel) est partagé avec
+`portail-parcours` et `portail-lien-magique`, qui tournent en parallèle sur la
+même base éphémère — le mettre en reprise les aurait cassés. `PAT_SEED_02`
+(Jennifer Martin) est seedée et utilisée par aucun autre spec : le helper
+`preparerReprisePourTest` la met dans l'état d'un retour après longue absence
+(jeton, réponses antidatées, accusé TRUST déjà donné) sans gêner personne.
 
-Ce qui est couvert à la place : le domaine (`packReevaluation.test.ts`), la route
-dans ses deux sens (`pack-reevaluation/route.test.ts`, dont « n'assigne rien même
-quand le patient accepte ») et le composant, y compris le refus, l'accusé et
-l'échec d'enregistrement. **Ce qui n'est pas prouvé** : que l'écran s'affiche
-réellement pour un vrai patient en reprise, dans un vrai navigateur.
+Le test prouve les trois invariants : la proposition s'affiche avec ses deux
+réponses au même niveau et aucun chiffre ; le refus s'enregistre et affiche son
+accusé ; **au rechargement la question ne se repose pas**. Vert sur Chromium et
+iPhone 13.
+
+Le lot est complet : domaine (`packReevaluation.test.ts`), route
+(`pack-reevaluation/route.test.ts`), composant, et ce parcours navigateur.
 
 ## Tests
 
