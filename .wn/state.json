@@ -4,9 +4,9 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "en_cours",
-  "active_campaign": "2026-07-11-fiches-conseils-contextuelles-v1",
-  "active_lot": "LOT-06",
+  "status": "active",
+  "active_campaign": "2026-07-22-g-trust-04-durcissement-et-reliquats",
+  "active_lot": "LOT-00",
   "last_completed_lot": "C3/LOT-06",
   "git": {
     "branch": null,
@@ -25,12 +25,12 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "C3 LOT-06 (fil de correspondance médecin V1, transcription praticien) LIVRÉ ET CLOS le 2026-07-22 : #252 migration correspondances_medecin (revue wn-reviewer GO avant merge, VÉRIFIÉE en production — 1 tentative à 17:58:12Z, requête inverse vide, 9 colonnes, RLS deny-all 0 policy, FK, index) + #255 routes et onglet « Correspondance » (36 tests, consigneLe inantidatable, dossier clos = 409 deux sens, TRUST indicateur seul). Campagne fiches-conseils-contextuelles-v1 passée à « livrée » ; V2 du fil (lien signé sur infra G4) au CONSTAT D'USAGE, pas à une échéance. Merges #252/#255 opérés par l'assistant sur instruction explicite de l'utilisateur (dérogation ponctuelle à la règle Copilot). Vercel passé au plan Pro ; #258 (autre session) ajoute web/vercel.json ignoreCommand — les builds sans changement sous web/ sont sautés. Plus aucun lot à_faire non bloqué : suites humaines — renvoi des invitations aux 12 patients (précondition IDP2 LOT-04, re-mesurer avant d'ouvrir ce lot DESTRUCTIF), visibilité patient du fil (décision non prise), désactivation des Previews Vercel (réglage dashboard, recommandé : les Previews lisent la base de prod), G-TRUST-04 borné au 2026-10-21 (exigences 5/7 et exercice sur table de la procédure de violation restent ouvrables), backlog audit (next 14.2.35, code mort, onboarding, @ts-nocheck).",
+  "next_action": "Campagne 2026-07-22-g-trust-04-durcissement-et-reliquats OUVERTE le 2026-07-22 (décision utilisateur : « ouvrons tout sauf les invitations patient — 1 plan 1 lot ») : lot unique LOT-00, ~11 PR vers main, décisions GD-1..GD-6 dans CAMPAGNE.md. Chantiers : (1) journal_acces_dossiers — piste d'audit des lectures praticien de dossier nommé, exigence 5 G-TRUST-04, migration patron G5 puis branchement 22 routes GET ; (2) exercice sur table de PROCEDURE_VIOLATION_DONNEES.md (exigence 6) ; (3) next 14.2.5→14.2.35 ; (4) code mort ui/Score* ; (5) @ts-nocheck du catalogue clinique par vagues mesurées, types seuls ; (6) requalification onboarding + Previews conservées avec règle « jamais de drapeau WN_* sur Preview » + checklist G-TRUST-04 mise à jour en clôture. EN ATTENTE HUMAINE ailleurs : renvoi des invitations aux 12 patients (précondition IDP2 LOT-04, re-mesurer avant d'ouvrir ce lot DESTRUCTIF), visibilité patient du fil médecin (décision non prise), reconduction/levée de la dérogation G-TRUST-04 au 2026-10-21, confirmation juridique de la procédure de violation (D-TRUST-02).",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-22T18:15:00Z",
+  "updated_at": "2026-07-22T19:30:31Z",
   "parallel_campaigns": []
 }
