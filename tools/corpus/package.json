@@ -1,0 +1,10 @@
+{
+  "name": "wn-corpus-pipeline",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Pipeline corpus WellNeuro : snapshot, extract (2 IA), invariants, chunk, ingest.",
+  "dependencies": {
+    "pg": "^8.22.0"
+  }
+}
