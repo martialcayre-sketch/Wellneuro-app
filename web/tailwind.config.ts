@@ -10,14 +10,18 @@ const config: Config = {
     extend: {
       colors: {
         background: 'var(--background)',
-        foreground: 'var(--foreground)',
+        // Forme rgb(var(--x-rgb) / <alpha-value>) : indispensable pour que les
+        // modificateurs d'opacité (bg-foreground/35, bg-surface/80, bg-muted/40)
+        // soient générés — un var() hex les faisait silencieusement disparaître
+        // (overlays invisibles, audit visuel 2026-07-22).
+        foreground: 'rgb(var(--foreground-rgb) / <alpha-value>)',
         surface: {
-          DEFAULT: 'var(--surface)',
+          DEFAULT: 'rgb(var(--surface-rgb) / <alpha-value>)',
           foreground: 'var(--surface-foreground)',
           elevated: 'var(--color-surface-elevated)',
         },
         muted: {
-          DEFAULT: 'var(--muted)',
+          DEFAULT: 'rgb(var(--muted-rgb) / <alpha-value>)',
           foreground: 'var(--muted-foreground)',
         },
         border: 'var(--border)',
@@ -33,7 +37,7 @@ const config: Config = {
         // data-theme (cf. docs/design-system-d1.md, section « Rail de navigation »).
         rail: {
           DEFAULT: 'var(--rail-background)',
-          surface: 'var(--rail-surface)',
+          surface: 'rgb(var(--rail-surface-rgb) / <alpha-value>)',
           foreground: 'var(--rail-foreground)',
           muted: 'var(--rail-muted)',
           'muted-foreground': 'var(--rail-muted-foreground)',

@@ -19,7 +19,9 @@ const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = 
 function CarteDuFil({ carte, onEcarter }: { carte: CarteFil; onEcarter: () => void }) {
   const { libelle, icon: Icon } = TYPE_CARTE[carte.type];
   return (
-    <article className="bg-surface text-surface-foreground rounded-xl border border-border p-4 shadow-card flex items-start gap-3">
+    // flex-wrap : à 390px les actions passent sous le texte au lieu de
+    // l'écraser dans une colonne de 50px (audit visuel 2026-07-22).
+    <article className="bg-surface text-surface-foreground rounded-xl border border-border p-4 shadow-card flex flex-wrap items-start gap-3">
       <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
         <Icon size={18} strokeWidth={2} aria-hidden="true" />
       </span>
@@ -31,7 +33,7 @@ function CarteDuFil({ carte, onEcarter }: { carte: CarteFil; onEcarter: () => vo
         <p className="text-[15.5px] font-semibold text-foreground mt-0.5 truncate">{carte.titre}</p>
         <p className="text-14 text-muted-foreground mt-1">{carte.pourquoi}</p>
       </div>
-      <div className="flex shrink-0 items-center gap-3 self-center">
+      <div className="flex w-full items-center justify-end gap-3 sm:w-auto sm:shrink-0 sm:self-center">
         <Link
           href={carte.href}
           className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"

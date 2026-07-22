@@ -1376,6 +1376,38 @@ d'effacement falsifiée : sans sa ligne, elle nomme `packProposition`.
 **Questions ouvertes** : R2, R4 (date de bascule des liens permanents), R6 ;
 relecture visuelle humaine des écrans praticien, toujours pas faite.
 
+## 2026-07-21 — IDP2 LOT-01b : la surface du cycle de vie (#194, mergé)
+
+**Livré** : menu « Gérer le dossier » par ligne, confirmations asymétriques
+(clôture réversible / effacement exigeant la saisie de `EFFACER`, la valeur que
+le serveur exige déjà). « Supprimer » absorbé sous son vrai nom. Deux trous
+trouvés en chemin : `PATCH` rejetait `PAT_SEED_03` (« Modifier » inopérant sur le
+dossier de seed) ; `POST /consultations` n'avait pas la garde de clôture et
+réactivait un jeton révoqué.
+
+**Décisions** : les actions d'accès restent ouvertes sur un dossier clos — le
+blocage aurait tenu « aucun envoi » en cassant la lecture des archives promise ;
+D4 amendée. Route `DELETE` supprimée : un verbe destructif qui n'écrivait que
+`actif: false`, voisin désormais d'un vrai effacement.
+
+**Écarté** : `@radix-ui/react-dropdown-menu` (se teste mal en jsdom, or ce menu
+ouvre la seule action irréversible) ; tout E2E qui efface (`PAT_SEED_03` est une
+fixture partagée entre postes).
+
+**Trois rattrapages** : la revue a rendu deux no-go — menu rogné par un
+`overflow` (jsdom ne calcule aucune géométrie), puis échec muet derrière
+l'overlay Radix ; enfin le CI a cassé sur `next lint`. **`npm run check` ne lance
+pas le lint** : les trois paliers documentés ne le couvrent pas.
+
+**Prochaine action** : LOT-02 (compte patient), bloqué par la question du sort de
+l'e-mail dans le résidu.
+
+**Questions ouvertes** : le lint hors des paliers T1–T3 ; LOT-04 porte une
+migration destructive, à ne pas enchaîner.
+
+*(Entrée récupérée le 2026-07-22 depuis le commit `86e0619`, resté sur une
+branche locale jamais poussée — insérée à sa place chronologique.)*
+
 ## 2026-07-22 — Audit 5.0 : les réserves restantes fermées, et le CHANGELOG désamorcé
 
 **Décisions** : R2, R4, R6 et SP-SPI LOT-01 traités, une PR chacun, toutes
@@ -1582,3 +1614,23 @@ T1 + T2 (`test:worktree`) verts.
 une surface de validation praticien (Atelier corpus, non ouverte).
 
 **Questions ouvertes** : passage à l'échelle 88 sources (API batch) ; piste MP4.
+
+## 2026-07-22 — Hygiène du flux : déploiements Vercel filtrés, purge outillée des branches
+
+**Décisions** : Ignored Build Step posé deux fois — `web/vercel.json` (#258,
+mergée) et réglage projet via API — les commits hors `web/` ne consomment plus
+de déploiement (quota Hobby 100/j) ; constaté opérant sur #264 (« Canceled by
+Ignored Build Step »). `delete_branch_on_merge` activé. Purge sur preuve (tip ⊆
+`headRefOid` d'une PR mergée, ou ancêtre de `main`) : 8 worktrees, 76 branches
+locales, 15 remote. `scripts/nettoyage-branches.sh` (#264, verify vert) rejoue
+cette preuve — constat seul par défaut, `--appliquer` pour purger.
+
+**Écarté** : désactiver les previews par branche (vérification visuelle des
+PR) ; toute suppression sans preuve (le squash merge aveugle `--merged` ; deux
+rétentions légitimes trouvées).
+
+**Prochaine action** : sortir `docs/ai/Anthropic Api Key.pages` du dépôt ;
+trancher `86e0619` (journal LOT-01b jamais mergé).
+
+**Questions ouvertes** : filtre docs-only sur `verify` (check obligatoire) ;
+fichier sale de `rag-pgvector-audit`.

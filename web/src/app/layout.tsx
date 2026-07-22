@@ -21,10 +21,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
-      <body
-        className={`${sora.variable} ${instrumentSans.variable} ${plexMono.variable} ${bricolage.variable} ${albertSans.variable} font-sans`}
-      >
+    /* Les variables next/font DOIVENT vivre sur <html>, pas sur <body> : les
+     * rôles --font-body/--font-display sont déclarés sur :root en les
+     * référençant, et une custom property se calcule là où elle est déclarée.
+     * Posées sur <body>, var(--font-albert) était introuvable au niveau de
+     * :root → --font-body devenait « guaranteed-invalid », héritée invalide
+     * partout → font-family retombait sur le défaut navigateur (Times).
+     * Diagnostiqué par sonde getComputedStyle le 2026-07-22 (audit visuel). */
+    <html
+      lang="fr"
+      className={`${sora.variable} ${instrumentSans.variable} ${plexMono.variable} ${bricolage.variable} ${albertSans.variable}`}
+    >
+      <body className="font-sans">
         <Providers>{children}</Providers>
       </body>
     </html>
