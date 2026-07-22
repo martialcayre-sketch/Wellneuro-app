@@ -132,6 +132,12 @@ Aucune migration Prisma : le compte est déjà la ligne `patients` (LOT-02).
   `app/portail/connexion/page.tsx`, drapeau `WN_G5_GOOGLE_PATIENT` éteint, codes
   d'événement, E2E. 82 tests unitaires, 3 E2E. Falsifié six fois avant d'être
   committé (voir plus bas). `lib/auth.ts` n'est pas touché.
+- **03c-trace — la trace durable en base.** *Livré le 2026-07-22* — table
+  `portail_connexions_google`, écrite dans `google/retour/route.ts`. Lève le
+  NO-GO d'activation qu'avait posé la revue adversariale : le chemin Google
+  laisse désormais une trace, comme le lien magique. Migration additive, drapeau
+  toujours éteint. Falsifié trois fois (trace succès supprimée, trace avant
+  vérification du `state`, trace fail-closed).
 - **03d — activation.** *Runbook écrit le 2026-07-21, non exécuté* —
   `../ACTIVATION_RUNBOOK_G5.md`. Décision distincte et datée, avec les variables
   du client OAuth patient. Ne fait pas partie du merge, et ne peut pas l'être :
@@ -193,18 +199,18 @@ avec `email <> lower(email)`. L'hypothèse de normalisation sur laquelle repose 
 recherche par adresse tient — mais aucune contrainte ne l'impose, d'où un test
 qui fixe le comportement si une ligne à casse différente apparaissait.
 
-**Ce qui reste, et qui bloque l'activation (03d) :** une connexion Google ne
-laisse **aucune trace durable en base**, là où le lien magique écrit
-`consommeLe` et `rejeuxRefuses`. Le dépôt écrit lui-même l'argument
+**Ce qui bloquait l'activation, et qui est levé (LOT-03c-trace, 2026-07-22) :**
+une connexion Google ne laissait **aucune trace durable en base**, là où le lien
+magique écrit `consommeLe` et `rejeuxRefuses`. Le dépôt écrit lui-même l'argument
 (`portail/lien/[jeton]/route.ts`) : « un log Vercel est purgé, et une trace
-purgée ne prouve plus rien le jour où on la cherche ». Trois mois après, à la
-question « qui a ouvert ce dossier, quand, par quel chemin », il ne resterait
-rien. Cela demande une migration — donc un lot distinct, pas un ajout de
-dernière minute à celui-ci.
+purgée ne prouve plus rien le jour où on la cherche ». C'est désormais la table
+`portail_connexions_google` — un lot distinct avec sa migration, comme il se
+devait, plutôt qu'un ajout de dernière minute à celui-ci.
 
-Restent ouverts, à arbitrer et non à trancher en revue : `max_age` sur l'URL
-d'autorisation (poste partagé où la session Google reste ouverte), et l'absence
-de `noindex` sur la page d'entrée.
+Restent ouverts, à arbitrer et non à trancher en revue : la **durée de
+conservation** de cette trace (décision de conformité, pas de code) ; `max_age`
+sur l'URL d'autorisation (poste partagé où la session Google reste ouverte) ; et
+l'absence de `noindex` sur la page d'entrée.
 
 ## Interaction avec R4, constatée au rebasage du 2026-07-21
 

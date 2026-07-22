@@ -39,27 +39,22 @@ Le portail se comporte donc exactement comme avant le lot. **C'est vérifiable
 sans rien lire de la configuration** : si `/portail/connexion` répond 404 en
 production, le chemin est éteint.
 
-## Bloquant avant d'activer — la trace durable
+## La trace durable — NO-GO levé le 2026-07-22
 
-La revue adversariale du 2026-07-21 rend un **NO-GO à l'activation** sur ce
-point, et il n'est pas fermé par le LOT-03c.
+La revue adversariale du 2026-07-21 avait posé un **NO-GO à l'activation** :
+une connexion Google n'écrivait rien en base, là où le lien magique écrit
+`consommeLe` et `rejeuxRefuses`. Trois mois après, « qui a ouvert ce dossier,
+quand, par quel chemin » n'aurait plus eu de réponse.
 
-Une connexion Google n'écrit **rien en base** : elle ne laisse qu'un
-`logger.security`. Le lien magique, lui, écrit `consommeLe` et `rejeuxRefuses`,
-et le dépôt écrit l'argument à l'endroit même où il le fait
-(`portail/lien/[jeton]/route.ts`) : « *un log Vercel est purgé, et une trace
-purgée ne prouve plus rien le jour où on la cherche* ».
+**Fermé par le LOT-03c-trace** (table `portail_connexions_google`) : chaque
+tentative parvenue au bout laisse une ligne — patient, instant, issue, catégorie
+de refus, jamais l'adresse ni le jeton. La table reste vide tant que le drapeau
+est éteint. Le NO-GO ne tient donc plus.
 
-Le scénario n'est pas théorique : un patient signale trois mois plus tard un
-accès qu'il ne reconnaît pas, ou le responsable doit dire qui a ouvert un
-dossier, quand, par quel chemin. Les journaux Vercel ont tourné.
-
-**Deux issues acceptables, aucune troisième** : une ligne minimale en base
-(idPatient, instant, canal, succès ou refus — ni e-mail ni empreinte) portée par
-un lot distinct avec sa migration ; **ou** une décision explicite et datée du
-responsable de s'en passer, écrite ici. Activer sans l'un ni l'autre revient à
-ouvrir un troisième chemin d'accès à des dossiers de santé sans pouvoir en
-rendre compte.
+Il subsiste une chose à **décider**, pas à corriger : la table ne se purge pas
+(un journal d'accès doit durer), et sa **durée de conservation** est une décision
+de conformité, non encodée dans le code. À fixer par le responsable, ici, avant
+ou peu après l'activation — ce n'est pas un conseil que l'assistant peut donner.
 
 ## Vérifications préalables, en lecture seule
 
