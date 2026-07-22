@@ -52,9 +52,13 @@ stricte :
 - `id`, `idPatient` (FK Patient), `sens` (`sortant` | `entrant`),
   `medecinLibelle` (texte libre « Dr Martin » — **aucune adresse e-mail, aucun
   RPPS** : la V1 n'a pas besoin d'identifier le médecin, seulement de le
-  nommer), `texte`, `idSynthese` (nullable), `dateEchange` (date réelle de
-  l'échange, nullable), `creeLe`.
-- RLS deny-all, index `(idPatient, creeLe)`.
+  nommer), `texte`, `idSynthese` (nullable), `echangeLe` (date réelle de
+  l'échange, nullable), `consigneLe`, `praticienEmail` (attribution — « datée,
+  attribuée », patron `relecture_notes` ; constat AC-2 de la revue).
+  *(Noms définitifs actés à la livraison de la PR 1 — AC-3 : `echangeLe` /
+  `consigneLe` reprennent le patron deux-dates SP-TT, à la place des
+  `dateEchange`/`creeLe` de la première rédaction.)*
+- RLS deny-all, index `(idPatient, consigneLe)`.
 - **Dans la même PR** : `effacerDossier` efface la table nommément — la garde
   structurelle d'`effacement.test.ts` (qui dérive du schéma toute table
   portant `id_patient`) échoue sinon, et c'est voulu. Patron #226.
@@ -67,10 +71,13 @@ stricte :
 - UI sur le dossier patient (dashboard praticien), textes en français,
   registre confraternel non prescriptif (« explorations à discuter » —
   jamais « prescription »).
-- Articulation TRUST à vérifier en implémentation : la finalité de
-  consentement `partage_medecin_traitant` existe
-  (`web/src/lib/trust/types.ts:62`) ; si elle conditionne le partage, le
-  refus est porté par la route de consignation, pas par l'écran.
+- Articulation TRUST **tranchée le 2026-07-22 (décision utilisateur) :
+  indicateur seul, pas de garde bloquante.** Le partage a lieu hors
+  application, par les canaux du praticien : bloquer la consignation
+  n'empêcherait pas le partage, cela rendrait seulement le dossier aveugle.
+  Le GET expose l'état du choix `partage_medecin_traitant` (dernier événement
+  fait foi, `lib/trust/consentementPartage.ts`) et l'écran l'affiche — la
+  responsabilité déontologique reste au praticien, informé.
 
 ## Hors périmètre
 
