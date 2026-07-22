@@ -122,6 +122,14 @@
   --muted: #f0e7d6;
   --muted-foreground: #6e5f49;
   --border: #dccfb6;
+  /* Jumeaux RGB (même règle que --teal-700-rgb) : requis pour que Tailwind
+   * génère les modificateurs d'opacité (bg-foreground/35 des overlays,
+   * bg-surface/80 des headers, bg-muted/40) — sans eux la classe n'est pas
+   * produite et le fond est simplement ABSENT (overlays invisibles trouvés
+   * par l'audit visuel du 2026-07-22). Tenus synchronisés à la main. */
+  --foreground-rgb: 43 33 21;
+  --surface-rgb: 255 253 249;
+  --muted-rgb: 240 231 214;
   --color-primary: var(--forest-600);
   --color-primary-rgb: var(--forest-600-rgb);
   --color-primary-foreground: #ffffff;
@@ -160,6 +168,10 @@
   --muted: #e3e7f1;
   --muted-foreground: #535d7a;
   --border: #c4cbdd;
+  /* Jumeaux RGB — cf. bloc patient. */
+  --foreground-rgb: 27 35 55;
+  --surface-rgb: 255 255 255;
+  --muted-rgb: 227 231 241;
   --color-primary: var(--indigo-600);
   --color-primary-rgb: var(--indigo-600-rgb);
   --color-primary-foreground: #ffffff;
@@ -192,6 +204,9 @@
    * par-dessus la couleur de repli --rail-background. */
   --rail-gradient: linear-gradient(180deg, var(--night-900), var(--night-950));
   --rail-surface: var(--night-800);
+  /* Jumeau RGB de night-800 (#1b2342) : bg-rail-surface/95 de la barre basse
+   * mobile — sans lui la barre était TRANSPARENTE (audit 2026-07-22). */
+  --rail-surface-rgb: 27 35 66;
   --rail-foreground: #eef0fa;
   --rail-muted: #1f2850;
   --rail-muted-foreground: #8b94be;

@@ -9,7 +9,7 @@ export function BanniereDiffere({ children }: { children: ReactNode }) {
   return (
     <div
       role="status"
-      className="flex items-start gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-3 text-base text-status-warning shadow-card"
+      className="flex items-start gap-3 rounded-xl border border-accent bg-status-warning/15 px-4 py-3 text-base text-status-warning shadow-card"
     >
       <Clock aria-hidden="true" size={18} strokeWidth={2} className="mt-0.5 shrink-0" />
       <p className="min-w-0">

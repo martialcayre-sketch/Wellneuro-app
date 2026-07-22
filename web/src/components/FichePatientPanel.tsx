@@ -952,8 +952,8 @@ export function FichePatientPanel({
                     className={`flex min-h-11 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-[10px] px-3 py-2 text-left text-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${classesEtat}`}
                   >
                     <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${couleurPuce}`} />
-                    <span className="min-w-0 flex-1">{phase.libelle}</span>
-                    <span className="text-2xs text-muted-foreground">{LIBELLE_STATUT[statut]}</span>
+                    <span className="min-w-0 flex-1 truncate">{phase.libelle}</span>
+                    <span className="shrink-0 text-2xs text-muted-foreground">{LIBELLE_STATUT[statut]}</span>
                   </button>
                 );
               })}
