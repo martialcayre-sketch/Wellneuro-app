@@ -602,3 +602,20 @@ Règle globale `@layer base` : `:focus-visible { outline: 3px solid
 var(--color-focus-ring); outline-offset: 2px; }` — épaisseur et décalage de
 la maquette, couleur indigo (praticien) / forêt (patient). Le solaire plein
 est exclu comme indicateur de focus (2,03:1 sur blanc, < 3:1 requis).
+
+### État du chantier (clôture V12, 2026-07-22)
+
+Les lots V1 à V11 sont **appliqués au code** : socle, cockpit fiche patient
+(Spirale, chips, rail de phases, tiroirs 440 px), accueil (métriques 32 px,
+Fil), rail nuit complet (Fiches-trajectoires, écrans réservés C3/C4/différés),
+copilote, questionnaires & packs, documents, synthèse/droits/paramètres,
+portail sable plat (journey, pbtn, pcard 18 px), Mon équilibre legacy.
+Vitrine de comparaison : `/dev/vitrine` (hors production).
+
+Dérogations assumées :
+- `ScoreZones` : le point de curseur garde `shadow-sm` (micro-élément).
+- « Bande de confiance des observations » (maquette patient) non branchée —
+  aucun signal de qualité agrégé dans le payload patient ; rien n'est inventé.
+- Captures Playwright en artefacts, sans baselines commitées (rendu
+  macOS ↔ Ubuntu divergent ; des baselines mono-plateforme casseraient
+  `verify`).
