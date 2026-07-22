@@ -70,7 +70,7 @@ export function TrustPanel() {
   }
   if (data.signalements.length === 0) {
     return (
-      <div className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
+      <div className="bg-surface border border-border rounded-xl shadow-card p-6 text-base text-muted-foreground shadow-card">
         Aucun signalement ni demande pour le moment. Les dépôts des patients (effets indésirables,
         incidents de confidentialité, demandes de droits) apparaîtront ici et dans le Fil.
       </div>

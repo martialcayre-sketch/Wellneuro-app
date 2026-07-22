@@ -200,8 +200,8 @@ export function SynthesePanel() {
     <div className="flex flex-col gap-6">
 
       {/* Sélection patient */}
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Patient</h3>
+      <div className="bg-surface border border-border rounded-xl shadow-card p-4">
+        <h3 className="font-display text-lg font-semibold text-foreground mb-3">Patient</h3>
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={selectedPatient}
@@ -232,9 +232,9 @@ export function SynthesePanel() {
 
       {/* Liste des synthèses */}
       {selectedPatient && (
-        <div className="bg-surface border border-border rounded-xl overflow-hidden">
+        <div className="bg-surface border border-border rounded-xl shadow-card overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="font-display text-lg font-semibold text-foreground">
               Synthèses de {patient ? `${patient.prenom} ${patient.nom}` : selectedPatient}
               <span className="ml-2 text-muted-foreground font-normal">({syntheses.length})</span>
             </h3>
@@ -271,9 +271,9 @@ export function SynthesePanel() {
 
       {/* Détail synthèse sélectionnée */}
       {selectedSynthese && (
-        <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-4">
+        <div className="bg-surface border border-border rounded-xl shadow-card p-4 flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">
+            <h3 className="font-display text-lg font-semibold text-foreground">
               Synthèse {selectedSynthese.idSynthese}
               <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${STATUT_COLOR[selectedSynthese.statut] ?? 'bg-muted text-muted-foreground'}`}>
                 {STATUT_LABEL[selectedSynthese.statut] ?? selectedSynthese.statut}
