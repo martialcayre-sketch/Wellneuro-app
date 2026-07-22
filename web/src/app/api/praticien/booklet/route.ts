@@ -26,9 +26,14 @@ export async function GET(req: Request) {
 
   if (!idSynthese) return withCorrelationHeader(NextResponse.json({ error: 'idSynthese requis.' }, { status: 400 }), requestContext);
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+
   try {
-    const synthese = await prisma.syntheseIA.findUnique({
-      where: { idSynthese },
+    // Même scoping que le POST : la synthèse d'un patient d'un autre praticien
+    // est « introuvable », le 404 existant absorbe les deux cas (anti-oracle).
+    const synthese = await prisma.syntheseIA.findFirst({
+      where: { idSynthese, patient: filtrePatientsDuPraticien(emailSession) },
       include: { bookletEnvois: { orderBy: { dateEnvoi: 'desc' }, take: 1 } },
     });
 
