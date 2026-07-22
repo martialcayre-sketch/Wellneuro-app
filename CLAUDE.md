@@ -170,6 +170,11 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
   sur les parcours**, elle n'exécute pas Playwright.
 - Avant d'annoncer qu'une PR est prête à merger, lire son CI (`gh pr checks`) :
   les E2E n'y sont pas couverts par `npm test`.
+- **Changelog par fragments.** Ne pas éditer le haut de `CHANGELOG.md` : poser un
+  fichier `changelog.d/AAAA-MM-JJ-slug.md` (le bloc `###` qui irait sous
+  `## Non publié`). Deux PR n'entrent alors plus en conflit sur le même fichier —
+  c'est ce qui a fait échouer cinq merges le 2026-07-21. Repli : `node
+  scripts/changelog-collate.mjs`. Détail : `changelog.d/README.md`.
 
 ## Revue, merge et suppression des branches — le ressort de Copilot
 

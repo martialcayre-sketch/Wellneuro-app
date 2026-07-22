@@ -8,7 +8,9 @@ applyTo: "**/*.md,**/*.mdx"
 - Vérifier toute affirmation technique contre le dépôt réel.
 - `docs/claude/PROJET_CONTEXTE.md` décrit l’état courant.
 - `docs/roadmap.md` et les roadmaps actives décrivent le futur.
-- `CHANGELOG.md` décrit les évolutions fonctionnelles.
+- `CHANGELOG.md` décrit les évolutions fonctionnelles ; une nouvelle entrée se
+  pose en fragment dans `changelog.d/`, jamais en éditant le haut du fichier
+  (voir `changelog.d/README.md`).
 - `SESSION_LOG.md` est append-only.
 - Ne pas supprimer, déplacer, fusionner ou archiver un document sans confirmation distincte.
 - Préférer un lien vers une source canonique à une longue duplication.

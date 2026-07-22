@@ -25,7 +25,7 @@ Arguments : `$ARGUMENTS`
 2. tests, scripts et schéma en lecture seule ;
 3. `docs/claude/PROJET_CONTEXTE.md` ;
 4. roadmaps actives ;
-5. `CHANGELOG.md` ;
+5. `CHANGELOG.md` (entrées à venir : fragments dans `changelog.d/`) ;
 6. `SESSION_LOG.md` ;
 7. documents datés comme historique.
 
