@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "« Ma spirale », reprise en douceur et pack proposé"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "IDP / LOT-01"
 ---
 

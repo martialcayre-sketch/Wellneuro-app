@@ -1,9 +1,9 @@
 ---
 id: "2026-07-19-sp-spi-ma-spirale-patient"
 titre: "SP-SPI — « Ma spirale » et reprise patient"
-statut: "cadrée"
+statut: "livrée"
 créée_le: "2026-07-19"
-mise_à_jour: "2026-07-21"
+mise_à_jour: "2026-07-22"
 lot_courant: "LOT-01"
 ---
 
@@ -63,7 +63,7 @@ repose sur un lien permanent, ce que la campagne refuse. C2A ✓.
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-01 | Accueil « Ma spirale » + reprise en douceur + pack de réévaluation proposé (jamais assigné) | à_faire | IDP / LOT-01 |
+| LOT-01 | Accueil « Ma spirale » + reprise en douceur + pack de réévaluation proposé (jamais assigné) | livré (#198, #209, #216, #224) | IDP / LOT-01 |
 
 ## Dette héritée — E11 (audit de conformité 5.0, 2026-07-20)
 
