@@ -2,7 +2,6 @@
 
 Archive issue de la compaction de `docs/claude/SESSION_LOG.md` le 2026-07-22.
 Cette archive conserve intégralement les entrées déplacées du journal actif.
-
 ## [2026-07-14] — Campagne C1 : LOT-00 clôturé
 
 **Décisions prises** : audit statique des entrées C1 terminé ; option A
@@ -1376,6 +1375,38 @@ d'effacement falsifiée : sans sa ligne, elle nomme `packProposition`.
 
 **Questions ouvertes** : R2, R4 (date de bascule des liens permanents), R6 ;
 relecture visuelle humaine des écrans praticien, toujours pas faite.
+
+## 2026-07-21 — IDP2 LOT-01b : la surface du cycle de vie (#194, mergé)
+
+**Livré** : menu « Gérer le dossier » par ligne, confirmations asymétriques
+(clôture réversible / effacement exigeant la saisie de `EFFACER`, la valeur que
+le serveur exige déjà). « Supprimer » absorbé sous son vrai nom. Deux trous
+trouvés en chemin : `PATCH` rejetait `PAT_SEED_03` (« Modifier » inopérant sur le
+dossier de seed) ; `POST /consultations` n'avait pas la garde de clôture et
+réactivait un jeton révoqué.
+
+**Décisions** : les actions d'accès restent ouvertes sur un dossier clos — le
+blocage aurait tenu « aucun envoi » en cassant la lecture des archives promise ;
+D4 amendée. Route `DELETE` supprimée : un verbe destructif qui n'écrivait que
+`actif: false`, voisin désormais d'un vrai effacement.
+
+**Écarté** : `@radix-ui/react-dropdown-menu` (se teste mal en jsdom, or ce menu
+ouvre la seule action irréversible) ; tout E2E qui efface (`PAT_SEED_03` est une
+fixture partagée entre postes).
+
+**Trois rattrapages** : la revue a rendu deux no-go — menu rogné par un
+`overflow` (jsdom ne calcule aucune géométrie), puis échec muet derrière
+l'overlay Radix ; enfin le CI a cassé sur `next lint`. **`npm run check` ne lance
+pas le lint** : les trois paliers documentés ne le couvrent pas.
+
+**Prochaine action** : LOT-02 (compte patient), bloqué par la question du sort de
+l'e-mail dans le résidu.
+
+**Questions ouvertes** : le lint hors des paliers T1–T3 ; LOT-04 porte une
+migration destructive, à ne pas enchaîner.
+
+*(Entrée récupérée le 2026-07-22 depuis le commit `86e0619`, resté sur une
+branche locale jamais poussée — insérée à sa place chronologique.)*
 
 ## 2026-07-22 — Audit 5.0 : les réserves restantes fermées, et le CHANGELOG désamorcé
 
