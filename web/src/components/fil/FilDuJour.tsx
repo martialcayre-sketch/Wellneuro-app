@@ -31,15 +31,23 @@ function CarteDuFil({ carte, onEcarter }: { carte: CarteFil; onEcarter: () => vo
           <span className="text-sm font-semibold text-foreground">{carte.patient}</span>
         </div>
         <p className="text-[15.5px] font-semibold text-foreground mt-0.5 truncate">{carte.titre}</p>
-        <p className="text-14 text-muted-foreground mt-1">{carte.pourquoi}</p>
+        {/* Rangée d'actions maquette : bouton d'action + pill « Pourquoi
+            maintenant » (le pourquoi garde son propre span — les tests le
+            ciblent au texte exact). */}
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Link
+            href={carte.href}
+            className="inline-flex min-h-9 items-center rounded-lg border border-border bg-surface px-3 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            {carte.actionLabel} →
+          </Link>
+          <span className="inline-flex min-h-[30px] items-center gap-1 rounded-full border border-border bg-muted px-3 py-0.5 text-13 text-muted-foreground">
+            <span>Pourquoi maintenant :</span>
+            <span>{carte.pourquoi}</span>
+          </span>
+        </div>
       </div>
       <div className="flex w-full items-center justify-end gap-3 sm:w-auto sm:shrink-0 sm:self-center">
-        <Link
-          href={carte.href}
-          className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded"
-        >
-          {carte.actionLabel} →
-        </Link>
         {/* Écarter est un geste réversible : rien n'est supprimé, la carte
             reste annulable juste après (garde-fou 5.0). */}
         <button
@@ -142,19 +150,29 @@ export function FilDuJour() {
   }
 
   return (
-    <div data-testid="fil-du-jour" className="flex flex-col gap-3">
-      {erreurRefus && (
-        <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-2 text-base text-foreground">
-          {erreurRefus}
-        </p>
-      )}
-      {data.cartes.map(carte =>
-        ecartees.includes(carte.cle) ? (
-          <CarteEcartee key={carte.cle} carte={carte} onAnnuler={() => void basculerRefus(carte, false)} />
-        ) : (
-          <CarteDuFil key={carte.cle} carte={carte} onEcarter={() => void basculerRefus(carte, true)} />
-        ),
-      )}
-    </div>
+    // Panneau « Aujourd'hui » de la maquette : en-tête display + compteur
+    // mono, cartes empilées à l'intérieur.
+    <section data-testid="fil-du-jour" className="rounded-lg border border-border bg-surface p-4 shadow-card">
+      <div className="mb-3 flex items-baseline justify-between gap-3 px-1">
+        <h3 className="font-display text-lg font-semibold text-foreground">Aujourd&apos;hui</h3>
+        <span className="font-mono text-13 text-muted-foreground">
+          {data.cartes.length} carte{data.cartes.length > 1 ? 's' : ''}
+        </span>
+      </div>
+      <div className="flex flex-col gap-3">
+        {erreurRefus && (
+          <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-2 text-base text-foreground">
+            {erreurRefus}
+          </p>
+        )}
+        {data.cartes.map(carte =>
+          ecartees.includes(carte.cle) ? (
+            <CarteEcartee key={carte.cle} carte={carte} onAnnuler={() => void basculerRefus(carte, false)} />
+          ) : (
+            <CarteDuFil key={carte.cle} carte={carte} onEcarter={() => void basculerRefus(carte, true)} />
+          ),
+        )}
+      </div>
+    </section>
   );
 }
