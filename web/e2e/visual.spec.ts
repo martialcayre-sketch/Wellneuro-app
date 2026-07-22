@@ -47,4 +47,15 @@ test.describe('Captures — refonte visuelle 5.0', () => {
       fullPage: false,
     });
   });
+
+  test('patients & assignations', async ({ page, context }, testInfo) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/dashboard/patients');
+    await page.getByRole('button', { name: 'Créer le patient' }).waitFor();
+    await page.screenshot({
+      path: `${DOSSIER}/dashboard-patients-${testInfo.project.name}.png`,
+      fullPage: true,
+    });
+  });
 });
