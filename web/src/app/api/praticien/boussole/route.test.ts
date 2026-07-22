@@ -7,6 +7,7 @@ const { getServerSession, getLatestPublishedJaFeasibility, prisma } = vi.hoisted
     patient: { findUnique: vi.fn() },
     ciqualNutrientValue: { findMany: vi.fn() },
     protocolDraft: { findMany: vi.fn() },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
 
@@ -86,9 +87,44 @@ describe('GET /api/praticien/boussole', () => {
 
   it('refuse un patient appartenant à un autre praticien', async () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
-    expect((await GET(request())).status).toBe(403);
+    const res = await GET(request());
+    expect(res.status).toBe(403);
+    // Corps 403 historique préservé à l'octet malgré le ralliement à la garde.
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'forbidden',
+      error: 'Patient non accessible pour ce praticien.',
+    });
     expect(prisma.ciqualNutrientValue.findMany).not.toHaveBeenCalled();
     expect(getLatestPublishedJaFeasibility).not.toHaveBeenCalled();
+    // Un refus ne se journalise pas : la ligne nommerait un dossier non lu.
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('un patient inexistant rend le même 403, sans journalisation', async () => {
+    prisma.patient.findUnique.mockResolvedValue(null);
+    const res = await GET(request());
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'forbidden',
+      error: 'Patient non accessible pour ce praticien.',
+    });
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('un GET accessible journalise l’accès au gabarit littéral (G-TRUST-04)', async () => {
+    const res = await GET(request());
+    expect(res.status).toBe(200);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_TEST',
+        praticienEmail: 'martial@wellneuro.fr',
+        route: '/api/praticien/boussole',
+        methode: 'GET',
+      },
+    });
   });
 
   it('retourne 404 pour un aliment hors manifeste ou absent', async () => {

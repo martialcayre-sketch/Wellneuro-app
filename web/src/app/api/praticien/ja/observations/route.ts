@@ -1,13 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 import {
   listJaObservationSnapshots,
   saveJaObservationSnapshot,
   type JaObservationSnapshot,
   type JaObservationSnapshotInput,
 } from '@/lib/food-observation/persistence';
+import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/ja/observations';
 
 type ErrorResponse = { ok: false; reason: string; error: string };
 type ListResponse = { ok: true; snapshots: JaObservationSnapshot[] } | ErrorResponse;
@@ -53,11 +56,13 @@ export async function GET(req: Request): Promise<NextResponse<ListResponse>> {
       );
     }
 
-    const patient = await prisma.patient.findUnique({
-      where: { idPatient },
-      select: { praticienEmail: true },
+    // Garde factorisée (G-TRUST-04) : les deux verdicts non-`accessible`
+    // rendent le 403 historique de cette route.
+    const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session), {
+      route: ROUTE_JOURNAL,
+      methode: 'GET',
     });
-    if (!patient || patient.praticienEmail.toLowerCase() !== session.user.email.toLowerCase()) {
+    if (verdict !== 'accessible') {
       return NextResponse.json(
         { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
         { status: 403 },
@@ -110,11 +115,10 @@ export async function POST(req: Request): Promise<NextResponse<SaveResponse>> {
       );
     }
 
-    const patient = await prisma.patient.findUnique({
-      where: { idPatient },
-      select: { praticienEmail: true },
-    });
-    if (!patient || patient.praticienEmail.toLowerCase() !== session.user.email.toLowerCase()) {
+    // Même garde, sans `acces` : une écriture laisse déjà sa propre trace
+    // datée et attribuée (GD-1).
+    const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+    if (verdict !== 'accessible') {
       return NextResponse.json(
         { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
         { status: 403 },

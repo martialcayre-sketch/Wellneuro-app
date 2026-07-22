@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 import { construireReperes } from '@/lib/praticien/lectureAsOf';
 import { notesActives, preparerNote } from '@/lib/praticien/relectureNote';
 
@@ -21,6 +22,9 @@ import { notesActives, preparerNote } from '@/lib/praticien/relectureNote';
 // un DELETE. PRATICIEN SEUL, garde d'appartenance appliquée.
 
 const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/relecture-notes';
 
 export type NoteExposee = {
   id: string;
@@ -66,8 +70,12 @@ type Garde =
   | { echec: NextResponse<RelectureNotesApiResponse>; email?: undefined }
   | { echec?: undefined; email: string };
 
-/** Session + identifiant + appartenance. Retourne l'e-mail praticien ou une réponse d'échec. */
-async function garder(req: Request, idPatient: string): Promise<Garde> {
+/**
+ * Session + identifiant + appartenance. Retourne l'e-mail praticien ou une
+ * réponse d'échec. `acces` n'est transmis que par le GET : seule la lecture
+ * des notes est une consultation de dossier à journaliser (G-TRUST-04).
+ */
+async function garder(req: Request, idPatient: string, acces?: GabaritAcces): Promise<Garde> {
   const session = await getServerSession(authOptions);
   if (!session) return { echec: echec('unauthenticated', 'Authentification requise.', 401) };
 
@@ -88,7 +96,7 @@ async function garder(req: Request, idPatient: string): Promise<Garde> {
   }
 
   const email = emailPraticien(session);
-  const appartenance = await verifierAppartenancePatient(idPatient, email);
+  const appartenance = await verifierAppartenancePatient(idPatient, email, acces);
   if (appartenance === 'introuvable') return { echec: echec('patient_not_found', 'Patient introuvable.', 404) };
   if (appartenance === 'autre_praticien') {
     return { echec: echec('forbidden', 'Patient non accessible pour ce praticien.', 403) };
@@ -102,7 +110,7 @@ export async function GET(req: Request): Promise<NextResponse<RelectureNotesApiR
   try {
     const { searchParams } = new URL(req.url);
     const idPatient = (searchParams.get('idPatient') ?? '').trim();
-    const garde = await garder(req, idPatient);
+    const garde = await garder(req, idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
     if (garde.echec) return garde.echec;
 
     const lignes = await prisma.relectureNote.findMany({

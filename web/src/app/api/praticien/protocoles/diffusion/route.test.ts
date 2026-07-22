@@ -6,6 +6,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     patient: { findUnique: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn(), create: vi.fn() },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
 
@@ -62,7 +63,14 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
     const res = await POST(postRequest(body));
     expect(res.status).toBe(403);
+    // Corps 403 historique préservé à l'octet malgré le ralliement à la garde.
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'forbidden',
+      error: 'Patient non accessible pour ce praticien.',
+    });
     expect(prisma.protocolDraft.findUnique).not.toHaveBeenCalled();
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   it('rejette l’accès inter-patient (404)', async () => {
@@ -93,6 +101,8 @@ describe('POST /api/praticien/protocoles/diffusion', () => {
         }),
       }),
     );
+    // Une écriture laisse déjà sa propre trace datée et attribuée (GD-1).
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   it('est idempotent quand la version active est déjà approuvée (no-op)', async () => {
@@ -131,6 +141,16 @@ describe('GET /api/praticien/protocoles/diffusion', () => {
     expect(res.status).toBe(200);
     expect(json.approval?.protocolDraftInputHash).toBe('HASH_V1');
     expect(json.stale).toBe(true);
+    // Le GET accessible journalise la lecture au gabarit littéral (G-TRUST-04).
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_1',
+        praticienEmail: 'p@wellneuro.fr',
+        route: '/api/praticien/protocoles/diffusion',
+        methode: 'GET',
+      },
+    });
   });
 
   it('retourne approval null sans versions', async () => {
@@ -147,6 +167,13 @@ describe('GET /api/praticien/protocoles/diffusion', () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
     const res = await GET(new Request('http://localhost/api/praticien/protocoles/diffusion?idPatient=PAT_1&decisionCardId=DEC_1'));
     expect(res.status).toBe(403);
+    // Corps 403 historique préservé à l'octet malgré le ralliement à la garde.
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'forbidden',
+      error: 'Patient non accessible pour ce praticien.',
+    });
     expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 });

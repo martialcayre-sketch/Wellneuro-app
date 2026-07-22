@@ -22,6 +22,9 @@ export type ClotureApiResponse =
   | { ok: true; cloture: Cloture }
   | { ok: false; reason: string; error: string };
 
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/copilote/cloture';
+
 export async function GET(req: Request): Promise<NextResponse<ClotureApiResponse>> {
   try {
     const session = await getServerSession(authOptions);
@@ -41,7 +44,10 @@ export async function GET(req: Request): Promise<NextResponse<ClotureApiResponse
       );
     }
 
-    const appartenance = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+    const appartenance = await verifierAppartenancePatient(idPatient, emailPraticien(session), {
+      route: ROUTE_JOURNAL,
+      methode: 'GET',
+    });
     if (appartenance === 'introuvable') {
       return NextResponse.json(
         { ok: false, reason: 'patient_not_found', error: 'Patient introuvable.' },

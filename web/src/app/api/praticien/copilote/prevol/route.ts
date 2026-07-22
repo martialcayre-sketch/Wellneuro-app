@@ -18,6 +18,9 @@ export type PreVolApiResponse =
   | { ok: true; prevol: PreVol }
   | { ok: false; reason: string; error: string };
 
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/copilote/prevol';
+
 // Lecture prudente du JSON de check-in : une valeur absente ou illisible reste
 // `null` (aucune question suggérée ne se déclenchera dessus) plutôt que d'être
 // devinée.
@@ -46,7 +49,10 @@ export async function GET(req: Request): Promise<NextResponse<PreVolApiResponse>
       );
     }
 
-    const appartenance = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+    const appartenance = await verifierAppartenancePatient(idPatient, emailPraticien(session), {
+      route: ROUTE_JOURNAL,
+      methode: 'GET',
+    });
     if (appartenance === 'introuvable') {
       return NextResponse.json(
         { ok: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
