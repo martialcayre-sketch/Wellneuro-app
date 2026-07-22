@@ -1,4 +1,6 @@
 import nodemailer from 'nodemailer';
+import { isG5GooglePatientEnabled } from '@/lib/portail/featureFlag';
+import { CHEMIN_CONNEXION } from '@/lib/portail/googleIdentite';
 
 /**
  * URL d'un lien magique (gate G4). Le jeton n'apparaît que là : dans l'e-mail
@@ -7,6 +9,16 @@ import nodemailer from 'nodemailer';
 export function buildMagicLinkUrl(jeton: string): string {
   const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
   return `${baseUrl}/portail/lien/${jeton}`;
+}
+
+/**
+ * URL de la page d'entrée Google (gate G5). Distincte de `buildMagicLinkUrl` :
+ * elle ne porte aucun secret, donc rien à générer par appel — la même URL vaut
+ * pour tout patient.
+ */
+export function buildGoogleConnexionUrl(): string {
+  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  return `${baseUrl}${CHEMIN_CONNEXION}`;
 }
 
 /**
@@ -44,6 +56,11 @@ export async function sendMagicLinkEmail(
 // Envoi best-effort du lien d'accès au portail patient. Sans SMTP_URL
 // configuré, l'envoi est silencieusement ignoré (le lien reste récupérable
 // côté praticien dans la réponse de l'API).
+//
+// Gate G5 (IDP2 LOT-03f) : quand le drapeau est actif, l'e-mail propose Google
+// avant le lien permanent, sans jamais le retirer — le patient garde le choix,
+// et un patient qui refuse Google n'est pas laissé sans accès. Drapeau éteint,
+// le texte est identique lettre pour lettre à ce qu'il était avant ce lot.
 export async function sendPortailLinkEmail(
   patientEmail: string,
   prenom: string,
@@ -53,6 +70,16 @@ export async function sendPortailLinkEmail(
   const smtpUrl = process.env.SMTP_URL;
   if (!smtpUrl) return;
   const motifInfo = motif ? `\nMotif de votre consultation : ${motif}` : '';
+  const googleActif = isG5GooglePatientEnabled();
+  const lienIntro = googleActif
+    ? ''
+    : `Ce lien est personnel et permanent : vous pourrez y revenir à tout moment ` +
+      `en confirmant l'adresse email enregistrée par votre praticien.\n\n`;
+  const acces = googleActif
+    ? `Deux façons d'accéder à votre espace :\n\n` +
+      `→ Continuer avec Google (recommandé) :\n${buildGoogleConnexionUrl()}\n\n` +
+      `→ Ou via ce lien personnel et permanent :\n${lien}\n\n`
+    : `Accéder à votre espace :\n${lien}\n\n`;
   const transport = nodemailer.createTransport(smtpUrl);
   await transport.sendMail({
     from: '"Wellneuro" <noreply@wellneuro.fr>',
@@ -61,12 +88,11 @@ export async function sendPortailLinkEmail(
     text:
       `Bonjour ${prenom},\n\n` +
       `Votre praticien vous ouvre l'accès à votre espace patient Wellneuro.${motifInfo}\n\n` +
-      `Ce lien est personnel et permanent : vous pourrez y revenir à tout moment ` +
-      `en confirmant l'adresse email enregistrée par votre praticien.\n\n` +
+      lienIntro +
       `Lors de votre première connexion, il vous sera demandé de donner votre consentement, ` +
       `de remplir une courte fiche de renseignements puis un questionnaire d'anamnèse. ` +
       `Vos questionnaires de suivi seront ensuite mis à votre disposition.\n\n` +
-      `Accéder à votre espace :\n${lien}\n\n` +
+      acces +
       `L'équipe Wellneuro`,
   });
 }

@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Google comme premier chemin — et la séparation des rôles rendue structurelle"
-statut: "03a, 03b, 03c et 03c-trace livrés, 03d activé le 2026-07-22 — 03e (purge) en revue"
+statut: "livré — 03a, 03b, 03c, 03c-trace, 03d (activation), 03e (purge, #230, mergée) et 03f (invitation Google dans l'e-mail) en revue"
 dépend_de: "LOT-02 (livré)"
 ---
 
@@ -144,16 +144,30 @@ Aucune migration Prisma : le compte est déjà la ligne `patients` (LOT-02).
   vers Google avec le bon client), pas par lecture de configuration. Détail dans
   `../ACTIVATION_RUNBOOK_G5.md`, section « Activation exécutée ». Durée de
   conservation de la trace fixée à 12 mois glissants le même jour.
-- **03e — purge de la trace.** *En revue le 2026-07-22* — `deleteMany`
-  opportuniste sur `portail_connexions_google` à chaque tentative, même patron
-  que `portail_demande_tentatives`. Aucune migration (l'index de purge existait
-  déjà dans le modèle du LOT-03c-trace). Falsification notable : retirer le
-  `.catch()` local de la purge ne cassait rien — le `try/catch` englobant de
-  `tracer()` rattrapait déjà tout — et a révélé que ce `.catch()` était pire que
-  redondant : il avalait silencieusement un échec que le code rendait pourtant
-  alertable. Retiré ; l'échec remonte désormais au `catch` qui journalise. Revue
-  adversariale : GO, deux tests faibles (un tautologique, un sans assertion
-  d'ordre) corrigés dans la foulée et falsifiés à leur tour.
+- **03e — purge de la trace.** *Livré le 2026-07-22* (#230, mergée) —
+  `deleteMany` opportuniste sur `portail_connexions_google` à chaque tentative,
+  même patron que `portail_demande_tentatives`. Aucune migration (l'index de
+  purge existait déjà dans le modèle du LOT-03c-trace). Falsification notable :
+  retirer le `.catch()` local de la purge ne cassait rien — le `try/catch`
+  englobant de `tracer()` rattrapait déjà tout — et a révélé que ce `.catch()`
+  était pire que redondant : il avalait silencieusement un échec que le code
+  rendait pourtant alertable. Retiré ; l'échec remonte désormais au `catch` qui
+  journalise. Revue adversariale : GO, deux tests faibles (un tautologique, un
+  sans assertion d'ordre) corrigés dans la foulée et falsifiés à leur tour.
+  Vérifié en production après merge : comportement inchangé, table toujours
+  vide.
+- **03f — inviter vers Google, pas seulement l'accepter.** *2026-07-22* — la
+  vérification de précondition de LOT-04 (voir plus bas) a montré que 12 accès
+  ouverts sur 13 n'avaient **jamais** utilisé le lien magique ni Google : rien,
+  ni bouton praticien ni e-mail, ne mentionnait le chemin Google. `03c`/`03d`
+  avaient livré une porte que personne ne poussait vers le patient.
+  `sendPortailLinkEmail` (`lib/consultation/email.ts`) propose désormais Google
+  en premier quand `WN_G5_GOOGLE_PATIENT` est actif, **sans retirer** le lien
+  permanent — cohérent avec D1/D8, le patient garde le choix. Drapeau éteint,
+  texte identique lettre pour lettre à avant ce lot (vérifié : falsifier la
+  lecture du drapeau fait échouer le test qui vérifie l'ordre Google-puis-lien).
+  Pas de migration, pas de route d'authentification touchée — hors du périmètre
+  de l'exception « migration ou authentification » de `CLAUDE.md`.
 
 ### Ce que 03c a coûté en falsifications
 
