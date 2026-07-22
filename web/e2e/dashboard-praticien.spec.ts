@@ -20,8 +20,9 @@ test.describe('Praticien Dashboard', () => {
     // Vérifie que la page est chargée et que les éléments clés sont présents
     await expect(page).toHaveTitle(/Dashboard|Praticien/i); // Adjust title expectation
 
-    // Vérifie que le titre du dashboard est visible
-    const mainHeading = page.locator('h1, h2').filter({ hasText: /Dashboard|Espace praticien|Bienvenue|Bonjour/i });
+    // Vérifie que le titre du dashboard est visible (maquette La Spirale :
+    // l'accueil s'intitule « Le Fil du jour », plus de salutation).
+    const mainHeading = page.locator('h1, h2').filter({ hasText: /Le Fil du jour/i });
     await expect(mainHeading.first()).toBeVisible({ timeout: 10000 });
 
     // Sur les largeurs 768-1024px (tablette portrait), la navigation est repliée
@@ -128,7 +129,7 @@ test.describe('Praticien Dashboard', () => {
 
       const drawer = page.getByRole('dialog', { name: 'Navigation' });
       await expect(drawer).toBeVisible();
-      await expect(drawer.getByRole('link', { name: 'Fiches-trajectoires' })).toBeVisible();
+      await expect(drawer.getByRole('link', { name: 'Fiche-trajectoire' })).toBeVisible();
 
       // Régression verrouillée : Dialog.Portal (Radix) rend hors du conteneur
       // [data-theme="praticien"] dont dépendent les tokens --rail-* — sans
@@ -149,10 +150,10 @@ test.describe('Praticien Dashboard', () => {
     await page.context().addCookies([sessionCookie]);
     await page.goto('/dashboard');
 
-    // La carte métriques « le cabinet en un coup d'œil » et le conteneur du
-    // Fil sont présents quel que soit l'état des données.
-    await expect(page.getByRole('heading', { name: /coup d/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Le Fil', exact: true })).toBeVisible();
+    // L'en-tête « Le Fil du jour » (maquette La Spirale, sans métriques) et le
+    // conteneur du Fil sont présents quel que soit l'état des données.
+    await expect(page.getByRole('heading', { name: 'Le Fil du jour' })).toBeVisible();
+    await expect(page.getByTestId('fil-du-jour')).toBeVisible();
 
     const fil = page.getByTestId('fil-du-jour');
     await expect(fil).toBeVisible({ timeout: 10000 });

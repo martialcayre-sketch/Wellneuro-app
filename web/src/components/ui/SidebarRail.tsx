@@ -1,49 +1,69 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, Compass, Mail, BookOpen, ClipboardCheck, CalendarDays, FlaskConical, type LucideIcon } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Users,
+  Sparkles,
+  FileText,
+  Settings,
+  ShieldCheck,
+  Compass,
+  Mail,
+  BookOpen,
+  ClipboardCheck,
+  CalendarDays,
+  FlaskConical,
+  Layers,
+  type LucideIcon,
+} from 'lucide-react';
+import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 
-// `tag` : marqueur discret façon maquette (.badge-soon) — code de campagne ou
-// « différé » sur les écrans réservés. Jamais porteur seul : l'écran cible
-// affiche la bannière détaillée.
-type NavItem = { href: string; label: string; icon: LucideIcon; tag?: string };
+// Rail conforme à la maquette de référence « WellNeuro 5.0 — La Spirale »
+// (artifact canonique, décision propriétaire 2026-07-22) : trois groupes —
+// La Spirale (surfaces 5.0), Héritage 4.0 — inchangé (surfaces historiques,
+// tag « 4.0 »), Réglages. `badge: 'fil'` affiche le compteur RÉEL de cartes
+// du Fil (aucun chiffre inventé ; rien en cas d'erreur réseau).
+type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  tag?: string;
+  badge?: 'fil';
+  /** 'exact' : actif seulement sur le chemin exact (désambiguïse
+   * Fiche-trajectoire ↔ Questionnaires & packs, qui partagent la page). */
+  matiere?: 'exact' | 'prefixe' | 'sous-pages';
+};
 
-/**
- * Rail regroupé (SP-FIL LOT-02, disposition 5.0) : « Le Fil » en tête, puis
- * des groupes étiquetés. Les écrans réservés (correspondance, bibliothèque,
- * agenda, biologie) pointent vers des pages statiques qui fixent l'intention
- * (maquettes 4.0/5.0) — routes réelles, contenu différé.
- */
 const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
-  { etiquette: null, items: [{ href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard }] },
   {
-    etiquette: 'Suivi',
+    etiquette: 'La Spirale',
     items: [
-      // Wording maquette 5.0 : la fiche patient est une fiche-trajectoire.
-      { href: '/dashboard/patients', label: 'Fiches-trajectoires', icon: Users },
+      { href: '/dashboard', label: 'Le Fil du jour', icon: LayoutDashboard, matiere: 'exact', badge: 'fil' },
+      // La liste des patients EST l'entrée des fiches ; l'item est actif sur
+      // la liste et les fiches, sauf quand « Questionnaires & packs » (même
+      // page, lecture héritage) est visé — voir matiere.
+      { href: '/dashboard/patients', label: 'Fiche-trajectoire', icon: Users, matiere: 'prefixe' },
       { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
-      { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail, tag: 'C3' },
+      { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail },
     ],
   },
   {
-    etiquette: 'Instruments',
+    etiquette: 'Héritage 4.0 — inchangé',
     items: [
-      { href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles },
-      { href: '/dashboard/documents', label: 'Documents', icon: FileText },
-      { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, tag: 'C4' },
-      { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck },
+      { href: '/dashboard/patients', label: 'Questionnaires & packs', icon: Layers, tag: '4.0', matiere: 'sous-pages' },
+      { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, tag: '4.0' },
+      { href: '/dashboard/documents', label: 'Documents', icon: FileText, tag: '4.0' },
+      { href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles, tag: '4.0' },
+      { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck, tag: '4.0' },
+      { href: '/dashboard/agenda', label: 'Agenda & consultations', icon: CalendarDays, tag: '4.0' },
+      { href: '/dashboard/biologie', label: 'Biologie fonctionnelle', icon: FlaskConical, tag: '4.0' },
     ],
   },
   {
-    etiquette: 'À venir',
-    items: [
-      { href: '/dashboard/agenda', label: 'Agenda & consultations', icon: CalendarDays, tag: 'différé' },
-      { href: '/dashboard/biologie', label: 'Biologie fonctionnelle', icon: FlaskConical, tag: 'différé' },
-    ],
-  },
-  {
-    etiquette: 'Cabinet',
+    etiquette: 'Réglages',
     items: [
       { href: '/dashboard/droits', label: 'Confiance & droits', icon: ShieldCheck },
       { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
@@ -54,22 +74,39 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
 interface SidebarRailProps {
   collapsed: boolean;
   onNavigate?: () => void;
-  /** Affiche le bloc de marque en tête (maquette cible : le brand vit dans le
-   * rail, pas dans le header). Le tiroir tablette garde son propre titre. */
+  /** Affiche le bloc de marque en tête (maquette : le brand vit dans le
+   * rail). Le tiroir tablette garde son propre titre. */
   brand?: boolean;
 }
 
 export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRailProps) {
   const pathname = usePathname();
+  // Compteur réel du Fil — même API que l'écran ; silence en cas d'échec.
+  const [nbCartesFil, setNbCartesFil] = useState<number | null>(null);
+  useEffect(() => {
+    let vivant = true;
+    fetch('/api/praticien/fil')
+      .then(r => r.json())
+      .then((d: FilApiResponse) => {
+        if (vivant && !d.unavailable && Array.isArray(d.cartes)) setNbCartesFil(d.cartes.length);
+      })
+      .catch(() => {});
+    return () => {
+      vivant = false;
+    };
+  }, []);
 
-  const isActive = (href: string) =>
-    href === '/dashboard' ? pathname === href : pathname?.startsWith(href);
+  const isActive = (item: NavItem) => {
+    if (item.matiere === 'exact') return pathname === item.href;
+    if (item.matiere === 'sous-pages') return pathname === item.href;
+    if (item.matiere === 'prefixe') return pathname?.startsWith(`${item.href}/`) ?? false;
+    return pathname?.startsWith(item.href) ?? false;
+  };
 
   return (
     <nav className="space-y-1">
       {brand && (
         <div className={`flex items-center gap-3 pb-3 ${collapsed ? 'justify-center' : 'px-1'}`}>
-          {/* Glyphe WN solaire (maquette : 34px, radius 9px, fond solaire .18). */}
           <span
             aria-hidden="true"
             className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-solar-500/[.18] font-display text-sm font-extrabold text-rail-accent"
@@ -79,28 +116,27 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
           {!collapsed && (
             <span className="min-w-0">
               <span className="block truncate font-display text-lg font-bold text-rail-foreground">WellNeuro</span>
-              <span className="block truncate text-2xs text-rail-muted-foreground">Espace praticien</span>
+              <span className="block truncate text-2xs text-rail-muted-foreground">Horizon 5.0</span>
             </span>
           )}
         </div>
       )}
       {groupesNavigation.map((groupe, indexGroupe) => (
         <div key={groupe.etiquette ?? 'principal'}>
-          {indexGroupe > 0 &&
-            (collapsed ? (
-              <div className="my-2 border-t border-rail-border" aria-hidden="true" />
-            ) : (
-              <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-[.08em] text-rail-muted-foreground">
-                {groupe.etiquette}
-              </p>
-            ))}
-          {groupe.items.map((item) => {
-            const active = isActive(item.href);
+          {collapsed ? (
+            indexGroupe > 0 && <div className="my-2 border-t border-rail-border" aria-hidden="true" />
+          ) : (
+            <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-[.08em] text-rail-muted-foreground">
+              {groupe.etiquette}
+            </p>
+          )}
+          {groupe.items.map(item => {
+            const active = isActive(item);
             const Icon = item.icon;
 
             return (
               <Link
-                key={item.href}
+                key={`${item.href}-${item.label}`}
                 href={item.href}
                 onClick={onNavigate}
                 aria-current={active ? 'page' : undefined}
@@ -110,7 +146,9 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
                 } ${
                   active
                     ? 'bg-solar-500/[.12] font-semibold text-rail-foreground shadow-[inset_3px_0_0_var(--rail-accent)]'
-                    : 'text-rail-muted-foreground hover:bg-rail-surface hover:text-rail-foreground'
+                    : item.tag
+                      ? 'text-rail-muted-foreground opacity-80 hover:bg-rail-surface hover:text-rail-foreground hover:opacity-100'
+                      : 'text-rail-muted-foreground hover:bg-rail-surface hover:text-rail-foreground'
                 }`}
               >
                 <Icon
@@ -120,6 +158,11 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
                   className={`shrink-0 ${active ? '' : 'opacity-85'}`}
                 />
                 {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
+                {!collapsed && item.badge === 'fil' && nbCartesFil !== null && nbCartesFil > 0 && (
+                  <span className="shrink-0 rounded-full bg-solar-500/[.18] px-2 py-0.5 font-mono text-2xs font-semibold text-rail-accent">
+                    {nbCartesFil}
+                  </span>
+                )}
                 {!collapsed && item.tag && (
                   <span className="shrink-0 rounded-md border border-rail-border px-1.5 py-0.5 text-2xs text-rail-muted-foreground">
                     {item.tag}
