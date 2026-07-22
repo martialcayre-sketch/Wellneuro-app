@@ -14,7 +14,8 @@ const PADDING: Record<'sm' | 'lg', string> = {
 // englober chaque carte dans le wrapper `w-full max-w-2xl` de PatientCard
 // n'a pas de sens (la largeur est déjà contrainte par le parent).
 export function patientCardClassName(padding: 'sm' | 'lg' = 'lg', className = ''): string {
-  return `bg-surface rounded-2xl shadow-card border border-border ${PADDING[padding]} ${className}`;
+  // rounded-lg = 18px depuis le socle 5.0 (radius exact de la pcard maquette).
+  return `bg-surface rounded-lg shadow-card border border-border ${PADDING[padding]} ${className}`;
 }
 
 // Chrome de carte commun au portail patient — remplace les déclarations

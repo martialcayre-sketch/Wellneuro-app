@@ -2,11 +2,13 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 export type PatientButtonVariant = 'primary' | 'ghost' | 'neutral' | 'danger-text';
 
+// Mesures pbtn de la maquette cible : 16 px semibold, cible ≥ 48 px,
+// radius 12 px. `neutral`/`danger-text` restent des actions secondaires.
 const VARIANT_CLASSES: Record<PatientButtonVariant, string> = {
-  primary: 'min-h-11 inline-flex items-center justify-center py-2.5 px-4 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:opacity-90 disabled:opacity-50 transition-opacity',
-  ghost: 'min-h-11 inline-flex items-center justify-center py-2.5 px-4 bg-surface text-primary border border-primary/30 rounded-lg font-medium text-sm hover:bg-primary/10 disabled:opacity-50 transition-colors',
+  primary: 'min-h-12 inline-flex items-center justify-center py-3 px-[22px] bg-primary text-primary-foreground rounded-xl font-semibold text-base hover:opacity-90 disabled:opacity-50 transition-opacity',
+  ghost: 'min-h-12 inline-flex items-center justify-center py-3 px-[22px] bg-transparent text-primary border border-primary/30 rounded-xl font-semibold text-base hover:bg-primary/10 disabled:opacity-50 transition-colors',
   neutral: 'min-h-11 inline-flex items-center justify-center py-2 px-4 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors',
-  'danger-text': 'text-xs text-status-danger hover:underline',
+  'danger-text': 'text-13 text-status-danger hover:underline',
 };
 
 // Exporté pour les éléments non-<button> (ex. <a> de navigation dans le hub)

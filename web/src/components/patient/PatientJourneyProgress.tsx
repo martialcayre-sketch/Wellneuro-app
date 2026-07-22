@@ -36,28 +36,38 @@ export function buildJourneySteps(currentId: JourneyStep['id']): JourneyStep[] {
   }));
 }
 
+// Anatomie journey de la maquette cible : puce 14 px au-dessus du libellé,
+// étape courante en accent avec halo cuivré, barres de liaison 2 px. Le halo
+// n'est jamais seul porteur : le libellé passe en semibold + sr-only.
 const STATE_CLASSES: Record<JourneyStepState, { dot: string; label: string }> = {
   done: { dot: 'bg-primary', label: 'text-foreground' },
-  current: { dot: 'bg-accent', label: 'text-foreground font-semibold' },
-  upcoming: { dot: 'bg-muted', label: 'text-muted-foreground/70' },
+  current: {
+    dot: 'bg-accent shadow-[0_0_0_4px_rgba(178,94,56,.18)]',
+    label: 'text-foreground font-semibold',
+  },
+  upcoming: { dot: 'border border-border bg-muted', label: 'text-muted-foreground/70' },
 };
 
 export function PatientJourneyProgress({ steps }: { steps: JourneyStep[] }) {
   return (
-    <ol className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1" aria-label="Étapes de votre parcours">
+    <ol className="flex items-start overflow-x-auto pb-1 -mx-1 px-1" aria-label="Étapes de votre parcours">
       {steps.map((step, index) => {
         const classes = STATE_CLASSES[step.state];
         return (
-          <li key={step.id} className="flex items-center gap-1.5 shrink-0">
-            <span
-              className={`inline-block w-2 h-2 rounded-full ${classes.dot}`}
-              aria-hidden="true"
-            />
-            <span className={`text-xs whitespace-nowrap ${classes.label}`}>
-              {step.label}
-              {step.state === 'current' && <span className="sr-only"> (étape actuelle)</span>}
+          <li key={step.id} className="flex shrink-0 items-start">
+            <span className="flex min-w-0 flex-col items-center gap-1.5">
+              <span
+                className={`inline-block h-3.5 w-3.5 rounded-full ${classes.dot}`}
+                aria-hidden="true"
+              />
+              <span className={`whitespace-nowrap px-1 text-2xs ${classes.label}`}>
+                {step.label}
+                {step.state === 'current' && <span className="sr-only"> (étape actuelle)</span>}
+              </span>
             </span>
-            {index < steps.length - 1 && <span className="text-muted-foreground/40 text-xs px-0.5" aria-hidden="true">›</span>}
+            {index < steps.length - 1 && (
+              <span className="mt-[6px] h-0.5 w-4 shrink-0 bg-border sm:w-6" aria-hidden="true" />
+            )}
           </li>
         );
       })}
