@@ -1560,3 +1560,23 @@ toute écriture en base (lectures `execute_sql` seules).
 restants, re-mesurer avant LOT-04 ; sinon suite SP-SPI LOT-01.
 
 **Questions ouvertes** : date de rapprochement 13/13 ; backlog audit.
+
+## 2026-07-22 — Hygiène du flux : déploiements Vercel filtrés, purge outillée des branches
+
+**Décisions** : Ignored Build Step posé deux fois — `web/vercel.json` (#258,
+mergée) et réglage projet via API — les commits hors `web/` ne consomment plus
+de déploiement (quota Hobby 100/j) ; constaté opérant sur #264 (« Canceled by
+Ignored Build Step »). `delete_branch_on_merge` activé. Purge sur preuve (tip ⊆
+`headRefOid` d'une PR mergée, ou ancêtre de `main`) : 8 worktrees, 76 branches
+locales, 15 remote. `scripts/nettoyage-branches.sh` (#264, verify vert) rejoue
+cette preuve — constat seul par défaut, `--appliquer` pour purger.
+
+**Écarté** : désactiver les previews par branche (vérification visuelle des
+PR) ; toute suppression sans preuve (le squash merge aveugle `--merged` ; deux
+rétentions légitimes trouvées).
+
+**Prochaine action** : sortir `docs/ai/Anthropic Api Key.pages` du dépôt ;
+trancher `86e0619` (journal LOT-01b jamais mergé).
+
+**Questions ouvertes** : filtre docs-only sur `verify` (check obligatoire) ;
+fichier sale de `rag-pgvector-audit`.
