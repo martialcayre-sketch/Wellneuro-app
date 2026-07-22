@@ -12,6 +12,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     protocolDiffusionApproval: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
     trustAdverseEffectReport: { findMany: vi.fn() },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
 
@@ -56,6 +57,7 @@ describe('GET /api/praticien/copilote/prevol', () => {
     prisma.patient.findUnique.mockResolvedValue(null);
     const res = await GET(request());
     expect(res.status).toBe(404);
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   it('patient d’un autre praticien : 403, sans lire la moindre donnée liée', async () => {
@@ -64,6 +66,22 @@ describe('GET /api/praticien/copilote/prevol', () => {
     expect(res.status).toBe(403);
     expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
     expect(prisma.protocolCheckin.findMany).not.toHaveBeenCalled();
+    // Un refus ne se journalise pas : la ligne nommerait un dossier non lu.
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('un GET accessible journalise l’accès au gabarit littéral (G-TRUST-04)', async () => {
+    const res = await GET(request());
+    expect(res.status).toBe(200);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_1',
+        praticienEmail: 'p@wellneuro.fr',
+        route: '/api/praticien/copilote/prevol',
+        methode: 'GET',
+      },
+    });
   });
 
   it('patient sans historique : pré-vol vide et ancre explicite', async () => {

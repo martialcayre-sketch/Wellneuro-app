@@ -8,6 +8,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     protocolCheckin: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
     assessmentEpisode: { findFirst: vi.fn() },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
 
@@ -47,6 +48,33 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     const res = await GET(request('idPatient=pas%20valide&decisionCardId=DEC_1'));
     expect(res.status).toBe(400);
+  });
+
+  it('patient hors périmètre : 404 fusionné, jamais journalisé', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
+    const res = await GET(request());
+    expect(res.status).toBe(404);
+    // Un refus ne se journalise pas : la ligne nommerait un dossier non lu.
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('un GET accessible journalise l’accès au gabarit littéral (G-TRUST-04)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    prisma.protocolCheckin.findMany.mockResolvedValue([]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    const res = await GET(request());
+    expect(res.status).toBe(200);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_1',
+        praticienEmail: 'p@wellneuro.fr',
+        route: '/api/praticien/protocoles/checkins',
+        methode: 'GET',
+      },
+    });
   });
 
   it('borne les check-ins au fil et calcule le résumé (200)', async () => {

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { journaliserAccesDossier, type GabaritAcces } from './journalAcces';
 
 // Garde d'appartenance praticien — factorisation du contrôle déjà appliqué
 // par `boussole`, `ja/activation`, `ja/observations`, `protocoles/versions` et
@@ -34,10 +35,18 @@ export type VerdictAppartenance = 'accessible' | 'introuvable' | 'autre_praticie
  * Vérifie qu'un patient existe ET appartient au praticien en session.
  * Distingue les deux échecs pour que chaque route conserve le code HTTP
  * qu'elle exposait déjà (404 sur absence, 403 sur appartenance).
+ *
+ * `acces` (G-TRUST-04, exigence 5) : fourni par les GET « dossier nommé »,
+ * il fait journaliser la lecture dans `journal_acces_dossiers` — si et
+ * seulement si le verdict est `accessible` (une ligne de refus nommerait un
+ * dossier qui n'a PAS été lu) et jamais à l'insu d'une route qui n'a pas
+ * opté (POST, listes). Un seul site par handler porte `acces`, sinon la même
+ * lecture serait journalisée deux fois. Écriture awaitée, fail-open (GD-4).
  */
 export async function verifierAppartenancePatient(
   idPatient: string,
   emailSession: string | null,
+  acces?: GabaritAcces,
 ): Promise<VerdictAppartenance> {
   const patient = await prisma.patient.findUnique({
     where: { idPatient },
@@ -45,5 +54,9 @@ export async function verifierAppartenancePatient(
   });
   if (!patient) return 'introuvable';
   if (!emailSession) return 'autre_praticien';
-  return patient.praticienEmail.toLowerCase() === emailSession ? 'accessible' : 'autre_praticien';
+  if (patient.praticienEmail.toLowerCase() !== emailSession) return 'autre_praticien';
+  if (acces) {
+    await journaliserAccesDossier({ idPatient, praticienEmail: emailSession, ...acces });
+  }
+  return 'accessible';
 }

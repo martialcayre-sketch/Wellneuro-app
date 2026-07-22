@@ -7,6 +7,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     ciqualNutrientValue: { findMany: vi.fn() },
     assessmentEpisode: { upsert: vi.fn(), findMany: vi.fn() },
     protocolDraft: { upsert: vi.fn(), findMany: vi.fn() },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn().mockResolvedValue([]),
   },
 }));
@@ -141,8 +142,15 @@ describe('POST /api/praticien/protocoles/versions', () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
     const res = await POST(postRequest({ episode, decisionCard, submission }));
     expect(res.status).toBe(403);
+    // Corps 403 historique préservé à l'octet malgré le ralliement à la garde.
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'forbidden',
+      error: 'Patient non accessible pour ce praticien.',
+    });
     expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   it('crée la première version avec supersedes null', async () => {
@@ -161,6 +169,8 @@ describe('POST /api/praticien/protocoles/versions', () => {
         create: expect.objectContaining({ idPatient: 'PAT_1', supersedesDraftId: null, status: 'practitioner_reviewed' }),
       }),
     );
+    // Une écriture laisse déjà sa propre trace datée et attribuée (GD-1).
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   it('crée une nouvelle version chaînée sur changement clinique', async () => {
@@ -321,6 +331,32 @@ describe('GET /api/praticien/protocoles/versions', () => {
     const req = new Request('http://localhost/api/praticien/protocoles/versions?idPatient=PAT_1&decisionCardId=DEC_1');
     const res = await GET(req);
     expect(res.status).toBe(403);
+    // Corps 403 historique préservé à l'octet malgré le ralliement à la garde.
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'forbidden',
+      error: 'Patient non accessible pour ce praticien.',
+    });
     expect(prisma.protocolDraft.findMany).not.toHaveBeenCalled();
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('un GET accessible journalise l’accès au gabarit littéral (G-TRUST-04)', async () => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    prisma.protocolDraft.findMany.mockResolvedValue([]);
+    const req = new Request('http://localhost/api/praticien/protocoles/versions?idPatient=PAT_1&decisionCardId=DEC_1');
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_1',
+        praticienEmail: 'praticien@wellneuro.fr',
+        route: '/api/praticien/protocoles/versions',
+        methode: 'GET',
+      },
+    });
   });
 });

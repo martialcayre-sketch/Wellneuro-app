@@ -10,6 +10,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
       findMany: vi.fn(),
       create: vi.fn(),
     },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
 
@@ -84,6 +85,25 @@ describe('/api/praticien/correspondance-medecin', () => {
     expect((await GET(getRequest())).status).toBe(403);
     expect((await POST(postRequest(corps()))).status).toBe(403);
     expect(prisma.correspondanceMedecin.create).not.toHaveBeenCalled();
+    // Un refus ne se journalise pas : la ligne nommerait un dossier non lu.
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('le GET accessible journalise la lecture du fil, le POST jamais (G-TRUST-04)', async () => {
+    expect((await GET(getRequest())).status).toBe(200);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_TEST',
+        praticienEmail: 'praticien@wellneuro.fr',
+        route: '/api/praticien/correspondance-medecin',
+        methode: 'GET',
+      },
+    });
+    // Une consignation laisse déjà sa propre trace datée et attribuée (GD-1).
+    prisma.journalAccesDossier.create.mockClear();
+    expect((await POST(postRequest(corps()))).status).toBe(201);
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   it('répond 404 sur un patient inconnu', async () => {

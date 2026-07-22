@@ -4,6 +4,7 @@ const { getServerSession, prisma, getLatestActivation, activateSnapshot } = vi.h
   getServerSession: vi.fn(),
   prisma: {
     patient: { findUnique: vi.fn() },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
   getLatestActivation: vi.fn(),
   activateSnapshot: vi.fn(),
@@ -59,6 +60,31 @@ describe('api/praticien/ja/activation', () => {
     expect(res.status).toBe(200);
     expect(json.ok).toBe(true);
     expect(json.activation.draftId).toBe('JA_ACT_1');
+    // Le GET accessible journalise la lecture au gabarit littéral (G-TRUST-04).
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_TEST',
+        praticienEmail: 'praticien@wellneuro.fr',
+        route: '/api/praticien/ja/activation',
+        methode: 'GET',
+      },
+    });
+  });
+
+  it('GET refuse hors périmètre : 403 à l’octet, jamais journalisé', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
+
+    const res = await GET(new Request('http://localhost/api/praticien/ja/activation?idPatient=PAT_TEST'));
+    expect(res.status).toBe(403);
+    // Corps 403 historique préservé à l'octet malgré le ralliement à la garde.
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'forbidden',
+      error: 'Patient non accessible pour ce praticien.',
+    });
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   it('POST active un snapshot JA pour un patient autorise', async () => {
@@ -73,6 +99,8 @@ describe('api/praticien/ja/activation', () => {
     expect(json.ok).toBe(true);
     expect(json.activation.draftId).toBe('JA_ACT_1');
     expect(activateSnapshot).toHaveBeenCalled();
+    // Une écriture laisse déjà sa propre trace datée et attribuée (GD-1).
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   it('POST refuse un patient hors perimetre praticien', async () => {
@@ -81,6 +109,13 @@ describe('api/praticien/ja/activation', () => {
 
     const res = await POST(postRequest(payload));
     expect(res.status).toBe(403);
+    // Corps 403 historique préservé à l'octet malgré le ralliement à la garde.
+    expect(await res.json()).toEqual({
+      ok: false,
+      reason: 'forbidden',
+      error: 'Patient non accessible pour ce praticien.',
+    });
     expect(activateSnapshot).not.toHaveBeenCalled();
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 });

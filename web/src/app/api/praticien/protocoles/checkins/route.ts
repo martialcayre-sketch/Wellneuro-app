@@ -25,6 +25,9 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 
 const ID_PATTERN = /^[A-Za-z0-9_:.#-]+$/;
 
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/protocoles/checkins';
+
 type GetResponse =
   | { ok: true; checkins: CheckinRow[]; resume: ResumeJ21 }
   | { ok: false; reason: string; error: string };
@@ -58,7 +61,11 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
 
     // Garde d'appartenance : le patient d'un autre praticien est traité comme
     // introuvable — un code distinct confirmerait son existence.
-    if ((await verifierAppartenancePatient(idPatient, emailPraticien(session))) !== 'accessible') {
+    const appartenance = await verifierAppartenancePatient(idPatient, emailPraticien(session), {
+      route: ROUTE_JOURNAL,
+      methode: 'GET',
+    });
+    if (appartenance !== 'accessible') {
       return NextResponse.json(
         { ok: false, reason: 'patient_not_found', error: 'Patient introuvable.' },
         { status: 404 },

@@ -6,6 +6,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     patient: { findUnique: vi.fn() },
     assessmentEpisode: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
 
@@ -47,6 +48,7 @@ describe('GET /api/praticien/trajectoire', () => {
     prisma.patient.findUnique.mockResolvedValue(null);
     const res = await GET(request());
     expect(res.status).toBe(404);
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   it('patient d’un autre praticien : 403, distinct du 404 « introuvable »', async () => {
@@ -55,6 +57,23 @@ describe('GET /api/praticien/trajectoire', () => {
     expect(res.status).toBe(403);
     // La trajectoire n'est jamais lue pour un patient qui n'est pas le sien.
     expect(prisma.assessmentEpisode.findMany).not.toHaveBeenCalled();
+    // Un refus ne se journalise pas : la ligne nommerait un dossier non lu.
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('un GET accessible journalise l’accès au gabarit littéral (G-TRUST-04)', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    const res = await GET(request());
+    expect(res.status).toBe(200);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_1',
+        praticienEmail: 'p@wellneuro.fr',
+        route: '/api/praticien/trajectoire',
+        methode: 'GET',
+      },
+    });
   });
 
   it('sans épisode → trajectoire vide, comparaison indisponible (200)', async () => {

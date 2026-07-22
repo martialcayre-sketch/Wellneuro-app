@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { deriveProtocolDraftId, deriveVersionId, resolveActiveVersion } from '@/lib/protocol/versioning';
+import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import {
   DIFFUSION_CONFIRMATION,
   isApprovalStale,
@@ -17,6 +18,9 @@ import {
 // transmission relève d'un lot ultérieur (LOT-05).
 
 const ID_PATTERN = /^[A-Za-z0-9_:.#-]+$/;
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/protocoles/diffusion';
 
 type PostBody = {
   idPatient?: string;
@@ -61,10 +65,11 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
-    const patient = await prisma.patient.findUnique({
-      where: { idPatient }, select: { praticienEmail: true },
-    });
-    if (!patient || patient.praticienEmail.toLowerCase() !== session.user.email.toLowerCase()) {
+    // Garde factorisée sans `acces` : une écriture laisse déjà sa propre
+    // trace datée et attribuée (GD-1). Les deux verdicts non-`accessible`
+    // rendent le 403 historique de cette route.
+    const verdictPost = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+    if (verdictPost !== 'accessible') {
       return NextResponse.json(
         { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
         { status: 403 },
@@ -182,10 +187,13 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       );
     }
 
-    const patient = await prisma.patient.findUnique({
-      where: { idPatient }, select: { praticienEmail: true },
+    // Garde factorisée (G-TRUST-04) : les deux verdicts non-`accessible`
+    // rendent le 403 historique de cette route.
+    const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session), {
+      route: ROUTE_JOURNAL,
+      methode: 'GET',
     });
-    if (!patient || patient.praticienEmail.toLowerCase() !== session.user.email.toLowerCase()) {
+    if (verdict !== 'accessible') {
       return NextResponse.json(
         { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },
         { status: 403 },
