@@ -197,6 +197,53 @@ table) ; PR-9 routes C/D.
 **Questions ouvertes** : preuve fonctionnelle du journal au premier dossier
 ouvert en prod ; PR #277 (keep-awake) toujours ouverte.
 
+<<<<<<< HEAD
 ## 2026-07-22 — SP-CONV : cadrage mergé (#280), campagne activée, LOT-00 livré
 
 **Décisions** : merge de #280 par l'assistant sur instruction explicite (« si green go », `verify` vert en 47 s) ; activation de SP-CONV en **campagne parallèle** (`.wn/state.json` + `sync`, g-trust-04 reste principale) ; LOT-00 exécuté dans la foulée. **Livré** : rectification datée en tête de l'audit UX du 22/07 ; « Résolue par G2 » sur les deux documents du gate multi-cycles ; ligne C2B du README rectifiée ; 3 maquettes (bandeau cockpit D5/D10, parcours synchronisé D2/D7/D11, Mon équilibre qualitatif D7) vérifiées au navigateur ; six constats revérifiés sur main post-merge. **Écarté** : capture du parcours-synchronise avant PR (même patron que les deux vérifiées). **Prochaine action** : merge de la PR LOT-00 (Copilot, sauf instruction), puis LOT-01 — contrat d'épisode partagé, code seul. **Questions ouvertes** : aucune.
+=======
+## 2026-07-22 — G-TRUST-04 PR-6 : exercice sur table de la procédure de violation
+
+**Décisions** : exercice sur table exécuté (exigence 6) — scénario fictif,
+lien portail de Michel Dogné transféré à un proche ; déroulé §2→§8 en
+vérifiant chaque geste contre le code réel ; fiche 2026-EX1 ; verdict :
+exécutable en 72 h par une seule personne. Constat EX-1 corrigé dans la même
+PR : RUNBOOK « Révocation accès patient » inexécutable (`portailToken`
+inexistant, route `DELETE /api/praticien/token` — trois portes, une
+transaction — ignorée). §8.4 réécrit « exercée le 2026-07-22 ». PR #281
+verte, `verify` inclus — merge confié à Copilot.
+
+**Écarté** : reprendre PR-7 (constatée déjà mergée #278 par la session
+parallèle avant d'agir) ; toucher la checklist (réservée PR-11) ; alerte
+active sur les logs SECURITY (EX-2, surface nouvelle non décidée).
+
+**Prochaine action** : reste du LOT-00 (PR-5/8/9/10/11) confié à l'autre
+session.
+
+**Questions ouvertes** : existence physique du registre des violations
+(EX-3, humain) ; confirmation juridique D-TRUST-02.
+
+## 2026-07-23 — Corpus : pilote chunks + claims ingéré en production
+
+**Décisions** : ingestion prod exécutée — 26 chunks (6 sources pilotes, batch
+001) puis 136 claims LOT_001, via le nouveau `tools/corpus/claims/ingest.mjs`
+(#282, mergée sur autorisation explicite). Rotation de `RAG_INTERNAL_SECRET` :
+variable Vercel **Sensitive** (`env pull` ne rend que le masque `[SENSITIVE]`),
+valeur conservée au coffre `~/Documents/WELLNEURO-API-KEYS/`. Branche
+`worktree-corpus-bench-qualite` supprimée (recouverte par main, preuve : diff
+vide hors package.json obsolète).
+
+**Écarté** : lots de 64 puis 16 claims — timeout transaction Prisma 5 s (~4
+requêtes séquentielles par claim × latence iad1↔eu-central-1) ; `--lot 4`
+retenu, correctif serveur remis à plus tard.
+
+**Preuves** : base prod — 136 `EN_ATTENTE_VALIDATION`, 0 `VALIDE`, 136 liens
+sha complets, barrière `match_wellneuro_rag_claims` vide même sondée avec
+l'embedding d'un claim ingéré au seuil 0.
+
+**Prochaine action** : validation praticien des 136 claims dans l'Atelier
+(`dashboard/corpus`).
+
+**Questions ouvertes** : région des fonctions (fra1) et regroupement des
+requêtes du store avant l'échelle 88 sources ; piste MP4.
+>>>>>>> origin/main

@@ -146,9 +146,14 @@ contient que la présente procédure et le modèle de fiche.
    un manque.
 3. Report sur `CHECKLIST_ACTIVATION_G_TRUST_04.md` si l'incident touche une
    des sept exigences.
-4. La procédure n'a jamais été exercée : un **exercice sur table** (dérouler
-   une fiche sur un scénario fictif — patients fictifs uniquement) est la
-   prochaine marche de l'exigence 6.
+4. **Exercée sur table le 2026-07-22** (scénario fictif : lien portail du
+   patient fictif Michel Dogné transféré à un tiers) — déroulé, fiche
+   remplie et constats dans
+   `docs/claude/campagnes/2026-07-22-g-trust-04-durcissement-et-reliquats/EXERCICE_SUR_TABLE_VIOLATION_2026-07-22.md`.
+   Verdict : exécutable en 72 h par une seule personne, après correction du
+   RUNBOOK « Révocation accès patient » (constat EX-1). La confirmation
+   juridique reste due (D-TRUST-02) : l'exercice valide l'exécutabilité,
+   pas la conformité.
 
 ## Annexe — modèle de fiche de violation
 

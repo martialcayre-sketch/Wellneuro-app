@@ -154,7 +154,7 @@ certification 63 questionnaires + tests scoring + T1 à chaque fichier.
 - [x] PR-3 Next 14.2.35 (T3) — #275, mergée le 2026-07-22.
 - [x] PR-4 code mort (T2) — #276, mergée le 2026-07-22.
 - [ ] PR-5 `@ts-nocheck` vague 1 (mesure consignée ici + certif + T2).
-- [ ] PR-6 exercice sur table (docs).
+- [x] PR-6 exercice sur table (docs) — cette PR.
 - [x] PR-7 helper + garde + routes A/B (T2 ; mocks `journalAccesDossier`
       ajoutés aux tests de routes) — cette PR.
 - [ ] PR-8 `@ts-nocheck` vague 2.
@@ -187,6 +187,22 @@ certification 63 questionnaires + tests scoring + T1 à chaque fichier.
 ## Résultats
 
 À compléter au fil des PR.
+
+### PR-6 — exercice sur table (2026-07-22)
+
+- `EXERCICE_SUR_TABLE_VIOLATION_2026-07-22.md` : scénario fictif (lien
+  portail de Michel Dogné transféré à un proche), déroulé §2→§8, fiche
+  2026-EX1 remplie, chronologie jouée (prise de connaissance → CNIL en
+  ~25 h < 72 h). Verdict : exécutable en 72 h par une seule personne.
+- 3 constats : **EX-1** RUNBOOK « Révocation accès patient » inexécutable
+  (`portailToken` inexistant, route `DELETE /api/praticien/token` — trois
+  portes, une transaction — ignorée), **corrigé dans la même PR** ;
+  **EX-2** détection passive (les événements SECURITY sont des logs, pas des
+  alertes — hors périmètre du lot) ; **EX-3** existence physique du registre
+  hors dépôt à confirmer par le responsable (action humaine).
+- `PROCEDURE_VIOLATION_DONNEES.md` §8.4 réécrit « exercée le 2026-07-22 » ;
+  la confirmation juridique reste due (D-TRUST-02). Checklist G-TRUST-04
+  inchangée (réservée PR-11).
 
 ### PR-7 — helper + garde + routes A/B (2026-07-22)
 
