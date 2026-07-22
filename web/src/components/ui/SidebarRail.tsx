@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, Compass, Mail, BookOpen, CalendarDays, FlaskConical, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, Compass, Mail, BookOpen, ClipboardCheck, CalendarDays, FlaskConical, type LucideIcon } from 'lucide-react';
 
 // `tag` : marqueur discret façon maquette (.badge-soon) — code de campagne ou
 // « différé » sur les écrans réservés. Jamais porteur seul : l'écran cible
@@ -32,6 +32,7 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
       { href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles },
       { href: '/dashboard/documents', label: 'Documents', icon: FileText },
       { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, tag: 'C4' },
+      { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck },
     ],
   },
   {
