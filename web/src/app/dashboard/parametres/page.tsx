@@ -11,12 +11,12 @@ export default async function ParametresPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-display text-3xl font-semibold text-foreground">Paramètres</h2>
+        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Paramètres</h2>
         <p className="text-base text-muted-foreground">Profil et gouvernance clinique — lecture seule.</p>
       </div>
 
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
+      <div className="bg-surface border border-border rounded-xl shadow-card p-4">
+        <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-foreground mb-3">
           <User size={16} strokeWidth={2} className="text-muted-foreground" aria-hidden="true" />
           Profil praticien
         </h3>
@@ -28,8 +28,8 @@ export default async function ParametresPage() {
         </dl>
       </div>
 
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
+      <div className="bg-surface border border-border rounded-xl shadow-card p-4">
+        <h3 className="flex items-center gap-2 font-display text-lg font-semibold text-foreground mb-3">
           <ShieldCheck size={16} strokeWidth={2} className="text-muted-foreground" aria-hidden="true" />
           Gouvernance clinique
         </h3>

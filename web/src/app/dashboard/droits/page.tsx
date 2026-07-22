@@ -6,14 +6,14 @@ export default function DroitsPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h2 className="font-display text-3xl font-bold text-foreground">Confiance &amp; droits</h2>
+        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Confiance &amp; droits</h2>
         <p className="text-base text-muted-foreground mt-1">
           Signalements d’effets indésirables, incidents de confidentialité et demandes de droits
           déposés par vos patients. Rien ne se supprime : les statuts évoluent.
         </p>
       </div>
       <section>
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em] mb-3">
           File des signalements et demandes
         </h3>
         <TrustPanel />
