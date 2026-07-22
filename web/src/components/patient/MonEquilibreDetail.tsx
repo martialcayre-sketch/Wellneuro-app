@@ -46,7 +46,7 @@ export function MonEquilibreDetail({
   if (loading) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-surface rounded-2xl shadow-sm border border-border p-8 text-center text-sm text-muted-foreground">
+        <div className="bg-surface rounded-2xl shadow-card border border-border p-8 text-center text-sm text-muted-foreground">
           Chargement…
         </div>
       </div>
@@ -56,7 +56,7 @@ export function MonEquilibreDetail({
   if (!data || 'ok' in data) {
     return (
       <div className="w-full max-w-md">
-        <div className="bg-surface rounded-2xl shadow-sm border border-border p-8 text-center">
+        <div className="bg-surface rounded-2xl shadow-card border border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">
             {data && 'error' in data ? data.error : 'Impossible de charger le détail pour le moment.'}
           </p>
@@ -76,7 +76,7 @@ export function MonEquilibreDetail({
 
   return (
     <div className="w-full max-w-2xl">
-      <div className="bg-surface rounded-2xl shadow-sm border border-border p-8">
+      <div className="bg-surface rounded-2xl shadow-card border border-border p-8">
         <h1 className="font-display text-xl font-bold text-foreground mb-1 text-center">Mes 12 besoins</h1>
         <p className="text-sm text-muted-foreground text-center mb-6">
           Sélectionnez ou survolez un besoin pour le mettre en évidence.

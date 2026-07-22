@@ -52,7 +52,7 @@ export function MobileBottomNav() {
               >
                 <Icon aria-hidden="true" size={18} strokeWidth={2} />
               </span>
-              <span className={`text-[13px] font-medium ${active ? 'text-rail-foreground' : 'text-rail-muted-foreground'}`}>
+              <span className={`text-13 font-medium ${active ? 'text-rail-foreground' : 'text-rail-muted-foreground'}`}>
                 {item.label}
               </span>
             </Link>
@@ -74,7 +74,7 @@ export function MobileBottomNav() {
               >
                 <MoreHorizontal size={18} strokeWidth={2} />
               </span>
-              <span className={`text-[13px] font-medium ${isMoreActive ? 'text-rail-foreground' : 'text-rail-muted-foreground'}`}>
+              <span className={`text-13 font-medium ${isMoreActive ? 'text-rail-foreground' : 'text-rail-muted-foreground'}`}>
                 Plus
               </span>
             </button>

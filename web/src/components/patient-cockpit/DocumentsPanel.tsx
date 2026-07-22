@@ -213,7 +213,7 @@ export function DocumentsPanel() {
               title={`Aperçu ${DESTINATAIRE_LABELS[destinataireApercu]}`}
               srcDoc={apercu.html ?? ''}
               sandbox="allow-same-origin allow-modals"
-              className="w-full h-[420px] border border-border rounded-lg bg-white"
+              className="w-full h-[420px] border border-border rounded-lg bg-surface"
             />
             <div className="flex flex-wrap items-center gap-3">
               <button type="button" onClick={onImprimer} className={`${btnBase} border bg-surface text-foreground`}>

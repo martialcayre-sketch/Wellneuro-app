@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 const CARD_BASE =
-  'bg-surface text-surface-foreground rounded-xl border border-border p-5 flex flex-col gap-1 shadow-sm';
+  'bg-surface text-surface-foreground rounded-xl border border-border p-5 flex flex-col gap-1 shadow-card';
 
 // Carte métrique du cabinet. Avec `href`, elle devient un point d'accès actif
 // (rendu comme lien, état survol/focus, libellé « Voir → ») vers la page
@@ -44,6 +44,6 @@ export function MetricCard({
 
 export function MetricCardSkeleton() {
   return (
-    <div className="bg-surface rounded-xl border border-border p-5 animate-pulse h-24 shadow-sm" />
+    <div className="bg-surface rounded-xl border border-border p-5 animate-pulse h-24 shadow-card" />
   );
 }

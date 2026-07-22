@@ -40,7 +40,7 @@ function EmailGate({ onVerified }: { onVerified: (email: string, data: Extract<P
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-surface rounded-2xl shadow-sm border border-border p-8">
+      <div className="bg-surface rounded-2xl shadow-card border border-border p-8">
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-primary/10 mb-4">
             <svg className="w-7 h-7 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,7 +123,7 @@ function QuestionnairesEnAttentePanel({ idAssignation, email }: {
 
   return (
     <div className="w-full max-w-2xl mt-5">
-      <div className="bg-surface rounded-2xl shadow-sm border border-border p-4 sm:p-5">
+      <div className="bg-surface rounded-2xl shadow-card border border-border p-4 sm:p-5">
         <div className="mb-3 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 sm:px-4">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-semibold text-primary">Suivi de vos questionnaires</p>
@@ -195,7 +195,7 @@ function SuccessScreen({ idAssignation, email }: {
 }) {
   return (
     <div className="w-full max-w-2xl">
-      <div className="bg-surface rounded-2xl shadow-sm border border-border p-8 text-center">
+      <div className="bg-surface rounded-2xl shadow-card border border-border p-8 text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-status-success/10 mb-4">
           <svg className="w-8 h-8 text-status-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -321,7 +321,7 @@ export default function PatientQuestionnairePage() {
 
   if (!data.questionnaire) {
     return (
-      <div className="w-full max-w-md bg-surface rounded-2xl shadow-sm border border-border p-8 text-center">
+      <div className="w-full max-w-md bg-surface rounded-2xl shadow-card border border-border p-8 text-center">
         <p className="text-status-warning">Ce questionnaire n&apos;est pas encore disponible en ligne. Contactez votre praticien.</p>
       </div>
     );
