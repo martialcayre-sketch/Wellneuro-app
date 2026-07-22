@@ -613,8 +613,8 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       )}
 
       {/* Nouveau patient */}
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Nouveau patient</h3>
+      <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
+        <h3 className="font-display text-lg font-semibold text-foreground mb-3">Nouveau patient</h3>
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreatePatient}>
           <Input required value={form.prenom} onChange={e => setForm(p => ({ ...p, prenom: e.target.value }))} placeholder="Prénom *" maxLength={100} />
           <Input required value={form.nom} onChange={e => setForm(p => ({ ...p, nom: e.target.value }))} placeholder="Nom *" maxLength={100} />
@@ -635,8 +635,8 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       </div>
 
       {/* Consultation / accès portail patient */}
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-1">Nouvelle consultation</h3>
+      <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
+        <h3 className="font-display text-lg font-semibold text-foreground mb-1">Nouvelle consultation</h3>
         <p className="text-xs text-muted-foreground mb-3">
           Ouvre une consultation et envoie au patient son lien d’accès : consentement, fiche de
           renseignements, anamnèse, puis assignation automatique du pack de base. Les actions sur un
@@ -679,8 +679,8 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       </div>
 
       {/* Nouvelle assignation */}
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Nouvelle assignation questionnaire</h3>
+      <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
+        <h3 className="font-display text-lg font-semibold text-foreground mb-3">Nouvelle assignation questionnaire</h3>
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateAssignation}>
           <Select required value={assignationForm.emailPatient} onChange={e => setAssignationForm(p => ({ ...p, emailPatient: e.target.value }))}>
             <option value="">Patient *</option>
@@ -781,7 +781,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       {/* Édition patient inline */}
       {editState && (
         <div className="bg-surface border border-accent rounded-xl p-4">
-          <h3 className="text-sm font-semibold text-foreground mb-3">
+          <h3 className="font-display text-lg font-semibold text-foreground mb-3">
             Modifier patient <span className="font-normal text-muted-foreground">{editState.idPatient}</span>
           </h3>
           <div className="flex flex-wrap gap-3 items-end">
@@ -822,19 +822,20 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
             <option value="email">Tri : email</option>
           </Select>
         </div>
-        <div className="text-sm text-muted-foreground">
+        {/* Meta de panel façon maquette : compteur en mono. */}
+        <div className="font-mono text-13 text-muted-foreground">
           {pagination ? `${pagination.total} patient(s)` : '—'}
         </div>
       </div>
 
       {/* Tableau patients */}
-      <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-card">
         <div className="px-4 py-3 border-b border-border">
-          <h3 className="text-sm font-semibold text-foreground">Patients</h3>
+          <h3 className="font-display text-lg font-semibold text-foreground">Patients</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-muted text-muted-foreground">
+            <thead className="bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 text-left">Nom</th>
                 <th className="px-4 py-2 text-left">Email</th>
@@ -870,11 +871,11 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       </div>
 
       {/* Tableau assignations */}
-      <div className="bg-surface border border-border rounded-xl overflow-hidden">
+      <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-card">
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">
+          <h3 className="font-display text-lg font-semibold text-foreground">
             Assignations récentes
-            <span className="ml-2 text-muted-foreground font-normal">({filteredAssignations.length})</span>
+            <span className="ml-2 font-mono text-13 font-normal text-muted-foreground">({filteredAssignations.length})</span>
           </h3>
           <select value={statutFilter} onChange={e => setStatutFilter(e.target.value as StatutFilter)} className="text-xs border border-border rounded-lg px-2 py-1 bg-surface text-muted-foreground">
             {(Object.keys(STATUT_LABELS) as StatutFilter[]).map(s => (
@@ -884,7 +885,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-muted text-muted-foreground">
+            <thead className="bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground">
               <tr>
                 <th className="px-4 py-2 text-left">Date</th>
                 <th className="px-4 py-2 text-left">Patient</th>

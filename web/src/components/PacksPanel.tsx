@@ -333,8 +333,8 @@ export function PacksPanel({
   return (
     <div className="flex flex-col gap-4">
       {/* Création d'un pack */}
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Nouveau pack de questionnaires</h3>
+      <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
+        <h3 className="font-display text-lg font-semibold text-foreground mb-3">Nouveau pack de questionnaires</h3>
         <form className="flex flex-col gap-3" onSubmit={onSubmitPack}>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <input required value={nom} onChange={e => setNom(e.target.value)} placeholder="Nom du pack *" className={inputCls} maxLength={120} />
@@ -394,8 +394,8 @@ export function PacksPanel({
       </div>
 
       {/* Liste des packs */}
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Packs existants</h3>
+      <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
+        <h3 className="font-display text-lg font-semibold text-foreground mb-3">Packs existants</h3>
         {loading ? (
           <p className="text-base text-muted-foreground">Chargement des packs...</p>
         ) : packs.length === 0 ? (
@@ -449,8 +449,8 @@ export function PacksPanel({
       </div>
 
       {/* Assigner un pack */}
-      <div className="bg-surface border border-border rounded-xl p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3">Assigner un pack à un patient</h3>
+      <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
+        <h3 className="font-display text-lg font-semibold text-foreground mb-3">Assigner un pack à un patient</h3>
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onAssignPack}>
           <select required value={assignForm.idPack} onChange={e => setAssignForm(p => ({ ...p, idPack: e.target.value }))} className={inputCls}>
             <option value="">Pack *</option>
@@ -479,9 +479,9 @@ export function PacksPanel({
 
       {editModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl bg-surface border border-border rounded-xl p-4 max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-4xl bg-surface border border-border rounded-xl p-4 shadow-card max-h-[90vh] overflow-y-auto">
             <div className="flex items-start justify-between gap-3 mb-3">
-              <h3 className="text-sm font-semibold text-foreground">Modifier un pack de questionnaires</h3>
+              <h3 className="font-display text-lg font-semibold text-foreground">Modifier un pack de questionnaires</h3>
               <button type="button" onClick={onCancelEditPack} className="text-xs text-muted-foreground hover:underline">
                 Fermer
               </button>
