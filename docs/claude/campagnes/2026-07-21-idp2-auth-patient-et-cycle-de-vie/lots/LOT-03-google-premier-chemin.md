@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Google comme premier chemin — et la séparation des rôles rendue structurelle"
-statut: "livré — 03a, 03b, 03c, 03c-trace, 03d (activation), 03e (purge, #230, mergée) et 03f (invitation Google dans l'e-mail) en revue"
+statut: "livré — 03a, 03b, 03c, 03c-trace, 03d (activation), 03e (purge, #230) et 03f (invitation Google dans l'e-mail, #231) mergées et vérifiées en production. LOT-04 bloqué : précondition à 1/13 après réinvitation générale du 2026-07-22"
 dépend_de: "LOT-02 (livré)"
 ---
 
@@ -168,6 +168,12 @@ Aucune migration Prisma : le compte est déjà la ligne `patients` (LOT-02).
   lecture du drapeau fait échouer le test qui vérifie l'ordre Google-puis-lien).
   Pas de migration, pas de route d'authentification touchée — hors du périmètre
   de l'exception « migration ou authentification » de `CLAUDE.md`.
+  *Livré le 2026-07-22* (#231, mergée puis vérifiée en production — build
+  frais 19 min après le merge). Praticien informé du bouton « Renvoyer le
+  lien » (`/dashboard/patients`) ; toutes les réinvitations envoyées le
+  2026-07-22. Précondition LOT-04 re-vérifiée le même jour : **1/13** —
+  inchangée, un renvoi d'e-mail n'accélère pas l'authentification elle-même,
+  il faut laisser le temps aux patients d'agir.
 
 ### Ce que 03c a coûté en falsifications
 
