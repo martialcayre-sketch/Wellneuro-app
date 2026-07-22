@@ -7,10 +7,11 @@ export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCa
   if (!decisionCard) {
     return (
       <section aria-labelledby="decision-summary-title">
-        <h3 id="decision-summary-title" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+        <h3 id="decision-summary-title" className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
           Décision clinique
         </h3>
-        <div className="rounded-xl border border-border bg-surface p-4">
+        {/* Carte de décision 5.0 : liseré primaire (maquette cible). */}
+        <div className="rounded-xl border border-border border-l-4 border-l-primary bg-surface p-4 shadow-card">
           <p className="text-base font-semibold text-foreground">Décision clinique non préparée</p>
           <p className="mt-1 text-base text-muted-foreground">
             Les données doivent être qualifiées et la décision validée par le praticien avant toute recommandation.
@@ -33,15 +34,16 @@ export function DecisionSummaryCard({ decisionCard }: { decisionCard: DecisionCa
 
   return (
     <section aria-labelledby="decision-summary-title">
-      <h3 id="decision-summary-title" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+      <h3 id="decision-summary-title" className="text-xs font-semibold text-solar-ink uppercase tracking-[.06em] mb-3">
         Décision clinique
       </h3>
       <TwoLevelReading
         label="Voir les sources et limites"
+        className="border-l-4 border-l-primary shadow-card"
         summary={(
           <div>
-            <p className="font-semibold">{status}</p>
-            {current && <p className="mt-1 text-muted-foreground">Statut : {current.confidence}</p>}
+            <p className="text-base font-semibold">{status}</p>
+            {current && <p className="mt-1 font-mono text-xs text-muted-foreground">Statut : {current.confidence}</p>}
           </div>
         )}
         detail={(

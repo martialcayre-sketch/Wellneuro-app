@@ -12,17 +12,20 @@ export function TwoLevelReading({
   detail,
   defaultExpanded = false,
   label,
+  className = '',
 }: {
   summary: ReactNode;
   detail: ReactNode;
   defaultExpanded?: boolean;
   label: string;
+  /** Classes additives sur la racine (ex. liseré de carte de décision 5.0). */
+  className?: string;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const detailId = useId();
 
   return (
-    <div className="rounded-xl border border-border bg-surface">
+    <div className={`rounded-xl border border-border bg-surface ${className}`}>
       <div className="flex items-center justify-between gap-3 p-4">
         <div className="text-sm text-foreground">{summary}</div>
         <button
