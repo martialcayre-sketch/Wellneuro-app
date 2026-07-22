@@ -111,7 +111,7 @@ test.describe('Praticien Dashboard', () => {
 
       const drawer = page.getByRole('dialog', { name: 'Navigation' });
       await expect(drawer).toBeVisible();
-      await expect(drawer.getByRole('link', { name: 'Patients' })).toBeVisible();
+      await expect(drawer.getByRole('link', { name: 'Fiches-trajectoires' })).toBeVisible();
 
       // Régression verrouillée : Dialog.Portal (Radix) rend hors du conteneur
       // [data-theme="praticien"] dont dépendent les tokens --rail-* — sans
