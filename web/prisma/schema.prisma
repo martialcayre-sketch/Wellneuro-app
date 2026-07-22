@@ -60,6 +60,7 @@ model Patient {
   filCardRejections          FilCardRejection[]
   portailMagicLinks          PortailMagicLink[]
   packPropositions           PackProposition[]
+  correspondancesMedecin     CorrespondanceMedecin[]
 
   @@map("patients")
 }
@@ -863,6 +864,47 @@ model RelectureNote {
 
   @@index([idPatient, creeLe], map: "sptt_relecture_note_patient_idx")
   @@map("relecture_notes")
+}
+
+// Fil de correspondance médecin (C3 LOT-06, V1 = transcription praticien —
+// décision FM-1 du cadrage du 2026-07-22). Le médecin n'accède à RIEN et
+// l'application n'envoie RIEN : le praticien consigne un envoi fait par ses
+// canaux habituels (sens « sortant ») et transcrit une réponse reçue (sens
+// « entrant »).
+//
+// MINIMISATION (données d'un tiers) : le médecin n'est désigné que par un
+// libellé libre (`medecin_libelle`) — ni adresse e-mail, ni RPPS, ni compte.
+// Texte seul par construction : aucun champ fichier (mur HDS, décision de
+// programme — le fil transporte des échanges, jamais de pièce biologique).
+//
+// DEUX DATES, jamais confondues (patron RelectureNote / SP-TT) : `echange_le`
+// est une DONNÉE — la date de l'échange réel, telle que transcrite,
+// facultative — tandis que `consigne_le` est le moment de l'écriture, posé
+// par la BASE (@default(now())), jamais par l'appelant. Une consignation est
+// inantidatable.
+//
+// CONSERVATION ALIGNÉE DOSSIER (FM-2) : dossier clos = consignation refusée
+// par la route ; effacement = deleteMany nommément dans `effacerDossier`,
+// forcé par la garde structurelle d'`effacement.test.ts`.
+//
+// `id_synthese` est une référence SOUPLE, sans FK (patron supersedes_note_id) :
+// la route vérifie existence et appartenance au POST, et l'effacement du
+// dossier emporte les deux tables dans la même transaction.
+model CorrespondanceMedecin {
+  id             String    @id @default(cuid()) @map("id")
+  idPatient      String    @map("id_patient")
+  praticienEmail String    @map("praticien_email")
+  sens           String    @map("sens") // sortant | entrant
+  medecinLibelle String    @map("medecin_libelle")
+  texte          String    @map("texte")
+  idSynthese     String?   @map("id_synthese")
+  echangeLe      DateTime? @map("echange_le")
+  consigneLe     DateTime  @default(now()) @map("consigne_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([idPatient, consigneLe], map: "c3_correspondance_medecin_patient_idx")
+  @@map("correspondances_medecin")
 }
 
 // Lien magique d'accès au portail patient (IDP LOT-01, gate G4).
