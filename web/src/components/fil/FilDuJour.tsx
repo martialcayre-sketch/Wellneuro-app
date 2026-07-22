@@ -25,11 +25,11 @@ function CarteDuFil({ carte, onEcarter }: { carte: CarteFil; onEcarter: () => vo
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{libelle}</span>
+          <span className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">{libelle}</span>
           <span className="text-sm font-semibold text-foreground">{carte.patient}</span>
         </div>
-        <p className="text-base text-foreground mt-0.5 truncate">{carte.titre}</p>
-        <p className="text-xs text-muted-foreground mt-1">{carte.pourquoi}</p>
+        <p className="text-[15.5px] font-semibold text-foreground mt-0.5 truncate">{carte.titre}</p>
+        <p className="text-14 text-muted-foreground mt-1">{carte.pourquoi}</p>
       </div>
       <div className="flex shrink-0 items-center gap-3 self-center">
         <Link
