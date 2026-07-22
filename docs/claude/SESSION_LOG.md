@@ -174,6 +174,10 @@ brouillon de migration claims) — domaine de la session corpus.
 **Questions ouvertes** : compaction du SESSION_LOG à terminer ; deux scripts
 keep-awake non suivis dans `scripts/`.
 
+## 2026-07-22 — Cadrage SP-CONV (convergence Spirale 5.0, trajectoire partagée)
+
+**Décisions** : campagne `2026-07-22-sp-conv-trajectoire-partagee` cadrée (7 lots, sans migration) ; contrat d'épisode partagé en code seul sur les cycles G2 ; parcours patient 6 étapes HC-F synchronisées ; réouvertures actées : renommage A7 et baselines V12 ; tags du rail non rouverts (réglé par V14). **Écarté** : lots migration/gate multi-cycles — la confrontation au code montre le gate G2 levé le 19/07 (`c2b_cycle_identity_v1`) ; 5 étapes de la maquette-démo ; KPI d'accueil (métriques supprimées par V14). L'audit du jour est hérité **rectifié** (table dans CAMPAGNE.md). Séquence programme (#12), registre §3 et index README amendés ; `.wn/state.json` non touché (g-trust-04 active). Les trois questions ouvertes ont été tranchées dans la même session (D9 « Mon carnet alimentaire », D10 fiche plein écran réel, D11 quatre statuts patient sous dérogation inchangée). **Prochaine action** : merge de la PR de cadrage (Copilot), puis LOT-00 (annotations + maquettes) après décision de gouvernance sur l'activation. **Questions ouvertes** : aucune au cadrage.
+
 ## 2026-07-22 — G-TRUST-04 PR-7 : journal des accès praticien branché
 
 **Décisions** : PR-7 livrée et mergée (#278, verify 6 min 21 vert, merge sur

@@ -807,6 +807,33 @@
 - **Dette héritée** : E11 (audit 5.0, hub empilé côté portail) rattachée à
   LOT-01 — détail dans `CAMPAGNE.md` de la campagne.
 
+### SP-CONV — Convergence Spirale 5.0 : trajectoire partagée (`2026-07-22-sp-conv-trajectoire-partagee`)
+
+- **Possède** : le contrat d'épisode partagé (module de dérivation à deux
+  formulations, praticien/patient, avec visibilité par champ) ; la phase
+  initiale calculée et le bandeau d'épisode du cockpit ; la suture entre
+  l'index Spirale de la fiche et le time-travel `asOf` ; la synchronisation
+  des étapes 5-6 du parcours patient ; la représentation qualitative de
+  « Mon équilibre » ; le renommage issu de la réouverture d'A7 ; la preuve
+  visuelle (baselines, captures portail — réouverture de la dérogation V12).
+- **Consomme** : cycles persistés G2 (`lib/protocol/trajectoire.ts`) ;
+  `lectureAsOf.ts` et les patrons SP-TT ; `Consultation.statut`,
+  `protocoleDiffuse`/`finDeCycle`, `BookletEnvoi` (routes portail
+  existantes) ; l'artifact de référence V14 et le design system §10.
+- **Décisions actées** : contrat **en code seul**, aucune migration attendue
+  (un champ manquant ⇒ lot séparé sous gate) ; parcours patient à
+  **6 étapes HC-F** conservées ; formulations patient sans score, sans
+  délai promis, garde de gamification respectée ; lecture datée strictement
+  en lecture seule (SP-TT) ; exécution en PR directes vers `main`
+  (exception Vague 2 reconduite). Détail D1–D8 : `CAMPAGNE.md`.
+- **Ne possède pas** : la refusabilité du Fil (SP-FIL, G1) ; le repère
+  cabinet (SP-CAB, `n ≥ 5`) ; l'écoute ambiante (SP-AMB) ; la Phase C
+  (HDS) ; le décommissionnement du flux legacy (suite IDP2 LOT-04) ; le
+  moteur `lib/equilibre`.
+- **Statut** : cadrée le 2026-07-22, à partir de l'audit UX du même jour
+  **rectifié par confrontation au code** (table dans `CAMPAGNE.md`).
+  Activation laissée à la gouvernance (g-trust-04 active).
+
 ### C0-UX — Refonte shell 3.0 (`2026-07-11-refonte-ux-shell-3-0`)
 
 - **Statut acté** : *socle technique livré — direction visuelle remplacée par
