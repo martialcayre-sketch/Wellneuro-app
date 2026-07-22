@@ -178,7 +178,12 @@ réversible seul.
   lieu d'être gardé.
 - **LOT-04 — Retrait du jeton permanent**, une fois les 13 accès migrés et
   seulement alors. Migration destructive sur `patients.access_token` : décision
-  distincte, confirmation explicite.
+  distincte, confirmation explicite. **Vérifié le 2026-07-22, précondition non
+  remplie** : 12 accès sur 13 n'ont jamais consommé ni lien magique ni
+  connexion Google — jeton nu seul. Cause identifiée : rien ne poussait ces
+  deux chemins vers le patient (ni bouton praticien, ni e-mail). Fermé côté
+  e-mail par **LOT-03f** (`lots/LOT-03-google-premier-chemin.md`) ; LOT-04 reste
+  bloqué tant que cette même requête ne s'approche pas de 13/13.
 
 ## Vérification attendue
 
