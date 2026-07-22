@@ -40,9 +40,12 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
 interface SidebarRailProps {
   collapsed: boolean;
   onNavigate?: () => void;
+  /** Affiche le bloc de marque en tête (maquette cible : le brand vit dans le
+   * rail, pas dans le header). Le tiroir tablette garde son propre titre. */
+  brand?: boolean;
 }
 
-export function SidebarRail({ collapsed, onNavigate }: SidebarRailProps) {
+export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRailProps) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
@@ -50,13 +53,30 @@ export function SidebarRail({ collapsed, onNavigate }: SidebarRailProps) {
 
   return (
     <nav className="space-y-1">
+      {brand && (
+        <div className={`flex items-center gap-3 pb-3 ${collapsed ? 'justify-center' : 'px-1'}`}>
+          {/* Glyphe WN solaire (maquette : 34px, radius 9px, fond solaire .18). */}
+          <span
+            aria-hidden="true"
+            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[9px] bg-solar-500/[.18] font-display text-sm font-extrabold text-rail-accent"
+          >
+            WN
+          </span>
+          {!collapsed && (
+            <span className="min-w-0">
+              <span className="block truncate font-display text-lg font-bold text-rail-foreground">WellNeuro</span>
+              <span className="block truncate text-2xs text-rail-muted-foreground">Espace praticien</span>
+            </span>
+          )}
+        </div>
+      )}
       {groupesNavigation.map((groupe, indexGroupe) => (
         <div key={groupe.etiquette ?? 'principal'}>
           {indexGroupe > 0 &&
             (collapsed ? (
               <div className="my-2 border-t border-rail-border" aria-hidden="true" />
             ) : (
-              <p className="px-3 pt-4 pb-1 text-13 font-semibold uppercase tracking-wide text-rail-muted-foreground">
+              <p className="px-3 pt-4 pb-1 text-xs font-semibold uppercase tracking-[.08em] text-rail-muted-foreground">
                 {groupe.etiquette}
               </p>
             ))}
@@ -71,24 +91,21 @@ export function SidebarRail({ collapsed, onNavigate }: SidebarRailProps) {
                 onClick={onNavigate}
                 aria-current={active ? 'page' : undefined}
                 aria-label={collapsed ? item.label : undefined}
-                className={`group flex items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
+                className={`group flex min-h-11 items-center gap-3 rounded-[11px] px-3 py-2.5 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
+                  collapsed ? 'justify-center' : ''
+                } ${
                   active
-                    ? 'border-rail-primary/20 bg-rail-primary/10'
-                    : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail hover:text-rail-foreground'
+                    ? 'bg-solar-500/[.12] font-semibold text-rail-foreground shadow-[inset_3px_0_0_var(--rail-accent)]'
+                    : 'text-rail-muted-foreground hover:bg-rail-surface hover:text-rail-foreground'
                 }`}
               >
-                <span
-                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                    active ? 'bg-rail-primary text-rail-primary-foreground' : 'bg-rail-muted text-rail-foreground'
-                  }`}
-                >
-                  <Icon aria-hidden="true" size={20} strokeWidth={2} />
-                </span>
-                {!collapsed && (
-                  <span className={`min-w-0 flex-1 truncate text-sm font-medium ${active ? 'text-rail-foreground' : ''}`}>
-                    {item.label}
-                  </span>
-                )}
+                <Icon
+                  aria-hidden="true"
+                  size={19}
+                  strokeWidth={2}
+                  className={`shrink-0 ${active ? '' : 'opacity-85'}`}
+                />
+                {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
               </Link>
             );
           })}
