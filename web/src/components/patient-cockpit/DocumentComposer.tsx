@@ -103,24 +103,27 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
   return (
     <section aria-label="Composition du document" className="flex flex-col gap-4">
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-lg font-semibold">{modele.titre}</h3>
+        <h3 className="font-display text-lg font-semibold">{modele.titre}</h3>
         <span
           aria-label={`État : ${ETAT_LABELS[document.etat]}`}
-          className="rounded-full border px-3 py-1 text-sm"
+          className="inline-flex min-h-[34px] items-center rounded-full border border-border bg-muted px-3 py-1 text-13"
         >
           État : {ETAT_LABELS[document.etat]}
         </span>
       </header>
 
-      <div role="group" aria-label="Destinataire de l’aperçu" className="flex flex-wrap gap-2">
+      {/* Sélecteur de destinataire façon onglets maquette. */}
+      <div role="group" aria-label="Destinataire de l’aperçu" className="inline-flex flex-wrap gap-1 self-start rounded-xl border border-border bg-muted p-1">
         {DESTINATAIRES.map((d) => (
           <button
             key={d}
             type="button"
             aria-pressed={destinataire === d}
             onClick={() => setDestinataire(d)}
-            className={`min-h-11 rounded-md border px-3 py-2 text-sm ${
-              destinataire === d ? 'bg-foreground text-surface' : 'bg-surface'
+            className={`min-h-11 rounded-lg px-3 py-2 text-sm ${
+              destinataire === d
+                ? 'bg-surface font-semibold text-foreground shadow-card'
+                : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {DESTINATAIRE_LABELS[d]}
@@ -130,14 +133,15 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div aria-label="Sources praticien" className="flex flex-col gap-3">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h4 className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">
             Sources praticien
           </h4>
           {document.blocs.map((bloc) => (
-            <article key={bloc.id} className="rounded-md border p-3">
+            <article key={bloc.id} className="rounded-xl border border-border bg-surface p-3 shadow-card">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 <span className="font-medium">{TYPE_LABELS[bloc.type]}</span>
-                <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                {/* Provenance en mono (maquette : source · version). */}
+                <span className="rounded bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
                   {SOURCE_LABELS[bloc.provenance.source]} · {bloc.provenance.version}
                 </span>
               </div>
@@ -147,16 +151,16 @@ export function DocumentComposer({ modele, blocs, destinataireInitial = 'patient
         </div>
 
         <div aria-label="Aperçu destinataire" className="flex flex-col gap-3">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          <h4 className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">
             Aperçu destinataire — {DESTINATAIRE_LABELS[destinataire]}
           </h4>
           {blocsVisibles.length === 0 ? (
-            <p className="rounded-md border border-dashed p-3 text-base text-muted-foreground">
+            <p className="rounded-xl border border-dashed border-border p-3 text-base text-muted-foreground">
               Aucun contenu diffusé à ce destinataire.
             </p>
           ) : (
             blocsVisibles.map((bloc) => (
-              <article key={bloc.id} className="rounded-md border p-3">
+              <article key={bloc.id} className="rounded-xl border border-border bg-surface p-3 shadow-card">
                 <p className="text-base text-foreground">{contenuPourDestinataire(bloc, destinataire)}</p>
               </article>
             ))
