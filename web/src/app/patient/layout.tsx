@@ -8,9 +8,10 @@ export const metadata: Metadata = {
 
 export default function PatientLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-surface flex flex-col">
+    // Canvas sable plat + logo display : même socle 5.0 que le portail (V9).
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="py-4 px-6 border-b border-border bg-surface/80 backdrop-blur flex items-center justify-between gap-3">
-        <span className="text-primary font-semibold text-lg">Wellneuro</span>
+        <span className="font-display text-xl font-bold text-primary">Wellneuro</span>
         <ReadingComfortControl />
       </header>
       <main className="flex-1 flex flex-col items-center px-4 py-8">
