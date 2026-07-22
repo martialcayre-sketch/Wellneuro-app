@@ -48,9 +48,13 @@ test.describe('Captures — refonte visuelle 5.0', () => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/dashboard');
+    // Attendre l'état résolu du Fil (les métriques n'existent plus —
+    // maquette La Spirale) : le panneau « Aujourd'hui » ou un état vide.
     await page.getByTestId('fil-du-jour').waitFor();
-    // Attendre la fin des squelettes : les métriques affichent leur lien actif.
-    await page.getByText('Voir →').first().waitFor();
+    await page.waitForFunction(() => {
+      const fil = document.querySelector('[data-testid="fil-du-jour"]');
+      return fil !== null && fil.querySelector('.animate-pulse') === null;
+    });
     await page.screenshot({
       path: `${DOSSIER}/dashboard-fil-${testInfo.project.name}.png`,
       fullPage: false,

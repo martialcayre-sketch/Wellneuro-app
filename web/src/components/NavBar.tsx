@@ -19,12 +19,14 @@ interface NavBarProps {
 
 export function NavBar({ email, buildLabel, children }: NavBarProps) {
   const pathname = usePathname();
-  const [expanded, setExpanded] = useState(false);
+  // Étendu PAR DÉFAUT (maquette de référence : rail large avec textes,
+  // décision propriétaire 2026-07-22) ; le repli reste un choix mémorisé.
+  const [expanded, setExpanded] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(RAIL_STORAGE_KEY);
-    if (stored === 'true') setExpanded(true);
+    if (stored === 'false') setExpanded(false);
   }, []);
 
   useEffect(() => {
@@ -83,7 +85,7 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
         <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-4 sm:px-6 lg:py-6">
           <aside
             className={`hidden shrink-0 flex-col gap-4 transition-[width] duration-200 ease-in-out lg:flex lg:sticky lg:top-20 lg:self-start ${
-              expanded ? 'lg:w-[232px]' : 'lg:w-16'
+              expanded ? 'lg:w-[252px]' : 'lg:w-16'
             }`}
           >
             {/* Colonne nuit de la maquette : dégradé --rail-gradient sur repli
