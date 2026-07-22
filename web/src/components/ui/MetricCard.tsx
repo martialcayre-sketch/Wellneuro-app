@@ -19,11 +19,11 @@ export function MetricCard({
 }) {
   const contenu = (
     <>
-      <span className="text-xs text-muted-foreground uppercase tracking-wide">{label}</span>
-      <span className="text-3xl font-bold text-primary">{value}</span>
+      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em]">{label}</span>
+      <span className="font-display text-metric font-bold text-primary">{value}</span>
       {sub && <span className="text-xs text-muted-foreground">{sub}</span>}
       {href && (
-        <span className="mt-1 text-xs font-medium text-primary group-hover:underline">Voir →</span>
+        <span className="mt-1 text-13 font-medium text-solar-ink group-hover:underline">Voir →</span>
       )}
     </>
   );
@@ -32,7 +32,7 @@ export function MetricCard({
     return (
       <Link
         href={href}
-        className={`${CARD_BASE} group transition hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
+        className={`${CARD_BASE} group transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-pop focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring`}
       >
         {contenu}
       </Link>

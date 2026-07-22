@@ -188,6 +188,9 @@
    * primaire indigo 6,92:1.
    */
   --rail-background: var(--night-900);
+  /* Dégradé nuit du rail (maquette cible 5.0) — appliqué en background-image
+   * par-dessus la couleur de repli --rail-background. */
+  --rail-gradient: linear-gradient(180deg, var(--night-900), var(--night-950));
   --rail-surface: var(--night-800);
   --rail-foreground: #eef0fa;
   --rail-muted: #1f2850;

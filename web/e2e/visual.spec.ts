@@ -40,6 +40,8 @@ test.describe('Captures — refonte visuelle 5.0', () => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/dashboard');
     await page.getByTestId('fil-du-jour').waitFor();
+    // Attendre la fin des squelettes : les métriques affichent leur lien actif.
+    await page.getByText('Voir →').first().waitFor();
     await page.screenshot({
       path: `${DOSSIER}/dashboard-fil-${testInfo.project.name}.png`,
       fullPage: false,

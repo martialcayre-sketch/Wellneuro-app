@@ -56,7 +56,7 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
       <div
         id="panneau-cloture"
         role="status"
-        className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground"
+        className="rounded-xl border border-border bg-surface p-4 shadow-card text-base text-muted-foreground"
       >
         Lecture de l’état de clôture&hellip;
       </div>
@@ -88,9 +88,9 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
     <section
       id="panneau-cloture"
       aria-labelledby="cloture-titre"
-      className="rounded-xl border border-border bg-surface p-4"
+      className="rounded-xl border border-border bg-surface p-4 shadow-card"
     >
-      <h3 id="cloture-titre" className="text-sm font-semibold text-foreground">
+      <h3 id="cloture-titre" className="font-display text-lg font-semibold text-foreground">
         La minute d’après
       </h3>
       <p className="mt-1 text-xs text-muted-foreground">
@@ -100,7 +100,7 @@ export function ClotureMinuteApresPanel({ idPatient }: { idPatient: string }) {
 
       {cloture.decision ? (
         <p className="mt-3 text-base text-foreground">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Décision</span> ·
+          <span className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Décision</span> ·
           priorité retenue <strong>{cloture.decision.selectedPriorityId}</strong>, enregistrée le{' '}
           {formatDate(cloture.decision.enregistreLe)}.
         </p>
