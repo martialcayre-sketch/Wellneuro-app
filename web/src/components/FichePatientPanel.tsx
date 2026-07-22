@@ -176,11 +176,15 @@ function InstrumentTiroir({
   description,
   icone: Icone,
   children,
+  large = false,
 }: {
   libelle: string;
   description: string;
   icone: LucideIcon;
   children: ReactNode;
+  /** Dérogation de largeur (maquette : 440px par défaut ; les tableaux
+   * denses comme « Détail des réponses » gardent la pane large). */
+  large?: boolean;
 }) {
   return (
     <Dialog.Root>
@@ -200,21 +204,23 @@ function InstrumentTiroir({
         <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35" />
         <Dialog.Content
           data-theme="praticien"
-          className="fixed right-0 top-0 z-50 h-full w-full max-w-2xl overflow-y-auto border-l border-border bg-surface p-6 shadow-xl focus:outline-none"
+          className={`fixed right-0 top-0 z-50 h-full w-full overflow-y-auto border-l border-border bg-surface px-[22px] py-5 shadow-pop focus:outline-none ${
+            large ? 'max-w-2xl' : 'lg:w-[min(440px,86%)] lg:max-w-none max-w-2xl'
+          }`}
         >
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-solar-ink">Instrument</p>
-              <Dialog.Title className="font-display text-lg font-bold text-foreground">{libelle}</Dialog.Title>
-              <Dialog.Description className="mt-1 text-base text-muted-foreground">{description}</Dialog.Description>
+              <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">Instrument</p>
+              <Dialog.Title className="font-display text-[19px] font-bold text-foreground">{libelle}</Dialog.Title>
+              <Dialog.Description className="mt-1 text-sm text-muted-foreground">{description}</Dialog.Description>
             </div>
             <Dialog.Close asChild>
               <button
                 type="button"
                 aria-label={`Fermer l’instrument ${libelle}`}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
-                <X aria-hidden="true" size={18} strokeWidth={2} />
+                <X aria-hidden="true" size={20} strokeWidth={2} />
               </button>
             </Dialog.Close>
           </div>
@@ -470,7 +476,24 @@ export function FichePatientPanel({
           {priorites.map((p: PrioriteBesoin) => (
             <tr key={p.besoin} className="border-t border-border">
               <td className="px-4 py-2">{p.libellePraticien}</td>
-              <td className="px-4 py-2 text-muted-foreground">{p.couverture !== null ? `${p.couverture}%` : '—'}</td>
+              <td className="px-4 py-2 text-muted-foreground">
+                {p.couverture !== null ? (
+                  /* Piste neutre (sans zones) : la couverture n'a pas de bornes
+                     de référentiel — aucun seuil n'est suggéré, le chiffre
+                     reste affiché à côté du point. */
+                  <span className="flex items-center gap-2">
+                    <ScoreZones
+                      value={p.couverture}
+                      max={100}
+                      ariaLabel={`Couverture ${p.couverture} %`}
+                      className="w-16"
+                    />
+                    {p.couverture}%
+                  </span>
+                ) : (
+                  '—'
+                )}
+              </td>
               <td className="px-4 py-2"><EvidenceBadge niveau={p.niveauPreuve} /></td>
             </tr>
           ))}
@@ -483,7 +506,9 @@ export function FichePatientPanel({
   );
 
   const cartesObjetsCliniques = (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    /* 2 colonnes fixes : la pane de tiroir fait 440px (maquette), les
+       breakpoints viewport de Tailwind n'y voient rien. */
+    <div className="grid grid-cols-2 gap-3">
       <ObjetGauge label="Indice global" value={objetsCliniques.indiceGlobal} />
       <ObjetGauge label="Stabilité métabolique" value={objetsCliniques.stabiliteMetabolique} />
       <ObjetGauge label="Réserve d'adaptation" value={objetsCliniques.reserveAdaptation} />
@@ -982,6 +1007,7 @@ export function FichePatientPanel({
                 libelle="Détail des réponses"
                 description="Détail technique des questionnaires reçus : scores, interprétations et qualité."
                 icone={FileText}
+                large
               >
                 {tableauReponses}
               </InstrumentTiroir>

@@ -12,9 +12,10 @@ import type { ScoreRange } from '@/lib/scoring/ranges';
  * l'aria-label.
  */
 const FOND_ZONE: Record<string, string> = {
-  danger: 'rgb(var(--color-status-danger-rgb) / 0.12)',
-  warning: 'rgb(var(--color-status-warning-rgb) / 0.12)',
-  success: 'rgb(var(--color-status-success-rgb) / 0.12)',
+  // Opacité .14 : anatomie needrow de la maquette cible 5.0 (2026-07-18).
+  danger: 'rgb(var(--color-status-danger-rgb) / 0.14)',
+  warning: 'rgb(var(--color-status-warning-rgb) / 0.14)',
+  success: 'rgb(var(--color-status-success-rgb) / 0.14)',
 };
 
 export function ScoreZones({
@@ -23,19 +24,22 @@ export function ScoreZones({
   ranges,
   previousValue,
   ariaLabel,
+  className = 'w-28',
 }: {
   value: number;
   max: number;
   ranges?: ScoreRange[] | null;
   previousValue?: number | null;
   ariaLabel: string;
+  /** Largeur de la piste (ex. `flex-1` dans une needrow de tiroir). */
+  className?: string;
 }) {
   if (!(max > 0)) return null;
   const pct = (v: number) => `${Math.max(0, Math.min(100, (v / max) * 100))}%`;
 
   return (
-    <span role="img" aria-label={ariaLabel} className="relative inline-block h-2.5 w-28 shrink-0 align-middle">
-      <span className="absolute inset-0 overflow-hidden rounded-full bg-muted">
+    <span role="img" aria-label={ariaLabel} className={`relative inline-block h-2 shrink-0 align-middle ${className}`}>
+      <span className="absolute inset-0 overflow-hidden rounded-md bg-muted">
         {(ranges ?? []).map((r, i) => (
           <span
             key={i}
@@ -57,7 +61,7 @@ export function ScoreZones({
       )}
       <span
         aria-hidden
-        className="absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface bg-foreground shadow-sm"
+        className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-surface bg-primary shadow-sm"
         style={{ left: pct(value) }}
       />
     </span>
