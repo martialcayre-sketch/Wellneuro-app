@@ -1472,3 +1472,91 @@ merge de #231 revient à Copilot.
 
 **Questions ouvertes** : date de rapprochement 13/13 pour LOT-04 ; reste du
 backlog audit (voir entrée précédente).
+
+## 2026-07-22 — Corpus 5.0 : banc qualité d'extraction (triple lecture croisée)
+
+**Décisions** : reprise du chantier pgvector/corpus, phase 2 de la proposition
+5.0 (banc qualité, préalable au pipeline d'ingestion). Banc construit dans
+`tools/corpus/bench/` (worktree `corpus-bench-qualite`) : pour chaque page,
+lecture **A** (pdftotext, vérité des nombres) + **B** (Claude Sonnet 5 vision) +
+**C** (GPT-5.4 vision), invariants déterministes bloquants — dosages nombre+unité
+de A devant survivre dans B et C, couverture caractères (bigrammes), comptage de
+cellules. Clés API lues depuis `web/.env.local` (jamais committées), les 3 PDF
+et sorties hors dépôt (`~/.wellneuro/corpus-bench/`).
+
+**Résultat (85 pages)** : restitution des dosages **100 % B / 100 % C**, 0 perdu
+des deux. Tokens entrée ~2011 (Claude) / ~1742 (GPT) par page — l'hypothèse
+~2100 de la note de coûts tient. Projection 11 000 pages, batch −50 % : croisé
+B+C **~76 $** (la note estimait ~107 $ ; recalage par tokens réels).
+
+**Écarté** : traiter les « manques » comme des régressions — deux confusables
+Unicode dans l'invariant lui-même, trouvés sur deux runs. Run 1 : ellipse ASCII
+`...` absorbée dans un run numérique → dosage fantôme `2.5 mg`. Run 2 : mu grec
+`μ` (U+03BC) des sorties Claude vs signe micro `µ` (U+00B5) de la couche texte →
+9 faux manques sur un tableau µg (aucune troncature réelle, vérifié ligne à
+ligne). Extracteur durci : ellipses neutralisées, nombres bien formés (milliers
+FR `1 000`, décimales `2,5`), `μ→µ`. Re-scoré hors-ligne (`rescore.mjs`) à coût
+API nul → 100 %/100 % confirmé sur les deux runs. Invariant qui n'a jamais bougé :
+perdus des deux = 0. Les modèles vision sont non déterministes (formatage,
+codepoints) : l'invariant doit être robuste aux confusables.
+
+**Prochaine action** : pipeline `tools/corpus/` (extract/invariants/chunk/claims/
+ingest) sur les notebooks prioritaires (09 Nutrition, 10 Micronutrition, 08
+Biologie fonctionnelle — à confirmer) ; puis migration `rag_corpus_claims`.
+
+**Questions ouvertes** : notebooks prioritaires à confirmer ; schéma
+`rag_corpus_claims` à compiler ; champ `patient_identifiable` explicite ;
+lancement avant 2026-08-31 (tarif intro Sonnet 5).
+
+## 2026-07-22 — Corpus 5.0 : pipeline verbatim + pilote 09 ingéré (dev-local)
+
+**Décisions** : chantier corpus repris en 3 phases (snapshot → pipeline → claims).
+Découverte structurante : le « WELLNEURO_CORPUS_STUDIO » du Drive n'est pas jetable
+— c'est le pipeline NotebookLM existant (specs SPEC_DECOUPAGE_RAG, 28+ markdown
+candidats, preuves G1-G4). Ne rien supprimer, ne pas vider les notebooks.
+Preuve à l'appui : l'ancien canonique NotebookLM de WN-SRC-0056 avait **retiré
+les 103 dosages** (synthèse dose-strippée, statut réel EN_ATTENTE), là où la
+route 2 IA les conserve tous. Les deux couches sont distinctes : la route 2 IA
+produit le **verbatim fidèle** (couche manquante), l'ancien alimente les claims.
+
+**Livré (tools/corpus/)** : `snapshot/` (391/391 appariés, 2 doublons contenu),
+`lib/wellneuro-text` (réplique normalize, parité hash 3/3 vs serveur),
+`extract/` (2 IA A/B/C + invariants), `chunk/` (conforme SPEC : unités de sens
+350-800 mots, dose insécable), `ingest/` (`--validate` via vrai
+parseRagIngestPayload + `devlocal.mjs` direct pgvector). Pilote 09 (6 sources,
+163 pages, ~3 $) : extrait, 26 chunks conformes, **ingérés en base éphémère
+pgvector, récupération 26/26**, recherche sémantique juste.
+
+**Écarté** : supprimer le studio / vider les notebooks ; réutiliser les anciens
+canoniques comme verbatim (dose-strippés) ; monter un next dev complet (npm
+install absent du worktree) au profit d'un harnais direct pgvector répliquant le
+SQL du store. Un « perdu des deux » sur WN-SRC-0053 = faux positif (collision de
+colonnes de tableau dans pdftotext A ; B/C corrects ; portion alimentaire, pas un
+dosage médicamenteux).
+
+**Prochaine action** : Phase 3 — migration `rag_corpus_claims` (SQL brut, pattern
+de 20260721090000, revue wn-reviewer avant / execute_sql après). Piste MP4 (14
+vidéos, hors 09) à traiter séparément.
+
+**Questions ouvertes** : schéma claims à valider avant migration ; ingestion prod
+(acte gaté) ; passage à l'échelle des 88 sources de 09 en batch −50 %.
+
+## 2026-07-22 — IDP2 : #226 vérifiée en prod, G5 constaté actif, précondition LOT-04 re-mesurée
+
+**Décisions** : vérification post-merge de #226 (exception migration/auth) :
+migration `20260722100000_idp2_g5_trace_connexions_google` appliquée en
+1 tentative (11:39:27Z), table conforme (5 colonnes, pkey + 2 index, RLS
+deny-all), requête inverse `_prisma_migrations` vide. Constat non anticipé :
+**WN_G5_GOOGLE_PATIENT est actif en production** — 03d exécuté côté humain —
+et la trace fonctionne (1 ligne `consomme`, PAT006, 15:04Z), preuve de bout
+en bout. Précondition LOT-04 re-mesurée : **1/13** (PAT006 seul passé par
+Google ou lien magique). Réconciliation `.wn/state.json`
+(`last_completed_lot` → LOT-03f, next_action à jour).
+
+**Écarté** : ouvrir LOT-04 (précondition non remplie, migration destructive) ;
+toute écriture en base (lectures `execute_sql` seules).
+
+**Prochaine action** : le praticien renvoie l'invitation aux 12 patients
+restants, re-mesurer avant LOT-04 ; sinon suite SP-SPI LOT-01.
+
+**Questions ouvertes** : date de rapprochement 13/13 ; backlog audit.
