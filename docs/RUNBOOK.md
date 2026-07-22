@@ -61,9 +61,20 @@
 
 ## Révocation accès patient
 
-1. Localiser `Patient.id` dans base Supabase
-2. Invalider ou supprimer `Patient.portailToken`
-3. Vérifier cookie `wn_portail` expiré côté patient (session terminée)
+> Corrigé le 2026-07-22 (exercice sur table, constat EX-1) : l'ancienne
+> version référençait `Patient.portailToken`, champ qui n'existe pas, et
+> ignorait la route applicative prévue pour ce cas.
+
+1. Depuis le tableau de bord praticien, révoquer l'accès du patient
+   (panneau patients) — ou `DELETE /api/praticien/token?idPatient=...`.
+   La route ferme **les trois portes en une transaction** : jeton permanent
+   (`accessTokenRevoked`), sessions déjà ouvertes (`sessionsInvalidesAvant`),
+   liens magiques encore en vol (datés `consommeLe`).
+2. Vérifier le refus côté patient : ancien lien → message d'indisponibilité,
+   session `wn_portail` existante refusée.
+3. Si l'accès doit être rétabli : réémettre et envoyer un nouveau lien
+   (`POST /api/praticien/token`, bouton « Renvoyer le lien »). La réémission
+   ne rouvre pas les sessions antérieures (`sessionsInvalidesAvant` survit).
 
 ## Violation de données personnelles
 
