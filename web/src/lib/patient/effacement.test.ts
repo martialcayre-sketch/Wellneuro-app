@@ -28,7 +28,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'assignation', 'consultation', 'trustAcknowledgement', 'trustChoiceEvent',
     'trustAdverseEffectReport', 'trustPrivacyIncident', 'trustRightsRequest',
     'filCardRejection', 'relectureNote', 'portailMagicLink', 'packProposition',
-    'portailConnexionGoogle', 'correspondanceMedecin',
+    'portailConnexionGoogle', 'correspondanceMedecin', 'journalAccesDossier',
   ]) {
     tx[nom] = modele(nom);
   }
@@ -64,6 +64,15 @@ describe('effacerDossier', () => {
     await effacerDossier('PAT_SEED_03');
     expect(appels).toContain('auditSynthese');
     expect(appels).toContain('bookletEnvoi');
+  });
+
+  // Même exposition pour les journaux d'accès (G5, G-TRUST-04) : sans clé
+  // étrangère, seul cet appel nommé les efface. L'assertion est
+  // comportementale — la garde structurelle plus bas, elle, est textuelle.
+  it('supprime les journaux d’accès qui nomment le dossier', async () => {
+    await effacerDossier('PAT_SEED_03');
+    expect(appels).toContain('portailConnexionGoogle');
+    expect(appels).toContain('journalAccesDossier');
   });
 
   it('tout passe par une seule transaction', async () => {

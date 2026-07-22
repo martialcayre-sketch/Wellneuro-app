@@ -101,6 +101,12 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.portailConnexionsGoogle = (
       await tx.portailConnexionGoogle.deleteMany({ where: par })
     ).count;
+    // Le journal des lectures praticien (G-TRUST-04, exigence 5) porte lui
+    // aussi `id_patient` sans clé étrangère : même raison, même geste — une
+    // trace d'accès ne survit pas au dossier qu'elle nomme.
+    supprimees.journalAccesDossiers = (
+      await tx.journalAccesDossier.deleteMany({ where: par })
+    ).count;
 
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.
