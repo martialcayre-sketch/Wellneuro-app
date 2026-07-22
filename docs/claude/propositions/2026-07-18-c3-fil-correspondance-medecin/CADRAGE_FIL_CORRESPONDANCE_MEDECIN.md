@@ -5,6 +5,15 @@
 > `schema.prisma` et `web/prisma/migrations/` intacts.** Ce document **pose** le
 > problème et les pistes ; **il ne tranche rien** — les décisions sont renvoyées à
 > une revue future (accès/identité médecin et régime de conservation à arbitrer).
+>
+> **Arbitré le 2026-07-22.** Q1 et Q3 sont tranchées par FM-1 (« C puis A » :
+> V1 transcription praticien, V2 lien signé sur infra G4) et FM-2 (conservation
+> alignée sur le dossier patient) —
+> `campagnes/2026-07-11-fiches-conseils-contextuelles-v1/CADRAGE_FIL_MEDECIN_5_0.md`.
+> Q2 était déjà acquise par construction (constat ci-dessous) ; Q4 (persisté →
+> gate migration) et Q5 (rattachement au patient) sont réglées par le lot
+> compilé : `campagnes/2026-07-11-fiches-conseils-contextuelles-v1/lots/LOT-06-fil-correspondance-medecin-v1.md`.
+> Ce document reste en l'état comme trace du raisonnement.
 
 ## Constat d'exécution (2026-07-20, clôture de la Vague 2)
 
