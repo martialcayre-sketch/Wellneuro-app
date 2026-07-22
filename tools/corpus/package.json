@@ -3,8 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Pipeline corpus WellNeuro : snapshot, extract (2 IA), invariants, chunk, ingest.",
+  "description": "Pipeline corpus WellNeuro : snapshot, extract (2 IA), invariants, chunk, claims, ingest.",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
+    "openai": "^6.9.0",
     "pg": "^8.22.0"
   }
 }
