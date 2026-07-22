@@ -13,12 +13,18 @@ export default defineConfig({
   datasource: {
     url: process.env["DATABASE_URL"] ? withSupabaseSslMode(process.env["DATABASE_URL"]) : undefined,
   },
-  // `vector(1536)` reste un type d'extension manipulé en SQL brut. La table est
-  // créée par la migration versionnée mais exclue du diff Prisma déclaratif.
+  // `vector(1536)` reste un type d'extension manipulé en SQL brut. Ces tables
+  // sont créées par des migrations versionnées mais exclues du diff Prisma
+  // déclaratif (couche RAG : verbatim `rag_corpus_chunks`, claims validés
+  // praticien `rag_corpus_claims` + leur jonction sources).
   experimental: {
     externalTables: true,
   },
   tables: {
-    external: ["public.rag_corpus_chunks"],
+    external: [
+      "public.rag_corpus_chunks",
+      "public.rag_corpus_claims",
+      "public.rag_corpus_claim_sources",
+    ],
   },
 });
