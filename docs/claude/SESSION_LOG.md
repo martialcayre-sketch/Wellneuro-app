@@ -1612,3 +1612,24 @@ trancher `86e0619` (journal LOT-01b jamais mergé).
 
 **Questions ouvertes** : filtre docs-only sur `verify` (check obligatoire) ;
 fichier sale de `rag-pgvector-audit`.
+
+## 2026-07-22 — Hygiène du flux, acte II : sauvetages et régime permanent
+
+**Décisions** : clé Anthropic (`.pages`) sortie du dépôt →
+`~/Documents/WELLNEURO-API-KEYS/`. Journal LOT-01b (`86e0619`) réinséré à sa
+place chronologique (#267). Requalification de 9 sources corpus préservée en
+PR brouillon, validée par le praticien et mergée (#268). Purge finale outillée :
+restent 3 worktrees (sessions actives), 5 branches locales, 3 remote. Régime
+permanent constaté : `delete_branch_on_merge` auto-nettoie les branches
+mergées, le filtre CI docs-only existait déjà (`verify` 25 s contre 6 min 33),
+l'Ignored Build Step ne consomme plus de déploiement docs.
+
+**Écarté** : valider moi-même la requalification corpus (gouvernance des
+données → brouillon) ; pull du checkout principal (compaction du SESSION_LOG
+en cours, non committée).
+
+**Prochaine action** : trancher `worktree-corpus-bench-qualite` (`7e4f591`,
+brouillon de migration claims) — domaine de la session corpus.
+
+**Questions ouvertes** : compaction du SESSION_LOG à terminer ; deux scripts
+keep-awake non suivis dans `scripts/`.
