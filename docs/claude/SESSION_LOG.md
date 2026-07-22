@@ -217,3 +217,27 @@ session.
 
 **Questions ouvertes** : existence physique du registre des violations
 (EX-3, humain) ; confirmation juridique D-TRUST-02.
+
+## 2026-07-23 — Corpus : pilote chunks + claims ingéré en production
+
+**Décisions** : ingestion prod exécutée — 26 chunks (6 sources pilotes, batch
+001) puis 136 claims LOT_001, via le nouveau `tools/corpus/claims/ingest.mjs`
+(#282, mergée sur autorisation explicite). Rotation de `RAG_INTERNAL_SECRET` :
+variable Vercel **Sensitive** (`env pull` ne rend que le masque `[SENSITIVE]`),
+valeur conservée au coffre `~/Documents/WELLNEURO-API-KEYS/`. Branche
+`worktree-corpus-bench-qualite` supprimée (recouverte par main, preuve : diff
+vide hors package.json obsolète).
+
+**Écarté** : lots de 64 puis 16 claims — timeout transaction Prisma 5 s (~4
+requêtes séquentielles par claim × latence iad1↔eu-central-1) ; `--lot 4`
+retenu, correctif serveur remis à plus tard.
+
+**Preuves** : base prod — 136 `EN_ATTENTE_VALIDATION`, 0 `VALIDE`, 136 liens
+sha complets, barrière `match_wellneuro_rag_claims` vide même sondée avec
+l'embedding d'un claim ingéré au seuil 0.
+
+**Prochaine action** : validation praticien des 136 claims dans l'Atelier
+(`dashboard/corpus`).
+
+**Questions ouvertes** : région des fonctions (fra1) et regroupement des
+requêtes du store avant l'échelle 88 sources ; piste MP4.
