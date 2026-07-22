@@ -1593,6 +1593,28 @@ restants, re-mesurer avant LOT-04 ; sinon suite SP-SPI LOT-01.
 
 **Questions ouvertes** : date de rapprochement 13/13 ; backlog audit.
 
+## 2026-07-22 — Corpus : couche claims (ingestion + rédaction 2 IA)
+
+**Décisions** : voie d'ingestion des claims livrée (route interne
+`/api/internal/rag/claims/ingest` + lib), statut `EN_ATTENTE_VALIDATION` forcé et
+**version de claim immuable**. Rédaction **2 IA** : Sonnet 5 rédige, GPT-5.4
+contre-vérifie la fidélité au verbatim (désaccord → exclu). PR **#254** (infra)
+mergée, **#262** (drafting) verify vert.
+
+**Écarté** : supersession auto des claims (risque de défaire une validation) →
+additif/immuable ; dry-run d'inspection avant ingestion (choix « enchaîner
+direct »).
+
+**Preuves** : revue adversariale (workflow, 20 agents) — 10 constats confirmés,
+tous corrigés, dont l'ajout silencieux de sources à un claim validé. Dev-local :
+136 claims (53 exclus par la fidélité), 136/136 ingérés, barrière D-003 tenue.
+T1 + T2 (`test:worktree`) verts.
+
+**Prochaine action** : claims → prod, gaté sur le déploiement de #254 (Vercel) +
+une surface de validation praticien (Atelier corpus, non ouverte).
+
+**Questions ouvertes** : passage à l'échelle 88 sources (API batch) ; piste MP4.
+
 ## 2026-07-22 — Hygiène du flux : déploiements Vercel filtrés, purge outillée des branches
 
 **Décisions** : Ignored Build Step posé deux fois — `web/vercel.json` (#258,

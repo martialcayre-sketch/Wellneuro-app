@@ -40,6 +40,23 @@ test.describe('Praticien Dashboard', () => {
     await expect(page.locator('a[href*="patients"]:visible').first()).toBeVisible({ timeout: 5000 });
   });
 
+  test('atelier corpus : la file de revue se rend, état vide compris', async ({ page }) => {
+    const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
+    await page.context().addCookies([sessionCookie]);
+
+    await page.goto('/dashboard/corpus');
+
+    await expect(page.getByRole('heading', { name: 'Atelier corpus' })).toBeVisible({
+      timeout: 10000,
+    });
+    // Base éphémère sans claims : l'écran doit annoncer la file vide, pas une
+    // erreur — la route GET a donc réellement lu les tables rag_*.
+    await expect(page.getByText('Aucun claim en attente de validation', { exact: false })).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByRole('tab', { name: 'En attente' })).toBeVisible();
+  });
+
   test('navigate to patients section', async ({ page }) => {
     const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
     await page.context().addCookies([sessionCookie]);
