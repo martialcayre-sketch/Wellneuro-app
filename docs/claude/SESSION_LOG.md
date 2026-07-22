@@ -1375,3 +1375,27 @@ d'effacement falsifiée : sans sa ligne, elle nomme `packProposition`.
 
 **Questions ouvertes** : R2, R4 (date de bascule des liens permanents), R6 ;
 relecture visuelle humaine des écrans praticien, toujours pas faite.
+
+## 2026-07-22 — Audit 5.0 : les réserves restantes fermées, et le CHANGELOG désamorcé
+
+**Décisions** : R2, R4, R6 et SP-SPI LOT-01 traités, une PR chacun, toutes
+mergées (#212, #214, #213, #216). **R2** — la barre « X % complété » est de la
+navigation, pas de la gamification ; frontière écrite et tenue par une garde.
+**R4** — la bascule des liens permanents devient une variable Vercel
+(`WN_PORTAIL_LIEN_PERMANENT_FIN`), **fail-open** ; la date reste au propriétaire.
+**R6** — les deux roadmaps coexistent ; le vrai défaut était le préfixe `R`
+désignant trois séries. **SP-SPI** — pack proposé, refusable, la question ne
+revient pas. Enfin #222 : le CHANGELOG passe aux fragments `changelog.d/`, la
+cause des cinq conflits d'insertion de la veille.
+
+**Écarté** : merger #218 (worktree verrouillé d'une autre session) ; migrer tout
+l'historique CHANGELOG ; un fail-closed pour R4 (mettrait les patients dehors).
+
+**Vérifié** : CI verte sur les sept PR ; R5 fermé **par mesure** (drapeaux
+prod) ; `pack_propositions` appliquée en prod (0 ligne, RLS active) ; captures
+praticien livrées (relecture visuelle enfin faite).
+
+**Prochaine action** : IDP2 LOT-03 (à spécifier) ou l'E2E du refus SP-SPI.
+
+**Questions ouvertes** : E2E du refus (fixture antidatée) ; #218 et #221 (autres
+sessions) ; date de bascule R4 ; migration destructive IDP2 LOT-04.
