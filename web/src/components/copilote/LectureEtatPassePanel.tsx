@@ -153,8 +153,8 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
   if (reperes.length === 0) return null;
 
   return (
-    <section aria-labelledby="lecture-passee" className="rounded-xl border border-border bg-surface p-4">
-      <h3 id="lecture-passee" className="text-sm font-semibold text-foreground">
+    <section aria-labelledby="lecture-passee" className="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <h3 id="lecture-passee" className="font-display text-lg font-semibold text-foreground">
         Lire l’état de la fiche à une date passée
       </h3>
       <p className="mt-1 text-xs text-muted-foreground">

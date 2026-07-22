@@ -54,7 +54,7 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
 
   if (etat === 'chargement') {
     return (
-      <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground">
+      <div role="status" className="rounded-xl border border-border bg-surface p-4 shadow-card text-base text-muted-foreground">
         Lecture du pré-vol&hellip;
       </div>
     );
@@ -79,8 +79,8 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <section aria-labelledby="prevol-changements" className="rounded-xl border border-border bg-surface p-4">
-        <h3 id="prevol-changements" className="text-sm font-semibold text-foreground">
+      <section aria-labelledby="prevol-changements" className="rounded-xl border border-border bg-surface p-4 shadow-card">
+        <h3 id="prevol-changements" className="font-display text-lg font-semibold text-foreground">
           Ce qui a changé
         </h3>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -97,15 +97,15 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
           <ul className="mt-3 space-y-2">
             {prevol.faits.map((fait, position) => (
               <li key={`${fait.source}-${fait.date}-${position}`} className="text-base text-foreground">
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                <span className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">
                   {LIBELLE_SOURCE[fait.source]}
                 </span>{' '}
                 · {fait.libelle}{' '}
-                <span className="text-muted-foreground">· {formatDate(fait.date)}</span>
+                <span className="font-mono text-13 text-muted-foreground">· {formatDate(fait.date)}</span>
                 {/* La version n'est affichée que si la source en a figé une :
                     son absence se lit comme une absence, jamais comme « v1 ». */}
                 {fait.version && (
-                  <span className="text-muted-foreground"> · version {fait.version}</span>
+                  <span className="font-mono text-13 text-muted-foreground"> · version {fait.version}</span>
                 )}
               </li>
             ))}
@@ -113,8 +113,8 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
         )}
       </section>
 
-      <section aria-labelledby="prevol-questions" className="rounded-xl border border-border bg-surface p-4">
-        <h3 id="prevol-questions" className="text-sm font-semibold text-foreground">
+      <section aria-labelledby="prevol-questions" className="rounded-xl border border-border bg-surface p-4 shadow-card">
+        <h3 id="prevol-questions" className="font-display text-lg font-semibold text-foreground">
           Questions suggérées
         </h3>
         {prevol.questionsSuggerees.length === 0 ? (
@@ -136,7 +136,7 @@ export function PreVolPanel({ idPatient }: { idPatient: string }) {
       </section>
 
       <section aria-labelledby="prevol-ailleurs" className="rounded-xl border border-border bg-muted/40 p-4">
-        <h3 id="prevol-ailleurs" className="text-sm font-semibold text-foreground">
+        <h3 id="prevol-ailleurs" className="font-display text-lg font-semibold text-foreground">
           Discordances et objets cliniques
         </h3>
         <p className="mt-2 text-base text-muted-foreground">
