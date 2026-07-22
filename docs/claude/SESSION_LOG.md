@@ -173,3 +173,22 @@ brouillon de migration claims) — domaine de la session corpus.
 
 **Questions ouvertes** : compaction du SESSION_LOG à terminer ; deux scripts
 keep-awake non suivis dans `scripts/`.
+
+## 2026-07-22 — G-TRUST-04 PR-7 : journal des accès praticien branché
+
+**Décisions** : PR-7 livrée et mergée (#278, verify 6 min 21 vert, merge sur
+instruction explicite). Helper `journaliserAccesDossier` (awaité fail-open
+patron G5, purge 365 j, code `PRATICIEN.ACCES_DOSSIER.TRACE_ECHEC`), garde
+`verifierAppartenancePatient(…, acces?)`, 12 routes GET branchées (7 cat. A,
+5 cat. B ralliées à la garde, 403 préservés à l'octet). Revue adversariale
+`wn-reviewer` : GO, 0 bloquant. T1 (298 tests) + T2 (1 min 58, 73 E2E) verts.
+Post-merge : table vérifiée (`execute_sql`) — 0 ligne, RLS deny-all.
+
+**Écarté** : journaliser les refus (nommerait un dossier non lu) ; convertir
+la catégorie C à la garde (choix anti-oracle, PR-9 en appel direct).
+
+**Prochaine action** : PR-5 (`@ts-nocheck` vague 1) ou PR-6 (exercice sur
+table) ; PR-9 routes C/D.
+
+**Questions ouvertes** : preuve fonctionnelle du journal au premier dossier
+ouvert en prod ; PR #277 (keep-awake) toujours ouverte.
