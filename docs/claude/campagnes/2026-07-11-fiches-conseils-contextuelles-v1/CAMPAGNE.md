@@ -1,7 +1,7 @@
 ---
 id: "2026-07-11-fiches-conseils-contextuelles-v1"
 titre: "C3 — Documents contextuels multi-destinataires V1"
-statut: "en_cours — reprise fil médecin V1 (LOT-06 compilé le 2026-07-22 après arbitrages FM-1/FM-2 ; V1 LOT-00 à LOT-05 restent en prod)"
+statut: "livrée — V1 + montage + fil médecin V1 (LOT-06 livré le 2026-07-22, #252 + #255 ; V2 lien signé au constat d'usage)"
 créée_le: "2026-07-11"
 mise_à_jour: "2026-07-22"
 lot_courant: "LOT-06"
@@ -93,7 +93,7 @@ et les blocs C1 (`cockpit`) / C2 (`ProtocolDraft`, `ProtocolDiffusionApproval`,
 | LOT-03 | Rendus par destinataire + impression HTML | **livré** |
 | LOT-04 | Validation, tests de bout en bout et handoff | **livré** |
 | LOT-05 | Montage cockpit + route de composition et envoi réemployé | **livré** |
-| LOT-06 | Fil de correspondance médecin V1 — transcription praticien (FM-1/FM-2 ; migration seule puis écran) | à_faire |
+| LOT-06 | Fil de correspondance médecin V1 — transcription praticien (FM-1/FM-2 ; migration seule puis écran) | **livré** (#252 vérifiée en prod, #255) |
 
 Décisions de compilation :
 

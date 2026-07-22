@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Fil de correspondance médecin V1 — transcription praticien"
-statut: "à_faire"
+statut: "livré — #252 (migration, vérifiée en prod) + #255 (routes + écran), 2026-07-22"
 dépend_de: "FM-1/FM-2 arbitrées (CADRAGE_FIL_MEDECIN_5_0.md) ✓"
 ---
 
@@ -106,16 +106,18 @@ stricte :
 
 ## Étapes
 
-- [ ] **Plan technique en mode Plan** avant toute édition (modèle exact,
-      routes, composants).
-- [ ] PR 1 : migration seule + effacement nommément + garde structurelle
-      verte. Revue adversariale `wn-reviewer` avant merge (exception
-      migration de CLAUDE.md), vérification `execute_sql` après.
-- [ ] PR 2 : routes (tests d'autorisation par route), écran, textes relus.
-- [ ] Vérifier l'articulation TRUST `partage_medecin_traitant` et consigner
-      la décision (garde route ou non) dans ce fichier.
-- [ ] Validations : T1 après chaque édition, T2 avant commit UI/API, T3
-      avant la PR de migration.
+- [x] **Plan technique en mode Plan** approuvé le 2026-07-22 avant toute
+      édition.
+- [x] PR 1 : migration seule + effacement nommément + garde structurelle
+      verte — **#252**, revue adversariale `wn-reviewer` GO avant merge,
+      **vérifiée en production** par `execute_sql` après (1 tentative,
+      requête inverse vide, 9 colonnes, RLS deny-all 0 policy, FK, index).
+- [x] PR 2 : routes (12 tests d'autorisation), écran, textes relus — **#255**
+      (36 tests nouveaux au total).
+- [x] Articulation TRUST tranchée et consignée plus haut : **indicateur
+      seul** (décision utilisateur du 2026-07-22).
+- [x] Validations : T1 à chaque phase, **T3 `test:worktree` sur les deux PR**
+      (migrate deploy éphémère, drift check vide, 69 E2E).
 
 ## Tests
 

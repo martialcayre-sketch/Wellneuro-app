@@ -7,7 +7,7 @@
   "status": "en_cours",
   "active_campaign": "2026-07-11-fiches-conseils-contextuelles-v1",
   "active_lot": "LOT-06",
-  "last_completed_lot": "IDP2/LOT-03f",
+  "last_completed_lot": "C3/LOT-06",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -25,12 +25,12 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Campagne active basculée le 2026-07-22 sur décision utilisateur (« fil médecin maintenant ») : C3 fiches-conseils-contextuelles-v1, lot courant LOT-06 (fil de correspondance médecin V1, transcription praticien). Spécification COMPILÉE (lots/LOT-06-fil-correspondance-medecin-v1.md) sur les arbitrages FM-1 (C puis A) et FM-2 (conservation alignée dossier) ; Q4 persisté→gate migration, Q5 rattachement au patient. Prochaine étape : PLAN TECHNIQUE EN MODE PLAN avant toute édition, puis PR 1 migration seule (table correspondances_medecin, minimisation stricte — aucune adresse ni RPPS médecin, texte seul par construction ; effacerDossier nommément dans la même PR, patron #226 ; revue wn-reviewer avant merge, execute_sql après) puis PR 2 routes+écran (garde appartenance, refus par les routes, dossier clos = consignation refusée ; articulation TRUST partage_medecin_traitant à vérifier). EN ATTENTE HUMAINE ailleurs : IDP2 LOT-04 (précondition 1/13 — renvoyer les invitations aux 12 patients puis re-mesurer ; migration DESTRUCTIVE, ne pas enchaîner), corpus phase 3 (PR #234 rag_corpus_claims : verify ROUGE — drift check, les 2 tables à ajouter à tables.external de web/prisma.config.ts ; portée par une autre session, ne pas doubler), exigence 6 G-TRUST-04 livrée (#239 : PROCEDURE_VIOLATION_DONNEES.md — reste confirmation juridique + exercice sur table), G-TRUST-04 orienté (rester + borner, échéance 2026-10-21).",
+  "next_action": "C3 LOT-06 (fil de correspondance médecin V1, transcription praticien) LIVRÉ ET CLOS le 2026-07-22 : #252 migration correspondances_medecin (revue wn-reviewer GO avant merge, VÉRIFIÉE en production — 1 tentative à 17:58:12Z, requête inverse vide, 9 colonnes, RLS deny-all 0 policy, FK, index) + #255 routes et onglet « Correspondance » (36 tests, consigneLe inantidatable, dossier clos = 409 deux sens, TRUST indicateur seul). Campagne fiches-conseils-contextuelles-v1 passée à « livrée » ; V2 du fil (lien signé sur infra G4) au CONSTAT D'USAGE, pas à une échéance. Merges #252/#255 opérés par l'assistant sur instruction explicite de l'utilisateur (dérogation ponctuelle à la règle Copilot). Vercel passé au plan Pro ; #258 (autre session) ajoute web/vercel.json ignoreCommand — les builds sans changement sous web/ sont sautés. Plus aucun lot à_faire non bloqué : suites humaines — renvoi des invitations aux 12 patients (précondition IDP2 LOT-04, re-mesurer avant d'ouvrir ce lot DESTRUCTIF), visibilité patient du fil (décision non prise), désactivation des Previews Vercel (réglage dashboard, recommandé : les Previews lisent la base de prod), G-TRUST-04 borné au 2026-10-21 (exigences 5/7 et exercice sur table de la procédure de violation restent ouvrables), backlog audit (next 14.2.35, code mort, onboarding, @ts-nocheck).",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-22T16:32:24Z",
+  "updated_at": "2026-07-22T18:15:00Z",
   "parallel_campaigns": []
 }
