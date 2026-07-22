@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Cycle de vie du dossier — clôture de suivi et effacement"
-statut: "livré — socle (#189) et surface, les deux PR du lot"
+statut: "clos — socle (#189) et surface (#194) mergés sur main le 2026-07-21"
 dépend_de: "aucun"
 ---
 
@@ -53,7 +53,11 @@ Schéma, effacement réel, refus portés par les routes, tests.
 Vérifié : T3 complet — 893 tests unitaires, aucune dérive schéma ↔ migrations,
 51 E2E.
 
-## LOT-01b — la surface (livré)
+## LOT-01b — la surface (mergé, #194, 2026-07-21)
+
+Mergé en squash sur `main` (`95df495`). Le lot est clos : les deux fins de
+parcours sont atteignables depuis l'écran, et l'effacement promis au patient en
+production est enfin exécutable par le praticien.
 
 Deux décisions ont précisé le cadrage au moment d'écrire, l'une et l'autre
 tranchées par l'utilisateur le 2026-07-21 :
