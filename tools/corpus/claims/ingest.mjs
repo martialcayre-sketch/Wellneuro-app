@@ -15,7 +15,7 @@
 //
 //   node --import ./tools/corpus/lib/register-alias.mjs \
 //     tools/corpus/claims/ingest.mjs \
-//     --draft ~/.wellneuro/corpus/claims/draft-LOT_001_2026-07-22.json [--validate]
+//     --draft ~/.wellneuro/corpus/claims/draft-LOT_001_2026-07-22.json [--validate] [--lot 16]
 //
 // Requiert (mode POST) : RAG_INTERNAL_SECRET. Jamais loggé, jamais écrit.
 
@@ -23,22 +23,30 @@ import fs from 'node:fs/promises';
 
 const { parseRagClaimsIngestPayload } = await import('@/lib/rag/claims/validation');
 
+// Plafond du contrat serveur. En pratique un lot de 64 dépasse le timeout de
+// transaction Prisma (5 s) contre la base de production : --lot permet de
+// descendre (16 tient large), le serveur restant l'arbitre du plafond.
 const RAG_MAX_BATCH = 64;
 
 function parseArgs() {
   const a = process.argv.slice(2);
-  const o = { draft: null, validate: false, url: process.env.WN_RAG_URL || 'http://localhost:3000' };
+  const o = { draft: null, validate: false, lot: RAG_MAX_BATCH, url: process.env.WN_RAG_URL || 'http://localhost:3000' };
   for (let i = 0; i < a.length; i++) {
     if (a[i] === '--draft') o.draft = a[++i];
     else if (a[i] === '--validate') o.validate = true;
+    else if (a[i] === '--lot') o.lot = Number(a[++i]);
     else if (a[i] === '--url') o.url = a[++i];
+  }
+  if (!Number.isInteger(o.lot) || o.lot < 1 || o.lot > RAG_MAX_BATCH) {
+    console.error(`--lot doit être un entier entre 1 et ${RAG_MAX_BATCH}.`);
+    process.exit(1);
   }
   return o;
 }
 
-function decouperLots(claims) {
+function decouperLots(claims, taille) {
   const lots = [];
-  for (let i = 0; i < claims.length; i += RAG_MAX_BATCH) lots.push(claims.slice(i, i + RAG_MAX_BATCH));
+  for (let i = 0; i < claims.length; i += taille) lots.push(claims.slice(i, i + taille));
   return lots;
 }
 
@@ -92,8 +100,8 @@ async function main() {
     console.error('Le draft ne contient aucun claim.');
     process.exit(1);
   }
-  const lots = decouperLots(draft.claims);
-  console.log(`Lot : ${draft.batchId} — ${draft.claims.length} claims, ${lots.length} requête(s)\n`);
+  const lots = decouperLots(draft.claims, o.lot);
+  console.log(`Lot : ${draft.batchId} — ${draft.claims.length} claims, ${lots.length} requête(s) de ≤ ${o.lot}\n`);
   if (o.validate) modeValidate(lots);
   else await modePost(lots, o.url);
 }
