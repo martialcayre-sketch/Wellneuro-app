@@ -196,3 +196,7 @@ table) ; PR-9 routes C/D.
 
 **Questions ouvertes** : preuve fonctionnelle du journal au premier dossier
 ouvert en prod ; PR #277 (keep-awake) toujours ouverte.
+
+## 2026-07-22 — SP-CONV : cadrage mergé (#280), campagne activée, LOT-00 livré
+
+**Décisions** : merge de #280 par l'assistant sur instruction explicite (« si green go », `verify` vert en 47 s) ; activation de SP-CONV en **campagne parallèle** (`.wn/state.json` + `sync`, g-trust-04 reste principale) ; LOT-00 exécuté dans la foulée. **Livré** : rectification datée en tête de l'audit UX du 22/07 ; « Résolue par G2 » sur les deux documents du gate multi-cycles ; ligne C2B du README rectifiée ; 3 maquettes (bandeau cockpit D5/D10, parcours synchronisé D2/D7/D11, Mon équilibre qualitatif D7) vérifiées au navigateur ; six constats revérifiés sur main post-merge. **Écarté** : capture du parcours-synchronise avant PR (même patron que les deux vérifiées). **Prochaine action** : merge de la PR LOT-00 (Copilot, sauf instruction), puis LOT-01 — contrat d'épisode partagé, code seul. **Questions ouvertes** : aucune.

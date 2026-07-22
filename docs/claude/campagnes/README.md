@@ -16,7 +16,7 @@
 | **SP-FIL** | Le Fil du jour v1 | **terminée** (2026-07-15 — accueil = Fil, rail regroupé, PR #74-#76) | — | 2 |
 | **SP-RUN** | Cockpit vivant (runtime C1) | **terminée** — runtime et branchement cockpit validés le 2026-07-17 | — | N+1 |
 | C2A | Points d'étape + persistance minimale | **terminée** (2026-07-18 — 7 lots en prod, gate migration levé) | C1 ✓ | 7 |
-| C2B | Trajectoire et ajustement (→ Spirale) | **terminée** (2026-07-18 — LOT-07→09 en prod, sans migration ; gate modèle multi-cycles différé) | C2A ✓ | 3 |
+| C2B | Trajectoire et ajustement (→ Spirale) | **terminée** (2026-07-18 — LOT-07→09 en prod ; gate modèle multi-cycles **levé le 2026-07-19** : G2, migration `c2b_cycle_identity_v1`) | C2A ✓ | 3 |
 | C3 | Documents contextuels (→ fil de correspondance) | **terminée** (2026-07-18 — V1 + montage cockpit en prod, 6 lots sans migration ; fil médecin 5.0 et persistance (b) reportés) | C1 ✓ | 6 |
 | C4 | Compléments clean label (C4A/C4B) | cadrée | C4A : intrinsèque ; C4B : C1/C2 | N+1 |
 | C5 | Boussole alimentaire (C5A intrinsèque/C5B contextuel) | **terminée** (2026-07-18 — 8 lots en prod, gates migration et import levés ; `WN_C5_ENABLED` actif, mesuré le 2026-07-21) | C5A : référentiel Ciqual après gates migration/import ; C5B : C1/C2 actifs | 8 |

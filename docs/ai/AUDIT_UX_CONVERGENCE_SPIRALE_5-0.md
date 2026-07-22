@@ -1,5 +1,21 @@
 # Audit UX WellNeuro — convergence vers Spirale 5.0
 
+> **Rectification du 2026-07-22 au soir (SP-CONV, LOT-00).** Cet audit a été
+> confronté au code de `main` le jour même de sa publication ; plusieurs
+> constats étaient déjà résolus ou périmés au moment où il a été écrit :
+> le **time-travel est livré** (SP-TT, 21/07 — `asOf`, `relecture_notes`,
+> panneau copilote ; seul le raccord avec l'index Spirale de la fiche
+> manque) ; la **clé de cycle est persistée** depuis le gate G2 du 19/07
+> (migration `c2b_cycle_identity_v1`, `cycleId`/`versionScore`) ; les
+> **métriques d'accueil ont été supprimées** et le **rail réaligné** par le
+> lot V14 sur l'artifact de référence (décision propriétaire) ; le
+> référentiel de cibles tactiles opposable est **44 px**, pas 48 ; la
+> variante `danger-text` de `PatientButton` n'existe plus. Le noyau valide
+> de l'audit est repris — rectifié — par la campagne
+> `docs/claude/campagnes/2026-07-22-sp-conv-trajectoire-partagee/CAMPAGNE.md`
+> (table « Ce que la confrontation au code a corrigé »). Le texte ci-dessous
+> est conservé tel quel, comme trace.
+
 ## Périmètre
 
 Audit statique du dépôt `martialcayre-sketch/Wellneuro-app`, branche `main`, incluant le code actuel, la maquette Spirale, les campagnes UX, les audits précédents et le chantier visuel V1–V12 clôturé le **22 juillet 2026**. Je n’ai pas exécuté l’application ni observé de vrais utilisateurs : les constats portent donc sur l’architecture d’information, les parcours codés, les états, l’accessibilité et la cohérence avec la doctrine produit.
