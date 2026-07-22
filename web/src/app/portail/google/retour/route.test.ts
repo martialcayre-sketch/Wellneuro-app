@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { prisma, ensureActivePortalAccess, logger } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
-    portailConnexionGoogle: { create: vi.fn() },
+    portailConnexionGoogle: { create: vi.fn(), deleteMany: vi.fn() },
   },
   ensureActivePortalAccess: vi.fn(),
   logger: { security: vi.fn(), error: vi.fn() },
@@ -83,6 +83,7 @@ describe('GET /portail/google/retour — retour de Google', () => {
     etatCourant = creerEtatGoogle(new Date());
     prisma.patient.findUnique.mockResolvedValue(PATIENT);
     prisma.portailConnexionGoogle.create.mockResolvedValue({ id: 'cx_1' });
+    prisma.portailConnexionGoogle.deleteMany.mockResolvedValue({ count: 0 });
     ensureActivePortalAccess.mockResolvedValue({
       accessToken: 'TOK_PERMANENT',
       url: 'http://localhost:3000/portail/TOK_PERMANENT',
@@ -269,6 +270,7 @@ describe('GET /portail/google/retour — la trace durable', () => {
     etatCourant = creerEtatGoogle(new Date());
     prisma.patient.findUnique.mockResolvedValue(PATIENT);
     prisma.portailConnexionGoogle.create.mockResolvedValue({ id: 'cx_1' });
+    prisma.portailConnexionGoogle.deleteMany.mockResolvedValue({ count: 0 });
     ensureActivePortalAccess.mockResolvedValue({
       accessToken: 'TOK_PERMANENT',
       url: 'http://localhost:3000/portail/TOK_PERMANENT',
@@ -362,5 +364,75 @@ describe('GET /portail/google/retour — la trace durable', () => {
     const res = await appeler();
     expect(res.headers.get('location')).toContain(REFUS);
     expect(donnees()).toEqual({ issue: 'refuse', motif: 'exception', idPatient: PATIENT.idPatient });
+  });
+});
+
+// Purge de la trace — décision de rétention du 2026-07-22 (IDP2 LOT-03e).
+// Pas de tâche planifiée dans ce dépôt : la purge se fait à chaque écriture,
+// même patron que `portail_demande_tentatives` dans
+// `POST /api/portail/lien/demande`.
+describe('GET /portail/google/retour — purge des lignes hors rétention', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    process.env.NEXTAUTH_URL = 'http://localhost:3000';
+    process.env.WN_G5_GOOGLE_PATIENT = 'true';
+    process.env.WN_GOOGLE_PATIENT_CLIENT_ID = CLIENT_ID;
+    process.env.WN_GOOGLE_PATIENT_CLIENT_SECRET = 'secret-de-test-non-production';
+    etatCourant = creerEtatGoogle(new Date());
+    prisma.patient.findUnique.mockResolvedValue(PATIENT);
+    prisma.portailConnexionGoogle.create.mockResolvedValue({ id: 'cx_1' });
+    prisma.portailConnexionGoogle.deleteMany.mockResolvedValue({ count: 0 });
+    ensureActivePortalAccess.mockResolvedValue({
+      accessToken: 'TOK_PERMANENT',
+      url: 'http://localhost:3000/portail/TOK_PERMANENT',
+    });
+    repondreGoogle(jetonIdentite());
+  });
+
+  it('purge les lignes antérieures au seuil de 12 mois à chaque écriture', async () => {
+    await appeler();
+    expect(prisma.portailConnexionGoogle.deleteMany).toHaveBeenCalledTimes(1);
+    const seuil = prisma.portailConnexionGoogle.deleteMany.mock.calls[0][0].where.creeLe.lt as Date;
+    const ecart = Date.now() - seuil.getTime();
+    // 365 jours, à la seconde de calcul près (pas de secret temporel exact ici,
+    // juste la fenêtre annoncée par ACTIVATION_RUNBOOK_G5.md).
+    expect(Math.abs(ecart - 365 * 24 * 60 * 60 * 1000)).toBeLessThan(5000);
+  });
+
+  it('la purge tourne aussi sur un refus tracé, pas seulement sur un succès', async () => {
+    prisma.patient.findUnique.mockResolvedValue(null);
+    await appeler();
+    expect(prisma.portailConnexionGoogle.deleteMany).toHaveBeenCalledTimes(1);
+  });
+
+  // Fail-open, comme l'écriture elle-même : une purge en échec ne doit ni
+  // retarder ni empêcher la session de s'ouvrir. Mais — et c'est le point que
+  // la falsification a trouvé — elle ne doit pas non plus disparaître sans
+  // laisser de trace : un `.catch(() => undefined)` local aurait avalé
+  // l'échec en silence, rendant `PORTAIL_GOOGLE_TRACE_ECHEC` inutile pour ce
+  // cas précis. Sans cette assertion, retirer le `try/catch` englobant au
+  // profit d'un `.catch()` muet local laissait la suite verte.
+  it('un échec de purge n’empêche pas la session de s’ouvrir, et reste journalisé', async () => {
+    prisma.portailConnexionGoogle.deleteMany.mockRejectedValue(new Error('base indisponible'));
+    const res = await appeler();
+    expect(res.headers.get('location')).toContain('/portail/TOK_PERMANENT');
+    expect(res.headers.get('set-cookie')).toContain('wn_portail=');
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'PORTAIL_PATIENT.GOOGLE.TRACE_ECHEC' }),
+    );
+    // L'intégrité d'audit du lot précédent tient à cet ordre : la trace du
+    // jour est écrite AVANT la tentative de purge. Sans cette assertion,
+    // inverser l'ordre laisserait la suite verte — même message, même
+    // fail-open — alors que la trace du jour aurait sauté. Relevé en revue
+    // adversariale le 2026-07-22.
+    expect(prisma.portailConnexionGoogle.create).toHaveBeenCalledTimes(1);
+  });
+
+  // Même borne que l'écriture : un retour non authentifié ne doit ni écrire
+  // ni purger — sinon marteler la route userait quand même la base.
+  it('un retour non authentifié ne déclenche aucune purge', async () => {
+    await appeler({ state: () => 'state-forge' });
+    expect(prisma.portailConnexionGoogle.deleteMany).not.toHaveBeenCalled();
   });
 });
