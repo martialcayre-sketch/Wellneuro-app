@@ -53,7 +53,9 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
             </button>
           </Dialog.Trigger>
 
-          <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border bg-primary/10 text-sm font-semibold text-primary lg:flex">
+          {/* Le brand vit désormais dans le rail (maquette cible) — le badge du
+              header ne subsiste que sur tablette, où le rail est en tiroir. */}
+          <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border bg-primary/10 text-sm font-semibold text-primary md:flex lg:hidden">
             WN
           </span>
 
@@ -81,17 +83,23 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
         <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-4 py-4 sm:px-6 lg:py-6">
           <aside
             className={`hidden shrink-0 flex-col gap-4 transition-[width] duration-200 ease-in-out lg:flex lg:sticky lg:top-20 lg:self-start ${
-              expanded ? 'lg:w-64' : 'lg:w-16'
+              expanded ? 'lg:w-[232px]' : 'lg:w-16'
             }`}
           >
-            <div className="rounded-[1.5rem] border border-rail-border bg-rail-surface p-3 shadow-sm">
-              <SidebarRail collapsed={!expanded} />
+            {/* Colonne nuit de la maquette : dégradé --rail-gradient sur repli
+                bg-rail, pleine hauteur sous le header, brand en tête. */}
+            <div
+              className={`flex min-h-[calc(100vh-6.5rem)] flex-col rounded-xl border border-rail-border bg-rail bg-[image:var(--rail-gradient)] ${
+                expanded ? 'px-3.5 py-5' : 'p-2.5'
+              }`}
+            >
+              <SidebarRail collapsed={!expanded} brand />
               <button
                 type="button"
                 onClick={toggleExpanded}
                 aria-expanded={expanded}
                 aria-label={expanded ? 'Réduire la navigation' : 'Étendre la navigation'}
-                className="mt-2 flex h-11 w-11 items-center justify-center rounded-xl border border-rail-border text-rail-muted-foreground transition hover:text-rail-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring"
+                className="mt-auto flex h-11 w-11 items-center justify-center rounded-[11px] text-rail-muted-foreground transition hover:bg-rail-surface hover:text-rail-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring"
               >
                 {expanded ? (
                   <PanelLeftClose aria-hidden="true" size={20} strokeWidth={2} />
@@ -113,7 +121,7 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
           <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 hidden bg-foreground/35 md:block lg:hidden" />
           <Dialog.Content
             data-theme="praticien"
-            className="fixed inset-y-0 left-0 z-50 hidden h-full w-72 max-w-[80vw] flex-col gap-4 border-r border-rail-border bg-rail-surface p-4 shadow-xl focus:outline-none md:flex lg:hidden"
+            className="fixed inset-y-0 left-0 z-50 hidden h-full w-72 max-w-[80vw] flex-col gap-4 border-r border-rail-border bg-rail bg-[image:var(--rail-gradient)] p-4 shadow-pop focus:outline-none md:flex lg:hidden"
           >
             <Dialog.Description className="sr-only">Panneau de navigation praticien</Dialog.Description>
             <div className="flex items-center justify-between">
