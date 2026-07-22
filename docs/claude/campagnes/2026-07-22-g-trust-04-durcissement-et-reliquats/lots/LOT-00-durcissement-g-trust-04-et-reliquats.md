@@ -147,15 +147,16 @@ certification 63 questionnaires + tests scoring + T1 à chaque fichier.
 
 ## Étapes
 
-- [ ] PR-1 campagne (ce document).
-- [ ] PR-2 migration `journal_acces_dossiers` + effacement + garde
-      structurelle verte (T3 ; revue wn-reviewer ; execute_sql post-merge).
-- [ ] PR-3 Next 14.2.35 (T3).
-- [ ] PR-4 code mort (T2).
+- [x] PR-1 campagne (ce document) — #272, mergée le 2026-07-22.
+- [x] PR-2 migration `journal_acces_dossiers` + effacement + garde
+      structurelle verte (T3 ; revue wn-reviewer ; execute_sql post-merge) —
+      #273, mergée le 2026-07-22.
+- [x] PR-3 Next 14.2.35 (T3) — #275, mergée le 2026-07-22.
+- [x] PR-4 code mort (T2) — #276, mergée le 2026-07-22.
 - [ ] PR-5 `@ts-nocheck` vague 1 (mesure consignée ici + certif + T2).
 - [ ] PR-6 exercice sur table (docs).
-- [ ] PR-7 helper + garde + routes A/B (T2 ; mocks `journalAccesDossier`
-      ajoutés aux tests de routes).
+- [x] PR-7 helper + garde + routes A/B (T2 ; mocks `journalAccesDossier`
+      ajoutés aux tests de routes) — cette PR.
 - [ ] PR-8 `@ts-nocheck` vague 2.
 - [ ] PR-9 routes C/D (T2).
 - [ ] PR-10 `@ts-nocheck` vague 3 ou borne.
@@ -186,3 +187,25 @@ certification 63 questionnaires + tests scoring + T1 à chaque fichier.
 ## Résultats
 
 À compléter au fil des PR.
+
+### PR-7 — helper + garde + routes A/B (2026-07-22)
+
+- `web/src/lib/praticien/journalAcces.ts` : `journaliserAccesDossier` awaitée
+  fail-open (patron `tracer()` G5, un seul try/catch, create avant purge),
+  `RETENTION_JOURNAL_ACCES_MS = 365 j`, code `PRATICIEN.ACCES_DOSSIER.TRACE_ECHEC`
+  ajouté à `eventCodes.ts`. Contexte de log sans Request fabriqué à la main
+  (précédent `instrumentation.ts`), `route`/`method` = gabarit littéral.
+- Garde `verifierAppartenancePatient(idPatient, email, acces?)` : journalise
+  ssi verdict `accessible` et `acces` fourni ; les appels à 2 arguments
+  compilent inchangés.
+- 7 routes A branchées (3ᵉ argument, GET seul ; `garder()` de
+  correspondance-medecin et relecture-notes reçoit un `acces?` transmis par le
+  GET seul). 5 routes B ralliées à la garde (`introuvable` et
+  `autre_praticien` → le 403 historique, corps vérifié à l'octet par les
+  tests ; POST ralliés sans `acces`). `ensurePractitionerScope` de
+  ja/activation devenu adaptateur de la garde.
+- Tests : `journalAcces.test.ts` (ligne exacte, purge 365 j, ordre
+  create→purge, fail-open écriture et purge), `appartenance.test.ts` (6 cas),
+  10 `route.test.ts` enrichis (1 create sur GET accessible au gabarit exact,
+  0 sur refus et sur POST, corps 403 verrouillés), 2 `route.test.ts` créés
+  (cloture, reperes — routes sans juge sinon). T1 vert (298 tests).

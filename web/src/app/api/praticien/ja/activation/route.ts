@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
 import {
   activateJaObservationSnapshot,
   getLatestJaActivation,
   type JaActivationSummary,
 } from '@/lib/food-observation/persistence';
+import { verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import type { GabaritAcces } from '@/lib/praticien/journalAcces';
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/ja/activation';
 
 type ErrorResponse = { ok: false; reason: string; error: string };
 type GetResponse = { ok: true; activation: JaActivationSummary | null } | ErrorResponse;
@@ -43,12 +47,17 @@ function isActivationPayload(value: unknown): value is ActivationPayload {
   );
 }
 
-async function ensurePractitionerScope(idPatient: string, practitionerEmail: string): Promise<boolean> {
-  const patient = await prisma.patient.findUnique({
-    where: { idPatient },
-    select: { praticienEmail: true },
-  });
-  return Boolean(patient && patient.praticienEmail.toLowerCase() === practitionerEmail.toLowerCase());
+// Adaptateur de la garde factorisée : conserve le contrat booléen historique
+// de cette route (patient inexistant et patient d'un autre praticien rendent
+// le même 403). `acces` n'est transmis que par le GET (G-TRUST-04) ; la garde
+// attend un e-mail minuscule, d'où le `.toLowerCase()`.
+async function ensurePractitionerScope(
+  idPatient: string,
+  practitionerEmail: string,
+  acces?: GabaritAcces,
+): Promise<boolean> {
+  const verdict = await verifierAppartenancePatient(idPatient, practitionerEmail.toLowerCase(), acces);
+  return verdict === 'accessible';
 }
 
 export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
@@ -70,7 +79,10 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       );
     }
 
-    const allowed = await ensurePractitionerScope(idPatient, session.user.email);
+    const allowed = await ensurePractitionerScope(idPatient, session.user.email, {
+      route: ROUTE_JOURNAL,
+      methode: 'GET',
+    });
     if (!allowed) {
       return NextResponse.json(
         { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },

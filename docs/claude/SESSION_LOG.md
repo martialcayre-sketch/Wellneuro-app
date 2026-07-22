@@ -177,3 +177,22 @@ keep-awake non suivis dans `scripts/`.
 ## 2026-07-22 — Cadrage SP-CONV (convergence Spirale 5.0, trajectoire partagée)
 
 **Décisions** : campagne `2026-07-22-sp-conv-trajectoire-partagee` cadrée (7 lots, sans migration) ; contrat d'épisode partagé en code seul sur les cycles G2 ; parcours patient 6 étapes HC-F synchronisées ; réouvertures actées : renommage A7 et baselines V12 ; tags du rail non rouverts (réglé par V14). **Écarté** : lots migration/gate multi-cycles — la confrontation au code montre le gate G2 levé le 19/07 (`c2b_cycle_identity_v1`) ; 5 étapes de la maquette-démo ; KPI d'accueil (métriques supprimées par V14). L'audit du jour est hérité **rectifié** (table dans CAMPAGNE.md). Séquence programme (#12), registre §3 et index README amendés ; `.wn/state.json` non touché (g-trust-04 active). Les trois questions ouvertes ont été tranchées dans la même session (D9 « Mon carnet alimentaire », D10 fiche plein écran réel, D11 quatre statuts patient sous dérogation inchangée). **Prochaine action** : merge de la PR de cadrage (Copilot), puis LOT-00 (annotations + maquettes) après décision de gouvernance sur l'activation. **Questions ouvertes** : aucune au cadrage.
+
+## 2026-07-22 — G-TRUST-04 PR-7 : journal des accès praticien branché
+
+**Décisions** : PR-7 livrée et mergée (#278, verify 6 min 21 vert, merge sur
+instruction explicite). Helper `journaliserAccesDossier` (awaité fail-open
+patron G5, purge 365 j, code `PRATICIEN.ACCES_DOSSIER.TRACE_ECHEC`), garde
+`verifierAppartenancePatient(…, acces?)`, 12 routes GET branchées (7 cat. A,
+5 cat. B ralliées à la garde, 403 préservés à l'octet). Revue adversariale
+`wn-reviewer` : GO, 0 bloquant. T1 (298 tests) + T2 (1 min 58, 73 E2E) verts.
+Post-merge : table vérifiée (`execute_sql`) — 0 ligne, RLS deny-all.
+
+**Écarté** : journaliser les refus (nommerait un dossier non lu) ; convertir
+la catégorie C à la garde (choix anti-oracle, PR-9 en appel direct).
+
+**Prochaine action** : PR-5 (`@ts-nocheck` vague 1) ou PR-6 (exercice sur
+table) ; PR-9 routes C/D.
+
+**Questions ouvertes** : preuve fonctionnelle du journal au premier dossier
+ouvert en prod ; PR #277 (keep-awake) toujours ouverte.

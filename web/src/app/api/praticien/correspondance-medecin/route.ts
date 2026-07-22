@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import type { GabaritAcces } from '@/lib/praticien/journalAcces';
 import { preparerCorrespondance } from '@/lib/praticien/correspondanceMedecin';
 import {
   accepteNouvelEnvoi,
@@ -34,6 +35,9 @@ import type { StatutChoix } from '@/lib/trust/types';
 // protéger personne.
 
 const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/correspondance-medecin';
 
 export type CorrespondanceExposee = {
   id: string;
@@ -110,8 +114,12 @@ type Garde =
   | { echec: NextResponse<CorrespondanceMedecinApiResponse>; email?: undefined }
   | { echec?: undefined; email: string };
 
-/** Session + identifiant + appartenance. Retourne l'e-mail praticien ou une réponse d'échec. */
-async function garder(idPatient: string): Promise<Garde> {
+/**
+ * Session + identifiant + appartenance. Retourne l'e-mail praticien ou une
+ * réponse d'échec. `acces` n'est transmis que par le GET : seule la lecture
+ * du fil est une consultation de dossier à journaliser (G-TRUST-04).
+ */
+async function garder(idPatient: string, acces?: GabaritAcces): Promise<Garde> {
   const session = await getServerSession(authOptions);
   if (!session) return { echec: echec('unauthenticated', 'Authentification requise.', 401) };
 
@@ -120,7 +128,7 @@ async function garder(idPatient: string): Promise<Garde> {
   }
 
   const email = emailPraticien(session);
-  const appartenance = await verifierAppartenancePatient(idPatient, email);
+  const appartenance = await verifierAppartenancePatient(idPatient, email, acces);
   if (appartenance === 'introuvable') {
     return { echec: echec('patient_not_found', 'Patient introuvable.', 404) };
   }
@@ -137,7 +145,7 @@ export async function GET(req: Request): Promise<NextResponse<CorrespondanceMede
   try {
     const { searchParams } = new URL(req.url);
     const idPatient = (searchParams.get('idPatient') ?? '').trim();
-    const garde = await garder(idPatient);
+    const garde = await garder(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
     if (garde.echec) return garde.echec;
 
     const [lignes, patient, choix] = await Promise.all([

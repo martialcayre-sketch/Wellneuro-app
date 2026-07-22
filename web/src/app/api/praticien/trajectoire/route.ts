@@ -16,6 +16,9 @@ import type { JalonMomentum } from '@/lib/equilibre/types';
 
 const MILESTONES: readonly JalonMomentum[] = ['T0', 'J21', 'J42', 'J90'];
 
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/trajectoire';
+
 export type TrajectoireApiResponse =
   | { ok: true; trajectoire: Trajectoire }
   | { ok: false; reason: 'unauthenticated' | 'invalid' | 'patient_not_found' | 'forbidden' | 'exception'; error: string };
@@ -37,7 +40,10 @@ export async function GET(req: Request): Promise<NextResponse<TrajectoireApiResp
     // Garde d'appartenance (alignée sur boussole / protocoles / ja) : absence
     // et appartenance restent deux échecs distincts, chaque code HTTP déjà
     // exposé par cette route étant conservé.
-    const appartenance = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+    const appartenance = await verifierAppartenancePatient(idPatient, emailPraticien(session), {
+      route: ROUTE_JOURNAL,
+      methode: 'GET',
+    });
     if (appartenance === 'introuvable') {
       return NextResponse.json({ ok: false, reason: 'patient_not_found', error: 'Patient introuvable.' }, { status: 404 });
     }

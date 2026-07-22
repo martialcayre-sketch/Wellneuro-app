@@ -22,8 +22,12 @@ import { resolveActiveVersion } from '@/lib/protocol/versioning';
 import { buildPractitionerFoodCompassReference } from '@/lib/food-compass/practitionerReference';
 import { getLatestPublishedJaFeasibility } from '@/lib/food-observation/feasibilityRepository';
 import type { PublishedJaFeasibility } from '@/lib/food-observation/feasibility';
+import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 
 export const dynamic = 'force-dynamic';
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/boussole';
 
 type SuccessResponse = {
   ok: true;
@@ -62,11 +66,14 @@ export async function GET(request: Request): Promise<NextResponse<PractitionerFo
   if (!manifest) return error('food_not_found', 'Aliment non disponible dans l’Observatoire.', 404);
 
   try {
-    const patient = await prisma.patient.findUnique({
-      where: { idPatient },
-      select: { praticienEmail: true },
+    // Garde factorisée (G-TRUST-04) : les deux verdicts non-`accessible`
+    // rendent le 403 historique de cette route — un patient inexistant ne se
+    // distingue pas d'un patient d'un autre praticien.
+    const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session), {
+      route: ROUTE_JOURNAL,
+      methode: 'GET',
     });
-    if (!patient || patient.praticienEmail.toLowerCase() !== session.user.email.toLowerCase()) {
+    if (verdict !== 'accessible') {
       return error('forbidden', 'Patient non accessible pour ce praticien.', 403);
     }
 
