@@ -147,8 +147,8 @@ export function DocumentsPanel() {
   return (
     <div className="flex flex-col gap-6">
       {/* Sélection patient + synthèse validée */}
-      <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-foreground">Patient et synthèse validée</h3>
+      <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3 shadow-card">
+        <h3 className="font-display text-lg font-semibold text-foreground">Patient et synthèse validée</h3>
         <div className="flex flex-wrap gap-3">
           <select value={selectedPatient} onChange={(e) => onSelectPatient(e.target.value)} className={`${inputCls} w-full sm:w-80`}>
             <option value="">Sélectionner un patient</option>
@@ -183,14 +183,14 @@ export function DocumentsPanel() {
       {doc && (
         <>
           {/* Vue de composition deux colonnes */}
-          <div className="bg-surface border border-border rounded-xl p-4">
+          <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
             <DocumentComposer modele={MODELE_SUIVI_21J} blocs={doc.blocs} />
           </div>
 
           {/* Aperçu imprimable par destinataire */}
-          <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3">
+          <div className="bg-surface border border-border rounded-xl p-4 flex flex-col gap-3 shadow-card">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-foreground">Aperçu imprimable</h3>
+              <h3 className="font-display text-lg font-semibold text-foreground">Aperçu imprimable</h3>
               <div role="group" aria-label="Destinataire de l’aperçu imprimable" className="flex flex-wrap gap-2">
                 {DESTINATAIRES.map((d) => (
                   <button
