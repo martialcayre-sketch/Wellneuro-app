@@ -2,9 +2,18 @@
 // comportement : chaque écran refondu est photographié pour comparaison
 // humaine avec la maquette cible (docs/claude/propositions/
 // 2026-07-18-refonte-ux-5-0/maquette-cible-ux-5-0.html). Les fichiers vont
-// dans test-results/visual/ (artefacts, jamais commités). La promotion en
-// baselines toHaveScreenshot() se fera au lot V12, écran par écran validé.
+// dans test-results/visual/ (artefacts, jamais commités).
 // Patients fictifs seedés uniquement (PAT_SEED_01 — Sophie Nicola).
+//
+// Décisions de clôture (V12) :
+// - PAS de baselines toHaveScreenshot() commitées : le CI verify tourne sous
+//   Ubuntu, le poste de référence sous macOS — le rendu des polices diverge
+//   et des baselines mono-plateforme casseraient verify en permanence. Les
+//   captures restent des artefacts de revue.
+// - PAS de capture portail : elle exigerait de créer une consultation pour un
+//   patient seedé partagé avec les parcours E2E (workers parallèles) — le
+//   risque d'interférence d'état dépasse la valeur d'une image. Les parcours
+//   portail photographient déjà leurs écrans en cas d'échec.
 import { test } from '@playwright/test';
 import { praticienSessionCookie } from './helpers/auth';
 

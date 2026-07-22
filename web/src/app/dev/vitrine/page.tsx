@@ -1,10 +1,15 @@
 import { notFound } from 'next/navigation';
+import { Chip } from '@/components/ui/Chip';
+import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
+import { BanniereDiffere } from '@/components/ui/BanniereDiffere';
+import { GrowthIllustration } from '@/components/patient/ui/GrowthIllustration';
 
 // Vitrine interne du chantier « refonte visuelle 5.0 » — comparaison directe
 // avec la maquette cible (docs/claude/propositions/2026-07-18-refonte-ux-5-0/
 // maquette-cible-ux-5-0.html), les deux thèmes côte à côte. Hors production
-// (même garde que /api/dev/*). S'enrichit à chaque lot : V1 = socle
-// (canvas, échelle typo, ombres, rayons, focus).
+// (même garde que /api/dev/*). V1 = socle (canvas, échelle typo, ombres,
+// rayons, focus) ; V12 = primitives livrées (chips, Spirale, croissance,
+// bannière différé).
 //
 // Données 100 % fictives — patients de démo autorisés uniquement.
 
@@ -81,6 +86,31 @@ function BlocSocle({ titre }: { titre: string }) {
           <p className="mt-1 font-mono text-xs text-muted-foreground">
             Sources : instrument fictif · scoring v2 · démo Sophie Nicola
           </p>
+        </section>
+
+        <section className="rounded-lg border border-border bg-surface p-5 shadow-card">
+          <h2 className="font-display text-xl font-semibold">Primitives livrées (V3-V11)</h2>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <SpiraleTrajectoire enCours />
+            <Chip variante="delta">Delta : marche 20 min — tenue 4 j/7 (démo)</Chip>
+            <Chip variante="due">Décision · en attente</Chip>
+            <Chip variante="soon">C3</Chip>
+            <Chip>Neutre</Chip>
+          </div>
+          <div className="mt-4 flex items-center gap-4">
+            <GrowthIllustration taille={80} />
+            <p className="text-sm text-muted-foreground">
+              Croissance (le Jardin) et Spirale (l&apos;Observatoire) — décoratives,
+              jamais porteuses seules.
+            </p>
+          </div>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <BanniereDiffere>
+            Exemple de bannière des écrans réservés — l&apos;intention, pas un
+            calendrier.
+          </BanniereDiffere>
         </section>
       </div>
     </div>
