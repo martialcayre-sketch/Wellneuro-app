@@ -1445,3 +1445,30 @@ des jetons portail), en stash dans le worktree.
 
 **Questions ouvertes** : reste du backlog audit — `next` 14.2.35, code mort,
 onboarding cassé, états machine périmés, `@ts-nocheck` du catalogue clinique.
+
+## 2026-07-22 — IDP2 LOT-03e mergée, précondition LOT-04 vérifiée non remplie, LOT-03f ouverte
+
+**Décisions** : LOT-03e (#230, purge de trace Google) mergée et vérifiée en
+production (build frais, comportement inchangé, table toujours vide). Avant
+d'enchaîner LOT-04 (retrait destructif du jeton permanent), vérification de sa
+précondition par requête SQL jointe plutôt que supposée : **non remplie**,
+12 accès sur 13 n'avaient jamais utilisé Google ni le lien magique. Cause
+identifiée par recherche ciblée : aucun bouton praticien ni e-mail ne
+proposait Google. Ouverture de **LOT-03f** (#231) — `sendPortailLinkEmail`
+propose désormais Google en premier quand `WN_G5_GOOGLE_PATIENT` est actif,
+lien permanent gardé en repli (D1/D8) ; drapeau éteint, texte inchangé lettre
+pour lettre (prouvé par falsification). CI de #231 vérifiée verte sur le head
+SHA exact malgré un commit de tête signé Copilot (merge bénin, pas de gel).
+
+**Écarté** : lancer LOT-04 sans vérifier la précondition ; faire remplacer le
+lien secret par Google plutôt que les proposer ensemble.
+
+**Vérifié** : #230 en prod ; requête précondition LOT-04 (13/1/12) ; #231 CI
+verte + diff vide entre mon commit et le head mergé par Copilot.
+
+**Prochaine action** : le praticien renvoie l'invitation aux 12 patients
+concernés (bouton « Renvoyer le lien ») pour rapprocher LOT-04 de 13/13 ;
+merge de #231 revient à Copilot.
+
+**Questions ouvertes** : date de rapprochement 13/13 pour LOT-04 ; reste du
+backlog audit (voir entrée précédente).
