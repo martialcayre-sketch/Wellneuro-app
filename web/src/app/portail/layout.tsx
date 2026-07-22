@@ -9,9 +9,11 @@ export const metadata: Metadata = {
 
 export default function PortailLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-surface flex flex-col">
+    // Canvas sable PLAT (maquette cible : les cartes crème flottent sur le
+    // sable, pas de dégradé).
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="py-4 px-6 border-b border-border bg-surface/80 backdrop-blur flex items-center justify-between gap-3">
-        <span className="text-primary font-semibold text-lg">Wellneuro</span>
+        <span className="font-display text-xl font-bold text-primary">Wellneuro</span>
         <ReadingComfortControl />
       </header>
       <main className="flex-1 flex flex-col items-center px-4 py-8">
