@@ -153,6 +153,9 @@ function stubFetch(options: Options = {}) {
     if (url.includes('/api/praticien/protocoles/versions')) return ok({ ok: true, active: null, history: [] });
     if (url.includes('/api/praticien/protocoles/diffusion')) return ok({ ok: true, approval: null, stale: false });
     if (url.includes('/api/praticien/protocoles/checkins')) return ok({ ok: true, resume: null });
+    if (url.includes('/api/praticien/correspondance-medecin')) {
+      return ok({ ok: true, correspondances: [], accepteConsignation: true, partageMedecinTraitant: null });
+    }
     return ok({});
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -243,13 +246,26 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(true);
   });
 
+  it('onglets in-fiche : « Correspondance » existe et monte le fil médecin (C3 LOT-06)', async () => {
+    await rendreFiche();
+
+    const onglets = screen.getByRole('tablist', { name: 'Vues de la fiche patient' });
+    fireEvent.click(within(onglets).getByRole('tab', { name: 'Correspondance' }));
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Correspondance avec le médecin traitant' })).toBeTruthy(),
+    );
+  });
+
   it('onglets in-fiche : le focus suit la sélection, Origine/Fin et le bouclage (B1)', async () => {
     await rendreFiche();
 
     const onglets = screen.getByRole('tablist', { name: 'Vues de la fiche patient' });
     const cockpit = within(onglets).getByRole('tab', { name: 'Poste de pilotage' });
     const besoins = within(onglets).getByRole('tab', { name: 'Les 12 besoins' });
-    const trajectoire = within(onglets).getByRole('tab', { name: 'Trajectoire' });
+    // Le DERNIER onglet, quel que soit son nom — c'est la sémantique de Fin et
+    // du bouclage que ce test vérifie, pas la composition de la liste.
+    const tousLesOnglets = within(onglets).getAllByRole('tab');
+    const dernier = tousLesOnglets[tousLesOnglets.length - 1];
 
     // Seul l'onglet actif est dans l'ordre de tabulation (tabindex roving).
     cockpit.focus();
@@ -266,20 +282,20 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     // Fin → dernier onglet ; Origine → premier onglet.
     fireEvent.keyDown(besoins, { key: 'End' });
-    await waitFor(() => expect(document.activeElement).toBe(trajectoire));
-    expect(trajectoire.getAttribute('aria-selected')).toBe('true');
+    await waitFor(() => expect(document.activeElement).toBe(dernier));
+    expect(dernier.getAttribute('aria-selected')).toBe('true');
 
-    fireEvent.keyDown(trajectoire, { key: 'Home' });
+    fireEvent.keyDown(dernier, { key: 'Home' });
     await waitFor(() => expect(document.activeElement).toBe(cockpit));
     expect(cockpit.getAttribute('aria-selected')).toBe('true');
 
     // Bouclage : flèche gauche depuis le premier → dernier onglet.
     fireEvent.keyDown(cockpit, { key: 'ArrowLeft' });
-    await waitFor(() => expect(document.activeElement).toBe(trajectoire));
-    expect(trajectoire.getAttribute('aria-selected')).toBe('true');
+    await waitFor(() => expect(document.activeElement).toBe(dernier));
+    expect(dernier.getAttribute('aria-selected')).toBe('true');
 
     // Bouclage : flèche droite depuis le dernier → premier onglet.
-    fireEvent.keyDown(trajectoire, { key: 'ArrowRight' });
+    fireEvent.keyDown(dernier, { key: 'ArrowRight' });
     await waitFor(() => expect(document.activeElement).toBe(cockpit));
     expect(cockpit.getAttribute('aria-selected')).toBe('true');
   });

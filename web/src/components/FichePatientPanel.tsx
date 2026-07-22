@@ -37,6 +37,7 @@ import { ModeConsultation } from '@/components/ui/ModeConsultation';
 import { PatientPreview } from '@/components/PatientPreview';
 import { DetailBesoinsPanel } from '@/components/DetailBesoinsPanel';
 import { PractitionerFoodObservationPanel } from '@/components/food-observation/PractitionerFoodObservationPanel';
+import { CorrespondanceMedecinPanel } from '@/components/correspondance/CorrespondanceMedecinPanel';
 import {
   ClinicalRuntimeSection,
   type EtatRuntimeClinique,
@@ -128,13 +129,14 @@ function LegendeNiveauxPreuve() {
 // Poste de pilotage (A6-R1) — ossature
 // ---------------------------------------------------------------------------
 
-type OngletFiche = 'cockpit' | 'besoins' | 'alimentation' | 'trajectoire';
+type OngletFiche = 'cockpit' | 'besoins' | 'alimentation' | 'trajectoire' | 'correspondance';
 
 const ONGLETS: { id: OngletFiche; libelle: string }[] = [
   { id: 'cockpit', libelle: 'Poste de pilotage' },
   { id: 'besoins', libelle: 'Les 12 besoins' },
   { id: 'alimentation', libelle: 'Alimentation' },
   { id: 'trajectoire', libelle: 'Trajectoire' },
+  { id: 'correspondance', libelle: 'Correspondance' },
 ];
 
 type IdPhase = 'patient' | 'donnees' | 'comprehension' | 'decision' | 'actions' | 'suivi' | 'reevaluation';
@@ -1026,6 +1028,15 @@ export function FichePatientPanel({
 
       <div role="tabpanel" id="panneau-alimentation" aria-labelledby="onglet-alimentation" hidden={ongletActif !== 'alimentation'}>
         {ongletActif === 'alimentation' && <PractitionerFoodObservationPanel idPatient={idPatient} />}
+      </div>
+
+      <div
+        role="tabpanel"
+        id="panneau-correspondance"
+        aria-labelledby="onglet-correspondance"
+        hidden={ongletActif !== 'correspondance'}
+      >
+        {ongletActif === 'correspondance' && <CorrespondanceMedecinPanel idPatient={idPatient} />}
       </div>
 
       <div role="tabpanel" id="panneau-trajectoire" aria-labelledby="onglet-trajectoire" hidden={ongletActif !== 'trajectoire'}>
