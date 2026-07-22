@@ -324,6 +324,22 @@ n'engagent rien tant que le responsable ne les a pas écrits ici.
 5. **Instruire la migration sans attendre la date de revue** : le coût technique
    est faible, le délai réel est celui du transfert de base et du contrat.
 
+### Extension de périmètre constatée — 2026-07-22
+
+Le **fil de correspondance médecin** (C3 LOT-06, PR #252 + #255, livré le
+2026-07-22) ajoute une catégorie de donnée de santé au périmètre hébergé : le
+**texte d'une correspondance clinique**, donnée de santé même sans pièce
+jointe. La décision est rendue avec son cadrage
+(`../2026-07-11-fiches-conseils-contextuelles-v1/CADRAGE_FIL_MEDECIN_5_0.md`) :
+toute utilisation du fil avec de vraies personnes vit sous la **même dérogation
+bornée au 2026-10-21** et se réexamine avec elle. La bascule C → A du fil —
+lien signé ouvrant une surface côté médecin, sur l'infra G4 — reste déclenchée
+par un **constat d'usage** (volume de correspondance réel), pas par une
+échéance : si elle survient avant la date de revue, elle s'instruit dans ce
+même cadre, pas à côté. Le modèle livré sert la recommandation 2 ci-dessus
+(minimisation) : texte seul par construction, aucune adresse e-mail ni RPPS
+médecin, effacement du dossier = effacement du fil, nommément testé.
+
 ## Qui lève ce gate
 
 **Pas l'assistant.** La levée est une décision du responsable du traitement
