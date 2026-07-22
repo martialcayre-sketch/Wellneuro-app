@@ -8,7 +8,7 @@ import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, More
 
 const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard },
-  { href: '/dashboard/patients', label: 'Patients', icon: Users },
+  { href: '/dashboard/patients', label: 'Fiches', icon: Users },
   { href: '/dashboard/synthese', label: 'Synthèses', icon: Sparkles },
 ];
 

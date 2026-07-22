@@ -2,23 +2,28 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, Compass, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, Compass, Mail, BookOpen, CalendarDays, FlaskConical, type LucideIcon } from 'lucide-react';
 
-type NavItem = { href: string; label: string; icon: LucideIcon };
+// `tag` : marqueur discret façon maquette (.badge-soon) — code de campagne ou
+// « différé » sur les écrans réservés. Jamais porteur seul : l'écran cible
+// affiche la bannière détaillée.
+type NavItem = { href: string; label: string; icon: LucideIcon; tag?: string };
 
 /**
  * Rail regroupé (SP-FIL LOT-02, disposition 5.0) : « Le Fil » en tête, puis
- * des groupes étiquetés qui accueilleront les surfaces à venir
- * (correspondance, bibliothèques) sans nouveau remaniement. Routes inchangées.
+ * des groupes étiquetés. Les écrans réservés (correspondance, bibliothèque,
+ * agenda, biologie) pointent vers des pages statiques qui fixent l'intention
+ * (maquettes 4.0/5.0) — routes réelles, contenu différé.
  */
 const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
   { etiquette: null, items: [{ href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard }] },
   {
     etiquette: 'Suivi',
     items: [
-      { href: '/dashboard/patients', label: 'Patients', icon: Users },
-      // Entrée réservée par la maquette 5.0, branchée par SP-COP LOT-01.
+      // Wording maquette 5.0 : la fiche patient est une fiche-trajectoire.
+      { href: '/dashboard/patients', label: 'Fiches-trajectoires', icon: Users },
       { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
+      { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail, tag: 'C3' },
     ],
   },
   {
@@ -26,6 +31,14 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
     items: [
       { href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles },
       { href: '/dashboard/documents', label: 'Documents', icon: FileText },
+      { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, tag: 'C4' },
+    ],
+  },
+  {
+    etiquette: 'À venir',
+    items: [
+      { href: '/dashboard/agenda', label: 'Agenda & consultations', icon: CalendarDays, tag: 'différé' },
+      { href: '/dashboard/biologie', label: 'Biologie fonctionnelle', icon: FlaskConical, tag: 'différé' },
     ],
   },
   {
@@ -106,6 +119,11 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
                   className={`shrink-0 ${active ? '' : 'opacity-85'}`}
                 />
                 {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
+                {!collapsed && item.tag && (
+                  <span className="shrink-0 rounded-md border border-rail-border px-1.5 py-0.5 text-2xs text-rail-muted-foreground">
+                    {item.tag}
+                  </span>
+                )}
               </Link>
             );
           })}
