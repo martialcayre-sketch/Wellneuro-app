@@ -1,0 +1,15 @@
+{
+  "name": "wn-corpus-bench",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Banc qualité d'extraction du corpus WellNeuro — lectures croisées A (pdftotext) / B (Claude) / C (GPT) et invariants déterministes.",
+  "scripts": {
+    "bench": "node bench.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
+    "openai": "^6.9.0",
+    "pg": "^8.22.0"
+  }
+}
