@@ -51,7 +51,7 @@ applique `prisma migrate deploy` sur la base Supabase de production au build de
 | 3 | Isolation multi-praticien | ⚠️ **Partiel — 30 routes sur 33** | cf. tableau ci-dessous |
 | 4 | Gestion des sessions et révocations | ⚠️ **Partiel — amélioré le 2026-07-21** | Cookie portail signé, durée bornée. **G4 activé en production** : lien haché en base, 24 h, usage unique, rejeu refusé et tracé. Mais le **jeton permanent subsiste et ne se périme toujours pas** — la coexistence des deux chemins est voulue pendant la bascule. L'exigence reste donc partielle : elle le sera jusqu'à la péremption des liens permanents, décision non prise |
 | 5 | Journalisation | ⚠️ **Partiel** | `web/src/lib/observability/` : logger structuré, codes d'événement, assainissement des données (`sanitizeLogData.ts`), corrélation de requête. Couvre les **erreurs et refus d'accès**, pas les **accès légitimes** : il n'existe pas de piste d'audit « qui a lu quel dossier, quand » |
-| 6 | Réponse aux incidents | ⚠️ **Partiel** | `docs/RUNBOOK.md` couvre Vercel/DNS, OAuth, Supabase/Prisma, fuite de secret, révocation d'un accès patient. **Aucune procédure de violation de données** (qualification, délai de notification CNIL, information des personnes) |
+| 6 | Réponse aux incidents | ⚠️ **Partiel — procédure écrite le 2026-07-22, jamais exercée** | `docs/RUNBOOK.md` couvre Vercel/DNS, OAuth, Supabase/Prisma, fuite de secret, révocation d'un accès patient. **La procédure de violation de données existe** (`docs/PROCEDURE_VIOLATION_DONNEES.md` : qualification, 72 h CNIL, information des personnes, registre, modèle de fiche) mais reste à faire confirmer par un conseil qualifié et à exercer sur table |
 | 7 | Tests de sécurité documentés | ⚠️ **Partiel** | Tests d'autorisation par route (`web/src/app/api/**/route.test.ts`), garde structurelle SP-MET, refus d'écriture en lecture passée (SP-TT). **Aucun test d'intrusion, aucune revue de sécurité externe** |
 
 Aucune ligne n'est ✅. Le gate ne peut donc pas être levé par un arbitrage
@@ -201,8 +201,10 @@ base (RLS ou équivalent) si la garde applicative était un jour contournée.
    décision « **livrable en préproduction ; activation avec données réelles =
    décision distincte, aujourd'hui NO-GO** » (`REGISTRE_FRONTIERES.md:619-621`).
 4. **Ajouter une piste d'audit des accès légitimes** (exigence 5).
-5. **Écrire la procédure de violation de données** (exigence 6) : qualification,
-   délai CNIL, information des personnes concernées.
+5. ~~Écrire la procédure de violation de données.~~ Fait le 2026-07-22
+   (`docs/PROCEDURE_VIOLATION_DONNEES.md`). Reste, pour que l'exigence 6 soit
+   tenue pour satisfaite : la confirmation par un conseil qualifié (dette
+   `DETTE_TRUST.md`) et un exercice sur table sur scénario fictif.
 6. **Faire réaliser une revue de sécurité externe** (exigence 7).
 7. **Constituer le dossier RGPD de l'expérimentation** : base légale,
    information des participants, DPA signés avec chaque sous-traitant réel

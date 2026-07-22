@@ -65,6 +65,15 @@
 2. Invalider ou supprimer `Patient.portailToken`
 3. Vérifier cookie `wn_portail` expiré côté patient (session terminée)
 
+## Violation de données personnelles
+
+Si un incident touche des données patient (divulgation, altération, perte —
+même sans certitude), suivre `docs/PROCEDURE_VIOLATION_DONNEES.md` :
+**horodater la prise de connaissance immédiatement** (le délai CNIL de 72 h
+court à partir de là), ouvrir une fiche au registre, endiguer via les
+procédures ci-dessus, puis qualifier le risque avant de décider notification
+et information des personnes.
+
 ## Contrôles avant commit
 
 ```bash
