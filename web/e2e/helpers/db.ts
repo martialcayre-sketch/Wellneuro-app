@@ -11,6 +11,7 @@ import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../../src/generated/prisma';
 import { withSupabaseSslMode, supabasePoolSsl } from '../../src/lib/postgres';
+import { getDocumentCourant } from '../../src/lib/trust/contenus/registre';
 
 const DATABASE_URL =
   process.env.DATABASE_URL ??
@@ -41,6 +42,74 @@ export async function resetPortailState(idPatient: string): Promise<void> {
   await prisma.trustAdverseEffectReport.deleteMany({ where: { idPatient } });
   await prisma.trustPrivacyIncident.deleteMany({ where: { idPatient } });
   await prisma.trustRightsRequest.deleteMany({ where: { idPatient } });
+}
+
+/**
+ * Met un patient fictif dans l'état « reprise » attendu par la proposition de
+ * pack de réévaluation (SP-SPI / LOT-01), et renvoie son jeton d'accès portail.
+ *
+ * Réservé à un patient qu'aucun autre spec n'utilise (Jennifer Martin,
+ * PAT_SEED_02) : ce helper mute ses réponses et son jeton, et deux specs
+ * s'exécutent en parallèle sur la même base éphémère. L'appliquer à
+ * `PAT_SEED_03` casserait `portail-parcours`.
+ *
+ * Trois écritures, toutes fidèles à un vrai patient qui revient après une longue
+ * absence :
+ *  1. un jeton d'accès permanent, tel qu'il aurait été posé à l'onboarding ;
+ *  2. ses réponses transmises antidatées au-delà du seuil de reprise
+ *     (`SEUIL_REPRISE_MOIS`), pour que « la dernière fois » soit lointaine ;
+ *  3. l'accusé de lecture du cadre TRUST déjà donné — un patient qui revient a
+ *     consenti à l'origine —, ce qui fait sauter « Avant de commencer ».
+ * Et une remise à zéro : aucune proposition antérieure, sinon la question ne se
+ * reposerait pas.
+ */
+export async function preparerReprisePourTest(idPatient: string): Promise<string> {
+  const accessToken = `E2E_REPRISE_${idPatient}`;
+
+  await prisma.patient.update({
+    where: { idPatient },
+    data: {
+      accessToken,
+      accessTokenRevoked: false,
+      actif: true,
+      accessTokenCreatedAt: new Date(),
+      sessionsInvalidesAvant: null,
+    },
+  });
+
+  // Bien au-delà de six mois : la reprise se déclenche sur la réponse la plus
+  // récente, on antidate donc toutes les réponses seedées du patient.
+  await prisma.questionnaireReponse.updateMany({
+    where: { idPatient },
+    data: { dateReponse: new Date('2025-01-01T00:00:00.000Z') },
+  });
+
+  const cadre = getDocumentCourant('cadre_accompagnement');
+  await prisma.trustAcknowledgement.deleteMany({
+    where: { idPatient, documentKey: 'cadre_accompagnement' },
+  });
+  await prisma.trustAcknowledgement.create({
+    data: {
+      idPatient,
+      documentKey: 'cadre_accompagnement',
+      documentVersion: cadre.version,
+      contentHash: 'e2e-reprise',
+      type: 'pris_connaissance',
+    },
+  });
+
+  await prisma.packProposition.deleteMany({ where: { idPatient } });
+
+  return accessToken;
+}
+
+/** Nettoie l'état de reprise laissé par un run (jeton, propositions, ack). */
+export async function nettoyerReprise(idPatient: string): Promise<void> {
+  await prisma.packProposition.deleteMany({ where: { idPatient } });
+  await prisma.patient.update({
+    where: { idPatient },
+    data: { accessToken: null, accessTokenCreatedAt: null },
+  });
 }
 
 export async function closePrisma(): Promise<void> {
