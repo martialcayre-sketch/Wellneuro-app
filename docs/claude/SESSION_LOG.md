@@ -1422,3 +1422,26 @@ date de bascule R4.
 
 **Questions ouvertes** : #218 et #221 (autres sessions) ; date R4 ; migration
 destructive IDP2 LOT-04.
+
+## 2026-07-22 — Audit 5.0 : le bloqueur décisionnel invisible du cockpit (#218)
+
+**Décisions** : réserve « poste de pilotage » fermée. Le message « Protocole
+indisponible — bloqueurs décisionnels » ne vivait que dans la phase Actions,
+masquée par défaut : un praticien sur Décision ignorait qu'un protocole était
+bloqué. Bannière permanente hors filtre de phase (motif B2) ; prédicat
+`isDecisionBloquee` extrait sans changer la logique, `import type` seul pour ne
+pas fuiter `node:crypto` côté client. Mergé (`743e4d9`) — la PR qu'une autre
+session avait laissée, rebasée puis débloquée (le CI ne partait pas tant que la
+branche était en conflit avec `main`).
+
+**Écarté** : réécrire les E2E pour entériner le masquage (le code s'aligne sur la
+sécurité) ; retirer deux gardes prouvées redondantes du code déjà mergé (churn).
+
+**Vérifié** : CI verte (E2E inclus) ; T1/T2 ; revue adversariale 5 lentilles,
+0 constat confirmé ; build frais 0 `node:crypto` dans les chunks client.
+
+**Prochaine action** : porter le lot sécurité différé (en-têtes HTTP + péremption
+des jetons portail), en stash dans le worktree.
+
+**Questions ouvertes** : reste du backlog audit — `next` 14.2.35, code mort,
+onboarding cassé, états machine périmés, `@ts-nocheck` du catalogue clinique.
