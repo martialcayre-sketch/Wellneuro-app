@@ -136,7 +136,7 @@ test.describe('Praticien Dashboard', () => {
     // L'en-tête « Le Fil du jour » (maquette La Spirale, sans métriques) et le
     // conteneur du Fil sont présents quel que soit l'état des données.
     await expect(page.getByRole('heading', { name: 'Le Fil du jour' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: "Aujourd'hui" }).or(page.getByTestId('fil-du-jour'))).toBeVisible();
+    await expect(page.getByTestId('fil-du-jour')).toBeVisible();
 
     const fil = page.getByTestId('fil-du-jour');
     await expect(fil).toBeVisible({ timeout: 10000 });
