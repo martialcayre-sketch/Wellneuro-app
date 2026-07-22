@@ -23,6 +23,18 @@ test.describe('Captures — refonte visuelle 5.0', () => {
     });
   });
 
+  test('fiche patient — tiroir « Les 12 besoins » ouvert', async ({ page, context }, testInfo) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`/dashboard/patients/${PATIENT_ID}`);
+    await page.getByRole('button', { name: 'Les 12 besoins' }).first().click();
+    await page.getByRole('dialog').waitFor();
+    await page.screenshot({
+      path: `${DOSSIER}/fiche-tiroir-besoins-${testInfo.project.name}.png`,
+      fullPage: false,
+    });
+  });
+
   test('accueil praticien — le Fil du jour', async ({ page, context }, testInfo) => {
     await context.addCookies([await praticienSessionCookie()]);
     await page.setViewportSize({ width: 1440, height: 900 });
