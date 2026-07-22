@@ -4711,8 +4711,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Anonymiser",
-    "comment": "Retirer toute donnée identifiable avant utilisation pédagogique ou RAG.",
+    "requiredAction": "Aucune",
+    "comment": "Cas clinique fictif, déjà anonymisé pour l'enseignement (aucune donnée patient réelle) — indexation autorisée sans étape d'anonymisation. Requalifié le 2026-07-22.",
     "auditDate": "2026-07-12"
   },
   {
@@ -6512,8 +6512,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Anonymiser",
-    "comment": "Retirer toute donnée identifiable avant utilisation pédagogique ou RAG.",
+    "requiredAction": "Aucune",
+    "comment": "Cas clinique fictif, déjà anonymisé pour l'enseignement (aucune donnée patient réelle) — indexation autorisée sans étape d'anonymisation. Requalifié le 2026-07-22.",
     "auditDate": "2026-07-12"
   },
   {
@@ -8731,8 +8731,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Anonymiser",
-    "comment": "Retirer toute donnée identifiable avant utilisation pédagogique ou RAG.",
+    "requiredAction": "Aucune",
+    "comment": "Cas clinique fictif, déjà anonymisé pour l'enseignement (aucune donnée patient réelle) — indexation autorisée sans étape d'anonymisation. Requalifié le 2026-07-22.",
     "auditDate": "2026-07-12"
   },
   {
@@ -9170,8 +9170,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Anonymiser",
-    "comment": "Retirer toute donnée identifiable avant utilisation pédagogique ou RAG.",
+    "requiredAction": "Aucune",
+    "comment": "Cas clinique fictif, déjà anonymisé pour l'enseignement (aucune donnée patient réelle) — indexation autorisée sans étape d'anonymisation. Requalifié le 2026-07-22.",
     "auditDate": "2026-07-12"
   },
   {
@@ -9528,8 +9528,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Anonymiser",
-    "comment": "Retirer toute donnée identifiable avant utilisation pédagogique ou RAG.",
+    "requiredAction": "Aucune",
+    "comment": "Cas clinique fictif, déjà anonymisé pour l'enseignement (aucune donnée patient réelle) — indexation autorisée sans étape d'anonymisation. Requalifié le 2026-07-22.",
     "auditDate": "2026-07-12"
   },
   {
@@ -9554,8 +9554,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Anonymiser",
-    "comment": "Retirer toute donnée identifiable avant utilisation pédagogique ou RAG.",
+    "requiredAction": "Aucune",
+    "comment": "Cas clinique fictif, déjà anonymisé pour l'enseignement (aucune donnée patient réelle) — indexation autorisée sans étape d'anonymisation. Requalifié le 2026-07-22.",
     "auditDate": "2026-07-12"
   },
   {
@@ -9580,8 +9580,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Anonymiser",
-    "comment": "Retirer toute donnée identifiable avant utilisation pédagogique ou RAG.",
+    "requiredAction": "Aucune",
+    "comment": "Cas clinique fictif, déjà anonymisé pour l'enseignement (aucune donnée patient réelle) — indexation autorisée sans étape d'anonymisation. Requalifié le 2026-07-22.",
     "auditDate": "2026-07-12"
   },
   {
@@ -10056,8 +10056,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Anonymiser",
-    "comment": "Retirer toute donnée identifiable avant utilisation pédagogique ou RAG.",
+    "requiredAction": "Aucune",
+    "comment": "Cas clinique fictif, déjà anonymisé pour l'enseignement (aucune donnée patient réelle) — indexation autorisée sans étape d'anonymisation. Requalifié le 2026-07-22.",
     "auditDate": "2026-07-12"
   },
   {
@@ -10349,8 +10349,8 @@
     "practitionerReviewRequired": true,
     "lifecycleStatus": "raw",
     "vigilance": "Modérée",
-    "requiredAction": "Anonymiser",
-    "comment": "Retirer toute donnée identifiable avant utilisation pédagogique ou RAG.",
+    "requiredAction": "Aucune",
+    "comment": "Cas clinique fictif, déjà anonymisé pour l'enseignement (aucune donnée patient réelle) — indexation autorisée sans étape d'anonymisation. Requalifié le 2026-07-22.",
     "auditDate": "2026-07-12"
   },
   {
