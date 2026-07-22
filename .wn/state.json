@@ -7,7 +7,7 @@
   "status": "en_cours",
   "active_campaign": "2026-07-21-idp2-auth-patient-et-cycle-de-vie",
   "active_lot": "LOT-03",
-  "last_completed_lot": "IDP2/LOT-03c",
+  "last_completed_lot": "IDP2/LOT-03f",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -25,7 +25,7 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Campagne active IDP2, lot courant LOT-03. Sous-lots 03a-03c LIVRES et merges sur main : 03a spécification (Google en OIDC direct, hors de NextAuth ; option A retenue, #215), 03b la garde des rôles devient un test (web/src/lib/auth.roles.guard.test.ts, 53 cas, #217), 03c le chemin Google patient éteint par défaut (web/src/lib/portail/googleIdentite.ts, web/src/app/portail/google/route.ts, drapeau WN_G5_GOOGLE_PATIENT off, #220). Le risque « deux surfaces d'authentification dans le même NextAuth » est fermé STRUCTURELLEMENT : le patient n'entre jamais dans authOptions, aucun cookie NextAuth patient n'est émis, lib/auth.ts intact. 03d = runbook d'activation (ACTIVATION_RUNBOOK_G5.md) ECRIT mais NON EXECUTE : décision HUMAINE (créer un client OAuth Google patient distinct + poser deux secrets Vercel), hors périmètre assistant. La trace durable en base (une connexion Google ne laisse aujourd'hui aucune trace, ce qui bloque l'activation 03d) est traitée par la PR #226 (feat/idp2-lot03c-trace, migration additive), EN VOL DANS UNE AUTRE SESSION — ne pas doubler. LOT-04 (retrait de patients.access_token) porte une migration DESTRUCTIVE : décision distincte, ne pas l'enchaîner ; il devra aussi défaire l'ancrage de l'URL au jeton permanent (interaction R4 décrite dans la spéc LOT-03). Prochaine action assistant-appropriée : suivre et vérifier #226 en production une fois mergée (exception migration/auth de CLAUDE.md — revue adversariale avant, lecture execute_sql après), sinon attendre l'arbitrage humain pour 03d.",
+  "next_action": "Campagne active IDP2, lot courant LOT-03, INTEGRALEMENT LIVRE : 03a spécification (#215), 03b garde des rôles testée (#217), 03c chemin Google éteint par défaut (#220), 03c-trace connexions Google en base (#226), 03e purge de la trace après 12 mois (#230), 03f l'e-mail d'accès propose Google avec lien permanent en repli (#231). Migration #226 VERIFIEE en production le 2026-07-22 (exception migration/auth de CLAUDE.md) : appliquée en 1 tentative à 11:39:27Z, table portail_connexions_google conforme (5 colonnes, pkey + g5_google_patient_idx + g5_google_scan_idx, RLS deny-all), requête inverse _prisma_migrations vide. 03d (activation G5) EXECUTE PAR L'HUMAIN : WN_G5_GOOGLE_PATIENT actif en production, preuve de bout en bout — 1 trace issue=consomme (PAT006, 2026-07-22 15:04Z), soit une connexion Google patient réelle aboutie. Lot sécurité différé (en-têtes HTTP + péremption jetons portail) livré (#229). LOT-04 (retrait DESTRUCTIF de patients.access_token) : précondition re-mesurée le 2026-07-22 à 15h UTC, NON REMPLIE — 1/13 patients actifs passés par Google ou lien magique (PAT006 seul), 12/13 dépendent encore du jeton permanent. Action côté praticien : renvoyer l'invitation aux 12 concernés, puis re-vérifier avant d'ouvrir LOT-04 ; il devra aussi défaire l'ancrage de l'URL au jeton permanent (interaction R4 de la spéc LOT-03). Prochain lot à_faire hors IDP2 : suite de SP-SPI LOT-01.",
   "blocking_issues": [
     "Fil de correspondance médecin (C3) : arbitrage humain requis sur identité médecin et conservation",
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md",
@@ -33,6 +33,6 @@
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-22T11:30:59Z",
+  "updated_at": "2026-07-22T15:20:39Z",
   "parallel_campaigns": []
 }
