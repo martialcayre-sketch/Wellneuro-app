@@ -320,3 +320,30 @@ export async function identiteDepuisCode(
   if (!jetonIdentite) return null;
   return identiteDepuisJetonGoogle(jetonIdentite, { clientId: config.clientId, ...attendu });
 }
+
+/**
+ * Durée de conservation de la trace des connexions Google
+ * (`portail_connexions_google`) — décision de conformité du 2026-07-22,
+ * consignée dans `ACTIVATION_RUNBOOK_G5.md` : **12 mois glissants**.
+ *
+ * Le plancher est fixé par l'objet même de la table : répondre à « qui a
+ * ouvert ce dossier, quand » quand la question arrive après coup — l'exemple
+ * donné au moment d'écrire ce lot était « trois mois après ». En dessous de ce
+ * plancher, la table ne tiendrait plus sa promesse. Le haut de la fourchette
+ * usuellement citée par la CNIL pour un journal technique/sécurité (6 mois à
+ * 1 an, en l'absence d'obligation légale spécifique) est retenu plutôt que le
+ * bas : un accès contesté sur un dossier de santé met souvent plus de temps à
+ * remonter qu'un incident de sécurité web ordinaire. La table elle-même ne
+ * contient aucune donnée de santé — seulement une métadonnée d'accès — les
+ * durées longues propres au contenu clinique ne s'y appliquent donc pas.
+ *
+ * Recommandation de l'assistant, retenue par le responsable : ce n'est pas un
+ * avis juridique engageant, et reste révisable si un cadre de conformité
+ * formel en décide autrement.
+ */
+export const RETENTION_CONNEXIONS_GOOGLE_MS = 365 * 24 * 60 * 60 * 1000;
+
+/** Les lignes antérieures à cet instant sont hors fenêtre de conservation. */
+export function debutRetentionConnexionsGoogle(maintenant: Date): Date {
+  return new Date(maintenant.getTime() - RETENTION_CONNEXIONS_GOOGLE_MS);
+}

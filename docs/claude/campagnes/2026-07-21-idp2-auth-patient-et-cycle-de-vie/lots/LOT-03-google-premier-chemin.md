@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Google comme premier chemin — et la séparation des rôles rendue structurelle"
-statut: "03a, 03b et 03c livrés — 03d écrit, non exécuté"
+statut: "03a, 03b, 03c et 03c-trace livrés, 03d activé le 2026-07-22 — 03e (purge) en revue"
 dépend_de: "LOT-02 (livré)"
 ---
 
@@ -138,11 +138,22 @@ Aucune migration Prisma : le compte est déjà la ligne `patients` (LOT-02).
   laisse désormais une trace, comme le lien magique. Migration additive, drapeau
   toujours éteint. Falsifié trois fois (trace succès supprimée, trace avant
   vérification du `state`, trace fail-closed).
-- **03d — activation.** *Runbook écrit le 2026-07-21, non exécuté* —
-  `../ACTIVATION_RUNBOOK_G5.md`. Décision distincte et datée, avec les variables
-  du client OAuth patient. Ne fait pas partie du merge, et ne peut pas l'être :
-  elle demande de créer un client OAuth chez Google et de poser deux secrets dans
-  Vercel.
+- **03d — activation.** *Exécutée le 2026-07-22* — client OAuth patient créé,
+  secrets posés en Production, `WN_G5_GOOGLE_PATIENT=true`. Vérifiée par
+  comportement observable (`/portail/connexion` 200, `/portail/google` redirige
+  vers Google avec le bon client), pas par lecture de configuration. Détail dans
+  `../ACTIVATION_RUNBOOK_G5.md`, section « Activation exécutée ». Durée de
+  conservation de la trace fixée à 12 mois glissants le même jour.
+- **03e — purge de la trace.** *En revue le 2026-07-22* — `deleteMany`
+  opportuniste sur `portail_connexions_google` à chaque tentative, même patron
+  que `portail_demande_tentatives`. Aucune migration (l'index de purge existait
+  déjà dans le modèle du LOT-03c-trace). Falsification notable : retirer le
+  `.catch()` local de la purge ne cassait rien — le `try/catch` englobant de
+  `tracer()` rattrapait déjà tout — et a révélé que ce `.catch()` était pire que
+  redondant : il avalait silencieusement un échec que le code rendait pourtant
+  alertable. Retiré ; l'échec remonte désormais au `catch` qui journalise. Revue
+  adversariale : GO, deux tests faibles (un tautologique, un sans assertion
+  d'ordre) corrigés dans la foulée et falsifiés à leur tour.
 
 ### Ce que 03c a coûté en falsifications
 

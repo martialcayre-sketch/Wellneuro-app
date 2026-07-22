@@ -1,17 +1,50 @@
 # G5 — Runbook d'activation du chemin Google patient (LOT-03d)
 
-> Écrit le 2026-07-21. **NON EXÉCUTÉ.**
+> Écrit le 2026-07-21. **Activé le 2026-07-22** — voir « Activation exécutée »
+> ci-dessous.
 >
 > Il vit à la racine de la campagne et non dans `lots/`, comme
 > `ACTIVATION_RUNBOOK_G4.md` : l'activation n'est pas un lot de code, et l'audit
 > des campagnes n'accepte qu'un fichier par ordinal — 03d partage le sien
 > avec 03a, 03b et 03c.
 >
-> Calqué sur `ACTIVATION_RUNBOOK_G4.md`. **Ce document n'active rien.** Il
-> décrit ce qu'il faut faire, dans quel ordre, et ce qu'il faut vérifier après.
-> L'exécution appartient au responsable : elle demande de créer un client OAuth
-> chez Google et de poser deux secrets dans Vercel — deux gestes que l'assistant
-> ne fait pas et ne peut pas faire.
+> Calqué sur `ACTIVATION_RUNBOOK_G4.md`. Ce document décrivait ce qu'il fallait
+> faire, dans quel ordre, et ce qu'il fallait vérifier après — les deux gestes
+> (client OAuth, secrets Vercel) sont désormais faits, par le responsable ; ils
+> ne pouvaient pas être faits par l'assistant.
+
+## Activation exécutée — 2026-07-22
+
+Client OAuth patient créé, `WN_GOOGLE_PATIENT_CLIENT_ID`/`_SECRET` posés en
+Production, redéploiement effectué, puis `WN_G5_GOOGLE_PATIENT=true` posé et
+un second redéploiement déclenché (une promotion d'un déploiement Preview vers
+Production a d'abord été tentée ; Vercel a reconstruit plutôt que de se
+contenter d'un changement d'alias, donc les variables ont bien été prises en
+compte — vérifié, pas supposé, voir ci-dessous).
+
+**Vérifié en production, par comportement observable, pas par lecture de
+configuration** :
+
+| Vérification | Résultat |
+|---|---|
+| `GET /portail/connexion` | 200, bouton « Continuer avec Google » rendu |
+| `GET /portail/google` | 307 vers `accounts.google.com`, `client_id` du client patient, `redirect_uri` correct, `scope=openid+email`, `state`/`nonce` présents |
+| Casse des adresses (requête de la section suivante) | 0 sur 17, inchangé |
+| Dossiers joignables sans accès envoyé | 1 (Sophie Nicola, `PAT005`) — **`actif: false` posé le 2026-07-22, vérifié en base**. Ré-invitation prévue séparément par le responsable |
+| `portail_connexions_google` | 0 ligne — cohérent, aucune connexion réelle encore tentée |
+
+**Durée de conservation de la trace — décidée le 2026-07-22 : 12 mois glissants.**
+Recommandation de l'assistant, retenue par le responsable. Motif : c'est le
+plancher fixé par l'objet même de la table — répondre à « qui a ouvert ce
+dossier » quand la question arrive après coup, l'exemple donné dans le lot
+étant « trois mois après » — et la fourchette usuellement citée par la CNIL
+pour un journal technique/sécurité en l'absence d'obligation légale spécifique
+(6 mois à 1 an), prise au haut de cette fourchette parce qu'un accès contesté
+sur un dossier de santé met souvent plus de temps à remonter qu'un incident de
+sécurité web ordinaire. La table ne contient aucune donnée de santé — seulement
+une métadonnée d'accès — donc les durées longues propres au contenu clinique
+ne s'appliquent pas ici. Mécanisme de purge : **LOT-03e**, ouvert le
+2026-07-22, code de la même conversation.
 
 ## Ce que ce runbook n'autorise pas
 

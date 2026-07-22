@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CHEMIN_RETOUR,
   DUREE_ETAT_MS,
+  RETENTION_CONNEXIONS_GOOGLE_MS,
   configurationGoogle,
   construireUrlAutorisation,
   creerEtatGoogle,
+  debutRetentionConnexionsGoogle,
   identiteDepuisCode,
   verifierEtatGoogle,
 } from './googleIdentite';
@@ -239,5 +241,32 @@ describe('surface publique du module', () => {
     expect(publics).not.toContain('identiteDepuisJetonGoogle');
     expect(publics).not.toContain('echangerCodeContreJetonIdentite');
     expect(publics).toContain('identiteDepuisCode');
+  });
+});
+
+// Durée de conservation de la trace des connexions Google — décision du
+// 2026-07-22 (ACTIVATION_RUNBOOK_G5.md) : 12 mois glissants.
+describe('rétention de la trace des connexions Google', () => {
+  it('la fenêtre est de 365 jours', () => {
+    expect(RETENTION_CONNEXIONS_GOOGLE_MS).toBe(365 * 24 * 60 * 60 * 1000);
+  });
+
+  it('le seuil se calcule en reculant de la fenêtre depuis l’instant donné', () => {
+    const seuil = debutRetentionConnexionsGoogle(MAINTENANT);
+    expect(seuil.getTime()).toBe(MAINTENANT.getTime() - RETENTION_CONNEXIONS_GOOGLE_MS);
+  });
+
+  // La version précédente comparait `seuil - 1j < seuil` : vrai quelle que
+  // soit l'implémentation, elle ne testait rien. Celle-ci applique le
+  // filtre `creeLe: { lt: seuil }` réellement utilisé par `deleteMany`
+  // (`google/retour/route.ts`) à des lignes de part et d'autre de la
+  // frontière — c'est l'inclusion/exclusion qui compte, pas l'arithmétique.
+  // Relevé en revue adversariale le 2026-07-22.
+  it('une ligne d’un jour plus vieille que le seuil est exclue par le filtre de purge, une plus récente est conservée', () => {
+    const seuil = debutRetentionConnexionsGoogle(MAINTENANT);
+    const filtre = (creeLe: Date) => creeLe.getTime() < seuil.getTime();
+
+    expect(filtre(new Date(seuil.getTime() - 24 * 60 * 60 * 1000))).toBe(true);
+    expect(filtre(new Date(seuil.getTime() + 24 * 60 * 60 * 1000))).toBe(false);
   });
 });

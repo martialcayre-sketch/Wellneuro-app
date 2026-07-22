@@ -5,6 +5,7 @@ import {
   COOKIE_ETAT,
   DESTINATION_REFUS,
   configurationGoogle,
+  debutRetentionConnexionsGoogle,
   identiteDepuisCode,
   verifierEtatGoogle,
 } from '@/lib/portail/googleIdentite';
@@ -86,6 +87,21 @@ type IssueConnexion = 'consomme' | 'refuse';
  * L'appelant garantit l'autre invariant — celui qui protège la table : `tracer`
  * n'est appelée qu'après la vérification du `state`. Un retour forgé n'écrit
  * donc jamais.
+ *
+ * PURGE OPPORTUNISTE, même patron que `POST /api/portail/lien/demande` pour
+ * `portail_demande_tentatives` : pas de tâche planifiée dans ce dépôt, la
+ * purge se fait donc à chaque écriture, sur les lignes sorties de la fenêtre
+ * de 12 mois (`RETENTION_CONNEXIONS_GOOGLE_MS`, décision du 2026-07-22,
+ * `ACTIVATION_RUNBOOK_G5.md`).
+ *
+ * Pas de `.catch()` propre à la purge, délibérément : le `try/catch` englobant
+ * la fait déjà échouer sans bloquer, et surtout la JOURNALISE
+ * (`PORTAIL_GOOGLE_TRACE_ECHEC`) — un `.catch(() => undefined)` local avalerait
+ * silencieusement l'échec, rendant justement invisible ce que ce code
+ * d'événement existe pour signaler. Constaté en falsifiant : retirer le
+ * `try/catch` englobant ne casse aucun test tant qu'un `.catch()` local
+ * masque l'échec ; le supprimer et laisser remonter à l'unique catch qui
+ * journalise est ce qui rend la panne de purge alertable.
  */
 async function tracer(
   contexte: RequestContext,
@@ -94,14 +110,22 @@ async function tracer(
   idPatient: string | null,
 ): Promise<void> {
   try {
+    const maintenant = new Date();
     await prisma.portailConnexionGoogle.create({ data: { issue, motif, idPatient } });
+    await prisma.portailConnexionGoogle.deleteMany({
+      where: { creeLe: { lt: debutRetentionConnexionsGoogle(maintenant) } },
+    });
   } catch (err) {
     logger.error({
       // Code dédié : une trace perdue doit être alertable pour elle-même, sans
       // se confondre avec une exception d'authentification (`PORTAIL_GOOGLE_EXCEPTION`).
+      // Couvre les deux pannes possibles ici — écriture ou purge — d'où un
+      // message qui ne présume pas laquelle : si seule la purge a échoué, la
+      // trace du jour existe bel et bien, seules des lignes anciennes
+      // s'accumulent un peu plus longtemps que prévu.
       event: EVENT_CODES.PORTAIL_GOOGLE_TRACE_ECHEC,
       domain: 'PORTAIL_PATIENT',
-      message: 'Échec d’écriture de la trace d’entrée Google',
+      message: 'Échec de tenue de la trace des connexions Google (écriture ou purge)',
       context: finalizeLogContext(contexte, { statusCode: 307, retryable: true }),
       error: err,
     });
