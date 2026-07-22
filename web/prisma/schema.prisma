@@ -1012,6 +1012,39 @@ model PortailConnexionGoogle {
   @@map("portail_connexions_google")
 }
 
+// Journal des lectures praticien de dossier nommé (G-TRUST-04, exigence 5).
+//
+// POURQUOI. La journalisation applicative couvre erreurs et refus, en console
+// Vercel purgeable ; le dépôt a acté (G5, ci-dessus) qu'un log purgeable ne
+// vaut pas trace d'accès. « Qui a lu quel dossier, quand » doit avoir une
+// réponse trois mois plus tard — cette table la porte pour le versant
+// praticien ; le versant patient est déjà couvert (`PortailConnexionGoogle`,
+// `PortailMagicLink.consommeLe`).
+//
+// CE QU'ELLE PORTE : le « qui » (`praticienEmail`), le « quel dossier »
+// (`idPatient`, NOT NULL — on n'écrit qu'après appartenance établie), le
+// « quand » (`creeLe`, posé par la base), le « par où » (`route` en gabarit
+// littéral, `methode`). JAMAIS l'URL réelle, JAMAIS de payload, d'IP, de
+// user-agent ni de donnée clinique.
+//
+// SANS CLÉ ÉTRANGÈRE VERS `patients` (comme `PortailConnexionGoogle`) :
+// `effacerDossier` efface cette table nommément, `effacement.test.ts` échoue
+// si on l'oublie. Rétention 12 mois glissants par purge opportuniste à
+// l'écriture (décision GD-2 du 2026-07-22, alignée sur le précédent G5) —
+// constante applicative, révisable sans migration.
+model JournalAccesDossier {
+  id             String   @id @default(cuid()) @map("id")
+  idPatient      String   @map("id_patient")
+  praticienEmail String   @map("praticien_email")
+  route          String   @map("route")
+  methode        String   @map("methode")
+  creeLe         DateTime @default(now()) @map("cree_le")
+
+  @@index([idPatient, creeLe], map: "acces_dossiers_patient_idx")
+  @@index([creeLe], map: "acces_dossiers_scan_idx")
+  @@map("journal_acces_dossiers")
+}
+
 // Résidu laissé par un effacement de dossier (IDP2).
 //
 // L'application PROMET l'effacement au patient
