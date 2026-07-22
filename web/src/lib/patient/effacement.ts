@@ -87,6 +87,14 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.relectureNotes = (await tx.relectureNote.deleteMany({ where: par })).count;
     supprimees.portailMagicLinks = (await tx.portailMagicLink.deleteMany({ where: par })).count;
     supprimees.packPropositions = (await tx.packProposition.deleteMany({ where: par })).count;
+    // La trace des entrées Google (gate G5) porte `id_patient` sans clé
+    // étrangère, comme `audit_syntheses` : rien ne la protège d'un oubli. Un
+    // journal d'accès qui survivrait à l'effacement le viderait de son sens —
+    // c'est le dossier effacé qu'il continuerait à nommer. Les lignes sans
+    // patient (refus sur adresse inconnue) ne sont pas concernées.
+    supprimees.portailConnexionsGoogle = (
+      await tx.portailConnexionGoogle.deleteMany({ where: par })
+    ).count;
 
     // 6. Le dossier lui-même. Toute contrainte oubliée échoue ICI, bruyamment,
     //    et annule l'ensemble — un effacement partiel serait pire que rien.

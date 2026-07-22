@@ -72,6 +72,42 @@ function effacerEtat(res: NextResponse): NextResponse {
   return res;
 }
 
+type IssueConnexion = 'consomme' | 'refuse';
+
+/**
+ * Écrit la trace durable d'une tentative d'entrée Google.
+ *
+ * **Fail-open**, et c'est délibéré : l'échec d'écriture de la trace ne doit ni
+ * bloquer un patient légitime, ni changer la sortie, ni devenir un canal par sa
+ * durée ou son code. On journalise l'échec et on continue. Perdre une ligne de
+ * journal sur un incident base coûte moins qu'enfermer dehors le patient dont
+ * l'accès venait d'être prouvé.
+ *
+ * L'appelant garantit l'autre invariant — celui qui protège la table : `tracer`
+ * n'est appelée qu'après la vérification du `state`. Un retour forgé n'écrit
+ * donc jamais.
+ */
+async function tracer(
+  contexte: RequestContext,
+  issue: IssueConnexion,
+  motif: string | null,
+  idPatient: string | null,
+): Promise<void> {
+  try {
+    await prisma.portailConnexionGoogle.create({ data: { issue, motif, idPatient } });
+  } catch (err) {
+    logger.error({
+      // Code dédié : une trace perdue doit être alertable pour elle-même, sans
+      // se confondre avec une exception d'authentification (`PORTAIL_GOOGLE_EXCEPTION`).
+      event: EVENT_CODES.PORTAIL_GOOGLE_TRACE_ECHEC,
+      domain: 'PORTAIL_PATIENT',
+      message: 'Échec d’écriture de la trace d’entrée Google',
+      context: finalizeLogContext(contexte, { statusCode: 307, retryable: true }),
+      error: err,
+    });
+  }
+}
+
 export async function GET(req: Request): Promise<NextResponse> {
   if (!isG5GooglePatientEnabled()) {
     return new NextResponse(null, { status: 404 });
@@ -80,9 +116,13 @@ export async function GET(req: Request): Promise<NextResponse> {
   const contexte = contexteSansSecret(req);
 
   // Passe à `true` dès que le `state` reçu correspond à un aller que nous avons
-  // émis. Tant qu'il est `false`, la requête peut venir de n'importe où, et son
-  // traitement ne doit toucher à aucun cookie du navigateur.
+  // émis. Tant qu'il est `false`, la requête peut venir de n'importe où : son
+  // traitement ne doit ni toucher à un cookie, ni écrire une trace.
   let allerReconnu = false;
+  // L'identifiant du patient résolu, hoisté pour être disponible dans le `catch`
+  // (où `patient`, déclaré dans le `try`, ne l'est plus). Null tant qu'aucun
+  // patient n'a été résolu — refus sur adresse inconnue, notamment.
+  let idPatientResolu: string | null = null;
 
   /**
    * La sortie unique. Adresse inconnue, non vérifiée, patient inactif, portail
@@ -137,16 +177,26 @@ export async function GET(req: Request): Promise<NextResponse> {
       nonce: etatAttendu.nonce,
       maintenant: new Date(),
     });
-    if (!identite) return refuser('identite_non_etablie');
+    if (!identite) {
+      await tracer(contexte, 'refuse', 'identite_non_etablie', null);
+      return refuser('identite_non_etablie');
+    }
 
     const patient = await prisma.patient.findUnique({
       where: { email: identite.email },
       select: { idPatient: true, email: true, actif: true, accessTokenRevoked: true },
     });
+    // Le patient est résolu (ou non) : la trace peut désormais le nommer, y
+    // compris pour un refus. Un dossier révoqué qu'on tente d'ouvrir par Google
+    // laisse ainsi une trace nominative — côté serveur seulement, l'écran, lui,
+    // reste indifférencié.
+    idPatientResolu = patient?.idPatient ?? null;
+
     // Adresse inconnue, patient désactivé, portail révoqué : trois situations,
     // une seule sortie. C'est ce qui empêche d'apprendre ici qu'une adresse
     // correspond à un patient de ce cabinet.
     if (!patient || !patient.actif || patient.accessTokenRevoked) {
+      await tracer(contexte, 'refuse', 'sans_espace_eligible', idPatientResolu);
       return refuser('sans_espace_eligible');
     }
 
@@ -154,6 +204,7 @@ export async function GET(req: Request): Promise<NextResponse> {
     // Fournit au passage le jeton permanent, qui reste la clé de l'URL.
     const acces = await ensureActivePortalAccess(patient.idPatient);
 
+    await tracer(contexte, 'consomme', null, patient.idPatient);
     logger.security({
       event: EVENT_CODES.PORTAIL_GOOGLE_CONNEXION,
       domain: 'SECURITY',
@@ -172,7 +223,14 @@ export async function GET(req: Request): Promise<NextResponse> {
     );
     return res;
   } catch (err) {
-    if (err instanceof PortalAccessError) return refuser('acces_indisponible');
+    // Ces deux sorties ne tracent que si l'aller avait été reconnu : une panne
+    // survenue avant la vérification du `state` (elle est improbable, mais on ne
+    // s'y fie pas) ne doit pas plus écrire qu'un retour forgé.
+    if (err instanceof PortalAccessError) {
+      if (allerReconnu) await tracer(contexte, 'refuse', 'acces_indisponible', idPatientResolu);
+      return refuser('acces_indisponible');
+    }
+    if (allerReconnu) await tracer(contexte, 'refuse', 'exception', idPatientResolu);
     logger.error({
       event: EVENT_CODES.PORTAIL_GOOGLE_EXCEPTION,
       domain: 'PORTAIL_PATIENT',

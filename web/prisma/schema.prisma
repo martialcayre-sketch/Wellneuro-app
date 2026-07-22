@@ -926,6 +926,50 @@ model PortailDemandeTentative {
   @@map("portail_demande_tentatives")
 }
 
+// Trace durable des entrées par Google (gate G5, IDP2 LOT-03c-trace).
+//
+// POURQUOI. Le lien magique laisse une trace en base (`consomme_le`,
+// `rejeux_refuses`) ; le chemin Google n'en laissait aucune — seulement un log
+// Vercel, purgeable. La revue adversariale du 2026-07-21 en a fait un NO-GO à
+// l'activation : trois mois après, « qui a ouvert ce dossier, quand, par quel
+// chemin » n'aurait plus de réponse. Cette table est la réponse.
+//
+// CE QU'ELLE PORTE, ET CE QU'ELLE NE PORTE PAS. `id_patient` (l'identifiant
+// synthétique, déjà partout ailleurs), l'instant, l'issue, et pour un refus sa
+// catégorie interne. JAMAIS l'adresse e-mail, JAMAIS une empreinte, JAMAIS le
+// jeton — même exigence de sobriété que `DossierEfface`. `id_patient` est
+// nullable : un refus sur une adresse inconnue n'a pas de patient à nommer.
+//
+// SANS CLÉ ÉTRANGÈRE VERS `patients`, comme `audit_syntheses` et
+// `booklet_envois`. `id_patient` est nullable (un refus sur adresse inconnue
+// n'a pas de patient), et une FK sur une colonne nullable n'apporterait rien
+// aux lignes sans parent. En contrepartie, rien dans la base ne protège cette
+// table d'un oubli à l'effacement : c'est `effacerDossier` qui l'efface
+// nommément, et `effacement.test.ts` échoue si une table portant `id_patient`
+// y est oubliée. Un journal d'accès qui SURVIVRAIT à l'effacement le viderait
+// de son sens — il continuerait à nommer le dossier qu'on vient de détruire.
+//
+// PAS DE PURGE AUTOMATIQUE, hors effacement. Contrairement à
+// `portail_demande_tentatives` — un compteur de cadence sans valeur passé une
+// heure — ceci est un journal d'accès : durer, tant que le dossier existe, est
+// son objet. La durée de conservation générale est une décision de conformité,
+// pas une constante de code : elle n'est pas encodée ici.
+//
+// ELLE N'EST ÉCRITE QU'APRÈS LA VÉRIFICATION DU `state`. Un retour forgé qui n'a
+// pas franchi la garde anti-CSRF n'écrit aucune ligne : sans cela, marteler
+// `/portail/google/retour` gonflerait la table sans borne.
+model PortailConnexionGoogle {
+  id        String   @id @default(cuid()) @map("id")
+  idPatient String?  @map("id_patient")
+  issue     String   @map("issue")
+  motif     String?  @map("motif")
+  creeLe    DateTime @default(now()) @map("cree_le")
+
+  @@index([idPatient, creeLe], map: "g5_google_patient_idx")
+  @@index([creeLe], map: "g5_google_scan_idx")
+  @@map("portail_connexions_google")
+}
+
 // Résidu laissé par un effacement de dossier (IDP2).
 //
 // L'application PROMET l'effacement au patient

@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma, ensureActivePortalAccess, logger } = vi.hoisted(() => ({
-  prisma: { patient: { findUnique: vi.fn() } },
+  prisma: {
+    patient: { findUnique: vi.fn() },
+    portailConnexionGoogle: { create: vi.fn() },
+  },
   ensureActivePortalAccess: vi.fn(),
   logger: { security: vi.fn(), error: vi.fn() },
 }));
@@ -79,6 +82,7 @@ describe('GET /portail/google/retour — retour de Google', () => {
     process.env.WN_GOOGLE_PATIENT_CLIENT_SECRET = 'secret-de-test-non-production';
     etatCourant = creerEtatGoogle(new Date());
     prisma.patient.findUnique.mockResolvedValue(PATIENT);
+    prisma.portailConnexionGoogle.create.mockResolvedValue({ id: 'cx_1' });
     ensureActivePortalAccess.mockResolvedValue({
       accessToken: 'TOK_PERMANENT',
       url: 'http://localhost:3000/portail/TOK_PERMANENT',
@@ -248,5 +252,115 @@ describe('GET /portail/google/retour — retour de Google', () => {
     expect(journalise).not.toContain(etatCourant.etat.etat);
     expect(journalise).not.toContain(EMAIL);
     expect(journalise).toContain('/portail/google/retour');
+  });
+});
+
+// Trace durable en base — le NO-GO d'activation levé (IDP2 LOT-03c-trace).
+// Le lien magique écrit `consomme_le`/`rejeux_refuses` ; ce chemin n'écrivait
+// rien. La revue adversariale du 2026-07-21 en a fait un bloquant.
+describe('GET /portail/google/retour — la trace durable', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    process.env.NEXTAUTH_URL = 'http://localhost:3000';
+    process.env.WN_G5_GOOGLE_PATIENT = 'true';
+    process.env.WN_GOOGLE_PATIENT_CLIENT_ID = CLIENT_ID;
+    process.env.WN_GOOGLE_PATIENT_CLIENT_SECRET = 'secret-de-test-non-production';
+    etatCourant = creerEtatGoogle(new Date());
+    prisma.patient.findUnique.mockResolvedValue(PATIENT);
+    prisma.portailConnexionGoogle.create.mockResolvedValue({ id: 'cx_1' });
+    ensureActivePortalAccess.mockResolvedValue({
+      accessToken: 'TOK_PERMANENT',
+      url: 'http://localhost:3000/portail/TOK_PERMANENT',
+    });
+    repondreGoogle(jetonIdentite());
+  });
+
+  const donnees = () => prisma.portailConnexionGoogle.create.mock.calls[0]?.[0]?.data;
+
+  it('une connexion réussie écrit une ligne « consomme » nominative', async () => {
+    await appeler();
+    expect(prisma.portailConnexionGoogle.create).toHaveBeenCalledTimes(1);
+    expect(donnees()).toEqual({ issue: 'consomme', motif: null, idPatient: PATIENT.idPatient });
+  });
+
+  it('un refus sur adresse inconnue trace, sans patient à nommer', async () => {
+    prisma.patient.findUnique.mockResolvedValue(null);
+    await appeler();
+    expect(donnees()).toEqual({ issue: 'refuse', motif: 'sans_espace_eligible', idPatient: null });
+  });
+
+  // Un dossier révoqué qu'on tente d'ouvrir par Google laisse une trace
+  // nominative — côté serveur seulement. L'écran, lui, reste indifférencié.
+  it('un refus sur dossier révoqué trace le patient, mais l’écran ne dit rien', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...PATIENT, accessTokenRevoked: true });
+    const res = await appeler();
+    expect(donnees()).toEqual({ issue: 'refuse', motif: 'sans_espace_eligible', idPatient: PATIENT.idPatient });
+    expect(res.headers.get('location')).toContain(REFUS);
+  });
+
+  it('la trace ne jamais porter ni l’adresse ni le jeton', async () => {
+    await appeler();
+    const ecrit = JSON.stringify(prisma.portailConnexionGoogle.create.mock.calls);
+    expect(ecrit).not.toContain(EMAIL);
+    expect(ecrit).not.toContain(etatCourant.etat.etat);
+    expect(ecrit).not.toContain(etatCourant.etat.nonce);
+  });
+
+  // La borne qui protège la table : un retour forgé, qui n'a pas franchi la
+  // vérification du `state`, n'écrit rien. Sans elle, marteler la route
+  // gonflerait la table sans fin.
+  it.each([
+    ['state forgé', { state: () => 'state-forge' }],
+    ['cookie d’aller absent', { cookie: () => null }],
+    ['code absent', { code: null }],
+    ['consentement refusé', { erreur: 'access_denied' }],
+  ])('un retour non authentifié (%s) n’écrit aucune trace', async (_cas, params) => {
+    await appeler(params);
+    expect(prisma.portailConnexionGoogle.create).not.toHaveBeenCalled();
+  });
+
+  // Fail-open : perdre la trace ne doit pas enfermer dehors le patient dont
+  // l'accès vient d'être prouvé.
+  it('un échec d’écriture de la trace n’empêche pas la session de s’ouvrir', async () => {
+    prisma.portailConnexionGoogle.create.mockRejectedValue(new Error('base indisponible'));
+    const res = await appeler();
+    expect(res.headers.get('location')).toContain('/portail/TOK_PERMANENT');
+    expect(res.headers.get('set-cookie')).toContain('wn_portail=');
+    expect(logger.error).toHaveBeenCalled();
+  });
+
+  // La trace succès n'est écrite qu'une fois l'accès RÉELLEMENT accordé :
+  // tracer « consomme » avant `ensureActivePortalAccess` mentirait sur un accès
+  // qui pourrait encore échouer.
+  it('la trace « consomme » suit l’octroi d’accès, jamais l’inverse', async () => {
+    const ordre: string[] = [];
+    ensureActivePortalAccess.mockImplementation(async () => {
+      ordre.push('acces');
+      return { accessToken: 'TOK_PERMANENT', url: 'http://localhost:3000/portail/TOK_PERMANENT' };
+    });
+    prisma.portailConnexionGoogle.create.mockImplementation(async () => {
+      ordre.push('trace');
+      return { id: 'cx_1' };
+    });
+    await appeler();
+    expect(ordre).toEqual(['acces', 'trace']);
+  });
+
+  // Portail révoqué entre la résolution et l'octroi (`PortalAccessError`) : la
+  // branche `catch` trace un refus nominatif, l'aller ayant été reconnu.
+  it('un portail révoqué à l’octroi trace un refus, nominatif', async () => {
+    ensureActivePortalAccess.mockRejectedValue(new PortalAccessError('portal_revoked'));
+    const res = await appeler();
+    expect(res.headers.get('location')).toContain(REFUS);
+    expect(donnees()).toEqual({ issue: 'refuse', motif: 'acces_indisponible', idPatient: PATIENT.idPatient });
+  });
+
+  // Panne inattendue APRÈS la vérification du `state` : refus tracé.
+  it('une panne après vérification du state trace un refus', async () => {
+    ensureActivePortalAccess.mockRejectedValue(new Error('panne inattendue'));
+    const res = await appeler();
+    expect(res.headers.get('location')).toContain(REFUS);
+    expect(donnees()).toEqual({ issue: 'refuse', motif: 'exception', idPatient: PATIENT.idPatient });
   });
 });

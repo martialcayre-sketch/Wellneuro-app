@@ -28,6 +28,10 @@ export const EVENT_CODES = {
   PORTAIL_GOOGLE_CONNEXION: 'PORTAIL_PATIENT.GOOGLE.CONNEXION',
   PORTAIL_GOOGLE_REFUS: 'PORTAIL_PATIENT.GOOGLE.REFUS',
   PORTAIL_GOOGLE_EXCEPTION: 'PORTAIL_PATIENT.GOOGLE.EXCEPTION',
+  // Distinct de l'exception d'authentification : une trace d'accès perdue est un
+  // trou de conformité (le lot existe pour le combler), pas un incident de
+  // connexion. Les confondre rendrait la perte de trace inalertable.
+  PORTAIL_GOOGLE_TRACE_ECHEC: 'PORTAIL_PATIENT.GOOGLE.TRACE_ECHEC',
 
   // Fin de parcours d'un dossier (IDP2). L'effacement est journalisé SANS
   // identité : sa trace durable est la ligne `dossiers_effaces`, un log étant
