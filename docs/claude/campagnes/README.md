@@ -27,6 +27,7 @@
 | **SP-MET** | Météo d'adhésion | **livrée** (2026-07-21) | C2A ✓ (sans migration) | 1 |
 | **IDP** | Identité patient durable | cadrée (2026-07-19) | **gate migration + revue de sécurité** ; activation bloquée par TRUST | 2 |
 | **SP-SPI** | « Ma spirale » et reprise patient | cadrée (2026-07-19) | IDP / LOT-01 | 1 |
+| **SP-CONV** | Convergence Spirale 5.0 : trajectoire partagée | cadrée (2026-07-22 — audit UX du jour rectifié par confrontation au code ; activation à la gouvernance) | cycles G2 ✓ + SP-TT ✓ + signaux portail existants ; sans migration | 7 |
 | SP-CAB / SP-AMB | Disposition 5.0 (suite) | à cadrer — séquence au programme 5.0 | SP-CAB : `n ≥ 5` épisodes clos ; SP-AMB : **gate CNIL/RGPD bloquant** | — |
 | WN-AUTO | Orchestration | terminée | — | — |
 
