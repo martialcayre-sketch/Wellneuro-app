@@ -31,6 +31,8 @@ import { ScoreZones } from '@/components/ui/ScoreZones';
 import { EvidenceBadge } from '@/components/ui/EvidenceBadge';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { CerclesConcentriques } from '@/components/ui/CerclesConcentriques';
+import { Chip } from '@/components/ui/Chip';
+import { SpiraleTrajectoire } from '@/components/ui/SpiraleTrajectoire';
 import { ModeConsultation } from '@/components/ui/ModeConsultation';
 import { PatientPreview } from '@/components/PatientPreview';
 import { DetailBesoinsPanel } from '@/components/DetailBesoinsPanel';
@@ -185,7 +187,7 @@ function InstrumentTiroir({
       <Dialog.Trigger asChild>
         <button
           type="button"
-          className="flex min-h-12 w-full items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-left text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="flex min-h-12 w-full items-center gap-2 rounded-[11px] border border-border bg-surface px-3 py-2 text-left text-14 font-medium text-foreground shadow-card hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           <Icone aria-hidden="true" size={18} strokeWidth={2} className="shrink-0 text-primary" />
           <span className="min-w-0 flex-1">{libelle}</span>
@@ -719,7 +721,7 @@ export function FichePatientPanel({
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="font-display text-3xl font-bold text-foreground">{nomComplet}</h2>
+          <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h2>
           <p className="mt-1 break-all text-sm text-muted-foreground">{patient.email}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
@@ -852,24 +854,27 @@ export function FichePatientPanel({
       >
         <section
           aria-label="Poste de pilotage clinique"
-          className="overflow-hidden rounded-2xl border border-border bg-muted shadow-card lg:h-[min(80vh,700px)] lg:grid lg:grid-rows-[auto,1fr]"
+          className="overflow-hidden rounded-lg border border-border bg-muted shadow-card lg:h-[min(80vh,700px)] lg:grid lg:grid-rows-[auto,1fr]"
         >
           {/* En-tête du cockpit (bandeau trajectoire) = 1re rangée. Le signal
               de correction (B2) est hissé au niveau de la fiche pour rester
               visible depuis tous les onglets, pas seulement le cockpit. */}
           <div>
-          {/* Bandeau trajectoire — toujours visible */}
-          <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface px-4 py-3">
+          {/* Bandeau trajectoire — toujours visible. Anatomie maquette cible :
+              Spirale (emblème décoratif), identité en display 19px, position en
+              mono, chip d'état à droite. */}
+          <div className="flex flex-wrap items-center gap-4 border-b border-border bg-surface px-[18px] py-3.5">
+            <SpiraleTrajectoire enCours className="shrink-0" />
             <div className="min-w-0">
-              <p className="font-display text-base font-bold text-foreground">{nomComplet}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-display text-[19px] font-bold leading-tight text-foreground">{nomComplet}</p>
+              <p className="font-mono text-13 text-muted-foreground">
                 {derniereReponse ? `Dernière réponse le ${derniereReponse}` : 'Aucune réponse reçue'}
               </p>
             </div>
-            <span className="ml-auto inline-flex min-h-9 items-center gap-2 rounded-full border border-accent bg-accent/10 px-3 py-1 text-xs font-medium text-solar-ink">
+            <Chip variante="due" className="ml-auto">
               <IconeStatut statut={statutPhase(phaseCourante.id)} />
               Phase affichée : {phaseCourante.libelle} — {LIBELLE_STATUT[statutPhase(phaseCourante.id)]}
-            </span>
+            </Chip>
           </div>
           </div>
 
@@ -881,12 +886,28 @@ export function FichePatientPanel({
               aria-label="Cycle clinique"
               className="flex gap-1 overflow-x-auto border-b border-border p-2 lg:flex-col lg:overflow-y-auto lg:border-b-0 lg:border-r"
             >
-              <p className="hidden px-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:block">
+              <p className="hidden px-2 pb-1 text-2xs font-semibold uppercase tracking-[.07em] text-muted-foreground lg:block">
                 Cycle clinique
               </p>
               {PHASES.map((phase, index) => {
                 const actif = phaseActive === phase.id;
                 const statut = statutPhase(phase.id);
+                // Anatomie maquette : puce 10px colorée par statut + statut
+                // textuel — jamais la couleur seule. La phase due (en attente)
+                // porte le liseré solaire inset ; la phase affichée garde la
+                // carte claire. Un seul box-shadow à la fois (ils ne se
+                // composent pas entre classes Tailwind).
+                const couleurPuce =
+                  statut === 'fait'
+                    ? 'bg-status-success'
+                    : statut === 'en_attente'
+                      ? 'bg-accent'
+                      : 'bg-transparent border border-border';
+                const classesEtat = actif
+                  ? 'bg-surface font-semibold text-foreground shadow-card'
+                  : statut === 'en_attente'
+                    ? 'bg-accent/10 font-semibold text-foreground shadow-[inset_3px_0_0_var(--color-accent)] hover:bg-accent/[.14]'
+                    : 'text-muted-foreground hover:text-foreground';
                 return (
                   <button
                     key={phase.id}
@@ -901,13 +922,11 @@ export function FichePatientPanel({
                     tabIndex={actif ? 0 : -1}
                     onClick={() => setPhaseActive(phase.id)}
                     onKeyDown={event => onClavierRail(event, index)}
-                    className={`flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
-                      actif ? 'bg-surface font-semibold text-foreground shadow-card' : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`flex min-h-11 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-[10px] px-3 py-2 text-left text-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${classesEtat}`}
                   >
-                    <IconeStatut statut={statut} />
+                    <span aria-hidden="true" className={`h-2.5 w-2.5 shrink-0 rounded-full ${couleurPuce}`} />
                     <span className="min-w-0 flex-1">{phase.libelle}</span>
-                    <span className="text-xs text-muted-foreground">{LIBELLE_STATUT[statut]}</span>
+                    <span className="text-2xs text-muted-foreground">{LIBELLE_STATUT[statut]}</span>
                   </button>
                 );
               })}
@@ -922,8 +941,8 @@ export function FichePatientPanel({
               className="flex flex-col gap-4 p-4 lg:min-h-0 lg:overflow-y-auto"
             >
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-solar-ink">Zone focale</p>
-                <h3 className="font-display text-lg font-bold text-foreground">{phaseCourante.libelle}</h3>
+                <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">Zone focale</p>
+                <h3 className="font-display text-xl font-bold text-foreground">{phaseCourante.libelle}</h3>
               </div>
               {focalLocal()}
               {/* Le runtime clinique reste monté en permanence : seul l'affichage
@@ -941,7 +960,7 @@ export function FichePatientPanel({
 
             {/* Instruments à tiroir */}
             <div className="flex flex-col gap-2 border-t border-border p-3 lg:border-l lg:border-t-0 lg:overflow-y-auto">
-              <p className="px-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Instruments</p>
+              <p className="px-1 text-2xs font-semibold uppercase tracking-[.07em] text-muted-foreground">Instruments</p>
               <InstrumentTiroir
                 libelle="Les 12 besoins"
                 description="Couverture descriptive et niveau de preuve, par besoin. Aucune priorité clinique n’est déduite ici."

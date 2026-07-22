@@ -69,6 +69,10 @@
    * clair (5,51:1) — le solaire plein est à 2,03:1, réservé aux marques
    * graphiques accompagnées d'une étiquette (règle de relief A5-R1). */
   --solar-ink: #8a5b10;
+  /* Encre menthe (chip delta 5.0) : la menthe pleine #0d9488 est à 3,74:1 sur
+   * blanc — suffisant en graphique, pas en petit texte. Même patron que
+   * --solar-ink/--copper-ink. */
+  --mint-ink: #0b6b62;
   --forest-600: #1e6f54;
   --forest-600-rgb: 30 111 84;
   --copper-500: #b25e38;

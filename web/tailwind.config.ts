@@ -74,6 +74,7 @@ const config: Config = {
         },
         mint: {
           600: 'rgb(var(--mint-600-rgb) / <alpha-value>)',
+          ink: 'var(--mint-ink)',
         },
         solar: {
           500: 'rgb(var(--solar-500-rgb) / <alpha-value>)',
