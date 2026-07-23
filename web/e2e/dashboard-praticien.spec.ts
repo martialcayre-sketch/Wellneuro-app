@@ -90,13 +90,14 @@ test.describe('Praticien Dashboard', () => {
       const bottomNav = page.locator('nav[aria-label="Navigation principale"]');
       await expect(bottomNav).toBeVisible();
       await expect(bottomNav.locator('a[href="/dashboard"]:visible')).toBeVisible();
-      await expect(bottomNav.locator('a[href="/dashboard/patients"]:visible')).toBeVisible();
+      // SP-TRAJ LOT-04 : « Fiches » ouvre la porte d'entrée trajectoire.
+      await expect(bottomNav.locator('a[href="/dashboard/trajectoires"]:visible')).toBeVisible();
       await expect(bottomNav.locator('a[href="/dashboard/synthese"]:visible')).toBeVisible();
       const plusButton = bottomNav.getByRole('button', { name: 'Plus' });
       await expect(plusButton).toBeVisible();
 
       // Cible tactile ≥ 44×44 px sur un lien de la navigation basse.
-      const patientsLink = bottomNav.locator('a[href="/dashboard/patients"]:visible');
+      const patientsLink = bottomNav.locator('a[href="/dashboard/trajectoires"]:visible');
       const box = await patientsLink.boundingBox();
       expect(box?.height).toBeGreaterThanOrEqual(44);
 

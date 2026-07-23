@@ -4,11 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { LayoutDashboard, Users, Sparkles, FileText, Settings, ShieldCheck, MoreHorizontal, X, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Sparkles, FileText, Layers, Settings, ShieldCheck, MoreHorizontal, X, type LucideIcon } from 'lucide-react';
 
 const primaryItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard', label: 'Le Fil', icon: LayoutDashboard },
-  { href: '/dashboard/patients', label: 'Fiches', icon: Users },
+  // Parcours 5.0 d'abord (SP-TRAJ LOT-04) : « Fiches » ouvre la porte
+  // d'entrée trajectoire ; la gestion « Questionnaires & packs » reste
+  // accessible depuis la liste et le rail desktop.
+  { href: '/dashboard/trajectoires', label: 'Fiches', icon: Users },
   { href: '/dashboard/synthese', label: 'Synthèses', icon: Sparkles },
 ];
 
@@ -25,7 +28,8 @@ export function MobileBottomNav() {
   const isMoreActive =
     (pathname?.startsWith('/dashboard/parametres') ||
       pathname?.startsWith('/dashboard/droits') ||
-      pathname?.startsWith('/dashboard/documents')) ??
+      pathname?.startsWith('/dashboard/documents') ||
+      pathname === '/dashboard/patients') ??
     false;
 
   return (
@@ -104,6 +108,30 @@ export function MobileBottomNav() {
                   </button>
                 </Dialog.Close>
               </div>
+              {/* Accès mobile conservé à la page héritage (SP-TRAJ LOT-04) :
+                  « Fiches » pointe désormais vers les trajectoires. */}
+              <Dialog.Close asChild>
+                <Link
+                  href="/dashboard/patients"
+                  aria-current={pathname === '/dashboard/patients' ? 'page' : undefined}
+                  className={`group mb-1 flex min-h-[44px] items-center gap-3 rounded-2xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rail-focus-ring ${
+                    pathname === '/dashboard/patients'
+                      ? 'border-rail-primary/20 bg-rail-primary/10'
+                      : 'border-transparent text-rail-muted-foreground hover:border-rail-border hover:bg-rail hover:text-rail-foreground'
+                  }`}
+                >
+                  <span
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
+                      pathname === '/dashboard/patients'
+                        ? 'bg-rail-primary text-rail-primary-foreground'
+                        : 'bg-rail-muted text-rail-foreground'
+                    }`}
+                  >
+                    <Layers aria-hidden="true" size={20} strokeWidth={2} />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">Questionnaires &amp; packs</span>
+                </Link>
+              </Dialog.Close>
               <Dialog.Close asChild>
                 <Link
                   href="/dashboard/documents"

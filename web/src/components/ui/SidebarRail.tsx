@@ -33,8 +33,12 @@ type NavItem = {
   tag?: string;
   badge?: 'fil';
   /** 'exact' : actif seulement sur le chemin exact (désambiguïse
-   * Fiche-trajectoire ↔ Questionnaires & packs, qui partagent la page). */
+   * Fiche-trajectoire ↔ Questionnaires & packs). */
   matiere?: 'exact' | 'prefixe' | 'sous-pages';
+  /** Préfixes SUPPLÉMENTAIRES qui activent l'item — ex. « Fiche-trajectoire »
+   * reste allumée sur les fiches (/dashboard/patients/…) alors qu'elle pointe
+   * vers /dashboard/trajectoires (SP-TRAJ LOT-04). */
+  prefixesActifs?: string[];
 };
 
 const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
@@ -42,10 +46,15 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
     etiquette: 'La Spirale',
     items: [
       { href: '/dashboard', label: 'Le Fil du jour', icon: LayoutDashboard, matiere: 'exact', badge: 'fil' },
-      // La liste des patients EST l'entrée des fiches ; l'item est actif sur
-      // la liste et les fiches, sauf quand « Questionnaires & packs » (même
-      // page, lecture héritage) est visé — voir matiere.
-      { href: '/dashboard/patients', label: 'Fiche-trajectoire', icon: Users, matiere: 'prefixe' },
+      // Porte d'entrée trajectoire (SP-TRAJ LOT-04) : la liste orientée
+      // trajectoire. L'item reste actif sur les fiches ouvertes depuis elle ;
+      // /dashboard/patients exact n'allume que « Questionnaires & packs ».
+      {
+        href: '/dashboard/trajectoires',
+        label: 'Fiche-trajectoire',
+        icon: Users,
+        prefixesActifs: ['/dashboard/patients/'],
+      },
       { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
       { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail },
     ],
@@ -97,6 +106,7 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
   }, []);
 
   const isActive = (item: NavItem) => {
+    if (item.prefixesActifs?.some((prefixe) => pathname?.startsWith(prefixe))) return true;
     if (item.matiere === 'exact') return pathname === item.href;
     if (item.matiere === 'sous-pages') return pathname === item.href;
     if (item.matiere === 'prefixe') return pathname?.startsWith(`${item.href}/`) ?? false;

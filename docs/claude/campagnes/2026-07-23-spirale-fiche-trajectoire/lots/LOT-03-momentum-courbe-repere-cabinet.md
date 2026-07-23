@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Momentum en courbe, repère cabinet, Estimé↔mesuré, révision A6-R2"
-statut: "en cours"
+statut: "livré — PR #314 ouverte le 2026-07-23 (empilée sur #313) ; merge Copilot en attente"
 dépend_de: "LOT-01"
 ---
 

@@ -4,7 +4,7 @@ titre: "SP-TRAJ — Fiche-trajectoire 5.0 : porte d'entrée, Spirale navigable, 
 statut: "en cours"
 créée_le: "2026-07-23"
 mise_à_jour: "2026-07-23"
-lot_courant: "LOT-03"
+lot_courant: "LOT-04"
 ---
 
 # SP-TRAJ — Fiche-trajectoire 5.0
