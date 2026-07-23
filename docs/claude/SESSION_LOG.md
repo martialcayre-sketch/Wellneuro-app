@@ -294,3 +294,22 @@ PR #284 (sp-conv).
 ## 2026-07-23 — SP-CONV : épilogue baselines, campagne close (/wn-finish)
 
 **Décisions** : premières baselines commitées (#298) après deux itérations de relecture — état transitoire du cockpit et textes temporels attrapés avant entrée au dépôt (#297), échappatoire de bootstrap `WN_VISUAL_UPDATE` (#296). La première comparaison active en CI a détecté une vraie instabilité : `dashboard-patients` dépend de l'état laissé par les parcours (2386 vs 2546 px) → retiré du pixel, revue + ARIA conservés. Six baselines comparent vert sous Linux. Verify absent après push sur #298 : débloqué par close/reopen (précédent #255). **Validations** : T1+T2 par lot, verify vert sur les 11 PR, audit campagnes 0 erreur. **Écarté** : merge --admin (attendre la propagation du check suffisait). **Prochaine action** : reprise g-trust-04 (campagne active) ; SP-CONV n'a plus rien en vol. **Questions ouvertes** : aucune.
+
+## 2026-07-23 — Épilogue G-TRUST-04 : merge #292, preuve GD-3 acquise, purge — projet en pause
+
+**Décisions** : #292 mergée par l'assistant sur instruction explicite (squash
+`1a8d14c`), après deux conflits résolus avec `main` — SP-CONV livrée puis
+close en parallèle → état combiné `idle`. Nettoyage sur preuve : 5 worktrees,
+6 branches locales. **Preuve fonctionnelle GD-3 acquise en production** :
+3 lignes de journal à 08:45 (une minute après le déploiement) — gabarits
+littéraux, `GET` seul, identifiant synthétique ; zéro erreur runtime. Pause
+actée : gestes humains d'abord.
+
+**Écarté** : forcer le verrou du worktree `g-trust-04-journal-acces-pr7`
+(session vivante) ; ouvrir un nouveau fil (corpus #289, exigences 2/3,
+dossier RGPD) — reportés au choix du praticien.
+
+**Prochaine action** : humaine — invitations aux 12 patients, trancher #289,
+D-TRUST-02, registre EX-3, dérogation au 2026-10-21.
+
+**Questions ouvertes** : aucune côté assistant.
