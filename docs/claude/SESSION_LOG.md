@@ -241,3 +241,24 @@ l'embedding d'un claim ingéré au seuil 0.
 
 **Questions ouvertes** : région des fonctions (fra1) et regroupement des
 requêtes du store avant l'échelle 88 sources ; piste MP4.
+
+## 2026-07-23 — G-TRUST-04 clos : PR unique de clôture (routes C/D, catalogue typé, campagne livrée)
+
+**Décisions** : reliquat du LOT-00 en une PR unique (décision utilisateur).
+Journal des accès branché sur les 10 routes C/D — **correctif au passage : le
+GET booklet n'était pas scopé praticien**, rallié au patron du POST.
+`@ts-nocheck` levé **17/17** (mesure : 1 560 erreurs, dont 1 425 par le seul
+`meta` non typé) — le juge de certification transpile désormais le TS avant
+son eval, prouvé neutre. Doublons Q_NEU_04/Q_NEU_08 dédoublonnés (gagnant
+runtime conservé). Checklist exigences 5/6 à jour, GD-6 consignée, onboarding
+requalifié « fonctionne » (E2E portail-parcours). Lot + campagne livrés.
+
+**Écarté** : borne GD-5 (l'utilisateur a choisi de moderniser le juge) ;
+annotation `Record` du catalogue (272 erreurs induites → inférence conservée,
+moteur en 51 `any` explicites).
+
+**Prochaine action** : preuve fonctionnelle du journal au premier dossier
+ouvert en prod (requête GD-3).
+
+**Questions ouvertes** : conflit bénin possible sur `.wn/state.json` avec la
+PR #284 (sp-conv).

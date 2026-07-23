@@ -50,8 +50,8 @@ applique `prisma migrate deploy` sur la base Supabase de production au build de
 | 2 | Contrôle d'accès centralisé | ⚠️ **Partiel** | Praticien : NextAuth + OAuth Google restreint à `@wellneuro.fr` (`web/src/lib/auth.ts`). Patient : jeton d'accès **permanent**, pas de compte, pas de révocation en libre-service |
 | 3 | Isolation multi-praticien | ⚠️ **Partiel — 30 routes sur 33** | cf. tableau ci-dessous |
 | 4 | Gestion des sessions et révocations | ⚠️ **Partiel — amélioré le 2026-07-21** | Cookie portail signé, durée bornée. **G4 activé en production** : lien haché en base, 24 h, usage unique, rejeu refusé et tracé. Mais le **jeton permanent subsiste et ne se périme toujours pas** — la coexistence des deux chemins est voulue pendant la bascule. L'exigence reste donc partielle : elle le sera jusqu'à la péremption des liens permanents, décision non prise |
-| 5 | Journalisation | ⚠️ **Partiel** | `web/src/lib/observability/` : logger structuré, codes d'événement, assainissement des données (`sanitizeLogData.ts`), corrélation de requête. Couvre les **erreurs et refus d'accès**, pas les **accès légitimes** : il n'existe pas de piste d'audit « qui a lu quel dossier, quand » |
-| 6 | Réponse aux incidents | ⚠️ **Partiel — procédure écrite le 2026-07-22, jamais exercée** | `docs/RUNBOOK.md` couvre Vercel/DNS, OAuth, Supabase/Prisma, fuite de secret, révocation d'un accès patient. **La procédure de violation de données existe** (`docs/PROCEDURE_VIOLATION_DONNEES.md` : qualification, 72 h CNIL, information des personnes, registre, modèle de fiche) mais reste à faire confirmer par un conseil qualifié et à exercer sur table |
+| 5 | Journalisation | ⚠️ **Partiel — amélioré les 2026-07-22/23** | La piste d'audit des accès légitimes existe : table `journal_acces_dossiers` (#273 — RLS deny-all, sans FK, effacée nommément avec le dossier, rétention 12 mois GD-2) et écriture branchée sur les **22 routes GET « dossier nommé »** (12 routes A/B en #278, 10 routes C/D au lot de clôture, dont un correctif de scoping sur le GET `booklet`). « Qui a lu quel dossier, quand » répond par une lecture `execute_sql` (requête type GD-3, consignée au lot). Limites écrites : liste vide sur dossier possédé non journalisée, POST exclus (leur écriture laisse sa propre trace, GD-1), versant patient déjà tracé (`portail_connexions_google`, `portail_magic_links`). Reste partiel : pas d'écran de consultation (GD-3, voulu) et preuve fonctionnelle en production attendue au premier dossier ouvert |
+| 6 | Réponse aux incidents | ⚠️ **Partiel — procédure écrite le 2026-07-22, exercée sur table le 2026-07-22** | `docs/RUNBOOK.md` couvre Vercel/DNS, OAuth, Supabase/Prisma, fuite de secret, révocation d'un accès patient. **La procédure de violation de données existe et a été exercée** (`docs/PROCEDURE_VIOLATION_DONNEES.md` ; exercice sur table #281, scénario fictif Michel Dogné, fiche 2026-EX1, constats EX-1/EX-2/EX-3, §8 réécrit). Reste : la confirmation par un conseil qualifié (D-TRUST-02) et le registre physique des violations hors dépôt (EX-3) |
 | 7 | Tests de sécurité documentés | ⚠️ **Partiel** | Tests d'autorisation par route (`web/src/app/api/**/route.test.ts`), garde structurelle SP-MET, refus d'écriture en lecture passée (SP-TT). **Aucun test d'intrusion, aucune revue de sécurité externe** |
 
 Aucune ligne n'est ✅. Le gate ne peut donc pas être levé par un arbitrage
@@ -140,6 +140,12 @@ posée sur **Preview et Production**, ce qui aurait permis d'émettre des liens
 vers de vrais dossiers depuis n'importe quelle URL de prévisualisation. Corrigé
 le jour même. À garder en tête pour tout drapeau ultérieur.
 
+**Règle arbitrée le 2026-07-22 (GD-6, campagne G-TRUST-04 durcissement) :
+jamais de drapeau `WN_*` posé sur l'environnement Preview.** Les Previews
+elles-mêmes sont conservées (vérification visuelle des PR, décision #258) —
+le vecteur de l'incident était le drapeau, pas la Preview. Arbitrage par
+défaut, révocable par le responsable du traitement.
+
 > Cette section constate, elle ne décide pas. **La levée du gate reste une
 > décision du responsable du traitement**, à écrire plus bas avec sa date, ses
 > pièces et son périmètre.
@@ -200,11 +206,15 @@ base (RLS ou équivalent) si la garde applicative était un jour contournée.
    refusé et tracé — c'est l'exigence 4, et la campagne IDP porte déjà la
    décision « **livrable en préproduction ; activation avec données réelles =
    décision distincte, aujourd'hui NO-GO** » (`REGISTRE_FRONTIERES.md:619-621`).
-4. **Ajouter une piste d'audit des accès légitimes** (exigence 5).
+4. ~~Ajouter une piste d'audit des accès légitimes.~~ Fait les 2026-07-22/23
+   (migration #273, routes A/B #278, routes C/D au lot de clôture). Reste,
+   pour que l'exigence 5 soit tenue pour satisfaite : la preuve fonctionnelle
+   en production (requête GD-3 au premier dossier ouvert).
 5. ~~Écrire la procédure de violation de données.~~ Fait le 2026-07-22
-   (`docs/PROCEDURE_VIOLATION_DONNEES.md`). Reste, pour que l'exigence 6 soit
-   tenue pour satisfaite : la confirmation par un conseil qualifié (dette
-   `DETTE_TRUST.md`) et un exercice sur table sur scénario fictif.
+   (`docs/PROCEDURE_VIOLATION_DONNEES.md`), **exercée sur table le même jour**
+   (#281, fiche 2026-EX1). Reste, pour que l'exigence 6 soit tenue pour
+   satisfaite : la confirmation par un conseil qualifié (dette
+   `DETTE_TRUST.md`) et le registre physique des violations (EX-3).
 6. **Faire réaliser une revue de sécurité externe** (exigence 7).
 7. **Constituer le dossier RGPD de l'expérimentation** : base légale,
    information des participants, DPA signés avec chaque sous-traitant réel
