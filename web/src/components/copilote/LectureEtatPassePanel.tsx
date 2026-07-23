@@ -39,7 +39,23 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
+// Pilotage externe (SP-CONV LOT-03) : l'index Spirale de l'onglet Trajectoire
+// sélectionne le repère et monte ce panneau — même mécanique `asOf`, même
+// garantie de lecture seule, une seule navigation temporelle dans le code.
+// `repereInitial` (ISO) déclenche la lecture datée ; `masquerSelecteur` retire
+// la liste interne de repères (la sélection vient d'ailleurs) ;
+// `onRetourPresent` est notifié quand le praticien revient au présent.
+export function LectureEtatPassePanel({
+  idPatient,
+  repereInitial,
+  masquerSelecteur = false,
+  onRetourPresent,
+}: {
+  idPatient: string;
+  repereInitial?: string | null;
+  masquerSelecteur?: boolean;
+  onRetourPresent?: () => void;
+}) {
   const [reperes, setReperes] = useState<Repere[]>([]);
   const [repereActif, setRepereActif] = useState<string | null>(null);
   const [lecture, setLecture] = useState<PropositionDatee | null>(null);
@@ -150,7 +166,22 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
     }
   }, [idPatient, repereActif, brouillon, chargerNotes]);
 
-  if (reperes.length === 0) return null;
+  // Pilotage externe (SP-CONV LOT-03) : la sélection venue de l'index Spirale
+  // déclenche la lecture datée ; sa désélection ramène au présent. Le serveur
+  // reste seul juge de la validité du repère (résolution `asOf`).
+  useEffect(() => {
+    if (repereInitial === undefined) return; // panneau autonome (copilote)
+    if (repereInitial === null) {
+      if (repereActif !== null) revenirAuPresent();
+      return;
+    }
+    if (repereInitial !== repereActif) void lireA(repereInitial);
+  }, [repereInitial, repereActif, lireA, revenirAuPresent]);
+
+  // En mode autonome, pas de repère = rien à proposer. En mode piloté, le
+  // panneau doit pouvoir rendre la lecture même si la liste locale de repères
+  // n'est pas (encore) disponible.
+  if (reperes.length === 0 && repereActif === null) return null;
 
   return (
     <section aria-labelledby="lecture-passee" className="rounded-xl border border-border bg-surface p-4 shadow-card">
@@ -163,35 +194,51 @@ export function LectureEtatPassePanel({ idPatient }: { idPatient: string }) {
         déposer une note — elle sera datée d’aujourd’hui.
       </p>
 
-      <ul className="mt-3 flex flex-wrap gap-2">
-        {reperes.map((repere) => {
-          const actif = repereActif === repere.date;
-          return (
-            <li key={`${repere.source}-${repere.date}`}>
-              <button
-                type="button"
-                aria-pressed={actif}
-                onClick={() => void lireA(repere.date)}
-                className={`min-h-11 rounded-lg border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
-                  actif
-                    ? 'border-primary bg-primary/10 font-semibold text-foreground'
-                    : 'border-border text-muted-foreground hover:bg-muted/40'
-                }`}
-              >
-                {formatDate(repere.date)} · {repere.libelle}
-              </button>
-            </li>
-          );
-        })}
-      </ul>
+      {!masquerSelecteur && (
+        <ul className="mt-3 flex flex-wrap gap-2">
+          {reperes.map((repere) => {
+            const actif = repereActif === repere.date;
+            return (
+              <li key={`${repere.source}-${repere.date}`}>
+                <button
+                  type="button"
+                  aria-pressed={actif}
+                  onClick={() => void lireA(repere.date)}
+                  className={`min-h-11 rounded-lg border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                    actif
+                      ? 'border-primary bg-primary/10 font-semibold text-foreground'
+                      : 'border-border text-muted-foreground hover:bg-muted/40'
+                  }`}
+                >
+                  {formatDate(repere.date)} · {repere.libelle}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {etat !== 'inactif' && repereActif && (
         <div className="mt-3 rounded-lg border border-accent bg-accent/5 p-3">
           {/* Bandeau permanent : on ne doit jamais confondre ce que l'on lit
               avec l'état actuel du patient. */}
-          <p className="text-base font-medium text-solar-ink">
-            Vous lisez l’état du {formatDate(repereActif)} — ce n’est pas l’état actuel du patient.
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="min-w-0 text-base font-medium text-solar-ink">
+              Vous lisez l’état du {formatDate(repereActif)} — ce n’est pas l’état actuel du patient.
+            </p>
+            {/* Toujours visible en vue datée (maquette SP-CONV) : une seule
+                sortie, explicite — jamais un état daté qui « colle ». */}
+            <button
+              type="button"
+              onClick={() => {
+                revenirAuPresent();
+                onRetourPresent?.();
+              }}
+              className="ml-auto flex min-h-11 shrink-0 items-center rounded-lg border border-border px-3 text-sm font-medium text-foreground hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            >
+              Retour au présent
+            </button>
+          </div>
 
           {etat === 'chargement' && (
             <p role="status" className="mt-2 text-base text-muted-foreground">

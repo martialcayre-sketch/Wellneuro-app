@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
 import { rattacherReperesAuxCycles, type Trajectoire } from '@/lib/protocol/trajectoire';
+import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
 // « La Spirale comme index temporel » : une liste de repères datés navigable,
@@ -26,9 +27,18 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-export function TrajectoirePanel({ trajectoire }: { trajectoire: Trajectoire | null }) {
-  // Index de repère sélectionné (navigation seule — aucune écriture, aucun filtre
-  // de données : le contenu affiché est identique, seule la mise en avant change).
+export function TrajectoirePanel({
+  trajectoire,
+  idPatient,
+}: {
+  trajectoire: Trajectoire | null;
+  idPatient?: string;
+}) {
+  // Index de repère sélectionné. Depuis SP-CONV LOT-03, la sélection n'est
+  // plus une simple mise en avant : elle pilote la lecture datée `asOf`
+  // (mécanique SP-TT, panneau partagé avec le copilote) — « cliquer un tour
+  // recharge la fiche telle qu'elle était à cette date », en lecture seule
+  // stricte. Sans `idPatient`, l'index reste une navigation visuelle.
   const [repereActif, setRepereActif] = useState<number | null>(null);
 
   const reperes = useMemo(
@@ -75,12 +85,26 @@ export function TrajectoirePanel({ trajectoire }: { trajectoire: Trajectoire | n
           </ul>
           <p role="status" className="mt-2 text-xs text-muted-foreground">
             {repereSelectionne === null
-              ? 'Sélectionnez un repère pour mettre en avant le cycle qu’il documente.'
+              ? 'Sélectionnez un repère pour relire la fiche telle qu’elle était à cette date.'
               : cycleSelectionne === null
                 ? `Repère ${LABEL_JALON[repereSelectionne.milestone]} du ${formatDate(repereSelectionne.date)} — antérieur à tout épisode T0 confirmé, aucun cycle ne lui est rattaché.`
-                : `Repère ${LABEL_JALON[repereSelectionne.milestone]} du ${formatDate(repereSelectionne.date)} — cycle mis en avant ci-dessous.`}
+                : `Repère ${LABEL_JALON[repereSelectionne.milestone]} du ${formatDate(repereSelectionne.date)} — cycle mis en avant ci-dessous, état daté recalculé.`}
           </p>
         </nav>
+      )}
+
+      {/* Suture time-travel (SP-CONV LOT-03, D6) : le repère sélectionné pilote
+          le panneau de lecture datée — mécanique SP-TT partagée avec le
+          copilote (asOf, lecture seule stricte, note horodatée au présent). */}
+      {idPatient && repereSelectionne && (
+        <div className="mt-3">
+          <LectureEtatPassePanel
+            idPatient={idPatient}
+            repereInitial={repereSelectionne.date}
+            masquerSelecteur
+            onRetourPresent={() => setRepereActif(null)}
+          />
+        </div>
       )}
 
       {!trajectoire || trajectoire.cycles.length === 0 ? (

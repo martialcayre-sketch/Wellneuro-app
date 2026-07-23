@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import { TrajectoirePanel } from './TrajectoirePanel';
 
@@ -213,5 +213,56 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
     );
     expect(screen.queryByRole('table')).toBeNull();
     expect(screen.getByText(/Non comparable/i)).toBeTruthy();
+  });
+});
+
+describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
+  const trajectoire: Trajectoire = {
+    index: [{ milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_T0' }],
+    cycles: [
+      {
+        cycleId: 'ep_T0',
+        dateT0: '2026-01-01T00:00:00.000Z',
+        versionScore: 'v1',
+        jalons: jalons(12, null),
+        momentum: null,
+      },
+    ],
+    comparaison: { disponible: false, raison: 'un_seul_cycle' },
+  };
+
+  const json = (payload: unknown, ok = true) => ({ ok, json: async () => payload });
+
+  it('sélectionner un repère monte la lecture datée (asOf) ; « Retour au présent » la referme', async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url.startsWith('/api/praticien/reperes')) {
+        return Promise.resolve(
+          json({ ok: true, reperes: [{ date: '2026-01-01T00:00:00.000Z', source: 'episode', libelle: 'Épisode T0 confirmé' }] }),
+        );
+      }
+      if (url.startsWith('/api/praticien/relecture-notes')) return Promise.resolve(json({ ok: true, notes: [] }));
+      return Promise.resolve(json({ asOf: '2026-01-01T00:00:00.000Z', proposal: { candidateResponses: [{}] } }));
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<TrajectoirePanel trajectoire={trajectoire} idPatient="PAT_SEED_03" />);
+    fireEvent.click(screen.getByRole('button', { name: /T0 · 01\/01\/2026/ }));
+
+    // La lecture datée est recalculée via asOf — bannière permanente.
+    await screen.findByText(/Vous lisez l’état du 01\/01\/2026/);
+    expect(
+      fetchMock.mock.calls.some(([url]) => String(url).includes('/api/praticien/cockpit') && String(url).includes('asOf=')),
+    ).toBe(true);
+
+    // Une seule sortie, explicite : retour au présent → le panneau se referme.
+    fireEvent.click(screen.getByRole('button', { name: 'Retour au présent' }));
+    expect(screen.queryByText(/Vous lisez l’état du/)).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it('sans idPatient, l’index reste une navigation visuelle — aucune lecture datée', () => {
+    render(<TrajectoirePanel trajectoire={trajectoire} />);
+    fireEvent.click(screen.getByRole('button', { name: /T0 · 01\/01\/2026/ }));
+    expect(screen.queryByText(/Vous lisez l’état du/)).toBeNull();
   });
 });
