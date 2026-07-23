@@ -29,8 +29,14 @@ const EMAIL_PORTAIL = 'jennifer.martin@fictif.wellneuro.fr';
 const DOSSIER = 'test-results/visual';
 
 // Comparaison au pixel : Linux (environnement CI) + baseline déjà commise.
+// `WN_VISUAL_UPDATE=1` (workflow visual-baselines, avec --update-snapshots)
+// force le passage même sans baseline : c'est ce qui ÉCRIT la première —
+// sans cette échappatoire, le garde-fou d'existence rendrait le bootstrap
+// impossible (aucune baseline → jamais de comparaison → jamais d'écriture).
 function baselineComparable(testInfo: TestInfo, nom: string): boolean {
-  return process.platform === 'linux' && existsSync(testInfo.snapshotPath(nom));
+  if (process.platform !== 'linux') return false;
+  if (process.env.WN_VISUAL_UPDATE === '1') return true;
+  return existsSync(testInfo.snapshotPath(nom));
 }
 
 async function capturer(page: Page, testInfo: TestInfo, nom: string, fullPage = false): Promise<void> {
