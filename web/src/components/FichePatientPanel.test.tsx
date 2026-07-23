@@ -315,11 +315,16 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     expect((screen.getByLabelText('Raison d’être') as HTMLTextAreaElement).value).toBe('Soutenir le sommeil');
   });
 
-  it('rend une demande de correction perceptible sans sélectionner la phase Patient (B2)', async () => {
+  it('demande de correction : la fiche s’ouvre sur la phase Patient (D5) et le signal reste visible (B2)', async () => {
     await rendreFiche({ assignationsModif: true });
 
-    // Phase par défaut = Décision : le signal doit tout de même être visible.
-    expect(screen.getByRole('tab', { name: /Décision 21 j/i }).getAttribute('aria-selected')).toBe('true');
+    // Règle D5 (SP-CONV LOT-02) : une correction en attente est la première
+    // action exigible — la fiche atterrit dessus au lieu de l'ignorer. C'était
+    // le reproche central de l'audit du 2026-07-22.
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Patient/i }).getAttribute('aria-selected')).toBe('true'),
+    );
+    // Le signal B2 reste hissé au niveau fiche, visible quelle que soit la vue.
     await waitFor(() => expect(screen.getByText(/1 demande de correction en attente/i)).toBeTruthy());
     // Et le rail signale la phase Patient « en attente », pas « renseignée ».
     expect(screen.getByRole('tab', { name: /Patient/i }).textContent).toContain('en attente');
@@ -432,22 +437,28 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
   // Le détail du blocage vit dans ProtocolMiniBuilder, phase Actions — or la
   // fiche s'ouvre sur Décision. Sans ce signal, le praticien ne peut pas savoir
   // qu'il est bloqué sans changer d'onglet au hasard.
-  it('bloqueurs décisionnels : le signal est visible dès la phase Décision', async () => {
+  it('bloqueurs décisionnels : la fiche s’ouvre sur Actions (D5, bloqueur de sécurité) et le signal reste', async () => {
     await rendreFiche({ runtime: 'ready', decision: 'bloquee' });
 
     await waitFor(() => expect(screen.getByText(/Protocole bloqué — bloqueurs décisionnels à revoir/i)).toBeTruthy());
-    // On est bien resté sur la phase par défaut : le signal n'a rien déplacé.
-    expect(screen.getByRole('tab', { name: /Décision 21 j/i }).getAttribute('aria-selected')).toBe('true');
+    // Règle D5, rang 1 : un bloqueur de sécurité prime sur tout — la fiche
+    // atterrit directement sur la phase Actions qui le détaille.
+    await waitFor(() =>
+      expect(screen.getByRole('tab', { name: /Actions/i }).getAttribute('aria-selected')).toBe('true'),
+    );
+    // Déjà sur place : le raccourci du bandeau n'a plus d'objet, le signal reste.
+    expect(screen.queryByRole('button', { name: 'Ouvrir la phase Actions' })).toBeNull();
   });
 
-  it('bloqueurs décisionnels : le raccourci ouvre la phase Actions puis s’efface', async () => {
+  it('bloqueurs décisionnels : depuis un autre onglet, le raccourci ramène à la phase Actions', async () => {
     await rendreFiche({ runtime: 'ready', decision: 'bloquee' });
     await waitFor(() => expect(screen.getByText(/Protocole bloqué/i)).toBeTruthy());
 
+    // Le praticien part consulter les besoins : le signal reste, avec son
+    // raccourci — puis le raccourci s'efface une fois revenu sur Actions.
+    fireEvent.click(screen.getByRole('tab', { name: 'Les 12 besoins' }));
     fireEvent.click(screen.getByRole('button', { name: 'Ouvrir la phase Actions' }));
     expect(screen.getByRole('tab', { name: /Actions/i }).getAttribute('aria-selected')).toBe('true');
-
-    // Une fois sur place, le raccourci n'a plus d'objet — le signal, lui, reste.
     expect(screen.queryByRole('button', { name: 'Ouvrir la phase Actions' })).toBeNull();
     expect(screen.getByText(/Protocole bloqué/i)).toBeTruthy();
   });

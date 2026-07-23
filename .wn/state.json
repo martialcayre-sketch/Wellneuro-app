@@ -31,11 +31,11 @@
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-23T07:20:00Z",
+  "updated_at": "2026-07-23T08:05:00Z",
   "parallel_campaigns": [
     {
       "campaign_id": "2026-07-22-sp-conv-trajectoire-partagee",
-      "active_lot": "LOT-02"
+      "active_lot": "LOT-03"
     }
   ]
 }
