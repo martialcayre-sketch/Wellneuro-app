@@ -1,4 +1,5 @@
 import { FichePatientPanel } from '@/components/FichePatientPanel';
+import { estOngletFiche, type OngletFiche } from '@/lib/praticien/ongletsFiche';
 import {
   buildValidationErgoC1Fixture,
   estModeValidationErgoActif,
@@ -26,9 +27,17 @@ export default function FichePatientPage({
   const fixtureValidationErgo: ValidationErgoC1Fixture | null = modeValidationErgo
     ? buildValidationErgoC1Fixture()
     : null;
+  // Deep-link `?onglet=` (ex. `?onglet=trajectoire` depuis la future page
+  // Trajectoires) : validé ici côté serveur, toute valeur inconnue est ignorée.
+  const ongletBrut = Array.isArray(searchParams?.onglet) ? searchParams.onglet[0] : searchParams?.onglet;
+  const ongletInitial: OngletFiche | undefined = estOngletFiche(ongletBrut) ? ongletBrut : undefined;
   return (
     <C5FeatureProvider enabled={isC5Enabled(process.env.WN_C5_ENABLED)}>
-      <FichePatientPanel idPatient={params.idPatient} fixtureValidationErgo={fixtureValidationErgo} />
+      <FichePatientPanel
+        idPatient={params.idPatient}
+        ongletInitial={ongletInitial}
+        fixtureValidationErgo={fixtureValidationErgo}
+      />
     </C5FeatureProvider>
   );
 }

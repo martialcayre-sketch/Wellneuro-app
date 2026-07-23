@@ -3,6 +3,9 @@
 import { useMemo, useState } from 'react';
 import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
 import { rattacherReperesAuxCycles, type Trajectoire } from '@/lib/protocol/trajectoire';
+import { deriverEpisodeBandeau } from '@/lib/trajectoire-partagee/contrat';
+import { Badge } from '@/components/ui/Badge';
+import { SpiraleEpisodes } from '@/components/ui/SpiraleEpisodes';
 import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
@@ -30,9 +33,12 @@ function formatDate(iso: string): string {
 export function TrajectoirePanel({
   trajectoire,
   idPatient,
+  nomComplet,
 }: {
   trajectoire: Trajectoire | null;
   idPatient?: string;
+  /** Identité affichée en tête de la fiche-trajectoire (maquette 5.0). */
+  nomComplet?: string;
 }) {
   // Index de repère sélectionné. Depuis SP-CONV LOT-03, la sélection n'est
   // plus une simple mise en avant : elle pilote la lecture datée `asOf`
@@ -49,48 +55,97 @@ export function TrajectoirePanel({
   const repereSelectionne = repereActif === null ? null : (reperes[repereActif] ?? null);
   const cycleSelectionne = repereSelectionne?.cycleId ?? null;
 
+  // En-tête d'identité (maquette 5.0, écran Fiche-trajectoire) : « {nom} —
+  // épisode N ». Sans cycle confirmé, l'identité seule — aucun épisode n'est
+  // affirmé. Sans identité fournie, le titre historique demeure.
+  const cycles = trajectoire?.cycles ?? [];
+  const episodeBandeau = useMemo(() => deriverEpisodeBandeau(cycles, new Date()), [cycles]);
+  const titre = nomComplet
+    ? episodeBandeau
+      ? `${nomComplet} — épisode ${episodeBandeau.numeroEpisode}`
+      : nomComplet
+    : 'Fiche-trajectoire — repères datés';
+
   return (
-    <section aria-labelledby="trajectoire-title" className="rounded-xl border border-border bg-surface p-4">
-      <h3 id="trajectoire-title" className="text-sm font-semibold text-foreground">
-        Fiche-trajectoire — repères datés
-      </h3>
+    <section aria-label="Fiche-trajectoire" className="rounded-xl border border-border bg-surface p-4">
+      <p className="text-2xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Fiche-trajectoire · identité patient durable
+      </p>
+      <h3 className="mt-1 font-display text-lg font-bold tracking-[-0.02em] text-foreground">{titre}</h3>
       <p className="mt-1 text-xs text-muted-foreground">
-        Index des jalons de mesure confirmés (lecture seule). Les points d’étape J7/J14/J21 (pilotage) n’y figurent
-        pas — seuls les jalons de mesure T0/J21/J42/J90.
+        La Spirale indexe les jalons de mesure confirmés (lecture seule) — cliquer un repère relit la fiche telle
+        qu’elle était à cette date. Les points d’étape J7/J14/J21 (pilotage) n’y figurent pas — seuls les jalons de
+        mesure T0/J21/J42/J90.
       </p>
 
+      {cycles.length > 0 && (
+        <ul aria-label="Épisodes" className="mt-2 flex flex-wrap gap-2">
+          {cycles.map((cycle, position) => (
+            <li key={cycle.cycleId}>
+              <Badge variant={position === cycles.length - 1 ? 'info' : 'neutral'}>
+                Épisode {position + 1} · T0 le {formatDate(cycle.dateT0)}
+                {cycle.momentum
+                  ? ` · momentum ${LABEL_TENDANCE[cycle.momentum.tendance]} (écart ${Math.abs(cycle.momentum.delta)})`
+                  : ''}
+              </Badge>
+            </li>
+          ))}
+        </ul>
+      )}
+
       {reperes.length > 0 && (
-        <nav aria-label="Index de la Spirale" className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Index de la Spirale</p>
-          <ul className="mt-2 flex flex-wrap gap-2">
-            {reperes.map((repere, position) => {
-              const actif = repereActif === position;
-              return (
-                <li key={`${repere.milestone}-${repere.date}-${position}`}>
-                  <button
-                    type="button"
-                    aria-pressed={actif}
-                    onClick={() => setRepereActif(actif ? null : position)}
-                    className={`min-h-11 rounded-lg border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
-                      actif
-                        ? 'border-primary bg-primary/10 font-semibold text-foreground'
-                        : 'border-border text-muted-foreground hover:bg-muted/40'
-                    }`}
-                  >
-                    {LABEL_JALON[repere.milestone]} · {formatDate(repere.date)}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <p role="status" className="mt-2 text-xs text-muted-foreground">
-            {repereSelectionne === null
-              ? 'Sélectionnez un repère pour relire la fiche telle qu’elle était à cette date.'
-              : cycleSelectionne === null
-                ? `Repère ${LABEL_JALON[repereSelectionne.milestone]} du ${formatDate(repereSelectionne.date)} — antérieur à tout épisode T0 confirmé, aucun cycle ne lui est rattaché.`
-                : `Repère ${LABEL_JALON[repereSelectionne.milestone]} du ${formatDate(repereSelectionne.date)} — cycle mis en avant ci-dessous, état daté recalculé.`}
-          </p>
-        </nav>
+        <div className="mt-3 flex flex-wrap items-start gap-x-6 gap-y-3">
+          {/* La Spirale navigable double les boutons texte : même sélection,
+              même suture time-travel — jamais la géométrie seule (A5-R1). */}
+          <div className="flex flex-col items-center gap-1">
+            <SpiraleEpisodes
+              reperes={reperes}
+              cycles={cycles}
+              taille={172}
+              interactive
+              indexActif={repereActif}
+              onSelectionRepere={(position) =>
+                setRepereActif(position === null ? null : repereActif === position ? null : position)
+              }
+            />
+            <p className="max-w-[13rem] text-center text-2xs text-muted-foreground">
+              Un arc = un jalon confirmé. Menthe : épisodes passés · indigo : épisode en cours · point solaire :
+              aujourd’hui.
+            </p>
+          </div>
+
+          <nav aria-label="Index de la Spirale" className="min-w-[14rem] flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Index de la Spirale</p>
+            <ul className="mt-2 flex flex-wrap gap-2">
+              {reperes.map((repere, position) => {
+                const actif = repereActif === position;
+                return (
+                  <li key={`${repere.milestone}-${repere.date}-${position}`}>
+                    <button
+                      type="button"
+                      aria-pressed={actif}
+                      onClick={() => setRepereActif(actif ? null : position)}
+                      className={`min-h-11 rounded-lg border px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                        actif
+                          ? 'border-primary bg-primary/10 font-semibold text-foreground'
+                          : 'border-border text-muted-foreground hover:bg-muted/40'
+                      }`}
+                    >
+                      {LABEL_JALON[repere.milestone]} · {formatDate(repere.date)}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <p role="status" className="mt-2 text-xs text-muted-foreground">
+              {repereSelectionne === null
+                ? 'Sélectionnez un repère pour relire la fiche telle qu’elle était à cette date.'
+                : cycleSelectionne === null
+                  ? `Repère ${LABEL_JALON[repereSelectionne.milestone]} du ${formatDate(repereSelectionne.date)} — antérieur à tout épisode T0 confirmé, aucun cycle ne lui est rattaché.`
+                  : `Repère ${LABEL_JALON[repereSelectionne.milestone]} du ${formatDate(repereSelectionne.date)} — cycle mis en avant ci-dessous, état daté recalculé.`}
+            </p>
+          </nav>
+        </div>
       )}
 
       {/* Suture time-travel (SP-CONV LOT-03, D6) : le repère sélectionné pilote

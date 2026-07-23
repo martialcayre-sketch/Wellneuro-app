@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { FichePatientPanel } from './FichePatientPanel';
+import { estOngletFiche } from '@/lib/praticien/ongletsFiche';
 import { C5FeatureProvider } from './patient-cockpit/C5FeatureProvider';
 import type { DecisionCard } from '@/lib/clinical-engine/types';
 
@@ -477,5 +478,37 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
 
     await waitFor(() => expect(screen.getByText(/Votre session a expiré/i)).toBeTruthy());
     expect(screen.queryByText(/Protocole bloqué/i)).toBeNull();
+  });
+});
+
+describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('`ongletInitial="trajectoire"` ouvre la fiche directement sur la trajectoire', async () => {
+    stubFetch();
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" ongletInitial="trajectoire" />
+      </C5FeatureProvider>,
+    );
+    await waitFor(() => expect(screen.getAllByText('Sophie Nicola').length).toBeGreaterThan(0));
+
+    const onglets = screen.getByRole('tablist', { name: 'Vues de la fiche patient' });
+    expect(within(onglets).getByRole('tab', { name: 'Trajectoire' }).getAttribute('aria-selected')).toBe('true');
+    // Le cockpit est masqué, le panneau trajectoire est monté.
+    expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(true);
+    await waitFor(() => expect(screen.getByText(/Fiche-trajectoire · identité patient durable/)).toBeTruthy());
+  });
+
+  it('estOngletFiche : garde stricte du deep-link — toute valeur inconnue est refusée', () => {
+    for (const valide of ['cockpit', 'besoins', 'alimentation', 'trajectoire', 'correspondance']) {
+      expect(estOngletFiche(valide)).toBe(true);
+    }
+    expect(estOngletFiche('inconnu')).toBe(false);
+    expect(estOngletFiche(undefined)).toBe(false);
+    expect(estOngletFiche(42)).toBe(false);
   });
 });

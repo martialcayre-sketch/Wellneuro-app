@@ -25,6 +25,7 @@ import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/pratic
 import type { ResultatMomentum } from '@/lib/equilibre/types';
 import type { ScoreSubScore } from '@/lib/scoring/types';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
+import type { OngletFiche } from '@/lib/praticien/ongletsFiche';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
@@ -130,8 +131,6 @@ function LegendeNiveauxPreuve() {
 // Poste de pilotage (A6-R1) — ossature
 // ---------------------------------------------------------------------------
 
-type OngletFiche = 'cockpit' | 'besoins' | 'alimentation' | 'trajectoire' | 'correspondance';
-
 const ONGLETS: { id: OngletFiche; libelle: string }[] = [
   { id: 'cockpit', libelle: 'Poste de pilotage' },
   { id: 'besoins', libelle: 'Les 12 besoins' },
@@ -236,9 +235,12 @@ function InstrumentTiroir({
 
 export function FichePatientPanel({
   idPatient,
+  ongletInitial,
   fixtureValidationErgo = null,
 }: {
   idPatient: string;
+  /** Onglet d'ouverture (deep-link `?onglet=`, validé par la page serveur). */
+  ongletInitial?: OngletFiche;
   fixtureValidationErgo?: ValidationErgoC1Fixture | null;
 }) {
   const [data, setData] = useState<EquilibreApiResponse | null>(null);
@@ -248,7 +250,7 @@ export function FichePatientPanel({
   const [assignationsModif, setAssignationsModif] = useState<PatientsApiResponse['assignations']>([]);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
-  const [ongletActif, setOngletActif] = useState<OngletFiche>('cockpit');
+  const [ongletActif, setOngletActif] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
   // Phase focale. 'decision' n'est plus qu'un point de départ neutre : la
   // phase réellement exigible est calculée par la règle D5 (SP-CONV LOT-02)
   // dès que l'état runtime est établi — sauf si le praticien a déjà navigué.
@@ -1167,7 +1169,7 @@ export function FichePatientPanel({
               </button>
             </div>
           ) : (
-            <TrajectoirePanel trajectoire={trajectoire} idPatient={idPatient} />
+            <TrajectoirePanel trajectoire={trajectoire} idPatient={idPatient} nomComplet={nomComplet} />
           ))}
       </div>
     </div>

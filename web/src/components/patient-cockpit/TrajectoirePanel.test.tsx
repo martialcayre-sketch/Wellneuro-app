@@ -42,7 +42,8 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
     render(<TrajectoirePanel trajectoire={trajectoire} />);
     expect(screen.getByText(/indice 40/i)).toBeTruthy();
     expect(screen.getAllByText(/jalon non mesuré/i).length).toBe(2);
-    expect(screen.getByText(/en hausse/i)).toBeTruthy();
+    // « en hausse » apparaît dans la carte de cycle ET le badge d'épisode.
+    expect(screen.getAllByText(/en hausse/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/dès un 2ᵉ cycle/i)).toBeTruthy();
   });
 
@@ -213,6 +214,74 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
     );
     expect(screen.queryByRole('table')).toBeNull();
     expect(screen.getByText(/Non comparable/i)).toBeTruthy();
+  });
+});
+
+describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 5.0)', () => {
+  const deuxCycles: Trajectoire = {
+    index: [
+      { milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_a' },
+      { milestone: 'J21', date: '2026-01-22T00:00:00.000Z', cycleId: 'ep_a' },
+      { milestone: 'T0', date: '2026-03-01T00:00:00.000Z', cycleId: 'ep_b' },
+    ],
+    cycles: [
+      {
+        cycleId: 'ep_a',
+        dateT0: '2026-01-01T00:00:00.000Z',
+        versionScore: 'v1',
+        jalons: jalons(40, 55),
+        momentum: { tendance: 'hausse', delta: 15 },
+      },
+      {
+        cycleId: 'ep_b',
+        dateT0: '2026-03-01T00:00:00.000Z',
+        versionScore: 'v1',
+        jalons: jalons(48, null),
+        momentum: null,
+      },
+    ],
+    comparaison: { disponible: true, raison: 'comparable' },
+  };
+
+  it('affiche l’identité et l’épisode courant, avec un badge par épisode', () => {
+    render(<TrajectoirePanel trajectoire={deuxCycles} nomComplet="Sophie Nicola" />);
+    expect(screen.getByRole('heading', { name: 'Sophie Nicola — épisode 2' })).toBeTruthy();
+    const episodes = screen.getByRole('list', { name: 'Épisodes' });
+    expect(within(episodes).getByText(/Épisode 1 · T0 le 01\/01\/2026 · momentum en hausse \(écart 15\)/)).toBeTruthy();
+    expect(within(episodes).getByText(/Épisode 2 · T0 le 01\/03\/2026/)).toBeTruthy();
+  });
+
+  it('sans cycle confirmé : l’identité seule — aucun épisode affirmé', () => {
+    render(<TrajectoirePanel trajectoire={null} nomComplet="Sophie Nicola" />);
+    expect(screen.getByRole('heading', { name: 'Sophie Nicola' })).toBeTruthy();
+    expect(screen.queryByText(/— épisode/)).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Épisodes' })).toBeNull();
+  });
+
+  it('sans identité fournie, le titre historique demeure', () => {
+    render(<TrajectoirePanel trajectoire={null} />);
+    expect(screen.getByRole('heading', { name: 'Fiche-trajectoire — repères datés' })).toBeTruthy();
+  });
+
+  it('la Spirale double l’index : cliquer un arc sélectionne le même repère que le bouton texte', () => {
+    render(<TrajectoirePanel trajectoire={deuxCycles} />);
+    const spirale = screen.getByRole('group', { name: /Spirale de trajectoire/ });
+
+    fireEvent.click(within(spirale).getByRole('button', { name: 'Jalon J21 du 22/01/2026 — épisode 1' }));
+
+    // Même sélection que par le bouton texte : mise en avant écrite, bouton
+    // texte pressé — une seule source d'état, pas deux navigations.
+    expect(screen.getByText(/repère sélectionné/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /J21 · 22\/01\/2026/ }).getAttribute('aria-pressed')).toBe('true');
+
+    // « Aujourd'hui » ramène au présent — même geste que la désélection.
+    fireEvent.click(within(spirale).getByRole('button', { name: 'Aujourd’hui — revenir au présent' }));
+    expect(screen.queryByText(/repère sélectionné/i)).toBeNull();
+  });
+
+  it('zéro repère → aucune Spirale rendue', () => {
+    render(<TrajectoirePanel trajectoire={{ ...deuxCycles, index: [] }} />);
+    expect(screen.queryByRole('group', { name: /Spirale de trajectoire/ })).toBeNull();
   });
 });
 
