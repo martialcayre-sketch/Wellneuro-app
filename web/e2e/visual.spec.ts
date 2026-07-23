@@ -118,7 +118,10 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
   test('patients & assignations', async ({ page }, testInfo) => {
     await page.goto('/dashboard/patients');
     await page.getByRole('button', { name: 'Créer le patient' }).waitFor();
-    await capturer(page, testInfo, 'dashboard-patients', { fullPage: true });
+    // Pas de pixel : la liste dépend de l'état laissé par les parcours E2E du
+    // même run (assignations créées pour Michel) — attrapé par la toute
+    // première comparaison active en CI, hauteur 2386 vs 2546 px.
+    await capturer(page, testInfo, 'dashboard-patients', { fullPage: true, pixel: false });
   });
 });
 
