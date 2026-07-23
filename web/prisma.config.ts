@@ -13,10 +13,11 @@ export default defineConfig({
   datasource: {
     url: process.env["DATABASE_URL"] ? withSupabaseSslMode(process.env["DATABASE_URL"]) : undefined,
   },
-  // `vector(1536)` reste un type d'extension manipulé en SQL brut. Ces tables
-  // sont créées par des migrations versionnées mais exclues du diff Prisma
-  // déclaratif (couche RAG : verbatim `rag_corpus_chunks`, claims validés
-  // praticien `rag_corpus_claims` + leur jonction sources).
+  // Tables SQL-brut hors schema.prisma : créées par des migrations versionnées
+  // mais exclues du diff Prisma déclaratif. Deux raisons d'y être — un type
+  // d'extension que Prisma ne modélise pas (`vector(1536)` : chunks, claims)
+  // ou une mécanique portée par la base elle-même (journal des décisions :
+  // triggers append-only et cohérence d'insertion).
   experimental: {
     externalTables: true,
   },
@@ -25,6 +26,7 @@ export default defineConfig({
       "public.rag_corpus_chunks",
       "public.rag_corpus_claims",
       "public.rag_corpus_claim_sources",
+      "public.rag_corpus_claim_decisions",
     ],
   },
 });

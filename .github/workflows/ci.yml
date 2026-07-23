@@ -142,6 +142,11 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/c5_ciqual_reference_v1.sql
 
+      - name: RAG claim decisions journal contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_decisions_journal_v1.sql
+
       - name: C5 LOT-02 import contract
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
