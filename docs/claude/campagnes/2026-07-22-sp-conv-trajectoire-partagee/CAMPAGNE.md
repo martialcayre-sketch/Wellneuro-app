@@ -4,7 +4,7 @@ titre: "SP-CONV — Convergence Spirale 5.0 : la trajectoire partagée"
 statut: "en_cours"
 créée_le: "2026-07-22"
 mise_à_jour: "2026-07-22"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 ---
 
 # SP-CONV — Convergence Spirale 5.0 : la trajectoire partagée
