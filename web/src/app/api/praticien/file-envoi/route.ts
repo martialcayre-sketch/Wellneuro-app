@@ -137,43 +137,48 @@ export async function POST(request: Request) {
       );
     }
 
-    const existant = await prisma.envoiBrouillon.findFirst({
-      where: {
-        praticienEmail: { equals: emailSession, mode: 'insensitive' },
-        idPatient: patient.idPatient,
-        statut: 'brouillon',
-      },
-    });
-    if (existant) {
-      const fusion = [...new Set([...existant.qids, ...qids])].slice(0, 60);
-      const maj = await prisma.envoiBrouillon.update({
-        where: { idBrouillon: existant.idBrouillon },
-        data: {
-          qids: fusion,
-          dateLimite: dateLimite ?? existant.dateLimite,
-          notes: notes ?? existant.notes,
+    // Invariant « un seul brouillon actif par patient et par praticien » :
+    // un index partiel (WHERE statut='brouillon') n'est pas exprimable dans
+    // le schéma Prisma et ferait dériver le contrôle schéma ↔ migrations.
+    // On sérialise donc les ajouts concurrents sur le verrou de la ligne
+    // patient (même patron FOR UPDATE que l'accès portail) : le
+    // findFirst-puis-create s'exécute sous verrou, la fenêtre TOCTOU
+    // disparaît.
+    const resultat = await prisma.$transaction(async tx => {
+      await tx.$queryRaw`SELECT id FROM patients WHERE id_patient = ${patient.idPatient} FOR UPDATE`;
+      const existant = await tx.envoiBrouillon.findFirst({
+        where: {
+          praticienEmail: { equals: emailSession, mode: 'insensitive' },
+          idPatient: patient.idPatient,
+          statut: 'brouillon',
         },
       });
-      return NextResponse.json<MutateFileEnvoiResponse>({
-        success: true,
-        idBrouillon: maj.idBrouillon,
-        count: maj.qids.length,
+      if (existant) {
+        const fusion = [...new Set([...existant.qids, ...qids])].slice(0, 60);
+        return tx.envoiBrouillon.update({
+          where: { idBrouillon: existant.idBrouillon },
+          data: {
+            qids: fusion,
+            dateLimite: dateLimite ?? existant.dateLimite,
+            notes: notes ?? existant.notes,
+          },
+        });
+      }
+      return tx.envoiBrouillon.create({
+        data: {
+          idBrouillon: createPublicId('ENV'),
+          praticienEmail: emailSession,
+          idPatient: patient.idPatient,
+          qids: qids.slice(0, 60),
+          dateLimite,
+          notes,
+        },
       });
-    }
-    const cree = await prisma.envoiBrouillon.create({
-      data: {
-        idBrouillon: createPublicId('ENV'),
-        praticienEmail: emailSession,
-        idPatient: patient.idPatient,
-        qids: qids.slice(0, 60),
-        dateLimite,
-        notes,
-      },
     });
     return NextResponse.json<MutateFileEnvoiResponse>({
       success: true,
-      idBrouillon: cree.idBrouillon,
-      count: cree.qids.length,
+      idBrouillon: resultat.idBrouillon,
+      count: resultat.qids.length,
     });
   } catch {
     return NextResponse.json<MutateFileEnvoiResponse>(

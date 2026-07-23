@@ -50,38 +50,14 @@ export const Q_STR_01 = {
     ]
   }
 };
-export const Q_STR_02 = {
-  id:'Q_STR_02', titre:'Échelle de stress perçu (PSS-10)',
-  instructions:'Pour chaque question, indiquez à quelle fréquence vous vous êtes senti(e) ou pensé(e) de cette façon au cours du dernier mois.',
-  sections:[
-    { id:'A', titre:'Perceptions au cours du dernier mois',
-      questions:[
-        q('P1',"À quelle fréquence avez-vous été dérangé(e) par un événement inattendu ?",O_PAS),
-        q('P2',"À quelle fréquence avez-vous eu du mal à contrôler les choses importantes de votre vie ?",O_PAS),
-        q('P3',"À quelle fréquence vous êtes-vous senti(e) nerveux(se) ou stressé(e) ?",O_PAS),
-        q('P4',"À quelle fréquence avez-vous eu confiance en votre capacité à gérer vos problèmes personnels ?",O_PAS),
-        q('P5',"À quelle fréquence avez-vous senti que les choses allaient dans votre sens ?",O_PAS),
-        q('P6',"À quelle fréquence vous êtes-vous senti(e) submergé(e) par les problèmes à résoudre ?",O_PAS),
-        q('P7',"À quelle fréquence avez-vous été capable de contrôler les éléments irritants de votre vie ?",O_PAS),
-        q('P8',"À quelle fréquence avez-vous senti que vous aviez la situation en main ?",O_PAS),
-        q('P9',"À quelle fréquence vous êtes-vous mis(e) en colère à cause de choses survenues hors de votre contrôle ?",O_PAS),
-        q('P10',"À quelle fréquence avez-vous eu l'impression que les difficultés s'étaient tellement accumulées que vous ne pouviez pas les surmonter ?",O_PAS),
-      ]}
-  ],
-  scoring:{
-    type:'sum_reversed',
-    reversed:['P4','P5','P7','P8'],
-    interpretation:[
-      // Seuils certifiés v2 — PDF PRO SIIN (0-4 interne ↔ 1-5 brut : décalage -10)
-      {min:0, max:10,label:'Bonne gestion du stress',color:'success',
-       detail:'Capacités d\'adaptation satisfaisantes — pas d\'intervention prioritaire'},
-      {min:11,max:16,label:'Adaptation satisfaisante mais inconstante',color:'warning',
-       detail:'Certaines situations génèrent un sentiment d\'impuissance — stratégies de gestion du stress conseillées'},
-      {min:17,max:40,label:'Niveau élevé de stress — désadaptation',color:'danger',
-       detail:'Risque cardio-métabolique, immunitaire, digestif, psychologique — intervention neuronutritionnelle prioritaire'},
-    ]
-  }
-};
+// Q_STR_02 (PSS-10) ne vit PAS ici : la définition qui fait autorité est
+// l'inline de questions.ts (items 1-5, /50, bandes 10-20/21-26/27-50, source
+// Drive certifiée). Une variante 0-4//40 (mêmes seuils décalés de -10) a
+// longtemps existé ici, importée puis masquée par la clé inline — code mort
+// purgé le 2026-07-23 sur arbitrage utilisateur : c'est le /50 servi aux
+// patients et porté par les scores historiques qui reste la référence. Toute
+// bascule vers la cotation standard 0-4 serait un changement clinique
+// (comparabilité des scores stockés) à documenter dans CHANGELOG.md.
 export const Q_STR_04 = {
   id:'Q_STR_04', titre:'DASS-21 — Dépression, Anxiété, Stress',
   instructions:'Veuillez lire chaque affirmation et indiquer dans quelle mesure elle s\'est appliquée à vous au cours de la semaine passée. Il n\'y a pas de bonne ou mauvaise réponse.',
