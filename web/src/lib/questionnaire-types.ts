@@ -14,6 +14,9 @@ export type Question = {
   step?: number;
   unit?: string;
   conditionnel?: string;
+  /** Groupe d'appartenance d'un item pour les scorings `group_majority`
+   * (ex. Q_STR_01 : A=dopaminergique, B=sérotoninergique, C=mixte). */
+  groupe?: string;
 };
 
 export type Section = { id: string; titre?: string; description?: string; questions: Question[] };
