@@ -321,7 +321,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
   return (
     <div className="w-full max-w-2xl space-y-6">
       <PatientPageHeader
-        title="Ma spirale alimentaire"
+        title="Mon carnet alimentaire"
         subtitle="Vous décrivez l’essai sans détailler tous les repas."
       />
 

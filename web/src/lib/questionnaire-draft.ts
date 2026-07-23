@@ -59,10 +59,34 @@ function parseLegacyDraft(raw: string): DraftAnswers | null {
   }
 }
 
+// Durée de vie d'un brouillon local (SP-CONV LOT-05) — alignée sur les
+// 30 jours du wizard fiche/anamnèse. Un brouillon sans date d'enregistrement
+// n'est jamais détruit sur supposition : seule une date prouvée trop
+// ancienne déclenche la purge.
+const DUREE_VIE_BROUILLON_JOURS = 30;
+
+function brouillonPerime(idAssignation: string): boolean {
+  try {
+    const raw =
+      window.localStorage.getItem(versionedMetaKey(idAssignation)) ??
+      window.localStorage.getItem(legacyMetaKey(idAssignation));
+    if (!raw) return false;
+    const savedAt = new Date(raw);
+    if (Number.isNaN(savedAt.getTime())) return false;
+    return Date.now() - savedAt.getTime() > DUREE_VIE_BROUILLON_JOURS * 24 * 60 * 60 * 1000;
+  } catch {
+    return false;
+  }
+}
+
 /** Lit l'état UX complet, avec fallback sur le format historique. */
 export function readQuestionnaireDraft(idAssignation: string): QuestionnaireDraftState | null {
   if (typeof window === 'undefined') return null;
   try {
+    if (brouillonPerime(idAssignation)) {
+      clearDraft(idAssignation);
+      return null;
+    }
     const versioned = window.localStorage.getItem(versionedDraftKey(idAssignation));
     if (versioned) {
       const parsed = parseVersionedDraft(versioned);

@@ -91,7 +91,7 @@
    * HC-F LOT-01 (2026-07-12) : plus aucun composant de web/src ne les
    * consomme (`grep -rn "var(--primary)\|var(--accent)" web/src` ne
    * retourne que ce commentaire) — tous les consommateurs historiques
-   * (login, NavBar, MetricsSection, PatientsPanel, SynthesePanel) sont
+   * (login, NavBar, PatientsPanel, SynthesePanel) sont
    * déjà migrés vers les tokens sémantiques --color-*. Conservées par
    * prudence (namespace toujours distinct), ne pas modifier sans
    * nouvelle vérification. */

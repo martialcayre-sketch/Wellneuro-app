@@ -268,6 +268,17 @@
 
 ### A7 — Cap « Ma spirale alimentaire » : instrument longitudinal à trois régimes (décision utilisateur 2026-07-16)
 
+> **Amendement du 2026-07-23 (SP-CONV LOT-05, décision utilisateur du
+> 2026-07-22 — D9).** Le **nom patient** de l'instrument devient
+> **« Mon carnet alimentaire »** : le mot « Spirale » est réservé à la
+> trajectoire globale du parcours (la marque du produit n'appartient pas à
+> un sous-module). Tout le reste d'A7 — régimes, calibrages, politiques
+> A7-1…A7-14 — est **inchangé** : seul le nom de surface change
+> (`lib/food-observation/labels.ts`, `LABEL_INSTRUMENT_PATIENT`).
+> Raisonnement complet :
+> `propositions/2026-07-23-sp-conv-adaptation-a7/ADAPTATION_A7_CARNET.md`.
+> Le titre de cette entrée est conservé tel quel, comme trace.
+
 - Le journal alimentaire 21 jours est **recadré 5.0** en **instrument
   longitudinal à trois régimes** (synthèse doc 11 actée, adaptée par le
   contrepoint du 2026-07-16) :

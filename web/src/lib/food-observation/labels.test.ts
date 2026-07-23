@@ -29,7 +29,7 @@ describe('vocabulaire UI (R4, D11)', () => {
   });
 
   it('porte les noms actés de l’instrument (D1)', () => {
-    expect(labels.LABEL_INSTRUMENT_PATIENT).toBe('Ma spirale alimentaire');
+    expect(labels.LABEL_INSTRUMENT_PATIENT).toBe('Mon carnet alimentaire');
     expect(labels.LABEL_INSTRUMENT_PRATICIEN).toBe('Trajectoire alimentaire');
   });
 

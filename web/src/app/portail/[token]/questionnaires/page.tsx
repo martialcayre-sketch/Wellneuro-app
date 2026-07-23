@@ -287,7 +287,7 @@ export default function QuestionnairesHubPage() {
       {/* Accès secondaires : une ligne de liens, plus deux cartes rivales. */}
       <nav aria-label="Autres espaces" className="flex flex-wrap gap-3">
         <a href={`/portail/${token}/alimentation`} className={patientButtonClassName('ghost')}>
-          Ouvrir Ma spirale alimentaire
+          Ouvrir Mon carnet alimentaire
         </a>
         <a href={`/portail/${token}/suivi`} className={patientButtonClassName('ghost')}>
           Ouvrir mes rendez-vous de suivi

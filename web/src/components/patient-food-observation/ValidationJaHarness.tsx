@@ -23,7 +23,7 @@ export function ValidationJaHarness() {
       <div className="mx-auto flex max-w-3xl flex-col items-center gap-6">
         <header className="w-full rounded-2xl border border-primary/20 bg-primary/10 p-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-primary">Harnais local JA5-02</p>
-          <h1 className="mt-1 text-2xl font-semibold">Ma spirale alimentaire</h1>
+          <h1 className="mt-1 text-2xl font-semibold">Mon carnet alimentaire</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Fixture fictive : {JA5_VALIDATION_PATIENT.displayName}. Les saisies restent en mémoire et
             disparaissent au rechargement. Aucun envoi ni enregistrement n’est effectué.
