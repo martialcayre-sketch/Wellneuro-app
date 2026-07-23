@@ -323,3 +323,7 @@ SQL joués en CI, T3 verts, base prod vérifiée après chaque migration (journa
 
 **Questions ouvertes** : générer les questionnaires pilotes (nécessite
 ANTHROPIC_API_KEY) ; passage à l'échelle 88 sources.
+
+## 2026-07-23 — Fin de session SP-CONV : vérification prod, rien en vol
+
+**Décisions** : session close sur une vérification factuelle — la 5.0 est **en production** (déploiement Vercel `READY` à chaque merge sur `main`, `app.wellneuro.fr` répond ; dernier déployé : `f2aaccc`). Les maquettes n'ont plus rien à valider : la référence est l'artifact acté en V14, les trois maquettes de campagne ont été réalisées par les LOT-02/04/05 et restent au dossier comme trace. **Écarté** : rouvrir un lot — aucun défaut constaté. **Prochaine action** : tour de validation humaine en prod (fiche adaptative, time-travel, portail) + validations jamais faites (zoom 200 %, lecteur d'écran réel, appareil physique — dette HC-F) ; côté programme, SP-CAB attend `n ≥ 5` épisodes clos. **Questions ouvertes** : aucune pour SP-CONV.
