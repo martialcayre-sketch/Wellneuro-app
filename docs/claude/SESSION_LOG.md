@@ -265,3 +265,7 @@ reste disponible mais n'est plus nécessaire.
 échelle 88 sources.
 
 **Questions ouvertes** : piste MP4.
+
+## 2026-07-23 — SP-CONV livrée : les six lots de code en full-auto
+
+**Décisions** : exécution full-auto autorisée (« lance tous les lots à la suite, checks, merge PR autorisés, nettoyage branches »). Six PR livrées et mergées à la suite, verify vert à chaque fois : #288 contrat d'épisode partagé (lib pure, garde D7) ; #290 cockpit adaptatif (phase initiale D5, bandeau épisode, plein écran D10, tests réécrits — l'ancien comportement testé était le reproche de l'audit) ; #291 suture time-travel (index Spirale → asOf via LectureEtatPassePanel piloté) ; #293 parcours patient synchronisé (étapes 5-6, champs additifs D11, dédoublonnage CTA) ; #294 Jardin (« Mon carnet alimentaire » — A7 amendé au registre, équilibre qualitatif, 44 px, TTL brouillons, MetricsSection supprimée) ; PR LOT-06 preuve visuelle (ARIA + toHaveScreenshot Linux fs-gaté, portail via Jennifer Martin isolée, workflow visual-baselines, dérogation V12 levée). **Écarté** : capture Mon équilibre portail (exigerait une consultation complète — remplacée par hub déplié). **Prochaine action** : déclencher `visual-baselines` et committer les premières baselines. **Questions ouvertes** : aucune — campagne close.

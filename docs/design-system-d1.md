@@ -616,6 +616,13 @@ Dérogations assumées :
 - `ScoreZones` : le point de curseur garde `shadow-sm` (micro-élément).
 - « Bande de confiance des observations » (maquette patient) non branchée —
   aucun signal de qualité agrégé dans le payload patient ; rien n'est inventé.
-- Captures Playwright en artefacts, sans baselines commitées (rendu
+- ~~Captures Playwright en artefacts, sans baselines commitées (rendu
   macOS ↔ Ubuntu divergent ; des baselines mono-plateforme casseraient
-  `verify`).
+  `verify`).~~ **Dérogation levée le 2026-07-23 (SP-CONV LOT-06)** : la
+  comparaison au pixel est désormais **Linux uniquement** (l'environnement
+  du CI) et conditionnée à l'existence de la baseline — elle ne peut pas
+  casser `verify` sur un poste macOS ni sur une baseline absente. Les
+  structures sensibles aux polices sont assertées en **snapshots ARIA**
+  (texte, toutes plateformes). Bootstrap des baselines : workflow manuel
+  `visual-baselines` (Ubuntu, `--update-snapshots`, artefact relu puis
+  commité). Le portail est capturé (Jennifer Martin, isolée des parcours).

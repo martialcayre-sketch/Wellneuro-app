@@ -9,13 +9,9 @@
 
 ## Activités parallèles
 
-### 2026-07-22-sp-conv-trajectoire-partagee
-
-**Titre** : SP-CONV — Convergence Spirale 5.0 : la trajectoire partagée
-**Statut** : active
-**Lot actif** : LOT-01
+Aucune campagne parallèle active.
 
 **Statut global** : active
-**Mise à jour** : 2026-07-22
+**Mise à jour** : 2026-07-23
 
 > La source de vérité machine est `.wn/state.json`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.
