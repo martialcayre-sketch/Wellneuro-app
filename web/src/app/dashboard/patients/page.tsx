@@ -12,9 +12,10 @@ export default function DashboardPatientsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Patients & assignations</h2>
+        <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">Questionnaires &amp; packs</h2>
         <p className="text-base text-muted-foreground mt-1">
-          Gestion patients et assignations via PostgreSQL (Prisma)
+          Gestion administrative des dossiers : création de patients et de consultations, assignation de
+          questionnaires et de packs. Le suivi clinique se lit dans « Fiche-trajectoire ».
         </p>
       </div>
       <PatientsPanel lienMagiqueActif={isG4LienMagiqueEnabled()} />

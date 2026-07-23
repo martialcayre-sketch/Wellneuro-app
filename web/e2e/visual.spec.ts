@@ -117,7 +117,10 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
 
   test('patients & assignations', async ({ page }, testInfo) => {
     await page.goto('/dashboard/patients');
-    await page.getByRole('button', { name: 'Créer le patient' }).waitFor();
+    // SP-TRAJ LOT-05 : les formulaires vivent en tiroirs — l'ancrage se fait
+    // sur la barre d'actions, le tableau est le premier contenu.
+    await page.getByRole('button', { name: 'Nouveau patient' }).waitFor();
+    await page.getByRole('table').first().waitFor();
     // Pas de pixel : la liste dépend de l'état laissé par les parcours E2E du
     // même run (assignations créées pour Michel) — attrapé par la toute
     // première comparaison active en CI, hauteur 2386 vs 2546 px.

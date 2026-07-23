@@ -450,6 +450,9 @@ describe('PatientsPanel — cycle de vie du dossier (LOT-01b)', () => {
   it('signale les dossiers clos dans le sélecteur de consultation', async () => {
     stubFetch({ patient: { ...PATIENT, suiviClotureLe: '2026-07-21T10:00:00.000Z' } });
     render(<PatientsPanel />);
+    // Le formulaire vit désormais dans son tiroir (SP-TRAJ LOT-05).
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+    fireEvent.click(screen.getByRole('button', { name: 'Nouvelle consultation' }));
     await waitFor(() => expect(screen.getByText(/Michel Dogné.*\(suivi clôturé\)/)).toBeTruthy());
   });
 });
@@ -516,5 +519,52 @@ describe('PatientsPanel — révocation d’accès (LOT-02c)', () => {
     const alerte = await screen.findByRole('alert');
     expect(alerte.textContent).toMatch(/pas accessible depuis votre compte/i);
     expect(screen.getByRole('heading', { name: /révoquer l’accès de/i })).toBeTruthy();
+  });
+});
+
+describe('PatientsPanel — tiroirs d’action (SP-TRAJ LOT-05)', () => {
+  it('les formulaires ne sont plus empilés : chacun s’ouvre dans son tiroir', async () => {
+    stubFetch();
+    render(<PatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+
+    // Fermés par défaut : aucun champ de création dans le DOM.
+    expect(screen.queryByPlaceholderText('Prénom *')).toBeNull();
+    expect(screen.queryByRole('dialog')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nouveau patient' }));
+    const tiroir = await screen.findByRole('dialog', { name: 'Nouveau patient' });
+    expect(tiroir).toBeTruthy();
+    expect(screen.getByPlaceholderText('Prénom *')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Créer le patient' })).toBeTruthy();
+  });
+
+  it('le tiroir assignation garde la suture packs : cliquer un pack suggéré referme le tiroir', async () => {
+    stubFetch();
+    render(<PatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nouvelle assignation' }));
+    const tiroir = await screen.findByRole('dialog', { name: 'Nouvelle assignation questionnaire' });
+    expect(tiroir).toBeTruthy();
+    // Zone « Packs suggérés » présente (vide sans questionnaire sélectionné).
+    expect(screen.getByText('Packs suggérés')).toBeTruthy();
+    expect(screen.getByText(/Sélectionnez un questionnaire pour voir les packs/)).toBeTruthy();
+  });
+
+  it('la création de consultation refermée sur succès s’annonce par la ligne de statut de la page', async () => {
+    stubFetch();
+    render(<PatientsPanel />);
+    await screen.findAllByRole('button', { name: /gérer le dossier/i });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Nouvelle consultation' }));
+    await screen.findByRole('dialog', { name: 'Nouvelle consultation' });
+
+    // Sélectionne le patient puis soumet : le stub répond success.
+    fireEvent.change(screen.getAllByRole('combobox')[0], { target: { value: 'PAT_SEED_03' } });
+    fireEvent.click(screen.getByRole('button', { name: /Créer une consultation/ }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    expect(screen.getByText(/Consultation créée, lien d’accès envoyé au patient/)).toBeTruthy();
   });
 });
