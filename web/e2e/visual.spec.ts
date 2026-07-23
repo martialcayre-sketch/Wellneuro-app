@@ -39,10 +39,18 @@ function baselineComparable(testInfo: TestInfo, nom: string): boolean {
   return existsSync(testInfo.snapshotPath(nom));
 }
 
-async function capturer(page: Page, testInfo: TestInfo, nom: string, fullPage = false): Promise<void> {
+// `pixel: false` — écrans dont un texte dépend du temps qui passe (phrase de
+// reprise en mois, dates relatives du Fil) : une baseline au pixel y dériverait
+// avec le calendrier. Ils gardent capture de revue + snapshot ARIA.
+async function capturer(
+  page: Page,
+  testInfo: TestInfo,
+  nom: string,
+  { fullPage = false, pixel = true }: { fullPage?: boolean; pixel?: boolean } = {},
+): Promise<void> {
   await page.screenshot({ path: `${DOSSIER}/${nom}-${testInfo.project.name}.png`, fullPage });
   const baseline = `${nom}.png`;
-  if (baselineComparable(testInfo, baseline)) {
+  if (pixel && baselineComparable(testInfo, baseline)) {
     await expect(page).toHaveScreenshot(baseline, { fullPage, maxDiffPixelRatio: 0.02 });
   }
 }
@@ -79,6 +87,12 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
         - tab /Suivi/
         - tab /Réévaluation/
     `);
+    // État posé : le panneau runtime a fini de charger — une baseline sur
+    // un état transitoire serait structurellement flaky (constaté au premier
+    // run du workflow : « Chargement de la proposition… » figé dans l'image).
+    // (« indéterminée » peut légitimement rester : Réévaluation sans épisode
+    // est un état stable — seul le chargement en vol est transitoire.)
+    await expect(page.getByText(/Chargement de la proposition/)).toHaveCount(0);
     await capturer(page, testInfo, 'fiche-cockpit');
   });
 
@@ -98,13 +112,13 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
       const fil = document.querySelector('[data-testid="fil-du-jour"]');
       return fil !== null && fil.querySelector('.animate-pulse') === null;
     });
-    await capturer(page, testInfo, 'dashboard-fil');
+    await capturer(page, testInfo, 'dashboard-fil', { pixel: false });
   });
 
   test('patients & assignations', async ({ page }, testInfo) => {
     await page.goto('/dashboard/patients');
     await page.getByRole('button', { name: 'Créer le patient' }).waitFor();
-    await capturer(page, testInfo, 'dashboard-patients', true);
+    await capturer(page, testInfo, 'dashboard-patients', { fullPage: true });
   });
 });
 
@@ -149,7 +163,7 @@ test.describe('Preuve visuelle — Jardin (portail patient)', () => {
         - listitem:
           - text: /Restitution/
     `);
-    await capturer(page, testInfo, 'portail-hub', true);
+    await capturer(page, testInfo, 'portail-hub', { fullPage: true, pixel: false });
   });
 
   test('portail — hub, sections secondaires dépliées', async ({ page }, testInfo) => {
@@ -157,6 +171,6 @@ test.describe('Preuve visuelle — Jardin (portail patient)', () => {
     for (const summary of await page.locator('details > summary').all()) {
       await summary.click();
     }
-    await capturer(page, testInfo, 'portail-hub-details', true);
+    await capturer(page, testInfo, 'portail-hub-details', { fullPage: true, pixel: false });
   });
 });
