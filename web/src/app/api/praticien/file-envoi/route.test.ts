@@ -6,12 +6,18 @@ const { prisma } = vi.hoisted(() => ({
     envoiBrouillon: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
-      create: vi.fn(),
       update: vi.fn(),
       delete: vi.fn(),
     },
+    $transaction: vi.fn(),
   },
 }));
+
+// Transaction du POST : verrou patient (FOR UPDATE) puis findFirst/update/create.
+const txf = {
+  $queryRaw: vi.fn(),
+  envoiBrouillon: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+};
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('next-auth', () => ({
@@ -41,13 +47,14 @@ describe('file-envoi POST', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.patient.findFirst.mockResolvedValue(PATIENT);
-    prisma.envoiBrouillon.findFirst.mockResolvedValue(null);
-    prisma.envoiBrouillon.create.mockImplementation(({ data }: { data: { qids: string[] } }) =>
+    prisma.$transaction.mockImplementation((op: (t: typeof txf) => unknown) => op(txf));
+    txf.envoiBrouillon.findFirst.mockResolvedValue(null);
+    txf.envoiBrouillon.create.mockImplementation(({ data }: { data: { qids: string[] } }) =>
       Promise.resolve({ idBrouillon: 'ENV_TEST_12345678', qids: data.qids }),
     );
   });
 
-  it('crée un brouillon en ne gardant que les ids assignables, dédupliqués', async () => {
+  it('crée un brouillon sous verrou patient, ids assignables seuls, dédupliqués', async () => {
     const res = await POST(
       postRequest({
         emailPatient: 'sophie.nicola@example.com',
@@ -59,20 +66,25 @@ describe('file-envoi POST', () => {
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.success).toBe(true);
-    const data = prisma.envoiBrouillon.create.mock.calls[0][0].data;
+    // Le verrou FOR UPDATE est pris avant la lecture du brouillon (anti-TOCTOU).
+    expect(txf.$queryRaw).toHaveBeenCalled();
+    expect(txf.$queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      txf.envoiBrouillon.findFirst.mock.invocationCallOrder[0],
+    );
+    const data = txf.envoiBrouillon.create.mock.calls[0][0].data;
     expect(data.qids).toEqual(['Q_STR_02']);
     expect(data.praticienEmail).toBe('praticien@wellneuro.fr');
     expect(data.idPatient).toBe('PAT001');
   });
 
   it('fusionne dans le brouillon existant sans doublon', async () => {
-    prisma.envoiBrouillon.findFirst.mockResolvedValue({
+    txf.envoiBrouillon.findFirst.mockResolvedValue({
       idBrouillon: 'ENV_EXISTANT',
       qids: ['Q_STR_02'],
       dateLimite: null,
       notes: null,
     });
-    prisma.envoiBrouillon.update.mockResolvedValue({
+    txf.envoiBrouillon.update.mockResolvedValue({
       idBrouillon: 'ENV_EXISTANT',
       qids: ['Q_STR_02', 'Q_SOM_02'],
     });
@@ -83,9 +95,10 @@ describe('file-envoi POST', () => {
       }),
     );
     expect(res.status).toBe(200);
-    const args = prisma.envoiBrouillon.update.mock.calls[0][0];
+    const args = txf.envoiBrouillon.update.mock.calls[0][0];
     expect(args.where).toEqual({ idBrouillon: 'ENV_EXISTANT' });
     expect(args.data.qids).toEqual(['Q_STR_02', 'Q_SOM_02']);
+    expect(txf.envoiBrouillon.create).not.toHaveBeenCalled();
   });
 
   it('refuse un payload sans questionnaire assignable', async () => {
@@ -94,7 +107,7 @@ describe('file-envoi POST', () => {
     );
     expect(res.status).toBe(400);
     expect((await res.json()).reason).toBe('invalid_payload');
-    expect(prisma.envoiBrouillon.create).not.toHaveBeenCalled();
+    expect(prisma.$transaction).not.toHaveBeenCalled();
   });
 
   it('refuse un dossier au suivi clôturé', async () => {
