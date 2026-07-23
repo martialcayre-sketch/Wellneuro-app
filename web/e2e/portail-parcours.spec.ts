@@ -388,7 +388,10 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
 
     await test.step('Re-soumission après déblocage', async () => {
       await page.goto(`${portailUrl}/questionnaires`);
-      await expect(page.getByText('Déverrouillé par le praticien')).toBeVisible();
+      // SP-CONV LOT-04 : l'item déverrouillé est l'action recommandée — il est
+      // mis en avant par « Mon parcours » (CTA « Corriger ») et n'est plus
+      // dupliqué dans la liste « À compléter ».
+      await expect(page.getByRole('link', { name: /^Corriger/ })).toBeVisible();
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/patient/questionnaire?id=') && res.status() === 200),
         page.getByRole('link', { name: 'Corriger' }).first().click(),

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isSessionValideForPatient, readPatientSession } from '@/lib/patient-session';
 import { mapAssignationPatient, type AssignationPatient } from '@/lib/consultation/mapAssignation';
+import { consultationCourante } from '@/lib/consultation/portail';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -23,6 +24,12 @@ export type PortailAssignationsResponse =
       // pas la dernière connexion. Aucune donnée de score n'accompagne cette
       // date : seule sa position dans le temps est racontée au patient.
       derniereReponseLe: string | null;
+      // Signaux du parcours synchronisé (SP-CONV LOT-04, D11) : uniquement des
+      // statuts dérivés de données que le portail sert déjà par ailleurs — le
+      // statut de la consultation (déjà sur `/api/portail/session`) et le fait
+      // qu'un booklet a été envoyé au patient (il l'a reçu par e-mail). Jamais
+      // de score, de discordance ni de donnée réservée au praticien.
+      parcours: { consultationStatut: string | null; bookletEnvoye: boolean };
     }
   | { ok: false; reason: 'unauthorized' | 'exception'; error: string };
 
@@ -96,11 +103,27 @@ export async function GET(req: Request): Promise<NextResponse> {
       _max: { dateReponse: true },
     });
 
+    // Parcours synchronisé (SP-CONV LOT-04) : deux signaux existants, lus en
+    // sélection minimale. `Envoye` est le seul statut de succès du booklet
+    // (`api/praticien/booklet`, logBookletEnvoi) — un échec d'envoi ne fait
+    // jamais avancer le parcours du patient.
+    const [consultation, bookletEnvoye] = await Promise.all([
+      consultationCourante(session.idPatient),
+      prisma.bookletEnvoi.findFirst({
+        where: { idPatient: session.idPatient, statut: 'Envoye' },
+        select: { id: true },
+      }),
+    ]);
+
     return withCorrelationHeader(NextResponse.json({
       ok: true,
       patient: { idPatient: session.idPatient, prenom: patient.prenom, nom: patient.nom },
       assignations,
       derniereReponseLe: derniereReponse._max.dateReponse?.toISOString() ?? null,
+      parcours: {
+        consultationStatut: consultation?.statut ?? null,
+        bookletEnvoye: bookletEnvoye !== null,
+      },
     }), requestContext);
   } catch (err) {
     logger.error({

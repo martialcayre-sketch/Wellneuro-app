@@ -1,10 +1,13 @@
-// Repère de parcours global du portail patient (HC-F LOT-04, Étape 3) :
-// consentement → informations → situation/anamnèse → questionnaires →
-// analyse du praticien → restitution. Purement présentationnel — l'état de
-// chaque étape est dérivé par l'écran appelant à partir de données déjà
-// chargées, jamais d'un nouvel appel réseau. Les étapes 5/6 (côté praticien)
-// ne sont jamais marquées "done" automatiquement, faute de signal serveur
-// fiable, et leur libellé ne promet aucun délai.
+// Repère de parcours global du portail patient (HC-F LOT-04, Étape 3 —
+// amendé par SP-CONV LOT-04 le 2026-07-23) : consentement → informations →
+// situation/anamnèse → questionnaires → analyse du praticien → restitution.
+// Purement présentationnel — l'état de chaque étape est dérivé par l'écran
+// appelant. Les étapes 5/6 vivent désormais : le hub les pilote via
+// `deriverEtatParcoursPatient` (lib/trajectoire-partagee), à partir des seuls
+// signaux que le portail sert déjà (statut de consultation, protocole
+// diffusé, booklet envoyé — D11). Leur libellé ne promet toujours aucun
+// délai, et une étape terminée est annoncée telle quelle aux lecteurs
+// d'écran, pas seulement l'étape courante.
 export type JourneyStepState = 'done' | 'current' | 'upcoming';
 
 export type JourneyStep = {
@@ -63,6 +66,7 @@ export function PatientJourneyProgress({ steps }: { steps: JourneyStep[] }) {
               <span className={`whitespace-nowrap px-1 text-2xs ${classes.label}`}>
                 {step.label}
                 {step.state === 'current' && <span className="sr-only"> (étape actuelle)</span>}
+                {step.state === 'done' && <span className="sr-only"> (terminée)</span>}
               </span>
             </span>
             {index < steps.length - 1 && (
