@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Preuve visuelle et clôture"
-statut: "à ouvrir"
+statut: "en cours"
 dépend_de: "LOT-05"
 ---
 

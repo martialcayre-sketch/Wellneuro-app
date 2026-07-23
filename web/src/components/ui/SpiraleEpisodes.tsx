@@ -68,11 +68,15 @@ export function SpiraleEpisodes({
   const rayonPour = (position: number): number =>
     totalAnneaux === 1 ? 32 : 16 + position * espacement;
   const epaisseur = totalAnneaux <= 4 ? 7 : totalAnneaux <= 6 ? 5 : 3.5;
-  // Cible de clic : un anneau transparent qui pave la bande radiale — borné à
-  // l'espacement pour que deux voisins ne se chevauchent jamais. Le trait
+  // Cible de clic : un anneau transparent dont la bande PAVE tout
+  // l'espacement radial — les bandes voisines se touchent sans se
+  // chevaucher, il n'existe aucun interstice mort : un clic entre deux
+  // anneaux sélectionne le plus proche, et le centre de la Spirale
+  // appartient à l'anneau intérieur quand la bande l'atteint (c'est aussi le
+  // point que vise un clic automatisé au centre de l'élément). Le trait
   // visible seul (fill="none" → pointer-events sur le trait) faisait des
-  // cibles de ~5-10 px avec des interstices morts entre anneaux.
-  const epaisseurCible = Math.max(epaisseur, Math.min(espacement, 14));
+  // cibles de ~5-10 px — attrapé en vrai navigateur par l'E2E peuplée.
+  const epaisseurCible = Math.max(epaisseur, espacement);
 
   // Fin de l'arc « aujourd'hui » : départ en haut (-90°) + fraction du tour.
   const rayonPresent = rayonPour(totalAnneaux - 1);

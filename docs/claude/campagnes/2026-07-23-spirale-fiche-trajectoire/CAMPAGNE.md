@@ -1,10 +1,10 @@
 ---
 id: "2026-07-23-spirale-fiche-trajectoire"
 titre: "SP-TRAJ — Fiche-trajectoire 5.0 : porte d'entrée, Spirale navigable, refonte Questionnaires & packs"
-statut: "en cours"
+statut: "en cours — 6 lots livrés en PR (pile #313→#316 + #311 mergée), fermeture au constat des merges Copilot"
 créée_le: "2026-07-23"
 mise_à_jour: "2026-07-23"
-lot_courant: "LOT-05"
+lot_courant: "LOT-06"
 ---
 
 # SP-TRAJ — Fiche-trajectoire 5.0
