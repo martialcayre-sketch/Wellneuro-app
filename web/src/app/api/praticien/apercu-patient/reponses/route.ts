@@ -3,6 +3,10 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/apercu-patient/reponses';
 
 // Miroir patient-safe de /api/patient/reponses, pour la prévisualisation
 // praticien (mécanisme PrévisualisationPatient, cf. CONTRATS_UX_P1.md §3).
@@ -40,6 +44,10 @@ export async function GET(req: Request): Promise<NextResponse<ApercuPatientRepon
     if (!ass) {
       return NextResponse.json({ ok: false, reason: 'not_found', error: 'Assignation non reconnue.' }, { status: 404 });
     }
+
+    // L'assignation résolue et scopée nomme le dossier ; journalisé AVANT le
+    // second 404 (absence de réponse) — le dossier a bien été consulté.
+    await journaliserAccesDossier({ idPatient: ass.idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
 
     const reponse = await prisma.questionnaireReponse.findFirst({
       where: { idAssignation },

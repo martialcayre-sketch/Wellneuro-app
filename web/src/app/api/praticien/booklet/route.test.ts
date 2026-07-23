@@ -99,17 +99,20 @@ describe('GET /api/praticien/booklet', () => {
     });
   });
 
-  it('404 pour la synthèse d’un patient d’un autre praticien, indistinguable de l’inexistante', async () => {
+  it('404 pour la synthèse d’un patient d’un autre praticien, indistinguable de l’inexistante — jamais journalisé', async () => {
     findFirst.mockResolvedValue(null);
     const res = await GET(req('http://x/api/praticien/booklet?idSynthese=SYN_1'));
     expect(res.status).toBe(404);
     expect(await res.json()).toEqual({ error: 'Synthèse introuvable.' });
+    // Un refus ne se journalise jamais : la ligne nommerait un dossier non lu.
+    expect(createJournal).not.toHaveBeenCalled();
   });
 
-  it('422 si la synthèse n’est pas validée', async () => {
+  it('422 si la synthèse n’est pas validée — la lecture est journalisée (le dossier a été résolu)', async () => {
     findFirst.mockResolvedValue(syntheseFixture('Brouillon_IA'));
     const res = await GET(req('http://x/api/praticien/booklet?idSynthese=SYN_1'));
     expect(res.status).toBe(422);
+    expect(createJournal).toHaveBeenCalledTimes(1);
   });
 
   it('200 avec le HTML pour une synthèse validée', async () => {
@@ -121,10 +124,24 @@ describe('GET /api/praticien/booklet', () => {
     expect(typeof body.html).toBe('string');
     expect(body.html.length).toBeGreaterThan(0);
   });
+
+  it('lecture journalisée au gabarit littéral (G-TRUST-04), idPatient issu de la synthèse', async () => {
+    findFirst.mockResolvedValue(syntheseFixture('Validee_Praticien'));
+    await GET(req('http://x/api/praticien/booklet?idSynthese=SYN_1'));
+    expect(createJournal).toHaveBeenCalledTimes(1);
+    expect(createJournal).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_1',
+        praticienEmail: 'p@wellneuro.fr',
+        route: '/api/praticien/booklet',
+        methode: 'GET',
+      },
+    });
+  });
 });
 
 describe('POST /api/praticien/booklet (garde inchangée)', () => {
-  it('422 sans confirmation de relecture, sans lecture de synthèse', async () => {
+  it('422 sans confirmation de relecture, sans lecture de synthèse ni journalisation', async () => {
     const res = await POST(
       new Request('http://x/api/praticien/booklet', {
         method: 'POST',
@@ -133,5 +150,7 @@ describe('POST /api/praticien/booklet (garde inchangée)', () => {
     );
     expect(res.status).toBe(422);
     expect(findFirst).not.toHaveBeenCalled();
+    // Le POST ne journalise pas (GD-1) : l'envoi laisse déjà sa trace datée.
+    expect(createJournal).not.toHaveBeenCalled();
   });
 });
