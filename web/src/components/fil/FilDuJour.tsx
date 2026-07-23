@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlarmClock, Flag, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
+import { AlarmClock, CalendarClock, Flag, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
@@ -13,6 +13,7 @@ import { BadgeMeteo } from '@/components/meteo/BadgeMeteo';
 /** Identité visuelle de chaque type de carte — l'icône double toujours le
  * libellé textuel (jamais la couleur seule, règle de relief A5-R1). */
 const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = {
+  consultation_prevue: { libelle: 'Consultation', icon: CalendarClock },
   signalement_trust: { libelle: 'Signalement', icon: ShieldCheck },
   synthese_a_valider: { libelle: 'À valider', icon: Sparkles },
   jalon_j21: { libelle: 'Jalon', icon: Flag },
@@ -243,7 +244,7 @@ export function FilDuJour() {
   // L'imminence se calcule sur les cartes encore visibles : écarter la carte
   // imminente promeut la suivante.
   const visibles = data.cartes.filter(c => !ecartees.includes(c.cle));
-  const cleImminente = visibles[indexCarteImminente(visibles)]?.cle ?? null;
+  const cleImminente = visibles[indexCarteImminente(visibles, maintenant)]?.cle ?? null;
 
   return (
     // Panneau « Aujourd'hui » de la maquette : en-tête display + résumé

@@ -94,6 +94,10 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.correspondancesMedecin = (
       await tx.correspondanceMedecin.deleteMany({ where: par })
     ).count;
+    // Les rendez-vous (accueil-observatoire LOT-04) sont en ON DELETE RESTRICT :
+    // subsistant, ils feraient échouer la suppression du patient. Donnée
+    // opérationnelle du dossier, ils partent avec lui, nommément.
+    supprimees.rendezVous = (await tx.rendezVous.deleteMany({ where: par })).count;
     // La trace des entrées Google (gate G5) porte `id_patient` sans clé
     // étrangère, comme `audit_syntheses` : rien ne la protège d'un oubli. Un
     // journal d'accès qui survivrait à l'effacement le viderait de son sens —

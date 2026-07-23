@@ -168,9 +168,13 @@ logique de PatientsPanel.
   synthèse IA = différenciant majeur.
 
 ### R6 — Workflow RDV complet (extension de D3)
-- Cal.com + chaînage : réservation → assignation automatique des
-  questionnaires 48 h avant → rappel → synthèse IA prête en consultation.
-- C'est le chaînage (pas l'agenda seul) qui réalise l'objectif
+- **Socle livré le 2026-07-23** (accueil-observatoire LOT-04) : modèle
+  `RendezVous` minimal, agenda praticien (planifier / lister / annuler), et
+  cartes « Pré-vol prêt » horodatées dans le Fil du jour (réutilisant le
+  pré-vol SP-COP). Ni récurrence, ni notification, ni surface patient.
+- **Reste à faire** : Cal.com + chaînage — réservation → assignation
+  automatique des questionnaires 48 h avant → rappel → synthèse IA prête en
+  consultation. C'est le chaînage (pas l'agenda seul) qui réalise l'objectif
   « zéro saisie » : ~1 h de préparation → < 5 min.
 
 ### R7 — Facturation et paiement
