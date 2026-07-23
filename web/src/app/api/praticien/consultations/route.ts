@@ -7,6 +7,7 @@ import { buildPortalUrl } from '@/lib/consultation/portal-access';
 import { isMotifValide } from '@/lib/consultation/motifs';
 import { sendPortailLinkEmail } from '@/lib/consultation/email';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 
 export type Consultation = {
@@ -46,6 +47,9 @@ type CreateConsultationPayload = {
   motif?: string;
 };
 
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/consultations';
+
 // GET /api/praticien/consultations?idPatient=... — historique des consultations d'un patient.
 export async function GET(req: Request): Promise<NextResponse<ConsultationsApiResponse>> {
   const session = await getServerSession(authOptions);
@@ -68,6 +72,12 @@ export async function GET(req: Request): Promise<NextResponse<ConsultationsApiRe
       where: { idPatient, praticienEmail: emailSession },
       orderBy: { createdAt: 'desc' },
     });
+    if (rows.length > 0) {
+      // Liste non vide = appartenance prouvée par le scope. Liste vide = rien
+      // (anti-oracle) — limite assumée (LOT-00) : dossier sans consultation
+      // non journalisé.
+      await journaliserAccesDossier({ idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
+    }
     const consultations: Consultation[] = rows.map(c => ({
       idConsultation: c.idConsultation,
       idPatient: c.idPatient,

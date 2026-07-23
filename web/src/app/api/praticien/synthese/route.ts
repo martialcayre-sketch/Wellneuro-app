@@ -5,6 +5,7 @@ import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import {
   anthropic,
   CLAUDE_MODEL,
@@ -64,6 +65,9 @@ function fusionnerVigilance(deterministes: string[], llm: string[]): string[] {
   return out;
 }
 
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/synthese';
+
 // GET /api/praticien/synthese?idPatient=PAT001
 // Liste des synthèses d'un patient
 export async function GET(req: Request) {
@@ -108,6 +112,13 @@ export async function GET(req: Request) {
         syntheseJson: true,
       },
     });
+
+    if (syntheses.length > 0) {
+      // Liste non vide = appartenance prouvée par la relation. Liste vide =
+      // rien (anti-oracle) — limite assumée (LOT-00) : dossier possédé sans
+      // synthèse non journalisé.
+      await journaliserAccesDossier({ idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
+    }
 
     return withCorrelationHeader(NextResponse.json({ syntheses }), requestContext);
   } catch (err) {

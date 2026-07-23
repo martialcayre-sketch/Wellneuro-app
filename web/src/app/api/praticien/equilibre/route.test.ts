@@ -16,17 +16,19 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 import { GET } from './route';
 
 function request(query = 'idPatient=PAT_1'): Request {
-  return new Request(`http://localhost/api/praticien/besoins?${query}`);
+  return new Request(`http://localhost/api/praticien/equilibre?${query}`);
 }
 
-// Régression E7 : cette route renvoyait identité + couverture des besoins pour
-// tout idPatient fourni, sans vérifier qu'il appartenait au praticien en
-// session (garde d'appartenance ajoutée le 2026-07-21).
-describe('GET /api/praticien/besoins', () => {
+describe('GET /api/praticien/equilibre', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
-    prisma.patient.findFirst.mockResolvedValue({ idPatient: 'PAT_1', prenom: 'Sophie', nom: 'Nicola' });
+    prisma.patient.findFirst.mockResolvedValue({
+      idPatient: 'PAT_1',
+      prenom: 'Sophie',
+      nom: 'Nicola',
+      email: 'sophie.nicola@fictif.wellneuro.fr',
+    });
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
   });
 
@@ -49,8 +51,7 @@ describe('GET /api/praticien/besoins', () => {
     });
   });
 
-  it('patient d’un autre praticien : 404 indistinguable d’un patient introuvable', async () => {
-    // filtrePatientsDuPraticien exclut la ligne : findFirst ne la retourne pas.
+  it('patient d’un autre praticien : 404 indistinguable, sans journalisation', async () => {
     prisma.patient.findFirst.mockResolvedValue(null);
     const res = await GET(request());
     expect(res.status).toBe(404);
@@ -61,21 +62,17 @@ describe('GET /api/praticien/besoins', () => {
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
-  it('patient accessible → 200 avec identité et besoins', async () => {
+  it('patient accessible → 200, et la lecture est journalisée au gabarit littéral', async () => {
     const res = await GET(request());
     expect(res.status).toBe(200);
     const json = (await res.json()) as { patient: { idPatient: string } };
     expect(json.patient.idPatient).toBe('PAT_1');
-  });
-
-  it('GET accessible journalise la lecture au gabarit littéral (G-TRUST-04)', async () => {
-    await GET(request());
     expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
     expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
       data: {
         idPatient: 'PAT_1',
         praticienEmail: 'p@wellneuro.fr',
-        route: '/api/praticien/besoins',
+        route: '/api/praticien/equilibre',
         methode: 'GET',
       },
     });

@@ -9,6 +9,10 @@ import { calculerCouverturesTousLesBesoins } from '@/lib/equilibre/score';
 import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import type { NiveauPreuveBesoin, StrateCode } from '@/lib/equilibre/types';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/besoins';
 
 const TITRE_PAR_QUESTIONNAIRE = new Map(QUESTIONNAIRES_CATALOG.map(q => [q.id, q.titre]));
 
@@ -58,6 +62,9 @@ export async function GET(req: Request): Promise<NextResponse<BesoinsApiResponse
     if (!patient) {
       return NextResponse.json({ unavailable: true, reason: 'patient_not_found' }, { status: 404 });
     }
+
+    // Requête scopée réussie = appartenance prouvée : journaliser la lecture.
+    await journaliserAccesDossier({ idPatient, praticienEmail: email, route: ROUTE_JOURNAL, methode: 'GET' });
 
     const reponsesDb = await prisma.questionnaireReponse.findMany({
       where: { idPatient },

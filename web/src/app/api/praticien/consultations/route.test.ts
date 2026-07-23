@@ -5,6 +5,7 @@ const { getServerSession, prisma, sendPortailLinkEmail } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn(), update: vi.fn() },
     consultation: { findMany: vi.fn(), create: vi.fn() },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
   sendPortailLinkEmail: vi.fn(),
 }));
@@ -60,6 +61,33 @@ describe('GET /api/praticien/consultations', () => {
       where: { idPatient: 'PAT_1', praticienEmail: 'p@wellneuro.fr' },
       orderBy: { createdAt: 'desc' },
     });
+    // Liste vide : dossier non prouvé accessible → pas de journalisation
+    // (limite assumée, LOT-00).
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('liste non vide → lecture journalisée au gabarit littéral (G-TRUST-04)', async () => {
+    prisma.consultation.findMany.mockResolvedValue([
+      {
+        idConsultation: 'CONS_1',
+        idPatient: 'PAT_1',
+        motif: 'Suivi',
+        statut: 'validee',
+        dateValidation: new Date('2026-07-01T00:00:00.000Z'),
+        createdAt: new Date('2026-07-01T00:00:00.000Z'),
+      },
+    ]);
+    const res = await GET(getRequest());
+    expect(res.status).toBe(200);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_1',
+        praticienEmail: 'p@wellneuro.fr',
+        route: '/api/praticien/consultations',
+        methode: 'GET',
+      },
+    });
   });
 });
 
@@ -108,6 +136,8 @@ describe('POST /api/praticien/consultations', () => {
       data: expect.objectContaining({ accessTokenRevoked: false }),
     });
     expect(sendPortailLinkEmail).toHaveBeenCalledOnce();
+    // Le POST ne journalise pas (GD-1) : il laisse déjà une trace datée.
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   // Cette route CRÉE une consultation, réactive au besoin un jeton révoqué et
