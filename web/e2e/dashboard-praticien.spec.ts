@@ -57,6 +57,36 @@ test.describe('Praticien Dashboard', () => {
     await expect(page.getByRole('tab', { name: 'En attente' })).toBeVisible();
   });
 
+  test('bibliothèque : catalogue, aperçu vierge et file d’envoi se rendent', async ({ page }) => {
+    const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
+    await page.context().addCookies([sessionCookie]);
+
+    await page.goto('/dashboard/bibliotheque');
+
+    await expect(page.getByRole('heading', { name: 'Bibliothèque', exact: true })).toBeVisible({
+      timeout: 10000,
+    });
+    // Rayons : Questionnaires actif, deux rayons annoncés à venir.
+    await expect(page.getByRole('button', { name: /^Questionnaires$/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Analyses biologiques/ })).toBeVisible();
+
+    // Catalogue : la recherche filtre le rendu (catalogue en code, sans DB).
+    const recherche = page.getByLabel('Rechercher dans le catalogue');
+    await expect(recherche).toBeVisible();
+    await recherche.fill('PSS-10');
+    const lignePss = page.getByRole('button', { name: /PSS-10/ }).first();
+    await expect(lignePss).toBeVisible();
+
+    // Aperçu vierge : la première question réelle de l'instrument s'affiche.
+    await lignePss.click();
+    await expect(page.getByText('dérangé(e) par un évènement inattendu', { exact: false })).toBeVisible({
+      timeout: 10000,
+    });
+
+    // File d'envoi : la colonne existe (état vide accepté sur base éphémère).
+    await expect(page.getByRole('heading', { name: "File d'envoi" })).toBeVisible();
+  });
+
   test('navigate to patients section', async ({ page }) => {
     const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
     await page.context().addCookies([sessionCookie]);

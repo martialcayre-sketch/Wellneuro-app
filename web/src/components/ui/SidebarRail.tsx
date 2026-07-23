@@ -57,13 +57,15 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
       },
       { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
       { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail },
+      // Rayon Questionnaires livré (arbitrages Bibliothèque du 2026-07-23) :
+      // la rubrique quitte l'héritage 4.0 et rejoint les surfaces 5.0.
+      { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen },
     ],
   },
   {
     etiquette: 'Héritage 4.0 — inchangé',
     items: [
       { href: '/dashboard/patients', label: 'Questionnaires & packs', icon: Layers, tag: '4.0', matiere: 'sous-pages' },
-      { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, tag: '4.0' },
       { href: '/dashboard/documents', label: 'Documents', icon: FileText, tag: '4.0' },
       { href: '/dashboard/synthese', label: 'Synthèse IA', icon: Sparkles, tag: '4.0' },
       { href: '/dashboard/corpus', label: 'Atelier corpus', icon: ClipboardCheck, tag: '4.0' },
