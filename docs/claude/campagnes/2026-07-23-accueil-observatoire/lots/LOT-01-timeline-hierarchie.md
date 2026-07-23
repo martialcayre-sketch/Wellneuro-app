@@ -1,3 +1,10 @@
+---
+id: "LOT-01"
+titre: "Timeline, hiérarchie, résumé qualitatif, bandeau « Vues rapides »"
+statut: "livré — PR #308"
+dépend_de: ""
+---
+
 # LOT-01 — Timeline, hiérarchie, résumé qualitatif, bandeau « Vues rapides »
 
 Statut : livré (PR de ce lot). Sans migration, sans nouvelle route API.
