@@ -1167,7 +1167,7 @@ export function FichePatientPanel({
               </button>
             </div>
           ) : (
-            <TrajectoirePanel trajectoire={trajectoire} />
+            <TrajectoirePanel trajectoire={trajectoire} idPatient={idPatient} />
           ))}
       </div>
     </div>
