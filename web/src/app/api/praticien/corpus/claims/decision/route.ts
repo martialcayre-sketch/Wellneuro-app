@@ -48,6 +48,10 @@ const MESSAGES_REFUS: Record<string, { message: string; status: number }> = {
       'Un verbatim cité a été modifié depuis son rattachement — validation refusée tant que la dérive n’est pas instruite.',
     status: 409,
   },
+  motif_requis: {
+    message: 'Un rejet exige un motif.',
+    status: 422,
+  },
 };
 
 function echec(reason: string, error: string, status: number) {
@@ -58,9 +62,12 @@ type PostBody = {
   id?: string;
   decision?: string;
   statutAttendu?: string;
+  motif?: string;
 };
 
-// POST /api/praticien/corpus/claims/decision — { id, decision, statutAttendu }
+// POST /api/praticien/corpus/claims/decision — { id, decision, statutAttendu, motif? }
+// `motif` est obligatoire pour un REJET (dette v1) ; il est journalisé avec
+// l'acte (rag_corpus_claim_decisions), jamais écrit sur le claim lui-même.
 export async function POST(req: Request): Promise<NextResponse<CorpusClaimDecisionApiResponse>> {
   try {
     const session = await getServerSession(authOptions);
@@ -89,7 +96,8 @@ export async function POST(req: Request): Promise<NextResponse<CorpusClaimDecisi
       return echec('decision_invalide', 'Décision ou statut attendu inconnu.', 400);
     }
 
-    const resultat = await deciderClaim({ id, decision, statutAttendu, validateur });
+    const motif = typeof body.motif === 'string' ? body.motif : undefined;
+    const resultat = await deciderClaim({ id, decision, statutAttendu, validateur, motif });
     if (!resultat.ok) {
       const refus = MESSAGES_REFUS[resultat.raison];
       return echec(resultat.raison, refus.message, refus.status);
