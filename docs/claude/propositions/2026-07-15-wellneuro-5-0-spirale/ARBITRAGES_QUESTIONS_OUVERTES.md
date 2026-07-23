@@ -128,24 +128,32 @@ regroupée par patient — un seul mail, un seul lien portail chacun ; aperçu
 vierge avant assignation ; statut de certification affiché ; création et
 importation en tiroirs, réservées au cabinet.
 
-**Questions ouvertes.**
+**Décisions (utilisateur, 2026-07-23).**
 
-1. **Nommage** : `/dashboard/bibliotheque` désigne déjà la « Bibliothèque
-   d'interventions » (compléments/alimentation). Désambiguïser avant toute
-   implémentation (« Bibliothèque de questionnaires » vs « d'interventions »,
-   ou slugs distincts).
-2. **Écart de catalogue** : 5 questionnaires scorables non assignables
-   (Q_GEO_03/04/05/06, Q_URO_02). Les exposer à l'assignation ou acter leur
-   statut « usage pro seul » ?
-3. **Alias historiques** : Q_SOM_08 et Q_STR_07 pointent vers les grilles
-   Q_NEU_12/Q_NEU_11. Le badge « Alias historique » de la maquette suffit-il,
-   ou faut-il fusionner les entrées ?
-4. **File d'envoi côté serveur** : l'existant envoie immédiatement (unitaire
-   ou pack → 1 mail pour 1 patient). La file exige une orchestration
-   (brouillon → file → parti) et un modèle de regroupement par patient.
-5. **Instruments du cabinet** (création/import) : hors catalogue certifié,
-   jamais certifiés automatiquement, grille relue avant scoring — périmètre
-   et gouvernance à cadrer avant implémentation.
+1. **Nommage — la Bibliothèque est le thème général, organisée en rayons.**
+   « Questionnaires » est un rayon de la Bibliothèque ; les catalogues
+   d'analyses biologiques (série R5) en formeront un autre, ainsi qu'un
+   rayon de fiches conseils ou autres (R2, actuel écran « interventions »).
+   Le conflit de slug disparaît : `/dashboard/bibliotheque` devient l'espace
+   général, chaque rayon un sous-espace.
+2. **Écart de catalogue — passation praticien.** Les 5 questionnaires
+   scorables non assignables (Q_GEO_03/04/05/06, Q_URO_02 : MMSE, 5 mots de
+   Dubois, AQ Alzheimer, QDRS, catalogue mictionnel) restent visibles en
+   bibliothèque avec le badge « Passation praticien » — jamais assignables
+   au portail : ce sont des tests à faire passer en consultation.
+3. **Alias historiques — badge seul.** Q_SOM_08 et Q_STR_07 gardent leurs
+   entrées avec le badge « Alias historique » ; pas de fusion — elle
+   exigerait une migration des assignations patients pour un gain
+   cosmétique.
+4. **File d'envoi — file simple, envoi au clic.** Table de brouillons
+   (praticien, patient, qids[], statut brouillon → parti) ; « Préparer les
+   envois » réutilise la mécanique pack (N assignations en transaction +
+   un mail récapitulatif, lien portail unique). Pas de cron ni de relance
+   automatique.
+5. **Instruments du cabinet — complet d'emblée.** Création et importation
+   avec grille de score relue et interprétation. Touche à la logique
+   clinique : documentation `CHANGELOG.md` et revue renforcée obligatoires
+   à l'implémentation.
 
 ## Récapitulatif des conséquences sur les lots
 
@@ -156,3 +164,7 @@ importation en tiroirs, réservées au cabinet.
 | Consentement double niveau | SP-AMB (document + état de séance) ; gate réglementaire préalable inchangé |
 | Fil = accueil | SP-FIL (remplace `/dashboard`, métriques en carte, e2e adapté) |
 | Reprise pré-composée | SP-SPI + Fil (carte reprise) ; version dégradée sans pack dans SP-FIL LOT-01 |
+| Bibliothèque multi-rayons | Rubrique 5.0 Bibliothèque (rayon Questionnaires) ; R5 (rayon analyses biologiques) ; R2 / écran interventions (rayon fiches conseils) |
+| File d'envoi simple (au clic) | Implémentation app du rayon Questionnaires — réutilise `packs/assign` (transaction + mail récapitulatif) |
+| Passation praticien (5 instruments) + alias en badge | Catalogue `web/src/lib` (exposition + badges) — sans migration de données |
+| Instruments du cabinet complets (création + import) | Logique clinique — `CHANGELOG.md` + revue renforcée obligatoires |
