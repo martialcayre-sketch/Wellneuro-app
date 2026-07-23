@@ -44,6 +44,7 @@ import {
   type PhaseCycleClinique,
 } from '@/components/patient-cockpit/ClinicalRuntimeSection';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
+import { deriverEpisodeBandeau, phaseInitiale } from '@/lib/trajectoire-partagee/contrat';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { RelectureProtocoleSoumission } from '@/components/patient-cockpit/ProtocolMiniBuilder';
 import type { ProtocolDraft } from '@/lib/clinical-engine/types';
@@ -220,7 +221,7 @@ function InstrumentTiroir({
               <button
                 type="button"
                 aria-label={`Fermer l’instrument ${libelle}`}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 <X aria-hidden="true" size={20} strokeWidth={2} />
               </button>
@@ -248,7 +249,12 @@ export function FichePatientPanel({
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
   const [ongletActif, setOngletActif] = useState<OngletFiche>('cockpit');
+  // Phase focale. 'decision' n'est plus qu'un point de départ neutre : la
+  // phase réellement exigible est calculée par la règle D5 (SP-CONV LOT-02)
+  // dès que l'état runtime est établi — sauf si le praticien a déjà navigué.
   const [phaseActive, setPhaseActive] = useState<IdPhase>('decision');
+  const phaseChoisieParPraticien = useRef(false);
+  const phaseInitialiseeRef = useRef(false);
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
   // « inconnue » tant qu'aucune lecture n'a abouti : un échec de lecture ne
   // doit JAMAIS être présenté comme une absence d'épisode (affirmation fausse
@@ -351,10 +357,102 @@ export function FichePatientPanel({
     }
   }, [idPatient]);
 
+  // Lecture désormais engagée dès l'ouverture de la fiche (SP-CONV LOT-02) :
+  // le bandeau d'épisode (« Épisode N en cours · T0 + X j ») en a besoin au
+  // niveau cockpit, pas seulement dans l'onglet Trajectoire.
   useEffect(() => {
-    if (ongletActif !== 'trajectoire' || etatTrajectoire !== 'inconnue') return;
+    if (etatTrajectoire !== 'inconnue') return;
     void chargerTrajectoire();
-  }, [ongletActif, etatTrajectoire, chargerTrajectoire]);
+  }, [etatTrajectoire, chargerTrajectoire]);
+
+  // Statuts du rail — dérivés de l'état réel (réponses reçues, demandes de
+  // correction, état remonté par le runtime clinique). Aucun statut inventé :
+  // en l'absence d'information, la phase reste « à ouvrir » — et tant que
+  // l'état réel n'est pas établi, « indéterminée ». Hissé avant les retours
+  // anticipés (SP-CONV LOT-02) pour nourrir aussi la phase initiale D5.
+  const statutPhase = useCallback(
+    (id: IdPhase): StatutPhase => {
+      if (!data || 'unavailable' in data) return 'inconnu';
+      const priorites = data.priorites;
+      if (id === 'patient') return assignationsModif.length > 0 ? 'en_attente' : 'fait';
+      if (id === 'donnees') return reponses.length > 0 ? 'fait' : 'en_attente';
+      if (id === 'comprehension') {
+        return priorites.some(p => p.couverture !== null) ? 'fait' : 'en_attente';
+      }
+      // Phases dérivées du runtime : tant que son état n'est pas établi
+      // (première mesure absente, chargement en cours ou erreur), le statut est
+      // honnêtement « indéterminée » — jamais une affirmation par défaut.
+      if (!etatRuntime || etatRuntime.chargement || etatRuntime.erreur !== null) return 'inconnu';
+      if (id === 'decision') return etatRuntime.episodeConfirme ? 'fait' : 'en_attente';
+      if (id === 'actions') {
+        if (etatRuntime.nombreVersions > 0) return 'fait';
+        return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
+      }
+      if (id === 'suivi') {
+        if (etatRuntime.suiviRenseigne) return 'fait';
+        return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
+      }
+      // Réévaluation : « renseignée » uniquement si un jalon POST-T0 (J21/J42/J90)
+      // a réellement été mesuré (booléens `mesure` de la trajectoire, A8-2) — un
+      // T0 confirmé ouvre un cycle mais ne constitue pas une réévaluation. Tant que
+      // la lecture de la trajectoire n'a pas abouti (en vol) ou a échoué, l'état
+      // est inconnu, jamais affirmé « à ouvrir ».
+      if (etatRuntime.trajectoireErreur || etatRuntime.trajectoireEnLecture) return 'inconnu';
+      return etatRuntime.reevaluationMesuree ? 'fait' : 'a_ouvrir';
+    },
+    [data, assignationsModif, reponses, etatRuntime],
+  );
+
+  // Navigation praticien : le choix manuel prime définitivement sur la
+  // sélection automatique, et la dernière phase consultée est mémorisée en
+  // LOCAL uniquement (règle D5, 4e rang) — jamais en base.
+  const clePhaseMemorisee = `wn.fiche.derniere-phase.${idPatient}`;
+  const choisirPhase = useCallback(
+    (id: IdPhase) => {
+      phaseChoisieParPraticien.current = true;
+      setPhaseActive(id);
+      try {
+        window.localStorage.setItem(clePhaseMemorisee, id);
+      } catch {
+        // Stockage local indisponible (navigation privée…) : la mémoire de
+        // phase est un confort, jamais une condition.
+      }
+    },
+    [clePhaseMemorisee],
+  );
+
+  // Phase initiale D5 (SP-CONV LOT-02) : premier bloqueur de sécurité >
+  // première action exigible > première phase en attente > dernière phase
+  // consultée. Une seule fois, jamais après une navigation du praticien, et
+  // jamais tant que l'état runtime n'est pas établi (état neutre).
+  useEffect(() => {
+    if (phaseInitialiseeRef.current || phaseChoisieParPraticien.current) return;
+    if (loading || !data || 'unavailable' in data) return;
+    if (!etatRuntime || etatRuntime.chargement) return;
+
+    let memoire: IdPhase | null = null;
+    try {
+      const brut = window.localStorage.getItem(clePhaseMemorisee);
+      if (brut && PHASES.some(p => p.id === brut)) memoire = brut as IdPhase;
+    } catch {
+      memoire = null;
+    }
+
+    const cible = phaseInitiale({
+      chargement: false,
+      bloqueurs: etatRuntime.erreur === null && etatRuntime.decisionBloquee ? ['actions'] : [],
+      actionsExigibles: [
+        ...(assignationsModif.length > 0 ? (['patient'] as const) : []),
+        ...(etatRuntime.erreur === null && !etatRuntime.episodeConfirme ? (['decision'] as const) : []),
+      ],
+      statuts: Object.fromEntries(PHASES.map(p => [p.id, statutPhase(p.id)])),
+      dernierePhaseConsultee: memoire,
+    });
+    if (cible) {
+      phaseInitialiseeRef.current = true;
+      setPhaseActive(cible);
+    }
+  }, [loading, data, etatRuntime, assignationsModif, statutPhase, clePhaseMemorisee]);
 
   const onDebloquer = async (idAssignation: string) => {
     setDeverrouillageId(idAssignation);
@@ -385,7 +483,7 @@ export function FichePatientPanel({
               : null;
     if (suivant === null) return;
     event.preventDefault();
-    setPhaseActive(PHASES[suivant].id);
+    choisirPhase(PHASES[suivant].id);
     refsPhases.current[suivant]?.focus();
   };
 
@@ -430,38 +528,15 @@ export function FichePatientPanel({
     ? new Date(reponses[0].dateSoumission).toLocaleDateString('fr-FR')
     : null;
 
-  // Statuts du rail — dérivés de l'état réel (réponses reçues, demandes de
-  // correction, état remonté par le runtime clinique). Aucun statut inventé :
-  // en l'absence d'information, la phase reste « à ouvrir ».
-  const statutPhase = (id: IdPhase): StatutPhase => {
-    if (id === 'patient') return assignationsModif.length > 0 ? 'en_attente' : 'fait';
-    if (id === 'donnees') return reponses.length > 0 ? 'fait' : 'en_attente';
-    if (id === 'comprehension') {
-      return priorites.some(p => p.couverture !== null) ? 'fait' : 'en_attente';
-    }
-    // Phases dérivées du runtime : tant que son état n'est pas établi
-    // (première mesure absente, chargement en cours ou erreur), le statut est
-    // honnêtement « indéterminée » — jamais une affirmation par défaut.
-    if (!etatRuntime || etatRuntime.chargement || etatRuntime.erreur !== null) return 'inconnu';
-    if (id === 'decision') return etatRuntime.episodeConfirme ? 'fait' : 'en_attente';
-    if (id === 'actions') {
-      if (etatRuntime.nombreVersions > 0) return 'fait';
-      return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
-    }
-    if (id === 'suivi') {
-      if (etatRuntime.suiviRenseigne) return 'fait';
-      return etatRuntime.episodeConfirme ? 'en_attente' : 'a_ouvrir';
-    }
-    // Réévaluation : « renseignée » uniquement si un jalon POST-T0 (J21/J42/J90)
-    // a réellement été mesuré (booléens `mesure` de la trajectoire, A8-2) — un
-    // T0 confirmé ouvre un cycle mais ne constitue pas une réévaluation. Tant que
-    // la lecture de la trajectoire n'a pas abouti (en vol) ou a échoué, l'état
-    // est inconnu, jamais affirmé « à ouvrir ».
-    if (etatRuntime.trajectoireErreur || etatRuntime.trajectoireEnLecture) return 'inconnu';
-    return etatRuntime.reevaluationMesuree ? 'fait' : 'a_ouvrir';
-  };
-
   const phaseCourante = PHASES.find(p => p.id === phaseActive) ?? PHASES[0];
+
+  // Bandeau d'épisode (SP-CONV LOT-02) — dérivé du contrat partagé sur les
+  // cycles G2 persistés. Null tant que la trajectoire n'est pas lue ou sans
+  // aucun cycle : le bandeau n'affirme alors rien.
+  const bandeauEpisode =
+    etatTrajectoire === 'chargee' && trajectoire
+      ? deriverEpisodeBandeau(trajectoire.cycles, new Date())
+      : null;
 
   // --- Contenus des instruments (tiroirs) -----------------------------------
   const tableauBesoins = (
@@ -746,10 +821,15 @@ export function FichePatientPanel({
   return (
     <ModeConsultation active={modeConsultationActif} onToggle={() => setModeConsultationActif(false)}>
     <div className="flex flex-col gap-4">
+      {/* Chrome condensé (D10, SP-CONV LOT-02) : identité et actions tiennent
+          sur une ligne en desktop — le cockpit prend l'espace restant de
+          l'écran (calc ci-dessous : 64px de NavBar + paddings du main + cette
+          ligne + les onglets ≈ 11.75rem). Zéro scroll de page en usage
+          courant ; les bannières critiques, exceptionnelles, peuvent décaler. */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h2 className="font-display text-3xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h2>
-          <p className="mt-1 break-all text-sm text-muted-foreground">{patient.email}</p>
+          <h2 className="font-display text-xl font-bold tracking-[-0.02em] text-foreground">{nomComplet}</h2>
+          <p className="break-all text-xs text-muted-foreground">{patient.email}</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           {derniereAssignationId && (
@@ -881,7 +961,7 @@ export function FichePatientPanel({
       >
         <section
           aria-label="Poste de pilotage clinique"
-          className="overflow-hidden rounded-lg border border-border bg-muted shadow-card lg:h-[min(80vh,700px)] lg:grid lg:grid-rows-[auto,1fr]"
+          className="overflow-hidden rounded-lg border border-border bg-muted shadow-card lg:h-[calc(100dvh-11.75rem)] lg:min-h-[420px] lg:grid lg:grid-rows-[auto,1fr]"
         >
           {/* En-tête du cockpit (bandeau trajectoire) = 1re rangée. Le signal
               de correction (B2) est hissé au niveau de la fiche pour rester
@@ -898,6 +978,30 @@ export function FichePatientPanel({
                 {derniereReponse ? `Dernière réponse le ${derniereReponse}` : 'Aucune réponse reçue'}
               </p>
             </div>
+            {/* Position d'épisode (SP-CONV LOT-02) — contrat partagé sur les
+                cycles G2. Rien n'est affiché tant qu'aucun cycle n'existe. */}
+            {bandeauEpisode && (
+              <div className="min-w-0 border-l border-border pl-4">
+                <p className="font-display text-[15px] font-semibold leading-tight text-foreground">
+                  Épisode {bandeauEpisode.numeroEpisode} en cours
+                </p>
+                <p className="font-mono text-13 text-muted-foreground">{bandeauEpisode.positionLibelle}</p>
+              </div>
+            )}
+            {/* Chip delta inter-tours : uniquement à version de score identique
+                (A8-3) — sinon rien, jamais approximé. */}
+            {bandeauEpisode?.deltaTourPrecedent && (
+              <Chip variante="delta">
+                Au tour précédent : momentum{' '}
+                {bandeauEpisode.deltaTourPrecedent.tendance === 'hausse'
+                  ? 'en hausse'
+                  : bandeauEpisode.deltaTourPrecedent.tendance === 'baisse'
+                    ? 'en baisse'
+                    : 'stable'}{' '}
+                ({bandeauEpisode.deltaTourPrecedent.delta > 0 ? '+' : ''}
+                {bandeauEpisode.deltaTourPrecedent.delta})
+              </Chip>
+            )}
             <Chip variante="due" className="ml-auto">
               <IconeStatut statut={statutPhase(phaseCourante.id)} />
               Phase affichée : {phaseCourante.libelle} — {LIBELLE_STATUT[statutPhase(phaseCourante.id)]}
@@ -947,7 +1051,7 @@ export function FichePatientPanel({
                     aria-selected={actif}
                     aria-controls="zone-focale"
                     tabIndex={actif ? 0 : -1}
-                    onClick={() => setPhaseActive(phase.id)}
+                    onClick={() => choisirPhase(phase.id)}
                     onKeyDown={event => onClavierRail(event, index)}
                     className={`flex min-h-11 shrink-0 items-center gap-2.5 whitespace-nowrap rounded-[10px] px-3 py-2 text-left text-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${classesEtat}`}
                   >
@@ -968,7 +1072,11 @@ export function FichePatientPanel({
               className="flex flex-col gap-4 p-4 lg:min-h-0 lg:overflow-y-auto"
             >
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">Zone focale</p>
+                {/* « Phase due » quand la phase affichée est celle qui attend
+                    une action (maquette LOT-02) — sinon l'eyebrow neutre. */}
+                <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
+                  {statutPhase(phaseCourante.id) === 'en_attente' ? 'Phase due' : 'Zone focale'}
+                </p>
                 <h3 className="font-display text-xl font-bold text-foreground">{phaseCourante.libelle}</h3>
               </div>
               {focalLocal()}
@@ -1059,7 +1167,7 @@ export function FichePatientPanel({
               </button>
             </div>
           ) : (
-            <TrajectoirePanel trajectoire={trajectoire} />
+            <TrajectoirePanel trajectoire={trajectoire} idPatient={idPatient} />
           ))}
       </div>
     </div>

@@ -1,5 +1,12 @@
 # Brainstorming — Gate « modèle multi-cycles » (report assumé de LOT-09)
 
+> **Résolue par G2 le 2026-07-19** (SP-CONV LOT-00, constat du 2026-07-22) :
+> la migration `20260719120000_c2b_cycle_identity_v1` a persisté `cycleId`
+> et `versionScore` sur `AssessmentEpisode` (backfill en 3 règles), et
+> `toEpisodeCreateInput` les pose à l'écriture — soit les options (a) + (d)
+> de la note technique. Ce dossier est conservé comme trace du
+> raisonnement ; ne plus le citer comme différé.
+
 > Ouvre le cadrage du gate identifié en clôture de C2B (registre **A8-5-ii**,
 > handoff **LOT-06**). **Périmètre : documentaire — aucun code, aucune migration,
 > `schema.prisma` et `web/prisma/migrations/` intacts.** Ce document **pose** le

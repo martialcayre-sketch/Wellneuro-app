@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>SP-CONV — maquette LOT-04 : parcours patient synchronisé (D2, D7, D11)</title>
+<style>
+  /* Tokens design-system-d1 §9-10 — patient, canvas sable plat A5-R2. */
+  :root{
+    --canvas:#EAE0CC; --surface:#FFFDF8; --border:#D8CBAF; --muted:#F4EDDE;
+    --fg:#2A2418; --muted-fg:#6E6350; --foret:#1E6F54; --cuivre:#B25E38;
+    --cuivre-ink:#8F4526;
+    --r-sm:10px; --r-md:14px; --r-lg:18px;
+    --shadow-card:0 8px 24px rgba(42,36,24,.08);
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--canvas);color:var(--fg);
+    font-family:"Albert Sans",system-ui,sans-serif;font-size:16px;
+    padding:24px;display:flex;flex-direction:column;gap:18px;align-items:center}
+  .note{font-size:13px;color:var(--muted-fg);max-width:72ch}
+  .display{font-family:"Bricolage Grotesque",system-ui,sans-serif}
+  .etats{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  .ecran{width:340px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-lg);box-shadow:var(--shadow-card);padding:20px}
+  .ecran>.lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--muted-fg);font-weight:700;display:block;margin-bottom:12px}
+
+  /* Journey 6 étapes HC-F (D2) — contrat inchangé, états enfin vivants. */
+  ol.journey{list-style:none;display:flex;flex-direction:column;gap:0}
+  .et{display:flex;gap:12px;align-items:flex-start;position:relative;padding-bottom:14px}
+  .et:not(:last-child)::before{content:"";position:absolute;left:13px;top:28px;
+    bottom:0;width:2px;background:var(--border)}
+  .pt{width:28px;height:28px;border-radius:999px;display:flex;align-items:center;
+    justify-content:center;font-size:13px;flex-shrink:0;border:2px solid var(--border);
+    background:var(--surface);color:var(--muted-fg)}
+  .et.done .pt{background:var(--foret);border-color:var(--foret);color:#fff}
+  .et.cur .pt{border-color:var(--cuivre);color:var(--cuivre-ink);font-weight:700}
+  .et .t b{font-size:15px;display:block}
+  .et .t span{font-size:13.5px;color:var(--muted-fg)}
+  .et.cur .t b{color:var(--cuivre-ink)}
+  .et.up{opacity:.55}
+</style>
+</head>
+<body>
+  <p class="note"><b>Maquette SP-CONV / LOT-04</b> — décisions D2 (les 6 étapes
+  HC-F conservées), D7 (formulations sans score ni délai promis) et D11 (statuts
+  dérivés de données que le portail sert déjà). Trois états du même composant
+  <code>PatientJourneyProgress</code>. Lecteurs d'écran : chaque étape terminée
+  est annoncée « terminée » (pas seulement l'étape courante). Jamais de
+  rétrogradation : une étape terminée ne redevient pas à venir.</p>
+
+  <div class="etats">
+    <section class="ecran" aria-label="État A — après transmission">
+      <span class="lbl">État A — vos éléments sont transmis</span>
+      <ol class="journey">
+        <li class="et done"><span class="pt">✓</span><span class="t"><b>Consentement</b><span>Terminé</span></span></li>
+        <li class="et done"><span class="pt">✓</span><span class="t"><b>Informations</b><span>Terminé</span></span></li>
+        <li class="et done"><span class="pt">✓</span><span class="t"><b>Situation</b><span>Terminé</span></span></li>
+        <li class="et done"><span class="pt">✓</span><span class="t"><b>Questionnaires</b><span>Vos éléments ont été transmis</span></span></li>
+        <li class="et cur" aria-current="step"><span class="pt">5</span><span class="t"><b>Analyse du praticien</b><span>Votre praticien les prépare</span></span></li>
+        <li class="et up"><span class="pt">6</span><span class="t"><b>Restitution</b><span>À venir</span></span></li>
+      </ol>
+    </section>
+
+    <section class="ecran" aria-label="État B — restitution disponible">
+      <span class="lbl">État B — votre restitution est disponible</span>
+      <ol class="journey">
+        <li class="et done"><span class="pt">✓</span><span class="t"><b>Consentement</b><span>Terminé</span></span></li>
+        <li class="et done"><span class="pt">✓</span><span class="t"><b>Informations</b><span>Terminé</span></span></li>
+        <li class="et done"><span class="pt">✓</span><span class="t"><b>Situation</b><span>Terminé</span></span></li>
+        <li class="et done"><span class="pt">✓</span><span class="t"><b>Questionnaires</b><span>Terminé</span></span></li>
+        <li class="et done"><span class="pt">✓</span><span class="t"><b>Analyse du praticien</b><span>Terminée</span></span></li>
+        <li class="et cur" aria-current="step"><span class="pt">6</span><span class="t"><b>Restitution</b><span>Votre restitution est disponible</span></span></li>
+      </ol>
+    </section>
+
+    <section class="ecran" aria-label="État C — prochaine étape prête">
+      <span class="lbl">État C — votre prochaine étape est prête</span>
+      <ol class="journey">
+        <li class="et done"><span class="pt">✓</span><span class="t"><b>Restitution</b><span>Consultée</span></span></li>
+        <li class="et cur" aria-current="step"><span class="pt">→</span><span class="t"><b>Votre prochaine étape est prête</b><span>Un questionnaire de suivi vous attend — à votre rythme</span></span></li>
+      </ol>
+      <p style="font-size:13px;color:var(--muted-fg);margin-top:10px">
+        Reprise d'un nouveau tour : le parcours redémarre sans effacer le
+        chemin accompli. Aucun compte à rebours, aucune relance culpabilisante.
+      </p>
+    </section>
+  </div>
+
+  <p class="note">Provenance des états (D11) : statut de consultation
+  (<code>api/portail/session</code>), protocole diffusé
+  (<code>api/portail/protocole</code>), booklet envoyé — aucune nouvelle
+  catégorie de donnée n'atteint le portail. Données fictives (Sophie Nicola).</p>
+</body>
+</html>

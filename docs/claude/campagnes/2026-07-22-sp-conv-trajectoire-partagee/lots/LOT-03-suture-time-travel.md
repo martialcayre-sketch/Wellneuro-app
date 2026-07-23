@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Suture time-travel — la Spirale de la fiche devient l'index temporel"
-statut: "à_faire"
+statut: "livré — 2026-07-23, PR de lot : index Spirale → asOf via LectureEtatPassePanel piloté, Retour au présent ; T1/T2 verts"
 dépend_de: "LOT-00"
 ---
 

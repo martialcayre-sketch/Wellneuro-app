@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>SP-CONV — maquette LOT-05 : Mon équilibre qualitatif (D7)</title>
+<style>
+  /* Tokens design-system-d1 §9-10 — patient, canvas sable plat A5-R2. */
+  :root{
+    --canvas:#EAE0CC; --surface:#FFFDF8; --border:#D8CBAF; --muted:#F4EDDE;
+    --fg:#2A2418; --muted-fg:#6E6350; --foret:#1E6F54; --cuivre:#B25E38;
+    --cuivre-ink:#8F4526;
+    --r-sm:10px; --r-md:14px; --r-lg:18px;
+    --shadow-card:0 8px 24px rgba(42,36,24,.08);
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--canvas);color:var(--fg);
+    font-family:"Albert Sans",system-ui,sans-serif;font-size:16px;
+    padding:24px;display:flex;flex-direction:column;gap:18px;align-items:center}
+  .note{font-size:13px;color:var(--muted-fg);max-width:72ch}
+  .display{font-family:"Bricolage Grotesque",system-ui,sans-serif}
+  .avant-apres{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+  .ecran{width:360px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-lg);box-shadow:var(--shadow-card);padding:22px}
+  .ecran .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--muted-fg);font-weight:700;display:block;margin-bottom:10px}
+  h2{font-size:22px;margin-bottom:4px}
+  .sous{font-size:14px;color:var(--muted-fg);margin-bottom:16px}
+
+  /* AVANT (constat) : barres proportionnelles = score masqué mais dessiné. */
+  .barres{display:flex;gap:10px;align-items:flex-end;height:64px;margin:10px 0;
+    opacity:.5;filter:grayscale(.3)}
+  .barres i{display:block;width:26px;background:var(--foret);border-radius:6px 6px 0 0}
+  .interdit{font-size:13px;color:#9B3A2E;font-weight:600}
+
+  /* APRÈS (cible) : repères temporels qualitatifs, aucun encodage de valeur. */
+  ol.reperes{list-style:none;display:flex;flex-direction:column;gap:0;margin:8px 0 14px}
+  .rep{display:flex;gap:12px;align-items:flex-start;position:relative;padding-bottom:16px}
+  .rep:not(:last-child)::before{content:"";position:absolute;left:9px;top:24px;
+    bottom:0;width:2px;background:var(--border)}
+  .rep .pt{width:20px;height:20px;border-radius:999px;flex-shrink:0;
+    background:var(--muted);border:2px solid var(--foret)}
+  .rep.now .pt{background:var(--foret)}
+  .rep b{display:block;font-size:15px}
+  .rep span{font-size:13.5px;color:var(--muted-fg)}
+  .explorer{border-top:1px solid var(--border);padding-top:14px}
+  .explorer .lbl{margin-bottom:8px}
+  .explorer li{display:flex;gap:10px;font-size:14.5px;padding:7px 0;list-style:none}
+  .explorer .ic{color:var(--cuivre-ink);flex-shrink:0}
+  .valide{margin-top:10px;background:#EAF3EF;border:1px solid #BFDCCF;
+    border-radius:var(--r-md);padding:10px 14px;font-size:13.5px;color:#175843}
+</style>
+</head>
+<body>
+  <p class="note"><b>Maquette SP-CONV / LOT-05</b> — décision D7 : le Jardin
+  raconte une construction, jamais une dégradation. À gauche, le constat
+  (barres = valeurs dessinées, « En baisse », « Vos priorités » calculées) ;
+  à droite, la cible. Aucune valeur du moteur <code>lib/equilibre</code> n'est
+  recalculée — seule la représentation change. Données fictives (Sophie Nicola).</p>
+
+  <div class="avant-apres">
+    <section class="ecran" aria-label="Avant — constat">
+      <span class="lbl">Avant — constat (à remplacer)</span>
+      <h2 class="display">Mon équilibre</h2>
+      <p class="sous">En baisse depuis votre dernier bilan</p>
+      <div class="barres" aria-hidden="true">
+        <i style="height:58px"></i><i style="height:44px"></i><i style="height:50px"></i><i style="height:36px"></i>
+      </div>
+      <p class="interdit">✕ La hauteur des barres encode les valeurs : le score
+      est masqué mais toujours représenté. « En baisse » contredit la doctrine.
+      « Vos priorités » est un tri automatique présenté comme un choix clinique.</p>
+    </section>
+
+    <section class="ecran" aria-label="Après — cible">
+      <span class="lbl">Après — cible LOT-05</span>
+      <h2 class="display">Votre équilibre se construit</h2>
+      <p class="sous">Des repères ont évolué depuis votre dernier bilan —
+      votre praticien les regarde avec vous.</p>
+      <ol class="reperes">
+        <li class="rep"><span class="pt"></span><span><b>Premier bilan — juin</b>
+          <span>Vos repères de départ ont été posés</span></span></li>
+        <li class="rep"><span class="pt"></span><span><b>Point d'étape — début juillet</b>
+          <span>Ce qui a bien tenu : votre régularité du soir</span></span></li>
+        <li class="rep now"><span class="pt"></span><span><b>Aujourd'hui</b>
+          <span>Des repères ont évolué — à explorer ensemble</span></span></li>
+      </ol>
+      <div class="explorer">
+        <span class="lbl">Points à explorer avec votre praticien</span>
+        <ul>
+          <li><span class="ic">◆</span> Votre sommeil, d'après vos réponses du 18/07</li>
+          <li><span class="ic">◆</span> Votre énergie en fin de journée</li>
+        </ul>
+        <p class="valide">✓ Recommandation validée par votre praticien :
+        poursuivre la marche de 20 minutes — elle vous réussit.</p>
+      </div>
+    </section>
+  </div>
+
+  <p class="note">Distinction structurante : les <b>constats calculés</b>
+  s'appellent « points à explorer » tant qu'aucune validation praticien
+  n'existe ; une <b>recommandation validée</b> est visuellement distincte
+  (encart forêt). Aucun chiffre, aucune couleur d'alarme, aucune hauteur
+  proportionnelle.</p>
+</body>
+</html>
