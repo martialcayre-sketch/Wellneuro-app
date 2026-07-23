@@ -15,6 +15,7 @@ import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
 import { MonParcoursAccueil, type EtapeDuMoment } from '@/components/patient/MonParcoursAccueil';
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
+import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
 
 type Groupe = 'a_completer' | 'correction' | 'transmis' | 'expire';
 
@@ -99,6 +100,17 @@ export default function QuestionnairesHubPage() {
   const [derniereReponseLe, setDerniereReponseLe] = useState<string | null>(null);
   const [brouillons, setBrouillons] = useState<Set<string>>(new Set());
   const [changements, setChangements] = useState<ChangementVisite[]>([]);
+  // Parcours synchronisé (SP-CONV LOT-04, D11) : signaux servis par les
+  // routes portail existantes. En cas d'échec de lecture, tout reste au plus
+  // prudent (false / null) — le parcours n'avance jamais sur une supposition.
+  const [signauxParcours, setSignauxParcours] = useState<{ consultationStatut: string | null; bookletEnvoye: boolean }>({
+    consultationStatut: null,
+    bookletEnvoye: false,
+  });
+  const [signauxProtocole, setSignauxProtocole] = useState<{ protocoleDiffuse: boolean; finDeCycle: boolean }>({
+    protocoleDiffuse: false,
+    finDeCycle: false,
+  });
   // Séquence TRUST « Avant de commencer » pour les patients existants : une
   // fois au prochain accès, tant que la version courante du cadre n'a pas
   // d'accusé de lecture. Jamais bloquante en cas d'erreur réseau.
@@ -148,6 +160,28 @@ export default function QuestionnairesHubPage() {
       setPatient(data.patient);
       setAssignations(data.assignations);
       setDerniereReponseLe(data.derniereReponseLe);
+      setSignauxParcours(data.parcours ?? { consultationStatut: null, bookletEnvoye: false });
+      // Protocole diffusé / fin de cycle : route existante, lecture résiliente
+      // — un échec laisse les signaux au plus prudent, jamais bloquant.
+      void (async () => {
+        try {
+          const resProtocole = await fetch('/api/portail/protocole');
+          if (!resProtocole.ok || annuleRef.current) return;
+          const protocole = (await resProtocole.json()) as {
+            ok?: boolean;
+            protocoleDiffuse?: boolean;
+            finDeCycle?: boolean;
+          };
+          if (!annuleRef.current && protocole.ok) {
+            setSignauxProtocole({
+              protocoleDiffuse: protocole.protocoleDiffuse === true,
+              finDeCycle: protocole.finDeCycle === true,
+            });
+          }
+        } catch {
+          /* signaux laissés au plus prudent */
+        }
+      })();
       setBrouillons(new Set(data.assignations.filter(a => hasDraft(a.idAssignation)).map(a => a.idAssignation)));
       // Comparaison locale à l'instantané de la visite précédente — purement
       // présentationnel, aucune écriture serveur (cf. lib/portail-visite.ts).
@@ -198,6 +232,27 @@ export default function QuestionnairesHubPage() {
   const dureeACompleterMin = aCompleterItems.reduce((somme, e) => somme + parseDureeMinutes(e.a.duree), 0);
   const actionRecommandee = calculerActionRecommandee(enriched, brouillons);
 
+  // Parcours synchronisé (SP-CONV LOT-04) : les étapes 5-6 vivent enfin —
+  // dérivées du contrat partagé sur les seuls signaux que le portail sert
+  // déjà. Null tant que des questionnaires restent à compléter : les étapes
+  // 1-4 gardent leur logique d'écran.
+  const etatParcours = deriverEtatParcoursPatient({
+    questionnairesTransmis: enriched.length > 0 && aCompleterItems.length === 0,
+    consultationStatut: signauxParcours.consultationStatut,
+    protocoleDiffuse: signauxProtocole.protocoleDiffuse,
+    finDeCycle: signauxProtocole.finDeCycle,
+    bookletEnvoye: signauxParcours.bookletEnvoye,
+  });
+
+  // L'étape du moment reflète l'état synchronisé quand plus rien n'est à
+  // compléter : « stable » devient la formulation D7 (transmis / en
+  // préparation / restitution disponible / prochaine étape prête). Une
+  // correction en attente garde la priorité — elle est plus actionnable.
+  const etapeDuMoment: EtapeDuMoment =
+    actionRecommandee.kind === 'stable' && etatParcours
+      ? { kind: 'attente', texte: etatParcours.formulation }
+      : actionRecommandee;
+
   /*
    * Disposition séquentielle (SP-SPI / LOT-01, résorption de l'écart E11).
    *
@@ -213,13 +268,15 @@ export default function QuestionnairesHubPage() {
    */
   return (
     <div className="w-full max-w-2xl space-y-6">
-      <PatientJourneyProgress steps={buildJourneySteps(4)} />
+      {/* Étapes 5-6 pilotées par le contrat (SP-CONV LOT-04) — jamais
+          rétrogrades : les signaux sous-jacents ne reculent pas. */}
+      <PatientJourneyProgress steps={buildJourneySteps(etatParcours?.journeyCurrentId ?? 4)} />
 
       <MonParcoursAccueil
         token={token}
         prenom={patient?.prenom ?? null}
         derniereReponseLe={derniereReponseLe}
-        etape={actionRecommandee}
+        etape={etapeDuMoment}
       />
 
       {/* Proposition de réévaluation : ne s'affiche qu'en reprise, et une seule
@@ -272,7 +329,20 @@ export default function QuestionnairesHubPage() {
       )}
 
       {GROUPES.map(({ cle, titre }) => {
-        const items = enriched.filter(e => e.aff.groupe === cle);
+        // Dédoublonnage (SP-CONV LOT-04) : l'action recommandée est déjà mise
+        // en avant par « Mon parcours » — la réafficher dans « À compléter »
+        // diluait la promesse « une étape à la fois ». Rien n'est retiré : le
+        // compteur reste complet, et l'item revient dans la liste dès qu'il
+        // n'est plus l'action recommandée.
+        const items = enriched.filter(
+          e =>
+            e.aff.groupe === cle &&
+            !(
+              cle === 'a_completer' &&
+              actionRecommandee.kind === 'action' &&
+              e.a.idAssignation === actionRecommandee.idAssignation
+            ),
+        );
         if (items.length === 0) return null;
 
         const liste = (
