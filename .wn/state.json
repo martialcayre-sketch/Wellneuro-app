@@ -4,9 +4,9 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "idle",
-  "active_campaign": null,
-  "active_lot": null,
+  "status": "active",
+  "active_campaign": "2026-07-23-spirale-fiche-trajectoire",
+  "active_lot": "LOT-01",
   "last_completed_lot": "G-TRUST-04/LOT-00",
   "git": {
     "branch": null,
@@ -25,12 +25,12 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "AUCUNE CAMPAGNE ACTIVE — les deux campagnes du jour sont closes le 2026-07-23 : G-TRUST-04 durcissement (LOT-00 livré : #272, #273, #275, #276, #278, #281, #292 — journal des accès sur 22 routes avec correctif de scoping booklet GET, exercice sur table, next 14.2.35, code mort purgé, @ts-nocheck levé 17/17 avec juge transpilé, checklist exigences 5/6 à jour) et SP-CONV trajectoire partagée (LOT-00..LOT-06 livrés #284, #288, #290, #291, #293, #294, #295, baselines visuelles #296-#298). PROCHAINES VÉRIFICATIONS ASSISTANT : preuve fonctionnelle du journal au premier dossier ouvert en prod (requête GD-3, execute_sql lecture seule) ; surveiller l'absence de PRATICIEN.ACCES_DOSSIER.TRACE_ECHEC dans les logs Vercel ; latence des GET praticien (purge opportuniste du journal, constat de revue). EN ATTENTE HUMAINE : renvoi des invitations aux 12 patients (précondition IDP2 LOT-04, re-mesurer avant d'ouvrir ce lot DESTRUCTIF), visibilité patient du fil médecin (décision non prise), reconduction/levée de la dérogation G-TRUST-04 au 2026-10-21, confirmation juridique de la procédure de violation (D-TRUST-02), registre physique des violations (constat EX-3).",
+  "next_action": "SP-TRAJ LOT-01 en cours (Spirale navigable + deep-link ?onglet=) — puis LOT-02..LOT-06 dans l ordre du plan approuvé le 2026-07-23 (CAMPAGNE.md). La révision d arbitrage A6-R2 (courbe momentum + repère cabinet) s écrit au REGISTRE_FRONTIERES.md dans le LOT-03, jamais avant. EN ATTENTE HUMAINE (reconduites) : renvoi des invitations aux 12 patients (précondition IDP2 LOT-04, re-mesurer avant d ouvrir ce lot DESTRUCTIF), visibilité patient du fil médecin, reconduction/levée de la dérogation G-TRUST-04 au 2026-10-21, confirmation juridique procédure de violation (D-TRUST-02), registre physique des violations (EX-3).",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-23T08:29:51Z",
+  "updated_at": "2026-07-23T12:00:00Z",
   "parallel_campaigns": []
 }
