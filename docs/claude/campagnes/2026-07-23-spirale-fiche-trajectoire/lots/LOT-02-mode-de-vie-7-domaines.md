@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "État daté enrichi — Mode de vie 7 domaines"
-statut: "en cours"
+statut: "livré — PR #313 ouverte le 2026-07-23 ; merge Copilot en attente"
 dépend_de: "LOT-01"
 ---
 

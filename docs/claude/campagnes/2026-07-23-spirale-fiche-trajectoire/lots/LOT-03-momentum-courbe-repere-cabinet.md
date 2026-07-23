@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Momentum en courbe, repère cabinet, Estimé↔mesuré, révision A6-R2"
-statut: "à ouvrir"
+statut: "en cours"
 dépend_de: "LOT-01"
 ---
 

@@ -5,10 +5,13 @@ import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
 import type { ModeVieDate } from '@/lib/equilibre/modeVie';
 import type { EtatDateTrajectoire } from '@/app/api/praticien/trajectoire/route';
 import { rattacherReperesAuxCycles, type Trajectoire } from '@/lib/protocol/trajectoire';
+import type { MedianesCabinet } from '@/lib/protocol/cabinet';
 import { deriverEpisodeBandeau } from '@/lib/trajectoire-partagee/contrat';
 import { Badge } from '@/components/ui/Badge';
 import { SpiraleEpisodes } from '@/components/ui/SpiraleEpisodes';
 import { ModeDeViePanel } from '@/components/patient-cockpit/ModeDeViePanel';
+import { MomentumPanel } from '@/components/patient-cockpit/MomentumPanel';
+import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
 import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
@@ -64,6 +67,27 @@ export function TrajectoirePanel({
 
   const repereSelectionne = repereActif === null ? null : (reperes[repereActif] ?? null);
   const cycleSelectionne = repereSelectionne?.cycleId ?? null;
+
+  // Canal fiche (LOT-02/03) : les panneaux mode de vie / momentum / estimé ne
+  // se montent que depuis la fiche — les autres montages restent inchangés.
+  const canalFiche = modeViePresent !== undefined;
+
+  // Repère de cabinet (A6-R2, LOT-03) : agrégat descriptif, lu une fois par
+  // fiche. Un échec de lecture laisse simplement la ligne médiane absente.
+  const [cabinet, setCabinet] = useState<MedianesCabinet | null>(null);
+  useEffect(() => {
+    if (!idPatient || !canalFiche) return;
+    let annule = false;
+    fetch(`/api/praticien/cabinet-momentum?idPatient=${encodeURIComponent(idPatient)}`)
+      .then((r) => r.json())
+      .then((payload: { ok?: boolean; cabinet?: MedianesCabinet }) => {
+        if (!annule && payload?.ok) setCabinet(payload.cabinet ?? null);
+      })
+      .catch(() => {});
+    return () => {
+      annule = true;
+    };
+  }, [idPatient, canalFiche]);
 
   // État daté du mode de vie (LOT-02) : recalculé côté serveur au repère
   // sélectionné (`etatAu`, même doctrine que SP-TT — jamais un curseur libre).
@@ -199,16 +223,26 @@ export function TrajectoirePanel({
       {/* Mode de vie au présent (LOT-02) — uniquement hors lecture datée, et
           seulement si l'appelant fournit le canal (la fiche) ; les autres
           montages de TrajectoirePanel restent inchangés. */}
-      {repereSelectionne === null && modeViePresent !== undefined && (
-        <div className="mt-3">
+      {repereSelectionne === null && canalFiche && (
+        <div className="mt-3 space-y-3">
           <ModeDeViePanel
-            modeVie={modeViePresent}
+            modeVie={modeViePresent ?? null}
             modeVieT0={modeVieT0CycleCourant ?? null}
             legendeDate="aujourd’hui"
             legendeT0={
               cycles.length > 0 ? `T0 (${formatDate(cycles[cycles.length - 1].dateT0)})` : undefined
             }
           />
+          {/* Momentum en courbe + estimé↔mesuré (A6-R2, LOT-03) — cycle
+              courant ; le repère cabinet arrive par sa propre lecture. */}
+          {cycles.length > 0 && (
+            <MomentumPanel
+              cycle={cycles[cycles.length - 1]}
+              cabinet={cabinet}
+              libelle={`épisode ${cycles.length}`}
+            />
+          )}
+          <EstimeMesurePanel />
         </div>
       )}
 
@@ -247,6 +281,15 @@ export function TrajectoirePanel({
               }
             />
           ) : null}
+          {/* Momentum du cycle documenté par le repère lu (A6-R2, LOT-03). */}
+          {canalFiche && cycleSelectionne && (
+            (() => {
+              const position = cycles.findIndex((candidat) => candidat.cycleId === cycleSelectionne);
+              return position >= 0 ? (
+                <MomentumPanel cycle={cycles[position]} cabinet={cabinet} libelle={`épisode ${position + 1}`} />
+              ) : null;
+            })()
+          )}
         </div>
       )}
 
