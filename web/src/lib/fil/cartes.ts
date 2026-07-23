@@ -6,11 +6,14 @@
  * explicite — proposition, jamais capture (décision A6, REGISTRE_FRONTIERES).
  */
 
+// `reponse_recente` a été retiré (accueil-observatoire LOT-02, décision
+// propriétaire 2026-07-23) : les questionnaires reçus vivent dans l'inbox par
+// patient (`lib/fil/inbox.ts`), plus dans le Fil. Les refus déjà posés sur ces
+// clés restent en base, inertes (append-only).
 export type TypeCarteFil =
   | 'signalement_trust'
   | 'synthese_a_valider'
   | 'assignation_en_retard'
-  | 'reponse_recente'
   | 'reprise';
 
 export type CarteFil = {
@@ -58,7 +61,6 @@ export type SignalementRow = {
   kind: 'effet_indesirable' | 'incident_confidentialite' | 'demande_droit';
   soumisLe: Date;
 };
-export type ReponseRow = { idReponse: string; idPatient: string; titre: string; dateReponse: Date };
 export type AssignationRow = {
   idAssignation: string;
   idPatient: string;
@@ -70,8 +72,6 @@ export type SyntheseRow = { idSynthese: string; idPatient: string; dateGeneratio
 /** Carte agrégée : pas de ligne source, donc pas d'identifiant à remonter. */
 export type DerniereActiviteRow = { idPatient: string; derniereReponse: Date };
 
-/** Fenêtre de « récence » d'une réponse reçue. */
-export const RECENCE_REPONSE_JOURS = 7;
 /** Inactivité au-delà de laquelle un patient est signalé en reprise. */
 export const SEUIL_REPRISE_MOIS = 6;
 /** Plafond de cartes par type pour garder le Fil lisible. */
@@ -190,29 +190,6 @@ export function cartesAssignationsEnRetard(
     });
 }
 
-export function cartesReponsesRecentes(
-  reponses: ReponseRow[],
-  noms: Map<string, string>,
-  maintenant: Date,
-): CarteFil[] {
-  const seuil = maintenant.getTime() - RECENCE_REPONSE_JOURS * JOUR_MS;
-  return reponses
-    .filter(r => r.dateReponse.getTime() >= seuil)
-    .sort((a, b) => b.dateReponse.getTime() - a.dateReponse.getTime())
-    .slice(0, MAX_CARTES_PAR_TYPE)
-    .map(r => ({
-      type: 'reponse_recente' as const,
-      idPatient: r.idPatient,
-      patient: nomPatient(noms, r.idPatient),
-      titre: r.titre,
-      pourquoi: `Réponses reçues le ${formatDateFr(r.dateReponse)}.`,
-      date: r.dateReponse.toISOString(),
-      href: `/dashboard/patients/${r.idPatient}`,
-      actionLabel: 'Consulter les réponses',
-      cle: cleCarte('reponse_recente', r.idReponse),
-    }));
-}
-
 /**
  * Signal de reprise v1 : purement informatif, sans pack pré-composé (le pack
  * de réévaluation pré-composé arrive avec SP-SPI, après C2A — décision A6-5).
@@ -259,7 +236,6 @@ const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string 
   { type: 'signalement_trust', singulier: 'signalement', pluriel: 'signalements' },
   { type: 'synthese_a_valider', singulier: 'relecture', pluriel: 'relectures' },
   { type: 'assignation_en_retard', singulier: 'retard', pluriel: 'retards' },
-  { type: 'reponse_recente', singulier: 'réponse reçue', pluriel: 'réponses reçues' },
   { type: 'reprise', singulier: 'reprise', pluriel: 'reprises' },
 ];
 
@@ -289,17 +265,15 @@ export function construireFil(entrees: {
   signalements?: SignalementRow[];
   syntheses: SyntheseRow[];
   assignations: AssignationRow[];
-  reponses: ReponseRow[];
   activites: DerniereActiviteRow[];
   noms: Map<string, string>;
   maintenant: Date;
 }): CarteFil[] {
-  const { signalements = [], syntheses, assignations, reponses, activites, noms, maintenant } = entrees;
+  const { signalements = [], syntheses, assignations, activites, noms, maintenant } = entrees;
   return [
     ...cartesSignalementsTrust(signalements, noms),
     ...cartesSynthesesAValider(syntheses, noms),
     ...cartesAssignationsEnRetard(assignations, noms, maintenant),
-    ...cartesReponsesRecentes(reponses, noms, maintenant),
     ...cartesReprise(activites, noms, maintenant),
   ];
 }

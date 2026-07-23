@@ -20,7 +20,7 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { POST } from './route';
 
-const CLE = 'reponse_recente:REP_1';
+const CLE = 'assignation_en_retard:ASG_1';
 
 function postRequest(body: unknown): Request {
   return new Request('http://localhost/api/praticien/fil/refus', {

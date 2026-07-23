@@ -66,11 +66,13 @@ export function filtrerCartesRefusees(cartes: CarteFil[], refusees: Set<string>)
   return cartes.filter((carte) => !refusees.has(carte.cle));
 }
 
+// `reponse_recente` retiré (accueil-observatoire LOT-02) : les refus déjà
+// posés sur ces clés restent en base, inertes — et un nouveau refus portant ce
+// préfixe est refusé comme toute clé d'un type inconnu.
 const TYPES_CARTE: readonly TypeCarteFil[] = [
   'signalement_trust',
   'synthese_a_valider',
   'assignation_en_retard',
-  'reponse_recente',
   'reprise',
 ];
 

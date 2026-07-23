@@ -1,11 +1,17 @@
 import { FilDuJour } from '@/components/fil/FilDuJour';
+import { MeteoAdhesionAside } from '@/components/fil/MeteoAdhesionAside';
+import { InboxQuestionnaires } from '@/components/fil/InboxQuestionnaires';
+import { CorrespondanceRecente } from '@/components/fil/CorrespondanceRecente';
 
 // Accueil praticien = le Fil du jour, conforme à la maquette de référence
-// « WellNeuro 5.0 — La Spirale » (artifact canonique, décision propriétaire
-// 2026-07-22) : eyebrow daté « interface ambiante », H1 « Le Fil du jour »,
-// timeline des cartes, colonne « Principe 5.0 ». Les métriques « le cabinet
-// en un coup d'œil » sont retirées (décision propriétaire — les accès vivent
-// dans le rail) ; la liste complète des patients reste sur /dashboard/patients.
+// « WellNeuro 5.0 — La Spirale » (artifact canonique) : eyebrow daté
+// « interface ambiante », H1 « Le Fil du jour », timeline des cartes, colonne
+// latérale de TRAVAIL — Météo d'adhésion, inbox questionnaires par patient,
+// correspondance récente (campagne accueil-observatoire LOT-02). L'encart
+// « Principe 5.0 » est retiré (décision propriétaire 2026-07-23 : l'aside
+// sert le travail, le manifeste vit dans la vitrine). Les métriques « le
+// cabinet en un coup d'œil » restent retirées (décision propriétaire
+// 2026-07-22) ; la liste complète des patients reste sur /dashboard/patients.
 export default function DashboardPage() {
   const dateDuJour = new Intl.DateTimeFormat('fr-FR', {
     weekday: 'long',
@@ -33,15 +39,13 @@ export default function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr),300px] lg:items-start">
         <FilDuJour />
 
-        {/* Colonne latérale maquette. « Météo d'adhésion » attend son agrégat
-            réel (SP-MET) — rien n'est inventé ; seul le principe est affiché. */}
-        <aside className="rounded-lg border border-border bg-surface p-5 shadow-card">
-          <h3 className="font-display text-lg font-semibold text-foreground">Principe 5.0</h3>
-          <p className="mt-2 text-sm text-foreground">
-            <strong>Préparé par le copilote · décidé par vous · tracé.</strong>{' '}
-            Toute proposition cite ses sources (instrument, date, version de
-            scoring) et attend votre relecture.
-          </p>
+        {/* Colonne latérale de travail (maquette + décisions 2026-07-23) :
+            chaque panneau se charge indépendamment et affiche ses propres
+            états — rien n'est inventé, rien ne bloque le Fil. */}
+        <aside className="flex flex-col gap-4">
+          <MeteoAdhesionAside />
+          <InboxQuestionnaires />
+          <CorrespondanceRecente />
         </aside>
       </div>
     </div>
