@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Porte d'entrée /dashboard/trajectoires + re-pointage du rail"
-statut: "à ouvrir"
+statut: "en cours"
 dépend_de: "LOT-01"
 ---
 
