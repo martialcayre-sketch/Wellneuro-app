@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { emailPraticien } from '@/lib/praticien/appartenance';
+import { tirageOuvertDeSource, type TirageOuvert } from '@/lib/rag/claims/recherche';
 import { tirerEchantillon } from '@/lib/rag/claims/revue';
 
 // Voie rapide de l'Atelier corpus — TIRAGE d'échantillon d'une source.
@@ -29,6 +30,50 @@ function echec(reason: string, error: string, status: number, tirageOuvert?: num
       : { ok: false, reason, error, tirageOuvert },
     { status },
   );
+}
+
+export type CorpusLotTirageOuvertApiResponse =
+  | { ok: true; tirage: TirageOuvert | null }
+  | { ok: false; reason: string; error: string };
+
+// GET /api/praticien/corpus/claims/lot/tirage?sourceId=… — le tirage OUVERT
+// de la source s'il existe (reprise d'une revue interrompue, sans re-tirer).
+export async function GET(req: Request): Promise<NextResponse<CorpusLotTirageOuvertApiResponse>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json(
+        { ok: false as const, reason: 'unauthenticated', error: 'Authentification requise.' },
+        { status: 401 },
+      );
+    }
+    if (!emailPraticien(session)) {
+      return NextResponse.json(
+        { ok: false as const, reason: 'unauthenticated', error: 'Session praticien sans e-mail.' },
+        { status: 401 },
+      );
+    }
+
+    const sourceId = (new URL(req.url).searchParams.get('sourceId') ?? '').trim();
+    if (!SOURCE_RE.test(sourceId)) {
+      return NextResponse.json(
+        { ok: false as const, reason: 'source_invalide', error: 'Identifiant de source invalide.' },
+        { status: 400 },
+      );
+    }
+
+    const tirage = await tirageOuvertDeSource(sourceId);
+    return NextResponse.json({ ok: true as const, tirage });
+  } catch (err) {
+    console.error(
+      '[praticien/corpus/claims/lot/tirage GET]',
+      err instanceof Error ? err.message : String(err),
+    );
+    return NextResponse.json(
+      { ok: false as const, reason: 'exception', error: 'Erreur technique.' },
+      { status: 500 },
+    );
+  }
 }
 
 // POST /api/praticien/corpus/claims/lot/tirage — { sourceId }

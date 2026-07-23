@@ -1,4 +1,5 @@
 import { AtelierCorpusPanel } from '@/components/corpus/AtelierCorpusPanel';
+import { AtelierVoieRapide } from '@/components/corpus/AtelierVoieRapide';
 
 // Atelier corpus v1 (D-004) — poste de revue des claims du corpus scientifique.
 // C'est la surface qui porte la signature praticien D-003 : un claim ingéré
@@ -22,6 +23,8 @@ export default function CorpusPage() {
           fois validée ici, source à l&apos;appui.
         </p>
       </div>
+
+      <AtelierVoieRapide />
 
       <AtelierCorpusPanel />
     </div>
