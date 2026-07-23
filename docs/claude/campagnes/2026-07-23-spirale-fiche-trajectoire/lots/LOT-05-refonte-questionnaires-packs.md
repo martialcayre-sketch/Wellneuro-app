@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Refonte Patients & assignations → Questionnaires & packs (tiroirs)"
-statut: "livré — PR #316 ouverte le 2026-07-23 (empilée sur #315) ; merge Copilot en attente"
+statut: "livré — PR #316 mergée le 2026-07-23"
 dépend_de: "LOT-04"
 ---
 

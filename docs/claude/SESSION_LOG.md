@@ -408,8 +408,9 @@ verify par étage).
 Michel + helper auto-nettoyant ; extraction des formulaires en fichiers séparés
 → tiroirs in-situ (état entrelacé).
 
-**Prochaine action** : finir le train de merges (close/reopen si `verify`
-absent au reciblage), clôturer la campagne (state idle), purger les branches.
+**Prochaine action** : purge des branches sur preuve et retour du dépôt au
+régime permanent — la campagne est close dans cette même PR (state idle),
+train de merges achevé, maintenance faite (#301, #318, #308 mergées).
 
 **Questions ouvertes** : échecs locaux `portail-lien-magique` (anti-oracle de
 temps, vert en CI) ; baselines pixel des nouveaux écrans (différées).
