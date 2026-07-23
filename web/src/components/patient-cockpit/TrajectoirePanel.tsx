@@ -1,11 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { JalonMomentum, TendanceMomentum } from '@/lib/equilibre/types';
+import type { ModeVieDate } from '@/lib/equilibre/modeVie';
+import type { EtatDateTrajectoire } from '@/app/api/praticien/trajectoire/route';
 import { rattacherReperesAuxCycles, type Trajectoire } from '@/lib/protocol/trajectoire';
 import { deriverEpisodeBandeau } from '@/lib/trajectoire-partagee/contrat';
 import { Badge } from '@/components/ui/Badge';
 import { SpiraleEpisodes } from '@/components/ui/SpiraleEpisodes';
+import { ModeDeViePanel } from '@/components/patient-cockpit/ModeDeViePanel';
 import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
@@ -34,11 +37,18 @@ export function TrajectoirePanel({
   trajectoire,
   idPatient,
   nomComplet,
+  modeViePresent,
+  modeVieT0CycleCourant,
 }: {
   trajectoire: Trajectoire | null;
   idPatient?: string;
   /** Identité affichée en tête de la fiche-trajectoire (maquette 5.0). */
   nomComplet?: string;
+  /** Mode de vie au présent (LOT-02) — undefined : appelant sans ce canal,
+   *  le panneau n'est pas rendu ; null : non mesuré, l'état est affiché. */
+  modeViePresent?: ModeVieDate | null;
+  /** Fantôme au T0 du cycle courant. */
+  modeVieT0CycleCourant?: ModeVieDate | null;
 }) {
   // Index de repère sélectionné. Depuis SP-CONV LOT-03, la sélection n'est
   // plus une simple mise en avant : elle pilote la lecture datée `asOf`
@@ -54,6 +64,44 @@ export function TrajectoirePanel({
 
   const repereSelectionne = repereActif === null ? null : (reperes[repereActif] ?? null);
   const cycleSelectionne = repereSelectionne?.cycleId ?? null;
+
+  // État daté du mode de vie (LOT-02) : recalculé côté serveur au repère
+  // sélectionné (`etatAu`, même doctrine que SP-TT — jamais un curseur libre).
+  const dateSelectionnee = repereSelectionne?.date ?? null;
+  const [etatDate, setEtatDate] = useState<EtatDateTrajectoire | null>(null);
+  const [lectureEtatDate, setLectureEtatDate] = useState<'aucune' | 'chargement' | 'chargee' | 'erreur'>('aucune');
+  useEffect(() => {
+    if (!idPatient || !dateSelectionnee) {
+      setEtatDate(null);
+      setLectureEtatDate('aucune');
+      return;
+    }
+    let annule = false;
+    setLectureEtatDate('chargement');
+    fetch(
+      `/api/praticien/trajectoire?idPatient=${encodeURIComponent(idPatient)}&etatAu=${encodeURIComponent(dateSelectionnee)}`,
+    )
+      .then((r) => r.json())
+      .then((payload: { ok?: boolean; etatDate?: EtatDateTrajectoire }) => {
+        if (annule) return;
+        if (!payload?.ok) {
+          setEtatDate(null);
+          setLectureEtatDate('erreur');
+          return;
+        }
+        setEtatDate(payload.etatDate ?? null);
+        setLectureEtatDate('chargee');
+      })
+      .catch(() => {
+        if (!annule) {
+          setEtatDate(null);
+          setLectureEtatDate('erreur');
+        }
+      });
+    return () => {
+      annule = true;
+    };
+  }, [idPatient, dateSelectionnee]);
 
   // En-tête d'identité (maquette 5.0, écran Fiche-trajectoire) : « {nom} —
   // épisode N ». Sans cycle confirmé, l'identité seule — aucun épisode n'est
@@ -148,17 +196,57 @@ export function TrajectoirePanel({
         </div>
       )}
 
+      {/* Mode de vie au présent (LOT-02) — uniquement hors lecture datée, et
+          seulement si l'appelant fournit le canal (la fiche) ; les autres
+          montages de TrajectoirePanel restent inchangés. */}
+      {repereSelectionne === null && modeViePresent !== undefined && (
+        <div className="mt-3">
+          <ModeDeViePanel
+            modeVie={modeViePresent}
+            modeVieT0={modeVieT0CycleCourant ?? null}
+            legendeDate="aujourd’hui"
+            legendeT0={
+              cycles.length > 0 ? `T0 (${formatDate(cycles[cycles.length - 1].dateT0)})` : undefined
+            }
+          />
+        </div>
+      )}
+
       {/* Suture time-travel (SP-CONV LOT-03, D6) : le repère sélectionné pilote
           le panneau de lecture datée — mécanique SP-TT partagée avec le
-          copilote (asOf, lecture seule stricte, note horodatée au présent). */}
+          copilote (asOf, lecture seule stricte, note horodatée au présent).
+          LOT-02 : l'état daté du mode de vie est recalculé au même repère. */}
       {idPatient && repereSelectionne && (
-        <div className="mt-3">
+        <div className="mt-3 space-y-3">
           <LectureEtatPassePanel
             idPatient={idPatient}
             repereInitial={repereSelectionne.date}
             masquerSelecteur
             onRetourPresent={() => setRepereActif(null)}
           />
+          {lectureEtatDate === 'chargement' ? (
+            <p role="status" className="text-xs text-muted-foreground">
+              Recalcul de l’état daté du mode de vie...
+            </p>
+          ) : lectureEtatDate === 'erreur' ? (
+            <p role="status" className="text-xs text-status-warning">
+              L’état daté du mode de vie n’a pas pu être lu — l’index et la lecture datée ci-dessus restent valables.
+            </p>
+          ) : etatDate ? (
+            <ModeDeViePanel
+              modeVie={etatDate.modeVie}
+              modeVieT0={etatDate.modeVieT0}
+              legendeDate={`au ${formatDate(etatDate.date)}`}
+              legendeT0={
+                cycleSelectionne
+                  ? (() => {
+                      const cycle = cycles.find((candidat) => candidat.cycleId === cycleSelectionne);
+                      return cycle ? `T0 (${formatDate(cycle.dateT0)})` : undefined;
+                    })()
+                  : undefined
+              }
+            />
+          ) : null}
         </div>
       )}
 

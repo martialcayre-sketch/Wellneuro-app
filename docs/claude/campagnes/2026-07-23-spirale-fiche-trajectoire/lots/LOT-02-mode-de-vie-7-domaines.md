@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "État daté enrichi — Mode de vie 7 domaines"
-statut: "à ouvrir"
+statut: "en cours"
 dépend_de: "LOT-01"
 ---
 

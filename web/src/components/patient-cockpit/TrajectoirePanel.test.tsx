@@ -283,6 +283,17 @@ describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 
     render(<TrajectoirePanel trajectoire={{ ...deuxCycles, index: [] }} />);
     expect(screen.queryByRole('group', { name: /Spirale de trajectoire/ })).toBeNull();
   });
+
+  it('mode de vie au présent (LOT-02) : rendu seulement quand le canal est fourni', () => {
+    const { rerender } = render(<TrajectoirePanel trajectoire={null} />);
+    // Appelant sans le canal (ex. ClinicalRuntimeSection) : rien n'apparaît.
+    expect(screen.queryByRole('region', { name: 'Mode de vie — 7 domaines' })).toBeNull();
+
+    rerender(<TrajectoirePanel trajectoire={null} modeViePresent={null} />);
+    // Canal fourni mais non mesuré : l'état est écrit, jamais un 0 (A8-2).
+    expect(screen.getByRole('region', { name: 'Mode de vie — 7 domaines' })).toBeTruthy();
+    expect(screen.getByText(/Mode de vie non mesuré à cette date/)).toBeTruthy();
+  });
 });
 
 describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
@@ -310,6 +321,33 @@ describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
         );
       }
       if (url.startsWith('/api/praticien/relecture-notes')) return Promise.resolve(json({ ok: true, notes: [] }));
+      // LOT-02 : l'état daté du mode de vie est recalculé au même repère.
+      if (url.startsWith('/api/praticien/trajectoire') && url.includes('etatAu=')) {
+        return Promise.resolve(
+          json({
+            ok: true,
+            trajectoire,
+            modeViePresent: null,
+            modeVieT0CycleCourant: null,
+            etatDate: {
+              date: '2026-01-01T00:00:00.000Z',
+              modeVie: {
+                domaines: [
+                  {
+                    id: 'SOMMEIL',
+                    label: 'Sommeil',
+                    total: 14,
+                    max: 28,
+                    interpretation: { label: 'Sommeil insuffisant', color: 'warning' },
+                    zones: [],
+                  },
+                ],
+              },
+              modeVieT0: null,
+            },
+          }),
+        );
+      }
       return Promise.resolve(json({ asOf: '2026-01-01T00:00:00.000Z', proposal: { candidateResponses: [{}] } }));
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -323,9 +361,21 @@ describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
       fetchMock.mock.calls.some(([url]) => String(url).includes('/api/praticien/cockpit') && String(url).includes('asOf=')),
     ).toBe(true);
 
+    // LOT-02 : le panneau mode de vie DATÉ accompagne la lecture — recalculé
+    // au repère (etatAu), zone en toutes lettres.
+    await screen.findByText('Sommeil insuffisant');
+    // « au 01/01/2026 » figure dans l'en-tête ET la légende du panneau daté.
+    expect(screen.getAllByText(/au 01\/01\/2026/).length).toBeGreaterThan(0);
+    expect(
+      fetchMock.mock.calls.some(
+        ([url]) => String(url).includes('/api/praticien/trajectoire') && String(url).includes('etatAu='),
+      ),
+    ).toBe(true);
+
     // Une seule sortie, explicite : retour au présent → le panneau se referme.
     fireEvent.click(screen.getByRole('button', { name: 'Retour au présent' }));
     expect(screen.queryByText(/Vous lisez l’état du/)).toBeNull();
+    expect(screen.queryByText('Sommeil insuffisant')).toBeNull();
     vi.unstubAllGlobals();
   });
 

@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { construireTrajectoire, type Trajectoire, type TrajectoireEpisode } from '@/lib/protocol/trajectoire';
+import { construireReperes, resoudreAsOf } from '@/lib/praticien/lectureAsOf';
+import { construireModeVieDate, type ModeVieDate } from '@/lib/equilibre/modeVie';
 import type { JalonMomentum } from '@/lib/equilibre/types';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
@@ -19,8 +21,23 @@ const MILESTONES: readonly JalonMomentum[] = ['T0', 'J21', 'J42', 'J90'];
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/trajectoire';
 
+// État daté « mode de vie » (SP-TRAJ LOT-02) : rejoué depuis les réponses
+// brutes tronquées à un repère réel (mécanique SP-TT), jamais un snapshot.
+export type EtatDateTrajectoire = {
+  date: string; // ISO du repère résolu
+  modeVie: ModeVieDate | null; // null = non mesuré à cette date (A8-2)
+  modeVieT0: ModeVieDate | null; // fantôme au T0 du cycle couvrant la date
+};
+
 export type TrajectoireApiResponse =
-  | { ok: true; trajectoire: Trajectoire }
+  | {
+      ok: true;
+      trajectoire: Trajectoire;
+      // Additifs LOT-02 — les consommateurs antérieurs les ignorent :
+      modeViePresent: ModeVieDate | null;
+      modeVieT0CycleCourant: ModeVieDate | null;
+      etatDate?: EtatDateTrajectoire;
+    }
   | { ok: false; reason: 'unauthenticated' | 'invalid' | 'patient_not_found' | 'forbidden' | 'exception'; error: string };
 
 // GET /api/praticien/trajectoire?idPatient=PAT001
@@ -75,7 +92,49 @@ export async function GET(req: Request): Promise<NextResponse<TrajectoireApiResp
     });
 
     const trajectoire = construireTrajectoire({ episodes, reponses: reponsesDb });
-    return NextResponse.json({ ok: true, trajectoire });
+
+    // Mode de vie au présent + fantôme T0 du cycle courant (LOT-02).
+    const cycleCourant = trajectoire.cycles.length > 0 ? trajectoire.cycles[trajectoire.cycles.length - 1] : null;
+    const modeViePresent = construireModeVieDate(reponsesDb);
+    const modeVieT0CycleCourant = cycleCourant
+      ? construireModeVieDate(reponsesDb, new Date(cycleCourant.dateT0))
+      : null;
+
+    // Lecture datée optionnelle `etatAu` : même doctrine que SP-TT — la date
+    // doit être un repère réel du patient (épisode confirmé ou réponse reçue),
+    // jamais un curseur libre. Hors repère → 400, rien n'est renvoyé.
+    const etatAuParam = searchParams.get('etatAu');
+    let etatDate: EtatDateTrajectoire | undefined;
+    if (etatAuParam !== null && etatAuParam !== '') {
+      const reperes = construireReperes({ episodes: episodesDb, reponses: reponsesDb });
+      const resolution = resoudreAsOf(etatAuParam, reperes);
+      if (resolution.mode === 'refus') {
+        return NextResponse.json(
+          { ok: false, reason: 'invalid', error: 'Date demandée hors des repères du patient.' },
+          { status: 400 },
+        );
+      }
+      if (resolution.mode === 'passe') {
+        // Fantôme T0 : le cycle couvrant la date lue (dernier T0 ≤ date). Si
+        // la date lue EST ce T0, pas de fantôme — un seul point, comme la
+        // maquette.
+        const instant = resolution.date.getTime();
+        const cycleCouvrant = [...trajectoire.cycles]
+          .filter((cycle) => new Date(cycle.dateT0).getTime() <= instant)
+          .pop();
+        const t0Distinct =
+          cycleCouvrant && Math.abs(new Date(cycleCouvrant.dateT0).getTime() - instant) > 1000
+            ? new Date(cycleCouvrant.dateT0)
+            : null;
+        etatDate = {
+          date: resolution.date.toISOString(),
+          modeVie: construireModeVieDate(reponsesDb, resolution.date),
+          modeVieT0: t0Distinct ? construireModeVieDate(reponsesDb, t0Distinct) : null,
+        };
+      }
+    }
+
+    return NextResponse.json({ ok: true, trajectoire, modeViePresent, modeVieT0CycleCourant, etatDate });
   } catch (err) {
     console.error('[praticien/trajectoire GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });

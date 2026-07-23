@@ -42,6 +42,10 @@ test.describe('Fiche-trajectoire (onglet Trajectoire)', () => {
     // arcs SVG.
     await expect(page.getByRole('navigation', { name: 'Index de la Spirale' })).toHaveCount(0);
     await expect(page.getByRole('group', { name: /Spirale de trajectoire/ })).toHaveCount(0);
+
+    // Mode de vie 7 domaines (LOT-02) : le panneau existe au présent — mesuré
+    // ou « non mesuré » selon les réponses du patient seedé, jamais absent.
+    await expect(panneau.getByRole('region', { name: 'Mode de vie — 7 domaines' })).toBeVisible();
   });
 
   test('le deep-link ?onglet=trajectoire ouvre la fiche directement sur la trajectoire', async ({ page, context }) => {
