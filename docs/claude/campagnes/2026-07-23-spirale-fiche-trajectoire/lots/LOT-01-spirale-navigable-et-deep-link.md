@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Fiche : deep-link ?onglet=, en-tête trajectoire, Spirale navigable"
-statut: "en cours"
+statut: "livré — PR #311 ouverte le 2026-07-23, T1/T2 verts, revue adversariale passée ; merge Copilot en attente"
 dépend_de: ""
 ---
 

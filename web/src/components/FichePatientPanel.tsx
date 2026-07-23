@@ -25,6 +25,7 @@ import type { ReponsesApiResponse, ReponseQuestionnaire } from '@/app/api/pratic
 import type { ResultatMomentum } from '@/lib/equilibre/types';
 import type { ScoreSubScore } from '@/lib/scoring/types';
 import type { Trajectoire } from '@/lib/protocol/trajectoire';
+import type { ModeVieDate } from '@/lib/equilibre/modeVie';
 import type { OngletFiche } from '@/lib/praticien/ongletsFiche';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
@@ -258,6 +259,9 @@ export function FichePatientPanel({
   const phaseChoisieParPraticien = useRef(false);
   const phaseInitialiseeRef = useRef(false);
   const [trajectoire, setTrajectoire] = useState<Trajectoire | null>(null);
+  // Mode de vie 7 domaines (LOT-02) — servi par la même lecture de trajectoire.
+  const [modeViePresent, setModeViePresent] = useState<ModeVieDate | null>(null);
+  const [modeVieT0CycleCourant, setModeVieT0CycleCourant] = useState<ModeVieDate | null>(null);
   // « inconnue » tant qu'aucune lecture n'a abouti : un échec de lecture ne
   // doit JAMAIS être présenté comme une absence d'épisode (affirmation fausse
   // sur l'historique clinique).
@@ -337,6 +341,8 @@ export function FichePatientPanel({
         ok?: boolean;
         reason?: string;
         trajectoire?: Trajectoire;
+        modeViePresent?: ModeVieDate | null;
+        modeVieT0CycleCourant?: ModeVieDate | null;
       };
       if (!reponse.ok || !payload?.ok) {
         setEtatTrajectoire('erreur');
@@ -350,6 +356,8 @@ export function FichePatientPanel({
         return;
       }
       setTrajectoire(payload.trajectoire ?? null);
+      setModeViePresent(payload.modeViePresent ?? null);
+      setModeVieT0CycleCourant(payload.modeVieT0CycleCourant ?? null);
       setEtatTrajectoire('chargee');
     } catch {
       setEtatTrajectoire('erreur');
@@ -1169,7 +1177,13 @@ export function FichePatientPanel({
               </button>
             </div>
           ) : (
-            <TrajectoirePanel trajectoire={trajectoire} idPatient={idPatient} nomComplet={nomComplet} />
+            <TrajectoirePanel
+              trajectoire={trajectoire}
+              idPatient={idPatient}
+              nomComplet={nomComplet}
+              modeViePresent={modeViePresent}
+              modeVieT0CycleCourant={modeVieT0CycleCourant}
+            />
           ))}
       </div>
     </div>
