@@ -28,7 +28,7 @@
   .tabs{display:flex;gap:4px;margin-left:auto}
   .tab{min-height:44px;padding:0 14px;display:flex;align-items:center;
     border-radius:var(--r-sm);font-size:14px;color:var(--muted-fg);border:0;background:none}
-  .tab[aria-selected="true"]{background:var(--muted);color:var(--fg);font-weight:600}
+  .tab[aria-current="page"]{background:var(--muted);color:var(--fg);font-weight:600}
 
   /* Cockpit : prend l'ESPACE RESTANT (flex-1) — remplace min(80vh,700px). */
   .cockpit{flex:1;min-height:420px;display:grid;grid-template-rows:auto 1fr;

@@ -245,3 +245,23 @@ session.
 
 **Questions ouvertes** : existence physique du registre des violations
 (EX-3, humain) ; confirmation juridique D-TRUST-02.
+## 2026-07-23 — Fonctions Vercel à Francfort (fra1) — question ouverte tranchée
+
+**Décisions** : `web/vercel.json` épingle `regions: ["fra1"]` (#286, mergée
+sous l'autorisation full-auto de la session corpus). Cause racine du timeout
+de transaction traitée : fonctions en iad1 contre base eu-central-1, ~80 ms
+par aller-retour SQL. Bénéfices : toutes les routes serveur, et traitement
+des données dans l'UE.
+
+**Écarté** : regroupement des requêtes du store claims (cause supprimée,
+changements minimaux) ; élévation du timeout Prisma (même raison). `--lot 4`
+reste disponible mais n'est plus nécessaire.
+
+**Preuves** : verify vert (6 min 14) ; déploiement `abf23cf` READY ;
+`x-vercel-id: fra1::fra1::…` constaté deux fois sur route dynamique, 401 en
+231 ms.
+
+**Prochaine action** : validation praticien des 136 claims (Atelier), puis
+échelle 88 sources.
+
+**Questions ouvertes** : piste MP4.
