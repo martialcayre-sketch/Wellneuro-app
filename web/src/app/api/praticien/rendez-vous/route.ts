@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { accepteNouvelEnvoi, MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
+import { bornesJourParis } from '@/lib/fil/fuseau';
 
 // Rendez-vous praticien (accueil-observatoire LOT-04). Objet opérationnel
 // minimal : lister les rendez-vous planifiés d'une fenêtre, en créer un.
@@ -31,11 +32,12 @@ function echec(reason: string, error: string, status: number) {
   return NextResponse.json<RendezVousApiResponse>({ ok: false, reason, error }, { status });
 }
 
-/** Fenêtre par défaut : aujourd'hui (00:00) → +7 jours. */
+/** Fenêtre par défaut : du début du jour de Paris jusqu'à la fin du 7ᵉ jour. */
 function fenetreParDefaut(maintenant: Date): { du: Date; au: Date } {
-  const du = new Date(maintenant);
-  du.setHours(0, 0, 0, 0);
-  return { du, au: new Date(du.getTime() + 7 * JOUR_MS) };
+  const { debut } = bornesJourParis(maintenant);
+  // 7 jours pleins : [debut, debut + 7 j). Le +JOUR_MS-1 appliqué plus bas rend
+  // la borne inclusive jusqu'à la fin du 6ᵉ jour → 7 jours affichés.
+  return { du: debut, au: new Date(debut.getTime() + 6 * JOUR_MS) };
 }
 
 function bornerDate(valeur: string | null, repli: Date): Date {

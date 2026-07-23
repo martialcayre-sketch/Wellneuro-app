@@ -22,6 +22,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { GET } from './route';
+import { bornesJourParis } from '@/lib/fil/fuseau';
 
 // L'accueil praticien (SP-FIL LOT-01) n'avait aucun test de route. Les gardes
 // vérifiées ici sont celles dont dépend l'honnêteté du Fil : une session
@@ -132,12 +133,13 @@ describe('GET /api/praticien/fil', () => {
 
   it('un rendez-vous du jour produit une carte consultation vers le pré-vol', async () => {
     prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
-    // Midi du jour courant : toujours dans la fenêtre du jour civil, quelle que
-    // soit l'heure d'exécution du test (le constructeur borne au jour, pas au futur).
-    const midiAujourdhui = new Date();
-    midiAujourdhui.setHours(12, 0, 0, 0);
+    // Milieu du jour civil de Paris courant : toujours dans la fenêtre, quelle
+    // que soit l'heure UTC d'exécution du test (le constructeur borne au jour
+    // de Paris, pas au futur).
+    const { debut } = bornesJourParis(new Date());
+    const midiParis = new Date(debut.getTime() + 12 * 60 * 60 * 1000);
     prisma.rendezVous.findMany.mockResolvedValue([
-      { id: 'RDV_1', idPatient: 'PAT_SEED_01', dateHeure: midiAujourdhui },
+      { id: 'RDV_1', idPatient: 'PAT_SEED_01', dateHeure: midiParis },
     ]);
     const payload = await (await GET()).json();
     const consultation = payload.cartes.find((c: { type: string }) => c.type === 'consultation_prevue');
