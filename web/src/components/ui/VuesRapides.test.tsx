@@ -18,14 +18,20 @@ describe('VuesRapides', () => {
     render(<VuesRapides />);
     const nav = screen.getByRole('navigation', { name: 'Vues rapides' });
     const liens = Array.from(nav.querySelectorAll('a')).map(a => a.textContent);
-    expect(liens).toEqual(['Fil du jour', 'Trajectoire', 'Consultation', 'Correspondance']);
+    expect(liens).toEqual(['Fil du jour', 'Fiche-trajectoire', 'Consultation', 'Correspondance']);
   });
 
-  it('marque la vue active par aria-current', () => {
+  it('marque la vue active par aria-current — une fiche ouverte reste rattachée à la trajectoire', () => {
     cheminCourant = '/dashboard/patients/PAT_SEED_01';
     render(<VuesRapides />);
-    expect(screen.getByRole('link', { name: 'Trajectoire' }).getAttribute('aria-current')).toBe('page');
+    expect(screen.getByRole('link', { name: 'Fiche-trajectoire' }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('link', { name: 'Fil du jour' }).getAttribute('aria-current')).toBeNull();
+  });
+
+  it('la porte d’entrée elle-même active la vue', () => {
+    cheminCourant = '/dashboard/trajectoires';
+    render(<VuesRapides />);
+    expect(screen.getByRole('link', { name: 'Fiche-trajectoire' }).getAttribute('aria-current')).toBe('page');
   });
 
   it('« Fil du jour » n’est actif que sur l’accueil exact — pas sur toute l’arborescence', () => {

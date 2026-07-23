@@ -9,17 +9,23 @@ import { usePathname } from 'next/navigation';
  * depuis le header. Le rail reste intégral — ces onglets sont un raccourci,
  * pas une navigation concurrente.
  */
-const VUES: { href: string; label: string; exact?: boolean }[] = [
+const VUES: { href: string; label: string; exact?: boolean; prefixesActifs?: string[] }[] = [
   { href: '/dashboard', label: 'Fil du jour', exact: true },
-  { href: '/dashboard/patients', label: 'Trajectoire' },
+  // SP-TRAJ LOT-04 : même destination et même nom que l'entrée du rail — la
+  // porte d'entrée trajectoire, plus la page héritage (constat de revue #308).
+  // Comme dans le rail, une fiche ouverte (/dashboard/patients/…) reste
+  // rattachée à la vue trajectoire.
+  { href: '/dashboard/trajectoires', label: 'Fiche-trajectoire', prefixesActifs: ['/dashboard/patients/'] },
   { href: '/dashboard/copilote', label: 'Consultation' },
   { href: '/dashboard/correspondance', label: 'Correspondance' },
 ];
 
 export function VuesRapides() {
   const pathname = usePathname();
-  const estActive = (vue: (typeof VUES)[number]) =>
-    vue.exact ? pathname === vue.href : (pathname?.startsWith(vue.href) ?? false);
+  const estActive = (vue: (typeof VUES)[number]) => {
+    if (vue.prefixesActifs?.some(prefixe => pathname?.startsWith(prefixe))) return true;
+    return vue.exact ? pathname === vue.href : (pathname?.startsWith(vue.href) ?? false);
+  };
 
   return (
     <nav aria-label="Vues rapides" className="hidden items-center gap-1 lg:flex">
