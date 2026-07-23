@@ -327,3 +327,27 @@ ANTHROPIC_API_KEY) ; passage à l'échelle 88 sources.
 ## 2026-07-23 — Fin de session SP-CONV : vérification prod, rien en vol
 
 **Décisions** : session close sur une vérification factuelle — la 5.0 est **en production** (déploiement Vercel `READY` à chaque merge sur `main`, `app.wellneuro.fr` répond ; dernier déployé : `f2aaccc`). Les maquettes n'ont plus rien à valider : la référence est l'artifact acté en V14, les trois maquettes de campagne ont été réalisées par les LOT-02/04/05 et restent au dossier comme trace. **Écarté** : rouvrir un lot — aucun défaut constaté. **Prochaine action** : tour de validation humaine en prod (fiche adaptative, time-travel, portail) + validations jamais faites (zoom 200 %, lecteur d'écran réel, appareil physique — dette HC-F) ; côté programme, SP-CAB attend `n ≥ 5` épisodes clos. **Questions ouvertes** : aucune pour SP-CONV.
+
+## 2026-07-23 — Atelier : notebooks, modale, questionnaires in-app, bibliothèque NotebookLM
+
+**Décisions** (arbitrages praticien en session) : entrée de l'Atelier = table
+des sources **groupée par notebook** (registre sanitaire, importé statiquement) ;
+**voie rapide en modale plein écran** (fini le défilement sous la vue) ;
+**génération du questionnaire dans la modale** (route serveur Sonnet 5, une
+question par chunk atteignable, la génération ne décide rien) ; bibliothèque
+**NotebookLM par dossiers Drive**, nourrie au **markdown canonique**
+(`tools/corpus/notebooklm/exporter.mjs` + guide, D-003 non engagé). PR #307 et
+#309 mergées.
+
+**Écarté** : fenêtre navigateur séparée (perte de session NextAuth) ; PDF
+originaux pour NotebookLM (canonique choisi) ; import de fichier questionnaire
+(remplacé par la génération in-app).
+
+**Corrigé au passage** : la voie rapide chargeait la file avec `sourceId=`,
+paramètre ignoré (route lit `source=`) — couverture affichée faussée, serveur
+déjà juste.
+
+**Prochaine action** : exercer la voie rapide sur le pilote (modale, notebook
+09) ; téléverser la bibliothèque dans Drive et créer le premier NotebookLM.
+
+**Questions ouvertes** : échelle 88 sources ; piste MP4.
