@@ -11,6 +11,7 @@ import type {
   CorpusLotTirageOuvertApiResponse,
 } from '@/app/api/praticien/corpus/claims/lot/tirage/route';
 import type { CorpusLotDecisionApiResponse } from '@/app/api/praticien/corpus/claims/lot/decision/route';
+import type { CorpusQuestionnaireApiResponse } from '@/app/api/praticien/corpus/claims/questionnaire/route';
 import type { CorpusRechercheApiResponse } from '@/app/api/praticien/corpus/claims/recherche/route';
 
 // Atelier corpus v2 — VOIE RAPIDE en MODALE plein écran, une source à la fois.
@@ -61,6 +62,8 @@ export function AtelierVoieRapideModale({
 
   const [questions, setQuestions] = useState<QuestionLocale[]>([]);
   const [nouvelleQuestion, setNouvelleQuestion] = useState('');
+  const [generationEnCours, setGenerationEnCours] = useState(false);
+  const [avertissementGeneration, setAvertissementGeneration] = useState('');
 
   const [issueArmee, setIssueArmee] = useState<'valider' | 'basculer' | null>(null);
   const [motifBascule, setMotifBascule] = useState('');
@@ -251,6 +254,42 @@ export function AtelierVoieRapideModale({
     if (nouvelles.length) setQuestions((qs) => [...qs, ...nouvelles]);
   }, []);
 
+  // Génération serveur : une question par chunk atteignable, depuis les
+  // claims du chunk. Les doublons (question déjà à l'écran) sont écartés ;
+  // chaque question reste à JOUER sur le corpus puis à juger — la génération
+  // ne décide rien.
+  const genererQuestionnaire = useCallback(async () => {
+    if (generationEnCours) return;
+    setGenerationEnCours(true);
+    setAvertissementGeneration('');
+    setErreur('');
+    try {
+      const reponse = await fetch('/api/praticien/corpus/claims/questionnaire', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ sourceId }),
+      });
+      const payload = (await reponse.json()) as CorpusQuestionnaireApiResponse;
+      if (!reponse.ok || !payload.ok) {
+        setErreur(payload.ok ? 'Génération impossible.' : payload.error);
+        return;
+      }
+      const dejaLa = new Set(questions.map((q) => q.question));
+      ajouterQuestions(
+        payload.questionnaire.questions.map((q) => q.question).filter((q) => !dejaLa.has(q)),
+      );
+      if (!payload.questionnaire.couvertureComplete) {
+        setAvertissementGeneration(
+          `Génération incomplète : ${payload.questionnaire.chunksSansQuestion.length} chunk(s) sans question — complétez à la main ou régénérez.`,
+        );
+      }
+    } catch {
+      setErreur('Erreur technique pendant la génération.');
+    } finally {
+      setGenerationEnCours(false);
+    }
+  }, [generationEnCours, sourceId, questions, ajouterQuestions]);
+
   const conclure = useCallback(
     async (issue: 'valider' | 'basculer') => {
       if (tirageId === null || chargement) return;
@@ -412,9 +451,19 @@ export function AtelierVoieRapideModale({
             </section>
 
             <section aria-label="Questionnaire de restitution">
-              <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
-                2 · Restitution — couverture {chunksCouverts.size}/{chunksAtteignables.size} chunks
-              </h4>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
+                  2 · Restitution — couverture {chunksCouverts.size}/{chunksAtteignables.size} chunks
+                </h4>
+                <Button variant="outline" onClick={genererQuestionnaire} disabled={generationEnCours}>
+                  {generationEnCours ? 'Génération…' : 'Générer le questionnaire'}
+                </Button>
+              </div>
+              {avertissementGeneration ? (
+                <p className="mt-2 rounded-lg bg-solar-500/10 px-3 py-2 text-xs text-solar-ink">
+                  {avertissementGeneration}
+                </p>
+              ) : null}
               <ul className="mt-3 flex flex-col gap-3">
                 {questions.map((q, index) => (
                   <li key={index} className="rounded-xl border border-border p-3">
