@@ -372,3 +372,22 @@ changement d'app.
 alias, orchestration serveur de la file) avant implémentation.
 
 **Questions ouvertes** : implémentation app de la vue.
+
+## 2026-07-23 — Épilogue G-TRUST-04 : merge #292, preuve GD-3 acquise, purge — projet en pause
+
+**Décisions** : #292 mergée par l'assistant sur instruction explicite (squash
+`1a8d14c`), après deux conflits résolus avec `main` — SP-CONV livrée puis
+close en parallèle → état combiné `idle`. Nettoyage sur preuve : 5 worktrees,
+6 branches locales. **Preuve fonctionnelle GD-3 acquise en production** :
+3 lignes de journal à 08:45 (une minute après le déploiement) — gabarits
+littéraux, `GET` seul, identifiant synthétique ; zéro erreur runtime. Pause
+actée : gestes humains d'abord.
+
+**Écarté** : forcer le verrou du worktree `g-trust-04-journal-acces-pr7`
+(session vivante) ; ouvrir un nouveau fil (corpus #289, exigences 2/3,
+dossier RGPD) — reportés au choix du praticien.
+
+**Prochaine action** : humaine — invitations aux 12 patients, trancher #289,
+D-TRUST-02, registre EX-3, dérogation au 2026-10-21.
+
+**Questions ouvertes** : aucune côté assistant.
