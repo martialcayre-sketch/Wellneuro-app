@@ -8,7 +8,9 @@ const VARIANT_CLASSES: Record<PatientButtonVariant, string> = {
   primary: 'min-h-12 inline-flex items-center justify-center py-3 px-[22px] bg-primary text-primary-foreground rounded-xl font-semibold text-base hover:opacity-90 disabled:opacity-50 transition-opacity',
   ghost: 'min-h-12 inline-flex items-center justify-center py-3 px-[22px] bg-transparent text-primary border border-primary/30 rounded-xl font-semibold text-base hover:bg-primary/10 disabled:opacity-50 transition-colors',
   neutral: 'min-h-11 inline-flex items-center justify-center py-2 px-4 text-sm text-muted-foreground border border-border rounded-lg hover:bg-muted transition-colors',
-  'danger-text': 'text-13 text-status-danger hover:underline',
+  // min-h + inline-flex : l'apparence reste celle d'un lien texte, mais la
+  // cible tactile respecte les 44 px du référentiel (SP-CONV LOT-05).
+  'danger-text': 'min-h-11 inline-flex items-center text-13 text-status-danger hover:underline',
 };
 
 // Exporté pour les éléments non-<button> (ex. <a> de navigation dans le hub)

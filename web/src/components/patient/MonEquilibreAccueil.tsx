@@ -6,32 +6,44 @@ import type { PatientEquilibreResponse } from '@/app/api/patient/equilibre/route
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { GrowthIllustration } from '@/components/patient/ui/GrowthIllustration';
 
+// Doctrine « construction, jamais dégradation » (SP-CONV LOT-05, D7) : une
+// évolution défavorable n'est jamais annoncée comme une chute — elle devient
+// un repère à explorer avec le praticien.
 const TENDANCE_LABEL: Record<string, string> = {
-  hausse: 'En hausse depuis votre dernier bilan',
+  hausse: 'En progression depuis votre dernier bilan',
   stable: 'Stable depuis votre dernier bilan',
-  baisse: 'En baisse depuis votre dernier bilan',
+  baisse: 'Des repères ont évolué depuis votre dernier bilan — votre praticien les regarde avec vous',
 };
 
+// Frise qualitative (SP-CONV LOT-05) : des repères temporels, pas des
+// valeurs. L'ancienne frise encodait l'indice dans la hauteur des barres — le
+// score était masqué mais toujours dessiné. Ici chaque bilan est un point
+// identique ; seule la position dans le temps est racontée.
 function Frise({ trajectoire }: { trajectoire: { date: string; valeur: number }[] }) {
   if (trajectoire.length < 2) return null;
-  const max = Math.max(...trajectoire.map(t => t.valeur), 1);
   return (
     <div className="mb-6">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Votre trajectoire</p>
-      <div className="flex items-end gap-2 h-16 px-1">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+        Votre parcours se construit
+      </p>
+      <div className="relative flex items-center justify-between px-1 py-2" aria-hidden="true">
+        <div className="absolute inset-x-1 top-1/2 h-0.5 -translate-y-1/2 bg-border" />
         {trajectoire.map((t, i) => (
-          <div key={i} className="flex flex-col items-center gap-1 flex-1">
-            <div
-              className="w-full max-w-[10px] rounded-full bg-accent"
-              style={{ height: `${Math.max(8, (t.valeur / max) * 48)}px` }}
-            />
-          </div>
+          <span
+            key={i}
+            className={`relative h-3 w-3 rounded-full border-2 border-primary ${
+              i === trajectoire.length - 1 ? 'bg-primary' : 'bg-surface'
+            }`}
+          />
         ))}
       </div>
       <div className="flex justify-between text-xs text-muted-foreground/70 px-1 mt-1">
         <span>Début</span>
         <span>Aujourd&apos;hui</span>
       </div>
+      <p className="sr-only">
+        {trajectoire.length} bilans jalonnent votre parcours, du début à aujourd&apos;hui.
+      </p>
     </div>
   );
 }
@@ -79,7 +91,7 @@ export function MonEquilibreAccueil({
           <button
             type="button"
             onClick={onRetour}
-            className="w-full mt-6 py-2.5 px-4 border border-primary text-primary rounded-lg font-medium text-sm hover:bg-primary/10 transition-colors"
+            className="w-full mt-6 min-h-11 py-2.5 px-4 border border-primary text-primary rounded-lg font-medium text-sm hover:bg-primary/10 transition-colors"
           >
             ← Retour
           </button>
@@ -124,7 +136,13 @@ export function MonEquilibreAccueil({
 
         {priorites.length > 0 && (
           <div className="mb-6">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em] mb-2">Vos priorités</p>
+            {/* « Points à explorer », pas « priorités » (SP-CONV LOT-05) : ces
+                items sont un tri automatique par couverture, pas une décision
+                clinique — tant qu'aucune validation praticien n'existe, ils
+                sont présentés comme matière de dialogue. */}
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-[.06em] mb-2">
+              Points à explorer avec votre praticien
+            </p>
             <ul className="space-y-1.5">
               {/* Item priorité maquette : 15,5px, icône 19px encre cuivre. */}
               {priorites.map(p => (
