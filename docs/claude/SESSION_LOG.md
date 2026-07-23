@@ -266,6 +266,27 @@ reste disponible mais n'est plus nécessaire.
 
 **Questions ouvertes** : piste MP4.
 
+## 2026-07-23 — G-TRUST-04 clos : PR unique de clôture (routes C/D, catalogue typé, campagne livrée)
+
+**Décisions** : reliquat du LOT-00 en une PR unique (décision utilisateur).
+Journal des accès branché sur les 10 routes C/D — **correctif au passage : le
+GET booklet n'était pas scopé praticien**, rallié au patron du POST.
+`@ts-nocheck` levé **17/17** (mesure : 1 560 erreurs, dont 1 425 par le seul
+`meta` non typé) — le juge de certification transpile désormais le TS avant
+son eval, prouvé neutre. Doublons Q_NEU_04/Q_NEU_08 dédoublonnés (gagnant
+runtime conservé). Checklist exigences 5/6 à jour, GD-6 consignée, onboarding
+requalifié « fonctionne » (E2E portail-parcours). Lot + campagne livrés.
+
+**Écarté** : borne GD-5 (l'utilisateur a choisi de moderniser le juge) ;
+annotation `Record` du catalogue (272 erreurs induites → inférence conservée,
+moteur en 51 `any` explicites).
+
+**Prochaine action** : preuve fonctionnelle du journal au premier dossier
+ouvert en prod (requête GD-3).
+
+**Questions ouvertes** : conflit bénin possible sur `.wn/state.json` avec la
+PR #284 (sp-conv).
+
 ## 2026-07-23 — SP-CONV livrée : les six lots de code en full-auto
 
 **Décisions** : exécution full-auto autorisée (« lance tous les lots à la suite, checks, merge PR autorisés, nettoyage branches »). Six PR livrées et mergées à la suite, verify vert à chaque fois : #288 contrat d'épisode partagé (lib pure, garde D7) ; #290 cockpit adaptatif (phase initiale D5, bandeau épisode, plein écran D10, tests réécrits — l'ancien comportement testé était le reproche de l'audit) ; #291 suture time-travel (index Spirale → asOf via LectureEtatPassePanel piloté) ; #293 parcours patient synchronisé (étapes 5-6, champs additifs D11, dédoublonnage CTA) ; #294 Jardin (« Mon carnet alimentaire » — A7 amendé au registre, équilibre qualitatif, 44 px, TTL brouillons, MetricsSection supprimée) ; PR LOT-06 preuve visuelle (ARIA + toHaveScreenshot Linux fs-gaté, portail via Jennifer Martin isolée, workflow visual-baselines, dérogation V12 levée). **Écarté** : capture Mon équilibre portail (exigerait une consultation complète — remplacée par hub déplié). **Prochaine action** : déclencher `visual-baselines` et committer les premières baselines. **Questions ouvertes** : aucune — campagne close.

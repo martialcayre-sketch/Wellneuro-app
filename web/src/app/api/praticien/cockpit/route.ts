@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { construireReperes, resoudreAsOf, tronquerA } from '@/lib/praticien/lectureAsOf';
 import { confirmAssessmentEpisode } from '@/lib/clinical-engine/assessmentEpisode';
 import { buildClinicalReview } from '@/lib/clinical-engine/clinicalReview';
@@ -55,6 +56,9 @@ export type ConfirmCockpitEpisodePayload = {
   includedResponseIds?: string[];
   proposalHash?: string;
 };
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/cockpit';
 
 function unavailable(reason: CockpitUnavailableReason, error: string, status: number) {
   return NextResponse.json<CockpitRuntimeApiResponse>({ status: 'unavailable', reason, error }, { status });
@@ -118,8 +122,14 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
   }
 
   try {
-    const inputs = await loadRuntimeInputs(idPatient, emailPraticien(session) ?? '', asOfBrut);
+    const email = emailPraticien(session) ?? '';
+    const inputs = await loadRuntimeInputs(idPatient, email, asOfBrut);
     if (!inputs) return unavailable('patient_not_found', 'Patient introuvable.', 404);
+    // Journalisé ICI et non dans loadRuntimeInputs : le helper sert aussi le
+    // POST, qui laisse déjà une trace datée et attribuée (GD-1). AVANT le
+    // refus `asOf` : le dossier a été résolu et ses données lues — même
+    // principe que booklet et documents avec leur 422.
+    await journaliserAccesDossier({ idPatient, praticienEmail: email, route: ROUTE_JOURNAL, methode: 'GET' });
     if ('refus' in inputs) {
       // Une date hors repères n'est jamais ramenée au présent en silence : la
       // lecture serait alors présentée comme passée tout en étant actuelle.

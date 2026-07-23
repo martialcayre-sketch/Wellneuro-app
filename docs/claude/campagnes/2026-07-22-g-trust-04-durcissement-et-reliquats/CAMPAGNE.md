@@ -1,9 +1,9 @@
 ---
 id: "2026-07-22-g-trust-04-durcissement-et-reliquats"
 titre: "G-TRUST-04 — durcissement et reliquats"
-statut: "en_cours"
+statut: "livrée"
 créée_le: "2026-07-22"
-mise_à_jour: "2026-07-22"
+mise_à_jour: "2026-07-23"
 lot_courant: "LOT-00"
 ---
 
@@ -83,12 +83,18 @@ purger les reliquats du backlog d'audit — en un seul lot :
 
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
-| LOT-00 | Durcissement G-TRUST-04 + reliquats (6 chantiers, ~11 PR) | en_cours | — |
+| LOT-00 | Durcissement G-TRUST-04 + reliquats (6 chantiers, ~11 PR) | livré (#272, #273, #275, #276, #278, #281, PR de clôture du 2026-07-23) | — |
 
 ## Done de campagne
 
-- [ ] Journal d'accès livré, vérifié en production (`execute_sql`).
-- [ ] Exercice sur table exécuté et consigné.
-- [ ] Next 14.2.35, code mort supprimé, `@ts-nocheck` levé ou borné.
-- [ ] Checklist G-TRUST-04 exigences 5/6 mises à jour avec preuves.
-- [ ] Lot `livré` **et** campagne `livrée` dans le même commit de clôture.
+- [x] Journal d'accès livré (22 routes, #278 + PR de clôture) ; table vérifiée
+      en production après #273/#278 (`execute_sql`, 0 ligne — attendu, aucun
+      dossier ouvert depuis le déploiement). La preuve fonctionnelle au
+      premier dossier ouvert reste consignée dans `next_action`.
+- [x] Exercice sur table exécuté et consigné (#281, fiche 2026-EX1).
+- [x] Next 14.2.35 (#275), code mort supprimé (#276), `@ts-nocheck` levé
+      17/17 (PR de clôture, juge de certification transpilé).
+- [x] Checklist G-TRUST-04 exigences 5/6 mises à jour avec preuves (PR de
+      clôture).
+- [x] Lot `livré` **et** campagne `livrée` dans le même commit de clôture
+      (2026-07-23).

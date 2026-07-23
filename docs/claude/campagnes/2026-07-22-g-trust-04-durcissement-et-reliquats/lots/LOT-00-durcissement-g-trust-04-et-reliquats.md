@@ -1,7 +1,7 @@
 ---
 id: "LOT-00"
 titre: "Durcissement G-TRUST-04 et reliquats d'audit"
-statut: "en_cours"
+statut: "livré"
 dépend_de: "aucun"
 ---
 
@@ -153,14 +153,18 @@ certification 63 questionnaires + tests scoring + T1 à chaque fichier.
       #273, mergée le 2026-07-22.
 - [x] PR-3 Next 14.2.35 (T3) — #275, mergée le 2026-07-22.
 - [x] PR-4 code mort (T2) — #276, mergée le 2026-07-22.
-- [ ] PR-5 `@ts-nocheck` vague 1 (mesure consignée ici + certif + T2).
-- [x] PR-6 exercice sur table (docs) — cette PR.
+- [x] PR-5 `@ts-nocheck` vague 1 (mesure consignée ici + certif + T2) — PR de
+      clôture (2026-07-23).
+- [x] PR-6 exercice sur table (docs) — #281, mergée le 2026-07-22.
 - [x] PR-7 helper + garde + routes A/B (T2 ; mocks `journalAccesDossier`
-      ajoutés aux tests de routes) — cette PR.
-- [ ] PR-8 `@ts-nocheck` vague 2.
-- [ ] PR-9 routes C/D (T2).
-- [ ] PR-10 `@ts-nocheck` vague 3 ou borne.
-- [ ] PR-11 clôture (checklist, requalifications, state, SESSION_LOG).
+      ajoutés aux tests de routes) — #278, mergée le 2026-07-22.
+- [x] PR-8 `@ts-nocheck` vague 2 — PR de clôture (2026-07-23).
+- [x] PR-9 routes C/D (T2) — PR de clôture (2026-07-23).
+- [x] PR-10 `@ts-nocheck` vague 3 — PR de clôture (2026-07-23) : 17/17 levés,
+      juge de certification transpilé (décision utilisateur, pas de borne).
+- [x] PR-11 clôture (checklist, requalifications, state, SESSION_LOG) — PR de
+      clôture (2026-07-23). PR-5 à PR-11 regroupées en une PR unique sur
+      décision utilisateur du 2026-07-23 (« on enchaîne tout, 1 seule PR »).
 
 ## Tests
 
@@ -225,3 +229,79 @@ certification 63 questionnaires + tests scoring + T1 à chaque fichier.
   10 `route.test.ts` enrichis (1 create sur GET accessible au gabarit exact,
   0 sur refus et sur POST, corps 403 verrouillés), 2 `route.test.ts` créés
   (cloture, reperes — routes sans juge sinon). T1 vert (298 tests).
+
+### PR-9 — routes C/D + correctif booklet (2026-07-23, PR de clôture)
+
+- **Correctif d'autorisation trouvé au branchement** : le GET `booklet`
+  (prévisualisation praticien) lisait la synthèse par `findUnique(idSynthese)`
+  sans clause d'appartenance — tout praticien authentifié pouvait prévisualiser
+  n'importe quel booklet (nom patient, synthèse, e-mail). Rallié au scoping du
+  POST (`findFirst` + `filtrePatientsDuPraticien`), 404 anti-oracle conservé.
+- 6 routes C (besoins, cockpit, equilibre, synthese, consultations,
+  protocoles) : appel direct après preuve d'appartenance, jamais la garde ;
+  routes liste journalisées sur résultat non vide seulement — **limite
+  assumée : dossier possédé sans donnée non journalisé**. cockpit : appel dans
+  le handler GET, jamais dans `loadRuntimeInputs` (partagé POST, GD-1).
+- 4 routes D (apercu-patient/reponses, booklet, documents, reponses) :
+  idPatient issu de la ligne résolue, jamais du paramètre ; booklet et
+  documents journalisent avant leur 422 (la synthèse a été lue), apercu avant
+  son second 404.
+- Tests : 5 créés (booklet, equilibre, synthese, apercu-patient/reponses,
+  reponses), 5 enrichis (besoins, cockpit, consultations, documents,
+  protocoles) ; 1 create au gabarit littéral sur accessible, 0 sur
+  refus/POST/liste vide. Le test cockpit « aucune écriture Prisma » devient
+  « …clinique » (le journal est une écriture d'audit). Revue adversariale
+  wn-reviewer : GO — au constat de cohérence, le refus `asOf` de cockpit sur
+  dossier possédé journalise désormais (données lues avant le refus, même
+  principe que le 422 de booklet/documents).
+
+### Chantier 5 — `@ts-nocheck` levé 17/17 (2026-07-23, PR de clôture)
+
+**Mesure préalable (GD-5)**, pragmas retirés sur les 17 fichiers :
+**1 560 erreurs tsc**. Par fichier : questions 493, neuropsychologie 274,
+pediatrie 146, stress 130, gerontologie 96, sommeil 92, tabacologie 64,
+cancerologie 51, mode-de-vie 46, fibromyalgie 38, alimentaire 38,
+intestin-gastro 36, cardiologie 16, shared 15, urologie 14, pneumologie 11,
+index 0. Par nature : 1 425 TS2554 (« Expected 4 arguments » — le `meta` non
+typé des fabriques était obligatoire), 102 TS7006, 17 TS7005, 7 TS7053,
+2 TS1117 (les doublons Q_NEU), résidu divers. Hors TS2554, tout se
+concentrait dans questions.ts (120) et shared.ts (15).
+
+**Décision utilisateur du 2026-07-23** : moderniser le juge plutôt que
+borner — `check_questionnaire_certification.js` transpile chaque fichier
+(`ts.transpileModule`) avant son eval, dédoublonnage des helpers sur la
+source brute (l'émetteur re-imprime les one-liners), prouvé neutre sur
+catalogue inchangé (même verdict avant/après).
+
+**Vagues** : (1) fabriques `q/qn/qs` typées dans shared.ts, 10 fichiers levés
+sans une annotation de données ; (2) 6 fichiers levés, `Question.groupe`
+ajouté au type (25 items ECAB, scorings `group_majority`) ; (3) questions.ts —
+doublons Q_NEU_04/Q_NEU_08 supprimés en conservant le gagnant runtime,
+`QuestionOption.v` élargi à `number|string` (dépistages digestifs 'oui'/'non',
+héritage GAS), catalogue laissé à l'inférence (l'annotation `Record`
+explosait le moteur à 272 erreurs), moteur de scoring en **51 `any`
+explicites** — les juges du comportement restent la certification des
+63 questionnaires et les tests de scoring. Écart à la spéc : shared.ts était
+prévu en vague 1 avec les données ; il a été typé (pas seulement levé), et
+aucune borne n'a été nécessaire. Zéro valeur, seuil ou ordre d'évaluation
+modifié ; tsc 0 erreur ; certification et T1 verts à chaque vague.
+
+### Requalification « onboarding cassé » (2026-07-23)
+
+Item de backlog non qualifié (audit 5.0 du 2026-07-22, détail perdu à la
+compaction du journal). **Verdict : l'onboarding fonctionne, item périmé.**
+Preuve : E2E `web/e2e/portail-parcours.spec.ts` — parcours complet gate →
+écrans TRUST → consentement → fiche → anamnèse → **onboarding (« Accéder à
+mon parcours » → hub)** → questionnaire → verrouillage → correction →
+re-soumission, joué en serial sur Michel Dogné (PAT_SEED_03) sur 2 projets
+(Chromium bureau + iPhone 13), vert au T3 de la PR de clôture.
+
+### Clôture (2026-07-23)
+
+- Checklist G-TRUST-04 : exigence 5 → « amélioré les 2026-07-22/23 » avec
+  preuves et limites ; exigence 6 → « exercée » ; item 4 barré-daté ; règle
+  GD-6 (« jamais de drapeau `WN_*` sur Preview ») consignée.
+- Reste humain (hors lot) : preuve fonctionnelle du journal au premier
+  dossier ouvert en prod (requête GD-3), confirmation juridique D-TRUST-02,
+  registre physique des violations (EX-3), dérogation G-TRUST-04 à réexaminer
+  au 2026-10-21.

@@ -15,6 +15,8 @@ const { getServerSession, prisma, writes } = vi.hoisted(() => {
       consultation: { findFirst: vi.fn(), update: writes.consultationUpdate },
       // Lu uniquement en lecture d'un état passé (SP-TT).
       assessmentEpisode: { findMany: vi.fn() },
+      // Journal des accès (G-TRUST-04) : écriture d'audit, pas clinique.
+      journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     },
   };
 });
@@ -79,6 +81,21 @@ describe('/api/praticien/cockpit', () => {
     expect(response.status).toBe(404);
     expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
     expect(prisma.consultation.findFirst).not.toHaveBeenCalled();
+    // Un refus ne se journalise jamais : la ligne nommerait un dossier non lu.
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+  });
+
+  it('GET accessible journalise la lecture au gabarit littéral (G-TRUST-04)', async () => {
+    await GET(getRequest());
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_TEST',
+        praticienEmail: 'praticien@wellneuro.fr',
+        route: '/api/praticien/cockpit',
+        methode: 'GET',
+      },
+    });
   });
 
   it('propose T0 par défaut et J21 sur demande avec réponses dans et hors fenêtre', async () => {
@@ -177,7 +194,9 @@ describe('/api/praticien/cockpit', () => {
     expect(contextChanged.status).toBe(409);
   });
 
-  it('ne déclenche aucune écriture Prisma', async () => {
+  it('ne déclenche aucune écriture Prisma clinique', async () => {
+    // Le journal des accès (G-TRUST-04) écrit sur le GET — écriture d'audit,
+    // hors périmètre de cette assertion qui protège l'état clinique.
     await GET(getRequest());
     const proposed = await proposal();
     await POST(postRequest({
@@ -186,6 +205,15 @@ describe('/api/praticien/cockpit', () => {
     expect(writes.patientUpdate).not.toHaveBeenCalled();
     expect(writes.responseCreate).not.toHaveBeenCalled();
     expect(writes.consultationUpdate).not.toHaveBeenCalled();
+  });
+
+  it('le POST (confirmation) ne journalise pas — sa trace datée existe déjà (GD-1)', async () => {
+    const proposed = await proposal();
+    prisma.journalAccesDossier.create.mockClear();
+    await POST(postRequest({
+      idPatient: 'PAT_TEST', milestone: 'T0', includedResponseIds: ['REP_T0'], proposalHash: proposed.proposalHash,
+    }));
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 });
 
@@ -222,6 +250,9 @@ describe('/api/praticien/cockpit — lecture d’un état passé (SP-TT)', () =>
     const res = await GET(getRequest('idPatient=PAT_TEST&asOf=2026-01-15T00:00:00.000Z'));
     expect(res.status).toBe(400);
     expect((await res.json()).reason).toBe('invalid_payload');
+    // Le dossier a été résolu et ses données lues avant le refus de date :
+    // la lecture est journalisée (même principe que le 422 de booklet).
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
   });
 
   it('une date illisible est refusée', async () => {

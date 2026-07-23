@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // Mocks des dépendances de la route (auth, prisma, observabilité).
 const findFirst = vi.fn();
 const findUniquePatient = vi.fn();
+const createJournal = vi.fn();
+const deleteManyJournal = vi.fn();
 
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { email: 'p@wellneuro.fr' } })) }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
@@ -10,6 +12,10 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     syntheseIA: { findFirst: (...a: unknown[]) => findFirst(...a) },
     patient: { findUnique: (...a: unknown[]) => findUniquePatient(...a) },
+    journalAccesDossier: {
+      create: (...a: unknown[]) => createJournal(...a),
+      deleteMany: (...a: unknown[]) => deleteManyJournal(...a),
+    },
   },
 }));
 vi.mock('@/lib/observability/logger', () => ({ logger: { error: vi.fn(), security: vi.fn() } }));
@@ -49,7 +55,11 @@ function syntheseFixture(statut: string) {
 beforeEach(() => {
   findFirst.mockReset();
   findUniquePatient.mockReset();
+  createJournal.mockReset();
+  deleteManyJournal.mockReset();
   findUniquePatient.mockResolvedValue({ prenom: 'Sophie', nom: 'Nicola' });
+  createJournal.mockResolvedValue({});
+  deleteManyJournal.mockResolvedValue({ count: 0 });
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -65,16 +75,33 @@ describe('GET /api/praticien/documents', () => {
     expect(res.status).toBe(400);
   });
 
-  it('404 si synthèse introuvable', async () => {
+  it('404 si synthèse introuvable — jamais journalisé', async () => {
     findFirst.mockResolvedValue(null);
     const res = await GET(req('http://x/api/praticien/documents?idSynthese=SYN_1'));
     expect(res.status).toBe(404);
+    // Un refus ne se journalise jamais : la ligne nommerait un dossier non lu.
+    expect(createJournal).not.toHaveBeenCalled();
   });
 
-  it('422 si synthèse non validée', async () => {
+  it('422 si synthèse non validée — la lecture est journalisée (le dossier a été résolu)', async () => {
     findFirst.mockResolvedValue(syntheseFixture('Brouillon_IA'));
     const res = await GET(req('http://x/api/praticien/documents?idSynthese=SYN_1'));
     expect(res.status).toBe(422);
+    expect(createJournal).toHaveBeenCalledTimes(1);
+  });
+
+  it('lecture journalisée au gabarit littéral (G-TRUST-04), idPatient issu de la synthèse', async () => {
+    findFirst.mockResolvedValue(syntheseFixture('Validee_Praticien'));
+    await GET(req('http://x/api/praticien/documents?idSynthese=SYN_1'));
+    expect(createJournal).toHaveBeenCalledTimes(1);
+    expect(createJournal).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_1',
+        praticienEmail: 'p@wellneuro.fr',
+        route: '/api/praticien/documents',
+        methode: 'GET',
+      },
+    });
   });
 
   it('compose des blocs pour une synthèse validée', async () => {

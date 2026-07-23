@@ -6,6 +6,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     patient: { findUnique: vi.fn() },
     assessmentEpisode: { upsert: vi.fn(), findMany: vi.fn() },
     protocolDraft: { upsert: vi.fn(), findMany: vi.fn() },
+    journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     $transaction: vi.fn().mockResolvedValue([]),
   },
 }));
@@ -88,6 +89,8 @@ describe('POST /api/praticien/protocoles', () => {
         }),
       }),
     );
+    // Le POST ne journalise pas (GD-1) : l'écriture laisse déjà sa trace.
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 
   // Gate G2 — identité de cycle estampillée à l'écriture.
@@ -211,6 +214,16 @@ describe('GET /api/praticien/protocoles', () => {
         },
       }),
     );
+    // Liste non vide = appartenance prouvée : lecture journalisée (G-TRUST-04).
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_1',
+        praticienEmail: 'praticien@wellneuro.fr',
+        route: '/api/praticien/protocoles',
+        methode: 'GET',
+      },
+    });
   });
 
   it('ne remonte rien pour le patient d’un autre praticien', async () => {
@@ -228,5 +241,8 @@ describe('GET /api/praticien/protocoles', () => {
         }),
       }),
     );
+    // Liste vide : dossier non prouvé accessible → pas de journalisation
+    // (limite assumée, LOT-00).
+    expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 });

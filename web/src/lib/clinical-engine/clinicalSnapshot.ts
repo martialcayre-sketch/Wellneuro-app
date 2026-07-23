@@ -59,7 +59,11 @@ function hasExploitableRawAnswers(response: QuestionnaireResponseInput): boolean
   if (!answers) return false;
   const definition = QUESTIONNAIRE_CATALOGUE[response.questionnaireId as keyof typeof QUESTIONNAIRE_CATALOGUE];
   if (!definition) return false;
-  const questions = definition.sections.flatMap(section => section.questions);
+  // Le catalogue mêle fabriques typées et littéraux bruts (levée @ts-nocheck
+  // par vagues, lot G-TRUST-04) : on ne dépend ici que de `id`/`conditionnel`.
+  const questions = definition.sections.flatMap(
+    section => section.questions as ReadonlyArray<{ id: string; conditionnel?: string }>,
+  );
   return questions
     .filter(question => conditionApplies((question as { conditionnel?: string }).conditionnel, answers))
     .every(question => answers[question.id] !== undefined && answers[question.id] !== '');

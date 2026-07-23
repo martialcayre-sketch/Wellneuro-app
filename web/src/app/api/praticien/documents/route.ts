@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { type SyntheseSchema } from '@/lib/anthropic';
 import { blocsDepuisSynthese, STATUTS_SYNTHESE_VALIDES, type StatutSyntheseSource } from '@/lib/documents';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { logger } from '@/lib/observability/logger';
 import {
@@ -12,6 +13,9 @@ import {
   finalizeLogContext,
   withCorrelationHeader,
 } from '@/lib/observability/requestContext';
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/documents';
 
 // GET /api/praticien/documents?idSynthese=SYN...
 // C3 (composition documentaire multi-destinataires). Compose CÔTÉ SERVEUR les blocs
@@ -47,6 +51,10 @@ export async function GET(req: Request) {
     if (!synthese) {
       return withCorrelationHeader(NextResponse.json({ error: 'Synthèse introuvable.' }, { status: 404 }), requestContext);
     }
+
+    // La synthèse résolue et scopée nomme le dossier ; journalisé AVANT le
+    // 422 — au refus « non validée », la synthèse a bien été lue.
+    await journaliserAccesDossier({ idPatient: synthese.idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
 
     const statut = synthese.statut as StatutSyntheseSource;
     if (!STATUTS_SYNTHESE_VALIDES.includes(statut)) {

@@ -1,4 +1,3 @@
-// @ts-nocheck
 export * from './shared';
 export * from './cancerologie';
 export * from './stress';

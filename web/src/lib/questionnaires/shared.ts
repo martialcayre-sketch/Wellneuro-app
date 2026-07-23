@@ -1,4 +1,3 @@
-// @ts-nocheck
 // ═══════════════════════════════════════════════════════════════════════════════
 // Wellneuro — Helpers partagés du catalogue de questionnaires
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -7,6 +6,8 @@
 // Aucune logique clinique ni scoring ici : uniquement des primitives de
 // construction réutilisées par les modules de domaine et par `questions.ts`.
 // ═══════════════════════════════════════════════════════════════════════════════
+import type { Question, QuestionOption } from '../questionnaire-types';
+
 
 // ─── OPTION SETS STANDARDS ───────────────────────────────────────────────────
 
@@ -26,6 +27,6 @@ export const O_CONNERS = [{v:0,l:'Pas vrai du tout — Jamais ou rarement'},{v:1
 
 // ─── FABRIQUES D'ITEMS ───────────────────────────────────────────────────────
 // meta : objet optionnel — ex. {conditionnel:'BR4>=2'} pour items conditionnels
-export function q(id, texte, opts, meta)  { const o={id:id,texte:texte,type:'likert',options:opts}; if(meta) Object.assign(o,meta); return o; }
-export function qn(id, texte, min, max, step, unit, meta) { const o={id:id,texte:texte,type:'number',min:min,max:max,step:step||1,unit:unit||''}; if(meta) Object.assign(o,meta); return o; }
-export function qs(id, texte, opts, meta) { const o={id:id,texte:texte,type:'select',options:opts}; if(meta) Object.assign(o,meta); return o; }
+export function q(id: string, texte: string, opts: QuestionOption[], meta?: Partial<Question>): Question  { const o: Question ={id:id,texte:texte,type:'likert',options:opts}; if(meta) Object.assign(o,meta); return o; }
+export function qn(id: string, texte: string, min: number, max: number, step?: number, unit?: string, meta?: Partial<Question>): Question { const o: Question ={id:id,texte:texte,type:'number',min:min,max:max,step:step||1,unit:unit||''}; if(meta) Object.assign(o,meta); return o; }
+export function qs(id: string, texte: string, opts: QuestionOption[], meta?: Partial<Question>): Question { const o: Question ={id:id,texte:texte,type:'select',options:opts}; if(meta) Object.assign(o,meta); return o; }

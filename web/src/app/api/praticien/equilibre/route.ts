@@ -12,7 +12,11 @@ import { calculerNiveauxPreuveTousLesBesoins } from '@/lib/equilibre/evidence';
 import { calculerDeltaMomentum, resoudreLectureJalon } from '@/lib/equilibre/momentum';
 import { calculerObjetsCliniques } from '@/lib/equilibre/objetsCliniques';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import type { JalonMomentum, NiveauPreuveBesoin, ResultatMomentum, StrateCode } from '@/lib/equilibre/types';
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/equilibre';
 
 export type PrioriteBesoin = {
   besoin: number;
@@ -70,6 +74,9 @@ export async function GET(req: Request): Promise<NextResponse<EquilibreApiRespon
     if (!patient) {
       return NextResponse.json({ unavailable: true, reason: 'patient_not_found' }, { status: 404 });
     }
+
+    // Requête scopée réussie = appartenance prouvée : journaliser la lecture.
+    await journaliserAccesDossier({ idPatient, praticienEmail: email, route: ROUTE_JOURNAL, methode: 'GET' });
 
     const reponsesDb = await prisma.questionnaireReponse.findMany({
       where: { idPatient },

@@ -1,5 +1,5 @@
-// @ts-nocheck
 // ─── IMPORTS CATALOGUE (lot 7) ──────────────────────────────────────────────
+import type { Question, QuestionOption } from './questionnaire-types';
 import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_FIB_01, Q_FIB_02, Q_FIB_03, Q_GAS_01, Q_GAS_02, Q_GAS_03, Q_GEO_01, Q_GEO_02, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_INF_01, Q_INF_02, Q_INF_03, Q_INF_04, Q_INF_05, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_08, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_01, Q_PED_02, Q_PED_03, Q_PNE_01, Q_SOM_01, Q_SOM_02, Q_SOM_03, Q_SOM_04, Q_SOM_05, Q_SOM_06, Q_SOM_07, Q_STR_01, Q_STR_02, Q_STR_03, Q_STR_04, Q_STR_05, Q_STR_06, Q_STR_08, Q_TAB_01, Q_TAB_02, Q_TAB_03, Q_TAB_04, Q_TAB_05, Q_URO_01, Q_URO_02 } from './questionnaires/index';
 // ═══════════════════════════════════════════════════════════════════════════════
 // Wellneuro SIIN — Questions.gs — DÉFINITIF v4 corrigé Dev
@@ -50,9 +50,9 @@ const O_IPSS = [{v:0,l:'Jamais'},{v:1,l:'Environ 1 x sur 5'},{v:2,l:'Environ 1 x
 const O_VF = [{v:0,l:'Faux'},{v:1,l:'Vrai'}];
 
 // meta : objet optionnel — ex. {conditionnel:'BR4>=2'} pour items conditionnels
-function q(id, texte, opts, meta)  { const o={id:id,texte:texte,type:'likert',options:opts}; if(meta) Object.assign(o,meta); return o; }
-function qn(id, texte, min, max, step, unit, meta) { const o={id:id,texte:texte,type:'number',min:min,max:max,step:step||1,unit:unit||''}; if(meta) Object.assign(o,meta); return o; }
-function qs(id, texte, opts, meta) { const o={id:id,texte:texte,type:'select',options:opts}; if(meta) Object.assign(o,meta); return o; }
+function q(id: string, texte: string, opts: QuestionOption[], meta?: Partial<Question>): Question  { const o: Question ={id:id,texte:texte,type:'likert',options:opts}; if(meta) Object.assign(o,meta); return o; }
+function qn(id: string, texte: string, min: number, max: number, step?: number, unit?: string, meta?: Partial<Question>): Question { const o: Question ={id:id,texte:texte,type:'number',min:min,max:max,step:step||1,unit:unit||''}; if(meta) Object.assign(o,meta); return o; }
+function qs(id: string, texte: string, opts: QuestionOption[], meta?: Partial<Question>): Question { const o: Question ={id:id,texte:texte,type:'select',options:opts}; if(meta) Object.assign(o,meta); return o; }
 
 // ─── CATALOGUE ───────────────────────────────────────────────────────────────
 
@@ -706,30 +706,9 @@ Q_FIB_02: {
 
 Q_NEU_01,
 
-Q_NEU_04: {
-  id:'Q_NEU_04', titre:'SCOFF — Dépistage des troubles du comportement alimentaire',
-  instructions:'Répondez par Oui ou Non à chacune des questions suivantes.',
-  sections:[
-    { id:'A', titre:'Questions sur votre rapport à l\'alimentation',
-      questions:[
-        q('S1',"Vous êtes-vous déjà fait vomir parce que vous ne vous sentiez pas bien « l'estomac plein » ?",O_YN),
-        q('S2',"Craignez-vous d'avoir perdu le contrôle des quantités que vous mangez ?",O_YN),
-        q('S3',"Avez-vous perdu plus de 6 kilos en moins de trois mois ?",O_YN),
-        q('S4',"Pensez-vous que vous êtes trop gros(se) alors que les autres vous considèrent comme trop mince ?",O_YN),
-        q('S5',"Diriez-vous que la nourriture est quelque chose qui occupe une place dominante dans votre vie ?",O_YN),
-      ]}
-  ],
-  scoring:{
-    type:'sum',
-    maxTotal:5,
-    certification:{source:'drive',status:'certifie'},
-    interpretation:[
-      {min:0,max:1,label:'Risque faible',color:'success'},
-      {min:2,max:5,label:'Risque de trouble du comportement alimentaire — consultation recommandée',color:'danger'},
-    ]
-  }
-},
-
+// Q_NEU_04 (SCOFF) : la version du module `neuropsychologie.ts` — un doublon
+// inline la précédait ici, écrasé au runtime par cette clé plus tardive ;
+// supprimé au lot G-TRUST-04 en conservant le gagnant (certification témoin).
 Q_NEU_04,
 
 
@@ -1045,8 +1024,9 @@ Q_NEU_03,
 Q_NEU_06,
 
 
-Q_NEU_08,
-
+// Q_NEU_08 (ECAB) : la version inline ci-dessous — le raccourci importé la
+// précédait, écrasé au runtime par cette clé plus tardive ; supprimé au lot
+// G-TRUST-04 en conservant le gagnant (certification témoin, EC10 inversé).
 Q_NEU_08: {
   id:'Q_NEU_08', titre:'ECAB — Dépendance cognitive aux benzodiazépines',
   instructions:'Ce questionnaire évalue votre attachement cognitif aux benzodiazépines (tranquillisants, somnifères). Répondez par Vrai ou Faux selon votre ressenti actuel.',
@@ -1449,8 +1429,14 @@ function getQuestionnaireIds() {
   return Object.keys(QUESTIONNAIRE_CATALOGUE).sort();
 }
 
-function getQuestionnaire(idQ) {
-  const q = QUESTIONNAIRE_CATALOGUE[idQ];
+// Le moteur travaille en `any` explicite : le catalogue inféré est une union
+// de 63 littéraux précis, mais ses 33 blocs de scoring hétérogènes rendraient
+// tout typage strict du moteur disproportionné (GD-5). Les juges du
+// comportement restent la certification des 63 questionnaires et les tests
+// de scoring — un `any` visible et greppable vaut mieux qu'un pragma qui
+// masquait le fichier entier.
+function getQuestionnaire(idQ: string) {
+  const q = (QUESTIONNAIRE_CATALOGUE as Record<string, any>)[idQ];
   if (!q) return null;
   return JSON.parse(JSON.stringify(q, (k, val) => {
     if (k === 'v') return undefined;
@@ -1459,13 +1445,13 @@ function getQuestionnaire(idQ) {
 }
 
 // Version sérialisable pour le client (remplace v/l par value/label)
-function getQuestionnaireForClient(idQ) {
-  const def = QUESTIONNAIRE_CATALOGUE[idQ];
+function getQuestionnaireForClient(idQ: string) {
+  const def = (QUESTIONNAIRE_CATALOGUE as Record<string, any>)[idQ];
   if (!def) return null;
-  function normalize(obj) {
+  function normalize(obj: any): any {
     if (Array.isArray(obj)) return obj.map(normalize);
     if (obj && typeof obj === 'object') {
-      const out = {};
+      const out: Record<string, any> = {};
       for (const k in obj) {
         if (k === 'v') out['value'] = obj[k];
         else if (k === 'l') out['label'] = obj[k];
@@ -1478,17 +1464,17 @@ function getQuestionnaireForClient(idQ) {
   return normalize(def);
 }
 
-export function calculateScore(idQ, answers) {
-  const def = QUESTIONNAIRE_CATALOGUE[idQ];
+export function calculateScore(idQ: string, answers: Record<string, any>) {
+  const def = (QUESTIONNAIRE_CATALOGUE as Record<string, any>)[idQ];
   if (!def) return {error: 'Questionnaire introuvable'};
   const sc = def.scoring;
 
   // Collecter toutes les questions
-  const allQ = [];
-  def.sections.forEach(s => s.questions.forEach(q => allQ.push(q)));
+  const allQ: any[] = [];
+  def.sections.forEach((s: any) => s.questions.forEach((q: any) => allQ.push(q)));
 
   // Évaluer un conditionnel de type 'QREF>=N' — items optionnels (BR5, BR16)
-  function evalConditionnel(cond) {
+  function evalConditionnel(cond: any) {
     if (!cond) return true;
     const m = cond.match(/^(\w+)(>=|<=|>|<|==)(\d+)$/);
     if (!m) return true;
@@ -1502,23 +1488,23 @@ export function calculateScore(idQ, answers) {
   }
 
   // Convertir answers en valeurs numériques
-  function getVal(qid) {
+  function getVal(qid: any) {
     const raw = answers[qid];
     if (raw === undefined || raw === null || raw === '') return null;
     return parseFloat(raw);
   }
 
   // Somme d'un sous-ensemble d'items
-  function sumItems(items, reversed) {
+  function sumItems(items: any, reversed: any) {
     let total = 0, missing = 0;
-    items.forEach(id => {
+    items.forEach((id: any) => {
       const q = allQ.find(q => q.id === id);
       if (q && q.conditionnel && !evalConditionnel(q.conditionnel)) return;
       const v = getVal(id);
       if (v === null) { missing++; return; }
       let minV = 0, maxV = 4;
       if (q && q.options && q.options.length) {
-        const vals = q.options.map(o => o.v !== undefined ? o.v : o.value).map(Number);
+        const vals = q.options.map((o: any) => o.v !== undefined ? o.v : o.value).map(Number);
         minV = Math.min(...vals);
         maxV = Math.max(...vals);
       }
@@ -1528,7 +1514,7 @@ export function calculateScore(idQ, answers) {
   }
 
   // Interpréter un score selon des plages
-  function interpretRanges(score, ranges) {
+  function interpretRanges(score: any, ranges: any) {
     for (const r of ranges) {
       if (score >= r.min && score <= r.max) return r;
     }
@@ -1557,7 +1543,7 @@ export function calculateScore(idQ, answers) {
     const {total} = sumItems(items, []);
     const average = Number((total / items.length).toFixed(1));
     const interp = interpretRanges(average, sc.interpretation);
-    const subScores = (sc.domains || []).map(domain => {
+    const subScores = (sc.domains || []).map((domain: any) => {
       const value = getVal(domain.item);
       return {
         id: domain.id,
@@ -1586,9 +1572,9 @@ export function calculateScore(idQ, answers) {
     const items = sc.items || allQ.map(q => q.id);
     let total = 0;
     let missing = 0;
-    const missingIds = [];
-    const notApplicable = [];
-    items.forEach(id => {
+    const missingIds: any[] = [];
+    const notApplicable: any[] = [];
+    items.forEach((id: any) => {
       const q = allQ.find(q => q.id === id);
       if (q && q.conditionnel && !evalConditionnel(q.conditionnel)) {
         notApplicable.push(id);
@@ -1610,7 +1596,7 @@ export function calculateScore(idQ, answers) {
   if (sc.type === 'sigh_sad_sa') {
     const scoreIds = [...(sc.groupA || []), ...(sc.groupB || []), ...(sc.dualItems || [])];
     const missingIds = scoreIds.filter(id => getVal(id) === null);
-    const sumIds = ids => ids.reduce((sum, id) => sum + (getVal(id) || 0), 0);
+    const sumIds = (ids: any) => ids.reduce((sum: any, id: any) => sum + (getVal(id) || 0), 0);
     const q15 = getVal('SIGH_Q015') || 0;
     const q16 = getVal('SIGH_Q016') || 0;
     const q17 = getVal('SIGH_Q017') || 0;
@@ -1687,22 +1673,22 @@ export function calculateScore(idQ, answers) {
 
   // ── SUBSCORE ─────────────────────────────────────────
   if (sc.type === 'subscore') {
-    const subResults = sc.subScores.map(sub => {
+    const subResults = sc.subScores.map((sub: any) => {
       const {total} = sumItems(sub.items, []);
       const scaled = sub.multiplier ? total * sub.multiplier : total;
       let interp = null;
       if (sc.interpretation) {
-        const interpDef = sc.interpretation.find(i => i.subscale === sub.id || i.subscale === '*');
+        const interpDef = sc.interpretation.find((i: any) => i.subscale === sub.id || i.subscale === '*');
         if (interpDef) interp = interpretRanges(scaled, interpDef.ranges);
       }
       return {id: sub.id, label: sub.label, total, scaled, max: sub.max, maxScaled: sub.multiplier ? sub.max*sub.multiplier : sub.max, interpretation: interp};
     });
-    const globalTotal = subResults.reduce((s, r) => s + r.total, 0);
+    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
 
     // Sortie enrichie pour Monnier : calories de base = protéines (g/j) x 24
     if (def.id === 'Q_ALI_03') {
-      const prot = subResults.find(s => s.id === 'MONNIER_PROT');
-      const calSup = subResults.find(s => s.id === 'MONNIER_CAL_SUP');
+      const prot = subResults.find((s: any) => s.id === 'MONNIER_PROT');
+      const calSup = subResults.find((s: any) => s.id === 'MONNIER_CAL_SUP');
       const proteinesGJour = prot ? Number(prot.total.toFixed(1)) : 0;
       const caloriesAdditionnelles = calSup ? Number(calSup.total.toFixed(0)) : 0;
       const caloriesBaseEstimees = Number((proteinesGJour * 24).toFixed(1));
@@ -1727,14 +1713,14 @@ export function calculateScore(idQ, answers) {
   // Source : EORTC scoring manuals. Raw score = moyenne des items renseignés ;
   // score 0-100 direct = ((RS-1)/range)*100 ; inverse = (1-(RS-1)/range)*100.
   if (sc.type === 'eortc') {
-    const subResults = sc.subScores.map(sub => {
-      const activeItems = sub.items.filter(id => {
+    const subResults = sc.subScores.map((sub: any) => {
+      const activeItems = sub.items.filter((id: any) => {
         const q = allQ.find(q => q.id === id);
         return !(q && q.conditionnel && !evalConditionnel(q.conditionnel));
       });
       let rawTotal = 0;
       let answered = 0;
-      activeItems.forEach(id => {
+      activeItems.forEach((id: any) => {
         const v = getVal(id);
         if (v === null) return;
         rawTotal += v;
@@ -1761,24 +1747,24 @@ export function calculateScore(idQ, answers) {
         transform: sub.transform
       };
     });
-    const scored = subResults.filter(r => r.score !== null);
+    const scored = subResults.filter((r: any) => r.score !== null);
     const total = scored.length
-      ? Number((scored.reduce((sum, r) => sum + r.score, 0) / scored.length).toFixed(1))
+      ? Number((scored.reduce((sum: any, r: any) => sum + r.score, 0) / scored.length).toFixed(1))
       : null;
     return {type:'eortc', subScores: subResults, total, maxTotal:100};
   }
 
   // ── GROUP_MAJORITY (Q_STR_01) ────────────────────────
   if (sc.type === 'group_majority') {
-    const subResults = sc.subScores.map(sub => {
+    const subResults = sc.subScores.map((sub: any) => {
       const {total} = sumItems(sub.items, []);
       return {id: sub.id, label: sub.label, total, max: sub.max};
     });
-    const globalTotal = subResults.reduce((s, r) => s + r.total, 0);
+    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
     let interp = interpretRanges(globalTotal, sc.interpretation);
     if (globalTotal >= 5 && globalTotal <= 14) {
-      const dominant = subResults.reduce((a, b) => a.total >= b.total ? a : b);
-      const proto = {A:'dopaminergique', B:'sérotoninergique', C:'mixte'};
+      const dominant = subResults.reduce((a: any, b: any) => a.total >= b.total ? a : b);
+      const proto: Record<string, string> = {A:'dopaminergique', B:'sérotoninergique', C:'mixte'};
       interp = {...interp, dominant: dominant.id, protocol: `Protocole ${proto[dominant.id] || dominant.id}`};
     }
     return {type:'group_majority', subScores: subResults, total: globalTotal, interpretation: interp, note: sc.note || null, certification: sc.certification || null};
@@ -1788,8 +1774,8 @@ export function calculateScore(idQ, answers) {
   if (sc.type === 'had') {
     const {total: scoreA} = sumItems(sc.subscalesA, []);
     const {total: scoreD} = sumItems(sc.subscalesD, []);
-    function interpHad(score, sub) {
-      const def = sc.interpretation.find(i => i.subscale === sub);
+    function interpHad(score: any, sub: any) {
+      const def = sc.interpretation.find((i: any) => i.subscale === sub);
       return def ? interpretRanges(score, def.ranges) : null;
     }
     return {
@@ -1848,12 +1834,12 @@ export function calculateScore(idQ, answers) {
 
   // ── TFD ──────────────────────────────────────────────────
   if (sc.type === 'tfd') {
-    const subResults = sc.subScores.map(sub => {
+    const subResults = sc.subScores.map((sub: any) => {
       const {total} = sumItems(sub.items, []);
       const interp = interpretRanges(total, sub.ranges);
       return {id: sub.id, label: sub.label, total, max: sub.max, interpretation: interp};
     });
-    const globalTotal = subResults.reduce((s, r) => s + r.total, 0);
+    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
     const globalInterp = interpretRanges(globalTotal, sc.globalInterpretation);
     return {type:'tfd', subScores: subResults, total: globalTotal, maxTotal:93, interpretation: globalInterp, note: sc.note || null, certification: sc.certification || null};
   }
@@ -1885,7 +1871,9 @@ export function calculateScore(idQ, answers) {
 
   // ── BRISTOL ───────────────────────────────────────────────
   if (sc.type === 'bristol') {
-    const v = getVal('BR1');
+    // `as any` : BR1 absent rend null, que les comparaisons historiques
+    // coercent (null <= 2) — comportement conservé à l'identique.
+    const v = getVal('BR1') as any;
     const interp = v <= 2 ? {label:'Constipation',color:'danger'}
                  : v <= 4 ? {label:'Normal',color:'success'}
                  : {label:'Selles molles / diarrhée',color:'warning'};
@@ -1894,23 +1882,23 @@ export function calculateScore(idQ, answers) {
 
   // ── UPPS ─────────────────────────────────────────────────
   if (sc.type === 'upps') {
-    const subResults = sc.subScores.map(sub => {
+    const subResults = sc.subScores.map((sub: any) => {
       const {total} = sumItems(sub.items, sub.reversed);
       return {id: sub.id, label: sub.label, total, max: sub.items.length * 4};
     });
-    const globalTotal = subResults.reduce((s, r) => s + r.total, 0);
+    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
     return {type:'upps', subScores: subResults, total: globalTotal, note: sc.note || null, certification: sc.certification || null};
   }
 
   // ── KARASEK (Q_STR_06) ───────────────────────────────
   if (sc.type === 'karasek') {
-    const karasekValue = (id, reversedItems = []) => {
+    const karasekValue = (id: any, reversedItems: any[] = []) => {
       const value = getVal(id);
       if (value === null) return 0;
       return reversedItems.includes(id) ? 5 - value : value;
     };
-    const sumKarasek = (items, reversedItems = []) =>
-      items.reduce((sum, id) => sum + karasekValue(id, reversedItems), 0);
+    const sumKarasek = (items: any, reversedItems: any[] = []) =>
+      items.reduce((sum: any, id: any) => sum + karasekValue(id, reversedItems), 0);
 
     const latDef = sc.weightedLatitude || null;
     let latWeighted = null;
@@ -1920,7 +1908,7 @@ export function calculateScore(idQ, answers) {
       latWeighted = (4 * auto) + (2 * usage);
     }
 
-    const subResults = sc.subScores.map(sub => {
+    const subResults = sc.subScores.map((sub: any) => {
       const rawTotal = sumKarasek(sub.items, sub.reversedItems || []);
       const total = sub.id === 'LAT' && latWeighted !== null ? latWeighted : rawTotal;
       let atRisk = false;
@@ -1931,8 +1919,8 @@ export function calculateScore(idQ, answers) {
       }
       return {id:sub.id, label:sub.label, total, rawTotal, max:sub.max, seuil:sub.seuil, atRisk, seuilLabel:sub.seuilLabel};
     });
-    const dem = subResults.find(s => s.id==='DEM'), lat = subResults.find(s => s.id==='LAT'),
-          sou = subResults.find(s => s.id==='SOU');
+    const dem = subResults.find((s: any) => s.id==='DEM'), lat = subResults.find((s: any) => s.id==='LAT'),
+          sou = subResults.find((s: any) => s.id==='SOU');
     const jobStrain = dem&&lat ? dem.atRisk && lat.atRisk : false;
     const isoStrain = jobStrain && sou && sou.atRisk;
     const interp = isoStrain ? {label:'Iso-Strain — risque burnout élevé',color:'danger'}
@@ -1993,8 +1981,8 @@ export function calculateScore(idQ, answers) {
   // Partie 3 : profils saisonniers par comptage mensuel
   // Partie 4 : symptômes hivernaux (nombre de OUI)
   if (sc.type === 'idtas_ae') {
-    const countOui = (items) => items.reduce((sum, id) => sum + (getVal(id) === 1 ? 1 : 0), 0);
-    const sumVals = (items) => items.reduce((sum, id) => sum + (getVal(id) || 0), 0);
+    const countOui = (items: any) => items.reduce((sum: any, id: any) => sum + (getVal(id) === 1 ? 1 : 0), 0);
+    const sumVals = (items: any) => items.reduce((sum: any, id: any) => sum + (getVal(id) || 0), 0);
 
     const partie1 = countOui(['IA1','IA2','IA3','IA4','IA5','IA6','IA7','IA8','IA9']);
     const gssScore = sumVals(['IG1','IG2','IG3','IG4','IG5','IG6']);
@@ -2009,8 +1997,8 @@ export function calculateScore(idQ, answers) {
       return null;
     })();
 
-    const winterHits = (sc.winterMonthsA || []).filter((id) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
-    const inverseHits = (sc.springSummerMonthsB || []).filter((id) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
+    const winterHits = (sc.winterMonthsA || []).filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
+    const inverseHits = (sc.springSummerMonthsB || []).filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
     const winterPatternLikely = winterHits >= (sc.monthlyPatternMinMonths || 3);
     const inversePatternLikely = inverseHits >= (sc.monthlyPatternMinMonths || 3);
 
@@ -2064,11 +2052,11 @@ export function calculateScore(idQ, answers) {
 
   // ── WEIGHTED_PER_AXIS (Tinetti Q_GEO_01) ─────────────
   if (sc.type === 'weighted_per_axis') {
-    const subResults = sc.subScores.map(sub => {
+    const subResults = sc.subScores.map((sub: any) => {
       const {total} = sumItems(sub.items, []);
       return {id:sub.id, label:sub.label, total, max:sub.max};
     });
-    const globalTotal = subResults.reduce((s, r) => s + r.total, 0);
+    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
     const interp = sc.interpretation ? interpretRanges(globalTotal, sc.interpretation) : null;
     return {type:'weighted_per_axis', subScores:subResults, total:globalTotal, maxTotal:sc.maxTotal||28, interpretation:interp, certification: sc.certification || null};
   }
@@ -2201,14 +2189,14 @@ export function calculateScore(idQ, answers) {
   // Requis pour Q_GEO_06 — Phase 1 (/5) + Phase 2 (/5) → total /10
   // Note clinique : rappel différé ≤ 2/5 → évocateur MA (sensibilité 85 %, spécificité 90 %)
   if (sc.type === 'sum_two_phases') {
-    const phaseResults = sc.phases.map(ph => {
+    const phaseResults = sc.phases.map((ph: any) => {
       const {total} = sumItems(ph.items, []);
       return {id: ph.id, label: ph.label, total, maxTotal: ph.maxTotal};
     });
-    const globalTotal = phaseResults.reduce((s, p) => s + p.total, 0);
+    const globalTotal = phaseResults.reduce((s: any, p: any) => s + p.total, 0);
 
     // Alerte clinique si rappel différé ≤ 2
-    const phaseD   = phaseResults.find(p => p.id === 'phase2');
+    const phaseD   = phaseResults.find((p: any) => p.id === 'phase2');
     const alertMA  = phaseD ? phaseD.total <= 2 : false;
 
     const interp = sc.interpretation ? interpretRanges(globalTotal, sc.interpretation) : null;
@@ -2248,13 +2236,13 @@ export function calculateScore(idQ, answers) {
   // Utilisé par Q_NEU_12 IDTAS-AE (4 parties : count_oui / sum / count_oui / sum)
   // L'interprétation principale repose sur le score GSS (Partie 2)
   if (sc.type === 'composite_multi_parties') {
-    const partResults = sc.parts.map(part => {
+    const partResults = sc.parts.map((part: any) => {
       // Collecter les items de cette partie
       const partItems = allQ.filter(q => part.items.includes(q.id));
 
       if (part.type === 'count_oui') {
         let count = 0;
-        part.items.forEach(id => { const v = getVal(id); if (v === 1) count++; });
+        part.items.forEach((id: any) => { const v = getVal(id); if (v === 1) count++; });
         return {id: part.id, label: part.label || part.id, type:'count_oui',
                 count, maxTotal: part.maxTotal};
       }
@@ -2267,7 +2255,7 @@ export function calculateScore(idQ, answers) {
     });
 
     // Interprétation basée sur le score GSS (P2)
-    const gssResult = partResults.find(p => p.id === 'P2');
+    const gssResult = partResults.find((p: any) => p.id === 'P2');
     const gssScore  = gssResult ? (gssResult.total || 0) : 0;
     let interp = null;
     if (sc.interpretation) {

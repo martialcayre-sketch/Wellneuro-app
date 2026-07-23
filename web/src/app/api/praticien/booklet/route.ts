@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { type SyntheseSchema, maskEmail, sanitizeAuditError } from '@/lib/anthropic';
 import { buildBookletHTML } from '@/lib/documents/bookletHtml';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
@@ -13,6 +14,9 @@ import {
   finalizeLogContext,
   withCorrelationHeader,
 } from '@/lib/observability/requestContext';
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/booklet';
 
 // GET /api/praticien/booklet?idSynthese=SYN...
 // Génère et retourne le HTML du booklet (prévisualisation praticien)
@@ -26,13 +30,22 @@ export async function GET(req: Request) {
 
   if (!idSynthese) return withCorrelationHeader(NextResponse.json({ error: 'idSynthese requis.' }, { status: 400 }), requestContext);
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+
   try {
-    const synthese = await prisma.syntheseIA.findUnique({
-      where: { idSynthese },
+    // Même scoping que le POST : la synthèse d'un patient d'un autre praticien
+    // est « introuvable », le 404 existant absorbe les deux cas (anti-oracle).
+    const synthese = await prisma.syntheseIA.findFirst({
+      where: { idSynthese, patient: filtrePatientsDuPraticien(emailSession) },
       include: { bookletEnvois: { orderBy: { dateEnvoi: 'desc' }, take: 1 } },
     });
 
     if (!synthese) return withCorrelationHeader(NextResponse.json({ error: 'Synthèse introuvable.' }, { status: 404 }), requestContext);
+
+    // La synthèse résolue et scopée nomme le dossier ; journalisé AVANT le
+    // 422 — au refus « non validée », la synthèse a bien été lue.
+    await journaliserAccesDossier({ idPatient: synthese.idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
 
     if (synthese.statut !== 'Validee_Praticien' && synthese.statut !== 'Corrigee_Praticien') {
       return withCorrelationHeader(NextResponse.json(

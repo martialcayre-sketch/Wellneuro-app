@@ -3,10 +3,31 @@
 
 const fs = require('fs');
 const path = require('path');
+const { createRequire } = require('module');
 
 const root = path.resolve(__dirname, '..');
 const questionsPath = path.join(root, 'web/src/lib/questions.ts');
 const mappingPath = path.join(root, 'docs/questionnaires-drive-mapping.md');
+
+// TypeScript est une devDependency de web/ — résolution indépendante du cwd
+// (le script est lancé depuis web/ par `npm run scoring-check`, mais rien ne
+// doit en dépendre).
+const ts = createRequire(path.join(root, 'web', 'package.json'))('typescript');
+
+// Le catalogue est du TypeScript depuis la levée de `@ts-nocheck` (lot
+// G-TRUST-04) : chaque fichier est transpilé avant l'eval, les annotations
+// disparaissent. ORDRE IMPOSÉ : le dédoublonnage des helpers
+// (`stripDuplicateQuestionHelpers`) travaille ligne à ligne sur la source
+// BRUTE, où les one-liners `function q(...)` et `const O_* =` sont garantis —
+// l'émetteur TypeScript, lui, re-imprime ces déclarations sur plusieurs
+// lignes. Prouvé neutre sur le catalogue pré-typage : même verdict, mêmes
+// 63 clés, mêmes fixtures.
+function transpileTs(source, fileName) {
+  return ts.transpileModule(source, {
+    fileName,
+    compilerOptions: { target: ts.ScriptTarget.ES2017, module: ts.ModuleKind.ESNext },
+  }).outputText;
+}
 
 // Le catalogue est découpé par domaine (lot 7) : `questions.ts` importe des
 // modules locaux (`./questionnaires/*`). Ce check évalue le catalogue comme un
@@ -18,7 +39,11 @@ function stripModuleSource(source) {
     .replace(/^\s*export\s+\*\s+from\s+['"]\.[^'"]*['"];?\s*$/gm, '')
     .replace(/^\s*export\s+\{[^}]*\}\s+from\s+['"]\.[^'"]*['"];?\s*$/gm, '')
     .replace(/^export\s+(const|function|class|let|var)\b/gm, '$1')
-    .replace(/^export\s+default\s+/gm, '');
+    .replace(/^export\s+default\s+/gm, '')
+    // Un module dont tous les exports sont des types (questionnaire-types.ts,
+    // inliné via un `import type`) transpile en un `export {};` résiduel,
+    // invalide dans un script eval.
+    .replace(/^\s*export\s*\{\s*\};?\s*$/gm, '');
 }
 
 function localImportPaths(source, dir) {
@@ -50,9 +75,11 @@ function inlineModule(file, seen, parts) {
   const abs = path.resolve(file);
   if (seen.has(abs)) return;
   seen.add(abs);
-  const source = fs.readFileSync(abs, 'utf8');
-  for (const dep of localImportPaths(source, path.dirname(abs))) inlineModule(dep, seen, parts);
-  parts.push(stripDuplicateQuestionHelpers(stripModuleSource(source)));
+  const raw = fs.readFileSync(abs, 'utf8');
+  for (const dep of localImportPaths(raw, path.dirname(abs))) inlineModule(dep, seen, parts);
+  // Dédoublonner sur la source brute (one-liners garantis), transpiler, puis
+  // retirer la syntaxe module de la sortie ré-imprimée.
+  parts.push(stripModuleSource(transpileTs(stripDuplicateQuestionHelpers(raw), abs)));
 }
 
 function loadQuestionsModule() {

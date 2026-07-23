@@ -18,6 +18,10 @@ import {
   filtrePatientsDuPraticien,
   verifierAppartenancePatient,
 } from '@/lib/praticien/appartenance';
+import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/protocoles';
 
 // Persistance minimale C2A (LOT-02). Le praticien authentifié persiste un
 // épisode CONFIRMÉ et un protocole RELU (practitioner_reviewed). Le snapshot,
@@ -220,6 +224,13 @@ export async function GET(req: Request): Promise<NextResponse<ListResponse>> {
         episode: { select: { milestone: true } },
       },
     });
+
+    if (drafts.length > 0) {
+      // Liste non vide = appartenance prouvée par la relation. Liste vide =
+      // rien (anti-oracle) — limite assumée (LOT-00) : dossier possédé sans
+      // protocole non journalisé.
+      await journaliserAccesDossier({ idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
+    }
 
     return NextResponse.json({
       ok: true,

@@ -4,6 +4,10 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSubScoreRanges, type ScoreRange } from '@/lib/scoring/ranges';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
+import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
+
+// Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
+const ROUTE_JOURNAL = '/api/praticien/reponses';
 
 export type ReponseQuestionnaire = {
   idReponse: string;
@@ -52,6 +56,13 @@ export async function GET(req: Request): Promise<NextResponse<ReponsesApiRespons
       where: { emailPatient: email, patient: filtrePatientsDuPraticien(emailSession) },
       orderBy: { dateReponse: 'desc' },
     });
+
+    if (pgReponses.length > 0) {
+      // Liste non vide = appartenance prouvée ; l'idPatient vient de la ligne
+      // (l'e-mail seul ne nomme pas un dossier). Liste vide = rien
+      // (anti-oracle) — limite assumée (LOT-00).
+      await journaliserAccesDossier({ idPatient: pgReponses[0].idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
+    }
 
     const reponses: ReponseQuestionnaire[] = pgReponses.map(pg => ({
       idReponse: pg.idReponse,
