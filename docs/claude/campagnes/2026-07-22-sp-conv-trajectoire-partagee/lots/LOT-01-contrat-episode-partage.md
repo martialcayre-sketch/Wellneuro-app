@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Contrat d'épisode partagé — une trajectoire, deux lectures"
-statut: "à_faire"
+statut: "livré — 2026-07-23, PR de lot : module lib/trajectoire-partagee (contrat pur, 22 tests + garde D7), T1/T2 verts"
 dépend_de: "LOT-00"
 ---
 
