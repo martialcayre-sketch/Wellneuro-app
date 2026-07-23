@@ -2,7 +2,9 @@
 // (page legacy /patient/[idAssignation] et pages portail). Ils décrivent la
 // forme produite par QUESTIONNAIRE_CATALOGUE (@/lib/questions).
 
-export type QuestionOption = { v: number; l: string };
+// v : numérique pour les scorings ; chaîne pour les items qualitatifs purs
+// ('oui'/'non' des dépistages digestifs, héritage GAS) — le catalogue porte les deux.
+export type QuestionOption = { v: number | string; l: string };
 
 export type Question = {
   id: string;
@@ -27,3 +29,9 @@ export type QuestionnaireDef = {
   instructions?: string;
   sections: Section[];
 };
+
+/** Bloc de scoring d'une entrée du catalogue. 33 variantes hétérogènes
+ * (sum, subscore, psqi, karasek, had, eortc, group_majority…) : le type reste
+ * volontairement permissif — les juges du contenu sont la certification des
+ * 63 questionnaires et les tests de scoring, pas le compilateur. */
+export type ScoringDef = { type: string; [k: string]: unknown };
