@@ -53,6 +53,21 @@ const LISTE = {
   compteurs: COMPTEURS,
 };
 
+/** Second claim (revue en lot) — deux claims en attente sur la même page. */
+const CLAIM_2 = {
+  ...CLAIM,
+  id: 'WN-CL-0056-002@v1.0',
+  claimId: 'WN-CL-0056-002',
+  texteNormalise: 'Le zinc participe à la neurotransmission.',
+};
+
+const LISTE_2 = {
+  ...LISTE,
+  total: 2,
+  claims: [CLAIM, CLAIM_2],
+  compteurs: { ...COMPTEURS, enAttenteValidation: 2 },
+};
+
 const URL_DECISION = '/api/praticien/corpus/claims/decision';
 
 /**
@@ -169,19 +184,37 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     expect(appelsPost()).toHaveLength(0);
   });
 
-  it('rejette en un geste (décision réversible depuis l’onglet Rejetés)', async () => {
+  it('rejette en deux temps : armer, motif obligatoire, puis signer avec le motif transmis', async () => {
     fetchMock.mockImplementation(router());
     await attendreLaFile();
 
+    // 1er clic : arme le rejet et ouvre le champ motif — RIEN n'est envoyé.
     fireEvent.click(screen.getByRole('button', { name: 'Rejeter' }));
+    expect(appelsPost()).toHaveLength(0);
+    const motif = screen.getByLabelText(/Motif du rejet/);
+    expect(motif).toBeTruthy();
+
+    // La confirmation reste bloquée tant que le motif est vide.
+    expect((screen.getByRole('button', { name: 'Confirmer le rejet' }) as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+
+    fireEvent.change(motif, { target: { value: 'Hors périmètre clinique' } });
+    expect(
+      (screen.getByRole('button', { name: 'Confirmer le rejet' }) as HTMLButtonElement).disabled,
+    ).toBe(false);
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer le rejet' }));
+
     await waitFor(() => {
       const posts = appelsPost();
       expect(posts).toHaveLength(1);
       expect(posts[0][0]).toBe(URL_DECISION);
+      // Le motif accompagne le rejet — sans lui la route répond motif_requis (422).
       expect(JSON.parse(posts[0][1].body)).toEqual({
         id: CLAIM.id,
         decision: 'REJETE',
         statutAttendu: 'EN_ATTENTE_VALIDATION',
+        motif: 'Hors périmètre clinique',
       });
     });
   });
@@ -295,7 +328,11 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     );
     await attendreLaFile();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Rejeter' }));
+    // Le refus serveur remonte via une validation (armer → confirmer), le rejet
+    // exigeant désormais un motif : la validation en deux temps suffit à
+    // provoquer et afficher l'erreur.
+    fireEvent.click(screen.getByRole('button', { name: 'Valider' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmer la validation' }));
     await waitFor(() =>
       expect(screen.getByText(/Un verbatim cité a été modifié depuis son rattachement/)).toBeTruthy(),
     );
@@ -316,5 +353,175 @@ describe('AtelierCorpusPanel (Atelier corpus v1)', () => {
     render(<AtelierCorpusPanel />);
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
     expect(screen.getByRole('button', { name: 'Réessayer' })).toBeTruthy();
+  });
+
+  it('revue en lot : marque, soumet une décision individuelle par claim dans l’ordre, recharge une seule fois', async () => {
+    fetchMock.mockImplementation(router({ listeDefaut: LISTE_2 }));
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+    const getsAvant = appelsGet().length;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revue en lot' }));
+    // 1er claim à valider, 2e à rejeter (+ motif).
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'À rejeter' })[1]);
+    fireEvent.change(screen.getByLabelText(/Motif du rejet/), { target: { value: 'Doublon' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+
+    await waitFor(() => expect(appelsPost()).toHaveLength(2));
+    const posts = appelsPost();
+    // Chaque marque part sur la route individuelle, jamais un endpoint de lot.
+    expect(posts.every(([url]) => url === URL_DECISION)).toBe(true);
+    // Ordre = ordre de la file, pas de l'insertion des marques.
+    expect(JSON.parse(posts[0][1].body)).toEqual({
+      id: CLAIM.id,
+      decision: 'VALIDE',
+      statutAttendu: 'EN_ATTENTE_VALIDATION',
+    });
+    expect(JSON.parse(posts[1][1].body)).toEqual({
+      id: CLAIM_2.id,
+      decision: 'REJETE',
+      statutAttendu: 'EN_ATTENTE_VALIDATION',
+      motif: 'Doublon',
+    });
+    // Une seule recharge à la fin du run (pas une par décision).
+    await waitFor(() => expect(appelsGet().length).toBe(getsAvant + 1));
+  });
+
+  it('revue en lot : un rejet sans motif bloque la soumission, un claim non marqué n’est jamais soumis', async () => {
+    fetchMock.mockImplementation(router({ listeDefaut: LISTE_2 }));
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revue en lot' }));
+    // Seul le 1er claim est marqué (à rejeter), sans motif → soumission bloquée.
+    fireEvent.click(screen.getAllByRole('button', { name: 'À rejeter' })[0]);
+    expect(
+      (screen.getByRole('button', { name: 'Soumettre les décisions (1)' }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+
+    fireEvent.change(screen.getByLabelText(/Motif du rejet/), { target: { value: 'Erroné' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (1)' }));
+
+    // Une seule décision part : le 2e claim, non marqué, n'est jamais soumis.
+    await waitFor(() => expect(appelsPost()).toHaveLength(1));
+    expect(JSON.parse(appelsPost()[0][1].body)).toEqual({
+      id: CLAIM.id,
+      decision: 'REJETE',
+      statutAttendu: 'EN_ATTENTE_VALIDATION',
+      motif: 'Erroné',
+    });
+  });
+
+  it('revue en lot : le résumé d’audit reste visible même quand le lot vide la file', async () => {
+    let signes = 0;
+    fetchMock.mockImplementation((url: string, options?: { method?: string; body?: string }) => {
+      if (options?.method === 'POST') {
+        signes += 1;
+        return Promise.resolve(
+          json({ ok: true, claim: { id: 'x', statut: 'VALIDE', validateur: 'p', valideAt: null } }),
+        );
+      }
+      if (url.startsWith('/api/praticien/corpus/claims?')) {
+        // Une fois des décisions signées, la file est vide au rechargement.
+        const liste =
+          signes > 0
+            ? { ...LISTE_2, total: 0, claims: [], compteurs: { ...COMPTEURS, enAttenteValidation: 0 } }
+            : LISTE_2;
+        return Promise.resolve(json(liste));
+      }
+      return Promise.resolve(json({}, false));
+    });
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revue en lot' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+
+    // La file se vide, MAIS le retour d'audit reste lisible.
+    await waitFor(() => expect(screen.getByText(/Aucun claim en attente/)).toBeTruthy());
+    expect(screen.getByText(/2 décisions enregistrées/)).toBeTruthy();
+  });
+
+  it('revue en lot : deux rejets portent chacun leur motif, transmis au bon claim', async () => {
+    fetchMock.mockImplementation(router({ listeDefaut: LISTE_2 }));
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revue en lot' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'À rejeter' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'À rejeter' })[1]);
+    // Les deux champs sont distincts par leur libellé (claimId) — pas d'homonymie.
+    fireEvent.change(screen.getByLabelText(`Motif du rejet — ${CLAIM.claimId}`), {
+      target: { value: 'Motif A' },
+    });
+    fireEvent.change(screen.getByLabelText(`Motif du rejet — ${CLAIM_2.claimId}`), {
+      target: { value: 'Motif B' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+
+    await waitFor(() => expect(appelsPost()).toHaveLength(2));
+    const parId = Object.fromEntries(
+      appelsPost().map(([, options]) => {
+        const corps = JSON.parse(options.body);
+        return [corps.id, corps.motif];
+      }),
+    );
+    expect(parId[CLAIM.id]).toBe('Motif A');
+    expect(parId[CLAIM_2.id]).toBe('Motif B');
+  });
+
+  it('revue en lot : un échec réseau partiel est signalé, pas compté comme signé', async () => {
+    fetchMock.mockImplementation((url: string, options?: { method?: string; body?: string }) => {
+      if (options?.method === 'POST') {
+        const corps = JSON.parse(options.body ?? '{}');
+        if (corps.id === CLAIM_2.id) return Promise.reject(new Error('réseau'));
+        return Promise.resolve(
+          json({ ok: true, claim: { id: corps.id, statut: 'VALIDE', validateur: 'p', valideAt: null } }),
+        );
+      }
+      if (url.startsWith('/api/praticien/corpus/claims?')) return Promise.resolve(json(LISTE_2));
+      return Promise.resolve(json({}, false));
+    });
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revue en lot' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+
+    await waitFor(() => expect(screen.getByText(/1 décision enregistrée/)).toBeTruthy());
+    // Le claim en échec est nommé, jamais compté comme signé.
+    expect(screen.getByText(new RegExp(`1 en échec.*${CLAIM_2.claimId}`))).toBeTruthy();
+  });
+
+  it('revue en lot : sur état divergent, arrête le run et ne compte pas la décision comme signée', async () => {
+    fetchMock.mockImplementation((url: string, options?: { method?: string }) => {
+      if (options?.method === 'POST') {
+        return Promise.resolve(
+          json({ ok: false, reason: 'etat_divergent', error: 'La file a changé sous vous.' }, false),
+        );
+      }
+      if (url.startsWith('/api/praticien/corpus/claims?')) {
+        return Promise.resolve(json(LISTE_2));
+      }
+      return Promise.resolve(json({}, false));
+    });
+    render(<AtelierCorpusPanel />);
+    await waitFor(() => expect(screen.getByText(/WN-CL-0056-002/)).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Revue en lot' }));
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[0]);
+    fireEvent.click(screen.getAllByRole('button', { name: 'À valider' })[1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Soumettre les décisions (2)' }));
+
+    // Le run s'arrête au 1er conflit : une seule tentative, résumé honnête.
+    await waitFor(() => expect(screen.getByText(/interrompu/)).toBeTruthy());
+    expect(appelsPost()).toHaveLength(1);
+    expect(screen.getByText(/0 décision/)).toBeTruthy();
   });
 });
