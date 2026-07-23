@@ -42,7 +42,8 @@ describe('TrajectoirePanel (C2B LOT-09)', () => {
     render(<TrajectoirePanel trajectoire={trajectoire} />);
     expect(screen.getByText(/indice 40/i)).toBeTruthy();
     expect(screen.getAllByText(/jalon non mesuré/i).length).toBe(2);
-    expect(screen.getByText(/en hausse/i)).toBeTruthy();
+    // « en hausse » apparaît dans la carte de cycle ET le badge d'épisode.
+    expect(screen.getAllByText(/en hausse/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/dès un 2ᵉ cycle/i)).toBeTruthy();
   });
 
@@ -216,6 +217,85 @@ describe('TrajectoirePanel — comparateur côte à côte (Vague 2)', () => {
   });
 });
 
+describe('TrajectoirePanel — en-tête et Spirale navigable (Fiche-trajectoire 5.0)', () => {
+  const deuxCycles: Trajectoire = {
+    index: [
+      { milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_a' },
+      { milestone: 'J21', date: '2026-01-22T00:00:00.000Z', cycleId: 'ep_a' },
+      { milestone: 'T0', date: '2026-03-01T00:00:00.000Z', cycleId: 'ep_b' },
+    ],
+    cycles: [
+      {
+        cycleId: 'ep_a',
+        dateT0: '2026-01-01T00:00:00.000Z',
+        versionScore: 'v1',
+        jalons: jalons(40, 55),
+        momentum: { tendance: 'hausse', delta: 15 },
+      },
+      {
+        cycleId: 'ep_b',
+        dateT0: '2026-03-01T00:00:00.000Z',
+        versionScore: 'v1',
+        jalons: jalons(48, null),
+        momentum: null,
+      },
+    ],
+    comparaison: { disponible: true, raison: 'comparable' },
+  };
+
+  it('affiche l’identité et l’épisode courant, avec un badge par épisode', () => {
+    render(<TrajectoirePanel trajectoire={deuxCycles} nomComplet="Sophie Nicola" />);
+    expect(screen.getByRole('heading', { name: 'Sophie Nicola — épisode 2' })).toBeTruthy();
+    const episodes = screen.getByRole('list', { name: 'Épisodes' });
+    expect(within(episodes).getByText(/Épisode 1 · T0 le 01\/01\/2026 · momentum en hausse \(écart 15\)/)).toBeTruthy();
+    expect(within(episodes).getByText(/Épisode 2 · T0 le 01\/03\/2026/)).toBeTruthy();
+  });
+
+  it('sans cycle confirmé : l’identité seule — aucun épisode affirmé', () => {
+    render(<TrajectoirePanel trajectoire={null} nomComplet="Sophie Nicola" />);
+    expect(screen.getByRole('heading', { name: 'Sophie Nicola' })).toBeTruthy();
+    expect(screen.queryByText(/— épisode/)).toBeNull();
+    expect(screen.queryByRole('list', { name: 'Épisodes' })).toBeNull();
+  });
+
+  it('sans identité fournie, le titre historique demeure', () => {
+    render(<TrajectoirePanel trajectoire={null} />);
+    expect(screen.getByRole('heading', { name: 'Fiche-trajectoire — repères datés' })).toBeTruthy();
+  });
+
+  it('la Spirale double l’index : cliquer un arc sélectionne le même repère que le bouton texte', () => {
+    render(<TrajectoirePanel trajectoire={deuxCycles} />);
+    const spirale = screen.getByRole('group', { name: /Spirale de trajectoire/ });
+
+    fireEvent.click(within(spirale).getByRole('button', { name: 'Jalon J21 du 22/01/2026 — épisode 1' }));
+
+    // Même sélection que par le bouton texte : mise en avant écrite, bouton
+    // texte pressé — une seule source d'état, pas deux navigations.
+    expect(screen.getByText(/repère sélectionné/i)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /J21 · 22\/01\/2026/ }).getAttribute('aria-pressed')).toBe('true');
+
+    // « Aujourd'hui » ramène au présent — même geste que la désélection.
+    fireEvent.click(within(spirale).getByRole('button', { name: 'Aujourd’hui — revenir au présent' }));
+    expect(screen.queryByText(/repère sélectionné/i)).toBeNull();
+  });
+
+  it('zéro repère → aucune Spirale rendue', () => {
+    render(<TrajectoirePanel trajectoire={{ ...deuxCycles, index: [] }} />);
+    expect(screen.queryByRole('group', { name: /Spirale de trajectoire/ })).toBeNull();
+  });
+
+  it('mode de vie au présent (LOT-02) : rendu seulement quand le canal est fourni', () => {
+    const { rerender } = render(<TrajectoirePanel trajectoire={null} />);
+    // Appelant sans le canal (ex. ClinicalRuntimeSection) : rien n'apparaît.
+    expect(screen.queryByRole('region', { name: 'Mode de vie — 7 domaines' })).toBeNull();
+
+    rerender(<TrajectoirePanel trajectoire={null} modeViePresent={null} />);
+    // Canal fourni mais non mesuré : l'état est écrit, jamais un 0 (A8-2).
+    expect(screen.getByRole('region', { name: 'Mode de vie — 7 domaines' })).toBeTruthy();
+    expect(screen.getByText(/Mode de vie non mesuré à cette date/)).toBeTruthy();
+  });
+});
+
 describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
   const trajectoire: Trajectoire = {
     index: [{ milestone: 'T0', date: '2026-01-01T00:00:00.000Z', cycleId: 'ep_T0' }],
@@ -241,6 +321,33 @@ describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
         );
       }
       if (url.startsWith('/api/praticien/relecture-notes')) return Promise.resolve(json({ ok: true, notes: [] }));
+      // LOT-02 : l'état daté du mode de vie est recalculé au même repère.
+      if (url.startsWith('/api/praticien/trajectoire') && url.includes('etatAu=')) {
+        return Promise.resolve(
+          json({
+            ok: true,
+            trajectoire,
+            modeViePresent: null,
+            modeVieT0CycleCourant: null,
+            etatDate: {
+              date: '2026-01-01T00:00:00.000Z',
+              modeVie: {
+                domaines: [
+                  {
+                    id: 'SOMMEIL',
+                    label: 'Sommeil',
+                    total: 14,
+                    max: 28,
+                    interpretation: { label: 'Sommeil insuffisant', color: 'warning' },
+                    zones: [],
+                  },
+                ],
+              },
+              modeVieT0: null,
+            },
+          }),
+        );
+      }
       return Promise.resolve(json({ asOf: '2026-01-01T00:00:00.000Z', proposal: { candidateResponses: [{}] } }));
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -254,9 +361,21 @@ describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
       fetchMock.mock.calls.some(([url]) => String(url).includes('/api/praticien/cockpit') && String(url).includes('asOf=')),
     ).toBe(true);
 
+    // LOT-02 : le panneau mode de vie DATÉ accompagne la lecture — recalculé
+    // au repère (etatAu), zone en toutes lettres.
+    await screen.findByText('Sommeil insuffisant');
+    // « au 01/01/2026 » figure dans l'en-tête ET la légende du panneau daté.
+    expect(screen.getAllByText(/au 01\/01\/2026/).length).toBeGreaterThan(0);
+    expect(
+      fetchMock.mock.calls.some(
+        ([url]) => String(url).includes('/api/praticien/trajectoire') && String(url).includes('etatAu='),
+      ),
+    ).toBe(true);
+
     // Une seule sortie, explicite : retour au présent → le panneau se referme.
     fireEvent.click(screen.getByRole('button', { name: 'Retour au présent' }));
     expect(screen.queryByText(/Vous lisez l’état du/)).toBeNull();
+    expect(screen.queryByText('Sommeil insuffisant')).toBeNull();
     vi.unstubAllGlobals();
   });
 

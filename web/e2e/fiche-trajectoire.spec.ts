@@ -22,8 +22,12 @@ test.describe('Fiche-trajectoire (onglet Trajectoire)', () => {
     await ongletTrajectoire.click();
     await expect(ongletTrajectoire).toHaveAttribute('aria-selected', 'true');
 
-    const panneau = page.getByRole('region', { name: 'Fiche-trajectoire — repères datés' });
+    const panneau = page.getByRole('region', { name: 'Fiche-trajectoire' });
     await expect(panneau).toBeVisible();
+    // En-tête d'identité (maquette 5.0) : sans épisode confirmé, l'identité
+    // seule — aucun « épisode N » n'est affirmé.
+    await expect(panneau.getByRole('heading', { name: 'Sophie Nicola' })).toBeVisible();
+    await expect(panneau.getByText(/— épisode/)).toHaveCount(0);
 
     // Sans épisode confirmé : état vide EXPLICITE, jamais une erreur déguisée
     // ni une affirmation par défaut sur l'historique clinique. L'assertion est
@@ -34,8 +38,28 @@ test.describe('Fiche-trajectoire (onglet Trajectoire)', () => {
     await expect(page.getByText(/n’a pas pu être lue/)).toHaveCount(0);
 
     // Aucun index à afficher tant qu'aucun repère n'est confirmé : la
-    // navigation de la Spirale ne s'invente pas.
+    // navigation de la Spirale ne s'invente pas — ni en boutons texte, ni en
+    // arcs SVG.
     await expect(page.getByRole('navigation', { name: 'Index de la Spirale' })).toHaveCount(0);
+    await expect(page.getByRole('group', { name: /Spirale de trajectoire/ })).toHaveCount(0);
+
+    // Mode de vie 7 domaines (LOT-02) : le panneau existe au présent — mesuré
+    // ou « non mesuré » selon les réponses du patient seedé, jamais absent.
+    await expect(panneau.getByRole('region', { name: 'Mode de vie — 7 domaines' })).toBeVisible();
+  });
+
+  test('le deep-link ?onglet=trajectoire ouvre la fiche directement sur la trajectoire', async ({ page, context }) => {
+    await context.addCookies([await praticienSessionCookie()]);
+    await page.goto(`/dashboard/patients/${PATIENT_ID}?onglet=trajectoire`);
+
+    const onglets = page.getByRole('tablist', { name: 'Vues de la fiche patient' });
+    await expect(onglets.getByRole('tab', { name: 'Trajectoire' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('region', { name: 'Fiche-trajectoire' })).toBeVisible();
+
+    // Une valeur inconnue est ignorée : la fiche s'ouvre sur le poste de
+    // pilotage, jamais une erreur.
+    await page.goto(`/dashboard/patients/${PATIENT_ID}?onglet=inconnu`);
+    await expect(onglets.getByRole('tab', { name: 'Poste de pilotage' })).toHaveAttribute('aria-selected', 'true');
   });
 
   test('la phase Réévaluation du poste de pilotage n’affirme rien sans épisode confirmé', async ({ page, context }) => {

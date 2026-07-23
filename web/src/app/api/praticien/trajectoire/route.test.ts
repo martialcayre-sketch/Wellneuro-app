@@ -141,3 +141,84 @@ describe('GET /api/praticien/trajectoire', () => {
     expect(select).toMatchObject({ cycleId: true, versionScore: true });
   });
 });
+
+// ── Mode de vie 7 domaines (SP-TRAJ LOT-02) ────────────────────────────────
+
+describe('GET /api/praticien/trajectoire — mode de vie daté (LOT-02)', () => {
+  const EPISODE_T0 = {
+    id: 'ep_T0',
+    milestone: 'T0',
+    confirmedAt: new Date('2026-01-05T00:00:00.000Z'),
+    cycleId: 'ep_T0',
+    versionScore: 'v1',
+  };
+  const modQuand = (dateIso: string, sommeilQ005: number) => ({
+    idQuestionnaire: 'Q_MOD_01',
+    dateReponse: new Date(dateIso),
+    scoresJson: { rawAnswers: { SOMMEIL_Q005: sommeilQ005 } },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ idPatient: 'PAT_1', praticienEmail: 'p@wellneuro.fr' });
+    prisma.assessmentEpisode.findMany.mockResolvedValue([EPISODE_T0]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      modQuand('2026-01-02T00:00:00.000Z', 3),
+      modQuand('2026-02-01T00:00:00.000Z', 12),
+    ]);
+  });
+
+  it('sans réponse mode de vie exploitable : modeViePresent null, jamais 0 (A8-2)', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+    const res = await GET(request());
+    const json = (await res.json()) as { modeViePresent: unknown };
+    expect(res.status).toBe(200);
+    expect(json.modeViePresent).toBeNull();
+  });
+
+  it('modeViePresent : dernier état rejoué par le moteur (7 domaines, zones du catalogue)', async () => {
+    const res = await GET(request());
+    const json = (await res.json()) as {
+      modeViePresent: { domaines: { id: string; total: number; zones: unknown[] }[] } | null;
+    };
+    expect(json.modeViePresent).not.toBeNull();
+    expect(json.modeViePresent!.domaines).toHaveLength(7);
+    const sommeil = json.modeViePresent!.domaines.find((d) => d.id === 'SOMMEIL')!;
+    expect(sommeil.total).toBe(12);
+    expect(sommeil.zones.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('etatAu hors des repères du patient → 400, rien n’est renvoyé', async () => {
+    const res = await GET(request('idPatient=PAT_1&etatAu=2026-01-03T12:00:00.000Z'));
+    expect(res.status).toBe(400);
+    const json = (await res.json()) as { ok: boolean; reason: string };
+    expect(json.ok).toBe(false);
+    expect(json.reason).toBe('invalid');
+  });
+
+  it('etatAu sur un repère réel : état daté recalculé, les réponses postérieures ignorées', async () => {
+    const res = await GET(request(`idPatient=PAT_1&etatAu=${encodeURIComponent('2026-01-05T00:00:00.000Z')}`));
+    const json = (await res.json()) as {
+      ok: boolean;
+      modeViePresent: { domaines: { id: string; total: number }[] } | null;
+      etatDate?: { date: string; modeVie: { domaines: { id: string; total: number }[] } | null };
+    };
+    expect(res.status).toBe(200);
+    expect(json.etatDate).toBeDefined();
+    expect(json.etatDate!.date).toBe('2026-01-05T00:00:00.000Z');
+    const sommeilDate = json.etatDate!.modeVie!.domaines.find((d) => d.id === 'SOMMEIL')!;
+    const sommeilPresent = json.modeViePresent!.domaines.find((d) => d.id === 'SOMMEIL')!;
+    // Au 05/01, seule la réponse du 02/01 (3) est connue ; au présent, 12.
+    expect(sommeilDate.total).toBe(3);
+    expect(sommeilPresent.total).toBe(12);
+  });
+
+  it('sans etatAu, les champs historiques de la réponse sont inchangés', async () => {
+    const res = await GET(request());
+    const json = (await res.json()) as { ok: boolean; trajectoire: { cycles: unknown[] }; etatDate?: unknown };
+    expect(json.ok).toBe(true);
+    expect(json.trajectoire.cycles).toHaveLength(1);
+    expect(json.etatDate).toBeUndefined();
+  });
+});

@@ -52,6 +52,9 @@ VALUES
    ('[' || repeat('0,', 1535) || '0]')::extensions.vector),
   ('__jrnl_autre__', 'WN-CL-8888-001', 'WN-SRC-8888', 'v1.0', 'claim de contrat, autre source',
    repeat('c', 64), 'déclaré', false, 'EN_ATTENTE_VALIDATION', 'contrat', 1536,
+   ('[' || repeat('0,', 1535) || '0]')::extensions.vector),
+  ('__jrnl_vecu__', 'WN-CL-9999-003', 'WN-SRC-9999', 'v1.0', 'claim de contrat, vécu',
+   repeat('d', 64), 'vécu', false, 'EN_ATTENTE_VALIDATION', 'contrat', 1536,
    ('[' || repeat('0,', 1535) || '0]')::extensions.vector);
 
 -- Comportemental.
@@ -148,6 +151,18 @@ BEGIN
   EXCEPTION WHEN raise_exception THEN NULL;
   END;
 
+  -- 7c. La voie rapide est une allowlist : un « vécu » (non prescriptif) ne se
+  --     signe pas non plus par lot (trigger, migration de suivi 20260723120000).
+  BEGIN
+    INSERT INTO public.rag_corpus_claim_decisions
+      (type_acte, decision, validateur, source_id, tirage_id, echantillon, questionnaire, claims)
+    VALUES ('decision_lot', 'VALIDE', 'contrat@wellneuro.fr', 'WN-SRC-9999', tirage,
+            '{"seed":1,"verdicts":[]}', '{"questions":[]}',
+            '[{"id":"__jrnl_vecu__","claimId":"WN-CL-9999-003","versionClaim":"v1.0","statutAvant":"EN_ATTENTE_VALIDATION","statutApres":"VALIDE"}]');
+    RAISE EXCEPTION 'journal claims: vécu signé par lot' USING ERRCODE = 'WN001';
+  EXCEPTION WHEN raise_exception THEN NULL;
+  END;
+
   -- 8. Une signature de lot ne peut être que VALIDE.
   BEGIN
     INSERT INTO public.rag_corpus_claim_decisions
@@ -173,6 +188,18 @@ BEGIN
   IF date_stockee < now() - interval '1 minute' THEN
     RAISE EXCEPTION 'journal claims: cree_le antidaté accepté' USING ERRCODE = 'WN001';
   END IF;
+
+  -- 9b. UN tirage, UNE issue : une seconde issue sur le même tirage viole
+  --     l'index unique partiel (migration de suivi 20260723120000) — même
+  --     sous concurrence, la base est l'arbitre.
+  BEGIN
+    INSERT INTO public.rag_corpus_claim_decisions
+      (type_acte, motif, validateur, source_id, tirage_id, echantillon)
+    VALUES ('bascule_individuelle', 'contrat: seconde issue', 'contrat@wellneuro.fr',
+            'WN-SRC-9999', tirage, '{"seed":1,"verdicts":[]}');
+    RAISE EXCEPTION 'journal claims: seconde issue acceptée sur un tirage conclu' USING ERRCODE = 'WN001';
+  EXCEPTION WHEN unique_violation THEN NULL;
+  END;
 
   -- 10. Append-only : ni UPDATE ni DELETE, même par le rôle courant.
   BEGIN

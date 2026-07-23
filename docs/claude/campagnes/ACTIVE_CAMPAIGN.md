@@ -2,10 +2,10 @@
 
 ## Activité primaire
 
-**Campagne** : 2026-07-22-g-trust-04-durcissement-et-reliquats
-**Titre** : G-TRUST-04 — durcissement et reliquats
+**Campagne** : 2026-07-23-spirale-fiche-trajectoire
+**Titre** : SP-TRAJ — Fiche-trajectoire 5.0 : porte d'entrée, Spirale navigable, refonte Questionnaires & packs
 **Statut** : active
-**Lot actif** : LOT-00
+**Lot actif** : LOT-01
 
 ## Activités parallèles
 

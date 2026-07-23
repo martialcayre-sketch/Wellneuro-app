@@ -225,6 +225,100 @@ body { margin: 0; }
 .msg time { display:block; font-size:9.5px; opacity:.75; margin-top:5px; }
 .attach { display:flex; gap:10px; align-items:center; margin-top:9px; padding:8px 11px; border-radius:10px; background:rgba(255,255,255,.6); border:1px solid var(--border); color:var(--fg); font-size:11px; font-weight:650; }
 
+/* ---------- Bibliothèque & file d'envoi ---------- */
+#p-bibliotheque { --bib-h:clamp(430px,calc(100vh - 410px),680px); }
+.bib-grid { display:grid; grid-template-columns:minmax(0,1.02fr) minmax(0,1fr) minmax(270px,.66fr); gap:16px; align-items:start; }
+.bib-col { display:flex; flex-direction:column; gap:16px; max-height:var(--bib-h); }
+.bib-cat, .prevu, .queue { display:flex; flex-direction:column; max-height:var(--bib-h); }
+.queue { flex:1 1 auto; min-height:0; }
+.bib-switch { display:flex; gap:3px; padding:3px; border:1px solid var(--border); border-radius:11px; background:var(--bg); }
+.bib-switch button { height:30px; padding:0 12px; border-radius:8px; font-size:11.5px; font-weight:600; color:var(--muted-fg); }
+.bib-switch button[aria-pressed="true"] { background:var(--primary); color:var(--primary-fg); }
+.bib-pane { display:none; }
+.bib-pane.active { display:flex; flex-direction:column; flex:1; min-height:0; animation:vfade .22s ease; }
+.bib-search { display:flex; align-items:center; gap:9px; padding:10px 15px; border-bottom:1px solid var(--border); color:var(--muted-fg); }
+.bib-search input { flex:1; border:0; background:none; font-size:12px; color:var(--fg); }
+.bib-search input:focus { outline:none; }
+.bib-search:focus-within { box-shadow:inset 0 0 0 2px var(--focus); }
+.bib-chips { display:flex; gap:6px; padding:9px 15px; border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:thin; }
+.chip { flex:none; display:inline-flex; align-items:center; min-height:26px; padding:0 11px; border:1px solid var(--border); border-radius:999px; font-size:10.5px; font-weight:650; color:var(--muted-fg); background:var(--surface); }
+.chip[aria-pressed="true"] { background:var(--indigo-bg); border-color:var(--indigo-600); color:var(--indigo-600); }
+.chip.gap { background:var(--warn-bg); border-color:rgba(146,64,14,.25); color:var(--warn); }
+.bib-list { flex:1; min-height:0; overflow-y:auto; padding:6px; display:grid; gap:2px; align-content:start; }
+.bib-row { display:grid; gap:4px; width:100%; text-align:left; padding:9px 11px; border-radius:10px; }
+.bib-row:not(.static):hover { background:var(--neutral-bg); }
+.bib-row[aria-pressed="true"] { background:var(--indigo-bg); box-shadow:inset 0 0 0 1px rgba(61,74,158,.35); }
+.bib-row strong { font-family:var(--font-display); font-size:12px; letter-spacing:-.01em; }
+.bib-row .meta { display:flex; align-items:center; gap:7px; flex-wrap:wrap; font-family:var(--font-mono); font-size:9.8px; color:var(--muted-fg); }
+.bib-row.static { cursor:default; }
+.rowacts { display:flex; gap:7px; flex-wrap:wrap; margin-top:3px; }
+.bib-more { padding:11px; text-align:center; font-size:10.5px; color:var(--muted-fg); }
+.bib-packfoot { border-top:1px solid var(--border); padding:11px 15px 14px; display:grid; gap:7px; justify-items:start; }
+.bib-packfoot p { margin:0; font-size:10.5px; color:var(--muted-fg); line-height:1.6; }
+.prevu-scroll { flex:1; min-height:0; overflow-y:auto; }
+.prevu-pane { display:none; }
+.prevu-pane.active { display:block; animation:vfade .22s ease; }
+.prevu-id { display:grid; gap:8px; padding:13px 17px 0; }
+.prevu-id h3 { margin:0; font-family:var(--font-display); font-size:14.5px; letter-spacing:-.015em; }
+.prevu-badges { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.prevu-sheet { margin:12px 15px 15px; padding:14px 16px; border-radius:13px; background:#FAF8F3; border:1px solid #E5DCCB; color:#2B2115; display:grid; gap:12px; }
+.prevu-consigne { margin:0; font-size:11.5px; font-style:italic; color:#6E5F49; line-height:1.6; }
+.prevu-scale { font-family:var(--font-mono); font-size:9.8px; color:#6E5F49; }
+.prevu-q { display:grid; gap:7px; }
+.prevu-q p { margin:0; font-size:12px; line-height:1.55; font-weight:550; }
+.prevu-opts { display:flex; gap:6px; }
+.prevu-opts i { font-style:normal; width:26px; height:26px; display:grid; place-items:center; border:1px solid #E5DCCB; border-radius:99px; font-size:10px; font-family:var(--font-mono); color:#6E5F49; background:#FFFDF9; }
+.prevu-choice { display:grid; gap:5px; font-size:11.5px; line-height:1.5; color:#2B2115; }
+.prevu-choice span { padding:7px 11px; border:1px solid #E5DCCB; border-radius:10px; background:#FFFDF9; }
+.prevu-packlist { display:grid; gap:5px; font-size:11.5px; }
+.prevu-packlist span { padding:7px 11px; border:1px solid #E5DCCB; border-radius:10px; background:#FFFDF9; }
+.prevu-fade { text-align:center; font-size:10.5px; color:#6E5F49; padding-top:2px; }
+.prevu-assign { border-top:1px solid var(--border); padding:12px 17px 15px; display:grid; gap:9px; }
+.prevu-assign .lab { font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-fg); }
+.pick-row { display:flex; gap:7px; flex-wrap:wrap; }
+.pick { position:relative; }
+.pick input { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.pick span { display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:0 11px; border:1px solid var(--border); border-radius:999px; font-size:11px; font-weight:600; color:var(--muted-fg); background:var(--surface); }
+.pick input:checked + span { background:var(--mint-bg); border-color:var(--mint-600); color:var(--mint-600); }
+.pick input:focus-visible + span { outline:2px solid var(--focus); outline-offset:2px; }
+.queue-body { flex:1; min-height:0; overflow-y:auto; padding:8px 17px 13px; display:grid; gap:14px; align-content:start; }
+.queue-patient.hidden { display:none; }
+.queue-head { display:grid; grid-template-columns:28px minmax(0,1fr) auto; gap:9px; align-items:center; }
+.queue-head .btn { min-height:26px; padding:0 8px; font-size:10px; }
+.queue-avatar { width:28px; height:28px; display:grid; place-items:center; border-radius:9px; background:var(--indigo-bg); color:var(--indigo-600); font-size:10px; font-weight:750; }
+.queue-head strong { font-size:12px; font-family:var(--font-display); }
+.queue-meta { display:block; font-family:var(--font-mono); font-size:9.5px; color:var(--muted-fg); margin-top:1px; white-space:nowrap; }
+.queue-items { display:grid; margin-top:4px; }
+.queue-item { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; padding:7px 0; border-bottom:1px dashed var(--border); font-size:11.5px; }
+.queue-item .sub { display:block; font-family:var(--font-mono); font-size:9.5px; color:var(--muted-fg); margin-top:2px; }
+.queue-x { width:22px; height:22px; display:grid; place-items:center; border-radius:7px; color:var(--muted-fg); }
+.queue-x:hover { background:var(--danger-bg); color:var(--danger); }
+.queue-x .icon { transform:rotate(45deg); }
+.queue-mail { display:none; margin-top:9px; white-space:pre-wrap; font-family:var(--font-mono); font-size:10.2px; line-height:1.6; background:var(--bg); border:1px solid var(--border); border-radius:10px; padding:11px 13px; color:var(--muted-fg); }
+.queue-mail.show { display:block; }
+.queue-foot { border-top:1px solid var(--border); padding:12px 17px 15px; display:grid; gap:9px; justify-items:start; }
+.queue-foot .tot { font-family:var(--font-mono); font-size:10.5px; color:var(--muted-fg); }
+.consent.warn { background:var(--warn-bg); border-color:rgba(146,64,14,.25); }
+.consent.warn .icon { color:var(--warn); }
+.tiroir { position:fixed; top:0; right:0; bottom:0; width:min(440px,92vw); z-index:60; background:var(--surface); border-left:1px solid var(--border); box-shadow:-18px 0 48px rgba(16,22,43,.22); transform:translateX(105%); transition:transform .25s ease; display:flex; flex-direction:column; }
+.tiroir.open { transform:none; }
+.tiroir-head { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; padding:16px 19px 13px; border-bottom:1px solid var(--border); }
+.tiroir-head h2 { margin:4px 0 0; font-family:var(--font-display); font-size:16px; letter-spacing:-.015em; }
+.tiroir-close { width:34px; height:34px; display:grid; place-items:center; border-radius:9px; color:var(--muted-fg); }
+.tiroir-close:hover { background:var(--neutral-bg); color:var(--fg); }
+.tiroir-close .icon { transform:rotate(45deg); }
+.tiroir-body { flex:1; overflow-y:auto; padding:15px 19px; display:grid; gap:13px; align-content:start; }
+.tiroir-foot { border-top:1px solid var(--border); padding:13px 19px; display:flex; gap:9px; justify-content:flex-end; flex-wrap:wrap; }
+.tiroir-veil { position:fixed; inset:0; z-index:55; background:rgba(16,22,43,.35); opacity:0; pointer-events:none; transition:opacity .2s ease; }
+.tiroir-veil.show { opacity:1; pointer-events:auto; }
+.field { display:grid; gap:5px; }
+.field label { font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted-fg); }
+.field :is(input[type="text"],select,textarea) { border:1px solid var(--border); border-radius:10px; padding:9px 12px; font-size:12px; background:var(--surface); width:100%; }
+.dropzone { display:grid; place-items:center; gap:6px; text-align:center; padding:26px 16px; border:1.5px dashed var(--border); border-radius:13px; color:var(--muted-fg); font-size:11.5px; background:var(--bg); }
+.dropzone strong { font-family:var(--font-display); font-size:12px; color:var(--fg); }
+.maptable { font-family:var(--font-mono); font-size:10.5px; display:grid; gap:6px; color:var(--muted-fg); border:1px solid var(--border); border-radius:10px; padding:11px 13px; background:var(--bg); }
+.maptable i { font-style:normal; color:var(--indigo-600); }
+
 /* ---------- Espace patient — le Jardin (Forêt & cuivre) ---------- */
 #space-patient {
   --bg:#FAF8F3; --fg:#2B2115; --surface:#FFFDF9;
@@ -262,6 +356,11 @@ body { margin: 0; }
   .minute-grid { grid-template-columns:1fr; }
   .traj-head { grid-template-columns:1fr; justify-items:center; text-align:center; }
   .traj-head .sp-legend { justify-content:center; }
+  .bib-grid { grid-template-columns:1fr; }
+  .bib-cat, .prevu, .queue { max-height:none; }
+  .bib-list { max-height:300px; }
+  .prevu-scroll { max-height:340px; }
+  .queue-body { max-height:280px; }
 }
 @media (max-width:760px) {
   #space-praticien.active { grid-template-columns:1fr; }
@@ -291,6 +390,9 @@ body { margin: 0; }
   <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Z"/><path d="M19 16.5H6a2 2 0 0 0-2 2"/></symbol>
   <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M8 3v4M16 3v4M3.5 10.5h17"/></symbol>
   <symbol id="i-flask" viewBox="0 0 24 24"><path d="M10 3v6L4.7 17.9A2 2 0 0 0 6.4 21h11.2a2 2 0 0 0 1.7-3.1L14 9V3"/><path d="M8.5 3h7M7.2 15h9.6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20.5 20.5-4.8-4.8"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M21.5 2.5 11 13"/><path d="M21.5 2.5 14.8 21.5l-3.8-8.5-8.5-3.8 19-6.7Z"/></symbol>
+  <symbol id="i-import" viewBox="0 0 24 24"><path d="M12 3v10.5"/><path d="m7.5 9.5 4.5 4.5 4.5-4.5"/><path d="M4 16.5V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2.5"/></symbol>
 </svg>
 
 <div class="wn" id="wn">
@@ -315,9 +417,9 @@ body { margin: 0; }
         <button class="rail-item" data-p="trajectoire"><svg class="icon"><use href="#i-clip"/></svg><span>Fiche-trajectoire</span></button>
         <button class="rail-item" data-p="consultation"><svg class="icon"><use href="#i-mic"/></svg><span>Consultation copilote</span></button>
         <button class="rail-item" data-p="correspondance"><svg class="icon"><use href="#i-msg"/></svg><span>Correspondance</span><span class="rail-count">1</span></button>
+        <button class="rail-item" data-p="bibliotheque"><svg class="icon"><use href="#i-book"/></svg><span>Bibliothèque</span><span class="rail-count" id="railBibCount">4</span></button>
         <div class="rail-label">Héritage 4.0 — inchangé</div>
         <button class="rail-item legacy" tabindex="-1"><svg class="icon"><use href="#i-layers"/></svg><span>Questionnaires &amp; packs</span><span class="rail-count">4.0</span></button>
-        <button class="rail-item legacy" tabindex="-1"><svg class="icon"><use href="#i-book"/></svg><span>Bibliothèque</span><span class="rail-count">4.0</span></button>
         <button class="rail-item legacy" tabindex="-1"><svg class="icon"><use href="#i-file"/></svg><span>Documents</span><span class="rail-count">4.0</span></button>
         <button class="rail-item legacy" tabindex="-1"><svg class="icon"><use href="#i-cal"/></svg><span>Agenda &amp; consultations</span><span class="rail-count">4.0</span></button>
         <button class="rail-item legacy" tabindex="-1"><svg class="icon"><use href="#i-flask"/></svg><span>Biologie fonctionnelle</span><span class="rail-count">4.0</span></button>
@@ -334,6 +436,7 @@ body { margin: 0; }
           <button data-p="trajectoire">Trajectoire</button>
           <button data-p="consultation">Consultation</button>
           <button data-p="correspondance">Correspondance</button>
+          <button data-p="bibliotheque">Bibliothèque</button>
         </nav>
       </header>
 
@@ -632,6 +735,363 @@ body { margin: 0; }
           </div>
         </section>
 
+        <!-- Bibliothèque -->
+        <section class="pview" id="p-bibliotheque">
+          <div class="page-head">
+            <div>
+              <div class="eyebrow">Catalogue d'instruments · 57 questionnaires · 14 domaines</div>
+              <h1>Bibliothèque</h1>
+              <p class="page-sub">Chercher, prévisualiser tel que le patient le verra, composer la file d'envoi — un seul mail par patient, un seul lien portail.</p>
+            </div>
+            <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
+              <button class="btn btn-secondary btn-sm" data-tiroir="importer"><svg class="icon icon-sm"><use href="#i-import"/></svg>Importer</button>
+              <button class="btn btn-secondary btn-sm" data-tiroir="creer"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Créer un questionnaire</button>
+            </div>
+          </div>
+
+          <div class="bib-grid">
+
+            <!-- A. Catalogue & packs -->
+            <section class="panel bib-cat">
+              <div class="panel-head">
+                <div class="bib-switch" role="group" aria-label="Catalogue ou packs">
+                  <button data-bibtab="catalogue" aria-pressed="true">Catalogue (57)</button>
+                  <button data-bibtab="packs" aria-pressed="false">Packs (2)</button>
+                </div>
+                <span class="panel-meta">Assignables uniquement</span>
+              </div>
+              <div class="bib-pane active" data-bib="catalogue">
+                <div class="bib-search"><svg class="icon icon-sm"><use href="#i-search"/></svg><input type="text" placeholder="Rechercher un titre, un code, un domaine…" aria-label="Rechercher dans le catalogue"/></div>
+                <div class="bib-chips">
+                  <button class="chip" aria-pressed="true">Tous (57)</button>
+                  <button class="chip">Sommeil</button>
+                  <button class="chip">Stress</button>
+                  <button class="chip">Neuro-psychologie</button>
+                  <button class="chip">Gastro-entérologie</button>
+                  <button class="chip">Alimentaire</button>
+                  <button class="chip">Mode de vie</button>
+                  <button class="chip">Cardiologie</button>
+                  <button class="chip">Fibromyalgie</button>
+                  <button class="chip">Gérontologie</button>
+                  <button class="chip">Tabacologie</button>
+                  <button class="chip">Pneumologie</button>
+                  <button class="chip">Urologie</button>
+                  <button class="chip">Pédiatrie</button>
+                  <button class="chip">Cancérologie</button>
+                  <button class="chip gap" title="5 questionnaires scorables ne sont pas proposés à l'assignation (gérontologie, urologie)">Non exposés (5)</button>
+                </div>
+                <div class="bib-list">
+                  <button class="bib-row" data-prev-btn="pss10" aria-pressed="true">
+                    <strong>PSS-10 — Échelle de stress perçu de Cohen</strong>
+                    <span class="meta">Q_STR_02 · 10 questions · /40 <span class="badge badge-neutral">Stress</span> <span class="badge badge-ok">Certifié</span></span>
+                  </button>
+                  <button class="bib-row" data-prev-btn="ess" aria-pressed="false">
+                    <strong>ESS — Échelle de somnolence d'Epworth</strong>
+                    <span class="meta">Q_SOM_02 · 8 situations · /24 <span class="badge badge-neutral">Sommeil</span> <span class="badge badge-ok">Certifié</span></span>
+                  </button>
+                  <button class="bib-row" data-prev-btn="bdi" aria-pressed="false">
+                    <strong>BDI — Inventaire de dépression de Beck (forme abrégée)</strong>
+                    <span class="meta">Q_NEU_01 · 13 questions · /39 <span class="badge badge-neutral">Neuro-psychologie</span> <span class="badge badge-ok">Certifié</span></span>
+                  </button>
+                  <button class="bib-row" data-prev-btn="tfd" aria-pressed="false">
+                    <strong>Troubles fonctionnels digestifs — SIIN 2021</strong>
+                    <span class="meta">Q_GAS_01 · 31 items · /93 <span class="badge badge-neutral">Gastro-entérologie</span></span>
+                  </button>
+                  <button class="bib-row" data-prev-btn="autre" aria-pressed="false">
+                    <strong>Dopamine · Noradrénaline · Sérotonine · Mélatonine — SIIN</strong>
+                    <span class="meta">Q_INF_03 · 4 × 10 items <span class="badge badge-neutral">Neuro-psychologie</span></span>
+                  </button>
+                  <button class="bib-row" data-prev-btn="autre" aria-pressed="false">
+                    <strong>DASS-21 — Dépression, anxiété, stress</strong>
+                    <span class="meta">Q_STR_04 · 21 items · 3 sous-scores <span class="badge badge-neutral">Stress</span> <span class="badge badge-ok">Certifié</span></span>
+                  </button>
+                  <button class="bib-row" data-prev-btn="autre" aria-pressed="false">
+                    <strong>PSQI — Index de qualité du sommeil de Pittsburgh</strong>
+                    <span class="meta">Q_SOM_01 · 19 items · 7 composantes <span class="badge badge-neutral">Sommeil</span> <span class="badge badge-ok">Certifié</span></span>
+                  </button>
+                  <button class="bib-row" data-prev-btn="autre" aria-pressed="false">
+                    <strong>HAD — Échelle hospitalière anxiété-dépression</strong>
+                    <span class="meta">Q_STR_07 · 14 questions <span class="badge badge-neutral">Stress</span> <span class="badge badge-neutral" title="Grille de score partagée avec l'inventaire hospitalier d'origine">Alias historique</span></span>
+                  </button>
+                  <div class="bib-more">49 autres questionnaires — la recherche filtre l'ensemble du catalogue.</div>
+                </div>
+              </div>
+              <div class="bib-pane" data-bib="packs">
+                <div class="bib-list">
+                  <div class="bib-row static">
+                    <strong>BASE DE CONSULTATION <span class="badge badge-info">Pack par défaut</span></strong>
+                    <span class="meta">7 questionnaires · ≈ 25 min · assigné automatiquement à l'arrivée d'un patient</span>
+                    <span class="rowacts">
+                      <button class="btn btn-secondary btn-sm" data-prev-btn="pack-base" aria-pressed="false">Aperçu</button>
+                      <button class="btn btn-ghost btn-sm">Modifier</button>
+                    </span>
+                  </div>
+                  <div class="bib-row static">
+                    <strong>Réévaluation de suivi</strong>
+                    <span class="meta">3 questionnaires · ≈ 12 min · créé par le cabinet</span>
+                    <span class="rowacts">
+                      <button class="btn btn-ghost btn-sm">Définir par défaut</button>
+                      <button class="btn btn-ghost btn-sm">Modifier</button>
+                    </span>
+                  </div>
+                </div>
+                <div class="bib-packfoot">
+                  <button class="btn btn-ghost btn-sm"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Nouveau pack</button>
+                  <p>Un pack s'assigne comme un questionnaire : il compte pour une ligne dans la file — et un seul mail.</p>
+                </div>
+              </div>
+            </section>
+
+            <!-- B. Aperçu vierge -->
+            <section class="panel prevu">
+              <div class="panel-head"><h2>Aperçu vierge</h2><span class="panel-meta">Tel que le patient le verra</span></div>
+              <div class="prevu-scroll">
+                <div class="prevu-pane active" data-prev="pss10" data-qtitle="PSS-10 — Stress perçu" data-qsub="Q_STR_02 · 10 questions · /40">
+                  <div class="prevu-id">
+                    <h3>PSS-10 — Échelle de stress perçu</h3>
+                    <div class="prevu-badges">
+                      <span class="provenance">Q_STR_02 · Cohen, 1983 · grille /40</span>
+                      <span class="badge badge-ok"><svg class="icon icon-sm"><use href="#i-check"/></svg>Certifié</span>
+                      <span class="badge badge-neutral">10 questions</span>
+                      <span class="badge badge-neutral">≈ 3 min</span>
+                    </div>
+                  </div>
+                  <div class="prevu-sheet">
+                    <p class="prevu-consigne">« Les questions suivantes portent sur vos sentiments et vos pensées durant le dernier mois. Pour chacune, indiquez la réponse qui s'approche le plus de votre expérience. »</p>
+                    <div class="prevu-scale">0 Jamais · 1 Presque jamais · 2 Parfois · 3 Assez souvent · 4 Très souvent</div>
+                    <div class="prevu-q"><p>1. Au cours du dernier mois, combien de fois avez-vous été dérangé(e) par un événement inattendu ?</p><div class="prevu-opts"><i>0</i><i>1</i><i>2</i><i>3</i><i>4</i></div></div>
+                    <div class="prevu-q"><p>2. Combien de fois vous a-t-il semblé difficile de contrôler les choses importantes de votre vie ?</p><div class="prevu-opts"><i>0</i><i>1</i><i>2</i><i>3</i><i>4</i></div></div>
+                    <div class="prevu-q"><p>3. Combien de fois vous êtes-vous senti(e) nerveux(se) ou stressé(e) ?</p><div class="prevu-opts"><i>0</i><i>1</i><i>2</i><i>3</i><i>4</i></div></div>
+                    <p class="prevu-fade">… 7 questions suivantes — le patient répond à son rythme, brouillon conservé.</p>
+                  </div>
+                </div>
+                <div class="prevu-pane" data-prev="ess" data-qtitle="ESS — Somnolence d'Epworth" data-qsub="Q_SOM_02 · 8 situations · /24">
+                  <div class="prevu-id">
+                    <h3>ESS — Échelle de somnolence d'Epworth</h3>
+                    <div class="prevu-badges">
+                      <span class="provenance">Q_SOM_02 · Johns, 1991 · grille /24</span>
+                      <span class="badge badge-ok"><svg class="icon icon-sm"><use href="#i-check"/></svg>Certifié</span>
+                      <span class="badge badge-neutral">8 situations</span>
+                      <span class="badge badge-neutral">≈ 2 min</span>
+                    </div>
+                  </div>
+                  <div class="prevu-sheet">
+                    <p class="prevu-consigne">« Quelle probabilité avez-vous de vous assoupir dans les situations suivantes, en dehors de toute fatigue exceptionnelle ? »</p>
+                    <div class="prevu-scale">0 Aucune chance · 1 Faible · 2 Modérée · 3 Forte</div>
+                    <div class="prevu-q"><p>1. Assis(e) en train de lire</p><div class="prevu-opts"><i>0</i><i>1</i><i>2</i><i>3</i></div></div>
+                    <div class="prevu-q"><p>2. En regardant la télévision</p><div class="prevu-opts"><i>0</i><i>1</i><i>2</i><i>3</i></div></div>
+                    <div class="prevu-q"><p>3. Assis(e), inactif(ve), dans un lieu public</p><div class="prevu-opts"><i>0</i><i>1</i><i>2</i><i>3</i></div></div>
+                    <p class="prevu-fade">… 5 situations suivantes.</p>
+                  </div>
+                </div>
+                <div class="prevu-pane" data-prev="bdi" data-qtitle="BDI — Dépression de Beck" data-qsub="Q_NEU_01 · 13 questions · /39">
+                  <div class="prevu-id">
+                    <h3>BDI — Inventaire de dépression de Beck (forme abrégée)</h3>
+                    <div class="prevu-badges">
+                      <span class="provenance">Q_NEU_01 · Beck · grille /39</span>
+                      <span class="badge badge-ok"><svg class="icon icon-sm"><use href="#i-check"/></svg>Certifié</span>
+                      <span class="badge badge-neutral">13 questions</span>
+                      <span class="badge badge-neutral">≈ 5 min</span>
+                    </div>
+                  </div>
+                  <div class="prevu-sheet">
+                    <p class="prevu-consigne">« Pour chaque groupe de phrases, choisissez celle qui décrit le mieux votre état actuel. »</p>
+                    <div class="prevu-q">
+                      <p>1.</p>
+                      <div class="prevu-choice">
+                        <span>0 — Je ne me sens pas triste.</span>
+                        <span>1 — Je me sens cafardeux(se) ou triste.</span>
+                        <span>2 — Je me sens tout le temps cafardeux(se) et je n'arrive pas à en sortir.</span>
+                        <span>3 — Je suis si triste que je ne peux pas le supporter.</span>
+                      </div>
+                    </div>
+                    <p class="prevu-fade">… 12 groupes suivants.</p>
+                  </div>
+                </div>
+                <div class="prevu-pane" data-prev="tfd" data-qtitle="Troubles fonctionnels digestifs — SIIN 2021" data-qsub="Q_GAS_01 · 31 items · /93">
+                  <div class="prevu-id">
+                    <h3>Troubles fonctionnels digestifs — SIIN 2021</h3>
+                    <div class="prevu-badges">
+                      <span class="provenance">Q_GAS_01 · SIIN 2021 · grille /93</span>
+                      <span class="badge badge-neutral">31 items · 5 catégories</span>
+                      <span class="badge badge-neutral">≈ 15 min</span>
+                    </div>
+                  </div>
+                  <div class="prevu-sheet">
+                    <p class="prevu-consigne">« Indiquez la fréquence de chaque trouble au cours des trois derniers mois. »</p>
+                    <div class="prevu-scale">0 Jamais · 1 Parfois · 2 Souvent · 3 Très souvent</div>
+                    <div class="prevu-q"><p>1. Ballonnements ou distension abdominale</p><div class="prevu-opts"><i>0</i><i>1</i><i>2</i><i>3</i></div></div>
+                    <div class="prevu-q"><p>2. Lourdeurs ou inconfort après le repas</p><div class="prevu-opts"><i>0</i><i>1</i><i>2</i><i>3</i></div></div>
+                    <p class="prevu-fade">… 29 items suivants, regroupés en 5 catégories.</p>
+                  </div>
+                </div>
+                <div class="prevu-pane" data-prev="pack-base" data-qtitle="Pack — BASE DE CONSULTATION" data-qsub="7 questionnaires · 1 lien portail" data-qpack="1">
+                  <div class="prevu-id">
+                    <h3>Pack — BASE DE CONSULTATION</h3>
+                    <div class="prevu-badges">
+                      <span class="provenance">Pack par défaut · 7 instruments · ≈ 25 min</span>
+                      <span class="badge badge-info">Pack par défaut</span>
+                    </div>
+                  </div>
+                  <div class="prevu-sheet">
+                    <p class="prevu-consigne">Le patient reçoit les sept instruments dans un seul parcours, un seul lien :</p>
+                    <div class="prevu-packlist">
+                      <span>Questionnaire Mode de Vie SIIN</span>
+                      <span>PSS-10 — Stress perçu</span>
+                      <span>ESS — Somnolence d'Epworth</span>
+                      <span>PSQI — Qualité du sommeil</span>
+                      <span>Troubles fonctionnels digestifs — SIIN 2021</span>
+                      <span>Questionnaire alimentaire SIIN</span>
+                      <span>Mes plaintes actuelles (échelle 1–10)</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="prevu-pane" data-prev="autre">
+                  <div class="prevu-id">
+                    <h3>Aperçu rédigé pour quatre instruments</h3>
+                    <div class="prevu-badges"><span class="badge badge-neutral">Maquette</span></div>
+                  </div>
+                  <div class="prevu-sheet">
+                    <p class="prevu-consigne">Dans la maquette, l'aperçu vierge est rédigé pour PSS-10, Epworth, Beck et TFD SIIN — ainsi que pour le pack Base de consultation. Dans l'application, chaque instrument du catalogue s'ouvrirait ici, avec sa consigne, son échelle et ses premières questions, tel que le patient le verra.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="prevu-assign">
+                <span class="lab">Ajouter pour</span>
+                <div class="pick-row">
+                  <label class="pick"><input type="checkbox" value="sn" checked/><span>Sophie Nicola</span></label>
+                  <label class="pick"><input type="checkbox" value="jm"/><span>Jennifer Martin</span></label>
+                  <label class="pick"><input type="checkbox" value="md"/><span>Michel Dogné</span></label>
+                </div>
+                <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+                  <button class="btn btn-primary btn-sm" id="bibAdd"><svg class="icon icon-sm"><use href="#i-plus"/></svg><span id="bibAddLabel">Ajouter à la file</span></button>
+                  <span class="why">L'ajout ne déclenche aucun envoi — la file attend votre validation.</span>
+                </div>
+              </div>
+            </section>
+
+            <!-- C. File d'envoi -->
+            <div class="bib-col">
+              <section class="panel queue">
+                <div class="panel-head"><h2>File d'envoi</h2><span class="badge badge-info">1 mail par patient</span></div>
+                <div class="queue-body" id="queueBody">
+                  <div class="queue-patient" data-pat="sn" data-prenom="Sophie">
+                    <div class="queue-head">
+                      <span class="queue-avatar">SN</span>
+                      <div><strong>Sophie Nicola</strong><span class="queue-meta">3 éléments · 1 mail</span></div>
+                      <button class="btn btn-ghost btn-sm" data-mail aria-expanded="false">Aperçu du mail</button>
+                    </div>
+                    <div class="queue-items">
+                      <div class="queue-item"><div>Pack — BASE DE CONSULTATION<span class="sub">7 questionnaires · 1 lien</span></div><button class="queue-x" data-x aria-label="Retirer de la file"><svg class="icon icon-sm"><use href="#i-plus"/></svg></button></div>
+                      <div class="queue-item"><div>PSS-10 — Stress perçu<span class="sub">Q_STR_02 · /40</span></div><button class="queue-x" data-x aria-label="Retirer de la file"><svg class="icon icon-sm"><use href="#i-plus"/></svg></button></div>
+                      <div class="queue-item"><div>ESS — Somnolence d'Epworth<span class="sub">Q_SOM_02 · /24</span></div><button class="queue-x" data-x aria-label="Retirer de la file"><svg class="icon icon-sm"><use href="#i-plus"/></svg></button></div>
+                    </div>
+                    <div class="queue-mail">Objet : Vos questionnaires — Cabinet WellNeuro
+
+Bonjour Sophie,
+
+3 questionnaires vous attendent, dont le pack Base de consultation.
+
+Un seul lien suffit :
+https://app.wellneuro.fr/portail/•••
+
+Répondez à votre rythme — vos réponses rejoignent directement votre dossier.</div>
+                  </div>
+                  <div class="queue-patient hidden" data-pat="jm" data-prenom="Jennifer">
+                    <div class="queue-head">
+                      <span class="queue-avatar">JM</span>
+                      <div><strong>Jennifer Martin</strong><span class="queue-meta">0 élément</span></div>
+                      <button class="btn btn-ghost btn-sm" data-mail aria-expanded="false">Aperçu du mail</button>
+                    </div>
+                    <div class="queue-items"></div>
+                    <div class="queue-mail">Objet : Vos questionnaires — Cabinet WellNeuro
+
+Bonjour Jennifer,
+
+Vos questionnaires vous attendent.
+
+Un seul lien suffit :
+https://app.wellneuro.fr/portail/•••</div>
+                  </div>
+                  <div class="queue-patient" data-pat="md" data-prenom="Michel">
+                    <div class="queue-head">
+                      <span class="queue-avatar">MD</span>
+                      <div><strong>Michel Dogné</strong><span class="queue-meta">1 élément · 1 mail</span></div>
+                      <button class="btn btn-ghost btn-sm" data-mail aria-expanded="false">Aperçu du mail</button>
+                    </div>
+                    <div class="queue-items">
+                      <div class="queue-item"><div>Troubles fonctionnels digestifs — SIIN 2021<span class="sub">Q_GAS_01 · 31 items</span></div><button class="queue-x" data-x aria-label="Retirer de la file"><svg class="icon icon-sm"><use href="#i-plus"/></svg></button></div>
+                    </div>
+                    <div class="queue-mail">Objet : Votre questionnaire — Cabinet WellNeuro
+
+Bonjour Michel,
+
+1 questionnaire vous attend :
+Troubles fonctionnels digestifs — SIIN 2021.
+
+Un seul lien suffit :
+https://app.wellneuro.fr/portail/•••</div>
+                  </div>
+                </div>
+                <div class="queue-foot">
+                  <span class="tot" id="queueTotal">2 patients · 4 éléments</span>
+                  <button class="btn btn-primary" id="queueSend"><svg class="icon icon-sm"><use href="#i-send"/></svg><span id="queueSendLabel">Préparer 2 envois</span></button>
+                  <span class="why">Un seul lien portail par patient. Rien ne part sans votre validation.</span>
+                </div>
+              </section>
+              <section class="panel">
+                <div class="panel-head"><h2>Ce que l'écran ajoute</h2></div>
+                <div style="padding:13px 19px 17px;font-size:11.5px;color:var(--muted-fg);line-height:1.65">Aujourd'hui : assignation unitaire ou pack, un mail par envoi. L'écran ajoute : file multi-patients (un seul mail chacun), aperçu vierge, certification visible, création et importation d'instruments.</div>
+              </section>
+            </div>
+          </div>
+
+          <!-- Tiroirs : création & importation -->
+          <aside class="tiroir" id="tiroir-creer" aria-label="Créer un questionnaire">
+            <div class="tiroir-head">
+              <div><div class="eyebrow">Instrument du cabinet</div><h2>Créer un questionnaire</h2></div>
+              <button class="tiroir-close" data-tiroir-close aria-label="Fermer"><svg class="icon"><use href="#i-plus"/></svg></button>
+            </div>
+            <div class="tiroir-body">
+              <div class="field"><label>Titre</label><input type="text" value="Ressenti de la charge mentale — cabinet"/></div>
+              <div class="field"><label>Domaine</label><select><option>Stress</option><option>Sommeil</option><option>Mode de vie</option><option>Neuro-psychologie</option></select></div>
+              <div class="field"><label>Consigne au patient</label><textarea rows="2">Indiquez la fréquence de chaque situation au cours des deux dernières semaines.</textarea></div>
+              <div class="field"><label>Type d'échelle</label><select><option>Fréquence 0–4 (jamais → très souvent)</option><option>Intensité 0–3</option><option>Oui · Non</option></select></div>
+              <div class="field"><label>Question 1</label><input type="text" value="Je me sens débordé(e) par les tâches à mener de front."/></div>
+              <div class="field"><label>Question 2</label><input type="text" value="Je repousse des décisions simples par manque d'énergie."/></div>
+              <button class="btn btn-ghost btn-sm" style="justify-self:start"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Ajouter une question</button>
+              <div class="consent warn"><svg class="icon"><use href="#i-alert"/></svg><span><b>Score non certifié.</b> Un questionnaire créé reste privé à votre cabinet — il n'est jamais certifié automatiquement, et sa grille de score doit être relue avant toute interprétation.</span></div>
+            </div>
+            <div class="tiroir-foot">
+              <button class="btn btn-secondary btn-sm">Enregistrer le brouillon</button>
+              <button class="btn btn-primary btn-sm">Publier dans mon catalogue</button>
+            </div>
+          </aside>
+          <aside class="tiroir" id="tiroir-importer" aria-label="Importer des questionnaires">
+            <div class="tiroir-head">
+              <div><div class="eyebrow">Catalogue du cabinet</div><h2>Importer des questionnaires</h2></div>
+              <button class="tiroir-close" data-tiroir-close aria-label="Fermer"><svg class="icon"><use href="#i-plus"/></svg></button>
+            </div>
+            <div class="tiroir-body">
+              <div class="dropzone"><svg class="icon"><use href="#i-import"/></svg><strong>Déposez un fichier CSV ou JSON</strong><span>ou choisissez-le depuis votre ordinateur — modèle fourni</span></div>
+              <div class="field">
+                <label>Correspondance des colonnes</label>
+                <div class="maptable">
+                  <div><i>titre</i> → Titre affiché</div>
+                  <div><i>domaine</i> → Domaine (14 reconnus)</div>
+                  <div><i>bareme</i> → Grille de score (relecture requise)</div>
+                </div>
+              </div>
+              <span class="why">Un instrument importé reste non scoré tant que sa grille n'a pas été relue par le cabinet.</span>
+            </div>
+            <div class="tiroir-foot">
+              <button class="btn btn-ghost btn-sm">Télécharger le modèle</button>
+              <button class="btn btn-primary btn-sm" disabled>Analyser le fichier</button>
+            </div>
+          </aside>
+          <div class="tiroir-veil" id="tiroirVeil"></div>
+        </section>
+
       </main>
     </div>
   </div>
@@ -707,6 +1167,108 @@ body { margin: 0; }
     b.addEventListener('click', function () { showTT(b.dataset.ttBtn); });
     b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showTT(b.dataset.ttBtn); } });
   });
+
+  /* Bibliothèque : catalogue/packs, aperçu vierge, file d'envoi, tiroirs */
+  function showBibPane(name) {
+    document.querySelectorAll('.bib-pane').forEach(function (p) { p.classList.toggle('active', p.dataset.bib === name); });
+    document.querySelectorAll('[data-bibtab]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.bibtab === name)); });
+  }
+  document.querySelectorAll('[data-bibtab]').forEach(function (b) { b.addEventListener('click', function () { showBibPane(b.dataset.bibtab); }); });
+
+  function syncAdd() {
+    var add = document.getElementById('bibAdd');
+    if (!add) { return; }
+    var pane = document.querySelector('.prevu-pane.active');
+    add.disabled = !(pane && pane.dataset.qtitle);
+  }
+  function showPrev(name, btn) {
+    document.querySelectorAll('.prevu-pane').forEach(function (p) { p.classList.toggle('active', p.dataset.prev === name); });
+    document.querySelectorAll('[data-prev-btn]').forEach(function (b) { b.setAttribute('aria-pressed', String(b === btn)); });
+    syncAdd();
+  }
+  document.querySelectorAll('[data-prev-btn]').forEach(function (b) { b.addEventListener('click', function () { showPrev(b.dataset.prevBtn, b); }); });
+
+  function refreshQueue() {
+    var total = 0, pats = 0;
+    document.querySelectorAll('.queue-patient').forEach(function (g) {
+      var n = g.querySelectorAll('.queue-item').length;
+      g.classList.toggle('hidden', n === 0);
+      if (n > 0) { pats += 1; total += n; }
+      var meta = g.querySelector('.queue-meta');
+      if (meta) { meta.textContent = n + (n > 1 ? ' éléments' : ' élément') + ' · 1 mail'; }
+      var mail = g.querySelector('.queue-mail');
+      if (mail && n > 0) {
+        var avecPack = Array.prototype.some.call(g.querySelectorAll('.queue-item > div'), function (d) {
+          return d.textContent.indexOf('Pack —') === 0;
+        });
+        mail.textContent = 'Objet : ' + (n > 1 ? 'Vos questionnaires' : 'Votre questionnaire') + ' — Cabinet WellNeuro\n\n'
+          + 'Bonjour ' + (g.dataset.prenom || '') + ',\n\n'
+          + n + (n > 1 ? ' questionnaires vous attendent' : ' questionnaire vous attend')
+          + (avecPack ? ', dont le pack Base de consultation' : '') + '.\n\n'
+          + 'Un seul lien suffit :\nhttps://app.wellneuro.fr/portail/•••\n\n'
+          + 'Répondez à votre rythme — vos réponses rejoignent directement votre dossier.';
+      }
+    });
+    document.getElementById('queueTotal').textContent =
+      pats + (pats > 1 ? ' patients · ' : ' patient · ') + total + (total > 1 ? ' éléments' : ' élément');
+    document.getElementById('queueSendLabel').textContent = 'Préparer ' + pats + (pats > 1 ? ' envois' : ' envoi');
+    document.getElementById('railBibCount').textContent = String(total);
+  }
+
+  var bibAdd = document.getElementById('bibAdd');
+  if (bibAdd) {
+    bibAdd.addEventListener('click', function () {
+      var pane = document.querySelector('.prevu-pane.active');
+      if (!pane || !pane.dataset.qtitle) { return; }
+      var picks = document.querySelectorAll('.prevu-assign input:checked');
+      if (!picks.length) { return; }
+      picks.forEach(function (input) {
+        var g = document.querySelector('.queue-patient[data-pat="' + input.value + '"]');
+        if (!g) { return; }
+        var item = document.createElement('div'); item.className = 'queue-item';
+        var txt = document.createElement('div'); txt.textContent = pane.dataset.qtitle;
+        var sub = document.createElement('span'); sub.className = 'sub'; sub.textContent = pane.dataset.qsub || '';
+        txt.appendChild(sub);
+        var x = document.createElement('button'); x.className = 'queue-x';
+        x.setAttribute('data-x', ''); x.setAttribute('aria-label', 'Retirer de la file');
+        x.innerHTML = '<svg class="icon icon-sm"><use href="#i-plus"/></svg>';
+        item.appendChild(txt); item.appendChild(x);
+        g.querySelector('.queue-items').appendChild(item);
+      });
+      refreshQueue();
+      var lab = document.getElementById('bibAddLabel');
+      bibAdd.disabled = true; lab.textContent = 'Ajouté à la file';
+      setTimeout(function () { lab.textContent = 'Ajouter à la file'; syncAdd(); }, 1300);
+    });
+  }
+
+  var queueBody = document.getElementById('queueBody');
+  if (queueBody) {
+    queueBody.addEventListener('click', function (e) {
+      var x = e.target.closest('[data-x]');
+      if (x) { x.closest('.queue-item').remove(); refreshQueue(); return; }
+      var m = e.target.closest('[data-mail]');
+      if (m) {
+        var mail = m.closest('.queue-patient').querySelector('.queue-mail');
+        var open = !mail.classList.contains('show');
+        mail.classList.toggle('show', open);
+        m.setAttribute('aria-expanded', String(open));
+      }
+    });
+    refreshQueue();
+  }
+
+  function setTiroir(name) {
+    ['creer', 'importer'].forEach(function (id) {
+      document.getElementById('tiroir-' + id).classList.toggle('open', name === id);
+    });
+    document.getElementById('tiroirVeil').classList.toggle('show', name !== null);
+  }
+  document.querySelectorAll('[data-tiroir]').forEach(function (b) { b.addEventListener('click', function () { setTiroir(b.dataset.tiroir); }); });
+  document.querySelectorAll('[data-tiroir-close]').forEach(function (b) { b.addEventListener('click', function () { setTiroir(null); }); });
+  document.getElementById('tiroirVeil').addEventListener('click', function () { setTiroir(null); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { setTiroir(null); } });
+  document.querySelectorAll('[data-p]').forEach(function (b) { b.addEventListener('click', function () { setTiroir(null); }); });
 })();
 </script>
 
