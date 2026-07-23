@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cartesAssignationsEnRetard,
+  cartesJalons,
   cartesReprise,
   cartesSignalementsTrust,
   cartesSynthesesAValider,
@@ -80,6 +81,9 @@ describe('resumeFil', () => {
         { idSynthese: 'SYN_1', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-13T09:00:00') },
         { idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') },
       ],
+      jalons: [
+        { idCheckin: 'CHK_1', idPatient: 'P-SOPHIE', soumisLe: new Date('2026-07-14T08:00:00') },
+      ],
       assignations: [
         { idAssignation: 'ASG_1', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
       ],
@@ -87,8 +91,9 @@ describe('resumeFil', () => {
       noms: NOMS,
       maintenant: MAINTENANT,
     });
-    // 2 synthèses agrégées en 1 carte : le résumé compte bien 2 relectures.
-    expect(resumeFil(fil)).toBe('1 signalement · 2 relectures · 1 retard');
+    // 2 synthèses agrégées en 1 carte : le résumé compte bien 2 relectures ;
+    // le jalon s'intercale entre relectures et retards.
+    expect(resumeFil(fil)).toBe('1 signalement · 2 relectures · 1 jalon · 1 retard');
   });
 
   it('rend une chaîne vide pour un fil vide', () => {
@@ -107,6 +112,37 @@ describe('indexCarteImminente', () => {
     });
     expect(indexCarteImminente(fil)).toBe(0);
     expect(indexCarteImminente([])).toBe(-1);
+  });
+});
+
+describe('cartesJalons', () => {
+  it('cite la date du check-in J21 et l’action observée, sans momentum si absent', () => {
+    const cartes = cartesJalons(
+      [{ idCheckin: 'CHK_1', idPatient: 'P-SOPHIE', soumisLe: new Date('2026-07-14T08:00:00'), adhesion: 'Tous les jours' }],
+      NOMS,
+    );
+    expect(cartes).toHaveLength(1);
+    expect(cartes[0].type).toBe('jalon_j21');
+    expect(cartes[0].patient).toBe('Sophie Nicola');
+    expect(cartes[0].titre).toBe('Jalon J21 atteint — décision attendue');
+    expect(cartes[0].pourquoi).toContain('Check-in J21 reçu le 14 juillet');
+    expect(cartes[0].pourquoi).toContain('Tous les jours');
+    expect(cartes[0].pourquoi).not.toContain('Momentum');
+    expect(cartes[0].cle).toBe('jalon_j21:CHK_1');
+  });
+
+  it('cite le momentum seulement quand il existe (jamais un 0)', () => {
+    const [hausse] = cartesJalons(
+      [{ idCheckin: 'CHK_1', idPatient: 'P-SOPHIE', soumisLe: new Date('2026-07-14T08:00:00'), momentum: { tendance: 'hausse', delta: 1.4 } }],
+      NOMS,
+    );
+    expect(hausse.pourquoi).toContain('Momentum en hausse de 1.4');
+
+    const [stable] = cartesJalons(
+      [{ idCheckin: 'CHK_2', idPatient: 'P-MICHEL', soumisLe: new Date('2026-07-14T08:00:00'), momentum: { tendance: 'stable', delta: 0 } }],
+      NOMS,
+    );
+    expect(stable.pourquoi).toContain('Momentum stable');
   });
 });
 
@@ -181,9 +217,10 @@ describe('construireFil', () => {
     expect(fil.map(c => c.type)).toEqual(['signalement_trust', 'synthese_a_valider']);
   });
 
-  it('ordonne le Fil : synthèses, retards, reprises (les réponses reçues sont passées à l’inbox)', () => {
+  it('ordonne le Fil : synthèses, jalons, retards, reprises (les réponses reçues sont passées à l’inbox)', () => {
     const fil = construireFil({
       syntheses: [{ idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
+      jalons: [{ idCheckin: 'CHK_1', idPatient: 'P-SOPHIE', soumisLe: new Date('2026-07-14T08:00:00') }],
       assignations: [
         { idAssignation: 'ASG_6', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
       ],
@@ -193,6 +230,7 @@ describe('construireFil', () => {
     });
     expect(fil.map(c => c.type)).toEqual([
       'synthese_a_valider',
+      'jalon_j21',
       'assignation_en_retard',
       'reprise',
     ]);
@@ -240,6 +278,7 @@ describe('identité des cartes (clé)', () => {
     const fil = construireFil({
       signalements: [{ id: 'SIG_9', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
       syntheses: [{ idSynthese: 'SYN_9', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
+      jalons: [{ idCheckin: 'CHK_9', idPatient: 'P-SOPHIE', soumisLe: new Date('2026-07-14T08:00:00') }],
       assignations: [
         { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
       ],
@@ -248,7 +287,7 @@ describe('identité des cartes (clé)', () => {
       maintenant: MAINTENANT,
     });
 
-    expect(fil).toHaveLength(4);
+    expect(fil).toHaveLength(5);
     for (const carte of fil) {
       expect(carte.cle.startsWith(`${carte.type}:`)).toBe(true);
       expect(carte.cle.length).toBeGreaterThan(carte.type.length + 1);

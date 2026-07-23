@@ -9,6 +9,8 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     syntheseIA: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn(), groupBy: vi.fn() },
+    protocolCheckin: { findMany: vi.fn() },
+    assessmentEpisode: { findMany: vi.fn() },
     patient: { findMany: vi.fn() },
     filCardRejection: { findMany: vi.fn() },
   },
@@ -36,6 +38,8 @@ describe('GET /api/praticien/fil', () => {
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.groupBy.mockResolvedValue([]);
+    prisma.protocolCheckin.findMany.mockResolvedValue([]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     prisma.patient.findMany.mockResolvedValue([]);
     prisma.filCardRejection.findMany.mockResolvedValue([]);
   });
@@ -104,6 +108,35 @@ describe('GET /api/praticien/fil', () => {
     expect(selectDe(prisma.trustRightsRequest.findMany).id).toBe(true);
     expect(selectDe(prisma.syntheseIA.findMany).idSynthese).toBe(true);
     expect(selectDe(prisma.assignation.findMany).idAssignation).toBe(true);
+    expect(selectDe(prisma.protocolCheckin.findMany).id).toBe(true);
+  });
+
+  // Jalon J21 = check-in J21 soumis MOINS épisode J21 consigné.
+  it('un check-in J21 sans épisode J21 produit une carte jalon', async () => {
+    prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
+    prisma.protocolCheckin.findMany.mockResolvedValue([
+      { id: 'CHK_J21', idPatient: 'PAT_SEED_01', reponses: {}, soumisLe: new Date('2026-07-14T08:00:00.000Z') },
+    ]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]); // aucune décision consignée
+    // momentumJalonsParPatient relit épisodes + réponses : rien de mesuré.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+
+    const payload = await (await GET()).json();
+    const jalon = payload.cartes.find((c: { type: string }) => c.type === 'jalon_j21');
+    expect(jalon).toBeDefined();
+    expect(jalon.cle).toBe('jalon_j21:CHK_J21');
+    expect(jalon.titre).toContain('Jalon J21');
+  });
+
+  it('un check-in J21 déjà suivi d’un épisode J21 consigné ne produit aucune carte jalon', async () => {
+    prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
+    prisma.protocolCheckin.findMany.mockResolvedValue([
+      { id: 'CHK_J21', idPatient: 'PAT_SEED_01', reponses: {}, soumisLe: new Date('2026-07-14T08:00:00.000Z') },
+    ]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01' }]);
+
+    const payload = await (await GET()).json();
+    expect(payload.cartes.some((c: { type: string }) => c.type === 'jalon_j21')).toBe(false);
   });
 
   const CLE_SYNTHESE = 'synthese_a_valider:agregat:PAT_SEED_01:2026-07-20T09:00:00.000Z';

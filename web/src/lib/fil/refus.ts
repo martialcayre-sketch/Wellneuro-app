@@ -72,6 +72,7 @@ export function filtrerCartesRefusees(cartes: CarteFil[], refusees: Set<string>)
 const TYPES_CARTE: readonly TypeCarteFil[] = [
   'signalement_trust',
   'synthese_a_valider',
+  'jalon_j21',
   'assignation_en_retard',
   'reprise',
 ];
