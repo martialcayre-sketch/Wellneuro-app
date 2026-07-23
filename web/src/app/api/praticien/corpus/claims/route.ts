@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { sourcesDuNotebook } from '@/lib/rag/claims/notebooks';
 import { getRagClaimsHealth } from '@/lib/rag/claims/store';
 import {
   compterClaimsRevue,
@@ -62,6 +63,12 @@ export async function GET(req: Request): Promise<NextResponse<CorpusClaimsApiRes
       return echec('source_invalide', 'Identifiant de source invalide.', 400);
     }
 
+    // Filtre notebook (registre sanitaire) — borné pour rester un libellé.
+    const notebookBrut = (searchParams.get('notebook') ?? '').trim();
+    if (notebookBrut.length > 200) {
+      return echec('notebook_invalide', 'Libellé de notebook invalide.', 400);
+    }
+
     const limitBrut = Number(searchParams.get('limit') ?? '50');
     const offsetBrut = Number(searchParams.get('offset') ?? '0');
     if (!Number.isInteger(limitBrut) || !Number.isInteger(offsetBrut) || limitBrut < 1 || offsetBrut < 0) {
@@ -75,6 +82,7 @@ export async function GET(req: Request): Promise<NextResponse<CorpusClaimsApiRes
       listerClaimsRevue({
         statut: statutBrut,
         sourceId: sourceBrut || undefined,
+        sourceIds: notebookBrut ? sourcesDuNotebook(notebookBrut) : undefined,
         limit: limitBrut,
         offset: offsetBrut,
       }),

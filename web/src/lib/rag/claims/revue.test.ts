@@ -150,8 +150,28 @@ describe('listerClaimsRevue', () => {
 
     const appelPage = prisma.$queryRaw.mock.calls[1];
     expect(sqlDeAppel(appelPage)).toContain('LIMIT');
-    // Paramètres de la page : statut, source ×2, limit clampé, offset plancher.
-    expect(parametresDeAppel(appelPage)).toEqual(['EN_ATTENTE_VALIDATION', null, null, 100, 0]);
+    // Paramètres de la page : statut, source ×2, sourceIds (notebook) ×2,
+    // limit clampé, offset plancher.
+    expect(parametresDeAppel(appelPage)).toEqual([
+      'EN_ATTENTE_VALIDATION',
+      null,
+      null,
+      null,
+      null,
+      100,
+      0,
+    ]);
+  });
+
+  it('filtre par ensemble de sources (notebook) — liste vide = résultat vide, jamais ignorée', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([{ total: BigInt(0) }]).mockResolvedValueOnce([]);
+
+    await listerClaimsRevue({ statut: 'EN_ATTENTE_VALIDATION', sourceIds: [] });
+
+    const appelPage = prisma.$queryRaw.mock.calls[1];
+    expect(sqlDeAppel(appelPage)).toContain('= ANY(');
+    // Le tableau vide est transmis tel quel : le SQL rend zéro ligne.
+    expect(parametresDeAppel(appelPage)).toEqual(['EN_ATTENTE_VALIDATION', null, null, [], [], 50, 0]);
   });
 });
 

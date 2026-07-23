@@ -81,6 +81,8 @@ const LIMIT_MAX = 100;
 export type ListerClaimsRevueOptions = {
   statut: ClaimStatut;
   sourceId?: string;
+  /** Restriction à un ensemble de sources (filtre notebook — résolu registre). */
+  sourceIds?: string[];
   limit?: number;
   offset?: number;
 };
@@ -94,6 +96,9 @@ export type ListerClaimsRevueOptions = {
 export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Promise<ListeClaimsRevue> {
   const statut = options.statut;
   const sourceId = options.sourceId ?? null;
+  // Filtre notebook : une liste vide signifie « notebook sans aucune source »
+  // — résultat vide garanti, jamais un filtre silencieusement ignoré.
+  const sourceIds = options.sourceIds ?? null;
   const limit = Math.max(1, Math.min(options.limit ?? 50, LIMIT_MAX));
   const offset = Math.max(0, options.offset ?? 0);
 
@@ -104,6 +109,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
       WHERE c.statut = ${statut}
         AND c.active = true
         AND (${sourceId}::text IS NULL OR c.source_id = ${sourceId})
+        AND (${sourceIds}::text[] IS NULL OR c.source_id = ANY(${sourceIds}::text[]))
     `,
     prisma.$queryRaw<Array<{
       id: string;
@@ -142,6 +148,7 @@ export async function listerClaimsRevue(options: ListerClaimsRevueOptions): Prom
       WHERE c.statut = ${statut}
         AND c.active = true
         AND (${sourceId}::text IS NULL OR c.source_id = ${sourceId})
+        AND (${sourceIds}::text[] IS NULL OR c.source_id = ANY(${sourceIds}::text[]))
       ORDER BY c.source_id, c.claim_id, c.version_claim
       LIMIT ${limit} OFFSET ${offset}
     `,
@@ -944,4 +951,74 @@ export async function basculerLot(params: {
   }
 
   return { ok: true };
+}
+
+export type SourceEnRevue = {
+  sourceId: string;
+  enAttente: number;
+  valides: number;
+  rejetes: number;
+  /** En attente, signables par lot : déclaré/observé non prescriptifs (allowlist). */
+  voieRapide: number;
+  /** En attente, revue individuelle obligatoire : prescriptifs ou interprétés/vécus. */
+  voieLente: number;
+  /** Un tirage sans issue existe pour cette source (voie rapide en cours). */
+  tirageOuvert: boolean;
+};
+
+/**
+ * Vue d'ensemble par source : les comptes qui pilotent l'écran de l'Atelier —
+ * quelle source a une file, ce qui part en voie rapide et ce qui reste en
+ * individuel, et si une revue de lot est déjà en cours. Même périmètre que la
+ * file (active = true).
+ */
+export async function listerSourcesEnRevue(): Promise<SourceEnRevue[]> {
+  const lignes = await prisma.$queryRaw<Array<{
+    source_id: string;
+    en_attente: bigint;
+    valides: bigint;
+    rejetes: bigint;
+    voie_rapide: bigint;
+    tirage_ouvert: boolean;
+  }>>`
+    SELECT
+      c.source_id,
+      count(*) FILTER (WHERE c.statut = 'EN_ATTENTE_VALIDATION') AS en_attente,
+      count(*) FILTER (WHERE c.statut = 'VALIDE') AS valides,
+      count(*) FILTER (WHERE c.statut = 'REJETE') AS rejetes,
+      count(*) FILTER (
+        WHERE c.statut = 'EN_ATTENTE_VALIDATION'
+          AND c.prescriptif = false
+          AND c.typologie_lecture IN ('déclaré', 'observé')
+      ) AS voie_rapide,
+      EXISTS (
+        SELECT 1
+        FROM public.rag_corpus_claim_decisions t
+        WHERE t.type_acte = 'tirage_echantillon'
+          AND t.source_id = c.source_id
+          AND NOT EXISTS (
+            SELECT 1 FROM public.rag_corpus_claim_decisions i
+            WHERE i.tirage_id = t.id
+              AND i.type_acte IN ('decision_lot', 'bascule_individuelle')
+          )
+      ) AS tirage_ouvert
+    FROM public.rag_corpus_claims c
+    WHERE c.active = true
+    GROUP BY c.source_id
+    ORDER BY c.source_id
+  `;
+
+  return lignes.map((ligne) => {
+    const enAttente = Number(ligne.en_attente);
+    const voieRapide = Number(ligne.voie_rapide);
+    return {
+      sourceId: ligne.source_id,
+      enAttente,
+      valides: Number(ligne.valides),
+      rejetes: Number(ligne.rejetes),
+      voieRapide,
+      voieLente: enAttente - voieRapide,
+      tirageOuvert: ligne.tirage_ouvert,
+    };
+  });
 }
