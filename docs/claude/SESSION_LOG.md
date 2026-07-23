@@ -351,3 +351,24 @@ déjà juste.
 09) ; téléverser la bibliothèque dans Drive et créer le premier NotebookLM.
 
 **Questions ouvertes** : échelle 88 sources ; piste MP4.
+
+## 2026-07-23 — UX 5.0 V15 : rubrique Bibliothèque (maquette)
+
+**Décisions** : rubrique Bibliothèque activée dans la maquette Spirale
+(PR #312, squash `4ecf9ae`, mergée sur instruction explicite du
+propriétaire) ; file d'envoi générale multi-patients — un mail, un lien
+portail par patient ; aperçu vierge « le Jardin » ; création/import en
+tiroirs 440 px ; artifact republié sur la même URL. Revue adversariale
+(38 agents) : barème PSS-10 corrigé /40, aperçu du mail resynchronisé.
+Questions produit consignées en ARBITRAGES §6. Validations : Chromium
+headless (interactions, hauteur bornée, zéro erreur console),
+anti-secrets, `verify` 33 s (docs-only) — pas de suite web/, aucun
+changement d'app.
+
+**Écarté** : artifact séparé (maquette unique) ; panier par patient
+(file globale préférée) ; toucher à l'app.
+
+**Prochaine action** : trancher ARBITRAGES §6 (nommage, écart catalogue,
+alias, orchestration serveur de la file) avant implémentation.
+
+**Questions ouvertes** : implémentation app de la vue.
