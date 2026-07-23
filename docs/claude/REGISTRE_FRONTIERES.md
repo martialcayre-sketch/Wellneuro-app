@@ -266,6 +266,33 @@
   `propositions/2026-07-18-refonte-ux-5-0/`. **Aucune modification de logique
   clinique ni de seuils.**
 
+### A6-R2 — Révision : courbe de momentum praticien et repère de cabinet (décision utilisateur 2026-07-23, campagne SP-TRAJ)
+
+- Révise « jamais une courbe » (A6) pour la **seule surface praticien** de la
+  Fiche-trajectoire : une **courbe de momentum** y est admise **si et
+  seulement si** chaque point est un **jalon réellement mesuré** (T0/J21/J42/
+  J90, booléen `mesure` de `lib/protocol/trajectoire.ts`). Aucun point
+  interpolé, aucun prolongement prédictif, aucun pronostic : un jalon non
+  mesuré est un **trou visible** dans la ligne, jamais un 0 (A8-2 intact).
+  Sous 2 jalons mesurés, pas de courbe — repli sur le texte momentum
+  existant. La Spirale reste l'index de navigation (A6) ; la courbe est un
+  instrument de lecture du cycle, **invisible côté patient**.
+- Avance le **repère de cabinet** (périmètre ex-SP-CAB) : médiane
+  **descriptive** des momentums par jalon, calculée sur les cycles du cabinet
+  de **même `versionScore`** que le cycle lu (A8-3 étendu à l'agrégat — un
+  cycle de version différente ou inconnue n'entre jamais dans la cohorte),
+  avec `n=` **toujours affiché** et repère **masqué sous n < 5 cycles
+  comparables** (A6-2 conservé ; constante applicative
+  `SEUIL_COHORTE_CABINET`, ajustable). Un repère, jamais une prédiction, ni
+  un objectif, ni un classement de patients.
+- « Estimé ↔ mesuré » : le panneau **existe en état « second temps »**
+  (badge « HDS requis ») — aucune donnée biologique n'est stockée ni
+  fabriquée ; le gate HDS et le différé « Biologie fonctionnelle » restent
+  inchangés.
+- Aucune modification de logique clinique ni de seuils : la courbe et la
+  médiane lisent des valeurs déjà produites par `lib/equilibre`, rien n'est
+  recalibré.
+
 ### A7 — Cap « Ma spirale alimentaire » : instrument longitudinal à trois régimes (décision utilisateur 2026-07-16)
 
 > **Amendement du 2026-07-23 (SP-CONV LOT-05, décision utilisateur du
