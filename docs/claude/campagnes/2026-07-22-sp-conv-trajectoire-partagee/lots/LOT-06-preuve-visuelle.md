@@ -102,6 +102,8 @@ Livré le 2026-07-23 :
   documenté dans `web/e2e/README.md`.
 - Écarts au périmètre prévu, assumés : la capture « Mon équilibre »
   portail exigerait une consultation complète pour Jennifer (interférence
-  refusée) — remplacée par « hub sections dépliées » ; la démonstration
-  « verify échoue sur une régression volontaire » attend les premières
-  baselines commitées (workflow à déclencher post-merge).
+  refusée) — remplacée par « hub sections dépliées » ; les premières
+  baselines (8 — quatre écrans stables × 2 projets) ont été générées sous
+  Ubuntu, relues image par image (2 itérations : état transitoire et textes
+  temporels attrapés à la relecture) puis commitées le 2026-07-23 — le
+  `verify` de leur PR est la première comparaison au pixel active.
