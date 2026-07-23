@@ -8,6 +8,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { Menu, ChevronDown, PanelLeftClose, PanelLeftOpen, X } from 'lucide-react';
 import { SidebarRail } from '@/components/ui/SidebarRail';
 import { MobileBottomNav } from '@/components/ui/MobileBottomNav';
+import { VuesRapides } from '@/components/ui/VuesRapides';
 
 const RAIL_STORAGE_KEY = 'wn-rail-expanded';
 
@@ -62,6 +63,12 @@ export function NavBar({ email, buildLabel, children }: NavBarProps) {
           </span>
 
           <span className="hidden text-xs font-medium text-muted-foreground lg:inline">{buildLabel}</span>
+
+          {/* Onglets « Vues rapides » de la maquette (topbar de l'Observatoire) —
+              desktop seulement, MobileBottomNav couvre les petits écrans. */}
+          <div className="hidden flex-1 justify-center lg:flex">
+            <VuesRapides />
+          </div>
 
           <details className="relative ml-auto">
             <summary className="flex h-11 cursor-pointer list-none items-center gap-1 rounded-full border border-border px-3 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring [&::-webkit-details-marker]:hidden">

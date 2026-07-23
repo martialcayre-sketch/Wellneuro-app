@@ -6,7 +6,9 @@ import {
   cartesSignalementsTrust,
   cartesSynthesesAValider,
   construireFil,
+  indexCarteImminente,
   MAX_CARTES_PAR_TYPE,
+  resumeFil,
 } from './cartes';
 
 // Patients fictifs autorisés uniquement (CLAUDE.md).
@@ -30,6 +32,85 @@ describe('cartesSynthesesAValider', () => {
     expect(cartes.map(c => c.patient)).toEqual(['Jennifer Martin', 'Sophie Nicola']);
     expect(cartes[0].href).toBe('/dashboard/synthese');
     expect(cartes[0].pourquoi).toContain('validation');
+  });
+
+  it('agrège les synthèses d’un même patient en une carte « N relectures en attente »', () => {
+    const cartes = cartesSynthesesAValider(
+      [
+        { idSynthese: 'SYN_1', idPatient: 'P-SOPHIE', dateGeneration: new Date('2026-07-10T09:00:00') },
+        { idSynthese: 'SYN_2', idPatient: 'P-SOPHIE', dateGeneration: new Date('2026-07-14T09:00:00') },
+        { idSynthese: 'SYN_3', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-12T09:00:00') },
+      ],
+      NOMS,
+    );
+    expect(cartes).toHaveLength(2);
+    expect(cartes[0].patient).toBe('Sophie Nicola');
+    expect(cartes[0].titre).toBe('2 relectures en attente');
+    expect(cartes[0].nbElements).toBe(2);
+    // La date de référence est la synthèse la plus récente du patient.
+    expect(cartes[0].pourquoi).toContain('14 juillet');
+    expect(cartes[1].titre).toBe('1 relecture en attente');
+  });
+
+  it('une nouvelle synthèse change la clé de l’agrégat — la carte écartée revient', () => {
+    const avant = cartesSynthesesAValider(
+      [{ idSynthese: 'SYN_1', idPatient: 'P-SOPHIE', dateGeneration: new Date('2026-07-10T09:00:00') }],
+      NOMS,
+    );
+    const apres = cartesSynthesesAValider(
+      [
+        { idSynthese: 'SYN_1', idPatient: 'P-SOPHIE', dateGeneration: new Date('2026-07-10T09:00:00') },
+        { idSynthese: 'SYN_2', idPatient: 'P-SOPHIE', dateGeneration: new Date('2026-07-15T09:00:00') },
+      ],
+      NOMS,
+    );
+    expect(apres[0].cle).not.toBe(avant[0].cle);
+    // Sans fait nouveau, la clé ne bouge pas : le refus persiste.
+    const relecture = cartesSynthesesAValider(
+      [{ idSynthese: 'SYN_1', idPatient: 'P-SOPHIE', dateGeneration: new Date('2026-07-10T09:00:00') }],
+      NOMS,
+    );
+    expect(relecture[0].cle).toBe(avant[0].cle);
+  });
+});
+
+describe('resumeFil', () => {
+  it('résume par type dans l’ordre du Fil, en comptant les lignes sources des agrégats', () => {
+    const fil = construireFil({
+      signalements: [{ id: 'SIG_1', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
+      syntheses: [
+        { idSynthese: 'SYN_1', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-13T09:00:00') },
+        { idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') },
+      ],
+      assignations: [],
+      reponses: [
+        { idReponse: 'REP_1', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-14T08:00:00') },
+      ],
+      activites: [],
+      noms: NOMS,
+      maintenant: MAINTENANT,
+    });
+    // 2 synthèses agrégées en 1 carte : le résumé compte bien 2 relectures.
+    expect(resumeFil(fil)).toBe('1 signalement · 2 relectures · 1 réponse reçue');
+  });
+
+  it('rend une chaîne vide pour un fil vide', () => {
+    expect(resumeFil([])).toBe('');
+  });
+});
+
+describe('indexCarteImminente', () => {
+  it('désigne la tête du Fil, ou rien si le Fil est vide', () => {
+    const fil = construireFil({
+      syntheses: [{ idSynthese: 'SYN_1', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
+      assignations: [],
+      reponses: [],
+      activites: [],
+      noms: NOMS,
+      maintenant: MAINTENANT,
+    });
+    expect(indexCarteImminente(fil)).toBe(0);
+    expect(indexCarteImminente([])).toBe(-1);
   });
 });
 
