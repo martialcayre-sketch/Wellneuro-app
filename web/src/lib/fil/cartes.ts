@@ -25,6 +25,8 @@ export type CarteFil = {
   actionLabel: string;
   /** Identité stable de la carte — voir `cleCarte`. */
   cle: string;
+  /** Nombre de lignes sources portées par la carte (cartes agrégées) — 1 sinon. */
+  nbElements?: number;
 };
 
 /**
@@ -36,11 +38,14 @@ export type CarteFil = {
  * n'aurait pas de clé, et deux cartes de même type au même instant se
  * confondraient — le refus « sauterait » et la carte reviendrait le lendemain.
  *
- * Une seule carte fait exception, `reprise`, qui est agrégée et n'a donc pas
- * de ligne source : sa clé est `idPatient + date de référence`. Cette date ne
- * bouge pas tant que le patient reste inactif — et s'il répond, la carte
- * disparaît d'elle-même. La clé est donc stable exactement quand elle doit
- * l'être.
+ * Deux cartes font exception parce qu'elles sont agrégées et n'ont donc pas
+ * de ligne source unique : `reprise` (clé = `idPatient + date de référence`,
+ * stable tant que le patient reste inactif) et `synthese_a_valider` (clé =
+ * `agregat + idPatient + date de la synthèse la plus récente`). Pour la
+ * seconde, une nouvelle synthèse déplace la date de référence, donc la clé :
+ * la carte écartée REVIENT — c'est voulu, un fait nouveau mérite une nouvelle
+ * décision. Les refus posés sur l'ancienne clé restent en base, inertes
+ * (append-only, jamais nettoyés).
  */
 export function cleCarte(type: TypeCarteFil, identifiant: string): string {
   return `${type}:${identifiant}`;
@@ -118,24 +123,40 @@ export function cartesSignalementsTrust(
     }));
 }
 
+/**
+ * Synthèses en brouillon, agrégées PAR PATIENT (« N relectures en attente »,
+ * maquette Spirale). L'agrégat global de la maquette est impossible : le refus
+ * G1 est ancré sur un patient (FK), une carte trans-patients n'aurait pas de
+ * refus valide. Voir `cleCarte` pour la sémantique de la clé d'agrégat.
+ */
 export function cartesSynthesesAValider(
   syntheses: SyntheseRow[],
   noms: Map<string, string>,
 ): CarteFil[] {
-  return syntheses
-    .slice()
-    .sort((a, b) => b.dateGeneration.getTime() - a.dateGeneration.getTime())
+  const parPatient = new Map<string, { nb: number; dateRef: Date }>();
+  for (const s of syntheses) {
+    const agregat = parPatient.get(s.idPatient);
+    if (!agregat) {
+      parPatient.set(s.idPatient, { nb: 1, dateRef: s.dateGeneration });
+    } else {
+      agregat.nb += 1;
+      if (s.dateGeneration > agregat.dateRef) agregat.dateRef = s.dateGeneration;
+    }
+  }
+  return [...parPatient.entries()]
+    .sort((a, b) => b[1].dateRef.getTime() - a[1].dateRef.getTime())
     .slice(0, MAX_CARTES_PAR_TYPE)
-    .map(s => ({
+    .map(([idPatient, { nb, dateRef }]) => ({
       type: 'synthese_a_valider' as const,
-      idPatient: s.idPatient,
-      patient: nomPatient(noms, s.idPatient),
-      titre: 'Synthèse IA en brouillon',
-      pourquoi: `Générée le ${formatDateFr(s.dateGeneration)} — rien n'est diffusé sans votre validation.`,
-      date: s.dateGeneration.toISOString(),
+      idPatient,
+      patient: nomPatient(noms, idPatient),
+      titre: `${nb} relecture${nb > 1 ? 's' : ''} en attente`,
+      pourquoi: `Dernière synthèse générée le ${formatDateFr(dateRef)} — rien n'est diffusé sans votre validation.`,
+      date: dateRef.toISOString(),
       href: '/dashboard/synthese',
-      actionLabel: 'Relire et valider',
-      cle: cleCarte('synthese_a_valider', s.idSynthese),
+      actionLabel: 'Relire',
+      cle: cleCarte('synthese_a_valider', `agregat:${idPatient}:${dateRef.toISOString()}`),
+      nbElements: nb,
     }));
 }
 
@@ -227,6 +248,40 @@ export function cartesReprise(
         cle: cleCarte('reprise', `${a.idPatient}:${a.derniereReponse.toISOString()}`),
       };
     });
+}
+
+/**
+ * Résumé qualitatif du panneau « Aujourd'hui » (maquette : « 3 consultations ·
+ * 2 relectures ») — remplace le compteur brut « N cartes ». Suit l'ordre du
+ * Fil ; les cartes agrégées comptent leurs lignes sources (`nbElements`).
+ */
+const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string }[] = [
+  { type: 'signalement_trust', singulier: 'signalement', pluriel: 'signalements' },
+  { type: 'synthese_a_valider', singulier: 'relecture', pluriel: 'relectures' },
+  { type: 'assignation_en_retard', singulier: 'retard', pluriel: 'retards' },
+  { type: 'reponse_recente', singulier: 'réponse reçue', pluriel: 'réponses reçues' },
+  { type: 'reprise', singulier: 'reprise', pluriel: 'reprises' },
+];
+
+export function resumeFil(cartes: CarteFil[]): string {
+  return LIBELLES_RESUME.map(({ type, singulier, pluriel }) => {
+    const duType = cartes.filter(c => c.type === type);
+    if (duType.length === 0) return null;
+    const nb = duType.reduce((somme, c) => somme + (c.nbElements ?? 1), 0);
+    return `${nb} ${nb > 1 ? pluriel : singulier}`;
+  })
+    .filter((libelle): libelle is string => libelle !== null)
+    .join(' · ');
+}
+
+/**
+ * Carte imminente : celle que la timeline met en avant (badge « Maintenant »,
+ * action primaire). Tant que le Fil n'a pas d'heures réelles (rendez-vous,
+ * lot agenda), c'est la tête de l'ordre fixe — ce qui attend le praticien
+ * d'abord. Le lot agenda la raffinera : consultation à venir la plus proche.
+ */
+export function indexCarteImminente(cartes: CarteFil[]): number {
+  return cartes.length > 0 ? 0 : -1;
 }
 
 /** Ordre du Fil : ce qui attend le praticien d'abord, les signaux ensuite. */

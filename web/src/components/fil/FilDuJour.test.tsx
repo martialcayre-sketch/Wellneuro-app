@@ -87,13 +87,66 @@ describe('FilDuJour — les quatre états de rendu', () => {
   it('le type est écrit en toutes lettres à côté de l’icône, jamais porté par elle seule', async () => {
     stubFetch(async () => ({
       cartes: [
-        carte({ type: 'signalement_trust', titre: 'Signalement à traiter' }),
-        carte({ type: 'assignation_en_retard', titre: 'Questionnaire en retard' }),
+        carte({ type: 'signalement_trust', titre: 'Signalement à traiter', cle: 'signalement_trust:SIG_1' }),
+        carte({ type: 'assignation_en_retard', titre: 'Questionnaire en retard', cle: 'assignation_en_retard:ASG_1' }),
       ],
     }));
     render(<FilDuJour />);
     await waitFor(() => expect(screen.getByText('Signalement')).toBeTruthy());
     expect(screen.getByText('En retard')).toBeTruthy();
+  });
+});
+
+describe('FilDuJour — timeline et hiérarchie (maquette Spirale)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('seule la première carte porte le marqueur « Maintenant » et l’action primaire', async () => {
+    stubFetch(async () => ({
+      cartes: [
+        carte({ cle: 'reponse_recente:REP_1', titre: 'Première' }),
+        carte({ cle: 'reponse_recente:REP_2', titre: 'Seconde' }),
+      ],
+    }));
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText('Première')).toBeTruthy());
+    expect(screen.getAllByText('Maintenant')).toHaveLength(1);
+    const liens = screen.getAllByRole('link', { name: /Ouvrir la fiche/ });
+    expect(liens[0].className).toContain('bg-primary');
+    expect(liens[1].className).not.toContain('bg-primary');
+  });
+
+  it('l’heure s’affiche pour un événement du jour, « — » pour une carte sans date', async () => {
+    const ceMatin = new Date();
+    ceMatin.setHours(9, 30, 0, 0);
+    stubFetch(async () => ({
+      cartes: [
+        carte({ cle: 'reponse_recente:REP_1', date: ceMatin.toISOString() }),
+        carte({ cle: 'reponse_recente:REP_2', titre: 'Sans date', date: null }),
+      ],
+    }));
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText('09:30')).toBeTruthy());
+    expect(screen.getByText('—')).toBeTruthy();
+  });
+
+  it('l’en-tête résume le fil par type — jamais un « N cartes » brut', async () => {
+    stubFetch(async () => ({
+      cartes: [
+        carte({ cle: 'reponse_recente:REP_1' }),
+        carte({ cle: 'reponse_recente:REP_2', titre: 'Autre' }),
+        carte({
+          type: 'synthese_a_valider',
+          cle: 'synthese_a_valider:agregat:PAT_SEED_01:2026-07-14',
+          titre: '3 relectures en attente',
+          nbElements: 3,
+        }),
+      ],
+    }));
+    render(<FilDuJour />);
+    await waitFor(() =>
+      expect(screen.getByText('3 relectures · 2 réponses reçues')).toBeTruthy(),
+    );
+    expect(screen.queryByText(/3 cartes/)).toBeNull();
   });
 });
 
