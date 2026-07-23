@@ -294,3 +294,32 @@ PR #284 (sp-conv).
 ## 2026-07-23 — SP-CONV : épilogue baselines, campagne close (/wn-finish)
 
 **Décisions** : premières baselines commitées (#298) après deux itérations de relecture — état transitoire du cockpit et textes temporels attrapés avant entrée au dépôt (#297), échappatoire de bootstrap `WN_VISUAL_UPDATE` (#296). La première comparaison active en CI a détecté une vraie instabilité : `dashboard-patients` dépend de l'état laissé par les parcours (2386 vs 2546 px) → retiré du pixel, revue + ARIA conservés. Six baselines comparent vert sous Linux. Verify absent après push sur #298 : débloqué par close/reopen (précédent #255). **Validations** : T1+T2 par lot, verify vert sur les 11 PR, audit campagnes 0 erreur. **Écarté** : merge --admin (attendre la propagation du check suffisait). **Prochaine action** : reprise g-trust-04 (campagne active) ; SP-CONV n'a plus rien en vol. **Questions ouvertes** : aucune.
+
+## 2026-07-23 — Atelier corpus v2 : validation par lot livrée (4 PR)
+
+**Décisions** : la procédure « validation à deux vitesses » (actée le matin,
+#289) est exécutable en production. Quatre PR séquencées, toutes mergées :
+- **#300 (PR A)** — migration journal des décisions `rag_corpus_claim_decisions`
+  (append-only par trigger, cree_le non antidatable, RLS deny-all).
+- **#302 (PR B)** — lib : tirage serveur seedé (30 % dégressif, allowlist
+  déclaré/observé), `deciderLot` (lot figé au tirage, couverture des chunks,
+  UPDATE + journal transactionnels), bascule motivée ; migration de suivi
+  20260723120000 (index unique « un tirage, une issue », trigger allowlist).
+- **#303 (PR C)** — écran voie rapide + route de restitution en mode revue.
+- **#304 (PR D)** — générateur de questionnaire (couverture 1 question ↔ 1 chunk).
+
+**Écarté** : denylist `<> 'interprété'` (revue : laissait entrer `vécu`) →
+allowlist stricte ; unicité d'issue applicative (revue : course concurrente) →
+index unique en base ; couverture « tous chunks actifs » (revue : sources sans
+claim insignables) → « chunks atteignables ».
+
+**Preuves** : deux revues adversariales `wn-reviewer` par migration (PR A :
+NO-GO 12 constats → GO ; PR B : NO-GO 2 bloquants concurrence → GO), contrats
+SQL joués en CI, T3 verts, base prod vérifiée après chaque migration (journal :
+3 triggers/RLS ; suivi : index unique + trigger allowlist présents).
+
+**Prochaine action** : le praticien exerce la voie rapide sur le pilote
+(`dashboard/corpus`) — 87 claims en voie rapide, 49 en individuel.
+
+**Questions ouvertes** : générer les questionnaires pilotes (nécessite
+ANTHROPIC_API_KEY) ; passage à l'échelle 88 sources.
