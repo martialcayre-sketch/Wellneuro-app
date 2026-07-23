@@ -38,4 +38,20 @@ describe('bornesJourParis', () => {
     const { debut } = bornesJourParis(new Date('2026-01-15T08:00:00Z'));
     expect(debut.toISOString()).toBe('2026-01-14T23:00:00.000Z');
   });
+
+  it('gère le jour de passage à l’heure d’été (29 mars 2026) : jour de 23 h', () => {
+    // Transition à 02:00 local (01:00 UTC) → +1 avant, +2 après.
+    const { debut, fin } = bornesJourParis(new Date('2026-03-29T12:00:00Z'));
+    expect(debut.toISOString()).toBe('2026-03-28T23:00:00.000Z'); // minuit Paris = +1
+    expect(fin.toISOString()).toBe('2026-03-29T22:00:00.000Z'); // minuit suivant = +2
+    // Journée civile de 23 h (bascule en avant), pas 24.
+    expect(fin.getTime() - debut.getTime()).toBe(23 * 60 * 60 * 1000);
+  });
+
+  it('gère le jour de passage à l’heure d’hiver (25 octobre 2026) : jour de 25 h', () => {
+    const { debut, fin } = bornesJourParis(new Date('2026-10-25T12:00:00Z'));
+    expect(debut.toISOString()).toBe('2026-10-24T22:00:00.000Z'); // minuit Paris = +2
+    expect(fin.toISOString()).toBe('2026-10-25T23:00:00.000Z'); // minuit suivant = +1
+    expect(fin.getTime() - debut.getTime()).toBe(25 * 60 * 60 * 1000);
+  });
 });
