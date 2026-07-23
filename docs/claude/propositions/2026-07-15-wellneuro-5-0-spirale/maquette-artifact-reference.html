@@ -226,7 +226,12 @@ body { margin: 0; }
 .attach { display:flex; gap:10px; align-items:center; margin-top:9px; padding:8px 11px; border-radius:10px; background:rgba(255,255,255,.6); border:1px solid var(--border); color:var(--fg); font-size:11px; font-weight:650; }
 
 /* ---------- Bibliothèque & file d'envoi ---------- */
-#p-bibliotheque { --bib-h:clamp(430px,calc(100vh - 410px),680px); }
+#p-bibliotheque { --bib-h:clamp(420px,calc(100vh - 460px),680px); }
+.rayons { display:flex; gap:7px; flex-wrap:wrap; margin:-6px 0 16px; }
+.rayon { display:inline-flex; align-items:center; gap:7px; min-height:34px; padding:0 13px; border:1px solid var(--border); border-radius:999px; font-size:11.5px; font-weight:650; color:var(--muted-fg); background:var(--surface); }
+.rayon[aria-pressed="true"] { background:var(--indigo-bg); border-color:var(--indigo-600); color:var(--indigo-600); }
+.rayon[disabled] { opacity:.55; cursor:default; }
+.rayon-tag { font-size:9px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px 7px; border-radius:999px; background:var(--neutral-bg); color:var(--muted-fg); }
 .bib-grid { display:grid; grid-template-columns:minmax(0,1.02fr) minmax(0,1fr) minmax(270px,.66fr); gap:16px; align-items:start; }
 .bib-col { display:flex; flex-direction:column; gap:16px; max-height:var(--bib-h); }
 .bib-cat, .prevu, .queue { display:flex; flex-direction:column; max-height:var(--bib-h); }
@@ -243,7 +248,6 @@ body { margin: 0; }
 .bib-chips { display:flex; gap:6px; padding:9px 15px; border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:thin; }
 .chip { flex:none; display:inline-flex; align-items:center; min-height:26px; padding:0 11px; border:1px solid var(--border); border-radius:999px; font-size:10.5px; font-weight:650; color:var(--muted-fg); background:var(--surface); }
 .chip[aria-pressed="true"] { background:var(--indigo-bg); border-color:var(--indigo-600); color:var(--indigo-600); }
-.chip.gap { background:var(--warn-bg); border-color:rgba(146,64,14,.25); color:var(--warn); }
 .bib-list { flex:1; min-height:0; overflow-y:auto; padding:6px; display:grid; gap:2px; align-content:start; }
 .bib-row { display:grid; gap:4px; width:100%; text-align:left; padding:9px 11px; border-radius:10px; }
 .bib-row:not(.static):hover { background:var(--neutral-bg); }
@@ -739,7 +743,7 @@ body { margin: 0; }
         <section class="pview" id="p-bibliotheque">
           <div class="page-head">
             <div>
-              <div class="eyebrow">Catalogue d'instruments · 57 questionnaires · 14 domaines</div>
+              <div class="eyebrow">Rayon Questionnaires · 57 questionnaires · 14 domaines</div>
               <h1>Bibliothèque</h1>
               <p class="page-sub">Chercher, prévisualiser tel que le patient le verra, composer la file d'envoi — un seul mail par patient, un seul lien portail.</p>
             </div>
@@ -747,6 +751,12 @@ body { margin: 0; }
               <button class="btn btn-secondary btn-sm" data-tiroir="importer"><svg class="icon icon-sm"><use href="#i-import"/></svg>Importer</button>
               <button class="btn btn-secondary btn-sm" data-tiroir="creer"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Créer un questionnaire</button>
             </div>
+          </div>
+
+          <div class="rayons" role="group" aria-label="Rayons de la bibliothèque">
+            <button class="rayon" aria-pressed="true"><svg class="icon icon-sm"><use href="#i-clip"/></svg>Questionnaires</button>
+            <button class="rayon" disabled title="Rayon à venir — catalogue et packs d'analyses biologiques"><svg class="icon icon-sm"><use href="#i-flask"/></svg>Analyses biologiques<span class="rayon-tag">à venir</span></button>
+            <button class="rayon" disabled title="Rayon à venir — fiches conseils et interventions"><svg class="icon icon-sm"><use href="#i-book"/></svg>Fiches conseils<span class="rayon-tag">à venir</span></button>
           </div>
 
           <div class="bib-grid">
@@ -778,7 +788,7 @@ body { margin: 0; }
                   <button class="chip">Urologie</button>
                   <button class="chip">Pédiatrie</button>
                   <button class="chip">Cancérologie</button>
-                  <button class="chip gap" title="5 questionnaires scorables ne sont pas proposés à l'assignation (gérontologie, urologie)">Non exposés (5)</button>
+                  <button class="chip" title="5 instruments à faire passer en consultation (MMSE, 5 mots de Dubois, AQ Alzheimer, QDRS, catalogue mictionnel) — jamais assignables au portail">Passation praticien (5)</button>
                 </div>
                 <div class="bib-list">
                   <button class="bib-row" data-prev-btn="pss10" aria-pressed="true">
