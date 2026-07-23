@@ -1,7 +1,7 @@
 ---
 id: "LOT-02"
 titre: "Cockpit adaptatif — la fiche s'ouvre là où le travail attend"
-statut: "à_faire"
+statut: "livré — 2026-07-23, PR de lot : phase initiale D5, bandeau épisode, plein écran D10, tiroir 44 px ; T1/T2 verts"
 dépend_de: "LOT-01"
 ---
 
