@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Refonte Patients & assignations → Questionnaires & packs (tiroirs)"
-statut: "à ouvrir"
+statut: "en cours"
 dépend_de: "LOT-04"
 ---
 

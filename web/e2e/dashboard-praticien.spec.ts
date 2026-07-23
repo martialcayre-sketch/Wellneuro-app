@@ -182,17 +182,30 @@ test.describe('Praticien Dashboard', () => {
     await expect(page.getByText('Version du moteur d’équilibre')).toBeVisible();
   });
 
-  test('patients : formulaire de création patient utilisable après refactor (HC-F LOT-03)', async ({ page }) => {
+  test('patients : le tableau d’abord, le formulaire de création en tiroir (SP-TRAJ LOT-05)', async ({ page }) => {
     const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
     await page.context().addCookies([sessionCookie]);
     await page.goto('/dashboard/patients');
 
-    await expect(page.getByPlaceholder('Prénom *', { exact: true })).toBeVisible();
+    // Le tableau patients est le premier contenu — les formulaires ne sont
+    // plus empilés en tête de page.
+    await expect(page.getByRole('table').first()).toBeVisible();
+    await expect(page.getByPlaceholder('Prénom *', { exact: true })).toBeHidden();
+
+    // Le tiroir « Nouveau patient » ouvre le formulaire complet.
+    await page.getByRole('button', { name: 'Nouveau patient' }).click();
+    const tiroir = page.getByRole('dialog', { name: 'Nouveau patient' });
+    await expect(tiroir).toBeVisible();
+    await expect(tiroir.getByPlaceholder('Prénom *', { exact: true })).toBeVisible();
     // { exact: true } : « Prénom * » contient « nom * » comme sous-chaîne,
     // ce qui matcherait sinon les deux champs (strict mode).
-    await expect(page.getByPlaceholder('Nom *', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Créer le patient' })).toBeVisible();
-    await expect(page.getByRole('table').first()).toBeVisible();
+    await expect(tiroir.getByPlaceholder('Nom *', { exact: true })).toBeVisible();
+    await expect(tiroir.getByRole('button', { name: 'Créer le patient' })).toBeVisible();
+
+    // Échap referme et rend le focus au déclencheur.
+    await page.keyboard.press('Escape');
+    await expect(tiroir).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Nouveau patient' })).toBeFocused();
   });
 
   // IDP2 LOT-01b. Le menu « Gérer le dossier » est rendu dans une cellule du

@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
 import type {
   CreatePatientResponse,
   PatchPatientResponse,
@@ -59,6 +61,67 @@ function StatusBadge({ value }: { value: string }) {
   return <Badge variant={variant}>{status}</Badge>;
 }
 
+// Tiroir d'action (SP-TRAJ LOT-05) : les trois formulaires de création
+// quittent l'empilement de cartes pour des tiroirs Radix ouverts depuis une
+// barre d'actions — le tableau patients redevient le premier élément de la
+// page. Composant DÉFINI AU NIVEAU MODULE (jamais dans le rendu du panneau :
+// une définition imbriquée remonterait le formulaire à chaque rendu et ferait
+// perdre le focus de saisie). Le déclencheur vit dans le Root Radix : le
+// focus revient dessus à la fermeture.
+function TiroirAction({
+  boutonLabel,
+  titre,
+  description,
+  ouvert,
+  onOpenChange,
+  children,
+}: {
+  boutonLabel: string;
+  titre: string;
+  description?: string;
+  ouvert: boolean;
+  onOpenChange: (ouvert: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Dialog.Root open={ouvert} onOpenChange={onOpenChange}>
+      <Dialog.Trigger asChild>
+        <Button className="min-h-11">{boutonLabel}</Button>
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        {/* data-theme requis : Radix portale vers document.body, hors du
+            conteneur [data-theme="praticien"] du layout. */}
+        <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35" />
+        <Dialog.Content
+          data-theme="praticien"
+          className="fixed inset-y-0 right-0 z-50 w-full max-w-xl overflow-y-auto border-l border-border bg-surface p-5 shadow-pop focus:outline-none"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Dialog.Title className="font-display text-lg font-semibold text-foreground">{titre}</Dialog.Title>
+              {description ? (
+                <Dialog.Description className="mt-1 text-xs text-muted-foreground">{description}</Dialog.Description>
+              ) : (
+                <Dialog.Description className="sr-only">{titre}</Dialog.Description>
+              )}
+            </div>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                aria-label={`Fermer « ${titre} »`}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <X aria-hidden="true" size={20} strokeWidth={2} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <div className="mt-4">{children}</div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 type EditPatientState = {
   idPatient: string;
   telephone: string;
@@ -115,6 +178,8 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   const [tokenAction, setTokenAction] = useState<'resend' | 'revoke' | 'copier' | 'lien_magique' | null>(null);
   const [consultationFeedback, setConsultationFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [suggestedPackSelection, setSuggestedPackSelection] = useState<SuggestedPackSelection | null>(null);
+  // Tiroir d'action ouvert (LOT-05) — un seul à la fois.
+  const [tiroirOuvert, setTiroirOuvert] = useState<'patient' | 'consultation' | 'assignation' | null>(null);
 
   const loadData = async () => {
     const r = await fetch('/api/praticien/patients');
@@ -272,6 +337,8 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       }
       setConsultationFeedback({ ok: true, msg: `Consultation créée, lien d’accès envoyé au patient.` });
       setConsultationForm({ idPatient: '', motif: '' });
+      // Succès → le tiroir se ferme, la ligne de statut de la page l'annonce.
+      setTiroirOuvert(null);
     } catch {
       setConsultationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
     } finally {
@@ -612,10 +679,16 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
         />
       )}
 
-      {/* Nouveau patient */}
-      <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
-        <h3 className="font-display text-lg font-semibold text-foreground mb-3">Nouveau patient</h3>
-        <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreatePatient}>
+      {/* Barre d'actions (LOT-05) : les formulaires de création vivent en
+          tiroirs — le tableau patients est le premier contenu de la page. */}
+      <div className="flex flex-wrap items-center gap-3">
+        <TiroirAction
+          boutonLabel="Nouveau patient"
+          titre="Nouveau patient"
+          ouvert={tiroirOuvert === 'patient'}
+          onOpenChange={ouvert => setTiroirOuvert(ouvert ? 'patient' : null)}
+        >
+          <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreatePatient}>
           <Input required value={form.prenom} onChange={e => setForm(p => ({ ...p, prenom: e.target.value }))} placeholder="Prénom *" maxLength={100} />
           <Input required value={form.nom} onChange={e => setForm(p => ({ ...p, nom: e.target.value }))} placeholder="Nom *" maxLength={100} />
           <Input required type="email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="Email *" maxLength={254} />
@@ -626,23 +699,22 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
               {saving ? 'Création...' : 'Créer le patient'}
             </Button>
             {feedback && (
-              <span className={`text-sm ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>
+              <span role="status" className={`text-sm ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>
                 {feedback.msg}
               </span>
             )}
           </div>
-        </form>
-      </div>
+          </form>
+        </TiroirAction>
 
-      {/* Consultation / accès portail patient */}
-      <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
-        <h3 className="font-display text-lg font-semibold text-foreground mb-1">Nouvelle consultation</h3>
-        <p className="text-xs text-muted-foreground mb-3">
-          Ouvre une consultation et envoie au patient son lien d’accès : consentement, fiche de
-          renseignements, anamnèse, puis assignation automatique du pack de base. Les actions sur un
-          dossier existant sont dans « Gérer le dossier », au bout de sa ligne.
-        </p>
-        <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateConsultation}>
+        <TiroirAction
+          boutonLabel="Nouvelle consultation"
+          titre="Nouvelle consultation"
+          description="Ouvre une consultation et envoie au patient son lien d’accès : consentement, fiche de renseignements, anamnèse, puis assignation automatique du pack de base. Les actions sur un dossier existant sont dans « Gérer le dossier », au bout de sa ligne."
+          ouvert={tiroirOuvert === 'consultation'}
+          onOpenChange={ouvert => setTiroirOuvert(ouvert ? 'consultation' : null)}
+        >
+          <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateConsultation}>
           <Select required value={consultationForm.idPatient} onChange={e => setConsultationForm(p => ({ ...p, idPatient: e.target.value }))}>
             <option value="">Patient *</option>
             {/* Un dossier clos est signalé ICI, et pas seulement refusé après
@@ -664,24 +736,25 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
             <Button type="submit" disabled={savingConsultation || tokenAction !== null}>
               {savingConsultation ? 'Envoi...' : 'Créer une consultation & envoyer le lien'}
             </Button>
-            {/* Les actions d'accès sont déclenchées depuis une ligne du
-                tableau, plus bas : leur retour s'affiche donc loin du geste.
-                `aria-live` le fait au moins annoncer. */}
-            <span
-              role="status"
-              aria-live="polite"
-              className={`text-sm ${consultationFeedback?.ok ? 'text-status-success' : 'text-status-danger'}`}
-            >
-              {consultationFeedback?.msg ?? ''}
-            </span>
+            {/* Un échec se dit DANS le tiroir (Radix voile le reste de la
+                page) ; le succès ferme le tiroir et s'annonce par la ligne
+                de statut de la barre d'actions. */}
+            {consultationFeedback && !consultationFeedback.ok && (
+              <span role="status" className="text-sm text-status-danger">
+                {consultationFeedback.msg}
+              </span>
+            )}
           </div>
-        </form>
-      </div>
+          </form>
+        </TiroirAction>
 
-      {/* Nouvelle assignation */}
-      <div className="bg-surface border border-border rounded-xl p-4 shadow-card">
-        <h3 className="font-display text-lg font-semibold text-foreground mb-3">Nouvelle assignation questionnaire</h3>
-        <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateAssignation}>
+        <TiroirAction
+          boutonLabel="Nouvelle assignation"
+          titre="Nouvelle assignation questionnaire"
+          ouvert={tiroirOuvert === 'assignation'}
+          onOpenChange={ouvert => setTiroirOuvert(ouvert ? 'assignation' : null)}
+        >
+          <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onCreateAssignation}>
           <Select required value={assignationForm.emailPatient} onChange={e => setAssignationForm(p => ({ ...p, emailPatient: e.target.value }))}>
             <option value="">Patient *</option>
             {(data?.patients ?? []).map(p => (
@@ -738,13 +811,16 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
                   <button
                     key={pack.id}
                     type="button"
-                    onClick={() =>
+                    onClick={() => {
                       setSuggestedPackSelection({
                         registryPackId: pack.id,
                         titre: pack.titre,
                         nonce: Date.now(),
-                      })
-                    }
+                      });
+                      // Le tiroir se ferme : la suture s'observe sur le
+                      // panneau Packs, derrière le voile sinon.
+                      setTiroirOuvert(null);
+                    }}
                     className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-1 text-xs text-foreground hover:bg-muted"
                   >
                     <span>{pack.titre}</span>
@@ -762,21 +838,25 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
               {savingAssignation ? 'Création...' : 'Créer l’assignation'}
             </Button>
             {assignationFeedback && (
-              <span className={`text-sm ${assignationFeedback.ok ? 'text-status-success' : 'text-status-danger'}`}>
+              <span role="status" className={`text-sm ${assignationFeedback.ok ? 'text-status-success' : 'text-status-danger'}`}>
                 {assignationFeedback.msg}
               </span>
             )}
           </div>
-        </form>
-      </div>
+          </form>
+        </TiroirAction>
 
-      {/* Packs de questionnaires */}
-      <PacksPanel
-        questionnaires={questionnaires}
-        registry={registry}
-        suggestedPackSelection={suggestedPackSelection}
-        patients={(data?.patients ?? []).map(p => ({ email: p.email, prenom: p.prenom, nom: p.nom }))}
-      />
+        {/* Retour des actions déclenchées depuis les lignes du tableau (lien
+            renvoyé/copié/révoqué, consultation créée…) : loin du geste,
+            `aria-live` le fait au moins annoncer. */}
+        <span
+          role="status"
+          aria-live="polite"
+          className={`text-sm ${consultationFeedback?.ok ? 'text-status-success' : 'text-status-danger'}`}
+        >
+          {consultationFeedback?.msg ?? ''}
+        </span>
+      </div>
 
       {/* Édition patient inline */}
       {editState && (
@@ -869,6 +949,16 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
           </div>
         )}
       </div>
+
+      {/* Packs de questionnaires — cœur de la page « Questionnaires & packs »,
+          après le tableau (LOT-05). La suture `suggestedPackSelection` avec le
+          tiroir d'assignation est conservée telle quelle. */}
+      <PacksPanel
+        questionnaires={questionnaires}
+        registry={registry}
+        suggestedPackSelection={suggestedPackSelection}
+        patients={(data?.patients ?? []).map(p => ({ email: p.email, prenom: p.prenom, nom: p.nom }))}
+      />
 
       {/* Tableau assignations */}
       <div className="bg-surface border border-border rounded-xl overflow-hidden shadow-card">
