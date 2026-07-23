@@ -48,7 +48,7 @@ function formatDate(iso: string): string {
 
 type Etat = 'chargement' | 'chargee' | 'erreur';
 
-export function AtelierCorpusPanel() {
+export function AtelierCorpusPanel({ notebook }: { notebook?: string } = {}) {
   const [statut, setStatut] = useState<ClaimStatut>('EN_ATTENTE_VALIDATION');
   const [offset, setOffset] = useState(0);
   const [claims, setClaims] = useState<ClaimEnRevue[]>([]);
@@ -79,8 +79,9 @@ export function AtelierCorpusPanel() {
     setConfirmationId(null);
     setErreurDecision('');
     try {
+      const filtreNotebook = notebook ? `&notebook=${encodeURIComponent(notebook)}` : '';
       const reponse = await fetch(
-        `/api/praticien/corpus/claims?statut=${encodeURIComponent(statutCourant)}&limit=${LIMITE_PAGE}&offset=${offsetCourant}`,
+        `/api/praticien/corpus/claims?statut=${encodeURIComponent(statutCourant)}&limit=${LIMITE_PAGE}&offset=${offsetCourant}${filtreNotebook}`,
       );
       const payload = (await reponse.json()) as CorpusClaimsApiResponse;
       if (generation !== generationRef.current) return;
@@ -104,7 +105,7 @@ export function AtelierCorpusPanel() {
       setErreur('La file de revue n’a pas pu être lue.');
       setEtat('erreur');
     }
-  }, []);
+  }, [notebook]);
 
   useEffect(() => {
     vueRef.current = { statut, offset };
