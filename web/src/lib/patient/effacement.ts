@@ -87,6 +87,7 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.relectureNotes = (await tx.relectureNote.deleteMany({ where: par })).count;
     supprimees.portailMagicLinks = (await tx.portailMagicLink.deleteMany({ where: par })).count;
     supprimees.packPropositions = (await tx.packProposition.deleteMany({ where: par })).count;
+    supprimees.envoiBrouillons = (await tx.envoiBrouillon.deleteMany({ where: par })).count;
     // La correspondance médecin est une pièce du dossier (FM-2, C3 LOT-06) :
     // le résidu D6 (année, prénom, trois lettres) ne couvre pas un texte
     // clinique. Elle part avec le dossier, nommément.

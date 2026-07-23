@@ -61,6 +61,7 @@ model Patient {
   portailMagicLinks          PortailMagicLink[]
   packPropositions           PackProposition[]
   correspondancesMedecin     CorrespondanceMedecin[]
+  envoiBrouillons            EnvoiBrouillon[]
 
   @@map("patients")
 }
@@ -1113,4 +1114,36 @@ model PackProposition {
   @@index([idPatient, enregistreLe], map: "sp_spi_pack_proposition_patient_idx")
   @@index([idPatient, idPack], map: "sp_spi_pack_proposition_pack_idx")
   @@map("pack_propositions")
+}
+
+// Bibliothèque — file d'envoi de questionnaires (arbitrage utilisateur du
+// 2026-07-23 : « file simple, envoi au clic »). Un brouillon par patient et
+// par praticien accumule des questionnaires ; « Préparer les envois » crée
+// les assignations en transaction (patron packs/assign) et envoie UN mail
+// récapitulatif avec le lien portail unique. La ligne passe alors à
+// `statut: "parti"` et reste comme trace ; un nouvel ajout rouvre un
+// brouillon neuf. Pas de cron, pas de relance automatique.
+//
+// `qids` ne sont PAS des clés étrangères : le brouillon consigne une
+// intention d'envoi contre le catalogue en code (QUESTIONNAIRE_CATALOGUE),
+// qui n'a pas de table. La validation des ids se fait à l'écriture et à
+// l'envoi, jamais par contrainte.
+model EnvoiBrouillon {
+  id             String    @id @default(cuid())
+  idBrouillon    String    @unique @map("id_brouillon")
+  praticienEmail String    @map("praticien_email")
+  idPatient      String    @map("id_patient")
+  qids           String[]  @default([]) @map("qids")
+  statut         String    @default("brouillon") @map("statut") // brouillon | parti
+  dateLimite     String?   @map("date_limite")
+  notes          String?   @map("notes")
+  dateEnvoi      DateTime? @map("date_envoi")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([praticienEmail, statut], map: "bibliotheque_envoi_brouillon_praticien_idx")
+  @@index([idPatient, statut], map: "bibliotheque_envoi_brouillon_patient_idx")
+  @@map("envoi_brouillons")
 }
