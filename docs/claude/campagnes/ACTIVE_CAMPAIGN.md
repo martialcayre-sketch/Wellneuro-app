@@ -9,7 +9,11 @@
 
 ## Activités parallèles
 
-Aucune campagne parallèle active.
+### 2026-07-22-sp-conv-trajectoire-partagee
+
+**Titre** : SP-CONV — Convergence Spirale 5.0 : la trajectoire partagée
+**Statut** : active
+**Lot actif** : LOT-01
 
 **Statut global** : active
 **Mise à jour** : 2026-07-22

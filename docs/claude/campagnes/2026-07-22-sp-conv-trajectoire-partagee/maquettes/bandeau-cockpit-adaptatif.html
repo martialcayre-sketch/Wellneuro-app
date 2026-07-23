@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>SP-CONV — maquette LOT-02 : bandeau d'épisode &amp; cockpit plein écran (D5, D10)</title>
+<style>
+  /* Tokens design-system-d1 §9-10 — praticien, canvas ardoise A5-R2. */
+  :root{
+    --canvas:#D3D8E6; --surface:#FFFFFF; --border:#C3C9DC; --muted:#EEF0F7;
+    --fg:#1B2240; --muted-fg:#5A6284; --indigo:#3D4A9E; --solar:#E8A33D;
+    --solar-ink:#8A5B10; --mint:#0D9488;
+    --r-sm:10px; --r-md:14px; --r-lg:18px;
+    --shadow-card:0 8px 24px rgba(16,22,43,.08);
+  }
+  *{box-sizing:border-box;margin:0}
+  body{background:var(--canvas);color:var(--fg);
+    font-family:"Instrument Sans",system-ui,sans-serif;font-size:16px;
+    padding:24px;display:flex;flex-direction:column;gap:16px;min-height:100vh}
+  .note{font-size:13px;color:var(--muted-fg);max-width:72ch}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace}
+  .display{font-family:"Sora",system-ui,sans-serif}
+
+  /* D10 — chrome condensé : en-tête de fiche + onglets sur UNE ligne (~56px). */
+  .chrome{display:flex;align-items:center;gap:14px;background:var(--surface);
+    border:1px solid var(--border);border-radius:var(--r-md);padding:8px 14px;
+    box-shadow:var(--shadow-card)}
+  .chrome h1{font-size:18px;font-weight:600}
+  .tabs{display:flex;gap:4px;margin-left:auto}
+  .tab{min-height:44px;padding:0 14px;display:flex;align-items:center;
+    border-radius:var(--r-sm);font-size:14px;color:var(--muted-fg);border:0;background:none}
+  .tab[aria-current="page"]{background:var(--muted);color:var(--fg);font-weight:600}
+
+  /* Cockpit : prend l'ESPACE RESTANT (flex-1) — remplace min(80vh,700px). */
+  .cockpit{flex:1;min-height:420px;display:grid;grid-template-rows:auto 1fr;
+    background:var(--muted);border:1px solid var(--border);
+    border-radius:var(--r-sm);overflow:hidden;box-shadow:var(--shadow-card)}
+
+  /* Bandeau trajectoire — LOT-02, nourri par le contrat LOT-01. */
+  .bandeau{display:flex;align-items:center;gap:16px;background:var(--surface);
+    border-bottom:1px solid var(--border);padding:10px 16px}
+  .bandeau .id b{display:block;font-size:17px}
+  .pos{font-size:13px;color:var(--muted-fg)}
+  .chips{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;
+    padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:var(--muted)}
+  .chip.delta{border-color:#B8E3DC;background:#E9F7F4;color:#0B6E62}
+  .chip.due{border-color:#F2D9AC;background:#FBF2DF;color:var(--solar-ink);font-weight:600}
+
+  .corps{display:grid;grid-template-columns:200px 1fr;min-height:0}
+  .phases{border-right:1px solid var(--border);padding:10px;display:flex;
+    flex-direction:column;gap:2px;overflow-y:auto}
+  .phases .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--muted-fg);padding:4px 8px}
+  .ph{min-height:44px;display:flex;align-items:center;gap:8px;padding:0 10px;
+    border-radius:var(--r-sm);font-size:14px;color:var(--muted-fg);border:0;background:none;text-align:left}
+  .ph .st{font-size:12px;margin-left:auto}
+  .ph[aria-current="step"]{background:#FBF2DF;color:var(--solar-ink);font-weight:600;
+    box-shadow:inset 3px 0 0 var(--solar)}
+  .focale{padding:18px 22px;overflow-y:auto}
+  .eyebrow{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--solar-ink);font-weight:700}
+  .focale h2{font-size:24px;margin:4px 0 6px}
+  .src{font-size:12px;color:var(--muted-fg)}
+  .carte{margin-top:14px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--r-md);padding:16px;max-width:60ch}
+</style>
+</head>
+<body>
+  <p class="note"><b>Maquette SP-CONV / LOT-02</b> — décisions D5 (phase initiale
+  calculée) et D10 (plein écran réel : la page est une colonne pleine hauteur,
+  ce chrome fait une ligne, le cockpit prend l'espace restant — zéro scroll de
+  page). Bandeau nourri par le contrat LOT-01. Données fictives (Sophie Nicola).</p>
+
+  <header class="chrome">
+    <h1 class="display">Sophie Nicola</h1>
+    <span class="pos">Dernière réponse le 18/07</span>
+    <nav class="tabs" aria-label="Vues de la fiche">
+      <button class="tab" aria-current="page">Poste de pilotage</button>
+      <button class="tab">Besoins</button>
+      <button class="tab">Alimentation</button>
+      <button class="tab">Trajectoire</button>
+      <button class="tab">Correspondance</button>
+    </nav>
+  </header>
+
+  <section class="cockpit" aria-label="Poste de pilotage">
+    <div class="bandeau">
+      <!-- Spirale emblème 52px (existant, ui/SpiraleTrajectoire) -->
+      <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true">
+        <path d="M26 26 m0 -18 a18 18 0 1 1 -12.7 30.7" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round"/>
+        <path d="M26 26 m0 -9 a9 9 0 1 1 -6.4 15.4" fill="none" stroke="#3D4A9E" stroke-width="3" stroke-dasharray="4 5" stroke-linecap="round"/>
+        <circle cx="26" cy="17" r="4" fill="#E8A33D"/>
+      </svg>
+      <div class="id">
+        <b class="display">Épisode 2 en cours</b>
+        <span class="pos mono">T0 + 14 j · vous êtes ici</span>
+      </div>
+      <div class="chips">
+        <span class="chip delta">Au tour 1 : « marche 20 min » — tenue 4 j/7, bien tolérée</span>
+        <span class="chip due">Décision · à faire</span>
+      </div>
+    </div>
+    <div class="corps">
+      <nav class="phases" aria-label="Cycle clinique">
+        <span class="lbl">Cycle clinique</span>
+        <button class="ph">Patient <span class="st">✓</span></button>
+        <button class="ph">Données fiables <span class="st">✓</span></button>
+        <button class="ph">Compréhension <span class="st">✓</span></button>
+        <button class="ph" aria-current="step">Décision 21 j <span class="st">à faire</span></button>
+        <button class="ph">Actions <span class="st">—</span></button>
+        <button class="ph">Suivi <span class="st">—</span></button>
+        <button class="ph">Réévaluation J90 <span class="st">—</span></button>
+      </nav>
+      <div class="focale">
+        <span class="eyebrow">Phase due</span>
+        <h2 class="display">Décision de 21 jours</h2>
+        <p class="src mono">source : SIIN sommeil /28 · NEU_03 v2 · calculé 18/07 · versionScore v1</p>
+        <div class="carte">
+          <p><b>Règle D5 — la fiche s'ouvre ici, elle n'y est pas figée :</b><br>
+          1. premier bloqueur de sécurité → sa phase ;<br>
+          2. sinon première action exigible (cette décision due) ;<br>
+          3. sinon première phase en attente ;<br>
+          4. sinon dernière phase consultée par ce praticien.<br>
+          Pendant le chargement du runtime : état neutre, aucune phase affirmée.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

@@ -1,5 +1,12 @@
 # Arbitrages — Gate « modèle multi-cycles » (questions ouvertes, non tranchées)
 
+> **Résolue par G2 le 2026-07-19** (SP-CONV LOT-00, constat du 2026-07-22) :
+> Q1 tranchée en (a) colonne `cycleId`, Q2 en (d) `versionScore` par
+> épisode, Q3 par le backfill en 3 règles de `c2b_cycle_identity_v1` —
+> confirmation explicite au dossier `GATE_G2_IDENTITE_CYCLE.md`. La
+> checklist ci-dessous est donc historique ; ne plus la citer comme
+> bloquante.
+
 > **Ouvre** les questions de `BRAINSTORM_GATE_MULTI_CYCLES.md` (Q1–Q5), à la lumière
 > de `NOTE_TECHNIQUE_MODELE.md`. **Ce document ne tranche rien** : les décisions sont
 > renvoyées à une **revue future**, sur données réelles ≥ 2 cycles. Aucune n'est

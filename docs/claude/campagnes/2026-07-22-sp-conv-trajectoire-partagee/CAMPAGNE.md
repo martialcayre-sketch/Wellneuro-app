@@ -1,10 +1,10 @@
 ---
 id: "2026-07-22-sp-conv-trajectoire-partagee"
 titre: "SP-CONV — Convergence Spirale 5.0 : la trajectoire partagée"
-statut: "cadrée"
+statut: "en_cours"
 créée_le: "2026-07-22"
 mise_à_jour: "2026-07-22"
-lot_courant: "LOT-00"
+lot_courant: "LOT-01"
 ---
 
 # SP-CONV — Convergence Spirale 5.0 : la trajectoire partagée
@@ -170,13 +170,13 @@ seul. Détail : `lots/LOT-XX-*.md`.
 
 ## Raccordement
 
-- Campagne **cadrée** pendant que `2026-07-22-g-trust-04-durcissement-et-reliquats`
-  est active (périmètres orthogonaux — sécurité/dette vs UX ; seul point de
-  contact : le code mort, borné à `ui/Score*` chez eux, `MetricsSection`
-  ici). Activation à la clôture de g-trust-04 ou en `parallel_campaigns` —
-  décision laissée à la session de gouvernance, comme pour IDP2.
-- L'enregistrement dans `.wn/state.json` et `ACTIVE_CAMPAIGN.md` est
-  volontairement laissé à la session de gouvernance.
+- Campagne cadrée puis **activée en parallèle le 2026-07-22** (décision
+  utilisateur : « green go » sur la PR de cadrage #280, puis lancement du
+  LOT-00) — `2026-07-22-g-trust-04-durcissement-et-reliquats` reste la
+  campagne active principale, SP-CONV est enregistrée dans
+  `parallel_campaigns` de `.wn/state.json`. Périmètres orthogonaux —
+  sécurité/dette vs UX ; seul point de contact : le code mort, borné à
+  `ui/Score*` chez eux, `MetricsSection` ici.
 - Hérite des constats de l'audit du 2026-07-22 **tels que rectifiés** par la
   table ci-dessus (équivalent « Dette héritée » de SP-SPI).
 - Prépare SP-CAB (le bandeau d'épisode et le contrat partagé sont les
