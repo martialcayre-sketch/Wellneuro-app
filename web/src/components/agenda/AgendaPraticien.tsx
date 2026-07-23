@@ -5,19 +5,24 @@ import type { RendezVousApiResponse, RendezVousExpose } from '@/app/api/praticie
 
 type PatientOption = { idPatient: string; nomComplet: string };
 
+const FUSEAU = 'Europe/Paris';
 const FORMAT_JOUR = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: FUSEAU,
   weekday: 'long',
   day: 'numeric',
   month: 'long',
 });
-const FORMAT_HEURE = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' });
+const FORMAT_HEURE = new Intl.DateTimeFormat('fr-FR', { timeZone: FUSEAU, hour: '2-digit', minute: '2-digit' });
+// Clé de regroupement stable = jour civil de Paris (indépendant du fuseau du
+// navigateur), cohérente avec le libellé formaté ci-dessus.
+const CLE_JOUR = new Intl.DateTimeFormat('en-CA', { timeZone: FUSEAU, year: 'numeric', month: '2-digit', day: '2-digit' });
 
-/** Regroupe les rendez-vous par jour civil, pour une liste lisible. */
+/** Regroupe les rendez-vous par jour civil de Paris, pour une liste lisible. */
 function grouperParJour(rdvs: RendezVousExpose[]): { jour: string; libelle: string; items: RendezVousExpose[] }[] {
   const groupes = new Map<string, { libelle: string; items: RendezVousExpose[] }>();
   for (const r of rdvs) {
     const d = new Date(r.dateHeure);
-    const cle = d.toISOString().slice(0, 10);
+    const cle = CLE_JOUR.format(d);
     const groupe = groupes.get(cle);
     if (groupe) groupe.items.push(r);
     else groupes.set(cle, { libelle: FORMAT_JOUR.format(d), items: [r] });

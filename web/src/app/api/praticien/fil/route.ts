@@ -7,6 +7,7 @@ import { construireFil, type CarteFil } from '@/lib/fil/cartes';
 import { clesRefusees, filtrerCartesRefusees } from '@/lib/fil/refus';
 import { jalonsSansDecision } from '@/lib/fil/jalonsJ21';
 import { momentumJalonsParPatient } from '@/lib/fil/momentumJ21';
+import { bornesJourParis } from '@/lib/fil/fuseau';
 
 export type FilApiResponse = {
   cartes: CarteFil[];
@@ -29,10 +30,9 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
   try {
     const maintenant = new Date();
     const email = emailPraticien(session) ?? '';
-    // Fenêtre du jour civil pour les consultations prévues (LOT-04).
-    const debutJour = new Date(maintenant);
-    debutJour.setHours(0, 0, 0, 0);
-    const finJour = new Date(debutJour.getTime() + 24 * 60 * 60 * 1000);
+    // Fenêtre du jour civil de PARIS (le cabinet) pour les consultations
+    // prévues (LOT-04) — le serveur tourne en UTC sur Vercel.
+    const { debut: debutJour, fin: finJour } = bornesJourParis(maintenant);
 
     const filtreNonTraite = { statutTraitement: { in: ['recu', 'en_cours'] } };
     // Les identifiants de ligne source sont sélectionnés pour que chaque carte

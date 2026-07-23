@@ -6,6 +6,8 @@
  * explicite — proposition, jamais capture (décision A6, REGISTRE_FRONTIERES).
  */
 
+import { bornesJourParis, formatHeureParis } from './fuseau';
+
 // `reponse_recente` a été retiré (accueil-observatoire LOT-02, décision
 // propriétaire 2026-07-23) : les questionnaires reçus vivent dans l'inbox par
 // patient (`lib/fil/inbox.ts`), plus dans le Fil. Les refus déjà posés sur ces
@@ -101,9 +103,6 @@ const JOUR_MS = 24 * 60 * 60 * 1000;
 const formatDateFr = (d: Date) =>
   new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long' }).format(d);
 
-const formatHeureFr = (d: Date) =>
-  new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' }).format(d);
-
 function nomPatient(noms: Map<string, string>, idPatient: string): string {
   return noms.get(idPatient) ?? 'Patient';
 }
@@ -138,12 +137,11 @@ export function cartesConsultationsPrevues(
   noms: Map<string, string>,
   maintenant: Date,
 ): CarteFil[] {
-  const debutJour = new Date(maintenant);
-  debutJour.setHours(0, 0, 0, 0);
-  const finJour = new Date(debutJour.getTime() + JOUR_MS);
+  // Jour civil de Paris (le cabinet), pas le jour UTC du serveur.
+  const { debut, fin } = bornesJourParis(maintenant);
 
   return rdvs
-    .filter(r => r.dateHeure >= debutJour && r.dateHeure < finJour)
+    .filter(r => r.dateHeure >= debut && r.dateHeure < fin)
     .sort((a, b) => a.dateHeure.getTime() - b.dateHeure.getTime())
     .slice(0, MAX_CARTES_PAR_TYPE)
     .map(r => {
@@ -151,7 +149,7 @@ export function cartesConsultationsPrevues(
       const pourquoi =
         minutes >= 0 && minutes <= IMMINENCE_CONSULTATION_MIN
           ? `Consultation dans ${minutes} min.`
-          : `Consultation à ${formatHeureFr(r.dateHeure)}.`;
+          : `Consultation à ${formatHeureParis(r.dateHeure)}.`;
       return {
         type: 'consultation_prevue' as const,
         idPatient: r.idPatient,
@@ -333,8 +331,9 @@ export function cartesReprise(
 
 /**
  * Résumé qualitatif du panneau « Aujourd'hui » (maquette : « 3 consultations ·
- * 2 relectures ») — remplace le compteur brut « N cartes ». Suit l'ordre du
- * Fil ; les cartes agrégées comptent leurs lignes sources (`nbElements`).
+ * 2 relectures ») — remplace le compteur brut « N cartes ». Les consultations
+ * ouvrent le résumé (maquette), même si dans le Fil les signalements passent
+ * devant ; les cartes agrégées comptent leurs lignes sources (`nbElements`).
  */
 const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string }[] = [
   { type: 'consultation_prevue', singulier: 'consultation', pluriel: 'consultations' },
