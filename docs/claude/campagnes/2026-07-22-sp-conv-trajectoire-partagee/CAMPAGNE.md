@@ -1,10 +1,10 @@
 ---
 id: "2026-07-22-sp-conv-trajectoire-partagee"
 titre: "SP-CONV — Convergence Spirale 5.0 : la trajectoire partagée"
-statut: "en_cours"
+statut: "livrée — 2026-07-23, sept lots en production (LOT-00 → LOT-06), exécution full-auto sur décision utilisateur"
 créée_le: "2026-07-22"
-mise_à_jour: "2026-07-22"
-lot_courant: "LOT-04"
+mise_à_jour: "2026-07-23"
+lot_courant: "LOT-06"
 ---
 
 # SP-CONV — Convergence Spirale 5.0 : la trajectoire partagée

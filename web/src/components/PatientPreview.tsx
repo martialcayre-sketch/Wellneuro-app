@@ -38,7 +38,7 @@ export function PatientPreview({ assignationId }: { patientId: string; assignati
               <button
                 type="button"
                 aria-label="Fermer l'aperçu"
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
               >
                 <X aria-hidden="true" size={18} strokeWidth={2} />
               </button>

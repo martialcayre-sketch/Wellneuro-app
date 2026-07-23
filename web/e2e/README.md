@@ -123,3 +123,23 @@ production (`PLAYWRIGHT_WEB_SERVER=start`) sur les deux projets
 (Chromium + WebKit). Les déclencheurs couvrent `main` et les branches
 `campaign/**/integration`. Pour reproduire localement la même séquence :
 `npm run test:worktree` (voir ci-dessus).
+
+## Preuve visuelle (SP-CONV LOT-06)
+
+`e2e/visual.spec.ts` a trois étages : captures de revue
+(`test-results/visual/`, artefacts), **snapshots ARIA** (structure
+accessible, committés dans le spec, toutes plateformes), et **baselines
+`toHaveScreenshot`** (`e2e/visual.spec.ts-snapshots/`, committées) comparées
+**sous Linux uniquement** et **seulement si la baseline existe** — un poste
+macOS ne compare jamais, une baseline absente ne casse jamais `verify`.
+
+Pour produire ou rafraîchir les baselines : lancer le workflow manuel
+`visual-baselines` (Actions → visual-baselines → Run workflow), télécharger
+l'artefact `visual-baselines`, **relire chaque image**, puis committer le
+dossier `web/e2e/visual.spec.ts-snapshots/` via une PR.
+
+Isolation : les captures portail utilisent **Jennifer Martin**
+(`PAT_SEED_02`, `preparerReprisePourTest`) — jamais Michel Dogné
+(`PAT_SEED_03`, réservé aux parcours) ni Sophie Nicola (`PAT_SEED_01`,
+fiche praticien). La règle « un seul run e2e à la fois » sur la base
+partagée reste inchangée.

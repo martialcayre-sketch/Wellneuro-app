@@ -4,9 +4,9 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "active",
-  "active_campaign": "2026-07-22-sp-conv-trajectoire-partagee",
-  "active_lot": "LOT-04",
+  "status": "idle",
+  "active_campaign": null,
+  "active_lot": null,
   "last_completed_lot": "G-TRUST-04/LOT-00",
   "git": {
     "branch": null,
@@ -15,22 +15,22 @@
   },
   "validation": {
     "overall_status": "passed",
-    "last_checked_at": "2026-07-23T06:17:48Z",
+    "last_checked_at": "2026-07-23T08:29:51Z",
     "checks": {
       "orchestration": "audit campagnes vert à la clôture G-TRUST-04 (1 warning préexistant : LOT-00 dupliqué sur refonte-ux-shell-3-0)",
       "type_check": "vert — @ts-nocheck levé 17/17 sur le catalogue clinique, tsc 0 erreur projet entier",
       "scoring_certification": "vert — juge transpile le TS avant eval (prouvé neutre sur catalogue inchangé) ; 63 questionnaires, fixtures certifiées, rejoué à chaque vague",
       "no_secrets": "vert",
-      "e2e": "T3 test:worktree complet vert à la clôture G-TRUST-04 (dont portail-parcours, preuve de la requalification onboarding)",
+      "e2e": "T3 test:worktree complet vert à la clôture G-TRUST-04 (dont portail-parcours, preuve de la requalification onboarding) ; baselines visuelles SP-CONV actives depuis #298",
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Campagne G-TRUST-04 durcissement CLOSE le 2026-07-23 (LOT-00 livré : #272, #273, #275, #276, #278, #281, PR de clôture #292 — journal des accès branché sur 22 routes avec correctif de scoping booklet GET, exercice sur table fait, next 14.2.35, code mort purgé, @ts-nocheck levé 17/17 avec juge transpilé, checklist exigences 5/6 à jour). ACTIVITÉ PRIMAIRE désormais : campagne SP-CONV (2026-07-22-sp-conv-trajectoire-partagee), promue de parallèle à primaire à la clôture de G-TRUST-04 — LOT-00 annotations/maquettes (#284), LOT-01 contrat d'épisode (#288), LOT-02 cockpit adaptatif (#290), LOT-03 suture time-travel (#291) livrés ; lot actif LOT-04. PROCHAINES VÉRIFICATIONS ASSISTANT : preuve fonctionnelle du journal au premier dossier ouvert en prod (requête GD-3, execute_sql lecture seule) ; surveiller l'absence de PRATICIEN.ACCES_DOSSIER.TRACE_ECHEC dans les logs Vercel. EN ATTENTE HUMAINE : renvoi des invitations aux 12 patients (précondition IDP2 LOT-04, re-mesurer avant d'ouvrir ce lot DESTRUCTIF), visibilité patient du fil médecin (décision non prise), reconduction/levée de la dérogation G-TRUST-04 au 2026-10-21, confirmation juridique de la procédure de violation (D-TRUST-02), registre physique des violations (constat EX-3).",
+  "next_action": "AUCUNE CAMPAGNE ACTIVE — les deux campagnes du jour sont closes le 2026-07-23 : G-TRUST-04 durcissement (LOT-00 livré : #272, #273, #275, #276, #278, #281, #292 — journal des accès sur 22 routes avec correctif de scoping booklet GET, exercice sur table, next 14.2.35, code mort purgé, @ts-nocheck levé 17/17 avec juge transpilé, checklist exigences 5/6 à jour) et SP-CONV trajectoire partagée (LOT-00..LOT-06 livrés #284, #288, #290, #291, #293, #294, #295, baselines visuelles #296-#298). PROCHAINES VÉRIFICATIONS ASSISTANT : preuve fonctionnelle du journal au premier dossier ouvert en prod (requête GD-3, execute_sql lecture seule) ; surveiller l'absence de PRATICIEN.ACCES_DOSSIER.TRACE_ECHEC dans les logs Vercel ; latence des GET praticien (purge opportuniste du journal, constat de revue). EN ATTENTE HUMAINE : renvoi des invitations aux 12 patients (précondition IDP2 LOT-04, re-mesurer avant d'ouvrir ce lot DESTRUCTIF), visibilité patient du fil médecin (décision non prise), reconduction/levée de la dérogation G-TRUST-04 au 2026-10-21, confirmation juridique de la procédure de violation (D-TRUST-02), registre physique des violations (constat EX-3).",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-23T06:17:48Z",
+  "updated_at": "2026-07-23T08:29:51Z",
   "parallel_campaigns": []
 }

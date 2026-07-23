@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Jardin — renommage A7, « Mon équilibre » qualitatif, résidus a11y"
-statut: "à_faire"
+statut: "livré — 2026-07-23, PR de lot : renommage A7 acté + registre amendé, équilibre qualitatif, 44 px, TTL brouillons, MetricsSection supprimée ; T1 (122) / T2 (73 E2E) verts"
 dépend_de: "LOT-00"
 ---
 

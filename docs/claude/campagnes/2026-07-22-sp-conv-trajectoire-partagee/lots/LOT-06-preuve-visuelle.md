@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Preuve visuelle — baselines et captures du portail (rouvre la dérogation V12)"
-statut: "à_faire"
+statut: "livré — 2026-07-23, PR de lot : toHaveScreenshot Linux fs-gaté, snapshots ARIA, portail capturé (Jennifer Martin isolée), workflow visual-baselines ; T1/T2 verts (79 E2E)"
 dépend_de: "LOT-02, LOT-04, LOT-05"
 ---
 
@@ -83,4 +83,27 @@ portail couvert ; dérogation V12 levée et datée dans le design system.
 
 ## Résultats
 
-À compléter à la clôture.
+Livré le 2026-07-23 :
+
+- `visual.spec.ts` réécrit en trois étages : captures de revue (artefacts,
+  toutes plateformes), **snapshots ARIA** committés dans le spec (rail des
+  7 phases, frise des 6 étapes — insensibles aux polices, validés sur
+  macOS), **`toHaveScreenshot` Linux uniquement et conditionné à
+  l'existence de la baseline** — ne peut casser ni un poste macOS ni
+  `verify` sans baseline.
+- **Portail capturé** (porte d'entrée, hub « Mon parcours » + frise, hub
+  sections dépliées) avec **Jennifer Martin** (`PAT_SEED_02`,
+  `preparerReprisePourTest`) — isolée des parcours (Michel) et du
+  praticien (Sophie) : le motif du refus V12 est levé sans nouvelle infra.
+- **Workflow manuel `visual-baselines`** (Ubuntu, réplique de l'env CI,
+  `--update-snapshots`, artefact à relire puis committer) — le bootstrap
+  des baselines ne passe jamais par un rendu macOS.
+- Dérogation V12 **levée et datée** au design system §10 ; contrat
+  documenté dans `web/e2e/README.md`.
+- Écarts au périmètre prévu, assumés : la capture « Mon équilibre »
+  portail exigerait une consultation complète pour Jennifer (interférence
+  refusée) — remplacée par « hub sections dépliées » ; les premières
+  baselines (8 — quatre écrans stables × 2 projets) ont été générées sous
+  Ubuntu, relues image par image (2 itérations : état transitoire et textes
+  temporels attrapés à la relecture) puis commitées le 2026-07-23 — le
+  `verify` de leur PR est la première comparaison au pixel active.

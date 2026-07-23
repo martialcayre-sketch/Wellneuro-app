@@ -388,7 +388,10 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
 
     await test.step('Re-soumission après déblocage', async () => {
       await page.goto(`${portailUrl}/questionnaires`);
-      await expect(page.getByText('Déverrouillé par le praticien')).toBeVisible();
+      // SP-CONV LOT-04 : l'item déverrouillé est l'action recommandée — il est
+      // mis en avant par « Mon parcours » (CTA « Corriger ») et n'est plus
+      // dupliqué dans la liste « À compléter ».
+      await expect(page.getByRole('link', { name: /^Corriger/ })).toBeVisible();
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/patient/questionnaire?id=') && res.status() === 200),
         page.getByRole('link', { name: 'Corriger' }).first().click(),
@@ -418,7 +421,7 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
   });
 });
 
-test('route patient : accès Ma spirale alimentaire (JA5-02)', async ({ page, context }) => {
+test('route patient : accès Mon carnet alimentaire (JA5-02, renommé SP-CONV LOT-05)', async ({ page, context }) => {
   const sessionCookie = await praticienSessionCookie();
   await context.addCookies([sessionCookie]);
 
@@ -436,5 +439,5 @@ test('route patient : accès Ma spirale alimentaire (JA5-02)', async ({ page, co
 
   await page.goto(`/portail/${token}/alimentation`);
   await expect(page).toHaveURL(new RegExp(`/portail/${token}/alimentation$`));
-  await expect(page.getByRole('heading', { name: 'Ma spirale alimentaire' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Mon carnet alimentaire' })).toBeVisible();
 });

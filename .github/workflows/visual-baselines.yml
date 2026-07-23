@@ -1,0 +1,92 @@
+# Génération des baselines visuelles (SP-CONV LOT-06 — lève la dérogation V12).
+#
+# Déclenchement MANUEL uniquement : les baselines sont produites dans
+# l'environnement de référence (Ubuntu, celui du job verify), jamais sur un
+# poste macOS dont le rendu des polices diverge. Le workflow rejoue la suite
+# `e2e/visual.spec.ts` avec --update-snapshots puis publie
+# `web/e2e/visual.spec.ts-snapshots/` en artefact — à télécharger, relire
+# (chaque image est regardée avant d'être promue) et committer via une PR.
+# Tant qu'aucune baseline n'est commise, la comparaison au pixel est
+# simplement inactive (le spec la conditionne à l'existence du fichier) :
+# ce workflow ne peut donc jamais casser verify.
+name: visual-baselines
+
+on:
+  workflow_dispatch:
+
+jobs:
+  baselines:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+          POSTGRES_DB: wellneuro_ci
+          POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=en_US.UTF-8
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      DATABASE_URL: postgresql://ci_user:ci_password@localhost:5432/wellneuro_ci
+      NEXTAUTH_SECRET: ci-test-secret-r8-2-playwright-automation
+      NEXTAUTH_URL: http://localhost:3000
+      GOOGLE_CLIENT_ID: ci-placeholder
+      GOOGLE_CLIENT_SECRET: ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Dépendances
+        working-directory: web
+        run: npm ci
+
+      - name: Client Prisma
+        working-directory: web
+        run: npx prisma generate
+
+      - name: Migrations
+        working-directory: web
+        run: npx prisma migrate deploy
+
+      - name: Seed (patients fictifs uniquement)
+        working-directory: web
+        run: npm run prisma:seed
+
+      - name: Navigateurs Playwright
+        working-directory: web
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Générer les baselines (suite visuelle seule)
+        working-directory: web
+        env:
+          # Échappatoire du garde-fou d'existence : force toHaveScreenshot
+          # même sans baseline — combiné à --update-snapshots, il ÉCRIT la
+          # baseline au lieu de comparer.
+          WN_VISUAL_UPDATE: '1'
+        run: npx playwright test e2e/visual.spec.ts --update-snapshots
+
+      - name: Publier les baselines en artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: web/e2e/visual.spec.ts-snapshots/
+          if-no-files-found: error
+
+      - name: Publier les captures de revue
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-captures
+          path: web/test-results/visual/
+          if-no-files-found: ignore

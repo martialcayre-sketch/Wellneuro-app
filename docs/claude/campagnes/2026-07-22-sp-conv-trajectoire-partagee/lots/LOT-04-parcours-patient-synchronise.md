@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Parcours patient synchronisé — les étapes 5-6 vivent enfin"
-statut: "à_faire"
+statut: "livré — 2026-07-23, PR de lot : étapes 5-6 pilotées par le contrat, a11y terminées, dédoublonnage CTA ; T1/T2 verts (73 E2E)"
 dépend_de: "LOT-01"
 ---
 

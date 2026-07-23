@@ -63,7 +63,7 @@ export function MonEquilibreDetail({
           <button
             type="button"
             onClick={onRetour}
-            className="w-full mt-6 py-2.5 px-4 border border-primary text-primary rounded-lg font-medium text-sm hover:bg-primary/10 transition-colors"
+            className="w-full mt-6 min-h-11 py-2.5 px-4 border border-primary text-primary rounded-lg font-medium text-sm hover:bg-primary/10 transition-colors"
           >
             ← Retour
           </button>

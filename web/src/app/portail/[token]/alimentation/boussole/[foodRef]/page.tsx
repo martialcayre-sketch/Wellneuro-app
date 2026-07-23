@@ -12,7 +12,7 @@ export default function PatientFoodCompassPage({
   return (
     <div className="w-full max-w-2xl space-y-4">
       <Link href={`/portail/${params.token}/alimentation`} className="inline-flex min-h-11 items-center text-sm text-primary hover:underline">
-        ← Ma spirale alimentaire
+        ← Mon carnet alimentaire
       </Link>
       <PatientFoodCompassZoom foodRef={params.foodRef} />
     </div>

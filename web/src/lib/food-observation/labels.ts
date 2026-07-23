@@ -13,7 +13,10 @@ import type {
  * « prescription » (R4), jamais « jumeau » (D11).
  */
 
-export const LABEL_INSTRUMENT_PATIENT = 'Ma spirale alimentaire';
+// « Mon carnet alimentaire » depuis SP-CONV LOT-05 (réouverture d'A7, décision
+// utilisateur du 2026-07-22) : « Spirale » est réservée à la trajectoire
+// globale du parcours — la marque du produit n'appartient pas à un sous-module.
+export const LABEL_INSTRUMENT_PATIENT = 'Mon carnet alimentaire';
 export const LABEL_INSTRUMENT_PRATICIEN = 'Trajectoire alimentaire';
 
 export const LABELS_REGIME: Record<EpisodeRegime, string> = {
