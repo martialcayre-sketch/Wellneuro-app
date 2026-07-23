@@ -69,6 +69,11 @@ jobs:
 
       - name: Générer les baselines (suite visuelle seule)
         working-directory: web
+        env:
+          # Échappatoire du garde-fou d'existence : force toHaveScreenshot
+          # même sans baseline — combiné à --update-snapshots, il ÉCRIT la
+          # baseline au lieu de comparer.
+          WN_VISUAL_UPDATE: '1'
         run: npx playwright test e2e/visual.spec.ts --update-snapshots
 
       - name: Publier les baselines en artefact
