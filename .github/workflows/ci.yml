@@ -71,8 +71,13 @@ jobs:
           # Volontairement PAS `grep -qv` : le grep BSD (macOS) en rend un statut
           # faux, ce qui rendrait cette logique invérifiable en local même si
           # elle passe sous le grep GNU du runner. On matérialise la liste.
+          # La matrice de mapping des questionnaires est classée CODE : la
+          # certification scoring la vérifie contre le catalogue, et cette
+          # certification vit désormais sur le chemin code (elle transpile le
+          # TS du catalogue, donc a besoin de web/node_modules).
           hors_docs="$(printf '%s\n' "$fichiers" | grep -vE '(^docs/|\.md$)' || true)"
-          if [ -z "$fichiers" ] || [ -n "$hors_docs" ]; then
+          mapping="$(printf '%s\n' "$fichiers" | grep -E '^docs/questionnaires-drive-mapping\.md$' || true)"
+          if [ -z "$fichiers" ] || [ -n "$hors_docs" ] || [ -n "$mapping" ]; then
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
           else
             echo "docs_only=true" >> "$GITHUB_OUTPUT"
@@ -85,11 +90,6 @@ jobs:
       - name: Campaign rules audit (blocking)
         run: node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
 
-      # Protège la logique clinique : les 63 questionnaires doivent rester
-      # conformes à leurs fixtures de scoring certifiées.
-      - name: Scoring certification (63 questionnaires, blocking)
-        run: node scripts/check_questionnaire_certification.js
-
       - uses: actions/setup-node@v4
         if: steps.scope.outputs.docs_only != 'true'
         with:
@@ -101,6 +101,15 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm ci
+
+      # Protège la logique clinique : les 63 questionnaires doivent rester
+      # conformes à leurs fixtures de scoring certifiées. Après `npm ci` : le
+      # juge transpile le TypeScript du catalogue (devDependency de web/).
+      # Une PR purement documentaire ne peut pas l'esquiver pour autant : la
+      # matrice de mapping est classée code par l'étape « Périmètre du diff ».
+      - name: Scoring certification (63 questionnaires, blocking)
+        if: steps.scope.outputs.docs_only != 'true'
+        run: node scripts/check_questionnaire_certification.js
 
       - name: Generate Prisma client
         if: steps.scope.outputs.docs_only != 'true'
