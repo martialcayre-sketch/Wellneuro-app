@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { construireFil, type CarteFil } from '@/lib/fil/cartes';
 import { clesRefusees, filtrerCartesRefusees } from '@/lib/fil/refus';
+import { jalonsSansDecision } from '@/lib/fil/jalonsJ21';
+import { momentumJalonsParPatient } from '@/lib/fil/momentumJ21';
 
 export type FilApiResponse = {
   cartes: CarteFil[];
@@ -36,25 +38,36 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     // Les questionnaires reçus ne produisent plus de carte : ils vivent dans
     // l'inbox par patient (accueil-observatoire LOT-02) — seul le groupBy
     // d'activité reste, pour la carte `reprise`.
-    const [effets, incidents, droits, syntheses, assignations, activites] = await Promise.all([
-      prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
-      prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
-      prisma.trustRightsRequest.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
-      prisma.syntheseIA.findMany({
-        where: { statut: 'Brouillon_IA' },
-        orderBy: { dateGeneration: 'desc' },
-        take: 20,
-        select: { idSynthese: true, idPatient: true, dateGeneration: true },
-      }),
-      prisma.assignation.findMany({
-        where: { statut: { not: 'Complété' }, dateLimite: { not: null } },
-        select: { idAssignation: true, idPatient: true, titre: true, dateLimite: true, statut: true },
-      }),
-      prisma.questionnaireReponse.groupBy({
-        by: ['idPatient'],
-        _max: { dateReponse: true },
-      }),
-    ]);
+    const [effets, incidents, droits, syntheses, assignations, activites, checkinsJ21, episodesJ21] =
+      await Promise.all([
+        prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
+        prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
+        prisma.trustRightsRequest.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
+        prisma.syntheseIA.findMany({
+          where: { statut: 'Brouillon_IA' },
+          orderBy: { dateGeneration: 'desc' },
+          take: 20,
+          select: { idSynthese: true, idPatient: true, dateGeneration: true },
+        }),
+        prisma.assignation.findMany({
+          where: { statut: { not: 'Complété' }, dateLimite: { not: null } },
+          select: { idAssignation: true, idPatient: true, titre: true, dateLimite: true, statut: true },
+        }),
+        prisma.questionnaireReponse.groupBy({
+          by: ['idPatient'],
+          _max: { dateReponse: true },
+        }),
+        // Jalon J21 : check-ins J21 soumis, moins les épisodes J21 déjà
+        // consignés (différence calculée après scoping — cf. jalonsJ21.ts).
+        prisma.protocolCheckin.findMany({
+          where: { pointEtape: 'J21' },
+          select: { id: true, idPatient: true, reponses: true, soumisLe: true },
+        }),
+        prisma.assessmentEpisode.findMany({
+          where: { milestone: 'J21' },
+          select: { idPatient: true },
+        }),
+      ]);
 
     const signalements = [
       ...effets.map(e => ({ id: e.id, idPatient: e.idPatient, kind: 'effet_indesirable' as const, soumisLe: e.soumisLe })),
@@ -68,6 +81,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         ...syntheses.map(s => s.idPatient),
         ...assignations.map(a => a.idPatient),
         ...activites.map(a => a.idPatient),
+        ...checkinsJ21.map(c => c.idPatient),
       ]),
     ];
     // Toute carte dont le patient n'est pas dans ce résultat est écartée
@@ -83,9 +97,20 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     const noms = new Map(patients.map(p => [p.idPatient, `${p.prenom} ${p.nom}`.trim()]));
     const actifs = new Set(patients.map(p => p.idPatient));
 
+    // Jalon J21 = check-in J21 sans épisode J21 consigné (différence pure),
+    // enrichi du momentum réel quand il existe (bornée aux patients-jalon).
+    const jalonsBruts = jalonsSansDecision(
+      checkinsJ21,
+      new Set(episodesJ21.map(e => e.idPatient)),
+      actifs,
+    );
+    const momentums = await momentumJalonsParPatient(jalonsBruts.map(j => j.idPatient));
+    const jalons = jalonsBruts.map(j => ({ ...j, momentum: momentums.get(j.idPatient) ?? null }));
+
     const cartes = construireFil({
       signalements: signalements.filter(s => actifs.has(s.idPatient)),
       syntheses: syntheses.filter(s => actifs.has(s.idPatient)),
+      jalons,
       assignations: assignations.filter(a => actifs.has(a.idPatient)),
       activites: activites
         .filter(a => actifs.has(a.idPatient) && a._max.dateReponse !== null)

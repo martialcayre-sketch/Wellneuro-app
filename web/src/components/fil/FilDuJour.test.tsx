@@ -95,11 +95,13 @@ describe('FilDuJour — les quatre états de rendu', () => {
     stubFetch(async () => ({
       cartes: [
         carte({ type: 'signalement_trust', titre: 'Signalement à traiter', cle: 'signalement_trust:SIG_1' }),
+        carte({ type: 'jalon_j21', titre: 'Jalon J21 atteint — décision attendue', cle: 'jalon_j21:CHK_1' }),
         carte({ type: 'reprise', titre: 'Suivi interrompu', cle: 'reprise:PAT_SEED_01:x' }),
       ],
     }));
     render(<FilDuJour />);
     await waitFor(() => expect(screen.getByText('Signalement')).toBeTruthy());
+    expect(screen.getByText('Jalon')).toBeTruthy();
     expect(screen.getByText('Reprise')).toBeTruthy();
   });
 });

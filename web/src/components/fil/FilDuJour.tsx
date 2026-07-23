@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlarmClock, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
+import { AlarmClock, Flag, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
 import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
@@ -15,6 +15,7 @@ import { BadgeMeteo } from '@/components/meteo/BadgeMeteo';
 const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = {
   signalement_trust: { libelle: 'Signalement', icon: ShieldCheck },
   synthese_a_valider: { libelle: 'À valider', icon: Sparkles },
+  jalon_j21: { libelle: 'Jalon', icon: Flag },
   assignation_en_retard: { libelle: 'En retard', icon: AlarmClock },
   reprise: { libelle: 'Reprise', icon: RotateCcw },
 };

@@ -13,6 +13,7 @@
 export type TypeCarteFil =
   | 'signalement_trust'
   | 'synthese_a_valider'
+  | 'jalon_j21'
   | 'assignation_en_retard'
   | 'reprise';
 
@@ -71,6 +72,23 @@ export type AssignationRow = {
 export type SyntheseRow = { idSynthese: string; idPatient: string; dateGeneration: Date };
 /** Carte agrégée : pas de ligne source, donc pas d'identifiant à remonter. */
 export type DerniereActiviteRow = { idPatient: string; derniereReponse: Date };
+
+/** Sens du momentum tel que le porte l'équilibre (T0 → dernier jalon mesuré). */
+export type TendanceMomentumCarte = 'hausse' | 'stable' | 'baisse';
+/**
+ * Jalon J21 atteint sans décision consignée. La ligne source est le check-in
+ * J21 (`idCheckin`) : ancre stable pour le refus G1. `adhesion` et `momentum`
+ * sont des enrichissements FACTUELS et OPTIONNELS — cités seulement s'ils
+ * existent réellement, jamais inventés (A8-2 : jamais un 0 à la place d'un
+ * jalon non mesuré).
+ */
+export type JalonRow = {
+  idCheckin: string;
+  idPatient: string;
+  soumisLe: Date;
+  adhesion?: string | null;
+  momentum?: { tendance: TendanceMomentumCarte; delta: number } | null;
+};
 
 /** Inactivité au-delà de laquelle un patient est signalé en reprise. */
 export const SEUIL_REPRISE_MOIS = 6;
@@ -160,6 +178,43 @@ export function cartesSynthesesAValider(
     }));
 }
 
+/**
+ * Jalons J21 atteints sans décision de 21 jours consignée. Une carte par
+ * patient, ancrée sur son check-in J21 (ligne source réelle → refus G1
+ * standard). Le « pourquoi maintenant » cite la date du check-in, et — quand
+ * ils existent réellement — l'action principale observée et le momentum.
+ */
+export function cartesJalons(jalons: JalonRow[], noms: Map<string, string>): CarteFil[] {
+  return jalons
+    .slice()
+    .sort((a, b) => b.soumisLe.getTime() - a.soumisLe.getTime())
+    .slice(0, MAX_CARTES_PAR_TYPE)
+    .map(j => {
+      const morceaux = [
+        `Check-in J21 reçu le ${formatDateFr(j.soumisLe)} — décision de 21 jours à consigner.`,
+      ];
+      if (j.adhesion) morceaux.push(`Action principale : « ${j.adhesion} ».`);
+      if (j.momentum) {
+        morceaux.push(
+          j.momentum.tendance === 'stable'
+            ? 'Momentum stable.'
+            : `Momentum en ${j.momentum.tendance} de ${Math.abs(j.momentum.delta)}.`,
+        );
+      }
+      return {
+        type: 'jalon_j21' as const,
+        idPatient: j.idPatient,
+        patient: nomPatient(noms, j.idPatient),
+        titre: 'Jalon J21 atteint — décision attendue',
+        pourquoi: morceaux.join(' '),
+        date: j.soumisLe.toISOString(),
+        href: `/dashboard/patients/${j.idPatient}`,
+        actionLabel: 'Ouvrir la fiche',
+        cle: cleCarte('jalon_j21', j.idCheckin),
+      };
+    });
+}
+
 export function cartesAssignationsEnRetard(
   assignations: AssignationRow[],
   noms: Map<string, string>,
@@ -235,6 +290,7 @@ export function cartesReprise(
 const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string }[] = [
   { type: 'signalement_trust', singulier: 'signalement', pluriel: 'signalements' },
   { type: 'synthese_a_valider', singulier: 'relecture', pluriel: 'relectures' },
+  { type: 'jalon_j21', singulier: 'jalon', pluriel: 'jalons' },
   { type: 'assignation_en_retard', singulier: 'retard', pluriel: 'retards' },
   { type: 'reprise', singulier: 'reprise', pluriel: 'reprises' },
 ];
@@ -264,15 +320,17 @@ export function indexCarteImminente(cartes: CarteFil[]): number {
 export function construireFil(entrees: {
   signalements?: SignalementRow[];
   syntheses: SyntheseRow[];
+  jalons?: JalonRow[];
   assignations: AssignationRow[];
   activites: DerniereActiviteRow[];
   noms: Map<string, string>;
   maintenant: Date;
 }): CarteFil[] {
-  const { signalements = [], syntheses, assignations, activites, noms, maintenant } = entrees;
+  const { signalements = [], syntheses, jalons = [], assignations, activites, noms, maintenant } = entrees;
   return [
     ...cartesSignalementsTrust(signalements, noms),
     ...cartesSynthesesAValider(syntheses, noms),
+    ...cartesJalons(jalons, noms),
     ...cartesAssignationsEnRetard(assignations, noms, maintenant),
     ...cartesReprise(activites, noms, maintenant),
   ];

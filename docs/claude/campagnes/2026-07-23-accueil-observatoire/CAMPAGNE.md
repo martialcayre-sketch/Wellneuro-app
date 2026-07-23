@@ -58,7 +58,7 @@ rendez-vous.
 |---|---|---|---|
 | LOT-01 | Timeline horodatée, carte imminente, résumé qualitatif, agrégat relectures par patient, bandeau « Vues rapides » — sans migration | livré | — |
 | LOT-02 | Aside de travail : Météo d'adhésion, inbox questionnaires par patient (remplace les cartes « Reçu »), correspondance récente + badge rail — sans migration | livré | LOT-01 |
-| LOT-03 | Cartes jalon J21 / momentum — sans migration | à faire | LOT-01 |
+| LOT-03 | Cartes jalon J21 / momentum — sans migration | livré | LOT-01 |
 | LOT-04 | Agenda : modèle `RendezVous`, CRUD minimal, cartes « Pré-vol prêt » horodatées — **migration**, gaté par confirmation explicite + mise à jour du registre des différés | à faire | LOT-01 |
 
 ## Définition de done
