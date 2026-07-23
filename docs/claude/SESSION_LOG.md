@@ -391,3 +391,26 @@ dossier RGPD) — reportés au choix du praticien.
 D-TRUST-02, registre EX-3, dérogation au 2026-10-21.
 
 **Questions ouvertes** : aucune côté assistant.
+
+## 2026-07-23 — SP-TRAJ : Fiche-trajectoire 5.0 livrée en 6 lots
+
+**Décisions** : audit confirmé — le rail « Fiche-trajectoire » menait à la page
+héritage ; plan approuvé (périmètre complet, arbitrages revisités → **A6-R2 au
+registre** : courbe momentum praticien aux seuls jalons mesurés, repère cabinet
+n≥5, estimé↔mesuré « second temps » ; porte d'entrée `/dashboard/trajectoires`).
+Livré : #311 (mergée) puis pile #313→#317 — Spirale navigable + deep-link,
+mode de vie 7 domaines daté, momentum+cabinet, porte d'entrée, tiroirs
+« Questionnaires & packs », preuve navigateur Spirale peuplée. Merges par
+l'assistant sur instruction explicite — train en cours (#313 mergée, rebase +
+verify par étage).
+
+**Écarté** : E2E peuplée sur Sophie/Jennifer (baselines pixel, fixtures) →
+Michel + helper auto-nettoyant ; extraction des formulaires en fichiers séparés
+→ tiroirs in-situ (état entrelacé).
+
+**Prochaine action** : purge des branches sur preuve et retour du dépôt au
+régime permanent — la campagne est close dans cette même PR (state idle),
+train de merges achevé, maintenance faite (#301, #318, #308 mergées).
+
+**Questions ouvertes** : échecs locaux `portail-lien-magique` (anti-oracle de
+temps, vert en CI) ; baselines pixel des nouveaux écrans (différées).

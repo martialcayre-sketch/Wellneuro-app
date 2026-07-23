@@ -115,3 +115,39 @@ export async function nettoyerReprise(idPatient: string): Promise<void> {
 export async function closePrisma(): Promise<void> {
   await prisma.$disconnect();
 }
+
+/**
+ * Peuple la trajectoire d'un patient fictif d'un épisode T0 confirmé
+ * (SP-TRAJ LOT-06) — le strict nécessaire pour que la Spirale ait un repère :
+ * l'index se construit sur les épisodes confirmés, pas sur les valeurs. La
+ * ligne est marquée par son id pour un nettoyage idempotent.
+ *
+ * Réservé à `PAT_SEED_03` (Michel Dogné) : aucun autre spec ne lit ses
+ * épisodes — les parcours portail ne touchent pas `assessment_episodes`, et
+ * les captures pixel du cockpit portent sur PAT_SEED_01.
+ */
+const ID_EPISODE_E2E = 'ep_e2e_spirale_peuplee';
+
+export async function provisionEpisodeTrajectoire(idPatient: string): Promise<Date> {
+  await cleanupEpisodeTrajectoire();
+  const dateT0 = new Date('2026-06-01T09:00:00.000Z');
+  await prisma.assessmentEpisode.create({
+    data: {
+      id: ID_EPISODE_E2E,
+      idPatient,
+      milestone: 'T0',
+      targetAt: dateT0,
+      confirmedAt: dateT0,
+      payload: { source: 'e2e-spirale-peuplee' },
+      payloadHash: 'e2e-spirale-peuplee',
+      contractVersion: 'objets-cliniques-v1',
+      cycleId: ID_EPISODE_E2E,
+      versionScore: 'v1',
+    },
+  });
+  return dateT0;
+}
+
+export async function cleanupEpisodeTrajectoire(): Promise<void> {
+  await prisma.assessmentEpisode.deleteMany({ where: { id: ID_EPISODE_E2E } });
+}

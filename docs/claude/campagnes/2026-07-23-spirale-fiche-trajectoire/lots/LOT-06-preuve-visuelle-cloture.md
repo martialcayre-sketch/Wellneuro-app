@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Preuve visuelle et clôture"
-statut: "à ouvrir"
+statut: "livré — PR #317 mergée le 2026-07-23"
 dépend_de: "LOT-05"
 ---
 

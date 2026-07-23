@@ -115,6 +115,22 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
     await capturer(page, testInfo, 'dashboard-fil', { pixel: false });
   });
 
+  test('porte d’entrée trajectoires — liste orientée trajectoire (SP-TRAJ LOT-04)', async ({ page }, testInfo) => {
+    await page.goto('/dashboard/trajectoires');
+    await page.getByRole('link', { name: /Sophie Nicola/ }).waitFor();
+    // Pas de pixel : « T0 + X j » et les échéances datées bougent avec le
+    // temps, et l'état des lignes dépend des parcours E2E du même run.
+    await capturer(page, testInfo, 'dashboard-trajectoires', { fullPage: true, pixel: false });
+  });
+
+  test('fiche patient — onglet Trajectoire, état vide honnête (SP-TRAJ LOT-01)', async ({ page }, testInfo) => {
+    await page.goto(`/dashboard/patients/${PATIENT_PRATICIEN}?onglet=trajectoire`);
+    await page.getByRole('region', { name: 'Fiche-trajectoire' }).waitFor();
+    // Pas de pixel : le panneau « Mode de vie » et les textes datés varient
+    // avec les réponses laissées par les autres suites du run.
+    await capturer(page, testInfo, 'fiche-trajectoire-onglet', { fullPage: true, pixel: false });
+  });
+
   test('patients & assignations', async ({ page }, testInfo) => {
     await page.goto('/dashboard/patients');
     // SP-TRAJ LOT-05 : les formulaires vivent en tiroirs — l'ancrage se fait

@@ -4,10 +4,10 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "active",
-  "active_campaign": "2026-07-23-spirale-fiche-trajectoire",
-  "active_lot": "LOT-01",
-  "last_completed_lot": "G-TRUST-04/LOT-00",
+  "status": "idle",
+  "active_campaign": null,
+  "active_lot": null,
+  "last_completed_lot": "2026-07-23-spirale-fiche-trajectoire/LOT-06",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -25,12 +25,12 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "SP-TRAJ LOT-01 en cours (Spirale navigable + deep-link ?onglet=) — puis LOT-02..LOT-06 dans l ordre du plan approuvé le 2026-07-23 (CAMPAGNE.md). La révision d arbitrage A6-R2 (courbe momentum + repère cabinet) s écrit au REGISTRE_FRONTIERES.md dans le LOT-03, jamais avant. EN ATTENTE HUMAINE (reconduites) : renvoi des invitations aux 12 patients (précondition IDP2 LOT-04, re-mesurer avant d ouvrir ce lot DESTRUCTIF), visibilité patient du fil médecin, reconduction/levée de la dérogation G-TRUST-04 au 2026-10-21, confirmation juridique procédure de violation (D-TRUST-02), registre physique des violations (EX-3).",
+  "next_action": "AUCUNE CAMPAGNE ACTIVE — SP-TRAJ livrée et mergée le 2026-07-23 (#311, #313→#317 ; merges par l'assistant, Copilot en dépassement de forfait). Maintenance faite le même jour : #301/#318 (journaux, conflit d'append résolu) et #308 (accueil-observatoire — frontmatter de lot corrigé, revue adversariale GO, VuesRapides rattrapées vers /dashboard/trajectoires dans #315) mergées. EN ATTENTE HUMAINE (reconduites) : invitations aux 12 patients (précondition IDP2 LOT-04), visibilité patient du fil médecin, dérogation G-TRUST-04 au 2026-10-21, D-TRUST-02, registre EX-3. Notes locales : purger web/.next si fiche-trajectoire:12 timeout ; portail-lien-magique:45 échoue en local même sur main pur (anti-oracle de temps), vert en CI ; baselines pixel des nouveaux écrans trajectoires différées (captures de revue seules).",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-23T12:00:00Z",
+  "updated_at": "2026-07-23T17:55:00Z",
   "parallel_campaigns": []
 }
