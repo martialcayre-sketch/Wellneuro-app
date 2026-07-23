@@ -246,10 +246,14 @@ certification 63 questionnaires + tests scoring + T1 à chaque fichier.
   idPatient issu de la ligne résolue, jamais du paramètre ; booklet et
   documents journalisent avant leur 422 (la synthèse a été lue), apercu avant
   son second 404.
-- Tests : 4 créés (booklet, equilibre, synthese, apercu, reponses — 5 en
-  comptant booklet), 3 enrichis ; 1 create au gabarit littéral sur accessible,
-  0 sur refus/POST/liste vide. Le test cockpit « aucune écriture Prisma »
-  devient « …clinique » (le journal est une écriture d'audit).
+- Tests : 5 créés (booklet, equilibre, synthese, apercu-patient/reponses,
+  reponses), 5 enrichis (besoins, cockpit, consultations, documents,
+  protocoles) ; 1 create au gabarit littéral sur accessible, 0 sur
+  refus/POST/liste vide. Le test cockpit « aucune écriture Prisma » devient
+  « …clinique » (le journal est une écriture d'audit). Revue adversariale
+  wn-reviewer : GO — au constat de cohérence, le refus `asOf` de cockpit sur
+  dossier possédé journalise désormais (données lues avant le refus, même
+  principe que le 422 de booklet/documents).
 
 ### Chantier 5 — `@ts-nocheck` levé 17/17 (2026-07-23, PR de clôture)
 

@@ -125,14 +125,16 @@ export async function GET(req: Request): Promise<NextResponse<CockpitRuntimeApiR
     const email = emailPraticien(session) ?? '';
     const inputs = await loadRuntimeInputs(idPatient, email, asOfBrut);
     if (!inputs) return unavailable('patient_not_found', 'Patient introuvable.', 404);
+    // Journalisé ICI et non dans loadRuntimeInputs : le helper sert aussi le
+    // POST, qui laisse déjà une trace datée et attribuée (GD-1). AVANT le
+    // refus `asOf` : le dossier a été résolu et ses données lues — même
+    // principe que booklet et documents avec leur 422.
+    await journaliserAccesDossier({ idPatient, praticienEmail: email, route: ROUTE_JOURNAL, methode: 'GET' });
     if ('refus' in inputs) {
       // Une date hors repères n'est jamais ramenée au présent en silence : la
       // lecture serait alors présentée comme passée tout en étant actuelle.
       return unavailable('invalid_payload', 'Date de lecture inconnue pour ce patient.', 400);
     }
-    // Journalisé ICI et non dans loadRuntimeInputs : le helper sert aussi le
-    // POST, qui laisse déjà une trace datée et attribuée (GD-1).
-    await journaliserAccesDossier({ idPatient, praticienEmail: email, route: ROUTE_JOURNAL, methode: 'GET' });
     const { proposal, proposalHash } = proposeRuntimeEpisode(inputs, milestoneRaw);
     return NextResponse.json({ status: 'proposal_required', proposal, proposalHash, asOf: inputs.asOf });
   } catch (error) {

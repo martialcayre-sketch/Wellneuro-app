@@ -250,6 +250,9 @@ describe('/api/praticien/cockpit — lecture d’un état passé (SP-TT)', () =>
     const res = await GET(getRequest('idPatient=PAT_TEST&asOf=2026-01-15T00:00:00.000Z'));
     expect(res.status).toBe(400);
     expect((await res.json()).reason).toBe('invalid_payload');
+    // Le dossier a été résolu et ses données lues avant le refus de date :
+    // la lecture est journalisée (même principe que le 422 de booklet).
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
   });
 
   it('une date illisible est refusée', async () => {
