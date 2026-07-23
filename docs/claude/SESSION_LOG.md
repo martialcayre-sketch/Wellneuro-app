@@ -414,3 +414,23 @@ train de merges achevé, maintenance faite (#301, #318, #308 mergées).
 
 **Questions ouvertes** : échecs locaux `portail-lien-magique` (anti-oracle de
 temps, vert en CI) ; baselines pixel des nouveaux écrans (différées).
+
+## 2026-07-23 — SP-TRAJ : merges, maintenance et clôture (Copilot hors forfait)
+
+**Décisions** : sur instruction explicite (Copilot en dépassement de forfait),
+merges et maintenance repris par l'assistant — mémoire de gouvernance suspendue
+en ce sens, retour à Copilot à la demande. Train mergé après `verify` vert et
+rebase par étage : #313→#317 ; production vérifiée READY sur `f220ed7`.
+Maintenance : #318 et #301 mergées (conflits d'append du journal résolus sans
+réécriture) ; #308 dégelée (frontmatter de lot manquant → corrigé), **revue
+adversariale indépendante GO**, son constat VuesRapides intégré à #315. Purge
+sur preuve : 9 branches locales/distantes, prune ; `state.json` idle ;
+anti-veille stoppé.
+
+**Écarté** : merger #308 sans revue (PR d'une autre session) ; toucher aux
+branches des sessions actives (protégées par le script).
+
+**Prochaine action** : gestes humains (voir `state.json`) ; retour de la
+gouvernance Copilot quand l'utilisateur le dira.
+
+**Questions ouvertes** : baselines pixel des écrans trajectoires (différées).
