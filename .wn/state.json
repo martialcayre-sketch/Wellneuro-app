@@ -7,7 +7,7 @@
   "status": "active",
   "active_campaign": "2026-07-22-g-trust-04-durcissement-et-reliquats",
   "active_lot": "LOT-00",
-  "last_completed_lot": "C3/LOT-06",
+  "last_completed_lot": "SP-CONV/LOT-06",
   "git": {
     "branch": null,
     "last_commit": null,
@@ -25,17 +25,12 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Campagne 2026-07-22-g-trust-04-durcissement-et-reliquats, lot unique LOT-00 (~11 PR vers main, décisions GD-1..GD-6 dans CAMPAGNE.md). FAIT : PR-1 campagne (#272), PR-2 migration journal_acces_dossiers (#273, vérifiée en prod), PR-3 next 14.2.35 (#275), PR-4 code mort ui/Score* (#276), PR-7 branchement du journal — helper + garde + 12 routes A/B (#278, revue wn-reviewer GO, T2 vert, table vérifiée post-merge : 0 ligne, RLS deny-all). RESTE : PR-5/PR-8/PR-10 @ts-nocheck par vagues mesurées (types seuls, mesure d'abord) ; PR-6 exercice sur table de PROCEDURE_VIOLATION_DONNEES.md (exigence 6) ; PR-9 routes C/D du journal (appel direct après requête scopée, jamais la garde) ; PR-11 clôture (requalification onboarding, règle « jamais de drapeau WN_* sur Preview », checklist G-TRUST-04, lot+campagne livrés). Preuve fonctionnelle du journal attendue au premier dossier ouvert en prod (requête GD-3). EN ATTENTE HUMAINE ailleurs : renvoi des invitations aux 12 patients (précondition IDP2 LOT-04, re-mesurer avant d'ouvrir ce lot DESTRUCTIF), visibilité patient du fil médecin (décision non prise), reconduction/levée de la dérogation G-TRUST-04 au 2026-10-21, confirmation juridique de la procédure de violation (D-TRUST-02). — En parallèle (2026-07-22 soir) : campagne SP-CONV (2026-07-22-sp-conv-trajectoire-partagee) cadrée par #280 et activée sur décision utilisateur ; LOT-00 (annotations + maquettes) livré en PR de lot ; prochain lot SP-CONV : LOT-01 (contrat d'épisode partagé, code seul, sans migration).",
+  "next_action": "Campagne 2026-07-22-g-trust-04-durcissement-et-reliquats, lot unique LOT-00 (~11 PR vers main, décisions GD-1..GD-6 dans CAMPAGNE.md). FAIT : PR-1 campagne (#272), PR-2 migration journal_acces_dossiers (#273, vérifiée en prod), PR-3 next 14.2.35 (#275), PR-4 code mort ui/Score* (#276), PR-7 branchement du journal — helper + garde + 12 routes A/B (#278, revue wn-reviewer GO, T2 vert, table vérifiée post-merge : 0 ligne, RLS deny-all). RESTE : PR-5/PR-8/PR-10 @ts-nocheck par vagues mesurées (types seuls, mesure d'abord) ; PR-6 exercice sur table de PROCEDURE_VIOLATION_DONNEES.md (exigence 6) ; PR-9 routes C/D du journal (appel direct après requête scopée, jamais la garde) ; PR-11 clôture (requalification onboarding, règle « jamais de drapeau WN_* sur Preview », checklist G-TRUST-04, lot+campagne livrés). Preuve fonctionnelle du journal attendue au premier dossier ouvert en prod (requête GD-3). EN ATTENTE HUMAINE ailleurs : renvoi des invitations aux 12 patients (précondition IDP2 LOT-04, re-mesurer avant d'ouvrir ce lot DESTRUCTIF), visibilité patient du fil médecin (décision non prise), reconduction/levée de la dérogation G-TRUST-04 au 2026-10-21, confirmation juridique de la procédure de violation (D-TRUST-02). — En parallèle (2026-07-22 soir) : campagne SP-CONV (2026-07-22-sp-conv-trajectoire-partagee) cadrée par #280 et activée sur décision utilisateur ; LOT-00 (annotations + maquettes) livré en PR de lot ; prochain lot SP-CONV : LOT-01 (contrat d'épisode partagé, code seul, sans migration). — SP-CONV LIVRÉE le 2026-07-23 (7 lots, PR #280/#284/#288/#290/#291/#293/#294 + PR LOT-06) : contrat d'épisode partagé, cockpit adaptatif plein écran, suture time-travel, étapes patient 5-6 vivantes, Mon carnet alimentaire (A7 amendé), preuve visuelle (dérogation V12 levée). Reste : déclencher le workflow visual-baselines et committer les premières baselines.",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-07-23T10:30:00Z",
-  "parallel_campaigns": [
-    {
-      "campaign_id": "2026-07-22-sp-conv-trajectoire-partagee",
-      "active_lot": "LOT-06"
-    }
-  ]
+  "updated_at": "2026-07-23T11:10:00Z",
+  "parallel_campaigns": []
 }
