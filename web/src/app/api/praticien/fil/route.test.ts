@@ -11,6 +11,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     questionnaireReponse: { findMany: vi.fn(), groupBy: vi.fn() },
     protocolCheckin: { findMany: vi.fn() },
     assessmentEpisode: { findMany: vi.fn() },
+    rendezVous: { findMany: vi.fn() },
     patient: { findMany: vi.fn() },
     filCardRejection: { findMany: vi.fn() },
   },
@@ -40,6 +41,7 @@ describe('GET /api/praticien/fil', () => {
     prisma.questionnaireReponse.groupBy.mockResolvedValue([]);
     prisma.protocolCheckin.findMany.mockResolvedValue([]);
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    prisma.rendezVous.findMany.mockResolvedValue([]);
     prisma.patient.findMany.mockResolvedValue([]);
     prisma.filCardRejection.findMany.mockResolvedValue([]);
   });
@@ -126,6 +128,22 @@ describe('GET /api/praticien/fil', () => {
     expect(jalon).toBeDefined();
     expect(jalon.cle).toBe('jalon_j21:CHK_J21');
     expect(jalon.titre).toContain('Jalon J21');
+  });
+
+  it('un rendez-vous du jour produit une carte consultation vers le pré-vol', async () => {
+    prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
+    // Midi du jour courant : toujours dans la fenêtre du jour civil, quelle que
+    // soit l'heure d'exécution du test (le constructeur borne au jour, pas au futur).
+    const midiAujourdhui = new Date();
+    midiAujourdhui.setHours(12, 0, 0, 0);
+    prisma.rendezVous.findMany.mockResolvedValue([
+      { id: 'RDV_1', idPatient: 'PAT_SEED_01', dateHeure: midiAujourdhui },
+    ]);
+    const payload = await (await GET()).json();
+    const consultation = payload.cartes.find((c: { type: string }) => c.type === 'consultation_prevue');
+    expect(consultation).toBeDefined();
+    expect(consultation.cle).toBe('consultation_prevue:RDV_1');
+    expect(consultation.href).toContain('/dashboard/copilote?idPatient=PAT_SEED_01');
   });
 
   it('un check-in J21 déjà suivi d’un épisode J21 consigné ne produit aucune carte jalon', async () => {

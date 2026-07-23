@@ -28,6 +28,11 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
 
   try {
     const maintenant = new Date();
+    const email = emailPraticien(session) ?? '';
+    // Fenêtre du jour civil pour les consultations prévues (LOT-04).
+    const debutJour = new Date(maintenant);
+    debutJour.setHours(0, 0, 0, 0);
+    const finJour = new Date(debutJour.getTime() + 24 * 60 * 60 * 1000);
 
     const filtreNonTraite = { statutTraitement: { in: ['recu', 'en_cours'] } };
     // Les identifiants de ligne source sont sélectionnés pour que chaque carte
@@ -38,7 +43,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     // Les questionnaires reçus ne produisent plus de carte : ils vivent dans
     // l'inbox par patient (accueil-observatoire LOT-02) — seul le groupBy
     // d'activité reste, pour la carte `reprise`.
-    const [effets, incidents, droits, syntheses, assignations, activites, checkinsJ21, episodesJ21] =
+    const [effets, incidents, droits, syntheses, assignations, activites, checkinsJ21, episodesJ21, rdvs] =
       await Promise.all([
         prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
         prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
@@ -67,6 +72,16 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
           where: { milestone: 'J21' },
           select: { idPatient: true },
         }),
+        // Consultations prévues aujourd'hui (LOT-04). Déjà bornées au praticien
+        // (la table porte praticienEmail) et au jour civil.
+        prisma.rendezVous.findMany({
+          where: {
+            praticienEmail: email,
+            statut: 'planifie',
+            dateHeure: { gte: debutJour, lt: finJour },
+          },
+          select: { id: true, idPatient: true, dateHeure: true },
+        }),
       ]);
 
     const signalements = [
@@ -82,6 +97,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         ...assignations.map(a => a.idPatient),
         ...activites.map(a => a.idPatient),
         ...checkinsJ21.map(c => c.idPatient),
+        ...rdvs.map(r => r.idPatient),
       ]),
     ];
     // Toute carte dont le patient n'est pas dans ce résultat est écartée
@@ -90,7 +106,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       where: {
         idPatient: { in: idsConcernes },
         actif: true,
-        ...filtrePatientsDuPraticien(emailPraticien(session) ?? ''),
+        ...filtrePatientsDuPraticien(email),
       },
       select: { idPatient: true, prenom: true, nom: true },
     });
@@ -108,6 +124,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     const jalons = jalonsBruts.map(j => ({ ...j, momentum: momentums.get(j.idPatient) ?? null }));
 
     const cartes = construireFil({
+      consultations: rdvs.filter(r => actifs.has(r.idPatient)),
       signalements: signalements.filter(s => actifs.has(s.idPatient)),
       syntheses: syntheses.filter(s => actifs.has(s.idPatient)),
       jalons,

@@ -1,3 +1,10 @@
+---
+id: "LOT-02"
+titre: "Colonne latérale de travail : Météo, Inbox, Correspondance"
+statut: "livré"
+dépend_de: "LOT-01"
+---
+
 # LOT-02 — Colonne latérale de travail : Météo, Inbox, Correspondance
 
 Statut : livré (PR de ce lot). Sans migration. L'encart « Principe 5.0 » est

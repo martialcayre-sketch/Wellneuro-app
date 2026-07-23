@@ -28,7 +28,8 @@ const { prisma, appels } = vi.hoisted(() => {
     'assignation', 'consultation', 'trustAcknowledgement', 'trustChoiceEvent',
     'trustAdverseEffectReport', 'trustPrivacyIncident', 'trustRightsRequest',
     'filCardRejection', 'relectureNote', 'portailMagicLink', 'packProposition',
-    'envoiBrouillon', 'portailConnexionGoogle', 'correspondanceMedecin', 'journalAccesDossier',
+    'envoiBrouillon', 'portailConnexionGoogle', 'correspondanceMedecin', 'rendezVous',
+    'journalAccesDossier',
   ]) {
     tx[nom] = modele(nom);
   }

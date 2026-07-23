@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   cartesAssignationsEnRetard,
+  cartesConsultationsPrevues,
   cartesJalons,
   cartesReprise,
   cartesSignalementsTrust,
@@ -74,8 +75,9 @@ describe('cartesSynthesesAValider', () => {
 });
 
 describe('resumeFil', () => {
-  it('résume par type dans l’ordre du Fil, en comptant les lignes sources des agrégats', () => {
+  it('résume par type dans l’ordre du Fil, consultations en tête, en comptant les agrégats', () => {
     const fil = construireFil({
+      consultations: [{ id: 'RDV_1', idPatient: 'P-SOPHIE', dateHeure: new Date('2026-07-15T11:00:00') }],
       signalements: [{ id: 'SIG_1', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
       syntheses: [
         { idSynthese: 'SYN_1', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-13T09:00:00') },
@@ -91,9 +93,9 @@ describe('resumeFil', () => {
       noms: NOMS,
       maintenant: MAINTENANT,
     });
-    // 2 synthèses agrégées en 1 carte : le résumé compte bien 2 relectures ;
-    // le jalon s'intercale entre relectures et retards.
-    expect(resumeFil(fil)).toBe('1 signalement · 2 relectures · 1 jalon · 1 retard');
+    // Consultations en tête (maquette « 3 consultations · … ») ; 2 synthèses
+    // agrégées comptent bien pour 2 relectures.
+    expect(resumeFil(fil)).toBe('1 consultation · 1 signalement · 2 relectures · 1 jalon · 1 retard');
   });
 
   it('rend une chaîne vide pour un fil vide', () => {
@@ -112,6 +114,75 @@ describe('indexCarteImminente', () => {
     });
     expect(indexCarteImminente(fil)).toBe(0);
     expect(indexCarteImminente([])).toBe(-1);
+  });
+
+  it('préfère la consultation à venir la plus proche quand `maintenant` est fourni', () => {
+    const fil = construireFil({
+      signalements: [{ id: 'SIG_1', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
+      consultations: [
+        { id: 'RDV_TARD', idPatient: 'P-JENNIFER', dateHeure: new Date('2026-07-15T16:00:00') },
+        { id: 'RDV_TOT', idPatient: 'P-SOPHIE', dateHeure: new Date('2026-07-15T11:00:00') },
+      ],
+      syntheses: [],
+      assignations: [],
+      activites: [],
+      noms: NOMS,
+      maintenant: MAINTENANT,
+    });
+    // Le signalement est en tête de l'ordre, mais l'imminente est la
+    // consultation à venir la plus proche (11:00), pas l'index 0.
+    const idx = indexCarteImminente(fil, MAINTENANT);
+    expect(fil[idx].cle).toBe('consultation_prevue:RDV_TOT');
+  });
+
+  it('sans consultation à venir, retombe sur la tête du Fil', () => {
+    const fil = construireFil({
+      signalements: [{ id: 'SIG_1', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
+      // consultation déjà passée aujourd'hui (08:00 < 10:00)
+      consultations: [{ id: 'RDV_PASSE', idPatient: 'P-SOPHIE', dateHeure: new Date('2026-07-15T08:00:00') }],
+      syntheses: [],
+      assignations: [],
+      activites: [],
+      noms: NOMS,
+      maintenant: MAINTENANT,
+    });
+    expect(indexCarteImminente(fil, MAINTENANT)).toBe(0);
+  });
+});
+
+describe('cartesConsultationsPrevues', () => {
+  it('ne retient que les rendez-vous du jour civil, triés par heure, vers le pré-vol', () => {
+    const cartes = cartesConsultationsPrevues(
+      [
+        { id: 'RDV_2', idPatient: 'P-MICHEL', dateHeure: new Date('2026-07-15T14:30:00') },
+        { id: 'RDV_1', idPatient: 'P-SOPHIE', dateHeure: new Date('2026-07-15T09:00:00') },
+        { id: 'RDV_DEMAIN', idPatient: 'P-JENNIFER', dateHeure: new Date('2026-07-16T09:00:00') },
+      ],
+      NOMS,
+      MAINTENANT,
+    );
+    expect(cartes).toHaveLength(2); // le RDV de demain est écarté
+    expect(cartes.map(c => c.patient)).toEqual(['Sophie Nicola', 'Michel Dogné']);
+    expect(cartes[0].titre).toBe('Pré-vol prêt');
+    expect(cartes[0].href).toBe('/dashboard/copilote?idPatient=P-SOPHIE');
+    expect(cartes[0].actionLabel).toBe('Ouvrir le pré-vol');
+    expect(cartes[0].cle).toBe('consultation_prevue:RDV_1');
+  });
+
+  it('annonce « dans X min » à l’approche, l’heure sinon', () => {
+    const [imminente] = cartesConsultationsPrevues(
+      [{ id: 'RDV_1', idPatient: 'P-SOPHIE', dateHeure: new Date('2026-07-15T10:30:00') }],
+      NOMS,
+      MAINTENANT, // 10:00
+    );
+    expect(imminente.pourquoi).toBe('Consultation dans 30 min.');
+
+    const [lointaine] = cartesConsultationsPrevues(
+      [{ id: 'RDV_2', idPatient: 'P-MICHEL', dateHeure: new Date('2026-07-15T16:00:00') }],
+      NOMS,
+      MAINTENANT,
+    );
+    expect(lointaine.pourquoi).toContain('Consultation à');
   });
 });
 
@@ -217,8 +288,10 @@ describe('construireFil', () => {
     expect(fil.map(c => c.type)).toEqual(['signalement_trust', 'synthese_a_valider']);
   });
 
-  it('ordonne le Fil : synthèses, jalons, retards, reprises (les réponses reçues sont passées à l’inbox)', () => {
+  it('ordonne le Fil : consultations après signalements, puis synthèses, jalons, retards, reprises', () => {
     const fil = construireFil({
+      signalements: [{ id: 'SIG_1', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
+      consultations: [{ id: 'RDV_1', idPatient: 'P-SOPHIE', dateHeure: new Date('2026-07-15T11:00:00') }],
       syntheses: [{ idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
       jalons: [{ idCheckin: 'CHK_1', idPatient: 'P-SOPHIE', soumisLe: new Date('2026-07-14T08:00:00') }],
       assignations: [
@@ -229,6 +302,8 @@ describe('construireFil', () => {
       maintenant: MAINTENANT,
     });
     expect(fil.map(c => c.type)).toEqual([
+      'signalement_trust',
+      'consultation_prevue',
       'synthese_a_valider',
       'jalon_j21',
       'assignation_en_retard',
