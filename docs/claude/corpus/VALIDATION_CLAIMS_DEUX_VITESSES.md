@@ -1,10 +1,11 @@
-# Validation des claims à deux vitesses — proposition **À VALIDER**
+# Validation des claims à deux vitesses — procédure **ACTÉE**
 
-> **Statut : proposition, non actée.** Décision de gouvernance clinique
-> réservée au praticien. Rédigée le 2026-07-23 en réponse à la question :
-> « la validation peut-elle se faire par un test de lecture global avec
-> questionnaire, comme l'ancienne procédure NotebookLM ? » Rien dans ce
-> document ne modifie le comportement actuel de l'Atelier (revue individuelle).
+> **Statut : actée par arbitrage praticien du 2026-07-23** (5 décisions
+> tranchées en session, consignées en fin de document). Rédigée en réponse à
+> la question : « la validation peut-elle se faire par un test de lecture
+> global avec questionnaire, comme l'ancienne procédure NotebookLM ? »
+> L'Atelier v1 (revue individuelle) reste le comportement en production tant
+> que l'Atelier v2 n'est pas livré.
 
 ## Constat
 
@@ -52,25 +53,31 @@ au texte mais trompeur hors contexte, emphase déplacée, sur-généralisation.
 
 ## Proposition
 
-### Voie rapide — claims non prescriptifs (72 % du pilote)
+### Voie rapide — claims déclarés/observés non prescriptifs (64 % du pilote)
 
 Par source :
 
-1. **Questionnaire de restitution global** : l'ancienne procédure NotebookLM
-   rejouée **sur le RAG lui-même** (les réponses citent les claims) — teste en
-   prime la chaîne de récupération de bout en bout.
+1. **Questionnaire de restitution généré depuis les claims**, joué **sur le
+   RAG lui-même** (les réponses citent les claims — teste en prime la chaîne
+   de récupération) : restitution factuelle sur les claims à enjeu, questions
+   pièges sur ce que la source **ne dit pas** (anti-sur-généralisation),
+   nuances ; **couverture garantie** — chaque chunk touché par au moins une
+   question. Structure d'audit héritée de `NOTEBOOK_VALIDATIONS` : verdict +
+   preuve + validateur + date. Questions libres toujours possibles en plus.
 2. **Échantillon aléatoire tiré par le serveur** (jamais choisi par le
-   praticien — anti-biais) : min. 5 claims ou 20 % de la source, confrontés
-   au verbatim.
+   praticien — anti-biais) : **30 % (min. 5) sur les 10 premières sources**,
+   puis 20 % (min. 5) si zéro défaut constaté — taux dégressif.
 3. **Zéro défaut → signature du lot entier** de la source. **Un défaut → la
    source entière bascule en revue individuelle** (pas de tri sélectif : un
    défaut échantillonné est un signal sur le lot).
 
-### Voie lente — claims prescriptifs (28 % du pilote)
+### Voie lente — prescriptifs **et** interprétés (36 % du pilote)
 
-**Revue individuelle obligatoire, sans exception.** Dosages, recommandations,
-conduites : ~6-7 claims par source, quelques minutes. Aucun claim
-`prescriptif = true` ne peut être signé par lot.
+**Revue individuelle obligatoire, sans exception**, pour tout claim
+`prescriptif = true` (dosages, recommandations, conduites) **et** tout claim
+`typologie_lecture = 'interprété'`, même non prescriptif — l'interprétation
+est le terrain naturel de la sur-généralisation. Aucun claim de ces deux
+familles ne peut être signé par lot.
 
 ### Troisième levier — validation à la demande
 
@@ -80,10 +87,11 @@ consultations en cours ; le reste attend sans risque.
 
 ### Chiffrage à l'échelle 88 sources
 
-~560 prescriptifs en individuel (~14 h, étalables) + 88 questionnaires et
-échantillons (~10 h) ≈ **~24 h étalées et priorisables**, contre ~50 h de
-tout-individuel d'un bloc. La validation à la demande étale ce coût sur les
-mois d'usage réel.
+~720 claims en voie lente (prescriptifs + interprétés, ~36 %, ~18 h étalables)
+auxquels s'ajoutent 88 questionnaires générés et échantillons (~8 h), soit
+**~26 h étalées et priorisables**, contre ~50 h de tout-individuel d'un bloc. La **validation à
+la demande** (actée) étale ce coût sur les mois d'usage réel : on valide
+d'abord les sources utiles aux consultations en cours.
 
 ## Esquisse d'implémentation (Atelier v2)
 
@@ -98,15 +106,18 @@ mois d'usage réel.
 - Écran Atelier : vue par source, questionnaire + réponses RAG citées,
   échantillon à confronter, signature de lot ; motif de rejet (dette v1).
 
-## Décisions à trancher (praticien)
+## Décisions actées (arbitrage praticien, 2026-07-23)
 
-1. Taux d'échantillon : min. 5 / 20 % — ou plus prudent au démarrage
-   (ex. 30 % les 10 premières sources, puis relâcher si zéro défaut) ?
-2. Les 11 « interprété » non prescriptifs : voie rapide ou individuelle ?
-   (l'interprétation est le terrain naturel de la sur-généralisation)
-3. Questionnaire : réutiliser la trame `NOTEBOOK_VALIDATIONS` existante, ou
-   trame nouvelle par source ?
-4. Validation à la demande : actée comme politique, ou tout valider d'avance ?
-5. Le pilote actuel (136 claims) : première application de la procédure à
-   deux vitesses, ou revue individuelle intégrale comme baptême du feu de
-   l'Atelier v1 ?
+1. **Taux d'échantillon : 30 % dégressif** — 30 % (min. 5) sur les 10
+   premières sources, puis 20 % (min. 5) si zéro défaut constaté.
+2. **Interprétés non prescriptifs : revue individuelle** — ils rejoignent la
+   voie lente avec les prescriptifs.
+3. **Questionnaire : généré depuis les claims** — restitution factuelle,
+   questions pièges, nuances, couverture de chaque chunk garantie ; structure
+   d'audit `NOTEBOOK_VALIDATIONS` conservée (verdict + preuve + validateur +
+   date) ; questions libres possibles en plus.
+4. **Validation à la demande actée** — les sources utiles aux consultations
+   d'abord, le reste attend derrière la barrière.
+5. **Le pilote passe en deux vitesses** — 49 claims en individuel
+   (38 prescriptifs + 11 interprétés), 87 en voie rapide (échantillon 30 %) :
+   première application réelle de la procédure, ~1 h 30 estimée.
