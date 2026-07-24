@@ -151,3 +151,50 @@ export async function provisionEpisodeTrajectoire(idPatient: string): Promise<Da
 export async function cleanupEpisodeTrajectoire(): Promise<void> {
   await prisma.assessmentEpisode.deleteMany({ where: { id: ID_EPISODE_E2E } });
 }
+
+// ---------------------------------------------------------------------------
+// Fixture « tirage caduc » (Atelier corpus, voie rapide) — reproduit l'état de
+// WN-SRC-0056 : un tirage OUVERT dont le lot d'éligibles a divergé (ici : un
+// claim VALIDÉ individuellement, donc plus aucun éligible voie rapide), rendant
+// le tirage ni signable (etat_divergent) ni relançable → à clôturer par la
+// nouvelle issue tirage_caduc. Tables SQL-brut (rag_corpus_*), hors modèles
+// Prisma : SQL direct. Le claim est VALIDE (pas EN_ATTENTE) pour ne PAS peupler
+// la file « En attente » que d'autres specs attendent vide.
+const CADUC_SOURCE_ID = 'WN-SRC-0056';
+const CADUC_CLAIM_PK = 'E2E_CADUC_0056_CLAIM';
+
+export async function seedTirageCaducFixture(): Promise<string> {
+  // Idempotence : claim propre à chaque run (table normale, DELETE permis).
+  await prisma.$executeRawUnsafe(
+    `DELETE FROM public.rag_corpus_claims WHERE id = '${CADUC_CLAIM_PK}'`,
+  );
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO public.rag_corpus_claims
+       (id, claim_id, source_id, version_claim, texte_normalise, content_sha256,
+        typologie_lecture, prescriptif, statut, validateur, valide_at,
+        embedding_model, embedding_dimensions, embedding)
+     VALUES
+       ('${CADUC_CLAIM_PK}', 'WN-CL-0056-901', '${CADUC_SOURCE_ID}', 'v1.0',
+        'claim e2e caduc', repeat('e', 64), 'déclaré', false,
+        'VALIDE', 'e2e@wellneuro.fr', now(), 'e2e', 1536,
+        ('[' || repeat('0,', 1535) || '0]')::extensions.vector)`,
+  );
+  // Tirage OUVERT (sans issue) dont les éligibles figés ne correspondent plus
+  // au lot courant (vide, le claim étant VALIDE) → tirageOuvertDeSource le rend
+  // avec caduc = true, et la modale propose la clôture.
+  await prisma.$executeRawUnsafe(
+    `INSERT INTO public.rag_corpus_claim_decisions (type_acte, validateur, source_id, echantillon)
+     VALUES ('tirage_echantillon', 'e2e@wellneuro.fr', '${CADUC_SOURCE_ID}',
+             '{"seed":1,"taux":0.3,"taille":1,"lot":1,"eligibles":["E2E_CADUC_0056_GHOST"],"tires":["E2E_CADUC_0056_GHOST"]}'::jsonb)`,
+  );
+  return CADUC_SOURCE_ID;
+}
+
+// Le journal des décisions est append-only (DELETE bloqué par trigger) : on ne
+// nettoie que le claim — la source disparaît alors de la vue d'ensemble ; les
+// lignes de tirage/clôture restent comme trace, inertes pour les autres specs.
+export async function cleanupTirageCaducFixture(): Promise<void> {
+  await prisma.$executeRawUnsafe(
+    `DELETE FROM public.rag_corpus_claims WHERE id = '${CADUC_CLAIM_PK}'`,
+  );
+}
