@@ -15,6 +15,7 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
 import { GET, POST } from './route';
 
 const episode = {
@@ -100,7 +101,7 @@ describe('POST /api/praticien/protocoles', () => {
     expect(prisma.assessmentEpisode.findMany).not.toHaveBeenCalled();
     expect(prisma.assessmentEpisode.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({ cycleId: 'EPI_1', versionScore: 'v1' }),
+        create: expect.objectContaining({ cycleId: 'EPI_1', versionScore: VERSION_SCORE_EQUILIBRE }),
       }),
     );
   });

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { VERSION_SCORE_EQUILIBRE } from '@/lib/equilibre/constants';
 import { buildProtocolDraft } from '@/lib/clinical-engine/protocolDraft';
 import type { DecisionCard, ProtocolAction, ProtocolReview } from '@/lib/clinical-engine/types';
 import {
@@ -213,6 +214,6 @@ describe('toEpisodeCreateInput (gate G2)', () => {
       { cycleId: 'EPI_1' },
     );
     expect(input.cycleId).toBe('EPI_1');
-    expect(input.versionScore).toBe('v1');
+    expect(input.versionScore).toBe(VERSION_SCORE_EQUILIBRE);
   });
 });
