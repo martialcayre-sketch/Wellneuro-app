@@ -1,6 +1,6 @@
 // ─── IMPORTS CATALOGUE (lot 7) ──────────────────────────────────────────────
 import type { Question, QuestionOption } from './questionnaire-types';
-import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_FIB_01, Q_FIB_02, Q_FIB_03, Q_GAS_01, Q_GAS_02, Q_GAS_03, Q_GEO_01, Q_GEO_02, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_INF_01, Q_INF_02, Q_INF_03, Q_INF_04, Q_INF_05, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_08, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_01, Q_PED_02, Q_PED_03, Q_PNE_01, Q_SOM_01, Q_SOM_02, Q_SOM_03, Q_SOM_04, Q_SOM_05, Q_SOM_06, Q_SOM_07, Q_STR_01, Q_STR_03, Q_STR_04, Q_STR_05, Q_STR_06, Q_STR_08, Q_TAB_01, Q_TAB_02, Q_TAB_03, Q_TAB_04, Q_TAB_05, Q_URO_01, Q_URO_02 } from './questionnaires/index';
+import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_FIB_01, Q_FIB_02, Q_FIB_03, Q_GAS_01, Q_GAS_02, Q_GAS_03, Q_GEO_01, Q_GEO_02, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_INF_01, Q_INF_02, Q_INF_03, Q_INF_04, Q_INF_05, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_08, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_01, Q_PED_02, Q_PED_03, Q_PNE_01, Q_SOM_01, Q_SOM_02, Q_SOM_03, Q_SOM_04, Q_SOM_05, Q_SOM_06, Q_SOM_07, Q_STR_01, Q_STR_02, Q_STR_03, Q_STR_04, Q_STR_05, Q_STR_06, Q_STR_08, Q_TAB_01, Q_TAB_02, Q_TAB_03, Q_TAB_04, Q_TAB_05, Q_URO_01, Q_URO_02 } from './questionnaires/index';
 // ═══════════════════════════════════════════════════════════════════════════════
 // Wellneuro SIIN — Questions.gs — DÉFINITIF v4 corrigé Dev
 // Dr Martial Cayre — 23/06/2026
@@ -36,8 +36,6 @@ const O_YOUNG= [{v:0,l:'Jamais'},{v:1,l:'Rarement'},{v:2,l:'De temps en temps'},
 const O_BMS  = [{v:1,l:'Jamais'},{v:2,l:'Presque jamais'},{v:3,l:'Rarement'},{v:4,l:'Parfois'},{v:5,l:'Souvent'},{v:6,l:'Très souvent'},{v:7,l:'Toujours'}];
 const O_CUNGI= [{v:0,l:'Non pas du tout'},{v:1,l:'Faiblement'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'},{v:5,l:'Extrêmement'}];
 const O_PAS  = [{v:0,l:'Jamais'},{v:1,l:'Presque jamais'},{v:2,l:'Parfois'},{v:3,l:'Assez souvent'},{v:4,l:'Très souvent'}];
-const O_PSS_DIRECT = [{v:1,l:'Jamais'},{v:2,l:'Presque jamais'},{v:3,l:'Parfois'},{v:4,l:'Assez souvent'},{v:5,l:'Souvent'}];
-const O_PSS_INVERSE = [{v:5,l:'Jamais'},{v:4,l:'Presque jamais'},{v:3,l:'Parfois'},{v:2,l:'Assez souvent'},{v:1,l:'Souvent'}];
 const O_ZARIT= [{v:0,l:'Jamais'},{v:1,l:'Rarement'},{v:2,l:'Parfois'},{v:3,l:'Assez souvent'},{v:4,l:'Presque toujours'}];
 const O_DASS = [{v:0,l:'Ne s’applique pas du tout à moi'},{v:1,l:'S’applique un peu à moi, ou une partie du temps'},{v:2,l:'S’applique beaucoup à moi, ou une bonne partie du temps'},{v:3,l:'S’applique entièrement à moi, ou la grande majorité du temps'}];
 const O_CONNERS = [{v:0,l:'Pas vrai du tout — Jamais ou rarement'},{v:1,l:"Un peu vrai — À l'occasion"},{v:2,l:'Assez vrai — Souvent'},{v:3,l:'Très vrai — Très souvent'}];
@@ -115,39 +113,7 @@ Q_STR_01: {
   }
 },
 
-Q_STR_02: {
-  id:'Q_STR_02', titre:'Échelle de stress perçu (PSS-10)',
-  instructions:'Pour chaque question, indiquez à quelle fréquence vous vous êtes senti(e) ou pensé(e) de cette façon au cours du dernier mois.',
-  sections:[
-    { id:'A', titre:'Perceptions au cours du dernier mois',
-      questions:[
-        q('P1',"Au cours du dernier mois combien de fois, avez-vous été dérangé(e) par un évènement inattendu ?",O_PSS_DIRECT),
-        q('P2',"Au cours du dernier mois combien de fois vous a-t-il semblé difficile de contrôler les choses importantes de votre vie ?",O_PSS_DIRECT),
-        q('P3',"Au cours du dernier mois combien de fois vous êtes-vous senti(e) nerveux(se) ou stressé(e) ?",O_PSS_DIRECT),
-        q('P4',"Au cours du dernier mois combien de fois vous êtes-vous senti(e) confiant(e) à prendre en main vos problèmes personnels ?",O_PSS_INVERSE),
-        q('P5',"Au cours du dernier mois combien de fois avez-vous senti que les choses allaient comme vous le vouliez ?",O_PSS_INVERSE),
-        q('P6',"Au cours du dernier mois combien de fois avez-vous pensé que vous ne pouviez pas assumer toutes les choses que vous deviez faire ?",O_PSS_DIRECT),
-        q('P7',"Au cours du dernier mois combien de fois avez-vous été capable de maîtriser votre énervement ?",O_PSS_INVERSE),
-        q('P8',"Au cours du dernier mois combien de fois avez-vous senti que vous dominiez la situation ?",O_PSS_INVERSE),
-        q('P9',"Au cours du dernier mois combien de fois vous êtes-vous senti(e) irrité(e) parce que des événements échappaient à votre contrôle ?",O_PSS_DIRECT),
-        q('P10',"Au cours du dernier mois combien de fois avez-vous trouvé que les difficultés s’accumulaient à un tel point que vous ne pouviez les contrôler ?",O_PSS_DIRECT),
-      ]}
-  ],
-  scoring:{
-    type:'sum',
-    maxTotal:50,
-    certification:{source:'drive',status:'certifie'},
-    note:'Source Drive : les items inversés portent directement les valeurs 5-1. Le score 27 est rattaché au niveau élevé pour lever la borne non explicitement couverte par la mention >27.',
-    interpretation:[
-      {min:10,max:20,label:'Bonne gestion du stress',color:'success',
-       detail:'Capacités d\'adaptation satisfaisantes — pas d\'intervention prioritaire.'},
-      {min:21,max:26,label:'Adaptation satisfaisante mais inconstante',color:'warning',
-       detail:'Certaines situations génèrent un sentiment d\'impuissance — stratégies de gestion du stress conseillées.'},
-      {min:27,max:50,label:'Niveau élevé de stress et désadaptation',color:'danger',
-       detail:'Risque cardio-métabolique, immunitaire, digestif, psychologique — intervention neuronutritionnelle prioritaire.'},
-    ]
-  }
-},
+Q_STR_02,
 
 Q_STR_04: {
   id:'Q_STR_04', titre:'DASS-21 — Dépression, Anxiété, Stress',

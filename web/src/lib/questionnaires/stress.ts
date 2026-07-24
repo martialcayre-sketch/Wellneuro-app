@@ -1,4 +1,4 @@
-import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_ZARIT, O_DASS, O_CONNERS, q, qn, qs } from './shared';
+import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_PSS_DIRECT, O_PSS_INVERSE, O_ZARIT, O_DASS, O_CONNERS, q, qn, qs } from './shared';
 
 export const Q_STR_01 = {
   id:'Q_STR_01', titre:'Questionnaire de stress SIIN',
@@ -50,14 +50,44 @@ export const Q_STR_01 = {
     ]
   }
 };
-// Q_STR_02 (PSS-10) ne vit PAS ici : la définition qui fait autorité est
-// l'inline de questions.ts (items 1-5, /50, bandes 10-20/21-26/27-50, source
-// Drive certifiée). Une variante 0-4//40 (mêmes seuils décalés de -10) a
-// longtemps existé ici, importée puis masquée par la clé inline — code mort
-// purgé le 2026-07-23 sur arbitrage utilisateur : c'est le /50 servi aux
-// patients et porté par les scores historiques qui reste la référence. Toute
-// bascule vers la cotation standard 0-4 serait un changement clinique
-// (comparabilité des scores stockés) à documenter dans CHANGELOG.md.
+// Q_STR_02 (PSS-10) : items cotés 1-5 (inversés en 5-1), total ∈ [10,50],
+// /50 servi aux patients et porté par les scores historiques (source Drive
+// certifiée). La cotation standard 0-4//40 a été écartée pour préserver la
+// comparabilité des scores stockés — toute bascule serait un changement
+// clinique à documenter dans CHANGELOG.md.
+export const Q_STR_02 = {
+  id:'Q_STR_02', titre:'Échelle de stress perçu (PSS-10)',
+  instructions:'Pour chaque question, indiquez à quelle fréquence vous vous êtes senti(e) ou pensé(e) de cette façon au cours du dernier mois.',
+  sections:[
+    { id:'A', titre:'Perceptions au cours du dernier mois',
+      questions:[
+        q('P1',"Au cours du dernier mois combien de fois, avez-vous été dérangé(e) par un évènement inattendu ?",O_PSS_DIRECT),
+        q('P2',"Au cours du dernier mois combien de fois vous a-t-il semblé difficile de contrôler les choses importantes de votre vie ?",O_PSS_DIRECT),
+        q('P3',"Au cours du dernier mois combien de fois vous êtes-vous senti(e) nerveux(se) ou stressé(e) ?",O_PSS_DIRECT),
+        q('P4',"Au cours du dernier mois combien de fois vous êtes-vous senti(e) confiant(e) à prendre en main vos problèmes personnels ?",O_PSS_INVERSE),
+        q('P5',"Au cours du dernier mois combien de fois avez-vous senti que les choses allaient comme vous le vouliez ?",O_PSS_INVERSE),
+        q('P6',"Au cours du dernier mois combien de fois avez-vous pensé que vous ne pouviez pas assumer toutes les choses que vous deviez faire ?",O_PSS_DIRECT),
+        q('P7',"Au cours du dernier mois combien de fois avez-vous été capable de maîtriser votre énervement ?",O_PSS_INVERSE),
+        q('P8',"Au cours du dernier mois combien de fois avez-vous senti que vous dominiez la situation ?",O_PSS_INVERSE),
+        q('P9',"Au cours du dernier mois combien de fois vous êtes-vous senti(e) irrité(e) parce que des événements échappaient à votre contrôle ?",O_PSS_DIRECT),
+        q('P10',"Au cours du dernier mois combien de fois avez-vous trouvé que les difficultés s’accumulaient à un tel point que vous ne pouviez les contrôler ?",O_PSS_DIRECT),
+      ]}
+  ],
+  scoring:{
+    type:'sum',
+    maxTotal:50,
+    certification:{source:'drive',status:'certifie'},
+    note:'Source Drive : les items inversés portent directement les valeurs 5-1. Le score 27 est rattaché au niveau élevé pour lever la borne non explicitement couverte par la mention >27.',
+    interpretation:[
+      {min:10,max:20,label:'Bonne gestion du stress',color:'success',
+       detail:'Capacités d\'adaptation satisfaisantes — pas d\'intervention prioritaire.'},
+      {min:21,max:26,label:'Adaptation satisfaisante mais inconstante',color:'warning',
+       detail:'Certaines situations génèrent un sentiment d\'impuissance — stratégies de gestion du stress conseillées.'},
+      {min:27,max:50,label:'Niveau élevé de stress et désadaptation',color:'danger',
+       detail:'Risque cardio-métabolique, immunitaire, digestif, psychologique — intervention neuronutritionnelle prioritaire.'},
+    ]
+  }
+};
 export const Q_STR_04 = {
   id:'Q_STR_04', titre:'DASS-21 — Dépression, Anxiété, Stress',
   instructions:'Veuillez lire chaque affirmation et indiquer dans quelle mesure elle s\'est appliquée à vous au cours de la semaine passée. Il n\'y a pas de bonne ou mauvaise réponse.',

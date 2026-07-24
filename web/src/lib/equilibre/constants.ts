@@ -4,7 +4,7 @@ import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire
 // l'indicateur "Mon équilibre" (patient) / "Cartographie neuro-fonctionnelle"
 // (praticien). Un changement de valeur ici (poids, seuils, mapping) doit
 // s'accompagner d'un bump de VERSION_SCORE_EQUILIBRE.
-export const VERSION_SCORE_EQUILIBRE = 'v1' as const;
+export const VERSION_SCORE_EQUILIBRE = 'v2' as const;
 
 export const POIDS_STRATE: Record<StrateCode, number> = {
   CORPS: 0.6,
@@ -61,7 +61,7 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
   8: [{ idQuestionnaire: 'Q_NEU_11', sousScore: 'D', max: 21, inverser: true }],
   9: [
     { idQuestionnaire: 'Q_STR_01', max: 42, inverser: true },
-    { idQuestionnaire: 'Q_STR_02', max: 40, inverser: true },
+    { idQuestionnaire: 'Q_STR_02', max: 50, inverser: true },
     { idQuestionnaire: 'Q_STR_03', max: 55, inverser: true },
   ],
   10: [
