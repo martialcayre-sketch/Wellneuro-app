@@ -434,3 +434,19 @@ branches des sessions actives (protégées par le script).
 gouvernance Copilot quand l'utilisateur le dira.
 
 **Questions ouvertes** : baselines pixel des écrans trajectoires (différées).
+
+## 2026-07-24 — Instruments du cabinet livrés en production (PR #328)
+
+**Décisions** : lot « complet d'emblée » livré — table `cabinet_instruments`, cycle brouillon → relecture → publication, import JSON/CSV, resolver commun. Après revue adversariale (56 agents, 14 constats confirmés dont 1 bloquant) : assignation faisant autorité côté patient, contenu gelé (409) pendant les envois, submit défensif **scopé aux ids CAB_** — le 409 global aurait cassé les questionnaires fonctionnels (23 assignations réelles en attente, vérifié en prod).
+**Écarté** : snapshot de définition par assignation (migration lourde, gel applicatif équivalent) ; index partiel (inexprimable en Prisma).
+**Validations** : T3 ×4 verts (E2E inclus), 561 tests, banc 63 questionnaires, `verify` CI vert, migration appliquée en prod (RLS active, 0 échec).
+**Prochaine action** : arbitrer `Q_STR_02 max:40` dans `equilibre/constants.ts` et le motif import-masqué `Q_STR_01`.
+**Questions ouvertes** : rayons Analyses biologiques et Fiches conseils à cadrer.
+
+## 2026-07-24 — PSS-10 : couverture stress bornée sur /50 (PR #348 mergée)
+
+**Décisions** : `equilibre/constants.ts` `Q_STR_02 max 40→50`. Le PSS-10 servi est coté 1–5 (brut ∈ [10,50]) ; `max:40` (vestige 0-4) écrasait à 0 toute couverture de brut ≥ 40 — fondation critique faussée. Bump `VERSION_SCORE_EQUILIBRE v1→v2` (imposé par la convention du fichier). Q_STR_02 migré de l'inline `questions.ts` vers le module `stress.ts` (options PSS dans `shared.ts`) ; deux tests assertent désormais la constante.
+**Écarté** : test d'invariant `max==maxTotal` (choix « migrer » plutôt que « garde-fou ») ; normalisation min–max (systémique, hors périmètre) ; PR sur la branche stale `feat/instruments-cabinet` → branche fraîche depuis `main`.
+**Validations** : `npm run check` + banc + 415 tests chemin-version verts sur base `main` ; E2E isolés 94 passés (seul échec = flake documenté `portail-lien-magique`) ; revue `wn-reviewer` GO ; CI `verify` pass ; mergée squash `699b228`, branche purgée.
+**Prochaine action** : exploitation — signaler la frontière v1↔v2 (momentum masqué sur cycles en cours).
+**Questions ouvertes** : motif import-masqué des ~27 autres questionnaires ; rayons Analyses biologiques / Fiches conseils.
