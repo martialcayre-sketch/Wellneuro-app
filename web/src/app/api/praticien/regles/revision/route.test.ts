@@ -1,0 +1,163 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { getServerSession, prisma } = vi.hoisted(() => {
+  const prismaMock = {
+    clinicalRule: {
+      findUnique: vi.fn(),
+      findFirst: vi.fn(),
+      aggregate: vi.fn(),
+      create: vi.fn(),
+      // Jamais utilisés par une révision — leur absence d'appel est un
+      // invariant testé (append-only : on ne modifie RIEN en place).
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    supplementSourceReference: { findUnique: vi.fn() },
+    supplementIngredientForme: { findUnique: vi.fn() },
+    clinicalCriterion: { findUnique: vi.fn() },
+    $transaction: vi.fn(),
+  };
+  return { getServerSession: vi.fn(), prisma: prismaMock };
+});
+
+vi.mock('next-auth', () => ({ getServerSession }));
+vi.mock('@/lib/auth', () => ({ authOptions: {} }));
+vi.mock('@/lib/prisma', () => ({ prisma }));
+
+import { POST } from './route';
+
+const URL_BASE = 'http://localhost/api/praticien/regles/revision';
+
+const ORIGINE = {
+  id: 'regle_1',
+  intentTagId: 'tag_sommeil',
+  ingredientId: 'ing_mag',
+  typeRegle: 'recommande',
+  poids: 7,
+};
+
+const CREEE = {
+  id: 'regle_2',
+  typeRegle: 'recommande',
+  poids: 7,
+  justification: 'Justification révisée.',
+  conditionSupplementaire: null,
+  doseCibleBasse: null,
+  doseCibleHaute: null,
+  gradePreuveScientifique: 'fort',
+  versionRegle: 3,
+  actif: true,
+  creeLe: new Date('2026-07-24T10:00:00.000Z'),
+  validePar: null,
+  valideLe: null,
+  intentTagId: 'tag_sommeil',
+  ingredientId: 'ing_mag',
+  intentTag: { id: 'tag_sommeil', code: 'sommeil_fragmente', labelFr: 'Sommeil fragmenté', categorie: 'sommeil' },
+  ingredient: { id: 'ing_mag', code: 'magnesium', nomFr: 'Magnésium' },
+  formePreferee: null,
+  sourceReference: { id: 'src_1', citation: 'Revue Micronutrition, 2024', lienUrl: null },
+};
+
+const CORPS = {
+  regleId: 'regle_1',
+  gradePreuveScientifique: 'fort',
+  justification: 'Justification révisée.',
+  sourceReferenceId: 'src_1',
+};
+
+function requete(body: unknown): Request {
+  return new Request(URL_BASE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+describe('/api/praticien/regles/revision', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.WN_C4_ENABLED = 'true';
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.$transaction.mockImplementation(async (fn: (tx: typeof prisma) => unknown) => fn(prisma));
+    prisma.clinicalRule.findUnique.mockResolvedValue(ORIGINE);
+    prisma.clinicalRule.findFirst.mockResolvedValue(null);
+    prisma.clinicalRule.aggregate.mockResolvedValue({ _max: { versionRegle: 2 } });
+    prisma.clinicalRule.create.mockResolvedValue(CREEE);
+    prisma.supplementSourceReference.findUnique.mockResolvedValue({ id: 'src_1', actif: true });
+  });
+
+  it('exige une session et le drapeau C4', async () => {
+    getServerSession.mockResolvedValue(null);
+    expect((await POST(requete(CORPS))).status).toBe(401);
+
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    delete process.env.WN_C4_ENABLED;
+    expect((await POST(requete(CORPS))).status).toBe(404);
+    expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
+  });
+
+  it('crée la version suivante EN BROUILLON — sans jamais éditer la règle d’origine', async () => {
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(201);
+    const json = await reponse.json();
+    expect(json.ok).toBe(true);
+    expect(json.regle.versionRegle).toBe(3);
+    expect(json.regle.statut).toBe('brouillon');
+
+    // Nouvelle ligne : versionRegle = max(lignée) + 1, lignée héritée de
+    // l'origine, poids repris à défaut, aucune signature posée.
+    expect(prisma.clinicalRule.create).toHaveBeenCalledTimes(1);
+    const { data } = prisma.clinicalRule.create.mock.calls[0][0];
+    expect(data).toMatchObject({
+      intentTagId: 'tag_sommeil',
+      ingredientId: 'ing_mag',
+      typeRegle: 'recommande',
+      versionRegle: 3,
+      poids: 7,
+      gradePreuveScientifique: 'fort',
+      actif: true,
+    });
+    expect(data.validePar).toBeUndefined();
+    expect(data.valideLe).toBeUndefined();
+
+    // Append-only : AUCUNE écriture sur une ligne existante, dans la
+    // transaction ou hors d'elle.
+    expect(prisma.clinicalRule.update).not.toHaveBeenCalled();
+    expect(prisma.clinicalRule.updateMany).not.toHaveBeenCalled();
+    // Le tout se joue dans une transaction (lecture du plafond + création).
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuse une révision quand un brouillon existe déjà dans la lignée', async () => {
+    prisma.clinicalRule.findFirst.mockResolvedValue({ id: 'regle_brouillon' });
+    const reponse = await POST(requete(CORPS));
+    expect(reponse.status).toBe(409);
+    expect((await reponse.json()).reason).toBe('brouillon_existant');
+    expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
+  });
+
+  it('répond 404 sur une règle d’origine introuvable', async () => {
+    prisma.clinicalRule.findUnique.mockResolvedValue(null);
+    expect((await POST(requete(CORPS))).status).toBe(404);
+    expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
+  });
+
+  it('applique les mêmes exigences de contenu que la création', async () => {
+    expect((await POST(requete({ ...CORPS, gradePreuveScientifique: 'A' }))).status).toBe(400);
+    expect((await POST(requete({ ...CORPS, justification: '' }))).status).toBe(400);
+    expect((await POST(requete({ ...CORPS, sourceReferenceId: '' }))).status).toBe(400);
+    expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse une forme préférée hors de l’ingrédient de la lignée', async () => {
+    prisma.supplementIngredientForme.findUnique.mockResolvedValue({
+      id: 'forme_x',
+      actif: true,
+      ingredientId: 'ing_autre',
+    });
+    const reponse = await POST(requete({ ...CORPS, formePrefereeId: 'forme_x' }));
+    expect(reponse.status).toBe(422);
+    expect((await reponse.json()).reason).toBe('forme_invalide');
+    expect(prisma.clinicalRule.create).not.toHaveBeenCalled();
+  });
+});
