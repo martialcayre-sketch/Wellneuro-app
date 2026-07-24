@@ -9,6 +9,9 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     syntheseIA: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn(), groupBy: vi.fn() },
+    protocolCheckin: { findMany: vi.fn() },
+    assessmentEpisode: { findMany: vi.fn() },
+    rendezVous: { findMany: vi.fn() },
     patient: { findMany: vi.fn() },
     filCardRejection: { findMany: vi.fn() },
   },
@@ -19,6 +22,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { GET } from './route';
+import { bornesJourParis } from '@/lib/fil/fuseau';
 
 // L'accueil praticien (SP-FIL LOT-01) n'avait aucun test de route. Les gardes
 // vérifiées ici sont celles dont dépend l'honnêteté du Fil : une session
@@ -36,6 +40,9 @@ describe('GET /api/praticien/fil', () => {
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.groupBy.mockResolvedValue([]);
+    prisma.protocolCheckin.findMany.mockResolvedValue([]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    prisma.rendezVous.findMany.mockResolvedValue([]);
     prisma.patient.findMany.mockResolvedValue([]);
     prisma.filCardRejection.findMany.mockResolvedValue([]);
   });
@@ -58,8 +65,8 @@ describe('GET /api/praticien/fil', () => {
   });
 
   it('un patient inactif ne produit aucune carte', async () => {
-    prisma.questionnaireReponse.findMany.mockResolvedValue([
-      { idPatient: 'PAT_INACTIF', idQuestionnaire: 'Q_1', dateReponse: new Date() },
+    prisma.syntheseIA.findMany.mockResolvedValue([
+      { idSynthese: 'SYN_1', idPatient: 'PAT_INACTIF', dateGeneration: new Date() },
     ]);
     // Le second appel ne remonte que les patients actifs : la carte doit
     // disparaître plutôt que d'afficher un patient sans nom.
@@ -69,10 +76,9 @@ describe('GET /api/praticien/fil', () => {
     expect(payload.cartes).toEqual([]);
   });
 
-  it('une réponse récente d’un patient actif produit une carte sourcée', async () => {
-    const dateReponse = new Date();
-    prisma.questionnaireReponse.findMany.mockResolvedValue([
-      { idReponse: 'REP_1', idPatient: 'PAT_SEED_01', idQuestionnaire: 'Q_1', dateReponse },
+  it('une synthèse en brouillon d’un patient actif produit une carte sourcée', async () => {
+    prisma.syntheseIA.findMany.mockResolvedValue([
+      { idSynthese: 'SYN_1', idPatient: 'PAT_SEED_01', dateGeneration: new Date('2026-07-20T09:00:00.000Z') },
     ]);
     prisma.patient.findMany.mockResolvedValue([
       { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
@@ -86,8 +92,9 @@ describe('GET /api/praticien/fil', () => {
     expect(carte.pourquoi).toBeTruthy();
     expect(carte.href).toBeTruthy();
     expect(carte.actionLabel).toBeTruthy();
-    // Prérequis de G1 : la carte est identifiée par sa ligne source.
-    expect(carte.cle).toBe('reponse_recente:REP_1');
+    // Prérequis de G1 : la carte agrégée est identifiée par patient + date de
+    // référence (la synthèse la plus récente).
+    expect(carte.cle).toBe('synthese_a_valider:agregat:PAT_SEED_01:2026-07-20T09:00:00.000Z');
   });
 
   // Sans l'identifiant dans le `select`, la clé vaudrait silencieusement
@@ -104,22 +111,71 @@ describe('GET /api/praticien/fil', () => {
     expect(selectDe(prisma.trustRightsRequest.findMany).id).toBe(true);
     expect(selectDe(prisma.syntheseIA.findMany).idSynthese).toBe(true);
     expect(selectDe(prisma.assignation.findMany).idAssignation).toBe(true);
-    expect(selectDe(prisma.questionnaireReponse.findMany).idReponse).toBe(true);
+    expect(selectDe(prisma.protocolCheckin.findMany).id).toBe(true);
   });
 
-  // G1 : le refus persiste côté serveur, il ne dépend pas de l'écran.
-  it('une carte refusée ne réapparaît pas au chargement suivant', async () => {
-    const dateReponse = new Date();
-    prisma.questionnaireReponse.findMany.mockResolvedValue([
-      { idReponse: 'REP_1', idPatient: 'PAT_SEED_01', idQuestionnaire: 'Q_1', dateReponse },
+  // Jalon J21 = check-in J21 soumis MOINS épisode J21 consigné.
+  it('un check-in J21 sans épisode J21 produit une carte jalon', async () => {
+    prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
+    prisma.protocolCheckin.findMany.mockResolvedValue([
+      { id: 'CHK_J21', idPatient: 'PAT_SEED_01', reponses: {}, soumisLe: new Date('2026-07-14T08:00:00.000Z') },
+    ]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([]); // aucune décision consignée
+    // momentumJalonsParPatient relit épisodes + réponses : rien de mesuré.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
+
+    const payload = await (await GET()).json();
+    const jalon = payload.cartes.find((c: { type: string }) => c.type === 'jalon_j21');
+    expect(jalon).toBeDefined();
+    expect(jalon.cle).toBe('jalon_j21:CHK_J21');
+    expect(jalon.titre).toContain('Jalon J21');
+  });
+
+  it('un rendez-vous du jour produit une carte consultation vers le pré-vol', async () => {
+    prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
+    // Milieu du jour civil de Paris courant : toujours dans la fenêtre, quelle
+    // que soit l'heure UTC d'exécution du test (le constructeur borne au jour
+    // de Paris, pas au futur).
+    const { debut } = bornesJourParis(new Date());
+    const midiParis = new Date(debut.getTime() + 12 * 60 * 60 * 1000);
+    prisma.rendezVous.findMany.mockResolvedValue([
+      { id: 'RDV_1', idPatient: 'PAT_SEED_01', dateHeure: midiParis },
+    ]);
+    const payload = await (await GET()).json();
+    const consultation = payload.cartes.find((c: { type: string }) => c.type === 'consultation_prevue');
+    expect(consultation).toBeDefined();
+    expect(consultation.cle).toBe('consultation_prevue:RDV_1');
+    expect(consultation.href).toContain('/dashboard/copilote?idPatient=PAT_SEED_01');
+  });
+
+  it('un check-in J21 déjà suivi d’un épisode J21 consigné ne produit aucune carte jalon', async () => {
+    prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
+    prisma.protocolCheckin.findMany.mockResolvedValue([
+      { id: 'CHK_J21', idPatient: 'PAT_SEED_01', reponses: {}, soumisLe: new Date('2026-07-14T08:00:00.000Z') },
+    ]);
+    prisma.assessmentEpisode.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01' }]);
+
+    const payload = await (await GET()).json();
+    expect(payload.cartes.some((c: { type: string }) => c.type === 'jalon_j21')).toBe(false);
+  });
+
+  const CLE_SYNTHESE = 'synthese_a_valider:agregat:PAT_SEED_01:2026-07-20T09:00:00.000Z';
+  function mockSyntheseSophie() {
+    prisma.syntheseIA.findMany.mockResolvedValue([
+      { idSynthese: 'SYN_1', idPatient: 'PAT_SEED_01', dateGeneration: new Date('2026-07-20T09:00:00.000Z') },
     ]);
     prisma.patient.findMany.mockResolvedValue([
       { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
     ]);
+  }
+
+  // G1 : le refus persiste côté serveur, il ne dépend pas de l'écran.
+  it('une carte refusée ne réapparaît pas au chargement suivant', async () => {
+    mockSyntheseSophie();
     prisma.filCardRejection.findMany.mockResolvedValue([
       {
         id: 'r1',
-        carteCle: 'reponse_recente:REP_1',
+        carteCle: CLE_SYNTHESE,
         refusee: true,
         supersedesRejectionId: null,
         refuseLe: new Date(),
@@ -131,20 +187,14 @@ describe('GET /api/praticien/fil', () => {
   });
 
   it('un refus annulé laisse la carte revenir', async () => {
-    const dateReponse = new Date();
-    prisma.questionnaireReponse.findMany.mockResolvedValue([
-      { idReponse: 'REP_1', idPatient: 'PAT_SEED_01', idQuestionnaire: 'Q_1', dateReponse },
-    ]);
-    prisma.patient.findMany.mockResolvedValue([
-      { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
-    ]);
+    mockSyntheseSophie();
     prisma.filCardRejection.findMany.mockResolvedValue([
-      { id: 'r1', carteCle: 'reponse_recente:REP_1', refusee: true, supersedesRejectionId: null, refuseLe: new Date('2026-07-20T10:00:00.000Z') },
-      { id: 'r2', carteCle: 'reponse_recente:REP_1', refusee: false, supersedesRejectionId: 'r1', refuseLe: new Date('2026-07-20T10:05:00.000Z') },
+      { id: 'r1', carteCle: CLE_SYNTHESE, refusee: true, supersedesRejectionId: null, refuseLe: new Date('2026-07-20T10:00:00.000Z') },
+      { id: 'r2', carteCle: CLE_SYNTHESE, refusee: false, supersedesRejectionId: 'r1', refuseLe: new Date('2026-07-20T10:05:00.000Z') },
     ]);
 
     const payload = await (await GET()).json();
-    expect(payload.cartes.map((c: { cle: string }) => c.cle)).toEqual(['reponse_recente:REP_1']);
+    expect(payload.cartes.map((c: { cle: string }) => c.cle)).toEqual([CLE_SYNTHESE]);
   });
 
   it('une panne de lecture est annoncée, jamais présentée comme un fil vide', async () => {

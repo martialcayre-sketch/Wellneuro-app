@@ -20,18 +20,21 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
+import type { CorrespondanceRecentesApiResponse } from '@/app/api/praticien/correspondance-medecin/recentes/route';
 
 // Rail conforme à la maquette de référence « WellNeuro 5.0 — La Spirale »
 // (artifact canonique, décision propriétaire 2026-07-22) : trois groupes —
 // La Spirale (surfaces 5.0), Héritage 4.0 — inchangé (surfaces historiques,
 // tag « 4.0 »), Réglages. `badge: 'fil'` affiche le compteur RÉEL de cartes
-// du Fil (aucun chiffre inventé ; rien en cas d'erreur réseau).
+// du Fil ; `badge: 'correspondance'` le nombre de consignations des 7 derniers
+// jours (accueil-observatoire LOT-02). Aucun chiffre inventé ; rien en cas
+// d'erreur réseau.
 type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
   tag?: string;
-  badge?: 'fil';
+  badge?: 'fil' | 'correspondance';
   /** 'exact' : actif seulement sur le chemin exact (désambiguïse
    * Fiche-trajectoire ↔ Questionnaires & packs). */
   matiere?: 'exact' | 'prefixe' | 'sous-pages';
@@ -56,7 +59,7 @@ const groupesNavigation: { etiquette: string | null; items: NavItem[] }[] = [
         prefixesActifs: ['/dashboard/patients/'],
       },
       { href: '/dashboard/copilote', label: 'Consultation copilote', icon: Compass },
-      { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail },
+      { href: '/dashboard/correspondance', label: 'Correspondance', icon: Mail, badge: 'correspondance' },
       // Rayon Questionnaires livré (arbitrages Bibliothèque du 2026-07-23) :
       // la rubrique quitte l'héritage 4.0 et rejoint les surfaces 5.0.
       { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen },
@@ -94,6 +97,8 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
   const pathname = usePathname();
   // Compteur réel du Fil — même API que l'écran ; silence en cas d'échec.
   const [nbCartesFil, setNbCartesFil] = useState<number | null>(null);
+  // Compteur de correspondances récentes (7 j) — silence en cas d'échec.
+  const [nbCorrespondance, setNbCorrespondance] = useState<number | null>(null);
   useEffect(() => {
     let vivant = true;
     fetch('/api/praticien/fil')
@@ -102,10 +107,19 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
         if (vivant && !d.unavailable && Array.isArray(d.cartes)) setNbCartesFil(d.cartes.length);
       })
       .catch(() => {});
+    fetch('/api/praticien/correspondance-medecin/recentes')
+      .then(r => r.json())
+      .then((d: CorrespondanceRecentesApiResponse) => {
+        if (vivant && !d.unavailable) setNbCorrespondance(d.nbRecentes7j);
+      })
+      .catch(() => {});
     return () => {
       vivant = false;
     };
   }, []);
+
+  const compteurBadge = (badge: NavItem['badge']): number | null =>
+    badge === 'fil' ? nbCartesFil : badge === 'correspondance' ? nbCorrespondance : null;
 
   const isActive = (item: NavItem) => {
     if (item.prefixesActifs?.some((prefixe) => pathname?.startsWith(prefixe))) return true;
@@ -170,11 +184,14 @@ export function SidebarRail({ collapsed, onNavigate, brand = false }: SidebarRai
                   className={`shrink-0 ${active ? '' : 'opacity-85'}`}
                 />
                 {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
-                {!collapsed && item.badge === 'fil' && nbCartesFil !== null && nbCartesFil > 0 && (
-                  <span className="shrink-0 rounded-full bg-solar-500/[.18] px-2 py-0.5 font-mono text-2xs font-semibold text-rail-accent">
-                    {nbCartesFil}
-                  </span>
-                )}
+                {(() => {
+                  const compteur = compteurBadge(item.badge);
+                  return !collapsed && compteur !== null && compteur > 0 ? (
+                    <span className="shrink-0 rounded-full bg-solar-500/[.18] px-2 py-0.5 font-mono text-2xs font-semibold text-rail-accent">
+                      {compteur}
+                    </span>
+                  ) : null;
+                })()}
                 {!collapsed && item.tag && (
                   <span className="shrink-0 rounded-md border border-rail-border px-1.5 py-0.5 text-2xs text-rail-muted-foreground">
                     {item.tag}

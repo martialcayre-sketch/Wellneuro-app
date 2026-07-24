@@ -2,18 +2,22 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { AlarmClock, Inbox, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
+import { AlarmClock, CalendarClock, Flag, RotateCcw, ShieldCheck, Sparkles, type LucideIcon } from 'lucide-react';
 import type { FilApiResponse } from '@/app/api/praticien/fil/route';
+import type { MeteoAdhesionApiResponse } from '@/app/api/praticien/meteo-adhesion/route';
 import { indexCarteImminente, resumeFil, type CarteFil, type TypeCarteFil } from '@/lib/fil/cartes';
 import { libelleTemporel } from '@/lib/fil/horodatage';
+import type { EtatMeteoAdhesion } from '@/lib/protocol/adhesion';
+import { BadgeMeteo } from '@/components/meteo/BadgeMeteo';
 
 /** Identité visuelle de chaque type de carte — l'icône double toujours le
  * libellé textuel (jamais la couleur seule, règle de relief A5-R1). */
 const TYPE_CARTE: Record<TypeCarteFil, { libelle: string; icon: LucideIcon }> = {
+  consultation_prevue: { libelle: 'Consultation', icon: CalendarClock },
   signalement_trust: { libelle: 'Signalement', icon: ShieldCheck },
   synthese_a_valider: { libelle: 'À valider', icon: Sparkles },
+  jalon_j21: { libelle: 'Jalon', icon: Flag },
   assignation_en_retard: { libelle: 'En retard', icon: AlarmClock },
-  reponse_recente: { libelle: 'Reçu', icon: Inbox },
   reprise: { libelle: 'Reprise', icon: RotateCcw },
 };
 
@@ -25,11 +29,15 @@ const GRILLE_TIMELINE =
 function CarteDuFil({
   carte,
   imminente,
+  meteo,
   maintenant,
   onEcarter,
 }: {
   carte: CarteFil;
   imminente: boolean;
+  /** État d'adhésion du patient — badge affiché seulement s'il appelle une
+   * conversation (fragile/interrompue). Absent = pas de badge. */
+  meteo?: EtatMeteoAdhesion;
   maintenant: Date;
   onEcarter: () => void;
 }) {
@@ -73,6 +81,14 @@ function CarteDuFil({
             )}
           </div>
           <p className="text-[15.5px] font-semibold text-foreground mt-0.5 truncate">{carte.titre}</p>
+          {/* Badge d'adhésion inline (maquette : « Adhésion : fragile ») —
+              seulement quand il appelle une conversation. Réutilise l'agrégat
+              SP-MET ; jamais un score. */}
+          {(meteo === 'fragile' || meteo === 'interrompue') && (
+            <div className="mt-1.5">
+              <BadgeMeteo etat={meteo} prefixe="Adhésion : " />
+            </div>
+          )}
           {/* Rangée d'actions maquette : bouton d'action + pill « Pourquoi
               maintenant » (le pourquoi garde son propre span — les tests le
               ciblent au texte exact). */}
@@ -152,6 +168,9 @@ export function FilDuJour() {
   const [loading, setLoading] = useState(true);
   const [ecartees, setEcartees] = useState<string[]>([]);
   const [erreurRefus, setErreurRefus] = useState('');
+  // Météo par patient pour le badge inline — chargée à part. Un échec ne
+  // masque jamais le Fil : sans donnée, pas de badge, c'est tout.
+  const [meteoParPatient, setMeteoParPatient] = useState<Map<string, EtatMeteoAdhesion>>(new Map());
 
   useEffect(() => {
     fetch('/api/praticien/fil')
@@ -159,6 +178,16 @@ export function FilDuJour() {
       .then(setData)
       .catch(() => setData({ cartes: [], unavailable: true }))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/praticien/meteo-adhesion')
+      .then(async r => (await r.json()) as MeteoAdhesionApiResponse)
+      .then(reponse => {
+        if (reponse.unavailable) return;
+        setMeteoParPatient(new Map(reponse.determinees.map(l => [l.idPatient, l.etat])));
+      })
+      .catch(() => {});
   }, []);
 
   // Le serveur fait foi : la carte n'est écartée à l'écran qu'une fois le refus
@@ -206,7 +235,7 @@ export function FilDuJour() {
     return (
       <div data-testid="fil-du-jour" className="bg-surface border border-border rounded-xl p-6 text-base text-muted-foreground shadow-card">
         Rien n&apos;appelle votre attention pour le moment. Le Fil se remplit à mesure
-        que les réponses, les échéances et les synthèses arrivent.
+        que les signalements, les échéances et les synthèses arrivent.
       </div>
     );
   }
@@ -215,7 +244,7 @@ export function FilDuJour() {
   // L'imminence se calcule sur les cartes encore visibles : écarter la carte
   // imminente promeut la suivante.
   const visibles = data.cartes.filter(c => !ecartees.includes(c.cle));
-  const cleImminente = visibles[indexCarteImminente(visibles)]?.cle ?? null;
+  const cleImminente = visibles[indexCarteImminente(visibles, maintenant)]?.cle ?? null;
 
   return (
     // Panneau « Aujourd'hui » de la maquette : en-tête display + résumé
@@ -250,6 +279,7 @@ export function FilDuJour() {
               key={carte.cle}
               carte={carte}
               imminente={carte.cle === cleImminente}
+              meteo={meteoParPatient.get(carte.idPatient)}
               maintenant={maintenant}
               onEcarter={() => void basculerRefus(carte, true)}
             />

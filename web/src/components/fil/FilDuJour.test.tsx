@@ -16,22 +16,29 @@ afterEach(() => {
 });
 
 const carte = (partiel: Partial<CarteFil> = {}): CarteFil => ({
-  type: 'reponse_recente',
+  type: 'assignation_en_retard',
   idPatient: 'PAT_SEED_01',
   patient: 'Sophie Nicola',
-  titre: 'Réponses reçues',
-  pourquoi: 'Reçu il y a 2 jours',
+  titre: 'Questionnaire en retard',
+  pourquoi: 'Échéance dépassée depuis 2 jours',
   date: '2026-07-17T10:00:00.000Z',
   href: '/dashboard/patients/PAT_SEED_01',
   actionLabel: 'Ouvrir la fiche',
-  cle: 'reponse_recente:REP_1',
+  cle: 'assignation_en_retard:ASG_1',
   ...partiel,
 });
 
-function stubFetch(implementation: () => Promise<unknown>) {
+// Le composant lit deux endpoints : le Fil et la Météo (badge inline). Par
+// défaut, la Météo répond « rien à afficher » ; les tests qui veulent un badge
+// stubent explicitement `/api/praticien/meteo-adhesion`.
+function stubFetch(implementationFil: () => Promise<unknown>) {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => ({ json: implementation }) as unknown as Response),
+    vi.fn(async (url: string) =>
+      url.includes('meteo-adhesion')
+        ? ({ json: async () => ({ ok: true, determinees: [], nbIndeterminees: 0 }) } as unknown as Response)
+        : ({ json: implementationFil } as unknown as Response),
+    ),
   );
 }
 
@@ -78,8 +85,8 @@ describe('FilDuJour — les quatre états de rendu', () => {
     stubFetch(async () => ({ cartes: [carte()] }));
     render(<FilDuJour />);
     await waitFor(() => expect(screen.getByText('Sophie Nicola')).toBeTruthy());
-    expect(screen.getByText('Reçu')).toBeTruthy();
-    expect(screen.getByText('Reçu il y a 2 jours')).toBeTruthy();
+    expect(screen.getByText('En retard')).toBeTruthy();
+    expect(screen.getByText('Échéance dépassée depuis 2 jours')).toBeTruthy();
     const lien = screen.getByRole('link', { name: /Ouvrir la fiche/ });
     expect(lien.getAttribute('href')).toBe('/dashboard/patients/PAT_SEED_01');
   });
@@ -88,12 +95,14 @@ describe('FilDuJour — les quatre états de rendu', () => {
     stubFetch(async () => ({
       cartes: [
         carte({ type: 'signalement_trust', titre: 'Signalement à traiter', cle: 'signalement_trust:SIG_1' }),
-        carte({ type: 'assignation_en_retard', titre: 'Questionnaire en retard', cle: 'assignation_en_retard:ASG_1' }),
+        carte({ type: 'jalon_j21', titre: 'Jalon J21 atteint — décision attendue', cle: 'jalon_j21:CHK_1' }),
+        carte({ type: 'reprise', titre: 'Suivi interrompu', cle: 'reprise:PAT_SEED_01:x' }),
       ],
     }));
     render(<FilDuJour />);
     await waitFor(() => expect(screen.getByText('Signalement')).toBeTruthy());
-    expect(screen.getByText('En retard')).toBeTruthy();
+    expect(screen.getByText('Jalon')).toBeTruthy();
+    expect(screen.getByText('Reprise')).toBeTruthy();
   });
 });
 
@@ -103,8 +112,8 @@ describe('FilDuJour — timeline et hiérarchie (maquette Spirale)', () => {
   it('seule la première carte porte le marqueur « Maintenant » et l’action primaire', async () => {
     stubFetch(async () => ({
       cartes: [
-        carte({ cle: 'reponse_recente:REP_1', titre: 'Première' }),
-        carte({ cle: 'reponse_recente:REP_2', titre: 'Seconde' }),
+        carte({ cle: 'assignation_en_retard:ASG_1', titre: 'Première' }),
+        carte({ cle: 'assignation_en_retard:ASG_2', titre: 'Seconde' }),
       ],
     }));
     render(<FilDuJour />);
@@ -120,8 +129,8 @@ describe('FilDuJour — timeline et hiérarchie (maquette Spirale)', () => {
     ceMatin.setHours(9, 30, 0, 0);
     stubFetch(async () => ({
       cartes: [
-        carte({ cle: 'reponse_recente:REP_1', date: ceMatin.toISOString() }),
-        carte({ cle: 'reponse_recente:REP_2', titre: 'Sans date', date: null }),
+        carte({ cle: 'assignation_en_retard:ASG_1', date: ceMatin.toISOString() }),
+        carte({ cle: 'assignation_en_retard:ASG_2', titre: 'Sans date', date: null }),
       ],
     }));
     render(<FilDuJour />);
@@ -132,21 +141,54 @@ describe('FilDuJour — timeline et hiérarchie (maquette Spirale)', () => {
   it('l’en-tête résume le fil par type — jamais un « N cartes » brut', async () => {
     stubFetch(async () => ({
       cartes: [
-        carte({ cle: 'reponse_recente:REP_1' }),
-        carte({ cle: 'reponse_recente:REP_2', titre: 'Autre' }),
         carte({
           type: 'synthese_a_valider',
           cle: 'synthese_a_valider:agregat:PAT_SEED_01:2026-07-14',
           titre: '3 relectures en attente',
           nbElements: 3,
         }),
+        carte({ cle: 'assignation_en_retard:ASG_1' }),
+        carte({ cle: 'assignation_en_retard:ASG_2', titre: 'Autre' }),
       ],
     }));
     render(<FilDuJour />);
-    await waitFor(() =>
-      expect(screen.getByText('3 relectures · 2 réponses reçues')).toBeTruthy(),
-    );
+    await waitFor(() => expect(screen.getByText('3 relectures · 2 retards')).toBeTruthy());
     expect(screen.queryByText(/3 cartes/)).toBeNull();
+  });
+
+  it('affiche le badge d’adhésion inline pour un patient fragile, sourcé sur la Météo', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('meteo-adhesion')
+          ? ({
+              json: async () => ({
+                ok: true,
+                determinees: [
+                  { idPatient: 'PAT_SEED_01', patient: 'Sophie Nicola', etat: 'fragile', pointEtapeSource: 'J14', dateSource: null },
+                ],
+                nbIndeterminees: 0,
+              }),
+            } as unknown as Response)
+          : ({ json: async () => ({ cartes: [carte()] }) } as unknown as Response),
+      ),
+    );
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText(/Adhésion : fragile/i)).toBeTruthy());
+  });
+
+  it('sans Météo disponible, aucune carte ne porte de badge d’adhésion', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.includes('meteo-adhesion')
+          ? ({ json: async () => ({ ok: false, determinees: [], nbIndeterminees: 0, unavailable: true }) } as unknown as Response)
+          : ({ json: async () => ({ cartes: [carte()] }) } as unknown as Response),
+      ),
+    );
+    render(<FilDuJour />);
+    await waitFor(() => expect(screen.getByText('Questionnaire en retard')).toBeTruthy());
+    expect(screen.queryByText(/Adhésion :/i)).toBeNull();
   });
 });
 
@@ -167,13 +209,13 @@ describe('FilDuJour — écarter une carte (G1)', () => {
             ok: refusOk,
             json: async () =>
               refusOk
-                ? { ok: true, carteCle: 'reponse_recente:REP_1', refusee: true, inchange: false }
+                ? { ok: true, carteCle: 'assignation_en_retard:ASG_1', refusee: true, inchange: false }
                 : { ok: false, reason: 'exception', error: 'Erreur technique.' },
           } as unknown as Response;
         }
         return {
           ok: true,
-          json: async () => ({ cartes: [carte({ cle: 'reponse_recente:REP_1' })] }),
+          json: async () => ({ cartes: [carte({ cle: 'assignation_en_retard:ASG_1' })] }),
         } as unknown as Response;
       }),
     );
@@ -191,7 +233,7 @@ describe('FilDuJour — écarter une carte (G1)', () => {
     const refus = appels.find(a => a.url === '/api/praticien/fil/refus');
     expect(refus?.body).toMatchObject({
       idPatient: 'PAT_SEED_01',
-      carteCle: 'reponse_recente:REP_1',
+      carteCle: 'assignation_en_retard:ASG_1',
       refusee: true,
     });
   });

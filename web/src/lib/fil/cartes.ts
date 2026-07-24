@@ -6,11 +6,18 @@
  * explicite — proposition, jamais capture (décision A6, REGISTRE_FRONTIERES).
  */
 
+import { bornesJourParis, formatHeureParis } from './fuseau';
+
+// `reponse_recente` a été retiré (accueil-observatoire LOT-02, décision
+// propriétaire 2026-07-23) : les questionnaires reçus vivent dans l'inbox par
+// patient (`lib/fil/inbox.ts`), plus dans le Fil. Les refus déjà posés sur ces
+// clés restent en base, inertes (append-only).
 export type TypeCarteFil =
+  | 'consultation_prevue'
   | 'signalement_trust'
   | 'synthese_a_valider'
+  | 'jalon_j21'
   | 'assignation_en_retard'
-  | 'reponse_recente'
   | 'reprise';
 
 export type CarteFil = {
@@ -58,7 +65,6 @@ export type SignalementRow = {
   kind: 'effet_indesirable' | 'incident_confidentialite' | 'demande_droit';
   soumisLe: Date;
 };
-export type ReponseRow = { idReponse: string; idPatient: string; titre: string; dateReponse: Date };
 export type AssignationRow = {
   idAssignation: string;
   idPatient: string;
@@ -70,8 +76,23 @@ export type SyntheseRow = { idSynthese: string; idPatient: string; dateGeneratio
 /** Carte agrégée : pas de ligne source, donc pas d'identifiant à remonter. */
 export type DerniereActiviteRow = { idPatient: string; derniereReponse: Date };
 
-/** Fenêtre de « récence » d'une réponse reçue. */
-export const RECENCE_REPONSE_JOURS = 7;
+/** Sens du momentum tel que le porte l'équilibre (T0 → dernier jalon mesuré). */
+export type TendanceMomentumCarte = 'hausse' | 'stable' | 'baisse';
+/**
+ * Jalon J21 atteint sans décision consignée. La ligne source est le check-in
+ * J21 (`idCheckin`) : ancre stable pour le refus G1. `adhesion` et `momentum`
+ * sont des enrichissements FACTUELS et OPTIONNELS — cités seulement s'ils
+ * existent réellement, jamais inventés (A8-2 : jamais un 0 à la place d'un
+ * jalon non mesuré).
+ */
+export type JalonRow = {
+  idCheckin: string;
+  idPatient: string;
+  soumisLe: Date;
+  adhesion?: string | null;
+  momentum?: { tendance: TendanceMomentumCarte; delta: number } | null;
+};
+
 /** Inactivité au-delà de laquelle un patient est signalé en reprise. */
 export const SEUIL_REPRISE_MOIS = 6;
 /** Plafond de cartes par type pour garder le Fil lisible. */
@@ -98,6 +119,50 @@ const LIBELLE_SIGNALEMENT: Record<SignalementRow['kind'], string> = {
   incident_confidentialite: 'Incident de confidentialité',
   demande_droit: 'Demande d’exercice de droit',
 };
+
+/** Rendez-vous planifié (accueil-observatoire LOT-04). Ligne source réelle. */
+export type RendezVousRow = { id: string; idPatient: string; dateHeure: Date };
+
+/** Délai (min) sous lequel une consultation est annoncée « dans X min » plutôt
+ * qu'à son heure — au-delà, ou passée, on affiche l'heure. */
+const IMMINENCE_CONSULTATION_MIN = 60;
+
+/**
+ * Consultations prévues aujourd'hui → cartes « Pré-vol prêt » horodatées.
+ * Réutilise le pré-vol SP-COP (href `/dashboard/copilote?idPatient=`), rien de
+ * nouveau côté préparation. Bornées au jour civil de `maintenant`.
+ */
+export function cartesConsultationsPrevues(
+  rdvs: RendezVousRow[],
+  noms: Map<string, string>,
+  maintenant: Date,
+): CarteFil[] {
+  // Jour civil de Paris (le cabinet), pas le jour UTC du serveur.
+  const { debut, fin } = bornesJourParis(maintenant);
+
+  return rdvs
+    .filter(r => r.dateHeure >= debut && r.dateHeure < fin)
+    .sort((a, b) => a.dateHeure.getTime() - b.dateHeure.getTime())
+    .slice(0, MAX_CARTES_PAR_TYPE)
+    .map(r => {
+      const minutes = Math.round((r.dateHeure.getTime() - maintenant.getTime()) / 60000);
+      const pourquoi =
+        minutes >= 0 && minutes <= IMMINENCE_CONSULTATION_MIN
+          ? `Consultation dans ${minutes} min.`
+          : `Consultation à ${formatHeureParis(r.dateHeure)}.`;
+      return {
+        type: 'consultation_prevue' as const,
+        idPatient: r.idPatient,
+        patient: nomPatient(noms, r.idPatient),
+        titre: 'Pré-vol prêt',
+        pourquoi,
+        date: r.dateHeure.toISOString(),
+        href: `/dashboard/copilote?idPatient=${encodeURIComponent(r.idPatient)}`,
+        actionLabel: 'Ouvrir le pré-vol',
+        cle: cleCarte('consultation_prevue', r.id),
+      };
+    });
+}
 
 /** Signalements TRUST non traités : toujours en tête du Fil — c'est un
  * patient qui attend une réponse humaine. */
@@ -160,6 +225,43 @@ export function cartesSynthesesAValider(
     }));
 }
 
+/**
+ * Jalons J21 atteints sans décision de 21 jours consignée. Une carte par
+ * patient, ancrée sur son check-in J21 (ligne source réelle → refus G1
+ * standard). Le « pourquoi maintenant » cite la date du check-in, et — quand
+ * ils existent réellement — l'action principale observée et le momentum.
+ */
+export function cartesJalons(jalons: JalonRow[], noms: Map<string, string>): CarteFil[] {
+  return jalons
+    .slice()
+    .sort((a, b) => b.soumisLe.getTime() - a.soumisLe.getTime())
+    .slice(0, MAX_CARTES_PAR_TYPE)
+    .map(j => {
+      const morceaux = [
+        `Check-in J21 reçu le ${formatDateFr(j.soumisLe)} — décision de 21 jours à consigner.`,
+      ];
+      if (j.adhesion) morceaux.push(`Action principale : « ${j.adhesion} ».`);
+      if (j.momentum) {
+        morceaux.push(
+          j.momentum.tendance === 'stable'
+            ? 'Momentum stable.'
+            : `Momentum en ${j.momentum.tendance} de ${Math.abs(j.momentum.delta)}.`,
+        );
+      }
+      return {
+        type: 'jalon_j21' as const,
+        idPatient: j.idPatient,
+        patient: nomPatient(noms, j.idPatient),
+        titre: 'Jalon J21 atteint — décision attendue',
+        pourquoi: morceaux.join(' '),
+        date: j.soumisLe.toISOString(),
+        href: `/dashboard/patients/${j.idPatient}`,
+        actionLabel: 'Ouvrir la fiche',
+        cle: cleCarte('jalon_j21', j.idCheckin),
+      };
+    });
+}
+
 export function cartesAssignationsEnRetard(
   assignations: AssignationRow[],
   noms: Map<string, string>,
@@ -188,29 +290,6 @@ export function cartesAssignationsEnRetard(
         cle: cleCarte('assignation_en_retard', a.idAssignation),
       };
     });
-}
-
-export function cartesReponsesRecentes(
-  reponses: ReponseRow[],
-  noms: Map<string, string>,
-  maintenant: Date,
-): CarteFil[] {
-  const seuil = maintenant.getTime() - RECENCE_REPONSE_JOURS * JOUR_MS;
-  return reponses
-    .filter(r => r.dateReponse.getTime() >= seuil)
-    .sort((a, b) => b.dateReponse.getTime() - a.dateReponse.getTime())
-    .slice(0, MAX_CARTES_PAR_TYPE)
-    .map(r => ({
-      type: 'reponse_recente' as const,
-      idPatient: r.idPatient,
-      patient: nomPatient(noms, r.idPatient),
-      titre: r.titre,
-      pourquoi: `Réponses reçues le ${formatDateFr(r.dateReponse)}.`,
-      date: r.dateReponse.toISOString(),
-      href: `/dashboard/patients/${r.idPatient}`,
-      actionLabel: 'Consulter les réponses',
-      cle: cleCarte('reponse_recente', r.idReponse),
-    }));
 }
 
 /**
@@ -252,14 +331,16 @@ export function cartesReprise(
 
 /**
  * Résumé qualitatif du panneau « Aujourd'hui » (maquette : « 3 consultations ·
- * 2 relectures ») — remplace le compteur brut « N cartes ». Suit l'ordre du
- * Fil ; les cartes agrégées comptent leurs lignes sources (`nbElements`).
+ * 2 relectures ») — remplace le compteur brut « N cartes ». Les consultations
+ * ouvrent le résumé (maquette), même si dans le Fil les signalements passent
+ * devant ; les cartes agrégées comptent leurs lignes sources (`nbElements`).
  */
 const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string }[] = [
+  { type: 'consultation_prevue', singulier: 'consultation', pluriel: 'consultations' },
   { type: 'signalement_trust', singulier: 'signalement', pluriel: 'signalements' },
   { type: 'synthese_a_valider', singulier: 'relecture', pluriel: 'relectures' },
+  { type: 'jalon_j21', singulier: 'jalon', pluriel: 'jalons' },
   { type: 'assignation_en_retard', singulier: 'retard', pluriel: 'retards' },
-  { type: 'reponse_recente', singulier: 'réponse reçue', pluriel: 'réponses reçues' },
   { type: 'reprise', singulier: 'reprise', pluriel: 'reprises' },
 ];
 
@@ -276,30 +357,58 @@ export function resumeFil(cartes: CarteFil[]): string {
 
 /**
  * Carte imminente : celle que la timeline met en avant (badge « Maintenant »,
- * action primaire). Tant que le Fil n'a pas d'heures réelles (rendez-vous,
- * lot agenda), c'est la tête de l'ordre fixe — ce qui attend le praticien
- * d'abord. Le lot agenda la raffinera : consultation à venir la plus proche.
+ * action primaire). Avec des heures réelles (rendez-vous, LOT-04), c'est la
+ * consultation À VENIR la plus proche ; à défaut, la tête de l'ordre fixe — ce
+ * qui attend le praticien d'abord.
  */
-export function indexCarteImminente(cartes: CarteFil[]): number {
-  return cartes.length > 0 ? 0 : -1;
+export function indexCarteImminente(cartes: CarteFil[], maintenant?: Date): number {
+  if (cartes.length === 0) return -1;
+  if (maintenant) {
+    const t = maintenant.getTime();
+    let meilleur = -1;
+    let plusProche = Infinity;
+    cartes.forEach((c, i) => {
+      if (c.type !== 'consultation_prevue' || !c.date) return;
+      const d = new Date(c.date).getTime();
+      if (d >= t && d < plusProche) {
+        plusProche = d;
+        meilleur = i;
+      }
+    });
+    if (meilleur !== -1) return meilleur;
+  }
+  return 0;
 }
 
 /** Ordre du Fil : ce qui attend le praticien d'abord, les signaux ensuite. */
 export function construireFil(entrees: {
+  consultations?: RendezVousRow[];
   signalements?: SignalementRow[];
   syntheses: SyntheseRow[];
+  jalons?: JalonRow[];
   assignations: AssignationRow[];
-  reponses: ReponseRow[];
   activites: DerniereActiviteRow[];
   noms: Map<string, string>;
   maintenant: Date;
 }): CarteFil[] {
-  const { signalements = [], syntheses, assignations, reponses, activites, noms, maintenant } = entrees;
+  const {
+    consultations = [],
+    signalements = [],
+    syntheses,
+    jalons = [],
+    assignations,
+    activites,
+    noms,
+    maintenant,
+  } = entrees;
   return [
+    // Un signalement TRUST attend une réponse humaine : il précède tout, même
+    // une consultation imminente. Viennent ensuite les consultations du jour.
     ...cartesSignalementsTrust(signalements, noms),
+    ...cartesConsultationsPrevues(consultations, noms, maintenant),
     ...cartesSynthesesAValider(syntheses, noms),
+    ...cartesJalons(jalons, noms),
     ...cartesAssignationsEnRetard(assignations, noms, maintenant),
-    ...cartesReponsesRecentes(reponses, noms, maintenant),
     ...cartesReprise(activites, noms, maintenant),
   ];
 }
