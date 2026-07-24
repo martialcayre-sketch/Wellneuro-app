@@ -1,27 +1,5 @@
 import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_ZARIT, O_DASS, O_CONNERS, q, qn, qs } from './shared';
 
-export const Q_PED_01 = {
-  id:'Q_PED_01', titre:'Échelle de Matinalité-Vespéralité Enfant — Dr Caci',
-  instructions:'Pour chaque question, choisissez une seule réponse, celle qui correspond le mieux au rythme spontané de l\'enfant.',
-  sections:[
-    { id:'A', titre:'Préférences de sommeil et d\'éveil',
-      questions:[
-        q('PE1','Imagine que l\'école n\'existe plus. Tu n\'es pas obligé(e) de te lever tôt. À quelle heure te lèverais-tu ?',[{v:5,l:'Entre 5h00 et 6h30'},{v:4,l:'Entre 6h30 et 7h45'},{v:3,l:'Entre 7h45 et 9h45'},{v:2,l:'Entre 9h45 et 11h00'},{v:1,l:'Entre 11h00 et midi'}]),
-        q('PE2','Chaque jour pour toi, te lever le matin c\'est :',[{v:1,l:'Impossible'},{v:2,l:'Difficile'},{v:3,l:'Plutôt facile'},{v:4,l:'Très facile'}]),
-        q('PE3','Si les cours de gymnastique avaient lieu à 7h00 du matin, comment te sentirais-tu ?',[{v:4,l:'Au top niveau'},{v:3,l:'Bien'},{v:2,l:'Moins bien que d\'habitude'},{v:1,l:'Très mal'}]),
-        q('PE4','Mauvaise nouvelle : tu as un contrôle de deux heures ! Bonne nouvelle : tu peux choisir de le faire à l\'heure où tu penses être le plus efficace. Ce sera :',[{v:4,l:'Entre 8h00 et 10h00'},{v:3,l:'Entre 11h00 et 13h00'},{v:2,l:'Entre 15h00 et 17h00'},{v:1,l:'Entre 19h00 et 21h00'}]),
-        q('PE5','À quel moment de la journée as-tu le plus d\'énergie pour faire ce qui te plaît ?',[{v:4,l:'Le matin, car le soir je suis fatigué'},{v:3,l:'Le matin plus que le soir'},{v:2,l:'Le soir plus que le matin'},{v:1,l:'Le soir, car le matin je suis fatigué'}]),
-        q('PE6','Chouette ! Tes parents te laissent te coucher à l\'heure que tu veux. Quel moment choisis-tu ?',[{v:5,l:'Entre 20h00 et 21h00'},{v:4,l:'Entre 21h00 et 22h15'},{v:3,l:'Entre 22h15 et 0h30'},{v:2,l:'Entre 0h30 et 1h45'},{v:1,l:'Entre 1h45 et 3h00'}]),
-        q('PE7','Comment te sens-tu dans la demi-heure qui suit ton réveil ?',[{v:1,l:'Complètement épuisé'},{v:2,l:'Un petit peu étourdi'},{v:3,l:'Bien'},{v:4,l:'Au top niveau'}]),
-        q('PE8','À quel moment ton corps commence-t-il à te dire qu\'il faut aller se coucher, même si tu peux résister encore un peu ?',[{v:5,l:'Entre 20h00 et 21h00'},{v:4,l:'Entre 21h00 et 22h15'},{v:3,l:'Entre 22h15 et 0h30'},{v:2,l:'Entre 0h30 et 1h45'},{v:1,l:'Entre 1h45 et 3h00'}]),
-        q('PE9','Imaginons que tu doives te lever tous les matins à 6h00. Ça serait ?',[{v:1,l:'Affreux'},{v:2,l:'Pas super'},{v:3,l:'S\'il le faut absolument...'},{v:4,l:'Sans problème'}]),
-        q('PE10','Lorsque tu te lèves le matin, combien de temps te faut-il pour te sentir bien réveillé ?',[{v:4,l:'Entre 0 et 10 minutes'},{v:3,l:'Entre 11 et 20 minutes'},{v:2,l:'Entre 21 et 40 minutes'},{v:1,l:'Plus de 40 minutes'}]),
-      ]},
-  ],
-  scoring:{
-    type:'sum_no_interpretation', maxTotal:43
-  }
-};
 export const Q_PED_02 = {
   id:'Q_PED_02', titre:'Échelle de Conners — Version Enseignant (TDAH, forme courte)',
   instructions:'Ce questionnaire est destiné aux ENSEIGNANTS. Évaluez le comportement de l\'élève au cours du dernier mois. 0 = Pas du tout · 1 = Un peu · 2 = Souvent · 3 = Très souvent.',
