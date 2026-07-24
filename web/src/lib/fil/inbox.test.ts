@@ -10,9 +10,9 @@ describe('lignesInbox', () => {
   it('groupe par patient : une ligne, nombre, dernière date et derniers titres', () => {
     const lignes = lignesInbox(
       [
-        { idPatient: 'P-SOPHIE', titre: 'Sommeil', dateReponse: new Date('2026-07-14T08:00:00.000Z') },
-        { idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-15T08:00:00.000Z') },
-        { idPatient: 'P-MICHEL', titre: 'Alimentaire', dateReponse: new Date('2026-07-13T08:00:00.000Z') },
+        { idReponse: 'R1', idPatient: 'P-SOPHIE', titre: 'Sommeil', dateReponse: new Date('2026-07-14T08:00:00.000Z') },
+        { idReponse: 'R2', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-15T08:00:00.000Z') },
+        { idReponse: 'R3', idPatient: 'P-MICHEL', titre: 'Alimentaire', dateReponse: new Date('2026-07-13T08:00:00.000Z') },
       ],
       new Map(),
       NOMS,
@@ -30,9 +30,9 @@ describe('lignesInbox', () => {
     const lignes = lignesInbox(
       [
         // vue en consultation (avant l'ancre) → ignorée
-        { idPatient: 'P-SOPHIE', titre: 'Ancien', dateReponse: new Date('2026-07-10T08:00:00.000Z') },
+        { idReponse: 'R1', idPatient: 'P-SOPHIE', titre: 'Ancien', dateReponse: new Date('2026-07-10T08:00:00.000Z') },
         // après l'ancre → en attente
-        { idPatient: 'P-SOPHIE', titre: 'Récent', dateReponse: new Date('2026-07-15T08:00:00.000Z') },
+        { idReponse: 'R2', idPatient: 'P-SOPHIE', titre: 'Récent', dateReponse: new Date('2026-07-15T08:00:00.000Z') },
       ],
       ancres,
       NOMS,
@@ -44,7 +44,7 @@ describe('lignesInbox', () => {
 
   it('sans consultation validée, toutes les réponses attendent', () => {
     const lignes = lignesInbox(
-      [{ idPatient: 'P-MICHEL', titre: 'Alimentaire', dateReponse: new Date('2026-07-13T08:00:00.000Z') }],
+      [{ idReponse: 'R1', idPatient: 'P-MICHEL', titre: 'Alimentaire', dateReponse: new Date('2026-07-13T08:00:00.000Z') }],
       new Map(),
       NOMS,
     );
@@ -55,16 +55,31 @@ describe('lignesInbox', () => {
   it('plafonne les titres à trois, sans doublon', () => {
     const lignes = lignesInbox(
       [
-        { idPatient: 'P-SOPHIE', titre: 'A', dateReponse: new Date('2026-07-15T08:00:00.000Z') },
-        { idPatient: 'P-SOPHIE', titre: 'A', dateReponse: new Date('2026-07-14T08:00:00.000Z') },
-        { idPatient: 'P-SOPHIE', titre: 'B', dateReponse: new Date('2026-07-13T08:00:00.000Z') },
-        { idPatient: 'P-SOPHIE', titre: 'C', dateReponse: new Date('2026-07-12T08:00:00.000Z') },
-        { idPatient: 'P-SOPHIE', titre: 'D', dateReponse: new Date('2026-07-11T08:00:00.000Z') },
+        { idReponse: 'R1', idPatient: 'P-SOPHIE', titre: 'A', dateReponse: new Date('2026-07-15T08:00:00.000Z') },
+        { idReponse: 'R2', idPatient: 'P-SOPHIE', titre: 'A', dateReponse: new Date('2026-07-14T08:00:00.000Z') },
+        { idReponse: 'R3', idPatient: 'P-SOPHIE', titre: 'B', dateReponse: new Date('2026-07-13T08:00:00.000Z') },
+        { idReponse: 'R4', idPatient: 'P-SOPHIE', titre: 'C', dateReponse: new Date('2026-07-12T08:00:00.000Z') },
+        { idReponse: 'R5', idPatient: 'P-SOPHIE', titre: 'D', dateReponse: new Date('2026-07-11T08:00:00.000Z') },
       ],
       new Map(),
       NOMS,
     );
     expect(lignes[0].nb).toBe(5);
     expect(lignes[0].titres).toEqual(['A', 'B', 'C']);
+  });
+
+  it('écarte les réponses confirmées lues par le praticien', () => {
+    const lignes = lignesInbox(
+      [
+        { idReponse: 'R-LUE', idPatient: 'P-SOPHIE', titre: 'Sommeil', dateReponse: new Date('2026-07-14T08:00:00.000Z') },
+        { idReponse: 'R-NON-LUE', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-15T08:00:00.000Z') },
+      ],
+      new Map(),
+      NOMS,
+      new Set(['R-LUE']),
+    );
+    expect(lignes).toHaveLength(1);
+    expect(lignes[0].nb).toBe(1);
+    expect(lignes[0].titres).toEqual(['Plaintes']);
   });
 });

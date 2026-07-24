@@ -13,7 +13,7 @@
  * réponses attendent.
  */
 
-export type ReponseInboxRow = { idPatient: string; titre: string; dateReponse: Date };
+export type ReponseInboxRow = { idReponse: string; idPatient: string; titre: string; dateReponse: Date };
 
 export type LigneInbox = {
   idPatient: string;
@@ -31,9 +31,11 @@ export function lignesInbox(
   reponses: ReponseInboxRow[],
   derniereConsultationValidee: Map<string, Date>,
   noms: Map<string, string>,
+  reponsesLues = new Set<string>(),
 ): LigneInbox[] {
   const parPatient = new Map<string, ReponseInboxRow[]>();
   for (const r of reponses) {
+    if (reponsesLues.has(r.idReponse)) continue;
     const ancre = derniereConsultationValidee.get(r.idPatient);
     if (ancre && r.dateReponse <= ancre) continue; // déjà vue en consultation
     const liste = parPatient.get(r.idPatient);

@@ -283,9 +283,30 @@ model QuestionnaireReponse {
   interpretation  String?  @map("interpretation")
   createdAt       DateTime @default(now()) @map("created_at")
 
-  patient Patient @relation(fields: [idPatient], references: [idPatient])
+  patient  Patient                         @relation(fields: [idPatient], references: [idPatient])
+  lectures QuestionnaireLecturePraticien[]
 
   @@map("questionnaire_reponses")
+}
+
+// Accusé explicite de lecture praticien d'une réponse questionnaire.
+//
+// Le Fil du jour ne peut pas déduire « lu » d'une visite de fiche : la lecture
+// clinique doit être confirmée au niveau du questionnaire reçu, sinon l'inbox
+// se vide trop tôt. Une ligne = une réponse confirmée lue par le praticien qui
+// porte le dossier. Pas de payload clinique : l'identifiant de réponse suffit.
+model QuestionnaireLecturePraticien {
+  id             String   @id @default(cuid())
+  idReponse      String   @unique @map("id_reponse")
+  idPatient      String   @map("id_patient")
+  praticienEmail String   @map("praticien_email")
+  luLe           DateTime @default(now()) @map("lu_le")
+
+  reponse QuestionnaireReponse @relation(fields: [idReponse], references: [idReponse], onDelete: Cascade)
+
+  @@index([idPatient, luLe], map: "questionnaire_lectures_patient_idx")
+  @@index([luLe], map: "questionnaire_lectures_scan_idx")
+  @@map("questionnaire_lectures_praticien")
 }
 
 model SyntheseIA {

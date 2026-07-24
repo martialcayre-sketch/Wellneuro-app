@@ -1,6 +1,10 @@
 import { SynthesePanel } from '@/components/SynthesePanel';
 
-export default function DashboardSynthesePage() {
+export default function DashboardSynthesePage({
+  searchParams,
+}: {
+  searchParams?: { idPatient?: string };
+}) {
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -9,7 +13,7 @@ export default function DashboardSynthesePage() {
           Génération IA à partir des résultats questionnaires — validation praticien obligatoire avant envoi
         </p>
       </div>
-      <SynthesePanel />
+      <SynthesePanel initialPatientId={searchParams?.idPatient ?? ''} />
     </div>
   );
 }

@@ -66,6 +66,9 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
 
     // 3. Enfants directs.
     supprimees.synthesesIA = (await tx.syntheseIA.deleteMany({ where: par })).count;
+    supprimees.questionnaireLecturesPraticien = (
+      await tx.questionnaireLecturePraticien.deleteMany({ where: par })
+    ).count;
     supprimees.questionnaireReponses = (await tx.questionnaireReponse.deleteMany({ where: par })).count;
     supprimees.assignations = (await tx.assignation.deleteMany({ where: par })).count;
     supprimees.consultations = (await tx.consultation.deleteMany({ where: par })).count;

@@ -14,6 +14,7 @@ import {
   HelpCircle,
   ListChecks,
   ShieldAlert,
+  Sparkles,
   Stethoscope,
   X,
   type LucideIcon,
@@ -1122,6 +1123,24 @@ export function FichePatientPanel({
                 icone={Activity}
               >
                 {cartesObjetsCliniques}
+              </InstrumentTiroir>
+              <InstrumentTiroir
+                libelle="Synthèse IA & booklet"
+                description="Générer, relire, valider la synthèse IA puis préparer le booklet patient."
+                icone={Sparkles}
+              >
+                <div className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4">
+                  <p className="text-base text-foreground">
+                    Les outils de synthèse s’ouvrent dans l’espace dédié, avec ce patient déjà sélectionné.
+                  </p>
+                  <Link
+                    href={`/dashboard/synthese?idPatient=${encodeURIComponent(idPatient)}`}
+                    className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  >
+                    <Sparkles aria-hidden="true" size={16} />
+                    Ouvrir la synthèse IA
+                  </Link>
+                </div>
               </InstrumentTiroir>
               <InstrumentTiroir
                 libelle="Détail des réponses"
