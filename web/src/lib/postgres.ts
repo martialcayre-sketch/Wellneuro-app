@@ -6,7 +6,22 @@
  * `undefined` si aucune n'est définie (l'appelant décide de l'erreur).
  */
 export function resolveDatabaseUrl(): string | undefined {
-  return process.env.DATABASE_URL ?? process.env.SCALINGO_POSTGRESQL_URL;
+  // `??` ne bascule que sur null/undefined : un DATABASE_URL posé mais VIDE
+  // (déclaré sans valeur côté Scalingo) masquerait SCALINGO_POSTGRESQL_URL. On
+  // teste donc le non-blanc avant de retomber sur l'URL de l'add-on Scalingo.
+  const direct = process.env.DATABASE_URL;
+  if (direct && direct.trim()) return direct;
+  return process.env.SCALINGO_POSTGRESQL_URL;
+}
+
+/**
+ * Taille du pool `pg`, lue depuis `DB_POOL_MAX`. Défaut et plancher **1** :
+ * toute valeur absente, vide, non numérique ou < 1 retombe à 1 (une valeur
+ * négative passée à `pg` serait invalide). À relever (5–10) sur Scalingo.
+ */
+export function resolvePoolMax(): number {
+  const n = Number.parseInt(process.env.DB_POOL_MAX ?? '', 10);
+  return Number.isFinite(n) && n >= 1 ? n : 1;
 }
 
 /**

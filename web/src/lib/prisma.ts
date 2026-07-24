@@ -1,7 +1,7 @@
 import { PrismaClient } from '@/generated/prisma';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { resolveDatabaseUrl, stripSslParams, supabasePoolSsl } from '@/lib/postgres';
+import { resolveDatabaseUrl, resolvePoolMax, stripSslParams, supabasePoolSsl } from '@/lib/postgres';
 
 function createPrismaClient(): PrismaClient {
   const rawConnectionString = resolveDatabaseUrl();
@@ -22,8 +22,13 @@ function createPrismaClient(): PrismaClient {
     /* URL non parseable : conservée masquée */
   }
   const sslmodeReste = /[?&]sslmode=/.test(connectionString) ? 'oui' : 'non';
+  // Libellé dérivé de la FORME de `ssl`, pas de sa troothiness : sans TLS
+  // (local) → « s.o. » ; chiffré sans vérifier la chaîne → « oui » ; chaîne
+  // vérifiée (DB_SSL_CA) → « non ». C'est l'instrument de validation du
+  // durcissement TLS HDS, il ne doit pas s'inverser.
+  const tlsNoVerify = ssl === undefined ? 's.o.' : ssl.rejectUnauthorized === false ? 'oui' : 'non';
   console.log(
-    `[prisma] connexion db host=${hostForLog} tlsNoVerify=${ssl ? 'oui' : 'non'} sslmodeDansUrl=${sslmodeReste}`,
+    `[prisma] connexion db host=${hostForLog} tlsNoVerify=${tlsNoVerify} sslmodeDansUrl=${sslmodeReste}`,
   );
 
   // `max` connexions par instance. Défaut **1** — hérité du modèle serverless
@@ -34,8 +39,7 @@ function createPrismaClient(): PrismaClient {
   // Sur un conteneur Scalingo long-running mono-process, relever `DB_POOL_MAX`
   // (5–10) évite de sérialiser tout l'accès DB sur une seule connexion. Garder
   // `DB_POOL_MAX × nombre_de_conteneurs` sous le plafond du plan PostgreSQL.
-  const max = Number.parseInt(process.env.DB_POOL_MAX ?? '1', 10) || 1;
-  const pool = new Pool({ connectionString, ssl, max });
+  const pool = new Pool({ connectionString, ssl, max: resolvePoolMax() });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }

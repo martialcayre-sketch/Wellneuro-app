@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   resolveDatabaseUrl,
+  resolvePoolMax,
   supabasePoolSsl,
   stripSslParams,
   withSupabaseSslMode,
@@ -28,6 +29,31 @@ describe('resolveDatabaseUrl', () => {
     delete process.env.DATABASE_URL;
     delete process.env.SCALINGO_POSTGRESQL_URL;
     expect(resolveDatabaseUrl()).toBeUndefined();
+  });
+
+  it('DATABASE_URL vide/blanche ne masque pas le repli Scalingo', () => {
+    process.env.DATABASE_URL = '   ';
+    process.env.SCALINGO_POSTGRESQL_URL = 'postgresql://scalingo/db';
+    expect(resolveDatabaseUrl()).toBe('postgresql://scalingo/db');
+  });
+});
+
+describe('resolvePoolMax', () => {
+  it('défaut 1 si DB_POOL_MAX absente', () => {
+    delete process.env.DB_POOL_MAX;
+    expect(resolvePoolMax()).toBe(1);
+  });
+
+  it('lit une valeur valide', () => {
+    process.env.DB_POOL_MAX = '8';
+    expect(resolvePoolMax()).toBe(8);
+  });
+
+  it('plancher 1 : 0, négatif, vide ou non numérique retombent à 1', () => {
+    for (const v of ['0', '-5', '', 'abc']) {
+      process.env.DB_POOL_MAX = v;
+      expect(resolvePoolMax(), `DB_POOL_MAX=${JSON.stringify(v)}`).toBe(1);
+    }
   });
 });
 
