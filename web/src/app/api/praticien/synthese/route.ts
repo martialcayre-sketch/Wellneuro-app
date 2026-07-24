@@ -36,7 +36,11 @@ type ReponseInput = {
   interpretation: string | null;
 };
 
-function buildUserMessage(reponses: ReponseInput[], prenom: string, nom: string, contexte: string): string {
+// Pseudonymisation (audit HDS 2026-07-24) : aucune identité patient ne part
+// vers l'API Anthropic. Le nom n'apporte rien au raisonnement clinique, et
+// `buildContexteClinique` exclut l'identité par construction — seule cette
+// ligne d'en-tête la faisait sortir.
+function buildUserMessage(reponses: ReponseInput[], contexte: string): string {
   const filtered = reponses.map(r => ({
     titre: r.titre,
     date: r.date,
@@ -48,7 +52,7 @@ function buildUserMessage(reponses: ReponseInput[], prenom: string, nom: string,
   const blocContexte = contexte
     ? `## Contexte anamnestique et signalétique du patient\n\n${contexte}`
     : '## Contexte anamnestique et signalétique du patient\n\nContexte anamnestique non renseigné pour ce patient.';
-  return `Patient : ${prenom} ${nom}\nNombre de questionnaires complétés : ${filtered.length}\n\n${blocContexte}\n\n## Résultats des questionnaires\n\n${JSON.stringify(filtered, null, 2)}`;
+  return `Nombre de questionnaires complétés : ${filtered.length}\n\n${blocContexte}\n\n## Résultats des questionnaires\n\n${JSON.stringify(filtered, null, 2)}`;
 }
 
 // Fusionne les points de vigilance déterministes (garantis) en tête de ceux
@@ -230,7 +234,7 @@ export async function POST(req: Request) {
       });
     }
 
-    const userMessage = buildUserMessage(reponsesInput, patient.prenom, patient.nom, contexteClinique);
+    const userMessage = buildUserMessage(reponsesInput, contexteClinique);
 
     const response = await anthropic.messages.create({
       model: CLAUDE_MODEL,
