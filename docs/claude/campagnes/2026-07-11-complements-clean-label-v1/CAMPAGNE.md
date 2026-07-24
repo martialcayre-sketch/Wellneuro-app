@@ -1,10 +1,10 @@
 ---
 id: "2026-07-11-complements-clean-label-v1"
 titre: "C4 — Compléments clean label (C4A/C4B)"
-statut: "cadrée — lots à compiler N+1"
+statut: "en cours"
 créée_le: "2026-07-11"
-mise_à_jour: "2026-07-13"
-lot_courant: "aucun"
+mise_à_jour: "2026-07-24"
+lot_courant: "LOT-00"
 ---
 
 # C4 — Compléments clean label
@@ -83,3 +83,24 @@ protocole/documents + validation.
 
 - Bibliothèque compléments en **instrument à tiroir** consultable depuis la zone focale (protocole) ; présentation multi-dimensions **sans score global dominant** inchangée.
 - Canvas **ardoise** A5-R2 — différé au lot d'implémentation.
+
+## Lancement 2026-07-24
+
+La campagne démarre sur la base de la proposition de convergence relue et
+mergée (`docs/claude/propositions/2026-07-24-rayon-complements-bibliotheque/PROPOSITION_RAYON_COMPLEMENTS.md`).
+Décisions du praticien du 2026-07-24 :
+
+- **Catalogue DGCCRF/Compl'Alim complet, importé en brouillons** — pas de
+  pilote restreint ; statut `importée`/`vérifiée` visible par fiche, revue
+  praticien pour toute activation clinique.
+- **Check-in observance compléments : oui, par évolution versionnée** du
+  catalogue gelé de questions (conditionnelle, options fermées non
+  culpabilisantes, jamais de pourcentage ni de relance).
+- **Option 1 retenue pour le protocole : contrat V3 avec `supplementCatalogRef`
+  gouverné** — la garde `FORBIDDEN_SUPPLEMENT_FIELDS` reste intégralement en
+  place ; la référence est posée par le praticien seul, via l'instrument
+  bibliothèque.
+
+Le LOT-00 est exécuté le 2026-07-24 : audit des sources open data, modèle de
+fiche produit et contrat de données — livrable `LOT-00-AUDIT-SOURCES.md` (même
+dossier). Aucune décision actée ci-dessus n'est modifiée par ce lancement.
