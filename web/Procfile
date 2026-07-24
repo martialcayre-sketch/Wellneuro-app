@@ -1,0 +1,2 @@
+web: npm run start:scalingo
+postdeploy: npm run db:deploy

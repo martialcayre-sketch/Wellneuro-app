@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "bash scripts/vercel-build.sh",
     "start": "next start",
+    "start:scalingo": "next start -p ${PORT:-3000}",
+    "db:deploy": "bash scripts/db-deploy.sh",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "prisma:generate": "prisma generate",
