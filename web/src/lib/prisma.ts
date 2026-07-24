@@ -1,12 +1,12 @@
 import { PrismaClient } from '@/generated/prisma';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { stripSslParams, supabasePoolSsl } from '@/lib/postgres';
+import { resolveDatabaseUrl, stripSslParams, supabasePoolSsl } from '@/lib/postgres';
 
 function createPrismaClient(): PrismaClient {
-  const rawConnectionString = process.env.DATABASE_URL;
+  const rawConnectionString = resolveDatabaseUrl();
   if (!rawConnectionString) {
-    throw new Error('DATABASE_URL est absent de web/.env.local');
+    throw new Error("DATABASE_URL (ou SCALINGO_POSTGRESQL_URL) est absente de l'environnement");
   }
   // On retire les paramètres SSL de la chaîne et on ne laisse que l'option `ssl`
   // du Pool piloter le TLS (sinon l'adaptateur en libpq-compat écrase l'option
@@ -26,13 +26,16 @@ function createPrismaClient(): PrismaClient {
     `[prisma] connexion db host=${hostForLog} tlsNoVerify=${ssl ? 'oui' : 'non'} sslmodeDansUrl=${sslmodeReste}`,
   );
 
-  // `max: 1` : chaque instance serverless (Lambda) ne doit garder qu'une seule
-  // connexion physique vers le pooler Supabase (Supavisor, mode transaction).
-  // Sans cette borne, `pg.Pool` ouvre par défaut jusqu'à 10 connexions par
-  // instance ; plusieurs routes/instances en parallèle épuisent alors le
-  // budget de connexions du pooler, qui répond par une erreur
-  // « authentication failed » trompeuse au lieu d'un message de saturation.
-  const pool = new Pool({ connectionString, ssl, max: 1 });
+  // `max` connexions par instance. Défaut **1** — hérité du modèle serverless
+  // Vercel + pooler Supabase (Supavisor, mode transaction), où chaque instance
+  // (Lambda) ne doit garder qu'une connexion ; sans cette borne, plusieurs
+  // routes/instances épuisent le budget du pooler, qui répond « authentication
+  // failed » (trompeur) au lieu d'un message de saturation.
+  // Sur un conteneur Scalingo long-running mono-process, relever `DB_POOL_MAX`
+  // (5–10) évite de sérialiser tout l'accès DB sur une seule connexion. Garder
+  // `DB_POOL_MAX × nombre_de_conteneurs` sous le plafond du plan PostgreSQL.
+  const max = Number.parseInt(process.env.DB_POOL_MAX ?? '1', 10) || 1;
+  const pool = new Pool({ connectionString, ssl, max });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }

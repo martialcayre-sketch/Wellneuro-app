@@ -2,7 +2,12 @@
 // npm install --save-dev prisma dotenv
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
-import { withSupabaseSslMode } from "./src/lib/postgres";
+import { resolveDatabaseUrl, withSupabaseSslMode } from "./src/lib/postgres";
+
+// `migrate deploy` en postdeploy Scalingo s'exécute en contexte CLI où
+// SCALINGO_POSTGRESQL_URL existe mais DATABASE_URL peut être absente : on résout
+// les deux (comme le runtime), sinon les migrations viseraient une base vide.
+const dbUrl = resolveDatabaseUrl();
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -11,7 +16,7 @@ export default defineConfig({
     seed: "node prisma/runWithAlias.js prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"] ? withSupabaseSslMode(process.env["DATABASE_URL"]) : undefined,
+    url: dbUrl ? withSupabaseSslMode(dbUrl) : undefined,
   },
   // Tables SQL-brut hors schema.prisma : créées par des migrations versionnées
   // mais exclues du diff Prisma déclaratif. Deux raisons d'y être — un type
