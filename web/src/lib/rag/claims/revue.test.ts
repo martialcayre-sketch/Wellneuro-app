@@ -19,16 +19,19 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import {
   basculerLot,
+  cloreTirageCaduc,
   compterClaimsRevue,
   deciderClaim,
   deciderLot,
   ECHANTILLON_MIN,
   elementJournalClaim,
+  eligiblesVoieRapide,
   estClaimStatut,
   listerClaimsRevue,
   sanitiserQuestionnaire,
   sanitiserVerdicts,
   tailleEchantillon,
+  tirageCaduc,
   tirerEchantillon,
   tirerIndicesEchantillon,
   transitionAutorisee,
@@ -837,5 +840,134 @@ describe('basculerLot', () => {
       .mockResolvedValueOnce([{ n: BigInt(0) }]);
     prisma.$executeRaw.mockRejectedValueOnce(new Error('unique constraint (23505)'));
     expect(await basculerLot(PARAMS)).toEqual({ ok: false, raison: 'tirage_deja_conclu' });
+  });
+});
+
+describe('tirageCaduc — divergence exacte du lot éligible', () => {
+  it('même ensemble (ordre indifférent) → NON caduc', () => {
+    expect(tirageCaduc(['a', 'b', 'c'], ['c', 'a', 'b'])).toBe(false);
+  });
+
+  it('taille différente → caduc (lot rétréci OU élargi)', () => {
+    expect(tirageCaduc(['a', 'b'], ['a'])).toBe(true);
+    expect(tirageCaduc(['a', 'b'], ['a', 'b', 'c'])).toBe(true);
+    expect(tirageCaduc(['a'], [])).toBe(true);
+  });
+
+  it('même taille mais un membre différent → caduc', () => {
+    expect(tirageCaduc(['a', 'b'], ['a', 'x'])).toBe(true);
+  });
+});
+
+describe('eligiblesVoieRapide — allowlist de la voie rapide', () => {
+  beforeEach(() => {
+    prisma.$queryRaw.mockReset();
+  });
+
+  it('rend les ids éligibles et n’interroge QUE l’allowlist déclaré/observé non prescriptif', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([{ id: 'a' }, { id: 'b' }]);
+    expect(await eligiblesVoieRapide('WN-SRC-0056')).toEqual(['a', 'b']);
+    const sql = sqlDeAppel(prisma.$queryRaw.mock.calls[0]);
+    expect(sql).toContain("statut = 'EN_ATTENTE_VALIDATION'");
+    expect(sql).toContain('c.active = true');
+    expect(sql).toContain('prescriptif = false');
+    expect(sql).toContain("typologie_lecture IN ('déclaré', 'observé')");
+  });
+
+  // Anti-dérive : l'exactitude du drapeau `caduc` repose sur l'ÉGALITÉ des
+  // périmètres — le lot figé au tirage (tirerEchantillon) et le lot courant
+  // (eligiblesVoieRapide) doivent partager la MÊME allowlist. Si l'une dérive
+  // sans l'autre, `tirageCaduc` mentirait silencieusement. Ce test verrouille
+  // les quatre clauses communes sur les deux requêtes.
+  it('partage la MÊME allowlist que le tirage (verrou anti-dérive du drapeau caduc)', async () => {
+    const CLAUSES = [
+      "statut = 'EN_ATTENTE_VALIDATION'",
+      'active = true',
+      'prescriptif = false',
+      "typologie_lecture IN ('déclaré', 'observé')",
+    ];
+
+    prisma.$queryRaw.mockReset();
+    prisma.$queryRaw.mockResolvedValueOnce([]);
+    await eligiblesVoieRapide('WN-SRC-0056');
+    const sqlEligibles = sqlDeAppel(prisma.$queryRaw.mock.calls[0]);
+
+    prisma.$queryRaw.mockReset();
+    prisma.$queryRaw
+      .mockResolvedValueOnce([]) // aucun tirage ouvert
+      .mockResolvedValueOnce([{ id: 'a' }]) // éligibles (2e appel du tirage)
+      .mockResolvedValueOnce([{ signees: BigInt(0), bascules: BigInt(0) }])
+      .mockResolvedValueOnce([{ id: BigInt(1) }]);
+    await tirerEchantillon({ sourceId: 'WN-SRC-0056', validateur: 'p@wellneuro.fr' });
+    const sqlTirage = sqlDeAppel(prisma.$queryRaw.mock.calls[1]);
+
+    for (const clause of CLAUSES) {
+      expect(sqlEligibles).toContain(clause);
+      expect(sqlTirage).toContain(clause);
+    }
+  });
+});
+
+describe('cloreTirageCaduc — clôture NEUTRE d’un tirage caduc', () => {
+  beforeEach(() => {
+    prisma.$queryRaw.mockReset();
+    prisma.$executeRaw.mockReset();
+  });
+
+  const PARAMS = { sourceId: 'WN-SRC-0056', tirageId: 41, validateur: 'p@wellneuro.fr' };
+
+  it('clôture un tirage dont le lot a divergé — journal tirage_caduc, AUCUN claim touché', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: BigInt(41), echantillon: { tires: ['a'], eligibles: ['a', 'b'] } }])
+      .mockResolvedValueOnce([{ n: BigInt(0) }])
+      // Lot courant réduit à ['a'] → divergé des éligibles figés → caduc.
+      .mockResolvedValueOnce([{ id: 'a' }]);
+    prisma.$executeRaw.mockResolvedValueOnce(1);
+
+    expect(await cloreTirageCaduc(PARAMS)).toEqual({ ok: true });
+
+    const sql = sqlDeAppel(prisma.$executeRaw.mock.calls[0]);
+    expect(sql).toContain("'tirage_caduc'");
+    expect(sql).not.toContain('UPDATE public.rag_corpus_claims');
+    const params = parametresDeAppel(prisma.$executeRaw.mock.calls[0]);
+    expect(params[0]).toBe('p@wellneuro.fr');
+    expect(params[1]).toBe('WN-SRC-0056');
+    expect(params[2]).toBe(41);
+    const instantane = JSON.parse(params[3] as string);
+    expect(instantane.eligiblesFiges).toEqual(['a', 'b']);
+    expect(instantane.lotActuel).toEqual(['a']);
+  });
+
+  it('refuse de clôturer un tirage ENCORE VIVANT (lot inchangé) — la revue ne se contourne pas', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: BigInt(41), echantillon: { tires: ['a'], eligibles: ['a', 'b'] } }])
+      .mockResolvedValueOnce([{ n: BigInt(0) }])
+      .mockResolvedValueOnce([{ id: 'a' }, { id: 'b' }]); // identique → non caduc
+    expect(await cloreTirageCaduc(PARAMS)).toEqual({ ok: false, raison: 'tirage_encore_vivant' });
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('propage tirage_introuvable et tirage_deja_conclu depuis le chargement', async () => {
+    prisma.$queryRaw.mockResolvedValueOnce([]);
+    expect(await cloreTirageCaduc(PARAMS)).toEqual({ ok: false, raison: 'tirage_introuvable' });
+
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: BigInt(41), echantillon: { tires: ['a'], eligibles: ['a'] } }])
+      .mockResolvedValueOnce([{ n: BigInt(1) }]);
+    expect(await cloreTirageCaduc(PARAMS)).toEqual({ ok: false, raison: 'tirage_deja_conclu' });
+    expect(prisma.$executeRaw).not.toHaveBeenCalled();
+  });
+
+  it('rend tirage_deja_conclu si l’index unique d’issue refuse l’INSERT (course perdue)', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([{ id: BigInt(41), echantillon: { tires: ['a'], eligibles: ['a', 'b'] } }])
+      .mockResolvedValueOnce([{ n: BigInt(0) }])
+      .mockResolvedValueOnce([{ id: 'a' }]);
+    prisma.$executeRaw.mockRejectedValueOnce(
+      new Error(
+        'duplicate key value violates unique constraint "rag_claim_decisions_issue_unique" (23505)',
+      ),
+    );
+    expect(await cloreTirageCaduc(PARAMS)).toEqual({ ok: false, raison: 'tirage_deja_conclu' });
   });
 });

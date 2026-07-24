@@ -94,13 +94,16 @@ describe('tirageOuvertDeSource — reprise sans re-tirer', () => {
     prisma.$queryRaw.mockReset();
   });
 
-  it('rend le tirage ouvert avec tirés et éligibles', async () => {
-    prisma.$queryRaw.mockResolvedValueOnce([
-      {
-        id: BigInt(41),
-        echantillon: { seed: 7, taux: 0.3, lot: 10, tires: ['a'], eligibles: ['a', 'b'] },
-      },
-    ]);
+  it('rend le tirage ouvert (non caduc quand le lot n’a pas bougé)', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([
+        {
+          id: BigInt(41),
+          echantillon: { seed: 7, taux: 0.3, lot: 10, tires: ['a'], eligibles: ['a', 'b'] },
+        },
+      ])
+      // Lot éligible courant IDENTIQUE aux éligibles figés → non caduc.
+      .mockResolvedValueOnce([{ id: 'a' }, { id: 'b' }]);
     expect(await tirageOuvertDeSource('WN-SRC-0056')).toEqual({
       tirageId: 41,
       seed: 7,
@@ -108,12 +111,27 @@ describe('tirageOuvertDeSource — reprise sans re-tirer', () => {
       lot: 10,
       tires: ['a'],
       eligibles: ['a', 'b'],
+      caduc: false,
     });
     // Un tirage n'est « ouvert » que sans issue : le SQL exclut les tirages
-    // déjà conclus par une decision_lot ou une bascule.
+    // déjà conclus par une decision_lot, une bascule OU une clôture caduc.
     const sql = sqlDeAppel(prisma.$queryRaw.mock.calls[0]);
     expect(sql).toContain('NOT EXISTS');
-    expect(sql).toContain("'decision_lot', 'bascule_individuelle'");
+    expect(sql).toContain("'decision_lot', 'bascule_individuelle', 'tirage_caduc'");
+  });
+
+  it('marque caduc quand le lot éligible a divergé des éligibles figés', async () => {
+    prisma.$queryRaw
+      .mockResolvedValueOnce([
+        {
+          id: BigInt(41),
+          echantillon: { seed: 7, taux: 0.3, lot: 10, tires: ['a'], eligibles: ['a', 'b'] },
+        },
+      ])
+      // Lot réduit à ['a'] (l’autre éligible traité individuellement) → caduc.
+      .mockResolvedValueOnce([{ id: 'a' }]);
+    const tirage = await tirageOuvertDeSource('WN-SRC-0056');
+    expect(tirage?.caduc).toBe(true);
   });
 
   it('rend null quand aucun tirage ouvert', async () => {

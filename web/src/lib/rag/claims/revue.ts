@@ -481,6 +481,39 @@ export function tailleEchantillon(n: number, taux: number): number {
   return Math.min(n, Math.max(ECHANTILLON_MIN, Math.ceil(n * taux)));
 }
 
+/**
+ * Les claims actuellement éligibles à la voie rapide d'une source — ALLOWLIST
+ * déclaré/observé, non prescriptif, en attente, actif. MÊME prédicat que le
+ * tirage et que le chargement du lot dans deciderLot ; l'ordre est stable.
+ */
+export async function eligiblesVoieRapide(sourceId: string): Promise<string[]> {
+  const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT c.id
+    FROM public.rag_corpus_claims c
+    WHERE c.source_id = ${sourceId}
+      AND c.statut = 'EN_ATTENTE_VALIDATION'
+      AND c.active = true
+      AND c.prescriptif = false
+      AND c.typologie_lecture IN ('déclaré', 'observé')
+    ORDER BY c.claim_id, c.version_claim
+  `;
+  return rows.map((r) => r.id);
+}
+
+/**
+ * Un tirage est CADUC quand le lot éligible courant diffère (par ensemble) des
+ * éligibles FIGÉS au tirage — même égalité exacte que le `memeLot` de
+ * deciderLot : un claim échantillonné validé/rejeté individuellement, ou une
+ * nouvelle ingestion, rend le tirage insignable. La clôture caduc le conclut
+ * sans alléguer de défaut ; un tirage NON caduc (lot inchangé) doit être signé
+ * ou basculé, jamais clôturé — la revue de l'échantillon ne se contourne pas.
+ */
+export function tirageCaduc(eligiblesFiges: string[], lotActuel: string[]): boolean {
+  if (eligiblesFiges.length !== lotActuel.length) return true;
+  const actuel = new Set(lotActuel);
+  return !eligiblesFiges.every((id) => actuel.has(id));
+}
+
 export type TirageEchantillonResultat =
   | {
       ok: true;
@@ -520,7 +553,7 @@ export async function tirerEchantillon(params: {
       AND NOT EXISTS (
         SELECT 1 FROM public.rag_corpus_claim_decisions i
         WHERE i.tirage_id = t.id
-          AND i.type_acte IN ('decision_lot', 'bascule_individuelle')
+          AND i.type_acte IN ('decision_lot', 'bascule_individuelle', 'tirage_caduc')
       )
     ORDER BY t.id DESC
     LIMIT 1
@@ -694,7 +727,7 @@ async function chargerTirageOuvert(
     SELECT count(*) AS n
     FROM public.rag_corpus_claim_decisions
     WHERE tirage_id = ${tirageId}
-      AND type_acte IN ('decision_lot', 'bascule_individuelle')
+      AND type_acte IN ('decision_lot', 'bascule_individuelle', 'tirage_caduc')
   `;
   if (issues[0] && Number(issues[0].n) > 0) return 'tirage_deja_conclu';
 
@@ -953,6 +986,61 @@ export async function basculerLot(params: {
   return { ok: true };
 }
 
+export type ClotureCaducResultat =
+  | { ok: true }
+  | { ok: false; raison: 'tirage_introuvable' | 'tirage_deja_conclu' | 'tirage_encore_vivant' };
+
+/**
+ * Clôture NEUTRE d'un tirage caduc (issue tirage_caduc) : le lot éligible a
+ * divergé des éligibles figés au tirage (traitement individuel entre-temps, ou
+ * nouvelle ingestion) — le tirage n'est plus signable et le relancer est
+ * refusé tant qu'il n'a pas d'issue. Cette clôture le conclut SANS changer
+ * aucun statut de claim et SANS alléguer de défaut (à la différence de
+ * basculerLot). La caducité est VÉRIFIÉE ici : un tirage encore vivant (lot
+ * inchangé) est refusé — la revue de l'échantillon ne se contourne pas.
+ * L'unicité d'issue est portée par l'index unique (course avec une signature
+ * ou une bascule → une seule issue, 23505 → tirage_deja_conclu).
+ */
+export async function cloreTirageCaduc(params: {
+  sourceId: string;
+  tirageId: number;
+  validateur: string;
+}): Promise<ClotureCaducResultat> {
+  const { sourceId, tirageId, validateur } = params;
+
+  const tirage = await chargerTirageOuvert(tirageId, sourceId);
+  if (tirage === 'tirage_introuvable' || tirage === 'tirage_deja_conclu') {
+    return { ok: false, raison: tirage };
+  }
+
+  const lotActuel = await eligiblesVoieRapide(sourceId);
+  if (!tirageCaduc(tirage.eligibles, lotActuel)) {
+    return { ok: false, raison: 'tirage_encore_vivant' };
+  }
+
+  try {
+    await prisma.$executeRaw`
+      INSERT INTO public.rag_corpus_claim_decisions
+        (type_acte, validateur, source_id, tirage_id, echantillon)
+      VALUES
+        ('tirage_caduc', ${validateur}, ${sourceId}, ${tirageId},
+         ${JSON.stringify({
+           tirageId,
+           tiresFiges: tirage.tires,
+           eligiblesFiges: tirage.eligibles,
+           lotActuel,
+         })}::jsonb)
+    `;
+  } catch (error) {
+    if (estViolationIssueUnique(error)) {
+      return { ok: false, raison: 'tirage_deja_conclu' };
+    }
+    throw error;
+  }
+
+  return { ok: true };
+}
+
 export type SourceEnRevue = {
   sourceId: string;
   enAttente: number;
@@ -999,7 +1087,7 @@ export async function listerSourcesEnRevue(): Promise<SourceEnRevue[]> {
           AND NOT EXISTS (
             SELECT 1 FROM public.rag_corpus_claim_decisions i
             WHERE i.tirage_id = t.id
-              AND i.type_acte IN ('decision_lot', 'bascule_individuelle')
+              AND i.type_acte IN ('decision_lot', 'bascule_individuelle', 'tirage_caduc')
           )
       ) AS tirage_ouvert
     FROM public.rag_corpus_claims c

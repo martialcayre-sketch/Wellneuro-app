@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { emailPraticien } from '@/lib/praticien/appartenance';
 import {
   basculerLot,
+  cloreTirageCaduc,
   deciderLot,
   type QuestionRestitution,
   type VerdictEchantillon,
@@ -27,6 +28,7 @@ const SOURCE_RE = /^WN-SRC-\d{4}$/;
 export type CorpusLotDecisionApiResponse =
   | { ok: true; issue: 'valider'; valides: number }
   | { ok: true; issue: 'basculer' }
+  | { ok: true; issue: 'clore_caduc' }
   | { ok: false; reason: string; error: string };
 
 const MESSAGES_REFUS: Record<string, { message: string; status: number }> = {
@@ -71,6 +73,11 @@ const MESSAGES_REFUS: Record<string, { message: string; status: number }> = {
     status: 409,
   },
   motif_requis: { message: 'Une bascule exige un motif.', status: 422 },
+  tirage_encore_vivant: {
+    message:
+      'Ce tirage est encore vivant (son lot n’a pas changé) — il ne se clôture pas pour caducité, signez-le ou basculez la source.',
+    status: 409,
+  },
 };
 
 function echec(reason: string, error: string, status: number) {
@@ -143,7 +150,20 @@ export async function POST(req: Request): Promise<NextResponse<CorpusLotDecision
       return NextResponse.json({ ok: true, issue: 'basculer' });
     }
 
-    return echec('issue_invalide', "L'issue doit être 'valider' ou 'basculer'.", 400);
+    if (body.issue === 'clore_caduc') {
+      const resultat = await cloreTirageCaduc({
+        sourceId,
+        tirageId: tirageId as number,
+        validateur,
+      });
+      if (!resultat.ok) {
+        const refus = MESSAGES_REFUS[resultat.raison];
+        return echec(resultat.raison, refus.message, refus.status);
+      }
+      return NextResponse.json({ ok: true, issue: 'clore_caduc' });
+    }
+
+    return echec('issue_invalide', "L'issue doit être 'valider', 'basculer' ou 'clore_caduc'.", 400);
   } catch (err) {
     console.error(
       '[praticien/corpus/claims/lot/decision POST]',
