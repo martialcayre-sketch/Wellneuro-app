@@ -9,6 +9,8 @@ const { prisma } = vi.hoisted(() => ({
       update: vi.fn(),
       delete: vi.fn(),
     },
+    // idsAssignablesPour / titres CAB : aucun instrument du cabinet ici.
+    cabinetInstrument: { findMany: vi.fn().mockResolvedValue([]), findUnique: vi.fn() },
     $transaction: vi.fn(),
   },
 }));

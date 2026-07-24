@@ -1,12 +1,9 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
-import {
-  ALIAS_HISTORIQUES,
-  CATALOGUE_DEFINITIONS,
-  nbQuestions,
-  scoreMax,
-} from '@/lib/bibliotheque';
+import { ALIAS_HISTORIQUES, nbQuestions, scoreMax } from '@/lib/bibliotheque';
+import { estInstrumentCabinet, resolveDefinition } from '@/lib/instruments';
+import { emailPraticien } from '@/lib/praticien/appartenance';
 import type { Section } from '@/lib/questionnaire-types';
 
 // Aperçu VIERGE d'un instrument, tel que le patient le verra : définition
@@ -45,7 +42,21 @@ export async function GET(request: Request) {
     }
     const aliasVers = ALIAS_HISTORIQUES[demande] ?? null;
     const id = aliasVers ?? demande;
-    const def = CATALOGUE_DEFINITIONS[id];
+    // Resolver commun : les alias/catalogue passent inchangés ; un instrument
+    // du cabinet n'est servi qu'à son praticien PROPRIÉTAIRE, quel que soit
+    // son statut — publié compris. Sans email de session, aucun CAB n'est
+    // servi (le contrôle propriétaire serait inopérant).
+    const emailSession = emailPraticien(session);
+    if (estInstrumentCabinet(id) && !emailSession) {
+      return NextResponse.json<ApercuApiResponse>(
+        { apercu: null, reason: 'not_found' },
+        { status: 404 },
+      );
+    }
+    const def = await resolveDefinition(id, {
+      praticienEmail: emailSession ?? undefined,
+      inclureNonPublies: true,
+    });
     if (!def) {
       return NextResponse.json<ApercuApiResponse>(
         { apercu: null, reason: 'not_found' },

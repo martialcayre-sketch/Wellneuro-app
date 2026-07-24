@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import nodemailer from 'nodemailer';
-import { CATALOGUE_DEFINITIONS, IDS_ASSIGNABLES } from '@/lib/bibliotheque';
+import { idsAssignablesPour, resolveDefinition } from '@/lib/instruments';
 import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
@@ -82,21 +82,22 @@ export async function POST(request: Request) {
     }
 
     // Revalidation à l'envoi : assignable AUJOURD'HUI (actif + défini), pas
-    // seulement au moment de l'ajout au brouillon.
-    const aCreer = brouillon.qids.flatMap(idQuestionnaire => {
-      const def = IDS_ASSIGNABLES.has(idQuestionnaire)
-        ? CATALOGUE_DEFINITIONS[idQuestionnaire]
-        : undefined;
-      return def
-        ? [
-            {
-              idAssignation: createPublicId('ASS'),
-              idQuestionnaire,
-              titre: def.titre || idQuestionnaire,
-            },
-          ]
-        : [];
-    });
+    // seulement au moment de l'ajout au brouillon. Un instrument du cabinet
+    // repassé en brouillon entre l'ajout et l'envoi est simplement filtré :
+    // `idsAssignablesPour` ne rend que les CAB publiés, et `resolveDefinition`
+    // sans options ne sert jamais un non-publié.
+    const assignables = await idsAssignablesPour(emailSession);
+    const aCreer: { idAssignation: string; idQuestionnaire: string; titre: string }[] = [];
+    for (const idQuestionnaire of brouillon.qids) {
+      if (!assignables.has(idQuestionnaire)) continue;
+      const def = await resolveDefinition(idQuestionnaire);
+      if (!def) continue;
+      aCreer.push({
+        idAssignation: createPublicId('ASS'),
+        idQuestionnaire,
+        titre: def.titre || idQuestionnaire,
+      });
+    }
     if (aCreer.length === 0) {
       return NextResponse.json<EnvoyerFileResponse>(
         { success: false, reason: 'invalid_payload', error: 'Aucun questionnaire valide dans ce brouillon.' },

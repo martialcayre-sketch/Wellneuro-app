@@ -1,12 +1,23 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { X } from 'lucide-react';
 import { BanniereDiffere } from '@/components/ui/BanniereDiffere';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { QuestionField } from '@/components/patient/QuestionField';
+import { ECHELLES_NOMMEES, type EchelleNommee } from '@/lib/echelles-cabinet';
 import type { BibliothequeEntree } from '@/lib/bibliotheque';
+import type { BibliothequeApiResponse } from '@/app/api/praticien/bibliotheque/route';
 import type { ApercuApiResponse } from '@/app/api/praticien/bibliotheque/apercu/route';
+import type {
+  InstrumentCabinetDetailDto,
+  InstrumentCabinetDto,
+  InstrumentsApiResponse,
+  MutateInstrumentResponse,
+} from '@/app/api/praticien/instruments/route';
+import type { ImportInstrumentResponse } from '@/app/api/praticien/instruments/import/route';
 import type {
   FileEnvoiApiResponse,
   FileEnvoiBrouillon,
@@ -34,20 +45,31 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
   const [message, setMessage] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [occupe, setOccupe] = useState(false);
+  // Instruments du cabinet : la liste serveur (prop) ne les connaît pas — le
+  // panneau recharge les entrées via l'API, qui les fusionne au catalogue.
+  const [entreesCourantes, setEntreesCourantes] = useState<BibliothequeEntree[]>(entrees);
+  const [instrumentsCabinet, setInstrumentsCabinet] = useState<InstrumentCabinetDto[]>([]);
+  const [erreurInstruments, setErreurInstruments] = useState(false);
+  const [tiroirEditeur, setTiroirEditeur] = useState(false);
+  const [tiroirImport, setTiroirImport] = useState(false);
+  const [tiroirRelecture, setTiroirRelecture] = useState(false);
+  const [editionInitiale, setEditionInitiale] = useState<InstrumentCabinetDetailDto | null>(null);
+  const [relecture, setRelecture] = useState<InstrumentCabinetDetailDto | null>(null);
 
   const selection = useMemo(
-    () => entrees.find(e => e.id === selectionId) ?? null,
-    [entrees, selectionId],
+    () => entreesCourantes.find(e => e.id === selectionId) ?? null,
+    [entreesCourantes, selectionId],
   );
 
   const categories = useMemo(
-    () => [...new Set(entrees.map(e => e.categorie))].sort((a, b) => a.localeCompare(b, 'fr')),
-    [entrees],
+    () =>
+      [...new Set(entreesCourantes.map(e => e.categorie))].sort((a, b) => a.localeCompare(b, 'fr')),
+    [entreesCourantes],
   );
 
   const filtres = useMemo(() => {
     const terme = recherche.trim().toLowerCase();
-    return entrees.filter(e => {
+    return entreesCourantes.filter(e => {
       if (categorie && e.categorie !== categorie) return false;
       if (!terme) return true;
       return (
@@ -56,7 +78,7 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
         e.categorie.toLowerCase().includes(terme)
       );
     });
-  }, [entrees, recherche, categorie]);
+  }, [entreesCourantes, recherche, categorie]);
 
   const chargerFile = useCallback(async () => {
     try {
@@ -67,6 +89,41 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
       setBrouillons([]);
     }
   }, []);
+
+  const chargerBibliotheque = useCallback(async () => {
+    try {
+      const res = await fetch('/api/praticien/bibliotheque');
+      const json = (await res.json()) as BibliothequeApiResponse;
+      if (Array.isArray(json.entrees) && json.entrees.length > 0) {
+        setEntreesCourantes(json.entrees);
+      }
+    } catch {
+      // Les entrées serveur restent affichées.
+    }
+  }, []);
+
+  const chargerInstruments = useCallback(async () => {
+    try {
+      const res = await fetch('/api/praticien/instruments');
+      const json = (await res.json()) as InstrumentsApiResponse;
+      if (!res.ok || json.unavailable) {
+        // Un échec de chargement n'est pas « aucun instrument » : l'écran
+        // doit le dire, pas le masquer.
+        setErreurInstruments(true);
+        setInstrumentsCabinet([]);
+        return;
+      }
+      setErreurInstruments(false);
+      setInstrumentsCabinet(json.instruments ?? []);
+    } catch {
+      setErreurInstruments(true);
+      setInstrumentsCabinet([]);
+    }
+  }, []);
+
+  const rafraichirCabinet = useCallback(async () => {
+    await Promise.all([chargerBibliotheque(), chargerInstruments()]);
+  }, [chargerBibliotheque, chargerInstruments]);
 
   useEffect(() => {
     let actif = true;
@@ -87,10 +144,11 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
       }
     })();
     void chargerFile();
+    void rafraichirCabinet();
     return () => {
       actif = false;
     };
-  }, [chargerFile]);
+  }, [chargerFile, rafraichirCabinet]);
 
   useEffect(() => {
     if (!selectionId) return;
@@ -183,6 +241,85 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
     setOccupe(false);
   }
 
+  async function chargerDetail(idInstrument: string): Promise<InstrumentCabinetDetailDto | null> {
+    try {
+      const res = await fetch(`/api/praticien/instruments?id=${encodeURIComponent(idInstrument)}`);
+      const json = (await res.json()) as InstrumentsApiResponse;
+      return json.instrument ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function ouvrirEdition(idInstrument: string) {
+    setErreur(null);
+    const detail = await chargerDetail(idInstrument);
+    if (!detail) {
+      setErreur('Instrument introuvable.');
+      return;
+    }
+    setEditionInitiale(detail);
+    setTiroirEditeur(true);
+  }
+
+  async function ouvrirRelecture(idInstrument: string) {
+    setErreur(null);
+    const detail = await chargerDetail(idInstrument);
+    if (!detail) {
+      setErreur('Instrument introuvable.');
+      return;
+    }
+    setRelecture(detail);
+    setTiroirRelecture(true);
+  }
+
+  async function publier(idInstrument: string) {
+    setOccupe(true);
+    setMessage(null);
+    setErreur(null);
+    try {
+      const res = await fetch('/api/praticien/instruments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idInstrument, action: 'publier' }),
+      });
+      const json = (await res.json()) as MutateInstrumentResponse;
+      if (json.success) {
+        setMessage('Instrument publié — désormais assignable via la file d’envoi.');
+        setTiroirRelecture(false);
+        await rafraichirCabinet();
+      } else {
+        setErreur(json.error ?? 'Publication impossible.');
+      }
+    } catch {
+      setErreur('Publication impossible.');
+    }
+    setOccupe(false);
+  }
+
+  async function desactiverInstrument(idInstrument: string) {
+    setOccupe(true);
+    setMessage(null);
+    setErreur(null);
+    try {
+      const res = await fetch('/api/praticien/instruments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idInstrument, action: 'desactiver' }),
+      });
+      const json = (await res.json()) as MutateInstrumentResponse;
+      if (json.success) {
+        setMessage('Instrument désactivé — retiré du catalogue du cabinet.');
+        await rafraichirCabinet();
+      } else {
+        setErreur(json.error ?? 'Désactivation impossible.');
+      }
+    } catch {
+      setErreur('Désactivation impossible.');
+    }
+    setOccupe(false);
+  }
+
   const totalFile = brouillons.reduce((n, b) => n + b.items.length, 0);
 
   return (
@@ -216,6 +353,55 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
 
       {rayon === 'questionnaires' && (
         <>
+          <div className="flex flex-wrap gap-2">
+            <TiroirBibliotheque
+              declencheur={
+                <Button className="min-h-11" onClick={() => setEditionInitiale(null)}>
+                  Créer un questionnaire
+                </Button>
+              }
+              titre={editionInitiale ? 'Modifier l’instrument' : 'Créer un questionnaire'}
+              description="Instrument privé au cabinet — jamais certifié automatiquement : la grille est relue puis publiée avant tout envoi."
+              ouvert={tiroirEditeur}
+              onOpenChange={setTiroirEditeur}
+            >
+              <EditeurInstrument
+                initiale={editionInitiale}
+                onRafraichir={rafraichirCabinet}
+                onTermine={m => {
+                  setTiroirEditeur(false);
+                  setMessage(m);
+                }}
+              />
+            </TiroirBibliotheque>
+            <TiroirBibliotheque
+              declencheur={
+                <Button variant="outline" className="min-h-11">
+                  Importer
+                </Button>
+              }
+              titre="Importer un questionnaire"
+              description="JSON ou CSV — le résultat entre en brouillon, grille à relire avant publication."
+              ouvert={tiroirImport}
+              onOpenChange={setTiroirImport}
+            >
+              <ImportInstrument onRafraichir={rafraichirCabinet} />
+            </TiroirBibliotheque>
+            <TiroirBibliotheque
+              titre="Relire la grille"
+              description="Vérifiez l’échelle, les bandes et le score maximal avant de publier."
+              ouvert={tiroirRelecture}
+              onOpenChange={setTiroirRelecture}
+            >
+              {relecture && (
+                <RelectureGrille
+                  detail={relecture}
+                  occupe={occupe}
+                  onPublier={() => void publier(relecture.idInstrument)}
+                />
+              )}
+            </TiroirBibliotheque>
+          </div>
           {(message || erreur) && (
             <p
               role="status"
@@ -283,6 +469,10 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                         {e.certifie && <Badge variant="success">Certifié</Badge>}
                         {e.passationPraticien && <Badge variant="warning">Passation praticien</Badge>}
                         {e.aliasVers && <Badge variant="neutral">Alias historique</Badge>}
+                        {e.cabinet && <Badge variant="warning">Cabinet — non certifié</Badge>}
+                        {e.cabinet && e.cabinet.statutRelecture !== 'valide' && (
+                          <BadgeStatutInstrument statut={e.cabinet.statutRelecture} />
+                        )}
                       </span>
                     </button>
                   </li>
@@ -293,6 +483,75 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                   </li>
                 )}
               </ul>
+              <div data-testid="instruments-cabinet" className="border-t border-border px-5 py-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="font-display text-sm font-semibold text-foreground">
+                    Instruments du cabinet
+                  </h4>
+                  <span className="font-mono text-2xs text-muted-foreground">
+                    {instrumentsCabinet.length}
+                  </span>
+                </div>
+                <p className="mt-1 text-2xs text-muted-foreground">
+                  Privés à votre cabinet — jamais certifiés ; publication après relecture de la
+                  grille.
+                </p>
+                {erreurInstruments ? (
+                  <p role="alert" className="mt-3 text-xs text-status-danger">
+                    Impossible de charger les instruments — réessayez.
+                  </p>
+                ) : instrumentsCabinet.length === 0 ? (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Aucun instrument — créez ou importez un questionnaire.
+                  </p>
+                ) : (
+                  <ul className="mt-3 flex flex-col gap-2">
+                    {instrumentsCabinet.map(i => (
+                      <li key={i.idInstrument} className="rounded-lg border border-border p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="min-w-0 font-display text-sm font-semibold text-foreground">
+                            {i.titre}
+                          </span>
+                          <BadgeStatutInstrument statut={i.statutRelecture} />
+                        </div>
+                        <p className="mt-1 font-mono text-2xs text-muted-foreground">
+                          {i.idInstrument}
+                          {i.nbQuestions != null ? ` · ${i.nbQuestions} questions` : ''}
+                          {i.scoreMax != null ? ` · /${i.scoreMax}` : ''}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {i.statutRelecture === 'grille_a_relire' && (
+                            <button
+                              type="button"
+                              disabled={occupe}
+                              onClick={() => void ouvrirRelecture(i.idInstrument)}
+                              className="rounded-lg border border-indigo-600 bg-indigo-600/10 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-indigo-600/20 disabled:opacity-60"
+                            >
+                              Relire la grille
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            disabled={occupe}
+                            onClick={() => void ouvrirEdition(i.idInstrument)}
+                            className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                          >
+                            Modifier
+                          </button>
+                          <button
+                            type="button"
+                            disabled={occupe}
+                            onClick={() => void desactiverInstrument(i.idInstrument)}
+                            className="rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-status-danger transition-colors hover:bg-status-danger/10 disabled:opacity-60"
+                          >
+                            Désactiver
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </section>
 
             {/* Aperçu vierge */}
@@ -397,7 +656,9 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                     {selection && !selection.assignable
                       ? selection.passationPraticien
                         ? 'Passation en consultation — jamais envoyé au portail.'
-                        : 'Alias historique — non assignable tel quel.'
+                        : selection.cabinet
+                          ? 'Instrument du cabinet non publié — faites relire puis publiez la grille avant l’envoi.'
+                          : 'Alias historique — non assignable tel quel.'
                       : "L'ajout ne déclenche aucun envoi."}
                   </span>
                 </div>
@@ -438,6 +699,11 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                               <span className="ml-1 font-mono text-2xs text-muted-foreground">
                                 {item.id}
                               </span>
+                              {item.indisponible && (
+                                <span className="ml-1.5 inline-flex">
+                                  <Badge variant="danger">Indisponible</Badge>
+                                </span>
+                              )}
                             </span>
                             <button
                               type="button"
@@ -534,5 +800,605 @@ function ChipFiltre({
     >
       {children}
     </button>
+  );
+}
+
+function BadgeStatutInstrument({ statut }: { statut: string }) {
+  if (statut === 'valide') return <Badge variant="success">Publié</Badge>;
+  if (statut === 'grille_a_relire') return <Badge variant="warning">Grille à relire</Badge>;
+  return <Badge variant="neutral">Brouillon</Badge>;
+}
+
+// Tiroir Radix de la Bibliothèque (patron TiroirAction de PatientsPanel,
+// SP-TRAJ LOT-05) : composant DÉFINI AU NIVEAU MODULE — une définition
+// imbriquée remonterait le formulaire à chaque rendu et ferait perdre le
+// focus de saisie. `declencheur` optionnel : le tiroir de relecture s'ouvre
+// depuis la liste, sans bouton propre.
+function TiroirBibliotheque({
+  declencheur,
+  titre,
+  description,
+  ouvert,
+  onOpenChange,
+  children,
+}: {
+  declencheur?: React.ReactNode;
+  titre: string;
+  description?: string;
+  ouvert: boolean;
+  onOpenChange: (ouvert: boolean) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Dialog.Root open={ouvert} onOpenChange={onOpenChange}>
+      {declencheur ? <Dialog.Trigger asChild>{declencheur}</Dialog.Trigger> : null}
+      <Dialog.Portal>
+        {/* data-theme requis : Radix portale vers document.body, hors du
+            conteneur [data-theme="praticien"] du layout. */}
+        <Dialog.Overlay data-theme="praticien" className="fixed inset-0 z-50 bg-foreground/35" />
+        <Dialog.Content
+          data-theme="praticien"
+          className="fixed inset-y-0 right-0 z-50 w-full max-w-xl overflow-y-auto border-l border-border bg-surface p-5 shadow-pop focus:outline-none"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <Dialog.Title className="font-display text-lg font-semibold text-foreground">
+                {titre}
+              </Dialog.Title>
+              {description ? (
+                <Dialog.Description className="mt-1 text-xs text-muted-foreground">
+                  {description}
+                </Dialog.Description>
+              ) : (
+                <Dialog.Description className="sr-only">{titre}</Dialog.Description>
+              )}
+            </div>
+            <Dialog.Close asChild>
+              <button
+                type="button"
+                aria-label={`Fermer « ${titre} »`}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+              >
+                <X aria-hidden="true" size={20} strokeWidth={2} />
+              </button>
+            </Dialog.Close>
+          </div>
+          <div className="mt-4">{children}</div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+const CLASSE_CHAMP =
+  'rounded-lg border border-border bg-surface px-3 py-2 text-sm font-normal text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary';
+
+const COULEURS_BANDE: { valeur: 'success' | 'warning' | 'danger'; libelle: string }[] = [
+  { valeur: 'success', libelle: 'Favorable' },
+  { valeur: 'warning', libelle: 'À surveiller' },
+  { valeur: 'danger', libelle: 'Préoccupant' },
+];
+
+function libelleCouleur(color: string): string {
+  return COULEURS_BANDE.find(c => c.valeur === color)?.libelle ?? color;
+}
+
+function detecterEchelle(initiale: InstrumentCabinetDetailDto | null): EchelleNommee {
+  const options = initiale?.definition.sections[0]?.questions[0]?.options;
+  if (!options) return 'frequence_0_4';
+  for (const nom of Object.keys(ECHELLES_NOMMEES) as EchelleNommee[]) {
+    const echelle = ECHELLES_NOMMEES[nom];
+    if (
+      echelle.options.length === options.length &&
+      echelle.options.every((o, i) => o.v === options[i]?.v)
+    ) {
+      return nom;
+    }
+  }
+  return 'frequence_0_4';
+}
+
+type BandeEdition = { min: string; max: string; label: string; color: 'success' | 'warning' | 'danger' };
+
+// Éditeur d'instrument du cabinet — création et modification. L'échelle
+// choisie s'applique à toutes les questions ; la grille est de type « somme »
+// avec bandes contiguës. Le tiroir Radix démonte le contenu à la fermeture :
+// l'état repart de `initiale` à chaque ouverture.
+function EditeurInstrument({
+  initiale,
+  onRafraichir,
+  onTermine,
+}: {
+  initiale: InstrumentCabinetDetailDto | null;
+  onRafraichir: () => Promise<void>;
+  onTermine: (message: string) => void;
+}) {
+  const [idInstrument, setIdInstrument] = useState<string | null>(initiale?.idInstrument ?? null);
+  const [titre, setTitre] = useState(initiale?.titre ?? '');
+  const [domaine, setDomaine] = useState(initiale?.categorie ?? 'Cabinet');
+  const [consigne, setConsigne] = useState(initiale?.definition.instructions ?? '');
+  const [echelle, setEchelle] = useState<EchelleNommee>(() => detecterEchelle(initiale));
+  const [questions, setQuestions] = useState<string[]>(() =>
+    initiale ? initiale.definition.sections.flatMap(s => s.questions.map(q => q.texte)) : [''],
+  );
+  const [bandes, setBandes] = useState<BandeEdition[]>(() =>
+    initiale
+      ? initiale.scoring.interpretation.map(b => ({
+          min: String(b.min),
+          max: String(b.max),
+          label: b.label,
+          color: b.color,
+        }))
+      : [{ min: '', max: '', label: 'Grille à définir — relecture requise', color: 'warning' }],
+  );
+  const [erreurs, setErreurs] = useState<string[]>([]);
+  const [messageLocal, setMessageLocal] = useState<string | null>(null);
+  const [occupe, setOccupe] = useState(false);
+
+  const optionsEchelle = ECHELLES_NOMMEES[echelle].options;
+  const nbQuestionsValides = questions.filter(q => q.trim().length > 0).length;
+  const minPossible = nbQuestionsValides * Math.min(...optionsEchelle.map(o => o.v));
+  const maxPossible = nbQuestionsValides * Math.max(...optionsEchelle.map(o => o.v));
+
+  function construirePayload() {
+    const textes = questions.map(q => q.trim()).filter(q => q.length > 0);
+    return {
+      titre: titre.trim(),
+      categorie: domaine.trim() || 'Cabinet',
+      definition: {
+        ...(consigne.trim() ? { instructions: consigne.trim() } : {}),
+        sections: [
+          {
+            id: 'S1',
+            questions: textes.map((texte, i) => ({
+              id: `Q${i + 1}`,
+              texte,
+              type: 'likert',
+              options: optionsEchelle,
+            })),
+          },
+        ],
+      },
+      scoring: {
+        type: 'sum',
+        // Bornes vides auto-complétées : la première bande démarre au score
+        // minimal, la dernière finit au score maximal.
+        interpretation: bandes.map((b, i) => ({
+          min: b.min === '' && i === 0 ? minPossible : Number(b.min),
+          max: b.max === '' && i === bandes.length - 1 ? maxPossible : Number(b.max),
+          label: b.label,
+          color: b.color,
+        })),
+      },
+    };
+  }
+
+  async function enregistrer(avecRelecture: boolean) {
+    setOccupe(true);
+    setErreurs([]);
+    setMessageLocal(null);
+    try {
+      const payload = construirePayload();
+      const res = await fetch('/api/praticien/instruments', {
+        method: idInstrument ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(idInstrument ? { idInstrument, ...payload } : payload),
+      });
+      const json = (await res.json()) as MutateInstrumentResponse;
+      if (!json.success) {
+        setErreurs(json.erreurs ?? [json.error ?? 'Enregistrement impossible.']);
+        return;
+      }
+      const id = json.idInstrument ?? idInstrument;
+      setIdInstrument(id ?? null);
+      await onRafraichir();
+      if (!avecRelecture) {
+        setMessageLocal('Brouillon enregistré.');
+        return;
+      }
+      const resRelecture = await fetch('/api/praticien/instruments', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idInstrument: id, action: 'demander_relecture' }),
+      });
+      const jsonRelecture = (await resRelecture.json()) as MutateInstrumentResponse;
+      if (!jsonRelecture.success) {
+        setErreurs(jsonRelecture.erreurs ?? [jsonRelecture.error ?? 'Demande de relecture impossible.']);
+        return;
+      }
+      await onRafraichir();
+      onTermine('Relecture demandée — ouvrez « Relire la grille » pour publier.');
+    } catch {
+      setErreurs(['Enregistrement impossible.']);
+    } finally {
+      setOccupe(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {erreurs.length > 0 && (
+        <ul
+          role="alert"
+          className="flex flex-col gap-1 rounded-lg border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-xs text-status-danger"
+        >
+          {erreurs.map(e => (
+            <li key={e}>{e}</li>
+          ))}
+        </ul>
+      )}
+      {messageLocal && (
+        <p
+          role="status"
+          className="rounded-lg border border-status-success/40 bg-status-success/10 px-3 py-2 text-xs text-status-success"
+        >
+          {messageLocal}
+        </p>
+      )}
+      <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+        Titre
+        <input
+          value={titre}
+          onChange={e => setTitre(e.target.value)}
+          placeholder="Ex. Auto-évaluation sommeil — cabinet"
+          className={CLASSE_CHAMP}
+        />
+      </label>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+          Domaine
+          <input
+            value={domaine}
+            onChange={e => setDomaine(e.target.value)}
+            placeholder="Cabinet"
+            className={CLASSE_CHAMP}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+          Échelle
+          <select
+            value={echelle}
+            onChange={e => setEchelle(e.target.value as EchelleNommee)}
+            className={CLASSE_CHAMP}
+          >
+            {(Object.keys(ECHELLES_NOMMEES) as EchelleNommee[]).map(nom => (
+              <option key={nom} value={nom}>
+                {ECHELLES_NOMMEES[nom].libelle}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+        Consigne
+        <textarea
+          value={consigne}
+          onChange={e => setConsigne(e.target.value)}
+          rows={2}
+          placeholder="Ex. Répondez spontanément, en pensant aux deux dernières semaines."
+          className={CLASSE_CHAMP}
+        />
+      </label>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-xs font-semibold text-foreground">Questions</legend>
+        {questions.map((q, i) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <div key={i} className="flex items-center gap-2">
+            <input
+              aria-label={`Question ${i + 1}`}
+              value={q}
+              onChange={e =>
+                setQuestions(prev => prev.map((texte, j) => (j === i ? e.target.value : texte)))
+              }
+              placeholder={`Texte de la question ${i + 1}`}
+              className={`min-w-0 flex-1 ${CLASSE_CHAMP}`}
+            />
+            <button
+              type="button"
+              aria-label={`Retirer la question ${i + 1}`}
+              disabled={questions.length === 1}
+              onClick={() => setQuestions(prev => prev.filter((_, j) => j !== i))}
+              className="rounded p-1 text-muted-foreground hover:bg-status-danger/10 hover:text-status-danger disabled:opacity-40"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          className="self-start"
+          disabled={questions.length >= 60}
+          onClick={() => setQuestions(prev => [...prev, ''])}
+        >
+          Ajouter une question
+        </Button>
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-xs font-semibold text-foreground">
+          Bandes d’interprétation{' '}
+          <span className="font-normal text-muted-foreground">
+            (score possible {minPossible}–{maxPossible})
+          </span>
+        </legend>
+        {bandes.map((b, i) => (
+          // eslint-disable-next-line react/no-array-index-key
+          <div key={i} className="flex items-center gap-2">
+            <input
+              aria-label={`Score minimal de la bande ${i + 1}`}
+              inputMode="numeric"
+              value={b.min}
+              onChange={e =>
+                setBandes(prev => prev.map((x, j) => (j === i ? { ...x, min: e.target.value } : x)))
+              }
+              placeholder="min"
+              className={`w-16 ${CLASSE_CHAMP}`}
+            />
+            <input
+              aria-label={`Score maximal de la bande ${i + 1}`}
+              inputMode="numeric"
+              value={b.max}
+              onChange={e =>
+                setBandes(prev => prev.map((x, j) => (j === i ? { ...x, max: e.target.value } : x)))
+              }
+              placeholder="max"
+              className={`w-16 ${CLASSE_CHAMP}`}
+            />
+            <input
+              aria-label={`Libellé de la bande ${i + 1}`}
+              value={b.label}
+              onChange={e =>
+                setBandes(prev => prev.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))
+              }
+              placeholder="Libellé"
+              className={`min-w-0 flex-1 ${CLASSE_CHAMP}`}
+            />
+            <select
+              aria-label={`Couleur de la bande ${i + 1}`}
+              value={b.color}
+              onChange={e =>
+                setBandes(prev =>
+                  prev.map((x, j) =>
+                    j === i ? { ...x, color: e.target.value as BandeEdition['color'] } : x,
+                  ),
+                )
+              }
+              className={CLASSE_CHAMP}
+            >
+              {COULEURS_BANDE.map(c => (
+                <option key={c.valeur} value={c.valeur}>
+                  {c.libelle}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              aria-label={`Retirer la bande ${i + 1}`}
+              disabled={bandes.length === 1}
+              onClick={() => setBandes(prev => prev.filter((_, j) => j !== i))}
+              className="rounded p-1 text-muted-foreground hover:bg-status-danger/10 hover:text-status-danger disabled:opacity-40"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        <Button
+          type="button"
+          variant="outline"
+          className="self-start"
+          disabled={bandes.length >= 6}
+          onClick={() =>
+            setBandes(prev => [...prev, { min: '', max: '', label: '', color: 'warning' }])
+          }
+        >
+          Ajouter une bande
+        </Button>
+      </fieldset>
+
+      <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
+        <Button type="button" disabled={occupe} onClick={() => void enregistrer(false)}>
+          Enregistrer le brouillon
+        </Button>
+        <Button type="button" variant="outline" disabled={occupe} onClick={() => void enregistrer(true)}>
+          Demander la relecture
+        </Button>
+      </div>
+      <p className="text-2xs text-muted-foreground">
+        Jamais certifié automatiquement : la grille doit être relue puis publiée avant tout envoi.
+        Toute modification repasse l’instrument en brouillon.
+      </p>
+    </div>
+  );
+}
+
+// Import JSON/CSV — le résultat entre toujours en brouillon ; les
+// avertissements (échelle par défaut, grille à définir) restent affichés.
+function ImportInstrument({ onRafraichir }: { onRafraichir: () => Promise<void> }) {
+  const [format, setFormat] = useState<'json' | 'csv'>('json');
+  const [contenu, setContenu] = useState('');
+  const [titreImport, setTitreImport] = useState('');
+  const [echelleImport, setEchelleImport] = useState<EchelleNommee | ''>('');
+  const [resultat, setResultat] = useState<ImportInstrumentResponse | null>(null);
+  const [occupe, setOccupe] = useState(false);
+
+  async function importer() {
+    setOccupe(true);
+    setResultat(null);
+    try {
+      const res = await fetch('/api/praticien/instruments/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          format,
+          contenu,
+          ...(titreImport.trim() ? { titre: titreImport.trim() } : {}),
+          ...(echelleImport ? { echelle: echelleImport } : {}),
+        }),
+      });
+      const json = (await res.json()) as ImportInstrumentResponse;
+      setResultat(json);
+      if (json.success) await onRafraichir();
+    } catch {
+      setResultat({ success: false, error: "L'import a échoué." });
+    }
+    setOccupe(false);
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {resultat && !resultat.success && (
+        <div
+          role="alert"
+          className="flex flex-col gap-1 rounded-lg border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-xs text-status-danger"
+        >
+          <p>{resultat.error ?? "L'import a échoué."}</p>
+          {(resultat.erreurs ?? []).map(e => (
+            <p key={e}>{e}</p>
+          ))}
+        </div>
+      )}
+      {resultat?.success && (
+        <div
+          role="status"
+          className="flex flex-col gap-1 rounded-lg border border-status-success/40 bg-status-success/10 px-3 py-2 text-xs text-status-success"
+        >
+          <p>
+            Importé en brouillon ({resultat.nbQuestions} question
+            {(resultat.nbQuestions ?? 0) > 1 ? 's' : ''}). La relecture reste obligatoire avant
+            publication.
+          </p>
+        </div>
+      )}
+      {(resultat?.avertissements?.length ?? 0) > 0 && (
+        <ul className="flex flex-col gap-1 rounded-lg border border-status-warning/40 bg-status-warning/10 px-3 py-2 text-xs text-status-warning">
+          {resultat?.avertissements?.map(a => <li key={a}>{a}</li>)}
+        </ul>
+      )}
+      <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+        Format
+        <select
+          value={format}
+          onChange={e => setFormat(e.target.value as 'json' | 'csv')}
+          className={CLASSE_CHAMP}
+        >
+          <option value="json">JSON</option>
+          <option value="csv">CSV (une question par ligne)</option>
+        </select>
+      </label>
+      {format === 'csv' && (
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+            Titre
+            <input
+              value={titreImport}
+              onChange={e => setTitreImport(e.target.value)}
+              placeholder="Titre de l’instrument"
+              className={CLASSE_CHAMP}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+            Échelle
+            <select
+              value={echelleImport}
+              onChange={e => setEchelleImport(e.target.value as EchelleNommee | '')}
+              className={CLASSE_CHAMP}
+            >
+              <option value="">Par défaut (Fréquence 0–4)</option>
+              {(Object.keys(ECHELLES_NOMMEES) as EchelleNommee[]).map(nom => (
+                <option key={nom} value={nom}>
+                  {ECHELLES_NOMMEES[nom].libelle}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
+      <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+        Contenu
+        <textarea
+          value={contenu}
+          onChange={e => setContenu(e.target.value)}
+          rows={10}
+          placeholder={
+            format === 'json'
+              ? '{ "titre": "…", "questions": [{ "texte": "…" }], "echelle": "frequence_0_4" }'
+              : 'question\nPremière question…\nDeuxième question…'
+          }
+          className={`font-mono text-xs ${CLASSE_CHAMP}`}
+        />
+      </label>
+      <div className="border-t border-border pt-4">
+        <Button type="button" disabled={occupe || contenu.trim().length === 0} onClick={() => void importer()}>
+          Importer en brouillon
+        </Button>
+        <p className="mt-2 text-2xs text-muted-foreground">
+          Sans grille fournie, une bande unique « Grille à définir — relecture requise » est posée.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Récapitulatif de relecture : échelle, bandes, score maximal — puis le geste
+// explicite « Grille relue — publier ». C'est LE passage obligé vers
+// l'assignabilité d'un instrument du cabinet.
+function RelectureGrille({
+  detail,
+  occupe,
+  onPublier,
+}: {
+  detail: InstrumentCabinetDetailDto;
+  occupe: boolean;
+  onPublier: () => void;
+}) {
+  const options = detail.definition.sections[0]?.questions[0]?.options ?? [];
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="font-display text-base font-semibold text-foreground">{detail.titre}</p>
+        <p className="mt-1 font-mono text-2xs text-muted-foreground">
+          {detail.idInstrument}
+          {detail.nbQuestions != null ? ` · ${detail.nbQuestions} questions` : ''}
+          {detail.scoreMax != null ? ` · score /${detail.scoreMax}` : ''}
+        </p>
+      </div>
+      <div>
+        <p className="text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
+          Échelle
+        </p>
+        <p className="mt-1 text-xs text-foreground">
+          {options.map(o => `${o.v} = ${o.l}`).join(' · ')}
+        </p>
+      </div>
+      <div>
+        <p className="text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
+          Bandes d’interprétation
+        </p>
+        <ul className="mt-1 flex flex-col">
+          {detail.scoring.interpretation.map(b => (
+            <li
+              key={`${b.min}-${b.max}`}
+              className="flex items-center justify-between gap-2 border-b border-dashed border-border py-1.5 text-xs text-foreground last:border-b-0"
+            >
+              <span className="font-mono text-2xs text-muted-foreground">
+                {b.min}–{b.max}
+              </span>
+              <span className="min-w-0 flex-1">{b.label}</span>
+              <Badge variant={b.color}>{libelleCouleur(b.color)}</Badge>
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="border-t border-border pt-4">
+        <Button type="button" disabled={occupe} onClick={onPublier}>
+          Grille relue — publier
+        </Button>
+        <p className="mt-2 text-2xs text-muted-foreground">
+          La publication rend l’instrument assignable via la file d’envoi. Il reste non certifié.
+        </p>
+      </div>
+    </div>
   );
 }

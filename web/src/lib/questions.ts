@@ -1467,6 +1467,17 @@ function getQuestionnaireForClient(idQ: string) {
 export function calculateScore(idQ: string, answers: Record<string, any>) {
   const def = (QUESTIONNAIRE_CATALOGUE as Record<string, any>)[idQ];
   if (!def) return {error: 'Questionnaire introuvable'};
+  return computeScoreFromDef(def, answers);
+}
+
+// Extraction mécanique (lot instruments du cabinet) : le corps intégral de
+// calculateScore après le lookup catalogue, à l'identique — il ne référence
+// que def/sc/answers et les helpers locaux, jamais le catalogue par id.
+// Permet de scorer une définition résolue hors catalogue (instrument CAB_
+// publié) sans AUCUN changement de comportement pour le catalogue. Retour
+// `any` : même contrat que calculateScore avant extraction (le fichier est
+// entièrement en `any`, les juges du contenu sont les tests de scoring).
+export function computeScoreFromDef(def: any, answers: Record<string, any>): any {
   const sc = def.scoring;
 
   // Collecter toutes les questions
@@ -2276,4 +2287,4 @@ export function calculateScore(idQ: string, answers: Record<string, any>) {
   // ── DEFAULT ───────────────────────────────────────────
   return {error: `Type de scoring non implémenté : ${sc.type}`};
 
-} // fin calculateScore
+} // fin computeScoreFromDef
