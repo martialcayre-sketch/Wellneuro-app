@@ -10,15 +10,15 @@ const ligne = (
   supersedesRejectionId: string | null = null,
 ) => ({ id, carteCle, refusee, refuseLe: new Date(refuseLe), supersedesRejectionId });
 
-const CLE_A = 'reponse_recente:REP_A';
+const CLE_A = 'assignation_en_retard:ASG_A';
 const CLE_B = 'synthese_a_valider:SYN_B';
 
 const carte = (cle: string): CarteFil => ({
-  type: 'reponse_recente',
+  type: 'assignation_en_retard',
   idPatient: 'PAT_SEED_01',
   patient: 'Sophie Nicola',
-  titre: 'Réponses reçues',
-  pourquoi: 'Reçu il y a 2 jours',
+  titre: 'Questionnaire en retard',
+  pourquoi: 'Échéance dépassée',
   date: '2026-07-17T10:00:00.000Z',
   href: '/dashboard/patients/PAT_SEED_01',
   actionLabel: 'Ouvrir la fiche',
@@ -83,7 +83,7 @@ describe('refus des cartes du Fil (G1)', () => {
 
 describe('cleCarteValide', () => {
   it('accepte une clé portant le préfixe d’un type connu', () => {
-    expect(cleCarteValide('reponse_recente:REP_1')).toBe(true);
+    expect(cleCarteValide('assignation_en_retard:ASG_1')).toBe(true);
     expect(cleCarteValide('reprise:PAT_1:2026-01-01T00:00:00.000Z')).toBe(true);
     expect(cleCarteValide('signalement_trust:effet_indesirable:SIG_1')).toBe(true);
   });
@@ -92,11 +92,17 @@ describe('cleCarteValide', () => {
     // Sans ce contrôle, la table se remplirait de clés inertes mais
     // indistinguables plus tard d'un refus réel.
     expect(cleCarteValide('n_importe_quoi:1')).toBe(false);
-    expect(cleCarteValide('reponse_recente:')).toBe(false);
-    expect(cleCarteValide('reponse_recente')).toBe(false);
+    expect(cleCarteValide('synthese_a_valider:')).toBe(false);
+    expect(cleCarteValide('synthese_a_valider')).toBe(false);
     expect(cleCarteValide('')).toBe(false);
     expect(cleCarteValide(null)).toBe(false);
     expect(cleCarteValide(42)).toBe(false);
-    expect(cleCarteValide(`reponse_recente:${'x'.repeat(300)}`)).toBe(false);
+    expect(cleCarteValide(`synthese_a_valider:${'x'.repeat(300)}`)).toBe(false);
+  });
+
+  it('refuse le préfixe d’un type retiré : `reponse_recente` est désormais inerte', () => {
+    // Le type a migré vers l'inbox (accueil-observatoire LOT-02). Un client qui
+    // rejouerait une ancienne clé ne peut plus créer de refus.
+    expect(cleCarteValide('reponse_recente:REP_1')).toBe(false);
   });
 });

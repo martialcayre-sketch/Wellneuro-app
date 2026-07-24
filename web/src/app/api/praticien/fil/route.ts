@@ -3,11 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
-import {
-  construireFil,
-  RECENCE_REPONSE_JOURS,
-  type CarteFil,
-} from '@/lib/fil/cartes';
+import { construireFil, type CarteFil } from '@/lib/fil/cartes';
 import { clesRefusees, filtrerCartesRefusees } from '@/lib/fil/refus';
 
 export type FilApiResponse = {
@@ -30,7 +26,6 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
 
   try {
     const maintenant = new Date();
-    const seuilRecence = new Date(maintenant.getTime() - RECENCE_REPONSE_JOURS * 24 * 60 * 60 * 1000);
 
     const filtreNonTraite = { statutTraitement: { in: ['recu', 'en_cours'] } };
     // Les identifiants de ligne source sont sélectionnés pour que chaque carte
@@ -38,7 +33,10 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     // rendra un refus persistant désignable, sans quoi il porterait sur une
     // projection recalculée à chaque ouverture.
     const selectSignalement = { id: true, idPatient: true, soumisLe: true };
-    const [effets, incidents, droits, syntheses, assignations, reponses, activites] = await Promise.all([
+    // Les questionnaires reçus ne produisent plus de carte : ils vivent dans
+    // l'inbox par patient (accueil-observatoire LOT-02) — seul le groupBy
+    // d'activité reste, pour la carte `reprise`.
+    const [effets, incidents, droits, syntheses, assignations, activites] = await Promise.all([
       prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
       prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
       prisma.trustRightsRequest.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
@@ -51,12 +49,6 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       prisma.assignation.findMany({
         where: { statut: { not: 'Complété' }, dateLimite: { not: null } },
         select: { idAssignation: true, idPatient: true, titre: true, dateLimite: true, statut: true },
-      }),
-      prisma.questionnaireReponse.findMany({
-        where: { dateReponse: { gte: seuilRecence } },
-        orderBy: { dateReponse: 'desc' },
-        take: 20,
-        select: { idReponse: true, idPatient: true, titre: true, dateReponse: true },
       }),
       prisma.questionnaireReponse.groupBy({
         by: ['idPatient'],
@@ -75,7 +67,6 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         ...signalements.map(s => s.idPatient),
         ...syntheses.map(s => s.idPatient),
         ...assignations.map(a => a.idPatient),
-        ...reponses.map(r => r.idPatient),
         ...activites.map(a => a.idPatient),
       ]),
     ];
@@ -96,7 +87,6 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       signalements: signalements.filter(s => actifs.has(s.idPatient)),
       syntheses: syntheses.filter(s => actifs.has(s.idPatient)),
       assignations: assignations.filter(a => actifs.has(a.idPatient)),
-      reponses: reponses.filter(r => actifs.has(r.idPatient)),
       activites: activites
         .filter(a => actifs.has(a.idPatient) && a._max.dateReponse !== null)
         .map(a => ({ idPatient: a.idPatient, derniereReponse: a._max.dateReponse as Date })),

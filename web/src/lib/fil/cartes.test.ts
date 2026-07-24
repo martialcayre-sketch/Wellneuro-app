@@ -1,13 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   cartesAssignationsEnRetard,
-  cartesReponsesRecentes,
   cartesReprise,
   cartesSignalementsTrust,
   cartesSynthesesAValider,
   construireFil,
   indexCarteImminente,
-  MAX_CARTES_PAR_TYPE,
   resumeFil,
 } from './cartes';
 
@@ -82,16 +80,15 @@ describe('resumeFil', () => {
         { idSynthese: 'SYN_1', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-13T09:00:00') },
         { idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') },
       ],
-      assignations: [],
-      reponses: [
-        { idReponse: 'REP_1', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-14T08:00:00') },
+      assignations: [
+        { idAssignation: 'ASG_1', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
       ],
       activites: [],
       noms: NOMS,
       maintenant: MAINTENANT,
     });
     // 2 synthèses agrégées en 1 carte : le résumé compte bien 2 relectures.
-    expect(resumeFil(fil)).toBe('1 signalement · 2 relectures · 1 réponse reçue');
+    expect(resumeFil(fil)).toBe('1 signalement · 2 relectures · 1 retard');
   });
 
   it('rend une chaîne vide pour un fil vide', () => {
@@ -104,7 +101,6 @@ describe('indexCarteImminente', () => {
     const fil = construireFil({
       syntheses: [{ idSynthese: 'SYN_1', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
       assignations: [],
-      reponses: [],
       activites: [],
       noms: NOMS,
       maintenant: MAINTENANT,
@@ -139,21 +135,6 @@ describe('cartesAssignationsEnRetard', () => {
       MAINTENANT,
     );
     expect(cartes).toHaveLength(0);
-  });
-});
-
-describe('cartesReponsesRecentes', () => {
-  it('ne retient que la fenêtre de récence et plafonne le nombre de cartes', () => {
-    const recentes = Array.from({ length: 7 }, (_, i) => ({
-      idReponse: `REP_${i}`,
-      idPatient: 'P-SOPHIE',
-      titre: `Questionnaire ${i}`,
-      dateReponse: new Date(`2026-07-1${4 - (i % 5)}T08:00:00`),
-    }));
-    const vieille = { idReponse: 'REP_OLD', idPatient: 'P-MICHEL', titre: 'Ancien', dateReponse: new Date('2026-06-01T08:00:00') };
-    const cartes = cartesReponsesRecentes([...recentes, vieille], NOMS, MAINTENANT);
-    expect(cartes.length).toBe(MAX_CARTES_PAR_TYPE);
-    expect(cartes.every(c => c.patient === 'Sophie Nicola')).toBe(true);
   });
 });
 
@@ -193,7 +174,6 @@ describe('construireFil', () => {
       signalements: [{ id: 'SIG_2', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
       syntheses: [{ idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
       assignations: [],
-      reponses: [],
       activites: [],
       noms: NOMS,
       maintenant: MAINTENANT,
@@ -201,14 +181,11 @@ describe('construireFil', () => {
     expect(fil.map(c => c.type)).toEqual(['signalement_trust', 'synthese_a_valider']);
   });
 
-  it('ordonne le Fil : synthèses, retards, réponses, reprises', () => {
+  it('ordonne le Fil : synthèses, retards, reprises (les réponses reçues sont passées à l’inbox)', () => {
     const fil = construireFil({
       syntheses: [{ idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
       assignations: [
         { idAssignation: 'ASG_6', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
-      ],
-      reponses: [
-        { idReponse: 'REP_7', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-14T08:00:00') },
       ],
       activites: [{ idPatient: 'P-SOPHIE', derniereReponse: new Date('2025-08-01T08:00:00') }],
       noms: NOMS,
@@ -217,7 +194,6 @@ describe('construireFil', () => {
     expect(fil.map(c => c.type)).toEqual([
       'synthese_a_valider',
       'assignation_en_retard',
-      'reponse_recente',
       'reprise',
     ]);
   });
@@ -230,13 +206,12 @@ describe('construireFil', () => {
 describe('identité des cartes (clé)', () => {
   it('deux cartes de même type, même patient et même instant restent distinctes', () => {
     const memeInstant = new Date('2026-07-14T08:00:00');
-    const cartes = cartesReponsesRecentes(
+    const cartes = cartesSignalementsTrust(
       [
-        { idReponse: 'REP_A', idPatient: 'P-SOPHIE', titre: 'Sommeil', dateReponse: memeInstant },
-        { idReponse: 'REP_B', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: memeInstant },
+        { id: 'SIG_A', idPatient: 'P-SOPHIE', kind: 'effet_indesirable', soumisLe: memeInstant },
+        { id: 'SIG_B', idPatient: 'P-SOPHIE', kind: 'effet_indesirable', soumisLe: memeInstant },
       ],
       NOMS,
-      MAINTENANT,
     );
     // C'est exactement ce qu'une clé « type + patient + date » aurait confondu.
     expect(new Set(cartes.map(c => c.cle)).size).toBe(2);
@@ -247,9 +222,6 @@ describe('identité des cartes (clé)', () => {
       syntheses: [{ idSynthese: 'SYN_9', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
       assignations: [
         { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
-      ],
-      reponses: [
-        { idReponse: 'REP_9', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-14T08:00:00') },
       ],
       activites: [{ idPatient: 'P-SOPHIE', derniereReponse: new Date('2025-08-01T08:00:00') }],
       noms: NOMS,
@@ -271,15 +243,12 @@ describe('identité des cartes (clé)', () => {
       assignations: [
         { idAssignation: 'ASG_9', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
       ],
-      reponses: [
-        { idReponse: 'REP_9', idPatient: 'P-SOPHIE', titre: 'Plaintes', dateReponse: new Date('2026-07-14T08:00:00') },
-      ],
       activites: [{ idPatient: 'P-SOPHIE', derniereReponse: new Date('2025-08-01T08:00:00') }],
       noms: NOMS,
       maintenant: MAINTENANT,
     });
 
-    expect(fil).toHaveLength(5);
+    expect(fil).toHaveLength(4);
     for (const carte of fil) {
       expect(carte.cle.startsWith(`${carte.type}:`)).toBe(true);
       expect(carte.cle.length).toBeGreaterThan(carte.type.length + 1);
