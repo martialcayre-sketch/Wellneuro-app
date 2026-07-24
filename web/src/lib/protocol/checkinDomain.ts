@@ -6,6 +6,17 @@
 
 export const CHECKIN_CONTRACT_VERSION = 'c2a-checkin-v1' as const;
 
+// Version du CATALOGUE de questions (distincte du contrat de persistance
+// ci-dessus). Le catalogue de base — les 4 questions gelées — est `-v1` ; il
+// n'est jamais modifié dans son sens. `-v2` est une évolution STRICTEMENT
+// ADDITIVE (C4 LOT-05) : elle n'ajoute qu'une question d'observance compléments
+// conditionnelle (`observance_complements` + motif facultatif), rendue
+// uniquement lorsqu'une recommandation compléments est matérialisée dans le
+// protocole actif. Les 4 questions gelées gardent `valeur`/`libelle` à
+// l'identique — aucun ajout au tableau `CHECKIN_QUESTIONS` (gelé, longueur 4).
+export const CHECKIN_CATALOGUE_BASE_VERSION = 'checkin-catalogue-v1' as const;
+export const CHECKIN_CATALOGUE_VERSION = 'checkin-catalogue-v2-observance-complements' as const;
+
 const JOUR_MS = 24 * 60 * 60 * 1000;
 
 // ─── Points d'étape ──────────────────────────────────────────────────────────
@@ -30,7 +41,12 @@ export function pointEtapeCourant(anchorDate: Date, now: Date): PointEtape | nul
 }
 
 // ─── Catalogue des questions (gelé, français, non culpabilisant) ─────────────
-export type CheckinQuestionId = 'adhesion' | 'tolerance' | 'energie' | 'sommeil';
+// Identifiants du catalogue de base (gelés). L'extension additive C4 (§ plus
+// bas) déclare ses propres identifiants ; les deux sont réunis dans
+// `CheckinQuestionId` sans que le sens des questions de base ne change.
+export type CheckinQuestionBaseId = 'adhesion' | 'tolerance' | 'energie' | 'sommeil';
+export type CheckinQuestionObservanceId = 'observance_complements' | 'observance_complements_motif';
+export type CheckinQuestionId = CheckinQuestionBaseId | CheckinQuestionObservanceId;
 export type CheckinOption = { valeur: string; libelle: string };
 export type CheckinQuestion = {
   id: CheckinQuestionId;
@@ -78,16 +94,93 @@ export const CHECKIN_QUESTIONS: readonly CheckinQuestion[] = [
   },
 ] as const;
 
+// ─── Extension C4 LOT-05 : observance compléments (additive, versionnée) ─────
+// Le catalogue de base ci-dessus reste GELÉ (tableau de longueur 4, non modifié).
+// L'évolution du contrat clinique gelé passe par ces constantes SÉPARÉES, jamais
+// par une addition au tableau gelé. La question ci-dessous n'est jamais rendue
+// d'office : `resolveCheckinQuestions` ne l'ajoute que lorsqu'une recommandation
+// compléments est matérialisée dans le protocole actif (cf.
+// `aUneMaterialisationComplements`). Ton calqué sur `adhesion` : options fermées,
+// factuelles, non culpabilisantes. On rapporte, on n'infère pas — jamais un %,
+// jamais un score, jamais montré au patient comme une mesure.
+export const QUESTION_OBSERVANCE_COMPLEMENTS: CheckinQuestion = {
+  id: 'observance_complements',
+  libelle: 'Avez-vous pu prendre le complément proposé cette semaine ?',
+  options: [
+    { valeur: 'pas_encore_commence', libelle: 'Pas encore commencé' },
+    { valeur: 'quelques_prises', libelle: 'Quelques prises' },
+    { valeur: 'plupart_des_jours', libelle: 'La plupart des jours' },
+    { valeur: 'tous_les_jours', libelle: 'Tous les jours' },
+  ],
+} as const;
+
+// Motif FACULTATIF, fermé : éclaire un éventuel frein sans jamais culpabiliser
+// ni inférer. Réponse absente = rien n'est supposé.
+export const QUESTION_OBSERVANCE_COMPLEMENTS_MOTIF: CheckinQuestion = {
+  id: 'observance_complements_motif',
+  libelle: "S'il y a eu un frein, lequel ? (facultatif)",
+  options: [
+    { valeur: 'oubli', libelle: 'Oubli' },
+    { valeur: 'gene_digestive', libelle: 'Gêne digestive' },
+    { valeur: 'doute', libelle: 'Doute' },
+    { valeur: 'autre', libelle: 'Autre' },
+  ],
+} as const;
+
+// Lookup exhaustif (base gelée + extension C4). Sert à résoudre le libellé d'une
+// réponse quelle que soit sa question ; ne remplace pas `CHECKIN_QUESTIONS`, qui
+// reste la seule source du catalogue de base.
+const TOUTES_LES_QUESTIONS: readonly CheckinQuestion[] = [
+  ...CHECKIN_QUESTIONS,
+  QUESTION_OBSERVANCE_COMPLEMENTS,
+  QUESTION_OBSERVANCE_COMPLEMENTS_MOTIF,
+] as const;
+
+// Matérialisation compléments = au moins une action `supplement_exploration`
+// portant une référence catalogue (`supplementCatalogRef`). Fonction PURE et
+// structurelle (aucune dépendance Prisma ni clinical-engine) : c'est ce qui
+// conditionne l'apparition de la question. Sans matérialisation → question
+// absente. Un contrat V2 (intention seule, sans `supplementCatalogRef`) ne
+// matérialise rien : le protocole ne connaît qu'une intention.
+export function aUneMaterialisationComplements(
+  actions: ReadonlyArray<{ type: string; supplementCatalogRef?: unknown }>,
+): boolean {
+  return actions.some(
+    (action) => action.type === 'supplement_exploration' && action.supplementCatalogRef != null,
+  );
+}
+
+// Catalogue résolu à la lecture selon l'état du protocole actif. Sans
+// matérialisation, il est STRICTEMENT égal au catalogue de base gelé (mêmes
+// références d'objet, même ordre) — le versionnage n'altère rien tant que la
+// condition n'est pas réunie.
+export function resolveCheckinQuestions(options: {
+  materialisationComplements: boolean;
+}): CheckinQuestion[] {
+  const questions: CheckinQuestion[] = [...CHECKIN_QUESTIONS];
+  if (options.materialisationComplements) {
+    questions.push(QUESTION_OBSERVANCE_COMPLEMENTS, QUESTION_OBSERVANCE_COMPLEMENTS_MOTIF);
+  }
+  return questions;
+}
+
 export type CheckinReponses = {
   adhesion: string;
   tolerance: string;
   energie: string;
   sommeil: string;
+  // Extension C4 (additive, facultative) : présentes uniquement quand la
+  // question conditionnelle a été rendue et répondue. Le motif est toujours
+  // facultatif. Leur absence ne dit rien — aucune inférence.
+  observance_complements?: string;
+  observance_complements_motif?: string;
 };
 
 // Libellé humain d'une réponse (pour l'affichage factuel côté patient/praticien).
+// Recherche dans le catalogue exhaustif : les libellés de l'extension C4 sont
+// donc résolus au même titre que ceux du catalogue de base.
 export function optionLibelle(questionId: CheckinQuestionId, valeur: string): string | null {
-  const question = CHECKIN_QUESTIONS.find((q) => q.id === questionId);
+  const question = TOUTES_LES_QUESTIONS.find((q) => q.id === questionId);
   return question?.options.find((o) => o.valeur === valeur)?.libelle ?? null;
 }
 
@@ -113,6 +206,20 @@ export function ensureReponses(value: unknown): CheckinReponses {
       throw new TypeError(`Réponse invalide pour « ${question.libelle} ».`);
     }
     out[question.id] = rep;
+  }
+  // Extension C4 (additive) : les réponses d'observance compléments sont
+  // FACULTATIVES. Absentes → non portées (les 4 questions de base restent la
+  // seule exigence). Présentes → validées contre leurs options fermées et
+  // reportées ; une valeur hors options est rejetée (jamais silencieusement
+  // acceptée). Aucune autre clé n'est portée : `contractVersion` & co. restent
+  // ignorées, comme avant.
+  for (const question of [QUESTION_OBSERVANCE_COMPLEMENTS, QUESTION_OBSERVANCE_COMPLEMENTS_MOTIF]) {
+    const rep = v[question.id];
+    if (rep === undefined) continue;
+    if (typeof rep !== 'string' || !question.options.some((o) => o.valeur === rep)) {
+      throw new TypeError(`Réponse invalide pour « ${question.libelle} ».`);
+    }
+    out[question.id as CheckinQuestionObservanceId] = rep;
   }
   return out;
 }

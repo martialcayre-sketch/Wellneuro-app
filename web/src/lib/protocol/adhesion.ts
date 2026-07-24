@@ -89,6 +89,25 @@ export function deriverMeteoAdhesion(checkins: CheckinRow[]): MeteoAdhesion {
     if (libelleTolerance) faitsObserves.push(`Tolérance rapportée : « ${libelleTolerance} »`);
   }
 
+  // Observance compléments (C4 LOT-05) : question conditionnelle, présente
+  // uniquement quand une recommandation compléments est matérialisée. Quand elle
+  // a été répondue, la réponse entre comme FAIT OBSERVÉ supplémentaire, verbatim
+  // et sourcé sur le même point d'étape — au même titre que la tolérance
+  // non-« bien ». Elle ne modifie JAMAIS l'état (toujours 3 états + indéterminée,
+  // dérivés de la seule question `adhesion`) : pas de deuxième météo, pas de
+  // pondération, pas de nouvel agrégat. On rapporte, on n'infère pas. Absente →
+  // aucun fait ajouté (aucune inférence tirée d'un silence).
+  const observance = plusRecent.reponses.observance_complements;
+  if (observance) {
+    const libelleObservance = optionLibelle('observance_complements', observance);
+    if (libelleObservance) faitsObserves.push(`Compléments : « ${libelleObservance} »`);
+  }
+  const motif = plusRecent.reponses.observance_complements_motif;
+  if (motif) {
+    const libelleMotif = optionLibelle('observance_complements_motif', motif);
+    if (libelleMotif) faitsObserves.push(`Frein compléments rapporté : « ${libelleMotif} »`);
+  }
+
   return {
     etat,
     faitsObserves,
