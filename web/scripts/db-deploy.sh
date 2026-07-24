@@ -18,8 +18,12 @@
 #   DATABASE_URL            — cas général (dev, CI, ou alias posé côté Scalingo) ;
 #   SCALINGO_POSTGRESQL_URL — injectée par l'add-on PostgreSQL Scalingo.
 #
-# L'import one-shot C5 CIQUAL n'est PAS rejoué ici : sur Scalingo ces données
-# arrivent par la migration de données (dump/restore), pas par un ré-import.
+# PRÉCONDITION : ne JAMAIS provisionner une base VIERGE par ce seul script. Il
+# n'applique que le schéma (migrate deploy) — pas les données. Les données de
+# référence (C5 CIQUAL, chargées one-shot hors migration sur Vercel) et les
+# données patients arrivent par la migration de données (dump/restore) ; l'import
+# C5 n'est pas rejoué ici. Sur une base restaurée par dump, migrate deploy est
+# idempotent et ne fait que rattraper d'éventuelles migrations manquantes.
 set -euo pipefail
 
 DB_URL="${MIGRATE_DATABASE_URL:-${DATABASE_URL:-${SCALINGO_POSTGRESQL_URL:-}}}"
