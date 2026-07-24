@@ -117,6 +117,18 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
     expect(d.idSynthese).toBe('SYN_1');
     expect(prisma.syntheseIA.create).toHaveBeenCalledOnce();
   });
+
+  it('ne passe AUCUNE option Anthropic (défauts SDK inchangés, Vercel intact)', async () => {
+    await POST(req(CORPS));
+    expect(anthropicCreate).toHaveBeenCalledWith(expect.anything(), undefined);
+  });
+
+  it('échec du modèle : 500, aucune synthèse persistée', async () => {
+    anthropicCreate.mockRejectedValue(new Error('API indisponible'));
+    const res = await POST(req(CORPS));
+    expect(res.status).toBe(500);
+    expect(prisma.syntheseIA.create).not.toHaveBeenCalled();
+  });
 });
 
 describe('POST /api/praticien/synthese — transport SSE (Scalingo, flag ON)', () => {
@@ -137,6 +149,14 @@ describe('POST /api/praticien/synthese — transport SSE (Scalingo, flag ON)', (
     expect(payload.success).toBe(true);
     expect(payload.idSynthese).toBe('SYN_1');
     expect(prisma.syntheseIA.create).toHaveBeenCalledOnce();
+  });
+
+  it('borne l’appel Anthropic (timeout 2 min, 1 reprise) — SSE seulement', async () => {
+    await POST(req(CORPS));
+    expect(anthropicCreate).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ timeout: 120_000, maxRetries: 1 }),
+    );
   });
 
   it('échec du modèle : event: error, aucune synthèse persistée', async () => {

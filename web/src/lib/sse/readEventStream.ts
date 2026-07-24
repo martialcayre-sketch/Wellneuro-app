@@ -36,18 +36,23 @@ export async function readEventStream(
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    let sep: number;
-    while ((sep = buffer.indexOf('\n\n')) !== -1) {
-      const frame = parseSseFrame(buffer.slice(0, sep));
-      buffer = buffer.slice(sep + 2);
-      if (frame) onEvent(frame);
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let sep: number;
+      while ((sep = buffer.indexOf('\n\n')) !== -1) {
+        const frame = parseSseFrame(buffer.slice(0, sep));
+        buffer = buffer.slice(sep + 2);
+        if (frame) onEvent(frame);
+      }
     }
+    // Dernière trame éventuelle sans séparateur final.
+    const reste = parseSseFrame(buffer);
+    if (reste) onEvent(reste);
+  } finally {
+    // Libère toujours le verrou, même si `onEvent` lève.
+    reader.releaseLock();
   }
-  // Dernière trame éventuelle sans séparateur final.
-  const reste = parseSseFrame(buffer);
-  if (reste) onEvent(reste);
 }
