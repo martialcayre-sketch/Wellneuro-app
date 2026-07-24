@@ -62,6 +62,7 @@ model Patient {
   packPropositions           PackProposition[]
   correspondancesMedecin     CorrespondanceMedecin[]
   envoiBrouillons            EnvoiBrouillon[]
+  rendezVous                 RendezVous[]
 
   @@map("patients")
 }
@@ -1146,4 +1147,28 @@ model EnvoiBrouillon {
   @@index([praticienEmail, statut], map: "bibliotheque_envoi_brouillon_praticien_idx")
   @@index([idPatient, statut], map: "bibliotheque_envoi_brouillon_patient_idx")
   @@map("envoi_brouillons")
+}
+
+// Rendez-vous praticien (accueil-observatoire LOT-04) — objet OPÉRATIONNEL
+// minimal qui dé-diffère le workflow RDV (R6 produit / E5, registre §4). Ni
+// récurrence, ni notification, ni surface patient : il alimente les cartes
+// « Pré-vol prêt » du Fil et l'écran agenda. `date_heure` est une DONNÉE (le
+// moment planifié) ; `cree_le` est posé par la base, jamais par l'appelant.
+// L'annulation est un STATUT (`annule`), jamais une suppression : le
+// rendez-vous reste une trace, `annule_le` datant le geste.
+model RendezVous {
+  id             String    @id @default(cuid()) @map("id")
+  idPatient      String    @map("id_patient")
+  praticienEmail String    @map("praticien_email")
+  dateHeure      DateTime  @map("date_heure")
+  motif          String?   @map("motif")
+  statut         String    @default("planifie") @map("statut") // planifie | annule
+  annuleLe       DateTime? @map("annule_le")
+  creeLe         DateTime  @default(now()) @map("cree_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient])
+
+  @@index([praticienEmail, dateHeure], map: "ao_rendez_vous_praticien_date_idx")
+  @@index([idPatient, dateHeure], map: "ao_rendez_vous_patient_date_idx")
+  @@map("rendez_vous")
 }

@@ -11,6 +11,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     questionnaireReponse: { findMany: vi.fn(), groupBy: vi.fn() },
     protocolCheckin: { findMany: vi.fn() },
     assessmentEpisode: { findMany: vi.fn() },
+    rendezVous: { findMany: vi.fn() },
     patient: { findMany: vi.fn() },
     filCardRejection: { findMany: vi.fn() },
   },
@@ -21,6 +22,7 @@ vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import { GET } from './route';
+import { bornesJourParis } from '@/lib/fil/fuseau';
 
 // L'accueil praticien (SP-FIL LOT-01) n'avait aucun test de route. Les gardes
 // vérifiées ici sont celles dont dépend l'honnêteté du Fil : une session
@@ -40,6 +42,7 @@ describe('GET /api/praticien/fil', () => {
     prisma.questionnaireReponse.groupBy.mockResolvedValue([]);
     prisma.protocolCheckin.findMany.mockResolvedValue([]);
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
+    prisma.rendezVous.findMany.mockResolvedValue([]);
     prisma.patient.findMany.mockResolvedValue([]);
     prisma.filCardRejection.findMany.mockResolvedValue([]);
   });
@@ -126,6 +129,23 @@ describe('GET /api/praticien/fil', () => {
     expect(jalon).toBeDefined();
     expect(jalon.cle).toBe('jalon_j21:CHK_J21');
     expect(jalon.titre).toContain('Jalon J21');
+  });
+
+  it('un rendez-vous du jour produit une carte consultation vers le pré-vol', async () => {
+    prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
+    // Milieu du jour civil de Paris courant : toujours dans la fenêtre, quelle
+    // que soit l'heure UTC d'exécution du test (le constructeur borne au jour
+    // de Paris, pas au futur).
+    const { debut } = bornesJourParis(new Date());
+    const midiParis = new Date(debut.getTime() + 12 * 60 * 60 * 1000);
+    prisma.rendezVous.findMany.mockResolvedValue([
+      { id: 'RDV_1', idPatient: 'PAT_SEED_01', dateHeure: midiParis },
+    ]);
+    const payload = await (await GET()).json();
+    const consultation = payload.cartes.find((c: { type: string }) => c.type === 'consultation_prevue');
+    expect(consultation).toBeDefined();
+    expect(consultation.cle).toBe('consultation_prevue:RDV_1');
+    expect(consultation.href).toContain('/dashboard/copilote?idPatient=PAT_SEED_01');
   });
 
   it('un check-in J21 déjà suivi d’un épisode J21 consigné ne produit aucune carte jalon', async () => {

@@ -70,6 +70,7 @@ export function filtrerCartesRefusees(cartes: CarteFil[], refusees: Set<string>)
 // posés sur ces clés restent en base, inertes — et un nouveau refus portant ce
 // préfixe est refusé comme toute clé d'un type inconnu.
 const TYPES_CARTE: readonly TypeCarteFil[] = [
+  'consultation_prevue',
   'signalement_trust',
   'synthese_a_valider',
   'jalon_j21',

@@ -911,7 +911,7 @@
 |---|---|
 | R9 / E2 Mon équilibre | Moteur : **livré** (`lib/equilibre/`). UI praticien : intrants C1. UI patient : Hybrid Patient |
 | R4 / E6 Protocole builder | C1 (V1 minimale), campagne dédiée si extension |
-| R6 / E5 Workflow RDV | différé, non rattaché |
+| R6 / E5 Workflow RDV | **socle rattaché** le 2026-07-23 (accueil-observatoire LOT-04) : modèle `RendezVous` minimal + agenda praticien + cartes « Pré-vol prêt » du Fil. Le chaînage complet (Cal.com, assignation auto pré-consultation) reste différé — c'est le socle RDV, pas le workflow « zéro saisie » |
 | R3 Fiches / recettes | C3 (rendu) + C5 (contenu alimentaire) |
 | R2 Compléments | C4 |
 | R1 Ciqual / mapping | acquis E1 + socle data C5 |
