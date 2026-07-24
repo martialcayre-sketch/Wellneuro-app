@@ -1,38 +1,20 @@
 import { randomUUID } from 'crypto';
-import type { AppEnvironment, LogContext, RequestContext } from './types';
+import type { LogContext, RequestContext } from './types';
+import { deploymentEnv, deploymentRequestId, releaseSha } from './deploymentEnv';
 import { sanitizeUrl } from './sanitizeLogData';
-
-function resolveEnvironment(): AppEnvironment {
-  const vercelEnv = process.env.VERCEL_ENV;
-  if (vercelEnv === 'production' || vercelEnv === 'preview' || vercelEnv === 'development') {
-    return vercelEnv;
-  }
-  if (process.env.NODE_ENV === 'production') return 'production';
-  return 'development';
-}
-
-function resolveRelease(): string {
-  return process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.NEXT_PUBLIC_APP_VERSION ?? 'local';
-}
 
 function resolveRuntime(): string {
   return process.env.NEXT_RUNTIME ?? 'nodejs';
 }
 
 export function createRequestContext(req: Request): RequestContext {
-  const requestId =
-    req.headers.get('x-vercel-id') ??
-    req.headers.get('x-request-id') ??
-    req.headers.get('x-amzn-trace-id') ??
-    null;
-
   return {
     correlationId: `cor_${randomUUID().replace(/-/g, '')}`,
-    requestId,
+    requestId: deploymentRequestId(req.headers),
     route: sanitizeUrl(req.url),
     method: req.method,
-    environment: resolveEnvironment(),
-    release: resolveRelease(),
+    environment: deploymentEnv(),
+    release: releaseSha(),
     runtime: resolveRuntime(),
     startedAtMs: Date.now(),
   };

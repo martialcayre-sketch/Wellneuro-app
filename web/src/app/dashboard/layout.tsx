@@ -2,12 +2,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { NavBar } from '@/components/NavBar';
+import { releaseSha } from '@/lib/observability/deploymentEnv';
 import type { ReactNode } from 'react';
 
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session = await getServerSession(authOptions);
-  const commitSha = process.env.VERCEL_GIT_COMMIT_SHA ?? process.env.NEXT_PUBLIC_APP_VERSION ?? 'local';
-  const buildLabel = `build ${commitSha.slice(0, 7)}`;
+  const buildLabel = `build ${releaseSha().slice(0, 7)}`;
 
   if (!session) {
     redirect('/login');
