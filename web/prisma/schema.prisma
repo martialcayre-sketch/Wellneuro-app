@@ -419,6 +419,7 @@ model SupplementIngredient {
   formes               SupplementIngredientForme[]
   clinicalRules        ClinicalRule[]
   functionalThresholds IngredientFunctionalThreshold[]
+  compositions         SupplementProductComposition[]
 
   @@map("supplement_ingredients")
 }
@@ -433,6 +434,7 @@ model SupplementIngredientForme {
 
   ingredient    SupplementIngredient @relation(fields: [ingredientId], references: [id])
   clinicalRules ClinicalRule[]
+  compositions  SupplementProductComposition[]
 
   @@unique([ingredientId, code])
   @@map("supplement_ingredient_formes")
@@ -528,6 +530,13 @@ model ClinicalRule {
   creeLe       DateTime  @default(now()) @map("cree_le")
   validePar    String?   @map("valide_par")
   valideLe     DateTime? @map("valide_le")
+  // Traçabilité durable de la désactivation (C4 LOT-03b, décision n°3 « override
+  // tracé, jamais silencieux ») : une règle désactivée porte sa raison et son
+  // signataire (CHECK en base). Renseigner ces champs n'est pas une édition de
+  // contenu interdite — c'est le journal de la transition.
+  raisonDesactivation String?   @map("raison_desactivation")
+  desactivePar        String?   @map("desactive_par")
+  desactiveLe         DateTime? @map("desactive_le")
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
@@ -536,6 +545,7 @@ model ClinicalRule {
   formePreferee   SupplementIngredientForme? @relation(fields: [formePrefereeId], references: [id])
   sourceReference SupplementSourceReference  @relation(fields: [sourceReferenceId], references: [id])
 
+  @@unique([intentTagId, ingredientId, typeRegle, versionRegle], map: "clinical_rules_lignee_version_key")
   @@index([intentTagId])
   @@index([ingredientId])
   @@map("clinical_rules")
@@ -583,6 +593,87 @@ model ProtocolReviewFlag {
 
   @@index([protocolDraftId])
   @@map("protocol_review_flags")
+}
+
+// Catalogue de produits commerciaux C4A (campagne C4 « Compléments clean
+// label », LOT-01, décision praticien du 2026-07-24 : catalogue
+// DGCCRF/Compl'Alim complet importé en brouillons). Référentiel documentaire,
+// aucune donnée patient. Le produit est une matérialisation commerciale qui se
+// projette sur le pivot clinique SupplementIngredient via sa composition ; les
+// règles, seuils et alertes restent au niveau ingrédient (V1 intacte).
+// Reformulation = nouvelle ligne (version_formulation), jamais d'édition en
+// place (append-only garanti par l'application, pas par la base — même posture
+// que clinical_rules.version_regle). L'import de masse ne pose jamais
+// statut_fiche = 'verifiee' (décision n°11 : une source externe produit des
+// brouillons, la vérification est un geste praticien signé).
+
+model SupplementProduct {
+  id                       String    @id @default(cuid())
+  nomCommercial            String    @map("nom_commercial")
+  marque                   String    @map("marque")
+  marche                   String    @default("FR") @map("marche")
+  versionFormulation       Int       @default(1) @map("version_formulation")
+  sourceProvenance         String    @map("source_provenance")
+  sourceIdentifiant        String    @map("source_identifiant")
+  sourceUrl                String?   @map("source_url")
+  dateDerniereVerification DateTime? @map("date_derniere_verification")
+  statutFiche              String    @default("importee") @map("statut_fiche")
+  niveauCompletude         String    @map("niveau_completude")
+  contenuSha256            String?   @map("contenu_sha256")
+  donneesManquantes        String[]  @default([]) @map("donnees_manquantes")
+  incertitudes             String?   @map("incertitudes")
+  labels                   String[]  @default([]) @map("labels")
+  allergenes               String[]  @default([]) @map("allergenes")
+  excipients               String[]  @default([]) @map("excipients")
+  verifiePar               String?   @map("verifie_par")
+  verifieLe                DateTime? @map("verifie_le")
+  actif                    Boolean   @default(true) @map("actif")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  compositions    SupplementProductComposition[]
+  versionCourante SupplementProductVersionCourante?
+
+  @@unique([sourceProvenance, sourceIdentifiant, versionFormulation], map: "supplement_products_source_version_key")
+  @@index([marque, nomCommercial], map: "supplement_products_marque_nom_idx")
+  @@index([statutFiche, actif], map: "supplement_products_statut_idx")
+  @@map("supplement_products")
+}
+
+model SupplementProductComposition {
+  id             String   @id @default(cuid())
+  productId      String   @map("product_id")
+  ingredientId   String   @map("ingredient_id")
+  formeId        String?  @map("forme_id")
+  doseParPortion Float?   @map("dose_par_portion")
+  unite          String?  @map("unite")
+  position       Int      @default(0) @map("position")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  product    SupplementProduct          @relation(fields: [productId], references: [id])
+  ingredient SupplementIngredient       @relation(fields: [ingredientId], references: [id])
+  // onDelete: Restrict explicite — SANS lui, une relation optionnelle défaute à
+  // SET NULL côté Prisma, alors que la migration crée la FK en RESTRICT :
+  // dérive détectée par le banc B-1. Les deux FK requises (product, ingredient)
+  // défautent déjà à RESTRICT, d'où leur absence ici.
+  forme      SupplementIngredientForme? @relation(fields: [formeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([productId, ingredientId, formeId], map: "supplement_product_compositions_produit_ingredient_forme_key")
+  @@index([ingredientId], map: "supplement_product_compositions_ingredient_idx")
+  @@map("supplement_product_compositions")
+}
+
+model SupplementProductVersionCourante {
+  id                String   @id @default(cuid())
+  sourceProvenance  String   @map("source_provenance")
+  sourceIdentifiant String   @map("source_identifiant")
+  productId         String   @unique @map("product_id")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  product SupplementProduct @relation(fields: [productId], references: [id])
+
+  @@unique([sourceProvenance, sourceIdentifiant], map: "supplement_product_versions_courantes_source_key")
+  @@map("supplement_product_versions_courantes")
 }
 
 // ─── TRUST V1 (campagne 2026-07-15-trust-information-patient-droits-v1) ─────
