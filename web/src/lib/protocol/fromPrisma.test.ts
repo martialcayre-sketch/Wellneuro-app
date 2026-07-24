@@ -59,4 +59,16 @@ describe('reconstructProtocolDraft', () => {
   it('rejette un payload illisible', () => {
     expect(() => reconstructProtocolDraft(null, 'x')).toThrow(ProtocolPayloadIntegrityError);
   });
+
+  // Propriété de sécurité porteuse du contrat V3 (LOT-04) : la lecture refuse
+  // un payload V3 tant qu'il n'est pas ouvert délibérément. Ce test garde le
+  // verrou — quiconque ajoutera V3 à la garde de version de fromPrisma.ts sans
+  // brancher aussi la validation de la référence catalogue verra ce test
+  // échouer, et non ouvrir en silence la lecture de références non validées.
+  it('rejette un payload de version V3 (contrat non ouvert en lecture)', () => {
+    const v3 = { ...draft, version: 'c1-protocol-draft-v3' };
+    expect(() => reconstructProtocolDraft(v3, draft.inputHash)).toThrow(
+      ProtocolPayloadIntegrityError,
+    );
+  });
 });

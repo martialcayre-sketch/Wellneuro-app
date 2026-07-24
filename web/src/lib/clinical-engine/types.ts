@@ -8,6 +8,7 @@ export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
 export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;
 export const VERSION_PROTOCOL_DRAFT = 'c1-protocol-draft-v1' as const;
 export const VERSION_PROTOCOL_DRAFT_V2 = 'c1-protocol-draft-v2' as const;
+export const VERSION_PROTOCOL_DRAFT_V3 = 'c1-protocol-draft-v3' as const;
 export const VERSION_PATIENT_PROTOCOL_VIEW = 'c1-patient-protocol-view-v1' as const;
 
 export type MeasurementUnit = 'ratio' | 'score_100' | 'delta';
@@ -276,6 +277,23 @@ export type ProtocolActionType =
   | 'biological_exploration'
   | 'supplement_exploration';
 
+/**
+ * Référence opaque et gouvernée vers une sélection du catalogue de compléments
+ * (C4) : règle clinique versionnée + justification, posée uniquement par le
+ * praticien — jamais générée par l'IA, jamais saisie en texte libre.
+ * `productId` est optionnel : le schéma produit (`SupplementProduct`) arrive au
+ * LOT-01 ; la validation d'existence (FK) du produit sera branchée à ce
+ * moment-là. D'ici là, la référence est validée structurellement, sans
+ * résolution.
+ */
+export type SupplementCatalogRef = {
+  ingredientId: string;
+  ruleId: string;
+  ruleVersion: number;
+  productId?: string;
+  justification: string;
+};
+
 export type ProtocolAction = {
   actionId: string;
   type: ProtocolActionType;
@@ -286,6 +304,8 @@ export type ProtocolAction = {
   limitations: string[];
   /** Référence C5 uniquement dans un payload protocole V2. */
   foodCompassRef?: FoodCompassActionRef;
+  /** Référence catalogue C4 uniquement dans un payload protocole V3, sur une action `supplement_exploration` seule. */
+  supplementCatalogRef?: SupplementCatalogRef;
 };
 
 export type TherapeuticLoad = {
@@ -307,7 +327,7 @@ export type ProtocolDraft = {
   selectedPriorityId: string;
   createdAt: string;
   updatedAt: string;
-  version: typeof VERSION_PROTOCOL_DRAFT | typeof VERSION_PROTOCOL_DRAFT_V2;
+  version: typeof VERSION_PROTOCOL_DRAFT | typeof VERSION_PROTOCOL_DRAFT_V2 | typeof VERSION_PROTOCOL_DRAFT_V3;
   status: 'draft' | 'practitioner_reviewed';
   purpose: string;
   followUpCriterion: string;
