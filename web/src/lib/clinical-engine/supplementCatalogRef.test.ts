@@ -115,6 +115,9 @@ describe('SupplementCatalogRef — contrat protocole V3', () => {
     expect(() => assertSupplementCatalogRef(catalogRef({ ruleId: '' }))).toThrow('ruleId');
     expect(() => assertSupplementCatalogRef(catalogRef({ justification: '  ' }))).toThrow('justification');
     expect(() => assertSupplementCatalogRef(catalogRef({ productId: ' ' }))).toThrow('productId');
+    // productId: null est distinct de undefined (accepté) et de ' ' (vide) :
+    // typeof null !== 'string' → rejet.
+    expect(() => assertSupplementCatalogRef(catalogRef({ productId: null as unknown as string }))).toThrow('productId');
   });
 
   it('rejette un ruleVersion qui n’est pas un entier strictement positif', () => {
@@ -122,6 +125,9 @@ describe('SupplementCatalogRef — contrat protocole V3', () => {
     expect(() => assertSupplementCatalogRef(catalogRef({ ruleVersion: -1 }))).toThrow('entier strictement positif');
     expect(() => assertSupplementCatalogRef(catalogRef({ ruleVersion: 1.5 }))).toThrow('entier strictement positif');
     expect(() => assertSupplementCatalogRef(catalogRef({ ruleVersion: '1' as unknown as number }))).toThrow('entier strictement positif');
+    // Number.isInteger écarte NaN et Infinity — bornes non finies verrouillées.
+    expect(() => assertSupplementCatalogRef(catalogRef({ ruleVersion: Number.NaN }))).toThrow('entier strictement positif');
+    expect(() => assertSupplementCatalogRef(catalogRef({ ruleVersion: Number.POSITIVE_INFINITY }))).toThrow('entier strictement positif');
   });
 
   it('rejette tout champ inconnu dans la référence', () => {
