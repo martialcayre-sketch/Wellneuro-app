@@ -1,55 +1,5 @@
 import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_PSS_DIRECT, O_PSS_INVERSE, O_ZARIT, O_DASS, O_CONNERS, q, qn, qs } from './shared';
 
-export const Q_STR_01 = {
-  id:'Q_STR_01', titre:'Questionnaire de stress SIIN',
-  instructions:'Répondez spontanément pour chaque item en choisissant la fréquence qui vous correspond le mieux au cours des dernières semaines.',
-  sections:[
-    { id:'A', titre:'Groupe A — Épuisement & énergie',
-      description:'0 = Rarement · 1 = Parfois · 2 = Souvent',
-      questions:[
-        q('A1',"J'ai du mal à me réveiller le matin, je dois souvent prendre un café ou des stimulants",O_RPS),
-        q('A2',"Je me sens vite fatigué(e), même sans effort",O_RPS),
-        q('A3',"J'ai des troubles de la concentration, j'oublie des choses facilement",O_RPS),
-        q('A4',"Je me sens moins en forme au quotidien",O_RPS),
-        q('A5',"J'ai parfois des coups de pompe, des vertiges, une faiblesse soudaine",O_RPS),
-        q('A6',"Je suis démotivé(e), je n'ai goût à rien et j'ai tendance à remettre à demain ce que je dois faire",O_RPS),
-        q('A7',"J'ai parfois la tête vide, je suis distrait(e)",O_RPS),
-      ]},
-    { id:'B', titre:'Groupe B — Tension & anxiété',
-      questions:[
-        q('B8',"Je me sens tendu(e) et nerveux(se), souvent agité(e)",O_RPS),
-        q('B9',"Je rencontre des difficultés pour m'endormir, je pense souvent à des soucis",O_RPS),
-        q('B10',"Je suis nerveux(se), inquiet(e) et parfois anxieux(se)",O_RPS),
-        q('B11',"Je n'arrive pas à prendre du temps pour décompresser, me détendre",O_RPS),
-        q('B12',"Je me réveille souvent dans la nuit ou fin de nuit",O_RPS),
-        q('B13',"Un rien me stress, m'énerve et me fait réagir",O_RPS),
-        q('B14',"Je suis très exigeant(e), envers moi-même et les autres",O_RPS),
-      ]},
-    { id:'C', titre:'Groupe C — Somatisation',
-      questions:[
-        q('C15',"J'ai souvent mal au dos, à la nuque ou des maux de tête",O_RPS),
-        q('C16',"J'ai des palpitations cardiaques, des tremblements",O_RPS),
-        q('C17',"J'ai une respiration courte et rapide, je suis essoufflé(e), je soupire souvent",O_RPS),
-        q('C18',"J'ai parfois un nœud creux de l'estomac, la gorge serrée",O_RPS),
-        q('C19',"J'ai des troubles digestifs ou intestinaux, des douleurs au ventre",O_RPS),
-        q('C20',"J'ai des secousses musculaires, au niveau du visage, des paupières",O_RPS),
-        q('C21',"Je fume, je bois de l'alcool ou prends d'autres substances pour me stimuler ou me calmer",O_RPS),
-      ]}
-  ],
-  scoring:{
-    type:'group_majority',
-    subScores:[
-      {id:'A',label:'Groupe A — Épuisement / protocole dopaminergique',items:['A1','A2','A3','A4','A5','A6','A7'],max:14},
-      {id:'B',label:'Groupe B — Tension / protocole sérotoninergique',items:['B8','B9','B10','B11','B12','B13','B14'],max:14},
-      {id:'C',label:'Groupe C — Somatisation / protocole mixte',items:['C15','C16','C17','C18','C19','C20','C21'],max:14},
-    ],
-    interpretation:[
-      {min:0,max:3,label:'Niveau de stress faible',color:'success',protocol:'Conseils de vie antistress'},
-      {min:4,max:14,label:'Stress modéré',color:'warning',protocol:'Protocole selon groupe dominant (A=dopaminergique, B=sérotoninergique, C=mixte)'},
-      {min:15,max:42,label:'Stress élevé',color:'danger',protocol:'Protocole mixte dopaminergique + sérotoninergique (10 jours)'},
-    ]
-  }
-};
 // Q_STR_02 (PSS-10) : items cotés 1-5 (inversés en 5-1), total ∈ [10,50],
 // /50 servi aux patients et porté par les scores historiques (source Drive
 // certifiée). La cotation standard 0-4//40 a été écartée pour préserver la
@@ -85,86 +35,6 @@ export const Q_STR_02 = {
        detail:'Certaines situations génèrent un sentiment d\'impuissance — stratégies de gestion du stress conseillées.'},
       {min:27,max:50,label:'Niveau élevé de stress et désadaptation',color:'danger',
        detail:'Risque cardio-métabolique, immunitaire, digestif, psychologique — intervention neuronutritionnelle prioritaire.'},
-    ]
-  }
-};
-export const Q_STR_04 = {
-  id:'Q_STR_04', titre:'DASS-21 — Dépression, Anxiété, Stress',
-  instructions:'Veuillez lire chaque affirmation et indiquer dans quelle mesure elle s\'est appliquée à vous au cours de la semaine passée. Il n\'y a pas de bonne ou mauvaise réponse.',
-  sections:[
-    { id:'D', titre:'Humeur & vitalité',
-      questions:[
-        q('D3',"Je n'arrivais pas à éprouver de sentiments positifs",O_DASS),
-        q('D5',"J'avais du mal à trouver la force de faire quoi que ce soit",O_DASS),
-        q('D10',"Je ne me sentais pas capable d'enthousiasme pour quoi que ce soit",O_DASS),
-        q('D13',"Je me sentais triste, déprimé(e)",O_DASS),
-        q('D16',"Je n'arrivais pas à me sentir enthousiaste pour quoi que ce soit",O_DASS),
-        q('D17',"J'avais l'impression de ne pas valoir grand-chose en tant que personne",O_DASS),
-        q('D21',"Je n'arrivais pas à trouver aucun sens à la vie",O_DASS),
-      ]},
-    { id:'A', titre:'Sensations d\'anxiété',
-      questions:[
-        q('A2',"J'avais la bouche sèche",O_DASS),
-        q('A4',"J'avais des difficultés à respirer",O_DASS),
-        q('A7',"Je tremblais",O_DASS),
-        q('A9',"J'étais préoccupé(e) par les situations dans lesquelles je pouvais paniquer et paraître ridicule",O_DASS),
-        q('A15',"Je me sentais sur le point de paniquer",O_DASS),
-        q('A19',"J'étais conscient(e) de ma bouche sèche",O_DASS),
-        q('A20',"Je ressentais des palpitations ou une accélération du rythme cardiaque, sans effort physique",O_DASS),
-      ]},
-    { id:'S', titre:'Tension & stress',
-      questions:[
-        q('S1',"J'avais du mal à me calmer",O_DASS),
-        q('S6',"J'avais tendance à réagir de façon excessive",O_DASS),
-        q('S8',"Je me sentais nerveux(se)",O_DASS),
-        q('S11',"Je trouvais difficile de me détendre",O_DASS),
-        q('S12',"Je me sentais très agité(e)",O_DASS),
-        q('S14',"J'étais intolér(e) à tout ce qui m'empêchait de continuer ce que je faisais",O_DASS),
-        q('S18',"Je me sentais susceptible",O_DASS),
-      ]}
-  ],
-  scoring:{
-    type:'subscore',
-    subScores:[
-      {id:'D',label:'Dépression (×2)',items:['D3','D5','D10','D13','D16','D17','D21'],max:42,multiplier:2},
-      {id:'A',label:'Anxiété (×2)',items:['A2','A4','A7','A9','A15','A19','A20'],max:42,multiplier:2},
-      {id:'S',label:'Stress (×2)',items:['S1','S6','S8','S11','S12','S14','S18'],max:42,multiplier:2},
-    ],
-    interpretation:[
-      {subscale:'D',ranges:[{min:0,max:9,label:'Normal',color:'success'},{min:10,max:13,label:'Léger',color:'info'},{min:14,max:20,label:'Modéré',color:'warning'},{min:21,max:27,label:'Sévère',color:'danger'},{min:28,max:42,label:'Extrêmement sévère',color:'dark'}]},
-      {subscale:'A',ranges:[{min:0,max:7,label:'Normal',color:'success'},{min:8,max:9,label:'Léger',color:'info'},{min:10,max:14,label:'Modéré',color:'warning'},{min:15,max:19,label:'Sévère',color:'danger'},{min:20,max:42,label:'Extrêmement sévère',color:'dark'}]},
-      {subscale:'S',ranges:[{min:0,max:14,label:'Normal',color:'success'},{min:15,max:18,label:'Léger',color:'info'},{min:19,max:25,label:'Modéré',color:'warning'},{min:26,max:33,label:'Sévère',color:'danger'},{min:34,max:42,label:'Extrêmement sévère',color:'dark'}]},
-    ]
-  }
-};
-export const Q_STR_05 = {
-  id:'Q_STR_05', titre:'BMS-10 — Burnout Mesure Short',
-  instructions:'En pensant à votre travail, globalement, indiquez à quelle fréquence chaque affirmation s\'applique à vous.',
-  sections:[
-    { id:'A', titre:'Épuisement & Burnout',
-      questions:[
-        q('B1','En pensant à votre travail, globalement, vous êtes-vous senti(e) fatigué(e) ?',O_BMS),
-        q('B2','En pensant à votre travail, globalement, vous êtes-vous senti(e) déçu(e) par certaines personnes ?',O_BMS),
-        q('B3','En pensant à votre travail, globalement, vous êtes-vous senti(e) désespéré(e) ?',O_BMS),
-        q('B4','En pensant à votre travail, globalement, vous êtes-vous senti(e) « sous pression » ?',O_BMS),
-        q('B5','En pensant à votre travail, globalement, vous êtes-vous senti(e) physiquement faible ou malade ?',O_BMS),
-        q('B6','En pensant à votre travail, globalement, vous êtes-vous senti(e) « sans valeur » ou « en échec » ?',O_BMS),
-        q('B7','En pensant à votre travail, globalement, avez-vous ressenti des difficultés de sommeil ?',O_BMS),
-        q('B8','En pensant à votre travail, globalement, vous êtes-vous senti(e) délaissé(e) ?',O_BMS),
-        q('B9','En pensant à votre travail, globalement, vous êtes-vous senti(e) déprimé(e) ?',O_BMS),
-        q('B10','En pensant à votre travail, globalement, pouvez-vous dire « J\'en ai assez » / « Ça suffit » ?',O_BMS),
-      ]}
-  ],
-  scoring:{
-    type:'bms_average',
-    minTotal:10,
-    maxTotal:70,
-    interpretation:[
-      {min:1.0,max:2.4,label:'Très faible',color:'success'},
-      {min:2.5,max:3.4,label:'Faible',color:'info'},
-      {min:3.5,max:4.4,label:'Modéré',color:'warning'},
-      {min:4.5,max:5.4,label:'Élevé',color:'danger'},
-      {min:5.5,max:7.0,label:'Très élevé',color:'danger'},
     ]
   }
 };
@@ -211,37 +81,6 @@ export const Q_STR_08 = {
       {min:25, max:54, label:'Pas d’addiction au travail', color:'success'},
       {min:55, max:69, label:'Addiction minime au travail', color:'warning'},
       {min:70, max:100, label:'Addiction élevée au travail', color:'danger'},
-    ]
-  }
-};
-export const Q_STR_03 = {
-  id:'Q_STR_03', titre:'Questionnaire de stress de Cungi',
-  instructions:'Pour chaque item, cochez la réponse correspondant le mieux à votre ressenti.',
-  sections:[
-    { id:'A', titre:'Évaluation brève du stress',
-      description:'0 = Non pas du tout · 1 = Faiblement · 2 = Un peu · 3 = Assez · 4 = Beaucoup · 5 = Extrêmement',
-      questions:[
-        q('CU1','Suis-je émotif(ve), sensible aux remarques, aux critiques d\'autrui ?',O_CUNGI),
-        q('CU2','Suis-je colérique ou rapidement irritable ?',O_CUNGI),
-        q('CU3','Suis-je perfectionniste, ai-je tendance à ne pas être satisfait(e) de ce que j\'ai fait ou de ce que les autres ont fait ?',O_CUNGI),
-        q('CU4','Ai-je le cœur qui bat vite, de la transpiration, des tremblements ou des secousses musculaires ?',O_CUNGI),
-        q('CU5','Est-ce que je me sens tendu(e) au niveau des muscles, des mâchoires, du visage ou du corps en général ?',O_CUNGI),
-        q('CU6','Ai-je des problèmes de sommeil ?',O_CUNGI),
-        q('CU7','Suis-je anxieux(se), est-ce que je me fais souvent du souci ?',O_CUNGI),
-        q('CU8','Ai-je des manifestations corporelles comme un trouble digestif, des douleurs, des maux de tête, des allergies ou de l\'eczéma ?',O_CUNGI),
-        q('CU9','Est-ce que je suis fatigué(e) ?',O_CUNGI),
-        q('CU10','Ai-je des problèmes de santé plus importants comme un ulcère, une maladie de peau, du cholestérol, de l\'hypertension artérielle ou un trouble cardiovasculaire ?',O_CUNGI),
-        q('CU11','Est-ce que je fume ou bois de l\'alcool pour me stimuler ou me calmer ? Est-ce que j\'utilise d\'autres produits ou des médicaments dans ce but ?',O_CUNGI),
-      ]},
-  ],
-  scoring:{
-    type:'sum', maxTotal:55,
-    interpretation:[
-      {min:0,max:9,label:'Niveau de stress très bas',color:'success'},
-      {min:10,max:15,label:'Niveau de stress bas',color:'info'},
-      {min:16,max:21,label:'Niveau de stress moyen',color:'warning'},
-      {min:22,max:30,label:'Niveau de stress élevé',color:'danger'},
-      {min:31,max:55,label:'Niveau de stress très élevé',color:'danger'},
     ]
   }
 };

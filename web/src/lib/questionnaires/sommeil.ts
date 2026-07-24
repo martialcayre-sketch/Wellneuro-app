@@ -39,59 +39,6 @@ export const Q_SOM_01 = {
   ],
   scoring:{type:'psqi'}
 };
-export const Q_SOM_02 = {
-  id:'Q_SOM_02', titre:'Échelle de somnolence d\'Epworth',
-  instructions:'Comment vous assoupissiez-vous, ou comment seriez-vous susceptible de vous assoupir dans les situations suivantes ? Même si vous ne vous trouvez pas récemment dans ces situations, essayez d\'imaginer comment elles vous auraient affecté.',
-  sections:[
-    { id:'A', titre:'Situations courantes',
-      description:"0 = Jamais · 1 = Légère chance · 2 = Chance modérée · 3 = Forte chance",
-      questions:[
-        q('E1',"Assis(e) en lisant",O_03jt),
-        q('E2',"En regardant la télévision",O_03jt),
-        q('E3',"Assis(e), inactif(ve) dans un endroit public (réunion, cinéma)",O_03jt),
-        q('E4',"Comme passager(e) dans une voiture roulant sans arrêt pendant une heure",O_03jt),
-        q('E5',"Allongé(e) l'après-midi quand les circonstances le permettent",O_03jt),
-        q('E6',"Assis(e) en parlant à quelqu'un",O_03jt),
-        q('E7',"Assis(e) tranquillement après un repas sans alcool",O_03jt),
-        q('E8',"Dans une voiture immobilisée quelques minutes dans un embouteillage",O_03jt),
-      ]}
-  ],
-  scoring:{
-    type:'sum',
-    maxTotal:24,
-    interpretation:[
-      {min:0,max:10,label:'Somnolence normale',color:'success'},
-      {min:11,max:14,label:'Somnolence légère à modérée',color:'warning'},
-      {min:15,max:24,label:'Somnolence sévère — consultation recommandée',color:'danger'},
-    ]
-  }
-};
-export const Q_SOM_06 = {
-  id:'Q_SOM_06', titre:'Questionnaire de Pichot — Fatigue',
-  instructions:'Indiquez la fréquence à laquelle vous avez ressenti chacun des items suivants au cours des dernières semaines.',
-  sections:[
-    { id:'A', titre:'Évaluation de la fatigue',
-      questions:[
-        q('P1',"Vous sentez-vous fatigué(e) ?",O_04),
-        q('P2',"Avez-vous envie de dormir ou de vous reposer ?",O_04),
-        q('P3',"Avez-vous du mal à vous concentrer ?",O_04),
-        q('P4',"Avez-vous du mal à démarrer quelque chose de nouveau ?",O_04),
-        q('P5',"Êtes-vous sans énergie ?",O_04),
-        q('P6',"Vous sentez-vous physiquement épuisé(e) ?",O_04),
-        q('P7',"Avez-vous du mal à accomplir vos obligations et responsabilités ?",O_04),
-        q('P8',"Avez-vous du mal à finir ce que vous commencez ?",O_04),
-      ]}
-  ],
-  scoring:{
-    type:'sum',
-    maxTotal:32,
-    interpretation:[
-      {min:0,max:12,label:'Fatigue absente à légère',color:'success'},
-      {min:13,max:22,label:'Fatigue modérée',color:'warning'},
-      {min:23,max:32,label:'Fatigue sévère',color:'danger'},
-    ]
-  }
-};
 export const Q_SOM_07 = {
   id:'Q_SOM_07', titre:'MFI-20 — Inventaire multidimensionnel de la fatigue',
   instructions:'Par ces affirmations, nous souhaitons connaître comment vous vous êtes senti(e) au cours des derniers jours.',
@@ -204,52 +151,4 @@ export const Q_SOM_04 = {
       {min:31,max:40, label:'SJSR très sévère',color:'danger',protocol:'Prise en charge neurologique urgente'},
     ]
   }
-};
-export const Q_SOM_05 = {
-  id:'Q_SOM_05', titre:'Questionnaire de Matinalité-Vespéralité de Horne & Östberg (MEQ)',
-  instructions:'Pour chaque question, choisissez la réponse qui vous correspond le mieux. Il n\'y a pas de bonne ou mauvaise réponse — pensez à vos préférences réelles.',
-  sections:[
-    { id:'A', titre:'Préférences de sommeil et d\'éveil',
-      questions:[
-        qs('HO1','Si vous étiez entièrement libre de planifier votre journée, à quelle heure environ vous lèveriez-vous ?',
-          [{v:5,l:'05h00 – 06h30'},{v:4,l:'06h30 – 07h45'},{v:3,l:'07h45 – 09h45'},{v:2,l:'09h45 – 11h00'},{v:1,l:'11h00 – 12h00'}]),
-        qs('HO2','Si vous étiez entièrement libre de planifier votre soirée, à quelle heure environ vous coucheriez-vous ?',
-          [{v:5,l:'20h00 – 21h00'},{v:4,l:'21h00 – 22h15'},{v:3,l:'22h15 – 00h30'},{v:2,l:'00h30 – 01h45'},{v:1,l:'01h45 – 03h00'}]),
-        qs('HO3','Lorsque vous devez vous lever à une heure spécifique le matin, à quel point dépendez-vous d’un réveille-matin pour vous réveiller ?',
-          [{v:4,l:'Pas du tout dépendant(e)'},{v:3,l:'Un peu dépendant(e)'},{v:2,l:'Assez dépendant(e)'},{v:1,l:'Très dépendant(e)'}]),
-        qs('HO4','Comment trouvez-vous le fait de vous lever le matin quand vous n’êtes pas réveillé(e) subitement ?',
-          [{v:1,l:'Très difficile'},{v:2,l:'Assez difficile'},{v:3,l:'Assez facile'},{v:4,l:'Très facile'}]),
-        qs('HO5','Comment vous sentez-vous durant la première demi-heure suivant votre réveil le matin ?',
-          [{v:1,l:'Pas du tout alerte'},{v:2,l:'Pas très alerte'},{v:3,l:'Assez alerte'},{v:4,l:'Très alerte'}]),
-        qs('HO6','Comment est votre appétit durant la première demi-heure suivant votre réveil ?',
-          [{v:1,l:'Très pauvre'},{v:2,l:'Plutôt pauvre'},{v:3,l:'Plutôt bon'},{v:4,l:'Très bon'}]),
-        qs('HO7','Durant la première demi-heure suivant votre réveil le matin, comment vous sentez-vous ?',
-          [{v:1,l:'Très fatigué(e)'},{v:2,l:'Plutôt fatigué(e)'},{v:3,l:'Plutôt reposé(e)'},{v:4,l:'Très reposé(e)'}]),
-        qs('HO8','Lorsque vous n’avez aucun engagement le lendemain, à quelle heure vous couchez-vous par rapport à votre heure habituelle de coucher ?',
-          [{v:4,l:'Rarement ou jamais plus tard'},{v:3,l:'Moins d’une heure plus tard'},{v:2,l:'1 à 2 heures plus tard'},{v:1,l:'Plus de 2 heures plus tard'}]),
-        qs('HO9','Vous avez décidé de faire du sport 2 fois par semaine avec un(e) ami(e) qui est disponible uniquement entre 7h00 et 8h00 le matin. En ne tenant compte que de la façon dont vous vous sentez à cette heure de la journée, comment seront vos performances ?',
-          [{v:4,l:'Je serai en bonne forme'},{v:3,l:'Je serai raisonnablement en forme'},{v:2,l:'Je trouverai cela difficile'},{v:1,l:'Je trouverai cela très difficile'}]),
-        qs('HO10','Dans la soirée, à quelle heure environ vous sentez-vous fatigué et éprouvez-vous le besoin de dormir ?',
-          [{v:5,l:'20h00 – 21h00'},{v:4,l:'21h00 – 22h15'},{v:3,l:'22h15 – 00h45'},{v:2,l:'00h45 – 02h00'},{v:1,l:'02h00 – 03h00'}]),
-        qs('HO11','Vous voulez atteindre votre meilleure performance dans un test qui sera mentalement très exigeant et durera 2 heures. Vous êtes entièrement libre de planifier votre journée. À quelle heure choisirez-vous de faire le test ?',
-          [{v:6,l:'08h00 – 10h00'},{v:4,l:'11h00 – 13h00'},{v:2,l:'15h00 – 17h00'},{v:0,l:'19h00 – 21h00'}]),
-        qs('HO12','Si vous allez vous coucher à 23h00, à quel point vous sentirez-vous fatigué(e) ?',
-          [{v:0,l:'Pas du tout fatigué(e)'},{v:2,l:'Un peu fatigué(e)'},{v:3,l:'Assez fatigué(e)'},{v:5,l:'Très fatigué(e)'}]),
-        qs('HO13','Si vous vous couchez quelques heures plus tard que d’habitude et que vous n’avez aucune obligation le lendemain matin, quel scénario vous semble le plus probable ?',
-          [{v:4,l:'Je me réveillerai à l’heure habituelle mais je ne me rendormirai pas'},{v:3,l:'Je me réveillerai à l’heure habituelle et je sommeillerai légèrement par la suite'},{v:2,l:'Je me réveillerai à l’heure habituelle mais je me rendormirai ensuite'},{v:1,l:'Je me réveillerai plus tard que d’habitude'}]),
-        qs('HO14','Vous devez rester réveillé(e) entre 4h00 et 6h00 du matin pour une garde de nuit et vous n’avez aucun engagement pour le lendemain. Lequel des choix suivants vous conviendrait le plus ?',
-          [{v:1,l:'Je n’irais pas me coucher avant que la garde soit terminée'},{v:2,l:'Je ferais une sieste avant la garde et dormirai après'},{v:3,l:'Je dormirais principalement avant la garde et je ferai une sieste après'},{v:4,l:'Je dormirais seulement avant la garde'}]),
-        qs('HO15','Vous devez faire 2 heures de travail physique intense et vous êtes entièrement libre de planifier votre journée. En ne tenant compte que de la façon dont vous vous sentez à cette heure de la journée, laquelle des périodes suivantes choisirez-vous pour le faire ?',
-          [{v:4,l:'08h00 – 10h00'},{v:3,l:'11h00 – 13h00'},{v:2,l:'15h00 – 17h00'},{v:1,l:'19h00 – 21h00'}]),
-        qs('HO16','Vous avez décidé de faire du sport 2 fois par semaine avec un(e) ami(e) qui est disponible uniquement entre 22h00 et 23h00 le soir. En ne tenant compte que de la façon dont vous vous sentez à cette heure de la journée, comment seront vos performances ?',
-          [{v:1,l:'Je serai en bonne forme'},{v:2,l:'Je serai raisonnablement en forme'},{v:3,l:'Je trouverai cela difficile'},{v:4,l:'Je trouverai cela très difficile'}]),
-        qs('HO17','Supposons que vous puissiez choisir vos propres heures de travail, que vous travailliez cinq heures par jour, en incluant les pauses, et que votre travail est intéressant et payé en fonction de votre rendement. Vers quelle heure environ choisiriez-vous de commencer à travailler ?',
-          [{v:5,l:'5 heures commençant entre 04h00 – 08h00'},{v:4,l:'5 heures commençant entre 08h00 – 09h00'},{v:3,l:'5 heures commençant entre 09h00 – 14h00'},{v:2,l:'5 heures commençant entre 14h00 – 17h00'},{v:1,l:'5 heures commençant entre 17h00 – 04h00'}]),
-        qs('HO18','À quelle heure environ vous sentez-vous dans votre meilleure forme ?',
-          [{v:5,l:'05h00 – 08h00'},{v:4,l:'08h00 – 10h00'},{v:3,l:'10h00 – 17h00'},{v:2,l:'17h00 – 22h00'},{v:1,l:'22h00 – 05h00'}]),
-        qs('HO19','On parle de gens « du matin » ou « lève-tôt » et de gens « du soir » ou « couche-tard ». Dans quelle catégorie vous situez-vous ?',
-          [{v:6,l:'Nettement parmi les gens du matin'},{v:4,l:'Plutôt parmi les gens du matin que parmi les gens du soir'},{v:2,l:'Plutôt parmi les gens du soir que parmi les gens du matin'},{v:0,l:'Nettement parmi les gens du soir'}]),
-      ]},
-  ],
-  scoring:{type:'horne', maxTotal:86}
 };
