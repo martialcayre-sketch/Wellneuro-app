@@ -1,0 +1,1209 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import {
+  GRADES_PREUVE_SCIENTIFIQUE,
+  labelGradePreuve,
+  type GradePreuveScientifique,
+} from '@/lib/supplement-library/types';
+import type { RegleAtelier, StatutRegle } from '@/lib/supplement-library/gouvernance';
+import type { RegleCreationApiResponse, ReglesApiResponse } from '@/app/api/praticien/regles/route';
+import type { RegleRevisionApiResponse } from '@/app/api/praticien/regles/revision/route';
+import type { RegleValidationApiResponse } from '@/app/api/praticien/regles/validation/route';
+import type { RegleDesactivationApiResponse } from '@/app/api/praticien/regles/desactivation/route';
+import type {
+  ReglesVocabulaireApiResponse,
+  VocabulaireCreationApiResponse,
+} from '@/app/api/praticien/regles/vocabulaire/route';
+import type { ReglesPrevisualisationApiResponse } from '@/app/api/praticien/regles/previsualisation/route';
+
+// Atelier de règles cliniques v1 (C4, LOT-03b) — le pendant de l'Atelier
+// corpus pour le référentiel du moteur d'intention. L'écran matérialise le
+// versioning append-only (décision actée n°5) :
+//  - une règle NAÎT brouillon (création ou révision), et rien de son contenu
+//    ne s'édite jamais en place — « réviser » crée la version suivante ;
+//  - valider SIGNE (e-mail praticien + date) et désactive, côté serveur et
+//    dans la même transaction, les versions validées antérieures de la lignée ;
+//  - désactiver retire une version (raison obligatoire), sans effacer
+//    signature ni contenu — la lignée reste auditable.
+// Les gestes qui engagent le référentiel (valider, désactiver) sont en deux
+// temps : le premier clic arme, le second confirme — et la désactivation exige
+// SA raison avant confirmation.
+//
+// Le badge de grade est TOUJOURS étiqueté « preuve scientifique » (échelle
+// GRADE : fort / modéré / faible / usage traditionnel) — à ne jamais confondre
+// avec l'échelle A/B/C/D du moteur d'équilibre (provenance de donnée patient).
+//
+// Gardes d'écran (motif AtelierCorpusPanel) : une seule action en vol à la
+// fois (verrou par ref), et chaque chargement porte un numéro de génération —
+// une réponse arrivée après un changement d'onglet ou de page est jetée.
+
+type Vocabulaire = Extract<ReglesVocabulaireApiResponse, { ok: true }>;
+type Compteurs = { brouillons: number; validees: number; desactivees: number };
+
+const ONGLETS: { statut: StatutRegle; libelle: string }[] = [
+  { statut: 'brouillon', libelle: 'Brouillons' },
+  { statut: 'validee', libelle: 'Validées' },
+  { statut: 'desactivee', libelle: 'Désactivées' },
+];
+
+const LIMITE_PAGE = 20;
+
+const LIBELLE_STATUT: Record<StatutRegle, string> = {
+  brouillon: 'Brouillon — non servie par la résolution',
+  validee: 'Validée',
+  desactivee: 'Désactivée',
+};
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+function classeChamp(): string {
+  return 'rounded-lg border border-border bg-background px-3 py-1.5 text-sm';
+}
+
+/** Badge de grade — étiquette « preuve scientifique », jamais A/B/C/D nu. */
+function BadgeGrade({ grade }: { grade: GradePreuveScientifique }) {
+  return <Badge variant="neutral">preuve scientifique — {labelGradePreuve(grade)}</Badge>;
+}
+
+type Etat = 'chargement' | 'chargee' | 'erreur';
+
+// ─── Encart « tester une intention » (prévisualisation de résolution) ───────
+
+function EncartPrevisualisation({ desactive }: { desactive: boolean }) {
+  const [codes, setCodes] = useState('');
+  const [etat, setEtat] = useState<'repos' | 'envoi' | 'chargee' | 'erreur'>('repos');
+  const [erreur, setErreur] = useState('');
+  const [resolution, setResolution] = useState<
+    Extract<ReglesPrevisualisationApiResponse, { ok: true }>['resolution'] | null
+  >(null);
+
+  const tester = async () => {
+    const liste = codes.split(',').map((code) => code.trim()).filter(Boolean);
+    if (liste.length === 0) return;
+    setEtat('envoi');
+    setErreur('');
+    try {
+      const reponse = await fetch('/api/praticien/regles/previsualisation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codes: liste }),
+      });
+      const payload = (await reponse.json()) as ReglesPrevisualisationApiResponse;
+      if (!reponse.ok || !payload.ok) {
+        setErreur(payload.ok ? 'La prévisualisation n’a pas pu être lue.' : payload.error);
+        setEtat('erreur');
+        return;
+      }
+      setResolution(payload.resolution);
+      setEtat('chargee');
+    } catch {
+      setErreur('La prévisualisation n’a pas pu être lue.');
+      setEtat('erreur');
+    }
+  };
+
+  return (
+    <section
+      aria-label="Tester une intention"
+      className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-card"
+    >
+      <h3 className="font-display text-lg font-semibold text-foreground">Tester une intention</h3>
+      <p className="text-sm text-muted-foreground">
+        Prévisualisation d&apos;atelier : la résolution inclut ici les brouillons,
+        marqués comme tels — elle n&apos;alimente jamais un protocole ni un patient.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          aria-label="Codes d’intention à tester"
+          value={codes}
+          disabled={desactive || etat === 'envoi'}
+          onChange={(event) => setCodes(event.target.value)}
+          placeholder="codes d’intention, séparés par des virgules"
+          className={`${classeChamp()} min-w-64 flex-1`}
+        />
+        <Button
+          variant="outline"
+          disabled={desactive || etat === 'envoi' || codes.trim().length === 0}
+          onClick={() => void tester()}
+        >
+          {etat === 'envoi' ? 'Résolution…' : 'Tester la résolution'}
+        </Button>
+      </div>
+      {etat === 'erreur' && (
+        <p role="alert" className="rounded-lg border border-accent bg-status-warning/10 px-3 py-2 text-sm text-status-warning">
+          {erreur}
+        </p>
+      )}
+      {etat === 'chargee' && resolution && (
+        <div className="flex flex-col gap-3">
+          {resolution.codesInconnus.length > 0 && (
+            <p className="text-sm text-muted-foreground">
+              Codes sans intention active : {resolution.codesInconnus.join(', ')}
+            </p>
+          )}
+          {resolution.intentions.length === 0 && resolution.codesInconnus.length === 0 && (
+            <p className="text-sm text-muted-foreground">Aucune intention résolue.</p>
+          )}
+          {resolution.intentions.map(({ intention, regles }) => (
+            <div key={intention.id} className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+              <p className="text-sm font-medium text-foreground">
+                {intention.labelFr} <span className="font-mono text-xs text-muted-foreground">({intention.code})</span>
+              </p>
+              {regles.length === 0 ? (
+                <p className="mt-1 text-sm text-muted-foreground">Aucune règle dans cette lignée.</p>
+              ) : (
+                <ul className="mt-1 flex flex-col gap-1">
+                  {regles.map((regle) => (
+                    <li key={regle.regleId} className="flex flex-wrap items-center gap-2 text-sm text-foreground">
+                      <span>
+                        {regle.ingredient.nomFr}
+                        {regle.formePreferee ? ` (${regle.formePreferee.labelFr})` : ''} · v{regle.versionRegle}
+                      </span>
+                      <BadgeGrade grade={regle.gradePreuve} />
+                      {!regle.regleValidee && <Badge variant="warning">brouillon — non servie</Badge>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ─── Formulaire de création (lignée neuve, brouillon v1) ────────────────────
+
+function FormulaireCreation({
+  vocabulaire,
+  desactive,
+  onCree,
+}: {
+  vocabulaire: Vocabulaire;
+  desactive: boolean;
+  onCree: () => void;
+}) {
+  const [intentTagId, setIntentTagId] = useState('');
+  const [ingredientId, setIngredientId] = useState('');
+  const [formePrefereeId, setFormePrefereeId] = useState('');
+  const [typeRegle, setTypeRegle] = useState('recommande');
+  const [grade, setGrade] = useState<GradePreuveScientifique | ''>('');
+  const [doseBasse, setDoseBasse] = useState('');
+  const [doseHaute, setDoseHaute] = useState('');
+  const [poids, setPoids] = useState('1');
+  const [justification, setJustification] = useState('');
+  const [sourceReferenceId, setSourceReferenceId] = useState('');
+  const [critereId, setCritereId] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const [succes, setSucces] = useState('');
+
+  const ingredient = vocabulaire.ingredients.find((entree) => entree.id === ingredientId) ?? null;
+  const pret =
+    intentTagId && ingredientId && typeRegle.trim() && grade && justification.trim() && sourceReferenceId;
+
+  const soumettre = async () => {
+    if (!pret || envoi) return;
+    setEnvoi(true);
+    setErreur('');
+    setSucces('');
+    try {
+      const reponse = await fetch('/api/praticien/regles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          intentTagId,
+          ingredientId,
+          typeRegle: typeRegle.trim(),
+          gradePreuveScientifique: grade,
+          justification: justification.trim(),
+          sourceReferenceId,
+          ...(formePrefereeId ? { formePrefereeId } : {}),
+          ...(doseBasse.trim() ? { doseCibleBasse: Number(doseBasse) } : {}),
+          ...(doseHaute.trim() ? { doseCibleHaute: Number(doseHaute) } : {}),
+          ...(poids.trim() ? { poids: Number(poids) } : {}),
+          ...(critereId ? { conditionSupplementaire: { critereId } } : {}),
+        }),
+      });
+      const payload = (await reponse.json()) as RegleCreationApiResponse;
+      if (!reponse.ok || !payload.ok) {
+        setErreur(payload.ok ? 'La règle n’a pas pu être créée.' : payload.error);
+        return;
+      }
+      setSucces(`Brouillon créé (v${payload.regle.versionRegle}) — à valider dans l’onglet Brouillons.`);
+      setJustification('');
+      setDoseBasse('');
+      setDoseHaute('');
+      setCritereId('');
+      onCree();
+    } catch {
+      setErreur('La règle n’a pas pu être créée.');
+    } finally {
+      setEnvoi(false);
+    }
+  };
+
+  const fige = desactive || envoi;
+  return (
+    <details className="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <summary className="cursor-pointer font-display text-lg font-semibold text-foreground">
+        Nouvelle règle (brouillon)
+      </summary>
+      <div className="mt-3 flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">
+          Une règle naît en brouillon, invisible de la résolution tant qu&apos;elle
+          n&apos;est pas validée. Justification et source sont obligatoires.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <select
+            aria-label="Intention clinique"
+            value={intentTagId}
+            disabled={fige}
+            onChange={(event) => setIntentTagId(event.target.value)}
+            className={classeChamp()}
+          >
+            <option value="">Intention clinique…</option>
+            {vocabulaire.intentions.map((entree) => (
+              <option key={entree.id} value={entree.id}>{entree.labelFr}</option>
+            ))}
+          </select>
+          <select
+            aria-label="Ingrédient"
+            value={ingredientId}
+            disabled={fige}
+            onChange={(event) => {
+              setIngredientId(event.target.value);
+              setFormePrefereeId('');
+            }}
+            className={classeChamp()}
+          >
+            <option value="">Ingrédient…</option>
+            {vocabulaire.ingredients.map((entree) => (
+              <option key={entree.id} value={entree.id}>{entree.nomFr}</option>
+            ))}
+          </select>
+          <select
+            aria-label="Forme préférée (optionnelle)"
+            value={formePrefereeId}
+            disabled={fige || !ingredient}
+            onChange={(event) => setFormePrefereeId(event.target.value)}
+            className={classeChamp()}
+          >
+            <option value="">Forme préférée (optionnelle)…</option>
+            {(ingredient?.formes ?? []).map((forme) => (
+              <option key={forme.id} value={forme.id}>{forme.labelFr}</option>
+            ))}
+          </select>
+          <input
+            type="text"
+            aria-label="Type de règle"
+            value={typeRegle}
+            disabled={fige}
+            onChange={(event) => setTypeRegle(event.target.value)}
+            placeholder="type de règle (snake_case)"
+            className={classeChamp()}
+          />
+          <select
+            aria-label="Grade de preuve scientifique (échelle GRADE)"
+            value={grade}
+            disabled={fige}
+            onChange={(event) => setGrade(event.target.value as GradePreuveScientifique | '')}
+            className={classeChamp()}
+          >
+            <option value="">Preuve scientifique (échelle GRADE)…</option>
+            {GRADES_PREUVE_SCIENTIFIQUE.map((valeur) => (
+              <option key={valeur} value={valeur}>{labelGradePreuve(valeur)}</option>
+            ))}
+          </select>
+          <select
+            aria-label="Source"
+            value={sourceReferenceId}
+            disabled={fige}
+            onChange={(event) => setSourceReferenceId(event.target.value)}
+            className={classeChamp()}
+          >
+            <option value="">Source (obligatoire)…</option>
+            {vocabulaire.sources.map((source) => (
+              <option key={source.id} value={source.id}>{source.citation}</option>
+            ))}
+          </select>
+          <input
+            type="number"
+            aria-label="Dose cible basse"
+            value={doseBasse}
+            disabled={fige}
+            min={0}
+            onChange={(event) => setDoseBasse(event.target.value)}
+            placeholder="dose cible basse (optionnelle)"
+            className={classeChamp()}
+          />
+          <input
+            type="number"
+            aria-label="Dose cible haute"
+            value={doseHaute}
+            disabled={fige}
+            min={0}
+            onChange={(event) => setDoseHaute(event.target.value)}
+            placeholder="dose cible haute (optionnelle)"
+            className={classeChamp()}
+          />
+          <input
+            type="number"
+            aria-label="Poids de la règle"
+            value={poids}
+            disabled={fige}
+            min={1}
+            onChange={(event) => setPoids(event.target.value)}
+            className={classeChamp()}
+          />
+          <select
+            aria-label="Critère conditionnel (optionnel)"
+            value={critereId}
+            disabled={fige}
+            onChange={(event) => setCritereId(event.target.value)}
+            className={classeChamp()}
+          >
+            <option value="">Critère conditionnel (optionnel)…</option>
+            {vocabulaire.criteres.map((critere) => (
+              <option key={critere.id} value={critere.id}>{critere.labelFr}</option>
+            ))}
+          </select>
+        </div>
+        <textarea
+          aria-label="Justification"
+          value={justification}
+          disabled={fige}
+          maxLength={4000}
+          rows={3}
+          onChange={(event) => setJustification(event.target.value)}
+          placeholder="Justification sourcée (obligatoire)"
+          className={classeChamp()}
+        />
+        {erreur && (
+          <p role="alert" className="rounded-lg border border-accent bg-status-warning/10 px-3 py-2 text-sm text-status-warning">
+            {erreur}
+          </p>
+        )}
+        {succes && (
+          <p role="status" className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+            {succes}
+          </p>
+        )}
+        <Button className="self-start" disabled={fige || !pret} onClick={() => void soumettre()}>
+          Créer le brouillon
+        </Button>
+      </div>
+    </details>
+  );
+}
+
+// ─── Formulaire de révision (nouvelle version en brouillon) ─────────────────
+
+function FormulaireRevision({
+  regle,
+  vocabulaire,
+  desactive,
+  onSoumis,
+  onAnnule,
+}: {
+  regle: RegleAtelier;
+  vocabulaire: Vocabulaire;
+  desactive: boolean;
+  onSoumis: () => void;
+  onAnnule: () => void;
+}) {
+  const [grade, setGrade] = useState<GradePreuveScientifique>(regle.gradePreuve);
+  const [justification, setJustification] = useState(regle.justification);
+  const [sourceReferenceId, setSourceReferenceId] = useState(regle.source.id);
+  const [formePrefereeId, setFormePrefereeId] = useState(regle.formePreferee?.id ?? '');
+  const [doseBasse, setDoseBasse] = useState(regle.doseCibleBasse?.toString() ?? '');
+  const [doseHaute, setDoseHaute] = useState(regle.doseCibleHaute?.toString() ?? '');
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState('');
+
+  const ingredient = vocabulaire.ingredients.find((entree) => entree.id === regle.ingredient.id) ?? null;
+
+  const soumettre = async () => {
+    if (envoi || !justification.trim() || !sourceReferenceId) return;
+    setEnvoi(true);
+    setErreur('');
+    try {
+      const reponse = await fetch('/api/praticien/regles/revision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          regleId: regle.id,
+          gradePreuveScientifique: grade,
+          justification: justification.trim(),
+          sourceReferenceId,
+          ...(formePrefereeId ? { formePrefereeId } : {}),
+          ...(doseBasse.trim() ? { doseCibleBasse: Number(doseBasse) } : {}),
+          ...(doseHaute.trim() ? { doseCibleHaute: Number(doseHaute) } : {}),
+        }),
+      });
+      const payload = (await reponse.json()) as RegleRevisionApiResponse;
+      if (!reponse.ok || !payload.ok) {
+        setErreur(payload.ok ? 'La révision n’a pas pu être créée.' : payload.error);
+        return;
+      }
+      onSoumis();
+    } catch {
+      setErreur('La révision n’a pas pu être créée.');
+    } finally {
+      setEnvoi(false);
+    }
+  };
+
+  const fige = desactive || envoi;
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/40 p-3">
+      <p className="text-sm font-medium text-foreground">
+        Révision — une nouvelle version (v{regle.versionRegle + 1}) naîtra en brouillon ;
+        la v{regle.versionRegle} reste servie jusqu&apos;à validation de la nouvelle.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <select
+          aria-label="Grade de preuve scientifique de la révision"
+          value={grade}
+          disabled={fige}
+          onChange={(event) => setGrade(event.target.value as GradePreuveScientifique)}
+          className={classeChamp()}
+        >
+          {GRADES_PREUVE_SCIENTIFIQUE.map((valeur) => (
+            <option key={valeur} value={valeur}>{labelGradePreuve(valeur)}</option>
+          ))}
+        </select>
+        <select
+          aria-label="Source de la révision"
+          value={sourceReferenceId}
+          disabled={fige}
+          onChange={(event) => setSourceReferenceId(event.target.value)}
+          className={classeChamp()}
+        >
+          {vocabulaire.sources.map((source) => (
+            <option key={source.id} value={source.id}>{source.citation}</option>
+          ))}
+        </select>
+        <select
+          aria-label="Forme préférée de la révision"
+          value={formePrefereeId}
+          disabled={fige}
+          onChange={(event) => setFormePrefereeId(event.target.value)}
+          className={classeChamp()}
+        >
+          <option value="">Sans forme préférée</option>
+          {(ingredient?.formes ?? []).map((forme) => (
+            <option key={forme.id} value={forme.id}>{forme.labelFr}</option>
+          ))}
+        </select>
+        <div className="flex gap-3">
+          <input
+            type="number"
+            aria-label="Dose cible basse de la révision"
+            value={doseBasse}
+            disabled={fige}
+            min={0}
+            onChange={(event) => setDoseBasse(event.target.value)}
+            placeholder="dose basse"
+            className={`${classeChamp()} w-full`}
+          />
+          <input
+            type="number"
+            aria-label="Dose cible haute de la révision"
+            value={doseHaute}
+            disabled={fige}
+            min={0}
+            onChange={(event) => setDoseHaute(event.target.value)}
+            placeholder="dose haute"
+            className={`${classeChamp()} w-full`}
+          />
+        </div>
+      </div>
+      <textarea
+        aria-label="Justification de la révision"
+        value={justification}
+        disabled={fige}
+        maxLength={4000}
+        rows={3}
+        onChange={(event) => setJustification(event.target.value)}
+        className={classeChamp()}
+      />
+      {erreur && (
+        <p role="alert" className="rounded-lg border border-accent bg-status-warning/10 px-3 py-2 text-sm text-status-warning">
+          {erreur}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={fige || !justification.trim()} onClick={() => void soumettre()}>
+          Créer la révision (brouillon)
+        </Button>
+        <Button variant="outline" disabled={fige} onClick={onAnnule}>
+          Annuler
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Formulaire du vocabulaire gouverné ─────────────────────────────────────
+
+function FormulaireVocabulaire({
+  desactive,
+  onAjoute,
+}: {
+  desactive: boolean;
+  onAjoute: () => void;
+}) {
+  const [type, setType] = useState<'intention' | 'critere'>('intention');
+  const [code, setCode] = useState('');
+  const [labelFr, setLabelFr] = useState('');
+  const [categorie, setCategorie] = useState('');
+  const [envoi, setEnvoi] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const [succes, setSucces] = useState('');
+
+  const pret = code.trim() && labelFr.trim() && (type === 'critere' || categorie.trim());
+
+  const soumettre = async () => {
+    if (!pret || envoi) return;
+    setEnvoi(true);
+    setErreur('');
+    setSucces('');
+    try {
+      const reponse = await fetch('/api/praticien/regles/vocabulaire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          code: code.trim(),
+          labelFr: labelFr.trim(),
+          ...(categorie.trim() ? { categorie: categorie.trim() } : {}),
+        }),
+      });
+      const payload = (await reponse.json()) as VocabulaireCreationApiResponse;
+      if (!reponse.ok || !payload.ok) {
+        setErreur(payload.ok ? 'L’entrée n’a pas pu être ajoutée.' : payload.error);
+        return;
+      }
+      setSucces(
+        type === 'intention'
+          ? `Intention « ${payload.entree.labelFr} » ajoutée au vocabulaire.`
+          : `Critère « ${payload.entree.labelFr} » ajouté au vocabulaire.`,
+      );
+      setCode('');
+      setLabelFr('');
+      setCategorie('');
+      onAjoute();
+    } catch {
+      setErreur('L’entrée n’a pas pu être ajoutée.');
+    } finally {
+      setEnvoi(false);
+    }
+  };
+
+  const fige = desactive || envoi;
+  return (
+    <details className="rounded-xl border border-border bg-surface p-4 shadow-card">
+      <summary className="cursor-pointer font-display text-lg font-semibold text-foreground">
+        Vocabulaire gouverné (intentions et critères)
+      </summary>
+      <div className="mt-3 flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">
+          Le vocabulaire est de la donnée, pas du code : ajouter une intention ou
+          un critère ne demande aucun déploiement. Une condition de règle ne peut
+          citer qu&apos;un critère de ce vocabulaire.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <select
+            aria-label="Type d’entrée de vocabulaire"
+            value={type}
+            disabled={fige}
+            onChange={(event) => setType(event.target.value as 'intention' | 'critere')}
+            className={classeChamp()}
+          >
+            <option value="intention">Intention clinique</option>
+            <option value="critere">Critère clinique</option>
+          </select>
+          <input
+            type="text"
+            aria-label="Code de l’entrée"
+            value={code}
+            disabled={fige}
+            onChange={(event) => setCode(event.target.value)}
+            placeholder="code (snake_case)"
+            className={classeChamp()}
+          />
+          <input
+            type="text"
+            aria-label="Libellé français de l’entrée"
+            value={labelFr}
+            disabled={fige}
+            maxLength={200}
+            onChange={(event) => setLabelFr(event.target.value)}
+            placeholder="libellé français"
+            className={classeChamp()}
+          />
+          <input
+            type="text"
+            aria-label="Catégorie de l’entrée"
+            value={categorie}
+            disabled={fige}
+            maxLength={100}
+            onChange={(event) => setCategorie(event.target.value)}
+            placeholder={type === 'intention' ? 'catégorie (obligatoire)' : 'catégorie (optionnelle)'}
+            className={classeChamp()}
+          />
+        </div>
+        {erreur && (
+          <p role="alert" className="rounded-lg border border-accent bg-status-warning/10 px-3 py-2 text-sm text-status-warning">
+            {erreur}
+          </p>
+        )}
+        {succes && (
+          <p role="status" className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+            {succes}
+          </p>
+        )}
+        <Button className="self-start" disabled={fige || !pret} onClick={() => void soumettre()}>
+          Ajouter au vocabulaire
+        </Button>
+      </div>
+    </details>
+  );
+}
+
+// ─── Panneau principal ──────────────────────────────────────────────────────
+
+export function AtelierReglesPanel() {
+  const [statut, setStatut] = useState<StatutRegle>('brouillon');
+  const [offset, setOffset] = useState(0);
+  const [regles, setRegles] = useState<RegleAtelier[]>([]);
+  const [total, setTotal] = useState(0);
+  const [compteurs, setCompteurs] = useState<Compteurs | null>(null);
+  const [etat, setEtat] = useState<Etat>('chargement');
+  const [erreur, setErreur] = useState('');
+  const [vocabulaire, setVocabulaire] = useState<Vocabulaire | null>(null);
+
+  /** Règle dont l'action est « armée » (1er clic) : le 2e clic confirme. */
+  const [confirmation, setConfirmation] = useState<{ id: string; action: 'valider' | 'desactiver' } | null>(null);
+  /** Raison saisie pour une désactivation armée (obligatoire avant confirmation). */
+  const [raison, setRaison] = useState('');
+  /** Règle dont la révision est ouverte. */
+  const [revisionId, setRevisionId] = useState<string | null>(null);
+  const [envoiId, setEnvoiId] = useState<string | null>(null);
+  const [erreurAction, setErreurAction] = useState('');
+  const [messageAction, setMessageAction] = useState('');
+
+  const generationRef = useRef(0);
+  const vueRef = useRef<{ statut: StatutRegle; offset: number }>({ statut: 'brouillon', offset: 0 });
+  const envoiRef = useRef(false);
+  const refsOnglets = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const annulerArmement = useCallback(() => {
+    setConfirmation(null);
+    setRaison('');
+  }, []);
+
+  const charger = useCallback(async (statutCourant: StatutRegle, offsetCourant: number) => {
+    const generation = ++generationRef.current;
+    setEtat('chargement');
+    setConfirmation(null);
+    setRaison('');
+    setRevisionId(null);
+    setErreurAction('');
+    try {
+      const reponse = await fetch(
+        `/api/praticien/regles?statut=${encodeURIComponent(statutCourant)}&limit=${LIMITE_PAGE}&offset=${offsetCourant}`,
+      );
+      const payload = (await reponse.json()) as ReglesApiResponse;
+      if (generation !== generationRef.current) return;
+      if (!reponse.ok || !payload.ok) {
+        setErreur(payload.ok ? 'La liste des règles n’a pas pu être lue.' : payload.error);
+        setEtat('erreur');
+        return;
+      }
+      if (payload.regles.length === 0 && payload.total > 0 && offsetCourant > 0) {
+        setOffset(Math.max(0, offsetCourant - LIMITE_PAGE));
+        return;
+      }
+      setRegles(payload.regles);
+      setTotal(payload.total);
+      setCompteurs(payload.compteurs);
+      setEtat('chargee');
+    } catch {
+      if (generation !== generationRef.current) return;
+      setErreur('La liste des règles n’a pas pu être lue.');
+      setEtat('erreur');
+    }
+  }, []);
+
+  const chargerVocabulaire = useCallback(async () => {
+    try {
+      const reponse = await fetch('/api/praticien/regles/vocabulaire');
+      const payload = (await reponse.json()) as ReglesVocabulaireApiResponse;
+      if (reponse.ok && payload.ok) setVocabulaire(payload);
+    } catch {
+      // Le panneau reste lisible sans vocabulaire (formulaires masqués).
+    }
+  }, []);
+
+  useEffect(() => {
+    vueRef.current = { statut, offset };
+    void charger(statut, offset);
+  }, [charger, statut, offset]);
+
+  useEffect(() => {
+    void chargerVocabulaire();
+  }, [chargerVocabulaire]);
+
+  const changerOnglet = (prochain: StatutRegle) => {
+    if (prochain === statut) return;
+    setMessageAction('');
+    setStatut(prochain);
+    setOffset(0);
+  };
+
+  // Navigation clavier du tablist (tabindex roving, motif AtelierCorpusPanel).
+  const onClavierOnglets = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    const suivant =
+      event.key === 'ArrowRight' || event.key === 'ArrowDown'
+        ? (index + 1) % ONGLETS.length
+        : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+          ? (index - 1 + ONGLETS.length) % ONGLETS.length
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? ONGLETS.length - 1
+              : null;
+    if (suivant === null) return;
+    event.preventDefault();
+    changerOnglet(ONGLETS[suivant].statut);
+    refsOnglets.current[suivant]?.focus();
+  };
+
+  const agir = useCallback(
+    async (regle: RegleAtelier, action: 'valider' | 'desactiver', raisonSaisie?: string) => {
+      if (envoiRef.current) return;
+      envoiRef.current = true;
+      setEnvoiId(regle.id);
+      setErreurAction('');
+      setMessageAction('');
+      try {
+        const reponse =
+          action === 'valider'
+            ? await fetch('/api/praticien/regles/validation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ regleId: regle.id, statutAttendu: regle.statut }),
+              })
+            : await fetch('/api/praticien/regles/desactivation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  regleId: regle.id,
+                  statutAttendu: regle.statut,
+                  raison: raisonSaisie ?? '',
+                }),
+              });
+        const payload = (await reponse.json()) as
+          | RegleValidationApiResponse
+          | RegleDesactivationApiResponse;
+        if (!reponse.ok || !payload.ok) {
+          setErreurAction(payload.ok ? 'L’action n’a pas pu être enregistrée.' : payload.error);
+          if (!payload.ok && payload.reason === 'etat_divergent') {
+            void charger(vueRef.current.statut, vueRef.current.offset);
+          }
+          return;
+        }
+        if (action === 'valider' && 'versionsDesactivees' in payload) {
+          setMessageAction(
+            payload.versionsDesactivees > 0
+              ? `Règle validée et signée — ${payload.versionsDesactivees} version antérieure désactivée.`
+              : 'Règle validée et signée.',
+          );
+        } else {
+          setMessageAction('Règle désactivée — la lignée reste auditable.');
+        }
+        void charger(vueRef.current.statut, vueRef.current.offset);
+      } catch {
+        setErreurAction('L’action n’a pas pu être enregistrée.');
+      } finally {
+        envoiRef.current = false;
+        setEnvoiId(null);
+        setConfirmation(null);
+        setRaison('');
+      }
+    },
+    [charger],
+  );
+
+  const enEnvoi = envoiId !== null;
+  const idOngletActif = `onglet-regles-${statut}`;
+
+  // Groupement par intention : la revue se fait intention par intention.
+  const parIntention = new Map<string, { intention: RegleAtelier['intention']; regles: RegleAtelier[] }>();
+  for (const regle of regles) {
+    const groupe = parIntention.get(regle.intention.id) ?? { intention: regle.intention, regles: [] };
+    groupe.regles.push(regle);
+    parIntention.set(regle.intention.id, groupe);
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      {compteurs && (
+        <dl className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
+            <dt className="text-xs font-medium text-muted-foreground">Brouillons</dt>
+            <dd className="mt-1 font-display text-2xl font-bold text-foreground">{compteurs.brouillons}</dd>
+          </div>
+          <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
+            <dt className="text-xs font-medium text-muted-foreground">Validées</dt>
+            <dd className="mt-1 font-display text-2xl font-bold text-status-success">{compteurs.validees}</dd>
+          </div>
+          <div className="rounded-xl border border-border bg-surface p-4 shadow-card">
+            <dt className="text-xs font-medium text-muted-foreground">Désactivées</dt>
+            <dd className="mt-1 font-display text-2xl font-bold text-muted-foreground">{compteurs.desactivees}</dd>
+          </div>
+        </dl>
+      )}
+
+      <EncartPrevisualisation desactive={enEnvoi} />
+
+      {vocabulaire && (
+        <FormulaireCreation
+          vocabulaire={vocabulaire}
+          desactive={enEnvoi}
+          onCree={() => {
+            if (vueRef.current.statut === 'brouillon') {
+              void charger('brouillon', vueRef.current.offset);
+            } else {
+              changerOnglet('brouillon');
+            }
+          }}
+        />
+      )}
+
+      <FormulaireVocabulaire desactive={enEnvoi} onAjoute={() => void chargerVocabulaire()} />
+
+      <div role="tablist" aria-label="Statut des règles" className="flex gap-2">
+        {ONGLETS.map((onglet, index) => {
+          const actif = onglet.statut === statut;
+          return (
+            <button
+              key={onglet.statut}
+              ref={(element) => {
+                refsOnglets.current[index] = element;
+              }}
+              type="button"
+              role="tab"
+              id={`onglet-regles-${onglet.statut}`}
+              aria-selected={actif}
+              aria-controls="panneau-regles"
+              tabIndex={actif ? 0 : -1}
+              onClick={() => changerOnglet(onglet.statut)}
+              onKeyDown={(event) => onClavierOnglets(event, index)}
+              className={`min-h-9 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                actif
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-border text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              {onglet.libelle}
+            </button>
+          );
+        })}
+      </div>
+
+      <div id="panneau-regles" role="tabpanel" aria-labelledby={idOngletActif} className="flex flex-col gap-5">
+        {erreurAction && (
+          <p role="alert" className="rounded-lg border border-accent bg-status-warning/10 px-3 py-2 text-sm text-status-warning">
+            {erreurAction}
+          </p>
+        )}
+        {messageAction && (
+          <p role="status" aria-live="polite" className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-foreground">
+            {messageAction}
+          </p>
+        )}
+
+        {etat === 'chargement' && (
+          <div role="status" className="rounded-xl border border-border bg-surface p-4 text-base text-muted-foreground shadow-card">
+            Lecture des règles&hellip;
+          </div>
+        )}
+
+        {etat === 'erreur' && (
+          <div role="alert" className="flex flex-col gap-3 rounded-xl border border-accent bg-status-warning/10 p-4 text-base text-status-warning">
+            <span>{erreur}</span>
+            <Button variant="outline" className="self-start" onClick={() => void charger(statut, offset)}>
+              Réessayer
+            </Button>
+          </div>
+        )}
+
+        {etat === 'chargee' && regles.length === 0 && (
+          <div className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card">
+            {statut === 'brouillon'
+              ? 'Aucun brouillon en attente. Une création ou une révision apparaîtra ici, à valider justification et source sous les yeux.'
+              : 'Aucune règle dans cet état.'}
+          </div>
+        )}
+
+        {etat === 'chargee' && regles.length > 0 && (
+          <div className="flex flex-col gap-6">
+            <p className="text-sm text-muted-foreground">
+              {regles.length === total
+                ? `${total} règle${total > 1 ? 's' : ''}`
+                : `${regles.length} règle${regles.length > 1 ? 's' : ''} affichée${regles.length > 1 ? 's' : ''} sur ${total}`}{' '}
+              — groupées par intention, décision règle par règle.
+            </p>
+
+            {[...parIntention.values()].map(({ intention, regles: reglesIntention }) => (
+              <section key={intention.id} aria-label={`Intention ${intention.labelFr}`} className="flex flex-col gap-3">
+                <h3 className="font-display text-lg font-semibold text-foreground">
+                  {intention.labelFr}{' '}
+                  <span className="font-mono text-xs font-normal text-muted-foreground">({intention.code})</span>
+                </h3>
+                {reglesIntention.map((regle) => {
+                  const armeeValider = confirmation?.id === regle.id && confirmation.action === 'valider';
+                  const armeeDesactiver = confirmation?.id === regle.id && confirmation.action === 'desactiver';
+                  return (
+                    <article key={regle.id} className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-card">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs text-muted-foreground">v{regle.versionRegle}</span>
+                        <Badge variant="info">{regle.typeRegle}</Badge>
+                        <BadgeGrade grade={regle.gradePreuve} />
+                        <Badge
+                          variant={regle.statut === 'validee' ? 'success' : regle.statut === 'brouillon' ? 'warning' : 'neutral'}
+                        >
+                          {LIBELLE_STATUT[regle.statut]}
+                        </Badge>
+                      </div>
+
+                      <p className="text-base font-medium text-foreground">
+                        {regle.ingredient.nomFr}
+                        {regle.formePreferee ? ` — ${regle.formePreferee.labelFr}` : ''}
+                        {regle.doseCibleBasse !== null || regle.doseCibleHaute !== null ? (
+                          <span className="ml-2 text-sm font-normal text-muted-foreground">
+                            cible {regle.doseCibleBasse ?? '—'}–{regle.doseCibleHaute ?? '—'}
+                          </span>
+                        ) : null}
+                      </p>
+
+                      <blockquote className="whitespace-pre-wrap border-l-2 border-border pl-3 text-sm text-muted-foreground">
+                        {regle.justification}
+                      </blockquote>
+
+                      <p className="text-xs text-muted-foreground">
+                        Source : {regle.source.citation}
+                        {regle.source.lienUrl ? ` — ${regle.source.lienUrl}` : ''}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        <span>Créée le {formatDate(regle.creeLe)}</span>
+                        {regle.validePar && regle.valideLe && (
+                          <span>· validée par {regle.validePar} le {formatDate(regle.valideLe)}</span>
+                        )}
+                      </div>
+
+                      {regle.lignee.length > 0 && (
+                        <details className="rounded-lg border border-border bg-muted/40 px-3 py-2">
+                          <summary className="cursor-pointer text-sm font-medium text-muted-foreground">
+                            Lignée — {regle.lignee.length} autre{regle.lignee.length > 1 ? 's' : ''} version
+                            {regle.lignee.length > 1 ? 's' : ''}
+                          </summary>
+                          <ul className="mt-2 flex flex-col gap-2">
+                            {regle.lignee.map((version) => (
+                              <li key={version.id} className="border-l-2 border-border pl-3 text-sm text-muted-foreground">
+                                <span className="font-mono text-xs">v{version.versionRegle}</span>{' '}
+                                · {LIBELLE_STATUT[version.statut]}
+                                {version.validePar && version.valideLe
+                                  ? ` · validée par ${version.validePar} le ${formatDate(version.valideLe)}`
+                                  : ''}
+                                <blockquote className="mt-1 whitespace-pre-wrap text-xs">
+                                  {version.justification}
+                                </blockquote>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
+
+                      {regle.statut === 'brouillon' && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {armeeValider ? (
+                            <>
+                              <span className="text-sm font-medium text-foreground">
+                                Signer la validation de cette règle ? Les versions validées antérieures de la lignée seront désactivées.
+                              </span>
+                              <Button disabled={enEnvoi} onClick={() => void agir(regle, 'valider')}>
+                                Confirmer la validation
+                              </Button>
+                              <Button variant="outline" disabled={enEnvoi} onClick={annulerArmement}>
+                                Annuler
+                              </Button>
+                            </>
+                          ) : armeeDesactiver ? (
+                            <>
+                              <span className="text-sm font-medium text-foreground">Raison de la désactivation</span>
+                              <input
+                                type="text"
+                                aria-label={`Raison de la désactivation — v${regle.versionRegle} ${regle.ingredient.nomFr}`}
+                                autoFocus
+                                maxLength={2000}
+                                value={raison}
+                                disabled={enEnvoi}
+                                onChange={(event) => setRaison(event.target.value)}
+                                placeholder="Raison de la désactivation (obligatoire)"
+                                className={classeChamp()}
+                              />
+                              <Button
+                                variant="danger"
+                                disabled={enEnvoi || raison.trim().length === 0}
+                                onClick={() => void agir(regle, 'desactiver', raison)}
+                              >
+                                Confirmer la désactivation
+                              </Button>
+                              <Button variant="outline" disabled={enEnvoi} onClick={annulerArmement}>
+                                Annuler
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button
+                                disabled={enEnvoi}
+                                onClick={() => setConfirmation({ id: regle.id, action: 'valider' })}
+                              >
+                                Valider
+                              </Button>
+                              <Button
+                                variant="danger"
+                                disabled={enEnvoi}
+                                onClick={() => {
+                                  setConfirmation({ id: regle.id, action: 'desactiver' });
+                                  setRaison('');
+                                }}
+                              >
+                                Désactiver
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {regle.statut === 'validee' && (
+                        <div className="flex flex-col gap-3">
+                          {revisionId === regle.id && vocabulaire ? (
+                            <FormulaireRevision
+                              regle={regle}
+                              vocabulaire={vocabulaire}
+                              desactive={enEnvoi}
+                              onSoumis={() => {
+                                setRevisionId(null);
+                                setMessageAction(
+                                  `Révision créée en brouillon (v${regle.versionRegle + 1}) — onglet Brouillons.`,
+                                );
+                                void charger(vueRef.current.statut, vueRef.current.offset);
+                              }}
+                              onAnnule={() => setRevisionId(null)}
+                            />
+                          ) : armeeDesactiver ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-sm font-medium text-foreground">
+                                Désactiver cette version validée ? Elle ne sera plus servie par la résolution.
+                              </span>
+                              <input
+                                type="text"
+                                aria-label={`Raison de la désactivation — v${regle.versionRegle} ${regle.ingredient.nomFr}`}
+                                autoFocus
+                                maxLength={2000}
+                                value={raison}
+                                disabled={enEnvoi}
+                                onChange={(event) => setRaison(event.target.value)}
+                                placeholder="Raison de la désactivation (obligatoire)"
+                                className={classeChamp()}
+                              />
+                              <Button
+                                variant="danger"
+                                disabled={enEnvoi || raison.trim().length === 0}
+                                onClick={() => void agir(regle, 'desactiver', raison)}
+                              >
+                                Confirmer la désactivation
+                              </Button>
+                              <Button variant="outline" disabled={enEnvoi} onClick={annulerArmement}>
+                                Annuler
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                variant="outline"
+                                disabled={enEnvoi || !vocabulaire}
+                                onClick={() => setRevisionId(regle.id)}
+                              >
+                                Réviser
+                              </Button>
+                              <Button
+                                variant="danger"
+                                disabled={enEnvoi}
+                                onClick={() => {
+                                  setConfirmation({ id: regle.id, action: 'desactiver' });
+                                  setRaison('');
+                                }}
+                              >
+                                Désactiver
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {regle.statut === 'desactivee' && (
+                        <p className="text-sm text-muted-foreground">
+                          Version désactivée — la lignée continue par révision d&apos;une version active.
+                        </p>
+                      )}
+                    </article>
+                  );
+                })}
+              </section>
+            ))}
+
+            {total > LIMITE_PAGE && (
+              <nav aria-label="Pagination des règles" className="flex flex-wrap items-center gap-3">
+                <Button
+                  variant="outline"
+                  disabled={offset === 0 || enEnvoi}
+                  onClick={() => setOffset(Math.max(0, offset - LIMITE_PAGE))}
+                >
+                  Précédent
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Règles {offset + 1}–{offset + regles.length} sur {total}
+                </span>
+                <Button
+                  variant="outline"
+                  disabled={offset + LIMITE_PAGE >= total || enEnvoi}
+                  onClick={() => setOffset(offset + LIMITE_PAGE)}
+                >
+                  Suivant
+                </Button>
+              </nav>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
