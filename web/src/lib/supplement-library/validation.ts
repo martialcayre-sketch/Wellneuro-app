@@ -244,13 +244,19 @@ function canonicalise(value: unknown): unknown {
 }
 
 export function contenuSha256ForFiche(fiche: Omit<SupplementFicheInput, 'contenuSha256'>): string {
+  // `position` est EXCLUE de l'empreinte : c'est un ordre d'affichage, pas une
+  // donnée d'identité de formulation. L'identité est l'ensemble (ingrédient,
+  // forme, dose, unité). Sans cette exclusion, deux payloads aux mêmes
+  // composants dans un ordre de tableau inversé et SANS position explicite
+  // (parseComposition assigne alors position = index) produiraient des
+  // positions différentes → hash différent → fausse « nouvelle version »
+  // (revue #352, R1).
   const composition = [...fiche.compositions]
     .map((c) => ({
       ingredientId: c.ingredientId,
       formeId: c.formeId ?? null,
       doseParPortion: c.doseParPortion ?? null,
       unite: c.unite ?? null,
-      position: c.position ?? 0,
     }))
     .sort((a, b) => {
       const parIng = a.ingredientId.localeCompare(b.ingredientId);

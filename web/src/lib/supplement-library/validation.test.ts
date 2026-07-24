@@ -103,6 +103,57 @@ describe('validation ingestion compléments', () => {
     expect(inverse.contenuSha256).toBe(base.contenuSha256);
   });
 
+  // Revue #352 R1 : l'ordre inversé SANS position explicite (parseComposition
+  // assigne alors position = index) doit produire le même hash — position est
+  // exclue de l'empreinte.
+  it('empreinte déterministe : ordre inversé sans position explicite', () => {
+    const base = parseSupplementIngestPayload({
+      fiches: [ficheBrute({
+        compositions: [
+          { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParPortion: 300, unite: 'mg' },
+          { ingredientId: 'ing_vitamine_b6', doseParPortion: 1.4, unite: 'mg' },
+        ],
+      })],
+    }).fiches[0];
+    const inverse = parseSupplementIngestPayload({
+      fiches: [ficheBrute({
+        compositions: [
+          { ingredientId: 'ing_vitamine_b6', doseParPortion: 1.4, unite: 'mg' },
+          { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParPortion: 300, unite: 'mg' },
+        ],
+      })],
+    }).fiches[0];
+    expect(inverse.contenuSha256).toBe(base.contenuSha256);
+  });
+
+  // Invariant n°11 contre entrée HOSTILE : un payload qui tente d'injecter un
+  // statut vérifié, un signataire, ou une empreinte cliente est neutralisé —
+  // les champs de cycle de vie ne sont jamais lus du payload, le hash est
+  // recalculé serveur (revue #352, T1).
+  it('neutralise un payload hostile (statut vérifié, signataire, hash client)', () => {
+    const hostile = parseSupplementIngestPayload({
+      fiches: [ficheBrute({
+        statutFiche: 'verifiee',
+        verifiePar: 'attaquant@example.com',
+        verifieLe: '2020-01-01T00:00:00.000Z',
+        dateDerniereVerification: '2020-01-01T00:00:00.000Z',
+        actif: false,
+        contenuSha256: 'f'.repeat(64),
+      })],
+    }).fiches[0];
+    const propre = parseSupplementIngestPayload({ fiches: [ficheBrute()] }).fiches[0];
+    // Le hash est celui recalculé serveur (identique à la fiche propre), jamais
+    // celui fourni par le client.
+    expect(hostile.contenuSha256).toBe(propre.contenuSha256);
+    expect(hostile.contenuSha256).not.toBe('f'.repeat(64));
+    // Aucun champ de cycle de vie n'a survécu au parse.
+    const brut = hostile as unknown as Record<string, unknown>;
+    expect(brut.statutFiche).toBeUndefined();
+    expect(brut.verifiePar).toBeUndefined();
+    expect(brut.verifieLe).toBeUndefined();
+    expect(brut.dateDerniereVerification).toBeUndefined();
+  });
+
   it('empreinte déterministe : change si une dose change', () => {
     const base = parseSupplementIngestPayload({ fiches: [ficheBrute()] }).fiches[0];
     const doseModifiee = parseSupplementIngestPayload({
