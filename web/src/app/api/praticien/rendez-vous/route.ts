@@ -14,6 +14,7 @@ import { bornesJourParis } from '@/lib/fil/fuseau';
 const ID_PATIENT_PATTERN = /^[A-Za-z0-9_-]+$/;
 const MOTIF_MAX = 500;
 const JOUR_MS = 24 * 60 * 60 * 1000;
+const TOLERANCE_DATE_PASSEE_MS = 5 * 60 * 1000;
 
 export type RendezVousExpose = {
   id: string;
@@ -32,18 +33,22 @@ function echec(reason: string, error: string, status: number) {
   return NextResponse.json<RendezVousApiResponse>({ ok: false, reason, error }, { status });
 }
 
-/** Fenêtre par défaut : du début du jour de Paris jusqu'à la fin du 7ᵉ jour. */
+/** Fenêtre par défaut : du début du jour de Paris à la fin du 7ᵉ jour (borne exclusive). */
 function fenetreParDefaut(maintenant: Date): { du: Date; au: Date } {
   const { debut } = bornesJourParis(maintenant);
-  // 7 jours pleins : [debut, debut + 7 j). Le +JOUR_MS-1 appliqué plus bas rend
-  // la borne inclusive jusqu'à la fin du 6ᵉ jour → 7 jours affichés.
-  return { du: debut, au: new Date(debut.getTime() + 6 * JOUR_MS) };
+  // Midi du 6ᵉ jour suivant : ±1 h de bascule DST le laisse dans le même jour
+  // civil, dont la fin donne une fenêtre de 7 jours pleins [du, au).
+  const midiDernierJour = new Date(debut.getTime() + 6 * JOUR_MS + JOUR_MS / 2);
+  return { du: debut, au: bornesJourParis(midiDernierJour).fin };
 }
 
-function bornerDate(valeur: string | null, repli: Date): Date {
-  if (!valeur || !/^\d{4}-\d{2}-\d{2}$/.test(valeur)) return repli;
-  const d = new Date(`${valeur}T00:00:00`);
-  return Number.isNaN(d.getTime()) ? repli : d;
+/** Bornes du jour civil de Paris demandé (`YYYY-MM-DD`), `null` si illisible. */
+function jourParisDemande(valeur: string | null): { debut: Date; fin: Date } | null {
+  if (!valeur || !/^\d{4}-\d{2}-\d{2}$/.test(valeur)) return null;
+  // Midi UTC tombe toujours dans le jour civil de Paris visé (13-14 h locales),
+  // et le parseur ISO rejette les dates impossibles (« 2026-02-31 »).
+  const midi = new Date(`${valeur}T12:00:00Z`);
+  return Number.isNaN(midi.getTime()) ? null : bornesJourParis(midi);
 }
 
 // GET /api/praticien/rendez-vous?du=YYYY-MM-DD&au=YYYY-MM-DD — rendez-vous
@@ -58,13 +63,17 @@ export async function GET(req: Request): Promise<NextResponse<RendezVousApiRespo
     const maintenant = new Date();
     const defaut = fenetreParDefaut(maintenant);
     const { searchParams } = new URL(req.url);
-    const du = bornerDate(searchParams.get('du'), defaut.du);
-    // `au` est inclusif jusqu'à la fin de journée.
-    const auJour = bornerDate(searchParams.get('au'), defaut.au);
-    const au = new Date(auJour.getTime() + JOUR_MS - 1);
+    const du = jourParisDemande(searchParams.get('du'))?.debut ?? defaut.du;
+    // `au` est inclusif jusqu'à la fin du jour de Paris (sa fin, exclue, sert de borne).
+    const au = jourParisDemande(searchParams.get('au'))?.fin ?? defaut.au;
 
     const lignes = await prisma.rendezVous.findMany({
-      where: { praticienEmail: email, statut: 'planifie', dateHeure: { gte: du, lte: au } },
+      // Casse tolérée comme partout ailleurs (annulation, filtrePatientsDuPraticien).
+      where: {
+        praticienEmail: { equals: email, mode: 'insensitive' },
+        statut: 'planifie',
+        dateHeure: { gte: du, lt: au },
+      },
       select: { id: true, idPatient: true, dateHeure: true, motif: true },
       orderBy: { dateHeure: 'asc' },
     });
@@ -118,6 +127,11 @@ export async function POST(req: Request): Promise<NextResponse<RendezVousApiResp
     if (!dateHeureBrut || Number.isNaN(dateHeure.getTime())) {
       return echec('date_invalide', 'Date et heure du rendez-vous illisibles.', 400);
     }
+    // Un rendez-vous se planifie vers l'avant ; la tolérance absorbe l'horloge
+    // du poste et la saisie d'un créneau qui vient de commencer.
+    if (dateHeure.getTime() < Date.now() - TOLERANCE_DATE_PASSEE_MS) {
+      return echec('date_passee', 'Ce créneau est déjà passé.', 400);
+    }
 
     let motif: string | null = null;
     if (corps.motif != null) {
@@ -140,6 +154,23 @@ export async function POST(req: Request): Promise<NextResponse<RendezVousApiResp
     });
     if (!patient || !accepteNouvelEnvoi(patient)) {
       return echec(RAISON_DOSSIER_CLOS, MESSAGE_DOSSIER_CLOS, 409);
+    }
+
+    // Garde anti double-soumission : le même créneau déjà planifié pour ce
+    // patient n'est pas recréé (double-clic, relance réseau). Sans contrainte
+    // unique en base, une course simultanée reste théoriquement possible — la
+    // garde couvre le cas réel, le double-clic séquentiel.
+    const doublon = await prisma.rendezVous.findFirst({
+      where: {
+        idPatient,
+        praticienEmail: { equals: email ?? '', mode: 'insensitive' },
+        dateHeure,
+        statut: 'planifie',
+      },
+      select: { id: true },
+    });
+    if (doublon) {
+      return echec('deja_planifie', 'Ce rendez-vous est déjà planifié pour ce créneau.', 409);
     }
 
     const cree = await prisma.rendezVous.create({

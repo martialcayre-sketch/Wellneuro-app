@@ -76,7 +76,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         // (la table porte praticienEmail) et au jour civil.
         prisma.rendezVous.findMany({
           where: {
-            praticienEmail: email,
+            praticienEmail: { equals: email, mode: 'insensitive' },
             statut: 'planifie',
             dateHeure: { gte: debutJour, lt: finJour },
           },
