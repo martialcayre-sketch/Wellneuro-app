@@ -71,6 +71,18 @@ Par source :
    source entière bascule en revue individuelle** (pas de tri sélectif : un
    défaut échantillonné est un signal sur le lot).
 
+Un tirage fige le lot d'éligibles au moment où il est tiré ; la signature exige
+ensuite l'**égalité exacte** avec ce lot. Un lot **caduc** — divergé depuis le
+tirage parce que des claims échantillonnés ont été traités en revue individuelle
+entre-temps, ou qu'une nouvelle ingestion a modifié la source — n'est donc plus
+signable, et un nouveau tirage est bloqué tant que le précédent n'a pas d'issue.
+La **clôture neutre** (`tirage_caduc`, ajoutée le 2026-07-25) dénoue ce cas :
+elle conclut le tirage **sans changer aucun statut de claim et sans alléguer de
+défaut** — à réserver au cas caduc (la caducité est vérifiée côté serveur ; un
+tirage encore vivant se signe ou se bascule, il ne se clôture pas). C'est ce qui
+avait bloqué WN-SRC-0056, tous ses claims ayant été validés individuellement
+après le tirage.
+
 ### Voie lente — prescriptifs **et** interprétés (36 % du pilote)
 
 **Revue individuelle obligatoire, sans exception**, pour tout claim

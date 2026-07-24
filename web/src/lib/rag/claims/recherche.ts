@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { createEmbeddings } from '@/lib/rag/embeddings';
+import { eligiblesVoieRapide, tirageCaduc } from '@/lib/rag/claims/revue';
 
 // Recherche de RESTITUTION en mode revue (Atelier v2, voie rapide).
 //
@@ -94,6 +95,14 @@ export type TirageOuvert = {
   lot: number;
   tires: string[];
   eligibles: string[];
+  /**
+   * CADUC : le lot éligible courant a divergé des éligibles figés au tirage
+   * (traitement individuel entre-temps, ou nouvelle ingestion). Le tirage ne
+   * peut plus être signé — il faut le clôturer (issue tirage_caduc) pour
+   * repartir. La modale s'en sert pour proposer la clôture au lieu d'une revue
+   * d'échantillon impossible.
+   */
+  caduc: boolean;
 };
 
 /**
@@ -109,7 +118,7 @@ export async function tirageOuvertDeSource(sourceId: string): Promise<TirageOuve
       AND NOT EXISTS (
         SELECT 1 FROM public.rag_corpus_claim_decisions i
         WHERE i.tirage_id = t.id
-          AND i.type_acte IN ('decision_lot', 'bascule_individuelle')
+          AND i.type_acte IN ('decision_lot', 'bascule_individuelle', 'tirage_caduc')
       )
     ORDER BY t.id DESC
     LIMIT 1
@@ -120,12 +129,15 @@ export async function tirageOuvertDeSource(sourceId: string): Promise<TirageOuve
   const echantillon = (ligne.echantillon ?? {}) as Record<string, unknown>;
   const enListe = (valeur: unknown): string[] =>
     Array.isArray(valeur) ? valeur.filter((t): t is string => typeof t === 'string') : [];
+  const eligibles = enListe(echantillon.eligibles);
+  const lotActuel = await eligiblesVoieRapide(sourceId);
   return {
     tirageId: Number(ligne.id),
     seed: Number(echantillon.seed ?? 0),
     taux: Number(echantillon.taux ?? 0),
     lot: Number(echantillon.lot ?? 0),
     tires: enListe(echantillon.tires),
-    eligibles: enListe(echantillon.eligibles),
+    eligibles,
+    caduc: tirageCaduc(eligibles, lotActuel),
   };
 }

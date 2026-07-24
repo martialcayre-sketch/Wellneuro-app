@@ -67,6 +67,9 @@ export function AtelierVoieRapideModale({
   const [tirageId, setTirageId] = useState<number | null>(null);
   const [taux, setTaux] = useState<number | null>(null);
   const [tirageRepris, setTirageRepris] = useState(false);
+  // Tirage CADUC (lot divergé depuis le tirage) : ni signable ni relançable —
+  // la seule issue est la clôture neutre (aucun statut ne change).
+  const [tirageCaduc, setTirageCaduc] = useState(false);
   const [tires, setTires] = useState<string[]>([]);
   const [claimsSource, setClaimsSource] = useState<ClaimEnRevue[]>([]);
   const [verdicts, setVerdicts] = useState<Record<string, VerdictLocal>>({});
@@ -77,7 +80,7 @@ export function AtelierVoieRapideModale({
   const [generationEnCours, setGenerationEnCours] = useState(false);
   const [avertissementGeneration, setAvertissementGeneration] = useState('');
 
-  const [issueArmee, setIssueArmee] = useState<'valider' | 'basculer' | null>(null);
+  const [issueArmee, setIssueArmee] = useState<'valider' | 'basculer' | 'clore_caduc' | null>(null);
   const [motifBascule, setMotifBascule] = useState('');
   const [conclusion, setConclusion] = useState('');
 
@@ -139,12 +142,13 @@ export function AtelierVoieRapideModale({
   }, [sourceId]);
 
   const entrerEnRevue = useCallback(
-    async (id: number, tauxTirage: number, tiresTirage: string[], repris: boolean) => {
+    async (id: number, tauxTirage: number, tiresTirage: string[], repris: boolean, caduc: boolean) => {
       const claims = await chargerClaimsSource();
       setTirageId(id);
       setTaux(tauxTirage);
       setTires(tiresTirage);
       setTirageRepris(repris);
+      setTirageCaduc(caduc);
       setClaimsSource(claims);
       setVerdicts({});
       setNotes({});
@@ -174,6 +178,7 @@ export function AtelierVoieRapideModale({
             payload.tirage.taux,
             payload.tirage.tires,
             true,
+            payload.tirage.caduc,
           );
         }
       } catch {
@@ -201,7 +206,7 @@ export function AtelierVoieRapideModale({
         setErreur(payload.ok ? 'Tirage impossible.' : payload.error);
         return;
       }
-      await entrerEnRevue(payload.tirageId, payload.taux, payload.tires, false);
+      await entrerEnRevue(payload.tirageId, payload.taux, payload.tires, false, false);
     } catch {
       setErreur('Erreur technique pendant le tirage.');
     } finally {
@@ -328,7 +333,7 @@ export function AtelierVoieRapideModale({
   }, [generationEnCours, sourceId]);
 
   const conclure = useCallback(
-    async (issue: 'valider' | 'basculer') => {
+    async (issue: 'valider' | 'basculer' | 'clore_caduc') => {
       if (tirageId === null || chargement) return;
       setChargement(true);
       setErreur('');
@@ -351,25 +356,29 @@ export function AtelierVoieRapideModale({
               verdict: q.verdict as 'conforme' | 'non_conforme',
             })),
         };
+        // Clôture d'un tirage caduc : aucune pièce à joindre — rien n'est ni
+        // signé ni restitué, le serveur revérifie la caducité.
         const corps =
-          issue === 'valider'
-            ? {
-                sourceId,
-                tirageId,
-                issue,
-                verdicts: verdictsEnvoyes,
-                questionnaire: questionnaireEnvoye,
-              }
-            : {
-                sourceId,
-                tirageId,
-                issue,
-                motif: motifBascule.trim(),
-                ...(verdictsEnvoyes.length ? { verdicts: verdictsEnvoyes } : {}),
-                ...(questionnaireEnvoye.questions.length
-                  ? { questionnaire: questionnaireEnvoye }
-                  : {}),
-              };
+          issue === 'clore_caduc'
+            ? { sourceId, tirageId, issue }
+            : issue === 'valider'
+              ? {
+                  sourceId,
+                  tirageId,
+                  issue,
+                  verdicts: verdictsEnvoyes,
+                  questionnaire: questionnaireEnvoye,
+                }
+              : {
+                  sourceId,
+                  tirageId,
+                  issue,
+                  motif: motifBascule.trim(),
+                  ...(verdictsEnvoyes.length ? { verdicts: verdictsEnvoyes } : {}),
+                  ...(questionnaireEnvoye.questions.length
+                    ? { questionnaire: questionnaireEnvoye }
+                    : {}),
+                };
         const reponse = await fetch('/api/praticien/corpus/claims/lot/decision', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -383,7 +392,9 @@ export function AtelierVoieRapideModale({
         setConclusion(
           payload.issue === 'valider'
             ? `Lot signé : ${payload.valides} claims validés.`
-            : 'Source basculée en revue individuelle — motif journalisé.',
+            : payload.issue === 'clore_caduc'
+              ? 'Tirage caduc clôturé — vous pouvez refaire un tirage.'
+              : 'Source basculée en revue individuelle — motif journalisé.',
         );
         setPhase('conclu');
         onConclu();
@@ -437,7 +448,27 @@ export function AtelierVoieRapideModale({
           </div>
         ) : null}
 
-        {phase === 'revue' ? (
+        {phase === 'revue' && tirageCaduc ? (
+          <div className="max-w-2xl rounded-xl border border-solar-500/40 bg-solar-500/10 p-4">
+            <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
+              Tirage caduc
+            </h4>
+            <p className="mt-2 text-sm text-foreground">
+              Le lot de ce tirage a changé depuis qu’il a été tiré — des claims échantillonnés ont
+              été traités en revue individuelle, ou une nouvelle ingestion a modifié la source. Il
+              ne peut donc plus être signé tel quel, et un nouveau tirage est bloqué tant que
+              celui-ci n’a pas d’issue.
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Clôturez ce tirage pour repartir : <span className="font-medium">aucun statut de
+              claim n’est modifié</span> et aucun défaut n’est enregistré — la clôture ne fait que
+              conclure le tirage. Vous pourrez ensuite en tirer un nouveau si des claims restent en
+              voie rapide.
+            </p>
+          </div>
+        ) : null}
+
+        {phase === 'revue' && !tirageCaduc ? (
           <div className="grid gap-6 lg:grid-cols-2">
             <section aria-label="Échantillon à confronter au verbatim">
               <h4 className="text-sm font-semibold uppercase tracking-[.05em] text-solar-ink">
@@ -586,53 +617,71 @@ export function AtelierVoieRapideModale({
 
       {phase === 'revue' ? (
         <footer className="flex flex-wrap items-center gap-2 border-t border-border px-5 py-3">
-          {issueArmee === 'valider' ? (
-            <Button onClick={() => conclure('valider')} disabled={chargement}>
-              Confirmer la signature du lot ({claimsSource.length} claims)
-            </Button>
+          {tirageCaduc ? (
+            issueArmee === 'clore_caduc' ? (
+              <Button variant="danger" onClick={() => conclure('clore_caduc')} disabled={chargement}>
+                Confirmer la clôture du tirage caduc
+              </Button>
+            ) : (
+              <Button
+                variant="danger"
+                onClick={() => setIssueArmee('clore_caduc')}
+                disabled={chargement}
+              >
+                Clore le tirage (caduc)
+              </Button>
+            )
           ) : (
-            <Button
-              onClick={() => setIssueArmee('valider')}
-              disabled={!signaturePossible || chargement}
-              title={
-                signaturePossible
-                  ? undefined
-                  : 'Signature possible quand tout l’échantillon et tout le questionnaire sont conformes, couverture complète.'
-              }
-            >
-              Signer le lot
-            </Button>
+            <>
+              {issueArmee === 'valider' ? (
+                <Button onClick={() => conclure('valider')} disabled={chargement}>
+                  Confirmer la signature du lot ({claimsSource.length} claims)
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setIssueArmee('valider')}
+                  disabled={!signaturePossible || chargement}
+                  title={
+                    signaturePossible
+                      ? undefined
+                      : 'Signature possible quand tout l’échantillon et tout le questionnaire sont conformes, couverture complète.'
+                  }
+                >
+                  Signer le lot
+                </Button>
+              )}
+              {issueArmee === 'basculer' ? (
+                <Button
+                  variant="danger"
+                  onClick={() => conclure('basculer')}
+                  disabled={chargement || motifBascule.trim().length === 0}
+                >
+                  Confirmer la bascule
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => setIssueArmee('basculer')}
+                  disabled={chargement || !unVerdictNegatif}
+                  title={
+                    unVerdictNegatif
+                      ? undefined
+                      : 'La bascule se justifie par un défaut constaté (échantillon ou questionnaire).'
+                  }
+                >
+                  Basculer en revue individuelle
+                </Button>
+              )}
+              {issueArmee === 'basculer' ? (
+                <input
+                  value={motifBascule}
+                  onChange={(e) => setMotifBascule(e.target.value)}
+                  placeholder="Motif de la bascule (obligatoire)"
+                  className="min-w-64 flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                />
+              ) : null}
+            </>
           )}
-          {issueArmee === 'basculer' ? (
-            <Button
-              variant="danger"
-              onClick={() => conclure('basculer')}
-              disabled={chargement || motifBascule.trim().length === 0}
-            >
-              Confirmer la bascule
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={() => setIssueArmee('basculer')}
-              disabled={chargement || !unVerdictNegatif}
-              title={
-                unVerdictNegatif
-                  ? undefined
-                  : 'La bascule se justifie par un défaut constaté (échantillon ou questionnaire).'
-              }
-            >
-              Basculer en revue individuelle
-            </Button>
-          )}
-          {issueArmee === 'basculer' ? (
-            <input
-              value={motifBascule}
-              onChange={(e) => setMotifBascule(e.target.value)}
-              placeholder="Motif de la bascule (obligatoire)"
-              className="min-w-64 flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
-            />
-          ) : null}
           {issueArmee ? (
             <Button variant="outline" onClick={() => setIssueArmee(null)}>
               Annuler
