@@ -69,6 +69,158 @@ function fusionnerVigilance(deterministes: string[], llm: string[]): string[] {
   return out;
 }
 
+type DonePayload = {
+  success: true;
+  idSynthese: string;
+  synthese: ReturnType<typeof validateSyntheseSchema>;
+  modele: string;
+  dateGeneration: string;
+};
+
+type GenererArgs = {
+  idPatient: string;
+  emailPatient: string;
+  userMessage: string;
+  vigilanceDeterministe: string[];
+  reponsesInput: ReponseInput[];
+  contexteClinique: string;
+};
+
+// Appel Anthropic + validation de schéma + persistance. IDENTIQUE quel que soit
+// le transport (JSON historique ou SSE Scalingo) : seule l'enveloppe HTTP
+// diffère. `state.idSynthese` est renseigné dès qu'un id est attribué, pour que
+// l'appelant journalise une erreur survenue APRÈS la création.
+async function genererSynthesePersistee(
+  args: GenererArgs,
+  state: { idSynthese: string },
+  // Options de requête Anthropic. Absentes en JSON (défauts SDK inchangés,
+  // Vercel intact) ; en SSE on borne le travail (voir l'appelant streaming).
+  requestOptions?: { timeout?: number; maxRetries?: number },
+): Promise<DonePayload> {
+  const response = await anthropic.messages.create(
+    {
+      model: CLAUDE_MODEL,
+      max_tokens: 4096,
+      system: [{ type: 'text', text: SYSTEM_PROMPT_SYNTHESE, cache_control: { type: 'ephemeral' } }],
+      messages: [{ role: 'user', content: args.userMessage }],
+    },
+    requestOptions,
+  );
+
+  const usage = (response.usage ?? {}) as {
+    input_tokens?: number;
+    output_tokens?: number;
+    cache_creation_input_tokens?: number;
+    cache_read_input_tokens?: number;
+  };
+  const metricsCache = {
+    input_tokens: usage.input_tokens ?? 0,
+    output_tokens: usage.output_tokens ?? 0,
+    cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
+    cache_read_input_tokens: usage.cache_read_input_tokens ?? 0,
+  };
+
+  if (response.stop_reason === 'max_tokens') {
+    throw new Error('La synthèse IA a été tronquée (réponse trop longue). Réessayez.');
+  }
+
+  const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
+  if (!text) throw new Error('Réponse vide de l\'API Claude.');
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('La réponse IA ne contient pas de JSON valide.');
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonMatch[0]);
+  } catch {
+    const cleaned = jsonMatch[0].replace(/,\s*([}\]])/g, '$1');
+    parsed = JSON.parse(cleaned);
+  }
+
+  const synthese = validateSyntheseSchema(parsed);
+  // Garantit la présence des vigilances déterministes en tête, LLM ou non.
+  synthese.points_de_vigilance = fusionnerVigilance(args.vigilanceDeterministe, synthese.points_de_vigilance);
+  state.idSynthese = createPublicId('SYN');
+
+  const record = await prisma.syntheseIA.create({
+    data: {
+      idSynthese: state.idSynthese,
+      idPatient: args.idPatient,
+      emailPatient: args.emailPatient,
+      modele: CLAUDE_MODEL,
+      versionPrompt: VERSION_PROMPT_SYNTHESE,
+      donneesEntree: {
+        reponses: args.reponsesInput,
+        contexteClinique: args.contexteClinique,
+        vigilanceDeterministe: args.vigilanceDeterministe,
+        metadonneesPrompt: {
+          versionPrompt: VERSION_PROMPT_SYNTHESE,
+          versionSchema: VERSION_SCHEMA_SYNTHESE,
+          versionCorpus: VERSION_CORPUS_SYNTHESE,
+          corpusSha256: CORPUS_CLINIQUE_SHA256,
+          corpusActif: CORPUS_CLINIQUE_ACTIF,
+          corpusValidationExterne: CORPUS_CLINIQUE_METADATA.validationExterne,
+          corpusDateValidation: CORPUS_CLINIQUE_METADATA.dateValidation,
+        },
+        metriquesAnthropic: metricsCache,
+      } as any,
+      syntheseJson: synthese,
+      statut: 'Brouillon_IA',
+    },
+  });
+
+  await prisma.auditSynthese.create({
+    data: {
+      idSynthese: state.idSynthese,
+      idPatient: args.idPatient,
+      modele: CLAUDE_MODEL,
+      versionPrompt: VERSION_PROMPT_SYNTHESE,
+      statut: 'OK',
+    },
+  });
+
+  return {
+    success: true,
+    idSynthese: record.idSynthese,
+    synthese,
+    modele: CLAUDE_MODEL,
+    dateGeneration: record.dateGeneration.toISOString(),
+  };
+}
+
+// Journalisation d'erreur de génération, partagée par les deux transports.
+function logErreurGeneration(err: unknown, requestContext: ReturnType<typeof createRequestContext>): void {
+  logger.error({
+    event: EVENT_CODES.SYNTHESE_POST_EXCEPTION,
+    domain: 'SYNTHESE_IA',
+    message: 'Erreur lors de la génération de synthèse IA',
+    context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
+    error: err,
+  });
+}
+
+// Trace d'erreur en base — seulement si un id a été attribué (échec après
+// création). Best-effort : n'interrompt jamais la réponse d'erreur.
+async function auditErreurGeneration(err: unknown, idPatient: string, idSynthese: string): Promise<void> {
+  if (!idSynthese) return;
+  const msg = err instanceof Error ? err.message : String(err);
+  await prisma.auditSynthese
+    .create({
+      data: {
+        idSynthese,
+        idPatient,
+        modele: CLAUDE_MODEL,
+        versionPrompt: VERSION_PROMPT_SYNTHESE,
+        statut: 'Erreur',
+        erreurCourte: sanitizeAuditError(msg),
+      },
+    })
+    .catch(() => {});
+}
+
+const MESSAGE_ERREUR_GENERATION = 'Erreur lors de la génération de la synthèse. Réessayez.';
+
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/synthese';
 
@@ -177,7 +329,6 @@ export async function POST(req: Request) {
     return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
   }
 
-  let idSynthese = '';
   try {
     // Garde d'appartenance avant tout appel au modèle : sans elle, générer une
     // synthèse enverrait les réponses d'un patient d'un autre praticien à
@@ -235,122 +386,93 @@ export async function POST(req: Request) {
     }
 
     const userMessage = buildUserMessage(reponsesInput, contexteClinique);
-
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 4096,
-      system: [{ type: 'text', text: SYSTEM_PROMPT_SYNTHESE, cache_control: { type: 'ephemeral' } }],
-      messages: [{ role: 'user', content: userMessage }],
-    });
-
-    const usage = (response.usage ?? {}) as {
-      input_tokens?: number;
-      output_tokens?: number;
-      cache_creation_input_tokens?: number;
-      cache_read_input_tokens?: number;
-    };
-    const metricsCache = {
-      input_tokens: usage.input_tokens ?? 0,
-      output_tokens: usage.output_tokens ?? 0,
-      cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
-      cache_read_input_tokens: usage.cache_read_input_tokens ?? 0,
+    const genererArgs: GenererArgs = {
+      idPatient,
+      emailPatient: patient.email,
+      userMessage,
+      vigilanceDeterministe,
+      reponsesInput,
+      contexteClinique,
     };
 
-    if (response.stop_reason === 'max_tokens') {
-      throw new Error('La synthèse IA a été tronquée (réponse trop longue). Réessayez.');
+    // Transport JSON historique (défaut, y compris Vercel) — inchangé.
+    if (process.env.WN_SYNTHESE_STREAM !== 'true') {
+      const state = { idSynthese: '' };
+      try {
+        const payload = await genererSynthesePersistee(genererArgs, state);
+        return withCorrelationHeader(NextResponse.json(payload), requestContext);
+      } catch (err) {
+        logErreurGeneration(err, requestContext);
+        await auditErreurGeneration(err, idPatient, state.idSynthese);
+        return withCorrelationHeader(
+          NextResponse.json({ error: MESSAGE_ERREUR_GENERATION }, { status: 500 }),
+          requestContext,
+        );
+      }
     }
 
-    const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
-    if (!text) throw new Error('Réponse vide de l\'API Claude.');
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('La réponse IA ne contient pas de JSON valide.');
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(jsonMatch[0]);
-    } catch {
-      const cleaned = jsonMatch[0].replace(/,\s*([}\]])/g, '$1');
-      parsed = JSON.parse(cleaned);
-    }
-
-    const synthese = validateSyntheseSchema(parsed);
-    // Garantit la présence des vigilances déterministes (signaux d'alerte,
-    // traitements) en tête, même si le LLM les a omises.
-    synthese.points_de_vigilance = fusionnerVigilance(vigilanceDeterministe, synthese.points_de_vigilance);
-    idSynthese = createPublicId('SYN');
-
-    const record = await prisma.syntheseIA.create({
-      data: {
-        idSynthese,
-        idPatient,
-        emailPatient: patient.email,
-        modele: CLAUDE_MODEL,
-        versionPrompt: VERSION_PROMPT_SYNTHESE,
-        donneesEntree: {
-          reponses: reponsesInput,
-          contexteClinique,
-          vigilanceDeterministe,
-          metadonneesPrompt: {
-            versionPrompt: VERSION_PROMPT_SYNTHESE,
-            versionSchema: VERSION_SCHEMA_SYNTHESE,
-            versionCorpus: VERSION_CORPUS_SYNTHESE,
-            corpusSha256: CORPUS_CLINIQUE_SHA256,
-            corpusActif: CORPUS_CLINIQUE_ACTIF,
-            corpusValidationExterne: CORPUS_CLINIQUE_METADATA.validationExterne,
-            corpusDateValidation: CORPUS_CLINIQUE_METADATA.dateValidation,
-          },
-          metriquesAnthropic: metricsCache,
-        } as any,
-        syntheseJson: synthese,
-        statut: 'Brouillon_IA',
+    // Transport SSE (Scalingo) : un octet précoce passe le seuil « premier
+    // octet » de 30 s du routeur, les heartbeats tiennent la fenêtre 59 s, puis
+    // un événement terminal `done`/`error`. Toutes les gardes qui rendent un
+    // code d'erreur (401/404/422/503) sont AU-DESSUS, avant l'ouverture du flux :
+    // une fois les en-têtes partis, le statut est figé à 200 et toute erreur
+    // passe in-band par `event: error`.
+    const encoder = new TextEncoder();
+    const flux = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        const enqueue = (s: string) => {
+          try {
+            controller.enqueue(encoder.encode(s));
+          } catch {
+            /* flux déjà fermé (client parti) */
+          }
+        };
+        enqueue(': ouverture\n\n');
+        const battement = setInterval(() => enqueue(': battement\n\n'), 10_000);
+        const state = { idSynthese: '' };
+        try {
+          // Le heartbeat tient le routeur ; on borne quand même le travail à
+          // ~2 min + une reprise (défaut SDK : 10 min, 2 reprises), pour ne pas
+          // laisser une requête pendre après une déconnexion client.
+          const payload = await genererSynthesePersistee(genererArgs, state, {
+            timeout: 120_000,
+            maxRetries: 1,
+          });
+          enqueue(`event: done\ndata: ${JSON.stringify(payload)}\n\n`);
+        } catch (err) {
+          logErreurGeneration(err, requestContext);
+          await auditErreurGeneration(err, idPatient, state.idSynthese);
+          enqueue(`event: error\ndata: ${JSON.stringify({ error: MESSAGE_ERREUR_GENERATION })}\n\n`);
+        } finally {
+          clearInterval(battement);
+          try {
+            controller.close();
+          } catch {
+            /* déjà fermé */
+          }
+        }
       },
     });
 
-    await prisma.auditSynthese.create({
-      data: {
-        idSynthese,
-        idPatient,
-        modele: CLAUDE_MODEL,
-        versionPrompt: VERSION_PROMPT_SYNTHESE,
-        statut: 'OK',
-      },
-    });
-
-    return withCorrelationHeader(NextResponse.json({
-      success: true,
-      idSynthese: record.idSynthese,
-      synthese,
-      modele: CLAUDE_MODEL,
-      dateGeneration: record.dateGeneration.toISOString(),
-    }), requestContext);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    logger.error({
-      event: EVENT_CODES.SYNTHESE_POST_EXCEPTION,
-      domain: 'SYNTHESE_IA',
-      message: 'Erreur lors de la génération de synthèse IA',
-      context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
-      error: err,
-    });
-
-    if (idSynthese) {
-      await prisma.auditSynthese.create({
-        data: {
-          idSynthese,
-          idPatient,
-          modele: CLAUDE_MODEL,
-          versionPrompt: VERSION_PROMPT_SYNTHESE,
-          statut: 'Erreur',
-          erreurCourte: sanitizeAuditError(msg),
+    return withCorrelationHeader(
+      new Response(flux, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache, no-transform',
+          'X-Accel-Buffering': 'no',
         },
-      }).catch(() => {});
-    }
-
-    return withCorrelationHeader(NextResponse.json(
-      { error: 'Erreur lors de la génération de la synthèse. Réessayez.' },
-      { status: 500 }
-    ), requestContext);
+      }),
+      requestContext,
+    );
+  } catch (err) {
+    // Erreurs AVANT l'ouverture du flux (lectures DB patient/réponses/contexte) :
+    // aucun id de synthèse n'existe encore, réponse d'erreur JSON classique.
+    logErreurGeneration(err, requestContext);
+    return withCorrelationHeader(
+      NextResponse.json({ error: MESSAGE_ERREUR_GENERATION }, { status: 500 }),
+      requestContext,
+    );
   }
 }
 
