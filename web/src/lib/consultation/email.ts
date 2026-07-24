@@ -57,6 +57,10 @@ export async function sendMagicLinkEmail(
 // configuré, l'envoi est silencieusement ignoré (le lien reste récupérable
 // côté praticien dans la réponse de l'API).
 //
+// Aucune donnée clinique dans le corps (audit HDS 2026-07-24) : le motif de
+// consultation n'y figure plus — une boîte e-mail n'est pas un canal maîtrisé.
+// Il reste en base (`consultations.motif`), visible du praticien.
+//
 // Gate G5 (IDP2 LOT-03f) : quand le drapeau est actif, l'e-mail propose Google
 // avant le lien permanent, sans jamais le retirer — le patient garde le choix,
 // et un patient qui refuse Google n'est pas laissé sans accès. Drapeau éteint,
@@ -64,12 +68,10 @@ export async function sendMagicLinkEmail(
 export async function sendPortailLinkEmail(
   patientEmail: string,
   prenom: string,
-  lien: string,
-  motif?: string | null
+  lien: string
 ): Promise<void> {
   const smtpUrl = process.env.SMTP_URL;
   if (!smtpUrl) return;
-  const motifInfo = motif ? `\nMotif de votre consultation : ${motif}` : '';
   const googleActif = isG5GooglePatientEnabled();
   const lienIntro = googleActif
     ? ''
@@ -87,7 +89,7 @@ export async function sendPortailLinkEmail(
     subject: 'Accès à votre espace patient — Wellneuro',
     text:
       `Bonjour ${prenom},\n\n` +
-      `Votre praticien vous ouvre l'accès à votre espace patient Wellneuro.${motifInfo}\n\n` +
+      `Votre praticien vous ouvre l'accès à votre espace patient Wellneuro.\n\n` +
       lienIntro +
       `Lors de votre première connexion, il vous sera demandé de donner votre consentement, ` +
       `de remplir une courte fiche de renseignements puis un questionnaire d'anamnèse. ` +
