@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import type { ClaimEnRevue } from '@/lib/rag/claims/revue';
-import type { ClaimRestitution } from '@/lib/rag/claims/recherche';
 import type { CorpusClaimsApiResponse } from '@/app/api/praticien/corpus/claims/route';
 import type {
   CorpusLotTirageApiResponse,
@@ -12,28 +11,41 @@ import type {
 } from '@/app/api/praticien/corpus/claims/lot/tirage/route';
 import type { CorpusLotDecisionApiResponse } from '@/app/api/praticien/corpus/claims/lot/decision/route';
 import type { CorpusQuestionnaireApiResponse } from '@/app/api/praticien/corpus/claims/questionnaire/route';
-import type { CorpusRechercheApiResponse } from '@/app/api/praticien/corpus/claims/recherche/route';
+import type { CorpusEvaluationApiResponse } from '@/app/api/praticien/corpus/claims/evaluation/route';
 
 // Atelier corpus v2 — VOIE RAPIDE en MODALE plein écran, une source à la fois.
 //
 // La modale s'ouvre depuis la vue d'ensemble des sources (jamais de saisie
 // manuelle d'identifiant) et porte tout le déroulé sans faire défiler la page
 // principale : tirage serveur (repris s'il en existe un ouvert), confrontation
-// de l'échantillon au verbatim, questionnaire de restitution joué sur le
-// corpus, puis signature du lot entier ou bascule motivée — armée puis
-// confirmée. Échap ou « Fermer » interrompt sans conclure : le tirage ouvert
-// se retrouve tel quel à la prochaine ouverture (il ne se re-tire pas).
+// de l'échantillon au verbatim, questionnaire de restitution, puis signature du
+// lot entier ou bascule motivée — armée puis confirmée. Échap ou « Fermer »
+// interrompt sans conclure : le tirage ouvert se retrouve tel quel à la
+// prochaine ouverture (il ne se re-tire pas).
+//
+// Restitution (décision praticien du 2026-07-24) : chaque question générée
+// porte SON chunk et ses claims (couverture 1 question ↔ 1 chunk, revérifiée
+// par le serveur via claimsCites). Le praticien COLLE la réponse du notebook
+// (NotebookLM, sans API), puis « Faire évaluer par l'IA » PROPOSE un verdict +
+// justification. Le verdict retenu reste son acte (D-003) : l'IA pré-remplit,
+// elle ne signe pas.
 
 type VerdictLocal = 'conforme' | 'non_conforme' | null;
 
 type QuestionLocale = {
   question: string;
+  /** Chunk couvert par la question (vide pour une question libre). */
+  chunkId: string;
+  /** Réponse du notebook, collée par le praticien. */
   reponse: string;
+  /** Claims de référence de la question (issus de la génération). */
   claimsCites: string[];
+  /** Chunks couverts si la question est jugée conforme ([chunkId] si généré). */
   chunksCites: string[];
-  resultats: ClaimRestitution[];
   verdict: VerdictLocal;
-  enCours: boolean;
+  /** Justification proposée par l'IA (vide tant que non évaluée). */
+  justificationIA: string;
+  enEvaluation: boolean;
 };
 
 export function AtelierVoieRapideModale({
@@ -197,61 +209,74 @@ export function AtelierVoieRapideModale({
     }
   }, [sourceId, entrerEnRevue]);
 
-  const jouerQuestion = useCallback(
-    async (index: number) => {
-      const question = questions[index];
-      if (!question || question.enCours) return;
-      setQuestions((qs) => qs.map((q, i) => (i === index ? { ...q, enCours: true } : q)));
-      try {
-        const reponse = await fetch('/api/praticien/corpus/claims/recherche', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ sourceId, question: question.question }),
-        });
-        const payload = (await reponse.json()) as CorpusRechercheApiResponse;
-        if (!reponse.ok || !payload.ok) {
-          setErreur(payload.ok ? 'Restitution impossible.' : payload.error);
-          setQuestions((qs) => qs.map((q, i) => (i === index ? { ...q, enCours: false } : q)));
-          return;
-        }
-        const resultats = payload.claims;
-        setQuestions((qs) =>
-          qs.map((q, i) =>
-            i === index
-              ? {
-                  ...q,
-                  enCours: false,
-                  resultats,
-                  reponse: resultats.map((r) => r.texteNormalise).join('\n'),
-                  claimsCites: [...new Set(resultats.map((r) => r.claimId))],
-                  chunksCites: [...new Set(resultats.flatMap((r) => r.chunksCites))],
-                  verdict: null,
-                }
-              : q,
-          ),
-        );
-      } catch {
-        setErreur('Erreur technique pendant la restitution.');
-        setQuestions((qs) => qs.map((q, i) => (i === index ? { ...q, enCours: false } : q)));
-      }
-    },
-    [questions, sourceId],
+  const majQuestion = useCallback(
+    (index: number, patch: Partial<QuestionLocale>) =>
+      setQuestions((qs) => qs.map((q, i) => (i === index ? { ...q, ...patch } : q))),
+    [],
   );
 
-  const ajouterQuestions = useCallback((libelles: string[]) => {
-    const nouvelles = libelles
-      .map((q) => q.trim())
-      .filter((q) => q.length >= 3)
-      .map((question) => ({
+  // Éditer la réponse invalide la proposition IA précédente : on repart neutre,
+  // le praticien réévalue ou tranche à la main.
+  const modifierReponse = useCallback(
+    (index: number, reponse: string) => majQuestion(index, { reponse, verdict: null, justificationIA: '' }),
+    [majQuestion],
+  );
+
+  const evaluerQuestion = useCallback(
+    async (index: number) => {
+      const question = questions[index];
+      if (!question || question.enEvaluation || question.reponse.trim() === '') return;
+      majQuestion(index, { enEvaluation: true });
+      try {
+        const reponse = await fetch('/api/praticien/corpus/claims/evaluation', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            sourceId,
+            question: question.question,
+            reponse: question.reponse,
+            claimsCites: question.claimsCites,
+          }),
+        });
+        const payload = (await reponse.json()) as CorpusEvaluationApiResponse;
+        if (!reponse.ok || !payload.ok) {
+          setErreur(payload.ok ? 'Évaluation impossible.' : payload.error);
+          majQuestion(index, { enEvaluation: false });
+          return;
+        }
+        majQuestion(index, {
+          enEvaluation: false,
+          verdict: payload.evaluation.verdict,
+          justificationIA: payload.evaluation.justification,
+        });
+      } catch {
+        setErreur('Erreur technique pendant l’évaluation.');
+        majQuestion(index, { enEvaluation: false });
+      }
+    },
+    [questions, sourceId, majQuestion],
+  );
+
+  // Question libre : appoint du praticien, SANS chunk ni claims de référence —
+  // elle ne compte donc pas dans la couverture ni dans le lot signé (le serveur
+  // n'accepte au questionnaire que des questions à claims cités), mais peut être
+  // collée et évaluée pour vérification.
+  const ajouterQuestionLibre = useCallback((libelle: string) => {
+    const question = libelle.trim();
+    if (question.length < 3) return;
+    setQuestions((qs) => [
+      ...qs,
+      {
         question,
+        chunkId: '',
         reponse: '',
-        claimsCites: [] as string[],
-        chunksCites: [] as string[],
-        resultats: [] as ClaimRestitution[],
-        verdict: null as VerdictLocal,
-        enCours: false,
-      }));
-    if (nouvelles.length) setQuestions((qs) => [...qs, ...nouvelles]);
+        claimsCites: [],
+        chunksCites: [],
+        verdict: null,
+        justificationIA: '',
+        enEvaluation: false,
+      },
+    ]);
   }, []);
 
   // Génération serveur : une question par chunk atteignable, depuis les
@@ -274,10 +299,22 @@ export function AtelierVoieRapideModale({
         setErreur(payload.ok ? 'Génération impossible.' : payload.error);
         return;
       }
-      const dejaLa = new Set(questions.map((q) => q.question));
-      ajouterQuestions(
-        payload.questionnaire.questions.map((q) => q.question).filter((q) => !dejaLa.has(q)),
-      );
+      setQuestions((qs) => {
+        const dejaLa = new Set(qs.map((q) => q.question));
+        const nouvelles: QuestionLocale[] = payload.questionnaire.questions
+          .filter((q) => !dejaLa.has(q.question))
+          .map((q) => ({
+            question: q.question,
+            chunkId: q.chunkId,
+            reponse: '',
+            claimsCites: q.claimsCitesAttendus,
+            chunksCites: [q.chunkId],
+            verdict: null,
+            justificationIA: '',
+            enEvaluation: false,
+          }));
+        return nouvelles.length ? [...qs, ...nouvelles] : qs;
+      });
       if (!payload.questionnaire.couvertureComplete) {
         setAvertissementGeneration(
           `Génération incomplète : ${payload.questionnaire.chunksSansQuestion.length} chunk(s) sans question — complétez à la main ou régénérez.`,
@@ -288,7 +325,7 @@ export function AtelierVoieRapideModale({
     } finally {
       setGenerationEnCours(false);
     }
-  }, [generationEnCours, sourceId, questions, ajouterQuestions]);
+  }, [generationEnCours, sourceId]);
 
   const conclure = useCallback(
     async (issue: 'valider' | 'basculer') => {
@@ -302,8 +339,11 @@ export function AtelierVoieRapideModale({
           ...(notes[id]?.trim() ? { note: notes[id].trim() } : {}),
         }));
         const questionnaireEnvoye = {
+          // Le serveur n'accepte au questionnaire que des questions à claims
+          // cités (couverture) : on n'envoie que les questions générées jugées,
+          // pas les questions libres d'appoint.
           questions: questions
-            .filter((q) => q.verdict !== null && q.reponse !== '')
+            .filter((q) => q.verdict !== null && q.reponse.trim() !== '' && q.claimsCites.length > 0)
             .map((q) => ({
               question: q.question,
               reponse: q.reponse,
@@ -467,48 +507,49 @@ export function AtelierVoieRapideModale({
               <ul className="mt-3 flex flex-col gap-3">
                 {questions.map((q, index) => (
                   <li key={index} className="rounded-xl border border-border p-3">
-                    <p className="text-sm font-medium text-foreground">{q.question}</p>
-                    {q.resultats.length > 0 ? (
-                      <div className="mt-2 flex flex-col gap-1">
-                        {q.resultats.map((r) => (
-                          <p
-                            key={`${r.claimId}@${r.versionClaim}`}
-                            className="text-xs text-muted-foreground"
-                          >
-                            <span className="font-medium">{r.claimId}</span>{' '}
-                            ({Math.round(r.similarity * 100)} %) — {r.texteNormalise}
-                          </p>
-                        ))}
-                        <div className="mt-2 flex gap-1">
-                          <Button
-                            variant={q.verdict === 'conforme' ? 'primary' : 'outline'}
-                            onClick={() =>
-                              setQuestions((qs) =>
-                                qs.map((x, i) => (i === index ? { ...x, verdict: 'conforme' } : x)),
-                              )
-                            }
-                          >
-                            Restitution conforme
-                          </Button>
-                          <Button
-                            variant={q.verdict === 'non_conforme' ? 'danger' : 'outline'}
-                            onClick={() =>
-                              setQuestions((qs) =>
-                                qs.map((x, i) =>
-                                  i === index ? { ...x, verdict: 'non_conforme' } : x,
-                                ),
-                              )
-                            }
-                          >
-                            Non conforme
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <Button className="mt-2" onClick={() => jouerQuestion(index)} disabled={q.enCours}>
-                        {q.enCours ? 'Restitution…' : 'Jouer sur le corpus'}
+                    <p className="text-sm font-medium text-foreground">
+                      {q.question}
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        {q.chunkId || 'question libre'}
+                      </span>
+                    </p>
+                    <textarea
+                      value={q.reponse}
+                      onChange={(e) => modifierReponse(index, e.target.value)}
+                      placeholder="Collez ici la réponse du notebook (NotebookLM)"
+                      rows={3}
+                      className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm"
+                    />
+                    <div className="mt-2 flex flex-wrap items-center gap-1">
+                      <Button
+                        variant="outline"
+                        onClick={() => evaluerQuestion(index)}
+                        disabled={q.enEvaluation || q.reponse.trim() === ''}
+                        title={
+                          q.reponse.trim() === '' ? 'Collez d’abord la réponse du notebook.' : undefined
+                        }
+                      >
+                        {q.enEvaluation ? 'Évaluation…' : 'Faire évaluer par l’IA'}
                       </Button>
-                    )}
+                      <Button
+                        variant={q.verdict === 'conforme' ? 'primary' : 'outline'}
+                        onClick={() => majQuestion(index, { verdict: 'conforme' })}
+                      >
+                        Conforme
+                      </Button>
+                      <Button
+                        variant={q.verdict === 'non_conforme' ? 'danger' : 'outline'}
+                        onClick={() => majQuestion(index, { verdict: 'non_conforme' })}
+                      >
+                        Non conforme
+                      </Button>
+                    </div>
+                    {q.justificationIA ? (
+                      <p className="mt-2 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">Proposition IA</span> —{' '}
+                        {q.justificationIA}
+                      </p>
+                    ) : null}
                   </li>
                 ))}
               </ul>
@@ -522,7 +563,7 @@ export function AtelierVoieRapideModale({
                 <Button
                   variant="outline"
                   onClick={() => {
-                    ajouterQuestions([nouvelleQuestion]);
+                    ajouterQuestionLibre(nouvelleQuestion);
                     setNouvelleQuestion('');
                   }}
                 >
