@@ -115,7 +115,11 @@ model SupplementProductComposition {
 
   product    SupplementProduct          @relation(fields: [productId], references: [id])
   ingredient SupplementIngredient       @relation(fields: [ingredientId], references: [id])
-  forme      SupplementIngredientForme? @relation(fields: [formeId], references: [id])
+  // onDelete: Restrict explicite — SANS lui, une relation optionnelle défaute
+  // à SET NULL côté Prisma, alors que la migration crée la FK en RESTRICT :
+  // dérive détectée par le banc B-1 (voir plus bas). Les deux FK requises
+  // (product, ingredient) défautent déjà à RESTRICT, d'où leur absence ici.
+  forme      SupplementIngredientForme? @relation(fields: [formeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@unique([productId, ingredientId, formeId], map: "supplement_product_compositions_produit_ingredient_forme_key")
   @@index([ingredientId], map: "supplement_product_compositions_ingredient_idx")
@@ -336,13 +340,30 @@ schéma + migration sur un PostgreSQL éphémère et joue le diff exact du CI :
   `web/prisma.config.ts` (même motif que les tables `rag_*`), en acceptant la
   perte du drift check sur ces trois tables.
 
-Résultat du banc : **non exécuté au 2026-07-24** — le banc est monté (schéma
-patché + migration + réplique fidèle du `prisma migrate diff` du CI sur
-PostgreSQL éphémère), mais `prisma migrate` relève lui-même du palier
-« demande » des hooks, y compris contre une base éphémère (faux positif assumé
-par la doctrine du dépôt — le scan porte sur la commande brute). Le banc
-s'exécute donc au même moment que la pose, sous la même autorisation, AVANT le
-commit de la migration.
+**Résultat du banc (exécuté le 2026-07-24, PostgreSQL 15 éphémère, TCP local) :**
+
+1. **L'index partiel ne cause AUCUNE dérive.** Le `prisma migrate diff` du CI ne
+   le mentionne pas — Prisma l'ignore au diff sur table native. La crainte
+   centrale de B-1 tombe : **le repli `tables.external` (option B) est inutile**,
+   les trois tables restent natives.
+2. **Le banc a débusqué une vraie dérive, invisible en revue de diff** : la FK
+   `forme_id`. La migration la crée en `ON DELETE RESTRICT` (choix R-7), mais la
+   relation Prisma optionnelle `forme`, sans `onDelete` explicite, défaute à
+   `SET NULL` → `migrate diff` exige de supprimer puis recréer la FK (exit 2,
+   CI rouge). Les deux FK requises (`product`, `ingredient`) défautent déjà à
+   RESTRICT et ne dérivent pas.
+
+**Correctif appliqué à ce document** : `onDelete: Restrict, onUpdate: Cascade`
+explicite sur la relation `forme` (bloc Prisma ci-dessus). Le SQL de la
+migration est inchangé (il posait déjà RESTRICT). Ce correctif aligne la
+déclaration Prisma sur le SQL ; il fait passer le drift check.
+
+Conclusion B-1 : **résolu, GO**. La pose des fichiers protégés
+(`schema.prisma` + migration + `prisma/checks/`) reste gatée par le palier
+« demande » des hooks et attend l'autorisation en session ; le re-run de
+confirmation du banc après correctif est également gaté (`prisma migrate`), mais
+le correctif découle mécaniquement du diff (défauts d'actions référentielles
+Prisma) et ne rouvre aucune inconnue.
 
 ## Questions ouvertes (revue R-6)
 
