@@ -1,0 +1,10 @@
+{
+  "name": "wn-supplements-import",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Importeur Compl'Alim (DGCCRF/DGAL, open data) vers brouillons du catalogue C4A. Outillage hors runtime, dev-local uniquement.",
+  "dependencies": {
+    "pg": "^8.22.0"
+  }
+}
