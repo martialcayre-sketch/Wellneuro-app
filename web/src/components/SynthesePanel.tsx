@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { readEventStream } from '@/lib/sse/readEventStream';
 import type { PatientsPgApiResponse } from '@/app/api/praticien/patients-pg/route';
 import type { SyntheseSchema } from '@/lib/anthropic';
 
@@ -98,12 +99,49 @@ export function SynthesePanel() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idPatient: selectedPatient }),
       });
-      const d = await r.json() as { success?: boolean; error?: string; idSynthese?: string };
-      if (!r.ok || !d.success) {
+
+      // Les gardes d'erreur répondent toujours en JSON (401/404/422/503/500),
+      // quel que soit le transport de succès.
+      if (!r.ok) {
+        const d = (await r.json().catch(() => ({}))) as { error?: string };
         setFeedback({ ok: false, msg: d.error ?? 'Erreur lors de la génération.' });
         return;
       }
-      setFeedback({ ok: true, msg: 'Synthèse générée. Relisez et validez avant envoi.' });
+
+      const msgSucces = 'Synthèse générée. Relisez et validez avant envoi.';
+
+      // Transport SSE (Scalingo) : lire le flux jusqu'à l'événement terminal.
+      if (r.headers.get('content-type')?.includes('text/event-stream')) {
+        let terminal: { ok: boolean; msg: string } | null = null;
+        await readEventStream(r, e => {
+          if (e.event === 'done') {
+            terminal = { ok: true, msg: msgSucces };
+          } else if (e.event === 'error') {
+            let msg = 'Erreur lors de la génération.';
+            try {
+              msg = (JSON.parse(e.data) as { error?: string }).error ?? msg;
+            } catch {
+              /* trame d'erreur illisible : message générique */
+            }
+            terminal = { ok: false, msg };
+          }
+        });
+        if (!terminal) {
+          setFeedback({ ok: false, msg: 'Réponse incomplète du serveur. Réessayez.' });
+          return;
+        }
+        setFeedback(terminal);
+        if ((terminal as { ok: boolean }).ok) await loadSyntheses(selectedPatient);
+        return;
+      }
+
+      // Transport JSON historique.
+      const d = (await r.json()) as { success?: boolean; error?: string };
+      if (!d.success) {
+        setFeedback({ ok: false, msg: d.error ?? 'Erreur lors de la génération.' });
+        return;
+      }
+      setFeedback({ ok: true, msg: msgSucces });
       await loadSyntheses(selectedPatient);
     } catch {
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
