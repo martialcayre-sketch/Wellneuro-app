@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
-import { calculateScore } from '@/lib/questions';
+import { computeScoreFromDef } from '@/lib/questions';
+import { estInstrumentCabinet, resolveDefinition } from '@/lib/instruments';
 import { createPublicId } from '@/lib/ids';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
@@ -113,8 +114,52 @@ export async function POST(req: Request): Promise<NextResponse> {
     const idQuestionnaire = ass.idQuestionnaire;
     const titre = ass.titre || idQuestionnaire;
 
-    // Calculer le score
-    const scores = calculateScore(idQuestionnaire, answers) as Record<string, unknown>;
+    // Calculer le score — resolver commun catalogue/cabinet en mode
+    // passation : l'assignation fait autorité, un CAB_ dépublié ou désactivé
+    // après l'envoi reste scoré par la grille envoyée.
+    const def = await resolveDefinition(idQuestionnaire, { pourPassation: true });
+    if (!def && estInstrumentCabinet(idQuestionnaire)) {
+      // Défensif, instruments du cabinet SEULEMENT : un CAB_ assigné doit
+      // toujours résoudre (mode passation) — une ligne absente est anormale.
+      // On ne verrouille RIEN et on ne persiste RIEN : verrouiller une réponse
+      // sans scores serait une perte clinique silencieuse. Les ids hors
+      // catalogue de définitions (questionnaires fonctionnels : Q_PLAINTES,
+      // Q_ALI_01…) gardent plus bas leur flux historique — réponses brutes
+      // persistées sans score.
+      logger.warn({
+        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_UNAVAILABLE,
+        domain: 'QUESTIONNAIRE',
+        message: 'Définition introuvable à la soumission — aucune persistance',
+        context: finalizeLogContext(requestContext, { statusCode: 409, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'indisponible', error: "Ce questionnaire n'est plus disponible, contactez votre praticien." }, { status: 409 }), requestContext);
+    }
+    if (def?.cabinet) {
+      // Instruments du cabinet : réponses COMPLÈTES exigées. Le moteur de
+      // somme ignore les items omis — sur une échelle à minimum > 0, un total
+      // partiel sortirait des bandes et retomberait sur la plus sévère.
+      const manquantes = def.sections
+        .flatMap(s => s.questions.map(q => q.id))
+        .filter(idItem => {
+          const valeur = (answers as Record<string, unknown>)[idItem];
+          return valeur === undefined || valeur === null || valeur === '';
+        });
+      if (manquantes.length > 0) {
+        logger.warn({
+          event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_INVALID_PAYLOAD,
+          domain: 'QUESTIONNAIRE',
+          message: 'Réponses incomplètes sur instrument du cabinet',
+          context: finalizeLogContext(requestContext, { statusCode: 400, retryable: false }),
+        });
+        return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Réponses incomplètes : toutes les questions sont requises.' }, { status: 400 }), requestContext);
+      }
+    }
+    // Sans définition (questionnaire fonctionnel ou id retiré du catalogue),
+    // les réponses brutes restent la donnée clinique : persistées avec un
+    // champ error, comme avant ce lot.
+    const scores = (
+      def ? computeScoreFromDef(def, answers) : { error: 'Questionnaire introuvable' }
+    ) as Record<string, unknown>;
 
     // Extraire interpretation principale
     let interpretation = '';

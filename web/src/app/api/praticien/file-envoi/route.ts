@@ -3,7 +3,8 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
-import { CATALOGUE_DEFINITIONS, IDS_ASSIGNABLES } from '@/lib/bibliotheque';
+import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
+import { estInstrumentCabinet, idsAssignablesPour } from '@/lib/instruments';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 
@@ -11,7 +12,13 @@ import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@
 // envoi au clic »). Un brouillon par patient accumule des questionnaires ;
 // rien ne part d'ici — l'envoi est un POST séparé sur ./envoyer.
 
-export type FileEnvoiItem = { id: string; titre: string };
+export type FileEnvoiItem = {
+  id: string;
+  titre: string;
+  /** Instrument du cabinet devenu non assignable (dépublié ou désactivé) :
+   * affiché barré d'un badge, il sera filtré à l'envoi. */
+  indisponible?: boolean;
+};
 
 export type FileEnvoiBrouillon = {
   idBrouillon: string;
@@ -47,8 +54,18 @@ export type MutateFileEnvoiResponse = {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-function titreDe(id: string): string {
-  return CATALOGUE_DEFINITIONS[id]?.titre || id;
+type InfoCabinet = { titre: string; actif: boolean; statutRelecture: string };
+
+function itemDe(id: string, cabinetParId: Map<string, InfoCabinet>): FileEnvoiItem {
+  if (!estInstrumentCabinet(id)) {
+    return { id, titre: CATALOGUE_DEFINITIONS[id]?.titre || id };
+  }
+  const info = cabinetParId.get(id);
+  // Un instrument du cabinet dépublié ou désactivé reste LISTÉ, marqué
+  // indisponible — jamais supprimé silencieusement : c'est l'envoi qui le
+  // filtrera, et l'écran doit le dire avant.
+  const indisponible = !info || !info.actif || info.statutRelecture !== 'valide';
+  return { id, titre: info?.titre || id, ...(indisponible ? { indisponible: true } : {}) };
 }
 
 export async function GET() {
@@ -66,6 +83,26 @@ export async function GET() {
       orderBy: { createdAt: 'asc' },
       include: { patient: { select: { prenom: true, nom: true, email: true } } },
     });
+    // Les instruments du cabinet (CAB_) n'ont pas de titre au catalogue en
+    // code : une seule lecture pour tous les brouillons — statut compris,
+    // pour marquer les items devenus non assignables.
+    const idsCabinet = [...new Set(lignes.flatMap(l => l.qids.filter(estInstrumentCabinet)))];
+    const cabinetParId = new Map<string, InfoCabinet>(
+      idsCabinet.length === 0
+        ? []
+        : (
+            await prisma.cabinetInstrument.findMany({
+              where: {
+                idInstrument: { in: idsCabinet },
+                praticienEmail: { equals: emailSession, mode: 'insensitive' },
+              },
+              select: { idInstrument: true, titre: true, actif: true, statutRelecture: true },
+            })
+          ).map(row => [
+            row.idInstrument,
+            { titre: row.titre, actif: row.actif, statutRelecture: row.statutRelecture },
+          ]),
+    );
     return NextResponse.json<FileEnvoiApiResponse>({
       brouillons: lignes.map(l => ({
         idBrouillon: l.idBrouillon,
@@ -73,7 +110,7 @@ export async function GET() {
         prenom: l.patient.prenom,
         nom: l.patient.nom,
         emailPatient: l.patient.email,
-        items: l.qids.map(id => ({ id, titre: titreDe(id) })),
+        items: l.qids.map(id => itemDe(id, cabinetParId)),
         dateLimite: l.dateLimite,
         notes: l.notes,
       })),
@@ -112,8 +149,10 @@ export async function POST(request: Request) {
     const notes = typeof body.notes === 'string' ? body.notes.trim().slice(0, 500) : null;
 
     // Seuls les instruments réellement assignables entrent dans la file :
-    // ni alias historiques, ni passations praticien, ni ids inconnus.
-    const qids = [...new Set(qidsDemandes.filter(id => IDS_ASSIGNABLES.has(id)))];
+    // ni alias historiques, ni passations praticien, ni ids inconnus — et
+    // côté cabinet, seuls les instruments PUBLIÉS du praticien en session.
+    const assignables = await idsAssignablesPour(emailSession);
+    const qids = [...new Set(qidsDemandes.filter(id => assignables.has(id)))];
     if (!EMAIL_REGEX.test(emailPatient) || qids.length === 0) {
       return NextResponse.json<MutateFileEnvoiResponse>(
         { success: false, reason: 'invalid_payload', error: 'Patient ou questionnaires invalides.' },

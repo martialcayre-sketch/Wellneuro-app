@@ -1147,3 +1147,29 @@ model EnvoiBrouillon {
   @@index([idPatient, statut], map: "bibliotheque_envoi_brouillon_patient_idx")
   @@map("envoi_brouillons")
 }
+
+// Instruments du cabinet (décision utilisateur du 2026-07-23) : un praticien
+// crée ou importe un questionnaire privé à son cabinet, avec grille de score
+// et interprétation. Il n'est JAMAIS certifié automatiquement ; sa grille doit
+// être relue puis publiée (`statutRelecture: "valide"`) avant d'être
+// assignable. Une fois publié, il part par la file d'envoi et se score à la
+// soumission comme un instrument du catalogue (resolver commun
+// `@/lib/instruments`). Pas de FK praticien : le praticien n'existe que par
+// l'email de session (hypothèse mono-praticien, patron EnvoiBrouillon).
+model CabinetInstrument {
+  id              String   @id @default(cuid())
+  idInstrument    String   @unique @map("id_instrument") // CAB_xxx (createPublicId('CAB'))
+  praticienEmail  String   @map("praticien_email")
+  titre           String
+  categorie       String   @default("Cabinet")
+  description     String?
+  definitionJson  Json     @map("definition_json") // { instructions?: string, sections: Section[] }
+  scoringJson     Json     @map("scoring_json") // { type, reversed?, interpretation: [...] }
+  statutRelecture String   @default("brouillon") @map("statut_relecture") // brouillon | grille_a_relire | valide
+  actif           Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([praticienEmail, actif], map: "cabinet_instrument_praticien_idx")
+  @@map("cabinet_instruments")
+}

@@ -87,6 +87,82 @@ test.describe('Praticien Dashboard', () => {
     await expect(page.getByRole('heading', { name: "File d'envoi" })).toBeVisible();
   });
 
+  // Instruments du cabinet : le parcours complet créer → enregistrer →
+  // demander la relecture → publier. La publication n'est JAMAIS automatique :
+  // elle passe par l'écran de relecture de la grille. Titre unique par run, et
+  // désactivation en fin de test — la base est partagée entre les postes.
+  test('bibliothèque : créer un instrument du cabinet jusqu’à publication', async ({ page }) => {
+    const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
+    await page.context().addCookies([sessionCookie]);
+    await page.goto('/dashboard/bibliotheque');
+
+    const titre = `Instrument E2E ${Date.now()}`;
+
+    try {
+      // Éditeur en tiroir : titre + deux questions, échelle par défaut.
+      await page.getByRole('button', { name: 'Créer un questionnaire' }).click();
+      const tiroir = page.getByRole('dialog', { name: 'Créer un questionnaire' });
+      await expect(tiroir).toBeVisible();
+      await tiroir.getByLabel('Titre', { exact: true }).fill(titre);
+      await tiroir.getByLabel('Question 1', { exact: true }).fill('Je dors bien la semaine.');
+      await tiroir.getByRole('button', { name: 'Ajouter une question' }).click();
+      await tiroir.getByLabel('Question 2', { exact: true }).fill('Je me réveille reposé(e).');
+
+      await tiroir.getByRole('button', { name: 'Enregistrer le brouillon' }).click();
+      await expect(tiroir.getByText('Brouillon enregistré.')).toBeVisible({ timeout: 10000 });
+
+      await tiroir.getByRole('button', { name: 'Demander la relecture' }).click();
+      await expect(tiroir).toBeHidden({ timeout: 10000 });
+
+      // La liste du cabinet montre le statut « Grille à relire ».
+      const sectionCabinet = page.getByTestId('instruments-cabinet');
+      const ligne = sectionCabinet.locator('li', { hasText: titre });
+      await expect(ligne).toBeVisible({ timeout: 10000 });
+      await expect(ligne.getByText('Grille à relire')).toBeVisible();
+
+      // Relecture : récapitulatif (échelle + bandes) puis publication explicite.
+      await ligne.getByRole('button', { name: 'Relire la grille' }).click();
+      const relecture = page.getByRole('dialog', { name: 'Relire la grille' });
+      await expect(relecture).toBeVisible();
+      await expect(relecture.getByText(/Bandes d.interprétation/)).toBeVisible();
+      await relecture.getByRole('button', { name: 'Grille relue — publier' }).click();
+      await expect(relecture).toBeHidden({ timeout: 10000 });
+      await expect(ligne.getByText('Publié')).toBeVisible({ timeout: 10000 });
+
+      // Le catalogue porte l'entrée cabinet, badge « Cabinet — non certifié ».
+      await page.getByLabel('Rechercher dans le catalogue').fill(titre);
+      await expect(
+        page.locator('li', { hasText: titre }).filter({ hasText: 'Cabinet — non certifié' }),
+      ).toBeVisible({ timeout: 10000 });
+
+      // Désactivation par l'UI : le bouton fait partie du parcours testé.
+      await ligne.getByRole('button', { name: 'Désactiver' }).click();
+      await expect(ligne).toBeHidden({ timeout: 10000 });
+    } finally {
+      // Filet : si une assertion a échoué en route, désactive par l'API tout
+      // instrument de ce run resté actif — la base E2E est partagée entre les
+      // postes, aucun orphelin ne doit s'y accumuler. `page.request` partage
+      // le cookie de session praticien du contexte. Le nettoyage est enveloppé :
+      // une exception ici (contexte fermé après échec) ne doit pas remplacer
+      // l'erreur d'origine du test.
+      try {
+        const liste = await page.request.get('/api/praticien/instruments');
+        const json = (await liste.json().catch(() => ({ instruments: [] }))) as {
+          instruments?: { idInstrument: string; titre: string }[];
+        };
+        for (const instrument of json.instruments ?? []) {
+          if (instrument.titre === titre) {
+            await page.request.patch('/api/praticien/instruments', {
+              data: { idInstrument: instrument.idInstrument, action: 'desactiver' },
+            });
+          }
+        }
+      } catch {
+        // Nettoyage best-effort : l'erreur du test prime.
+      }
+    }
+  });
+
   test('navigate to patients section', async ({ page }) => {
     const sessionCookie = await praticienSessionCookie(PRATICIEN_EMAIL);
     await page.context().addCookies([sessionCookie]);

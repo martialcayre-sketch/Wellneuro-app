@@ -5,6 +5,8 @@ const { sendMail, prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findFirst: vi.fn() },
     envoiBrouillon: { findFirst: vi.fn() },
+    // idsAssignablesPour / resolveDefinition : aucun instrument du cabinet ici.
+    cabinetInstrument: { findMany: vi.fn().mockResolvedValue([]), findUnique: vi.fn() },
     $transaction: vi.fn(),
   },
 }));

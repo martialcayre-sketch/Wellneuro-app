@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { resolveDefinition } from '@/lib/instruments';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 
@@ -56,7 +56,11 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
       return NextResponse.json({ ok: false, reason: 'expired', error: 'Ce lien de questionnaire a expiré.' }, { status: 410 });
     }
 
-    const questionnaire = (QUESTIONNAIRE_CATALOGUE as Record<string, unknown>)[ass.idQuestionnaire] ?? null;
+    // Resolver commun catalogue/cabinet en mode passation : l'assignation
+    // fait autorité — un instrument CAB_ déjà envoyé reste rendu même s'il a
+    // été désactivé ou dépublié entre-temps. Un id sans définition (ligne
+    // absente) rend null : l'écran « pas encore disponible » fait le reste.
+    const questionnaire = await resolveDefinition(ass.idQuestionnaire, { pourPassation: true });
 
     const assignationInfo: AssignationInfo = {
       idAssignation: ass.idAssignation,

@@ -74,6 +74,9 @@ export type BibliothequeEntree = {
   assignable: boolean;
   aliasVers: string | null;
   passationPraticien: boolean;
+  /** Présent sur les instruments du cabinet (CAB_) : jamais certifiés,
+   * assignables seulement une fois la grille relue puis publiée. */
+  cabinet?: { statutRelecture: string };
 };
 
 export function listeBibliotheque(): BibliothequeEntree[] {

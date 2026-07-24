@@ -5,6 +5,8 @@ const { prisma } = vi.hoisted(() => ({
     assignation: { findUnique: vi.fn(), update: vi.fn() },
     patient: { findUnique: vi.fn() },
     questionnaireReponse: { create: vi.fn() },
+    // Resolver commun : lu seulement pour les ids CAB_ (instruments cabinet).
+    cabinetInstrument: { findUnique: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -95,5 +97,192 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
     };
     expect(data.scoresJson).toBeTruthy();
     expect(data.scoresJson.rawAnswers).toEqual({ NEU3_Q001: 2, NEU3_Q002: 1 });
+  });
+});
+
+// Instruments du cabinet : la passation est protégée (l'assignation fait
+// autorité, même dépublié/désactivé), la complétude est exigée, et JAMAIS de
+// verrouillage sans définition résolue — verrouiller une réponse sans scores
+// serait une perte clinique silencieuse.
+describe('POST /api/patient/submit — instruments du cabinet', () => {
+  const assignationCabinet = {
+    idAssignation: 'ASS_CAB_TEST',
+    idPatient: 'PAT_SEED_03',
+    emailPatient: 'sophie.nicola@example.test',
+    idQuestionnaire: 'CAB_SUBMIT_1',
+    titre: 'Instrument cabinet test',
+    dateLimite: null,
+    statutReponses: 'en_cours',
+  };
+
+  const rowCabinet = {
+    idInstrument: 'CAB_SUBMIT_1',
+    praticienEmail: 'praticien@wellneuro.fr',
+    titre: 'Instrument cabinet test',
+    // Dépublié ET désactivé après l'envoi : la passation doit aboutir malgré tout.
+    actif: false,
+    statutRelecture: 'brouillon',
+    definitionJson: {
+      sections: [
+        {
+          id: 'S1',
+          questions: [
+            {
+              id: 'Q1',
+              texte: 'Je dors bien.',
+              type: 'likert',
+              options: [
+                { v: 0, l: 'Non' },
+                { v: 1, l: 'Oui' },
+              ],
+            },
+            {
+              id: 'Q2',
+              texte: 'Je me réveille reposé(e).',
+              type: 'likert',
+              options: [
+                { v: 0, l: 'Non' },
+                { v: 1, l: 'Oui' },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    scoringJson: {
+      type: 'sum',
+      maxTotal: 2,
+      interpretation: [{ min: 0, max: 2, label: 'Repère', color: 'warning' }],
+    },
+  };
+
+  function requeteCabinet(answers: Record<string, unknown>): Request {
+    const cookie = signPatientSession({
+      idPatient: assignationCabinet.idPatient,
+      email: assignationCabinet.emailPatient,
+    });
+    return new Request('http://localhost/api/patient/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        cookie: `wn_portail=${encodeURIComponent(cookie)}`,
+      },
+      body: JSON.stringify({
+        idAssignation: assignationCabinet.idAssignation,
+        idQuestionnaire: assignationCabinet.idQuestionnaire,
+        answers,
+      }),
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.assignation.findUnique.mockResolvedValue(assignationCabinet);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignationCabinet.idPatient,
+      actif: true,
+      email: assignationCabinet.emailPatient,
+      accessToken: 'TOKEN_TEST',
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+    });
+    prisma.assignation.update.mockResolvedValue(assignationCabinet);
+    prisma.questionnaireReponse.create.mockResolvedValue({});
+    prisma.cabinetInstrument.findUnique.mockResolvedValue(rowCabinet);
+  });
+
+  it('score et persiste un instrument dépublié/désactivé après l’envoi', async () => {
+    const res = await postSubmit(requeteCabinet({ Q1: 1, Q2: 0 }));
+    expect(res.status).toBe(200);
+    expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
+    const { data } = prisma.questionnaireReponse.create.mock.calls[0][0] as {
+      data: { scorePrincipal: number | null; interpretation: string | null };
+    };
+    expect(data.scorePrincipal).toBe(1);
+    expect(data.interpretation).toBe('Repère');
+    expect(prisma.assignation.update).toHaveBeenCalledTimes(1);
+  });
+
+  it('réponses incomplètes : 400, aucune persistance ni verrouillage', async () => {
+    const res = await postSubmit(requeteCabinet({ Q1: 1 }));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toContain('Réponses incomplètes');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+
+  it('définition introuvable : 409, aucune persistance ni verrouillage', async () => {
+    prisma.cabinetInstrument.findUnique.mockResolvedValue(null);
+    const res = await postSubmit(requeteCabinet({ Q1: 1, Q2: 0 }));
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: string }).error).toContain("n'est plus disponible");
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+});
+
+// Les questionnaires fonctionnels (Q_PLAINTES, Q_ALI_01…) n'ont pas de
+// définition dans QUESTIONNAIRE_CATALOGUE : leur donnée clinique est la
+// réponse brute, persistée avec un champ error depuis toujours. Le 409
+// défensif est réservé aux CAB_ — ce flux historique ne doit pas casser
+// (assignations réelles en attente en production).
+describe('POST /api/patient/submit — questionnaires fonctionnels sans définition', () => {
+  const assignationFonctionnelle = {
+    idAssignation: 'ASS_FONC_TEST',
+    idPatient: 'PAT_SEED_03',
+    emailPatient: 'sophie.nicola@example.test',
+    idQuestionnaire: 'Q_PLAINTES',
+    titre: 'Plaintes et symptômes',
+    dateLimite: null,
+    statutReponses: 'en_cours',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.assignation.findUnique.mockResolvedValue(assignationFonctionnelle);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignationFonctionnelle.idPatient,
+      actif: true,
+      email: assignationFonctionnelle.emailPatient,
+      accessToken: 'TOKEN_TEST',
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+    });
+    prisma.assignation.update.mockResolvedValue(assignationFonctionnelle);
+    prisma.questionnaireReponse.create.mockResolvedValue({});
+  });
+
+  it('persiste les réponses brutes sans score et verrouille (flux historique)', async () => {
+    const cookie = signPatientSession({
+      idPatient: assignationFonctionnelle.idPatient,
+      email: assignationFonctionnelle.emailPatient,
+    });
+    const res = await postSubmit(
+      new Request('http://localhost/api/patient/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          cookie: `wn_portail=${encodeURIComponent(cookie)}`,
+        },
+        body: JSON.stringify({
+          idAssignation: assignationFonctionnelle.idAssignation,
+          idQuestionnaire: assignationFonctionnelle.idQuestionnaire,
+          answers: { plainte_1: 'Fatigue au réveil' },
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    // Le resolver n'est pas consulté pour un id non CAB_ hors catalogue.
+    expect(prisma.cabinetInstrument.findUnique).not.toHaveBeenCalled();
+    expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
+    const { data } = prisma.questionnaireReponse.create.mock.calls[0][0] as {
+      data: { scoresJson: Record<string, unknown>; scorePrincipal: number | null };
+    };
+    expect(data.scoresJson.error).toBe('Questionnaire introuvable');
+    expect(data.scoresJson.rawAnswers).toEqual({ plainte_1: 'Fatigue au réveil' });
+    expect(data.scorePrincipal).toBeNull();
+    expect(prisma.assignation.update).toHaveBeenCalledTimes(1);
   });
 });
