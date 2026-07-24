@@ -55,6 +55,10 @@ function gagne(candidate: LigneRegle, tenante: LigneRegle): boolean {
   return comparerTexte(candidate.id, tenante.id) > 0;
 }
 
+function estValidee(regle: LigneRegle): boolean {
+  return regle.validePar !== null && regle.valideLe !== null;
+}
+
 function versRegleResolue(regle: LigneRegle): RegleResolue {
   return {
     regleId: regle.id,
@@ -71,11 +75,19 @@ function versRegleResolue(regle: LigneRegle): RegleResolue {
     creeLe: regle.creeLe.toISOString(),
     validePar: regle.validePar,
     valideLe: regle.valideLe ? regle.valideLe.toISOString() : null,
+    regleValidee: estValidee(regle),
   };
 }
 
+// Motif barrière D-003 (décision actée par revue, PR #333) : par défaut, seules
+// les règles actives ET validées (`validePar` et `valideLe` non nuls) sont
+// servies — rien d'actionnable sans validation praticien signée.
+// `inclureNonValidees` est réservée au futur atelier de règles
+// (prévisualisation) et ne doit JAMAIS alimenter un chemin protocole/patient ;
+// chaque règle non validée sort alors marquée `regleValidee: false`.
 export async function resoudreIntentions(
   codesIntentions: readonly string[],
+  options: { inclureNonValidees?: boolean } = {},
 ): Promise<ResolutionIntentions> {
   if (!isC4Enabled()) {
     throw new Error(
@@ -99,10 +111,15 @@ export async function resoudreIntentions(
   const intentionsParCode = new Map(intentions.map(intention => [intention.code, intention]));
   const codesInconnus = codes.filter(code => !intentionsParCode.has(code));
 
+  const inclureNonValidees = options.inclureNonValidees === true;
   const regles: LigneRegle[] = intentions.length === 0
     ? []
     : await prisma.clinicalRule.findMany({
-      where: { intentTagId: { in: intentions.map(intention => intention.id) }, actif: true },
+      where: {
+        intentTagId: { in: intentions.map(intention => intention.id) },
+        actif: true,
+        ...(inclureNonValidees ? {} : { validePar: { not: null }, valideLe: { not: null } }),
+      },
       select: {
         id: true,
         intentTagId: true,
@@ -122,8 +139,14 @@ export async function resoudreIntentions(
       },
     });
 
+  // Garde défensive doublant le filtre de la requête : une règle jamais
+  // validée n'entre pas dans la sélection par défaut, et la « dernière
+  // version active par lignée » se choisit APRÈS ce filtre — une version
+  // brouillon ne doit jamais masquer la dernière version validée.
+  const reglesRetenues = regles.filter(regle => inclureNonValidees || estValidee(regle));
+
   const derniereParLignee = new Map<string, LigneRegle>();
-  for (const regle of regles) {
+  for (const regle of reglesRetenues) {
     const cle = cleLignee(regle);
     const tenante = derniereParLignee.get(cle);
     if (!tenante || gagne(regle, tenante)) derniereParLignee.set(cle, regle);

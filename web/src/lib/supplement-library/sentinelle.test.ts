@@ -1,10 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
-  prisma: { ingredientFunctionalThreshold: { findMany: vi.fn() } },
+  prisma: {
+    clinicalIntentTag: { findMany: vi.fn() },
+    clinicalRule: { findMany: vi.fn() },
+    ingredientFunctionalThreshold: { findMany: vi.fn() },
+  },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
+import { resoudreIntentions } from './resolution';
 import {
   detecterCumulSubstance,
   detecterDepassementsSeuils,
@@ -32,8 +37,9 @@ function regleResolue(overrides: Partial<RegleResolue> = {}): RegleResolue {
     conditionSupplementaire: null,
     source: { id: 'src_1', citation: 'Revue Micronutrition, 2024', lienUrl: null },
     creeLe: '2026-07-01T00:00:00.000Z',
-    validePar: null,
-    valideLe: null,
+    validePar: 'praticien@wellneuro.fr',
+    valideLe: '2026-07-02T00:00:00.000Z',
+    regleValidee: true,
     ...overrides,
   };
 }
@@ -140,6 +146,24 @@ describe('detecterCumulSubstance', () => {
       { code: 'sommeil_fragmente', labelFr: 'Sommeil fragmenté', regles: [regleResolue()] },
     ]))).toEqual([]);
   });
+
+  it('ignore les règles non validées d\'une résolution de prévisualisation (motif barrière D-003)', () => {
+    const previsualisation = resolution([
+      { code: 'sommeil_fragmente', labelFr: 'Sommeil fragmenté', regles: [regleResolue()] },
+      {
+        code: 'stress_chronique',
+        labelFr: 'Stress chronique',
+        regles: [regleResolue({
+          regleId: 'regle_mag_brouillon',
+          validePar: null,
+          valideLe: null,
+          regleValidee: false,
+        })],
+      },
+    ]);
+    // Une seule occurrence validée reste : aucun cumul à signaler.
+    expect(detecterCumulSubstance(previsualisation)).toEqual([]);
+  });
 });
 
 describe('detecterDepassementsSeuils', () => {
@@ -210,5 +234,41 @@ describe('evaluerSentinelle', () => {
     );
     expect(candidats.map(candidat => candidat.typeFlag))
       .toEqual(['cumul_substance', 'depassement_seuil']);
+  });
+
+  it('bout en bout : la résolution par défaut ne nourrit la sentinelle qu\'en règles validées', async () => {
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([
+      { id: 'tag_0', code: 'sommeil_fragmente', labelFr: 'Sommeil fragmenté', categorie: 'sommeil' },
+      { id: 'tag_1', code: 'stress_chronique', labelFr: 'Stress chronique', categorie: 'stress' },
+    ]);
+    // Garde défensive : un brouillon renvoyé malgré le filtre de la requête
+    // reste écarté — il ne peut pas fabriquer un cumul.
+    prisma.clinicalRule.findMany.mockResolvedValue([
+      {
+        id: 'regle_mag_sommeil', intentTagId: 'tag_0', typeRegle: 'recommande',
+        justification: 'Justification sourcée.', conditionSupplementaire: null,
+        doseCibleBasse: 110, doseCibleHaute: 310, gradePreuveScientifique: 'modere',
+        versionRegle: 1, creeLe: new Date('2026-07-01T00:00:00.000Z'),
+        validePar: 'praticien@wellneuro.fr', valideLe: new Date('2026-07-02T00:00:00.000Z'),
+        ingredient: magnesium, formePreferee: null,
+        sourceReference: { id: 'src_1', citation: 'Revue Micronutrition, 2024', lienUrl: null },
+      },
+      {
+        id: 'regle_mag_stress_brouillon', intentTagId: 'tag_1', typeRegle: 'recommande',
+        justification: 'Brouillon non validé.', conditionSupplementaire: null,
+        doseCibleBasse: 220, doseCibleHaute: 220, gradePreuveScientifique: 'modere',
+        versionRegle: 1, creeLe: new Date('2026-07-03T00:00:00.000Z'),
+        validePar: null, valideLe: null,
+        ingredient: magnesium, formePreferee: null,
+        sourceReference: { id: 'src_1', citation: 'Revue Micronutrition, 2024', lienUrl: null },
+      },
+    ]);
+    const resolutionParDefaut = await resoudreIntentions(['sommeil_fragmente', 'stress_chronique']);
+    const candidats = await evaluerSentinelle(resolutionParDefaut);
+    // Une seule règle validée en présence : aucun cumul possible.
+    expect(candidats).toEqual([]);
+    expect(prisma.clinicalRule.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ validePar: { not: null }, valideLe: { not: null } }),
+    }));
   });
 });

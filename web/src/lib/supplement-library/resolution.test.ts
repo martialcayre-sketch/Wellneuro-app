@@ -88,7 +88,12 @@ describe('resoudreIntentions', () => {
     ]);
     const resolution = await resoudreIntentions(['sommeil_fragmente']);
     expect(prisma.clinicalRule.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: { intentTagId: { in: ['tag_sommeil'] }, actif: true },
+      where: {
+        intentTagId: { in: ['tag_sommeil'] },
+        actif: true,
+        validePar: { not: null },
+        valideLe: { not: null },
+      },
     }));
     expect(resolution.intentions[0].regles).toHaveLength(1);
     expect(resolution.intentions[0].regles[0]).toMatchObject({
@@ -118,7 +123,64 @@ describe('resoudreIntentions', () => {
       creeLe: '2026-07-01T00:00:00.000Z',
       validePar: 'praticien@wellneuro.fr',
       valideLe: '2026-07-02T00:00:00.000Z',
+      regleValidee: true,
     });
+  });
+
+  it('exclut par défaut une règle active jamais validée (motif barrière D-003)', async () => {
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
+    prisma.clinicalRule.findMany.mockResolvedValue([
+      regle(),
+      // Garde défensive : même si la requête laissait passer un brouillon,
+      // il resterait exclu de la sélection par défaut.
+      regle({
+        id: 'regle_brouillon', versionRegle: 4, validePar: null, valideLe: null,
+        ingredient: { id: 'ing_zinc', code: 'zinc', nomFr: 'Zinc' },
+      }),
+    ]);
+    const resolution = await resoudreIntentions(['sommeil_fragmente']);
+    expect(prisma.clinicalRule.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        intentTagId: { in: ['tag_sommeil'] },
+        actif: true,
+        validePar: { not: null },
+        valideLe: { not: null },
+      },
+    }));
+    expect(resolution.intentions[0].regles.map(r => r.regleId)).toEqual(['regle_mag_1']);
+    expect(resolution.intentions[0].regles[0].regleValidee).toBe(true);
+  });
+
+  it('la dernière version validée reste servie même si une version brouillon plus récente existe', async () => {
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
+    prisma.clinicalRule.findMany.mockResolvedValue([
+      regle({ id: 'regle_mag_v2', versionRegle: 2 }),
+      regle({ id: 'regle_mag_v3_brouillon', versionRegle: 3, validePar: null, valideLe: null }),
+    ]);
+    const resolution = await resoudreIntentions(['sommeil_fragmente']);
+    // Le filtre s'applique AVANT la sélection de lignée : le brouillon v3 ne
+    // masque pas la dernière version validée v2.
+    expect(resolution.intentions[0].regles.map(r => r.regleId)).toEqual(['regle_mag_v2']);
+  });
+
+  it('n\'inclut les règles non validées que sur option explicite, marquées regleValidee: false', async () => {
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
+    prisma.clinicalRule.findMany.mockResolvedValue([
+      regle(),
+      regle({
+        id: 'regle_brouillon', validePar: null, valideLe: null,
+        ingredient: { id: 'ing_zinc', code: 'zinc', nomFr: 'Zinc' },
+      }),
+    ]);
+    const resolution = await resoudreIntentions(['sommeil_fragmente'], { inclureNonValidees: true });
+    // Option de prévisualisation atelier : la requête ne filtre plus sur la validation.
+    expect(prisma.clinicalRule.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { intentTagId: { in: ['tag_sommeil'] }, actif: true },
+    }));
+    expect(resolution.intentions[0].regles.map(r => [r.regleId, r.regleValidee])).toEqual([
+      ['regle_mag_1', true],
+      ['regle_brouillon', false],
+    ]);
   });
 
   it('garde un ordre neutre : intentions dans l\'ordre demandé, règles alphabétiques par ingrédient', async () => {

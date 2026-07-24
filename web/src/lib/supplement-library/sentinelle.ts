@@ -35,10 +35,14 @@ type OccurrencesIngredient = {
 
 // Rassemble, dans l'ordre neutre de la résolution, chaque atteinte d'un
 // ingrédient par une règle de la sélection. Aucune agrégation de doses.
+// La sentinelle ne s'évalue que sur des règles validées : une résolution de
+// prévisualisation (`inclureNonValidees`, réservée à l'atelier de règles) ne
+// produit jamais de flag depuis une règle non validée (motif barrière D-003).
 function collecterOccurrences(resolution: ResolutionIntentions): Map<string, OccurrencesIngredient> {
   const parIngredient = new Map<string, OccurrencesIngredient>();
   for (const { intention, regles } of resolution.intentions) {
     for (const regle of regles) {
+      if (!regle.regleValidee) continue;
       const entree = parIngredient.get(regle.ingredient.id)
         ?? { ingredient: regle.ingredient, occurrences: [] };
       entree.occurrences.push({

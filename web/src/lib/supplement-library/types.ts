@@ -77,6 +77,10 @@ export type RegleResolue = {
   creeLe: string;
   validePar: string | null;
   valideLe: string | null;
+  // Motif barrière D-003 : rien d'actionnable sans validation praticien
+  // signée. `false` ne peut apparaître qu'en prévisualisation atelier
+  // (option `inclureNonValidees`), jamais sur un chemin protocole/patient.
+  regleValidee: boolean;
 };
 
 export type IntentionResolue = {
