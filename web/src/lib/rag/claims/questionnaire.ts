@@ -53,6 +53,7 @@ async function genererQuestion(
   apiKey: string,
   model: string,
   claims: Array<{ claimId: string; texte: string }>,
+  signal?: AbortSignal,
 ): Promise<string> {
   const liste = claims.map((c, i) => `${i + 1}. ${c.texte}`).join('\n');
   const response = await fetch(`${ANTHROPIC_BASE_URL}/messages`, {
@@ -69,6 +70,7 @@ async function genererQuestion(
       messages: [{ role: 'user', content: `CLAIMS D'UN MÊME EXTRAIT :\n${liste}` }],
     }),
     cache: 'no-store',
+    signal,
   });
   const payload = (await response.json().catch(() => ({}))) as AnthropicMessageResponse;
   if (!response.ok) {
@@ -90,7 +92,13 @@ async function genererQuestion(
  * questionnaire troué ne permettra pas la signature (garde serveur de
  * deciderLot), et l'écran doit pouvoir le dire.
  */
-export async function genererQuestionnaireSource(sourceId: string): Promise<QuestionnaireGenere> {
+export async function genererQuestionnaireSource(
+  sourceId: string,
+  // `signal` (transport SSE Scalingo) borne le travail : à l'expiration du délai
+  // ou à la déconnexion du client, les appels LLM en vol sont annulés. Absent en
+  // JSON (Vercel) → comportement inchangé.
+  options?: { signal?: AbortSignal },
+): Promise<QuestionnaireGenere> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY est absent.');
   const model = process.env.WN_CLAIMS_CLAUDE_MODEL?.trim() || 'claude-sonnet-5';
@@ -120,7 +128,7 @@ export async function genererQuestionnaireSource(sourceId: string): Promise<Ques
   const resultats = await Promise.all(
     [...parChunk.entries()].map(async ([chunkId, claims]) => {
       try {
-        const question = await genererQuestion(apiKey, model, claims);
+        const question = await genererQuestion(apiKey, model, claims, options?.signal);
         return { chunkId, question, claimsCitesAttendus: claims.map((c) => c.claimId) };
       } catch (error) {
         console.error(
@@ -131,6 +139,12 @@ export async function genererQuestionnaireSource(sourceId: string): Promise<Ques
       }
     }),
   );
+
+  // Une annulation (timeout/déconnexion en SSE) fait échouer chaque chunk et
+  // ressortirait en « aucune question » — trompeur. On la remonte en erreur.
+  if (options?.signal?.aborted) {
+    throw new Error('Génération interrompue (délai dépassé).');
+  }
 
   const questions = resultats.filter((r): r is QuestionGeneree => r !== null);
   const chunksSansQuestion = [...parChunk.keys()].filter(

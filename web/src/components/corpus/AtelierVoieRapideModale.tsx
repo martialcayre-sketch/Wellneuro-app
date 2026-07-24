@@ -12,6 +12,7 @@ import type {
 import type { CorpusLotDecisionApiResponse } from '@/app/api/praticien/corpus/claims/lot/decision/route';
 import type { CorpusQuestionnaireApiResponse } from '@/app/api/praticien/corpus/claims/questionnaire/route';
 import type { CorpusEvaluationApiResponse } from '@/app/api/praticien/corpus/claims/evaluation/route';
+import { readEventStream } from '@/lib/sse/readEventStream';
 
 // Atelier corpus v2 — VOIE RAPIDE en MODALE plein écran, une source à la fois.
 //
@@ -294,14 +295,39 @@ export function AtelierVoieRapideModale({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ sourceId }),
       });
-      const payload = (await reponse.json()) as CorpusQuestionnaireApiResponse;
-      if (!reponse.ok || !payload.ok) {
-        setErreur(payload.ok ? 'Génération impossible.' : payload.error);
+
+      // Deux transports, même payload terminal : JSON (Vercel) ou SSE (Scalingo,
+      // pour tenir le seuil « premier octet » de 30 s du routeur), distingués
+      // par le content-type. En SSE, `done`/`error` portent tous deux un
+      // CorpusQuestionnaireApiResponse.
+      let payload: CorpusQuestionnaireApiResponse | null = null;
+      if (reponse.headers.get('content-type')?.includes('text/event-stream')) {
+        await readEventStream(reponse, (e) => {
+          if (e.event === 'done' || e.event === 'error') {
+            try {
+              payload = JSON.parse(e.data) as CorpusQuestionnaireApiResponse;
+            } catch {
+              /* trame terminale illisible → payload reste null */
+            }
+          }
+        });
+      } else {
+        payload = (await reponse.json()) as CorpusQuestionnaireApiResponse;
+      }
+
+      const resultat: CorpusQuestionnaireApiResponse | null = payload;
+      if (!resultat) {
+        setErreur('Erreur technique pendant la génération.');
         return;
       }
+      if (!resultat.ok) {
+        setErreur(resultat.error);
+        return;
+      }
+      const questionnaire = resultat.questionnaire;
       setQuestions((qs) => {
         const dejaLa = new Set(qs.map((q) => q.question));
-        const nouvelles: QuestionLocale[] = payload.questionnaire.questions
+        const nouvelles: QuestionLocale[] = questionnaire.questions
           .filter((q) => !dejaLa.has(q.question))
           .map((q) => ({
             question: q.question,
@@ -315,9 +341,9 @@ export function AtelierVoieRapideModale({
           }));
         return nouvelles.length ? [...qs, ...nouvelles] : qs;
       });
-      if (!payload.questionnaire.couvertureComplete) {
+      if (!questionnaire.couvertureComplete) {
         setAvertissementGeneration(
-          `Génération incomplète : ${payload.questionnaire.chunksSansQuestion.length} chunk(s) sans question — complétez à la main ou régénérez.`,
+          `Génération incomplète : ${questionnaire.chunksSansQuestion.length} chunk(s) sans question — complétez à la main ou régénérez.`,
         );
       }
     } catch {

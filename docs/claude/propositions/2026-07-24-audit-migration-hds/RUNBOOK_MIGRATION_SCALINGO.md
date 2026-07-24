@@ -74,6 +74,7 @@ tant que Scalingo n'est pas provisionné (défauts = comportement Vercel actuel)
 | `OPENAI_API_KEY` / `OPENAI_BASE_URL` | embeddings | |
 | `RAG_EMBEDDING_MODEL` / `RAG_EMBEDDING_DIMENSIONS` | modèle / `1536` | |
 | Flags produit (`WN_C5_ENABLED`, `WN_G4_LIEN_MAGIQUE`, `WN_G4_REDEMANDE_PATIENT`, `WN_PORTAIL_TOKEN_TTL_JOURS`…) | **recopier les valeurs prod actuelles** | ne pas allumer de nouveaux flags ici |
+| Flags de streaming (`WN_SYNTHESE_STREAM`, `WN_CLAIMS_QUESTIONNAIRE_STREAM`) | **`true`** | **à l'inverse** : à allumer *seulement* sur Scalingo, pour que les routes longues passent le routeur 30 s (défaut off = JSON, Vercel) |
 
 `DATABASE_URL` n'a pas à être posée : `SCALINGO_POSTGRESQL_URL` (add-on) suffit.
 
