@@ -20,7 +20,7 @@ describe('sendPortailLinkEmail', () => {
     process.env.WN_G5_GOOGLE_PATIENT = 'false';
     process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
 
-    await sendPortailLinkEmail('patient@example.com', 'Michel', 'https://app.wellneuro.fr/portail/TOK_ABC', null);
+    await sendPortailLinkEmail('patient@example.com', 'Michel', 'https://app.wellneuro.fr/portail/TOK_ABC');
 
     expect(sendMail).toHaveBeenCalledOnce();
     const { text } = sendMail.mock.calls[0][0];
@@ -28,6 +28,8 @@ describe('sendPortailLinkEmail', () => {
     expect(text).not.toContain('/portail/connexion');
     expect(text).toContain('Ce lien est personnel et permanent');
     expect(text).toContain('Accéder à votre espace :\nhttps://app.wellneuro.fr/portail/TOK_ABC');
+    // Audit HDS : aucune donnée clinique dans le corps.
+    expect(text).not.toContain('Motif');
   });
 
   it('propose Google avant le lien permanent quand le drapeau G5 est actif, sans retirer le lien', async () => {
@@ -35,10 +37,12 @@ describe('sendPortailLinkEmail', () => {
     process.env.WN_G5_GOOGLE_PATIENT = 'true';
     process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
 
-    await sendPortailLinkEmail('patient@example.com', 'Michel', 'https://app.wellneuro.fr/portail/TOK_ABC', null);
+    await sendPortailLinkEmail('patient@example.com', 'Michel', 'https://app.wellneuro.fr/portail/TOK_ABC');
 
     expect(sendMail).toHaveBeenCalledOnce();
     const { text } = sendMail.mock.calls[0][0];
+    // Audit HDS : aucune donnée clinique dans le corps, drapeau actif compris.
+    expect(text).not.toContain('Motif');
     const positionGoogle = text.indexOf('Continuer avec Google');
     const positionLienPermanent = text.indexOf('https://app.wellneuro.fr/portail/TOK_ABC');
     expect(positionGoogle).toBeGreaterThan(-1);
@@ -53,7 +57,7 @@ describe('sendPortailLinkEmail', () => {
     delete process.env.SMTP_URL;
     process.env.WN_G5_GOOGLE_PATIENT = 'true';
 
-    await sendPortailLinkEmail('patient@example.com', 'Michel', 'https://app.wellneuro.fr/portail/TOK_ABC', null);
+    await sendPortailLinkEmail('patient@example.com', 'Michel', 'https://app.wellneuro.fr/portail/TOK_ABC');
 
     expect(sendMail).not.toHaveBeenCalled();
   });
