@@ -228,6 +228,14 @@ describe('FichePatientPanel — poste de pilotage (A6-R1)', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });
 
+  it('poste de pilotage : propose les outils de synthèse IA avec le patient présélectionné', async () => {
+    await rendreFiche();
+
+    fireEvent.click(screen.getByRole('button', { name: /Synthèse IA & booklet/i }));
+    const lien = await screen.findByRole('link', { name: /Ouvrir la synthèse IA/i });
+    expect(lien.getAttribute('href')).toBe('/dashboard/synthese?idPatient=PAT001');
+  });
+
   it('onglets in-fiche : navigation clavier (flèches) et bascule vers la trajectoire', async () => {
     await rendreFiche();
 

@@ -25,11 +25,11 @@ const { prisma, appels } = vi.hoisted(() => {
   for (const nom of [
     'auditSynthese', 'bookletEnvoi', 'protocolCheckin', 'protocolDiffusionApproval',
     'protocolDraft', 'assessmentEpisode', 'syntheseIA', 'questionnaireReponse',
-    'assignation', 'consultation', 'trustAcknowledgement', 'trustChoiceEvent',
-    'trustAdverseEffectReport', 'trustPrivacyIncident', 'trustRightsRequest',
-    'filCardRejection', 'relectureNote', 'portailMagicLink', 'packProposition',
-    'envoiBrouillon', 'portailConnexionGoogle', 'correspondanceMedecin', 'rendezVous',
-    'journalAccesDossier',
+    'questionnaireLecturePraticien', 'assignation', 'consultation', 'trustAcknowledgement',
+    'trustChoiceEvent', 'trustAdverseEffectReport', 'trustPrivacyIncident',
+    'trustRightsRequest', 'filCardRejection', 'relectureNote', 'portailMagicLink',
+    'packProposition', 'envoiBrouillon', 'portailConnexionGoogle',
+    'correspondanceMedecin', 'rendezVous', 'journalAccesDossier',
   ]) {
     tx[nom] = modele(nom);
   }
@@ -65,6 +65,12 @@ describe('effacerDossier', () => {
     await effacerDossier('PAT_SEED_03');
     expect(appels).toContain('auditSynthese');
     expect(appels).toContain('bookletEnvoi');
+  });
+
+  it('supprime les accusés de lecture questionnaires avant les réponses', async () => {
+    await effacerDossier('PAT_SEED_03');
+    expect(appels).toContain('questionnaireLecturePraticien');
+    expect(appels.indexOf('questionnaireLecturePraticien')).toBeLessThan(appels.indexOf('questionnaireReponse'));
   });
 
   // Même exposition pour les journaux d'accès (G5, G-TRUST-04) : sans clé

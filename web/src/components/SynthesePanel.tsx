@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { readEventStream } from '@/lib/sse/readEventStream';
 import type { PatientsPgApiResponse } from '@/app/api/praticien/patients-pg/route';
 import type { SyntheseSchema } from '@/lib/anthropic';
@@ -45,7 +45,7 @@ const PRIORITE_LABEL: Record<string, string> = {
 const inputCls = 'bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground';
 const btnPrimary = 'px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60';
 
-export function SynthesePanel() {
+export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: string }) {
   const [patients, setPatients] = useState<PatientsPgApiResponse['patients']>([]);
   const [selectedPatient, setSelectedPatient] = useState('');
   const [syntheses, setSyntheses] = useState<SyntheseRecord[]>([]);
@@ -62,14 +62,7 @@ export function SynthesePanel() {
   const [notes, setNotes] = useState('');
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  useEffect(() => {
-    fetch('/api/praticien/patients-pg')
-      .then(r => r.json())
-      .then((d: PatientsPgApiResponse) => setPatients(d.patients ?? []))
-      .catch(() => {});
-  }, []);
-
-  const loadSyntheses = async (idPatient: string) => {
+  const loadSyntheses = useCallback(async (idPatient: string) => {
     if (!idPatient) { setSyntheses([]); return; }
     setLoading(true);
     try {
@@ -78,7 +71,25 @@ export function SynthesePanel() {
       setSyntheses(d.syntheses ?? []);
     } catch { setSyntheses([]); }
     finally { setLoading(false); }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/praticien/patients-pg')
+      .then(r => r.json())
+      .then((d: PatientsPgApiResponse) => setPatients(d.patients ?? []))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!initialPatientId || selectedPatient === initialPatientId) return;
+    if (!patients.some(p => p.idPatient === initialPatientId)) return;
+    setSelectedPatient(initialPatientId);
+    setSelectedSynthese(null);
+    setBookletHtml(null);
+    setBookletInfo(null);
+    setFeedback(null);
+    void loadSyntheses(initialPatientId);
+  }, [initialPatientId, loadSyntheses, patients, selectedPatient]);
 
   const onSelectPatient = (id: string) => {
     setSelectedPatient(id);
