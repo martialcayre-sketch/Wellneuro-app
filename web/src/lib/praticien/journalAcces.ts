@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
-import type { AppEnvironment, LogContext } from '@/lib/observability/types';
+import { deploymentEnv, releaseSha } from '@/lib/observability/deploymentEnv';
+import type { LogContext } from '@/lib/observability/types';
 
 // Journal des accès praticien aux dossiers nommés (G-TRUST-04, exigence 5).
 //
@@ -44,16 +45,9 @@ export type GabaritAcces = Pick<AccesDossier, 'route' | 'methode'>;
 // fabrication manuelle que `instrumentation.ts`, précédent du dépôt.
 // `route`/`method` portent le gabarit, littéral donc sans donnée sensible.
 function contexteHorsRequete(acces: AccesDossier): LogContext {
-  const vercelEnv = process.env.VERCEL_ENV;
-  const environment: AppEnvironment =
-    vercelEnv === 'production' || vercelEnv === 'preview' || vercelEnv === 'development'
-      ? vercelEnv
-      : process.env.NODE_ENV === 'production'
-        ? 'production'
-        : 'development';
   return {
-    environment,
-    release: process.env.VERCEL_GIT_COMMIT_SHA ?? 'local',
+    environment: deploymentEnv(),
+    release: releaseSha(),
     runtime: process.env.NEXT_RUNTIME ?? 'nodejs',
     route: acces.route,
     method: acces.methode,
