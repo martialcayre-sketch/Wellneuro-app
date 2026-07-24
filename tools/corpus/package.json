@@ -6,6 +6,7 @@
   "description": "Pipeline corpus WellNeuro : snapshot, extract (2 IA), invariants, chunk, claims, ingest.",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.70.0",
+    "googleapis": "^144.0.0",
     "openai": "^6.9.0",
     "pg": "^8.22.0"
   }
