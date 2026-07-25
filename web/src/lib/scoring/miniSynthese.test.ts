@@ -1,5 +1,19 @@
 import { describe, expect, it } from 'vitest';
+import { calculateScore, QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { buildMiniSynthese } from './miniSynthese';
+
+type IdQuestionnaire = keyof typeof QUESTIONNAIRE_CATALOGUE;
+
+function itemsDe(idQuestionnaire: IdQuestionnaire): string[] {
+  const q = QUESTIONNAIRE_CATALOGUE[idQuestionnaire];
+  return (q?.sections ?? []).flatMap((s: { questions?: { id: string }[] }) =>
+    (s.questions ?? []).map((x) => x.id),
+  );
+}
+
+function toutesA(idQuestionnaire: IdQuestionnaire, valeur: string): Record<string, string> {
+  return Object.fromEntries(itemsDe(idQuestionnaire).map((id) => [id, valeur]));
+}
 
 describe('buildMiniSynthese', () => {
   it('renvoie une chaîne vide sans throw pour null, undefined ou {}', () => {
@@ -63,5 +77,70 @@ describe('buildMiniSynthese', () => {
 
   it('subScores présent mais vide → chaîne vide', () => {
     expect(buildMiniSynthese({ subScores: [] })).toBe('');
+  });
+});
+
+// Ces cas exécutent le MOTEUR RÉEL. Avant, tous s'arrêtaient à leur phrase
+// globale : PSQI, Berlin, IDTAS-AE, QIF et le test des 5 mots rangent leurs
+// rubriques sous `components`, `categories`, `parts` et `phases`, quatre clés
+// que la mini-synthèse ne lisait pas. Le praticien ne voyait donc jamais les
+// sept composantes d'un PSQI ni les deux phases d'un rappel.
+describe('buildMiniSynthese — détail par rubrique sur les sorties réelles du moteur', () => {
+  it('PSQI : la phrase globale, puis les sept composantes', () => {
+    const reponses: Record<string, string> = {
+      Q1: '23', Q2: '45', Q3: '7', Q4: '5', Q5a: '2', Q6: '2', Q7: '1', Q8: '1', Q9: '1',
+    };
+    for (const id of ['Q5b', 'Q5c', 'Q5d', 'Q5e', 'Q5f', 'Q5g', 'Q5h', 'Q5i', 'Q5j']) reponses[id] = '1';
+
+    const s = buildMiniSynthese(calculateScore('Q_SOM_01', reponses));
+    expect(s).toContain('Troubles du sommeil modérés');
+    expect(s).toContain('Qualité subjective 2');
+    expect(s).toContain('Dysfonction diurne 1');
+    // Aucun maximum n'est déclaré par composante : ne pas en inventer un.
+    expect(s).not.toContain('/3');
+  });
+
+  it('Berlin : les catégories positives sont nommées, pas chiffrées', () => {
+    const s = buildMiniSynthese(
+      calculateScore('Q_SOM_03', {
+        BE1: '1', BE2: '2', BE3: '2', BE4: '1', BE5: '1', BE6: '2', BE7: '1', BE8: '1', BE9: '32',
+      }),
+    );
+    expect(s).toContain('Catégories positives : Ronflements, Somnolence diurne, Facteurs de risque');
+    // Deux des trois catégories n'ont pas de score. Les afficher « 0 » les
+    // dirait négatives alors qu'elles sont positives.
+    expect(s).not.toContain('Somnolence diurne 0');
+  });
+
+  it('Test des 5 mots : les deux phases du rappel apparaissent', () => {
+    const s = buildMiniSynthese(calculateScore('Q_GEO_06', toutesA('Q_GEO_06', '1')));
+    expect(s).toContain('Rappel immédiat 5/5');
+    expect(s).toContain('Rappel différé 5/5');
+  });
+
+  it('QIF : le maximum du libellé ne se répète pas derrière la valeur', () => {
+    const s = buildMiniSynthese(calculateScore('Q_FIB_02', toutesA('Q_FIB_02', '2')));
+    expect(s).toContain('Absentéisme 2.9/10');
+    expect(s).not.toContain('Absentéisme (/10)');
+  });
+
+  it("IDTAS-AE : la rubrique qui porte l'interprétation globale ne la répète pas", () => {
+    const s = buildMiniSynthese(calculateScore('Q_NEU_12', toutesA('Q_NEU_12', '1')));
+    const occurrences = s.split('trouble affectif saisonnier').length - 1;
+    expect(occurrences).toBe(1);
+    expect(s).toContain('Score GSS 6/24');
+  });
+
+  it('HAD : comportement inchangé — les deux sous-échelles portent seules le propos', () => {
+    const s = buildMiniSynthese(calculateScore('Q_NEU_11', toutesA('Q_NEU_11', '2')));
+    expect(s).toBe('Anxiété : symptomatologie certaine ; Dépression : symptomatologie certaine');
+  });
+
+  it('Pichot : un score global sans rubrique reste une phrase unique', () => {
+    const s = buildMiniSynthese(calculateScore('Q_SOM_06', toutesA('Q_SOM_06', '2')));
+    expect(s).toBe(
+      'Fatigue non significative selon le seuil fourni ; à interpréter selon le contexte clinique',
+    );
+    expect(s).not.toContain('Détail');
   });
 });
