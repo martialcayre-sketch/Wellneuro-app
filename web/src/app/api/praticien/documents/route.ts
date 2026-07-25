@@ -8,6 +8,7 @@ import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appar
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { logger } from '@/lib/observability/logger';
+import { estRedactionPraticien } from '@/lib/synthese-praticien';
 import {
   createRequestContext,
   finalizeLogContext,
@@ -80,6 +81,7 @@ export async function GET(req: Request) {
       statut,
       versionPrompt: synthese.versionPrompt,
       dateValidation: synthese.dateValidation ? synthese.dateValidation.toISOString() : null,
+      origine: estRedactionPraticien(synthese.modele) ? 'praticien' : 'ia',
     });
 
     return withCorrelationHeader(

@@ -1,9 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { PenLine, Sparkles } from 'lucide-react';
 import { readEventStream } from '@/lib/sse/readEventStream';
 import type { PatientsPgApiResponse } from '@/app/api/praticien/patients-pg/route';
 import type { SyntheseSchema } from '@/lib/anthropic';
+import { SynthesePraticienEditor } from '@/components/SynthesePraticienEditor';
+import {
+  estRedactionPraticien,
+  nouveauBrouillonPraticien,
+} from '@/lib/synthese-praticien';
 
 type SyntheseRecord = {
   idSynthese: string;
@@ -18,6 +24,7 @@ type SyntheseRecord = {
 
 const STATUT_LABEL: Record<string, string> = {
   Brouillon_IA: 'Brouillon IA',
+  Brouillon_Praticien: 'Brouillon praticien',
   Validee_Praticien: 'Validée',
   Corrigee_Praticien: 'Corrigée',
   Rejetee: 'Rejetée',
@@ -25,6 +32,7 @@ const STATUT_LABEL: Record<string, string> = {
 
 const STATUT_COLOR: Record<string, string> = {
   Brouillon_IA: 'bg-status-warning/10 text-status-warning',
+  Brouillon_Praticien: 'bg-status-info/10 text-status-info',
   Validee_Praticien: 'bg-status-success/10 text-status-success',
   Corrigee_Praticien: 'bg-status-info/10 text-status-info',
   Rejetee: 'bg-status-danger/10 text-status-danger',
@@ -53,6 +61,9 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [manualDraft, setManualDraft] = useState<SyntheseSchema | null>(null);
+  const [editedManual, setEditedManual] = useState<SyntheseSchema | null>(null);
+  const [manualDirty, setManualDirty] = useState(false);
   const [bookletHtml, setBookletHtml] = useState<string | null>(null);
   const [bookletInfo, setBookletInfo] = useState<{ dejaEnvoye: boolean; emailMasque: string | null } | null>(null);
   const [loadingBooklet, setLoadingBooklet] = useState(false);
@@ -85,6 +96,9 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     if (!patients.some(p => p.idPatient === initialPatientId)) return;
     setSelectedPatient(initialPatientId);
     setSelectedSynthese(null);
+    setManualDraft(null);
+    setEditedManual(null);
+    setManualDirty(false);
     setBookletHtml(null);
     setBookletInfo(null);
     setFeedback(null);
@@ -94,6 +108,9 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   const onSelectPatient = (id: string) => {
     setSelectedPatient(id);
     setSelectedSynthese(null);
+    setManualDraft(null);
+    setEditedManual(null);
+    setManualDirty(false);
     setBookletHtml(null);
     setBookletInfo(null);
     setFeedback(null);
@@ -158,6 +175,65 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
       setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const onCreateManual = async () => {
+    if (!selectedPatient || !manualDraft) return;
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/synthese', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idPatient: selectedPatient, synthese: manualDraft }),
+      });
+      const d = await r.json() as { success?: boolean; error?: string; synthese?: SyntheseRecord };
+      if (!r.ok || !d.success || !d.synthese) {
+        setFeedback({ ok: false, msg: d.error ?? 'Impossible de créer le brouillon.' });
+        return;
+      }
+      setManualDraft(null);
+      setSelectedSynthese(d.synthese);
+      setEditedManual(d.synthese.syntheseJson);
+      setManualDirty(false);
+      setFeedback({ ok: true, msg: 'Brouillon praticien enregistré. Validez-le avant de préparer le booklet.' });
+      await loadSyntheses(selectedPatient);
+    } catch {
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onSaveManual = async () => {
+    if (!selectedSynthese || !editedManual) return;
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/synthese', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idSynthese: selectedSynthese.idSynthese,
+          action: 'enregistrer',
+          synthese: editedManual,
+        }),
+      });
+      const d = await r.json() as { success?: boolean; error?: string; syntheseJson?: SyntheseSchema };
+      if (!r.ok || !d.success || !d.syntheseJson) {
+        setFeedback({ ok: false, msg: d.error ?? 'Impossible d’enregistrer le brouillon.' });
+        return;
+      }
+      setSelectedSynthese({ ...selectedSynthese, syntheseJson: d.syntheseJson });
+      setEditedManual(d.syntheseJson);
+      setManualDirty(false);
+      setFeedback({ ok: true, msg: 'Brouillon praticien enregistré.' });
+      await loadSyntheses(selectedPatient);
+    } catch {
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -265,19 +341,55 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
             ))}
           </select>
           {selectedPatient && (
-            <button
-              onClick={onGenerate}
-              disabled={generating}
-              className={`${btnPrimary} bg-primary`}
-            >
-              {generating ? 'Génération en cours...' : 'Générer une synthèse IA'}
-            </button>
+            <>
+              <button
+                onClick={onGenerate}
+                disabled={generating || saving}
+                className={`${btnPrimary} inline-flex items-center gap-2 bg-primary`}
+              >
+                <Sparkles size={16} aria-hidden="true" />
+                {generating ? 'Génération en cours...' : 'Générer une synthèse IA'}
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedSynthese(null);
+                  setEditedManual(null);
+                  setManualDraft(nouveauBrouillonPraticien());
+                  setBookletHtml(null);
+                  setFeedback(null);
+                }}
+                disabled={generating || saving}
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
+              >
+                <PenLine size={16} aria-hidden="true" />
+                Rédiger une synthèse
+              </button>
+            </>
           )}
         </div>
         {feedback && (
           <p className={`mt-2 text-base ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</p>
         )}
       </div>
+
+      {manualDraft && selectedPatient && (
+        <div className="bg-surface border border-border rounded-xl shadow-card p-4">
+          <h3 className="mb-4 font-display text-lg font-semibold text-foreground">
+            Nouveau brouillon praticien
+          </h3>
+          <SynthesePraticienEditor
+            value={manualDraft}
+            onChange={setManualDraft}
+            onSave={onCreateManual}
+            onCancel={() => setManualDraft(null)}
+            saving={saving}
+            saveLabel="Créer le brouillon"
+          />
+          {feedback && (
+            <p className={`mt-3 text-base ${feedback.ok ? 'text-status-success' : 'text-status-danger'}`}>{feedback.msg}</p>
+          )}
+        </div>
+      )}
 
       {/* Liste des synthèses */}
       {selectedPatient && (
@@ -303,10 +415,21 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                     <span className="text-sm text-muted-foreground">
                       {new Date(s.dateGeneration).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
-                    <span className="text-xs text-muted-foreground">{s.modele}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {estRedactionPraticien(s.modele) ? 'Rédaction praticien' : s.modele}
+                    </span>
                   </div>
                   <button
-                    onClick={() => { setSelectedSynthese(s); setNotes(s.notesPraticien ?? ''); setBookletHtml(null); setBookletInfo(null); setFeedback(null); }}
+                    onClick={() => {
+                      setSelectedSynthese(s);
+                      setManualDraft(null);
+                      setEditedManual(estRedactionPraticien(s.modele) && s.statut === 'Brouillon_Praticien' ? s.syntheseJson : null);
+                      setManualDirty(false);
+                      setNotes(s.notesPraticien ?? '');
+                      setBookletHtml(null);
+                      setBookletInfo(null);
+                      setFeedback(null);
+                    }}
                     className="text-xs text-accent hover:underline"
                   >
                     Voir / gérer
@@ -328,58 +451,79 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                 {STATUT_LABEL[selectedSynthese.statut] ?? selectedSynthese.statut}
               </span>
             </h3>
-            <button onClick={() => { setSelectedSynthese(null); setBookletHtml(null); }} className="text-xs text-muted-foreground hover:text-foreground">
+            <button onClick={() => { setSelectedSynthese(null); setEditedManual(null); setManualDirty(false); setBookletHtml(null); }} className="text-xs text-muted-foreground hover:text-foreground">
               Fermer
             </button>
           </div>
 
-          {/* Résumé praticien */}
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Résumé praticien</p>
-            <p className="text-base text-foreground leading-relaxed">{selectedSynthese.syntheseJson.resume_praticien}</p>
-          </div>
-
-          {/* Axes prioritaires */}
-          {selectedSynthese.syntheseJson.axes_prioritaires?.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Axes prioritaires</p>
-              <div className="flex flex-col gap-2">
-                {selectedSynthese.syntheseJson.axes_prioritaires.map((axe, i) => (
-                  <div key={i} className="bg-muted border border-border rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-base font-medium text-foreground">{axe.axe}</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITE_COLOR[axe.niveau_priorite] ?? 'bg-muted text-muted-foreground'}`}>
-                        {PRIORITE_LABEL[axe.niveau_priorite] ?? axe.niveau_priorite}
-                      </span>
-                    </div>
-                    {axe.arguments?.length > 0 && (
-                      <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-0.5">
-                        {axe.arguments.map((a, j) => <li key={j}>{a}</li>)}
-                      </ul>
-                    )}
-                  </div>
-                ))}
+          {selectedSynthese.statut === 'Brouillon_Praticien' && editedManual ? (
+            <>
+              <SynthesePraticienEditor
+                value={editedManual}
+                onChange={value => {
+                  setEditedManual(value);
+                  setManualDirty(true);
+                }}
+                onSave={onSaveManual}
+                saving={saving}
+              />
+              {manualDirty && (
+                <p className="text-sm text-status-warning">
+                  Enregistrez les modifications avant de valider le brouillon.
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Résumé praticien</p>
+                <p className="text-base text-foreground leading-relaxed">{selectedSynthese.syntheseJson.resume_praticien}</p>
               </div>
-            </div>
-          )}
 
-          {/* Points de vigilance */}
-          {selectedSynthese.syntheseJson.points_de_vigilance?.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Points de vigilance</p>
-              <ul className="text-base text-foreground list-disc pl-4 space-y-0.5">
-                {selectedSynthese.syntheseJson.points_de_vigilance.map((p, i) => <li key={i}>{p}</li>)}
-              </ul>
-            </div>
-          )}
+              {selectedSynthese.syntheseJson.axes_prioritaires?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Axes prioritaires</p>
+                  <div className="flex flex-col gap-2">
+                    {selectedSynthese.syntheseJson.axes_prioritaires.map((axe, i) => (
+                      <div key={i} className="bg-muted border border-border rounded-lg p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-base font-medium text-foreground">{axe.axe}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${PRIORITE_COLOR[axe.niveau_priorite] ?? 'bg-muted text-muted-foreground'}`}>
+                            {PRIORITE_LABEL[axe.niveau_priorite] ?? axe.niveau_priorite}
+                          </span>
+                        </div>
+                        {axe.arguments?.length > 0 && (
+                          <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-0.5">
+                            {axe.arguments.map((a, j) => <li key={j}>{a}</li>)}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* Limites */}
-          <p className="text-xs text-muted-foreground italic">{selectedSynthese.syntheseJson.limites}</p>
+              {selectedSynthese.syntheseJson.points_de_vigilance?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Points de vigilance</p>
+                  <ul className="text-base text-foreground list-disc pl-4 space-y-0.5">
+                    {selectedSynthese.syntheseJson.points_de_vigilance.map((p, i) => <li key={i}>{p}</li>)}
+                  </ul>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground italic">{selectedSynthese.syntheseJson.limites}</p>
+            </>
+          )}
 
           {/* Actions validation */}
-          {selectedSynthese.statut === 'Brouillon_IA' && (
+          {(selectedSynthese.statut === 'Brouillon_IA' || selectedSynthese.statut === 'Brouillon_Praticien') && (
             <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
-              <button onClick={() => onAction(selectedSynthese.idSynthese, 'valider')} disabled={saving} className={`${btnPrimary} bg-status-success`}>
+              <button
+                onClick={() => onAction(selectedSynthese.idSynthese, 'valider')}
+                disabled={saving || (selectedSynthese.statut === 'Brouillon_Praticien' && manualDirty)}
+                className={`${btnPrimary} bg-status-success`}
+              >
                 {saving ? '...' : 'Valider la synthèse'}
               </button>
               <button onClick={() => onAction(selectedSynthese.idSynthese, 'rejeter')} disabled={saving} className={`${btnPrimary} bg-status-danger`}>

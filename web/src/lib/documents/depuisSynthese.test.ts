@@ -60,4 +60,22 @@ describe('blocsDepuisSynthese — field-filter par construction', () => {
     expect(blocsPourDestinataire(blocs, 'patient')).toHaveLength(0);
     expect(blocsPourDestinataire(blocs, 'medecin')).toHaveLength(0);
   });
+
+  it('porte une provenance praticien sans attribuer le contenu à l’IA', () => {
+    const blocs = blocsDepuisSynthese({
+      ...source('Validee_Praticien'),
+      origine: 'praticien',
+      versionPrompt: 'synthese-praticien-v1',
+    });
+    expect(blocs.every(bloc => bloc.regime === 'statique_valide')).toBe(true);
+    expect(blocs.every(bloc => bloc.provenance.source === 'synthese_praticien')).toBe(true);
+    expect(blocs.every(bloc => bloc.provenance.statutSource === undefined)).toBe(true);
+  });
+
+  it('refuse de composer un brouillon praticien non validé', () => {
+    expect(() => blocsDepuisSynthese({
+      ...source('Brouillon_Praticien'),
+      origine: 'praticien',
+    })).toThrow('doit être validé');
+  });
 });

@@ -49,7 +49,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
         prisma.trustRightsRequest.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
         prisma.syntheseIA.findMany({
-          where: { statut: 'Brouillon_IA' },
+          where: { statut: { in: ['Brouillon_IA', 'Brouillon_Praticien'] } },
           orderBy: { dateGeneration: 'desc' },
           take: 20,
           select: { idSynthese: true, idPatient: true, dateGeneration: true },
