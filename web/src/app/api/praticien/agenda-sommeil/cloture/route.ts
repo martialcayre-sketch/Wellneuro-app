@@ -46,7 +46,12 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
-    const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session));
+    // Journal d'accès (G-TRUST-04) : la clôture lit les nuits du patient et
+    // produit une réponse — elle laisse donc une trace nommée, comme le GET.
+    const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session), {
+      route: '/api/praticien/agenda-sommeil/cloture',
+      methode: 'POST',
+    });
     if (verdict !== 'accessible') {
       return NextResponse.json(
         { ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' },

@@ -6,6 +6,7 @@ const { prisma } = vi.hoisted(() => ({
     questionnaireReponse: { findFirst: vi.fn(), create: vi.fn() },
     agendaSommeilNuit: { findMany: vi.fn() },
     $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -34,14 +35,14 @@ function nuitRow(dateNuit: string, over: Record<string, unknown> = {}) {
   };
 }
 
-// $transaction exécute le callback avec un tx qui reflète l'assignation courante.
-function mockTransaction(statutCourant: string) {
+// $transaction exécute le callback avec un tx dont le verrou de ligne
+// (SELECT … FOR UPDATE, via $queryRaw) reflète le statut courant de
+// l'assignation — c'est ce verrou qui sérialise les clôtures concurrentes.
+function mockTransaction(statutVerrou: string) {
   prisma.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
     fn({
-      assignation: {
-        findUnique: vi.fn().mockResolvedValue({ statutReponses: statutCourant }),
-        update: prisma.assignation.update,
-      },
+      $queryRaw: vi.fn().mockResolvedValue([{ statutReponses: statutVerrou }]),
+      assignation: { update: prisma.assignation.update },
       questionnaireReponse: {
         findFirst: prisma.questionnaireReponse.findFirst,
         create: prisma.questionnaireReponse.create,
@@ -107,6 +108,30 @@ describe('cloturerAgenda', () => {
     expect(res.idReponse).toBe('REP_EXIST');
     expect(res.nbNuits).toBe(7);
     expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+  });
+
+  it('course concurrente : si une autre clôture a verrouillé pendant le calcul, ne crée pas de doublon', async () => {
+    // L'assignation était non verrouillée au démarrage (chemin idempotent initial
+    // non pris), mais une clôture concurrente a commité entre-temps : le verrou
+    // de ligne (FOR UPDATE) lit alors 'verrouille' DANS la transaction → on
+    // renvoie la réponse gagnante, sans créer de seconde QuestionnaireReponse.
+    prisma.assignation.findUnique.mockResolvedValue(ASS);
+    prisma.agendaSommeilNuit.findMany.mockResolvedValue([
+      nuitRow('2026-07-10'),
+      nuitRow('2026-07-11'),
+      nuitRow('2026-07-12'),
+      nuitRow('2026-07-13'),
+      nuitRow('2026-07-14'),
+    ]);
+    mockTransaction('verrouille');
+    prisma.questionnaireReponse.findFirst.mockResolvedValue({ idReponse: 'REP_GAGNANT' });
+
+    const res = await cloturerAgenda({ idAssignation: 'ASS_AGD' });
+
+    expect(res.dejaCloture).toBe(true);
+    expect(res.idReponse).toBe('REP_GAGNANT');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
   });
 
   it('refuse une assignation qui n’est pas un agenda', async () => {

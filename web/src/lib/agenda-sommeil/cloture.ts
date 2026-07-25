@@ -71,11 +71,19 @@ export async function cloturerAgenda(input: { idAssignation: string }): Promise<
   // transaction, avec re-vérification du verrou : deux clôtures concurrentes ne
   // produisent qu'une réponse (la seconde retombe sur le chemin idempotent).
   const resultat = await prisma.$transaction(async (tx) => {
-    const courant = await tx.assignation.findUnique({
-      where: { idAssignation: ass.idAssignation },
-      select: { statutReponses: true },
-    });
-    if (courant?.statutReponses === 'verrouille') {
+    // Verrou de LIGNE sur l'assignation (SELECT … FOR UPDATE) : il sérialise les
+    // clôtures concurrentes. Sans lui, en READ COMMITTED, un double-clic patient
+    // ou une clôture patient + praticien simultanées liraient toutes deux un
+    // statut non verrouillé et créeraient chacune une QuestionnaireReponse
+    // (doublon de dossier). Il n'existe pas de contrainte d'unicité sur
+    // questionnaire_reponses.id_assignation (partagée par la re-soumission des
+    // autres instruments) — c'est donc le verrou de ligne qui garantit l'unicité.
+    const verrou = await tx.$queryRaw<Array<{ statutReponses: string }>>`
+      SELECT statut_reponses AS "statutReponses"
+      FROM assignations
+      WHERE id_assignation = ${ass.idAssignation}
+      FOR UPDATE`;
+    if (verrou[0]?.statutReponses === 'verrouille') {
       const existante = await tx.questionnaireReponse.findFirst({
         where: { idAssignation: ass.idAssignation },
         orderBy: { dateReponse: 'desc' },
