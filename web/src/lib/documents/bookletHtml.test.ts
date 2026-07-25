@@ -22,7 +22,6 @@ describe('buildBookletHTML (extrait de la route booklet)', () => {
     expect(html).toContain('Validé par votre praticien');
     expect(html).toContain('Sophie Nicola');
     expect(html).toContain('sommeil fragmenté');
-    expect(html).toContain('Priorité élevée');
     expect(html).toContain('Note interne');
   });
 
@@ -32,12 +31,11 @@ describe('buildBookletHTML (extrait de la route booklet)', () => {
     expect(html).toContain('&lt;b&gt;x&lt;/b&gt;');
   });
 
-  it('omet les sections vides', () => {
+  it('se réduit au narratif quand tout le reste est vide', () => {
     const s: SyntheseSchema = { ...synthese(), points_de_vigilance: [], questions_entretien: [], axes_prioritaires: [] };
     const html = buildBookletHTML('X', '2026', s, '');
-    expect(html).not.toContain('Points de vigilance');
-    expect(html).not.toContain('Questions pour la consultation');
     expect(html).not.toContain('axes prioritaires');
+    expect(html).toContain('Ce que vos réponses suggèrent');
   });
 
   it('attribue honnêtement au praticien un booklet issu d’un brouillon manuel', () => {
@@ -46,5 +44,68 @@ describe('buildBookletHTML (extrait de la route booklet)', () => {
     });
     expect(html).toContain('Document rédigé et validé par votre praticien.');
     expect(html).not.toContain('assistance d’intelligence artificielle');
+  });
+
+  // Le booklet part par e-mail AU PATIENT. Le field-filter de `depuisSynthese`
+  // est formel sur TROIS blocs : axes = « praticien (détaillé) + médecin ; jamais
+  // patient » ; vigilance = « praticien + médecin ; jamais patient » ; questions
+  // d'entretien = « praticien uniquement ». Le booklet lisait `syntheseJson`
+  // directement et contournait ce filtre.
+  it('ne rend JAMAIS les axes prioritaires, même renseignés', () => {
+    const html = buildBookletHTML('X', '2026', synthese(), '');
+    expect(html).not.toContain('axes prioritaires');
+    expect(html).not.toContain('Priorité élevée');
+    expect(html).not.toContain('réveils');
+    expect(html).not.toContain('ferritine');
+  });
+
+  // Le cas qu'une revue adversariale a trouvé : retirer `questions_entretien` en
+  // laissant `points_a_confirmer` déplaçait la fuite au lieu de la fermer. Le
+  // contrat JSON de ce champ dit littéralement « Question à poser en entretien »,
+  // et `arguments` porte les libellés d'interprétation destinés au praticien.
+  it("ne laisse pas fuir une question d'entretien déguisée en « point à confirmer »", () => {
+    const s: SyntheseSchema = {
+      ...synthese(),
+      axes_prioritaires: [
+        {
+          axe: 'Humeur',
+          niveau_priorite: 'eleve',
+          arguments: ['BDI-II 42 — Dépression sévère'],
+          points_a_confirmer: ['Avez-vous des idées noires ?'],
+        },
+      ],
+    };
+    const html = buildBookletHTML('X', '2026', s, '');
+    expect(html).not.toContain('Dépression sévère');
+    expect(html).not.toContain('idées noires');
+    expect(html).not.toContain('À confirmer');
+  });
+
+  it("ne rend JAMAIS les points de vigilance, même renseignés", () => {
+    const html = buildBookletHTML('X', '2026', synthese(), '');
+    expect(html).not.toContain('Points de vigilance');
+    expect(html).not.toContain('fatigue');
+  });
+
+  it("ne rend JAMAIS les questions d'entretien, même renseignées", () => {
+    const html = buildBookletHTML('X', '2026', synthese(), '');
+    expect(html).not.toContain('Questions pour la consultation');
+    expect(html).not.toContain('Depuis quand ?');
+  });
+
+  // Le cas qui a motivé la correction : la vigilance déterministe recopie les
+  // signaux d'alerte déclarés par le patient. Reçue seule dans une boîte mail,
+  // sans praticien en face, cette phrase est exactement ce qu'il ne faut pas
+  // envoyer.
+  it("ne laisse pas fuir un signal d'alerte déclaré par le patient", () => {
+    const s: SyntheseSchema = {
+      ...synthese(),
+      points_de_vigilance: [
+        "Signal d'alerte signalé par le patient : Idées noires ou suicidaires — avis médical à évaluer en priorité.",
+      ],
+    };
+    const html = buildBookletHTML('X', '2026', s, '');
+    expect(html).not.toContain('Idées noires');
+    expect(html).not.toContain('avis médical à évaluer en priorité');
   });
 });
