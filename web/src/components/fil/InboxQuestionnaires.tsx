@@ -7,6 +7,7 @@ import { CheckCheck, ExternalLink, Eye, X } from 'lucide-react';
 import type { InboxQuestionnairesApiResponse } from '@/app/api/praticien/inbox-questionnaires/route';
 import { libelleTemporel } from '@/lib/fil/horodatage';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
+import type { ReponseQuestionnaireLisible } from '@/lib/questionnaire-reponses';
 
 type DetailState = {
   idPatient: string;
@@ -22,24 +23,60 @@ function valeurLisible(valeur: unknown): string {
   return JSON.stringify(valeur);
 }
 
-function ReponsesBrutes({ rawAnswers }: { rawAnswers: Record<string, unknown> | null }) {
-  const entrees = rawAnswers ? Object.entries(rawAnswers) : [];
-  if (entrees.length === 0) {
+function ReponsesDetaillees({
+  reponses,
+  rawAnswers,
+}: {
+  reponses: ReponseQuestionnaireLisible[];
+  rawAnswers: Record<string, unknown> | null;
+}) {
+  const lignes = reponses.length > 0
+    ? reponses
+    : Object.entries(rawAnswers ?? {}).map(([idQuestion, valeur]) => ({
+        idQuestion,
+        libelleQuestion: null,
+        libelleReponse: null,
+        valeurBrute: valeurLisible(valeur),
+        section: null,
+      }));
+  if (lignes.length === 0) {
     return <p className="text-sm text-muted-foreground">Réponses brutes non disponibles pour ce questionnaire.</p>;
   }
   return (
-    <div className="overflow-hidden rounded-lg border border-border">
-      <table className="min-w-full text-sm">
-        <tbody>
-          {entrees.map(([cle, valeur]) => (
-            <tr key={cle} className="border-t border-border first:border-t-0">
-              <th className="w-32 bg-muted px-3 py-2 text-left font-mono text-xs text-muted-foreground">{cle}</th>
-              <td className="px-3 py-2 text-foreground">{valeurLisible(valeur)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <dl className="divide-y divide-border border-y border-border">
+      {lignes.map(ligne => {
+        const reponseAffichee = ligne.libelleReponse ?? ligne.valeurBrute;
+        const afficherValeurBrute = Boolean(
+          ligne.libelleReponse && ligne.libelleReponse !== ligne.valeurBrute,
+        );
+        return (
+          <div key={ligne.idQuestion} className="py-3 first:pt-2 last:pb-2">
+            <dt>
+              <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="font-mono text-2xs font-medium text-muted-foreground">
+                  {ligne.idQuestion}
+                </span>
+                {ligne.section && (
+                  <span className="text-2xs text-muted-foreground">{ligne.section}</span>
+                )}
+              </span>
+              <span className="mt-1 block text-sm font-medium leading-5 text-foreground">
+                {ligne.libelleQuestion ?? `Question ${ligne.idQuestion}`}
+              </span>
+            </dt>
+            <dd className="mt-1.5 border-l-2 border-primary/35 pl-3">
+              <span className="text-2xs font-semibold uppercase text-muted-foreground">Réponse</span>
+              <p className="text-sm leading-5 text-foreground">{reponseAffichee}</p>
+              {afficherValeurBrute && (
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Valeur brute : <span className="font-mono">{ligne.valeurBrute}</span>
+                </p>
+              )}
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
   );
 }
 
@@ -222,7 +259,7 @@ export function InboxQuestionnaires() {
                             </p>
                           </div>
                           <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-medium text-foreground">
-                            {reponse.scorePrincipal !== null ? `Score ${reponse.scorePrincipal}` : 'Sans score principal'}
+                            {reponse.scorePrincipal !== null ? `Score brut : ${reponse.scorePrincipal}` : 'Sans score principal'}
                           </span>
                         </div>
                         {reponse.interpretation && (
@@ -235,7 +272,10 @@ export function InboxQuestionnaires() {
                           <p className="mb-1 text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">
                             Réponses enregistrées
                           </p>
-                          <ReponsesBrutes rawAnswers={reponse.rawAnswers} />
+                          <ReponsesDetaillees
+                            reponses={reponse.reponsesLisibles}
+                            rawAnswers={reponse.rawAnswers}
+                          />
                         </div>
                       </article>
                     );

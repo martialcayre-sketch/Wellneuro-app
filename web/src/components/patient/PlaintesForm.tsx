@@ -10,16 +10,7 @@ import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessa
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { SaveStatusIndicator, type SaveError } from '@/components/patient/SaveStatusIndicator';
 import { PatientConfirmDialog } from '@/components/patient/PatientConfirmDialog';
-
-const PLAINTES = [
-  { key: 'fatigue',   label: 'Fatigue', icon: '😴' },
-  { key: 'douleurs',  label: 'Douleurs', icon: '💢' },
-  { key: 'digestion', label: 'Digestion', icon: '🫃' },
-  { key: 'surpoids',  label: 'Surpoids / morphologie', icon: '⚖️' },
-  { key: 'insomnie',  label: 'Insomnie / sommeil', icon: '🌙' },
-  { key: 'moral',     label: 'Moral / anxiété', icon: '😟' },
-  { key: 'mobilite',  label: 'Mobilité / douleurs musculaires', icon: '🦵' },
-];
+import { PLAINTES } from '@/lib/plaintes';
 
 // Pagination du questionnaire (4 + 3 curseurs) — réduit le défilement vertical
 // en présentant les dimensions en deux étapes. N'affecte ni le brouillon ni le
