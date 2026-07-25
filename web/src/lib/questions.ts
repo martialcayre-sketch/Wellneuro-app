@@ -1,6 +1,6 @@
 // ─── IMPORTS CATALOGUE (lot 7) ──────────────────────────────────────────────
 import type { Question, QuestionOption } from './questionnaire-types';
-import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_GAS_03, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_02, Q_PED_03, Q_SOM_01, Q_SOM_03, Q_SOM_04, Q_SOM_07, Q_STR_02, Q_STR_06, Q_STR_08, Q_TAB_03, Q_TAB_04 } from './questionnaires/index';
+import { Q_ALI_01, Q_ALI_02, Q_ALI_03, Q_CAN_01, Q_CAN_02, Q_CAR_01, Q_GAS_03, Q_GEO_03, Q_GEO_04, Q_GEO_05, Q_GEO_06, Q_MOD_01, Q_MOD_02, Q_MOD_03, Q_NEU_01, Q_NEU_02, Q_NEU_03, Q_NEU_04, Q_NEU_05, Q_NEU_06, Q_NEU_07, Q_NEU_09, Q_NEU_10, Q_NEU_11, Q_NEU_12, Q_PED_02, Q_PED_03, Q_SOM_01, Q_SOM_03, Q_SOM_04, Q_SOM_07, Q_SOM_09, Q_STR_02, Q_STR_06, Q_STR_08, Q_TAB_03, Q_TAB_04 } from './questionnaires/index';
 // ═══════════════════════════════════════════════════════════════════════════════
 // Wellneuro SIIN — Questions.gs — DÉFINITIF v4 corrigé Dev
 // Dr Martial Cayre — 23/06/2026
@@ -273,6 +273,7 @@ Q_SOM_06: {
 
 
 Q_SOM_07,
+Q_SOM_09,
 
 
 // ════════════════════════════════════════════════════════
@@ -2206,6 +2207,62 @@ export function computeScoreFromDef(def: any, answers: Record<string, any>): any
       note: sc.note || 'Recueil de données brutes — pas de score global. Interprétation clinique par le praticien.',
       scored: false,
       certification: sc.certification || null
+    };
+  }
+
+  // ── AGENDA_SOMMEIL — agenda du sommeil 21 nuits (Q_SOM_09) ──────────────
+  // Lit les agrégats produits à la clôture (cf. lib/agenda-sommeil/agregats.ts),
+  // rangés dans `rawAnswers`. Sous le seuil de nuits, recueil transmis SANS score
+  // (scored:false, jamais un 0 par défaut). Barème /100 = 4 sous-indices /25,
+  // rampes linéaires bornées. PROPOSITION à valider cliniquement.
+  if (sc.type === 'agenda_sommeil') {
+    const minNuits = sc.minNuits || 5;
+    const n = getVal('AGD_NB_NUITS');
+    if (n === null || n < minNuits) {
+      return {
+        type:'agenda_sommeil',
+        scored:false,
+        nbNuits: n || 0,
+        note: sc.note || `Moins de ${minNuits} nuits renseignées — recueil transmis sans agrégation.`,
+        certification: sc.certification || null,
+      };
+    }
+    const clampR = (x: number) => Math.max(0, Math.min(1, x));
+    const tst = getVal('AGD_TST_MOY') ?? 0;
+    const eff = getVal('AGD_EFF_MOY') ?? 0;
+    const latMed = getVal('AGD_LAT_MED') ?? 0;
+    const revMoy = getVal('AGD_REV_MOY') ?? 0;
+    const regEct = getVal('AGD_REG_ECT') ?? 0;
+    // Durée : plateau [420,540] min → 25 ; 0 à ≤240 ou ≥720 min.
+    const scoreDuree = tst >= 420 && tst <= 540
+      ? 25
+      : tst < 420
+        ? clampR((tst - 240) / (420 - 240)) * 25
+        : clampR((720 - tst) / (720 - 540)) * 25;
+    // Efficacité : ≥85 % → 25 ; ≤65 % → 0.
+    const scoreEff = clampR((eff - 65) / (85 - 65)) * 25;
+    // Continuité : latence (≤15 min plein, ≥60 nul) + réveils (≤1 plein, ≥3 nul).
+    const scoreCont = clampR((60 - latMed) / (60 - 15)) * 12.5 + clampR((3 - revMoy) / (3 - 1)) * 12.5;
+    // Régularité : ≤30 min → 25 ; ≥120 min → 0.
+    const scoreReg = clampR((120 - regEct) / (120 - 30)) * 25;
+    const subScores = [
+      { id:'DUREE', label:'Durée', total: Math.round(scoreDuree), max:25 },
+      { id:'EFF', label:'Efficacité', total: Math.round(scoreEff), max:25 },
+      { id:'CONT', label:'Continuité', total: Math.round(scoreCont), max:25 },
+      { id:'REG', label:'Régularité', total: Math.round(scoreReg), max:25 },
+    ];
+    const total = Math.round(scoreDuree + scoreEff + scoreCont + scoreReg);
+    const interp = interpretRanges(total, sc.interpretation);
+    return {
+      type:'agenda_sommeil',
+      scored:true,
+      total,
+      maxTotal:100,
+      subScores,
+      interpretation: interp,
+      nbNuits: n,
+      note: sc.note || null,
+      certification: sc.certification || null,
     };
   }
 

@@ -132,6 +132,8 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Évaluez 5 dimensions de la fatigue : générale, physique, activité, motivation, mentale (20 items).`, duree: '10 min', actif: true },
   { id: 'Q_SOM_08', titre: 'IDTAS-AE — Dépression & Trouble Affectif Saisonnier', categorie: 'Sommeil',
     description: `Évaluez la présence d'une dépression saisonnière et ses variations mensuelles.`, duree: '15 min', actif: true },
+  { id: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', categorie: 'Sommeil',
+    description: `Recueil interactif : chaque matin, le patient note sa nuit en une minute (frise sans chiffres). L'analyse (durée, efficacité, régularité) est transmise à la clôture des 21 nuits.`, duree: '1 min / matin', actif: true },
 
   // ── NEURO-PSYCHOLOGIE ──────────────────────────────────────────────────────────────────
   { id: 'Q_INF_03', titre: 'Dopamine · Noradrénaline · Sérotonine · Mélatonine — SIIN', categorie: 'Neuro-psychologie',

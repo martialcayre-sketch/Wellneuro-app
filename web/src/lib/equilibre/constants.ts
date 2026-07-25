@@ -4,7 +4,12 @@ import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire
 // l'indicateur "Mon équilibre" (patient) / "Cartographie neuro-fonctionnelle"
 // (praticien). Un changement de valeur ici (poids, seuils, mapping) doit
 // s'accompagner d'un bump de VERSION_SCORE_EQUILIBRE.
-export const VERSION_SCORE_EQUILIBRE = 'v2' as const;
+//
+// v2 → v3 (agenda du sommeil) : ajout de Q_SOM_09 comme 3e source du besoin 5.
+// Conséquence actée (doctrine « versionScore différents jamais soustraits ») :
+// un AssessmentEpisode figé en v2 ne se compare pas à un épisode v3 — la
+// comparaison de jalons momentum reprend au premier couple d'épisodes v3.
+export const VERSION_SCORE_EQUILIBRE = 'v3' as const;
 
 export const POIDS_STRATE: Record<StrateCode, number> = {
   CORPS: 0.6,
@@ -55,6 +60,10 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
   5: [
     { idQuestionnaire: 'Q_SOM_01', max: 21, inverser: true },
     { idQuestionnaire: 'Q_MOD_01', sousScore: 'ACTIVITE_PHYSIQUE', max: 20, inverser: false },
+    // Agenda du sommeil 21 nuits : score composite /100 (plus haut = mieux).
+    // Complète le PSQI ; absent tant que l'agenda n'est pas clôturé (couverture
+    // null, jamais 0). Barème /100 = proposition, à valider cliniquement.
+    { idQuestionnaire: 'Q_SOM_09', max: 100, inverser: false },
   ],
   6: [],
   7: [],
@@ -102,6 +111,9 @@ export const NIVEAU_PREUVE_PAR_SOURCE: Record<string, NiveauPreuve> = {
   Q_INF_01: 'B',
   Q_SOM_01: 'A',
   Q_MOD_01: 'B',
+  // Agenda du sommeil : outil standard francophone, mais l'indice composite /100
+  // est une construction WellNeuro (pas de validation psychométrique tierce) → B.
+  Q_SOM_09: 'B',
   Q_NEU_11: 'A',
   Q_STR_01: 'B',
   Q_STR_02: 'A',

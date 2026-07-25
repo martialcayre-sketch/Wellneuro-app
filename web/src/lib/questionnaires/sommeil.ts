@@ -113,6 +113,42 @@ export const Q_SOM_03 = {
   ],
   scoring:{type:'berlin'}
 };
+// Agenda du sommeil — 21 nuits (Q_SOM_09). Instrument de RECUEIL longitudinal :
+// le patient saisit une nuit par matin via un composant dédié (jamais le rendu
+// générique). Les items ci-dessous sont des PSEUDO-ITEMS d'agrégats produits à
+// la CLÔTURE (cf. lib/agenda-sommeil/agregats.ts) — ils ne sont jamais saisis
+// ni montrés au patient ; ils existent pour que le scoring `agenda_sommeil` les
+// lise dans `rawAnswers` et pour la compatibilité fiche/équilibre. Le barème
+// /100 ci-dessous est une PROPOSITION WellNeuro à faire valider par le praticien.
+export const Q_SOM_09 = {
+  id:'Q_SOM_09', titre:'Agenda du sommeil — 21 nuits',
+  instructions:"Chaque matin pendant trois semaines, notez en une minute votre nuit passée. Vos saisies restent visibles sous forme d'une frise ; l'analyse est transmise à votre praticien à la fin du recueil.",
+  sections:[
+    { id:'agregats', titre:'Agrégats générés à la clôture — jamais saisis',
+      description:"Valeurs calculées automatiquement à partir des nuits renseignées. Le patient ne les voit pas.",
+      questions:[
+        qn('AGD_NB_NUITS',"Nombre de nuits renseignées",0,21,1,'nuits'),
+        qn('AGD_TIB_MOY',"Temps au lit moyen",0,960,1,'min'),
+        qn('AGD_TST_MOY',"Temps de sommeil total moyen",0,960,1,'min'),
+        qn('AGD_EFF_MOY',"Efficacité du sommeil moyenne",0,100,1,'%'),
+        qn('AGD_LAT_MED',"Latence d'endormissement médiane",0,120,1,'min'),
+        qn('AGD_REV_MOY',"Réveils nocturnes moyens par nuit",0,3,0.1,'réveils'),
+        qn('AGD_REG_ECT',"Régularité (écart-type du milieu de sommeil)",0,360,1,'min'),
+        qn('AGD_QUAL_MOY',"Qualité subjective moyenne",1,5,0.1,''),
+      ]},
+  ],
+  scoring:{
+    type:'agenda_sommeil',
+    maxTotal:100,
+    minNuits:5,
+    note:"Barème WellNeuro (proposition) : 4 sous-indices /25 — durée, efficacité, continuité, régularité. À valider cliniquement.",
+    interpretation:[
+      {min:0, max:49, label:'Sommeil nettement perturbé',color:'danger'},
+      {min:50,max:74, label:'Fragilités du sommeil',color:'warning'},
+      {min:75,max:100,label:'Sommeil globalement satisfaisant',color:'success'},
+    ]
+  }
+};
 export const Q_SOM_04 = {
   id:'Q_SOM_04', titre:'IRLS — Syndrome des jambes sans repos (Échelle internationale)',
   instructions:'Pour chaque question, choisissez la réponse qui décrit le mieux vos symptômes au cours des 7 derniers jours.',

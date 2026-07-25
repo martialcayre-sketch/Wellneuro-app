@@ -1,0 +1,113 @@
+import type { Prisma } from '@/generated/prisma';
+import { prisma } from '@/lib/prisma';
+import { computeScoreFromDef } from '@/lib/questions';
+import { resolveDefinition } from '@/lib/instruments';
+import { createPublicId } from '@/lib/ids';
+import { calculerAgregats, compterNuitsPlausibles } from './agregats';
+import { resolveNuitsActives } from './nuit';
+import { listNuits } from './persistence';
+import { AGENDA_SOMMEIL_ID } from './types';
+
+// Clôture d'un agenda du sommeil (Q_SOM_09) — chemin UNIQUE de production des
+// agrégats et du score. Appelée par la route patient (fenêtre atteinte) comme
+// par la route praticien (à tout moment). Produit une QuestionnaireReponse
+// STANDARD (mêmes champs que /api/patient/submit) : compatibilité automatique
+// avec la fiche, l'inbox, la mini-synthèse et (LOT-C) l'équilibre. Idempotente :
+// une seconde clôture renvoie la réponse déjà produite.
+
+export type ClotureResultat = { idReponse: string; titre: string; nbNuits: number; dejaCloture: boolean };
+
+export async function cloturerAgenda(input: { idAssignation: string }): Promise<ClotureResultat> {
+  const ass = await prisma.assignation.findUnique({ where: { idAssignation: input.idAssignation } });
+  if (!ass) throw new TypeError('Agenda introuvable.');
+  if (ass.idQuestionnaire !== AGENDA_SOMMEIL_ID) {
+    throw new TypeError("Cette assignation n'est pas un agenda du sommeil.");
+  }
+
+  // Idempotence : déjà clôturé → renvoyer la réponse existante sans en recréer.
+  if (ass.statutReponses === 'verrouille') {
+    const existante = await prisma.questionnaireReponse.findFirst({
+      where: { idAssignation: ass.idAssignation },
+      orderBy: { dateReponse: 'desc' },
+      select: { idReponse: true, scoresJson: true },
+    });
+    if (existante) {
+      const raw = (existante.scoresJson as Record<string, unknown> | null)?.rawAnswers as
+        | Record<string, unknown>
+        | undefined;
+      const nbNuits = typeof raw?.AGD_NB_NUITS === 'number' ? raw.AGD_NB_NUITS : 0;
+      return { idReponse: existante.idReponse, titre: ass.titre, nbNuits, dejaCloture: true };
+    }
+  }
+
+  const nuitsActives = resolveNuitsActives(await listNuits(ass.idPatient, ass.idAssignation));
+  if (nuitsActives.length === 0) {
+    throw new TypeError('Aucune nuit renseignée : rien à clôturer.');
+  }
+  const reponsesNuits = nuitsActives.map((n) => n.reponses);
+  const agregats = calculerAgregats(reponsesNuits);
+  const nbPlausibles = compterNuitsPlausibles(reponsesNuits);
+  // Agrégats complets si ≥ seuil ; sinon au moins le compte, pour que le scoring
+  // rende scored:false avec la bonne note (jamais un 0 par défaut).
+  const rawAnswers = (agregats ?? { AGD_NB_NUITS: nbPlausibles }) as Record<string, number>;
+
+  const def = await resolveDefinition(AGENDA_SOMMEIL_ID, { pourPassation: true });
+  const scores = (def ? computeScoreFromDef(def, rawAnswers) : { error: 'Définition introuvable' }) as Record<
+    string,
+    unknown
+  >;
+
+  let interpretation = '';
+  if (scores.interpretation && typeof scores.interpretation === 'object') {
+    interpretation = ((scores.interpretation as Record<string, unknown>).label as string) ?? '';
+  }
+  const scorePrincipal: number | null = typeof scores.total === 'number' ? scores.total : null;
+  const scoresWithAnswers = { ...scores, rawAnswers } as Prisma.InputJsonValue;
+
+  const idReponse = createPublicId('REP');
+  const now = new Date();
+
+  // Création de la réponse + verrouillage de l'assignation dans une seule
+  // transaction, avec re-vérification du verrou : deux clôtures concurrentes ne
+  // produisent qu'une réponse (la seconde retombe sur le chemin idempotent).
+  const resultat = await prisma.$transaction(async (tx) => {
+    const courant = await tx.assignation.findUnique({
+      where: { idAssignation: ass.idAssignation },
+      select: { statutReponses: true },
+    });
+    if (courant?.statutReponses === 'verrouille') {
+      const existante = await tx.questionnaireReponse.findFirst({
+        where: { idAssignation: ass.idAssignation },
+        orderBy: { dateReponse: 'desc' },
+        select: { idReponse: true },
+      });
+      if (existante) return { idReponse: existante.idReponse, dejaCloture: true };
+    }
+    await tx.questionnaireReponse.create({
+      data: {
+        idReponse,
+        idPatient: ass.idPatient,
+        emailPatient: ass.emailPatient.toLowerCase(),
+        idAssignation: ass.idAssignation,
+        idQuestionnaire: AGENDA_SOMMEIL_ID,
+        titre: ass.titre || AGENDA_SOMMEIL_ID,
+        dateReponse: now,
+        scoresJson: scoresWithAnswers,
+        scorePrincipal,
+        interpretation: interpretation || null,
+      },
+    });
+    await tx.assignation.update({
+      where: { idAssignation: ass.idAssignation },
+      data: { statut: 'Complété', statutReponses: 'verrouille', dateDerniereModification: now },
+    });
+    return { idReponse, dejaCloture: false };
+  });
+
+  return {
+    idReponse: resultat.idReponse,
+    titre: ass.titre,
+    nbNuits: typeof rawAnswers.AGD_NB_NUITS === 'number' ? rawAnswers.AGD_NB_NUITS : nbPlausibles,
+    dejaCloture: resultat.dejaCloture,
+  };
+}

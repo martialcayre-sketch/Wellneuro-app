@@ -46,6 +46,7 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 | `Q_SOM_05` | `sommeil_06_chronotype_horne.md` | certifié | certifié | n/a | certifié | certifié | certifié | Horne & Östberg, 19 items, score 16-86 |
 | `Q_SOM_06` | `sommeil_01_fatigue_pichot.md` | certifié | certifié | n/a | certifié | certifié | certifié | Pichot, 8 items, score 0-32, seuil Drive > 22 |
 | `Q_SOM_07` | `sommeil_07_mfi_fatigue_multidimensionnelle.md` | mappé | mappé | n/a | mappé | mappé | à faire | MFI |
+| `Q_SOM_09` | n/a (instrument WellNeuro) | n/a | n/a | n/a | n/a | n/a | n/a | Agenda du sommeil 21 nuits — recueil quotidien, indice composite /100 (durée, efficacité, latence, réveils, régularité). Pas de source Drive : construction WellNeuro, source du besoin 5, barème à valider cliniquement |
 | `Q_INF_01` | `questionnaire_hyperexcitabilite.md` | certifié | certifié | n/a | certifié | certifié | certifié | Hyperexcitabilité, 24 items, score 0-96 |
 | `Q_INF_02` | `questionnaire_hypersensibilite_deficit_magnesium.md` | certifié | certifié | n/a | certifié | certifié | certifié | Magnésium, 13 items, score 0-52 |
 | `Q_INF_03` | `questionnaire_dnsm_neurotransmetteurs.md` | certifié | certifié | n/a | certifié | certifié | certifié | DNSM, 40 items, 4 sous-scores 0-40 |

@@ -81,7 +81,10 @@ Alternance indispensable entre l'activité corporelle (qui nourrit le
 cerveau) et les phases de repos (qui restaurent).
 
 - **Variables d'entrée** : questionnaire d'activité (GPAQ/NAP) et qualité du
-  sommeil (agenda du sommeil, index PSQI).
+  sommeil (index PSQI `Q_SOM_01` ; **agenda du sommeil interactif `Q_SOM_09`** —
+  recueil de 21 nuits, indice composite /100 : durée, efficacité, latence,
+  réveils, régularité). L'agenda complète le PSQI comme source du besoin 5
+  (niveau de preuve B ; barème /100 à valider cliniquement).
 - **Règle de décision** : si sédentarité ou PSQI > 5 (sommeil inefficace),
   intégrer la remise en mouvement et l'hygiène du sommeil dans le socle de
   la prescription.

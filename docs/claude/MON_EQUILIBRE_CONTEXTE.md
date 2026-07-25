@@ -50,6 +50,13 @@ commits, la documentation ou l'UI.
   évidence les creux) plutôt qu'un chiffre unique sans contexte.
 - **Aucune moyenne ne doit masquer une carence sévère** : un score élevé sur
   un pilier ne compense jamais mathématiquement un pilier effondré.
+- **`VERSION_SCORE_EQUILIBRE` = v3** (depuis l'agenda du sommeil, 2026-07-25) :
+  le besoin 5 « Mouvement, fonctions corporelles et repos » a une **3e source**,
+  l'agenda du sommeil `Q_SOM_09` (indice composite /100, niveau B), en complément
+  du PSQI `Q_SOM_01` et de l'activité physique `Q_MOD_01`. L'agenda alimente donc
+  l'indice global et le momentum. Doctrine inchangée : un épisode figé en v2 ne
+  se soustrait pas d'un épisode v3 — la comparaison de jalons reprend au premier
+  couple v3. Barème /100 = proposition à valider cliniquement.
 
 ---
 

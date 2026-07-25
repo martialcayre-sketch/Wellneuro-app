@@ -67,4 +67,30 @@ describe('calculerCouvertureBesoin', () => {
     });
     expect(couvertureBesoin2).toBeCloseTo(0.6875, 6);
   });
+
+  it('besoin 5 : l’agenda du sommeil (Q_SOM_09) au plateau donne une couverture de 1', () => {
+    const couverture = calculerCouvertureBesoin(5, {
+      Q_SOM_09: {
+        AGD_NB_NUITS: 21,
+        AGD_TST_MOY: 470,
+        AGD_EFF_MOY: 95,
+        AGD_LAT_MED: 10,
+        AGD_REV_MOY: 0.5,
+        AGD_REG_ECT: 20,
+      },
+    });
+    expect(couverture).toBeCloseTo(1, 6);
+  });
+
+  it('besoin 5 : agenda absent → la couverture vient des autres sources, jamais diluée à 0', () => {
+    // Seul le PSQI est répondu (score parfait inversé → couverture 1). L'agenda
+    // non clôturé n'ajoute pas une source à 0 : couverture = 1, pas 0,5.
+    const couverture = calculerCouvertureBesoin(5, {
+      Q_SOM_01: {
+        Q1: 23, Q2: 5, Q3: 7, Q4: 8, Q6: 0, Q7: 0, Q8: 0, Q9: 0,
+        Q5a: 0, Q5b: 0, Q5c: 0, Q5d: 0, Q5e: 0, Q5f: 0, Q5g: 0, Q5h: 0, Q5i: 0, Q5j: 0,
+      },
+    });
+    expect(couverture).toBeCloseTo(1, 6);
+  });
 });

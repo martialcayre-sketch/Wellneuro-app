@@ -319,6 +319,21 @@ export default function PatientQuestionnairePage() {
     );
   }
 
+  // Agenda du sommeil (Q_SOM_09) : le recueil quotidien passe par l'espace
+  // portail (session sécurisée), jamais par ce lien email legacy. On oriente
+  // sans écrire — aucune saisie répétée par email-gate (§8.4).
+  if (assignation.idQuestionnaire === 'Q_SOM_09') {
+    return (
+      <div className="w-full max-w-md bg-surface rounded-2xl shadow-card border border-border p-8 text-center">
+        <h1 className="font-display text-lg font-bold text-foreground mb-2">Votre agenda du sommeil 🌙</h1>
+        <p className="text-sm text-muted-foreground">
+          Il se remplit chaque matin depuis votre espace patient sécurisé. Ouvrez le lien
+          « Mon parcours » reçu par e-mail pour noter votre nuit en une minute.
+        </p>
+      </div>
+    );
+  }
+
   if (!data.questionnaire) {
     return (
       <div className="w-full max-w-md bg-surface rounded-2xl shadow-card border border-border p-8 text-center">

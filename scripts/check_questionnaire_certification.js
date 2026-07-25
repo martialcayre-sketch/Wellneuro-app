@@ -268,6 +268,7 @@ assertEqual(verdictRegistre.erreurs, [], 'registre de certification des instrume
 console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.instruments.length} entrées, ${verdictRegistre.aCompleter} à compléter, ${verdictRegistre.sourcesEquilibre.size} sources Mon Équilibre, ${evidence.etudes.length} preuves psychométriques.`);
 
 const supportedScoringTypes = new Set([
+  'agenda_sommeil',
   'audit',
   'berlin',
   'bms_average',

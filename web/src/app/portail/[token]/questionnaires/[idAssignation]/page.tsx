@@ -9,6 +9,7 @@ import { MonEquilibreDetail } from '@/components/patient/MonEquilibreDetail';
 import { ConsentScreen } from '@/components/patient/ConsentScreen';
 import { ConsultationScreen } from '@/components/patient/ConsultationScreen';
 import { PlaintesForm } from '@/components/patient/PlaintesForm';
+import { AgendaSommeilJournal } from '@/components/patient/agenda-sommeil/AgendaSommeilJournal';
 import { GenericQuestionnaire } from '@/components/patient/GenericQuestionnaire';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
@@ -111,6 +112,23 @@ export default function PortailQuestionnairePage() {
           email={email}
           onAccepted={() => charger()}
         />
+      </div>
+    );
+  }
+
+  // 1 bis) Agenda du sommeil (Q_SOM_09) : recueil nuit par nuit via composant
+  // dédié. Placé AVANT le bloc « verrouillé » : une fois clôturé, le composant
+  // affiche la frise en consultation (état « Transmis au praticien »), au lieu
+  // de l'écran générique de lecture seule.
+  if (assignation.idQuestionnaire === 'Q_SOM_09') {
+    return (
+      <div className="w-full max-w-2xl">
+        <EnTete
+          token={token}
+          titre={assignation.titre}
+          badge={assignation.statutReponses === 'verrouille' ? 'Transmis au praticien' : undefined}
+        />
+        <AgendaSommeilJournal idAssignation={assignation.idAssignation} onRetourHub={retourHub} />
       </div>
     );
   }
