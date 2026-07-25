@@ -14,6 +14,7 @@ But : récupérer les variables nécessaires au projet sans manipuler de fichier
 - `CLAUDE_MODEL`
 - `WN_C5_ENABLED`
 - `WN_ENABLE_CORPUS_CLINIQUE_V1`
+- `WN_ENABLE_ORIENTATION_NNPP2`
 - `WN_C5_CIQUAL_IMPORT_CONFIRMATION`
 - `NEXT_PUBLIC_SENTRY_DSN`
 - `SENTRY_DSN`
