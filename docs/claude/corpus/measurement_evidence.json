@@ -1,0 +1,6 @@
+{
+  "version": "measurement-evidence-v1",
+  "dateAudit": "2026-07-25",
+  "commentaire": "Preuves psychométriques par instrument (campagne 2026-07-25-certification-corpus-questionnaires, lot 1 — squelette, rempli aux lots 2-3 depuis les sources primaires et les claims validés). Une ligne par étude × propriété : questionnaireId, population, langue, tailleEchantillon, propriete (validite_contenu | structure_interne | coherence_interne | fidelite | erreur_mesure | validite_construit | sensibilite_changement | mdc | mcid), resultat, conclusionCosmin (A | B | C | inconnu), doi/pmid/sourceId, claimId validé correspondant. Aucune ligne n'est ajoutée sans référence vérifiable — ce fichier alimente l'axe `cosmin` du registre des instruments et les annotations « changement fiable » du momentum (lot 12).",
+  "etudes": []
+}

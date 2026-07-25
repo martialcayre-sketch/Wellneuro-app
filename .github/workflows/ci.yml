@@ -111,6 +111,14 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         run: node scripts/check_questionnaire_certification.js
 
+      # Banc du validateur de registre : c'est lui qui prouve que le garde
+      # ci-dessus échoue quand il doit échouer (entrée manquante, axe hors
+      # vocabulaire, extraction BESOIN_SOURCES cassée). Sans ce banc, un garde
+      # devenu muet resterait vert.
+      - name: Registre des instruments (banc du validateur)
+        if: steps.scope.outputs.docs_only != 'true'
+        run: node --test scripts/lib/verifier_registre_instruments.test.mjs
+
       - name: Generate Prisma client
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web

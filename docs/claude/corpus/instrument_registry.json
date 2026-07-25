@@ -1,0 +1,2347 @@
+{
+  "version": "instrument-registry-v2",
+  "dateAudit": "2026-07-25",
+  "commentaire": "Registre de certification des instruments du catalogue (campagne 2026-07-25-certification-corpus-questionnaires, lot 1, schéma v2 après intégration de l'audit externe et de la revue indépendante). Une entrée par clé de QUESTIONNAIRE_CATALOGUE. Axes SÉPARÉS, jamais fusionnés : - instrument.formePubliee : ce que décrit la publication d'origine (items, dimensions, bornes). N'affirme RIEN sur ce que l'application administre. - versionServie : ce que l'application administre RÉELLEMENT. `description` reste null tant que le banc de certification (lot 3) ne l'a pas établie contre le catalogue — la renseigner de mémoire ferait disparaître les divergences que la campagne cherche justement à révéler (Berlin, MFI-20, PSQI sont déjà connus divergents). `statutContenu` : verbatim | traduit | adapte | cree_localement | a_auditer. - statutBibliographique : reference_identifiee | a_completer | referentiel_interne_siin. `references.dateVerification` null = auteurs/année NON vérifiés contre la source primaire (identifiés de mémoire) ; ils ne font autorité qu'une fois le PDF source au dossier. - statutCertification (cycle de vie WellNeuro) : repere → source_obtenue → droits_verifies → contenu_verrouille → scoring_verifie → psychometrie_revue → mapping_clinique_approuve → publie ; états terminaux suspendu | remplace. Toutes les entrées démarrent à 'repere'. - cosmin : A | B | C | inconnu — qualité psychométrique publiée (à renseigner depuis measurement_evidence.json). Ne JAMAIS confondre avec les niveaux A/B/C/D WellNeuro : NIVEAU_PREUVE_PAR_SOURCE (web/src/lib/equilibre/constants.ts) reste la source unique de cet axe-là, volontairement non dupliqué ici. - droits.statut : a_verifier | libre | licence_requise | permission_obtenue | restreint. - sourceMonEquilibre : l'instrument alimente BESOIN_SOURCES (fait dérivé de constants.ts, contrôlé par le garde CI). Aucun DOI/PMID n'est renseigné sans vérification (null). Le libellé d'usage est « Validé pour l'usage WellNeuro » avec son périmètre — jamais « certifié médicalement ».",
+  "instruments": [
+    {
+      "questionnaireId": "Q_STR_01",
+      "instrument": {
+        "nomOfficiel": "Questionnaire de stress SIIN",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": "21 items, score 0-42",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "questionnaire_stress_siin.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_STR_02",
+      "instrument": {
+        "nomOfficiel": "Perceived Stress Scale (PSS-10)",
+        "auteurs": "Cohen, Kamarck & Mermelstein (PSS) ; forme 10 items : Cohen & Williamson",
+        "anneePublication": 1988,
+        "formePubliee": "10 items, coté 1-5 servi (brut 10-50)",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Bellinghausen et al. 2009 (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "usage non commercial libre (déclaré par l'auteur, à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "questionnaire_stress_cohen_pss.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_STR_03",
+      "instrument": {
+        "nomOfficiel": "Questionnaire de stress de Cungi",
+        "auteurs": "C. Cungi",
+        "anneePublication": null,
+        "formePubliee": "11 items, score 0-55 (usage professionnel)",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (instrument francophone)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "questionnaire_stress_cungi.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_STR_04",
+      "instrument": {
+        "nomOfficiel": "Depression Anxiety Stress Scales (DASS-21)",
+        "auteurs": "Lovibond & Lovibond",
+        "anneePublication": 1995,
+        "formePubliee": "21 items, 3 sous-scores 0-21",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "domaine public (déclaré par les auteurs, à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_stress_dass21.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_STR_05",
+      "instrument": {
+        "nomOfficiel": "Burnout Measure, Short version (BMS-10)",
+        "auteurs": "Malach-Pines",
+        "anneePublication": 2005,
+        "formePubliee": "10 items, moyenne 1-7",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_stress_bms_burnout.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_STR_06",
+      "instrument": {
+        "nomOfficiel": "Job Content Questionnaire (Karasek)",
+        "auteurs": "Karasek (modèle 1979) ; JCQ : Karasek et al. 1998",
+        "anneePublication": 1998,
+        "formePubliee": "32 items servis (demande/latitude/soutien)",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Niedhammer et al. (enquête SUMER, à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_stress_karasek.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_STR_08",
+      "instrument": {
+        "nomOfficiel": "Work Addiction Risk Test (WART)",
+        "auteurs": "B. E. Robinson",
+        "anneePublication": 1989,
+        "formePubliee": "25 items, score 25-100",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_wart_addiction_travail.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_NEU_01",
+      "instrument": {
+        "nomOfficiel": "Beck Depression Inventory, forme abrégée (BDI 13 items)",
+        "auteurs": "Beck & Beck (forme abrégée)",
+        "anneePublication": 1972,
+        "formePubliee": "13 items, score 0-39",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Collet & Cottraux (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "BDI sous copyright Pearson (forme abrégée : à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "bdi_echelle_de_depression_de_beck.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_NEU_02",
+      "instrument": {
+        "nomOfficiel": "Montgomery–Åsberg Depression Rating Scale (MADRS)",
+        "auteurs": "Montgomery & Åsberg",
+        "anneePublication": 1979,
+        "formePubliee": "10 items, score 0-60",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "madrs_echelle_depression.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_NEU_03",
+      "instrument": {
+        "nomOfficiel": "SIGH-SAD, version auto-évaluation (SIGH-SAD-SA)",
+        "auteurs": "Williams, Link, Rosenthal & Terman",
+        "anneePublication": 1992,
+        "formePubliee": "25 items, groupes A/B",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_sigh_sad_sa.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_NEU_04",
+      "instrument": {
+        "nomOfficiel": "SCOFF",
+        "auteurs": "Morgan, Reid & Lacey",
+        "anneePublication": 1999,
+        "formePubliee": "5 items oui/non, seuil ≥ 2",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — SCOFF-F, Garcia et al. (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_scoff.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_NEU_05",
+      "instrument": {
+        "nomOfficiel": "UPPS Impulsive Behavior Scale",
+        "auteurs": "Whiteside & Lynam",
+        "anneePublication": 2001,
+        "formePubliee": "45 items, 4 sous-échelles",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Van der Linden et al. (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_upps_impulsivite.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_NEU_06",
+      "instrument": {
+        "nomOfficiel": "Questionnaire cognitif SIIN (historique)",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": null,
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_NEU_07",
+      "instrument": {
+        "nomOfficiel": "Alcohol Use Disorders Identification Test (AUDIT)",
+        "auteurs": "Saunders et al. (OMS)",
+        "anneePublication": 1993,
+        "formePubliee": "10 items, score 0-40, seuils différenciés femme/homme",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Gache et al. (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "OMS — reproduction autorisée avec mention (à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_audit_alcool.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_NEU_08",
+      "instrument": {
+        "nomOfficiel": "Échelle Cognitive d'Attachement aux Benzodiazépines (ECAB)",
+        "auteurs": "Pelissolo et al.",
+        "anneePublication": 1996,
+        "formePubliee": "10 items vrai/faux, seuil ≥ 6",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (instrument francophone)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "ecab_echelle_cognitive_attachement_benzodiazepines.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_NEU_09",
+      "instrument": {
+        "nomOfficiel": "Zarit Burden Interview",
+        "auteurs": "Zarit, Reever & Bach-Peterson",
+        "anneePublication": 1980,
+        "formePubliee": "22 items, score 0-88",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Hébert et al. (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "zarit_grille_charge_proches_aidants.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_NEU_10",
+      "instrument": {
+        "nomOfficiel": "Internet Addiction Test",
+        "auteurs": "K. Young",
+        "anneePublication": 1998,
+        "formePubliee": "20 items, score 0-100",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Khazaal et al. (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "dependance_a_internet.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_NEU_11",
+      "instrument": {
+        "nomOfficiel": "Hospital Anxiety and Depression Scale (HAD)",
+        "auteurs": "Zigmond & Snaith",
+        "anneePublication": 1983,
+        "formePubliee": "14 items, sous-scores anxiété/dépression 0-21",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Lépine et al. (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "GL Assessment (copyright déclaré, à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "questionnaire_had.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_NEU_12",
+      "instrument": {
+        "nomOfficiel": "IDTAS-AE — Inventaire Diagnostique des Troubles Affectifs Saisonniers (auto-évaluation)",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "idtas_ae_depression_trouble_affectif_saisonnier.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_SOM_01",
+      "instrument": {
+        "nomOfficiel": "Pittsburgh Sleep Quality Index (PSQI)",
+        "auteurs": "Buysse et al.",
+        "anneePublication": 1989,
+        "formePubliee": "19 items auto, 7 composantes, score 0-21",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Blais et al. (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "© University of Pittsburgh (usage clinique libre déclaré, à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "sommeil_05_psqi_pittsburgh.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_SOM_02",
+      "instrument": {
+        "nomOfficiel": "Epworth Sleepiness Scale",
+        "auteurs": "M. W. Johns",
+        "anneePublication": 1991,
+        "formePubliee": "8 items, score 0-24",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "© M. W. Johns (licence requise pour certains usages, à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "sommeil_03_epworth_somnolence.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_SOM_03",
+      "instrument": {
+        "nomOfficiel": "Questionnaire de Berlin (apnée du sommeil)",
+        "auteurs": "Netzer et al.",
+        "anneePublication": 1999,
+        "formePubliee": "10 items, 3 catégories",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "sommeil_04_berlin_apnee_sommeil.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_SOM_04",
+      "instrument": {
+        "nomOfficiel": "International Restless Legs Syndrome Rating Scale (IRLS)",
+        "auteurs": "International RLS Study Group (Walters et al.)",
+        "anneePublication": 2003,
+        "formePubliee": "10 items, score 0-40",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "sommeil_02_irls_jambes_sans_repos.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_SOM_05",
+      "instrument": {
+        "nomOfficiel": "Morningness-Eveningness Questionnaire (MEQ, Horne & Östberg)",
+        "auteurs": "Horne & Östberg",
+        "anneePublication": 1976,
+        "formePubliee": "19 items",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Taillard et al. (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "sommeil_06_chronotype_horne.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_SOM_06",
+      "instrument": {
+        "nomOfficiel": "Échelle de fatigue de Pichot",
+        "auteurs": "P. Pichot",
+        "anneePublication": null,
+        "formePubliee": "8 items, score 0-32",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (instrument francophone)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "sommeil_01_fatigue_pichot.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_SOM_07",
+      "instrument": {
+        "nomOfficiel": "Multidimensional Fatigue Inventory (MFI-20)",
+        "auteurs": "Smets et al.",
+        "anneePublication": 1995,
+        "formePubliee": "20 items, 5 dimensions",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Gentile et al. (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "sommeil_07_mfi_fatigue_multidimensionnelle.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_INF_01",
+      "instrument": {
+        "nomOfficiel": "Questionnaire d'hyperexcitabilité SIIN",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": "score 0-96",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "questionnaire_hyperexcitabilite.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_INF_02",
+      "instrument": {
+        "nomOfficiel": "Questionnaire de dépistage magnésium / spasmophilie SIIN",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_hypersensibilite_deficit_magnesium.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_INF_03",
+      "instrument": {
+        "nomOfficiel": "DNST SIIN — Dopamine, Noradrénaline, Sérotonine, Mélatonine",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": "sous-scores DA/NA/SE/ME 0-40",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "questionnaire_dnsm_neurotransmetteurs.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_INF_04",
+      "instrument": {
+        "nomOfficiel": "Headache Impact Test (HIT-6)",
+        "auteurs": "Kosinski et al.",
+        "anneePublication": 2003,
+        "formePubliee": "6 items, score 36-78",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "© QualityMetric (licence requise, à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "hit_patients_migraineux.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_INF_05",
+      "instrument": {
+        "nomOfficiel": "Auto-évaluation de l'anxiété (référentiel SIIN)",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "auto_anxiete_questionnaire_auto_evaluation.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_GAS_01",
+      "instrument": {
+        "nomOfficiel": "TFD SIIN 2021 — Troubles fonctionnels digestifs",
+        "auteurs": null,
+        "anneePublication": 2021,
+        "formePubliee": "score 0-93",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "gastro_04_troubles_fonctionnels_digestifs_intestinaux.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_GAS_02",
+      "instrument": {
+        "nomOfficiel": "IBS Severity Scoring System (score de Francis)",
+        "auteurs": "Francis, Morris & Whorwell",
+        "anneePublication": 1997,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "gastro_03_score_francis.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_GAS_03",
+      "instrument": {
+        "nomOfficiel": "Échelle de Bristol (type de selles)",
+        "auteurs": "Lewis & Heaton",
+        "anneePublication": 1997,
+        "formePubliee": "7 types",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "gastro_01_selles_enfant_nourrisson.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_FIB_01",
+      "instrument": {
+        "nomOfficiel": "Fibromyalgia Rapid Screening Tool (FiRST)",
+        "auteurs": "Perrot et al.",
+        "anneePublication": 2010,
+        "formePubliee": "6 items oui/non",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (instrument d'origine francophone)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_first_fibromyalgie_contexte.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_FIB_02",
+      "instrument": {
+        "nomOfficiel": "Questionnaire d'impact de la fibromyalgie (QIF, adaptation du FIQ)",
+        "auteurs": "FIQ : Burckhardt, Clark & Bennett ; adaptation fr : Perrot et al.",
+        "anneePublication": 1991,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — Perrot et al. (à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_qif_impact_fibromyalgie_contexte.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_FIB_03",
+      "instrument": {
+        "nomOfficiel": "ELFE — Évaluation des points douloureux fibromyalgiques (professionnel)",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "liste_elfe_evaluation_fibromyalgie_contexte_praticien.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_CAR_01",
+      "instrument": {
+        "nomOfficiel": "Questionnaire cardio-métabolique SIIN",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_troubles_fonctionnels_cardio_metaboliques.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_TAB_01",
+      "instrument": {
+        "nomOfficiel": "Test de motivation à l'arrêt du tabac (Lagrue & Légeron)",
+        "auteurs": "Lagrue & Légeron",
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (instrument francophone)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_lagrue_legeron_motivation_arret_tabac.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_TAB_02",
+      "instrument": {
+        "nomOfficiel": "Fagerström Test for Nicotine Dependence (FTND)",
+        "auteurs": "Heatherton, Kozlowski, Frecker & Fagerström",
+        "anneePublication": 1991,
+        "formePubliee": "6 items, score 0-10",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_fagerstrom_dependance_nicotine.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_TAB_03",
+      "instrument": {
+        "nomOfficiel": "QCT2 de Gilliard — Comportement tabagique (4 dimensions)",
+        "auteurs": "Gilliard",
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_qct2_gilliard_comportement_tabagique.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_TAB_04",
+      "instrument": {
+        "nomOfficiel": "Questionnaire d'évaluation de la consommation de cannabis",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_dependance_cannabis.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_TAB_05",
+      "instrument": {
+        "nomOfficiel": "Hooked On Nicotine Checklist (HONC, Di Franza)",
+        "auteurs": "DiFranza et al.",
+        "anneePublication": 2002,
+        "formePubliee": "10 items",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_di_franza_nicotine_adolescents.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_PNE_01",
+      "instrument": {
+        "nomOfficiel": "Questionnaire de qualité de vie BPCO",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_bpco_pneumologie.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_URO_01",
+      "instrument": {
+        "nomOfficiel": "International Prostate Symptom Score (IPSS)",
+        "auteurs": "Barry et al. (AUA)",
+        "anneePublication": 1992,
+        "formePubliee": "7 items + qualité de vie",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "01_ipss_international_prostate_score_symptom.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_URO_02",
+      "instrument": {
+        "nomOfficiel": "Catalogue mictionnel — CHU de Nice",
+        "auteurs": "CHU de Nice",
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (outil clinique francophone)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "02_catalogue_mictionnel.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_PED_01",
+      "instrument": {
+        "nomOfficiel": "Échelle de Matinalité-Vespéralité pour l'Enfant (Dr Caci)",
+        "auteurs": "H. Caci",
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (instrument francophone)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [
+        "WN-SRC-0380",
+        "WN-SRC-0381"
+      ],
+      "driveMd": "pediatrie_01_matinalite_vesperalite_enfant.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_PED_02",
+      "instrument": {
+        "nomOfficiel": "Conners Teacher Rating Scale, forme courte (CTRS-R:S)",
+        "auteurs": "C. K. Conners",
+        "anneePublication": 1997,
+        "formePubliee": "version enseignant, forme courte",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "© MHS (licence requise, à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [
+        "WN-SRC-0382",
+        "WN-SRC-0383"
+      ],
+      "driveMd": "pediatrie_03_conners_enseignant_ctrs_rs.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_PED_03",
+      "instrument": {
+        "nomOfficiel": "Conners 3, version parent",
+        "auteurs": "C. K. Conners",
+        "anneePublication": 2008,
+        "formePubliee": "3e édition",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "© MHS (licence requise, à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [
+        "WN-SRC-0382",
+        "WN-SRC-0384"
+      ],
+      "driveMd": "pediatrie_02_conners_parent.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_MOD_01",
+      "instrument": {
+        "nomOfficiel": "Questionnaire contextuel de mode de vie SIIN",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "questionnaire_contextuel_mode_de_vie_contexte.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_MOD_02",
+      "instrument": {
+        "nomOfficiel": "Activité et dépense énergétique globale SIIN",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_activite_depense_energetique_globale_siin_contexte.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_MOD_03",
+      "instrument": {
+        "nomOfficiel": "Mes plaintes actuelles et troubles ressentis (référentiel SIIN)",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_plaintes_actuelles_troubles_ressentis.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_ALI_01",
+      "instrument": {
+        "nomOfficiel": "Questionnaire alimentaire SIIN",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": "score 0-42",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": true,
+      "sourceIds": [],
+      "driveMd": "questionnaire_alimentaire_siin_contexte.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_ALI_02",
+      "instrument": {
+        "nomOfficiel": "Score d'adhérence à la diète méditerranéenne SIIN",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (référentiel d'origine, adapté des scores méditerranéens publiés)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_diete_mediterraneenne_contexte.md",
+      "statutBibliographique": "referentiel_interne_siin"
+    },
+    {
+      "questionnaireId": "Q_ALI_03",
+      "instrument": {
+        "nomOfficiel": "Évaluation des apports caloriques et protéiques — méthode Monnier",
+        "auteurs": "L. Monnier",
+        "anneePublication": null,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (méthode francophone)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_monnier_apports_caloriques_proteiques_contexte.md",
+      "statutBibliographique": "a_completer"
+    },
+    {
+      "questionnaireId": "Q_GEO_01",
+      "instrument": {
+        "nomOfficiel": "Grille de Tinetti — équilibre et marche (POMA)",
+        "auteurs": "M. E. Tinetti",
+        "anneePublication": 1986,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "gerontologie_01_tinetti_equilibre_marche.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_GEO_02",
+      "instrument": {
+        "nomOfficiel": "SARC-F — dépistage de la sarcopénie",
+        "auteurs": "Malmstrom & Morley",
+        "anneePublication": 2013,
+        "formePubliee": "5 items, score 0-10",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "gerontologie_02_sarcopenie.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_GEO_03",
+      "instrument": {
+        "nomOfficiel": "Alzheimer's Questionnaire (AQ)",
+        "auteurs": "Sabbagh et al.",
+        "anneePublication": 2010,
+        "formePubliee": "21 items",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": null,
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_GEO_04",
+      "instrument": {
+        "nomOfficiel": "Mini Mental State Examination, version consensuelle GRECO",
+        "auteurs": "Folstein, Folstein & McHugh ; version GRECO : Derouesné et al.",
+        "anneePublication": 1975,
+        "formePubliee": "version GRECO",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — GRECO (Derouesné et al. 1999, à confirmer)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "© PAR (Psychological Assessment Resources) — licence requise, à vérifier",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "mmse_mini_mental_state_examination_greco.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_GEO_05",
+      "instrument": {
+        "nomOfficiel": "Quick Dementia Rating System (QDRS)",
+        "auteurs": "J. E. Galvin",
+        "anneePublication": 2015,
+        "formePubliee": null,
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — à confirmer",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "© J. E. Galvin (usage clinique libre déclaré, à vérifier)",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_reperage_troubles_dementiels_qdrs.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_GEO_06",
+      "instrument": {
+        "nomOfficiel": "Test des 5 mots de Dubois",
+        "auteurs": "B. Dubois et al.",
+        "anneePublication": 2002,
+        "formePubliee": "rappel en 2 phases",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr (instrument francophone)",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": null,
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_test_5_mots_dubois.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_CAN_01",
+      "instrument": {
+        "nomOfficiel": "EORTC QLQ-C30",
+        "auteurs": "Aaronson et al. (EORTC)",
+        "anneePublication": 1993,
+        "formePubliee": "30 items",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — traduction officielle EORTC",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "© EORTC — enregistrement/autorisation requis, à vérifier",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_cancerologie_qlq_c30.md",
+      "statutBibliographique": "reference_identifiee"
+    },
+    {
+      "questionnaireId": "Q_CAN_02",
+      "instrument": {
+        "nomOfficiel": "EORTC QLQ-BR23 (module sein)",
+        "auteurs": "Sprangers et al. (EORTC)",
+        "anneePublication": 1996,
+        "formePubliee": "23 items",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": null,
+        "langue": "fr",
+        "traductionValidee": "fr — traduction officielle EORTC",
+        "statutContenu": "a_auditer"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "© EORTC — enregistrement/autorisation requis, à vérifier",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": null,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": "questionnaire_cancerologie_qlq_br23.md",
+      "statutBibliographique": "reference_identifiee"
+    }
+  ]
+}
