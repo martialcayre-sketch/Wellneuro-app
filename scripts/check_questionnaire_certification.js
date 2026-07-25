@@ -244,6 +244,29 @@ const fixturesMissingInMatrix = [...certifiedFixtures].filter(id => {
 });
 assertEqual(fixturesMissingInMatrix, [], 'chaque fixture certifiée doit être marquée certifiée dans la matrice');
 
+// Registre de certification des instruments (campagne certification corpus,
+// lot 1, schéma v2). Les règles vivent dans un module pur, testable hors de ce
+// script : `node --test scripts/lib/verifier_registre_instruments.test.mjs`.
+// La complétude bibliographique (`a_completer`) est tolérée et seulement
+// signalée — le travail éditorial ne bloque pas le CI.
+const { verifierRegistreInstruments } = require('./lib/verifier_registre_instruments');
+
+const instrumentRegistry = JSON.parse(fs.readFileSync(path.join(root, 'docs/claude/corpus/instrument_registry.json'), 'utf8'));
+const evidence = JSON.parse(fs.readFileSync(path.join(root, 'docs/claude/corpus/measurement_evidence.json'), 'utf8'));
+const sourceRegistry = JSON.parse(fs.readFileSync(path.join(root, 'docs/claude/corpus/source_registry.json'), 'utf8'));
+
+const verdictRegistre = verifierRegistreInstruments({
+  registre: instrumentRegistry,
+  idsCatalogue: ids,
+  sourceIdsCorpus: new Set(sourceRegistry.map(source => source.sourceId)),
+  constantsSource: fs.readFileSync(path.join(root, 'web/src/lib/equilibre/constants.ts'), 'utf8'),
+  matriceDrive: mapping,
+  evidence,
+});
+assertEqual(verdictRegistre.erreurs, [], 'registre de certification des instruments');
+
+console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.instruments.length} entrées, ${verdictRegistre.aCompleter} à compléter, ${verdictRegistre.sourcesEquilibre.size} sources Mon Équilibre, ${evidence.etudes.length} preuves psychométriques.`);
+
 const supportedScoringTypes = new Set([
   'audit',
   'berlin',
