@@ -23,6 +23,7 @@
     "setup:check": "npm run prisma:generate && npm run type-check && npm run scoring-check",
     "scoring-check": "node ../scripts/check_questionnaire_certification.js",
     "registry-check": "node --test ../scripts/lib/verifier_registre_instruments.test.mjs",
+    "certify-check": "node --test ../tools/corpus/certify/lib/comparaison.test.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:dot": "vitest run --reporter=dot",

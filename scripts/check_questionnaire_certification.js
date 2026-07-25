@@ -3,91 +3,14 @@
 
 const fs = require('fs');
 const path = require('path');
-const { createRequire } = require('module');
+
+// Le chargement du catalogue TypeScript vit dans un module partagé : le banc
+// de certification (tools/corpus/certify/) doit évaluer LE MÊME catalogue et
+// exécuter LE MÊME calculateScore que ce garde, pas une copie.
+const { chargerCatalogue } = require('./lib/charger_catalogue');
 
 const root = path.resolve(__dirname, '..');
-const questionsPath = path.join(root, 'web/src/lib/questions.ts');
 const mappingPath = path.join(root, 'docs/questionnaires-drive-mapping.md');
-
-// TypeScript est une devDependency de web/ — résolution indépendante du cwd
-// (le script est lancé depuis web/ par `npm run scoring-check`, mais rien ne
-// doit en dépendre).
-const ts = createRequire(path.join(root, 'web', 'package.json'))('typescript');
-
-// Le catalogue est du TypeScript depuis la levée de `@ts-nocheck` (lot
-// G-TRUST-04) : chaque fichier est transpilé avant l'eval, les annotations
-// disparaissent. ORDRE IMPOSÉ : le dédoublonnage des helpers
-// (`stripDuplicateQuestionHelpers`) travaille ligne à ligne sur la source
-// BRUTE, où les one-liners `function q(...)` et `const O_* =` sont garantis —
-// l'émetteur TypeScript, lui, re-imprime ces déclarations sur plusieurs
-// lignes. Prouvé neutre sur le catalogue pré-typage : même verdict, mêmes
-// 63 clés, mêmes fixtures.
-function transpileTs(source, fileName) {
-  return ts.transpileModule(source, {
-    fileName,
-    compilerOptions: { target: ts.ScriptTarget.ES2017, module: ts.ModuleKind.ESNext },
-  }).outputText;
-}
-
-// Le catalogue est découpé par domaine (lot 7) : `questions.ts` importe des
-// modules locaux (`./questionnaires/*`). Ce check évalue le catalogue comme un
-// script autonome ; il faut donc « inliner » ces imports relatifs locaux (déps
-// d'abord, dédupliquées) avant l'eval, puis retirer les mots-clés `export`.
-function stripModuleSource(source) {
-  return source
-    .replace(/^\s*import\s+[^;]*?from\s+['"]\.[^'"]*['"];?\s*$/gm, '')
-    .replace(/^\s*export\s+\*\s+from\s+['"]\.[^'"]*['"];?\s*$/gm, '')
-    .replace(/^\s*export\s+\{[^}]*\}\s+from\s+['"]\.[^'"]*['"];?\s*$/gm, '')
-    .replace(/^export\s+(const|function|class|let|var)\b/gm, '$1')
-    .replace(/^export\s+default\s+/gm, '')
-    // Un module dont tous les exports sont des types (questionnaire-types.ts,
-    // inliné via un `import type`) transpile en un `export {};` résiduel,
-    // invalide dans un script eval.
-    .replace(/^\s*export\s*\{\s*\};?\s*$/gm, '');
-}
-
-function localImportPaths(source, dir) {
-  const re = /(import\s+[^;]*?from\s+['"](\.[^'"]*)['"])|(export\s+(?:\*|\{[^}]*\})\s+from\s+['"](\.[^'"]*)['"])/g;
-  const out = [];
-  let match;
-  while ((match = re.exec(source))) {
-    const rel = match[2] || match[4];
-    if (!rel) continue;
-    let abs = path.resolve(dir, rel);
-    if (!abs.endsWith('.ts')) abs += '.ts';
-    out.push(abs);
-  }
-  return out;
-}
-
-function stripDuplicateQuestionHelpers(source) {
-  if (!source.includes('QUESTIONNAIRE_CATALOGUE')) return source;
-  const duplicateNames = new Set(['O_RPS', 'O_JPT', 'O_04', 'O_03jt', 'O_YN', 'O_UPPS', 'O_YOUNG', 'O_BMS', 'O_CUNGI', 'O_PAS', 'O_ZARIT', 'O_DASS', 'O_CONNERS']);
-  return source.split('\n').filter(line => {
-    const constMatch = line.match(/^const ([A-Za-z0-9_]+)\s*=/);
-    if (constMatch && duplicateNames.has(constMatch[1])) return false;
-    if (/^function q(n|s)?\(/.test(line)) return false;
-    return true;
-  }).join('\n');
-}
-
-function inlineModule(file, seen, parts) {
-  const abs = path.resolve(file);
-  if (seen.has(abs)) return;
-  seen.add(abs);
-  const raw = fs.readFileSync(abs, 'utf8');
-  for (const dep of localImportPaths(raw, path.dirname(abs))) inlineModule(dep, seen, parts);
-  // Dédoublonner sur la source brute (one-liners garantis), transpiler, puis
-  // retirer la syntaxe module de la sortie ré-imprimée.
-  parts.push(stripModuleSource(transpileTs(stripDuplicateQuestionHelpers(raw), abs)));
-}
-
-function loadQuestionsModule() {
-  const parts = [];
-  inlineModule(questionsPath, new Set(), parts);
-  const source = parts.join('\n');
-  return new Function(`${source}\nreturn { QUESTIONNAIRE_CATALOGUE, calculateScore };`)();
-}
 
 function assertEqual(actual, expected, message) {
   const same = JSON.stringify(actual) === JSON.stringify(expected);
@@ -100,7 +23,7 @@ function assert(condition, message) {
   if (!condition) throw new Error(`[questionnaires] ${message}`);
 }
 
-const { QUESTIONNAIRE_CATALOGUE, calculateScore } = loadQuestionsModule();
+const { QUESTIONNAIRE_CATALOGUE, calculateScore } = chargerCatalogue();
 const mapping = fs.readFileSync(mappingPath, 'utf8');
 const allowedStatuses = new Set(['certifié', 'mappé', 'ambigu', 'n/a', 'absent Drive', 'historique', 'doublon', 'à vérifier', 'à faire', 'non scoré']);
 
