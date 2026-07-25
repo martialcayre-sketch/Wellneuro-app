@@ -5,11 +5,11 @@
   (`subScores`, `components`, `parts`, `categories`, `phases`), héritées de
   l'ordre d'implémentation des instruments. `buildMiniSynthese` n'en lisait
   qu'une : les **sept composantes du PSQI**, les **trois catégories de Berlin**,
-  les **cinq parties de l'IDTAS-AE**, les **quatre axes du QIF** et les **deux
-  phases du test des 5 mots** n'atteignaient ni l'écran praticien ni le prompt
-  de synthèse. Le nouveau module `scoring/rubriques.ts` projette les cinq formes
-  sur une seule, et la mini-synthèse les restitue derrière l'interprétation
-  globale.
+  les **cinq parties de l'IDTAS-AE**, les **quatre axes du QIF**, le **score de
+  Francis** et les **deux phases du test des 5 mots** n'atteignaient ni l'écran
+  praticien ni le prompt de synthèse. Le nouveau module `scoring/rubriques.ts`
+  projette les cinq formes sur une seule, et la mini-synthèse les restitue
+  derrière l'interprétation globale.
 
 ### Ajouté
 
@@ -26,5 +26,15 @@
   l'interprétation quand elle existe, et énumère dans l'ordre de l'instrument
   sinon — classer par valeur écrirait « ressort surtout » sur ce qui va le mieux.
 
-  Banc de 27 tests exécutant `calculateScore` sur le catalogue réel, jamais des
+  Banc de 37 tests exécutant `calculateScore` sur le catalogue réel, jamais des
   fixtures écrites à la main.
+
+### Modifié
+
+- **« Tous les axes explorés sont peu perturbés. » disparaît sur six
+  instruments** — UPPS, Conners, BPCO, Monnier, QCT2 Gilliard et SIGH-SAD. Leurs
+  rubriques ne portent **aucune interprétation** : la phrase affirmait une
+  réassurance qu'aucune donnée ne soutenait. Ils énumèrent désormais leurs
+  valeurs. Le message est conservé là où il reste fondé, c'est-à-dire quand au
+  moins une rubrique est interprétée et qu'aucune n'est perturbée. Verrouillé
+  par deux tests.

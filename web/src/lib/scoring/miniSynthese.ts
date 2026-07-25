@@ -32,12 +32,26 @@ function valeurLisible(r: RubriqueScore): string {
 }
 
 /**
- * Libellé sans son maximum quand c'est de LÀ qu'on l'a tiré : les rubriques du
- * QIF s'appellent « Absentéisme (/10) », et « Absentéisme (/10) 2.9/10 » dit
- * deux fois la même chose.
+ * Libellé sans son maximum, la valeur le portant déjà : les rubriques du QIF
+ * s'appellent « Absentéisme (/10) », celles de Tinetti « Équilibre (/16) », et
+ * « Équilibre (/16) 16/16 » dit deux fois la même chose. Le dépouillement ne
+ * dépend PAS de `maxOrigine` — sur Tinetti le maximum vient du champ ET du
+ * libellé, et ne regarder que `libelle` laissait passer le seul instrument où
+ * la redondance subsistait.
  */
 function libelleLisible(r: RubriqueScore): string {
-  return r.maxOrigine === 'libelle' ? r.label.replace(/\s*\(\s*\/\s*[\d.,]+\s*\)\s*$/, '').trim() : r.label;
+  return r.label.replace(/\s*\(\s*\/\s*[\d.,]+\s*\)\s*$/, '').trim() || r.label;
+}
+
+/**
+ * Minuscule initiale pour enchaîner « Axe : interprétation », SAUF quand le
+ * libellé s'ouvre sur une lettre isolée : le TFD SIIN grade ses sous-échelles
+ * A / B / C, et « b — troubles fonctionnels modérés » n'est pas un grade
+ * clinique, c'est une coquille.
+ */
+function enMinusculeInitiale(label: string): string {
+  if (/^\p{Lu}(?:\P{L}|$)/u.test(label)) return label;
+  return label.charAt(0).toLowerCase() + label.slice(1);
 }
 
 /** Rubriques perturbées, les plus sévères d'abord. Vide si aucune n'est interprétée. */
@@ -61,19 +75,31 @@ function clauseRubriques(rubriques: readonly RubriqueScore[], labelGlobal = ''):
   // Une rubrique dont l'interprétation EST l'interprétation globale ne dit rien
   // de plus : sur l'IDTAS-AE, le score GSS porte le verdict du questionnaire
   // entier, et le répéter derrière lui ne fait que doubler la phrase.
+  //
+  // MAIS DÉDUPLIQUER NE DOIT JAMAIS PROMOUVOIR. Une revue adversariale a
+  // reproduit le cas sur le TFD SIIN : quatre sous-échelles en « C — troubles
+  // fonctionnels majeurs » (le verdict global) et une en « B ». Le filtre
+  // retirait les quatre, et « Rubriques à noter » nommait la SEULE qui n'était
+  // pas majeure. Même motif sur l'inventaire de plaintes, et jusque dans le
+  // prompt de la synthèse IA.
+  //
+  // Dès qu'une rubrique perturbée porte le verdict global, on ne hiérarchise
+  // plus du tout : on énumère. Le tri ne connaît que la couleur, et `danger`
+  // couvre plusieurs bandes sur ces instruments — il n'a pas de quoi classer.
   const global = labelGlobal.trim().toLowerCase();
-  const perturb = perturbees(rubriques).filter(
-    (r) => r.interpretation!.label.trim().toLowerCase() !== global,
+  const perturb = perturbees(rubriques);
+  const porteLeVerdictGlobal = perturb.some(
+    (r) => r.interpretation!.label.trim().toLowerCase() === global,
   );
-  if (perturb.length > 0) {
+  if (perturb.length > 0 && !porteLeVerdictGlobal) {
     const nommees = perturb
       .slice(0, 3)
-      .map((r) => `${libelleLisible(r)} : ${r.interpretation!.label.toLowerCase()}`)
+      .map((r) => `${libelleLisible(r)} : ${enMinusculeInitiale(r.interpretation!.label)}`)
       .join(' ; ');
     return `Rubriques à noter — ${nommees}.`;
   }
 
-  // Aucune interprétation par rubrique exploitable : on énumère sans classer.
+  // Pas de hiérarchie possible : on énumère sans classer.
   if (rubriques.some((r) => r.binaire)) {
     const positives = rubriques.filter((r) => r.positif).map((r) => libelleLisible(r));
     return positives.length > 0
@@ -81,9 +107,10 @@ function clauseRubriques(rubriques: readonly RubriqueScore[], labelGlobal = ''):
       : 'Aucune catégorie positive.';
   }
 
-  const chiffrees = rubriques.filter((r) => r.valeur !== null);
-  if (chiffrees.length === 0) return '';
-  return `Détail — ${chiffrees.map((r) => `${libelleLisible(r)} ${valeurLisible(r)}`).join(', ')}.`;
+  // Une rubrique que le moteur n'a pas su calculer RESTE dans l'énumération,
+  // marquée « non calculé ». La retirer laissait lire un détail qu'on croyait
+  // exhaustif — six domaines sur sept, sans le moindre signal.
+  return `Détail — ${rubriques.map((r) => `${libelleLisible(r)} ${valeurLisible(r)}`).join(', ')}.`;
 }
 
 /**
@@ -125,7 +152,7 @@ export function buildMiniSynthese(scores: ScoreInput): string {
     if (perturb.length > 0) {
       return perturb
         .slice(0, 3)
-        .map((r) => `${r.label} : ${r.interpretation!.label.toLowerCase()}`)
+        .map((r) => `${libelleLisible(r)} : ${enMinusculeInitiale(r.interpretation!.label)}`)
         .join(' ; ');
     }
     // Une rubrique interprétée mais non perturbée : le propos existe, il est

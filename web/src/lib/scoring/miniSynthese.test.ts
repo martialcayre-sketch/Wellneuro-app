@@ -136,6 +136,86 @@ describe('buildMiniSynthese — détail par rubrique sur les sorties réelles du
     expect(s).toBe('Anxiété : symptomatologie certaine ; Dépression : symptomatologie certaine');
   });
 
+  // Le défaut qu'une revue adversariale a reproduit sur ce questionnaire : la
+  // déduplication retirait les quatre sous-échelles en « C » (le verdict
+  // global) et « Rubriques à noter » nommait la SEULE en « B ». Le praticien
+  // lisait donc, sous un titre de hiérarchie, la rubrique la moins atteinte.
+  it('TFD : quand des rubriques portent le verdict global, on énumère au lieu de classer', () => {
+    const s = buildMiniSynthese(
+      calculateScore('Q_GAS_01', {
+        C1_1: '3', C1_2: '1', C1_3: '1', C1_4: '0', C1_5: '2', C1_6: '3', C1_7: '0', C1_8: '1',
+        C2_1: '2', C2_2: '2', C2_3: '1', C2_4: '3', C2_5: '1', C2_6: '2', C2_7: '0',
+        C3_1: '2', C3_2: '3', C3_3: '1', C3_4: '3', C3_5: '2',
+        C4_1: '2', C4_2: '3', C4_3: '2', C4_4: '2', C4_5: '3', C4_6: '3',
+        C5_1: '2', C5_2: '0', C5_3: '0', C5_4: '3', C5_5: '3',
+      }),
+    );
+    expect(s).toContain('C — Prédominance de troubles fonctionnels majeurs');
+    expect(s).not.toContain('Rubriques à noter');
+    // Les cinq sous-échelles, pas seulement celle qui échappe au verdict.
+    for (const axe of ['Digestif supérieur', 'Moyen-grêle', 'Transit', 'Selles', 'Douleurs intestinales']) {
+      expect(s).toContain(axe);
+    }
+  });
+
+  it('les grades cliniques gardent leur majuscule — « B — … » n’est pas « b — … »', () => {
+    const s = buildMiniSynthese({
+      subScores: [
+        { id: 'X', label: 'Digestif supérieur', total: 11, max: 24, interpretation: { label: 'B — Troubles fonctionnels modérés', color: 'warning' } },
+        { id: 'Y', label: 'Transit', total: 3, max: 15, interpretation: { label: 'A — Peu de troubles', color: 'success' } },
+      ],
+    });
+    expect(s).toContain('B — Troubles fonctionnels modérés');
+    expect(s).not.toContain('b — troubles');
+  });
+
+  it("une rubrique non calculée reste dans l'énumération, marquée comme telle", () => {
+    // Six domaines sur sept renseignés : le septième doit se voir.
+    const s = buildMiniSynthese(
+      calculateScore('Q_MOD_03', { Q001: '5', Q002: '5', Q003: '5', Q004: '5', Q005: '5', Q006: '5' }),
+    );
+    expect(s).toContain('Mobilité non calculé');
+    expect(s.split(',').length).toBe(7);
+  });
+
+  it('Tinetti : le maximum du libellé est dépouillé même quand le champ le porte aussi', () => {
+    const s = buildMiniSynthese({
+      interpretation: { label: 'Risque de chute' },
+      subScores: [
+        { id: 'E', label: 'Équilibre (/16)', total: 12, max: 16 },
+        { id: 'M', label: 'Marche (/12)', total: 9, max: 12 },
+      ],
+    });
+    expect(s).toContain('Équilibre 12/16');
+    expect(s).not.toContain('(/16)');
+  });
+
+  // Changement de comportement assumé, verrouillé ici. L'ancienne version
+  // affirmait « tous les axes explorés sont peu perturbés » sur des rubriques
+  // qui ne portent AUCUNE interprétation — une réassurance qu'aucune donnée ne
+  // soutenait. Concerne UPPS, Conners, BPCO, Monnier, QCT2 et SIGH-SAD.
+  it('des rubriques sans interprétation ne produisent plus une fausse réassurance', () => {
+    const s = buildMiniSynthese(calculateScore('Q_PED_02', toutesA('Q_PED_02', '3')));
+    expect(s).not.toContain('peu perturbés');
+    expect(s).toContain('Index TDAH 24/24');
+  });
+
+  it('une rubrique interprétée et non perturbée reste rassurante', () => {
+    const s = buildMiniSynthese({
+      subScores: [
+        { id: 'D', label: 'Dopamine', total: 5, interpretation: { label: 'Dans la norme', color: 'success' } },
+        { id: 'S', label: 'Sérotonine', total: 4, interpretation: { label: 'Dans la norme', color: 'success' } },
+      ],
+    });
+    expect(s).toBe('Tous les axes explorés sont peu perturbés.');
+  });
+
+  it('Francis : le troisième instrument à `components` est bien couvert', () => {
+    const s = buildMiniSynthese(calculateScore('Q_GAS_02', toutesA('Q_GAS_02', '50')));
+    expect(s.length).toBeGreaterThan(0);
+    expect(s).toContain('Détail');
+  });
+
   it('Pichot : un score global sans rubrique reste une phrase unique', () => {
     const s = buildMiniSynthese(calculateScore('Q_SOM_06', toutesA('Q_SOM_06', '2')));
     expect(s).toBe(
