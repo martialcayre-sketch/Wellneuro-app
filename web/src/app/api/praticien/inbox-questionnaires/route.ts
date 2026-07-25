@@ -5,6 +5,13 @@ import { prisma } from '@/lib/prisma';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { lignesInbox, type LigneInbox } from '@/lib/fil/inbox';
 import { getSubScoreRanges, type ScoreRange } from '@/lib/scoring/ranges';
+import { resolveDefinition } from '@/lib/instruments';
+import { QUESTIONNAIRE_PLAINTES_LECTURE } from '@/lib/plaintes';
+import {
+  construireReponsesLisibles,
+  type ReponseQuestionnaireLisible,
+} from '@/lib/questionnaire-reponses';
+import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 
 export type InboxQuestionnaireDetail = {
   idReponse: string;
@@ -18,6 +25,7 @@ export type InboxQuestionnaireDetail = {
   scorePrincipal: number | null;
   interpretation: string;
   subScoreRanges: Record<string, ScoreRange[]> | null;
+  reponsesLisibles: ReponseQuestionnaireLisible[];
 };
 
 export type InboxQuestionnairesApiResponse = {
@@ -63,6 +71,17 @@ function filtrerReponsesEnAttente(
     if (lues.has(r.idReponse)) return false;
     const ancre = ancres.get(r.idPatient);
     return !ancre || r.dateReponse > ancre;
+  });
+}
+
+async function resoudreDefinitionPourLecture(
+  idQuestionnaire: string,
+  praticienEmail: string,
+): Promise<QuestionnaireDef | null> {
+  if (idQuestionnaire === 'Q_PLAINTES') return QUESTIONNAIRE_PLAINTES_LECTURE;
+  return resolveDefinition(idQuestionnaire, {
+    praticienEmail,
+    inclureNonPublies: true,
   });
 }
 
@@ -157,23 +176,38 @@ export async function GET(req: Request): Promise<NextResponse<InboxQuestionnaire
     if (idPatientDetail) {
       const patient = patients[0];
       const enAttente = filtrerReponsesEnAttente(reponsesNormalisees, ancres, lues);
+      const definitions = new Map(
+        await Promise.all(
+          [...new Set(enAttente.map(r => r.idQuestionnaire))].map(async idQuestionnaire => [
+            idQuestionnaire,
+            await resoudreDefinitionPourLecture(idQuestionnaire, emailSession),
+          ] as const),
+        ),
+      );
       return NextResponse.json({
         ok: true,
         lignes: [],
         patient: { idPatient: patient.idPatient, nom: noms.get(patient.idPatient) ?? 'Patient' },
-        reponses: enAttente.map(r => ({
-          idReponse: r.idReponse,
-          idPatient: r.idPatient,
-          idAssignation: r.idAssignation ?? '',
-          idQuestionnaire: r.idQuestionnaire,
-          titre: r.titre,
-          dateSoumission: r.dateReponse.toISOString(),
-          scoresParsed: (r.scoresJson as Record<string, unknown>) ?? null,
-          rawAnswers: extraireRawAnswers(r.scoresJson),
-          scorePrincipal: r.scorePrincipal ?? null,
-          interpretation: r.interpretation ?? '',
-          subScoreRanges: getSubScoreRanges(r.idQuestionnaire),
-        })),
+        reponses: enAttente.map(r => {
+          const rawAnswers = extraireRawAnswers(r.scoresJson);
+          return {
+            idReponse: r.idReponse,
+            idPatient: r.idPatient,
+            idAssignation: r.idAssignation ?? '',
+            idQuestionnaire: r.idQuestionnaire,
+            titre: r.titre,
+            dateSoumission: r.dateReponse.toISOString(),
+            scoresParsed: (r.scoresJson as Record<string, unknown>) ?? null,
+            rawAnswers,
+            scorePrincipal: r.scorePrincipal ?? null,
+            interpretation: r.interpretation ?? '',
+            subScoreRanges: getSubScoreRanges(r.idQuestionnaire),
+            reponsesLisibles: construireReponsesLisibles(
+              definitions.get(r.idQuestionnaire) ?? null,
+              rawAnswers,
+            ),
+          };
+        }),
       });
     }
 

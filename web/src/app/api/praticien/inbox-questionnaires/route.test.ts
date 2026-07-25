@@ -87,10 +87,10 @@ describe('GET /api/praticien/inbox-questionnaires', () => {
         idReponse: 'R1',
         idPatient: 'PAT_SEED_01',
         idAssignation: 'ASS1',
-        idQuestionnaire: 'NEU_03',
+        idQuestionnaire: 'Q_NEU_06',
         titre: 'Questionnaire sommeil',
         dateReponse: new Date('2026-07-15T08:00:00.000Z'),
-        scoresJson: { total: 7, rawAnswers: { Q1: 2 } },
+        scoresJson: { total: 7, rawAnswers: { MM1: 2 } },
         scorePrincipal: 7,
         interpretation: 'Vigilance',
       },
@@ -98,8 +98,16 @@ describe('GET /api/praticien/inbox-questionnaires', () => {
     const res = await GET(getRequest('/api/praticien/inbox-questionnaires?idPatient=PAT_SEED_01'));
     const payload = await res.json();
     expect(payload.patient.nom).toBe('Sophie Nicola');
-    expect(payload.reponses[0].rawAnswers).toEqual({ Q1: 2 });
+    expect(payload.reponses[0].rawAnswers).toEqual({ MM1: 2 });
     expect(payload.reponses[0].scorePrincipal).toBe(7);
+    expect(payload.reponses[0].reponsesLisibles).toEqual([
+      expect.objectContaining({
+        idQuestion: 'MM1',
+        libelleQuestion: "J'oublie des informations récentes (noms, rendez-vous, mots)",
+        libelleReponse: 'Rarement',
+        valeurBrute: '2',
+      }),
+    ]);
   });
 
   it('POST confirme la lecture des réponses encore en attente du patient scopé', async () => {

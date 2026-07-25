@@ -62,11 +62,20 @@ describe('InboxQuestionnaires', () => {
               idQuestionnaire: 'NEU_03',
               titre: 'Sommeil',
               dateSoumission: '2026-07-15T08:00:00.000Z',
-              scoresParsed: { total: 7, rawAnswers: { Q1: 2 } },
-              rawAnswers: { Q1: 2 },
+              scoresParsed: { total: 7, rawAnswers: { MM1: 2 } },
+              rawAnswers: { MM1: 2 },
               scorePrincipal: 7,
               interpretation: 'Vigilance',
               subScoreRanges: null,
+              reponsesLisibles: [
+                {
+                  idQuestion: 'MM1',
+                  libelleQuestion: "J'oublie des informations récentes (noms, rendez-vous, mots)",
+                  libelleReponse: 'Rarement',
+                  valeurBrute: '2',
+                  section: 'Mémoire',
+                },
+              ],
             },
           ],
         });
@@ -92,7 +101,10 @@ describe('InboxQuestionnaires', () => {
     const dialog = await screen.findByRole('dialog');
     expect(dialog).toBeTruthy();
     expect(dialog.textContent).toContain('Sommeil');
-    expect(dialog.textContent).toContain('Q1');
+    expect(dialog.textContent).toContain("J'oublie des informations récentes");
+    expect(dialog.textContent).toContain('Rarement');
+    expect(dialog.textContent).toContain('Valeur brute : 2');
+    expect(dialog.textContent).toContain('Score brut : 7');
 
     fireEvent.click(screen.getByRole('button', { name: /Confirmer la lecture/i }));
     await waitFor(() =>
