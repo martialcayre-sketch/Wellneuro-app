@@ -1,6 +1,6 @@
 import type { SyntheseSchema } from '@/lib/anthropic';
 import { construireBloc } from './bloc';
-import type { Bloc, StatutSyntheseSource } from './types';
+import { STATUTS_SYNTHESE_VALIDES, type Bloc, type StatutSyntheseSource } from './types';
 
 // Adaptateur : SyntheseIA (contenu validé) → blocs C3 (LOT-03). PUR (aucune Prisma :
 // l'appelant fournit les champs lus). Applique le FIELD-FILTER par construction —
@@ -15,6 +15,7 @@ export type SyntheseSource = {
   statut: StatutSyntheseSource;
   versionPrompt: string;
   dateValidation?: string | null;
+  origine?: 'ia' | 'praticien';
 };
 
 /** Libellé de priorité côté praticien (le niveau n'est jamais exposé patient/médecin). */
@@ -35,9 +36,26 @@ const NIVEAU_LABEL: Record<'eleve' | 'modere' | 'faible', string> = {
  * - questions d'entretien : praticien uniquement.
  */
 export function blocsDepuisSynthese(source: SyntheseSource): Bloc[] {
-  const { syntheseJson: s, statut, versionPrompt, dateValidation } = source;
+  const { syntheseJson: s, statut, versionPrompt, dateValidation, origine = 'ia' } = source;
+  if (origine === 'praticien' && !STATUTS_SYNTHESE_VALIDES.includes(statut)) {
+    throw new Error('Un brouillon praticien doit être validé avant composition documentaire.');
+  }
   const ancrageHash = `${versionPrompt}#${dateValidation ?? statut}`;
-  const provenance = { source: 'synthese_ia' as const, ancrageHash, version: versionPrompt, statutSource: statut, dateValidation: dateValidation ?? undefined };
+  const provenance = origine === 'praticien'
+    ? {
+        source: 'synthese_praticien' as const,
+        ancrageHash,
+        version: versionPrompt,
+        dateValidation: dateValidation ?? undefined,
+      }
+    : {
+        source: 'synthese_ia' as const,
+        ancrageHash,
+        version: versionPrompt,
+        statutSource: statut,
+        dateValidation: dateValidation ?? undefined,
+      };
+  const regime = origine === 'praticien' ? 'statique_valide' as const : 'genere_ia' as const;
   const blocs: Bloc[] = [];
 
   const narratifPatient = s.narratif_patient?.trim();
@@ -45,7 +63,7 @@ export function blocsDepuisSynthese(source: SyntheseSource): Bloc[] {
     construireBloc({
       id: 'synthese_narratif',
       type: 'narratif',
-      regime: 'genere_ia',
+      regime,
       provenance,
       contenu: {
         praticien: s.resume_praticien || 'Résumé praticien à compléter.',
@@ -60,7 +78,7 @@ export function blocsDepuisSynthese(source: SyntheseSource): Bloc[] {
       construireBloc({
         id: `synthese_axe_${index}`,
         type: 'decision_validee',
-        regime: 'genere_ia',
+        regime,
         provenance,
         contenu: {
           praticien: `${axe.axe} (${NIVEAU_LABEL[axe.niveau_priorite]})${args ? `\n${args}` : ''}`,
@@ -75,7 +93,7 @@ export function blocsDepuisSynthese(source: SyntheseSource): Bloc[] {
       construireBloc({
         id: `synthese_vigilance_${index}`,
         type: 'vigilance',
-        regime: 'genere_ia',
+        regime,
         provenance,
         contenu: { praticien: point, medecin: `Signal à discuter : ${point}` },
       }),
@@ -87,7 +105,7 @@ export function blocsDepuisSynthese(source: SyntheseSource): Bloc[] {
       construireBloc({
         id: `synthese_question_${index}`,
         type: 'note_praticien',
-        regime: 'genere_ia',
+        regime,
         provenance,
         contenu: { praticien: question },
       }),

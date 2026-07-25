@@ -11,6 +11,7 @@ export function buildBookletHTML(
   dateDocument: string,
   s: SyntheseSchema,
   notesPraticien: string,
+  options: { assistanceIA?: boolean } = {},
 ): string {
   const axesPrioritaires = (s.axes_prioritaires ?? []).slice(0, 3);
   const couleurPriorite: Record<string, string> = {
@@ -22,6 +23,9 @@ export function buildBookletHTML(
   const dateDocumentHtml = escapeHtml(dateDocument);
   const narratifHtml = escapeHtml(s.narratif_patient || 'Synthèse à compléter par votre praticien.');
   const notesPraticienHtml = escapeHtml(notesPraticien);
+  const mentionPreparation = options.assistanceIA === false
+    ? 'Document rédigé et validé par votre praticien.'
+    : 'Document préparé avec une assistance d’intelligence artificielle et validé par votre praticien.';
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -96,7 +100,7 @@ export function buildBookletHTML(
   <div class="notes-praticien">${notesPraticienHtml}</div>` : ''}
 
   <div class="footer">
-    Document préparé avec une assistance d’intelligence artificielle et validé par votre praticien.<br>
+    ${mentionPreparation}<br>
     Ce bilan ne constitue pas un diagnostic médical.<br>
     wellneuro.fr &nbsp;·&nbsp; ${dateDocumentHtml}
   </div>

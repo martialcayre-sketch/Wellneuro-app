@@ -20,6 +20,11 @@ import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
 import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
+import {
+  MODELE_REDACTION_PRATICIEN,
+  VERSION_SYNTHESE_PRATICIEN,
+  validerBrouillonPraticien,
+} from '@/lib/synthese-praticien';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -476,8 +481,106 @@ export async function POST(req: Request) {
   }
 }
 
+// PUT /api/praticien/synthese
+// Crée un brouillon rédigé par le praticien, sans appel à un modèle d'IA.
+export async function PUT(req: Request) {
+  const requestContext = createRequestContext(req);
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+  }
+
+  let body: { idPatient?: string; synthese?: unknown };
+  try {
+    body = (await req.json()) as { idPatient?: string; synthese?: unknown };
+  } catch {
+    return withCorrelationHeader(NextResponse.json({ error: 'JSON invalide.' }, { status: 400 }), requestContext);
+  }
+
+  const idPatient = (body.idPatient ?? '').trim();
+  if (!idPatient || idPatient.length > 64 || !/^[A-Za-z0-9_-]+$/.test(idPatient)) {
+    return withCorrelationHeader(NextResponse.json({ error: 'idPatient invalide.' }, { status: 400 }), requestContext);
+  }
+
+  const validation = validerBrouillonPraticien(body.synthese);
+  if (!validation.ok) {
+    return withCorrelationHeader(NextResponse.json({ error: validation.error }, { status: 400 }), requestContext);
+  }
+
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+  }
+
+  try {
+    const patient = await prisma.patient.findFirst({
+      where: { idPatient, ...filtrePatientsDuPraticien(emailSession) },
+    });
+    if (!patient) {
+      return withCorrelationHeader(NextResponse.json({ error: 'Patient introuvable.' }, { status: 404 }), requestContext);
+    }
+
+    const idSynthese = createPublicId('SYN');
+    const record = await prisma.syntheseIA.create({
+      data: {
+        idSynthese,
+        idPatient,
+        emailPatient: patient.email,
+        modele: MODELE_REDACTION_PRATICIEN,
+        versionPrompt: VERSION_SYNTHESE_PRATICIEN,
+        donneesEntree: {
+          source: 'praticien',
+          versionSchema: VERSION_SYNTHESE_PRATICIEN,
+        },
+        syntheseJson: validation.synthese,
+        statut: 'Brouillon_Praticien',
+      },
+    });
+
+    await prisma.auditSynthese.create({
+      data: {
+        idSynthese,
+        idPatient,
+        modele: MODELE_REDACTION_PRATICIEN,
+        versionPrompt: VERSION_SYNTHESE_PRATICIEN,
+        statut: 'Brouillon_Praticien_Cree',
+      },
+    });
+
+    await journaliserAccesDossier({
+      idPatient,
+      praticienEmail: emailSession,
+      route: ROUTE_JOURNAL,
+      methode: 'PUT',
+    });
+
+    return withCorrelationHeader(NextResponse.json({
+      success: true,
+      synthese: {
+        idSynthese: record.idSynthese,
+        idPatient: record.idPatient,
+        dateGeneration: record.dateGeneration,
+        modele: record.modele,
+        statut: record.statut,
+        dateValidation: record.dateValidation,
+        notesPraticien: record.notesPraticien,
+        syntheseJson: record.syntheseJson,
+      },
+    }), requestContext);
+  } catch (err) {
+    logger.error({
+      event: EVENT_CODES.SYNTHESE_POST_EXCEPTION,
+      domain: 'SYNTHESE_IA',
+      message: 'Erreur lors de la création du brouillon praticien',
+      context: finalizeLogContext(requestContext, { statusCode: 500, retryable: true }),
+      error: err,
+    });
+    return withCorrelationHeader(NextResponse.json({ error: 'Erreur technique.' }, { status: 500 }), requestContext);
+  }
+}
+
 // PATCH /api/praticien/synthese
-// Valider, rejeter ou annoter une synthèse
+// Enregistrer, valider, rejeter ou annoter une synthèse.
 export async function PATCH(req: Request) {
   const requestContext = createRequestContext(req);
   const session = await getServerSession(authOptions);
@@ -485,8 +588,9 @@ export async function PATCH(req: Request) {
 
   type PatchBody = {
     idSynthese?: string;
-    action?: 'valider' | 'rejeter' | 'annoter';
+    action?: 'enregistrer' | 'valider' | 'rejeter' | 'annoter';
     notes?: string;
+    synthese?: unknown;
   };
 
   let body: PatchBody;
@@ -504,14 +608,34 @@ export async function PATCH(req: Request) {
     return withCorrelationHeader(NextResponse.json({ error: 'idSynthese et action sont requis.' }, { status: 400 }), requestContext);
   }
 
+  const emailSession = emailPraticien(session);
+  if (!emailSession) {
+    return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
+  }
+
   try {
-    const existing = await prisma.syntheseIA.findUnique({ where: { idSynthese } });
+    const existing = await prisma.syntheseIA.findFirst({
+      where: { idSynthese, patient: filtrePatientsDuPraticien(emailSession) },
+    });
     if (!existing) {
       return withCorrelationHeader(NextResponse.json({ error: 'Synthèse introuvable.' }, { status: 404 }), requestContext);
     }
 
     let statut = existing.statut;
-    if (action === 'valider') {
+    let syntheseJson: Prisma.InputJsonValue | undefined;
+    if (action === 'enregistrer') {
+      if (existing.statut !== 'Brouillon_Praticien' || existing.modele !== MODELE_REDACTION_PRATICIEN) {
+        return withCorrelationHeader(NextResponse.json(
+          { error: 'Seul un brouillon praticien peut être modifié.' },
+          { status: 409 },
+        ), requestContext);
+      }
+      const validation = validerBrouillonPraticien(body.synthese);
+      if (!validation.ok) {
+        return withCorrelationHeader(NextResponse.json({ error: validation.error }, { status: 400 }), requestContext);
+      }
+      syntheseJson = validation.synthese as Prisma.InputJsonValue;
+    } else if (action === 'valider') {
       statut = 'Validee_Praticien';
     } else if (action === 'rejeter') {
       statut = 'Rejetee';
@@ -521,16 +645,28 @@ export async function PATCH(req: Request) {
       return withCorrelationHeader(NextResponse.json({ error: 'Action invalide.' }, { status: 400 }), requestContext);
     }
 
-    await prisma.syntheseIA.update({
+    const record = await prisma.syntheseIA.update({
       where: { idSynthese },
       data: {
         statut,
         dateValidation: action === 'valider' ? new Date() : existing.dateValidation,
         notesPraticien: action === 'annoter' ? notes : existing.notesPraticien,
+        ...(syntheseJson ? { syntheseJson } : {}),
       },
     });
 
-    return withCorrelationHeader(NextResponse.json({ success: true, statut }), requestContext);
+    await journaliserAccesDossier({
+      idPatient: existing.idPatient,
+      praticienEmail: emailSession,
+      route: ROUTE_JOURNAL,
+      methode: 'PATCH',
+    });
+
+    return withCorrelationHeader(NextResponse.json({
+      success: true,
+      statut,
+      syntheseJson: record.syntheseJson,
+    }), requestContext);
   } catch (err) {
     logger.error({
       event: EVENT_CODES.SYNTHESE_PATCH_EXCEPTION,

@@ -39,4 +39,12 @@ describe('buildBookletHTML (extrait de la route booklet)', () => {
     expect(html).not.toContain('Questions pour la consultation');
     expect(html).not.toContain('axes prioritaires');
   });
+
+  it('attribue honnêtement au praticien un booklet issu d’un brouillon manuel', () => {
+    const html = buildBookletHTML('Sophie Nicola', '18 juillet 2026', synthese(), '', {
+      assistanceIA: false,
+    });
+    expect(html).toContain('Document rédigé et validé par votre praticien.');
+    expect(html).not.toContain('assistance d’intelligence artificielle');
+  });
 });

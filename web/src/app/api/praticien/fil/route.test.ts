@@ -114,6 +114,13 @@ describe('GET /api/praticien/fil', () => {
     expect(selectDe(prisma.protocolCheckin.findMany).id).toBe(true);
   });
 
+  it('remonte les brouillons IA et praticien à valider', async () => {
+    await GET();
+    expect(prisma.syntheseIA.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { statut: { in: ['Brouillon_IA', 'Brouillon_Praticien'] } },
+    }));
+  });
+
   // Jalon J21 = check-in J21 soumis MOINS épisode J21 consigné.
   it('un check-in J21 sans épisode J21 produit une carte jalon', async () => {
     prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);

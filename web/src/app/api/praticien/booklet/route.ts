@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { type SyntheseSchema, maskEmail, sanitizeAuditError } from '@/lib/anthropic';
 import { buildBookletHTML } from '@/lib/documents/bookletHtml';
+import { estRedactionPraticien } from '@/lib/synthese-praticien';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { logger } from '@/lib/observability/logger';
@@ -60,7 +61,13 @@ export async function GET(req: Request) {
       .toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     const syntheseData = synthese.syntheseJson as unknown as SyntheseSchema;
-    const html = buildBookletHTML(patientNom, dateDocument, syntheseData, synthese.notesPraticien ?? '');
+    const html = buildBookletHTML(
+      patientNom,
+      dateDocument,
+      syntheseData,
+      synthese.notesPraticien ?? '',
+      { assistanceIA: !estRedactionPraticien(synthese.modele) },
+    );
 
     const dernierEnvoi = synthese.bookletEnvois[0];
 
@@ -155,7 +162,13 @@ export async function POST(req: Request) {
       .toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     const syntheseData = synthese.syntheseJson as unknown as SyntheseSchema;
-    const html = buildBookletHTML(patientNom, dateDocument, syntheseData, synthese.notesPraticien ?? '');
+    const html = buildBookletHTML(
+      patientNom,
+      dateDocument,
+      syntheseData,
+      synthese.notesPraticien ?? '',
+      { assistanceIA: !estRedactionPraticien(synthese.modele) },
+    );
 
     // Dossier au suivi clôturé : plus aucun document ne part. La garde porte
     // sur l'ENVOI, pas sur l'aperçu — consulter le document d'un dossier clos

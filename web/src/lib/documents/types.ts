@@ -18,6 +18,7 @@ export type SourceBloc =
   | 'c2_diffusion'
   | 'c2_checkin'
   | 'c2_trajectoire'
+  | 'synthese_praticien'
   | 'synthese_ia';
 
 /**
@@ -36,6 +37,7 @@ export type Destinataire = 'patient' | 'medecin' | 'praticien';
  */
 export type StatutSyntheseSource =
   | 'Brouillon_IA'
+  | 'Brouillon_Praticien'
   | 'Validee_Praticien'
   | 'Corrigee_Praticien'
   | 'Rejetee';

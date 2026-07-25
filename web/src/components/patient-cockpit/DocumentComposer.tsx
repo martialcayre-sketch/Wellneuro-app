@@ -31,6 +31,7 @@ const SOURCE_LABELS: Record<SourceBloc, string> = {
   c2_diffusion: 'Diffusion (C2)',
   c2_checkin: 'Check-in (C2)',
   c2_trajectoire: 'Trajectoire (C2B)',
+  synthese_praticien: 'Synthèse praticien',
   synthese_ia: 'Synthèse IA',
 };
 
