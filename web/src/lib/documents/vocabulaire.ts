@@ -44,33 +44,93 @@ export function assertRenduMedecinNonPrescriptif(texte: string): void {
 // Cette garde ne juge pas du fond : elle attrape le registre. Les surfaces
 // praticien (resume_praticien, points de vigilance, `protocol` du catalogue) ne
 // sont PAS concernées — leur franchise clinique est utile et voulue.
+//
+// CE QU'ELLE NE SAIT PAS FAIRE. Elle ne lit pas la négation : « il n'y a ni
+// urgence ni danger » est une phrase rassurante qu'elle signale quand même.
+// Écrire un analyseur de négation française pour ça serait disproportionné et
+// faillible. La conséquence est assumée AILLEURS : le signalement est un
+// AVERTISSEMENT CONFIRMABLE côté route, jamais un refus définitif. Un faux
+// positif coûte un clic ; il ne rend pas un document indélivrable.
+//
+// Une revue adversariale a mesuré le coût de la version précédente, qui
+// cherchait ses racines par simple `includes` : « Rien ne s'aggrave » était
+// attrapé par `grave`, et « je ne persévère pas » — libellé RÉEL du catalogue —
+// par `sévère`. D'où les frontières de mot et la normalisation d'accents
+// ci-dessous, réellement appliquées et non plus supposées par duplication.
 
-/** Racines de termes anxiogènes à proscrire d'un contenu lu par le patient. */
+/**
+ * Racines de termes anxiogènes dans un contenu lu par le patient. Écrites SANS
+ * accent : la comparaison normalise le texte avant de chercher.
+ *
+ * « critique » n'y figure pas : « un esprit critique », « la période critique »
+ * et « un point critique » sont trop courants en français pour que la racine
+ * porte un signal. Une garde qui crie tout le temps ne se lit plus.
+ */
 export const RACINES_ANXIOGENES: readonly string[] = [
-  'urgen', // urgence, urgent, urgente
-  'danger', // danger, dangereux
-  'alarm', // alarmant, alarme
+  'urgence',
+  'urgent',
+  'danger',
+  'dangereux',
+  'alarmant',
+  'alarme',
   'grave',
-  'sévère',
+  'gravite',
   'severe',
-  'critique',
-  'inquiétant',
   'inquietant',
-  'immédiatement',
   'immediatement',
-  'risque élevé',
   'risque eleve',
-  'sans délai',
   'sans delai',
 ];
 
 /**
- * Premier terme anxiogène trouvé, ou null. Renvoyer le TERME (et non un
- * booléen) est ce qui permet de dire au praticien quoi reformuler.
+ * Minuscules et sans accent, AVEC la carte des positions d'origine — pour
+ * comparer « sévère » et « severe » sans les lister deux fois, tout en sachant
+ * réextraire le mot exact du praticien.
+ *
+ * La carte n'est pas un luxe : `toLowerCase()` ne conserve pas la longueur dans
+ * tous les cas (« İ » devient deux points de code), et un texte déjà décomposé
+ * décalerait tout le reste. Normaliser caractère par caractère supprime la
+ * question.
+ */
+function normaliserAvecIndices(brut: string): { norme: string; indices: number[] } {
+  let norme = '';
+  const indices: number[] = [];
+  for (let i = 0; i < brut.length; i += 1) {
+    const morceau = brut[i]
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/\p{Diacritic}/gu, '');
+    for (const c of morceau) {
+      norme += c;
+      indices.push(i);
+    }
+  }
+  return { norme, indices };
+}
+
+/**
+ * Premier terme anxiogène trouvé, TEL QU'IL EST ÉCRIT DANS LE TEXTE, ou null.
+ *
+ * Renvoyer le mot du praticien plutôt que la racine est ce qui rend le message
+ * utilisable : « le narratif emploie « urgente » » se comprend, « le narratif
+ * emploie « urgen » » non — et la règle « UI en français » l'exige.
  */
 export function termeAnxiogene(texte: string): string | null {
-  const t = (texte ?? '').toLowerCase();
-  return RACINES_ANXIOGENES.find((racine) => t.includes(racine)) ?? null;
+  const brut = texte ?? '';
+  const { norme, indices } = normaliserAvecIndices(brut);
+  for (const racine of RACINES_ANXIOGENES) {
+    // Frontière de mot à gauche, suffixe libre à droite : `grave` ne doit pas
+    // être trouvé dans « aggrave » ni `severe` dans « persevere », mais les
+    // accords (urgent / urgente / urgents) doivent l'être sans multiplier les
+    // entrées de la liste.
+    const motif = new RegExp(`(?<![\\p{L}\\p{N}])${racine.replace(/ /g, '\\s+')}\\p{L}*`, 'u');
+    const trouve = motif.exec(norme);
+    if (!trouve) continue;
+    const debut = indices[trouve.index];
+    const dernier = indices[trouve.index + trouve[0].length - 1];
+    return brut.slice(debut, dernier + 1);
+  }
+  return null;
 }
 
 /** `true` si le texte emploie un registre anxiogène. */

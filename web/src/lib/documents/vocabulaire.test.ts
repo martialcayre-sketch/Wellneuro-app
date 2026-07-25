@@ -41,15 +41,41 @@ describe('garde de vocabulaire anxiogène (contenus lus par le patient)', () => 
     expect(contientTermeAnxiogene('Votre praticien reprendra ces éléments avec vous.')).toBe(false);
   });
 
-  it('insensible à la casse et aux accents des racines couvertes', () => {
-    expect(contientTermeAnxiogene('AVIS MÉDICAL URGENT')).toBe(true);
-    expect(contientTermeAnxiogene('Depression severe')).toBe(true);
+  // Une revue adversariale a mesuré ce que coûtait la version `includes` : elle
+  // attrapait « grave » dans « aggrave » et « sévère » dans « persévère » — ce
+  // dernier étant un libellé RÉEL du catalogue (« Je ne persévère pas, je suis
+  // vite découragé(e) »). Une garde qui punit le mot d'à côté n'apprend rien.
+  it("ne se déclenche pas sur un mot qui contient seulement la racine", () => {
+    expect(termeAnxiogene("Rien ne s'aggrave à ce stade.")).toBeNull();
+    expect(termeAnxiogene('Je ne persévère pas, je suis vite découragé(e)')).toBeNull();
+    expect(termeAnxiogene('Nous garderons un esprit critique.')).toBeNull();
+    expect(termeAnxiogene('Un point aggravant a été noté par votre praticien.')).toBeNull();
   });
 
-  // Renvoyer le terme, et pas un booléen, est ce qui permet de dire au
-  // praticien QUOI reformuler.
-  it('termeAnxiogene nomme le terme fautif', () => {
-    expect(termeAnxiogene('Consultation neurologique urgente')).toBe('urgen');
+  // Ce que la garde ne SAIT PAS faire, et qu'elle assume : elle ne lit pas la
+  // négation. Ces phrases sont rassurantes et pourtant signalées. C'est la
+  // raison pour laquelle la route en fait un AVERTISSEMENT CONFIRMABLE et non
+  // un refus : un faux positif coûte un clic, pas un document indélivrable.
+  it('signale aussi les tournures négatives — limite connue et assumée', () => {
+    expect(termeAnxiogene("Aucun signe grave n'a été relevé.")).toBe('grave');
+    expect(termeAnxiogene("Il n'y a ni urgence ni danger.")).toBe('urgence');
+  });
+
+  it('insensible à la casse et aux accents, par normalisation réelle', () => {
+    expect(contientTermeAnxiogene('AVIS MÉDICAL URGENT')).toBe(true);
+    expect(contientTermeAnxiogene('Depression severe')).toBe(true);
+    // « sévère » n'est PAS dans la liste — seul « severe » y figure. Si la
+    // normalisation d'accents disparaissait, ce cas tomberait.
+    expect(contientTermeAnxiogene('Une fatigue sévère')).toBe(true);
+  });
+
+  // Renvoyer le mot du praticien, et pas la racine, est ce qui permet de dire
+  // QUOI reformuler — et la règle « UI en français » l'exige : « (« urgen ») »
+  // n'est pas du français.
+  it('termeAnxiogene renvoie le mot tel qu\'il est écrit, accents compris', () => {
+    expect(termeAnxiogene('Consultation neurologique urgente')).toBe('urgente');
+    expect(termeAnxiogene('Une fatigue sévère est décrite')).toBe('sévère');
+    expect(termeAnxiogene('AVIS MÉDICAL URGENT')).toBe('URGENT');
     expect(termeAnxiogene('Vos réponses évoquent une fatigue installée.')).toBeNull();
   });
 });

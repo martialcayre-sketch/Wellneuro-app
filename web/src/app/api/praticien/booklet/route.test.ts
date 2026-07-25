@@ -66,7 +66,12 @@ beforeEach(() => {
   createJournal.mockReset();
   deleteManyJournal.mockReset();
   createBookletEnvoi.mockReset();
-  findUniquePatient.mockResolvedValue({ prenom: 'Sophie', nom: 'Nicola', suiviClotureLe: null, effaceLe: null });
+  // `actif` manquait : `phaseDossier` lit `!etat.actif` et concluait
+  // « désactivé » sur un dossier censé être en suivi. Aucun test n'allait
+  // jusque-là, donc le fixture pouvait rester faux sans que rien ne rougisse.
+  findUniquePatient.mockResolvedValue({
+    prenom: 'Sophie', nom: 'Nicola', actif: true, suiviClotureLe: null, effaceLe: null,
+  });
   createJournal.mockResolvedValue({});
   deleteManyJournal.mockResolvedValue({ count: 0 });
   createBookletEnvoi.mockResolvedValue({});
@@ -152,5 +157,83 @@ describe('POST /api/praticien/booklet (garde inchangée)', () => {
     expect(findFirst).not.toHaveBeenCalled();
     // Le POST ne journalise pas (GD-1) : l'envoi laisse déjà sa trace datée.
     expect(createJournal).not.toHaveBeenCalled();
+  });
+});
+
+// SMTP_URL est absente en test : la route s'arrête en 503 APRÈS la garde de
+// registre. C'est ce qui permet de prouver qu'un narratif propre la franchit,
+// sans avoir à simuler nodemailer.
+describe('POST /api/praticien/booklet — garde de registre anxiogène', () => {
+  function envoyer(corps: Record<string, unknown>) {
+    return POST(
+      new Request('http://x/api/praticien/booklet', {
+        method: 'POST',
+        body: JSON.stringify({ idSynthese: 'SYN_1', relectureConfirmee: true, ...corps }),
+      }),
+    );
+  }
+
+  function avecNarratif(narratif: string) {
+    const s = syntheseFixture('Validee_Praticien');
+    s.syntheseJson.narratif_patient = narratif;
+    findFirst.mockResolvedValue(s);
+  }
+
+  it('demande confirmation, nomme le mot, et n’envoie rien', async () => {
+    avecNarratif('Une consultation urgente est à prévoir.');
+    const res = await envoyer({});
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.needsConfirmation).toBe(true);
+    expect(body.reason).toBe('REGISTRE_ANXIOGENE');
+    // Le MOT du praticien, pas la racine : « urgen » n'est pas du français.
+    expect(body.terme).toBe('urgente');
+    expect(body.warning).toContain('urgente');
+    // Aucun envoi : la route se serait sinon arrêtée en 503 (SMTP_URL absente).
+    expect(body.emailMasque).toBeDefined();
+  });
+
+  it('journalise le blocage — un motif clinique doit se relire', async () => {
+    avecNarratif('Une consultation urgente est à prévoir.');
+    await envoyer({});
+    expect(createBookletEnvoi).toHaveBeenCalledTimes(1);
+    const trace = createBookletEnvoi.mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(trace.data.statut).toBe('Confirmation_Requise');
+    expect(trace.data.operation).toBe('Registre');
+    expect(String(trace.data.erreurCourte)).toContain('urgente');
+  });
+
+  it('confirmerRegistre laisse passer — la garde fait regarder, elle ne décide pas', async () => {
+    avecNarratif('Une consultation urgente est à prévoir.');
+    const res = await envoyer({ confirmerRegistre: true });
+    // 503 SMTP : la garde est franchie, l'envoi est bien tenté.
+    expect(res.status).toBe(503);
+  });
+
+  it('forceSend ne vaut PAS confirmation de registre — deux décisions distinctes', async () => {
+    avecNarratif('Une consultation urgente est à prévoir.');
+    const res = await envoyer({ forceSend: true });
+    const body = await res.json();
+    expect(body.needsConfirmation).toBe(true);
+    expect(body.reason).toBe('REGISTRE_ANXIOGENE');
+  });
+
+  it('un narratif descriptif passe sans confirmation', async () => {
+    avecNarratif('Vos réponses évoquent un sommeil fragmenté ; nous en reparlerons.');
+    const res = await envoyer({});
+    expect(res.status).toBe(503);
+    expect(createBookletEnvoi).toHaveBeenCalledTimes(1);
+    const trace = createBookletEnvoi.mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(trace.data.operation).not.toBe('Registre');
+  });
+
+  it('un dossier clos répond « dossier clos », pas « reformulez »', async () => {
+    avecNarratif('Une consultation urgente est à prévoir.');
+    findUniquePatient.mockResolvedValue({
+      prenom: 'Sophie', nom: 'Nicola', actif: true,
+      suiviClotureLe: new Date('2026-07-01T00:00:00.000Z'), effaceLe: null,
+    });
+    const res = await envoyer({});
+    expect(res.status).toBe(409);
   });
 });

@@ -6,10 +6,14 @@ import { escapeHtml } from '@/lib/html';
 // créer, ne pas empiler »). Fonction PURE, sans I/O. Sert de patron de référence
 // au rendu C3 par destinataire (`documents/rendu.ts`).
 //
-// CE DOCUMENT PART PAR E-MAIL AU PATIENT. Il ne rend donc NI les points de
-// vigilance, NI les questions d'entretien. Le field-filter de
-// `depuisSynthese.ts` est formel : la vigilance est « praticien + médecin,
-// jamais patient » ; les questions d'entretien sont « praticien uniquement ».
+// CE DOCUMENT PART PAR E-MAIL AU PATIENT. Il ne rend donc RIEN de ce que le
+// field-filter de `depuisSynthese.ts` réserve au praticien et au médecin —
+// TROIS blocs, pas deux :
+//
+//   axes prioritaires        « praticien (détaillé) + médecin ; jamais patient »
+//   points de vigilance      « praticien + médecin ; jamais patient »
+//   questions d'entretien    « praticien uniquement »
+//
 // Le booklet contournait ce filtre en lisant `syntheseJson` directement.
 //
 // Ce n'était pas une question de ton. `extraireVigilanceDeterministe`
@@ -18,8 +22,21 @@ import { escapeHtml } from '@/lib/html';
 // fait partie — suivis de « avis médical à évaluer en priorité ». Un patient
 // pouvait recevoir cette phrase seul dans sa boîte mail, sans accompagnement.
 //
-// Garde opposable : `bookletHtml.test.ts` échoue si l'un des deux blocs
-// reparaît, y compris avec un signal d'alerte en contenu.
+// LE BLOC AXES ÉTAIT LA MÊME FUITE SOUS UN AUTRE NOM DE CHAMP, et c'est une
+// revue adversariale qui l'a vue : `axe.arguments` porte les libellés
+// d'interprétation destinés au praticien (contrat JSON : « Score X élevé »,
+// « Interprétation Y ») et `axe.points_a_confirmer` porte, littéralement,
+// « Question à poser en entretien ». Retirer `questions_entretien` en laissant
+// ce champ-là revenait à déplacer la fuite, pas à la fermer.
+//
+// Ce que le patient reçoit désormais : le narratif qui lui est destiné, et la
+// note que son praticien a écrite pour lui. Rétablir un profil par axes est une
+// DÉCISION PRODUIT — elle suppose des libellés écrits pour le patient, et une
+// mise à jour du field-filter qui fasse foi.
+//
+// Garde opposable : `bookletHtml.test.ts` échoue si l'un des trois blocs
+// reparaît, y compris avec un signal d'alerte ou une question d'entretien en
+// contenu.
 export function buildBookletHTML(
   patientNom: string,
   dateDocument: string,
@@ -27,12 +44,6 @@ export function buildBookletHTML(
   notesPraticien: string,
   options: { assistanceIA?: boolean } = {},
 ): string {
-  const axesPrioritaires = (s.axes_prioritaires ?? []).slice(0, 3);
-  const couleurPriorite: Record<string, string> = {
-    eleve: '#dc2626',
-    modere: '#d97706',
-    faible: '#16a34a',
-  };
   const patientNomHtml = escapeHtml(patientNom);
   const dateDocumentHtml = escapeHtml(dateDocument);
   const narratifHtml = escapeHtml(s.narratif_patient || 'Synthèse à compléter par votre praticien.');
@@ -57,13 +68,6 @@ export function buildBookletHTML(
   h2 { font-size: 18px; color: #2d6a4f; border-left: 4px solid #2d6a4f; padding-left: 12px; margin-top: 36px; }
   h3 { font-size: 15px; color: #1a1a2e; margin-bottom: 6px; }
   .narratif { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px 24px; font-size: 15px; line-height: 1.7; color: #166534; }
-  .axe { background: #fafafa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px 20px; margin-bottom: 16px; }
-  .axe-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-  .prio-badge { font-size: 11px; font-weight: bold; padding: 3px 10px; border-radius: 12px; color: #fff; }
-  ul { margin: 6px 0 0; padding-left: 20px; }
-  li { margin-bottom: 4px; font-size: 14px; line-height: 1.6; }
-  .vigilance { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 16px 20px; }
-  .questions { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px 20px; }
   .notes-praticien { background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 16px 20px; font-style: italic; }
   .footer { border-top: 1px solid #e5e7eb; margin-top: 48px; padding-top: 20px; font-size: 12px; color: #9ca3af; text-align: center; line-height: 1.6; }
 </style>
@@ -83,21 +87,8 @@ export function buildBookletHTML(
   <h2>Ce que vos réponses suggèrent</h2>
   <div class="narratif">${narratifHtml}</div>
 
-  ${axesPrioritaires.length > 0 ? `
-  <h2>Profil neuronutritionnel — axes prioritaires</h2>
-  ${axesPrioritaires.map(axe => `
-  <div class="axe">
-    <div class="axe-header">
-      <h3 style="margin:0">${escapeHtml(axe.axe)}</h3>
-      <span class="prio-badge" style="background:${couleurPriorite[axe.niveau_priorite] ?? '#6b7280'}">
-        ${axe.niveau_priorite === 'eleve' ? 'Priorité élevée' : axe.niveau_priorite === 'modere' ? 'Priorité modérée' : 'Priorité faible'}
-      </span>
-    </div>
-    ${axe.arguments?.length ? `<ul>${axe.arguments.map(a => `<li>${escapeHtml(a)}</li>`).join('')}</ul>` : ''}
-    ${axe.points_a_confirmer?.length ? `<p style="font-size:13px;color:#555;margin:10px 0 0"><em>À confirmer : ${axe.points_a_confirmer.map(escapeHtml).join(' — ')}</em></p>` : ''}
-  </div>`).join('')}` : ''}
-
-  <!-- Vigilance et questions d'entretien : voir la note en tête de fichier. -->
+  <!-- Axes prioritaires, vigilance et questions d'entretien : voir la note en
+       tête de fichier. Les trois sont réservés au praticien et au médecin. -->
 
   ${notesPraticien ? `
   <h2>Note de votre praticien</h2>

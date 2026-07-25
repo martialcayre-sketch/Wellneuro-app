@@ -50,9 +50,10 @@ Le patient lit ce texte SEUL, souvent avant d'avoir revu son praticien. Il doit
 en sortir orienté, jamais inquiété.
 
 - N'emploie JAMAIS, dans narratif_patient : « urgence », « urgent », « danger »,
-  « dangereux », « alerte », « grave », « sévère », « critique », « anormal »,
-  « inquiétant », « risque élevé », « immédiatement ». Ces mots peuvent figurer
-  dans resume_praticien et points_de_vigilance, qui ne sont pas lus par le patient.
+  « dangereux », « alerte », « alarmant », « grave », « gravité », « sévère »,
+  « anormal », « inquiétant », « risque élevé », « immédiatement », « sans délai ».
+  Ces mots peuvent figurer dans resume_praticien, axes_prioritaires et
+  points_de_vigilance : aucun de ces trois champs n'est lu par le patient.
 - Les libellés d'interprétation des questionnaires et les champs « Orientation »
   fournis en entrée sont écrits POUR LE PRATICIEN. Ne les recopie pas tels quels
   dans narratif_patient : reformule-les dans un registre descriptif.

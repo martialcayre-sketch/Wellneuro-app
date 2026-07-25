@@ -101,7 +101,16 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return withCorrelationHeader(NextResponse.json({ error: 'Non authentifié.' }, { status: 401 }), requestContext);
 
-  type SendBody = { idSynthese?: string; relectureConfirmee?: boolean; forceSend?: boolean };
+  // `confirmerRegistre` est DISTINCT de `forceSend`, et volontairement.
+  // `forceSend` confirme un renvoi ; réutiliser le même drapeau ferait
+  // confirmer d'un seul clic deux choses sans rapport — « oui, renvoyez » vaudrait
+  // aussi « oui, envoyez ce texte alarmiste », sans que le praticien l'ait lu.
+  type SendBody = {
+    idSynthese?: string;
+    relectureConfirmee?: boolean;
+    forceSend?: boolean;
+    confirmerRegistre?: boolean;
+  };
   let body: SendBody;
   try {
     body = (await req.json()) as SendBody;
@@ -112,6 +121,7 @@ export async function POST(req: Request) {
   const idSynthese = (body.idSynthese ?? '').trim();
   const relectureConfirmee = body.relectureConfirmee === true;
   const forceSend = body.forceSend === true;
+  const confirmerRegistre = body.confirmerRegistre === true;
 
   if (!idSynthese) return withCorrelationHeader(NextResponse.json({ error: 'idSynthese requis.' }, { status: 400 }), requestContext);
 
@@ -163,27 +173,6 @@ export async function POST(req: Request) {
       .toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     const syntheseData = synthese.syntheseJson as unknown as SyntheseSchema;
-
-    // Registre anxiogène : le narratif est le seul texte libre qui parte au
-    // patient. Quand il vient du modèle, celui-ci peut y recopier une
-    // « Orientation » du catalogue (« Avis médical urgent »…) ; quand il vient
-    // du praticien, la relecture reste utile. Reçue seule, sans praticien en
-    // face, cette phrase inquiète sans orienter. La garde vaut donc dans les
-    // deux cas, et refuse l'envoi en NOMMANT le terme plutôt qu'en réécrivant
-    // en silence un contenu que le praticien a relu.
-    const terme = termeAnxiogene(syntheseData.narratif_patient ?? '');
-    if (terme) {
-      return withCorrelationHeader(NextResponse.json(
-        {
-          success: false,
-          reason: 'REGISTRE_ANXIOGENE',
-          terme,
-          error: `Le narratif patient emploie un registre alarmiste (« ${terme} »). Reformulez-le avant l'envoi : ce texte est lu seul, souvent avant la consultation.`,
-        },
-        { status: 422 }
-      ), requestContext);
-    }
-
     const html = buildBookletHTML(
       patientNom,
       dateDocument,
@@ -195,12 +184,46 @@ export async function POST(req: Request) {
     // Dossier au suivi clôturé : plus aucun document ne part. La garde porte
     // sur l'ENVOI, pas sur l'aperçu — consulter le document d'un dossier clos
     // reste légitime. Elle est dans la route et non dans l'écran, sinon un
-    // appel direct la contournerait.
+    // appel direct la contournerait. Elle passe AVANT l'avertissement de
+    // registre : demander de reformuler un document qui ne partira jamais
+    // serait un travail pour rien.
     if (patient && !accepteNouvelEnvoi(patient)) {
       return withCorrelationHeader(NextResponse.json(
         { success: false, reason: RAISON_DOSSIER_CLOS, error: MESSAGE_DOSSIER_CLOS },
         { status: 409 }
       ), requestContext);
+    }
+
+    // Registre anxiogène : le narratif est le seul texte libre qui parte au
+    // patient. Quand il vient du modèle, celui-ci peut y recopier une
+    // « Orientation » du catalogue (« Avis médical urgent »…) ; quand il vient
+    // du praticien, la relecture reste utile. Reçue seule, sans praticien en
+    // face, cette phrase inquiète sans orienter.
+    //
+    // AVERTISSEMENT, PAS REFUS — et c'est une revue adversariale qui a montré
+    // pourquoi. Le narratif d'une synthèse IA n'est éditable à AUCUN moment de
+    // son cycle de vie : `action:'enregistrer'` exige `Brouillon_Praticien` +
+    // `MODELE_REDACTION_PRATICIEN`, l'envoi exige `Validee_Praticien`, et les
+    // deux ensembles sont disjoints. Un refus dur aurait donc dit « reformulez »
+    // sans qu'aucun écran ne le permette, et aurait rendu indélivrables des
+    // booklets déjà validés en production — d'autant que la garde ne lit pas la
+    // négation et signale « il n'y a ni urgence ni danger ».
+    //
+    // On réemploie le patron `needsConfirmation` déjà en place pour le renvoi,
+    // avec un drapeau à lui : le praticien voit le mot, et décide. La garde le
+    // fait REGARDER ; elle ne se substitue pas à son jugement.
+    const terme = termeAnxiogene(syntheseData.narratif_patient ?? '');
+    if (terme && !confirmerRegistre) {
+      await logBookletEnvoi(idSynthese, synthese.idPatient, synthese.emailPatient,
+        'Confirmation_Requise', 'Registre', relectureConfirmee,
+        `Registre anxiogène dans le narratif patient : « ${terme} ».`);
+      return withCorrelationHeader(NextResponse.json({
+        needsConfirmation: true,
+        reason: 'REGISTRE_ANXIOGENE',
+        terme,
+        warning: `Le narratif patient emploie « ${terme} ». Ce texte est lu seul, souvent avant la consultation. Reformulez-le, ou ajoutez confirmerRegistre: true pour l'envoyer tel quel.`,
+        emailMasque: maskEmail(synthese.emailPatient),
+      }), requestContext);
     }
 
     // Envoi email via nodemailer (SMTP via compte noreply@wellneuro.fr)
