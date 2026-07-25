@@ -136,9 +136,8 @@ CB-01 (migration = acte gaté). Aucune de ces tables ne porte de donnée patient
 
 ### L'analyte (pivot clinique)
 
-`BiologyAnalyte` : `code` interne stable (ex. `BIO_FERRITINE`), libellé,
-`codeRemboursement?` (nul si hors nomenclature), `remboursable` (dérivé de la
-correspondance NABM, jamais inféré), `unite` (vocabulaire **fermé**),
+`BiologyAnalyte` : `code` interne stable (ex. `BIO_FERRITINE`, forme imposée
+par contrainte), libellé, `unite` (vocabulaire **fermé**),
 `typePrelevement` (sang, urine, selles, salive… — fermé),
 `delaiRenduIndicatif?`, `sourceProvenance` (fermé :
 `nabm_smt_ans | labo | saisie_praticien`), `statutFiche`
@@ -148,12 +147,40 @@ correspondance NABM, jamais inféré), `unite` (vocabulaire **fermé**),
 (comme la dimension coût de C4) — l'audit confirme qu'aucun montant en euros
 n'est disponible dans la source.
 
+**Il n'existe volontairement aucune colonne `remboursable` ni
+`codeRemboursement`.** Un booléen stocké est une inférence figée : il diverge
+de la correspondance qui le fonde dès que la nomenclature bouge, alors que le
+cadrage exige qu'il ne soit *jamais* inféré. Le caractère remboursable se
+**dérive** donc à la lecture, et cette dérivation est écrite une seule fois
+(`web/src/lib/biology-library/remboursable.ts`) pour que CB-02a, CB-05, CB-06
+et CB-08 ne s'en donnent pas quatre définitions divergentes — elles décideraient
+du document que le patient reçoit.
+
+Elle ne rend pas un booléen mais **quatre états** : `non_evalue` (aucune
+correspondance signée — ce n'est pas « non remboursé », et cela doit se dire),
+`hors_nomenclature`, `remboursable`, et `remboursable_si_groupe` (l'analyte
+n'est coté qu'au sein d'un groupe imposé : le proposer seul ne le rend pas
+remboursable). Entente préalable, acte réservé et remboursement partiel sont
+des **conditions à afficher**, jamais des motifs de basculer en « non
+remboursé ».
+
 `BiologyAnalyteNabm` : correspondance **plusieurs-à-plusieurs** entre analyte et
-acte de la nomenclature (`analyteCode`, `codeActe`, `nature : isole | groupe`,
-`verifiePar/verifieLe`). Un analyte a plusieurs cotations possibles selon le
-groupage (TSH seule, TSH + T4L, TSH + T4L + T3L) et un acte couvre parfois deux
-analytes : un champ `nomenclatureNabm` unique ne tiendrait pas. Voir
+acte de la nomenclature (`analyteCode`, `codeActe`,
+`nature : isole | groupe_et | groupe_ou`, `verifiePar/verifieLe`). Un analyte a
+plusieurs cotations possibles selon le groupage (TSH seule, TSH + T4L,
+TSH + T4L + T3L) et un acte couvre parfois deux analytes : un champ
+`nomenclatureNabm` unique ne tiendrait pas. Voir
 [l'audit de la source](AUDIT-SOURCE-NABM.md), §7.
+
+Deux précisions issues de la revue du lot CB-01. **`groupe` valait pour deux
+situations opposées** : un acte qui cote un ensemble imposé (1211 = TSH + T4
+libre — proposer un seul membre ne le rend pas cotable) et un acte qui laisse
+un choix (1387 = folates sériques *ou* érythrocytaires — chacun est couvert).
+D'où trois natures et non deux. Et la correspondance est ancrée sur le **code
+d'acte**, jamais sur la ligne d'un millésime : sans cela la signature du
+praticien se périmait à chaque nouvelle version de nomenclature, faisant
+basculer tout le catalogue en « non remboursé » — donc changer le document
+remis au patient.
 
 ### Deux référentiels de valeurs, jamais fusionnés
 
@@ -327,7 +354,7 @@ fail-closed ; un fragment `changelog.d/` et un worktree par lot.
 | Lot | Contenu | Dépendances | Gates |
 | --- | --- | --- | --- |
 | CB-00 | Ce cadrage + décisions 0/A→G actées + **audit de la source NABM fait** ([AUDIT-SOURCE-NABM.md](AUDIT-SOURCE-NABM.md)) | — | aucun |
-| CB-01 | Migration catalogue CB-A (analytes, correspondance `BiologyAnalyteNabm`, deux référentiels de plages, préanalytique, panels, ratios, liens, pointeur de version) + vocabulaires fermés + les **deux flags** déclarés fail-closed | CB-00 | **migration** |
+| CB-01 | **Fait** — migration catalogue CB-A : onze tables (analytes, `biology_nabm_actes`, correspondance `BiologyAnalyteNabm`, deux référentiels de plages, préanalytique, panels, ratios, liens, pointeur de version) + vocabulaires fermés + les **deux flags** déclarés fail-closed | CB-00 | **migration** |
 | CB-02a | Domaine `web/src/lib/biology-library/` cloné de `supplement-library/` + import **NABM complet** (988 actes, six appels anonymes) en brouillons `importee` + file de revue | CB-01 | ingestion |
 | CB-02b | Corpus notebook « analyses biologiques » : extract → chunk → claims (`metadata.rayon:'biologie'`) → Atelier, **voie lente** | **après stabilisation de la certification** (décision G) | **ingestion prod** ; coût API |
 | CB-03 | Extension moteur : variantes de cible `analyse`/`panel_bio` + table biologie **séparée**, vide, signée-sha + double verrou + route | CB-02b ; après les lots 8-9 certification | flag ; table signée |

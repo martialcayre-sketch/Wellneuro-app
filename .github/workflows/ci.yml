@@ -155,6 +155,25 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_decisions_journal_v1.sql
 
+      # Le drift check ci-dessus ne voit ni les CHECK, ni la RLS, ni les index
+      # partiels : Prisma ne les introspecte pas. Ce contrat les vérifie, et
+      # surtout il fait échouer le CI si une colonne du catalogue biologie
+      # prend une sémantique patient — le verrou HDS cesse d'être un
+      # commentaire pour devenir un test.
+      - name: CB-01 biology catalogue contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1.sql
+
+      # Le contrat ci-dessus vérifie que les invariants sont EN PLACE ; celui-ci
+      # vérifie qu'ils MORDENT — quinze insertions interdites qui doivent toutes
+      # être rejetées, et pour le bon motif. Transaction annulée : rien ne
+      # survit, pas même la colonne ajoutée pour éprouver le verrou HDS.
+      - name: CB-01 biology catalogue negative tests
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1_negatif.sql
+
       - name: C5 LOT-02 import contract
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
