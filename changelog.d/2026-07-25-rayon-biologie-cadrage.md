@@ -14,3 +14,12 @@
   document patient systématique, ingestion du notebook après la certification)
   (`docs/claude/propositions/2026-07-25-rayon-biologie-fonctionnelle/`).
   Aucun code ni migration dans cette campagne de cadrage.
+- Audit de la source de la nomenclature des actes de biologie médicale
+  (`AUDIT-SOURCE-NABM.md`) : source retenue = Serveur Multi-Terminologies de
+  l'ANS (FHIR, Licence Ouverte v2, API anonyme) plutôt que le portail ameli,
+  volumétrie réelle 988 actes sur 1050 concepts, propriétés de facturation
+  disponibles mais aucune métadonnée clinique (unité, préanalytique, valeurs de
+  référence), et cœur de la biologie fonctionnelle absent de la nomenclature.
+  Deux corrections au modèle du cadrage : correspondance analyte ↔ acte
+  plusieurs-à-plusieurs (`BiologyAnalyteNabm`) et `sourceProvenance` en
+  `nabm_smt_ans`.

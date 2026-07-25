@@ -137,15 +137,23 @@ CB-01 (migration = acte gaté). Aucune de ces tables ne porte de donnée patient
 ### L'analyte (pivot clinique)
 
 `BiologyAnalyte` : `code` interne stable (ex. `BIO_FERRITINE`), libellé,
-`nomenclatureNabm?` et `codeRemboursement?` (nuls si hors nomenclature),
-`remboursable` (dérivé de la présence NABM, jamais inféré), `unite`
-(vocabulaire **fermé**), `typePrelevement` (sang, urine, selles, salive… —
-fermé), `delaiRenduIndicatif?`, `sourceProvenance` (fermé :
-`nabm_ameli | labo | saisie_praticien`), `statutFiche`
+`codeRemboursement?` (nul si hors nomenclature), `remboursable` (dérivé de la
+correspondance NABM, jamais inféré), `unite` (vocabulaire **fermé**),
+`typePrelevement` (sang, urine, selles, salive… — fermé),
+`delaiRenduIndicatif?`, `sourceProvenance` (fermé :
+`nabm_smt_ans | labo | saisie_praticien`), `statutFiche`
 (`importee | verifiee | inactive`, défaut `importee`), `contenuSha256`
 (idempotence, patron C4), `niveauCompletude`, `donneesManquantes[]`
 (abstention honnête), `verifiePar?/verifieLe?`. Le coût indicatif est différé
-(comme la dimension coût de C4).
+(comme la dimension coût de C4) — l'audit confirme qu'aucun montant en euros
+n'est disponible dans la source.
+
+`BiologyAnalyteNabm` : correspondance **plusieurs-à-plusieurs** entre analyte et
+acte de la nomenclature (`analyteCode`, `codeActe`, `nature : isole | groupe`,
+`verifiePar/verifieLe`). Un analyte a plusieurs cotations possibles selon le
+groupage (TSH seule, TSH + T4L, TSH + T4L + T3L) et un acte couvre parfois deux
+analytes : un champ `nomenclatureNabm` unique ne tiendrait pas. Voir
+[l'audit de la source](AUDIT-SOURCE-NABM.md), §7.
 
 ### Deux référentiels de valeurs, jamais fusionnés
 
@@ -178,9 +186,11 @@ côte, jamais une colonne « normes » unique.
 
 ### Alimentation
 
-Deux voies, comme C4 : import de la nomenclature (NABM/AMELI — licence et
-format à auditer en CB-00) en **brouillons** `importee` avec file de revue
-praticien, et corpus (notebook « analyses biologiques ») pour les plages
+Deux voies, comme C4 : import de la nomenclature (NABM — **source auditée**, voir
+[AUDIT-SOURCE-NABM.md](AUDIT-SOURCE-NABM.md) : Serveur Multi-Terminologies de
+l'ANS, LOv2, 988 actes, six appels d'API anonymes) en **brouillons** `importee`
+avec file de revue praticien, et corpus (notebook « analyses biologiques »)
+pour les plages
 fonctionnelles, le préanalytique interprétatif et les liens cliniques. Une
 source externe ne produit que des brouillons (décision C4 n°11, reprise ici).
 
@@ -316,9 +326,9 @@ fail-closed ; un fragment `changelog.d/` et un worktree par lot.
 
 | Lot | Contenu | Dépendances | Gates |
 | --- | --- | --- | --- |
-| CB-00 | Ce cadrage + décisions 0/A→G actées + audit source NABM/AMELI (licence, format, volumétrie) | — | aucun |
-| CB-01 | Migration catalogue CB-A (analytes, deux référentiels de plages, préanalytique, panels, ratios, liens, pointeur de version) + vocabulaires fermés + les **deux flags** déclarés fail-closed | CB-00 | **migration** |
-| CB-02a | Domaine `web/src/lib/biology-library/` cloné de `supplement-library/` + import **NABM complet** en brouillons `importee` + file de revue | CB-01 | ingestion (secret dédié) |
+| CB-00 | Ce cadrage + décisions 0/A→G actées + **audit de la source NABM fait** ([AUDIT-SOURCE-NABM.md](AUDIT-SOURCE-NABM.md)) | — | aucun |
+| CB-01 | Migration catalogue CB-A (analytes, correspondance `BiologyAnalyteNabm`, deux référentiels de plages, préanalytique, panels, ratios, liens, pointeur de version) + vocabulaires fermés + les **deux flags** déclarés fail-closed | CB-00 | **migration** |
+| CB-02a | Domaine `web/src/lib/biology-library/` cloné de `supplement-library/` + import **NABM complet** (988 actes, six appels anonymes) en brouillons `importee` + file de revue | CB-01 | ingestion |
 | CB-02b | Corpus notebook « analyses biologiques » : extract → chunk → claims (`metadata.rayon:'biologie'`) → Atelier, **voie lente** | **après stabilisation de la certification** (décision G) | **ingestion prod** ; coût API |
 | CB-03 | Extension moteur : variantes de cible `analyse`/`panel_bio` + table biologie **séparée**, vide, signée-sha + double verrou + route | CB-02b ; après les lots 8-9 certification | flag ; table signée |
 | CB-04 | Compilateur `tools/corpus/biologie/compile.mjs` → table régénérée par PR revue | CB-03 + claims validés | **signature praticien** |
@@ -340,6 +350,13 @@ les liens cliniques restent **vides** jusqu'à CB-02b. Le catalogue servi entre
 CB-02a et CB-02b n'expose que les valeurs de référence laboratoire et les
 métadonnées d'analyse — ce qui est cohérent avec l'invariant : une plage
 fonctionnelle sans claim validé n'est jamais servie.
+
+L'audit de la source ajoute une nuance de poids : **le cœur de la biologie
+fonctionnelle est absent de la nomenclature** (sélénium, homocystéine,
+coenzyme Q10, acides gras érythrocytaires, glutathion peroxydase, mélatonine…).
+CB-02a livre donc le socle remboursable et la matière administrative ; ce qui
+distingue le rayon d'un bilan de routine arrive en CB-02b, par le corpus. Le
+lot d'import n'est pas le lot qui donne sa valeur au rayon.
 
 ## §9 — Invariants réglementaires
 
@@ -387,10 +404,17 @@ Les décisions du §10 en ont refermé deux (charge de validation, télescopage
 avec la certification, tous deux traités par le séquencement de la décision G).
 Restent :
 
-- **Licence et format NABM/AMELI** : à auditer dans CB-00 avant tout import
-  (comme l'open data DGCCRF le fut pour C4). C'est le seul préalable du chemin
-  démarrable immédiatement — si la source n'est pas exploitable, CB-02a se
-  décale.
+- ~~**Licence et format NABM/AMELI**~~ — **refermé le 2026-07-25** par
+  [l'audit de la source](AUDIT-SOURCE-NABM.md) : LOv2, API FHIR anonyme,
+  988 actes en six appels. Le risque résiduel a changé de nature : la source est
+  **pauvre en clinique** (ni unité, ni préanalytique, ni valeur de référence) et
+  ignore le cœur de la biologie fonctionnelle. L'import remplit la moitié
+  administrative d'une fiche — ce que `donneesManquantes[]` doit rendre visible
+  plutôt que masquer.
+- **Rapprochement analyte ↔ acte NABM** : ni automatisable par libellé (le
+  filtre du serveur produit des faux négatifs silencieux), ni bijectif (TSH se
+  cote de trois façons). C'est une table de correspondance revue à la main,
+  charge à ne pas sous-estimer dans CB-02a.
 - **Fusion accidentelle des deux référentiels de valeurs** : le risque de
   conception n°1 — deux tables, deux affichages, jamais une colonne « normes ».
   Le garde naturel est l'invariant « pas de plage fonctionnelle sans claim » :
