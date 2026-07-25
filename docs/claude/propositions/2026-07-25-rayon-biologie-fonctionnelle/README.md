@@ -7,12 +7,13 @@ certification, PR #359, et que la proposition du rayon compléments C4).
 
 ## §0 — Nature de la campagne
 
-Campagne **additive**, pendant biologie du rayon compléments C4. Code proposé :
-**CB** (« Catalogue Biologie »), scindé comme C4 en **CB-A** (catalogue
-intrinsèque, data-first, aucune donnée patient) et **CB-B** (lecture
-contextuelle du dossier). Le code C4 étant déjà pris (flag `WN_C4_ENABLED`,
-migration `20260724133000_c4_supplement_product_catalogue` en base), CB évite
-toute collision — décision 0 à confirmer.
+Campagne **additive**, pendant biologie du rayon compléments C4. Code retenu
+(décision 0, actée le 2026-07-25) : **CB** (« Catalogue Biologie »), scindé
+comme C4 en **CB-A** (catalogue intrinsèque, data-first, aucune donnée patient)
+et **CB-B** (lecture contextuelle du dossier), flag `WN_CB_ENABLED`. Le code C4
+étant déjà pris (flag `WN_C4_ENABLED`, migration
+`20260724133000_c4_supplement_product_catalogue` en base) et C5 occupé par
+`food-compass`, CB évite toute collision.
 
 La campagne est **subordonnée à la campagne de certification du corpus des
 questionnaires** en cours (`docs/claude/propositions/2026-07-25-certification-corpus-questionnaires/`) :
@@ -178,7 +179,7 @@ côte, jamais une colonne « normes » unique.
 ### Alimentation
 
 Deux voies, comme C4 : import de la nomenclature (NABM/AMELI — licence et
-format à auditer en CB-00bis) en **brouillons** `importee` avec file de revue
+format à auditer en CB-00) en **brouillons** `importee` avec file de revue
 praticien, et corpus (notebook « analyses biologiques ») pour les plages
 fonctionnelles, le préanalytique interprétatif et les liens cliniques. Une
 source externe ne produit que des brouillons (décision C4 n°11, reprise ici).
@@ -196,8 +197,11 @@ est portée par le modèle, le vocabulaire et la machine à états.
   existant — texte seul, mur HDS respecté ; le médecin seul prescrit.
 - **Non remboursé** (biologie fonctionnelle spécialisée : acides organiques
   urinaires, zonuline, profils d'acides gras, microbiote…) : conseil direct,
-  payé par le patient ; **document remis au patient** (certains laboratoires
-  exigeant néanmoins une ordonnance, le document le signale le cas échéant).
+  payé par le patient ; **document remis au patient systématiquement**
+  (décision F) — y compris quand le laboratoire n'exige rien, pour que le
+  patient reparte toujours avec la trace écrite de ce qui lui a été proposé et
+  pourquoi. Le document signale le cas échéant qu'une ordonnance reste requise
+  par le laboratoire choisi.
 
 ### Machine à états (append-only, patron de la chaîne clinique)
 
@@ -311,25 +315,31 @@ gaté ; HDS = **gate dur** ; tout l'aval applicatif derrière `WN_CB_ENABLED`
 fail-closed ; un fragment `changelog.d/` et un worktree par lot.
 
 | Lot | Contenu | Dépendances | Gates |
-|---|---|---|---|
-| CB-00 | Ce cadrage + décisions 0/A→G + audit source NABM/AMELI (licence, format, volumétrie) + calendrier notebook | — | aucun |
-| CB-01 | Migration catalogue CB-A (analytes, deux référentiels de plages, préanalytique, panels, ratios, liens, pointeur de version) + vocabulaires fermés | CB-00 | **migration** |
-| CB-02a | Domaine `web/src/lib/biology-library/` cloné de `supplement-library/` + import NABM en brouillons + file de revue | CB-01 | ingestion (secret dédié) |
-| CB-02b | Corpus notebook « analyses biologiques » : extract → chunk → claims (`metadata.rayon:'biologie'`) → Atelier, **voie lente** | notebook fourni ; parallélisable | **ingestion prod** ; coût API |
-| CB-03 | Extension moteur : variantes de cible `analyse`/`panel_bio` + table biologie vide signée-sha + double verrou + route | coordonné avec lots 7-9 certification | flag ; table signée |
+| --- | --- | --- | --- |
+| CB-00 | Ce cadrage + décisions 0/A→G actées + audit source NABM/AMELI (licence, format, volumétrie) | — | aucun |
+| CB-01 | Migration catalogue CB-A (analytes, deux référentiels de plages, préanalytique, panels, ratios, liens, pointeur de version) + vocabulaires fermés + les **deux flags** déclarés fail-closed | CB-00 | **migration** |
+| CB-02a | Domaine `web/src/lib/biology-library/` cloné de `supplement-library/` + import **NABM complet** en brouillons `importee` + file de revue | CB-01 | ingestion (secret dédié) |
+| CB-02b | Corpus notebook « analyses biologiques » : extract → chunk → claims (`metadata.rayon:'biologie'`) → Atelier, **voie lente** | **après stabilisation de la certification** (décision G) | **ingestion prod** ; coût API |
+| CB-03 | Extension moteur : variantes de cible `analyse`/`panel_bio` + table biologie **séparée**, vide, signée-sha + double verrou + route | CB-02b ; après les lots 8-9 certification | flag ; table signée |
 | CB-04 | Compilateur `tools/corpus/biologie/compile.mjs` → table régénérée par PR revue | CB-03 + claims validés | **signature praticien** |
 | CB-05 | Migration + machine à états `BiologyExplorationProposal`/`Item`, génération depuis les candidats | CB-01, CB-03 | **migration** |
-| CB-06 | Régimes remboursé/non-remboursé : courrier médecin (C3, texte) / document patient ; IA en aval bornée ; Relu→Validé→Envoyé | CB-05 | validation praticien avant diffusion |
-| CB-07 | Contrat protocole V4 `BiologyCatalogRef` sur `biological_exploration` (si décision D = V4) | CB-05 | revue adversariale (contrat clinique) |
+| CB-06 | Régimes : courrier médecin (fil C3, texte) / **document patient systématique** ; IA en aval bornée ; Relu→Validé→Envoyé | CB-05 | validation praticien avant diffusion |
+| CB-07 | Contrat protocole **V4 `BiologyCatalogRef`** sur `biological_exploration` (décision D actée) | CB-05 | revue adversariale (contrat clinique) |
 | CB-08 | UI : rayon dans la bibliothèque, fiche analyte, encart fiche patient, cartes du fil | CB-05/06 | flag |
 | CB-09 | Étage 2 : `BiologyResult`, saisie/import, estimé↔mesuré, ré-alimentation | **HDS obtenu** | **GATE DUR HDS** + `WN_CB_RESULTS_ENABLED` |
 
-Ordre : CB-00 → {CB-01, CB-02b} tôt (CB-02b dès le notebook disponible,
-indépendant du schéma) ; CB-02a après CB-01 ; CB-03/04 **après ou en parallèle
-contrôlé** des lots 8-9 de la certification — jamais une table de règles
-concurrente avant que la table NNPP2 soit stabilisée ; CB-05 → 06 → 07/08 ;
-CB-09 seulement après HDS. La certification reste prioritaire sur la file de
-validation praticien.
+Ordre après arbitrage : **CB-00 → CB-01 → CB-02a** est le chemin démarrable
+immédiatement — il ne dépend ni du notebook ni de la certification, puisque le
+catalogue NABM se remplit par import et non par claims. **CB-02b n'ouvre
+qu'après la certification** (décision G), et CB-03/04 en découlent : pas de
+table de règles biologie avant que la table NNPP2 soit stabilisée et signée.
+Puis CB-05 → 06 → 07/08. CB-09 seulement après HDS.
+
+Conséquence pratique : les plages fonctionnelles (`BiologyFunctionalRange`) et
+les liens cliniques restent **vides** jusqu'à CB-02b. Le catalogue servi entre
+CB-02a et CB-02b n'expose que les valeurs de référence laboratoire et les
+métadonnées d'analyse — ce qui est cohérent avec l'invariant : une plage
+fonctionnelle sans claim validé n'est jamais servie.
 
 ## §9 — Invariants réglementaires
 
@@ -351,38 +361,53 @@ validation praticien.
 - **Pas de score global, pas de score de risque chiffré** : dimensions nommées,
   justification toujours visible, tri neutre.
 
-## §10 — Décisions à trancher par le praticien
+## §10 — Décisions actées (praticien, 2026-07-25)
 
-| # | Question | Recommandation |
-|---|---|---|
-| 0 | Nommage : code **CB**, flag `WN_CB_ENABLED` ? | CB |
-| A | Deux étages, **deux flags distincts** (`WN_CB_ENABLED` / `WN_CB_RESULTS_ENABLED` jamais activé avant HDS) ? | oui |
-| B | **Étendre** le moteur d'orientation (variantes de cible) plutôt qu'un moteur frère ? | étendre |
-| C | Table de règles biologie **séparée** de la table NNPP2 (signatures indépendantes) ? | séparée |
-| D | Protocole : contrat **V4 `BiologyCatalogRef`** sur `biological_exploration`, ou rester au niveau intention ? | V4 (miroir de l'option 1 C4, retenue) |
-| E | Catalogue V1 : import NABM **complet** en brouillons, ou pilote restreint (2-3 axes : fer, thyroïde, inflammation) ? | complet (précédent C4) |
-| F | Matérialisation : courrier médecin via **fil C3** (texte) ; document patient systématique pour le non-remboursé ? | C3 + document systématique |
-| G | Notebook « analyses biologiques » : disponibilité et calendrier d'ingestion vis-à-vis de la certification en cours ? | à dater |
+Les huit décisions structurantes ont été tranchées le 2026-07-25. Elles sont
+**fermées** : toute réouverture passe par une entrée datée sous ce tableau.
 
-## §11 — Risques et questions ouvertes
+| # | Question | Décision actée |
+| --- | --- | --- |
+| 0 | Nommage du rayon | **CB** (« Catalogue Biologie »), flag `WN_CB_ENABLED`, scission CB-A / CB-B. Évite C4 (compléments) et C5 (food-compass). |
+| A | Séparation documentaire / résultats patient | **Deux flags distincts** : `WN_CB_ENABLED` (étage 1) et `WN_CB_RESULTS_ENABLED` (étage 2, fail-closed, jamais activé avant attestation HDS). |
+| B | Construction du moteur | **Étendre** le moteur d'orientation existant (variantes de cible `analyse` / `panel_bio`), pas de moteur frère. |
+| C | Table de règles | **Séparée** de la table NNPP2 : sha-256 et signature praticien propres, campagnes indépendantes. |
+| D | Lien au protocole | **Contrat V4 `BiologyCatalogRef`** sur l'action `biological_exploration`, miroir de `SupplementCatalogRef` V3. |
+| E | Périmètre catalogue V1 | **NABM complet** en brouillons `importee`, vérification praticien au fil de l'eau (précédent C4/DGCCRF). |
+| F | Matérialisation des régimes | Remboursé : **courrier texte au médecin traitant via le fil C3**. Non remboursé : **document patient systématique**, même sans exigence du laboratoire. |
+| G | Calendrier du notebook biologie | **Après stabilisation de la campagne certification** — ne pas empiler deux files de validation en voie lente. |
 
-- **Charge de validation praticien** : la file D-003 est déjà chargée
-  (certification lots 2-4 et 8 ; 811 + 658 claims 09/10 en attente). Les claims
-  biologie s'empilent dessus, en voie lente. → étaler CB-02b, la certification
-  d'abord.
-- **Licence et format NABM/AMELI** : à auditer en CB-00bis avant tout import
-  (comme l'open data DGCCRF le fut pour C4).
-- **Disponibilité du notebook analyses biologiques** : tout l'étage « plages
-  fonctionnelles + moteur » en dépend (décision G).
+Conséquences directes : CB-07 (contrat V4) n'est plus conditionnel ; CB-02b
+attend la certification au lieu d'être seulement « parallélisable » ; le second
+flag est nommé et gelé dès CB-01.
+
+## §11 — Risques et points de vigilance
+
+Les décisions du §10 en ont refermé deux (charge de validation, télescopage
+avec la certification, tous deux traités par le séquencement de la décision G).
+Restent :
+
+- **Licence et format NABM/AMELI** : à auditer dans CB-00 avant tout import
+  (comme l'open data DGCCRF le fut pour C4). C'est le seul préalable du chemin
+  démarrable immédiatement — si la source n'est pas exploitable, CB-02a se
+  décale.
 - **Fusion accidentelle des deux référentiels de valeurs** : le risque de
   conception n°1 — deux tables, deux affichages, jamais une colonne « normes ».
-- **Télescopage avec la certification** : le moteur d'orientation appartient
-  aux lots 7-9 de la certification ; CB-03/04 s'y coordonnent (table séparée,
-  séquencement) au lieu de créer une seconde source de vérité.
+  Le garde naturel est l'invariant « pas de plage fonctionnelle sans claim » :
+  entre CB-02a et CB-02b, la colonne fonctionnelle est vide, et cela doit se
+  voir plutôt que se combler par défaut avec les bornes labo.
+- **Séquencement à tenir** : CB-02b et CB-03 sont désormais suspendus à la
+  stabilisation de la certification. Le risque n'est plus le télescopage mais
+  l'oubli — le rayon peut rester longtemps à l'état « catalogue sans plages
+  fonctionnelles », utile mais muet côté moteur.
 - **Collision de nommage** : `web/src/lib/protocol/` (suivi patient) et
   l'atelier de règles C4 (`api/praticien/regles`) sont des homonymes à éviter —
   le domaine s'appellera `biology-library`, le concept « exploration
   biologique ».
+- **Périmètre réglementaire** : la décision D (contrat V4) fait entrer une
+  référence catalogue biologie dans le protocole. C'est le point où une analyse
+  MDCG 2019-11 dédiée devra être refaite si la finalité revendiquée évolue vers
+  l'aide au diagnostic.
 
 ## Annexe — correspondances
 
