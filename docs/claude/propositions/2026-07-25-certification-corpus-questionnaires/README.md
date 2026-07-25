@@ -151,13 +151,31 @@ praticien ; 12/13 ensuite. **La priorité immédiate est la certification
      fois, une fois leurs items extraits.
    - **Palier T1** : `scoring-check` est ajouté à `npm run check` (leçon
      LOT-01b) et le banc du validateur entre au CI.
+6. **Droits du référentiel SIIN — usage cabinet** (2026-07-25). Les
+   questionnaires issus du corpus SIIN sont **libres d'usage dans le cadre de la
+   pratique du cabinet de neuronutrition**, la licence ne s'appliquant pas à
+   l'usage par le praticien. Acté sur les **13 entrées**
+   `statutBibliographique: referentiel_interne_siin` du registre
+   (`droits.statut: permission_obtenue`, détail et date portés dans l'entrée).
+   **Périmètre** : administration aux patients du cabinet, scoring, restitution
+   praticien et patient, indexation dans le corpus RAG interne — la barrière
+   D-003 garantit que les claims ne sortent pas de l'application. **Ne couvre
+   pas** la rediffusion hors cabinet, la publication du verbatim, ni la cession
+   à un tiers. Pour un instrument SIIN qui **adapte une échelle publiée par un
+   tiers** (diète méditerranéenne, auto-évaluation de l'anxiété…), la
+   déclaration porte sur l'adaptation et laisse intacts les droits de l'échelle
+   d'origine : à traiter entrée par entrée au banc.
+7. **Rapatriement des sources** (2026-07-25) : 123 PDF du dossier Drive
+   rapatriés dans `~/.wellneuro/corpus/`, 116 notices au registre sous le
+   notebook « 13 — Instruments du cabinet ». La question (a) ci-dessous est
+   close pour les instruments du cabinet.
 
 ## 5. Décisions praticien en attente
 
 | # | Question | Bloque |
 |---|---|---|
-| a | Fourniture des PDF sources primaires des ~35 instruments validés — dépôt `~/.wellneuro/corpus/` + entrées registre | Lot 2 |
-| b | Droits/licences par instrument (PSQI © Univ. Pittsburgh, QLQ © EORTC, MMSE © PAR, Conners © MHS, Epworth © Johns, HIT-6 © QualityMetric…) : ingérer verbatim en base, ou banc **local seulement** | Lot 2 (périmètre) |
+| ~~a~~ | ~~Fourniture des PDF sources primaires~~ — **close le 2026-07-25** (123 PDF rapatriés, 116 notices) | — |
+| b | Droits/licences des instruments **tiers** (PSQI © Univ. Pittsburgh, QLQ © EORTC, MMSE © PAR, Conners © MHS, Epworth © Johns, HIT-6 © QualityMetric…) : ingérer verbatim en base, ou banc **local seulement**. Le référentiel SIIN est tranché (décision 6) ; ces instruments-là ne le sont pas | Lot 2 (périmètre) |
 | c | Hiérarchie en cas de divergence Drive ↔ source primaire (le banc va en détecter — MFI-20/Berlin/PSQI déjà constatées) | Lot 4 (arbitrages) |
 | d | Validation des niveaux de preuve A/B/C/D (`NIVEAU_PREUVE_PAR_SOURCE`) | Lot 5 |
 | e | Besoins 3/6/7/11 : rester à couverture null, ou mapper de nouvelles sources (⇒ bump v3) | Lot 6 |
