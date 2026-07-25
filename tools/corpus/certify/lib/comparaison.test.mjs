@@ -1,0 +1,320 @@
+// Banc du comparateur SOURCE ↔ SERVI.
+//
+//   node --test tools/corpus/certify/lib/comparaison.test.mjs
+//
+// Ce que ces cas prouvent : le comparateur ÉCHOUE quand il doit échouer.
+// Un banc qui ne montrerait que des cas conformes ne dirait rien de sa
+// capacité à détecter — c'est exactement l'angle mort qu'on cherche à couvrir
+// sur des instruments servis en production.
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { comparer, similarite, normaliserTexte, echelleServie } from './comparaison.mjs';
+import { empreinteServie, reponsesExtremes, itemsDuServi } from './servi.mjs';
+
+/** Empreinte servie minimale, surchargeable par cas de test. */
+function servi(surcharge = {}) {
+  return {
+    id: 'Q_TEST',
+    titre: 'Instrument de test',
+    sections: [{ id: 'A', titre: 'Section A', itemIds: ['T1', 'T2'] }],
+    items: [
+      { id: 'T1', texte: 'Je me sens en forme', type: 'likert', options: [{ v: 1, l: 'Non' }, { v: 5, l: 'Oui' }], min: null, max: null, unite: null, conditionnel: null, section: 'A' },
+      { id: 'T2', texte: 'Je me sens fatigué', type: 'likert', options: [{ v: 1, l: 'Non' }, { v: 5, l: 'Oui' }], min: null, max: null, unite: null, conditionnel: null, section: 'A' },
+    ],
+    scoring: { type: 'sum', maxTotalDeclare: 10, bandes: [], typePorteUneInversion: false },
+    bornesExecutees: { min: 2, max: 10, erreur: null },
+    ...surcharge,
+  };
+}
+
+/** Spécification source minimale, alignée sur `servi()` par défaut. */
+function spec(surcharge = {}) {
+  return {
+    instrument: 'TEST',
+    echelleReponse: { min: 1, max: 5 },
+    items: [
+      { numero: 1, texte: 'Je me sens en forme', inverse: false },
+      { numero: 2, texte: 'Je me sens fatigué', inverse: false },
+    ],
+    sousEchelles: [{ nom: 'Section A', nbItems: 2 }],
+    baremeGlobal: true,
+    seuils: [],
+    bornesTotal: { min: 2, max: 10 },
+    ...surcharge,
+  };
+}
+
+const codes = (resultat) => resultat.divergences.map((d) => d.code);
+
+test('instrument conforme : aucune divergence, certifiable', () => {
+  const r = comparer(servi(), spec());
+  assert.deepEqual(r.divergences, []);
+  assert.equal(r.resume.certifiable, true);
+  assert.equal(r.resume.parGravite.critique, 0);
+});
+
+test('échelle de cotation décalée : divergence critique', () => {
+  // Le cas MFI-20 : source cotée 1-5, application cotée 0-4.
+  const decale = servi({
+    items: servi().items.map((i) => ({ ...i, options: [{ v: 0, l: 'Non' }, { v: 4, l: 'Oui' }] })),
+  });
+  const r = comparer(decale, spec());
+  const d = r.divergences.find((x) => x.code === 'echelle_de_cotation');
+  assert.ok(d, "l'écart d'échelle doit être détecté");
+  assert.equal(d.gravite, 'critique');
+  assert.equal(d.attendu, '1–5');
+  assert.equal(d.obtenu, '0–4');
+  assert.equal(r.resume.certifiable, false);
+});
+
+test("nombre d'items différent : divergence critique", () => {
+  const r = comparer(servi(), spec({ items: [...spec().items, { numero: 3, texte: 'Item surnuméraire', inverse: false }] }));
+  assert.ok(codes(r).includes('nombre_items'));
+  assert.equal(r.divergences.find((d) => d.code === 'nombre_items').gravite, 'critique');
+});
+
+test('inversion exigée par la source et absente du scoring : divergence critique', () => {
+  const r = comparer(
+    servi(),
+    spec({
+      items: [
+        { numero: 1, texte: 'Je me sens en forme', inverse: true },
+        { numero: 2, texte: 'Je me sens fatigué', inverse: false },
+      ],
+      formuleInversion: '6 - réponse',
+    }),
+  );
+  const d = r.divergences.find((x) => x.code === 'inversion_absente');
+  assert.ok(d);
+  assert.equal(d.gravite, 'critique');
+  assert.match(d.message, /6 - réponse/);
+});
+
+/** Instrument à 4 items ; `inversesServis` = positions cotées à rebours. */
+function serviAvecCle(inversesServis) {
+  const direct = [{ v: 1, l: 'Jamais' }, { v: 3, l: 'Parfois' }, { v: 5, l: 'Souvent' }];
+  const rebours = [{ v: 5, l: 'Jamais' }, { v: 3, l: 'Parfois' }, { v: 1, l: 'Souvent' }];
+  const items = [1, 2, 3, 4].map((n) => ({
+    id: `P${n}`, texte: `Item ${n}`, type: 'likert',
+    options: inversesServis.includes(n) ? rebours : direct,
+    min: null, max: null, unite: null, conditionnel: null, section: 'A',
+  }));
+  return servi({ items, sections: [{ id: 'A', titre: 'A', itemIds: items.map((i) => i.id) }] });
+}
+
+function specAvecInverses(inversesSource) {
+  return spec({
+    items: [1, 2, 3, 4].map((n) => ({ numero: n, texte: `Item ${n}`, inverse: inversesSource.includes(n) })),
+    sousEchelles: [{ nom: 'Section A', nbItems: 4 }],
+  });
+}
+
+test("inversion MATÉRIALISÉE dans la clé de réponse : aucune divergence (cas PSS-10)", () => {
+  // La source cote « Jamais = 5 » aux items positifs ; l'application fait de
+  // même. L'inversion existe, simplement pas sous forme de formule.
+  const r = comparer(serviAvecCle([2, 4]), specAvecInverses([2, 4]));
+  assert.ok(!codes(r).includes('inversion_absente'), "une inversion portée par les options ne doit pas être signalée absente");
+});
+
+test('inversion attendue et absente de la clé comme du type : divergence critique (cas MFI-20)', () => {
+  const r = comparer(serviAvecCle([]), specAvecInverses([2, 4]));
+  const d = r.divergences.find((x) => x.code === 'inversion_absente');
+  assert.ok(d);
+  assert.equal(d.gravite, 'critique');
+  assert.equal(d.obtenu, '2 non inversé(s) : 2, 4');
+});
+
+test('inversion PARTIELLE : signalée comme telle, avec les items restés directs', () => {
+  const r = comparer(serviAvecCle([2]), specAvecInverses([2, 4]));
+  const d = r.divergences.find((x) => x.code === 'inversion_absente');
+  assert.ok(d, "une inversion à moitié appliquée doit être signalée");
+  assert.match(d.message, /PARTIE seulement/);
+  assert.equal(d.item, '4');
+});
+
+test("inversion exigée et portée par le type de scoring : pas de divergence d'inversion", () => {
+  const r = comparer(
+    servi({ scoring: { type: 'sum_reversed', maxTotalDeclare: 10, bandes: [], typePorteUneInversion: true } }),
+    spec({ items: [{ numero: 1, texte: 'Je me sens en forme', inverse: true }, { numero: 2, texte: 'Je me sens fatigué', inverse: false }] }),
+  );
+  assert.ok(!codes(r).includes('inversion_absente'));
+});
+
+test('découpage en sous-échelles différent : divergence majeure', () => {
+  const r = comparer(
+    servi(),
+    spec({ sousEchelles: [{ nom: 'Générale' }, { nom: 'Physique' }, { nom: 'Mentale' }, { nom: 'Activité' }, { nom: 'Motivation' }] }),
+  );
+  const d = r.divergences.find((x) => x.code === 'sous_echelles');
+  assert.ok(d);
+  assert.equal(d.gravite, 'majeur');
+  assert.match(d.attendu, /Motivation/);
+});
+
+test("barème affiché alors que la source n'en prévoit aucun : divergence critique", () => {
+  const avecBandes = servi({
+    scoring: { type: 'sum', maxTotalDeclare: 10, bandes: [{ min: 0, max: 5, label: 'Normal', protocole: null }], typePorteUneInversion: false },
+  });
+  const r = comparer(avecBandes, spec({ baremeGlobal: false }));
+  const d = r.divergences.find((x) => x.code === 'bareme_sans_source');
+  assert.ok(d, "un barème sans source doit être signalé");
+  assert.equal(d.gravite, 'critique');
+});
+
+test('barème adossé à la source : aucune divergence de barème', () => {
+  const avecBandes = servi({
+    scoring: { type: 'sum', maxTotalDeclare: 10, bandes: [{ min: 0, max: 5, label: 'Normal', protocole: null }], typePorteUneInversion: false },
+  });
+  const r = comparer(avecBandes, spec({ baremeGlobal: true }));
+  assert.ok(!codes(r).includes('bareme_sans_source'));
+});
+
+test('seuil de la source non représenté : divergence majeure', () => {
+  const r = comparer(
+    servi(),
+    spec({ seuils: [{ perimetre: 'sous-échelle fatigue générale', population: 'Femmes ≥ 60 ans', operateur: '>=', valeur: 14 }] }),
+  );
+  const d = r.divergences.find((x) => x.code === 'seuil_non_represente');
+  assert.ok(d);
+  assert.equal(d.gravite, 'majeur');
+  assert.match(d.message, /Femmes/);
+});
+
+test('bornes exécutées différentes de la source : divergence critique', () => {
+  const r = comparer(servi({ bornesExecutees: { min: 0, max: 80, erreur: null } }), spec({ bornesTotal: { min: 20, max: 100 } }));
+  const d = r.divergences.find((x) => x.code === 'bornes_score');
+  assert.ok(d);
+  assert.equal(d.gravite, 'critique');
+  assert.equal(d.attendu, '20–100');
+  assert.equal(d.obtenu, '0–80');
+});
+
+test('scoring catégoriel face à une source sans total : aucun faux positif', () => {
+  // Le cas Berlin : le moteur rend un niveau de risque, pas un total. La
+  // source n'attend pas de total non plus — il n'y a rien à signaler.
+  const r = comparer(
+    servi({ bornesExecutees: { min: null, max: null, erreur: null, categoriel: true } }),
+    spec({ bornesTotal: null }),
+  );
+  assert.ok(!codes(r).includes('total_numerique_absent'));
+  assert.ok(!codes(r).includes('bornes_non_executables'));
+});
+
+test('scoring catégoriel alors que la source définit un total : divergence critique', () => {
+  const r = comparer(
+    servi({ bornesExecutees: { min: null, max: null, erreur: null, categoriel: true } }),
+    spec({ bornesTotal: { min: 0, max: 21 } }),
+  );
+  const d = r.divergences.find((x) => x.code === 'total_numerique_absent');
+  assert.ok(d, "un total attendu par la source et absent du moteur doit être signalé");
+  assert.equal(d.gravite, 'critique');
+});
+
+test("bornes nulles sans nature déclarée : signalées, jamais silencieuses", () => {
+  // Si `categoriel` n'est pas renseigné, l'absence de total ne doit pas
+  // pouvoir se lire comme une conformité.
+  const r = comparer(servi({ bornesExecutees: { min: null, max: null, erreur: null } }), spec({ bornesTotal: null }));
+  const d = r.divergences.find((x) => x.code === 'bornes_indeterminees');
+  assert.ok(d, 'une nature de résultat indéterminée doit être signalée');
+  assert.equal(d.gravite, 'majeur');
+});
+
+test('moteur non exécutable : divergence majeure, jamais un silence', () => {
+  const r = comparer(servi({ bornesExecutees: { min: null, max: null, erreur: 'type de scoring inconnu' } }), spec());
+  const d = r.divergences.find((x) => x.code === 'bornes_non_executables');
+  assert.ok(d, "une exécution impossible ne doit pas passer pour une conformité");
+  assert.equal(d.gravite, 'majeur');
+});
+
+test("conduites cliniques logées dans l'interprétation : divergence majeure", () => {
+  // Le cas IRLS : `protocol` mêlé aux bandes de score.
+  const avecProtocole = servi({
+    scoring: {
+      type: 'sum',
+      maxTotalDeclare: 10,
+      bandes: [{ min: 0, max: 5, label: 'Léger', protocole: 'Bilan biologique complet' }],
+      typePorteUneInversion: false,
+    },
+  });
+  const r = comparer(avecProtocole, spec());
+  const d = r.divergences.find((x) => x.code === 'protocole_dans_interpretation');
+  assert.ok(d);
+  assert.equal(d.gravite, 'majeur');
+});
+
+test('libellé éloigné de la source : divergence mineure, avec le texte des deux côtés', () => {
+  const r = comparer(
+    servi(),
+    spec({ items: [{ numero: 1, texte: "J'ai des difficultés à démarrer", inverse: false }, { numero: 2, texte: 'Je me sens fatigué', inverse: false }] }),
+  );
+  const d = r.divergences.find((x) => x.code === 'libelle_item');
+  assert.ok(d);
+  assert.equal(d.gravite, 'mineur');
+  assert.equal(d.item, 'T1');
+  assert.equal(d.attendu, "J'ai des difficultés à démarrer");
+  assert.equal(d.obtenu, 'Je me sens en forme');
+});
+
+test('libellé proche à la casse et aux accents près : aucune divergence', () => {
+  const r = comparer(servi(), spec({ items: [{ numero: 1, texte: 'JE ME SENS EN FORME', inverse: false }, { numero: 2, texte: 'je me sens FATIGUE', inverse: false }] }));
+  assert.ok(!codes(r).includes('libelle_item'));
+});
+
+test('les divergences sont triées : critique avant majeur avant mineur', () => {
+  const r = comparer(
+    servi({
+      items: servi().items.map((i) => ({ ...i, options: [{ v: 0, l: 'Non' }, { v: 4, l: 'Oui' }] })),
+      scoring: { type: 'sum', maxTotalDeclare: 10, bandes: [{ min: 0, max: 5, label: 'Léger', protocole: 'Conduite' }], typePorteUneInversion: false },
+    }),
+    spec({ items: [{ numero: 1, texte: 'Texte totalement autre ici', inverse: false }, { numero: 2, texte: 'Je me sens fatigué', inverse: false }] }),
+  );
+  const gravites = r.divergences.map((d) => d.gravite);
+  assert.deepEqual([...gravites].sort((a, b) => ['critique', 'majeur', 'mineur'].indexOf(a) - ['critique', 'majeur', 'mineur'].indexOf(b)), gravites);
+});
+
+test("echelleServie ignore les items numériques sans options", () => {
+  const items = [
+    { id: 'N1', texte: 'IMC', type: 'number', options: [], min: 10, max: 60, unite: 'kg/m²', conditionnel: null, section: 'C' },
+    { id: 'T1', texte: 'Item', type: 'likert', options: [{ v: 0, l: 'Non' }, { v: 3, l: 'Oui' }], min: null, max: null, unite: null, conditionnel: null, section: 'A' },
+  ];
+  assert.deepEqual(echelleServie(items), { min: 0, max: 3 });
+});
+
+test('reponsesExtremes couvre options ET bornes numériques', () => {
+  const items = itemsDuServi({
+    sections: [
+      { id: 'A', questions: [{ id: 'T1', texte: 'x', type: 'likert', options: [{ v: 1, l: 'a' }, { v: 5, l: 'b' }] }, { id: 'N1', texte: 'y', type: 'number', min: 10, max: 60 }] },
+    ],
+  });
+  assert.deepEqual(reponsesExtremes(items, 'min'), { T1: 1, N1: 10 });
+  assert.deepEqual(reponsesExtremes(items, 'max'), { T1: 5, N1: 60 });
+});
+
+test('empreinteServie obtient les bornes EN EXÉCUTANT le moteur, pas en lisant maxTotal', () => {
+  const entree = {
+    titre: 'Faux instrument',
+    sections: [{ id: 'A', questions: [{ id: 'T1', texte: 'x', type: 'likert', options: [{ v: 0, l: 'a' }, { v: 4, l: 'b' }] }] }],
+    // `maxTotal` MENT volontairement : le moteur, lui, rendra 4.
+    scoring: { type: 'sum', maxTotal: 999 },
+  };
+  const moteur = (_id, reponses) => ({ total: Object.values(reponses).reduce((s, v) => s + v, 0) });
+  const e = empreinteServie('Q_FAUX', entree, moteur);
+  assert.equal(e.scoring.maxTotalDeclare, 999);
+  assert.equal(e.bornesExecutees.max, 4, 'la borne doit venir du moteur, pas de la déclaration');
+  assert.equal(e.bornesExecutees.min, 0);
+});
+
+test('empreinteServie signale un moteur absent au lieu de rendre des bornes nulles muettes', () => {
+  const e = empreinteServie('Q_FAUX', { sections: [], scoring: {} }, undefined);
+  assert.equal(e.bornesExecutees.erreur, 'calculateScore absent');
+});
+
+test('normaliserTexte neutralise casse, accents et ponctuation', () => {
+  assert.equal(normaliserTexte("Je me sens réveillé(e) — ÉNERGIQUE !"), 'je me sens reveille e energique');
+});
+
+test('similarite : identique vaut 1, disjoint vaut 0', () => {
+  assert.equal(similarite('abc def', 'abc def'), 1);
+  assert.equal(similarite('abc', 'xyz'), 0);
+});

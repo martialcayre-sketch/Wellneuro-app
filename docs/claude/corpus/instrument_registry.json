@@ -67,13 +67,16 @@
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0398",
+        "WN-SRC-0399"
+      ],
       "driveMd": "questionnaire_stress_cohen_pss.md",
       "statutBibliographique": "reference_identifiee"
     },
@@ -733,13 +736,16 @@
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0392",
+        "WN-SRC-0393"
+      ],
       "driveMd": "sommeil_05_psqi_pittsburgh.md",
       "statutBibliographique": "reference_identifiee"
     },
@@ -807,13 +813,16 @@
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0394",
+        "WN-SRC-0395"
+      ],
       "driveMd": "sommeil_04_berlin_apnee_sommeil.md",
       "statutBibliographique": "reference_identifiee"
     },
@@ -955,13 +964,16 @@
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0396",
+        "WN-SRC-0397"
+      ],
       "driveMd": "sommeil_07_mfi_fatigue_multidimensionnelle.md",
       "statutBibliographique": "reference_identifiee"
     },

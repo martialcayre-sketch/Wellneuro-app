@@ -119,6 +119,15 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         run: node --test scripts/lib/verifier_registre_instruments.test.mjs
 
+      # Même raison pour le comparateur SOURCE ↔ SERVI du banc de
+      # certification : ses cas prouvent qu'il détecte une échelle décalée, une
+      # inversion absente ou partielle, un barème sans source — et qu'il se
+      # tait quand l'inversion est portée par la clé de réponse. Un
+      # comparateur permissif certifierait n'importe quoi en silence.
+      - name: Comparateur de certification (banc du comparateur)
+        if: steps.scope.outputs.docs_only != 'true'
+        run: node --test tools/corpus/certify/lib/comparaison.test.mjs
+
       - name: Generate Prisma client
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
