@@ -450,3 +450,11 @@ gouvernance Copilot quand l'utilisateur le dira.
 **Validations** : `npm run check` + banc + 415 tests chemin-version verts sur base `main` ; E2E isolés 94 passés (seul échec = flake documenté `portail-lien-magique`) ; revue `wn-reviewer` GO ; CI `verify` pass ; mergée squash `699b228`, branche purgée.
 **Prochaine action** : exploitation — signaler la frontière v1↔v2 (momentum masqué sur cycles en cours).
 **Questions ouvertes** : motif import-masqué des ~27 autres questionnaires ; rayons Analyses biologiques / Fiches conseils.
+
+## 2026-07-25 — Certification corpus des questionnaires : LOT-00/01/07 mergés
+
+**Décisions** : audit d'architecture externe challengé puis intégré. Doctrine actée — le RAG certifie, source et explique ; le moteur déterministe calcule ; le graphe clinique oriente ; l'IA rédige. Une certification vaut pour une version, une langue, une population et un usage, jamais globalement. Mergés : #359 cadrage (13 lots, décisions praticien) ; #360 registre des instruments (63 entrées, axes séparés forme publiée / version servie / droits / cosmin / cycle de vie) avec module de validation et son propre banc, `scoring-check` entré dans T1 ; #361 moteur d'orientation dark (table vide, double verrou, filtre droits dur, règle sans claim ⇒ rien).
+**Écarté** : tables en base (artefacts JSON/TS versionnés, zéro migration) ; compilateur remplaçant `calculateScore` (réécriture de prod) ; formule composite de momentum et couverture des besoins produite par le LLM (données déterministes).
+**Validations** : T1 + garde 63 questionnaires ; 35 tests Vitest + 15 `node --test` ; T2 95 passés (seul échec = flake `portail-lien-magique`) ; revue `wn-reviewer` GO, constats traités ; CI vert sur les 3 PR et sur `main` après merge, contenu vérifié sur `main`.
+**Prochaine action** : humaine — fournir les PDF sources des instruments et trancher les droits (PSQI, QLQ, MMSE, Conners, Epworth, HIT-6) pour ouvrir les lots 2-4.
+**Questions ouvertes** : divergences à arbitrer — MFI-20 sommé sans inversion d'items, Berlin à 9 items, PSQI adapté, `protocol` mêlé aux bandes de l'IRLS.
