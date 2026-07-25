@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { type SyntheseSchema, maskEmail, sanitizeAuditError } from '@/lib/anthropic';
 import { buildBookletHTML } from '@/lib/documents/bookletHtml';
+import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 import { estRedactionPraticien } from '@/lib/synthese-praticien';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
@@ -162,6 +163,27 @@ export async function POST(req: Request) {
       .toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 
     const syntheseData = synthese.syntheseJson as unknown as SyntheseSchema;
+
+    // Registre anxiogène : le narratif est le seul texte libre qui parte au
+    // patient. Quand il vient du modèle, celui-ci peut y recopier une
+    // « Orientation » du catalogue (« Avis médical urgent »…) ; quand il vient
+    // du praticien, la relecture reste utile. Reçue seule, sans praticien en
+    // face, cette phrase inquiète sans orienter. La garde vaut donc dans les
+    // deux cas, et refuse l'envoi en NOMMANT le terme plutôt qu'en réécrivant
+    // en silence un contenu que le praticien a relu.
+    const terme = termeAnxiogene(syntheseData.narratif_patient ?? '');
+    if (terme) {
+      return withCorrelationHeader(NextResponse.json(
+        {
+          success: false,
+          reason: 'REGISTRE_ANXIOGENE',
+          terme,
+          error: `Le narratif patient emploie un registre alarmiste (« ${terme} »). Reformulez-le avant l'envoi : ce texte est lu seul, souvent avant la consultation.`,
+        },
+        { status: 422 }
+      ), requestContext);
+    }
+
     const html = buildBookletHTML(
       patientNom,
       dateDocument,

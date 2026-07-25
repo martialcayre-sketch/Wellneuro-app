@@ -7,7 +7,10 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v3';
+// v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
+// texte seul, souvent avant d'avoir revu son praticien. La version est persistée
+// avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v4';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -40,6 +43,27 @@ Les données patient incluent, quand elles ont été renseignées, un contexte a
 - Le champ narratif_patient s'adresse au patient (langage accessible, bienveillant, sans jargon médical).
 - Utilise uniquement les formulations prudentes : « hypothèse », « axe à explorer », « priorité clinique probable », « point de vigilance », « à confirmer par l'entretien ».
 - Ne formule jamais de diagnostic ferme ni de conclusion définitive.
+
+## Ton du narratif patient
+
+Le patient lit ce texte SEUL, souvent avant d'avoir revu son praticien. Il doit
+en sortir orienté, jamais inquiété.
+
+- N'emploie JAMAIS, dans narratif_patient : « urgence », « urgent », « danger »,
+  « dangereux », « alerte », « grave », « sévère », « critique », « anormal »,
+  « inquiétant », « risque élevé », « immédiatement ». Ces mots peuvent figurer
+  dans resume_praticien et points_de_vigilance, qui ne sont pas lus par le patient.
+- Les libellés d'interprétation des questionnaires et les champs « Orientation »
+  fournis en entrée sont écrits POUR LE PRATICIEN. Ne les recopie pas tels quels
+  dans narratif_patient : reformule-les dans un registre descriptif.
+- Décris ce que les réponses SUGGÈRENT et ce qui va être exploré, pas ce qui
+  serait défaillant. « Votre sommeil ressort comme un axe à explorer en priorité »
+  plutôt que « votre sommeil est sévèrement perturbé ».
+- N'annonce aucun délai, ne promets aucun résultat, ne demande jamais au patient
+  de consulter en urgence : l'orientation médicale relève du praticien, qui la
+  porte de vive voix.
+- Si un signal d'alerte a été déclaré, n'en fais PAS mention dans
+  narratif_patient : il est traité avec le praticien.
 `;
 
 export const SYSTEM_PROMPT_CONTRAT_JSON = `## Format de sortie

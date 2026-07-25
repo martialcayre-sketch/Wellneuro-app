@@ -3,9 +3,23 @@ import { escapeHtml } from '@/lib/html';
 
 // Rendu HTML du booklet patient (extrait verbatim de
 // `app/api/praticien/booklet/route.ts` — C3 LOT-03, principe « auditer avant de
-// créer, ne pas empiler »). Fonction PURE, sans I/O : comportement inchangé, la
-// route l'importe désormais au lieu de la redéfinir. Sert de patron de référence
+// créer, ne pas empiler »). Fonction PURE, sans I/O. Sert de patron de référence
 // au rendu C3 par destinataire (`documents/rendu.ts`).
+//
+// CE DOCUMENT PART PAR E-MAIL AU PATIENT. Il ne rend donc NI les points de
+// vigilance, NI les questions d'entretien. Le field-filter de
+// `depuisSynthese.ts` est formel : la vigilance est « praticien + médecin,
+// jamais patient » ; les questions d'entretien sont « praticien uniquement ».
+// Le booklet contournait ce filtre en lisant `syntheseJson` directement.
+//
+// Ce n'était pas une question de ton. `extraireVigilanceDeterministe`
+// (lib/consultation/contexteClinique.ts) préfixe les points de vigilance des
+// signaux d'alerte déclarés par le patient — « Idées noires ou suicidaires » en
+// fait partie — suivis de « avis médical à évaluer en priorité ». Un patient
+// pouvait recevoir cette phrase seul dans sa boîte mail, sans accompagnement.
+//
+// Garde opposable : `bookletHtml.test.ts` échoue si l'un des deux blocs
+// reparaît, y compris avec un signal d'alerte en contenu.
 export function buildBookletHTML(
   patientNom: string,
   dateDocument: string,
@@ -83,17 +97,7 @@ export function buildBookletHTML(
     ${axe.points_a_confirmer?.length ? `<p style="font-size:13px;color:#555;margin:10px 0 0"><em>À confirmer : ${axe.points_a_confirmer.map(escapeHtml).join(' — ')}</em></p>` : ''}
   </div>`).join('')}` : ''}
 
-  ${s.points_de_vigilance?.length ? `
-  <h2>Points de vigilance</h2>
-  <div class="vigilance">
-    <ul>${s.points_de_vigilance.map(p => `<li>${escapeHtml(p)}</li>`).join('')}</ul>
-  </div>` : ''}
-
-  ${s.questions_entretien?.length ? `
-  <h2>Questions pour la consultation</h2>
-  <div class="questions">
-    <ul>${s.questions_entretien.map(q => `<li>${escapeHtml(q)}</li>`).join('')}</ul>
-  </div>` : ''}
+  <!-- Vigilance et questions d'entretien : voir la note en tête de fichier. -->
 
   ${notesPraticien ? `
   <h2>Note de votre praticien</h2>
