@@ -13,6 +13,7 @@ import {
   FileText,
   HelpCircle,
   ListChecks,
+  Moon,
   ShieldAlert,
   Sparkles,
   Stethoscope,
@@ -47,6 +48,7 @@ import {
   type PhaseCycleClinique,
 } from '@/components/patient-cockpit/ClinicalRuntimeSection';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
+import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
 import { deriverEpisodeBandeau, phaseInitiale } from '@/lib/trajectoire-partagee/contrat';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { RelectureProtocoleSoumission } from '@/components/patient-cockpit/ProtocolMiniBuilder';
@@ -1141,6 +1143,14 @@ export function FichePatientPanel({
                     Ouvrir la synthèse IA
                   </Link>
                 </div>
+              </InstrumentTiroir>
+              <InstrumentTiroir
+                libelle="Agenda du sommeil"
+                description="Recueil nuit par nuit (Q_SOM_09) : chronogramme, durée, efficacité, régularité."
+                icone={Moon}
+                large
+              >
+                <AgendaSommeilPraticienPanel idPatient={idPatient} />
               </InstrumentTiroir>
               <InstrumentTiroir
                 libelle="Détail des réponses"

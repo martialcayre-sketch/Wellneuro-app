@@ -63,6 +63,7 @@ model Patient {
   correspondancesMedecin     CorrespondanceMedecin[]
   envoiBrouillons            EnvoiBrouillon[]
   rendezVous                 RendezVous[]
+  agendaSommeilNuits         AgendaSommeilNuit[]
 
   @@map("patients")
 }
@@ -130,8 +131,9 @@ model Assignation {
   correctionCommentaire  String?   @map("correction_commentaire")
   correctionDemandeeDate DateTime? @map("correction_demandee_date")
 
-  patient          Patient           @relation(fields: [idPatient], references: [idPatient])
-  protocolCheckins ProtocolCheckin[]
+  patient            Patient             @relation(fields: [idPatient], references: [idPatient])
+  protocolCheckins   ProtocolCheckin[]
+  agendaSommeilNuits AgendaSommeilNuit[]
 
   @@map("assignations")
 }
@@ -890,6 +892,33 @@ model ProtocolCheckin {
   @@index([protocolDraftId], map: "c2a_checkin_draft_idx")
   @@index([idAssignation], map: "c2a_checkin_assignation_idx")
   @@map("protocol_checkins")
+}
+
+// Agenda du sommeil 21 nuits (Q_SOM_09) — une ligne = une nuit déclarée par le
+// patient. Patron ProtocolCheckin : append-only chaîné (supersedesNuitId),
+// écriture via session portail uniquement. `dateNuit` = date CALENDAIRE du
+// RÉVEIL (AAAA-MM-JJ, horloge murale locale) ; les heures sont des chaînes
+// HH:MM locales dans `reponses` — aucune conversion de fuseau (cf.
+// lib/agenda-sommeil). Les agrégats ne vivent PAS ici : ils sont produits à la
+// clôture dans une QuestionnaireReponse standard (compatibilité fiche/inbox/
+// équilibre). Toute nouvelle table fille de `patients` doit entrer dans la
+// transaction d'effacement IDP2 (lib/patient/effacement.ts).
+model AgendaSommeilNuit {
+  id               String   @id @default(cuid()) @map("id")
+  idPatient        String   @map("id_patient")
+  idAssignation    String   @map("id_assignation")
+  dateNuit         String   @map("date_nuit") // AAAA-MM-JJ (matin du réveil)
+  reponses         Json     @map("reponses") // contrat agenda-sommeil-v1
+  canal            String   @default("portail") @map("canal")
+  supersedesNuitId String?  @map("supersedes_nuit_id")
+  soumisLe         DateTime @default(now()) @map("soumis_le")
+
+  patient     Patient     @relation(fields: [idPatient], references: [idPatient])
+  assignation Assignation @relation(fields: [idAssignation], references: [idAssignation])
+
+  @@index([idPatient, dateNuit], map: "agd_som_patient_date_idx")
+  @@index([idAssignation, dateNuit], map: "agd_som_assignation_date_idx")
+  @@map("agenda_sommeil_nuits")
 }
 
 // Approbation praticien « pour diffusion » (C2A LOT-03 Part B). Mapping 1:1 du

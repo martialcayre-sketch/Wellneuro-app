@@ -89,6 +89,12 @@ export async function POST(req: Request): Promise<NextResponse> {
       });
       return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'forbidden', error: 'Assignation non reconnue.' }, { status: 403 }), requestContext);
     }
+    // L'agenda du sommeil (Q_SOM_09) n'est jamais soumis par cette route : ses
+    // agrégats sont produits UNIQUEMENT par la clôture serveur (le patient ne
+    // calcule ni ne transmet de score). Un POST direct forgerait les agrégats.
+    if (ass.idQuestionnaire === 'Q_SOM_09') {
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unavailable', error: "L'agenda du sommeil se remplit nuit par nuit, il ne se soumet pas ici." }, { status: 409 }), requestContext);
+    }
     if (ass.statutReponses === 'verrouille' || ass.statutReponses === 'modification_demandee') {
       logger.warn({
         event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_ALREADY_DONE,

@@ -29,7 +29,7 @@ const { prisma, appels } = vi.hoisted(() => {
     'trustChoiceEvent', 'trustAdverseEffectReport', 'trustPrivacyIncident',
     'trustRightsRequest', 'filCardRejection', 'relectureNote', 'portailMagicLink',
     'packProposition', 'envoiBrouillon', 'portailConnexionGoogle',
-    'correspondanceMedecin', 'rendezVous', 'journalAccesDossier',
+    'correspondanceMedecin', 'rendezVous', 'journalAccesDossier', 'agendaSommeilNuit',
   ]) {
     tx[nom] = modele(nom);
   }
@@ -80,6 +80,15 @@ describe('effacerDossier', () => {
     await effacerDossier('PAT_SEED_03');
     expect(appels).toContain('portailConnexionGoogle');
     expect(appels).toContain('journalAccesDossier');
+  });
+
+  // Nuits d'agenda du sommeil : FK RESTRICT vers patients ET assignations. Si
+  // elles passaient après les assignations, la contrainte ferait échouer tout
+  // l'effacement.
+  it('supprime les nuits d’agenda du sommeil avant les assignations', async () => {
+    await effacerDossier('PAT_SEED_03');
+    expect(appels).toContain('agendaSommeilNuit');
+    expect(appels.indexOf('agendaSommeilNuit')).toBeLessThan(appels.indexOf('assignation'));
   });
 
   it('tout passe par une seule transaction', async () => {

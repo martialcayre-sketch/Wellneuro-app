@@ -58,6 +58,10 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
 
     // 2. Petits-enfants : ce qui dépend d'un brouillon de protocole.
     supprimees.protocolCheckins = (await tx.protocolCheckin.deleteMany({ where: par })).count;
+    // Nuits d'agenda du sommeil (Q_SOM_09) : FK RESTRICT vers patients ET
+    // assignations — supprimées avant les assignations (ligne plus bas), sinon
+    // l'effacement échouerait sur la contrainte.
+    supprimees.agendaSommeilNuits = (await tx.agendaSommeilNuit.deleteMany({ where: par })).count;
     supprimees.protocolDiffusionApprovals = (
       await tx.protocolDiffusionApproval.deleteMany({ where: par })
     ).count;

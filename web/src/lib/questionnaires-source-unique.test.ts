@@ -44,8 +44,9 @@ describe('source unique des questionnaires', () => {
   });
 
   it('aucune régression du nombre de questionnaires modulaires', () => {
-    // 36 questionnaires servis depuis leur module (shorthand). Ce compte ne doit
+    // 37 questionnaires servis depuis leur module (shorthand). Ce compte ne doit
     // évoluer que par un ajout/retrait volontaire, jamais par surprise.
-    expect(defsModule.length).toBe(36);
+    // 37 depuis l'ajout de Q_SOM_09 (agenda du sommeil, 2026-07-25).
+    expect(defsModule.length).toBe(37);
   });
 });
