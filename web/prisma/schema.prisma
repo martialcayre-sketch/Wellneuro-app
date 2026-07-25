@@ -1340,3 +1340,312 @@ model RendezVous {
   @@index([idPatient, dateHeure], map: "ao_rendez_vous_patient_date_idx")
   @@map("rendez_vous")
 }
+
+
+// ─── CATALOGUE BIOLOGIE FONCTIONNELLE CB-A (campagne CB, LOT CB-01) ─────────
+// Cadrage : docs/claude/propositions/2026-07-25-rayon-biologie-fonctionnelle/
+// Étage 1 DOCUMENTAIRE uniquement. AUCUNE de ces tables ne porte de valeur
+// biologique patient : le stockage d'un résultat est un acte gaté HDS (étage 2,
+// lot CB-09, second flag WN_CB_RESULTS_ENABLED). Une table de ce bloc qui se
+// mettrait à porter une mesure patient romprait le verrou.
+//
+// L'audit de la source (AUDIT-SOURCE-NABM.md) impose la séparation centrale de
+// ce schéma : la nomenclature n'est PAS l'ossature du catalogue. Les actes
+// importés vivent dans `biology_nabm_actes` (matière administrative, verbatim
+// source) ; le pivot clinique est `biology_analytes`, alimenté par le praticien
+// et le corpus. Les deux ne se rejoignent que par une correspondance manuelle
+// et signée (`biology_analyte_nabm`), jamais par rapprochement de libellés —
+// le filtre de la source rend des faux négatifs silencieux (audit §5).
+
+// Pivot clinique du rayon. Entité STABLE : contrairement au produit C4, un
+// analyte n'a pas de versions successives (la ferritine ne change pas) — c'est
+// la NOMENCLATURE qui est versionnée, côté biology_nabm_actes.
+model BiologyAnalyte {
+  id                  String    @id @default(cuid())
+  code                String    @unique @map("code")
+  libelle             String    @map("libelle")
+  libellePatient      String?   @map("libelle_patient")
+  unite               String?   @map("unite")
+  typePrelevement     String    @map("type_prelevement")
+  delaiRenduIndicatif String?   @map("delai_rendu_indicatif")
+  sourceProvenance    String    @map("source_provenance")
+  sourceIdentifiant   String?   @map("source_identifiant")
+  statutFiche         String    @default("importee") @map("statut_fiche")
+  niveauCompletude    String    @map("niveau_completude")
+  contenuSha256       String?   @map("contenu_sha256")
+  donneesManquantes   String[]  @default([]) @map("donnees_manquantes")
+  incertitudes        String?   @map("incertitudes")
+  verifiePar          String?   @map("verifie_par")
+  verifieLe           DateTime? @map("verifie_le")
+  actif               Boolean   @default(true) @map("actif")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  correspondancesNabm  BiologyAnalyteNabm[]
+  plagesReference      BiologyReferenceRange[]
+  plagesFonctionnelles BiologyFunctionalRange[]
+  preanalytiques       BiologyPreanalytic[]
+  liensCliniques       BiologyAnalyteLink[]
+  itemsPanel           BiologyPanelItem[]
+  ratiosOperandeA      BiologyRatio[]          @relation("ratio_operande_a")
+  ratiosOperandeB      BiologyRatio[]          @relation("ratio_operande_b")
+
+  @@index([statutFiche, actif], map: "biology_analytes_statut_idx")
+  @@index([typePrelevement], map: "biology_analytes_prelevement_idx")
+  @@map("biology_analytes")
+}
+
+// Nomenclature des actes de biologie médicale, importée verbatim depuis le
+// Serveur Multi-Terminologies de l'ANS (LOv2). Destination de l'import CB-02a
+// (988 actes). Table ADMINISTRATIVE : aucun champ clinique, la source n'en
+// porte aucun (ni unité, ni préanalytique, ni valeur de référence).
+// Le tarif en euros n'y figure pas non plus — seul `coefficient_b` existe, la
+// valeur de la lettre-clé relevant d'un arrêté : ne jamais afficher d'euros.
+model BiologyNabmActe {
+  id                           String    @id @default(cuid())
+  codeActe                     String    @map("code_acte")
+  versionSource                String    @map("version_source")
+  versionPublieeLe             DateTime? @map("version_publiee_le")
+  libelle                      String    @map("libelle")
+  coefficientB                 Int?      @map("coefficient_b")
+  codeParent                   String?   @map("code_parent")
+  ententePrealable             Boolean?  @map("entente_prealable")
+  examenSanguin                Boolean?  @map("examen_sanguin")
+  indicationMedicale           Boolean?  @map("indication_medicale")
+  nombreMaxParFacturation      Int?      @map("nombre_max_par_facturation")
+  initiativeBiologistePossible Boolean?  @map("initiative_biologiste_possible")
+  rmo                          Boolean?  @map("rmo")
+  remboursementTotal           Boolean?  @map("remboursement_total")
+  acteReserve                  Boolean?  @map("acte_reserve")
+  inactif                      Boolean   @default(false) @map("inactif")
+  contenuSha256                String?   @map("contenu_sha256")
+  importeLe                    DateTime  @default(now()) @map("importe_le")
+  updatedAt                    DateTime  @updatedAt @map("updated_at")
+
+  // Pas de relation vers BiologyAnalyteNabm : la correspondance est ancrée sur
+  // le CODE d'acte, qui traverse les millésimes, et non sur la ligne d'un
+  // millésime donné. `codeParent` reçoit le `parent` de la source — souvent un
+  // sous-chapitre (« 06-04 »), pas un chapitre : le nom ne promet donc rien de
+  // plus que ce que la source donne.
+  @@unique([codeActe, versionSource], map: "biology_nabm_actes_code_version_key")
+  @@index([versionSource, inactif], map: "biology_nabm_actes_version_idx")
+  @@map("biology_nabm_actes")
+}
+
+// Correspondance analyte ↔ acte, PLUSIEURS-À-PLUSIEURS dans les deux sens
+// (audit §7) : la TSH se cote seule (1208), avec T4L (1211) ou avec T4L+T3L
+// (1212) ; et l'acte 1387 couvre folates sériques OU érythrocytaires.
+//
+// ANCRÉE SUR `codeActe`, PAS SUR L'IDENTIFIANT D'UNE LIGNE DE MILLÉSIME : la
+// signature du praticien porte sur un code de nomenclature, qui traverse les
+// versions. L'attacher à la ligne (code, V105) l'aurait périmée au millésime
+// suivant — soit en laissant lire un `inactif` obsolète, soit en faisant
+// basculer tout le catalogue en « non remboursé » après chaque import.
+// L'acte se résout au millésime courant via le pointeur de version. Le prix
+// est l'absence de clé étrangère (le code seul n'est pas unique dans la table
+// des actes) ; le contrat SQL vérifie la résolution à la place.
+//
+// Une ligne non signée est une PROPOSITION de rapprochement, pas une
+// correspondance : le caractère remboursable se dérive des seules lignes
+// signées. Il n'existe volontairement PAS de colonne `remboursable` sur
+// l'analyte — un booléen stocké divergerait de la correspondance qui le fonde,
+// et le cadrage exige qu'il ne soit jamais inféré. La dérivation est écrite une
+// seule fois, dans `web/src/lib/biology-library/remboursable.ts`.
+model BiologyAnalyteNabm {
+  id          String    @id @default(cuid())
+  analyteCode String    @map("analyte_code")
+  codeActe    String    @map("code_acte")
+  nature      String    @map("nature")
+  commentaire String?   @map("commentaire")
+  verifiePar  String?   @map("verifie_par")
+  verifieLe   DateTime? @map("verifie_le")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  analyte BiologyAnalyte @relation(fields: [analyteCode], references: [code])
+
+  @@unique([analyteCode, codeActe], map: "biology_analyte_nabm_analyte_acte_key")
+  @@index([codeActe], map: "biology_analyte_nabm_code_acte_idx")
+  @@map("biology_analyte_nabm")
+}
+
+// Référentiel 1/2 — valeurs de référence LABORATOIRE. Ne demande aucun claim :
+// c'est une donnée d'appareil, pas une interprétation clinique.
+// Cible POLYMORPHE : un analyte OU un ratio. Le cadrage §3 impose aux ratios
+// « les mêmes deux référentiels de valeurs séparés » — HOMA, ω6/ω3, Cu/Zn et
+// saturation de la transferrine ont tous une plage.
+model BiologyReferenceRange {
+  id            String   @id @default(cuid())
+  analyteCode   String?  @map("analyte_code")
+  ratioCode     String?  @map("ratio_code")
+  borneMin      Float?   @map("borne_min")
+  borneMax      Float?   @map("borne_max")
+  unite         String   @map("unite")
+  population    String   @default("adulte_tout_venant") @map("population")
+  sourceLibelle String   @map("source_libelle")
+  sourceUrl     String?  @map("source_url")
+  actif         Boolean  @default(true) @map("actif")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  analyte BiologyAnalyte? @relation(fields: [analyteCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  ratio   BiologyRatio?   @relation(fields: [ratioCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([analyteCode, actif], map: "biology_reference_ranges_analyte_idx")
+  @@index([ratioCode, actif], map: "biology_reference_ranges_ratio_idx")
+  @@map("biology_reference_ranges")
+}
+
+// Référentiel 2/2 — plages FONCTIONNELLES optimales. INVARIANT MIROIR DE
+// L'ORIENTATION : `claim_id` et `version_claim` sont NOT NULL — une plage
+// fonctionnelle sans claim validé n'existe pas, donc n'est jamais servie.
+// Les deux référentiels ne fusionnent jamais : l'UI les présente côte à côte.
+// Pas de FK vers rag_corpus_claims — table SQL-brut hors schema.prisma
+// (prisma.config.ts, tables.external) ; le lien se vérifie à la lecture, comme
+// pour les claims des règles d'orientation.
+model BiologyFunctionalRange {
+  id           String   @id @default(cuid())
+  analyteCode  String?  @map("analyte_code")
+  ratioCode    String?  @map("ratio_code")
+  borneMin     Float?   @map("borne_min")
+  borneMax     Float?   @map("borne_max")
+  unite        String   @map("unite")
+  population   String   @default("adulte_tout_venant") @map("population")
+  claimId      String   @map("claim_id")
+  versionClaim String   @map("version_claim")
+  niveauPreuve String   @map("niveau_preuve")
+  actif        Boolean  @default(true) @map("actif")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  analyte BiologyAnalyte? @relation(fields: [analyteCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  ratio   BiologyRatio?   @relation(fields: [ratioCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([analyteCode, actif], map: "biology_functional_ranges_analyte_idx")
+  @@index([ratioCode, actif], map: "biology_functional_ranges_ratio_idx")
+  @@index([claimId], map: "biology_functional_ranges_claim_idx")
+  @@map("biology_functional_ranges")
+}
+
+// Conditions de prélèvement. Sourcées par claim QUAND elles viennent du corpus
+// (paire claim_id/version_claim tout-ou-rien) ; une condition purement
+// logistique (tube, délai d'acheminement) n'en demande pas.
+model BiologyPreanalytic {
+  id            String   @id @default(cuid())
+  analyteCode   String   @map("analyte_code")
+  typeCondition String   @map("type_condition")
+  consigne      String   @map("consigne")
+  claimId       String?  @map("claim_id")
+  versionClaim  String?  @map("version_claim")
+  actif         Boolean  @default(true) @map("actif")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  analyte BiologyAnalyte @relation(fields: [analyteCode], references: [code])
+
+  @@index([analyteCode, actif], map: "biology_preanalytics_analyte_idx")
+  @@map("biology_preanalytics")
+}
+
+// Ratios calculés déterministes. SPÉCIFICATION STRUCTURÉE D'OPÉRANDES, jamais
+// une expression libre exécutable (patron ScoringSpecification) : l'opération
+// est un vocabulaire fermé de trois formes, les opérandes sont des analytes du
+// catalogue, la constante est un nombre. Rien n'est évalué depuis du texte.
+model BiologyRatio {
+  id            String   @id @default(cuid())
+  code          String   @unique @map("code")
+  libelle       String   @map("libelle")
+  operation     String   @map("operation")
+  analyteACode  String   @map("analyte_a_code")
+  analyteBCode  String   @map("analyte_b_code")
+  constante     Float?   @map("constante")
+  uniteResultat String?  @map("unite_resultat")
+  actif         Boolean  @default(true) @map("actif")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  analyteA             BiologyAnalyte           @relation("ratio_operande_a", fields: [analyteACode], references: [code])
+  analyteB             BiologyAnalyte           @relation("ratio_operande_b", fields: [analyteBCode], references: [code])
+  itemsPanel           BiologyPanelItem[]
+  plagesReference      BiologyReferenceRange[]
+  plagesFonctionnelles BiologyFunctionalRange[]
+  liensCliniques       BiologyAnalyteLink[]
+
+  @@index([analyteACode], map: "biology_ratios_analyte_a_idx")
+  @@index([analyteBCode], map: "biology_ratios_analyte_b_idx")
+  @@map("biology_ratios")
+}
+
+// Bilans hiérarchisés — mêmes niveaux que les explorations du moteur
+// d'orientation NNPP2 (socle | approfondissement | specialise).
+model BiologyPanel {
+  id        String   @id @default(cuid())
+  code      String   @unique @map("code")
+  libelle   String   @map("libelle")
+  niveau    String   @map("niveau")
+  objectif  String?  @map("objectif")
+  besoins   Int[]    @default([]) @map("besoins")
+  actif     Boolean  @default(true) @map("actif")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  items BiologyPanelItem[]
+
+  @@map("biology_panels")
+}
+
+// Un item de bilan porte SOIT un analyte SOIT un ratio, jamais les deux ni
+// aucun (CHECK cible_unique dans la migration).
+model BiologyPanelItem {
+  id          String   @id @default(cuid())
+  panelCode   String   @map("panel_code")
+  analyteCode String?  @map("analyte_code")
+  ratioCode   String?  @map("ratio_code")
+  position    Int      @default(0) @map("position")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  panel   BiologyPanel    @relation(fields: [panelCode], references: [code])
+  analyte BiologyAnalyte? @relation(fields: [analyteCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  ratio   BiologyRatio?   @relation(fields: [ratioCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([panelCode, position], map: "biology_panel_items_panel_idx")
+  @@map("biology_panel_items")
+}
+
+// Lien biomarqueur ↔ besoin (1-12) / axe NeuroAxis / nutriment. PROVENANCE
+// CLAIM OBLIGATOIRE (claim_id NOT NULL) : aucune association clinique ne naît
+// d'une intuition. Reste VIDE jusqu'à CB-02b — et doit le rester visiblement.
+// Cible polymorphe comme les plages : un ratio se lie à un besoin au même
+// titre qu'un analyte (le HOMA vers la glycorégulation). L'unicité est portée
+// par deux index PARTIELS créés dans la migration, et non par un `@@unique`
+// ici : avec une colonne NULL, une unicité composée laisserait passer les
+// doublons (sémantique Postgres).
+model BiologyAnalyteLink {
+  id           String   @id @default(cuid())
+  analyteCode  String?  @map("analyte_code")
+  ratioCode    String?  @map("ratio_code")
+  cibleType    String   @map("cible_type")
+  cibleCode    String   @map("cible_code")
+  direction    String   @map("direction")
+  claimId      String   @map("claim_id")
+  versionClaim String   @map("version_claim")
+  niveauPreuve String   @map("niveau_preuve")
+  actif        Boolean  @default(true) @map("actif")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  analyte BiologyAnalyte? @relation(fields: [analyteCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+  ratio   BiologyRatio?   @relation(fields: [ratioCode], references: [code], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([cibleType, cibleCode], map: "biology_analyte_links_cible_idx")
+  @@map("biology_analyte_links")
+}
+
+// Pointeur de version courante PAR SOURCE (patron C4) : on ne sert jamais
+// toutes les versions de la nomenclature à la fois. L'import CB-02a déplace le
+// pointeur dans la même transaction que l'insertion du nouveau millésime.
+model BiologyCatalogVersionCourante {
+  id               String   @id @default(cuid())
+  sourceProvenance String   @unique @map("source_provenance")
+  versionSource    String   @map("version_source")
+  contenuSha256    String?  @map("contenu_sha256")
+  nombreEntrees    Int      @default(0) @map("nombre_entrees")
+  importeLe        DateTime @default(now()) @map("importe_le")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("biology_catalog_versions_courantes")
+}
