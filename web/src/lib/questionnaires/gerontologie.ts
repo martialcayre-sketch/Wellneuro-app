@@ -102,6 +102,19 @@ export const Q_GEO_04 = {
   ],
   scoring:{
     type:'sum', maxTotal:30,
+    // Arbitrage praticien du 2026-07-26 : le MMSE se lit par domaine autant que
+    // par total. Un 24/30 par déficit d'orientation et un 24/30 par déficit de
+    // rappel n'orientent pas vers le même bilan. Les six domaines de la source
+    // correspondent exactement aux six sections servies (10+3+5+3+8+1 = 30).
+    // Purement descriptif : le total reste 0-30.
+    dimensions:[
+      {id:'ORI', label:'Orientation',              items:['MM1','MM2','MM3','MM4','MM5','MM6','MM7','MM8','MM9','MM10'], max:10},
+      {id:'APP', label:'Apprentissage',            items:['MM11','MM12','MM13'],                                          max:3},
+      {id:'ATT', label:'Attention et calcul',      items:['MM14','MM15','MM16','MM17','MM18'],                            max:5},
+      {id:'RAP', label:'Rappel',                   items:['MM19','MM20','MM21'],                                          max:3},
+      {id:'LAN', label:'Langage',                  items:['MM22','MM23','MM24','MM25','MM26','MM27','MM28','MM29'],       max:8},
+      {id:'CON', label:'Construction visuospatiale', items:['MM30'],                                                      max:1},
+    ],
     // Seuils HAS 2011 (absents PDF SIIN — escalade documentée)
     interpretation:[
       {min:27, max:30, label:'Normal',                     color:'success', protocol:'Pas d\'indication de trouble cognitif'},

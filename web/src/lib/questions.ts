@@ -804,8 +804,14 @@ Q_URO_01: {
     { id:'A', titre:'Symptômes urinaires (dernier mois)',
       questions:[
         qs('U1',"Au cours du dernier mois, avec quelle fréquence avez-vous eu la sensation que votre vessie n'était pas complètement vidée après avoir uriné ?",O_IPSS),
-        qs('U2',"Au cours du dernier mois, avec quelle fréquence avez-vous eu besoin d'uriner moins de 2 heures après avoir fini d'uriner ?",
-          [{v:0,l:'Jamais'},{v:2,l:'Environ 1 x sur 5'},{v:3,l:'Environ 1 x sur 3'},{v:4,l:'Environ 1 x sur 2'},{v:5,l:'Environ 2 x sur 3'},{v:6,l:'Presque toujours'}]),
+        // Arbitrage praticien du 2026-07-26 : U2 était coté 0,2,3,4,5,6 — la
+        // valeur 1 manquait et le plafond montait à 6, portant le score de
+        // symptômes à 36 au lieu des 35 publiés, hors de la bande haute
+        // d'interprétation. Les libellés étaient déjà ceux de `O_IPSS` ; seules
+        // les valeurs différaient. Aucune passation IPSS n'existait en base au
+        // moment du changement (vérifié), donc aucune réponse enregistrée n'est
+        // réinterprétée.
+        qs('U2',"Au cours du dernier mois, avec quelle fréquence avez-vous eu besoin d'uriner moins de 2 heures après avoir fini d'uriner ?",O_IPSS),
         qs('U3',"Au cours du dernier mois, avec quelle fréquence avez-vous eu une interruption du jet d'urine c'est à dire démarrage de la miction puis arrêt puis redémarrage ?",O_IPSS),
         qs('U4',"Au cours du dernier mois, après avoir ressenti le besoin d'uriner, avec quelle fréquence avez-vous eu des difficultés à vous retenir d'uriner ?",O_IPSS),
         qs('U5',"Au cours du dernier mois, avec quelle fréquence avez-vous eu une diminution de la taille ou de la force du jet d'urine ?",O_IPSS),
@@ -823,8 +829,12 @@ Q_URO_01: {
     type:'subscore',
     certification:{source:'drive',status:'ambigu'},
     subScores:[
-      {id:'IPSS', label:'Score IPSS total (symptômes)',  items:['U1','U2','U3','U4','U5','U6','U7'], max:36},
-      {id:'QdV',  label:'Qualité de vie associée',       items:['U8'], max:6},
+      {id:'IPSS', label:'Score IPSS total (symptômes)',  items:['U1','U2','U3','U4','U5','U6','U7'], max:35},
+      // L'IPSS rapporte la question de qualité de vie SÉPARÉMENT : elle ne
+      // s'ajoute pas au score de symptômes. Sans ce drapeau, le total global
+      // valait 42 (36 + 6) — un nombre qui n'existe dans aucune publication et
+      // que rien n'interprétait.
+      {id:'QdV',  label:'Qualité de vie associée',       items:['U8'], max:6, horsTotal:true},
     ],
     interpretation:[
       {subscale:'IPSS', ranges:[
@@ -838,7 +848,12 @@ Q_URO_01: {
         {min:5, max:6, label:'Qualité de vie insatisfaisante',color:'danger'},
       ]},
     ],
-    note:'Drive conserve une cotation source atypique Q002 = 0,2,3,4,5,6, incohérente avec le total IPSS 0-35 indiqué pour l’interprétation.'
+    // La cotation de U2 (0,2,3,4,5,6 dans la source Drive) a été ramenée à 0-5
+    // et la qualité de vie sortie du total le 2026-07-26 sur arbitrage
+    // praticien — historique complet dans le changelog du 2026-07-26. La `note`
+    // ci-dessous part dans le compte rendu et dans le prompt de synthèse : elle
+    // dit l'état de la mesure, pas celui de l'ingénierie.
+    note:'Score de symptômes 0-35 et qualité de vie 0-6 rapportés séparément, conformément à l’IPSS publié.'
   }
 },
 
@@ -1504,7 +1519,25 @@ export function computeScoreFromDef(def: any, answers: Record<string, any>): any
     const items = allQ.map(q => q.id);
     const {total} = sumItems(items, []);
     const interp = interpretRanges(total, sc.interpretation);
-    return {type:'sum', total, maxTotal: sc.maxTotal, interpretation: interp, note: sc.note || null, certification: sc.certification || null};
+    // `dimensions` : découpage DESCRIPTIF déclaré par l'instrument. Il n'entre
+    // pas dans le total — celui-ci reste la somme de tous les items — et sert
+    // uniquement à ne plus masquer un profil derrière un score global. Ajouté
+    // le 2026-07-26 sur arbitrage praticien, pour les instruments dont la
+    // source distingue des dimensions que le catalogue ne calculait pas.
+    //
+    // Clé DISTINCTE de `subScores`, délibérément : un sous-score porte sa
+    // propre bande d'interprétation et remplace le score global à l'affichage,
+    // une dimension ne fait que détailler un total qui reste la mesure. Les
+    // confondre effacerait le total et l'interprétation de la fiche patient.
+    const dimensions = (sc.dimensions || []).map((d: any) => {
+      const {total: sousTotal} = sumItems(d.items, []);
+      return {id: d.id, label: d.label, total: sousTotal, max: d.max ?? null, interpretation: null};
+    });
+    return {
+      type:'sum', total, maxTotal: sc.maxTotal, interpretation: interp,
+      ...(dimensions.length > 0 ? {dimensions} : {}),
+      note: sc.note || null, certification: sc.certification || null,
+    };
   }
 
   // ── SUM_NO_INTERPRETATION ───────────────────────────
@@ -1659,9 +1692,12 @@ export function computeScoreFromDef(def: any, answers: Record<string, any>): any
         const interpDef = sc.interpretation.find((i: any) => i.subscale === sub.id || i.subscale === '*');
         if (interpDef) interp = interpretRanges(scaled, interpDef.ranges);
       }
-      return {id: sub.id, label: sub.label, total, scaled, max: sub.max, maxScaled: sub.multiplier ? sub.max*sub.multiplier : sub.max, interpretation: interp};
+      return {id: sub.id, label: sub.label, total, scaled, max: sub.max, maxScaled: sub.multiplier ? sub.max*sub.multiplier : sub.max, interpretation: interp, ...(sub.horsTotal === true ? {horsTotal: true} : {})};
     });
-    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
+    // `horsTotal` : une sous-échelle que l'instrument rapporte À PART et qui ne
+    // s'additionne pas au score global (question de qualité de vie de l'IPSS).
+    // Drapeau déclaratif, additif : sans lui, le comportement est inchangé.
+    const globalTotal = subResults.filter((r: any) => !r.horsTotal).reduce((s: any, r: any) => s + r.total, 0);
 
     // Sortie enrichie pour Monnier : calories de base = protéines (g/j) x 24
     if (def.id === 'Q_ALI_03') {

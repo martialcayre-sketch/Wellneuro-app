@@ -725,19 +725,97 @@ assertEqual(optionLabels('Q_PNE_01', 'BP1'), ['Jamais', 'Parfois', 'Fréquemment
 assertCertification(calculateScore('Q_PNE_01', fill('Q_PNE_01', 0)), 'certifie', 'Q_PNE_01');
 
 assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'min')).total, 0, 'Q_URO_01 score minimal');
-assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).total, 42, 'Q_URO_01 total maximal avec QdV');
-assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).subScores.map(score => score.total), [36, 6], 'Q_URO_01 sous-scores maximaux');
-assertEqual(optionLabels('Q_URO_01', 'U2'), ['Jamais', 'Environ 1 x sur 5', 'Environ 1 x sur 3', 'Environ 1 x sur 2', 'Environ 2 x sur 3', 'Presque toujours'], 'Q_URO_01 cotation Q002 Drive atypique');
+// Arbitrage praticien du 2026-07-26 (banc de certification, lot 4). Ces trois
+// attentes portaient l'ancien comportement : total 42 (= 36 symptômes + 6
+// qualité de vie), sous-échelle de symptômes plafonnant à 36, item U2 coté
+// 0,2,3,4,5,6. L'IPSS publié rapporte la qualité de vie À PART et plafonne les
+// symptômes à 35. Aucune passation Q_URO_01 n'existait en base au moment du
+// changement (vérifié) : aucune réponse enregistrée n'est réinterprétée.
+assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).total, 35, 'Q_URO_01 total maximal, qualité de vie exclue');
+assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).subScores.map(score => score.total), [35, 6], 'Q_URO_01 sous-scores maximaux');
+// La qualité de vie reste calculée et interprétée — elle est sortie du total,
+// pas supprimée.
+assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).subScores[1].interpretation.label, 'Qualité de vie insatisfaisante', 'Q_URO_01 QdV toujours interprétée');
+assertEqual(optionLabels('Q_URO_01', 'U2'), ['Jamais', 'Environ 1 x sur 5', 'Environ 1 x sur 3', 'Environ 1 x sur 2', 'Environ 2 x sur 3', 'Presque toujours'], 'Q_URO_01 libellés U2 inchangés');
+assertEqual(questions('Q_URO_01').find(q => q.id === 'U2').options.map(o => o.v), [0, 1, 2, 3, 4, 5], 'Q_URO_01 cotation U2 ramenée à 0-5');
 assertEqual(questions('Q_URO_01').map(question => question.texte).slice(0, 2), [
   "Au cours du dernier mois, avec quelle fréquence avez-vous eu la sensation que votre vessie n'était pas complètement vidée après avoir uriné ?",
   "Au cours du dernier mois, avec quelle fréquence avez-vous eu besoin d'uriner moins de 2 heures après avoir fini d'uriner ?",
 ], 'Q_URO_01 libellés IPSS Drive');
-assert(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).note.includes('cotation source atypique'), 'Q_URO_01 doit documenter la cotation atypique Q002');
+// La `note` part dans le compte rendu ET dans le prompt de synthèse : elle
+// énonce l'état de la mesure, jamais l'historique d'ingénierie (celui-ci vit
+// dans le changelog et dans le commentaire de `questions.ts`).
+assert(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).note.includes('0-35'), 'Q_URO_01 doit énoncer la borne du score de symptômes');
+assert(!/[Aa]rbitrage|lot 4|banc de certification|Drive/.test(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).note), 'Q_URO_01 : la note ne doit pas véhiculer d’historique d’ingénierie jusqu’au prompt de synthèse');
 assertCertification(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'min')), 'ambigu', 'Q_URO_01');
 
 const uroJournal = calculateScore('Q_URO_02', fill('Q_URO_02', 0));
 assertEqual(uroJournal.scored, false, 'Q_URO_02 ne doit pas produire de score automatique');
 assert(uroJournal.note.includes('Recueil de données brutes sur 3 jours'), 'Q_URO_02 note journal');
 assertCertification(uroJournal, 'certifie', 'Q_URO_02');
+
+// ── Invariants des dimensions déclarées (arbitrage du 2026-07-26) ───────────
+// Une dimension DÉTAILLE un total qui reste la mesure. Le défaut qu'on redoute
+// n'est pas un total faux — il resterait juste — mais un item oublié dans le
+// découpage : le profil affiché serait faux SOUS un total juste, et rien ne le
+// signalerait. Ces invariants sont génériques : ils couvrent tout instrument
+// qui déclarera des dimensions, pas seulement les deux d'aujourd'hui.
+const instrumentsADimensions = Object.entries(QUESTIONNAIRE_CATALOGUE)
+  .filter(([, def]) => Array.isArray(def?.scoring?.dimensions) && def.scoring.dimensions.length > 0)
+  .map(([id]) => id);
+assert(instrumentsADimensions.length > 0, 'au moins un instrument doit déclarer des dimensions (sinon ces invariants ne gardent rien)');
+
+for (const id of instrumentsADimensions) {
+  const def = QUESTIONNAIRE_CATALOGUE[id];
+  const itemsServis = questions(id).map(question => question.id);
+  const itemsDeclares = def.scoring.dimensions.flatMap(dimension => dimension.items);
+
+  const doublons = itemsDeclares.filter((item, index) => itemsDeclares.indexOf(item) !== index);
+  assertEqual(doublons, [], `${id} : un item ne peut appartenir qu'à une seule dimension`);
+  assertEqual(itemsDeclares.filter(item => !itemsServis.includes(item)), [], `${id} : dimension déclarant un item inexistant`);
+  assertEqual(itemsServis.filter(item => !itemsDeclares.includes(item)), [], `${id} : item servi absent de toute dimension — le profil affiché serait faux sous un total juste`);
+
+  const maxDeclares = def.scoring.dimensions.reduce((somme, dimension) => somme + dimension.max, 0);
+  assertEqual(maxDeclares, def.scoring.maxTotal, `${id} : somme des maxima des dimensions différente du maximum total`);
+
+  // Jeu complet ET jeu partiel : c'est sur le partiel qu'un découpage bancal se
+  // trahit, une dimension entière pouvant y rester vide.
+  for (const [libelle, reponses] of [
+    ['jeu complet', fillByOptionBoundary(id, 'max')],
+    ['jeu partiel', Object.fromEntries(Object.entries(fillByOptionBoundary(id, 'max')).filter((_, index) => index % 3 !== 0))],
+  ]) {
+    const resultat = calculateScore(id, reponses);
+    assert(!resultat.subScores, `${id} : les dimensions doivent sortir sous la clé \`dimensions\`, jamais \`subScores\` — cette dernière remplace le total et son interprétation à l'affichage`);
+    // Seule la branche `sum` sait calculer des dimensions : les déclarer sur un
+    // autre type de scoring les rendrait muettes. Sans cette assertion, le
+    // `reduce` ci-dessous lève un TypeError qui n'oriente vers rien.
+    assert(Array.isArray(resultat.dimensions), `${id} (${libelle}) : dimensions déclarées mais non calculées — seul le scoring \`sum\` les rend (type servi : \`${resultat.type}\`)`);
+    // La fiche patient affiche `label` et `max` : une dimension sans l'un des
+    // deux se rendrait en ligne vide ou en total sans borne.
+    for (const dimension of resultat.dimensions) {
+      assert(dimension.label && typeof dimension.max === 'number', `${id} : dimension \`${dimension.id}\` sans libellé ou sans maximum — la fiche patient rend les deux`);
+    }
+    assertEqual(
+      resultat.dimensions.reduce((somme, dimension) => somme + dimension.total, 0),
+      resultat.total,
+      `${id} (${libelle}) : somme des dimensions différente du total`,
+    );
+  }
+}
+
+// `horsTotal` ampute le score global de la sous-échelle qui le porte. Seul
+// l'IPSS l'utilise, sur décision clinique ; l'assertion rend visible en revue
+// le jour où le drapeau essaimera ailleurs.
+const porteursHorsTotal = Object.entries(QUESTIONNAIRE_CATALOGUE)
+  .filter(([, def]) => (def?.scoring?.subScores || []).some(sub => sub.horsTotal === true))
+  .map(([id]) => id);
+assertEqual(porteursHorsTotal, ['Q_URO_01'], '`horsTotal` sort une sous-échelle du score global : tout nouvel usage doit être un arbitrage clinique explicite');
+
+// Instruments `subscore` jusqu'ici sans aucune fixture de total : sans elles,
+// un `horsTotal` posé par erreur amputerait leur score sans qu'un test bronche.
+assertEqual(calculateScore('Q_MOD_01', fillByOptionBoundary('Q_MOD_01', 'max')).total, 180, 'Q_MOD_01 total maximal');
+assertEqual(calculateScore('Q_TAB_03', fillByOptionBoundary('Q_TAB_03', 'max')).total, 84, 'Q_TAB_03 total maximal');
+assertEqual(calculateScore('Q_PED_02', fillByOptionBoundary('Q_PED_02', 'max')).total, 84, 'Q_PED_02 total maximal');
+assertEqual(calculateScore('Q_ALI_03', fillByOptionBoundary('Q_ALI_03', 'max')).total, 36, 'Q_ALI_03 total maximal');
 
 console.log(`[questionnaires] OK — ${ids.length} questionnaires documentés, fixtures scoring certifiées validées.`);
