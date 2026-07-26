@@ -134,14 +134,26 @@ export function comparer(servi, spec) {
   }
 
   // ── Inversions ─────────────────────────────────────────────────────────
-  // Le catalogue ne porte aucun champ d'inversion : elle ne peut venir que du
-  // TYPE de scoring. Une source qui exige des inversions face à un type qui
-  // n'en fait aucune produit un score dont le sens est inversé pour ces items.
+  // Une inversion peut venir de TROIS endroits, et n'en manquer qu'un suffit à
+  // accuser à tort un instrument correct :
+  //   1. le TYPE de scoring (`sum_reversed`…) ;
+  //   2. une liste d'identifiants (`subScores[].reversed` pour l'UPPS,
+  //      `reversedItems` et ses variantes pour le Karasek) ;
+  //   3. le corps même du moteur, sans rien déclarer — `(7 - q12) * 1.43` pour
+  //      le QIF, l'item `EC10` de l'ECAB.
+  //
+  // Aucune lecture de déclaration ne couvre le cas 3, et une déclaration peut
+  // par ailleurs être MORTE (annoncée, jamais appliquée). Seule l'exécution
+  // tranche : `itemsInversesAppliques` vient d'une sonde qui monte chaque item
+  // et regarde dans quel sens bouge le score. La clé de réponse cotée à rebours
+  // (PSS-10) reste couverte par `inversionsMaterialisees`.
   const inverses = itemsSource.filter((i) => i.inverse);
+  const appliques = new Set(servi.scoring.itemsInversesAppliques ?? []);
   if (inverses.length > 0 && !servi.scoring.typePorteUneInversion) {
     // Position dans l'ordre de la source (le `numero` quand il existe).
     const positions = inverses.map((i, rang) => (typeof i.numero === 'number' ? i.numero : itemsSource.indexOf(i) + 1 || rang + 1));
-    const { manquantes } = inversionsMaterialisees(servi.items, positions);
+    const { manquantes: nonMaterialisees } = inversionsMaterialisees(servi.items, positions);
+    const manquantes = nonMaterialisees.filter((p) => !appliques.has(servi.items[p - 1]?.id));
     if (manquantes.length > 0) {
       const partielle = manquantes.length < positions.length;
       divergences.push(
@@ -160,15 +172,22 @@ export function comparer(servi, spec) {
   }
 
   // ── Sous-échelles ──────────────────────────────────────────────────────
+  // Comparer aux `sections` — le découpage d'ÉCRAN — accusait à tort tout
+  // instrument calculant plusieurs dimensions dans une seule page : le DASS-21
+  // (1 section, 3 sous-échelles), le HAD (1 section, 2), le PSQI (3 sections,
+  // 7 composantes). Ce sont les dimensions RENDUES PAR LE MOTEUR qui font foi.
   const sousEchelles = spec.sousEchelles ?? [];
-  if (sousEchelles.length > 0 && sousEchelles.length !== servi.sections.length) {
+  const dimensions = servi.dimensions ?? { noms: [], origine: 'aucune' };
+  if (sousEchelles.length > 0 && sousEchelles.length !== dimensions.noms.length) {
     divergences.push(
       divergence(
         'sous_echelles',
         'majeur',
         "Le découpage en sous-échelles diffère : un score global masque des dimensions que la source distingue.",
         `${sousEchelles.length} (${sousEchelles.map((s) => s.nom).join(', ')})`,
-        `${servi.sections.length} (${servi.sections.map((s) => s.titre || s.id).join(', ')})`,
+        dimensions.noms.length === 0
+          ? 'aucune dimension calculée (score global seul)'
+          : `${dimensions.noms.length} via ${dimensions.origine} (${dimensions.noms.join(', ')})`,
       ),
     );
   }
@@ -242,13 +261,88 @@ export function comparer(servi, spec) {
       );
     }
   } else if (attenduBornes && typeof attenduBornes.max === 'number' && bornes.max !== null && bornes.max !== attenduBornes.max) {
+    // Le balayage rend un score ATTEIGNABLE, donc un plancher du maximum réel.
+    // Les deux écarts ne pèsent pas pareil :
+    //   dépassement — un patient PEUT obtenir un score au-dessus du plafond
+    //     publié : preuve directe, et le barème d'interprétation ne le couvre
+    //     probablement pas ;
+    //   plafond non atteint — le balayage n'a rien prouvé. Le PSQI (durée du
+    //     sommeil) et le QIF (jours ressentis bien, item inversé) atteignent
+    //     leur maximum publié avec un jeu cohérent, que le balayage ne trouve
+    //     pas. Les annoncer « critiques » était deux fois faux.
+    if (bornes.max > attenduBornes.max) {
+      divergences.push(
+        divergence(
+          'bornes_score_depassees',
+          'critique',
+          "Le moteur produit un score supérieur au maximum de la source : ce jeu de réponses est atteignable par un patient.",
+          `${attenduBornes.min ?? '?'}–${attenduBornes.max}`,
+          `atteint ${bornes.max}`,
+        ),
+      );
+    } else {
+      // Le plafond n'a pas été atteint. Trois situations, et AUCUNE ne peut se
+      // solder par un silence : une divergence absente se lit « conforme »,
+      // alors qu'ici le banc n'a simplement pas conclu.
+      const maxConnu = servi.scoring.maxTotalDeclare ?? servi.scoring.maxTotalRendu ?? null;
+      if (maxConnu !== null && maxConnu !== attenduBornes.max) {
+        divergences.push(
+          divergence(
+            'bornes_score_declarees',
+            'majeur',
+            "Le maximum DÉCLARÉ par le catalogue diffère de celui de la source (le balayage n'a pas atteint le plafond : il ne prouve rien à lui seul).",
+            `${attenduBornes.min ?? '?'}–${attenduBornes.max}`,
+            `maximum connu du catalogue ${maxConnu}, balayage ${bornes.min ?? '?'}→${bornes.max}`,
+          ),
+        );
+      } else {
+        divergences.push(
+          divergence(
+            'bornes_score_non_atteintes',
+            'mineur',
+            maxConnu === null
+              ? "Le balayage n'atteint pas le maximum de la source et le catalogue n'en déclare aucun : le banc N'A PAS CONCLU — à vérifier à la main."
+              : "Le balayage n'atteint pas le maximum de la source, que le catalogue déclare pourtant correctement : probable composante non monotone. Non concluant.",
+            `${attenduBornes.min ?? '?'}–${attenduBornes.max}`,
+            `balayage ${bornes.min ?? '?'}→${bornes.max}${maxConnu === null ? ', aucun maximum déclaré' : `, maximum déclaré ${maxConnu}`}`,
+          ),
+        );
+      }
+    }
+  }
+
+  // ── Plancher franchi ───────────────────────────────────────────────────
+  // Symétrique du dépassement, et pour la même raison : `bornes.min` est un
+  // score ATTEIGNABLE. Un patient qui obtient 21 sur une échelle publiée 23–92
+  // sort du barème par le bas. Le cas existe (`Q_CAN_02`, deux items
+  // conditionnels sortis de la somme) et n'était couvert par aucune règle.
+  if (attenduBornes && typeof attenduBornes.min === 'number' && bornes.min !== null && bornes.min < attenduBornes.min) {
     divergences.push(
       divergence(
-        'bornes_score',
+        'bornes_score_sous_plancher',
         'critique',
-        "Le score maximal réellement produit par le moteur diffère de celui de la source.",
-        `${attenduBornes.min ?? '?'}–${attenduBornes.max}`,
-        `${bornes.min ?? '?'}–${bornes.max}`,
+        'Le moteur produit un score inférieur au minimum de la source : ce jeu de réponses est atteignable par un patient.',
+        `${attenduBornes.min}–${attenduBornes.max ?? '?'}`,
+        `descend à ${bornes.min}`,
+      ),
+    );
+  }
+
+  // ── Inversion déclarée mais jamais appliquée ───────────────────────────
+  // Le cas le plus traître : le catalogue annonce une inversion, le moteur n'en
+  // fait rien, et une lecture par déclaration donnerait l'instrument pour bon.
+  const declarees = servi.scoring.itemsInversesDeclares ?? [];
+  const indetermines = new Set(servi.scoring.itemsInversionIndeterminee ?? []);
+  const mortes = declarees.filter((id) => !appliques.has(id) && !indetermines.has(id));
+  if (mortes.length > 0) {
+    divergences.push(
+      divergence(
+        'inversion_declaree_non_appliquee',
+        'critique',
+        "Le catalogue déclare ces items inversés ; l'exécution du moteur montre qu'ils ne le sont pas. La déclaration est morte.",
+        `${declarees.length} item(s) déclaré(s) inversé(s)`,
+        `${mortes.length} sans effet : ${mortes.join(', ')}`,
+        mortes.join(', '),
       ),
     );
   }

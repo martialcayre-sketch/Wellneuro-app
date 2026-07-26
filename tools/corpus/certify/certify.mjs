@@ -64,12 +64,38 @@ ${SCHEMA}`;
 
 function parseArgs() {
   const a = process.argv.slice(2);
-  const o = { instrument: null, sources: [] };
+  const o = { instrument: null, sources: [], recomparer: false };
   for (let i = 0; i < a.length; i++) {
     if (a[i] === '--instrument') o.instrument = a[++i];
     else if (a[i] === '--sources') o.sources = a[++i].split(',').map((s) => s.trim());
+    else if (a[i] === '--recomparer') o.recomparer = true;
   }
   return o;
+}
+
+/**
+ * Relit les spécifications déjà produites pour un instrument.
+ *
+ * Les lectures structurantes coûtent deux appels de modèle par instrument ;
+ * corriger le COMPARATEUR n'a aucune raison de les repayer, puisque la source
+ * n'a pas bougé. `--recomparer` rejoue donc la comparaison sur les
+ * `spec-*.json` du dossier de sortie — sans réseau, sans clé API, et sur
+ * l'ensemble du banc si `--instrument` est omis.
+ */
+async function specsEnCache(dossier) {
+  const lectures = [
+    { lecteur: 'B (Claude)', fichier: 'spec-B.json' },
+    { lecteur: 'C (GPT)', fichier: 'spec-C.json' },
+  ];
+  const specs = [];
+  for (const { lecteur, fichier } of lectures) {
+    try {
+      specs.push({ lecteur, spec: JSON.parse(await fs.readFile(path.join(dossier, fichier), 'utf8')), erreur: null });
+    } catch {
+      specs.push({ lecteur, spec: null, erreur: 'spécification absente du cache' });
+    }
+  }
+  return specs;
 }
 
 /** Extrait le premier objet JSON d'une réponse de modèle (tolère les fioritures). */
@@ -139,9 +165,10 @@ function redigerRapport({ instrument, sources, empreinte, verdicts, croisement, 
   l.push('## Ce que sert l\'application');
   l.push('');
   l.push(`- items : ${empreinte.items.length}`);
-  l.push(`- sections : ${empreinte.sections.length} (${empreinte.sections.map((s) => s.titre || s.id).join(' · ')})`);
-  l.push(`- scoring : type \`${empreinte.scoring.type}\`, maxTotal déclaré ${empreinte.scoring.maxTotalDeclare ?? '—'}`);
-  l.push(`- bornes **exécutées** par le moteur : ${empreinte.bornesExecutees.min ?? '?'} → ${empreinte.bornesExecutees.max ?? '?'}${empreinte.bornesExecutees.erreur ? ` (erreur : ${empreinte.bornesExecutees.erreur})` : ''}`);
+  l.push(`- sections (écran) : ${empreinte.sections.length} (${empreinte.sections.map((s) => s.titre || s.id).join(' · ')})`);
+  l.push(`- dimensions **calculées** : ${empreinte.dimensions.noms.length} via \`${empreinte.dimensions.origine}\`${empreinte.dimensions.noms.length ? ` (${empreinte.dimensions.noms.join(' · ')})` : ''}`);
+  l.push(`- scoring : type \`${empreinte.scoring.type}\`, maxTotal déclaré ${empreinte.scoring.maxTotalDeclare ?? '—'}${empreinte.scoring.itemsInversesDeclares.length ? `, ${empreinte.scoring.itemsInversesDeclares.length} item(s) inversé(s) déclaré(s)` : ''}`);
+  l.push(`- balayage du moteur : ${empreinte.bornesExecutees.min ?? '?'} → ${empreinte.bornesExecutees.max ?? '?'}${empreinte.bornesExecutees.erreur ? ` (erreur : ${empreinte.bornesExecutees.erreur})` : ''} — un score **atteignable**, donc un plancher du maximum, pas le maximum`);
   l.push(`- bandes d'interprétation : ${empreinte.scoring.bandes.length}`);
   l.push('');
 
@@ -181,50 +208,15 @@ function redigerRapport({ instrument, sources, empreinte, verdicts, croisement, 
 /** Clé d'identité d'une divergence : le même écart doit se reconnaître d'une lecture à l'autre. */
 const cleDivergence = (d) => `${d.code}|${d.item ?? ''}`;
 
-async function main() {
-  const o = parseArgs();
-  if (!o.instrument || o.sources.length === 0) {
-    console.error('Usage : --instrument Q_SOM_07 --sources WN-SRC-0396,WN-SRC-0397');
-    process.exit(1);
-  }
-
-  const { chargerCatalogue } = require(path.resolve('scripts/lib/charger_catalogue.js'));
-  const { QUESTIONNAIRE_CATALOGUE, calculateScore } = chargerCatalogue();
-  const entree = QUESTIONNAIRE_CATALOGUE[o.instrument];
-  if (!entree) throw new Error(`${o.instrument} absent du catalogue servi`);
-
-  const morceaux = [];
-  for (const sid of o.sources) {
-    const chemin = path.join(EXTRACTED, sid, 'canonical.md');
-    try {
-      morceaux.push(`<!-- source ${sid} -->\n${await fs.readFile(chemin, 'utf8')}`);
-    } catch {
-      console.error(`  ${sid} : verbatim absent (${chemin}) — extraire d'abord`);
-    }
-  }
-  if (morceaux.length === 0) throw new Error('aucun verbatim disponible');
-  const verbatim = morceaux.join('\n\n');
-
-  console.log(`=== ${o.instrument} — ${entree.titre} ===`);
-  console.log(`  sources : ${o.sources.join(', ')} (${verbatim.length} caractères)`);
-
-  const empreinte = empreinteServie(o.instrument, entree, calculateScore);
-  console.log(`  servi : ${empreinte.items.length} items, bornes exécutées ${empreinte.bornesExecutees.min}→${empreinte.bornesExecutees.max}`);
-
-  const [b, c] = await Promise.allSettled([
-    lectureStructuranteClaude(verbatim),
-    lectureStructuranteGpt(verbatim),
-  ]);
-  const specs = [
-    { lecteur: 'B (Claude)', spec: b.status === 'fulfilled' ? b.value : null, erreur: b.status === 'rejected' ? String(b.reason?.message || b.reason) : null },
-    { lecteur: 'C (GPT)', spec: c.status === 'fulfilled' ? c.value : null, erreur: c.status === 'rejected' ? String(c.reason?.message || c.reason) : null },
-  ];
+async function traiter({ instrument, sources, entree, calculateScore, specs }) {
+  const empreinte = empreinteServie(instrument, entree, calculateScore);
+  console.log(`  servi : ${empreinte.items.length} items, ${empreinte.dimensions.noms.length} dimension(s) via ${empreinte.dimensions.origine}, balayage ${empreinte.bornesExecutees.min}→${empreinte.bornesExecutees.max}`);
   for (const s of specs) {
     console.log(`  lecture ${s.lecteur} : ${s.spec ? `${(s.spec.items ?? []).length} items lus` : `ÉCHEC — ${s.erreur}`}`);
   }
 
   const verdicts = specs.filter((s) => s.spec).map((s) => ({ lecteur: s.lecteur, resultat: comparer(empreinte, s.spec) }));
-  if (verdicts.length === 0) throw new Error('les deux lectures structurantes ont échoué');
+  if (verdicts.length === 0) throw new Error('aucune spécification exploitable');
 
   // Croisement : confirmée = vue par toutes les lectures disponibles.
   const parCle = new Map();
@@ -245,18 +237,93 @@ async function main() {
     else croisement.aConfirmer.push({ ...divergence, vuePar: lecteurs.join(', ') });
   }
 
-  const dossier = path.join(SORTIE, o.instrument);
+  const dossier = path.join(SORTIE, instrument);
   await fs.mkdir(dossier, { recursive: true });
   for (const s of specs) {
     if (s.spec) await fs.writeFile(path.join(dossier, `spec-${s.lecteur[0]}.json`), `${JSON.stringify(s.spec, null, 2)}\n`);
   }
   await fs.writeFile(path.join(dossier, 'empreinte-servie.json'), `${JSON.stringify(empreinte, null, 2)}\n`);
-  const rapport = redigerRapport({ instrument: o.instrument, sources: o.sources, empreinte, verdicts, croisement, specs });
+  const rapport = redigerRapport({ instrument, sources, empreinte, verdicts, croisement, specs });
   await fs.writeFile(path.join(dossier, 'rapport.md'), rapport);
 
-  console.log(`\n  confirmées : ${croisement.confirmees.length} · à confirmer : ${croisement.aConfirmer.length}`);
+  console.log(`  confirmées : ${croisement.confirmees.length} · à confirmer : ${croisement.aConfirmer.length}`);
   for (const d of croisement.confirmees) console.log(`    [${d.gravite}] ${d.code}${d.item ? ` (${d.item})` : ''}`);
-  console.log(`\n  rapport : ${path.join(dossier, 'rapport.md')}`);
+  return { instrument, confirmees: croisement.confirmees, aConfirmer: croisement.aConfirmer };
+}
+
+async function main() {
+  const o = parseArgs();
+  // Contrôle d'usage AVANT le chargement du catalogue : lancé depuis un autre
+  // répertoire que la racine, le `require` échoue, et un mode d'emploi vaut
+  // mieux qu'une trace de module introuvable.
+  if (!o.recomparer && (!o.instrument || o.sources.length === 0)) {
+    console.error('Usage : --instrument Q_SOM_07 --sources WN-SRC-0396,WN-SRC-0397');
+    console.error('        --recomparer [--instrument Q_XXX]   (rejeu depuis le cache, sans appel API)');
+    console.error('À lancer depuis la racine du dépôt.');
+    process.exit(1);
+  }
+
+  const { chargerCatalogue } = require(path.resolve('scripts/lib/charger_catalogue.js'));
+  const { QUESTIONNAIRE_CATALOGUE, calculateScore } = chargerCatalogue();
+
+  // ── Rejeu depuis le cache : aucun appel de modèle ──────────────────────
+  if (o.recomparer) {
+    const dossiers = o.instrument
+      ? [o.instrument]
+      : (await fs.readdir(SORTIE, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name).sort();
+    const bilan = [];
+    for (const instrument of dossiers) {
+      const entree = QUESTIONNAIRE_CATALOGUE[instrument];
+      if (!entree) {
+        console.error(`${instrument} : absent du catalogue servi — ignoré`);
+        continue;
+      }
+      const specs = await specsEnCache(path.join(SORTIE, instrument));
+      if (!specs.some((s) => s.spec)) {
+        console.error(`${instrument} : aucune spécification en cache — ignoré`);
+        continue;
+      }
+      console.log(`=== ${instrument} — ${entree.titre} ===`);
+      try {
+        bilan.push(await traiter({ instrument, sources: ['(cache)'], entree, calculateScore, specs }));
+      } catch (e) {
+        console.error(`  ÉCHEC : ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+    const critiques = bilan.flatMap((b) => b.confirmees.filter((d) => d.gravite === 'critique'));
+    console.log(`\n${bilan.length} instrument(s) recomparés · ${critiques.length} divergence(s) critique(s) confirmée(s)`);
+    return;
+  }
+
+  const entree = QUESTIONNAIRE_CATALOGUE[o.instrument];
+  if (!entree) throw new Error(`${o.instrument} absent du catalogue servi`);
+
+  const morceaux = [];
+  for (const sid of o.sources) {
+    const chemin = path.join(EXTRACTED, sid, 'canonical.md');
+    try {
+      morceaux.push(`<!-- source ${sid} -->\n${await fs.readFile(chemin, 'utf8')}`);
+    } catch {
+      console.error(`  ${sid} : verbatim absent (${chemin}) — extraire d'abord`);
+    }
+  }
+  if (morceaux.length === 0) throw new Error('aucun verbatim disponible');
+  const verbatim = morceaux.join('\n\n');
+
+  console.log(`=== ${o.instrument} — ${entree.titre} ===`);
+  console.log(`  sources : ${o.sources.join(', ')} (${verbatim.length} caractères)`);
+
+  const [b, c] = await Promise.allSettled([
+    lectureStructuranteClaude(verbatim),
+    lectureStructuranteGpt(verbatim),
+  ]);
+  const specs = [
+    { lecteur: 'B (Claude)', spec: b.status === 'fulfilled' ? b.value : null, erreur: b.status === 'rejected' ? String(b.reason?.message || b.reason) : null },
+    { lecteur: 'C (GPT)', spec: c.status === 'fulfilled' ? c.value : null, erreur: c.status === 'rejected' ? String(c.reason?.message || c.reason) : null },
+  ];
+
+  const r = await traiter({ instrument: o.instrument, sources: o.sources, entree, calculateScore, specs });
+  console.log(`\n  rapport : ${path.join(SORTIE, r.instrument, 'rapport.md')}`);
 }
 
 main().catch((e) => {
