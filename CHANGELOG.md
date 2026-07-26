@@ -4,6 +4,14 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### Synthèses IA longues : plafond de sortie relevé (2026-07-26)
+
+La génération pouvait échouer pour un dossier comprenant plusieurs
+questionnaires : Claude atteignait le plafond de 4 096 tokens avant de fermer
+le JSON, et la synthèse tronquée était volontairement refusée. Le plafond de
+sortie passe à 8 192 tokens afin de permettre une synthèse consolidée complète.
+Les données d'entrée, le scoring et les règles cliniques restent inchangés.
+
 ### Un protocole bloqué se voit sans changer d'onglet (2026-07-21)
 
 Le poste de pilotage (#146) a réparti le runtime clinique par phase, et la fiche
