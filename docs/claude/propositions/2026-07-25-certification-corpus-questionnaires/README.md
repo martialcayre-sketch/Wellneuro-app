@@ -170,12 +170,50 @@ praticien ; 12/13 ensuite. **La priorité immédiate est la certification
    notebook « 13 — Instruments du cabinet ». La question (a) ci-dessous est
    close pour les instruments du cabinet.
 
+8. **Droits des instruments tiers et périmètre d'ingestion** (2026-07-26) —
+   clôt la question (b).
+
+   **Fait établi qui a motivé la décision** : les mentions de droits relevées
+   *dans les documents sources eux-mêmes* (champ `mentionsDroits` du banc, 59
+   instruments) ne décrivent pas le corpus qu'on croyait. **30 sources portent
+   l'en-tête SIIN seul** ; 7 portent SIIN **et** une attribution tierce
+   (Terman/Williams, Johns, Maslach-Pines, Lagrue/Légeron, Galvin, GRECO,
+   Bristol) ; 7 ne portent **qu'une** attribution tierce (Beck, FIQ de
+   Burckhardt, Tinetti, Sabbagh, Dubois, Monnier, Perrot/Bouhassira) ; 15 n'en
+   portent aucune. L'estimation antérieure — « la quasi-totalité des sources
+   sont des échelles tierces sous copyright » — était fausse.
+
+   **Décision A — ingestion complète des 106 sources d'instruments**, verbatim
+   compris, au titre de l'usage strictement interne au cabinet et de la
+   barrière D-003. Les claims entrent en `EN_ATTENTE_VALIDATION`, comme tout le
+   reste du corpus.
+
+   **Décision B — la déclaration du praticien est étendue** aux 7 instruments
+   dont la source ne porte qu'une attribution tierce, avec le même périmètre et
+   les mêmes exclusions que la décision 6. **Portée juridique inscrite au
+   registre sans l'adoucir** : la déclaration enregistre la position du
+   praticien et l'engage ; elle ne constitue pas une licence et n'éteint aucun
+   droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune
+   autorisation n'a été sollicitée auprès des ayants droit.
+
+   **Restent à `a_verifier`** : les 15 sources sans aucune mention de droits et
+   les 7 sources SIIN + tiers, dont l'adaptation SIIN est couverte par la
+   décision 6 mais dont l'échelle d'origine ne l'est pas. Ingérées comme les
+   autres au titre de la décision A ; leur statut de droits reste ouvert au
+   registre, daté et visible.
+
+   **Distinction technique retenue** : la table des claims n'a aucune colonne
+   pointant vers un chunk, et la voie servie à l'IA comme au patient
+   (`match_wellneuro_rag_claims`) ne lit **que les claims**. Les chunks —
+   seuls porteurs du verbatim — ne sont lus que par le contrôle de santé, la
+   vérification et l'écran de revue.
+
 ## 5. Décisions praticien en attente
 
 | # | Question | Bloque |
 |---|---|---|
 | ~~a~~ | ~~Fourniture des PDF sources primaires~~ — **close le 2026-07-25** (123 PDF rapatriés, 116 notices) | — |
-| b | Droits/licences des instruments **tiers** (PSQI © Univ. Pittsburgh, QLQ © EORTC, MMSE © PAR, Conners © MHS, Epworth © Johns, HIT-6 © QualityMetric…) : ingérer verbatim en base, ou banc **local seulement**. Le référentiel SIIN est tranché (décision 6) ; ces instruments-là ne le sont pas | Lot 2 (périmètre) |
+| ~~b~~ | ~~Droits/licences des instruments **tiers**~~ — **close le 2026-07-26** (décision 8 : ingestion complète des 106 sources ; déclaration étendue à 7 instruments ; 22 restent `a_verifier`) | — |
 | c | Hiérarchie en cas de divergence Drive ↔ source primaire (le banc va en détecter — MFI-20/Berlin/PSQI déjà constatées) | Lot 4 (arbitrages) |
 | d | Validation des niveaux de preuve A/B/C/D (`NIVEAU_PREUVE_PAR_SOURCE`) | Lot 5 |
 | e | Besoins 3/6/7/11 : rester à couverture null, ou mapper de nouvelles sources (⇒ bump v3) | Lot 6 |
