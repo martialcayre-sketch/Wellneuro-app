@@ -80,6 +80,7 @@ export function AtelierVoieRapideModale({
   const [nouvelleQuestion, setNouvelleQuestion] = useState('');
   const [generationEnCours, setGenerationEnCours] = useState(false);
   const [avertissementGeneration, setAvertissementGeneration] = useState('');
+  const [questionCopiee, setQuestionCopiee] = useState<number | null>(null);
 
   const [issueArmee, setIssueArmee] = useState<'valider' | 'basculer' | 'clore_caduc' | null>(null);
   const [motifBascule, setMotifBascule] = useState('');
@@ -227,6 +228,17 @@ export function AtelierVoieRapideModale({
     (index: number, reponse: string) => majQuestion(index, { reponse, verdict: null, justificationIA: '' }),
     [majQuestion],
   );
+
+  const copierQuestion = useCallback(async (index: number, question: string) => {
+    try {
+      await navigator.clipboard.writeText(question);
+      setQuestionCopiee(index);
+      setErreur('');
+    } catch {
+      setQuestionCopiee(null);
+      setErreur('Impossible de copier la question dans le presse-papiers.');
+    }
+  }, []);
 
   const evaluerQuestion = useCallback(
     async (index: number) => {
@@ -564,12 +576,24 @@ export function AtelierVoieRapideModale({
               <ul className="mt-3 flex flex-col gap-3">
                 {questions.map((q, index) => (
                   <li key={index} className="rounded-xl border border-border p-3">
-                    <p className="text-sm font-medium text-foreground">
-                      {q.question}
-                      <span className="ml-2 text-xs font-normal text-muted-foreground">
-                        {q.chunkId || 'question libre'}
-                      </span>
-                    </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm font-medium text-foreground">
+                        {q.question}
+                        <span className="ml-2 text-xs font-normal text-muted-foreground">
+                          {q.chunkId || 'question libre'}
+                        </span>
+                      </p>
+                      {q.chunkId ? (
+                        <Button
+                          variant="outline"
+                          className="shrink-0"
+                          onClick={() => copierQuestion(index, q.question)}
+                          aria-label={`Copier la question ${index + 1} dans le presse-papiers`}
+                        >
+                          {questionCopiee === index ? 'Copiée' : 'Copier la question'}
+                        </Button>
+                      ) : null}
+                    </div>
                     <textarea
                       value={q.reponse}
                       onChange={(e) => modifierReponse(index, e.target.value)}
