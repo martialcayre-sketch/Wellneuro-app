@@ -100,7 +100,7 @@ describe('GET /api/praticien/booklet', () => {
         idSynthese: 'SYN_1',
         patient: { praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' } },
       },
-      include: { bookletEnvois: { orderBy: { dateEnvoi: 'desc' }, take: 1 } },
+      include: { bookletEnvois: { where: { statut: 'Envoye' }, orderBy: { dateEnvoi: 'desc' }, take: 1 } },
     });
   });
 

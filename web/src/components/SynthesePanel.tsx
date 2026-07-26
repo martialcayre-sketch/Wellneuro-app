@@ -1,13 +1,14 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { PenLine, Sparkles } from 'lucide-react';
+import { PenLine, Sparkles, Trash2 } from 'lucide-react';
 import { readEventStream } from '@/lib/sse/readEventStream';
 import type { PatientsPgApiResponse } from '@/app/api/praticien/patients-pg/route';
 import type { SyntheseSchema } from '@/lib/anthropic';
 import { SynthesePraticienEditor } from '@/components/SynthesePraticienEditor';
 import {
   estRedactionPraticien,
+  MODELE_REDACTION_PRATICIEN,
   nouveauBrouillonPraticien,
 } from '@/lib/synthese-praticien';
 
@@ -263,6 +264,60 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     }
   };
 
+  const onResetSynthese = async () => {
+    if (!selectedSynthese) return;
+    const confirme = window.confirm(
+      'Effacer le contenu de cette synthèse et la remettre en brouillon praticien vide ?',
+    );
+    if (!confirme) return;
+
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const r = await fetch('/api/praticien/synthese', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idSynthese: selectedSynthese.idSynthese, action: 'effacer' }),
+      });
+      const d = await r.json() as {
+        success?: boolean;
+        error?: string;
+        statut?: string;
+        syntheseJson?: SyntheseSchema;
+        modele?: string;
+        dateValidation?: string | null;
+        notesPraticien?: string | null;
+      };
+      if (!r.ok || !d.success || !d.syntheseJson || !d.statut) {
+        setFeedback({ ok: false, msg: d.error ?? 'Impossible d’effacer la synthèse.' });
+        return;
+      }
+      const syntheseVide = {
+        ...selectedSynthese,
+        statut: d.statut,
+        modele: d.modele ?? MODELE_REDACTION_PRATICIEN,
+        dateValidation: d.dateValidation ?? null,
+        notesPraticien: d.notesPraticien ?? null,
+        syntheseJson: d.syntheseJson,
+      };
+      setSelectedSynthese(syntheseVide);
+      setEditedManual(d.syntheseJson);
+      setManualDraft(null);
+      setManualDirty(false);
+      setNotes('');
+      setBookletHtml(null);
+      setBookletInfo(null);
+      setRelectureConfirmee(false);
+      setForceSend(false);
+      setFeedback({ ok: true, msg: 'Synthèse vidée. Complétez le brouillon avant validation et booklet.' });
+      await loadSyntheses(selectedPatient);
+    } catch {
+      setFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const onLoadBooklet = async (idSynthese: string) => {
     setLoadingBooklet(true);
     setBookletHtml(null);
@@ -284,6 +339,14 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
     } finally {
       setLoadingBooklet(false);
     }
+  };
+
+  const onClearBooklet = () => {
+    setBookletHtml(null);
+    setBookletInfo(null);
+    setRelectureConfirmee(false);
+    setForceSend(false);
+    setFeedback({ ok: true, msg: 'Prévisualisation du booklet effacée.' });
   };
 
   const onSend = async (idSynthese: string) => {
@@ -320,6 +383,13 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   };
 
   const patient = patients.find(p => p.idPatient === selectedPatient);
+  const validationBrouillonBloquee =
+    selectedSynthese?.statut === 'Brouillon_Praticien'
+    && (
+      manualDirty
+      || !editedManual?.resume_praticien.trim()
+      || !editedManual?.narratif_patient.trim()
+    );
 
   return (
     <div className="flex flex-col gap-6">
@@ -521,7 +591,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
             <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
               <button
                 onClick={() => onAction(selectedSynthese.idSynthese, 'valider')}
-                disabled={saving || (selectedSynthese.statut === 'Brouillon_Praticien' && manualDirty)}
+                disabled={saving || validationBrouillonBloquee}
                 className={`${btnPrimary} bg-status-success`}
               >
                 {saving ? '...' : 'Valider la synthèse'}
@@ -531,6 +601,18 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
               </button>
             </div>
           )}
+
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+            <button
+              type="button"
+              onClick={onResetSynthese}
+              disabled={saving || sending}
+              className="inline-flex items-center gap-2 rounded-lg border border-status-danger/40 px-4 py-2 text-sm font-medium text-status-danger hover:bg-status-danger/10 disabled:opacity-60"
+            >
+              <Trash2 size={16} aria-hidden="true" />
+              {saving ? 'Effacement...' : 'Vider la synthèse'}
+            </button>
+          </div>
 
           {/* Notes praticien */}
           {(selectedSynthese.statut === 'Validee_Praticien' || selectedSynthese.statut === 'Corrigee_Praticien') && (
@@ -583,13 +665,24 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                         Confirmer le renvoi (déjà envoyé précédemment).
                       </label>
                     )}
-                    <button
-                      onClick={() => onSend(selectedSynthese.idSynthese)}
-                      disabled={sending || !relectureConfirmee}
-                      className={`${btnPrimary} self-start bg-status-success`}
-                    >
-                      {sending ? 'Envoi en cours...' : 'Envoyer au patient'}
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => onSend(selectedSynthese.idSynthese)}
+                        disabled={sending || !relectureConfirmee}
+                        className={`${btnPrimary} bg-status-success`}
+                      >
+                        {sending ? 'Envoi en cours...' : 'Envoyer au patient'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onClearBooklet}
+                        disabled={sending}
+                        className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted disabled:opacity-60"
+                      >
+                        <Trash2 size={16} aria-hidden="true" />
+                        Effacer le booklet affiché
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

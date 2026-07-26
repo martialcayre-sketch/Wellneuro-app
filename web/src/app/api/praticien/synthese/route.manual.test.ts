@@ -6,6 +6,7 @@ const { getServerSession, prisma, journaliserAccesDossier } = vi.hoisted(() => (
   prisma: {
     patient: { findFirst: vi.fn() },
     syntheseIA: { create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+    bookletEnvoi: { findFirst: vi.fn() },
     auditSynthese: { create: vi.fn() },
   },
 }));
@@ -88,6 +89,7 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     prisma.syntheseIA.create.mockResolvedValue(ligneSynthese());
     prisma.syntheseIA.findFirst.mockResolvedValue(ligneSynthese());
     prisma.syntheseIA.update.mockResolvedValue(ligneSynthese());
+    prisma.bookletEnvoi.findFirst.mockResolvedValue(null);
     prisma.auditSynthese.create.mockResolvedValue({});
     journaliserAccesDossier.mockResolvedValue(undefined);
   });
@@ -146,6 +148,61 @@ describe('brouillon praticien /api/praticien/synthese', () => {
       action: 'valider',
     }));
     expect(response.status).toBe(404);
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
+
+  it('vide une synthèse non envoyée et la remet en brouillon praticien', async () => {
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1',
+      action: 'effacer',
+    }));
+
+    expect(response.status).toBe(200);
+    expect(prisma.bookletEnvoi.findFirst).toHaveBeenCalledWith({
+      where: { idSynthese: 'SYN_MANUEL_1', statut: 'Envoye' },
+      select: { id: true },
+    });
+    expect(prisma.syntheseIA.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        statut: 'Brouillon_Praticien',
+        modele: MODELE_REDACTION_PRATICIEN,
+        versionPrompt: VERSION_SYNTHESE_PRATICIEN,
+        dateValidation: null,
+        notesPraticien: null,
+        syntheseJson: expect.objectContaining({
+          resume_praticien: '',
+          narratif_patient: '',
+        }),
+      }),
+    }));
+    expect(prisma.auditSynthese.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ statut: 'Brouillon_Efface_Praticien' }),
+    });
+  });
+
+  it('refuse de vider une synthèse dont le booklet a déjà été envoyé', async () => {
+    prisma.bookletEnvoi.findFirst.mockResolvedValue({ id: 'BE_1' });
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1',
+      action: 'effacer',
+    }));
+
+    expect(response.status).toBe(409);
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
+
+  it('refuse de valider un brouillon praticien vide', async () => {
+    prisma.syntheseIA.findFirst.mockResolvedValue({
+      ...ligneSynthese(),
+      syntheseJson: nouveauBrouillonPraticien(),
+    });
+
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1',
+      action: 'valider',
+    }));
+
+    expect(response.status).toBe(400);
     expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
   });
 });

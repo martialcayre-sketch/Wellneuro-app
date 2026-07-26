@@ -23,6 +23,7 @@ import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/cons
 import {
   MODELE_REDACTION_PRATICIEN,
   VERSION_SYNTHESE_PRATICIEN,
+  nouveauBrouillonPraticien,
   validerBrouillonPraticien,
 } from '@/lib/synthese-praticien';
 import { logger } from '@/lib/observability/logger';
@@ -580,7 +581,7 @@ export async function PUT(req: Request) {
 }
 
 // PATCH /api/praticien/synthese
-// Enregistrer, valider, rejeter ou annoter une synthèse.
+// Enregistrer, valider, rejeter, annoter ou vider une synthèse.
 export async function PATCH(req: Request) {
   const requestContext = createRequestContext(req);
   const session = await getServerSession(authOptions);
@@ -588,7 +589,7 @@ export async function PATCH(req: Request) {
 
   type PatchBody = {
     idSynthese?: string;
-    action?: 'enregistrer' | 'valider' | 'rejeter' | 'annoter';
+    action?: 'enregistrer' | 'valider' | 'rejeter' | 'annoter' | 'effacer';
     notes?: string;
     synthese?: unknown;
   };
@@ -623,6 +624,11 @@ export async function PATCH(req: Request) {
 
     let statut = existing.statut;
     let syntheseJson: Prisma.InputJsonValue | undefined;
+    let dateValidation: Date | null | undefined = existing.dateValidation;
+    let notesPraticien: string | null | undefined = existing.notesPraticien;
+    let modele: string | undefined;
+    let versionPrompt: string | undefined;
+    let donneesEntree: Prisma.InputJsonValue | undefined;
     if (action === 'enregistrer') {
       if (existing.statut !== 'Brouillon_Praticien' || existing.modele !== MODELE_REDACTION_PRATICIEN) {
         return withCorrelationHeader(NextResponse.json(
@@ -636,11 +642,43 @@ export async function PATCH(req: Request) {
       }
       syntheseJson = validation.synthese as Prisma.InputJsonValue;
     } else if (action === 'valider') {
+      if (existing.statut === 'Brouillon_Praticien' || existing.modele === MODELE_REDACTION_PRATICIEN) {
+        const validation = validerBrouillonPraticien(existing.syntheseJson);
+        if (!validation.ok) {
+          return withCorrelationHeader(NextResponse.json({ error: validation.error }, { status: 400 }), requestContext);
+        }
+        syntheseJson = validation.synthese as Prisma.InputJsonValue;
+      }
       statut = 'Validee_Praticien';
+      dateValidation = new Date();
     } else if (action === 'rejeter') {
       statut = 'Rejetee';
     } else if (action === 'annoter') {
       statut = existing.statut === 'Validee_Praticien' && notes ? 'Corrigee_Praticien' : existing.statut;
+      notesPraticien = notes;
+    } else if (action === 'effacer') {
+      const bookletEnvoye = await prisma.bookletEnvoi.findFirst({
+        where: { idSynthese, statut: 'Envoye' },
+        select: { id: true },
+      });
+      if (bookletEnvoye) {
+        return withCorrelationHeader(NextResponse.json(
+          { error: 'Impossible de vider une synthèse dont le booklet a déjà été envoyé.' },
+          { status: 409 },
+        ), requestContext);
+      }
+      statut = 'Brouillon_Praticien';
+      syntheseJson = nouveauBrouillonPraticien() as Prisma.InputJsonValue;
+      dateValidation = null;
+      notesPraticien = null;
+      modele = MODELE_REDACTION_PRATICIEN;
+      versionPrompt = VERSION_SYNTHESE_PRATICIEN;
+      donneesEntree = {
+        source: 'effacement_praticien',
+        ancienModele: existing.modele,
+        ancienStatut: existing.statut,
+        versionSchema: VERSION_SYNTHESE_PRATICIEN,
+      };
     } else {
       return withCorrelationHeader(NextResponse.json({ error: 'Action invalide.' }, { status: 400 }), requestContext);
     }
@@ -649,11 +687,26 @@ export async function PATCH(req: Request) {
       where: { idSynthese },
       data: {
         statut,
-        dateValidation: action === 'valider' ? new Date() : existing.dateValidation,
-        notesPraticien: action === 'annoter' ? notes : existing.notesPraticien,
+        dateValidation,
+        notesPraticien,
+        ...(modele ? { modele } : {}),
+        ...(versionPrompt ? { versionPrompt } : {}),
+        ...(donneesEntree ? { donneesEntree } : {}),
         ...(syntheseJson ? { syntheseJson } : {}),
       },
     });
+
+    if (action === 'effacer') {
+      await prisma.auditSynthese.create({
+        data: {
+          idSynthese,
+          idPatient: existing.idPatient,
+          modele: MODELE_REDACTION_PRATICIEN,
+          versionPrompt: VERSION_SYNTHESE_PRATICIEN,
+          statut: 'Brouillon_Efface_Praticien',
+        },
+      });
+    }
 
     await journaliserAccesDossier({
       idPatient: existing.idPatient,
@@ -666,6 +719,9 @@ export async function PATCH(req: Request) {
       success: true,
       statut,
       syntheseJson: record.syntheseJson,
+      modele: record.modele,
+      dateValidation: record.dateValidation,
+      notesPraticien: record.notesPraticien,
     }), requestContext);
   } catch (err) {
     logger.error({
