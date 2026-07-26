@@ -11,6 +11,12 @@ export type ScoreInterpretation = {
   label: string;
   color?: string;
   detail?: string;
+  /**
+   * Conduite clinique. N'est PLUS émis ici depuis le 2026-07-26 — il sort sous
+   * `ScoreResultBase.conduite`. Le champ reste déclaré parce que les réponses
+   * enregistrées avant cette date le portent toujours, et que la fiche
+   * praticien continue de les afficher.
+   */
   protocol?: string;
 };
 
@@ -34,6 +40,12 @@ export type ScoreResultBase = {
    * remplace jamais le score global : elle le détaille.
    */
   dimensions?: ScoreSubScore[];
+  /**
+   * Conduite clinique associée à la bande atteinte — « ce qu'il faut faire »,
+   * séparé de « ce que vaut la mesure ». Sorti de `interpretation` le
+   * 2026-07-26 : un moteur de scoring mesure, il ne prescrit pas.
+   */
+  conduite?: string;
   missing?: number;
   missingIds?: string[];
   notApplicable?: string[];

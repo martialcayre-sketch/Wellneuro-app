@@ -1459,7 +1459,37 @@ export function calculateScore(idQ: string, answers: Record<string, any>) {
 // publié) sans AUCUN changement de comportement pour le catalogue. Retour
 // `any` : même contrat que calculateScore avant extraction (le fichier est
 // entièrement en `any`, les juges du contenu sont les tests de scoring).
+// Une bande d'interprétation dit CE QUE VAUT la mesure ; une conduite dit CE
+// QU'IL FAUT FAIRE. Les deux cohabitaient dans le même objet, si bien que la
+// conduite voyageait partout où voyageait l'interprétation — jusque dans le
+// prompt envoyé au modèle de synthèse, qui recevait « Consultation
+// neurologique — envisager traitement pharmacologique » comme s'il s'agissait
+// d'un résultat de mesure. Elle sort ici sous une clé distincte, à un seul
+// endroit : les 17 moteurs passent tous par cet entonnoir.
+//
+// Rien n'est perdu ni réécrit : les réponses déjà enregistrées gardent leur
+// `interpretation.protocol`, que `buildMiniSynthese` sait encore lire.
+function separerConduite(resultat: any): any {
+  const interpretation = resultat?.interpretation;
+  if (!interpretation || typeof interpretation !== 'object') return resultat;
+  if (!('protocol' in interpretation)) return resultat;
+  // La clé part TOUJOURS, y compris vide : l'IRLS déclare `protocol: ''` sur sa
+  // bande d'absence de trouble, et laisser la clé traîner rendrait la règle
+  // « une conduite ne voyage pas dans l'interprétation » vraie à peu près.
+  const {protocol, ...interpretationSansConduite} = interpretation as Record<string, unknown>;
+  const conduite = typeof protocol === 'string' ? protocol.trim() : '';
+  return {
+    ...resultat,
+    interpretation: interpretationSansConduite,
+    ...(conduite ? {conduite} : {}),
+  };
+}
+
 export function computeScoreFromDef(def: any, answers: Record<string, any>): any {
+  return separerConduite(computeScoreFromDefBrut(def, answers));
+}
+
+function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   const sc = def.scoring;
 
   // Collecter toutes les questions
@@ -2346,4 +2376,4 @@ export function computeScoreFromDef(def: any, answers: Record<string, any>): any
   // ── DEFAULT ───────────────────────────────────────────
   return {error: `Type de scoring non implémenté : ${sc.type}`};
 
-} // fin computeScoreFromDef
+} // fin computeScoreFromDefBrut

@@ -27,8 +27,17 @@ export function buildMiniSynthese(scores: ScoreInput): string {
     if (typeof interp.detail === 'string' && interp.detail.trim()) {
       return `${base}. ${interp.detail.trim()}`;
     }
-    if (typeof interp.protocol === 'string' && interp.protocol.trim()) {
-      return `${base} — Orientation : ${interp.protocol.trim()}`;
+    // `conduite` d'abord (format courant), `interpretation.protocol` ensuite :
+    // les réponses enregistrées avant le 2026-07-26 portent l'ancienne forme et
+    // doivent continuer de s'afficher à l'identique. Sans ce repli, la fiche
+    // perdrait l'orientation sur les passations déjà en base.
+    const conduite = typeof scores.conduite === 'string' && scores.conduite.trim()
+      ? scores.conduite.trim()
+      : typeof interp.protocol === 'string' && interp.protocol.trim()
+        ? interp.protocol.trim()
+        : '';
+    if (conduite) {
+      return `${base} — Orientation : ${conduite}`;
     }
     return base;
   }
