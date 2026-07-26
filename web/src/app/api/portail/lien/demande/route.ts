@@ -161,7 +161,7 @@ async function traiterDemande(
     });
 
     try {
-      await sendMagicLinkEmail(patient.email, patient.prenom, buildMagicLinkUrl(jeton));
+      await sendMagicLinkEmail(patient.email, patient.prenom, buildMagicLinkUrl(jeton), patient.idPatient);
     } catch (e) {
       // L'échec d'envoi ne change pas la réponse : la dire au patient
       // signalerait que son adresse est connue.

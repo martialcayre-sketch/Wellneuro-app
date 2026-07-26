@@ -108,7 +108,7 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
       });
       const lienMagique = buildMagicLinkUrl(jeton);
       try {
-        await sendMagicLinkEmail(patient.email, patient.prenom, lienMagique);
+        await sendMagicLinkEmail(patient.email, patient.prenom, lienMagique, patient.idPatient);
       } catch (e) {
         console.error('[praticien/token lien_magique] email:', (e as Error).message);
       }
@@ -139,7 +139,7 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
       try {
         // En serverless, on attend explicitement la promesse pour eviter que
         // l'envoi best-effort soit interrompu juste apres la reponse HTTP.
-        await sendPortailLinkEmail(patient.email, patient.prenom, lien);
+        await sendPortailLinkEmail(patient.email, patient.prenom, lien, patient.idPatient);
       } catch (e) {
         console.error('[praticien/token POST] email:', (e as Error).message);
       }

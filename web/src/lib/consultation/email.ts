@@ -1,6 +1,41 @@
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { isG5GooglePatientEnabled } from '@/lib/portail/featureFlag';
 import { CHEMIN_CONNEXION } from '@/lib/portail/googleIdentite';
+import {
+  journaliserCorrespondancePatient,
+  TYPES_CORRESPONDANCE_PATIENT,
+  type TypeCorrespondancePatient,
+} from '@/lib/correspondance/patient';
+
+async function envoyerAccesTrace({
+  idPatient,
+  type,
+  objet,
+  envoyer,
+}: {
+  idPatient?: string;
+  type: TypeCorrespondancePatient;
+  objet: string;
+  envoyer: () => Promise<unknown>;
+}): Promise<void> {
+  if (!process.env.SMTP_URL) {
+    if (idPatient) {
+      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Non_envoye' });
+    }
+    return;
+  }
+  try {
+    await envoyer();
+    if (idPatient) {
+      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Envoye' });
+    }
+  } catch (erreur) {
+    if (idPatient) {
+      await journaliserCorrespondancePatient({ idPatient, type, objet, statut: 'Erreur', erreur });
+    }
+    throw erreur;
+  }
+}
 
 /**
  * URL d'un lien magique (gate G4). Le jeton n'apparaît que là : dans l'e-mail
@@ -33,23 +68,31 @@ export async function sendMagicLinkEmail(
   patientEmail: string,
   prenom: string,
   lien: string,
+  idPatient?: string,
 ): Promise<void> {
   const smtpUrl = process.env.SMTP_URL;
-  if (!smtpUrl) return;
-  const transport = creerTransportSmtp(smtpUrl);
-  await transport.sendMail({
-    from: '"Wellneuro" <noreply@wellneuro.fr>',
-    to: patientEmail,
-    subject: 'Votre lien d’accès — Wellneuro',
-    text:
-      `Bonjour ${prenom},\n\n` +
-      `Voici votre lien d'accès à votre espace patient Wellneuro :\n${lien}\n\n` +
-      `Ce lien est valable 24 heures et ne s'ouvre qu'une fois. ` +
-      `Passé ce délai, ou si vous l'avez déjà utilisé, vous pourrez en redemander ` +
-      `un nouveau depuis la page qui s'affichera — sans passer par votre praticien.\n\n` +
-      `Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message : ` +
-      `sans clic de votre part, ce lien expirera seul.\n\n` +
-      `L'équipe Wellneuro`,
+  await envoyerAccesTrace({
+    idPatient,
+    type: TYPES_CORRESPONDANCE_PATIENT.lienMagique,
+    objet: 'Lien temporaire d’accès à l’espace patient',
+    envoyer: async () => {
+      if (!smtpUrl) return;
+      const transport = creerTransportSmtp(smtpUrl);
+      await transport.sendMail({
+        from: '"Wellneuro" <noreply@wellneuro.fr>',
+        to: patientEmail,
+        subject: 'Votre lien d’accès — Wellneuro',
+        text:
+          `Bonjour ${prenom},\n\n` +
+          `Voici votre lien d'accès à votre espace patient Wellneuro :\n${lien}\n\n` +
+          `Ce lien est valable 24 heures et ne s'ouvre qu'une fois. ` +
+          `Passé ce délai, ou si vous l'avez déjà utilisé, vous pourrez en redemander ` +
+          `un nouveau depuis la page qui s'affichera — sans passer par votre praticien.\n\n` +
+          `Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer ce message : ` +
+          `sans clic de votre part, ce lien expirera seul.\n\n` +
+          `L'équipe Wellneuro`,
+      });
+    },
   });
 }
 
@@ -68,10 +111,10 @@ export async function sendMagicLinkEmail(
 export async function sendPortailLinkEmail(
   patientEmail: string,
   prenom: string,
-  lien: string
+  lien: string,
+  idPatient?: string,
 ): Promise<void> {
   const smtpUrl = process.env.SMTP_URL;
-  if (!smtpUrl) return;
   const googleActif = isG5GooglePatientEnabled();
   const lienIntro = googleActif
     ? ''
@@ -82,19 +125,27 @@ export async function sendPortailLinkEmail(
       `→ Continuer avec Google (recommandé) :\n${buildGoogleConnexionUrl()}\n\n` +
       `→ Ou via ce lien personnel et permanent :\n${lien}\n\n`
     : `Accéder à votre espace :\n${lien}\n\n`;
-  const transport = creerTransportSmtp(smtpUrl);
-  await transport.sendMail({
-    from: '"Wellneuro" <noreply@wellneuro.fr>',
-    to: patientEmail,
-    subject: 'Accès à votre espace patient — Wellneuro',
-    text:
-      `Bonjour ${prenom},\n\n` +
-      `Votre praticien vous ouvre l'accès à votre espace patient Wellneuro.\n\n` +
-      lienIntro +
-      `Lors de votre première connexion, il vous sera demandé de donner votre consentement, ` +
-      `de remplir une courte fiche de renseignements puis un questionnaire d'anamnèse. ` +
-      `Vos questionnaires de suivi seront ensuite mis à votre disposition.\n\n` +
-      acces +
-      `L'équipe Wellneuro`,
+  await envoyerAccesTrace({
+    idPatient,
+    type: TYPES_CORRESPONDANCE_PATIENT.accesPortail,
+    objet: 'Accès à l’espace patient',
+    envoyer: async () => {
+      if (!smtpUrl) return;
+      const transport = creerTransportSmtp(smtpUrl);
+      await transport.sendMail({
+        from: '"Wellneuro" <noreply@wellneuro.fr>',
+        to: patientEmail,
+        subject: 'Accès à votre espace patient — Wellneuro',
+        text:
+          `Bonjour ${prenom},\n\n` +
+          `Votre praticien vous ouvre l'accès à votre espace patient Wellneuro.\n\n` +
+          lienIntro +
+          `Lors de votre première connexion, il vous sera demandé de donner votre consentement, ` +
+          `de remplir une courte fiche de renseignements puis un questionnaire d'anamnèse. ` +
+          `Vos questionnaires de suivi seront ensuite mis à votre disposition.\n\n` +
+          acces +
+          `L'équipe Wellneuro`,
+      });
+    },
   });
 }

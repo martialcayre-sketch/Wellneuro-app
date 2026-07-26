@@ -10,6 +10,7 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
       findMany: vi.fn(),
       create: vi.fn(),
     },
+    correspondancePatient: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
   },
 }));
@@ -55,6 +56,7 @@ describe('/api/praticien/correspondance-medecin', () => {
     prisma.patient.findUnique.mockResolvedValue(PATIENT_EN_SUIVI);
     prisma.trustChoiceEvent.findMany.mockResolvedValue([]);
     prisma.correspondanceMedecin.findMany.mockResolvedValue([]);
+    prisma.correspondancePatient.findMany.mockResolvedValue([]);
     prisma.syntheseIA.findUnique.mockResolvedValue(null);
     prisma.correspondanceMedecin.create.mockImplementation(
       async ({ data }: { data: Record<string, unknown> }) => ({
@@ -220,6 +222,31 @@ describe('/api/praticien/correspondance-medecin', () => {
     // Référence souple : un id de synthèse disparu est exposé tel quel, la
     // lecture ne casse pas (AC-5 de la revue de la PR 1).
     expect(json.correspondances[0].idSynthese).toBe('SYN_DISPARUE');
+  });
+
+  it('expose la chronologie patient sans corps de message ni adresse', async () => {
+    prisma.correspondancePatient.findMany.mockResolvedValue([
+      {
+        id: 'CP_1',
+        type: 'booklet',
+        objet: 'Envoi du bilan neuronutritionnel',
+        statut: 'Envoye',
+        canal: 'email',
+        referenceType: 'synthese',
+        referenceId: 'SYN_1',
+        enregistreLe: new Date('2026-07-26T12:00:00.000Z'),
+      },
+    ]);
+    const json = await (await GET(getRequest())).json();
+    expect(json.correspondancesPatient).toEqual([
+      expect.objectContaining({
+        objet: 'Envoi du bilan neuronutritionnel',
+        statut: 'Envoye',
+        enregistreLe: '2026-07-26T12:00:00.000Z',
+      }),
+    ]);
+    expect(JSON.stringify(json.correspondancesPatient)).not.toContain('@');
+    expect(JSON.stringify(json.correspondancesPatient)).not.toContain('texte');
   });
 
   it('sans choix exprimé, le consentement est null (jamais deviné)', async () => {

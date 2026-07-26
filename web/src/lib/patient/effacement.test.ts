@@ -29,7 +29,8 @@ const { prisma, appels } = vi.hoisted(() => {
     'trustChoiceEvent', 'trustAdverseEffectReport', 'trustPrivacyIncident',
     'trustRightsRequest', 'filCardRejection', 'relectureNote', 'portailMagicLink',
     'packProposition', 'envoiBrouillon', 'portailConnexionGoogle',
-    'correspondanceMedecin', 'rendezVous', 'journalAccesDossier', 'agendaSommeilNuit',
+    'correspondanceMedecin', 'correspondancePatient', 'rendezVous', 'journalAccesDossier',
+    'agendaSommeilNuit',
   ]) {
     tx[nom] = modele(nom);
   }
@@ -80,6 +81,12 @@ describe('effacerDossier', () => {
     await effacerDossier('PAT_SEED_03');
     expect(appels).toContain('portailConnexionGoogle');
     expect(appels).toContain('journalAccesDossier');
+  });
+
+  it('supprime le journal de correspondance patient avec le dossier', async () => {
+    await effacerDossier('PAT_SEED_03');
+    expect(appels).toContain('correspondancePatient');
+    expect(appels.indexOf('correspondancePatient')).toBeLessThan(appels.indexOf('patient'));
   });
 
   // Nuits d'agenda du sommeil : FK RESTRICT vers patients ET assignations. Si

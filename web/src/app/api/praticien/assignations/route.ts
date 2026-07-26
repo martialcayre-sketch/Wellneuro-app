@@ -8,6 +8,10 @@ import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import {
+  journaliserCorrespondancePatient,
+  TYPES_CORRESPONDANCE_PATIENT,
+} from '@/lib/correspondance/patient';
 
 type CreateAssignationPayload = {
   emailPatient?: string;
@@ -165,7 +169,7 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
     try {
       // En serverless, on attend explicitement la promesse pour eviter que
       // l'envoi best-effort soit interrompu juste apres la reponse HTTP.
-      await sendAssignmentEmail(emailPatient, titre, dateLimite, notes, portalUrl);
+      await sendAssignmentEmail(idPatient, idAssignation, emailPatient, titre, dateLimite, notes, portalUrl);
     } catch (e) {
       console.error('[assignations POST] email patient:', (e as Error).message);
     }
@@ -240,6 +244,8 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
 }
 
 async function sendAssignmentEmail(
+  idPatient: string,
+  idAssignation: string,
   patientEmail: string,
   titreQuestionnaire: string,
   dateLimite: string,
@@ -247,19 +253,35 @@ async function sendAssignmentEmail(
   portalUrl: string
 ) {
   const smtpUrl = process.env.SMTP_URL;
-  if (!smtpUrl) return;
+  const trace = {
+    idPatient,
+    type: TYPES_CORRESPONDANCE_PATIENT.questionnaire,
+    objet: 'Invitation à compléter un questionnaire',
+    referenceType: 'assignation',
+    referenceId: idAssignation,
+  } as const;
+  if (!smtpUrl) {
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Non_envoye' });
+    return;
+  }
   const transport = creerTransportSmtp(smtpUrl);
   const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
   const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
-  await transport.sendMail({
-    from: '"Wellneuro" <noreply@wellneuro.fr>',
-    to: patientEmail,
-    subject: 'Questionnaire à compléter avant votre consultation — Wellneuro',
-    text:
-      `Bonjour,\n\n` +
-      `Votre praticien vous invite à compléter le questionnaire suivant avant votre consultation :\n` +
-      `« ${titreQuestionnaire} »${dateInfo}${noteInfo}\n\n` +
-      `Accédez à votre espace patient ici :\n${portalUrl}\n\n` +
-      `L'équipe Wellneuro`,
-  });
+  try {
+    await transport.sendMail({
+      from: '"Wellneuro" <noreply@wellneuro.fr>',
+      to: patientEmail,
+      subject: 'Questionnaire à compléter avant votre consultation — Wellneuro',
+      text:
+        `Bonjour,\n\n` +
+        `Votre praticien vous invite à compléter le questionnaire suivant avant votre consultation :\n` +
+        `« ${titreQuestionnaire} »${dateInfo}${noteInfo}\n\n` +
+        `Accédez à votre espace patient ici :\n${portalUrl}\n\n` +
+        `L'équipe Wellneuro`,
+    });
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Envoye' });
+  } catch (erreur) {
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Erreur', erreur });
+    throw erreur;
+  }
 }

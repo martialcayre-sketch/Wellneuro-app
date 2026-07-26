@@ -185,7 +185,7 @@ export async function POST(req: Request): Promise<NextResponse<CreateConsultatio
       // En serverless, on attend explicitement la promesse pour eviter que
       // l'envoi best-effort soit interrompu juste apres la reponse HTTP.
       // Le motif ne part plus dans l'e-mail (audit HDS) — il reste en base.
-      await sendPortailLinkEmail(patient.email, patient.prenom, lien);
+      await sendPortailLinkEmail(patient.email, patient.prenom, lien, patient.idPatient);
     } catch (e) {
       console.error('[praticien/consultations POST] email:', (e as Error).message);
     }

@@ -10,6 +10,7 @@ const json = (payload: unknown, ok = true) => ({ ok, json: async () => payload }
 const FIL_VIDE = {
   ok: true,
   correspondances: [],
+  correspondancesPatient: [],
   accepteConsignation: true,
   partageMedecinTraitant: null,
 };
@@ -48,6 +49,32 @@ afterEach(() => {
 });
 
 describe('CorrespondanceMedecinPanel (C3 LOT-06)', () => {
+  it('affiche les envois patient et leur issue dans le même onglet', async () => {
+    fetchMock.mockImplementation(
+      router({
+        fil: {
+          ...FIL_VIDE,
+          correspondancesPatient: [
+            {
+              id: 'CP_1',
+              type: 'booklet',
+              objet: 'Envoi du bilan neuronutritionnel',
+              statut: 'Envoye',
+              canal: 'email',
+              referenceType: 'synthese',
+              referenceId: 'SYN_1',
+              enregistreLe: '2026-07-26T12:00:00.000Z',
+            },
+          ],
+        },
+      }),
+    );
+    await attendreLeFil();
+    expect(screen.getByText('Correspondance avec le patient')).toBeTruthy();
+    expect(screen.getByText('Envoi du bilan neuronutritionnel')).toBeTruthy();
+    expect(screen.getByText('Envoyé')).toBeTruthy();
+  });
+
   it('affiche le fil, badges de sens compris', async () => {
     fetchMock.mockImplementation(
       router({

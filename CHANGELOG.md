@@ -4,6 +4,22 @@ Toutes les évolutions notables du MVP Wellneuro NNPP2 doivent être documentée
 
 ## Non publié
 
+### La correspondance patient rejoint le fil du dossier (2026-07-26)
+
+L’onglet **Correspondance** de la fiche patient ne présentait que les échanges
+consignés avec le médecin traitant, alors que les booklets et e-mails envoyés
+au patient étaient dispersés dans plusieurs audits ou sans journal commun.
+
+- Une chronologie « Correspondance avec le patient » regroupe désormais les
+  booklets, accès au portail, invitations aux questionnaires et accusés de
+  réception.
+- Chaque entrée conserve seulement le type, l’objet générique, le statut, la
+  date et une référence métier éventuelle. Ni le corps du message ni l’adresse
+  du patient ne sont recopiés.
+- Les anciens audits de booklets sont repris lors de la migration ; aucun ancien
+  e-mail non audité n’est reconstruit ou présenté comme envoyé.
+- L’effacement RGPD du dossier supprime aussi ce nouveau journal.
+
 ### Synthèses IA longues : plafond de sortie relevé (2026-07-26)
 
 La génération pouvait échouer pour un dossier comprenant plusieurs
