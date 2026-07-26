@@ -23,7 +23,15 @@
   rappel et un 24/30 par déficit d'orientation n'orientent pas vers le même
   bilan, et le total seul les confondait.
   Le découpage est **descriptif** : les totaux (0-25 et 0-30) et toutes les
-  bandes d'interprétation sont inchangés. Il est émis sous la clé `subScores`,
-  celle que la restitution par rubrique sait déjà lire — aucune surface
-  d'affichage n'a été modifiée. Un instrument `sum` qui ne déclare pas de
-  dimensions garde exactement sa sortie d'avant.
+  bandes d'interprétation sont inchangés. Il sort sous une clé `dimensions`
+  **distincte de `subScores`** : un sous-score porte sa propre interprétation
+  et remplace le score global à l'affichage, une dimension ne fait que
+  détailler un total qui reste la mesure. Les confondre aurait effacé de la
+  fiche patient le total du MMSE et son interprétation, remplacés par autant de
+  tirets qu'il y a de domaines. La fiche affiche donc le total, puis les
+  dimensions sous lui. Un instrument `sum` qui n'en déclare pas garde
+  exactement sa sortie d'avant.
+  Trois gardes verrouillent le découpage, chacune vérifiée en échec : aucun item
+  servi hors dimension et aucun doublon, somme des maxima égale au maximum
+  total, somme des dimensions égale au total (jeux complet et partiel) — et
+  l'interdiction d'émettre sous `subScores`.

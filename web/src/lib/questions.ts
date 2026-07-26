@@ -848,7 +848,12 @@ Q_URO_01: {
         {min:5, max:6, label:'Qualité de vie insatisfaisante',color:'danger'},
       ]},
     ],
-    note:'Arbitrage praticien du 2026-07-26 (banc de certification, lot 4) : la cotation atypique de U2 (0,2,3,4,5,6 dans la source Drive) est ramenée à 0-5 comme les six autres items, et la question de qualité de vie est sortie du score global. Le score de symptômes va désormais de 0 à 35, conformément à l’IPSS publié, et la qualité de vie reste rapportée à part.'
+    // La cotation de U2 (0,2,3,4,5,6 dans la source Drive) a été ramenée à 0-5
+    // et la qualité de vie sortie du total le 2026-07-26 sur arbitrage
+    // praticien — historique complet dans le changelog du 2026-07-26. La `note`
+    // ci-dessous part dans le compte rendu et dans le prompt de synthèse : elle
+    // dit l'état de la mesure, pas celui de l'ingénierie.
+    note:'Score de symptômes 0-35 et qualité de vie 0-6 rapportés séparément, conformément à l’IPSS publié.'
   }
 },
 
@@ -1519,15 +1524,18 @@ export function computeScoreFromDef(def: any, answers: Record<string, any>): any
     // uniquement à ne plus masquer un profil derrière un score global. Ajouté
     // le 2026-07-26 sur arbitrage praticien, pour les instruments dont la
     // source distingue des dimensions que le catalogue ne calculait pas.
-    // Émis sous la clé `subScores` : c'est celle que la restitution par
-    // rubrique sait déjà lire, aucune surface n'a besoin d'être modifiée.
+    //
+    // Clé DISTINCTE de `subScores`, délibérément : un sous-score porte sa
+    // propre bande d'interprétation et remplace le score global à l'affichage,
+    // une dimension ne fait que détailler un total qui reste la mesure. Les
+    // confondre effacerait le total et l'interprétation de la fiche patient.
     const dimensions = (sc.dimensions || []).map((d: any) => {
       const {total: sousTotal} = sumItems(d.items, []);
       return {id: d.id, label: d.label, total: sousTotal, max: d.max ?? null, interpretation: null};
     });
     return {
       type:'sum', total, maxTotal: sc.maxTotal, interpretation: interp,
-      ...(dimensions.length > 0 ? {subScores: dimensions} : {}),
+      ...(dimensions.length > 0 ? {dimensions} : {}),
       note: sc.note || null, certification: sc.certification || null,
     };
   }
@@ -1684,7 +1692,7 @@ export function computeScoreFromDef(def: any, answers: Record<string, any>): any
         const interpDef = sc.interpretation.find((i: any) => i.subscale === sub.id || i.subscale === '*');
         if (interpDef) interp = interpretRanges(scaled, interpDef.ranges);
       }
-      return {id: sub.id, label: sub.label, total, scaled, max: sub.max, maxScaled: sub.multiplier ? sub.max*sub.multiplier : sub.max, interpretation: interp, horsTotal: sub.horsTotal === true};
+      return {id: sub.id, label: sub.label, total, scaled, max: sub.max, maxScaled: sub.multiplier ? sub.max*sub.multiplier : sub.max, interpretation: interp, ...(sub.horsTotal === true ? {horsTotal: true} : {})};
     });
     // `horsTotal` : une sous-échelle que l'instrument rapporte À PART et qui ne
     // s'additionne pas au score global (question de qualité de vie de l'IPSS).

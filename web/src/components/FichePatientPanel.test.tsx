@@ -58,6 +58,35 @@ type Options = {
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'enVol';
   // « bloquee » = abstention clinique non levée : aucun protocole proposable.
   decision?: 'actionnable' | 'bloquee';
+  reponses?: 'defaut' | 'dimensions';
+};
+
+// Réponse portant un découpage DESCRIPTIF (scoring `sum` + `dimensions`) : le
+// total et son interprétation restent la mesure, les dimensions la détaillent.
+// Calquée sur le MMSE (Q_GEO_04), premier instrument à en déclarer.
+const REPONSES_A_DIMENSIONS = {
+  reponses: [
+    {
+      idReponse: 'REP002',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_GEO_04',
+      titre: 'MMSE GRECO',
+      dateSoumission: '2026-07-02T10:00:00.000Z',
+      scorePrincipal: 18,
+      interpretation: 'Démence modérée',
+      scoresParsed: {
+        type: 'sum',
+        total: 18,
+        maxTotal: 30,
+        interpretation: { label: 'Démence modérée', color: 'warning' },
+        dimensions: [
+          { id: 'ORI', label: 'Orientation', total: 6, max: 10, interpretation: null },
+          { id: 'RAP', label: 'Rappel', total: 0, max: 3, interpretation: null },
+        ],
+      },
+      subScoreRanges: null,
+    },
+  ],
 };
 
 // Cycle de trajectoire : T0 toujours mesuré (l'ancre), J21 selon le scénario.
@@ -98,7 +127,9 @@ function stubFetch(options: Options = {}) {
         besoins: EQUILIBRE.priorites.map(p => ({ ...p, id: p.besoin, sources: [] })),
       });
     }
-    if (url.includes('/api/praticien/reponses')) return ok(REPONSES);
+    if (url.includes('/api/praticien/reponses')) {
+      return ok(options.reponses === 'dimensions' ? REPONSES_A_DIMENSIONS : REPONSES);
+    }
     if (url.includes('/api/praticien/patients')) {
       return ok({
         assignations: assignationsModif
@@ -509,6 +540,26 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     // Le cockpit est masqué, le panneau trajectoire est monté.
     expect(document.getElementById('panneau-cockpit')?.hasAttribute('hidden')).toBe(true);
     await waitFor(() => expect(screen.getByText(/Fiche-trajectoire · identité patient durable/)).toBeTruthy());
+  });
+
+  it('dimensions descriptives : le total et son interprétation restent affichés, détaillés et non remplacés', async () => {
+    await rendreFiche({ reponses: 'dimensions' });
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+
+    const ligne = (await screen.findByText('MMSE GRECO')).closest('tr')!;
+    // Le total /30 et l'interprétation clinique sont la mesure : les dimensions
+    // les détaillent, elles ne prennent jamais leur place. C'est exactement ce
+    // que la clé `subScores` aurait cassé — six tirets à la place de
+    // « Démence modérée », et plus de total nulle part.
+    expect(within(ligne).getByText('18')).toBeTruthy();
+    expect(within(ligne).getByText('Démence modérée')).toBeTruthy();
+    expect(within(ligne).queryByText('—')).toBeNull();
+    // Et le profil est bien lisible : un 18/30 par effondrement du rappel
+    // n'oriente pas vers le même bilan qu'un 18/30 par désorientation.
+    expect(within(ligne).getByText('Orientation')).toBeTruthy();
+    expect(within(ligne).getByText('6/10')).toBeTruthy();
+    expect(within(ligne).getByText('Rappel')).toBeTruthy();
+    expect(within(ligne).getByText('0/3')).toBeTruthy();
   });
 
   it('estOngletFiche : garde stricte du deep-link — toute valeur inconnue est refusée', () => {

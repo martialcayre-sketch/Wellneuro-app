@@ -240,7 +240,11 @@ export function dimensionsServies(idQuestionnaire, entree, items, calculateScore
       // au maximum et 0 au minimum) — l'inverse ne s'observe sur aucun des
       // 64 instruments.
       const resultat = calculateScore(idQuestionnaire, reponsesExtremes(items, 'max'));
-      for (const cle of ['subScores', 'components', 'parts', 'categories', 'phases']) {
+      // `dimensions` d'abord : c'est la clé la plus explicite, et un scoring
+      // `sum` ne rend qu'elle. `mesureGlobale` ne la lit PAS, volontairement —
+      // les dimensions somment déjà à `total`, les compter deux fois fausserait
+      // la détection du sens des items.
+      for (const cle of ['dimensions', 'subScores', 'components', 'parts', 'categories', 'phases']) {
         const liste = resultat?.[cle];
         if (Array.isArray(liste) && liste.length > 0) {
           return { noms: liste.map((d) => String(d.label ?? d.id ?? '')), origine: cle };

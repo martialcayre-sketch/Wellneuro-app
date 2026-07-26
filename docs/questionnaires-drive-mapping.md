@@ -65,7 +65,7 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 | `Q_TAB_04` | `questionnaire_dependance_cannabis.md` | mappé | mappé | n/a | mappé | mappé | à faire | Cannabis |
 | `Q_TAB_05` | `questionnaire_di_franza_nicotine_adolescents.md` | certifié | certifié | n/a | certifié | certifié | certifié | Di Franza/HONC, 10 items oui/non, seuil perte d'autonomie ≥ 4 |
 | `Q_PNE_01` | `questionnaire_bpco_pneumologie.md` | certifié | certifié | n/a | certifié | n/a | certifié | BPCO, score total 0-33 + sous-scores fonctionnel/psychologique/relationnel, sans seuil fixe Drive |
-| `Q_URO_01` | `01_ipss_international_prostate_score_symptom.md` | certifié | certifié | n/a | certifié | ambigu | certifié | IPSS, Q002 cotée 0/2/3/4/5/6 dans Drive, total source 36 vs interprétation 0-35 |
+| `Q_URO_01` | `01_ipss_international_prostate_score_symptom.md` | certifié | certifié | n/a | certifié | ambigu | certifié | IPSS. **Écart délibéré à Drive (arbitrage 2026-07-26)** : Drive cote Q002 `0/2/3/4/5/6` et somme 36 avec la qualité de vie ; le code cote `0-5` comme les six autres items et rapporte la qualité de vie hors total. Symptômes 0-35, QdV 0-6, conformes à l'IPSS publié. Ne pas « rétablir » la cotation Drive. |
 | `Q_URO_02` | `02_catalogue_mictionnel.md` | certifié | certifié | n/a | non scoré | n/a | certifié | Catalogue mictionnel, journal 3 jours, aucun score automatique |
 | `Q_PED_01` | `pediatrie_01_matinalite_vesperalite_enfant.md` | certifié | certifié | n/a | certifié | n/a | certifié | Chronotype enfant, 10 items, score brut 10-43 sans interprétation automatisée |
 | `Q_PED_02` | `pediatrie_03_conners_enseignant_ctrs_rs.md` | mappé | mappé | n/a | mappé | mappé | à faire | Conners enseignant |

@@ -635,6 +635,11 @@ export function FichePatientPanel({
                 const subScores = Array.isArray(scores?.subScores)
                   ? (scores!.subScores as ScoreSubScore[])
                   : [];
+                // Les dimensions DÉTAILLENT un total qui reste la mesure — elles
+                // ne le remplacent pas, contrairement aux sous-scores.
+                const dimensions = Array.isArray(scores?.dimensions)
+                  ? (scores!.dimensions as ScoreSubScore[])
+                  : [];
                 const miniSynthese = buildMiniSynthese(scores);
                 return (
                   <tr key={r.idReponse} className="border-t border-border align-top">
@@ -678,9 +683,24 @@ export function FichePatientPanel({
                           ))}
                         </div>
                       ) : r.scorePrincipal !== null ? (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                          {r.scorePrincipal}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary self-start">
+                            {r.scorePrincipal}
+                          </span>
+                          {dimensions.length > 0 && (
+                            <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                              {dimensions.map(dim => (
+                                <div key={dim.id} className="flex items-baseline gap-1.5 whitespace-nowrap">
+                                  <span className="w-28 truncate" title={dim.label}>{dim.label}</span>
+                                  <span className="tabular-nums">
+                                    {dim.total ?? '—'}
+                                    {typeof dim.max === 'number' ? `/${dim.max}` : ''}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       ) : '—'}
                     </td>
                     <td className="px-4 py-2 text-muted-foreground max-w-xs">

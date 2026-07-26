@@ -28,6 +28,12 @@ export type ScoreResultBase = {
   maxTotal?: number | null;
   interpretation?: ScoreInterpretation | null;
   subScores?: ScoreSubScore[];
+  /**
+   * Découpage descriptif d'un total unique (scoring `sum`). À la différence de
+   * `subScores`, une dimension ne porte pas d'interprétation propre et ne
+   * remplace jamais le score global : elle le détaille.
+   */
+  dimensions?: ScoreSubScore[];
   missing?: number;
   missingIds?: string[];
   notApplicable?: string[];
