@@ -118,6 +118,14 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
     expect(prisma.syntheseIA.create).toHaveBeenCalledOnce();
   });
 
+  it('laisse assez de sortie pour consolider un dossier riche sans troncature', async () => {
+    await POST(req(CORPS));
+    expect(anthropicCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ max_tokens: 8192 }),
+      undefined,
+    );
+  });
+
   it('ne passe AUCUNE option Anthropic (défauts SDK inchangés, Vercel intact)', async () => {
     await POST(req(CORPS));
     expect(anthropicCreate).toHaveBeenCalledWith(expect.anything(), undefined);

@@ -42,6 +42,12 @@ type ReponseInput = {
   interpretation: string | null;
 };
 
+// 4 096 tokens ne suffisent pas toujours lorsqu'un dossier cumule plusieurs
+// questionnaires : Claude peut produire un JSON valide mais le couper avant
+// l'accolade finale. 8 192 laisse la place à la synthèse consolidée sans
+// modifier les données d'entrée ni la logique clinique.
+const MAX_TOKENS_SYNTHESE = 8192;
+
 // Pseudonymisation (audit HDS 2026-07-24) : aucune identité patient ne part
 // vers l'API Anthropic. Le nom n'apporte rien au raisonnement clinique, et
 // `buildContexteClinique` exclut l'identité par construction — seule cette
@@ -106,7 +112,7 @@ async function genererSynthesePersistee(
   const response = await anthropic.messages.create(
     {
       model: CLAUDE_MODEL,
-      max_tokens: 4096,
+      max_tokens: MAX_TOKENS_SYNTHESE,
       system: [{ type: 'text', text: SYSTEM_PROMPT_SYNTHESE, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: args.userMessage }],
     },
