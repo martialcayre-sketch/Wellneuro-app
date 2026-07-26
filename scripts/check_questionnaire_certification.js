@@ -786,6 +786,15 @@ for (const id of instrumentsADimensions) {
   ]) {
     const resultat = calculateScore(id, reponses);
     assert(!resultat.subScores, `${id} : les dimensions doivent sortir sous la clé \`dimensions\`, jamais \`subScores\` — cette dernière remplace le total et son interprétation à l'affichage`);
+    // Seule la branche `sum` sait calculer des dimensions : les déclarer sur un
+    // autre type de scoring les rendrait muettes. Sans cette assertion, le
+    // `reduce` ci-dessous lève un TypeError qui n'oriente vers rien.
+    assert(Array.isArray(resultat.dimensions), `${id} (${libelle}) : dimensions déclarées mais non calculées — seul le scoring \`sum\` les rend (type servi : \`${resultat.type}\`)`);
+    // La fiche patient affiche `label` et `max` : une dimension sans l'un des
+    // deux se rendrait en ligne vide ou en total sans borne.
+    for (const dimension of resultat.dimensions) {
+      assert(dimension.label && typeof dimension.max === 'number', `${id} : dimension \`${dimension.id}\` sans libellé ou sans maximum — la fiche patient rend les deux`);
+    }
     assertEqual(
       resultat.dimensions.reduce((somme, dimension) => somme + dimension.total, 0),
       resultat.total,

@@ -31,7 +31,11 @@
   tirets qu'il y a de domaines. La fiche affiche donc le total, puis les
   dimensions sous lui. Un instrument `sum` qui n'en déclare pas garde
   exactement sa sortie d'avant.
-  Trois gardes verrouillent le découpage, chacune vérifiée en échec : aucun item
+  Les dimensions sont rendues indépendamment de la présence d'un sous-score ou
+  d'un score principal : aucun instrument n'émet aujourd'hui les deux clés, mais
+  l'affichage ne doit pas être ce qui décide qu'un profil disparaît.
+  Des gardes verrouillent le découpage, chacune vérifiée en échec : aucun item
   servi hors dimension et aucun doublon, somme des maxima égale au maximum
-  total, somme des dimensions égale au total (jeux complet et partiel) — et
-  l'interdiction d'émettre sous `subScores`.
+  total, somme des dimensions égale au total (jeux complet et partiel),
+  interdiction d'émettre sous `subScores`, dimensions effectivement calculées
+  (seul le scoring `sum` les rend) et rendables (libellé et maximum présents).

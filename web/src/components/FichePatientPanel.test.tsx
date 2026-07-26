@@ -58,7 +58,7 @@ type Options = {
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'enVol';
   // « bloquee » = abstention clinique non levée : aucun protocole proposable.
   decision?: 'actionnable' | 'bloquee';
-  reponses?: 'defaut' | 'dimensions';
+  reponses?: 'defaut' | 'dimensions' | 'dimensions-degradees';
 };
 
 // Réponse portant un découpage DESCRIPTIF (scoring `sum` + `dimensions`) : le
@@ -83,6 +83,47 @@ const REPONSES_A_DIMENSIONS = {
           { id: 'ORI', label: 'Orientation', total: 6, max: 10, interpretation: null },
           { id: 'RAP', label: 'Rappel', total: 0, max: 3, interpretation: null },
         ],
+      },
+      subScoreRanges: null,
+    },
+  ],
+};
+
+// Deux formes qu'AUCUN instrument n'émet aujourd'hui — vérifié sur les 64 —
+// mais que rien n'interdit à un futur moteur : des dimensions accompagnées de
+// sous-scores, et des dimensions sans score principal. Avant correction, la
+// cellule perdait le profil dans les deux cas, silencieusement. C'est la même
+// classe de défaut que celle qui a effacé le total du MMSE, déplacée d'un cran.
+const REPONSES_A_DIMENSIONS_DEGRADEES = {
+  reponses: [
+    {
+      idReponse: 'REP003',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_TEST_A',
+      titre: 'Instrument à sous-scores ET dimensions',
+      dateSoumission: '2026-07-03T10:00:00.000Z',
+      scorePrincipal: 12,
+      interpretation: 'Modéré',
+      scoresParsed: {
+        type: 'subscore',
+        total: 12,
+        subScores: [{ id: 'S1', label: 'Sous-échelle', total: 12, max: 20, interpretation: { label: 'Modéré', color: 'warning' } }],
+        dimensions: [{ id: 'DIM_A', label: 'Dimension A', total: 5, max: 8, interpretation: null }],
+      },
+      subScoreRanges: null,
+    },
+    {
+      idReponse: 'REP004',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_TEST_B',
+      titre: 'Instrument à dimensions sans total',
+      dateSoumission: '2026-07-04T10:00:00.000Z',
+      scorePrincipal: null,
+      interpretation: null,
+      scoresParsed: {
+        type: 'sum',
+        total: null,
+        dimensions: [{ id: 'DIM_B', label: 'Dimension B', total: 3, max: 4, interpretation: null }],
       },
       subScoreRanges: null,
     },
@@ -128,7 +169,9 @@ function stubFetch(options: Options = {}) {
       });
     }
     if (url.includes('/api/praticien/reponses')) {
-      return ok(options.reponses === 'dimensions' ? REPONSES_A_DIMENSIONS : REPONSES);
+      if (options.reponses === 'dimensions') return ok(REPONSES_A_DIMENSIONS);
+      if (options.reponses === 'dimensions-degradees') return ok(REPONSES_A_DIMENSIONS_DEGRADEES);
+      return ok(REPONSES);
     }
     if (url.includes('/api/praticien/patients')) {
       return ok({
@@ -553,13 +596,33 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     // « Démence modérée », et plus de total nulle part.
     expect(within(ligne).getByText('18')).toBeTruthy();
     expect(within(ligne).getByText('Démence modérée')).toBeTruthy();
-    expect(within(ligne).queryByText('—')).toBeNull();
+    // Sur la cellule entière, et non par match exact : un `queryByText('—')`
+    // ne voit pas le tiret quand il est collé à un maximum (`—/10`).
+    const celluleScore = ligne.querySelectorAll('td')[2];
+    expect(celluleScore.textContent).toContain('18');
+    expect(celluleScore.textContent).not.toContain('—');
     // Et le profil est bien lisible : un 18/30 par effondrement du rappel
     // n'oriente pas vers le même bilan qu'un 18/30 par désorientation.
     expect(within(ligne).getByText('Orientation')).toBeTruthy();
     expect(within(ligne).getByText('6/10')).toBeTruthy();
     expect(within(ligne).getByText('Rappel')).toBeTruthy();
     expect(within(ligne).getByText('0/3')).toBeTruthy();
+  });
+
+  it('dimensions : le profil survit aux deux formes dégradées — avec sous-scores, et sans score principal', async () => {
+    await rendreFiche({ reponses: 'dimensions-degradees' });
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+
+    // Co-présence avec des sous-scores : les deux découpages s'affichent.
+    const ligneMixte = (await screen.findByText('Instrument à sous-scores ET dimensions')).closest('tr')!;
+    expect(within(ligneMixte).getByText('Sous-échelle')).toBeTruthy();
+    expect(within(ligneMixte).getByText('Dimension A')).toBeTruthy();
+    expect(within(ligneMixte).getByText('5/8')).toBeTruthy();
+
+    // Score principal absent : le tiret reste, les dimensions ne disparaissent pas avec lui.
+    const ligneSansTotal = screen.getByText('Instrument à dimensions sans total').closest('tr')!;
+    expect(within(ligneSansTotal).getByText('Dimension B')).toBeTruthy();
+    expect(within(ligneSansTotal).getByText('3/4')).toBeTruthy();
   });
 
   it('estOngletFiche : garde stricte du deep-link — toute valeur inconnue est refusée', () => {
