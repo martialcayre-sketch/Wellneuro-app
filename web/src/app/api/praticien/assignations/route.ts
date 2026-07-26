@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
-import nodemailer from 'nodemailer';
+import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
@@ -248,7 +248,7 @@ async function sendAssignmentEmail(
 ) {
   const smtpUrl = process.env.SMTP_URL;
   if (!smtpUrl) return;
-  const transport = nodemailer.createTransport(smtpUrl);
+  const transport = creerTransportSmtp(smtpUrl);
   const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
   const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
   await transport.sendMail({

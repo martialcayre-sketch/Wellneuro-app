@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 
 /**
  * Notification praticien à la réception d'un signalement TRUST.
@@ -12,7 +12,7 @@ export async function notifierPraticienSignalement(praticienEmail: string): Prom
   const smtpUrl = process.env.SMTP_URL;
   if (!smtpUrl || !praticienEmail) return;
   try {
-    const transporter = nodemailer.createTransport(smtpUrl);
+    const transporter = creerTransportSmtp(smtpUrl);
     await transporter.sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
       to: praticienEmail,

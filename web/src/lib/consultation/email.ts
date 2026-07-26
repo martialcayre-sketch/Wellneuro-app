@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { isG5GooglePatientEnabled } from '@/lib/portail/featureFlag';
 import { CHEMIN_CONNEXION } from '@/lib/portail/googleIdentite';
 
@@ -36,7 +36,7 @@ export async function sendMagicLinkEmail(
 ): Promise<void> {
   const smtpUrl = process.env.SMTP_URL;
   if (!smtpUrl) return;
-  const transport = nodemailer.createTransport(smtpUrl);
+  const transport = creerTransportSmtp(smtpUrl);
   await transport.sendMail({
     from: '"Wellneuro" <noreply@wellneuro.fr>',
     to: patientEmail,
@@ -82,7 +82,7 @@ export async function sendPortailLinkEmail(
       `→ Continuer avec Google (recommandé) :\n${buildGoogleConnexionUrl()}\n\n` +
       `→ Ou via ce lien personnel et permanent :\n${lien}\n\n`
     : `Accéder à votre espace :\n${lien}\n\n`;
-  const transport = nodemailer.createTransport(smtpUrl);
+  const transport = creerTransportSmtp(smtpUrl);
   await transport.sendMail({
     from: '"Wellneuro" <noreply@wellneuro.fr>',
     to: patientEmail,

@@ -6,6 +6,7 @@ import { type SyntheseSchema, maskEmail, sanitizeAuditError } from '@/lib/anthro
 import { buildBookletHTML } from '@/lib/documents/bookletHtml';
 import { termeAnxiogene } from '@/lib/documents/vocabulaire';
 import { estRedactionPraticien } from '@/lib/synthese-praticien';
+import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
 import { logger } from '@/lib/observability/logger';
@@ -237,8 +238,7 @@ export async function POST(req: Request) {
       ), requestContext);
     }
 
-    const nodemailer = await import('nodemailer');
-    const transporter = nodemailer.createTransport(smtpUrl);
+    const transporter = creerTransportSmtp(smtpUrl);
 
     await transporter.sendMail({
       from: '"Wellneuro" <noreply@wellneuro.fr>',
