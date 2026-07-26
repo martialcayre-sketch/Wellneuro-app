@@ -84,6 +84,7 @@ describe('POST /api/portail/lien/demande', () => {
       PATIENT.email,
       PATIENT.prenom,
       expect.stringContaining('/portail/lien/'),
+      PATIENT.idPatient,
     );
   });
 

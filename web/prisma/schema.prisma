@@ -61,6 +61,7 @@ model Patient {
   portailMagicLinks          PortailMagicLink[]
   packPropositions           PackProposition[]
   correspondancesMedecin     CorrespondanceMedecin[]
+  correspondancesPatient     CorrespondancePatient[]
   envoiBrouillons            EnvoiBrouillon[]
   rendezVous                 RendezVous[]
   agendaSommeilNuits         AgendaSommeilNuit[]
@@ -363,6 +364,31 @@ model BookletEnvoi {
   synthese SyntheseIA @relation(fields: [idSynthese], references: [idSynthese])
 
   @@map("booklet_envois")
+}
+
+// Chronologie minimale des communications avec le patient. Le corps du
+// message et l'adresse ne sont jamais conservés : seuls le type, l'objet,
+// l'issue technique et une éventuelle référence métier alimentent le dossier.
+model CorrespondancePatient {
+  id            String   @id @default(cuid())
+  idPatient     String   @map("id_patient")
+  canal         String   @default("email")
+  sens          String   @default("sortant")
+  type          String
+  objet         String
+  statut        String
+  referenceType String?  @map("reference_type")
+  referenceId   String?  @map("reference_id")
+  sourceType    String?  @map("source_type")
+  sourceId      String?  @map("source_id")
+  erreurCourte  String?  @map("erreur_courte")
+  enregistreLe  DateTime @default(now()) @map("enregistre_le")
+
+  patient Patient @relation(fields: [idPatient], references: [idPatient], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId], map: "correspondances_patient_source_key")
+  @@index([idPatient, enregistreLe], map: "correspondances_patient_patient_idx")
+  @@map("correspondances_patient")
 }
 
 // Boussole alimentaire — couche clinique propriétaire (référentiel, aucune

@@ -14,6 +14,10 @@ import {
   finalizeLogContext,
   withCorrelationHeader,
 } from '@/lib/observability/requestContext';
+import {
+  journaliserCorrespondancePatient,
+  TYPES_CORRESPONDANCE_PATIENT,
+} from '@/lib/correspondance/patient';
 
 // La réponse au navigateur patient ne porte PAS les scores (audit 5.0, réserve
 // R1) : le total et son libellé d'interprétation sont des données praticien.
@@ -206,8 +210,9 @@ export async function POST(req: Request): Promise<NextResponse> {
       data: { statut: 'Complété', statutReponses: 'verrouille', dateDerniereModification: now },
     });
 
-    // Accusé de réception email (best-effort, ne bloque pas)
-    sendAck(emailPatient, titre).catch(e =>
+    // Accusé de réception email best-effort. La promesse est attendue pour que
+    // le runtime serverless ne coupe ni l'envoi ni sa trace après la réponse.
+    await sendAck(idPatient, idReponse, emailPatient, titre).catch(e =>
       logger.error({
         event: EVENT_CODES.QUESTIONNAIRE_ACK_EMAIL_FAILED,
         domain: 'EMAIL',
@@ -230,19 +235,40 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 }
 
-async function sendAck(patientEmail: string, titreQuestionnaire: string) {
+async function sendAck(
+  idPatient: string,
+  idReponse: string,
+  patientEmail: string,
+  titreQuestionnaire: string,
+) {
   const smtpUrl = process.env.SMTP_URL;
-  if (!smtpUrl) return;
+  const trace = {
+    idPatient,
+    type: TYPES_CORRESPONDANCE_PATIENT.accuseQuestionnaire,
+    objet: 'Confirmation de réception d’un questionnaire',
+    referenceType: 'reponse_questionnaire',
+    referenceId: idReponse,
+  } as const;
+  if (!smtpUrl) {
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Non_envoye' });
+    return;
+  }
   const transport = creerTransportSmtp(smtpUrl);
-  await transport.sendMail({
-    from: '"Wellneuro" <noreply@wellneuro.fr>',
-    to: patientEmail,
-    subject: 'Vos réponses ont bien été reçues — Wellneuro',
-    text:
-      `Bonjour,\n\n` +
-      `Nous confirmons la bonne réception de vos réponses au questionnaire :\n` +
-      `« ${titreQuestionnaire} »\n\n` +
-      `Votre praticien Wellneuro en prendra connaissance prochainement.\n\n` +
-      `L'équipe Wellneuro`,
-  });
+  try {
+    await transport.sendMail({
+      from: '"Wellneuro" <noreply@wellneuro.fr>',
+      to: patientEmail,
+      subject: 'Vos réponses ont bien été reçues — Wellneuro',
+      text:
+        `Bonjour,\n\n` +
+        `Nous confirmons la bonne réception de vos réponses au questionnaire :\n` +
+        `« ${titreQuestionnaire} »\n\n` +
+        `Votre praticien Wellneuro en prendra connaissance prochainement.\n\n` +
+        `L'équipe Wellneuro`,
+    });
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Envoye' });
+  } catch (erreur) {
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Erreur', erreur });
+    throw erreur;
+  }
 }

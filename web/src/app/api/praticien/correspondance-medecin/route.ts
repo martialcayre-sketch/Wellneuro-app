@@ -49,10 +49,22 @@ export type CorrespondanceExposee = {
   consigneLe: string;
 };
 
+export type CorrespondancePatientExposee = {
+  id: string;
+  type: string;
+  objet: string;
+  statut: string;
+  canal: string;
+  referenceType: string | null;
+  referenceId: string | null;
+  enregistreLe: string;
+};
+
 export type CorrespondanceMedecinApiResponse =
   | {
       ok: true;
       correspondances: CorrespondanceExposee[];
+      correspondancesPatient: CorrespondancePatientExposee[];
       accepteConsignation: boolean;
       partageMedecinTraitant: StatutChoix | null;
     }
@@ -148,11 +160,25 @@ export async function GET(req: Request): Promise<NextResponse<CorrespondanceMede
     const garde = await garder(idPatient, { route: ROUTE_JOURNAL, methode: 'GET' });
     if (garde.echec) return garde.echec;
 
-    const [lignes, patient, choix] = await Promise.all([
+    const [lignes, communicationsPatient, patient, choix] = await Promise.all([
       prisma.correspondanceMedecin.findMany({
         where: { idPatient },
         select: SELECTION,
         orderBy: { consigneLe: 'desc' },
+      }),
+      prisma.correspondancePatient.findMany({
+        where: { idPatient },
+        select: {
+          id: true,
+          type: true,
+          objet: true,
+          statut: true,
+          canal: true,
+          referenceType: true,
+          referenceId: true,
+          enregistreLe: true,
+        },
+        orderBy: { enregistreLe: 'desc' },
       }),
       prisma.patient.findUnique({
         where: { idPatient },
@@ -167,6 +193,10 @@ export async function GET(req: Request): Promise<NextResponse<CorrespondanceMede
     return NextResponse.json({
       ok: true,
       correspondances: lignes.map(exposer),
+      correspondancesPatient: communicationsPatient.map((ligne) => ({
+        ...ligne,
+        enregistreLe: ligne.enregistreLe.toISOString(),
+      })),
       // Courtoisie d'écran : la décision qui fait foi reste le 409 du POST.
       accepteConsignation: patient ? accepteNouvelEnvoi(patient) : false,
       partageMedecinTraitant: statutPartageMedecinTraitant(choix),

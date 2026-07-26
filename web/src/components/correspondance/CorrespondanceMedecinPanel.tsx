@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type {
   CorrespondanceExposee,
+  CorrespondancePatientExposee,
   CorrespondanceMedecinApiResponse,
 } from '@/app/api/praticien/correspondance-medecin/route';
 import { LONGUEUR_MAX_MEDECIN_LIBELLE, LONGUEUR_MAX_TEXTE } from '@/lib/praticien/correspondanceMedecin';
@@ -33,6 +34,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
   const [etat, setEtat] = useState<EtatFil>('chargement');
   const [erreur, setErreur] = useState('');
   const [correspondances, setCorrespondances] = useState<CorrespondanceExposee[]>([]);
+  const [correspondancesPatient, setCorrespondancesPatient] = useState<CorrespondancePatientExposee[]>([]);
   const [accepteConsignation, setAccepteConsignation] = useState(true);
   const [partage, setPartage] = useState<string | null>(null);
 
@@ -59,6 +61,7 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
         return;
       }
       setCorrespondances(payload.correspondances);
+      setCorrespondancesPatient(payload.correspondancesPatient ?? []);
       setAccepteConsignation(payload.accepteConsignation);
       setPartage(payload.partageMedecinTraitant);
       setEtat('chargee');
@@ -134,6 +137,57 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
   }, [idPatient, sens, medecinLibelle, texte, idSynthese, echangeLe, chargerFil]);
 
   return (
+    <div className="flex flex-col gap-4">
+    <section aria-labelledby="correspondance-patient" className="rounded-xl border border-border bg-surface p-4">
+      <h3 id="correspondance-patient" className="text-sm font-semibold text-foreground">
+        Correspondance avec le patient
+      </h3>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Historique des e-mails envoyés par Wellneuro. Le contenu des messages et l’adresse du patient ne
+        sont pas recopiés dans ce journal.
+      </p>
+
+      {etat === 'chargement' && (
+        <p role="status" className="mt-3 text-base text-muted-foreground">
+          Chargement du fil&hellip;
+        </p>
+      )}
+
+      {etat === 'chargee' && correspondancesPatient.length === 0 && (
+        <p className="mt-3 text-base text-muted-foreground">
+          Aucun envoi patient journalisé pour l’instant.
+        </p>
+      )}
+
+      {etat === 'chargee' && correspondancesPatient.length > 0 && (
+        <ol className="mt-3 space-y-2">
+          {correspondancesPatient.map((ligne) => (
+            <li key={ligne.id} className="rounded-lg border border-border bg-surface p-3 text-base text-foreground">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-medium">{ligne.objet}</p>
+                <span
+                  className={
+                    ligne.statut === 'Envoye'
+                      ? 'text-xs font-medium text-status-success'
+                      : 'text-xs font-medium text-status-warning'
+                  }
+                >
+                  {ligne.statut === 'Envoye'
+                    ? 'Envoyé'
+                    : ligne.statut === 'Erreur'
+                      ? 'Échec d’envoi'
+                      : 'Non envoyé'}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {ligne.canal === 'email' ? 'E-mail' : ligne.canal} · {formatDate(ligne.enregistreLe)}
+              </p>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+
     <section aria-labelledby="correspondance-medecin" className="rounded-xl border border-border bg-surface p-4">
       <h3 id="correspondance-medecin" className="text-sm font-semibold text-foreground">
         Correspondance avec le médecin traitant
@@ -318,5 +372,6 @@ export function CorrespondanceMedecinPanel({ idPatient }: { idPatient: string })
         </div>
       )}
     </section>
+    </div>
   );
 }

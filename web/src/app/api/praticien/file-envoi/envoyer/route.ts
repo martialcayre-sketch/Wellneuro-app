@@ -8,6 +8,10 @@ import { idsAssignablesPour, resolveDefinition } from '@/lib/instruments';
 import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
+import {
+  journaliserCorrespondancePatient,
+  TYPES_CORRESPONDANCE_PATIENT,
+} from '@/lib/correspondance/patient';
 
 // « Préparer les envois » — l'envoi au clic d'un brouillon de la file
 // (arbitrage 2026-07-23). Patron packs/assign : N assignations créées dans
@@ -153,6 +157,8 @@ export async function POST(request: Request) {
 
     // En serverless, on attend explicitement l'envoi (patron assignations).
     await sendFileEnvoiEmail({
+      idPatient: patient.idPatient,
+      idBrouillon,
       emailPatient: patient.email,
       titres: aCreer.map(item => item.titre),
       dateLimite: brouillon.dateLimite,
@@ -172,12 +178,16 @@ export async function POST(request: Request) {
 }
 
 async function sendFileEnvoiEmail({
+  idPatient,
+  idBrouillon,
   emailPatient,
   titres,
   dateLimite,
   notes,
   portalUrl,
 }: {
+  idPatient: string;
+  idBrouillon: string;
   emailPatient: string;
   titres: string[];
   dateLimite: string | null;
@@ -185,16 +195,29 @@ async function sendFileEnvoiEmail({
   portalUrl: string;
 }) {
   const smtpUrl = process.env.SMTP_URL;
-  if (!smtpUrl) return;
+  const trace = {
+    idPatient,
+    type: TYPES_CORRESPONDANCE_PATIENT.questionnaires,
+    objet: 'Invitation à compléter plusieurs questionnaires',
+    referenceType: 'envoi_brouillon',
+    referenceId: idBrouillon,
+    sourceType: 'envoi_brouillon',
+    sourceId: idBrouillon,
+  } as const;
+  if (!smtpUrl) {
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Non_envoye' });
+    return;
+  }
   const transporter = creerTransportSmtp(smtpUrl);
   const liste = titres.map(t => `• ${t}`).join('\n');
   const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
   const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
-  await transporter.sendMail({
-    from: '"Wellneuro" <noreply@wellneuro.fr>',
-    to: emailPatient,
-    subject: 'Questionnaires à compléter avant votre consultation — Wellneuro',
-    text: `Bonjour,
+  try {
+    await transporter.sendMail({
+      from: '"Wellneuro" <noreply@wellneuro.fr>',
+      to: emailPatient,
+      subject: 'Questionnaires à compléter avant votre consultation — Wellneuro',
+      text: `Bonjour,
 
 Votre praticien vous invite à compléter les questionnaires suivants :
 ${liste}${dateInfo}${noteInfo}
@@ -205,5 +228,10 @@ Accéder à vos questionnaires :
 ${portalUrl}
 
 L'équipe Wellneuro`,
-  });
+    });
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Envoye' });
+  } catch (erreur) {
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Erreur', erreur });
+    throw erreur;
+  }
 }

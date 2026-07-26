@@ -16,6 +16,10 @@ import {
   finalizeLogContext,
   withCorrelationHeader,
 } from '@/lib/observability/requestContext';
+import {
+  journaliserCorrespondancePatient,
+  TYPES_CORRESPONDANCE_PATIENT,
+} from '@/lib/correspondance/patient';
 
 type AssignPackPayload = {
   idPack?: string;
@@ -186,7 +190,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     }
 
     // Un seul email récapitulatif (best-effort), lien vers le portail permanent.
-    sendPackEmail(emailPatient, pack.nom, aCreer, dateLimite, notes, portalUrl).catch(
+    await sendPackEmail(patient.idPatient, idPack, emailPatient, pack.nom, aCreer, dateLimite, notes, portalUrl).catch(
       e => logger.error({
         event: EVENT_CODES.ASSIGNATION_PACK_EMAIL_FAILED,
         domain: 'EMAIL',
@@ -210,6 +214,8 @@ export async function POST(req: Request): Promise<NextResponse> {
 }
 
 async function sendPackEmail(
+  idPatient: string,
+  idPack: string,
   patientEmail: string,
   packNom: string,
   assignations: { idAssignation: string; titre: string }[],
@@ -218,21 +224,37 @@ async function sendPackEmail(
   portalUrl: string,
 ) {
   const smtpUrl = process.env.SMTP_URL;
-  if (!smtpUrl) return;
+  const trace = {
+    idPatient,
+    type: TYPES_CORRESPONDANCE_PATIENT.questionnaires,
+    objet: 'Invitation à compléter plusieurs questionnaires',
+    referenceType: 'pack',
+    referenceId: idPack,
+  } as const;
+  if (!smtpUrl) {
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Non_envoye' });
+    return;
+  }
   const liste = assignations.map(a => `• ${a.titre}`).join('\n');
   const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
   const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
   const transport = creerTransportSmtp(smtpUrl);
-  await transport.sendMail({
-    from: '"Wellneuro" <noreply@wellneuro.fr>',
-    to: patientEmail,
-    subject: `Questionnaires à compléter avant votre consultation — Wellneuro`,
-    text:
-      `Bonjour,\n\n` +
-      `Votre praticien vous invite à compléter les questionnaires du pack « ${packNom} » avant votre consultation :\n` +
-      `${liste}${dateInfo}${noteInfo}\n\n` +
-      `Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente du pack et les remplir dans l'ordre de votre choix.\n\n` +
-      `Accéder à vos questionnaires :\n${portalUrl}\n\n` +
-      `L'équipe Wellneuro`,
-  });
+  try {
+    await transport.sendMail({
+      from: '"Wellneuro" <noreply@wellneuro.fr>',
+      to: patientEmail,
+      subject: `Questionnaires à compléter avant votre consultation — Wellneuro`,
+      text:
+        `Bonjour,\n\n` +
+        `Votre praticien vous invite à compléter les questionnaires du pack « ${packNom} » avant votre consultation :\n` +
+        `${liste}${dateInfo}${noteInfo}\n\n` +
+        `Un seul lien suffit : après confirmation de votre email, vous pourrez accéder à tous les questionnaires en attente du pack et les remplir dans l'ordre de votre choix.\n\n` +
+        `Accéder à vos questionnaires :\n${portalUrl}\n\n` +
+        `L'équipe Wellneuro`,
+    });
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Envoye' });
+  } catch (erreur) {
+    await journaliserCorrespondancePatient({ ...trace, statut: 'Erreur', erreur });
+    throw erreur;
+  }
 }

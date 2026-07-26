@@ -95,6 +95,11 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     supprimees.portailMagicLinks = (await tx.portailMagicLink.deleteMany({ where: par })).count;
     supprimees.packPropositions = (await tx.packProposition.deleteMany({ where: par })).count;
     supprimees.envoiBrouillons = (await tx.envoiBrouillon.deleteMany({ where: par })).count;
+    // Le journal de correspondance patient ne conserve ni corps ni adresse,
+    // mais il nomme encore le dossier : il part explicitement avec lui.
+    supprimees.correspondancesPatient = (
+      await tx.correspondancePatient.deleteMany({ where: par })
+    ).count;
     // La correspondance médecin est une pièce du dossier (FM-2, C3 LOT-06) :
     // le résidu D6 (année, prénom, trois lettres) ne couvre pas un texte
     // clinique. Elle part avec le dossier, nommément.

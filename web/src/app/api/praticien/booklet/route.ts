@@ -17,6 +17,10 @@ import {
   finalizeLogContext,
   withCorrelationHeader,
 } from '@/lib/observability/requestContext';
+import {
+  journaliserCorrespondancePatient,
+  TYPES_CORRESPONDANCE_PATIENT,
+} from '@/lib/correspondance/patient';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/booklet';
@@ -270,7 +274,7 @@ async function logBookletEnvoi(
   statut: string, operation: string, relectureConfirmee: boolean, erreur: string
 ) {
   try {
-    await prisma.bookletEnvoi.create({
+    const audit = await prisma.bookletEnvoi.create({
       data: {
         idSynthese,
         idPatient,
@@ -280,6 +284,19 @@ async function logBookletEnvoi(
         relectureConfirmee,
         erreurCourte: erreur ? sanitizeAuditError(erreur) : undefined,
       },
+    });
+    await journaliserCorrespondancePatient({
+      idPatient,
+      type: TYPES_CORRESPONDANCE_PATIENT.booklet,
+      objet: operation === 'Renvoi'
+        ? 'Renvoi du bilan neuronutritionnel'
+        : 'Envoi du bilan neuronutritionnel',
+      statut: statut === 'Envoye' ? 'Envoye' : 'Erreur',
+      referenceType: 'synthese',
+      referenceId: idSynthese,
+      sourceType: 'booklet_envoi',
+      sourceId: audit.id,
+      erreur,
     });
   } catch { /* audit non bloquant */ }
 }
