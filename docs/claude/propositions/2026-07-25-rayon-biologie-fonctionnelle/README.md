@@ -423,18 +423,82 @@ Même logique pour les correspondances signées : un import qui priverait l'une
 d'elles de son acte est refusé, parce qu'il écrirait sans le dire un état que
 le contrat du dépôt déclare invalide.
 
-**Quatre questions restent ouvertes pour le praticien** (soulevées par la
-revue, sans réponse dans le cadrage) :
+### L'import passe par le build Vercel (2026-07-26)
 
-1. Par où passe l'import en production — étape de `vercel-build.sh`, ou geste
-   manuel depuis le Mac ? Aujourd'hui : geste manuel, gaté par cinq preuves.
-2. Que devient une correspondance signée dont l'acte disparaît ? Un statut
+La première des questions ouvertes ci-dessous est **tranchée** : l'import
+s'exécute depuis `web/scripts/vercel-build.sh`, après `migrate deploy`, sur le
+patron de l'import C5 CIQUAL. Le geste manuel reste possible et inchangé, mais
+il n'est plus le chemin nominal.
+
+**Pourquoi le build plutôt que le Mac.** L'écriture exige `MIGRATE_DATABASE_URL`,
+qui n'existe sur aucun poste et ne doit pas y exister. La faire transiter pour
+un import manuel reviendrait à sortir la connexion de production de son coffre
+pour une opération qui n'a lieu qu'une fois. Dans le build, elle est déjà là,
+déjà scopée `Production`, et n'a jamais quitté Vercel.
+
+**Ce qui arme l'import — deux variables Vercel, scope Production :**
+
+| Variable | Rôle |
+| --- | --- |
+| `WN_CB_NABM_IMPORT_CONFIRMATION` | vaut le jeton `CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1`. Absente, aucun import n'a lieu et le build ne change pas de comportement. |
+| `WN_CB_NABM_IMPORT_BASE` | **nomme l'hôte** de `MIGRATE_DATABASE_URL`. L'import refuse si les deux ne concordent pas. |
+
+La seconde n'est pas une redondance : elle oblige la personne qui arme l'import
+à savoir sur quelle base il va écrire, et elle ne dépend d'aucune variable de
+plateforme — elle vaudra donc encore quand cette connexion changera d'hôte.
+
+**Ce qui est épinglé dans le script, donc modifiable seulement par une PR
+relue :** le jeton, le millésime attendu (`V105`) et l'empreinte SHA-256 de son
+contenu canonique (987 actes sur 1050 concepts, mesurée le 2026-07-26 ;
+empreinte complète et commande de reproduction dans `AUDIT-SOURCE-NABM.md` §2).
+
+Ces deux dernières épingles sont la vraie raison d'être du câblage : **elles
+rendent la variable inoffensive si on l'oublie en place.** Sans elles, un
+déploiement quelconque, des mois plus tard, importerait le millésime que l'ANS
+aura publié entre-temps — sans relecture, en déplaçant le catalogue servi, donc
+ce qui est proposé au patient et ce qui part au médecin traitant.
+
+**Le jeton porte lui aussi le millésime**, et c'est le second verrou : sans
+cela, une PR ultérieure qui bump `V105` en `V106` suffirait à relancer l'import
+sur sa seule autorité, si la variable était restée posée. Le modèle annonce
+deux clés indépendantes — il en faut donc deux qui bougent.
+
+Enfin, quand la base sert **déjà** le millésime épinglé avec l'empreinte
+épinglée, l'import **sort sans appeler la source**. Sans cette sortie anticipée,
+une variable oubliée ferait interroger l'ANS à chaque déploiement de production,
+et — la source publiant un millésime tous les un à deux mois — ferait échouer
+**tous** les déploiements dès la version suivante, y compris un correctif urgent
+sans rapport.
+
+Ne sont **pas** câblés, et ne doivent pas l'être : `--remplace-pointeur`,
+`--accepte-orphelines`, `--allow-shrink`. Ce sont des forçages qui demandent un
+jugement humain ; s'ils deviennent nécessaires, le build doit échouer.
+
+Le build rejoue enfin, juste après l'import, le contrat
+`prisma/checks/cb_biologie_catalogue_v1.sql`. **C'est sa première exécution là
+où il existe des données** : en CI il ne rencontre qu'une base vide, où ses
+invariants de données sont muets. Ce n'est pas pour autant un garde permanent —
+il ne s'exécute que tant que la variable d'armement est posée, donc une fois.
+
+**Marche à suivre :** poser les deux variables → redéployer `main` → lire le
+rapport dans les logs de build → vérifier la base par `execute_sql` (attendus à
+figer *avant* d'armer : 987 lignes en `version_source = 'V105'`, pointeur à
+987 entrées, un snapshot à l'empreinte épinglée) → **retirer les deux
+variables**. L'import est transactionnel et idempotent : un échec n'écrit rien
+et laisse la production sur le déploiement précédent — **à une exception près**,
+le contrat s'exécutant après le commit de l'import, un build rouge à cette
+étape-là signifie que l'import, lui, est bien écrit.
+
+**Trois questions restent ouvertes pour le praticien** (soulevées par la revue,
+sans réponse dans le cadrage) :
+
+1. Que devient une correspondance signée dont l'acte disparaît ? Un statut
    « signature orpheline » et une file de reprise, ou le silence de
    `hors_nomenclature` suffit-il ? À trancher **avant CB-02c**.
-3. Entre `signee` et `courrier_medecin_genere`, le régime documentaire est-il
+2. Entre `signee` et `courrier_medecin_genere`, le régime documentaire est-il
    figé ? Si le pointeur bouge dans cet intervalle, une proposition signée
    comme remboursée peut se matérialiser en document patient.
-4. `biology_source_snapshots` accueillera-t-elle un jour une source `labo` ? Le
+3. `biology_source_snapshots` accueillera-t-elle un jour une source `labo` ? Le
    CHECK est aujourd'hui restreint à `nabm_smt_ans` pour que l'élargir soit une
    migration relue — `contenu` étant un texte libre que le verrou HDS, qui
    raisonne sur des noms de colonnes, ne peut pas inspecter.

@@ -72,6 +72,29 @@ Deux pièges d'implémentation qui en découlent :
   non-numérique** (la version antérieure de cette page en annonçait 45). C'est
   ce qui rend le motif `^[0-9]{4}$` sûr : il ne rejette aucun acte réel.
 
+### Empreinte du millésime servi
+
+Le millésime **V105** a, au 2026-07-26, l'empreinte SHA-256 suivante sur son
+contenu canonique — celle qu'épingle `web/scripts/vercel-build.sh` :
+
+```text
+3a9c289f081d293e7655de709a295bc6da9ece3f2301b86f1ea9625d1c7aed0f
+```
+
+Elle se reproduit en une commande, sans base de données ni secret : le dry-run
+n'écrit rien et n'exige aucune preuve.
+
+```bash
+cd web && npm run cb:nabm:dry-run    # imprime contenuSha256
+```
+
+**Ce que cette empreinte garantit, et ce qu'elle ne garantit pas.** Elle prouve
+que le contenu n'a pas bougé depuis cette mesure — pas que les 987 actes ont été
+relus un à un. Elle porte sur la sérialisation *canonique* (concepts triés par
+code, clés et listes triées), non sur les octets du réseau : sans cela, deux
+récupérations du même millésime donneraient deux empreintes et déclencheraient à
+tort le refus « la source a changé ».
+
 ## 3. Ce que la NABM porte
 
 Les propriétés sont **peuplées**, contrairement à ce qu'un premier appel laisse

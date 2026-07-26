@@ -184,7 +184,9 @@ jobs:
       # les invariants de STRUCTURE (CHECK, RLS, index, verrou HDS) ; les
       # invariants de DONNÉES du contrat y renvoient 0 par vacuité. Ces
       # derniers sont rejoués dans la transaction de l'import CB-02a
-      # (`prisma/importNabm.ts`), seul endroit où des données existent.
+      # (`prisma/importNabm.ts`), puis par le contrat que `vercel-build.sh`
+      # relance juste après cet import — le seul point du déploiement où des
+      # données existent. Le banc CB-02a en fait autant sur ses fixtures.
       - name: CB-01 biology catalogue negative tests
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web

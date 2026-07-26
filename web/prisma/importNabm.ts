@@ -7,8 +7,8 @@
  *
  * L'écriture exige simultanément :
  *   --apply
- *   --confirmation CB-02A-IMPORT-NABM-MC-2026-07-26-v1
- *   WN_CB_NABM_IMPORT_CONFIRMATION=CB-02A-IMPORT-NABM-MC-2026-07-26-v1
+ *   --confirmation CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1
+ *   WN_CB_NABM_IMPORT_CONFIRMATION=CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1
  *   MIGRATE_DATABASE_URL=<connexion PostgreSQL de migration>
  *   --base <hôte>          l'hôte visé, qui doit correspondre à celui de
  *                          MIGRATE_DATABASE_URL
@@ -16,19 +16,33 @@
  * POURQUOI `--base` PLUTÔT QU'UN CONTRÔLE DE `VERCEL_ENV`. La première version
  * de ce script recopiait le garde de l'import Ciqual : « hors Vercel
  * Production, exiger --allow-non-production ». La revue du 2026-07-26 a montré
- * qu'il ne gardait rien ici. Ciqual s'exécute DEPUIS `vercel-build.sh`, où
- * `VERCEL_ENV=production` a un sens ; CB-02a n'est câblé dans aucun build et
- * s'exécute toujours à la main. Le drapeau qui annonce « pas la production »
- * était donc celui qu'on aurait tapé POUR écrire en production. Un garde qu'on
- * désarme systématiquement est pire qu'aucun garde : il rassure.
+ * qu'il ne gardait rien : le drapeau qui annonce « pas la production » était
+ * celui qu'on aurait tapé POUR écrire en production. Un garde qu'on désarme
+ * systématiquement est pire qu'aucun garde — il rassure.
  *
  * `--base` demande à l'opérateur de NOMMER la base qu'il vise, et refuse si ce
  * nom ne se retrouve pas dans la chaîne de connexion. On ne peut plus se
- * tromper de base sans l'avoir écrit.
+ * tromper de base sans l'avoir écrit. Ce garde reste le bon depuis que
+ * `scripts/vercel-build.sh` appelle cet import (2026-07-26) : il ne dépend
+ * d'aucune variable de plateforme, donc il vaut aussi bien pour le build que
+ * pour un lancement à la main, et il vaudra encore après le cutover Scalingo.
+ *
+ * Épingles de contenu, employées par `scripts/vercel-build.sh` :
+ *   --version <millésime>  échoue si la source n'en rend pas exactement celui-là
+ *   --sha256 <empreinte>   échoue si le contenu canonique n'a pas cette
+ *                          empreinte. Les deux ensemble rendent l'import
+ *                          REPRODUCTIBLE : il écrit ce qui a été relu en PR, ou
+ *                          rien. Sans elles, un import câblé dans un build
+ *                          suivrait la source sans que personne l'ait décidé.
+ *
+ * Quand les deux épingles sont posées ET que la base sert déjà ce millésime
+ * avec cette empreinte, l'import SORT SANS APPELER LA SOURCE. Ce n'est pas une
+ * optimisation : sans elle, une variable d'armement oubliée en place ferait
+ * interroger l'ANS à chaque déploiement de production, et ferait échouer tous
+ * les déploiements le jour où la nomenclature changerait de millésime.
  *
  * Options de mise au point :
  *   --source <répertoire>  lit les pages depuis des fixtures au lieu du réseau
- *   --version <millésime>  échoue si la source n'en rend pas exactement celui-là
  *   --allow-shrink         accepte un millésime sous le plancher de volumétrie
  *   --remplace-pointeur <version_actuelle>
  *                          autorise le pointeur à quitter un millésime pour un
@@ -112,8 +126,14 @@ async function recupererPages(): Promise<PageExpand[]> {
   return pages;
 }
 
-function imprimerRapport(resultat: ImportNabm): void {
-  console.log('=== CB-02a — dry-run NABM ===');
+// Titre NEUTRE, à dessein. Ce rapport s'imprime avant le contrôle d'empreinte,
+// avant le garde des signatures et avant l'écriture : il décrit ce que la
+// SOURCE contient, pas ce qui sera fait. « dry-run » mentait sur un run qui
+// écrit — c'était le défaut d'origine, dans le log de build, seule trace d'une
+// écriture en production ; « import » mentirait sur un run refusé. Le succès
+// n'a qu'un marqueur, la ligne « import NABM validé ».
+function imprimerRapport(resultat: ImportNabm, ecritureDemandee: boolean): void {
+  console.log('=== CB-02a — lecture de la source NABM ===');
   console.log(JSON.stringify(resultat.rapport, null, 2));
   if (resultat.rapport.incompatibilitesAsymetriques > 0) {
     console.warn(
@@ -121,7 +141,7 @@ function imprimerRapport(resultat: ImportNabm): void {
         'seul côté par la source. Signalé, non bloquant : la V105 n\'en avait aucune.',
     );
   }
-  console.log('Aucune écriture PostgreSQL effectuée.');
+  if (!ecritureDemandee) console.log('Aucune écriture PostgreSQL effectuée.');
 }
 
 async function insererLot(client: Client, actes: ActeNabm[], version: string): Promise<void> {
@@ -163,7 +183,11 @@ async function insererLot(client: Client, actes: ActeNabm[], version: string): P
   );
 }
 
-async function ecrire(resultat: ImportNabm): Promise<void> {
+// Rend la connexion de migration une fois toutes les preuves réunies. Extraite
+// de `ecrire` pour que la sortie anticipée de `main` les exige AVANT d'ouvrir
+// la moindre connexion : un contrôle qui refuse la mauvaise base ne doit pas
+// être précédé d'une lecture sur cette mauvaise base.
+function verifierPreuves(): string {
   const confirmation = argument('--confirmation');
   if (confirmation !== NABM_IMPORT_CONFIRMATION) {
     throw new Error(`Confirmation CLI invalide ; attendu ${NABM_IMPORT_CONFIRMATION}`);
@@ -190,6 +214,71 @@ async function ecrire(resultat: ImportNabm): Promise<void> {
         'Import refusé — ce sont deux bases différentes.',
     );
   }
+
+  // Le jeton doit NOMMER le millésime importé. Sans ce contrôle, la présence du
+  // millésime dans le jeton n'était qu'une convention de nommage : une PR qui
+  // aurait épinglé un millésime suivant sans toucher au jeton aurait laissé
+  // valide une variable d'armement oubliée dans Vercel, et l'import serait
+  // reparti au déploiement suivant. C'est ici que la convention devient
+  // mécanique — et hors build, pas seulement dedans.
+  const version = argument('--version');
+  if (version && !NABM_IMPORT_CONFIRMATION.includes(`-${version}-`)) {
+    throw new Error(
+      `Le jeton ${NABM_IMPORT_CONFIRMATION} ne nomme pas le millésime ${version}. ` +
+        'Épingler un millésime sans renouveler le jeton laisserait valide une ' +
+        'autorisation donnée pour un autre contenu — import refusé.',
+    );
+  }
+  return url;
+}
+
+// Le catalogue sert-il DÉJÀ ce millésime, avec exactement ce contenu ?
+//
+// Le prédicat est délibérément AU MOINS AUSSI FORT que le contrat rejoué juste
+// après par `vercel-build.sh` : il vérifie le pointeur, son empreinte, son
+// compte d'entrées, ET que ce compte est bien celui des actes réellement en
+// base. Un prédicat plus faible ferait sortir l'import sur « rien à faire »
+// devant un état que le contrat déclare aussitôt invalide — transformant un
+// catalogue tronqué, aujourd'hui réparé par un simple rejeu, en déploiements
+// de production bloqués jusqu'à intervention manuelle.
+async function millesimeDejaServi(
+  url: string,
+  version: string,
+  empreinte: string,
+): Promise<boolean> {
+  const client = new Client({
+    connectionString: stripSslParams(url),
+    ssl: supabasePoolSsl(url),
+  });
+  await client.connect();
+  try {
+    const { rows } = await client.query<{ servi: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+           FROM biology_catalog_versions_courantes c
+           JOIN biology_source_snapshots s
+             ON s.source_provenance = c.source_provenance
+            AND s.version_source = c.version_source
+          WHERE c.source_provenance = $1
+            AND c.version_source = $2
+            AND s.contenu_sha256 = $3
+            AND c.contenu_sha256 = $3
+            AND c.nombre_entrees > 0
+            AND c.nombre_entrees = (
+              SELECT count(*) FROM biology_nabm_actes
+               WHERE version_source = c.version_source
+            )
+       ) AS servi`,
+      [NABM_SOURCE_PROVENANCE, version, empreinte],
+    );
+    return rows[0]?.servi === true;
+  } finally {
+    await client.end();
+  }
+}
+
+async function ecrire(resultat: ImportNabm): Promise<void> {
+  const url = verifierPreuves();
 
   const { rapport, actes, snapshot } = resultat;
   const version = rapport.versionSource;
@@ -295,16 +384,23 @@ async function ecrire(resultat: ImportNabm): Promise<void> {
     // invalide. L'import ne doit pas écrire sans le dire un état que le projet
     // refuse. Vide aujourd'hui (`biology_analytes` l'est), mais c'est
     // exactement le genre de garde qu'on n'ajoute plus une fois qu'il mord.
+    //
+    // La comparaison porte sur le CHARGEMENT ENTRANT, et non sur les lignes
+    // déjà en base pour ce millésime. Interroger la base ici — ce que faisait
+    // la première version — revenait à interroger un ensemble VIDE au premier
+    // import d'un millésime, l'insertion n'ayant pas encore eu lieu : toute
+    // correspondance signée y était déclarée orpheline, et la seule issue
+    // devenait `--accepte-orphelines`, qui désarme la vraie protection. Un
+    // garde qu'il faut désarmer pour avancer ne garde rien. Défaut trouvé le
+    // 2026-07-26 par le cas 11 du banc, qui joue enfin le chemin nominal.
+    const codesEntrants = actes.map(acte => acte.codeActe);
     const orphelines = await client.query<{ analyte_code: string; code_acte: string }>(
       `SELECT c.analyte_code, c.code_acte
        FROM biology_analyte_nabm c
        WHERE c.verifie_par IS NOT NULL
-         AND NOT EXISTS (
-           SELECT 1 FROM biology_nabm_actes a
-           WHERE a.code_acte = c.code_acte AND a.version_source = $1
-         )
+         AND NOT (c.code_acte = ANY($1::text[]))
        ORDER BY c.analyte_code, c.code_acte`,
-      [version],
+      [codesEntrants],
     );
     if (orphelines.rowCount && !process.argv.includes('--accepte-orphelines')) {
       const apercu = orphelines.rows
@@ -470,14 +566,55 @@ async function ecrire(resultat: ImportNabm): Promise<void> {
 }
 
 async function main(): Promise<void> {
+  const ecritureDemandee = process.argv.includes('--apply');
+  const versionEpinglee = argument('--version');
+
+  // Normalisée et vérifiée de forme ici : une empreinte en majuscules ou avec
+  // une espace parasite ferait échouer TOUS les imports en accusant la source
+  // d'avoir changé, message exact et diagnostic faux.
+  //
+  // La validation se déclenche sur la PRÉSENCE de l'argument, jamais sur la
+  // vérité de sa forme normalisée : `--sha256 "   "` se réduit à la chaîne
+  // vide, qui est falsy — l'épingle aurait disparu sans un mot et l'import
+  // aurait suivi la source.
+  const empreinteBrute = argument('--sha256');
+  const empreinteEpinglee = empreinteBrute?.trim().toLowerCase();
+  if (empreinteBrute !== undefined && !/^[0-9a-f]{64}$/.test(empreinteEpinglee ?? '')) {
+    throw new Error(`--sha256 attend 64 caractères hexadécimaux ; reçu « ${empreinteBrute} »`);
+  }
+
+  // Épingles posées ET catalogue déjà à jour : on ne dérange pas la source.
+  // Voir l'en-tête — c'est ce qui rend une variable d'armement oubliée dans
+  // Vercel inoffensive plutôt que bruyamment nuisible.
+  if (ecritureDemandee && versionEpinglee && empreinteEpinglee) {
+    const url = verifierPreuves();
+    if (await millesimeDejaServi(url, versionEpinglee, empreinteEpinglee)) {
+      console.log(
+        `=== CB-02a — rien à faire ===\nLe catalogue sert déjà ${versionEpinglee} ` +
+          `avec l'empreinte épinglée ${empreinteEpinglee}. La source n'a pas été interrogée.`,
+      );
+      return;
+    }
+  }
+
   const pages = await recupererPages();
   const resultat = construireImport(pages, {
-    versionAttendue: argument('--version'),
+    versionAttendue: versionEpinglee,
     autoriserReduction: process.argv.includes('--allow-shrink'),
   });
-  imprimerRapport(resultat);
+  imprimerRapport(resultat, ecritureDemandee);
 
-  if (!process.argv.includes('--apply')) {
+  // Vérifiée APRÈS le rapport, pour que la sortie montre l'empreinte réellement
+  // lue quand elle diverge — sans quoi il faudrait relancer pour la connaître.
+  if (empreinteEpinglee && empreinteEpinglee !== resultat.rapport.contenuSha256) {
+    throw new Error(
+      `Empreinte attendue ${empreinteEpinglee}, source lue ${resultat.rapport.contenuSha256}. ` +
+        `Le millésime ${resultat.rapport.versionSource} ne porte plus le contenu relu — ` +
+        'arbitrage humain requis, aucun import automatique.',
+    );
+  }
+
+  if (!ecritureDemandee) {
     console.log(
       `Mode dry-run. Pour écrire, les deux preuves ${NABM_IMPORT_CONFIRMATION} sont requises.`,
     );

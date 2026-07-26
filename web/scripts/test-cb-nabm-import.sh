@@ -27,7 +27,7 @@ if [ "$BASE_REELLE" != "$BASE_ATTENDUE" ]; then
 fi
 
 HOTE="$(node -e 'process.stdout.write(new URL(process.env.DATABASE_URL).hostname)')"
-JETON=CB-02A-IMPORT-NABM-MC-2026-07-26-v1
+JETON=CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1
 export MIGRATE_DATABASE_URL="$DATABASE_URL"
 export WN_CB_NABM_IMPORT_CONFIRMATION="$JETON"
 
@@ -164,6 +164,92 @@ grep -q "deux bases différentes" "$SORTIE" || {
   cat "$SORTIE" >&2; exit 1; }
 echo "  ✔ --base doit nommer l'hôte réellement visé"
 
+# Les deux cas suivants gardent le CÂBLAGE DANS LE BUILD VERCEL, où l'import
+# n'a plus d'opérateur devant lui : ce sont les épingles posées en constantes
+# de `scripts/vercel-build.sh` qui tiennent lieu de relecture. Sans elles, la
+# variable d'armement oubliée en place ferait importer, au prochain déploiement
+# venu, le millésime que l'ANS aura publié entre-temps.
+echo "── 9. Le millésime servi ne change pas sans PR ──"
+echec_attendu "millésime non épinglé" "V106 attendu" \
+  --source "$FIXTURES/v105" --version V106
+
+echo "── 10. Un même millésime au contenu changé est refusé ──"
+echec_attendu "empreinte non épinglée" "ne porte plus le contenu relu" \
+  --source "$FIXTURES/v105" --version V105 \
+  --sha256 0000000000000000000000000000000000000000000000000000000000000000
+
+# Les trois cas suivants jouent le chemin NOMINAL du build, celui que les cas 9
+# et 10 ne prouvent pas : un `--sha256` mal branché (champ renommé, comparaison
+# inversée) les laisserait verts tout en faisant échouer la production pour
+# toujours. On repart d'un catalogue vide — les correspondances signées, elles,
+# restent en place : le contrat du cas 13 doit les voir se résoudre.
+echo "── Remise à zéro du catalogue (les signatures restent) ──"
+node -e '
+const {Client} = require("pg");
+(async () => {
+  const c = new Client({connectionString: process.env.DATABASE_URL});
+  await c.connect();
+  await c.query("DELETE FROM biology_catalog_versions_courantes");
+  await c.query("DELETE FROM biology_source_snapshots");
+  await c.query("DELETE FROM biology_nabm_actes");
+  await c.end();
+})().catch(e => { console.error(e); process.exit(1); });'
+
+echo "── 11. Chemin nominal du build : les bonnes épingles laissent passer ──"
+# Le dry-run donne l'empreinte du millésime ; `--allow-shrink` parce que les
+# fixtures tiennent quatre actes et non les 987 du plancher de volumétrie.
+node prisma/runWithAlias.js prisma/importNabm.ts --allow-shrink \
+  --source "$FIXTURES/v105" >"$SORTIE" 2>&1 || { cat "$SORTIE" >&2; exit 1; }
+# Lecture par motif, et non par `valeur` : cette dernière s'ancre sur la ligne
+# « import NABM validé », absente d'un dry-run. Sans ancre elle prend la
+# première accolade du fichier — celle de la bannière dotenvx, qui en contient.
+SHA_V105="$(sed -n 's/.*"contenuSha256": "\([0-9a-f]\{64\}\)".*/\1/p' "$SORTIE")"
+if [ ${#SHA_V105} -ne 64 ]; then
+  echo "ÉCHEC — empreinte illisible dans le rapport de dry-run" >&2
+  cat "$SORTIE" >&2; exit 1
+fi
+importer --source "$FIXTURES/v105" --version V105 --sha256 "$SHA_V105" \
+  >"$SORTIE" 2>&1 || { cat "$SORTIE" >&2; exit 1; }
+attendre inseres 4
+attendre pointeurApres V105
+echo "  ✔ import effectué avec les épingles du build"
+
+echo "── 12. Rejeu armé : la source n'est plus interrogée ──"
+importer --source "$FIXTURES/v105" --version V105 --sha256 "$SHA_V105" \
+  >"$SORTIE" 2>&1 || { cat "$SORTIE" >&2; exit 1; }
+grep -q "La source n'a pas été interrogée" "$SORTIE" || {
+  echo "ÉCHEC — le rejeu armé a interrogé la source au lieu de sortir" >&2
+  cat "$SORTIE" >&2; exit 1; }
+echo "  ✔ une variable d'armement oubliée ne déclenche plus d'appel réseau"
+
+echo "── 13. Le contrat du catalogue passe sur des données ──"
+# En CI ce contrat ne rencontre qu'une base VIDE : ses invariants de données y
+# sont muets. Ici il en a, et c'est `vercel-build.sh` qui le rejouera en
+# production juste après l'import.
+npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1.sql \
+  >"$SORTIE" 2>&1 || { cat "$SORTIE" >&2; exit 1; }
+echo "  ✔ contrat vert sur un catalogue peuplé"
+
+# La sortie anticipée du cas 12 tient à DEUX conditions : le millésime servi et
+# son empreinte. Sans le cas suivant, retirer la condition d'empreinte laissait
+# le banc vert — et faisait sortir « rien à faire » un import qui devait refuser.
+echo "── 14. La sortie anticipée exige AUSSI l'empreinte ──"
+echec_attendu "millésime servi mais empreinte divergente" "ne porte plus le contenu relu" \
+  --source "$FIXTURES/v105" --version V105 \
+  --sha256 1111111111111111111111111111111111111111111111111111111111111111
+
+echo "── 15. Un jeton qui ne nomme pas le millésime est refusé ──"
+# Sans ce contrôle, le millésime dans le jeton n'était qu'une convention : une
+# PR qui aurait épinglé V106 sans renouveler le jeton aurait laissé valide une
+# variable d'armement oubliée dans Vercel.
+echec_attendu "jeton désaccordé du millésime épinglé" "ne nomme pas le millésime V106" \
+  --source "$FIXTURES/v106" --version V106 \
+  --sha256 2222222222222222222222222222222222222222222222222222222222222222
+
+echo "── 16. Une épingle d'empreinte vide est refusée, pas ignorée ──"
+echec_attendu "--sha256 réduit à rien" "64 caractères hexadécimaux" \
+  --source "$FIXTURES/v105" --version V105 --sha256 "   "
+
 echo "── Table rase finale ──"
 # TOUTE VALEUR SQL PASSE EN PARAMÈTRE, et ce n'est pas ici un réflexe de
 # sécurité : ces blocs `node -e` sont délimités par des apostrophes simples,
@@ -185,4 +271,4 @@ const {Client} = require("pg");
   await c.end();
 })().catch(e => { console.error(e); process.exit(1); });'
 
-echo "CB-02a : banc d'intégration de l'import — 9 cas vérifiés."
+echo "CB-02a : banc d'intégration de l'import — 17 cas vérifiés."

@@ -89,7 +89,12 @@ export const NABM_PROPRIETES_UNIVERSELLES = [
  */
 export const NABM_PLANCHER_ACTES = 800;
 
-export const NABM_IMPORT_CONFIRMATION = 'CB-02A-IMPORT-NABM-MC-2026-07-26-v1';
+// Le MILLÉSIME fait partie du jeton, délibérément. Sans lui, une variable
+// d'armement oubliée dans Vercel resterait valide après une PR qui change le
+// millésime épinglé : l'import repartirait sur la seule autorité de cette PR,
+// alors que le modèle annonce deux clés indépendantes. Avec lui, la variable
+// cesse de correspondre et le build échoue avant le moindre appel réseau.
+export const NABM_IMPORT_CONFIRMATION = 'CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1';
 
 const URL_EXTENSION_PROPRIETE =
   'http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property';
