@@ -423,18 +423,60 @@ Même logique pour les correspondances signées : un import qui priverait l'une
 d'elles de son acte est refusé, parce qu'il écrirait sans le dire un état que
 le contrat du dépôt déclare invalide.
 
-**Quatre questions restent ouvertes pour le praticien** (soulevées par la
-revue, sans réponse dans le cadrage) :
+### L'import passe par le build Vercel (2026-07-26)
 
-1. Par où passe l'import en production — étape de `vercel-build.sh`, ou geste
-   manuel depuis le Mac ? Aujourd'hui : geste manuel, gaté par cinq preuves.
-2. Que devient une correspondance signée dont l'acte disparaît ? Un statut
+La première des questions ouvertes ci-dessous est **tranchée** : l'import
+s'exécute depuis `web/scripts/vercel-build.sh`, après `migrate deploy`, sur le
+patron de l'import C5 CIQUAL. Le geste manuel reste possible et inchangé, mais
+il n'est plus le chemin nominal.
+
+**Pourquoi le build plutôt que le Mac.** L'écriture exige `MIGRATE_DATABASE_URL`,
+qui n'existe sur aucun poste et ne doit pas y exister. La faire transiter pour
+un import manuel reviendrait à sortir la connexion de production de son coffre
+pour une opération qui n'a lieu qu'une fois. Dans le build, elle est déjà là,
+déjà scopée `Production`, et n'a jamais quitté Vercel.
+
+**Ce qui arme l'import — deux variables Vercel, scope Production :**
+
+| Variable | Rôle |
+| --- | --- |
+| `WN_CB_NABM_IMPORT_CONFIRMATION` | vaut le jeton `CB-02A-IMPORT-NABM-MC-2026-07-26-v1`. Absente, aucun import n'a lieu et le build ne change pas de comportement. |
+| `WN_CB_NABM_IMPORT_BASE` | **nomme l'hôte** de `MIGRATE_DATABASE_URL`. L'import refuse si les deux ne concordent pas. |
+
+La seconde n'est pas une redondance : elle oblige la personne qui arme l'import
+à savoir sur quelle base il va écrire. C'est le garde qui protégera le jour où
+`MIGRATE_DATABASE_URL` changera d'hôte — **au cutover Scalingo**, précisément le
+moment où l'on risque de rejouer un import contre l'ancienne base.
+
+**Ce qui est épinglé dans le script, donc modifiable seulement par une PR
+relue :** le jeton, le millésime attendu (`V105`) et l'empreinte SHA-256 de son
+contenu canonique (`3a9c289f…`, 987 actes sur 1050 concepts, mesurée le
+2026-07-26). Ces deux dernières épingles sont la vraie raison d'être du
+câblage : **elles rendent la variable inoffensive si on l'oublie en place.**
+Sans elles, un déploiement quelconque, des mois plus tard, importerait le
+millésime que l'ANS aura publié entre-temps — sans relecture, en déplaçant le
+catalogue servi, donc ce qui est proposé au patient et ce qui part au médecin
+traitant. Avec elles, ce jour-là le build **échoue** et quelqu'un vient voir.
+
+Ne sont **pas** câblés, et ne doivent pas l'être : `--remplace-pointeur`,
+`--accepte-orphelines`, `--allow-shrink`. Ce sont des forçages qui demandent un
+jugement humain ; s'ils deviennent nécessaires, le build doit échouer.
+
+**Marche à suivre :** poser les deux variables → redéployer `main` → lire le
+rapport dans les logs de build → **retirer les deux variables**. L'import est
+transactionnel et idempotent : un échec n'écrit rien et laisse la production sur
+le déploiement précédent.
+
+**Trois questions restent ouvertes pour le praticien** (soulevées par la revue,
+sans réponse dans le cadrage) :
+
+1. Que devient une correspondance signée dont l'acte disparaît ? Un statut
    « signature orpheline » et une file de reprise, ou le silence de
    `hors_nomenclature` suffit-il ? À trancher **avant CB-02c**.
-3. Entre `signee` et `courrier_medecin_genere`, le régime documentaire est-il
+2. Entre `signee` et `courrier_medecin_genere`, le régime documentaire est-il
    figé ? Si le pointeur bouge dans cet intervalle, une proposition signée
    comme remboursée peut se matérialiser en document patient.
-4. `biology_source_snapshots` accueillera-t-elle un jour une source `labo` ? Le
+3. `biology_source_snapshots` accueillera-t-elle un jour une source `labo` ? Le
    CHECK est aujourd'hui restreint à `nabm_smt_ans` pour que l'élargir soit une
    migration relue — `contenu` étant un texte libre que le verrou HDS, qui
    raisonne sur des noms de colonnes, ne peut pas inspecter.

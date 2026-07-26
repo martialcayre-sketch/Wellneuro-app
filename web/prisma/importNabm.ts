@@ -26,9 +26,16 @@
  * nom ne se retrouve pas dans la chaîne de connexion. On ne peut plus se
  * tromper de base sans l'avoir écrit.
  *
+ * Épingles de contenu, employées par `scripts/vercel-build.sh` :
+ *   --version <millésime>  échoue si la source n'en rend pas exactement celui-là
+ *   --sha256 <empreinte>   échoue si le contenu canonique n'a pas cette
+ *                          empreinte. Les deux ensemble rendent l'import
+ *                          REPRODUCTIBLE : il écrit ce qui a été relu en PR, ou
+ *                          rien. Sans elles, un import câblé dans un build
+ *                          suivrait la source sans que personne l'ait décidé.
+ *
  * Options de mise au point :
  *   --source <répertoire>  lit les pages depuis des fixtures au lieu du réseau
- *   --version <millésime>  échoue si la source n'en rend pas exactement celui-là
  *   --allow-shrink         accepte un millésime sous le plancher de volumétrie
  *   --remplace-pointeur <version_actuelle>
  *                          autorise le pointeur à quitter un millésime pour un
@@ -476,6 +483,17 @@ async function main(): Promise<void> {
     autoriserReduction: process.argv.includes('--allow-shrink'),
   });
   imprimerRapport(resultat);
+
+  // Vérifiée APRÈS le rapport, pour que la sortie montre l'empreinte réellement
+  // lue quand elle diverge — sans quoi il faudrait relancer pour la connaître.
+  const empreinteAttendue = argument('--sha256');
+  if (empreinteAttendue && empreinteAttendue !== resultat.rapport.contenuSha256) {
+    throw new Error(
+      `Empreinte attendue ${empreinteAttendue}, source lue ${resultat.rapport.contenuSha256}. ` +
+        `Le millésime ${resultat.rapport.versionSource} ne porte plus le contenu relu — ` +
+        'arbitrage humain requis, aucun import automatique.',
+    );
+  }
 
   if (!process.argv.includes('--apply')) {
     console.log(

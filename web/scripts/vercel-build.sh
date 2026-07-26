@@ -9,6 +9,11 @@
 # Supabase en session mode (port 5432) — l'URL runtime passe par le pooler en
 # mode transaction, que `migrate deploy` ne supporte pas.
 #
+# Ce script porte aussi deux imports de données de référence (C5 CIQUAL, CB-02a
+# NABM), chacun désarmé par défaut et armé par une variable Vercel dédiée. Ce
+# ne sont pas des migrations : ils n'entrent pas dans `migrate deploy` et ne
+# sont pas rejoués par le hook Scalingo (`scripts/db-deploy.sh`).
+#
 # Sécurité :
 # - Jamais en preview : garde stricte sur VERCEL_ENV=production.
 # - Variable absente : on avertit bruyamment mais on ne bloque pas le
@@ -20,8 +25,19 @@ set -euo pipefail
 
 if [ "${VERCEL_ENV:-}" = "production" ]; then
   c5_ciqual_import_ref="C5-LOT02-IMPORT-MC-2026-07-18-v1"
+
+  # CB-02a — nomenclature NABM. Trois faits épinglés ICI, donc modifiables
+  # seulement par une PR relue ; voir le bloc d'import plus bas pour le pourquoi.
+  cb_nabm_import_ref="CB-02A-IMPORT-NABM-MC-2026-07-26-v1"
+  cb_nabm_version="V105"
+  cb_nabm_sha256="3a9c289f081d293e7655de709a295bc6da9ece3f2301b86f1ea9625d1c7aed0f"
+
   if [ -n "${WN_C5_CIQUAL_IMPORT_CONFIRMATION:-}" ] && [ -z "${MIGRATE_DATABASE_URL:-}" ]; then
     echo "❌ Import C5 LOT-02 demandé sans MIGRATE_DATABASE_URL : déploiement refusé." >&2
+    exit 1
+  fi
+  if [ -n "${WN_CB_NABM_IMPORT_CONFIRMATION:-}" ] && [ -z "${MIGRATE_DATABASE_URL:-}" ]; then
+    echo "❌ Import CB-02a demandé sans MIGRATE_DATABASE_URL : déploiement refusé." >&2
     exit 1
   fi
 
@@ -49,6 +65,64 @@ if [ "${VERCEL_ENV:-}" = "production" ]; then
       echo "→ Import append-only C5 LOT-02 confirmé…"
       npm run c5:ciqual:apply -- \
         --confirmation "$c5_ciqual_import_ref"
+    fi
+
+    # ── CB-02a — import de la nomenclature NABM ──────────────────────────────
+    #
+    # Deux preuves côté Vercel, trois faits épinglés côté code relu.
+    #
+    # Variables Vercel (scope Production) :
+    #   WN_CB_NABM_IMPORT_CONFIRMATION  arme l'import ;
+    #   WN_CB_NABM_IMPORT_BASE          NOMME l'hôte visé. L'import refuse si ce
+    #                                   nom ne se retrouve pas dans
+    #                                   MIGRATE_DATABASE_URL. Les deux variables
+    #                                   sont posées par la même personne, au même
+    #                                   moment : armer l'import oblige donc à
+    #                                   savoir sur quelle base il va écrire —
+    #                                   ce qui protège le jour où cette URL
+    #                                   changera d'hôte (cutover Scalingo).
+    #
+    # Constantes du script (donc : une PR pour les changer) : le jeton, le
+    # MILLÉSIME attendu et l'EMPREINTE de son contenu. Épingler les deux
+    # dernières est ce qui rend la variable inoffensive si on l'oublie en
+    # place — le jour où l'ANS publiera le millésime suivant, le build ÉCHOUERA
+    # au lieu d'importer en silence une nomenclature que personne n'a relue.
+    # Un import silencieux déplacerait le catalogue servi, donc ce qui est
+    # proposé au patient et ce qui part au médecin traitant.
+    #
+    # Volontairement PAS câblés : --remplace-pointeur, --accepte-orphelines,
+    # --allow-shrink. Ce sont des forçages qui demandent un jugement humain. Si
+    # l'un devient nécessaire, ce build doit échouer et quelqu'un doit reprendre
+    # l'import à la main.
+    #
+    # L'import est transactionnel et idempotent : un échec (réseau, refus d'un
+    # garde, build interrompu par la limite de durée Vercel) n'écrit rien et
+    # laisse la production sur le déploiement précédent.
+    if [ -n "${WN_CB_NABM_IMPORT_CONFIRMATION:-}" ]; then
+      if [ "$WN_CB_NABM_IMPORT_CONFIRMATION" != "$cb_nabm_import_ref" ]; then
+        echo "❌ Confirmation d'import CB-02a invalide : import refusé." >&2
+        exit 1
+      fi
+      if [ -z "${WN_CB_NABM_IMPORT_BASE:-}" ]; then
+        echo "❌ Import CB-02a armé sans WN_CB_NABM_IMPORT_BASE : import refusé." >&2
+        echo "   Cette variable doit nommer l'hôte de MIGRATE_DATABASE_URL." >&2
+        exit 1
+      fi
+
+      echo "→ Advisors Supabase avant import CB-02a…"
+      npx --yes supabase@2.109.1 db advisors \
+        --db-url "$MIGRATE_DATABASE_URL" \
+        --type all \
+        --level warn \
+        --fail-on warn \
+        --output-format json
+
+      echo "→ Import NABM CB-02a confirmé (millésime $cb_nabm_version épinglé)…"
+      npm run cb:nabm:apply -- \
+        --confirmation "$cb_nabm_import_ref" \
+        --base "$WN_CB_NABM_IMPORT_BASE" \
+        --version "$cb_nabm_version" \
+        --sha256 "$cb_nabm_sha256"
     fi
   else
     echo "⚠️  MIGRATE_DATABASE_URL absente : migrations NON appliquées." >&2

@@ -164,6 +164,20 @@ grep -q "deux bases différentes" "$SORTIE" || {
   cat "$SORTIE" >&2; exit 1; }
 echo "  ✔ --base doit nommer l'hôte réellement visé"
 
+# Les deux cas suivants gardent le CÂBLAGE DANS LE BUILD VERCEL, où l'import
+# n'a plus d'opérateur devant lui : ce sont les épingles posées en constantes
+# de `scripts/vercel-build.sh` qui tiennent lieu de relecture. Sans elles, la
+# variable d'armement oubliée en place ferait importer, au prochain déploiement
+# venu, le millésime que l'ANS aura publié entre-temps.
+echo "── 9. Le millésime servi ne change pas sans PR ──"
+echec_attendu "millésime non épinglé" "V106 attendu" \
+  --source "$FIXTURES/v105" --version V106
+
+echo "── 10. Un même millésime au contenu changé est refusé ──"
+echec_attendu "empreinte non épinglée" "ne porte plus le contenu relu" \
+  --source "$FIXTURES/v105" --version V105 \
+  --sha256 0000000000000000000000000000000000000000000000000000000000000000
+
 echo "── Table rase finale ──"
 # TOUTE VALEUR SQL PASSE EN PARAMÈTRE, et ce n'est pas ici un réflexe de
 # sécurité : ces blocs `node -e` sont délimités par des apostrophes simples,
@@ -185,4 +199,4 @@ const {Client} = require("pg");
   await c.end();
 })().catch(e => { console.error(e); process.exit(1); });'
 
-echo "CB-02a : banc d'intégration de l'import — 9 cas vérifiés."
+echo "CB-02a : banc d'intégration de l'import — 11 cas vérifiés."
