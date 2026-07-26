@@ -520,3 +520,15 @@ d'affichage ; rétablir ou non un profil par axes côté patient, avec des libel
 **Prochaine action** : supprimer le client parasite + son JSON (console) ; `DB_SSL_CA` staging ; lots A4/A5.
 
 **Questions ouvertes** : propriété du projet `750815743505` (perso gmail vs org wellneuro.fr) à vérifier/transférer.
+
+## 2026-07-26 — DB_SSL_CA staging + lots code A4/A5 clos (#382)
+
+**Décisions** : `DB_SSL_CA` posé sur staging (root CA « Scalingo Databases », `tlsNoVerify=non` confirmé en logs) — chaîne TLS vérifiée. **A4** (exig. 5) tranché : le GET agenda `rendez-vous` **n'est pas journalisé** (liste opérationnelle ≠ dossier de santé nommé ; `motif` = note d'agenda praticien), documenté en code + test de surface d'exposition. **A5** (exig. 7) : 13 routes praticien authentifiées sans aucun test reçoivent « sans session → 401 » (dont metrics/patients-pg/trust, données patient). **Tous les lots CODE de prépa HDS sont faits** (fondation+P0+P1+P2+A4/A5).
+
+**Écarté** : journaliser l'agenda (surface non clinique) ; faire confiance à l'audit `wn-explorer` brut — 8 faux positifs « manque 401 » écartés par vérif déterministe.
+
+**Validations** : T1 vert (29 tests) ; CI `verify` vert sur #382 (8m31, E2E inclus, en env propre).
+
+**Prochaine action** : migrations Prisma **C** sous 🚪 go explicite — hachage `patients.access_token` (exig. 4) + RLS (exig. 3), protocole renforcé (revue avant, base prod après).
+
+**Questions ouvertes** : go pour migration C ? ; volet ops/juridique HDS (responsable, échéance 2026-10-21) ; propriété projet Google `750815743505`.
