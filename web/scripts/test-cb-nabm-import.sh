@@ -230,6 +230,26 @@ npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1.sql \
   >"$SORTIE" 2>&1 || { cat "$SORTIE" >&2; exit 1; }
 echo "  ✔ contrat vert sur un catalogue peuplé"
 
+# La sortie anticipée du cas 12 tient à DEUX conditions : le millésime servi et
+# son empreinte. Sans le cas suivant, retirer la condition d'empreinte laissait
+# le banc vert — et faisait sortir « rien à faire » un import qui devait refuser.
+echo "── 14. La sortie anticipée exige AUSSI l'empreinte ──"
+echec_attendu "millésime servi mais empreinte divergente" "ne porte plus le contenu relu" \
+  --source "$FIXTURES/v105" --version V105 \
+  --sha256 1111111111111111111111111111111111111111111111111111111111111111
+
+echo "── 15. Un jeton qui ne nomme pas le millésime est refusé ──"
+# Sans ce contrôle, le millésime dans le jeton n'était qu'une convention : une
+# PR qui aurait épinglé V106 sans renouveler le jeton aurait laissé valide une
+# variable d'armement oubliée dans Vercel.
+echec_attendu "jeton désaccordé du millésime épinglé" "ne nomme pas le millésime V106" \
+  --source "$FIXTURES/v106" --version V106 \
+  --sha256 2222222222222222222222222222222222222222222222222222222222222222
+
+echo "── 16. Une épingle d'empreinte vide est refusée, pas ignorée ──"
+echec_attendu "--sha256 réduit à rien" "64 caractères hexadécimaux" \
+  --source "$FIXTURES/v105" --version V105 --sha256 "   "
+
 echo "── Table rase finale ──"
 # TOUTE VALEUR SQL PASSE EN PARAMÈTRE, et ce n'est pas ici un réflexe de
 # sécurité : ces blocs `node -e` sont délimités par des apostrophes simples,
@@ -251,4 +271,4 @@ const {Client} = require("pg");
   await c.end();
 })().catch(e => { console.error(e); process.exit(1); });'
 
-echo "CB-02a : banc d'intégration de l'import — 13 cas vérifiés."
+echo "CB-02a : banc d'intégration de l'import — 17 cas vérifiés."

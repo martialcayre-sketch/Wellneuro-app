@@ -21,11 +21,12 @@
   base de production. C'est sa **première exécution là où il existe des
   données** : en intégration continue il ne rencontre qu'une base vide, où ses
   invariants de données ne disent rien.
-- **Quatre cas de banc** (`scripts/test-cb-nabm-import.sh` passe de neuf à
-  treize) : millésime non épinglé et contenu changé sous millésime inchangé,
-  tous deux refusés ; puis le chemin nominal du build et son rejeu, qui
-  manquaient — deux épingles n'ayant que des tests négatifs peuvent être mal
-  branchées sans que rien ne le dise.
+- **Huit cas de banc** (`scripts/test-cb-nabm-import.sh` passe de neuf à
+  dix-sept) : millésime non épinglé, contenu changé sous millésime inchangé,
+  jeton désaccordé du millésime, épingle d'empreinte vide — tous refusés ; puis
+  le chemin nominal du build, son rejeu, et le contrat joué sur des données.
+  Le chemin nominal manquait : deux épingles n'ayant que des tests négatifs
+  peuvent être mal branchées sans que rien ne le dise.
 
 ### Sécurité
 

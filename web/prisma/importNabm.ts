@@ -126,11 +126,14 @@ async function recupererPages(): Promise<PageExpand[]> {
   return pages;
 }
 
-// Le titre et la dernière ligne suivent le MODE, sans quoi le log de build —
-// seule trace d'une écriture en production — s'annonçait « dry-run » et
-// « aucune écriture effectuée » juste avant d'écrire 987 lignes.
+// Titre NEUTRE, à dessein. Ce rapport s'imprime avant le contrôle d'empreinte,
+// avant le garde des signatures et avant l'écriture : il décrit ce que la
+// SOURCE contient, pas ce qui sera fait. « dry-run » mentait sur un run qui
+// écrit — c'était le défaut d'origine, dans le log de build, seule trace d'une
+// écriture en production ; « import » mentirait sur un run refusé. Le succès
+// n'a qu'un marqueur, la ligne « import NABM validé ».
 function imprimerRapport(resultat: ImportNabm, ecritureDemandee: boolean): void {
-  console.log(`=== CB-02a — ${ecritureDemandee ? 'import' : 'dry-run'} NABM ===`);
+  console.log('=== CB-02a — lecture de la source NABM ===');
   console.log(JSON.stringify(resultat.rapport, null, 2));
   if (resultat.rapport.incompatibilitesAsymetriques > 0) {
     console.warn(
@@ -211,12 +214,33 @@ function verifierPreuves(): string {
         'Import refusé — ce sont deux bases différentes.',
     );
   }
+
+  // Le jeton doit NOMMER le millésime importé. Sans ce contrôle, la présence du
+  // millésime dans le jeton n'était qu'une convention de nommage : une PR qui
+  // aurait épinglé un millésime suivant sans toucher au jeton aurait laissé
+  // valide une variable d'armement oubliée dans Vercel, et l'import serait
+  // reparti au déploiement suivant. C'est ici que la convention devient
+  // mécanique — et hors build, pas seulement dedans.
+  const version = argument('--version');
+  if (version && !NABM_IMPORT_CONFIRMATION.includes(`-${version}-`)) {
+    throw new Error(
+      `Le jeton ${NABM_IMPORT_CONFIRMATION} ne nomme pas le millésime ${version}. ` +
+        'Épingler un millésime sans renouveler le jeton laisserait valide une ' +
+        'autorisation donnée pour un autre contenu — import refusé.',
+    );
+  }
   return url;
 }
 
-// Le catalogue sert-il DÉJÀ ce millésime, avec exactement ce contenu ? Les deux
-// conditions ensemble : le pointeur seul ne dit rien du contenu, et un snapshot
-// seul peut appartenir à un millésime qui n'est plus servi.
+// Le catalogue sert-il DÉJÀ ce millésime, avec exactement ce contenu ?
+//
+// Le prédicat est délibérément AU MOINS AUSSI FORT que le contrat rejoué juste
+// après par `vercel-build.sh` : il vérifie le pointeur, son empreinte, son
+// compte d'entrées, ET que ce compte est bien celui des actes réellement en
+// base. Un prédicat plus faible ferait sortir l'import sur « rien à faire »
+// devant un état que le contrat déclare aussitôt invalide — transformant un
+// catalogue tronqué, aujourd'hui réparé par un simple rejeu, en déploiements
+// de production bloqués jusqu'à intervention manuelle.
 async function millesimeDejaServi(
   url: string,
   version: string,
@@ -238,6 +262,12 @@ async function millesimeDejaServi(
           WHERE c.source_provenance = $1
             AND c.version_source = $2
             AND s.contenu_sha256 = $3
+            AND c.contenu_sha256 = $3
+            AND c.nombre_entrees > 0
+            AND c.nombre_entrees = (
+              SELECT count(*) FROM biology_nabm_actes
+               WHERE version_source = c.version_source
+            )
        ) AS servi`,
       [NABM_SOURCE_PROVENANCE, version, empreinte],
     );
@@ -542,9 +572,15 @@ async function main(): Promise<void> {
   // Normalisée et vérifiée de forme ici : une empreinte en majuscules ou avec
   // une espace parasite ferait échouer TOUS les imports en accusant la source
   // d'avoir changé, message exact et diagnostic faux.
-  const empreinteEpinglee = argument('--sha256')?.trim().toLowerCase();
-  if (empreinteEpinglee && !/^[0-9a-f]{64}$/.test(empreinteEpinglee)) {
-    throw new Error(`--sha256 attend 64 caractères hexadécimaux ; reçu « ${empreinteEpinglee} »`);
+  //
+  // La validation se déclenche sur la PRÉSENCE de l'argument, jamais sur la
+  // vérité de sa forme normalisée : `--sha256 "   "` se réduit à la chaîne
+  // vide, qui est falsy — l'épingle aurait disparu sans un mot et l'import
+  // aurait suivi la source.
+  const empreinteBrute = argument('--sha256');
+  const empreinteEpinglee = empreinteBrute?.trim().toLowerCase();
+  if (empreinteBrute !== undefined && !/^[0-9a-f]{64}$/.test(empreinteEpinglee ?? '')) {
+    throw new Error(`--sha256 attend 64 caractères hexadécimaux ; reçu « ${empreinteBrute} »`);
   }
 
   // Épingles posées ET catalogue déjà à jour : on ne dérange pas la source.

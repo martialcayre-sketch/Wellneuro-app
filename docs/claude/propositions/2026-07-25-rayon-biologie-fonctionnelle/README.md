@@ -477,14 +477,17 @@ jugement humain ; s'ils deviennent nécessaires, le build doit échouer.
 Le build rejoue enfin, juste après l'import, le contrat
 `prisma/checks/cb_biologie_catalogue_v1.sql`. **C'est sa première exécution là
 où il existe des données** : en CI il ne rencontre qu'une base vide, où ses
-invariants de données sont muets.
+invariants de données sont muets. Ce n'est pas pour autant un garde permanent —
+il ne s'exécute que tant que la variable d'armement est posée, donc une fois.
 
 **Marche à suivre :** poser les deux variables → redéployer `main` → lire le
 rapport dans les logs de build → vérifier la base par `execute_sql` (attendus à
 figer *avant* d'armer : 987 lignes en `version_source = 'V105'`, pointeur à
 987 entrées, un snapshot à l'empreinte épinglée) → **retirer les deux
 variables**. L'import est transactionnel et idempotent : un échec n'écrit rien
-et laisse la production sur le déploiement précédent.
+et laisse la production sur le déploiement précédent — **à une exception près**,
+le contrat s'exécutant après le commit de l'import, un build rouge à cette
+étape-là signifie que l'import, lui, est bien écrit.
 
 **Trois questions restent ouvertes pour le praticien** (soulevées par la revue,
 sans réponse dans le cadrage) :

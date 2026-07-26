@@ -78,9 +78,10 @@ if [ "${VERCEL_ENV:-}" = "production" ]; then
     #                                   MIGRATE_DATABASE_URL. Les deux variables
     #                                   sont posées par la même personne, au même
     #                                   moment : armer l'import oblige donc à
-    #                                   savoir sur quelle base il va écrire —
-    #                                   ce qui protège le jour où cette URL
-    #                                   changera d'hôte (cutover Scalingo).
+    #                                   savoir sur quelle base il va écrire, et ce
+    #                                   contrôle ne dépend d'aucune variable de
+    #                                   plateforme — il vaut encore si la
+    #                                   connexion change d'hôte.
     #
     # Constantes du script (donc : une PR pour les changer) : le jeton, le
     # MILLÉSIME attendu et l'EMPREINTE de son contenu. Épingler les deux
@@ -90,6 +91,12 @@ if [ "${VERCEL_ENV:-}" = "production" ]; then
     # Un import silencieux déplacerait le catalogue servi, donc ce qui est
     # proposé au patient et ce qui part au médecin traitant.
     #
+    # Le jeton NOMME le millésime, et l'import refuse s'il ne le nomme pas.
+    # Sans ce lien, incrémenter les deux épingles ci-dessus aurait suffi à
+    # relancer un import sur la seule autorité de cette PR, la variable étant
+    # restée posée. Le modèle annonce deux clés indépendantes ; il en faut donc
+    # deux qui bougent. Bump de millésime = les TROIS constantes changent.
+    #
     # Volontairement PAS câblés : --remplace-pointeur, --accepte-orphelines,
     # --allow-shrink. Ce sont des forçages qui demandent un jugement humain. Si
     # l'un devient nécessaire, ce build doit échouer et quelqu'un doit reprendre
@@ -98,6 +105,11 @@ if [ "${VERCEL_ENV:-}" = "production" ]; then
     # L'import est transactionnel et idempotent : un échec (réseau, refus d'un
     # garde, build interrompu par la limite de durée Vercel) n'écrit rien et
     # laisse la production sur le déploiement précédent.
+    #
+    # NUANCE À CONNAÎTRE AVANT DE DÉCIDER QUOI FAIRE D'UN BUILD ROUGE : le
+    # contrat qui suit s'exécute APRÈS le commit de l'import. Un échec du
+    # contrat laisse donc l'import écrit, et le build en échec. C'est le seul
+    # cas où « build rouge » ne veut pas dire « rien n'a été écrit ».
     if [ -n "${WN_CB_NABM_IMPORT_CONFIRMATION:-}" ]; then
       if [ "$WN_CB_NABM_IMPORT_CONFIRMATION" != "$cb_nabm_import_ref" ]; then
         echo "❌ Confirmation d'import CB-02a invalide : import refusé." >&2
@@ -126,7 +138,8 @@ if [ "${VERCEL_ENV:-}" = "production" ]; then
 
       # Le contrat du catalogue, joué là où il y a enfin des DONNÉES. En CI il
       # ne rencontre qu'une base vide : ses invariants de données y sont muets.
-      # C'est donc ici, et nulle part ailleurs, qu'ils disent quelque chose.
+      # C'est donc ici, sur la production, qu'ils disent enfin quelque chose —
+      # une seule fois, puisque la variable d'armement se retire ensuite.
       echo "→ Contrat du catalogue biologie sur les données importées…"
       DATABASE_URL="$MIGRATE_DATABASE_URL" npx prisma db execute \
         --file prisma/checks/cb_biologie_catalogue_v1.sql
