@@ -532,3 +532,15 @@ d'affichage ; rétablir ou non un profil par axes côté patient, avec des libel
 **Prochaine action** : migrations Prisma **C** sous 🚪 go explicite — hachage `patients.access_token` (exig. 4) + RLS (exig. 3), protocole renforcé (revue avant, base prod après).
 
 **Questions ouvertes** : go pour migration C ? ; volet ops/juridique HDS (responsable, échéance 2026-10-21) ; propriété projet Google `750815743505`.
+
+## 2026-07-26 — Audit de la chaîne alimentaire 5.0 (PR #380 mergée)
+
+**Décisions** : audit livré en réponse à deux documents praticien (simulation du workflow cible, verdict métrologique sur `Q_ALI_01/02/03`). Sept affirmations vérifiées à la ligne, sept exactes. Quatre constats inédits : le besoin 2 « Micronutriments » est alimenté par la fatigue de Pichot **et** figure dans les fondations critiques — son effondrement plafonne le *Mon équilibre* global à 50 ; `Q_ALI_02`/`Q_ALI_03` n'alimentent aucun besoin ; `Q_ALI_03` promet l'estimation dans ses consignes servies ; `POST /api/portail/ja/observations` n'est appelé par aucun client. Désaccord de fond acté : la référence de certification est la **publication primaire**, pas le PDF du cabinet — sur `Q_ALI_02` l'app est plus fidèle au MEDAS publié que le PDF qu'on lui oppose. Merge par l'assistant sur instruction explicite.
+
+**Écarté** : les 15 domaines proposés (réduits à 5-6 réellement discriminés) ; restaurer les 57 items SIIN (non validés — renommage recommandé) ; exécuter le P0 (bump `VERSION_SCORE_EQUILIBRE` v3→v4 sans demande explicite).
+
+**Validations** : anti-secrets vert ; T1 vert après `npm ci` + `prisma generate` (conteneur nu) ; CI `verify` success 31 s ; citations `fichier:ligne` revérifiées, deux corrigées avant commit.
+
+**Prochaine action** : humaine — trancher les quatre arbitrages du §7 (source du besoin 2, sort de `Q_ALI_01`, alcool dans `Q_ALI_02`, écriture patient du carnet avant le 2026-10-21 sous hébergement non-HDS).
+
+**Questions ouvertes** : `scoring-check` rapporte 0 preuve psychométrique sur les 64 instruments du registre — hors périmètre, mérite son propre fil.
