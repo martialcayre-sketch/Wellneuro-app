@@ -33,8 +33,8 @@ Chemin critique le plus court vers un go : **A → B‑P1 → 🚪 C → D → E
 - [ ] 🤖 **P1 — claims questionnaire en SSE + heartbeat** (`web/src/app/api/praticien/corpus/claims/questionnaire/route.ts`, `maxDuration:120`, appels LLM parallèles) — *seul point qui casse réellement sous le routeur Scalingo*
 - [ ] 🤖 **P2 — timeout `AbortController`** sur le fetch embeddings (`web/src/lib/rag/embeddings.ts`, aucun timeout aujourd'hui)
 - [ ] 🤖 **P2 — envois SMTP best-effort non bloquants** (aujourd'hui `await transport.sendMail` dans le chemin de requête — un relais lent tient la requête au-delà de la fenêtre routeur)
-- [ ] 🤖 **A4 — journalisation exig. 5** : trancher l'exposition du `GET` agenda `rendez-vous`
-- [ ] 🤖 **A5 — tests d'authz exig. 7**
+- [x] 🤖 **A4 — journalisation exig. 5** : tranché le 2026-07-26 — le `GET` agenda `rendez-vous` **n'est pas journalisé** (liste opérationnelle, pas une lecture de dossier de santé nommé ; `motif` = note d'agenda du praticien). Décision documentée dans `route.ts`, surface d'exposition verrouillée par un test. Révocable par le responsable.
+- [x] 🤖 **A5 — tests d'authz exig. 7** : couvert le 2026-07-26 — 13 routes praticien authentifiées qui n'avaient **aucun** test reçoivent un test « sans session → 401 » (dont metrics, patients-pg, trust qui portent de la donnée patient). Audit `wn-explorer` : les 8 autres routes qu'il signalait « manque 401 » avaient déjà le test (faux positifs, vérifiés).
 - [ ] 🤖 (À trancher) Sentry **client** (bundle navigateur, variables inlinées — non couvert par #345)
 
 ## C. Migrations Prisma — 🚪 go explicite requis

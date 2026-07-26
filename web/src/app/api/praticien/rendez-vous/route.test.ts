@@ -64,6 +64,21 @@ describe('GET /api/praticien/rendez-vous', () => {
     expect(payload.rendezVous[0].patient).toBe('Sophie Nicola');
     expect(payload.rendezVous[0].motif).toBe('Suivi');
   });
+
+  it('A4 — surface d’exposition bornée (garde la décision de non-journalisation)', async () => {
+    prisma.rendezVous.findMany.mockResolvedValue([
+      { id: 'RDV_1', idPatient: 'PAT_SEED_01', dateHeure: new Date('2026-07-15T09:00:00.000Z'), motif: 'Suivi' },
+    ]);
+    prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
+    const payload = await (await GET(req('http://x/api/praticien/rendez-vous'))).json();
+    // La liste n'expose que planification + identité, jamais le dossier de santé
+    // (réponses, synthèse, consultations). Si un champ clinique apparaissait, la
+    // décision A4 de non-journalisation (cf. commentaire dans route.ts) devrait
+    // être rouverte — ce test la garde.
+    expect(Object.keys(payload.rendezVous[0]).sort()).toEqual(
+      ['dateHeure', 'id', 'idPatient', 'motif', 'patient'],
+    );
+  });
 });
 
 describe('POST /api/praticien/rendez-vous', () => {

@@ -54,6 +54,18 @@ function jourParisDemande(valeur: string | null): { debut: Date; fin: Date } | n
 // GET /api/praticien/rendez-vous?du=YYYY-MM-DD&au=YYYY-MM-DD — rendez-vous
 // planifiés du praticien, triés par date croissante. Bornés par praticienEmail
 // (la table le porte) : pas de garde par patient sur une liste.
+//
+// Exig. 5 (journal des accès aux dossiers nommés, G-TRUST-04) — NON journalisée,
+// décision A4 du 2026-07-26, et c'est un choix, pas un oubli. Le journal trace la
+// lecture d'un DOSSIER DE SANTÉ nommé ; l'agenda n'en lit aucun : il lit des
+// enregistrements `RendezVous` (planification, saisie du praticien) et les noms
+// des patients concernés — jamais réponses, synthèse ni consultations. Le `motif`
+// est une note d'agenda écrite par le praticien, pas une donnée soumise par le
+// patient. Un praticien qui consulte son propre agenda n'est pas le risque que le
+// journal existe pour détecter. Même catégorie que `patients`, `fil`, `metrics`
+// (listes/aperçus, non journalisés) — la cohérence avec elles est la raison.
+// Révocable par le responsable du traitement s'il juge le `motif` assez sensible
+// pour l'y soumettre (il faudrait alors journaliser par patient distinct listé).
 export async function GET(req: Request): Promise<NextResponse<RendezVousApiResponse>> {
   const session = await getServerSession(authOptions);
   if (!session) return echec('unauthenticated', 'Authentification requise.', 401);
