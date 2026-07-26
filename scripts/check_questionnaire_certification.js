@@ -725,14 +725,24 @@ assertEqual(optionLabels('Q_PNE_01', 'BP1'), ['Jamais', 'Parfois', 'Fréquemment
 assertCertification(calculateScore('Q_PNE_01', fill('Q_PNE_01', 0)), 'certifie', 'Q_PNE_01');
 
 assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'min')).total, 0, 'Q_URO_01 score minimal');
-assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).total, 42, 'Q_URO_01 total maximal avec QdV');
-assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).subScores.map(score => score.total), [36, 6], 'Q_URO_01 sous-scores maximaux');
-assertEqual(optionLabels('Q_URO_01', 'U2'), ['Jamais', 'Environ 1 x sur 5', 'Environ 1 x sur 3', 'Environ 1 x sur 2', 'Environ 2 x sur 3', 'Presque toujours'], 'Q_URO_01 cotation Q002 Drive atypique');
+// Arbitrage praticien du 2026-07-26 (banc de certification, lot 4). Ces trois
+// attentes portaient l'ancien comportement : total 42 (= 36 symptômes + 6
+// qualité de vie), sous-échelle de symptômes plafonnant à 36, item U2 coté
+// 0,2,3,4,5,6. L'IPSS publié rapporte la qualité de vie À PART et plafonne les
+// symptômes à 35. Aucune passation Q_URO_01 n'existait en base au moment du
+// changement (vérifié) : aucune réponse enregistrée n'est réinterprétée.
+assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).total, 35, 'Q_URO_01 total maximal, qualité de vie exclue');
+assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).subScores.map(score => score.total), [35, 6], 'Q_URO_01 sous-scores maximaux');
+// La qualité de vie reste calculée et interprétée — elle est sortie du total,
+// pas supprimée.
+assertEqual(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).subScores[1].interpretation.label, 'Qualité de vie insatisfaisante', 'Q_URO_01 QdV toujours interprétée');
+assertEqual(optionLabels('Q_URO_01', 'U2'), ['Jamais', 'Environ 1 x sur 5', 'Environ 1 x sur 3', 'Environ 1 x sur 2', 'Environ 2 x sur 3', 'Presque toujours'], 'Q_URO_01 libellés U2 inchangés');
+assertEqual(questions('Q_URO_01').find(q => q.id === 'U2').options.map(o => o.v), [0, 1, 2, 3, 4, 5], 'Q_URO_01 cotation U2 ramenée à 0-5');
 assertEqual(questions('Q_URO_01').map(question => question.texte).slice(0, 2), [
   "Au cours du dernier mois, avec quelle fréquence avez-vous eu la sensation que votre vessie n'était pas complètement vidée après avoir uriné ?",
   "Au cours du dernier mois, avec quelle fréquence avez-vous eu besoin d'uriner moins de 2 heures après avoir fini d'uriner ?",
 ], 'Q_URO_01 libellés IPSS Drive');
-assert(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).note.includes('cotation source atypique'), 'Q_URO_01 doit documenter la cotation atypique Q002');
+assert(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'max')).note.includes('Arbitrage praticien du 2026-07-26'), 'Q_URO_01 doit documenter l’arbitrage qui a corrigé la cotation');
 assertCertification(calculateScore('Q_URO_01', fillByOptionBoundary('Q_URO_01', 'min')), 'ambigu', 'Q_URO_01');
 
 const uroJournal = calculateScore('Q_URO_02', fill('Q_URO_02', 0));

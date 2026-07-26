@@ -32,6 +32,15 @@ export const Q_CAR_01 = {
   ],
   scoring:{
     type:'sum', maxTotal:25,
+    // Arbitrage praticien du 2026-07-26 : la source distingue trois dimensions
+    // que le score global masquait. Deux patients à 12 points peuvent avoir un
+    // profil opposé — l'un chargé en antécédents, l'autre en mode de vie, le
+    // second seul étant modifiable. Purement descriptif : le total reste 0-25.
+    dimensions:[
+      {id:'FAM', label:'Antécédents familiaux',            items:['A1','A2'],                                    max:2},
+      {id:'PERSO', label:'Facteurs de risque personnels',  items:['B1','B2','B3','B4','B5','B6','B7'],           max:10},
+      {id:'VIE', label:'Mode de vie et facteurs aggravants', items:['C1','C2','C3','C4','C5','C6','C7'],         max:13},
+    ],
     interpretation:[
       {min:0,  max:5,  label:'Risque faible',     color:'success', protocol:'Prévention primaire — optimiser l\'hygiène de vie'},
       {min:6,  max:10, label:'Risque modéré',     color:'info',    protocol:'Bilan lipidique et glycémique conseillé — micronutrition préventive'},
