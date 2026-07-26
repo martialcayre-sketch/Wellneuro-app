@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
-import nodemailer from 'nodemailer';
+import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { logger } from '@/lib/observability/logger';
@@ -222,7 +222,7 @@ async function sendPackEmail(
   const liste = assignations.map(a => `• ${a.titre}`).join('\n');
   const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
   const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
-  const transport = nodemailer.createTransport(smtpUrl);
+  const transport = creerTransportSmtp(smtpUrl);
   await transport.sendMail({
     from: '"Wellneuro" <noreply@wellneuro.fr>',
     to: patientEmail,

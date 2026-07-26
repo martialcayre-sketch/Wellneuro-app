@@ -5,24 +5,39 @@ type EmbeddingResponse = {
   error?: { message?: string };
 };
 
+// Borne l'appel embeddings : sur un conteneur persistant (Scalingo, sans le
+// `maxDuration` serverless de Vercel), un OpenAI qui pend bloquerait la requête
+// indéfiniment. 30 s = marge large pour un batch, sous le seuil « premier octet »
+// de 30 s du routeur pour les rares chemins où l'embedding est synchrone.
+const DELAI_EMBEDDINGS_MS = 30_000;
+
 export async function createEmbeddings(inputs: string[]): Promise<number[][]> {
   const config = getRagConfig();
   if (inputs.length === 0) return [];
 
-  const response = await fetch(`${config.openAiBaseUrl}/embeddings`, {
-    method: 'POST',
-    headers: {
-      authorization: `Bearer ${config.openAiApiKey}`,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: config.embeddingModel,
-      input: inputs,
-      dimensions: config.embeddingDimensions,
-      encoding_format: 'float',
-    }),
-    cache: 'no-store',
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${config.openAiBaseUrl}/embeddings`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${config.openAiApiKey}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: config.embeddingModel,
+        input: inputs,
+        dimensions: config.embeddingDimensions,
+        encoding_format: 'float',
+      }),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(DELAI_EMBEDDINGS_MS),
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'TimeoutError') {
+      throw new Error(`Délai dépassé pour les embeddings (${DELAI_EMBEDDINGS_MS / 1000} s).`);
+    }
+    throw err;
+  }
 
   const payload = (await response.json().catch(() => ({}))) as EmbeddingResponse;
   if (!response.ok) {

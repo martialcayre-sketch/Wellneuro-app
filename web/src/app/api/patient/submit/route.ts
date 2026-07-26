@@ -6,7 +6,7 @@ import { estInstrumentCabinet, resolveDefinition } from '@/lib/instruments';
 import { createPublicId } from '@/lib/ids';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
-import nodemailer from 'nodemailer';
+import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -233,7 +233,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 async function sendAck(patientEmail: string, titreQuestionnaire: string) {
   const smtpUrl = process.env.SMTP_URL;
   if (!smtpUrl) return;
-  const transport = nodemailer.createTransport(smtpUrl);
+  const transport = creerTransportSmtp(smtpUrl);
   await transport.sendMail({
     from: '"Wellneuro" <noreply@wellneuro.fr>',
     to: patientEmail,

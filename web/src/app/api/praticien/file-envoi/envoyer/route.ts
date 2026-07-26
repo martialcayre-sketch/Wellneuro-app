@@ -3,7 +3,7 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
-import nodemailer from 'nodemailer';
+import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { idsAssignablesPour, resolveDefinition } from '@/lib/instruments';
 import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
@@ -184,8 +184,9 @@ async function sendFileEnvoiEmail({
   notes: string | null;
   portalUrl: string;
 }) {
-  if (!process.env.SMTP_URL) return;
-  const transporter = nodemailer.createTransport(process.env.SMTP_URL);
+  const smtpUrl = process.env.SMTP_URL;
+  if (!smtpUrl) return;
+  const transporter = creerTransportSmtp(smtpUrl);
   const liste = titres.map(t => `• ${t}`).join('\n');
   const dateInfo = dateLimite ? `\nÀ compléter avant le : ${dateLimite}` : '';
   const noteInfo = notes ? `\nNote de votre praticien : ${notes}` : '';
