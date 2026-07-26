@@ -165,6 +165,13 @@ grep -q "deux bases différentes" "$SORTIE" || {
 echo "  ✔ --base doit nommer l'hôte réellement visé"
 
 echo "── Table rase finale ──"
+# TOUTE VALEUR SQL PASSE EN PARAMÈTRE, et ce n'est pas ici un réflexe de
+# sécurité : ces blocs `node -e` sont délimités par des apostrophes simples,
+# où une apostrophe littérale referme la chaîne du shell. Écrit en clair,
+# `code = 'BIO_FERRITINE'` parvenait à Postgres sans ses quotes, donc lu comme
+# un identifiant de colonne : « column bio_ferritine does not exist ».
+# Le CI l'a vu ; ma vérification locale l'avait manqué parce qu'elle tuyautait
+# la sortie dans grep — ce qui masque le code de retour du script.
 node -e '
 const {Client} = require("pg");
 (async () => {
@@ -174,8 +181,8 @@ const {Client} = require("pg");
   await c.query("DELETE FROM biology_catalog_versions_courantes");
   await c.query("DELETE FROM biology_source_snapshots");
   await c.query("DELETE FROM biology_nabm_actes");
-  await c.query("DELETE FROM biology_analytes WHERE code = 'BIO_FERRITINE'");
+  await c.query("DELETE FROM biology_analytes WHERE code = $1", ["BIO_FERRITINE"]);
   await c.end();
 })().catch(e => { console.error(e); process.exit(1); });'
 
-echo "CB-02a : banc d'intégration de l'import — 8 cas vérifiés."
+echo "CB-02a : banc d'intégration de l'import — 9 cas vérifiés."
