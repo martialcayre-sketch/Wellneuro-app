@@ -508,3 +508,15 @@ non croisés.
 arbitrage des 16 divergences (lot 4) ; PR #372 en attente sur deux points
 d'affichage ; rétablir ou non un profil par axes côté patient, avec des libellés
 écrits pour lui.
+
+## 2026-07-26 — G5 staging réparé + P2 bornes I/O Scalingo (#377)
+
+**Décisions** : G5 staging basculé sur le vrai client patient Externe `750815743505` — la prod marchait déjà (6 connexions gmail réelles en base). Le blocage `org_internal` venait d'un client **parasite** `385215216634-tanfoe` créé par erreur dans le projet praticien Interne, posé à tort sur staging. Audit complet des identités Google livré (`docs/claude/propositions/2026-07-25-audit-identites-google/`). **P2 mergé (#377)** : helper `creerTransportSmtp` (timeouts 10/10/20 s) sur 8 envois SMTP + `createEmbeddings` borné à 30 s.
+
+**Écarté** : projet Google dédié patient (existe déjà) ; fire-and-forget SMTP (masquerait l'échec d'e-mails qui *sont* le livrable).
+
+**Validations** : T1 vert ; T2 `test:worktree` 2092 unitaires + 95/97 E2E (2 échecs = artefact `.env.local`, prouvé local) ; CI `verify` vert 8m25 ; base prod lue via MCP.
+
+**Prochaine action** : supprimer le client parasite + son JSON (console) ; `DB_SSL_CA` staging ; lots A4/A5.
+
+**Questions ouvertes** : propriété du projet `750815743505` (perso gmail vs org wellneuro.fr) à vérifier/transférer.
