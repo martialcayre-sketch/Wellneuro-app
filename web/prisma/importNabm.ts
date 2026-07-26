@@ -1,0 +1,492 @@
+/**
+ * CB-02a — import de la nomenclature NABM depuis le Serveur Multi-Terminologies
+ * de l'ANS (Licence Ouverte v2, API anonyme).
+ *
+ * Sans argument, le script récupère les six pages, les vérifie, imprime un
+ * rapport et s'arrête SANS toucher à la base.
+ *
+ * L'écriture exige simultanément :
+ *   --apply
+ *   --confirmation CB-02A-IMPORT-NABM-MC-2026-07-26-v1
+ *   WN_CB_NABM_IMPORT_CONFIRMATION=CB-02A-IMPORT-NABM-MC-2026-07-26-v1
+ *   MIGRATE_DATABASE_URL=<connexion PostgreSQL de migration>
+ *   --base <hôte>          l'hôte visé, qui doit correspondre à celui de
+ *                          MIGRATE_DATABASE_URL
+ *
+ * POURQUOI `--base` PLUTÔT QU'UN CONTRÔLE DE `VERCEL_ENV`. La première version
+ * de ce script recopiait le garde de l'import Ciqual : « hors Vercel
+ * Production, exiger --allow-non-production ». La revue du 2026-07-26 a montré
+ * qu'il ne gardait rien ici. Ciqual s'exécute DEPUIS `vercel-build.sh`, où
+ * `VERCEL_ENV=production` a un sens ; CB-02a n'est câblé dans aucun build et
+ * s'exécute toujours à la main. Le drapeau qui annonce « pas la production »
+ * était donc celui qu'on aurait tapé POUR écrire en production. Un garde qu'on
+ * désarme systématiquement est pire qu'aucun garde : il rassure.
+ *
+ * `--base` demande à l'opérateur de NOMMER la base qu'il vise, et refuse si ce
+ * nom ne se retrouve pas dans la chaîne de connexion. On ne peut plus se
+ * tromper de base sans l'avoir écrit.
+ *
+ * Options de mise au point :
+ *   --source <répertoire>  lit les pages depuis des fixtures au lieu du réseau
+ *   --version <millésime>  échoue si la source n'en rend pas exactement celui-là
+ *   --allow-shrink         accepte un millésime sous le plancher de volumétrie
+ *   --remplace-pointeur <version_actuelle>
+ *                          autorise le pointeur à quitter un millésime pour un
+ *                          millésime DÉJÀ connu (retour arrière) ; il faut
+ *                          nommer la version que l'on remplace
+ *   --accepte-orphelines   autorise un import qui prive des correspondances
+ *                          signées de leur acte
+ */
+import { readFile, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { Client } from 'pg';
+import { stripSslParams, supabasePoolSsl } from '@/lib/postgres';
+import {
+  construireImport,
+  NABM_EXPAND_ENDPOINT,
+  NABM_IMPORT_CONFIRMATION,
+  NABM_LICENCE,
+  NABM_PAGE_SIZE,
+  NABM_PROPRIETES,
+  NABM_SOURCE_PROVENANCE,
+  NABM_VALUESET_URL,
+  type ActeNabm,
+  type ImportNabm,
+  type PageExpand,
+} from './nabmImport';
+
+const NOMBRE_PAGES = 6;
+const TAILLE_LOT = 200;
+
+function argument(nom: string): string | undefined {
+  const index = process.argv.indexOf(nom);
+  if (index === -1) return undefined;
+  const valeur = process.argv[index + 1];
+  if (!valeur || valeur.startsWith('--')) throw new Error(`Valeur absente pour ${nom}`);
+  return valeur;
+}
+
+async function recupererPage(offset: number): Promise<PageExpand> {
+  const parametres = new URLSearchParams();
+  parametres.set('url', NABM_VALUESET_URL);
+  parametres.set('count', String(NABM_PAGE_SIZE));
+  parametres.set('offset', String(offset));
+  for (const propriete of NABM_PROPRIETES) parametres.append('property', propriete);
+
+  let derniereErreur: unknown;
+  for (let tentative = 1; tentative <= 3; tentative += 1) {
+    try {
+      const reponse = await fetch(`${NABM_EXPAND_ENDPOINT}?${parametres}`, {
+        headers: { accept: 'application/fhir+json' },
+        signal: AbortSignal.timeout(120_000),
+      });
+      if (!reponse.ok) {
+        throw new Error(`Réponse ${reponse.status} de la source à l'offset ${offset}`);
+      }
+      return (await reponse.json()) as PageExpand;
+    } catch (erreur) {
+      derniereErreur = erreur;
+      if (tentative < 3) await new Promise(r => setTimeout(r, tentative * 500));
+    }
+  }
+  throw derniereErreur;
+}
+
+async function recupererPages(): Promise<PageExpand[]> {
+  const repertoire = argument('--source');
+  if (repertoire) {
+    const fichiers = (await readdir(repertoire)).filter(f => f.endsWith('.json')).sort();
+    if (fichiers.length === 0) throw new Error(`Aucune fixture .json dans ${repertoire}`);
+    return Promise.all(
+      fichiers.map(async f => JSON.parse(await readFile(join(repertoire, f), 'utf8')) as PageExpand),
+    );
+  }
+
+  // Séquentiel et non parallèle : six requêtes sur une API publique gratuite
+  // de l'État. Rien ici n'est pressé, et la source n'a pas à absorber une
+  // rafale à chaque rejeu.
+  const pages: PageExpand[] = [];
+  for (let page = 0; page < NOMBRE_PAGES; page += 1) {
+    pages.push(await recupererPage(page * NABM_PAGE_SIZE));
+  }
+  return pages;
+}
+
+function imprimerRapport(resultat: ImportNabm): void {
+  console.log('=== CB-02a — dry-run NABM ===');
+  console.log(JSON.stringify(resultat.rapport, null, 2));
+  if (resultat.rapport.incompatibilitesAsymetriques > 0) {
+    console.warn(
+      `⚠ ${resultat.rapport.incompatibilitesAsymetriques} incompatibilité(s) déclarée(s) d'un ` +
+        'seul côté par la source. Signalé, non bloquant : la V105 n\'en avait aucune.',
+    );
+  }
+  console.log('Aucune écriture PostgreSQL effectuée.');
+}
+
+async function insererLot(client: Client, actes: ActeNabm[], version: string): Promise<void> {
+  const colonnes = 17;
+  const valeurs: Array<string | number | boolean | string[] | null> = [];
+  const gabarits = actes.map((acte, rang) => {
+    valeurs.push(
+      `nabm-${version}-${acte.codeActe}`,
+      acte.codeActe,
+      version,
+      acte.libelle,
+      acte.coefficientB,
+      acte.codeParent,
+      acte.ententePrealable,
+      acte.examenSanguin,
+      acte.indicationMedicale,
+      acte.nombreMaxParFacturation,
+      acte.initiativeBiologistePossible,
+      acte.rmo,
+      acte.remboursementTotal,
+      acte.acteReserve,
+      acte.inactif,
+      acte.codeIncompatible,
+      acte.regleApplicable,
+    );
+    const decalage = rang * colonnes;
+    return `(${Array.from({ length: colonnes }, (_, i) => `$${decalage + i + 1}`).join(', ')}, now())`;
+  });
+
+  await client.query(
+    `INSERT INTO biology_nabm_actes
+       (id, code_acte, version_source, libelle, coefficient_b, code_parent,
+        entente_prealable, examen_sanguin, indication_medicale,
+        nombre_max_par_facturation, initiative_biologiste_possible, rmo,
+        remboursement_total, acte_reserve, inactif, code_incompatible,
+        regle_applicable, updated_at)
+     VALUES ${gabarits.join(', ')}`,
+    valeurs,
+  );
+}
+
+async function ecrire(resultat: ImportNabm): Promise<void> {
+  const confirmation = argument('--confirmation');
+  if (confirmation !== NABM_IMPORT_CONFIRMATION) {
+    throw new Error(`Confirmation CLI invalide ; attendu ${NABM_IMPORT_CONFIRMATION}`);
+  }
+  if (process.env.WN_CB_NABM_IMPORT_CONFIRMATION !== NABM_IMPORT_CONFIRMATION) {
+    throw new Error('Variable WN_CB_NABM_IMPORT_CONFIRMATION absente ou invalide');
+  }
+  const url = process.env.MIGRATE_DATABASE_URL;
+  if (!url) throw new Error('MIGRATE_DATABASE_URL est absente');
+
+  // L'opérateur doit nommer la base qu'il vise. Voir l'en-tête : le contrôle
+  // de VERCEL_ENV recopié de l'import Ciqual n'avait ici aucun sens.
+  const baseAnnoncee = argument('--base');
+  const hote = new URL(url).hostname;
+  if (!baseAnnoncee) {
+    throw new Error(
+      `--base est requis avec --apply. La connexion vise « ${hote} » ; ` +
+        'nommer cet hôte pour confirmer que c\'est bien la base voulue.',
+    );
+  }
+  if (hote !== baseAnnoncee) {
+    throw new Error(
+      `--base annonce « ${baseAnnoncee} » mais MIGRATE_DATABASE_URL vise « ${hote} ». ` +
+        'Import refusé — ce sont deux bases différentes.',
+    );
+  }
+
+  const { rapport, actes, snapshot } = resultat;
+  const version = rapport.versionSource;
+
+  const client = new Client({
+    connectionString: stripSslParams(url),
+    ssl: supabasePoolSsl(url),
+  });
+  await client.connect();
+  let transactionOuverte = false;
+  try {
+    await client.query('BEGIN');
+    transactionOuverte = true;
+    await client.query("SET LOCAL lock_timeout = '10s'");
+    await client.query("SET LOCAL statement_timeout = '180s'");
+    await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [
+      `cb-02a-import-nabm:${version}`,
+    ]);
+    await client.query(
+      'LOCK TABLE biology_nabm_actes, biology_source_snapshots, ' +
+        'biology_catalog_versions_courantes IN SHARE ROW EXCLUSIVE MODE',
+    );
+
+    // ── Le millésime a-t-il déjà été importé ? ────────────────────────────
+    const existant = await client.query<{
+      actes: string;
+      sha: string | null;
+      pointeur: string | null;
+    }>(
+      `SELECT
+         (SELECT count(*) FROM biology_nabm_actes WHERE version_source = $1) AS actes,
+         (SELECT contenu_sha256 FROM biology_source_snapshots
+          WHERE source_provenance = $2 AND version_source = $1) AS sha,
+         (SELECT version_source FROM biology_catalog_versions_courantes
+          WHERE source_provenance = $2) AS pointeur`,
+      [version, NABM_SOURCE_PROVENANCE],
+    );
+    const dejaPresents = Number(existant.rows[0]?.actes ?? 0);
+    const shaExistant = existant.rows[0]?.sha ?? null;
+    const pointeurAvant = existant.rows[0]?.pointeur ?? null;
+
+    // Une source qui change SOUS LE MÊME NUMÉRO DE VERSION est le seul cas
+    // que cet import ne sait pas trancher seul : soit la nomenclature a été
+    // corrigée sans changer d'étiquette, soit notre sérialisation a bougé.
+    // Écraser reviendrait à modifier un millésime déjà cité par des
+    // correspondances signées.
+    if (shaExistant !== null && shaExistant !== rapport.contenuSha256) {
+      throw new Error(
+        `Le millésime ${version} est déjà en base avec une empreinte DIFFÉRENTE ` +
+          `(${shaExistant.slice(0, 12)}… en base, ${rapport.contenuSha256.slice(0, 12)}… reçue). ` +
+          'La source a changé sans changer de version, ou la sérialisation canonique a évolué. ' +
+          'Arbitrage humain requis — aucun écrasement automatique.',
+      );
+    }
+
+    if (dejaPresents !== 0 && dejaPresents !== actes.length) {
+      throw new Error(
+        `Millésime ${version} partiellement présent : ${dejaPresents} actes en base ` +
+          `pour ${actes.length} attendus. Import refusé.`,
+      );
+    }
+
+    // ── LE POINTEUR NE RECULE PAS TOUT SEUL ───────────────────────────────
+    // Défaut trouvé en revue le 2026-07-26. Le plancher de volumétrie refuse
+    // un catalogue MUTILÉ ; il n'a rien à dire d'un catalogue COMPLET mais
+    // ANTÉRIEUR. Rejouer les pages d'un millésime déjà remplacé ramenait donc
+    // le pointeur en arrière sans un mot — et l'effet n'est pas cosmétique :
+    // un acte désactivé au millésime récent redevient actif, donc
+    // `deriverRemboursement` le rend « remboursable », donc `regimeDocumentaire`
+    // bascule sur `courrier_medecin`. Un courrier serait parti au médecin
+    // traitant en citant un acte que la nomenclature a retiré.
+    //
+    // LE GARDE EST SYMÉTRIQUE, ET C'EST ASSUMÉ. Aucun ordre n'est garanti
+    // entre les numéros de version — « V106 > V105 » ne repose sur rien de
+    // vérifiable, la source pouvant changer de convention. Impossible, donc,
+    // de reconnaître la seule direction dangereuse. Le critère porte sur un
+    // fait, pas sur une comparaison : ce millésime est DÉJÀ intégralement en
+    // base et le pointeur est ailleurs, donc l'import n'apporte aucune donnée
+    // et ne fait que CHANGER LE CATALOGUE SERVI.
+    //
+    // Le banc d'intégration a d'ailleurs pris cette symétrie en défaut dans la
+    // première version du correctif, qui parlait de « retour arrière » : après
+    // un retour, réavancer était refusé sous un motif faux. Un premier import
+    // reste sans friction (`dejaPresents === 0`) ; seul un re-pointage exige
+    // de nommer le millésime que l'on quitte.
+    const changeDeMillesime =
+      pointeurAvant !== null && pointeurAvant !== version && dejaPresents === actes.length;
+    if (changeDeMillesime && argument('--remplace-pointeur') !== pointeurAvant) {
+      throw new Error(
+        `Changement de millésime servi refusé : le pointeur est sur ${pointeurAvant} et ` +
+          `${version} est déjà intégralement en base. Cet import n'ajoute aucune donnée — ` +
+          'il ne fait que changer le catalogue servi. Si le millésime visé est ANTÉRIEUR, ' +
+          'y revenir réactive des actes désactivés depuis, donc fait repartir des courriers ' +
+          'au médecin traitant sur des actes retirés de la nomenclature. ' +
+          `Pour le faire : --remplace-pointeur ${pointeurAvant}`,
+      );
+    }
+
+    // ── Aucune signature du praticien n'est orphelinée en silence ─────────
+    // Une correspondance signée porte un CODE d'acte, qui traverse les
+    // millésimes. Si le millésime entrant ne contient plus cet acte, la
+    // signature ne se résout plus — et le contrat du dépôt déclare cet état
+    // invalide. L'import ne doit pas écrire sans le dire un état que le projet
+    // refuse. Vide aujourd'hui (`biology_analytes` l'est), mais c'est
+    // exactement le genre de garde qu'on n'ajoute plus une fois qu'il mord.
+    const orphelines = await client.query<{ analyte_code: string; code_acte: string }>(
+      `SELECT c.analyte_code, c.code_acte
+       FROM biology_analyte_nabm c
+       WHERE c.verifie_par IS NOT NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM biology_nabm_actes a
+           WHERE a.code_acte = c.code_acte AND a.version_source = $1
+         )
+       ORDER BY c.analyte_code, c.code_acte`,
+      [version],
+    );
+    if (orphelines.rowCount && !process.argv.includes('--accepte-orphelines')) {
+      const apercu = orphelines.rows
+        .slice(0, 10)
+        .map(o => `${o.analyte_code}→${o.code_acte}`)
+        .join(', ');
+      throw new Error(
+        `${orphelines.rowCount} correspondance(s) signée(s) par le praticien ne se ` +
+          `résoudraient plus dans le millésime ${version} : ${apercu}` +
+          (orphelines.rowCount > 10 ? ', …' : '') +
+          '. Ces analytes basculeraient en « hors nomenclature », donc en document ' +
+          'patient au lieu du courrier médecin. Reprendre ces signatures, ou forcer ' +
+          'avec --accepte-orphelines.',
+      );
+    }
+
+    let inseres = 0;
+    if (dejaPresents === 0) {
+      for (let depart = 0; depart < actes.length; depart += TAILLE_LOT) {
+        const lot = actes.slice(depart, depart + TAILLE_LOT);
+        await insererLot(client, lot, version);
+        inseres += lot.length;
+      }
+    }
+
+    // ── Le snapshot : ce qui prouve d'où vient le catalogue ───────────────
+    await client.query(
+      `INSERT INTO biology_source_snapshots
+         (id, source_provenance, version_source, url_source, licence, contenu,
+          contenu_sha256, nombre_concepts, nombre_actes, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
+       ON CONFLICT (source_provenance, version_source) DO NOTHING`,
+      [
+        `snapshot-${NABM_SOURCE_PROVENANCE}-${version}`,
+        NABM_SOURCE_PROVENANCE,
+        version,
+        NABM_VALUESET_URL,
+        NABM_LICENCE,
+        snapshot,
+        rapport.contenuSha256,
+        rapport.nombreConcepts,
+        rapport.nombreActes,
+      ],
+    );
+
+    // ── Le pointeur de version, dans la MÊME transaction ──────────────────
+    // Le contrat de migration vérifie que `nombre_entrees` compte bien les
+    // actes du millésime pointé : déplacer le pointeur ailleurs qu'ici
+    // casserait le CI au déploiement suivant.
+    await client.query(
+      `INSERT INTO biology_catalog_versions_courantes
+         (id, source_provenance, version_source, contenu_sha256, nombre_entrees, updated_at)
+       VALUES ($1, $2, $3, $4, $5, now())
+       ON CONFLICT (source_provenance) DO UPDATE
+         SET version_source = EXCLUDED.version_source,
+             contenu_sha256 = EXCLUDED.contenu_sha256,
+             nombre_entrees = EXCLUDED.nombre_entrees,
+             updated_at = now()`,
+      [
+        `version-courante-${NABM_SOURCE_PROVENANCE}`,
+        NABM_SOURCE_PROVENANCE,
+        version,
+        rapport.contenuSha256,
+        actes.length,
+      ],
+    );
+
+    // ── Relecture : on ne fait pas confiance à ce qu'on vient d'écrire ────
+    //
+    // Ce bloc rejoue, DANS LA TRANSACTION, les invariants de DONNÉES du
+    // contrat `cb_biologie_catalogue_v1.sql`. La revue du 2026-07-26 a montré
+    // que ces invariants-là ne s'exécutent jamais là où des données existent :
+    // en CI le contrat tourne sur une base construite par `migrate deploy`,
+    // donc vide, et `vercel-build.sh` ne l'invoque pas. Ils y renvoient 0 par
+    // vacuité, toujours. Ici ils portent — et une violation annule l'import au
+    // lieu de le constater après coup.
+    const controle = await client.query<{
+      actes: string;
+      inattendus: string;
+      pointeur: string;
+      snapshots: string;
+      pendantes: string;
+      signatures_non_resolues: string;
+    }>(
+      `SELECT
+         (SELECT count(*) FROM biology_nabm_actes WHERE version_source = $1) AS actes,
+         (SELECT count(*) FROM biology_nabm_actes
+           WHERE version_source = $1 AND code_acte !~ '^[0-9]{4}$') AS inattendus,
+         (SELECT count(*) FROM biology_catalog_versions_courantes
+           WHERE source_provenance = $2 AND version_source = $1
+             AND nombre_entrees = $3) AS pointeur,
+         (SELECT count(*) FROM biology_source_snapshots
+           WHERE source_provenance = $2 AND version_source = $1
+             AND encode(sha256(convert_to(contenu, 'UTF8')), 'hex') = contenu_sha256) AS snapshots,
+         (SELECT count(*) FROM biology_nabm_actes a
+           CROSS JOIN LATERAL unnest(coalesce(a.code_incompatible, ARRAY[]::text[])) AS ref(code)
+           WHERE a.version_source = $1
+             AND NOT EXISTS (
+               SELECT 1 FROM biology_nabm_actes cible
+               WHERE cible.code_acte = ref.code AND cible.version_source = $1
+             )) AS pendantes,
+         (SELECT count(*) FROM biology_analyte_nabm c
+           WHERE c.verifie_par IS NOT NULL
+             AND NOT EXISTS (
+               SELECT 1 FROM biology_nabm_actes a
+               WHERE a.code_acte = c.code_acte AND a.version_source = $1
+             )) AS signatures_non_resolues`,
+      [version, NABM_SOURCE_PROVENANCE, actes.length],
+    );
+    const c = controle.rows[0];
+    if (
+      Number(c?.actes) !== actes.length ||
+      Number(c?.inattendus) !== 0 ||
+      Number(c?.pointeur) !== 1 ||
+      Number(c?.snapshots) !== 1 ||
+      Number(c?.pendantes) !== 0
+    ) {
+      throw new Error(`Relecture incohérente après écriture : ${JSON.stringify(c)}`);
+    }
+
+    await client.query('COMMIT');
+    transactionOuverte = false;
+
+    const pointeurADeplace = pointeurAvant !== version;
+    console.log('=== CB-02a — import NABM validé ===');
+    console.log(
+      JSON.stringify(
+        {
+          confirmation: NABM_IMPORT_CONFIRMATION,
+          versionSource: version,
+          inseres,
+          // `rejeuSansEffet` ne peut PAS se déduire du seul comptage d'actes :
+          // un rejeu qui n'insère rien mais déplace le pointeur change le
+          // catalogue servi. Les deux conditions, sinon le rapport ment sur
+          // l'exécution même qui vient de tout changer.
+          rejeuSansEffet: dejaPresents === actes.length && !pointeurADeplace,
+          pointeurAvant,
+          pointeurApres: version,
+          pointeurDeplace: pointeurADeplace,
+          changementDeMillesimeForce: changeDeMillesime,
+          actesEnBase: Number(c?.actes),
+          snapshotVerifieEnBase: true,
+          signaturesNonResolues: Number(c?.signatures_non_resolues),
+        },
+        null,
+        2,
+      ),
+    );
+    if (Number(c?.signatures_non_resolues) > 0) {
+      console.warn(
+        `⚠ ${c?.signatures_non_resolues} correspondance(s) signée(s) ne se résolvent plus ` +
+          'dans le millésime courant (import forcé avec --accepte-orphelines). Ces ' +
+          'analytes basculent en « hors nomenclature » : document patient, plus de ' +
+          'courrier médecin. À reprendre en revue praticien.',
+      );
+    }
+  } catch (erreur) {
+    if (transactionOuverte) await client.query('ROLLBACK');
+    throw erreur;
+  } finally {
+    await client.end();
+  }
+}
+
+async function main(): Promise<void> {
+  const pages = await recupererPages();
+  const resultat = construireImport(pages, {
+    versionAttendue: argument('--version'),
+    autoriserReduction: process.argv.includes('--allow-shrink'),
+  });
+  imprimerRapport(resultat);
+
+  if (!process.argv.includes('--apply')) {
+    console.log(
+      `Mode dry-run. Pour écrire, les deux preuves ${NABM_IMPORT_CONFIRMATION} sont requises.`,
+    );
+    return;
+  }
+  await ecrire(resultat);
+}
+
+main().catch(erreur => {
+  console.error('Import CB-02a interrompu :', erreur instanceof Error ? erreur.message : erreur);
+  process.exit(1);
+});

@@ -36,6 +36,8 @@
     "check:pack-registry": "node prisma/runWithAlias.js prisma/checkPackRegistryConsistency.ts",
     "c5:ciqual:dry-run": "node prisma/runWithAlias.js prisma/importCiqual2025.ts",
     "c5:ciqual:apply": "node prisma/runWithAlias.js prisma/importCiqual2025.ts --apply",
+    "cb:nabm:dry-run": "node prisma/runWithAlias.js prisma/importNabm.ts",
+    "cb:nabm:apply": "node prisma/runWithAlias.js prisma/importNabm.ts --apply",
     "c5:ciqual:test-integration": "bash scripts/test-c5-ciqual-import.sh",
     "prompt-cache-check": "node prisma/runWithAlias.js scripts/prompt-cache-check.ts"
   },

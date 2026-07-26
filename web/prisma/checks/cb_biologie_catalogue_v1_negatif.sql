@@ -75,7 +75,57 @@ DECLARE
         VALUES ('t14', 'BIO_PANEL_Z', 'x', 'socle', ARRAY[47], now())$q$],
     ['lien vers un besoin mal formé',
      $q$INSERT INTO biology_analyte_links (id, analyte_code, cible_type, cible_code, direction, claim_id, version_claim, niveau_preuve)
-        VALUES ('t15', 'BIO_TEST', 'besoin', 'besion_3', 'bas_evocateur', 'clm_1', 'v1.0', 'C')$q$]
+        VALUES ('t15', 'BIO_TEST', 'besoin', 'besion_3', 'bas_evocateur', 'clm_1', 'v1.0', 'C')$q$],
+    -- ── CB-02a : les deux propriétés que CB-01 ne stockait pas ────────────
+    -- Une incompatibilité ne vise qu'un acte : ni chapitre, ni nœud de règle.
+    ['incompatibilité vers un code de chapitre',
+     $q$INSERT INTO biology_nabm_actes (id, code_acte, version_source, libelle, code_incompatible, updated_at)
+        VALUES ('t16', '1213', 'V105', 'x', ARRAY['12'], now())$q$],
+    -- Le tableau vide est une SECONDE écriture de « aucune incompatibilité » :
+    -- une seule représentation autorisée, NULL.
+    ['incompatibilité en tableau vide',
+     $q$INSERT INTO biology_nabm_actes (id, code_acte, version_source, libelle, code_incompatible, updated_at)
+        VALUES ('t17', '1213', 'V105', 'x', ARRAY[]::text[], now())$q$],
+    -- Mesuré : aucun acte de la V105 ne s'exclut lui-même.
+    ['acte incompatible avec lui-même',
+     $q$INSERT INTO biology_nabm_actes (id, code_acte, version_source, libelle, code_incompatible, updated_at)
+        VALUES ('t18', '1213', 'V105', 'x', ARRAY['1213'], now())$q$],
+    -- `array_to_string` ignore les NULL : sans array_position, {NULL} passait.
+    ['incompatibilité contenant un NULL',
+     $q$INSERT INTO biology_nabm_actes (id, code_acte, version_source, libelle, code_incompatible, updated_at)
+        VALUES ('t19', '1213', 'V105', 'x', ARRAY[NULL]::text[], now())$q$],
+    -- LE VRAI TEST D'`array_position`. Le cas ci-dessus est rejeté par le
+    -- motif — {NULL} se sérialise en chaîne vide — et ne prouve donc rien de
+    -- ce que le commentaire de la migration affirme. Ici la sérialisation
+    -- donne « 1234 », qui PASSE le motif : seul array_position peut mordre.
+    ['incompatibilité mêlant un code et un NULL',
+     $q$INSERT INTO biology_nabm_actes (id, code_acte, version_source, libelle, code_incompatible, updated_at)
+        VALUES ('t19b', '1213', 'V105', 'x', ARRAY['1234', NULL]::text[], now())$q$],
+    -- Une virgule DANS un élément : sérialisé, {'1234,5678'} est indiscernable
+    -- de {'1234','5678'}. C'est le contrôle de longueur qui les sépare.
+    ['incompatibilité à virgule interne',
+     $q$INSERT INTO biology_nabm_actes (id, code_acte, version_source, libelle, code_incompatible, updated_at)
+        VALUES ('t19c', '1213', 'V105', 'x', ARRAY['1234,5678'], now())$q$],
+    -- Un nœud de règle porte un nom, jamais un code d'acte.
+    ['règle applicable prenant un code d''acte',
+     $q$INSERT INTO biology_nabm_actes (id, code_acte, version_source, libelle, regle_applicable, updated_at)
+        VALUES ('t20', '1213', 'V105', 'x', ARRAY['1213'], now())$q$],
+    -- ── Le snapshot ne peut pas mentir sur son contenu ────────────────────
+    ['snapshot dont l''empreinte ne correspond pas au contenu',
+     $q$INSERT INTO biology_source_snapshots (id, source_provenance, version_source, url_source, licence, contenu, contenu_sha256, nombre_concepts, nombre_actes, updated_at)
+        VALUES ('t21', 'nabm_smt_ans', 'V105', 'https://smt.esante.gouv.fr/x', 'LOv2', '{"a":1}',
+                '0000000000000000000000000000000000000000000000000000000000000000', 1050, 987, now())$q$],
+    -- LOv2 impose de citer la source : un snapshot sans licence nommée est
+    -- inexploitable en aval, l'UI n'aurait rien à afficher.
+    ['snapshot sans licence citée',
+     $q$INSERT INTO biology_source_snapshots (id, source_provenance, version_source, url_source, licence, contenu, contenu_sha256, nombre_concepts, nombre_actes, updated_at)
+        VALUES ('t22', 'nabm_smt_ans', 'V105', 'https://smt.esante.gouv.fr/x', '   ', '{"a":1}',
+                encode(sha256(convert_to('{"a":1}', 'UTF8')), 'hex'), 1050, 987, now())$q$],
+    -- Plus d'actes que de concepts : un import qui aurait compté deux fois.
+    ['snapshot comptant plus d''actes que de concepts',
+     $q$INSERT INTO biology_source_snapshots (id, source_provenance, version_source, url_source, licence, contenu, contenu_sha256, nombre_concepts, nombre_actes, updated_at)
+        VALUES ('t23', 'nabm_smt_ans', 'V105', 'https://smt.esante.gouv.fr/x', 'LOv2', '{"a":1}',
+                encode(sha256(convert_to('{"a":1}', 'UTF8')), 'hex'), 987, 1050, now())$q$]
   ];
 BEGIN
   -- On exige le BON motif de rejet, pas un rejet quelconque. La plupart de ces

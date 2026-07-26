@@ -12,7 +12,7 @@ DECLARE
     'biology_reference_ranges', 'biology_functional_ranges',
     'biology_preanalytics', 'biology_ratios', 'biology_panels',
     'biology_panel_items', 'biology_analyte_links',
-    'biology_catalog_versions_courantes'
+    'biology_catalog_versions_courantes', 'biology_source_snapshots'
   ];
   colonne_suspecte text;
   nb int;
@@ -85,13 +85,14 @@ BEGIN
     RAISE EXCEPTION 'CB-01: policy inattendue sur le catalogue (deny-all attendu)';
   END IF;
 
-  -- Les onze tables existent bien.
+  -- Les douze tables existent bien (onze de CB-01, plus la table de snapshots
+  -- ajoutée par CB-02a).
   SELECT count(*) INTO nb
   FROM information_schema.tables
   WHERE table_schema = 'public' AND table_name = ANY(tables_cb);
 
-  IF nb <> 11 THEN
-    RAISE EXCEPTION 'CB-01: % tables du catalogue trouvées, 11 attendues', nb;
+  IF nb <> 12 THEN
+    RAISE EXCEPTION 'CB-01: % tables du catalogue trouvées, 12 attendues', nb;
   END IF;
 
   -- ── Index partiels : la sémantique NULL de l'unicité ─────────────────────
@@ -123,8 +124,14 @@ BEGIN
     'biology_analytes_source_provenance_check',
     'biology_analytes_unite_check',
     'biology_analytes_fiche_verifiee_signee_check',
-    -- La racine « NABM » et les 62 concepts non-actes n'entrent pas.
+    -- La racine « NABM » et les 63 concepts non-actes n'entrent pas.
     'biology_nabm_actes_code_acte_check',
+    -- Une incompatibilité ne vise qu'un acte, jamais un chapitre ni soi-même.
+    'biology_nabm_actes_code_incompatible_check',
+    'biology_nabm_actes_regle_applicable_check',
+    -- Un snapshot ment sur son contenu : impossible, le hash est recalculé.
+    'biology_source_snapshots_sha256_verifie_check',
+    'biology_source_snapshots_licence_check',
     -- Groupe imposé et groupe au choix restent distincts.
     'biology_analyte_nabm_nature_check',
     'biology_analyte_nabm_signature_check',
@@ -167,6 +174,44 @@ BEGIN
   IF nb > 0 THEN
     RAISE EXCEPTION
       'CB-01: le pointeur de version ne compte pas les actes de son millésime (% source(s))', nb;
+  END IF;
+
+  -- ── Tout millésime servi est adossé à son snapshot ───────────────────────
+  -- CB-02a écrit le snapshot et déplace le pointeur dans la MÊME transaction.
+  -- Un pointeur sans snapshot signifierait donc soit une écriture manuelle,
+  -- soit un import partiel : dans les deux cas, un catalogue servi dont on ne
+  -- peut plus prouver la provenance — ce que la LOv2 impose précisément de
+  -- pouvoir citer. Silencieux tant qu'aucune source n'est importée.
+  SELECT count(*) INTO nb
+  FROM biology_catalog_versions_courantes v
+  WHERE NOT EXISTS (
+    SELECT 1 FROM biology_source_snapshots s
+    WHERE s.source_provenance = v.source_provenance
+      AND s.version_source = v.version_source
+      AND (v.contenu_sha256 IS NULL OR v.contenu_sha256 = s.contenu_sha256)
+  );
+
+  IF nb > 0 THEN
+    RAISE EXCEPTION
+      'CB-01: % pointeur(s) de version sans snapshot correspondant (ou d''empreinte divergente)', nb;
+  END IF;
+
+  -- ── Une incompatibilité renvoie à un acte du même millésime ──────────────
+  -- Le CHECK garantit la FORME des codes ; il ne peut pas garantir qu'ils
+  -- EXISTENT — Postgres n'accepte pas de clé étrangère depuis un tableau.
+  -- Mesure du 2026-07-26 : les 966 occurrences de la V105 se résolvent toutes.
+  -- Une référence pendante signifierait un import tronqué à mi-parcours.
+  SELECT count(*) INTO nb
+  FROM biology_nabm_actes a
+  CROSS JOIN LATERAL unnest(coalesce(a.code_incompatible, ARRAY[]::text[])) AS ref(code)
+  WHERE NOT EXISTS (
+    SELECT 1 FROM biology_nabm_actes cible
+    WHERE cible.code_acte = ref.code AND cible.version_source = a.version_source
+  );
+
+  IF nb > 0 THEN
+    RAISE EXCEPTION
+      'CB-01: % référence(s) d''incompatibilité pendante(s) dans leur millésime', nb;
   END IF;
 
   -- ── Toute correspondance signée se résout dans le millésime courant ──────
