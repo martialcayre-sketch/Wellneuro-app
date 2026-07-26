@@ -468,3 +468,17 @@ gouvernance Copilot quand l'utilisateur le dira.
 **Validations** : T1 + garde 63 questionnaires ; 35 tests Vitest + 15 `node --test` ; T2 95 passés (seul échec = flake `portail-lien-magique`) ; revue `wn-reviewer` GO, constats traités ; CI vert sur les 3 PR et sur `main` après merge, contenu vérifié sur `main`.
 **Prochaine action** : humaine — fournir les PDF sources des instruments et trancher les droits (PSQI, QLQ, MMSE, Conners, Epworth, HIT-6) pour ouvrir les lots 2-4.
 **Questions ouvertes** : divergences à arbitrer — MFI-20 sommé sans inversion d'items, Berlin à 9 items, PSQI adapté, `protocol` mêlé aux bandes de l'IRLS.
+
+## 2026-07-26 — Rayon biologie : import de la nomenclature NABM (CB-02a)
+
+CB-02a mergé (#374) et vérifié en production : 12 tables, RLS deny-all sans policy, 0 ligne. Le lot, annoncé sans migration, en a porté une — mesurer la source avant d'écrire a montré que CB-01 n'avait de colonne ni pour `codeIncompatible` (438 actes sur 987, jusqu'à 17 valeurs) ni pour le snapshot exigé par l'audit. Trois chiffres de l'audit corrigés : 987 actes et non 988 (le 988ᵉ est la racine `NABM`), 63 non-actes, aucun code non numérique mais 256 à zéro de tête.
+
+**Décisions** : snapshot en TEXT et non `jsonb`, pour que son empreinte reste recalculable en base ; vocabulaire de `source_provenance` restreint à `nabm_smt_ans` sur cette table seule.
+
+**Écarté** : merger sans relire la base ; extraire la connexion de production par le MCP Vercel ; écrire par le MCP Supabase, qui contournerait les cinq gardes.
+
+**Validations** : 21 tests Vitest ; 987 actes réellement importés sur PostgreSQL 15 ; contrat vert avec données ; 25 tests négatifs rejetants ; banc d'intégration 9 cas câblé en CI ; revue `wn-reviewer` NO-GO, trois défauts de fond corrigés ; CI vert, migration relue en base.
+
+**Prochaine action** : l'import en production **n'est pas lancé** — aucune chaîne de connexion sur le poste. Le câbler dans `vercel-build.sh` (patron C5) plutôt que de faire transiter un secret.
+
+**Questions ouvertes** : sort d'une correspondance signée dont l'acte disparaît (à trancher avant CB-02c) ; régime documentaire figé ou non entre signature et courrier ; source `labo` dans les snapshots.
