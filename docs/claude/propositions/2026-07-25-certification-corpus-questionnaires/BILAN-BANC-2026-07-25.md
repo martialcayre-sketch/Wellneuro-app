@@ -17,11 +17,21 @@
 >    composante décroît quand l'item croît. Le PSQI atteint 21/21 et le QIF
 >    99,9/100 avec un jeu de réponses cohérent.
 >
+> Une revue adversariale a ensuite montré que ces correctifs **taisaient** deux
+> classes de défauts : une inversion appliquée hors de toute déclaration
+> (Karasek, QIF, ECAB) restait accusée à tort, et un plafond non atteint ne
+> produisait plus aucune ligne — pas même pour dire que le banc n'avait pas
+> conclu. L'inversion est désormais établie **en exécutant le moteur** (on monte
+> un item, on regarde le sens dans lequel bouge le score), et le minimum de la
+> source est comparé au même titre que le maximum.
+>
 > **Après rejeu des 59 instruments** (sans nouvel appel de modèle, via
-> `certify.mjs --recomparer`) : **9 instruments** à divergence critique et non
-> 11 ; **13 critiques** et non 16 ; **3 `sous_echelles`** et non 7. L'UPPS et le
-> QIF sortent entièrement de la liste. Deux des 13 restantes sont encore des
-> artefacts de comptage, décrits dans le dossier d'arbitrage.
+> `certify.mjs --recomparer`) : **10 instruments** à divergence critique et non
+> 11 ; **14 critiques** et non 16 ; **3 `sous_echelles`** et non 7. L'UPPS, le
+> QIF et le Karasek sortent de la liste ; **`Q_CAN_02` y entre** — il figurait
+> parmi les 12 instruments déclarés « propres » ci-dessous, et produit pourtant
+> un score sous le plancher publié. Deux des 14 restantes sont des artefacts de
+> comptage, décrits dans le dossier d'arbitrage.
 >
 > Les chiffres d'origine sont conservés ci-dessous tels qu'ils ont été publiés.
 > Le tableau à jour et les décisions attendues sont dans
@@ -84,7 +94,8 @@ inversion absente, barème sans source, bornes de score, total numérique absent
 
 ## Instruments propres
 
-Aucune divergence, ni confirmée ni à confirmer :
+Aucune divergence, ni confirmée ni à confirmer.
+**`Q_CAN_02` ne l'est plus** : voir le bloc de correction en tête.
 
 `Q_CAN_02`, `Q_INF_04`, `Q_MOD_02`, `Q_NEU_07`, `Q_NEU_09`, `Q_NEU_10`, `Q_SOM_06`, `Q_STR_02`, `Q_STR_08`, `Q_TAB_01`, `Q_TAB_02`, `Q_URO_02`.
 

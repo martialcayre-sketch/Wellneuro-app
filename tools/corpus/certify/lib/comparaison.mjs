@@ -137,20 +137,23 @@ export function comparer(servi, spec) {
   // Une inversion peut venir de TROIS endroits, et n'en manquer qu'un suffit à
   // accuser à tort un instrument correct :
   //   1. le TYPE de scoring (`sum_reversed`…) ;
-  //   2. `scoring.subScores[].reversed`, qui liste des identifiants d'items —
-  //      oublié par la première version, d'où le faux positif critique sur
-  //      l'UPPS, dont les 25 inversions sont pourtant appliquées ;
-  //   3. la clé de réponse elle-même, quand les options sont cotées à rebours
-  //      (cas du PSS-10) — c'est ce que vérifie `inversionsMaterialisees`.
+  //   2. une liste d'identifiants (`subScores[].reversed` pour l'UPPS,
+  //      `reversedItems` et ses variantes pour le Karasek) ;
+  //   3. le corps même du moteur, sans rien déclarer — `(7 - q12) * 1.43` pour
+  //      le QIF, l'item `EC10` de l'ECAB.
+  //
+  // Aucune lecture de déclaration ne couvre le cas 3, et une déclaration peut
+  // par ailleurs être MORTE (annoncée, jamais appliquée). Seule l'exécution
+  // tranche : `itemsInversesAppliques` vient d'une sonde qui monte chaque item
+  // et regarde dans quel sens bouge le score. La clé de réponse cotée à rebours
+  // (PSS-10) reste couverte par `inversionsMaterialisees`.
   const inverses = itemsSource.filter((i) => i.inverse);
-  const declares = new Set(servi.scoring.itemsInversesDeclares ?? []);
+  const appliques = new Set(servi.scoring.itemsInversesAppliques ?? []);
   if (inverses.length > 0 && !servi.scoring.typePorteUneInversion) {
     // Position dans l'ordre de la source (le `numero` quand il existe).
     const positions = inverses.map((i, rang) => (typeof i.numero === 'number' ? i.numero : itemsSource.indexOf(i) + 1 || rang + 1));
     const { manquantes: nonMaterialisees } = inversionsMaterialisees(servi.items, positions);
-    // Une position dont l'item servi figure dans `reversed` est inversée par le
-    // moteur, quoi que disent ses options.
-    const manquantes = nonMaterialisees.filter((p) => !declares.has(servi.items[p - 1]?.id));
+    const manquantes = nonMaterialisees.filter((p) => !appliques.has(servi.items[p - 1]?.id));
     if (manquantes.length > 0) {
       const partielle = manquantes.length < positions.length;
       divergences.push(
@@ -277,17 +280,71 @@ export function comparer(servi, spec) {
           `atteint ${bornes.max}`,
         ),
       );
-    } else if (servi.scoring.maxTotalDeclare !== null && servi.scoring.maxTotalDeclare !== attenduBornes.max) {
-      divergences.push(
-        divergence(
-          'bornes_score_declarees',
-          'majeur',
-          "Le maximum DÉCLARÉ par le catalogue diffère de celui de la source (le balayage n'a pas atteint le plafond : il ne prouve rien à lui seul).",
-          `${attenduBornes.min ?? '?'}–${attenduBornes.max}`,
-          `maxTotal déclaré ${servi.scoring.maxTotalDeclare}, balayage ${bornes.min ?? '?'}→${bornes.max}`,
-        ),
-      );
+    } else {
+      // Le plafond n'a pas été atteint. Trois situations, et AUCUNE ne peut se
+      // solder par un silence : une divergence absente se lit « conforme »,
+      // alors qu'ici le banc n'a simplement pas conclu.
+      const maxConnu = servi.scoring.maxTotalDeclare ?? servi.scoring.maxTotalRendu ?? null;
+      if (maxConnu !== null && maxConnu !== attenduBornes.max) {
+        divergences.push(
+          divergence(
+            'bornes_score_declarees',
+            'majeur',
+            "Le maximum DÉCLARÉ par le catalogue diffère de celui de la source (le balayage n'a pas atteint le plafond : il ne prouve rien à lui seul).",
+            `${attenduBornes.min ?? '?'}–${attenduBornes.max}`,
+            `maximum connu du catalogue ${maxConnu}, balayage ${bornes.min ?? '?'}→${bornes.max}`,
+          ),
+        );
+      } else {
+        divergences.push(
+          divergence(
+            'bornes_score_non_atteintes',
+            'mineur',
+            maxConnu === null
+              ? "Le balayage n'atteint pas le maximum de la source et le catalogue n'en déclare aucun : le banc N'A PAS CONCLU — à vérifier à la main."
+              : "Le balayage n'atteint pas le maximum de la source, que le catalogue déclare pourtant correctement : probable composante non monotone. Non concluant.",
+            `${attenduBornes.min ?? '?'}–${attenduBornes.max}`,
+            `balayage ${bornes.min ?? '?'}→${bornes.max}${maxConnu === null ? ', aucun maximum déclaré' : `, maximum déclaré ${maxConnu}`}`,
+          ),
+        );
+      }
     }
+  }
+
+  // ── Plancher franchi ───────────────────────────────────────────────────
+  // Symétrique du dépassement, et pour la même raison : `bornes.min` est un
+  // score ATTEIGNABLE. Un patient qui obtient 21 sur une échelle publiée 23–92
+  // sort du barème par le bas. Le cas existe (`Q_CAN_02`, deux items
+  // conditionnels sortis de la somme) et n'était couvert par aucune règle.
+  if (attenduBornes && typeof attenduBornes.min === 'number' && bornes.min !== null && bornes.min < attenduBornes.min) {
+    divergences.push(
+      divergence(
+        'bornes_score_sous_plancher',
+        'critique',
+        'Le moteur produit un score inférieur au minimum de la source : ce jeu de réponses est atteignable par un patient.',
+        `${attenduBornes.min}–${attenduBornes.max ?? '?'}`,
+        `descend à ${bornes.min}`,
+      ),
+    );
+  }
+
+  // ── Inversion déclarée mais jamais appliquée ───────────────────────────
+  // Le cas le plus traître : le catalogue annonce une inversion, le moteur n'en
+  // fait rien, et une lecture par déclaration donnerait l'instrument pour bon.
+  const declarees = servi.scoring.itemsInversesDeclares ?? [];
+  const indetermines = new Set(servi.scoring.itemsInversionIndeterminee ?? []);
+  const mortes = declarees.filter((id) => !appliques.has(id) && !indetermines.has(id));
+  if (mortes.length > 0) {
+    divergences.push(
+      divergence(
+        'inversion_declaree_non_appliquee',
+        'critique',
+        "Le catalogue déclare ces items inversés ; l'exécution du moteur montre qu'ils ne le sont pas. La déclaration est morte.",
+        `${declarees.length} item(s) déclaré(s) inversé(s)`,
+        `${mortes.length} sans effet : ${mortes.join(', ')}`,
+        mortes.join(', '),
+      ),
+    );
   }
 
   // ── Conduites cliniques logées dans les bandes d'interprétation ────────

@@ -253,6 +253,16 @@ async function traiter({ instrument, sources, entree, calculateScore, specs }) {
 
 async function main() {
   const o = parseArgs();
+  // Contrôle d'usage AVANT le chargement du catalogue : lancé depuis un autre
+  // répertoire que la racine, le `require` échoue, et un mode d'emploi vaut
+  // mieux qu'une trace de module introuvable.
+  if (!o.recomparer && (!o.instrument || o.sources.length === 0)) {
+    console.error('Usage : --instrument Q_SOM_07 --sources WN-SRC-0396,WN-SRC-0397');
+    console.error('        --recomparer [--instrument Q_XXX]   (rejeu depuis le cache, sans appel API)');
+    console.error('À lancer depuis la racine du dépôt.');
+    process.exit(1);
+  }
+
   const { chargerCatalogue } = require(path.resolve('scripts/lib/charger_catalogue.js'));
   const { QUESTIONNAIRE_CATALOGUE, calculateScore } = chargerCatalogue();
 
@@ -283,12 +293,6 @@ async function main() {
     const critiques = bilan.flatMap((b) => b.confirmees.filter((d) => d.gravite === 'critique'));
     console.log(`\n${bilan.length} instrument(s) recomparés · ${critiques.length} divergence(s) critique(s) confirmée(s)`);
     return;
-  }
-
-  if (!o.instrument || o.sources.length === 0) {
-    console.error('Usage : --instrument Q_SOM_07 --sources WN-SRC-0396,WN-SRC-0397');
-    console.error('        --recomparer [--instrument Q_XXX]   (rejeu depuis le cache, sans appel API)');
-    process.exit(1);
   }
 
   const entree = QUESTIONNAIRE_CATALOGUE[o.instrument];

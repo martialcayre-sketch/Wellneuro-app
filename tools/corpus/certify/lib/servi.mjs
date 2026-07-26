@@ -92,6 +92,11 @@ export function bornesExecutees(idQuestionnaire, items, calculateScore) {
       max,
       erreur: null,
       categoriel: min === null && max === null,
+      // Plusieurs moteurs rendent leur maximum dans le RÉSULTAT sans le
+      // déclarer dans `scoring.maxTotal` (PSQI, QIF, Q_GAS_01, Q_GAS_02).
+      // L'ignorer privait le comparateur du seul repère dont il disposait
+      // quand le balayage n'atteint pas le plafond.
+      maxTotalRendu: typeof haut?.maxTotal === 'number' ? haut.maxTotal : null,
       // `max` est atteignable, donc un PLANCHER du maximum réel ; `min` est
       // atteignable, donc un PLAFOND du minimum réel. Nommer cette asymétrie
       // évite de relire ces nombres comme un intervalle exact.
@@ -125,11 +130,88 @@ export function inversionsDeclarees(entree) {
   };
   recolter(scoring.subScores);
   recolter(scoring.parts);
-  for (const id of scoring.reversed ?? []) ids.add(id);
+  // Le catalogue nomme ces listes de plusieurs façons selon le moteur :
+  // `reversed` (UPPS), `reversedItems` / `reversedAutonomieItems` /
+  // `reversedUsageItems` (Karasek). Les énumérer ne suffit pourtant pas — voir
+  // `inversionsAppliquees`, qui seule fait foi.
+  for (const [cle, valeur] of Object.entries(scoring)) {
+    if (/^reversed/i.test(cle) && Array.isArray(valeur)) {
+      for (const id of valeur) if (typeof id === 'string') ids.add(id);
+    }
+  }
   return {
     ids,
     porteeParLeType: typeof scoring.type === 'string' && /revers/i.test(scoring.type),
   };
+}
+
+/** Toutes les valeurs numériques d'un résultat de scoring, agrégées. */
+function mesureGlobale(resultat) {
+  if (!resultat || typeof resultat !== 'object') return null;
+  let somme = 0;
+  let vue = false;
+  if (typeof resultat.total === 'number') { somme += resultat.total; vue = true; }
+  for (const cle of ['subScores', 'components', 'parts', 'categories', 'phases']) {
+    for (const d of resultat[cle] ?? []) {
+      for (const champ of ['total', 'val', 'score', 'count']) {
+        if (typeof d?.[champ] === 'number') { somme += d[champ]; vue = true; break; }
+      }
+    }
+  }
+  if (typeof resultat.count === 'number') { somme += resultat.count; vue = true; }
+  return vue ? somme : null;
+}
+
+/**
+ * Items que le moteur inverse RÉELLEMENT, établis en l'exécutant.
+ *
+ * Lire l'inversion dans une déclaration ne marche pas : le catalogue l'exprime
+ * d'au moins trois façons — `subScores[].reversed` (UPPS), `reversedItems` et
+ * ses variantes (Karasek), et parfois rien du tout parce qu'elle est écrite
+ * dans le corps du moteur (`(7 - q12) * 1.43` pour le QIF, `EC10` pour l'ECAB).
+ * Une revue indépendante a montré que la version « par déclaration » laissait
+ * vivre le faux positif sur ces trois instruments — et en escaladait un au
+ * praticien comme décision clinique.
+ *
+ * La sonde applique au module sa propre doctrine : on monte un item de son
+ * minimum à son maximum, toutes choses égales par ailleurs, et l'on regarde le
+ * sens dans lequel bouge l'agrégat des mesures. Il baisse ⇒ l'item est inversé.
+ *
+ * @returns {{inverses: Set<string>, directs: Set<string>, indetermines: Set<string>}}
+ */
+export function inversionsAppliquees(idQuestionnaire, items, calculateScore) {
+  const inverses = new Set();
+  const directs = new Set();
+  const indetermines = new Set();
+  if (typeof calculateScore !== 'function') return { inverses, directs, indetermines };
+
+  const base = reponsesExtremes(items, 'min');
+  let reference;
+  try {
+    reference = mesureGlobale(calculateScore(idQuestionnaire, base));
+  } catch {
+    return { inverses, directs, indetermines };
+  }
+  if (reference === null) return { inverses, directs, indetermines };
+
+  for (const item of items) {
+    const valeurs = valeursPossibles(item);
+    if (valeurs.length === 0) { indetermines.add(item.id); continue; }
+    const haut = Math.max(...valeurs);
+    const bas = Math.min(...valeurs);
+    if (haut === bas) { indetermines.add(item.id); continue; }
+    let mesure;
+    try {
+      mesure = mesureGlobale(calculateScore(idQuestionnaire, { ...base, [item.id]: haut }));
+    } catch {
+      indetermines.add(item.id);
+      continue;
+    }
+    if (mesure === null || mesure === reference) indetermines.add(item.id);
+    else if (mesure < reference) inverses.add(item.id);
+    else directs.add(item.id);
+  }
+  return { inverses, directs, indetermines };
 }
 
 /**
@@ -152,9 +234,11 @@ export function dimensionsServies(idQuestionnaire, entree, items, calculateScore
   const scoring = entree?.scoring ?? {};
   if (typeof calculateScore === 'function') {
     try {
-      // Un jeu de réponses médian : on ne cherche pas un score, seulement la
-      // FORME du résultat. Les extrêmes feraient courir le risque qu'une
-      // branche de garde court-circuite le calcul des dimensions.
+      // Jeu de réponses au MAXIMUM : on ne cherche pas un score, seulement la
+      // FORME du résultat. Le maximum plutôt que le minimum parce qu'un jeu
+      // bas peut faire court-circuiter le calcul (`Q_SOM_09` rend 4 dimensions
+      // au maximum et 0 au minimum) — l'inverse ne s'observe sur aucun des
+      // 64 instruments.
       const resultat = calculateScore(idQuestionnaire, reponsesExtremes(items, 'max'));
       for (const cle of ['subScores', 'components', 'parts', 'categories', 'phases']) {
         const liste = resultat?.[cle];
@@ -189,6 +273,7 @@ export function empreinteServie(id, entree, calculateScore) {
   const items = itemsDuServi(entree);
   const scoring = entree.scoring ?? {};
   const inversion = inversionsDeclarees(entree);
+  const appliquees = inversionsAppliquees(id, items, calculateScore);
   const bandes = (scoring.interpretation ?? []).map((b) => ({
     min: b.min,
     max: b.max,
@@ -214,6 +299,9 @@ export function empreinteServie(id, entree, calculateScore) {
       // listés dans `reversed`. Voir `inversionsDeclarees`.
       typePorteUneInversion: inversion.porteeParLeType,
       itemsInversesDeclares: [...inversion.ids],
+      // Ce que le moteur fait, par opposition à ce que le catalogue annonce.
+      itemsInversesAppliques: [...appliquees.inverses],
+      itemsInversionIndeterminee: [...appliquees.indetermines],
     },
     dimensions: dimensionsServies(id, entree, items, calculateScore),
     bornesExecutees: bornesExecutees(id, items, calculateScore),

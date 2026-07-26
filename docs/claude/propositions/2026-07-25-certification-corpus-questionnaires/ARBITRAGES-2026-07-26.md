@@ -18,20 +18,27 @@
 
 ## Ce qui a changé depuis le bilan du 2026-07-25
 
-Le banc s'était trompé sur cinq points, tous dans le sens de l'accusation à tort.
-Deux instruments sortent entièrement de la liste.
+Le banc s'était trompé dans les deux sens : il accusait à tort, et il taisait.
+Une revue adversariale indépendante a rendu NO-GO sur une première version de
+ces correctifs, en montrant que j'avais désarmé une détection en croyant
+supprimer un faux positif. Les deux défauts qu'elle a trouvés sont corrigés ici.
 
 | | 2026-07-25 | 2026-07-26 | Cause |
 |---|---|---|---|
-| Instruments à divergence critique | 11 | **9** | UPPS et QIF blanchis |
-| Divergences critiques | 16 | **13** | |
+| Instruments à divergence critique | 11 | **10** | 3 blanchis, 1 nouvellement détecté |
+| Divergences critiques | 16 | **14** | |
 | dont `inversion_absente` | 2 | **1** | l'UPPS applique bien ses 25 inversions |
-| dont bornes de score | 3 | **1** | PSQI et QIF atteignent leur plafond publié |
+| dont bornes de score | 3 | **2** | PSQI et QIF atteignent leur plafond ; `Q_CAN_02` passe sous le sien |
 | `sous_echelles` (majeur) | 7 | **3** | le banc comptait les sections d'écran |
+| bornes non concluantes | — | **2** (mineur) | le banc dit désormais quand il n'a pas conclu |
 
-Et parmi les 13 critiques restantes, **deux sont des artefacts de comptage** que
-le comparateur ne peut pas voir seul (détail en §3) : le banc réel se réduit à
-**11 divergences critiques sur 8 instruments**.
+Blanchis : **UPPS** (ses 25 inversions sont appliquées), **QIF** (99,9/100
+atteignable) et **Karasek** (ses cinq items sont bien inversés — voir §7).
+Nouvellement détecté : **`Q_CAN_02`**, que l'ancienne règle ne pouvait pas voir.
+
+Parmi les 14 critiques, **deux sont des artefacts de comptage** que le
+comparateur ne peut pas trancher seul (§3) : le banc réel se réduit à
+**12 divergences critiques sur 9 instruments**.
 
 ---
 
@@ -95,6 +102,26 @@ preuve est directe, ce jeu de réponses est atteignable par un patient.
 clinique à faire — ne plus sommer la qualité de vie dans le total, et rétablir
 la cotation 0–5 sur `U2`. Ils touchent la logique de scoring : ils demandent
 votre accord explicite et une entrée au CHANGELOG.
+
+---
+
+## 2 bis. QLQ-BR23 (`Q_CAN_02`) — un score sous le plancher publié
+
+Détecté seulement après correction du banc : aucune règle ne lisait le
+**minimum** de la source. Or le raisonnement qui rend un dépassement probant
+vaut identiquement par le bas — `bornes.min` est lui aussi un score atteignable.
+
+**Vérifié par exécution** : la source publie une échelle **23–92** ; le moteur
+descend à **21**, parce que deux items conditionnels sortent de la somme quand
+ils ne s'appliquent pas. Un patient concerné obtient donc un score hors barème.
+
+**À arbitrer** : compter les items conditionnels non applicables comme leur
+valeur plancher, ou rapporter le score sur le nombre d'items réellement posés.
+Le second choix change la comparabilité entre patients ; le premier, non.
+
+Cet instrument figurait parmi les **12 déclarés « propres »** au bilan du
+2026-07-25. C'est la meilleure illustration de ce que vaut une liste de
+conformité produite par un outil non éprouvé.
 
 ---
 
@@ -169,8 +196,13 @@ travail est mécanique une fois la décision prise.
   les instruments concernés sont souvent d'autres traductions. Un tri fiable
   demande une lecture sémantique, pas une mesure de similarité. Rien n'est livré
   sur ce point plutôt qu'un chiffre faux.
-- **`Q_ALI_03` et `Q_STR_06` (Karasek) n'ont toujours qu'une lecture.** Leurs
-  écarts, dont les cinq items non inversés du Karasek, restent « à confirmer ».
+- **`Q_ALI_03` et `Q_STR_06` (Karasek) n'ont toujours qu'une lecture**, et leurs
+  écarts restent « à confirmer ». Mais **l'accusation portée sur les cinq items
+  du Karasek est réfutée**, pas en attente : le moteur les inverse bel et bien
+  (`Q002`, `Q006`, `Q013`, `Q027`, `Q028` — monter l'item d'un cran fait baisser
+  le sous-score). C'était un faux positif du banc, que sa version d'origine
+  aurait remonté ici comme décision clinique. Il ne reste rien à trancher sur ce
+  point.
 - **La hiérarchie source du cabinet ↔ publication d'origine n'est pas tranchée**
   (question (c) du cadrage). Elle conditionne les §1 et §3.
 
@@ -182,6 +214,7 @@ travail est mécanique une fois la décision prise.
 |---|---|---|
 | 1 | MFI-20 : suspendre, reconstruire ou renommer | clinique, forte |
 | 2 | IPSS : ne plus sommer la qualité de vie ; `U2` en 0–5 | scoring, faible ambiguïté |
+| 2 bis | QLQ-BR23 : traitement des items conditionnels non applicables | scoring |
 | 3 | Tinetti : découpage 20 lignes ou 16 | comparabilité |
 | 4 | `Q_ALI_01`, `Q_FIB_03`, `Q_NEU_12` : adaptations assumées ou à réaligner | clinique |
 | 5 | Dimensions à déclarer sur `Q_CAR_01` et `Q_GEO_04` | affichage |

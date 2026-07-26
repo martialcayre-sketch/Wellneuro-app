@@ -209,6 +209,56 @@ test('plafond non atteint par le balayage, maxTotal déclaré conforme : aucune 
   // trivialement, et ne prouverait rien du défaut corrigé.
   assert.equal(r.resume.parGravite.critique, 0, 'un plafond non atteint ne prouve aucune divergence');
   assert.equal(r.resume.certifiable, true);
+  // …mais le banc doit DIRE qu'il n'a pas conclu. Une divergence absente se lit
+  // « conforme » ; c'est le silence qu'une revue indépendante a reproché à la
+  // première version de cette règle.
+  const d = r.divergences.find((x) => x.code === 'bornes_score_non_atteintes');
+  assert.ok(d, "un plafond non atteint doit être dit, jamais tu");
+  assert.equal(d.gravite, 'mineur');
+});
+
+test("plafond non atteint et AUCUN maximum déclaré : le banc dit qu'il n'a pas conclu", () => {
+  // Le trou : sans `maxTotal` déclaré, la première version ne produisait
+  // strictement RIEN — ni critique, ni majeur, ni mineur — et rendait
+  // `certifiable: true`. Un moteur réellement plafonné (items non comptés)
+  // passait sans un mot.
+  const r = comparer(
+    servi({ bornesExecutees: { min: 0, max: 15, erreur: null }, scoring: { ...servi().scoring, maxTotalDeclare: null } }),
+    spec({ bornesTotal: { min: 0, max: 21 } }),
+  );
+  const d = r.divergences.find((x) => x.code === 'bornes_score_non_atteintes');
+  assert.ok(d, 'aucun maximum connu : le banc doit signaler son incapacité à conclure');
+  assert.match(d.message, /N'A PAS CONCLU/);
+});
+
+test('maximum rendu par le MOTEUR à défaut du catalogue : divergence majeure, pas un silence', () => {
+  // Le PSQI et le QIF ne déclarent pas `scoring.maxTotal` mais le rendent dans
+  // leur résultat. L'ignorer privait le comparateur de son seul repère.
+  const r = comparer(
+    servi({
+      bornesExecutees: { min: 0, max: 15, erreur: null },
+      scoring: { ...servi().scoring, maxTotalDeclare: null, maxTotalRendu: 18 },
+    }),
+    spec({ bornesTotal: { min: 0, max: 21 } }),
+  );
+  const d = r.divergences.find((x) => x.code === 'bornes_score_declarees');
+  assert.ok(d, 'le maximum rendu par le moteur doit servir de repère');
+  assert.equal(d.gravite, 'majeur');
+  assert.match(d.obtenu, /18/);
+});
+
+test('score atteignable SOUS le plancher de la source : divergence critique', () => {
+  // Le cas `Q_CAN_02` (QLQ-BR23) : deux items conditionnels sortent de la
+  // somme, le moteur descend à 21 sous une échelle publiée 23–92. Aucune règle
+  // ne lisait `bornesTotal.min`.
+  const r = comparer(
+    servi({ bornesExecutees: { min: 21, max: 92, erreur: null } }),
+    spec({ bornesTotal: { min: 23, max: 92 } }),
+  );
+  const d = r.divergences.find((x) => x.code === 'bornes_score_sous_plancher');
+  assert.ok(d, 'un score sous le plancher publié est atteignable, donc prouvé');
+  assert.equal(d.gravite, 'critique');
+  assert.match(d.obtenu, /21/);
 });
 
 test('plafond non atteint ET maxTotal déclaré divergent : majeur, jamais critique', () => {
@@ -346,28 +396,60 @@ test('empreinteServie signale un moteur absent au lieu de rendre des bornes null
 // Chacun de ces cas ÉCHOUE sur la version d'origine du comparateur. Ils sont
 // écrits d'après les instruments réels qui les ont produits.
 
-test("inversion déclarée par `subScores[].reversed` : reconnue, pas accusée (cas UPPS)", () => {
-  // L'UPPS déclare 25 items inversés hors du type de scoring. Le moteur les
-  // applique — 45 items tous cotés 1 donnent 45/48 en Urgence. La première
-  // version ne regardait que le type et annonçait « 25 items non inversés ».
+/** Deux items 1–4, dont `inversesParLeMoteur` sont réellement inversés. */
+function instrumentAInversion(inversesParLeMoteur) {
   const entree = {
-    titre: 'UPPS réduit',
+    titre: 'Instrument à inversion',
     sections: [{ id: 'A', questions: [
       { id: 'Q001', texte: 'a', type: 'likert', options: [{ v: 1, l: 'x' }, { v: 4, l: 'y' }] },
       { id: 'Q002', texte: 'b', type: 'likert', options: [{ v: 1, l: 'x' }, { v: 4, l: 'y' }] },
     ] }],
+    // La DÉCLARATION annonce Q002 inversé, quoi que fasse le moteur.
     scoring: { type: 'upps', subScores: [{ id: 'U', label: 'Urgence', items: ['Q001', 'Q002'], reversed: ['Q002'] }] },
   };
-  const e = empreinteServie('Q_NEU_05', entree, () => ({ subScores: [{ id: 'U', label: 'Urgence', total: 5 }] }));
-  assert.deepEqual(e.scoring.itemsInversesDeclares, ['Q002']);
-
-  const r = comparer(e, {
-    echelleReponse: { min: 1, max: 4 },
-    items: [{ numero: 1, texte: 'a', inverse: false }, { numero: 2, texte: 'b', inverse: true }],
-    sousEchelles: [{ nom: 'Urgence', nbItems: 2 }],
-    baremeGlobal: null, seuils: [], bornesTotal: null,
+  const moteur = (_id, rep) => ({
+    subScores: [{
+      id: 'U',
+      label: 'Urgence',
+      total: Object.entries(rep).reduce((s, [id, v]) => s + (inversesParLeMoteur.includes(id) ? 5 - v : v), 0),
+    }],
   });
-  assert.ok(!codes(r).includes('inversion_absente'), "une inversion appliquée ne doit pas être signalée absente");
+  return { entree, moteur };
+}
+
+const specInversion = {
+  echelleReponse: { min: 1, max: 4 },
+  items: [{ numero: 1, texte: 'a', inverse: false }, { numero: 2, texte: 'b', inverse: true }],
+  sousEchelles: [{ nom: 'Urgence', nbItems: 2 }],
+  baremeGlobal: null, seuils: [], bornesTotal: null,
+};
+
+test("inversion RÉELLEMENT appliquée : reconnue, pas accusée (cas UPPS, Karasek, QIF)", () => {
+  // Trois mécanismes distincts dans le catalogue — `subScores[].reversed`
+  // (UPPS), `reversedItems` (Karasek), inversion codée en dur dans le moteur
+  // (QIF : `(7 - q12) * 1.43`). Aucune lecture de déclaration ne couvre le
+  // troisième : seule l'exécution tranche.
+  const { entree, moteur } = instrumentAInversion(['Q002']);
+  const e = empreinteServie('Q_NEU_05', entree, moteur);
+  assert.deepEqual(e.scoring.itemsInversesAppliques, ['Q002'], "la sonde doit voir l'inversion");
+  const r = comparer(e, specInversion);
+  assert.ok(!codes(r).includes('inversion_absente'), 'une inversion appliquée ne doit pas être signalée absente');
+  assert.ok(!codes(r).includes('inversion_declaree_non_appliquee'));
+});
+
+test('inversion DÉCLARÉE mais jamais appliquée : divergence critique (déclaration morte)', () => {
+  // Le cas que la lecture par déclaration ne pouvait pas voir : le catalogue
+  // annonce l'inversion, le moteur n'en fait rien, et l'instrument passait
+  // pour bon.
+  const { entree, moteur } = instrumentAInversion([]);
+  const e = empreinteServie('Q_FAUX', entree, moteur);
+  assert.deepEqual(e.scoring.itemsInversesDeclares, ['Q002']);
+  assert.deepEqual(e.scoring.itemsInversesAppliques, []);
+  const r = comparer(e, specInversion);
+  const d = r.divergences.find((x) => x.code === 'inversion_declaree_non_appliquee');
+  assert.ok(d, 'une déclaration sans effet doit être signalée');
+  assert.equal(d.gravite, 'critique');
+  assert.match(d.obtenu, /Q002/);
 });
 
 test("inversion NI déclarée NI matérialisée : toujours signalée (cas MFI-20)", () => {
