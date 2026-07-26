@@ -10,6 +10,19 @@
 // (`maxTotal`), elles sont OBTENUES EN EXÉCUTANT `calculateScore` sur les jeux
 // de réponses extrêmes. Une borne déclarée peut mentir ; une borne exécutée,
 // non. C'est la différence entre auditer un commentaire et auditer un moteur.
+//
+// MAIS une borne exécutée par balayage ne dit pas tout, et la première version
+// de ce module l'a oublié. Mettre chaque item à sa valeur maximale ne maximise
+// le TOTAL que si le total croît avec chaque item. Dès qu'une composante est
+// non monotone — la durée de sommeil du PSQI (dormir plus baisse le score), les
+// « jours ressentis bien » du QIF (item inversé) — le balayage produit un
+// plafond ARBITRAIRE, inférieur au vrai. Le banc l'a signalé comme divergence
+// critique sur le PSQI (0–21 attendu, « 2–15 » observé) et sur le QIF (0–100
+// attendu, « 10–89.9 » observé) : deux faux positifs. Or les deux instruments
+// atteignent bien leur plafond publié avec un jeu de réponses cohérent.
+//
+// D'où `nature` : un balayage rend un PLANCHER du maximum, jamais le maximum.
+// Un plafond dépassé est une preuve ; un plafond non atteint n'en est pas une.
 
 /** Items d'une entrée de catalogue, à plat, avec leur section d'origine. */
 export function itemsDuServi(entree) {
@@ -66,7 +79,7 @@ export function reponsesExtremes(items, sens) {
  */
 export function bornesExecutees(idQuestionnaire, items, calculateScore) {
   if (typeof calculateScore !== 'function') {
-    return { min: null, max: null, erreur: 'calculateScore absent', categoriel: false };
+    return { min: null, max: null, erreur: 'calculateScore absent', categoriel: false, nature: 'inconnue' };
   }
   try {
     const bas = calculateScore(idQuestionnaire, reponsesExtremes(items, 'min'));
@@ -74,10 +87,96 @@ export function bornesExecutees(idQuestionnaire, items, calculateScore) {
     const lire = (r) => (typeof r?.total === 'number' ? r.total : null);
     const min = lire(bas);
     const max = lire(haut);
-    return { min, max, erreur: null, categoriel: min === null && max === null };
+    return {
+      min,
+      max,
+      erreur: null,
+      categoriel: min === null && max === null,
+      // `max` est atteignable, donc un PLANCHER du maximum réel ; `min` est
+      // atteignable, donc un PLAFOND du minimum réel. Nommer cette asymétrie
+      // évite de relire ces nombres comme un intervalle exact.
+      nature: 'encadrement_par_balayage',
+    };
   } catch (e) {
-    return { min: null, max: null, erreur: String(e?.message || e), categoriel: false };
+    return { min: null, max: null, erreur: String(e?.message || e), categoriel: false, nature: 'inconnue' };
   }
+}
+
+/**
+ * Items dont le catalogue déclare l'inversion.
+ *
+ * La première version cherchait l'inversion dans le seul TYPE de scoring
+ * (`/revers/i`), avec ce commentaire : « le catalogue n'a aucun champ
+ * d'inversion ». C'était faux. `scoring.subScores[].reversed` porte des
+ * identifiants d'items, et le moteur les applique : sur l'UPPS, 45 items tous
+ * cotés 1 donnent 45/48 en Urgence — un score haut à partir de réponses basses,
+ * ce qui n'arrive que si l'inversion a lieu. Le banc a pourtant annoncé
+ * « 25 items non inversés » sur cet instrument : un faux positif critique.
+ *
+ * @returns {{ids: Set<string>, porteeParLeType: boolean}}
+ */
+export function inversionsDeclarees(entree) {
+  const scoring = entree?.scoring ?? {};
+  const ids = new Set();
+  const recolter = (liste) => {
+    for (const bloc of liste ?? []) {
+      for (const id of bloc?.reversed ?? []) ids.add(id);
+    }
+  };
+  recolter(scoring.subScores);
+  recolter(scoring.parts);
+  for (const id of scoring.reversed ?? []) ids.add(id);
+  return {
+    ids,
+    porteeParLeType: typeof scoring.type === 'string' && /revers/i.test(scoring.type),
+  };
+}
+
+/**
+ * Dimensions de scoring RÉELLEMENT servies, lues sur le résultat du moteur.
+ *
+ * Les `sections` d'une entrée de catalogue sont un découpage d'ÉCRAN : le
+ * DASS-21 tient en une seule section et calcule pourtant trois sous-échelles,
+ * le PSQI en compte trois et produit sept composantes. Comparer les
+ * sous-échelles d'une source aux sections servies a donc fabriqué quatre
+ * divergences « majeures » là où le découpage existait bel et bien.
+ *
+ * Les moteurs nomment leurs dimensions de cinq façons — mêmes clés que
+ * `web/src/lib/scoring/rubriques.ts`, qui a rencontré le même problème côté
+ * restitution. La première clé non vide gagne ; à défaut, l'interprétation par
+ * sous-échelle (`interpretation[].subscale`, cas du HAD) fait foi.
+ *
+ * @returns {{noms: string[], origine: string}}
+ */
+export function dimensionsServies(idQuestionnaire, entree, items, calculateScore) {
+  const scoring = entree?.scoring ?? {};
+  if (typeof calculateScore === 'function') {
+    try {
+      // Un jeu de réponses médian : on ne cherche pas un score, seulement la
+      // FORME du résultat. Les extrêmes feraient courir le risque qu'une
+      // branche de garde court-circuite le calcul des dimensions.
+      const resultat = calculateScore(idQuestionnaire, reponsesExtremes(items, 'max'));
+      for (const cle of ['subScores', 'components', 'parts', 'categories', 'phases']) {
+        const liste = resultat?.[cle];
+        if (Array.isArray(liste) && liste.length > 0) {
+          return { noms: liste.map((d) => String(d.label ?? d.id ?? '')), origine: cle };
+        }
+      }
+    } catch {
+      // Moteur en échec : on retombe sur la déclaration, jamais sur les sections.
+    }
+  }
+  for (const cle of ['subScores', 'parts']) {
+    const liste = scoring[cle];
+    if (Array.isArray(liste) && liste.length > 0) {
+      return { noms: liste.map((d) => String(d.label ?? d.id ?? '')), origine: `scoring.${cle}` };
+    }
+  }
+  const sousEchelles = (scoring.interpretation ?? []).filter((b) => b?.subscale).map((b) => String(b.subscale));
+  if (sousEchelles.length > 0) {
+    return { noms: [...new Set(sousEchelles)], origine: 'interpretation.subscale' };
+  }
+  return { noms: [], origine: 'aucune' };
 }
 
 /**
@@ -89,6 +188,7 @@ export function bornesExecutees(idQuestionnaire, items, calculateScore) {
 export function empreinteServie(id, entree, calculateScore) {
   const items = itemsDuServi(entree);
   const scoring = entree.scoring ?? {};
+  const inversion = inversionsDeclarees(entree);
   const bandes = (scoring.interpretation ?? []).map((b) => ({
     min: b.min,
     max: b.max,
@@ -110,10 +210,12 @@ export function empreinteServie(id, entree, calculateScore) {
       type: scoring.type ?? null,
       maxTotalDeclare: scoring.maxTotal ?? null,
       bandes,
-      // Le catalogue n'a aucun champ d'inversion : une inversion ne peut donc
-      // exister que si le TYPE de scoring la porte (`sum_reversed`…).
-      typePorteUneInversion: typeof scoring.type === 'string' && /revers/i.test(scoring.type),
+      // Inversion : portée par le type de scoring OU par les identifiants
+      // listés dans `reversed`. Voir `inversionsDeclarees`.
+      typePorteUneInversion: inversion.porteeParLeType,
+      itemsInversesDeclares: [...inversion.ids],
     },
+    dimensions: dimensionsServies(id, entree, items, calculateScore),
     bornesExecutees: bornesExecutees(id, items, calculateScore),
   };
 }

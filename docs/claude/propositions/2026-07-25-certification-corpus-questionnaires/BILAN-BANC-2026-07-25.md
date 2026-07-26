@@ -1,5 +1,32 @@
 # Banc de certification SOURCE ↔ SERVI — bilan du 2026-07-25
 
+> ## ⚠ Corrigé le 2026-07-26 — les chiffres ci-dessous surestiment les écarts
+>
+> Trois défauts du comparateur ont été trouvés **en vérifiant ses accusations une
+> à une**, et corrigés (tests de non-régression : `comparaison.test.mjs`, six cas
+> qui échouent sur la version d'origine) :
+>
+> 1. les **sous-échelles** étaient comparées aux `sections` — le découpage
+>    d'écran — au lieu des dimensions calculées par le moteur. Le DASS-21 tient
+>    en une section et calcule trois sous-échelles ; le PSQI en compte trois et
+>    produit sept composantes ;
+> 2. les **inversions** n'étaient cherchées que dans le *type* de scoring, alors
+>    que `subScores[].reversed` en porte. L'UPPS applique bien ses 25 inversions
+>    (45 items cotés 1 → 45/48 en Urgence) ;
+> 3. les **bornes** étaient balayées item par item, ce qui est faux dès qu'une
+>    composante décroît quand l'item croît. Le PSQI atteint 21/21 et le QIF
+>    99,9/100 avec un jeu de réponses cohérent.
+>
+> **Après rejeu des 59 instruments** (sans nouvel appel de modèle, via
+> `certify.mjs --recomparer`) : **9 instruments** à divergence critique et non
+> 11 ; **13 critiques** et non 16 ; **3 `sous_echelles`** et non 7. L'UPPS et le
+> QIF sortent entièrement de la liste. Deux des 13 restantes sont encore des
+> artefacts de comptage, décrits dans le dossier d'arbitrage.
+>
+> Les chiffres d'origine sont conservés ci-dessous tels qu'ils ont été publiés.
+> Le tableau à jour et les décisions attendues sont dans
+> **`ARBITRAGES-2026-07-26.md`**.
+
 Passé sur **59 instruments** du catalogue, contre les PDF sources rapatriés du
 dossier Drive du cabinet. Chaque instrument est lu **deux fois de façon
 indépendante** (Claude Sonnet 5 et GPT-5.4), aucune des deux n'ayant le catalogue
