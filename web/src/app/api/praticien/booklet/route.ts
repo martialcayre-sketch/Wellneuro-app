@@ -40,7 +40,7 @@ export async function GET(req: Request) {
     // est « introuvable », le 404 existant absorbe les deux cas (anti-oracle).
     const synthese = await prisma.syntheseIA.findFirst({
       where: { idSynthese, patient: filtrePatientsDuPraticien(emailSession) },
-      include: { bookletEnvois: { orderBy: { dateEnvoi: 'desc' }, take: 1 } },
+      include: { bookletEnvois: { where: { statut: 'Envoye' }, orderBy: { dateEnvoi: 'desc' }, take: 1 } },
     });
 
     if (!synthese) return withCorrelationHeader(NextResponse.json({ error: 'Synthèse introuvable.' }, { status: 404 }), requestContext);
@@ -143,7 +143,7 @@ export async function POST(req: Request) {
     // envoyer le booklet d'un patient qui n'est pas le sien.
     const synthese = await prisma.syntheseIA.findFirst({
       where: { idSynthese, patient: filtrePatientsDuPraticien(emailSession) },
-      include: { bookletEnvois: { orderBy: { dateEnvoi: 'desc' }, take: 1 } },
+      include: { bookletEnvois: { where: { statut: 'Envoye' }, orderBy: { dateEnvoi: 'desc' }, take: 1 } },
     });
 
     if (!synthese) return withCorrelationHeader(NextResponse.json({ error: 'Synthèse introuvable.' }, { status: 404 }), requestContext);
