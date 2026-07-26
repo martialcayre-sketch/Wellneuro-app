@@ -482,3 +482,29 @@ CB-02a mergé (#374) et vérifié en production : 12 tables, RLS deny-all sans p
 **Prochaine action** : l'import en production **n'est pas lancé** — aucune chaîne de connexion sur le poste. Le câbler dans `vercel-build.sh` (patron C5) plutôt que de faire transiter un secret.
 
 **Questions ouvertes** : sort d'une correspondance signée dont l'acte disparaît (à trancher avant CB-02c) ; régime documentaire figé ou non entre signature et courrier ; source `labo` dans les snapshots.
+
+## 2026-07-26 — Certification corpus (lots 2-3) et fuite du booklet patient
+
+**Décisions** : rapatriement des 123 PDF Drive → 106 sources extraites en triple
+lecture ; banc de certification passé sur **59 instruments** (12 propres, 11 avec
+au moins une divergence critique confirmée par les deux lectures, 16 critiques ;
+MFI-20 et PSQI confirmés, PSS-10 témoin propre). Droits SIIN actés au registre
+sur les 13 instruments internes. **Fuite de production fermée** (#370) : le
+booklet envoyé au patient rendait axes, vigilance et questions d'entretien —
+dont les signaux d'alerte déclarés. Garde de registre anxiogène confirmable
+côté route.
+
+**Écarté** : l'ingestion pgvector, pourtant autorisée — 140 chunks validés hors
+ligne, **rien écrit en prod** : les sources sont massivement des échelles
+tierces sous copyright, hors périmètre de la déclaration SIIN.
+
+**Validations** : T1, T3, CI `verify` (E2E inclus) verts ; deux revues
+`wn-reviewer` NO-GO justifiées, défauts corrigés. #370/#371/#373 mergées.
+
+**Prochaine action** : rejouer le banc sur `Q_ALI_03` et `Q_STR_06` (Karasek),
+non croisés.
+
+**Questions ouvertes** : droits des instruments tiers (bloque pgvector) ;
+arbitrage des 16 divergences (lot 4) ; PR #372 en attente sur deux points
+d'affichage ; rétablir ou non un profil par axes côté patient, avec des libellés
+écrits pour lui.
