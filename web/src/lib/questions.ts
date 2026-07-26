@@ -2214,7 +2214,7 @@ export function computeScoreFromDef(def: any, answers: Record<string, any>): any
   // Lit les agrégats produits à la clôture (cf. lib/agenda-sommeil/agregats.ts),
   // rangés dans `rawAnswers`. Sous le seuil de nuits, recueil transmis SANS score
   // (scored:false, jamais un 0 par défaut). Barème /100 = 4 sous-indices /25,
-  // rampes linéaires bornées. PROPOSITION à valider cliniquement.
+  // rampes linéaires bornées. Barème validé cliniquement par le praticien le 2026-07-26.
   if (sc.type === 'agenda_sommeil') {
     const minNuits = sc.minNuits || 5;
     const n = getVal('AGD_NB_NUITS');
