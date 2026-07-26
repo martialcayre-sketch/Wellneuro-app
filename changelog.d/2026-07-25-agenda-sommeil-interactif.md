@@ -34,10 +34,13 @@ soustraient jamais », un épisode de mesure figé en v2 ne se compare pas à un
 épisode v3 — la comparaison de jalons momentum reprend au premier couple
 d'épisodes v3.
 
-**À valider avant mise en production.** Le barème /100 (quatre sous-indices —
-durée, efficacité, continuité, régularité) est une **proposition WellNeuro**, pas
-un instrument psychométriquement validé : à faire relire par le praticien avant
-tout affichage clinique, au même titre que `NIVEAU_PREUVE_PAR_SOURCE`.
+**Barème validé cliniquement le 2026-07-26.** Le barème /100 (quatre sous-indices
+— durée, efficacité, continuité, régularité) reste une **construction WellNeuro**
+(pas un instrument psychométriquement validé), mais ses seuils ont été relus et
+confirmés par le praticien : les deux ancrages à fort poids diagnostique
+(efficacité ≥ 85 %, durée 7–9 h) suivent les seuils de référence ; les deux plus
+souples (réveils comptés, écart-type du milieu de sommeil) sont assumés et
+recalibrables à la lumière des premières distributions patient.
 
 Migration `agenda_sommeil_v1` (table `agenda_sommeil_nuits`, purement additive,
 append-only chaînée ; entrée dans l'effacement RGPD IDP2).

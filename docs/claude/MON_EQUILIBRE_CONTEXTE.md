@@ -56,7 +56,9 @@ commits, la documentation ou l'UI.
   du PSQI `Q_SOM_01` et de l'activité physique `Q_MOD_01`. L'agenda alimente donc
   l'indice global et le momentum. Doctrine inchangée : un épisode figé en v2 ne
   se soustrait pas d'un épisode v3 — la comparaison de jalons reprend au premier
-  couple v3. Barème /100 = proposition à valider cliniquement.
+  couple v3 (conséquence vérifiée nulle : `assessment_episodes` vide en prod au
+  2026-07-26, aucun épisode v2 à orpheliner). Barème /100 validé cliniquement le
+  2026-07-26.
 
 ---
 

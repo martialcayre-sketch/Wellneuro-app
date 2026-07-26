@@ -119,7 +119,7 @@ export const Q_SOM_03 = {
 // la CLÔTURE (cf. lib/agenda-sommeil/agregats.ts) — ils ne sont jamais saisis
 // ni montrés au patient ; ils existent pour que le scoring `agenda_sommeil` les
 // lise dans `rawAnswers` et pour la compatibilité fiche/équilibre. Le barème
-// /100 ci-dessous est une PROPOSITION WellNeuro à faire valider par le praticien.
+// /100 ci-dessous a été validé cliniquement par le praticien le 2026-07-26.
 export const Q_SOM_09 = {
   id:'Q_SOM_09', titre:'Agenda du sommeil — 21 nuits',
   instructions:"Chaque matin pendant trois semaines, notez en une minute votre nuit passée. Vos saisies restent visibles sous forme d'une frise ; l'analyse est transmise à votre praticien à la fin du recueil.",
@@ -141,7 +141,7 @@ export const Q_SOM_09 = {
     type:'agenda_sommeil',
     maxTotal:100,
     minNuits:5,
-    note:"Barème WellNeuro (proposition) : 4 sous-indices /25 — durée, efficacité, continuité, régularité. À valider cliniquement.",
+    note:"Barème WellNeuro validé cliniquement (2026-07-26) : 4 sous-indices /25 — durée, efficacité, continuité, régularité.",
     interpretation:[
       {min:0, max:49, label:'Sommeil nettement perturbé',color:'danger'},
       {min:50,max:74, label:'Fragilités du sommeil',color:'warning'},

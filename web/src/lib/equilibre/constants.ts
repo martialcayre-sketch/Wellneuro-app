@@ -62,7 +62,7 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
     { idQuestionnaire: 'Q_MOD_01', sousScore: 'ACTIVITE_PHYSIQUE', max: 20, inverser: false },
     // Agenda du sommeil 21 nuits : score composite /100 (plus haut = mieux).
     // Complète le PSQI ; absent tant que l'agenda n'est pas clôturé (couverture
-    // null, jamais 0). Barème /100 = proposition, à valider cliniquement.
+    // null, jamais 0). Barème /100 validé cliniquement le 2026-07-26.
     { idQuestionnaire: 'Q_SOM_09', max: 100, inverser: false },
   ],
   6: [],
