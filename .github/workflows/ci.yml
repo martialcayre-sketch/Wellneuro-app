@@ -175,13 +175,32 @@ jobs:
         run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1.sql
 
       # Le contrat ci-dessus vérifie que les invariants sont EN PLACE ; celui-ci
-      # vérifie qu'ils MORDENT — quinze insertions interdites qui doivent toutes
-      # être rejetées, et pour le bon motif. Transaction annulée : rien ne
-      # survit, pas même la colonne ajoutée pour éprouver le verrou HDS.
+      # vérifie qu'ils MORDENT — vingt-cinq insertions interdites qui doivent
+      # toutes être rejetées, et pour le bon motif. Transaction annulée : rien
+      # ne survit, pas même la colonne ajoutée pour éprouver le verrou HDS.
+      #
+      # PORTÉE RÉELLE, À NE PAS SURESTIMER : ces deux fichiers tournent sur une
+      # base construite par le seul `migrate deploy`, donc VIDE. Ils éprouvent
+      # les invariants de STRUCTURE (CHECK, RLS, index, verrou HDS) ; les
+      # invariants de DONNÉES du contrat y renvoient 0 par vacuité. Ces
+      # derniers sont rejoués dans la transaction de l'import CB-02a
+      # (`prisma/importNabm.ts`), seul endroit où des données existent.
       - name: CB-01 biology catalogue negative tests
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1_negatif.sql
+
+      # Les deux contrats ci-dessus éprouvent la STRUCTURE ; ce banc éprouve le
+      # CHEMIN D'ÉCRITURE de l'import CB-02a, que les tests Vitest ne touchent
+      # pas (ils couvrent la logique pure). Il rejoue une rotation de millésime
+      # sur fixtures : c'est le seul contexte où se manifeste le défaut trouvé
+      # en revue — un pointeur qui change de millésime servi sans le dire.
+      - name: CB-02a NABM import bench
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        env:
+          WN_CB_NABM_DESTRUCTIVE_TEST: wellneuro_ci
+        run: bash scripts/test-cb-nabm-import.sh
 
       - name: C5 LOT-02 import contract
         if: steps.scope.outputs.docs_only != 'true'

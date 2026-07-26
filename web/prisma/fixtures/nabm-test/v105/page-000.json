@@ -1,0 +1,611 @@
+{
+  "resourceType": "ValueSet",
+  "version": "V105",
+  "expansion": {
+    "total": 5,
+    "offset": 0,
+    "contains": [
+      {
+        "code": "10",
+        "display": "HORMONOLOGIE",
+        "extension": []
+      },
+      {
+        "code": "1208",
+        "display": "T.S.H.(SANG)",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "coeffB"
+              },
+              {
+                "url": "value",
+                "valueString": "20"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "examenSanguin"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "ententePrealable"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "indicationMedicale"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "initativeBiologistePossible"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "rmo"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "remboursementTotal"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "acteReserve"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "parent"
+              },
+              {
+                "url": "value",
+                "valueCode": "10"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "inactive"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "codeIncompatible"
+              },
+              {
+                "url": "value",
+                "valueCode": "1211"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "codeIncompatible"
+              },
+              {
+                "url": "value",
+                "valueCode": "1207"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "1211",
+        "display": "T.S.H. + T4 LIBRE (SANG)",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "coeffB"
+              },
+              {
+                "url": "value",
+                "valueString": "35"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "examenSanguin"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "ententePrealable"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "indicationMedicale"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "initativeBiologistePossible"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "rmo"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "remboursementTotal"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "acteReserve"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "parent"
+              },
+              {
+                "url": "value",
+                "valueCode": "10"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "inactive"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "codeIncompatible"
+              },
+              {
+                "url": "value",
+                "valueCode": "1208"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "1207",
+        "display": "T4 LIBRE (SANG)",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "coeffB"
+              },
+              {
+                "url": "value",
+                "valueString": "20"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "examenSanguin"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "ententePrealable"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "indicationMedicale"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "initativeBiologistePossible"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "rmo"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "remboursementTotal"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "acteReserve"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "parent"
+              },
+              {
+                "url": "value",
+                "valueCode": "10"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "inactive"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "codeIncompatible"
+              },
+              {
+                "url": "value",
+                "valueCode": "1208"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "code": "1213",
+        "display": "FERRITINE (DOSAGE) (SANG)",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "coeffB"
+              },
+              {
+                "url": "value",
+                "valueString": "17"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "examenSanguin"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "ententePrealable"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "indicationMedicale"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "initativeBiologistePossible"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "rmo"
+              },
+              {
+                "url": "value",
+                "valueBoolean": true
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "remboursementTotal"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "acteReserve"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "parent"
+              },
+              {
+                "url": "value",
+                "valueCode": "12"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/5.0/StructureDefinition/extension-ValueSet.expansion.contains.property",
+            "extension": [
+              {
+                "url": "code",
+                "valueCode": "inactive"
+              },
+              {
+                "url": "value",
+                "valueBoolean": false
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

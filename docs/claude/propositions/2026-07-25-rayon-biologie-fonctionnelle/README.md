@@ -355,7 +355,7 @@ fail-closed ; un fragment `changelog.d/` et un worktree par lot.
 | --- | --- | --- | --- |
 | CB-00 | Ce cadrage + décisions 0/A→G actées + **audit de la source NABM fait** ([AUDIT-SOURCE-NABM.md](AUDIT-SOURCE-NABM.md)) | — | aucun |
 | CB-01 | **Fait** — migration catalogue CB-A : onze tables (analytes, `biology_nabm_actes`, correspondance `BiologyAnalyteNabm`, deux référentiels de plages, préanalytique, panels, ratios, liens, pointeur de version) + vocabulaires fermés + les **deux flags** déclarés fail-closed | CB-00 | **migration** |
-| CB-02a | Domaine `web/src/lib/biology-library/` cloné de `supplement-library/` + import **NABM complet** (988 actes, six appels anonymes) en brouillons `importee` + file de revue | CB-01 | ingestion |
+| CB-02a | **Fait** — import **NABM complet** (**987** actes, six appels anonymes) : logique pure + CLI dry-run/apply, snapshot canonique des 1050 concepts, pointeur de version. Migration additive `code_incompatible` / `regle_applicable` / `biology_source_snapshots` | CB-01 | ingestion + **migration** |
 | CB-02b | Corpus notebook « analyses biologiques » : extract → chunk → claims (`metadata.rayon:'biologie'`) → Atelier, **voie lente** | **après stabilisation de la certification** (décision G) | **ingestion prod** ; coût API |
 | CB-03 | Extension moteur : variantes de cible `analyse`/`panel_bio` + table biologie **séparée**, vide, signée-sha + double verrou + route | CB-02b ; après les lots 8-9 certification | flag ; table signée |
 | CB-04 | Compilateur `tools/corpus/biologie/compile.mjs` → table régénérée par PR revue | CB-03 + claims validés | **signature praticien** |
@@ -384,6 +384,60 @@ coenzyme Q10, acides gras érythrocytaires, glutathion peroxydase, mélatonine�
 CB-02a livre donc le socle remboursable et la matière administrative ; ce qui
 distingue le rayon d'un bilan de routine arrive en CB-02b, par le corpus. Le
 lot d'import n'est pas le lot qui donne sa valeur au rayon.
+
+**Deux points de ce tableau ont été corrigés par la réalisation de CB-02a**
+(2026-07-26), et il vaut mieux les lire ici que les redécouvrir :
+
+- **L'import ne crée AUCUNE fiche d'analyte en brouillon.** La rédaction
+  initiale du lot annonçait « 988 actes en brouillons `importee` » ; c'était
+  écrit avant que l'audit n'établisse que la NABM est l'axe de remboursement et
+  non l'ossature du catalogue. Les 987 actes peuplent `biology_nabm_actes`,
+  table administrative et verbatim ; `biology_analytes` reste **vide**. Une
+  fiche d'analyte naît d'un claim ou de la saisie praticien, jamais d'un
+  intitulé de facturation — l'audit §5 montre que le rapprochement par libellé
+  produit des faux négatifs silencieux. La file de revue porte donc sur les
+  **correspondances** analyte ↔ acte, et elle n'a pas d'objet tant qu'il
+  n'existe pas d'analyte : c'est le lot CB-02c, en aval de CB-02b.
+- **CB-02a a finalement porté une migration.** Le lot était annoncé sans, sa
+  table de destination existant déjà. La mesure de la source a montré que CB-01
+  ne prévoyait de colonne ni pour `codeIncompatible` (438 actes sur 987, jusqu'à
+  17 valeurs) ni pour `regleApplicable` (25 actes), et que le snapshot exigé par
+  l'audit §10 n'avait qu'une colonne d'empreinte — on gardait la preuve d'un
+  contenu qu'on ne gardait pas. Migration additive sur tables vides.
+
+**Une décision d'exploitation, tranchée par la revue adversariale du
+2026-07-26 :** le **millésime servi ne change jamais implicitement**. Un import
+qui n'apporte aucune donnée nouvelle mais déplacerait le pointeur est refusé
+tant que l'opérateur n'a pas nommé la version qu'il quitte
+(`--remplace-pointeur <version>`). Le garde est **symétrique** — il ne
+reconnaît pas la direction, aucun ordre n'étant garanti entre numéros de
+version — mais un premier import reste sans friction.
+
+Ce n'est pas de la prudence de principe. La revue a reproduit la séquence :
+rejouer un millésime déjà remplacé ramenait le pointeur en arrière **sans un
+mot**, un acte désactivé au millésime récent redevenait actif, et
+`deriverRemboursement` le rendait de nouveau `remboursable` — donc
+`regimeDocumentaire` basculait sur `courrier_medecin`. **Un courrier serait
+parti au médecin traitant en citant un acte que la nomenclature a retiré.**
+Même logique pour les correspondances signées : un import qui priverait l'une
+d'elles de son acte est refusé, parce qu'il écrirait sans le dire un état que
+le contrat du dépôt déclare invalide.
+
+**Quatre questions restent ouvertes pour le praticien** (soulevées par la
+revue, sans réponse dans le cadrage) :
+
+1. Par où passe l'import en production — étape de `vercel-build.sh`, ou geste
+   manuel depuis le Mac ? Aujourd'hui : geste manuel, gaté par cinq preuves.
+2. Que devient une correspondance signée dont l'acte disparaît ? Un statut
+   « signature orpheline » et une file de reprise, ou le silence de
+   `hors_nomenclature` suffit-il ? À trancher **avant CB-02c**.
+3. Entre `signee` et `courrier_medecin_genere`, le régime documentaire est-il
+   figé ? Si le pointeur bouge dans cet intervalle, une proposition signée
+   comme remboursée peut se matérialiser en document patient.
+4. `biology_source_snapshots` accueillera-t-elle un jour une source `labo` ? Le
+   CHECK est aujourd'hui restreint à `nabm_smt_ans` pour que l'élargir soit une
+   migration relue — `contenu` étant un texte libre que le verrou HDS, qui
+   raisonne sur des noms de colonnes, ne peut pas inspecter.
 
 ## §9 — Invariants réglementaires
 

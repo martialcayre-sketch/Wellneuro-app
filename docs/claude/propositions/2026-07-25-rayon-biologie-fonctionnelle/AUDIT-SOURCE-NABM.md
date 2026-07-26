@@ -43,23 +43,34 @@ catalogue, et à stocker : `version = "V105"` + `contenuSha256` du snapshot.
 ## 2. Volumétrie exacte — 1050 concepts ≠ 1050 actes
 
 L'API annonce `count = 1050`. Ce nombre ne doit pas devenir le nombre de fiches
-du catalogue : **62 concepts sur 1050 ne sont pas des actes**.
+du catalogue : **63 concepts sur 1050 ne sont pas des actes**.
+
+> **Corrigé le 2026-07-26, par la mesure faite avant d'écrire l'import.** Cette
+> section annonçait 988 actes et 62 non-actes. Le 988ᵉ « acte » était la
+> **racine `NABM`** de la nomenclature, qui compte quatre caractères sans être
+> un code. L'erreur n'était pas cosmétique : le CHECK écrit en CB-01 sur son
+> fondement (`^[0-9A-Z]{4}$`) laissait entrer la racine au catalogue comme s'il
+> s'agissait d'une analyse — exactement la fiche fantôme que le filtre devait
+> interdire. Le bon motif est `^[0-9]{4}$`.
 
 | Nature | Nombre | Forme du code | Exemple |
 | --- | --- | --- | --- |
 | Chapitre | 18 | 1–2 chiffres | `05` — Hématologie |
 | Sous-chapitre | 33 | `CC-NN` | `06-04` |
-| Nœud de règle | 11 | texte | `CONTINGENCE_3`, `REGLE_SPECIFIQUE` |
-| **Acte facturable** | **988** | 4 chiffres, zéros de tête | `1213` — FERRITINE (DOSAGE) (SANG) |
+| Nœud de règle | 11 | texte | `CONTINGENCE_3`, `REGLESPECIFIQUE_4` |
+| **Racine de la terminologie** | **1** | **quatre lettres** | `NABM` |
+| **Acte facturable** | **987** | 4 chiffres, zéros de tête | `1213` — FERRITINE (DOSAGE) (SANG) |
 | Total | 1050 | | |
 
 Deux pièges d'implémentation qui en découlent :
 
-- **Le filtre d'import est obligatoire.** Sans lui, le catalogue naîtrait avec 62
+- **Le filtre d'import est obligatoire.** Sans lui, le catalogue naîtrait avec 63
   fiches fantômes, dont des chapitres présentés comme des analyses.
-- **Le code est une chaîne, jamais un entier.** `0014` ≠ `14`, et 45 codes ne
-  sont pas purement numériques. Une colonne `integer` perdrait les zéros de tête
-  et casserait le rapprochement.
+- **Le code est une chaîne, jamais un entier.** `0014` ≠ `14` : **256 des 987
+  actes portent un zéro de tête**, qu'une colonne `integer` perdrait. En
+  revanche — seconde correction du 2026-07-26 — **aucun code d'acte n'est
+  non-numérique** (la version antérieure de cette page en annonçait 45). C'est
+  ce qui rend le motif `^[0-9]{4}$` sûr : il ne rejette aucun acte réel.
 
 ## 3. Ce que la NABM porte
 
@@ -77,7 +88,8 @@ croire (voir le piège au §5). Relevé sur l'acte `1213` :
 | `rmo` | boolean | `true` | référence médicale opposable |
 | `remboursementTotal` | boolean | `false` | pas de prise en charge à 100 % |
 | `acteReserve` | boolean | `false` | acte réservé |
-| `codeIncompatible`, `regleApplicable` | code | — | renvoient aux nœuds `CONTINGENCE_*` / `REGLE_SPECIFIQUE` |
+| `codeIncompatible` | code, **multi-valué** | `1822` | actes non cumulables sur une même demande — **438 actes sur 987**, jusqu'à **17 valeurs** (1208 exclut 1211, 1207, 1212, 1209, 1803) |
+| `regleApplicable` | code | — | **25 actes**, renvoie aux nœuds `REGLESPECIFIQUE_3` / `REGLESPECIFIQUE_4` |
 | `parent`, `child` | code | `parent = 12` | hiérarchie chapitre / sous-chapitre |
 | `inactive` | boolean | `false` | **filtre d'import** |
 
@@ -198,13 +210,35 @@ six appels au lieu de 988 `$lookup`.
 
 - pagination `count=200`, `offset` de 0 à 1000 — **6 appels**, anonymes ;
 - `property=` pour chacune des propriétés du §3 ci-dessus ;
-- filtrer : ne garder que `inactive = false` et un code de 4 caractères →
-  **988 fiches** en statut `importee` ;
-- conserver le snapshot brut, sa version (`V105`) et son `contenuSha256` ;
+- filtrer sur un code **purement numérique à 4 chiffres** → **987 fiches** dans
+  `biology_nabm_actes` ;
+- conserver le snapshot, sa version (`V105`) et son `contenuSha256` ;
 - ne dériver `remboursable` que de la correspondance vérifiée (§7) ;
 - rejouer à chaque version : les versions se succèdent à un rythme mensuel à
   bimestriel (V101 à V105 entre janvier et juin 2026), et un acte peut passer
   `inactive`.
+
+> **Trois précisions apportées par la réalisation de CB-02a (2026-07-26).**
+>
+> - **Ne pas filtrer sur `inactive`.** La recette disait « ne garder que
+>   `inactive = false` ». Aucun des 987 actes de la V105 n'est inactif, donc ce
+>   filtre ne retirait rien — mais il aurait été nuisible à la première version
+>   qui en désactive un : l'acte DISPARAÎTRAIT du millésime au lieu d'y figurer
+>   comme inactif, et `deriverRemboursement` rendrait « pas encore évalué » là
+>   où la vérité est « l'acte n'existe plus ». L'import stocke donc tous les
+>   actes et recopie `inactive` dans la colonne `inactif`.
+> - **Le snapshot est CANONIQUE, pas octet-pour-octet.** Le serveur ne garantit
+>   aucun ordre stable ; hacher les octets bruts ferait changer l'empreinte à
+>   chaque rejeu du même millésime et déclencherait à tort le refus « la source
+>   a changé sans changer de version ». Concepts triés par code, clés et listes
+>   triées : 390 Ko contre 2,4 Mo bruts. Il conserve les **1050 concepts**, pas
+>   seulement les 987 actes — c'est le seul endroit où survivent les libellés de
+>   chapitre (« 05 HEMATOLOGIE »), qui n'ont pas de table dédiée.
+> - **Le rapprochement des incompatibilités se vérifie, il ne se suppose pas.**
+>   Les 966 occurrences renvoient toutes à un acte du même millésime, et la
+>   relation est **parfaitement symétrique** (0 paire déclarée d'un seul côté).
+>   L'import le mesure et le signale sans bloquer : une asymétrie serait un
+>   défaut de la source, et refuser l'import en priverait tout le millésime.
 
 Vérification reproductible :
 

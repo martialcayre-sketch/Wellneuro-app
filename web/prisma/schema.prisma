@@ -1418,6 +1418,12 @@ model BiologyNabmActe {
   remboursementTotal           Boolean?  @map("remboursement_total")
   acteReserve                  Boolean?  @map("acte_reserve")
   inactif                      Boolean   @default(false) @map("inactif")
+  // Actes non cumulables sur une même demande — 1208 (T.S.H. seule) exclut
+  // 1211 (T.S.H. + T4 libre). Verbatim de la source. NULL, jamais `{}` :
+  // le CHECK en base interdit le tableau vide pour n'avoir qu'une écriture
+  // de « aucune incompatibilité ».
+  codeIncompatible             String[]  @map("code_incompatible")
+  regleApplicable              String[]  @map("regle_applicable")
   contenuSha256                String?   @map("contenu_sha256")
   importeLe                    DateTime  @default(now()) @map("importe_le")
   updatedAt                    DateTime  @updatedAt @map("updated_at")
@@ -1648,4 +1654,30 @@ model BiologyCatalogVersionCourante {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@map("biology_catalog_versions_courantes")
+}
+
+// Snapshot VERBATIM d'une source, par millésime — exigé par l'audit CB-00 §10,
+// que CB-01 n'avait doté que d'une colonne d'empreinte : on conservait la
+// preuve d'un contenu qu'on ne conservait pas.
+//
+// `contenu` est du TEXT et non du Json : `jsonb` réordonne les clés et
+// normalise les nombres, si bien que les octets relus ne sont plus ceux qui
+// ont été hachés et que l'empreinte n'atteste plus rien. En TEXT, un CHECK en
+// base recalcule sha256 à chaque écriture. Le contenu reste interrogeable par
+// un cast le jour où l'on retypera une propriété laissée de côté.
+model BiologySourceSnapshot {
+  id               String   @id @default(cuid())
+  sourceProvenance String   @map("source_provenance")
+  versionSource    String   @map("version_source")
+  urlSource        String   @map("url_source")
+  licence          String   @map("licence")
+  contenu          String   @map("contenu")
+  contenuSha256    String   @map("contenu_sha256")
+  nombreConcepts   Int      @map("nombre_concepts")
+  nombreActes      Int      @map("nombre_actes")
+  importeLe        DateTime @default(now()) @map("importe_le")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@unique([sourceProvenance, versionSource], map: "biology_source_snapshots_source_version_key")
+  @@map("biology_source_snapshots")
 }
