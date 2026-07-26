@@ -451,6 +451,16 @@ gouvernance Copilot quand l'utilisateur le dira.
 **Prochaine action** : exploitation — signaler la frontière v1↔v2 (momentum masqué sur cycles en cours).
 **Questions ouvertes** : motif import-masqué des ~27 autres questionnaires ; rayons Analyses biologiques / Fiches conseils.
 
+## 2026-07-24 — Accueil Observatoire : Fil du jour aligné sur la maquette, quatre lots livrés
+
+**Décisions** : campagne `2026-07-23-accueil-observatoire` (4 lots) planifiée puis livrée ; mergée dans `main` par Copilot pendant la nuit — #308 (timeline horodatée, carte imminente « Maintenant », résumé qualitatif, relectures agrégées par patient, bandeau « Vues rapides ») ; #323 (aside Météo d'adhésion réutilisant SP-MET, inbox questionnaires par patient remplaçant les cartes « Reçu », correspondance récente réutilisant C3 LOT-06, « Principe 5.0 » retiré) ; #324 (cartes jalon J21 / momentum) ; #327 + suivi #334 (agenda `RendezVous`, migration `ao_rendez_vous_v1` — vérifiée en prod : 1 tentative aboutie, table conforme, requête inverse `_prisma_migrations` vide). Correctif signalé « Trajectoire » des Vues rapides : déjà réglé par #315 (SP-TRAJ) dans le même train — rien à faire, worktree fermé sans commit.
+
+**Écarté** : agrégat global des relectures façon maquette (incompatible avec le refus G1, ancré sur un patient) → agrégat par patient, clé datée.
+
+**Prochaine action** : aucune côté ce chantier — campagne close.
+
+**Questions ouvertes** : aucune.
+
 ## 2026-07-25 — Certification corpus des questionnaires : LOT-00/01/07 mergés
 
 **Décisions** : audit d'architecture externe challengé puis intégré. Doctrine actée — le RAG certifie, source et explique ; le moteur déterministe calcule ; le graphe clinique oriente ; l'IA rédige. Une certification vaut pour une version, une langue, une population et un usage, jamais globalement. Mergés : #359 cadrage (13 lots, décisions praticien) ; #360 registre des instruments (63 entrées, axes séparés forme publiée / version servie / droits / cosmin / cycle de vie) avec module de validation et son propre banc, `scoring-check` entré dans T1 ; #361 moteur d'orientation dark (table vide, double verrou, filtre droits dur, règle sans claim ⇒ rien).
