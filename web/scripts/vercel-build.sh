@@ -28,7 +28,7 @@ if [ "${VERCEL_ENV:-}" = "production" ]; then
 
   # CB-02a — nomenclature NABM. Trois faits épinglés ICI, donc modifiables
   # seulement par une PR relue ; voir le bloc d'import plus bas pour le pourquoi.
-  cb_nabm_import_ref="CB-02A-IMPORT-NABM-MC-2026-07-26-v1"
+  cb_nabm_import_ref="CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1"
   cb_nabm_version="V105"
   cb_nabm_sha256="3a9c289f081d293e7655de709a295bc6da9ece3f2301b86f1ea9625d1c7aed0f"
 
@@ -123,6 +123,13 @@ if [ "${VERCEL_ENV:-}" = "production" ]; then
         --base "$WN_CB_NABM_IMPORT_BASE" \
         --version "$cb_nabm_version" \
         --sha256 "$cb_nabm_sha256"
+
+      # Le contrat du catalogue, joué là où il y a enfin des DONNÉES. En CI il
+      # ne rencontre qu'une base vide : ses invariants de données y sont muets.
+      # C'est donc ici, et nulle part ailleurs, qu'ils disent quelque chose.
+      echo "→ Contrat du catalogue biologie sur les données importées…"
+      DATABASE_URL="$MIGRATE_DATABASE_URL" npx prisma db execute \
+        --file prisma/checks/cb_biologie_catalogue_v1.sql
     fi
   else
     echo "⚠️  MIGRATE_DATABASE_URL absente : migrations NON appliquées." >&2
