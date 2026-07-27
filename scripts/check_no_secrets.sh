@@ -33,17 +33,33 @@ GREP_EXCLUDES=(
 )
 
 # En mode --staged, on n'inspecte que les lignes AJOUTÉES du diff indexé : ce
-# qu'on s'apprête à committer, et rien du contenu préexistant.
-# Chaque ligne ajoutée est préfixée de son fichier et d'une tabulation, pour que
-# `check_pattern` puisse rendre l'emplacement sans jamais rendre le contenu.
+# qu'on s'apprête à committer, et rien du contenu préexistant. Chaque ligne est
+# préfixée de son fichier et d'une tabulation, pour que `check_pattern` rende
+# l'emplacement sans jamais rendre le contenu.
+#
+# Le nom de fichier vient de `git`, jamais du texte du diff. Une version
+# antérieure le lisait dans les en-têtes `+++` — or une ligne de CONTENU
+# commençant par `++ ` produit une ligne de diff `+++ …` indiscernable d'un
+# en-tête. Le fragment de contenu devenait alors le « nom de fichier » imprimé
+# pour toutes les lignes suivantes : la valeur du secret ressortait par le canal
+# de l'emplacement. La même ligne, avalée comme un en-tête, n'était par ailleurs
+# jamais scannée — fuite et faux négatif d'une seule cause.
+#
+# D'où un diff par fichier, et les lignes ajoutées lues APRÈS le premier `@@` :
+# passé cette borne, aucune ligne n'est plus interprétée comme un en-tête.
 AJOUTS=""
 if [[ "$MODE" == "staged" ]]; then
-  AJOUTS="$(git diff --cached --unified=0 -- . \
-    ':(exclude)package-lock.json' ':(exclude)*.lock' 2>/dev/null \
-    | awk '
-        /^\+\+\+ /  { f = substr($0, 7); if (f == "ev/null") f = "(supprimé)"; next }
-        /^\+/       { print f "\t" $0 }
-      ' || true)"
+  while IFS= read -r -d '' fichier; do
+    lignes="$(git diff --cached --unified=0 --no-renames -- "$fichier" 2>/dev/null \
+      | awk '/^@@/ { dans = 1; next } dans && /^\+/ { print }' || true)"
+    [[ -n "$lignes" ]] || continue
+    # Le `+` du diff est conservé à dessein : il s'intercale entre le nom de
+    # fichier et la ligne, et n'est ni un guillemet, ni une espace, ni `:`/`=`.
+    # C'est lui qui empêche un chemin comme `config/client_secret` de former un
+    # faux positif avec le début de la ligne ajoutée. Ne pas le retirer.
+    AJOUTS+="$(printf '%s\n' "$lignes" | awk -v f="$fichier" '{ print f "\t" $0 }')"$'\n'
+  done < <(git diff --cached --name-only -z -- . \
+    ':(exclude)package-lock.json' ':(exclude)*.lock' 2>/dev/null)
 fi
 
 # Ne rapporte JAMAIS la ligne trouvée, seulement où elle est. Un `grep -n` nu

@@ -30,25 +30,40 @@
   copier-coller de l'historique. Le dépôt écrivait déjà la règle contraire dans
   `docs/gouvernance-questionnaires-scoring.md` : signaler le fichier « sans
   exposer le secret dans les journaux ou commits ». Le contrôle la violait dès
-  qu'il fonctionnait. Il rend désormais `fichier:ligne` en mode complet, le nom
-  du fichier en mode indexé, et rien d'autre.
+  qu'il fonctionnait. Il rend désormais `fichier:ligne` en mode complet et le
+  nom du fichier en mode indexé.
+  **L'emplacement vient de `git`, plus du texte du diff** — c'est la seconde
+  moitié du correctif, et elle a été trouvée en revue après la première. Le nom
+  était d'abord lu dans les en-têtes `+++` ; or une ligne de *contenu*
+  commençant par `++` suivi d'une espace produit une ligne de diff `+++ …`
+  indiscernable d'un en-tête. Ce fragment de contenu devenait alors le « nom de fichier » imprimé
+  pour toutes les lignes suivantes : **la valeur du secret ressortait par le
+  canal de l'emplacement**, à l'endroit même qu'on venait de refermer. La ligne
+  avalée n'était par ailleurs jamais scannée — fuite et faux négatif d'une seule
+  cause. Le mode indexé lit maintenant un diff par fichier, borné au premier
+  `@@` : passé cette borne, aucune ligne n'est plus interprétée comme un
+  en-tête, et le nom vient de `git diff --name-only`.
 - **Un banc verrouille le contrôle** (`scripts/check_no_secrets.test.mjs`,
-  9 cas plus 5 `todo`), en CI **et dans le palier T1** — `npm run check` le
+  11 cas plus 5 `todo`), en CI **et dans le palier T1** — `npm run check` le
   lance, par cohérence avec `registry-check` et `certify-check` : un palier qui
   ne couvre pas ce que le CI vérifie ne protège de rien.
   Il monte un dépôt jetable, y dépose un faux compte de service, vérifie le
   refus dans les deux modes, **et qu'aucune sortie ne contient le corps de la
-  clé**. Deux contrôles négatifs le gardent honnête : un dépôt sain doit être
-  accepté, et une ligne de prose documentaire citant plusieurs noms de variables
-  aussi — sans ce second cas, le banc ne verrouillerait que la sensibilité du
-  contrôle, jamais sa spécificité, et un motif redevenu trop large passerait au
-  vert.
-  Falsifié par quatre mutations, chacune attrapée par la garde qui la vise :
-  motifs d'origine (5 échecs), séparateur permissif (le cas de prose seul),
-  détection réimprimant la ligne (les deux cas de non-fuite), mode indexé
-  aveugle (les deux cas indexés). Le cas de prose tient sur **une seule ligne
-  longue**, comme dans le fichier réel : `grep` travaillant ligne par ligne,
-  répartir la phrase détruisait la propriété même qu'il éprouve.
+  clé**. La garde décisive est formulée en invariant plutôt qu'en énumération :
+  *chaque ligne de sortie doit avoir la forme d'un emplacement*. Chercher deux
+  chaînes précises ne verrouille que le cas qui les porte ; exiger la forme
+  attrape aussi les fuites qu'on n'a pas su prévoir — c'est elle qui rattrape le
+  piège du `++`, sans qu'il ait fallu l'anticiper.
+  Deux contrôles négatifs le gardent honnête : un dépôt sain doit être accepté,
+  et une ligne de prose documentaire citant plusieurs noms de variables aussi —
+  sans ce second cas, le banc ne verrouillerait que la sensibilité du contrôle,
+  jamais sa spécificité, et un motif redevenu trop large passerait au vert.
+  Falsifié par cinq mutations, chacune attrapée par la garde qui la vise :
+  motifs d'origine (7 échecs), séparateur permissif (le cas de prose seul),
+  détection réimprimant la ligne (4), mode indexé aveugle (4), et retour à
+  l'analyseur d'en-têtes (le cas du `++` seul). Le cas de prose tient sur **une
+  seule ligne longue**, comme dans le fichier réel : `grep` travaillant ligne
+  par ligne, répartir la phrase détruisait la propriété même qu'il éprouve.
   Les fragments sensibles du banc sont assemblés par concaténation plutôt que
   d'exclure le fichier du scan : une exclusion créerait l'angle mort qu'on vient
   de fermer.

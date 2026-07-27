@@ -63,6 +63,12 @@ const ANODIN = 'export const seuil = 12;\n// Aucune clé ici.\n';
  * par ligne, et répartir la phrase sur plusieurs lignes détruirait justement la
  * propriété qu'on éprouve — c'est le voisinage de deux identifiants sur la même
  * ligne qui piège un séparateur trop permissif.
+ *
+ * Seule fixture à écrire ses identifiants en toutes lettres, contrairement à la
+ * règle de concaténation posée en tête de fichier : c'est le point du cas. Elle
+ * doit ressembler à la prose réelle, et elle ne peut pas déclencher le contrôle
+ * — le backtick fermant bloque le séparateur, ce que le scan complet du dépôt
+ * vérifie à chaque exécution.
  */
 const PROSE =
   "Toute configuration sensible (`DATABASE_URL`, `ANTHROPIC_API_KEY`, " +
@@ -99,7 +105,14 @@ function lancer(racine, ...args) {
     cwd: racine,
     encoding: 'utf8',
   });
-  return { code: r.status, sortie: `${r.stdout}${r.stderr}` };
+  // `emplacements` isole ce que le script prétend être des emplacements : la
+  // sortie standard, privée de la ligne de conclusion. C'est sur cet ensemble
+  // que porte l'invariant « rien d'autre qu'un emplacement ne sort d'ici ».
+  const emplacements = r.stdout
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith('OK:'));
+  return { code: r.status, sortie: `${r.stdout}${r.stderr}`, emplacements };
 }
 
 function avecBanc(fichiers, corps) {
@@ -172,6 +185,49 @@ describe('check_no_secrets.sh — ce qu’il ne doit jamais imprimer', () => {
       assert.equal(code, 1);
       assert.doesNotMatch(sortie, /BEGIN PRIVATE KEY/, 'le corps de la clé a fuité');
       assert.doesNotMatch(sortie, /CONTENU-DE-TEST-SANS-VALEUR/, 'le corps de la clé a fuité');
+    });
+  });
+
+  test('tout ce qui sort est un emplacement, quelle qu’en soit la cause', () => {
+    // Invariant plutôt qu'énumération. Chercher deux chaînes précises ne
+    // verrouille que le fixture qui les porte ; exiger la FORME de chaque ligne
+    // attrape aussi les fuites qu'on n'a pas su prévoir.
+    avecBanc({ 'compte.json': COMPTE_DE_SERVICE }, racine => {
+      const complet = lancer(racine);
+      assert.equal(complet.code, 1);
+      assert.ok(complet.emplacements.length > 0, 'aucun emplacement : le cas ne prouve rien');
+      for (const ligne of complet.emplacements) {
+        assert.match(ligne, /^\.\/[^:]+:\d+$/, `sortie non conforme à « chemin:ligne » : ${ligne}`);
+      }
+      git(racine, 'add', 'compte.json');
+      const indexe = lancer(racine, '--staged');
+      assert.equal(indexe.code, 1);
+      assert.ok(indexe.emplacements.length > 0, 'aucun emplacement : le cas ne prouve rien');
+      for (const ligne of indexe.emplacements) {
+        assert.equal(ligne, 'compte.json', `sortie non conforme à un chemin indexé : ${ligne}`);
+      }
+    });
+  });
+
+  test('une ligne ajoutée commençant par « ++ » ne devient pas l’emplacement', () => {
+    // `++ texte` produit une ligne de diff `+++ texte`, indiscernable d'un
+    // en-tête de fichier. Un analyseur qui lit le nom dans le diff en fait un
+    // « emplacement » — et imprime donc le contenu. Ici la ligne suivante porte
+    // le secret : le piège fuit ET masque, puisque la ligne avalée n'est jamais
+    // scannée.
+    const PIEGE = [
+      `++ ${DEBUT_PEM}`,
+      `  "${CLE_PRIVEE}": "${DEBUT_PEM}\\nCONTENU-DE-TEST-SANS-VALEUR\\n"`,
+      '',
+    ].join('\n');
+    avecBanc({ 'piege.md': PIEGE }, racine => {
+      git(racine, 'add', 'piege.md');
+      const { code, sortie, emplacements } = lancer(racine, '--staged');
+      assert.equal(code, 1, `la clé privée n’a pas été détectée : ${sortie}`);
+      assert.doesNotMatch(sortie, /CONTENU-DE-TEST-SANS-VALEUR/, 'le corps de la clé a fuité');
+      for (const ligne of emplacements) {
+        assert.equal(ligne, 'piege.md', `emplacement dérivé du contenu : ${ligne}`);
+      }
     });
   });
 });
