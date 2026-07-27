@@ -19,6 +19,7 @@ import {
 import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
 import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
+import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
 import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
 import {
   MODELE_REDACTION_PRATICIEN,
@@ -50,9 +51,14 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string): string {
   const filtered = reponses.map(r => ({
     titre: r.titre,
     date: r.date,
-    scores: r.scores,
+    // Scores privés de toute conduite clinique : le modèle rédige à partir
+    // de la mesure. L'orientation lui parvient étiquetée par la mini-synthèse.
+    scores: scoresPourPrompt(r.scores),
     scorePrincipal: r.scorePrincipal,
     interpretation: r.interpretation,
+    // Sur l'objet **original** : `buildMiniSynthese` lit `conduite` et retombe
+    // sur `interpretation.protocol` pour les passations déjà en base. Le lui
+    // passer filtré ferait disparaître l'orientation du prompt entier.
     miniSynthese: buildMiniSynthese(r.scores),
   }));
   const blocContexte = contexte
