@@ -7,6 +7,7 @@
 | Élément | Type | Fichier | Modèle | Effort |
 | --- | --- | --- | --- | --- |
 | `/wn-model` | Skill (slash-command) | `.claude/skills/wn-model/SKILL.md` | — (recommande) | low |
+| `/wn-ultra` | Skill (slash-command) | `.claude/skills/wn-ultra/SKILL.md` | — (recommande le mode) | low |
 | `wn-fable` | Sous-agent | `.claude/agents/wn-fable.md` | `claude-fable-5` | high |
 
 Modifications associées (épinglage de modèle sur des sous-agents existants) :
@@ -25,6 +26,12 @@ Modifications associées (épinglage de modèle sur des sous-agents existants) :
 - **Fonction** : à partir d'une description de tâche, recommande un couple **modèle + effort + intensité de réflexion** et rend la commande exacte à appliquer (`/model …`, délégation à un sous-agent, ou mot-clé de réflexion). Ne modifie aucun fichier.
 - **Intérêt** : centralise une décision récurrente (« quel modèle pour cette tâche ? ») au lieu de la laisser implicite. Aligne le coût sur la complexité réelle et rend le choix traçable.
 - **Options d'appel** : `/wn-model [tâche]` (recommande), ou override explicite `fable | opus | sonnet | haiku | plan`. Un override prime toujours sur le mapping par défaut.
+
+### `/wn-ultra` — routeur de mode d'exécution
+
+- **Fonction** : à partir d'une description de tâche, tranche le **mode d'exécution** — solo, multi-agent léger (briques existantes : sous-agents épinglés, campagnes), ou **ultracode** (orchestration multi-agent via l'outil Workflow) — via une grille de signaux (largeur / confiance / échelle). Sur un verdict ultracode avec opt-in `ultracode` présent, il lance le Workflow adapté ; sans opt-in, il recommande d'opter sans rien lancer.
+- **Intérêt** : centralise la décision « faut-il payer l'orchestration multi-agent pour cette tâche ? » et aligne le coût (jusqu'à des dizaines de sous-agents) sur le besoin réel de largeur ou de confiance. Ultracode reste un **mode d'exécution, pas une autorisation** : migration, Supabase, déploiement et clinique passent toujours par le mode Plan + revue + merge.
+- **Options d'appel** : `/wn-ultra [tâche]`, ou override explicite `ultracode | leger | solo`. Un override prime sur la grille.
 
 ### `wn-fable` — sous-agent haut de gamme
 

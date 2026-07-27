@@ -168,13 +168,30 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
   changement d'UI, le vérifier en rejouant les E2E (`npm run test:worktree`,
   `-- --fast` pour une passe courte) : **une suite Vitest verte ne prouve rien
   sur les parcours**, elle n'exécute pas Playwright.
-- Avant d'annoncer qu'une PR est prête à merger, lire son CI (`gh pr checks`) :
-  les E2E n'y sont pas couverts par `npm test`.
+- Ouvrir la PR avec un corps via `--body-file` et un diff d'une seule finalité,
+  puis **attendre son CI sans le sonder en boucle** (idiome ci-dessous) ; avant
+  d'annoncer une PR prête à merger, en **lire** le résultat — les E2E n'y sont pas
+  couverts par `npm test`.
 - **Changelog par fragments.** Ne pas éditer le haut de `CHANGELOG.md` : poser un
   fichier `changelog.d/AAAA-MM-JJ-slug.md` (le bloc `###` qui irait sous
   `## Non publié`). Deux PR n'entrent alors plus en conflit sur le même fichier —
   c'est ce qui a fait échouer cinq merges le 2026-07-21. Repli : `node
   scripts/changelog-collate.mjs`. Détail : `changelog.d/README.md`.
+
+### Attendre le CI d'une PR sans le sonder (idiome, ex-`/wn-pr`)
+
+Un seul appel bloquant en tâche de fond, qui rend la main dès que les checks se
+figent — plutôt que des `gh pr checks` / `gh pr view` répétés (le 2026-07-20, une
+session a produit 81 appels de sondage pour l'information que cette boucle rend en
+un seul) :
+
+```bash
+until [ -z "$(gh pr checks <N> --json bucket --jq '.[]|select(.bucket=="pending")' 2>/dev/null)" ]; do sleep 20; done
+gh pr checks <N>
+```
+
+Gabarit de corps de PR et check-list complète : le skill `/wn-pr` (invocation
+manuelle ; ces idiomes valent pour **toute** ouverture de PR, `/wn-pr` invoqué ou non).
 
 ## Revue, merge et suppression des branches — le ressort de Copilot
 
@@ -211,6 +228,27 @@ le remettre. Ce geste doit rester visible et rare.
 été remise à jour sur `main`. Peu de PR tournent en parallèle ici, et l'activer
 imposerait une resynchronisation et un nouveau CI à chaque merge concurrent —
 friction quotidienne pour un incident rare.
+
+### Période transitoire — cycle PR complet côté assistant (idiome de merge)
+
+Tant qu'une autorisation en cours confie le suivi du CI, le merge et le nettoyage
+à l'assistant (retour au ressort Copilot ci-dessus prévu à l'échéance), cet idiome
+**prime sur le « pas de `gh pr merge` » plus haut**. Une fois le CI vert lu (idiome
+d'attente dans « Avant de committer »), enchaîner en un minimum d'allers-retours :
+
+1. **Vérifier que `verify` a réellement tourné**, pas seulement les checks Vercel
+   (effet de bord `action_required` décrit plus haut) ; sans `verify`, ne pas merger.
+2. `gh pr merge <N> --squash --delete-branch` — merge et suppression de la branche
+   distante en un geste.
+3. Supprimer le worktree rattaché une fois la PR fermée (`ExitWorktree`, ou
+   `git worktree remove`).
+4. **Repartir de `main` pour le lot suivant**, jamais de la branche squashée :
+   sinon la PR suivante ré-embarque le lot précédent, la fusion conflictue et
+   GitHub ne crée aucun run.
+
+`enforce_admins` reste actif et `verify` obligatoire (plus haut) : une PR gelée
+bloque le merge au lieu de ressembler à un succès — ne jamais forcer. Sur une PR
+de migration ou d'authentification, appliquer d'abord l'exception ci-dessous.
 
 ### L'exception : migration ou authentification
 
