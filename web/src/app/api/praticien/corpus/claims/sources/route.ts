@@ -7,8 +7,9 @@ import { listerSourcesEnRevue, type SourceEnRevue } from '@/lib/rag/claims/revue
 // Atelier corpus — vue d'ensemble PAR SOURCE, groupée par notebook.
 //
 // C'est l'écran d'entrée de la revue : quelles sources ont une file, combien
-// part en voie rapide (déclaré/observé non prescriptifs) et combien reste en
-// individuel, et si une revue de lot est déjà en cours. Le notebook vient du
+// part en voie rapide (déclaré/observé non prescriptifs, et sans borne de
+// décision dans le texte) et combien reste en individuel, et si une revue de
+// lot est déjà en cours. Le notebook vient du
 // registre sanitaire (source_registry.json), la base ne le connaît pas.
 
 export const runtime = 'nodejs';

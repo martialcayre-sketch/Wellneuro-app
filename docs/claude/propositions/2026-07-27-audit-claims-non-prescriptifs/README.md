@@ -329,6 +329,37 @@ Chiffres de contrôle, tous recoupés en base le 2026-07-27 :
 | Claims porteurs d'un seuil ou d'une plage | **55** (plancher) |
 | Statut de tous les claims du notebook | `EN_ATTENTE_VALIDATION` |
 
+### Suite — ce que le garde ne rattrape pas : 27 claims déjà signés
+
+Ajouté le 2026-07-27, en préparant le lot du garde. La mesure a été étendue à
+tout le corpus, et le constat cesse d'être préventif.
+
+**148 claims sont déjà `VALIDE` par signature de lot** (7 sources, notebooks 09
+et 10). **43 sont capturés par les motifs, et 27 ne figuraient dans aucun
+échantillon tiré** : validés sans qu'aucun œil ne les lise. (Ces deux comptages
+utilisent les quatre familles de motifs décrites ci-dessous, celles de l'audit —
+pas la fonction finalement expédiée par le lot du garde, dont trois alternatives
+ont été resserrées et deux élargies après mesure. L'ordre de grandeur ne change
+pas ; les identifiants ci-dessous, eux, sont fixes.) Relus un par un, une
+dizaine sont des tailles d'effet d'études ; le reste porte une vraie borne — mais
+des **normes nutritionnelles**, pas des plages de laboratoire : besoins hydriques
+EFSA (2 L, 2,5 L/j), ANC lipides « 35-40 % », ratio linoléique/α-linolénique
+« inférieur à 4 », « moins de 800 kcal = extrêmement hypocalorique », cotations
+DietScore. L'enjeu clinique est moindre qu'une grille ferritine ; le mécanisme
+est le même.
+
+**Le garde ne les rattrape pas** : il ferme la voie rapide en amont, il ne revient
+pas sur une signature acquise. Leur sort — les repasser en attente, les marquer,
+ou les laisser — est une **décision distincte**, non tranchée au 2026-07-27, parce
+qu'elle modifie des données de production déjà signées par le praticien.
+
+Les 27, pour qu'un lot ultérieur n'ait pas à refaire la mesure :
+
+`WN-CL-0033-012`, `-013`, `-016`, `-017`, `-028`, `-029`, `-031`, `-032`, `-040`,
+`-054`, `-056`, `-068`, `-072`, `-080`, `-081`, `-082`, `-084`, `-085` ;
+`WN-CL-0034-034`, `-040` ; `WN-CL-0064-010`, `-012` ; `WN-CL-0076-005`, `-007`,
+`-008`, `-009`, `-028`.
+
 ### Les quatre familles de motifs
 
 Appliquées en `~*` (insensible à la casse) sur `texte_normalise`. Ce sont elles,

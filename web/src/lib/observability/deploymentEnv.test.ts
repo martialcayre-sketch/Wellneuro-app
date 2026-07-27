@@ -3,6 +3,8 @@ import {
   deploymentEnv,
   deploymentEnvLabel,
   releaseSha,
+  clientDeploymentEnvLabel,
+  clientReleaseSha,
   deploymentRequestId,
 } from './deploymentEnv';
 
@@ -17,6 +19,8 @@ function clear() {
   delete process.env.WN_RELEASE_SHA;
   delete process.env.VERCEL_GIT_COMMIT_SHA;
   delete process.env.NEXT_PUBLIC_APP_VERSION;
+  delete process.env.NEXT_PUBLIC_WN_DEPLOY_ENV;
+  delete process.env.NEXT_PUBLIC_WN_RELEASE_SHA;
 }
 
 describe('deploymentEnv', () => {
@@ -56,6 +60,38 @@ describe('deploymentEnvLabel', () => {
     clear();
     process.env.VERCEL_ENV = 'production';
     expect(deploymentEnvLabel()).toBe('production');
+  });
+});
+
+describe('clientDeploymentEnvLabel (bundle navigateur)', () => {
+  it('NEXT_PUBLIC_WN_DEPLOY_ENV prime (Scalingo), staging préservé', () => {
+    clear();
+    process.env.NEXT_PUBLIC_WN_DEPLOY_ENV = 'staging';
+    process.env.VERCEL_ENV = 'production';
+    expect(clientDeploymentEnvLabel()).toBe('staging');
+  });
+
+  it('repli VERCEL_ENV puis NODE_ENV si NEXT_PUBLIC absente (Vercel inchangé)', () => {
+    clear();
+    process.env.VERCEL_ENV = 'production';
+    expect(clientDeploymentEnvLabel()).toBe('production');
+  });
+});
+
+describe('clientReleaseSha (bundle navigateur)', () => {
+  it('NEXT_PUBLIC_WN_RELEASE_SHA prime (Scalingo)', () => {
+    clear();
+    process.env.NEXT_PUBLIC_WN_RELEASE_SHA = 'sha-scalingo';
+    process.env.VERCEL_GIT_COMMIT_SHA = 'sha-vercel';
+    expect(clientReleaseSha()).toBe('sha-scalingo');
+  });
+
+  it('repli VERCEL_GIT_COMMIT_SHA, sinon undefined (inerte sur Vercel)', () => {
+    clear();
+    process.env.VERCEL_GIT_COMMIT_SHA = 'sha-vercel';
+    expect(clientReleaseSha()).toBe('sha-vercel');
+    clear();
+    expect(clientReleaseSha()).toBeUndefined();
   });
 });
 

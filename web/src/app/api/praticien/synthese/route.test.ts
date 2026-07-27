@@ -8,6 +8,10 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
   prisma: {
     syntheseIA: { findMany: vi.fn() },
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
+    // Le GET qualifie chaque synthèse : porte-t-elle sur un dossier qui
+    // contient une passation dont l'interprétation a été retirée ? D'où cette
+    // seconde lecture, en sélection minimale (`idQuestionnaire` seul).
+    questionnaireReponse: { findMany: vi.fn() },
   },
 }));
 
@@ -61,6 +65,7 @@ describe('GET /api/praticien/synthese', () => {
     vi.clearAllMocks();
     getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
     prisma.syntheseIA.findMany.mockResolvedValue([]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([]);
   });
 
   it('refuse sans session (401)', async () => {
@@ -110,5 +115,38 @@ describe('GET /api/praticien/synthese', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ syntheses: [] });
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
+    // Aucune synthèse à qualifier : on ne lit pas les passations pour rien.
+    expect(prisma.questionnaireReponse.findMany).not.toHaveBeenCalled();
+  });
+
+  // Les 3 synthèses de production sont toutes VALIDÉES et alimentent le booklet
+  // patient : elles précèdent le retrait, elles ne sont pas réécrites, elles
+  // sont donc qualifiées à la lecture.
+  it('synthèse antérieure au retrait, dossier concerné → avertissement', async () => {
+    prisma.syntheseIA.findMany.mockResolvedValue([syntheseRow()]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([{ idQuestionnaire: 'Q_SOM_07' }]);
+    const { syntheses } = await (await GET(request())).json();
+    expect(syntheses[0].avertissementMesureRetiree).toBeTruthy();
+    expect(syntheses[0].avertissementMesureRetiree).toContain('régénérer');
+  });
+
+  it('même dossier, mais synthèse POSTÉRIEURE au retrait → aucun avertissement', async () => {
+    // Sans ce contrôle, la mention ne s'effacerait jamais et l'on apprendrait
+    // à ne plus la lire.
+    prisma.syntheseIA.findMany.mockResolvedValue([
+      { ...syntheseRow(), dateGeneration: new Date('2026-08-01T00:00:00.000Z') },
+    ]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([{ idQuestionnaire: 'Q_SOM_07' }]);
+    const { syntheses } = await (await GET(request())).json();
+    expect(syntheses[0].avertissementMesureRetiree).toBeNull();
+  });
+
+  it('synthèse ancienne mais dossier SAIN → aucun avertissement', async () => {
+    // Le second contrôle négatif : sans lui, marquer toutes les synthèses
+    // anciennes ferait passer le premier test au vert.
+    prisma.syntheseIA.findMany.mockResolvedValue([syntheseRow()]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([{ idQuestionnaire: 'Q_SOM_06' }]);
+    const { syntheses } = await (await GET(request())).json();
+    expect(syntheses[0].avertissementMesureRetiree).toBeNull();
   });
 });

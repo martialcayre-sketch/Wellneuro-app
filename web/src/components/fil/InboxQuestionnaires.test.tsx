@@ -117,4 +117,82 @@ describe('InboxQuestionnaires', () => {
       ),
     );
   });
+
+  // Moitié « écran » du réservoir Q_SOM_07. Sans ce test, supprimer la pastille
+  // et le motif laissait la suite ENTIÈREMENT verte (mesuré en revue le
+  // 2026-07-27 : 2168 tests passants après la mutation) — et la passation
+  // invalide redevenait indiscernable d'un questionnaire sans score.
+  function stubDetail(reponse: Record<string, unknown>) {
+    vi.stubGlobal('fetch', vi.fn(async (input: unknown, init?: RequestInit) => {
+      const url = String(input);
+      if (init?.method === 'POST') return json({ ok: true, lignes: [] });
+      if (url.includes('idPatient=PAT_SEED_01')) {
+        return json({
+          ok: true,
+          lignes: [],
+          patient: { idPatient: 'PAT_SEED_01', nom: 'Sophie Nicola' },
+          reponses: [reponse],
+        });
+      }
+      return json({
+        ok: true,
+        lignes: [{
+          idPatient: 'PAT_SEED_01', patient: 'Sophie Nicola', nb: 1,
+          derniereDate: '2026-07-21T08:00:00.000Z', titres: ['MFI-20'],
+        }],
+      });
+    }));
+  }
+
+  const BASE_SOM07 = {
+    idReponse: 'REP_SOM07',
+    idPatient: 'PAT_SEED_01',
+    idAssignation: 'ASS1',
+    idQuestionnaire: 'Q_SOM_07',
+    titre: 'MFI-20 — Échelle multidimensionnelle de fatigue',
+    dateSoumission: '2026-07-21T08:00:00.000Z',
+    // Tel que la route le sert désormais : neutralisé côté serveur.
+    scoresParsed: { rawAnswers: { M1: 2 } },
+    rawAnswers: { M1: 2 },
+    scorePrincipal: null,
+    interpretation: '',
+    subScoreRanges: null,
+    reponsesLisibles: [],
+  };
+
+  async function ouvrirDetail() {
+    render(<InboxQuestionnaires />);
+    await waitFor(() => expect(screen.getByText('Sophie Nicola')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: /Sophie Nicola/ }));
+    return screen.findByRole('dialog');
+  }
+
+  it('une passation non interprétable dit POURQUOI, et ne dit pas « sans score »', async () => {
+    stubDetail({ ...BASE_SOM07, nonInterpretable: 'Motif de test : instrument non conforme à sa source.' });
+    const dialog = await ouvrirDetail();
+    expect(dialog.textContent).toContain('Interprétation retirée');
+    expect(dialog.textContent).toContain('Motif de test : instrument non conforme à sa source.');
+    // « Sans score principal » serait faux : la passation en portait un. C'est
+    // la formulation exacte que ce lot remplace.
+    expect(dialog.textContent).not.toContain('Sans score principal');
+    expect(dialog.textContent).not.toContain('Score brut');
+  });
+
+  it('contrôle négatif — un instrument courant garde sa pastille de score', async () => {
+    // Sans lui, afficher inconditionnellement « Interprétation retirée » ferait
+    // passer le test ci-dessus au vert.
+    stubDetail({
+      ...BASE_SOM07,
+      idQuestionnaire: 'NEU_03',
+      titre: 'Sommeil',
+      scoresParsed: { total: 7, rawAnswers: { MM1: 2 } },
+      scorePrincipal: 7,
+      interpretation: 'Vigilance',
+      nonInterpretable: null,
+    });
+    const dialog = await ouvrirDetail();
+    expect(dialog.textContent).toContain('Score brut : 7');
+    expect(dialog.textContent).toContain('Vigilance');
+    expect(dialog.textContent).not.toContain('Interprétation retirée');
+  });
 });

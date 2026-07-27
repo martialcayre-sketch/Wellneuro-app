@@ -7,6 +7,7 @@ import { CheckCheck, ExternalLink, Eye, X } from 'lucide-react';
 import type { InboxQuestionnairesApiResponse } from '@/app/api/praticien/inbox-questionnaires/route';
 import { libelleTemporel } from '@/lib/fil/horodatage';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
+import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import type { ReponseQuestionnaireLisible } from '@/lib/questionnaire-reponses';
 
 type DetailState = {
@@ -258,10 +259,28 @@ export function InboxQuestionnaires() {
                               })}
                             </p>
                           </div>
-                          <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-xs font-medium text-foreground">
-                            {reponse.scorePrincipal !== null ? `Score brut : ${reponse.scorePrincipal}` : 'Sans score principal'}
+                          {/* « Sans score principal » serait faux ici : la
+                              passation en portait un, il a été retiré. Un
+                              libellé qui décrit l'absence sans en donner la
+                              cause fait passer une décision clinique pour une
+                              donnée manquante. */}
+                          <span
+                            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${
+                              reponse.nonInterpretable
+                                ? 'border-status-danger/40 bg-status-danger/10 text-status-danger'
+                                : 'border-border bg-surface text-foreground'
+                            }`}
+                          >
+                            {reponse.nonInterpretable
+                              ? ETIQUETTE_NON_INTERPRETABLE
+                              : reponse.scorePrincipal !== null
+                                ? `Score brut : ${reponse.scorePrincipal}`
+                                : 'Sans score principal'}
                           </span>
                         </div>
+                        {reponse.nonInterpretable && (
+                          <p className="mt-2 text-sm text-status-danger">{reponse.nonInterpretable}</p>
+                        )}
                         {reponse.interpretation && (
                           <p className="mt-2 text-sm font-medium text-foreground">{reponse.interpretation}</p>
                         )}

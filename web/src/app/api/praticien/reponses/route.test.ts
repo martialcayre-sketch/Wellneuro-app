@@ -85,3 +85,114 @@ describe('GET /api/praticien/reponses', () => {
     expect(prisma.journalAccesDossier.create).not.toHaveBeenCalled();
   });
 });
+
+// Réservoir des passations non interprétables — le retrait a lieu DANS la
+// route, jamais dans l'écran. C'est la leçon du lot #406 : `actif: false` n'y
+// gardait que les écrans, et les trois chemins d'assignation sont passés à
+// côté. Une donnée que la route livre encore est une donnée qu'un appelant
+// affichera un jour.
+describe('GET /api/praticien/reponses — passation non interprétable', () => {
+  function ligneSom07(surcharge: Record<string, unknown> = {}) {
+    return {
+      ...reponseRow(),
+      idReponse: 'REP_SOM07',
+      idQuestionnaire: 'Q_SOM_07',
+      titre: 'MFI-20 — Échelle multidimensionnelle de fatigue',
+      // Forme réellement en base le 2026-07-27 (relevée par execute_sql).
+      scoresJson: {
+        type: 'sum',
+        total: 45,
+        maxTotal: 80,
+        interpretation: { label: 'Fatigue notable', color: 'warning' },
+        certification: null,
+        rawAnswers: { M1: 2, M2: 3 },
+      },
+      scorePrincipal: 45,
+      interpretation: 'Fatigue notable',
+      ...surcharge,
+    };
+  }
+
+  beforeEach(() => {
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+  });
+
+  it('ne livre ni score principal ni interprétation, et donne le motif', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([ligneSom07()]);
+    const { reponses } = await (await GET(request())).json();
+    expect(reponses).toHaveLength(1);
+    expect(reponses[0].scorePrincipal).toBeNull();
+    expect(reponses[0].interpretation).toBe('');
+    expect(reponses[0].nonInterpretable).toBeTruthy();
+    // Le motif est ce qui distingue « retiré » de « manquant » à l'écran.
+    expect(reponses[0].nonInterpretable).toContain('MFI-20');
+  });
+
+  it('ne laisse subsister aucune valeur de score dans la charge utile sérialisée', async () => {
+    // Preuve sur le JSON réellement transmis, pas sur l'objet intermédiaire :
+    // c'est ce que le navigateur reçoit. Un total oublié sous une clé
+    // imprévue serait attrapé ici même si aucune assertion ne le nomme.
+    //
+    // Le motif est retiré AVANT le balayage, et pas par confort : il cite
+    // « 3 bandes sur /80 » et « échelle 1→5 ». Chercher des nombres nus dans
+    // un texte qui explique des nombres rend un faux positif — la première
+    // version de ce test échouait sur son propre motif.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([ligneSom07()]);
+    const charge = await (await GET(request())).json();
+    const motif = charge.reponses[0].nonInterpretable;
+    expect(motif, 'motif absent : le balayage ci-dessous ne prouverait rien').toBeTruthy();
+    const { nonInterpretable: _motif, ...sansMotif } = charge.reponses[0];
+    const brut = JSON.stringify(sansMotif);
+    for (const fuite of ['Fatigue notable', '"total"', '"maxTotal"', '45', '80']) {
+      expect(brut, `« ${fuite} » a fui vers le client`).not.toContain(fuite);
+    }
+  });
+
+  it('conserve les réponses brutes du patient — marquer n’est pas effacer', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([ligneSom07()]);
+    const { reponses } = await (await GET(request())).json();
+    expect(reponses[0].scoresParsed).toEqual({ rawAnswers: { M1: 2, M2: 3 } });
+    expect(reponses[0].titre).toBe('MFI-20 — Échelle multidimensionnelle de fatigue');
+  });
+
+  it('couvre la forme HÉRITÉE réellement en base, qui n’a aucun rawAnswers', async () => {
+    // La passation du 2026-06-15 (score 31, « Fatigue multidimensionnelle
+    // sévère ») porte `{GF, AM, global}` et PAS de clé `rawAnswers` — vérifié
+    // en production. Une liste noire de clés interprétatives aurait couvert la
+    // forme courante et laissé passer `global` ; sans cette fixture, aucune
+    // suite de route n'exerçait la forme qui est pourtant en base.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      ligneSom07({
+        scoresJson: { GF: 18, AM: 13, global: 31 },
+        scorePrincipal: 31,
+        interpretation: 'Fatigue multidimensionnelle sévère — composantes physique et mentale toutes deux impactées',
+      }),
+    ]);
+    const { reponses } = await (await GET(request())).json();
+    expect(reponses[0].nonInterpretable).toBeTruthy();
+    expect(reponses[0].scorePrincipal).toBeNull();
+    expect(reponses[0].interpretation).toBe('');
+    // Rien ne subsiste : cette passation-là n'est même pas rescorable.
+    expect(reponses[0].scoresParsed).toEqual({});
+    const { nonInterpretable: _m, ...sansMotif } = reponses[0];
+    for (const fuite of ['"global"', '"GF"', '"AM"', '31', 'sévère']) {
+      expect(JSON.stringify(sansMotif), `« ${fuite} » a fui`).not.toContain(fuite);
+    }
+  });
+
+  it('retire aussi les bornes de sous-scores (elles dessineraient une échelle non servie)', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([ligneSom07()]);
+    const { reponses } = await (await GET(request())).json();
+    expect(reponses[0].subScoreRanges).toBeNull();
+  });
+
+  it('ne touche à rien sur un instrument courant (contrôle négatif)', async () => {
+    // Sans ce contrôle, vider inconditionnellement score et interprétation
+    // ferait passer les quatre tests ci-dessus au vert.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([reponseRow()]);
+    const { reponses } = await (await GET(request())).json();
+    expect(reponses[0].nonInterpretable).toBeNull();
+    expect(reponses[0].scorePrincipal).toBe(3);
+    expect(reponses[0].interpretation).toBe('Faible');
+  });
+});

@@ -426,6 +426,22 @@ export async function deciderClaim(params: {
 // 20260723120000). L'unicité d'issue d'un tirage est portée par l'index
 // unique partiel de la même migration — la vérification applicative n'est
 // qu'un confort d'UX, la base est l'arbitre sous concurrence.
+//
+// S'y ajoute depuis le 2026-07-27 un GARDE DE CONTENU, indépendant de la
+// typologie : `public.rag_claim_porte_seuil` (migration 20260727140000) écarte
+// tout claim portant une borne de décision — plage de référence, seuil,
+// bande d'interprétation. Motif : l'audit du notebook 08
+// (docs/claude/propositions/2026-07-27-audit-claims-non-prescriptifs/) a trouvé
+// AU MOINS 55 telles bornes parmi 563 claims éligibles, dont la grille ferritine
+// en cinq bandes et les trois seuils d'homocystéine. Ni `typologie_lecture` ni
+// `prescriptif` n'encode cette propriété, et la frontière 'déclaré'/'interprété'
+// ne la tranche pas — d'où un critère de contenu, vérifiable.
+//
+// Le prédicat vit dans la BASE et non ici : il s'éprouve en six endroits (les
+// cinq requêtes ci-dessous et le trigger), et une définition par site aurait
+// divergé au premier ajustement. Toute requête qui décide de l'éligibilité doit
+// l'appeler — l'oublier sur l'UPDATE de `deciderLot` rendrait les autres
+// inopérantes.
 // ---------------------------------------------------------------------------
 
 /** 30 % (min. 5) pendant le rodage, 20 % (min. 5) ensuite si zéro défaut. */
@@ -495,6 +511,7 @@ export async function eligiblesVoieRapide(sourceId: string): Promise<string[]> {
       AND c.active = true
       AND c.prescriptif = false
       AND c.typologie_lecture IN ('déclaré', 'observé')
+      AND NOT public.rag_claim_porte_seuil(c.texte_normalise)
     ORDER BY c.claim_id, c.version_claim
   `;
   return rows.map((r) => r.id);
@@ -561,7 +578,9 @@ export async function tirerEchantillon(params: {
   if (ouverts[0]) return { ok: false, raison: 'tirage_ouvert', tirageId: Number(ouverts[0].id) };
 
   // Périmètre de la voie rapide — MÊME prédicat que le chargement du lot dans
-  // deciderLot : allowlist déclaré/observé, non prescriptif, en attente, actif.
+  // deciderLot : allowlist déclaré/observé, non prescriptif, en attente, actif,
+  // et sans borne de décision dans le texte (garde de contenu, migration
+  // 20260727140000).
   const eligibles = await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT c.id
     FROM public.rag_corpus_claims c
@@ -570,6 +589,7 @@ export async function tirerEchantillon(params: {
       AND c.active = true
       AND c.prescriptif = false
       AND c.typologie_lecture IN ('déclaré', 'observé')
+      AND NOT public.rag_claim_porte_seuil(c.texte_normalise)
     ORDER BY c.claim_id, c.version_claim
   `;
   if (eligibles.length === 0) return { ok: false, raison: 'aucun_claim_voie_rapide' };
@@ -802,6 +822,7 @@ export async function deciderLot(params: {
       AND c.active = true
       AND c.prescriptif = false
       AND c.typologie_lecture IN ('déclaré', 'observé')
+      AND NOT public.rag_claim_porte_seuil(c.texte_normalise)
     ORDER BY c.claim_id, c.version_claim
   `;
   const idsLot = new Set(lot.map((c) => c.id));
@@ -890,6 +911,7 @@ export async function deciderLot(params: {
           AND active = true
           AND prescriptif = false
           AND typologie_lecture IN ('déclaré', 'observé')
+          AND NOT public.rag_claim_porte_seuil(texte_normalise)
         RETURNING id
       `;
       // Garde de concurrence : si le lot a bougé entre lecture et signature,
@@ -1046,9 +1068,9 @@ export type SourceEnRevue = {
   enAttente: number;
   valides: number;
   rejetes: number;
-  /** En attente, signables par lot : déclaré/observé non prescriptifs (allowlist). */
+  /** En attente, signables par lot : déclaré/observé non prescriptifs (allowlist), sans borne de décision dans le texte. */
   voieRapide: number;
-  /** En attente, revue individuelle obligatoire : prescriptifs ou interprétés/vécus. */
+  /** En attente, revue individuelle obligatoire : prescriptifs, interprétés/vécus, ou porteurs d'une borne de décision. */
   voieLente: number;
   /** Un tirage sans issue existe pour cette source (voie rapide en cours). */
   tirageOuvert: boolean;
@@ -1078,6 +1100,7 @@ export async function listerSourcesEnRevue(): Promise<SourceEnRevue[]> {
         WHERE c.statut = 'EN_ATTENTE_VALIDATION'
           AND c.prescriptif = false
           AND c.typologie_lecture IN ('déclaré', 'observé')
+          AND NOT public.rag_claim_porte_seuil(c.texte_normalise)
       ) AS voie_rapide,
       EXISTS (
         SELECT 1

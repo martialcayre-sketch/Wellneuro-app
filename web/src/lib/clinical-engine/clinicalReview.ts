@@ -161,6 +161,23 @@ function structuralMissingData(snapshot: ClinicalSnapshot): MissingDataFinding[]
         limitations: ['Aucune criticité clinique n’est attribuée automatiquement.'],
       });
     }
+    // Motif distinct, et `findingId` distinct : réutiliser `not_calculable`
+    // aurait fait dire « la réponse ne contient pas de données brutes
+    // complètes et exploitables » d'une passation qui en porte vingt. Ici les
+    // données sont là — c'est leur LECTURE qui a été retirée. Le motif exact
+    // vient du registre, porté par la limitation du snapshot.
+    if (response.evaluability === 'not_interpretable') {
+      findings.push({
+        findingId: `response:${response.responseId}:not_interpretable`, kind: 'missing_data',
+        confidence: 'à_documenter', priority: null, ruleId: null,
+        uncertaintyExplanation:
+          'Les réponses sont présentes, mais l’instrument servi ne correspond pas à sa source publiée : '
+          + 'le résultat enregistré n’est pas la mesure annoncée par son titre.',
+        potentialDecisionImpact: STRUCTURAL_IMPACT,
+        provenance: { responseIds: [response.responseId], needIds: [], clinicalObjectCodes: [] },
+        limitations: ['Aucune criticité clinique n’est attribuée automatiquement.'],
+      });
+    }
     if (response.scoreVersion === null) {
       findings.push({
         findingId: `response:${response.responseId}:score_version_unknown`, kind: 'missing_data',
