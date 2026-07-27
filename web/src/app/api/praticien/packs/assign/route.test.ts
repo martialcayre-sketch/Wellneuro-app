@@ -42,6 +42,10 @@ function request(): Request {
 describe('POST /api/praticien/packs/assign — lien portail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // `clearAllMocks` efface les appels, PAS les implémentations : un
+    // `mockResolvedValue` posé dans un test fuiterait sur les suivants. On
+    // repose donc la valeur de la fabrique à chaque cas.
+    vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({ qids: ['Q_NEU_03'], source: 'legacy' });
     process.env.SMTP_URL = 'smtp://test';
     process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
     prisma.patient.findFirst.mockResolvedValue(patient);

@@ -55,13 +55,45 @@
   TypeScript reste le seul point de décision. Aucune migration. Le qid reste
   dans `packs.qids` du pack concerné : il est écarté à l'envoi, pas supprimé —
   ce qui le rendra de nouveau disponible à la réactivation, sans rien réécrire.
-- **Limites connues, laissées telles quelles.** Une assignation déjà envoyée et
-  non remplie resterait remplissable : le portail patient ne filtre pas sur
-  `actif`. Le cas est vide aujourd'hui — les 3 assignations de `Q_SOM_07` en
-  production sont `Complété` / `verrouillé`. De même, la création d'un pack
-  n'interdit pas d'y placer un instrument suspendu ; il sera simplement écarté à
-  l'envoi. Fermer ces deux trous toucherait le parcours patient de tous les
-  instruments : lot distinct.
+- **L'amputation d'un pack est tracée.** Écarter un qid en silence rend le trou
+  indétectable : le praticien lit « 5 questionnaires assignés » sans savoir
+  lequel manque, et sur le chemin de l'onboarding portail il n'y a même pas de
+  praticien pour lire ce compte. Un `logger.warn` nomme donc les instruments
+  écartés, dans `packs/assign` et dans `api/portail/valider`. La trace est
+  posée **par les routes**, pas par `assignBasePack` : `LogPayload` exige un
+  contexte de requête, et fabriquer un faux contexte pour contenter le type
+  reviendrait à mentir dans le journal. La bibliothèque expose `qidsSuspendus()`
+  et laisse tracer celui qui sait.
+- **Effet collatéral assumé sur `Q_FIB_03`.** L'ELFE est `actif: false` depuis
+  la création du catalogue mais possède une définition de scoring : **avant ce
+  diff, les trois chemins l'assignaient** par appel direct. Il devient refusé.
+  C'est bien la sémantique voulue, et l'impact mesuré est nul — il n'est dans
+  **aucun** pack, ne porte aucune assignation ni réponse en production, et est
+  absent de tous les écrans. Mais c'est une capacité retirée, et elle est ici
+  nommée plutôt que passée sous silence.
+- **Il existe un quatrième chemin d'assignation**, `api/praticien/file-envoi/
+  envoyer` — déjà étanche, puisqu'il passe par `IDS_ASSIGNABLES`, qui filtre
+  `actif`. Rien à corriger, mais à savoir : « les trois chemins » ci-dessus
+  désigne ceux qui ne l'étaient pas.
+- **Limites connues, laissées telles quelles.**
+  - Une assignation déjà envoyée et non remplie resterait remplissable : le
+    portail patient ne filtre pas sur `actif`. Le cas est **vide** — les 3
+    assignations de `Q_SOM_07` sont `Complété` / `verrouillé` (la 4ᵉ réponse
+    n'a pas d'assignation : c'est la ligne de seed du 2026-06-15).
+  - `PATCH /api/praticien/assignations` déverrouille une réponse complétée et
+    rouvre la saisie : un praticien peut donc re-servir un instrument suspendu.
+    Geste délibéré, mais non gardé.
+  - Créer un pack n'interdit pas d'y placer un instrument suspendu ; il sera
+    écarté à l'envoi.
+  - **La suspension ferme le robinet, pas le réservoir** : les passations déjà
+    enregistrées continuent d'alimenter la fiche et la synthèse IA avec
+    l'interprétation que ce même lot déclare invalide. Un praticien lira encore
+    « Fatigue sévère » sur une somme sans inversion d'items. C'est le prix de
+    l'arbitrage « marquer et laisser en place » ; le marquage relève de la
+    reconstruction.
+
+  Fermer ces trous toucherait le parcours patient de tous les instruments, ou la
+  surface de restitution : lots distincts.
 - La description affichée annonce toujours « 5 dimensions » là où le scoring en
   sert 2. Elle n'est plus visible (l'entrée quitte la bibliothèque) et sera
   corrigée à la réactivation, avec la grille reconstruite depuis la source.

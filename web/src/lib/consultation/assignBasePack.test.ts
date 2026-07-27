@@ -6,7 +6,7 @@ const { prisma } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
 
-import { assignPackToPatient } from './assignBasePack';
+import { assignPackToPatient, qidsSuspendus } from './assignBasePack';
 
 // Ce chemin est le plus sensible des trois points d'assignation : il part de
 // l'onboarding portail (`api/portail/valider`), donc sans clic praticien sur le
@@ -39,6 +39,14 @@ describe('assignPackToPatient — instruments suspendus', () => {
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
     const arg = prisma.assignation.create.mock.calls[0][0] as { data: { idQuestionnaire: string } };
     expect(arg.data.idQuestionnaire).toBe('Q_NEU_03');
+  });
+
+  // `qidsSuspendus` est ce que la route journalise : sans elle, l'amputation du
+  // pack de base serait invisible — ce chemin n'a aucun praticien pour lire un
+  // écart de comptage. La fonction est ici, la trace dans `api/portail/valider`.
+  it('expose les qids écartés, pour que l’appelant puisse les tracer', () => {
+    expect(qidsSuspendus(['Q_NEU_03', 'Q_SOM_07'])).toEqual(['Q_SOM_07']);
+    expect(qidsSuspendus(['Q_NEU_03'])).toEqual([]);
   });
 
   it('n’écrit rien si le pack ne contient que des instruments suspendus', async () => {

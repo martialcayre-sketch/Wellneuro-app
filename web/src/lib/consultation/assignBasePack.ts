@@ -3,6 +3,17 @@ import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 
+/**
+ * Les qids écartés parce que l'instrument est suspendu. Rendu à l'appelant
+ * plutôt que journalisé ici : `LogPayload` exige un contexte de requête, que
+ * cette fonction n'a pas — et fabriquer un faux contexte pour contenter le
+ * type reviendrait à mentir dans le journal. La route qui appelle est celle
+ * qui sait tracer.
+ */
+export function qidsSuspendus(qids: string[]): string[] {
+  return qids.filter(id => IDS_SUSPENDUS.has(id));
+}
+
 const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>;
 
 export type PackAssignmentOptions = {

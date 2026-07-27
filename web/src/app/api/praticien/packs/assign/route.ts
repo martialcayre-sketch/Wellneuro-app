@@ -153,6 +153,20 @@ export async function POST(req: Request): Promise<NextResponse> {
       }];
     });
 
+    // Amputer un pack en silence le rend indétectable en exploitation : le
+    // praticien lit « 5 questionnaires assignés » sans savoir lequel manque.
+    // On trace donc les qids écartés pour cause de suspension — sans quoi le
+    // seul témoin serait un écart de comptage que personne ne vérifie.
+    const ecartesSuspendus = qids.filter(id => IDS_SUSPENDUS.has(id));
+    if (ecartesSuspendus.length > 0) {
+      logger.warn({
+        event: EVENT_CODES.ASSIGNATION_PACK_RESOLUTION_FAILED,
+        domain: 'ASSIGNATION',
+        message: `Questionnaires suspendus écartés du pack : ${ecartesSuspendus.join(', ')}`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+      });
+    }
+
     if (aCreer.length === 0) {
       logger.warn({
         event: EVENT_CODES.ASSIGNATION_PACK_RESOLUTION_FAILED,
