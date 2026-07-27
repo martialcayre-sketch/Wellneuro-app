@@ -642,6 +642,29 @@ HDS mergées effacées.
 **Questions ouvertes** : confirmation DPO ; Sentry client ; PR 2 `DROP COLUMN
 access_token*` ; ops D/E + juridique F (2026-10-21).
 
+## 2026-07-27 — P0 métrologique alimentaire, points 2 à 4 (PR #408, mergée)
+
+Retiré des questionnaires alimentaires ce qu'ils n'affirment pas : titre et
+consignes de `Q_ALI_03` ne promettent plus d'estimation en g/kcal, seuils de
+`Q_ALI_01` signalés provisoires, consigne IA interdisant de conclure à une
+carence ou une quantité.
+
+**Défaut trouvé hors plan par la revue adversariale** : `Q_ALI_03` émettait un
+bloc `monnier` calculé depuis des sous-scores inexistants — 0 g/j et 0 kcal/j
+invariants, persistés et transmis au modèle. Un signal de dénutrition fabriqué,
+porté par la passation du 2026-07-25. Bloc retiré, clé filtrée du prompt. Le
+rapport d'audit affirmait le contraire ; ligne corrigée.
+
+Écartés : recâbler le bloc (exigerait poids, portions, table de composition) ;
+renseigner `versionServie.description` (le garde du registre l'interdit sous
+`a_auditer`) ; retirer `MO10` et suspendre `Q_ALI_01` (arbitrages cliniques).
+
+**Prochaine action** : backfill des `titre` figés — la fiche praticien affiche
+encore l'ancienne promesse sur la passation concernée.
+
+**Questions ouvertes** : neuf réserves au changelog, dont les libellés
+« Apports » et les bandes de `Q_ALI_01` qui continuent de conclure.
+
 ## 2026-07-27 — `actif` devient une garde de route (#406, #410)
 
 **Décisions** : #406 (`0c7d9af`) — `actif: false` ne gardait que les écrans ;
