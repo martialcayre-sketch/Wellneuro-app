@@ -1,7 +1,7 @@
 ---
 id: "2026-07-26-audit-accompagnement-alimentaire"
 titre: "Audit et arbitrage — accompagnement alimentaire Wellneuro 5.0"
-statut: "rapport — aucun changement applicatif, arbitrages en attente"
+statut: "rapport — P0 point 1 exécuté le 2026-07-27 (v4), autres arbitrages en attente"
 créé_le: "2026-07-26"
 base_auditée: "main @ a19df9b"
 ---

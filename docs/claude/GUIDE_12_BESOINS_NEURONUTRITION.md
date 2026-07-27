@@ -38,10 +38,17 @@ Le fonctionnement neuronal, la neurogenèse et la synthèse des
 neurotransmetteurs exigent des cofacteurs précis (minéraux, vitamines,
 polyphénols, acides aminés).
 
-- **Variables d'entrée** : signes cliniques de carences (échelle de Pichot,
-  fatigue). Biomarqueurs, les « 5 majeurs + 3 » : ferritine (fer), zinc
-  sérique, magnésium érythrocytaire, iode, sélénium, vitamine D, B9, B12
-  active.
+- **Variables d'entrée** : biomarqueurs, les « 5 majeurs + 3 » : ferritine
+  (fer), zinc sérique, magnésium érythrocytaire, iode, sélénium, vitamine D,
+  B9, B12 active.
+- **Aucune source questionnaire depuis la v4 du score** (2026-07-27).
+  L'échelle de fatigue de Pichot y figurait ; elle en a été retirée, la fatigue
+  étant un motif d'*explorer* le fer, la B12, les folates ou la vitamine D, et
+  non leur *mesure*. Ce besoin étant une fondation critique, l'assimilation
+  plafonnait le score global à 50 sur une carence jamais mesurée. Le besoin
+  reste donc **non évalué** (couverture `null`, jamais 0) tant qu'aucune source
+  pertinente n'existe — voir
+  `docs/claude/propositions/2026-07-26-audit-accompagnement-alimentaire/`.
 - **Règle de décision** : si carence détectée (ex. vitamine D < 45 ng/ml ou
   ferritine basse), générer un protocole de supplémentation
   micronutritionnelle individualisée.

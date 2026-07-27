@@ -20,8 +20,26 @@ import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire
 // donc les besoins non évaluables (couverture null, jamais 0) jusqu'à ce
 // qu'une source pertinente existe. Voir
 // docs/claude/propositions/2026-07-26-audit-accompagnement-alimentaire/.
-// Même conséquence de frontière : un épisode figé en v3 ne se compare pas à un
-// épisode v4 — la comparaison de jalons momentum reprend au premier couple v4.
+//
+// FRONTIÈRE — ce que le code fait réellement, la formulation portée jusqu'ici
+// par la note v2 → v3 étant inexacte. Seule l'ÉTIQUETTE `versionScore` est
+// figée à la confirmation d'un épisode (protocol/versioning.ts) ; les VALEURS
+// affichées sont recalculées à chaque lecture avec le mapping besoin → sources
+// courant (protocol/trajectoire.ts, `construireHistoriqueEquilibre`). Il en
+// découle deux conséquences, à ne pas confondre avec « la comparaison reprend » :
+//   — un épisode étiqueté v3 affichera des valeurs calculées en v4 ;
+//   — `resoudreComparaison` refuse dès que DEUX étiquettes coexistent
+//     (trajectoire.ts, `versions.size > 1`), sur l'ensemble des cycles du
+//     patient et sans fenêtre : un seul cycle v3 subsistant bloque donc la
+//     comparaison indéfiniment, il n'y a pas de reprise automatique.
+// Figer la valeur plutôt que l'étiquette est une décision d'architecture
+// ouverte, posée au praticien — elle dépasse ce lot.
+//
+// NB rédaction : ne jamais écrire le nom de la table de mapping en toutes
+// lettres AU-DESSUS de sa déclaration. Le garde du registre l'extrait par
+// `indexOf` (scripts/lib/verifier_registre_instruments.js) et tomberait sur le
+// commentaire au lieu de la table — il refuse alors de valider plutôt que de
+// contrôler dans le vide.
 export const VERSION_SCORE_EQUILIBRE = 'v4' as const;
 
 export const POIDS_STRATE: Record<StrateCode, number> = {
