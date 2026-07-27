@@ -145,6 +145,55 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
     expect(anthropicCreate).toHaveBeenCalledWith(expect.anything(), undefined);
   });
 
+  it('une passation non interprétable part sans le moindre chiffre', async () => {
+    // Réservoir `Q_SOM_07` : 4 passations en production, toutes porteuses d'un
+    // score et d'une bande que le lot #406 a déclarés invalides. Ce test
+    // observe la charge utile APRÈS `JSON.stringify` — le seul endroit où l'on
+    // voit ce que le modèle reçoit vraiment.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idQuestionnaire: 'Q_SOM_07',
+        titre: 'MFI-20 — Échelle multidimensionnelle de fatigue',
+        dateReponse: new Date('2026-07-22'),
+        scoresJson: {
+          type: 'sum',
+          total: 33,
+          maxTotal: 80,
+          interpretation: { label: 'Fatigue dans les limites normales' },
+          rawAnswers: { M1: 2 },
+        },
+        scorePrincipal: 33,
+        interpretation: 'Fatigue dans les limites normales',
+      },
+    ]);
+    await POST(req(CORPS));
+    const message: string = anthropicCreate.mock.calls[0][0].messages[0].content;
+    // La passation reste NOMMÉE — la faire disparaître laisserait croire
+    // qu'elle n'a pas été remplie.
+    expect(message).toContain('"idQuestionnaire": "Q_SOM_07"');
+    expect(message).toContain('"mesureNonInterpretable"');
+    // …mais vidée de toute mesure.
+    expect(message).toContain('"scorePrincipal": null');
+    expect(message).toContain('"scores": null');
+    expect(message).not.toContain('Fatigue dans les limites normales');
+    expect(message).not.toContain('"total"');
+    expect(message).not.toContain('33');
+    // La mini-synthèse est le second canal par lequel l'orientation atteint le
+    // modèle (lot #389). Elle doit être muette ici, sinon le retrait des
+    // scores ne protège de rien. Le mock la rend truthy (`{}`) : ce test
+    // échouerait si la route la portait quand même.
+    expect(message).toContain('"miniSynthese": ""');
+  });
+
+  it('un questionnaire courant garde ses chiffres (contrôle négatif)', async () => {
+    // Sans lui, vider inconditionnellement scores et interprétation ferait
+    // passer le test ci-dessus au vert.
+    await POST(req(CORPS));
+    const message: string = anthropicCreate.mock.calls[0][0].messages[0].content;
+    expect(message).toContain('"scorePrincipal": 12');
+    expect(message).not.toContain('mesureNonInterpretable');
+  });
+
   it('échec du modèle : 500, aucune synthèse persistée', async () => {
     anthropicCreate.mockRejectedValue(new Error('API indisponible'));
     const res = await POST(req(CORPS));

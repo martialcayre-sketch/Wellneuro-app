@@ -20,6 +20,7 @@ import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
 import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
+import { motifNonInterpretable } from '@/lib/scoring/passationsNonInterpretables';
 import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
 import {
   MODELE_REDACTION_PRATICIEN,
@@ -63,20 +64,47 @@ const MAX_TOKENS_SYNTHESE = 8192;
 // `buildContexteClinique` exclut l'identité par construction — seule cette
 // ligne d'en-tête la faisait sortir.
 function buildUserMessage(reponses: ReponseInput[], contexte: string): string {
-  const filtered = reponses.map(r => ({
-    idQuestionnaire: r.idQuestionnaire,
-    titre: r.titre,
-    date: r.date,
-    // Scores privés de toute conduite clinique : le modèle rédige à partir
-    // de la mesure. L'orientation lui parvient étiquetée par la mini-synthèse.
-    scores: scoresPourPrompt(r.scores),
-    scorePrincipal: r.scorePrincipal,
-    interpretation: r.interpretation,
-    // Sur l'objet **original** : `buildMiniSynthese` lit `conduite` et retombe
-    // sur `interpretation.protocol` pour les passations déjà en base. Le lui
-    // passer filtré ferait disparaître l'orientation du prompt entier.
-    miniSynthese: buildMiniSynthese(r.scores),
-  }));
+  const filtered = reponses.map(r => {
+    // Passation dont le résultat enregistré n'est pas une mesure (registre
+    // `passationsNonInterpretables`). Le modèle n'en reçoit AUCUN chiffre et
+    // AUCUNE bande : ni total, ni sous-scores, ni réponses brutes, ni la
+    // mini-synthèse qui reporterait l'orientation. Retirer la donnée est ce qui
+    // protège ; la consigne système ne fait qu'expliquer le trou — l'inverse
+    // (consigne seule, données livrées) est ce que le lot #408 a nommé « une
+    // interdiction dont le critère de déclenchement n'arrive pas ».
+    //
+    // La passation reste NOMMÉE : elle a eu lieu, le patient y a consacré du
+    // temps, et un dossier où elle disparaîtrait sans un mot laisserait croire
+    // qu'elle n'a pas été remplie. C'est l'arbitrage « marquer et laisser en
+    // place », pas « effacer ».
+    const motifNonMesure = motifNonInterpretable(r.idQuestionnaire);
+    if (motifNonMesure) {
+      return {
+        idQuestionnaire: r.idQuestionnaire,
+        titre: r.titre,
+        date: r.date,
+        mesureNonInterpretable: motifNonMesure,
+        scores: null,
+        scorePrincipal: null,
+        interpretation: null,
+        miniSynthese: '',
+      };
+    }
+    return {
+      idQuestionnaire: r.idQuestionnaire,
+      titre: r.titre,
+      date: r.date,
+      // Scores privés de toute conduite clinique : le modèle rédige à partir
+      // de la mesure. L'orientation lui parvient étiquetée par la mini-synthèse.
+      scores: scoresPourPrompt(r.scores),
+      scorePrincipal: r.scorePrincipal,
+      interpretation: r.interpretation,
+      // Sur l'objet **original** : `buildMiniSynthese` lit `conduite` et retombe
+      // sur `interpretation.protocol` pour les passations déjà en base. Le lui
+      // passer filtré ferait disparaître l'orientation du prompt entier.
+      miniSynthese: buildMiniSynthese(r.scores),
+    };
+  });
   const blocContexte = contexte
     ? `## Contexte anamnestique et signalétique du patient\n\n${contexte}`
     : '## Contexte anamnestique et signalétique du patient\n\nContexte anamnestique non renseigné pour ce patient.';
