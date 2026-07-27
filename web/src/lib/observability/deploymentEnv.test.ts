@@ -86,12 +86,12 @@ describe('clientReleaseSha (bundle navigateur)', () => {
     expect(clientReleaseSha()).toBe('sha-scalingo');
   });
 
-  it('repli VERCEL_GIT_COMMIT_SHA puis « local »', () => {
+  it('repli VERCEL_GIT_COMMIT_SHA, sinon undefined (inerte sur Vercel)', () => {
     clear();
     process.env.VERCEL_GIT_COMMIT_SHA = 'sha-vercel';
     expect(clientReleaseSha()).toBe('sha-vercel');
     clear();
-    expect(clientReleaseSha()).toBe('local');
+    expect(clientReleaseSha()).toBeUndefined();
   });
 });
 
