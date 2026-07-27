@@ -575,3 +575,24 @@ CB-04.
 bande ? gel des déclenchements ? dénombrement avant/après ?) ; QLQ-BR23, règle
 EORTC à lire ; Berlin à rejouer au banc ; garde de divergence registre ↔ base
 pour la décision 7 ; `npm ci` jamais joué dans `tools/corpus` en CI.
+
+## 2026-07-27 — Conduites hors des bandes (#389) et garde anti-secrets refait (#396)
+
+**Décisions** : #389 mergée (`159ec9a`) — les conduites sortent de
+`interpretation`, et le bloc de scores brut est filtré avant le prompt. Le
+modèle continue de recevoir l'orientation, **une fois, étiquetée** par la
+mini-synthèse : le filtre retire un doublon, pas une information. #396 mergée
+(`bf513c0`) — `secrets/` ignoré, motifs élargis à la forme JSON, banc de 14 cas
+en CI et en T1, trois codes de sortie (`2` = « je n'ai pas pu vérifier »).
+
+**Écarté** : couvrir `GOOGLE_CLIENT_SECRET` et `NEXTAUTH_SECRET` — 8 et 28
+correspondances, toutes des placeholders ; un garde qui échoue toujours finit
+désactivé. Et recalculer les 4 passations MFI-20 : le PDF source montre un
+**autre instrument** (échelle, inversions, dimensions et libellés divergent).
+
+**Prochaine action** : `actif: false` sur `Q_SOM_07`, en PR depuis `main`.
+
+**Questions ouvertes** : le checkout principal doit `git pull` pour que
+`secrets/` prenne effet là où sont les identifiants ; un fichier binaire indexé
+échappe encore au mode `--staged` ; aucune fixture ne rejoue la forme héritée
+`interpretation.protocol` par `route.post.test.ts`.
