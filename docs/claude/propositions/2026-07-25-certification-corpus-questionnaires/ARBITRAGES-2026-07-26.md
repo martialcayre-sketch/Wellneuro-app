@@ -8,6 +8,31 @@
 > avec ce qui a été vérifié et comment. Chaque arbitrage retenu sera daté au
 > CHANGELOG avant toute modification du catalogue.
 
+**Tranché le 2026-07-27.** Le praticien a rendu ses arbitrages sur la
+quasi-totalité de ce dossier — voir
+[le dossier d'arbitrage du 2026-07-27](../2026-07-27-arbitrages-praticien/README.md).
+Décision structurante : **la publication primaire fait foi** quand elle diverge
+du PDF du cabinet. Elle décide les trois constats du **§3** qu'elle conditionne —
+Tinetti, `Q_FIB_03`, `Q_NEU_12`.
+
+Le reste a été tranché séparément, ou ne l'est pas :
+
+- **IPSS (§2)** — corrigé, mais au titre du défaut de scoring que ce document
+  qualifie lui-même de « sans ambiguïté clinique », pas de la hiérarchie de
+  source.
+- **QLQ-BR23 (§2 bis)** — **reste ouvert** : la règle EORTC pour items manquants
+  doit être lue dans la source avant tout correctif.
+- **`Q_CAR_01` et `Q_GEO_04` (§5)** — tranchés ensemble : les dimensions sont
+  déclarées dans les deux cas.
+- **Berlin** — **retiré de la passe** : son constat est antérieur à la
+  correction du comparateur décrite plus bas, et il ne figure pas au §3.
+  À rejouer au banc avant tout correctif.
+- **MFI-20 (§1)** — hors de cette passe, arbitrage traité dans une autre
+  session.
+
+Le présent document garde son texte d'origine — c'est la pièce d'instruction,
+pas le registre des décisions.
+
 ## Comment lire les verdicts
 
 | Verdict | Ce qu'il veut dire |

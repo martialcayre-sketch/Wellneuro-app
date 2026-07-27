@@ -98,8 +98,13 @@ hors Prisma (`tables.external`).
 chunk par unités de sens, claims rédigés par une IA et contre-vérifiés par une
 seconde, ingest par routes internes, push NotebookLM/Drive) servira sans
 modification au notebook « analyses biologiques ». Les claims biologiques
-(plages, interprétations) sont prescriptifs/interprétés : **voie lente
-obligatoire** (revue individuelle, `VALIDATION_CLAIMS_DEUX_VITESSES.md`).
+(plages, interprétations) suivent le **régime commun** de validation
+(`VALIDATION_CLAIMS_DEUX_VITESSES.md`), dont la voie lente est clée sur la
+**typologie** du claim. Ce paragraphe annonçait au départ une « voie lente
+obligatoire » pour la biologie, en présupposant que ces claims seraient
+prescriptifs ou interprétés : la mesure a dit l'inverse (74 % étiquetés
+`déclaré`/`observé` non prescriptifs). Tranché le 2026-07-27 — régime commun et
+audit d'échantillon ([décision 8](../2026-07-27-arbitrages-praticien/README.md)).
 
 ## §2 — Le verrou HDS et le modèle à deux étages (section pivot)
 
@@ -285,8 +290,11 @@ Fichier propre (ex. `orientationBiologieRulesV1.ts`), sha-256 propre,
 métadonnées et **signature praticien indépendantes** de la table NNPP2 de la
 certification (décision C). Compilée hors-ligne par un outil dédié
 (`tools/corpus/biologie/compile.mjs`, miroir du lot 9 certification) à partir
-des seuls claims **VALIDÉS** en voie lente, régénérée par PR revue. Double
-verrou fail-closed propre : `WN_CB_ENABLED` **et** table signée.
+des seuls claims **VALIDÉS**, régénérée par PR revue. Double verrou fail-closed
+propre : `WN_CB_ENABLED` **et** table signée. (La mention « en voie lente » a
+été retirée le 2026-07-27 : le régime de validation est le régime commun, cf.
+[décision 8](../2026-07-27-arbitrages-praticien/README.md). L'exigence de fond
+est inchangée — **VALIDÉS**, jamais `EN_ATTENTE_VALIDATION`.)
 
 ### Hiérarchisation et priorisation (le cœur « intelligent » — et déterministe)
 
@@ -421,23 +429,31 @@ qui était écrit ici :
   rayon corpus C4 ([rayonCorpus.ts:69](../../../../web/src/lib/supplement-library/rayonCorpus.ts#L69)),
   qui filtre donc **à zéro en permanence**. Ce n'est pas un détail de CB : c'est
   un chemin de code livré qui ne peut rien restituer, quel que soit le rayon.
-  **À trancher** (question ouverte, cf. §11) : basculer ce filtre sur le
-  notebook — que `rag_corpus_chunks.notebook` porte déjà et que
-  [notebooks.ts](../../../../web/src/lib/rag/claims/notebooks.ts) dérive de
-  `sourceId` via le registre — ou faire produire `rayon` par la chaîne. Ne pas
-  laisser l'état actuel passer pour une intention.
+  **Tranché le 2026-07-27** ([dossier d'arbitrage, décision 7](../2026-07-27-arbitrages-praticien/README.md)) :
+  le filtre bascule sur le **notebook**, via
+  [notebooks.ts](../../../../web/src/lib/rag/claims/notebooks.ts). Vérification
+  en base le même jour : `match_wellneuro_rag_claims` **retourne déjà
+  `source_id`**, les 2 993 claims le portent tous, et les 658 chunks portent
+  tous un `notebook`. Le correctif est donc **sans migration ni backfill**, et
+  rend au rayon micronutrition les **305 claims validés** du notebook 10.
 - **Ce n'est pas l'ingestion qui ouvre les plages fonctionnelles, c'est la
   validation.** Les 758 claims sont entrés en `EN_ATTENTE_VALIDATION`, donc
   inertes. Tant que le praticien ne les a pas validés dans l'Atelier, la colonne
   fonctionnelle reste vide exactement comme avant — l'invariant « pas de plage
   fonctionnelle sans claim **validé** » n'a pas bougé d'un cran.
-- **La voie lente est une intention, pas un garde.** La décision G la
-  présupposait ; rien ne l'implémente. Sur les 758 claims du lot, **563 (74 %)
-  sont `déclaré` ou `observé` non prescriptifs**, donc éligibles à la voie
-  rapide — l'allowlist de [revue.ts](../../../../web/src/lib/rag/claims/revue.ts)
-  ne connaît ni notebook ni rayon. Si la voie lente est une exigence clinique
-  pour la biologie, il manque un garde et il faut l'écrire comme un lot ; sinon
-  il faut cesser de l'énoncer au passé composé.
+- **La voie lente existe — mais pas celle que ce cadrage présupposait.**
+  L'allowlist de [revue.ts](../../../../web/src/lib/rag/claims/revue.ts) est clée
+  sur la **typologie** (`interprété` et `vécu` en voie lente, une typologie
+  inconnue tombe du côté prudent), redondée par un trigger d'insertion ; elle ne
+  connaît simplement ni notebook ni rayon. Ce qui est infirmé, c'est la
+  **prémisse** posée ici : les claims biologiques ne se sont pas révélés
+  majoritairement prescriptifs ou interprétés — **563 des 758 (74 %)** sont
+  étiquetés `déclaré`/`observé` non prescriptifs, donc éligibles à la voie
+  rapide. **Tranché le 2026-07-27**
+  ([décision 8](../2026-07-27-arbitrages-praticien/README.md)) : régime commun,
+  et **audit d'une trentaine de ces claims** avant d'en conclure quoi que ce
+  soit — l'étiquetage est produit par le LLM rédacteur lui-même, et « 74 % non
+  prescriptifs » peut aussi vouloir dire « sous-étiquetés ».
 
 **Contrôle en base après ingestion** (2026-07-27, lecture `execute_sql`) :
 lot `LOT_007_2026-07-26` = **135 chunks / 27 sources / 758 claims**, dont
@@ -545,19 +561,21 @@ et laisse la production sur le déploiement précédent — **à une exception p
 le contrat s'exécutant après le commit de l'import, un build rouge à cette
 étape-là signifie que l'import, lui, est bien écrit.
 
-**Trois questions restent ouvertes pour le praticien** (soulevées par la revue,
-sans réponse dans le cadrage) :
+**Trois questions soulevées par la revue, toutes tranchées le 2026-07-27**
+(détail et motifs : [dossier d'arbitrage, décisions 9 à 11](../2026-07-27-arbitrages-praticien/README.md)) :
 
-1. Que devient une correspondance signée dont l'acte disparaît ? Un statut
-   « signature orpheline » et une file de reprise, ou le silence de
-   `hors_nomenclature` suffit-il ? À trancher **avant CB-02c**.
+1. Que devient une correspondance signée dont l'acte disparaît ?
+   → **Statut « signature orpheline » et file de reprise**, à poser **avant
+   CB-02c**. Le silence de `hors_nomenclature` ferait porter la signature sur
+   autre chose que ce qui est servi, sans le signaler.
 2. Entre `signee` et `courrier_medecin_genere`, le régime documentaire est-il
-   figé ? Si le pointeur bouge dans cet intervalle, une proposition signée
-   comme remboursée peut se matérialiser en document patient.
-3. `biology_source_snapshots` accueillera-t-elle un jour une source `labo` ? Le
-   CHECK est aujourd'hui restreint à `nabm_smt_ans` pour que l'élargir soit une
-   migration relue — `contenu` étant un texte libre que le verrou HDS, qui
-   raisonne sur des noms de colonnes, ne peut pas inspecter.
+   figé ? → **Figé à la signature, et génération interrompue si le pointeur a
+   bougé** : la proposition revient au praticien plutôt que de se matérialiser
+   sur un état périmé.
+3. `biology_source_snapshots` accueillera-t-elle un jour une source `labo` ?
+   → **Le CHECK reste fermé** à `nabm_smt_ans` ; l'élargir restera une migration
+   relue. `contenu` est un texte libre que le verrou HDS, qui raisonne sur des
+   noms de colonnes, ne peut pas inspecter.
 
 ## §9 — Invariants réglementaires
 
@@ -628,16 +646,25 @@ Restent donc, celles-là comprises :
   revue compte **2 375 claims `EN_ATTENTE_VALIDATION`** tous lots confondus, dont
   les 758 de la biologie. Le rayon peut rester longtemps à l'état « catalogue
   sans plages fonctionnelles », utile mais muet côté moteur.
-- **Le rayon corpus C4 filtre à zéro.** `servirRayonCorpus` sélectionne sur
-  `metadata.rayon`, qu'aucun claim ne porte (0 sur 2 993 en production au
-  2026-07-27). La fonctionnalité est livrée et inerte, pour tous les rayons et
-  pas seulement la biologie. À trancher avant de s'appuyer dessus en CB-08 :
-  basculer le filtre sur le notebook, ou faire produire `rayon` par la chaîne.
-- **La voie lente n'est pas outillée.** 563 des 758 claims biologie (74 %) sont
-  éligibles à la voie rapide, l'allowlist de `revue.ts` ignorant le notebook et
-  le rayon. Si la voie lente est une exigence clinique pour la biologie — c'est
-  ce que présupposait la décision G — elle demande un garde explicite, donc un
-  lot ; en son absence, ne pas la présenter comme acquise.
+- **Le rayon corpus C4 filtrait à zéro — tranché, plus un risque mais un lot.**
+  `servirRayonCorpus` sélectionnait sur `metadata.rayon`, qu'aucun claim ne
+  porte (0 sur 2 993 en production au 2026-07-27) : la fonctionnalité était
+  livrée et inerte, pour tous les rayons. Le filtre bascule sur le **notebook**
+  ([décision 7](../2026-07-27-arbitrages-praticien/README.md)), sans migration
+  ni backfill — la fonction SQL retourne déjà `source_id`. À faire avant de
+  s'appuyer dessus en CB-08.
+- **La prémisse de ce cadrage sur la nature des claims biologiques est
+  infirmée** — le garde, lui, existe. 563 des 758 claims (74 %) sont éligibles à
+  la voie rapide, l'allowlist de `revue.ts` étant clée sur la typologie et non
+  sur le notebook. Régime commun retenu, **assorti d'un audit d'échantillon**
+  ([décision 8](../2026-07-27-arbitrages-praticien/README.md)) : l'étiquetage
+  `prescriptif`/typologie est produit par le LLM rédacteur, et ces 74 % ne
+  disent pas encore si les claims ne sont pas prescriptifs ou s'ils sont
+  sous-étiquetés. **Le risque ouvert** : ces claims alimenteront les seuils de
+  `orientationBiologieRulesV1.ts`, derrière une signature de lot échantillonnée
+  à 20 %. Leçon de rédaction à retenir au passage — j'avais d'abord écrit que
+  ce garde n'existait pas ; décrire comme absente une protection en place est
+  une manière de la démonter.
 - **Séquencement restant** : CB-03 reste suspendu à la stabilisation de la
   certification. Le risque n'est plus le télescopage, désormais assumé, mais
   l'oubli.

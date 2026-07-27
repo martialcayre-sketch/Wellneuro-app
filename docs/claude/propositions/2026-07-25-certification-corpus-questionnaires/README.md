@@ -208,17 +208,30 @@ praticien ; 12/13 ensuite. **La priorité immédiate est la certification
    seuls porteurs du verbatim — ne sont lus que par le contrôle de santé, la
    vérification et l'écran de revue.
 
+   **État d'exécution au 2026-07-27 — la décision A n'est faite qu'à moitié.**
+   Le verbatim est passé : `LOT_006_2026-07-26` porte **140 chunks pour 106
+   sources** du notebook « 13 — Instruments du cabinet ». Les claims, eux,
+   n'ont jamais été produits : **0 claim** rattaché à ce lot. Le praticien a
+   tranché le 2026-07-27 ([décision 6](../2026-07-27-arbitrages-praticien/README.md))
+   de commencer par un **pilote de 10 sources** dont on mesurera le taux
+   d'exclusion, plutôt que d'engager les 106 d'un bloc. Motif : sur le
+   `LOT_007`, les deux seuls chunks de nature *questionnaire* ont vu **14 claims
+   sur 14 exclus pour infidélité**, le rédacteur transformant des intitulés de
+   sections en énoncés de causalité absents de la source. Si le pilote le
+   confirme, c'est la décision A qu'il faudra amender — un instrument n'est
+   peut-être pas une source de connaissance.
+
 ## 5. Décisions praticien en attente
 
 | # | Question | Bloque |
 |---|---|---|
 | ~~a~~ | ~~Fourniture des PDF sources primaires~~ — **close le 2026-07-25** (123 PDF rapatriés, 116 notices) | — |
 | ~~b~~ | ~~Droits/licences des instruments **tiers**~~ — **close le 2026-07-26** (décision 8 : ingestion complète des 106 sources ; déclaration étendue à 7 instruments ; 22 restent `a_verifier`) | — |
-| c | Hiérarchie en cas de divergence Drive ↔ source primaire (le banc va en détecter — MFI-20/Berlin/PSQI déjà constatées) | Lot 4 (arbitrages) |
+| ~~c~~ | ~~Hiérarchie en cas de divergence Drive ↔ source primaire~~ — **close le 2026-07-27** ([décision 1](../2026-07-27-arbitrages-praticien/README.md) : la **publication primaire fait foi**) | — |
 | d | Validation des niveaux de preuve A/B/C/D (`NIVEAU_PREUVE_PAR_SOURCE`) | Lot 5 |
 | e | Besoins 3/6/7/11 : rester à couverture null, ou mapper de nouvelles sources (⇒ bump v3) | Lot 6 |
 | f | Confirmation du périmètre A-009 appliqué à l'orientation | Lot 8 |
-| g | Sortie des champs `protocol` des bandes d'interprétation (IRLS…) vers un objet de conduite clinique séparé | lot d'arbitrage dédié |
+| ~~g~~ | ~~Sortie des champs `protocol` des bandes d'interprétation (IRLS…)~~ — **close le 2026-07-27** ([décision 5](../2026-07-27-arbitrages-praticien/README.md) : champ praticien distinct, non transmis au prompt patient, 11 instruments) | — |
 | h | Libellés chiffrés du catalogue (« sensibilité 90,5 % »…) : adosser à une référence ou marquer provisoires | Lot 4 |
 
 **Veille réglementaire** : la « validation pour l'usage WellNeuro » reste
