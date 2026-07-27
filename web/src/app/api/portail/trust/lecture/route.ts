@@ -6,7 +6,7 @@ import type { TrustDocumentKey, TypeAccuse } from '@/lib/trust/types';
 
 export type TrustLectureResponse = { ok: true } | { ok: false; reason: string; error: string };
 
-type Payload = { token?: string; documentKey?: string; type?: string };
+type Payload = { documentKey?: string; type?: string };
 
 const CLES_VALIDES: TrustDocumentKey[] = [
   'cadre_accompagnement',
@@ -36,7 +36,7 @@ export async function POST(req: Request): Promise<NextResponse<TrustLectureRespo
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Document ou type inconnu.' }, { status: 400 });
   }
 
-  const auth = await authentifierPatientPortail(req, payload.token ?? null);
+  const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<TrustLectureResponse>;
   const { patient } = auth;
 

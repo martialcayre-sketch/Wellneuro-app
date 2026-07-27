@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { readPatientSession } from '@/lib/patient-session';
 import {
-  isTokenValide,
-  isEmailValide,
-  resolvePortailPatient,
+  resolvePortailPatientFromSession,
   consultationCourante,
   CONSENTEMENT_VERSION,
   FINALITE_CONSENTEMENT,
@@ -11,26 +10,17 @@ import {
 
 export type PortailConsentementResponse = { ok: true } | { ok: false; reason: string; error: string };
 
-type Payload = { token?: string; email?: string };
-
 // POST /api/portail/consentement — recueille le consentement au niveau de la
-// consultation courante, avant toute saisie de fiche/anamnèse.
+// consultation courante, avant toute saisie de fiche/anamnèse. Auth par cookie
+// de session (LOT-04) : plus de couple jeton+email ; l'identité vient du cookie.
 export async function POST(req: Request): Promise<NextResponse<PortailConsentementResponse>> {
-  let payload: Payload;
-  try {
-    payload = (await req.json()) as Payload;
-  } catch {
-    return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
-  }
-
-  const token = (payload.token ?? '').trim();
-  const email = (payload.email ?? '').trim().toLowerCase();
-  if (!isTokenValide(token) || !isEmailValide(email)) {
-    return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiants invalides.' }, { status: 400 });
+  const session = readPatientSession(req);
+  if (!session) {
+    return NextResponse.json({ ok: false, reason: 'unauthenticated', error: 'Session expirée. Reconnectez-vous.' }, { status: 401 });
   }
 
   try {
-    const patient = await resolvePortailPatient(token, email);
+    const patient = await resolvePortailPatientFromSession(session);
     if (!patient) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 });
     }

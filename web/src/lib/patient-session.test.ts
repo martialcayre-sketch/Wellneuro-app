@@ -194,9 +194,10 @@ describe('session patient', () => {
     expect(isSessionValideForPatient(session, compte({ idPatient: 'PAT_2' }))).toBe(false);
     expect(isSessionValideForPatient(session, compte({ email: 'autre@example.test' }))).toBe(false);
     expect(isSessionValideForPatient(session, compte({ actif: false }))).toBe(false);
-    // Portée du jeton, tenue par la fonction elle-même et non par ses appelants :
-    // un sixième appelant ne peut plus l'oublier.
-    expect(isSessionValideForPatient(session, compte({ accessToken: null }))).toBe(false);
+    // LOT-04 : l'ABSENCE de jeton ne ferme plus la session (les patients sans
+    // jeton d'accès sont désormais la norme). La RÉVOCATION, elle, reste honorée
+    // par la fonction elle-même — un appelant ne peut pas l'oublier.
+    expect(isSessionValideForPatient(session, compte({ accessToken: null }))).toBe(true);
     expect(isSessionValideForPatient(session, compte({ accessTokenRevoked: true }))).toBe(false);
   });
 });

@@ -2,8 +2,26 @@
 // mini-app OAuth Google — pattern standard pour tester une app NextAuth avec
 // Playwright. Nécessite NEXTAUTH_SECRET (même valeur que le serveur testé).
 import { encode } from 'next-auth/jwt';
+import { PORTAIL_COOKIE_NAME, signPatientSession } from '../../src/lib/patient-session';
 
 const PRATICIEN_EMAIL = 'martialcayre@wellneuro.fr';
+
+// Pose la session PORTAIL PATIENT (cookie `wn_portail`) exactement comme le fait
+// l'atterrissage magic-link/Google. Depuis le LOT-04, ce cookie signé est
+// l'unique credential du portail : plus de jeton d'URL ni de gate e-mail à
+// simuler. Le vrai parcours magic-link reste couvert par `portail-lien-magique`.
+export function patientPortailSessionCookie(idPatient: string, email: string) {
+  const value = signPatientSession({ idPatient, email });
+  return {
+    name: PORTAIL_COOKIE_NAME,
+    value,
+    domain: 'localhost',
+    path: '/',
+    httpOnly: true,
+    sameSite: 'Lax' as const,
+    expires: Math.floor(Date.now() / 1000) + 12 * 60 * 60,
+  };
+}
 
 export async function praticienSessionCookie(email = PRATICIEN_EMAIL) {
   const secret = process.env.NEXTAUTH_SECRET;

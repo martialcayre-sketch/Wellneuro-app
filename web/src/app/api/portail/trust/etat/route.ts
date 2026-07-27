@@ -38,13 +38,12 @@ export type TrustEtatResponse =
     }
   | { ok: false; reason: string; error: string };
 
-// GET /api/portail/trust/etat?token=… — état TRUST du patient de la session.
+// GET /api/portail/trust/etat — état TRUST du patient de la session (cookie).
 // Les documents eux-mêmes viennent du registre versionné côté client
 // (lib/trust/contenus/registre.ts) ; cette route ne renvoie que l'état
 // individuel (DTO patient explicite, aucune sérialisation implicite).
 export async function GET(req: Request): Promise<NextResponse<TrustEtatResponse>> {
-  const token = new URL(req.url).searchParams.get('token');
-  const auth = await authentifierPatientPortail(req, token);
+  const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<TrustEtatResponse>;
   const { patient } = auth;
 

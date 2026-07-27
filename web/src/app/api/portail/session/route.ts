@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import {
-  isTokenValide,
-  isEmailValide,
-  resolvePortailPatient,
   resolvePortailPatientFromSession,
   consultationCourante,
 } from '@/lib/consultation/portail';
@@ -13,7 +10,6 @@ import {
   signPatientSession,
   readPatientSession,
 } from '@/lib/patient-session';
-import { lienPermanentHonore, lireBascule } from '@/lib/portail/lienPermanent';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -34,92 +30,37 @@ export type PortailConsultationState = {
 export type PortailSessionResponse =
   | {
       ok: true;
-      // `idPatient` sert au navigateur à nommer ses brouillons locaux sans
-      // recopier le jeton d'accès dans le stockage : une identité qui survit
-      // au changement de lien (préalable G4). Aucune route portail n'accepte
-      // un `idPatient` venu du client — elles le lisent toutes du cookie.
+      // `idPatient` sert au navigateur à nommer ses brouillons locaux et à bâtir
+      // les liens du portail. Aucune route portail n'accepte un `idPatient` venu
+      // du client — elles le lisent toutes du cookie signé.
       patient: { idPatient: string; prenom: string; nom: string; email: string };
       consultation: PortailConsultationState | null;
       premiereAssignation: string | null;
     }
   | { ok: false; reason: string; error: string };
 
-type Payload = { token?: string; email?: string };
-
-// POST /api/portail/session — « login » du portail patient.
+// POST /api/portail/session — « qui suis-je » du portail patient. Depuis le
+// LOT-04, l'unique credential est le cookie de session signé `wn_portail`, posé
+// à l'atterrissage magic-link/Google. Cette route lit le cookie, rafraîchit la
+// session (glissante) et renvoie l'état d'onboarding. Plus de login par
+// jeton+email : sans cookie valide, elle répond 401 et le client redirige vers
+// la page de connexion.
 export async function POST(req: Request): Promise<NextResponse> {
   const requestContext = createRequestContext(req);
-  let payload: Payload;
-  try {
-    payload = (await req.json()) as Payload;
-  } catch {
-    logger.warn({
-      event: EVENT_CODES.PORTAIL_SESSION_INVALID_PAYLOAD,
-      domain: 'PORTAIL_PATIENT',
-      message: 'Payload invalide sur ouverture de session portail',
-      context: finalizeLogContext(requestContext, { statusCode: 400, retryable: false }),
-    });
-    return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 }), requestContext);
-  }
 
-  const token = (payload.token ?? '').trim();
-  const email = (payload.email ?? '').trim().toLowerCase();
-
-  if (!isTokenValide(token) || (email && !isEmailValide(email))) {
-    logger.security({
-      event: EVENT_CODES.PORTAIL_SESSION_INVALID_PAYLOAD,
-      domain: 'SECURITY',
-      message: 'Tentative portail avec identifiants invalides',
-      context: finalizeLogContext(requestContext, { statusCode: 400, retryable: false }),
-    });
-    return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiants invalides.' }, { status: 400 }), requestContext);
-  }
-
-  // Bascule des liens permanents (R4). Vérifiée avant toute lecture en base :
-  // passée, le jeton n'identifie plus personne. Le message le dit franchement et
-  // oriente vers le canal de redemande — après la bascule, « accès non reconnu
-  // ou révoqué » ferait croire à chaque patient que son dossier est fermé.
-  // Aucune fuite : la bascule est globale, sa mention n'apprend rien sur
-  // l'existence d'une adresse ni d'un jeton.
-  const bascule = lireBascule();
-  if (bascule.etat === 'invalide') {
-    // Une bascule illisible laisse les liens ouverts (fail-open assumé) : elle
-    // ne doit pas pour autant passer inaperçue.
-    logger.error({
-      event: EVENT_CODES.PORTAIL_LIEN_PERMANENT_BASCULE_ILLISIBLE,
-      domain: 'SECURITY',
-      message: 'WN_PORTAIL_LIEN_PERMANENT_FIN illisible — liens permanents laissés ouverts',
-      context: finalizeLogContext(requestContext, { retryable: false }),
-    });
-  }
-  if (!lienPermanentHonore(new Date(), bascule)) {
-    logger.security({
-      event: EVENT_CODES.PORTAIL_LIEN_PERMANENT_BASCULE,
-      domain: 'SECURITY',
-      message: 'Accès par lien permanent refusé — bascule atteinte',
-      context: finalizeLogContext(requestContext, { statusCode: 410, retryable: false }),
-    });
+  const session = readPatientSession(req);
+  if (!session) {
     return withCorrelationHeader(
       NextResponse.json(
-        {
-          ok: false,
-          reason: 'lien_permanent_expire',
-          error:
-            'Ce lien d’accès n’est plus valable. Demandez-en un nouveau depuis la page d’accès, ou à votre praticien.',
-        },
-        { status: 410 },
+        { ok: false, reason: 'unauthenticated', error: 'Session expirée. Reconnectez-vous.' },
+        { status: 401 },
       ),
       requestContext,
     );
   }
 
   try {
-    const existingSession = readPatientSession(req);
-    const patient = email
-      ? await resolvePortailPatient(token, email)
-      : existingSession
-        ? await resolvePortailPatientFromSession(token, existingSession)
-        : null;
+    const patient = await resolvePortailPatientFromSession(session);
     if (!patient) {
       logger.security({
         event: EVENT_CODES.PORTAIL_SESSION_FORBIDDEN,
@@ -155,14 +96,13 @@ export async function POST(req: Request): Promise<NextResponse> {
       premiereAssignation: premiere?.idAssignation ?? null,
     });
 
-    // Pose le cookie de session portail : l'email n'est saisi qu'ici, puis
-    // porté par le cookie signé pour les appels suivants (hub, questionnaires).
+    // Rafraîchit le cookie (session glissante) : réémet l'identité déjà vérifiée
+    // par `resolvePortailPatientFromSession`. Une révocation postérieure a déjà
+    // court-circuité ce chemin (403 ci-dessus), donc aucune session révoquée
+    // n'est prolongée ici.
     res.cookies.set(
       PORTAIL_COOKIE_NAME,
-      signPatientSession({
-        idPatient: patient.idPatient,
-        email: patient.email,
-      }),
+      signPatientSession({ idPatient: patient.idPatient, email: patient.email }),
       PORTAIL_COOKIE_OPTIONS,
     );
 

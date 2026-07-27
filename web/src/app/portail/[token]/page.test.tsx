@@ -2,7 +2,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
 
-vi.mock('next/navigation', () => ({ useParams: () => ({ token: 'TOK_SESSION_TEST' }) }));
+const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
+vi.mock('next/navigation', () => ({
+  useParams: () => ({ token: 'PAT_TEST' }),
+  useRouter: () => ({ replace }),
+}));
 
 import PortailPage from './page';
 
@@ -10,6 +14,7 @@ describe('PortailPage — restauration de session', () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    replace.mockClear();
   });
 
   it('restaure une session valide sans afficher le gate email', async () => {
@@ -19,7 +24,7 @@ describe('PortailPage — restauration de session', () => {
       ok: true,
       json: vi.fn().mockResolvedValue({
         ok: true,
-        patient: { prenom: 'Sophie', nom: 'Nicola', email: 'sophie.nicola@example.test' },
+        patient: { idPatient: 'PAT_TEST', prenom: 'Sophie', nom: 'Nicola', email: 'sophie.nicola@example.test' },
         consultation: null,
         premiereAssignation: 'ASS_TEST',
       }),
@@ -31,19 +36,20 @@ describe('PortailPage — restauration de session', () => {
     expect(screen.getByText('Vérification de votre session…')).not.toBeNull();
     await waitFor(() => expect(screen.getByText('Merci !')).not.toBeNull());
     expect(screen.queryByPlaceholderText('votre@email.fr')).toBeNull();
-    expect(fetchMock).toHaveBeenCalledWith('/api/portail/session', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ token: 'TOK_SESSION_TEST' }),
-    }));
+    expect(replace).not.toHaveBeenCalled();
   });
 
-  it('affiche le gate lorsque la restauration est refusée', async () => {
+  // LOT-04 : plus de gate email. Sans cookie valide, la page redirige vers la
+  // page de connexion (Google + redemande de lien magique).
+  it('redirige vers /portail/connexion lorsque la restauration est refusée', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       json: vi.fn().mockResolvedValue({ ok: false, reason: 'forbidden', error: 'Accès refusé.' }),
     }));
 
     render(<PortailPage />);
 
-    await waitFor(() => expect(screen.getByPlaceholderText('votre@email.fr')).not.toBeNull());
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/portail/connexion'));
+    // Le champ e-mail du gate n'existe plus.
+    expect(screen.queryByPlaceholderText('votre@email.fr')).toBeNull();
   });
 });

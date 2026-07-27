@@ -10,7 +10,6 @@ import {
   verifierEtatGoogle,
 } from '@/lib/portail/googleIdentite';
 import { PORTAIL_COOKIE_NAME, PORTAIL_COOKIE_OPTIONS, signPatientSession } from '@/lib/patient-session';
-import { PortalAccessError, ensureActivePortalAccess } from '@/lib/consultation/portal-access';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
@@ -19,8 +18,8 @@ import type { RequestContext } from '@/lib/observability/types';
 // GET /portail/google/retour — retour de Google (gate G5).
 //
 // Le corps est celui, déjà éprouvé, de `portail/lien/[jeton]/route.ts` :
-// vérifier, résoudre le patient, `ensureActivePortalAccess`, poser `wn_portail`
-// via `signPatientSession`, rediriger. Ce qui change est seulement la preuve
+// vérifier, résoudre le patient, contrôler compte actif + accès non révoqué,
+// poser `wn_portail` via `signPatientSession`, rediriger. Ce qui change est la preuve
 // présentée à l'entrée — un jeton d'identité Google au lieu d'un lien reçu par
 // e-mail. Dans les deux cas la preuve est la même en substance : le contrôle de
 // la boîte associée au compte patient.
@@ -224,10 +223,6 @@ export async function GET(req: Request): Promise<NextResponse> {
       return refuser('sans_espace_eligible');
     }
 
-    // Verrouille la ligne et refuse si le portail a été révoqué entre-temps.
-    // Fournit au passage le jeton permanent, qui reste la clé de l'URL.
-    const acces = await ensureActivePortalAccess(patient.idPatient);
-
     await tracer(contexte, 'consomme', null, patient.idPatient);
     logger.security({
       event: EVENT_CODES.PORTAIL_GOOGLE_CONNEXION,
@@ -236,10 +231,10 @@ export async function GET(req: Request): Promise<NextResponse> {
       context: finalizeLogContext(contexte, { statusCode: 307, retryable: false }),
     });
 
-    const res = effacerEtat(NextResponse.redirect(new URL(`/portail/${acces.accessToken}`, req.url)));
-    // Le même cookie de session que les deux autres chemins d'entrée — session
-    // de COMPTE depuis IDP2 LOT-02. La révocation continue de la couper via
-    // `sessionsInvalidesAvant`, sans rien de particulier à prévoir ici.
+    // Depuis le LOT-04, le segment d'URL porte l'idPatient (non secret) ; l'accès
+    // repose sur le cookie de session ci-dessous. La révocation reste effective
+    // (garde `accessTokenRevoked` ci-dessus + `sessionsInvalidesAvant`).
+    const res = effacerEtat(NextResponse.redirect(new URL(`/portail/${patient.idPatient}`, req.url)));
     res.cookies.set(
       PORTAIL_COOKIE_NAME,
       signPatientSession({ idPatient: patient.idPatient, email: patient.email }),
@@ -250,10 +245,6 @@ export async function GET(req: Request): Promise<NextResponse> {
     // Ces deux sorties ne tracent que si l'aller avait été reconnu : une panne
     // survenue avant la vérification du `state` (elle est improbable, mais on ne
     // s'y fie pas) ne doit pas plus écrire qu'un retour forgé.
-    if (err instanceof PortalAccessError) {
-      if (allerReconnu) await tracer(contexte, 'refuse', 'acces_indisponible', idPatientResolu);
-      return refuser('acces_indisponible');
-    }
     if (allerReconnu) await tracer(contexte, 'refuse', 'exception', idPatientResolu);
     logger.error({
       event: EVENT_CODES.PORTAIL_GOOGLE_EXCEPTION,

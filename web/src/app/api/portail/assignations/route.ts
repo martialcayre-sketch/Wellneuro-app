@@ -60,7 +60,6 @@ export async function GET(req: Request): Promise<NextResponse> {
         nom: true,
         email: true,
         actif: true,
-        accessToken: true,
         accessTokenRevoked: true,
         sessionsInvalidesAvant: true,
       },

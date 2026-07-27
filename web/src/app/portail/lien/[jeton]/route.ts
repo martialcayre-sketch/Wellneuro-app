@@ -3,7 +3,6 @@ import { prisma } from '@/lib/prisma';
 import { isG4LienMagiqueEnabled } from '@/lib/portail/featureFlag';
 import { empreinteJeton, etatLien } from '@/lib/portail/lienMagique';
 import { PORTAIL_COOKIE_NAME, PORTAIL_COOKIE_OPTIONS, signPatientSession } from '@/lib/patient-session';
-import { PortalAccessError, ensureActivePortalAccess } from '@/lib/consultation/portal-access';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
@@ -18,9 +17,9 @@ import type { RequestContext } from '@/lib/observability/types';
 // LE JETON NE SORT PAS DE CETTE FONCTION. Il n'est ni stocké, ni journalisé, ni
 // transmis : seule son empreinte sert à retrouver la ligne.
 //
-// L'URL du portail ne change pas. Après consommation, le patient atterrit sur
-// `/portail/<jeton permanent>` — l'espace d'aujourd'hui, qui décide seul de
-// l'étape à afficher (gate e-mail, consentement, fiche, anamnèse, hub).
+// Après consommation, le patient atterrit sur `/portail/<idPatient>` — segment
+// de routage non secret (LOT-04) — l'espace d'aujourd'hui, qui décide seul de
+// l'étape à afficher (consentement, fiche, anamnèse, hub) d'après le cookie.
 
 export const dynamic = 'force-dynamic';
 
@@ -104,16 +103,17 @@ export async function GET(
     });
     if (consommation.count !== 1) return refuse('concurrence');
 
-    // Le patient doit toujours être actif et son portail non révoqué :
-    // `ensureActivePortalAccess` verrouille la ligne et lève sinon. Il fournit
-    // au passage le jeton permanent, qui reste la clé de l'URL du portail.
-    const acces = await ensureActivePortalAccess(lien.idPatient);
-
+    // Le patient doit toujours être actif et son portail non révoqué. Cette
+    // garde était portée par `ensureActivePortalAccess` (retiré au LOT-04) ; on
+    // la réécrit ICI explicitement — sans elle, une révocation cesserait
+    // silencieusement de bloquer l'entrée par lien magique (invariant révocation).
     const patient = await prisma.patient.findUnique({
       where: { idPatient: lien.idPatient },
-      select: { email: true },
+      select: { email: true, actif: true, accessTokenRevoked: true },
     });
-    if (!patient) return refuse('patient_introuvable');
+    if (!patient || !patient.actif || patient.accessTokenRevoked) {
+      return refuse('acces_indisponible');
+    }
 
     logger.security({
       event: EVENT_CODES.PORTAIL_LIEN_CONSOMME,
@@ -122,11 +122,11 @@ export async function GET(
       context: finalizeLogContext(contexte, { statusCode: 302, retryable: false }),
     });
 
-    const res = NextResponse.redirect(new URL(`/portail/${acces.accessToken}`, req.url));
-    // Le cookie ouvre une session de COMPTE (IDP2 LOT-02) : il n'est plus ancré
-    // au jeton permanent, dont la réémission ne déconnecte donc plus. La
-    // révocation reste effective — elle pose `sessionsInvalidesAvant`, coupe-
-    // circuit qui survivra au retrait du jeton (LOT-04).
+    // Depuis le LOT-04, le portail n'est plus indexé par un jeton secret : le
+    // segment d'URL porte l'idPatient (non secret), et l'accès repose sur le
+    // cookie de session posé ci-dessous. La révocation reste effective (garde
+    // ci-dessus + `sessionsInvalidesAvant`, posé à la révocation).
+    const res = NextResponse.redirect(new URL(`/portail/${lien.idPatient}`, req.url));
     res.cookies.set(
       PORTAIL_COOKIE_NAME,
       signPatientSession({
@@ -137,9 +137,6 @@ export async function GET(
     );
     return res;
   } catch (err) {
-    // Portail révoqué ou patient inactif (`PortalAccessError`) : même refus que
-    // tout le reste — un message distinct dirait à un tiers que le lien a existé.
-    if (err instanceof PortalAccessError) return refuse('acces_indisponible');
     logger.error({
       event: EVENT_CODES.PORTAIL_SESSION_EXCEPTION,
       domain: 'PORTAIL_PATIENT',

@@ -1,21 +1,27 @@
-import { notFound } from 'next/navigation';
-import { isG5GooglePatientEnabled } from '@/lib/portail/featureFlag';
+import {
+  isG4LienMagiqueEnabled,
+  isG4RedemandePatientEnabled,
+  isG5GooglePatientEnabled,
+} from '@/lib/portail/featureFlag';
 import { MESSAGE_ACCES_GOOGLE_REFUSE } from '@/lib/portail/googleIdentite';
+import { DemandeLienForm } from '@/components/patient/DemandeLienForm';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientInlineMessage } from '@/components/patient/ui/PatientInlineMessage';
 import { PatientPageHeader } from '@/components/patient/ui/PatientPageHeader';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 
-// Entrée du portail SANS jeton — gate G5 (IDP2 LOT-03c).
+// Entrée du portail SANS jeton — la porte unique de reprise d'accès (LOT-04).
 //
-// C'est la page qui manquait : jusqu'ici, un patient ne pouvait entrer qu'avec
-// un lien reçu (permanent ou magique). Sans lien sous la main, il n'y avait
-// aucune porte. Google en ouvre une, en s'appuyant sur ce que le patient a
-// déjà : le contrôle de sa boîte e-mail.
+// Depuis le retrait du lien permanent, c'est ICI qu'aboutissent les liens morts
+// et les sessions expirées. La page offre les DEUX chemins d'entrée restants :
+// Google (gate G5) et la réception d'un lien d'accès par e-mail (gate G4,
+// redemande self-service). Elle ne rend JAMAIS `notFound()` : le jeton permanent
+// ne fonctionne plus, un 404 ici enfermerait les patients dehors (revue
+// adversariale). Si aucune voie n'est ouverte, elle indique au moins comment
+// obtenir un accès (via le praticien) — jamais une page vide.
 //
 // `force-dynamic` n'est pas décoratif : sans lui, Next prérendrait la page au
-// build et y figerait la valeur du drapeau de ce moment-là. Un drapeau qu'il
-// faut redéployer pour changer n'en est pas un.
+// build et y figerait la valeur des drapeaux de ce moment-là.
 export const dynamic = 'force-dynamic';
 
 export default function ConnexionPortailPage({
@@ -23,7 +29,10 @@ export default function ConnexionPortailPage({
 }: {
   searchParams?: { etat?: string };
 }) {
-  if (!isG5GooglePatientEnabled()) notFound();
+  const googleActif = isG5GooglePatientEnabled();
+  // La redemande self-service exige les DEUX drapeaux (canal magique + canal
+  // public non authentifié), exactement comme la route `lien/demande`.
+  const redemandeActive = isG4LienMagiqueEnabled() && isG4RedemandePatientEnabled();
 
   // Le paramètre ne prend qu'une valeur : tous les refus du chemin Google
   // atterrissent ici, à l'identique. Rien dans cet écran ne dit lequel des
@@ -41,26 +50,33 @@ export default function ConnexionPortailPage({
 
         {refuse && <PatientInlineMessage tone="error">{MESSAGE_ACCES_GOOGLE_REFUSE}</PatientInlineMessage>}
 
-        {/* Un lien et non un bouton : la route pose un cookie puis redirige,
-            elle se navigue. Pas de JavaScript nécessaire pour entrer. */}
-        <a href="/portail/google" className={patientButtonClassName('primary', 'w-full')}>
-          Continuer avec Google
-        </a>
+        {googleActif && (
+          <>
+            {/* Un lien et non un bouton : la route pose un cookie puis redirige,
+                elle se navigue. Pas de JavaScript nécessaire pour entrer. */}
+            <a href="/portail/google" className={patientButtonClassName('primary', 'w-full')}>
+              Continuer avec Google
+            </a>
+            {/* Dit AVANT le clic, pas après (registre : Google sous-traitant
+                nouveau, scope `openid email`, aucune donnée de santé). */}
+            <p className="text-xs text-muted-foreground text-center">
+              Vous serez redirigé vers Google, qui apprendra que vous vous connectez à cette
+              application. Seule votre adresse e-mail est transmise — aucune donnée de santé.
+            </p>
+          </>
+        )}
 
-        {/* Dit AVANT le clic, pas après. Le registre inscrit Google comme
-            sous-traitant nouveau sur les patients (LOT-03a) : la personne doit
-            savoir ce qu'elle déclenche pendant qu'elle peut encore choisir
-            l'autre chemin. La phrase ne promet rien qu'on ne tienne — le scope
-            demandé est `openid email`, aucune donnée de santé ne transite. */}
-        <p className="text-xs text-muted-foreground text-center">
-          Vous serez redirigé vers Google, qui apprendra que vous vous connectez à cette
-          application. Seule votre adresse e-mail est transmise — aucune donnée de santé.
-        </p>
-
-        <PatientInlineMessage tone="info">
-          Vous avez reçu un lien d’accès par e-mail ? Il reste valable : ouvrez-le directement.
-          Vous pouvez aussi en demander un à votre praticien, sans passer par Google.
-        </PatientInlineMessage>
+        {/* Réception d'un lien d'accès par e-mail : le chemin pour qui n'utilise
+            pas Google. Réponse indifférenciée (non-oracle) — voir DemandeLienForm.
+            Sans le canal public, on rappelle au moins qu'un praticien peut en envoyer. */}
+        {redemandeActive ? (
+          <DemandeLienForm />
+        ) : (
+          <PatientInlineMessage tone="info">
+            Vous avez reçu un lien d’accès par e-mail ? Il reste valable : ouvrez-le directement.
+            Vous pouvez aussi en demander un à votre praticien.
+          </PatientInlineMessage>
+        )}
       </PatientCard>
     </div>
   );

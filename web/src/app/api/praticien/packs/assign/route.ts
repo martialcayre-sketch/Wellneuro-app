@@ -6,7 +6,7 @@ import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
-import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
+import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -160,36 +160,36 @@ export async function POST(req: Request): Promise<NextResponse> {
       ), requestContext);
     }
 
-    let portalUrl: string;
-    try {
-      portalUrl = await withActivePortalAccess(patient.idPatient, async (tx, access) => {
-        for (const item of aCreer) {
-          await tx.assignation.create({
-            data: {
-              ...item,
-              idPatient: patient.idPatient,
-              emailPatient,
-              dateAssignation: new Date(nowIso),
-              dateLimite: dateLimite || null,
-              statut: 'En attente',
-              notes: notesPack,
-            },
-          });
-        }
-        return access.url;
-      });
-    } catch (error) {
-      if (error instanceof PortalAccessError && error.reason === 'portal_revoked') {
-        return withCorrelationHeader(NextResponse.json({
-          success: false,
-          reason: 'portal_revoked',
-          error: 'L’accès portail de ce patient est révoqué. Réémettez-le explicitement avant de créer une assignation.',
-        }, { status: 409 }), requestContext);
-      }
-      throw error;
+    // L'accès portail de ce patient ne doit pas être révoqué (LOT-04 — plus de
+    // jeton ni de verrou de ligne ; une révocation concurrente est bénigne, un
+    // patient révoqué ne peut de toute façon pas entrer). Les créations restent
+    // atomiques via `$transaction`.
+    if (patient.accessTokenRevoked) {
+      return withCorrelationHeader(NextResponse.json({
+        success: false,
+        reason: 'portal_revoked',
+        error: 'L’accès portail de ce patient est révoqué. Réémettez-le explicitement avant de créer une assignation.',
+      }, { status: 409 }), requestContext);
     }
 
-    // Un seul email récapitulatif (best-effort), lien vers le portail permanent.
+    await prisma.$transaction(
+      aCreer.map(item =>
+        prisma.assignation.create({
+          data: {
+            ...item,
+            idPatient: patient.idPatient,
+            emailPatient,
+            dateAssignation: new Date(nowIso),
+            dateLimite: dateLimite || null,
+            statut: 'En attente',
+            notes: notesPack,
+          },
+        }),
+      ),
+    );
+    const portalUrl = buildGoogleConnexionUrl();
+
+    // Un seul email récapitulatif (best-effort), vers la page de connexion.
     await sendPackEmail(patient.idPatient, idPack, emailPatient, pack.nom, aCreer, dateLimite, notes, portalUrl).catch(
       e => logger.error({
         event: EVENT_CODES.ASSIGNATION_PACK_EMAIL_FAILED,

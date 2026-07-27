@@ -70,16 +70,15 @@ function sign(payloadB64: string): string {
 }
 
 /**
- * État de compte lu en base, suffisant pour statuer sur une session. Les champs
- * de jeton en font partie DÉLIBÉRÉMENT : une fonction nommée « la session
- * est-elle valide » qui n'en tiendrait pas compte inviterait le prochain
- * appelant à les oublier. Ils disparaîtront d'ici au LOT-04, en un seul endroit.
+ * État de compte lu en base, suffisant pour statuer sur une session. Depuis le
+ * LOT-04, le jeton d'accès n'est plus un credential : seul `accessTokenRevoked`
+ * (drapeau de révocation, non secret) subsiste ici — il est honoré à chaque
+ * entrée, y compris pour couper une session cookie en vol.
  */
 export type PatientSessionAccount = {
   idPatient: string;
   email: string;
   actif: boolean;
-  accessToken: string | null;
   accessTokenRevoked: boolean;
   sessionsInvalidesAvant: Date | null;
 };
@@ -96,9 +95,10 @@ export function isSessionValideForPatient(
   if (session.idPatient !== patient.idPatient) return false;
   if (!patient.actif) return false;
   if (patient.email.toLowerCase() !== session.email) return false;
-  // Tant que le chemin par jeton existe, un portail sans jeton ou révoqué reste
-  // fermé quoi que dise le cookie (retiré au LOT-04, ici et nulle part ailleurs).
-  if (!patient.accessToken || patient.accessTokenRevoked) return false;
+  // La révocation reste honorée : `accessTokenRevoked` ferme le portail quoi que
+  // dise le cookie. Depuis le LOT-04 la présence d'un jeton n'est plus exigée —
+  // les patients sans jeton d'accès sont désormais la norme (entrée par cookie).
+  if (patient.accessTokenRevoked) return false;
   if (patient.sessionsInvalidesAvant && session.iat * 1000 <= patient.sessionsInvalidesAvant.getTime()) {
     return false;
   }
@@ -202,7 +202,6 @@ export async function isSessionAuthorizedForAssignment(
       idPatient: true,
       actif: true,
       email: true,
-      accessToken: true,
       accessTokenRevoked: true,
       sessionsInvalidesAvant: true,
     },

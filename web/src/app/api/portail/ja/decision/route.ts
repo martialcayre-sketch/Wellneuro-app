@@ -26,7 +26,6 @@ async function resolveAuthorizedSession(req: Request): Promise<{ idPatient: stri
     select: {
       idPatient: true,
       actif: true,
-      accessToken: true,
       accessTokenRevoked: true,
       email: true,
       sessionsInvalidesAvant: true,

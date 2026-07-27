@@ -1,8 +1,8 @@
 // Gate G4 — lien magique d'accès patient (IDP LOT-01).
 //
-// Le parcours portail existant (`portail-parcours.spec.ts`) n'est PAS touché :
-// il entre par le jeton permanent, qui reste valable. Les deux chemins
-// coexistent — c'est l'exigence du registre, et ce spec vérifie le second.
+// Ce spec vérifie l'entrée par lien magique (24 h, usage unique). Depuis le
+// LOT-04, c'est — avec Google — l'un des deux seuls chemins d'entrée : le jeton
+// permanent a été retiré, l'accès repose désormais sur le cookie de session.
 //
 // Le drapeau `WN_G4_LIEN_MAGIQUE` est allumé par `playwright.config.ts` pour le
 // serveur de test uniquement ; il reste absent de Vercel.

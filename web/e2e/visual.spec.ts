@@ -20,7 +20,7 @@
 // (Sophie Nicola, PAT_SEED_01) — plus d'interférence entre workers.
 import { existsSync } from 'node:fs';
 import { test, expect, type Page, type TestInfo } from '@playwright/test';
-import { praticienSessionCookie } from './helpers/auth';
+import { praticienSessionCookie, patientPortailSessionCookie } from './helpers/auth';
 import { preparerReprisePourTest, nettoyerReprise, closePrisma } from './helpers/db';
 
 const PATIENT_PRATICIEN = 'PAT_SEED_01'; // Sophie Nicola — fiche praticien
@@ -55,14 +55,11 @@ async function capturer(
   }
 }
 
-async function ouvrirHubPortail(page: Page, token: string): Promise<void> {
-  await page.goto(`/portail/${token}`);
-  await page.getByPlaceholder('votre@email.fr').fill(EMAIL_PORTAIL);
-  await Promise.all([
-    page.waitForResponse(res => res.url().includes('/api/portail/session') && res.status() === 200),
-    page.getByRole('button', { name: 'Accéder à mon espace' }).click(),
-  ]);
-  await page.goto(`/portail/${token}/questionnaires`);
+async function ouvrirHubPortail(page: Page): Promise<void> {
+  // LOT-04 : session par cookie (comme l'atterrissage magic-link/Google), plus
+  // de gate e-mail ni de jeton d'URL.
+  await page.context().addCookies([patientPortailSessionCookie(PATIENT_PORTAIL, EMAIL_PORTAIL)]);
+  await page.goto(`/portail/${PATIENT_PORTAIL}/questionnaires`);
   await page.getByRole('heading', { name: 'Mon parcours' }).waitFor();
 }
 
@@ -145,10 +142,9 @@ test.describe('Preuve visuelle — Observatoire (praticien)', () => {
 });
 
 test.describe('Preuve visuelle — Jardin (portail patient)', () => {
-  let token: string;
-
   test.beforeAll(async () => {
-    token = await preparerReprisePourTest(PATIENT_PORTAIL);
+    // Le jeton retourné est inerte depuis le LOT-04 : l'accès passe par le cookie.
+    await preparerReprisePourTest(PATIENT_PORTAIL);
   });
 
   test.afterAll(async () => {
@@ -160,14 +156,17 @@ test.describe('Preuve visuelle — Jardin (portail patient)', () => {
     await page.setViewportSize({ width: 420, height: 900 });
   });
 
-  test('portail — porte d’entrée', async ({ page }, testInfo) => {
-    await page.goto(`/portail/${token}`);
-    await page.getByRole('heading', { name: 'Votre espace patient' }).waitFor();
-    await capturer(page, testInfo, 'portail-gate');
+  test('portail — porte d’entrée (page de connexion)', async ({ page }, testInfo) => {
+    // LOT-04 : la porte d'entrée est la page de connexion (Google + redemande),
+    // le gate e-mail a disparu. Nouvelle baseline (l'ancienne `portail-gate` est
+    // retirée) — régénérée par le workflow visual-baselines.
+    await page.goto('/portail/connexion');
+    await page.getByRole('heading', { name: 'Accéder à votre espace' }).waitFor();
+    await capturer(page, testInfo, 'portail-connexion');
   });
 
   test('portail — Mon parcours (hub) et frise des étapes', async ({ page }, testInfo) => {
-    await ouvrirHubPortail(page, token);
+    await ouvrirHubPortail(page);
 
     // Frise du parcours : 6 étapes HC-F, structure accessible committée.
     await expect(page.getByRole('list', { name: 'Étapes de votre parcours' })).toMatchAriaSnapshot(`
@@ -189,7 +188,7 @@ test.describe('Preuve visuelle — Jardin (portail patient)', () => {
   });
 
   test('portail — hub, sections secondaires dépliées', async ({ page }, testInfo) => {
-    await ouvrirHubPortail(page, token);
+    await ouvrirHubPortail(page);
     for (const summary of await page.locator('details > summary').all()) {
       await summary.click();
     }

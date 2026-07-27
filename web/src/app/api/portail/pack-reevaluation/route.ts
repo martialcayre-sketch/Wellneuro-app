@@ -46,7 +46,6 @@ async function patientDeLaSession(req: Request) {
       idPatient: true,
       actif: true,
       email: true,
-      accessToken: true,
       accessTokenRevoked: true,
       sessionsInvalidesAvant: true,
     },

@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { readPatientSession } from '@/lib/patient-session';
 import {
-  isTokenValide,
-  isEmailValide,
-  resolvePortailPatient,
+  resolvePortailPatientFromSession,
   consultationCourante,
   CONSENTEMENT_VERSION,
   FINALITE_CONSENTEMENT,
@@ -17,7 +16,7 @@ export type PortailValiderResponse =
   | { ok: true; premiereAssignation: string | null; count: number }
   | { ok: false; reason: string; error: string };
 
-type Payload = { token?: string; email?: string; anamnese?: unknown; motif?: string };
+type Payload = { anamnese?: unknown; motif?: string };
 
 const NOM_PACK_BASE = 'BASE DE CONSULTATION';
 
@@ -33,17 +32,16 @@ async function resoudrePackBase() {
 // POST /api/portail/valider — enregistre l'anamnèse, valide l'onboarding et
 // assigne automatiquement le pack de base.
 export async function POST(req: Request): Promise<NextResponse<PortailValiderResponse>> {
+  const session = readPatientSession(req);
+  if (!session) {
+    return NextResponse.json({ ok: false, reason: 'unauthenticated', error: 'Session expirée. Reconnectez-vous.' }, { status: 401 });
+  }
+
   let payload: Payload;
   try {
     payload = (await req.json()) as Payload;
   } catch {
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
-  }
-
-  const token = (payload.token ?? '').trim();
-  const email = (payload.email ?? '').trim().toLowerCase();
-  if (!isTokenValide(token) || !isEmailValide(email)) {
-    return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiants invalides.' }, { status: 400 });
   }
 
   const anamnese = normaliserAnamnese(payload.anamnese);
@@ -60,7 +58,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
   }
 
   try {
-    const patient = await resolvePortailPatient(token, email);
+    const patient = await resolvePortailPatientFromSession(session);
     if (!patient) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 });
     }
