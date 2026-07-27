@@ -356,7 +356,7 @@ fail-closed ; un fragment `changelog.d/` et un worktree par lot.
 | CB-00 | Ce cadrage + décisions 0/A→G actées + **audit de la source NABM fait** ([AUDIT-SOURCE-NABM.md](AUDIT-SOURCE-NABM.md)) | — | aucun |
 | CB-01 | **Fait** — migration catalogue CB-A : onze tables (analytes, `biology_nabm_actes`, correspondance `BiologyAnalyteNabm`, deux référentiels de plages, préanalytique, panels, ratios, liens, pointeur de version) + vocabulaires fermés + les **deux flags** déclarés fail-closed | CB-00 | **migration** |
 | CB-02a | **Fait** — import **NABM complet** (**987** actes, six appels anonymes) : logique pure + CLI dry-run/apply, snapshot canonique des 1050 concepts, pointeur de version. Migration additive `code_incompatible` / `regle_applicable` / `biology_source_snapshots` | CB-01 | ingestion + **migration** |
-| CB-02b | Corpus notebook « analyses biologiques » : extract → chunk → claims (`metadata.rayon:'biologie'`) → Atelier, **voie lente** | **après stabilisation de la certification** (décision G) | **ingestion prod** ; coût API |
+| CB-02b | **Fait le 2026-07-27** — corpus notebook 08 « Biologie fonctionnelle » : 27 sources / 891 pages en triple lecture, **135 chunks** et **758 claims** ingérés en production (`LOT_007_2026-07-26`), tous `EN_ATTENTE_VALIDATION` | décision G **levée par le praticien le 2026-07-27** (cf. §10) | **ingestion prod** ; coût API |
 | CB-03 | Extension moteur : variantes de cible `analyse`/`panel_bio` + table biologie **séparée**, vide, signée-sha + double verrou + route | CB-02b ; après les lots 8-9 certification | flag ; table signée |
 | CB-04 | Compilateur `tools/corpus/biologie/compile.mjs` → table régénérée par PR revue | CB-03 + claims validés | **signature praticien** |
 | CB-05 | Migration + machine à états `BiologyExplorationProposal`/`Item`, génération depuis les candidats | CB-01, CB-03 | **migration** |
@@ -367,23 +367,27 @@ fail-closed ; un fragment `changelog.d/` et un worktree par lot.
 
 Ordre après arbitrage : **CB-00 → CB-01 → CB-02a** est le chemin démarrable
 immédiatement — il ne dépend ni du notebook ni de la certification, puisque le
-catalogue NABM se remplit par import et non par claims. **CB-02b n'ouvre
-qu'après la certification** (décision G), et CB-03/04 en découlent : pas de
-table de règles biologie avant que la table NNPP2 soit stabilisée et signée.
-Puis CB-05 → 06 → 07/08. CB-09 seulement après HDS.
+catalogue NABM se remplit par import et non par claims. **CB-02b était
+subordonné à la certification** (décision G) ; le praticien a levé ce gate le
+2026-07-27 et le lot est passé. CB-03/04 restent en aval : pas de table de
+règles biologie avant que la table NNPP2 soit stabilisée et signée. Puis
+CB-05 → 06 → 07/08. CB-09 seulement après HDS.
 
 Conséquence pratique : les plages fonctionnelles (`BiologyFunctionalRange`) et
-les liens cliniques restent **vides** jusqu'à CB-02b. Le catalogue servi entre
-CB-02a et CB-02b n'expose que les valeurs de référence laboratoire et les
-métadonnées d'analyse — ce qui est cohérent avec l'invariant : une plage
-fonctionnelle sans claim validé n'est jamais servie.
+les liens cliniques restent **vides** — et le sont toujours après CB-02b. Ce
+n'est pas l'ingestion du corpus qui les ouvre, c'est la **validation** des
+claims dans l'Atelier, puis leur compilation en CB-04. Le catalogue servi
+n'expose jusque-là que les valeurs de référence laboratoire et les métadonnées
+d'analyse — ce qui est cohérent avec l'invariant : une plage fonctionnelle sans
+claim **validé** n'est jamais servie.
 
 L'audit de la source ajoute une nuance de poids : **le cœur de la biologie
 fonctionnelle est absent de la nomenclature** (sélénium, homocystéine,
 coenzyme Q10, acides gras érythrocytaires, glutathion peroxydase, mélatonine…).
 CB-02a livre donc le socle remboursable et la matière administrative ; ce qui
-distingue le rayon d'un bilan de routine arrive en CB-02b, par le corpus. Le
-lot d'import n'est pas le lot qui donne sa valeur au rayon.
+distingue le rayon d'un bilan de routine arrive par le corpus — présent depuis
+CB-02b, mais servi seulement une fois les claims validés. Le lot d'import n'est
+pas le lot qui donne sa valeur au rayon.
 
 **Deux points de ce tableau ont été corrigés par la réalisation de CB-02a**
 (2026-07-26), et il vaut mieux les lire ici que les redécouvrir :
@@ -404,6 +408,58 @@ lot d'import n'est pas le lot qui donne sa valeur au rayon.
   17 valeurs) ni pour `regleApplicable` (25 actes), et que le snapshot exigé par
   l'audit §10 n'avait qu'une colonne d'empreinte — on gardait la preuve d'un
   contenu qu'on ne gardait pas. Migration additive sur tables vides.
+
+**Ce que la réalisation de CB-02b a établi** (2026-07-27), y compris contre ce
+qui était écrit ici :
+
+- **La chaîne d'ingestion ne produit pas `metadata.rayon` — et ce champ existe
+  bel et bien ailleurs.** Le tableau annonçait des claims marqués
+  `metadata.rayon:'biologie'`. Le rédacteur de claims n'écrit en réalité que
+  `{source_chunk, section, page}` ([draft.mjs](../../../../tools/corpus/claims/draft.mjs)),
+  et **aucun claim d'aucun lot n'en porte** : vérifié en production le
+  2026-07-27, **0 sur 2 993**. Or `metadata.rayon` est la clé de filtrage du
+  rayon corpus C4 ([rayonCorpus.ts:69](../../../../web/src/lib/supplement-library/rayonCorpus.ts#L69)),
+  qui filtre donc **à zéro en permanence**. Ce n'est pas un détail de CB : c'est
+  un chemin de code livré qui ne peut rien restituer, quel que soit le rayon.
+  **À trancher** (question ouverte, cf. §11) : basculer ce filtre sur le
+  notebook — que `rag_corpus_chunks.notebook` porte déjà et que
+  [notebooks.ts](../../../../web/src/lib/rag/claims/notebooks.ts) dérive de
+  `sourceId` via le registre — ou faire produire `rayon` par la chaîne. Ne pas
+  laisser l'état actuel passer pour une intention.
+- **Ce n'est pas l'ingestion qui ouvre les plages fonctionnelles, c'est la
+  validation.** Les 758 claims sont entrés en `EN_ATTENTE_VALIDATION`, donc
+  inertes. Tant que le praticien ne les a pas validés dans l'Atelier, la colonne
+  fonctionnelle reste vide exactement comme avant — l'invariant « pas de plage
+  fonctionnelle sans claim **validé** » n'a pas bougé d'un cran.
+- **La voie lente est une intention, pas un garde.** La décision G la
+  présupposait ; rien ne l'implémente. Sur les 758 claims du lot, **563 (74 %)
+  sont `déclaré` ou `observé` non prescriptifs**, donc éligibles à la voie
+  rapide — l'allowlist de [revue.ts](../../../../web/src/lib/rag/claims/revue.ts)
+  ne connaît ni notebook ni rayon. Si la voie lente est une exigence clinique
+  pour la biologie, il manque un garde et il faut l'écrire comme un lot ; sinon
+  il faut cesser de l'énoncer au passé composé.
+
+**Contrôle en base après ingestion** (2026-07-27, lecture `execute_sql`) :
+lot `LOT_007_2026-07-26` = **135 chunks / 27 sources / 758 claims**, dont
+**758 `EN_ATTENTE_VALIDATION` et 0 `VALIDE`** — la barrière D-003 tient,
+l'ingestion ne valide rien. Total du corpus : 658 chunks sur 7 lots,
+2 993 claims dont **2 375 en file de revue** et 618 validés.
+
+Deux chiffres du lot méritent d'être conservés. Le corpus a retenu **758 claims
+sur 906 rédigés** : 148 sont tombés par désaccord entre le rédacteur (Sonnet 5)
+et le contre-vérificateur (GPT-5.4), la règle de la chaîne étant que le
+désaccord exclut. Et **121 chunks sur 135 seulement ont produit un claim**. La
+répartition des 14 restants importe plus que leur nombre : **12 sont stériles**
+par nature — titres, sommaires, planches de figures — mais **2 ne le sont pas**.
+`WN-CH-0049-002` et `WN-CH-0049-006` (source `WN-SRC-0049`, exploration
+dimensionnelle des neurotransmetteurs) ont produit 7 claims chacun, **tous
+exclus pour infidélité** : le rédacteur transformait des intitulés de sections
+de questionnaire (« SEROTONINE », « DOPAMINE ») en énoncés de causalité que la
+source ne formule pas. Du contenu clinique réel n'est donc pas entré dans le
+corpus, et c'est le contre-vérificateur qui l'a retenu — à relire si ce
+matériel manque plus tard. Les 135 chunks ont été ingérés quoi qu'il en soit :
+le verbatim est le corpus, les claims n'en sont que la dérivation, et un chunk
+manquant ferait un trou dans la récupération.
 
 **Une décision d'exploitation, tranchée par la revue adversariale du
 2026-07-26 :** le **millésime servi ne change jamais implicitement**. Un import
@@ -537,17 +593,18 @@ Les huit décisions structurantes ont été tranchées le 2026-07-25. Elles sont
 | D | Lien au protocole | **Contrat V4 `BiologyCatalogRef`** sur l'action `biological_exploration`, miroir de `SupplementCatalogRef` V3. |
 | E | Périmètre catalogue V1 | **NABM complet** en brouillons `importee`, vérification praticien au fil de l'eau (précédent C4/DGCCRF). |
 | F | Matérialisation des régimes | Remboursé : **courrier texte au médecin traitant via le fil C3**. Non remboursé : **document patient systématique**, même sans exigence du laboratoire. |
-| G | Calendrier du notebook biologie | **Après stabilisation de la campagne certification** — ne pas empiler deux files de validation en voie lente. |
+| G | Calendrier du notebook biologie | **Après stabilisation de la campagne certification** — ne pas empiler deux files de validation en voie lente. **Levée le 2026-07-27** : le praticien a demandé d'implanter le reste de la biologie sans attendre la fin de la certification, et a donné le go d'ingestion de CB-02b. La file de revue passe donc bien à deux campagnes empilées (2 375 claims en attente) — c'est le coût accepté par cette levée. |
 
-Conséquences directes : CB-07 (contrat V4) n'est plus conditionnel ; CB-02b
-attend la certification au lieu d'être seulement « parallélisable » ; le second
-flag est nommé et gelé dès CB-01.
+Conséquences directes : CB-07 (contrat V4) n'est plus conditionnel ; le second
+flag est nommé et gelé dès CB-01. La subordination de CB-02b à la certification
+a tenu du 2026-07-25 au 2026-07-27, date à laquelle le praticien l'a levée.
 
 ## §11 — Risques et points de vigilance
 
-Les décisions du §10 en ont refermé deux (charge de validation, télescopage
-avec la certification, tous deux traités par le séquencement de la décision G).
-Restent :
+Les décisions du §10 en avaient refermé deux (charge de validation, télescopage
+avec la certification) par le séquencement de la décision G. **La levée de G le
+2026-07-27 les rouvre tous les deux** : les deux files coexistent désormais.
+Restent donc, celles-là comprises :
 
 - ~~**Licence et format NABM/AMELI**~~ — **refermé le 2026-07-25** par
   [l'audit de la source](AUDIT-SOURCE-NABM.md) : LOv2, API FHIR anonyme,
@@ -562,13 +619,28 @@ Restent :
   charge à ne pas sous-estimer dans CB-02a.
 - **Fusion accidentelle des deux référentiels de valeurs** : le risque de
   conception n°1 — deux tables, deux affichages, jamais une colonne « normes ».
-  Le garde naturel est l'invariant « pas de plage fonctionnelle sans claim » :
-  entre CB-02a et CB-02b, la colonne fonctionnelle est vide, et cela doit se
-  voir plutôt que se combler par défaut avec les bornes labo.
-- **Séquencement à tenir** : CB-02b et CB-03 sont désormais suspendus à la
-  stabilisation de la certification. Le risque n'est plus le télescopage mais
-  l'oubli — le rayon peut rester longtemps à l'état « catalogue sans plages
-  fonctionnelles », utile mais muet côté moteur.
+  Le garde naturel est l'invariant « pas de plage fonctionnelle sans claim
+  validé » : tant qu'aucun claim biologie n'est validé, la colonne fonctionnelle
+  est vide — l'ingestion de CB-02b n'y change rien — et cela doit se voir plutôt
+  que se combler par défaut avec les bornes labo.
+- **Charge de validation praticien** : c'est le goulot réel du rayon, et la
+  levée de la décision G l'a aggravé volontairement. Au 2026-07-27 la file de
+  revue compte **2 375 claims `EN_ATTENTE_VALIDATION`** tous lots confondus, dont
+  les 758 de la biologie. Le rayon peut rester longtemps à l'état « catalogue
+  sans plages fonctionnelles », utile mais muet côté moteur.
+- **Le rayon corpus C4 filtre à zéro.** `servirRayonCorpus` sélectionne sur
+  `metadata.rayon`, qu'aucun claim ne porte (0 sur 2 993 en production au
+  2026-07-27). La fonctionnalité est livrée et inerte, pour tous les rayons et
+  pas seulement la biologie. À trancher avant de s'appuyer dessus en CB-08 :
+  basculer le filtre sur le notebook, ou faire produire `rayon` par la chaîne.
+- **La voie lente n'est pas outillée.** 563 des 758 claims biologie (74 %) sont
+  éligibles à la voie rapide, l'allowlist de `revue.ts` ignorant le notebook et
+  le rayon. Si la voie lente est une exigence clinique pour la biologie — c'est
+  ce que présupposait la décision G — elle demande un garde explicite, donc un
+  lot ; en son absence, ne pas la présenter comme acquise.
+- **Séquencement restant** : CB-03 reste suspendu à la stabilisation de la
+  certification. Le risque n'est plus le télescopage, désormais assumé, mais
+  l'oubli.
 - **Collision de nommage** : `web/src/lib/protocol/` (suivi patient) et
   l'atelier de règles C4 (`api/praticien/regles`) sont des homonymes à éviter —
   le domaine s'appellera `biology-library`, le concept « exploration
