@@ -40,6 +40,7 @@ Routes possibles :
 - reprise de contexte : `/wn-context` ou `/wn-handoff` ;
 - choix du modèle/effort selon le contexte : `/wn-model` ;
 - choix du mode d'exécution (solo / multi-agent / ultracode) : `/wn-ultra` ;
+- routage combiné (route + modèle + mode en une passe) : `/wn-route` — normalement automatique en début de session, voir `CLAUDE.md` ;
 - campagne historique R0-R6 : `/wn-auto`.
 
 Répondre avec : route choisie, raison en une phrase, première action sûre, et instruction explicite de passage en mode Plan avant modification si le lot peut impliquer des edits.

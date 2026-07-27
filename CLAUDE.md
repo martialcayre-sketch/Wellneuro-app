@@ -279,6 +279,8 @@ l'authentification ou une migration se compte en accès patients rompus.
 
 Si `docs/claude/SESSION_LOG.md` existe, lire sa dernière entrée avant de répondre à la première question de la session, sans qu'on ait besoin de le demander. Ne pas résumer ce contenu à voix haute sauf si c'est demandé — l'utiliser silencieusement comme contexte de reprise.
 
+Avant de répondre à la toute première demande de la session — démarrage ou juste après `/clear` —, invoquer silencieusement le skill `wn-route` sur cette demande. Il combine en une passe la route (`/wn`), le modèle (`/wn-model`) et le mode d'exécution (`/wn-ultra`). Ne l'afficher que s'il dévie du défaut (règle d'économie du skill) ; une fois par session, pas à chaque message.
+
 **Une session = un worktree.** Avant d'écrire quoi que ce soit dans le dépôt, ouvrir son propre worktree (outil `EnterWorktree`, ou `git worktree add`). Plusieurs sessions peuvent travailler en parallèle, jamais dans la même copie : le 2026-07-20, deux sessions partageant le checkout principal ont produit une PR à deux périmètres et un commit atterri sur la branche d'une autre session. Ne jamais faire `git checkout` / `git switch` dans un worktree qu'une autre session utilise. `npm run test:worktree` est déjà conçu pour ce mode (ports et base éphémère dérivés du chemin du worktree). Détail : `docs/ROLES_MACHINES.md`.
 
 ## Fin de session
