@@ -2,56 +2,90 @@
 
 Suite du P0 de l'audit alimentaire
 (`docs/claude/propositions/2026-07-26-audit-accompagnement-alimentaire/` §6),
-après le point 1 livré en v4. **Aucun scoring, aucun seuil, aucune migration
-modifiés** : ce lot ne change que ce que l'application *dit*.
+après le point 1 livré en v4. Aucun seuil, aucune bande d'interprétation, aucune
+migration modifiés.
 
-**Point 2 — `Q_ALI_03` ne promet plus ce qu'il ne calcule pas.** Son titre
-(« Évaluation des apports caloriques et protéiques ») et ses consignes servies
-(« permet d'estimer vos apports journaliers en protéines et calories »)
-annonçaient une estimation quantitative que le scoring ne produit pas : il ne
-calcule que cinq sous-scores ordinaux, nommés « index » dans le code même.
-Estimer un apport protéique exigerait le poids du patient, les portions
-réellement consommées et une table de composition — rien de tout cela n'est
-recueilli. Le questionnaire devient « Fréquences de consommation alimentaire
-(adapté de la méthode Monnier) », la mention « repérage rapide validé » quitte
-le catalogue, et les consignes disent ce qu'elles font. **Il avait déjà été
-administré une fois** (1 patient, 2026-07-25) : la promesse a réellement été
-servie. L'attribution à la méthode Monnier est conservée comme origine.
+**Correctif principal, non prévu au plan : `Q_ALI_03` produisait bien des
+grammes et des kilocalories — faux, et à zéro.** `questions.ts` portait un cas
+particulier qui émettait `monnier: { proteinesGJour, caloriesBaseEstimees,
+caloriesAdditionnelles, caloriesTotalesEstimees }` à partir de sous-scores
+`MONNIER_PROT` / `MONNIER_CAL_SUP` qui n'existent pas — les sous-scores servis
+s'appellent `P_AN`, `P_VG`, `GL`, `LIP`, `SU`. Les quatre valeurs tombaient donc
+à **0, invariant aux réponses** (mesuré aux deux bornes), étaient persistées
+dans `scores_json` et transmises au modèle de synthèse, où elles se lisent « 0 g
+de protéines par jour, 0 kcal par jour » : un signal de dénutrition sévère,
+fabriqué. La passation du 2026-07-25 le porte en base. Le bloc est retiré du
+moteur — le recâbler exigerait le poids, les portions et une table de
+composition, qu'aucun item ne recueille — et la clé est écartée du prompt par
+`scoresPourPrompt` pour couvrir les passations déjà enregistrées, que le retrait
+ne réécrit pas. **Le rapport d'audit affirmait le contraire** (« ne calcule ni
+g/j ni kcal/j — exact ») : la ligne est corrigée sur place, avec la raison de
+l'erreur — la vérification s'était arrêtée à la définition du questionnaire sans
+regarder le moteur.
+
+**Point 2 — `Q_ALI_03` ne promet plus ce qu'il ne calcule pas.** Titre et
+consignes servies annonçaient une estimation quantitative. Le questionnaire
+devient « Fréquences de consommation alimentaire (adapté de la méthode
+Monnier) », la mention « repérage rapide validé » quitte le catalogue. Il avait
+déjà été administré une fois (1 patient) : la promesse a réellement été servie.
 
 **Point 3 — les seuils de `Q_ALI_01` sont signalés provisoires.** La version
-servie compte 14 items cotés 0-3 (total /42) ; elle porte le nom du
-questionnaire SIIN sans en être une numérisation. Ses quatre bandes
-d'interprétation n'ont ni DOI, ni publication primaire, ni étalonnage. Elles
-restent servies — les rompre casserait 8 passations existantes sur 6 patients —
-mais le code et le catalogue disent désormais qu'elles orientent l'entretien et
-ne concluent pas. Le fait aggravant est rappelé sur place : ce questionnaire
-alimente le besoin 1, qui est une fondation critique.
+servie compte 14 items cotés 0-3 (/42) et porte le nom du questionnaire SIIN
+sans en être une numérisation ; ses quatre bandes n'ont ni DOI, ni publication
+primaire, ni étalonnage. Elles restent servies — les rompre casserait 8
+passations sur 6 patients — mais le code le dit, sur place, avec le fait
+aggravant : ce questionnaire alimente le besoin 1, fondation critique.
 
-**Point 4 — l'IA ne peut plus conclure à une carence.** Le prompt de
-gouvernance gagne une section dédiée : les questionnaires `Q_ALI_*` recueillent
-des fréquences déclarées, pas des apports. Interdiction explicite d'en déduire
-une carence (même atténuée en « probable »), une quantité en grammes ou en
-kilocalories, un statut biologique, un index ou une charge glycémique, un
-HOMA-IR, une homocystéinémie, un statut inflammatoire ou antioxydant, ou un
+**Point 4 — l'IA ne peut plus conclure à une carence.** Section dédiée dans la
+consigne système : interdiction d'en déduire une carence (même atténuée en
+« probable »), une quantité en grammes ou en kilocalories, un statut biologique,
+un HOMA-IR, une homocystéinémie, un statut inflammatoire ou antioxydant, ou un
 besoin de supplémentation. Ce qui reste autorisé est nommé : une **exposition
-alimentaire déclarée** probablement faible, intermédiaire ou compatible avec
-les repères. La règle prime sur le reste du prompt en cas de contradiction
-apparente.
+alimentaire déclarée**. `VERSION_PROMPT_SYNTHESE` passe à `synthese-v5` — sans
+ce bump, les synthèses produites avec et sans la règle seraient indiscernables
+en base.
 
-**Registre — une affirmation fausse retirée.** `Q_ALI_01` portait
-`formePubliee: "score 0-42"`, qui est le total de la **version servie**, pas
-celui de la forme publiée : le champ affirmait donc de la source ce qui n'est
-vrai que du servi — exactement la confusion que l'audit reproche au banc
-SOURCE ↔ SERVI. Remis à `null`, la forme publiée restant à établir sur document
-primaire. Les descriptions de `versionServie` n'ont **pas** été renseignées :
-le garde du registre l'interdit tant que `statutContenu` vaut `a_auditer`, et
-reclasser ce statut est un acte de certification qui appartient à la campagne
-corpus, pas à ce lot.
+**La règle s'indexait sur un identifiant que le modèle ne recevait pas.** La
+consigne désigne les questionnaires par « identifiants commençant par Q_ALI »,
+alors que la route de synthèse ne transmettait que `titre`. `Q_ALI_02`
+(« Score d'adhérence à la diète méditerranéenne SIIN ») n'offrait aucun indice
+permettant de l'y rattacher. `idQuestionnaire` est désormais transmis.
 
-**Reste ouvert, signalé sur place.** L'item `MO10` de `Q_ALI_03` (activité
-physique) est collecté sans entrer dans aucun sous-score. Le retirer modifierait
-le contenu d'un instrument déjà administré ; le câbler créerait un sous-score
-non validé. Les deux sont des arbitrages cliniques, laissés au praticien.
+**Trois gardes ajoutées** (`promptAlimentaire.guard.test.ts`, 9 cas), chacune
+vérifiée par mutation : présence de la section et de ses interdictions dans la
+consigne ; couplage consigne ↔ charge utile (si la consigne cite l'identifiant,
+la route doit le transmettre) ; aucune clé de quantité dans ce qui part au
+modèle, pour tous les `Q_ALI_*` aux deux bornes, bloc `monnier` hérité compris.
 
-**Validations** : T1 vert ; suite complète verte ; `scoring-check` vert ;
-anti-secrets vert.
+**Registre.** `formePubliee` de `Q_ALI_01` passe de `"score 0-42"` à `null` : ce
+champ affirmait de la **source** ce qui n'est vrai que du **servi**. Les
+descriptions de `versionServie` ne sont pas renseignées — le garde du registre
+l'interdit tant que `statutContenu` vaut `a_auditer`, et reclasser ce statut est
+un acte de certification qui appartient à la campagne corpus.
+
+**Réserves ouvertes, non traitées ici** (revue adversariale du 2026-07-27) :
+
+- L'ancien titre reste gelé dans `assignations.titre` et
+  `questionnaire_reponses.titre` ; sur le portail patient, l'en-tête (code) et
+  la carte « En cours » (base) afficheront donc les deux libellés côte à côte
+  tant qu'aucun backfill n'est passé. Les e-mails déjà envoyés portent l'ancien.
+- Les cinq libellés de sous-score de `Q_ALI_03` disent toujours « **Apports** …
+  (index) » — le mot retiré du titre survit là où le praticien lit le résultat.
+- Les bandes d'interprétation de `Q_ALI_01` continuent de conclure
+  (« Alimentation très déséquilibrée — bilan approfondi nécessaire ») alors que
+  la description ajoutée dit qu'elles ne concluent pas.
+- `description` du catalogue n'est affichée nulle part : la mise en garde
+  ajoutée pour `Q_ALI_01` n'atteint aucun œil pour l'instant.
+- `buildMiniSynthese` rend « Tous les axes explorés sont peu perturbés » pour
+  `Q_ALI_03`, qui ne porte aucune bande — absence d'interprétation lue comme
+  normalité.
+- L'item `MO10` de `Q_ALI_03` est collecté sans entrer dans aucun sous-score.
+- `statutCertification` de `Q_ALI_01` et `Q_ALI_03` reste `repere` alors que le
+  registre accepte `suspendu` ; et `nomOfficiel` de `Q_ALI_01` porte toujours le
+  nom SIIN dont le servi n'est pas la numérisation.
+
+Ces sept points relèvent d'arbitrages cliniques ou d'un backfill, pas de la
+correction de forme livrée ici.
+
+**Validations** : T1 vert ; suite complète verte ; gardes nouvelles vérifiées
+par mutation ; `scoring-check` vert ; anti-secrets vert.

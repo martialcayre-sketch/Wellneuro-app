@@ -7,10 +7,15 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v5 (2026-07-27) : interdiction de conclure à une carence, une quantité ou un
+// statut biologique depuis un questionnaire alimentaire (audit métrologique du
+// 2026-07-26, P0 point 4). Sans ce bump, les synthèses rédigées avec et sans la
+// règle porteraient la même étiquette et l'on ne saurait plus lesquelles ont
+// été produites sous le garde-fou.
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v4';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v5';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
