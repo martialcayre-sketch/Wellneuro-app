@@ -23,8 +23,24 @@ DECLARE
   obtenu boolean;
   texte text;
   cas record;
+  role_supabase text;
   echecs text := '';
 BEGIN
+  -- Droits : ni anon ni authenticated ne doit pouvoir exécuter le garde.
+  -- Conditionné à l'existence du rôle — la base éphémère du CI n'a ni l'un ni
+  -- l'autre, et l'assertion y est vide. Elle mord sur la production, où elle a
+  -- justement pris en défaut la première rédaction : `REVOKE ... FROM PUBLIC`
+  -- ne retire rien quand Supabase a déjà posé des grants nominatifs (corrigé
+  -- par 20260727200000).
+  FOREACH role_supabase IN ARRAY ARRAY['anon', 'authenticated'] LOOP
+    IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = role_supabase)
+       AND has_function_privilege(role_supabase, 'public.rag_claim_porte_seuil(text)', 'EXECUTE')
+    THEN
+      RAISE EXCEPTION 'garde seuils: le rôle % peut exécuter le garde', role_supabase
+        USING ERRCODE = 'WN001';
+    END IF;
+  END LOOP;
+
   -- Structurel : la fonction existe, elle rend un booléen, et elle est bien
   -- IMMUTABLE — non parce que le trigger l'exigerait (PostgreSQL n'impose
   -- aucune volatilité là), mais parce qu'une dérive vers STABLE ou VOLATILE
