@@ -646,17 +646,31 @@ export async function PATCH(req: Request) {
     let versionPrompt: string | undefined;
     let donneesEntree: Prisma.InputJsonValue | undefined;
     if (action === 'enregistrer') {
-      if (existing.statut !== 'Brouillon_Praticien' || existing.modele !== MODELE_REDACTION_PRATICIEN) {
+      const estBrouillonPraticien = existing.statut === 'Brouillon_Praticien' && existing.modele === MODELE_REDACTION_PRATICIEN;
+      const estBrouillonIA = existing.statut === 'Brouillon_IA';
+      if (!estBrouillonPraticien && !estBrouillonIA) {
         return withCorrelationHeader(NextResponse.json(
-          { error: 'Seul un brouillon praticien peut être modifié.' },
+          { error: 'Seul un brouillon (IA ou praticien) non encore validé peut être modifié.' },
           { status: 409 },
         ), requestContext);
       }
-      const validation = validerBrouillonPraticien(body.synthese);
-      if (!validation.ok) {
-        return withCorrelationHeader(NextResponse.json({ error: validation.error }, { status: 400 }), requestContext);
+      if (estBrouillonPraticien) {
+        const validation = validerBrouillonPraticien(body.synthese);
+        if (!validation.ok) {
+          return withCorrelationHeader(NextResponse.json({ error: validation.error }, { status: 400 }), requestContext);
+        }
+        syntheseJson = validation.synthese as Prisma.InputJsonValue;
+      } else {
+        // Brouillon IA : mêmes règles de coercion que celles appliquées à la
+        // génération (`validateSyntheseSchema`), pas celles du brouillon
+        // praticien. Les deux schémas ne sont pas interchangeables :
+        // `validerBrouillonPraticien` borne des longueurs pensées pour la saisie
+        // manuelle (narratif à 12000 car., 3 axes max...) et écrase toujours
+        // `limites` par son propre texte — l'appliquer ici rejetterait une
+        // édition triviale d'un contenu IA déjà plus long, et remplacerait
+        // silencieusement la mention de limites générée par le modèle.
+        syntheseJson = validateSyntheseSchema(body.synthese) as unknown as Prisma.InputJsonValue;
       }
-      syntheseJson = validation.synthese as Prisma.InputJsonValue;
     } else if (action === 'valider') {
       if (existing.statut === 'Brouillon_Praticien' || existing.modele === MODELE_REDACTION_PRATICIEN) {
         const validation = validerBrouillonPraticien(existing.syntheseJson);
