@@ -116,14 +116,15 @@ function lancer(racine, ...args) {
 }
 
 /**
- * Même chose, mais avec un `git` qui échoue — `safe.directory`, conteneur à uid
- * différent, `git` hors du PATH. Le contrôle doit le dire, pas se taire.
+ * Même chose, mais avec un outil de la chaîne qui échoue — `git` empêché par
+ * `safe.directory` ou un uid de conteneur, `mktemp` sur un système de fichiers
+ * en lecture seule. Le contrôle doit le dire, pas se taire ni conclure.
  */
-function lancerAvecGitEnPanne(racine, ...args) {
+function lancerAvecOutilEnPanne(racine, outil, ...args) {
   const faux = join(racine, 'faux-bin');
   mkdirSync(faux, { recursive: true });
-  const shim = join(faux, 'git');
-  writeFileSync(shim, '#!/bin/sh\necho "fatal: detected dubious ownership" >&2\nexit 128\n');
+  const shim = join(faux, outil);
+  writeFileSync(shim, `#!/bin/sh\necho "${outil}: échec simulé" >&2\nexit 1\n`);
   chmodSync(shim, 0o755);
   const r = spawnSync('bash', [join(racine, 'scripts', 'check_no_secrets.sh'), ...args], {
     cwd: racine,
@@ -306,9 +307,22 @@ describe('check_no_secrets.sh — quand il ne peut pas conclure', () => {
     // PATH suffisaient. « Je n'ai pas pu vérifier » n'est pas « rien trouvé ».
     avecBanc({ 'compte.json': COMPTE_DE_SERVICE }, racine => {
       git(racine, 'add', 'compte.json');
-      const { code, sortie } = lancerAvecGitEnPanne(racine, '--staged');
+      const { code, sortie } = lancerAvecOutilEnPanne(racine, 'git', '--staged');
       assert.equal(code, 2, `le contrôle a conclu sans pouvoir lire l’index : ${sortie}`);
       assert.doesNotMatch(sortie, /^OK:/m, 'le contrôle a annoncé « OK » sans rien lire');
+      assert.match(sortie, /NON CONCLUANT/);
+    });
+  });
+
+  test('un mktemp en panne aussi, plutôt que « secret détecté »', () => {
+    // Sans garde, `set -e` sortirait en 1 — c'est-à-dire dans le code qui
+    // signifie « un secret a été trouvé », alors que rien n'a été lu. Le sens
+    // de dégradation est bon, la conclusion est fausse.
+    avecBanc({ 'compte.json': COMPTE_DE_SERVICE }, racine => {
+      git(racine, 'add', 'compte.json');
+      const { code, sortie } = lancerAvecOutilEnPanne(racine, 'mktemp', '--staged');
+      assert.equal(code, 2, `échec d’outillage rendu comme une détection : ${sortie}`);
+      assert.doesNotMatch(sortie, /^OK:/m);
       assert.match(sortie, /NON CONCLUANT/);
     });
   });

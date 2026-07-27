@@ -60,7 +60,9 @@ GREP_EXCLUDES=(
 # « Je n'ai pas pu vérifier » n'est pas « je n'ai rien trouvé ».
 AJOUTS=""
 if [[ "$MODE" == "staged" ]]; then
-  LISTE="$(mktemp)"
+  # `mktemp` gardé pour la même raison que `git` : sans cela `set -e` sortirait
+  # en 1, c'est-à-dire « secret détecté », alors que rien n'a été lu.
+  LISTE="$(mktemp)" || { echo "ERREUR: mktemp a échoué — contrôle NON CONCLUANT." >&2; exit 2; }
   trap 'rm -f "$LISTE"' EXIT
   # Le passage par un fichier, et non par `$(…)`, parce que bash retire les
   # octets NUL des substitutions de commande — ce qui détruirait la séparation

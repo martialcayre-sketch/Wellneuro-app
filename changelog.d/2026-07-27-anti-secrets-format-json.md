@@ -47,14 +47,19 @@
   — une donnée qui redevient de la syntaxe. Un pathspec n'est pas un chemin :
   `:` y ouvre la syntaxe magique de git, si bien qu'un fichier nommé `:note.md`
   cessait de matcher quoi que ce soit et sortait du contrôle en silence.
-- **Un `git` en panne fait désormais sortir en 2, jamais en 0.** Le pire mode de
-  défaillance d'un garde est de répondre « OK » sans avoir rien lu — et
+- **Un outil en panne fait désormais sortir en 2, jamais en 0 ni en 1.** Le pire
+  mode de défaillance d'un garde est de répondre « OK » sans avoir rien lu — et
   `safe.directory`, un conteneur à uid différent ou un `git` hors du PATH y
-  suffisaient, avant comme après le premier correctif. « Je n'ai pas pu
-  vérifier » n'est pas « je n'ai rien trouvé », et le code de sortie le dit
-  maintenant.
+  suffisaient, avant comme après le premier correctif. Un `mktemp` en échec, lui,
+  sortait en **1**, c'est-à-dire dans le code qui signifie « un secret a été
+  trouvé » : le sens de dégradation était bon, la conclusion fausse.
+  Trois codes distincts désormais — **0** rien trouvé, **1** secret détecté,
+  **2** *je n'ai pas pu vérifier*, qui appelle un diagnostic d'outillage et non
+  la recherche d'un secret. La distinction est écrite dans
+  `docs/gouvernance-questionnaires-scoring.md`, dont la consigne existante ne
+  parlait que d'« échec ».
 - **Un banc verrouille le contrôle** (`scripts/check_no_secrets.test.mjs`,
-  13 cas plus 7 `todo`), en CI **et dans le palier T1** — `npm run check` le
+  14 cas plus 7 `todo`), en CI **et dans le palier T1** — `npm run check` le
   lance, par cohérence avec `registry-check` et `certify-check` : un palier qui
   ne couvre pas ce que le CI vérifie ne protège de rien.
   Il monte un dépôt jetable, y dépose un faux compte de service, vérifie le
