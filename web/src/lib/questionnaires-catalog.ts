@@ -30,12 +30,16 @@ export type QuestionnaireCatalogEntry = {
 
 export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // ── ALIMENTAIRE ─────────────────────────────────────────────────────────────
+  // Seuils provisoires, source non certifiée : la version servie est un
+  // dépistage court de 14 items (/42), non une numérisation du questionnaire
+  // SIIN d'origine (57 items, /90). Cf. le commentaire de Q_ALI_01 dans
+  // questionnaires/alimentaire.ts et l'audit du 2026-07-26.
   { id: 'Q_ALI_01', titre: 'Questionnaire Alimentaire SIIN', categorie: 'Alimentaire',
-    description: `Évaluez la qualité globale de votre alimentation : légumes, fruits, protéines, graisses, sucres et comportements alimentaires.`, duree: '15 min', actif: true },
+    description: `Situez la qualité globale de votre alimentation : légumes, fruits, protéines, graisses, sucres et comportements alimentaires. Repérage d'habitudes, non validé comme instrument de mesure — les résultats orientent l'entretien, ils ne concluent pas.`, duree: '15 min', actif: true },
   { id: 'Q_ALI_02', titre: 'Alimentation — Diète méditerranéenne SIIN', categorie: 'Alimentaire',
     description: `Évaluez votre adhérence au régime méditerranéen en 14 questions (score /14).`, duree: '10 min', actif: true },
-  { id: 'Q_ALI_03', titre: 'Évaluation des apports caloriques et protéiques — Pr. L. Monnier', categorie: 'Alimentaire',
-    description: `Estimez vos apports quotidiens en protéines et calories selon la méthode Monnier (repérage rapide validé).`, duree: '10 min', actif: true },
+  { id: 'Q_ALI_03', titre: 'Fréquences de consommation alimentaire (adapté de la méthode Monnier)', categorie: 'Alimentaire',
+    description: `Situez vos fréquences de consommation par groupe d'aliments. Ne calcule ni apports caloriques ni apports protéiques : la version servie produit des indices de fréquence, pas des quantités. Source non certifiée.`, duree: '10 min', actif: true },
 
   // ── FIBROMYALGIE ────────────────────────────────────────────────────────────
   { id: 'Q_FIB_01', titre: 'FiRST — Dépistage de la fibromyalgie', categorie: 'Fibromyalgie',
