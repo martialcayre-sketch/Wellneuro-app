@@ -1729,27 +1729,19 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // Drapeau déclaratif, additif : sans lui, le comportement est inchangé.
     const globalTotal = subResults.filter((r: any) => !r.horsTotal).reduce((s: any, r: any) => s + r.total, 0);
 
-    // Sortie enrichie pour Monnier : calories de base = protéines (g/j) x 24
-    if (def.id === 'Q_ALI_03') {
-      const prot = subResults.find((s: any) => s.id === 'MONNIER_PROT');
-      const calSup = subResults.find((s: any) => s.id === 'MONNIER_CAL_SUP');
-      const proteinesGJour = prot ? Number(prot.total.toFixed(1)) : 0;
-      const caloriesAdditionnelles = calSup ? Number(calSup.total.toFixed(0)) : 0;
-      const caloriesBaseEstimees = Number((proteinesGJour * 24).toFixed(1));
-      const caloriesTotalesEstimees = Number((caloriesBaseEstimees + caloriesAdditionnelles).toFixed(1));
-      return {
-        type:'subscore',
-        subScores: subResults,
-        total: globalTotal,
-        monnier: {
-          proteinesGJour,
-          caloriesBaseEstimees,
-          caloriesAdditionnelles,
-          caloriesTotalesEstimees
-        }
-      };
-    }
-
+    // Un bloc `monnier` était calculé ici pour `Q_ALI_03`, censé rendre des
+    // protéines en g/j et des calories en kcal/j. Il cherchait des sous-scores
+    // `MONNIER_PROT` et `MONNIER_CAL_SUP` qui n'existent pas : les sous-scores
+    // servis sont `P_AN`, `P_VG`, `GL`, `LIP`, `SU`. Les deux `find` rendaient
+    // donc `undefined` et les quatre valeurs tombaient à 0 — **invariantes aux
+    // réponses**, mesurées aux deux bornes. Ce zéro était persisté dans
+    // `scores_json` et transmis au modèle de synthèse, où il se lit « 0 g de
+    // protéines par jour, 0 kcal par jour » : un signal de dénutrition sévère,
+    // fabriqué. Aucune UI ne le lisait. Retiré plutôt que recâblé — recâbler
+    // exigerait le poids du patient, les portions et une table de composition,
+    // qu'aucun item ne recueille (audit du 2026-07-26, P0 point 2).
+    // Les passations antérieures gardent la clé en base ; `scoresPourPrompt`
+    // l'écarte du prompt.
     return {type:'subscore', subScores: subResults, total: globalTotal, note: sc.note || null, certification: sc.certification || null};
   }
 

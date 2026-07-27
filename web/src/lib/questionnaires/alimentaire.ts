@@ -45,6 +45,18 @@ export const Q_ALI_01 = {
           [{v:3,l:'Jamais'},{v:2,l:'Parfois'},{v:1,l:'Souvent'},{v:0,l:'Très souvent'}]),
       ]},
   ],
+  // SEUILS PROVISOIRES, SOURCE NON CERTIFIÉE (P0 métrologique, point 3, audit
+  // du 2026-07-26). La version servie ici compte 14 items cotés 0-3 (total /42)
+  // alors que le questionnaire SIIN d'origine en compte 57, cotés 0/1/2
+  // (total /90) : ce n'est pas une numérisation de la source, c'est un
+  // dépistage court local qui en porte le nom. Les quatre bandes ci-dessous
+  // n'ont donc aucune validation psychométrique — ni DOI, ni publication
+  // primaire, ni étalonnage. Elles restent servies pour ne pas rompre les
+  // passations existantes, mais ne doivent fonder aucune conclusion clinique
+  // ferme. Ce questionnaire alimente pourtant le besoin 1, qui est une
+  // fondation critique : l'arbitrage (restaurer les 57 items, ou renommer ce
+  // dépistage et lui retirer ses seuils) est ouvert au praticien — voir
+  // docs/claude/propositions/2026-07-26-audit-accompagnement-alimentaire/ §5.3.
   scoring:{
     type:'sum', maxTotal:42,
     interpretation:[
@@ -102,9 +114,16 @@ export const Q_ALI_02 = {
     ]
   }
 };
+// P0 métrologique (audit du 2026-07-26, point 2) : le titre et les consignes
+// promettaient une estimation d'apports en grammes et en kilocalories que le
+// scoring ne produit pas — il ne calcule que des indices ordinaux de fréquence
+// (voir `subScores` plus bas, tous nommés « index »). Estimer un apport
+// protéique exigerait le poids, les portions réellement consommées et une table
+// de composition ; rien de tout cela n'est recueilli. Promesse retirée, source
+// non certifiée signalée. La méthode Monnier reste citée comme origine.
 export const Q_ALI_03 = {
-  id:'Q_ALI_03', titre:'Évaluation des apports caloriques et protéiques — Méthode Monnier',
-  instructions:'Ce questionnaire permet d\'estimer vos apports journaliers en protéines et calories. Renseignez vos habitudes habituelles.',
+  id:'Q_ALI_03', titre:'Fréquences de consommation alimentaire (adapté de la méthode Monnier)',
+  instructions:'Renseignez vos habitudes habituelles. Ce questionnaire situe vos fréquences de consommation par groupe d\'aliments ; il ne calcule ni calories ni grammes de protéines.',
   sections:[
     { id:'A', titre:'Protéines animales',
       questions:[
@@ -133,6 +152,11 @@ export const Q_ALI_03 = {
         qs('MO9','Produits sucrés (desserts, sodas, confiseries) : portions par jour ?',
           [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4 ou plus'}]),
       ]},
+    // MO10 est collecté sans entrer dans aucun sous-score : il est demandé au
+    // patient et jamais exploité. Le retirer modifierait le contenu d'un
+    // instrument déjà administré, le câbler créerait un sous-score non validé —
+    // les deux sont des arbitrages cliniques, pas des corrections de forme.
+    // Signalé au rapport d'audit, en attente de décision praticien.
     { id:'D', titre:'Contexte',
       questions:[
         qs('MO10','Votre niveau d\'activité physique global est :',

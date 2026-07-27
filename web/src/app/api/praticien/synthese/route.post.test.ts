@@ -68,7 +68,11 @@ beforeEach(() => {
   getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
   prisma.patient.findFirst.mockResolvedValue({ idPatient: 'PAT_SEED_01', email: 'pat@example.com' });
   prisma.questionnaireReponse.findMany.mockResolvedValue([
-    { titre: 'BDI', dateReponse: new Date('2026-07-10'), scoresJson: {}, scorePrincipal: 12, interpretation: null },
+    // `idQuestionnaire` fait partie de la charge utile depuis le 2026-07-27 :
+    // la consigne système désigne les questionnaires alimentaires par leur
+    // identifiant. La fixture doit le porter, sinon `JSON.stringify` élide la
+    // clé et aucun test n'observe jamais l'identifiant réellement transmis.
+    { idQuestionnaire: 'Q_ALI_03', titre: 'BDI', dateReponse: new Date('2026-07-10'), scoresJson: {}, scorePrincipal: 12, interpretation: null },
   ]);
   prisma.consultation.findFirst.mockResolvedValue(null);
   validateSyntheseSchema.mockReturnValue({ points_de_vigilance: [] });
@@ -124,6 +128,16 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
       expect.objectContaining({ max_tokens: 8192 }),
       undefined,
     );
+  });
+
+  it('transmet l’identifiant du questionnaire dans le message envoyé au modèle', async () => {
+    // La consigne système interdit de conclure à une carence « pour les
+    // identifiants commençant par Q_ALI ». Le critère de déclenchement doit
+    // donc atteindre le modèle : c'est le seul test qui l'observe **après**
+    // `JSON.stringify`, là où une clé absente du type disparaît sans bruit.
+    await POST(req(CORPS));
+    const message = anthropicCreate.mock.calls[0][0].messages[0].content;
+    expect(message).toContain('"idQuestionnaire": "Q_ALI_03"');
   });
 
   it('ne passe AUCUNE option Anthropic (défauts SDK inchangés, Vercel intact)', async () => {

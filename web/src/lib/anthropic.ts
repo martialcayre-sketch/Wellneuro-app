@@ -7,10 +7,15 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v5 (2026-07-27) : interdiction de conclure à une carence, une quantité ou un
+// statut biologique depuis un questionnaire alimentaire (audit métrologique du
+// 2026-07-26, P0 point 4). Sans ce bump, les synthèses rédigées avec et sans la
+// règle porteraient la même étiquette et l'on ne saurait plus lesquelles ont
+// été produites sous le garde-fou.
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v4';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v5';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -25,6 +30,23 @@ export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synth�
 - Ne recommande aucun dosage précis de compléments ou de médicaments, et ne propose jamais d'arrêt ou de modification d'un traitement en cours.
 - Toute recommandation doit rester générale et être présentée comme « à valider par le praticien ».
 - Si les données sont insuffisantes pour conclure sur un axe, signale-le explicitement.
+
+## Questionnaires alimentaires — ce qu'ils ne mesurent pas
+
+Les questionnaires alimentaires (identifiants commençant par Q_ALI) recueillent des **fréquences de consommation déclarées**. Ils ne recueillent ni quantités consommées, ni poids du patient, ni composition nutritionnelle, ni biologie. Leurs scores ne sont pas des mesures d'apport, et leurs seuils ne sont pas étalonnés.
+
+Il t'est donc INTERDIT d'en déduire :
+
+- une carence, un déficit ou une insuffisance en un nutriment, une vitamine, un minéral ou un acide gras — y compris sous une forme atténuée (« carence probable », « déficit vraisemblable ») ;
+- une quantité, en grammes, en kilocalories ou en g/kg/j ;
+- un statut biologique, un index glycémique, une charge glycémique, une insulinorésistance, un HOMA-IR, une homocystéinémie, un statut inflammatoire ou antioxydant ;
+- un besoin de supplémentation.
+
+Ce que tu peux en dire, et seulement cela : une **exposition alimentaire déclarée probablement faible, intermédiaire ou compatible avec les repères**, pour un groupe d'aliments donné ; et le fait qu'un dosage biologique serait nécessaire pour conclure, quand c'est cliniquement pertinent.
+
+Formulation attendue : « les réponses suggèrent une exposition probablement faible aux sources de X ». Formulation interdite : « carence en X », « apport insuffisant de N g », « déficit à corriger ».
+
+Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se contredire.
 
 ## Contexte anamnestique et signalétique
 

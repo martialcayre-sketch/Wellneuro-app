@@ -30,6 +30,18 @@
 // `conduite.guard.test.ts` échoue si cela change.
 const CLES_CONDUITE = new Set(['conduite', 'protocol']);
 
+// Second motif, distinct du premier : une **quantité non étalonnée**. Le bloc
+// `monnier` de `Q_ALI_03` annonçait des protéines en g/j et des calories en
+// kcal/j calculées depuis des sous-scores inexistants — il rendait donc 0
+// partout, quelle que soit la réponse. Le calcul est retiré du moteur
+// (`questions.ts`), mais la clé subsiste dans les `scores_json` déjà en base :
+// sans ce filtre, ces passations continueraient d'envoyer « 0 g de protéines
+// par jour » au modèle, c'est-à-dire un signal de dénutrition sévère fabriqué,
+// juste à côté d'une consigne système qui lui interdit de conclure à une
+// quantité. Retiré du prompt, pas de la base : la donnée historique reste
+// lisible, elle cesse d'être soumise au raisonnement clinique.
+const CLES_QUANTITE_NON_ETALONNEE = new Set(['monnier']);
+
 /**
  * Copie profonde de `scores` privée des clés `conduite` et `protocol`, à toute
  * profondeur. N'altère jamais l'entrée : l'objet original reste requis pour
@@ -44,7 +56,7 @@ export function scoresPourPrompt(scores: unknown): unknown {
   }
   const out: Record<string, unknown> = {};
   for (const [cle, valeur] of Object.entries(scores as Record<string, unknown>)) {
-    if (CLES_CONDUITE.has(cle)) continue;
+    if (CLES_CONDUITE.has(cle) || CLES_QUANTITE_NON_ETALONNEE.has(cle)) continue;
     out[cle] = scoresPourPrompt(valeur);
   }
   return out;

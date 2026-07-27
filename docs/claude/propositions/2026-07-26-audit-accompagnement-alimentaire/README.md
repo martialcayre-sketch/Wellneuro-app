@@ -93,12 +93,35 @@ peut soutenir ; et le patient, au milieu, saisit dans le vide.
 | Besoin 1 « Équilibre de l'assiette » ← `Q_ALI_01` max 42 | **exact** | `web/src/lib/equilibre/constants.ts:53` |
 | Besoin 2 « Micronutriments essentiels » ← Pichot fatigue | **exact** | `constants.ts:54` ; `questions.ts:247-248` |
 | Besoin 3 « Rythme alimentaire » ← aucune source | **exact** | `constants.ts:55` (tableau vide) |
-| `Q_ALI_03` ne calcule ni g/j ni kcal/j | **exact** | `alimentaire.ts:142-151` (sous-scores « index ») |
+| `Q_ALI_03` ne calcule ni g/j ni kcal/j | **infirmé — voir ci-dessous** | `questions.ts:1731-1752` (bloc `monnier`) |
 | Persistance JA adossée à `ProtocolDraft` | **exact** | `web/src/lib/food-observation/persistence.ts:128` |
 | Saisie patient non persistée côté serveur | **exact** | `PatientFoodObservationPanel.tsx:196` |
 
-Sept affirmations sur sept se confirment. L'audit fourni est fiable sur ses
-constats de fait.
+> **Correction du 2026-07-27 — cette ligne était fausse, et dans le sens
+> rassurant.** J'avais vérifié la *définition* du questionnaire
+> (`alimentaire.ts`), pas le *moteur* de scoring. `questions.ts:1731-1752`
+> portait un cas particulier `Q_ALI_03` qui émettait bel et bien un bloc
+> `monnier: { proteinesGJour, caloriesBaseEstimees, caloriesAdditionnelles,
+> caloriesTotalesEstimees }`. Il cherchait des sous-scores `MONNIER_PROT` et
+> `MONNIER_CAL_SUP` qui n'existent pas — les sous-scores servis sont `P_AN`,
+> `P_VG`, `GL`, `LIP`, `SU` — et rendait donc **0 partout, invariant aux
+> réponses**, mesuré aux deux bornes. Ce zéro était persisté dans `scores_json`
+> et transmis au modèle de synthèse, où il se lit « 0 g de protéines par jour,
+> 0 kcal par jour » : un signal de dénutrition sévère, fabriqué. La passation du
+> 2026-07-25 le porte en base. Trouvé par la revue adversariale du 2026-07-27 ;
+> bloc retiré du moteur et clé écartée du prompt dans le même lot.
+>
+> La leçon dépasse cette ligne : **une vérification qui s'arrête à la définition
+> d'un questionnaire ne dit rien de ce que le moteur en fait.** Les autres
+> lignes de ce tableau qui portent sur un calcul ont été établies de la même
+> façon et méritent le même doute.
+
+Six affirmations sur sept se confirment ; la septième est infirmée, et elle
+l'était dans le sens rassurant. L'audit fourni est fiable sur ce qu'il a
+regardé — la formulation initiale (« fiable sur ses constats de fait ») est
+maintenue en gardant à l'esprit qu'elle a été écrite avant de découvrir que la
+vérification s'était arrêtée à la définition des questionnaires, sans jamais
+ouvrir le moteur de scoring.
 
 ---
 
@@ -154,10 +177,14 @@ les **consignes servies au patient** portent la même promesse —
 « Ce questionnaire permet d'estimer vos apports journaliers en protéines et
 calories » (`alimentaire.ts:107`).
 
-Or le scoring ne produit que cinq sous-scores ordinaux explicitement nommés
-« index » (`alimentaire.ts:142-151`) : aucun gramme, aucune kilocalorie. Le
-patient répond donc à un questionnaire qui lui annonce un résultat que le
-moteur ne calcule pas.
+Or la **définition** ne produit que cinq sous-scores ordinaux explicitement
+nommés « index » (`alimentaire.ts:142-151`). Le patient répond donc à un
+questionnaire qui lui annonce un résultat que ces sous-scores ne portent pas.
+
+Le **moteur**, lui, émettait bien un bloc de quantités — voir la correction du
+2026-07-27 plus haut : quatre valeurs à zéro, invariantes, transmises au modèle
+de synthèse. La promesse n'était donc pas seulement non tenue : elle était
+remplie par un chiffre faux.
 
 **Item mort au passage** : `MO10` (niveau d'activité physique, coté 1 à 5,
 `alimentaire.ts:138-139`) n'entre dans aucun des cinq sous-scores. Il est
