@@ -803,6 +803,54 @@ for (const id of instrumentsADimensions) {
   }
 }
 
+// Une conduite clinique ne doit plus voyager DANS l'interprétation : elle sort
+// sous `conduite`. Balayage des 64 instruments aux deux bornes — un seul cas
+// témoin ne garderait rien, le catalogue en compte 12 porteurs et 43 bandes,
+// et c'est la bande atteinte qui décide, donc les deux extrêmes.
+{
+  const fautifs = [];
+  const attendusPorteurs = new Set();
+  for (const [id, def] of Object.entries(QUESTIONNAIRE_CATALOGUE)) {
+    const bandes = def?.scoring?.interpretation;
+    if (Array.isArray(bandes) && bandes.some(bande => typeof bande?.protocol === 'string' && bande.protocol.trim())) {
+      attendusPorteurs.add(id);
+    }
+    for (const borne of ['min', 'max']) {
+      let resultat;
+      try {
+        resultat = calculateScore(id, fillByOptionBoundary(id, borne));
+      } catch {
+        continue; // instrument non scorable aux bornes : hors sujet ici.
+      }
+      if (resultat?.interpretation && typeof resultat.interpretation === 'object' && 'protocol' in resultat.interpretation) {
+        fautifs.push(`${id} (${borne})`);
+      }
+    }
+  }
+  assertEqual(fautifs, [], 'conduite clinique émise dans `interpretation` — elle doit sortir sous `conduite`, sans quoi elle voyage jusqu’au prompt de synthèse comme un résultat de mesure');
+
+  // Et le versant positif : sans lui, supprimer purement les 43 `protocol` du
+  // catalogue passerait le garde ci-dessus sans que rien ne signale la perte.
+  //
+  // La liste est SERVIE, pas déclarée. Le Berlin (`Q_SOM_03`) n'a pas de bandes
+  // dans le catalogue — son moteur fabrique son interprétation en dur — et
+  // aucune inspection statique ne le voit : il faut exécuter pour le trouver.
+  const porteursServis = Object.keys(QUESTIONNAIRE_CATALOGUE).filter(id => {
+    for (const borne of ['min', 'max']) {
+      try {
+        if (typeof calculateScore(id, fillByOptionBoundary(id, borne))?.conduite === 'string') return true;
+      } catch { /* voir ci-dessus */ }
+    }
+    return false;
+  });
+  assertEqual(
+    porteursServis.sort(),
+    ['Q_ALI_01', 'Q_ALI_02', 'Q_CAR_01', 'Q_GEO_01', 'Q_GEO_02', 'Q_GEO_03', 'Q_GEO_04', 'Q_NEU_02', 'Q_NEU_06', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01', 'Q_TAB_04'],
+    'liste des instruments servant une conduite clinique — un ajout ou une perte doit être vu en revue, pas subi',
+  );
+  assert(attendusPorteurs.size === 12, `12 instruments déclarent une conduite dans leurs bandes ; obtenu ${attendusPorteurs.size}`);
+}
+
 // `horsTotal` ampute le score global de la sous-échelle qui le porte. Seul
 // l'IPSS l'utilise, sur décision clinique ; l'assertion rend visible en revue
 // le jour où le drapeau essaimera ailleurs.

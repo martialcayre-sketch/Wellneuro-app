@@ -25,11 +25,37 @@ describe('buildMiniSynthese', () => {
     expect(result).toBe('Fatigue modérée. à surveiller sur 4 semaines');
   });
 
-  it('interprétation globale avec protocol (sans detail) → orientation ajoutée', () => {
+  it('forme héritée : protocol dans l’interprétation → orientation ajoutée', () => {
+    // Les réponses enregistrées avant le 2026-07-26 portent cette forme. Elles
+    // ne sont pas réécrites : la fiche doit continuer de les afficher.
     const result = buildMiniSynthese({
       interpretation: { label: 'Fatigue sévère', protocol: 'Protocole 21 jours' },
     });
     expect(result).toBe('Fatigue sévère — Orientation : Protocole 21 jours');
+  });
+
+  it('forme courante : conduite hors de l’interprétation → même phrase rendue', () => {
+    const result = buildMiniSynthese({
+      interpretation: { label: 'Fatigue sévère' },
+      conduite: 'Protocole 21 jours',
+    });
+    expect(result).toBe('Fatigue sévère — Orientation : Protocole 21 jours');
+  });
+
+  it('conduite prime sur un protocol hérité résiduel', () => {
+    const result = buildMiniSynthese({
+      interpretation: { label: 'Fatigue sévère', protocol: 'Ancienne conduite' },
+      conduite: 'Conduite courante',
+    });
+    expect(result).toBe('Fatigue sévère — Orientation : Conduite courante');
+  });
+
+  it('detail prime sur la conduite, comme il primait sur protocol', () => {
+    const result = buildMiniSynthese({
+      interpretation: { label: 'Fatigue sévère', detail: 'à surveiller' },
+      conduite: 'Protocole 21 jours',
+    });
+    expect(result).toBe('Fatigue sévère. à surveiller');
   });
 
   it('label vide/blanc est ignoré, retombe sur les subScores puis sur vide', () => {
