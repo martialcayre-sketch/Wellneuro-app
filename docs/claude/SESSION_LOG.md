@@ -744,3 +744,22 @@ critiques. Elle commande le lot 1 du plan révisé.
 a-t-il vocation à servir (zéro ligne en base) ; six domaines ou quatorze ; les
 quatre questions du rapport trajectoire.
 
+
+## 2026-07-27 — Clôture : #416 mergée, raccourci docs-only du CI constaté
+
+**Décisions** : #416 mergée en squash (`9693b91`) sur instruction explicite —
+audit trajectoire, confrontation de l'audit externe, plan alimentaire révisé.
+Conflit sur ce journal avec #419 (deux entrées ajoutées au même endroit) résolu
+en conservant les deux, dans l'ordre d'arrivée.
+
+**À retenir** : depuis #412, `verify` détecte un diff purement documentaire
+(`ci.yml:53-85`) et saute build et E2E — vert en 33 s là où la même PR prenait
+8 min 37 avant le merge de `main`. Ce n'est pas un passage à vide : anti-secrets
+et audit des campagnes restent inconditionnels. Ne pas lire un `verify` court
+comme un CI qui n'a rien vérifié, ni comme la preuve que les E2E sont passées.
+
+**Écarté** : forcer un run complet sur un diff docs-only.
+
+**Prochaine action** : arbitrer `Q_ALI_01` — lot 1 du plan révisé.
+
+**Questions ouvertes** : inchangées, voir l'entrée précédente.
