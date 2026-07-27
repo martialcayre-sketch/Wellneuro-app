@@ -383,8 +383,9 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
   };
 
   const patient = patients.find(p => p.idPatient === selectedPatient);
+  const brouillonEditable = selectedSynthese?.statut === 'Brouillon_Praticien' || selectedSynthese?.statut === 'Brouillon_IA';
   const validationBrouillonBloquee =
-    selectedSynthese?.statut === 'Brouillon_Praticien'
+    brouillonEditable
     && (
       manualDirty
       || !editedManual?.resume_praticien.trim()
@@ -493,7 +494,7 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
                     onClick={() => {
                       setSelectedSynthese(s);
                       setManualDraft(null);
-                      setEditedManual(estRedactionPraticien(s.modele) && s.statut === 'Brouillon_Praticien' ? s.syntheseJson : null);
+                      setEditedManual(s.statut === 'Brouillon_Praticien' || s.statut === 'Brouillon_IA' ? s.syntheseJson : null);
                       setManualDirty(false);
                       setNotes(s.notesPraticien ?? '');
                       setBookletHtml(null);
@@ -526,9 +527,10 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
             </button>
           </div>
 
-          {selectedSynthese.statut === 'Brouillon_Praticien' && editedManual ? (
+          {brouillonEditable && editedManual ? (
             <>
               <SynthesePraticienEditor
+                key={selectedSynthese.idSynthese}
                 value={editedManual}
                 onChange={value => {
                   setEditedManual(value);

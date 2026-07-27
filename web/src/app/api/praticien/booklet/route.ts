@@ -206,13 +206,15 @@ export async function POST(req: Request) {
     // face, cette phrase inquiète sans orienter.
     //
     // AVERTISSEMENT, PAS REFUS — et c'est une revue adversariale qui a montré
-    // pourquoi. Le narratif d'une synthèse IA n'est éditable à AUCUN moment de
-    // son cycle de vie : `action:'enregistrer'` exige `Brouillon_Praticien` +
-    // `MODELE_REDACTION_PRATICIEN`, l'envoi exige `Validee_Praticien`, et les
-    // deux ensembles sont disjoints. Un refus dur aurait donc dit « reformulez »
-    // sans qu'aucun écran ne le permette, et aurait rendu indélivrables des
-    // booklets déjà validés en production — d'autant que la garde ne lit pas la
-    // négation et signale « il n'y a ni urgence ni danger ».
+    // pourquoi. Cette route ne s'exécute que sur une synthèse déjà
+    // `Validee_Praticien`/`Corrigee_Praticien` (garde plus haut) : à ce stade,
+    // qu'elle soit d'origine IA ou praticien, `action:'enregistrer'` la refuse
+    // — seul un brouillon `Brouillon_IA`/`Brouillon_Praticien` reste modifiable
+    // (voir `/api/praticien/synthese`). Un refus dur ici dirait donc
+    // « reformulez » sans qu'aucun écran ne le permette encore à ce stade, et
+    // rendrait indélivrables des booklets déjà validés en production — d'autant
+    // que la garde ne lit pas la négation et signale « il n'y a ni urgence ni
+    // danger ».
     //
     // On réemploie le patron `needsConfirmation` déjà en place pour le renvoi,
     // avec un drapeau à lui : le praticien voit le mot, et décide. La garde le
