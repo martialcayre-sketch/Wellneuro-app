@@ -1,6 +1,18 @@
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
+
+/**
+ * Les qids écartés parce que l'instrument est suspendu. Rendu à l'appelant
+ * plutôt que journalisé ici : `LogPayload` exige un contexte de requête, que
+ * cette fonction n'a pas — et fabriquer un faux contexte pour contenter le
+ * type reviendrait à mentir dans le journal. La route qui appelle est celle
+ * qui sait tracer.
+ */
+export function qidsSuspendus(qids: string[]): string[] {
+  return qids.filter(id => IDS_SUSPENDUS.has(id));
+}
 
 const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>;
 
@@ -44,7 +56,10 @@ export async function assignPackToPatient(params: {
 
   for (const idQuestionnaire of qids) {
     const questionnaire = catalogue[idQuestionnaire];
-    if (!questionnaire) continue;
+    // Un instrument suspendu est écarté comme un id inconnu. Ce chemin est le
+    // plus sensible des trois : il part de l'onboarding portail, donc sans clic
+    // praticien sur le questionnaire lui-même.
+    if (!questionnaire || IDS_SUSPENDUS.has(idQuestionnaire)) continue;
     const idAssignation = createPublicId('ASS');
     const titre = questionnaire.titre || idQuestionnaire;
     await prisma.assignation.create({

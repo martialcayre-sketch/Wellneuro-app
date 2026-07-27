@@ -205,4 +205,46 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     expect(response.status).toBe(400);
     expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
   });
+
+  it('enregistre l’édition d’un brouillon IA sans repasser par les contraintes du brouillon praticien', async () => {
+    prisma.syntheseIA.findFirst.mockResolvedValue({
+      ...ligneSynthese(),
+      idSynthese: 'SYN_IA_1',
+      modele: 'claude-test',
+      statut: 'Brouillon_IA',
+      syntheseJson: { ...brouillon, limites: 'Limites générées par le modèle.' },
+    });
+
+    // Dépasse la limite de 12000 caractères du brouillon praticien : une
+    // édition d'un contenu IA déjà long ne doit pas être rejetée pour autant.
+    const syntheseModifiee = {
+      ...brouillon,
+      narratif_patient: 'x'.repeat(13000),
+      limites: 'Limites générées par le modèle.',
+    };
+
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_IA_1',
+      action: 'enregistrer',
+      synthese: syntheseModifiee,
+    }));
+
+    expect(response.status).toBe(200);
+    expect(prisma.syntheseIA.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ syntheseJson: syntheseModifiee }),
+    }));
+  });
+
+  it('refuse d’enregistrer une synthèse déjà validée, IA ou praticien', async () => {
+    prisma.syntheseIA.findFirst.mockResolvedValue({ ...ligneSynthese(), statut: 'Validee_Praticien' });
+
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1',
+      action: 'enregistrer',
+      synthese: brouillon,
+    }));
+
+    expect(response.status).toBe(409);
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
 });

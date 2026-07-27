@@ -1,6 +1,7 @@
 'use client';
 
-import { Plus, Save, Trash2, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Plus, Save, Search, Trash2, X } from 'lucide-react';
 import type { SyntheseSchema } from '@/lib/anthropic';
 
 type Props = {
@@ -19,6 +20,52 @@ function lignes(value: string): string[] {
   // Conserve la ligne vide terminale pendant la frappe ; le serveur nettoie
   // les éléments vides à l'enregistrement.
   return value.split('\n');
+}
+
+type ChampRecherche = 'resume_praticien' | 'narratif_patient';
+
+type Occurrence = { start: number; end: number; index: number; total: number };
+
+function toutesOccurrences(texte: string, requete: string): number[] {
+  if (!requete) return [];
+  const lower = texte.toLowerCase();
+  const req = requete.toLowerCase();
+  const positions: number[] = [];
+  let idx = 0;
+  while ((idx = lower.indexOf(req, idx)) !== -1) {
+    positions.push(idx);
+    idx += req.length;
+  }
+  return positions;
+}
+
+// Recherche insensible à la casse, sans regex : un mot cherché dans une
+// synthèse clinique ne doit jamais être interprété comme un motif.
+function trouverOccurrenceSuivante(texte: string, requete: string, depart: number): Occurrence | null {
+  const positions = toutesOccurrences(texte, requete);
+  if (positions.length === 0) return null;
+  const start = positions.find(p => p >= depart) ?? positions[0];
+  return { start, end: start + requete.length, index: positions.indexOf(start), total: positions.length };
+}
+
+function remplacerToutesOccurrences(texte: string, requete: string, remplacement: string): { texte: string; nombre: number } {
+  if (!requete) return { texte, nombre: 0 };
+  const lower = texte.toLowerCase();
+  const req = requete.toLowerCase();
+  let nombre = 0;
+  let sortie = '';
+  let i = 0;
+  while (i < texte.length) {
+    const idx = lower.indexOf(req, i);
+    if (idx === -1) {
+      sortie += texte.slice(i);
+      break;
+    }
+    sortie += texte.slice(i, idx) + remplacement;
+    i = idx + requete.length;
+    nombre++;
+  }
+  return { texte: sortie, nombre };
 }
 
 export function SynthesePraticienEditor({
@@ -46,16 +93,173 @@ export function SynthesePraticienEditor({
     ]);
   };
 
+  const resumeRef = useRef<HTMLTextAreaElement>(null);
+  const narratifRef = useRef<HTMLTextAreaElement>(null);
+  const [champActif, setChampActif] = useState<ChampRecherche>('narratif_patient');
+  const [rechercheOuverte, setRechercheOuverte] = useState(false);
+  const [requete, setRequete] = useState('');
+  const [remplacement, setRemplacement] = useState('');
+  const [occurrenceCourante, setOccurrenceCourante] = useState<Occurrence | null>(null);
+  const [messageRecherche, setMessageRecherche] = useState<string | null>(null);
+
+  const champsRecherche = {
+    resume_praticien: { ref: resumeRef, label: 'Résumé interne praticien', maxLength: 4000 },
+    narratif_patient: { ref: narratifRef, label: 'Texte destiné au patient', maxLength: 12000 },
+  };
+  const cibleActive = champsRecherche[champActif];
+  const valeurActive = value[champActif];
+
+  const onFocusChamp = (nom: ChampRecherche) => {
+    if (nom === champActif) return;
+    setChampActif(nom);
+    setOccurrenceCourante(null);
+    setMessageRecherche(null);
+  };
+
+  // Une frappe manuelle entre deux clics peut décaler ou invalider l'occurrence
+  // mémorisée : on revérifie qu'elle désigne toujours le mot cherché dans le
+  // texte actuel avant de s'en servir, plutôt que de faire confiance à des
+  // indices qui pourraient pointer sur un tout autre passage.
+  const occurrenceValide = (o: Occurrence | null): o is Occurrence =>
+    !!o && o.end <= valeurActive.length && valeurActive.slice(o.start, o.end).toLowerCase() === requete.toLowerCase();
+
+  const chercherSuivant = () => {
+    if (!requete) {
+      setOccurrenceCourante(null);
+      setMessageRecherche(null);
+      return;
+    }
+    const depart = occurrenceValide(occurrenceCourante) ? occurrenceCourante.end : 0;
+    const trouve = trouverOccurrenceSuivante(valeurActive, requete, depart);
+    if (!trouve) {
+      setOccurrenceCourante(null);
+      setMessageRecherche('Aucune occurrence trouvée.');
+      return;
+    }
+    setOccurrenceCourante(trouve);
+    const el = cibleActive.ref.current;
+    if (el) {
+      el.focus();
+      el.setSelectionRange(trouve.start, trouve.end);
+    }
+    setMessageRecherche(`Occurrence ${trouve.index + 1} sur ${trouve.total}.`);
+  };
+
+  const remplacerCourant = () => {
+    if (!requete) return;
+    const cible = occurrenceValide(occurrenceCourante) ? occurrenceCourante : trouverOccurrenceSuivante(valeurActive, requete, 0);
+    if (!cible) {
+      setMessageRecherche('Aucune occurrence trouvée.');
+      return;
+    }
+    const nouveauTexte = (valeurActive.slice(0, cible.start) + remplacement + valeurActive.slice(cible.end))
+      .slice(0, cibleActive.maxLength);
+    modifier(champActif, nouveauTexte);
+    setOccurrenceCourante(null);
+    setMessageRecherche('Occurrence remplacée. Cliquez sur « Occurrence suivante » pour continuer.');
+  };
+
+  const remplacerTout = () => {
+    if (!requete) return;
+    const { texte, nombre } = remplacerToutesOccurrences(valeurActive, requete, remplacement);
+    if (nombre === 0) {
+      setMessageRecherche('Aucune occurrence trouvée.');
+      return;
+    }
+    modifier(champActif, texte.slice(0, cibleActive.maxLength));
+    setOccurrenceCourante(null);
+    setMessageRecherche(`${nombre} occurrence(s) remplacée(s).`);
+  };
+
+  const basculerRecherche = () => {
+    setRechercheOuverte(o => !o);
+    setRequete('');
+    setRemplacement('');
+    setOccurrenceCourante(null);
+    setMessageRecherche(null);
+  };
+
   return (
     <div className="flex flex-col gap-5">
+      <div className="rounded-lg border border-border bg-muted/40 p-3">
+        <button
+          type="button"
+          onClick={basculerRecherche}
+          className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-accent"
+        >
+          <Search size={16} aria-hidden="true" />
+          {rechercheOuverte ? 'Fermer la recherche' : 'Rechercher / remplacer'}
+        </button>
+
+        {rechercheOuverte && (
+          <div className="mt-3 flex flex-col gap-2">
+            <p className="text-xs text-muted-foreground">
+              Champ actif : <span className="font-medium text-foreground">{cibleActive.label}</span> — cliquez dans un champ pour le cibler.
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={requete}
+                onChange={event => {
+                  setRequete(event.target.value);
+                  setOccurrenceCourante(null);
+                  setMessageRecherche(null);
+                }}
+                onKeyDown={event => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault();
+                    chercherSuivant();
+                  }
+                }}
+                placeholder="Mot ou expression à rechercher"
+                aria-label="Rechercher un mot"
+                className={`${champ} sm:w-64`}
+              />
+              <button
+                type="button"
+                onClick={chercherSuivant}
+                className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+              >
+                Occurrence suivante
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={remplacement}
+                onChange={event => setRemplacement(event.target.value)}
+                placeholder="Remplacer par"
+                aria-label="Remplacer par"
+                className={`${champ} sm:w-64`}
+              />
+              <button
+                type="button"
+                onClick={remplacerCourant}
+                className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+              >
+                Remplacer
+              </button>
+              <button
+                type="button"
+                onClick={remplacerTout}
+                className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-muted"
+              >
+                Remplacer tout
+              </button>
+            </div>
+            {messageRecherche && <p className="text-xs text-muted-foreground">{messageRecherche}</p>}
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-2">
         <label htmlFor="synthese-resume" className="text-sm font-medium text-foreground">
           Résumé interne praticien
         </label>
         <textarea
           id="synthese-resume"
+          ref={resumeRef}
           value={value.resume_praticien}
           onChange={event => modifier('resume_praticien', event.target.value)}
+          onFocus={() => onFocusChamp('resume_praticien')}
           rows={5}
           maxLength={4000}
           required
@@ -69,8 +273,10 @@ export function SynthesePraticienEditor({
         </label>
         <textarea
           id="synthese-patient"
+          ref={narratifRef}
           value={value.narratif_patient}
           onChange={event => modifier('narratif_patient', event.target.value)}
+          onFocus={() => onFocusChamp('narratif_patient')}
           rows={8}
           maxLength={12000}
           required

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
@@ -140,12 +141,31 @@ export async function POST(req: Request): Promise<NextResponse> {
     const { qids } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
     const aCreer = qids.flatMap(idQuestionnaire => {
       const questionnaire = catalogue[idQuestionnaire];
-      return questionnaire ? [{
+      // Un instrument suspendu est écarté comme un id inconnu : le pack part
+      // amputé de cette ligne plutôt que d'échouer en bloc. Le filtre est ici
+      // et pas seulement dans l'écran — un pack déjà enregistré en base peut
+      // contenir un qid suspendu, et rien ne le retire de `pack.qids`.
+      if (!questionnaire || IDS_SUSPENDUS.has(idQuestionnaire)) return [];
+      return [{
         idAssignation: createPublicId('ASS'),
         idQuestionnaire,
         titre: questionnaire.titre || idQuestionnaire,
-      }] : [];
+      }];
     });
+
+    // Amputer un pack en silence le rend indétectable en exploitation : le
+    // praticien lit « 5 questionnaires assignés » sans savoir lequel manque.
+    // On trace donc les qids écartés pour cause de suspension — sans quoi le
+    // seul témoin serait un écart de comptage que personne ne vérifie.
+    const ecartesSuspendus = qids.filter(id => IDS_SUSPENDUS.has(id));
+    if (ecartesSuspendus.length > 0) {
+      logger.warn({
+        event: EVENT_CODES.ASSIGNATION_PACK_RESOLUTION_FAILED,
+        domain: 'ASSIGNATION',
+        message: `Questionnaires suspendus écartés du pack : ${ecartesSuspendus.join(', ')}`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+      });
+    }
 
     if (aCreer.length === 0) {
       logger.warn({
