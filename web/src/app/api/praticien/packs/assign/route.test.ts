@@ -22,6 +22,7 @@ vi.mock('@/lib/observability/logger', () => ({
 }));
 
 import { POST } from './route';
+import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 
 const patient = {
   idPatient: 'PAT_TEST',
@@ -61,6 +62,21 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     expect(message.text).toContain('https://app.wellneuro.fr/portail/connexion');
     expect(message.text).not.toContain('/portail/TOK');
     expect(message.text).not.toContain('/patient/ASS_');
+  });
+
+  // Cas réel : un pack enregistré en base contient un instrument depuis
+  // suspendu. Rien ne retire le qid de `pack.qids` — le filtre doit donc agir
+  // à l'envoi. Le pack part amputé plutôt que d'échouer en bloc.
+  it('écarte un questionnaire suspendu du pack sans faire échouer l’envoi', async () => {
+    vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({
+      qids: ['Q_NEU_03', 'Q_SOM_07'],
+      source: 'legacy',
+    });
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    expect(prisma.assignation.create).toHaveBeenCalledOnce();
+    const cree = prisma.assignation.create.mock.calls[0][0] as { data: { idQuestionnaire: string } };
+    expect(cree.data.idQuestionnaire).toBe('Q_NEU_03');
   });
 
   it('ne crée aucune assignation lorsque le portail est révoqué', async () => {

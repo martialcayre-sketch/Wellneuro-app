@@ -6,7 +6,8 @@ import {
   PASSATION_PRATICIEN,
   listeBibliotheque,
 } from './bibliotheque';
-import { QUESTIONNAIRES_CATALOG } from './questionnaires-catalog';
+import { IDS_SUSPENDUS, QUESTIONNAIRES_CATALOG } from './questionnaires-catalog';
+import { calculateScore } from './questions';
 
 describe('listeBibliotheque', () => {
   const entrees = listeBibliotheque();
@@ -70,10 +71,27 @@ describe('questionnaire suspendu (actif: false)', () => {
     }
   });
 
-  it('garde sa définition de scoring — les passations existantes restent lisibles', () => {
+  it('reste scorable — les passations existantes restent lisibles', () => {
     for (const q of suspendus) {
       const cible = ALIAS_HISTORIQUES[q.id] ?? q.id;
       expect(CATALOGUE_DEFINITIONS[cible], q.id).toBeDefined();
+      // Assertion sur le vrai point d'entrée, pas sur un proxy : `calculateScore`
+      // rend `{ error: 'Questionnaire introuvable' }` sur un id absent du
+      // catalogue de scoring. Une « purge des inactifs » de ce catalogue —
+      // le nettoyage plausible — ferait donc échouer ceci.
+      expect(calculateScore(cible, {}), q.id).not.toHaveProperty('error');
     }
+  });
+
+  // Les trois gardes ci-dessus étaient VERTES avant la suspension de Q_SOM_07 :
+  // Q_FIB_03 les satisfaisait déjà à lui seul. Un invariant sur « les
+  // suspendus » verrouille le mécanisme, jamais la décision — le repasser à
+  // `actif: true` laisserait la suite entièrement verte. D'où cette assertion
+  // nommée, qui est la seule à tomber si la suspension est défaite.
+  it('Q_SOM_07 (MFI-20 divergent) est suspendu et le reste', () => {
+    const mfi = QUESTIONNAIRES_CATALOG.find(q => q.id === 'Q_SOM_07');
+    expect(mfi, 'Q_SOM_07 doit exister au catalogue').toBeDefined();
+    expect(mfi?.actif).toBe(false);
+    expect(IDS_SUSPENDUS.has('Q_SOM_07')).toBe(true);
   });
 });

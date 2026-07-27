@@ -132,12 +132,13 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // n'est pas le MFI-20. Échelle d'accord 1→5 servie en fréquence 0→4, aucune
   // des 10 inversions appliquée, 5 sous-échelles publiées servies en 2 sections,
   // et 3 bandes /80 alors que la source écrit qu'il n'existe pas de barème.
-  // Les libellés ne se recoupent qu'à moitié. `actif: false` retire l'entrée du
-  // sélecteur praticien et de la bibliothèque ; les 4 passations déjà
-  // enregistrées restent lisibles (aucune route de lecture ne filtre sur ce
-  // champ) et ne sont PAS recalculables — elles portent sur d'autres items.
-  // Réactivation prévue à la reconstruction depuis la source, avec la
-  // description corrigée.
+  // Les libellés ne se recoupent qu'à moitié. `actif: false` retire l'entrée des
+  // écrans ET la fait refuser par les trois chemins d'assignation (voir
+  // IDS_SUSPENDUS plus bas) : un pack de production en contenait encore un.
+  // Les réponses déjà enregistrées restent lisibles — aucune route de lecture
+  // ne filtre sur ce champ — et ne sont PAS recalculables : elles portent sur
+  // d'autres items, sur une autre échelle. Réactivation prévue à la
+  // reconstruction depuis la source, avec la description corrigée.
   { id: 'Q_SOM_07', titre: 'MFI-20 — Échelle multidimensionnelle de fatigue', categorie: 'Sommeil',
     description: `Évaluez 5 dimensions de la fatigue : générale, physique, activité, motivation, mentale (20 items).`, duree: '10 min', actif: false },
   { id: 'Q_SOM_08', titre: 'IDTAS-AE — Dépression & Trouble Affectif Saisonnier', categorie: 'Sommeil',
@@ -195,3 +196,22 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   { id: 'Q_CAN_02', titre: 'QLQ-BR23 — Module cancer du sein (EORTC)', categorie: 'Cancérologie',
     description: `Module complémentaire QLQ-C30 spécifique cancer du sein : image corporelle, symptômes traitement, bras, sein (23 items).`, duree: '10 min', actif: true },
 ];
+
+// Les instruments suspendus — `actif: false`. À importer par les routes
+// d'assignation, jamais l'inverse : un questionnaire retiré doit l'être dans la
+// route, pas seulement dans l'écran, sinon un appel direct ou un pack existant
+// le contourne. C'est la règle que `api/praticien/assignations/route.ts` écrit
+// déjà pour le dossier clos ; elle vaut ici pour la même raison.
+//
+// Volontairement l'ensemble des SUSPENDUS, et non son complément « assignables ».
+// `IDS_ASSIGNABLES` (lib/bibliotheque.ts) exclut aussi les alias historiques et
+// les passations praticien : s'en servir de garde refuserait des questionnaires
+// qui passent aujourd'hui. Refuser exactement ce qui est suspendu ne change le
+// comportement d'aucun autre instrument.
+export const IDS_SUSPENDUS: ReadonlySet<string> = new Set(
+  QUESTIONNAIRES_CATALOG.filter(q => !q.actif).map(q => q.id),
+);
+
+export const RAISON_QUESTIONNAIRE_SUSPENDU = 'questionnaire_suspendu';
+export const MESSAGE_QUESTIONNAIRE_SUSPENDU =
+  "Ce questionnaire est suspendu et ne peut plus être envoyé.";

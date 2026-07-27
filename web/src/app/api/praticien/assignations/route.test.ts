@@ -22,11 +22,11 @@ const patient = {
   accessTokenRevoked: false,
 };
 
-function request(): Request {
+function request(idQuestionnaire = 'Q_NEU_03'): Request {
   return new Request('http://localhost/api/praticien/assignations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ emailPatient: patient.email, idQuestionnaire: 'Q_NEU_03' }),
+    body: JSON.stringify({ emailPatient: patient.email, idQuestionnaire }),
   });
 }
 
@@ -50,6 +50,21 @@ describe('POST /api/praticien/assignations — lien portail', () => {
     expect(message.text).toContain('https://app.wellneuro.fr/portail/connexion');
     expect(message.text).not.toContain('/portail/TOK');
     expect(message.text).not.toContain('/patient/ASS_');
+  });
+
+  // Le refus doit être DANS la route, pas dans l'écran : retirer l'entrée du
+  // sélecteur laisse passer un appel direct. `Q_SOM_07` est nommé exprès — un
+  // invariant générique sur « les suspendus » resterait vert si on le
+  // réactivait, et c'est cette décision-là qu'on verrouille ici.
+  it('refuse un questionnaire suspendu, avant toute écriture et tout envoi', async () => {
+    const response = await POST(request('Q_SOM_07'));
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({
+      success: false,
+      reason: 'questionnaire_suspendu',
+    });
+    expect(prisma.assignation.create).not.toHaveBeenCalled();
+    expect(sendMail).not.toHaveBeenCalled();
   });
 
   it('bloque avant écriture lorsque le portail est révoqué', async () => {

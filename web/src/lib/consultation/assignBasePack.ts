@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 
 const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>;
 
@@ -44,7 +45,10 @@ export async function assignPackToPatient(params: {
 
   for (const idQuestionnaire of qids) {
     const questionnaire = catalogue[idQuestionnaire];
-    if (!questionnaire) continue;
+    // Un instrument suspendu est écarté comme un id inconnu. Ce chemin est le
+    // plus sensible des trois : il part de l'onboarding portail, donc sans clic
+    // praticien sur le questionnaire lui-même.
+    if (!questionnaire || IDS_SUSPENDUS.has(idQuestionnaire)) continue;
     const idAssignation = createPublicId('ASS');
     const titre = questionnaire.titre || idQuestionnaire;
     await prisma.assignation.create({
