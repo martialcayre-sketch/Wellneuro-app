@@ -690,3 +690,27 @@ depuis le checkout principal ; lots 5-6 (besoins).
 **Questions ouvertes** : bloc axes du booklet patient ; `PATCH assignations`
 re-sert un suspendu ; les passations invalides alimentent encore fiche et
 synthèse IA.
+
+## 2026-07-27 — Audit de la chaîne trajectoire patient (docs-only)
+
+**Décisions** : clôture de session par un lot documentaire, sans aucun code.
+Audit complet de la chaîne trajectoire (SP-CONV + SP-TRAJ) demandé par
+l'utilisateur après signalement que le périmètre dépassait une clôture. Règle de
+preuve ajoutée : aucun constat de comportement sur lecture seule — sondes Vitest
+jetables exécutées, portée mesurée en production.
+
+**Trouvé** : la chaîne praticien est **dormante** (0 épisode, 0 protocole, pour
+17 patients) ; un jalon sans réponse nouvelle est rendu « mesuré » avec la valeur
+de T0 et un momentum « stable » (F1, prouvé), ce que deux frontières écrites
+interdisent mot pour mot ; le repère de cabinet en hérite ; côté patient, « *n*
+bilans jalonnent votre parcours » alors qu'il y en a eu un. Aucun patient
+concerné aujourd'hui — défauts latents.
+
+**Écarté** : tout correctif de code (F1 modifie un signal clinique servi → bump
+v5 + demande explicite) ; le backfill des `titre` figés (données de production).
+
+**Prochaine action** : arbitrer le P0 du nouveau rapport — distinguer « pas de
+nouvelle mesure » de « mesure stable ».
+
+**Questions ouvertes** : la chaîne protocole → épisode a-t-elle vocation à
+servir ? Les quatre questions du §7 du rapport trajectoire.
