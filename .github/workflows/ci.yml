@@ -164,6 +164,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_decisions_journal_v1.sql
 
+      # Le garde de contenu de la voie rapide tient à un motif d'expression
+      # régulière : « rappel 55/55, précision 65 % » est une mesure faite une
+      # fois en production. Ce banc l'épingle sur vingt-huit textes réels du
+      # corpus — une alternative supprimée par mégarde rouvrirait la signature
+      # par lot à des plages de référence sans qu'aucun autre test ne bronche.
+      - name: RAG claim seuils guard contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_garde_seuils_v1.sql
+
       # Le drift check ci-dessus ne voit ni les CHECK, ni la RLS, ni les index
       # partiels : Prisma ne les introspecte pas. Ce contrat les vérifie, et
       # surtout il fait échouer le CI si une colonne du catalogue biologie

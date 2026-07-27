@@ -28,6 +28,7 @@ import {
   eligiblesVoieRapide,
   estClaimStatut,
   listerClaimsRevue,
+  listerSourcesEnRevue,
   sanitiserQuestionnaire,
   sanitiserVerdicts,
   tailleEchantillon,
@@ -621,6 +622,19 @@ describe('deciderLot', () => {
     expect(sqlUpdate).toContain("AND statut = 'EN_ATTENTE_VALIDATION'");
     expect(sqlUpdate).toContain('AND prescriptif = false');
     expect(sqlUpdate).toContain("AND typologie_lecture IN ('déclaré', 'observé')");
+    // Le chemin d'ÉCRITURE porte lui aussi le garde de contenu : c'est le seul
+    // des six sites dont l'absence rendrait les cinq autres inopérants.
+    expect(sqlUpdate).toContain('AND NOT public.rag_claim_porte_seuil(texte_normalise)');
+
+    // Et le chargement du lot l'applique déjà — sans quoi le lot et le tirage
+    // figé divergeraient à chaque signature. Repéré par son contenu et non par
+    // son rang : un indice se périmerait au premier ajout de requête, et ce
+    // verrou doit survivre à ça.
+    const sqlLot = prisma.$queryRaw.mock.calls
+      .map(sqlDeAppel)
+      .find((sql: string) => sql.includes('SELECT c.id, c.claim_id, c.version_claim'));
+    expect(sqlLot).toBeDefined();
+    expect(sqlLot).toContain('AND NOT public.rag_claim_porte_seuil(c.texte_normalise)');
 
     const sqlJournal = sqlDeAppel(prisma.$executeRaw.mock.calls[0]);
     expect(sqlJournal).toContain("'decision_lot'");
@@ -878,13 +892,18 @@ describe('eligiblesVoieRapide — allowlist de la voie rapide', () => {
   // périmètres — le lot figé au tirage (tirerEchantillon) et le lot courant
   // (eligiblesVoieRapide) doivent partager la MÊME allowlist. Si l'une dérive
   // sans l'autre, `tirageCaduc` mentirait silencieusement. Ce test verrouille
-  // les quatre clauses communes sur les deux requêtes.
+  // les cinq clauses communes sur les deux requêtes — la cinquième étant le
+  // garde de CONTENU (migration 20260727140000) : sans elle dans ce verrou,
+  // retirer `rag_claim_porte_seuil` d'une des requêtes laisserait tout le CI
+  // vert, le tirage embarquerait des claims à borne, et le refus viendrait du
+  // trigger sous forme d'exception brute au lieu d'un `etat_divergent`.
   it('partage la MÊME allowlist que le tirage (verrou anti-dérive du drapeau caduc)', async () => {
     const CLAUSES = [
       "statut = 'EN_ATTENTE_VALIDATION'",
       'active = true',
       'prescriptif = false',
       "typologie_lecture IN ('déclaré', 'observé')",
+      'NOT public.rag_claim_porte_seuil(c.texte_normalise)',
     ];
 
     prisma.$queryRaw.mockReset();
@@ -969,5 +988,33 @@ describe('cloreTirageCaduc — clôture NEUTRE d’un tirage caduc', () => {
       ),
     );
     expect(await cloreTirageCaduc(PARAMS)).toEqual({ ok: false, raison: 'tirage_deja_conclu' });
+  });
+});
+
+describe('listerSourcesEnRevue', () => {
+  // Sixième et dernier site de l'allowlist. Le compteur n'écrit rien, mais s'il
+  // dérive il annonce au praticien un lot plus large que le lot signable : il
+  // lancerait un tirage sur un nombre qui n'existe pas.
+  it('compte la voie rapide avec le garde de contenu, et dérive la voie lente par soustraction', async () => {
+    prisma.$queryRaw.mockReset();
+    prisma.$queryRaw.mockResolvedValueOnce([
+      {
+        source_id: 'WN-SRC-0041',
+        en_attente: BigInt(74),
+        valides: BigInt(0),
+        rejetes: BigInt(0),
+        voie_rapide: BigInt(24),
+        tirage_ouvert: false,
+      },
+    ]);
+
+    const sources = await listerSourcesEnRevue();
+
+    const sql = sqlDeAppel(prisma.$queryRaw.mock.calls[0]);
+    expect(sql).toContain("AND c.typologie_lecture IN ('déclaré', 'observé')");
+    expect(sql).toContain('AND NOT public.rag_claim_porte_seuil(c.texte_normalise)');
+    // Les 50 restants sont en voie lente, garde de contenu compris — jamais
+    // orphelins entre les deux colonnes.
+    expect(sources[0]).toMatchObject({ enAttente: 74, voieRapide: 24, voieLente: 50 });
   });
 });
