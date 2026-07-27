@@ -89,10 +89,20 @@
 - **Mon équilibre et l'orientation ne sont pas concernés**, vérifié :
   `Q_SOM_07` n'apparaît dans aucun `BESOIN_SOURCES` (donc aucune couverture,
   aucune fondation critique), et `ORIENTATION_RULES_V1` est une table vide.
+- **Les synthèses DÉJÀ générées portent la conclusion invalide, et elles ne sont
+  pas réécrites.** Mesuré, pas supposé : les 3 patients concernés ont **3
+  synthèses** en base, dont **2 mentionnent explicitement « MFI »** et **3
+  mentionnent « fatigue »**. Ces synthèses alimentent les documents patient et
+  médecin (`lib/documents/depuisSynthese.ts`), qui n'ont aucune autre source :
+  générer aujourd'hui un livret depuis l'une d'elles reservirait le texte fondé
+  sur une mesure retirée. **Régénérer la synthèse produit désormais un texte
+  propre** — c'est le geste qui corrige, et il appartient au praticien. Les
+  réécrire d'office supposerait une écriture en base sur des données patient,
+  hors de l'arbitrage rendu (« marquer et laisser en place », aucune écriture) ;
+  la décision est donc posée, pas prise.
 - **`SyntheseIA.donneesEntree` conserve la trace non filtrée** des données
   d'entrée, y compris pour ces passations. C'est délibéré : c'est un journal
-  d'audit de ce qui est **entré**, pas de ce qui a été **envoyé**. Les synthèses
-  déjà générées ne sont pas réécrites.
+  d'audit de ce qui est **entré**, pas de ce qui a été **envoyé**.
 - **`prisma/seed.ts` recrée toujours la passation** (score 31, « Fatigue
   multidimensionnelle sévère »). La ligne est conservée sciemment — elle
   reproduit l'état réel de la production, et c'est précisément le cas qu'on veut
