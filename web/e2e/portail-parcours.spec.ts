@@ -11,7 +11,7 @@
 // données historiques du seed (cf. helpers/db.ts).
 import { test, expect, type Page } from '@playwright/test';
 import { resetPortailState, closePrisma } from './helpers/db';
-import { praticienSessionCookie } from './helpers/auth';
+import { praticienSessionCookie, patientPortailSessionCookie } from './helpers/auth';
 
 const PATIENT = {
   idPatient: 'PAT_SEED_03',
@@ -131,14 +131,15 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
       expect(res.ok()).toBe(true);
       const json = await res.json();
       expect(json.success).toBe(true);
-      portailUrl = `/portail/${json.accessToken}`;
+      // LOT-04 : plus de jeton d'URL ni de gate e-mail. On pose la session
+      // portail (cookie signé) exactement comme le fait l'atterrissage
+      // magic-link/Google, et le segment d'URL porte désormais l'idPatient.
+      await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
+      portailUrl = `/portail/${PATIENT.idPatient}`;
     });
 
     let etatDebug: Promise<{ status: number; corps: string } | null> = Promise.resolve(null);
-    await test.step('Gate email', async () => {
-      await page.goto(portailUrl);
-      await expect(page.getByRole('heading', { name: 'Votre espace patient' })).toBeVisible();
-      await page.getByPlaceholder('votre@email.fr').fill(PATIENT.email);
+    await test.step('Ouverture de session (cookie, sans gate e-mail — LOT-04)', async () => {
       // Instrumentation : capture la première réponse trust/etat suivant
       // l'ouverture de session — diagnostique le saut silencieux de la
       // séquence « Avant de commencer » observé en CI (iPhone + next start).
@@ -148,7 +149,7 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
         .catch(() => null);
       await Promise.all([
         page.waitForResponse(res => res.url().includes('/api/portail/session') && res.status() === 200),
-        page.getByRole('button', { name: 'Accéder à mon espace' }).click(),
+        page.goto(portailUrl),
       ]);
     });
 
@@ -422,22 +423,19 @@ test.describe.serial('Parcours portail patient — Phase 0 (Michel Dogné, patie
 });
 
 test('route patient : accès Mon carnet alimentaire (JA5-02, renommé SP-CONV LOT-05)', async ({ page, context }) => {
-  const sessionCookie = await praticienSessionCookie();
-  await context.addCookies([sessionCookie]);
+  await context.addCookies([await praticienSessionCookie()]);
 
   const creation = await page.request.post('/api/praticien/consultations', {
     data: { idPatient: PATIENT.idPatient },
   });
   expect(creation.ok()).toBe(true);
-  const creationJson = await creation.json();
-  const token = creationJson.accessToken as string;
+  expect((await creation.json()).success).toBe(true);
 
-  const portailSession = await page.request.post('/api/portail/session', {
-    data: { token, email: PATIENT.email },
-  });
-  expect(portailSession.ok()).toBe(true);
+  // LOT-04 : session portail par cookie (comme l'atterrissage magic-link/Google) ;
+  // le segment d'URL porte l'idPatient, plus un jeton secret.
+  await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
 
-  await page.goto(`/portail/${token}/alimentation`);
-  await expect(page).toHaveURL(new RegExp(`/portail/${token}/alimentation$`));
+  await page.goto(`/portail/${PATIENT.idPatient}/alimentation`);
+  await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/alimentation$`));
   await expect(page.getByRole('heading', { name: 'Mon carnet alimentaire' })).toBeVisible();
 });

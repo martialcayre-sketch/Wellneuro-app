@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import type { PortailSessionResponse, PortailConsultationState } from '@/app/api/portail/session/route';
 import { MOTIFS_CONSULTATION } from '@/lib/consultation/motifs';
 import { FICHE_SECTIONS, FICHE_CHAMPS_REQUIS } from '@/lib/consultation/fiche';
@@ -17,8 +17,6 @@ import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { DocumentTrust } from '@/components/patient/trust/DocumentTrust';
 import { getDocumentCourant } from '@/lib/trust/contenus/registre';
-
-type Verified = Extract<PortailSessionResponse, { ok: true }>;
 
 // ─── autosave locale minimale (gate/fiche/anamnèse n'ont pas de idAssignation
 // avant l'onboarding — clé scopée par patient plutôt que par assignation, sur
@@ -123,52 +121,10 @@ function clearWizardDraft(kind: WizardDraftKind, idPatient: string): void {
   }
 }
 
-// ─── étape : email gate ─────────────────────────────────────────────────────
-function EmailGate({ token, onVerified }: { token: string; onVerified: (email: string, data: Verified) => void }) {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const res = await fetch('/api/portail/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, email: email.trim().toLowerCase() }),
-      });
-      const data = (await res.json()) as PortailSessionResponse;
-      if (!data.ok) setError(data.error);
-      else onVerified(email.trim().toLowerCase(), data);
-    } catch {
-      setError('Erreur réseau. Réessayez.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <PatientCard as="form" onSubmit={handleSubmit} maxWidth="md" className="space-y-4">
-      <PatientPageHeader
-        center
-        title="Votre espace patient"
-        subtitle="Confirmez l’adresse email enregistrée par votre praticien pour accéder à votre espace."
-      />
-      <PatientField label="Adresse email">
-        <input
-          type="email" value={email} onChange={e => setEmail(e.target.value)}
-          required autoFocus placeholder="votre@email.fr" className={patientInputClassName}
-        />
-      </PatientField>
-      {error && <PatientInlineMessage tone="error">{error}</PatientInlineMessage>}
-      <PatientButton type="submit" variant="primary" disabled={!email.trim()} loading={loading} loadingLabel="Vérification…" className="w-full">
-        Accéder à mon espace
-      </PatientButton>
-    </PatientCard>
-  );
-}
+// ─── (EmailGate retiré au LOT-04) ───────────────────────────────────────────
+// Plus d'entrée par jeton+email : l'accès passe par le cookie de session posé à
+// l'atterrissage magic-link/Google. Sans cookie valide, la page redirige vers
+// `/portail/connexion` (voir le useEffect ci-dessous) au lieu d'afficher un gate.
 
 // ─── étape : consentement ───────────────────────────────────────────────────
 function ConsentScreen({ token, email, onAccepted }: { token: string; email: string; onAccepted: () => void }) {
@@ -596,7 +552,6 @@ function DoneScreen({ token, premiereAssignation }: { token: string; premiereAss
 // ─── page principale ─────────────────────────────────────────────────────────
 type Step =
   | { name: 'loading' }
-  | { name: 'gate' }
   | { name: 'avant' } // séquence TRUST « Avant de commencer », avant tout recueil
   | { name: 'consent' }
   | { name: 'fiche' }
@@ -612,6 +567,7 @@ function prochaineEtape(c: PortailConsultationState | null, premiere: string | n
 
 export default function PortailPage() {
   const { token } = useParams<{ token: string }>();
+  const router = useRouter();
   const [step, setStep] = useState<Step>({ name: 'loading' });
   const [email, setEmail] = useState('');
   // Identité de session : elle nomme les brouillons locaux. Toujours renseignée
@@ -666,31 +622,21 @@ export default function PortailPage() {
         const data = (await response.json()) as PortailSessionResponse;
         if (!active) return;
         if (data.ok) appliquerSession(data);
-        else setStep({ name: 'gate' });
+        // Pas de cookie valide (lien permanent mort, session expirée) : plus de
+        // gate email au LOT-04 — on renvoie vers la page de connexion.
+        else router.replace('/portail/connexion');
       } catch {
-        if (active) setStep({ name: 'gate' });
+        if (active) router.replace('/portail/connexion');
       }
     })();
     return () => { active = false; };
-  }, [token, appliquerSession]);
+  }, [token, appliquerSession, router]);
 
   if (step.name === 'loading') {
     return (
       <PatientCard maxWidth="md">
         <p className="text-sm text-muted-foreground" role="status">Vérification de votre session…</p>
       </PatientCard>
-    );
-  }
-
-  if (step.name === 'gate') {
-    return (
-      <EmailGate
-        token={token}
-        onVerified={(mail, data) => {
-          void mail;
-          appliquerSession(data);
-        }}
-      />
     );
   }
 

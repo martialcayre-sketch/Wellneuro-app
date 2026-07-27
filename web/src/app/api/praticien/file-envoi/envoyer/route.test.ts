@@ -12,8 +12,6 @@ const { sendMail, prisma } = vi.hoisted(() => ({
 }));
 
 const tx = {
-  $queryRaw: vi.fn(),
-  patient: { update: vi.fn() },
   assignation: { create: vi.fn() },
   envoiBrouillon: { updateMany: vi.fn() },
 };
@@ -41,6 +39,7 @@ const PATIENT = {
   idPatient: 'PAT001',
   email: 'sophie.nicola@example.com',
   actif: true,
+  accessTokenRevoked: false,
   suiviClotureLe: null,
 };
 
@@ -60,9 +59,6 @@ describe('file-envoi/envoyer POST', () => {
     prisma.envoiBrouillon.findFirst.mockResolvedValue(BROUILLON);
     prisma.patient.findFirst.mockResolvedValue(PATIENT);
     prisma.$transaction.mockImplementation((op: (t: typeof tx) => unknown) => op(tx));
-    tx.$queryRaw.mockResolvedValue([
-      { actif: true, accessToken: 'TOK_PORTAIL_TEST', accessTokenRevoked: false },
-    ]);
     tx.envoiBrouillon.updateMany.mockResolvedValue({ count: 1 });
   });
 
@@ -87,15 +83,14 @@ describe('file-envoi/envoyer POST', () => {
 
     expect(sendMail).toHaveBeenCalledTimes(1);
     const message = sendMail.mock.calls[0][0];
-    expect(message.text).toContain('https://app.wellneuro.fr/portail/TOK_PORTAIL_TEST');
+    expect(message.text).toContain('https://app.wellneuro.fr/portail/connexion');
+    expect(message.text).not.toContain('/portail/TOK');
     expect(message.text).not.toContain('/patient/ASS_');
     expect(message.text).toContain('PSS-10');
   });
 
   it('révocation portail : 409, aucune assignation, brouillon intact', async () => {
-    tx.$queryRaw.mockResolvedValue([
-      { actif: true, accessToken: 'TOK_PORTAIL_TEST', accessTokenRevoked: true },
-    ]);
+    prisma.patient.findFirst.mockResolvedValue({ ...PATIENT, accessTokenRevoked: true });
     const res = await POST(postRequest({ idBrouillon: 'ENV_1' }));
     expect(res.status).toBe(409);
     expect((await res.json()).reason).toBe('portal_revoked');

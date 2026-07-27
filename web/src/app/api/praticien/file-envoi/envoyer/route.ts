@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { idsAssignablesPour, resolveDefinition } from '@/lib/instruments';
-import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
+import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import {
@@ -14,9 +14,9 @@ import {
 } from '@/lib/correspondance/patient';
 
 // « Préparer les envois » — l'envoi au clic d'un brouillon de la file
-// (arbitrage 2026-07-23). Patron packs/assign : N assignations créées dans
-// la transaction verrouillée du portail, puis UN mail récapitulatif avec le
-// lien portail unique. Le brouillon passe à `parti` dans la même transaction.
+// (arbitrage 2026-07-23). Patron packs/assign : N assignations créées dans une
+// transaction, puis UN mail récapitulatif vers la page de connexion. Le
+// brouillon passe à `parti` dans la même transaction (claim atomique).
 
 export type EnvoyerFileResponse = {
   success: boolean;
@@ -110,13 +110,22 @@ export async function POST(request: Request) {
     }
 
     const notesEnvoi = brouillon.notes?.trim() || 'Envoi groupé — bibliothèque';
-    let portalUrl = '';
+
+    // L'accès portail de ce patient ne doit pas être révoqué (LOT-04 — plus de
+    // jeton ni de verrou de ligne ; une révocation concurrente est bénigne, un
+    // patient révoqué ne peut de toute façon pas entrer).
+    if (patient.accessTokenRevoked) {
+      return NextResponse.json<EnvoyerFileResponse>(
+        { success: false, reason: 'portal_revoked', error: 'Accès portail révoqué pour ce patient.' },
+        { status: 409 },
+      );
+    }
+
     try {
-      portalUrl = await withActivePortalAccess(patient.idPatient, async (tx, access) => {
-        // Claim atomique : le verrou FOR UPDATE de la ligne patient sérialise
-        // les envois concurrents, et ce updateMany gardé sur le statut fait
-        // qu'un second envoi (double-clic, second onglet, retry) trouve
-        // count=0 et abandonne sans créer d'assignation ni envoyer de mail.
+      await prisma.$transaction(async (tx) => {
+        // Claim atomique : ce updateMany gardé sur le statut fait qu'un second
+        // envoi (double-clic, second onglet, retry) trouve count=0 et abandonne
+        // sans créer d'assignation ni envoyer de mail.
         const claim = await tx.envoiBrouillon.updateMany({
           where: { idBrouillon, statut: 'brouillon' },
           data: { statut: 'parti', dateEnvoi: new Date() },
@@ -137,7 +146,6 @@ export async function POST(request: Request) {
             },
           });
         }
-        return access.url;
       });
     } catch (err) {
       if (err instanceof BrouillonDejaParti) {
@@ -146,14 +154,10 @@ export async function POST(request: Request) {
           { status: 409 },
         );
       }
-      if (err instanceof PortalAccessError && err.reason === 'portal_revoked') {
-        return NextResponse.json<EnvoyerFileResponse>(
-          { success: false, reason: 'portal_revoked', error: 'Accès portail révoqué pour ce patient.' },
-          { status: 409 },
-        );
-      }
       throw err;
     }
+
+    const portalUrl = buildGoogleConnexionUrl();
 
     // En serverless, on attend explicitement l'envoi (patron assignations).
     await sendFileEnvoiEmail({

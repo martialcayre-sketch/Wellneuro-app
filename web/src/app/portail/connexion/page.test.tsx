@@ -1,16 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-
-// `notFound()` lève en vrai ; on remplace par une exception reconnaissable pour
-// pouvoir affirmer qu'elle a bien été levée, et pas simplement que le rendu a
-// échoué pour une autre raison.
-const NON_TROUVE = new Error('notFound');
-vi.mock('next/navigation', () => ({
-  notFound: () => {
-    throw NON_TROUVE;
-  },
-}));
 
 import { MESSAGE_ACCES_GOOGLE_REFUSE } from '@/lib/portail/googleIdentite';
 import ConnexionPortailPage from './page';
@@ -18,30 +8,50 @@ import ConnexionPortailPage from './page';
 afterEach(cleanup);
 
 describe('/portail/connexion', () => {
-  // Le lot affirme que les trois surfaces répondent 404 sans le drapeau. Les
-  // deux routes le prouvaient, la page non — et l'E2E tourne toujours drapeau
-  // allumé. Relevé en revue adversariale le 2026-07-21.
-  it('drapeau éteint : la page n’existe pas', () => {
+  beforeEach(() => {
     delete process.env.WN_G5_GOOGLE_PATIENT;
-    expect(() => ConnexionPortailPage({})).toThrow(NON_TROUVE);
+    delete process.env.WN_G4_LIEN_MAGIQUE;
+    delete process.env.WN_G4_REDEMANDE_PATIENT;
   });
 
-  it('drapeau allumé : la porte d’entrée est un lien vers le départ Google', () => {
-    process.env.WN_G5_GOOGLE_PATIENT = 'true';
+  // LOT-04, anti-lock-out (revue adversariale) : le jeton permanent ne
+  // fonctionne plus, un 404 ici enfermerait les patients dehors. Même tous
+  // drapeaux éteints, la page reste rendue et indique comment obtenir un accès.
+  it('aucun chemin ouvert : jamais 404, indique la voie praticien', () => {
     render(ConnexionPortailPage({}));
-    const lien = screen.getByRole('link', { name: 'Continuer avec Google' });
-    expect(lien.getAttribute('href')).toBe('/portail/google');
+    expect(screen.getByText(/en demander un/i)).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Continuer avec Google' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Recevoir un nouveau lien' })).toBeNull();
   });
 
-  // Le registre inscrit Google comme sous-traitant nouveau sur les patients.
-  // La personne doit l'apprendre avant de cliquer, pas après.
-  it('prévient de la redirection vers Google avant le clic', () => {
+  it('Google seul : lien de départ Google + avertissement avant le clic', () => {
     process.env.WN_G5_GOOGLE_PATIENT = 'true';
     render(ConnexionPortailPage({}));
+    expect(screen.getByRole('link', { name: 'Continuer avec Google' }).getAttribute('href')).toBe('/portail/google');
+    // Le registre inscrit Google comme sous-traitant nouveau : dit avant le clic.
     expect(screen.getByText(/redirigé vers Google/i)).toBeTruthy();
     expect(screen.getByText(/aucune donnée de santé/i)).toBeTruthy();
-    // Et l'autre chemin reste nommé : Google est optionnel (décision D1).
-    expect(screen.getByText(/sans passer par Google/i)).toBeTruthy();
+    // L'autre voie reste nommée : Google est optionnel (décision D1).
+    expect(screen.getByText(/en demander un/i)).toBeTruthy();
+  });
+
+  // Le levier « facile pour le patient » : sans Google, la redemande self-service
+  // est offerte ici même — plus besoin d'aller d'abord sur `lien/indisponible`.
+  it('redemande seule (sans Google) : formulaire de redemande, pas de 404, pas de Google', () => {
+    process.env.WN_G4_LIEN_MAGIQUE = 'true';
+    process.env.WN_G4_REDEMANDE_PATIENT = 'true';
+    render(ConnexionPortailPage({}));
+    expect(screen.getByRole('button', { name: 'Recevoir un nouveau lien' })).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Continuer avec Google' })).toBeNull();
+  });
+
+  it('les deux chemins ouverts : Google ET redemande', () => {
+    process.env.WN_G5_GOOGLE_PATIENT = 'true';
+    process.env.WN_G4_LIEN_MAGIQUE = 'true';
+    process.env.WN_G4_REDEMANDE_PATIENT = 'true';
+    render(ConnexionPortailPage({}));
+    expect(screen.getByRole('link', { name: 'Continuer avec Google' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Recevoir un nouveau lien' })).toBeTruthy();
   });
 
   it('sans refus, aucun message d’erreur n’est affiché', () => {

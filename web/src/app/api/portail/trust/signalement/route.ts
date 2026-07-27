@@ -35,7 +35,7 @@ type PayloadDroit = {
   typeDemande?: string;
   description?: string;
 };
-type Payload = { token?: string } & (PayloadEffetIndesirable | PayloadIncident | PayloadDroit);
+type Payload = PayloadEffetIndesirable | PayloadIncident | PayloadDroit;
 
 const SEVERITES: SeveriteDeclaree[] = ['legere', 'moderee', 'severe', 'incertaine'];
 const ACTIONS: ActionPriseDeclaree[] = ['aucune', 'reduit', 'arrete', 'ne_sait_pas'];
@@ -74,7 +74,7 @@ export async function POST(req: Request): Promise<NextResponse<TrustSignalementR
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
   }
 
-  const auth = await authentifierPatientPortail(req, payload.token ?? null);
+  const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<TrustSignalementResponse>;
   const { patient } = auth;
 

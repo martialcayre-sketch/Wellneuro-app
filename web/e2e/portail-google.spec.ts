@@ -1,9 +1,9 @@
 // Gate G5 — entrée patient par Google (IDP2 LOT-03c).
 //
-// Les deux chemins existants ne sont PAS touchés : `portail-parcours.spec.ts`
-// entre par le jeton permanent, `portail-lien-magique.spec.ts` par le lien
-// magique. Tous deux tournent dans la même suite et resteraient rouges si ce
-// lot les avait cassés — c'est là qu'est vérifiée leur intégrité, pas ici.
+// Les autres chemins ne sont PAS couverts ici : `portail-lien-magique.spec.ts`
+// vérifie l'entrée par lien magique, `portail-parcours.spec.ts` le parcours une
+// fois la session ouverte. Depuis le LOT-04, l'accès repose sur le cookie de
+// session (le jeton permanent a été retiré) ; Google reste l'une des deux voies.
 //
 // Ce que ce spec couvre, et qu'aucun test unitaire ne couvre : le comportement
 // du VRAI serveur quand quelqu'un frappe ces routes sans passer par Google.
@@ -15,10 +15,13 @@ import { test, expect } from '@playwright/test';
 // reformulation ne laisse pas ce test vérifier une phrase qui n'existe plus.
 import { MESSAGE_ACCES_GOOGLE_REFUSE } from '../src/lib/portail/googleIdentite';
 
-test('la page d’entrée propose Google, sans rien demander d’autre', async ({ page }) => {
+test('la page d’entrée propose Google et la redemande d’un lien (LOT-04)', async ({ page }) => {
   await page.goto('/portail/connexion');
   await expect(page.getByRole('heading', { name: 'Accéder à votre espace' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Continuer avec Google' })).toBeVisible();
+  // Les deux voies de reprise cohabitent (drapeaux G5 + G4-redemande allumés) :
+  // sans cela, un patient sans Google resterait sans porte.
+  await expect(page.getByRole('button', { name: 'Recevoir un nouveau lien' })).toBeVisible();
 });
 
 test('le départ ne pose jamais de session, configuré ou non', async ({ page }) => {

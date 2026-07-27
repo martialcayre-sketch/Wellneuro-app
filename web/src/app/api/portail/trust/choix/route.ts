@@ -6,7 +6,7 @@ import type { FinaliteChoix, StatutChoix } from '@/lib/trust/types';
 
 export type TrustChoixResponse = { ok: true } | { ok: false; reason: string; error: string };
 
-type Payload = { token?: string; finalite?: string; statut?: string };
+type Payload = { finalite?: string; statut?: string };
 
 const FINALITES_VALIDES: FinaliteChoix[] = [
   'partage_medecin_traitant',
@@ -31,7 +31,7 @@ export async function POST(req: Request): Promise<NextResponse<TrustChoixRespons
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Choix inconnu.' }, { status: 400 });
   }
 
-  const auth = await authentifierPatientPortail(req, payload.token ?? null);
+  const auth = await authentifierPatientPortail(req);
   if (auth.erreur) return auth.erreur as NextResponse<TrustChoixResponse>;
   const { patient } = auth;
 

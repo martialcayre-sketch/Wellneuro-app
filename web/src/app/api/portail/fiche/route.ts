@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { readPatientSession } from '@/lib/patient-session';
 import {
-  isTokenValide,
-  isEmailValide,
-  resolvePortailPatient,
+  resolvePortailPatientFromSession,
   consultationCourante,
 } from '@/lib/consultation/portail';
 import { normaliserFiche, FICHE_CHAMPS_REQUIS } from '@/lib/consultation/fiche';
@@ -11,10 +10,16 @@ import { isMotifValide } from '@/lib/consultation/motifs';
 
 export type PortailFicheResponse = { ok: true } | { ok: false; reason: string; error: string };
 
-type Payload = { token?: string; email?: string; fiche?: unknown; motif?: string };
+type Payload = { fiche?: unknown; motif?: string };
 
-// POST /api/portail/fiche — enregistre la fiche signalétique + le motif.
+// POST /api/portail/fiche — enregistre la fiche signalétique + le motif. Auth par
+// cookie de session (LOT-04) : l'identité vient du cookie, plus de jeton+email.
 export async function POST(req: Request): Promise<NextResponse<PortailFicheResponse>> {
+  const session = readPatientSession(req);
+  if (!session) {
+    return NextResponse.json({ ok: false, reason: 'unauthenticated', error: 'Session expirée. Reconnectez-vous.' }, { status: 401 });
+  }
+
   let payload: Payload;
   try {
     payload = (await req.json()) as Payload;
@@ -22,12 +27,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailFicheRespo
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'JSON invalide.' }, { status: 400 });
   }
 
-  const token = (payload.token ?? '').trim();
-  const email = (payload.email ?? '').trim().toLowerCase();
   const motif = (payload.motif ?? '').trim();
-  if (!isTokenValide(token) || !isEmailValide(email)) {
-    return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiants invalides.' }, { status: 400 });
-  }
   if (motif && !isMotifValide(motif)) {
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Motif de consultation invalide.' }, { status: 400 });
   }
@@ -42,7 +42,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailFicheRespo
   }
 
   try {
-    const patient = await resolvePortailPatient(token, email);
+    const patient = await resolvePortailPatientFromSession(session);
     if (!patient) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Accès non reconnu ou révoqué.' }, { status: 403 });
     }

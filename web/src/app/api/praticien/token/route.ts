@@ -2,16 +2,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { createPublicId } from '@/lib/ids';
-import { buildMagicLinkUrl, sendMagicLinkEmail, sendPortailLinkEmail } from '@/lib/consultation/email';
-import { buildPortalUrl } from '@/lib/consultation/portal-access';
+import { buildGoogleConnexionUrl, buildMagicLinkUrl, sendMagicLinkEmail, sendPortailLinkEmail } from '@/lib/consultation/email';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { isG4LienMagiqueEnabled } from '@/lib/portail/featureFlag';
 import { creerJeton, empreinteJeton, expirationDepuis, originePraticien } from '@/lib/portail/lienMagique';
 
 export type TokenActionResponse = {
   success: boolean;
-  accessToken?: string;
   lien?: string;
   error?: string;
   reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'forbidden' | 'portal_revoked' | 'exception';
@@ -22,11 +19,12 @@ type TokenPayload = {
   action?: 'issue' | 'resend' | 'lien' | 'lien_magique';
 };
 
-// POST /api/praticien/token — émet (ou réémet) et envoie le lien du portail
-// patient. Le token est permanent : « issue » le crée s'il est absent et lève
-// une éventuelle révocation ; « resend » renvoie le lien existant ; « lien »
-// fait la même chose que « resend » mais sans déclencher l'envoi d'email
-// (utilisé pour la copie du lien côté dashboard praticien).
+// POST /api/praticien/token — envoie (ou renvoie) au patient l'accès à son
+// espace. LOT-04 : plus de jeton permanent — le lien pointe la page de connexion
+// (Google + réception d'un lien par e-mail). « issue »/« resend » envoient
+// l'e-mail et lèvent une éventuelle révocation ; « lien » renvoie l'URL de
+// connexion sans envoi ni écriture (copie côté dashboard) ; « lien_magique »
+// émet un lien à usage unique valable 24 h.
 export async function POST(req: Request): Promise<NextResponse<TokenActionResponse>> {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -78,9 +76,9 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
       );
     }
 
-    // Lien magique (gate G4) : n'écrit pas dans `patients`, ne touche pas au
-    // jeton permanent. Les deux chemins coexistent — c'est l'exigence du
-    // registre, et c'est ce qui rend cette PR réversible.
+    // Lien magique (gate G4) : émet un lien à usage unique 24 h et n'écrit rien
+    // dans `patients` (hors la levée de révocation gérée plus bas). C'est l'un
+    // des deux chemins d'entrée, avec Google.
     if (action === 'lien_magique') {
       if (!isG4LienMagiqueEnabled()) {
         return NextResponse.json(
@@ -117,35 +115,26 @@ export async function POST(req: Request): Promise<NextResponse<TokenActionRespon
       return NextResponse.json({ success: true, lien: lienMagique });
     }
 
-    let accessToken = patient.accessToken ?? '';
-    const doitCreer = !accessToken || (action === 'issue' && patient.accessTokenRevoked);
-    if (doitCreer) {
-      accessToken = createPublicId('TOK');
-      await prisma.patient.update({
-        where: { idPatient },
-        data: {
-          accessToken,
-          accessTokenRevoked: false,
-          accessTokenCreatedAt: new Date(),
-        },
-      });
-    } else if (patient.accessTokenRevoked) {
-      // resend sur un token révoqué : on le réactive.
+    // « issue »/« resend » ré-ouvrent l'accès : si le praticien avait révoqué ce
+    // patient, on lève la révocation (LOT-04 — plus de jeton à créer). « lien »
+    // (copie) est en lecture seule : il renvoie l'URL de connexion sans rien
+    // réactiver ni écrire.
+    if (action !== 'lien' && patient.accessTokenRevoked) {
       await prisma.patient.update({ where: { idPatient }, data: { accessTokenRevoked: false } });
     }
 
-    const lien = buildPortalUrl(accessToken);
+    const lien = buildGoogleConnexionUrl();
     if (action !== 'lien') {
       try {
         // En serverless, on attend explicitement la promesse pour eviter que
         // l'envoi best-effort soit interrompu juste apres la reponse HTTP.
-        await sendPortailLinkEmail(patient.email, patient.prenom, lien, patient.idPatient);
+        await sendPortailLinkEmail(patient.email, patient.prenom, patient.idPatient);
       } catch (e) {
         console.error('[praticien/token POST] email:', (e as Error).message);
       }
     }
 
-    return NextResponse.json({ success: true, accessToken, lien });
+    return NextResponse.json({ success: true, lien });
   } catch {
     return NextResponse.json({ success: false, reason: 'exception', error: "Erreur technique lors de l'envoi du token." });
   }
@@ -178,25 +167,22 @@ export async function DELETE(req: Request): Promise<NextResponse<TokenActionResp
     if (!patient) {
       return NextResponse.json({ success: false, reason: 'patient_not_found', error: 'Patient introuvable.' }, { status: 404 });
     }
-    // TROIS PORTES, ET RÉVOQUER LES FERME TOUTES.
+    // TROIS PORTES, ET RÉVOQUER LES FERME TOUTES (invariant révocation LOT-04).
     //
-    // `accessTokenRevoked` ferme le chemin par jeton ; `sessionsInvalidesAvant`
-    // ferme les sessions de compte déjà ouvertes — le seul des trois qui
-    // survivra au retrait du jeton (LOT-04), et le seul qu'une réémission
-    // d'accès ne défait pas.
+    // `accessTokenRevoked` reste le drapeau « accès portail révoqué » : il est
+    // relu à CHAQUE entrée — atterrissage magic-link (garde explicite) et Google,
+    // redemande de lien — et par `isSessionValideForPatient`, qui coupe aussi une
+    // session cookie en vol. `sessionsInvalidesAvant` invalide en plus les
+    // cookies déjà émis ; un nouveau login légitime, postérieur, repart proprement.
     //
-    // Restaient les liens à usage unique **encore en vol** : émis avant la
-    // révocation, ils n'étaient gardés que par `ensureActivePortalAccess`, qui
-    // relit `accessTokenRevoked` — une réémission d'accès les rendait donc
-    // exploitables, jusqu'à 24 h après. Ils sont datés ici.
-    //
-    // `consommeLe` porte un lien qui n'a pas été consommé, et c'est délibéré :
+    // Restaient les liens à usage unique **encore en vol**, émis avant la
+    // révocation : on les date ici (`consommeLe`) pour qu'`etatLien` les refuse.
+    // Sans cela, un lien émis avant la révocation resterait ouvrable jusqu'à 24 h
+    // après. `consommeLe` porte un lien non consommé, et c'est délibéré :
     // `etatLien` refuse déjà sur cette date, le patient lit le même message
-    // qu'un lien réellement consommé (`MESSAGE_LIEN_INDISPONIBLE`), et la trace
-    // de rejeu reste sur la même ligne. Une colonne de plus n'aurait rien
-    // changé au refus.
+    // qu'un lien réellement consommé (`MESSAGE_LIEN_INDISPONIBLE`).
     //
-    // Une transaction, parce que fermer le jeton sans fermer les liens laisse
+    // Une transaction, parce que fermer le drapeau sans fermer les liens laisse
     // exactement le trou qu'on referme.
     const maintenant = new Date();
     await prisma.$transaction([

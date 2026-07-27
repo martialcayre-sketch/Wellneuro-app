@@ -1,5 +1,4 @@
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
-import { isG5GooglePatientEnabled } from '@/lib/portail/featureFlag';
 import { CHEMIN_CONNEXION } from '@/lib/portail/googleIdentite';
 import {
   journaliserCorrespondancePatient,
@@ -59,10 +58,9 @@ export function buildGoogleConnexionUrl(): string {
 /**
  * Envoi d'un lien magique — 24 h, une seule ouverture.
  *
- * Distinct de `sendPortailLinkEmail`, qui reste mot pour mot ce qu'il était
- * pour le chemin permanent : les deux coexistent pendant la bascule. Le texte
- * diffère parce que la promesse diffère — l'autre dit « personnel et
- * permanent », celui-ci doit dire l'inverse sans inquiéter.
+ * Distinct de `sendPortailLinkEmail`, qui pointe la page de connexion (Google +
+ * redemande d'un lien) : ici l'e-mail porte un lien à usage unique qui ouvre
+ * directement la session. Le texte le dit franchement, sans inquiéter.
  */
 export async function sendMagicLinkEmail(
   patientEmail: string,
@@ -97,34 +95,23 @@ export async function sendMagicLinkEmail(
 }
 
 // Envoi best-effort du lien d'accès au portail patient. Sans SMTP_URL
-// configuré, l'envoi est silencieusement ignoré (le lien reste récupérable
-// côté praticien dans la réponse de l'API).
+// configuré, l'envoi est silencieusement ignoré (l'URL de connexion reste
+// récupérable côté praticien dans la réponse de l'API).
 //
 // Aucune donnée clinique dans le corps (audit HDS 2026-07-24) : le motif de
 // consultation n'y figure plus — une boîte e-mail n'est pas un canal maîtrisé.
 // Il reste en base (`consultations.motif`), visible du praticien.
 //
-// Gate G5 (IDP2 LOT-03f) : quand le drapeau est actif, l'e-mail propose Google
-// avant le lien permanent, sans jamais le retirer — le patient garde le choix,
-// et un patient qui refuse Google n'est pas laissé sans accès. Drapeau éteint,
-// le texte est identique lettre pour lettre à ce qu'il était avant ce lot.
+// LOT-04 : plus aucun lien permanent secret dans l'e-mail. On pointe la page de
+// connexion (non secrète, durable), où le patient choisit Google ou la réception
+// d'un lien d'accès par e-mail. Ce sont les deux seuls chemins d'entrée.
 export async function sendPortailLinkEmail(
   patientEmail: string,
   prenom: string,
-  lien: string,
   idPatient?: string,
 ): Promise<void> {
   const smtpUrl = process.env.SMTP_URL;
-  const googleActif = isG5GooglePatientEnabled();
-  const lienIntro = googleActif
-    ? ''
-    : `Ce lien est personnel et permanent : vous pourrez y revenir à tout moment ` +
-      `en confirmant l'adresse email enregistrée par votre praticien.\n\n`;
-  const acces = googleActif
-    ? `Deux façons d'accéder à votre espace :\n\n` +
-      `→ Continuer avec Google (recommandé) :\n${buildGoogleConnexionUrl()}\n\n` +
-      `→ Ou via ce lien personnel et permanent :\n${lien}\n\n`
-    : `Accéder à votre espace :\n${lien}\n\n`;
+  const connexion = buildGoogleConnexionUrl();
   await envoyerAccesTrace({
     idPatient,
     type: TYPES_CORRESPONDANCE_PATIENT.accesPortail,
@@ -139,11 +126,12 @@ export async function sendPortailLinkEmail(
         text:
           `Bonjour ${prenom},\n\n` +
           `Votre praticien vous ouvre l'accès à votre espace patient Wellneuro.\n\n` +
-          lienIntro +
+          `Rendez-vous sur votre page d'accès :\n${connexion}\n\n` +
+          `Vous pourrez vous connecter avec Google, ou recevoir un lien d'accès ` +
+          `par e-mail à l'adresse enregistrée par votre praticien.\n\n` +
           `Lors de votre première connexion, il vous sera demandé de donner votre consentement, ` +
           `de remplir une courte fiche de renseignements puis un questionnaire d'anamnèse. ` +
           `Vos questionnaires de suivi seront ensuite mis à votre disposition.\n\n` +
-          acces +
           `L'équipe Wellneuro`,
       });
     },

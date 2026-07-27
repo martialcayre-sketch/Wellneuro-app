@@ -11,6 +11,7 @@
 // (PAT_SEED_03) casserait `portail-parcours`.
 import { test, expect } from '@playwright/test';
 import { preparerReprisePourTest, nettoyerReprise, closePrisma } from './helpers/db';
+import { patientPortailSessionCookie } from './helpers/auth';
 
 const PATIENT = {
   idPatient: 'PAT_SEED_02',
@@ -18,10 +19,10 @@ const PATIENT = {
 };
 
 test.describe.serial('Proposition de pack de réévaluation (reprise)', () => {
-  let token = '';
-
   test.beforeAll(async () => {
-    token = await preparerReprisePourTest(PATIENT.idPatient);
+    // Met le patient en état « reprise » ; son jeton (inerte depuis le LOT-04)
+    // n'est plus utilisé — l'accès passe par le cookie de session.
+    await preparerReprisePourTest(PATIENT.idPatient);
   });
 
   test.afterAll(async () => {
@@ -30,16 +31,11 @@ test.describe.serial('Proposition de pack de réévaluation (reprise)', () => {
   });
 
   async function seConnecter(page: import('@playwright/test').Page): Promise<void> {
-    await page.goto(`/portail/${token}`);
-    await expect(page.getByRole('heading', { name: 'Votre espace patient' })).toBeVisible();
-    await page.getByPlaceholder('votre@email.fr').fill(PATIENT.email);
-    await Promise.all([
-      page.waitForResponse((r) => r.url().includes('/api/portail/session') && r.status() === 200),
-      page.getByRole('button', { name: 'Accéder à mon espace' }).click(),
-    ]);
-    // TRUST « Avant de commencer » est sauté (accusé posé par le helper) ;
-    // l'accueil vit sur la page questionnaires.
-    await page.goto(`/portail/${token}/questionnaires`);
+    // LOT-04 : session par cookie (comme l'atterrissage magic-link/Google), plus
+    // de gate e-mail ni de jeton d'URL. TRUST « Avant de commencer » est sauté
+    // (accusé posé par le helper) ; l'accueil vit sur la page questionnaires.
+    await page.context().addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
+    await page.goto(`/portail/${PATIENT.idPatient}/questionnaires`);
     await expect(page.getByRole('heading', { name: 'Mon parcours' })).toBeVisible();
   }
 

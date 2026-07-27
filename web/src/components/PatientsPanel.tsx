@@ -372,10 +372,9 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     }
   };
 
-  // Lien magique (gate G4) — action de nature différente des trois autres, qui
-  // portent toutes le jeton permanent : celui-ci expire en 24 h et ne s'ouvre
-  // qu'une fois. Le libellé le dit, pour qu'on ne le confonde pas avec
-  // « Renvoyer le lien ».
+  // Lien magique (gate G4) — action de nature différente des autres, qui
+  // pointent la page de connexion : celui-ci expire en 24 h et ne s'ouvre qu'une
+  // fois. Le libellé le dit, pour qu'on ne le confonde pas avec « Renvoyer le lien ».
   const onEnvoyerLienMagique = async (idPatient: string) => {
     setTokenAction('lien_magique');
     setConsultationFeedback(null);

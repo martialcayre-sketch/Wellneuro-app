@@ -1,24 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, ensureActivePortalAccess, logger } = vi.hoisted(() => ({
+const { prisma, logger } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
     portailConnexionGoogle: { create: vi.fn(), deleteMany: vi.fn() },
   },
-  ensureActivePortalAccess: vi.fn(),
   logger: { security: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/observability/logger', () => ({ logger }));
-vi.mock('@/lib/consultation/portal-access', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/consultation/portal-access')>(
-    '@/lib/consultation/portal-access',
-  );
-  return { ...actual, ensureActivePortalAccess };
-});
 
-import { PortalAccessError } from '@/lib/consultation/portal-access';
 import { COOKIE_ETAT, creerEtatGoogle } from '@/lib/portail/googleIdentite';
 import { verifyPatientSession } from '@/lib/patient-session';
 import { GET } from './route';
@@ -84,10 +76,6 @@ describe('GET /portail/google/retour — retour de Google', () => {
     prisma.patient.findUnique.mockResolvedValue(PATIENT);
     prisma.portailConnexionGoogle.create.mockResolvedValue({ id: 'cx_1' });
     prisma.portailConnexionGoogle.deleteMany.mockResolvedValue({ count: 0 });
-    ensureActivePortalAccess.mockResolvedValue({
-      accessToken: 'TOK_PERMANENT',
-      url: 'http://localhost:3000/portail/TOK_PERMANENT',
-    });
     repondreGoogle(jetonIdentite());
   });
 
@@ -100,7 +88,7 @@ describe('GET /portail/google/retour — retour de Google', () => {
 
   it('une adresse vérifiée et connue ouvre la session portail', async () => {
     const res = await appeler();
-    expect(res.headers.get('location')).toContain('/portail/TOK_PERMANENT');
+    expect(res.headers.get('location')).toContain('/portail/PAT_TEST');
     expect(res.headers.get('set-cookie')).toContain('wn_portail=');
   });
 
@@ -118,13 +106,6 @@ describe('GET /portail/google/retour — retour de Google', () => {
     expect(session).not.toBeNull();
     expect(session?.idPatient).toBe(PATIENT.idPatient);
     expect(session?.email).toBe(EMAIL);
-  });
-
-  // Le portail est ouvert pour CE patient : si l'argument dérivait, la session
-  // serait posée sur un dossier et le jeton d'accès pris sur un autre.
-  it('le portail est ouvert pour l’identifiant du patient résolu', async () => {
-    await appeler();
-    expect(ensureActivePortalAccess).toHaveBeenCalledWith(PATIENT.idPatient);
   });
 
   // La base est normalisée aujourd'hui (vérifié en production le 2026-07-21 :
@@ -221,10 +202,6 @@ describe('GET /portail/google/retour — retour de Google', () => {
     prisma.patient.findUnique.mockResolvedValue({ ...PATIENT, accessTokenRevoked: true });
     destinations.push((await appeler()).headers.get('location') ?? '');
 
-    prisma.patient.findUnique.mockResolvedValue(PATIENT);
-    ensureActivePortalAccess.mockRejectedValue(new PortalAccessError('portal_revoked'));
-    destinations.push((await appeler()).headers.get('location') ?? '');
-
     expect(new Set(destinations).size).toBe(1);
     expect(destinations[0]).toContain(REFUS);
   });
@@ -271,10 +248,6 @@ describe('GET /portail/google/retour — la trace durable', () => {
     prisma.patient.findUnique.mockResolvedValue(PATIENT);
     prisma.portailConnexionGoogle.create.mockResolvedValue({ id: 'cx_1' });
     prisma.portailConnexionGoogle.deleteMany.mockResolvedValue({ count: 0 });
-    ensureActivePortalAccess.mockResolvedValue({
-      accessToken: 'TOK_PERMANENT',
-      url: 'http://localhost:3000/portail/TOK_PERMANENT',
-    });
     repondreGoogle(jetonIdentite());
   });
 
@@ -327,43 +300,18 @@ describe('GET /portail/google/retour — la trace durable', () => {
   it('un échec d’écriture de la trace n’empêche pas la session de s’ouvrir', async () => {
     prisma.portailConnexionGoogle.create.mockRejectedValue(new Error('base indisponible'));
     const res = await appeler();
-    expect(res.headers.get('location')).toContain('/portail/TOK_PERMANENT');
+    expect(res.headers.get('location')).toContain('/portail/PAT_TEST');
     expect(res.headers.get('set-cookie')).toContain('wn_portail=');
     expect(logger.error).toHaveBeenCalled();
   });
 
-  // La trace succès n'est écrite qu'une fois l'accès RÉELLEMENT accordé :
-  // tracer « consomme » avant `ensureActivePortalAccess` mentirait sur un accès
-  // qui pourrait encore échouer.
-  it('la trace « consomme » suit l’octroi d’accès, jamais l’inverse', async () => {
-    const ordre: string[] = [];
-    ensureActivePortalAccess.mockImplementation(async () => {
-      ordre.push('acces');
-      return { accessToken: 'TOK_PERMANENT', url: 'http://localhost:3000/portail/TOK_PERMANENT' };
-    });
-    prisma.portailConnexionGoogle.create.mockImplementation(async () => {
-      ordre.push('trace');
-      return { id: 'cx_1' };
-    });
-    await appeler();
-    expect(ordre).toEqual(['acces', 'trace']);
-  });
-
-  // Portail révoqué entre la résolution et l'octroi (`PortalAccessError`) : la
-  // branche `catch` trace un refus nominatif, l'aller ayant été reconnu.
-  it('un portail révoqué à l’octroi trace un refus, nominatif', async () => {
-    ensureActivePortalAccess.mockRejectedValue(new PortalAccessError('portal_revoked'));
-    const res = await appeler();
-    expect(res.headers.get('location')).toContain(REFUS);
-    expect(donnees()).toEqual({ issue: 'refuse', motif: 'acces_indisponible', idPatient: PATIENT.idPatient });
-  });
-
-  // Panne inattendue APRÈS la vérification du `state` : refus tracé.
+  // Panne inattendue APRÈS la vérification du `state`, avant que le patient soit
+  // résolu : refus tracé (idPatient encore inconnu à ce stade).
   it('une panne après vérification du state trace un refus', async () => {
-    ensureActivePortalAccess.mockRejectedValue(new Error('panne inattendue'));
+    prisma.patient.findUnique.mockRejectedValue(new Error('panne inattendue'));
     const res = await appeler();
     expect(res.headers.get('location')).toContain(REFUS);
-    expect(donnees()).toEqual({ issue: 'refuse', motif: 'exception', idPatient: PATIENT.idPatient });
+    expect(donnees()).toEqual({ issue: 'refuse', motif: 'exception', idPatient: null });
   });
 });
 
@@ -383,10 +331,6 @@ describe('GET /portail/google/retour — purge des lignes hors rétention', () =
     prisma.patient.findUnique.mockResolvedValue(PATIENT);
     prisma.portailConnexionGoogle.create.mockResolvedValue({ id: 'cx_1' });
     prisma.portailConnexionGoogle.deleteMany.mockResolvedValue({ count: 0 });
-    ensureActivePortalAccess.mockResolvedValue({
-      accessToken: 'TOK_PERMANENT',
-      url: 'http://localhost:3000/portail/TOK_PERMANENT',
-    });
     repondreGoogle(jetonIdentite());
   });
 
@@ -416,7 +360,7 @@ describe('GET /portail/google/retour — purge des lignes hors rétention', () =
   it('un échec de purge n’empêche pas la session de s’ouvrir, et reste journalisé', async () => {
     prisma.portailConnexionGoogle.deleteMany.mockRejectedValue(new Error('base indisponible'));
     const res = await appeler();
-    expect(res.headers.get('location')).toContain('/portail/TOK_PERMANENT');
+    expect(res.headers.get('location')).toContain('/portail/PAT_TEST');
     expect(res.headers.get('set-cookie')).toContain('wn_portail=');
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({ event: 'PORTAIL_PATIENT.GOOGLE.TRACE_ECHEC' }),

@@ -1,24 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, ensureActivePortalAccess, logger } = vi.hoisted(() => ({
+const { prisma, logger } = vi.hoisted(() => ({
   prisma: {
     portailMagicLink: { findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     patient: { findUnique: vi.fn() },
   },
-  ensureActivePortalAccess: vi.fn(),
   logger: { security: vi.fn(), error: vi.fn() },
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/observability/logger', () => ({ logger }));
-vi.mock('@/lib/consultation/portal-access', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/consultation/portal-access')>(
-    '@/lib/consultation/portal-access',
-  );
-  return { ...actual, ensureActivePortalAccess };
-});
 
-import { PortalAccessError } from '@/lib/consultation/portal-access';
 import { empreinteJeton } from '@/lib/portail/lienMagique';
 import { GET } from './route';
 
@@ -35,6 +27,9 @@ function appeler(jeton = JETON) {
 }
 
 const LIEN_VALIDE = { id: 'lk_1', idPatient: 'PAT_TEST', expireLe: DEMAIN, consommeLe: null };
+// LOT-04 : la garde de révocation qui vivait dans `ensureActivePortalAccess`
+// (retiré) est désormais une lecture explicite du patient dans la route.
+const PATIENT_ACTIF = { email: 'michel.dogne@fictif.wellneuro.fr', actif: true, accessTokenRevoked: false };
 
 describe('GET /portail/lien/[jeton]', () => {
   beforeEach(() => {
@@ -44,11 +39,7 @@ describe('GET /portail/lien/[jeton]', () => {
     prisma.portailMagicLink.findUnique.mockResolvedValue(LIEN_VALIDE);
     prisma.portailMagicLink.updateMany.mockResolvedValue({ count: 1 });
     prisma.portailMagicLink.update.mockResolvedValue({});
-    prisma.patient.findUnique.mockResolvedValue({ email: 'michel.dogne@fictif.wellneuro.fr' });
-    ensureActivePortalAccess.mockResolvedValue({
-      accessToken: 'TOK_PERMANENT',
-      url: 'http://localhost/portail/TOK_PERMANENT',
-    });
+    prisma.patient.findUnique.mockResolvedValue(PATIENT_ACTIF);
   });
 
   // Ce qui rend le NO-GO réel : merger la migration n'active rien.
@@ -59,10 +50,12 @@ describe('GET /portail/lien/[jeton]', () => {
     expect(prisma.portailMagicLink.findUnique).not.toHaveBeenCalled();
   });
 
-  it('un lien valide ouvre la session et renvoie vers l’espace patient', async () => {
+  it('un lien valide ouvre la session et renvoie vers l’espace patient (segment = idPatient, jamais un secret)', async () => {
     const res = await appeler();
     expect(res.status).toBe(307);
-    expect(res.headers.get('location')).toContain('/portail/TOK_PERMANENT');
+    expect(res.headers.get('location')).toContain('/portail/PAT_TEST');
+    // Le jeton secret ne doit plus figurer dans l'URL d'atterrissage (LOT-04).
+    expect(res.headers.get('location')).not.toContain('TOK');
     expect(res.headers.get('set-cookie')).toContain('wn_portail=');
   });
 
@@ -110,8 +103,18 @@ describe('GET /portail/lien/[jeton]', () => {
     expect(res.headers.get('set-cookie')).toBeNull();
   });
 
-  it('un portail révoqué est refusé comme le reste, sans rien dire de plus', async () => {
-    ensureActivePortalAccess.mockRejectedValue(new PortalAccessError('portal_revoked'));
+  // INVARIANT RÉVOCATION (LOT-04) : sans la garde explicite ajoutée dans la
+  // route, un patient révoqué rentrerait par lien magique — la garde vivait
+  // avant dans `ensureActivePortalAccess`, désormais retiré.
+  it('un accès portail révoqué est refusé au lien magique, sans rien dire de plus', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...PATIENT_ACTIF, accessTokenRevoked: true });
+    const res = await appeler();
+    expect(res.headers.get('location')).toContain('/portail/lien/indisponible');
+    expect(res.headers.get('set-cookie')).toBeNull();
+  });
+
+  it('un compte inactif est refusé au lien magique', async () => {
+    prisma.patient.findUnique.mockResolvedValue({ ...PATIENT_ACTIF, actif: false });
     const res = await appeler();
     expect(res.headers.get('location')).toContain('/portail/lien/indisponible');
     expect(res.headers.get('set-cookie')).toBeNull();
@@ -131,7 +134,7 @@ describe('GET /portail/lien/[jeton]', () => {
     destinations.push((await appeler()).headers.get('location') ?? '');
 
     prisma.portailMagicLink.findUnique.mockResolvedValue(LIEN_VALIDE);
-    ensureActivePortalAccess.mockRejectedValue(new PortalAccessError('portal_revoked'));
+    prisma.patient.findUnique.mockResolvedValue({ ...PATIENT_ACTIF, accessTokenRevoked: true });
     destinations.push((await appeler()).headers.get('location') ?? '');
 
     expect(new Set(destinations).size).toBe(1);

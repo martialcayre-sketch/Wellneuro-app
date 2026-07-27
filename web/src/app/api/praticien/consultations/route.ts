@@ -3,7 +3,6 @@ import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
-import { buildPortalUrl } from '@/lib/consultation/portal-access';
 import { isMotifValide } from '@/lib/consultation/motifs';
 import { sendPortailLinkEmail } from '@/lib/consultation/email';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
@@ -28,8 +27,6 @@ export type ConsultationsApiResponse = {
 export type CreateConsultationResponse = {
   success: boolean;
   idConsultation?: string;
-  accessToken?: string;
-  lien?: string;
   error?: string;
   reason?:
     | 'unauthenticated'
@@ -154,17 +151,14 @@ export async function POST(req: Request): Promise<NextResponse<CreateConsultatio
       );
     }
 
-    // Assure un token d'accès permanent (création si absent, réactivation si révoqué).
-    let accessToken = patient.accessToken ?? '';
-    if (!accessToken || patient.accessTokenRevoked) {
-      accessToken = accessToken || createPublicId('TOK');
+    // Créer une consultation ré-ouvre le suivi : si le praticien avait révoqué
+    // l'accès portail de ce patient, on lève la révocation. LOT-04 — plus de
+    // jeton à (re)créer, l'accès passe par le cookie de session ; seul le drapeau
+    // de révocation est remis à zéro.
+    if (patient.accessTokenRevoked) {
       await prisma.patient.update({
         where: { idPatient },
-        data: {
-          accessToken,
-          accessTokenRevoked: false,
-          accessTokenCreatedAt: patient.accessTokenCreatedAt ?? new Date(),
-        },
+        data: { accessTokenRevoked: false },
       });
     }
 
@@ -180,17 +174,16 @@ export async function POST(req: Request): Promise<NextResponse<CreateConsultatio
       },
     });
 
-    const lien = buildPortalUrl(accessToken);
     try {
       // En serverless, on attend explicitement la promesse pour eviter que
       // l'envoi best-effort soit interrompu juste apres la reponse HTTP.
       // Le motif ne part plus dans l'e-mail (audit HDS) — il reste en base.
-      await sendPortailLinkEmail(patient.email, patient.prenom, lien, patient.idPatient);
+      await sendPortailLinkEmail(patient.email, patient.prenom, patient.idPatient);
     } catch (e) {
       console.error('[praticien/consultations POST] email:', (e as Error).message);
     }
 
-    return NextResponse.json({ success: true, idConsultation, accessToken, lien });
+    return NextResponse.json({ success: true, idConsultation });
   } catch {
     return NextResponse.json({ success: false, reason: 'exception', error: 'Erreur technique lors de la création de la consultation.' });
   }

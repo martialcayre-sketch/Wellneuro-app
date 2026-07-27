@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
-import { PortalAccessError, withActivePortalAccess } from '@/lib/consultation/portal-access';
+import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import {
@@ -136,34 +136,32 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
     const titre = titrePayload || questionnaire.titre || idQuestionnaire;
     const nowIso = new Date().toISOString();
 
-    let portalUrl: string;
-    try {
-      portalUrl = await withActivePortalAccess(patient.idPatient, async (tx, access) => {
-        await tx.assignation.create({
-          data: {
-            idAssignation,
-            idPatient,
-            emailPatient,
-            idQuestionnaire,
-            titre,
-            dateAssignation: new Date(nowIso),
-            dateLimite: dateLimite || null,
-            statut: 'En attente',
-            notes: notes || null,
-          },
-        });
-        return access.url;
-      });
-    } catch (error) {
-      if (error instanceof PortalAccessError && error.reason === 'portal_revoked') {
-        return NextResponse.json({
-          success: false,
-          reason: 'portal_revoked',
-          error: 'L’accès portail de ce patient est révoqué. Réémettez-le explicitement avant de créer une assignation.',
-        }, { status: 409 });
-      }
-      throw error;
+    // L'accès portail de ce patient ne doit pas être révoqué : sinon il ne
+    // pourrait pas ouvrir l'assignation. LOT-04 — plus de jeton ni de verrou de
+    // ligne ; la lecture du drapeau suffit (une révocation concurrente est
+    // bénigne : un patient révoqué ne peut de toute façon pas entrer).
+    if (patient.accessTokenRevoked) {
+      return NextResponse.json({
+        success: false,
+        reason: 'portal_revoked',
+        error: 'L’accès portail de ce patient est révoqué. Réémettez-le explicitement avant de créer une assignation.',
+      }, { status: 409 });
     }
+
+    await prisma.assignation.create({
+      data: {
+        idAssignation,
+        idPatient,
+        emailPatient,
+        idQuestionnaire,
+        titre,
+        dateAssignation: new Date(nowIso),
+        dateLimite: dateLimite || null,
+        statut: 'En attente',
+        notes: notes || null,
+      },
+    });
+    const portalUrl = buildGoogleConnexionUrl();
 
     // Email patient avec lien questionnaire (best-effort)
     try {
