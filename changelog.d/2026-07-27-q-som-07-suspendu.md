@@ -63,7 +63,21 @@
   posée **par les routes**, pas par `assignBasePack` : `LogPayload` exige un
   contexte de requête, et fabriquer un faux contexte pour contenter le type
   reviendrait à mentir dans le journal. La bibliothèque expose `qidsSuspendus()`
-  et laisse tracer celui qui sait.
+  et laisse tracer celui qui sait. Le code d'événement est le sien —
+  `ASSIGNATION.PACK.INSTRUMENT_SUSPENDU`, et non `RESOLUTION_FAILED` réutilisé :
+  la résolution a *réussi*, la requête rend 200, et `eventCodes.ts` écrit deux
+  fois la règle inverse (« deux sémantiques, deux codes, sinon c'est
+  inalertable »). Sous un code commun, un envoi nominal et un échec dur
+  devenaient indiscernables — et un pack entièrement suspendu émettait deux fois
+  le même code dans une seule requête.
+- **Le pack affiche ce qui partira, pas ce qu'il contient.** `PacksPanel` tirait
+  ses titres de `/api/praticien/questionnaires`, qui filtre `actif` : le pack de
+  production concerné affichait donc « Q_SOM_07 » en identifiant brut au milieu
+  de titres lisibles, et annonçait un compte incluant l'instrument jamais
+  envoyé. Le compte porte désormais sur les seuls qids envoyables (liste et
+  sélecteur d'assignation), et les autres sortent sur une ligne « Non envoyé —
+  suspendu ou inconnu ». L'écran ne distingue pas suspendu d'inconnu, et n'a pas
+  à le faire : la conséquence est la même, la route les écarte tous les deux.
 - **Effet collatéral assumé sur `Q_FIB_03`.** L'ELFE est `actif: false` depuis
   la création du catalogue mais possède une définition de scoring : **avant ce
   diff, les trois chemins l'assignaient** par appel direct. Il devient refusé.
@@ -91,6 +105,14 @@
     « Fatigue sévère » sur une somme sans inversion d'items. C'est le prix de
     l'arbitrage « marquer et laisser en place » ; le marquage relève de la
     reconstruction.
+  - Et le réservoir n'est pas seulement laissé plein, il est **rerempli** :
+    `prisma/seed.ts` recrée `REP_J02_SOM07` (score 31, « Fatigue
+    multidimensionnelle sévère ») à chaque `db seed` et à chaque
+    réinitialisation E2E. La ligne est conservée sciemment — elle reproduit
+    l'état réel de la production, où 3 passations verrouillées portent la même
+    lecture, et c'est précisément le cas qu'on veut voir s'afficher. La retirer
+    ferait diverger la démo du réel et toucherait des empreintes visuelles,
+    pour un gain nul.
 
   Fermer ces trous toucherait le parcours patient de tous les instruments, ou la
   surface de restitution : lots distincts.

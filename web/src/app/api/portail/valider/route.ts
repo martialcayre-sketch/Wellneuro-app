@@ -93,7 +93,7 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
     const ecartes = qidsSuspendus(qids);
     if (ecartes.length > 0) {
       logger.warn({
-        event: EVENT_CODES.ASSIGNATION_PACK_RESOLUTION_FAILED,
+        event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
         domain: 'ASSIGNATION',
         message: `Questionnaires suspendus écartés du pack de base : ${ecartes.join(', ')}`,
         context: finalizeLogContext(createRequestContext(req), { retryable: false }),
