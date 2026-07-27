@@ -36,7 +36,7 @@
 -- (65 %) sur la population auditée. Le garde sur-capture d'un tiers : vingt-neuf
 -- claims de plus en revue individuelle, aucun laissé passer parmi ceux qui
 -- portent un chiffre. Coût sur tout le corpus : 1511 claims éligibles à la voie
--- rapide deviennent 1257, soit 254 (17 %) qui basculent en revue individuelle.
+-- rapide deviennent 1254, soit 257 (17 %) qui basculent en revue individuelle.
 --
 -- Chaque alternative est mesurée, aucune n'est écrite au jugé. Deux exemples de
 -- ce que la mesure a corrigé : `u?i? ?/ ?l`, hérité du script d'audit, avait ses
@@ -55,8 +55,9 @@
 -- déclaré IMMUTABLE dans pg_catalog, et que la fonction ne lit ni table ni
 -- réglage de session. Ce n'est PAS une optimisation par ligne : la clause
 -- `SET search_path` interdit l'inlining, l'appel a donc bien lieu pour chaque
--- ligne. Ce que IMMUTABLE autorise, c'est l'appel depuis un prédicat de trigger
--- et depuis un index si le besoin s'en présentait.
+-- ligne. Et ce n'est pas non plus une condition d'appel depuis le trigger —
+-- PostgreSQL n'impose aucune volatilité là. Ce que IMMUTABLE autorise seul,
+-- c'est l'usage en index ou en CHECK, si le besoin s'en présentait.
 CREATE OR REPLACE FUNCTION public.rag_claim_porte_seuil(texte text)
 RETURNS boolean
 LANGUAGE sql

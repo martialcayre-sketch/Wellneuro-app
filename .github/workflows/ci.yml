@@ -166,9 +166,11 @@ jobs:
 
       # Le garde de contenu de la voie rapide tient à un motif d'expression
       # régulière : « rappel 55/55, précision 65 % » est une mesure faite une
-      # fois en production. Ce banc l'épingle sur vingt-huit textes réels du
-      # corpus — une alternative supprimée par mégarde rouvrirait la signature
-      # par lot à des plages de référence sans qu'aucun autre test ne bronche.
+      # fois en production. Ce banc l'épingle sur trente-sept cas — les textes
+      # réels des 55 claims trouvés par l'audit, plus des sondes qui rendent
+      # chaque famille de motifs individuellement indispensable. Sans lui, une
+      # alternative supprimée par mégarde rouvrirait la signature par lot à des
+      # plages de référence sans qu'aucun autre test ne bronche.
       - name: RAG claim seuils guard contract
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web

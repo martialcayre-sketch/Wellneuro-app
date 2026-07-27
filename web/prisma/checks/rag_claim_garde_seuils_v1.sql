@@ -6,11 +6,13 @@
 -- alternative supprimée par mégarde rouvrirait la voie rapide à des plages de
 -- référence sans qu'aucun test ne bronche.
 --
--- Les vingt-huit cas ci-dessous sont des textes RÉELS, repris des claims du
--- corpus (identifiants en commentaire) — pas des chaînes inventées pour faire
--- passer le motif. Les positifs viennent des 55 de l'audit du 2026-07-27 ; les
--- négatifs sont ses faux positifs écartés et des claims de contrôle, dont ceux
--- qui ont motivé le resserrement de deux alternatives.
+-- Les trente-sept cas ci-dessous sont de deux natures, et il faut les
+-- distinguer : ceux portant un identifiant `WN-CL-…` sont des textes RÉELS du
+-- corpus — les positifs viennent des 55 de l'audit du 2026-07-27, les négatifs
+-- sont ses faux positifs écartés. Les autres sont des SONDES construites, qui
+-- n'existent que pour rendre une famille de motifs individuellement
+-- indispensable : sans elles, supprimer une famille entière laissait le banc
+-- vert, ce qui est exactement le défaut que ce banc prétend couvrir.
 --
 -- ERRCODE sentinelle WN001, jamais intercepté.
 BEGIN;
@@ -23,8 +25,10 @@ DECLARE
   cas record;
   echecs text := '';
 BEGIN
-  -- Structurel : la fonction existe, elle est IMMUTABLE (c'est ce qui autorise
-  -- son appel dans un prédicat de trigger), et elle rend un booléen.
+  -- Structurel : la fonction existe, elle rend un booléen, et elle est bien
+  -- IMMUTABLE — non parce que le trigger l'exigerait (PostgreSQL n'impose
+  -- aucune volatilité là), mais parce qu'une dérive vers STABLE ou VOLATILE
+  -- signalerait que la fonction s'est mise à lire autre chose que son argument.
   IF NOT EXISTS (
     SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
     WHERE n.nspname = 'public' AND p.proname = 'rag_claim_porte_seuil'
@@ -99,15 +103,28 @@ BEGIN
       -- sans quoi le cas 9 de rag_claim_decisions_journal_v1.sql casse.
       (false, 'fixture-journal', 'claim de contrat, non prescriptif'),
 
-      -- ═══ COUVERTURE PAR FAMILLE ════════════════════════════════════════
-      -- Les six positifs « plage de laboratoire » ci-dessus matchent tous par
-      -- au moins DEUX familles : supprimer entièrement la famille 1 ne ferait
-      -- tomber aucun d'eux. Les trois cas suivants n'ont qu'une seule porte
-      -- d'entrée chacun — ils rendent les familles 1, 3 et 5 individuellement
-      -- indispensables.
+      -- ═══ SONDES DE COUVERTURE PAR FAMILLE ══════════════════════════════
+      -- Les positifs réels ci-dessus matchent presque tous par DEUX familles ou
+      -- plus : supprimer une famille entière ne faisait tomber aucun d'eux.
+      -- Mesuré par mutation famille par famille — les familles 2 et 4, ainsi
+      -- que l'ancre `^` et l'alternative espacée ` < | > `, n'étaient épinglées
+      -- par RIEN. Chaque sonde ci-dessous n'a qu'une seule porte d'entrée :
+      -- retirer sa famille la fait tomber, et elle seule.
       (true,  'famille-1-seule', 'Le sélénium plasmatique se situe à 80 µg/l chez l''adulte.'),
       (true,  'famille-1-ascii', 'Le zinc plasmatique se situe à 800 ug/L chez l''adulte.'),
       (true,  'famille-3-collée', 'Les poissons gras (>2% de lipides totaux) ont une forte teneur en oméga 3.'),
+      -- Famille 2 seule : le vocabulaire de la borne, sans aucun chiffre.
+      (true,  'famille-2-seule', 'La plage de tolérance figure sur le compte rendu du laboratoire.'),
+      -- Famille 4 seule. « valeur optimale » ne déclenche PAS la famille 2, qui
+      -- exige « valeur de référence / normale / souhaitée / de tolérance ».
+      (true,  'famille-4-seule', 'La valeur optimale se lit dans la partie haute du compte rendu.'),
+      -- L'ancre `^` de la famille 3 : une borne en TÊTE de chaîne n'a aucun
+      -- caractère devant, donc `[^p]` seul la manquerait. Forme fréquente
+      -- d'une grille recopiée ligne à ligne.
+      (true,  'ancre-début', '<10 correspond à une carence profonde.'),
+      -- L'alternative espacée ` < | > ` : un comparateur qui n'est PAS suivi
+      -- d'un chiffre échappe à `(^|[^p])[<>] ?=? ?[0-9]`.
+      (true,  'comparateur-espacé', 'Le rapport mesuré est > à la moyenne du laboratoire.'),
 
       -- La frontière de la famille 1, et elle est volontaire : sa première
       -- alternative exige un CHIFFRE devant l''unité. Une unité nue n''est pas

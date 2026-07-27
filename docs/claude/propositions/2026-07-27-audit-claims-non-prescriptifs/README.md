@@ -336,7 +336,11 @@ tout le corpus, et le constat cesse d'être préventif.
 
 **148 claims sont déjà `VALIDE` par signature de lot** (7 sources, notebooks 09
 et 10). **43 sont capturés par les motifs, et 27 ne figuraient dans aucun
-échantillon tiré** : validés sans qu'aucun œil ne les lise. Relus un par un, une
+échantillon tiré** : validés sans qu'aucun œil ne les lise. (Ces deux comptages
+utilisent les quatre familles de motifs décrites ci-dessous, celles de l'audit —
+pas la fonction finalement expédiée par le lot du garde, dont trois alternatives
+ont été resserrées et deux élargies après mesure. L'ordre de grandeur ne change
+pas ; les identifiants ci-dessous, eux, sont fixes.) Relus un par un, une
 dizaine sont des tailles d'effet d'études ; le reste porte une vraie borne — mais
 des **normes nutritionnelles**, pas des plages de laboratoire : besoins hydriques
 EFSA (2 L, 2,5 L/j), ANC lipides « 35-40 % », ratio linoléique/α-linolénique

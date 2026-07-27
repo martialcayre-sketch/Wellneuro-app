@@ -41,11 +41,13 @@ individuelle**. Le garde sur-capture d'un tiers ; il ne laisse rien passer parmi
 les claims porteurs d'un chiffre.
 
 **Un banc épingle le motif** (`prisma/checks/rag_claim_garde_seuils_v1.sql`,
-câblé en CI) : 32 textes réels du corpus, positifs et négatifs, plus le contrôle
-que la fonction est bien `IMMUTABLE`. Quatre d'entre eux n'ont qu'une seule porte
-d'entrée chacun, ce qui rend les familles de motifs individuellement
-indispensables — sans eux, supprimer toute la famille « unité biologique » ne
-faisait tomber aucun cas. Sans lui, « rappel 55/55 » resterait une
+câblé en CI) : 37 cas, plus le contrôle que la fonction est bien `IMMUTABLE`.
+Les textes réels du corpus ne suffisaient pas — presque tous matchent par deux
+familles de motifs ou plus, si bien qu'une mutation famille par famille a montré
+que les familles « vocabulaire » et « optimum », l'ancre de début de chaîne et
+l'alternative espacée ` < | > ` n'étaient épinglées par **rien**. Sept sondes
+construites, à une seule porte d'entrée chacune, comblent ce trou : retirer une
+famille fait désormais tomber le banc. Sans lui, « rappel 55/55 » resterait une
 mesure faite une fois en production et jamais rejouable. Le contrat du journal
 reçoit un cas 7d symétrique côté trigger. Les deux bancs ont été **éprouvés par
 mutation** : un garde neutralisé les fait tomber tous les deux.
