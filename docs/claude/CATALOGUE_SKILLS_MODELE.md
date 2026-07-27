@@ -8,6 +8,7 @@
 | --- | --- | --- | --- | --- |
 | `/wn-model` | Skill (slash-command) | `.claude/skills/wn-model/SKILL.md` | — (recommande) | low |
 | `/wn-ultra` | Skill (slash-command) | `.claude/skills/wn-ultra/SKILL.md` | — (recommande le mode) | low |
+| `/wn-route` | Skill (slash-command, auto en début de session) | `.claude/skills/wn-route/SKILL.md` | — (combine route/modèle/mode) | low |
 | `wn-fable` | Sous-agent | `.claude/agents/wn-fable.md` | `claude-fable-5` | high |
 
 Modifications associées (épinglage de modèle sur des sous-agents existants) :
@@ -32,6 +33,12 @@ Modifications associées (épinglage de modèle sur des sous-agents existants) :
 - **Fonction** : à partir d'une description de tâche, tranche le **mode d'exécution** — solo, multi-agent léger (briques existantes : sous-agents épinglés, campagnes), ou **ultracode** (orchestration multi-agent via l'outil Workflow) — via une grille de signaux (largeur / confiance / échelle). Sur un verdict ultracode avec opt-in `ultracode` présent, il lance le Workflow adapté ; sans opt-in, il recommande d'opter sans rien lancer.
 - **Intérêt** : centralise la décision « faut-il payer l'orchestration multi-agent pour cette tâche ? » et aligne le coût (jusqu'à des dizaines de sous-agents) sur le besoin réel de largeur ou de confiance. Ultracode reste un **mode d'exécution, pas une autorisation** : migration, Supabase, déploiement et clinique passent toujours par le mode Plan + revue + merge.
 - **Options d'appel** : `/wn-ultra [tâche]`, ou override explicite `ultracode | leger | solo`. Un override prime sur la grille.
+
+### `/wn-route` — routeur combiné de session
+
+- **Fonction** : combine en une seule passe les trois grilles ci-dessus (`/wn` pour la route, `/wn-model` pour le modèle, `/wn-ultra` pour le mode d'exécution) au lieu de trois invocations séquentielles, en chargeant leurs `SKILL.md` comme contexte plutôt qu'en dupliquant leur contenu. Appliqué automatiquement (via `CLAUDE.md`) à la toute première demande d'une session ou juste après `/clear` ; n'affiche un plan que si le résultat dévie du défaut (Sonnet, solo, aucune délégation).
+- **Intérêt** : évite trois passes de routage séquentielles pour une même demande, et rend le routage par défaut silencieux — l'économie de tokens vient de ne rien afficher quand rien ne change, pas d'un raisonnement de routage plus élaboré.
+- **Options d'appel** : automatique en début de session (voir `CLAUDE.md`), ou `/wn-route [tâche]` pour re-router explicitement en cours de session.
 
 ### `wn-fable` — sous-agent haut de gamme
 
