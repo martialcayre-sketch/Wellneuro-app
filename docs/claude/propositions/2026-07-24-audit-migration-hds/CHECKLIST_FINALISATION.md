@@ -2,7 +2,10 @@
 
 Compagnon de `AUDIT_MIGRATION_HDS.md` et `RUNBOOK_MIGRATION_SCALINGO.md`.
 Liste de contrôle de bout en bout pour **lever la dérogation du 2026-10-21**.
-État arrêté le 2026-07-24 (staging provisionné, fondation + P0 mergés).
+État arrêté le 2026-07-27 (staging provisionné ; fondation + P0 + **tout le code B**
+mergés — P1 #356, P2 #377, A4/A5 #382 ; jeton portail retiré au titre de
+l'exig. 4 par #397). **Il ne reste plus qu'un seul item de code sur le chemin
+critique : RLS exig. 3 (C).**
 
 **Légende de responsabilité**
 - 🤖 **code** — assistant, 1 PR par lot, derrière flag, inerte pour Vercel, revue adversariale (`wn-reviewer`) avant merge
@@ -11,8 +14,9 @@ Liste de contrôle de bout en bout pour **lever la dérogation du 2026-10-21**.
 - 🚪 **porte** — nécessite un « go explicite » du responsable
 - ⚖️ **juridique** — responsable ; conditionne la levée de dérogation, pas la faisabilité technique
 
-Chemin critique le plus court vers un go : **A → B‑P1 → 🚪 C → D → E**.
-**F (juridique)** court en parallèle et conditionne le « GO données réelles ».
+Chemin critique le plus court vers un go : **A → 🚪 C → D → E** (B‑P1 est fait
+par #356). **F (juridique)** court en parallèle et conditionne le « GO données
+réelles ».
 
 ---
 
@@ -30,9 +34,9 @@ Chemin critique le plus court vers un go : **A → B‑P1 → 🚪 C → D → E
 
 ## B. Code restant (1 PR par lot, flag, inerte Vercel, revue adversariale)
 
-- [ ] 🤖 **P1 — claims questionnaire en SSE + heartbeat** (`web/src/app/api/praticien/corpus/claims/questionnaire/route.ts`, `maxDuration:120`, appels LLM parallèles) — *seul point qui casse réellement sous le routeur Scalingo*
-- [ ] 🤖 **P2 — timeout `AbortController`** sur le fetch embeddings (`web/src/lib/rag/embeddings.ts`, aucun timeout aujourd'hui)
-- [ ] 🤖 **P2 — envois SMTP best-effort non bloquants** (aujourd'hui `await transport.sendMail` dans le chemin de requête — un relais lent tient la requête au-delà de la fenêtre routeur)
+- [x] 🤖 **P1 — claims questionnaire en SSE + heartbeat** : livré #356 (flag `WN_CLAIMS_QUESTIONNAIRE_STREAM`). La route porte `maxDuration:120`, ouvre un `ReadableStream` `text/event-stream` et émet un battement `: battement` toutes les 10 s — *seul point qui cassait réellement sous le routeur 30 s de Scalingo*.
+- [x] 🤖 **P2 — timeout sur le fetch embeddings** : livré #377 — `AbortSignal.timeout(DELAI_EMBEDDINGS_MS)` (30 s) sur `web/src/lib/rag/embeddings.ts`, qui n'avait aucun timeout.
+- [x] 🤖 **P2 — envois SMTP bornés** : livré #377 — helper commun `creerTransportSmtp` (timeouts connexion/greeting/socket 10/10/20 s) sur les 5 routes d'envoi. **Résolu par un timeout, pas en fire-and-forget** : le « best-effort non bloquant » d'origine a été écarté, il masquerait l'échec d'e-mails qui *sont* le livrable. La fenêtre routeur est tenue par la borne, l'échec reste visible.
 - [x] 🤖 **A4 — journalisation exig. 5** : tranché le 2026-07-26 — le `GET` agenda `rendez-vous` **n'est pas journalisé** (liste opérationnelle, pas une lecture de dossier de santé nommé ; `motif` = note d'agenda du praticien). Décision documentée dans `route.ts`, surface d'exposition verrouillée par un test. Révocable par le responsable.
 - [x] 🤖 **A5 — tests d'authz exig. 7** : couvert le 2026-07-26 — 13 routes praticien authentifiées qui n'avaient **aucun** test reçoivent un test « sans session → 401 » (dont metrics, patients-pg, trust qui portent de la donnée patient). Audit `wn-explorer` : les 8 autres routes qu'il signalait « manque 401 » avaient déjà le test (faux positifs, vérifiés).
 - [ ] 🤖 (À trancher) Sentry **client** (bundle navigateur, variables inlinées — non couvert par #345)
@@ -41,8 +45,8 @@ Chemin critique le plus court vers un go : **A → B‑P1 → 🚪 C → D → E
 
 > Protocole obligatoire : **revue adversariale indépendante AVANT**, **vérification de la base de production APRÈS** (`execute_sql`).
 
-- [ ] 🚪🤖 **Hachage `patients.access_token`** exig. 4 — traité comme critère de sortie de la bascule liens magiques G4/G5 (voir `ADDENDUM_JETON_PORTAIL.md`), pas comme un hachage isolé
-- [ ] 🚪🤖 **RLS** exig. 3
+- [x] 🚪🤖 **Jeton `patients.access_token`** exig. 4 — **résolu par #397** selon l'option 2 de l'`ADDENDUM_JETON_PORTAIL.md` (achever la bascule G4/G5, ne pas hacher isolément). Le cookie de session signé `wn_portail` devient l'**unique credential** ; le jeton permanent n'est plus relu ni reconstruit en URL. Aucune migration (colonnes conservées, rollback `git revert`), vérifié en prod post-merge (schéma intact, 14 actifs / 0 révoqué). **Résidu** : les valeurs en clair, désormais dormantes (aucun accès accordé), subsistent en base → `DROP COLUMN access_token*` en **PR 2** après fenêtre de stabilité, avec réintroduction d'un drapeau de révocation de remplacement.
+- [ ] 🚪🤖 **RLS** exig. 3 — **seul item de code restant sur le chemin critique, et c'est une décision de périmètre, pas un chantier vierge.** Un socle **deny-all** est **déjà en place** sur les tables patient (`patients`, `assignations`, `questionnaire_reponses`, `correspondances_patient`…) depuis la migration `20260707123710_enable_rls_security` — `ENABLE ROW LEVEL SECURITY`, **zéro policy et zéro `FORCE`** volontairement (« deny-all par défaut = posture voulue »). Effet réel : un rôle **non-propriétaire** (ex. rôle public/anon) est bloqué ; le rôle **propriétaire** de l'app contourne la RLS faute de `FORCE`. À trancher pour l'exig. 3 : ce deny-all suffit-il, ou faut-il **`FORCE` + policies par principal** (isolation ligne à ligne y compris pour le rôle applicatif, ce qui impose une connexion sous rôle non-propriétaire + variable de session) ? Si arbitrage « renforcer » : protocole complet (revue adversariale avant, `execute_sql` après) + 🚪 go explicite.
 
 ## D. App PROD HDS + migration des données (⚙️ responsable, runbook §4)
 
@@ -68,4 +72,10 @@ Chemin critique le plus court vers un go : **A → B‑P1 → 🚪 C → D → E
 
 ## Déjà fait ✅
 
-Fondation build/release **#342** · connexion PG portable **#344** · observabilité neutre **#345** · synthèse IA en SSE **#347** · audit + runbook **#346** · staging provisionné et validé au boot (build + 35 migrations + boot OK) · pseudonymisation de l'appel Anthropic **#335** · retrait du motif de consultation des e-mails **#336**.
+Fondation build/release **#342** · connexion PG portable **#344** · observabilité neutre **#345** · synthèse IA en SSE **#347** · audit + runbook **#346** · staging provisionné et validé au boot (build + 35 migrations + boot OK) · pseudonymisation de l'appel Anthropic **#335** · retrait du motif de consultation des e-mails **#336** · claims questionnaire en SSE + heartbeat P1 **#356** · bornes I/O (embeddings + SMTP) P2 **#377** · journalisation A4 + tests authz A5 **#382** · jeton portail retiré, cookie de session = unique credential exig. 4 **#397**.
+
+**En un coup d'œil, ce qui reste côté assistant (🤖) :** un seul item de code sur
+le chemin critique — **RLS exig. 3 (C)**, et c'est un arbitrage de périmètre
+(deny-all déjà en place). Hors chemin critique : Sentry **client** (B, à trancher)
+et la **PR 2** `DROP COLUMN access_token*` (après fenêtre de stabilité). Tout le
+reste est ⚙️ ops (A, D, E) ou ⚖️ juridique (F), à la main du responsable.

@@ -596,3 +596,15 @@ désactivé. Et recalculer les 4 passations MFI-20 : le PDF source montre un
 `secrets/` prenne effet là où sont les identifiants ; un fichier binaire indexé
 échappe encore au mode `--staged` ; aucune fixture ne rejoue la forme héritée
 `interpretation.protocol` par `route.post.test.ts`.
+
+## 2026-07-27 — Migration C / LOT-04 : retrait du jeton portail (PR #397 mergée)
+
+**Décisions** : Option 1 — le cookie de session signé `wn_portail` devient l'unique credential ; résolution par `session.idPatient`, segment d'URL = idPatient (non secret). 50 fichiers (+799/−1350), machinerie morte supprimée (`portal-access.ts`, `lienPermanent.ts`). Aucune migration (colonnes conservées, rollback `git revert`). Révocation tenue à toutes les entrées (garde magic-link réécrite — classe PR #202). Mergée après confirmation des drapeaux d'entrée actifs en prod ; l'utilisateur a lancé `gh pr merge` (le classifier le bloque même après « go » — pas de contournement `gh api`).
+
+**Écarté** : hachage du jeton (relu pour reconstruire l'URL, impossible isolément) ; Option 2 (rebuild `/portail/espace/*`) différée ; DROP COLUMN → PR ultérieure après fenêtre de stabilité.
+
+**Validations** : T1 vert, tsc 0, T3 E2E verts (2 échecs = artefact env worktree connu) ; wn-reviewer GO conditionnel ; post-merge — Vercel prod `success`, DB prod schéma intact (colonnes présentes, 14 actifs, 0 révoqué), `/portail/connexion` 200 avec les deux voies (Google + redemande).
+
+**Prochaine action** : humaine — comms patient (liens permanents cassés) + parcours authentifié réel (magic-link reçu + Google + un révoqué refusé aux trois entrées).
+
+**Questions ouvertes** : cadrer la PR 2 (`DROP COLUMN access_token*`, avec réintroduction d'un drapeau de révocation de remplacement).
