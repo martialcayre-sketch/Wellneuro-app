@@ -128,8 +128,18 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Déterminez votre chronotype (matin ou soir) pour adapter vos rythmes biologiques.`, duree: '10 min', actif: true },
   { id: 'Q_SOM_06', titre: 'Questionnaire de fatigue de Pichot', categorie: 'Sommeil',
     description: `Évaluez votre niveau de fatigue globale en 8 questions (seuil significatif > 22).`, duree: '5 min', actif: true },
+  // Suspendu le 2026-07-27 : confronté au PDF source, l'instrument servi ici
+  // n'est pas le MFI-20. Échelle d'accord 1→5 servie en fréquence 0→4, aucune
+  // des 10 inversions appliquée, 5 sous-échelles publiées servies en 2 sections,
+  // et 3 bandes /80 alors que la source écrit qu'il n'existe pas de barème.
+  // Les libellés ne se recoupent qu'à moitié. `actif: false` retire l'entrée du
+  // sélecteur praticien et de la bibliothèque ; les 4 passations déjà
+  // enregistrées restent lisibles (aucune route de lecture ne filtre sur ce
+  // champ) et ne sont PAS recalculables — elles portent sur d'autres items.
+  // Réactivation prévue à la reconstruction depuis la source, avec la
+  // description corrigée.
   { id: 'Q_SOM_07', titre: 'MFI-20 — Échelle multidimensionnelle de fatigue', categorie: 'Sommeil',
-    description: `Évaluez 5 dimensions de la fatigue : générale, physique, activité, motivation, mentale (20 items).`, duree: '10 min', actif: true },
+    description: `Évaluez 5 dimensions de la fatigue : générale, physique, activité, motivation, mentale (20 items).`, duree: '10 min', actif: false },
   { id: 'Q_SOM_08', titre: 'IDTAS-AE — Dépression & Trouble Affectif Saisonnier', categorie: 'Sommeil',
     description: `Évaluez la présence d'une dépression saisonnière et ses variations mensuelles.`, duree: '15 min', actif: true },
   { id: 'Q_SOM_09', titre: 'Agenda du sommeil — 21 nuits', categorie: 'Sommeil',

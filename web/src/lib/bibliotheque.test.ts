@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   ALIAS_HISTORIQUES,
+  CATALOGUE_DEFINITIONS,
   IDS_ASSIGNABLES,
   PASSATION_PRATICIEN,
   listeBibliotheque,
 } from './bibliotheque';
+import { QUESTIONNAIRES_CATALOG } from './questionnaires-catalog';
 
 describe('listeBibliotheque', () => {
   const entrees = listeBibliotheque();
@@ -40,5 +42,38 @@ describe('listeBibliotheque', () => {
 
   it('ne contient aucun doublon d’identifiant', () => {
     expect(parId.size).toBe(entrees.length);
+  });
+});
+
+// Suspendre un instrument (`actif: false`) doit couper l'assignation SANS
+// rendre illisibles les passations déjà enregistrées. Les deux moitiés se
+// tiennent : couper sans préserver ferait disparaître des données cliniques,
+// préserver sans couper laisserait proposer un instrument retiré.
+//
+// Formulé en invariant sur TOUS les suspendus, et non sur un identifiant
+// nommé : la propriété doit valoir pour la prochaine suspension aussi. Au
+// 2026-07-27 il y en a deux — Q_FIB_03 (ELFE) et Q_SOM_07 (MFI-20 divergent).
+describe('questionnaire suspendu (actif: false)', () => {
+  const suspendus = QUESTIONNAIRES_CATALOG.filter(q => !q.actif);
+  const affiches = new Set(listeBibliotheque().map(e => e.id));
+
+  // Contrôle négatif : sans lui, les deux gardes suivantes passeraient au vert
+  // sur un ensemble vide et ne prouveraient rien.
+  it('il en existe au moins un dans le catalogue', () => {
+    expect(suspendus.length).toBeGreaterThan(0);
+  });
+
+  it('disparaît du rayon affiché et des ids assignables', () => {
+    for (const q of suspendus) {
+      expect(affiches.has(q.id), q.id).toBe(false);
+      expect(IDS_ASSIGNABLES.has(q.id), q.id).toBe(false);
+    }
+  });
+
+  it('garde sa définition de scoring — les passations existantes restent lisibles', () => {
+    for (const q of suspendus) {
+      const cible = ALIAS_HISTORIQUES[q.id] ?? q.id;
+      expect(CATALOGUE_DEFINITIONS[cible], q.id).toBeDefined();
+    }
   });
 });
