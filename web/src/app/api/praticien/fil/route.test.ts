@@ -6,9 +6,10 @@ const { getServerSession, prisma } = vi.hoisted(() => ({
     trustAdverseEffectReport: { findMany: vi.fn() },
     trustPrivacyIncident: { findMany: vi.fn() },
     trustRightsRequest: { findMany: vi.fn() },
-    syntheseIA: { findMany: vi.fn() },
+    syntheseIA: { findMany: vi.fn(), groupBy: vi.fn() },
     assignation: { findMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn(), groupBy: vi.fn() },
+    questionnaireLecturePraticien: { groupBy: vi.fn() },
     protocolCheckin: { findMany: vi.fn() },
     assessmentEpisode: { findMany: vi.fn() },
     rendezVous: { findMany: vi.fn() },
@@ -37,9 +38,11 @@ describe('GET /api/praticien/fil', () => {
     prisma.trustPrivacyIncident.findMany.mockResolvedValue([]);
     prisma.trustRightsRequest.findMany.mockResolvedValue([]);
     prisma.syntheseIA.findMany.mockResolvedValue([]);
+    prisma.syntheseIA.groupBy.mockResolvedValue([]);
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.questionnaireReponse.groupBy.mockResolvedValue([]);
+    prisma.questionnaireLecturePraticien.groupBy.mockResolvedValue([]);
     prisma.protocolCheckin.findMany.mockResolvedValue([]);
     prisma.assessmentEpisode.findMany.mockResolvedValue([]);
     prisma.rendezVous.findMany.mockResolvedValue([]);
@@ -95,6 +98,39 @@ describe('GET /api/praticien/fil', () => {
     // Prérequis de G1 : la carte agrégée est identifiée par patient + date de
     // référence (la synthèse la plus récente).
     expect(carte.cle).toBe('synthese_a_valider:agregat:PAT_SEED_01:2026-07-20T09:00:00.000Z');
+  });
+
+  // Le bug rapporté : l'inbox retire une réponse dès sa lecture confirmée,
+  // et sans synthèse générée, le patient devenait invisible partout.
+  it('un questionnaire lu sans synthèse générée produit une carte « à générer »', async () => {
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
+    ]);
+    prisma.questionnaireLecturePraticien.groupBy.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', _max: { luLe: new Date('2026-07-20T09:00:00.000Z') } },
+    ]);
+
+    const payload = await (await GET()).json();
+    const carte = payload.cartes.find((c: { type: string }) => c.type === 'synthese_a_generer');
+    expect(carte).toBeDefined();
+    expect(carte.patient).toContain('Sophie');
+    expect(carte.href).toBe('/dashboard/synthese?idPatient=PAT_SEED_01');
+    expect(carte.cle).toBe('synthese_a_generer:agregat:PAT_SEED_01:2026-07-20T09:00:00.000Z');
+  });
+
+  it('une synthèse déjà générée après la lecture écarte la carte « à générer »', async () => {
+    prisma.patient.findMany.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' },
+    ]);
+    prisma.questionnaireLecturePraticien.groupBy.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', _max: { luLe: new Date('2026-07-18T09:00:00.000Z') } },
+    ]);
+    prisma.syntheseIA.groupBy.mockResolvedValue([
+      { idPatient: 'PAT_SEED_01', _max: { dateGeneration: new Date('2026-07-19T09:00:00.000Z') } },
+    ]);
+
+    const payload = await (await GET()).json();
+    expect(payload.cartes.some((c: { type: string }) => c.type === 'synthese_a_generer')).toBe(false);
   });
 
   // Sans l'identifiant dans le `select`, la clé vaudrait silencieusement

@@ -11,11 +11,14 @@ import { bornesJourParis, formatHeureParis } from './fuseau';
 // `reponse_recente` a été retiré (accueil-observatoire LOT-02, décision
 // propriétaire 2026-07-23) : les questionnaires reçus vivent dans l'inbox par
 // patient (`lib/fil/inbox.ts`), plus dans le Fil. Les refus déjà posés sur ces
-// clés restent en base, inertes (append-only).
+// clés restent en base, inertes (append-only). Mais l'inbox retire une réponse
+// dès sa lecture confirmée — sans rien d'autre, un patient lu sans synthèse
+// générée devient invisible partout. `synthese_a_generer` couvre ce trou.
 export type TypeCarteFil =
   | 'consultation_prevue'
   | 'signalement_trust'
   | 'synthese_a_valider'
+  | 'synthese_a_generer'
   | 'jalon_j21'
   | 'assignation_en_retard'
   | 'reprise';
@@ -45,14 +48,15 @@ export type CarteFil = {
  * n'aurait pas de clé, et deux cartes de même type au même instant se
  * confondraient — le refus « sauterait » et la carte reviendrait le lendemain.
  *
- * Deux cartes font exception parce qu'elles sont agrégées et n'ont donc pas
+ * Trois cartes font exception parce qu'elles sont agrégées et n'ont donc pas
  * de ligne source unique : `reprise` (clé = `idPatient + date de référence`,
- * stable tant que le patient reste inactif) et `synthese_a_valider` (clé =
- * `agregat + idPatient + date de la synthèse la plus récente`). Pour la
- * seconde, une nouvelle synthèse déplace la date de référence, donc la clé :
- * la carte écartée REVIENT — c'est voulu, un fait nouveau mérite une nouvelle
- * décision. Les refus posés sur l'ancienne clé restent en base, inertes
- * (append-only, jamais nettoyés).
+ * stable tant que le patient reste inactif), `synthese_a_valider` (clé =
+ * `agregat + idPatient + date de la synthèse la plus récente`) et
+ * `synthese_a_generer` (même schéma, clé ancrée sur la lecture confirmée la
+ * plus récente). Dans les trois cas, un fait nouveau déplace la date de
+ * référence, donc la clé : la carte écartée REVIENT — c'est voulu, un fait
+ * nouveau mérite une nouvelle décision. Les refus posés sur l'ancienne clé
+ * restent en base, inertes (append-only, jamais nettoyés).
  */
 export function cleCarte(type: TypeCarteFil, identifiant: string): string {
   return `${type}:${identifiant}`;
@@ -73,6 +77,9 @@ export type AssignationRow = {
   statut: string;
 };
 export type SyntheseRow = { idSynthese: string; idPatient: string; dateGeneration: Date };
+/** Lecture confirmée la plus récente d'un patient — pas de ligne source
+ * unique, cf. `cleCarte`. */
+export type LectureRow = { idPatient: string; derniereLecture: Date };
 /** Carte agrégée : pas de ligne source, donc pas d'identifiant à remonter. */
 export type DerniereActiviteRow = { idPatient: string; derniereReponse: Date };
 
@@ -226,6 +233,38 @@ export function cartesSynthesesAValider(
 }
 
 /**
+ * Questionnaire(s) lu(s) par le praticien sans qu'aucune synthèse n'ait été
+ * générée depuis (ou jamais) — le trou laissé par l'inbox, qui retire une
+ * réponse dès sa lecture confirmée (`lib/fil/inbox.ts`). Une carte par
+ * patient, datée sur sa lecture confirmée la plus récente ; écartée dès
+ * qu'une synthèse plus récente que cette lecture existe.
+ */
+export function cartesSynthesesAGenerer(
+  lectures: LectureRow[],
+  dernieresSyntheses: Map<string, Date>,
+  noms: Map<string, string>,
+): CarteFil[] {
+  return lectures
+    .filter(l => {
+      const derniereGeneration = dernieresSyntheses.get(l.idPatient);
+      return !derniereGeneration || l.derniereLecture > derniereGeneration;
+    })
+    .sort((a, b) => b.derniereLecture.getTime() - a.derniereLecture.getTime())
+    .slice(0, MAX_CARTES_PAR_TYPE)
+    .map(l => ({
+      type: 'synthese_a_generer' as const,
+      idPatient: l.idPatient,
+      patient: nomPatient(noms, l.idPatient),
+      titre: 'Synthèse à générer',
+      pourquoi: `Questionnaire lu le ${formatDateFr(l.derniereLecture)} — aucune synthèse générée depuis.`,
+      date: l.derniereLecture.toISOString(),
+      href: `/dashboard/synthese?idPatient=${encodeURIComponent(l.idPatient)}`,
+      actionLabel: 'Générer la synthèse',
+      cle: cleCarte('synthese_a_generer', `agregat:${l.idPatient}:${l.derniereLecture.toISOString()}`),
+    }));
+}
+
+/**
  * Jalons J21 atteints sans décision de 21 jours consignée. Une carte par
  * patient, ancrée sur son check-in J21 (ligne source réelle → refus G1
  * standard). Le « pourquoi maintenant » cite la date du check-in, et — quand
@@ -339,6 +378,7 @@ const LIBELLES_RESUME: { type: TypeCarteFil; singulier: string; pluriel: string 
   { type: 'consultation_prevue', singulier: 'consultation', pluriel: 'consultations' },
   { type: 'signalement_trust', singulier: 'signalement', pluriel: 'signalements' },
   { type: 'synthese_a_valider', singulier: 'relecture', pluriel: 'relectures' },
+  { type: 'synthese_a_generer', singulier: 'synthèse à générer', pluriel: 'synthèses à générer' },
   { type: 'jalon_j21', singulier: 'jalon', pluriel: 'jalons' },
   { type: 'assignation_en_retard', singulier: 'retard', pluriel: 'retards' },
   { type: 'reprise', singulier: 'reprise', pluriel: 'reprises' },
@@ -385,6 +425,8 @@ export function construireFil(entrees: {
   consultations?: RendezVousRow[];
   signalements?: SignalementRow[];
   syntheses: SyntheseRow[];
+  lectures?: LectureRow[];
+  dernieresSyntheses?: Map<string, Date>;
   jalons?: JalonRow[];
   assignations: AssignationRow[];
   activites: DerniereActiviteRow[];
@@ -395,6 +437,8 @@ export function construireFil(entrees: {
     consultations = [],
     signalements = [],
     syntheses,
+    lectures = [],
+    dernieresSyntheses = new Map<string, Date>(),
     jalons = [],
     assignations,
     activites,
@@ -407,6 +451,7 @@ export function construireFil(entrees: {
     ...cartesSignalementsTrust(signalements, noms),
     ...cartesConsultationsPrevues(consultations, noms, maintenant),
     ...cartesSynthesesAValider(syntheses, noms),
+    ...cartesSynthesesAGenerer(lectures, dernieresSyntheses, noms),
     ...cartesJalons(jalons, noms),
     ...cartesAssignationsEnRetard(assignations, noms, maintenant),
     ...cartesReprise(activites, noms, maintenant),

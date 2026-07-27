@@ -40,49 +40,84 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     // rendra un refus persistant désignable, sans quoi il porterait sur une
     // projection recalculée à chaque ouverture.
     const selectSignalement = { id: true, idPatient: true, soumisLe: true };
-    // Les questionnaires reçus ne produisent plus de carte : ils vivent dans
-    // l'inbox par patient (accueil-observatoire LOT-02) — seul le groupBy
-    // d'activité reste, pour la carte `reprise`.
-    const [effets, incidents, droits, syntheses, assignations, activites, checkinsJ21, episodesJ21, rdvs] =
-      await Promise.all([
-        prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
-        prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
-        prisma.trustRightsRequest.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
-        prisma.syntheseIA.findMany({
-          where: { statut: { in: ['Brouillon_IA', 'Brouillon_Praticien'] } },
-          orderBy: { dateGeneration: 'desc' },
-          take: 20,
-          select: { idSynthese: true, idPatient: true, dateGeneration: true },
-        }),
-        prisma.assignation.findMany({
-          where: { statut: { not: 'Complété' }, dateLimite: { not: null } },
-          select: { idAssignation: true, idPatient: true, titre: true, dateLimite: true, statut: true },
-        }),
-        prisma.questionnaireReponse.groupBy({
-          by: ['idPatient'],
-          _max: { dateReponse: true },
-        }),
-        // Jalon J21 : check-ins J21 soumis, moins les épisodes J21 déjà
-        // consignés (différence calculée après scoping — cf. jalonsJ21.ts).
-        prisma.protocolCheckin.findMany({
-          where: { pointEtape: 'J21' },
-          select: { id: true, idPatient: true, reponses: true, soumisLe: true },
-        }),
-        prisma.assessmentEpisode.findMany({
-          where: { milestone: 'J21' },
-          select: { idPatient: true },
-        }),
-        // Consultations prévues aujourd'hui (LOT-04). Déjà bornées au praticien
-        // (la table porte praticienEmail) et au jour civil.
-        prisma.rendezVous.findMany({
-          where: {
-            praticienEmail: { equals: email, mode: 'insensitive' },
-            statut: 'planifie',
-            dateHeure: { gte: debutJour, lt: finJour },
-          },
-          select: { id: true, idPatient: true, dateHeure: true },
-        }),
-      ]);
+    // Les questionnaires reçus ne produisent plus de carte de réception : ils
+    // vivent dans l'inbox par patient (accueil-observatoire LOT-02) — seul le
+    // groupBy d'activité reste, pour la carte `reprise`. Mais l'inbox retire
+    // une réponse dès sa lecture confirmée (questionnaireLecturePraticien) :
+    // sans rien d'autre, un patient lu sans synthèse générée devient invisible
+    // partout. Les deux groupBy suivants (lectures, dernière synthèse par
+    // patient toutes causes confondues) alimentent `synthese_a_generer`.
+    const [
+      effets,
+      incidents,
+      droits,
+      syntheses,
+      assignations,
+      activites,
+      checkinsJ21,
+      episodesJ21,
+      rdvs,
+      lecturesGroupBy,
+      dernieresSynthesesGroupBy,
+    ] = await Promise.all([
+      prisma.trustAdverseEffectReport.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
+      prisma.trustPrivacyIncident.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
+      prisma.trustRightsRequest.findMany({ where: filtreNonTraite, select: selectSignalement, take: 10 }),
+      prisma.syntheseIA.findMany({
+        where: { statut: { in: ['Brouillon_IA', 'Brouillon_Praticien'] } },
+        orderBy: { dateGeneration: 'desc' },
+        take: 20,
+        select: { idSynthese: true, idPatient: true, dateGeneration: true },
+      }),
+      prisma.assignation.findMany({
+        where: { statut: { not: 'Complété' }, dateLimite: { not: null } },
+        select: { idAssignation: true, idPatient: true, titre: true, dateLimite: true, statut: true },
+      }),
+      prisma.questionnaireReponse.groupBy({
+        by: ['idPatient'],
+        _max: { dateReponse: true },
+      }),
+      // Jalon J21 : check-ins J21 soumis, moins les épisodes J21 déjà
+      // consignés (différence calculée après scoping — cf. jalonsJ21.ts).
+      prisma.protocolCheckin.findMany({
+        where: { pointEtape: 'J21' },
+        select: { id: true, idPatient: true, reponses: true, soumisLe: true },
+      }),
+      prisma.assessmentEpisode.findMany({
+        where: { milestone: 'J21' },
+        select: { idPatient: true },
+      }),
+      // Consultations prévues aujourd'hui (LOT-04). Déjà bornées au praticien
+      // (la table porte praticienEmail) et au jour civil.
+      prisma.rendezVous.findMany({
+        where: {
+          praticienEmail: { equals: email, mode: 'insensitive' },
+          statut: 'planifie',
+          dateHeure: { gte: debutJour, lt: finJour },
+        },
+        select: { id: true, idPatient: true, dateHeure: true },
+      }),
+      prisma.questionnaireLecturePraticien.groupBy({
+        by: ['idPatient'],
+        _max: { luLe: true },
+      }),
+      // Toutes synthèses confondues (pas seulement les brouillons) : une
+      // synthèse déjà validée compte pour « générée », seule une lecture plus
+      // récente qu'elle doit faire revenir la carte.
+      prisma.syntheseIA.groupBy({
+        by: ['idPatient'],
+        _max: { dateGeneration: true },
+      }),
+    ]);
+
+    const lectures = lecturesGroupBy
+      .filter((l): l is typeof l & { _max: { luLe: Date } } => l._max.luLe !== null)
+      .map(l => ({ idPatient: l.idPatient, derniereLecture: l._max.luLe }));
+    const dernieresSyntheses = new Map(
+      dernieresSynthesesGroupBy
+        .filter((s): s is typeof s & { _max: { dateGeneration: Date } } => s._max.dateGeneration !== null)
+        .map(s => [s.idPatient, s._max.dateGeneration]),
+    );
 
     const signalements = [
       ...effets.map(e => ({ id: e.id, idPatient: e.idPatient, kind: 'effet_indesirable' as const, soumisLe: e.soumisLe })),
@@ -98,6 +133,7 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
         ...activites.map(a => a.idPatient),
         ...checkinsJ21.map(c => c.idPatient),
         ...rdvs.map(r => r.idPatient),
+        ...lectures.map(l => l.idPatient),
       ]),
     ];
     // Toute carte dont le patient n'est pas dans ce résultat est écartée
@@ -127,6 +163,8 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
       consultations: rdvs.filter(r => actifs.has(r.idPatient)),
       signalements: signalements.filter(s => actifs.has(s.idPatient)),
       syntheses: syntheses.filter(s => actifs.has(s.idPatient)),
+      lectures: lectures.filter(l => actifs.has(l.idPatient)),
+      dernieresSyntheses,
       jalons,
       assignations: assignations.filter(a => actifs.has(a.idPatient)),
       activites: activites
@@ -137,8 +175,9 @@ export async function GET(): Promise<NextResponse<FilApiResponse>> {
     });
 
     // Point de passage UNIQUE du refus (G1) : sur les cartes déjà construites,
-    // jamais dans les 5 fonctions de production — ce serait 5 endroits à garder
-    // cohérents. La lecture est bornée aux patients du praticien, comme le Fil.
+    // jamais dans les fonctions de production — ce serait autant d'endroits à
+    // garder cohérents. La lecture est bornée aux patients du praticien, comme
+    // le Fil.
     const refus = await prisma.filCardRejection.findMany({
       where: { idPatient: { in: [...actifs] } },
       select: { id: true, carteCle: true, refusee: true, supersedesRejectionId: true, refuseLe: true },
