@@ -664,3 +664,29 @@ encore l'ancienne promesse sur la passation concernée.
 
 **Questions ouvertes** : neuf réserves au changelog, dont les libellés
 « Apports » et les bandes de `Q_ALI_01` qui continuent de conclure.
+
+## 2026-07-27 — `actif` devient une garde de route (#406, #410)
+
+**Décisions** : #406 (`0c7d9af`) — `actif: false` ne gardait que les écrans ;
+les trois chemins d'assignation l'ignoraient, dont l'onboarding portail, sans
+clic praticien. Garde par `IDS_SUSPENDUS`, jamais par le complément
+`IDS_ASSIGNABLES` (il exclut alias et passations praticien, et refuserait des
+instruments valides). #410 (`caa0424`) — trois défauts de revue adversariale :
+code `INSTRUMENT_SUSPENDU` distinct de `RESOLUTION_FAILED` (un pack tout
+suspendu émettait deux fois le même code) ; test de route sur `portail/valider`,
+dont la trace pouvait disparaître sans un seul échec ; `PacksPanel` affichait
+`Q_SOM_07` brut et un compte faux.
+
+**Écarté** : consultation validée à zéro questionnaire (non atteignable) ;
+retrait du seed `REP_J02_SOM07` — il reproduit l'état réel de la production.
+
+**Validations** : T1 vert ; T2 281 fichiers Vitest verts, 5 échecs E2E =
+pollution `.env.local` connue ; `verify` vert 8 min 37 ; prod lue par
+`execute_sql` (3 assignations, toutes verrouillées).
+
+**Prochaine action** : retirer le worktree `certification-corpus-lots-0-1-7`
+depuis le checkout principal ; lots 5-6 (besoins).
+
+**Questions ouvertes** : bloc axes du booklet patient ; `PATCH assignations`
+re-sert un suspendu ; les passations invalides alimentent encore fiche et
+synthèse IA.
