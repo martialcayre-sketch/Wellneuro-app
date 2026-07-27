@@ -47,19 +47,43 @@ GREP_EXCLUDES=(
 #
 # D'où un diff par fichier, et les lignes ajoutées lues APRÈS le premier `@@` :
 # passé cette borne, aucune ligne n'est plus interprétée comme un en-tête.
+#
+# `:(literal)` n'est pas décoratif. Le nom que git vient de rendre lui est
+# redonné en PATHSPEC, et un pathspec n'est pas un chemin : `:` y ouvre la
+# syntaxe magique, si bien qu'un fichier nommé `:note.md` ne matchait plus rien
+# et sortait du contrôle en silence. Même classe de défaut que celle du `++`
+# ci-dessus — une donnée qui redevient de la syntaxe.
+#
+# Et l'échec de `git` fait sortir en 2, jamais en 0. Un contrôle qui répond
+# « OK » sans avoir rien lu est pire qu'absent : `safe.directory`, un conteneur
+# à uid différent ou un `git` hors du PATH suffisaient à le rendre muet.
+# « Je n'ai pas pu vérifier » n'est pas « je n'ai rien trouvé ».
 AJOUTS=""
 if [[ "$MODE" == "staged" ]]; then
+  LISTE="$(mktemp)"
+  trap 'rm -f "$LISTE"' EXIT
+  # Le passage par un fichier, et non par `$(…)`, parce que bash retire les
+  # octets NUL des substitutions de commande — ce qui détruirait la séparation
+  # de `-z`, seule forme sûre pour un nom de fichier quelconque.
+  if ! git diff --cached --name-only -z -- . \
+       ':(exclude)package-lock.json' ':(exclude)*.lock' > "$LISTE"; then
+    echo "ERREUR: 'git diff --cached' a échoué — contrôle NON CONCLUANT." >&2
+    exit 2
+  fi
   while IFS= read -r -d '' fichier; do
-    lignes="$(git diff --cached --unified=0 --no-renames -- "$fichier" 2>/dev/null \
-      | awk '/^@@/ { dans = 1; next } dans && /^\+/ { print }' || true)"
+    if ! diff_fichier="$(git diff --cached --unified=0 --no-renames -- ":(literal)$fichier")"; then
+      echo "ERREUR: 'git diff --cached' a échoué sur un fichier indexé — contrôle NON CONCLUANT." >&2
+      exit 2
+    fi
+    lignes="$(printf '%s\n' "$diff_fichier" \
+      | awk '/^@@/ { dans = 1; next } dans && /^\+/ { print }')"
     [[ -n "$lignes" ]] || continue
     # Le `+` du diff est conservé à dessein : il s'intercale entre le nom de
     # fichier et la ligne, et n'est ni un guillemet, ni une espace, ni `:`/`=`.
     # C'est lui qui empêche un chemin comme `config/client_secret` de former un
     # faux positif avec le début de la ligne ajoutée. Ne pas le retirer.
     AJOUTS+="$(printf '%s\n' "$lignes" | awk -v f="$fichier" '{ print f "\t" $0 }')"$'\n'
-  done < <(git diff --cached --name-only -z -- . \
-    ':(exclude)package-lock.json' ':(exclude)*.lock' 2>/dev/null)
+  done < "$LISTE"
 fi
 
 # Ne rapporte JAMAIS la ligne trouvée, seulement où elle est. Un `grep -n` nu

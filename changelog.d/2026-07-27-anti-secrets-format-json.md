@@ -43,8 +43,18 @@
   cause. Le mode indexé lit maintenant un diff par fichier, borné au premier
   `@@` : passé cette borne, aucune ligne n'est plus interprétée comme un
   en-tête, et le nom vient de `git diff --name-only`.
+  **Ce nom lui est redonné en `:(literal)`**, troisième forme de la même classe
+  — une donnée qui redevient de la syntaxe. Un pathspec n'est pas un chemin :
+  `:` y ouvre la syntaxe magique de git, si bien qu'un fichier nommé `:note.md`
+  cessait de matcher quoi que ce soit et sortait du contrôle en silence.
+- **Un `git` en panne fait désormais sortir en 2, jamais en 0.** Le pire mode de
+  défaillance d'un garde est de répondre « OK » sans avoir rien lu — et
+  `safe.directory`, un conteneur à uid différent ou un `git` hors du PATH y
+  suffisaient, avant comme après le premier correctif. « Je n'ai pas pu
+  vérifier » n'est pas « je n'ai rien trouvé », et le code de sortie le dit
+  maintenant.
 - **Un banc verrouille le contrôle** (`scripts/check_no_secrets.test.mjs`,
-  11 cas plus 5 `todo`), en CI **et dans le palier T1** — `npm run check` le
+  13 cas plus 7 `todo`), en CI **et dans le palier T1** — `npm run check` le
   lance, par cohérence avec `registry-check` et `certify-check` : un palier qui
   ne couvre pas ce que le CI vérifie ne protège de rien.
   Il monte un dépôt jetable, y dépose un faux compte de service, vérifie le
@@ -58,12 +68,16 @@
   et une ligne de prose documentaire citant plusieurs noms de variables aussi —
   sans ce second cas, le banc ne verrouillerait que la sensibilité du contrôle,
   jamais sa spécificité, et un motif redevenu trop large passerait au vert.
-  Falsifié par cinq mutations, chacune attrapée par la garde qui la vise :
-  motifs d'origine (7 échecs), séparateur permissif (le cas de prose seul),
-  détection réimprimant la ligne (4), mode indexé aveugle (4), et retour à
-  l'analyseur d'en-têtes (le cas du `++` seul). Le cas de prose tient sur **une
-  seule ligne longue**, comme dans le fichier réel : `grep` travaillant ligne
-  par ligne, répartir la phrase détruisait la propriété même qu'il éprouve.
+  Falsifié par sept mutations, chacune attrapée par la garde qui la vise :
+  motifs d'origine (8 échecs), séparateur permissif (le cas de prose seul),
+  détection réimprimant la ligne (5), mode indexé aveugle (5), retour à
+  l'analyseur d'en-têtes, pathspec nu, échec de `git` avalé (un cas chacun).
+  Deux fixtures ont dû être refaites pour être discriminantes, et l'échec était
+  le même : elles n'exerçaient pas la propriété qu'elles prétendaient éprouver.
+  Le cas de prose tient sur **une seule ligne longue**, comme dans le fichier
+  réel — `grep` travaillant ligne par ligne, répartir la phrase la neutralisait.
+  Le piège du `++` porte le secret **sur** la ligne piégée, pas sur la suivante :
+  placé en dessous, il était trouvé même par l'analyseur fautif.
   Les fragments sensibles du banc sont assemblés par concaténation plutôt que
   d'exclure le fichier du scan : une exclusion créerait l'angle mort qu'on vient
   de fermer.

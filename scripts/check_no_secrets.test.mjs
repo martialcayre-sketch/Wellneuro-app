@@ -21,7 +21,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, copyFileSync, rmSync, chmodSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -115,6 +115,24 @@ function lancer(racine, ...args) {
   return { code: r.status, sortie: `${r.stdout}${r.stderr}`, emplacements };
 }
 
+/**
+ * Même chose, mais avec un `git` qui échoue — `safe.directory`, conteneur à uid
+ * différent, `git` hors du PATH. Le contrôle doit le dire, pas se taire.
+ */
+function lancerAvecGitEnPanne(racine, ...args) {
+  const faux = join(racine, 'faux-bin');
+  mkdirSync(faux, { recursive: true });
+  const shim = join(faux, 'git');
+  writeFileSync(shim, '#!/bin/sh\necho "fatal: detected dubious ownership" >&2\nexit 128\n');
+  chmodSync(shim, 0o755);
+  const r = spawnSync('bash', [join(racine, 'scripts', 'check_no_secrets.sh'), ...args], {
+    cwd: racine,
+    encoding: 'utf8',
+    env: { ...process.env, PATH: `${faux}:${process.env.PATH}` },
+  });
+  return { code: r.status, sortie: `${r.stdout}${r.stderr}` };
+}
+
 function avecBanc(fichiers, corps) {
   const racine = bancTemporaire(fichiers);
   try {
@@ -152,6 +170,19 @@ describe('check_no_secrets.sh — ce qui doit être refusé', () => {
     avecBanc({ 'oauth.json': CONFIG_OAUTH }, racine => {
       const { code } = lancer(racine);
       assert.equal(code, 1, 'le contrôle a accepté un client_secret JSON');
+    });
+  });
+
+  test('un fichier dont le nom commence par « : », en mode --staged', () => {
+    // Le nom rendu par git lui est redonné en PATHSPEC, et `:` y ouvre la
+    // syntaxe magique : sans `:(literal)`, ce fichier ne matche plus rien et
+    // sort du contrôle en silence. Même classe que le piège du « ++ » — une
+    // donnée qui redevient de la syntaxe.
+    avecBanc({ ':note.md': COMPTE_DE_SERVICE }, racine => {
+      git(racine, 'add', '-A');
+      const { code, sortie } = lancer(racine, '--staged');
+      assert.equal(code, 1, `un nom de fichier magique a contourné le contrôle : ${sortie}`);
+      assert.doesNotMatch(sortie, /CONTENU-DE-TEST-SANS-VALEUR/, 'le corps de la clé a fuité');
     });
   });
 
@@ -215,9 +246,12 @@ describe('check_no_secrets.sh — ce qu’il ne doit jamais imprimer', () => {
     // « emplacement » — et imprime donc le contenu. Ici la ligne suivante porte
     // le secret : le piège fuit ET masque, puisque la ligne avalée n'est jamais
     // scannée.
+    // Le secret est SUR la ligne piégée, pas sur la suivante : c'est ce qui
+    // rend le cas discriminant. Placé en dessous, il serait trouvé même par un
+    // analyseur qui saute les `+++`, et le test passerait sans rien prouver.
     const PIEGE = [
-      `++ ${DEBUT_PEM}`,
-      `  "${CLE_PRIVEE}": "${DEBUT_PEM}\\nCONTENU-DE-TEST-SANS-VALEUR\\n"`,
+      `++ "${CLE_PRIVEE}": "${DEBUT_PEM}\\nCONTENU-DE-TEST-SANS-VALEUR\\n"`,
+      'Une ligne ordinaire, pour que le fichier ait une suite.',
       '',
     ].join('\n');
     avecBanc({ 'piege.md': PIEGE }, racine => {
@@ -265,7 +299,29 @@ describe('check_no_secrets.sh — ce qui doit passer', () => {
 // Ce que le contrôle NE fait PAS, nommé plutôt que passé sous silence. Chaque
 // ligne est une forme de secret qu'il laisse passer aujourd'hui : la liste est
 // le périmètre réel du garde, et sa levée demande un autre outil qu'un motif.
+describe('check_no_secrets.sh — quand il ne peut pas conclure', () => {
+  test('un git en panne fait sortir en 2, jamais en 0', () => {
+    // Le pire mode de défaillance d'un garde : répondre « OK » sans avoir rien
+    // lu. `safe.directory`, un conteneur à uid différent, un `git` absent du
+    // PATH suffisaient. « Je n'ai pas pu vérifier » n'est pas « rien trouvé ».
+    avecBanc({ 'compte.json': COMPTE_DE_SERVICE }, racine => {
+      git(racine, 'add', 'compte.json');
+      const { code, sortie } = lancerAvecGitEnPanne(racine, '--staged');
+      assert.equal(code, 2, `le contrôle a conclu sans pouvoir lire l’index : ${sortie}`);
+      assert.doesNotMatch(sortie, /^OK:/m, 'le contrôle a annoncé « OK » sans rien lire');
+      assert.match(sortie, /NON CONCLUANT/);
+    });
+  });
+});
+
 describe('check_no_secrets.sh — hors périmètre assumé', () => {
+  // Un fichier binaire indexé illustre les deux : le mode complet le voit
+  // (`Binary file X matches`, sur stdout côté BSD, sur stderr côté GNU ≥ 3.5 —
+  // troisième forme du « grep n'est pas grep »), le mode indexé non, faute de
+  // `@@` dans un diff binaire. Le garde d'avant-commit laisse donc passer ce
+  // que le CI attrapera après que le commit existe.
+  test.todo('un secret dans un fichier binaire, en mode --staged');
+  test.todo('l’invariant de forme face à « Binary file X matches »');
   test.todo('une clé privée sans identifiant devant (.pem, .p12, clé SSH nue)');
   test.todo('un JSON échappé dans du JSON, ou un compte de service en base64');
   test.todo('une URL de connexion portant un mot de passe');
