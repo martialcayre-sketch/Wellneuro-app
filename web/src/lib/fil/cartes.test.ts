@@ -5,6 +5,7 @@ import {
   cartesJalons,
   cartesReprise,
   cartesSignalementsTrust,
+  cartesSynthesesAGenerer,
   cartesSynthesesAValider,
   construireFil,
   indexCarteImminente,
@@ -71,6 +72,39 @@ describe('cartesSynthesesAValider', () => {
       NOMS,
     );
     expect(relecture[0].cle).toBe(avant[0].cle);
+  });
+});
+
+describe('cartesSynthesesAGenerer', () => {
+  it('signale un patient lu sans aucune synthèse générée', () => {
+    const cartes = cartesSynthesesAGenerer(
+      [{ idPatient: 'P-SOPHIE', derniereLecture: new Date('2026-07-14T09:00:00') }],
+      new Map(),
+      NOMS,
+    );
+    expect(cartes).toHaveLength(1);
+    expect(cartes[0].patient).toBe('Sophie Nicola');
+    expect(cartes[0].titre).toBe('Synthèse à générer');
+    expect(cartes[0].href).toBe('/dashboard/synthese?idPatient=P-SOPHIE');
+    expect(cartes[0].pourquoi).toContain('14 juillet');
+  });
+
+  it('écarte un patient dont la synthèse la plus récente couvre déjà la lecture', () => {
+    const cartes = cartesSynthesesAGenerer(
+      [{ idPatient: 'P-SOPHIE', derniereLecture: new Date('2026-07-10T09:00:00') }],
+      new Map([['P-SOPHIE', new Date('2026-07-12T09:00:00')]]),
+      NOMS,
+    );
+    expect(cartes).toEqual([]);
+  });
+
+  it('fait revenir la carte quand une nouvelle lecture suit la dernière synthèse', () => {
+    const cartes = cartesSynthesesAGenerer(
+      [{ idPatient: 'P-SOPHIE', derniereLecture: new Date('2026-07-15T09:00:00') }],
+      new Map([['P-SOPHIE', new Date('2026-07-12T09:00:00')]]),
+      NOMS,
+    );
+    expect(cartes).toHaveLength(1);
   });
 });
 
@@ -288,11 +322,12 @@ describe('construireFil', () => {
     expect(fil.map(c => c.type)).toEqual(['signalement_trust', 'synthese_a_valider']);
   });
 
-  it('ordonne le Fil : consultations après signalements, puis synthèses, jalons, retards, reprises', () => {
+  it('ordonne le Fil : consultations après signalements, puis synthèses (à valider, à générer), jalons, retards, reprises', () => {
     const fil = construireFil({
       signalements: [{ id: 'SIG_1', idPatient: 'P-MICHEL', kind: 'demande_droit', soumisLe: new Date('2026-07-15T09:00:00') }],
       consultations: [{ id: 'RDV_1', idPatient: 'P-SOPHIE', dateHeure: new Date('2026-07-15T11:00:00') }],
       syntheses: [{ idSynthese: 'SYN_2', idPatient: 'P-JENNIFER', dateGeneration: new Date('2026-07-14T09:00:00') }],
+      lectures: [{ idPatient: 'P-MICHEL', derniereLecture: new Date('2026-07-15T08:00:00') }],
       jalons: [{ idCheckin: 'CHK_1', idPatient: 'P-SOPHIE', soumisLe: new Date('2026-07-14T08:00:00') }],
       assignations: [
         { idAssignation: 'ASG_6', idPatient: 'P-MICHEL', titre: 'Mode de vie', dateLimite: '2026-07-01', statut: 'En attente' },
@@ -305,6 +340,7 @@ describe('construireFil', () => {
       'signalement_trust',
       'consultation_prevue',
       'synthese_a_valider',
+      'synthese_a_generer',
       'jalon_j21',
       'assignation_en_retard',
       'reprise',

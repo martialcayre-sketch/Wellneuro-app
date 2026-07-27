@@ -86,6 +86,7 @@ describe('cleCarteValide', () => {
     expect(cleCarteValide('assignation_en_retard:ASG_1')).toBe(true);
     expect(cleCarteValide('reprise:PAT_1:2026-01-01T00:00:00.000Z')).toBe(true);
     expect(cleCarteValide('signalement_trust:effet_indesirable:SIG_1')).toBe(true);
+    expect(cleCarteValide('synthese_a_generer:agregat:PAT_1:2026-01-01T00:00:00.000Z')).toBe(true);
   });
 
   it('refuse une clé arbitraire, tronquée ou démesurée', () => {

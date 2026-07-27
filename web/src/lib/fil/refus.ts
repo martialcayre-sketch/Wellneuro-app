@@ -59,8 +59,8 @@ export function clesRefusees(lignes: LigneRefus[]): Set<string> {
  * Retire du Fil les cartes refusées.
  *
  * Point de passage UNIQUE, appliqué après `construireFil` sur les cartes déjà
- * construites : filtrer dans les 5 fonctions de production ferait 5 endroits à
- * garder cohérents.
+ * construites : filtrer dans chaque fonction de production ferait autant
+ * d'endroits à garder cohérents.
  */
 export function filtrerCartesRefusees(cartes: CarteFil[], refusees: Set<string>): CarteFil[] {
   return cartes.filter((carte) => !refusees.has(carte.cle));
@@ -73,6 +73,7 @@ const TYPES_CARTE: readonly TypeCarteFil[] = [
   'consultation_prevue',
   'signalement_trust',
   'synthese_a_valider',
+  'synthese_a_generer',
   'jalon_j21',
   'assignation_en_retard',
   'reprise',
