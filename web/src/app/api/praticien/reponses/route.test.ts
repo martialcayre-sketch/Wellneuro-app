@@ -155,6 +155,31 @@ describe('GET /api/praticien/reponses — passation non interprétable', () => {
     expect(reponses[0].titre).toBe('MFI-20 — Échelle multidimensionnelle de fatigue');
   });
 
+  it('couvre la forme HÉRITÉE réellement en base, qui n’a aucun rawAnswers', async () => {
+    // La passation du 2026-06-15 (score 31, « Fatigue multidimensionnelle
+    // sévère ») porte `{GF, AM, global}` et PAS de clé `rawAnswers` — vérifié
+    // en production. Une liste noire de clés interprétatives aurait couvert la
+    // forme courante et laissé passer `global` ; sans cette fixture, aucune
+    // suite de route n'exerçait la forme qui est pourtant en base.
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      ligneSom07({
+        scoresJson: { GF: 18, AM: 13, global: 31 },
+        scorePrincipal: 31,
+        interpretation: 'Fatigue multidimensionnelle sévère — composantes physique et mentale toutes deux impactées',
+      }),
+    ]);
+    const { reponses } = await (await GET(request())).json();
+    expect(reponses[0].nonInterpretable).toBeTruthy();
+    expect(reponses[0].scorePrincipal).toBeNull();
+    expect(reponses[0].interpretation).toBe('');
+    // Rien ne subsiste : cette passation-là n'est même pas rescorable.
+    expect(reponses[0].scoresParsed).toEqual({});
+    const { nonInterpretable: _m, ...sansMotif } = reponses[0];
+    for (const fuite of ['"global"', '"GF"', '"AM"', '31', 'sévère']) {
+      expect(JSON.stringify(sansMotif), `« ${fuite} » a fui`).not.toContain(fuite);
+    }
+  });
+
   it('retire aussi les bornes de sous-scores (elles dessineraient une échelle non servie)', async () => {
     prisma.questionnaireReponse.findMany.mockResolvedValue([ligneSom07()]);
     const { reponses } = await (await GET(request())).json();

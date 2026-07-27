@@ -206,7 +206,12 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
 export type PatchAssignationResponse = {
   success: boolean;
   error?: string;
-  reason?: 'unauthenticated' | 'invalid_payload' | 'not_found' | 'exception';
+  reason?:
+    | 'unauthenticated'
+    | 'invalid_payload'
+    | 'not_found'
+    | 'exception'
+    | typeof RAISON_QUESTIONNAIRE_SUSPENDU;
 };
 
 // PATCH /api/praticien/assignations — déverrouillage manuel des réponses (R8-lite)
@@ -247,6 +252,21 @@ export async function PATCH(req: Request): Promise<NextResponse<PatchAssignation
     });
     if (!ass) {
       return NextResponse.json({ success: false, reason: 'not_found', error: 'Assignation introuvable.' }, { status: 404 });
+    }
+    // Déverrouiller ROUVRE la saisie : c'est un chemin d'envoi de plus, et
+    // c'était le dernier par lequel un instrument suspendu pouvait encore être
+    // re-servi. Le lot #406 l'avait nommé sans le fermer (« geste délibéré,
+    // mais non gardé »). Même refus que les trois autres chemins, avant toute
+    // écriture — et dans la route, jamais dans l'écran.
+    if (IDS_SUSPENDUS.has(ass.idQuestionnaire)) {
+      return NextResponse.json(
+        {
+          success: false,
+          reason: RAISON_QUESTIONNAIRE_SUSPENDU,
+          error: MESSAGE_QUESTIONNAIRE_SUSPENDU,
+        },
+        { status: 409 }
+      );
     }
     await prisma.assignation.update({
       where: { idAssignation },

@@ -103,4 +103,31 @@ describe('GET /api/portail/assignations — liaison session au compte', () => {
     expect(corps.derniereReponseLe).toBe('2025-07-21T12:00:00.000Z');
     expect(JSON.stringify(corps)).not.toMatch(/score|interpretation/i);
   });
+
+  // Un instrument suspendu parce qu'il NE MESURE PAS ce qu'il annonce ne doit
+  // plus être proposé, même si son assignation est partie avant la suspension :
+  // faire remplir 20 items pour un résultat retiré à la lecture ferait perdre
+  // au patient un temps qu'on sait d'avance inutile.
+  it('n’affiche plus un questionnaire suspendu encore à remplir', async () => {
+    prisma.assignation.findMany.mockResolvedValue([
+      { idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_07', titre: 'MFI-20', statut: 'Envoyé', dateAssignation: new Date('2026-07-01'), dateLimite: null, idPatient: patient.idPatient, emailPatient: patient.email, statutReponses: null, createdAt: new Date('2026-07-01') },
+      { idAssignation: 'ASS_2', idQuestionnaire: 'Q_SOM_06', titre: 'Pichot', statut: 'Envoyé', dateAssignation: new Date('2026-07-02'), dateLimite: null, idPatient: patient.idPatient, emailPatient: patient.email, statutReponses: null, createdAt: new Date('2026-07-02') },
+    ]);
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
+    const corps = await (await GET(request(cookie))).json();
+    const ids = corps.assignations.map((a: { idAssignation: string }) => a.idAssignation);
+    expect(ids).toContain('ASS_2');
+    expect(ids).not.toContain('ASS_1');
+  });
+
+  it('conserve une passation suspendue DÉJÀ complétée — elle n’est plus à remplir', async () => {
+    // Contrôle négatif du filtre : sans lui, on effacerait de l'historique du
+    // patient un questionnaire qu'il a bel et bien rempli.
+    prisma.assignation.findMany.mockResolvedValue([
+      { idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_07', titre: 'MFI-20', statut: 'Complété', dateAssignation: new Date('2026-07-01'), dateLimite: null, idPatient: patient.idPatient, emailPatient: patient.email, statutReponses: 'verrouille', createdAt: new Date('2026-07-01') },
+    ]);
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
+    const corps = await (await GET(request(cookie))).json();
+    expect(corps.assignations.map((a: { idAssignation: string }) => a.idAssignation)).toContain('ASS_1');
+  });
 });

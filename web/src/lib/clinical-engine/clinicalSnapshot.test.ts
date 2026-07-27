@@ -101,6 +101,39 @@ describe('ClinicalSnapshot', () => {
     expect(snapshot.balanceAssessment.global.value).toBeNull();
   });
 
+  // `not_interpretable` est un TROISIÈME état, pas un synonyme du deuxième.
+  // Réutiliser `not_calculable` aurait fait dire « la réponse ne contient pas
+  // de données brutes complètes et exploitables » d'une passation qui en porte
+  // vingt — c'est exactement pour cela que le lot a préféré élargir le type
+  // plutôt que de recycler la valeur voisine.
+  it('une passation non interprétable est distinguée d’une réponse incomplète', () => {
+    const responses = [makeResponse({
+      questionnaireId: 'Q_SOM_07',
+      // Réponses brutes COMPLÈTES et exploitables : c'est tout l'enjeu.
+      scoresJson: { total: 45, rawAnswers: { M1: 2, M2: 3 } },
+    })];
+    const snapshot = buildClinicalSnapshot({
+      snapshotId: 'snapshot-1', patientId: 'patient-test', asOf: '2026-01-02T00:00:00.000Z',
+      assessmentEpisode: confirmedEpisode(responses), patientContext: context, responses,
+    });
+
+    const finding = snapshot.questionnaireFindings[0];
+    expect(finding.evaluability).toBe('not_interpretable');
+    expect(finding.evaluability).not.toBe('not_calculable');
+    // La limitation porte le VRAI motif, pas celui des données manquantes.
+    expect(finding.limitations[0]).toContain('MFI-20');
+    expect(finding.limitations.join(' ')).not.toContain('rawAnswers');
+  });
+
+  it('contrôle négatif — un instrument courant reste `calculable`', () => {
+    const responses = [makeResponse()];
+    const snapshot = buildClinicalSnapshot({
+      snapshotId: 'snapshot-1', patientId: 'patient-test', asOf: '2026-01-02T00:00:00.000Z',
+      assessmentEpisode: confirmedEpisode(responses), patientContext: context, responses,
+    });
+    expect(snapshot.questionnaireFindings[0].evaluability).toBe('calculable');
+  });
+
   it('attribue à chaque objet uniquement ses sources effectives', () => {
     const responses = [makeResponse()];
     const snapshot = buildClinicalSnapshot({

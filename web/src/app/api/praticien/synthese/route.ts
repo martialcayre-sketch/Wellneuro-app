@@ -20,7 +20,10 @@ import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
 import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
-import { motifNonInterpretable } from '@/lib/scoring/passationsNonInterpretables';
+import {
+  avertissementSyntheseAnterieure,
+  motifNonInterpretable,
+} from '@/lib/scoring/passationsNonInterpretables';
 import { buildContexteClinique, extraireVigilanceDeterministe } from '@/lib/consultation/contexteClinique';
 import {
   MODELE_REDACTION_PRATICIEN,
@@ -336,7 +339,27 @@ export async function GET(req: Request) {
       await journaliserAccesDossier({ idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
     }
 
-    return withCorrelationHeader(NextResponse.json({ syntheses }), requestContext);
+    // Synthèses rédigées AVANT le retrait d'interprétation : elles ont pu
+    // s'appuyer sur une mesure qui n'en était pas une, et elles restent la
+    // seule source des documents patient et médecin. On ne les réécrit pas —
+    // on dit ce qu'elles valent, à la lecture. Une seule requête, et seulement
+    // s'il y a quelque chose à qualifier.
+    const syntheseAvecAvertissement = syntheses.length === 0 ? [] : await (async () => {
+      const passations = await prisma.questionnaireReponse.findMany({
+        where: { idPatient },
+        select: { idQuestionnaire: true },
+      });
+      const ids = passations.map(p => p.idQuestionnaire);
+      return syntheses.map(s => ({
+        ...s,
+        avertissementMesureRetiree: avertissementSyntheseAnterieure(ids, s.dateGeneration),
+      }));
+    })();
+
+    return withCorrelationHeader(
+      NextResponse.json({ syntheses: syntheseAvecAvertissement }),
+      requestContext,
+    );
   } catch (err) {
     logger.error({
       event: EVENT_CODES.SYNTHESE_GET_EXCEPTION,

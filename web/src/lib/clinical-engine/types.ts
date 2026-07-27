@@ -67,7 +67,14 @@ export type PatientContext = {
 };
 
 export type QuestionnaireFinding = AssessmentResponseRef & {
-  evaluability: 'calculable' | 'not_calculable';
+  // `not_interpretable` est un troisième état, et pas un synonyme du deuxième :
+  // `not_calculable` dit que les réponses brutes manquent ou sont incomplètes,
+  // `not_interpretable` dit qu'elles sont là, complètes, mais que l'instrument
+  // servi ne correspond pas à sa source publiée — le résultat n'est donc pas la
+  // mesure que son titre annonce. Les confondre ferait affirmer « la réponse ne
+  // contient pas de données brutes exploitables » sur une passation qui en
+  // porte vingt (`Q_SOM_07`, mesuré en production le 2026-07-27).
+  evaluability: 'calculable' | 'not_calculable' | 'not_interpretable';
   limitations: string[];
 };
 

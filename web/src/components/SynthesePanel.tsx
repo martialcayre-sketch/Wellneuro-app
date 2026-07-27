@@ -21,6 +21,9 @@ type SyntheseRecord = {
   dateValidation: string | null;
   notesPraticien: string | null;
   syntheseJson: SyntheseSchema;
+  /* Renseigné quand la synthèse précède le retrait d'interprétation d'un des
+   * questionnaires du dossier — calculé côté serveur, jamais ici. */
+  avertissementMesureRetiree?: string | null;
 };
 
 const STATUT_LABEL: Record<string, string> = {
@@ -526,6 +529,17 @@ export function SynthesePanel({ initialPatientId = '' }: { initialPatientId?: st
               Fermer
             </button>
           </div>
+
+          {/* Synthèse antérieure au retrait d'interprétation : elle a pu
+              s'appuyer sur une mesure qui n'en était pas une, et elle reste la
+              seule source du booklet patient et du courrier médecin. On ne la
+              réécrit pas — on dit ce qu'elle vaut, avant que le praticien ne
+              l'envoie. */}
+          {selectedSynthese.avertissementMesureRetiree && (
+            <p className="rounded-lg border border-status-danger/40 bg-status-danger/10 px-3 py-2 text-sm text-status-danger">
+              {selectedSynthese.avertissementMesureRetiree}
+            </p>
+          )}
 
           {brouillonEditable && editedManual ? (
             <>

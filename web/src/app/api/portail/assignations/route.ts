@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { isSessionValideForPatient, readPatientSession } from '@/lib/patient-session';
 import { mapAssignationPatient, type AssignationPatient } from '@/lib/consultation/mapAssignation';
+import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 import { consultationCourante } from '@/lib/consultation/portail';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -91,7 +92,21 @@ export async function GET(req: Request): Promise<NextResponse> {
       orderBy: [{ dateAssignation: 'desc' }, { createdAt: 'asc' }],
     });
 
-    const assignations: AssignationPatient[] = assignationsDb.map(mapAssignationPatient);
+    // Un instrument suspendu ne s'affiche plus au patient, même si son
+    // assignation est partie avant la suspension. La doctrine antérieure
+    // (« un envoi parti doit rester remplissable et scorable ») valait tant que
+    // le seul motif de suspension était organisationnel ; elle ne tient plus
+    // quand le motif est que l'instrument NE MESURE PAS ce qu'il annonce —
+    // faire remplir 20 items pour un résultat retiré à la lecture ferait perdre
+    // au patient un temps qu'on sait d'avance inutile.
+    //
+    // Une assignation déjà complétée n'est pas concernée : elle n'est plus à
+    // remplir. Mesuré avant d'écrire : les 3 assignations `Q_SOM_07` de
+    // production sont toutes `Complété`, donc ce filtre ne retire rien
+    // aujourd'hui — il ferme un chemin, il ne change pas un écran.
+    const assignations: AssignationPatient[] = assignationsDb
+      .filter(a => !IDS_SUSPENDUS.has(a.idQuestionnaire) || a.statut === 'Complété')
+      .map(mapAssignationPatient);
 
     // Horloge de la reprise : dernière réponse **transmise**, comme le Fil
     // praticien (`api/praticien/fil/route.ts`, `_max.dateReponse`). Se

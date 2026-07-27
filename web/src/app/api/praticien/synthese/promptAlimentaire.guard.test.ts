@@ -31,7 +31,7 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // Empreinte de la consigne système sous `synthese-v6`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
-const EMPREINTE_V6 = 'c20a7f430f328196';
+const EMPREINTE_V6 = '3b9bd6d23d2b688f';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -83,6 +83,24 @@ describe('garde-fou alimentaire — consigne système', () => {
     }
   });
 
+  it('porte la section des passations non interprétables et le NOM du champ', () => {
+    // Sans cette assertion, la section ne tenait qu'à l'empreinte — or le geste
+    // que le test lui-même enseigne (bump + report du nouveau hash) suffit à la
+    // supprimer en gardant le CI vert. C'est la classe de défaut que ce fichier
+    // documente : une interdiction dont le critère de déclenchement n'arrive
+    // pas vaut moins que rien. Relevé en revue le 2026-07-27.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('mesureNonInterpretable');
+    for (const interdit of ['sévérité', 'reconstituer', 'points_de_vigilance']) {
+      expect(SYSTEM_PROMPT_GOUVERNANCE).toContain(interdit);
+    }
+  });
+
+  it('nomme ce qui reste autorisé pour ces passations, pas seulement ce qui est interdit', () => {
+    // Même raison que pour la section alimentaire : une consigne purement
+    // prohibitive laisse le modèle inventer une formulation de repli.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("n'est pas exploitable");
+  });
+
   it('nomme ce qui reste autorisé, pas seulement ce qui est interdit', () => {
     // Une consigne purement prohibitive laisse le modèle sans formulation de
     // repli : il en invente une, souvent équivalente à ce qu'on lui interdit.
@@ -119,6 +137,17 @@ describe('garde-fou alimentaire — couplage consigne / charge utile', () => {
       SOURCE_ROUTE.indexOf('function buildUserMessage') + 1200,
     );
     expect(bloc).toContain('idQuestionnaire');
+  });
+
+  it('transmet le champ sur lequel la consigne « non interprétable » s’indexe', () => {
+    // Même couplage que ci-dessus, pour la section ajoutée en v6 : si la
+    // consigne parle de `mesureNonInterpretable`, la route doit poser ce champ
+    // — orthographié à l'identique. Une consigne qui cite un nom de champ que
+    // personne n'émet est une protection de façade.
+    if (!SYSTEM_PROMPT_GOUVERNANCE.includes('mesureNonInterpretable')) return;
+    expect(SOURCE_ROUTE).toMatch(/mesureNonInterpretable:\s*motifNonMesure/);
+    // Et le motif doit venir du registre, pas d'un littéral recopié sur place.
+    expect(SOURCE_ROUTE).toMatch(/motifNonInterpretable\(r\.idQuestionnaire\)/);
   });
 });
 

@@ -3,7 +3,6 @@ import { QUESTIONNAIRES_CATALOG, IDS_SUSPENDUS } from '@/lib/questionnaires-cata
 import {
   ETIQUETTE_NON_INTERPRETABLE,
   MOTIFS_PASSATION_NON_INTERPRETABLE,
-  estNonInterpretable,
   motifNonInterpretable,
   scoresSansMesure,
 } from './passationsNonInterpretables';
@@ -51,21 +50,29 @@ describe('registre — inclusion dans les suspendus', () => {
         entree?.actif,
         `${id} est de nouveau actif : statuer sur ses passations historiques avant de le retirer du registre`,
       ).toBe(false);
-      expect(IDS_SUSPENDUS.has(id)).toBe(true);
+      // Pas d'assertion sur `IDS_SUSPENDUS` ici : il est DÉRIVÉ de `!actif`
+      // (`questionnaires-catalog.ts`), donc la vérifier après `actif === false`
+      // est une tautologie — elle donnerait l'impression d'une double garde là
+      // où il n'y en a qu'une. Relevé en revue le 2026-07-27.
     },
   );
 
-  it('n’impose PAS la réciproque — un suspendu peut rester parfaitement lisible', () => {
+  it('n’impose PAS la réciproque — Q_FIB_03 est suspendu ET parfaitement lisible', () => {
     // `Q_FIB_03` (ELFE) est inactif depuis toujours parce qu'il n'a jamais été
     // déployé, non parce que ses résultats seraient faux. Confondre les deux
     // ensembles est exactement l'erreur que le lot #406 a écartée en refusant
     // `IDS_ASSIGNABLES` comme garde. Ce test échoue si quelqu'un « simplifie »
     // le registre en le dérivant de `!actif`.
-    const suspendusLisibles = [...IDS_SUSPENDUS].filter(id => !estNonInterpretable(id));
+    //
+    // Nommé, et pas seulement « il existe un suspendu lisible » : la version
+    // anonyme de cette assertion dépendait d'un tiers muet — réactiver ou
+    // retirer ELFE l'aurait fait échouer pour une raison sans rapport, et la
+    // pression aurait été de l'affaiblir plutôt que de la comprendre.
+    expect(IDS_SUSPENDUS.has('Q_FIB_03'), 'Q_FIB_03 n’est plus suspendu : revoir ce test').toBe(true);
     expect(
-      suspendusLisibles.length,
+      motifNonInterpretable('Q_FIB_03'),
       'le registre a été dérivé de `actif` : ce sont deux décisions distinctes',
-    ).toBeGreaterThan(0);
+    ).toBeNull();
   });
 });
 
@@ -81,7 +88,6 @@ describe('motifNonInterpretable', () => {
     expect(motifNonInterpretable('Q_SOM_07')).toBe(
       MOTIFS_PASSATION_NON_INTERPRETABLE.get('Q_SOM_07'),
     );
-    expect(estNonInterpretable('Q_SOM_07')).toBe(true);
   });
 });
 
@@ -134,6 +140,17 @@ describe('scoresSansMesure — liste blanche', () => {
     expect(scoresSansMesure('texte')).toEqual({});
     expect(scoresSansMesure([1, 2])).toEqual({});
     expect(scoresSansMesure({})).toEqual({});
+    // `rawAnswers: null` est une absence, pas une clé vide à propager : livrer
+    // `{ rawAnswers: null }` annoncerait un contenu que chaque consommateur
+    // devrait revalider. Relevé en revue le 2026-07-27.
+    expect(scoresSansMesure({ total: 45, rawAnswers: null })).toEqual({});
+  });
+
+  it('rend {} sur la forme héritée réellement en base, qui n’a AUCUN rawAnswers', () => {
+    // Vérifié en production : la passation du 2026-06-15 ne porte pas même la
+    // clé, quand les trois autres portent 20 items. Elle n'est donc pas
+    // rescorable, et « les réponses brutes restent » ne vaut pas pour elle.
+    expect(scoresSansMesure({ GF: 18, AM: 13, global: 31 })).toEqual({});
   });
 
   it('n’altère pas l’objet d’origine', () => {

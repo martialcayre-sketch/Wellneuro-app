@@ -98,6 +98,22 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
     expect(data.scoresJson).toBeTruthy();
     expect(data.scoresJson.rawAnswers).toEqual({ NEU3_Q001: 2, NEU3_Q002: 1 });
   });
+
+  // Le portail ne propose plus un instrument suspendu, mais un refus qui ne vit
+  // que dans l'écran se contourne par un appel direct — mot pour mot la leçon
+  // du lot #406 sur les trois chemins d'assignation. 409 et non 410 : ce n'est
+  // pas une expiration, c'est un retrait.
+  it('refuse la soumission d’un instrument suspendu, sans rien calculer ni écrire', async () => {
+    prisma.assignation.findUnique.mockResolvedValue({
+      ...assignation,
+      idQuestionnaire: 'Q_SOM_07',
+    });
+    const res = await postSubmit(requeteSoumission());
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'questionnaire_suspendu' });
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
 });
 
 // Instruments du cabinet : la passation est protégée (l'assignation fait

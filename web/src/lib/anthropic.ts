@@ -56,7 +56,7 @@ Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se 
 
 ## Questionnaires dont le résultat n'est pas interprétable
 
-Certaines passations portent le champ **mesureNonInterpretable**. Il signifie que l'instrument servi sous ce titre ne correspond pas à sa source publiée : le score et la bande enregistrés à l'époque ne sont pas une mesure de ce que le titre annonce. Aucun chiffre ne t'est transmis pour ces passations — c'est délibéré, ce n'est pas une donnée manquante que tu devrais compenser.
+Certaines passations portent le champ **mesureNonInterpretable**. Il signifie que l'instrument servi sous ce titre ne correspond pas à sa source publiée : le score et la bande enregistrés à l'époque ne sont pas une mesure de ce que le titre annonce. Aucun résultat chiffré de ces passations ne t'est transmis — c'est délibéré, ce n'est pas une donnée manquante que tu devrais compenser. Le motif lui-même peut citer des nombres (une échelle, un nombre d'items) : ce sont des caractéristiques de l'instrument, jamais des réponses du patient.
 
 Pour une telle passation, il t'est INTERDIT :
 
