@@ -11,6 +11,10 @@ client_secret*.json
 # base). Rien n'y était couvert : `client_secret*.json` ci-dessus ne correspond
 # ni à `wn-drive-sa.json` ni à `ca.pem`, et un seul `git add -A` les aurait fait
 # entrer dans l'historique.
+# Sans `/` initial, à dessein : la règle vaut à toute profondeur, y compris pour
+# un `web/secrets/` créé plus tard. Contrepartie assumée — un répertoire de code
+# qui s'appellerait `secrets` serait ignoré en silence. Aucun chemin suivi n'en
+# contient aujourd'hui, sur aucune branche.
 secrets/
 # Dépendances et builds
 node_modules/

@@ -52,6 +52,23 @@ const DOTENV = `${CLE_API}=sk-ant-contenu000factice000\n`;
 
 const ANODIN = 'export const seuil = 12;\n// Aucune clé ici.\n';
 
+/**
+ * Prose documentaire citant des noms de variables — reprise de
+ * `docs/claude/REGLES_CRITIQUES.md`. C'est la classe de faux positifs qui a
+ * fait écarter le séparateur permissif (11 correspondances). Sans ce cas, le
+ * banc ne verrouille que la sensibilité du contrôle, jamais sa spécificité :
+ * un motif redevenu trop large passerait au vert.
+ *
+ * Une SEULE ligne, longue, comme dans le fichier réel : `grep` travaille ligne
+ * par ligne, et répartir la phrase sur plusieurs lignes détruirait justement la
+ * propriété qu'on éprouve — c'est le voisinage de deux identifiants sur la même
+ * ligne qui piège un séparateur trop permissif.
+ */
+const PROSE =
+  "Toute configuration sensible (`DATABASE_URL`, `ANTHROPIC_API_KEY`, " +
+  '`GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`) passe uniquement par des ' +
+  "variables d'environnement (`web/.env.local` en dev, variables Vercel en production).\n";
+
 function git(cwd, ...args) {
   const r = spawnSync('git', args, { cwd, encoding: 'utf8' });
   assert.equal(r.status, 0, `git ${args.join(' ')} a échoué : ${r.stderr}`);
@@ -111,6 +128,10 @@ describe('check_no_secrets.sh — ce qui doit être refusé', () => {
       git(racine, 'add', 'compte.json');
       const { code, sortie } = lancer(racine, '--staged');
       assert.equal(code, 1, `le contrôle a accepté une clé privée JSON indexée : ${sortie}`);
+      // Sans cette assertion, le cas passe au vert sur n'importe quel `exit 1`
+      // — un mode `--staged` cassé le satisferait sans rien détecter.
+      assert.match(sortie, new RegExp(CLE_PRIVEE));
+      assert.match(sortie, /compte\.json/);
     });
   });
 
@@ -126,6 +147,31 @@ describe('check_no_secrets.sh — ce qui doit être refusé', () => {
     avecBanc({ 'config.txt': DOTENV }, racine => {
       const { code } = lancer(racine);
       assert.equal(code, 1, 'le contrôle a accepté une clé au format dotenv');
+    });
+  });
+});
+
+describe('check_no_secrets.sh — ce qu’il ne doit jamais imprimer', () => {
+  test('la détection rend l’emplacement, jamais le corps du secret', () => {
+    // `grep -n` imprimait la ligne entière : sur un compte de service, la clé
+    // privée complète, dans le terminal — donc dans un journal de session,
+    // donc à un copier-coller du dépôt. Le contrôle doit dire OÙ, pas QUOI.
+    avecBanc({ 'compte.json': COMPTE_DE_SERVICE }, racine => {
+      const { code, sortie } = lancer(racine);
+      assert.equal(code, 1);
+      assert.match(sortie, /compte\.json/, 'le fichier fautif doit être nommé');
+      assert.doesNotMatch(sortie, /BEGIN PRIVATE KEY/, 'le corps de la clé a fuité');
+      assert.doesNotMatch(sortie, /CONTENU-DE-TEST-SANS-VALEUR/, 'le corps de la clé a fuité');
+    });
+  });
+
+  test('en mode --staged non plus', () => {
+    avecBanc({ 'compte.json': COMPTE_DE_SERVICE }, racine => {
+      git(racine, 'add', 'compte.json');
+      const { code, sortie } = lancer(racine, '--staged');
+      assert.equal(code, 1);
+      assert.doesNotMatch(sortie, /BEGIN PRIVATE KEY/, 'le corps de la clé a fuité');
+      assert.doesNotMatch(sortie, /CONTENU-DE-TEST-SANS-VALEUR/, 'le corps de la clé a fuité');
     });
   });
 });
@@ -148,4 +194,25 @@ describe('check_no_secrets.sh — ce qui doit passer', () => {
       assert.equal(code, 0, 'le contrôle a refusé des lignes indexées saines');
     });
   });
+
+  test('la prose documentaire citant des noms de variables est acceptée', () => {
+    // Verrou de SPÉCIFICITÉ. C'est cette classe qui a fait écarter le
+    // séparateur permissif : il y trouvait 11 correspondances, toutes fausses.
+    // Sans ce cas, un motif redevenu trop large satisferait tout le banc.
+    avecBanc({ 'REGLES.md': PROSE }, racine => {
+      const { code, sortie } = lancer(racine);
+      assert.equal(code, 0, `le contrôle a refusé de la prose documentaire : ${sortie}`);
+    });
+  });
+});
+
+// Ce que le contrôle NE fait PAS, nommé plutôt que passé sous silence. Chaque
+// ligne est une forme de secret qu'il laisse passer aujourd'hui : la liste est
+// le périmètre réel du garde, et sa levée demande un autre outil qu'un motif.
+describe('check_no_secrets.sh — hors périmètre assumé', () => {
+  test.todo('une clé privée sans identifiant devant (.pem, .p12, clé SSH nue)');
+  test.todo('un JSON échappé dans du JSON, ou un compte de service en base64');
+  test.todo('une URL de connexion portant un mot de passe');
+  test.todo('un jeton porteur (Authorization: Bearer …)');
+  test.todo('GOOGLE_CLIENT_SECRET — 8 placeholders de test bloqueraient le build');
 });

@@ -34,24 +34,39 @@ GREP_EXCLUDES=(
 
 # En mode --staged, on n'inspecte que les lignes AJOUTÉES du diff indexé : ce
 # qu'on s'apprête à committer, et rien du contenu préexistant.
+# Chaque ligne ajoutée est préfixée de son fichier et d'une tabulation, pour que
+# `check_pattern` puisse rendre l'emplacement sans jamais rendre le contenu.
 AJOUTS=""
 if [[ "$MODE" == "staged" ]]; then
   AJOUTS="$(git diff --cached --unified=0 -- . \
     ':(exclude)package-lock.json' ':(exclude)*.lock' 2>/dev/null \
-    | grep -E '^\+' | grep -vE '^\+\+\+' || true)"
+    | awk '
+        /^\+\+\+ /  { f = substr($0, 7); if (f == "ev/null") f = "(supprimé)"; next }
+        /^\+/       { print f "\t" $0 }
+      ' || true)"
 fi
 
+# Ne rapporte JAMAIS la ligne trouvée, seulement où elle est. Un `grep -n` nu
+# imprimait le contenu : sur un fichier de compte de service, c'est la clé
+# privée entière, déversée dans le terminal — donc dans un journal de session,
+# donc potentiellement dans un commit. Le dépôt écrit déjà la règle, dans
+# `docs/gouvernance-questionnaires-scoring.md` : signaler le fichier « sans
+# exposer le secret dans les journaux ou commits ». Le contrôle la violait dès
+# qu'il fonctionnait, et l'élargissement des motifs rendait ce chemin
+# atteignable pour la première fois.
 check_pattern() {
   local label="$1"
   local pattern="$2"
   local trouve
   if [[ "$MODE" == "staged" ]]; then
-    trouve="$(printf '%s' "$AJOUTS" | grep -nE "$pattern" || true)"
-    [[ -n "$trouve" ]] || return 0
-    printf '%s\n' "$trouve"
+    # `$AJOUTS` porte le nom de fichier en tête, séparé par une tabulation :
+    # `cut -f1` rend l'emplacement sans la ligne ajoutée.
+    trouve="$(printf '%s\n' "$AJOUTS" | grep -E "$pattern" | cut -f1 | sort -u || true)"
   else
-    grep -rnE "${GREP_EXCLUDES[@]}" "$pattern" . 2>/dev/null || return 0
+    trouve="$(grep -rnE "${GREP_EXCLUDES[@]}" "$pattern" . 2>/dev/null | cut -d: -f1,2 || true)"
   fi
+  [[ -n "$trouve" ]] || return 0
+  printf '%s\n' "$trouve"
   echo "ERREUR: motif suspect détecté: $label" >&2
   status=1
 }
@@ -72,11 +87,34 @@ check_pattern() {
 # d'attraper ce qu'il annonce attraper.
 SEP="['\"]*[[:space:]]*[:=][[:space:]]*['\"]*"
 
-check_pattern "SHEET_ID"          "SHEET_ID${SEP}[A-Za-z0-9_-]{25,}"
-check_pattern "ANTHROPIC_API_KEY" "ANTHROPIC_API_KEY${SEP}[A-Za-z0-9_-]{10,}"
-check_pattern "CLAUDE_API_KEY"    "CLAUDE_API_KEY${SEP}[A-Za-z0-9_-]{10,}"
-check_pattern "client_secret"     "client_secret${SEP}[A-Za-z0-9_-]{10,}"
-check_pattern "private_key"       "private_key${SEP}-----BEGIN"
+check_pattern "SHEET_ID"            "SHEET_ID${SEP}[A-Za-z0-9_-]{25,}"
+check_pattern "ANTHROPIC_API_KEY"   "ANTHROPIC_API_KEY${SEP}[A-Za-z0-9_-]{10,}"
+check_pattern "CLAUDE_API_KEY"      "CLAUDE_API_KEY${SEP}[A-Za-z0-9_-]{10,}"
+check_pattern "OPENAI_API_KEY"      "OPENAI_API_KEY${SEP}[A-Za-z0-9_-]{10,}"
+check_pattern "RAG_INTERNAL_SECRET" "RAG_INTERNAL_SECRET${SEP}[A-Za-z0-9_-]{10,}"
+check_pattern "client_secret"       "client_secret${SEP}[A-Za-z0-9_-]{10,}"
+check_pattern "private_key"         "private_key${SEP}-----BEGIN"
+
+# CE QUE CE CONTRÔLE NE COUVRE PAS — mesuré le 2026-07-27, à ne pas croire
+# couvert par le titre du lot :
+#
+# - `GOOGLE_CLIENT_SECRET` (majuscules) : le motif `client_secret` est sensible
+#   à la casse, et l'ajout de `-i` remonterait 8 correspondances, TOUTES des
+#   valeurs factices (`ci-placeholder`, `secret-de-test-non-production`). Idem
+#   `NEXTAUTH_SECRET` : 28 correspondances, toutes des placeholders de test.
+#   Un contrôle qui échoue toujours finit désactivé ; le couvrir demande de
+#   savoir distinguer une valeur factice d'une vraie, ce qu'un motif ne sait
+#   pas faire. Suivi à part.
+# - une clé privée sans identifiant devant (`.pem`, `.p12`, clé SSH nue) ;
+# - un JSON échappé dans du JSON, ou un compte de service encodé en base64 ;
+# - une URL de connexion portant un mot de passe (`postgresql://u:mdp@…`) ;
+# - un jeton porteur (`Authorization: Bearer …`) ;
+# - une valeur séparée de son identifiant par autre chose qu'un `:` ou un `=`
+#   (`--client_secret VALEUR`), ou posée sur la ligne suivante.
+#
+# Ce contrôle attrape les formes courantes d'un secret nommé. Il n'est pas un
+# scanner de secrets et ne remplace pas la règle de base : rien de sensible
+# n'entre dans le dépôt.
 
 if [[ "$status" -eq 0 ]]; then
   if [[ "$MODE" == "staged" ]]; then
