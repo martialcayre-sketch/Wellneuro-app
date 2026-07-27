@@ -4,8 +4,8 @@ Compagnon de `AUDIT_MIGRATION_HDS.md` et `RUNBOOK_MIGRATION_SCALINGO.md`.
 Liste de contrôle de bout en bout pour **lever la dérogation du 2026-10-21**.
 État arrêté le 2026-07-27 (staging provisionné ; fondation + P0 + **tout le code B**
 mergés — P1 #356, P2 #377, A4/A5 #382 ; jeton portail retiré au titre de
-l'exig. 4 par #397). **Il ne reste plus qu'un seul item de code sur le chemin
-critique : RLS exig. 3 (C).**
+l'exig. 4 par #397). **Plus aucun item de code sur le chemin critique : RLS exig. 3 (C)
+tranché le 2026-07-27 — posture A, deny-all documenté, aucun code base.**
 
 **Légende de responsabilité**
 - 🤖 **code** — assistant, 1 PR par lot, derrière flag, inerte pour Vercel, revue adversariale (`wn-reviewer`) avant merge
@@ -14,8 +14,8 @@ critique : RLS exig. 3 (C).**
 - 🚪 **porte** — nécessite un « go explicite » du responsable
 - ⚖️ **juridique** — responsable ; conditionne la levée de dérogation, pas la faisabilité technique
 
-Chemin critique le plus court vers un go : **A → 🚪 C → D → E** (B‑P1 est fait
-par #356). **F (juridique)** court en parallèle et conditionne le « GO données
+Chemin critique le plus court vers un go : **A → D → E** (tout le code B/C est fait — B par #356/#377/#382,
+C RLS tranché posture A le 2026-07-27, jeton exig. 4 par #397). **F (juridique)** court en parallèle et conditionne le « GO données
 réelles ».
 
 ---
@@ -46,7 +46,7 @@ réelles ».
 > Protocole obligatoire : **revue adversariale indépendante AVANT**, **vérification de la base de production APRÈS** (`execute_sql`).
 
 - [x] 🚪🤖 **Jeton `patients.access_token`** exig. 4 — **résolu par #397** selon l'option 2 de l'`ADDENDUM_JETON_PORTAIL.md` (achever la bascule G4/G5, ne pas hacher isolément). Le cookie de session signé `wn_portail` devient l'**unique credential** ; le jeton permanent n'est plus relu ni reconstruit en URL. Aucune migration (colonnes conservées, rollback `git revert`), vérifié en prod post-merge (schéma intact, 14 actifs / 0 révoqué). **Résidu** : les valeurs en clair, désormais dormantes (aucun accès accordé), subsistent en base → `DROP COLUMN access_token*` en **PR 2** après fenêtre de stabilité, avec réintroduction d'un drapeau de révocation de remplacement.
-- [ ] 🚪🤖 **RLS** exig. 3 — **seul item de code restant sur le chemin critique, et c'est une décision de périmètre, pas un chantier vierge.** Un socle **deny-all** est **déjà en place** sur les tables patient (`patients`, `assignations`, `questionnaire_reponses`, `correspondances_patient`…) depuis la migration `20260707123710_enable_rls_security` — `ENABLE ROW LEVEL SECURITY`, **zéro policy et zéro `FORCE`** volontairement (« deny-all par défaut = posture voulue »). Effet réel : un rôle **non-propriétaire** (ex. rôle public/anon) est bloqué ; le rôle **propriétaire** de l'app contourne la RLS faute de `FORCE`. À trancher pour l'exig. 3 : ce deny-all suffit-il, ou faut-il **`FORCE` + policies par principal** (isolation ligne à ligne y compris pour le rôle applicatif, ce qui impose une connexion sous rôle non-propriétaire + variable de session) ? Si arbitrage « renforcer » : protocole complet (revue adversariale avant, `execute_sql` après) + 🚪 go explicite. **Détail + les deux postures chiffrées : `ADDENDUM_RLS_EXIG3.md`** (état prod vérifié le 2026-07-27 : 71 tables RLS activée, 0 policy, 0 `FORCE`, app connectée en `postgres` = propriétaire).
+- [x] 🚪🤖 **RLS** exig. 3 — **tranché le 2026-07-27 : posture A retenue** (deny-all documenté comme suffisant, **aucun code base**). Le socle **deny-all** déjà en place — RLS activée, **zéro policy et zéro `FORCE`** sur 71 tables `public` (migration `20260707123710_enable_rls_security`, état prod vérifié : app connectée en `postgres` = propriétaire) — neutralise le vecteur réel (API de données managée Supabase, rôles `anon`/`service`) ; l'isolation ligne à ligne reste **applicative** (portail par `session.idPatient`, praticien Google `@wellneuro.fr`). Posture B (`FORCE` + policies par principal) **écartée à ce stade** (disproportionnée pour une app mono-domaine, risque de régression). Décision inscrite au registre : **`docs/DECISIONS.md` D-005**. **Résidu, seul et déplacé en F (⚖️) :** faire **confirmer** la posture par le DPO/auditeur avant de figer — note prête à envoyer `NOTE_DPO_RLS_EXIG3.md`. Si l'audit exige l'isolation base : bascule posture B (🚪 go + fenêtre dédiée, protocole renforcé, à démarrer tôt). **Détail + les deux postures chiffrées : `ADDENDUM_RLS_EXIG3.md`.**
 
 ## D. App PROD HDS + migration des données (⚙️ responsable, runbook §4)
 
@@ -72,10 +72,11 @@ réelles ».
 
 ## Déjà fait ✅
 
-Fondation build/release **#342** · connexion PG portable **#344** · observabilité neutre **#345** · synthèse IA en SSE **#347** · audit + runbook **#346** · staging provisionné et validé au boot (build + 35 migrations + boot OK) · pseudonymisation de l'appel Anthropic **#335** · retrait du motif de consultation des e-mails **#336** · claims questionnaire en SSE + heartbeat P1 **#356** · bornes I/O (embeddings + SMTP) P2 **#377** · journalisation A4 + tests authz A5 **#382** · jeton portail retiré, cookie de session = unique credential exig. 4 **#397**.
+Fondation build/release **#342** · connexion PG portable **#344** · observabilité neutre **#345** · synthèse IA en SSE **#347** · audit + runbook **#346** · staging provisionné et validé au boot (build + 35 migrations + boot OK) · pseudonymisation de l'appel Anthropic **#335** · retrait du motif de consultation des e-mails **#336** · claims questionnaire en SSE + heartbeat P1 **#356** · bornes I/O (embeddings + SMTP) P2 **#377** · journalisation A4 + tests authz A5 **#382** · jeton portail retiré, cookie de session = unique credential exig. 4 **#397** · RLS exig. 3 tranché **posture A** (deny-all documenté, `docs/DECISIONS.md` D-005), sous confirmation DPO/auditeur.
 
-**En un coup d'œil, ce qui reste côté assistant (🤖) :** un seul item de code sur
-le chemin critique — **RLS exig. 3 (C)**, et c'est un arbitrage de périmètre
-(deny-all déjà en place). Hors chemin critique : Sentry **client** (B, à trancher)
-et la **PR 2** `DROP COLUMN access_token*` (après fenêtre de stabilité). Tout le
-reste est ⚙️ ops (A, D, E) ou ⚖️ juridique (F), à la main du responsable.
+**En un coup d'œil, ce qui reste côté assistant (🤖) :** plus aucun item de code
+sur le chemin critique — **RLS exig. 3 tranché posture A le 2026-07-27** (deny-all
+documenté, D-005 ; seul résidu = confirmation DPO/auditeur, en F). Hors chemin
+critique : Sentry **client** (B, à trancher), la **PR 2** `DROP COLUMN access_token*`
+(après fenêtre de stabilité) et les **textes RGPD** au cutover (E). Tout le reste
+est ⚙️ ops (A, D, E) ou ⚖️ juridique (F), à la main du responsable.

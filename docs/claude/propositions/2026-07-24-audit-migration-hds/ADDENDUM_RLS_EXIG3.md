@@ -87,3 +87,15 @@ dérogation (2026-10-21).
 
 Décision attendue du responsable : **A** (documenter le deny-all comme suffisant)
 ou **B** (lancer le renforcement, avec go et fenêtre dédiée).
+
+## Décision prise — 2026-07-27 : posture A
+
+Le responsable retient la **posture A** : le deny-all déjà en place, complété des
+gardes applicatifs, est documenté comme suffisant pour l'exig. 3, **sans code
+base**. La décision est inscrite au registre (`docs/DECISIONS.md`, **D-005**) et
+**soumise pour confirmation** au DPO/auditeur HDS avant d'être figée — note prête
+à envoyer : `NOTE_DPO_RLS_EXIG3.md`.
+
+Réserve explicite : si l'audit exige une isolation **au niveau base** indépendante
+du code applicatif, bascule vers la **posture B** (chantier sous 🚪 go explicite +
+fenêtre dédiée, protocole renforcé), à démarrer tôt vu l'échéance 2026-10-21.
