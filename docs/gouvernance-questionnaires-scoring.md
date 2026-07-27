@@ -59,4 +59,6 @@ bash scripts/check_no_secrets.sh
 
 `npm run scoring-check` doit rester strict : couverture de la matrice, statuts autorisés, types de scoring connus, absence de `NaN`/`Infinity`, fixtures des questionnaires certifiés.
 
-Si `check_no_secrets.sh` échoue sur un fichier local ignoré, signaler le fichier sans affaiblir le script et sans exposer le secret dans les journaux ou commits.
+Si `check_no_secrets.sh` échoue sur un fichier local ignoré, signaler le fichier sans affaiblir le script et sans exposer le secret dans les journaux ou commits. Le script s'y tient de lui-même depuis le 2026-07-27 : il ne rend que `fichier:ligne`, jamais la ligne trouvée.
+
+Distinguer les deux échecs : **1** signifie « un secret a été détecté », **2** signifie « je n'ai pas pu vérifier » (index illisible, `git` en panne) — et appelle un diagnostic d'outillage, pas la recherche d'un secret. Seul le mode `--staged` peut rendre 2.
