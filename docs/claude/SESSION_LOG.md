@@ -711,3 +711,36 @@ la doctrine écrite d'`instruments.ts`.
 
 **Questions ouvertes** : bloc axes du booklet ; un booklet parti n'est pas
 rappelé ; `RETRAIT_EN_SERVICE_LE` en dur.
+
+## 2026-07-27 — Audit de la chaîne trajectoire patient (docs-only)
+
+**Décisions** : clôture de session par un lot documentaire, sans aucun code.
+Audit complet de la chaîne trajectoire (SP-CONV + SP-TRAJ) demandé par
+l'utilisateur après signalement que le périmètre dépassait une clôture. Règle de
+preuve ajoutée : aucun constat de comportement sur lecture seule — sondes Vitest
+jetables exécutées, portée mesurée en production.
+
+**Trouvé** : la chaîne praticien est **dormante** (0 épisode, 0 protocole, pour
+17 patients) ; un jalon sans réponse nouvelle est rendu « mesuré » avec la valeur
+de T0 et un momentum « stable » (F1, prouvé), ce que deux frontières écrites
+interdisent mot pour mot ; le repère de cabinet en hérite ; côté patient, « *n*
+bilans jalonnent votre parcours » alors qu'il y en a eu un. Aucun patient
+concerné aujourd'hui — défauts latents.
+
+**Écarté** : tout correctif de code (F1 modifie un signal clinique servi → bump
+v5 + demande explicite) ; le backfill des `titre` figés (données de production).
+
+**Audit externe confronté** (3e document apporté) : juste sur `Q_ALI_01`, risque
+résiduel n° 1 — il pilote seul une fondation critique avec des seuils que le code
+déclare non certifiés. Faux sur la couverture du carnet, qui refuse explicitement
+de qualifier ; mais le verdict de suffisance existe ailleurs et dit au patient
+« nous en savons assez » sur trois traces du même jour. Écarté : brancher `AL12`
+au besoin 3 (rejouerait le défaut du besoin 2) ; 14 domaines dont 8 vides.
+
+**Prochaine action** : arbitrer `Q_ALI_01` — renommage et sortie des fondations
+critiques. Elle commande le lot 1 du plan révisé.
+
+**Questions ouvertes** : sort du « silence utile » ; le cycle protocole → épisode
+a-t-il vocation à servir (zéro ligne en base) ; six domaines ou quatorze ; les
+quatre questions du rapport trajectoire.
+
