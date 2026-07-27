@@ -7,6 +7,11 @@
 credentials.json
 token.json
 client_secret*.json
+# Dossier de travail des identifiants de service (clé Drive, certificat de
+# base). Rien n'y était couvert : `client_secret*.json` ci-dessus ne correspond
+# ni à `wn-drive-sa.json` ni à `ca.pem`, et un seul `git add -A` les aurait fait
+# entrer dans l'historique.
+secrets/
 # Dépendances et builds
 node_modules/
 .next/

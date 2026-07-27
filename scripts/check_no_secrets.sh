@@ -56,11 +56,27 @@ check_pattern() {
   status=1
 }
 
-check_pattern "SHEET_ID"          "SHEET_ID[[:space:]]*[:=][[:space:]]*['\"]?[A-Za-z0-9_-]{25,}"
-check_pattern "ANTHROPIC_API_KEY" "ANTHROPIC_API_KEY[[:space:]]*[:=][[:space:]]*['\"]?[A-Za-z0-9_-]{10,}"
-check_pattern "CLAUDE_API_KEY"    "CLAUDE_API_KEY[[:space:]]*[:=][[:space:]]*['\"]?[A-Za-z0-9_-]{10,}"
-check_pattern "client_secret"     "client_secret[[:space:]]*[:=][[:space:]]*['\"]?[A-Za-z0-9_-]{10,}"
-check_pattern "private_key"       "private_key[[:space:]]*[:=][[:space:]]*['\"]?-----BEGIN"
+# Un secret ne s'écrit pas toujours `CLE=valeur`. En JSON — le format d'une clé
+# de compte de service Google — l'identifiant porte des guillemets, et le
+# guillemet fermant s'intercale avant le deux-points. Les motifs exigeaient que
+# le séparateur suive l'identifiant DIRECTEMENT : ils rataient donc la forme la
+# plus courante d'une clé privée, dans les deux modes. Mesuré le 2026-07-27 sur
+# un `secrets/wn-drive-sa.json` que rien n'ignorait par ailleurs.
+#
+# Ce séparateur admet donc les guillemets de part et d'autre. Une variante plus
+# permissive (`[^A-Za-z0-9_]{0,4}`) attrapait autant mais a été écartée par la
+# mesure : 11 faux positifs sur le dépôt, tous dans de la prose documentaire
+# citant des noms de variables. Celle-ci en produit zéro.
+#
+# `scripts/check_no_secrets.test.mjs` échoue si l'un de ces motifs cesse
+# d'attraper ce qu'il annonce attraper.
+SEP="['\"]*[[:space:]]*[:=][[:space:]]*['\"]*"
+
+check_pattern "SHEET_ID"          "SHEET_ID${SEP}[A-Za-z0-9_-]{25,}"
+check_pattern "ANTHROPIC_API_KEY" "ANTHROPIC_API_KEY${SEP}[A-Za-z0-9_-]{10,}"
+check_pattern "CLAUDE_API_KEY"    "CLAUDE_API_KEY${SEP}[A-Za-z0-9_-]{10,}"
+check_pattern "client_secret"     "client_secret${SEP}[A-Za-z0-9_-]{10,}"
+check_pattern "private_key"       "private_key${SEP}-----BEGIN"
 
 if [[ "$status" -eq 0 ]]; then
   if [[ "$MODE" == "staged" ]]; then
