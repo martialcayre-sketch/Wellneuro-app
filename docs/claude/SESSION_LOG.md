@@ -690,3 +690,24 @@ depuis le checkout principal ; lots 5-6 (besoins).
 **Questions ouvertes** : bloc axes du booklet patient ; `PATCH assignations`
 re-sert un suspendu ; les passations invalides alimentent encore fiche et
 synthèse IA.
+
+## 2026-07-27 — Le réservoir Q_SOM_07 est fermé (#418)
+
+**Décisions** : #413 mergée. #418 (`4e35516`) — les passations à interprétation
+retirée cessent d'alimenter fiche, Fil et synthèse IA. Registre distinct de
+`IDS_SUSPENDUS` : `actif: false` décide de l'envoi, pas de la lecture. Liste
+blanche, seul `rawAnswers` subsiste. Consigne v5 → v6. Trois arbitrages :
+synthèses antérieures qualifiées (critère = date), `evaluability` gagne
+`not_interpretable`, `PATCH` / portail / `submit` refusent un suspendu — contre
+la doctrine écrite d'`instruments.ts`.
+
+**Écarté** : réécrire les 3 synthèses validées (écriture en base) ; recycler
+`not_calculable`, qui aurait nié vingt items présents.
+
+**Validations** : 15 mutations, chacune ≥ 1 échec ; 2200 tests ; `verify`
+8 min 29 ; prod relue — rien réécrit.
+
+**Prochaine action** : retirer les deux worktrees ; lots 5-6 (besoins).
+
+**Questions ouvertes** : bloc axes du booklet ; un booklet parti n'est pas
+rappelé ; `RETRAIT_EN_SERVICE_LE` en dur.
