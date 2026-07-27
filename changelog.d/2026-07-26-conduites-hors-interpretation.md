@@ -1,7 +1,8 @@
 ### Modifié
 
 - **Les conduites cliniques sortent des bandes d'interprétation du scoring, et
-  ne partent plus au modèle de synthèse** (arbitrage du 2026-07-26). Une bande
+  ne parviennent plus au modèle de synthèse comme un résultat de mesure**
+  (arbitrage du 2026-07-26). Une bande
   dit *ce que vaut la mesure* ; une conduite dit *ce qu'il faut faire*. Les deux
   cohabitaient dans le même objet, si bien que la conduite voyageait partout où
   voyageait l'interprétation — jusque dans le prompt envoyé au modèle, qui
@@ -12,10 +13,13 @@
   ne suffisait pas, la conduite avait seulement remonté d'un niveau dans le même
   objet sérialisé.
   Ce filtre ne retire aucune information au modèle, il retire un **doublon non
-  étiqueté** : les 25 conduites servies (13 instruments × 2 bornes de réponses)
-  lui parviennent déjà par la mini-synthèse déterministe, sous la forme
-  explicite « … — Orientation : … », et aucune bande du catalogue ne cumule un
-  `detail` qui masquerait cette orientation.
+  étiqueté** : les 25 conduites servies (13 instruments aux deux bornes, moins
+  la bande basse vide de l'IRLS `Q_SOM_04`) **continuent de lui parvenir** par
+  la mini-synthèse déterministe, sous la forme explicite « … — Orientation : … »,
+  et aucune bande du catalogue ne cumule un `detail` qui masquerait cette
+  orientation. Le modèle reçoit donc toujours l'orientation, verbatim et **par
+  conception** : une fois, étiquetée comme telle, au lieu de deux fois dont une
+  au rang d'un résultat de mesure.
   Le texte n'a pas changé, les seuils non plus, et **la fiche praticien affiche
   exactement la même phrase** : `buildMiniSynthese` lit la nouvelle clé, et
   garde le repli sur l'ancienne forme pour les réponses déjà enregistrées —
@@ -26,6 +30,9 @@
   les 17 moteurs de scoring : aucune des **44 bandes** du catalogue qui déclarent
   une conduite n'est éditée (dont une vide, l'IRLS `Q_SOM_04`, dont la clé part
   quand même — sans quoi la garde serait plus stricte que le code).
+  **44 déclarent la clé, 43 la remplissent** : c'est le second chiffre que
+  rapporte `check_questionnaire_certification.js`, qui ignore les vides. Les deux
+  sont exacts et ne se contredisent pas ; ils ne comptent pas la même chose.
   Trois gardes CI verrouillent le résultat, toutes vérifiées en échec par
   mutation : aucune interprétation servie ne porte de conduite **sous la clé
   `protocol`** (balayage des 64 instruments aux deux bornes), la liste des 13

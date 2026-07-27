@@ -126,6 +126,34 @@ describe('Balayage du catalogue servi — aucune conduite ne survit à la séria
     expect(fuites, `conduites parvenues au prompt : ${fuites.join(' | ')}`).toEqual([]);
   });
 
+  it('aucune conduite servie ne se loge hors de la racine', () => {
+    // Le filtre agit à toute profondeur ; `buildMiniSynthese` ne lit que la
+    // racine (`conduite`, puis `interpretation.protocol`). Une conduite posée
+    // plus bas — sous `subScores[].interpretation` par exemple — serait donc
+    // retirée du prompt sans y être remise ailleurs : le doublon deviendrait
+    // une perte, en silence. Aucun instrument n'en pose aujourd'hui ; cette
+    // garde est ce qui l'empêche de commencer.
+    const PORTEES = new Set(['conduite', 'interpretation.protocol']);
+    const horsRacine: string[] = [];
+    for (const id of ids) {
+      for (const borne of ['min', 'max'] as const) {
+        let scores: unknown;
+        try {
+          scores = calculateScore(id, reponsesALaBorne(id, borne));
+        } catch {
+          continue;
+        }
+        for (const chemin of cheminsDeConduite(scores)) {
+          if (!PORTEES.has(chemin)) horsRacine.push(`${id} (${borne}) → ${chemin}`);
+        }
+      }
+    }
+    expect(
+      horsRacine,
+      `conduites hors de portée de la mini-synthèse : ${horsRacine.join(' | ')}`
+    ).toEqual([]);
+  });
+
   it('chaque conduite servie reste portée par la mini-synthèse, étiquetée', () => {
     const perdues: string[] = [];
     for (const id of ids) {

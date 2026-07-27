@@ -163,6 +163,10 @@ async function genererSynthesePersistee(
       modele: CLAUDE_MODEL,
       versionPrompt: VERSION_PROMPT_SYNTHESE,
       donneesEntree: {
+        // Trace d'audit des **données d'entrée**, non du prompt : `reponses`
+        // conserve les conduites, que `buildUserMessage` retire du bloc `scores`
+        // avant sérialisation. Reconstituer le prompt à partir de ce champ
+        // donnerait donc un message plus riche que celui réellement envoyé.
         reponses: args.reponsesInput,
         contexteClinique: args.contexteClinique,
         vigilanceDeterministe: args.vigilanceDeterministe,
