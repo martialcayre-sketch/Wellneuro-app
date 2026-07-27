@@ -36,6 +36,15 @@ import {
 } from '@/lib/observability/requestContext';
 
 type ReponseInput = {
+  // Transmis au modèle depuis le 2026-07-27 : la consigne système désigne les
+  // questionnaires alimentaires par leur identifiant (« commençant par Q_ALI »)
+  // pour lui interdire d'en conclure une carence ou une quantité. Sans cette
+  // clé, le modèle devait deviner la famille depuis le seul `titre` libre — et
+  // `Q_ALI_02` (« Score d'adhérence à la diète méditerranéenne SIIN ») n'en
+  // portait aucun indice. Une interdiction dont le critère de déclenchement
+  // n'arrive pas vaut moins que rien : elle donne l'impression que le risque
+  // est couvert. Verrouillé par `promptAlimentaire.guard.test.ts`.
+  idQuestionnaire: string;
   titre: string;
   date: string;
   scores: Record<string, unknown>;
@@ -55,6 +64,7 @@ const MAX_TOKENS_SYNTHESE = 8192;
 // ligne d'en-tête la faisait sortir.
 function buildUserMessage(reponses: ReponseInput[], contexte: string): string {
   const filtered = reponses.map(r => ({
+    idQuestionnaire: r.idQuestionnaire,
     titre: r.titre,
     date: r.date,
     // Scores privés de toute conduite clinique : le modèle rédige à partir
@@ -376,6 +386,7 @@ export async function POST(req: Request) {
     }
 
     const reponsesInput: ReponseInput[] = reponses.map(r => ({
+      idQuestionnaire: r.idQuestionnaire,
       titre: r.titre,
       date: r.dateReponse.toISOString().split('T')[0],
       scores: r.scoresJson as Record<string, unknown>,
