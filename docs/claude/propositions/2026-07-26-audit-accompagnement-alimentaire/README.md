@@ -1,12 +1,19 @@
 ---
 id: "2026-07-26-audit-accompagnement-alimentaire"
 titre: "Audit et arbitrage — accompagnement alimentaire Wellneuro 5.0"
-statut: "rapport — aucun changement applicatif, arbitrages en attente"
+statut: "rapport — P0 point 1 exécuté le 2026-07-27 (v4), autres arbitrages en attente"
 créé_le: "2026-07-26"
 base_auditée: "main @ a19df9b"
 ---
 
 # Audit et arbitrage — accompagnement alimentaire
+
+> **Suite donnée — 2026-07-27.** Le point 1 du P0 (§6) est **exécuté** :
+> `Q_SOM_06` est détaché du besoin 2, qui devient non évalué, et
+> `VERSION_SCORE_EQUILIBRE` passe de v3 à v4. Le constat §4.1 décrit donc
+> désormais l'**état antérieur**. Les points 2 à 4 du P0, ainsi que P0 bis,
+> P1, P2 et P3, restent ouverts, comme les quatre questions du §7 —
+> à l'exception de la première, tranchée par ce correctif.
 
 ## 1. Périmètre et méthode
 

@@ -61,11 +61,24 @@ describe('calculerCouvertureBesoin', () => {
     expect(couvertureBesoin3).toBeNull();
   });
 
-  it('besoin 2 (Pichot Q_SOM_06, 10/32 inversé) doit donner une couverture de 0,6875', () => {
+  // v4 : la fatigue de Pichot n'est plus une source du besoin 2. Répondre au
+  // Q_SOM_06 ne doit donc plus produire de couverture « micronutriments » —
+  // sans quoi une fatigue élevée replafonnerait le score global à 50 (le
+  // besoin 2 est une fondation critique) au nom d'une carence non mesurée.
+  it('besoin 2 (micronutriments) reste non évaluable : le Pichot ne le renseigne plus', () => {
     const couvertureBesoin2 = calculerCouvertureBesoin(2, {
       Q_SOM_06: { P1: '2', P2: '2', P3: '1', P4: '1', P5: '1', P6: '1', P7: '1', P8: '1' },
     });
-    expect(couvertureBesoin2).toBeCloseTo(0.6875, 6);
+    expect(couvertureBesoin2).toBeNull();
+  });
+
+  // Le corollaire qui compte cliniquement : un patient très fatigué ne
+  // déclenche plus le plafond de fondation critique par le besoin 2.
+  it('une fatigue sévère ne déclenche plus le plafond via le besoin 2', () => {
+    const couvertureBesoin2 = calculerCouvertureBesoin(2, {
+      Q_SOM_06: { P1: '4', P2: '4', P3: '4', P4: '4', P5: '4', P6: '4', P7: '4', P8: '4' },
+    });
+    expect(couvertureBesoin2).toBeNull();
   });
 
   it('besoin 5 : l’agenda du sommeil (Q_SOM_09) au plateau donne une couverture de 1', () => {
@@ -92,5 +105,47 @@ describe('calculerCouvertureBesoin', () => {
       },
     });
     expect(couverture).toBeCloseTo(1, 6);
+  });
+});
+
+// Invariants ancrés par la revue adversariale du 2026-07-27 (P0 métrologique).
+// Le correctif « le besoin 2 n'est plus mesuré par la fatigue » repose sur un
+// raisonnement — « une couverture null n'est pas un zéro » — qui n'était
+// affirmé qu'en commentaire. Ces tests le rendent exécutable.
+describe('fondations critiques sans source (invariants v4)', () => {
+  it('une fondation critique sans source ne déclenche jamais le plafond', () => {
+    // Toutes les fondations critiques (1, 2, 4, 5, 9) sont non renseignées :
+    // couverture null. Si null était assimilé à 0, le plafond tomberait.
+    const aucuneFondationRenseignee = agregerEquilibre({ 8: 1, 10: 1, 12: 1 });
+
+    expect(aucuneFondationRenseignee.fondationsCritiquesDeclenchees).toEqual([]);
+    expect(aucuneFondationRenseignee.plafondApplique).toBe(false);
+  });
+
+  it('le besoin 2 ne peut plus déclencher le plafond, quel que soit le Pichot', () => {
+    // Pichot au maximum (fatigue extrême) : avant v4, la couverture du besoin 2
+    // tombait sous SEUIL_EFFONDREMENT et plafonnait tout le score global.
+    const couvertureBesoin2 = calculerCouvertureBesoin(2, {
+      Q_SOM_06: { P1: '4', P2: '4', P3: '4', P4: '4', P5: '4', P6: '4', P7: '4', P8: '4' },
+    });
+    expect(couvertureBesoin2).toBeNull();
+
+    const avecFatigueMaximale = agregerEquilibre({ 1: 1, 2: couvertureBesoin2, 4: 1, 5: 1, 9: 1 });
+    expect(avecFatigueMaximale.fondationsCritiquesDeclenchees.some(f => f.besoin === 2)).toBe(false);
+    expect(avecFatigueMaximale.plafondApplique).toBe(false);
+    expect(avecFatigueMaximale.scoreGlobal).toBeGreaterThan(PLAFOND_FONDATION_CRITIQUE);
+  });
+
+  it('répondre au seul Pichot ne produit plus aucun indice global', () => {
+    // Conséquence assumée et mesurée en production le 2026-07-27 : zéro patient
+    // n'a le Pichot pour seule réponse exploitable. Le test fige la décision
+    // plutôt que de la laisser se découvrir en exploitation.
+    const seulPichot = agregerEquilibre({
+      2: calculerCouvertureBesoin(2, {
+        Q_SOM_06: { P1: '2', P2: '2', P3: '1', P4: '1', P5: '1', P6: '1', P7: '1', P8: '1' },
+      }),
+    });
+    expect(seulPichot.scoreGlobal).toBeNull();
+    expect(seulPichot.scoreGlobalAvantPlafond).toBeNull();
   });
 });

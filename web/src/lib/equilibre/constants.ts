@@ -9,7 +9,38 @@ import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire
 // Conséquence actée (doctrine « versionScore différents jamais soustraits ») :
 // un AssessmentEpisode figé en v2 ne se compare pas à un épisode v3 — la
 // comparaison de jalons momentum reprend au premier couple d'épisodes v3.
-export const VERSION_SCORE_EQUILIBRE = 'v3' as const;
+//
+// v3 → v4 (P0 métrologique, audit du 2026-07-26) : RETRAIT de Q_SOM_06 comme
+// source du besoin 2. L'échelle de fatigue de Pichot mesure la fatigue, pas la
+// couverture micronutritionnelle — et le besoin 2 étant une fondation
+// critique, une fatigue élevée plafonnait le score global à 50 en désignant
+// « Micronutriments essentiels » comme effondrés, sans qu'aucun micronutriment
+// n'ait été mesuré. La fatigue est un motif d'EXPLORER le fer, la B12, les
+// folates ou la vitamine D ; elle n'en est pas la mesure. Le besoin 2 rejoint
+// donc les besoins non évaluables (couverture null, jamais 0) jusqu'à ce
+// qu'une source pertinente existe. Voir
+// docs/claude/propositions/2026-07-26-audit-accompagnement-alimentaire/.
+//
+// FRONTIÈRE — ce que le code fait réellement, la formulation portée jusqu'ici
+// par la note v2 → v3 étant inexacte. Seule l'ÉTIQUETTE `versionScore` est
+// figée à la confirmation d'un épisode (protocol/versioning.ts) ; les VALEURS
+// affichées sont recalculées à chaque lecture avec le mapping besoin → sources
+// courant (protocol/trajectoire.ts, `construireHistoriqueEquilibre`). Il en
+// découle deux conséquences, à ne pas confondre avec « la comparaison reprend » :
+//   — un épisode étiqueté v3 affichera des valeurs calculées en v4 ;
+//   — `resoudreComparaison` refuse dès que DEUX étiquettes coexistent
+//     (trajectoire.ts, `versions.size > 1`), sur l'ensemble des cycles du
+//     patient et sans fenêtre : un seul cycle v3 subsistant bloque donc la
+//     comparaison indéfiniment, il n'y a pas de reprise automatique.
+// Figer la valeur plutôt que l'étiquette est une décision d'architecture
+// ouverte, posée au praticien — elle dépasse ce lot.
+//
+// NB rédaction : ne jamais écrire le nom de la table de mapping en toutes
+// lettres AU-DESSUS de sa déclaration. Le garde du registre l'extrait par
+// `indexOf` (scripts/lib/verifier_registre_instruments.js) et tomberait sur le
+// commentaire au lieu de la table — il refuse alors de valider plutôt que de
+// contrôler dans le vide.
+export const VERSION_SCORE_EQUILIBRE = 'v4' as const;
 
 export const POIDS_STRATE: Record<StrateCode, number> = {
   CORPS: 0.6,
@@ -45,13 +76,20 @@ export const SEUIL_EFFONDREMENT = 0.34;
 export const PLAFOND_FONDATION_CRITIQUE = 50;
 
 // Mapping besoin → questionnaire(s) existants (web/src/lib/questions.ts).
-// Besoins 3, 6, 7, 11 : aucun questionnaire disponible dans le catalogue
-// actuel — non évaluables en v1 (retournent une couverture null), plutôt
+// Besoins 2, 3, 6, 7, 11 : aucun questionnaire pertinent disponible dans le
+// catalogue actuel — non évaluables (retournent une couverture null), plutôt
 // que d'inventer une source. Voir docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md
 // pour la justification clinique de chaque source retenue.
+//
+// Toute entrée ajoutée ou retirée ici doit être répercutée sur le champ
+// `sourceMonEquilibre` de docs/claude/corpus/instrument_registry.json : le
+// garde scripts/lib/verifier_registre_instruments.js contrôle l'alignement
+// dans les deux sens et fait échouer `scoring-check` (T1) sinon.
 export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
   1: [{ idQuestionnaire: 'Q_ALI_01', max: 42, inverser: false }],
-  2: [{ idQuestionnaire: 'Q_SOM_06', max: 32, inverser: true }],
+  // 2 : voir la note v3 → v4 en tête de fichier — Q_SOM_06 (fatigue de Pichot)
+  // retiré, la fatigue ne mesurant pas la couverture micronutritionnelle.
+  2: [],
   3: [],
   4: [
     { idQuestionnaire: 'Q_GAS_01', max: 93, inverser: true },
@@ -106,7 +144,9 @@ export const TOLERANCE_JOURS_JALON = 8;
 // actée au même titre que POIDS_STRATE ou BESOIN_SOURCES.
 export const NIVEAU_PREUVE_PAR_SOURCE: Record<string, NiveauPreuve> = {
   Q_ALI_01: 'B',
-  Q_SOM_06: 'A',
+  // Q_SOM_06 retiré en v4 avec sa source (besoin 2) : cette table n'est lue
+  // que pour les entrées de BESOIN_SOURCES (equilibre/evidence.ts), une clé
+  // orpheline affirmerait que Pichot reste une source de Mon équilibre.
   Q_GAS_01: 'B',
   Q_INF_01: 'B',
   Q_SOM_01: 'A',
