@@ -709,8 +709,16 @@ concerné aujourd'hui — défauts latents.
 **Écarté** : tout correctif de code (F1 modifie un signal clinique servi → bump
 v5 + demande explicite) ; le backfill des `titre` figés (données de production).
 
-**Prochaine action** : arbitrer le P0 du nouveau rapport — distinguer « pas de
-nouvelle mesure » de « mesure stable ».
+**Audit externe confronté** (3e document apporté) : juste sur `Q_ALI_01`, risque
+résiduel n° 1 — il pilote seul une fondation critique avec des seuils que le code
+déclare non certifiés. Faux sur la couverture du carnet, qui refuse explicitement
+de qualifier ; mais le verdict de suffisance existe ailleurs et dit au patient
+« nous en savons assez » sur trois traces du même jour. Écarté : brancher `AL12`
+au besoin 3 (rejouerait le défaut du besoin 2) ; 14 domaines dont 8 vides.
 
-**Questions ouvertes** : la chaîne protocole → épisode a-t-elle vocation à
-servir ? Les quatre questions du §7 du rapport trajectoire.
+**Prochaine action** : arbitrer `Q_ALI_01` — renommage et sortie des fondations
+critiques. Elle commande le lot 1 du plan révisé.
+
+**Questions ouvertes** : sort du « silence utile » ; le cycle protocole → épisode
+a-t-il vocation à servir (zéro ligne en base) ; six domaines ou quatorze ; les
+quatre questions du rapport trajectoire.
