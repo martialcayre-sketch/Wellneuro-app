@@ -544,3 +544,34 @@ d'affichage ; rétablir ou non un profil par axes côté patient, avec des libel
 **Prochaine action** : humaine — trancher les quatre arbitrages du §7 (source du besoin 2, sort de `Q_ALI_01`, alcool dans `Q_ALI_02`, écriture patient du carnet avant le 2026-10-21 sous hébergement non-HDS).
 
 **Questions ouvertes** : `scoring-check` rapporte 0 preuve psychométrique sur les 64 instruments du registre — hors périmètre, mérite son propre fil.
+
+## 2026-07-27 — CB-02b en production et onze arbitrages praticien
+
+**Décisions** : CB-02b mergé (#394) — notebook 08 ingéré, 135 chunks / 758 claims
+tous en attente. Onze arbitrages tranchés puis gravés (#399, dossier
+`propositions/2026-07-27-arbitrages-praticien/`) : la publication primaire fait
+foi ; rescorage rétroactif des passations ; `Q_ALI_01` restauré à 57 items ;
+dimensions déclarées sur `Q_CAR_01` et `Q_GEO_04` ; `protocol` hors des bandes
+(12 instruments) plus un filtre en lecture ; pilote de 10 sources sur `LOT_006` ;
+rayon corpus C4 filtré par notebook ; voie lente biologie retirée du cadrage ;
+trois décisions CB-02c. Réserve posée : sous-scores catégoriels `Q_ALI_01`
+adossés à la boussole alimentaire, après implantation et passation test.
+
+**Écartées** : estampiller la version du barème (le praticien préfère la série
+homogène) ; forme courte de `Q_ALI_01` ; produire `metadata.rayon` dans la chaîne
+(imposerait migration et backfill) ; nettoyer les `scores_json` enregistrés
+(écriture patient pour un gain nul).
+
+**Validations** : anti-secrets vert ; `verify` vert sur #394 (9 min 2 s, E2E) et
+#399 (30 s) ; chiffres recoupés en production par `execute_sql` ; revue
+adversariale NO-GO sur #399 — quatre bloquants vérifiés à la ligne et corrigés,
+dont une protection décrite à tort comme absente.
+
+**Prochaine action** : auditer une trentaine des claims biologie étiquetés non
+prescriptifs — il dira si l'étiquetage LLM peut servir de gate, et conditionne
+CB-04.
+
+**Questions ouvertes** : go pour le lot de rescorage (recontact si changement de
+bande ? gel des déclenchements ? dénombrement avant/après ?) ; QLQ-BR23, règle
+EORTC à lire ; Berlin à rejouer au banc ; garde de divergence registre ↔ base
+pour la décision 7 ; `npm ci` jamais joué dans `tools/corpus` en CI.
