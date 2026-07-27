@@ -620,3 +620,24 @@ désactivé. Et recalculer les 4 passations MFI-20 : le PDF source montre un
 **Prochaine action** : humaine — points 2 à 4 du P0 (promesses de `Q_ALI_03`, seuils provisoires de `Q_ALI_01`, garde-fou IA).
 
 **Questions ouvertes** : étiquette vs valeur de `versionScore` ; `VERSION_MAPPING_BESOINS` figé à `besoins-v1` alors que le mapping a bougé deux fois.
+
+## 2026-07-27 — RLS exig. 3 tranché (posture A), chemin critique HDS vidé
+
+**Décisions** : RLS (exig. 3) tranché **posture A** — deny-all en place (0 policy,
+0 `FORCE`, app en `postgres`) + gardes applicatifs = contrôle suffisant, sans code
+base. Gravé : `DECISIONS.md` D-005, note DPO prête, addendum, checklist (chemin
+critique → A→D→E). **Chemin critique code = vide.**
+
+**Écarté** : posture B (`FORCE` + policies) — disproportionnée mono-domaine, risque
+de régression ; force-suppression du worktree verrouillé.
+
+**Incident** : premiers Write/Edit sur le checkout principal (chemins hors
+worktree), nettoyés ; sa modif SESSION_LOG (autre session) préservée. 5 branches
+HDS mergées effacées.
+
+**Validations** : anti-secrets `--staged` vert ; PR #407 `verify` vert 29 s (docs only).
+
+**Prochaine action** : envoyer la note au DPO/auditeur pour confirmer la posture A.
+
+**Questions ouvertes** : confirmation DPO ; Sentry client ; PR 2 `DROP COLUMN
+access_token*` ; ops D/E + juridique F (2026-10-21).
