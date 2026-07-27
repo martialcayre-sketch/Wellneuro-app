@@ -33,12 +33,17 @@
   **44 déclarent la clé, 43 la remplissent** : c'est le second chiffre que
   rapporte `check_questionnaire_certification.js`, qui ignore les vides. Les deux
   sont exacts et ne se contredisent pas ; ils ne comptent pas la même chose.
-  Trois gardes CI verrouillent le résultat, toutes vérifiées en échec par
+  Quatre gardes CI verrouillent le résultat, toutes vérifiées en échec par
   mutation : aucune interprétation servie ne porte de conduite **sous la clé
   `protocol`** (balayage des 64 instruments aux deux bornes), la liste des 13
   instruments qui en servent une est figée — un ajout comme une perte se voit en
-  revue —, et aucune conduite ne survit à la sérialisation du prompt, sous l'une
-  ou l'autre forme.
+  revue —, aucune conduite ne survit à la sérialisation du prompt, sous l'une
+  ou l'autre forme, et **aucune conduite servie ne se loge hors des deux chemins
+  que la mini-synthèse sait lire**. Cette quatrième garde est la seule à fermer
+  une asymétrie qui, sans elle, aurait transformé le doublon en perte : le filtre
+  retire à toute profondeur, la mini-synthèse ne compense qu'à la racine. Un
+  moteur mutant qui imbrique la conduite dans un sous-score la fait échouer — et
+  aucune des dix autres assertions, le filtre récursif la masquant à toutes.
   **13, et non les 12 que déclare le catalogue** : le questionnaire de Berlin
   (`Q_SOM_03`) construit son interprétation dans le moteur, en dur, et aucune
   inspection des définitions ne pouvait le montrer. Seule l'exécution le révèle.
