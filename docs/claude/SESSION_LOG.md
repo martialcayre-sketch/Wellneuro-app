@@ -608,3 +608,15 @@ désactivé. Et recalculer les 4 passations MFI-20 : le PDF source montre un
 **Prochaine action** : humaine — comms patient (liens permanents cassés) + parcours authentifié réel (magic-link reçu + Google + un révoqué refusé aux trois entrées).
 
 **Questions ouvertes** : cadrer la PR 2 (`DROP COLUMN access_token*`, avec réintroduction d'un drapeau de révocation de remplacement).
+
+## 2026-07-27 — P0 métrologique : le besoin 2 n'est plus mesuré par la fatigue (PR #398)
+
+**Décisions** : `VERSION_SCORE_EQUILIBRE` v3 → v4. `Q_SOM_06` (fatigue de Pichot) retiré du besoin 2 « Micronutriments essentiels », qui devient non évalué — il est fondation critique, donc une fatigue élevée plafonnait le *Mon équilibre* global à 50 sur une carence jamais mesurée. Registre aligné (12 → 11 sources). Frontière de version corrigée : seule l'étiquette `versionScore` est figée, les valeurs sont recalculées, et la comparaison ne reprend pas automatiquement — la note héritée de v2→v3 était fausse. Merge par l'assistant sur instruction explicite.
+
+**Écarté** : retirer le besoin 2 des fondations critiques (une couverture `null` est déjà ignorée par le plafond — inerte, pas dangereux) ; bumper `VERSION_MAPPING_BESOINS` et figer la valeur plutôt que l'étiquette — décisions d'architecture hors lot.
+
+**Validations** : revue adversariale `wn-reviewer` **NO-GO initial**, quatre points traités ; bloquant levé par lecture de production (aucun patient ne perd son indice, `assessment_episodes` vide). Suite complète 280 fichiers / 2 132 tests ; `verify` CI 8 min 14, E2E inclus. Cinq tests ancrent les invariants jusque-là revendiqués en commentaire.
+
+**Prochaine action** : humaine — points 2 à 4 du P0 (promesses de `Q_ALI_03`, seuils provisoires de `Q_ALI_01`, garde-fou IA).
+
+**Questions ouvertes** : étiquette vs valeur de `versionScore` ; `VERSION_MAPPING_BESOINS` figé à `besoins-v1` alors que le mapping a bougé deux fois.
