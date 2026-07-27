@@ -51,11 +51,28 @@ alors que la route de synthèse ne transmettait que `titre`. `Q_ALI_02`
 (« Score d'adhérence à la diète méditerranéenne SIIN ») n'offrait aucun indice
 permettant de l'y rattacher. `idQuestionnaire` est désormais transmis.
 
-**Trois gardes ajoutées** (`promptAlimentaire.guard.test.ts`, 9 cas), chacune
-vérifiée par mutation : présence de la section et de ses interdictions dans la
-consigne ; couplage consigne ↔ charge utile (si la consigne cite l'identifiant,
-la route doit le transmettre) ; aucune clé de quantité dans ce qui part au
-modèle, pour tous les `Q_ALI_*` aux deux bornes, bloc `monnier` hérité compris.
+**Trois gardes ajoutées** (`promptAlimentaire.guard.test.ts`, 9 cas) :
+
+- **Consigne** — la section et ses interdictions sont présentes, et son
+  empreinte SHA-256 est couplée à `VERSION_PROMPT_SYNTHESE` : toute édition du
+  garde-fou échoue tant que la version n'est pas incrémentée avec elle.
+- **Couplage consigne ↔ charge utile** — si la consigne cite l'identifiant, la
+  route doit le transmettre. Contrôle structurel (`buildUserMessage` n'est pas
+  exportable depuis un `route.ts`), doublé d'une assertion **comportementale**
+  dans `route.post.test.ts` qui observe l'identifiant après `JSON.stringify`.
+- **Aucune clé de quantité** dans ce qui part au modèle, pour les trois
+  `Q_ALI_*`, aux deux bornes réelles de chaque échelle, sur la forme
+  effectivement lue depuis `scores_json` (`rawAnswers` inclus), bloc `monnier`
+  hérité compris.
+
+La première version de cette dernière garde **ne mesurait rien** : son helper de
+bornes lisait `options[].value` alors que le catalogue porte `{v, l}`, si bien
+qu'elle scorait un questionnaire entièrement non répondu, identique aux deux
+« bornes ». Trouvé en re-revue, corrigé en réutilisant la forme éprouvée de
+`conduite.guard.test.ts`, et assorti de deux assertions d'anti-vacuité — les
+réponses doivent être finies, et les deux bornes doivent produire des totaux
+distincts. Chaque garde est vérifiée par mutation, y compris contre une variante
+conditionnelle du bloc `monnier` que la version initiale laissait passer.
 
 **Registre.** `formePubliee` de `Q_ALI_01` passe de `"score 0-42"` à `null` : ce
 champ affirmait de la **source** ce qui n'est vrai que du **servi**. Les
@@ -83,6 +100,15 @@ un acte de certification qui appartient à la campagne corpus.
 - `statutCertification` de `Q_ALI_01` et `Q_ALI_03` reste `repere` alors que le
   registre accepte `suspendu` ; et `nomOfficiel` de `Q_ALI_01` porte toujours le
   nom SIIN dont le servi n'est pas la numérisation.
+- `rawAnswers` part au modèle pour tous les instruments — c'est le canal par
+  lequel une future clé de quantité arriverait sans passer par un moteur. La
+  garde le balaie désormais pour les `Q_ALI_*` ; les 61 autres instruments ne
+  sont pas couverts.
+- La fiche praticien affiche toujours l'ancien titre pour la passation du
+  2026-07-25, `titre` étant figé à l'assignation. Le modèle ne reçoit plus la
+  quantité fabriquée ; **l'humain lit encore la promesse**. Un `UPDATE` sur
+  `assignations` et `questionnaire_reponses` le réglerait, par le chemin
+  migration relue.
 
 Ces sept points relèvent d'arbitrages cliniques ou d'un backfill, pas de la
 correction de forme livrée ici.

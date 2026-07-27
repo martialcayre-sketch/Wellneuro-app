@@ -116,8 +116,12 @@ peut soutenir ; et le patient, au milieu, saisit dans le vide.
 > lignes de ce tableau qui portent sur un calcul ont été établies de la même
 > façon et méritent le même doute.
 
-Six affirmations sur sept se confirment, la septième est infirmée. L'audit fourni est fiable sur ses
-constats de fait.
+Six affirmations sur sept se confirment ; la septième est infirmée, et elle
+l'était dans le sens rassurant. L'audit fourni est fiable sur ce qu'il a
+regardé — la formulation initiale (« fiable sur ses constats de fait ») est
+maintenue en gardant à l'esprit qu'elle a été écrite avant de découvrir que la
+vérification s'était arrêtée à la définition des questionnaires, sans jamais
+ouvrir le moteur de scoring.
 
 ---
 
@@ -173,10 +177,14 @@ les **consignes servies au patient** portent la même promesse —
 « Ce questionnaire permet d'estimer vos apports journaliers en protéines et
 calories » (`alimentaire.ts:107`).
 
-Or le scoring ne produit que cinq sous-scores ordinaux explicitement nommés
-« index » (`alimentaire.ts:142-151`) : aucun gramme, aucune kilocalorie. Le
-patient répond donc à un questionnaire qui lui annonce un résultat que le
-moteur ne calcule pas.
+Or la **définition** ne produit que cinq sous-scores ordinaux explicitement
+nommés « index » (`alimentaire.ts:142-151`). Le patient répond donc à un
+questionnaire qui lui annonce un résultat que ces sous-scores ne portent pas.
+
+Le **moteur**, lui, émettait bien un bloc de quantités — voir la correction du
+2026-07-27 plus haut : quatre valeurs à zéro, invariantes, transmises au modèle
+de synthèse. La promesse n'était donc pas seulement non tenue : elle était
+remplie par un chiffre faux.
 
 **Item mort au passage** : `MO10` (niveau d'activité physique, coté 1 à 5,
 `alimentaire.ts:138-139`) n'entre dans aucun des cinq sous-scores. Il est

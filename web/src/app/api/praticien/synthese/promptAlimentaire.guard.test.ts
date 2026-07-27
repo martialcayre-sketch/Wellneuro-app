@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
@@ -20,9 +21,17 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 //     que la route ne transmettait pas. Le critère de déclenchement n'arrivait
 //     jamais.
 //
-// Les trois gardes ci-dessous échouent si l'un ou l'autre revient.
+// Les trois gardes ci-dessous échouent si l'un ou l'autre revient — y compris
+// sous une forme conditionnée aux réponses, et non seulement par un revert
+// littéral. La preuve comportementale du second point (l'identifiant survit à
+// `JSON.stringify`) vit dans `route.post.test.ts`.
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
+
+// Empreinte de la consigne système sous `synthese-v5`. À reporter en même temps
+// que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
+// pas chacun des deux séparément.
+const EMPREINTE_V5 = '7a2a60d64444864e';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -41,18 +50,29 @@ function cheminsDeQuantite(valeur: unknown, chemin = ''): string[] {
   return trouves;
 }
 
-/** Réponses aux deux bornes pour un questionnaire du catalogue. */
-function bornes(def: any): Record<string, string>[] {
-  const questions = (def.sections ?? []).flatMap((s: any) => s.questions ?? []);
-  const basse: Record<string, string> = {};
-  const haute: Record<string, string> = {};
-  for (const q of questions) {
-    const options = q.options ?? [];
-    if (options.length === 0) continue;
-    basse[q.id] = String(options[0].value ?? options[0]);
-    haute[q.id] = String(options[options.length - 1].value ?? options[options.length - 1]);
-  }
-  return [basse, haute];
+function questionsDe(id: string): Array<{ id: string; options?: Array<{ v: unknown }> }> {
+  const def = (QUESTIONNAIRE_CATALOGUE as Record<string, any>)[id];
+  return (def?.sections ?? []).flatMap((s: any) => s.questions ?? []);
+}
+
+/**
+ * Réponses saturées à la borne basse ou haute. Même forme que
+ * `reponsesALaBorne` dans `conduite.guard.test.ts` — les options du catalogue
+ * sont `{v, l}` et **pas** `{value}` : `value` n'apparaît qu'après
+ * `getQuestionnaireForClient`. Une première version de ce helper lisait
+ * `options[0].value`, obtenait `undefined`, retombait sur l'objet et envoyait
+ * « [object Object] » au moteur — qui rendait alors un questionnaire
+ * entièrement non répondu, identique aux deux « bornes ». La garde ne scorait
+ * donc jamais une seule réponse valide. Trouvé en re-revue le 2026-07-27 ;
+ * c'est la raison de l'assertion d'anti-vacuité plus bas.
+ */
+function reponsesALaBorne(id: string, borne: 'min' | 'max'): Record<string, number> {
+  return Object.fromEntries(
+    questionsDe(id).map(q => {
+      const valeurs = (q.options ?? []).map(o => Number(o.v)).filter(Number.isFinite);
+      return [q.id, borne === 'min' ? Math.min(...valeurs) : Math.max(...valeurs)];
+    })
+  );
 }
 
 describe('garde-fou alimentaire — consigne système', () => {
@@ -69,14 +89,25 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('exposition');
   });
 
-  it('est étiquetée par une version distincte de v4', () => {
-    // La règle a été ajoutée après v4 : sans bump, les synthèses produites avec
-    // et sans le garde-fou seraient indiscernables en base.
-    expect(VERSION_PROMPT_SYNTHESE).not.toBe('synthese-v4');
+  it('change de version dès que la consigne change', () => {
+    // `not.toBe('synthese-v4')` passait pour n'importe quelle valeur, retour à
+    // v3 compris — il ne couplait rien. L'empreinte lie la version au texte :
+    // **toute** édition de la consigne fait échouer ce test tant que la
+    // version n'a pas été incrémentée et l'empreinte remise à jour ensemble.
+    // C'est précisément ce que le changelog présente comme l'objet du bump.
+    const empreinte = createHash('sha256').update(SYSTEM_PROMPT_GOUVERNANCE).digest('hex').slice(0, 16);
+    expect(
+      { version: VERSION_PROMPT_SYNTHESE, empreinte },
+      'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
+    ).toEqual({ version: 'synthese-v5', empreinte: EMPREINTE_V5 });
   });
 });
 
 describe('garde-fou alimentaire — couplage consigne / charge utile', () => {
+  // Contrôle structurel seul : `buildUserMessage` n'est pas exportable depuis
+  // un `route.ts` (contrainte Next.js), même patron que `conduite.guard.test`.
+  // La preuve **comportementale** — l'identifiant survit à `JSON.stringify` —
+  // vit dans `route.post.test.ts`, qui capture la charge utile Anthropic.
   it('transmet au modèle l’identifiant sur lequel la consigne s’indexe', () => {
     // Défaut B2 : la consigne cite « identifiants commençant par Q_ALI » alors
     // que `buildUserMessage` ne sérialisait que `titre`. Si la consigne
@@ -99,12 +130,35 @@ describe('garde-fou alimentaire — aucune quantité non étalonnée dans le pro
   });
 
   it.each(idsAlimentaires)('%s ne fait sortir aucune clé de quantité vers le modèle', id => {
-    const def = (QUESTIONNAIRE_CATALOGUE as any)[id];
-    for (const reponses of bornes(def)) {
+    const totaux: Record<string, number> = {};
+    for (const borne of ['min', 'max'] as const) {
+      const reponses = reponsesALaBorne(id, borne);
+      // Un helper de bornes cassé rend des réponses dégénérées — `undefined`,
+      // `NaN`, ou `±Infinity` quand `Math.min(...[])` opère sur un tableau
+      // vide. Le vérifier ici, sur l'entrée, plutôt que d'espérer que le score
+      // de sortie le trahisse : c'est ce détour par la sortie qui a laissé
+      // passer la version cassée du 2026-07-27.
+      const valeurs = Object.values(reponses);
+      expect(valeurs.length, `${id} : aucune question balayée`).toBeGreaterThan(0);
+      expect(
+        valeurs.every(Number.isFinite),
+        `${id} (${borne}) : réponses dégénérées ${JSON.stringify(reponses)}`,
+      ).toBe(true);
       const scores = (calculateScore as any)(id, reponses);
-      const chemins = cheminsDeQuantite(scoresPourPrompt(scores));
-      expect(chemins, `${id} laisse passer ${chemins.join(', ')}`).toEqual([]);
+      // La charge utile réelle est `scoresPourPrompt(scoresJson)`, et
+      // `scoresJson` vaut `{...scores, rawAnswers}` (`api/patient/submit`).
+      // Balayer le retour nu du moteur laisserait `rawAnswers` hors du champ.
+      const charge = scoresPourPrompt({ ...scores, rawAnswers: reponses });
+      const chemins = cheminsDeQuantite(charge);
+      expect(chemins, `${id} (${borne}) laisse passer ${chemins.join(', ')}`).toEqual([]);
+      totaux[borne] = Number(scores?.total);
     }
+    // Anti-vacuité, sur la sortie cette fois : les deux bornes doivent produire
+    // des totaux finis et **distincts**. Un balayage qui rend deux fois le même
+    // score n'a pas exercé l'échelle — c'est la signature du questionnaire non
+    // répondu que la version cassée envoyait au moteur.
+    expect(Number.isFinite(totaux.min) && Number.isFinite(totaux.max), `${id} : totaux non finis`).toBe(true);
+    expect(totaux.max, `${id} : les deux bornes rendent ${totaux.max} — échelle non exercée`).toBeGreaterThan(totaux.min);
   });
 
   it('écarte un bloc `monnier` hérité, encore porté par les passations en base', () => {
