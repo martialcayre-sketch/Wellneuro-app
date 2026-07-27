@@ -53,6 +53,12 @@ export const EVENT_CODES = {
   ASSIGNATION_PACK_RESOLUTION_FAILED: 'ASSIGNATION.PACK.RESOLUTION_FAILED',
   ASSIGNATION_PACK_EMAIL_FAILED: 'ASSIGNATION.PACK.EMAIL_SEND_FAILED',
   ASSIGNATION_PACK_EXCEPTION: 'ASSIGNATION.PACK.EXCEPTION',
+  // Distinct de RESOLUTION_FAILED, pour la raison écrite plus haut : la
+  // résolution a RÉUSSI et la requête rend 200 — le pack part simplement
+  // amputé d'un instrument suspendu (`actif: false`). Sous le même code, un
+  // envoi nominal et un échec dur deviendraient indiscernables, et un pack
+  // entièrement suspendu émettrait deux fois le même code dans une requête.
+  ASSIGNATION_PACK_INSTRUMENT_SUSPENDU: 'ASSIGNATION.PACK.INSTRUMENT_SUSPENDU',
 
   METRICS_UNAUTHORIZED: 'PRATICIEN.METRICS.UNAUTHORIZED',
   METRICS_QUERY_FAILED: 'PRATICIEN.METRICS.QUERY_FAILED',

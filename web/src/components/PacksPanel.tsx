@@ -411,9 +411,24 @@ export function PacksPanel({
                     <Badge variant={p.actif ? 'success' : 'neutral'}>{p.actif ? 'Actif' : 'Inactif'}</Badge>
                     {p.parDefaut && <Badge variant="warning">Pack de base</Badge>}
                   </div>
+                  {/* `titreParId` vient de /api/praticien/questionnaires, qui
+                      filtre `actif` : un qid sans titre est un instrument
+                      suspendu ou inconnu — dans les deux cas la route
+                      d'assignation l'écarte. Le compter dans le total ferait
+                      lire « 6 questionnaires » à un praticien qui en envoie 5. */}
                   <p className="text-xs text-muted-foreground mt-1">
-                    {p.qids.length} questionnaire(s) : {p.qids.map(id => titreParId.get(id) ?? id).join(', ')}
+                    {p.qids.filter(id => titreParId.has(id)).length} questionnaire(s) :{' '}
+                    {p.qids.filter(id => titreParId.has(id)).map(id => titreParId.get(id)).join(', ')}
                   </p>
+                  {p.qids.some(id => !titreParId.has(id)) && (
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 flex-wrap">
+                      <Badge variant="warning">Non envoyé</Badge>
+                      <span>
+                        Suspendu ou inconnu :{' '}
+                        {p.qids.filter(id => !titreParId.has(id)).join(', ')}
+                      </span>
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <button
@@ -454,8 +469,12 @@ export function PacksPanel({
         <form className="grid grid-cols-1 md:grid-cols-2 gap-3" onSubmit={onAssignPack}>
           <select required value={assignForm.idPack} onChange={e => setAssignForm(p => ({ ...p, idPack: e.target.value }))} className={inputCls}>
             <option value="">Pack *</option>
+            {/* Même raison qu'au-dessus : le compte annoncé au moment de
+                choisir doit être celui qui partira, pas celui du pack stocké. */}
             {packsActifs.map(p => (
-              <option key={p.idPack} value={p.idPack}>{`${p.nom} (${p.qids.length})`}</option>
+              <option key={p.idPack} value={p.idPack}>
+                {`${p.nom} (${p.qids.filter(id => titreParId.has(id)).length})`}
+              </option>
             ))}
           </select>
           <select required value={assignForm.emailPatient} onChange={e => setAssignForm(p => ({ ...p, emailPatient: e.target.value }))} className={inputCls}>

@@ -23,6 +23,8 @@ vi.mock('@/lib/observability/logger', () => ({
 
 import { POST } from './route';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
+import { logger } from '@/lib/observability/logger';
+import { EVENT_CODES } from '@/lib/observability/eventCodes';
 
 const patient = {
   idPatient: 'PAT_TEST',
@@ -81,6 +83,25 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
     const cree = prisma.assignation.create.mock.calls[0][0] as { data: { idQuestionnaire: string } };
     expect(cree.data.idQuestionnaire).toBe('Q_NEU_03');
+
+    // Le filtrage sans la trace serait le pire des deux : le praticien lit
+    // « pack envoyé » et rien ne dit qu'il manque une ligne. Le code est
+    // asserté nommément — sous RESOLUTION_FAILED, cet envoi nominal se
+    // confondrait avec l'échec dur émis 20 lignes plus bas dans la route.
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
+        message: expect.stringContaining('Q_SOM_07'),
+      })
+    );
+  });
+
+  it('ne journalise aucune suspension quand le pack est entièrement actif', async () => {
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({ event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU })
+    );
   });
 
   it('ne crée aucune assignation lorsque le portail est révoqué', async () => {

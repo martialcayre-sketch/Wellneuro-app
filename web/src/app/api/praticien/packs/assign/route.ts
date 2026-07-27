@@ -160,7 +160,7 @@ export async function POST(req: Request): Promise<NextResponse> {
     const ecartesSuspendus = qids.filter(id => IDS_SUSPENDUS.has(id));
     if (ecartesSuspendus.length > 0) {
       logger.warn({
-        event: EVENT_CODES.ASSIGNATION_PACK_RESOLUTION_FAILED,
+        event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
         domain: 'ASSIGNATION',
         message: `Questionnaires suspendus écartés du pack : ${ecartesSuspendus.join(', ')}`,
         context: finalizeLogContext(requestContext, { retryable: false }),
