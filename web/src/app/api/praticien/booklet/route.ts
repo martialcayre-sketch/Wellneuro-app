@@ -9,6 +9,7 @@ import { estRedactionPraticien } from '@/lib/synthese-praticien';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
+import { avertissementSyntheseAnterieure } from '@/lib/scoring/passationsNonInterpretables';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
@@ -77,6 +78,20 @@ export async function GET(req: Request) {
 
     const dernierEnvoi = synthese.bookletEnvois[0];
 
+    // Le booklet part au PATIENT. Si la synthèse dont il est tiré précède le
+    // retrait d'interprétation, le praticien doit le savoir AVANT d'envoyer,
+    // pas après — d'où la mention sur la prévisualisation. Elle informe, elle
+    // ne bloque pas : le praticien reste seul juge de ce qu'il expédie, et la
+    // régénération est à un clic.
+    const passations = await prisma.questionnaireReponse.findMany({
+      where: { idPatient: synthese.idPatient },
+      select: { idQuestionnaire: true },
+    });
+    const avertissementMesureRetiree = avertissementSyntheseAnterieure(
+      passations.map(p => p.idQuestionnaire),
+      synthese.dateGeneration,
+    );
+
     return withCorrelationHeader(NextResponse.json({
       html,
       patientNom,
@@ -86,6 +101,7 @@ export async function GET(req: Request) {
       dejaEnvoye: !!dernierEnvoi,
       dernierEnvoiDate: dernierEnvoi?.dateEnvoi?.toISOString() ?? null,
       dernierEnvoiEmailMasque: dernierEnvoi ? maskEmail(synthese.emailPatient) : null,
+      avertissementMesureRetiree,
     }), requestContext);
   } catch (err) {
     logger.error({

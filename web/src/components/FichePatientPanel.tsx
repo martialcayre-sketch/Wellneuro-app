@@ -30,6 +30,7 @@ import type { Trajectoire } from '@/lib/protocol/trajectoire';
 import type { ModeVieDate } from '@/lib/equilibre/modeVie';
 import type { OngletFiche } from '@/lib/praticien/ongletsFiche';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
+import { ETIQUETTE_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 import { ScoreGauge } from '@/components/ui/ScoreGauge';
 import { ScoreZones } from '@/components/ui/ScoreZones';
 import { EvidenceBadge } from '@/components/ui/EvidenceBadge';
@@ -648,6 +649,19 @@ export function FichePatientPanel({
                     </td>
                     <td className="px-4 py-2 font-medium">
                       <div>{r.titre || r.idQuestionnaire || '—'}</div>
+                      {/* La route a déjà vidé score et interprétation : sans
+                          cette ligne, la passation s'afficherait en « — »
+                          partout, ce qui se lit comme un incident technique et
+                          non comme une décision clinique. Dire pourquoi est la
+                          moitié du travail. */}
+                      {r.nonInterpretable && (
+                        <div
+                          className="mt-1 max-w-md text-xs font-normal text-status-danger"
+                          title={r.nonInterpretable}
+                        >
+                          {ETIQUETTE_NON_INTERPRETABLE} — {r.nonInterpretable}
+                        </div>
+                      )}
                       {miniSynthese && (
                         <div className="mt-1 text-xs font-normal italic text-foreground/80 max-w-md" title={miniSynthese}>
                           Synthèse : {miniSynthese}
@@ -732,7 +746,9 @@ export function FichePatientPanel({
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex flex-wrap gap-1.5">
-                        {certification ? (
+                        {r.nonInterpretable ? (
+                          <Badge variant="danger">Non interprétable</Badge>
+                        ) : certification ? (
                           <Badge variant={certification.variant}>{certification.label}</Badge>
                         ) : (
                           <Badge variant="neutral">Historique</Badge>

@@ -12,6 +12,7 @@ import {
   type ReponseQuestionnaireLisible,
 } from '@/lib/questionnaire-reponses';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
+import { motifNonInterpretable, scoresSansMesure } from '@/lib/scoring/passationsNonInterpretables';
 
 export type InboxQuestionnaireDetail = {
   idReponse: string;
@@ -26,6 +27,11 @@ export type InboxQuestionnaireDetail = {
   interpretation: string;
   subScoreRanges: Record<string, ScoreRange[]> | null;
   reponsesLisibles: ReponseQuestionnaireLisible[];
+  /* Motif pour lequel le résultat enregistré n'est pas une mesure — `null` dans
+   * le cas courant. Renseigné, il vient avec un `scorePrincipal` et une
+   * `interpretation` déjà vidés côté serveur ; `rawAnswers` et
+   * `reponsesLisibles`, eux, sont conservés. */
+  nonInterpretable: string | null;
 };
 
 export type InboxQuestionnairesApiResponse = {
@@ -190,6 +196,12 @@ export async function GET(req: Request): Promise<NextResponse<InboxQuestionnaire
         patient: { idPatient: patient.idPatient, nom: noms.get(patient.idPatient) ?? 'Patient' },
         reponses: enAttente.map(r => {
           const rawAnswers = extraireRawAnswers(r.scoresJson);
+          // Même retrait qu'en fiche patient, et pour la même raison : le Fil
+          // est l'écran où le praticien découvre la passation. Les réponses
+          // brutes et leur relecture item par item RESTENT — c'est ce que le
+          // patient a réellement répondu ; seule la lecture qu'on en avait
+          // tirée s'en va.
+          const nonInterpretable = motifNonInterpretable(r.idQuestionnaire);
           return {
             idReponse: r.idReponse,
             idPatient: r.idPatient,
@@ -197,15 +209,18 @@ export async function GET(req: Request): Promise<NextResponse<InboxQuestionnaire
             idQuestionnaire: r.idQuestionnaire,
             titre: r.titre,
             dateSoumission: r.dateReponse.toISOString(),
-            scoresParsed: (r.scoresJson as Record<string, unknown>) ?? null,
+            scoresParsed: nonInterpretable
+              ? scoresSansMesure(r.scoresJson)
+              : ((r.scoresJson as Record<string, unknown>) ?? null),
             rawAnswers,
-            scorePrincipal: r.scorePrincipal ?? null,
-            interpretation: r.interpretation ?? '',
-            subScoreRanges: getSubScoreRanges(r.idQuestionnaire),
+            scorePrincipal: nonInterpretable ? null : (r.scorePrincipal ?? null),
+            interpretation: nonInterpretable ? '' : (r.interpretation ?? ''),
+            subScoreRanges: nonInterpretable ? null : getSubScoreRanges(r.idQuestionnaire),
             reponsesLisibles: construireReponsesLisibles(
               definitions.get(r.idQuestionnaire) ?? null,
               rawAnswers,
             ),
+            nonInterpretable,
           };
         }),
       });

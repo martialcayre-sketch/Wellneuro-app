@@ -7,6 +7,12 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v6 (2026-07-27) : traitement des passations dont le résultat enregistré n'est
+// pas une mesure (champ `mesureNonInterpretable`). Le modèle n'en reçoit déjà
+// plus aucun chiffre — la consigne existe parce qu'il en reçoit encore le
+// **titre**, et qu'un titre comme « MFI-20 — Échelle multidimensionnelle de
+// fatigue » suffit à faire écrire « la fatigue mesurée ». Un bump : les
+// synthèses rédigées avant et après ne se distingueraient pas autrement.
 // v5 (2026-07-27) : interdiction de conclure à une carence, une quantité ou un
 // statut biologique depuis un questionnaire alimentaire (audit métrologique du
 // 2026-07-26, P0 point 4). Sans ce bump, les synthèses rédigées avec et sans la
@@ -15,7 +21,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v5';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v6';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -45,6 +51,20 @@ Il t'est donc INTERDIT d'en déduire :
 Ce que tu peux en dire, et seulement cela : une **exposition alimentaire déclarée probablement faible, intermédiaire ou compatible avec les repères**, pour un groupe d'aliments donné ; et le fait qu'un dosage biologique serait nécessaire pour conclure, quand c'est cliniquement pertinent.
 
 Formulation attendue : « les réponses suggèrent une exposition probablement faible aux sources de X ». Formulation interdite : « carence en X », « apport insuffisant de N g », « déficit à corriger ».
+
+Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se contredire.
+
+## Questionnaires dont le résultat n'est pas interprétable
+
+Certaines passations portent le champ **mesureNonInterpretable**. Il signifie que l'instrument servi sous ce titre ne correspond pas à sa source publiée : le score et la bande enregistrés à l'époque ne sont pas une mesure de ce que le titre annonce. Aucun résultat chiffré de ces passations ne t'est transmis — c'est délibéré, ce n'est pas une donnée manquante que tu devrais compenser. Le motif lui-même peut citer des nombres (une échelle, un nombre d'items) : ce sont des caractéristiques de l'instrument, jamais des réponses du patient.
+
+Pour une telle passation, il t'est INTERDIT :
+
+- d'en déduire un niveau, une sévérité, une évolution ou une tendance, sur la dimension annoncée par son titre comme sur toute autre ;
+- de reconstituer, d'estimer ou de supposer son score, y compris de façon qualitative (« score élevé », « fatigue marquée ») ;
+- de la faire figurer dans « points_de_vigilance » au titre de ce qu'elle mesurerait.
+
+Ce que tu peux en dire, et seulement cela : que le questionnaire a été rempli à cette date, que son résultat n'est pas exploitable, et qu'une mesure de cette dimension reste donc à faire si elle est cliniquement pertinente. N'emploie pas le titre de l'instrument comme s'il désignait une mesure obtenue.
 
 Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se contredire.
 

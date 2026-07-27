@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getSubScoreRanges, type ScoreRange } from '@/lib/scoring/ranges';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
+import { motifNonInterpretable, scoresSansMesure } from '@/lib/scoring/passationsNonInterpretables';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/reponses';
@@ -23,6 +24,11 @@ export type ReponseQuestionnaire = {
   /* Bornes d'interprétation par sous-score, lues du catalogue côté serveur
    * (A5-R1, affichage ScoreZones) — additif, null si non applicables. */
   subScoreRanges: Record<string, ScoreRange[]> | null;
+  /* Motif pour lequel le résultat enregistré n'est pas une mesure — `null` dans
+   * le cas courant. Quand il est renseigné, `scorePrincipal`, `interpretation`
+   * et les clés de score autres que `rawAnswers` ont **déjà été retirées côté
+   * serveur** : l'écran n'a rien à masquer, il n'a plus rien à masquer. */
+  nonInterpretable: string | null;
 };
 
 export type ReponsesApiResponse = {
@@ -64,19 +70,46 @@ export async function GET(req: Request): Promise<NextResponse<ReponsesApiRespons
       await journaliserAccesDossier({ idPatient: pgReponses[0].idPatient, praticienEmail: emailSession, route: ROUTE_JOURNAL, methode: 'GET' });
     }
 
-    const reponses: ReponseQuestionnaire[] = pgReponses.map(pg => ({
-      idReponse: pg.idReponse,
-      idPatient: pg.idPatient,
-      emailPatient: pg.emailPatient,
-      idAssignation: pg.idAssignation ?? '',
-      idQuestionnaire: pg.idQuestionnaire,
-      titre: pg.titre,
-      dateSoumission: pg.dateReponse.toISOString(),
-      scoresParsed: (pg.scoresJson as Record<string, unknown>) ?? null,
-      scorePrincipal: pg.scorePrincipal ?? null,
-      interpretation: pg.interpretation ?? '',
-      subScoreRanges: getSubScoreRanges(pg.idQuestionnaire),
-    }));
+    const reponses: ReponseQuestionnaire[] = pgReponses.map(pg => {
+      // Le retrait se fait ICI, pas dans l'écran. Une donnée que la route livre
+      // encore est une donnée qu'un autre appelant affichera un jour — c'est
+      // exactement la raison pour laquelle `actif: false` n'a gardé que les
+      // écrans au lot précédent, et pourquoi les trois chemins d'assignation
+      // sont passés à côté.
+      const nonInterpretable = motifNonInterpretable(pg.idQuestionnaire);
+      if (nonInterpretable) {
+        return {
+          idReponse: pg.idReponse,
+          idPatient: pg.idPatient,
+          emailPatient: pg.emailPatient,
+          idAssignation: pg.idAssignation ?? '',
+          idQuestionnaire: pg.idQuestionnaire,
+          titre: pg.titre,
+          dateSoumission: pg.dateReponse.toISOString(),
+          scoresParsed: scoresSansMesure(pg.scoresJson),
+          scorePrincipal: null,
+          interpretation: '',
+          // Les bornes décrivent une échelle que cette passation n'a pas
+          // servie : les livrer ferait dessiner des zones sous un score absent.
+          subScoreRanges: null,
+          nonInterpretable,
+        };
+      }
+      return {
+        idReponse: pg.idReponse,
+        idPatient: pg.idPatient,
+        emailPatient: pg.emailPatient,
+        idAssignation: pg.idAssignation ?? '',
+        idQuestionnaire: pg.idQuestionnaire,
+        titre: pg.titre,
+        dateSoumission: pg.dateReponse.toISOString(),
+        scoresParsed: (pg.scoresJson as Record<string, unknown>) ?? null,
+        scorePrincipal: pg.scorePrincipal ?? null,
+        interpretation: pg.interpretation ?? '',
+        subScoreRanges: getSubScoreRanges(pg.idQuestionnaire),
+        nonInterpretable: null,
+      };
+    });
 
     return NextResponse.json({ reponses });
   } catch (err) {

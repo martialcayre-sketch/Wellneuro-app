@@ -7,6 +7,10 @@ const findUniquePatient = vi.fn();
 const createJournal = vi.fn();
 const deleteManyJournal = vi.fn();
 const createBookletEnvoi = vi.fn();
+// Le booklet part au patient : la prévisualisation qualifie la synthèse dont il
+// est tiré (antérieure au retrait d'interprétation ?), d'où cette lecture des
+// passations du dossier, en sélection minimale.
+const findManyReponses = vi.fn(async () => [] as Array<{ idQuestionnaire: string }>);
 
 vi.mock('next-auth', () => ({ getServerSession: vi.fn(async () => ({ user: { email: 'p@wellneuro.fr' } })) }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
@@ -19,6 +23,7 @@ vi.mock('@/lib/prisma', () => ({
       deleteMany: (...a: unknown[]) => deleteManyJournal(...a),
     },
     bookletEnvoi: { create: (...a: unknown[]) => createBookletEnvoi(...a) },
+    questionnaireReponse: { findMany: (...a: unknown[]) => findManyReponses(...(a as [])) },
   },
 }));
 vi.mock('@/lib/anthropic', () => ({
@@ -75,6 +80,8 @@ beforeEach(() => {
   createJournal.mockResolvedValue({});
   deleteManyJournal.mockResolvedValue({ count: 0 });
   createBookletEnvoi.mockResolvedValue({});
+  findManyReponses.mockReset();
+  findManyReponses.mockResolvedValue([]);
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -128,6 +135,31 @@ describe('GET /api/praticien/booklet', () => {
     expect(body.patientNom).toBe('Sophie Nicola');
     expect(typeof body.html).toBe('string');
     expect(body.html.length).toBeGreaterThan(0);
+    // Dossier sain : aucune mention. C'est le contrôle négatif des deux tests
+    // qui suivent.
+    expect(body.avertissementMesureRetiree).toBeNull();
+  });
+
+  it('booklet tiré d’une synthèse antérieure au retrait : la prévisualisation le dit', async () => {
+    // Le booklet part AU PATIENT. Le praticien doit le savoir avant d'envoyer,
+    // pas après — et les 3 synthèses de production sont toutes validées, donc
+    // expédiables en l'état.
+    findFirst.mockResolvedValue(syntheseFixture('Validee_Praticien'));
+    findManyReponses.mockResolvedValue([{ idQuestionnaire: 'Q_SOM_07' }]);
+    const body = await (await GET(req('http://x/api/praticien/booklet?idSynthese=SYN_1'))).json();
+    expect(body.avertissementMesureRetiree).toBeTruthy();
+    // Elle informe, elle ne bloque pas : le document reste produit.
+    expect(body.html.length).toBeGreaterThan(0);
+  });
+
+  it('dossier concerné mais synthèse postérieure au retrait : aucune mention', async () => {
+    findFirst.mockResolvedValue({
+      ...syntheseFixture('Validee_Praticien'),
+      dateGeneration: new Date('2026-08-01T00:00:00.000Z'),
+    });
+    findManyReponses.mockResolvedValue([{ idQuestionnaire: 'Q_SOM_07' }]);
+    const body = await (await GET(req('http://x/api/praticien/booklet?idSynthese=SYN_1'))).json();
+    expect(body.avertissementMesureRetiree).toBeNull();
   });
 
   it('lecture journalisée au gabarit littéral (G-TRUST-04), idPatient issu de la synthèse', async () => {

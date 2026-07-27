@@ -58,7 +58,31 @@ type Options = {
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'enVol';
   // « bloquee » = abstention clinique non levée : aucun protocole proposable.
   decision?: 'actionnable' | 'bloquee';
-  reponses?: 'defaut' | 'dimensions' | 'dimensions-degradees';
+  reponses?: 'defaut' | 'dimensions' | 'dimensions-degradees' | 'non-interpretable';
+};
+
+// Passation dont le résultat enregistré n'est pas une mesure (réservoir
+// `Q_SOM_07`). Telle que la route la sert DÉSORMAIS : score, interprétation et
+// bornes déjà retirés côté serveur, motif joint. Sans les deux tests plus bas,
+// supprimer l'explication et le badge laissait la suite entièrement verte —
+// mesuré en revue le 2026-07-27 — et la ligne redevenait « — / — /
+// Historique », indiscernable d'un vieux questionnaire sans score.
+const MOTIF_TEST = 'Motif de test : l’instrument servi ne correspond pas à sa source publiée.';
+const REPONSES_NON_INTERPRETABLE = {
+  reponses: [
+    {
+      idReponse: 'REP_SOM07',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_SOM_07',
+      titre: 'MFI-20 — Échelle multidimensionnelle de fatigue',
+      dateSoumission: '2026-07-21T10:00:00.000Z',
+      scorePrincipal: null,
+      interpretation: '',
+      scoresParsed: { rawAnswers: { M1: 2 } },
+      subScoreRanges: null,
+      nonInterpretable: MOTIF_TEST,
+    },
+  ],
 };
 
 // Réponse portant un découpage DESCRIPTIF (scoring `sum` + `dimensions`) : le
@@ -171,6 +195,7 @@ function stubFetch(options: Options = {}) {
     if (url.includes('/api/praticien/reponses')) {
       if (options.reponses === 'dimensions') return ok(REPONSES_A_DIMENSIONS);
       if (options.reponses === 'dimensions-degradees') return ok(REPONSES_A_DIMENSIONS_DEGRADEES);
+      if (options.reponses === 'non-interpretable') return ok(REPONSES_NON_INTERPRETABLE);
       return ok(REPONSES);
     }
     if (url.includes('/api/praticien/patients')) {
@@ -623,6 +648,32 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     const ligneSansTotal = screen.getByText('Instrument à dimensions sans total').closest('tr')!;
     expect(within(ligneSansTotal).getByText('Dimension B')).toBeTruthy();
     expect(within(ligneSansTotal).getByText('3/4')).toBeTruthy();
+  });
+
+  it('passation non interprétable : la ligne DIT pourquoi, au lieu de trois tirets muets', async () => {
+    await rendreFiche({ reponses: 'non-interpretable' });
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+
+    const ligne = (await screen.findByText('MFI-20 — Échelle multidimensionnelle de fatigue')).closest('tr')!;
+    expect(ligne.textContent).toContain('Interprétation retirée');
+    expect(ligne.textContent).toContain(MOTIF_TEST);
+    // Le badge qualité doit porter la décision, PAS retomber sur « Historique »
+    // — c'est le libellé que la ligne prendrait si l'on retirait le marquage,
+    // et il ferait passer une passation invalide pour une passation ancienne.
+    expect(within(ligne).getByText('Non interprétable')).toBeTruthy();
+    expect(ligne.textContent).not.toContain('Historique');
+  });
+
+  it('contrôle négatif — un instrument courant ne gagne ni motif ni badge', async () => {
+    // Sans lui, marquer inconditionnellement ferait passer le test ci-dessus au
+    // vert.
+    await rendreFiche({ reponses: 'dimensions' });
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+
+    const ligne = (await screen.findByText('MMSE GRECO')).closest('tr')!;
+    expect(ligne.textContent).not.toContain('Interprétation retirée');
+    expect(ligne.textContent).not.toContain('Non interprétable');
+    expect(within(ligne).getByText('Démence modérée')).toBeTruthy();
   });
 
   it('estOngletFiche : garde stricte du deep-link — toute valeur inconnue est refusée', () => {

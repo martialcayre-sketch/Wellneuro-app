@@ -3,6 +3,11 @@ import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { computeScoreFromDef } from '@/lib/questions';
 import { estInstrumentCabinet, resolveDefinition } from '@/lib/instruments';
+import {
+  IDS_SUSPENDUS,
+  MESSAGE_QUESTIONNAIRE_SUSPENDU,
+  RAISON_QUESTIONNAIRE_SUSPENDU,
+} from '@/lib/questionnaires-catalog';
 import { createPublicId } from '@/lib/ids';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
@@ -123,6 +128,24 @@ export async function POST(req: Request): Promise<NextResponse> {
     const emailPatient = ass.emailPatient.toLowerCase();
     const idQuestionnaire = ass.idQuestionnaire;
     const titre = ass.titre || idQuestionnaire;
+
+    // Instrument suspendu : refus AVANT tout calcul et toute écriture. Le
+    // portail ne le propose plus (`api/portail/assignations`), mais un refus
+    // qui ne vit que dans l'écran se contourne par un appel direct — c'est
+    // mot pour mot la leçon du lot #406 sur les trois chemins d'assignation.
+    // 409 et non 410 : ce n'est pas une expiration, c'est un retrait.
+    if (IDS_SUSPENDUS.has(idQuestionnaire)) {
+      logger.warn({
+        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_UNAVAILABLE,
+        domain: 'QUESTIONNAIRE',
+        message: 'Soumission refusée : instrument suspendu',
+        context: finalizeLogContext(requestContext, { statusCode: 409, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json(
+        { ok: false, reason: RAISON_QUESTIONNAIRE_SUSPENDU, error: MESSAGE_QUESTIONNAIRE_SUSPENDU },
+        { status: 409 }
+      ), requestContext);
+    }
 
     // Calculer le score — resolver commun catalogue/cabinet en mode
     // passation : l'assignation fait autorité, un CAB_ dépublié ou désactivé
