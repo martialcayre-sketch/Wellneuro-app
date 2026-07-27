@@ -7,10 +7,14 @@ import {
   type TrajectoireEpisode,
 } from './trajectoire';
 
-// Même fixture rawAnswers que depuisPrisma.test.ts : produit un scoreGlobal non-null.
-const RAW = { P1: '2', P2: '2', P3: '1', P4: '1', P5: '1', P6: '1', P7: '1', P8: '1' };
+// Même fixture rawAnswers que depuisPrisma.test.ts : PSS-10 complet, source
+// vivante du besoin 9, donc scoreGlobal non-null (le Pichot ne l'est plus en v4).
+const RAW = {
+  P1: '2', P2: '2', P3: '3', P4: '3', P5: '3',
+  P6: '2', P7: '3', P8: '3', P9: '2', P10: '3',
+};
 const reponse = (iso: string) => ({
-  idQuestionnaire: 'Q_SOM_06',
+  idQuestionnaire: 'Q_STR_02',
   dateReponse: new Date(iso),
   scoresJson: { rawAnswers: RAW },
 });

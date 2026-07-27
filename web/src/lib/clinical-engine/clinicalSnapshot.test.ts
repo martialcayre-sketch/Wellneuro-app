@@ -6,13 +6,18 @@ import { confirmAssessmentEpisode, proposeAssessmentEpisode } from './assessment
 import { buildClinicalSnapshot } from './clinicalSnapshot';
 import type { PatientContext, QuestionnaireResponseInput } from './types';
 
-const RAW_ANSWERS = { P1: '2', P2: '2', P3: '1', P4: '1', P5: '1', P6: '1', P7: '1', P8: '1' };
+// PSS-10 complet : source vivante du besoin 9, donc scoreGlobal non-null.
+// Le Pichot tenait ce rôle avant v4 ; il n'est plus source de Mon équilibre.
+const RAW_ANSWERS = {
+  P1: '2', P2: '2', P3: '3', P4: '3', P5: '3',
+  P6: '2', P7: '3', P8: '3', P9: '2', P10: '3',
+};
 const context: PatientContext = { mainReason: null, priorityGoal: null, expectations: [], constraints: [] };
 
 function makeResponse(overrides: Partial<QuestionnaireResponseInput> = {}): QuestionnaireResponseInput {
   return {
     responseId: 'response-1',
-    questionnaireId: 'Q_SOM_06',
+    questionnaireId: 'Q_STR_02',
     observedAt: '2026-01-01T00:00:00.000Z',
     scoresJson: { rawAnswers: RAW_ANSWERS },
     scoreVersion: 'questionnaire-fixture-v1',
@@ -52,7 +57,7 @@ describe('ClinicalSnapshot', () => {
       assessmentEpisode: confirmedEpisode(responses), patientContext: context, responses,
     });
     const direct = calculerEquilibre(construireReponsesParQuestionnaire([
-      { idQuestionnaire: 'Q_SOM_06', dateReponse: new Date(responses[0].observedAt), scoresJson: responses[0].scoresJson },
+      { idQuestionnaire: 'Q_STR_02', dateReponse: new Date(responses[0].observedAt), scoresJson: responses[0].scoresJson },
     ]));
 
     expect(snapshot.balanceAssessment.global).toEqual({
@@ -62,7 +67,10 @@ describe('ClinicalSnapshot', () => {
     expect(snapshot.versions.balanceScore).toBe(VERSION_SCORE_EQUILIBRE);
     expect(snapshot.clinicalObjects).toHaveLength(5);
     expect(snapshot.clinicalObjects.find(object => object.code === 'MOMENTUM')?.measurement).toEqual({ value: null, unit: 'delta' });
-    expect(snapshot.balanceAssessment.needs.find(need => need.needId === 2)?.evidence).toBe('A');
+    expect(snapshot.balanceAssessment.needs.find(need => need.needId === 9)?.evidence).toBe('A');
+    // v4 : le besoin 2 (micronutriments) rejoint le besoin 3 parmi les non
+    // mesurés — le Pichot n'en est plus la source.
+    expect(snapshot.balanceAssessment.needs.find(need => need.needId === 2)?.evidence).toBe('NON_MESURE');
     expect(snapshot.balanceAssessment.needs.find(need => need.needId === 3)?.evidence).toBe('NON_MESURE');
   });
 
@@ -100,8 +108,14 @@ describe('ClinicalSnapshot', () => {
       assessmentEpisode: confirmedEpisode(responses), patientContext: context, responses,
     });
 
+    // La fixture répond au PSS-10, source du besoin 9 : l'indice global et la
+    // réserve d'adaptation (adossée à ce besoin) le revendiquent, les trois
+    // autres objets n'ont aucune source — c'est bien « uniquement les sources
+    // effectives », et non « une seule ».
+    const porteurs = ['ADAPTATION_RESERVE', 'GLOBAL_BALANCE'];
     expect(snapshot.clinicalObjects.find(object => object.code === 'GLOBAL_BALANCE')?.sourceResponseIds).toEqual(['response-1']);
-    expect(snapshot.clinicalObjects.filter(object => object.code !== 'GLOBAL_BALANCE').every(object => object.sourceResponseIds.length === 0)).toBe(true);
+    expect(snapshot.clinicalObjects.find(object => object.code === 'ADAPTATION_RESERVE')?.sourceResponseIds).toEqual(['response-1']);
+    expect(snapshot.clinicalObjects.filter(object => !porteurs.includes(object.code)).every(object => object.sourceResponseIds.length === 0)).toBe(true);
   });
 
   it('ne déclare que la réponse la plus récente comme source effective', () => {

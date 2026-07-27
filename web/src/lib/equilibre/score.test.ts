@@ -61,11 +61,24 @@ describe('calculerCouvertureBesoin', () => {
     expect(couvertureBesoin3).toBeNull();
   });
 
-  it('besoin 2 (Pichot Q_SOM_06, 10/32 inversé) doit donner une couverture de 0,6875', () => {
+  // v4 : la fatigue de Pichot n'est plus une source du besoin 2. Répondre au
+  // Q_SOM_06 ne doit donc plus produire de couverture « micronutriments » —
+  // sans quoi une fatigue élevée replafonnerait le score global à 50 (le
+  // besoin 2 est une fondation critique) au nom d'une carence non mesurée.
+  it('besoin 2 (micronutriments) reste non évaluable : le Pichot ne le renseigne plus', () => {
     const couvertureBesoin2 = calculerCouvertureBesoin(2, {
       Q_SOM_06: { P1: '2', P2: '2', P3: '1', P4: '1', P5: '1', P6: '1', P7: '1', P8: '1' },
     });
-    expect(couvertureBesoin2).toBeCloseTo(0.6875, 6);
+    expect(couvertureBesoin2).toBeNull();
+  });
+
+  // Le corollaire qui compte cliniquement : un patient très fatigué ne
+  // déclenche plus le plafond de fondation critique par le besoin 2.
+  it('une fatigue sévère ne déclenche plus le plafond via le besoin 2', () => {
+    const couvertureBesoin2 = calculerCouvertureBesoin(2, {
+      Q_SOM_06: { P1: '4', P2: '4', P3: '4', P4: '4', P5: '4', P6: '4', P7: '4', P8: '4' },
+    });
+    expect(couvertureBesoin2).toBeNull();
   });
 
   it('besoin 5 : l’agenda du sommeil (Q_SOM_09) au plateau donne une couverture de 1', () => {

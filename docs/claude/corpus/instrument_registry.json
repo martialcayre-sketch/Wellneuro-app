@@ -932,7 +932,7 @@
         "readministrable": null,
         "intervalleMinJours": null
       },
-      "sourceMonEquilibre": true,
+      "sourceMonEquilibre": false,
       "sourceIds": [],
       "driveMd": "sommeil_01_fatigue_pichot.md",
       "statutBibliographique": "a_completer"

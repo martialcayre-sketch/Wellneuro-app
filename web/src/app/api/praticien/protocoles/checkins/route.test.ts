@@ -22,7 +22,12 @@ const reponses = { contractVersion: 'c2a-checkin-v1', adhesion: 'plupart_des_jou
 
 // Réponses brutes exploitables par le moteur d'équilibre (rawAnswers) — même
 // fixture que depuisPrisma.test.ts : produit un scoreGlobal non-null par jalon.
-const RAW_ANSWERS_Q_SOM_06 = { P1: '2', P2: '2', P3: '1', P4: '1', P5: '1', P6: '1', P7: '1', P8: '1' };
+// PSS-10 complet : source vivante du besoin 9, donc scoreGlobal non-null.
+// Le Pichot tenait ce rôle avant v4 ; il n'est plus source de Mon équilibre.
+const RAW_ANSWERS_Q_STR_02 = {
+  P1: '2', P2: '2', P3: '3', P4: '3', P5: '3',
+  P6: '2', P7: '3', P8: '3', P9: '2', P10: '3',
+};
 
 function request(query = 'idPatient=PAT_1&decisionCardId=DEC_1'): Request {
   return new Request(`http://localhost/api/praticien/protocoles/checkins?${query}`);
@@ -115,7 +120,7 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     // T0 en janvier → jalons T0/J21/J42/J90 tous passés à la date du test →
     // historique d'équilibre daté non vide → volet score branché (n'est plus null).
     prisma.questionnaireReponse.findMany.mockResolvedValue([
-      { idQuestionnaire: 'Q_SOM_06', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_SOM_06 } },
+      { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
     ]);
 
     const res = await GET(request());
@@ -135,7 +140,7 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     // Épisode T0 confirmé : c'est lui qui ancre les jalons (pas la 1re réponse).
     prisma.assessmentEpisode.findFirst.mockResolvedValue({ confirmedAt: new Date('2026-01-01T00:00:00.000Z') });
     prisma.questionnaireReponse.findMany.mockResolvedValue([
-      { idQuestionnaire: 'Q_SOM_06', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_SOM_06 } },
+      { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
     ]);
 
     const res = await GET(request());
