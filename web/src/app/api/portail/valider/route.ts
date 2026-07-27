@@ -8,9 +8,12 @@ import {
   FINALITE_CONSENTEMENT,
 } from '@/lib/consultation/portail';
 import { normaliserAnamnese, ANAMNESE_CHAMP_REQUIS } from '@/lib/consultation/anamnese';
-import { assignPackToPatient } from '@/lib/consultation/assignBasePack';
+import { assignPackToPatient, qidsSuspendus } from '@/lib/consultation/assignBasePack';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { isMotifValide } from '@/lib/consultation/motifs';
+import { logger } from '@/lib/observability/logger';
+import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { createRequestContext, finalizeLogContext } from '@/lib/observability/requestContext';
 
 export type PortailValiderResponse =
   | { ok: true; premiereAssignation: string | null; count: number }
@@ -83,6 +86,20 @@ export async function POST(req: Request): Promise<NextResponse<PortailValiderRes
 
     // Assignation du pack de base (consentement déjà donné au niveau consultation).
     const { qids } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
+
+    // Ce chemin n'a aucun praticien pour lire un écart de comptage : le patient
+    // valide son onboarding et reçoit ce qui reste. Sans cette trace,
+    // l'amputation du pack de base serait strictement invisible.
+    const ecartes = qidsSuspendus(qids);
+    if (ecartes.length > 0) {
+      logger.warn({
+        event: EVENT_CODES.ASSIGNATION_PACK_RESOLUTION_FAILED,
+        domain: 'ASSIGNATION',
+        message: `Questionnaires suspendus écartés du pack de base : ${ecartes.join(', ')}`,
+        context: finalizeLogContext(createRequestContext(req), { retryable: false }),
+      });
+    }
+
     const cree = await assignPackToPatient({
       idPatientBusiness: patient.idPatient,
       emailPatient: patient.email,

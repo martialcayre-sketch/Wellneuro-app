@@ -4,6 +4,11 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createPublicId } from '@/lib/ids';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
+import {
+  IDS_SUSPENDUS,
+  MESSAGE_QUESTIONNAIRE_SUSPENDU,
+  RAISON_QUESTIONNAIRE_SUSPENDU,
+} from '@/lib/questionnaires-catalog';
 import { creerTransportSmtp } from '@/lib/email/transportSmtp';
 import { buildGoogleConnexionUrl } from '@/lib/consultation/email';
 import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appartenance';
@@ -31,6 +36,10 @@ export type CreateAssignationResponse = {
     | 'patient_not_found'
     | 'portal_revoked'
     | 'questionnaire_not_found'
+    // Instrument suspendu (`actif: false`) : distinct de
+    // `questionnaire_not_found`, sinon le praticien croirait à une faute de
+    // frappe alors que le questionnaire existe et a été retiré à dessein.
+    | 'questionnaire_suspendu'
     // Suivi clôturé : distinct de `patient_not_found`, sinon le praticien
     // chercherait un dossier disparu au lieu de le rouvrir.
     | 'dossier_cloture'
@@ -116,8 +125,20 @@ export async function POST(req: Request): Promise<NextResponse<CreateAssignation
       );
     }
 
-    // NB : le champ "actif" du catalogue (désactivation dynamique d'un questionnaire)
-    // n'est pas encore porté en base/code — seule l'existence de l'ID est vérifiée ici.
+    // Questionnaire suspendu (`actif: false` au catalogue) : refus ici, dans la
+    // route, pour la même raison que le dossier clos ci-dessus — le retirer du
+    // sélecteur ne suffit pas, un appel direct contourne l'écran.
+    if (IDS_SUSPENDUS.has(idQuestionnaire)) {
+      return NextResponse.json(
+        {
+          success: false,
+          reason: RAISON_QUESTIONNAIRE_SUSPENDU,
+          error: MESSAGE_QUESTIONNAIRE_SUSPENDU,
+        },
+        { status: 409 }
+      );
+    }
+
     const questionnaire = (QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>)[idQuestionnaire];
 
     if (!questionnaire) {
