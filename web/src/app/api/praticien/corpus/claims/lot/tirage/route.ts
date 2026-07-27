@@ -12,7 +12,9 @@ import { tirerEchantillon } from '@/lib/rag/claims/revue';
 // journalisé (rag_corpus_claim_decisions, type tirage_echantillon) avant
 // d'être montré — un tirage défavorable ne s'efface pas en re-tirant, chaque
 // tentative laisse sa trace. Périmètre : claims déclarés/observés non
-// prescriptifs seulement (la voie lente ne passe jamais par ici).
+// prescriptifs ET sans borne de décision dans le texte — plage de référence,
+// seuil, bande d'interprétation (garde de contenu, migration 20260727140000).
+// La voie lente ne passe jamais par ici.
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

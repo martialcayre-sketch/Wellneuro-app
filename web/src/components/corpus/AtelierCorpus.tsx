@@ -11,8 +11,9 @@ import type { CorpusSourcesApiResponse, SourceAtelier } from '@/app/api/praticie
 //
 // L'entrée de la revue est la table des SOURCES, groupée par notebook (le
 // registre sanitaire fait foi) : pour chaque source, ce qui part en voie
-// rapide et ce qui reste en revue individuelle (prescriptifs + interprétés —
-// la validation manuelle des prescriptifs est conservée par construction).
+// rapide et ce qui reste en revue individuelle (prescriptifs, interprétés, et
+// depuis le 2026-07-27 les claims porteurs d'une borne de décision — plage de
+// référence, seuil, bande d'interprétation).
 // La voie rapide s'ouvre en MODALE plein écran sur UNE source — la page
 // principale ne défile plus sous elle. Le filtre notebook s'applique aussi à
 // la file individuelle en dessous.

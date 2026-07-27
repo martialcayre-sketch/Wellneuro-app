@@ -55,6 +55,12 @@ VALUES
    ('[' || repeat('0,', 1535) || '0]')::extensions.vector),
   ('__jrnl_vecu__', 'WN-CL-9999-003', 'WN-SRC-9999', 'v1.0', 'claim de contrat, vécu',
    repeat('d', 64), 'vécu', false, 'EN_ATTENTE_VALIDATION', 'contrat', 1536,
+   ('[' || repeat('0,', 1535) || '0]')::extensions.vector),
+  -- Éligible par typologie ET non prescriptif — seul son CONTENU l'exclut
+  -- (garde de contenu, migration 20260727140000).
+  ('__jrnl_seuil__', 'WN-CL-9999-004', 'WN-SRC-9999', 'v1.0',
+   'Les valeurs normales d''homocystéine sont inférieures à 5 à 8 μmol/l.',
+   repeat('e', 64), 'déclaré', false, 'EN_ATTENTE_VALIDATION', 'contrat', 1536,
    ('[' || repeat('0,', 1535) || '0]')::extensions.vector);
 
 -- Comportemental.
@@ -160,6 +166,21 @@ BEGIN
             '{"seed":1,"verdicts":[]}', '{"questions":[]}',
             '[{"id":"__jrnl_vecu__","claimId":"WN-CL-9999-003","versionClaim":"v1.0","statutAvant":"EN_ATTENTE_VALIDATION","statutApres":"VALIDE"}]');
     RAISE EXCEPTION 'journal claims: vécu signé par lot' USING ERRCODE = 'WN001';
+  EXCEPTION WHEN raise_exception THEN NULL;
+  END;
+
+  -- 7d. Le garde de CONTENU : un claim déclaré, non prescriptif, de la bonne
+  --     source — donc éligible par tous les critères de l'allowlist — ne se
+  --     signe pas par lot s'il porte une borne de décision (trigger, migration
+  --     20260727140000). Audit du 2026-07-27 : au moins 55 claims du notebook 08
+  --     passaient ainsi, dont la grille ferritine et les seuils d'homocystéine.
+  BEGIN
+    INSERT INTO public.rag_corpus_claim_decisions
+      (type_acte, decision, validateur, source_id, tirage_id, echantillon, questionnaire, claims)
+    VALUES ('decision_lot', 'VALIDE', 'contrat@wellneuro.fr', 'WN-SRC-9999', tirage,
+            '{"seed":1,"verdicts":[]}', '{"questions":[]}',
+            '[{"id":"__jrnl_seuil__","claimId":"WN-CL-9999-004","versionClaim":"v1.0","statutAvant":"EN_ATTENTE_VALIDATION","statutApres":"VALIDE"}]');
+    RAISE EXCEPTION 'journal claims: claim porteur d''une borne signé par lot' USING ERRCODE = 'WN001';
   EXCEPTION WHEN raise_exception THEN NULL;
   END;
 
