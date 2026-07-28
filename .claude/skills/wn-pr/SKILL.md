@@ -41,6 +41,10 @@ en un seul.
 Avant d’annoncer qu’une PR est prête à merger, **lire son CI** : `npm test`
 n’exécute pas les E2E, une suite Vitest verte ne dit rien des parcours.
 
+Une fois la PR ouverte, la suite du cycle (CI, régime de merge courant, exception
+migration/auth, merge et nettoyage) est du ressort de `/wn-merge`, pas de ce
+skill.
+
 ## Corps de PR
 
 Rédiger le corps dans un fichier et le passer par `--body-file`. Le garde-fou

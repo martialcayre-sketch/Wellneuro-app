@@ -34,7 +34,7 @@ Routes possibles :
 - bug : `/wn-debug` ;
 - validation : `/wn-test` ;
 - revue : `/wn-review` ;
-- PR : `/wn-pr` ;
+- PR : `/wn-pr` (ouverture) puis `/wn-merge` (CI, régime de merge, clôture) ;
 - hygiène documentaire multi-dépôts : `/wn-hygiene` ;
 - clôture : `/wn-finish` ;
 - reprise de contexte : `/wn-context` ou `/wn-handoff` ;
