@@ -51,7 +51,15 @@ function reponsesALaBorne(id: string, borne: 'min' | 'max'): Record<string, numb
 
 describe('Synthèse IA — aucune conduite clinique dans le prompt (structurel)', () => {
   it('le bloc `scores` du message utilisateur passe par `scoresPourPrompt`', () => {
-    expect(SOURCE).toMatch(/scores:\s*scoresPourPrompt\(r\.scores\)/);
+    // Depuis `synthese-v8`, le filtre est ENVELOPPÉ par la traduction des
+    // réponses alimentaires en tranches cochées. L'ordre importe et reste
+    // vérifié ici : `scoresPourPrompt` s'applique d'ABORD (il retire), la
+    // traduction ensuite (elle réécrit ce qui reste). L'inverse ferait traduire
+    // des blocs destinés à disparaître.
+    expect(SOURCE).toMatch(/scoresPourPrompt\(r\.scores\)/);
+    expect(SOURCE).toMatch(
+      /scores:\s*reponsesLisiblesPourPrompt\(\s*r\.idQuestionnaire,\s*scoresPourPrompt\(r\.scores\)\s*\)/
+    );
     expect(SOURCE).not.toMatch(/^\s*scores:\s*r\.scores\s*,/m);
   });
 

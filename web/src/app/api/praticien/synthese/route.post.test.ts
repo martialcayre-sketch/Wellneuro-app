@@ -185,6 +185,39 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
     expect(message).toContain('"miniSynthese": ""');
   });
 
+  it('une réponse alimentaire part en TRANCHE COCHÉE, jamais en code de barème', async () => {
+    // Le code enregistré n'est pas la quantité : `MO1: 2` vaut « 3-4 » portions
+    // de viande par semaine. Livré nu sous une consigne autorisant la
+    // restitution « dans l'unité de la question », il faisait écrire au modèle
+    // « 2 portions » — une déclaration que le patient n'a jamais faite.
+    //
+    // Fixture sur `Q_ALI_03`, indépendante de `WN_ALI_01_SIIN57` : ce test
+    // observe le BRANCHEMENT de la route, qui ne doit dépendre d'aucun drapeau.
+    // Les libellés des deux formes de `Q_ALI_01` sont gardés séparément, dans
+    // les deux positions, par `promptAlimentaire.guard.test.ts`.
+    //
+    // Ce test observe la charge APRÈS `JSON.stringify` : c'est le seul endroit
+    // où l'on voit ce que le modèle reçoit vraiment. Un module de traduction
+    // parfait que la route n'appellerait pas passerait tous les autres tests —
+    // c'est exactement « l'interdiction dont le critère n'arrive jamais » (#408).
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idQuestionnaire: 'Q_ALI_03',
+        titre: 'Fréquences de consommation alimentaire',
+        dateReponse: new Date('2026-07-22'),
+        scoresJson: { type: 'sum', total: 21, maxTotal: 42, rawAnswers: { MO1: 2 } },
+        scorePrincipal: 21,
+        interpretation: null,
+      },
+    ]);
+    await POST(req(CORPS));
+    const message: string = anthropicCreate.mock.calls[0][0].messages[0].content;
+    expect(message).toContain('"reponse": "3-4"');
+    expect(message).toContain('"question"');
+    // Et le code nu ne doit plus être ce que porte la réponse.
+    expect(message).not.toMatch(/"MO1":\s*2/);
+  });
+
   it('un questionnaire courant garde ses chiffres (contrôle négatif)', async () => {
     // Sans lui, vider inconditionnellement scores et interprétation ferait
     // passer le test ci-dessus au vert.

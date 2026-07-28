@@ -20,6 +20,7 @@ import { CORPUS_CLINIQUE_ACTIF } from '@/lib/anthropic';
 import { CORPUS_CLINIQUE_METADATA, CORPUS_CLINIQUE_SHA256 } from '@/lib/clinical/corpusSyntheseV1';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
+import { reponsesLisiblesPourPrompt } from '@/lib/scoring/reponsesLisibles';
 import {
   avertissementSyntheseAnterieure,
   motifNonInterpretable,
@@ -99,7 +100,16 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string): string {
       date: r.date,
       // Scores privés de toute conduite clinique : le modèle rédige à partir
       // de la mesure. L'orientation lui parvient étiquetée par la mini-synthèse.
-      scores: scoresPourPrompt(r.scores),
+      //
+      // Puis, pour les Q_ALI seulement, `rawAnswers` est rendu lisible : le
+      // libellé de l'option cochée et celui de la question, au lieu du poids de
+      // points de l'option. Sans cela, le modèle recevait `AL5: 3` — qui vaut
+      // « Rarement ou jamais » de viande rouge — sous une consigne l'autorisant
+      // à en faire une quantité « dans l'unité de la question ».
+      //
+      // Deux étapes distinctes, dans cet ordre : `scoresPourPrompt` reste un
+      // filtre pur qui retire, `reponsesLisiblesPourPrompt` traduit ce qui reste.
+      scores: reponsesLisiblesPourPrompt(r.idQuestionnaire, scoresPourPrompt(r.scores)),
       scorePrincipal: r.scorePrincipal,
       interpretation: r.interpretation,
       // Sur l'objet **original** : `buildMiniSynthese` lit `conduite` et retombe

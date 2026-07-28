@@ -30,12 +30,19 @@ const O_ON = [{v:1,l:'Oui'},{v:0,l:'Non'}];
  *    aussi, une construction WellNeuro — descriptives, lues par aucun score.
  *
  * ── Pourquoi des quantités et pas des Oui/Non partout ───────────────────────
- * Les items en « Combien… » gardent une saisie chiffrée (33 items) ; les
+ * Les items en « Combien… » gardent une réponse QUANTITATIVE (33 items) ; les
  * affirmations restent en Oui/Non (24 items). Reformuler un « combien » en
  * seuil (« Je bois plus de 12 verres d'eau par jour ») en ferait une question
- * suggestive, qui attire l'acquiescement. Et la quantité saisie est conservée
- * dans `rawAnswers` : un barème révisé se rejouera sur les réponses déjà
- * recueillies, sans redemander une passation.
+ * suggestive, qui attire l'acquiescement. Et la quantité est conservée dans
+ * `rawAnswers` : un barème révisé se rejouera sur les réponses déjà recueillies,
+ * sans redemander une passation.
+ *
+ * Précision qui a manqué une fois, et coûté un NO-GO : ce ne sont PAS des items
+ * de saisie libre (`qn`). Ce sont des listes (`qs`) dont la valeur est la
+ * quantité REPRÉSENTATIVE de la tranche — le patient coche « 5 à 8 verres » et
+ * `6` est enregistré. La quantité survit ; la précision, non. C'est pourquoi le
+ * modèle de synthèse reçoit le libellé de la tranche et jamais l'entier
+ * (`lib/scoring/reponsesLisibles.ts`).
  *
  * ── Portée clinique, arrêtée le 2026-07-28 ──────────────────────────────────
  * Cet instrument sert la PREMIÈRE décision d'orientation alimentaire. Le carnet

@@ -15,8 +15,8 @@
   L'énigme « 57 × 2 = 114 » est close, et les quatre bandes publiées (`<25`,
   `26-50`, `51-70`, `>71`) s'appliquent telles quelles. Un test vérifie la somme,
   plutôt qu'un commentaire l'affirme.
-- **Saisie : la quantité réelle là où la source demande « combien ».** 33 items en
-  saisie chiffrée, 24 en Oui/Non — la règle vient de la source elle-même.
+- **Saisie : la quantité réelle là où la source demande « combien ».** 33 items à
+  réponse quantitative (des tranches, pas une saisie libre), 24 en Oui/Non — la règle vient de la source elle-même.
   Reformuler un « combien » en affirmation-seuil (« Je bois plus de 12 verres
   d'eau par jour ») en ferait une **question suggestive**, qui attire
   l'acquiescement. Les quantités sont conservées dans `rawAnswers`, dans l'unité
