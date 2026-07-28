@@ -71,7 +71,14 @@ AS $$
     )
     AND NOT EXISTS (
       SELECT 1 FROM lots l
-      WHERE l.claim_pk = c.id AND l.tires @> to_jsonb(c.id)
+      WHERE l.claim_pk = c.id
+        -- `l.tires IS NULL` compte comme « peut-être tiré », donc épargne le
+        -- claim. Sans cette branche, `NULL @> …` vaut NULL, l'EXISTS ne trouve
+        -- rien, et un lot dont l'échantillon n'aurait pas de clé `tires` verrait
+        -- TOUS ses claims repris comme jamais lus. Aucune ligne de ce genre en
+        -- production au 2026-07-28 — mais c'est une mesure, pas une propriété du
+        -- code, et une signature ne s'efface pas sur une donnée manquante.
+        AND (l.tires IS NULL OR l.tires @> to_jsonb(c.id))
     );
 $$;
 

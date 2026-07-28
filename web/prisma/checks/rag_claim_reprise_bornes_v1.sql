@@ -45,12 +45,20 @@ VALUES
   ('__rb_revalide__', 'WN-CL-7777-005', 'WN-SRC-7777', 'v1.0',
    'Une méthylation insuffisante correspond à une homocystéine supérieure à 8 à 10 μmol/l.',
    repeat('e', 64), 'déclaré', false, 'VALIDE', 'p@wellneuro.fr', now(), 'contrat', 1536,
+   ('[' || repeat('0,', 1535) || '0]')::extensions.vector),
+  -- Borne, couvert par un lot dont l'échantillon ne porte AUCUNE clé `tires` :
+  -- on ne peut pas savoir s'il a été lu. Une signature ne s'efface pas sur une
+  -- donnée manquante — il doit être épargné.
+  ('__rb_sans_tires__', 'WN-CL-7777-006', 'WN-SRC-7777', 'v1.0',
+   'Les valeurs de référence du GABA sont de 0.40-0.85 µmol/L.',
+   repeat('f', 64), 'déclaré', false, 'VALIDE', 'p@wellneuro.fr', now(), 'contrat', 1536,
    ('[' || repeat('0,', 1535) || '0]')::extensions.vector);
 
 DO $$
 DECLARE
   tirage_a bigint;
   tirage_b bigint;
+  tirage_c bigint;
   cible text[];
 BEGIN
   -- Premier lot : tire __rb_tire__ et __rb_deux_lots__, couvre les cinq.
@@ -92,6 +100,20 @@ BEGIN
          '{"seed":2,"tires":[]}', '{"questions":[]}',
          '[{"id":"__rb_deux_lots__"}]', c.valide_at
   FROM public.rag_corpus_claims c WHERE c.id = '__rb_deux_lots__';
+
+  -- Troisième lot : échantillon SANS clé `tires`. Aucune ligne de ce genre en
+  -- production, mais rien dans le schéma ne l'interdit.
+  INSERT INTO public.rag_corpus_claim_decisions
+    (type_acte, validateur, source_id, echantillon)
+  VALUES ('tirage_echantillon', 'p@wellneuro.fr', 'WN-SRC-7777', '{"seed":3}')
+  RETURNING id INTO tirage_c;
+
+  INSERT INTO public.rag_corpus_claim_decisions
+    (type_acte, decision, validateur, source_id, tirage_id, echantillon, questionnaire, claims, cree_le)
+  SELECT 'decision_lot', 'VALIDE', 'p@wellneuro.fr', 'WN-SRC-7777', tirage_c,
+         '{"seed":3}', '{"questions":[]}',
+         '[{"id":"__rb_sans_tires__"}]', c.valide_at
+  FROM public.rag_corpus_claims c WHERE c.id = '__rb_sans_tires__';
 
   ALTER TABLE public.rag_corpus_claim_decisions ENABLE TRIGGER rag_claim_decisions_avant_insertion;
 
