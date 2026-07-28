@@ -92,6 +92,30 @@ describe('saveJaObservationSnapshot — cohérence trace ↔ épisode', () => {
     expect(prisma.protocolDraft.create).not.toHaveBeenCalled();
   });
 
+  it('refuse un plan d’un autre épisode', async () => {
+    await expect(saveJaObservationSnapshot(entree({
+      plans: [{ eventId: 'pl1', episodeId: 'ja_autre', from: '2026-07-21', dureeJours: 3, activatedBy: 'patient', rationaleRequired: false }],
+    }) as never)).rejects.toThrow(/plans/);
+    expect(prisma.protocolDraft.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse une solution d’un autre épisode', async () => {
+    await expect(saveJaObservationSnapshot(entree({
+      solutions: [{ solutionId: 's1', episodeId: 'ja_autre', labelPatient: 'Préparer la veille', contexte: 'Semaine' }],
+    }) as never)).rejects.toThrow(/solutions/);
+    expect(prisma.protocolDraft.create).not.toHaveBeenCalled();
+  });
+
+  // Le lot branche le premier client d'une route d'écriture jusqu'ici dormante :
+  // le contenu vient d'un navigateur patient, et rien d'autre ne borne ce qui
+  // entre dans `protocol_drafts.payload`.
+  it('refuse une liste hors bornes de volume', async () => {
+    const trop = Array.from({ length: 201 }, (_, i) => ({ ...trace(EPISODE.episodeId), traceId: `t${i}` }));
+    await expect(saveJaObservationSnapshot(entree({ traces: trop }) as never))
+      .rejects.toThrow(/hors bornes/);
+    expect(prisma.protocolDraft.create).not.toHaveBeenCalled();
+  });
+
   it('ne sur-rejette pas : une trace du cycle courant passe', async () => {
     const snapshot = await saveJaObservationSnapshot(entree({
       traces: [trace(EPISODE.episodeId)],

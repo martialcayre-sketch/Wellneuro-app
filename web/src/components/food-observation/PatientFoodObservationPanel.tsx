@@ -327,6 +327,17 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
     // les traces relèvent d'un autre épisode.
     const duCycle = <T extends { episodeId: string }>(liste: T[]): T[] =>
       liste.filter(item => item.episodeId === episode.episodeId);
+    // Rien du cycle courant à transmettre, alors que l'appareil porte des
+    // notes : elles relèvent d'une période antérieure. Le dire plutôt que
+    // d'envoyer un instantané vide et de rendre un succès trompeur.
+    const aTransmettre = duCycle(traces).length + duCycle(pauses).length
+      + duCycle(plans).length + duCycle(solutions).length;
+    const enLocal = traces.length + pauses.length + plans.length + solutions.length;
+    if (aTransmettre === 0 && enLocal > 0) {
+      setErreurEnvoi('Vos notes datent d’une période précédente : rien à transmettre pour la période en cours.');
+      return;
+    }
+
     setErreurEnvoi('');
     setEnvoi(true);
     try {
@@ -507,6 +518,13 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         </PatientButton>
       </div>
 
+      {/* La saisie n'ouvre qu'une fois le cycle résolu — plans et solutions
+          compris : saisis avant, ils seraient rattachés à un identifiant hors
+          cycle, puis écartés de la transmission sans que le patient le voie. */}
+      {!protocoleCharge ? (
+        <PatientInlineMessage tone="info">Chargement de votre carnet…</PatientInlineMessage>
+      ) : (
+      <>
       <div data-testid="ja-patient-question-jour">
         <PatientCard padding="sm" className="space-y-3 border-primary/20">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Question du jour</p>
@@ -521,12 +539,6 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         </PatientCard>
       </div>
 
-      {/* La saisie n'ouvre qu'une fois le cycle résolu : avant, une trace
-          serait rattachée à un épisode « hors cycle » puis écartée à
-          l'enregistrement. */}
-      {!protocoleCharge ? (
-        <PatientInlineMessage tone="info">Chargement de votre carnet…</PatientInlineMessage>
-      ) : (
       <div data-testid="ja-patient-formulaire-trace">
         <PatientCard className="space-y-4">
         <PatientField label="Budget d’attention (traces par semaine)">
@@ -628,7 +640,6 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         </div>
         </PatientCard>
       </div>
-      )}
 
       <div data-testid="ja-patient-couverture">
         <PatientCard padding="sm" className="space-y-2">
@@ -691,6 +702,9 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
           )}
         </PatientCard>
       </div>
+
+      </>
+      )}
 
       <div data-testid="ja-patient-historique">
         <PatientCard padding="sm" className="space-y-3">

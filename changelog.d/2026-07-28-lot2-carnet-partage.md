@@ -76,6 +76,14 @@
   `praticien/protocoles`, `copilote/prevol` et `patient/protocole`, avec les
   tests de non-régression correspondants.
 
+- **Le serveur décide seul du cycle auquel une transmission se rattache.**
+  `POST /api/portail/ja/observations` confronte l'`episodeId` reçu au protocole
+  effectivement diffusé (`resolveProtocoleDiffuse`) et rend un `409` explicite
+  sinon. Sans cela, la cohérence vérifiée par le domaine restait **interne au
+  corps reçu** : un onglet resté ouvert au travers d'une nouvelle diffusion
+  transmettait un instantané parfaitement cohérent avec lui-même, et rattaché
+  au cycle périmé.
+
 - **Une trace ne peut plus partir sous un épisode qui n'est pas le sien.** Le
   brouillon local est conservé d'un cycle à l'autre, et l'épisode est résolu de
   façon asynchrone : une trace d'un cycle précédent, ou saisie avant que le
@@ -83,14 +91,29 @@
   silence à la lecture — `buildPublishedJaFeasibility` lève et
   `getLatestPublishedJaFeasibility` avale l'exception, si bien que la
   faisabilité JA aurait **disparu de la boussole praticien sans message**. Trois
-  gardes : la saisie n'ouvre qu'une fois le cycle résolu, l'envoi ne porte que
-  les éléments du cycle courant, et `saveJaObservationSnapshot` refuse
-  l'instantané incohérent.
+  gardes : la saisie — traces, plans et solutions — n'ouvre qu'une fois le cycle
+  résolu, l'envoi ne porte que les éléments du cycle courant, et
+  `saveJaObservationSnapshot` refuse l'instantané incohérent. Quand tout le
+  brouillon relève d'une période antérieure, la transmission est refusée avec un
+  message plutôt que rendue comme un succès à contenu vide.
+
+- **Le volume écrit est borné** (200 éléments par liste). Le lot branche le
+  premier client d'une route d'écriture jusqu'ici dormante : sans borne, du JSON
+  de navigateur patient entrait sans limite dans `protocol_drafts.payload`, sur
+  une implantation non-HDS.
 
 - **Le praticien lit ce que le patient transmet.** Le panneau praticien affiche
   les transmissions reçues (date et comptes, sans interprétation). Sans ce
   lecteur, « Transmettre à mon praticien » promettait un partage sans
-  destinataire — de la donnée de santé écrite avant d'avoir un usage.
+  destinataire — de la donnée de santé écrite avant d'avoir un usage. Le filtre
+  d'acteur est posé **en base** : appliqué après coup sur une fenêtre de dix
+  lignes tous acteurs confondus — chaque activation praticien en écrivant deux —
+  le panneau aurait affirmé « aucune transmission du patient » alors qu'il en
+  existait.
+
+- **`GET /api/praticien/protocoles` ne renvoie plus les instantanés du carnet.**
+  Changement de contrat d'API sans consommateur connu, conséquence de
+  l'exclusion ci-dessus.
 
 ### Réserves ouvertes
 
@@ -110,16 +133,19 @@
   le même `episodeId` avec une fenêtre différente, confondant deux cycles. Faire
   entrer `approvedAt` dans la dérivation reste à trancher.
 - **La transmission ne se ferme pas à `finDeCycle`.** La route portail calcule
-  cet état (J21 + 3 j) ; le panneau l'ignore. Le bouton reste offert après la fin
-  du cycle, avec des traces datées d'aujourd'hui sous une fenêtre passée.
+  cet état (J21 + 3 j) ; ni le panneau ni la garde de cycle ne s'en servent —
+  tant que le protocole reste diffusé, une trace datée d'aujourd'hui part sous
+  une fenêtre passée.
 - `supersedesDraftId` est contrôlé par le client et seul son **format** est
   vérifié : `supersedes_draft_id` ne porte aucune clé étrangère. Deux appareils
   produisent en outre une fourche, sans règle de résolution.
-- La tête de chaîne relue du `sessionStorage` peut être périmée hors ligne : la
-  liste serveur devrait faire seule autorité.
+- La tête de chaîne relue du `sessionStorage` peut être périmée hors ligne, la
+  liste serveur ne l'écrasant qu'en cas de succès.
 - Un retour arrière vers le déploiement précédent rendrait illisibles les
   épisodes écrits sans `idealPlan` (`nonEmpty` y est inconditionnel). Les lignes,
   elles, subsisteraient.
+- Les transmissions affichées au praticien ne portent pas leur cycle :
+  « 3 trace(s) » d'un essai antérieur se lit sous le panneau du cycle courant.
 - `PatientCard` n'accepte ni ne transmet `data-testid` : l'attribut posé sur la
   carte de décision praticien (`ja-patient-decision-active`) disparaît
   silencieusement du DOM. Hors périmètre de ce lot, mais un test s'appuyant sur

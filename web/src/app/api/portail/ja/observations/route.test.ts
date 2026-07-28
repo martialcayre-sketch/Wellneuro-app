@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, listSnapshots, saveSnapshot, readPatientSession, isSessionValideForPatient } = vi.hoisted(() => ({
+const { prisma, listSnapshots, saveSnapshot, readPatientSession, isSessionValideForPatient, resolveProtocoleDiffuse } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
   },
@@ -8,6 +8,7 @@ const { prisma, listSnapshots, saveSnapshot, readPatientSession, isSessionValide
   saveSnapshot: vi.fn(),
   readPatientSession: vi.fn(),
   isSessionValideForPatient: vi.fn(),
+  resolveProtocoleDiffuse: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -19,12 +20,13 @@ vi.mock('@/lib/patient-session', () => ({
   readPatientSession,
   isSessionValideForPatient,
 }));
+vi.mock('@/lib/protocol/portailProtocol', () => ({ resolveProtocoleDiffuse }));
 
 import { GET, POST } from './route';
 
 const payload = {
   episode: {
-    episodeId: 'ja_episode_1',
+    episodeId: 'ja_PAT_TEST_abcdef0123456789',
     patientId: 'PAT_TEST',
     startDate: '2026-07-17',
     endDate: '2026-07-24',
@@ -61,6 +63,11 @@ describe('api/portail/ja/observations', () => {
       email: 'sophie.nicola@example.test',
     });
     isSessionValideForPatient.mockReturnValue(true);
+    resolveProtocoleDiffuse.mockResolvedValue({
+      protocolDraftId: 'PD_1',
+      protocolDraftInputHash: 'abcdef0123456789ZZZZ',
+      approvedAt: new Date('2026-07-20T08:00:00.000Z'),
+    });
   });
 
   it('GET refuse sans session portail', async () => {
@@ -153,6 +160,52 @@ describe('api/portail/ja/observations', () => {
     expect(res.status).toBe(400);
     expect(json.reason).toBe('invalid_payload');
     expect(json.error).toMatch(/n’appartient pas au patient/);
+  });
+
+  // Autorité serveur : la cohérence interne du corps ne suffit pas. Un onglet
+  // resté ouvert au travers d'une nouvelle diffusion enverrait un instantané
+  // parfaitement cohérent avec lui-même, rattaché au cycle périmé.
+  it('POST refuse un instantané rattaché à un cycle qui n’est plus diffusé', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue({
+      protocolDraftId: 'PD_2',
+      protocolDraftInputHash: '9999999999999999ZZZZ',
+      approvedAt: new Date('2026-08-01T08:00:00.000Z'),
+    });
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }),
+    );
+    const json = (await res.json()) as { reason: string; error: string };
+
+    expect(res.status).toBe(409);
+    expect(json.reason).toBe('cycle_perime');
+    expect(json.error).toMatch(/Rechargez la page/);
+    expect(saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('POST refuse quand plus aucun protocole n’est diffusé', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    expect(res.status).toBe(409);
+    expect(saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  // Le patient ne chaîne que sur ses propres transmissions : le filtre est posé
+  // EN BASE, une fenêtre tous acteurs pouvant les masquer entièrement.
+  it('GET borne la liste aux instantanés du patient, en base', async () => {
+    listSnapshots.mockResolvedValue([]);
+    await GET(new Request('http://localhost/api/portail/ja/observations'));
+    expect(listSnapshots).toHaveBeenCalledWith('PAT_TEST', 10, 'patient');
   });
 
   it('POST refuse si la session n’est plus valide pour le compte', async () => {

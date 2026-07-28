@@ -207,11 +207,13 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     const chargerTransmissions = async () => {
       try {
         const res = await fetch(
-          `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}`,
+          `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}&actor=patient`,
           { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
         );
         const json = (await res.json()) as { ok: boolean; snapshots?: JaSnapshotRecu[] };
         if (!mounted || !res.ok || !json.ok || !json.snapshots) return;
+        // Le filtre d'acteur est déjà posé en base ; celui-ci n'est qu'une
+        // ceinture, il ne porte plus la fenêtre de lecture.
         setTransmissions(json.snapshots.filter(s => s.actor === 'patient'));
       } catch {
         // Repli silencieux : la revue praticien reste utilisable.

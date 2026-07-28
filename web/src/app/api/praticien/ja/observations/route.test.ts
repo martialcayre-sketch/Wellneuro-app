@@ -68,6 +68,28 @@ describe('api/praticien/ja/observations', () => {
     expect(res.status).toBe(401);
   });
 
+  // H-A : le filtre d'acteur est posé EN BASE. Appliqué après coup sur une
+  // fenêtre de 10 lignes tous acteurs — chaque activation praticien en écrivant
+  // deux — le panneau conclurait « aucune transmission du patient » alors qu'il
+  // en existe.
+  it('GET borne la liste à l’acteur demandé, en base', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    listSnapshots.mockResolvedValue([]);
+
+    await GET(new Request('http://localhost/api/praticien/ja/observations?idPatient=PAT_TEST&actor=patient'));
+    expect(listSnapshots).toHaveBeenCalledWith('PAT_TEST', 10, 'patient');
+  });
+
+  it('GET ignore un acteur inconnu plutôt que de le passer au domaine', async () => {
+    getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
+    prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });
+    listSnapshots.mockResolvedValue([]);
+
+    await GET(new Request('http://localhost/api/praticien/ja/observations?idPatient=PAT_TEST&actor=nimporte'));
+    expect(listSnapshots).toHaveBeenCalledWith('PAT_TEST', 10, undefined);
+  });
+
   it('GET liste les snapshots si patient autorisé', async () => {
     getServerSession.mockResolvedValue({ user: { email: 'praticien@wellneuro.fr' } });
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'praticien@wellneuro.fr' });

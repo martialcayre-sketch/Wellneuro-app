@@ -275,12 +275,45 @@ describe('PatientFoodObservationPanel', () => {
     expect(screen.getByText(/2026-06-01/)).toBeTruthy();
   });
 
-  it('n’ouvre pas la saisie avant que le cycle soit résolu', () => {
+  it('n’ouvre aucune saisie avant que le cycle soit résolu', () => {
     mockRoutes({ protocole: PROTOCOLE_DIFFUSE });
     render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
 
     expect(screen.queryByTestId('ja-patient-enregistrer-trace')).toBeNull();
+    // Plans et solutions aussi : saisis hors cycle, ils seraient écartés de la
+    // transmission sans que le patient le voie.
+    expect(screen.queryByTestId('ja-patient-question-jour')).toBeNull();
+    expect(screen.queryByTestId('ja-patient-solutions')).toBeNull();
     expect(screen.getByText('Chargement de votre carnet…')).toBeTruthy();
+  });
+
+  // Un brouillon entièrement issu d'un cycle précédent produisait un envoi vide
+  // rendu comme un succès : le patient croyait avoir transmis.
+  it('refuse de transmettre quand tout le brouillon relève d’une période antérieure', async () => {
+    window.sessionStorage.setItem('wellneuro:ja5-02:patient:PAT_TEST', JSON.stringify({
+      budget: 3,
+      traces: [{
+        traceId: 't_ancien',
+        episodeId: 'ja_PAT_TEST_cycle_precedent',
+        localDate: '2026-06-01',
+        occasionPresentee: true,
+        faisable: true,
+        issue: 'fait',
+        frictionsVersion: 'frictions-v1',
+      }],
+      pauses: [],
+      plans: [],
+      solutions: [],
+    }));
+    mockRoutes({ protocole: PROTOCOLE_DIFFUSE });
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+
+    fireEvent.click(await screen.findByTestId('ja-patient-transmettre'));
+
+    expect(await screen.findByText(/rien à transmettre pour la période en cours/i)).toBeTruthy();
+    const posts = vi.mocked(fetch).mock.calls.filter(([url, init]) =>
+      String(url).includes('/api/portail/ja/observations') && init?.method === 'POST');
+    expect(posts).toHaveLength(0);
   });
 
   it('rend l’échec de transmission en français sans perdre le brouillon', async () => {
