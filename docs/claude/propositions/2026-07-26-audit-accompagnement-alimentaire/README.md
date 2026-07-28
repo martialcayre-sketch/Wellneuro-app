@@ -1,19 +1,44 @@
 ---
 id: "2026-07-26-audit-accompagnement-alimentaire"
 titre: "Audit et arbitrage — accompagnement alimentaire Wellneuro 5.0"
-statut: "rapport — P0 point 1 exécuté le 2026-07-27 (v4), autres arbitrages en attente"
+statut: "rapport — P0 intégralement exécuté le 2026-07-27 (#398, #408) ; P0 bis, P1, P2, P3 en attente d'arbitrage"
 créé_le: "2026-07-26"
 base_auditée: "main @ a19df9b"
 ---
 
 # Audit et arbitrage — accompagnement alimentaire
 
-> **Suite donnée — 2026-07-27.** Le point 1 du P0 (§6) est **exécuté** :
-> `Q_SOM_06` est détaché du besoin 2, qui devient non évalué, et
-> `VERSION_SCORE_EQUILIBRE` passe de v3 à v4. Le constat §4.1 décrit donc
-> désormais l'**état antérieur**. Les points 2 à 4 du P0, ainsi que P0 bis,
-> P1, P2 et P3, restent ouverts, comme les quatre questions du §7 —
-> à l'exception de la première, tranchée par ce correctif.
+> **Suite donnée — 2026-07-27. Le P0 (§6) est intégralement exécuté.**
+>
+> - **Point 1** (#398) : `Q_SOM_06` est détaché du besoin 2, qui devient non
+>   évalué, et `VERSION_SCORE_EQUILIBRE` passe de v3 à v4. Le constat §4.1
+>   décrit donc désormais l'**état antérieur**.
+> - **Points 2 à 4** (#408) : la promesse d'estimation est retirée du titre et
+>   des consignes de `Q_ALI_03` comme du catalogue ; les seuils de `Q_ALI_01`
+>   sont signalés provisoires et de source non certifiée ; le prompt de synthèse
+>   (v5) interdit désormais de conclure à une carence, une quantité ou un statut
+>   biologique depuis un questionnaire alimentaire.
+>
+> **Un défaut hors plan, trouvé par la revue adversariale**, a rendu ce lot plus
+> grave qu'annoncé : `Q_ALI_03` émettait un bloc `monnier` calculé depuis des
+> sous-scores **inexistants** — 0 g/j de protéines et 0 kcal/j, invariants quelle
+> que soit la réponse, persistés en base et transmis au modèle de synthèse. Un
+> signal de dénutrition sévère fabriqué, porté par la passation du 2026-07-25.
+> Le calcul est retiré du moteur et la clé filtrée du prompt. **Le §3 de ce
+> rapport affirmait le contraire ; la ligne est corrigée sur place.**
+>
+> Restent ouverts : **P0 bis, P1, P2, P3**, les questions 2 à 4 du §7 (la
+> première est tranchée par le point 1), et neuf réserves consignées au
+> changelog — dont les libellés de sous-score disant encore « Apports », les
+> bandes d'interprétation de `Q_ALI_01` qui continuent de conclure, et le
+> **backfill des `titre` figés** : la fiche praticien affiche encore l'ancienne
+> promesse sur la passation du 2026-07-25.
+>
+> **Suite hors périmètre alimentaire.** La méthode de ce rapport a été appliquée
+> à la chaîne trajectoire patient le 2026-07-27 :
+> `docs/claude/propositions/2026-07-27-audit-chaine-trajectoire/`. Elle y a
+> trouvé le même défaut de fond — une absence de mesure rendue comme un
+> résultat — et le fait que la chaîne praticien n'a aucune donnée en production.
 
 ## 1. Périmètre et méthode
 
@@ -387,11 +412,22 @@ C'est faisable et cohérent. Ce n'est pas une variante du formulaire actuel.
    scores (règle à porter dans le prompt de synthèse).
 
 > ⚠️ **Ces changements modifient des scores servis.** Ils imposent un bump
-> `VERSION_SCORE_EQUILIBRE` v3 → v4 (`constants.ts:12`) et une note de
-> frontière : un épisode figé en v3 ne se compare pas à un épisode v4, la
-> comparaison de momentum reprend au premier couple v4. C'est une modification
+> `VERSION_SCORE_EQUILIBRE` v3 → v4 (`constants.ts:43`). C'est une modification
 > de **logique clinique** : demande explicite du praticien et entrée
 > `CHANGELOG.md` requises avant exécution.
+>
+> **Correction — 2026-07-27.** Cet encadré affirmait initialement qu'« un épisode
+> figé en v3 ne se compare pas à un épisode v4, la comparaison de momentum
+> reprend au premier couple v4 ». **C'est faux, sur les deux moitiés de la
+> phrase.** Rien n'est figé sauf l'étiquette : les valeurs sont **recalculées à
+> chaque lecture** avec le mapping courant (`depuisPrisma.ts:88-107`), si bien
+> qu'un épisode étiqueté v3 affiche déjà des valeurs v4. Et il n'y a **aucune
+> reprise** : `resoudreComparaison` (`protocol/trajectoire.ts:170-181`) refuse
+> dès que deux étiquettes coexistent sur l'ensemble des cycles du patient, sans
+> fenêtre — un seul cycle v3 subsistant bloque la comparaison indéfiniment.
+> La formulation exacte est portée depuis #398 par `constants.ts:24-36` ;
+> l'encadré, lui, n'avait pas été repris. Le détail est audité au §5 (F3, F4) du
+> rapport `2026-07-27-audit-chaine-trajectoire/`.
 
 ### P0 bis — Brancher l'écriture patient existante **[à arbitrer]**
 
@@ -427,9 +463,11 @@ Le plus gros chantier (§5.6), dépendant de tout ce qui précède.
 
 Ces quatre questions ne se tranchent pas en lisant du code.
 
-1. **Besoin 2 « Micronutriments essentiels »** : le laisser non évalué, ou lui
-   définir une nouvelle source ? (Rappel : il est fondation critique, donc son
-   effondrement plafonne le score global à 50.)
+1. ~~**Besoin 2 « Micronutriments essentiels »** : le laisser non évalué, ou lui
+   définir une nouvelle source ?~~ **Tranchée le 2026-07-27** (#398) : laissé
+   **non évalué** (couverture `null`), la fatigue de Pichot ayant été retirée de
+   ses sources. La question de lui donner une source pertinente reste ouverte,
+   mais elle ne bloque plus rien — le besoin ne plafonne plus le score global.
 2. **`Q_ALI_01`** : restaurer les 57 items SIIN, ou assumer un dépistage court
    Wellneuro renommé et sans seuils cliniques ? (Recommandation : le second,
    §5.3.)

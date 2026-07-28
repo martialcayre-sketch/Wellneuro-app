@@ -4,6 +4,7 @@ import { calculerNiveauxPreuveTousLesBesoins } from '../equilibre/evidence';
 import { calculerObjetsCliniques, SOURCES_STABILITE_METABOLIQUE } from '../equilibre/objetsCliniques';
 import { calculerEquilibre } from '../equilibre/score';
 import { QUESTIONNAIRE_CATALOGUE } from '../questions';
+import { motifNonInterpretable } from '../scoring/passationsNonInterpretables';
 import { canonicalSha256 } from './canonical';
 import {
   VERSION_MAPPING_BESOINS,
@@ -148,6 +149,20 @@ export function buildClinicalSnapshot(input: {
 
   const questionnaireFindings: QuestionnaireFinding[] = selected.map(response => {
     const calculable = hasExploitableRawAnswers(response);
+    // L'ordre compte : une passation non interprétable l'est quel que soit
+    // l'état de ses réponses brutes. La dire « calculable » laisserait le C1
+    // annoncer une mesure disponible là où il n'y en a pas.
+    const motifNonMesure = motifNonInterpretable(response.questionnaireId);
+    if (motifNonMesure) {
+      return {
+        responseId: response.responseId,
+        questionnaireId: response.questionnaireId,
+        observedAt: new Date(response.observedAt).toISOString(),
+        scoreVersion: response.scoreVersion,
+        evaluability: 'not_interpretable' as const,
+        limitations: [motifNonMesure],
+      };
+    }
     return {
       responseId: response.responseId,
       questionnaireId: response.questionnaireId,

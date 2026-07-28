@@ -691,6 +691,78 @@ depuis le checkout principal ; lots 5-6 (besoins).
 re-sert un suspendu ; les passations invalides alimentent encore fiche et
 synthèse IA.
 
+## 2026-07-27 — Le réservoir Q_SOM_07 est fermé (#418)
+
+**Décisions** : #413 mergée. #418 (`4e35516`) — les passations à interprétation
+retirée cessent d'alimenter fiche, Fil et synthèse IA. Registre distinct de
+`IDS_SUSPENDUS` : `actif: false` décide de l'envoi, pas de la lecture. Liste
+blanche, seul `rawAnswers` subsiste. Consigne v5 → v6. Trois arbitrages :
+synthèses antérieures qualifiées (critère = date), `evaluability` gagne
+`not_interpretable`, `PATCH` / portail / `submit` refusent un suspendu — contre
+la doctrine écrite d'`instruments.ts`.
+
+**Écarté** : réécrire les 3 synthèses validées (écriture en base) ; recycler
+`not_calculable`, qui aurait nié vingt items présents.
+
+**Validations** : 15 mutations, chacune ≥ 1 échec ; 2200 tests ; `verify`
+8 min 29 ; prod relue — rien réécrit.
+
+**Prochaine action** : retirer les deux worktrees ; lots 5-6 (besoins).
+
+**Questions ouvertes** : bloc axes du booklet ; un booklet parti n'est pas
+rappelé ; `RETRAIT_EN_SERVICE_LE` en dur.
+
+## 2026-07-27 — Audit de la chaîne trajectoire patient (docs-only)
+
+**Décisions** : clôture de session par un lot documentaire, sans aucun code.
+Audit complet de la chaîne trajectoire (SP-CONV + SP-TRAJ) demandé par
+l'utilisateur après signalement que le périmètre dépassait une clôture. Règle de
+preuve ajoutée : aucun constat de comportement sur lecture seule — sondes Vitest
+jetables exécutées, portée mesurée en production.
+
+**Trouvé** : la chaîne praticien est **dormante** (0 épisode, 0 protocole, pour
+17 patients) ; un jalon sans réponse nouvelle est rendu « mesuré » avec la valeur
+de T0 et un momentum « stable » (F1, prouvé), ce que deux frontières écrites
+interdisent mot pour mot ; le repère de cabinet en hérite ; côté patient, « *n*
+bilans jalonnent votre parcours » alors qu'il y en a eu un. Aucun patient
+concerné aujourd'hui — défauts latents.
+
+**Écarté** : tout correctif de code (F1 modifie un signal clinique servi → bump
+v5 + demande explicite) ; le backfill des `titre` figés (données de production).
+
+**Audit externe confronté** (3e document apporté) : juste sur `Q_ALI_01`, risque
+résiduel n° 1 — il pilote seul une fondation critique avec des seuils que le code
+déclare non certifiés. Faux sur la couverture du carnet, qui refuse explicitement
+de qualifier ; mais le verdict de suffisance existe ailleurs et dit au patient
+« nous en savons assez » sur trois traces du même jour. Écarté : brancher `AL12`
+au besoin 3 (rejouerait le défaut du besoin 2) ; 14 domaines dont 8 vides.
+
+**Prochaine action** : arbitrer `Q_ALI_01` — renommage et sortie des fondations
+critiques. Elle commande le lot 1 du plan révisé.
+
+**Questions ouvertes** : sort du « silence utile » ; le cycle protocole → épisode
+a-t-il vocation à servir (zéro ligne en base) ; six domaines ou quatorze ; les
+quatre questions du rapport trajectoire.
+
+
+## 2026-07-27 — Clôture : #416 mergée, raccourci docs-only du CI constaté
+
+**Décisions** : #416 mergée en squash (`9693b91`) sur instruction explicite —
+audit trajectoire, confrontation de l'audit externe, plan alimentaire révisé.
+Conflit sur ce journal avec #419 (deux entrées ajoutées au même endroit) résolu
+en conservant les deux, dans l'ordre d'arrivée.
+
+**À retenir** : depuis #412, `verify` détecte un diff purement documentaire
+(`ci.yml:53-85`) et saute build et E2E — vert en 33 s là où la même PR prenait
+8 min 37 avant le merge de `main`. Ce n'est pas un passage à vide : anti-secrets
+et audit des campagnes restent inconditionnels. Ne pas lire un `verify` court
+comme un CI qui n'a rien vérifié, ni comme la preuve que les E2E sont passées.
+
+**Écarté** : forcer un run complet sur un diff docs-only.
+
+**Prochaine action** : arbitrer `Q_ALI_01` — lot 1 du plan révisé.
+
+**Questions ouvertes** : inchangées, voir l'entrée précédente.
 ## 2026-07-28 — Agenda du sommeil : audit, contrat v2 et complétude face au consensus
 
 **Décisions** : audit de la maquette « Wellneuro 5.0 » puis refonte en deux lots, dans le worktree `agenda-sommeil-v2` (non committé). Lot 1 : fin du pré-remplissage par la nuit de la veille (on validait 20 copies conformes sans un geste), cadran tactile sans clavier, éveil nocturne obligatoire avec classe `aucun` explicite, barème refondu en 4 axes indépendants (la latence y comptait 3 fois ; la qualité vécue n'y comptait pas), seuils 7/14 nuits dont 4 de week-end, écart-type en n−1, niveau de preuve B→D, besoin 5 pondéré (mouvement 1/2, repos 1/2). Lot 2, après comparaison au Consensus Sleep Diary : réveil final (3ᵉ poignée conditionnelle — le réveil matinal précoce était invisible et comptait comme du sommeil), aide au sommeil obligatoire, éveil reborné 15/30/60, métriques de fréquence.

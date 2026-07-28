@@ -110,6 +110,64 @@ describe('GET /api/praticien/inbox-questionnaires', () => {
     ]);
   });
 
+  it('le détail retire score et interprétation d’une passation non interprétable, et garde les réponses', async () => {
+    // Le Fil est l'écran où le praticien DÉCOUVRE la passation : c'est là que
+    // « Fatigue notable » se lisait pour la première fois sur une somme sans
+    // inversion d'items. Les réponses brutes et leur relecture item par item
+    // restent — ce que le patient a répondu est vrai, la lecture ne l'était pas.
+    prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idReponse: 'R_SOM07',
+        idPatient: 'PAT_SEED_01',
+        idAssignation: 'ASS1',
+        idQuestionnaire: 'Q_SOM_07',
+        titre: 'MFI-20 — Échelle multidimensionnelle de fatigue',
+        dateReponse: new Date('2026-07-21T08:00:00.000Z'),
+        scoresJson: {
+          type: 'sum',
+          total: 45,
+          maxTotal: 80,
+          interpretation: { label: 'Fatigue notable' },
+          rawAnswers: { M1: 2 },
+        },
+        scorePrincipal: 45,
+        interpretation: 'Fatigue notable',
+      },
+    ]);
+    const payload = await (await GET(getRequest('/api/praticien/inbox-questionnaires?idPatient=PAT_SEED_01'))).json();
+    const reponse = payload.reponses[0];
+    expect(reponse.nonInterpretable).toBeTruthy();
+    expect(reponse.scorePrincipal).toBeNull();
+    expect(reponse.interpretation).toBe('');
+    expect(reponse.subScoreRanges).toBeNull();
+    expect(reponse.scoresParsed).toEqual({ rawAnswers: { M1: 2 } });
+    // Conservé, et c'est le point : marquer n'est pas effacer.
+    expect(reponse.rawAnswers).toEqual({ M1: 2 });
+    expect(reponse.titre).toBe('MFI-20 — Échelle multidimensionnelle de fatigue');
+  });
+
+  it('le détail laisse intact un instrument courant (contrôle négatif)', async () => {
+    prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_SEED_01', prenom: 'Sophie', nom: 'Nicola' }]);
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idReponse: 'R1',
+        idPatient: 'PAT_SEED_01',
+        idAssignation: 'ASS1',
+        idQuestionnaire: 'Q_NEU_06',
+        titre: 'Questionnaire sommeil',
+        dateReponse: new Date('2026-07-15T08:00:00.000Z'),
+        scoresJson: { total: 7, rawAnswers: { MM1: 2 } },
+        scorePrincipal: 7,
+        interpretation: 'Vigilance',
+      },
+    ]);
+    const payload = await (await GET(getRequest('/api/praticien/inbox-questionnaires?idPatient=PAT_SEED_01'))).json();
+    expect(payload.reponses[0].nonInterpretable).toBeNull();
+    expect(payload.reponses[0].scorePrincipal).toBe(7);
+    expect(payload.reponses[0].interpretation).toBe('Vigilance');
+  });
+
   it('POST confirme la lecture des réponses encore en attente du patient scopé', async () => {
     prisma.questionnaireReponse.findMany.mockResolvedValue([
       { idReponse: 'R1', idPatient: 'PAT_SEED_01', titre: 'Sommeil', dateReponse: new Date('2026-07-15T08:00:00.000Z') },
