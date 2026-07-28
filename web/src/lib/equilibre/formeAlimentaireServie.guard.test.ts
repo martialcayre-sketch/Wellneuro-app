@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Q_ALI_01, Q_ALI_01_SIIN_57, Q_ALI_01_COURT_14 } from '@/lib/questionnaires/alimentaire';
-import { BESOIN_SOURCES, VERSION_SCORE_EQUILIBRE, BESOINS_FONDATIONS_CRITIQUES } from './constants';
+import { BESOIN_SOURCES, VERSION_SCORE_EQUILIBRE, BESOINS_FONDATIONS_CRITIQUES, SEUIL_EFFONDREMENT } from './constants';
 
 // Cohérence de la forme alimentaire servie.
 //
@@ -54,5 +54,36 @@ describe('forme alimentaire servie', () => {
 
   it('le besoin 2 n’a toujours aucune source — le branchement est un lot à part', () => {
     expect(BESOIN_SOURCES[2]).toEqual([]);
+  });
+});
+
+// ── Le seuil d'effondrement change de portée sans changer de valeur ──────────
+//
+// `SEUIL_EFFONDREMENT` vaut 0,34 et reste global aux cinq fondations critiques.
+// Mais l'échelle du besoin 1 passe de /42 à /90, donc le total qui déclenche le
+// plafonnement de « Mon équilibre » à 50 passe de ≤ 14 à ≤ 30.
+//
+// Sur /42, 14 était exactement le haut de la bande la plus basse du dépistage.
+// Sur /90, 30 dépasse le haut de la bande source « très déséquilibrée » (25) et
+// mord sur « déséquilibrée » (26-50). Arbitrage praticien du 2026-07-28 :
+// GARDER 0,34 et le documenter — le seuil étant partagé, le recalibrer
+// déplacerait aussi le sommeil, le digestif, le stress et les micronutriments.
+//
+// Ce test ne juge pas la valeur : il rend le déclencheur EXPLICITE, pour qu'un
+// changement d'échelle futur ne le déplace plus en silence.
+describe('seuil d’effondrement — portée sur l’échelle servie', () => {
+  it('nomme le total à partir duquel le plafonnement se déclenche', () => {
+    const maxServi = Q_ALI_01.scoring.maxTotal;
+    const totalDeclencheur = Math.floor(SEUIL_EFFONDREMENT * maxServi);
+    expect({ maxServi, totalDeclencheur }).toEqual(
+      SIIN57_ACTIF ? { maxServi: 90, totalDeclencheur: 30 } : { maxServi: 42, totalDeclencheur: 14 },
+    );
+  });
+
+  it('le seuil reste global — aucune fondation critique n’a le sien', () => {
+    // Si un seuil par besoin est introduit un jour, ce test doit tomber : la
+    // décision de 2026-07-28 repose précisément sur le caractère partagé.
+    expect(typeof SEUIL_EFFONDREMENT).toBe('number');
+    expect(SEUIL_EFFONDREMENT).toBe(0.34);
   });
 });

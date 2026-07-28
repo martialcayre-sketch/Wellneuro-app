@@ -41,7 +41,7 @@
     "cb:nabm:apply": "node prisma/runWithAlias.js prisma/importNabm.ts --apply",
     "c5:ciqual:test-integration": "bash scripts/test-c5-ciqual-import.sh",
     "prompt-cache-check": "node prisma/runWithAlias.js scripts/prompt-cache-check.ts",
-    "test:siin57": "WN_ALI_01_SIIN57=true vitest run src/lib/equilibre src/lib/questionnaires src/lib/questionnaire-display.test.ts src/components/patient --reporter=dot"
+    "test:siin57": "WN_ALI_01_SIIN57=true vitest run --reporter=dot"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.107.0",

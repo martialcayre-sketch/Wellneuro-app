@@ -106,6 +106,55 @@ Aucun n'a été affaibli ; deux ont été renforcés.
   nommé. `versionServie` reste `a_auditer` — le garde interdit d'y écrire une
   description sous ce statut, et la forme servie dépend encore du drapeau.
 
+### Ce que la revue adversariale a corrigé
+
+Verdict initial **NO-GO**. Quatre constats traités, dont deux défauts du diff
+lui-même.
+
+- **La parade anti-zéro n'était écrite que dans un sens.** Le moteur `sum` n'en
+  avait aucune : servir la forme courte après avoir recueilli des réponses
+  `SIIN*` — c'est-à-dire **éteindre le drapeau**, que ce changelog présentait
+  comme le retour arrière — rendait `total: 0`, donc la bande « très
+  déséquilibrée » **et sa conduite « bilan approfondi nécessaire »**, sur un
+  dossier illisible. Sur une source de fondation critique, cela plafonne « Mon
+  équilibre » à 50. Vérifié à l'exécution avant correction. La garde est
+  désormais posée sur `sum` aussi, ce qui protège tous les instruments de ce
+  moteur, et un test couvre les deux sens.
+- **Un garde était devenu tautologique.** `ALI01_SERT_UNE_CONDUITE` dérivait du
+  champ que l'assertion teste : les deux membres bougeaient ensemble, et
+  supprimer les quatre `protocol:` de la forme courte — une perte clinique
+  réelle — laissait le garde vert dans les deux positions. Le discriminant est
+  maintenant `maxTotal`, indépendant. Falsifié : la suppression fait rougir.
+- **La seconde passe CI ne couvrait qu'un quart de la suite.** Les gardes qui
+  balaient tout le catalogue (`promptAlimentaire`, `conduite`, `submit`) en
+  étaient exclus alors qu'ils itèrent sur `Q_ALI*`. La passe drapeau allumé
+  exécute désormais la suite **entière**.
+- **Vérifié bon et non modifié**, la revue l'ayant recalculé indépendamment : la
+  somme de 90, l'absence d'item mort, l'unicité des identifiants, la couverture
+  exacte des 12 catégories, et surtout le fait qu'**aucun seuil ne tombe à
+  l'intérieur d'une bande de réponse** — les cas serrés (`SIIN07`, `SIIN25`,
+  `SIIN26`, `SIIN31`, `SIIN54`) tombent tous sur une frontière.
+
+### Deux arbitrages praticien rendus le 2026-07-28
+
+- **Le seuil d'effondrement reste à 0,34.** Sa valeur ne change pas, sa portée
+  si : le plafonnement se déclenchait à ≤ 14/42 (exactement la bande la plus
+  basse du dépistage) et se déclenchera à **≤ 30/90**, soit toute la bande
+  source « très déséquilibrée » (≤25) plus le bas de « déséquilibrée » (26-50).
+  Décision de le garder : le seuil est **partagé par les cinq fondations
+  critiques**, et le recalibrer déplacerait aussi le sommeil, le digestif, le
+  stress et les micronutriments. Un test nomme désormais le total déclencheur
+  dans les deux positions, pour qu'un futur changement d'échelle ne le déplace
+  plus en silence.
+- **Les 8 passations de la forme courte restent lisibles.** La revue relevait
+  qu'on leur applique le critère de `Q_SOM_07` (« l'instrument servi n'est pas sa
+  source ») sans les traiter comme lui. La différence est réelle : sur
+  `Q_SOM_07`, les bandes étaient **inventées** et les inversions non appliquées
+  — la lecture n'avait aucun sens. Ici le dépistage à 14 items est cohérent sur
+  sa propre échelle /42 ; ce qu'on lui reproche est de porter le nom de la
+  source. Les marquer priverait **6 patients de leur seule mesure du besoin 1**,
+  une fondation critique. Réserve assumée, inscrite ici.
+
 ### Réserves connues
 
 - **Le banc golden `tests/wellneuro/golden/scoring-golden.test.mjs` est mort ET
@@ -121,9 +170,33 @@ Aucun n'a été affaibli ; deux ont été renforcés.
 - **Les 4 assignations ouvertes doivent être tranchées avant l'allumage** :
   laisser expirer, annuler et réassigner, ou laisser basculer. Ces patients ont
   reçu une invitation annonçant 15 minutes.
-- **Aucune migration, aucune écriture en base**, aucun rescorage des 8 passations
-  existantes — les 43 items manquants n'ont jamais été posés. Retour arrière par
-  `git revert` ou extinction du drapeau.
+- **Aucune migration, aucune écriture en base.** Mais deux formulations de la
+  première rédaction étaient fausses, et la revue les a reprises :
+  - « aucun rescorage des 8 passations » — rien n'est **réécrit en base**, c'est
+    vrai ; mais les valeurs affichées sont **recalculées à chaque lecture** avec
+    le mapping courant (frontière déjà documentée dans `equilibre/constants.ts`).
+    Les historiques « Mon équilibre » de ces patients bougeront visiblement à
+    l'allumage.
+  - « retour arrière par extinction du drapeau » — **l'extinction n'est pas un
+    retour arrière neutre.** La garde anti-zéro posée sur `sum` empêche
+    désormais le score fabriqué, mais un aller-retour du drapeau fait coexister
+    des épisodes étiquetés v5 et v6, et `resoudreComparaison` refuse
+    **définitivement** la comparaison momentum dès que deux étiquettes
+    coexistent, sans fenêtre de reprise. Le retour arrière propre est
+    `git revert` **avant** tout allumage.
+- **Ce qui est conservé dans `rawAnswers` est un code de bande, pas une
+  quantité déclarée** (`SIIN02: 4` signifie « 3 à 5 »). Un barème révisé se
+  rejouera donc tant que les nouveaux seuils tombent sur des frontières de
+  bandes existantes — pas à l'intérieur. La première rédaction promettait plus.
+- **À traiter avant l'allumage, pas avant le merge** (relevé par la revue) :
+  la consigne système affirme que les questionnaires `Q_ALI` « ne recueillent
+  pas de quantités » alors que `rawAnswers` portera des codes d'apparence
+  numérique, et le garde `cheminsDeQuantite` filtre sur des **noms de clés**,
+  donc ne les voit pas ; le gate d'affichage `activation: 'blocked'` est
+  contourné plutôt que levé, alors que le registre porte encore
+  `statutCertification: "repere"` ; et `evidence.ts` compte une source pour le
+  niveau de preuve dès qu'une réponse existe, même si sa couverture est nulle —
+  asymétrie préexistante, aggravée ici.
 - Le **branchement des sous-catégories aux besoins** (besoin 2 en exposition,
   besoin 3 en rythme) reste au lot suivant, après passation test : l'ordre est
   gravé dans l'arbitrage du 2026-07-27. Le **pont vers la boussole** est une

@@ -1547,6 +1547,30 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── SUM ──────────────────────────────────────────────
   if (sc.type === 'sum') {
     const items = allQ.map(q => q.id);
+
+    // GARDE — « non scoré », jamais 0 par défaut.
+    //
+    // Symétrique de celle du moteur `seuils_points`, et posée ici pour la même
+    // raison : une passation dont AUCUNE réponse ne correspond aux items de la
+    // définition rendait `total: 0`, donc la bande la plus basse ET sa conduite
+    // clinique — « bilan approfondi nécessaire » sur un dossier illisible. Et
+    // `equilibre/score.ts` accepte 0 comme une valeur : sur une source de
+    // fondation critique, cela plafonne le score global à 50.
+    //
+    // Le cas n'est pas théorique : `Q_ALI_01` a deux formes aux identifiants
+    // disjoints (`AL*` et `SIIN*`). Servir l'une après avoir recueilli l'autre
+    // — dans un sens comme dans l'autre — tombe exactement ici. Trouvé par la
+    // revue adversariale du 2026-07-28, qui a relevé que le lot n'avait écrit
+    // la garde que dans le sens qui l'arrangeait.
+    if (items.length > 0 && items.every(id => getVal(id) === null)) {
+      return {
+        type: 'sum', scored: false, total: null, maxTotal: sc.maxTotal,
+        interpretation: null, note: sc.note || null,
+        certification: sc.certification || null,
+        raisonNonScore: 'aucune réponse ne correspond aux items de cet instrument',
+      };
+    }
+
     const {total} = sumItems(items, []);
     const interp = interpretRanges(total, sc.interpretation);
     // `dimensions` : découpage DESCRIPTIF déclaré par l'instrument. Il n'entre

@@ -853,8 +853,14 @@ for (const id of instrumentsADimensions) {
   // servie. Ce n'est pas un assouplissement : sans cela, le garde serait
   // forcément faux dans l'une des deux positions du drapeau, et c'est un garde
   // toujours rouge qu'on finit par désactiver.
-  const ALI01_SERT_UNE_CONDUITE = (QUESTIONNAIRE_CATALOGUE.Q_ALI_01.scoring.interpretation || [])
-    .some(bande => typeof bande.protocol === 'string' && bande.protocol.trim() !== '');
+  // Discriminant INDÉPENDANT du champ testé. La première version lisait
+  // `scoring.interpretation[].protocol` — exactement ce que l'assertion
+  // vérifie : les deux membres de l'égalité bougeaient ensemble, et supprimer
+  // les quatre `protocol:` de la forme courte (une perte clinique réelle)
+  // laissait le garde vert dans les deux positions. Relevé par la revue
+  // adversariale du 2026-07-28. `maxTotal` identifie la forme sans rien
+  // partager avec ce qui est contrôlé.
+  const ALI01_SERT_UNE_CONDUITE = QUESTIONNAIRE_CATALOGUE.Q_ALI_01.scoring.maxTotal !== 90;
   const porteursAttendus = [
     ...(ALI01_SERT_UNE_CONDUITE ? ['Q_ALI_01'] : []),
     'Q_ALI_02', 'Q_CAR_01', 'Q_GEO_01', 'Q_GEO_02', 'Q_GEO_03', 'Q_GEO_04',

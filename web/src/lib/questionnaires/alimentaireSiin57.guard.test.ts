@@ -251,3 +251,34 @@ describe('vocabulaire — contrainte, pas préférence', () => {
     }
   });
 });
+
+// ── Le miroir de la parade anti-zéro ────────────────────────────────────────
+//
+// La première version de ce banc n'écrivait que le sens qui l'arrangeait :
+// « réponses AL* contre la forme SIIN ». La revue adversariale du 2026-07-28 a
+// relevé le sens inverse — servir la forme COURTE après avoir recueilli des
+// réponses SIIN — qui rendait `total: 0`, donc la bande la plus basse ET sa
+// conduite « bilan approfondi nécessaire », sur un dossier illisible. Sur une
+// source de fondation critique, cela plafonne « Mon équilibre » à 50.
+//
+// C'est le scénario de l'EXTINCTION du drapeau, que le changelog présente comme
+// le retour arrière : il devait donc être gardé dans les deux sens.
+describe('parade anti-zéro — les deux sens', () => {
+  it('la forme COURTE ne score pas des réponses SIIN', () => {
+    const reponsesSiin = Object.fromEntries(BAREME.map(e => [e.id, valeurAuSeuil(e.id, e.seuil)]));
+    const r = computeScoreFromDef(Q_ALI_01_COURT_14, reponsesSiin as Record<string, number>);
+    expect(r.scored).toBe(false);
+    expect(r.total).toBeNull();
+    expect(r.interpretation).toBeNull();
+    // La conduite clinique ne doit surtout pas être émise.
+    expect(r.conduite).toBeUndefined();
+  });
+
+  it('contrôle négatif — la forme courte score toujours ses propres réponses', () => {
+    const items = Q_ALI_01_COURT_14.sections.flatMap((s: any) => s.questions);
+    const siennes = Object.fromEntries(items.map((q: any) => [q.id, 3]));
+    const r = computeScoreFromDef(Q_ALI_01_COURT_14, siennes as Record<string, number>);
+    expect(r.scored).not.toBe(false);
+    expect(typeof r.total).toBe('number');
+  });
+});
