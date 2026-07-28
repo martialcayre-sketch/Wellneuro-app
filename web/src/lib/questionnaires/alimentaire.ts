@@ -246,18 +246,33 @@ export const Q_ALI_01_SIIN_57 = {
       {id:'SIIN56',points:1,seuil:{egal:1}},
       {id:'SIIN57',points:2,seuil:{egal:1}},
     ],
-    // CONSTRUCTION WELLNEURO — la source ne déclare aucune sous-échelle.
-    // Descriptives : elles n'entrent pas dans le total et ne sont lues par
-    // aucun besoin (`BESOIN_SOURCES` lit `subScores`, jamais `dimensions`).
-    // Tous les items ne sont pas rattachés à une catégorie ; ceux qui ne le
-    // sont pas comptent quand même dans le /90.
+    // CONSTRUCTION WELLNEURO — la source ne déclare aucune sous-échelle
+    // (`sousEchelles: []` sur les deux lectures du banc). Descriptives : elles
+    // n'entrent pas dans le total et ne sont lues par aucun besoin
+    // (`BESOIN_SOURCES` lit `subScores`, jamais `dimensions`).
+    //
+    // COUVERTURE TOTALE des 57 items, et ce n'est pas un excès de zèle : le
+    // garde de certification refuse qu'un item servi n'appartienne à aucune
+    // catégorie, parce qu'un profil dont les catégories ne s'additionnent pas
+    // au total est un profil faux sous un score juste. Le cadrage envisageait
+    // 5 à 6 catégories « réellement discriminées » ; couvrir partiellement
+    // aurait affiché 68 points répartis sous un total de 90.
+    //
+    // Chaque item appartient à EXACTEMENT une catégorie — un test le vérifie
+    // dans les deux sens.
     dimensions:[
-      {id:'DIVERSITE_VEGETALE',label:'Diversité végétale',items:['SIIN08','SIIN09','SIIN43','SIIN45','SIIN46']},
-      {id:'FIBRES_CEREALES',label:'Fibres et céréales complètes',items:['SIIN10','SIIN11','SIIN12','SIIN13']},
-      {id:'OMEGA_3',label:'Oméga-3',items:['SIIN14','SIIN16','SIIN17','SIIN25','SIIN27','SIIN49']},
-      {id:'QUALITE_GLUCIDIQUE',label:'Qualité glucidique',items:['SIIN04','SIIN05','SIIN22','SIIN34','SIIN35','SIIN40']},
-      {id:'ULTRA_TRANSFORMES',label:'Produits ultra-transformés',items:['SIIN20','SIIN33','SIIN36','SIIN37','SIIN38','SIIN39','SIIN42','SIIN57']},
-      {id:'RYTHME_ALIMENTAIRE',label:'Rythme alimentaire',items:['SIIN50','SIIN51','SIIN52','SIIN53','SIIN54','SIIN55']},
+      {id:'HYDRATATION',label:'Hydratation et boissons chaudes',items:['SIIN01','SIIN02','SIIN03'],max:3},
+      {id:'ALCOOL',label:'Alcool',items:['SIIN06','SIIN07'],max:3},
+      {id:'DIVERSITE_VEGETALE',label:'Diversité végétale',items:['SIIN08','SIIN09','SIIN15','SIIN43','SIIN45','SIIN46'],max:12},
+      {id:'FIBRES_CEREALES',label:'Fibres et céréales complètes',items:['SIIN10','SIIN11','SIIN12','SIIN13'],max:7},
+      {id:'OMEGA_3',label:'Oméga-3',items:['SIIN14','SIIN16','SIIN17','SIIN25','SIIN27','SIIN49'],max:11},
+      {id:'QUALITE_LIPIDIQUE',label:'Qualité des matières grasses',items:['SIIN18','SIIN19'],max:4},
+      {id:'PRODUITS_LAITIERS',label:'Produits laitiers et fromages',items:['SIIN21','SIIN23','SIIN24'],max:3},
+      {id:'PROTEINES_ANIMALES',label:'Protéines animales',items:['SIIN26','SIIN28','SIIN29','SIIN30','SIIN31','SIIN32'],max:7},
+      {id:'QUALITE_GLUCIDIQUE',label:'Qualité glucidique',items:['SIIN04','SIIN05','SIIN22','SIIN34','SIIN35','SIIN40'],max:7},
+      {id:'ULTRA_TRANSFORMES',label:'Produits ultra-transformés',items:['SIIN20','SIIN33','SIIN36','SIIN37','SIIN38','SIIN39','SIIN42','SIIN57'],max:16},
+      {id:'RYTHME_ALIMENTAIRE',label:'Rythme alimentaire',items:['SIIN50','SIIN51','SIIN52','SIIN53','SIIN54','SIIN55'],max:10},
+      {id:'PRATIQUES_CULINAIRES',label:'Pratiques culinaires et achats',items:['SIIN41','SIIN44','SIIN47','SIIN48','SIIN56'],max:7},
     ],
     // Les quatre bandes de la source, sur /90. Elles sont rédigées POUR LE
     // PROFESSIONNEL — « facteur de risque de maladies » n'est pas un texte

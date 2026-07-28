@@ -217,6 +217,7 @@ const supportedScoringTypes = new Set([
   'sum_no_interpretation',
   'sum_reversed',
   'sum_two_phases',
+  'seuils_points',
   'tfd',
   'upps',
   'weighted_per_axis',
@@ -843,12 +844,34 @@ for (const id of instrumentsADimensions) {
     }
     return false;
   });
+  // `Q_ALI_01` a deux formes, et une seule sert une conduite. Le dépistage court
+  // historique porte un `protocol` sur chacune de ses quatre bandes ; l'Enquête
+  // alimentaire SIIN, restaurée le 2026-07-28, n'en porte aucune — les conduites
+  // sont sorties des bandes au lot #389, et rien n'obligeait à en réintroduire.
+  //
+  // La liste reste donc figée et relue, mais son entrée `Q_ALI_01` suit la forme
+  // servie. Ce n'est pas un assouplissement : sans cela, le garde serait
+  // forcément faux dans l'une des deux positions du drapeau, et c'est un garde
+  // toujours rouge qu'on finit par désactiver.
+  const ALI01_SERT_UNE_CONDUITE = (QUESTIONNAIRE_CATALOGUE.Q_ALI_01.scoring.interpretation || [])
+    .some(bande => typeof bande.protocol === 'string' && bande.protocol.trim() !== '');
+  const porteursAttendus = [
+    ...(ALI01_SERT_UNE_CONDUITE ? ['Q_ALI_01'] : []),
+    'Q_ALI_02', 'Q_CAR_01', 'Q_GEO_01', 'Q_GEO_02', 'Q_GEO_03', 'Q_GEO_04',
+    'Q_NEU_02', 'Q_NEU_06', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01', 'Q_TAB_04',
+  ].sort();
   assertEqual(
     porteursServis.sort(),
-    ['Q_ALI_01', 'Q_ALI_02', 'Q_CAR_01', 'Q_GEO_01', 'Q_GEO_02', 'Q_GEO_03', 'Q_GEO_04', 'Q_NEU_02', 'Q_NEU_06', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01', 'Q_TAB_04'],
+    porteursAttendus,
     'liste des instruments servant une conduite clinique — un ajout ou une perte doit être vu en revue, pas subi',
   );
-  assert(attendusPorteurs.size === 12, `12 instruments déclarent une conduite dans leurs bandes ; obtenu ${attendusPorteurs.size}`);
+  // 12 déclarants avec le dépistage court, 11 avec l'Enquête SIIN : même
+  // raison que juste au-dessus, `Q_ALI_01` est le seul à varier.
+  const declarantsAttendus = ALI01_SERT_UNE_CONDUITE ? 12 : 11;
+  assert(
+    attendusPorteurs.size === declarantsAttendus,
+    `${declarantsAttendus} instruments déclarent une conduite dans leurs bandes ; obtenu ${attendusPorteurs.size}`,
+  );
 }
 
 // `horsTotal` ampute le score global de la sous-échelle qui le porte. Seul

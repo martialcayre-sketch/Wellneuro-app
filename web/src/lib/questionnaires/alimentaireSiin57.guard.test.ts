@@ -161,6 +161,40 @@ describe('sous-catégories — descriptives et dark', () => {
     }
   });
 
+  it('couvrent les 57 items, chacun dans exactement une catégorie', () => {
+    // Une couverture partielle afficherait un profil dont les catégories ne
+    // s'additionnent pas au total — un profil faux sous un score juste. Un
+    // item compté deux fois gonflerait une catégorie sans que rien ne le dise.
+    const occurrences = new Map<string, number>();
+    for (const d of SCORING.dimensions) {
+      for (const id of d.items) occurrences.set(id, (occurrences.get(id) ?? 0) + 1);
+    }
+    const jamais = BAREME.filter(e => !occurrences.has(e.id)).map(e => e.id);
+    const plusieursFois = [...occurrences].filter(([, n]) => n > 1).map(([id]) => id);
+    expect(jamais, 'items sans catégorie').toEqual([]);
+    expect(plusieursFois, 'items dans plusieurs catégories').toEqual([]);
+    expect(occurrences.size).toBe(57);
+  });
+
+  it('le `max` déclaré de chaque catégorie est celui de ses items', () => {
+    // Le `max` est écrit dans la définition (le garde de certification le lit
+    // statiquement) ET recalculé par le moteur. Deux sources pour une même
+    // valeur : sans ce test, elles divergeraient en silence et le profil
+    // afficherait des fractions fausses.
+    for (const d of SCORING.dimensions) {
+      const calcule = d.items.reduce(
+        (s: number, id: string) => s + (BAREME.find(e => e.id === id)?.points ?? 0), 0,
+      );
+      expect(d.max, `${d.id} : max déclaré ${d.max}, items ${calcule}`).toBe(calcule);
+    }
+  });
+
+  it('la somme des maximums de catégorie vaut le total de l’instrument', () => {
+    // Corollaire mesuré de la couverture : c'est ce qui rend le profil
+    // additif, et donc lisible à côté du score.
+    expect(SCORING.dimensions.reduce((s: number, d: any) => s + d.max, 0)).toBe(90);
+  });
+
   it('sont rendues sous `dimensions`, jamais sous `subScores`', () => {
     // `BESOIN_SOURCES.sousScore` lit `subScores[]` et rien d'autre : tant que
     // les catégories vivent sous `dimensions`, aucun besoin ne peut les lire.

@@ -208,6 +208,7 @@ export default function PortailQuestionnairePage() {
         questionnaire={data.questionnaire as QuestionnaireDef}
         email={email}
         onDone={retourHub}
+        renderer={data.renderer}
       />
     </div>
   );

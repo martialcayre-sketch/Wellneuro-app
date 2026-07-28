@@ -21,7 +21,7 @@
     "supabase:db:push": "supabase db push",
     "supabase:migration:new": "supabase migration new",
     "setup:check": "npm run prisma:generate && npm run type-check && npm run scoring-check",
-    "scoring-check": "node ../scripts/check_questionnaire_certification.js",
+    "scoring-check": "node ../scripts/check_questionnaire_certification.js && WN_ALI_01_SIIN57=true node ../scripts/check_questionnaire_certification.js",
     "registry-check": "node --test ../scripts/lib/verifier_registre_instruments.test.mjs",
     "certify-check": "node --test ../tools/corpus/certify/lib/comparaison.test.mjs",
     "secrets-check": "node --test ../scripts/check_no_secrets.test.mjs",
