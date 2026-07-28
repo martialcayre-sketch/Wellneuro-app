@@ -156,9 +156,14 @@ export async function POST(req: Request): Promise<NextResponse> {
       // toujours résoudre (mode passation) — une ligne absente est anormale.
       // On ne verrouille RIEN et on ne persiste RIEN : verrouiller une réponse
       // sans scores serait une perte clinique silencieuse. Les ids hors
-      // catalogue de définitions (questionnaires fonctionnels : Q_PLAINTES,
-      // Q_ALI_01…) gardent plus bas leur flux historique — réponses brutes
-      // persistées sans score.
+      // catalogue de définitions (`Q_PLAINTES`) gardent plus bas leur flux
+      // historique — réponses brutes persistées sans score.
+      //
+      // Correction du 2026-07-28 : ce commentaire citait aussi `Q_ALI_01`, à
+      // tort. Il EST dans `QUESTIONNAIRE_CATALOGUE`, donc résolu par
+      // `resolveDefinition` et scoré par `computeScoreFromDef` comme n'importe
+      // quel instrument — ses 8 passations en production portent d'ailleurs un
+      // `scorePrincipal`. Seul `Q_PLAINTES` est réellement hors catalogue.
       logger.warn({
         event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_UNAVAILABLE,
         domain: 'QUESTIONNAIRE',
