@@ -808,6 +808,25 @@ for (const id of instrumentsASousScoresBesoins) {
   for (const sousScore of resultat.scoresBesoins) {
     assert(typeof sousScore.max === 'number' && sousScore.max > 0, `${id} : sous-score servi \`${sousScore.id}\` sans maximum dérivé — une couverture y serait calculée par division par zéro`);
   }
+
+  // Un sous-score servi n'a qu'UN porteur. `extraireValeurBrute`
+  // (`equilibre/score.ts`) lit `subScores` ET `scoresBesoins` : émettre les
+  // deux rendrait la lecture ambiguë, et le `max` de `BESOIN_SOURCES` —
+  // calibré sur un seul — donnerait une couverture fausse sur l'autre. Le
+  // runtime refuse désormais de trancher (il rend « pas de mesure ») ; ce
+  // garde rend le cas inatteignable plutôt que seulement inoffensif.
+  //
+  // Jeu complet ET jeu partiel, comme le garde jumeau des `dimensions` : le
+  // moteur a un retour anticipé « aucune réponse correspondante », et un
+  // porteur qui n'apparaîtrait que sur cette branche échapperait à une passe
+  // qui ne remplit qu'au maximum.
+  for (const [libelle, reponses] of [
+    ['jeu complet', fillByOptionBoundary(id, 'max')],
+    ['jeu partiel', Object.fromEntries(Object.entries(fillByOptionBoundary(id, 'max')).filter((_, index) => index % 3 !== 0))],
+  ]) {
+    const servi = calculateScore(id, reponses);
+    assert(!servi.subScores, `${id} (${libelle}) : émet \`scoresBesoins\` ET \`subScores\` — un sous-score servi doit avoir un seul porteur, sinon sa lecture par BESOIN_SOURCES devient ambiguë`);
+  }
 }
 
 const instrumentsADimensions = Object.entries(QUESTIONNAIRE_CATALOGUE)

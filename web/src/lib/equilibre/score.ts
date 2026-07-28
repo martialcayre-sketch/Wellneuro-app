@@ -33,15 +33,29 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
     // fiche patient y basculerait ses colonnes Score et Interprétation et
     // remplacerait le total par les sous-scores (garde de certification). Ces
     // moteurs exposent donc leurs sous-scores servis sous `scoresBesoins`.
-    // Chercher dans les deux, sans préférence : c'est le même contrat
-    // `{id, total}`, seule la clé diffère.
+    //
+    // Aucun moteur n'émet les DEUX aujourd'hui (mesuré aux deux positions du
+    // drapeau). La certification l'interdit désormais aux instruments qui
+    // DÉCLARENT `sousScoresBesoins` — aujourd'hui le seul chemin d'émission de
+    // `scoresBesoins` (`questions.ts`, branche `seuils_points`), mais rien ne
+    // fige cette unicité : ce lecteur ne s'y fie donc pas.
+    //
+    // Un seul porteur doit répondre. Deux, c'est ambigu et non résoluble ici :
+    // le contrat est `{id, total}`, il ne porte PAS le dénominateur. Deux
+    // totaux égaux ne prouvent donc pas deux mesures égales — `total: 4` sur
+    // /10 et sur /7 sont deux couvertures différentes, et le `max` de
+    // `BESOIN_SOURCES` n'est calibré que sur l'un des deux. Rendre l'un ou
+    // l'autre — que ce soit par l'ordre de la boucle ou parce que les totaux
+    // coïncident — servirait une couverture FAUSSE. Une absence de mesure se
+    // voit (`missing_data`) ; une valeur fausse, non.
     const porteurs = [resultat.subScores, resultat.scoresBesoins];
+    const totaux: number[] = [];
     for (const porteur of porteurs) {
       if (!Array.isArray(porteur)) continue;
       const sub = porteur.find((s: { id: string }) => s.id === sousScore);
-      if (sub && typeof sub.total === 'number') return sub.total;
+      if (sub && typeof sub.total === 'number') totaux.push(sub.total);
     }
-    return null;
+    return totaux.length === 1 ? totaux[0] : null;
   }
   return typeof resultat.total === 'number' ? resultat.total : null;
 }
