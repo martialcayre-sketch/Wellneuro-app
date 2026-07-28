@@ -1,6 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { calculerNiveauPreuveBesoin, listerSourcesPreuveBesoin } from './evidence';
+import { calculerCouvertureBesoin, calculerCouvertureSource } from './score';
 import { BESOIN_SOURCES, NIVEAU_PREUVE_PAR_SOURCE } from './constants';
+
+/**
+ * Agenda du sommeil clôturé : 21 nuits et ses agrégats. Au-dessus du seuil de
+ * 5 nuits, le moteur agrège et rend un total — la source devient exploitable.
+ */
+function reponsesAgendaComplet(): Record<string, number> {
+  return {
+    AGD_NB_NUITS: 21, AGD_TIB_MOY: 480, AGD_TST_MOY: 450, AGD_EFF_MOY: 94,
+    AGD_LAT_MED: 15, AGD_REV_MOY: 0.5, AGD_REG_ECT: 30, AGD_QUAL_MOY: 4,
+  };
+}
 
 describe('evidence — niveaux de preuve par besoin', () => {
   it('besoin sans réponse doit être NON_MESURE', () => {
@@ -28,6 +40,76 @@ describe('evidence — niveaux de preuve par besoin', () => {
     expect(sources).toHaveLength(1);
     expect(sources[0]?.idQuestionnaire).toBe('Q_SOM_01');
     expect(sources[0]?.grade).toBe('A');
+  });
+});
+
+// ── Répondu ne veut pas dire exploitable (2026-07-28) ───────────────────────
+//
+// Le prédicat était `Boolean(reponses[idQuestionnaire])` : il ignorait
+// `sousScore` et ignorait l'échec de scoring. Un besoin pouvait donc afficher un
+// grade de preuve alors que `score.ts` le tenait déjà pour NON COUVERT — un
+// badge fabriqué, exposé au praticien par `api/praticien/besoins`.
+describe('evidence — une source répondue mais non exploitable ne compte pas', () => {
+  // L'agenda du sommeil est le seul moteur du catalogue à rendre `{scored:false}`
+  // sans total : sous 5 nuits, il n'y a pas de mesure. C'est donc le cas vivant.
+  const AGENDA_INSUFFISANT = { Q_SOM_09: { AGD_NB_NUITS: 3 } };
+  const PSQI = { Q_SOM_01: { P1: '1' } };
+
+  it('un agenda sous son seuil de nuits ne dégrade plus le niveau de preuve', () => {
+    // Vaut 'B' avant ce correctif : l'agenda (grade B) comptait sans mesure et
+    // tirait le besoin vers le bas, sous la règle du plus faible.
+    expect(calculerNiveauPreuveBesoin(5, { ...PSQI, ...AGENDA_INSUFFISANT })).toBe('A');
+  });
+
+  it('un agenda EXPLOITABLE dégrade toujours — anti-sur-filtrage', () => {
+    // Sans ce contrôle, un prédicat qui écarterait TOUT agenda passerait le test
+    // ci-dessus au vert en supprimant la source au lieu de la qualifier.
+    const agendaComplet = { Q_SOM_09: reponsesAgendaComplet() };
+    expect(calculerCouvertureSource(BESOIN_SOURCES[5][2], agendaComplet)).not.toBeNull();
+    expect(calculerNiveauPreuveBesoin(5, { ...PSQI, ...agendaComplet })).toBe('B');
+  });
+
+  it('seule source non exploitable : NON_MESURE, et aucune source listée', () => {
+    expect(listerSourcesPreuveBesoin(5, AGENDA_INSUFFISANT)).toEqual([]);
+    expect(calculerNiveauPreuveBesoin(5, AGENDA_INSUFFISANT)).toBe('NON_MESURE');
+  });
+
+  it('un sous-score partiellement répondu reste compté', () => {
+    // Le besoin 10 lit trois sous-scores de `Q_INF_03`. Le moteur `subscore` les
+    // émet toujours : une passation incomplète ne doit PAS être rétrogradée en
+    // silence par le nouveau prédicat.
+    expect(calculerNiveauPreuveBesoin(10, { Q_INF_03: { D1: '4' } })).toBe('B');
+  });
+
+  it('« répondu mais vide » compte toujours — ce lot ne traite pas ce cas', () => {
+    // `{}` est truthy et score `total: 0` : couverture 0, pas null. Avant comme
+    // après. À ne pas présenter comme corrigé.
+    expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: {} })).toBe('A');
+  });
+
+  it('INVARIANT : NON_MESURE si et seulement si le besoin n’est pas couvert', () => {
+    // C'est la propriété que le correctif rétablit entre les deux modules. Le
+    // membre droit est l'agrégat PUBLIC de `score.ts` — surtout pas
+    // `calculerCouvertureSource`, qui serait l'appel qu'on vient de tester.
+    const jeux: Array<Record<string, Record<string, string | number>>> = [
+      {},
+      PSQI,
+      AGENDA_INSUFFISANT,
+      { ...PSQI, ...AGENDA_INSUFFISANT },
+      { Q_SOM_09: reponsesAgendaComplet() },
+      { Q_INF_03: { D1: '4' } },
+      { Q_GAS_01: { G1: '1' } },
+    ];
+    for (const besoinId of Object.keys(BESOIN_SOURCES).map(Number)) {
+      for (const reponses of jeux) {
+        const nonMesure = calculerNiveauPreuveBesoin(besoinId, reponses) === 'NON_MESURE';
+        const nonCouvert = calculerCouvertureBesoin(besoinId, reponses) === null;
+        expect(
+          nonMesure,
+          `besoin ${besoinId} : preuve et couverture divergent sur ${JSON.stringify(reponses)}`,
+        ).toBe(nonCouvert);
+      }
+    }
   });
 });
 

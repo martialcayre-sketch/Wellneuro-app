@@ -21,6 +21,32 @@ export type OptionOrderPolicy =
       pinnedValues: readonly number[];
     };
 
+/**
+ * Levée du gate pour UNE forme servie, déclarée dans le registre.
+ *
+ * Un identifiant peut désigner deux formes — `Q_ALI_01` sert le dépistage court
+ * à 14 items ou l'Enquête SIIN à 57 selon `WN_ALI_01_SIIN57`, et le gate
+ * (« certification documentaire et fixture de scoring ») n'est satisfait que par
+ * la seconde. `activation` ne connaît qu'un identifiant : elle ne peut donc pas
+ * exprimer cette condition, et la coder dans le résolveur revenait à CONTOURNER
+ * le gate au lieu de le lever — le registre continuait d'annoncer « bloqué »
+ * pendant qu'une exception nominative rendait la grille.
+ *
+ * D'où ce champ : la condition est DÉCLARÉE là où le gate l'est, et le résolveur
+ * la lit sans connaître aucun instrument.
+ *
+ * Le discriminant est `scoring.maxTotal`, jamais le nombre d'items. `maxTotal`
+ * porte déjà tout le lot — `VERSION_SCORE_EQUILIBRE`, `BESOIN_SOURCES[1].max`,
+ * `formeAlimentaireServie.guard.test.ts` — donc une dérive y devient un test
+ * rouge existant. Un compte d'items serait un proxy isolé : ajouter un item
+ * ferait retomber le rendu en `standard` en silence.
+ */
+export type LeveeConditionnelle = Readonly<{
+  discriminant: 'scoring.maxTotal';
+  valeur: number;
+  motif: string;
+}>;
+
 export type DisplayPolicy = Readonly<{
   administration: AdministrationPolicy;
   renderer: RendererProfile;
@@ -28,6 +54,7 @@ export type DisplayPolicy = Readonly<{
   optionOrder: OptionOrderPolicy;
   activation: 'enabled' | 'blocked' | 'candidate';
   gate?: string;
+  leveeConditionnelle?: LeveeConditionnelle;
 }>;
 
 export type MicroBatchDefinition = readonly (readonly string[])[];
@@ -77,8 +104,16 @@ const DISPLAY_POLICY_REGISTRY: Readonly<Record<string, DisplayPolicy>> = Object.
     renderer: 'guided_sections',
     itemOrder: 'fixed',
     optionOrder: Object.freeze({ mode: 'fixed' }),
+    // Reste `blocked` : l'identifiant sert DEUX formes, et le dépistage court à
+    // 14 items ne satisfait toujours pas le gate. Passer à `enabled` lui
+    // ouvrirait la grille — la forme non certifiée, rendue comme la certifiée.
     activation: 'blocked',
-    gate: 'Certification documentaire et fixture de scoring requises.',
+    gate: "Certification documentaire et fixture de scoring requises. LEVÉ pour l'Enquête SIIN à 57 items, cotée /90 : sources WN-SRC-0470 et WN-SRC-0471, banc de scoring dédié tournant dans les deux positions du drapeau. Le dépistage court à 14 items, coté /42, n'apporte ni l'une ni l'autre et reste au rendu standard.",
+    leveeConditionnelle: Object.freeze({
+      discriminant: 'scoring.maxTotal',
+      valeur: 90,
+      motif: "Forme SIIN certifiée — le /90 est le discriminant qui porte déjà le barème servi et l'étiquette de version du score.",
+    }),
   }),
   Q_ALI_03: Object.freeze({
     administration: 'strict',
@@ -111,23 +146,28 @@ export function getEnabledRenderer(questionnaireId: string): RendererProfile {
  *
  * D'où la règle : le serveur décide de ce qu'il sert, le client l'applique.
  */
+export type DefinitionServie = { scoring?: { maxTotal?: unknown } } | null | undefined;
+
+/**
+ * Résolveur PUR — ne connaît aucun identifiant d'instrument.
+ *
+ * Anti-tautologie : ne jamais écrire un attendu de test qui recalcule le
+ * discriminant depuis la policy testée. Les deux membres bougeraient ensemble, et
+ * c'est exactement ce qui avait rendu `ALI01_SERT_UNE_CONDUITE` vert alors qu'une
+ * perte clinique réelle passait. Les attendus sont des littéraux.
+ */
+export function resoudreRenderer(policy: DisplayPolicy, def: DefinitionServie): RendererProfile {
+  if (policy.activation === 'enabled') return policy.renderer;
+  const levee = policy.leveeConditionnelle;
+  if (levee && def?.scoring?.maxTotal === levee.valeur) return policy.renderer;
+  return 'standard';
+}
+
 export function getRendererPourDefinition(
   questionnaireId: string,
-  def: { sections?: ReadonlyArray<{ questions: ReadonlyArray<unknown> }> } | null | undefined,
+  def: DefinitionServie,
 ): RendererProfile {
-  const policy = getDisplayPolicy(questionnaireId);
-  if (policy.activation === 'enabled') return policy.renderer;
-
-  // Le gate de `Q_ALI_01` est « certification documentaire et fixture de scoring
-  // requises ». La forme SIIN à 57 items apporte les deux ; la forme courte,
-  // non certifiée, reste donc au rendu standard. On reconnaît la première au
-  // nombre d'items servis plutôt qu'au drapeau : c'est la même information,
-  // lue sur ce qui est effectivement rendu.
-  if (questionnaireId === 'Q_ALI_01' && policy.renderer === 'guided_sections') {
-    const nbItems = (def?.sections ?? []).reduce((n, s) => n + s.questions.length, 0);
-    if (nbItems === 57) return 'guided_sections';
-  }
-  return 'standard';
+  return resoudreRenderer(getDisplayPolicy(questionnaireId), def);
 }
 
 export function getMicroBatches(questionnaireId: string): MicroBatchDefinition {

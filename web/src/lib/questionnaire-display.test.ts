@@ -7,6 +7,7 @@ import {
   getEnabledRenderer,
   getMicroBatches,
   getRendererPourDefinition,
+  resoudreRenderer,
   type OptionOrderPolicy,
 } from './questionnaire-display';
 import { Q_ALI_01_SIIN_57, Q_ALI_01_COURT_14 } from './questionnaires/alimentaire';
@@ -35,6 +36,33 @@ describe('registre d’affichage questionnaires', () => {
       optionOrder: { mode: 'fixed' },
       activation: 'enabled',
     });
+  });
+
+  it('le résolveur ne connaît AUCUN identifiant d’instrument', () => {
+    // Garde de style, portée au corps de la fonction seule : le registre du même
+    // fichier n'est QUE des littéraux `Q_*`, une regex sur le fichier entier
+    // serait rouge dès l'écriture. Il double le garde comportemental ci-dessous,
+    // qui est le seul à prouver quelque chose : celui-ci interdit une
+    // orthographe, pas un comportement.
+    expect(resoudreRenderer.toString()).not.toMatch(/Q_[A-Z]{3}_\d{2}/);
+  });
+
+  it('le résolveur lit la levée conditionnelle, sur des policies fabriquées', () => {
+    // Aucun instrument nommé nulle part : c'est ce qui distingue la levée du
+    // contournement qu'elle remplace.
+    const bloquee = {
+      administration: 'strict', renderer: 'guided_sections', itemOrder: 'fixed',
+      optionOrder: { mode: 'fixed' }, activation: 'blocked',
+      leveeConditionnelle: { discriminant: 'scoring.maxTotal', valeur: 90, motif: 'test' },
+    } as const;
+    expect(resoudreRenderer(bloquee, { scoring: { maxTotal: 90 } })).toBe('guided_sections');
+    expect(resoudreRenderer(bloquee, { scoring: { maxTotal: 42 } })).toBe('standard');
+    expect(resoudreRenderer(bloquee, { scoring: {} })).toBe('standard');
+    expect(resoudreRenderer(bloquee, null)).toBe('standard');
+    // Une policy bloquée SANS levée ne rend jamais son renderer, quelle que soit
+    // la définition — sinon la levée n'aurait rien à lever.
+    const { leveeConditionnelle: _, ...sansLevee } = bloquee;
+    expect(resoudreRenderer(sansLevee as any, { scoring: { maxTotal: 90 } })).toBe('standard');
   });
 
   it('n’active que le pilote Q_NEU_03', () => {
@@ -133,6 +161,29 @@ describe('getRendererPourDefinition', () => {
   it('reste tolérante à une définition absente', () => {
     expect(getRendererPourDefinition('Q_ALI_01', null)).toBe('standard');
     expect(getRendererPourDefinition('Q_ALI_01', undefined)).toBe('standard');
+  });
+
+  it('un identifiant ABSENT du registre reste au rendu standard', () => {
+    // Le contrôle négatif ci-dessus n'exerce que des identifiants PRÉSENTS au
+    // registre : il ne prouve pas que la policy par défaut refuse. Sans cette
+    // ligne, une policy par défaut portant une levée passerait inaperçue.
+    expect(getRendererPourDefinition('Q_INCONNU', Q_ALI_01_SIIN_57)).toBe('standard');
+  });
+
+  it('le gate de `Q_ALI_01` reste BLOQUÉ — il est levé, pas retiré', () => {
+    // La distinction est tout l'objet du lot : le registre continue de dire que
+    // l'identifiant est bloqué, et déclare à côté la condition qui le lève. Le
+    // passer à `enabled` ouvrirait la grille à la forme courte non certifiée.
+    const policy = getDisplayPolicy('Q_ALI_01');
+    expect(policy.activation).toBe('blocked');
+    expect(policy.leveeConditionnelle).toEqual({
+      discriminant: 'scoring.maxTotal',
+      valeur: 90,
+      motif: expect.any(String),
+    });
+    // Et le gate nomme les DEUX formes, pas seulement celle qui passe.
+    expect(policy.gate).toContain('57');
+    expect(policy.gate).toContain('14');
   });
 
   it('n’altère pas `getEnabledRenderer`, qui garde son contrat par identifiant', () => {
