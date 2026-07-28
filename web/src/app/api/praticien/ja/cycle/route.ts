@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
-import { verifierAppartenancePatient } from '@/lib/praticien/appartenance';
+import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 
 // Cycle JA diffusé, vu du praticien (lot 2, item 5). Miroir exact de ce que
 // `GET /api/portail/protocole` sert au patient, pour que les deux panneaux du
@@ -51,7 +51,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
       );
     }
 
-    const verdict = await verifierAppartenancePatient(idPatient, session.user.email.toLowerCase(), {
+    const verdict = await verifierAppartenancePatient(idPatient, emailPraticien(session), {
       route: ROUTE_JOURNAL,
       methode: 'GET',
     });

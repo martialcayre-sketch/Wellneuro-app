@@ -40,6 +40,15 @@ type VueCyclePraticien = {
   debutCycle: string;
 };
 
+type JaSnapshotRecu = {
+  draftId: string;
+  createdAt: string;
+  actor: 'praticien' | 'patient';
+  tracesCount: number;
+  pausesCount: number;
+  solutionsCount: number;
+};
+
 type PractitionerFoodObservationDraft = {
   traces: TrialTrace[];
   decisionMode: 'accepter' | 'modifier';
@@ -152,6 +161,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   });
   const [episode, setEpisode] = useState<FoodObservationEpisode | null>(null);
   const [cycleCharge, setCycleCharge] = useState(false);
+  const [transmissions, setTransmissions] = useState<JaSnapshotRecu[]>([]);
   const [traces, setTraces] = useState<TrialTrace[]>(() => initialDraft?.traces ?? []);
   const [decisionMode, setDecisionMode] = useState<'accepter' | 'modifier'>(
     () => initialDraft?.decisionMode ?? 'accepter'
@@ -188,6 +198,29 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   useEffect(() => {
     writeDraft(idPatient, { traces, decisionMode, decisionNote, assietteCode });
   }, [idPatient, traces, decisionMode, decisionNote, assietteCode]);
+
+  // Transmissions reçues du patient (lot 2, item 4). Sans ce lecteur, le bouton
+  // « Transmettre à mon praticien » promettait un partage sans destinataire.
+  useEffect(() => {
+    let mounted = true;
+
+    const chargerTransmissions = async () => {
+      try {
+        const res = await fetch(
+          `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}`,
+          { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
+        );
+        const json = (await res.json()) as { ok: boolean; snapshots?: JaSnapshotRecu[] };
+        if (!mounted || !res.ok || !json.ok || !json.snapshots) return;
+        setTransmissions(json.snapshots.filter(s => s.actor === 'patient'));
+      } catch {
+        // Repli silencieux : la revue praticien reste utilisable.
+      }
+    };
+
+    void chargerTransmissions();
+    return () => { mounted = false; };
+  }, [idPatient]);
 
   // Épisode dérivé du protocole diffusé, identique à celui du panneau patient.
   useEffect(() => {
@@ -447,6 +480,31 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           </p>
         )
       )}
+
+      <section
+        className="bg-surface border border-border rounded-xl p-4 space-y-2"
+        data-testid="ja-praticien-transmissions"
+      >
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Ce que le patient a transmis
+        </h3>
+        {transmissions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucune transmission du patient à ce jour.</p>
+        ) : (
+          <ul className="space-y-1 text-sm text-foreground">
+            {transmissions.map((snapshot) => (
+              <li key={snapshot.draftId}>
+                {dateLocale(new Date(snapshot.createdAt))} — {snapshot.tracesCount} trace(s),{' '}
+                {snapshot.pausesCount} pause(s), {snapshot.solutionsCount} solution(s)
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Comptes de ce qui a été transmis, sans interprétation. Une transmission patient
+          n’alimente aucune dérivation clinique tant que vous n’avez pas activé de décision.
+        </p>
+      </section>
 
       {draftRestored && (
         <p className="rounded-lg px-4 py-2 text-base text-primary bg-primary/10" data-testid="ja-praticien-restored-info">

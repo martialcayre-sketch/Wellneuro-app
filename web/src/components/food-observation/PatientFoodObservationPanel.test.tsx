@@ -54,6 +54,14 @@ function mockRoutes(options: { protocole?: unknown; snapshots?: unknown[]; postJ
   }));
 }
 
+// La saisie n'apparaît qu'une fois le cycle résolu (lot 2, item 5) : tous les
+// cas de saisie attendent donc le formulaire.
+async function rendrePret(idPatient: string | null = 'PAT_TEST') {
+  const vue = render(<PatientFoodObservationPanel idPatient={idPatient} />);
+  await screen.findByTestId('ja-patient-formulaire-trace');
+  return vue;
+}
+
 describe('PatientFoodObservationPanel', () => {
   beforeEach(() => {
     mockRoutes();
@@ -65,8 +73,8 @@ describe('PatientFoodObservationPanel', () => {
     vi.unstubAllGlobals();
   });
 
-  it('demande une friction pour une trace partielle/empêchee', () => {
-    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+  it('demande une friction pour une trace partielle/empêchee', async () => {
+    await rendrePret();
 
     fireEvent.change(screen.getByTestId('ja-patient-issue'), {
       target: { value: 'partiel_empeche' },
@@ -80,8 +88,8 @@ describe('PatientFoodObservationPanel', () => {
   // prouve RIEN sur la couverture — trois traces du même lundi y suffisent.
   // Le panneau ne rend donc plus aucun verdict de suffisance au patient. Ce
   // test remplace celui qui exigeait l'inverse : il garde la correction.
-  it('ne rend aucun verdict de suffisance quand le budget hebdomadaire est atteint', () => {
-    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+  it('ne rend aucun verdict de suffisance quand le budget hebdomadaire est atteint', async () => {
+    await rendrePret();
 
     fireEvent.change(screen.getByTestId('ja-patient-budget'), {
       target: { value: '2' },
@@ -94,8 +102,8 @@ describe('PatientFoodObservationPanel', () => {
     expect(screen.getByTestId('ja-patient-couverture')).toBeTruthy();
   });
 
-  it('ajoute une solution intra-épisode', () => {
-    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+  it('ajoute une solution intra-épisode', async () => {
+    await rendrePret();
 
     fireEvent.change(screen.getByTestId('ja-patient-solution-input'), {
       target: { value: 'Préparer la veille' },
@@ -105,8 +113,8 @@ describe('PatientFoodObservationPanel', () => {
     expect(screen.getByText('• Préparer la veille')).toBeTruthy();
   });
 
-  it('restaure le brouillon local après remount', () => {
-    const { unmount } = render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+  it('restaure le brouillon local après remount', async () => {
+    const { unmount } = await rendrePret();
 
     fireEvent.change(screen.getByTestId('ja-patient-budget'), {
       target: { value: '2' },
@@ -119,7 +127,7 @@ describe('PatientFoodObservationPanel', () => {
     fireEvent.click(screen.getByTestId('ja-patient-ajouter-solution'));
 
     unmount();
-    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+    await rendrePret();
 
     expect(screen.getByText('Brouillon local restauré sur cet appareil.')).toBeTruthy();
     expect(screen.getByText('• Batch cuisine dimanche')).toBeTruthy();
@@ -128,8 +136,8 @@ describe('PatientFoodObservationPanel', () => {
   // Préalable G4 : le brouillon suit la personne, pas le lien. Une clé portant
   // le jeton d'URL deviendrait introuvable au lien suivant — et écrirait un
   // secret d'accès dans le stockage du navigateur.
-  it('nomme le brouillon d’après le patient, jamais d’après un jeton de lien', () => {
-    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+  it('nomme le brouillon d’après le patient, jamais d’après un jeton de lien', async () => {
+    await rendrePret();
 
     fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
 
@@ -138,8 +146,8 @@ describe('PatientFoodObservationPanel', () => {
     expect(cles.some(cle => cle.includes('TOK'))).toBe(false);
   });
 
-  it('sans session, ne conserve rien et le dit plutôt que de le taire', () => {
-    render(<PatientFoodObservationPanel idPatient={null} />);
+  it('sans session, ne conserve rien et le dit plutôt que de le taire', async () => {
+    await rendrePret(null);
 
     fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
 
@@ -149,7 +157,7 @@ describe('PatientFoodObservationPanel', () => {
 
   // Lot 2, item 5 — l'épisode vient du protocole diffusé, jamais d'un gabarit.
   it('sans protocole diffusé, n’affiche aucune action et ne propose pas de transmettre', async () => {
-    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+    await rendrePret();
 
     await screen.findByTestId('ja-patient-sans-cycle');
     expect(screen.queryByTestId('ja-patient-action-cycle')).toBeNull();
@@ -230,6 +238,51 @@ describe('PatientFoodObservationPanel', () => {
     });
   });
 
+  // La saisie n'ouvre qu'une fois le cycle résolu, et un brouillon d'un cycle
+  // précédent ne repart pas sous le cycle courant : le serveur refuserait
+  // l'instantané, et la faisabilité JA disparaîtrait de la boussole praticien.
+  it('ne transmet aucune trace relevant d’un autre épisode', async () => {
+    window.sessionStorage.setItem('wellneuro:ja5-02:patient:PAT_TEST', JSON.stringify({
+      budget: 3,
+      traces: [{
+        traceId: 't_ancien',
+        episodeId: 'ja_PAT_TEST_cycle_precedent',
+        localDate: '2026-06-01',
+        occasionPresentee: true,
+        faisable: true,
+        issue: 'fait',
+        frictionsVersion: 'frictions-v1',
+      }],
+      pauses: [],
+      plans: [],
+      solutions: [],
+    }));
+    mockRoutes({ protocole: PROTOCOLE_DIFFUSE });
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+
+    await screen.findByTestId('ja-patient-transmettre');
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
+    fireEvent.click(screen.getByTestId('ja-patient-transmettre'));
+
+    await waitFor(() => {
+      const post = vi.mocked(fetch).mock.calls.find(([url, init]) =>
+        String(url).includes('/api/portail/ja/observations') && init?.method === 'POST');
+      const corps = JSON.parse(String(post?.[1]?.body));
+      expect(corps.traces).toHaveLength(1);
+      expect(corps.traces[0].episodeId).toBe('ja_PAT_TEST_abcdef0123456789');
+    });
+    // La trace ancienne reste visible en local : elle n'est pas détruite.
+    expect(screen.getByText(/2026-06-01/)).toBeTruthy();
+  });
+
+  it('n’ouvre pas la saisie avant que le cycle soit résolu', () => {
+    mockRoutes({ protocole: PROTOCOLE_DIFFUSE });
+    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+
+    expect(screen.queryByTestId('ja-patient-enregistrer-trace')).toBeNull();
+    expect(screen.getByText('Chargement de votre carnet…')).toBeTruthy();
+  });
+
   it('rend l’échec de transmission en français sans perdre le brouillon', async () => {
     mockRoutes({
       protocole: PROTOCOLE_DIFFUSE,
@@ -248,8 +301,8 @@ describe('PatientFoodObservationPanel', () => {
     expect(screen.getByText(/· Je l’ai fait/i)).toBeTruthy();
   });
 
-  it('réinitialise le brouillon local', () => {
-    render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
+  it('réinitialise le brouillon local', async () => {
+    await rendrePret();
 
     fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
     expect(screen.getByText(/· Je l’ai fait/i)).toBeTruthy();

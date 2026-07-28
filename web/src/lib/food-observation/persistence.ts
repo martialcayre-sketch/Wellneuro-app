@@ -9,9 +9,12 @@ import type {
   TrialTrace,
 } from '@/lib/food-observation/types';
 import { readFoodObservationEpisode } from '@/lib/food-observation/episode';
+import {
+  JA_FOOD_OBSERVATION_CONTRACT_VERSION,
+  JA_SELECTED_PRIORITY_ID,
+} from '@/lib/food-observation/contract';
 
-export const JA_FOOD_OBSERVATION_CONTRACT_VERSION = 'ja-food-observation-v1' as const;
-const JA_SELECTED_PRIORITY_ID = 'JA_FOOD_OBSERVATION';
+export { JA_FOOD_OBSERVATION_CONTRACT_VERSION } from '@/lib/food-observation/contract';
 
 export type JaObservationSnapshotInput = {
   idPatient: string;
@@ -109,6 +112,24 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
   if (episode.patientId !== idPatient) {
     throw new TypeError('L’épisode JA n’appartient pas au patient demandé.');
   }
+  // Cohérence trace ↔ épisode. Une trace saisie sous un autre épisode — cycle
+  // précédent restauré du brouillon local, ou saisie faite avant que le cycle
+  // soit résolu — serait persistée sous le cycle courant, puis rejetée en
+  // silence à la lecture (`buildPublishedJaFeasibility` lève, et
+  // `getLatestPublishedJaFeasibility` avale l'exception) : la faisabilité JA
+  // disparaîtrait de la boussole praticien sans le moindre message.
+  const evenements: { evenements: { episodeId: string }[]; nom: string }[] = [
+    { evenements: input.traces, nom: 'traces' },
+    { evenements: input.pauses, nom: 'pauses' },
+    { evenements: input.plans, nom: 'plans' },
+    { evenements: input.solutions, nom: 'solutions' },
+  ];
+  for (const { evenements: liste, nom } of evenements) {
+    if (liste.some(item => item.episodeId !== episode.episodeId)) {
+      throw new TypeError(`Instantané JA incohérent : des ${nom} relèvent d’un autre épisode.`);
+    }
+  }
+
   const capturedAt = new Date().toISOString();
   const payload = {
     actor: input.actor,

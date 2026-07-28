@@ -322,6 +322,11 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
 
   const transmettre = async () => {
     if (!idPatient || !episode || envoi) return;
+    // Ne partent que les éléments du cycle courant : le brouillon local est
+    // conservé d'un cycle à l'autre, et le serveur refuse un instantané dont
+    // les traces relèvent d'un autre épisode.
+    const duCycle = <T extends { episodeId: string }>(liste: T[]): T[] =>
+      liste.filter(item => item.episodeId === episode.episodeId);
     setErreurEnvoi('');
     setEnvoi(true);
     try {
@@ -331,10 +336,10 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         credentials: 'same-origin',
         body: JSON.stringify({
           episode,
-          traces,
-          pauses,
-          plans,
-          solutions,
+          traces: duCycle(traces),
+          pauses: duCycle(pauses),
+          plans: duCycle(plans),
+          solutions: duCycle(solutions),
           // Le panneau patient ne tient pas de carrière d'action : le contrat
           // serveur exige le tableau, il part vide plutôt qu'absent.
           actionCareer: [],
@@ -516,6 +521,12 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         </PatientCard>
       </div>
 
+      {/* La saisie n'ouvre qu'une fois le cycle résolu : avant, une trace
+          serait rattachée à un épisode « hors cycle » puis écartée à
+          l'enregistrement. */}
+      {!protocoleCharge ? (
+        <PatientInlineMessage tone="info">Chargement de votre carnet…</PatientInlineMessage>
+      ) : (
       <div data-testid="ja-patient-formulaire-trace">
         <PatientCard className="space-y-4">
         <PatientField label="Budget d’attention (traces par semaine)">
@@ -617,6 +628,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         </div>
         </PatientCard>
       </div>
+      )}
 
       <div data-testid="ja-patient-couverture">
         <PatientCard padding="sm" className="space-y-2">

@@ -123,6 +123,35 @@ describe('PractitionerFoodObservationPanel', () => {
     expect(postCalls).toHaveLength(0);
   });
 
+  // Lot 2, item 4 — sans ce lecteur, « Transmettre à mon praticien » promettait
+  // un partage sans destinataire : la donnée arrivait en base et n'était lue
+  // nulle part.
+  it('affiche les transmissions du patient, et elles seules', async () => {
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/praticien/ja/cycle')) {
+        return new Response(JSON.stringify(CYCLE_DIFFUSE), { status: 200 });
+      }
+      if (url.includes('/api/praticien/ja/observations')) {
+        return new Response(JSON.stringify({
+          ok: true,
+          snapshots: [
+            { draftId: 'JA_1', createdAt: '2026-07-27T09:00:00.000Z', actor: 'patient', tracesCount: 3, pausesCount: 1, solutionsCount: 2 },
+            { draftId: 'JA_2', createdAt: '2026-07-26T09:00:00.000Z', actor: 'praticien', tracesCount: 9, pausesCount: 0, solutionsCount: 0 },
+          ],
+        }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
+    });
+
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    const bloc = await screen.findByTestId('ja-praticien-transmissions');
+
+    await waitFor(() => expect(bloc.textContent).toMatch(/2026-07-27 — 3 trace\(s\)/));
+    // L'instantané rédigé par le praticien n'est pas une transmission patient.
+    expect(bloc.textContent).not.toMatch(/9 trace\(s\)/);
+  });
+
   it('dérive l’épisode du protocole diffusé et refuse d’activer sans lui', async () => {
     render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
     const cycle = await screen.findByTestId('ja-praticien-cycle');

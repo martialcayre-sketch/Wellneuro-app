@@ -48,6 +48,23 @@ describe('api/praticien/ja/cycle', () => {
     expect(res.status).toBe(400);
   });
 
+  // Journal des accès (G-TRUST-04) : une lecture accessible se trace au gabarit
+  // littéral, jamais l'URL reçue. Toutes les routes praticien voisines le font.
+  it('journalise la lecture accessible au gabarit littéral', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    await GET(new Request(URL_BASE));
+
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
+    expect(prisma.journalAccesDossier.create).toHaveBeenCalledWith({
+      data: {
+        idPatient: 'PAT_TEST',
+        praticienEmail: 'praticien@wellneuro.fr',
+        route: '/api/praticien/ja/cycle',
+        methode: 'GET',
+      },
+    });
+  });
+
   it('rend protocoleDiffuse=false quand aucun protocole n’est diffusé', async () => {
     resolveProtocoleDiffuse.mockResolvedValue(null);
     const res = await GET(new Request(URL_BASE));

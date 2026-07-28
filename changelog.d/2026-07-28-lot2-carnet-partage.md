@@ -64,6 +64,34 @@
   d'appartenance habituelle : aucune donnée nouvelle n'est exposée, ni au
   patient ni au praticien.
 
+- **Les instantanés du carnet cessent de se faire passer pour des versions de
+  protocole.** Ils vivent dans `protocol_drafts` ; les lectures praticien non
+  bornées par un `decisionCardId` les prenaient donc pour des versions. La
+  clôture de consultation (`copilote/cloture`) retient le brouillon le plus
+  récent comme fil courant : une transmission patient — désormais déclenchable à
+  volonté depuis le portail — faisait apparaître au praticien son protocole
+  comme **non relu** et sa diffusion comme **caduque**. Trouvé par la revue
+  adversariale, prouvé par test exécuté. Un fragment `where` partagé
+  (`EXCLURE_INSTANTANES_JA`) est appliqué à `copilote/cloture`,
+  `praticien/protocoles`, `copilote/prevol` et `patient/protocole`, avec les
+  tests de non-régression correspondants.
+
+- **Une trace ne peut plus partir sous un épisode qui n'est pas le sien.** Le
+  brouillon local est conservé d'un cycle à l'autre, et l'épisode est résolu de
+  façon asynchrone : une trace d'un cycle précédent, ou saisie avant que le
+  cycle soit connu, aurait été persistée sous le cycle courant puis rejetée en
+  silence à la lecture — `buildPublishedJaFeasibility` lève et
+  `getLatestPublishedJaFeasibility` avale l'exception, si bien que la
+  faisabilité JA aurait **disparu de la boussole praticien sans message**. Trois
+  gardes : la saisie n'ouvre qu'une fois le cycle résolu, l'envoi ne porte que
+  les éléments du cycle courant, et `saveJaObservationSnapshot` refuse
+  l'instantané incohérent.
+
+- **Le praticien lit ce que le patient transmet.** Le panneau praticien affiche
+  les transmissions reçues (date et comptes, sans interprétation). Sans ce
+  lecteur, « Transmettre à mon praticien » promettait un partage sans
+  destinataire — de la donnée de santé écrite avant d'avoir un usage.
+
 ### Réserves ouvertes
 
 - **Le sort du cycle protocole → épisode n'est pas tranché** (lot 2, item 6).
@@ -77,6 +105,21 @@
   identifiant de l'instant de capture, si bien que deux envois du même contenu
   produisent deux lignes. Seule la désactivation du bouton pendant l'envoi
   protège du double clic.
+- **`cycleRef` identifie le contenu du protocole, pas la diffusion.** Il dérive
+  de `protocolDraftInputHash` : une ré-approbation de la **même** version rendrait
+  le même `episodeId` avec une fenêtre différente, confondant deux cycles. Faire
+  entrer `approvedAt` dans la dérivation reste à trancher.
+- **La transmission ne se ferme pas à `finDeCycle`.** La route portail calcule
+  cet état (J21 + 3 j) ; le panneau l'ignore. Le bouton reste offert après la fin
+  du cycle, avec des traces datées d'aujourd'hui sous une fenêtre passée.
+- `supersedesDraftId` est contrôlé par le client et seul son **format** est
+  vérifié : `supersedes_draft_id` ne porte aucune clé étrangère. Deux appareils
+  produisent en outre une fourche, sans règle de résolution.
+- La tête de chaîne relue du `sessionStorage` peut être périmée hors ligne : la
+  liste serveur devrait faire seule autorité.
+- Un retour arrière vers le déploiement précédent rendrait illisibles les
+  épisodes écrits sans `idealPlan` (`nonEmpty` y est inconditionnel). Les lignes,
+  elles, subsisteraient.
 - `PatientCard` n'accepte ni ne transmet `data-testid` : l'attribut posé sur la
   carte de décision praticien (`ja-patient-decision-active`) disparaît
   silencieusement du DOM. Hors périmètre de ce lot, mais un test s'appuyant sur
