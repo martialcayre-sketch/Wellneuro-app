@@ -5,6 +5,7 @@ import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 import { readQuestionnaireDraft, writeDraft, writeQuestionnaireDraft } from '@/lib/questionnaire-draft';
 import { GenericQuestionnaire } from './GenericQuestionnaire';
+import { Q_ALI_01_SIIN_57 } from '@/lib/questionnaires/alimentaire';
 
 const assignation = {
   idAssignation: 'ASS_TEST_NEU_03',
@@ -319,5 +320,61 @@ describe('GenericQuestionnaire — micro_batch Q_NEU_03', () => {
     expect(screen.getByText('Deuxième partie')).not.toBeNull();
     expect(screen.getByText('50% complété')).not.toBeNull();
     expect(screen.getByRole('combobox')).not.toBeNull();
+  });
+});
+
+// ── Saisie en grille (Enquête alimentaire SIIN, 57 items) ────────────────────
+//
+// Le point verrouillé ici n'est pas l'esthétique : c'est que les options
+// restent de VRAIS `input[type=radio]`. Le parcours patient E2E remplit le
+// questionnaire en cochant `form input[type="radio"]` ; des `<button>` stylés
+// casseraient tout le parcours, et `Q_ALI_01` est dans le pack de base.
+describe('GenericQuestionnaire — grille guided_sections', () => {
+  const assignationAli = { ...assignation, idAssignation: 'ASS_TEST_ALI', idQuestionnaire: 'Q_ALI_01', titre: 'Enquête alimentaire SIIN' };
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.stubGlobal('scrollTo', vi.fn());
+  });
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  function rendre(renderer?: 'guided_sections') {
+    render(
+      <GenericQuestionnaire
+        assignation={assignationAli}
+        questionnaire={Q_ALI_01_SIIN_57 as unknown as QuestionnaireDef}
+        email={assignationAli.emailPatient}
+        onDone={vi.fn()}
+        renderer={renderer}
+      />,
+    );
+  }
+
+  it('rend les options en radios cochables, jamais en liste déroulante', () => {
+    rendre('guided_sections');
+    const groupes = screen.getAllByRole('group');
+    expect(groupes.length).toBeGreaterThan(0);
+    for (const groupe of groupes) {
+      expect(within(groupe).getAllByRole('radio').length).toBeGreaterThan(1);
+    }
+    expect(screen.queryAllByRole('combobox')).toHaveLength(0);
+  });
+
+  it('une option cochée le reste — le contrat de saisie tient', () => {
+    rendre('guided_sections');
+    const premier = within(screen.getAllByRole('group')[0]).getAllByRole('radio')[1] as HTMLInputElement;
+    fireEvent.click(premier);
+    expect(premier.checked).toBe(true);
+  });
+
+  it('contrôle négatif — sans le renderer serveur, la même définition retombe en liste déroulante', () => {
+    // Sans lui, rendre des radios inconditionnellement ferait passer le premier
+    // test au vert quoi qu'il arrive, et l'on ne saurait pas que la bascule
+    // vient bien du serveur.
+    rendre(undefined);
+    expect(screen.queryAllByRole('combobox').length).toBeGreaterThan(0);
   });
 });

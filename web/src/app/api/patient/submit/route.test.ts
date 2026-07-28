@@ -238,11 +238,15 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
   });
 });
 
-// Les questionnaires fonctionnels (Q_PLAINTES, Q_ALI_01…) n'ont pas de
-// définition dans QUESTIONNAIRE_CATALOGUE : leur donnée clinique est la
-// réponse brute, persistée avec un champ error depuis toujours. Le 409
-// défensif est réservé aux CAB_ — ce flux historique ne doit pas casser
-// (assignations réelles en attente en production).
+// Les questionnaires fonctionnels — `Q_PLAINTES` — n'ont pas de définition dans
+// QUESTIONNAIRE_CATALOGUE : leur donnée clinique est la réponse brute, persistée
+// avec un champ error depuis toujours. Le 409 défensif est réservé aux CAB_ —
+// ce flux historique ne doit pas casser (assignations réelles en attente en
+// production).
+//
+// Correction du 2026-07-28 : ce commentaire citait `Q_ALI_01` parmi eux, à tort.
+// Il est bien au catalogue et scoré comme les autres — le test ci-dessous ne
+// l'a d'ailleurs jamais couvert, il n'exerce que `Q_PLAINTES`.
 describe('POST /api/patient/submit — questionnaires fonctionnels sans définition', () => {
   const assignationFonctionnelle = {
     idAssignation: 'ASS_FONC_TEST',

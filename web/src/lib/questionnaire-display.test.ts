@@ -6,8 +6,10 @@ import {
   getDisplayPolicy,
   getEnabledRenderer,
   getMicroBatches,
+  getRendererPourDefinition,
   type OptionOrderPolicy,
 } from './questionnaire-display';
+import { Q_ALI_01_SIIN_57, Q_ALI_01_COURT_14 } from './questionnaires/alimentaire';
 
 const questionnaire: QuestionnaireDef = {
   id: 'Q_TEST_01',
@@ -103,5 +105,40 @@ describe('registre d’affichage questionnaires', () => {
     const score = calculateScore('Q_NEU_03', payload);
     expect(score).toEqual(calculateScore('Q_NEU_03', localValues));
     expect(score).toMatchObject({ scoreGroupeA: 16, scoreGroupeB: 8, total: 24 });
+  });
+});
+
+// ── Renderer décidé sur la définition SERVIE (2026-07-28) ────────────────────
+//
+// `Q_ALI_01` a deux formes : le dépistage court à 14 items et l'Enquête
+// alimentaire SIIN à 57. Le drapeau qui les départage n'existe que côté
+// serveur ; si le client tranchait, il lirait `undefined` et choisirait la
+// disposition de l'autre forme. Le serveur décide donc, et transmet.
+describe('getRendererPourDefinition', () => {
+  it('laisse la forme courte au rendu standard — son gate n’est pas levé', () => {
+    expect(getRendererPourDefinition('Q_ALI_01', Q_ALI_01_COURT_14)).toBe('standard');
+  });
+
+  it('sert la grille à la forme SIIN à 57 items', () => {
+    expect(getRendererPourDefinition('Q_ALI_01', Q_ALI_01_SIIN_57)).toBe('guided_sections');
+  });
+
+  it('n’ouvre la grille à aucun autre questionnaire, quel que soit son nombre d’items', () => {
+    // Contrôle négatif : sans lui, un `return 'guided_sections'` inconditionnel
+    // ferait passer le test ci-dessus au vert.
+    expect(getRendererPourDefinition('Q_ALI_03', Q_ALI_01_SIIN_57)).toBe('standard');
+    expect(getRendererPourDefinition('Q_MOD_02', Q_ALI_01_SIIN_57)).toBe('standard');
+  });
+
+  it('reste tolérante à une définition absente', () => {
+    expect(getRendererPourDefinition('Q_ALI_01', null)).toBe('standard');
+    expect(getRendererPourDefinition('Q_ALI_01', undefined)).toBe('standard');
+  });
+
+  it('n’altère pas `getEnabledRenderer`, qui garde son contrat par identifiant', () => {
+    // L'ancienne fonction est conservée telle quelle : elle sert encore de
+    // repli pour tous les questionnaires à forme unique.
+    expect(getEnabledRenderer('Q_ALI_01')).toBe('standard');
+    expect(getEnabledRenderer('Q_NEU_03')).toBe('micro_batch');
   });
 });

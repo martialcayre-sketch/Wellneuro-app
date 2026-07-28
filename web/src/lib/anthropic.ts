@@ -7,6 +7,14 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v7 (2026-07-28) : la section alimentaire cessait d'être vraie. Elle affirmait
+// que les Q_ALI « ne recueillent pas de quantités consommées » — or l'Enquête
+// alimentaire SIIN en pose 33 (portions, verres, cuillères, heures), et la
+// valeur enregistrée EST la quantité dans l'unité de la question. Une
+// interdiction fondée sur une prémisse fausse s'effondre dès que le modèle voit
+// la donnée. La règle est donc recadrée sur ce qui la justifie vraiment : une
+// quantité d'ALIMENT déclarée n'est pas un APPORT en nutriments, et n'est jamais
+// un statut biologique.
 // v6 (2026-07-27) : traitement des passations dont le résultat enregistré n'est
 // pas une mesure (champ `mesureNonInterpretable`). Le modèle n'en reçoit déjà
 // plus aucun chiffre — la consigne existe parce qu'il en reçoit encore le
@@ -21,7 +29,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v6';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v7';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -37,18 +45,22 @@ export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synth�
 - Toute recommandation doit rester générale et être présentée comme « à valider par le praticien ».
 - Si les données sont insuffisantes pour conclure sur un axe, signale-le explicitement.
 
-## Questionnaires alimentaires — ce qu'ils ne mesurent pas
+## Questionnaires alimentaires — ce qu'ils mesurent, et ce qu'ils ne mesurent pas
 
-Les questionnaires alimentaires (identifiants commençant par Q_ALI) recueillent des **fréquences de consommation déclarées**. Ils ne recueillent ni quantités consommées, ni poids du patient, ni composition nutritionnelle, ni biologie. Leurs scores ne sont pas des mesures d'apport, et leurs seuils ne sont pas étalonnés.
+Les questionnaires alimentaires (identifiants commençant par Q_ALI) recueillent des **quantités et des fréquences de consommation DÉCLARÉES par le patient** : des portions, des verres, des cuillères à soupe, des œufs, des fois par semaine, des heures de jeûne nocturne. Ces valeurs sont donc de vraies quantités d'ALIMENTS, dans l'unité de la question — souvent approchées, le patient ayant choisi parmi des tranches.
 
-Il t'est donc INTERDIT d'en déduire :
+Ils ne recueillent en revanche ni le poids du patient, ni la composition nutritionnelle des aliments, ni aucune biologie. Leurs scores ne sont pas des mesures d'apport, et leurs seuils ne sont pas étalonnés sur une population.
 
+Tu peux donc rapporter ce que le patient DÉCLARE consommer, dans l'unité de la question et en le nommant comme une déclaration : « déclare deux portions de légumes par jour », « déclare un jeûne nocturne d'environ dix heures ».
+
+Il t'est en revanche INTERDIT d'en déduire :
+
+- un **apport nutritionnel**, en grammes, milligrammes, microgrammes, kilocalories ou g/kg/j — une quantité d'aliment déclarée n'est pas un apport en nutriments ;
 - une carence, un déficit ou une insuffisance en un nutriment, une vitamine, un minéral ou un acide gras — y compris sous une forme atténuée (« carence probable », « déficit vraisemblable ») ;
-- une quantité, en grammes, en kilocalories ou en g/kg/j ;
 - un statut biologique, un index glycémique, une charge glycémique, une insulinorésistance, un HOMA-IR, une homocystéinémie, un statut inflammatoire ou antioxydant ;
 - un besoin de supplémentation.
 
-Ce que tu peux en dire, et seulement cela : une **exposition alimentaire déclarée probablement faible, intermédiaire ou compatible avec les repères**, pour un groupe d'aliments donné ; et le fait qu'un dosage biologique serait nécessaire pour conclure, quand c'est cliniquement pertinent.
+Ce que tu peux en conclure, et seulement cela : une **exposition alimentaire déclarée probablement faible, intermédiaire ou compatible avec les repères**, pour un groupe d'aliments donné ; et le fait qu'un dosage biologique serait nécessaire pour conclure, quand c'est cliniquement pertinent.
 
 Formulation attendue : « les réponses suggèrent une exposition probablement faible aux sources de X ». Formulation interdite : « carence en X », « apport insuffisant de N g », « déficit à corriger ».
 

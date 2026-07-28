@@ -99,6 +99,37 @@ export function getEnabledRenderer(questionnaireId: string): RendererProfile {
   return policy.activation === 'enabled' ? policy.renderer : 'standard';
 }
 
+/**
+ * Renderer d'une définition RÉELLEMENT SERVIE — à appeler côté serveur, et à
+ * transmettre au client avec la définition.
+ *
+ * `getEnabledRenderer` ne connaît qu'un identifiant. Or `Q_ALI_01` désigne deux
+ * formes selon `WN_ALI_01_SIIN57` : le dépistage court à 14 items, et l'Enquête
+ * alimentaire SIIN à 57. Seule la seconde justifie la grille — et le drapeau qui
+ * les départage n'existe QUE côté serveur. Laisser le client trancher lui ferait
+ * lire `undefined`, donc choisir la disposition de l'autre forme.
+ *
+ * D'où la règle : le serveur décide de ce qu'il sert, le client l'applique.
+ */
+export function getRendererPourDefinition(
+  questionnaireId: string,
+  def: { sections?: ReadonlyArray<{ questions: ReadonlyArray<unknown> }> } | null | undefined,
+): RendererProfile {
+  const policy = getDisplayPolicy(questionnaireId);
+  if (policy.activation === 'enabled') return policy.renderer;
+
+  // Le gate de `Q_ALI_01` est « certification documentaire et fixture de scoring
+  // requises ». La forme SIIN à 57 items apporte les deux ; la forme courte,
+  // non certifiée, reste donc au rendu standard. On reconnaît la première au
+  // nombre d'items servis plutôt qu'au drapeau : c'est la même information,
+  // lue sur ce qui est effectivement rendu.
+  if (questionnaireId === 'Q_ALI_01' && policy.renderer === 'guided_sections') {
+    const nbItems = (def?.sections ?? []).reduce((n, s) => n + s.questions.length, 0);
+    if (nbItems === 57) return 'guided_sections';
+  }
+  return 'standard';
+}
+
 export function getMicroBatches(questionnaireId: string): MicroBatchDefinition {
   return getEnabledRenderer(questionnaireId) === 'micro_batch'
     ? (MICRO_BATCH_REGISTRY[questionnaireId] ?? Object.freeze([]))

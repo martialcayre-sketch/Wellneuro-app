@@ -28,10 +28,10 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v6`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v7`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
-const EMPREINTE_V6 = '3b9bd6d23d2b688f';
+const EMPREINTE_V7 = '0b1ca35174325385';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -101,6 +101,20 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("n'est pas exploitable");
   });
 
+  it('dit ce que l’instrument recueille VRAIMENT, et pas seulement ce qu’il ne mesure pas', () => {
+    // v7 : la consigne affirmait que les Q_ALI ne recueillent pas de quantités.
+    // L'Enquête SIIN en pose 33 (portions, verres, cuillères, heures), et la
+    // valeur enregistrée EST la quantité dans l'unité de la question. Une
+    // interdiction fondée sur une prémisse fausse s'effondre dès que le modèle
+    // voit la donnée : la règle porte désormais sur ce qui la justifie
+    // réellement — une quantité d'ALIMENT n'est pas un APPORT en nutriments.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('DÉCLARÉES');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('apport nutritionnel');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("n'est pas un apport en nutriments");
+    // Et elle ne doit plus nier le recueil de quantités.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).not.toContain('ne recueillent ni quantités consommées');
+  });
+
   it('nomme ce qui reste autorisé, pas seulement ce qui est interdit', () => {
     // Une consigne purement prohibitive laisse le modèle sans formulation de
     // repli : il en invente une, souvent équivalente à ce qu'on lui interdit.
@@ -117,7 +131,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v6', empreinte: EMPREINTE_V6 });
+    ).toEqual({ version: 'synthese-v7', empreinte: EMPREINTE_V7 });
   });
 });
 

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AssignationInfo } from '@/app/api/patient/questionnaire/route';
 import type { PatientSubmitResponse } from '@/app/api/patient/submit/route';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
-import { getEnabledRenderer, getMicroBatches } from '@/lib/questionnaire-display';
+import { getEnabledRenderer, getMicroBatches, type RendererProfile } from '@/lib/questionnaire-display';
 import {
   clearDraft,
   readDraftSavedAt,
@@ -22,14 +22,22 @@ import { PatientConfirmDialog } from '@/components/patient/PatientConfirmDialog'
 // Questionnaire générique piloté par le catalogue, section par section.
 // Composant présentationnel : la navigation (retour hub / succès) est confiée
 // à onDone par la page appelante.
-export function GenericQuestionnaire({ assignation, questionnaire, email, onDone }: {
+export function GenericQuestionnaire({ assignation, questionnaire, email, onDone, renderer: rendererServeur }: {
   assignation: AssignationInfo;
   questionnaire: QuestionnaireDef;
   email: string;
   onDone: () => void;
+  /**
+   * Renderer décidé par le SERVEUR, qui seul sait quelle forme il a servie
+   * (`Q_ALI_01` en a deux, départagées par une variable d'environnement
+   * invisible d'ici). Absent, on retombe sur le registre par identifiant :
+   * c'est le comportement historique, et il reste juste pour tous les
+   * questionnaires à forme unique.
+   */
+  renderer?: RendererProfile;
 }) {
   const sections = questionnaire.sections ?? [];
-  const renderer = getEnabledRenderer(questionnaire.id);
+  const renderer = rendererServeur ?? getEnabledRenderer(questionnaire.id);
   const microBatches = getMicroBatches(questionnaire.id);
   const allQuestions = useMemo(
     () => sections.flatMap(questionnaireSection => questionnaireSection.questions),
@@ -40,6 +48,10 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
     [allQuestions],
   );
   const isMicroBatch = renderer === 'micro_batch' && microBatches.length > 0;
+  // Saisie en grille : une ligne par item, les réponses en regard. Les pages
+  // restent les sections du catalogue — c'est déjà le découpage par famille
+  // d'aliments, il n'y a rien à réinventer.
+  const estGrille = renderer === 'guided_sections';
   const pageQuestions = useMemo(() => (
     isMicroBatch
       ? microBatches.map(ids => ids.map(id => questionsById.get(id)).filter((question): question is NonNullable<typeof question> => Boolean(question)))
@@ -302,7 +314,8 @@ export function GenericQuestionnaire({ assignation, questionnaire, email, onDone
           question={q}
           value={answers[q.id] ?? ''}
           onChange={val => setAnswers(a => ({ ...a, [q.id]: val }))}
-          displaySelectAsRadioCards={isMicroBatch}
+          displaySelectAsRadioCards={isMicroBatch || estGrille}
+          optionLayout={estGrille ? 'grille' : 'cartes'}
         />
       ))}
 

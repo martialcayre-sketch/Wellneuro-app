@@ -116,9 +116,16 @@ jobs:
       # juge transpile le TypeScript du catalogue (devDependency de web/).
       # Une PR purement documentaire ne peut pas l'esquiver pour autant : la
       # matrice de mapping est classée code par l'étape « Périmètre du diff ».
+      # Lancé DEUX FOIS, une par position de `WN_ALI_01_SIIN57`. `Q_ALI_01` a
+      # deux formes servies (dépistage court à 14 items, Enquête SIIN à 57) et
+      # le catalogue n'en expose qu'une à la fois : en ne jouant que la position
+      # par défaut, le garde était aveugle à la forme gatée — vert au merge,
+      # rouge à la bascule du drapeau, c'est-à-dire au pire moment.
       - name: Scoring certification (63 questionnaires, blocking)
         if: steps.scope.outputs.docs_only != 'true'
-        run: node scripts/check_questionnaire_certification.js
+        run: |
+          node scripts/check_questionnaire_certification.js
+          WN_ALI_01_SIIN57=true node scripts/check_questionnaire_certification.js
 
       # Banc du validateur de registre : c'est lui qui prouve que le garde
       # ci-dessus échoue quand il doit échouer (entrée manquante, axe hors
@@ -271,6 +278,17 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm run test
+
+      # Seconde passe, drapeau `WN_ALI_01_SIIN57` allumé. Sans elle, les gardes
+      # qui dérivent une valeur du barème servi (le `max` du besoin 1,
+      # l'étiquette de version) ne mordent que dans une position : figer `max` à
+      # 42 et la version à sa valeur courante passe inaperçu en position
+      # éteinte, où le dérivé vaut justement la valeur figée. Falsifié : ces
+      # deux mutations ne faisaient tomber aucun test avant cette étape.
+      - name: Unit tests (Vitest, forme SIIN 57 items)
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npm run test:siin57
 
       - name: Lint
         if: steps.scope.outputs.docs_only != 'true'

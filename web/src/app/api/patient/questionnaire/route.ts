@@ -3,9 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { resolveDefinition } from '@/lib/instruments';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
+import { getRendererPourDefinition, type RendererProfile } from '@/lib/questionnaire-display';
 
 export type PatientQuestionnaireResponse =
-  | { ok: true; assignation: AssignationInfo; questionnaire: unknown }
+  // `renderer` est décidé ICI, sur la définition réellement servie : le client
+  // ne voit pas les variables d'environnement, et `Q_ALI_01` a deux formes.
+  | { ok: true; assignation: AssignationInfo; questionnaire: unknown; renderer: RendererProfile }
   | { ok: false; reason: 'not_found' | 'expired' | 'invalid' | 'exception'; error: string };
 
 export type AssignationInfo = {
@@ -75,7 +78,12 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
       statutReponses: ass.statutReponses,
     };
 
-    return NextResponse.json({ ok: true, assignation: assignationInfo, questionnaire });
+    const renderer = getRendererPourDefinition(
+      ass.idQuestionnaire,
+      questionnaire as { sections?: ReadonlyArray<{ questions: ReadonlyArray<unknown> }> } | null,
+    );
+
+    return NextResponse.json({ ok: true, assignation: assignationInfo, questionnaire, renderer });
   } catch (err) {
     console.error('[patient/questionnaire GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });
