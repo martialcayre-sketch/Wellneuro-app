@@ -37,7 +37,7 @@ describe('forme alimentaire servie', () => {
   });
 
   it('l’étiquette de version suit le barème réellement servi', () => {
-    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v5' : 'v4');
+    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v6' : 'v5');
   });
 
   it('le besoin 1 reste une fondation critique — d’où l’exigence ci-dessus', () => {

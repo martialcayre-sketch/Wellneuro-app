@@ -94,8 +94,15 @@ export function frictionLabel(code: string): string {
 }
 
 /**
- * Silence utile explicite côté patient : quand le budget de la semaine est
- * couvert, l'instrument sait dire qu'on en sait assez.
+ * Silence utile — message servi sur un régime `silence` PRESCRIT par le
+ * praticien, jamais dérivé d'un décompte de traces.
+ *
+ * Le docblock précédent disait « quand le budget de la semaine est couvert,
+ * l'instrument sait dire qu'on en sait assez » : c'est exactement le
+ * raisonnement retiré par le lot 1 (audit du 2026-07-27, §2.1). Trois traces du
+ * même lundi couvrent un budget de trois sans rien prouver sur la couverture.
+ * Le laisser écrit, au-dessus d'une fonction prête à l'emploi, suffirait à le
+ * faire revenir.
  */
 export function buildSilenceUtileMessage(): string {
   return MESSAGE_SILENCE_UTILE;

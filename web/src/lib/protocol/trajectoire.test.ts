@@ -40,7 +40,11 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
     expect(tr.comparaison).toEqual({ disponible: false, raison: 'aucun_cycle' });
   });
 
-  it('un cycle T0 mesuré → jalons datés + momentum, comparaison « un seul cycle »', () => {
+  // Ce cas asseyait le constat F1 au lieu de le prévenir : une réponse unique à
+  // T0 produisait J21/J42/J90 « mesurés » à la valeur de T0 et un momentum
+  // « stable (écart 0) ». Depuis le lot 1, un jalon sans réponse nouvelle est
+  // non mesuré (A8-2) et le momentum reste null faute de seconde lecture.
+  it('un cycle T0 sans réponse ultérieure → T0 seul mesuré, aucun momentum (F1)', () => {
     const tr = construireTrajectoire({
       episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
       reponses: [reponse('2026-01-01T00:00:00.000Z')],
@@ -49,9 +53,25 @@ describe('construireTrajectoire (C2B LOT-09)', () => {
     const cycle = tr.cycles[0];
     // T0 mesuré (réponse ≤ T0) → valeur non-null.
     expect(cycle.jalons.find((j) => j.jalon === 'T0')?.mesure).toBe(true);
-    expect(cycle.momentum).not.toBeNull();
+    for (const jalon of ['J21', 'J42', 'J90'] as const) {
+      expect(cycle.jalons.find((j) => j.jalon === jalon)?.mesure).toBe(false);
+      expect(cycle.jalons.find((j) => j.jalon === jalon)?.valeur).toBeNull();
+    }
+    expect(cycle.momentum).toBeNull();
     expect(cycle.versionScore).toBe('v1');
     expect(tr.comparaison).toEqual({ disponible: false, raison: 'un_seul_cycle' });
+  });
+
+  it('une réponse nouvelle à J21 → J21 mesuré et momentum calculé', () => {
+    const tr = construireTrajectoire({
+      episodes: [t0('ep_T0', '2026-01-01T00:00:00.000Z')],
+      reponses: [reponse('2026-01-01T00:00:00.000Z'), reponse('2026-01-22T00:00:00.000Z')],
+    });
+    const cycle = tr.cycles[0];
+    expect(cycle.jalons.find((j) => j.jalon === 'J21')?.mesure).toBe(true);
+    expect(cycle.momentum).not.toBeNull();
+    // Aucune réponse après J21 : les jalons suivants restent non mesurés.
+    expect(cycle.jalons.find((j) => j.jalon === 'J42')?.mesure).toBe(false);
   });
 
   it('jalon sans couverture → « non mesuré », jamais un 0 (A8-2)', () => {
