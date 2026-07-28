@@ -1654,10 +1654,14 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     }
 
     const interp = sc.interpretation ? interpretRanges(total, sc.interpretation) : null;
-    // Découpage descriptif — même contrat que `dimensions` sur `sum` : il ne
-    // touche pas au total et n'est lu par aucun besoin (`BESOIN_SOURCES` lit
-    // `subScores`, jamais `dimensions`).
-    const dimensions = (sc.dimensions || []).map((d: any) => {
+    // Agrégat d'un sous-ensemble d'items du barème, partagé par les deux usages
+    // ci-dessous : `dimensions` (descriptif, affiché) et `scoresBesoins` (servi
+    // à Mon équilibre). Le partage est LOCAL à ce moteur : la branche `sum` a sa
+    // propre implémentation de `dimensions`, qui rend `total: sousTotal` sans
+    // parade anti-zéro et recopie le `max` déclaré au lieu de le recalculer.
+    // Les unifier est un autre lot — les deux moteurs ne portent pas la même
+    // doctrine, et l'aligner changerait des valeurs servies.
+    const agregerItems = (d: any) => {
       let sousTotal = 0, sousMax = 0, sousRepondus = 0;
       for (const id of d.items) {
         const entree = bareme.find((e: any) => e.id === id);
@@ -1670,16 +1674,45 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       }
       return {
         id: d.id, label: d.label,
+        // Jamais 0 par défaut : aucun item répondu n'est pas « zéro point »,
+        // c'est « pas de mesure ». Même doctrine que le total.
         total: sousRepondus > 0 ? sousTotal : null,
+        // `max` recalculé depuis le barème, jamais recopié d'une déclaration :
+        // un littéral divergeant du barème serait silencieux.
         max: sousMax, repondus: sousRepondus, items: d.items.length,
         interpretation: null,
       };
+    };
+
+    // Découpage descriptif — il ne touche pas au total, et il est rendu à part
+    // dans la fiche patient.
+    const dimensions = (sc.dimensions || []).map(agregerItems);
+
+    // Sous-scores SERVIS à un besoin de Mon équilibre. Clé distincte de
+    // `subScores` À DESSEIN : `check_questionnaire_certification.js` interdit
+    // qu'un instrument déclarant des `dimensions` émette des `subScores`, parce
+    // que la fiche patient bascule alors ses colonnes Score et Interprétation
+    // en mode sous-scores et REMPLACE le total et sa bande. Distincte de
+    // `dimensions` aussi : le découpage d'affichage et la mesure d'un besoin
+    // n'ont aucune raison de coïncider — ici le rythme s'affiche sur 6 items
+    // (/10) et n'en sert que 4 au besoin 3 (/7), ceux que le guide nomme.
+    // Un sous-score SERVI n'est une mesure que s'il est COMPLET. La parade
+    // anti-zéro d'`agregerItems` s'arrête à « aucun item répondu » : elle suffit
+    // sur un total à 57 items, où un manquant est du bruit, mais pas ici — sur
+    // 4 items, un seul répondu au repère rendait 2/7, soit 29 % de couverture,
+    // SOUS le seuil d'effondrement, pour un patient qu'on n'a presque pas
+    // interrogé. La sensibilité est ~14 fois celle du besoin 1. Partiel vaut
+    // donc « pas de mesure », jamais une mesure basse.
+    const scoresBesoins = (sc.sousScoresBesoins || []).map((d: any) => {
+      const agrege = agregerItems(d);
+      return { ...agrege, total: agrege.repondus === agrege.items ? agrege.total : null };
     });
 
     return {
       type: 'seuils_points', scored: true, total, maxTotal: sc.maxTotal,
       interpretation: interp,
       ...(dimensions.length > 0 ? {dimensions} : {}),
+      ...(scoresBesoins.length > 0 ? {scoresBesoins} : {}),
       missing: missingIds.length,
       ...(missingIds.length > 0 ? {missingIds} : {}),
       note: sc.note || null, certification: sc.certification || null,

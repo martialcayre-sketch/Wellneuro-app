@@ -761,6 +761,55 @@ assertCertification(uroJournal, 'certifie', 'Q_URO_02');
 // découpage : le profil affiché serait faux SOUS un total juste, et rien ne le
 // signalerait. Ces invariants sont génériques : ils couvrent tout instrument
 // qui déclarera des dimensions, pas seulement les deux d'aujourd'hui.
+// ── Sous-scores SERVIS à un besoin (`sousScoresBesoins`) ────────────────────
+//
+// Clé distincte de `dimensions` (profil affiché) et de `subScores` (que le mur
+// ci-dessous interdit ici). Elle alimente `BESOIN_SOURCES` : une déclaration
+// muette rendrait un besoin définitivement non évaluable, sans erreur nulle
+// part — le `max` étant dérivé de la même déclaration, il resterait cohérent.
+// Sa jumelle `dimensions` a ce garde depuis l'origine ; elle ne l'avait pas.
+const instrumentsASousScoresBesoins = Object.entries(QUESTIONNAIRE_CATALOGUE)
+  .filter(([, def]) => Array.isArray(def?.scoring?.sousScoresBesoins) && def.scoring.sousScoresBesoins.length > 0)
+  .map(([id]) => id);
+
+// Anti-vacuité, liée au drapeau : la déclaration n'existe que sur la forme SIIN,
+// donc ce garde est légitimement vide en position éteinte — mais il doit mordre
+// dans l'autre, sinon il ne garde rien là où il compte.
+if (process.env.WN_ALI_01_SIIN57 === 'true') {
+  assert(instrumentsASousScoresBesoins.length > 0, 'position SIIN : aucun sous-score servi déclaré — ce garde ne garderait rien');
+}
+
+for (const id of instrumentsASousScoresBesoins) {
+  const def = QUESTIONNAIRE_CATALOGUE[id];
+  const declares = def.scoring.sousScoresBesoins;
+  const itemsServis = questions(id).map(question => question.id);
+
+  const ids = declares.map(sousScore => sousScore.id);
+  assertEqual(ids.filter((x, i) => ids.indexOf(x) !== i), [], `${id} : deux sous-scores servis portent le même identifiant`);
+  const idsDimensions = (def.scoring.dimensions || []).map(dimension => dimension.id);
+  assertEqual(ids.filter(x => idsDimensions.includes(x)), [], `${id} : un sous-score servi porte l'identifiant d'une dimension — la lecture par BESOIN_SOURCES deviendrait ambiguë`);
+
+  for (const sousScore of declares) {
+    assert(sousScore.items.length > 0, `${id} : sous-score servi \`${sousScore.id}\` sans aucun item`);
+    assertEqual(sousScore.items.filter(item => !itemsServis.includes(item)), [], `${id} : sous-score servi \`${sousScore.id}\` déclarant un item inexistant`);
+    const doublons = sousScore.items.filter((item, index) => sousScore.items.indexOf(item) !== index);
+    assertEqual(doublons, [], `${id} : sous-score servi \`${sousScore.id}\` répète un item — son maximum dérivé serait faux`);
+  }
+
+  // Déclaré ⇒ réellement calculé. Seule la branche `seuils_points` les rend :
+  // les déclarer ailleurs les rendrait muets, et le besoin non évaluable.
+  const resultat = calculateScore(id, fillByOptionBoundary(id, 'max'));
+  assert(Array.isArray(resultat.scoresBesoins), `${id} : sousScoresBesoins déclarés mais non calculés — seul le scoring \`seuils_points\` les rend (type servi : \`${resultat.type}\`)`);
+  assertEqual(
+    resultat.scoresBesoins.map(sousScore => sousScore.id).sort(),
+    ids.slice().sort(),
+    `${id} : les sous-scores calculés ne correspondent pas aux sous-scores déclarés`
+  );
+  for (const sousScore of resultat.scoresBesoins) {
+    assert(typeof sousScore.max === 'number' && sousScore.max > 0, `${id} : sous-score servi \`${sousScore.id}\` sans maximum dérivé — une couverture y serait calculée par division par zéro`);
+  }
+}
+
 const instrumentsADimensions = Object.entries(QUESTIONNAIRE_CATALOGUE)
   .filter(([, def]) => Array.isArray(def?.scoring?.dimensions) && def.scoring.dimensions.length > 0)
   .map(([id]) => id);

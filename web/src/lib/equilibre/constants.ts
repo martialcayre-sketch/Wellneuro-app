@@ -67,12 +67,51 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // qui n'a pas encore été appliqué. Une étiquette de version qui ment est pire
 // qu'une étiquette absente — c'est toute la leçon de la frontière ci-dessus.
 //
+// v6 → v7 (besoin 3 « Rythme alimentaire ») : le besoin 3, non évaluable depuis
+// l'origine, gagne une source — le sous-score `RYTHME_CHRONO` de l'Enquête SIIN
+// (SIIN52/53/54/55, 7 points), qui couvre exactement les deux variables
+// d'entrée que le guide des 12 besoins lui donne (ratio protéines/glucides des
+// repas, durée du jeûne nocturne). Le mapping change, donc l'étiquette change.
+//
+// v6 ne peut pas être partagée, pour la raison déjà écrite deux fois plus haut :
+// elle désigne le barème /90 SANS le besoin 3, et une étiquette qui recouvre
+// deux définitions rend le comparateur inopérant. v6 n'a jamais été écrite en
+// base — vérifié le 2026-07-28, `assessment_episodes` est vide — le bump ne
+// gèle donc aucune comparaison existante.
+//
+// Comme v6, v7 SUIT LE DRAPEAU : la forme courte ne déclare pas ce sous-score,
+// le besoin 3 reste non mesuré tant que `WN_ALI_01_SIIN57` est éteint, et
+// l'étiquette reste v5.
+//
 // NB rédaction : ne jamais écrire le nom de la table de mapping en toutes
 // lettres AU-DESSUS de sa déclaration. Le garde du registre l'extrait par
 // `indexOf` (scripts/lib/verifier_registre_instruments.js) et tomberait sur le
 // commentaire au lieu de la table — il refuse alors de valider plutôt que de
 // contrôler dans le vide.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v6' : 'v5';
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v7' : 'v5';
+
+/**
+ * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.
+ *
+ * Même raison que le `max` du besoin 1 : un littéral (`7`) serait faux dans une
+ * des deux positions du drapeau sans qu'aucun test tournant dans l'autre ne le
+ * voie. Vaut 0 quand la forme servie ne déclare pas ce sous-score — la forme
+ * courte — et c'est sans conséquence : le moteur n'émet alors aucune valeur,
+ * `calculerCouvertureSource` rend `null` avant toute division.
+ */
+export const MAX_RYTHME_CHRONO = (() => {
+  const scoring = Q_ALI_01.scoring as {
+    bareme?: Array<{ id: string; points: number }>;
+    sousScoresBesoins?: Array<{ id: string; items: string[] }>;
+  };
+  const declaration = (scoring.sousScoresBesoins ?? []).find(s => s.id === 'RYTHME_CHRONO');
+  if (!declaration) return 0;
+  const bareme = scoring.bareme ?? [];
+  return declaration.items.reduce(
+    (somme, id) => somme + (bareme.find(e => e.id === id)?.points ?? 0),
+    0
+  );
+})();
 
 export const POIDS_STRATE: Record<StrateCode, number> = {
   CORPS: 0.6,
@@ -108,9 +147,13 @@ export const SEUIL_EFFONDREMENT = 0.34;
 export const PLAFOND_FONDATION_CRITIQUE = 50;
 
 // Mapping besoin → questionnaire(s) existants (web/src/lib/questions.ts).
-// Besoins 2, 3, 6, 7, 11 : aucun questionnaire pertinent disponible dans le
+// Besoins 2, 6, 7, 11 : aucun questionnaire pertinent disponible dans le
 // catalogue actuel — non évaluables (retournent une couverture null), plutôt
-// que d'inventer une source. Voir docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md
+// que d'inventer une source. Le besoin 2 en particulier ne peut PAS l'être par
+// un questionnaire : le guide lui donne des biomarqueurs pour seules variables
+// d'entrée (ferritine, zinc, magnésium, iode, sélénium, vitamine D, B9, B12).
+// Le besoin 3 a quitté cette liste le 2026-07-28 ; un test la fige désormais,
+// pour qu'un branchement futur ne s'y fasse pas en silence. Voir docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md
 // pour la justification clinique de chaque source retenue.
 //
 // Toute entrée ajoutée ou retirée ici doit être répercutée sur le champ
@@ -122,7 +165,12 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
   // 2 : voir la note v3 → v4 en tête de fichier — Q_SOM_06 (fatigue de Pichot)
   // retiré, la fatigue ne mesurant pas la couverture micronutritionnelle.
   2: [],
-  3: [],
+  // Besoin 3 « Rythme alimentaire (chronobiologie) ». Sous-score dédié, DISTINCT
+  // de la catégorie d'affichage `RYTHME_ALIMENTAIRE` (6 items, /10) : il ne
+  // porte que les 4 items correspondant aux variables d'entrée que le guide
+  // nomme. `inverser: false` — les points sont acquis quand le repère est
+  // atteint, plus haut vaut mieux.
+  3: [{ idQuestionnaire: 'Q_ALI_01', sousScore: 'RYTHME_CHRONO', max: MAX_RYTHME_CHRONO, inverser: false }],
   4: [
     { idQuestionnaire: 'Q_GAS_01', max: 93, inverser: true },
     { idQuestionnaire: 'Q_INF_01', max: 96, inverser: true },

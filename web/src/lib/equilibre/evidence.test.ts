@@ -123,6 +123,11 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
       // `test:siin57` passait à côté du seul dossier réellement concerné.
       { Q_ALI_01: { AL1: '1', AL2: '2' } },
       { Q_INF_01: {} },
+      // Clés SIIN : sans elles, `test:siin57` passait à côté du besoin 3, seul
+      // besoin dont la mesure dépend de la position du drapeau.
+      { Q_ALI_01: { SIIN52: 1, SIIN53: 1, SIIN54: 12, SIIN55: 1 } },
+      { Q_ALI_01: { SIIN54: 12 } },
+      { Q_ALI_01: { SIIN01: 13, SIIN08: 6 } },
     ];
     for (const besoinId of Object.keys(BESOIN_SOURCES).map(Number)) {
       for (const reponses of jeux) {

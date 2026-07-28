@@ -2,7 +2,7 @@ import { BESOINS, BESOIN_SOURCES, VERSION_SCORE_EQUILIBRE } from '../equilibre/c
 import { construireReponsesParQuestionnaire } from '../equilibre/depuisPrisma';
 import { calculerNiveauxPreuveTousLesBesoins } from '../equilibre/evidence';
 import { calculerObjetsCliniques, SOURCES_STABILITE_METABOLIQUE } from '../equilibre/objetsCliniques';
-import { calculerEquilibre } from '../equilibre/score';
+import { calculerCouvertureSource, calculerEquilibre } from '../equilibre/score';
 import { QUESTIONNAIRE_CATALOGUE } from '../questions';
 import { motifNonInterpretable } from '../scoring/passationsNonInterpretables';
 import { canonicalSha256 } from './canonical';
@@ -227,7 +227,21 @@ export function buildClinicalSnapshot(input: {
       strata: equilibre.strates.map(strate => ({ code: strate.strate, measurement: ratio(strate.couverture) })),
       needs: BESOINS.map(besoin => {
         const sources = BESOIN_SOURCES[besoin.id] ?? [];
-        const answered = sources.filter(source => Boolean(reponsesParQuestionnaire[source.idQuestionnaire])).length;
+        // `evaluability` compte les sources EXPLOITABLES, plus seulement celles
+        // dont un objet de réponses existe. Le prédicat était
+        // `Boolean(reponsesParQuestionnaire[id])` : il ignorait `sousScore` et
+        // ignorait l'échec de scoring, si bien qu'un besoin pouvait se
+        // contredire dans un seul objet — `evaluability: 'measured'` à côté
+        // d'une `measurement.value` nulle et d'une preuve `NON_MESURE`. C'est
+        // `evidence.ts` qui a adopté le bon prédicat en premier (#434) ; ce site
+        // était le dernier porteur de l'ancien.
+        //
+        // Conséquence assumée : `clinicalReview` retrouve des findings
+        // `missing_data` sur les besoins dont une source est répondue mais
+        // inexploitable. C'est l'information juste — elle manquait.
+        const answered = sources.filter(
+          source => calculerCouvertureSource(source, reponsesParQuestionnaire) !== null
+        ).length;
         return {
           needId: besoin.id,
           strata: besoin.strate,

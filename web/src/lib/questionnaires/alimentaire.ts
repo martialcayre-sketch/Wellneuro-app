@@ -281,6 +281,26 @@ export const Q_ALI_01_SIIN_57 = {
       {id:'RYTHME_ALIMENTAIRE',label:'Rythme alimentaire',items:['SIIN50','SIIN51','SIIN52','SIIN53','SIIN54','SIIN55'],max:10},
       {id:'PRATIQUES_CULINAIRES',label:'Pratiques culinaires et achats',items:['SIIN41','SIIN44','SIIN47','SIIN48','SIIN56'],max:7},
     ],
+    // ── Sous-score servi au besoin 3 « Rythme alimentaire (chronobiologie) »
+    //
+    // DISTINCT de la catégorie d'affichage `RYTHME_ALIMENTAIRE`, qui compte 6
+    // items et 10 points. Le guide des 12 besoins
+    // (`docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md`, § 3) nomme DEUX
+    // variables d'entrée — « ratio protéines/glucides des repas, durée du jeûne
+    // nocturne (nutripériode) » — et une règle de décision : « protéines le
+    // matin […] en assurant un jeûne nocturne d'au moins 10 à 12 h ».
+    //
+    // Les quatre items ci-dessous les couvrent exactement, et le seuil de
+    // SIIN54 (`{min:10}`) EST celui du guide. Deux items de la catégorie en
+    // sont écartés par arbitrage praticien du 2026-07-28 : SIIN50 (heures
+    // régulières) relève du préambule mais d'aucune variable nommée, SIIN51
+    // (restauration rapide) mesure une qualité d'approvisionnement. Un besoin
+    // ne mesure que la construction que sa référence lui donne.
+    //
+    // Aucun `max` déclaré : il est dérivé du barème par le moteur.
+    sousScoresBesoins:[
+      {id:'RYTHME_CHRONO',label:'Rythme chronobiologique',items:['SIIN52','SIIN53','SIIN54','SIIN55']},
+    ],
     // Les quatre bandes de la source, sur /90. Elles sont rédigées POUR LE
     // PROFESSIONNEL — « facteur de risque de maladies » n'est pas un texte
     // patient. Aucune `protocol` ici : les conduites sortent des bandes depuis
