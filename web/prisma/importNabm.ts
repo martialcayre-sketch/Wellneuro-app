@@ -521,6 +521,23 @@ async function ecrire(resultat: ImportNabm): Promise<void> {
       throw new Error(`Relecture incohérente après écriture : ${JSON.stringify(c)}`);
     }
 
+    // ── Contrat STRUCTUREL, DANS la transaction ───────────────────────────
+    // Les invariants de SCHÉMA (CHECK, RLS, index partiels, verrou HDS) sont
+    // rejoués ici, avant COMMIT : une violation annule l'import (ROLLBACK par le
+    // catch) au lieu d'être constatée APRÈS coup — c'était la fenêtre « build
+    // rouge mais données écrites » du contrat que `vercel-build.sh` relançait
+    // après l'import. Le fichier est un bloc DO NU (sans BEGIN/COMMIT), justement
+    // pour tourner dans CETTE transaction sans la committer. Les invariants de
+    // DONNÉES de l'import sont déjà couverts par la relecture ci-dessus ; la
+    // barrière D-003 (plages/liens d'AUTRES lots) reste un contrat de catalogue
+    // hors du chemin d'import — voir prisma/checks/cb_biologie_catalogue_v1.sql.
+    // Chemin relatif au cwd = web/ (npm script, banc, workflow release-db).
+    const contratStructurel = await readFile(
+      join('prisma', 'checks', 'cb_biologie_structure_v1.sql'),
+      'utf8',
+    );
+    await client.query(contratStructurel);
+
     await client.query('COMMIT');
     transactionOuverte = false;
 

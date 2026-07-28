@@ -148,13 +148,10 @@ jobs:
             --version "V105" \
             --sha256 "3a9c289f081d293e7655de709a295bc6da9ece3f2301b86f1ea9625d1c7aed0f"
 
-      # Le contrat du catalogue, joué là où il y a enfin des DONNÉES (en CI la base
-      # est vide, ses invariants de données y sont muets). NOTE : ce re-jeu APRÈS
-      # l'import est la fenêtre « rouge ≠ rien écrit » ; le lot de durcissement
-      # CB-02a le déplace DANS la transaction d'import (prisma/importNabm.ts) et
-      # retirera alors cette étape.
-      - name: "Contrat du catalogue biologie sur les données importées"
-        if: ${{ inputs.mode == 'import-cb' }}
-        run: |
-          DATABASE_URL="$MIGRATE_DATABASE_URL" \
-            npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1.sql
+      # PAS de contrat post-import ici. Le contrat STRUCTUREL est désormais rejoué
+      # DANS la transaction de l'import (prisma/importNabm.ts, fichier
+      # cb_biologie_structure_v1.sql) : une violation annule l'import — plus de
+      # fenêtre « rouge mais données écrites ». Les invariants de DONNÉES de
+      # l'import sont vérifiés par sa relecture in-transaction ; la barrière D-003
+      # (plages/liens d'AUTRES lots) reste un contrat de catalogue, hors du chemin
+      # d'import (voir prisma/checks/cb_biologie_catalogue_v1.sql, joué en CI).

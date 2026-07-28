@@ -222,13 +222,17 @@ grep -q "La source n'a pas été interrogée" "$SORTIE" || {
   cat "$SORTIE" >&2; exit 1; }
 echo "  ✔ une variable d'armement oubliée ne déclenche plus d'appel réseau"
 
-echo "── 13. Le contrat du catalogue passe sur des données ──"
-# En CI ce contrat ne rencontre qu'une base VIDE : ses invariants de données y
-# sont muets. Ici il en a, et c'est `vercel-build.sh` qui le rejouera en
-# production juste après l'import.
+echo "── 13. Les contrats du catalogue passent sur des données ──"
+# En CI ces contrats ne rencontrent qu'une base VIDE : les invariants de données
+# y sont muets. Ici il y a des données. Le contrat STRUCTUREL est le MÊME fichier
+# que l'import rejoue dans sa transaction avant COMMIT ; le contrat de DONNÉES est
+# celui que `vercel-build.sh` rejoue encore en production après l'import (jusqu'à
+# sa bascule).
+npx prisma db execute --file prisma/checks/cb_biologie_structure_v1.sql \
+  >"$SORTIE" 2>&1 || { cat "$SORTIE" >&2; exit 1; }
 npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1.sql \
   >"$SORTIE" 2>&1 || { cat "$SORTIE" >&2; exit 1; }
-echo "  ✔ contrat vert sur un catalogue peuplé"
+echo "  ✔ contrats structure + données verts sur un catalogue peuplé"
 
 # La sortie anticipée du cas 12 tient à DEUX conditions : le millésime servi et
 # son empreinte. Sans le cas suivant, retirer la condition d'empreinte laissait
@@ -249,6 +253,35 @@ echec_attendu "jeton désaccordé du millésime épinglé" "ne nomme pas le mill
 echo "── 16. Une épingle d'empreinte vide est refusée, pas ignorée ──"
 echec_attendu "--sha256 réduit à rien" "64 caractères hexadécimaux" \
   --source "$FIXTURES/v105" --version V105 --sha256 "   "
+
+echo "── 17. Une violation structurelle annule l'import (verrou HDS in-transaction) ──"
+# On ajoute RÉELLEMENT une colonne de sémantique patient au catalogue, puis on
+# relance un import. Le contrat STRUCTUREL, rejoué DANS la transaction de l'import
+# avant COMMIT, doit la détecter et faire ROLLBACK : l'import est refusé, rien
+# n'est écrit. Sans ce cas, le contrat structurel pourrait ne jamais être appelé
+# dans la transaction — ou l'être sans mordre — sans que rien ne le dise. Le
+# rejeu de V105 (déjà servi, sans épingle) entre bien dans le chemin d'écriture
+# sans déclencher la sortie anticipée ni le garde d'orphelines (1213 est en V105).
+node -e '
+const {Client} = require("pg");
+(async () => {
+  const c = new Client({connectionString: process.env.DATABASE_URL});
+  await c.connect();
+  await c.query("ALTER TABLE biology_analytes ADD COLUMN IF NOT EXISTS id_patient text");
+  await c.end();
+})().catch(e => { console.error(e); process.exit(1); });'
+echec_attendu "colonne à sémantique patient dans le catalogue" "sémantique patient" \
+  --source "$FIXTURES/v105"
+# Restauration : la colonne de test ne doit pas survivre au banc.
+node -e '
+const {Client} = require("pg");
+(async () => {
+  const c = new Client({connectionString: process.env.DATABASE_URL});
+  await c.connect();
+  await c.query("ALTER TABLE biology_analytes DROP COLUMN IF EXISTS id_patient");
+  await c.end();
+})().catch(e => { console.error(e); process.exit(1); });'
+echo "  ✔ colonne patient détectée in-transaction, import annulé, colonne retirée"
 
 echo "── Table rase finale ──"
 # TOUTE VALEUR SQL PASSE EN PARAMÈTRE, et ce n'est pas ici un réflexe de
@@ -271,4 +304,4 @@ const {Client} = require("pg");
   await c.end();
 })().catch(e => { console.error(e); process.exit(1); });'
 
-echo "CB-02a : banc d'intégration de l'import — 17 cas vérifiés."
+echo "CB-02a : banc d'intégration de l'import — 18 cas vérifiés."
