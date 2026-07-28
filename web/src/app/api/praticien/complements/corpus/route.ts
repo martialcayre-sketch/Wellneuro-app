@@ -11,7 +11,7 @@ import {
 
 // Rayon corpus (C4, outil n°1) — PRATICIEN SEUL, derrière WN_C4_ENABLED
 // (fail-closed, 404 flag éteint). Restitue les claims validés (barrière D-003
-// via match_wellneuro_rag_claims) filtrés par metadata.rayon. Le corpus vide
+// via match_wellneuro_rag_claims) filtrés PAR NOTEBOOK du rayon. Le corpus vide
 // est un état normal — la route répond 200 avec corpusVide, jamais une erreur.
 
 export const runtime = 'nodejs';

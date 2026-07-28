@@ -203,6 +203,18 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_reprise_bornes_v1.sql
 
+      # Le rayon corpus filtre PAR NOTEBOOK (rayonCorpus.ts, décision 7 des
+      # arbitrages 2026-07-27) : ce contrat éprouve que le notebook d'une source
+      # est un fait univoque et présent en base. Sur la base CI (vide) il passe
+      # trivialement ; sa fixture annulée prouve que le détecteur d'orphelin
+      # n'est pas un no-op. Sa portée réelle est la prod (SELECT rejoués en
+      # lecture seule post-merge) : la moitié « registre » de la garde de
+      # divergence est tenue au runtime (sourcesDuNotebook lit le registre).
+      - name: RAG rayon notebook coherence contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_rayon_notebook_coherence_v1.sql
+
       # Le drift check ci-dessus ne voit ni les CHECK, ni la RLS, ni les index
       # partiels : Prisma ne les introspecte pas. Le contrat STRUCTUREL les
       # vérifie, et fait échouer le CI si une colonne du catalogue biologie prend
