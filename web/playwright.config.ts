@@ -130,6 +130,16 @@ export default defineConfig({
       // de session. Le parcours complet chez Google n'est pas automatisable
       // sans compte réel : il est couvert en unitaire, jeton d'identité forgé.
       WN_G5_GOOGLE_PATIENT: 'true',
+      // « aucun secret posé » ci-dessus n'est vrai que si on l'IMPOSE : le
+      // `...process.env` plus haut fait fuiter le vrai client patient présent
+      // dans `web/.env.local` (nécessaire à `npm run dev`), et la route
+      // redirigerait alors vers Google au lieu de refuser — deux E2E rouges,
+      // mais SEULEMENT sur les postes où ce `.env.local` existe. On force donc
+      // l'absence de client, après le spread, pour que le test vérifie partout
+      // le même état de production (drapeau allumé, client absent) — la valeur
+      // vide fait rendre `null` à `configurationGoogle()`.
+      WN_GOOGLE_PATIENT_CLIENT_ID: '',
+      WN_GOOGLE_PATIENT_CLIENT_SECRET: '',
     } as Record<string, string>,
     // En mode start, exiger un port libre : réutiliser un serveur déjà lancé
     // risquerait de tester silencieusement un `next dev` (autre build, voire
