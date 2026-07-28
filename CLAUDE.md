@@ -263,8 +263,8 @@ une PR qui porte une migration ou touche l'authentification :
 2. **Après le merge, vérifier la base de production** — la migration s'est-elle
    appliquée, et le backfill a-t-il fait ce qu'il annonçait ? Une lecture
    `execute_sql` suffit (voir « Lire la base de production » plus haut). Sans
-   cela, un `migrate deploy` échoué pendant le build Vercel ne se voit nulle
-   part.
+   cela, un `migrate deploy` ou un import qui a échoué à mi-course lors de la
+   release (`release-db`) ne se voit nulle part ailleurs.
 
 Le coût de ces deux gestes se compte en minutes ; celui d'un raté sur
 l'authentification ou une migration se compte en accès patients rompus.

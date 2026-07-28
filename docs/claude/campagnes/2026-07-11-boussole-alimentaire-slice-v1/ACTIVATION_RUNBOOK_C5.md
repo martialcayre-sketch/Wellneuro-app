@@ -15,8 +15,8 @@ présente dans Vercel Production (migration au build) » ci-dessous est **caduqu
 
 - [ ] PR LOT-07 mergée dans `main`, CI verte (Vercel, verify, devcontainer-smoke).
 - [ ] `WN_C5_ENABLED` absent/`false` sur le déploiement courant (surfaces C5 en 404).
-- [ ] `MIGRATE_DATABASE_URL` présente dans Vercel Production (migration au build),
-      valeur non lue ni consignée.
+- [ ] ~~`MIGRATE_DATABASE_URL` présente dans Vercel Production (migration au build)~~
+      **caduc** (voir bandeau) : le build ne migre plus, migrations via `release-db`.
 - [ ] Référentiel Ciqual importé et intègre (`RAPPORT_IMPORT_LOT-02.md`).
 - [ ] Instruction d'activation du responsable consignée (`VALIDATION_FINALE_C5.md`).
 

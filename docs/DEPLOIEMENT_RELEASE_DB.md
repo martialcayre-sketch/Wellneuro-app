@@ -64,16 +64,17 @@ Ces gestes se font dans l'interface, hors code :
    - `WN_CB_NABM_IMPORT_CONFIRMATION` — jeton `CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1`
      (doit être **identique** à la constante épinglée dans le code, sinon l'import
      refuse).
-3. **Bascule (au moment où `vercel-build.sh` cesse d'écrire)** : **retirer** de
-   Vercel (scope Production) `MIGRATE_DATABASE_URL` et les jetons d'import
-   `WN_C5_CIQUAL_IMPORT_CONFIRMATION` / `WN_CB_NABM_IMPORT_CONFIRMATION` /
-   `WN_CB_NABM_IMPORT_BASE`. Sans cette variable, le build tombe dans sa branche
-   « migrations NON appliquées » (dégradation gracieuse) et ne touche plus la base.
+3. **Retirer de Vercel** (scope Production) `MIGRATE_DATABASE_URL` et les jetons
+   d'import `WN_C5_CIQUAL_IMPORT_CONFIRMATION` / `WN_CB_NABM_IMPORT_CONFIRMATION` /
+   `WN_CB_NABM_IMPORT_BASE`. Depuis l'allègement, le build ne les lit plus : ce
+   retrait est de l'hygiène (ne pas laisser traîner la connexion de prod), pas une
+   condition de correction.
 
-> Tant que la bascule n'est pas faite, le workflow **coexiste** avec le build :
-> les deux peuvent appliquer les migrations. Le workflow étant manuel, il ne fait
-> rien tant qu'on ne le déclenche pas. Ne merger le lot qui allège
-> `vercel-build.sh` **qu'après** les étapes 1–2 ci-dessus.
+> **Ordre de bascule.** `release-db` est désormais l'**unique** chemin d'écriture :
+> le build ne migre plus. Les étapes 1–2 (environnement + secrets) doivent donc
+> être faites **avant** de merger le lot qui allège `vercel-build.sh` — sinon
+> aucune migration future n'a de chemin d'application et la base fige. Le workflow
+> étant manuel, il ne fait rien tant qu'on ne le déclenche pas.
 
 ## Déclencher une release
 

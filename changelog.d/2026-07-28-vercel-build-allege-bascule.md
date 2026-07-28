@@ -12,11 +12,16 @@ réussir en laissant la base « en retard » (il n'y touche plus), et la fenêtr
 contrat structurel est joué in-transaction depuis le lot précédent).
 
 La doctrine « chemin unique » suit la réalité : `CLAUDE.md`,
-`docs/claude/WORKFLOW_DEVELOPPEMENT.md` et `docs/claude/REGISTRE_FRONTIERES.md`
-nomment `release-db` comme chemin d'écriture prod. Les runbooks d'import (C5, NABM)
-portent un bandeau de redirection. Le contrat de données (dont la barrière D-003,
-peuplée par d'autres lots) n'est plus rejoué sur le chemin d'import ; il reste un
-contrat de catalogue joué en CI.
+`docs/claude/WORKFLOW_DEVELOPPEMENT.md`, `docs/claude/REGISTRE_FRONTIERES.md`,
+`docs/RAG_PGVECTOR_PRODUCTION.md` et le hook Scalingo `web/scripts/db-deploy.sh`
+nomment `release-db` comme chemin d'écriture prod (plus « le build applique les
+migrations »). Les runbooks d'import (C5, NABM) portent un bandeau de redirection.
+Le contrat de données (dont la barrière D-003, peuplée par d'autres lots) n'est
+plus rejoué sur le chemin d'import ; il reste un contrat de catalogue joué en CI.
+
+Quelques checklists d'activation de campagne (`GATES_VAGUE2_G1_G3_G4`,
+`PREPARATION_PRODUCTION_C5`, `CHECKLIST_ACTIVATION_G_TRUST_04`) mentionnent encore
+« migrate deploy au build » : dette de cohérence à solder en suivi immédiat.
 
 **Prérequis de mise en service (étapes ops, hors code)** : créer l'environnement
 GitHub `production` (required reviewers distincts du déclencheur) et ses secrets,

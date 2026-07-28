@@ -114,17 +114,13 @@ jobs:
       # web/scripts/vercel-build.sh : advisors → import (jeton/version/sha épinglés
       # ci-dessous, hôte nommé au déclenchement) → contrat sur les données.
       #
-      # Les trois épingles ci-dessous sont les MÊMES constantes que le build
-      # portait ; un bump de millésime les change toutes les trois, ET le secret
+      # Les trois épingles ci-dessous (jeton, millésime, empreinte) sont l'UNIQUE
+      # source de vérité depuis que le build Vercel n'écrit plus. Un bump de
+      # millésime les change toutes les trois, ET le secret
       # WN_CB_NABM_IMPORT_CONFIRMATION, ET rouvre une PR relue. Le modèle « deux
       # clés qui bougent ensemble » : le jeton (épinglé + secret) et l'hôte (input).
-      #
-      # DOUBLE SOURCE DE VÉRITÉ pendant la coexistence : ces trois valeurs sont
-      # aussi épinglées dans web/scripts/vercel-build.sh:31-33. Tant que le build
-      # écrit encore, les DEUX fichiers doivent bouger ensemble sur un bump. Une
-      # divergence échoue fermé (le garde --version/--sha256 de importNabm.ts
-      # rejette), jamais un import silencieux d'un mauvais contenu. Le lot qui
-      # allège vercel-build.sh supprime cette duplication.
+      # Une divergence échoue fermé (le garde --version/--sha256 de importNabm.ts
+      # rejette), jamais un import silencieux d'un mauvais contenu.
       - name: "Advisors Supabase (fail-on warn, avant import)"
         if: ${{ inputs.mode == 'import-cb' }}
         run: |
