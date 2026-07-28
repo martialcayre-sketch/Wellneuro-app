@@ -116,9 +116,16 @@ jobs:
       # juge transpile le TypeScript du catalogue (devDependency de web/).
       # Une PR purement documentaire ne peut pas l'esquiver pour autant : la
       # matrice de mapping est classée code par l'étape « Périmètre du diff ».
+      # Lancé DEUX FOIS, une par position de `WN_ALI_01_SIIN57`. `Q_ALI_01` a
+      # deux formes servies (dépistage court à 14 items, Enquête SIIN à 57) et
+      # le catalogue n'en expose qu'une à la fois : en ne jouant que la position
+      # par défaut, le garde était aveugle à la forme gatée — vert au merge,
+      # rouge à la bascule du drapeau, c'est-à-dire au pire moment.
       - name: Scoring certification (63 questionnaires, blocking)
         if: steps.scope.outputs.docs_only != 'true'
-        run: node scripts/check_questionnaire_certification.js
+        run: |
+          node scripts/check_questionnaire_certification.js
+          WN_ALI_01_SIIN57=true node scripts/check_questionnaire_certification.js
 
       # Banc du validateur de registre : c'est lui qui prouve que le garde
       # ci-dessus échoue quand il doit échouer (entrée manquante, axe hors
