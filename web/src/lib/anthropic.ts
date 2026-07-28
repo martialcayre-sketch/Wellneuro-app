@@ -9,19 +9,36 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
 // v10 (2026-07-29) : v9 décrivait DEUX porteurs de sous-scores et en laissait un
 // troisième — `subScores`, la forme historique — sans un mot. Résiduel documenté à
-// la clôture de #437, mesuré depuis : `subScores` est le porteur DOMINANT (16
-// instruments du catalogue, 62 sous-scores ; en base, **30 passations sur 76** le
-// portent contre **0** pour `dimensions` et `scoresBesoins`). La consigne décrivait
-// donc les deux clés qu'aucune passation enregistrée ne porte, et se taisait sur
-// celle qu'elles portent toutes. Elle annonçait aussi « sous deux clés » — faux — et
-// « chaque sous-score porte son propre total et son propre max » : trois des 62 n'ont
-// aucun `max` (`Q_NEU_03`). Sont désormais décrits les champs que le modèle voit
-// réellement : `scaled`/`maxScaled` (même mesure remise à l'échelle), `rawTotal`
-// (total AVANT pondération — sur le Karasek, `LAT` vaut 78 pondéré contre 30 brut
-// pour un seuil à 72 : lire le brut INVERSE le verdict), `horsTotal` (sous-échelle
-// exclue du total global), `seuil`/`seuilLabel`/`atRisk` (le verdict est `atRisk`),
-// et l'`interpretation` propre à un sous-score. Enfin, un questionnaire à sous-scores
-// peut n'avoir AUCUN total global (Karasek) : ne pas en fabriquer un par addition.
+// la clôture de #437, mesuré depuis : `subScores` est le porteur DOMINANT (17
+// instruments du catalogue, 66 sous-scores ; en base au 2026-07-29, **30 passations
+// sur 76** le portent contre **0** pour `dimensions` et `scoresBesoins`). La consigne
+// décrivait donc les deux clés qu'aucune passation enregistrée ne porte, et se taisait
+// sur celle qu'elles portent toutes. Elle annonçait aussi « sous deux clés » — faux —
+// et « chaque sous-score porte son propre total et son propre max » : trois des 66
+// n'ont aucun `max` (`Q_NEU_03`). Sont désormais décrits les champs que le modèle voit
+// réellement, chacun par la règle qui le rend sûr :
+//   · `total: null` — NON MESURÉ, jamais un zéro. `Q_SOM_09` produit ce `null` à
+//     dessein (`questions.ts` : « jamais complété par un 0, qui se lirait comme
+//     "mauvais" au lieu de "inconnu" »), et le total global est déjà renormalisé sans
+//     lui. Une v10 antérieure ordonnait de lire `total` contre `max` sans réserve :
+//     elle aurait fait écrire « qualité de sommeil 0/25 » à côté d'un 100/100.
+//   · `seuil: null` — l'instrument ne publie AUCUN seuil ; `atRisk` vaut alors `false`
+//     par DÉFAUT et ne signifie rien (`Q_STR_06/REC`, `seuilLabel: "Pas de seuil
+//     source"`). Ériger `atRisk` en verdict sans cette réserve fabriquait une
+//     réassurance (« reconnaissance : pas à risque ») que la source ne porte pas.
+//   · `scaled`/`maxScaled` (même mesure remise à l'échelle) ; `rawTotal` (total AVANT
+//     pondération — sur le Karasek, `LAT` vaut 78 pondéré contre 30 brut pour un seuil
+//     à 72 : lire le brut INVERSE le verdict) ; `horsTotal` (sous-échelle exclue du
+//     total global, sans que les autres soient pour autant additifs — `Q_NEU_03`
+//     recoupe ses items) ; `interpretation` propre à un sous-score.
+// Enfin, un questionnaire à sous-scores peut n'avoir AUCUN total global (Karasek) :
+// ne pas en fabriquer un par addition.
+// Les deux premières règles viennent de la revue adversariale, qui a rendu NO-GO sur
+// la première rédaction. Elle a aussi montré POURQUOI je ne les avais pas vues : mon
+// relevé saturait les options de chaque question, or `Q_SOM_09` n'a pas d'options
+// (il lit des agrégats numériques) — l'instrument sortait du recensement sans bruit,
+// et c'était le seul à porter des `total: null`. La méthode de mesure avait caché le
+// seul cas qui invalidait la règle écrite.
 // v9 (2026-07-28) : la charge de synthèse peut désormais porter des sous-scores
 // nommés — `dimensions` (découpage d'affichage) et `scoresBesoins` (mesure d'un
 // besoin) — sans que la consigne les décrive. À l'allumage de `WN_ALI_01_SIIN57`,
@@ -122,21 +139,22 @@ Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se 
 
 Certains questionnaires ne te livrent pas qu'un score global : leur résultat peut porter des **sous-scores**, sous trois clés distinctes qui ne veulent pas dire la même chose.
 
-- **subScores** — les **sous-échelles de l'instrument lui-même**, telles que sa source les publie. C'est de loin la forme la plus répandue.
+- **subScores** — les **sous-échelles propres à l'instrument** : tantôt celles que publie sa source, tantôt un découpage retenu par WellNeuro. N'accorde pas à un axe l'autorité d'une échelle publiée du seul fait qu'il figure ici. C'est de loin la forme la plus répandue.
 - **dimensions** — un découpage d'**affichage** : le questionnaire réparti en catégories thématiques telles qu'elles sont présentées au patient.
 - **scoresBesoins** — la **mesure d'un besoin** : un sous-ensemble d'items retenu pour évaluer un besoin clinique précis, qui peut ne reprendre qu'une partie des items d'une dimension.
 
-Règle commune : le score d'un sous-score est **total**, et il se lit contre le **max** qui l'accompagne — jamais contre le max d'un autre sous-score, ni contre le total global du questionnaire.
+Règle commune : le score d'un sous-score est **total**, et il se lit contre le **max** qui l'accompagne — jamais contre le max d'un autre sous-score, ni contre le total global du questionnaire. L'un comme l'autre peuvent manquer : les champs décrits plus bas disent alors ce qu'il faut en faire.
 
 Un même thème peut apparaître **deux fois**, sous dimensions et sous scoresBesoins, avec des libellés voisins mais des **périmètres différents** (un nombre d'items et un max différents). Ce sont deux vues d'un même thème, pas deux mesures à cumuler : ne les additionne jamais, et ne reporte pas le résultat de l'une sous le dénominateur de l'autre.
 
 Une entrée de **subScores** peut porter d'autres champs, qui se lisent ainsi :
 
+- **total à null** — ce sous-score **n'a pas été mesuré**. Ce n'est **pas** un zéro, et surtout pas le plus mauvais score de l'échelle : ne le rapporte ni comme un score, ni comme une proportion, ne le situe sur aucune bande et ne le fais entrer dans aucune moyenne. Dis que cette dimension n'a pas été recueillie. Le total global qui l'accompagne a déjà été calculé sans lui.
 - **max absent** — ce sous-score n'a pas de dénominateur. Rapporte la valeur brute sans en faire une proportion ni un pourcentage, et n'invente aucun max.
 - **scaled** et **maxScaled** — la même mesure remise à l'échelle de l'instrument. Lis scaled contre maxScaled et total contre max : ne croise jamais les deux paires.
 - **rawTotal** — un total intermédiaire, avant pondération. Ce n'est pas le score : le score reste total, et rapporter rawTotal à un seuil peut inverser la conclusion.
-- **horsTotal** à vrai — ce sous-score est rapporté à part et **n'entre pas** dans le total global du questionnaire.
-- **seuil**, **seuilLabel** et **atRisk** — un seuil publié par l'instrument et son verdict. Le verdict est **atRisk** ; ne le recalcule pas toi-même depuis le total.
+- **horsTotal** à vrai — ce sous-score est rapporté à part et **n'entre pas** dans le total global du questionnaire. N'en conclus pas pour autant que les autres s'additionnent : un sous-score peut recouper des items déjà comptés ailleurs.
+- **seuil**, **seuilLabel** et **atRisk** — un seuil de l'instrument et son verdict. Quand un seuil existe, le verdict est **atRisk** et il ne se recalcule pas depuis le total. Mais **seuil peut valoir null** : l'instrument ne publie alors aucun seuil pour ce sous-score, atRisk vaut false **par défaut et ne signifie rien** — lis seuilLabel, et n'en conclus ni risque, ni absence de risque.
 - **interpretation** — la bande de ce sous-score-là, jamais celle du questionnaire entier.
 
 Enfin, certains questionnaires à sous-scores **n'ont pas de score global** : le champ total est alors absent de leur résultat. N'en fabrique pas un en additionnant les sous-scores.
