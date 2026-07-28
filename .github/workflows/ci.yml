@@ -144,6 +144,19 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         run: node --test tools/corpus/certify/lib/comparaison.test.mjs
 
+      # Banc golden de scoring : verrouille calculateScore/buildMiniSynthese
+      # contre quatre fixtures représentatives + un cas d'erreur. Débranché de
+      # tout runner jusqu'ici — son chargeur (concaténation des sources TS de
+      # questions.ts et exécution via `new Function`) cassait sur une syntaxe
+      # de type trop récente pour son ancien strip par regex. Une dérive
+      # réelle du fixture (protocol → conduite, PR #389) s'y était accumulée
+      # sans qu'aucun run ne s'en aperçoive — exactement ce que le brancher ici
+      # referme. Après `npm ci` : son chargeur transpile le TS via le
+      # compilateur, devDependency de web/.
+      - name: Scoring golden bench (banc de régression)
+        if: steps.scope.outputs.docs_only != 'true'
+        run: node --test tests/wellneuro/golden/scoring-golden.test.mjs
+
       - name: Generate Prisma client
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
