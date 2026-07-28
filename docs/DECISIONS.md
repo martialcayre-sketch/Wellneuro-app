@@ -4,6 +4,15 @@
 
 ## Décisions actives
 
+### D-006 — Migration HDS : bascule tout-Scalingo, données réelles dès la phase de test, découplée du calendrier juridique
+
+- Date : 2026-07-28
+- Statut : accepté (décision du **responsable de traitement**), **sous les réserves listées ci-dessous**
+- Domaine : architecture, hébergement et conformité (HDS, RGPD)
+- Décision : la migration vers **Scalingo** (hébergeur certifié HDS — cert. n° 38436 ; infrastructure Outscale, cert. HDS n° 36741-4) s'applique **aux patients réels dès la phase de test**, sans attendre la finalisation du volet juridique. Base invoquée par le responsable : **consentements patients déjà recueillis** et **information RGPD** (conservation des données, droit d'accès, de consultation, de révocation) **déjà actée** sur l'implantation Vercel actuelle. Argument de cohérence : les données réelles sont **déjà** hébergées sur Vercel/Supabase **non‑HDS** sous la dérogation (échéance 2026‑10‑21) — les déplacer vers Scalingo **améliore** la posture, il ne la dégrade pas. Corollaire : **pas de double‑implantation permanente** — Vercel/Supabase ne sont gardés chauds que comme **filet de rollback court** pendant la bascule, puis décommissionnés avec **preuve d'effacement écrite** (registre RGPD). État cible : **Scalingo seul**.
+- Conséquences : le volet contractuel HDS **côté hébergeur** se referme par la **signature électronique du DPA Scalingo** (l'annexe HDS s'y attache automatiquement — item F, volet hébergeur). Les patients réels ne doivent atterrir que sur l'**app prod HDS** dûment provisionnée (`osc-fr1 --hds-resource`, `DB_SSL_CA`, secrets prod, contrôles d'accès de niveau prod) — **pas** sur un staging au sens lâche. Aucun garde runtime n'empêche les données réelles : le passage au réel est la **migration de données du bloc D** (dump Supabase → restore Scalingo), acte ops du responsable. **Réserves (n'invalident pas la direction, à lever en parallèle) :** (1) **e‑signer le DPA Scalingo** ; (2) **confirmation DPO recommandée** sur « patients réels sur Scalingo en phase de test » — décision plus lourde que le RLS (D‑005) ; (3) DPA des **autres sous‑traitants** (Anthropic, SMTP, Google, Sentry), **AIPD**, **pentest léger** (item F) ; (4) la conformité des **consentements/information** est une **certification du responsable**, non vérifiée indépendamment ici. Le gate dur `WN_CB_RESULTS_ENABLED` (résultats biologiques réels) **reste distinct** et ne s'ouvre qu'après attestation HDS effective.
+- Référence : `docs/claude/propositions/2026-07-24-audit-migration-hds/` (AUDIT, RUNBOOK §4/§5, CHECKLIST_FINALISATION F/D/E), `docs/DECISIONS.md` D‑005 (RLS), `docs/FEATURE_FLAGS.md`
+
 ### D-005 — RLS (exig. 3 HDS) : le deny-all documenté comme contrôle suffisant (posture A)
 
 - Date : 2026-07-27
