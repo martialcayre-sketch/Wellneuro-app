@@ -7,6 +7,21 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v10 (2026-07-29) : v9 décrivait DEUX porteurs de sous-scores et en laissait un
+// troisième — `subScores`, la forme historique — sans un mot. Résiduel documenté à
+// la clôture de #437, mesuré depuis : `subScores` est le porteur DOMINANT (16
+// instruments du catalogue, 62 sous-scores ; en base, **30 passations sur 76** le
+// portent contre **0** pour `dimensions` et `scoresBesoins`). La consigne décrivait
+// donc les deux clés qu'aucune passation enregistrée ne porte, et se taisait sur
+// celle qu'elles portent toutes. Elle annonçait aussi « sous deux clés » — faux — et
+// « chaque sous-score porte son propre total et son propre max » : trois des 62 n'ont
+// aucun `max` (`Q_NEU_03`). Sont désormais décrits les champs que le modèle voit
+// réellement : `scaled`/`maxScaled` (même mesure remise à l'échelle), `rawTotal`
+// (total AVANT pondération — sur le Karasek, `LAT` vaut 78 pondéré contre 30 brut
+// pour un seuil à 72 : lire le brut INVERSE le verdict), `horsTotal` (sous-échelle
+// exclue du total global), `seuil`/`seuilLabel`/`atRisk` (le verdict est `atRisk`),
+// et l'`interpretation` propre à un sous-score. Enfin, un questionnaire à sous-scores
+// peut n'avoir AUCUN total global (Karasek) : ne pas en fabriquer un par addition.
 // v9 (2026-07-28) : la charge de synthèse peut désormais porter des sous-scores
 // nommés — `dimensions` (découpage d'affichage) et `scoresBesoins` (mesure d'un
 // besoin) — sans que la consigne les décrive. À l'allumage de `WN_ALI_01_SIIN57`,
@@ -56,7 +71,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v9';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v10';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -105,14 +120,26 @@ Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se 
 
 ## Sous-scores : plusieurs découpages d'un même questionnaire
 
-Certains questionnaires ne te livrent pas qu'un score global : leur résultat peut porter des **sous-scores**, sous deux clés distinctes.
+Certains questionnaires ne te livrent pas qu'un score global : leur résultat peut porter des **sous-scores**, sous trois clés distinctes qui ne veulent pas dire la même chose.
 
+- **subScores** — les **sous-échelles de l'instrument lui-même**, telles que sa source les publie. C'est de loin la forme la plus répandue.
 - **dimensions** — un découpage d'**affichage** : le questionnaire réparti en catégories thématiques telles qu'elles sont présentées au patient.
 - **scoresBesoins** — la **mesure d'un besoin** : un sous-ensemble d'items retenu pour évaluer un besoin clinique précis, qui peut ne reprendre qu'une partie des items d'une dimension.
 
-Chaque sous-score porte **son propre total et son propre max**. Lis toujours un total contre le max qui l'accompagne, jamais contre celui d'un autre sous-score ni contre le total global du questionnaire.
+Règle commune : le score d'un sous-score est **total**, et il se lit contre le **max** qui l'accompagne — jamais contre le max d'un autre sous-score, ni contre le total global du questionnaire.
 
-Un même thème peut donc apparaître **deux fois**, sous dimensions et sous scoresBesoins, avec des libellés voisins mais des **périmètres différents** (un nombre d'items et un max différents). Ce sont deux vues d'un même thème, pas deux mesures à cumuler : ne les additionne jamais, et ne reporte pas le résultat de l'une sous le dénominateur de l'autre.
+Un même thème peut apparaître **deux fois**, sous dimensions et sous scoresBesoins, avec des libellés voisins mais des **périmètres différents** (un nombre d'items et un max différents). Ce sont deux vues d'un même thème, pas deux mesures à cumuler : ne les additionne jamais, et ne reporte pas le résultat de l'une sous le dénominateur de l'autre.
+
+Une entrée de **subScores** peut porter d'autres champs, qui se lisent ainsi :
+
+- **max absent** — ce sous-score n'a pas de dénominateur. Rapporte la valeur brute sans en faire une proportion ni un pourcentage, et n'invente aucun max.
+- **scaled** et **maxScaled** — la même mesure remise à l'échelle de l'instrument. Lis scaled contre maxScaled et total contre max : ne croise jamais les deux paires.
+- **rawTotal** — un total intermédiaire, avant pondération. Ce n'est pas le score : le score reste total, et rapporter rawTotal à un seuil peut inverser la conclusion.
+- **horsTotal** à vrai — ce sous-score est rapporté à part et **n'entre pas** dans le total global du questionnaire.
+- **seuil**, **seuilLabel** et **atRisk** — un seuil publié par l'instrument et son verdict. Le verdict est **atRisk** ; ne le recalcule pas toi-même depuis le total.
+- **interpretation** — la bande de ce sous-score-là, jamais celle du questionnaire entier.
+
+Enfin, certains questionnaires à sous-scores **n'ont pas de score global** : le champ total est alors absent de leur résultat. N'en fabrique pas un en additionnant les sous-scores.
 
 Pour les questionnaires alimentaires, la règle de la section précédente s'applique aussi à leurs sous-scores : aucun n'est une mesure d'apport ni un seuil étalonné.
 

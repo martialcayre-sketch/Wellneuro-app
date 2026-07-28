@@ -35,10 +35,10 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v9`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v10`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
-const EMPREINTE_V9 = 'a59102311224da13';
+const EMPREINTE_V10 = '9b8989651a62d804';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -143,7 +143,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v9', empreinte: EMPREINTE_V9 });
+    ).toEqual({ version: 'synthese-v10', empreinte: EMPREINTE_V10 });
   });
 
   it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {
