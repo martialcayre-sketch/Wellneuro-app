@@ -61,4 +61,13 @@ describe('GET /api/patient/questionnaire — propriété session', () => {
     expect(response.status).toBe(200);
     expect(prisma.patient.findUnique).not.toHaveBeenCalled();
   });
+
+  it('une assignation annulée est indisponible : 410 reason annulee', async () => {
+    // Fil A : refus dans la route, pas seulement dans l'écran. Le propriétaire
+    // légitime (email correct) ne peut pas ouvrir la saisie d'une annulée.
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignation, statut: 'Annulée' });
+    const response = await GET(request(`&email=${encodeURIComponent(assignation.emailPatient)}`));
+    expect(response.status).toBe(410);
+    expect(await response.json()).toMatchObject({ ok: false, reason: 'annulee' });
+  });
 });

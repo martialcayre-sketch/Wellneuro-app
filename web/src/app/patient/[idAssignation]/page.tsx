@@ -344,9 +344,17 @@ export default function PatientQuestionnairePage() {
 
   return (
     <div className="w-full max-w-2xl">
+      {/*
+        `renderer` vient du serveur, comme sur la page portail. Sans lui, le repli
+        client retombe sur `getEnabledRenderer`, qui ne connaît qu'un identifiant
+        et ignore quelle forme est servie : l'Enquête SIIN à 57 items serait
+        rendue en listes déroulantes ici et en grille là-bas. Le gate serait levé
+        d'un côté et contourné de l'autre.
+      */}
       <GenericQuestionnaire
         assignation={assignation}
         questionnaire={data.questionnaire as QuestionnaireDef}
+        renderer={data.renderer}
         email={email}
         onDone={onDone}
       />

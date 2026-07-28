@@ -21,6 +21,32 @@ export type OptionOrderPolicy =
       pinnedValues: readonly number[];
     };
 
+/**
+ * Levée du gate pour UNE forme servie, déclarée dans le registre.
+ *
+ * Un identifiant peut désigner deux formes — `Q_ALI_01` sert le dépistage court
+ * à 14 items ou l'Enquête SIIN à 57 selon `WN_ALI_01_SIIN57`, et le gate
+ * (« certification documentaire et fixture de scoring ») n'est satisfait que par
+ * la seconde. `activation` ne connaît qu'un identifiant : elle ne peut donc pas
+ * exprimer cette condition, et la coder dans le résolveur revenait à CONTOURNER
+ * le gate au lieu de le lever — le registre continuait d'annoncer « bloqué »
+ * pendant qu'une exception nominative rendait la grille.
+ *
+ * D'où ce champ : la condition est DÉCLARÉE là où le gate l'est, et le résolveur
+ * la lit sans connaître aucun instrument.
+ *
+ * Le discriminant est `scoring.maxTotal`, jamais le nombre d'items. `maxTotal`
+ * porte déjà tout le lot — `VERSION_SCORE_EQUILIBRE`, `BESOIN_SOURCES[1].max`,
+ * `formeAlimentaireServie.guard.test.ts` — donc une dérive y devient un test
+ * rouge existant. Un compte d'items serait un proxy isolé : ajouter un item
+ * ferait retomber le rendu en `standard` en silence.
+ */
+export type LeveeConditionnelle = Readonly<{
+  discriminant: 'scoring.maxTotal';
+  valeur: number;
+  motif: string;
+}>;
+
 export type DisplayPolicy = Readonly<{
   administration: AdministrationPolicy;
   renderer: RendererProfile;
@@ -28,6 +54,7 @@ export type DisplayPolicy = Readonly<{
   optionOrder: OptionOrderPolicy;
   activation: 'enabled' | 'blocked' | 'candidate';
   gate?: string;
+  leveeConditionnelle?: LeveeConditionnelle;
 }>;
 
 export type MicroBatchDefinition = readonly (readonly string[])[];
@@ -77,8 +104,16 @@ const DISPLAY_POLICY_REGISTRY: Readonly<Record<string, DisplayPolicy>> = Object.
     renderer: 'guided_sections',
     itemOrder: 'fixed',
     optionOrder: Object.freeze({ mode: 'fixed' }),
+    // Reste `blocked` : l'identifiant sert DEUX formes, et le dépistage court à
+    // 14 items ne satisfait toujours pas le gate. Passer à `enabled` lui
+    // ouvrirait la grille — la forme non certifiée, rendue comme la certifiée.
     activation: 'blocked',
-    gate: 'Certification documentaire et fixture de scoring requises.',
+    gate: "Certification documentaire et fixture de scoring requises. LEVÉ pour l'Enquête SIIN à 57 items, cotée /90 : sources WN-SRC-0470 et WN-SRC-0471, banc de scoring dédié tournant dans les deux positions du drapeau. Le dépistage court à 14 items, coté /42, n'apporte ni l'une ni l'autre et reste au rendu standard.",
+    leveeConditionnelle: Object.freeze({
+      discriminant: 'scoring.maxTotal',
+      valeur: 90,
+      motif: "Forme SIIN certifiée — le /90 est le discriminant qui porte déjà le barème servi et l'étiquette de version du score.",
+    }),
   }),
   Q_ALI_03: Object.freeze({
     administration: 'strict',
@@ -97,6 +132,50 @@ export function getDisplayPolicy(questionnaireId: string): DisplayPolicy {
 export function getEnabledRenderer(questionnaireId: string): RendererProfile {
   const policy = getDisplayPolicy(questionnaireId);
   return policy.activation === 'enabled' ? policy.renderer : 'standard';
+}
+
+/** Ce que le résolveur lit d'une définition servie : son barème, rien d'autre. */
+export type DefinitionServie = { scoring?: { maxTotal?: unknown } } | null | undefined;
+
+/**
+ * Résolveur PUR — ne connaît aucun identifiant d'instrument.
+ *
+ * Anti-tautologie : ne jamais écrire un attendu de test qui recalcule le
+ * discriminant depuis la policy testée. Les deux membres bougeraient ensemble, et
+ * c'est exactement ce qui avait rendu `ALI01_SERT_UNE_CONDUITE` vert alors qu'une
+ * perte clinique réelle passait. Les attendus sont des littéraux.
+ */
+export function resoudreRenderer(policy: DisplayPolicy, def: DefinitionServie): RendererProfile {
+  if (policy.activation === 'enabled') return policy.renderer;
+  const levee = policy.leveeConditionnelle;
+  // Le `discriminant` est VÉRIFIÉ, pas seulement déclaré. Sans ce test, le champ
+  // serait décoratif : élargir l'union à `'items.count'` et déclarer
+  // `{discriminant:'items.count', valeur:57}` compilerait, et le résolveur
+  // comparerait quand même `scoring.maxTotal === 57` — un instrument coté /57
+  // ouvrirait la grille. Fail-open silencieux ; ici la levée inconnue ne lève rien.
+  if (levee?.discriminant === 'scoring.maxTotal' && def?.scoring?.maxTotal === levee.valeur) {
+    return policy.renderer;
+  }
+  return 'standard';
+}
+
+/**
+ * Renderer d'une définition RÉELLEMENT SERVIE — à appeler côté serveur, et à
+ * transmettre au client avec la définition.
+ *
+ * `getEnabledRenderer` ne connaît qu'un identifiant. Or `Q_ALI_01` désigne deux
+ * formes selon `WN_ALI_01_SIIN57` : le dépistage court à 14 items, et l'Enquête
+ * alimentaire SIIN à 57. Seule la seconde justifie la grille — et le drapeau qui
+ * les départage n'existe QUE côté serveur. Laisser le client trancher lui ferait
+ * lire `undefined`, donc choisir la disposition de l'autre forme.
+ *
+ * D'où la règle : le serveur décide de ce qu'il sert, le client l'applique.
+ */
+export function getRendererPourDefinition(
+  questionnaireId: string,
+  def: DefinitionServie,
+): RendererProfile {
+  return resoudreRenderer(getDisplayPolicy(questionnaireId), def);
 }
 
 export function getMicroBatches(questionnaireId: string): MicroBatchDefinition {

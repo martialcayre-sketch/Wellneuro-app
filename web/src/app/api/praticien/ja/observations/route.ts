@@ -69,7 +69,12 @@ export async function GET(req: Request): Promise<NextResponse<ListResponse>> {
       );
     }
 
-    const snapshots = await listJaObservationSnapshots(idPatient);
+    // Le filtre d'acteur est appliqué EN BASE : filtrer après coup sur une
+    // fenêtre de 10 lignes tous acteurs confondus ferait disparaître les
+    // transmissions du patient dès quelques activations praticien.
+    const actorParam = searchParams.get('actor');
+    const actor = actorParam === 'patient' || actorParam === 'praticien' ? actorParam : undefined;
+    const snapshots = await listJaObservationSnapshots(idPatient, 10, actor);
     return NextResponse.json({ ok: true, snapshots });
   } catch (error) {
     console.error('[praticien/ja/observations GET]', error instanceof Error ? error.message : String(error));

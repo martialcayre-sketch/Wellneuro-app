@@ -9,9 +9,12 @@ import type {
   TrialTrace,
 } from '@/lib/food-observation/types';
 import { readFoodObservationEpisode } from '@/lib/food-observation/episode';
+import {
+  JA_FOOD_OBSERVATION_CONTRACT_VERSION,
+  JA_SELECTED_PRIORITY_ID,
+} from '@/lib/food-observation/contract';
 
-export const JA_FOOD_OBSERVATION_CONTRACT_VERSION = 'ja-food-observation-v1' as const;
-const JA_SELECTED_PRIORITY_ID = 'JA_FOOD_OBSERVATION';
+export { JA_FOOD_OBSERVATION_CONTRACT_VERSION } from '@/lib/food-observation/contract';
 
 export type JaObservationSnapshotInput = {
   idPatient: string;
@@ -109,6 +112,38 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
   if (episode.patientId !== idPatient) {
     throw new TypeError('L’épisode JA n’appartient pas au patient demandé.');
   }
+  // Cohérence trace ↔ épisode. Une trace saisie sous un autre épisode — cycle
+  // précédent restauré du brouillon local, ou saisie faite avant que le cycle
+  // soit résolu — serait persistée sous le cycle courant, puis rejetée en
+  // silence à la lecture (`buildPublishedJaFeasibility` lève, et
+  // `getLatestPublishedJaFeasibility` avale l'exception) : la faisabilité JA
+  // disparaîtrait de la boussole praticien sans le moindre message.
+  // Borne de volume. Le lot 2 branche le premier client d'une route d'écriture
+  // jusqu'ici dormante : le contenu vient d'un navigateur patient, et rien
+  // d'autre ne limite ce qui entre dans `protocol_drafts.payload`. Le budget
+  // d'attention plafonne à 7 traces/semaine sur une fenêtre de 21 jours ;
+  // 200 éléments par liste laissent une marge large et ferment l'écriture non
+  // bornée.
+  const MAX_ELEMENTS_PAR_LISTE = 200;
+
+  const evenements: { evenements: { episodeId: string }[]; nom: string }[] = [
+    { evenements: input.traces, nom: 'traces' },
+    { evenements: input.pauses, nom: 'pauses' },
+    { evenements: input.plans, nom: 'plans' },
+    { evenements: input.solutions, nom: 'solutions' },
+  ];
+  for (const { evenements: liste, nom } of evenements) {
+    if (liste.length > MAX_ELEMENTS_PAR_LISTE) {
+      throw new TypeError(`Instantané JA hors bornes : trop de ${nom}.`);
+    }
+    if (liste.some(item => item.episodeId !== episode.episodeId)) {
+      throw new TypeError(`Instantané JA incohérent : des ${nom} relèvent d’un autre épisode.`);
+    }
+  }
+  if (input.actionCareer.length > MAX_ELEMENTS_PAR_LISTE) {
+    throw new TypeError('Instantané JA hors bornes : trop d’éléments de carrière d’action.');
+  }
+
   const capturedAt = new Date().toISOString();
   const payload = {
     actor: input.actor,
@@ -176,7 +211,18 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
   };
 }
 
-export async function listJaObservationSnapshots(idPatientRaw: string, limit = 10): Promise<JaObservationSnapshot[]> {
+/**
+ * `actor` filtre **en base**, pas après coup. Un filtrage côté client sur une
+ * fenêtre de `limit` lignes tous acteurs confondus fait disparaître les
+ * transmissions du patient dès que quelques activations praticien les
+ * précèdent — chaque activation écrivant deux lignes JA — et la surface qui les
+ * affiche conclut alors « aucune transmission » alors qu'il y en a.
+ */
+export async function listJaObservationSnapshots(
+  idPatientRaw: string,
+  limit = 10,
+  actor?: 'praticien' | 'patient',
+): Promise<JaObservationSnapshot[]> {
   const idPatient = ensurePatientId(idPatientRaw);
   const max = Number.isInteger(limit) ? Math.min(Math.max(limit, 1), 50) : 10;
 
@@ -185,6 +231,7 @@ export async function listJaObservationSnapshots(idPatientRaw: string, limit = 1
       idPatient,
       contractVersion: JA_FOOD_OBSERVATION_CONTRACT_VERSION,
       selectedPriorityId: JA_SELECTED_PRIORITY_ID,
+      ...(actor ? { payload: { path: ['actor'], equals: actor } } : {}),
     },
     orderBy: { createdAt: 'desc' },
     take: max,

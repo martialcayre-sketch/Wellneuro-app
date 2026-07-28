@@ -4,7 +4,8 @@
 # Ordre fail-fast — contrôles statiques d'abord, base ensuite :
 #   anti-secrets → audit campagnes → prisma generate → scoring → type-check
 #   → vitest → lint → PostgreSQL éphémère → migrate deploy → dérive
-#   schéma↔migrations → seed → build → Playwright (Chromium + WebKit) contre
+#   schéma↔migrations → contrats SQL (prisma/checks) → seed → build
+#   → Playwright (Chromium + WebKit) contre
 #   le build de production (`next start`), le même artefact que Vercel déploie.
 #
 # Gates de sûreté avant déploiement (chaîne web/scripts/vercel-build.sh —
@@ -360,6 +361,42 @@ npx prisma migrate diff \
   --to-schema prisma/schema.prisma \
   --exit-code \
   || die "schema.prisma ne correspond pas aux migrations committées — générer la migration manquante avant tout déploiement."
+
+step "Contrats SQL (prisma/checks)"
+# Ces contrats éprouvent ce que ni Prisma ni Vitest ne voient : CHECK, RLS,
+# triggers, index partiels, et les invariants de DONNÉES rejoués dans une
+# transaction annulée. Le CI les lance ; ce palier ne le faisait pas — si bien
+# qu'écrire du SQL de garde obligeait à monter un PostgreSQL à la main pour le
+# valider. C'est le motif exact qui a fait entrer le lint dans T1 le
+# 2026-07-21 : un palier qui ne couvre pas ce que le CI vérifie ne protège de
+# rien (LOT-01b).
+#
+# La liste n'est pas recopiée : elle est EXTRAITE de ci.yml. Recopier l'aurait
+# fait diverger au premier contrat ajouté, et la divergence aurait été
+# silencieuse — le palier serait resté vert en ignorant le nouveau garde.
+# `sed` plutôt que `grep -o` : le grep de macOS et celui du runner ne rendent
+# pas la même chose (voir l'avertissement de ci.yml sur `grep -qv`).
+contrats=$(sed -n 's|.*--file \(prisma/checks/[A-Za-z0-9_./-]*\.sql\).*|\1|p' \
+  "$ROOT/.github/workflows/ci.yml" | sort -u)
+if [[ -z "$contrats" ]]; then
+  die "aucun contrat SQL trouvé dans .github/workflows/ci.yml — l'extraction a cessé de fonctionner, elle ne rendrait plus silence que succès."
+fi
+attendus=$(printf '%s\n' "$contrats" | wc -l | tr -d ' ')
+joues=0
+while IFS= read -r contrat; do
+  [[ -f "$WEB/$contrat" ]] || die "contrat $contrat référencé par le CI mais absent du dépôt."
+  printf '  %s\n' "$contrat"
+  # `< /dev/null` : sans lui, un jour où l'outil appelé lirait stdin, il
+  # avalerait le reste du here-string et la boucle s'arrêterait après UN
+  # contrat — verte. C'est exactement le silence que cette étape existe pour
+  # empêcher.
+  npx prisma db execute --file "$contrat" > /dev/null < /dev/null \
+    || die "contrat SQL en échec : $contrat"
+  joues=$((joues + 1))
+done <<< "$contrats"
+# Un contrat extrait mais non joué ne doit jamais ressembler à un succès.
+[[ "$joues" == "$attendus" ]] \
+  || die "$joues contrat(s) joué(s) pour $attendus extrait(s) de ci.yml — la boucle s'est interrompue sans le dire."
 
 step "Seed (patients fictifs uniquement)"
 npm run prisma:seed

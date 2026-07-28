@@ -19,6 +19,7 @@ import {
   verifierAppartenancePatient,
 } from '@/lib/praticien/appartenance';
 import { journaliserAccesDossier } from '@/lib/praticien/journalAcces';
+import { EXCLURE_INSTANTANES_JA } from '@/lib/food-observation/contract';
 
 // Gabarit littéral pour le journal des accès (G-TRUST-04) — jamais l'URL reçue.
 const ROUTE_JOURNAL = '/api/praticien/protocoles';
@@ -213,7 +214,7 @@ export async function GET(req: Request): Promise<NextResponse<ListResponse>> {
     // praticien ne remontent pas — la liste est vide, comme pour un patient
     // sans protocole, sans révéler que celui-ci existe.
     const drafts = await prisma.protocolDraft.findMany({
-      where: { idPatient, patient: filtrePatientsDuPraticien(emailSession) },
+      where: { idPatient, patient: filtrePatientsDuPraticien(emailSession), ...EXCLURE_INSTANTANES_JA },
       orderBy: { createdAt: 'desc' },
       select: {
         id: true,

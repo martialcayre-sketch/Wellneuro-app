@@ -80,6 +80,15 @@ beforeEach(() => {
 });
 
 describe('cloturerAgenda', () => {
+  it('refuse de clôturer une assignation annulée (Fil A), sans rien créer', async () => {
+    // La clôture est le chemin UNIQUE de production des agrégats (patient comme
+    // praticien) : un agenda annulé ne doit pas y fabriquer de QuestionnaireReponse
+    // ni repasser `statut` à 'Complété', ce qui écraserait l'annulation.
+    prisma.assignation.findUnique.mockResolvedValue({ ...ASS, statut: 'Annulée' });
+    await expect(cloturerAgenda({ idAssignation: 'ASS_AGD' })).rejects.toThrow(/annulé/);
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+  });
+
   it('crée une réponse scorée et verrouille l’assignation (14 nuits, week-end couvert)', async () => {
     prisma.assignation.findUnique.mockResolvedValue(ASS);
     prisma.agendaSommeilNuit.findMany.mockResolvedValue(nuitsConsecutives(14));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agregerEquilibre, calculerCouvertureBesoin, clamp01 } from './score';
+import { agregerEquilibre, calculerCouvertureBesoin, calculerCouvertureSource, clamp01 } from './score';
 import { PLAFOND_FONDATION_CRITIQUE } from './constants';
 
 // Scénarios portés depuis l'ancien score.check.ts (auto-vérification
@@ -56,9 +56,64 @@ describe('agregerEquilibre', () => {
 });
 
 describe('calculerCouvertureBesoin', () => {
-  it('besoin 3 (rythme alimentaire, aucune source mappée) reste non évaluable en v1 — jamais 0 par défaut', () => {
-    const couvertureBesoin3 = calculerCouvertureBesoin(3, { Q_ALI_01: { MO1: '4' } });
-    expect(couvertureBesoin3).toBeNull();
+  // Le besoin 3 A une source depuis le 2026-07-28 : le sous-score `RYTHME_CHRONO`
+  // de l'Enquête SIIN. Le test qui vivait ici s'intitulait « aucune source
+  // mappée » et serait resté VERT en devenant faux — ses réponses `{MO1:'4'}` ne
+  // correspondent à aucun item, donc la couverture reste nulle par un tout autre
+  // chemin. Un test qui ne peut plus échouer pour la raison qu'il annonce ne
+  // garde rien ; ceux-ci disent ce qui est vrai, dans les deux positions du
+  // drapeau.
+  const SIIN57_ACTIF = process.env.WN_ALI_01_SIIN57 === 'true';
+
+  it('besoin 3 : une passation de la forme COURTE ne le renseigne pas', () => {
+    // Les 8 passations de production portent des clés `AL*`. Relues sous la
+    // forme SIIN, elles ne correspondent à aucun item : le moteur rend
+    // `total: null` (parade anti-zéro), jamais 0. Vrai dans les deux positions,
+    // pour deux raisons différentes — forme courte : pas de sous-score déclaré ;
+    // forme SIIN : aucune réponse correspondante.
+    expect(calculerCouvertureBesoin(3, { Q_ALI_01: { AL1: '1', AL2: '2' } })).toBeNull();
+  });
+
+  it('besoin 3 : une passation SIIN complète le renseigne, et seulement en position SIIN', () => {
+    // Les quatre items servis, au repère : SIIN52/53/55 en Oui (1), SIIN54 à
+    // 12 h de jeûne. Attendu écrit à la main : 7 points sur 7, donc couverture 1.
+    const reponsesAuRepere = { SIIN52: 1, SIIN53: 1, SIIN54: 12, SIIN55: 1 };
+    expect(calculerCouvertureBesoin(3, { Q_ALI_01: reponsesAuRepere }))
+      .toBe(SIIN57_ACTIF ? 1 : null);
+  });
+
+  it('besoin 3 : une passation SIIN qui n’aborde AUCUN item de rythme reste non mesurée', () => {
+    // LE cas qui exerce la parade anti-zéro du sous-score, et le seul. Le test
+    // « forme courte » ci-dessus passe par le retour anticipé du moteur (aucune
+    // réponse correspondante du tout) et ne l'atteint jamais : mesuré par
+    // mutation, remplacer `sousRepondus > 0 ? sousTotal : null` par `sousTotal`
+    // le laissait vert. Ici la passation est valide et scorée — seuls les
+    // quatre items servis manquent. Rendre 0 dirait « rythme au plus bas »
+    // d'un patient qu'on n'a pas interrogé, et tirerait la strate CORPS vers
+    // le bas sur une mesure absente.
+    expect(calculerCouvertureBesoin(3, { Q_ALI_01: { SIIN01: 13, SIIN08: 6 } })).toBeNull();
+  });
+
+  it.each([
+    ['1 item sur 4', { SIIN54: 12 }],
+    ['2 items sur 4', { SIIN52: 1, SIIN53: 1 }],
+    ['3 items sur 4', { SIIN52: 1, SIIN53: 1, SIIN54: 12 }],
+  ])('besoin 3 : %s ne suffit pas — partiel vaut « pas de mesure »', (_nom, reponses) => {
+    // Trouvé en revue : sans cette règle, `{SIIN54: 12}` — un patient au repère
+    // sur la SEULE question qu'il a lue — rendait 2/7, soit 28,6 %, SOUS le
+    // seuil d'effondrement. Un sous-score à 4 items n'a pas la tolérance d'un
+    // total à 57 : la sensibilité y est ~14 fois plus grande. Une mesure basse
+    // et une absence de mesure ne se confondent pas.
+    expect(calculerCouvertureBesoin(3, { Q_ALI_01: reponses })).toBeNull();
+  });
+
+  it('besoin 3 : hors du repère, la couverture chute sans jamais devenir nulle', () => {
+    // Contrôle négatif du test ci-dessus : sans lui, une couverture figée à 1
+    // passerait au vert. SIIN54 à 7 h (< 10) et SIIN52 en Non retirent 4 points
+    // sur 7 — il en reste 3, soit 3/7.
+    const horsRepere = { SIIN52: 0, SIIN53: 1, SIIN54: 7, SIIN55: 1 };
+    expect(calculerCouvertureBesoin(3, { Q_ALI_01: horsRepere }))
+      .toBe(SIIN57_ACTIF ? 3 / 7 : null);
   });
 
   // v4 : la fatigue de Pichot n'est plus une source du besoin 2. Répondre au
@@ -189,14 +244,23 @@ describe('besoin 5 — mouvement et repos à parts égales', () => {
     expect(couverture).toBeCloseTo((psqiSeul + activiteSeule) / 2, 6);
   });
 
-  it('les besoins à plusieurs sources non groupées gardent la moyenne simple', () => {
-    // Le besoin 9 (trois sources de stress, aucun groupe) ne doit rien changer :
-    // sans `groupe`, chaque source forme le sien et l'on retrouve la moyenne
-    // simple. C'est ce qui rend le regroupement sûr à introduire.
-    const couverture = calculerCouvertureBesoin(9, {
-      Q_STR_02: { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0, Q10: 0 },
-    });
-    expect(couverture).toBeCloseTo(1, 6);
+  it('un besoin non groupé passe la couverture de ses sources sans la regrouper', () => {
+    // Besoin 9 (stress), sources sans `groupe` : le regroupement du besoin 5 ne
+    // doit pas y fuiter. La couverture du besoin reste la moyenne simple des
+    // couvertures de ses sources disponibles — ici la seule fournie. On la
+    // compare à ce que rend directement `calculerCouvertureSource`, sans coder
+    // de valeur en dur : robuste au barème réel du PSS-10 (items P1..P10, dont
+    // certains inversés). Une clé fantaisiste rendrait `null` depuis que la
+    // garde « aucune réponse ne correspond » existe — d'où de vraies clés.
+    const reponses = {
+      Q_STR_02: { P1: 3, P2: 2, P3: 4, P4: 2, P5: 3, P6: 1, P7: 4, P8: 3, P9: 2, P10: 1 },
+    };
+    const attendu = calculerCouvertureSource(
+      { idQuestionnaire: 'Q_STR_02', max: 50, inverser: true },
+      reponses,
+    );
+    expect(attendu).not.toBeNull();
+    expect(calculerCouvertureBesoin(9, reponses)).toBeCloseTo(attendu!, 6);
   });
 });
 

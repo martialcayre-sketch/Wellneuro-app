@@ -3,10 +3,13 @@ import { prisma } from '@/lib/prisma';
 import { resolveDefinition } from '@/lib/instruments';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
+import { getRendererPourDefinition, type DefinitionServie, type RendererProfile } from '@/lib/questionnaire-display';
 
 export type PatientQuestionnaireResponse =
-  | { ok: true; assignation: AssignationInfo; questionnaire: unknown }
-  | { ok: false; reason: 'not_found' | 'expired' | 'invalid' | 'exception'; error: string };
+  // `renderer` est décidé ICI, sur la définition réellement servie : le client
+  // ne voit pas les variables d'environnement, et `Q_ALI_01` a deux formes.
+  | { ok: true; assignation: AssignationInfo; questionnaire: unknown; renderer: RendererProfile }
+  | { ok: false; reason: 'not_found' | 'expired' | 'invalid' | 'annulee' | 'exception'; error: string };
 
 export type AssignationInfo = {
   idAssignation: string;
@@ -49,6 +52,12 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
     if (!accessAllowed) {
       return NextResponse.json({ ok: false, reason: 'not_found', error: 'Adresse email non reconnue pour ce questionnaire.' }, { status: 404 });
     }
+    // Assignation annulée par le praticien (Fil A) : indisponible. Refus dans la
+    // route, pas seulement dans l'écran — un chemin patient oublié laisserait une
+    // annulée remplissable (leçon des trois chemins d'assignation).
+    if (ass.statut === 'Annulée') {
+      return NextResponse.json({ ok: false, reason: 'annulee', error: 'Ce questionnaire a été annulé par votre praticien.' }, { status: 410 });
+    }
     // La date limite ne bloque que le remplissage/modification, pas la consultation
     // des réponses déjà verrouillées (droit de consultation permanent, R8-lite).
     const bloqueParDeadline = ass.statutReponses !== 'verrouille' && ass.statutReponses !== 'modification_demandee';
@@ -75,7 +84,16 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
       statutReponses: ass.statutReponses,
     };
 
-    return NextResponse.json({ ok: true, assignation: assignationInfo, questionnaire });
+    // Le discriminant de la levée de gate est `scoring.maxTotal` — le barème
+    // servi, et non un compte d'items : c'est lui qui porte déjà l'étiquette de
+    // version du score et le `max` du besoin 1, donc une dérive y devient un
+    // test rouge existant plutôt qu'un renderer qui change d'avis en silence.
+    const renderer = getRendererPourDefinition(
+      ass.idQuestionnaire,
+      questionnaire as DefinitionServie,
+    );
+
+    return NextResponse.json({ ok: true, assignation: assignationInfo, questionnaire, renderer });
   } catch (err) {
     console.error('[patient/questionnaire GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ok: false, reason: 'exception', error: 'Erreur technique.' }, { status: 500 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TrajectoireCycle } from './trajectoire';
+import { construireTrajectoire, type TrajectoireCycle } from './trajectoire';
 import { calculerMedianesCabinet, SEUIL_COHORTE_CABINET } from './cabinet';
 
 // Fixtures synthétiques — aucun patient réel, aucun nom : des cycles nus.
@@ -87,5 +87,46 @@ describe('calculerMedianesCabinet (A6-R2)', () => {
     const j21 = resultat.parJalon.find((m) => m.jalon === 'J21')!;
     expect(j21.n).toBe(4);
     expect(j21.mediane).toBe(13); // médiane de [4, 10, 16, 20]
+  });
+});
+
+// Constat F1-bis de l'audit du 2026-07-27 : cinq patients ayant répondu une
+// seule fois franchissaient SEUIL_COHORTE_CABINET et servaient au praticien une
+// médiane de +0 par jalon, présentée comme un repère descriptif de sa
+// patientèle. Ce cas part des réponses brutes et traverse toute la chaîne —
+// c'est là, et non sur des cycles construits à la main, que le défaut vivait.
+describe('repère de cabinet — une cohorte silencieuse ne sert aucune médiane (F1-bis)', () => {
+  const RAW = {
+    P1: '2', P2: '2', P3: '3', P4: '3', P5: '3',
+    P6: '2', P7: '3', P8: '3', P9: '2', P10: '3',
+  };
+
+  it('cinq cycles sans réponse après T0 : nTotal atteint le seuil, aucun jalon agrégé', () => {
+    const cabinet = Array.from({ length: 5 }, (_, i) =>
+      construireTrajectoire({
+        episodes: [
+          {
+            id: `ep_${i}`,
+            milestone: 'T0' as const,
+            confirmedAt: new Date('2026-01-01T00:00:00.000Z'),
+            cycleId: `cy_${i}`,
+            versionScore: 'v1',
+          },
+        ],
+        reponses: [
+          {
+            idQuestionnaire: 'Q_STR_02',
+            dateReponse: new Date('2026-01-01T00:00:00.000Z'),
+            scoresJson: { rawAnswers: RAW },
+          },
+        ],
+      }).cycles,
+    );
+
+    const resultat = calculerMedianesCabinet(cabinet, 'v1');
+    expect(resultat.nTotal).toBe(SEUIL_COHORTE_CABINET);
+    expect(resultat.masque).toBe(false);
+    // Le seuil est franchi, mais plus aucun delta fabriqué ne l'alimente.
+    expect(resultat.parJalon).toEqual([]);
   });
 });

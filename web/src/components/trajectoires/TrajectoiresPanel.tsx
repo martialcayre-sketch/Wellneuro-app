@@ -20,6 +20,20 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+// Le premier jalon non mesuré n'est une « prochaine échéance » que si sa date
+// théorique est à venir. Depuis la règle de nouveauté (lot 1), un patient qui a
+// répondu une fois puis s'est arrêté a ses jalons suivants non mesurés — annoncer
+// « prochaine échéance : J21 vers le 22/01 » sur une fiche à T0 + 120 jours
+// donnerait une échéance passée pour un rendez-vous à venir.
+function libelleEcheance(echeance: { libelle: string; date: string | null } | null): string {
+  if (!echeance) return 'Cycle complet : les 4 jalons sont mesurés';
+  if (!echeance.date) return `Prochaine échéance : ${echeance.libelle}`;
+  const passee = new Date(echeance.date).getTime() <= Date.now();
+  return passee
+    ? `Jalon ${echeance.libelle} non mesuré — échéance du ${formatDate(echeance.date)} passée`
+    : `Prochaine échéance : ${echeance.libelle} vers le ${formatDate(echeance.date)}`;
+}
+
 export function TrajectoiresPanel() {
   const [lignes, setLignes] = useState<LigneCabinet[]>([]);
   const [etat, setEtat] = useState<'chargement' | 'chargee' | 'erreur'>('chargement');
@@ -129,11 +143,7 @@ export function TrajectoiresPanel() {
                       : 'Aucun jalon mesuré'}
                   </span>
                   <span className="hidden text-xs text-muted-foreground sm:block">
-                    {resume.prochaineEcheance
-                      ? resume.prochaineEcheance.date
-                        ? `Prochaine échéance : ${resume.prochaineEcheance.libelle} vers le ${formatDate(resume.prochaineEcheance.date)}`
-                        : `Prochaine échéance : ${resume.prochaineEcheance.libelle}`
-                      : 'Cycle complet : les 4 jalons sont mesurés'}
+                    {libelleEcheance(resume.prochaineEcheance)}
                   </span>
                 </span>
               </Link>

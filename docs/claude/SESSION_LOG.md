@@ -786,3 +786,28 @@ comme un CI qui n'a rien vérifié, ni comme la preuve que les E2E sont passées
 **Prochaine action** : `/wn-review`, puis commit et PR des trois lots ensemble.
 
 **Questions ouvertes** : sept gestes obligatoires le matin — à confronter à l'assiduité réelle d'une première cohorte.
+
+## 2026-07-28 — Garde de contenu de la voie rapide, reprise, arbitrage des bandes
+
+**Décisions** : l'audit des 563 claims « non prescriptifs » du notebook 08 a
+trouvé **au moins 55 bornes** de décision (#401). Garde de contenu posé sur les
+**six** sites de l'allowlist, définition unique en base (#412) ; puis révocation
+nominative d'`anon`/`authenticated`, que `REVOKE … FROM PUBLIC` n'avait pas faite
+(#420). Les **28 bornes déjà signées par lot sans lecture** repassent en attente,
+signature effacée (#422). Arbitrage des 19 bandes de scores : la publication
+primaire ne départage **qu'une fois sur huit** instruments.
+
+**Écarté** : décider sur la typologie du claim — la frontière `déclaré` /
+`interprété` est indécidable sur une grille de référence ; toucher aux barèmes
+servis — cela change des scores patients, le rescorage a son go séparé.
+
+**Validations** : T1, T2, six contrats SQL, quatre revues adversariales dont
+trois NO-GO, preuves par mutation, base de production relue après chaque
+migration.
+
+**Prochaine action** : trancher les 19 claims un par un — le dossier propose un
+sort pour chacun.
+
+**Questions ouvertes** : BDI-13 et Q-MAT dérivent **côté produit**, gelés
+derrière le go de rescorage ; place de l'échelle de Conners, désavouée par ses
+auteurs depuis 1985.

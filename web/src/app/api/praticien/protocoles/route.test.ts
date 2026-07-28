@@ -207,11 +207,15 @@ describe('GET /api/praticien/protocoles', () => {
       milestone: 'T0',
     });
     // La requête est bornée à l'idPatient ET scopée au praticien en session.
+    // Elle exclut aussi les instantanés du carnet alimentaire : ils partagent
+    // `protocol_drafts` sans être des versions de protocole, et le patient en
+    // écrit lui-même depuis le lot 2.
     expect(prisma.protocolDraft.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           idPatient: 'PAT_1',
           patient: { praticienEmail: { equals: 'praticien@wellneuro.fr', mode: 'insensitive' } },
+          contractVersion: { not: 'ja-food-observation-v1' },
         },
       }),
     );

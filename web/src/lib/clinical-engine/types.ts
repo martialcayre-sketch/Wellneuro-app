@@ -2,7 +2,14 @@ import type { JalonMomentum, NiveauPreuveBesoin, StrateCode } from '../equilibre
 import type { FoodCompassActionRef } from '../food-compass/types';
 
 export const VERSION_SCHEMA_CLINICAL_SNAPSHOT = 'c1-clinical-snapshot-v1' as const;
-export const VERSION_MAPPING_BESOINS = 'besoins-v1' as const;
+// v1 → v2 (2026-07-28) : le besoin 3 « Rythme alimentaire » gagne une source.
+// Cette étiquette entre dans `ClinicalSnapshot.inputHash`, donc dans la chaîne
+// de provenance persistée — la laisser à v1 ferait porter deux mappings par une
+// même étiquette, le défaut que `VERSION_SCORE_EQUILIBRE` existe pour empêcher
+// côté score. Coût mesuré avant bump : `protocol_drafts`,
+// `protocol_diffusion_approvals` et `assessment_episodes` sont VIDES en
+// production, aucun hash persisté ne bouge.
+export const VERSION_MAPPING_BESOINS = 'besoins-v2' as const;
 export const VERSION_OBJETS_CLINIQUES = 'objets-cliniques-v1' as const;
 export const VERSION_CLINICAL_REVIEW = 'c1-clinical-review-v1' as const;
 export const VERSION_DECISION_CARD = 'c1-decision-card-v1' as const;

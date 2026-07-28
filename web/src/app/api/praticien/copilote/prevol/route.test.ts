@@ -41,6 +41,17 @@ describe('GET /api/praticien/copilote/prevol', () => {
     prisma.trustAdverseEffectReport.findMany.mockResolvedValue([]);
   });
 
+  // Les instantanés du carnet alimentaire partagent `protocol_drafts` : sans
+  // exclusion, une transmission patient compterait comme un protocole relu.
+  it('exclut les instantanés du carnet alimentaire des versions relues', async () => {
+    await GET(request());
+    expect(prisma.protocolDraft.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ contractVersion: { not: 'ja-food-observation-v1' } }),
+      }),
+    );
+  });
+
   it('refuse sans session (401) sans toucher la base', async () => {
     getServerSession.mockResolvedValue(null);
     const res = await GET(request());

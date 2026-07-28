@@ -104,6 +104,19 @@ export async function POST(req: Request): Promise<NextResponse> {
     if (ass.idQuestionnaire === 'Q_SOM_09') {
       return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unavailable', error: "L'agenda du sommeil se remplit nuit par nuit, il ne se soumet pas ici." }, { status: 409 }), requestContext);
     }
+    // Assignation annulée par le praticien (Fil A) : soumission refusée. Refus
+    // défensif symétrique à celui de `patient/questionnaire` — une annulée ne se
+    // remplit ni ne se soumet, quel que soit le chemin. 409 : un retrait, pas une
+    // expiration.
+    if (ass.statut === 'Annulée') {
+      logger.warn({
+        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_UNAVAILABLE,
+        domain: 'QUESTIONNAIRE',
+        message: 'Soumission refusée : assignation annulée',
+        context: finalizeLogContext(requestContext, { statusCode: 409, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'annulee', error: 'Ce questionnaire a été annulé par votre praticien.' }, { status: 409 }), requestContext);
+    }
     if (ass.statutReponses === 'verrouille' || ass.statutReponses === 'modification_demandee') {
       logger.warn({
         event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_ALREADY_DONE,
@@ -156,9 +169,14 @@ export async function POST(req: Request): Promise<NextResponse> {
       // toujours résoudre (mode passation) — une ligne absente est anormale.
       // On ne verrouille RIEN et on ne persiste RIEN : verrouiller une réponse
       // sans scores serait une perte clinique silencieuse. Les ids hors
-      // catalogue de définitions (questionnaires fonctionnels : Q_PLAINTES,
-      // Q_ALI_01…) gardent plus bas leur flux historique — réponses brutes
-      // persistées sans score.
+      // catalogue de définitions (`Q_PLAINTES`) gardent plus bas leur flux
+      // historique — réponses brutes persistées sans score.
+      //
+      // Correction du 2026-07-28 : ce commentaire citait aussi `Q_ALI_01`, à
+      // tort. Il EST dans `QUESTIONNAIRE_CATALOGUE`, donc résolu par
+      // `resolveDefinition` et scoré par `computeScoreFromDef` comme n'importe
+      // quel instrument — ses 8 passations en production portent d'ailleurs un
+      // `scorePrincipal`. Seul `Q_PLAINTES` est réellement hors catalogue.
       logger.warn({
         event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_UNAVAILABLE,
         domain: 'QUESTIONNAIRE',

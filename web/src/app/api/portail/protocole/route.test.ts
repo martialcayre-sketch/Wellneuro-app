@@ -35,6 +35,10 @@ function request(cookie?: string): Request {
   });
 }
 
+// Hash d'ancrage de longueur réelle : une fixture d'un caractère laissait
+// passer toute valeur de LONGUEUR_CYCLE_REF, troncature comprise.
+const HASH_COMPLET = 'a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f801';
+
 const draftDerive = {
   purpose: 'Stabiliser vos matins.',
   followUpCriterion: 'Réveils nocturnes < 2 par nuit à J21.',
@@ -77,22 +81,29 @@ describe('GET /api/portail/protocole', () => {
   it('dérive une vue patient-safe (title+minimalPlan uniquement) (200)', async () => {
     mockOwnerAuth();
     prisma.protocolDiffusionApproval.findMany.mockResolvedValue([
-      { id: 'appr_1', protocolDraftId: 'proto_DEC#h', protocolDraftInputHash: 'h', decisionCardInputHash: 'decision-hash', approvedBy: 'practitioner', confirmation: 'content_approved_for_diffusion', supersedesApprovalId: null, createdAt: new Date(), approvedAt: new Date(Date.now() - 7 * 24 * 3600 * 1000) },
+      { id: 'appr_1', protocolDraftId: 'proto_DEC#h', protocolDraftInputHash: HASH_COMPLET, decisionCardInputHash: 'decision-hash', approvedBy: 'practitioner', confirmation: 'content_approved_for_diffusion', supersedesApprovalId: null, createdAt: new Date(), approvedAt: new Date(Date.now() - 7 * 24 * 3600 * 1000) },
     ]);
-    prisma.protocolDraft.findUnique.mockResolvedValue({ payload: {}, inputHash: 'h', decisionCardId: 'DEC', decisionCardInputHash: 'decision-hash', status: 'practitioner_reviewed', reviewedAt: new Date(0) });
-    prisma.protocolDraft.findMany.mockResolvedValue([{ id: 'proto_DEC#h', inputHash: 'h', supersedesDraftId: null, createdAt: new Date() }]);
+    prisma.protocolDraft.findUnique.mockResolvedValue({ payload: {}, inputHash: HASH_COMPLET, decisionCardId: 'DEC', decisionCardInputHash: 'decision-hash', status: 'practitioner_reviewed', reviewedAt: new Date(0) });
+    prisma.protocolDraft.findMany.mockResolvedValue([{ id: 'proto_DEC#h', inputHash: HASH_COMPLET, supersedesDraftId: null, createdAt: new Date() }]);
     reconstructProtocolDraft.mockReturnValue(draftDerive);
 
     const res = await GET(request(proprioCookie()));
     const json = (await res.json()) as {
       ok: boolean; protocoleDiffuse: boolean; finDeCycle: boolean;
-      vue: { purpose: string; actionPrincipale: Record<string, unknown> | null };
+      vue: { purpose: string; actionPrincipale: Record<string, unknown> | null; cycleRef: string; debutCycle: string };
     };
     expect(res.status).toBe(200);
     expect(json.protocoleDiffuse).toBe(true);
     expect(json.finDeCycle).toBe(false);
     expect(json.vue.purpose).toBe('Stabiliser vos matins.');
     expect(json.vue.actionPrincipale).toEqual({ type: 'food', title: 'Petit-déjeuner protéiné', minimalPlan: 'Trois matins cette semaine' });
+    // Référence de cycle du carnet alimentaire (lot 2, item 5) : opaque,
+    // dérivée du hash d'ancrage, et bornée — jamais le hash entier.
+    expect(json.vue.cycleRef).toBe(HASH_COMPLET.slice(0, 16));
+    expect(json.vue.cycleRef).toHaveLength(16);
+    // Le hash d'ancrage entier ne sort pas : c'est la troncature qui le garantit.
+    expect(JSON.stringify(json)).not.toContain(HASH_COMPLET);
+    expect(typeof json.vue.debutCycle).toBe('string');
     // Aucune fuite de champ interne.
     expect(JSON.stringify(json)).not.toContain('INTERNE');
   });

@@ -1,4 +1,8 @@
 import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire, StrateCode } from './types';
+// Le maximum du besoin 1 est DÉRIVÉ de la forme réellement servie, jamais
+// recopié : un `max` littéral divergeant du barème est silencieux (aucun garde
+// ne les compare), et il sature ou effondre une fondation critique sans erreur.
+import { Q_ALI_01 } from '../questionnaires/alimentaire';
 
 // Cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md — méthodologie actée pour
 // l'indicateur "Mon équilibre" (patient) / "Cartographie neuro-fonctionnelle"
@@ -21,6 +25,23 @@ import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire
 // qu'une source pertinente existe. Voir
 // docs/claude/propositions/2026-07-26-audit-accompagnement-alimentaire/.
 //
+// v4 → v5 (lot 1, audit de la chaîne trajectoire du 2026-07-27, constat F1) :
+// RÈGLE DE NOUVEAUTÉ sur l'historique. Une lecture n'est émise à un jalon que
+// si une réponse nouvelle est arrivée depuis la dernière lecture émise
+// (equilibre/depuisPrisma.ts). Aucun poids, seuil ni mapping ne change ici, et
+// aucune valeur calculée à une date donnée ne bouge — mais l'ENSEMBLE des
+// lectures d'un cycle change : un cycle antérieur pouvait porter J21/J42/J90
+// « mesurés » à la valeur de T0 pour un patient qui n'avait plus rien rempli,
+// avec un momentum « stable (écart 0) ». Comparer un tel cycle à un cycle
+// postérieur reviendrait à comparer des jalons fabriqués à des jalons réels :
+// c'est précisément ce que l'étiquette de version existe pour empêcher.
+//
+// v5 ne couvre QUE ce changement. Le retrait des conclusions de Q_ALI_01 et sa
+// sortie des fondations critiques modifient le mapping et la définition du
+// score : ils appellent leur propre bump, pas un partage de cette étiquette.
+// Une version qui recouvre deux définitions différentes rend A8-3 inopérante —
+// le comparateur ne saurait plus laquelle il compare.
+//
 // FRONTIÈRE — ce que le code fait réellement, la formulation portée jusqu'ici
 // par la note v2 → v3 étant inexacte. Seule l'ÉTIQUETTE `versionScore` est
 // figée à la confirmation d'un épisode (protocol/versioning.ts) ; les VALEURS
@@ -35,20 +56,78 @@ import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire
 // Figer la valeur plutôt que l'étiquette est une décision d'architecture
 // ouverte, posée au praticien — elle dépasse ce lot.
 //
+// v5 → v6 (Enquête alimentaire SIIN, forme complète) : le besoin 1 passe d'un
+// dépistage à 14 items coté /42 à l'instrument source, 57 items cotés /90. Le
+// barème change, donc l'étiquette change — et elle ne PARTAGE PAS v5, comme la
+// note ci-dessus l'exige déjà : v5 ne couvre que la règle de nouveauté.
+//
+// La version SUIT LE DRAPEAU, elle n'est pas figée au merge. Tant que
+// `WN_ALI_01_SIIN57` est éteint, c'est bien la forme courte qui est servie et
+// calculée : étiqueter ces épisodes « v6 » les dirait produits sous un barème
+// qui n'a pas encore été appliqué. Une étiquette de version qui ment est pire
+// qu'une étiquette absente — c'est toute la leçon de la frontière ci-dessus.
+//
+// v6 → v7 (besoin 3 « Rythme alimentaire ») : le besoin 3, non évaluable depuis
+// l'origine, gagne une source — le sous-score `RYTHME_CHRONO` de l'Enquête SIIN
+// (SIIN52/53/54/55, 7 points), qui couvre exactement les deux variables
+// d'entrée que le guide des 12 besoins lui donne (ratio protéines/glucides des
+// repas, durée du jeûne nocturne). Le mapping change, donc l'étiquette change.
+//
+// v6 ne peut pas être partagée, pour la raison déjà écrite deux fois plus haut :
+// elle désigne le barème /90 SANS le besoin 3, et une étiquette qui recouvre
+// deux définitions rend le comparateur inopérant. v6 n'a jamais été écrite en
+// base — vérifié le 2026-07-28, `assessment_episodes` est vide — le bump ne
+// gèle donc aucune comparaison existante.
+//
+// Comme v6, v7 SUIT LE DRAPEAU : la forme courte ne déclare pas ce sous-score,
+// le besoin 3 reste non mesuré tant que `WN_ALI_01_SIIN57` est éteint, et
+// l'étiquette reste v5.
+//
 // NB rédaction : ne jamais écrire le nom de la table de mapping en toutes
 // lettres AU-DESSUS de sa déclaration. Le garde du registre l'extrait par
 // `indexOf` (scripts/lib/verifier_registre_instruments.js) et tomberait sur le
 // commentaire au lieu de la table — il refuse alors de valider plutôt que de
 // contrôler dans le vide.
-// v4 → v5 (2026-07-28) : le besoin 5 passe d'une moyenne simple de ses trois
-// sources à deux groupes à parts égales (mouvement / repos). Un patient SANS
-// agenda clôturé garde exactement son score — le repos se réduit alors au PSQI,
-// et la moyenne des deux groupes redonne la moyenne simple d'avant. Seuls les
-// patients dont l'agenda est clôturé changent : le sommeil y pesait 2/3 du
-// besoin, il en pèse désormais la moitié. Doctrine inchangée (« versionScore
-// différents jamais soustraits ») : un épisode figé en v4 ne se compare pas à un
-// épisode v5, et la comparaison des jalons momentum reprend au premier couple v5.
-export const VERSION_SCORE_EQUILIBRE = 'v5' as const;
+//
+// v7 → v8 / v9 (2026-07-28, regroupement du besoin 5) : le besoin 5 passe d'une
+// moyenne simple de ses trois sources à deux groupes à parts égales (mouvement /
+// repos). Un patient SANS agenda clôturé garde exactement son score — le repos
+// se réduit alors au PSQI, et la moyenne des deux groupes redonne la moyenne
+// simple d'avant. Seuls les patients dont l'agenda est clôturé changent : le
+// sommeil y pesait 2/3 du besoin, il en pèse désormais la moitié.
+//
+// Ce changement de mapping s'applique dans LES DEUX positions du drapeau
+// alimentaire, il fait donc avancer chaque branche d'un cran : la branche forme
+// courte v5 → v8, la branche SIIN /90 + besoin 3 v7 → v9. On saute v6, réservée
+// par la note ci-dessus à un intermédiaire jamais servi. La règle de non-partage
+// d'étiquette impose ce bump : au merge, ce regroupement et la « règle de
+// nouveauté » de main revendiquaient tous deux v5 — deux définitions sous une
+// même étiquette, exactement ce que ce fichier interdit. Doctrine inchangée : un
+// épisode figé sous l'ancienne étiquette ne se compare pas aux nouvelles.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v9' : 'v8';
+
+/**
+ * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.
+ *
+ * Même raison que le `max` du besoin 1 : un littéral (`7`) serait faux dans une
+ * des deux positions du drapeau sans qu'aucun test tournant dans l'autre ne le
+ * voie. Vaut 0 quand la forme servie ne déclare pas ce sous-score — la forme
+ * courte — et c'est sans conséquence : le moteur n'émet alors aucune valeur,
+ * `calculerCouvertureSource` rend `null` avant toute division.
+ */
+export const MAX_RYTHME_CHRONO = (() => {
+  const scoring = Q_ALI_01.scoring as {
+    bareme?: Array<{ id: string; points: number }>;
+    sousScoresBesoins?: Array<{ id: string; items: string[] }>;
+  };
+  const declaration = (scoring.sousScoresBesoins ?? []).find(s => s.id === 'RYTHME_CHRONO');
+  if (!declaration) return 0;
+  const bareme = scoring.bareme ?? [];
+  return declaration.items.reduce(
+    (somme, id) => somme + (bareme.find(e => e.id === id)?.points ?? 0),
+    0
+  );
+})();
 
 export const POIDS_STRATE: Record<StrateCode, number> = {
   CORPS: 0.6,
@@ -84,9 +163,13 @@ export const SEUIL_EFFONDREMENT = 0.34;
 export const PLAFOND_FONDATION_CRITIQUE = 50;
 
 // Mapping besoin → questionnaire(s) existants (web/src/lib/questions.ts).
-// Besoins 2, 3, 6, 7, 11 : aucun questionnaire pertinent disponible dans le
+// Besoins 2, 6, 7, 11 : aucun questionnaire pertinent disponible dans le
 // catalogue actuel — non évaluables (retournent une couverture null), plutôt
-// que d'inventer une source. Voir docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md
+// que d'inventer une source. Le besoin 2 en particulier ne peut PAS l'être par
+// un questionnaire : le guide lui donne des biomarqueurs pour seules variables
+// d'entrée (ferritine, zinc, magnésium, iode, sélénium, vitamine D, B9, B12).
+// Le besoin 3 a quitté cette liste le 2026-07-28 ; un test la fige désormais,
+// pour qu'un branchement futur ne s'y fasse pas en silence. Voir docs/claude/GUIDE_12_BESOINS_NEURONUTRITION.md
 // pour la justification clinique de chaque source retenue.
 //
 // Toute entrée ajoutée ou retirée ici doit être répercutée sur le champ
@@ -94,11 +177,16 @@ export const PLAFOND_FONDATION_CRITIQUE = 50;
 // garde scripts/lib/verifier_registre_instruments.js contrôle l'alignement
 // dans les deux sens et fait échouer `scoring-check` (T1) sinon.
 export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
-  1: [{ idQuestionnaire: 'Q_ALI_01', max: 42, inverser: false }],
+  1: [{ idQuestionnaire: 'Q_ALI_01', max: Q_ALI_01.scoring.maxTotal, inverser: false }],
   // 2 : voir la note v3 → v4 en tête de fichier — Q_SOM_06 (fatigue de Pichot)
   // retiré, la fatigue ne mesurant pas la couverture micronutritionnelle.
   2: [],
-  3: [],
+  // Besoin 3 « Rythme alimentaire (chronobiologie) ». Sous-score dédié, DISTINCT
+  // de la catégorie d'affichage `RYTHME_ALIMENTAIRE` (6 items, /10) : il ne
+  // porte que les 4 items correspondant aux variables d'entrée que le guide
+  // nomme. `inverser: false` — les points sont acquis quand le repère est
+  // atteint, plus haut vaut mieux.
+  3: [{ idQuestionnaire: 'Q_ALI_01', sousScore: 'RYTHME_CHRONO', max: MAX_RYTHME_CHRONO, inverser: false }],
   4: [
     { idQuestionnaire: 'Q_GAS_01', max: 93, inverser: true },
     { idQuestionnaire: 'Q_INF_01', max: 96, inverser: true },

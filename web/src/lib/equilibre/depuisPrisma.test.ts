@@ -80,3 +80,92 @@ describe('depuisPrisma — adaptateur Prisma → moteur équilibre', () => {
     expect(ancree[0].date.getTime()).toBe(new Date('2026-01-22T00:00:00.000Z').getTime());
   });
 });
+
+// Constat F1 de l'audit de la chaîne trajectoire (2026-07-27) : sans règle de
+// nouveauté, un patient ayant répondu une seule fois obtenait quatre lectures
+// identiques datées T0/J21/J42/J90, un delta de 0 et une tendance « stable ».
+// Les frontières A6-R2 et A8-2 l'interdisent : un jalon sans mesure est « non
+// mesuré », jamais un 0. Ces cas reprennent les sondes de l'audit.
+describe('construireHistoriqueEquilibre — règle de nouveauté (lot 1, F1)', () => {
+  const JOUR_MS = 24 * 60 * 60 * 1000;
+  const RAW_T0 = {
+    P1: '2', P2: '2', P3: '3', P4: '3', P5: '3',
+    P6: '2', P7: '3', P8: '3', P9: '2', P10: '3',
+  };
+  const RAW_J21 = {
+    P1: '1', P2: '1', P3: '2', P4: '2', P5: '2',
+    P6: '1', P7: '2', P8: '2', P9: '1', P10: '2',
+  };
+
+  // T0 assez ancien pour que les quatre jalons soient atteints.
+  const dateT0 = new Date(Date.now() - 120 * JOUR_MS);
+
+  it('une seule réponse puis silence : une seule lecture, pas quatre', () => {
+    const historique = construireHistoriqueEquilibre([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: dateT0, scoresJson: { rawAnswers: RAW_T0 } },
+    ]);
+
+    expect(historique).toHaveLength(1);
+    expect(historique[0].date.getTime()).toBe(dateT0.getTime());
+  });
+
+  it('une réponse nouvelle à J21 : deux lectures, et la seconde est datée J21', () => {
+    const dateJ21 = new Date(dateT0.getTime() + 21 * JOUR_MS);
+    const historique = construireHistoriqueEquilibre([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: dateT0, scoresJson: { rawAnswers: RAW_T0 } },
+      { idQuestionnaire: 'Q_STR_02', dateReponse: dateJ21, scoresJson: { rawAnswers: RAW_J21 } },
+    ]);
+
+    expect(historique).toHaveLength(2);
+    expect(historique[1].date.getTime()).toBe(dateJ21.getTime());
+    // J42 et J90 sont passés mais rien de nouveau n'est arrivé : aucune lecture.
+    expect(historique.some((l) => l.date.getTime() > dateJ21.getTime())).toBe(false);
+  });
+
+  // Défaut trouvé par la revue adversariale du 2026-07-28 : filtrer sur la
+  // seule présence de `rawAnswers` laissait 53 questionnaires du catalogue
+  // rouvrir un jalon sans rien changer à l'indice — « stable, écart 0 » revenait
+  // par la porte de service. Le prédicat porte donc sur les sources réellement
+  // agrégées par le moteur.
+  it('une passation hors mapping des besoins ne rouvre pas de jalon', () => {
+    // Q_SOM_06 (fatigue de Pichot) : exploitable, mais retiré des sources en v4.
+    const historique = construireHistoriqueEquilibre([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: dateT0, scoresJson: { rawAnswers: RAW_T0 } },
+      {
+        idQuestionnaire: 'Q_SOM_06',
+        dateReponse: new Date(dateT0.getTime() + 21 * JOUR_MS),
+        scoresJson: { rawAnswers: { F1: '3', F2: '3', F3: '2', F4: '2', F5: '3', F6: '2', F7: '3', F8: '2' } },
+      },
+    ]);
+
+    expect(historique).toHaveLength(1);
+  });
+
+  it('une réponse nouvelle mais inexploitable ne rouvre pas de jalon', () => {
+    // Sans `rawAnswers`, la ligne est ignorée par le moteur : la compter comme
+    // nouveauté ré-émettrait la lecture précédente à l'identique.
+    const historique = construireHistoriqueEquilibre([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: dateT0, scoresJson: { rawAnswers: RAW_T0 } },
+      {
+        idQuestionnaire: 'Q_SOM_01',
+        dateReponse: new Date(dateT0.getTime() + 21 * JOUR_MS),
+        scoresJson: { global: 12 },
+      },
+    ]);
+
+    expect(historique).toHaveLength(1);
+  });
+
+  it('une valeur inchangée reste une mesure : la règle porte sur la réponse, pas sur le score', () => {
+    // Même questionnaire, mêmes réponses, mais une passation réellement refaite
+    // à J21 — c'est une mesure stable, pas un silence. Elle doit être servie.
+    const dateJ21 = new Date(dateT0.getTime() + 21 * JOUR_MS);
+    const historique = construireHistoriqueEquilibre([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: dateT0, scoresJson: { rawAnswers: RAW_T0 } },
+      { idQuestionnaire: 'Q_STR_02', dateReponse: dateJ21, scoresJson: { rawAnswers: RAW_T0 } },
+    ]);
+
+    expect(historique).toHaveLength(2);
+    expect(historique[0].valeur).toBe(historique[1].valeur);
+  });
+});

@@ -122,6 +122,15 @@ export function MomentumPanel({
             Repère de cabinet disponible à partir de 5 cycles comparables — aujourd’hui : n={cabinet.nTotal}
             {cabinet.versionScoreReference === null ? ' (version de score du cycle inconnue)' : ''}.
           </p>
+        ) : cabinet.parJalon.length === 0 ? (
+          // La cohorte atteint le seuil, mais aucun jalon n'y contribue : depuis
+          // la règle de nouveauté (lot 1), des cycles sans réponse ultérieure
+          // n'apportent plus de delta. Annoncer une médiane serait combler par
+          // la légende le trou que A6-R2 demande de laisser visible.
+          <p className="mt-2 text-xs text-muted-foreground">
+            Aucun jalon comparable dans le cabinet pour l’instant (n={cabinet.nTotal} cycles, version{' '}
+            {cabinet.versionScoreReference}) — les cycles retenus n’ont pas de mesure postérieure à T0.
+          </p>
         ) : (
           <p className="mt-2 text-xs text-muted-foreground">
             ┄ médiane du cabinet (n={cabinet.nTotal} cycles comparables, version {cabinet.versionScoreReference}) — un

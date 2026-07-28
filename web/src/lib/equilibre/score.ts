@@ -28,10 +28,20 @@ export function clamp01(valeur: number): number {
 function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: string): number | null {
   if (!resultat || resultat.error) return null;
   if (sousScore) {
-    const sub = Array.isArray(resultat.subScores)
-      ? resultat.subScores.find((s: { id: string }) => s.id === sousScore)
-      : null;
-    return sub && typeof sub.total === 'number' ? sub.total : null;
+    // Deux porteurs possibles. `subScores` est la forme historique. Un moteur
+    // qui déclare des `dimensions` ne PEUT PAS émettre de `subScores` — la
+    // fiche patient y basculerait ses colonnes Score et Interprétation et
+    // remplacerait le total par les sous-scores (garde de certification). Ces
+    // moteurs exposent donc leurs sous-scores servis sous `scoresBesoins`.
+    // Chercher dans les deux, sans préférence : c'est le même contrat
+    // `{id, total}`, seule la clé diffère.
+    const porteurs = [resultat.subScores, resultat.scoresBesoins];
+    for (const porteur of porteurs) {
+      if (!Array.isArray(porteur)) continue;
+      const sub = porteur.find((s: { id: string }) => s.id === sousScore);
+      if (sub && typeof sub.total === 'number') return sub.total;
+    }
+    return null;
   }
   return typeof resultat.total === 'number' ? resultat.total : null;
 }
@@ -47,6 +57,11 @@ export function calculerCouvertureSource(
   source: SourceQuestionnaire,
   reponses: ReponsesParQuestionnaire
 ): number | null {
+  // `max` nul ou absent : une division par 0 rend `Infinity`, que `clamp01`
+  // ramènerait à 1 — le pire rendu possible pour une absence de mesure. Ce cas
+  // existe depuis que `BESOIN_SOURCES` porte un `max` DÉRIVÉ : la forme qui ne
+  // déclare pas le sous-score en rend 0. Refuser avant de diviser.
+  if (!(source.max > 0)) return null;
   const answers = reponses[source.idQuestionnaire];
   if (!answers) return null;
   const resultat = calculateScore(source.idQuestionnaire, answers);

@@ -217,6 +217,7 @@ const supportedScoringTypes = new Set([
   'sum_no_interpretation',
   'sum_reversed',
   'sum_two_phases',
+  'seuils_points',
   'tfd',
   'upps',
   'weighted_per_axis',
@@ -760,6 +761,55 @@ assertCertification(uroJournal, 'certifie', 'Q_URO_02');
 // découpage : le profil affiché serait faux SOUS un total juste, et rien ne le
 // signalerait. Ces invariants sont génériques : ils couvrent tout instrument
 // qui déclarera des dimensions, pas seulement les deux d'aujourd'hui.
+// ── Sous-scores SERVIS à un besoin (`sousScoresBesoins`) ────────────────────
+//
+// Clé distincte de `dimensions` (profil affiché) et de `subScores` (que le mur
+// ci-dessous interdit ici). Elle alimente `BESOIN_SOURCES` : une déclaration
+// muette rendrait un besoin définitivement non évaluable, sans erreur nulle
+// part — le `max` étant dérivé de la même déclaration, il resterait cohérent.
+// Sa jumelle `dimensions` a ce garde depuis l'origine ; elle ne l'avait pas.
+const instrumentsASousScoresBesoins = Object.entries(QUESTIONNAIRE_CATALOGUE)
+  .filter(([, def]) => Array.isArray(def?.scoring?.sousScoresBesoins) && def.scoring.sousScoresBesoins.length > 0)
+  .map(([id]) => id);
+
+// Anti-vacuité, liée au drapeau : la déclaration n'existe que sur la forme SIIN,
+// donc ce garde est légitimement vide en position éteinte — mais il doit mordre
+// dans l'autre, sinon il ne garde rien là où il compte.
+if (process.env.WN_ALI_01_SIIN57 === 'true') {
+  assert(instrumentsASousScoresBesoins.length > 0, 'position SIIN : aucun sous-score servi déclaré — ce garde ne garderait rien');
+}
+
+for (const id of instrumentsASousScoresBesoins) {
+  const def = QUESTIONNAIRE_CATALOGUE[id];
+  const declares = def.scoring.sousScoresBesoins;
+  const itemsServis = questions(id).map(question => question.id);
+
+  const ids = declares.map(sousScore => sousScore.id);
+  assertEqual(ids.filter((x, i) => ids.indexOf(x) !== i), [], `${id} : deux sous-scores servis portent le même identifiant`);
+  const idsDimensions = (def.scoring.dimensions || []).map(dimension => dimension.id);
+  assertEqual(ids.filter(x => idsDimensions.includes(x)), [], `${id} : un sous-score servi porte l'identifiant d'une dimension — la lecture par BESOIN_SOURCES deviendrait ambiguë`);
+
+  for (const sousScore of declares) {
+    assert(sousScore.items.length > 0, `${id} : sous-score servi \`${sousScore.id}\` sans aucun item`);
+    assertEqual(sousScore.items.filter(item => !itemsServis.includes(item)), [], `${id} : sous-score servi \`${sousScore.id}\` déclarant un item inexistant`);
+    const doublons = sousScore.items.filter((item, index) => sousScore.items.indexOf(item) !== index);
+    assertEqual(doublons, [], `${id} : sous-score servi \`${sousScore.id}\` répète un item — son maximum dérivé serait faux`);
+  }
+
+  // Déclaré ⇒ réellement calculé. Seule la branche `seuils_points` les rend :
+  // les déclarer ailleurs les rendrait muets, et le besoin non évaluable.
+  const resultat = calculateScore(id, fillByOptionBoundary(id, 'max'));
+  assert(Array.isArray(resultat.scoresBesoins), `${id} : sousScoresBesoins déclarés mais non calculés — seul le scoring \`seuils_points\` les rend (type servi : \`${resultat.type}\`)`);
+  assertEqual(
+    resultat.scoresBesoins.map(sousScore => sousScore.id).sort(),
+    ids.slice().sort(),
+    `${id} : les sous-scores calculés ne correspondent pas aux sous-scores déclarés`
+  );
+  for (const sousScore of resultat.scoresBesoins) {
+    assert(typeof sousScore.max === 'number' && sousScore.max > 0, `${id} : sous-score servi \`${sousScore.id}\` sans maximum dérivé — une couverture y serait calculée par division par zéro`);
+  }
+}
+
 const instrumentsADimensions = Object.entries(QUESTIONNAIRE_CATALOGUE)
   .filter(([, def]) => Array.isArray(def?.scoring?.dimensions) && def.scoring.dimensions.length > 0)
   .map(([id]) => id);
@@ -843,12 +893,40 @@ for (const id of instrumentsADimensions) {
     }
     return false;
   });
+  // `Q_ALI_01` a deux formes, et une seule sert une conduite. Le dépistage court
+  // historique porte un `protocol` sur chacune de ses quatre bandes ; l'Enquête
+  // alimentaire SIIN, restaurée le 2026-07-28, n'en porte aucune — les conduites
+  // sont sorties des bandes au lot #389, et rien n'obligeait à en réintroduire.
+  //
+  // La liste reste donc figée et relue, mais son entrée `Q_ALI_01` suit la forme
+  // servie. Ce n'est pas un assouplissement : sans cela, le garde serait
+  // forcément faux dans l'une des deux positions du drapeau, et c'est un garde
+  // toujours rouge qu'on finit par désactiver.
+  // Discriminant INDÉPENDANT du champ testé. La première version lisait
+  // `scoring.interpretation[].protocol` — exactement ce que l'assertion
+  // vérifie : les deux membres de l'égalité bougeaient ensemble, et supprimer
+  // les quatre `protocol:` de la forme courte (une perte clinique réelle)
+  // laissait le garde vert dans les deux positions. Relevé par la revue
+  // adversariale du 2026-07-28. `maxTotal` identifie la forme sans rien
+  // partager avec ce qui est contrôlé.
+  const ALI01_SERT_UNE_CONDUITE = QUESTIONNAIRE_CATALOGUE.Q_ALI_01.scoring.maxTotal !== 90;
+  const porteursAttendus = [
+    ...(ALI01_SERT_UNE_CONDUITE ? ['Q_ALI_01'] : []),
+    'Q_ALI_02', 'Q_CAR_01', 'Q_GEO_01', 'Q_GEO_02', 'Q_GEO_03', 'Q_GEO_04',
+    'Q_NEU_02', 'Q_NEU_06', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01', 'Q_TAB_04',
+  ].sort();
   assertEqual(
     porteursServis.sort(),
-    ['Q_ALI_01', 'Q_ALI_02', 'Q_CAR_01', 'Q_GEO_01', 'Q_GEO_02', 'Q_GEO_03', 'Q_GEO_04', 'Q_NEU_02', 'Q_NEU_06', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01', 'Q_TAB_04'],
+    porteursAttendus,
     'liste des instruments servant une conduite clinique — un ajout ou une perte doit être vu en revue, pas subi',
   );
-  assert(attendusPorteurs.size === 12, `12 instruments déclarent une conduite dans leurs bandes ; obtenu ${attendusPorteurs.size}`);
+  // 12 déclarants avec le dépistage court, 11 avec l'Enquête SIIN : même
+  // raison que juste au-dessus, `Q_ALI_01` est le seul à varier.
+  const declarantsAttendus = ALI01_SERT_UNE_CONDUITE ? 12 : 11;
+  assert(
+    attendusPorteurs.size === declarantsAttendus,
+    `${declarantsAttendus} instruments déclarent une conduite dans leurs bandes ; obtenu ${attendusPorteurs.size}`,
+  );
 }
 
 // `horsTotal` ampute le score global de la sous-échelle qui le porte. Seul

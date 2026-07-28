@@ -34,7 +34,9 @@ type AssignationSource = {
 export function mapAssignationPatient(a: AssignationSource): AssignationPatient {
   const bloqueParDeadline = a.statutReponses !== 'verrouille' && a.statutReponses !== 'modification_demandee';
   const expiree = bloqueParDeadline && isDeadlineExpired(a.dateLimite);
-  const estEnAttenteSaisie = a.statut !== 'Complété' && !expiree;
+  // Une assignation annulée (Fil A) quitte la liste « à saisir » : sinon elle y
+  // resterait, son statut n'étant ni 'Complété' ni expiré.
+  const estEnAttenteSaisie = a.statut !== 'Complété' && a.statut !== 'Annulée' && !expiree;
 
   return {
     idAssignation: a.idAssignation,

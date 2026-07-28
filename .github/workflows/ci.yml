@@ -116,9 +116,16 @@ jobs:
       # juge transpile le TypeScript du catalogue (devDependency de web/).
       # Une PR purement documentaire ne peut pas l'esquiver pour autant : la
       # matrice de mapping est classée code par l'étape « Périmètre du diff ».
+      # Lancé DEUX FOIS, une par position de `WN_ALI_01_SIIN57`. `Q_ALI_01` a
+      # deux formes servies (dépistage court à 14 items, Enquête SIIN à 57) et
+      # le catalogue n'en expose qu'une à la fois : en ne jouant que la position
+      # par défaut, le garde était aveugle à la forme gatée — vert au merge,
+      # rouge à la bascule du drapeau, c'est-à-dire au pire moment.
       - name: Scoring certification (63 questionnaires, blocking)
         if: steps.scope.outputs.docs_only != 'true'
-        run: node scripts/check_questionnaire_certification.js
+        run: |
+          node scripts/check_questionnaire_certification.js
+          WN_ALI_01_SIIN57=true node scripts/check_questionnaire_certification.js
 
       # Banc du validateur de registre : c'est lui qui prouve que le garde
       # ci-dessus échoue quand il doit échouer (entrée manquante, axe hors
@@ -185,29 +192,51 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_garde_seuils_v1.sql
 
+      # La migration de reprise (20260728090000) écrit des données de production
+      # — elle efface des signatures praticien. Sur la base du CI, construite
+      # vide, elle est un no-op : sans ce banc, le CI n'en prouverait rien. Il
+      # éprouve la fonction de cible sur les deux formes qui avaient échappé à
+      # la première rédaction — un claim couvert par deux lots et tiré dans un
+      # seul, et un claim revalidé individuellement après la signature de lot.
+      - name: RAG claim reprise bornes contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_reprise_bornes_v1.sql
+
       # Le drift check ci-dessus ne voit ni les CHECK, ni la RLS, ni les index
-      # partiels : Prisma ne les introspecte pas. Ce contrat les vérifie, et
-      # surtout il fait échouer le CI si une colonne du catalogue biologie
-      # prend une sémantique patient — le verrou HDS cesse d'être un
-      # commentaire pour devenir un test.
-      - name: CB-01 biology catalogue contract
+      # partiels : Prisma ne les introspecte pas. Le contrat STRUCTUREL les
+      # vérifie, et fait échouer le CI si une colonne du catalogue biologie prend
+      # une sémantique patient — le verrou HDS cesse d'être un commentaire pour
+      # devenir un test. C'est le MÊME fichier (bloc DO nu) que l'import CB-02a
+      # rejoue DANS sa transaction avant COMMIT (`prisma/importNabm.ts`) : une
+      # violation structurelle annule alors l'import au lieu d'être constatée
+      # après coup.
+      - name: CB-01 biology structure contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/cb_biologie_structure_v1.sql
+
+      # Le contrat de DONNÉES (pointeur de version, snapshot, incompatibilités,
+      # barrière D-003). Sur la base CI, VIDE, ses invariants renvoient 0 par
+      # vacuité : il ne mord que là où des données existent.
+      - name: CB-01 biology catalogue data contract
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1.sql
 
-      # Le contrat ci-dessus vérifie que les invariants sont EN PLACE ; celui-ci
-      # vérifie qu'ils MORDENT — vingt-cinq insertions interdites qui doivent
-      # toutes être rejetées, et pour le bon motif. Transaction annulée : rien
-      # ne survit, pas même la colonne ajoutée pour éprouver le verrou HDS.
+      # Le contrat structurel ci-dessus vérifie que les invariants sont EN PLACE ;
+      # celui-ci vérifie qu'ils MORDENT — insertions interdites qui doivent toutes
+      # être rejetées, et pour le bon motif. Transaction annulée : rien ne survit,
+      # pas même la colonne ajoutée pour éprouver le verrou HDS.
       #
-      # PORTÉE RÉELLE, À NE PAS SURESTIMER : ces deux fichiers tournent sur une
-      # base construite par le seul `migrate deploy`, donc VIDE. Ils éprouvent
-      # les invariants de STRUCTURE (CHECK, RLS, index, verrou HDS) ; les
-      # invariants de DONNÉES du contrat y renvoient 0 par vacuité. Ces
-      # derniers sont rejoués dans la transaction de l'import CB-02a
-      # (`prisma/importNabm.ts`), puis par le contrat que `vercel-build.sh`
-      # relance juste après cet import — le seul point du déploiement où des
-      # données existent. Le banc CB-02a en fait autant sur ses fixtures.
+      # PORTÉE RÉELLE, À NE PAS SURESTIMER : ces fichiers tournent sur une base
+      # construite par le seul `migrate deploy`, donc VIDE. Ils éprouvent la
+      # STRUCTURE (CHECK, RLS, index, verrou HDS) ; les invariants de DONNÉES
+      # renvoient 0 par vacuité. Ces derniers ne mordent que sur des données
+      # réelles : la relecture et le contrat structurel sont rejoués DANS la
+      # transaction de l'import CB-02a (`prisma/importNabm.ts`), et le banc CB-02a
+      # en fait autant sur ses fixtures — y compris le cas d'une violation
+      # structurelle qui doit annuler l'import (ROLLBACK).
       - name: CB-01 biology catalogue negative tests
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
@@ -260,6 +289,17 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
         run: npm run test
+
+      # Seconde passe, drapeau `WN_ALI_01_SIIN57` allumé. Sans elle, les gardes
+      # qui dérivent une valeur du barème servi (le `max` du besoin 1,
+      # l'étiquette de version) ne mordent que dans une position : figer `max` à
+      # 42 et la version à sa valeur courante passe inaperçu en position
+      # éteinte, où le dérivé vaut justement la valeur figée. Falsifié : ces
+      # deux mutations ne faisaient tomber aucun test avant cette étape.
+      - name: Unit tests (Vitest, forme SIIN 57 items)
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npm run test:siin57
 
       - name: Lint
         if: steps.scope.outputs.docs_only != 'true'

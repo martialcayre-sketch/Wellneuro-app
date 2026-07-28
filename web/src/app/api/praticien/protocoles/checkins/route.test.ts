@@ -117,10 +117,14 @@ describe('GET /api/praticien/protocoles/checkins', () => {
         pointEtape: 'J21', reponses, canal: 'portail', supersedesCheckinId: null, soumisLe: new Date('2026-01-22T00:00:00.000Z'),
       },
     ]);
-    // T0 en janvier → jalons T0/J21/J42/J90 tous passés à la date du test →
-    // historique d'équilibre daté non vide → volet score branché (n'est plus null).
+    // T0 en janvier → jalons T0/J21/J42/J90 tous passés à la date du test.
+    // DEUX passations réelles : depuis le lot 1 (règle de nouveauté, F1), un
+    // jalon sans réponse nouvelle n'est plus mesuré — une réponse unique à T0
+    // ne produirait donc aucun momentum, et ce test ne prouverait plus que le
+    // volet score est branché. Le titre annonçait déjà « T0+J21 ».
     prisma.questionnaireReponse.findMany.mockResolvedValue([
       { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
+      { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-22T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
     ]);
 
     const res = await GET(request());
@@ -139,8 +143,12 @@ describe('GET /api/praticien/protocoles/checkins', () => {
     prisma.protocolCheckin.findMany.mockResolvedValue([]);
     // Épisode T0 confirmé : c'est lui qui ancre les jalons (pas la 1re réponse).
     prisma.assessmentEpisode.findFirst.mockResolvedValue({ confirmedAt: new Date('2026-01-01T00:00:00.000Z') });
+    // Deux passations : voir le cas précédent — la règle de nouveauté (lot 1)
+    // rend le momentum null sur une réponse unique, ce qui masquerait ici ce
+    // que le cas vérifie réellement, à savoir l'ancrage sur l'épisode confirmé.
     prisma.questionnaireReponse.findMany.mockResolvedValue([
       { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-01T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
+      { idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-01-22T00:00:00.000Z'), scoresJson: { rawAnswers: RAW_ANSWERS_Q_STR_02 } },
     ]);
 
     const res = await GET(request());

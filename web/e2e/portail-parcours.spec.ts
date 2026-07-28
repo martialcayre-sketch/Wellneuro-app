@@ -438,4 +438,38 @@ test('route patient : accès Mon carnet alimentaire (JA5-02, renommé SP-CONV LO
   await page.goto(`/portail/${PATIENT.idPatient}/alimentation`);
   await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/alimentation$`));
   await expect(page.getByRole('heading', { name: 'Mon carnet alimentaire' })).toBeVisible();
+
+  // Lot 2, item 5 : sans protocole diffusé, aucune action n'est affichée et la
+  // transmission n'est pas proposée — mais la saisie reste ouverte.
+  await expect(page.getByTestId('ja-patient-sans-cycle')).toBeVisible();
+  await expect(page.getByTestId('ja-patient-transmettre')).toHaveCount(0);
+  await page.getByTestId('ja-patient-enregistrer-trace').click();
+  await expect(page.getByTestId('ja-patient-historique')).toContainText('Je l’ai fait');
+});
+
+// Lot 2, item 4 : l'écriture patient est branchée. La route ne connaissait
+// aucun client jusqu'ici — ce parcours vérifie qu'un patient authentifié peut
+// transmettre, et qu'un instantané non authentifié est refusé.
+test('route patient : transmission du carnet alimentaire au praticien', async ({ page, context }) => {
+  await context.addCookies([await praticienSessionCookie()]);
+  const creation = await page.request.post('/api/praticien/consultations', {
+    data: { idPatient: PATIENT.idPatient },
+  });
+  expect(creation.ok()).toBe(true);
+
+  // Sans cookie portail, la route d'écriture refuse.
+  const sansSession = await page.request.get('/api/portail/ja/observations');
+  expect(sansSession.status()).toBe(401);
+
+  await context.addCookies([patientPortailSessionCookie(PATIENT.idPatient, PATIENT.email)]);
+
+  const liste = await page.request.get('/api/portail/ja/observations');
+  expect(liste.ok()).toBe(true);
+  expect((await liste.json()).ok).toBe(true);
+
+  // Un corps incomplet est refusé par le contrat, sans 500.
+  const incomplet = await page.request.post('/api/portail/ja/observations', {
+    data: { episode: {}, traces: [] },
+  });
+  expect(incomplet.status()).toBe(400);
 });

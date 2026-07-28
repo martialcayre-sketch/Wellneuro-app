@@ -40,6 +40,10 @@ export type ScoreResultBase = {
    * remplace jamais le score global : elle le détaille.
    */
   dimensions?: ScoreSubScore[];
+  /** Sous-scores SERVIS à un besoin de Mon équilibre — lus par `BESOIN_SOURCES`.
+   *  Distincts de `dimensions` (profil affiché) et de `subScores` (que la fiche
+   *  patient substituerait au total). */
+  scoresBesoins?: ScoreSubScore[];
   /**
    * Conduite clinique associée à la bande atteinte — « ce qu'il faut faire »,
    * séparé de « ce que vaut la mesure ». Sorti de `interpretation` le

@@ -7,6 +7,41 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v9 (2026-07-28) : la charge de synthèse peut désormais porter des sous-scores
+// nommés — `dimensions` (découpage d'affichage) et `scoresBesoins` (mesure d'un
+// besoin) — sans que la consigne les décrive. À l'allumage de `WN_ALI_01_SIIN57`,
+// l'Enquête SIIN livre les deux pour le même thème « rythme » avec des périmètres
+// différents (`RYTHME_ALIMENTAIRE` /10 côté affichage, `RYTHME_CHRONO` /7 côté
+// besoin) : deux totaux du même ordre sous deux dénominateurs, côte à côte dans le
+// même JSON, que le modèle pouvait additionner ou confondre. La consigne les décrit
+// désormais (arm « décrire ce qui est livré » de la réserve #432), en formulation
+// GÉNÉRALE — vraie dans les deux positions du drapeau, ce qui autorise le bump sans
+// faire mentir l'étiquette : c'est le TEXTE de la consigne qui change réellement,
+// pas seulement la charge. Le nom des sous-scores n'est pas codé en dur dans la
+// consigne (il vieillirait) ; un garde couple les deux sens (la consigne décrit
+// `scoresBesoins`/`dimensions` ⇒ une passation SIIN complète les porte réellement).
+// v8 (2026-07-28) : v7 généralisait à tous les Q_ALI une prémisse qui n'est
+// vraie que sur l'un d'eux. Elle affirmait que « la valeur enregistrée EST la
+// quantité dans l'unité de la question » et autorisait le modèle à la rapporter
+// telle quelle. Or aucun item alimentaire n'est en saisie chiffrée — ce sont des
+// listes — et ce que la valeur signifie dépend du moteur :
+//   · `seuils_points` (Enquête SIIN) : c'est bien une quantité, mais celle qui
+//     REPRÉSENTE la tranche. Le patient a coché « 5 à 8 verres », pas « 6 ».
+//   · `sum` / `subscore` (forme courte, Q_ALI_02, Q_ALI_03) : c'est un poids de
+//     POINTS, sans rapport avec une quantité, et inversé sur plusieurs items —
+//     `AL5: 3` vaut « Rarement ou jamais » de viande rouge.
+// Dans les deux cas le modèle était invité à fabriquer une déclaration patient :
+// ici une précision fausse, là un contresens. Trois gestes conjoints : la route
+// livre le LIBELLÉ coché et celui de la question (`reponsesLisiblesPourPrompt`),
+// les équivalences de portion en grammes sont retirées du libellé transmis, et
+// la consigne parle de tranche déclarée, non de compte exact. Une consigne seule
+// n'aurait rien réparé — c'est la leçon de #408 : l'interdiction dont le critère
+// n'arrive jamais.
+// v7 (2026-07-28) : la section alimentaire cessait d'être vraie. Elle affirmait
+// que les Q_ALI « ne recueillent pas de quantités consommées » — or l'Enquête
+// alimentaire SIIN en pose 33 (portions, verres, cuillères, heures). La règle a
+// été recadrée sur ce qui la justifie vraiment : une quantité d'ALIMENT déclarée
+// n'est pas un APPORT en nutriments, et n'est jamais un statut biologique.
 // v6 (2026-07-27) : traitement des passations dont le résultat enregistré n'est
 // pas une mesure (champ `mesureNonInterpretable`). Le modèle n'en reçoit déjà
 // plus aucun chiffre — la consigne existe parce qu'il en reçoit encore le
@@ -21,7 +56,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v6';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v9';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -37,22 +72,49 @@ export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synth�
 - Toute recommandation doit rester générale et être présentée comme « à valider par le praticien ».
 - Si les données sont insuffisantes pour conclure sur un axe, signale-le explicitement.
 
-## Questionnaires alimentaires — ce qu'ils ne mesurent pas
+## Questionnaires alimentaires — ce qu'ils mesurent, et ce qu'ils ne mesurent pas
 
-Les questionnaires alimentaires (identifiants commençant par Q_ALI) recueillent des **fréquences de consommation déclarées**. Ils ne recueillent ni quantités consommées, ni poids du patient, ni composition nutritionnelle, ni biologie. Leurs scores ne sont pas des mesures d'apport, et leurs seuils ne sont pas étalonnés.
+Les questionnaires alimentaires (identifiants commençant par Q_ALI) recueillent des **quantités et des fréquences de consommation DÉCLARÉES par le patient** : des portions, des verres, des cuillères à soupe, des œufs, des fois par semaine, des heures de jeûne nocturne.
 
-Il t'est donc INTERDIT d'en déduire :
+Le patient n'a jamais saisi un nombre : il a **coché une tranche** dans une liste. Ses réponses te sont donc transmises sous la forme { question, reponse }, où le champ **reponse** est le libellé exact de la tranche cochée — « 5 à 8 verres », « 1-2 fois/semaine », « Rarement ou jamais ». Certaines réponses ne sont pas une quantité du tout (« Huile d'olive vierge extra »). Aucun code numérique de barème ne t'est transmis : hors des champs nommés ci-dessous, un entier nu n'est jamais une quantité.
 
+Ils ne recueillent en revanche ni le poids du patient, ni la composition nutritionnelle des aliments, ni aucune biologie. Leurs scores ne sont pas des mesures d'apport, et leurs seuils ne sont pas étalonnés sur une population.
+
+Tu peux donc rapporter ce que le patient DÉCLARE consommer, **dans les termes exacts de la tranche cochée** et en le nommant comme une déclaration : « déclare entre 5 et 8 verres d'eau par jour », « déclare consommer de la viande rouge rarement ou jamais ».
+
+Trois précisions qui en découlent, et qui priment :
+
+- **Ne convertis jamais une tranche en compte exact.** « 5 à 8 verres » ne devient pas « 6 verres », « 1 à 4 » ne devient pas « 2 ». La tranche est ce que le patient a déclaré ; son milieu est une invention.
+- **Ne calcule aucune masse consommée.** Les équivalences de portion en grammes ne te sont pas transmises, précisément pour que tu n'aies pas à t'en abstenir : « 3 portions » reste « 3 portions », jamais une quantité en grammes.
+- Deux champs peuvent remplacer **reponse** :
+  - **quantiteDeclaree** — la quantité que le patient a déclarée, dans l'unité de la question, quand elle ne correspond plus à aucune tranche proposée. Elle est exploitable telle quelle, comme une déclaration.
+  - **valeurNonResolue** — une réponse dont le sens n'est pas rétabli, parfois sans même le libellé de sa question. Signale-la comme non exploitable ; n'en déduis ni quantité, ni fréquence, ni tendance, et ne la lis jamais comme un nombre.
+
+Il t'est en revanche INTERDIT d'en déduire :
+
+- un **apport nutritionnel**, en grammes, milligrammes, microgrammes, kilocalories ou g/kg/j — une quantité d'aliment déclarée n'est pas un apport en nutriments ;
 - une carence, un déficit ou une insuffisance en un nutriment, une vitamine, un minéral ou un acide gras — y compris sous une forme atténuée (« carence probable », « déficit vraisemblable ») ;
-- une quantité, en grammes, en kilocalories ou en g/kg/j ;
 - un statut biologique, un index glycémique, une charge glycémique, une insulinorésistance, un HOMA-IR, une homocystéinémie, un statut inflammatoire ou antioxydant ;
 - un besoin de supplémentation.
 
-Ce que tu peux en dire, et seulement cela : une **exposition alimentaire déclarée probablement faible, intermédiaire ou compatible avec les repères**, pour un groupe d'aliments donné ; et le fait qu'un dosage biologique serait nécessaire pour conclure, quand c'est cliniquement pertinent.
+Ce que tu peux en conclure, et seulement cela : une **exposition alimentaire déclarée probablement faible, intermédiaire ou compatible avec les repères**, pour un groupe d'aliments donné ; et le fait qu'un dosage biologique serait nécessaire pour conclure, quand c'est cliniquement pertinent.
 
 Formulation attendue : « les réponses suggèrent une exposition probablement faible aux sources de X ». Formulation interdite : « carence en X », « apport insuffisant de N g », « déficit à corriger ».
 
 Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se contredire.
+
+## Sous-scores : plusieurs découpages d'un même questionnaire
+
+Certains questionnaires ne te livrent pas qu'un score global : leur résultat peut porter des **sous-scores**, sous deux clés distinctes.
+
+- **dimensions** — un découpage d'**affichage** : le questionnaire réparti en catégories thématiques telles qu'elles sont présentées au patient.
+- **scoresBesoins** — la **mesure d'un besoin** : un sous-ensemble d'items retenu pour évaluer un besoin clinique précis, qui peut ne reprendre qu'une partie des items d'une dimension.
+
+Chaque sous-score porte **son propre total et son propre max**. Lis toujours un total contre le max qui l'accompagne, jamais contre celui d'un autre sous-score ni contre le total global du questionnaire.
+
+Un même thème peut donc apparaître **deux fois**, sous dimensions et sous scoresBesoins, avec des libellés voisins mais des **périmètres différents** (un nombre d'items et un max différents). Ce sont deux vues d'un même thème, pas deux mesures à cumuler : ne les additionne jamais, et ne reporte pas le résultat de l'une sous le dénominateur de l'autre.
+
+Pour les questionnaires alimentaires, la règle de la section précédente s'applique aussi à leurs sous-scores : aucun n'est une mesure d'apport ni un seuil étalonné.
 
 ## Questionnaires dont le résultat n'est pas interprétable
 

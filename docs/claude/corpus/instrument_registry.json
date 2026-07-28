@@ -1988,11 +1988,11 @@
     {
       "questionnaireId": "Q_ALI_01",
       "instrument": {
-        "nomOfficiel": "Questionnaire alimentaire SIIN",
+        "nomOfficiel": "Enquête alimentaire SIIN",
         "auteurs": null,
         "anneePublication": null,
-        "formePubliee": null,
-        "proprietaireDroits": null
+        "formePubliee": "57 items ; chaque item porte un seuil et une valeur de 1 ou 2 points, acquise si le seuil est atteint (0 sinon) ; total /90 ; 4 bandes (<25, 26-50, 51-70, >71). Établi le 2026-07-28 par lecture des sources WN-SRC-0470 (volet patient) et WN-SRC-0471 (volet pro).",
+        "proprietaireDroits": "S.I.I.N. — Scientific Institute for Intelligent Nutrition"
       },
       "versionServie": {
         "description": null,
@@ -2018,7 +2018,10 @@
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0470",
+        "WN-SRC-0471"
+      ],
       "driveMd": "questionnaire_alimentaire_siin_contexte.md",
       "statutBibliographique": "referentiel_interne_siin"
     },
