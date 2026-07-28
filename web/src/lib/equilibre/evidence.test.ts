@@ -65,7 +65,8 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
     // Sans ce contrôle, un prédicat qui écarterait TOUT agenda passerait le test
     // ci-dessus au vert en supprimant la source au lieu de la qualifier.
     const agendaComplet = { Q_SOM_09: reponsesAgendaComplet() };
-    expect(calculerCouvertureSource(BESOIN_SOURCES[5][2], agendaComplet)).not.toBeNull();
+    const sourceAgenda = BESOIN_SOURCES[5].find(s => s.idQuestionnaire === 'Q_SOM_09')!;
+    expect(calculerCouvertureSource(sourceAgenda, agendaComplet)).not.toBeNull();
     expect(calculerNiveauPreuveBesoin(5, { ...PSQI, ...agendaComplet })).toBe('B');
   });
 
@@ -81,10 +82,29 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
     expect(calculerNiveauPreuveBesoin(10, { Q_INF_03: { D1: '4' } })).toBe('B');
   });
 
-  it('« répondu mais vide » compte toujours — ce lot ne traite pas ce cas', () => {
-    // `{}` est truthy et score `total: 0` : couverture 0, pas null. Avant comme
-    // après. À ne pas présenter comme corrigé.
+  it('« répondu mais vide » dépend du MOTEUR, pas d’une règle unique', () => {
+    // Nuance que la première rédaction avait manquée : `{}` est truthy, mais ce
+    // qu'il devient dépend du moteur. `psqi` score 0 → couverture 0, la source
+    // compte ; les moteurs `sum` portent la garde anti-zéro et rendent `null`
+    // dès qu'aucune réponse ne correspond → la source ne compte plus. Écrire
+    // « répondu mais vide compte toujours » aurait été faux de quatre sources.
     expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: {} })).toBe('A');
+    expect(calculerNiveauPreuveBesoin(4, { Q_INF_01: {} })).toBe('NON_MESURE');
+  });
+
+  it('BESOIN 1 : une passation `AL*` relue sous la forme SIIN cesse d’être une preuve', () => {
+    // LE cas de la campagne, et le seul vivant en production : 8 passations
+    // portent des clés `AL1`–`AL14`. Drapeau éteint, la forme courte les
+    // reconnaît et le besoin 1 vaut 'B'. Drapeau allumé, la forme SIIN n'en
+    // reconnaît aucune, le moteur rend `total: null` (garde anti-zéro de #430)
+    // et le besoin devient NON_MESURE — au lieu d'afficher une preuve sur une
+    // mesure que `score.ts` tenait déjà pour absente. Le besoin 1 est une
+    // FONDATION CRITIQUE : c'est là que le badge fabriqué coûtait le plus.
+    const passationCourte = { Q_ALI_01: { AL1: '1', AL2: '2', AL5: '3' } };
+    const attendu = process.env.WN_ALI_01_SIIN57 === 'true' ? 'NON_MESURE' : 'B';
+    expect(calculerNiveauPreuveBesoin(1, passationCourte)).toBe(attendu);
+    // Et la cohérence avec le score, dans les deux positions.
+    expect(calculerCouvertureBesoin(1, passationCourte) === null).toBe(attendu === 'NON_MESURE');
   });
 
   it('INVARIANT : NON_MESURE si et seulement si le besoin n’est pas couvert', () => {
@@ -99,6 +119,10 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
       { Q_SOM_09: reponsesAgendaComplet() },
       { Q_INF_03: { D1: '4' } },
       { Q_GAS_01: { G1: '1' } },
+      // Le cas de la campagne DOIT figurer dans la matrice : sans lui,
+      // `test:siin57` passait à côté du seul dossier réellement concerné.
+      { Q_ALI_01: { AL1: '1', AL2: '2' } },
+      { Q_INF_01: {} },
     ];
     for (const besoinId of Object.keys(BESOIN_SOURCES).map(Number)) {
       for (const reponses of jeux) {

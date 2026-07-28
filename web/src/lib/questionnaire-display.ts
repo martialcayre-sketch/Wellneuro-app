@@ -134,18 +134,7 @@ export function getEnabledRenderer(questionnaireId: string): RendererProfile {
   return policy.activation === 'enabled' ? policy.renderer : 'standard';
 }
 
-/**
- * Renderer d'une définition RÉELLEMENT SERVIE — à appeler côté serveur, et à
- * transmettre au client avec la définition.
- *
- * `getEnabledRenderer` ne connaît qu'un identifiant. Or `Q_ALI_01` désigne deux
- * formes selon `WN_ALI_01_SIIN57` : le dépistage court à 14 items, et l'Enquête
- * alimentaire SIIN à 57. Seule la seconde justifie la grille — et le drapeau qui
- * les départage n'existe QUE côté serveur. Laisser le client trancher lui ferait
- * lire `undefined`, donc choisir la disposition de l'autre forme.
- *
- * D'où la règle : le serveur décide de ce qu'il sert, le client l'applique.
- */
+/** Ce que le résolveur lit d'une définition servie : son barème, rien d'autre. */
 export type DefinitionServie = { scoring?: { maxTotal?: unknown } } | null | undefined;
 
 /**
@@ -159,10 +148,29 @@ export type DefinitionServie = { scoring?: { maxTotal?: unknown } } | null | und
 export function resoudreRenderer(policy: DisplayPolicy, def: DefinitionServie): RendererProfile {
   if (policy.activation === 'enabled') return policy.renderer;
   const levee = policy.leveeConditionnelle;
-  if (levee && def?.scoring?.maxTotal === levee.valeur) return policy.renderer;
+  // Le `discriminant` est VÉRIFIÉ, pas seulement déclaré. Sans ce test, le champ
+  // serait décoratif : élargir l'union à `'items.count'` et déclarer
+  // `{discriminant:'items.count', valeur:57}` compilerait, et le résolveur
+  // comparerait quand même `scoring.maxTotal === 57` — un instrument coté /57
+  // ouvrirait la grille. Fail-open silencieux ; ici la levée inconnue ne lève rien.
+  if (levee?.discriminant === 'scoring.maxTotal' && def?.scoring?.maxTotal === levee.valeur) {
+    return policy.renderer;
+  }
   return 'standard';
 }
 
+/**
+ * Renderer d'une définition RÉELLEMENT SERVIE — à appeler côté serveur, et à
+ * transmettre au client avec la définition.
+ *
+ * `getEnabledRenderer` ne connaît qu'un identifiant. Or `Q_ALI_01` désigne deux
+ * formes selon `WN_ALI_01_SIIN57` : le dépistage court à 14 items, et l'Enquête
+ * alimentaire SIIN à 57. Seule la seconde justifie la grille — et le drapeau qui
+ * les départage n'existe QUE côté serveur. Laisser le client trancher lui ferait
+ * lire `undefined`, donc choisir la disposition de l'autre forme.
+ *
+ * D'où la règle : le serveur décide de ce qu'il sert, le client l'applique.
+ */
 export function getRendererPourDefinition(
   questionnaireId: string,
   def: DefinitionServie,

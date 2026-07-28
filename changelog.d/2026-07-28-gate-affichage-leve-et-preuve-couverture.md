@@ -45,17 +45,42 @@ Le prédicat est désormais `calculerCouvertureSource(...) !== null`, **le même
 celui de `score.ts`**. Il n'est pas extrait dans un troisième module : ce serait
 dédoubler la définition de « source exploitable », le défaut même qu'on corrige.
 
-**Portée réelle, mesurée : un seul cas vivant.** `sumItems` compte une réponse
-manquante comme `0` et le moteur `subscore` émet toujours ses sous-scores. Le
-seul moteur rendant `null` est l'agenda du sommeil sous son seuil de 5 nuits. Un
-patient avec PSQI (grade A) et un agenda ouvert à moins de 5 nuits (grade B), sans
-`Q_MOD_01`, voyait le besoin 5 en **B** ; il passe en **A**. Le B était fabriqué :
-il reposait sur une source dont `score.ts` ignorait déjà la couverture.
+**Portée réelle, mesurée — et la première rédaction la disait fausse.** Elle
+annonçait « un seul cas vivant, l'agenda du sommeil ». La revue adversariale a
+sondé les treize sources de `BESOIN_SOURCES` : **cinq** rendent `null`, pas une.
+Les quatre autres sont des moteurs `sum` (`Q_ALI_01`, `Q_INF_01`, `Q_STR_02`,
+`Q_STR_03`), qui portent depuis #430 la garde anti-zéro — aucune réponse
+correspondante ⟹ `total: null`, jamais `0`. Les moteurs `psqi`, `had`, `tfd`,
+`subscore` et `group_majority` ne rendent jamais `null` : le besoin 10 et ses
+trois sous-scores `Q_INF_03` sont bien épargnés.
+
+**Chiffré en production** (`execute_sql`, 2026-07-28) :
+
+- **0 agenda `Q_SOM_09`** — le cas présenté comme « le seul vivant » n'existe pas
+  encore en base ;
+- **8 passations `Q_ALI_01` portant des clés `AL*`** — le cas réellement vivant,
+  et c'est celui de la campagne. Relues sous la forme SIIN, elles ne
+  correspondent à aucun item : le besoin **1, fondation critique**, passe de
+  « preuve B » à `NON_MESURE`. Le B était fabriqué — `score.ts` tenait déjà ce
+  besoin pour non couvert. Un test le fixe **dans les deux positions du drapeau** ;
+- 3 lignes sans `rawAnswers`, toutes sur des patients fictifs de seed, et déjà
+  écartées en amont par `depuisPrisma`.
 
 **Pas de bump de `VERSION_SCORE_EQUILIBRE`, et un bump serait nuisible.** Le
-niveau de preuve n'entre dans aucun calcul de `calculerEquilibre` et n'est jamais
-persisté — il est recalculé à la lecture. Bumper rendrait tous les épisodes
-existants incomparables pour signaler un changement de **badge**.
+niveau de preuve n'entre dans aucun calcul de `calculerEquilibre`. Bumper
+rendrait tous les épisodes existants incomparables (`versions_differentes`,
+comparaison momentum désactivée sans reprise) pour signaler un changement de
+**badge** — le mauvais levier.
+
+**Mais il n'est pas « jamais persisté », comme l'affirmait la première
+rédaction.** Il entre dans `ClinicalSnapshot.inputHash`, donc dans la chaîne de
+provenance réellement écrite en base — `snapshot_input_hash`,
+`decision_card_input_hash`, `input_hash` du brouillon de protocole. Conséquence
+bornée mais réelle : pour un dossier dont un grade change, la prochaine
+régénération produit un hash différent **sans qu'aucune réponse patient ait
+bougé**, donc une nouvelle version de brouillon et une approbation de diffusion
+marquée obsolète. La chaîne praticien est dormante à ce jour (0 épisode,
+0 protocole), mais le fait devait être écrit.
 
 ### Ce que les gardes vérifient
 
@@ -81,8 +106,17 @@ existants incomparables pour signaler un changement de **badge**.
 
 ### Réserves
 
-- **« Répondu mais vide » compte toujours comme une preuve.** Un `rawAnswers`
-  vide est truthy et score `total: 0` : couverture `0`, pas `null`. Avant comme
-  après — un test le dit, pour que ce lot ne soit pas lu comme l'ayant corrigé.
+- **Le prédicat fautif subsiste dans `clinicalSnapshot.ts`**, où il décide
+  d'`evaluability` — le seul champ que lit `clinicalReview` pour émettre le
+  finding `missing_data`. Un besoin peut donc désormais se contredire dans un
+  même objet : aucune mesure, `evidence: NON_MESURE`, et `evaluability: 'partial'`
+  qui garde le moteur clinique muet. L'aligner change `inputHash` et fait
+  apparaître des findings neufs — c'est un changement de signal clinique servi,
+  qui a son go séparé. **Réserve explicite, pas un oubli** : ce lot ne l'aligne
+  pas et le dit.
+- **« Répondu mais vide » ne se résume pas à une règle.** Un `rawAnswers` vide est
+  truthy, mais ce qu'il devient dépend du moteur : `psqi` score `0` et la source
+  compte toujours ; les moteurs `sum` rendent `null` et elle cesse de compter. Un
+  test fixe les deux, pour qu'aucune des deux moitiés ne soit lue comme la règle.
 - Ce lot **n'allume pas** `WN_ALI_01_SIIN57`. Aucune migration, aucune écriture
   en base, aucun barème, seuil ou bande touché.

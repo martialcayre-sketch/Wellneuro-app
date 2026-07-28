@@ -1,3 +1,5 @@
+import { readdirSync, readFileSync } from 'fs';
+import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import type { QuestionnaireDef } from './questionnaire-types';
 import { calculateScore, QUESTIONNAIRE_CATALOGUE } from './questions';
@@ -63,6 +65,49 @@ describe('registre d’affichage questionnaires', () => {
     // la définition — sinon la levée n'aurait rien à lever.
     const { leveeConditionnelle: _, ...sansLevee } = bloquee;
     expect(resoudreRenderer(sansLevee as any, { scoring: { maxTotal: 90 } })).toBe('standard');
+  });
+
+  it('un discriminant INCONNU ne lève rien — jamais fail-open', () => {
+    // Sans la vérification du champ `discriminant`, il serait décoratif :
+    // déclarer `{discriminant:'items.count', valeur:57}` ferait quand même
+    // comparer `scoring.maxTotal === 57`, et un instrument coté /57 ouvrirait la
+    // grille. Une levée qu'on ne sait pas interpréter ne lève rien.
+    const exotique = {
+      administration: 'strict', renderer: 'guided_sections', itemOrder: 'fixed',
+      optionOrder: { mode: 'fixed' }, activation: 'blocked',
+      leveeConditionnelle: { discriminant: 'items.count', valeur: 57, motif: 'test' },
+    } as any;
+    expect(resoudreRenderer(exotique, { scoring: { maxTotal: 57 } })).toBe('standard');
+  });
+
+  it('toute page montant GenericQuestionnaire transmet le renderer du serveur', () => {
+    // Le défaut réparé ici était un chemin patient qui NE passait PAS la prop :
+    // le repli client retombe alors sur l'identifiant seul et sert la
+    // disposition de l'autre forme. Un garde nominatif sur les deux pages
+    // connues laisserait un troisième chemin s'ouvrir sans témoin ; celui-ci
+    // balaie tous les sites de montage.
+    const racine = join(__dirname, '..');
+    const sites: string[] = [];
+    const sansRenderer: string[] = [];
+    const parcourir = (dossier: string) => {
+      for (const entree of readdirSync(dossier, { withFileTypes: true })) {
+        const chemin = join(dossier, entree.name);
+        if (entree.isDirectory()) { parcourir(chemin); continue; }
+        if (!entree.name.endsWith('.tsx') || entree.name.includes('.test.')) continue;
+        const source = readFileSync(chemin, 'utf8');
+        let i = source.indexOf('<GenericQuestionnaire');
+        while (i !== -1) {
+          const bloc = source.slice(i, source.indexOf('/>', i) + 2);
+          sites.push(chemin);
+          if (!/\brenderer=/.test(bloc)) sansRenderer.push(chemin);
+          i = source.indexOf('<GenericQuestionnaire', i + 1);
+        }
+      }
+    };
+    parcourir(racine);
+    // Anti-vacuité : un balayage qui ne trouve aucun site passerait au vert.
+    expect(sites.length, 'aucun montage de GenericQuestionnaire trouvé').toBeGreaterThanOrEqual(2);
+    expect(sansRenderer, `pages sans prop renderer : ${sansRenderer.join(', ')}`).toEqual([]);
   });
 
   it('n’active que le pilote Q_NEU_03', () => {
