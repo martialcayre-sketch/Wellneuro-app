@@ -49,17 +49,17 @@ cd web && npm run type-check
 
 - Merge d'une PR sur `main` (CI verte) => build et deploiement Vercel
   automatiques (integration Git).
-- Le build de production execute `web/scripts/vercel-build.sh` : les
-  migrations Prisma committees (et donc relues en PR) sont appliquees sur la
-  base Supabase AVANT `next build`. Le gate humain est la revue de PR.
-- Prerequis : variable Vercel `MIGRATE_DATABASE_URL` (scope Production
-  uniquement), URL Supabase en session mode (port 5432) — l'URL runtime du
-  pooler en mode transaction ne convient pas a `migrate deploy`.
-- Les previews de PR n'appliquent jamais de migration (garde stricte sur
-  `VERCEL_ENV=production`).
-- Si la variable est absente, le build avertit bruyamment et deploie sans
-  migrer (tolere par degradation gracieuse) : creer la variable puis
-  redeployer.
+- Le build de production execute `web/scripts/vercel-build.sh` : il genere le
+  client Prisma et construit Next. Il N'ECRIT PLUS EN BASE.
+- Les migrations Prisma committees (relues en PR) et l'import NABM s'appliquent
+  HORS du build, via le workflow GitHub Actions `release-db` (declenche a la
+  main, gate par l'environnement protege `production` = second gate humain, en
+  plus de la revue de PR). Voir `docs/DEPLOIEMENT_RELEASE_DB.md`.
+- Prerequis du workflow : secret d'environnement `MIGRATE_DATABASE_URL` (URL
+  Supabase en session mode, port 5432 — le pooler transaction ne convient pas a
+  `migrate deploy`).
+- Ordre expand/contract : appliquer la migration via `release-db` AVANT le
+  deploiement du code qui en depend. Le code tolere une base « en avance ».
 - Le registre canonique des migrations reste `_prisma_migrations` (Prisma).
   Ne jamais appliquer de SQL en parallele (`supabase db push`, dashboard,
   MCP) : double comptabilite garantie.

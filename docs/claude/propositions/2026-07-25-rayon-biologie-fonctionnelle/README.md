@@ -497,6 +497,15 @@ le contrat du dépôt déclare invalide.
 
 ### L'import passe par le build Vercel (2026-07-26)
 
+> **Mise à jour (2026-07-28) — l'import ne passe plus par le build Vercel.** La
+> section 3 a sorti l'écriture du build : l'import NABM s'exécute désormais via le
+> workflow GitHub Actions `release-db` (mode `import-cb`), gaté par l'environnement
+> protégé `production`. Les variables `WN_CB_NABM_*` décrites ci-dessous ne sont
+> **plus lues par le build** ; leurs valeurs deviennent l'entrée `nabm_base` et les
+> secrets d'environnement du workflow. Chemin à jour :
+> `docs/DEPLOIEMENT_RELEASE_DB.md`. Le texte ci-dessous est conservé comme trace de
+> la décision du 2026-07-26.
+
 La première des questions ouvertes ci-dessous est **tranchée** : l'import
 s'exécute depuis `web/scripts/vercel-build.sh`, après `migrate deploy`, sur le
 patron de l'import C5 CIQUAL. Le geste manuel reste possible et inchangé, mais

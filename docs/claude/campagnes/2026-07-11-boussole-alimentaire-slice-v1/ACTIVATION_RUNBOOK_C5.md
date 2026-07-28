@@ -4,6 +4,13 @@
 > LOT-07 mergé, CI verte, trois verdicts émis (`VALIDATION_FINALE_C5.md`),
 > instruction explicite du responsable. Rollback = flag `false` (non destructif).
 
+**Mise à jour (2026-07-28)** — Le build Vercel **n'applique plus** migrations ni
+imports (section 3) : les migrations passent par le workflow `release-db`
+(`docs/DEPLOIEMENT_RELEASE_DB.md`). Le référentiel Ciqual C5 est **déjà importé**
+(append-only, idempotent) et n'est **pas** recâblé dans le workflow — son garde
+`VERCEL_ENV` demanderait d'abord un refactor. La ligne « `MIGRATE_DATABASE_URL`
+présente dans Vercel Production (migration au build) » ci-dessous est **caduque**.
+
 ## Prérequis (à confirmer avant activation)
 
 - [ ] PR LOT-07 mergée dans `main`, CI verte (Vercel, verify, devcontainer-smoke).
