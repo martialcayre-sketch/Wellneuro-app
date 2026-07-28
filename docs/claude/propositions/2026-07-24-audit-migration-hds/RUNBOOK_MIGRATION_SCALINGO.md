@@ -7,7 +7,7 @@ migrer les données et basculer. Rappel : le code de préparation est **inerte**
 tant que Scalingo n'est pas provisionné (défauts = comportement Vercel actuel).
 
 ## Prérequis
-- Compte Scalingo, région **`osc-secnum-fr1`** (HDS), contrat + annexe HDS signés.
+- Compte Scalingo, région **`osc-fr1` + `--hds-resource`** (conforme HDS — c'est ce qui est réellement provisionné). L'audit recommandait `osc-secnum-fr1` (Outscale **SecNumCloud**, souveraine, plus strict) ; le choix `osc-fr1` reste HDS mais **non SecNumCloud** — arbitrage et réserve « périmètre HDS à confirmer par écrit » consignés dans `docs/DECISIONS.md` D‑006. DPA + annexe HDS Scalingo à **e‑signer** avant toute donnée réelle.
 - CLI Scalingo installée et authentifiée (`scalingo login`).
 - Dépôt connecté (déploiement par push, ou intégration GitHub).
 
@@ -23,7 +23,9 @@ tant que Scalingo n'est pas provisionné (défauts = comportement Vercel actuel)
 ## Étape 1 — App staging (données FICTIVES d'abord)
 
 1. **Créer l'app** en région HDS :
-   `scalingo create wellneuro-staging --region osc-secnum-fr1`
+   `scalingo create wellneuro-staging --region osc-fr1 --hds-resource`
+   (confirmer la syntaxe exacte du flag HDS avec Scalingo ; `osc-secnum-fr1`
+   serait la variante SecNumCloud plus stricte — cf. D‑006)
 2. **Monorepo** — le code est dans `web/` :
    `scalingo --app wellneuro-staging env-set PROJECT_DIR=web`
 3. **Add-on PostgreSQL** (plan HDS ; le badge HDS est sur les plans Business) :
