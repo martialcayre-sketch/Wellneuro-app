@@ -49,13 +49,13 @@ const FICHE: FicheComplement = {
 };
 
 const CORPUS_VIDE = {
-  ok: true, contractVersion: 'c4-rayon-corpus-v1', rayon: 'micronutrition',
+  ok: true, contractVersion: 'c4-rayon-corpus-v2', rayon: 'micronutrition',
   disponible: true, corpusVide: true, claims: [],
   message: 'Corpus en cours de constitution — aucun claim validé pour ce rayon.',
 };
 
 const CORPUS_PLEIN = {
-  ok: true, contractVersion: 'c4-rayon-corpus-v1', rayon: 'micronutrition',
+  ok: true, contractVersion: 'c4-rayon-corpus-v2', rayon: 'micronutrition',
   disponible: true, corpusVide: false,
   claims: [{
     claimId: 'WN-CLAIM-0001', versionClaim: 'v1',
@@ -126,6 +126,23 @@ describe('FicheComplementPanel (fiche justificative multi-dimensions)', () => {
       expect(screen.getByText(/Le magnésium bisglycinate soutient le sommeil/)).toBeTruthy(),
     );
     expect(screen.getByText(/validé par praticien@wellneuro.fr/)).toBeTruthy();
+  });
+
+  it('balise les claims prescriptifs par un badge (le clinicien voit, cure ensuite)', async () => {
+    fetchMock.mockResolvedValue(json({
+      ...CORPUS_PLEIN,
+      claims: [{
+        ...CORPUS_PLEIN.claims[0],
+        claimId: 'WN-CLAIM-0009',
+        texteNormalise: 'Magnésium : 300 mg par jour au coucher.',
+        prescriptif: true,
+      }],
+    }));
+    render(<FicheComplementPanel fiche={FICHE} />);
+    await waitFor(() =>
+      expect(screen.getByText(/300 mg par jour/)).toBeTruthy(),
+    );
+    expect(screen.getByText('prescriptif')).toBeTruthy();
   });
 
   it('interroge la route corpus avec le rayon et une requête dérivée de la fiche', async () => {

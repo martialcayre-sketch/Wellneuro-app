@@ -18,7 +18,7 @@ import { GET } from './route';
 const URL_BASE = 'http://localhost/api/praticien/complements/corpus';
 
 const VIDE = {
-  contractVersion: 'c4-rayon-corpus-v1',
+  contractVersion: 'c4-rayon-corpus-v2',
   rayon: 'micronutrition',
   disponible: true,
   corpusVide: true,

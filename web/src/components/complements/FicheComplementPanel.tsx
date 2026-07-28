@@ -313,7 +313,17 @@ export function FicheComplementPanel({
           <ul className="mt-1.5 flex flex-col gap-2 text-xs text-foreground">
             {corpus.claims.map((c) => (
               <li key={`${c.claimId}-${c.versionClaim}`} className="border-l-2 border-border pl-2">
-                <p>« {c.texteNormalise} »</p>
+                <p>
+                  « {c.texteNormalise} »
+                  {c.prescriptif ? (
+                    <span
+                      className="ml-1.5 inline-block rounded bg-status-warning/15 px-1 py-0.5 align-middle text-2xs font-semibold uppercase tracking-[.06em] text-status-warning"
+                      title="Claim prescriptif — posologie ou seuil ; à contextualiser avant toute reprise patient."
+                    >
+                      prescriptif
+                    </span>
+                  ) : null}
+                </p>
                 <p className="mt-0.5 text-2xs text-muted-foreground">
                   {c.classeAutorite} · niveau de preuve {c.niveauPreuve}
                   {c.validateur ? ` · validé par ${c.validateur}` : ''}
