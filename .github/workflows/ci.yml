@@ -185,6 +185,17 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_garde_seuils_v1.sql
 
+      # La migration de reprise (20260728090000) écrit des données de production
+      # — elle efface des signatures praticien. Sur la base du CI, construite
+      # vide, elle est un no-op : sans ce banc, le CI n'en prouverait rien. Il
+      # éprouve la fonction de cible sur les deux formes qui avaient échappé à
+      # la première rédaction — un claim couvert par deux lots et tiré dans un
+      # seul, et un claim revalidé individuellement après la signature de lot.
+      - name: RAG claim reprise bornes contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_reprise_bornes_v1.sql
+
       # Le drift check ci-dessus ne voit ni les CHECK, ni la RLS, ni les index
       # partiels : Prisma ne les introspecte pas. Ce contrat les vérifie, et
       # surtout il fait échouer le CI si une colonne du catalogue biologie
