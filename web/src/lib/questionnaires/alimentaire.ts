@@ -1,6 +1,288 @@
 import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_ZARIT, O_DASS, O_CONNERS, q, qn, qs } from './shared';
 
-export const Q_ALI_01 = {
+// ── Oui / Non ────────────────────────────────────────────────────────────────
+// 1 = oui, 0 = non. Le barème dit lequel des deux rapporte les points : sur
+// « Utilisez-vous des huiles de tournesol… ? », c'est NON qui score.
+const O_ON = [{v:1,l:'Oui'},{v:0,l:'Non'}];
+
+/**
+ * ENQUÊTE ALIMENTAIRE SIIN — forme complète, 57 items, total /90.
+ *
+ * Sources : WN-SRC-0470 (volet patient) et WN-SRC-0471 (volet pro), lues le
+ * 2026-07-28. Décision praticien du 2026-07-27 : restauration de la forme
+ * complète contre les 14 items servis depuis l'origine.
+ *
+ * ── Le barème, tel que la source le pose ────────────────────────────────────
+ * La source ne cote pas les réponses. Chaque ligne porte un SEUIL (« >5 »,
+ * « 1 à 5 », « Oui ») et une VALEUR EN POINTS (1 ou 2) : les points sont acquis
+ * si le seuil est atteint, sinon zéro. La somme des 57 valeurs fait exactement
+ * **90** — c'est le /90 du guide clinique et de la boussole, et c'est l'échelle
+ * des quatre bandes d'interprétation reproduites plus bas.
+ *
+ * ── Ce que la source ne dit PAS, et qu'il ne faut pas lui prêter ─────────────
+ * 1. Elle ne propose AUCUNE option de réponse : c'est un formulaire papier où
+ *    le patient écrit librement et où le professionnel compare au seuil. Les
+ *    bandes de réponse ci-dessous sont une construction WellNeuro, calées pour
+ *    que le seuil source tombe toujours sur une FRONTIÈRE de bande — jamais à
+ *    l'intérieur, sinon le score deviendrait ambigu.
+ * 2. Elle ne déclare AUCUNE sous-échelle (`sousEchelles: []` sur les deux
+ *    lectures indépendantes du banc). Les six `dimensions` sont donc, elles
+ *    aussi, une construction WellNeuro — descriptives, lues par aucun score.
+ *
+ * ── Pourquoi des quantités et pas des Oui/Non partout ───────────────────────
+ * Les items en « Combien… » gardent une saisie chiffrée (33 items) ; les
+ * affirmations restent en Oui/Non (24 items). Reformuler un « combien » en
+ * seuil (« Je bois plus de 12 verres d'eau par jour ») en ferait une question
+ * suggestive, qui attire l'acquiescement. Et la quantité saisie est conservée
+ * dans `rawAnswers` : un barème révisé se rejouera sur les réponses déjà
+ * recueillies, sans redemander une passation.
+ *
+ * ── Portée clinique, arrêtée le 2026-07-28 ──────────────────────────────────
+ * Cet instrument sert la PREMIÈRE décision d'orientation alimentaire. Le carnet
+ * alimentaire et le suivi des actions prennent le relais pour affiner. Il
+ * mesure une EXPOSITION DÉCLARÉE, jamais un apport ni un statut biologique.
+ */
+export const Q_ALI_01_SIIN_57 = {
+  id:'Q_ALI_01', titre:'Enquête alimentaire SIIN',
+  instructions:'Répondez pour vos habitudes habituelles. Il n\'y a pas de bonne ou de mauvaise réponse — seulement ce que vous mangez d\'ordinaire.',
+  sections:[
+    { id:'BOISSONS', titre:'Vos boissons',
+      questions:[
+        qs('SIIN01','Combien de verres d\'eau buvez-vous chaque jour, en comptant thés, tisanes et cafés ?',
+          [{v:2,l:'Moins de 5 verres'},{v:6,l:'5 à 8 verres'},{v:10,l:'9 à 12 verres'},{v:13,l:'Plus de 12 verres (ou plus d\'1,5 L)'}]),
+        qs('SIIN02','Combien de tasses de café buvez-vous chaque jour ?',
+          [{v:0,l:'Aucune'},{v:1,l:'1 à 2'},{v:4,l:'3 à 5'},{v:6,l:'Plus de 5'}]),
+        qs('SIIN03','Combien de tasses de thé buvez-vous chaque jour ?',
+          [{v:0,l:'Aucune'},{v:1,l:'1 à 2'},{v:4,l:'3 à 5'},{v:6,l:'Plus de 5'}]),
+        qs('SIIN04','Combien de jus de fruits sans sucre ajouté buvez-vous chaque jour ?',
+          [{v:0,l:'Aucun'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3 ou plus'}]),
+        qs('SIIN05','Combien de boissons sucrées (sodas, cola, limonade…) buvez-vous chaque jour ?',
+          [{v:0,l:'Jamais, ou pas tous les jours'},{v:1,l:'1 par jour'},{v:2,l:'2 par jour'},{v:3,l:'3 ou plus'}]),
+        qs('SIIN06','Combien de verres de vin buvez-vous en moyenne chaque jour ?',
+          [{v:0,l:'Aucun'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3 ou plus'}]),
+        qs('SIIN07','Combien de verres de vin ou de boissons alcoolisées buvez-vous chaque semaine ?',
+          [{v:0,l:'Aucun'},{v:2,l:'1 à 4'},{v:7,l:'5 à 9'},{v:12,l:'10 à 14'},{v:15,l:'15 ou plus'}]),
+      ]},
+    { id:'VEGETAUX', titre:'Végétaux et céréales complètes',
+      questions:[
+        qs('SIIN08','Combien de portions de légumes (environ 80 g) consommez-vous chaque jour ?',
+          [{v:1,l:'0 ou 1'},{v:3,l:'2 à 3'},{v:5,l:'4 à 5'},{v:6,l:'Plus de 5'}]),
+        qs('SIIN09','Combien de fruits entiers consommez-vous chaque jour ?',
+          [{v:0,l:'Aucun'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4 ou plus'}]),
+        qs('SIIN10','Combien de portions de céréales complètes ou semi-complètes consommez-vous chaque jour ? (riz complet, quinoa, flocons — environ 80 à 100 g)',
+          [{v:0,l:'Aucune'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3 ou plus'}]),
+        qs('SIIN11','Choisissez-vous des céréales complètes plutôt que raffinées au moins une fois sur deux ?', O_ON),
+        qs('SIIN12','Choisissez-vous du pain complet plutôt que du pain blanc ou de la baguette ?', O_ON),
+        qs('SIIN13','Combien de portions de légumes secs (150 g) consommez-vous chaque semaine ?',
+          [{v:0,l:'Aucune'},{v:1,l:'1 à 2'},{v:3,l:'3 ou plus'}]),
+        qs('SIIN14','Combien de portions de noix de Grenoble (30 g) consommez-vous chaque semaine ?',
+          [{v:0,l:'Aucune'},{v:1,l:'1 à 2'},{v:3,l:'3 ou plus'}]),
+        qs('SIIN15','Combien de portions de fruits secs non sucrés et non salés (amandes, noisettes, pistaches, cajou…) consommez-vous chaque semaine ?',
+          [{v:0,l:'Aucune'},{v:1,l:'1 à 2'},{v:3,l:'3 ou plus'}]),
+      ]},
+    { id:'GRASSES', titre:'Vos matières grasses',
+      questions:[
+        qs('SIIN16','Utilisez-vous l\'huile de colza comme huile principale, en cuisine ou en assaisonnement ?', O_ON),
+        qs('SIIN17','Combien de cuillères à soupe d\'huile de colza consommez-vous chaque jour ?',
+          [{v:0,l:'Aucune'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'Plus de 2'}]),
+        qs('SIIN18','Combien de portions de beurre, margarine, crème fraîche ou graisse de coco consommez-vous chaque jour ? (une portion = 12 g)',
+          [{v:0,l:'Moins d\'une portion'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3 ou plus'}]),
+        qs('SIIN19','Utilisez-vous l\'huile de tournesol, de maïs ou de pépin de raisin comme huile principale ou régulière ?', O_ON),
+        qs('SIIN20','Combien de sauces industrielles (mayonnaise, sauce salade, barbecue…) consommez-vous chaque jour ?',
+          [{v:0,l:'Jamais, ou pas tous les jours'},{v:1,l:'1'},{v:2,l:'2 ou plus'}]),
+      ]},
+    { id:'LAITIERS', titre:'Produits laitiers et fromages',
+      questions:[
+        qs('SIIN21','Combien de produits laitiers frais NON sucrés consommez-vous chaque jour ? (yaourt nature, fromage blanc, petit-suisse)',
+          [{v:0,l:'Aucun'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3 ou plus'}]),
+        qs('SIIN22','Combien de produits laitiers frais SUCRÉS consommez-vous chaque jour ? (yaourt aux fruits, dessert lacté sucré)',
+          [{v:0,l:'Moins d\'un par jour'},{v:1,l:'1'},{v:2,l:'2 ou plus'}]),
+        qs('SIIN23','Combien de portions de fromage consommez-vous chaque jour ?',
+          [{v:0,l:'Aucune'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3 ou plus'}]),
+        qs('SIIN24','Combien de portions de fromage gras consommez-vous chaque semaine ?',
+          [{v:1,l:'0 ou 1'},{v:3,l:'2 à 3'},{v:5,l:'4 à 6'},{v:7,l:'7 ou plus'}]),
+      ]},
+    { id:'MER_OEUFS', titre:'Œufs, poissons et fruits de mer',
+      questions:[
+        qs('SIIN25','Combien d\'œufs de la filière oméga-3 consommez-vous chaque semaine ?',
+          [{v:0,l:'Aucun'},{v:2,l:'1 à 3'},{v:5,l:'4 à 7'},{v:11,l:'8 à 14'},{v:15,l:'Plus de 14'}]),
+        qs('SIIN26','Combien d\'œufs hors filière oméga-3 (conventionnels, bio ou plein air) consommez-vous chaque semaine ?',
+          [{v:0,l:'Aucun'},{v:2,l:'1 à 4'},{v:6,l:'5 à 7'},{v:8,l:'8 ou plus'}]),
+        qs('SIIN27','Combien de portions de poissons gras consommez-vous chaque semaine ? (sardine, maquereau, hareng, saumon, thon — 100 g)',
+          [{v:0,l:'Aucune'},{v:1,l:'1'},{v:2,l:'2 ou plus'}]),
+        qs('SIIN28','Combien de portions de poisson, toutes espèces confondues, consommez-vous chaque semaine ? (100 g)',
+          [{v:1,l:'0 ou 1'},{v:3,l:'2 à 3'},{v:4,l:'4 ou plus'}]),
+        qs('SIIN29','Combien de portions de coquillages ou crustacés consommez-vous chaque semaine ? (une portion = 4 ou 5 coquillages)',
+          [{v:0,l:'Aucune'},{v:1,l:'1'},{v:2,l:'Plus d\'une'}]),
+      ]},
+    { id:'VIANDES', titre:'Viandes et charcuteries',
+      questions:[
+        qs('SIIN30','Combien de portions de viande blanche ou de volaille consommez-vous chaque semaine ? (poulet, dinde, canard, lapin, porc)',
+          [{v:0,l:'Aucune'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4 ou plus'}]),
+        qs('SIIN31','Combien de portions de viande rouge ou de hamburger consommez-vous chaque semaine ? (une portion = 100 à 150 g)',
+          [{v:0,l:'Aucune'},{v:2,l:'1 à 2'},{v:3,l:'3 à 4'},{v:5,l:'5 ou plus'}]),
+        qs('SIIN32','Choisissez-vous plutôt les volailles (poulet, dinde, lapin) que le veau, le bœuf, les saucisses ou les hamburgers ?', O_ON),
+        qs('SIIN33','Combien de portions de charcuterie consommez-vous chaque semaine ?',
+          [{v:0,l:'Aucune'},{v:2,l:'1 à 2'},{v:3,l:'3 à 4'},{v:5,l:'5 ou plus'}]),
+      ]},
+    { id:'FECULENTS', titre:'Féculents raffinés et produits sucrés',
+      questions:[
+        qs('SIIN34','Combien de fois par semaine consommez-vous des pommes de terre ? (frites, purée, vapeur)',
+          [{v:0,l:'Jamais'},{v:2,l:'1 à 2 fois'},{v:3,l:'3 à 4 fois'},{v:5,l:'5 fois ou plus'}]),
+        qs('SIIN35','Combien de fois par semaine consommez-vous des pâtes blanches, du riz blanc ou du pain blanc ?',
+          [{v:0,l:'Jamais'},{v:2,l:'1 à 2 fois'},{v:3,l:'3 à 4 fois'},{v:5,l:'5 fois ou plus'}]),
+        qs('SIIN36','Consommez-vous régulièrement ou quotidiennement des produits sucrés industriels ? (confiture, pâte à tartiner, céréales sucrées)', O_ON),
+        qs('SIIN37','Combien de fois par semaine consommez-vous des pâtisseries industrielles, cookies ou biscuits ?',
+          [{v:0,l:'Jamais'},{v:1,l:'1 fois'},{v:2,l:'2 à 3 fois'},{v:4,l:'4 fois ou plus'}]),
+      ]},
+    { id:'TRANSFORMES', titre:'Vos achats et produits transformés',
+      questions:[
+        qs('SIIN38','Les boissons sucrées (limonades, jus industriels, sodas, y compris light) sont-elles occasionnelles chez vous, jamais quotidiennes ?', O_ON),
+        qs('SIIN39','Lors de vos achats, les produits transformés « prêts à consommer » représentent-ils moins d\'un cinquième de votre caddy ?', O_ON),
+        qs('SIIN40','Utilisez-vous très peu de sucre ajouté — moins d\'une cuillère à soupe par jour, boissons comprises ?', O_ON),
+        qs('SIIN41','Rajoutez-vous du sel fréquemment, à la cuisson ou dans votre assiette ?', O_ON),
+        qs('SIIN42','Achetez-vous et consommez-vous assez souvent des produits salés industriels ? (chips, cacahuètes salées, fruits secs apéritifs)', O_ON),
+      ]},
+    { id:'PROTECTEURS', titre:'Assaisonnements et aliments protecteurs',
+      questions:[
+        qs('SIIN43','Combien de fois par semaine consommez-vous des plats assaisonnés naturellement ? (sauce tomate, oignon, ail, curry, curcuma, gingembre, moutarde, aromates)',
+          [{v:0,l:'Jamais'},{v:2,l:'1 à 2 fois'},{v:3,l:'Plus de 2 fois'}]),
+        qs('SIIN44','Consommez-vous chaque jour des épices, aromates ou herbes aromatiques, à table ou dans vos préparations ?', O_ON),
+        qs('SIIN45','Consommez-vous chaque jour du chocolat noir (>70 %), des agrumes, des petits fruits rouges ou du thé vert ?', O_ON),
+        qs('SIIN46','Consommez-vous chaque semaine des brocolis, des choux, des champignons, des algues ou du soja ?', O_ON),
+      ]},
+    { id:'CUISSON', titre:'Cuisson et filières',
+      questions:[
+        qs('SIIN47','Êtes-vous attentif aux températures de cuisson — en évitant barbecues, fritures et brunissement excessif ?', O_ON),
+        qs('SIIN48','Vous orientez-vous vers des produits bio dès que possible, notamment légumes, fruits, céréales et pain complets ?', O_ON),
+        qs('SIIN49','Êtes-vous attentif aux filières de production, en achetant des produits de la filière oméga-3 dès que possible ?', O_ON),
+      ]},
+    { id:'RYTHME', titre:'Votre rythme alimentaire',
+      questions:[
+        qs('SIIN50','Mangez-vous à heures régulières, en évitant les grignotages entre les repas ?', O_ON),
+        qs('SIIN51','Mangez-vous régulièrement au restaurant, « sur le pouce », en restauration rapide ou des plats tout prêts ?', O_ON),
+        qs('SIIN52','Prenez-vous chaque jour un petit déjeuner complet et copieux, riche en protéines et pauvre en sucres ?', O_ON),
+        qs('SIIN53','Consommez-vous régulièrement des aliments source de protéines au petit déjeuner ?', O_ON),
+        // Exception assumée à la règle « affirmation → Oui/Non » : la source
+        // pose « au moins 10 heures », mais la durée réelle du jeûne nocturne
+        // est un axe de chronobiologie que le praticien exploite. « Au moins
+        // 10 h » écraserait une information qu'on sait utile.
+        qs('SIIN54','Combien d\'heures s\'écoulent habituellement entre la fin de votre repas du soir et votre petit déjeuner ?',
+          [{v:7,l:'Moins de 8 heures'},{v:8,l:'8 à 9 heures'},{v:10,l:'10 à 11 heures'},{v:12,l:'12 heures ou plus'}]),
+        qs('SIIN55','Privilégiez-vous un petit déjeuner et un déjeuner copieux, avec un repas du soir léger et digeste ?', O_ON),
+      ]},
+    { id:'ETIQUETAGE', titre:'Étiquetage et édulcorants',
+      questions:[
+        qs('SIIN56','Lisez-vous les étiquettes et le Nutri-Score, en faisant attention à la composition et à la provenance ?', O_ON),
+        qs('SIIN57','Évitez-vous la consommation régulière d\'édulcorants intenses ? (aspartame, néotame, acésulfame K, sucrettes)', O_ON),
+      ]},
+  ],
+  scoring:{
+    type:'seuils_points',
+    maxTotal:90,
+    // Un item = un seuil et une valeur. La somme des 57 valeurs vaut 90 ;
+    // `scoring-check` le vérifie, plutôt que de faire confiance à ce commentaire.
+    bareme:[
+      {id:'SIIN01',points:1,seuil:{min:13}},
+      {id:'SIIN02',points:1,seuil:{min:1,max:5}},
+      {id:'SIIN03',points:1,seuil:{min:1,max:5}},
+      {id:'SIIN04',points:1,seuil:{max:1}},
+      {id:'SIIN05',points:1,seuil:{max:0}},
+      {id:'SIIN06',points:1,seuil:{max:1}},
+      {id:'SIIN07',points:2,seuil:{max:9}},
+      {id:'SIIN08',points:2,seuil:{min:6}},
+      {id:'SIIN09',points:2,seuil:{min:1,max:3}},
+      {id:'SIIN10',points:1,seuil:{min:1,max:2}},
+      {id:'SIIN11',points:2,seuil:{egal:1}},
+      {id:'SIIN12',points:2,seuil:{egal:1}},
+      {id:'SIIN13',points:2,seuil:{min:3}},
+      {id:'SIIN14',points:2,seuil:{min:3}},
+      {id:'SIIN15',points:2,seuil:{min:3}},
+      {id:'SIIN16',points:2,seuil:{egal:1}},
+      {id:'SIIN17',points:2,seuil:{min:3}},
+      {id:'SIIN18',points:2,seuil:{max:0}},
+      // NON favorable : les huiles riches en oméga-6 ne doivent pas être l'huile principale.
+      {id:'SIIN19',points:2,seuil:{egal:0}},
+      {id:'SIIN20',points:2,seuil:{max:0}},
+      {id:'SIIN21',points:1,seuil:{min:1,max:2}},
+      {id:'SIIN22',points:1,seuil:{max:0}},
+      {id:'SIIN23',points:1,seuil:{max:1}},
+      {id:'SIIN24',points:1,seuil:{max:3}},
+      {id:'SIIN25',points:2,seuil:{min:4,max:14}},
+      {id:'SIIN26',points:1,seuil:{max:4}},
+      {id:'SIIN27',points:2,seuil:{min:2}},
+      {id:'SIIN28',points:1,seuil:{min:4}},
+      {id:'SIIN29',points:1,seuil:{min:2}},
+      {id:'SIIN30',points:1,seuil:{min:2,max:3}},
+      {id:'SIIN31',points:2,seuil:{max:2}},
+      {id:'SIIN32',points:1,seuil:{egal:1}},
+      {id:'SIIN33',points:2,seuil:{max:2}},
+      {id:'SIIN34',points:1,seuil:{max:2}},
+      {id:'SIIN35',points:1,seuil:{max:2}},
+      // NON favorable : ne pas consommer régulièrement de produits sucrés industriels.
+      {id:'SIIN36',points:2,seuil:{egal:0}},
+      {id:'SIIN37',points:2,seuil:{max:1}},
+      {id:'SIIN38',points:2,seuil:{egal:1}},
+      {id:'SIIN39',points:2,seuil:{egal:1}},
+      {id:'SIIN40',points:2,seuil:{egal:1}},
+      // NON favorable : ne pas resaler systématiquement.
+      {id:'SIIN41',points:1,seuil:{egal:0}},
+      // NON favorable : ne pas consommer souvent de produits salés industriels.
+      {id:'SIIN42',points:2,seuil:{egal:0}},
+      {id:'SIIN43',points:2,seuil:{min:3}},
+      {id:'SIIN44',points:2,seuil:{egal:1}},
+      {id:'SIIN45',points:2,seuil:{egal:1}},
+      {id:'SIIN46',points:2,seuil:{egal:1}},
+      {id:'SIIN47',points:2,seuil:{egal:1}},
+      {id:'SIIN48',points:1,seuil:{egal:1}},
+      {id:'SIIN49',points:1,seuil:{egal:1}},
+      {id:'SIIN50',points:2,seuil:{egal:1}},
+      // NON favorable : ne pas manger régulièrement en restauration rapide.
+      {id:'SIIN51',points:1,seuil:{egal:0}},
+      {id:'SIIN52',points:2,seuil:{egal:1}},
+      {id:'SIIN53',points:2,seuil:{egal:1}},
+      {id:'SIIN54',points:2,seuil:{min:10}},
+      {id:'SIIN55',points:1,seuil:{egal:1}},
+      {id:'SIIN56',points:1,seuil:{egal:1}},
+      {id:'SIIN57',points:2,seuil:{egal:1}},
+    ],
+    // CONSTRUCTION WELLNEURO — la source ne déclare aucune sous-échelle.
+    // Descriptives : elles n'entrent pas dans le total et ne sont lues par
+    // aucun besoin (`BESOIN_SOURCES` lit `subScores`, jamais `dimensions`).
+    // Tous les items ne sont pas rattachés à une catégorie ; ceux qui ne le
+    // sont pas comptent quand même dans le /90.
+    dimensions:[
+      {id:'DIVERSITE_VEGETALE',label:'Diversité végétale',items:['SIIN08','SIIN09','SIIN43','SIIN45','SIIN46']},
+      {id:'FIBRES_CEREALES',label:'Fibres et céréales complètes',items:['SIIN10','SIIN11','SIIN12','SIIN13']},
+      {id:'OMEGA_3',label:'Oméga-3',items:['SIIN14','SIIN16','SIIN17','SIIN25','SIIN27','SIIN49']},
+      {id:'QUALITE_GLUCIDIQUE',label:'Qualité glucidique',items:['SIIN04','SIIN05','SIIN22','SIIN34','SIIN35','SIIN40']},
+      {id:'ULTRA_TRANSFORMES',label:'Produits ultra-transformés',items:['SIIN20','SIIN33','SIIN36','SIIN37','SIIN38','SIIN39','SIIN42','SIIN57']},
+      {id:'RYTHME_ALIMENTAIRE',label:'Rythme alimentaire',items:['SIIN50','SIIN51','SIIN52','SIIN53','SIIN54','SIIN55']},
+    ],
+    // Les quatre bandes de la source, sur /90. Elles sont rédigées POUR LE
+    // PROFESSIONNEL — « facteur de risque de maladies » n'est pas un texte
+    // patient. Aucune `protocol` ici : les conduites sortent des bandes depuis
+    // le lot #389.
+    interpretation:[
+      {min:71,max:90,label:'Alimentation optimale, protectrice du capital santé',color:'success'},
+      {min:51,max:70,label:'Alimentation plutôt équilibrée, mais insuffisamment protectrice',color:'info'},
+      {min:26,max:50,label:'Alimentation déséquilibrée, ne contribuant pas au maintien du capital santé',color:'warning'},
+      {min:0, max:25,label:'Alimentation très déséquilibrée et défavorable',color:'danger'},
+    ],
+  }
+};
+
+/**
+ * FORME COURTE HISTORIQUE — 14 items, total /42.
+ *
+ * Conservée telle quelle, et servie tant que `WN_ALI_01_SIIN57` n'est pas
+ * allumé. Ce n'est PAS un sous-ensemble des 57 : le banc de certification a
+ * comparé les libellés position par position et trouve des similarités de 0,00
+ * à 0,33 — c'est une réécriture indépendante. Ses 8 passations en production
+ * gardent donc leur score sur 42, et leurs identifiants `AL*` les rendent
+ * reconnaissables à vie.
+ */
+export const Q_ALI_01_COURT_14 = {
   id:'Q_ALI_01', titre:'Questionnaire alimentaire SIIN',
   instructions:'Répondez pour vos habitudes habituelles des 3 derniers mois. Il n\'y a pas de bonne ou mauvaise réponse.',
   sections:[
@@ -67,6 +349,19 @@ export const Q_ALI_01 = {
     ]
   }
 };
+
+/**
+ * Forme servie. Le drapeau est lu ICI, une seule fois, et le catalogue est
+ * server-only au runtime : `BibliothequePanel` n'en importe qu'un TYPE, effacé
+ * à la compilation. Il n'existe donc pas de chemin où l'écran servirait une
+ * forme et le moteur en scorerait une autre.
+ *
+ * Défaut ÉTEINT : tant que `WN_ALI_01_SIIN57` n'est pas posé en production, la
+ * forme à 14 items continue d'être servie et rien ne change pour personne.
+ */
+export const Q_ALI_01 =
+  process.env.WN_ALI_01_SIIN57 === 'true' ? Q_ALI_01_SIIN_57 : Q_ALI_01_COURT_14;
+
 export const Q_ALI_02 = {
   id:'Q_ALI_02', titre:'Score d\'adhérence à la diète méditerranéenne SIIN',
   instructions:'Répondez par OUI ou NON pour chaque habitude alimentaire habituelle. Ce questionnaire évalue votre adhérence au régime méditerranéen.',

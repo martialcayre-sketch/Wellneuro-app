@@ -1,4 +1,8 @@
 import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire, StrateCode } from './types';
+// Le maximum du besoin 1 est DÉRIVÉ de la forme réellement servie, jamais
+// recopié : un `max` littéral divergeant du barème est silencieux (aucun garde
+// ne les compare), et il sature ou effondre une fondation critique sans erreur.
+import { Q_ALI_01 } from '../questionnaires/alimentaire';
 
 // Cf. docs/claude/MON_EQUILIBRE_CONTEXTE.md — méthodologie actée pour
 // l'indicateur "Mon équilibre" (patient) / "Cartographie neuro-fonctionnelle"
@@ -35,12 +39,22 @@ import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire
 // Figer la valeur plutôt que l'étiquette est une décision d'architecture
 // ouverte, posée au praticien — elle dépasse ce lot.
 //
+// v4 → v5 (Enquête alimentaire SIIN, forme complète) : le besoin 1 passe d'un
+// dépistage à 14 items coté /42 à l'instrument source, 57 items cotés /90. Le
+// barème change, donc l'étiquette change.
+//
+// La version SUIT LE DRAPEAU, elle n'est pas figée au merge. Tant que
+// `WN_ALI_01_SIIN57` est éteint, c'est bien la forme courte qui est servie et
+// calculée : étiqueter ces épisodes « v5 » les dirait produits sous un barème
+// qui n'a pas encore été appliqué. Une étiquette de version qui ment est pire
+// qu'une étiquette absente — c'est toute la leçon de la frontière ci-dessus.
+//
 // NB rédaction : ne jamais écrire le nom de la table de mapping en toutes
 // lettres AU-DESSUS de sa déclaration. Le garde du registre l'extrait par
 // `indexOf` (scripts/lib/verifier_registre_instruments.js) et tomberait sur le
 // commentaire au lieu de la table — il refuse alors de valider plutôt que de
 // contrôler dans le vide.
-export const VERSION_SCORE_EQUILIBRE = 'v4' as const;
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v5' : 'v4';
 
 export const POIDS_STRATE: Record<StrateCode, number> = {
   CORPS: 0.6,
@@ -86,7 +100,7 @@ export const PLAFOND_FONDATION_CRITIQUE = 50;
 // garde scripts/lib/verifier_registre_instruments.js contrôle l'alignement
 // dans les deux sens et fait échouer `scoring-check` (T1) sinon.
 export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
-  1: [{ idQuestionnaire: 'Q_ALI_01', max: 42, inverser: false }],
+  1: [{ idQuestionnaire: 'Q_ALI_01', max: Q_ALI_01.scoring.maxTotal, inverser: false }],
   // 2 : voir la note v3 → v4 en tête de fichier — Q_SOM_06 (fatigue de Pichot)
   // retiré, la fatigue ne mesurant pas la couverture micronutritionnelle.
   2: [],

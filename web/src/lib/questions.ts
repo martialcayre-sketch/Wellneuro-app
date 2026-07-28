@@ -1570,6 +1570,98 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     };
   }
 
+  // ── SEUILS_POINTS (Enquête alimentaire SIIN, 57 items) ─────────────────────
+  //
+  // La source ne cote pas les réponses : elle donne, par item, un SEUIL et une
+  // VALEUR EN POINTS (1 ou 2). Le patient répond une quantité ; le seuil décide
+  // si les points sont acquis. La somme des 57 valeurs vaut exactement 90 —
+  // c'est le /90 du guide clinique.
+  //
+  // Pourquoi un moteur à part plutôt que `sum` : `sum` additionne la VALEUR DE
+  // L'OPTION choisie. Il faudrait donc encoder le score dans l'option, et deux
+  // quantités différentes valant toutes deux 0 point deviendraient
+  // indiscernables dans `rawAnswers` — la quantité réelle serait perdue à la
+  // saisie. Ici la réponse enregistrée est la quantité, et le score en est
+  // dérivé : rien n'est perdu, et un barème révisé se rejoue sur les réponses
+  // déjà recueillies.
+  if (sc.type === 'seuils_points') {
+    const bareme: any[] = sc.bareme || [];
+
+    // Seuil déclaratif, jamais une fonction : le garde de certification lit ce
+    // fichier comme du texte, et une fonction y serait opaque.
+    //   {min}        → valeur >= min
+    //   {max}        → valeur <= max
+    //   {min, max}   → intervalle fermé (seuils bilatéraux : café, fruits…)
+    //   {egal: n}    → égalité stricte (items Oui/Non : 1 = oui, 0 = non)
+    function seuilAtteint(seuil: any, v: number): boolean {
+      if (!seuil) return false;
+      if (seuil.egal !== undefined) return v === seuil.egal;
+      if (seuil.min !== undefined && v < seuil.min) return false;
+      if (seuil.max !== undefined && v > seuil.max) return false;
+      return seuil.min !== undefined || seuil.max !== undefined;
+    }
+
+    let total = 0;
+    let repondus = 0;
+    const missingIds: string[] = [];
+    for (const entree of bareme) {
+      const v = getVal(entree.id);
+      if (v === null || Number.isNaN(v)) { missingIds.push(entree.id); continue; }
+      repondus++;
+      if (seuilAtteint(entree.seuil, v)) total += entree.points;
+    }
+
+    // GARDE — « non scoré », jamais 0 par défaut.
+    //
+    // Sans elle, une passation dont AUCUNE réponse ne correspond aux items de
+    // cette définition rendrait `total: 0`. Or `equilibre/score.ts` accepte 0
+    // comme une valeur : le besoin 1 tomberait à 0, sous le seuil
+    // d'effondrement, et plafonnerait « Mon équilibre » à 50 — en silence.
+    // C'est le cas des 8 passations de la forme courte à 14 items (clés
+    // `AL1`–`AL14`), qui ne partagent aucun identifiant avec les 57 items.
+    // Même doctrine que l'agenda du sommeil sous son seuil de nuits.
+    if (repondus === 0) {
+      return {
+        type: 'seuils_points', scored: false, total: null, maxTotal: sc.maxTotal,
+        interpretation: null, note: sc.note || null,
+        certification: sc.certification || null,
+        raisonNonScore: 'aucune réponse ne correspond aux items de cet instrument',
+      };
+    }
+
+    const interp = sc.interpretation ? interpretRanges(total, sc.interpretation) : null;
+    // Découpage descriptif — même contrat que `dimensions` sur `sum` : il ne
+    // touche pas au total et n'est lu par aucun besoin (`BESOIN_SOURCES` lit
+    // `subScores`, jamais `dimensions`).
+    const dimensions = (sc.dimensions || []).map((d: any) => {
+      let sousTotal = 0, sousMax = 0, sousRepondus = 0;
+      for (const id of d.items) {
+        const entree = bareme.find((e: any) => e.id === id);
+        if (!entree) continue;
+        sousMax += entree.points;
+        const v = getVal(id);
+        if (v === null || Number.isNaN(v)) continue;
+        sousRepondus++;
+        if (seuilAtteint(entree.seuil, v)) sousTotal += entree.points;
+      }
+      return {
+        id: d.id, label: d.label,
+        total: sousRepondus > 0 ? sousTotal : null,
+        max: sousMax, repondus: sousRepondus, items: d.items.length,
+        interpretation: null,
+      };
+    });
+
+    return {
+      type: 'seuils_points', scored: true, total, maxTotal: sc.maxTotal,
+      interpretation: interp,
+      ...(dimensions.length > 0 ? {dimensions} : {}),
+      missing: missingIds.length,
+      ...(missingIds.length > 0 ? {missingIds} : {}),
+      note: sc.note || null, certification: sc.certification || null,
+    };
+  }
+
   // ── SUM_NO_INTERPRETATION ───────────────────────────
   if (sc.type === 'sum_no_interpretation') {
     const items = allQ.map(q => q.id);
