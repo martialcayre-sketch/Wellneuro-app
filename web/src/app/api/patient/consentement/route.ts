@@ -55,6 +55,16 @@ export async function POST(req: Request): Promise<NextResponse<PatientConsenteme
     if (isDeadlineExpired(ass.dateLimite)) {
       return NextResponse.json({ ok: false, reason: 'expired', error: 'Ce lien a expiré.' }, { status: 410 });
     }
+    // Assignation annulée par le praticien (Fil A) : ni consentement ni demande
+    // de modification n'ont de sens sur un questionnaire retiré. Résiduel
+    // documenté au merge de #438 — inoffensif (submit et l'ouverture du
+    // questionnaire restaient déjà bloqués), mais un chemin patient de plus qui
+    // ignorait l'annulation. Même statut/raison que `patient/questionnaire`
+    // (410 `annulee`) : le consentement est un préalable à l'ouverture, pas à
+    // la soumission.
+    if (ass.statut === 'Annulée') {
+      return NextResponse.json({ ok: false, reason: 'annulee', error: 'Ce questionnaire a été annulé par votre praticien.' }, { status: 410 });
+    }
 
     if (action === 'donner') {
       if (ass.consentement === 'donne') {
