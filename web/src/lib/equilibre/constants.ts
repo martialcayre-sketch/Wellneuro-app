@@ -88,7 +88,23 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // `indexOf` (scripts/lib/verifier_registre_instruments.js) et tomberait sur le
 // commentaire au lieu de la table — il refuse alors de valider plutôt que de
 // contrôler dans le vide.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v7' : 'v5';
+//
+// v7 → v8 / v9 (2026-07-28, regroupement du besoin 5) : le besoin 5 passe d'une
+// moyenne simple de ses trois sources à deux groupes à parts égales (mouvement /
+// repos). Un patient SANS agenda clôturé garde exactement son score — le repos
+// se réduit alors au PSQI, et la moyenne des deux groupes redonne la moyenne
+// simple d'avant. Seuls les patients dont l'agenda est clôturé changent : le
+// sommeil y pesait 2/3 du besoin, il en pèse désormais la moitié.
+//
+// Ce changement de mapping s'applique dans LES DEUX positions du drapeau
+// alimentaire, il fait donc avancer chaque branche d'un cran : la branche forme
+// courte v5 → v8, la branche SIIN /90 + besoin 3 v7 → v9. On saute v6, réservée
+// par la note ci-dessus à un intermédiaire jamais servi. La règle de non-partage
+// d'étiquette impose ce bump : au merge, ce regroupement et la « règle de
+// nouveauté » de main revendiquaient tous deux v5 — deux définitions sous une
+// même étiquette, exactement ce que ce fichier interdit. Doctrine inchangée : un
+// épisode figé sous l'ancienne étiquette ne se compare pas aux nouvelles.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v9' : 'v8';
 
 /**
  * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.
@@ -175,13 +191,24 @@ export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
     { idQuestionnaire: 'Q_GAS_01', max: 93, inverser: true },
     { idQuestionnaire: 'Q_INF_01', max: 96, inverser: true },
   ],
+  // Besoin 5 « Bouger et se reposer » — deux groupes à parts égales, MOUVEMENT
+  // et REPOS. Le repos se partage entre le questionnaire validé et l'agenda
+  // (2 / 1). Sans regroupement, la moyenne simple des trois sources donnait 2/3
+  // du besoin au sommeil : l'ajout d'une troisième source sommeil en v3 avait
+  // déplacé l'équilibre sans que ce soit une décision.
+  //
+  // Le groupe, et non des poids plats, parce qu'une pondération plate ne tient
+  // pas sa promesse quand une source manque : avec 3/2/1 et un agenda absent —
+  // le cas de presque tous les patients — le repos serait retombé à 2/5. Groupé,
+  // il garde son demi, et le score d'un patient sans agenda est inchangé.
   5: [
-    { idQuestionnaire: 'Q_SOM_01', max: 21, inverser: true },
-    { idQuestionnaire: 'Q_MOD_01', sousScore: 'ACTIVITE_PHYSIQUE', max: 20, inverser: false },
-    // Agenda du sommeil 21 nuits : score composite /100 (plus haut = mieux).
-    // Complète le PSQI ; absent tant que l'agenda n'est pas clôturé (couverture
-    // null, jamais 0). Barème /100 validé cliniquement le 2026-07-26.
-    { idQuestionnaire: 'Q_SOM_09', max: 100, inverser: false },
+    { idQuestionnaire: 'Q_MOD_01', sousScore: 'ACTIVITE_PHYSIQUE', max: 20, inverser: false, groupe: 'mouvement' },
+    { idQuestionnaire: 'Q_SOM_01', max: 21, inverser: true, groupe: 'repos', poids: 2 },
+    // Agenda du sommeil 21 nuits : indice longitudinal /100 (plus haut = mieux),
+    // niveau de preuve D. Il COMPLÈTE le PSQI, il ne le remplace pas — d'où un
+    // poids moindre dans le repos. Absent tant que l'agenda n'est pas clôturé,
+    // ou quand la couverture ne permet pas l'indice (couverture null, jamais 0).
+    { idQuestionnaire: 'Q_SOM_09', max: 100, inverser: false, groupe: 'repos', poids: 1 },
   ],
   6: [],
   7: [],
@@ -231,9 +258,14 @@ export const NIVEAU_PREUVE_PAR_SOURCE: Record<string, NiveauPreuve> = {
   Q_INF_01: 'B',
   Q_SOM_01: 'A',
   Q_MOD_01: 'B',
-  // Agenda du sommeil : outil standard francophone, mais l'indice composite /100
-  // est une construction WellNeuro (pas de validation psychométrique tierce) → B.
-  Q_SOM_09: 'B',
+  // Agenda du sommeil. Le SUPPORT est un instrument standard (SIIN, Consensus
+  // Sleep Diary) ; l'INDICE composite /100 qui alimente « Mon équilibre » ne
+  // l'est pas — ni validation psychométrique tierce, ni cohorte de calibration,
+  // ni seuil publié pour l'écart-type du milieu de sommeil. C'est la valeur
+  // consommée ici, donc D (hypothèse WellNeuro) et non B : classer l'indice au
+  // niveau de son support ferait passer une construction maison pour un
+  // référentiel. Corrigé le 2026-07-27.
+  Q_SOM_09: 'D',
   Q_NEU_11: 'A',
   Q_STR_01: 'B',
   Q_STR_02: 'A',

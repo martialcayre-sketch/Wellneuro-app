@@ -43,7 +43,11 @@ describe('forme alimentaire servie', () => {
   });
 
   it('l’étiquette de version suit le barème réellement servi', () => {
-    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v7' : 'v5');
+    // v8 / v9 depuis le regroupement du besoin 5 (2026-07-28) : ce changement de
+    // mapping s'applique dans les deux positions du drapeau, il a donc fait
+    // avancer chaque branche d'un cran (v5 → v8, v7 → v9). Voir la note de
+    // version dans constants.ts.
+    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v9' : 'v8');
   });
 
   it('le besoin 1 reste une fondation critique — d’où l’exigence ci-dessus', () => {

@@ -64,10 +64,14 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
   it('un agenda EXPLOITABLE dégrade toujours — anti-sur-filtrage', () => {
     // Sans ce contrôle, un prédicat qui écarterait TOUT agenda passerait le test
     // ci-dessus au vert en supprimant la source au lieu de la qualifier.
+    // Dégrade à 'D' depuis le 2026-07-27 : l'indice composite de l'agenda est une
+    // construction WellNeuro non validée (auparavant classé 'B' à tort, au niveau
+    // de son support). Le PSQI reste 'A' ; la règle du plus faible tire donc le
+    // besoin à 'D' dès que l'agenda contribue.
     const agendaComplet = { Q_SOM_09: reponsesAgendaComplet() };
     const sourceAgenda = BESOIN_SOURCES[5].find(s => s.idQuestionnaire === 'Q_SOM_09')!;
     expect(calculerCouvertureSource(sourceAgenda, agendaComplet)).not.toBeNull();
-    expect(calculerNiveauPreuveBesoin(5, { ...PSQI, ...agendaComplet })).toBe('B');
+    expect(calculerNiveauPreuveBesoin(5, { ...PSQI, ...agendaComplet })).toBe('D');
   });
 
   it('seule source non exploitable : NON_MESURE, et aucune source listée', () => {
