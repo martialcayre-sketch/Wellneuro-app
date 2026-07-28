@@ -76,13 +76,50 @@ describe('TrajectoiresPanel (SP-TRAJ LOT-04)', () => {
     expect(ligneSophie.getAttribute('href')).toBe('/dashboard/patients/PAT001?onglet=trajectoire');
     expect(screen.getByText(/Épisode 1 · T0 \+ \d+ j/)).toBeTruthy();
     expect(screen.getByText(/Dernier jalon T0 · indice 40/)).toBeTruthy();
-    expect(screen.getByText(/Prochaine échéance : J21/)).toBeTruthy();
+    // T0 au 2026-01-01 : l'échéance J21 (22/01) est passée depuis longtemps.
+    // « Prochaine échéance » se lirait « à venir » — c'est un jalon manqué.
+    expect(screen.getByText(/Jalon J21 non mesuré — échéance du 22\/01\/2026 passée/)).toBeTruthy();
 
     // Michel : rien d'inventé.
     const ligneMichel = screen.getByRole('link', { name: /Michel Dogné/ });
     expect(ligneMichel.getAttribute('href')).toBe('/dashboard/patients/PAT002?onglet=trajectoire');
     expect(screen.getByText('Aucun épisode confirmé')).toBeTruthy();
     expect(screen.getByText('T0 à confirmer', { exact: false })).toBeTruthy();
+  });
+
+  // Pendant du cas précédent : une échéance réellement à venir reste annoncée
+  // comme telle. Sans ce cas, le libellé pourrait dire « non mesuré » partout et
+  // le test ci-dessus passerait quand même.
+  it('un jalon dont l’échéance est à venir reste une « prochaine échéance »', async () => {
+    const dateT0 = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString();
+    stubFetch({
+      ok: true,
+      lignes: [
+        {
+          ...LIGNES[0],
+          trajectoire: {
+            ...LIGNES[0].trajectoire,
+            index: [{ milestone: 'T0', date: dateT0, cycleId: 'c1' }],
+            cycles: [
+              {
+                ...LIGNES[0].trajectoire.cycles[0],
+                dateT0,
+                jalons: [
+                  { jalon: 'T0', mesure: true, valeur: 40, date: dateT0 },
+                  { jalon: 'J21', mesure: false, valeur: null, date: null },
+                  { jalon: 'J42', mesure: false, valeur: null, date: null },
+                  { jalon: 'J90', mesure: false, valeur: null, date: null },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+    });
+    render(<TrajectoiresPanel />);
+
+    await screen.findByRole('link', { name: /Sophie Nicola/ });
+    expect(screen.getByText(/Prochaine échéance : J21 vers le/)).toBeTruthy();
   });
 
   it('recherche client : filtre par nom sans re-fetch', async () => {

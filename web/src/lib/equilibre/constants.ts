@@ -21,6 +21,23 @@ import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire
 // qu'une source pertinente existe. Voir
 // docs/claude/propositions/2026-07-26-audit-accompagnement-alimentaire/.
 //
+// v4 → v5 (lot 1, audit de la chaîne trajectoire du 2026-07-27, constat F1) :
+// RÈGLE DE NOUVEAUTÉ sur l'historique. Une lecture n'est émise à un jalon que
+// si une réponse nouvelle est arrivée depuis la dernière lecture émise
+// (equilibre/depuisPrisma.ts). Aucun poids, seuil ni mapping ne change ici, et
+// aucune valeur calculée à une date donnée ne bouge — mais l'ENSEMBLE des
+// lectures d'un cycle change : un cycle antérieur pouvait porter J21/J42/J90
+// « mesurés » à la valeur de T0 pour un patient qui n'avait plus rien rempli,
+// avec un momentum « stable (écart 0) ». Comparer un tel cycle à un cycle
+// postérieur reviendrait à comparer des jalons fabriqués à des jalons réels :
+// c'est précisément ce que l'étiquette de version existe pour empêcher.
+//
+// v5 ne couvre QUE ce changement. Le retrait des conclusions de Q_ALI_01 et sa
+// sortie des fondations critiques modifient le mapping et la définition du
+// score : ils appellent leur propre bump, pas un partage de cette étiquette.
+// Une version qui recouvre deux définitions différentes rend A8-3 inopérante —
+// le comparateur ne saurait plus laquelle il compare.
+//
 // FRONTIÈRE — ce que le code fait réellement, la formulation portée jusqu'ici
 // par la note v2 → v3 étant inexacte. Seule l'ÉTIQUETTE `versionScore` est
 // figée à la confirmation d'un épisode (protocol/versioning.ts) ; les VALEURS
@@ -40,7 +57,7 @@ import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire
 // `indexOf` (scripts/lib/verifier_registre_instruments.js) et tomberait sur le
 // commentaire au lieu de la table — il refuse alors de valider plutôt que de
 // contrôler dans le vide.
-export const VERSION_SCORE_EQUILIBRE = 'v4' as const;
+export const VERSION_SCORE_EQUILIBRE = 'v5' as const;
 
 export const POIDS_STRATE: Record<StrateCode, number> = {
   CORPS: 0.6,
