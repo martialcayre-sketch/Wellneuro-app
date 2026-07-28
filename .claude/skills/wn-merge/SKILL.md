@@ -10,8 +10,8 @@ effort: medium
 ## Contexte
 
 !`gh pr view $ARGUMENTS --json number,title,headRefName,url,files 2>/dev/null || echo "Passer le numéro de PR en argument, ou se placer sur sa branche."`
-!`sed -n '181,195p' CLAUDE.md`
-!`sed -n '196,271p' CLAUDE.md`
+!`sed -n '/^### Attendre le CI d.une PR sans le sonder/,/^## Revue, merge et suppression des branches/p' CLAUDE.md | sed '$d'`
+!`sed -n '/^## Revue, merge et suppression des branches/,/^## Définition de done pour une tâche standard/p' CLAUDE.md | sed '$d'`
 !`git worktree list 2>/dev/null || true`
 
 Arguments : `$ARGUMENTS`
@@ -40,8 +40,10 @@ l'autorisation transitoire est bornée dans le temps et peut avoir été retiré
      l'état du CI, laisser la revue et le merge à Copilot.
 5. **Exception migration ou authentification** — si le diff touche
    `prisma/schema.prisma`, `prisma/migrations/`, `supabase/migrations/`, ou
-   l'authentification (`web/src/lib/auth.ts`, routes `api/auth`, session,
-   token) : une revue adversariale indépendante (sous-agent `wn-reviewer`) est
+   l'authentification — praticien (`web/src/lib/auth.ts`, routes `api/auth`)
+   **ou** portail patient (`web/src/middleware.ts`, lien magique, cookie de
+   session, `patients.access_token`), ou plus largement tout chemin touchant
+   session/token : une revue adversariale indépendante (sous-agent `wn-reviewer`) est
    obligatoire avant le merge si elle n'a pas déjà eu lieu, et une vérification
    de la base de production (`execute_sql` MCP Supabase — jamais `psql`, jamais
    une commande Bash) après. Ces deux passes s'appliquent même en régime
