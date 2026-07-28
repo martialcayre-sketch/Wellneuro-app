@@ -5,7 +5,6 @@ import {
   FRICTIONS,
   LABELS_ISSUE_TRACE,
   LABEL_PAUSE_PATIENT,
-  buildSilenceUtileMessage,
   createAttentionBudget,
   createEpisode,
   createTrialTrace,
@@ -190,7 +189,15 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
     [traces.length, budget],
   );
 
-  const silenceUtile = traces.length >= budget ? buildSilenceUtileMessage() : null;
+  // Le « silence utile » N'EST PLUS rendu ici (lot 1, audit du 2026-07-27,
+  // §2.1). Il l'était sur `traces.length >= budget` : trois traces du même
+  // lundi suffisaient à dire au patient « nous en savons assez », un verdict de
+  // suffisance rendu sur un comptage — quand `describeCoverage` juste au-dessus
+  // s'interdit précisément de qualifier (il rend un comptage nu, protégé par
+  // `assertNeutre`). Le message reste servi là où il est légitime :
+  // `patient-food-observation/FoodObservationJourney.tsx`, sur un régime
+  // `silence` PRESCRIT par le praticien. Le conditionner à une couverture
+  // temporelle réelle suppose le moteur de couverture du lot 3, qui n'existe pas.
 
   useEffect(() => {
     writeDraft(idPatient, { budget, traces, pauses, plans, solutions });
@@ -471,7 +478,6 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         <PatientCard padding="sm" className="space-y-2">
           <p className="text-sm text-muted-foreground">Couverture de la semaine</p>
           <p className="text-sm font-medium text-foreground">{couverture}</p>
-          {silenceUtile && <p className="text-sm text-primary">{silenceUtile}</p>}
         </PatientCard>
       </div>
 

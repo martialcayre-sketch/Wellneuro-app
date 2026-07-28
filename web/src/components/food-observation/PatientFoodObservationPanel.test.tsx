@@ -32,7 +32,11 @@ describe('PatientFoodObservationPanel', () => {
     expect(screen.getByText(/précise la friction/i)).toBeTruthy();
   });
 
-  it('affiche le silence utile quand le budget hebdomadaire est atteint', () => {
+  // Lot 1 (audit du 2026-07-27, §2.1) : atteindre le budget hebdomadaire ne
+  // prouve RIEN sur la couverture — trois traces du même lundi y suffisent.
+  // Le panneau ne rend donc plus aucun verdict de suffisance au patient. Ce
+  // test remplace celui qui exigeait l'inverse : il garde la correction.
+  it('ne rend aucun verdict de suffisance quand le budget hebdomadaire est atteint', () => {
     render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
 
     fireEvent.change(screen.getByTestId('ja-patient-budget'), {
@@ -41,7 +45,9 @@ describe('PatientFoodObservationPanel', () => {
     fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
     fireEvent.click(screen.getByTestId('ja-patient-enregistrer-trace'));
 
-    expect(screen.getByText('Rien à noter aujourd’hui, nous en savons assez.')).toBeTruthy();
+    expect(screen.queryByText('Rien à noter aujourd’hui, nous en savons assez.')).toBeNull();
+    // La couverture reste servie : un comptage nu, sans qualification.
+    expect(screen.getByTestId('ja-patient-couverture')).toBeTruthy();
   });
 
   it('ajoute une solution intra-épisode', () => {
@@ -72,7 +78,6 @@ describe('PatientFoodObservationPanel', () => {
     render(<PatientFoodObservationPanel idPatient="PAT_TEST" />);
 
     expect(screen.getByText('Brouillon local restauré sur cet appareil.')).toBeTruthy();
-    expect(screen.getByText('Rien à noter aujourd’hui, nous en savons assez.')).toBeTruthy();
     expect(screen.getByText('• Batch cuisine dimanche')).toBeTruthy();
   });
 

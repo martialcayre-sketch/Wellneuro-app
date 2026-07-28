@@ -84,6 +84,20 @@ export function resoudreDateT0(reponses: ReponseBrute[]): Date | null {
  * praticien pour ancrer les jalons au T0 confirmé d'un épisode
  * (`assessment_episodes`). Absent → comportement inchangé (T0 global), pour la
  * fiche patient « Mon équilibre ».
+ *
+ * RÈGLE DE NOUVEAUTÉ (lot 1, audit de la chaîne trajectoire du 2026-07-27,
+ * constat F1) : une lecture n'est émise à un jalon que si une réponse NOUVELLE
+ * est arrivée depuis la dernière lecture émise. Sans cette règle, la boucle
+ * recalculait à chaque jalon passé sur l'ensemble des réponses connues à cette
+ * date : un patient ayant répondu une seule fois obtenait quatre lectures
+ * identiques datées T0/J21/J42/J90, un delta de 0 et une tendance « stable » —
+ * une absence de mesure rendue comme un résultat, ce que les frontières A6-R2
+ * et A8-2 interdisent. Le jalon sans réponse nouvelle est désormais omis, donc
+ * rendu « non mesuré » (`protocol/trajectoire.ts`), jamais un 0.
+ *
+ * Ce que la règle ne fait PAS : elle ne compare pas les valeurs. Une réponse
+ * nouvelle qui laisse l'indice inchangé produit bien une lecture — c'est une
+ * mesure réelle qui se trouve stable, pas un silence.
  */
 export function construireHistoriqueEquilibre(reponses: ReponseBrute[], ancreT0?: Date): LectureDatee[] {
   const dateT0 = ancreT0 ?? resoudreDateT0(reponses);
@@ -92,15 +106,33 @@ export function construireHistoriqueEquilibre(reponses: ReponseBrute[], ancreT0?
   const maintenant = new Date();
   const jalons = Object.keys(JOURS_JALON) as JalonMomentum[];
 
+  // Seules les réponses exploitables comptent comme nouveauté : une ligne sans
+  // `rawAnswers` est ignorée par le moteur (cf. extraireRawAnswers), elle ne
+  // peut donc pas justifier une nouvelle lecture — elle ré-émettrait la
+  // précédente à l'identique, soit exactement le défaut corrigé ici.
+  const datesReponsesExploitables = reponses
+    .filter((r) => extraireRawAnswers(r.scoresJson) !== null)
+    .map((r) => r.dateReponse);
+
   const lectures: LectureDatee[] = [];
+  let dateDerniereLecture: Date | null = null;
   for (const jalon of jalons) {
     const dateJalon = new Date(dateT0.getTime() + JOURS_JALON[jalon] * JOUR_MS);
     if (dateJalon > maintenant) continue;
+
+    if (dateDerniereLecture) {
+      const borneBasse = dateDerniereLecture;
+      const nouveaute = datesReponsesExploitables.some(
+        (date) => date > borneBasse && date <= dateJalon
+      );
+      if (!nouveaute) continue;
+    }
 
     const reponsesConnues = construireReponsesParQuestionnaire(reponses, dateJalon);
     const resultat = calculerEquilibre(reponsesConnues);
     if (resultat.scoreGlobal !== null) {
       lectures.push({ date: dateJalon, valeur: resultat.scoreGlobal });
+      dateDerniereLecture = dateJalon;
     }
   }
   return lectures;
