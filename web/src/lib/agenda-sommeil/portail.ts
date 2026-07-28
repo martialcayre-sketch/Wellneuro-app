@@ -12,7 +12,7 @@ type AssignationRow = Awaited<ReturnType<typeof prisma.assignation.findUnique>>;
 
 export type AgendaAuthError = {
   ok: false;
-  reason: 'unauthenticated' | 'not_found' | 'wrong_instrument';
+  reason: 'unauthenticated' | 'not_found' | 'wrong_instrument' | 'annulee';
   error: string;
   status: number;
 };
@@ -40,6 +40,17 @@ export async function authorizeAgendaPortail(
       reason: 'wrong_instrument',
       error: "Cette assignation n'est pas un agenda du sommeil.",
       status: 409,
+    };
+  }
+  // Annulée par le praticien (Fil A) : l'agenda est une chaîne de saisie
+  // parallèle au questionnaire standard ; elle doit honorer l'annulation ici,
+  // point de convergence de la vue (GET) et de la saisie d'une nuit (POST).
+  if (assignation.statut === 'Annulée') {
+    return {
+      ok: false,
+      reason: 'annulee',
+      error: 'Cet agenda du sommeil a été annulé par votre praticien.',
+      status: 410,
     };
   }
   return { idPatient: session.idPatient, assignation };

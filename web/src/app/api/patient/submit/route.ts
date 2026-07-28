@@ -104,6 +104,19 @@ export async function POST(req: Request): Promise<NextResponse> {
     if (ass.idQuestionnaire === 'Q_SOM_09') {
       return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unavailable', error: "L'agenda du sommeil se remplit nuit par nuit, il ne se soumet pas ici." }, { status: 409 }), requestContext);
     }
+    // Assignation annulée par le praticien (Fil A) : soumission refusée. Refus
+    // défensif symétrique à celui de `patient/questionnaire` — une annulée ne se
+    // remplit ni ne se soumet, quel que soit le chemin. 409 : un retrait, pas une
+    // expiration.
+    if (ass.statut === 'Annulée') {
+      logger.warn({
+        event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_UNAVAILABLE,
+        domain: 'QUESTIONNAIRE',
+        message: 'Soumission refusée : assignation annulée',
+        context: finalizeLogContext(requestContext, { statusCode: 409, retryable: false }),
+      });
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'annulee', error: 'Ce questionnaire a été annulé par votre praticien.' }, { status: 409 }), requestContext);
+    }
     if (ass.statutReponses === 'verrouille' || ass.statutReponses === 'modification_demandee') {
       logger.warn({
         event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_ALREADY_DONE,

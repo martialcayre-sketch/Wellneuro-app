@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PatientsPanel } from './PatientsPanel';
 
@@ -49,8 +49,11 @@ afterEach(() => {
 function stubFetch(options?: {
   surToken?: (body: unknown) => unknown;
   surCycleDeVie?: (body: unknown) => unknown;
+  surAnnulation?: (body: unknown) => unknown;
   patient?: typeof PATIENT;
   patients?: (typeof PATIENT)[];
+  /** Assignations exposées par le tableau « Assignations récentes » (Fil A). */
+  assignations?: Record<string, unknown>[];
   /** Diffère la réponse du cycle de vie, pour éprouver la double soumission. */
   delaiCycleDeVie?: number;
 }) {
@@ -75,10 +78,17 @@ function stubFetch(options?: {
           json: async () => options?.surToken?.(body) ?? { success: true },
         } as unknown as Response;
       }
+      if (String(url).startsWith('/api/praticien/assignations/annulation')) {
+        return {
+          ok: true,
+          json: async () => options?.surAnnulation?.(body) ?? { ok: true },
+        } as unknown as Response;
+      }
       return {
         ok: true,
         json: async () => ({
           patients: options?.patients ?? [options?.patient ?? PATIENT],
+          assignations: options?.assignations ?? [],
           questionnaires: [],
           packs: [],
           categories: [],
@@ -566,5 +576,70 @@ describe('PatientsPanel — tiroirs d’action (SP-TRAJ LOT-05)', () => {
 
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
     expect(screen.getByText(/Consultation créée, lien d’accès envoyé au patient/)).toBeTruthy();
+  });
+});
+
+describe('PatientsPanel — annulation d’une assignation (Fil A)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const ASSIGNATION_OUVERTE = {
+    idAssignation: 'ASS_OUVERTE',
+    idPatient: PATIENT.idPatient,
+    emailPatient: PATIENT.email,
+    idQuestionnaire: 'Q_NEU_03',
+    titre: 'Questionnaire ouvert',
+    statut: 'En attente',
+    statutReponses: 'non_rempli',
+    dateAssignation: '2026-07-28T10:00:00.000Z',
+    dateLimite: null,
+  };
+  const ASSIGNATION_SOUMISE = {
+    ...ASSIGNATION_OUVERTE,
+    idAssignation: 'ASS_SOUMISE',
+    titre: 'Questionnaire soumis',
+    statut: 'Complété',
+    statutReponses: 'verrouille',
+  };
+
+  it('seule une assignation ouverte porte un bouton « Annuler »', async () => {
+    stubFetch({ assignations: [ASSIGNATION_OUVERTE, ASSIGNATION_SOUMISE] });
+    render(<PatientsPanel />);
+    const ligneOuverte = (await screen.findByText('Questionnaire ouvert')).closest('tr')!;
+    const ligneSoumise = screen.getByText('Questionnaire soumis').closest('tr')!;
+    expect(within(ligneOuverte).getByRole('button', { name: 'Annuler' })).toBeTruthy();
+    // Une soumise porte une passation : pas d'action d'annulation.
+    expect(within(ligneSoumise).queryByRole('button', { name: 'Annuler' })).toBeNull();
+  });
+
+  it('confirmer l’annulation appelle la route puis rafraîchit le tableau', async () => {
+    const appels = stubFetch({ assignations: [ASSIGNATION_OUVERTE] });
+    render(<PatientsPanel />);
+    const ligne = (await screen.findByText('Questionnaire ouvert')).closest('tr')!;
+    fireEvent.click(within(ligne).getByRole('button', { name: 'Annuler' }));
+
+    // La modale dédiée s'ouvre en nommant le questionnaire.
+    await screen.findByRole('dialog');
+    expect(screen.getByText(/Annuler l’assignation « Questionnaire ouvert » \?/)).toBeTruthy();
+
+    const nbGetAvant = appels.filter(
+      a => a.url.startsWith('/api/praticien/patients') && !a.url.includes('cycle-de-vie'),
+    ).length;
+
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler l’assignation' }));
+
+    await waitFor(() =>
+      expect(
+        appels.some(a => a.url.startsWith('/api/praticien/assignations/annulation') && a.method === 'POST'),
+      ).toBe(true),
+    );
+    const appel = appels.find(a => a.url.startsWith('/api/praticien/assignations/annulation'));
+    expect((appel?.body as { idAssignation?: string })?.idAssignation).toBe('ASS_OUVERTE');
+
+    // Rafraîchissement : un GET /api/praticien/patients de plus après l'annulation.
+    await waitFor(() =>
+      expect(
+        appels.filter(a => a.url.startsWith('/api/praticien/patients') && !a.url.includes('cycle-de-vie')).length,
+      ).toBeGreaterThan(nbGetAvant),
+    );
   });
 });
