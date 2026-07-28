@@ -9,9 +9,14 @@
   « stable ». Les frontières écrites **A6-R2** et **A8-2** l'interdisent mot
   pour mot — un jalon sans mesure est « non mesuré », jamais un 0. Une lecture
   n'est désormais émise que si une réponse nouvelle et exploitable est arrivée
-  depuis la lecture précédente. La règle porte sur la **réponse**, pas sur le
-  score : une passation réellement refaite dont l'indice ne bouge pas reste une
-  mesure, et reste servie.
+  depuis la lecture précédente — « exploitable » signifiant : `rawAnswers`
+  présent **et** questionnaire source d'un besoin. La seconde condition n'est pas
+  un raffinement : le moteur n'agrège que onze questionnaires sur soixante-quatre,
+  et sans elle une passation hors mapping rouvrait un jalon dont la valeur était,
+  par construction, identique à la précédente — « stable, écart 0 » revenait par
+  la porte de service. La règle porte sur la **réponse**, pas sur le score : une
+  passation réellement refaite dont l'indice ne bouge pas reste une mesure, et
+  reste servie.
 
   Trois surfaces en découlent, sans y toucher :
   - côté patient, « *n* bilans jalonnent votre parcours » et « Stable depuis
@@ -34,11 +39,16 @@
   noter aujourd'hui, nous en savons assez » dès `traces.length >= budget` :
   trois traces du même lundi suffisaient. C'est un verdict de suffisance rendu
   sur un décompte, quand `describeCoverage`, juste au-dessus, s'interdit
-  précisément de qualifier. Le message **reste servi** là où il est légitime —
-  un régime `silence` prescrit par le praticien
-  (`patient-food-observation/FoodObservationJourney.tsx`). Le conditionner à une
-  couverture temporelle réelle suppose le moteur de couverture du lot 3, qui
-  n'existe pas encore.
+  précisément de qualifier. Le conditionner à une couverture temporelle réelle
+  suppose le moteur de couverture du lot 3, qui n'existe pas encore — d'où le
+  retrait.
+
+  À noter, car ce n'était pas visible avant de le chercher : ce panneau était la
+  **seule surface patient de production** qui rendait ce message. L'autre rendu,
+  sur un régime `silence` prescrit, n'est monté que par le harnais
+  `/dev/validation-ja`, réservé au développement. Le « silence utile » n'atteint
+  donc plus aucun patient, et le régime prescrit n'a pas encore de surface de
+  production — à trancher au lot 2, pas ici.
 
 ### Modifié
 

@@ -122,6 +122,25 @@ describe('construireHistoriqueEquilibre — règle de nouveauté (lot 1, F1)', (
     expect(historique.some((l) => l.date.getTime() > dateJ21.getTime())).toBe(false);
   });
 
+  // Défaut trouvé par la revue adversariale du 2026-07-28 : filtrer sur la
+  // seule présence de `rawAnswers` laissait 53 questionnaires du catalogue
+  // rouvrir un jalon sans rien changer à l'indice — « stable, écart 0 » revenait
+  // par la porte de service. Le prédicat porte donc sur les sources réellement
+  // agrégées par le moteur.
+  it('une passation hors mapping des besoins ne rouvre pas de jalon', () => {
+    // Q_SOM_06 (fatigue de Pichot) : exploitable, mais retiré des sources en v4.
+    const historique = construireHistoriqueEquilibre([
+      { idQuestionnaire: 'Q_STR_02', dateReponse: dateT0, scoresJson: { rawAnswers: RAW_T0 } },
+      {
+        idQuestionnaire: 'Q_SOM_06',
+        dateReponse: new Date(dateT0.getTime() + 21 * JOUR_MS),
+        scoresJson: { rawAnswers: { F1: '3', F2: '3', F3: '2', F4: '2', F5: '3', F6: '2', F7: '3', F8: '2' } },
+      },
+    ]);
+
+    expect(historique).toHaveLength(1);
+  });
+
   it('une réponse nouvelle mais inexploitable ne rouvre pas de jalon', () => {
     // Sans `rawAnswers`, la ligne est ignorée par le moteur : la compter comme
     // nouveauté ré-émettrait la lecture précédente à l'identique.

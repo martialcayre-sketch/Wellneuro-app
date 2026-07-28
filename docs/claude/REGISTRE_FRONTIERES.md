@@ -431,9 +431,19 @@
   T0 global** (`resoudreDateT0`). Prérequis du comparateur multi-épisodes.
   Source exacte (`confirmedAt` vs `targetAt`) et fenêtrage des réponses à
   préciser en compilation.
-- **A8-2 Couverture (Q2)** : un jalon sans réponse exploitable
-  (`scoresJson.rawAnswers` absent) est affiché **« jalon non mesuré »** côté
-  praticien — jamais omis sans trace, jamais un 0 inventé (aligné A1).
+- **A8-2 Couverture (Q2)** : un jalon **sans mesure nouvelle** est affiché
+  **« jalon non mesuré »** côté praticien — jamais omis sans trace, jamais un 0
+  inventé (aligné A1). Est « sans mesure nouvelle » un jalon auquel aucune
+  réponse exploitable (`scoresJson.rawAnswers` présent) **portant sur un
+  questionnaire source d'un besoin** n'est arrivée depuis la lecture précédente.
+
+  *Formulation d'origine, corrigée le 2026-07-28 (lot 1)* : la règle définissait
+  « non mesuré » par l'absence de `rawAnswers` — une propriété d'une **ligne de
+  réponse** — alors que le moteur raisonne sur un **agrégat** reconstruit à
+  chaque jalon. Un patient ayant répondu une seule fois satisfaisait donc la
+  règle à chaque jalon tout en produisant quatre lectures « mesurées » : la
+  frontière était mal formée, et ni elle ni le code ne trahissaient rien pris
+  séparément. C'est le constat F1 de l'audit de la chaîne trajectoire.
 - **A8-3 Garde `versionScore` (Q3)** : le comparateur **ne soustrait jamais**
   deux lectures de `versionScore` différents ; il affiche un bloc **« non
   comparable (score recalibré le …) »**. `VERSION_SCORE_EQUILIBRE`

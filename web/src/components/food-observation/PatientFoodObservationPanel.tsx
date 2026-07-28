@@ -194,10 +194,16 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
   // lundi suffisaient à dire au patient « nous en savons assez », un verdict de
   // suffisance rendu sur un comptage — quand `describeCoverage` juste au-dessus
   // s'interdit précisément de qualifier (il rend un comptage nu, protégé par
-  // `assertNeutre`). Le message reste servi là où il est légitime :
-  // `patient-food-observation/FoodObservationJourney.tsx`, sur un régime
-  // `silence` PRESCRIT par le praticien. Le conditionner à une couverture
-  // temporelle réelle suppose le moteur de couverture du lot 3, qui n'existe pas.
+  // `assertNeutre`). Le conditionner à une couverture temporelle réelle suppose
+  // le moteur de couverture du lot 3, qui n'existe pas.
+  //
+  // Conséquence à connaître : ce panneau était la SEULE surface patient de
+  // production qui rendait ce message. L'autre rendu
+  // (`patient-food-observation/FoodObservationJourney.tsx`, sur un régime
+  // `silence` prescrit) n'est monté que par le harnais `/dev/validation-ja`,
+  // réservé au développement (`validationJaGuard.ts`). Le « silence utile »
+  // n'atteint donc plus aucun patient — le régime prescrit n'a pas encore de
+  // surface de production, ce qui reste à trancher (lot 2).
 
   useEffect(() => {
     writeDraft(idPatient, { budget, traces, pauses, plans, solutions });

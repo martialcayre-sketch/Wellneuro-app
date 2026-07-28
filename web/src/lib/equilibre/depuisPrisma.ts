@@ -1,4 +1,4 @@
-import { JOURS_JALON } from './constants';
+import { BESOIN_SOURCES, JOURS_JALON } from './constants';
 import { calculerEquilibre } from './score';
 import type { JalonMomentum, LectureDatee, ReponsesParQuestionnaire } from './types';
 
@@ -106,12 +106,23 @@ export function construireHistoriqueEquilibre(reponses: ReponseBrute[], ancreT0?
   const maintenant = new Date();
   const jalons = Object.keys(JOURS_JALON) as JalonMomentum[];
 
-  // Seules les réponses exploitables comptent comme nouveauté : une ligne sans
-  // `rawAnswers` est ignorée par le moteur (cf. extraireRawAnswers), elle ne
-  // peut donc pas justifier une nouvelle lecture — elle ré-émettrait la
-  // précédente à l'identique, soit exactement le défaut corrigé ici.
-  const datesReponsesExploitables = reponses
-    .filter((r) => extraireRawAnswers(r.scoresJson) !== null)
+  // Seules comptent comme nouveauté les réponses que le moteur lit RÉELLEMENT :
+  // exploitables (`rawAnswers` présent, cf. extraireRawAnswers) ET portant sur
+  // un questionnaire source d'un besoin. Les deux conditions sont nécessaires.
+  //
+  // La seconde n'est pas un raffinement : `calculerEquilibre` n'agrège que les
+  // sources de la table de mapping ci-dessous — onze questionnaires sur les
+  // soixante-quatre du catalogue. Sans elle, une passation hors mapping (un
+  // Q_SOM_06, retiré des sources en v4 précisément parce qu'il ne mesure pas ce
+  // qu'on lui faisait dire) rouvrirait un jalon dont la valeur serait, par
+  // construction, identique à la précédente : « stable, écart 0 » à nouveau,
+  // c'est-à-dire F1 sous une forme atténuée. Le seuil de déclenchement aurait
+  // bougé, la classe de défaut serait restée ouverte.
+  const idsSources = new Set(
+    Object.values(BESOIN_SOURCES).flatMap((sources) => sources.map((s) => s.idQuestionnaire))
+  );
+  const datesReponsesRetenues = reponses
+    .filter((r) => idsSources.has(r.idQuestionnaire) && extraireRawAnswers(r.scoresJson) !== null)
     .map((r) => r.dateReponse);
 
   const lectures: LectureDatee[] = [];
@@ -122,7 +133,7 @@ export function construireHistoriqueEquilibre(reponses: ReponseBrute[], ancreT0?
 
     if (dateDerniereLecture) {
       const borneBasse = dateDerniereLecture;
-      const nouveaute = datesReponsesExploitables.some(
+      const nouveaute = datesReponsesRetenues.some(
         (date) => date > borneBasse && date <= dateJalon
       );
       if (!nouveaute) continue;

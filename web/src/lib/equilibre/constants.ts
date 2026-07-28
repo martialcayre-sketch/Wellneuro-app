@@ -31,8 +31,12 @@ import type { BesoinDefinition, JalonMomentum, NiveauPreuve, SourceQuestionnaire
 // avec un momentum « stable (écart 0) ». Comparer un tel cycle à un cycle
 // postérieur reviendrait à comparer des jalons fabriqués à des jalons réels :
 // c'est précisément ce que l'étiquette de version existe pour empêcher.
-// Le lot 1 porte aussi le retrait des conclusions de Q_ALI_01 et sa sortie des
-// fondations critiques (session distincte) — même version v5.
+//
+// v5 ne couvre QUE ce changement. Le retrait des conclusions de Q_ALI_01 et sa
+// sortie des fondations critiques modifient le mapping et la définition du
+// score : ils appellent leur propre bump, pas un partage de cette étiquette.
+// Une version qui recouvre deux définitions différentes rend A8-3 inopérante —
+// le comparateur ne saurait plus laquelle il compare.
 //
 // FRONTIÈRE — ce que le code fait réellement, la formulation portée jusqu'ici
 // par la note v2 → v3 étant inexacte. Seule l'ÉTIQUETTE `versionScore` est
