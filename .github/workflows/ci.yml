@@ -279,6 +279,17 @@ jobs:
         working-directory: web
         run: npm run test
 
+      # Seconde passe, drapeau `WN_ALI_01_SIIN57` allumé. Sans elle, les gardes
+      # qui dérivent une valeur du barème servi (le `max` du besoin 1,
+      # l'étiquette de version) ne mordent que dans une position : figer `max` à
+      # 42 et la version à sa valeur courante passe inaperçu en position
+      # éteinte, où le dérivé vaut justement la valeur figée. Falsifié : ces
+      # deux mutations ne faisaient tomber aucun test avant cette étape.
+      - name: Unit tests (Vitest, forme SIIN 57 items)
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npm run test:siin57
+
       - name: Lint
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web
