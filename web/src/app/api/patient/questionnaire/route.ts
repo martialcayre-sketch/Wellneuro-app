@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { resolveDefinition } from '@/lib/instruments';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
-import { getRendererPourDefinition, type RendererProfile } from '@/lib/questionnaire-display';
+import { getRendererPourDefinition, type DefinitionServie, type RendererProfile } from '@/lib/questionnaire-display';
 
 export type PatientQuestionnaireResponse =
   // `renderer` est décidé ICI, sur la définition réellement servie : le client
@@ -78,9 +78,13 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
       statutReponses: ass.statutReponses,
     };
 
+    // Le discriminant de la levée de gate est `scoring.maxTotal` — le barème
+    // servi, et non un compte d'items : c'est lui qui porte déjà l'étiquette de
+    // version du score et le `max` du besoin 1, donc une dérive y devient un
+    // test rouge existant plutôt qu'un renderer qui change d'avis en silence.
     const renderer = getRendererPourDefinition(
       ass.idQuestionnaire,
-      questionnaire as { sections?: ReadonlyArray<{ questions: ReadonlyArray<unknown> }> } | null,
+      questionnaire as DefinitionServie,
     );
 
     return NextResponse.json({ ok: true, assignation: assignationInfo, questionnaire, renderer });

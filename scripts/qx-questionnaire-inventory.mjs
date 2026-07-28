@@ -46,7 +46,7 @@ const { QUESTIONNAIRE_CATALOGUE } = new Function(`${parts.join("\n")}\nreturn { 
 const pilots = {
   Q_NEU_03: ["micro_batch", "autorisé — certifié"],
   Q_MOD_02: ["focus", "bloqué — certification + fixture"],
-  Q_ALI_01: ["guided_sections", "bloqué — certification + fixture"],
+  Q_ALI_01: ["guided_sections", "bloqué, LEVÉ pour la forme SIIN /90 (leveeConditionnelle)"],
   Q_ALI_03: ["compact_repeated_scale", "candidat — certification requise"]
 };
 

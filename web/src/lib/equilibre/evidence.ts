@@ -1,4 +1,5 @@
 import { BESOIN_SOURCES, NIVEAU_PREUVE_PAR_SOURCE, RANG_PREUVE } from './constants';
+import { calculerCouvertureSource } from './score';
 import type { NiveauPreuveBesoin, ReponsesParQuestionnaire, SourcePreuve } from './types';
 
 /**
@@ -29,14 +30,28 @@ export function calculerNiveauxPreuveTousLesBesoins(
   return resultat;
 }
 
-/** Détail par source répondue — pour un futur tooltip listant les questionnaires. */
+/**
+ * Détail par source EXPLOITABLE — pour un futur tooltip listant les
+ * questionnaires, et lu tel quel par `api/praticien/besoins`.
+ *
+ * Le prédicat est `calculerCouvertureSource(...) !== null`, le même que celui de
+ * `score.ts`, et non plus la simple présence d'un objet de réponses. Un
+ * `Boolean(reponses[id])` ignorait `sousScore` et ignorait l'échec de scoring :
+ * un besoin pouvait afficher un grade de preuve alors que `score.ts` le tenait
+ * déjà pour non couvert. Cas vivant : un agenda du sommeil ouvert sous son seuil
+ * de nuits rend `{scored: false}`, sans total — le besoin restait « preuve B »
+ * sur une source dont aucune mesure n'existe.
+ *
+ * Le prédicat n'est PAS extrait dans un troisième module : ce serait dédoubler
+ * la définition de « source exploitable », le défaut même qu'on corrige.
+ */
 export function listerSourcesPreuveBesoin(
   besoinId: number,
   reponses: ReponsesParQuestionnaire
 ): SourcePreuve[] {
   const sources = BESOIN_SOURCES[besoinId] ?? [];
   return sources
-    .filter(source => Boolean(reponses[source.idQuestionnaire]))
+    .filter(source => calculerCouvertureSource(source, reponses) !== null)
     .map(source => ({
       idQuestionnaire: source.idQuestionnaire,
       sousScore: source.sousScore,
