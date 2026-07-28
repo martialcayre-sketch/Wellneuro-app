@@ -4,10 +4,30 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PractitionerFoodObservationPanel } from './PractitionerFoodObservationPanel';
 
+// Cycle diffusé servi par `/api/praticien/ja/cycle` : depuis le lot 2, l'épisode
+// en est dérivé et n'existe plus sans lui.
+const CYCLE_DIFFUSE = {
+  ok: true,
+  protocoleDiffuse: true,
+  vue: {
+    purpose: 'Rendre l’action alimentaire praticable les jours chargés.',
+    actionPrincipale: {
+      type: 'alimentation',
+      title: 'Ajouter une source de protéines au petit-déjeuner',
+      minimalPlan: 'Le faire trois fois cette semaine.',
+    },
+    cycleRef: 'abcdef0123456789',
+    debutCycle: '2026-07-20T08:00:00.000Z',
+  },
+};
+
 describe('PractitionerFoodObservationPanel', () => {
   beforeEach(() => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      if (url.includes('/api/praticien/ja/cycle')) {
+        return new Response(JSON.stringify(CYCLE_DIFFUSE), { status: 200 });
+      }
       if (url.includes('/api/praticien/ja/activation') && (init?.method ?? 'GET') === 'GET') {
         return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
       }
@@ -103,8 +123,38 @@ describe('PractitionerFoodObservationPanel', () => {
     expect(postCalls).toHaveLength(0);
   });
 
+  it('dérive l’épisode du protocole diffusé et refuse d’activer sans lui', async () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    const cycle = await screen.findByTestId('ja-praticien-cycle');
+    expect(cycle.textContent).toMatch(/Ajouter une source de protéines au petit-déjeuner/);
+    // Fenêtre de 21 jours à partir de la diffusion, plus les 7 jours en dur.
+    expect(cycle.textContent).toMatch(/2026-07-20/);
+    expect(cycle.textContent).toMatch(/2026-08-09/);
+
+    cleanup();
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/praticien/ja/cycle')) {
+        return new Response(JSON.stringify({ ok: true, protocoleDiffuse: false, vue: null }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
+    });
+
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    await screen.findByTestId('ja-praticien-sans-cycle');
+    fireEvent.change(screen.getByTestId('ja-praticien-feedback-patient'), {
+      target: { value: 'Cette version est plus simple les jours chargés.' },
+    });
+    fireEvent.click(screen.getByTestId('ja-praticien-activer-decision'));
+
+    expect(screen.getByText(/diffusez un protocole avant d’activer/i)).toBeTruthy();
+    const postCalls = vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'POST');
+    expect(postCalls).toHaveLength(0);
+  });
+
   it('joint la référence C5B seulement lors de l’activation praticien explicite', async () => {
     render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    await screen.findByTestId('ja-praticien-cycle');
     fireEvent.change(screen.getByTestId('ja-praticien-assiette'), {
       target: { value: 'ASSIETTE_SOIR_LEGER' },
     });

@@ -86,13 +86,18 @@ describe('GET /api/portail/protocole', () => {
     const res = await GET(request(proprioCookie()));
     const json = (await res.json()) as {
       ok: boolean; protocoleDiffuse: boolean; finDeCycle: boolean;
-      vue: { purpose: string; actionPrincipale: Record<string, unknown> | null };
+      vue: { purpose: string; actionPrincipale: Record<string, unknown> | null; cycleRef: string; debutCycle: string };
     };
     expect(res.status).toBe(200);
     expect(json.protocoleDiffuse).toBe(true);
     expect(json.finDeCycle).toBe(false);
     expect(json.vue.purpose).toBe('Stabiliser vos matins.');
     expect(json.vue.actionPrincipale).toEqual({ type: 'food', title: 'Petit-déjeuner protéiné', minimalPlan: 'Trois matins cette semaine' });
+    // Référence de cycle du carnet alimentaire (lot 2, item 5) : opaque,
+    // dérivée du hash d'ancrage, et bornée — jamais le hash entier.
+    expect(json.vue.cycleRef).toBe('h');
+    expect(json.vue.cycleRef.length).toBeLessThanOrEqual(16);
+    expect(typeof json.vue.debutCycle).toBe('string');
     // Aucune fuite de champ interne.
     expect(JSON.stringify(json)).not.toContain('INTERNE');
   });

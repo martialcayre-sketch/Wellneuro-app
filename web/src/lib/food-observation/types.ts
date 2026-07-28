@@ -53,7 +53,14 @@ export type TrialAction = {
   actionId: string;
   /** Libellé patient en français ; vocabulaire « essai », jamais « prescription » (R4). */
   labelPatient: string;
-  idealPlan: string;
+  /**
+   * Version idéale — facultative. La vue patient du protocole diffusé exclut
+   * délibérément `idealPlan` et `rescuePlan` (`api/portail/protocole/route.ts`) :
+   * un épisode dérivé du dossier côté patient n'en dispose pas, et l'exiger est
+   * ce qui obligeait le gabarit à en inventer un. Les épisodes rédigés par le
+   * praticien continuent de la porter.
+   */
+  idealPlan?: string;
   simplePlan: string;
   secoursPlan?: string;
   /** Référence C5B optionnelle ; son absence conserve la compatibilité JA V1. */

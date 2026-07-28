@@ -96,6 +96,65 @@ describe('api/portail/ja/observations', () => {
     expect(saveSnapshot).toHaveBeenCalled();
   });
 
+  // Le client patient chaîne ses transmissions ; la route doit passer la tête
+  // de chaîne au domaine, et l'`idPatient` doit venir de la session, jamais du
+  // corps de requête.
+  it('POST transmet supersedesDraftId et impose l’idPatient de la session', async () => {
+    saveSnapshot.mockResolvedValue({ draftId: 'JA_DRAFT_3' });
+    await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          supersedesDraftId: 'JA_DRAFT_2',
+          idPatient: 'PAT_AUTRE',
+          actor: 'praticien',
+        }),
+      }),
+    );
+
+    expect(saveSnapshot).toHaveBeenCalledWith(expect.objectContaining({
+      idPatient: 'PAT_TEST',
+      actor: 'patient',
+      supersedesDraftId: 'JA_DRAFT_2',
+    }));
+  });
+
+  it('POST refuse un corps incomplet sans appeler le domaine', async () => {
+    const { actionCareer: _omis, ...incomplet } = payload;
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(incomplet),
+      }),
+    );
+    const json = (await res.json()) as { ok: boolean; reason: string };
+
+    expect(res.status).toBe(400);
+    expect(json.reason).toBe('invalid_payload');
+    expect(saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  // Garde d'appartenance du domaine : un épisode rattaché à un autre patient
+  // ressort en 400, pas en 500 — et n'est jamais persisté.
+  it('POST rend 400 quand l’épisode n’appartient pas au patient de la session', async () => {
+    saveSnapshot.mockRejectedValue(new TypeError('L’épisode JA n’appartient pas au patient demandé.'));
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, episode: { ...payload.episode, patientId: 'PAT_AUTRE' } }),
+      }),
+    );
+    const json = (await res.json()) as { ok: boolean; reason: string; error: string };
+
+    expect(res.status).toBe(400);
+    expect(json.reason).toBe('invalid_payload');
+    expect(json.error).toMatch(/n’appartient pas au patient/);
+  });
+
   it('POST refuse si la session n’est plus valide pour le compte', async () => {
     isSessionValideForPatient.mockReturnValue(false);
     const res = await POST(
