@@ -19,9 +19,10 @@
   saisie chiffrée, 24 en Oui/Non — la règle vient de la source elle-même.
   Reformuler un « combien » en affirmation-seuil (« Je bois plus de 12 verres
   d'eau par jour ») en ferait une **question suggestive**, qui attire
-  l'acquiescement. Les quantités sont conservées dans `rawAnswers` : un barème
-  révisé se rejouera sur les réponses déjà recueillies, sans redemander une
-  passation.
+  l'acquiescement. Les quantités sont conservées dans `rawAnswers`, dans l'unité
+  de la question : un barème révisé se rejouera sur les réponses déjà
+  recueillies, tant que ses nouveaux seuils tombent sur des frontières de
+  tranches existantes.
 - **Un moteur dédié, `seuils_points`, et non `sum`.** `sum` additionne la valeur
   de l'option choisie ; il aurait fallu encoder le score dans l'option, et deux
   quantités valant toutes deux 0 point seraient devenues indiscernables une fois
@@ -155,6 +156,27 @@ lui-même.
   source. Les marquer priverait **6 patients de leur seule mesure du besoin 1**,
   une fondation critique. Réserve assumée, inscrite ici.
 
+### La consigne système cessait d'être vraie — recadrée en v7
+
+La consigne affirmait que les questionnaires `Q_ALI` « ne recueillent ni
+quantités consommées ». L'Enquête SIIN en pose **33** : portions (14 items),
+verres (7), heures (7), fois par semaine (4), tasses, cuillères à soupe, œufs.
+Et pour beaucoup, la valeur enregistrée **est** la quantité dans l'unité de la
+question.
+
+Une interdiction fondée sur une prémisse fausse s'effondre dès que le modèle voit
+la donnée — c'est la leçon de #408, où le critère de déclenchement n'arrivait
+jamais ; ici c'est le motif invoqué qui devient faux. La règle porte désormais sur
+ce qui la justifie réellement : le modèle **peut** rapporter ce que le patient
+déclare consommer, dans son unité et nommé comme une déclaration ; il lui reste
+interdit d'en déduire un **apport nutritionnel** (g, mg, µg, kcal), une carence,
+un statut biologique ou un besoin de supplémentation. `VERSION_PROMPT_SYNTHESE`
+passe en `synthese-v7`, empreinte reportée.
+
+Réserve subsistante : le garde `cheminsDeQuantite` filtre sur des **noms de
+clés** (`proteines`, `calories`…). Il ne voit pas une valeur quantitative portée
+par un nom d'item neutre comme `SIIN17`. Un garde sur les valeurs reste à écrire.
+
 ### Réserves connues
 
 - **Le banc golden `tests/wellneuro/golden/scoring-golden.test.mjs` est mort ET
@@ -184,15 +206,14 @@ lui-même.
     **définitivement** la comparaison momentum dès que deux étiquettes
     coexistent, sans fenêtre de reprise. Le retour arrière propre est
     `git revert` **avant** tout allumage.
-- **Ce qui est conservé dans `rawAnswers` est un code de bande, pas une
-  quantité déclarée** (`SIIN02: 4` signifie « 3 à 5 »). Un barème révisé se
+- **Ce qui est conservé dans `rawAnswers` est une quantité déclarée**, dans
+  l'unité de la question — `SIIN06: 2` signifie deux verres de vin, `SIIN17: 2`
+  deux cuillères d'huile de colza. Certaines valeurs représentent une tranche
+  plutôt qu'un compte exact (`SIIN02: 4` pour « 3 à 5 ») : un barème révisé se
   rejouera donc tant que les nouveaux seuils tombent sur des frontières de
-  bandes existantes — pas à l'intérieur. La première rédaction promettait plus.
+  tranches existantes, pas à l'intérieur.
 - **À traiter avant l'allumage, pas avant le merge** (relevé par la revue) :
-  la consigne système affirme que les questionnaires `Q_ALI` « ne recueillent
-  pas de quantités » alors que `rawAnswers` portera des codes d'apparence
-  numérique, et le garde `cheminsDeQuantite` filtre sur des **noms de clés**,
-  donc ne les voit pas ; le gate d'affichage `activation: 'blocked'` est
+  le gate d'affichage `activation: 'blocked'` est
   contourné plutôt que levé, alors que le registre porte encore
   `statutCertification: "repere"` ; et `evidence.ts` compte une source pour le
   niveau de preuve dès qu'une réponse existe, même si sa couverture est nulle —
