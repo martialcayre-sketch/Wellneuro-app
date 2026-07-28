@@ -5,6 +5,7 @@ import { PatientButton } from '@/components/patient/ui/PatientButton';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { decalerDate } from '@/lib/agenda-sommeil/nuit';
+import { horairesHabituels } from '@/lib/agenda-sommeil/agregats';
 import type { FenetreAgenda } from '@/lib/agenda-sommeil/fenetre';
 import { NB_JOURS_AGENDA, type NuitReponses } from '@/lib/agenda-sommeil/types';
 import { FriseNuits } from './FriseNuits';
@@ -63,6 +64,10 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
     for (const n of data?.nuits ?? []) m.set(n.dateNuit, n.reponses);
     return m;
   }, [data]);
+
+  // Position d'ouverture des poignées du cadran — une suggestion en pointillé,
+  // pas une valeur : elle ne devient une réponse qu'au toucher.
+  const habituels = useMemo(() => horairesHabituels(data?.nuits ?? []), [data]);
 
   async function enregistrer(reponses: NuitReponses) {
     setEnvoi(true);
@@ -165,11 +170,16 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
           <p className="text-sm text-muted-foreground mb-4">
             En une minute, sans regarder l’heure exacte — une estimation suffit.
           </p>
+          {/* `initial` ne vaut QUE la nuit déjà saisie qu'on vient corriger.
+              Jamais la nuit précédente : la v1 la reprenait en entier — latence
+              et qualité comprises —, le bouton d'envoi était actif sans un seul
+              geste, et vingt copies conformes de la première nuit passaient
+              pour un recueil. Les horaires habituels passent à part, en
+              suggestion fantôme. */}
           <SaisieNuitForm
             key={cibleDate}
-            initial={
-              nuitsParDate.get(cibleDate) ?? (enCorrection ? null : data.derniereNuit)
-            }
+            initial={nuitsParDate.get(cibleDate) ?? null}
+            horairesHabituels={habituels}
             submitting={envoi}
             ctaLabel={enCorrection ? 'Corriger ✓' : 'C’est noté ✓'}
             onSubmit={enregistrer}
@@ -200,11 +210,19 @@ export function AgendaSommeilJournal({ idAssignation, onRetourHub }: Props) {
           )}
         </div>
         <FriseNuits emplacements={fenetre.emplacements} nuitsParDate={nuitsParDate} />
-        {fenetre.nbRenseignees < fenetre.emplacements.length && (
-          <p className="text-xs text-muted-foreground mt-3 text-center">
-            Une nuit non notée, ça arrive — reprenez simplement demain matin.
-          </p>
-        )}
+        {/* Constat ADOSSÉ À L'ACTE DE NOTER, jamais à ce qui est noté. Une
+            formule de félicitation indexée sur la qualité déclarée apprendrait
+            en quelques jours à déclarer de bonnes nuits : le design introduirait
+            un biais de désirabilité dans l'instrument qu'il est censé servir.
+            Ici le seul chiffre montré est un compte de saisies — aucune moyenne,
+            aucune tendance, aucune couleur (réserves R1 et R2). */}
+        <p className="text-xs text-muted-foreground mt-3 text-center">
+          {fenetre.nbRenseignees} nuit{fenetre.nbRenseignees > 1 ? 's' : ''} notée
+          {fenetre.nbRenseignees > 1 ? 's' : ''} sur {NB_JOURS_AGENDA}.
+          {fenetre.nbRenseignees < fenetre.emplacements.length
+            ? ' Une nuit non notée, ça arrive — reprenez simplement demain matin.'
+            : ' Vous avez noté chaque nuit du recueil. Merci.'}
+        </p>
       </PatientCard>
 
       <div className="flex flex-col gap-2">

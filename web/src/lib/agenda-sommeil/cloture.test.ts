@@ -28,11 +28,35 @@ function nuitRow(dateNuit: string, over: Record<string, unknown> = {}) {
     idPatient: ASS.idPatient,
     idAssignation: ASS.idAssignation,
     dateNuit,
-    reponses: { contractVersion: 'agenda-sommeil-v1', heureCoucher: '23:00', heureLever: '07:00', latence: 'lt15', qualite: 4, ...over },
+    reponses: {
+      contractVersion: 'agenda-sommeil-v2',
+      heureCoucher: '23:00',
+      heureLever: '07:00',
+      latence: 'lt15',
+      qualite: 4,
+      reveils: { dureeTotale: 'aucun' },
+      aideSommeil: 'aucune',
+      extinctionImmediate: true,
+      leverImmediat: true,
+      ...over,
+    },
     canal: 'portail',
     supersedesNuitId: null,
     soumisLe: new Date(`${dateNuit}T07:00:00.000Z`),
   };
+}
+
+// 2026-07-06 est un lundi : quatorze nuits consécutives couvrent donc quatre
+// matins de week-end, condition de l'indice composite (cf. `couvertureSuffisante`).
+const LUNDI = '2026-07-06';
+
+function nuitsConsecutives(n: number, depuis = LUNDI) {
+  return Array.from({ length: n }, (_, i) => {
+    const [a, m, j] = depuis.split('-').map(Number);
+    const d = new Date(Date.UTC(a, m - 1, j + i));
+    const p = (x: number) => String(x).padStart(2, '0');
+    return nuitRow(`${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`);
+  });
 }
 
 // $transaction exécute le callback avec un tx dont le verrou de ligne
@@ -56,25 +80,20 @@ beforeEach(() => {
 });
 
 describe('cloturerAgenda', () => {
-  it('crée une réponse scorée et verrouille l’assignation (≥5 nuits)', async () => {
+  it('crée une réponse scorée et verrouille l’assignation (14 nuits, week-end couvert)', async () => {
     prisma.assignation.findUnique.mockResolvedValue(ASS);
-    prisma.agendaSommeilNuit.findMany.mockResolvedValue([
-      nuitRow('2026-07-10'),
-      nuitRow('2026-07-11'),
-      nuitRow('2026-07-12'),
-      nuitRow('2026-07-13'),
-      nuitRow('2026-07-14'),
-    ]);
+    prisma.agendaSommeilNuit.findMany.mockResolvedValue(nuitsConsecutives(14));
     mockTransaction('non_rempli');
 
     const res = await cloturerAgenda({ idAssignation: 'ASS_AGD' });
 
     expect(res.dejaCloture).toBe(false);
-    expect(res.nbNuits).toBe(5);
+    expect(res.nbNuits).toBe(14);
     expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
     const data = prisma.questionnaireReponse.create.mock.calls[0][0].data;
     expect(data.idQuestionnaire).toBe('Q_SOM_09');
-    expect(data.scoresJson.rawAnswers.AGD_NB_NUITS).toBe(5);
+    expect(data.scoresJson.rawAnswers.AGD_NB_NUITS).toBe(14);
+    expect(data.scoresJson.rawAnswers.AGD_NB_NUITS_WE).toBe(4);
     expect(typeof data.scoresJson.total).toBe('number');
     expect(typeof data.scorePrincipal).toBe('number');
     expect(prisma.assignation.update).toHaveBeenCalledWith(
@@ -82,9 +101,9 @@ describe('cloturerAgenda', () => {
     );
   });
 
-  it('produit une réponse non scorée sous 5 nuits (scored:false, jamais un 0)', async () => {
+  it('produit une réponse non scorée sous le seuil d’agrégation (scored:false, jamais un 0)', async () => {
     prisma.assignation.findUnique.mockResolvedValue(ASS);
-    prisma.agendaSommeilNuit.findMany.mockResolvedValue([nuitRow('2026-07-10'), nuitRow('2026-07-11')]);
+    prisma.agendaSommeilNuit.findMany.mockResolvedValue(nuitsConsecutives(2));
     mockTransaction('non_rempli');
 
     await cloturerAgenda({ idAssignation: 'ASS_AGD' });
@@ -92,6 +111,30 @@ describe('cloturerAgenda', () => {
     const data = prisma.questionnaireReponse.create.mock.calls[0][0].data;
     expect(data.scoresJson.scored).toBe(false);
     expect(data.scoresJson.rawAnswers.AGD_NB_NUITS).toBe(2);
+    expect(data.scorePrincipal).toBeNull();
+  });
+
+  it('agrège sans produire d’indice quand la couverture week-end manque', async () => {
+    prisma.assignation.findUnique.mockResolvedValue(ASS);
+    // Quatorze nuits, mais aucune de week-end : les moyennes existent, l'indice
+    // non — la régularité serait excellente et fausse.
+    const ouvrables: ReturnType<typeof nuitRow>[] = [];
+    for (let i = 0; ouvrables.length < 14; i += 1) {
+      const [a, m, j] = LUNDI.split('-').map(Number);
+      const d = new Date(Date.UTC(a, m - 1, j + i));
+      if (d.getUTCDay() === 0 || d.getUTCDay() === 6) continue;
+      const p = (x: number) => String(x).padStart(2, '0');
+      ouvrables.push(nuitRow(`${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())}`));
+    }
+    prisma.agendaSommeilNuit.findMany.mockResolvedValue(ouvrables);
+    mockTransaction('non_rempli');
+
+    await cloturerAgenda({ idAssignation: 'ASS_AGD' });
+
+    const data = prisma.questionnaireReponse.create.mock.calls[0][0].data;
+    expect(data.scoresJson.rawAnswers.AGD_NB_NUITS).toBe(14);
+    expect(data.scoresJson.rawAnswers.AGD_TST_MOY).toBe(472); // agrégats produits
+    expect(data.scoresJson.scored).toBe(false); // mais pas d'indice global
     expect(data.scorePrincipal).toBeNull();
   });
 

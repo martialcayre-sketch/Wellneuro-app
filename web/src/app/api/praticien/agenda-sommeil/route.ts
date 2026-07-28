@@ -92,7 +92,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         dateAssignation: ass.dateAssignation.toISOString(),
         fenetre: calculerFenetre(nuitsActives, aujourdHui),
         nuits: nuitsActives,
-        agregats: calculerAgregats(nuitsActives.map((n) => n.reponses)),
+        agregats: calculerAgregats(nuitsActives),
       });
     }
 

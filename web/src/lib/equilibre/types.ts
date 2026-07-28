@@ -12,11 +12,25 @@ export type BesoinDefinition = {
 // à sous-scores) qui alimente un besoin. `inverser` indique que le score
 // brut du questionnaire est orienté "plus haut = plus de symptômes" — la
 // couverture (0-1, plus haut = mieux) doit alors être 1 - ratio.
+// Un besoin est la moyenne de ses GROUPES, à parts égales ; un groupe est la
+// moyenne pondérée de ses sources disponibles. Sans `groupe`, chaque source
+// forme son propre groupe et le calcul reste la moyenne simple d'origine.
+//
+// Cette hiérarchie n'est pas une élégance : une pondération plate ne tient pas
+// sa promesse quand une source manque. Le besoin 5 vise « mouvement 1/2, repos
+// 1/2 » ; avec des poids plats 3/2/1 et un agenda absent — le cas de presque
+// tous les patients — la renormalisation donnait 3/5 au mouvement et 2/5 au
+// repos, et faisait basculer des patients sous le seuil d'effondrement sans
+// qu'une seule de leurs réponses ait changé. Groupés, le repos vaut son demi
+// quel que soit le nombre de sources qui l'alimentent.
 export type SourceQuestionnaire = {
   idQuestionnaire: string;
   sousScore?: string;
   max: number;
   inverser: boolean;
+  // Poids DANS le groupe (défaut 1). Sans groupe partagé, il n'a aucun effet.
+  poids?: number;
+  groupe?: string;
 };
 
 // answers attendu par calculateScore(idQuestionnaire, answers) de questions.ts

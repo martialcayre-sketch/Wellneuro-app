@@ -108,6 +108,98 @@ describe('calculerCouvertureBesoin', () => {
   });
 });
 
+// Pondération du besoin 5 (2026-07-27). Avant cette date la moyenne était
+// SIMPLE : les deux sources sommeil pesaient 2/3 du besoin « Bouger et se
+// reposer », non par décision mais parce qu'une troisième source y avait été
+// ajoutée. Ces tests fixent la structure voulue — mouvement 1/2, repos 1/2 dont
+// deux tiers pour le questionnaire validé.
+describe('besoin 5 — mouvement et repos à parts égales', () => {
+  // PSQI parfait → couverture 1 ; agenda au plateau → couverture 1.
+  const PSQI_PARFAIT = {
+    Q1: 23, Q2: 5, Q3: 7, Q4: 8, Q6: 0, Q7: 0, Q8: 0, Q9: 0,
+    Q5a: 0, Q5b: 0, Q5c: 0, Q5d: 0, Q5e: 0, Q5f: 0, Q5g: 0, Q5h: 0, Q5i: 0, Q5j: 0,
+  };
+  const AGENDA_PLATEAU = {
+    AGD_NB_NUITS: 18,
+    AGD_INDICE_ELIGIBLE: 1,
+    AGD_TIB_MOY: 480,
+    AGD_TST_MOY: 470,
+    AGD_EFF_MOY: 95,
+    AGD_LAT_MED: 10,
+    AGD_REG_ECT: 20,
+    AGD_QUAL_MOY: 5,
+  };
+
+  it('sommeil parfait et activité nulle : le besoin plafonne à 1/2, pas à 2/3', () => {
+    const couverture = calculerCouvertureBesoin(5, {
+      Q_SOM_01: PSQI_PARFAIT,
+      Q_SOM_09: AGENDA_PLATEAU,
+      // Q_MOD_01 répondu au minimum → sous-score activité physique à 0.
+      Q_MOD_01: { MOD_AP_01: 0, MOD_AP_02: 0, MOD_AP_03: 0, MOD_AP_04: 0 },
+    });
+    // (2×1 + 1×1 + 3×0) / 6 = 0,5
+    expect(couverture).toBeCloseTo(0.5, 6);
+  });
+
+  it('dans le repos, le questionnaire validé pèse deux fois l’agenda', () => {
+    // Sans activité renseignée, le repos se partage 2/3 PSQI + 1/3 agenda.
+    const psqiSeul = calculerCouvertureBesoin(5, { Q_SOM_01: PSQI_PARFAIT });
+    const agendaSeul = calculerCouvertureBesoin(5, { Q_SOM_09: AGENDA_PLATEAU });
+    // Chacun seul est renormalisé à 1 — c'est leur poids RELATIF qui diffère.
+    expect(psqiSeul).toBeCloseTo(1, 6);
+    expect(agendaSeul).toBeCloseTo(1, 6);
+    // Un PSQI parfait contre un agenda nul : 2/3, et non 1/2.
+    const mixte = calculerCouvertureBesoin(5, {
+      Q_SOM_01: PSQI_PARFAIT,
+      Q_SOM_09: { ...AGENDA_PLATEAU, AGD_TST_MOY: 60, AGD_EFF_MOY: 10, AGD_REG_ECT: 360, AGD_QUAL_MOY: 1 },
+    });
+    expect(mixte).toBeCloseTo(2 / 3, 6);
+  });
+
+  it('une source absente ne tire jamais vers 0 (renormalisation)', () => {
+    const sansAgenda = calculerCouvertureBesoin(5, {
+      Q_SOM_01: PSQI_PARFAIT,
+      Q_MOD_01: { MOD_AP_01: 0, MOD_AP_02: 0, MOD_AP_03: 0, MOD_AP_04: 0 },
+    });
+    // L'agenda manquant ne compte ni pour 0 ni pour 1 : le repos se réduit au
+    // PSQI, et les deux groupes restent à parts égales → (1 + 0) / 2 = 0,5.
+    expect(sansAgenda).toBeCloseTo(0.5, 6);
+  });
+
+  // Constat B3 de la revue du 2026-07-28. Une pondération PLATE (3/2/1)
+  // renormalisée sur les sources disponibles ne tient pas la promesse « parts
+  // égales » quand l'agenda manque — le cas de presque tous les patients : le
+  // repos serait retombé à 2/5, faisant basculer sous le seuil d'effondrement
+  // des patients dont AUCUNE réponse n'avait changé. Le regroupement l'évite.
+  it('un patient sans agenda garde exactement le score qu’il avait avant la pondération', () => {
+    // Référence : la moyenne simple des deux sources répondues, telle qu'elle
+    // était calculée avant l'introduction des poids.
+    const psqiModere = {
+      ...PSQI_PARFAIT,
+      Q2: 2, Q4: 6, Q5a: 1, Q5b: 1, Q5c: 1,
+    };
+    const couverture = calculerCouvertureBesoin(5, {
+      Q_SOM_01: psqiModere,
+      Q_MOD_01: { MOD_AP_01: 1, MOD_AP_02: 1, MOD_AP_03: 0, MOD_AP_04: 0 },
+    });
+    const psqiSeul = calculerCouvertureBesoin(5, { Q_SOM_01: psqiModere })!;
+    const activiteSeule = calculerCouvertureBesoin(5, {
+      Q_MOD_01: { MOD_AP_01: 1, MOD_AP_02: 1, MOD_AP_03: 0, MOD_AP_04: 0 },
+    })!;
+    expect(couverture).toBeCloseTo((psqiSeul + activiteSeule) / 2, 6);
+  });
+
+  it('les besoins à plusieurs sources non groupées gardent la moyenne simple', () => {
+    // Le besoin 9 (trois sources de stress, aucun groupe) ne doit rien changer :
+    // sans `groupe`, chaque source forme le sien et l'on retrouve la moyenne
+    // simple. C'est ce qui rend le regroupement sûr à introduire.
+    const couverture = calculerCouvertureBesoin(9, {
+      Q_STR_02: { Q1: 0, Q2: 0, Q3: 0, Q4: 0, Q5: 0, Q6: 0, Q7: 0, Q8: 0, Q9: 0, Q10: 0 },
+    });
+    expect(couverture).toBeCloseTo(1, 6);
+  });
+});
+
 // Invariants ancrés par la revue adversariale du 2026-07-27 (P0 métrologique).
 // Le correctif « le besoin 2 n'est plus mesuré par la fatigue » repose sur un
 // raisonnement — « une couverture null n'est pas un zéro » — qui n'était

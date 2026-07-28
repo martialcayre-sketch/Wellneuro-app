@@ -66,12 +66,32 @@ export function calculerCouvertureBesoin(
   reponses: ReponsesParQuestionnaire
 ): number | null {
   const sources = BESOIN_SOURCES[besoinId] ?? [];
-  const couvertures = sources
-    .map(source => calculerCouvertureSource(source, reponses))
-    .filter((c): c is number => c !== null);
 
-  if (couvertures.length === 0) return null;
-  return couvertures.reduce((somme, c) => somme + c, 0) / couvertures.length;
+  // Deux étages. Dans un groupe : moyenne pondérée des sources disponibles.
+  // Entre groupes : moyenne SIMPLE — chaque groupe pèse sa part quel que soit
+  // le nombre de sources qui l'alimentent, ce qui est tout l'intérêt du
+  // regroupement (cf. `SourceQuestionnaire.groupe`). Sans `groupe`, chaque
+  // source est seule dans le sien et l'on retrouve la moyenne simple d'origine.
+  const groupes = new Map<string, { poids: number; valeur: number }[]>();
+  sources.forEach((source, index) => {
+    const valeur = calculerCouvertureSource(source, reponses);
+    if (valeur === null) return;
+    const cle = source.groupe ?? `__source_${index}`;
+    const lot = groupes.get(cle);
+    const entree = { poids: source.poids ?? 1, valeur };
+    if (lot) lot.push(entree);
+    else groupes.set(cle, [entree]);
+  });
+
+  const valeursGroupes: number[] = [];
+  for (const [, entrees] of groupes) {
+    const sommePoids = entrees.reduce((s, e) => s + e.poids, 0);
+    if (sommePoids <= 0) continue;
+    valeursGroupes.push(entrees.reduce((s, e) => s + e.poids * e.valeur, 0) / sommePoids);
+  }
+
+  if (valeursGroupes.length === 0) return null;
+  return valeursGroupes.reduce((s, v) => s + v, 0) / valeursGroupes.length;
 }
 
 export function calculerCouverturesTousLesBesoins(

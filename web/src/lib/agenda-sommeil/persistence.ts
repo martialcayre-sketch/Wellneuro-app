@@ -72,7 +72,10 @@ export async function saveNuit(input: NuitInput): Promise<NuitRow> {
   const idPatient = ensureId(input.idPatient, 'Identifiant patient');
   const idAssignation = ensureId(input.idAssignation, "Identifiant d'assignation");
   const dateNuit = ensureDateNuit(input.dateNuit);
-  const reponses = ensureNuitReponses(input.reponses);
+  // Écriture = contrat v2 : éveil nocturne, aide au sommeil et mode de lever
+  // sont obligatoires, et les classes d'éveil héritées y sont refusées. C'est le
+  // seul point où l'exiger empêche l'agrégation d'inventer un zéro plus tard.
+  const reponses = ensureNuitReponses(input.reponses, { exigerObligatoires: true });
   const supersedesNuitId =
     input.supersedesNuitId != null ? ensureId(input.supersedesNuitId, 'Identifiant de nuit') : null;
 

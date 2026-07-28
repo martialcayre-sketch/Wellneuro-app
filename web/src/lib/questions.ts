@@ -2270,47 +2270,132 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── AGENDA_SOMMEIL — agenda du sommeil 21 nuits (Q_SOM_09) ──────────────
   // Lit les agrégats produits à la clôture (cf. lib/agenda-sommeil/agregats.ts),
-  // rangés dans `rawAnswers`. Sous le seuil de nuits, recueil transmis SANS score
-  // (scored:false, jamais un 0 par défaut). Barème /100 = 4 sous-indices /25,
-  // rampes linéaires bornées. Barème validé cliniquement par le praticien le 2026-07-26.
+  // rangés dans `rawAnswers`. Ce total est un INDICE LONGITUDINAL WellNeuro,
+  // niveau de preuve D : il sert à comparer un patient à lui-même dans le temps,
+  // jamais à poser un diagnostic ni à situer un patient dans une population.
+  //
+  // Quatre sous-indices MUTUELLEMENT INDÉPENDANTS (v2, 2026-07-27). Le barème v1
+  // comptait la latence trois fois — dans Durée via TST = TIB − latence − WASO,
+  // dans Efficacité via TST/TIB, et une troisième fois dans Continuité — et
+  // n'utilisait nulle part la qualité vécue, pourtant l'item le mieux renseigné.
+  // La latence et le compte de réveils restent produits et affichés au praticien
+  // comme métriques brutes ; ils sortent seulement du calcul du total, où ils
+  // étaient déjà présents à travers l'efficacité.
   if (sc.type === 'agenda_sommeil') {
-    const minNuits = sc.minNuits || 5;
+    const minNuits = sc.minNuits || 14;
     const n = getVal('AGD_NB_NUITS');
-    if (n === null || n < minNuits) {
+    // `AGD_INDICE_ELIGIBLE` porte la règle de couverture week-end : quatorze
+    // nuits toutes ouvrables donnent une régularité excellente et fausse.
+    // Absent des agendas d'avant la v2 — on ne bloque alors que sur le compte.
+    const eligible = getVal('AGD_INDICE_ELIGIBLE');
+    if (n === null || n < minNuits || eligible === 0) {
+      // La note dit POURQUOI l'indice manque — `sc.note` décrit le barème, pas
+      // la couverture ; la laisser gagner ici priverait le praticien du motif.
+      const motif = n === null || n < minNuits
+        ? `Moins de ${minNuits} nuits exploitables`
+        : 'Couverture week-end insuffisante (14 nuits dont 4 de week-end requises)';
       return {
         type:'agenda_sommeil',
         scored:false,
         nbNuits: n || 0,
-        note: sc.note || `Moins de ${minNuits} nuits renseignées — recueil transmis sans agrégation.`,
+        note: `${motif} — recueil transmis sans indice global.`,
         certification: sc.certification || null,
       };
     }
     const clampR = (x: number) => Math.max(0, Math.min(1, x));
-    const tst = getVal('AGD_TST_MOY') ?? 0;
-    const eff = getVal('AGD_EFF_MOY') ?? 0;
-    const latMed = getVal('AGD_LAT_MED') ?? 0;
-    const revMoy = getVal('AGD_REV_MOY') ?? 0;
-    const regEct = getVal('AGD_REG_ECT') ?? 0;
-    // Durée : plateau [420,540] min → 25 ; 0 à ≤240 ou ≥720 min.
-    const scoreDuree = tst >= 420 && tst <= 540
-      ? 25
-      : tst < 420
-        ? clampR((tst - 240) / (420 - 240)) * 25
-        : clampR((720 - tst) / (720 - 540)) * 25;
-    // Efficacité : ≥85 % → 25 ; ≤65 % → 0.
-    const scoreEff = clampR((eff - 65) / (85 - 65)) * 25;
-    // Continuité : latence (≤15 min plein, ≥60 nul) + réveils (≤1 plein, ≥3 nul).
-    const scoreCont = clampR((60 - latMed) / (60 - 15)) * 12.5 + clampR((3 - revMoy) / (3 - 1)) * 12.5;
-    // Régularité : ≤30 min → 25 ; ≥120 min → 0.
-    const scoreReg = clampR((120 - regEct) / (120 - 30)) * 25;
-    const subScores = [
-      { id:'DUREE', label:'Durée', total: Math.round(scoreDuree), max:25 },
-      { id:'EFF', label:'Efficacité', total: Math.round(scoreEff), max:25 },
-      { id:'CONT', label:'Continuité', total: Math.round(scoreCont), max:25 },
-      { id:'REG', label:'Régularité', total: Math.round(scoreReg), max:25 },
+    const tst = getVal('AGD_TST_MOY');
+    const eff = getVal('AGD_EFF_MOY');
+    const regEct = getVal('AGD_REG_ECT');
+    const qual = getVal('AGD_QUAL_MOY');
+    const tibMoy = getVal('AGD_TIB_MOY');
+
+    // PLANCHER DE COUVERTURE PAR AXE. Le seuil de `minNuits` porte sur le
+    // nombre de nuits du recueil, pas sur celui des nuits qui alimentent CHAQUE
+    // axe — et ces nombres divergent dès qu'une fenêtre mélange des nuits
+    // d'avant et d'après un changement de contrat. Sans ce plancher, un recueil
+    // de 21 nuits dont une seule porte les champs nécessaires produit une durée
+    // et une efficacité calculées sur n = 1 : le total variait de 50 points
+    // selon cette unique nuit, sans que rien ne le signale. Un axe trop peu
+    // soutenu est traité comme non couvert, donc renormalisé — jamais deviné.
+    const minAxe = sc.minNuitsAxe || 7;
+    const couvert = (id: string): boolean => {
+      const n = getVal(id);
+      return n === null || n >= minAxe; // absent = agenda d'avant les compteurs
+    };
+    const couvertTst = couvert('AGD_NB_NUITS_TST');
+    const couvertEff = couvert('AGD_NB_NUITS_EFF');
+
+    // Un axe dont la métrique n'est pas couverte vaut `null` et sort du total,
+    // qui est alors renormalisé sur les axes disponibles — jamais complété par
+    // un 0, qui se lirait comme « mauvais » au lieu de « inconnu ».
+    const axes = [
+      // Durée : 0 à ≤ 240 min, plein à ≥ 420 min. AUCUNE pénalité au-delà :
+      // l'AASM recommande ≥ 7 h sans fixer de borne haute, et un sommeil long
+      // relève d'une lecture clinique (récupération, dette, maladie), pas d'une
+      // perte automatique de points. Le temps AU LIT long est traité en drapeau.
+      { id:'DUREE', label:'Durée', ratio: tst === null || !couvertTst ? null : clampR((tst - 240) / 180) },
+      // Efficacité : ≤ 65 % → 0, ≥ 85 % → plein. Contient déjà la latence et
+      // l'éveil nocturne — c'est pourquoi ils ne sont plus scorés à part.
+      { id:'EFF', label:'Efficacité', ratio: eff === null || !couvertEff ? null : clampR((eff - 65) / 20) },
+      // Régularité : écart-type du milieu de sommeil, plein ≤ 30 min, nul ≥ 120.
+      { id:'REG', label:'Régularité', ratio: regEct === null ? null : clampR((120 - regEct) / 90) },
+      // Qualité vécue : 1 → 0, 5 → plein. Le ressenti du patient est une donnée,
+      // pas un ornement ; il n'entrait dans aucun sous-score en v1.
+      { id:'QUAL', label:'Qualité vécue', ratio: qual === null ? null : clampR((qual - 1) / 4) },
     ];
-    const total = Math.round(scoreDuree + scoreEff + scoreCont + scoreReg);
+    const couverts = axes.filter((a): a is typeof a & { ratio: number } => a.ratio !== null);
+    if (couverts.length < 3) {
+      return {
+        type:'agenda_sommeil',
+        scored:false,
+        nbNuits: n,
+        note: 'Métriques trop incomplètes — recueil transmis sans indice global.',
+        certification: sc.certification || null,
+      };
+    }
+    const subScores = axes.map(a => ({
+      id: a.id,
+      label: a.label,
+      total: a.ratio === null ? null : Math.round(a.ratio * 25),
+      max: 25,
+    }));
+    const total = Math.round(
+      (couverts.reduce((s, a) => s + a.ratio, 0) / couverts.length) * 100
+    );
     const interp = interpretRanges(total, sc.interpretation);
+
+    // Drapeaux cliniques, JAMAIS des points.
+    const drapeaux: string[] = [];
+    // Un temps au lit long associé à une efficacité basse est la cible de la
+    // restriction de sommeil. Le retrancher du total le confondrait avec un
+    // sommeil insuffisant, qui appelle exactement la conduite inverse. Le temps
+    // au lit court désormais de la MISE AU LIT au lever : le drapeau attrape
+    // donc aussi le patient qui passe une heure au lit avant d'éteindre, ce qui
+    // est précisément la conduite visée.
+    if (tibMoy !== null && tibMoy >= 540 && eff !== null && eff < 80) {
+      drapeaux.push('Temps au lit long avec efficacité basse — restriction de sommeil à discuter.');
+    }
+    // L'aide au sommeil n'entre PAS dans le total : c'est une exposition, pas un
+    // résultat, et la scorer répéterait l'erreur de catégorie consistant à
+    // mélanger prédicteurs et variable expliquée. Mais un indice calculé sur des
+    // nuits sous hypnotique ne se lit pas comme un indice sans — d'où ce drapeau,
+    // pour que le total ne soit jamais lu nu.
+    const nuitsAide = getVal('AGD_NB_NUITS_AIDE');
+    if (nuitsAide !== null && nuitsAide > 0) {
+      drapeaux.push(
+        `Indice calculé sur ${n} nuits, dont ${nuitsAide} sous aide au sommeil — à interpréter avec le traitement en cours.`,
+      );
+    }
+    // Fréquence : le critère clinique usuel est un nombre de nuits par semaine
+    // au-dessus de 30 minutes, que les moyennes effacent. La convention de
+    // recherche est NOMMÉE, jamais conclue — on rapporte, on ne diagnostique pas.
+    const freq = getVal('AGD_FREQ_CRITERE_SEM');
+    if (freq !== null && freq >= 3) {
+      drapeaux.push(
+        `${freq} nuits/semaine avec plus de 30 min d’endormissement ou d’éveil (convention de recherche : ≥ 3).`,
+      );
+    }
+
     return {
       type:'agenda_sommeil',
       scored:true,
@@ -2319,6 +2404,8 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       subScores,
       interpretation: interp,
       nbNuits: n,
+      nbAxesCouverts: couverts.length,
+      drapeaux,
       note: sc.note || null,
       certification: sc.certification || null,
     };

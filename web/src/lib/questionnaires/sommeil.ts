@@ -118,30 +118,63 @@ export const Q_SOM_03 = {
 // générique). Les items ci-dessous sont des PSEUDO-ITEMS d'agrégats produits à
 // la CLÔTURE (cf. lib/agenda-sommeil/agregats.ts) — ils ne sont jamais saisis
 // ni montrés au patient ; ils existent pour que le scoring `agenda_sommeil` les
-// lise dans `rawAnswers` et pour la compatibilité fiche/équilibre. Le barème
-// /100 ci-dessous a été validé cliniquement par le praticien le 2026-07-26.
+// lise dans `rawAnswers` et pour la compatibilité fiche/équilibre.
+//
+// TROIS STATUTS DE PREUVE DISTINCTS, à ne pas confondre :
+//   — le recueil nuit par nuit est un agenda du sommeil standard (SIIN,
+//     Consensus Sleep Diary) ;
+//   — les métriques dérivées (TST, efficacité, écart-type du milieu) sont des
+//     grandeurs usuelles de la littérature ;
+//   — l'indice /100 ci-dessous est une CONSTRUCTION WellNeuro, approuvée par le
+//     praticien mais sans validation psychométrique ni cohorte de calibration.
+//     Niveau de preuve D. Il se lit comme un indice longitudinal — le patient
+//     comparé à lui-même — et jamais comme un résultat diagnostique.
 export const Q_SOM_09 = {
   id:'Q_SOM_09', titre:'Agenda du sommeil — 21 nuits',
   instructions:"Chaque matin pendant trois semaines, notez en une minute votre nuit passée. Vos saisies restent visibles sous forme d'une frise ; l'analyse est transmise à votre praticien à la fin du recueil.",
   sections:[
     { id:'agregats', titre:'Agrégats générés à la clôture — jamais saisis',
-      description:"Valeurs calculées automatiquement à partir des nuits renseignées. Le patient ne les voit pas.",
+      description:"Valeurs calculées automatiquement à partir des nuits renseignées. Le patient ne les voit pas. Une métrique non couverte vaut null, jamais 0.",
       questions:[
         qn('AGD_NB_NUITS',"Nombre de nuits renseignées",0,21,1,'nuits'),
-        qn('AGD_TIB_MOY',"Temps au lit moyen",0,960,1,'min'),
+        qn('AGD_FENETRE_MOY',"Fenêtre de sommeil (extinction → lever)",0,960,1,'min'),
+        qn('AGD_TIB_MOY',"Temps au lit (mise au lit → lever)",0,1200,1,'min'),
+        qn('AGD_PRELIT_MOY',"Temps au lit avant extinction",0,480,1,'min'),
         qn('AGD_TST_MOY',"Temps de sommeil total moyen",0,960,1,'min'),
         qn('AGD_EFF_MOY',"Efficacité du sommeil moyenne",0,100,1,'%'),
         qn('AGD_LAT_MED',"Latence d'endormissement médiane",0,120,1,'min'),
+        qn('AGD_WASO_MOY',"Éveil nocturne cumulé moyen",0,240,1,'min'),
+        qn('AGD_TWAK_MOY',"Éveil au lit après le réveil final",0,480,1,'min'),
         qn('AGD_REV_MOY',"Réveils nocturnes moyens par nuit",0,3,0.1,'réveils'),
         qn('AGD_REG_ECT',"Régularité (écart-type du milieu de sommeil)",0,360,1,'min'),
         qn('AGD_QUAL_MOY',"Qualité subjective moyenne",1,5,0.1,''),
+        qn('AGD_FREQ_LAT30_SEM',"Nuits par semaine à endormissement > 30 min",0,7,0.1,'nuits'),
+        qn('AGD_FREQ_WASO30_SEM',"Nuits par semaine à éveil nocturne > 30 min",0,7,0.1,'nuits'),
+        qn('AGD_FREQ_CRITERE_SEM',"Nuits par semaine au-delà de 30 min (l'un ou l'autre)",0,7,0.1,'nuits'),
+        qn('AGD_NB_NUITS_AIDE',"Nuits sous aide au sommeil",0,21,1,'nuits'),
+        qn('AGD_NB_NUITS_TST',"Nuits exploitables pour le temps de sommeil",0,21,1,'nuits'),
+        qn('AGD_NB_NUITS_EFF',"Nuits exploitables pour l'efficacité",0,21,1,'nuits'),
+        qn('AGD_NB_NUITS_PRELIT',"Nuits où le mode de coucher est connu",0,21,1,'nuits'),
+        qn('AGD_NB_NUITS_REV',"Nuits où le compte de réveils est connu",0,21,1,'nuits'),
+        qn('AGD_NB_NUITS_TWAK',"Nuits où le mode de lever est connu",0,21,1,'nuits'),
+        qn('AGD_NB_NUITS_FREQ',"Nuits classables pour le seuil de 30 min",0,21,1,'nuits'),
+        qn('AGD_NB_NUITS_AIDE_CONNU',"Nuits où l'aide au sommeil est renseignée",0,21,1,'nuits'),
+        qn('AGD_NB_NUITS_WE',"Nuits de week-end retenues",0,21,1,'nuits'),
+        qn('AGD_INDICE_ELIGIBLE',"Couverture suffisante pour l'indice composite",0,1,1,''),
       ]},
   ],
   scoring:{
     type:'agenda_sommeil',
     maxTotal:100,
-    minNuits:5,
-    note:"Barème WellNeuro validé cliniquement (2026-07-26) : 4 sous-indices /25 — durée, efficacité, continuité, régularité.",
+    // Quatorze nuits, et non cinq : une moyenne se stabilise vite, une
+    // variabilité non — et c'est la régularité qui pèse un quart de l'indice.
+    minNuits:14,
+    // Plancher par AXE : un axe alimenté par moins de nuits que cela sort de
+    // l'indice. Le compte global ne dit rien de la couverture de chaque axe, qui
+    // diverge dès qu'une fenêtre mélange des nuits d'avant et d'après un
+    // changement de contrat.
+    minNuitsAxe:7,
+    note:"Indice longitudinal WellNeuro — non diagnostique (niveau de preuve D). Quatre sous-indices indépendants /25 : durée, efficacité, régularité, qualité vécue. Latence et nombre de réveils sont affichés comme métriques brutes ; ils entrent dans l'indice à travers l'efficacité, jamais une seconde fois.",
     interpretation:[
       {min:0, max:49, label:'Sommeil nettement perturbé',color:'danger'},
       {min:50,max:74, label:'Fragilités du sommeil',color:'warning'},

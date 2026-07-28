@@ -690,3 +690,27 @@ depuis le checkout principal ; lots 5-6 (besoins).
 **Questions ouvertes** : bloc axes du booklet patient ; `PATCH assignations`
 re-sert un suspendu ; les passations invalides alimentent encore fiche et
 synthèse IA.
+
+## 2026-07-28 — Agenda du sommeil : audit, contrat v2 et complétude face au consensus
+
+**Décisions** : audit de la maquette « Wellneuro 5.0 » puis refonte en deux lots, dans le worktree `agenda-sommeil-v2` (non committé). Lot 1 : fin du pré-remplissage par la nuit de la veille (on validait 20 copies conformes sans un geste), cadran tactile sans clavier, éveil nocturne obligatoire avec classe `aucun` explicite, barème refondu en 4 axes indépendants (la latence y comptait 3 fois ; la qualité vécue n'y comptait pas), seuils 7/14 nuits dont 4 de week-end, écart-type en n−1, niveau de preuve B→D, besoin 5 pondéré (mouvement 1/2, repos 1/2). Lot 2, après comparaison au Consensus Sleep Diary : réveil final (3ᵉ poignée conditionnelle — le réveil matinal précoce était invisible et comptait comme du sommeil), aide au sommeil obligatoire, éveil reborné 15/30/60, métriques de fréquence.
+
+**Options écartées** : suppression des horaires et score montré au patient (orthosomnie) ; facteurs et fréquence dans l'indice (expositions, double comptage) ; conversion des classes d'éveil v1 (inventerait une précision).
+
+**Validations** : T1 vert (606 tests) ; T3 : 2225 unitaires verts, 96 E2E passés, 2 échecs pré-existants dans `portail-google.spec.ts` (dépendants du `.env.local` local, hors périmètre).
+
+**Prochaine action** : `/wn-review` (passe adversariale — seuils cliniques), puis commit et PR des deux lots ensemble.
+
+**Questions ouvertes** : l'heure de mise au lit reste absente (nos efficacités sont plus flatteuses qu'un agenda partant du coucher) ; `test:worktree` rend 0 même quand son PostgreSQL ne démarre pas.
+
+## 2026-07-28 — Agenda du sommeil : mise au lit et redéfinition de l'efficacité
+
+**Décisions** : ajout de la 4ᵉ ancre du Consensus Sleep Diary — question « vous avez éteint la lumière : en me couchant / après un moment au lit », la seconde ouvrant une poignée 🛏️ sur le cadran. Deux conséquences voulues : le temps au lit court désormais de la mise au lit au lever (dénominateur de l'efficacité, qui BAISSE — 98 % → 87 % dans le cas testé, sans qu'une minute de sommeil change), et le temps au lit avant extinction devient une métrique à part (`AGD_PRELIT_MOY`), distincte de la latence d'endormissement. Le libellé de la question de latence porte maintenant explicitement sur l'après-extinction. Le recueil couvre 8 des 9 items du noyau ; la question ouverte du lot précédent est close.
+
+**Options écartées** : compter le pré-lit dans le temps de sommeil (le patient ne cherchait pas encore à dormir) ; ancrer la régularité sur le coucher (c'est le rythme de sommeil qu'elle mesure) ; demander l'heure d'endormissement (supposerait de regarder sa montre).
+
+**Validations** : T1 vert (621 tests) ; T3 : 2240 unitaires verts, 96 E2E passés, mêmes 2 échecs pré-existants `portail-google.spec.ts`.
+
+**Prochaine action** : `/wn-review`, puis commit et PR des trois lots ensemble.
+
+**Questions ouvertes** : sept gestes obligatoires le matin — à confronter à l'assiduité réelle d'une première cohorte.
