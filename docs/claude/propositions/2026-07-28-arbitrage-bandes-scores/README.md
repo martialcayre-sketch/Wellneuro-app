@@ -207,15 +207,42 @@ La publication primaire (Aubin et al., 2004) donne le score maximal — 20 — e
 Le document SPLF porte lui-même la réserve : « Ce guide d'interprétation est
 donné **à titre indicatif** et s'appuie sur la **seule expérience des experts**. »
 
-Le claim du corpus (« 0 à 6 : motivation faible ») est compatible avec la
-convention SPLF sur sa borne basse. **L'application ne sert pas cet
-instrument** : rien à corriger côté produit.
+**L'application SERT cet instrument, et sur une échelle qui n'existe nulle
+part.** Ma première rédaction affirmait le contraire ; la revue adversariale l'a
+relevé. `Q_TAB_01` — « Test de motivation à l'arrêt du tabac — Lagrue &
+Légeron » (`questions.ts:699-724`) — est le Q-MAT : ses quatre items sont ceux de
+la publication, mot pour mot.
+
+Mais **la cotation d'un item diverge**, et elle déforme tout le reste :
+
+| Item | Cotation servie | Cotation Q-MAT |
+|---|---|---|
+| T1 « dans six mois… » | 0 / 2 / 4 / 8 | 0 / 2 / 4 / 8 |
+| **T2 « envie d'arrêter ? »** | **0 / 1 / 4 / 6** | **0 / 1 / 2 / 3** |
+| T3 « dans quatre semaines ? » | 0 / 2 / 4 / 6 | 0 / 2 / 4 / 6 |
+| T4 « pas content de fumer ? » | 0 / 1 / 2 / 3 | 0 / 1 / 2 / 3 |
+
+Le total servi plafonne donc à **23**, là où la publication primaire écrit
+« un score maximal de **20** ». Et la grille d'interprétation servie
+(`questions.ts:718-721`) reprend la convention SPLF sur ses trois premières
+bandes — 0-6, 7-12, 13-20 — puis **ajoute une quatrième bande, 21-23**, qui
+n'existe que parce que l'échelle est gonflée.
+
+**Verdict : le claim du corpus a raison, et c'est le produit qui dérive.**
+« 0 à 6 : motivation faible » est à la fois ce que sert l'application et ce que
+publie la SPLF. Le défaut n'est pas la bande : c'est la cotation de T2, et la
+bande fantôme qu'elle engendre.
+
+**À traiter hors de ce dossier** : corriger T2 change des scores déjà rendus,
+donc relève du lot de rescorage. Mais c'est, après le BDI-13, le constat le plus
+actionnable — et le seul des deux où la publication primaire donne un chiffre
+net à opposer au produit.
 
 ---
 
 ## 8. Instruments du cabinet — hors de portée de la doctrine
 
-Quatre claims portent des bandes d'instruments internes : hyperexcitabilité SIIN
+Six claims portent des bandes d'instruments internes : hyperexcitabilité SIIN
 (`WN-CL-0048-007` à `-010`) et scores dimensionnels (`WN-CL-0049-007`, `-013`).
 
 Le cas de l'hyperexcitabilité mérite d'être noté : le corpus décrit une échelle
@@ -242,16 +269,18 @@ verser au registre plutôt qu'à trancher ici.
 
    | Sort proposé | Claims | Motif |
    |---|---|---|
-   | **À rejeter** (9) | HADS `WN-CL-0047-016`, `-022` à `-025` ; Pichot `WN-CL-0048-014` ; Conners `WN-CL-0046-026` ; Bratman `WN-CL-0046-028` ; Q-MAT `WN-CL-0046-030` | affirment une bande que leur source ne porte pas, ou propagent un seuil désavoué |
+   | **À rejeter** (8) | HADS `WN-CL-0047-016`, `-022` à `-025` ; Pichot `WN-CL-0048-014` ; Conners `WN-CL-0046-026` ; Bratman `WN-CL-0046-028` | affirment une bande que leur source ne porte pas, ou propagent un seuil désavoué |
    | **Validables** (3) | DASS-21 `WN-CL-0047-027` à `-029` | concordent avec le barème servi ; la réserve du doublement ne les vise pas |
-   | **À garder, contre l'app** (1) | Beck `WN-CL-0046-013` | c'est le **barème servi** qui s'écarte des conventions publiées, pas le claim |
+   | **À garder, contre l'app** (2) | Beck `WN-CL-0046-013` ; Q-MAT `WN-CL-0046-030` | c'est le **barème servi** qui s'écarte des conventions publiées, pas le claim |
    | **Au registre** (6) | hyperexcitabilité `WN-CL-0048-007` à `-010` ; dimensionnels `WN-CL-0049-007`, `-013` | instruments du cabinet, hors de portée de la doctrine |
 3. **Deux pièces à obtenir avant de corriger quoi que ce soit** : Beck &
    Beamesderfer 1974 (ou le manuel Cottraux) pour le BDI-13, et le manuel DASS
    pour lever le point d'anxiété = 5.
 4. **Un sujet à ouvrir, qui dépasse l'arbitrage** : la place de l'échelle de
    Conners abrégée, dont les auteurs recommandent l'abandon depuis 1985.
-5. **Deux constats à verser au registre** : l'échelle d'hyperexcitabilité servie
+5. **Trois constats à verser au registre** : la cotation de T2 du Q-MAT, qui
+   gonfle son maximum de 20 à 23 et engendre une bande d'interprétation que
+   personne ne publie ; l'échelle d'hyperexcitabilité servie
    n'a pas la même étendue que celle décrite au corpus, et le BDI servi ne
    correspond à aucune convention publiée retrouvée.
 

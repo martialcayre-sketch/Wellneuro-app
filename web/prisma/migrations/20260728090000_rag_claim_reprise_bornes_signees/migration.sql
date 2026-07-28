@@ -12,51 +12,104 @@
 -- et des règles de cotation — apports EFSA et OMS, ANC lipides et fer, ratio
 -- linoléique/alpha-linolénique, seuil « moins de 800 kcal », cotations
 -- DietScore. L'enjeu clinique est moindre qu'une grille ferritine ; le
--- mécanisme est identique, et la surface qui les servira n'est pas encore
--- ouverte. C'est maintenant qu'il est le moins coûteux de les relire.
+-- mécanisme est identique.
 --
 -- Décision praticien du 2026-07-27 : les repasser en attente, par migration
 -- relue. Elle EFFACE une signature — c'est la transition d'annulation que la
 -- lib autorise déjà (`VALIDE → EN_ATTENTE_VALIDATION`, revue.ts) —, elle ne
 -- rejette ni ne supprime aucun claim. Chacun repart en revue individuelle.
 --
--- ═══ Le critère est le GARDE, pas un jugement ═══════════════════════════════
+-- ═══ Le critère est une FONCTION, pas un bloc anonyme ═══════════════════════
 --
--- La cible n'est pas une liste d'identifiants triée à la main : c'est le
--- prédicat `rag_claim_porte_seuil` lui-même, c'est-à-dire « ce que le garde
--- aurait écarté s'il avait existé ». Objectif, reproductible, et il ne peut pas
--- se périmer entre l'écriture et le déploiement. Le prix est connu et assumé :
--- le garde sur-capture d'un tiers, quelques-uns des 28 sont des moyennes
--- d'étude qui se revalideront d'un coup d'œil.
+-- La cible n'est pas une liste d'identifiants triée à la main : c'est un
+-- prédicat, et il est posé dans une fonction pour une raison précise — le
+-- contrat `prisma/checks/rag_claim_reprise_bornes_v1.sql` l'éprouve sur des
+-- fixtures que la production ne contient pas encore. Un bloc anonyme aurait été
+-- invérifiable : la base du CI est vide, la migration y est un no-op, et le CI
+-- n'aurait rien prouvé de ce qui suit.
 --
--- ═══ Pourquoi aucune liste figée, et aucune assertion d'égalité ═════════════
+-- Trois conditions, et chacune répare un défaut que la revue adversariale a
+-- trouvé sur la première rédaction :
 --
--- Le garde est en production DEPUIS le 2026-07-27 : aucun nouveau lot ne peut
--- plus embarquer un claim porteur d'une borne. L'ensemble visé ne peut donc que
--- DÉCROÎTRE d'ici au déploiement — si le praticien en a déjà repris un à la
--- main. Épingler « exactement 28 » ferait échouer le build de production parce
--- que le praticien aurait fait son travail dans l'intervalle. On borne donc par
--- le haut, ce qui attrape un prédicat devenu trop large sans punir la
--- décroissance légitime.
-DO $$
-DECLARE
-  plafond constant int := 28;  -- mesuré en production le 2026-07-27
-  vises int;
-  repris int;
-BEGIN
-  CREATE TEMP TABLE reprise_bornes ON COMMIT DROP AS
+--   1. le claim porte une borne au sens du garde ;
+--   2. sa signature COURANTE est celle d'un lot — `valide_at = cree_le` du lot,
+--      égalité exacte car `deciderLot` fait l'UPDATE et l'INSERT du journal dans
+--      la MÊME transaction, où `now()` est constant. Sans cette condition, un
+--      claim repris puis REVALIDÉ INDIVIDUELLEMENT par le praticien — c'est-à-
+--      dire faisant exactement ce que ce lot lui demande — rentrerait à nouveau
+--      dans la cible à tout rejeu, et sa signature humaine serait effacée ;
+--   3. il n'a été tiré dans AUCUN lot. La première rédaction testait le tirage
+--      par couple (lot, claim) : un claim couvert par deux lots, tiré dans le
+--      premier et pas dans le second, passait le test par la seconde ligne et
+--      était repris alors qu'il avait été lu. L'anti-semi-jointure porte sur
+--      l'ensemble des lots, et déduplique par construction.
+--
+-- Mesuré en production le 2026-07-28 : aucun claim n'est couvert par plus d'un
+-- lot, aucune ligne `decision_lot` n'est sans `tires`, et les 28 visés ont tous
+-- `valide_at` égal au `cree_le` de leur lot. Les trois corrections ne changent
+-- donc RIEN à la cible d'aujourd'hui — elles la protègent d'une forme qui
+-- n'existe pas encore.
+CREATE OR REPLACE FUNCTION public.rag_claim_reprise_bornes_cible()
+RETURNS TABLE (id text, claim_id text, version_claim text, source_id text)
+LANGUAGE sql
+STABLE
+SET search_path = public, pg_temp
+AS $$
   WITH lots AS (
-    SELECT d.echantillon->'tires' AS tires, e.value->>'id' AS claim_pk
+    SELECT d.cree_le, d.echantillon->'tires' AS tires, e.value->>'id' AS claim_pk
     FROM public.rag_corpus_claim_decisions d,
          LATERAL jsonb_array_elements(d.claims) e
     WHERE d.type_acte = 'decision_lot' AND d.decision = 'VALIDE'
   )
   SELECT c.id, c.claim_id, c.version_claim, c.source_id
-  FROM lots
-  JOIN public.rag_corpus_claims c ON c.id = lots.claim_pk
-  WHERE NOT (lots.tires @> to_jsonb(lots.claim_pk))   -- jamais tiré, donc jamais lu
-    AND c.statut = 'VALIDE'                           -- idempotent : un claim déjà repris est ignoré
-    AND public.rag_claim_porte_seuil(c.texte_normalise);
+  FROM public.rag_corpus_claims c
+  WHERE c.statut = 'VALIDE'
+    AND public.rag_claim_porte_seuil(c.texte_normalise)
+    AND EXISTS (
+      SELECT 1 FROM lots l
+      WHERE l.claim_pk = c.id AND c.valide_at = l.cree_le
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM lots l
+      WHERE l.claim_pk = c.id AND l.tires @> to_jsonb(c.id)
+    );
+$$;
+
+COMMENT ON FUNCTION public.rag_claim_reprise_bornes_cible() IS
+  'Claims encore signés par un lot, jamais tirés, et porteurs d''une borne de décision. Cible de la reprise du 2026-07-28 (migration 20260728090000) ; conservée pour que son contrat puisse l''éprouver et qu''un rejeu reste vérifiable.';
+
+-- Doctrine du dépôt, et la leçon du 2026-07-27 : révoquer PUBLIC ne suffit pas,
+-- Supabase accorde EXECUTE nominativement à anon/authenticated/service_role via
+-- ALTER DEFAULT PRIVILEGES. On révoque donc nommément, en conditionnant à
+-- l'existence du rôle pour rester inerte sur la base éphémère du CI.
+REVOKE EXECUTE ON FUNCTION public.rag_claim_reprise_bornes_cible() FROM PUBLIC;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+    REVOKE EXECUTE ON FUNCTION public.rag_claim_reprise_bornes_cible() FROM anon;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+    REVOKE EXECUTE ON FUNCTION public.rag_claim_reprise_bornes_cible() FROM authenticated;
+  END IF;
+END $$;
+
+-- ═══ La reprise ════════════════════════════════════════════════════════════
+--
+-- Aucune assertion d'égalité, une borne haute. Le garde est en production
+-- DEPUIS le 2026-07-27 : aucun nouveau lot ne peut plus embarquer un claim
+-- porteur d'une borne. L'ensemble visé ne peut donc que DÉCROÎTRE d'ici au
+-- déploiement — si le praticien en a déjà repris un à la main. Épingler
+-- « exactement 28 » ferait échouer le build de production parce que le
+-- praticien aurait fait son travail dans l'intervalle. On borne par le haut, ce
+-- qui attrape un prédicat devenu trop large sans punir la décroissance.
+DO $$
+DECLARE
+  plafond constant int := 28;  -- mesuré en production le 2026-07-27 et le 2026-07-28
+  vises int;
+  repris int;
+BEGIN
+  CREATE TEMP TABLE reprise_bornes ON COMMIT DROP AS
+    SELECT * FROM public.rag_claim_reprise_bornes_cible();
 
   SELECT count(*) INTO vises FROM reprise_bornes;
 

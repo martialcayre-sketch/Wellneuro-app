@@ -31,9 +31,15 @@ et l'application : elle les invalide tous les deux, ou elle est inaccessible.
 - **DASS-21** — corpus et application concordent exactement. Une réserve les
   dépasse : la table publiée porte sur le DASS-42 et suppose des scores
   **doublés** ; le décalage se réduit à un point, l'anxiété à 5.
-- **Q-MAT, Bratman** — la primaire ne publie aucune bande (Q-MAT) ou décrit une
-  règle à deux paliers que le claim déforme (Bratman). L'application ne sert
-  aucun des deux : rien à corriger côté produit.
+- **Q-MAT** — second cas où c'est le produit qui dérive, et il était masqué par
+  un intitulé différent. `Q_TAB_01` (« Test de motivation à l'arrêt du tabac —
+  Lagrue & Légeron ») **est** le Q-MAT, items mot pour mot — mais son item T2 est
+  coté `0/1/4/6` au lieu de `0/1/2/3`. Le total plafonne donc à **23** là où la
+  publication primaire écrit « un score maximal de 20 », et la grille servie
+  ajoute une quatrième bande `21-23` qui n'existe que parce que l'échelle est
+  gonflée. Le claim du corpus a raison ; c'est la cotation qu'il faut corriger.
+- **Bratman** — la règle publiée est à deux paliers (4-5, puis ≥ 6) et le claim
+  la déforme en « plus de 4 ». L'application ne sert pas cet instrument.
 
 **Aucun barème n'est modifié.** Toucher une bande change des scores patients, et
 la décision 2 du 2026-07-27 range le rescorage rétroactif derrière un go
