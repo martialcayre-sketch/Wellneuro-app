@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { Q_ALI_01, Q_ALI_01_SIIN_57, Q_ALI_01_COURT_14 } from '@/lib/questionnaires/alimentaire';
-import { BESOIN_SOURCES, VERSION_SCORE_EQUILIBRE, BESOINS_FONDATIONS_CRITIQUES, SEUIL_EFFONDREMENT } from './constants';
+import {
+  BESOIN_SOURCES,
+  BESOINS_FONDATIONS_CRITIQUES,
+  MAX_RYTHME_CHRONO,
+  SEUIL_EFFONDREMENT,
+  VERSION_SCORE_EQUILIBRE,
+} from './constants';
 
 // Cohérence de la forme alimentaire servie.
 //
@@ -37,7 +43,7 @@ describe('forme alimentaire servie', () => {
   });
 
   it('l’étiquette de version suit le barème réellement servi', () => {
-    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v6' : 'v5');
+    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v7' : 'v5');
   });
 
   it('le besoin 1 reste une fondation critique — d’où l’exigence ci-dessus', () => {
@@ -52,8 +58,46 @@ describe('forme alimentaire servie', () => {
     expect(BESOIN_SOURCES[1].map(s => s.idQuestionnaire)).toEqual(['Q_ALI_01']);
   });
 
-  it('le besoin 2 n’a toujours aucune source — le branchement est un lot à part', () => {
+  it('le besoin 2 n’a toujours aucune source, et ne peut PAS en avoir', () => {
+    // Ce n'est pas « pas encore » : le guide des 12 besoins donne au besoin 2
+    // des biomarqueurs pour seules variables d'entrée (ferritine, zinc,
+    // magnésium, iode, sélénium, vitamine D, B9, B12). Aucun questionnaire ne
+    // mesure un statut micronutritionnel — l'y brancher referait le défaut
+    // Q_SOM_06, sur une fondation critique.
     expect(BESOIN_SOURCES[2]).toEqual([]);
+  });
+
+  it('le besoin 3 est servi par le sous-score de rythme, dans la position SIIN', () => {
+    const sources = BESOIN_SOURCES[3];
+    expect(sources.map(s => s.idQuestionnaire)).toEqual(['Q_ALI_01']);
+    expect(sources[0].sousScore).toBe('RYTHME_CHRONO');
+    // `max` DÉRIVÉ du barème servi, jamais littéral : 7 sous la forme SIIN
+    // (2+2+2+1), 0 sous la forme courte qui ne déclare pas ce sous-score.
+    expect(sources[0].max).toBe(SIIN57_ACTIF ? 7 : 0);
+    expect(sources[0].max).toBe(MAX_RYTHME_CHRONO);
+  });
+
+  it('le sous-score servi ne se confond pas avec la catégorie d’affichage', () => {
+    // `RYTHME_ALIMENTAIRE` en affiche 6 (/10), `RYTHME_CHRONO` en sert 4 (/7).
+    // Les confondre ferait porter au besoin 3 la restauration rapide et la
+    // régularité des prises, que le guide ne lui donne pas.
+    const scoring = Q_ALI_01_SIIN_57.scoring as any;
+    const categorie = scoring.dimensions.find((d: any) => d.id === 'RYTHME_ALIMENTAIRE');
+    const servi = scoring.sousScoresBesoins.find((s: any) => s.id === 'RYTHME_CHRONO');
+    expect(categorie.items).toEqual(['SIIN50', 'SIIN51', 'SIIN52', 'SIIN53', 'SIIN54', 'SIIN55']);
+    expect(servi.items).toEqual(['SIIN52', 'SIIN53', 'SIIN54', 'SIIN55']);
+    expect(categorie.max).toBe(10);
+  });
+
+  it('la liste des besoins SANS source est figée — sinon un branchement passe en silence', () => {
+    // Le trou que ce lot ferme : rien n'empêchait le besoin 3 de quitter cette
+    // liste sans qu'aucun test ne rougisse. Désormais, brancher 2, 6, 7 ou 11
+    // — ou débrancher 1, 3, 4, 5, 8, 9, 10, 12 — fait échouer ici.
+    const sansSource = Object.entries(BESOIN_SOURCES)
+      .filter(([, sources]) => sources.length === 0)
+      .map(([id]) => Number(id))
+      .sort((a, b) => a - b);
+    expect(sansSource).toEqual([2, 6, 7, 11]);
   });
 });
 

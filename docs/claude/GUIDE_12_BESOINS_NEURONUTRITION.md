@@ -61,6 +61,16 @@ la journée.
 
 - **Variables d'entrée** : ratio protéines/glucides des repas, durée du
   jeûne nocturne (nutripériode).
+- **Source questionnaire depuis le 2026-07-28** : sous-score `RYTHME_CHRONO` de
+  l'Enquête alimentaire SIIN (`Q_ALI_01`) — `SIIN52` et `SIIN53` (protéines et
+  ratio du petit déjeuner), `SIIN54` (jeûne nocturne, seuil ≥ 10 h, celui de la
+  règle ci-dessous), `SIIN55` (répartition de la charge sur la journée). Soit
+  7 points, DISTINCTS de la catégorie d'affichage `RYTHME_ALIMENTAIRE` qui en
+  compte 10. En sont écartés `SIIN50` (régularité des prises) et `SIIN51`
+  (restauration rapide) : ni l'un ni l'autre ne relève des deux variables
+  d'entrée ni de la répartition des nutriments. Servi seulement quand les quatre
+  items sont répondus — partiel vaut « pas de mesure », jamais une mesure basse.
+  Le besoin reste non évalué tant que `WN_ALI_01_SIIN57` est éteint.
 - **Règle de décision** : prescrire des protéines le matin (dopamine) et des
   glucides complexes en fin de journée (sérotonine), en assurant un jeûne
   nocturne d'au moins 10 à 12h.

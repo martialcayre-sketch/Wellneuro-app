@@ -430,8 +430,14 @@ describe('garde-fou alimentaire — forme de la sortie moteur', () => {
   const CLES_ADMISES = new Set([
     'type', 'total', 'maxTotal', 'subScores', 'interpretation', 'note',
     'certification', 'scored', 'rawAnswers', 'categories', 'bande',
-    'dimensions', 'missing', 'missingIds', 'raisonNonScore',
+    'dimensions', 'missing', 'missingIds', 'raisonNonScore', 'scoresBesoins',
   ]);
+  // `scoresBesoins` : sous-scores SERVIS à un besoin de Mon équilibre, ajouté le
+  // 2026-07-28 pour le besoin 3. Lu avant admission : même forme que
+  // `dimensions` (`{id, label, total, max, repondus, items, interpretation}`),
+  // des comptes et des points de barème, aucune unité physiologique. Clé
+  // distincte de `subScores` à dessein — la fiche patient basculerait ses
+  // colonnes Score et Interprétation dessus et remplacerait le total /90.
   // `repondus` et `items` sont deux COMPTES portés par chaque catégorie SIIN
   // (items renseignés / items de la catégorie) — vérifiés dans `questions.ts`
   // avant admission, aucune unité physiologique.
@@ -454,11 +460,13 @@ describe('garde-fou alimentaire — forme de la sortie moteur', () => {
       inconnues,
       `${id} : clés non déclarées ${inconnues.join(', ')} — si elles sont légitimes, les ajouter ICI en connaissance de cause`,
     ).toEqual([]);
-    // `subScores` ET `dimensions` : deux imbrications où un bloc au nom neutre
-    // pourrait se loger. N'en balayer qu'une laisserait l'autre ouverte.
+    // `subScores`, `dimensions` ET `scoresBesoins` : trois imbrications où un
+    // bloc au nom neutre pourrait se loger. N'en balayer que deux laisserait la
+    // troisième ouverte — c'est exactement ce qui était arrivé à `dimensions`.
     const imbriques = [
       ...((charge?.subScores ?? []) as Array<Record<string, unknown>>),
       ...((charge?.dimensions ?? []) as Array<Record<string, unknown>>),
+      ...((charge?.scoresBesoins ?? []) as Array<Record<string, unknown>>),
     ];
     for (const bloc of imbriques) {
       const inconnuesBloc = clesInconnues(bloc, CLES_IMBRIQUEES_ADMISES);

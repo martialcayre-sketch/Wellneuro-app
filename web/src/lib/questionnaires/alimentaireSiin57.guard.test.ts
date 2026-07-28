@@ -196,9 +196,16 @@ describe('sous-catégories — descriptives et dark', () => {
   });
 
   it('sont rendues sous `dimensions`, jamais sous `subScores`', () => {
-    // `BESOIN_SOURCES.sousScore` lit `subScores[]` et rien d'autre : tant que
-    // les catégories vivent sous `dimensions`, aucun besoin ne peut les lire.
-    // C'est ce qui rend ce lot « dark » par construction, et non par promesse.
+    // Le mur : la fiche patient bascule ses colonnes Score et Interprétation en
+    // mode sous-scores dès que `subScores` existe, et REMPLACE alors le total
+    // /90 et sa bande. Les catégories doivent donc rester sous `dimensions`.
+    //
+    // À jour au 2026-07-28 : la phrase qui vivait ici — « aucun besoin ne peut
+    // les lire, ce lot est dark par construction » — n'est PLUS vraie.
+    // `BESOIN_SOURCES` lit désormais aussi `scoresBesoins`, une TROISIÈME clé
+    // introduite pour le besoin 3 précisément parce que ce mur interdisait
+    // `subScores`. Les catégories, elles, restent hors de portée d'un besoin :
+    // le sous-score servi est un objet déclaré à part.
     const answers = Object.fromEntries(BAREME.map(e => [e.id, valeurAuSeuil(e.id, e.seuil)]));
     const r = computeScoreFromDef(Q_ALI_01_SIIN_57, answers as Record<string, number>);
     expect(Array.isArray(r.dimensions)).toBe(true);
