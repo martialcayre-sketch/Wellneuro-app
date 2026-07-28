@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
-import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
+import { QUESTIONNAIRE_CATALOGUE, calculateScore, computeScoreFromDef } from '@/lib/questions';
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
 import {
   MASSE_RESIDUELLE,
@@ -35,10 +35,10 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v8`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v9`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
-const EMPREINTE_V8 = 'e277477983ddf543';
+const EMPREINTE_V9 = 'a59102311224da13';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -143,7 +143,21 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v8', empreinte: EMPREINTE_V8 });
+    ).toEqual({ version: 'synthese-v9', empreinte: EMPREINTE_V9 });
+  });
+
+  it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {
+    // Réserve #432, arm « décrire ce qui est livré » : à l'allumage de
+    // `WN_ALI_01_SIIN57`, la charge porte, pour un même thème « rythme », une
+    // dimension d'affichage (`RYTHME_ALIMENTAIRE`, /10) ET un sous-score de
+    // besoin (`RYTHME_CHRONO`, /7), côte à côte sous des dénominateurs
+    // différents. La consigne doit nommer les deux clés et interdire de les
+    // confondre — sinon le modèle additionne deux vues d'un même thème. Marqueurs
+    // stables (pas un reformulage cosmétique) : les deux noms de clés et la
+    // notion de périmètres distincts.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('dimensions');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('scoresBesoins');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('périmètres différents');
   });
 });
 
@@ -174,6 +188,44 @@ describe('garde-fou alimentaire — couplage consigne / charge utile', () => {
     expect(SOURCE_ROUTE).toMatch(/mesureNonInterpretable:\s*motifNonMesure/);
     // Et le motif doit venir du registre, pas d'un littéral recopié sur place.
     expect(SOURCE_ROUTE).toMatch(/motifNonInterpretable\(r\.idQuestionnaire\)/);
+  });
+
+  it('livre réellement les sous-scores que la consigne décrit', () => {
+    // Couplage dans le sens « décrire = livrer » : si la consigne décrit
+    // `scoresBesoins`, une passation SIIN complète doit réellement porter ce
+    // porteur dans la charge — sinon la consigne décrit un fantôme. Sur la
+    // DÉFINITION `Q_ALI_01_SIIN_57` (via `computeScoreFromDef`), donc indépendant
+    // du drapeau env : drapeau éteint, le catalogue sert la forme courte qui n'a
+    // ni dimensions ni scoresBesoins, et le test serait trivialement absent.
+    if (!SYSTEM_PROMPT_GOUVERNANCE.includes('scoresBesoins')) return;
+    const reponses = Object.fromEntries(
+      Q_ALI_01_SIIN_57.sections.flatMap(s =>
+        s.questions.map(q => [q.id, Number((q.options ?? [])[0]?.v)] as const)
+      )
+    );
+    expect(Object.keys(reponses).length, 'forme SIIN : aucune question balayée').toBe(57);
+    const scores = computeScoreFromDef(Q_ALI_01_SIIN_57 as any, reponses) as any;
+    // La charge réelle est `scoresPourPrompt({...scores, rawAnswers})` (route.ts).
+    const charge = scoresPourPrompt({ ...scores, rawAnswers: reponses }) as any;
+    for (const cle of ['dimensions', 'scoresBesoins'] as const) {
+      expect(
+        Array.isArray(charge[cle]) && charge[cle].length > 0,
+        `la consigne décrit ${cle} mais la charge ne le porte pas`,
+      ).toBe(true);
+      for (const sous of charge[cle]) {
+        expect(typeof sous.id, `${cle} : id manquant`).toBe('string');
+        expect(typeof sous.label, `${cle} : label manquant`).toBe('string');
+        expect(typeof sous.max, `${cle} : max non numérique`).toBe('number');
+        expect('total' in sous, `${cle} : total absent`).toBe(true);
+      }
+    }
+    // Le thème « rythme » apparaît bien SOUS LES DEUX clés, avec des max
+    // distincts : c'est l'homonymie que la consigne apprend à ne pas confondre.
+    const maxDim = charge.dimensions.find((d: any) => d.id === 'RYTHME_ALIMENTAIRE')?.max;
+    const maxBesoin = charge.scoresBesoins.find((d: any) => d.id === 'RYTHME_CHRONO')?.max;
+    expect(maxDim, 'RYTHME_ALIMENTAIRE absent des dimensions').toBe(10);
+    expect(maxBesoin, 'RYTHME_CHRONO absent des scoresBesoins').toBe(7);
+    expect(maxDim === maxBesoin, 'les deux vues du rythme ont le même dénominateur — homonymie non exercée').toBe(false);
   });
 });
 
