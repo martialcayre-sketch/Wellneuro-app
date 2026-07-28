@@ -7,6 +7,19 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v9 (2026-07-28) : la charge de synthèse peut désormais porter des sous-scores
+// nommés — `dimensions` (découpage d'affichage) et `scoresBesoins` (mesure d'un
+// besoin) — sans que la consigne les décrive. À l'allumage de `WN_ALI_01_SIIN57`,
+// l'Enquête SIIN livre les deux pour le même thème « rythme » avec des périmètres
+// différents (`RYTHME_ALIMENTAIRE` /10 côté affichage, `RYTHME_CHRONO` /7 côté
+// besoin) : deux totaux du même ordre sous deux dénominateurs, côte à côte dans le
+// même JSON, que le modèle pouvait additionner ou confondre. La consigne les décrit
+// désormais (arm « décrire ce qui est livré » de la réserve #432), en formulation
+// GÉNÉRALE — vraie dans les deux positions du drapeau, ce qui autorise le bump sans
+// faire mentir l'étiquette : c'est le TEXTE de la consigne qui change réellement,
+// pas seulement la charge. Le nom des sous-scores n'est pas codé en dur dans la
+// consigne (il vieillirait) ; un garde couple les deux sens (la consigne décrit
+// `scoresBesoins`/`dimensions` ⇒ une passation SIIN complète les porte réellement).
 // v8 (2026-07-28) : v7 généralisait à tous les Q_ALI une prémisse qui n'est
 // vraie que sur l'un d'eux. Elle affirmait que « la valeur enregistrée EST la
 // quantité dans l'unité de la question » et autorisait le modèle à la rapporter
@@ -43,7 +56,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v8';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v9';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -89,6 +102,19 @@ Ce que tu peux en conclure, et seulement cela : une **exposition alimentaire dé
 Formulation attendue : « les réponses suggèrent une exposition probablement faible aux sources de X ». Formulation interdite : « carence en X », « apport insuffisant de N g », « déficit à corriger ».
 
 Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se contredire.
+
+## Sous-scores : plusieurs découpages d'un même questionnaire
+
+Certains questionnaires ne te livrent pas qu'un score global : leur résultat peut porter des **sous-scores**, sous deux clés distinctes.
+
+- **dimensions** — un découpage d'**affichage** : le questionnaire réparti en catégories thématiques telles qu'elles sont présentées au patient.
+- **scoresBesoins** — la **mesure d'un besoin** : un sous-ensemble d'items retenu pour évaluer un besoin clinique précis, qui peut ne reprendre qu'une partie des items d'une dimension.
+
+Chaque sous-score porte **son propre total et son propre max**. Lis toujours un total contre le max qui l'accompagne, jamais contre celui d'un autre sous-score ni contre le total global du questionnaire.
+
+Un même thème peut donc apparaître **deux fois**, sous dimensions et sous scoresBesoins, avec des libellés voisins mais des **périmètres différents** (un nombre d'items et un max différents). Ce sont deux vues d'un même thème, pas deux mesures à cumuler : ne les additionne jamais, et ne reporte pas le résultat de l'une sous le dénominateur de l'autre.
+
+Pour les questionnaires alimentaires, la règle de la section précédente s'applique aussi à leurs sous-scores : aucun n'est une mesure d'apport ni un seuil étalonné.
 
 ## Questionnaires dont le résultat n'est pas interprétable
 
