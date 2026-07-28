@@ -1,0 +1,144 @@
+name: Release DB
+
+# Applique les migrations Prisma et l'import de nomenclature NABM (CB-02a) sur la
+# BASE DE PRODUCTION, HORS du build applicatif Vercel. Déclenché À LA MAIN et gaté
+# par l'environnement protégé `production` (required reviewers) : c'est un SECOND
+# gate humain, en plus de la revue de PR qui a mergé la migration.
+#
+# POURQUOI CE WORKFLOW. Historiquement, web/scripts/vercel-build.sh appliquait les
+# migrations et les imports AU BUILD. Deux défauts en découlaient : un build
+# pouvait réussir en laissant la base « en retard » (MIGRATE_DATABASE_URL absente
+# → avertissement, pas échec) ; et le contrat post-import s'exécutait après le
+# COMMIT (« build rouge » ne voulait pas dire « rien écrit »). Ce workflow sort
+# l'écriture du build : le build redevient un pur `next build` sans effet de bord.
+#
+# `migrate deploy` n'invente jamais de SQL : il applique uniquement les migrations
+# committées (relues en PR). Le gate humain reste la revue de PR, doublée ici de
+# l'approbation d'environnement.
+#
+# PÉRIMÈTRE. Deux modes seulement : `migrate-only` et `import-cb`. L'import C5
+# CIQUAL n'est VOLONTAIREMENT PAS câblé ici — voir docs/DEPLOIEMENT_RELEASE_DB.md :
+# son garde repose sur `VERCEL_ENV=production`, qui ne tient pas hors Vercel ; le
+# brancher exigerait de le refaire à la manière du garde `--base` de NABM. C5 est
+# par ailleurs déjà importé (append-only, idempotent) et re-semé par dump côté
+# Scalingo (web/scripts/db-deploy.sh), donc sans besoin d'un chemin d'exécution.
+#
+# Runbook de déclenchement et étapes ops (secrets, environnement) :
+# docs/DEPLOIEMENT_RELEASE_DB.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Portée de la release"
+        required: true
+        type: choice
+        options:
+          - migrate-only
+          - import-cb
+      nabm_base:
+        description: "import-cb uniquement : hôte attendu de MIGRATE_DATABASE_URL (garde « deux clés »). Laisser vide sinon."
+        required: false
+        type: string
+
+# Jamais deux releases concurrentes sur la même base de production : la seconde
+# attend la première au lieu de s'entrelacer avec elle.
+concurrency:
+  group: release-db-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # L'environnement protégé porte les required reviewers et les secrets de prod.
+    environment: production
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # URL directe (session mode, port 5432) : `migrate deploy` ne supporte pas
+      # le pooler transaction. Secret d'environnement `production`, jamais committé.
+      MIGRATE_DATABASE_URL: ${{ secrets.MIGRATE_DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: "Garde — MIGRATE_DATABASE_URL requise (fail-closed)"
+        run: |
+          if [ -z "${MIGRATE_DATABASE_URL:-}" ]; then
+            echo "❌ MIGRATE_DATABASE_URL absente du secret d'environnement 'production'." >&2
+            echo "   Release refusée : aucune écriture ne doit partir sans cible explicite." >&2
+            exit 1
+          fi
+
+      - name: "Garde — nabm_base requis pour import-cb"
+        if: ${{ inputs.mode == 'import-cb' }}
+        run: |
+          if [ -z "${{ inputs.nabm_base }}" ]; then
+            echo "❌ Mode import-cb sans 'nabm_base' : il faut NOMMER l'hôte visé." >&2
+            echo "   Ce nom doit se retrouver dans MIGRATE_DATABASE_URL (garde --base)." >&2
+            exit 1
+          fi
+
+      # Préflight lecture seule (BEGIN READ ONLY … ROLLBACK dans le fichier) :
+      # n'écrit rien. Même contrôle que web/scripts/vercel-build.sh exécutait au
+      # build avant `migrate deploy`.
+      - name: "Préflight production (lecture seule)"
+        run: |
+          DATABASE_URL="$MIGRATE_DATABASE_URL" \
+            npx prisma db execute --file prisma/checks/c5_ciqual_production_preflight.sql
+
+      - name: "Migrations Prisma (migrate deploy)"
+        run: DATABASE_URL="$MIGRATE_DATABASE_URL" npx prisma migrate deploy
+
+      # ── Import NABM CB-02a ────────────────────────────────────────────────────
+      # Désarmé hors du mode import-cb. Reproduit EXACTEMENT l'invocation de
+      # web/scripts/vercel-build.sh : advisors → import (jeton/version/sha épinglés
+      # ci-dessous, hôte nommé au déclenchement) → contrat sur les données.
+      #
+      # Les trois épingles ci-dessous sont les MÊMES constantes que le build
+      # portait ; un bump de millésime les change toutes les trois, ET le secret
+      # WN_CB_NABM_IMPORT_CONFIRMATION, ET rouvre une PR relue. Le modèle « deux
+      # clés qui bougent ensemble » : le jeton (épinglé + secret) et l'hôte (input).
+      - name: "Advisors Supabase (fail-on warn, avant import)"
+        if: ${{ inputs.mode == 'import-cb' }}
+        run: |
+          npx --yes supabase@2.109.1 db advisors \
+            --db-url "$MIGRATE_DATABASE_URL" \
+            --type all \
+            --level warn \
+            --fail-on warn \
+            --output-format json
+
+      - name: "Import NABM CB-02a (transactionnel, idempotent)"
+        if: ${{ inputs.mode == 'import-cb' }}
+        env:
+          WN_CB_NABM_IMPORT_CONFIRMATION: ${{ secrets.WN_CB_NABM_IMPORT_CONFIRMATION }}
+        run: |
+          npm run cb:nabm:apply -- \
+            --confirmation "CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1" \
+            --base "${{ inputs.nabm_base }}" \
+            --version "V105" \
+            --sha256 "3a9c289f081d293e7655de709a295bc6da9ece3f2301b86f1ea9625d1c7aed0f"
+
+      # Le contrat du catalogue, joué là où il y a enfin des DONNÉES (en CI la base
+      # est vide, ses invariants de données y sont muets). NOTE : ce re-jeu APRÈS
+      # l'import est la fenêtre « rouge ≠ rien écrit » ; le lot de durcissement
+      # CB-02a le déplace DANS la transaction d'import (prisma/importNabm.ts) et
+      # retirera alors cette étape.
+      - name: "Contrat du catalogue biologie sur les données importées"
+        if: ${{ inputs.mode == 'import-cb' }}
+        run: |
+          DATABASE_URL="$MIGRATE_DATABASE_URL" \
+            npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1.sql
