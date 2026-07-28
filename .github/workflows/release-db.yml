@@ -82,10 +82,17 @@ jobs:
             exit 1
           fi
 
+      # `nabm_base` est un input libre : il passe par `env:` et n'est JAMAIS
+      # interpolé (`${{ }}`) dans un bloc `run:`. GitHub substitue `${{ }}`
+      # textuellement AVANT le shell — une valeur piégée s'exécuterait comme du
+      # code, avec les secrets de l'environnement `production` en portée. Via
+      # une variable shell (`"$NABM_BASE"`), le runner ne la ré-interprète pas.
       - name: "Garde — nabm_base requis pour import-cb"
         if: ${{ inputs.mode == 'import-cb' }}
+        env:
+          NABM_BASE: ${{ inputs.nabm_base }}
         run: |
-          if [ -z "${{ inputs.nabm_base }}" ]; then
+          if [ -z "$NABM_BASE" ]; then
             echo "❌ Mode import-cb sans 'nabm_base' : il faut NOMMER l'hôte visé." >&2
             echo "   Ce nom doit se retrouver dans MIGRATE_DATABASE_URL (garde --base)." >&2
             exit 1
@@ -111,6 +118,13 @@ jobs:
       # portait ; un bump de millésime les change toutes les trois, ET le secret
       # WN_CB_NABM_IMPORT_CONFIRMATION, ET rouvre une PR relue. Le modèle « deux
       # clés qui bougent ensemble » : le jeton (épinglé + secret) et l'hôte (input).
+      #
+      # DOUBLE SOURCE DE VÉRITÉ pendant la coexistence : ces trois valeurs sont
+      # aussi épinglées dans web/scripts/vercel-build.sh:31-33. Tant que le build
+      # écrit encore, les DEUX fichiers doivent bouger ensemble sur un bump. Une
+      # divergence échoue fermé (le garde --version/--sha256 de importNabm.ts
+      # rejette), jamais un import silencieux d'un mauvais contenu. Le lot qui
+      # allège vercel-build.sh supprime cette duplication.
       - name: "Advisors Supabase (fail-on warn, avant import)"
         if: ${{ inputs.mode == 'import-cb' }}
         run: |
@@ -125,10 +139,12 @@ jobs:
         if: ${{ inputs.mode == 'import-cb' }}
         env:
           WN_CB_NABM_IMPORT_CONFIRMATION: ${{ secrets.WN_CB_NABM_IMPORT_CONFIRMATION }}
+          # Passé par env, jamais interpolé dans le `run:` (cf. garde ci-dessus).
+          NABM_BASE: ${{ inputs.nabm_base }}
         run: |
           npm run cb:nabm:apply -- \
             --confirmation "CB-02A-IMPORT-NABM-V105-MC-2026-07-26-v1" \
-            --base "${{ inputs.nabm_base }}" \
+            --base "$NABM_BASE" \
             --version "V105" \
             --sha256 "3a9c289f081d293e7655de709a295bc6da9ece3f2301b86f1ea9625d1c7aed0f"
 
