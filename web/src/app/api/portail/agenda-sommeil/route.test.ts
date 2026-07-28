@@ -73,6 +73,16 @@ describe('POST /api/portail/agenda-sommeil', () => {
     expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
   });
 
+  it('refuse la saisie d’une nuit sur une assignation annulée (Fil A) : 410, aucune écriture', async () => {
+    // L'agenda honore l'annulation à son point d'auth commun (vue + saisie nuit).
+    mockOwner();
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignationAgenda, statut: 'Annulée' });
+    const res = await POST(req('POST', cookieFor(), { body: { idAssignation: 'ASS_AGD', reponses } }));
+    expect(res.status).toBe(410);
+    expect((await res.json()).reason).toBe('annulee');
+    expect(prisma.agendaSommeilNuit.create).not.toHaveBeenCalled();
+  });
+
   it('refuse l’accès inter-patient (404)', async () => {
     prisma.assignation.findUnique.mockResolvedValue(assignationAgenda);
     mockOwner();

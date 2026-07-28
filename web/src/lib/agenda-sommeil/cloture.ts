@@ -23,6 +23,13 @@ export async function cloturerAgenda(input: { idAssignation: string }): Promise<
   if (ass.idQuestionnaire !== AGENDA_SOMMEIL_ID) {
     throw new TypeError("Cette assignation n'est pas un agenda du sommeil.");
   }
+  // Annulée par le praticien (Fil A) : la clôture PRODUIT une QuestionnaireReponse
+  // et repasse `statut` à 'Complété'. Sans ce refus, une annulation serait
+  // silencieusement écrasée et une donnée clinique fabriquée pour un instrument
+  // retiré. Chemin UNIQUE de clôture (patient comme praticien) : le garde y suffit.
+  if (ass.statut === 'Annulée') {
+    throw new TypeError('Cet agenda du sommeil a été annulé et ne peut pas être clôturé.');
+  }
 
   // Idempotence : déjà clôturé → renvoyer la réponse existante sans en recréer.
   if (ass.statutReponses === 'verrouille') {

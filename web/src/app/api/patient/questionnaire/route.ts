@@ -9,7 +9,7 @@ export type PatientQuestionnaireResponse =
   // `renderer` est décidé ICI, sur la définition réellement servie : le client
   // ne voit pas les variables d'environnement, et `Q_ALI_01` a deux formes.
   | { ok: true; assignation: AssignationInfo; questionnaire: unknown; renderer: RendererProfile }
-  | { ok: false; reason: 'not_found' | 'expired' | 'invalid' | 'exception'; error: string };
+  | { ok: false; reason: 'not_found' | 'expired' | 'invalid' | 'annulee' | 'exception'; error: string };
 
 export type AssignationInfo = {
   idAssignation: string;
@@ -51,6 +51,12 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
       : ass.emailPatient.toLowerCase() === emailRaw;
     if (!accessAllowed) {
       return NextResponse.json({ ok: false, reason: 'not_found', error: 'Adresse email non reconnue pour ce questionnaire.' }, { status: 404 });
+    }
+    // Assignation annulée par le praticien (Fil A) : indisponible. Refus dans la
+    // route, pas seulement dans l'écran — un chemin patient oublié laisserait une
+    // annulée remplissable (leçon des trois chemins d'assignation).
+    if (ass.statut === 'Annulée') {
+      return NextResponse.json({ ok: false, reason: 'annulee', error: 'Ce questionnaire a été annulé par votre praticien.' }, { status: 410 });
     }
     // La date limite ne bloque que le remplissage/modification, pas la consultation
     // des réponses déjà verrouillées (droit de consultation permanent, R8-lite).

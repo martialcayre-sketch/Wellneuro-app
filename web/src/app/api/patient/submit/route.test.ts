@@ -99,6 +99,18 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
     expect(data.scoresJson.rawAnswers).toEqual({ NEU3_Q001: 2, NEU3_Q002: 1 });
   });
 
+  // Fil A : refus défensif symétrique à `patient/questionnaire`. Une annulée ne
+  // se soumet par aucun chemin — 409 (un retrait, pas une expiration), sans
+  // calcul ni écriture.
+  it('refuse la soumission d’une assignation annulée : 409, sans rien écrire', async () => {
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignation, statut: 'Annulée' });
+    const res = await postSubmit(requeteSoumission());
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ ok: false, reason: 'annulee' });
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+
   // Le portail ne propose plus un instrument suspendu, mais un refus qui ne vit
   // que dans l'écran se contourne par un appel direct — mot pour mot la leçon
   // du lot #406 sur les trois chemins d'assignation. 409 et non 410 : ce n'est

@@ -11,6 +11,7 @@ import type {
 } from '@/app/api/praticien/patients/route';
 import type { CycleDeVieAction, CycleDeVieResponse } from '@/app/api/praticien/patients/cycle-de-vie/route';
 import type { CreateAssignationResponse } from '@/app/api/praticien/assignations/route';
+import type { AnnulationAssignationResponse } from '@/app/api/praticien/assignations/annulation/route';
 import type { QuestionnairesApiResponse } from '@/app/api/praticien/questionnaires/route';
 import type { QuestionnairesRegistryApiResponse } from '@/app/api/praticien/questionnaires/registry/route';
 import type { CreateConsultationResponse } from '@/app/api/praticien/consultations/route';
@@ -20,6 +21,7 @@ import { MESSAGE_DOSSIER_CLOS } from '@/lib/patient/cycleDeVie';
 import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { PatientRow, type ActionDossier, type PatientRowData } from '@/components/ui/PatientRow';
 import { DossierConfirmDialog, type ModeConfirmation } from '@/components/ui/DossierConfirmDialog';
+import { AnnulationAssignationDialog } from '@/components/ui/AnnulationAssignationDialog';
 import { Pagination } from '@/components/ui/Pagination';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
@@ -30,12 +32,13 @@ const PAGE_SIZE = 10;
 const SEARCH_DEBOUNCE_MS = 300;
 
 type SortBy = 'nom' | 'email';
-type StatutFilter = '' | 'Complété' | 'En attente';
+type StatutFilter = '' | 'Complété' | 'En attente' | 'Annulée';
 
 const STATUT_LABELS: Record<StatutFilter, string> = {
   '': 'Tous les statuts',
   'Complété': 'Complété',
   'En attente': 'En attente',
+  'Annulée': 'Annulée',
 };
 
 function erreurLisible(reason?: string, fallback?: string): string {
@@ -50,6 +53,8 @@ function erreurLisible(reason?: string, fallback?: string): string {
     dossier_cloture: MESSAGE_DOSSIER_CLOS,
     confirmation_manquante: 'Effacement non confirmé : aucune donnée n’a été touchée.',
     questionnaire_not_found: 'Questionnaire introuvable.',
+    // Annulation d'assignation (Fil A) : seules les ouvertes sont annulables.
+    already_filled: 'Ce questionnaire a déjà été rempli — il ne peut pas être annulé.',
     exception: 'Erreur technique. Vérifiez le terminal Next.js.',
   };
   return (reason && map[reason]) ?? fallback ?? 'Erreur inconnue.';
@@ -57,7 +62,8 @@ function erreurLisible(reason?: string, fallback?: string): string {
 
 function StatusBadge({ value }: { value: string }) {
   const status = value || '—';
-  const variant: BadgeVariant = status === 'Complété' ? 'success' : 'neutral';
+  const variant: BadgeVariant =
+    status === 'Complété' ? 'success' : status === 'Annulée' ? 'warning' : 'neutral';
   return <Badge variant={variant}>{status}</Badge>;
 }
 
@@ -159,6 +165,10 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   const [loadingTable, setLoadingTable] = useState(true);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [assignationFeedback, setAssignationFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  // Annulation d'assignation (Fil A) : cible de la modale, état d'envoi, erreur.
+  const [annulationCible, setAnnulationCible] = useState<{ idAssignation: string; titre: string; emailPatient: string } | null>(null);
+  const [annulationEnCours, setAnnulationEnCours] = useState(false);
+  const [erreurAnnulation, setErreurAnnulation] = useState<string | null>(null);
   const [editFeedback, setEditFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [editState, setEditState] = useState<EditPatientState | null>(null);
   const [form, setForm] = useState({ prenom: '', nom: '', email: '', telephone: '', dateNaissance: '' });
@@ -317,6 +327,30 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       setAssignationFeedback({ ok: false, msg: 'Erreur réseau. Réessayez.' });
     } finally {
       setSavingAssignation(false);
+    }
+  };
+
+  const onConfirmerAnnulation = async () => {
+    if (!annulationCible || annulationEnCours) return;
+    setAnnulationEnCours(true);
+    setErreurAnnulation(null);
+    try {
+      const r = await fetch('/api/praticien/assignations/annulation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idAssignation: annulationCible.idAssignation }),
+      });
+      const json = (await r.json()) as AnnulationAssignationResponse;
+      if (!json.ok) {
+        setErreurAnnulation(erreurLisible(json.reason, json.error));
+        return;
+      }
+      setAnnulationCible(null);
+      await loadData();
+    } catch {
+      setErreurAnnulation('Erreur réseau. Réessayez.');
+    } finally {
+      setAnnulationEnCours(false);
     }
   };
 
@@ -980,24 +1014,66 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
                 <th className="px-4 py-2 text-left">Patient</th>
                 <th className="px-4 py-2 text-left">Questionnaire</th>
                 <th className="px-4 py-2 text-left">Statut</th>
+                <th className="px-4 py-2 text-left">Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredAssignations.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-4 text-center text-muted-foreground">Aucune assignation.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-4 text-center text-muted-foreground">Aucune assignation.</td></tr>
               )}
-              {filteredAssignations.map(a => (
+              {filteredAssignations.map(a => {
+                // Annulable : seulement une assignation ouverte, jamais remplie
+                // (cf. garde de portée serveur). Une soumise ou annulée n'a pas
+                // d'action.
+                const annulable = a.statut !== 'Complété' && a.statut !== 'Annulée' && a.statutReponses === 'non_rempli';
+                return (
                 <tr key={a.idAssignation} className="border-t border-border">
                   <td className="px-4 py-2">{a.dateAssignation ? new Date(a.dateAssignation).toLocaleDateString('fr-FR') : '—'}</td>
                   <td className="px-4 py-2">{a.emailPatient || a.idPatient || '—'}</td>
                   <td className="px-4 py-2">{a.titre || a.idQuestionnaire || '—'}</td>
                   <td className="px-4 py-2"><StatusBadge value={a.statut} /></td>
+                  <td className="px-4 py-2">
+                    {annulable ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setErreurAnnulation(null);
+                          setAnnulationCible({
+                            idAssignation: a.idAssignation,
+                            titre: a.titre || a.idQuestionnaire || 'ce questionnaire',
+                            emailPatient: a.emailPatient || '',
+                          });
+                        }}
+                        className="text-xs font-medium text-status-danger hover:underline"
+                      >
+                        Annuler
+                      </button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+
+      <AnnulationAssignationDialog
+        titreQuestionnaire={annulationCible?.titre ?? ''}
+        emailPatient={annulationCible?.emailPatient ?? ''}
+        open={annulationCible !== null}
+        onOpenChange={ouvert => {
+          if (!ouvert) {
+            setAnnulationCible(null);
+            setErreurAnnulation(null);
+          }
+        }}
+        onConfirm={onConfirmerAnnulation}
+        enCours={annulationEnCours}
+        erreur={erreurAnnulation}
+      />
     </div>
   );
 }
