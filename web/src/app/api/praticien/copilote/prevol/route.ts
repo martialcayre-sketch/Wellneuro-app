@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import { construirePreVol, type EntreesPreVol, type PreVol } from '@/lib/copilote/prevol';
+import { EXCLURE_INSTANTANES_JA } from '@/lib/food-observation/contract';
 
 // GET /api/praticien/copilote/prevol?idPatient= — pré-vol T-10 min (SP-COP
 // LOT-01). LECTURE SEULE : aucune écriture, aucune persistance, aucun snapshot.
@@ -90,7 +91,7 @@ export async function GET(req: Request): Promise<NextResponse<PreVolApiResponse>
           select: { milestone: true, confirmedAt: true, versionScore: true },
         }),
         prisma.protocolDraft.findMany({
-          where: { idPatient, reviewedAt: { not: null } },
+          where: { idPatient, reviewedAt: { not: null }, ...EXCLURE_INSTANTANES_JA },
           select: { reviewedAt: true },
         }),
         prisma.protocolDiffusionApproval.findMany({

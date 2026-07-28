@@ -6,6 +6,7 @@ import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/app
 import { resolveActiveVersion } from '@/lib/protocol/versioning';
 import { resolveActiveApproval } from '@/lib/protocol/diffusion';
 import { construireCloture, type Cloture } from '@/lib/copilote/minuteApres';
+import { EXCLURE_INSTANTANES_JA } from '@/lib/food-observation/contract';
 
 // GET /api/praticien/copilote/cloture?idPatient= — la minute d'après (SP-COP
 // LOT-02). LECTURE SEULE : aucune écriture, aucune persistance, aucun envoi.
@@ -63,7 +64,11 @@ export async function GET(req: Request): Promise<NextResponse<ClotureApiResponse
 
     const [versions, syntheses] = await Promise.all([
       prisma.protocolDraft.findMany({
-        where: { idPatient },
+        // Les instantanés du carnet alimentaire partagent cette table mais ne
+        // sont pas des versions de protocole ; depuis le lot 2, le patient en
+        // écrit lui-même. Sans cette exclusion, sa transmission devient le fil
+        // courant de la clôture (`versions[0]` ci-dessous).
+        where: { idPatient, ...EXCLURE_INSTANTANES_JA },
         select: {
           id: true,
           inputHash: true,

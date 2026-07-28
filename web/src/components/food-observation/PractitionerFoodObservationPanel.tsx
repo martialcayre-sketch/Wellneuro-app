@@ -12,8 +12,7 @@ import {
   LABELS_CONSTATS_DIRECTS,
   LABELS_ISSUE_TRACE,
   type FrictionCode,
-  createAttentionBudget,
-  createEpisode,
+  buildEpisodeDepuisProtocole,
   createTrialTrace,
   listDirectFindings,
   type FoodObservationEpisode,
@@ -25,36 +24,30 @@ function dateLocale(value: Date): string {
   return value.toISOString().slice(0, 10);
 }
 
-function plusDays(value: Date, days: number): Date {
-  const clone = new Date(value);
-  clone.setDate(clone.getDate() + days);
-  return clone;
-}
-
 function makeId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function buildEpisode(patientId: string): FoodObservationEpisode {
-  const start = new Date();
-  return createEpisode({
-    episodeId: `ja_praticien_${patientId}`,
-    patientId,
-    startDate: dateLocale(start),
-    endDate: dateLocale(plusDays(start, 6)),
-    budget: createAttentionBudget(3),
-    content: {
-      regime: 'essai',
-      hypothese: 'Observer la praticabilite de l’action alimentaire sans surcharge de saisie.',
-      action: {
-        actionId: 'action_ja5_02',
-        labelPatient: 'Action alimentaire de la semaine',
-        idealPlan: 'Version ideale decidee en consultation.',
-        simplePlan: 'Version simple decidee en consultation.',
-      },
-    },
-  });
-}
+// L'épisode praticien n'est plus un gabarit (lot 2, item 5) : il vient du
+// protocole diffusé, via `GET /api/praticien/ja/cycle`, et porte le MÊME
+// `episodeId` que celui du panneau patient. Sans protocole diffusé, il n'y a
+// pas d'épisode — l'ancien gabarit annonçait « Version ideale decidee en
+// consultation » sans que rien ne l'y relie.
+type VueCyclePraticien = {
+  purpose: string;
+  actionPrincipale: { type: string; title: string; minimalPlan: string } | null;
+  cycleRef: string;
+  debutCycle: string;
+};
+
+type JaSnapshotRecu = {
+  draftId: string;
+  createdAt: string;
+  actor: 'praticien' | 'patient';
+  tracesCount: number;
+  pausesCount: number;
+  solutionsCount: number;
+};
 
 type PractitionerFoodObservationDraft = {
   traces: TrialTrace[];
@@ -166,7 +159,9 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     if (!initialDraft) return false;
     return initialDraft.traces.length > 0 || initialDraft.decisionNote.length > 0;
   });
-  const [episode] = useState<FoodObservationEpisode>(() => buildEpisode(idPatient));
+  const [episode, setEpisode] = useState<FoodObservationEpisode | null>(null);
+  const [cycleCharge, setCycleCharge] = useState(false);
+  const [transmissions, setTransmissions] = useState<JaSnapshotRecu[]>([]);
   const [traces, setTraces] = useState<TrialTrace[]>(() => initialDraft?.traces ?? []);
   const [decisionMode, setDecisionMode] = useState<'accepter' | 'modifier'>(
     () => initialDraft?.decisionMode ?? 'accepter'
@@ -203,6 +198,64 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   useEffect(() => {
     writeDraft(idPatient, { traces, decisionMode, decisionNote, assietteCode });
   }, [idPatient, traces, decisionMode, decisionNote, assietteCode]);
+
+  // Transmissions reçues du patient (lot 2, item 4). Sans ce lecteur, le bouton
+  // « Transmettre à mon praticien » promettait un partage sans destinataire.
+  useEffect(() => {
+    let mounted = true;
+
+    const chargerTransmissions = async () => {
+      try {
+        const res = await fetch(
+          `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}&actor=patient`,
+          { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
+        );
+        const json = (await res.json()) as { ok: boolean; snapshots?: JaSnapshotRecu[] };
+        if (!mounted || !res.ok || !json.ok || !json.snapshots) return;
+        // Le filtre d'acteur est déjà posé en base ; celui-ci n'est qu'une
+        // ceinture, il ne porte plus la fenêtre de lecture.
+        setTransmissions(json.snapshots.filter(s => s.actor === 'patient'));
+      } catch {
+        // Repli silencieux : la revue praticien reste utilisable.
+      }
+    };
+
+    void chargerTransmissions();
+    return () => { mounted = false; };
+  }, [idPatient]);
+
+  // Épisode dérivé du protocole diffusé, identique à celui du panneau patient.
+  useEffect(() => {
+    let mounted = true;
+
+    const chargerCycle = async () => {
+      try {
+        const res = await fetch(`/api/praticien/ja/cycle?idPatient=${encodeURIComponent(idPatient)}`, {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+        });
+        const json = (await res.json()) as {
+          ok: boolean;
+          protocoleDiffuse?: boolean;
+          vue?: VueCyclePraticien | null;
+        };
+        if (!mounted) return;
+        if (!res.ok || !json.ok || !json.protocoleDiffuse || !json.vue) {
+          setEpisode(null);
+          return;
+        }
+        setEpisode(buildEpisodeDepuisProtocole({ idPatient, protocole: json.vue }));
+      } catch {
+        if (mounted) setEpisode(null);
+      } finally {
+        if (mounted) setCycleCharge(true);
+      }
+    };
+
+    void chargerCycle();
+    return () => { mounted = false; };
+  }, [idPatient]);
 
   useEffect(() => {
     let mounted = true;
@@ -243,7 +296,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     try {
       const trace = createTrialTrace({
         traceId: makeId('trace_praticien'),
-        episodeId: episode.episodeId,
+        episodeId: episode?.episodeId ?? `ja_praticien_${idPatient}_hors_cycle`,
         localDate: dateLocale(new Date()),
         occasionPresentee: true,
         faisable: issue === 'fait' || issue === 'adapte',
@@ -299,6 +352,13 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
     }
     if (feedbackPatient.trim().length < 10) {
       setError('Ajoutez un retour patient de 10 caractères minimum.');
+      return;
+    }
+
+    // Sans protocole diffusé, il n'y a pas d'épisode à figer : l'activation
+    // écrirait un instantané rattaché à un épisode inventé.
+    if (!episode) {
+      setError('Aucun protocole diffusé : diffusez un protocole avant d’activer une décision JA.');
       return;
     }
 
@@ -396,6 +456,57 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
           ← Retour fiche patient
         </Link>
       </div>
+
+      {cycleCharge && (
+        episode && episode.content.regime === 'essai' ? (
+          <section
+            className="bg-surface border border-border rounded-xl p-4 space-y-1"
+            data-testid="ja-praticien-cycle"
+          >
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Action du protocole diffusé
+            </h3>
+            <p className="text-sm font-medium text-foreground">{episode.content.action.labelPatient}</p>
+            <p className="text-sm text-muted-foreground">{episode.content.action.simplePlan}</p>
+            <p className="text-xs text-muted-foreground">
+              Période du {episode.startDate} au {episode.endDate}.
+            </p>
+          </section>
+        ) : (
+          <p
+            className="rounded-lg px-4 py-2 text-base text-primary bg-primary/10"
+            data-testid="ja-praticien-sans-cycle"
+          >
+            Aucun protocole diffusé pour ce patient : la saisie reste locale et aucune décision JA
+            ne peut être activée.
+          </p>
+        )
+      )}
+
+      <section
+        className="bg-surface border border-border rounded-xl p-4 space-y-2"
+        data-testid="ja-praticien-transmissions"
+      >
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Ce que le patient a transmis
+        </h3>
+        {transmissions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucune transmission du patient à ce jour.</p>
+        ) : (
+          <ul className="space-y-1 text-sm text-foreground">
+            {transmissions.map((snapshot) => (
+              <li key={snapshot.draftId}>
+                {dateLocale(new Date(snapshot.createdAt))} — {snapshot.tracesCount} trace(s),{' '}
+                {snapshot.pausesCount} pause(s), {snapshot.solutionsCount} solution(s)
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Comptes de ce qui a été transmis, sans interprétation. Une transmission patient
+          n’alimente aucune dérivation clinique tant que vous n’avez pas activé de décision.
+        </p>
+      </section>
 
       {draftRestored && (
         <p className="rounded-lg px-4 py-2 text-base text-primary bg-primary/10" data-testid="ja-praticien-restored-info">

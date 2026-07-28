@@ -40,7 +40,12 @@ function validateContent(content: RegimeContent): RegimeContent {
     nonEmpty(content.hypothese, 'hypothese');
     nonEmpty(content.action.actionId, 'action.actionId');
     nonEmpty(content.action.labelPatient, 'action.labelPatient');
-    nonEmpty(content.action.idealPlan, 'action.idealPlan');
+    // `idealPlan` n'est plus exigé : un épisode dérivé du protocole diffusé ne
+    // reçoit que le plan minimal, seul plan patient-safe. S'il est présent, il
+    // doit rester non vide.
+    if (content.action.idealPlan !== undefined) {
+      nonEmpty(content.action.idealPlan, 'action.idealPlan');
+    }
     nonEmpty(content.action.simplePlan, 'action.simplePlan');
     if (content.action.recommendedPlateRef !== undefined) {
       content.action.recommendedPlateRef = assertCurrentRecommendedPlateRef(

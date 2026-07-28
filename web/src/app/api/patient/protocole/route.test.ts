@@ -79,7 +79,13 @@ describe('GET /api/patient/protocole', () => {
     // Scopé au patient de l'assignation vérifiée.
     expect(prisma.protocolDraft.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { idPatient: 'PAT_PROPRIETAIRE', status: 'practitioner_reviewed' },
+        where: {
+          idPatient: 'PAT_PROPRIETAIRE',
+          status: 'practitioner_reviewed',
+          // Un instantané de carnet activé par le praticien ne doit pas se
+          // faire passer pour un protocole relu auprès du patient.
+          contractVersion: { not: 'ja-food-observation-v1' },
+        },
       }),
     );
   });

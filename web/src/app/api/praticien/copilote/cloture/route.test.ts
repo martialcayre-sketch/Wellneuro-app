@@ -50,6 +50,22 @@ describe('GET /api/praticien/copilote/cloture — garde et journal des accès', 
     });
   });
 
+  // Les instantanés du carnet alimentaire vivent dans `protocol_drafts` et le
+  // patient en écrit lui-même depuis le lot 2. La clôture prend le brouillon le
+  // plus récent comme fil courant : sans exclusion, une transmission patient
+  // ferait apparaître le protocole du praticien comme non relu et sa diffusion
+  // comme caduque.
+  it('exclut les instantanés du carnet alimentaire de la lecture des versions', async () => {
+    await GET(request());
+    expect(prisma.protocolDraft.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          contractVersion: { not: 'ja-food-observation-v1' },
+        }),
+      }),
+    );
+  });
+
   it('patient d’un autre praticien : 403, jamais journalisé', async () => {
     prisma.patient.findUnique.mockResolvedValue({ praticienEmail: 'autre@wellneuro.fr' });
     const res = await GET(request());

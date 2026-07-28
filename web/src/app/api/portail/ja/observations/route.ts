@@ -5,8 +5,14 @@ import {
   type JaObservationSnapshot,
   type JaObservationSnapshotInput,
 } from '@/lib/food-observation/persistence';
+import { episodeIdDepuisCycle } from '@/lib/food-observation/episodeDepuisProtocole';
 import { isSessionValideForPatient, readPatientSession } from '@/lib/patient-session';
+import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
 import { prisma } from '@/lib/prisma';
+
+// Miroir de la troncature de `GET /api/portail/protocole`, dont le client tire
+// l'identité du cycle.
+const LONGUEUR_CYCLE_REF = 16;
 
 type ErrorResponse = { ok: false; reason: string; error: string };
 type ListResponse = { ok: true; snapshots: JaObservationSnapshot[] } | ErrorResponse;
@@ -55,7 +61,9 @@ export async function GET(req: Request): Promise<NextResponse<ListResponse>> {
       );
     }
 
-    const snapshots = await listJaObservationSnapshots(auth.idPatient);
+    // Le patient ne chaîne que sur ses propres transmissions : le filtre est
+    // posé en base, une fenêtre tous acteurs pouvant les masquer entièrement.
+    const snapshots = await listJaObservationSnapshots(auth.idPatient, 10, 'patient');
     return NextResponse.json({ ok: true, snapshots });
   } catch (error) {
     console.error('[portail/ja/observations GET]', error instanceof Error ? error.message : String(error));
@@ -90,6 +98,26 @@ export async function POST(req: Request): Promise<NextResponse<SaveResponse>> {
       return NextResponse.json(
         { ok: false, reason: 'invalid_payload', error: 'Corps de requête incomplet.' },
         { status: 400 },
+      );
+    }
+
+    // Autorité serveur sur l'identité du cycle. Sans elle, la cohérence
+    // vérifiée par le domaine reste interne au corps reçu : un onglet resté
+    // ouvert au travers d'une nouvelle diffusion transmettrait un instantané
+    // parfaitement cohérent avec lui-même, et rattaché au cycle périmé.
+    const diffuse = await resolveProtocoleDiffuse(auth.idPatient);
+    const episodeAttendu = diffuse
+      ? episodeIdDepuisCycle(auth.idPatient, diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF))
+      : null;
+    const episodeRecu = (body.episode as { episodeId?: unknown }).episodeId;
+    if (!episodeAttendu || episodeRecu !== episodeAttendu) {
+      return NextResponse.json(
+        {
+          ok: false,
+          reason: 'cycle_perime',
+          error: 'Votre carnet a changé de période. Rechargez la page avant de transmettre.',
+        },
+        { status: 409 },
       );
     }
 

@@ -28,7 +28,17 @@ type VueProtocole = {
   adviceSheetRef: string | null;
   actionPrincipale: ActionPrincipale | null;
   boussoles: PatientFoodCompassSafeView[];
+  /**
+   * Référence opaque du cycle diffusé (préfixe du hash d'ancrage du protocole) :
+   * elle ne porte aucun contenu clinique et sert à donner au carnet alimentaire
+   * un identifiant d'épisode distinct d'un cycle à l'autre.
+   */
+  cycleRef: string;
+  /** Date d'approbation de la diffusion — début du cycle vécu par le patient. */
+  debutCycle: string;
 };
+
+const LONGUEUR_CYCLE_REF = 16;
 
 type GetResponse =
   | { ok: true; protocoleDiffuse: boolean; finDeCycle: boolean; vue: VueProtocole | null }
@@ -99,6 +109,8 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         ? { type: principale.type, title: principale.title, minimalPlan: principale.minimalPlan }
         : null,
       boussoles,
+      cycleRef: diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF),
+      debutCycle: diffuse.approvedAt.toISOString(),
     };
 
     const finDeCycle =
