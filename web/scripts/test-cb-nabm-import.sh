@@ -33,7 +33,23 @@ export WN_CB_NABM_IMPORT_CONFIRMATION="$JETON"
 
 FIXTURES=prisma/fixtures/nabm-test
 SORTIE="$(mktemp)"
-trap 'rm -f "$SORTIE"' EXIT
+# Nettoyage inconditionnel : le fichier de sortie ET la colonne de test du
+# cas 17. Sous `set -e`, un cas 17 qui échoue entre l'ADD COLUMN et le DROP
+# laisserait une colonne de sémantique patient en base — le verrou HDS
+# in-transaction ferait alors échouer le cas 1 de TOUT run suivant. Le DROP est
+# idempotent (IF EXISTS) : inoffensif quand la colonne n'a pas été ajoutée.
+nettoyer() {
+  rm -f "$SORTIE"
+  node -e '
+    const {Client} = require("pg");
+    (async () => {
+      const c = new Client({connectionString: process.env.DATABASE_URL});
+      await c.connect();
+      await c.query("ALTER TABLE biology_analytes DROP COLUMN IF EXISTS id_patient");
+      await c.end();
+    })().catch(() => {});' 2>/dev/null || true
+}
+trap nettoyer EXIT
 
 # Un import complet, avec toutes ses preuves. `$@` porte les options du cas.
 importer() {
@@ -254,25 +270,43 @@ echo "── 16. Une épingle d'empreinte vide est refusée, pas ignorée ──
 echec_attendu "--sha256 réduit à rien" "64 caractères hexadécimaux" \
   --source "$FIXTURES/v105" --version V105 --sha256 "   "
 
-echo "── 17. Une violation structurelle annule l'import (verrou HDS in-transaction) ──"
-# On ajoute RÉELLEMENT une colonne de sémantique patient au catalogue, puis on
-# relance un import. Le contrat STRUCTUREL, rejoué DANS la transaction de l'import
-# avant COMMIT, doit la détecter et faire ROLLBACK : l'import est refusé, rien
-# n'est écrit. Sans ce cas, le contrat structurel pourrait ne jamais être appelé
-# dans la transaction — ou l'être sans mordre — sans que rien ne le dise. Le
-# rejeu de V105 (déjà servi, sans épingle) entre bien dans le chemin d'écriture
-# sans déclencher la sortie anticipée ni le garde d'orphelines (1213 est en V105).
+echo "── 17. Une violation structurelle annule un import qui ÉCRIT (ROLLBACK effectif) ──"
+# On repart d'un catalogue NABM VIDE pour que l'import INSÈRE réellement (premier
+# import V105 = 4 actes, pointeur posé), puis on ajoute une colonne de sémantique
+# patient. L'import doit alors insérer dans sa transaction, passer la relecture,
+# puis buter sur le contrat STRUCTUREL rejoué avant COMMIT → RAISE → ROLLBACK. On
+# vérifie ENSUITE que rien n'a survécu (0 acte, aucun pointeur) : c'est la garantie
+# « rouge ⇒ rien écrit » éprouvée sur le chemin d'écriture RÉEL, pas sur un rejeu
+# idempotent. Les correspondances signées restent en place (1213 est dans V105,
+# donc pas d'orphelinage). Le DROP COLUMN est en outre garanti par le `trap` de
+# sortie, au cas où ce cas échouerait avant sa propre restauration.
 node -e '
 const {Client} = require("pg");
 (async () => {
   const c = new Client({connectionString: process.env.DATABASE_URL});
   await c.connect();
+  await c.query("DELETE FROM biology_catalog_versions_courantes");
+  await c.query("DELETE FROM biology_source_snapshots");
+  await c.query("DELETE FROM biology_nabm_actes");
   await c.query("ALTER TABLE biology_analytes ADD COLUMN IF NOT EXISTS id_patient text");
   await c.end();
 })().catch(e => { console.error(e); process.exit(1); });'
-echec_attendu "colonne à sémantique patient dans le catalogue" "sémantique patient" \
+echec_attendu "violation structurelle pendant un import qui insère" "sémantique patient" \
   --source "$FIXTURES/v105"
-# Restauration : la colonne de test ne doit pas survivre au banc.
+# Preuve du ROLLBACK : l'insertion n'a pas survécu, le catalogue est resté vide.
+restes="$(node -e '
+const {Client} = require("pg");
+(async () => {
+  const c = new Client({connectionString: process.env.DATABASE_URL});
+  await c.connect();
+  const r = await c.query("SELECT (SELECT count(*) FROM biology_nabm_actes) + (SELECT count(*) FROM biology_catalog_versions_courantes) AS n");
+  process.stdout.write(String(r.rows[0].n));
+  await c.end();
+})().catch(e => { console.error(e); process.exit(1); });')"
+if [ "$restes" != "0" ]; then
+  echo "ÉCHEC — ROLLBACK incomplet : $restes ligne(s) subsistent après l'import annulé" >&2
+  exit 1
+fi
 node -e '
 const {Client} = require("pg");
 (async () => {
@@ -281,7 +315,7 @@ const {Client} = require("pg");
   await c.query("ALTER TABLE biology_analytes DROP COLUMN IF EXISTS id_patient");
   await c.end();
 })().catch(e => { console.error(e); process.exit(1); });'
-echo "  ✔ colonne patient détectée in-transaction, import annulé, colonne retirée"
+echo "  ✔ import qui insère annulé, catalogue vide après rollback, colonne retirée"
 
 echo "── Table rase finale ──"
 # TOUTE VALEUR SQL PASSE EN PARAMÈTRE, et ce n'est pas ici un réflexe de
