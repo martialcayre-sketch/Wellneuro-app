@@ -144,8 +144,20 @@ describe('passation vide — rien à juger, donc aucun verdict', () => {
     expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: {} })).toBe('NON_MESURE');
     expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: { P1: '1' } })).toBe('NON_MESURE');
 
-    // Et une passation réellement répondue reste une preuve.
-    const psqi = { Q1: 23, Q2: 15, Q3: 7, Q4: 7, Q6: 1, Q7: 0, Q8: 0, Q9: 1 };
+    // Et une passation réellement répondue reste une preuve. Les dix items de
+    // perturbation ont été ajoutés le 2026-07-29 : sans eux, deux des sept
+    // composantes du PSQI ne sont pas mesurées, et l'instrument ne rend plus de
+    // total — la fixture aurait prouvé le contraire de ce qu'elle annonce.
+    const psqi = {
+      Q1: 23, Q2: 15, Q3: 7, Q4: 7,
+      Q5a: 0, Q5b: 0, Q5c: 0, Q5d: 0, Q5e: 0,
+      Q5f: 0, Q5g: 0, Q5h: 0, Q5i: 0, Q5j: 0,
+      Q6: 1, Q7: 0, Q8: 0, Q9: 1,
+    };
     expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: psqi })).toBe('A');
+    // Et une passation AMPUTÉE d'une composante n'en est plus une : c'est le lot
+    // du 2026-07-29 sur les moteurs à composantes.
+    const { Q5b: _b, Q5c: _c, ...sansPerturbations } = psqi;
+    expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: sansPerturbations })).toBe('NON_MESURE');
   });
 });

@@ -1564,6 +1564,49 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     return {total: repondus === 0 ? null : total, missing, repondus};
   }
 
+  /** Items RÉELLEMENT renseignés parmi une liste — comptés, jamais sommés. */
+  function repondusParmi(items: any[]) {
+    return (items || []).filter((id: any) => getVal(id) !== null).length;
+  }
+
+  /** Un axe est MESURÉ dès qu'un seul de ses items est renseigné. */
+  function axeMesure(items: any[]) {
+    return repondusParmi(items) > 0;
+  }
+
+  /**
+   * Un axe est COMPLET quand tous ses items le sont.
+   *
+   * Le seuil, lui, exige le complet — doctrine posée sur Karasek le 2026-07-29 :
+   * `karasekValue` rendait 0 sur une absence, si bien qu'un patient déclarant une
+   * autonomie MAXIMALE sur 7 items de 9 ressortait « Job Strain ». Un total
+   * incomplet est toujours BIAISÉ VERS LE BAS, et une grille lue par le bas
+   * conclut — rassurant ici, alarmant là, faux dans les deux cas.
+   *
+   * `items.length > 0` : `repondus === items.length` vaut `0 === 0` sur une liste
+   * vide, qui passerait alors pour complète.
+   */
+  function axeComplet(items: any[]) {
+    return (items || []).length > 0 && repondusParmi(items) === items.length;
+  }
+
+  /**
+   * Verdict d'un seuil MONOTONE croissant, sur une donnée peut-être incomplète.
+   *
+   * Un comptage ne peut que monter quand une réponse s'ajoute. Le franchissement
+   * observé est donc DÉFINITIF — six « oui » sur neuf items dépassent un seuil de
+   * cinq, que les trois derniers items soient renseignés ou non. Le non-
+   * franchissement, lui, ne vaut que sur un comptage complet : c'est le sens
+   * unique de la monotonie, et c'est ce qui autorise à affirmer `true` sans
+   * pouvoir affirmer `false`.
+   *
+   * Rendre `false` sur un instrument non répondu, c'est rendre « pas d'idéation
+   * suicidaire » d'un patient à qui personne n'a posé la question.
+   */
+  function seuilMonotone(atteint: boolean, complet: boolean) {
+    return atteint ? true : (complet ? false : null);
+  }
+
   /**
    * Total global agrégé depuis des sous-scores.
    *
@@ -1695,8 +1738,15 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // propre bande d'interprétation et remplace le score global à l'affichage,
     // une dimension ne fait que détailler un total qui reste la mesure. Les
     // confondre effacerait le total et l'interprétation de la fiche patient.
+    //
+    // `totalSousScore` et non `sumItems` : une dimension à laquelle personne n'a
+    // répondu vaut `null`, pas 0. `seuils_points` porte déjà cette garde sur ses
+    // propres dimensions depuis le 2026-07-28 ; `sum` ne l'avait pas, et rendait
+    // « Appariement 0/5 » ou « Attention 0/5 » sur un MMSE dont seule
+    // l'orientation avait été passée. Le total global, lui, ne bouge pas : une
+    // dimension est un découpage DESCRIPTIF qui n'y contribue pas.
     const dimensions = (sc.dimensions || []).map((d: any) => {
-      const {total: sousTotal} = sumItems(d.items, []);
+      const {total: sousTotal} = totalSousScore(d.items, []);
       return {id: d.id, label: d.label, total: sousTotal, max: d.max ?? null, interpretation: null};
     });
     return {
@@ -1842,9 +1892,6 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── PLAINTES ACTUELLES (source Drive) ─────────────────
   if (sc.type === 'plaintes_actuelles') {
     const items = allQ.map(q => q.id);
-    const {total} = sumItems(items, []);
-    const average = Number((total / items.length).toFixed(1));
-    const interp = interpretRanges(average, sc.interpretation);
     const subScores = (sc.domains || []).map((domain: any) => {
       const value = getVal(domain.item);
       return {
@@ -1855,6 +1902,21 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         interpretation: value === null ? null : interpretRanges(value, sc.interpretation),
       };
     });
+    // Les axes portaient DÉJÀ leur `null` — un domaine non renseigné n'a jamais
+    // valu 0 ici. Le total global, lui, comptait les manquants pour zéro et
+    // divisait par les sept domaines : une plainte de fatigue à 10/10, seule
+    // renseignée, sortait en « 10 » de total, « 1,4 » de moyenne et
+    // « Intensité faible ou absente » — la bande RASSURANTE, sur le même écran
+    // que « Intensité très élevée » servie par son propre domaine. Deux verdicts
+    // opposés tirés d'une seule réponse.
+    //
+    // La complétude se lit sur les ITEMS et non sur les domaines déclarés : le
+    // total a toujours été la somme des items, et l'y adosser garde sa valeur
+    // inchangée sur une passation complète, quoi que déclare `domains`.
+    const {total: somme} = sumItems(items, []);
+    const total = axeComplet(items) ? somme : null;
+    const average = total === null ? null : Number((total / items.length).toFixed(1));
+    const interp = interpretRanges(average, sc.interpretation);
     return {
       type:'plaintes_actuelles',
       total,
@@ -1902,13 +1964,24 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const q15 = getVal('SIGH_Q015') || 0;
     const q16 = getVal('SIGH_Q016') || 0;
     const q17 = getVal('SIGH_Q017') || 0;
-    const dualRawMax = Math.max(q15, q16, q17);
-    let scoreDual1517 = dualRawMax;
-    if (q17 >= 3 && q17 >= q15 && q17 >= q16) scoreDual1517 = 2;
-    else if (dualRawMax === 2) scoreDual1517 = 1;
-    const scoreGroupeA = sumIds(sc.groupA || []) + scoreDual1517;
-    const scoreGroupeB = sumIds(sc.groupB || []) + scoreDual1517;
-    const total = scoreGroupeA + scoreGroupeB;
+    // Le bloc 15-17 est la CHARNIÈRE de l'échelle : il entre dans les deux
+    // groupes. Non renseigné, il valait 0 — donc « ni hypersomnie, ni
+    // hyperphagie, ni prise de poids », affirmé de qui n'a rien répondu.
+    const dualItems = sc.dualItems || ['SIGH_Q015', 'SIGH_Q016', 'SIGH_Q017'];
+    const dualMesure = axeMesure(dualItems);
+    const dualRawMax = dualMesure ? Math.max(q15, q16, q17) : null;
+    let scoreDual1517: number | null = dualRawMax;
+    if (dualMesure) {
+      if (q17 >= 3 && q17 >= q15 && q17 >= q16) scoreDual1517 = 2;
+      else if (dualRawMax === 2) scoreDual1517 = 1;
+    }
+    // Un groupe est mesuré dès qu'un de SES items l'est — la charnière comprise,
+    // puisqu'elle lui appartient autant qu'à l'autre groupe.
+    const itemsA = [...(sc.groupA || []), ...dualItems];
+    const itemsB = [...(sc.groupB || []), ...dualItems];
+    const scoreGroupeA = axeMesure(itemsA) ? sumIds(sc.groupA || []) + (scoreDual1517 ?? 0) : null;
+    const scoreGroupeB = axeMesure(itemsB) ? sumIds(sc.groupB || []) + (scoreDual1517 ?? 0) : null;
+    const total = totalGlobalDepuisSousScores([{total: scoreGroupeA}, {total: scoreGroupeB}]);
     return {
       type:'sigh_sad_sa',
       scoreGroupeA,
@@ -2108,42 +2181,75 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── PSQI ─────────────────────────────────────────────
   if (sc.type === 'psqi') {
-    const hCoucher = getVal('Q1') || 23;
-    const minEndorm = getVal('Q2') || 30;
-    const hLever   = getVal('Q3') || 7;
-    const hDormies = getVal('Q4') || 7;
-    let tLit = hLever - hCoucher;
-    if (tLit <= 0) tLit += 24;
-    const efficiency = tLit > 0 ? (hDormies / tLit) * 100 : 0;
-    const C1 = getVal('Q6') || 0;
-    const lat = minEndorm <= 15 ? 0 : minEndorm <= 30 ? 1 : minEndorm <= 60 ? 2 : 3;
-    const q5a = getVal('Q5a') || 0;
-    const latSum = lat + q5a;
-    const C2 = latSum === 0 ? 0 : latSum <= 2 ? 1 : latSum <= 4 ? 2 : 3;
-    const C3 = hDormies > 7 ? 0 : hDormies >= 6 ? 1 : hDormies >= 5 ? 2 : 3;
-    const C4 = efficiency >= 85 ? 0 : efficiency >= 75 ? 1 : efficiency >= 65 ? 2 : 3;
+    // GARDE — les sept composantes du PSQI sont des LECTURES DE SEUIL, pas des
+    // sommes. Chacune exige donc TOUS ses items, doctrine posée sur Karasek : un
+    // sous-ensemble d'items biaise le total vers le bas, et une grille lue par le
+    // bas conclut. Ici elle concluait « Pas de trouble du sommeil ».
+    //
+    // Deux fabrications se cumulaient. Les VALEURS DE REPLI d'abord — coucher à
+    // 23 h, endormissement en 30 min, lever à 7 h, sept heures dormies — qui
+    // faisaient sortir une efficacité de sommeil et une durée d'un patient
+    // n'ayant renseigné aucune des quatre. Le `||` ensuite, qui reprenait la même
+    // valeur de repli sur une réponse LÉGITIME valant 0 : un coucher à minuit
+    // (`Q1 = 0`) se lisait 23 h, et zéro heure dormie se lisait sept.
+    //
+    // Ce n'est pas une garde de confort : `Q_SOM_01` est source de POIDS 2 du
+    // besoin 5 de « Mon équilibre », en `inverser: true` et en niveau de preuve
+    // A (`equilibre/constants.ts`). Un item répondu sur dix-huit rendait un
+    // total de 2 sur 21, inversé en 0,90 de couverture du repos.
+    const composante = (items: string[], calcul: () => number) =>
+      (axeComplet(items) ? calcul() : null);
+
+    const hCoucher = getVal('Q1');
+    const minEndorm = getVal('Q2');
+    const hLever   = getVal('Q3');
+    const hDormies = getVal('Q4');
+    const efficiency = composante(['Q1', 'Q3', 'Q4'], () => {
+      let tLit = (hLever as number) - (hCoucher as number);
+      if (tLit <= 0) tLit += 24;
+      return tLit > 0 ? ((hDormies as number) / tLit) * 100 : 0;
+    });
+    const C1 = composante(['Q6'], () => getVal('Q6') as number);
+    const C2 = composante(['Q2', 'Q5a'], () => {
+      const m = minEndorm as number;
+      const lat = m <= 15 ? 0 : m <= 30 ? 1 : m <= 60 ? 2 : 3;
+      const latSum = lat + (getVal('Q5a') as number);
+      return latSum === 0 ? 0 : latSum <= 2 ? 1 : latSum <= 4 ? 2 : 3;
+    });
+    const C3 = composante(['Q4'], () => {
+      const h = hDormies as number;
+      return h > 7 ? 0 : h >= 6 ? 1 : h >= 5 ? 2 : 3;
+    });
+    const C4 = efficiency === null ? null
+      : efficiency >= 85 ? 0 : efficiency >= 75 ? 1 : efficiency >= 65 ? 2 : 3;
     const c5Items = ['Q5b','Q5c','Q5d','Q5e','Q5f','Q5g','Q5h','Q5i','Q5j'];
-    const c5Sum = c5Items.reduce((s, id) => s + (getVal(id) || 0), 0);
-    const C5 = c5Sum === 0 ? 0 : c5Sum <= 9 ? 1 : c5Sum <= 18 ? 2 : 3;
-    const C6 = getVal('Q7') || 0;
-    const c7Sum = (getVal('Q8') || 0) + (getVal('Q9') || 0);
-    const C7 = c7Sum === 0 ? 0 : c7Sum <= 2 ? 1 : c7Sum <= 4 ? 2 : 3;
-    const total = C1 + C2 + C3 + C4 + C5 + C6 + C7;
-    const interp = total <= 4 ? {label:'Pas de trouble du sommeil',color:'success'}
+    const C5 = composante(c5Items, () => {
+      const c5Sum = c5Items.reduce((s, id) => s + (getVal(id) as number), 0);
+      return c5Sum === 0 ? 0 : c5Sum <= 9 ? 1 : c5Sum <= 18 ? 2 : 3;
+    });
+    const C6 = composante(['Q7'], () => getVal('Q7') as number);
+    const C7 = composante(['Q8', 'Q9'], () => {
+      const c7Sum = (getVal('Q8') as number) + (getVal('Q9') as number);
+      return c7Sum === 0 ? 0 : c7Sum <= 2 ? 1 : c7Sum <= 4 ? 2 : 3;
+    });
+    const composantes = [
+      {id:'C1',label:'Qualité subjective',val:C1},
+      {id:'C2',label:'Latence du sommeil',val:C2},
+      {id:'C3',label:'Durée du sommeil',val:C3},
+      {id:'C4',label:'Efficacité habituelle',val:C4},
+      {id:'C5',label:'Perturbations',val:C5},
+      {id:'C6',label:'Médication hypnotique',val:C6},
+      {id:'C7',label:'Dysfonction diurne',val:C7},
+    ];
+    const total = totalGlobalDepuisSousScores(composantes.map(c => ({total: c.val})));
+    const interp = total === null ? null
+                 : total <= 4 ? {label:'Pas de trouble du sommeil',color:'success'}
                  : total <= 10 ? {label:'Troubles du sommeil légers',color:'info'}
                  : total <= 16 ? {label:'Troubles du sommeil modérés',color:'warning'}
                  : {label:'Troubles du sommeil sévères',color:'danger'};
     return {type:'psqi', total, maxTotal:21,
-      components:[
-        {id:'C1',label:'Qualité subjective',val:C1},
-        {id:'C2',label:'Latence du sommeil',val:C2},
-        {id:'C3',label:'Durée du sommeil',val:C3},
-        {id:'C4',label:'Efficacité habituelle',val:C4},
-        {id:'C5',label:'Perturbations',val:C5},
-        {id:'C6',label:'Médication hypnotique',val:C6},
-        {id:'C7',label:'Dysfonction diurne',val:C7},
-      ],
-      efficiency: Math.round(efficiency),
+      components: composantes,
+      efficiency: efficiency === null ? null : Math.round(efficiency),
       interpretation: interp
     };
   }
@@ -2162,23 +2268,38 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── FRANCIS ─────────────────────────────────────────────────
   if (sc.type === 'francis') {
-    const fr2 = getVal('FR_Q002') || getVal('FR1') || 0;
-    const fr3 = (getVal('FR_Q003') || getVal('FR2') || 0) * 10;
-    const fr5 = getVal('FR_Q005') || getVal('FR3') || 0;
+    // Cinq dimensions à 100 points, un total sur 500 et une grille qui conclut
+    // dans les deux sens. Non renseignées, elles valaient 0 : un patient ayant
+    // répondu à la seule intensité des douleurs sortait « Valeurs normales » s'il
+    // la cotait bas, et « Troubles fonctionnels significatifs » s'il la cotait
+    // haut — quatre cinquièmes de l'échelle jamais posés dans les deux cas.
+    //
+    // `??` et non `||` : la valeur LÉGITIME 0 — « aucune douleur » — retombait
+    // sur l'identifiant hérité puis sur le repli. Une absence de douleur déclarée
+    // se lisait donc comme une absence de réponse, et inversement.
+    const premiereReponse = (...ids: string[]) => {
+      for (const id of ids) { const v = getVal(id); if (v !== null) return v; }
+      return null;
+    };
+    const fr2 = premiereReponse('FR_Q002', 'FR1');
+    const fr3Brut = premiereReponse('FR_Q003', 'FR2');
+    const fr3 = fr3Brut === null ? null : fr3Brut * 10;
+    const fr5 = premiereReponse('FR_Q005', 'FR3');
     const fr6 = getVal('FR_Q006');
     const fr4Legacy = getVal('FR4');
-    const fr6Score = fr6 !== null ? fr6 : (fr4Legacy !== null ? 100 - fr4Legacy : 0);
-    const fr7 = getVal('FR_Q007') || getVal('FR5') || 0;
-    const total = fr2 + fr3 + fr5 + fr6Score + fr7;
+    const fr6Score = fr6 !== null ? fr6 : (fr4Legacy !== null ? 100 - fr4Legacy : null);
+    const fr7 = premiereReponse('FR_Q007', 'FR5');
+    const composantes = [
+      {id:'FR_Q002',label:'Intensité des douleurs abdominales',       val:fr2, max:100},
+      {id:'FR_Q003',label:'Fréquence des douleurs ×10',               val:fr3, max:100},
+      {id:'FR_Q005',label:'Importance de la distension abdominale',   val:fr5, max:100},
+      {id:'FR_Q006',label:'Insatisfaction de la fréquence des selles',val:fr6Score, max:100},
+      {id:'FR_Q007',label:'Impact sur la vie générale',               val:fr7, max:100},
+    ];
+    const total = totalGlobalDepuisSousScores(composantes.map(c => ({total: c.val})));
     const interp = interpretRanges(total, sc.interpretation);
     return {type:'francis', total, maxTotal:500,
-      components:[
-        {id:'FR_Q002',label:'Intensité des douleurs abdominales',       val:fr2, max:100},
-        {id:'FR_Q003',label:'Fréquence des douleurs ×10',               val:fr3, max:100},
-        {id:'FR_Q005',label:'Importance de la distension abdominale',   val:fr5, max:100},
-        {id:'FR_Q006',label:'Insatisfaction de la fréquence des selles',val:fr6Score, max:100},
-        {id:'FR_Q007',label:'Impact sur la vie générale',               val:fr7, max:100},
-      ],
+      components: composantes,
       interpretation: interp,
       note: sc.note || null,
       certification: sc.certification || null
@@ -2347,23 +2468,50 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const countOui = (items: any) => items.reduce((sum: any, id: any) => sum + (getVal(id) === 1 ? 1 : 0), 0);
     const sumVals = (items: any) => items.reduce((sum: any, id: any) => sum + (getVal(id) || 0), 0);
 
-    const partie1 = countOui(['IA1','IA2','IA3','IA4','IA5','IA6','IA7','IA8','IA9']);
-    const gssScore = sumVals(['IG1','IG2','IG3','IG4','IG5','IG6']);
-    const partie3A = sumVals(['IMA1','IMA2','IMA3','IMA4','IMA5','IMA6','IMA7','IMA8','IMA9','IMA10','IMA11','IMA12']);
-    const partie3B = sumVals(['IMB1','IMB2','IMB3','IMB4','IMB5','IMB6','IMB7','IMB8','IMB9','IMB10','IMB11','IMB12']);
-    const partie4 = countOui(['IS1','IS2','IS3','IS4','IS5','IS6','IS7','IS8','IS9']);
+    // GARDE — un comptage aveugle aux absences n'est pas un dépistage.
+    //
+    // Les cinq parties valaient 0 sur une absence, et la partie 1 en tirait deux
+    // AFFIRMATIONS CLINIQUES : « pas de dépression majeure probable » et « pas
+    // d'idéation suicidaire », rendues d'un patient à qui personne n'avait posé
+    // les questions. La partie 2 décrochait en prime « Le problème n'est
+    // probablement pas saisonnier », la bande la plus rassurante de sa grille,
+    // parce qu'un score GSS non mesuré tombe dans sa borne basse.
+    //
+    // Le franchissement d'un seuil MONOTONE reste affirmable sur un comptage
+    // incomplet (`seuilMonotone`) : six « oui » sur neuf dépassent un seuil de
+    // cinq quels que soient les trois items restants. C'est le non-franchissement
+    // qui exige le comptage complet.
+    const itemsP1 = ['IA1','IA2','IA3','IA4','IA5','IA6','IA7','IA8','IA9'];
+    const itemsP2 = ['IG1','IG2','IG3','IG4','IG5','IG6'];
+    const itemsP3A = ['IMA1','IMA2','IMA3','IMA4','IMA5','IMA6','IMA7','IMA8','IMA9','IMA10','IMA11','IMA12'];
+    const itemsP3B = ['IMB1','IMB2','IMB3','IMB4','IMB5','IMB6','IMB7','IMB8','IMB9','IMB10','IMB11','IMB12'];
+    const itemsP4 = ['IS1','IS2','IS3','IS4','IS5','IS6','IS7','IS8','IS9'];
+
+    const partie1 = axeMesure(itemsP1) ? countOui(itemsP1) : null;
+    const gssScore = axeMesure(itemsP2) ? sumVals(itemsP2) : null;
+    const partie3A = axeMesure(itemsP3A) ? sumVals(itemsP3A) : null;
+    const partie3B = axeMesure(itemsP3B) ? sumVals(itemsP3B) : null;
+    const partie4 = axeMesure(itemsP4) ? countOui(itemsP4) : null;
 
     const gssInterpretation = (() => {
+      // Une grille ne se lit que sur un score COMPLET : la somme partielle est
+      // biaisée vers le bas, et la borne basse de cette grille-ci est
+      // « probablement pas saisonnier ».
+      if (!axeComplet(itemsP2)) return null;
       for (const r of sc.interpretation || []) {
-        if (gssScore >= r.gss_min && gssScore <= r.gss_max) return r;
+        if ((gssScore as number) >= r.gss_min && (gssScore as number) <= r.gss_max) return r;
       }
       return null;
     })();
 
-    const winterHits = (sc.winterMonthsA || []).filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
-    const inverseHits = (sc.springSummerMonthsB || []).filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
-    const winterPatternLikely = winterHits >= (sc.monthlyPatternMinMonths || 3);
-    const inversePatternLikely = inverseHits >= (sc.monthlyPatternMinMonths || 3);
+    const seuilMois = sc.monthlyPatternThreshold || 4;
+    const minMois = sc.monthlyPatternMinMonths || 3;
+    const moisA = sc.winterMonthsA || [];
+    const moisB = sc.springSummerMonthsB || [];
+    const winterHits = moisA.filter((id: any) => (getVal(id) ?? 0) > seuilMois).length;
+    const inverseHits = moisB.filter((id: any) => (getVal(id) ?? 0) > seuilMois).length;
+    const winterPatternLikely = seuilMonotone(winterHits >= minMois, axeComplet(moisA));
+    const inversePatternLikely = seuilMonotone(inverseHits >= minMois, axeComplet(moisB));
 
     return {
       type:'idtas_ae',
@@ -2373,8 +2521,13 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
           label:'Dépistage dépressif',
           total: partie1,
           maxTotal: 9,
-          probableMajorDepression: partie1 > (sc.partie1DepressionThreshold || 5),
-          suicidalIdeation: getVal('IA9') === 1,
+          probableMajorDepression: seuilMonotone(
+            (partie1 ?? 0) > (sc.partie1DepressionThreshold || 5),
+            axeComplet(itemsP1),
+          ),
+          // L'idéation suicidaire tient à UN item : elle est connue dès qu'il est
+          // répondu, et inconnue — jamais absente — tant qu'il ne l'est pas.
+          suicidalIdeation: getVal('IA9') === null ? null : getVal('IA9') === 1,
         },
         {
           id:'P2',
@@ -2495,25 +2648,35 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         funcCount += 1;
       }
     });
-    const funcAverage = funcCount > 0 ? (funcSum / funcCount) : 0;
-    const funcScaled = parseFloat((funcAverage * 3.3).toFixed(1));
+    // GARDE — une composante non renseignée vaut « non mesurée », pas 0.
+    //
+    // Les trois autres composantes valaient 0 en l'absence de réponse, et le
+    // total avec elles. Or ce total-ci a une bande dédiée à la valeur zéro :
+    // « Score peu compatible avec le diagnostic de fibromyalgie, sauf guérison ou
+    // très bonne évolution ». Un questionnaire d'impact non rempli se lisait donc
+    // comme une rémission.
+    const funcAverage = funcCount > 0 ? (funcSum / funcCount) : null;
+    const funcScaled = funcAverage === null ? null : parseFloat((funcAverage * 3.3).toFixed(1));
 
     // Q12 — Jours ressentis bien (0-7) → (7 - n) × 1.43
     const q12 = getVal('Q12');
-    const q12Score = q12 !== null ? parseFloat(((7 - q12) * 1.43).toFixed(1)) : 0;
+    const q12Score = q12 !== null ? parseFloat(((7 - q12) * 1.43).toFixed(1)) : null;
 
     // Q13 — Jours d'absentéisme (0-7) → n × 1.43
     const q13 = getVal('Q13');
-    const q13Score = q13 !== null ? parseFloat((q13 * 1.43).toFixed(1)) : 0;
+    const q13Score = q13 !== null ? parseFloat((q13 * 1.43).toFixed(1)) : null;
 
     // Q14-Q20 — EVA directs 0 à 10
     const evaItems = ['Q14','Q15','Q16','Q17','Q18','Q19','Q20'];
-    let evaSum = 0;
-    evaItems.forEach(id => { const v = getVal(id); if (v !== null) evaSum += v; });
+    let evaSum: number | null = null;
+    evaItems.forEach(id => { const v = getVal(id); if (v !== null) evaSum = (evaSum ?? 0) + v; });
 
-    const total = parseFloat((funcScaled + q12Score + q13Score + evaSum).toFixed(1));
+    const totalBrut = totalGlobalDepuisSousScores(
+      [funcScaled, q12Score, q13Score, evaSum].map(v => ({total: v})));
+    const total = totalBrut === null ? null : parseFloat(totalBrut.toFixed(1));
 	    const interp =
-	      total === 0 ? {label:'Score peu compatible avec le diagnostic de fibromyalgie, sauf guérison ou très bonne évolution', color:'success'}
+	      total === null ? null
+	    : total === 0 ? {label:'Score peu compatible avec le diagnostic de fibromyalgie, sauf guérison ou très bonne évolution', color:'success'}
 	    : total < 35  ? {label:"Tranche 1 à 34 non explicitement interprétée dans le module professionnel fourni", color:'info'}
 	    : total <= 50 ? {label:"Score qui ne doit pas décevoir si la personne pense être dans une bonne phase ; moins de 40 n'est pas un mauvais score", color:'warning'}
 	    : total <= 65 ? {label:"Peut correspondre à une mauvaise semaine ; re-tester régulièrement et consulter si le score ne s'améliore pas ou s'aggrave", color:'danger'}
@@ -2553,14 +2716,22 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // Note clinique : rappel différé ≤ 2/5 → évocateur MA (sensibilité 85 %, spécificité 90 %)
   if (sc.type === 'sum_two_phases') {
     const phaseResults = sc.phases.map((ph: any) => {
-      const {total} = sumItems(ph.items, []);
+      const {total} = totalSousScore(ph.items, []);
       return {id: ph.id, label: ph.label, total, maxTotal: ph.maxTotal};
     });
-    const globalTotal = phaseResults.reduce((s: any, p: any) => s + p.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(phaseResults);
 
-    // Alerte clinique si rappel différé ≤ 2
+    // Alerte clinique si rappel différé ≤ 2.
+    //
+    // GARDE — ce seuil se lit PAR LE BAS, et une phase non passée valait 0. Le
+    // rappel différé absent déclenchait donc l'alerte à coup sûr : le test des
+    // 5 mots où seul le rappel immédiat avait été fait sortait « Trouble de la
+    // mémoire épisodique — consultation neurologique », sur un rappel différé que
+    // personne n'avait demandé. Un seuil bas exige la phase COMPLÈTE : un rappel
+    // partiel est lui aussi biaisé vers le bas.
+    const itemsPhaseD = sc.phases.find((ph: any) => ph.id === 'phase2')?.items ?? [];
     const phaseD   = phaseResults.find((p: any) => p.id === 'phase2');
-    const alertMA  = phaseD ? phaseD.total <= 2 : false;
+    const alertMA  = (phaseD && axeComplet(itemsPhaseD)) ? phaseD.total <= 2 : null;
 
     const interp = sc.interpretation ? interpretRanges(globalTotal, sc.interpretation) : null;
     return {
@@ -2747,24 +2918,31 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       const partItems = allQ.filter(q => part.items.includes(q.id));
 
       if (part.type === 'count_oui') {
+        // Même garde que partout ailleurs : un comptage sans un seul item
+        // renseigné n'est pas « zéro oui », c'est l'absence de comptage.
         let count = 0;
         part.items.forEach((id: any) => { const v = getVal(id); if (v === 1) count++; });
         return {id: part.id, label: part.label || part.id, type:'count_oui',
-                count, maxTotal: part.maxTotal};
+                count: axeMesure(part.items) ? count : null, maxTotal: part.maxTotal};
       }
       if (part.type === 'sum') {
-        const {total} = sumItems(part.items, []);
+        const {total} = totalSousScore(part.items, []);
         return {id: part.id, label: part.label || part.id, type:'sum',
                 total, maxTotal: part.maxTotal};
       }
       return {id: part.id, label: part.id, type: part.type, raw: null};
     });
 
-    // Interprétation basée sur le score GSS (P2)
+    // Interprétation basée sur le score GSS (P2).
+    //
+    // Aucun instrument du catalogue ne sert ce moteur aujourd'hui — `Q_NEU_12`
+    // passe par `idtas_ae`. La garde y est posée quand même : un moteur qui porte
+    // encore le défaut que ce lot ferme est à une entrée de catalogue de le
+    // remettre en production, et sa bande basse est la rassurante.
     const gssResult = partResults.find((p: any) => p.id === 'P2');
-    const gssScore  = gssResult ? (gssResult.total || 0) : 0;
+    const gssScore  = gssResult ? gssResult.total ?? null : null;
     let interp = null;
-    if (sc.interpretation) {
+    if (sc.interpretation && gssScore !== null) {
       for (const r of sc.interpretation) {
         if (gssScore >= r.gss_min && gssScore <= r.gss_max) { interp = r; break; }
       }

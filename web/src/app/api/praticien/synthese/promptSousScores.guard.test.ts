@@ -449,10 +449,19 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     expect(agenda.maxTotal).toBe(100);
   });
 
-  it('un total à null NE garantit PAS un total global renormalisé', () => {
-    // Le second NO-GO. La correction du premier avait ajouté « le total global a
-    // déjà été calculé sans lui » : vrai de `Q_SOM_09`, FAUX de `Q_MOD_03`, qui
-    // compte les axes manquants pour zéro. Trois plaintes sur sept à 8/10 :
+  it('un total à null n’entraîne pas UN SEUL régime de total global', () => {
+    // Ce test a rougi deux fois, à dessein, et c'est la troisième.
+    //
+    // Le second NO-GO de la v10 portait sur la phrase « le total global a déjà été
+    // calculé sans lui » : vraie de `Q_SOM_09` (renormalisé), fausse de
+    // `Q_MOD_03`, qui comptait les axes manquants pour ZÉRO — trois plaintes sur
+    // sept à 8/10 rendaient 24/70 et une moyenne de 3,4.
+    //
+    // Le lot du 2026-07-29 sur les moteurs à composantes ferme ce dernier cas :
+    // `Q_MOD_03` ne compte plus les manquants, son total tombe à `null`. Ce qui
+    // ne ramène PAS à un régime unique — c'est le point que la consigne doit
+    // continuer de porter. Trois régimes coexistent désormais, et le modèle ne
+    // peut en supposer aucun :
     const items = questionsDe('Q_MOD_03').map(q => q.id);
     const partiel = Object.fromEntries(items.slice(0, 3).map(i => [i, 8]));
     const c = chargePour('Q_MOD_03', partiel);
@@ -464,30 +473,30 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     // …quatre non mesurés, correctement rendus `null`…
     expect(c.subScores.filter((s: any) => s.total === null).map((s: any) => s.id))
       .toEqual(['surpoids', 'sommeil', 'moral', 'mobilite']);
-    // …mais le total global les compte pour ZÉRO : 24 sur un dénominateur de 70
-    // inchangé, là où l'agenda aurait renormalisé. C'est ce que la consigne doit
-    // empêcher le modèle de tenir pour fiable.
-    expect(c.total).toBe(24);
+    // …et le total global TOMBE, au lieu de valoir 24 sur un dénominateur de 70
+    // inchangé. Le dénominateur, lui, reste servi : c'est celui de l'instrument.
+    expect(c.total).toBeNull();
     expect(c.maxTotal).toBe(70);
-    // La moyenne est contaminée de la même façon — 24/7 et non 24/3 — et elle est
-    // SERVIE au modèle. Elle était annoncée épinglée sans l'être : un attendu resté
-    // en commentaire ne garde rien, c'est la classe même que ce lot corrige.
-    expect(c.average).toBe(3.4);
-    // Et la moyenne 3,4 ne tombe dans AUCUNE plage : les bandes de cet instrument
-    // sont bornées sur des entiers ([1-3], [4-6], [7-8], [9-10]) alors que la valeur
-    // servie porte une décimale. Jusqu'au 2026-07-29, le moteur repliait alors sur
-    // la dernière bande, et ces deux lignes attendaient « Intensité très élevée »
-    // (danger) — le pire niveau de l'instrument, pour trois plaintes sur sept.
-    //
-    // Le repli est retiré : plus de bande fausse, donc plus de bande du tout. La
-    // grille reste à refaire contiguë au dixième — c'est une décision de seuil
-    // clinique, elle ne se prend pas dans un lot de code.
+    // La moyenne était contaminée de la même façon — 24/7 et non 24/3 — et elle
+    // est SERVIE au modèle. Elle tombe avec le total.
+    expect(c.average).toBeNull();
     expect(c.interpretation).toBeNull();
+
+    // Le troisième régime, toujours vivant : `Q_SOM_09` renormalise son total sur
+    // les axes couverts. Un modèle qui déduirait « un sous-score à null ⇒ total à
+    // null » se tromperait donc ici — d'où la mise en garde, et non une règle.
+    const agenda = chargePour('Q_SOM_09', { ...FIXTURES.Q_SOM_09, AGD_QUAL_MOY: null });
+    expect(agenda.subScores.find((s: any) => s.id === 'QUAL').total).toBeNull();
+    expect(agenda.total).toBe(100);
   });
 
   it('la consigne met en garde contre le total global quand un sous-score est null', () => {
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('méfie-toi alors du total global');
-    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('il exclut l’axe manquant, ou le compte pour zéro'.replace('’', "'"));
+    // Les TROIS régimes, nommés. La v10 n'en énonçait que deux, et le troisième
+    // — le total global qui tombe à null — est celui des sept moteurs corrigés le
+    // 2026-07-29 : une consigne qui ne le nomme pas décrit un moteur d'hier.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain(
+      'il exclut l’axe manquant, il tombe lui-même à null, ou il le compte pour zéro'.replace('’', "'"));
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('présente le total global');
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('comme **incomplet**');
     // La mise en garde couvre aussi la MOYENNE : `Q_MOD_03` en sert une, contaminée

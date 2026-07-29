@@ -55,12 +55,19 @@ describe('bandes d’interprétation — aucune bande plutôt qu’une bande fau
     // Bandes [1-3], [4-6], [7-8], [9-10] ; la valeur servie est une moyenne au
     // dixième. 28 % des totaux atteignables tombent entre deux bandes, et
     // recevaient tous « Intensité très élevée » (danger).
-    const troisPlaintes: any = calculateScore(
+    //
+    // La passation est COMPLÈTE depuis le 2026-07-29 : elle valait auparavant
+    // trois plaintes sur sept, et le moteur ne rend plus ni total ni moyenne sur
+    // une passation amputée. Le cas visé — une moyenne décimale entre deux
+    // bandes — n'a jamais eu besoin d'un instrument partiel : sept plaintes
+    // sommant 24 rendent la même moyenne de 3,4.
+    const septPlaintes: any = calculateScore(
       'Q_MOD_03',
-      Object.fromEntries(itemsDe('Q_MOD_03').slice(0, 3).map((q: any) => [q.id, 8])),
+      Object.fromEntries(itemsDe('Q_MOD_03').map((q: any, i: number) => [q.id, i === 0 ? 6 : 3])),
     );
-    expect(troisPlaintes.average).toBe(3.4);
-    expect(troisPlaintes.interpretation).toBeNull();
+    expect(septPlaintes.total).toBe(24);
+    expect(septPlaintes.average).toBe(3.4);
+    expect(septPlaintes.interpretation).toBeNull();
 
     // Une moyenne entière tombe bien dans sa bande.
     const entier: any = calculateScore(

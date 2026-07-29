@@ -24,7 +24,16 @@ function reponsesAgendaComplet(): Record<string, number> {
  * niveau A » sur une passation qui ne mesure rien. La garde de passation vide
  * (2026-07-29) le refuse : le banc mesure désormais ce qu'il annonce.
  */
-const PSQI_REPONDU = { Q1: 23, Q2: 15, Q3: 7, Q4: 7, Q6: 1, Q7: 0, Q8: 0, Q9: 1 };
+// Les dix items de perturbation (`Q5a`-`Q5j`) manquaient : la fixture couvrait
+// huit items sur dix-huit et valait pourtant « preuve de niveau A » du besoin 5.
+// Elle en couvre désormais dix-huit sur dix-huit, et rend le MÊME total de 3 —
+// ce que le banc énonce est inchangé, ce qu'il mesure ne l'était pas.
+const PSQI_REPONDU = {
+  Q1: 23, Q2: 15, Q3: 7, Q4: 7,
+  Q5a: 0, Q5b: 0, Q5c: 0, Q5d: 0, Q5e: 0,
+  Q5f: 0, Q5g: 0, Q5h: 0, Q5i: 0, Q5j: 0,
+  Q6: 1, Q7: 0, Q8: 0, Q9: 1,
+};
 // La source `Q_MOD_01` du besoin 5 lit la sous-échelle ACTIVITE_PHYSIQUE, et non
 // SOMMEIL : une fixture qui renseigne l'autre sous-échelle rendrait le même verdict
 // aujourd'hui, mais par accident — et rougirait au premier lot qui fera passer un
