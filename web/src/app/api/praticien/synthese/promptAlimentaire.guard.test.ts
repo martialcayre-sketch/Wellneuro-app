@@ -38,7 +38,7 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // Empreinte de la consigne système sous `synthese-v11`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
-const EMPREINTE_V11 = 'bc6945b09e3f1e4e';
+const EMPREINTE_V11 = '34031e3de3ab2389';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;

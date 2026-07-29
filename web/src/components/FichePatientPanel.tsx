@@ -62,6 +62,55 @@ function getArrayField(scores: Record<string, unknown> | null, key: string): str
   return Array.isArray(value) ? value.map(String) : [];
 }
 
+/**
+ * Les CINQ porteurs d'un découpage descriptif, ramenés à une même ligne.
+ *
+ * `dimensions` était seul rendu ; `components` (PSQI, QIF, Francis),
+ * `categories` (Berlin), `parts` (IDTAS-AE) et `phases` (5 mots de Dubois) ne
+ * l'étaient nulle part. Tant que ces moteurs fabriquaient un total, la colonne
+ * Score affichait au moins ce total. Depuis que le total tombe avec l'axe non
+ * mesuré (2026-07-29), elle n'affiche plus rien — un « — » qui se lit comme un
+ * incident technique, alors que les composantes réellement mesurées sont là.
+ *
+ * Deux formes de valeur (`total` ou `val`) et deux de dénominateur (`max` ou
+ * `maxTotal`) selon le moteur. Les catégories du Berlin, elles, ne portent pas
+ * de nombre du tout : leur mesure EST leur positivité.
+ */
+type AxeDescriptif = { cle: string; id: string; label: string; texte: string };
+
+function descriptifsDeScores(scores: Record<string, unknown> | null): AxeDescriptif[] {
+  const PORTEURS = ['dimensions', 'components', 'categories', 'parts', 'phases'];
+  const sortie: AxeDescriptif[] = [];
+  for (const cle of PORTEURS) {
+    const axes = scores?.[cle];
+    if (!Array.isArray(axes)) continue;
+    for (const axe of axes as Array<Record<string, unknown>>) {
+      const valeur = [axe.total, axe.val, axe.count, axe.score]
+        .find(v => typeof v === 'number') as number | undefined;
+      const max = [axe.max, axe.maxTotal].find(v => typeof v === 'number') as number | undefined;
+      let texte: string;
+      if (typeof valeur === 'number') {
+        texte = typeof max === 'number' ? `${valeur}/${max}` : String(valeur);
+      } else if (axe.positive === true) {
+        texte = 'positive';
+      } else if (axe.positive === false) {
+        texte = 'négative';
+      } else {
+        // Jamais « — » : la distinction entre « pas de mesure » et « pas de
+        // donnée » est exactement ce que ce lot rend visible.
+        texte = 'non mesuré';
+      }
+      sortie.push({
+        cle,
+        id: `${cle}:${String(axe.id ?? sortie.length)}`,
+        label: String(axe.label ?? axe.id ?? ''),
+        texte,
+      });
+    }
+  }
+  return sortie;
+}
+
 function certificationBadge(certification: ScoreCertification | null) {
   if (!certification) return null;
   if (certification.source === 'drive' && certification.status === 'certifie') {
@@ -696,9 +745,17 @@ export function FichePatientPanel({
                   : [];
                 // Les dimensions DÉTAILLENT un total qui reste la mesure — elles
                 // ne le remplacent pas, contrairement aux sous-scores.
-                const dimensions = Array.isArray(scores?.dimensions)
-                  ? (scores!.dimensions as ScoreSubScore[])
-                  : [];
+                //
+                // Quatre autres porteurs disent la même chose sous d'autres noms
+                // — `components` (PSQI, QIF, Francis), `categories` (Berlin),
+                // `parts` (IDTAS-AE), `phases` (5 mots de Dubois) — et n'étaient
+                // rendus NULLE PART. Tant que leur moteur fabriquait un total,
+                // la ligne affichait au moins ce total ; depuis que le total
+                // tombe avec l'axe non mesuré (2026-07-29), elle n'affichait plus
+                // rien : un « — » qui se lit comme un incident technique, alors
+                // que les composantes RÉELLEMENT mesurées existent dans
+                // `scores_json`. Relevé en revue adversariale du même lot.
+                const axesDescriptifs = descriptifsDeScores(scores);
                 const miniSynthese = buildMiniSynthese(scores);
                 return (
                   <tr key={r.idReponse} className="border-t border-border align-top">
@@ -766,15 +823,12 @@ export function FichePatientPanel({
                           s'afficher. Aucun instrument n'émet aujourd'hui les
                           deux clés, mais l'oubli inverse est exactement ce qui
                           a effacé le total du MMSE avant correction. */}
-                      {dimensions.length > 0 && (
+                      {axesDescriptifs.length > 0 && (
                         <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                          {dimensions.map(dim => (
-                            <div key={dim.id} className="flex items-baseline gap-1.5 whitespace-nowrap">
-                              <span className="w-28 truncate" title={dim.label}>{dim.label}</span>
-                              <span className="tabular-nums">
-                                {dim.total ?? '—'}
-                                {typeof dim.max === 'number' ? `/${dim.max}` : ''}
-                              </span>
+                          {axesDescriptifs.map(axe => (
+                            <div key={axe.id} className="flex items-baseline gap-1.5 whitespace-nowrap">
+                              <span className="w-28 truncate" title={axe.label}>{axe.label}</span>
+                              <span className="tabular-nums">{axe.texte}</span>
                             </div>
                           ))}
                         </div>

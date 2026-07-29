@@ -2178,10 +2178,17 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const hDormies = getVal('Q4') || 7;
     let tLit = hLever - hCoucher;
     if (tLit <= 0) tLit += 24;
-    // L'efficacité se calcule sur les horaires : sans eux, ce n'est pas 0 %,
-    // c'est rien. Émise telle quelle au prompt de synthèse, une efficacité
-    // fabriquée se lit comme une mesure de laboratoire.
-    const efficiency = aUneMesure(ITEMS_C4) && tLit > 0 ? (hDormies / tLit) * 100 : null;
+    // L'efficacité est un RAPPORT, et « au moins un item » n'est pas la bonne
+    // frontière pour un rapport : son numérateur (`Q4`, heures dormies) et son
+    // dénominateur (`Q1`/`Q3`, horaires) sont deux quantités indépendantes.
+    // Relevé en revue adversariale, sur la première rédaction de ce lot : avec
+    // `aUneMesure`, l'heure du coucher renseignée SEULE rendait encore 88 % —
+    // 7 h dormies pour 8 h au lit, tirées des défauts — et `C4` valait 0, la
+    // MEILLEURE valeur de la composante. Le correctif fermait le cas « aucun des
+    // trois » et laissait ouvert le cas « un des trois », qui est précisément
+    // celui du 88 %. Les trois items sont donc exigés.
+    const horairesMesures = ITEMS_C4.every(id => getVal(id) !== null);
+    const efficiency = horairesMesures && tLit > 0 ? (hDormies / tLit) * 100 : null;
     const C1 = aUneMesure(ITEMS_C1) ? (getVal('Q6') || 0) : null;
     const lat = minEndorm <= 15 ? 0 : minEndorm <= 30 ? 1 : minEndorm <= 60 ? 2 : 3;
     const q5a = getVal('Q5a') || 0;
@@ -2459,10 +2466,17 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // probable », « pas de profil hivernal ». Trois affirmations sur des
     // questions qui n'ont jamais été posées — et la première est celle que la
     // source Drive assortit d'une appréciation clinique immédiate.
-    const winterHits = (sc.winterMonthsA || []).filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
-    const inverseHits = (sc.springSummerMonthsB || []).filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
-    const winterPatternLikely = partie3A === null ? null : winterHits >= (sc.monthlyPatternMinMonths || 3);
-    const inversePatternLikely = partie3B === null ? null : inverseHits >= (sc.monthlyPatternMinMonths || 3);
+    //
+    // Le DÉCOMPTE tombe avec son drapeau, et pas seulement le drapeau : sur un
+    // instrument de trouble affectif SAISONNIER, « zéro mois d'hiver au-dessus
+    // du seuil » est le signal rassurant central. Le laisser à 0 à côté d'un
+    // `total: null` disait « non mesuré » et « zéro mois » dans le même objet.
+    const compter = (ids: any) => (ids || [])
+      .filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
+    const winterHits = partie3A === null ? null : compter(sc.winterMonthsA);
+    const inverseHits = partie3B === null ? null : compter(sc.springSummerMonthsB);
+    const winterPatternLikely = winterHits === null ? null : winterHits >= (sc.monthlyPatternMinMonths || 3);
+    const inversePatternLikely = inverseHits === null ? null : inverseHits >= (sc.monthlyPatternMinMonths || 3);
     const ia9 = getVal('IA9');
 
     return {

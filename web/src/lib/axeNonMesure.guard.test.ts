@@ -202,18 +202,29 @@ describe('axe non mesuré hors subScores déclarés — null, jamais zéro', () 
         const trouve = axesEmis(r).find(({ axe }) => axe.id === axeId);
         if (!trouve) { coupables.push(`${id}/${axeId} : axe absent du résultat`); continue; }
         axesEprouves++;
-        for (const champ of CHAMPS_VALEUR) {
-          if (trouve.axe[champ] !== undefined && trouve.axe[champ] !== null) {
-            coupables.push(`${id}/${axeId}.${champ} = ${trouve.axe[champ]}`);
+        // Règle GÉNÉRALE, et non liste blanche de noms de champs : sur un axe
+        // dont aucun item n'est renseigné, AUCUN nombre et AUCUN booléen n'a de
+        // sens, quel que soit son nom. Une première rédaction énumérait
+        // `total`/`val`/`count`/`score` et six drapeaux — et laissait passer
+        // `winterHits: 0` à côté de `winterPatternLikely: null`, sur un
+        // instrument de trouble affectif SAISONNIER, où « zéro mois d'hiver
+        // au-dessus du seuil » est le signal rassurant central. Relevé en revue
+        // adversariale : une liste blanche sur un moteur qui invente des champs
+        // a la même faiblesse structurelle que le balayage par déclaration qui
+        // avait raté HAD. La polarité est donc inversée — tout champ nouveau est
+        // coupable par défaut, à charge de l'exempter ici avec sa raison.
+        for (const [champ, valeur] of Object.entries(trouve.axe)) {
+          // Exemptés : les DÉNOMINATEURS et les comptes de QUESTIONS (combien la
+          // catégorie en contient, combien ont répondu), qui décrivent l'axe et
+          // ne mesurent rien ; et `horsTotal`, drapeau déclaratif de structure.
+          if (['max', 'maxTotal', 'maxScaled', 'items', 'repondus', 'missing',
+            'answered', 'seuil', 'horsTotal'].includes(champ)) continue;
+          if (champ === 'interpretation') {
+            if ((valeur as any)?.label) coupables.push(`${id}/${axeId} bande « ${(valeur as any).label} »`);
+            continue;
           }
-        }
-        if (trouve.axe.interpretation?.label) {
-          coupables.push(`${id}/${axeId} bande « ${trouve.axe.interpretation.label} »`);
-        }
-        for (const drapeau of ['positive', 'atRisk', 'probableMajorDepression',
-          'suicidalIdeation', 'winterPatternLikely', 'inversePatternLikely']) {
-          if (trouve.axe[drapeau] !== undefined && trouve.axe[drapeau] !== null) {
-            coupables.push(`${id}/${axeId}.${drapeau} = ${trouve.axe[drapeau]}`);
+          if (typeof valeur === 'number' || typeof valeur === 'boolean') {
+            coupables.push(`${id}/${axeId}.${champ} = ${valeur}`);
           }
         }
       }
@@ -272,6 +283,47 @@ describe('axe non mesuré hors subScores déclarés — null, jamais zéro', () 
     // au lit, soit 88 %. Un chiffre d'allure clinique, servi au modèle de
     // synthèse, entièrement fabriqué.
     expect(q6Seul.efficiency).toBeNull();
+  });
+
+  it('PSQI : l’efficacité exige ses TROIS items, numérateur et dénominateur', () => {
+    // Un rapport n'est pas mesuré parce qu'un de ses trois items l'est : le
+    // numérateur (`Q4`) et le dénominateur (`Q1`/`Q3`) sont indépendants. Avec
+    // la frontière « au moins un item », l'heure du coucher SEULE rendait
+    // encore 88 % et `C4 = 0` — la meilleure valeur de la composante. Trouvé en
+    // revue adversariale : le correctif fermait « aucun des trois » et laissait
+    // ouvert « un des trois », qui est justement le cas du 88 %.
+    for (const seul of ['Q1', 'Q3', 'Q4']) {
+      const r: any = calculateScore('Q_SOM_01', { [seul]: seul === 'Q4' ? 4 : 7 });
+      expect(r.efficiency, `${seul} seul`).toBeNull();
+      expect(r.components.find((c: any) => c.id === 'C4').val, `${seul} seul`).toBeNull();
+    }
+    // Deux des trois ne suffisent pas davantage.
+    const deux: any = calculateScore('Q_SOM_01', { Q1: 23, Q4: 7 });
+    expect(deux.efficiency).toBeNull();
+
+    // Anti-sur-filtrage : les trois renseignés, l'efficacité redevient un nombre.
+    const trois: any = calculateScore('Q_SOM_01', { Q1: 23, Q3: 7, Q4: 7 });
+    expect(trois.efficiency).toBe(88);
+    expect(trois.components.find((c: any) => c.id === 'C4').val).toBe(0);
+    // …et `C3`, qui ne dépend que de `Q4`, garde bien sa frontière à un item.
+    expect(trois.components.find((c: any) => c.id === 'C3').val).toBe(1);
+  });
+
+  it('IDTAS-AE : le décompte de mois hivernaux tombe avec sa partie', () => {
+    // `winterHits: 0` à côté de `winterPatternLikely: null` et `total: null`
+    // disait « non mesuré » et « zéro mois d'hiver au-dessus du seuil » dans le
+    // MÊME objet — sur un instrument de trouble affectif saisonnier, le second
+    // est le signal rassurant central.
+    const sansP3: any = calculateScore('Q_NEU_12',
+      toutSauf('Q_NEU_12', [...PERIMETRES.Q_NEU_12.P3A, ...PERIMETRES.Q_NEU_12.P3B]));
+    expect(sansP3.parts.find((p: any) => p.id === 'P3A').winterHits).toBeNull();
+    expect(sansP3.parts.find((p: any) => p.id === 'P3B').inverseHits).toBeNull();
+
+    // Anti-sur-filtrage : renseignée, la partie 3A rend bien son décompte.
+    const p3aRempli: any = calculateScore('Q_NEU_12',
+      Object.fromEntries(PERIMETRES.Q_NEU_12.P3A.map(i => [i, 0])));
+    expect(p3aRempli.parts.find((p: any) => p.id === 'P3A').winterHits).toBe(0);
+    expect(p3aRempli.parts.find((p: any) => p.id === 'P3A').winterPatternLikely).toBe(false);
   });
 
   it('Dubois : un test inachevé n’évoque plus la maladie d’Alzheimer', () => {

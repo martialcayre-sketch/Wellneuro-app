@@ -15,11 +15,20 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // Laisser la phrase aurait décrit au modèle un comportement disparu, et l'aurait
 // invité à « se méfier » d'un nombre qui ne lui arrive plus.
 // Trois gestes, tous rendus nécessaires par ce que le moteur émet maintenant :
-//   · le total global tombe AVEC son axe — sauf deux exceptions, `horsTotal` (un
-//     axe qui n'y contribuait pas) et la RENORMALISATION de `Q_SOM_09`, dont le
-//     total est une proportion sur les axes couverts et reste donc servi. Une
-//     première rédaction de v11 énonçait la chute sans réserve : elle était fausse
-//     de l'agenda du sommeil, et c'est le banc de couplage qui l'a montré ;
+//   · TROIS régimes de total global, et non deux. Le premier : il tombe avec son
+//     axe. Le deuxième : `Q_SOM_09` RENORMALISE — son total est une proportion
+//     sur les axes couverts, et reste donc servi. Le troisième, celui qui a failli
+//     disparaître de la consigne : un total NON NUL à côté d'un axe à `null`, sans
+//     compte d'axes couverts. C'est le cas des `dimensions` et des
+//     `scoresBesoins`, qui ne contribuent pas au total alors que leurs items y
+//     entrent — `Q_CAR_01` rend « Risque faible » sur 2 items de 25, `Q_GEO_04`
+//     (MMSE) « Démence modérée » sur la seule orientation, et `Q_ALI_01`, servi en
+//     production, une bande d'équilibre alimentaire amputée de l'hydratation. v10
+//     couvrait ce cas par « présente le total global comme incomplet » ; une
+//     première rédaction de v11 avait retiré cette phrase, devenue fausse des neuf
+//     moteurs corrigés, sans voir qu'elle restait vraie de ceux-là. Deux revues
+//     adversariales successives : la première sur la chute énoncée sans réserve
+//     (fausse de l'agenda), la seconde sur ce troisième régime ;
 //   · un booléen à `null` (`alertMA`, `highRisk`, `positive`, `suicidalIdeation`,
 //     `probableMajorDepression`, `winterPatternLikely`) n'est PAS un « non ». Ces
 //     drapeaux valaient `false` sur une question jamais posée ; ils valent `null`
@@ -191,7 +200,13 @@ Un même thème peut apparaître **deux fois**, sous dimensions et sous scoresBe
 
 Une entrée de sous-score peut porter d'autres champs. La règle du **total à null** vaut sous les **trois** clés ; les suivantes ne concernent que **subScores** :
 
-- **total à null** — ce sous-score **n'a pas été mesuré**. Ce n'est **pas** un zéro, et surtout pas le plus mauvais score de l'échelle : ne le rapporte ni comme un score, ni comme une proportion, ne le situe sur aucune bande et ne le fais entrer dans aucune moyenne. Dis que cette dimension n'a pas été recueillie. Regarde alors le **total global** du même questionnaire. Presque partout, il **tombe avec l'axe** : il vaut null lui aussi, ainsi que toute moyenne servie à côté de lui, parce que son dénominateur compte **tous** les axes. Ne le reconstitue alors d'aucune façon — ni en additionnant les axes mesurés, ni en comptant l'axe manquant pour zéro. Un instrument peut cependant **renormaliser** son total sur les seuls axes couverts : il le dit en servant un total **non nul** à côté d'un axe à null, avec un dénominateur qui ne dépend pas du nombre d'axes et un compte d'axes couverts. Ce total-là est utilisable, à condition de préciser sur combien d'axes il porte. Enfin, un axe marqué **horsTotal** ne contribue pas au total : son absence ne fait rien tomber.
+- **total à null** — ce sous-score **n'a pas été mesuré**. Ce n'est **pas** un zéro, et surtout pas le plus mauvais score de l'échelle : ne le rapporte ni comme un score, ni comme une proportion, ne le situe sur aucune bande et ne le fais entrer dans aucune moyenne. Dis que cette dimension n'a pas été recueillie. Regarde alors le **total global** du même questionnaire. Trois cas, et le bloc lui-même te dit lequel :
+
+  1. **Le total vaut null lui aussi**, ainsi que toute moyenne servie à côté de lui. L'axe manquant y contribuait, et le dénominateur de l'instrument compte tous ses axes. Ne le reconstitue d'aucune façon — ni en additionnant les axes mesurés, ni en comptant l'axe manquant pour zéro.
+  2. **Le total est renormalisé** sur les seuls axes couverts. L'instrument le dit : un dénominateur qui ne dépend pas du nombre d'axes, et un **compte d'axes couverts** servi à côté. Ce total-là est utilisable, à condition de préciser sur combien d'axes il porte.
+  3. **Le total est servi non nul, sans compte d'axes couverts.** L'axe à null est alors un découpage qui n'entre pas dans le total — mais ses items, eux, y entrent, et l'absence de réponse y compte pour **zéro**. Le total est donc **incomplet et tiré vers le bas**, ce qui peut le faire basculer dans une bande plus rassurante ou plus sévère selon le sens de l'échelle. Présente-le comme **incomplet**, ainsi que **toute moyenne servie à côté de lui**, et ne fonde aucune conclusion de gravité là-dessus.
+
+Enfin, un axe marqué **horsTotal** ne contribue pas au total : son absence ne fait rien tomber, et le total reste entier.
 - **max absent** — ce sous-score n'a pas de dénominateur. Rapporte la valeur brute sans en faire une proportion ni un pourcentage, et n'invente aucun max.
 - **scaled** et **maxScaled** — la même mesure remise à l'échelle de l'instrument. Lis scaled contre maxScaled et total contre max : ne croise jamais les deux paires.
 - **rawTotal** — un total intermédiaire, avant pondération. Ce n'est pas le score : le score reste total, et rapporter rawTotal à un seuil peut inverser la conclusion.

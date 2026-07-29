@@ -505,14 +505,38 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     // Régularité, Qualité vécue) — c'est aussi le minimum sous lequel il cesse
     // de scorer, ce qui rend le compte d'autant plus nécessaire à côté du 100.
     expect(agenda.nbAxesCouverts).toBe(3);
+
+    // Régime 3 — le total est servi NON NUL à côté d'un axe à null, et sans
+    // compte d'axes couverts. Le découpage n'entre pas dans le total, mais ses
+    // items y entrent et y comptent pour ZÉRO : le total est incomplet et tiré
+    // vers le bas. C'est le régime que la première rédaction de v11 avait effacé
+    // de la consigne, en croyant le lot du 2026-07-29 l'avoir fermé — il ne l'a
+    // fermé que là où l'axe CONTRIBUE au total. Deux items de `Q_CAR_01` sur
+    // vingt-cinq points rendent « Risque faible », en vert.
+    const carItems = questionsDe('Q_CAR_01').map(q => q.id);
+    const car = chargePour('Q_CAR_01', Object.fromEntries(carItems.slice(0, 2).map(i => [i, 1])));
+    expect(car.dimensions.find((d: any) => d.id === 'PERSO').total).toBeNull();
+    expect(car.dimensions.find((d: any) => d.id === 'VIE').total).toBeNull();
+    expect(car.total).toBe(2);
+    expect(car.maxTotal).toBe(25);
+    expect(car.interpretation?.label).toBe('Risque faible');
+    expect(car.nbAxesCouverts).toBeUndefined();
   });
 
-  it('la consigne décrit le total global tel que le moteur le rend', () => {
-    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("il **tombe avec l'axe**");
-    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('renormaliser');
+  it('la consigne décrit les TROIS régimes de total global, pas deux', () => {
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('Le total vaut null lui aussi');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('Le total est renormalisé');
+    // Le troisième régime, celui que la première rédaction de v11 avait effacé.
+    // Sans cette mise en garde, la seule règle décrivant un total non nul à côté
+    // d'un axe à null est celle de la renormalisation — qui se conclut par « ce
+    // total-là est utilisable ». Le modèle lirait « Risque faible » sur deux
+    // items de vingt-cinq points comme une mesure.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('Le total est servi non nul, sans compte d’axes couverts'.replace('’', "'"));
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('Présente-le comme **incomplet**');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('ne fonde aucune conclusion de gravité là-dessus');
     // Le régime fermé par le lot du 2026-07-29 ne doit plus être décrit comme un
-    // comportement possible : le décrire inviterait le modèle à se défier d'un
-    // total qui ne lui arrive plus, et à en reconstruire un.
+    // comportement des axes CONTRIBUTEURS : le décrire inviterait le modèle à se
+    // défier d'un total qui ne lui arrive plus, et à en reconstruire un.
     expect(SYSTEM_PROMPT_GOUVERNANCE).not.toContain('ou le compte pour zéro');
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("ni en comptant l'axe manquant pour zéro");
     // La mise en garde couvre aussi la MOYENNE : `Q_MOD_03` en sert une, qui
