@@ -189,16 +189,59 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Dépistez la dépendance à la nicotine chez l'adolescent en 10 questions oui/non.`, duree: '3 min', actif: true },
 
   // ── PÉDIATRIE (suite) ───────────────────────────────────────────────────────
+  // Suspendus le 2026-07-29 sur arbitrage praticien : droits non dégagés
+  // (« © MHS, licence requise » au registre des instruments). Ni assignation ni
+  // passation depuis l'ouverture, et le banc de certification ne les a jamais
+  // comparés à leur source — ce sont les deux seuls du catalogue dans ce cas.
+  // S'y ajoute une réserve scientifique déjà consignée : le seuil de 15 de
+  // l'échelle de Conners vient d'un rapport non publié, et le laboratoire de son
+  // propre auteur l'a désavoué en 1985 en recommandant d'abandonner
+  // l'instrument. Réactivation possible sur licence obtenue ET reconstruction
+  // depuis la source.
   { id: 'Q_PED_02', titre: 'Conners Enseignant — Évaluation TDAH (forme courte)', categorie: 'Pédiatrie',
-    description: `Évaluation du TDAH par l'enseignant : opposition, inattention, hyperactivité (28 items, 0-3).`, duree: '10 min', actif: true },
+    description: `Évaluation du TDAH par l'enseignant : opposition, inattention, hyperactivité (28 items, 0-3).`, duree: '10 min', actif: false },
   { id: 'Q_PED_03', titre: 'Conners Parents — Évaluation TDAH (forme courte)', categorie: 'Pédiatrie',
-    description: `Évaluation du TDAH par les parents : opposition, inattention, hyperactivité (27 items, 0-3).`, duree: '10 min', actif: true },
+    description: `Évaluation du TDAH par les parents : opposition, inattention, hyperactivité (27 items, 0-3).`, duree: '10 min', actif: false },
+
+  // ── GÉRONTOLOGIE (MMSE) ─────────────────────────────────────────────────────
+  // Entrée AJOUTÉE le 2026-07-29 pour pouvoir suspendre l'instrument, et non
+  // pour l'offrir — le rayon ne montre pas les entrées inactives. `Q_GEO_04`
+  // n'avait aucune entrée ici : il ne figurait qu'en `PASSATION_PRATICIEN`, une
+  // liste d'AFFICHAGE que les routes d'assignation ne consultent pas. Il n'était
+  // donc pas proposé à l'écran, mais un appel direct à
+  // `api/praticien/assignations` l'acceptait — il porte une définition, seule
+  // condition de cette route après le filtre `IDS_SUSPENDUS`. « Invisible et
+  // assignable » est la pire des combinaisons : c'est celle qu'un retrait de
+  // l'écran seul produit, et que ce fichier met en garde contre juste en dessous.
+  // Sans entrée au catalogue, `actif: false` ne pouvait pas l'atteindre.
+  //
+  // Sa ligne `PASSATION_PRATICIEN` est retirée EN PLUS, et pour une autre
+  // raison : elle portait l'aperçu de la grille, donc l'usage en consultation.
+  // Les deux gestes sont indépendants — celui-ci ferme la route, celui-là ferme
+  // l'usage — et il fallait les deux pour que la fermeture veuille dire quelque
+  // chose sur un instrument que le portail patient n'offrait déjà pas.
+  //
+  // Suspendu sur arbitrage praticien : droits non dégagés (« © PAR, licence
+  // requise » au registre), aucun usage, et trois instruments de dépistage
+  // cognitif restent au catalogue (Q_GEO_03, Q_GEO_05, Q_GEO_06). Le MMSE est en
+  // outre un test ADMINISTRÉ PAR UN CLINICIEN : sa place dans un portail patient
+  // se pose indépendamment de la licence.
+  { id: 'Q_GEO_04', titre: 'MMSE — Mini Mental State Examination (GRECO)', categorie: 'Gérontologie',
+    description: `Test cognitif administré par le clinicien : orientation, apprentissage, attention, rappel, langage, praxie (30 points).`, duree: '15 min', actif: false },
 
   // ── CANCÉROLOGIE ────────────────────────────────────────────────────────────
+  // Suspendus le 2026-07-29 sur arbitrage praticien : droits non dégagés
+  // (« © EORTC — enregistrement/autorisation requis » au registre). Aucun usage
+  // ni sur l'un ni sur l'autre. Ce sont les deux SEULS instruments de
+  // cancérologie du catalogue : les suspendre suspend le domaine, et c'est
+  // assumé le temps de l'enregistrement — l'EORTC pratique une autorisation
+  // gratuite pour l'usage clinique et académique, pas une licence payante.
+  // Leurs bandes portent par ailleurs des libellés que le catalogue déclare déjà
+  // douteux (« seuil source < 28 incohérent »), à revoir à la réactivation.
   { id: 'Q_CAN_01', titre: 'QLQ-C30 — Qualité de vie oncologique (EORTC)', categorie: 'Cancérologie',
-    description: `Questionnaire de qualité de vie validé pour les patients atteints de cancer (30 items, fonctions + symptômes).`, duree: '15 min', actif: true },
+    description: `Questionnaire de qualité de vie validé pour les patients atteints de cancer (30 items, fonctions + symptômes).`, duree: '15 min', actif: false },
   { id: 'Q_CAN_02', titre: 'QLQ-BR23 — Module cancer du sein (EORTC)', categorie: 'Cancérologie',
-    description: `Module complémentaire QLQ-C30 spécifique cancer du sein : image corporelle, symptômes traitement, bras, sein (23 items).`, duree: '10 min', actif: true },
+    description: `Module complémentaire QLQ-C30 spécifique cancer du sein : image corporelle, symptômes traitement, bras, sein (23 items).`, duree: '10 min', actif: false },
 ];
 
 // Les instruments suspendus — `actif: false`. À importer par les routes

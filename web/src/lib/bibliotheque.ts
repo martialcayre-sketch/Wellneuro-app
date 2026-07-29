@@ -34,7 +34,19 @@ export const ALIAS_HISTORIQUES: Record<string, string> = {
 // consultation (clinicien/informant/journal), jamais auto-administrés.
 export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   { id: 'Q_GEO_03', categorie: 'Gérontologie' },
-  { id: 'Q_GEO_04', categorie: 'Gérontologie' },
+  // `Q_GEO_04` (MMSE) est sorti d'ici le 2026-07-29, sur arbitrage praticien :
+  // droits non dégagés (« © PAR, licence requise »). Cette ligne portait son
+  // AFFICHAGE et l'aperçu de sa grille — le seul accès, dans l'application, aux
+  // 30 items pour une passation en consultation. La retirer retire donc l'usage
+  // lui-même, et c'est bien l'objet de la décision : fermer un instrument à la
+  // seule assignation, tout en continuant d'en afficher la grille, laisserait
+  // l'usage licencié se poursuivre sur papier.
+  //
+  // Les deux gestes sont INDÉPENDANTS, et une rédaction antérieure les avait
+  // confondus : elle justifiait ce retrait par un doublon d'affichage qui
+  // n'existe pas — `listeBibliotheque` ne montre jamais une entrée inactive, le
+  // MMSE ne serait donc apparu qu'une fois. Relevé en revue adversariale,
+  // contre-épreuve à l'appui. Le retrait tient, la raison change.
   { id: 'Q_GEO_05', categorie: 'Gérontologie' },
   { id: 'Q_GEO_06', categorie: 'Gérontologie' },
   { id: 'Q_URO_02', categorie: 'Urologie' },

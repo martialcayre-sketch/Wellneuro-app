@@ -7,7 +7,7 @@ import {
   listeBibliotheque,
 } from './bibliotheque';
 import { IDS_SUSPENDUS, QUESTIONNAIRES_CATALOG } from './questionnaires-catalog';
-import { calculateScore } from './questions';
+import { QUESTIONNAIRE_CATALOGUE, calculateScore } from './questions';
 
 describe('listeBibliotheque', () => {
   const entrees = listeBibliotheque();
@@ -31,7 +31,12 @@ describe('listeBibliotheque', () => {
     }
   });
 
-  it('expose les 5 passations praticien, jamais assignables', () => {
+  it('expose les 4 passations praticien, jamais assignables', () => {
+    // Quatre depuis le 2026-07-29 : `Q_GEO_04` (MMSE) en est sorti sur arbitrage
+    // des droits. Le compte est exact à dessein — sans lui, une boucle sur une
+    // liste amputée resterait verte.
+    expect(PASSATION_PRATICIEN.map(p => p.id))
+      .toEqual(['Q_GEO_03', 'Q_GEO_05', 'Q_GEO_06', 'Q_URO_02']);
     for (const { id } of PASSATION_PRATICIEN) {
       const entree = parId.get(id);
       expect(entree, id).toBeDefined();
@@ -93,5 +98,105 @@ describe('questionnaire suspendu (actif: false)', () => {
     expect(mfi, 'Q_SOM_07 doit exister au catalogue').toBeDefined();
     expect(mfi?.actif).toBe(false);
     expect(IDS_SUSPENDUS.has('Q_SOM_07')).toBe(true);
+  });
+
+  // ── Arbitrage des droits du 2026-07-29 ──────────────────────────────────────
+  //
+  // Cinq instruments sous licence tierce fermés à l'assignation le temps
+  // d'instruire leurs ayants droit. Même mécanisme que Q_SOM_07 — `actif: false`
+  // alimente `IDS_SUSPENDUS`, que les trois routes d'assignation consultent —
+  // parce qu'il est déjà câblé ET déjà gardé par le vérificateur du CI. Aucun
+  // code neuf, donc aucune garde neuve à se tromper.
+  const SUSPENDUS_DROITS = ['Q_PED_02', 'Q_PED_03', 'Q_GEO_04', 'Q_CAN_01', 'Q_CAN_02'];
+
+  it('les cinq instruments à droits non dégagés sont fermés à l’assignation', () => {
+    for (const id of SUSPENDUS_DROITS) {
+      const entree = QUESTIONNAIRES_CATALOG.find(q => q.id === id);
+      expect(entree, `${id} doit exister au catalogue`).toBeDefined();
+      expect(entree?.actif, id).toBe(false);
+      expect(IDS_SUSPENDUS.has(id), id).toBe(true);
+      expect(IDS_ASSIGNABLES.has(id), id).toBe(false);
+      // Fermé, pas effacé : la définition reste, les passations enregistrées
+      // restent lisibles, et la réactivation ne demande qu'une ligne.
+      expect(CATALOGUE_DEFINITIONS[id], id).toBeDefined();
+    }
+  });
+
+  it('le MMSE est fermé des DEUX côtés — la route et l’usage', () => {
+    // Il n'avait aucune entrée au catalogue : il ne figurait qu'en
+    // `PASSATION_PRATICIEN`, une liste d'AFFICHAGE que les routes d'assignation
+    // ne consultent pas. Non proposé à l'écran, donc — mais accepté par un appel
+    // direct à `api/praticien/assignations`, qui n'exige qu'une définition une
+    // fois passé le filtre `IDS_SUSPENDUS`. « Invisible et assignable » est
+    // exactement la combinaison contre laquelle `questionnaires-catalog.ts` met
+    // en garde. Sans entrée au catalogue, `actif: false` ne l'atteignait pas.
+    //
+    // Deux gestes INDÉPENDANTS, et il fallait les deux. L'entrée de catalogue
+    // en `actif: false` ferme la ROUTE ; le retrait de `PASSATION_PRATICIEN`
+    // ferme l'USAGE, car cette ligne portait l'aperçu de la grille — le seul
+    // accès aux 30 items pour une passation en consultation. Fermer la seule
+    // assignation en continuant d'afficher la grille laisserait l'usage
+    // licencié se poursuivre sur papier.
+    //
+    // Une rédaction antérieure justifiait le retrait par un doublon d'affichage
+    // qui n'existe pas : `listeBibliotheque` ne montre jamais une entrée
+    // inactive. Le geste tenait, sa raison était fausse — et une raison fausse
+    // ne garde rien, puisqu'elle serait retirée sans que rien ne rougisse.
+    expect(listeBibliotheque().filter(e => e.id === 'Q_GEO_04')).toHaveLength(0);
+    expect(PASSATION_PRATICIEN.map(p => p.id)).not.toContain('Q_GEO_04');
+    expect(IDS_SUSPENDUS.has('Q_GEO_04')).toBe(true);
+    expect(IDS_ASSIGNABLES.has('Q_GEO_04')).toBe(false);
+    // Et il reste scorable : les passations déjà enregistrées restent lisibles.
+    expect(calculateScore('Q_GEO_04', {})).not.toHaveProperty('error');
+  });
+
+  it('la cancérologie est suspendue en entier, et c’est assumé', () => {
+    // Anti-surprise : `Q_CAN_01` et `Q_CAN_02` sont les SEULS instruments de
+    // cancérologie. Les fermer ferme le domaine — le dire ici évite de le
+    // redécouvrir en production, et fait rougir le jour où un troisième arrive
+    // sans que la question de sa licence ait été posée.
+    const cancero = QUESTIONNAIRES_CATALOG.filter(q => q.categorie === 'Cancérologie');
+    expect(cancero.map(q => q.id)).toEqual(['Q_CAN_01', 'Q_CAN_02']);
+    expect(cancero.every(q => !q.actif)).toBe(true);
+  });
+
+  it('les instruments laissés hors suspension le restent', () => {
+    // L'arbitrage a porté sur CINQ des huit sous licence. Sans cette garde, un
+    // élargissement silencieux de la suspension passerait pour la décision
+    // prise. Epworth et HIT-6 sont réellement assignables ; `Q_STR_07` est un
+    // ALIAS sans définition de scoring, donc jamais assignable — l'assertion
+    // `!IDS_SUSPENDUS.has()` seule serait vraie de n'importe quel identifiant,
+    // `Q_FAUX` compris, et c'est ce qui masquait le cas de HAD ci-dessous.
+    for (const id of ['Q_SOM_02', 'Q_INF_04', 'Q_STR_07', 'Q_NEU_11']) {
+      expect(IDS_SUSPENDUS.has(id), id).toBe(false);
+    }
+    expect(IDS_ASSIGNABLES.has('Q_SOM_02')).toBe(true);
+    expect(IDS_ASSIGNABLES.has('Q_INF_04')).toBe(true);
+    expect(IDS_ASSIGNABLES.has('Q_STR_07')).toBe(false);
+    expect(CATALOGUE_DEFINITIONS['Q_STR_07']).toBeUndefined();
+  });
+
+  it('les définitions sans entrée de rayon sont recensées, jamais découvertes', () => {
+    // L'INVARIANT DE CLASSE que ce lot aurait dû écrire d'emblée.
+    //
+    // `api/praticien/assignations` n'exige, une fois passé le filtre
+    // `IDS_SUSPENDUS`, qu'une définition de scoring. Un instrument qui porte une
+    // définition sans figurer ni au catalogue ni en passation praticien est donc
+    // INVISIBLE à l'écran et ASSIGNABLE par appel direct — la combinaison contre
+    // laquelle `questionnaires-catalog.ts` met en garde, et celle que ce lot a
+    // fermée sur `Q_GEO_04`.
+    //
+    // Elle reste ouverte sur DEUX autres, et c'est mesuré ici plutôt que
+    // supposé. `Q_NEU_11` est le plus gênant : c'est HAD, l'un des huit
+    // instruments sous licence tierce, celui que l'arbitrage du 2026-07-29 a
+    // laissé servi — alors qu'aucun chemin d'interface ne sait le servir, son
+    // alias `Q_STR_07` n'ayant pas de définition. Hors périmètre de ce lot, qui
+    // ne ferme que les cinq décidés ; nommé pour ne pas être redécouvert.
+    const auRayon = new Set(QUESTIONNAIRES_CATALOG.map(q => q.id));
+    const enPassation = new Set(PASSATION_PRATICIEN.map(p => p.id));
+    const orphelins = Object.keys(QUESTIONNAIRE_CATALOGUE)
+      .filter(id => !auRayon.has(id) && !enPassation.has(id))
+      .sort();
+    expect(orphelins).toEqual(['Q_NEU_11', 'Q_NEU_12']);
   });
 });
