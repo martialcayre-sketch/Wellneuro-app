@@ -1975,12 +1975,17 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       if (q17 >= 3 && q17 >= q15 && q17 >= q16) scoreDual1517 = 2;
       else if (dualRawMax === 2) scoreDual1517 = 1;
     }
-    // Un groupe est mesuré dès qu'un de SES items l'est — la charnière comprise,
-    // puisqu'elle lui appartient autant qu'à l'autre groupe.
-    const itemsA = [...(sc.groupA || []), ...dualItems];
-    const itemsB = [...(sc.groupB || []), ...dualItems];
-    const scoreGroupeA = axeMesure(itemsA) ? sumIds(sc.groupA || []) + (scoreDual1517 ?? 0) : null;
-    const scoreGroupeB = axeMesure(itemsB) ? sumIds(sc.groupB || []) + (scoreDual1517 ?? 0) : null;
+    // Un groupe est mesuré dès qu'un de ses items PROPRES l'est — la charnière ne
+    // suffit PAS, bien qu'elle entre dans son score.
+    //
+    // Compter la charnière comme une mesure des deux groupes faisait rendre, sur
+    // le seul `SIGH_Q015` renseigné, un groupe A à 1, un groupe B à 1 et un total
+    // de 2 sur une échelle de 25 items — total persisté en `scorePrincipal` et
+    // servi au modèle de synthèse. Trois items partagés ne mesurent ni les quinze
+    // symptômes du groupe A, ni les sept du groupe B. Relevé en revue
+    // adversariale.
+    const scoreGroupeA = axeMesure(sc.groupA || []) ? sumIds(sc.groupA || []) + (scoreDual1517 ?? 0) : null;
+    const scoreGroupeB = axeMesure(sc.groupB || []) ? sumIds(sc.groupB || []) + (scoreDual1517 ?? 0) : null;
     const total = totalGlobalDepuisSousScores([{total: scoreGroupeA}, {total: scoreGroupeB}]);
     return {
       type:'sigh_sad_sa',
@@ -2676,7 +2681,15 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const total = totalBrut === null ? null : parseFloat(totalBrut.toFixed(1));
 	    const interp =
 	      total === null ? null
-	    : total === 0 ? {label:'Score peu compatible avec le diagnostic de fibromyalgie, sauf guérison ou très bonne évolution', color:'success'}
+	    // La bande du ZÉRO est une lecture de PLANCHER, et elle exige donc la
+	    // passation entière. Les quatre composantes mesurées ne suffisent pas : un
+	    // seul item répondu dans chacune, tous au minimum, rendait `total = 0` et
+	    // « guérison ou très bonne évolution » sur quatre réponses de vingt. Un
+	    // total nul n'est une rémission que si tout a été demandé. Relevé en revue
+	    // adversariale.
+	    : total === 0 ? (axeComplet(allQ.map(q => q.id))
+	        ? {label:'Score peu compatible avec le diagnostic de fibromyalgie, sauf guérison ou très bonne évolution', color:'success'}
+	        : null)
 	    : total < 35  ? {label:"Tranche 1 à 34 non explicitement interprétée dans le module professionnel fourni", color:'info'}
 	    : total <= 50 ? {label:"Score qui ne doit pas décevoir si la personne pense être dans une bonne phase ; moins de 40 n'est pas un mauvais score", color:'warning'}
 	    : total <= 65 ? {label:"Peut correspondre à une mauvaise semaine ; re-tester régulièrement et consulter si le score ne s'améliore pas ou s'aggrave", color:'danger'}
@@ -2939,10 +2952,15 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // passe par `idtas_ae`. La garde y est posée quand même : un moteur qui porte
     // encore le défaut que ce lot ferme est à une entrée de catalogue de le
     // remettre en production, et sa bande basse est la rassurante.
+    // La complétude, et pas seulement la présence : même exigence qu'`idtas_ae`,
+    // pour la même raison — une somme partielle est biaisée vers le bas et la
+    // borne basse de cette grille-ci est la rassurante. Le premier jet ne
+    // demandait que `gssScore !== null` ; « la même garde » n'en était pas une.
+    const partieP2 = (sc.parts || []).find((p: any) => p.id === 'P2');
     const gssResult = partResults.find((p: any) => p.id === 'P2');
     const gssScore  = gssResult ? gssResult.total ?? null : null;
     let interp = null;
-    if (sc.interpretation && gssScore !== null) {
+    if (sc.interpretation && gssScore !== null && axeComplet(partieP2?.items ?? [])) {
       for (const r of sc.interpretation) {
         if (gssScore >= r.gss_min && gssScore <= r.gss_max) { interp = r; break; }
       }

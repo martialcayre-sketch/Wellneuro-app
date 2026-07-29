@@ -68,14 +68,39 @@ dernière ligne confondait « cet instrument n'a pas de score global » (vrai du
 de réponse n'est pas un booléen à faux*. Les décrire supposait d'abord de trancher les
 booléens de `Q_NEU_12`, sans quoi la consigne aurait décrit un faux.
 
-Quatorze tests neufs et **douze preuves par mutation** — dont celle qui replace le repli
-de 23 h, celle qui rend `seuilMonotone` à `atteint` seul, et celle qui lit la bande GSS
-sur une somme partielle.
+**Trois trous fermés par la revue adversariale**, tous de la même forme : une garde posée
+sur les axes vides ne voit pas ce qui passe *entre* les axes.
+- **QIF** — quatre réponses sur vingt, une par bloc, rendaient les quatre composantes
+  MESURÉES et le total à zéro, donc la bande « guérison ou très bonne évolution ». Le
+  zéro de cet instrument est une lecture de PLANCHER : il exige désormais la passation
+  entière. Une passation partielle NON nulle garde sa bande — la règle ne mord que sur le
+  plancher.
+- **SIGH-SAD-SA** — la charnière 15-17 appartient aux deux groupes, et suffisait à les
+  déclarer mesurés tous les deux : le seul `SIGH_Q015` renseigné rendait A à 1, B à 1 et
+  un total de 2 sur vingt-cinq items, persisté en `scorePrincipal`. Un groupe exige
+  maintenant un de ses items PROPRES.
+- **`composite_multi_parties`** — sa garde n'exigeait que « le score existe » là où
+  `idtas_ae` exige le comptage complet. « La même garde » n'en était pas une.
 
-**Réserve nommée.** Le banc de couplage consigne / charge
-(`promptSousScores.guard.test.ts`) déclare encore `parts`, `components` et `categories`
-« hors périmètre » de son balayage exhaustif : la consigne v11 les décrit et des tests
-ciblés le vérifient, mais le balayage systématique des sept porteurs reste à écrire.
-Par ailleurs `Q_GEO_04` et `Q_CAR_01` rendent toujours un total global et une bande sur
-une passation partielle — c'est le moteur `sum`, et la question « combien d'items faut-il
-pour qu'un instrument soit interprétable » est un arbitrage clinique, pas un lot de code.
+Seize tests neufs et **quinze preuves par mutation** — dont celle qui replace le repli de
+23 h, celle qui rend `seuilMonotone` à `atteint` seul, celle qui lit la bande GSS sur une
+somme partielle, et les trois qui rouvrent les trous ci-dessus.
+
+**Réserves nommées.**
+- Le banc de couplage consigne / charge (`promptSousScores.guard.test.ts`) déclare encore
+  `parts`, `components` et `categories` « hors périmètre » de son balayage exhaustif : la
+  consigne v11 les décrit et des tests ciblés le vérifient, mais le balayage systématique
+  des sept porteurs reste à écrire.
+- **Les moteurs MONO-AXE concluent toujours sur une passation partielle**, et ce lot n'y
+  touche pas — il porte sur les axes. Au moins six sont dans ce cas : `sum` (`Q_GEO_04`,
+  `Q_CAR_01` et les autres), `audit` (bornes basses « consommation sans risque »),
+  `horne` (bande basse « Tout à fait du soir », danger), `bms_average` et `sum_reversed`.
+  Tous somment les items manquants à zéro puis lisent une grille par le bas. La question
+  « combien d'items faut-il pour qu'un instrument soit interprétable » est un arbitrage
+  clinique, pas un lot de code — mais elle est ouverte, et plus large que ce que la
+  première rédaction de cette réserve laissait entendre.
+- `VERSION_SCORE_EQUILIBRE` reste à `v9` : dérivée de `Q_ALI_01.scoring.maxTotal`, elle
+  n'a pas bougé alors que des couvertures calculées sur les mêmes réponses stockées ne
+  valent plus la même chose. `clinicalSnapshot.balanceScore` et
+  `protocol/versioning.versionScore` estampillent donc à l'identique. Même dette que
+  celle laissée par le lot précédent, signalée et non créée par celui-ci.

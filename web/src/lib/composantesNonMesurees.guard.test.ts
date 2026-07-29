@@ -15,7 +15,7 @@
 // sommeil » sur un PSQI d'un item ; « pas d'idéation suicidaire » sur un
 // dépistage non passé.
 import { describe, expect, it } from 'vitest';
-import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
+import { QUESTIONNAIRE_CATALOGUE, calculateScore, computeScoreFromDef } from '@/lib/questions';
 import { calculerCouvertureBesoin } from '@/lib/equilibre/score';
 import { calculerNiveauPreuveBesoin } from '@/lib/equilibre/evidence';
 
@@ -210,6 +210,28 @@ describe('composantes non mesurées — null, jamais zéro', () => {
     expect(complet.interpretation?.label).toContain('peu compatible');
   });
 
+  it('QIF : quatre réponses sur vingt ne valent pas une rémission, même une par bloc', () => {
+    // Le trou que la revue adversariale a trouvé. Les quatre composantes sont
+    // MESURÉES — une réponse chacune — donc le total sort, et il sort à zéro : la
+    // bande du plancher, « guérison ou très bonne évolution », sur quatre réponses
+    // de vingt. La garde des composantes ne pouvait pas l'attraper : elle porte
+    // sur les axes vides, et aucun ne l'est ici.
+    //
+    // Le zéro de cet instrument est une lecture de PLANCHER, et une lecture de
+    // plancher exige la passation entière — même doctrine que le seuil de Karasek,
+    // appliquée par le bas.
+    const uneParBloc: any = calculateScore('Q_FIB_02', { Q1: 0, Q12: 7, Q13: 0, Q14: 0 });
+    expect(uneParBloc.components.every((c: any) => c.val === 0)).toBe(true);
+    expect(uneParBloc.total).toBe(0);
+    expect(uneParBloc.interpretation).toBeNull();
+
+    // Et une passation NON nulle garde sa bande sans exiger la complétude : la
+    // règle ne mord que sur le plancher.
+    const partielNonNul: any = calculateScore('Q_FIB_02', { Q1: 10, Q12: 0, Q13: 7, Q14: 10 });
+    expect(partielNonNul.total).toBeGreaterThan(0);
+    expect(partielNonNul.interpretation?.label).toBeTruthy();
+  });
+
   it('IDTAS-AE : « pas d’idéation suicidaire » ne se déduit plus d’un silence', () => {
     // Deux booléens à très forte charge clinique, servis au modèle de synthèse
     // par `scoresPourPrompt` sans aucune consigne jusqu'à la v11.
@@ -272,6 +294,38 @@ describe('composantes non mesurées — null, jamais zéro', () => {
     }
   });
 
+  it('composite_multi_parties porte la MÊME garde qu’idtas_ae, pas une plus faible', () => {
+    // Aucun instrument du catalogue ne sert ce moteur — la garde y est posée
+    // parce qu'il est à une entrée de catalogue de revenir en production. Encore
+    // faut-il qu'elle soit la même : le premier jet n'exigeait que « le score
+    // existe », là où `idtas_ae` exige le comptage COMPLET. Relevé en revue
+    // adversariale ; sans ce test, « la même garde » restait une affirmation.
+    const def = {
+      sections: [{ id: 'P2', questions: [
+        { id: 'X1', type: 'number', min: 0, max: 12 },
+        { id: 'X2', type: 'number', min: 0, max: 12 },
+      ] }],
+      scoring: {
+        type: 'composite_multi_parties',
+        parts: [{ id: 'P2', type: 'sum', items: ['X1', 'X2'] }],
+        interpretation: [
+          { gss_min: 0, gss_max: 5, label: 'Le problème n’est probablement pas saisonnier' },
+          { gss_min: 6, gss_max: 24, label: 'Forme légère possible' },
+        ],
+      },
+    };
+    // Un item sur deux : la somme est biaisée vers le bas et décrocherait la
+    // bande rassurante.
+    const partiel: any = computeScoreFromDef(def, { X1: 3 });
+    expect(partiel.gssScore).toBe(3);
+    expect(partiel.interpretation).toBeNull();
+
+    // Les deux répondus : la bande revient.
+    const complet: any = computeScoreFromDef(def, { X1: 3, X2: 0 });
+    expect(complet.gssScore).toBe(3);
+    expect(complet.interpretation?.label).toContain('pas saisonnier');
+  });
+
   it('Test des 5 mots : l’alerte Alzheimer ne sort plus d’un rappel jamais demandé', () => {
     // Le seuil se lit PAR LE BAS (« ≤ 2/5 ») : une phase 2 absente valant 0 le
     // franchissait à coup sûr. Un rappel immédiat parfait sortait donc
@@ -302,8 +356,19 @@ describe('composantes non mesurées — null, jamais zéro', () => {
   });
 
   it('SIGH-SAD-SA : un groupe dont aucun item n’est posé ne vaut plus zéro', () => {
-    // La charnière 15-17 appartient aux DEUX groupes : le cas à exercer est celui
-    // où seul le groupe B est renseigné, charnière comprise ou non.
+    // La charnière 15-17 appartient aux DEUX groupes, et ne suffit à mesurer NI
+    // l'un ni l'autre : trois items partagés ne mesurent ni les quinze symptômes
+    // du groupe A, ni les sept du groupe B. Sans cette règle — trou trouvé en
+    // revue adversariale — le seul `SIGH_Q015` renseigné rendait A à 1, B à 1 et
+    // un total de 2 sur vingt-cinq items, persisté en `scorePrincipal`.
+    const charniereSeule: any = calculateScore('Q_NEU_03', { SIGH_Q015: 2 });
+    expect(charniereSeule.scoreGroupeA).toBeNull();
+    expect(charniereSeule.scoreGroupeB).toBeNull();
+    expect(charniereSeule.total).toBeNull();
+    // La charnière, elle, est bien mesurée : c'est ce qui a été répondu.
+    expect(charniereSeule.scoreDual1517).toBe(1);
+
+    // Un groupe renseigné SANS la charnière reste mesuré, l'autre non.
     const bSeul: any = calculateScore('Q_NEU_03',
       Object.fromEntries(['SIGH_Q003','SIGH_Q007','SIGH_Q008'].map(i => [i, 2])));
     expect(bSeul.scoreGroupeB).not.toBeNull();
