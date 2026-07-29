@@ -159,11 +159,20 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('nom');
   const [statutFilter, setStatutFilter] = useState<StatutFilter>('');
-  // Miroir non réactif du filtre courant : les rafraîchissements déclenchés
-  // ailleurs (création, annulation…) doivent le conserver sans pour autant
-  // faire de `loadData` une fonction à redéclarer à chaque changement de statut.
+  // Miroir du filtre courant, tenu à jour APRÈS commit — écrire un ref pendant
+  // le rendu laisserait, sur un rendu concurrent abandonné, une valeur jamais
+  // commitée qu'un gestionnaire d'événement lirait ensuite.
+  // Il sert à deux choses : les rafraîchissements déclenchés ailleurs
+  // (création, annulation…) conservent le filtre, et la garde de fraîcheur de
+  // `loadData` sait à quel statut la réponse qui arrive devrait correspondre.
   const statutFilterRef = useRef<StatutFilter>('');
-  statutFilterRef.current = statutFilter;
+  useEffect(() => {
+    statutFilterRef.current = statutFilter;
+  }, [statutFilter]);
+  // Échec du rechargement déclenché par le sélecteur de statut. Distinct de
+  // `data.unavailable`, qui remplace le panneau entier : changer un filtre
+  // d'affichage ne doit pas faire disparaître la surface praticien.
+  const [erreurStatut, setErreurStatut] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [tablePatients, setTablePatients] = useState<PatientsApiResponse['patients']>([]);
   const [pagination, setPagination] = useState<PatientsPagination | null>(null);
@@ -201,10 +210,30 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   // au 2026-07-29, ni consultables ni annulables depuis ce tableau.
   // Le paramètre par défaut reprend le filtre courant, pour que les rafraîchis-
   // sements déclenchés ailleurs (création, annulation…) ne le perdent pas.
-  const loadData = async (statut: StatutFilter = statutFilterRef.current) => {
+  const loadData = async (
+    statut: StatutFilter = statutFilterRef.current,
+    options?: { echecRemonte?: boolean },
+  ) => {
     const qs = statut ? `?statut=${encodeURIComponent(statut)}` : '';
     const r = await fetch(`/api/praticien/patients${qs}`);
     const json = (await r.json()) as PatientsApiResponse;
+
+    // Le sélecteur n'a pas de debounce : deux changements dans un aller-retour
+    // lancent deux requêtes concurrentes, et sans garde c'est la dernière
+    // ARRIVÉE qui gagne — la table listerait des « Complété » sous un filtre
+    // affichant « En attente ». Le filtre en mémoire d'avant en était
+    // structurellement immunisé ; celui-ci doit s'en protéger explicitement.
+    // Une réponse muette sur son statut (serveur antérieur, charge d'erreur)
+    // n'est pas un désaccord : on ne jette que ce qui contredit.
+    const statutRendu = json.assignationsMeta?.statut;
+    if (statutRendu !== undefined && (statutRendu ?? '') !== statutFilterRef.current) return;
+
+    // Une session expirée ou une exception serveur remplace tout le panneau
+    // (voir `data.unavailable` plus bas). Acceptable au chargement initial,
+    // pas sur un simple changement de filtre : l'appelant traite l'échec.
+    if (options?.echecRemonte && json.unavailable) {
+      throw new Error(json.reason ?? 'exception');
+    }
     setData(json);
   };
 
@@ -291,7 +320,13 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       isFirstStatutRender.current = false;
       return;
     }
-    void loadData(statutFilter);
+    setErreurStatut(null);
+    // Seul chemin de chargement déclenché par un geste d'UI : sans ce `.catch`,
+    // une coupure réseau ou un 502 rendant du HTML laisserait le sélecteur sur
+    // « En attente » et la table sur l'ensemble précédent, sans un mot.
+    loadData(statutFilter, { echecRemonte: true }).catch(() =>
+      setErreurStatut('Impossible de recharger les assignations. Vérifiez votre connexion, puis réessayez.'),
+    );
   }, [statutFilter]);
 
   const refreshPatients = () => Promise.all([loadData(), loadPatientsTable(page, search, sortBy)]);
@@ -1036,6 +1071,11 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
             ))}
           </select>
         </div>
+        {erreurStatut && (
+          <div className="px-4 py-2 border-b border-border bg-muted text-13 text-foreground" role="status" data-testid="assignations-erreur">
+            {erreurStatut}
+          </div>
+        )}
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead className="bg-muted text-2xs uppercase tracking-[.07em] text-muted-foreground">
@@ -1049,7 +1089,11 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
             </thead>
             <tbody>
               {filteredAssignations.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-4 text-center text-muted-foreground">Aucune assignation.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-4 text-center text-muted-foreground">
+                  {/* Sous filtre, « Aucune assignation. » se lirait comme une
+                      affirmation sur l'ensemble du dossier : on nomme le filtre. */}
+                  {statutFilter ? `Aucune assignation « ${statutFilter} ».` : 'Aucune assignation.'}
+                </td></tr>
               )}
               {filteredAssignations.map(a => {
                 // Annulable : seulement une assignation ouverte, jamais remplie
