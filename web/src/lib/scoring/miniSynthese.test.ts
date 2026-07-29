@@ -72,6 +72,30 @@ describe('buildMiniSynthese', () => {
     expect(result).toBe('Tous les axes explorés sont peu perturbés.');
   });
 
+  it('multi-axes — aucun axe INTERPRÉTÉ ne se dit pas « peu perturbé »', () => {
+    // Depuis que le moteur ne replie plus sur la dernière bande (2026-07-29), un
+    // score hors grille arrive ici sans interprétation racine ET sans bande sur
+    // ses axes. La phrase du cas précédent affirmait alors « peu perturbés » sur
+    // des axes dont RIEN n'a été constaté — et elle part dans la fiche praticien
+    // comme dans le prompt de synthèse. Ce serait la même faute que le repli,
+    // retournée en réassurance.
+    expect(buildMiniSynthese({
+      subScores: [
+        { id: 'D', label: 'Dopamine', total: 5, interpretation: null },
+        { id: 'S', label: 'Sérotonine', total: 4, interpretation: null },
+      ],
+    })).toBe('');
+
+    // Un seul axe interprété suffit à rendre « tous » signifiant : le garde
+    // refuse l'affirmation sans preuve, il ne supprime pas la phrase.
+    expect(buildMiniSynthese({
+      subScores: [
+        { id: 'D', label: 'Dopamine', total: 5, interpretation: { label: 'Dans la norme', color: 'success' } },
+        { id: 'S', label: 'Sérotonine', total: 4, interpretation: null },
+      ],
+    })).toBe('Tous les axes explorés sont peu perturbés.');
+  });
+
   it('multi-axes (DNSM) — tri par sévérité et limite à 3 axes perturbés', () => {
     const result = buildMiniSynthese({
       subScores: [

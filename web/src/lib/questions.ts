@@ -1536,12 +1536,58 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     return {total, missing};
   }
 
-  // Interpréter un score selon des plages
+  // Interpréter un score selon des plages.
+  //
+  // GARDE — pas de bande correspondante ⇒ AUCUNE bande, jamais la dernière.
+  //
+  // Le repli sur `ranges[ranges.length - 1]` rendait la bande écrite en dernier,
+  // qui n'a aucune raison d'être la bonne : mesuré le 2026-07-29 sur le catalogue
+  // entier, il tombe sur la plus SÉVÈRE ici et sur la plus RASSURANTE là.
+  //   · `Q_SOM_02` (Epworth) ne couvre ni 6 ni 15 — deux totaux parfaitement
+  //     atteignables sur 8 items cotés 0 à 3. Un patient à 6, donc sans somnolence,
+  //     recevait « Somnolence diurne excessive ; syndrome d'apnées du sommeil
+  //     possible ».
+  //   · `Q_MOD_01` ne couvre pas 9 sur quatre de ses sous-échelles, et sa dernière
+  //     bande est la rassurante : un score entre « non réparateur » (0-8) et
+  //     « insuffisant » (10-14) ressortait « satisfaisant ».
+  //   · Cinq jeux de bandes ne couvrent pas 0 (`Q_STR_02` 10-50, `Q_STR_08` 25-100,
+  //     `Q_STR_05` et `Q_GAS_03` 1-7, `Q_MOD_03` 1-10) : un instrument entièrement
+  //     non répondu y tombait, et recevait « Addiction élevée au travail » ou
+  //     « Intensité très élevée ».
+  //
+  // Rendre `null` dit « pas de bande pour ce score » — ce que les consommateurs
+  // savent déjà lire : la colonne `interpretation` est nullable en base, et les
+  // routes praticien comme patient rendent une chaîne vide sur une valeur absente.
+  // Une bande fausse, elle, se propage jusqu'à la fiche patient.
   function interpretRanges(score: any, ranges: any) {
+    if (!Array.isArray(ranges) || ranges.length === 0) return null;
+    // `null >= 0` vaut `true` en JavaScript : sans ce test, une valeur absente
+    // décrocherait la première bande dont le plancher est 0.
+    if (typeof score !== 'number' || !Number.isFinite(score)) return null;
     for (const r of ranges) {
       if (score >= r.min && score <= r.max) return r;
     }
-    return ranges[ranges.length - 1];
+    // AU-DESSUS de toute la grille : la bande de tête est terminale, et un score
+    // qui la dépasse en relève au moins. Ce cas-là n'est PAS un trou — c'est un
+    // plafond de grille écrit sous le maximum atteignable, et l'ancien repli y
+    // rendait la bonne réponse. Deux grilles sont dans ce cas : `Q_TAB_04`
+    // (plafond 32, total atteignable 36 — le résultat le plus sévère du
+    // questionnaire cannabis, avec son orientation en addictologie) et
+    // `Q_MOD_01/ADAPTATION_STRESS` (plafond 24, atteignable 28 — le patient le
+    // MIEUX adapté). Trouvé par la revue adversariale du 2026-07-29 : la mesure
+    // qui a fondé ce lot cherchait les trous et les planchers, jamais les
+    // plafonds.
+    //
+    // On prend la bande au `max` le plus haut, et non la dernière écrite : la
+    // règle reste vraie quel que soit l'ordre de rédaction de la grille.
+    //
+    // Rien de symétrique par le BAS, délibérément. Sous le plancher d'une grille,
+    // on ne trouve pas un score extrême mais une absence de mesure : le minimum
+    // atteignable de `Q_STR_02` est 10 et celui de `Q_STR_08` est 25 — un 0 n'y
+    // signifie pas « stress nul », il signifie « rien n'a été répondu ».
+    const tete = ranges.reduce((a: any, b: any) => (typeof b?.max === 'number' && b.max > a.max ? b : a));
+    if (typeof tete?.max === 'number' && score > tete.max) return tete;
+    return null;
   }
 
   // ── SUM ──────────────────────────────────────────────
@@ -1947,7 +1993,10 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     });
     const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
     let interp = interpretRanges(globalTotal, sc.interpretation);
-    if (globalTotal >= 5 && globalTotal <= 14) {
+    // Le protocole ne se greffe que sur une bande RÉELLE : sans ce test, étaler
+    // `null` fabriquerait un objet n'ayant qu'un protocole et aucune bande, qui se
+    // lirait comme une interprétation là où il n'y en a pas.
+    if (interp && globalTotal >= 5 && globalTotal <= 14) {
       const dominant = subResults.reduce((a: any, b: any) => a.total >= b.total ? a : b);
       const proto: Record<string, string> = {A:'dopaminergique', B:'sérotoninergique', C:'mixte'};
       interp = {...interp, dominant: dominant.id, protocol: `Protocole ${proto[dominant.id] || dominant.id}`};
@@ -2056,10 +2105,18 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── BRISTOL ───────────────────────────────────────────────
   if (sc.type === 'bristol') {
-    // `as any` : BR1 absent rend null, que les comparaisons historiques
-    // coercent (null <= 2) — comportement conservé à l'identique.
+    // GARDE — pas de réponse ⇒ pas d'interprétation.
+    //
+    // Ce bloc portait la note « BR1 absent rend null, que les comparaisons
+    // historiques coercent (null <= 2) — comportement conservé à l'identique ».
+    // Le comportement en question : une question non répondue ressortait
+    // « Constipation », en rouge. Conservé parce qu'il était connu, pas parce
+    // qu'il était juste. Trouvé le 2026-07-29 par le balayage du banc de bandes,
+    // que les cas écrits à la main avaient manqué : ce moteur n'appelle pas
+    // `interpretRanges`, la garde posée là ne le couvrait donc pas.
     const v = getVal('BR1') as any;
-    const interp = v <= 2 ? {label:'Constipation',color:'danger'}
+    const interp = (v === null || !Number.isFinite(v)) ? null
+                 : v <= 2 ? {label:'Constipation',color:'danger'}
                  : v <= 4 ? {label:'Normal',color:'success'}
                  : {label:'Selles molles / diarrhée',color:'warning'};
     return {type:'bristol', total: v, interpretation: interp};
@@ -2590,7 +2647,10 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       for (const r of sc.interpretation) {
         if (gssScore >= r.gss_min && gssScore <= r.gss_max) { interp = r; break; }
       }
-      if (!interp) interp = sc.interpretation[sc.interpretation.length - 1];
+      // Second repli sur la dernière bande, sur des bornes à deux dimensions cette
+      // fois. Retiré pour la même raison que celui d'`interpretRanges` : rendre une
+      // bande faute d'en trouver une vaut affirmation, et le score GSS vaut 0 quand
+      // la partie P2 n'a pas été renseignée.
     }
 
     return {

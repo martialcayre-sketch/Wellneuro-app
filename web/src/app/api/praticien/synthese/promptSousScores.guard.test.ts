@@ -473,11 +473,16 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     // SERVIE au modèle. Elle était annoncée épinglée sans l'être : un attendu resté
     // en commentaire ne garde rien, c'est la classe même que ce lot corrige.
     expect(c.average).toBe(3.4);
-    // Et la bande est un REPLI sur la dernière : la moyenne 3,4 ne tombe dans
-    // aucune plage. Un patient à trois plaintes sur sept est annoncé au pire
-    // niveau de l'instrument.
-    expect(c.interpretation.label).toBe('Intensité très élevée');
-    expect(c.interpretation.color).toBe('danger');
+    // Et la moyenne 3,4 ne tombe dans AUCUNE plage : les bandes de cet instrument
+    // sont bornées sur des entiers ([1-3], [4-6], [7-8], [9-10]) alors que la valeur
+    // servie porte une décimale. Jusqu'au 2026-07-29, le moteur repliait alors sur
+    // la dernière bande, et ces deux lignes attendaient « Intensité très élevée »
+    // (danger) — le pire niveau de l'instrument, pour trois plaintes sur sept.
+    //
+    // Le repli est retiré : plus de bande fausse, donc plus de bande du tout. La
+    // grille reste à refaire contiguë au dixième — c'est une décision de seuil
+    // clinique, elle ne se prend pas dans un lot de code.
+    expect(c.interpretation).toBeNull();
   });
 
   it('la consigne met en garde contre le total global quand un sous-score est null', () => {
