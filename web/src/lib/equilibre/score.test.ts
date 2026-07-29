@@ -170,6 +170,20 @@ describe('calculerCouvertureBesoin', () => {
 // deux tiers pour le questionnaire validé.
 describe('besoin 5 — mouvement et repos à parts égales', () => {
   // PSQI parfait → couverture 1 ; agenda au plateau → couverture 1.
+  // Sous-échelle « activité physique » de Q_MOD_01, avec ses VRAIS identifiants.
+  // Les fixtures écrivaient `MOD_AP_01`…`MOD_AP_04`, qui n'existent pas au
+  // catalogue : l'instrument ne reconnaissait aucune de ces réponses et sortait
+  // pourtant un score. La garde de passation vide (2026-07-29) le refuse
+  // désormais — ces tests mesuraient donc une couverture bâtie sur rien.
+  const ACTIVITE_NULLE = {
+    ACTIVITE_PHYSIQUE_Q001: 0, ACTIVITE_PHYSIQUE_Q002: 0, ACTIVITE_PHYSIQUE_Q003: 0,
+    ACTIVITE_PHYSIQUE_Q004: 0, ACTIVITE_PHYSIQUE_Q005: 0,
+  };
+  const ACTIVITE_PARTIELLE = {
+    ACTIVITE_PHYSIQUE_Q001: 1, ACTIVITE_PHYSIQUE_Q002: 1, ACTIVITE_PHYSIQUE_Q003: 0,
+    ACTIVITE_PHYSIQUE_Q004: 0, ACTIVITE_PHYSIQUE_Q005: 0,
+  };
+
   const PSQI_PARFAIT = {
     Q1: 23, Q2: 5, Q3: 7, Q4: 8, Q6: 0, Q7: 0, Q8: 0, Q9: 0,
     Q5a: 0, Q5b: 0, Q5c: 0, Q5d: 0, Q5e: 0, Q5f: 0, Q5g: 0, Q5h: 0, Q5i: 0, Q5j: 0,
@@ -190,7 +204,7 @@ describe('besoin 5 — mouvement et repos à parts égales', () => {
       Q_SOM_01: PSQI_PARFAIT,
       Q_SOM_09: AGENDA_PLATEAU,
       // Q_MOD_01 répondu au minimum → sous-score activité physique à 0.
-      Q_MOD_01: { MOD_AP_01: 0, MOD_AP_02: 0, MOD_AP_03: 0, MOD_AP_04: 0 },
+      Q_MOD_01: ACTIVITE_NULLE,
     });
     // (2×1 + 1×1 + 3×0) / 6 = 0,5
     expect(couverture).toBeCloseTo(0.5, 6);
@@ -214,7 +228,7 @@ describe('besoin 5 — mouvement et repos à parts égales', () => {
   it('une source absente ne tire jamais vers 0 (renormalisation)', () => {
     const sansAgenda = calculerCouvertureBesoin(5, {
       Q_SOM_01: PSQI_PARFAIT,
-      Q_MOD_01: { MOD_AP_01: 0, MOD_AP_02: 0, MOD_AP_03: 0, MOD_AP_04: 0 },
+      Q_MOD_01: ACTIVITE_NULLE,
     });
     // L'agenda manquant ne compte ni pour 0 ni pour 1 : le repos se réduit au
     // PSQI, et les deux groupes restent à parts égales → (1 + 0) / 2 = 0,5.
@@ -235,11 +249,11 @@ describe('besoin 5 — mouvement et repos à parts égales', () => {
     };
     const couverture = calculerCouvertureBesoin(5, {
       Q_SOM_01: psqiModere,
-      Q_MOD_01: { MOD_AP_01: 1, MOD_AP_02: 1, MOD_AP_03: 0, MOD_AP_04: 0 },
+      Q_MOD_01: ACTIVITE_PARTIELLE,
     });
     const psqiSeul = calculerCouvertureBesoin(5, { Q_SOM_01: psqiModere })!;
     const activiteSeule = calculerCouvertureBesoin(5, {
-      Q_MOD_01: { MOD_AP_01: 1, MOD_AP_02: 1, MOD_AP_03: 0, MOD_AP_04: 0 },
+      Q_MOD_01: ACTIVITE_PARTIELLE,
     })!;
     expect(couverture).toBeCloseTo((psqiSeul + activiteSeule) / 2, 6);
   });

@@ -80,10 +80,15 @@ describe('bandes d’interprétation — aucune bande plutôt qu’une bande fau
     // Écrit sur CET instrument-là après vérification : le premier jet visait
     // `Q_STR_08`, dont le moteur `sum` porte déjà une garde de non-scoré et sort
     // avant d'atteindre les bandes — le test passait sans rien exercer.
-    const vide: any = calculateScore('Q_STR_05', {});
-    expect(vide.scored).not.toBe(false);
-    expect(vide.average).toBe(0);
-    expect(vide.interpretation).toBeNull();
+    //
+    // Un SEUL item répondu, et non zéro : depuis la garde de passation vide
+    // (2026-07-29), un instrument sans aucune réponse sort avant les bandes. Une
+    // réponse unique sur dix donne une moyenne de 0,1, sous le plancher de la
+    // grille — c'est bien le chemin des bandes qui est exercé.
+    const presqueVide: any = calculateScore('Q_STR_05', { [itemsDe('Q_STR_05')[0].id]: 1 });
+    expect(presqueVide.scored).not.toBe(false);
+    expect(presqueVide.average).toBe(0.1);
+    expect(presqueVide.interpretation).toBeNull();
   });
 
   it('les grilles du catalogue ne portent plus aucun repli silencieux', () => {
