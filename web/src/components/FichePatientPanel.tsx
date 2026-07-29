@@ -253,6 +253,19 @@ export function FichePatientPanel({
   const [reponses, setReponses] = useState<ReponseQuestionnaire[]>([]);
   const [loadingReponses, setLoadingReponses] = useState(true);
   const [assignationsModif, setAssignationsModif] = useState<PatientsApiResponse['assignations']>([]);
+  // Un échec de lecture n'est JAMAIS rendu comme « aucune demande » : ce serait
+  // la même affirmation fausse que celle corrigée ici, et elle laisserait le
+  // questionnaire verrouillé côté patient sans que rien ne le signale. Même
+  // discipline que `etatTrajectoire` plus bas.
+  const [etatCorrections, setEtatCorrections] = useState<'chargement' | 'chargees' | 'erreur'>('chargement');
+  // Vrai seulement si le serveur a confirmé avoir appliqué NOS filtres et
+  // compte en base plus de lignes qu'il n'en a rendues.
+  const [correctionsTronquees, setCorrectionsTronquees] = useState(false);
+  // Garde de fraîcheur : la lecture se relance au changement de patient et au
+  // clic de « Réessayer ». Sans elle, une réponse lente concernant le patient
+  // précédent écraserait celle du patient affiché — soit les demandes de
+  // correction d'un autre dossier, avec leur bouton « Débloquer ».
+  const generationCorrections = useRef(0);
   const [deverrouillageId, setDeverrouillageId] = useState<string | null>(null);
   const [modeConsultationActif, setModeConsultationActif] = useState(false);
   const [ongletActif, setOngletActif] = useState<OngletFiche>(ongletInitial ?? 'cockpit');
@@ -322,16 +335,55 @@ export function FichePatientPanel({
       .then((d: ReponsesApiResponse) => setReponses(d.reponses ?? []))
       .catch(() => setReponses([]))
       .finally(() => setLoadingReponses(false));
-
-    fetch('/api/praticien/patients')
-      .then(r => r.json())
-      .then((d: PatientsApiResponse) => {
-        setAssignationsModif(
-          (d.assignations ?? []).filter(a => a.emailPatient === email && a.statutReponses === 'modification_demandee')
-        );
-      })
-      .catch(() => setAssignationsModif([]));
   }, [data]);
+
+  // Demandes de correction du dossier affiché. Les deux filtres partent au
+  // serveur : appliqués en mémoire, ils l'étaient APRÈS la troncature à 40 de la
+  // route, et sur les assignations de TOUS les patients — une demande hors des
+  // 40 assignations les plus récentes du cabinet n'apparaissait nulle part et
+  // n'était donc jamais débloquée. La route trie par `dateAssignation desc` :
+  // ce sont précisément les dossiers anciens, ceux qu'on corrige le plus tard,
+  // qui tombaient hors fenêtre.
+  //
+  // Ne dépend plus de `data` : l'identifiant du patient suffit, et faire
+  // attendre ce signal la lecture de l'équilibre le retardait sans raison.
+  const chargerCorrections = useCallback(async () => {
+    const generation = ++generationCorrections.current;
+    setEtatCorrections('chargement');
+    const params = new URLSearchParams({ idPatient, statutReponses: 'modification_demandee' });
+    try {
+      const reponse = await fetch(`/api/praticien/patients?${params.toString()}`);
+      const payload = (await reponse.json()) as PatientsApiResponse;
+      if (!reponse.ok || payload.unavailable) throw new Error(payload.reason ?? 'exception');
+      if (generation !== generationCorrections.current) return;
+
+      // Second passage EN DÉFENSE, pas en filtre : c'est le serveur qui
+      // restreint, et c'est lui qui supprime la troncature. Celui-ci garantit
+      // seulement qu'aucune ligne d'un autre dossier ne s'affiche si la requête
+      // n'a pas été honorée (serveur antérieur à ces paramètres) ; il ne peut
+      // rien masquer que le serveur ait correctement rendu.
+      const liste = (payload.assignations ?? []).filter(
+        a => a.idPatient === idPatient && a.statutReponses === 'modification_demandee',
+      );
+      const meta = payload.assignationsMeta;
+      const filtresHonores =
+        meta !== undefined
+        && meta.idPatient === idPatient
+        && meta.statutReponses === 'modification_demandee';
+      setAssignationsModif(liste);
+      setCorrectionsTronquees(filtresHonores && meta.total > liste.length);
+      setEtatCorrections('chargees');
+    } catch {
+      if (generation !== generationCorrections.current) return;
+      setAssignationsModif([]);
+      setCorrectionsTronquees(false);
+      setEtatCorrections('erreur');
+    }
+  }, [idPatient]);
+
+  useEffect(() => {
+    void chargerCorrections();
+  }, [chargerCorrections]);
 
   // Onglet « Trajectoire » : lecture seule. Une erreur de lecture est
   // distinguée d'une absence d'épisode et reste rejouable (aucun verrou
@@ -388,7 +440,13 @@ export function FichePatientPanel({
     (id: IdPhase): StatutPhase => {
       if (!data || 'unavailable' in data) return 'inconnu';
       const priorites = data.priorites;
-      if (id === 'patient') return assignationsModif.length > 0 ? 'en_attente' : 'fait';
+      // Une lecture en échec ne vaut pas « rien en attente » : sans cette
+      // branche, le rail affirmerait « renseignée » alors que l'état réel des
+      // demandes de correction n'a pas pu être établi.
+      if (id === 'patient') {
+        if (etatCorrections === 'erreur') return 'inconnu';
+        return assignationsModif.length > 0 ? 'en_attente' : 'fait';
+      }
       if (id === 'donnees') return reponses.length > 0 ? 'fait' : 'en_attente';
       if (id === 'comprehension') {
         return priorites.some(p => p.couverture !== null) ? 'fait' : 'en_attente';
@@ -414,7 +472,7 @@ export function FichePatientPanel({
       if (etatRuntime.trajectoireErreur || etatRuntime.trajectoireEnLecture) return 'inconnu';
       return etatRuntime.reevaluationMesuree ? 'fait' : 'a_ouvrir';
     },
-    [data, assignationsModif, reponses, etatRuntime],
+    [data, assignationsModif, etatCorrections, reponses, etatRuntime],
   );
 
   // Navigation praticien : le choix manuel prime définitivement sur la
@@ -941,6 +999,30 @@ export function FichePatientPanel({
         </div>
       )}
 
+      {/* Un échec de lecture ne se tait pas : sans ce bandeau, l'absence de
+          signal serait indiscernable d'une absence de demande — et le
+          questionnaire resterait verrouillé côté patient. Libellé de bouton
+          distinct de celui de la trajectoire : deux nœuds portant le même nom
+          accessible casseraient le mode strict des E2E. */}
+      {etatCorrections === 'erreur' && (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-3 rounded-xl border border-accent bg-status-warning/10 px-4 py-2 text-base text-status-warning"
+        >
+          <ShieldAlert aria-hidden="true" size={16} strokeWidth={2} className="shrink-0" />
+          <span className="min-w-0">
+            Les demandes de correction n’ont pas pu être lues. Ce dossier peut en compter une en attente de déblocage.
+          </span>
+          <button
+            type="button"
+            onClick={() => void chargerCorrections()}
+            className="ml-auto min-h-9 shrink-0 rounded-lg border border-accent px-3 py-1 text-xs font-medium text-solar-ink hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            Réessayer la lecture des corrections
+          </button>
+        </div>
+      )}
+
       {/* Signal permanent (B2) : une demande de correction patient doit rester
           perceptible quel que soit l'ONGLET affiché (« Les 12 besoins »,
           « Alimentation », « Trajectoire »…) et pas seulement dans le cockpit —
@@ -958,6 +1040,15 @@ export function FichePatientPanel({
               ? '1 demande de correction en attente de déblocage.'
               : `${assignationsModif.length} demandes de correction en attente de déblocage.`}
           </span>
+          {/* Le plafond de la route s'applique désormais aux seules demandes de
+              CE dossier — inatteignable en pratique (18 assignations pour le
+              patient le plus fourni au 2026-07-29). S'il l'était un jour, le
+              dire vaut mieux qu'afficher un compte partiel comme un total. */}
+          {correctionsTronquees && (
+            <span className="min-w-0 font-medium">
+              Liste tronquée : ce dossier compte d’autres demandes, non affichées ici.
+            </span>
+          )}
           {!(ongletActif === 'cockpit' && phaseActive === 'patient') && (
             <button
               type="button"
