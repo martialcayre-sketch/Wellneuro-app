@@ -54,6 +54,8 @@ function stubFetch(options?: {
   patients?: (typeof PATIENT)[];
   /** Assignations exposées par le tableau « Assignations récentes » (Fil A). */
   assignations?: Record<string, unknown>[];
+  /** Compte serveur du même ensemble : c'est lui qui révèle une troncature. */
+  assignationsMeta?: { total: number; plafond: number; statut: string | null };
   /** Diffère la réponse du cycle de vie, pour éprouver la double soumission. */
   delaiCycleDeVie?: number;
 }) {
@@ -89,6 +91,7 @@ function stubFetch(options?: {
         json: async () => ({
           patients: options?.patients ?? [options?.patient ?? PATIENT],
           assignations: options?.assignations ?? [],
+          ...(options?.assignationsMeta ? { assignationsMeta: options.assignationsMeta } : {}),
           questionnaires: [],
           packs: [],
           categories: [],
@@ -641,5 +644,55 @@ describe('PatientsPanel — annulation d’une assignation (Fil A)', () => {
         appels.filter(a => a.url.startsWith('/api/praticien/patients') && !a.url.includes('cycle-de-vie')).length,
       ).toBeGreaterThan(nbGetAvant),
     );
+  });
+
+  // Le filtre par statut s'appliquait en mémoire, sur une liste que le serveur
+  // avait déjà plafonnée à 40 : tout ce qui dépassait était masqué en silence,
+  // et le compte affiché se présentait comme un total.
+  describe('filtre de statut et troncature', () => {
+    it('change de statut par une requête serveur, jamais par un tri en mémoire', async () => {
+      const appels = stubFetch({ assignations: [ASSIGNATION_OUVERTE] });
+      render(<PatientsPanel />);
+      await screen.findByText('Questionnaire ouvert');
+
+      fireEvent.change(screen.getByDisplayValue('Tous les statuts'), { target: { value: 'Complété' } });
+
+      // L'URL exacte, accents percent-encodés : c'est ce que le serveur relit.
+      await waitFor(() =>
+        expect(
+          appels.some(a => a.url === `/api/praticien/patients?statut=${encodeURIComponent('Complété')}`),
+        ).toBe(true),
+      );
+    });
+
+    it('dit qu’elle tronque quand le total dépasse ce qu’elle affiche', async () => {
+      stubFetch({
+        assignations: [ASSIGNATION_OUVERTE],
+        assignationsMeta: { total: 48, plafond: 40, statut: null },
+      });
+      render(<PatientsPanel />);
+      const compte = await screen.findByTestId('assignations-compte');
+      expect(compte.textContent).toContain('1 sur 48');
+    });
+
+    // Une troncature affirmée sans troncature réelle serait le défaut inverse.
+    it('n’invente pas une troncature quand tout est affiché', async () => {
+      stubFetch({
+        assignations: [ASSIGNATION_OUVERTE],
+        assignationsMeta: { total: 1, plafond: 40, statut: null },
+      });
+      render(<PatientsPanel />);
+      const compte = await screen.findByTestId('assignations-compte');
+      expect(compte.textContent).toContain('1');
+      expect(compte.textContent).not.toContain('sur');
+    });
+
+    // Compte manquant ≠ compte nul : sans réponse du serveur, on n'affirme rien.
+    it('reste muet sur la troncature quand le serveur ne rend aucun compte', async () => {
+      stubFetch({ assignations: [ASSIGNATION_OUVERTE] });
+      render(<PatientsPanel />);
+      const compte = await screen.findByTestId('assignations-compte');
+      expect(compte.textContent).not.toContain('sur');
+    });
   });
 });

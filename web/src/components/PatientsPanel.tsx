@@ -159,6 +159,11 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortBy>('nom');
   const [statutFilter, setStatutFilter] = useState<StatutFilter>('');
+  // Miroir non réactif du filtre courant : les rafraîchissements déclenchés
+  // ailleurs (création, annulation…) doivent le conserver sans pour autant
+  // faire de `loadData` une fonction à redéclarer à chaque changement de statut.
+  const statutFilterRef = useRef<StatutFilter>('');
+  statutFilterRef.current = statutFilter;
   const [page, setPage] = useState(1);
   const [tablePatients, setTablePatients] = useState<PatientsApiResponse['patients']>([]);
   const [pagination, setPagination] = useState<PatientsPagination | null>(null);
@@ -191,8 +196,14 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   // Tiroir d'action ouvert (LOT-05) — un seul à la fois.
   const [tiroirOuvert, setTiroirOuvert] = useState<'patient' | 'consultation' | 'assignation' | null>(null);
 
-  const loadData = async () => {
-    const r = await fetch('/api/praticien/patients');
+  // Le statut part au serveur : filtrer en mémoire une liste déjà plafonnée à 40
+  // masquait les assignations situées au-delà du 40ᵉ rang — 8 « En attente »
+  // au 2026-07-29, ni consultables ni annulables depuis ce tableau.
+  // Le paramètre par défaut reprend le filtre courant, pour que les rafraîchis-
+  // sements déclenchés ailleurs (création, annulation…) ne le perdent pas.
+  const loadData = async (statut: StatutFilter = statutFilterRef.current) => {
+    const qs = statut ? `?statut=${encodeURIComponent(statut)}` : '';
+    const r = await fetch(`/api/praticien/patients${qs}`);
     const json = (await r.json()) as PatientsApiResponse;
     setData(json);
   };
@@ -270,6 +281,18 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   useEffect(() => {
     loadPatientsTable(page, search, sortBy);
   }, [page, search, sortBy, loadPatientsTable]);
+
+  // Le filtre de statut se joue en base : changer de statut est un rechargement,
+  // pas un tri en mémoire. Pas de debounce — c'est un <select>, pas une frappe
+  // clavier. Ignoré au premier rendu, déjà couvert par le chargement initial.
+  const isFirstStatutRender = useRef(true);
+  useEffect(() => {
+    if (isFirstStatutRender.current) {
+      isFirstStatutRender.current = false;
+      return;
+    }
+    void loadData(statutFilter);
+  }, [statutFilter]);
 
   const refreshPatients = () => Promise.all([loadData(), loadPatientsTable(page, search, sortBy)]);
 
@@ -647,11 +670,16 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
     }
   };
 
-  const filteredAssignations = useMemo(() => {
-    const list = data?.assignations ?? [];
-    if (!statutFilter) return list;
-    return list.filter(a => a.statut === statutFilter);
-  }, [data?.assignations, statutFilter]);
+  // Plus de filtre ici : le serveur a déjà rendu les assignations du statut
+  // demandé. Le filtre qui vivait à cet endroit s'appliquait APRÈS la troncature
+  // à 40 et masquait tout ce qui la dépassait.
+  const filteredAssignations = data?.assignations ?? [];
+
+  // Ce que la troncature a laissé de côté. `null` tant que le serveur n'a rien
+  // dit : un compte manquant n'est pas un compte nul, et on préfère ne rien
+  // afficher plutôt qu'affirmer une exhaustivité invérifiable.
+  const meta = data?.assignationsMeta ?? null;
+  const assignationsTronquees = meta !== null && meta.total > filteredAssignations.length;
 
   if (loading) {
     return <div className="text-base text-muted-foreground">Chargement des données patients...</div>;
@@ -998,7 +1026,9 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
           <h3 className="font-display text-lg font-semibold text-foreground">
             Assignations récentes
-            <span className="ml-2 font-mono text-13 font-normal text-muted-foreground">({filteredAssignations.length})</span>
+            <span className="ml-2 font-mono text-13 font-normal text-muted-foreground" data-testid="assignations-compte">
+              ({assignationsTronquees ? `${filteredAssignations.length} sur ${meta?.total}` : filteredAssignations.length})
+            </span>
           </h3>
           <select value={statutFilter} onChange={e => setStatutFilter(e.target.value as StatutFilter)} className="text-xs border border-border rounded-lg px-2 py-1 bg-surface text-muted-foreground">
             {(Object.keys(STATUT_LABELS) as StatutFilter[]).map(s => (

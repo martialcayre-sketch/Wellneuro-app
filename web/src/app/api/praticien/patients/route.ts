@@ -6,6 +6,21 @@ import { emailPraticien, filtrePatientsDuPraticien, verifierAppartenancePatient 
 
 const MAX_ASSIGNATIONS = 40;
 
+// Statuts filtrables côté serveur. Le filtre vivait côté client, appliqué APRÈS
+// la troncature à `MAX_ASSIGNATIONS` : filtrer une liste déjà tronquée ne cache
+// pas des lignes en trop, il en cache en moins — et sans le dire. Au 2026-07-29,
+// 8 assignations « En attente » tombaient hors des 40 plus récentes et devenaient
+// donc invisibles ET inannulables depuis le tableau praticien.
+const STATUTS_ASSIGNATION = ['En attente', 'Complété', 'Annulée'] as const;
+
+// Une valeur inconnue est IGNORÉE, pas rejetée : même choix que `sortBy` plus
+// bas. Un 400 sur un paramètre d'affichage priverait le praticien de sa liste
+// entière pour une faute de frappe dans une URL.
+function statutDemande(searchParams: URLSearchParams): string | null {
+  const brut = searchParams.get('statut');
+  return (STATUTS_ASSIGNATION as readonly string[]).includes(brut ?? '') ? brut : null;
+}
+
 type Patient = {
   idPatient: string;
   email: string;
@@ -39,9 +54,20 @@ export type PatientsPagination = {
   totalPages: number;
 };
 
+// Distinct de `PatientsPagination`, qui décrit les patients. `total` est le
+// nombre d'assignations répondant au filtre EN BASE ; `assignations.length` est
+// ce que la troncature en a laissé. Sans ce compte, le client ne peut pas savoir
+// qu'il est tronqué — et affiche un plafond comme s'il était un total.
+export type AssignationsMeta = {
+  total: number;
+  plafond: number;
+  statut: string | null;
+};
+
 export type PatientsApiResponse = {
   patients: Patient[];
   assignations: Assignation[];
+  assignationsMeta?: AssignationsMeta;
   pagination?: PatientsPagination;
   unavailable?: boolean;
   reason?: 'unauthenticated' | 'exception';
@@ -111,6 +137,16 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
   const pageParam = Number(searchParams.get('page'));
   const isPaginated = Number.isInteger(pageParam) && pageParam >= 1;
 
+  // Un seul `where` pour la liste ET pour le compte : c'est la seule façon que
+  // « 40 sur 48 » parle du même ensemble que les 40 lignes rendues. La garde de
+  // portée praticien reste en tête — le filtre de statut s'y ajoute, il ne la
+  // remplace pas.
+  const statut = statutDemande(searchParams);
+  const whereAssignations = {
+    patient: filtrePatientsDuPraticien(email),
+    ...(statut ? { statut } : {}),
+  };
+
   try {
     if (isPaginated) {
       const page = pageParam;
@@ -135,35 +171,39 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
           ? [{ email: 'asc' as const }]
           : [{ nom: 'asc' as const }, { prenom: 'asc' as const }];
 
-      const [dbPatients, total, dbAssignations] = await Promise.all([
+      const [dbPatients, total, dbAssignations, totalAssignations] = await Promise.all([
         prisma.patient.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize }),
         prisma.patient.count({ where }),
         prisma.assignation.findMany({
-          where: { patient: filtrePatientsDuPraticien(email) },
+          where: whereAssignations,
           orderBy: { dateAssignation: 'desc' },
           take: MAX_ASSIGNATIONS,
         }),
+        prisma.assignation.count({ where: whereAssignations }),
       ]);
 
       return NextResponse.json({
         patients: dbPatients.map(patientToDto),
         assignations: dbAssignations.map(assignationToDto),
+        assignationsMeta: { total: totalAssignations, plafond: MAX_ASSIGNATIONS, statut },
         pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
       });
     }
 
-    const [dbPatients, dbAssignations] = await Promise.all([
+    const [dbPatients, dbAssignations, totalAssignations] = await Promise.all([
       prisma.patient.findMany({ where: filtrePatientsDuPraticien(email), orderBy: [{ nom: 'asc' }, { prenom: 'asc' }] }),
       prisma.assignation.findMany({
-        where: { patient: filtrePatientsDuPraticien(email) },
+        where: whereAssignations,
         orderBy: { dateAssignation: 'desc' },
         take: MAX_ASSIGNATIONS,
       }),
+      prisma.assignation.count({ where: whereAssignations }),
     ]);
 
     return NextResponse.json({
       patients: dbPatients.map(patientToDto),
       assignations: dbAssignations.map(assignationToDto),
+      assignationsMeta: { total: totalAssignations, plafond: MAX_ASSIGNATIONS, statut },
     });
   } catch (err) {
     console.error('[patients GET]', err instanceof Error ? err.message : String(err));
