@@ -57,8 +57,10 @@ sollicitée ni obtenue ». Elles sont redescendues. Détail dans `droits.md`.
    `licence_requise` n'est consommé nulle part dans le code. Deux d'entre eux
    (`Q_PED_02`, `Q_PED_03`) n'ont jamais été passés au banc ; si le sort retenu est le
    retrait, la dépense n'a pas lieu d'être engagée.
-2. **Le plafond réel de `Q_ALI_01`** (`scoring-et-contenu.md` §2b) — le balayage rend
-   29 → 52 pour un score présenté sur 90. À vérifier avant toute lecture clinique.
+2. ~~**Le plafond réel de `Q_ALI_01`**~~ — **VÉRIFIÉ le 2026-07-29, rien à trancher.**
+   L'étendue réelle du score est 0 à 90 et les quatre bandes sont atteignables. Le
+   29 → 52 venait de `bornesExecutees`, un encadrement approché du banc et non l'étendue
+   servie (`scoring-et-contenu.md` §2b).
 3. **Le banc ignore les drapeaux** (`scoring-et-contenu.md` §2a) — `npm run check`
    vérifie déjà aux deux positions ; le banc de certification, non.
 4. **Les six échelles internationales non instruites** (`droits.md` §2) — Zarit, IAT,
