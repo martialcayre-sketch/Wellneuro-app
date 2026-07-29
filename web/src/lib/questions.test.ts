@@ -45,8 +45,22 @@ describe('calculateScore', () => {
   it('Q_CAN_02 (sum_items) — aucune réponse ne provoque pas de throw et dégrade proprement', () => {
     expect(() => calculateScore('Q_CAN_02', {})).not.toThrow();
     const result = calculateScore('Q_CAN_02', {});
-    expect(result.total).toBe(0);
-    expect(result.missing).toBe(21);
+    // Ces trois lignes attendaient `total: 0`, `missing: 21` et la liste des items
+    // non applicables jusqu'au 2026-07-29 : le moteur produisait un résultat
+    // complet à partir d'aucune réponse, et `Q_CAN_02` sortait « Aucun problème
+    // signalé ». « Dégrader proprement » veut dire ne rien affirmer.
+    expect(result.scored).toBe(false);
+    expect(result.total).toBeNull();
+    expect(result.interpretation).toBeNull();
+    expect(result.raisonNonScore).toBeTruthy();
+  });
+
+  it('Q_CAN_02 — une seule réponse suffit à retrouver le détail du moteur', () => {
+    // La garde ne mord QUE sur le vide : dès qu'une réponse existe, le moteur
+    // reprend la main et rend `missing`, `notApplicable` et son total.
+    const result = calculateScore('Q_CAN_02', { BR1: 1 });
+    expect(result.scored).not.toBe(false);
+    expect(result.total).toBe(1);
     // Sans réponse au déclencheur, les items conditionnels BR5/BR16 restent non applicables.
     expect(result.notApplicable).toEqual(['BR5', 'BR16']);
   });

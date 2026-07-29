@@ -14,6 +14,28 @@ function reponsesAgendaComplet(): Record<string, number> {
   };
 }
 
+/**
+ * Réponses aux identifiants RÉELS des instruments.
+ *
+ * Les fixtures de ce banc écrivaient `{ Q_SOM_01: { P1: '1' } }`,
+ * `{ Q_MOD_01: { ACT1: '1' } }` et `{ Q_GAS_01: { G1: '1' } }` — trois clés qui
+ * n'existent dans AUCUN de ces instruments. Le moteur n'en reconnaissait donc
+ * rien, sortait 0 partout, et `calculerNiveauPreuveBesoin` rendait « preuve de
+ * niveau A » sur une passation qui ne mesure rien. La garde de passation vide
+ * (2026-07-29) le refuse : le banc mesure désormais ce qu'il annonce.
+ */
+const PSQI_REPONDU = { Q1: 23, Q2: 15, Q3: 7, Q4: 7, Q6: 1, Q7: 0, Q8: 0, Q9: 1 };
+// La source `Q_MOD_01` du besoin 5 lit la sous-échelle ACTIVITE_PHYSIQUE, et non
+// SOMMEIL : une fixture qui renseigne l'autre sous-échelle rendrait le même verdict
+// aujourd'hui, mais par accident — et rougirait au premier lot qui fera passer un
+// sous-score sans item répondu à `null`, pour une raison étrangère à ce qu'elle
+// énonce. Relevé par la revue adversariale du 2026-07-29.
+const MODE_VIE_REPONDU = {
+  ACTIVITE_PHYSIQUE_Q001: 2, ACTIVITE_PHYSIQUE_Q002: 2, ACTIVITE_PHYSIQUE_Q003: 2,
+  ACTIVITE_PHYSIQUE_Q004: 2, ACTIVITE_PHYSIQUE_Q005: 2,
+};
+const TFD_REPONDU = { C1_1: 1, C1_2: 1, C1_3: 0 };
+
 describe('evidence — niveaux de preuve par besoin', () => {
   it('besoin sans réponse doit être NON_MESURE', () => {
     const result = calculerNiveauPreuveBesoin(5, {});
@@ -26,17 +48,17 @@ describe('evidence — niveaux de preuve par besoin', () => {
   });
 
   it('besoin 5 avec seule source Q_SOM_01 répondue doit être A', () => {
-    const result = calculerNiveauPreuveBesoin(5, { Q_SOM_01: { P1: '1' } });
+    const result = calculerNiveauPreuveBesoin(5, { Q_SOM_01: PSQI_REPONDU });
     expect(result).toBe('A');
   });
 
   it('besoin 5 avec sources A+B répondues doit retomber au plus faible (B)', () => {
-    const result = calculerNiveauPreuveBesoin(5, { Q_SOM_01: { P1: '1' }, Q_MOD_01: { ACT1: '1' } });
+    const result = calculerNiveauPreuveBesoin(5, { Q_SOM_01: PSQI_REPONDU, Q_MOD_01: MODE_VIE_REPONDU });
     expect(result).toBe('B');
   });
 
   it('listerSourcesPreuveBesoin ne renvoie que les sources effectivement répondues', () => {
-    const sources = listerSourcesPreuveBesoin(5, { Q_SOM_01: { P1: '1' } });
+    const sources = listerSourcesPreuveBesoin(5, { Q_SOM_01: PSQI_REPONDU });
     expect(sources).toHaveLength(1);
     expect(sources[0]?.idQuestionnaire).toBe('Q_SOM_01');
     expect(sources[0]?.grade).toBe('A');
@@ -53,7 +75,7 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
   // L'agenda du sommeil est le seul moteur du catalogue à rendre `{scored:false}`
   // sans total : sous 5 nuits, il n'y a pas de mesure. C'est donc le cas vivant.
   const AGENDA_INSUFFISANT = { Q_SOM_09: { AGD_NB_NUITS: 3 } };
-  const PSQI = { Q_SOM_01: { P1: '1' } };
+  const PSQI = { Q_SOM_01: PSQI_REPONDU };
 
   it('un agenda sous son seuil de nuits ne dégrade plus le niveau de preuve', () => {
     // Vaut 'B' avant ce correctif : l'agenda (grade B) comptait sans mesure et
@@ -86,14 +108,22 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
     expect(calculerNiveauPreuveBesoin(10, { Q_INF_03: { D1: '4' } })).toBe('B');
   });
 
-  it('« répondu mais vide » dépend du MOTEUR, pas d’une règle unique', () => {
-    // Nuance que la première rédaction avait manquée : `{}` est truthy, mais ce
-    // qu'il devient dépend du moteur. `psqi` score 0 → couverture 0, la source
-    // compte ; les moteurs `sum` portent la garde anti-zéro et rendent `null`
-    // dès qu'aucune réponse ne correspond → la source ne compte plus. Écrire
-    // « répondu mais vide compte toujours » aurait été faux de quatre sources.
-    expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: {} })).toBe('A');
+  it('« répondu mais vide » ne dépend plus du moteur — aucun ne compte', () => {
+    // Ce test disait l'inverse jusqu'au 2026-07-29 : `psqi` scorait 0 sur `{}` et
+    // la source comptait, tandis que les moteurs `sum` portaient déjà la garde
+    // anti-zéro et rendaient `null`. La règle était donc « ça dépend du moteur »,
+    // ce qui n'est pas une règle mais l'aveu d'un trou : dix-sept moteurs sur
+    // dix-neuf fabriquaient une preuve à partir de rien.
+    //
+    // La garde est désormais posée avant la répartition par moteur. Un `{}` ne
+    // mesure rien, quel que soit l'instrument.
+    expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: {} })).toBe('NON_MESURE');
     expect(calculerNiveauPreuveBesoin(4, { Q_INF_01: {} })).toBe('NON_MESURE');
+
+    // Et une passation dont AUCUNE clé n'appartient à l'instrument ne vaut pas
+    // mieux qu'un `{}` : c'est le cas vivant en production, celui des passations
+    // `AL*` relues sous la forme SIIN.
+    expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: { CLE_INCONNUE: '3' } })).toBe('NON_MESURE');
   });
 
   it('BESOIN 1 : une passation `AL*` relue sous la forme SIIN cesse d’être une preuve', () => {
@@ -122,7 +152,7 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
       { ...PSQI, ...AGENDA_INSUFFISANT },
       { Q_SOM_09: reponsesAgendaComplet() },
       { Q_INF_03: { D1: '4' } },
-      { Q_GAS_01: { G1: '1' } },
+      { Q_GAS_01: TFD_REPONDU },
       // Le cas de la campagne DOIT figurer dans la matrice : sans lui,
       // `test:siin57` passait à côté du seul dossier réellement concerné.
       { Q_ALI_01: { AL1: '1', AL2: '2' } },

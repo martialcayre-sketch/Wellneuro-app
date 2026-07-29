@@ -507,16 +507,32 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
   });
 
   it('atRisk part à vrai sur une donnée ABSENTE — le défaut que la règle doit contenir', () => {
-    // Passation vide : chaque sous-échelle tombe à 0, et les seuils « faible si < X »
-    // se déclenchent. `atRisk` n'est donc pas seulement muet quand le seuil manque,
-    // il est ACTIVEMENT faux quand la donnée manque. Épinglé pour qu'un correctif
-    // futur du moteur fasse rougir ce test en connaissance de cause.
+    // Ce test épinglait la passation VIDE, et disait attendre « qu'un correctif
+    // futur du moteur le fasse rougir en connaissance de cause ». C'est arrivé le
+    // 2026-07-29 : la garde de passation vide sort désormais avant tout scoring.
     const vide = chargePour('Q_STR_06', {});
-    const par = Object.fromEntries(vide.subScores.map((s: any) => [s.id, s]));
+    expect(vide.scored).toBe(false);
+    expect(vide.subScores).toBeUndefined();
+
+    // Mais le défaut lui-même n'est PAS fermé — il est seulement devenu partiel.
+    // Une passation où SEULE la sous-échelle « demande » est renseignée laisse les
+    // trois autres à 0, leurs seuils « faible si < X » se déclenchent, et
+    // l'instrument rend « Iso-Strain — risque burnout élevé » : son libellé le plus
+    // alarmant, sur trois sous-échelles sans une seule donnée.
+    //
+    // Fermer cela demande que chaque SOUS-SCORE distingue « zéro » de « non
+    // mesuré », et que les totaux globaux sachent l'ignorer. C'est le lot suivant.
+    // Réépinglé ici pour qu'il fasse rougir ce test à son tour.
+    const demSeule = chargePour('Q_STR_06', Object.fromEntries(
+      (QUESTIONNAIRE_CATALOGUE as any).Q_STR_06.scoring.subScores
+        .find((s: any) => s.id === 'DEM').items.map((i: string) => [i, 4]),
+    ));
+    const par = Object.fromEntries(demSeule.subScores.map((s: any) => [s.id, s]));
+    expect(par.DEM.total).toBe(33);
     expect(par.LAT.total).toBe(0);
     expect(par.LAT.atRisk).toBe(true);
     expect(par.SOU.atRisk).toBe(true);
-    expect(par.DEM.atRisk).toBe(false);
+    expect(demSeule.interpretation.label).toBe('Iso-Strain — risque burnout élevé');
   });
 
   it('horsTotal existe, et exclut réellement le sous-score du total global', () => {

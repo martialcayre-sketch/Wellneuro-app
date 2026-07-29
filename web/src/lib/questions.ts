@@ -1590,32 +1590,51 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     return null;
   }
 
+  // ── GARDE GÉNÉRALE — une passation vide n'est pas un résultat ─────────
+  //
+  // Deux moteurs portaient déjà cette garde (`sum` depuis le 2026-07-28,
+  // `seuils_points` depuis #436). Le catalogue en sert 27 : les vingt-cinq autres
+  // ne l'avaient pas. Mesuré le 2026-07-29 en appelant `calculateScore(id, {})` sur
+  // le catalogue entier, **40 verdicts cliniques sortaient de 22 instruments sans
+  // une seule réponse**.
+  //
+  // Trente en direction rassurante — « Pas de trouble du sommeil » (PSQI),
+  // « Absence de symptomatologie » (HAD), « Risque faible d'apnée du sommeil »
+  // (Berlin) : un questionnaire blanc se lisait comme un bilan propre. Dix en
+  // direction alarmante — les sept sous-échelles de `Q_MOD_01` en rouge,
+  // « Risque élevé de chute » (Tinetti), « Tout à fait du soir » (Horne), et
+  // `Q_GEO_06` annonçant « Trouble de la mémoire épisodique — consultation
+  // neurologique » sur un test non répondu.
+  //
+  // Aucune des deux directions n'est moins fausse que l'autre : la question n'est
+  // pas la sévérité du verdict, c'est qu'il n'y a rien à juger.
+  //
+  // Ce n'est PAS un cas d'école. Les identifiants d'un instrument changent — le
+  // cas `Q_ALI_01` (`AL*` contre `SIIN*`) l'a montré en production. Une passation
+  // relue sous une définition dont elle ne porte aucune clé tombe exactement ici,
+  // et sortait avec un verdict.
+  //
+  // Forme du retour reprise à l'identique des deux gardes existantes, `type`
+  // compris : `equilibre/evidence.ts` lit déjà `scored: false`, et les routes
+  // praticien comme patient savent rendre une interprétation absente.
+  // `agenda_sommeil` et `journal` portent DÉJÀ leur propre `scored: false`, avec un
+  // motif que celui-ci ne saurait pas dire — le nombre de nuits recueillies pour
+  // l'un, « recueil sans score global » pour l'autre. Les préempter remplacerait un
+  // motif juste par un motif générique, et perdrait `nbNuits`.
+  const PORTE_SON_PROPRE_NON_SCORE = ['agenda_sommeil', 'journal'];
+  if (!PORTE_SON_PROPRE_NON_SCORE.includes(sc.type)
+      && allQ.length > 0 && allQ.every((q: any) => getVal(q.id) === null)) {
+    return {
+      type: sc.type, scored: false, total: null, maxTotal: sc.maxTotal,
+      interpretation: null, note: sc.note || null,
+      certification: sc.certification || null,
+      raisonNonScore: 'aucune réponse ne correspond aux items de cet instrument',
+    };
+  }
+
   // ── SUM ──────────────────────────────────────────────
   if (sc.type === 'sum') {
     const items = allQ.map(q => q.id);
-
-    // GARDE — « non scoré », jamais 0 par défaut.
-    //
-    // Symétrique de celle du moteur `seuils_points`, et posée ici pour la même
-    // raison : une passation dont AUCUNE réponse ne correspond aux items de la
-    // définition rendait `total: 0`, donc la bande la plus basse ET sa conduite
-    // clinique — « bilan approfondi nécessaire » sur un dossier illisible. Et
-    // `equilibre/score.ts` accepte 0 comme une valeur : sur une source de
-    // fondation critique, cela plafonne le score global à 50.
-    //
-    // Le cas n'est pas théorique : `Q_ALI_01` a deux formes aux identifiants
-    // disjoints (`AL*` et `SIIN*`). Servir l'une après avoir recueilli l'autre
-    // — dans un sens comme dans l'autre — tombe exactement ici. Trouvé par la
-    // revue adversariale du 2026-07-28, qui a relevé que le lot n'avait écrit
-    // la garde que dans le sens qui l'arrangeait.
-    if (items.length > 0 && items.every(id => getVal(id) === null)) {
-      return {
-        type: 'sum', scored: false, total: null, maxTotal: sc.maxTotal,
-        interpretation: null, note: sc.note || null,
-        certification: sc.certification || null,
-        raisonNonScore: 'aucune réponse ne correspond aux items de cet instrument',
-      };
-    }
 
     const {total} = sumItems(items, []);
     const interp = interpretRanges(total, sc.interpretation);
