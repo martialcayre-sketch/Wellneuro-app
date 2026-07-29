@@ -54,7 +54,7 @@
 **Aucune valeur servie ne change** : ce lot ne touche ni un barème, ni un seuil,
 ni un moteur. Il change ce que le modèle sait de ce qu'on lui livre déjà.
 
-**Douze preuves par mutation**, chacune rouge puis restaurée. Elles portent sur le
+**Quatorze preuves par mutation**, chacune rouge puis restaurée. Elles portent sur le
 seul fichier `promptSousScores.guard.test.ts`, jamais sur le verrou d'empreinte —
 celui-ci rougit à toute édition de la consigne et ne discriminerait rien. Dont, en
 particulier : rassurer le modèle sur le total global quand un sous-score est `null` ;
@@ -70,8 +70,11 @@ ont le plus servi :
   définition du porteur sans rien faire rougir. Chaque porteur est désormais éprouvé
   par son nom **et** par ce qui le définit ;
 - ré-annoncer « **trois** clés » — la garde interdisait le seul littéral « sous deux
-  clés », donc sa reformulation passait. C'est la classe entière qui est fermée
-  (aucun dénombrement de porteurs), et la formule non exhaustive est exigée.
+  clés », donc sa reformulation passait. Le motif couvre désormais tous les
+  dénombrements de cette forme, et la tournure non exhaustive est exigée en positif.
+  Sans illusion : une garde textuelle ne ferme pas une classe **sémantique** — « les
+  porteurs sont au nombre de trois » passerait encore. C'est assumé et écrit dans le
+  test, pas ignoré.
 
 ### Ce que la revue adversariale a trouvé, et qui vaut d'être retenu
 
@@ -91,6 +94,18 @@ consigne empêchait donc correctement le modèle de scorer les axes `null`, puis
 données manquantes. Remplacé par une mise en garde : dès qu'un sous-score est à
 `null`, le total global est présenté comme **incomplet** et ne fonde aucune
 conclusion de gravité.
+
+**Troisième tour — la règle réécrite avait cessé de nommer le dénominateur.** En
+remplaçant le dénombrement par un invariant, j'avais écrit « lis chaque valeur
+contre le dénominateur qui l'accompagne dans le même bloc » et ne nommais plus le
+couple `total`/`max` que pour `subScores`. Or c'est dans les deux autres porteurs —
+et seulement là — que la charge offre **plusieurs** nombres : une dimension SIIN
+porte `{total: 4, max: 12, repondus: 6, items: 6}`. « 4 sur 6 » au lieu de « 4 sur
+12 » : **67 % au lieu de 33 %**, dans le sens rassurant, sur l'instrument
+alimentaire servi en production depuis le 2026-07-28. Aucune garde ne couvrait ces
+deux clés — celle qui existait n'assertait que leurs noms. La consigne nomme
+désormais le couple pour les trois porteurs et récuse explicitement `items` et
+`repondus`, qui comptent des **questions** et jamais des points.
 
 **Premier tour — deux défauts bloquants**, tous deux **introduits par ce lot**.
 
@@ -160,12 +175,19 @@ l'incident qui l'a motivée.
   **mal étiqueté, dans les deux directions** — `Q_MOD_03` et `Q_GEO_01` retombent
   sur leur **dernière** bande (« Intensité très élevée », « Risque élevé de
   chute »).
-  **La consigne ne peut pas réparer cela** : rien dans la charge ne distingue ce 0
-  d'un vrai zéro (les `subScores` ne portent ni `repondus` ni `items`, contrairement
-  aux `dimensions`), et demander au modèle de se méfier d'un 0 qu'aucun champ ne
-  qualifie le ferait douter de tous les zéros légitimes. C'est un correctif de
-  **moteur** — même classe que l'asymétrie déjà documentée en réserve de #443, et
-  probablement le prochain lot de cette série.
+  **La consigne ne peut pas réparer cela, mais pas pour la raison d'abord écrite.**
+  Une rédaction antérieure de cette réserve affirmait que « rien dans la charge ne
+  distingue ce 0 d'un vrai zéro » : **inexact**, et la revue l'a montré —
+  `rawAnswers` est persisté dans `scores_json` et transmis verbatim pour tout
+  questionnaire non `Q_ALI`. L'information des items non recueillis **est** dans la
+  charge. Ce qui manque est la **correspondance item → sous-score** : les
+  `subScores` ne portent ni `repondus` ni `items` (contrairement aux `dimensions`),
+  si bien que le modèle ne peut pas rattacher un item vide à l'axe qu'il vide.
+  Demander de se méfier d'un 0 sans lui donner ce lien le ferait douter de tous les
+  zéros légitimes. La conclusion tient donc — c'est un correctif de **moteur**,
+  même classe que l'asymétrie documentée en réserve de #443 — mais elle repose
+  désormais sur le bon motif. Reporter une parade clinique sur un motif faux est
+  précisément ce qui a valu à ce lot ses deux premiers refus.
 - **`atRisk` sur un total nul est activement faux**, pas seulement muet : passation
   Karasek vide, `LAT` et `SOU` passent à `atRisk: true` par franchissement de seuil
   « faible si < X ». Épinglé par un test pour qu'un correctif de moteur fasse

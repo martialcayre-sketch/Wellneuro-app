@@ -139,12 +139,58 @@ describe('consigne système — les trois porteurs de sous-scores', () => {
     // La faute de v9 était d'annoncer un DÉNOMBREMENT (« sous deux clés »), et la
     // première v10 l'a refaite en écrivant « trois » alors qu'il y en a sept.
     // Interdire le seul littéral « deux » laissait passer sa reformulation :
-    // mesuré, la mutation « ré-annoncer trois clés » ressortait VERTE. C'est donc
-    // la classe entière qui est fermée, et la formule non exhaustive exigée.
+    // mesuré, la mutation « ré-annoncer trois clés » ressortait VERTE. Le motif
+    // couvre donc tous les dénombrements de cette forme, et la formule non
+    // exhaustive est exigée en positif. Une garde textuelle ne fermera jamais une
+    // classe SÉMANTIQUE — « les porteurs sont au nombre de trois » passerait
+    // encore ; c'est assumé, pas ignoré.
     expect(SYSTEM_PROMPT_GOUVERNANCE, 'la consigne ré-annonce un dénombrement de porteurs')
       .not.toMatch(/sous (deux|trois|quatre|cinq|six|sept|huit) clés/);
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('sous plusieurs clés');
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("d'autres existent");
+  });
+
+  it('nomme le couple total/max pour les TROIS porteurs, et récuse les faux dénominateurs', () => {
+    // Régression introduite en réécrivant la règle générale : v9 nommait le couple
+    // (« lis toujours un total contre le max qui l'accompagne ») ; une rédaction
+    // intermédiaire de la v10 ne l'a plus nommé que pour `subScores` et a laissé
+    // « le dénominateur du même bloc » pour les deux autres. Or c'est précisément
+    // LÀ que la charge en offre plusieurs : une dimension SIIN porte
+    // `{total: 4, max: 12, repondus: 6, items: 6}`. « 4 sur 6 » au lieu de « 4 sur
+    // 12 » — 67 % au lieu de 33 %, dans le sens rassurant, sur l'instrument
+    // alimentaire servi en production. Aucune garde ne couvrait ces deux clés.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('la valeur est **total**, son dénominateur est **max**');
+    for (const compte of ['**items**', '**repondus**']) {
+      expect(SYSTEM_PROMPT_GOUVERNANCE, `${compte} non récusé comme dénominateur`).toContain(compte);
+    }
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('comptent des **questions**');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('vaut 4 sur 12, pas 4 sur 6');
+  });
+
+  it('la charge porte bien ces faux dénominateurs — sinon la règle vise un fantôme', () => {
+    // Sur la DÉFINITION SIIN, jamais via le catalogue : drapeau éteint, `Q_ALI_01`
+    // sert la forme courte, sans dimensions ni scoresBesoins.
+    const reponses = Object.fromEntries(
+      Q_ALI_01_SIIN_57.sections.flatMap(s =>
+        s.questions.map(q => [q.id, Number((q.options ?? [])[0]?.v)] as const)
+      )
+    );
+    const charge = scoresPourPrompt({
+      ...(computeScoreFromDef as any)(Q_ALI_01_SIIN_57 as any, reponses),
+      rawAnswers: reponses,
+    }) as any;
+    const dim = charge.dimensions.find((d: any) => d.id === 'DIVERSITE_VEGETALE');
+    // Attendus écrits à la main. `items` et `max` DIVERGENT : c'est ce qui rend le
+    // leurre atteignable. S'ils coïncidaient, la règle serait sans objet ici.
+    expect(dim.total).toBe(4);
+    expect(dim.max).toBe(12);
+    expect(dim.items).toBe(6);
+    expect(dim.repondus).toBe(6);
+    expect(dim.items).not.toBe(dim.max);
+    // Et le porteur besoin porte les mêmes champs.
+    const besoin = charge.scoresBesoins.find((b: any) => b.id === 'RYTHME_CHRONO');
+    expect(besoin.max).toBe(7);
+    expect(besoin.items).toBe(4);
   });
 
   it('n’affirme plus que TOUT sous-score porte un max', () => {
@@ -218,6 +264,7 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     const totalNul: string[] = [];
     const seuilNul: string[] = [];
     const sansOptions: string[] = [];
+    const leves: string[] = [];
     const champs = new Set<string>();
     let sousScoresBalayes = 0;
     const ajouterPorteurs = (charge: any) => {
@@ -238,14 +285,26 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
       ajouterPorteurs(scoresPourPrompt({ ...(computeScoreFromDef as any)(Q_ALI_01_SIIN_57 as any, reponses), rawAnswers: reponses }));
     }
     for (const id of ids) {
-      // Détection de classe, sur l'ENTRÉE : une question sans options reçoit `0`
-      // du remplissage générique, ce qui n'est pas une passation représentative.
-      if (questionsDe(id).some(q => !(q.options ?? []).length)) sansOptions.push(id);
+      // Détection de classe, sur l'ENTRÉE : une question à laquelle le remplissage
+      // générique ne sait pas répondre reçoit `0`, ce qui n'est pas une passation
+      // représentative. Le critère porte sur l'absence d'option NUMÉRIQUE, et non
+      // sur l'absence d'options : `Q_GAS_02` a des `select` à `v: "oui"/"non"` et
+      // n'entrait dans la liste que par ses questions `number` — vert pour une
+      // mauvaise raison, et un instrument fait de tels selects seuls y aurait
+      // échappé entièrement.
+      const questions = questionsDe(id);
+      const nonRemplissable = !questions.length
+        || questions.some(q => !(q.options ?? []).map(o => Number(o.v)).filter(Number.isFinite).length);
+      if (nonRemplissable) sansOptions.push(id);
       let charge: any;
       try {
         const reponses = reponsesPour(id);
         charge = scoresPourPrompt({ ...(calculateScore as any)(id, reponses), rawAnswers: reponses });
-      } catch {
+      } catch (e) {
+        // Jamais un `continue` muet : un moteur qui lève ferait disparaître son
+        // instrument de `porteurs`, `champs` et `emetteurs` sans un bruit — la
+        // forme même de l'angle mort que ce fichier existe pour fermer.
+        leves.push(`${id}: ${(e as Error)?.message ?? e}`);
         continue;
       }
       ajouterPorteurs(charge);
@@ -264,8 +323,12 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
         if ('seuil' in s && s.seuil === null) seuilNul.push(`${id}/${s.id}`);
       }
     }
-    return { emetteurs, porteurs, sansMax, horsTotal, sansTotalGlobal, totalNul, seuilNul, sansOptions, champs, sousScoresBalayes };
+    return { emetteurs, porteurs, sansMax, horsTotal, sansTotalGlobal, totalNul, seuilNul, sansOptions, leves, champs, sousScoresBalayes };
   })();
+
+  it('aucun instrument n’est avalé par une exception de moteur', () => {
+    expect(releve.leves, `moteur(s) en erreur, donc absent(s) du relevé : ${releve.leves.join(' | ')}`).toEqual([]);
+  });
 
   it('aucun angle mort silencieux : tout remplissage non représentatif est déclaré', () => {
     // LA garde de méthode. C'est son absence qui a laissé `Q_SOM_09` — et avec lui
@@ -377,6 +440,10 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     // empêcher le modèle de tenir pour fiable.
     expect(c.total).toBe(24);
     expect(c.maxTotal).toBe(70);
+    // La moyenne est contaminée de la même façon — 24/7 et non 24/3 — et elle est
+    // SERVIE au modèle. Elle était annoncée épinglée sans l'être : un attendu resté
+    // en commentaire ne garde rien, c'est la classe même que ce lot corrige.
+    expect(c.average).toBe(3.4);
     // Et la bande est un REPLI sur la dernière : la moyenne 3,4 ne tombe dans
     // aucune plage. Un patient à trois plaintes sur sept est annoncé au pire
     // niveau de l'instrument.
@@ -387,7 +454,12 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
   it('la consigne met en garde contre le total global quand un sous-score est null', () => {
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('méfie-toi alors du total global');
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('il exclut l’axe manquant, ou le compte pour zéro'.replace('’', "'"));
-    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('présente le total global comme **incomplet**');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('présente le total global');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('comme **incomplet**');
+    // La mise en garde couvre aussi la MOYENNE : `Q_MOD_03` en sert une, contaminée
+    // exactement comme son total (24/7 et non 24/3), et c'est le nombre le plus
+    // citable de sa charge.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('toute moyenne servie à côté de lui');
     // Et surtout, elle ne doit pas RASSURER : c'est la phrase du second NO-GO.
     expect(SYSTEM_PROMPT_GOUVERNANCE).not.toContain('a déjà été calculé sans lui');
   });
