@@ -1,6 +1,6 @@
 {
   "version": "instrument-registry-v2",
-  "dateAudit": "2026-07-25",
+  "dateAudit": "2026-07-29",
   "commentaire": "Registre de certification des instruments du catalogue (campagne 2026-07-25-certification-corpus-questionnaires, lot 1, schéma v2 après intégration de l'audit externe et de la revue indépendante). Une entrée par clé de QUESTIONNAIRE_CATALOGUE. Axes SÉPARÉS, jamais fusionnés : - instrument.formePubliee : ce que décrit la publication d'origine (items, dimensions, bornes). N'affirme RIEN sur ce que l'application administre. - versionServie : ce que l'application administre RÉELLEMENT. `description` reste null tant que le banc de certification (lot 3) ne l'a pas établie contre le catalogue — la renseigner de mémoire ferait disparaître les divergences que la campagne cherche justement à révéler (Berlin, MFI-20, PSQI sont déjà connus divergents). `statutContenu` : verbatim | traduit | adapte | cree_localement | a_auditer. - statutBibliographique : reference_identifiee | a_completer | referentiel_interne_siin. `references.dateVerification` null = auteurs/année NON vérifiés contre la source primaire (identifiés de mémoire) ; ils ne font autorité qu'une fois le PDF source au dossier. - statutCertification (cycle de vie WellNeuro) : repere → source_obtenue → droits_verifies → contenu_verrouille → scoring_verifie → psychometrie_revue → mapping_clinique_approuve → publie ; états terminaux suspendu | remplace. Toutes les entrées démarrent à 'repere'. - cosmin : A | B | C | inconnu — qualité psychométrique publiée (à renseigner depuis measurement_evidence.json). Ne JAMAIS confondre avec les niveaux A/B/C/D WellNeuro : NIVEAU_PREUVE_PAR_SOURCE (web/src/lib/equilibre/constants.ts) reste la source unique de cet axe-là, volontairement non dupliqué ici. - droits.statut : a_verifier | libre | licence_requise | permission_obtenue | restreint. - sourceMonEquilibre : l'instrument alimente BESOIN_SOURCES (fait dérivé de constants.ts, contrôlé par le garde CI). Aucun DOI/PMID n'est renseigné sans vérification (null). Le libellé d'usage est « Validé pour l'usage WellNeuro » avec son périmètre — jamais « certifié médicalement ».",
   "instruments": [
     {
@@ -13,10 +13,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "21 items en 3 sections, cotés sur 3 niveaux (0 à 2). Scoring de type group_majority avec 3 sous-scores (épuisement, tension, somatisation) et 3 bandes d'interprétation portant chacune une conduite. Le moteur balaie un total de 0 à 42.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "cree_localement"
       },
       "references": {
         "doi": null,
@@ -30,15 +30,23 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0400",
+        "WN-SRC-0401"
+      ],
       "driveMd": "questionnaire_stress_siin.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_STR_02",
@@ -63,7 +71,7 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": "usage non commercial libre (déclaré par l'auteur, à vérifier)",
+        "detail": "Mention antérieure au dossier : « usage non commercial libre (déclaré par l'auteur, à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
@@ -78,7 +86,12 @@
         "WN-SRC-0399"
       ],
       "driveMd": "questionnaire_stress_cohen_pss.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_STR_03",
@@ -103,19 +116,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0402",
+        "WN-SRC-0403"
+      ],
       "driveMd": "questionnaire_stress_cungi.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_STR_04",
@@ -140,19 +161,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": "domaine public (déclaré par les auteurs, à vérifier)",
+        "detail": "Mention antérieure au dossier : « domaine public (déclaré par les auteurs, à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0404",
+        "WN-SRC-0405"
+      ],
       "driveMd": "questionnaire_stress_dass21.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_STR_05",
@@ -177,19 +206,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0406",
+        "WN-SRC-0407"
+      ],
       "driveMd": "questionnaire_stress_bms_burnout.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_STR_06",
@@ -214,19 +251,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0408",
+        "WN-SRC-0409"
+      ],
       "driveMd": "questionnaire_stress_karasek.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_STR_08",
@@ -251,19 +296,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0410",
+        "WN-SRC-0411"
+      ],
       "driveMd": "questionnaire_wart_addiction_travail.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_NEU_01",
@@ -287,20 +340,28 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs.",
-        "dateVerification": "2026-07-26"
+        "statut": "a_verifier",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu.",
+        "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0421",
+        "WN-SRC-0422"
+      ],
       "driveMd": "bdi_echelle_de_depression_de_beck.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_NEU_02",
@@ -325,19 +386,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0423",
+        "WN-SRC-0424"
+      ],
       "driveMd": "madrs_echelle_depression.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_NEU_03",
@@ -362,19 +431,26 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0425"
+      ],
       "driveMd": "questionnaire_sigh_sad_sa.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_NEU_04",
@@ -399,19 +475,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0427",
+        "WN-SRC-0428"
+      ],
       "driveMd": "questionnaire_scoff.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_NEU_05",
@@ -436,19 +520,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0429",
+        "WN-SRC-0430"
+      ],
       "driveMd": "questionnaire_upps_impulsivite.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_NEU_06",
@@ -485,7 +577,12 @@
       "sourceMonEquilibre": false,
       "sourceIds": [],
       "driveMd": null,
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_NEU_07",
@@ -510,19 +607,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": "OMS — reproduction autorisée avec mention (à vérifier)",
+        "detail": "Mention antérieure au dossier : « OMS — reproduction autorisée avec mention (à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0431",
+        "WN-SRC-0432"
+      ],
       "driveMd": "questionnaire_audit_alcool.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_NEU_08",
@@ -547,19 +652,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0433",
+        "WN-SRC-0434"
+      ],
       "driveMd": "ecab_echelle_cognitive_attachement_benzodiazepines.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_NEU_09",
@@ -584,19 +697,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0437",
+        "WN-SRC-0438"
+      ],
       "driveMd": "zarit_grille_charge_proches_aidants.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_NEU_10",
@@ -621,19 +742,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0439",
+        "WN-SRC-0440"
+      ],
       "driveMd": "dependance_a_internet.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_NEU_11",
@@ -657,20 +786,28 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "a_verifier",
-        "detail": "GL Assessment (copyright déclaré, à vérifier)",
-        "dateVerification": null
+        "statut": "licence_requise",
+        "detail": "Mention antérieure au dossier : « GL Assessment (copyright déclaré, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0441",
+        "WN-SRC-0442"
+      ],
       "driveMd": "questionnaire_had.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_NEU_12",
@@ -695,19 +832,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0443",
+        "WN-SRC-0444"
+      ],
       "driveMd": "idtas_ae_depression_trouble_affectif_saisonnier.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_SOM_01",
@@ -732,7 +877,7 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": "© University of Pittsburgh (usage clinique libre déclaré, à vérifier)",
+        "detail": "Mention antérieure au dossier : « © University of Pittsburgh (usage clinique libre déclaré, à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
@@ -747,7 +892,12 @@
         "WN-SRC-0393"
       ],
       "driveMd": "sommeil_05_psqi_pittsburgh.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_SOM_02",
@@ -771,20 +921,28 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "a_verifier",
-        "detail": "© M. W. Johns (licence requise pour certains usages, à vérifier)",
-        "dateVerification": null
+        "statut": "licence_requise",
+        "detail": "Mention antérieure au dossier : « © M. W. Johns (licence requise pour certains usages, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0412",
+        "WN-SRC-0413"
+      ],
       "driveMd": "sommeil_03_epworth_somnolence.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_SOM_03",
@@ -809,7 +967,7 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
@@ -824,7 +982,12 @@
         "WN-SRC-0395"
       ],
       "driveMd": "sommeil_04_berlin_apnee_sommeil.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_SOM_04",
@@ -849,19 +1012,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0414",
+        "WN-SRC-0415"
+      ],
       "driveMd": "sommeil_02_irls_jambes_sans_repos.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_SOM_05",
@@ -886,19 +1057,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0416",
+        "WN-SRC-0417"
+      ],
       "driveMd": "sommeil_06_chronotype_horne.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_SOM_06",
@@ -923,19 +1102,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0418",
+        "WN-SRC-0419"
+      ],
       "driveMd": "sommeil_01_fatigue_pichot.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_SOM_07",
@@ -960,11 +1147,11 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "source_obtenue",
+      "statutCertification": "suspendu",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -975,7 +1162,12 @@
         "WN-SRC-0397"
       ],
       "driveMd": "sommeil_07_mfi_fatigue_multidimensionnelle.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 3
+      }
     },
     {
       "questionnaireId": "Q_SOM_09",
@@ -1004,7 +1196,7 @@
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": true,
         "intervalleMinJours": null
@@ -1012,7 +1204,12 @@
       "sourceMonEquilibre": true,
       "sourceIds": [],
       "driveMd": null,
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_INF_01",
@@ -1024,10 +1221,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "24 items répartis en 3 sections de 8, chacun coté de 0 à 4. Score par somme, maxTotal déclaré 96, balayage moteur de 0 à 96, découpé en 4 bandes d'interprétation (0–24, 25–48, 49–72, 73–96). Aucune sous-échelle calculée, aucun item inversé.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "cree_localement"
       },
       "references": {
         "doi": null,
@@ -1041,15 +1238,23 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0446",
+        "WN-SRC-0447"
+      ],
       "driveMd": "questionnaire_hyperexcitabilite.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_INF_02",
@@ -1061,10 +1266,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "13 items en une seule section, chacun coté de 0 à 4. Score par somme, maxTotal déclaré 52, balayage moteur de 0 à 52, découpé en 3 bandes d'interprétation (0–12, 13–26, 27–52). Aucune sous-échelle calculée, aucun item inversé.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "cree_localement"
       },
       "references": {
         "doi": null,
@@ -1078,15 +1283,23 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0448",
+        "WN-SRC-0449"
+      ],
       "driveMd": "questionnaire_hypersensibilite_deficit_magnesium.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_INF_03",
@@ -1098,10 +1311,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "40 items répartis en 4 sections de 10, chacun coté de 0 à 4. Scoring de type « subscore » : 4 sous-scores calculés (Dopamine, Noradrénaline, Sérotonine, Mélatonine), sans maxTotal déclaré, balayage moteur de 0 à 160. Une seule entrée d'interprétation, sans bornes numériques.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "cree_localement"
       },
       "references": {
         "doi": null,
@@ -1115,15 +1328,23 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0450",
+        "WN-SRC-0451"
+      ],
       "driveMd": "questionnaire_dnsm_neurotransmetteurs.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_INF_04",
@@ -1147,20 +1368,28 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "a_verifier",
-        "detail": "© QualityMetric (licence requise, à vérifier)",
-        "dateVerification": null
+        "statut": "licence_requise",
+        "detail": "Mention antérieure au dossier : « © QualityMetric (licence requise, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0452",
+        "WN-SRC-0453"
+      ],
       "driveMd": "hit_patients_migraineux.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_INF_05",
@@ -1172,10 +1401,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "11 items en une seule section, chacun coté de 0 à 4. Scoring de type « count_threshold » : maxTotal déclaré 11, mais le balayage ne rend aucune borne numérique, le résultat étant catégoriel. Quatre bandes d'interprétation (0–1, 2–3, 4–5, 6–11), dont aucune ne porte de protocole.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "cree_localement"
       },
       "references": {
         "doi": null,
@@ -1189,15 +1418,23 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "contenu_verrouille",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0454",
+        "WN-SRC-0455"
+      ],
       "driveMd": "auto_anxiete_questionnaire_auto_evaluation.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_GAS_01",
@@ -1209,10 +1446,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "L'application administre 31 items à 4 modalités, répartis en 5 sections, avec un scoring de type « tfd » calculant 5 sous-scores. Le balayage du moteur produit un total de 0 à 93. Aucune bande d'interprétation n'est servie.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1226,15 +1463,23 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0463",
+        "WN-SRC-0464"
+      ],
       "driveMd": "gastro_04_troubles_fonctionnels_digestifs_intestinaux.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_GAS_02",
@@ -1259,19 +1504,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0465",
+        "WN-SRC-0466"
+      ],
       "driveMd": "gastro_03_score_francis.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_GAS_03",
@@ -1296,19 +1549,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0467",
+        "WN-SRC-0468"
+      ],
       "driveMd": "gastro_01_selles_enfant_nourrisson.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_FIB_01",
@@ -1332,20 +1593,28 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs.",
-        "dateVerification": "2026-07-26"
+        "statut": "a_verifier",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu.",
+        "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0480",
+        "WN-SRC-0481"
+      ],
       "driveMd": "questionnaire_first_fibromyalgie_contexte.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_FIB_02",
@@ -1369,20 +1638,28 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs.",
-        "dateVerification": "2026-07-26"
+        "statut": "a_verifier",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu.",
+        "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0482",
+        "WN-SRC-0483"
+      ],
       "driveMd": "questionnaire_qif_impact_fibromyalgie_contexte.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_FIB_03",
@@ -1407,19 +1684,26 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "suspendu",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0484"
+      ],
       "driveMd": "liste_elfe_evaluation_fibromyalgie_contexte_praticien.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 2
+      }
     },
     {
       "questionnaireId": "Q_CAR_01",
@@ -1431,10 +1715,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "L'application administre 16 items binaires en 3 sections, avec un scoring de type somme et un maximum déclaré de 25. Le balayage du moteur produit un total de 0 à 25, découpé en 4 bandes d'interprétation qui portent toutes une conduite clinique. 3 dimensions sont calculées.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1448,15 +1732,23 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0486",
+        "WN-SRC-0487"
+      ],
       "driveMd": "questionnaire_troubles_fonctionnels_cardio_metaboliques.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_TAB_01",
@@ -1481,19 +1773,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0488",
+        "WN-SRC-0489"
+      ],
       "driveMd": "questionnaire_lagrue_legeron_motivation_arret_tabac.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_TAB_02",
@@ -1518,19 +1818,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0490",
+        "WN-SRC-0491"
+      ],
       "driveMd": "questionnaire_fagerstrom_dependance_nicotine.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_TAB_03",
@@ -1555,19 +1863,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0492",
+        "WN-SRC-0493"
+      ],
       "driveMd": "questionnaire_qct2_gilliard_comportement_tabagique.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_TAB_04",
@@ -1592,19 +1908,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0494",
+        "WN-SRC-0495"
+      ],
       "driveMd": "questionnaire_dependance_cannabis.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_TAB_05",
@@ -1629,19 +1953,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0496",
+        "WN-SRC-0497"
+      ],
       "driveMd": "questionnaire_di_franza_nicotine_adolescents.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_PNE_01",
@@ -1666,19 +1998,26 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0503"
+      ],
       "driveMd": "questionnaire_bpco_pneumologie.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_URO_01",
@@ -1703,19 +2042,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0498",
+        "WN-SRC-0499"
+      ],
       "driveMd": "01_ipss_international_prostate_score_symptom.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 2
+      }
     },
     {
       "questionnaireId": "Q_URO_02",
@@ -1740,19 +2087,26 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0500"
+      ],
       "driveMd": "02_catalogue_mictionnel.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_PED_01",
@@ -1777,11 +2131,11 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1789,10 +2143,17 @@
       "sourceMonEquilibre": false,
       "sourceIds": [
         "WN-SRC-0380",
-        "WN-SRC-0381"
+        "WN-SRC-0381",
+        "WN-SRC-0501",
+        "WN-SRC-0502"
       ],
       "driveMd": "pediatrie_01_matinalite_vesperalite_enfant.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_PED_02",
@@ -1816,12 +2177,12 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "a_verifier",
-        "detail": "© MHS (licence requise, à vérifier)",
-        "dateVerification": null
+        "statut": "licence_requise",
+        "detail": "Mention antérieure au dossier : « © MHS (licence requise, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1832,7 +2193,8 @@
         "WN-SRC-0383"
       ],
       "driveMd": "pediatrie_03_conners_enseignant_ctrs_rs.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": null
     },
     {
       "questionnaireId": "Q_PED_03",
@@ -1856,12 +2218,12 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "a_verifier",
-        "detail": "© MHS (licence requise, à vérifier)",
-        "dateVerification": null
+        "statut": "licence_requise",
+        "detail": "Mention antérieure au dossier : « © MHS (licence requise, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1872,7 +2234,8 @@
         "WN-SRC-0384"
       ],
       "driveMd": "pediatrie_02_conners_parent.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": null
     },
     {
       "questionnaireId": "Q_MOD_01",
@@ -1884,10 +2247,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "37 items en 7 sections, tous à 5 modalités mais à pondérations inégales : 31 items cotés 0 à 4, 4 items 0 à 8, 2 items 0 à 12. Scoring de type subscore : 7 sous-scores, un par section. Le moteur exécute un total de 0 à 180. 7 entrées de bande vides : ni bornes, ni libellé, ni conduite.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "cree_localement"
       },
       "references": {
         "doi": null,
@@ -1901,15 +2264,23 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0475",
+        "WN-SRC-0476"
+      ],
       "driveMd": "questionnaire_contextuel_mode_de_vie_contexte.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_MOD_02",
@@ -1921,10 +2292,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "2 items en une section, chacun à 3 modalités cotées 0 à 2. Scoring de type somme sans interprétation, maximum déclaré 4, exécuté de 0 à 4. Aucun sous-score, aucune bande d'interprétation.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "cree_localement"
       },
       "references": {
         "doi": null,
@@ -1938,15 +2309,23 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0477",
+        "WN-SRC-0478"
+      ],
       "driveMd": "questionnaire_activite_depense_energetique_globale_siin_contexte.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_MOD_03",
@@ -1958,10 +2337,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "Sept items cotés de 1 à 10, sur une section unique. Scoring de type plaintes_actuelles, total déclaré 70, balayage du moteur de 7 à 70. Sept sous-scores sont calculés, un par plainte. Quatre bandes d'interprétation, graduées sur l'échelle de 1 à 10 de chaque item et non sur le total.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "cree_localement"
       },
       "references": {
         "doi": null,
@@ -1975,15 +2354,22 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0479"
+      ],
       "driveMd": "questionnaire_plaintes_actuelles_troubles_ressentis.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_ALI_01",
@@ -2012,7 +2398,7 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "droits_verifies",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2023,7 +2409,12 @@
         "WN-SRC-0471"
       ],
       "driveMd": "questionnaire_alimentaire_siin_contexte.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_ALI_02",
@@ -2035,10 +2426,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "Quatorze items binaires répartis en 6 sections. Scoring par somme, total déclaré 14, balayage du moteur de 0 à 14. Quatre bandes d'interprétation, porteuses de conduites cliniques. Aucune sous-échelle n'est calculée.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine, adapté des scores méditerranéens publiés)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2052,15 +2443,22 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0472"
+      ],
       "driveMd": "questionnaire_diete_mediterraneenne_contexte.md",
-      "statutBibliographique": "referentiel_interne_siin"
+      "statutBibliographique": "referentiel_interne_siin",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_ALI_03",
@@ -2084,20 +2482,28 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs.",
-        "dateVerification": "2026-07-26"
+        "statut": "a_verifier",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu.",
+        "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0473",
+        "WN-SRC-0474"
+      ],
       "driveMd": "questionnaire_monnier_apports_caloriques_proteiques_contexte.md",
-      "statutBibliographique": "a_completer"
+      "statutBibliographique": "a_completer",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_GEO_01",
@@ -2121,20 +2527,27 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs.",
-        "dateVerification": "2026-07-26"
+        "statut": "a_verifier",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu.",
+        "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0462"
+      ],
       "driveMd": "gerontologie_01_tinetti_equilibre_marche.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_GEO_02",
@@ -2159,19 +2572,27 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": null,
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0460",
+        "WN-SRC-0461"
+      ],
       "driveMd": "gerontologie_02_sarcopenie.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_GEO_03",
@@ -2195,20 +2616,27 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs.",
-        "dateVerification": "2026-07-26"
+        "statut": "a_verifier",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu.",
+        "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0459"
+      ],
       "driveMd": null,
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_GEO_04",
@@ -2232,20 +2660,27 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "a_verifier",
-        "detail": "© PAR (Psychological Assessment Resources) — licence requise, à vérifier",
-        "dateVerification": null
+        "statut": "licence_requise",
+        "detail": "Mention antérieure au dossier : « © PAR (Psychological Assessment Resources) — licence requise, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0456"
+      ],
       "driveMd": "mmse_mini_mental_state_examination_greco.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_GEO_05",
@@ -2270,19 +2705,26 @@
       },
       "droits": {
         "statut": "a_verifier",
-        "detail": "© J. E. Galvin (usage clinique libre déclaré, à vérifier)",
+        "detail": "Mention antérieure au dossier : « © J. E. Galvin (usage clinique libre déclaré, à vérifier) ». Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « reference_identifiee ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour. Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas.",
         "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0458"
+      ],
       "driveMd": "questionnaire_reperage_troubles_dementiels_qdrs.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
+      }
     },
     {
       "questionnaireId": "Q_GEO_06",
@@ -2306,20 +2748,27 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs.",
-        "dateVerification": "2026-07-26"
+        "statut": "a_verifier",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu.",
+        "dateVerification": null
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0457"
+      ],
       "driveMd": "questionnaire_test_5_mots_dubois.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_CAN_01",
@@ -2343,20 +2792,28 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "a_verifier",
-        "detail": "© EORTC — enregistrement/autorisation requis, à vérifier",
-        "dateVerification": null
+        "statut": "licence_requise",
+        "detail": "Mention antérieure au dossier : « © EORTC — enregistrement/autorisation requis, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0504",
+        "WN-SRC-0505"
+      ],
       "driveMd": "questionnaire_cancerologie_qlq_c30.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     },
     {
       "questionnaireId": "Q_CAN_02",
@@ -2380,20 +2837,28 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "a_verifier",
-        "detail": "© EORTC — enregistrement/autorisation requis, à vérifier",
-        "dateVerification": null
+        "statut": "licence_requise",
+        "detail": "Mention antérieure au dossier : « © EORTC — enregistrement/autorisation requis, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "source_obtenue",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0506",
+        "WN-SRC-0507"
+      ],
       "driveMd": "questionnaire_cancerologie_qlq_br23.md",
-      "statutBibliographique": "reference_identifiee"
+      "statutBibliographique": "reference_identifiee",
+      "verdictScoring": {
+        "banc": "certify",
+        "date": "2026-07-29",
+        "divergencesCritiques": 1
+      }
     }
   ]
 }

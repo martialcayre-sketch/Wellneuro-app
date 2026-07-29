@@ -185,6 +185,7 @@ const verdictRegistre = verifierRegistreInstruments({
   constantsSource: fs.readFileSync(path.join(root, 'web/src/lib/equilibre/constants.ts'), 'utf8'),
   matriceDrive: mapping,
   evidence,
+  catalogueSource: fs.readFileSync(path.join(root, 'web/src/lib/questionnaires-catalog.ts'), 'utf8'),
 });
 assertEqual(verdictRegistre.erreurs, [], 'registre de certification des instruments');
 
