@@ -193,6 +193,28 @@ describe('consigne système — les trois porteurs de sous-scores', () => {
     expect(besoin.items).toBe(4);
   });
 
+  it('dimensions et scoresBesoins produisent des `total: null` PAR CONCEPTION', () => {
+    // Pourquoi la règle du `total: null` ne peut pas être scopée à `subScores` :
+    // la parade anti-zéro du moteur SIIN produit ces `null` délibérément, et sur
+    // l'instrument allumé en production. Une passation à moitié remplie reproduit
+    // le motif du second NO-GO — sous-scores `null` + total global comptant les
+    // manquants pour zéro + bande la plus sévère.
+    const toutes = Q_ALI_01_SIIN_57.sections.flatMap(s => s.questions);
+    const moitie = Object.fromEntries(
+      toutes.slice(0, Math.floor(toutes.length / 2)).map(q => [q.id, Number((q.options ?? [])[0]?.v)] as const)
+    );
+    const charge = scoresPourPrompt({
+      ...(computeScoreFromDef as any)(Q_ALI_01_SIIN_57 as any, moitie),
+      rawAnswers: moitie,
+    }) as any;
+    const dimNulles = charge.dimensions.filter((d: any) => d.total === null);
+    const besoinsNuls = charge.scoresBesoins.filter((b: any) => b.total === null);
+    expect(dimNulles.length, 'aucune dimension à null — le cas n’est plus exercé').toBeGreaterThan(0);
+    expect(besoinsNuls.length, 'aucun besoin à null — le cas n’est plus exercé').toBeGreaterThan(0);
+    // Et ces null coexistent avec un total global qui, lui, n'est PAS renormalisé.
+    expect(typeof charge.total).toBe('number');
+  });
+
   it('n’affirme plus que TOUT sous-score porte un max', () => {
     // Faux sur 3 des 66 (`Q_NEU_03`), et c'est l'affirmation qui autorisait le
     // modèle à fabriquer une proportion là où aucun dénominateur n'existe.
@@ -207,6 +229,13 @@ describe('consigne système — les trois porteurs de sous-scores', () => {
     // modèle aurait écrit « qualité de sommeil 0/25 » à côté d'un total de 100/100.
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('**total à null**');
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("n'a pas été mesuré");
+    // Et cette règle porte sur les TROIS clés, pas sur `subScores` seul. Une
+    // rédaction intermédiaire écrivait « sous subScores, total peut manquer » :
+    // vrai, mais l'implicature disait le contraire des deux autres — or ce sont
+    // `dimensions` et `scoresBesoins` qui produisent `total: null` PAR CONCEPTION
+    // (parade anti-zéro du moteur SIIN), sur l'instrument servi en production.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('Sous **ces trois clés**, **total** peut manquer');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('vaut sous les **trois** clés');
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('Ce n’est **pas** un zéro'.replace('’', "'"));
   });
 

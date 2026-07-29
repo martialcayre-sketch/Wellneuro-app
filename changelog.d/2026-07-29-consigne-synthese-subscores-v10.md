@@ -194,6 +194,18 @@ l'incident qui l'a motivée.
   rougir en connaissance de cause. La correction propre — émettre `atRisk: null`
   quand aucun seuil n'existe ou qu'aucune donnée ne le porte — est un changement
   de moteur, hors de ce lot.
+- **Les quatorze preuves par mutation ont été conduites hors dépôt** : elles ne
+  sont rejouables ni par le CI, ni par un tiers. C'est le pendant honnête de ce
+  qui les rend crédibles — sans cette ligne, le changelog ferait état d'une
+  garantie que personne ne peut vérifier.
+- **`atRisk` reste endossé par la consigne** alors qu'il est activement faux sur
+  une donnée absente. Trois faits mesurés, et non un universel : aucun des 17
+  émetteurs n'a d'item conditionnel ; l'interface interdit de quitter une page
+  tant qu'une question non conditionnelle est vide ; le serveur ne contrôle la
+  complétude que pour `def.cabinet`. Donc **aucun chemin d'écriture actuel** ne
+  produit une passation partielle d'un de ces 17 instruments — mais **les lignes
+  héritées n'ont pas été auditées**. Si un audit en trouvait, cette réserve
+  cesserait d'être reportable.
 - `scaled` / `maxScaled` sont aujourd'hui **toujours égaux** à `total` / `max` :
   aucun instrument ne déclare de `multiplier`. Le modèle voit donc quatre nombres
   pour deux mesures. La règle est écrite pour rester vraie si un multiplicateur
