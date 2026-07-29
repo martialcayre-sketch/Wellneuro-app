@@ -1517,14 +1517,20 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     return parseFloat(raw);
   }
 
-  // Somme d'un sous-ensemble d'items
+  // Somme d'un sous-ensemble d'items.
+  //
+  // `repondus` compte les items RÉELLEMENT renseignés. `missing` ne suffit pas à le
+  // déduire : un item conditionnel dont la condition n'est pas remplie sort de la
+  // boucle sans être compté nulle part, si bien que `missing === items.length` est
+  // faux dès qu'un conditionnel est en jeu.
   function sumItems(items: any, reversed: any) {
-    let total = 0, missing = 0;
+    let total = 0, missing = 0, repondus = 0;
     items.forEach((id: any) => {
       const q = allQ.find(q => q.id === id);
       if (q && q.conditionnel && !evalConditionnel(q.conditionnel)) return;
       const v = getVal(id);
       if (v === null) { missing++; return; }
+      repondus++;
       let minV = 0, maxV = 4;
       if (q && q.options && q.options.length) {
         const vals = q.options.map((o: any) => o.v !== undefined ? o.v : o.value).map(Number);
@@ -1533,7 +1539,48 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       }
       total += (reversed && reversed.includes(id)) ? (minV + maxV - v) : v;
     });
-    return {total, missing};
+    return {total, missing, repondus};
+  }
+
+  /**
+   * Total d'un SOUS-SCORE : `null` quand aucun de ses items n'a été renseigné.
+   *
+   * GARDE — « non mesuré », jamais 0.
+   *
+   * Un axe auquel personne n'a répondu valait zéro, et zéro est une valeur : il
+   * décrochait une bande, déclenchait les seuils « faible si < X », et entrait dans
+   * le total global. Mesuré le 2026-07-29 sur le catalogue entier — une passation
+   * ne renseignant que le PREMIER sous-score de chaque instrument produisait
+   * **37 sous-scores à zéro, 16 bandes d'interprétation fabriquées et 2 `atRisk`**,
+   * dans les deux directions : « Iso-Strain — risque burnout élevé » (Karasek) et
+   * « Risque élevé de chute » (Tinetti) d'un côté, « B — Troubles fonctionnels »
+   * sur une section de cinq (`Q_GAS_01`) de l'autre.
+   *
+   * La garde de passation vide (#451) ne mordait que sur l'instrument ENTIER ; ce
+   * défaut-ci vit un étage plus bas, par axe.
+   */
+  function totalSousScore(items: any, reversed: any) {
+    const {total, missing, repondus} = sumItems(items, reversed);
+    return {total: repondus === 0 ? null : total, missing, repondus};
+  }
+
+  /**
+   * Total global agrégé depuis des sous-scores.
+   *
+   * Si UN SEUL axe contributeur n'a pas été mesuré, le total n'est plus celui de
+   * l'instrument : son dénominateur (`maxTotal`) compte tous les axes, pas
+   * seulement ceux qui ont répondu. Sommer les axes mesurés produirait un nombre
+   * juste sur un dénominateur faux — c'est précisément ce qui faisait passer
+   * `Q_GAS_01` à 3 items sur 31 pour « 0,978 de couverture » d'une fondation
+   * critique de « Mon équilibre ».
+   *
+   * Les sous-scores mesurés, eux, restent servis avec leur propre bande : on ne
+   * perd que le nombre qui n'en était pas un.
+   */
+  function totalGlobalDepuisSousScores(contributeurs: any[]) {
+    if (contributeurs.length === 0) return null;
+    if (contributeurs.some((r: any) => r.total === null)) return null;
+    return contributeurs.reduce((s: number, r: any) => s + r.total, 0);
   }
 
   // Interpréter un score selon des plages.
@@ -1929,8 +1976,10 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── SUBSCORE ─────────────────────────────────────────
   if (sc.type === 'subscore') {
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = sumItems(sub.items, []);
-      const scaled = sub.multiplier ? total * sub.multiplier : total;
+      const {total} = totalSousScore(sub.items, []);
+      // `null * multiplier` vaut 0 : sans ce test, l'axe non mesuré revenait par
+      // la porte du score pondéré.
+      const scaled = total === null ? null : (sub.multiplier ? total * sub.multiplier : total);
       let interp = null;
       if (sc.interpretation) {
         const interpDef = sc.interpretation.find((i: any) => i.subscale === sub.id || i.subscale === '*');
@@ -1941,7 +1990,7 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // `horsTotal` : une sous-échelle que l'instrument rapporte À PART et qui ne
     // s'additionne pas au score global (question de qualité de vie de l'IPSS).
     // Drapeau déclaratif, additif : sans lui, le comportement est inchangé.
-    const globalTotal = subResults.filter((r: any) => !r.horsTotal).reduce((s: any, r: any) => s + r.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(subResults.filter((r: any) => !r.horsTotal));
 
     // Un bloc `monnier` était calculé ici pour `Q_ALI_03`, censé rendre des
     // protéines en g/j et des calories en kcal/j. Il cherchait des sous-scores
@@ -2007,15 +2056,20 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── GROUP_MAJORITY (Q_STR_01) ────────────────────────
   if (sc.type === 'group_majority') {
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = sumItems(sub.items, []);
+      const {total} = totalSousScore(sub.items, []);
       return {id: sub.id, label: sub.label, total, max: sub.max};
     });
-    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(subResults);
     let interp = interpretRanges(globalTotal, sc.interpretation);
     // Le protocole ne se greffe que sur une bande RÉELLE : sans ce test, étaler
     // `null` fabriquerait un objet n'ayant qu'un protocole et aucune bande, qui se
     // lirait comme une interprétation là où il n'y en a pas.
     if (interp && globalTotal >= 5 && globalTotal <= 14) {
+      // Aucun filtre sur les axes non mesurés ici, et ce n'est pas un oubli : on
+      // n'atteint ce bloc que si `interp` est non nul, ce qui exige un total global
+      // non nul, ce qui exige — par `totalGlobalDepuisSousScores` — que TOUS les
+      // axes contributeurs soient mesurés. Un filtre serait du code mort qu'aucune
+      // mutation ne pourrait faire rougir.
       const dominant = subResults.reduce((a: any, b: any) => a.total >= b.total ? a : b);
       const proto: Record<string, string> = {A:'dopaminergique', B:'sérotoninergique', C:'mixte'};
       interp = {...interp, dominant: dominant.id, protocol: `Protocole ${proto[dominant.id] || dominant.id}`};
@@ -2025,8 +2079,17 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── HAD ──────────────────────────────────────────────
   if (sc.type === 'had') {
-    const {total: scoreA} = sumItems(sc.subscalesA, []);
-    const {total: scoreD} = sumItems(sc.subscalesD, []);
+    // HAD porte ses axes sous `subscalesA`/`subscalesD`, et non sous
+    // `scoring.subScores` : il échappait donc à la garde des sous-scores, et le
+    // balayage qui la vérifiait — bâti sur la DÉCLARATION plutôt que sur ce que le
+    // moteur ÉMET — était aveugle au même endroit. Relevé en revue.
+    //
+    // L'enjeu n'est pas théorique : `Q_NEU_11/D` est la source UNIQUE du besoin 8
+    // de « Mon équilibre », en `inverser: true`. Zéro item de dépression rendait
+    // donc un ratio de 0, inversé en **1,000 de couverture** et un grade de preuve
+    // **A**, avec « Absence de symptomatologie » servi en vert à la fiche patient.
+    const {total: scoreA} = totalSousScore(sc.subscalesA, []);
+    const {total: scoreD} = totalSousScore(sc.subscalesD, []);
     function interpHad(score: any, sub: any) {
       const def = sc.interpretation.find((i: any) => i.subscale === sub);
       return def ? interpretRanges(score, def.ranges) : null;
@@ -2037,7 +2100,7 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         {id:'A', label:'Anxiété', total: scoreA, max:21, interpretation: interpHad(scoreA,'A')},
         {id:'D', label:'Dépression', total: scoreD, max:21, interpretation: interpHad(scoreD,'D')},
       ],
-      total: scoreA + scoreD,
+      total: totalGlobalDepuisSousScores([{total: scoreA}, {total: scoreD}]),
       note: sc.note || null,
       certification: sc.certification || null
     };
@@ -2088,11 +2151,11 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── TFD ──────────────────────────────────────────────────
   if (sc.type === 'tfd') {
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = sumItems(sub.items, []);
+      const {total} = totalSousScore(sub.items, []);
       const interp = interpretRanges(total, sub.ranges);
       return {id: sub.id, label: sub.label, total, max: sub.max, interpretation: interp};
     });
-    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(subResults);
     const globalInterp = interpretRanges(globalTotal, sc.globalInterpretation);
     return {type:'tfd', subScores: subResults, total: globalTotal, maxTotal:93, interpretation: globalInterp, note: sc.note || null, certification: sc.certification || null};
   }
@@ -2144,10 +2207,10 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── UPPS ─────────────────────────────────────────────────
   if (sc.type === 'upps') {
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = sumItems(sub.items, sub.reversed);
+      const {total} = totalSousScore(sub.items, sub.reversed);
       return {id: sub.id, label: sub.label, total, max: sub.items.length * 4};
     });
-    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(subResults);
     return {type:'upps', subScores: subResults, total: globalTotal, note: sc.note || null, certification: sc.certification || null};
   }
 
@@ -2158,22 +2221,45 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       if (value === null) return 0;
       return reversedItems.includes(id) ? 5 - value : value;
     };
-    const sumKarasek = (items: any, reversedItems: any[] = []) =>
-      items.reduce((sum: any, id: any) => sum + karasekValue(id, reversedItems), 0);
+    // `karasekValue` rend 0 sur une réponse absente : ce moteur ne peut donc pas
+    // s'appuyer sur `sumItems`. Il compte ses répondus lui-même.
+    const sumKarasek = (items: any, reversedItems: any[] = []) => {
+      let total = 0, repondus = 0;
+      for (const id of items) {
+        if (getVal(id) !== null) repondus++;
+        total += karasekValue(id, reversedItems);
+      }
+      return {total, repondus};
+    };
 
     const latDef = sc.weightedLatitude || null;
     let latWeighted = null;
     if (latDef) {
       const auto = sumKarasek(latDef.autonomieItems || [], latDef.reversedAutonomieItems || []);
       const usage = sumKarasek(latDef.usageItems || [], latDef.reversedUsageItems || []);
-      latWeighted = (4 * auto) + (2 * usage);
+      latWeighted = (auto.repondus + usage.repondus) === 0
+        ? null : (4 * auto.total) + (2 * usage.total);
     }
 
     const subResults = sc.subScores.map((sub: any) => {
-      const rawTotal = sumKarasek(sub.items, sub.reversedItems || []);
+      const brut = sumKarasek(sub.items, sub.reversedItems || []);
+      const rawTotal = brut.repondus === 0 ? null : brut.total;
       const total = sub.id === 'LAT' && latWeighted !== null ? latWeighted : rawTotal;
+      // Un seuil ne se lit que sur un axe COMPLET. `karasekValue` rend 0 sur une
+      // absence, et la latitude pondère jusqu'à 4 : deux items sautés retiraient
+      // 16 points sur 96, pour un seuil à 72. Un patient déclarant une autonomie
+      // MAXIMALE sur 7 items de 9 ressortait « Job Strain ». Relevé en revue.
+      const complet = brut.repondus === sub.items.length;
+      // GARDE — `null < 72` vaut `true` en JavaScript. Sans ce test, une
+      // sous-échelle à laquelle personne n'a répondu déclenchait tous les seuils
+      // « faible si < X », et trois d'entre eux suffisaient à annoncer un
+      // « Iso-Strain — risque burnout élevé ».
       let atRisk = false;
-      if (typeof sub.seuil === 'number' && sub.seuilDir) {
+      // Les DEUX conditions portent. `complet` refuse le seuil sur un axe partiel ;
+      // `total !== null` refuse le cas de l'axe déclaré SANS items, où
+      // `repondus === items.length` vaut `0 === 0` et donnerait « complet » sur une
+      // absence — et c'est aussi ce qui permet à TypeScript d'affiner le type.
+      if (total !== null && complet && typeof sub.seuil === 'number' && sub.seuilDir) {
         atRisk = sub.seuilDir === 'gte' ? total >= sub.seuil
               : sub.seuilDir === 'gt'  ? total > sub.seuil
               : total < sub.seuil;
@@ -2182,12 +2268,28 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     });
     const dem = subResults.find((s: any) => s.id==='DEM'), lat = subResults.find((s: any) => s.id==='LAT'),
           sou = subResults.find((s: any) => s.id==='SOU');
-    const jobStrain = dem&&lat ? dem.atRisk && lat.atRisk : false;
+    // Un Job Strain se CONSTATE sur deux axes mesurés, il ne se déduit pas de deux
+    // absences — et c'est déjà acquis : `atRisk` ne peut plus valoir `true` sur un
+    // total nul (garde ci-dessus). Doubler ce test ici ne serait pas une sécurité
+    // mais du code qu'aucune mutation ne ferait rougir.
+    const jobStrain = dem && lat ? dem.atRisk && lat.atRisk : false;
     const isoStrain = jobStrain && sou && sou.atRisk;
+    // Chaque verdict exige les axes QU'IL nomme, ni plus ni moins :
+    //   · Iso-Strain et Job Strain se lisent sur DEM et LAT (plus SOU pour le
+    //     premier) — déjà acquis, `atRisk` ne peut plus valoir vrai sans mesure ;
+    //   · « Forte demande psychologique » ne parle que de DEM, qui est mesuré : le
+    //     supprimer perdrait une information VRAIE ;
+    //   · « Situation professionnelle équilibrée » est le seul à conclure de
+    //     l'ABSENCE de risque — il lui faut donc les deux axes mesurés. Sans ce
+    //     test, une passation ne renseignant que « reconnaissance », le seul axe
+    //     sans seuil, ressortait « équilibrée », en vert. Relevé en revue.
+    const mesure = (s: any) => Boolean(s) && s.total !== null;
     const interp = isoStrain ? {label:'Iso-Strain — risque burnout élevé',color:'danger'}
                  : jobStrain ? {label:'Job Strain — stress professionnel',color:'warning'}
-                 : dem&&dem.atRisk ? {label:'Forte demande psychologique',color:'info'}
-                 : {label:'Situation professionnelle équilibrée',color:'success'};
+                 : dem && dem.atRisk ? {label:'Forte demande psychologique',color:'info'}
+                 : (mesure(dem) && mesure(lat))
+                   ? {label:'Situation professionnelle équilibrée',color:'success'}
+                   : null;
     return {type:'karasek', subScores:subResults, jobStrain, isoStrain, interpretation:interp, note: sc.note || null, certification: sc.certification || null};
   }
 
@@ -2314,10 +2416,10 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── WEIGHTED_PER_AXIS (Tinetti Q_GEO_01) ─────────────
   if (sc.type === 'weighted_per_axis') {
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = sumItems(sub.items, []);
+      const {total} = totalSousScore(sub.items, []);
       return {id:sub.id, label:sub.label, total, max:sub.max};
     });
-    const globalTotal = subResults.reduce((s: any, r: any) => s + r.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(subResults);
     const interp = sc.interpretation ? interpretRanges(globalTotal, sc.interpretation) : null;
     return {type:'weighted_per_axis', subScores:subResults, total:globalTotal, maxTotal:sc.maxTotal||28, interpretation:interp, certification: sc.certification || null};
   }

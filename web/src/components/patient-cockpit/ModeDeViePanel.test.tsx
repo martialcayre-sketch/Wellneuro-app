@@ -56,6 +56,31 @@ describe('ModeDeViePanel (SP-TRAJ LOT-02)', () => {
     expect(screen.getByText('9/20')).toBeTruthy();
   });
 
+  it('domaine NON MESURÉ : aucun point sur la piste, et « non mesuré » à la place du chiffre', () => {
+    // Depuis que le moteur distingue « zéro » de « non mesuré » par axe
+    // (2026-07-29), un domaine peut arriver ici avec `total: null`.
+    // `(null / max) * 100` vaut **0** en JavaScript : le repère se dessinait alors
+    // au point 0 de la piste — c'est-à-dire dans son segment `danger`, toutes les
+    // grilles SIIN ayant le rouge en bas — et la valeur s'affichait « /28 ».
+    // L'en-tête de ce panneau promet l'inverse depuis A8-2.
+    const { container } = render(
+      <ModeDeViePanel
+        modeVie={{ domaines: [
+          { id: 'SOMMEIL', label: 'Sommeil', total: 18, max: 28,
+            interpretation: { label: 'Sommeil satisfaisant', color: 'success' }, zones: ZONES },
+          { id: 'RYTHME_BIOLOGIQUE', label: 'Rythme biologique', total: null, max: 28,
+            interpretation: null, zones: ZONES },
+        ] }}
+        legendeDate="aujourd’hui"
+      />,
+    );
+    expect(screen.getByText('non mesuré')).toBeTruthy();
+    expect(screen.getByText('18/28')).toBeTruthy();
+    // Un seul repère tracé : celui du domaine mesuré.
+    const reperes = container.querySelectorAll('span[style*="left:"]');
+    expect(reperes.length).toBe(1);
+  });
+
   it('fantôme T0 : la légende ne l’annonce que quand il est fourni', () => {
     const { rerender } = render(<ModeDeViePanel modeVie={MODE_VIE} legendeDate="aujourd’hui" />);
     expect(screen.queryByText(/○/)).toBeNull();

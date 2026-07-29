@@ -506,33 +506,40 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     expect(rec.seuilLabel).toBe('Pas de seuil source');
   });
 
-  it('atRisk part à vrai sur une donnée ABSENTE — le défaut que la règle doit contenir', () => {
-    // Ce test épinglait la passation VIDE, et disait attendre « qu'un correctif
-    // futur du moteur le fasse rougir en connaissance de cause ». C'est arrivé le
-    // 2026-07-29 : la garde de passation vide sort désormais avant tout scoring.
+  it('atRisk ne part plus à vrai sur une donnée absente — défaut fermé', () => {
+    // Ce test a rougi deux fois de suite, à dessein. Il épinglait d'abord la
+    // passation VIDE (« pour qu'un correctif futur du moteur le fasse rougir en
+    // connaissance de cause ») ; #451 a fermé ce cas-là et l'a réépinglé sur le
+    // cas PARTIEL, en annonçant qu'il ferait rougir le lot suivant. C'est ce lot.
     const vide = chargePour('Q_STR_06', {});
     expect(vide.scored).toBe(false);
     expect(vide.subScores).toBeUndefined();
 
-    // Mais le défaut lui-même n'est PAS fermé — il est seulement devenu partiel.
-    // Une passation où SEULE la sous-échelle « demande » est renseignée laisse les
-    // trois autres à 0, leurs seuils « faible si < X » se déclenchent, et
-    // l'instrument rend « Iso-Strain — risque burnout élevé » : son libellé le plus
-    // alarmant, sur trois sous-échelles sans une seule donnée.
-    //
-    // Fermer cela demande que chaque SOUS-SCORE distingue « zéro » de « non
-    // mesuré », et que les totaux globaux sachent l'ignorer. C'est le lot suivant.
-    // Réépinglé ici pour qu'il fasse rougir ce test à son tour.
+    // Passation où SEULE la sous-échelle « demande » est renseignée. Les trois
+    // autres valaient 0, leurs seuils « faible si < X » se déclenchaient, et
+    // l'instrument rendait « Iso-Strain — risque burnout élevé » : son libellé le
+    // plus grave, sur trois sous-échelles sans une seule donnée.
     const demSeule = chargePour('Q_STR_06', Object.fromEntries(
       (QUESTIONNAIRE_CATALOGUE as any).Q_STR_06.scoring.subScores
         .find((s: any) => s.id === 'DEM').items.map((i: string) => [i, 4]),
     ));
     const par = Object.fromEntries(demSeule.subScores.map((s: any) => [s.id, s]));
+
+    // L'axe MESURÉ garde tout : son total, son seuil, et son verdict de risque.
     expect(par.DEM.total).toBe(33);
-    expect(par.LAT.total).toBe(0);
-    expect(par.LAT.atRisk).toBe(true);
-    expect(par.SOU.atRisk).toBe(true);
-    expect(demSeule.interpretation.label).toBe('Iso-Strain — risque burnout élevé');
+    expect(par.DEM.atRisk).toBe(true);
+
+    // Les axes NON mesurés ne valent plus zéro, et ne déclenchent plus rien.
+    for (const id of ['LAT', 'SOU', 'REC']) {
+      expect(par[id].total, `${id} devrait être non mesuré`).toBeNull();
+      expect(par[id].atRisk, `${id} ne peut pas être « à risque » sans donnée`).toBe(false);
+    }
+
+    // Et le verdict composite ne se déduit plus de deux absences : il reste celui
+    // du seul axe mesuré, pas l'Iso-Strain.
+    expect(demSeule.interpretation.label).toBe('Forte demande psychologique');
+    expect(demSeule.jobStrain).toBe(false);
+    expect(demSeule.isoStrain).toBe(false);
   });
 
   it('horsTotal existe, et exclut réellement le sous-score du total global', () => {
