@@ -115,7 +115,10 @@ export function describeCouvertureJournees(couverture: CouvertureJournees): stri
   const journees = couverture.compte > 1 ? 'journées' : 'journée';
   const base = `${couverture.compte} ${journees} décrite${couverture.compte > 1 ? 's' : ''}`;
 
-  const prochain = couverture.typesAbsents[0];
+  // Une fois le profil possible, la suggestion se tait : la répéter
+  // reviendrait à réclamer indéfiniment une journée que le patient ne vit
+  // peut-être pas — un patient sans emploi n'aura jamais de journée de poste.
+  const prochain = couverture.profilPossible ? undefined : couverture.typesAbsents[0];
   if (prochain === undefined) return assertNeutre(base);
 
   return assertNeutre(`${base}. ${SUGGESTIONS_TYPE_ABSENT[prochain]}`);

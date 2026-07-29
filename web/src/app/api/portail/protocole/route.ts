@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { authorizePortail, resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import {
+  ancreDepuisAssignation,
+  authorizePortail,
+  resolveProtocoleDiffuse,
+} from '@/lib/protocol/portailProtocol';
 import { reconstructProtocolDraft, ProtocolPayloadIntegrityError } from '@/lib/protocol/fromPrisma';
 import type { ProtocolActionType } from '@/lib/clinical-engine/types';
 import type { ProtocolDiffusionApproval } from '@/lib/clinical-engine/types';
@@ -53,7 +57,7 @@ async function ancreCalibrage(idAssignation: string): Promise<AncreCalibrage> {
     select: { dateAssignation: true },
   });
   return {
-    ancre: idAssignation.replace(/[^A-Za-z0-9_-]/g, ''),
+    ancre: ancreDepuisAssignation(idAssignation),
     debut: (assignation?.dateAssignation ?? new Date()).toISOString().slice(0, 10),
   };
 }

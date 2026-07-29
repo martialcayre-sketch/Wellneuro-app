@@ -194,12 +194,18 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   // tenait cette place ne comptait aucun jour : il affirmait « 7 jours sans
   // trace » dès que la liste était vide, et « 0 » dès qu'une trace existait,
   // fût-elle du premier jour d'une période de trois semaines.
+  //
+  // BORNE À CONNAÎTRE : `traces` est le brouillon LOCAL du praticien, jamais ce
+  // que le patient a transmis — la route de lecture ne rend que des compteurs,
+  // sans les dates. Le constat ne vaut donc que du carnet de ce poste. Il est
+  // tu dès qu'une transmission patient existe, plutôt que d'affirmer une
+  // absence que cette surface ne peut pas constater.
   const joursSansTrace = useMemo(() => {
-    if (!episode) return 0;
+    if (!episode || transmissions.length > 0) return 0;
     const datesTracees = new Set(traces.map(t => t.localDate));
     return joursObservables(episode.startDate, episode.endDate, dateLocale(new Date()))
       .filter(jour => !datesTracees.has(jour)).length;
-  }, [episode, traces]);
+  }, [episode, traces, transmissions]);
 
   const constats = useMemo(() => listDirectFindings({
     joursSansTrace,

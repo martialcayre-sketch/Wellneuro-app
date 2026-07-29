@@ -10,7 +10,11 @@ import {
   episodeIdDepuisCycle,
 } from '@/lib/food-observation/episodeDepuisProtocole';
 import { isSessionValideForPatient, readPatientSession } from '@/lib/patient-session';
-import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import {
+  ancreDepuisAssignation,
+  authorizePortail,
+  resolveProtocoleDiffuse,
+} from '@/lib/protocol/portailProtocol';
 import { prisma } from '@/lib/prisma';
 
 // Miroir de la troncature de `GET /api/portail/protocole`, dont le client tire
@@ -39,19 +43,17 @@ function isPayload(value: unknown): value is Omit<JaObservationSnapshotInput, 'i
   );
 }
 
-/**
- * Identité du bilan de calibrage attendue pour ce patient : ancrée sur son
- * assignation la plus récente, comme la sert `GET /api/portail/protocole`. Rend
- * `null` si aucune assignation — sans suivi, pas d'épisode.
- */
-async function episodeCalibrageAttendu(idPatient: string): Promise<string | null> {
-  const assignation = await prisma.assignation.findFirst({
-    where: { idPatient },
-    orderBy: { dateAssignation: 'desc' },
-    select: { idAssignation: true },
-  });
-  if (!assignation) return null;
-  return episodeIdCalibrage(idPatient, assignation.idAssignation.replace(/[^A-Za-z0-9_-]/g, ''));
+/** Identité du bilan de calibrage attendue pour ce patient. */
+async function episodeCalibrageAttendu(req: Request, idPatient: string): Promise<string | null> {
+  // `authorizePortail` est la MÊME résolution que celle qui sert l'ancre au
+  // client (`GET /api/portail/protocole`). Deux requêtes indépendantes, même
+  // triées pareil, ne suffiraient pas : ce qui compte est qu'il n'existe qu'un
+  // seul chemin d'élection. Sinon un désaccord rendrait un 409 que le
+  // rechargement ne corrige pas, et les journées déjà transmises deviendraient
+  // orphelines sous l'ancien identifiant.
+  const auth = await authorizePortail(req);
+  if ('ok' in auth || auth.idPatient !== idPatient) return null;
+  return episodeIdCalibrage(idPatient, ancreDepuisAssignation(auth.idAssignation));
 }
 
 async function resolveAuthorizedSession(req: Request): Promise<{ idPatient: string } | null> {
@@ -134,7 +136,7 @@ export async function POST(req: Request): Promise<NextResponse<SaveResponse>> {
     const diffuse = await resolveProtocoleDiffuse(auth.idPatient);
     const episodeAttendu = diffuse
       ? episodeIdDepuisCycle(auth.idPatient, diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF))
-      : await episodeCalibrageAttendu(auth.idPatient);
+      : await episodeCalibrageAttendu(req, auth.idPatient);
     const episodeRecu = (body.episode as { episodeId?: unknown }).episodeId;
     if (!episodeAttendu || episodeRecu !== episodeAttendu) {
       return NextResponse.json(

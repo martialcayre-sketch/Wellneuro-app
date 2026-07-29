@@ -19,14 +19,28 @@ export async function authorizePortail(req: Request): Promise<PortailAuth | Port
   if (!session) {
     return { ok: false, reason: 'unauthenticated', error: 'Connexion au portail requise.' };
   }
+  // Départage déterministe. `dateAssignation` est identique pour tous les
+  // questionnaires d'un même pack (`assignBasePack`, `packs/assign`) : sans
+  // second critère, l'ordre entre égaux suit l'ordre physique des tuples, qui
+  // bouge à chaque UPDATE. Deux résolutions successives éliraient alors deux
+  // assignations différentes.
   const assignation = await prisma.assignation.findFirst({
     where: { idPatient: session.idPatient },
-    orderBy: { dateAssignation: 'desc' },
+    orderBy: [{ dateAssignation: 'desc' }, { idAssignation: 'desc' }],
   });
   if (!assignation || !(await isSessionAuthorizedForAssignment(session, assignation))) {
     return { ok: false, reason: 'not_found', error: 'Suivi non reconnu.' };
   }
   return { idPatient: session.idPatient, idAssignation: assignation.idAssignation };
+}
+
+/**
+ * Ancre du bilan de calibrage : l'identifiant d'assignation réduit aux
+ * caractères sûrs. Dérivée ICI et nulle part ailleurs — les deux routes qui
+ * l'emploient doivent rendre exactement la même chaîne.
+ */
+export function ancreDepuisAssignation(idAssignation: string): string {
+  return idAssignation.replace(/[^A-Za-z0-9_-]/g, '');
 }
 
 // Approbation « pour diffusion » active du patient + date d'ancrage. V1

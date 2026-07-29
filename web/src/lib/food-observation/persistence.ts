@@ -10,6 +10,7 @@ import type {
   TrialTrace,
 } from '@/lib/food-observation/types';
 import { readFoodObservationEpisode } from '@/lib/food-observation/episode';
+import { readJourneeRepere } from '@/lib/food-observation/journee';
 import {
   JA_FOOD_OBSERVATION_CONTRACT_VERSION,
   JA_SELECTED_PRIORITY_ID,
@@ -134,7 +135,11 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
   // bornée.
   const MAX_ELEMENTS_PAR_LISTE = 200;
 
-  const journees = input.journees ?? [];
+  // Relues plutôt que crues : sans cela, un `typeJournee` inconnu, un nombre de
+  // prises absurde ou une `localDate` qui n'en est pas une entreraient tels
+  // quels dans `protocol_drafts.payload` — toutes les bornes du domaine ne
+  // vivraient que dans le navigateur.
+  const journees = (input.journees ?? []).map(readJourneeRepere);
   const evenements: { evenements: { episodeId: string }[]; nom: string }[] = [
     { evenements: input.traces, nom: 'traces' },
     { evenements: input.pauses, nom: 'pauses' },

@@ -25,13 +25,6 @@ import { localDate, nonEmpty } from './validation';
  */
 
 /**
- * Fenêtre du bilan de calibrage : 3 à 5 jours (A7-11 amendé, 2026-07-16). Ce
- * n'est pas la fenêtre de l'épisode (21 jours) — un bilan borné se remplit,
- * un journal de trois semaines s'abandonne.
- */
-export const NB_JOURNEES_CALIBRAGE = 5;
-
-/**
  * En deçà, aucun profil n'est dérivé — jamais un profil pauvre, jamais des
  * zéros. Trois journées, borne basse de l'arbitrage.
  */
@@ -139,9 +132,13 @@ export function createJourneeRepere(input: {
   const moments = input.momentsObserves ?? [];
   const marqueurs = input.marqueursPresents ?? [];
 
-  if (input.rienDeParticulier && (moments.length > 0 || marqueurs.length > 0)) {
+  if (input.rienDeParticulier
+    && (moments.length > 0
+      || marqueurs.length > 0
+      || input.nombrePrises !== undefined
+      || input.contexte !== undefined)) {
     throw new TypeError(
-      '« Rien de particulier » exclut les moments observés et les marqueurs : ce sont deux réponses différentes.'
+      '« Rien de particulier » exclut toute observation de la journée : ce sont deux réponses différentes.'
     );
   }
 
@@ -182,6 +179,32 @@ export function createJourneeRepere(input: {
     schemaVersion: VERSION_SCHEMA_FOOD_OBSERVATION,
     marqueursVersion: VERSION_REGISTRE_MARQUEURS,
   };
+}
+
+/**
+ * Relit une journée reçue d'un client. Rien de ce que le navigateur envoie
+ * n'est cru sur parole : les bornes du domaine ne valent que si le serveur les
+ * applique aussi. Même rôle que `readFoodObservationEpisode` pour l'épisode, et
+ * même conséquence — un `TypeError` ressort en 400, jamais en 500.
+ */
+export function readJourneeRepere(value: unknown): JourneeRepere {
+  if (!value || typeof value !== 'object') throw new TypeError('Journée repère invalide.');
+  const j = value as Record<string, unknown>;
+  const chaine = (v: unknown, champ: string): string => {
+    if (typeof v !== 'string') throw new TypeError(`${champ} doit être une chaîne.`);
+    return v;
+  };
+  return createJourneeRepere({
+    journeeId: chaine(j.journeeId, 'journeeId'),
+    episodeId: chaine(j.episodeId, 'episodeId'),
+    localDate: chaine(j.localDate, 'localDate'),
+    typeJournee: j.typeJournee as TypeJournee,
+    nombrePrises: j.nombrePrises === undefined ? undefined : Number(j.nombrePrises),
+    momentsObserves: Array.isArray(j.momentsObserves) ? j.momentsObserves.map(String) : [],
+    contexte: j.contexte === undefined ? undefined : chaine(j.contexte, 'contexte'),
+    marqueursPresents: Array.isArray(j.marqueursPresents) ? j.marqueursPresents.map(String) : [],
+    rienDeParticulier: j.rienDeParticulier === true,
+  });
 }
 
 /**

@@ -179,7 +179,9 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
   const [motLibre, setMotLibre] = useState('');
   const [solutionInput, setSolutionInput] = useState('');
   const [typeJournee, setTypeJournee] = useState<TypeJournee>(() => typeJourneeParDefaut(dateLocale(new Date())));
-  const [nombrePrises, setNombrePrises] = useState(3);
+  // Chaîne vide = « sans précision ». Un défaut à 3 ferait porter à chaque
+  // journée une observation que le patient n'a jamais faite.
+  const [nombrePrises, setNombrePrises] = useState('');
   const [momentsJournee, setMomentsJournee] = useState<MomentPrise[]>([]);
   const [contexteJournee, setContexteJournee] = useState('');
   const [rienDeParticulier, setRienDeParticulier] = useState(false);
@@ -258,7 +260,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
             ? buildEpisodeCalibrage({
                 idPatient,
                 ancre: json.calibrage.ancre,
-                debut: json.calibrage.debut,
+                aujourdHui: dateLocale(new Date()),
                 budget: createAttentionBudget(budget),
               })
             : null);
@@ -479,13 +481,14 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
         episodeId: episodeIdSaisie,
         localDate: dateDuJour,
         typeJournee,
-        nombrePrises: rienDeParticulier ? undefined : nombrePrises,
+        nombrePrises: rienDeParticulier || nombrePrises === '' ? undefined : Number(nombrePrises),
         momentsObserves: rienDeParticulier ? [] : momentsJournee,
         contexte: rienDeParticulier || !contexteJournee ? undefined : contexteJournee,
         rienDeParticulier,
       });
       setJournees(prev => [journee, ...prev]);
       setMomentsJournee([]);
+      setNombrePrises('');
       setContexteJournee('');
       setRienDeParticulier(false);
     } catch (e) {
@@ -660,8 +663,9 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
                     data-testid="ja-patient-nombre-prises"
                     className={patientInputClassName}
                     value={nombrePrises}
-                    onChange={(e) => setNombrePrises(Number(e.target.value))}
+                    onChange={(e) => setNombrePrises(e.target.value)}
                   >
+                    <option value="">Sans précision</option>
                     {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(v => <option key={v} value={v}>{v}</option>)}
                   </select>
                 </PatientField>

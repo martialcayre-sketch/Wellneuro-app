@@ -39,19 +39,24 @@ export function episodeIdCalibrage(idPatient: string, ancre: string): string {
 
 export function buildEpisodeCalibrage(input: {
   idPatient: string;
+  /** Identité stable du bilan — l'assignation, jamais la date. */
   ancre: string;
-  debut: string;
+  /** Aujourd'hui, au sens du client. La fenêtre se ferme ici. */
+  aujourdHui: string;
   budget?: AttentionBudget;
 }): FoodObservationEpisode | null {
   if (!input.idPatient || !input.ancre) return null;
-  const debut = input.debut.slice(0, 10);
+  // La fenêtre est les cinq jours qui SE TERMINENT aujourd'hui, non les cinq
+  // jours qui suivent l'assignation : pour un patient assigné il y a trois
+  // mois — le cas ordinaire quand il ouvre le carnet — cette seconde fenêtre
+  // serait close avant sa première saisie. L'identité, elle, ne bouge pas :
+  // elle tient à l'ancre, pas aux dates.
+  const fin = input.aujourdHui.slice(0, 10);
   return createEpisode({
     episodeId: episodeIdCalibrage(input.idPatient, input.ancre),
     patientId: input.idPatient,
-    startDate: debut,
-    // Trois à cinq jours (A7-11 amendé) : un bilan borné se remplit, un journal
-    // de trois semaines s'abandonne.
-    endDate: ajouterJours(input.debut, DUREE_CALIBRAGE_JOURS - 1),
+    startDate: ajouterJours(fin, -(DUREE_CALIBRAGE_JOURS - 1)),
+    endDate: fin,
     budget: input.budget ?? createAttentionBudget(),
     content: {
       regime: 'calibrage',

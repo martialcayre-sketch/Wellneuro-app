@@ -120,6 +120,11 @@ describe('describeCouvertureJournees', () => {
     expect(describeCouvertureJournees(couverture(1, []))).toBe('1 journée décrite');
   });
 
+  it('se tait dès que le profil est possible — ne réclame pas l’impossible', () => {
+    const possible = { compte: 3, typesCouverts: [], typesAbsents: ['travail_matin' as TypeJournee], profilPossible: true };
+    expect(describeCouvertureJournees(possible)).toBe('3 journées décrites');
+  });
+
   // Preuve que la grille mord : la formulation « au défaut », celle qui vient
   // spontanément, est refusée par le module lui-même.
   it('refuserait une formulation au défaut', () => {

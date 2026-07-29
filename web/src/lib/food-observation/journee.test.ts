@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MIN_JOURNEES_PROFIL,
+  readJourneeRepere,
   MIN_TYPES_DISTINCTS_PROFIL,
   couvertureJournees,
   createJourneeRepere,
@@ -45,8 +46,19 @@ describe('estWeekEnd — dérivation calendaire', () => {
 });
 
 describe('createJourneeRepere', () => {
-  it('refuse « rien de particulier » assorti d’observations', () => {
+  it('refuse « rien de particulier » assorti de la moindre observation', () => {
+    // Le helper fournit moments, prises et contexte : chaque champ est ensuite
+    // isolé, faute de quoi un seul d'entre eux tiendrait la garde à lui seul.
     expect(() => journee({ rienDeParticulier: true })).toThrow(/deux réponses différentes/);
+
+    const nu = {
+      journeeId: 'j', episodeId: 'ja_PAT_cycle', localDate: '2026-07-28',
+      typeJournee: 'repos' as const, rienDeParticulier: true,
+    };
+    expect(() => createJourneeRepere({ ...nu, momentsObserves: ['matin'] })).toThrow();
+    expect(() => createJourneeRepere({ ...nu, marqueursPresents: ['noix'] })).toThrow();
+    expect(() => createJourneeRepere({ ...nu, nombrePrises: 2 })).toThrow();
+    expect(() => createJourneeRepere({ ...nu, contexte: 'domicile' })).toThrow();
   });
 
   it('accepte « rien de particulier » seul — c’est une réponse, pas une absence', () => {
@@ -72,6 +84,49 @@ describe('createJourneeRepere', () => {
     expect(() => journee({ nombrePrises: 9 })).toThrow(/entier de 0 à 8/);
     expect(() => journee({ nombrePrises: -1 })).toThrow(/entier de 0 à 8/);
     expect(journee({ nombrePrises: 0 }).nombrePrises).toBe(0);
+  });
+});
+
+// Le serveur ne croit pas le navigateur : sans ce lecteur, toutes les bornes
+// du domaine ne vivraient que côté client.
+describe('readJourneeRepere — relecture d’une journée reçue', () => {
+  const brute = {
+    journeeId: 'j1',
+    episodeId: 'ja_PAT_cycle',
+    localDate: '2026-07-28',
+    typeJournee: 'repos',
+    momentsObserves: ['matin'],
+    marqueursPresents: [],
+  };
+
+  it('relit une journée conforme', () => {
+    expect(readJourneeRepere(brute).typeJournee).toBe('repos');
+  });
+
+  it('refuse un type de journée inconnu', () => {
+    expect(() => readJourneeRepere({ ...brute, typeJournee: 'vacances' }))
+      .toThrow(/Type de journée inconnu/);
+  });
+
+  it('refuse un nombre de prises absurde', () => {
+    expect(() => readJourneeRepere({ ...brute, nombrePrises: 1e9 })).toThrow(/entier de 0 à 8/);
+  });
+
+  it('refuse une date qui n’en est pas une', () => {
+    expect(() => readJourneeRepere({ ...brute, localDate: 42 })).toThrow(TypeError);
+    expect(() => readJourneeRepere({ ...brute, localDate: '28 juillet' })).toThrow(TypeError);
+  });
+
+  it('refuse un marqueur hors registre et un moment inconnu', () => {
+    expect(() => readJourneeRepere({ ...brute, marqueursPresents: ['quinoa'] }))
+      .toThrow(/hors registre pilote/);
+    expect(() => readJourneeRepere({ ...brute, momentsObserves: ['nuit'] }))
+      .toThrow(/Moment de prise inconnu/);
+  });
+
+  it('refuse ce qui n’est pas un objet', () => {
+    expect(() => readJourneeRepere(null)).toThrow(/Journée repère invalide/);
+    expect(() => readJourneeRepere('journée')).toThrow(/Journée repère invalide/);
   });
 });
 
