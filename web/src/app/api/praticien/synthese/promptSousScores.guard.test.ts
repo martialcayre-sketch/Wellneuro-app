@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
+import { QUESTIONNAIRE_CATALOGUE, calculateScore, computeScoreFromDef } from '@/lib/questions';
 import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
+import { Q_ALI_01_SIIN_57 } from '@/lib/questionnaires/alimentaire';
 import { SYSTEM_PROMPT_GOUVERNANCE } from '@/lib/anthropic';
 
 // Résiduel documenté à la clôture de #437. La consigne `synthese-v9` décrivait
@@ -47,6 +48,46 @@ const FIXTURES: Record<string, Record<string, number | null>> = {
  */
 const SANS_SOUS_SCORES = ['Q_URO_02', 'Q_FIB_03'];
 
+/**
+ * Instruments dont au moins une question n'a pas d'options : le remplissage
+ * générique leur envoie `0`, ce qui n'est PAS une passation représentative.
+ *
+ * C'est la détection de CLASSE, et elle remplace un premier essai qui ne visait que
+ * l'incident : la garde s'adossait à `scored === false`, or seul le moteur
+ * `agenda_sommeil` émet ce champ. Un instrument inatteignable dont le moteur rend un
+ * objet d'allure normale serait ressorti muet. Ici le critère porte sur l'ENTRÉE, pas
+ * sur ce que le moteur veut bien dire de lui-même.
+ *
+ * Chaque entrée déclare pourquoi le relevé reste valable, ou porte une fixture.
+ */
+const REMPLISSAGE_NON_REPRESENTATIF: Record<string, string> = {
+  Q_SOM_09: 'agrégats numériques — fixture fournie',
+  Q_MOD_03: 'échelles 0-10 en saisie directe — fixtures partielle et vide fournies',
+  Q_NEU_12: 'comptages mensuels ; n’émet pas `subScores` mais `parts` (hors périmètre)',
+  Q_SOM_01: 'PSQI ; n’émet pas `subScores` mais `components` (hors périmètre)',
+  Q_FIB_02: 'n’émet pas `subScores` mais `components` (hors périmètre)',
+  Q_GAS_02: 'n’émet pas `subScores` mais `components` (hors périmètre)',
+  Q_SOM_03: 'Berlin ; n’émet pas `subScores` mais `categories` (hors périmètre)',
+  Q_URO_02: 'type `journal` — aucun sous-score',
+};
+
+/**
+ * Les SEPT porteurs de découpages qui arrivent réellement au prompt. La v9 en
+ * annonçait deux, une première rédaction de la v10 en annonçait trois : les deux
+ * dénombrements étaient faux. Épinglé par NOM pour qu'un huitième porteur — ou la
+ * disparition d'un existant — rougisse au lieu de passer.
+ */
+const PORTEURS_ATTENDUS = [
+  'categories', 'components', 'dimensions', 'parts', 'phases', 'scoresBesoins', 'subScores',
+];
+
+/** Les 17 émetteurs de `subScores`, par identifiant : un compte ne voit pas une substitution. */
+const EMETTEURS_SUBSCORES = [
+  'Q_ALI_03', 'Q_GAS_01', 'Q_GEO_01', 'Q_INF_03', 'Q_MOD_01', 'Q_MOD_03', 'Q_NEU_03',
+  'Q_NEU_05', 'Q_NEU_11', 'Q_PED_02', 'Q_PNE_01', 'Q_SOM_09', 'Q_STR_01', 'Q_STR_04',
+  'Q_STR_06', 'Q_TAB_03', 'Q_URO_01',
+];
+
 /** Champs de `subScores` que la consigne n'a pas à décrire : ils se lisent seuls. */
 const CHAMPS_EVIDENTS = new Set(['id', 'label']);
 
@@ -65,7 +106,15 @@ function reponsesPour(id: string): Record<string, unknown> {
   );
 }
 
-/** La charge RÉELLEMENT transmise au modèle, pas le retour nu du moteur. */
+/**
+ * La charge transmise au modèle, et non le retour nu du moteur — `conduite` est
+ * légitime en sortie de moteur et n'arrive jamais au modèle.
+ *
+ * Nuance à ne pas surestimer : `route.ts` applique encore
+ * `reponsesLisiblesPourPrompt` par-dessus, qui ne touche que `rawAnswers` des
+ * `Q_ALI` et ne modifie aucun sous-score. Ce banc porte donc sur la charge telle
+ * qu'elle est vue par les sous-scores, pas sur l'objet final octet pour octet.
+ */
 function chargePour(id: string, reponses: Record<string, unknown> = reponsesPour(id)): any {
   const scores = (calculateScore as any)(id, reponses);
   return scoresPourPrompt({ ...scores, rawAnswers: reponses });
@@ -87,8 +136,15 @@ describe('consigne système — les trois porteurs de sous-scores', () => {
       expect(SYSTEM_PROMPT_GOUVERNANCE, `porteur ${cle} non nommé`).toContain(cle);
       expect(SYSTEM_PROMPT_GOUVERNANCE, `porteur ${cle} nommé mais non défini`).toContain(definition);
     }
-    // L'affirmation fausse de v9, épinglée : elle annonçait un dénombrement.
-    expect(SYSTEM_PROMPT_GOUVERNANCE).not.toContain('sous deux clés');
+    // La faute de v9 était d'annoncer un DÉNOMBREMENT (« sous deux clés »), et la
+    // première v10 l'a refaite en écrivant « trois » alors qu'il y en a sept.
+    // Interdire le seul littéral « deux » laissait passer sa reformulation :
+    // mesuré, la mutation « ré-annoncer trois clés » ressortait VERTE. C'est donc
+    // la classe entière qui est fermée, et la formule non exhaustive exigée.
+    expect(SYSTEM_PROMPT_GOUVERNANCE, 'la consigne ré-annonce un dénombrement de porteurs')
+      .not.toMatch(/sous (deux|trois|quatre|cinq|six|sept|huit) clés/);
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('sous plusieurs clés');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("d'autres existent");
   });
 
   it('n’affirme plus que TOUT sous-score porte un max', () => {
@@ -155,26 +211,44 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
 
   const releve = (() => {
     const emetteurs: Record<string, string[]> = { subScores: [], dimensions: [], scoresBesoins: [] };
+    const porteurs = new Set<string>();
     const sansMax: string[] = [];
     const horsTotal: string[] = [];
     const sansTotalGlobal: string[] = [];
     const totalNul: string[] = [];
     const seuilNul: string[] = [];
-    const nonScores: string[] = [];
+    const sansOptions: string[] = [];
     const champs = new Set<string>();
     let sousScoresBalayes = 0;
+    const ajouterPorteurs = (charge: any) => {
+      for (const [cle, valeur] of Object.entries(charge ?? {})) {
+        if (Array.isArray(valeur) && valeur.length && typeof valeur[0] === 'object' && valeur[0] !== null && 'id' in (valeur[0] as any)) {
+          porteurs.add(cle);
+        }
+      }
+    };
+    // Sur la DÉFINITION SIIN, jamais via le catalogue : drapeau éteint, `Q_ALI_01`
+    // sert la forme courte, qui ne porte ni `dimensions` ni `scoresBesoins`. Sans
+    // ce passage, le recensement des porteurs dépendrait de la position du drapeau
+    // — la cécité au drapeau, déjà trouvée trois fois dans cette campagne.
+    {
+      const reponses = Object.fromEntries(
+        Q_ALI_01_SIIN_57.sections.flatMap(s => s.questions.map(q => [q.id, Number((q.options ?? [])[0]?.v)] as const))
+      );
+      ajouterPorteurs(scoresPourPrompt({ ...(computeScoreFromDef as any)(Q_ALI_01_SIIN_57 as any, reponses), rawAnswers: reponses }));
+    }
     for (const id of ids) {
-      let scores: any;
+      // Détection de classe, sur l'ENTRÉE : une question sans options reçoit `0`
+      // du remplissage générique, ce qui n'est pas une passation représentative.
+      if (questionsDe(id).some(q => !(q.options ?? []).length)) sansOptions.push(id);
       let charge: any;
       try {
         const reponses = reponsesPour(id);
-        scores = (calculateScore as any)(id, reponses);
-        charge = scoresPourPrompt({ ...scores, rawAnswers: reponses });
+        charge = scoresPourPrompt({ ...(calculateScore as any)(id, reponses), rawAnswers: reponses });
       } catch {
-        nonScores.push(id);
         continue;
       }
-      if (scores?.scored === false) nonScores.push(id);
+      ajouterPorteurs(charge);
       for (const cle of ['subScores', 'dimensions', 'scoresBesoins'] as const) {
         if (Array.isArray(charge?.[cle]) && charge[cle].length) emetteurs[cle].push(id);
       }
@@ -190,19 +264,31 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
         if ('seuil' in s && s.seuil === null) seuilNul.push(`${id}/${s.id}`);
       }
     }
-    return { emetteurs, sansMax, horsTotal, sansTotalGlobal, totalNul, seuilNul, nonScores, champs, sousScoresBalayes };
+    return { emetteurs, porteurs, sansMax, horsTotal, sansTotalGlobal, totalNul, seuilNul, sansOptions, champs, sousScoresBalayes };
   })();
 
-  it('aucun angle mort silencieux : tout instrument non scoré est déclaré', () => {
+  it('aucun angle mort silencieux : tout remplissage non représentatif est déclaré', () => {
     // LA garde de méthode. C'est son absence qui a laissé `Q_SOM_09` — et avec lui
     // le seul contre-exemple à la règle écrite — sortir du recensement sans bruit.
-    // Un instrument que le remplissage générique ne sait pas atteindre doit être
-    // soit doté d'une fixture, soit déclaré comme n'émettant aucun sous-score.
-    const inconnus = releve.nonScores.filter(id => !SANS_SOUS_SCORES.includes(id));
+    // Un premier essai s'adossait à `scored === false` : trop étroit, seul le moteur
+    // `agenda_sommeil` émet ce champ. Le critère porte donc sur l'ENTRÉE.
     expect(
-      inconnus,
-      `non scoré(s) et non déclaré(s) : ${inconnus.join(', ')} — ajouter une fixture dans FIXTURES, ou les déclarer dans SANS_SOUS_SCORES après avoir VÉRIFIÉ qu'ils n'émettent aucun sous-score`,
-    ).toEqual([]);
+      releve.sansOptions.slice().sort(),
+      'instrument(s) dont le remplissage générique n’est pas représentatif : les déclarer dans REMPLISSAGE_NON_REPRESENTATIF, avec une fixture si le relevé doit les couvrir',
+    ).toEqual(Object.keys(REMPLISSAGE_NON_REPRESENTATIF).sort());
+  });
+
+  it('les SEPT porteurs de découpages sont épinglés par nom', () => {
+    // La v9 annonçait deux clés, une première v10 en annonçait trois : les deux
+    // dénombrements étaient faux. Un huitième porteur doit rougir, pas passer.
+    expect([...releve.porteurs].sort()).toEqual(PORTEURS_ATTENDUS);
+  });
+
+  it('les 17 émetteurs de subScores sont épinglés par identifiant, pas par compte', () => {
+    // Un compte ne voit pas une substitution : un instrument qui cesse d'émettre et
+    // un autre qui commence laisseraient `toBe(17)` vert — soit exactement la
+    // disparition silencieuse que ce fichier existe pour rendre bruyante.
+    expect(releve.emetteurs.subScores.slice().sort()).toEqual(EMETTEURS_SUBSCORES);
   });
 
   it('les instruments déclarés sans sous-scores n’en émettent réellement aucun', () => {
@@ -217,7 +303,15 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
   it('balaye réellement le catalogue — anti-vacuité', () => {
     expect(ids.length).toBeGreaterThanOrEqual(60);
     expect(releve.sousScoresBalayes, 'aucun sous-score balayé').toBe(66);
-    expect(releve.emetteurs.subScores.length).toBe(17);
+  });
+
+  it('aucun total à null n’apparaît sur une passation SATURÉE', () => {
+    // Le pendant du relevé : à saturation, tout est renseigné, donc rien ne doit
+    // être `null`. Un nouveau producteur de `null` sous saturation signalerait un
+    // moteur qui rend « non mesuré » pour une passation complète — à comprendre
+    // avant de l'admettre. Les producteurs légitimes sont exercés ci-dessous, sur
+    // des passations volontairement incomplètes.
+    expect(releve.totalNul).toEqual([]);
   });
 
   it('subScores est bien le porteur dominant — la raison même de le décrire', () => {
@@ -231,9 +325,14 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     // La garde qui rend le lot durable : elle vieillit avec le moteur. Un champ neuf
     // sous `subScores` arrive au modèle sans mode d'emploi tant qu'il n'est pas
     // décrit — c'est exactement ce qui est arrivé au porteur `subScores` lui-même.
+    // Marqueur `**champ**`, jamais le mot nu : la consigne fait 12 000 caractères et
+    // contient « valeur », « valoir », « sous-scores », si bien qu'un test de
+    // sous-chaîne déclarerait décrits des champs nommés `val`, `items` ou `score`
+    // qu'elle n'évoque nulle part. Relevé en revue — la garde passait pour une
+    // mauvaise raison, comme celle du porteur `subScores` avant elle.
     const nonDecrits = [...releve.champs]
       .filter(c => !CHAMPS_EVIDENTS.has(c))
-      .filter(c => !SYSTEM_PROMPT_GOUVERNANCE.includes(c))
+      .filter(c => !SYSTEM_PROMPT_GOUVERNANCE.includes(`**${c}**`))
       .sort();
     expect(
       nonDecrits,
@@ -256,6 +355,41 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     // consigne doit empêcher le modèle de défaire.
     expect(agenda.total).toBe(100);
     expect(agenda.maxTotal).toBe(100);
+  });
+
+  it('un total à null NE garantit PAS un total global renormalisé', () => {
+    // Le second NO-GO. La correction du premier avait ajouté « le total global a
+    // déjà été calculé sans lui » : vrai de `Q_SOM_09`, FAUX de `Q_MOD_03`, qui
+    // compte les axes manquants pour zéro. Trois plaintes sur sept à 8/10 :
+    const items = questionsDe('Q_MOD_03').map(q => q.id);
+    const partiel = Object.fromEntries(items.slice(0, 3).map(i => [i, 8]));
+    const c = chargePour('Q_MOD_03', partiel);
+    const par = Object.fromEntries(c.subScores.map((s: any) => [s.id, s.total]));
+    // Attendus écrits à la main — les identifiants de sous-scores ne sont PAS ceux
+    // des questions. Trois axes mesurés au même niveau…
+    expect(items.length).toBe(7);
+    expect([par.fatigue, par.douleurs, par.digestion]).toEqual([8, 8, 8]);
+    // …quatre non mesurés, correctement rendus `null`…
+    expect(c.subScores.filter((s: any) => s.total === null).map((s: any) => s.id))
+      .toEqual(['surpoids', 'sommeil', 'moral', 'mobilite']);
+    // …mais le total global les compte pour ZÉRO : 24 sur un dénominateur de 70
+    // inchangé, là où l'agenda aurait renormalisé. C'est ce que la consigne doit
+    // empêcher le modèle de tenir pour fiable.
+    expect(c.total).toBe(24);
+    expect(c.maxTotal).toBe(70);
+    // Et la bande est un REPLI sur la dernière : la moyenne 3,4 ne tombe dans
+    // aucune plage. Un patient à trois plaintes sur sept est annoncé au pire
+    // niveau de l'instrument.
+    expect(c.interpretation.label).toBe('Intensité très élevée');
+    expect(c.interpretation.color).toBe('danger');
+  });
+
+  it('la consigne met en garde contre le total global quand un sous-score est null', () => {
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('méfie-toi alors du total global');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('il exclut l’axe manquant, ou le compte pour zéro'.replace('’', "'"));
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('présente le total global comme **incomplet**');
+    // Et surtout, elle ne doit pas RASSURER : c'est la phrase du second NO-GO.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).not.toContain('a déjà été calculé sans lui');
   });
 
   it('un seuil à null existe réellement, et atRisk y vaut false sans rien vouloir dire', () => {

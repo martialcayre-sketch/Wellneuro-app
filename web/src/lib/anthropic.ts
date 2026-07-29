@@ -39,6 +39,23 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // (il lit des agrégats numériques) — l'instrument sortait du recensement sans bruit,
 // et c'était le seul à porter des `total: null`. La méthode de mesure avait caché le
 // seul cas qui invalidait la règle écrite.
+// Un SECOND NO-GO a suivi, sur une phrase que la correction du premier avait ajoutée :
+// « le total global a déjà été calculé sans lui ». Vraie de `Q_SOM_09` (renormalisé),
+// FAUSSE de `Q_MOD_03` (`plaintes_actuelles`), qui compte les axes manquants pour zéro
+// — trois plaintes sur sept à 8/10 rendent 24/70, moyenne 3,4, et une bande de REPLI
+// sur la dernière (« Intensité très élevée », danger). La consigne rassurait donc le
+// modèle sur un total global qui, là, se dégrade avec les données manquantes. Même
+// classe que ce que le lot ferme : une règle vraie d'une famille, fausse d'une autre.
+// La même passe a montré que le dénombrement « trois clés » était faux au même titre
+// que le « deux clés » de v9 : SEPT porteurs de découpages arrivent au prompt —
+// `subScores`, `dimensions`, `scoresBesoins`, plus `parts` (`Q_NEU_12`), `components`
+// (`Q_SOM_01`, `Q_FIB_02`, `Q_GAS_02`), `categories` (`Q_SOM_03`) et `phases`
+// (`Q_GEO_06`). La consigne n'énonce donc plus un compte : elle donne l'invariant
+// (« lis chaque valeur contre le dénominateur du même bloc, sinon pas de proportion »)
+// et détaille les trois clés les plus répandues. Les quatre autres restent à décrire —
+// réserve du changelog, avec un point à arbitrer : les `parts` de `Q_NEU_12` portent
+// `suicidalIdeation` et `probableMajorDepression`, deux booléens à très forte charge
+// clinique servis aujourd'hui sans aucune consigne (état antérieur à ce lot).
 // v9 (2026-07-28) : la charge de synthèse peut désormais porter des sous-scores
 // nommés — `dimensions` (découpage d'affichage) et `scoresBesoins` (mesure d'un
 // besoin) — sans que la consigne les décrive. À l'allumage de `WN_ALI_01_SIIN57`,
@@ -137,19 +154,19 @@ Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se 
 
 ## Sous-scores : plusieurs découpages d'un même questionnaire
 
-Certains questionnaires ne te livrent pas qu'un score global : leur résultat peut porter des **sous-scores**, sous trois clés distinctes qui ne veulent pas dire la même chose.
+Certains questionnaires ne te livrent pas qu'un score global : leur résultat peut porter des **sous-scores**, sous plusieurs clés qui ne veulent pas dire la même chose. Les trois plus répandues sont décrites ici ; d'autres existent (des composantes, des phases, des parties), et la règle générale plus bas vaut pour toutes.
 
 - **subScores** — les **sous-échelles propres à l'instrument** : tantôt celles que publie sa source, tantôt un découpage retenu par WellNeuro. N'accorde pas à un axe l'autorité d'une échelle publiée du seul fait qu'il figure ici. C'est de loin la forme la plus répandue.
 - **dimensions** — un découpage d'**affichage** : le questionnaire réparti en catégories thématiques telles qu'elles sont présentées au patient.
 - **scoresBesoins** — la **mesure d'un besoin** : un sous-ensemble d'items retenu pour évaluer un besoin clinique précis, qui peut ne reprendre qu'une partie des items d'une dimension.
 
-Règle commune : le score d'un sous-score est **total**, et il se lit contre le **max** qui l'accompagne — jamais contre le max d'un autre sous-score, ni contre le total global du questionnaire. L'un comme l'autre peuvent manquer : les champs décrits plus bas disent alors ce qu'il faut en faire.
+Règle générale, valable pour **toutes** ces clés : lis chaque valeur contre le dénominateur qui l'accompagne dans le même bloc — jamais contre celui d'un autre sous-score, ni contre le total global du questionnaire. Si aucun dénominateur ne l'accompagne, rapporte la valeur brute et ne fabrique aucune proportion. Sous **subScores**, la valeur est **total** et son dénominateur **max** ; l'un comme l'autre peuvent manquer, et les champs décrits plus bas disent alors ce qu'il faut en faire.
 
 Un même thème peut apparaître **deux fois**, sous dimensions et sous scoresBesoins, avec des libellés voisins mais des **périmètres différents** (un nombre d'items et un max différents). Ce sont deux vues d'un même thème, pas deux mesures à cumuler : ne les additionne jamais, et ne reporte pas le résultat de l'une sous le dénominateur de l'autre.
 
 Une entrée de **subScores** peut porter d'autres champs, qui se lisent ainsi :
 
-- **total à null** — ce sous-score **n'a pas été mesuré**. Ce n'est **pas** un zéro, et surtout pas le plus mauvais score de l'échelle : ne le rapporte ni comme un score, ni comme une proportion, ne le situe sur aucune bande et ne le fais entrer dans aucune moyenne. Dis que cette dimension n'a pas été recueillie. Le total global qui l'accompagne a déjà été calculé sans lui.
+- **total à null** — ce sous-score **n'a pas été mesuré**. Ce n'est **pas** un zéro, et surtout pas le plus mauvais score de l'échelle : ne le rapporte ni comme un score, ni comme une proportion, ne le situe sur aucune bande et ne le fais entrer dans aucune moyenne. Dis que cette dimension n'a pas été recueillie. Et **méfie-toi alors du total global** du même questionnaire : selon l'instrument, il exclut l'axe manquant, ou le compte pour zéro — ce qui abaisse le résultat et peut le faire basculer dans une bande sévère. Dès qu'un sous-score est à null, présente le total global comme **incomplet** et ne fonde aucune conclusion de gravité sur lui seul.
 - **max absent** — ce sous-score n'a pas de dénominateur. Rapporte la valeur brute sans en faire une proportion ni un pourcentage, et n'invente aucun max.
 - **scaled** et **maxScaled** — la même mesure remise à l'échelle de l'instrument. Lis scaled contre maxScaled et total contre max : ne croise jamais les deux paires.
 - **rawTotal** — un total intermédiaire, avant pondération. Ce n'est pas le score : le score reste total, et rapporter rawTotal à un seuil peut inverser la conclusion.
