@@ -50,7 +50,17 @@ export function buildMiniSynthese(scores: ScoreInput): string {
       .sort((a, b) => (SEVERITE[b.interpretation?.color ?? ''] ?? 0) - (SEVERITE[a.interpretation?.color ?? ''] ?? 0));
 
     if (perturbes.length === 0) {
-      return 'Tous les axes explorés sont peu perturbés.';
+      // Une absence de bande n'est PAS une bande basse.
+      //
+      // Depuis que le moteur ne replie plus sur la dernière bande (2026-07-29),
+      // un score hors grille arrive ici sans interprétation — et cette phrase
+      // affirmait alors « peu perturbés » sur des axes dont rien n'a été
+      // constaté. Elle part dans la fiche praticien ET dans le prompt de
+      // synthèse : ce serait la même faute que le repli, retournée en
+      // réassurance. Il faut donc qu'au moins un axe porte une bande pour que
+      // « tous » veuille dire quelque chose.
+      const auMoinsUneBande = axes.some(a => a.interpretation?.label);
+      return auMoinsUneBande ? 'Tous les axes explorés sont peu perturbés.' : '';
     }
     return perturbes
       .slice(0, 3)
