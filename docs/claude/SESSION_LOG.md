@@ -811,3 +811,27 @@ sort pour chacun.
 **Questions ouvertes** : BDI-13 et Q-MAT dérivent **côté produit**, gelés
 derrière le go de rescorage ; place de l'échelle de Conners, désavouée par ses
 auteurs depuis 1985.
+
+## 2026-07-29 — Q_ALI_01 : parc patients reconstitué, et consigne de synthèse v10
+
+**Décisions** : les 4 assignations ouvertes en v14 annulées, puis 8 réassignations
+créées, une par patient distinct — parc entièrement reconstitué sur les 57 items.
+Deux assignations inatteignables par l'interface ont été débloquées par appel direct
+à la route d'annulation, qui applique ses propres gardes. Résiduel de #437 fermé par
+la PR #445 (consigne `synthese-v10`), mergée après **trois refus** de revue
+adversariale — chaque défaut étant créé par la correction du précédent.
+
+**Écarté** : décrire les quatre porteurs restants (`parts`, `components`,
+`categories`, `phases`) — l'un livre `suicidalIdeation`, cela demande un arbitrage
+praticien ; poser la parade anti-zéro sur les `subScores` — correctif de moteur, pas
+de consigne.
+
+**Leçon** : mon banc saturait les *options* des questions ; `Q_SOM_09` n'en a pas et
+sortait du recensement sans bruit — la méthode de mesure cachait le seul
+contre-exemple à la règle que j'écrivais.
+
+**Prochaine action** : filtrer les assignations côté serveur (plafond de 40, lacune
+de #438).
+
+**Questions ouvertes** : les deux booléens cliniques de `Q_NEU_12` livrés sans
+consigne ; l'audit des lignes héritées partielles, dont dépend la réserve `atRisk`.
