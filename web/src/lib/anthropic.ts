@@ -7,6 +7,29 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v11 (2026-07-29) : v10 décrivait un régime de total global qui n'existe plus.
+// Elle disait « selon l'instrument, il exclut l'axe manquant, ou le compte pour
+// zéro », et donnait `Q_MOD_03` en exemple vivant du second cas. Le lot du même
+// jour a fermé ce régime sur les neuf moteurs qui le portaient encore : un total
+// global tombe désormais à `null` dès qu'un axe contributeur n'est pas mesuré.
+// Laisser la phrase aurait décrit au modèle un comportement disparu, et l'aurait
+// invité à « se méfier » d'un nombre qui ne lui arrive plus.
+// Trois gestes, tous rendus nécessaires par ce que le moteur émet maintenant :
+//   · le total global tombe AVEC son axe — sauf deux exceptions, `horsTotal` (un
+//     axe qui n'y contribuait pas) et la RENORMALISATION de `Q_SOM_09`, dont le
+//     total est une proportion sur les axes couverts et reste donc servi. Une
+//     première rédaction de v11 énonçait la chute sans réserve : elle était fausse
+//     de l'agenda du sommeil, et c'est le banc de couplage qui l'a montré ;
+//   · un booléen à `null` (`alertMA`, `highRisk`, `positive`, `suicidalIdeation`,
+//     `probableMajorDepression`, `winterPatternLikely`) n'est PAS un « non ». Ces
+//     drapeaux valaient `false` sur une question jamais posée ; ils valent `null`
+//     depuis ce lot, et rien dans la consigne ne disait comment lire un `null` là ;
+//   · deux absences de total global se distinguent enfin — le champ ABSENT (un
+//     instrument qui n'en produit pas) et le champ à `null` (un total qui n'a pas
+//     pu être établi). v10 ne décrivait que la première ; un `Q_GAS_01` partiel,
+//     qui relève de la seconde, aurait pu se faire décrire comme un instrument
+//     sans score global. Réserve nommée à la clôture du lot précédent.
+//
 // v10 (2026-07-29) : v9 décrivait DEUX porteurs de sous-scores et en laissait un
 // troisième — `subScores`, la forme historique — sans un mot. Résiduel documenté à
 // la clôture de #437, mesuré depuis : `subScores` est le porteur DOMINANT (17
@@ -105,7 +128,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v10';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v11';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -168,7 +191,7 @@ Un même thème peut apparaître **deux fois**, sous dimensions et sous scoresBe
 
 Une entrée de sous-score peut porter d'autres champs. La règle du **total à null** vaut sous les **trois** clés ; les suivantes ne concernent que **subScores** :
 
-- **total à null** — ce sous-score **n'a pas été mesuré**. Ce n'est **pas** un zéro, et surtout pas le plus mauvais score de l'échelle : ne le rapporte ni comme un score, ni comme une proportion, ne le situe sur aucune bande et ne le fais entrer dans aucune moyenne. Dis que cette dimension n'a pas été recueillie. Et **méfie-toi alors du total global** du même questionnaire : selon l'instrument, il exclut l'axe manquant, ou le compte pour zéro — ce qui abaisse le résultat et peut le faire basculer dans une bande sévère. Dès qu'un sous-score est à null, présente le total global — et **toute moyenne servie à côté de lui** — comme **incomplet**, et ne fonde aucune conclusion de gravité là-dessus.
+- **total à null** — ce sous-score **n'a pas été mesuré**. Ce n'est **pas** un zéro, et surtout pas le plus mauvais score de l'échelle : ne le rapporte ni comme un score, ni comme une proportion, ne le situe sur aucune bande et ne le fais entrer dans aucune moyenne. Dis que cette dimension n'a pas été recueillie. Regarde alors le **total global** du même questionnaire. Presque partout, il **tombe avec l'axe** : il vaut null lui aussi, ainsi que toute moyenne servie à côté de lui, parce que son dénominateur compte **tous** les axes. Ne le reconstitue alors d'aucune façon — ni en additionnant les axes mesurés, ni en comptant l'axe manquant pour zéro. Un instrument peut cependant **renormaliser** son total sur les seuls axes couverts : il le dit en servant un total **non nul** à côté d'un axe à null, avec un dénominateur qui ne dépend pas du nombre d'axes et un compte d'axes couverts. Ce total-là est utilisable, à condition de préciser sur combien d'axes il porte. Enfin, un axe marqué **horsTotal** ne contribue pas au total : son absence ne fait rien tomber.
 - **max absent** — ce sous-score n'a pas de dénominateur. Rapporte la valeur brute sans en faire une proportion ni un pourcentage, et n'invente aucun max.
 - **scaled** et **maxScaled** — la même mesure remise à l'échelle de l'instrument. Lis scaled contre maxScaled et total contre max : ne croise jamais les deux paires.
 - **rawTotal** — un total intermédiaire, avant pondération. Ce n'est pas le score : le score reste total, et rapporter rawTotal à un seuil peut inverser la conclusion.
@@ -176,7 +199,9 @@ Une entrée de sous-score peut porter d'autres champs. La règle du **total à n
 - **seuil**, **seuilLabel** et **atRisk** — un seuil de l'instrument et son verdict. Quand un seuil existe, le verdict est **atRisk** et il ne se recalcule pas depuis le total. Mais **seuil peut valoir null** : l'instrument ne publie alors aucun seuil pour ce sous-score, atRisk vaut false **par défaut et ne signifie rien** — lis seuilLabel, et n'en conclus ni risque, ni absence de risque.
 - **interpretation** — la bande de ce sous-score-là, jamais celle du questionnaire entier.
 
-Enfin, certains questionnaires à sous-scores **n'ont pas de score global** : le champ total est alors absent de leur résultat. N'en fabrique pas un en additionnant les sous-scores.
+Un champ **booléen à null** — un drapeau de risque, d'alerte ou de positivité — se lit de la même façon : la question n'a pas été posée, ou l'axe qui le fonde n'a pas été mesuré. Ce n'est **pas** « non ». N'en conclus ni la présence, ni l'absence de ce que le drapeau nomme, et ne compte pas un drapeau à null parmi les drapeaux négatifs.
+
+Enfin, distingue **deux** absences de score global, qui ne se disent pas pareil. Certains questionnaires à sous-scores **n'en ont pas du tout** : le champ total est alors **absent** de leur résultat, et il n'y a rien à en dire. D'autres en ont un, mais il vaut **null** parce qu'un axe n'a pas été mesuré : dis alors que le score global **n'a pas pu être établi sur cette passation**, et non que l'instrument n'en produit pas. N'en fabrique pas un en additionnant les sous-scores, dans un cas comme dans l'autre.
 
 Pour les questionnaires alimentaires, la règle de la section précédente s'applique aussi à leurs sous-scores : aucun n'est une mesure d'apport ni un seuil étalonné.
 

@@ -144,8 +144,16 @@ describe('passation vide — rien à juger, donc aucun verdict', () => {
     expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: {} })).toBe('NON_MESURE');
     expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: { P1: '1' } })).toBe('NON_MESURE');
 
-    // Et une passation réellement répondue reste une preuve.
-    const psqi = { Q1: 23, Q2: 15, Q3: 7, Q4: 7, Q6: 1, Q7: 0, Q8: 0, Q9: 1 };
+    // Et une passation réellement répondue reste une preuve. Les DIX-HUIT items
+    // du PSQI, pas huit : depuis le 2026-07-29, une composante sans aucun de ses
+    // items vaut « non mesurée » et fait tomber le total. La fixture d'origine
+    // omettait Q5a à Q5j — toute la composante « perturbations » — et décrochait
+    // pourtant un grade A.
+    const psqi = {
+      Q1: 23, Q2: 15, Q3: 7, Q4: 7, Q5a: 0,
+      Q5b: 0, Q5c: 0, Q5d: 0, Q5e: 0, Q5f: 0, Q5g: 0, Q5h: 0, Q5i: 0, Q5j: 0,
+      Q6: 1, Q7: 0, Q8: 0, Q9: 1,
+    };
     expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: psqi })).toBe('A');
   });
 });

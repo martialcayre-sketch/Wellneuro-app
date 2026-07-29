@@ -24,7 +24,21 @@ function reponsesAgendaComplet(): Record<string, number> {
  * niveau A » sur une passation qui ne mesure rien. La garde de passation vide
  * (2026-07-29) le refuse : le banc mesure désormais ce qu'il annonce.
  */
-const PSQI_REPONDU = { Q1: 23, Q2: 15, Q3: 7, Q4: 7, Q6: 1, Q7: 0, Q8: 0, Q9: 1 };
+// Les DIX-HUIT items du PSQI. Cette fixture n'en portait que huit, et omettait
+// Q5a puis Q5b à Q5j — la composante « perturbations » en entier. Elle décrochait
+// pourtant un grade A pour le besoin 5, sur un instrument dont une composante sur
+// sept n'avait aucune réponse : la même classe de défaut que les trois
+// identifiants inexistants du commentaire ci-dessus, un cran plus fin. Depuis le
+// 2026-07-29, une composante sans aucun item vaut « non mesurée » et fait tomber
+// le total du PSQI ; la fixture mesure donc enfin ce qu'elle annonce.
+const PSQI_REPONDU = {
+  Q1: 23, Q2: 15, Q3: 7, Q4: 7, Q5a: 0,
+  Q5b: 0, Q5c: 0, Q5d: 0, Q5e: 0, Q5f: 0, Q5g: 0, Q5h: 0, Q5i: 0, Q5j: 0,
+  Q6: 1, Q7: 0, Q8: 0, Q9: 1,
+};
+/** Le même PSQI privé de sa seule composante « perturbations du sommeil ». */
+const PSQI_SANS_C5 = Object.fromEntries(
+  Object.entries(PSQI_REPONDU).filter(([id]) => !/^Q5[b-j]$/.test(id)));
 // La source `Q_MOD_01` du besoin 5 lit la sous-échelle ACTIVITE_PHYSIQUE, et non
 // SOMMEIL : une fixture qui renseigne l'autre sous-échelle rendrait le même verdict
 // aujourd'hui, mais par accident — et rougirait au premier lot qui fera passer un
@@ -50,6 +64,16 @@ describe('evidence — niveaux de preuve par besoin', () => {
   it('besoin 5 avec seule source Q_SOM_01 répondue doit être A', () => {
     const result = calculerNiveauPreuveBesoin(5, { Q_SOM_01: PSQI_REPONDU });
     expect(result).toBe('A');
+  });
+
+  it('un PSQI amputé d’une composante entière ne vaut plus preuve de niveau A', () => {
+    // La contrepartie de la fixture ci-dessus. Neuf des dix-huit items — dont
+    // aucun de la composante « perturbations » — rendaient un total sur 21 et un
+    // grade A. Le total tombe désormais, et le besoin avec lui : mieux vaut
+    // « non mesuré » qu'une preuve de premier rang bâtie sur les six septièmes
+    // d'un instrument.
+    expect(calculerNiveauPreuveBesoin(5, { Q_SOM_01: PSQI_SANS_C5 })).toBe('NON_MESURE');
+    expect(listerSourcesPreuveBesoin(5, { Q_SOM_01: PSQI_SANS_C5 })).toHaveLength(0);
   });
 
   it('besoin 5 avec sources A+B répondues doit retomber au plus faible (B)', () => {

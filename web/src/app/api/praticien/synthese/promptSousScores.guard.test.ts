@@ -449,10 +449,18 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     expect(agenda.maxTotal).toBe(100);
   });
 
-  it('un total à null NE garantit PAS un total global renormalisé', () => {
-    // Le second NO-GO. La correction du premier avait ajouté « le total global a
-    // déjà été calculé sans lui » : vrai de `Q_SOM_09`, FAUX de `Q_MOD_03`, qui
-    // compte les axes manquants pour zéro. Trois plaintes sur sept à 8/10 :
+  it('les deux régimes de total global décrits par la consigne existent réellement', () => {
+    // Le second NO-GO de v10. La correction du premier avait ajouté « le total
+    // global a déjà été calculé sans lui » : vrai de `Q_SOM_09`, FAUX de
+    // `Q_MOD_03`, qui comptait alors les axes manquants pour zéro. v10 avait donc
+    // fini par décrire TROIS régimes, dont un — « il le compte pour zéro » — que
+    // le lot du 2026-07-29 a fermé sur les neuf moteurs qui le portaient encore.
+    //
+    // v11 n'en décrit plus que deux, et ce test les tient tous les deux : sans
+    // lui, la consigne pourrait décrire une chute qui n'a pas lieu, ou taire une
+    // renormalisation qui, elle, a bien lieu.
+    //
+    // Régime 1 — le total TOMBE avec l'axe. Trois plaintes sur sept à 8/10 :
     const items = questionsDe('Q_MOD_03').map(q => q.id);
     const partiel = Object.fromEntries(items.slice(0, 3).map(i => [i, 8]));
     const c = chargePour('Q_MOD_03', partiel);
@@ -464,15 +472,15 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     // …quatre non mesurés, correctement rendus `null`…
     expect(c.subScores.filter((s: any) => s.total === null).map((s: any) => s.id))
       .toEqual(['surpoids', 'sommeil', 'moral', 'mobilite']);
-    // …mais le total global les compte pour ZÉRO : 24 sur un dénominateur de 70
-    // inchangé, là où l'agenda aurait renormalisé. C'est ce que la consigne doit
-    // empêcher le modèle de tenir pour fiable.
-    expect(c.total).toBe(24);
+    // …et le total global TOMBE avec eux. Jusqu'au 2026-07-29, il valait 24 sur
+    // un dénominateur de 70 inchangé : un nombre juste sur un dénominateur faux,
+    // que le modèle ne pouvait pas distinguer d'un patient peu plaintif.
+    expect(c.total).toBeNull();
     expect(c.maxTotal).toBe(70);
-    // La moyenne est contaminée de la même façon — 24/7 et non 24/3 — et elle est
-    // SERVIE au modèle. Elle était annoncée épinglée sans l'être : un attendu resté
-    // en commentaire ne garde rien, c'est la classe même que ce lot corrige.
-    expect(c.average).toBe(3.4);
+    // La moyenne était contaminée de la même façon — 24/7 et non 24/3 — et elle
+    // est SERVIE au modèle. Elle tombe avec le total : une moyenne dont le
+    // numérateur n'existe plus n'a pas de valeur de repli.
+    expect(c.average).toBeNull();
     // Et la moyenne 3,4 ne tombe dans AUCUNE plage : les bandes de cet instrument
     // sont bornées sur des entiers ([1-3], [4-6], [7-8], [9-10]) alors que la valeur
     // servie porte une décimale. Jusqu'au 2026-07-29, le moteur repliait alors sur
@@ -483,19 +491,49 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     // grille reste à refaire contiguë au dixième — c'est une décision de seuil
     // clinique, elle ne se prend pas dans un lot de code.
     expect(c.interpretation).toBeNull();
+
+    // Régime 2 — le total est RENORMALISÉ sur les axes couverts, et l'instrument
+    // le dit : un dénominateur qui ne dépend pas du nombre d'axes, et un compte
+    // d'axes couverts servi à côté. Sans cette réserve, « le total tombe avec
+    // l'axe » serait faux de l'agenda du sommeil — c'est ce contre-exemple qui a
+    // fait réécrire la première rédaction de v11.
+    const agenda = chargePour('Q_SOM_09', { ...FIXTURES.Q_SOM_09, AGD_QUAL_MOY: null });
+    expect(agenda.subScores.find((s: any) => s.id === 'QUAL').total).toBeNull();
+    expect(agenda.total).toBe(100);
+    expect(agenda.maxTotal).toBe(100);
+    // Trois axes couverts sur les QUATRE de l'agenda (Durée, Efficacité,
+    // Régularité, Qualité vécue) — c'est aussi le minimum sous lequel il cesse
+    // de scorer, ce qui rend le compte d'autant plus nécessaire à côté du 100.
+    expect(agenda.nbAxesCouverts).toBe(3);
   });
 
-  it('la consigne met en garde contre le total global quand un sous-score est null', () => {
-    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('méfie-toi alors du total global');
-    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('il exclut l’axe manquant, ou le compte pour zéro'.replace('’', "'"));
-    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('présente le total global');
-    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('comme **incomplet**');
-    // La mise en garde couvre aussi la MOYENNE : `Q_MOD_03` en sert une, contaminée
-    // exactement comme son total (24/7 et non 24/3), et c'est le nombre le plus
+  it('la consigne décrit le total global tel que le moteur le rend', () => {
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("il **tombe avec l'axe**");
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('renormaliser');
+    // Le régime fermé par le lot du 2026-07-29 ne doit plus être décrit comme un
+    // comportement possible : le décrire inviterait le modèle à se défier d'un
+    // total qui ne lui arrive plus, et à en reconstruire un.
+    expect(SYSTEM_PROMPT_GOUVERNANCE).not.toContain('ou le compte pour zéro');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("ni en comptant l'axe manquant pour zéro");
+    // La mise en garde couvre aussi la MOYENNE : `Q_MOD_03` en sert une, qui
+    // tombait avec son total (24/7 et non 24/3), et c'est le nombre le plus
     // citable de sa charge.
     expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('toute moyenne servie à côté de lui');
     // Et surtout, elle ne doit pas RASSURER : c'est la phrase du second NO-GO.
     expect(SYSTEM_PROMPT_GOUVERNANCE).not.toContain('a déjà été calculé sans lui');
+  });
+
+  it('la consigne dit comment lire un booléen à null, et distingue les deux absences de total', () => {
+    // Neuf moteurs émettent désormais des drapeaux à `null` là où ils rendaient
+    // `false` — dont `suicidalIdeation`, que la source assortit d'une
+    // appréciation clinique immédiate. Rien dans la consigne ne disait comment
+    // lire un `null` à cette place : `false` et `null` s'y lisaient « non ».
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain('booléen à null');
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("Ce n'est **pas** « non »");
+    // Et la réserve nommée à la clôture du lot précédent : `total` ABSENT (un
+    // instrument sans score global) ne se dit pas comme `total` à `null` (un
+    // score global qui n'a pas pu être établi).
+    expect(SYSTEM_PROMPT_GOUVERNANCE).toContain("n'a pas pu être établi sur cette passation");
   });
 
   it('un seuil à null existe réellement, et atRisk y vaut false sans rien vouloir dire', () => {

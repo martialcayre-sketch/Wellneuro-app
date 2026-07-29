@@ -55,12 +55,20 @@ describe('bandes d’interprétation — aucune bande plutôt qu’une bande fau
     // Bandes [1-3], [4-6], [7-8], [9-10] ; la valeur servie est une moyenne au
     // dixième. 28 % des totaux atteignables tombent entre deux bandes, et
     // recevaient tous « Intensité très élevée » (danger).
-    const troisPlaintes: any = calculateScore(
+    //
+    // Le cas se lisait jusqu'ici sur trois plaintes de sept, dont la moyenne
+    // était contaminée par les quatre manquantes. Depuis le 2026-07-29, une
+    // passation incomplète ne sert plus ni total ni moyenne : le trou de grille
+    // subsiste, mais sur une passation COMPLÈTE dont la somme n'est pas un
+    // multiple de sept. C'est bien la grille qui est en cause, pas l'absence.
+    const valeurs = [8, 8, 4, 1, 1, 1, 1]; // somme 24 → 24/7 = 3,4
+    const complet: any = calculateScore(
       'Q_MOD_03',
-      Object.fromEntries(itemsDe('Q_MOD_03').slice(0, 3).map((q: any) => [q.id, 8])),
+      Object.fromEntries(itemsDe('Q_MOD_03').map((q: any, i: number) => [q.id, valeurs[i]])),
     );
-    expect(troisPlaintes.average).toBe(3.4);
-    expect(troisPlaintes.interpretation).toBeNull();
+    expect(complet.total).toBe(24);
+    expect(complet.average).toBe(3.4);
+    expect(complet.interpretation).toBeNull();
 
     // Une moyenne entière tombe bien dans sa bande.
     const entier: any = calculateScore(

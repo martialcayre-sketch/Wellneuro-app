@@ -1565,6 +1565,24 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   }
 
   /**
+   * Un axe est MESURÉ dès qu'UN SEUL de ses items est renseigné.
+   *
+   * Même frontière que `totalSousScore`, pour les moteurs qui ne passent pas par
+   * `sumItems` — ceux dont le découpage est codé en dur plutôt que déclaré
+   * (`psqi`, `francis`, `qif`, `berlin`, `idtas_ae`, `sigh_sad_sa`). Ils lisaient
+   * leurs items en `getVal(x) || 0`, si bien que l'absence entrait dans le calcul
+   * sous la valeur la plus basse, indiscernable d'un vrai zéro.
+   *
+   * La frontière est « au moins un item », pas « tous » : un axe partiellement
+   * répondu reste une mesure, sous-estimée mais réelle, et c'est le contrat déjà
+   * posé le 2026-07-29 sur les six moteurs à `subScores`. La compléter en
+   * « incomplet ⇒ non mesuré » serait un autre lot, et un autre arbitrage.
+   */
+  function aUneMesure(ids: any[]) {
+    return (ids || []).some((id: any) => getVal(id) !== null);
+  }
+
+  /**
    * Total global agrégé depuis des sous-scores.
    *
    * Si UN SEUL axe contributeur n'a pas été mesuré, le total n'est plus celui de
@@ -1695,8 +1713,13 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // propre bande d'interprétation et remplace le score global à l'affichage,
     // une dimension ne fait que détailler un total qui reste la mesure. Les
     // confondre effacerait le total et l'interprétation de la fiche patient.
+    //
+    // `total: null` quand aucun item de la dimension n'est renseigné, comme
+    // partout ailleurs. Une dimension n'entre pas dans le total global : son
+    // absence de mesure ne peut donc pas le faire tomber, et `total` reste la
+    // somme de tous les items répondus.
     const dimensions = (sc.dimensions || []).map((d: any) => {
-      const {total: sousTotal} = sumItems(d.items, []);
+      const {total: sousTotal} = totalSousScore(d.items, []);
       return {id: d.id, label: d.label, total: sousTotal, max: d.max ?? null, interpretation: null};
     });
     return {
@@ -1842,9 +1865,6 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── PLAINTES ACTUELLES (source Drive) ─────────────────
   if (sc.type === 'plaintes_actuelles') {
     const items = allQ.map(q => q.id);
-    const {total} = sumItems(items, []);
-    const average = Number((total / items.length).toFixed(1));
-    const interp = interpretRanges(average, sc.interpretation);
     const subScores = (sc.domains || []).map((domain: any) => {
       const value = getVal(domain.item);
       return {
@@ -1855,6 +1875,20 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         interpretation: value === null ? null : interpretRanges(value, sc.interpretation),
       };
     });
+    // Chaque domaine EST un item : « axe non mesuré » et « item manquant » se
+    // confondent ici, et les sept domaines couvrent les sept items. Le total et
+    // la moyenne tombent donc dès qu'une plainte manque.
+    //
+    // Ce que ce moteur faisait : trois plaintes sur sept à 8/10 rendaient 24/70,
+    // moyenne 3,4 — « Intensité faible ou absente », en vert. La moyenne divise
+    // par le nombre d'items, pas par le nombre de réponses : chaque plainte non
+    // renseignée tirait le résultat vers le bas. La consigne de synthèse v10
+    // décrit ce comportement comme un fait acquis ; il cesse d'exister ici, et
+    // v11 la corrige.
+    const {total: brut, missing} = sumItems(items, []);
+    const total = missing > 0 ? null : brut;
+    const average = total === null ? null : Number((total / items.length).toFixed(1));
+    const interp = interpretRanges(average, sc.interpretation);
     return {
       type:'plaintes_actuelles',
       total,
@@ -1902,13 +1936,25 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const q15 = getVal('SIGH_Q015') || 0;
     const q16 = getVal('SIGH_Q016') || 0;
     const q17 = getVal('SIGH_Q017') || 0;
-    const dualRawMax = Math.max(q15, q16, q17);
-    let scoreDual1517 = dualRawMax;
-    if (q17 >= 3 && q17 >= q15 && q17 >= q16) scoreDual1517 = 2;
-    else if (dualRawMax === 2) scoreDual1517 = 1;
-    const scoreGroupeA = sumIds(sc.groupA || []) + scoreDual1517;
-    const scoreGroupeB = sumIds(sc.groupB || []) + scoreDual1517;
-    const total = scoreGroupeA + scoreGroupeB;
+    // Le score corrigé 15-17 est REPORTÉ dans les deux groupes : ses items
+    // appartiennent donc à l'axe A comme à l'axe B, et chacun des deux est
+    // mesuré dès qu'un item de son groupe OU un item 15-17 est renseigné.
+    const dualIds = sc.dualItems || ['SIGH_Q015','SIGH_Q016','SIGH_Q017'];
+    const dualMesure = aUneMesure(dualIds);
+    const dualRawMax = dualMesure ? Math.max(q15, q16, q17) : null;
+    let scoreDual1517: number | null = dualRawMax;
+    if (dualMesure) {
+      if (q17 >= 3 && q17 >= q15 && q17 >= q16) scoreDual1517 = 2;
+      else if (dualRawMax === 2) scoreDual1517 = 1;
+    }
+    const scoreGroupeA = (aUneMesure(sc.groupA || []) || dualMesure)
+      ? sumIds(sc.groupA || []) + (scoreDual1517 ?? 0) : null;
+    const scoreGroupeB = (aUneMesure(sc.groupB || []) || dualMesure)
+      ? sumIds(sc.groupB || []) + (scoreDual1517 ?? 0) : null;
+    // Les deux groupes RECOUPENT leurs items (15-17 compte des deux côtés) : le
+    // total ne se recompose pas par addition de sous-scores disjoints, mais il
+    // tombe pour la même raison qu'ailleurs — un axe non mesuré n'est pas zéro.
+    const total = totalGlobalDepuisSousScores([{total: scoreGroupeA}, {total: scoreGroupeB}]);
     return {
       type:'sigh_sad_sa',
       scoreGroupeA,
@@ -2108,28 +2154,52 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── PSQI ─────────────────────────────────────────────
   if (sc.type === 'psqi') {
+    // GARDE — une composante sans aucun de ses items vaut « non mesurée ».
+    //
+    // Les défauts ci-dessous (23 h, 30 min, 7 h) ne fabriquent plus une
+    // composante entière : ils ne complètent qu'une composante PARTIELLEMENT
+    // renseignée. Sans cette frontière, une seule réponse suffisait à passer la
+    // garde de passation vide (#451), et les six autres composantes retombaient
+    // sur leurs défauts : Q6 seul, à sa PIRE valeur, rendait 3 + 1 + 1 + 0 + 0 +
+    // 0 + 0 = 5 sur 21, « Troubles du sommeil légers ». Un verdict d'ensemble
+    // tiré d'un septième de l'instrument, et rassurant là où la seule réponse
+    // disponible ne l'était pas.
+    const ITEMS_C1 = ['Q6'];
+    const ITEMS_C2 = ['Q2','Q5a'];
+    const ITEMS_C3 = ['Q4'];
+    const ITEMS_C4 = ['Q1','Q3','Q4'];
+    const ITEMS_C6 = ['Q7'];
+    const ITEMS_C7 = ['Q8','Q9'];
+    const c5Items = ['Q5b','Q5c','Q5d','Q5e','Q5f','Q5g','Q5h','Q5i','Q5j'];
+
     const hCoucher = getVal('Q1') || 23;
     const minEndorm = getVal('Q2') || 30;
     const hLever   = getVal('Q3') || 7;
     const hDormies = getVal('Q4') || 7;
     let tLit = hLever - hCoucher;
     if (tLit <= 0) tLit += 24;
-    const efficiency = tLit > 0 ? (hDormies / tLit) * 100 : 0;
-    const C1 = getVal('Q6') || 0;
+    // L'efficacité se calcule sur les horaires : sans eux, ce n'est pas 0 %,
+    // c'est rien. Émise telle quelle au prompt de synthèse, une efficacité
+    // fabriquée se lit comme une mesure de laboratoire.
+    const efficiency = aUneMesure(ITEMS_C4) && tLit > 0 ? (hDormies / tLit) * 100 : null;
+    const C1 = aUneMesure(ITEMS_C1) ? (getVal('Q6') || 0) : null;
     const lat = minEndorm <= 15 ? 0 : minEndorm <= 30 ? 1 : minEndorm <= 60 ? 2 : 3;
     const q5a = getVal('Q5a') || 0;
     const latSum = lat + q5a;
-    const C2 = latSum === 0 ? 0 : latSum <= 2 ? 1 : latSum <= 4 ? 2 : 3;
-    const C3 = hDormies > 7 ? 0 : hDormies >= 6 ? 1 : hDormies >= 5 ? 2 : 3;
-    const C4 = efficiency >= 85 ? 0 : efficiency >= 75 ? 1 : efficiency >= 65 ? 2 : 3;
-    const c5Items = ['Q5b','Q5c','Q5d','Q5e','Q5f','Q5g','Q5h','Q5i','Q5j'];
+    const C2 = aUneMesure(ITEMS_C2) ? (latSum === 0 ? 0 : latSum <= 2 ? 1 : latSum <= 4 ? 2 : 3) : null;
+    const C3 = aUneMesure(ITEMS_C3) ? (hDormies > 7 ? 0 : hDormies >= 6 ? 1 : hDormies >= 5 ? 2 : 3) : null;
+    const C4 = efficiency === null ? null
+             : efficiency >= 85 ? 0 : efficiency >= 75 ? 1 : efficiency >= 65 ? 2 : 3;
     const c5Sum = c5Items.reduce((s, id) => s + (getVal(id) || 0), 0);
-    const C5 = c5Sum === 0 ? 0 : c5Sum <= 9 ? 1 : c5Sum <= 18 ? 2 : 3;
-    const C6 = getVal('Q7') || 0;
+    const C5 = aUneMesure(c5Items) ? (c5Sum === 0 ? 0 : c5Sum <= 9 ? 1 : c5Sum <= 18 ? 2 : 3) : null;
+    const C6 = aUneMesure(ITEMS_C6) ? (getVal('Q7') || 0) : null;
     const c7Sum = (getVal('Q8') || 0) + (getVal('Q9') || 0);
-    const C7 = c7Sum === 0 ? 0 : c7Sum <= 2 ? 1 : c7Sum <= 4 ? 2 : 3;
-    const total = C1 + C2 + C3 + C4 + C5 + C6 + C7;
-    const interp = total <= 4 ? {label:'Pas de trouble du sommeil',color:'success'}
+    const C7 = aUneMesure(ITEMS_C7) ? (c7Sum === 0 ? 0 : c7Sum <= 2 ? 1 : c7Sum <= 4 ? 2 : 3) : null;
+    // Le total du PSQI est sur 21, sept composantes comprises : il ne se somme
+    // pas sur celles qui ont répondu.
+    const total = totalGlobalDepuisSousScores([C1, C2, C3, C4, C5, C6, C7].map(v => ({total: v})));
+    const interp = total === null ? null
+                 : total <= 4 ? {label:'Pas de trouble du sommeil',color:'success'}
                  : total <= 10 ? {label:'Troubles du sommeil légers',color:'info'}
                  : total <= 16 ? {label:'Troubles du sommeil modérés',color:'warning'}
                  : {label:'Troubles du sommeil sévères',color:'danger'};
@@ -2143,7 +2213,7 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         {id:'C6',label:'Médication hypnotique',val:C6},
         {id:'C7',label:'Dysfonction diurne',val:C7},
       ],
-      efficiency: Math.round(efficiency),
+      efficiency: efficiency === null ? null : Math.round(efficiency),
       interpretation: interp
     };
   }
@@ -2162,14 +2232,26 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
   // ── FRANCIS ─────────────────────────────────────────────────
   if (sc.type === 'francis') {
-    const fr2 = getVal('FR_Q002') || getVal('FR1') || 0;
-    const fr3 = (getVal('FR_Q003') || getVal('FR2') || 0) * 10;
-    const fr5 = getVal('FR_Q005') || getVal('FR3') || 0;
-    const fr6 = getVal('FR_Q006');
-    const fr4Legacy = getVal('FR4');
-    const fr6Score = fr6 !== null ? fr6 : (fr4Legacy !== null ? 100 - fr4Legacy : 0);
-    const fr7 = getVal('FR_Q007') || getVal('FR5') || 0;
-    const total = fr2 + fr3 + fr5 + fr6Score + fr7;
+    // GARDE — une composante non renseignée vaut « non mesurée », pas 0.
+    //
+    // Chaque composante est UNE échelle visuelle de 0 à 100 (deux identifiants
+    // possibles : la forme courante `FR_Q00x` et la forme héritée `FRx`). Sans
+    // cette garde, chaque absence entrait dans le total sous sa valeur la plus
+    // basse : un score de Francis calculé sur deux composantes de cinq sortait
+    // dans la bande la plus rassurante de l'échelle de sévérité du côlon
+    // irritable — une réassurance produite par ce que le patient n'a PAS dit.
+    const mesuree = (ids: string[], calcul: () => number) => aUneMesure(ids) ? calcul() : null;
+    const fr2 = mesuree(['FR_Q002','FR1'], () => getVal('FR_Q002') || getVal('FR1') || 0);
+    const fr3 = mesuree(['FR_Q003','FR2'], () => (getVal('FR_Q003') || getVal('FR2') || 0) * 10);
+    const fr5 = mesuree(['FR_Q005','FR3'], () => getVal('FR_Q005') || getVal('FR3') || 0);
+    const fr6Score = mesuree(['FR_Q006','FR4'], () => {
+      const fr6 = getVal('FR_Q006');
+      const fr4Legacy = getVal('FR4');
+      return fr6 !== null ? fr6 : (fr4Legacy !== null ? 100 - fr4Legacy : 0);
+    });
+    const fr7 = mesuree(['FR_Q007','FR5'], () => getVal('FR_Q007') || getVal('FR5') || 0);
+    const total = totalGlobalDepuisSousScores(
+      [fr2, fr3, fr5, fr6Score, fr7].map(v => ({total: v})));
     const interp = interpretRanges(total, sc.interpretation);
     return {type:'francis', total, maxTotal:500,
       components:[
@@ -2347,23 +2429,41 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const countOui = (items: any) => items.reduce((sum: any, id: any) => sum + (getVal(id) === 1 ? 1 : 0), 0);
     const sumVals = (items: any) => items.reduce((sum: any, id: any) => sum + (getVal(id) || 0), 0);
 
-    const partie1 = countOui(['IA1','IA2','IA3','IA4','IA5','IA6','IA7','IA8','IA9']);
-    const gssScore = sumVals(['IG1','IG2','IG3','IG4','IG5','IG6']);
-    const partie3A = sumVals(['IMA1','IMA2','IMA3','IMA4','IMA5','IMA6','IMA7','IMA8','IMA9','IMA10','IMA11','IMA12']);
-    const partie3B = sumVals(['IMB1','IMB2','IMB3','IMB4','IMB5','IMB6','IMB7','IMB8','IMB9','IMB10','IMB11','IMB12']);
-    const partie4 = countOui(['IS1','IS2','IS3','IS4','IS5','IS6','IS7','IS8','IS9']);
+    // GARDE — une partie sans aucun de ses items vaut « non mesurée », pas 0.
+    //
+    // `countOui` et `sumVals` lisaient l'absence comme un « non » et comme un
+    // zéro. Les cinq parties tombaient donc à 0, et le score GSS à 0 décrochait
+    // la bande « Le problème n'est probablement pas saisonnier », en vert : le
+    // verdict le plus rassurant de l'instrument, rendu sur rien.
+    const ITEMS_P1 = ['IA1','IA2','IA3','IA4','IA5','IA6','IA7','IA8','IA9'];
+    const ITEMS_P2 = ['IG1','IG2','IG3','IG4','IG5','IG6'];
+    const ITEMS_P3A = ['IMA1','IMA2','IMA3','IMA4','IMA5','IMA6','IMA7','IMA8','IMA9','IMA10','IMA11','IMA12'];
+    const ITEMS_P3B = ['IMB1','IMB2','IMB3','IMB4','IMB5','IMB6','IMB7','IMB8','IMB9','IMB10','IMB11','IMB12'];
+    const ITEMS_P4 = ['IS1','IS2','IS3','IS4','IS5','IS6','IS7','IS8','IS9'];
 
-    const gssInterpretation = (() => {
+    const partie1 = aUneMesure(ITEMS_P1) ? countOui(ITEMS_P1) : null;
+    const gssScore = aUneMesure(ITEMS_P2) ? sumVals(ITEMS_P2) : null;
+    const partie3A = aUneMesure(ITEMS_P3A) ? sumVals(ITEMS_P3A) : null;
+    const partie3B = aUneMesure(ITEMS_P3B) ? sumVals(ITEMS_P3B) : null;
+    const partie4 = aUneMesure(ITEMS_P4) ? countOui(ITEMS_P4) : null;
+
+    const gssInterpretation = gssScore === null ? null : (() => {
       for (const r of sc.interpretation || []) {
         if (gssScore >= r.gss_min && gssScore <= r.gss_max) return r;
       }
       return null;
     })();
 
+    // Un drapeau dont la prémisse n'est pas mesurée vaut `null`, pas `false` :
+    // `false` affirme « pas d'idéation suicidaire », « pas de dépression
+    // probable », « pas de profil hivernal ». Trois affirmations sur des
+    // questions qui n'ont jamais été posées — et la première est celle que la
+    // source Drive assortit d'une appréciation clinique immédiate.
     const winterHits = (sc.winterMonthsA || []).filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
     const inverseHits = (sc.springSummerMonthsB || []).filter((id: any) => (getVal(id) || 0) > (sc.monthlyPatternThreshold || 4)).length;
-    const winterPatternLikely = winterHits >= (sc.monthlyPatternMinMonths || 3);
-    const inversePatternLikely = inverseHits >= (sc.monthlyPatternMinMonths || 3);
+    const winterPatternLikely = partie3A === null ? null : winterHits >= (sc.monthlyPatternMinMonths || 3);
+    const inversePatternLikely = partie3B === null ? null : inverseHits >= (sc.monthlyPatternMinMonths || 3);
+    const ia9 = getVal('IA9');
 
     return {
       type:'idtas_ae',
@@ -2373,8 +2473,8 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
           label:'Dépistage dépressif',
           total: partie1,
           maxTotal: 9,
-          probableMajorDepression: partie1 > (sc.partie1DepressionThreshold || 5),
-          suicidalIdeation: getVal('IA9') === 1,
+          probableMajorDepression: partie1 === null ? null : partie1 > (sc.partie1DepressionThreshold || 5),
+          suicidalIdeation: ia9 === null ? null : ia9 === 1,
         },
         {
           id:'P2',
@@ -2431,22 +2531,35 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const be2 = getVal('BE2') || 0;
     const be3 = getVal('BE3') || 0;
     const be4 = getVal('BE4') || 0;
-    const cat1Score = be2 + be3 + be4;
-    const cat1Positive = be1 === 1 && cat1Score >= 2;
+    // GARDE — une catégorie sans aucun de ses items est INDÉTERMINÉE, pas
+    // négative. Ce moteur n'appelle pas `interpretRanges` : la garde de #450 ne
+    // le couvrait pas, exactement comme Bristol. Il rendait une bande dans TOUS
+    // les cas, et celle de l'absence était « Risque faible d'apnée du
+    // sommeil — surveillance clinique ». Une seule réponse suffisait à passer la
+    // garde de passation vide, et le Berlin sortait alors rassurant.
+    const cat1Mesuree = aUneMesure(['BE1','BE2','BE3','BE4']);
+    const cat1Score = cat1Mesuree ? be2 + be3 + be4 : null;
+    const cat1Positive = cat1Mesuree ? (be1 === 1 && (cat1Score as number) >= 2) : null;
 
     // Catégorie 2 — Somnolence diurne (items BE5-BE7)
     const be5 = getVal('BE5') || 0;
     const be6 = getVal('BE6') || 0;
     const be7 = getVal('BE7') || 0;
-    const cat2Positive = be5 >= 1 || be6 >= 1 || be7 === 1;
+    const cat2Positive = aUneMesure(['BE5','BE6','BE7']) ? (be5 >= 1 || be6 >= 1 || be7 === 1) : null;
 
     // Catégorie 3 — Facteurs de risque (HTA + IMC)
     const be8 = getVal('BE8') || 0;
     const be9 = getVal('BE9') || 0;
-    const cat3Positive = be8 === 1 || be9 > 30;
+    const cat3Positive = aUneMesure(['BE8','BE9']) ? (be8 === 1 || be9 > 30) : null;
 
-    const posCount = [cat1Positive, cat2Positive, cat3Positive].filter(Boolean).length;
-    const highRisk  = posCount >= 2;
+    // La règle de Berlin est « au moins DEUX catégories positives ». Elle reste
+    // donc CONCLUANTE dans un sens même incomplète : deux positives établissent
+    // le risque élevé quelle que soit la troisième. L'inverse est faux — « moins
+    // de deux » ne se conclut que si les trois catégories ont été mesurées.
+    const categories = [cat1Positive, cat2Positive, cat3Positive];
+    const posCount = categories.filter(c => c === true).length;
+    const indeterminees = categories.filter(c => c === null).length;
+    const highRisk = posCount >= 2 ? true : (indeterminees === 0 ? false : null);
 
     return {
       type: 'berlin',
@@ -2455,9 +2568,13 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         {id:'C2', label:'Somnolence diurne',   positive: cat2Positive},
         {id:'C3', label:'Facteurs de risque',  positive: cat3Positive},
       ],
-      positiveCategoryCount: posCount,
+      // Un décompte n'a de sens que sur un dénominateur connu : « 0 catégorie
+      // positive » sur trois indéterminées se lit comme un résultat négatif.
+      positiveCategoryCount: indeterminees === 0 ? posCount : null,
       highRisk,
-      interpretation: highRisk
+      interpretation: highRisk === null
+        ? null
+        : highRisk
         ? {label:"Risque élevé d'apnée obstructive du sommeil", color:'danger',
            protocol:'Consultation pneumologue — polysomnographie recommandée'}
         : {label:"Risque faible d'apnée du sommeil",            color:'success',
@@ -2495,25 +2612,38 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         funcCount += 1;
       }
     });
-    const funcAverage = funcCount > 0 ? (funcSum / funcCount) : 0;
-    const funcScaled = parseFloat((funcAverage * 3.3).toFixed(1));
+    // GARDE — une composante sans aucun de ses items vaut « non mesurée ».
+    //
+    // Les quatre composantes retombaient à 0, et la bande de tête du QIF est
+    // `total === 0` : « Score peu compatible avec le diagnostic de
+    // fibromyalgie, sauf guérison ou très bonne évolution ». Un questionnaire
+    // laissé vide écartait donc activement le diagnostic qu'il sert à mesurer.
+    // Q12 rend le cas indiscernable pire encore : `(7 - n) × 1.43` vaut 0 pour
+    // un patient qui s'est senti bien les sept jours, exactement comme pour un
+    // patient qui n'a pas répondu.
+    const funcAverage = funcCount > 0 ? (funcSum / funcCount) : null;
+    const funcScaled = funcAverage === null ? null : parseFloat((funcAverage * 3.3).toFixed(1));
 
     // Q12 — Jours ressentis bien (0-7) → (7 - n) × 1.43
     const q12 = getVal('Q12');
-    const q12Score = q12 !== null ? parseFloat(((7 - q12) * 1.43).toFixed(1)) : 0;
+    const q12Score = q12 !== null ? parseFloat(((7 - q12) * 1.43).toFixed(1)) : null;
 
     // Q13 — Jours d'absentéisme (0-7) → n × 1.43
     const q13 = getVal('Q13');
-    const q13Score = q13 !== null ? parseFloat((q13 * 1.43).toFixed(1)) : 0;
+    const q13Score = q13 !== null ? parseFloat((q13 * 1.43).toFixed(1)) : null;
 
     // Q14-Q20 — EVA directs 0 à 10
     const evaItems = ['Q14','Q15','Q16','Q17','Q18','Q19','Q20'];
-    let evaSum = 0;
-    evaItems.forEach(id => { const v = getVal(id); if (v !== null) evaSum += v; });
+    let evaBrut = 0;
+    evaItems.forEach(id => { const v = getVal(id); if (v !== null) evaBrut += v; });
+    const evaSum = aUneMesure(evaItems) ? evaBrut : null;
 
-    const total = parseFloat((funcScaled + q12Score + q13Score + evaSum).toFixed(1));
+    const totalBrut = totalGlobalDepuisSousScores(
+      [funcScaled, q12Score, q13Score, evaSum].map(v => ({total: v})));
+    const total = totalBrut === null ? null : parseFloat(totalBrut.toFixed(1));
 	    const interp =
-	      total === 0 ? {label:'Score peu compatible avec le diagnostic de fibromyalgie, sauf guérison ou très bonne évolution', color:'success'}
+	      total === null ? null
+	    : total === 0 ? {label:'Score peu compatible avec le diagnostic de fibromyalgie, sauf guérison ou très bonne évolution', color:'success'}
 	    : total < 35  ? {label:"Tranche 1 à 34 non explicitement interprétée dans le module professionnel fourni", color:'info'}
 	    : total <= 50 ? {label:"Score qui ne doit pas décevoir si la personne pense être dans une bonne phase ; moins de 40 n'est pas un mauvais score", color:'warning'}
 	    : total <= 65 ? {label:"Peut correspondre à une mauvaise semaine ; re-tester régulièrement et consulter si le score ne s'améliore pas ou s'aggrave", color:'danger'}
@@ -2552,15 +2682,23 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // Requis pour Q_GEO_06 — Phase 1 (/5) + Phase 2 (/5) → total /10
   // Note clinique : rappel différé ≤ 2/5 → évocateur MA (sensibilité 85 %, spécificité 90 %)
   if (sc.type === 'sum_two_phases') {
+    // GARDE — une phase non administrée vaut « non mesurée », pas 0.
+    //
+    // Le test des 5 mots se passe EN DEUX TEMPS séparés par un délai : entre
+    // les deux, la phase de rappel différé n'a normalement pas de réponse. Elle
+    // valait alors 0 sur 5, c'est-à-dire « ≤ 2 » — et l'alerte se déclenchait :
+    // « Rappel différé ≤ 2/5 — évocateur de maladie d'Alzheimer ». Un test
+    // simplement inachevé rendait donc le résultat que ce test sert à chercher.
     const phaseResults = sc.phases.map((ph: any) => {
-      const {total} = sumItems(ph.items, []);
+      const {total} = totalSousScore(ph.items, []);
       return {id: ph.id, label: ph.label, total, maxTotal: ph.maxTotal};
     });
-    const globalTotal = phaseResults.reduce((s: any, p: any) => s + p.total, 0);
+    const globalTotal = totalGlobalDepuisSousScores(phaseResults);
 
-    // Alerte clinique si rappel différé ≤ 2
+    // Alerte clinique si rappel différé ≤ 2 — et `null`, jamais `false`, quand
+    // la phase n'a pas été administrée : `false` affirmerait un rappel préservé.
     const phaseD   = phaseResults.find((p: any) => p.id === 'phase2');
-    const alertMA  = phaseD ? phaseD.total <= 2 : false;
+    const alertMA  = (phaseD && phaseD.total !== null) ? phaseD.total <= 2 : null;
 
     const interp = sc.interpretation ? interpretRanges(globalTotal, sc.interpretation) : null;
     return {
@@ -2569,7 +2707,7 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       total:       globalTotal,
       maxTotal:    sc.maxTotal,
       alertMA,
-      alertLabel:  alertMA ? 'Rappel différé ≤ 2/5 — évocateur de maladie d\'Alzheimer (Dubois 2002)' : null,
+      alertLabel:  alertMA === true ? 'Rappel différé ≤ 2/5 — évocateur de maladie d\'Alzheimer (Dubois 2002)' : null,
       interpretation: interp
     };
   }
@@ -2746,14 +2884,18 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       // Collecter les items de cette partie
       const partItems = allQ.filter(q => part.items.includes(q.id));
 
+      // Même contrat que partout : une partie sans aucun de ses items vaut
+      // « non mesurée ». Ce moteur n'est servi par AUCUN instrument du
+      // catalogue aujourd'hui — `Q_NEU_12` passe par `idtas_ae` — et la garde
+      // y est donc préventive, épinglée par un test sur définition forgée.
       if (part.type === 'count_oui') {
         let count = 0;
         part.items.forEach((id: any) => { const v = getVal(id); if (v === 1) count++; });
         return {id: part.id, label: part.label || part.id, type:'count_oui',
-                count, maxTotal: part.maxTotal};
+                count: aUneMesure(part.items) ? count : null, maxTotal: part.maxTotal};
       }
       if (part.type === 'sum') {
-        const {total} = sumItems(part.items, []);
+        const {total} = totalSousScore(part.items, []);
         return {id: part.id, label: part.label || part.id, type:'sum',
                 total, maxTotal: part.maxTotal};
       }
@@ -2762,9 +2904,9 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
     // Interprétation basée sur le score GSS (P2)
     const gssResult = partResults.find((p: any) => p.id === 'P2');
-    const gssScore  = gssResult ? (gssResult.total || 0) : 0;
+    const gssScore  = gssResult && gssResult.total !== undefined ? gssResult.total : null;
     let interp = null;
-    if (sc.interpretation) {
+    if (sc.interpretation && gssScore !== null) {
       for (const r of sc.interpretation) {
         if (gssScore >= r.gss_min && gssScore <= r.gss_max) { interp = r; break; }
       }
