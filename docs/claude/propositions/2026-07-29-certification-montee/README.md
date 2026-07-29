@@ -46,17 +46,23 @@ sollicitée ni obtenue ». Elles sont redescendues. Détail dans `droits.md`.
 - **[droits.md](droits.md)** — ce que la déclaration règle et ce qu'elle ne règle pas.
   Les 8 instruments sous licence tierce à arbitrer, les 35 échelles tierces non
   instruites, et les pièces que le CI exige désormais à chaque barreau.
+- **[licences-tierces.md](licences-tierces.md)** — une fiche par instrument pour les 8
+  sous licence tierce : ayant droit, ce que le dossier documente vraiment, usage réel en
+  production, candidats du même domaine et leur statut de droits. Mesure décisive :
+  **aucune assignation ouverte, six jamais utilisés**.
 - **[scoring-et-contenu.md](scoring-et-contenu.md)** — les 7 bloqués par une divergence
   critique, le cas `Q_ALI_01` où le banc mesurait la mauvaise forme, sept anomalies de
   moteur relevées en chemin, et l'inscription du verdict du banc au registre.
 
 ## Les quatre choses à trancher en premier
 
-1. **Les huit sous licence tierce** (`droits.md` §1) — obtenir la licence, ou retirer
-   l'instrument du catalogue. Ils restent **assignables aujourd'hui** :
-   `licence_requise` n'est consommé nulle part dans le code. Deux d'entre eux
-   (`Q_PED_02`, `Q_PED_03`) n'ont jamais été passés au banc ; si le sort retenu est le
-   retrait, la dépense n'a pas lieu d'être engagée.
+1. **Les huit sous licence tierce** — fiche par instrument dans
+   [licences-tierces.md](licences-tierces.md), qui propose trois blocs : retirer sans
+   regret (`Q_PED_02`, `Q_PED_03`, jamais utilisés et désavoués par leur propre
+   laboratoire), instruire l'ayant droit (`Q_SOM_02`, `Q_CAN_01`, `Q_CAN_02` — sans
+   substitut au catalogue), arbitrer sur l'usage (`Q_INF_04`, `Q_NEU_11`, `Q_GEO_04`).
+   Ils restent **assignables aujourd'hui** : `licence_requise` n'est consommé nulle part
+   dans le code.
 2. ~~**Le plafond réel de `Q_ALI_01`**~~ — **VÉRIFIÉ le 2026-07-29, rien à trancher.**
    L'étendue réelle du score est 0 à 90 et les quatre bandes sont atteignables. Le
    29 → 52 venait de `bornesExecutees`, un encadrement approché du banc et non l'étendue
