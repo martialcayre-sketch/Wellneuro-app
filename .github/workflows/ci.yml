@@ -96,6 +96,15 @@ jobs:
       - name: Anti-secrets (banc du contrôle)
         run: node --test scripts/check_no_secrets.test.mjs
 
+      # Chiffres du dossier d'arbitrage des droits contre le registre dont ils
+      # sont tirés. VOLONTAIREMENT SANS le garde `docs_only` : ce banc protège un
+      # DOCUMENT, et une PR qui ne touche que des documents est précisément celle
+      # où il doit mordre. L'y soumettre ferait un garde qui saute exactement
+      # quand il servirait. Il n'a besoin ni de npm ni de build — node, et deux
+      # fichiers du dépôt.
+      - name: Dossier des droits (chiffres contre le registre)
+        run: node --test scripts/dossier_droits_42.test.mjs
+
       - name: Campaign rules audit (blocking)
         run: node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
 
