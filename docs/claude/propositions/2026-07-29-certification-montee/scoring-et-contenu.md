@@ -85,23 +85,43 @@ de certification **deux fois**, drapeau éteint puis allumé. Le banc de certifi
 lui, n'a qu'une position. Aucun autre instrument n'est aujourd'hui sous drapeau — la
 portée est limitée à `Q_ALI_01`, mais la lacune est générale.
 
-**b) Le plafond réel de `Q_ALI_01`.** Le balayage du moteur rend **29 → 52** pour un
-maximum déclaré à **90**. Si ce balayage est exhaustif, aucun patient ne peut sortir de
-la fourchette 32 %–58 % d'un score présenté sur 90. À vérifier avant toute lecture
-clinique ; à ne pas confondre avec le plafond à 50 corrigé en #436, qui portait sur une
-cause différente.
+**b) Le plafond de `Q_ALI_01` — VÉRIFIÉ le 2026-07-29, et c'était une fausse alerte.**
+
+Ce document annonçait un balayage rendant **29 → 52** pour un maximum déclaré à 90, et
+demandait de le vérifier avant toute lecture clinique. C'est fait, et le constat tombe :
+**l'étendue réelle du score est 0 à 90**, les quatre bandes sont atteignables, aucun
+point n'est ni inévitable ni hors d'atteinte.
+
+Le 29 → 52 vient de `bornesExecutees`, dont le champ `nature` dit lui-même
+`encadrement_par_balayage` : un encadrement **approché**, qui essaie des motifs de
+réponses et ne cherche pas l'optimum item par item. Sur un moteur `seuils_points` où
+20 items donnent leur point pour une valeur BASSE, un balayage « tout au minimum » puis
+« tout au maximum » ne touche évidemment aucun extrême.
+
+Vérification refaite en construisant, pour chaque item, la réponse qui franchit son
+seuil et celle qui ne le franchit pas — avec le prédicat `seuilAtteint` **copié du
+moteur** plutôt que réécrit, la première tentative ayant ignoré la forme `egal` et
+produit un faux plancher à 41.
+
+**Leçon à retenir** : `bornesExecutees` du banc est un encadrement, pas l'étendue. Ne
+jamais en tirer une conclusion clinique sans la reconstruire.
 
 ## 3. Anomalies de moteur relevées en chemin
 
-Vérifiées directement sur `empreinte-servie.json`, pas sur la seule parole des
-lecteurs. Elles ne relèvent pas de la certification : elles alimentent le lot moteur,
-qui est séparé.
+Vérifiées sur `empreinte-servie.json`, pas sur la seule parole des lecteurs. Elles ne
+relèvent pas de la certification : elles alimentent le lot moteur, qui est séparé.
+
+**Une de ces sept lignes était fausse**, et la relecture du 2026-07-29 l'a retirée :
+vérifier sur l'empreinte du banc n'est pas vérifier sur le moteur. Les six autres ont
+été reconfirmées en scorant de vrais jeux de réponses — `Q_TAB_04` atteint bien 36 pour
+un maximum déclaré à 32, `Q_NEU_05` rend bien un minimum supérieur à son maximum, et
+`Q_STR_06` n'a bien aucun total global.
 
 | Instrument | Fait mesuré | Portée |
 |---|---|---|
 | `Q_NEU_05` (UPPS) | Le balayage rend un **minimum (120) supérieur au maximum (105)**, aucun total maximal déclaré. | L'étendue réellement servie n'est pas établie. |
 | `Q_TAB_04` | Maximum déclaré **32**, total réellement atteignable **36**. | Un score peut dépasser son propre plafond affiché. |
-| `Q_ALI_01` | Balayage **29 → 52** pour un maximum déclaré **90** ; **20 inversions appliquées, 0 déclarée**. | Voir §2. |
+| ~~`Q_ALI_01`~~ | **RETIRÉ** — les deux constats étaient des artefacts du banc. L'étendue réelle est 0 à 90 ; les « 20 inversions appliquées, 0 déclarée » sont la conception du barème (20 items donnent le point pour une valeur basse : moins de sucre, plus de points). | Voir §2b. |
 | `Q_STR_06` (Karasek) | **5 inversions appliquées, 0 déclarée** ; aucune borne exécutable. | L'inversion n'est vérifiable que par le comportement du moteur. |
 | `Q_STR_04` (DASS-21) | **3 bandes sans bornes ni libellé.** | La sévérité par sous-échelle n'est rattachée à aucun palier. |
 | `Q_MOD_01` | **7 bandes sans bornes.** | La couche d'interprétation servie s'écarte du référentiel SIIN. |
