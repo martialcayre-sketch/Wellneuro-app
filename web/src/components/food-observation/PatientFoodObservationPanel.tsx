@@ -2,20 +2,32 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
+  CONTEXTES_PRISE,
   FRICTIONS,
   LABELS_ISSUE_TRACE,
+  LABELS_MOMENT_PRISE,
+  LABELS_TYPE_JOURNEE,
   LABEL_PAUSE_PATIENT,
+  MOMENTS_PRISE,
+  buildEpisodeCalibrage,
   buildEpisodeDepuisProtocole,
+  couvertureJournees,
+  createJourneeRepere,
+  describeCouvertureJournees,
+  typeJourneeParDefaut,
   createAttentionBudget,
   createTrialTrace,
   declarePatientPause,
   describeCoverage,
   type FoodObservationEpisode,
   type IntraEpisodeSolution,
+  type JourneeRepere,
   type MinimalPlanEvent,
   type PatientPauseEvent,
+  type MomentPrise,
   type TraceIssue,
   type TrialTrace,
+  type TypeJournee,
 } from '@/lib/food-observation';
 import { PatientCard } from '@/components/patient/ui/PatientCard';
 import { PatientButton } from '@/components/patient/ui/PatientButton';
@@ -44,6 +56,9 @@ type VueProtocolePatient = {
   debutCycle: string;
 };
 
+/** Ancre du bilan de calibrage, servie tant qu'aucun protocole n'est diffusé. */
+type AncreCalibrage = { ancre: string; debut: string };
+
 // Hors cycle, les traces restent rattachées à un identifiant local explicite :
 // elles ne quittent pas l'appareil, faute d'épisode à transmettre.
 function episodeIdHorsCycle(idPatient: string): string {
@@ -56,6 +71,7 @@ type PatientFoodObservationDraft = {
   pauses: PatientPauseEvent[];
   plans: MinimalPlanEvent[];
   solutions: IntraEpisodeSolution[];
+  journees: JourneeRepere[];
   /** Tête de chaîne des transmissions déjà faites depuis cet appareil. */
   dernierEnvoiDraftId?: string;
 };
@@ -100,6 +116,8 @@ function readDraft(idPatient: string | null): PatientFoodObservationDraft | null
       pauses: parsed.pauses,
       plans: parsed.plans,
       solutions: parsed.solutions,
+      // Facultatif : un brouillon écrit avant le lot 3 n'en porte pas.
+      journees: Array.isArray(parsed.journees) ? parsed.journees : [],
       dernierEnvoiDraftId:
         typeof parsed.dernierEnvoiDraftId === 'string' ? parsed.dernierEnvoiDraftId : undefined,
     };
@@ -144,6 +162,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
   const [pauses, setPauses] = useState<PatientPauseEvent[]>(() => initialDraft?.pauses ?? []);
   const [plans, setPlans] = useState<MinimalPlanEvent[]>(() => initialDraft?.plans ?? []);
   const [solutions, setSolutions] = useState<IntraEpisodeSolution[]>(() => initialDraft?.solutions ?? []);
+  const [journees, setJournees] = useState<JourneeRepere[]>(() => initialDraft?.journees ?? []);
 
   const [budget, setBudget] = useState<number>(() => {
     if (!initialDraft) return 3;
@@ -159,6 +178,11 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
   const [frictionCode, setFrictionCode] = useState('');
   const [motLibre, setMotLibre] = useState('');
   const [solutionInput, setSolutionInput] = useState('');
+  const [typeJournee, setTypeJournee] = useState<TypeJournee>(() => typeJourneeParDefaut(dateLocale(new Date())));
+  const [nombrePrises, setNombrePrises] = useState(3);
+  const [momentsJournee, setMomentsJournee] = useState<MomentPrise[]>([]);
+  const [contexteJournee, setContexteJournee] = useState('');
+  const [rienDeParticulier, setRienDeParticulier] = useState(false);
   const [decision, setDecision] = useState<PatientDecision | null>(null);
   const [decisionLoading, setDecisionLoading] = useState<boolean>(true);
   const [error, setError] = useState('');
@@ -200,9 +224,10 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
       pauses,
       plans,
       solutions,
+      journees,
       dernierEnvoiDraftId: derniereTransmission?.draftId,
     });
-  }, [budget, traces, pauses, plans, solutions, idPatient, derniereTransmission]);
+  }, [budget, traces, pauses, plans, solutions, journees, idPatient, derniereTransmission]);
 
   // L'épisode vient du protocole diffusé, jamais d'un gabarit local.
   useEffect(() => {
@@ -223,10 +248,20 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
           ok: boolean;
           protocoleDiffuse?: boolean;
           vue?: VueProtocolePatient | null;
+          calibrage?: AncreCalibrage | null;
         };
         if (!mounted) return;
         if (!res.ok || !json.ok || !json.protocoleDiffuse || !json.vue) {
-          setEpisode(null);
+          // Avant le protocole, le carnet n'est pas muet : il ouvre un bilan de
+          // calibrage, transmissible, que le protocole diffusé remplacera.
+          setEpisode(json.calibrage
+            ? buildEpisodeCalibrage({
+                idPatient,
+                ancre: json.calibrage.ancre,
+                debut: json.calibrage.debut,
+                budget: createAttentionBudget(budget),
+              })
+            : null);
           return;
         }
         setEpisode(buildEpisodeDepuisProtocole({
@@ -331,8 +366,9 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
     // notes : elles relèvent d'une période antérieure. Le dire plutôt que
     // d'envoyer un instantané vide et de rendre un succès trompeur.
     const aTransmettre = duCycle(traces).length + duCycle(pauses).length
-      + duCycle(plans).length + duCycle(solutions).length;
-    const enLocal = traces.length + pauses.length + plans.length + solutions.length;
+      + duCycle(plans).length + duCycle(solutions).length + duCycle(journees).length;
+    const enLocal = traces.length + pauses.length + plans.length + solutions.length
+      + journees.length;
     if (aTransmettre === 0 && enLocal > 0) {
       setErreurEnvoi('Vos notes datent d’une période précédente : rien à transmettre pour la période en cours.');
       return;
@@ -351,6 +387,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
           pauses: duCycle(pauses),
           plans: duCycle(plans),
           solutions: duCycle(solutions),
+          journees: duCycle(journees),
           // Le panneau patient ne tient pas de carrière d'action : le contrat
           // serveur exige le tableau, il part vide plutôt qu'absent.
           actionCareer: [],
@@ -426,6 +463,41 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
     setPlans(prev => [plan, ...prev]);
   };
 
+  // Une journée par date : le domaine refuse le doublon à l'enregistrement de
+  // l'instantané, autant le dire ici plutôt que de laisser le patient saisir
+  // deux fois puis buter à la transmission.
+  const addJournee = () => {
+    setError('');
+    const dateDuJour = dateLocale(new Date());
+    if (journees.some(j => j.localDate === dateDuJour)) {
+      setError('Cette journée est déjà décrite. Modifiez-la en réinitialisant votre brouillon local.');
+      return;
+    }
+    try {
+      const journee = createJourneeRepere({
+        journeeId: makeId('journee'),
+        episodeId: episodeIdSaisie,
+        localDate: dateDuJour,
+        typeJournee,
+        nombrePrises: rienDeParticulier ? undefined : nombrePrises,
+        momentsObserves: rienDeParticulier ? [] : momentsJournee,
+        contexte: rienDeParticulier || !contexteJournee ? undefined : contexteJournee,
+        rienDeParticulier,
+      });
+      setJournees(prev => [journee, ...prev]);
+      setMomentsJournee([]);
+      setContexteJournee('');
+      setRienDeParticulier(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Impossible d’enregistrer cette journée.');
+    }
+  };
+
+  const basculerMoment = (moment: MomentPrise) => {
+    setMomentsJournee(prev =>
+      prev.includes(moment) ? prev.filter(m => m !== moment) : [...prev, moment]);
+  };
+
   const addSolution = () => {
     const label = solutionInput.trim();
     if (!label) return;
@@ -450,6 +522,7 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
     setPauses([]);
     setPlans([]);
     setSolutions([]);
+    setJournees([]);
     setOccasionPresentee(true);
     setFaisable('oui');
     setIssue('fait');
@@ -491,6 +564,13 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
                 Période du {episode.startDate} au {episode.endDate}.
               </p>
             </PatientCard>
+          </div>
+        ) : episode?.content.regime === 'calibrage' ? (
+          <div data-testid="ja-patient-calibrage">
+            <PatientInlineMessage tone="info">
+              Aucune action n’a encore été décidée en consultation. Décrivez quelques journées :
+              elles aideront à choisir ce qui vous conviendra.
+            </PatientInlineMessage>
           </div>
         ) : (
           <div data-testid="ja-patient-sans-cycle">
@@ -538,6 +618,97 @@ export function PatientFoodObservationPanel({ idPatient }: { idPatient: string |
           </div>
         </PatientCard>
       </div>
+
+      {/* Bilan de calibrage (lot 3) : la journée repère répond à une autre
+          question que la trace d'essai — à quoi ressemble une journée — et ne
+          s'affiche qu'en régime `calibrage`. En régime essai, le carnet reste
+          ce qu'il est. */}
+      {episode?.content.regime === 'calibrage' && (
+        <div data-testid="ja-patient-journee">
+          <PatientCard className="space-y-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Décrire la journée d’aujourd’hui
+            </p>
+
+            <PatientField label="Quel genre de journée était-ce ?">
+              <select
+                data-testid="ja-patient-type-journee"
+                className={patientInputClassName}
+                value={typeJournee}
+                onChange={(e) => setTypeJournee(e.target.value as TypeJournee)}
+              >
+                {Object.entries(LABELS_TYPE_JOURNEE).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </PatientField>
+
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                data-testid="ja-patient-rien-de-particulier"
+                type="checkbox"
+                checked={rienDeParticulier}
+                onChange={(e) => setRienDeParticulier(e.target.checked)}
+              />
+              Rien de particulier à signaler pour cette journée
+            </label>
+
+            {!rienDeParticulier && (
+              <>
+                <PatientField label="Combien de prises alimentaires ?">
+                  <select
+                    data-testid="ja-patient-nombre-prises"
+                    className={patientInputClassName}
+                    value={nombrePrises}
+                    onChange={(e) => setNombrePrises(Number(e.target.value))}
+                  >
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </PatientField>
+
+                <fieldset className="space-y-2">
+                  <legend className="text-sm text-muted-foreground">À quels moments ?</legend>
+                  {MOMENTS_PRISE.map(moment => (
+                    <label key={moment} className="flex items-center gap-2 text-sm text-foreground">
+                      <input
+                        data-testid={`ja-patient-moment-${moment}`}
+                        type="checkbox"
+                        checked={momentsJournee.includes(moment)}
+                        onChange={() => basculerMoment(moment)}
+                      />
+                      {LABELS_MOMENT_PRISE[moment]}
+                    </label>
+                  ))}
+                </fieldset>
+
+                <PatientField label="Dans quel contexte, principalement ?">
+                  <select
+                    data-testid="ja-patient-contexte"
+                    className={patientInputClassName}
+                    value={contexteJournee}
+                    onChange={(e) => setContexteJournee(e.target.value)}
+                  >
+                    <option value="">Sans précision</option>
+                    {CONTEXTES_PRISE.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </PatientField>
+              </>
+            )}
+
+            <PatientButton
+              data-testid="ja-patient-enregistrer-journee"
+              className="w-full sm:w-auto"
+              onClick={addJournee}
+            >
+              Enregistrer cette journée
+            </PatientButton>
+
+            <p className="text-sm text-muted-foreground" data-testid="ja-patient-couverture-journees">
+              {describeCouvertureJournees(couvertureJournees(journees))}
+            </p>
+          </PatientCard>
+        </div>
+      )}
 
       <div data-testid="ja-patient-formulaire-trace">
         <PatientCard className="space-y-4">

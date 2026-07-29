@@ -21,7 +21,28 @@ const PROTOCOLE_DIFFUSE = {
   },
 };
 
-function mockRoutes(options: { protocole?: unknown; snapshots?: unknown[]; postJa?: () => Response } = {}) {
+// Protocole diffusé dont l'épisode dérivé est en régime `calibrage` : c'est le
+// seul régime où la journée repère se saisit.
+const PROTOCOLE_CALIBRAGE = {
+  ...{ ok: true, protocoleDiffuse: true },
+  vue: {
+    purpose: 'Observer trois à cinq journées avant de décider.',
+    actionPrincipale: {
+      type: 'alimentation',
+      title: 'Décrire quelques journées',
+      minimalPlan: 'Trois à cinq journées suffisent.',
+    },
+    cycleRef: 'abcdef0123456789',
+    debutCycle: '2026-07-20T08:00:00.000Z',
+  },
+};
+
+function mockRoutes(options: {
+  protocole?: unknown;
+  calibrage?: { ancre: string; debut: string } | null;
+  snapshots?: unknown[];
+  postJa?: () => Response;
+} = {}) {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url.includes('/api/portail/ja/decision')) {
@@ -29,7 +50,12 @@ function mockRoutes(options: { protocole?: unknown; snapshots?: unknown[]; postJ
     }
     if (url.includes('/api/portail/protocole')) {
       return new Response(
-        JSON.stringify(options.protocole ?? { ok: true, protocoleDiffuse: false, vue: null }),
+        JSON.stringify(options.protocole ?? {
+          ok: true,
+          protocoleDiffuse: false,
+          vue: null,
+          calibrage: options.calibrage ?? null,
+        }),
         { status: 200 },
       );
     }
@@ -332,6 +358,65 @@ describe('PatientFoodObservationPanel', () => {
 
     expect(await screen.findByText('Corps de requête incomplet.')).toBeTruthy();
     expect(screen.getByText(/· Je l’ai fait/i)).toBeTruthy();
+  });
+
+  // Lot 3 — la journée repère ne s'ouvre qu'en régime calibrage.
+  // Lot 3 — avant le protocole, le carnet ouvre un bilan de calibrage : la
+  // journée repère s'y saisit, et elle est transmissible.
+  it('ouvre le bilan de calibrage quand aucun protocole n’est diffusé', async () => {
+    mockRoutes({ calibrage: { ancre: 'ASS_1', debut: '2026-07-20' } });
+    await rendrePret();
+
+    await screen.findByTestId('ja-patient-calibrage');
+    expect(screen.getByTestId('ja-patient-journee')).toBeTruthy();
+    expect(screen.getByTestId('ja-patient-transmettre')).toBeTruthy();
+  });
+
+  it('reste local quand il n’y a même pas d’assignation', async () => {
+    mockRoutes({ calibrage: null });
+    await rendrePret();
+
+    await screen.findByTestId('ja-patient-sans-cycle');
+    expect(screen.queryByTestId('ja-patient-journee')).toBeNull();
+    expect(screen.queryByTestId('ja-patient-transmettre')).toBeNull();
+  });
+
+  it('enregistre une journée et la transmet sous l’épisode de calibrage', async () => {
+    mockRoutes({ calibrage: { ancre: 'ASS_1', debut: '2026-07-20' } });
+    await rendrePret();
+
+    await screen.findByTestId('ja-patient-journee');
+    fireEvent.change(screen.getByTestId('ja-patient-type-journee'), { target: { value: 'repos' } });
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-journee'));
+    fireEvent.click(screen.getByTestId('ja-patient-transmettre'));
+
+    await waitFor(() => {
+      const post = vi.mocked(fetch).mock.calls.find(([url, init]) =>
+        String(url).includes('/api/portail/ja/observations') && init?.method === 'POST');
+      const corps = JSON.parse(String(post?.[1]?.body));
+      expect(corps.episode.episodeId).toBe('ja_PAT_TEST_calibrage_ASS_1');
+      expect(corps.journees).toHaveLength(1);
+      expect(corps.journees[0].typeJournee).toBe('repos');
+    });
+  });
+
+  it('refuse deux descriptions du même jour', async () => {
+    mockRoutes({ calibrage: { ancre: 'ASS_1', debut: '2026-07-20' } });
+    await rendrePret();
+
+    await screen.findByTestId('ja-patient-journee');
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-journee'));
+    fireEvent.click(screen.getByTestId('ja-patient-enregistrer-journee'));
+
+    expect(screen.getByText(/déjà décrite/i)).toBeTruthy();
+  });
+
+  it('n’offre pas la saisie de journée en régime essai', async () => {
+    mockRoutes({ protocole: PROTOCOLE_DIFFUSE });
+    await rendrePret();
+
+    await screen.findByTestId('ja-patient-action-cycle');
+    expect(screen.queryByTestId('ja-patient-journee')).toBeNull();
   });
 
   it('réinitialise le brouillon local', async () => {

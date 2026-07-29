@@ -439,12 +439,23 @@ test('route patient : accès Mon carnet alimentaire (JA5-02, renommé SP-CONV LO
   await expect(page).toHaveURL(new RegExp(`/portail/${PATIENT.idPatient}/alimentation$`));
   await expect(page.getByRole('heading', { name: 'Mon carnet alimentaire' })).toBeVisible();
 
-  // Lot 2, item 5 : sans protocole diffusé, aucune action n'est affichée et la
-  // transmission n'est pas proposée — mais la saisie reste ouverte.
-  await expect(page.getByTestId('ja-patient-sans-cycle')).toBeVisible();
-  await expect(page.getByTestId('ja-patient-transmettre')).toHaveCount(0);
+  // Lot 2, item 5 : aucune action décidée en consultation n'est affichée tant
+  // qu'aucun protocole n'est diffusé.
+  await expect(page.getByTestId('ja-patient-action-cycle')).toHaveCount(0);
+
+  // Lot 3 : cet état n'est plus un cul-de-sac — il ouvre le bilan de calibrage,
+  // et ce que le patient y décrit peut être transmis.
+  await expect(page.getByTestId('ja-patient-calibrage')).toBeVisible();
+  await expect(page.getByTestId('ja-patient-journee')).toBeVisible();
+
   await page.getByTestId('ja-patient-enregistrer-trace').click();
   await expect(page.getByTestId('ja-patient-historique')).toContainText('Je l’ai fait');
+
+  await page.getByTestId('ja-patient-type-journee').selectOption('repos');
+  await page.getByTestId('ja-patient-enregistrer-journee').click();
+  // La couverture nomme un apport, jamais un défaut.
+  await expect(page.getByTestId('ja-patient-couverture-journees'))
+    .toContainText('aiderait à comprendre ce qui change');
 });
 
 // Lot 2, item 4 : l'écriture patient est branchée. La route ne connaissait

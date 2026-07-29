@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma, reconstructProtocolDraft, resolvePatientFoodCompassView } = vi.hoisted(() => ({
   prisma: {
-    assignation: { findFirst: vi.fn() },
+    assignation: { findFirst: vi.fn(), findUnique: vi.fn() },
     patient: { findUnique: vi.fn() },
     protocolDiffusionApproval: { findMany: vi.fn() },
     protocolDraft: { findUnique: vi.fn(), findMany: vi.fn() },
@@ -27,6 +27,8 @@ function proprioCookie(): string {
 }
 function mockOwnerAuth(): void {
   prisma.assignation.findFirst.mockResolvedValue(assignation);
+  // Ancre du bilan de calibrage : servie tant qu'aucun protocole n'est diffusé.
+  prisma.assignation.findUnique.mockResolvedValue({ dateAssignation: new Date('2026-07-20T00:00:00Z') });
   prisma.patient.findUnique.mockResolvedValue({ idPatient: assignation.idPatient, actif: true, accessToken: 'TOK_PROPRIO', accessTokenRevoked: false, email: assignation.emailPatient });
 }
 function request(cookie?: string): Request {
@@ -76,6 +78,10 @@ describe('GET /api/portail/protocole', () => {
     expect(res.status).toBe(200);
     expect(json.protocoleDiffuse).toBe(false);
     expect(json.vue).toBeNull();
+    // Le carnet n'est pas muet avant le protocole : il reçoit l'ancre du bilan
+    // de calibrage, ancrée sur l'assignation et non sur l'horloge.
+    expect((json as unknown as { calibrage: { ancre: string; debut: string } }).calibrage)
+      .toEqual({ ancre: 'ASS_1', debut: '2026-07-20' });
   });
 
   it('dérive une vue patient-safe (title+minimalPlan uniquement) (200)', async () => {

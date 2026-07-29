@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { prisma, listSnapshots, saveSnapshot, readPatientSession, isSessionValideForPatient, resolveProtocoleDiffuse } = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
+    assignation: { findFirst: vi.fn() },
   },
   listSnapshots: vi.fn(),
   saveSnapshot: vi.fn(),
@@ -63,6 +64,7 @@ describe('api/portail/ja/observations', () => {
       email: 'sophie.nicola@example.test',
     });
     isSessionValideForPatient.mockReturnValue(true);
+    prisma.assignation.findFirst.mockResolvedValue({ idAssignation: 'ASS_1' });
     resolveProtocoleDiffuse.mockResolvedValue({
       protocolDraftId: 'PD_1',
       protocolDraftInputHash: 'abcdef0123456789ZZZZ',
@@ -186,7 +188,9 @@ describe('api/portail/ja/observations', () => {
     expect(saveSnapshot).not.toHaveBeenCalled();
   });
 
-  it('POST refuse quand plus aucun protocole n’est diffusé', async () => {
+  // Sans protocole diffusé, l'identité légitime est celle du bilan de calibrage
+  // — et elle seule : un épisode de cycle n'a plus cours.
+  it('POST refuse un épisode de cycle quand plus aucun protocole n’est diffusé', async () => {
     resolveProtocoleDiffuse.mockResolvedValue(null);
     const res = await POST(
       new Request('http://localhost/api/portail/ja/observations', {
@@ -198,6 +202,24 @@ describe('api/portail/ja/observations', () => {
 
     expect(res.status).toBe(409);
     expect(saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('POST accepte le bilan de calibrage tant qu’aucun protocole n’est diffusé', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    saveSnapshot.mockResolvedValue({ draftId: 'JA_DRAFT_CAL' });
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          episode: { ...payload.episode, episodeId: 'ja_PAT_TEST_calibrage_ASS_1' },
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(saveSnapshot).toHaveBeenCalled();
   });
 
   // Le patient ne chaîne que sur ses propres transmissions : le filtre est posé

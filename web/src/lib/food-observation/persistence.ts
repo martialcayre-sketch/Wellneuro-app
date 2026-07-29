@@ -4,6 +4,7 @@ import type {
   ActionCareer,
   FoodObservationEpisode,
   IntraEpisodeSolution,
+  JourneeRepere,
   MinimalPlanEvent,
   PatientPauseEvent,
   TrialTrace,
@@ -24,6 +25,12 @@ export type JaObservationSnapshotInput = {
   plans: MinimalPlanEvent[];
   solutions: IntraEpisodeSolution[];
   actionCareer: ActionCareer[];
+  /**
+   * Journées repères du bilan de calibrage (lot 3). Facultatif : les
+   * instantanés d'avant ce lot n'en portent pas, et un épisode en régime
+   * `essai` n'en produit aucune.
+   */
+  journees?: JourneeRepere[];
   supersedesDraftId?: string;
   actor: 'praticien' | 'patient';
 };
@@ -40,6 +47,7 @@ export type JaObservationSnapshot = {
   plansCount: number;
   solutionsCount: number;
   careersCount: number;
+  journeesCount: number;
 };
 
 export type JaMilestone = 'J7' | 'J14' | 'J21';
@@ -126,11 +134,13 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
   // bornée.
   const MAX_ELEMENTS_PAR_LISTE = 200;
 
+  const journees = input.journees ?? [];
   const evenements: { evenements: { episodeId: string }[]; nom: string }[] = [
     { evenements: input.traces, nom: 'traces' },
     { evenements: input.pauses, nom: 'pauses' },
     { evenements: input.plans, nom: 'plans' },
     { evenements: input.solutions, nom: 'solutions' },
+    { evenements: journees, nom: 'journées' },
   ];
   for (const { evenements: liste, nom } of evenements) {
     if (liste.length > MAX_ELEMENTS_PAR_LISTE) {
@@ -139,6 +149,13 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
     if (liste.some(item => item.episodeId !== episode.episodeId)) {
       throw new TypeError(`Instantané JA incohérent : des ${nom} relèvent d’un autre épisode.`);
     }
+  }
+  // Une journée par date : sans cette garde, deux descriptions du même mardi
+  // compteraient deux fois et la couverture par types redeviendrait un volume —
+  // exactement le défaut retiré au lot 1 côté traces.
+  const datesJournees = new Set(journees.map(j => j.localDate));
+  if (datesJournees.size !== journees.length) {
+    throw new TypeError('Instantané JA incohérent : deux journées repères portent la même date.');
   }
   if (input.actionCareer.length > MAX_ELEMENTS_PAR_LISTE) {
     throw new TypeError('Instantané JA hors bornes : trop d’éléments de carrière d’action.');
@@ -154,6 +171,7 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
     plans: input.plans,
     solutions: input.solutions,
     actionCareer: input.actionCareer,
+    journees,
   };
 
   const draftId = buildDraftId(episode.episodeId, capturedAt);
@@ -194,6 +212,7 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
     plans?: unknown[];
     solutions?: unknown[];
     actionCareer?: unknown[];
+    journees?: unknown[];
   };
 
   return {
@@ -208,6 +227,7 @@ export async function saveJaObservationSnapshot(input: JaObservationSnapshotInpu
     plansCount: Array.isArray(data.plans) ? data.plans.length : 0,
     solutionsCount: Array.isArray(data.solutions) ? data.solutions.length : 0,
     careersCount: Array.isArray(data.actionCareer) ? data.actionCareer.length : 0,
+    journeesCount: Array.isArray(data.journees) ? data.journees.length : 0,
   };
 }
 
@@ -253,6 +273,7 @@ export async function listJaObservationSnapshots(
       plans?: unknown[];
       solutions?: unknown[];
       actionCareer?: unknown[];
+      journees?: unknown[];
     };
 
     return {
@@ -267,6 +288,7 @@ export async function listJaObservationSnapshots(
       plansCount: Array.isArray(data.plans) ? data.plans.length : 0,
       solutionsCount: Array.isArray(data.solutions) ? data.solutions.length : 0,
       careersCount: Array.isArray(data.actionCareer) ? data.actionCareer.length : 0,
+      journeesCount: Array.isArray(data.journees) ? data.journees.length : 0,
     };
   });
 }

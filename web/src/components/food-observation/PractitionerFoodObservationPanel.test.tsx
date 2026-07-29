@@ -47,8 +47,15 @@ describe('PractitionerFoodObservationPanel', () => {
     vi.unstubAllGlobals();
   });
 
-  it('affiche le constat direct initial sans trace', () => {
+  // Lot 3 — le constat porte sur une période RÉELLE. Le décompte de jours sans
+  // trace était un 7 en dur : il affirmait « 7 jours » dès que la liste était
+  // vide, sans qu'aucun jour ne soit compté. Sans épisode, il n'y a pas de
+  // période — donc pas de constat.
+  it('affiche le constat direct sans trace, une fois la période connue', async () => {
     render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    expect(screen.queryByText(/Aucune trace sur la période/i)).toBeNull();
+
+    await screen.findByTestId('ja-praticien-cycle');
     expect(screen.getByText(/Aucune trace sur la période/i)).toBeTruthy();
   });
 

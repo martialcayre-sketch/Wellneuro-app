@@ -1,5 +1,11 @@
 import { LABEL_PAUSE_PATIENT, LABELS_CONSTATS_DIRECTS } from './labels';
-import type { AttentionBudget, DirectFinding, FourReadings } from './types';
+import type {
+  AttentionBudget,
+  CouvertureJournees,
+  DirectFinding,
+  FourReadings,
+  TypeJournee,
+} from './types';
 
 /**
  * Restitutions simples du domaine — affichage-avant-moteurs (A7-14) : au
@@ -90,6 +96,42 @@ export function listDirectFindings(input: {
   }
   return findings;
 }
+
+/**
+ * Restitution de la couverture du bilan de calibrage, par TYPES de journées
+ * (lot 3). C'est la seule fonction du domaine qui suggère quelque chose —
+ * l'arbitrage du 2026-07-28 revient sur « affichage d'abord, aucun moteur »
+ * (A7-11 amendé) pour ce point précis.
+ *
+ * Trois règles de rédaction, tenues ici et pas ailleurs :
+ * 1. elle SUGGÈRE, elle ne conclut jamais que l'observation suffit — le
+ *    verdict de suffisance retiré au lot 1 ne revient pas par cette porte ;
+ * 2. elle dit ce qu'une journée APPORTERAIT, jamais ce qui ferait défaut :
+ *    « manque » est un terme interdit (`TERMES_INTERDITS_SILENCE`) et
+ *    `assertNeutre` lèverait ;
+ * 3. aucun compte n'est comparé à un seuil affiché, aucun pourcentage.
+ */
+export function describeCouvertureJournees(couverture: CouvertureJournees): string {
+  const journees = couverture.compte > 1 ? 'journées' : 'journée';
+  const base = `${couverture.compte} ${journees} décrite${couverture.compte > 1 ? 's' : ''}`;
+
+  const prochain = couverture.typesAbsents[0];
+  if (prochain === undefined) return assertNeutre(base);
+
+  return assertNeutre(`${base}. ${SUGGESTIONS_TYPE_ABSENT[prochain]}`);
+}
+
+/**
+ * Une phrase par type absent, à l'indicatif d'aide. Formulations reprises de
+ * l'audit du 2026-07-26, qui les avait écrites ainsi précisément parce
+ * qu'elles nomment un apport et non un défaut.
+ */
+const SUGGESTIONS_TYPE_ABSENT: Record<TypeJournee, string> = {
+  travail_matin: 'Une journée de poste du matin aiderait à comprendre ce qui change.',
+  travail_apres_midi: 'Une journée de poste d’après-midi aiderait à comprendre ce qui change.',
+  repos: 'Une journée sans travail aiderait à comprendre ce qui change.',
+  week_end: 'Une journée de week-end aiderait à comprendre ce qui change.',
+};
 
 /**
  * Restitution de la pause déclarée par le patient — distincte de l'absence
