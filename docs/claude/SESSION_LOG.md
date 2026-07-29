@@ -835,3 +835,21 @@ de #438).
 
 **Questions ouvertes** : les deux booléens cliniques de `Q_NEU_12` livrés sans
 consigne ; l'audit des lignes héritées partielles, dont dépend la réserve `atRisk`.
+
+## 2026-07-29 — Certification des instruments, et trois lots moteur
+
+**Décisions** : 10 instruments montés à `scoring_verifie`, 49 sortis du premier barreau
+(#448) ; le vérificateur du CI exige désormais ses pièces à chaque barreau. Le moteur ne
+rend plus de bande par défaut (#450), plus de verdict sur une passation vide (#451), et
+un axe non répondu vaut « non mesuré » (#456). Deux corrections de dossier (#452, #453).
+
+**Écarté** : dégager les 43 `a_verifier` sur la déclaration de droits — elle porte sur
+les supports SIIN, dont aucun des 43 ne relève ; reformuler les items sous licence — une
+paraphrase reste dérivée et détruit l'instrument.
+
+**Prochaine action** : arbitrer les 8 sous licence tierce ; aucune assignation ouverte,
+six jamais utilisés.
+
+**Questions ouvertes** : 8 instruments via 7 moteurs rendent encore un axe à zéro sur une
+passation partielle ; consigne v11 à écrire (le total global `null` n'y est pas nommé) ;
+le banc golden n'est pas dans `test:worktree`.
