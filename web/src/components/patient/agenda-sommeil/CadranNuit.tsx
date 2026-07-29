@@ -33,6 +33,20 @@ const CY = 100;
 const R = 70;
 const PAS_MINUTES = 15;
 
+// Tolérance de prise, en unités du repère de dessin, mesurée le long de
+// l'anneau : un appui accroche la poignée la plus proche tant que l'arc qui les
+// sépare reste sous ce seuil. 26 unités valent ~34 px une fois le cadran rendu
+// à 300 px, soit une cible de ~68 px — au-delà des 44 px recommandés, et
+// surtout PLEINE : la v1 n'offrait qu'un anneau de 6 px autour de chaque
+// poignée, son centre étant couvert par le cercle visible (voir plus bas).
+const RAYON_PRISE = 26;
+
+// Zone morte centrale. `atan2` devient arbitrairement sensible près du centre :
+// à 5 unités, un tremblement de doigt balaie l'heure entière. En deçà de ce
+// rayon on n'accroche rien et on ignore le mouvement, en conservant la dernière
+// valeur — plutôt que de laisser la poignée partir en vrille.
+const RAYON_MORT = 25;
+
 // Le repère de dessin reste 0–200 (centre 100,100), mais le viewBox déborde de
 // 16 unités sur chaque bord : les étiquettes d'heure sont posées à 92 du centre
 // et, avec leur demi-largeur, dépassaient 200 — une heure comme 03:00 ou 09:00
@@ -50,6 +64,14 @@ function versHHMM(minutes: number): string {
   const t = ((Math.round(minutes / PAS_MINUTES) * PAS_MINUTES) % 1440 + 1440) % 1440;
   const p = (x: number) => String(x).padStart(2, '0');
   return `${p(Math.floor(t / 60))}:${p(t % 60)}`;
+}
+
+// Écart signé entre deux positions du cadran, ramené dans [-720, 720) : sur un
+// cercle, 23:50 et 00:10 sont distants de 20 minutes, pas de 1420. Sert deux
+// fois — choisir la poignée la plus proche d'un appui, et conserver l'écart de
+// prise pendant tout le glissement.
+function ecartCirculaire(a: number, b: number): number {
+  return (((a - b + 720) % 1440) + 1440) % 1440 - 720;
 }
 
 // Minuit en haut, sens horaire — la nuit s'inscrit donc autour du sommet.
@@ -90,9 +112,7 @@ function PoigneeCadran({
   valeur,
   label,
   icone,
-  onSaisir,
-  onDeplacer,
-  onRelacher,
+  refCercle,
   onClavier,
 }: {
   poignee: Poignee;
@@ -100,9 +120,7 @@ function PoigneeCadran({
   valeur: string | undefined;
   label: string;
   icone: string;
-  onSaisir: (poignee: Poignee, e: React.PointerEvent) => void;
-  onDeplacer: (e: React.PointerEvent) => void;
-  onRelacher: (e: React.PointerEvent) => void;
+  refCercle: (poignee: Poignee, el: SVGCircleElement | null) => void;
   onClavier: (poignee: Poignee, e: React.KeyboardEvent) => void;
 }) {
   const p = point(minutes);
@@ -110,25 +128,24 @@ function PoigneeCadran({
   const confirmee = valeur !== undefined;
   return (
     <g>
-      {/* Cible tactile élargie : ≥ 44 px une fois le cadran rendu à 300 px. */}
+      {/* Aucun gestionnaire de pointeur ici : ils vivent sur la racine <svg>.
+          La v1 posait un cercle de saisie transparent SOUS ce cercle visible,
+          son frère — donc peint avant lui. Le hit-test SVG suit l'ordre de
+          peinture : tout appui à moins de 13 unités du centre atterrissait sur
+          le cercle visible, qui ne portait aucun gestionnaire, et l'événement
+          ne pouvait pas remonter vers un FRÈRE. Seul l'anneau 13→18 déclenchait
+          un glissement, soit 6 px à l'écran, autour d'un centre inerte de 34 px
+          — précisément là où l'on appuie. Sur la racine, l'ordre de peinture ne
+          décide plus de rien : quel que soit l'élément touché, l'événement
+          remonte. */}
       <circle
-        cx={p.x}
-        cy={p.y}
-        r={18}
-        fill="transparent"
-        className="cursor-grab touch-none"
-        onPointerDown={(e) => onSaisir(poignee, e)}
-        onPointerMove={onDeplacer}
-        onPointerUp={onRelacher}
-        onPointerCancel={onRelacher}
-      />
-      <circle
+        ref={(el) => refCercle(poignee, el)}
         cx={p.x}
         cy={p.y}
         r={13}
-        className={
+        className={`cursor-grab ${
           confirmee ? 'fill-primary stroke-primary-foreground' : 'fill-surface stroke-primary/50'
-        }
+        }`}
         strokeWidth={2}
         strokeDasharray={confirmee ? undefined : '3 3'}
         role="slider"
@@ -198,6 +215,19 @@ export function CadranNuit({
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [active, setActive] = useState<Poignee | null>(null);
+  // Écart angulaire entre le doigt et la poignée au moment de la prise, conservé
+  // pendant tout le glissement. Sans lui, la poignée SAUTE sous le doigt au
+  // premier mouvement : personne n'appuie exactement au centre d'une cible, et
+  // la pulpe d'un doigt couvre à elle seule une heure de cadran. C'est le second
+  // motif du « laborieux », le premier étant la cible morte.
+  const ecartPrise = useRef(0);
+  // Le doigt qui tient la poignée. Une seconde touche pendant un glissement ne
+  // doit pas voler la prise en cours.
+  const pointeurActif = useRef<number | null>(null);
+  const cercles = useRef<Partial<Record<Poignee, SVGCircleElement | null>>>({});
+  const memoriserCercle = useCallback((poignee: Poignee, el: SVGCircleElement | null) => {
+    cercles.current[poignee] = el;
+  }, []);
 
   // Position affichée : la valeur si elle existe, la suggestion sinon.
   const posExtinction = extinction ?? suggestionExtinction;
@@ -217,18 +247,26 @@ export function CadranNuit({
   const posLit = miseAuLit ?? versHHMM(minExtinction - 30);
   const minLit = minutesDepuisMinuit(posLit);
 
-  // Coordonnées écran → minutes. Le viewBox est carré et le conteneur aussi :
-  // la projection est uniforme, un rapport de largeur suffit — à condition de
-  // partir de l'ORIGINE du viewBox et non de zéro.
-  const minutesDepuisEvenement = useCallback((clientX: number, clientY: number): number => {
-    const svg = svgRef.current;
-    if (!svg) return 0;
-    const rect = svg.getBoundingClientRect();
-    const x = VB_ORIGINE + ((clientX - rect.left) / rect.width) * VB_TAILLE - CX;
-    const y = VB_ORIGINE + ((clientY - rect.top) / rect.height) * VB_TAILLE - CY;
-    const deg = (Math.atan2(y, x) * 180) / Math.PI + 90;
-    return (((deg + 360) % 360) / 360) * 1440;
-  }, []);
+  // Coordonnées écran → position sur le cadran. Le viewBox est carré et le
+  // conteneur aussi : la projection est uniforme, un rapport de largeur suffit
+  // — à condition de partir de l'ORIGINE du viewBox et non de zéro. On rend
+  // AUSSI la distance au centre : c'est elle qui arme la zone morte.
+  const positionPointeur = useCallback(
+    (clientX: number, clientY: number): { minutes: number; distance: number } | null => {
+      const svg = svgRef.current;
+      if (!svg) return null;
+      const rect = svg.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return null;
+      const x = VB_ORIGINE + ((clientX - rect.left) / rect.width) * VB_TAILLE - CX;
+      const y = VB_ORIGINE + ((clientY - rect.top) / rect.height) * VB_TAILLE - CY;
+      const deg = (Math.atan2(y, x) * 180) / Math.PI + 90;
+      return {
+        minutes: (((deg + 360) % 360) / 360) * 1440,
+        distance: Math.hypot(x, y),
+      };
+    },
+    [],
+  );
 
   const POSITIONS: Record<Poignee, string> = {
     lit: posLit,
@@ -243,23 +281,78 @@ export function CadranNuit({
     sortie: minSortie,
   };
 
-  function saisir(poignee: Poignee, e: React.PointerEvent) {
+  // Les poignées effectivement à l'écran. Les deux conditionnelles ne sont pas
+  // candidates à la prise quand elles ne sont pas affichées, sans quoi un appui
+  // accrocherait une poignée invisible.
+  const visibles = (
+    [
+      afficherMiseAuLit ? 'lit' : null,
+      'extinction',
+      afficherReveilFinal ? 'reveil' : null,
+      'sortie',
+    ] as (Poignee | null)[]
+  ).filter((p): p is Poignee => p !== null);
+
+  // Prise par PROXIMITÉ, sur toute la surface du cadran, et non par contact avec
+  // une cible. La poignée retenue est la plus proche angulairement de l'appui,
+  // à condition que l'arc qui les sépare tienne sous `RAYON_PRISE`. Deux
+  // poignées voisines (mise au lit 30 min avant l'extinction, soit 9 unités
+  // d'arc) sont donc toutes deux candidates — la plus proche gagne, et l'écart
+  // de prise l'empêche ensuite de sauter sur sa voisine.
+  function saisir(e: React.PointerEvent) {
+    if (pointeurActif.current !== null) return;
+    const p = positionPointeur(e.clientX, e.clientY);
+    if (!p || p.distance < RAYON_MORT) return;
+
+    let choisie: Poignee | null = null;
+    let meilleurEcart = Infinity;
+    for (const poignee of visibles) {
+      const ecart = Math.abs(ecartCirculaire(p.minutes, MINUTES[poignee]));
+      if (ecart < meilleurEcart) {
+        meilleurEcart = ecart;
+        choisie = poignee;
+      }
+    }
+    // Écart de temps → longueur d'arc sur l'anneau, la seule unité comparable à
+    // une tolérance exprimée en unités de dessin.
+    const arc = (meilleurEcart / 1440) * 2 * Math.PI * R;
+    if (choisie === null || arc > RAYON_PRISE) return;
+
     e.preventDefault();
-    (e.currentTarget as Element).setPointerCapture(e.pointerId);
-    setActive(poignee);
+    // Capture posée sur la RACINE, un nœud stable : la v1 la posait sur la cible
+    // de la poignée, qui se déplace à chaque rendu. Le `?.` porte sur la méthode
+    // elle-même — jsdom ne l'implémente pas, et le glissement doit rester
+    // exécutable en test.
+    svgRef.current?.setPointerCapture?.(e.pointerId);
+    pointeurActif.current = e.pointerId;
+    ecartPrise.current = ecartCirculaire(p.minutes, MINUTES[choisie]);
+    setActive(choisie);
+    // `preventDefault` supprime le focus implicite : on le pose donc à la main,
+    // pour qu'un patient puisse affiner aux flèches la poignée qu'il vient de
+    // toucher.
+    cercles.current[choisie]?.focus?.();
     // L'appui vaut confirmation : la suggestion fantôme devient une valeur.
-    onChange(poignee, POSITIONS[poignee]);
+    onChange(choisie, POSITIONS[choisie]);
   }
 
   function deplacer(e: React.PointerEvent) {
-    if (!active) return;
+    if (!active || pointeurActif.current !== e.pointerId) return;
+    const p = positionPointeur(e.clientX, e.clientY);
+    // Zone morte : on garde la dernière valeur plutôt que de suivre un angle qui
+    // n'a plus de sens.
+    if (!p || p.distance < RAYON_MORT) return;
     e.preventDefault();
-    onChange(active, versHHMM(minutesDepuisEvenement(e.clientX, e.clientY)));
+    onChange(active, versHHMM(p.minutes - ecartPrise.current));
   }
 
   function relacher(e: React.PointerEvent) {
-    if (!active) return;
-    (e.currentTarget as Element).releasePointerCapture(e.pointerId);
+    if (pointeurActif.current !== e.pointerId) return;
+    // `releasePointerCapture` lève si le pointeur n'est plus capturé — ce qui est
+    // exactement le cas après un `pointercancel`, qui relâche déjà la capture.
+    const svg = svgRef.current;
+    if (svg?.hasPointerCapture?.(e.pointerId)) svg.releasePointerCapture(e.pointerId);
+    pointeurActif.current = null;
+    ecartPrise.current = 0;
     setActive(null);
   }
 
@@ -297,6 +390,7 @@ export function CadranNuit({
           ref={svgRef}
           viewBox={`${VB_ORIGINE} ${VB_ORIGINE} ${VB_TAILLE} ${VB_TAILLE}`}
           className="w-full touch-none"
+          onPointerDown={saisir}
           onPointerMove={deplacer}
           onPointerUp={relacher}
           onPointerCancel={relacher}
@@ -362,9 +456,7 @@ export function CadranNuit({
               valeur={miseAuLit}
               label={LABEL_MISE_AU_LIT}
               icone="🛏️"
-              onSaisir={saisir}
-              onDeplacer={deplacer}
-              onRelacher={relacher}
+              refCercle={memoriserCercle}
               onClavier={auClavier}
             />
           )}
@@ -374,10 +466,8 @@ export function CadranNuit({
             valeur={extinction}
             label={LABEL_EXTINCTION}
             icone="🌑"
-            onSaisir={saisir}
-            onDeplacer={deplacer}
-            onRelacher={relacher}
-            onClavier={auClavier}
+              refCercle={memoriserCercle}
+              onClavier={auClavier}
           />
           {afficherReveilFinal && (
             <PoigneeCadran
@@ -386,9 +476,7 @@ export function CadranNuit({
               valeur={reveilFinal}
               label={LABEL_REVEIL_FINAL}
               icone="👁️"
-              onSaisir={saisir}
-              onDeplacer={deplacer}
-              onRelacher={relacher}
+              refCercle={memoriserCercle}
               onClavier={auClavier}
             />
           )}
@@ -398,10 +486,8 @@ export function CadranNuit({
             valeur={sortieDuLit}
             label={LABEL_SORTIE_DU_LIT}
             icone="🌅"
-            onSaisir={saisir}
-            onDeplacer={deplacer}
-            onRelacher={relacher}
-            onClavier={auClavier}
+              refCercle={memoriserCercle}
+              onClavier={auClavier}
           />
         </svg>
       </div>
