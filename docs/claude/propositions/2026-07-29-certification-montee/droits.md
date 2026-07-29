@@ -26,13 +26,13 @@ C'est contre-intuitif, et c'est mesuré.
 La déclaration porte sur **les supports de cours du SIIN**. Les instruments qu'elle
 couvre sont donc ceux du **référentiel SIIN** — `statutBibliographique:
 referentiel_interne_siin`. Or ces treize instruments **avaient déjà été tranchés le
-2026-07-25**, sur la déclaration précédente. Les 43 restant à `a_verifier` sont
-**tous** des échelles tierces (32 `reference_identifiee`, 11 `a_completer`) :
+2026-07-25**, sur la déclaration précédente. Les 42 restant à `a_verifier` sont
+**tous** des échelles tierces (30 `reference_identifiee`, 12 `a_completer`) :
 **zéro** relève du référentiel SIIN.
 
 Une échelle tierce qu'un support de cours reproduit ne devient pas libre parce que le
 praticien a le droit d'utiliser le support. La déclaration est donc enregistrée dans
-chacune de ces 43 entrées, avec la réserve qui dit qu'elle ne les dégage pas.
+chacune de ces 42 entrées, avec la réserve qui dit qu'elle ne les dégage pas.
 
 ### Pourquoi le premier jet était faux
 
@@ -77,7 +77,7 @@ ayants droit ». Le statut disait `permission_obtenue` ; le texte disait le cont
 Le garde neuf lit l'étiquette, pas le texte — et c'est sur cette étiquette que BDI-13
 montait à `scoring_verifie`.
 
-La contre-revue adversariale l'a relevé : la règle du contenu, appliquée aux 43, ne
+La contre-revue adversariale l'a relevé : la règle du contenu, appliquée aux 42, ne
 l'était pas à celles-ci. Le fait était patent — `Q_GEO_03` et `Q_GEO_05` sont du **même
 auteur** (Galvin) et recevaient deux sorts opposés, sur la seule foi d'un label.
 
