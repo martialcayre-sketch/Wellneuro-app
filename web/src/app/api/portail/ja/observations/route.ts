@@ -5,9 +5,16 @@ import {
   type JaObservationSnapshot,
   type JaObservationSnapshotInput,
 } from '@/lib/food-observation/persistence';
-import { episodeIdDepuisCycle } from '@/lib/food-observation/episodeDepuisProtocole';
+import {
+  episodeIdCalibrage,
+  episodeIdDepuisCycle,
+} from '@/lib/food-observation/episodeDepuisProtocole';
 import { isSessionValideForPatient, readPatientSession } from '@/lib/patient-session';
-import { resolveProtocoleDiffuse } from '@/lib/protocol/portailProtocol';
+import {
+  ancreDepuisAssignation,
+  authorizePortail,
+  resolveProtocoleDiffuse,
+} from '@/lib/protocol/portailProtocol';
 import { prisma } from '@/lib/prisma';
 
 // Miroir de la troncature de `GET /api/portail/protocole`, dont le client tire
@@ -28,7 +35,25 @@ function isPayload(value: unknown): value is Omit<JaObservationSnapshotInput, 'i
     && Array.isArray(v.plans)
     && Array.isArray(v.solutions)
     && Array.isArray(v.actionCareer)
+    // `journees` est FACULTATIF : un carnet en régime essai n'en produit
+    // aucune, et un client antérieur au lot 3 ne l'envoie pas. Présent, il doit
+    // être un tableau — un objet passerait la garde d'épisode puis échouerait
+    // plus loin, sans message utile.
+    && (v.journees === undefined || Array.isArray(v.journees))
   );
+}
+
+/** Identité du bilan de calibrage attendue pour ce patient. */
+async function episodeCalibrageAttendu(req: Request, idPatient: string): Promise<string | null> {
+  // `authorizePortail` est la MÊME résolution que celle qui sert l'ancre au
+  // client (`GET /api/portail/protocole`). Deux requêtes indépendantes, même
+  // triées pareil, ne suffiraient pas : ce qui compte est qu'il n'existe qu'un
+  // seul chemin d'élection. Sinon un désaccord rendrait un 409 que le
+  // rechargement ne corrige pas, et les journées déjà transmises deviendraient
+  // orphelines sous l'ancien identifiant.
+  const auth = await authorizePortail(req);
+  if ('ok' in auth || auth.idPatient !== idPatient) return null;
+  return episodeIdCalibrage(idPatient, ancreDepuisAssignation(auth.idAssignation));
 }
 
 async function resolveAuthorizedSession(req: Request): Promise<{ idPatient: string } | null> {
@@ -105,10 +130,13 @@ export async function POST(req: Request): Promise<NextResponse<SaveResponse>> {
     // vérifiée par le domaine reste interne au corps reçu : un onglet resté
     // ouvert au travers d'une nouvelle diffusion transmettrait un instantané
     // parfaitement cohérent avec lui-même, et rattaché au cycle périmé.
+    // Deux identités légitimes, jamais les deux à la fois : le cycle diffusé
+    // quand il existe, le bilan de calibrage tant qu'il n'existe pas. Le client
+    // ne choisit pas — le serveur recalcule celle qui vaut à cet instant.
     const diffuse = await resolveProtocoleDiffuse(auth.idPatient);
     const episodeAttendu = diffuse
       ? episodeIdDepuisCycle(auth.idPatient, diffuse.protocolDraftInputHash.slice(0, LONGUEUR_CYCLE_REF))
-      : null;
+      : await episodeCalibrageAttendu(req, auth.idPatient);
     const episodeRecu = (body.episode as { episodeId?: unknown }).episodeId;
     if (!episodeAttendu || episodeRecu !== episodeAttendu) {
       return NextResponse.json(
@@ -129,6 +157,7 @@ export async function POST(req: Request): Promise<NextResponse<SaveResponse>> {
       plans: body.plans,
       solutions: body.solutions,
       actionCareer: body.actionCareer,
+      journees: body.journees,
       supersedesDraftId: typeof body.supersedesDraftId === 'string' ? body.supersedesDraftId : undefined,
       actor: 'patient',
     });

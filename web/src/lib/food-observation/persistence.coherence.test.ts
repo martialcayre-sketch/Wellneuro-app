@@ -40,6 +40,19 @@ function trace(episodeId: string) {
   };
 }
 
+function journee(episodeId: string, localDate: string) {
+  return {
+    journeeId: `j_${localDate}`,
+    episodeId,
+    localDate,
+    typeJournee: 'repos',
+    momentsObserves: [],
+    marqueursPresents: [],
+    schemaVersion: 'ja-domaine-v2',
+    marqueursVersion: 'marqueurs-ja-v1',
+  };
+}
+
 function entree(overrides: Record<string, unknown> = {}) {
   return {
     idPatient: 'PAT_TEST',
@@ -114,6 +127,36 @@ describe('saveJaObservationSnapshot — cohérence trace ↔ épisode', () => {
     await expect(saveJaObservationSnapshot(entree({ traces: trop }) as never))
       .rejects.toThrow(/hors bornes/);
     expect(prisma.protocolDraft.create).not.toHaveBeenCalled();
+  });
+
+  // Lot 3 — les journées repères héritent des deux gardes, et en ajoutent une :
+  // une journée par date. Sans elle, deux descriptions du même mardi feraient
+  // repasser la couverture par types pour un volume.
+  it('refuse une journée relevant d’un autre épisode', async () => {
+    await expect(saveJaObservationSnapshot(entree({
+      journees: [journee('ja_autre', '2026-07-28')],
+    }) as never)).rejects.toThrow(/journées/);
+    expect(prisma.protocolDraft.create).not.toHaveBeenCalled();
+  });
+
+  it('refuse deux journées portant la même date', async () => {
+    await expect(saveJaObservationSnapshot(entree({
+      journees: [
+        journee(EPISODE.episodeId, '2026-07-28'),
+        journee(EPISODE.episodeId, '2026-07-28'),
+      ],
+    }) as never)).rejects.toThrow(/même date/);
+    expect(prisma.protocolDraft.create).not.toHaveBeenCalled();
+  });
+
+  it('accepte deux journées de dates distinctes', async () => {
+    await saveJaObservationSnapshot(entree({
+      journees: [
+        journee(EPISODE.episodeId, '2026-07-28'),
+        journee(EPISODE.episodeId, '2026-07-29'),
+      ],
+    }) as never);
+    expect(prisma.protocolDraft.create).toHaveBeenCalledTimes(1);
   });
 
   it('ne sur-rejette pas : une trace du cycle courant passe', async () => {

@@ -1,3 +1,4 @@
+import { VERSION_SCHEMA_FOOD_OBSERVATION } from '@/lib/food-observation';
 import type {
   DailyQuestion,
   FoodObservationEpisode,
@@ -26,7 +27,7 @@ export const JA5_VALIDATION_EPISODE: FoodObservationEpisode = {
     },
   },
   budget: { tracesParSemaine: 3 },
-  schemaVersion: 'ja-domaine-v1',
+  schemaVersion: VERSION_SCHEMA_FOOD_OBSERVATION,
   frictionsVersion: 'frictions-v1',
 };
 

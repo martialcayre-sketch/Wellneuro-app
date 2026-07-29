@@ -1,4 +1,8 @@
-import { VERSION_REGISTRE_FRICTIONS, VERSION_SCHEMA_FOOD_OBSERVATION } from './types';
+import {
+  VERSIONS_SCHEMA_FOOD_OBSERVATION_LUES,
+  VERSION_REGISTRE_FRICTIONS,
+  VERSION_SCHEMA_FOOD_OBSERVATION,
+} from './types';
 import type {
   AttentionBudget,
   EpisodeRegime,
@@ -80,8 +84,14 @@ export function readFoodObservationEpisode(value: unknown): FoodObservationEpiso
   localDate(episode.startDate ?? '', 'startDate');
   localDate(episode.endDate ?? '', 'endDate');
   if (episode.endDate! < episode.startDate!) throw new TypeError('Période JA invalide.');
+  // La version COURANTE est celle qu'on écrit ; les versions LUES sont celles
+  // qu'on accepte de relire. Un épisode transmis avant le lot 3 porte encore
+  // `ja-domaine-v1` : le refuser rendrait illisibles les instantanés déjà en
+  // base, et l'exception serait avalée à la lecture de la faisabilité — la
+  // boussole praticien perdrait le JA sans un mot.
   if (!episode.content || !episode.budget
-    || episode.schemaVersion !== VERSION_SCHEMA_FOOD_OBSERVATION
+    || !(VERSIONS_SCHEMA_FOOD_OBSERVATION_LUES as readonly string[])
+      .includes(episode.schemaVersion ?? '')
     || episode.frictionsVersion !== VERSION_REGISTRE_FRICTIONS) {
     throw new TypeError('Contrat d’épisode JA invalide ou inconnu.');
   }

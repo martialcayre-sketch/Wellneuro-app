@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { createAttentionBudget } from './episode';
+import type { TypeJournee } from './types';
 import {
   buildFourReadings,
   describeCoverage,
+  describeCouvertureJournees,
   describePatientPause,
   listDirectFindings,
   TERMES_INTERDITS_SILENCE,
@@ -87,5 +89,45 @@ describe('quatre lectures séparées (A7-11)', () => {
     const readings = buildFourReadings({ observe });
     observe.push('mutation externe');
     expect(readings.observe).toEqual(['Une observation']);
+  });
+});
+
+// Lot 3 — la seule restitution du domaine qui suggère. Elle doit nommer un
+// APPORT, jamais un défaut : « manque » est un terme interdit, et une phrase
+// qui l'emploie lève à la construction.
+describe('describeCouvertureJournees', () => {
+  const couverture = (compte: number, absents: TypeJournee[]) => ({
+    compte,
+    typesCouverts: [],
+    typesAbsents: absents,
+    profilPossible: false,
+  });
+
+  it('suggère un apport et passe la grille de neutralité', () => {
+    const texte = describeCouvertureJournees(couverture(2, ['repos']));
+    expect(texte).toBe('2 journées décrites. Une journée sans travail aiderait à comprendre ce qui change.');
+    assertNeutralite(texte);
+    expect(texte).not.toMatch(/%|seuil|bon|mauvais|faible|insuffisant/i);
+  });
+
+  it('ne conclut jamais que l’observation suffit', () => {
+    const texte = describeCouvertureJournees(couverture(4, []));
+    expect(texte).toBe('4 journées décrites');
+    expect(texte).not.toMatch(/assez|suffi|complet/i);
+  });
+
+  it('accorde le singulier', () => {
+    expect(describeCouvertureJournees(couverture(1, []))).toBe('1 journée décrite');
+  });
+
+  it('se tait dès que le profil est possible — ne réclame pas l’impossible', () => {
+    const possible = { compte: 3, typesCouverts: [], typesAbsents: ['travail_matin' as TypeJournee], profilPossible: true };
+    expect(describeCouvertureJournees(possible)).toBe('3 journées décrites');
+  });
+
+  // Preuve que la grille mord : la formulation « au défaut », celle qui vient
+  // spontanément, est refusée par le module lui-même.
+  it('refuserait une formulation au défaut', () => {
+    expect(() => assertNeutralite('Il vous manque une journée sans travail.')).toThrow();
   });
 });

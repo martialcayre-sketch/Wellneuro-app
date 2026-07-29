@@ -14,6 +14,7 @@ import {
   type FrictionCode,
   buildEpisodeDepuisProtocole,
   createTrialTrace,
+  joursObservables,
   listDirectFindings,
   type FoodObservationEpisode,
   type TraceIssue,
@@ -47,6 +48,7 @@ type JaSnapshotRecu = {
   tracesCount: number;
   pausesCount: number;
   solutionsCount: number;
+  journeesCount: number;
 };
 
 type PractitionerFoodObservationDraft = {
@@ -188,12 +190,29 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
 
   const momentsToExplore = useMemo(() => topMomentsToExplore(traces), [traces]);
 
+  // Jours DISTINCTS sans trace sur la fenêtre de l'épisode. Le 7 en dur qui
+  // tenait cette place ne comptait aucun jour : il affirmait « 7 jours sans
+  // trace » dès que la liste était vide, et « 0 » dès qu'une trace existait,
+  // fût-elle du premier jour d'une période de trois semaines.
+  //
+  // BORNE À CONNAÎTRE : `traces` est le brouillon LOCAL du praticien, jamais ce
+  // que le patient a transmis — la route de lecture ne rend que des compteurs,
+  // sans les dates. Le constat ne vaut donc que du carnet de ce poste. Il est
+  // tu dès qu'une transmission patient existe, plutôt que d'affirmer une
+  // absence que cette surface ne peut pas constater.
+  const joursSansTrace = useMemo(() => {
+    if (!episode || transmissions.length > 0) return 0;
+    const datesTracees = new Set(traces.map(t => t.localDate));
+    return joursObservables(episode.startDate, episode.endDate, dateLocale(new Date()))
+      .filter(jour => !datesTracees.has(jour)).length;
+  }, [episode, traces, transmissions]);
+
   const constats = useMemo(() => listDirectFindings({
-    joursSansTrace: traces.length === 0 ? 7 : 0,
+    joursSansTrace,
     occasionAbsente: traces.some(trace => trace.occasionPresentee === false),
     planMinimalActif: false,
     actionDeclareeImpossible: traces.some(trace => trace.issue === 'partiel_empeche'),
-  }), [traces]);
+  }), [joursSansTrace, traces]);
 
   useEffect(() => {
     writeDraft(idPatient, { traces, decisionMode, decisionNote, assietteCode });
@@ -497,7 +516,8 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
             {transmissions.map((snapshot) => (
               <li key={snapshot.draftId}>
                 {dateLocale(new Date(snapshot.createdAt))} — {snapshot.tracesCount} trace(s),{' '}
-                {snapshot.pausesCount} pause(s), {snapshot.solutionsCount} solution(s)
+                {snapshot.pausesCount} pause(s), {snapshot.solutionsCount} solution(s),{' '}
+                {snapshot.journeesCount} journée(s) décrite(s)
               </li>
             ))}
           </ul>

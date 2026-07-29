@@ -46,7 +46,7 @@ describe('createEpisode', () => {
     expect(episode.statut).toBe('prepare');
     expect(episode.budget.tracesParSemaine).toBe(BUDGET_DEFAUT_TRACES_PAR_SEMAINE);
     expect(episode.budget.tracesParSemaine).toBeLessThan(7);
-    expect(episode.schemaVersion).toBe('ja-domaine-v1');
+    expect(episode.schemaVersion).toBe('ja-domaine-v2');
   });
 
   it('supporte les trois régimes, dont le silence sans observation prescrite', () => {
@@ -200,5 +200,36 @@ describe('statut : suspension sans justification (JA-00 A4)', () => {
     expect(clos.statut).toBe('clos');
     expect(() => activerEpisode(clos)).toThrow(/interdite/);
     expect(() => suspendreEpisode(clos)).toThrow(/interdite/);
+  });
+});
+
+// Lot 3 — la version courante change, les versions LUES ne se rétrécissent pas.
+// Sans cette compatibilité, les instantanés déjà transmis en v1 deviendraient
+// illisibles, et l'exception serait avalée à la lecture de la faisabilité.
+describe('compatibilité de version de schéma', () => {
+  const episodeV1 = {
+    episodeId: 'ja_PAT_ancien',
+    patientId: 'PAT_TEST',
+    startDate: '2026-07-10',
+    endDate: '2026-07-30',
+    statut: 'actif',
+    content: {
+      regime: 'essai',
+      hypothese: 'Hypothèse d’un épisode antérieur au lot 3.',
+      action: { actionId: 'a1', labelPatient: 'Action', simplePlan: 'Plan minimal' },
+    },
+    budget: { tracesParSemaine: 3 },
+    schemaVersion: 'ja-domaine-v1',
+    frictionsVersion: 'frictions-v1',
+  };
+
+  it('relit un épisode écrit avant le lot 3', () => {
+    const relu = readFoodObservationEpisode(episodeV1);
+    expect(relu.schemaVersion).toBe('ja-domaine-v1');
+  });
+
+  it('refuse toujours une version inconnue', () => {
+    expect(() => readFoodObservationEpisode({ ...episodeV1, schemaVersion: 'ja-domaine-v99' }))
+      .toThrow(/Contrat d’épisode JA invalide/);
   });
 });

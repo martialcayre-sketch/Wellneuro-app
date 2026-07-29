@@ -18,6 +18,61 @@ import type { AttentionBudget, FoodObservationEpisode } from './types';
 /** Fenêtre alignée sur les jalons `J7 | J14 | J21` (`persistence.ts`). */
 export const DUREE_EPISODE_JOURS = 21;
 
+/** Fenêtre du bilan de calibrage : 3 à 5 jours (A7-11 amendé, 2026-07-16). */
+export const DUREE_CALIBRAGE_JOURS = 5;
+
+/**
+ * Bilan de calibrage : l'épisode d'AVANT le protocole (A7-11 amendé — « outil
+ * de mesure pré-bilan/pré-protocole »).
+ *
+ * Sans protocole diffusé, le carnet n'avait rien à quoi rattacher une saisie :
+ * les notes restaient locales, non transmissibles. Le calibrage donne à cet
+ * état une identité — ancrée sur l'assignation du patient, pas sur un cycle de
+ * protocole qui n'existe pas encore — et donc la possibilité d'être transmis.
+ *
+ * Il cède la place dès qu'un protocole est diffusé : à partir de là, l'épisode
+ * vient du protocole et le régime devient `essai`.
+ */
+export function episodeIdCalibrage(idPatient: string, ancre: string): string {
+  return `ja_${idPatient}_calibrage_${ancre}`;
+}
+
+export function buildEpisodeCalibrage(input: {
+  idPatient: string;
+  /** Identité stable du bilan — l'assignation, jamais la date. */
+  ancre: string;
+  /** Aujourd'hui, au sens du client. La fenêtre se ferme ici. */
+  aujourdHui: string;
+  budget?: AttentionBudget;
+}): FoodObservationEpisode | null {
+  if (!input.idPatient || !input.ancre) return null;
+  // La fenêtre est les cinq jours qui SE TERMINENT aujourd'hui, non les cinq
+  // jours qui suivent l'assignation : pour un patient assigné il y a trois
+  // mois — le cas ordinaire quand il ouvre le carnet — cette seconde fenêtre
+  // serait close avant sa première saisie. L'identité, elle, ne bouge pas :
+  // elle tient à l'ancre, pas aux dates.
+  const fin = input.aujourdHui.slice(0, 10);
+  return createEpisode({
+    episodeId: episodeIdCalibrage(input.idPatient, input.ancre),
+    patientId: input.idPatient,
+    startDate: ajouterJours(fin, -(DUREE_CALIBRAGE_JOURS - 1)),
+    endDate: fin,
+    budget: input.budget ?? createAttentionBudget(),
+    content: {
+      regime: 'calibrage',
+      questionsBilan: {
+        structureDesPrises: true,
+        regulariteHoraires: true,
+        presenceMarqueursPertinents: true,
+      },
+      // Aucun marqueur pertinent tant qu'aucun besoin n'est travaillé : le
+      // sous-ensemble se choisit au regard du protocole, qui n'existe pas
+      // encore. Une liste vide dit cela ; une liste par défaut l'inventerait.
+      marqueursPertinents: [],
+    },
+  });
+}
+
 export type ProtocoleSourceEpisode = {
   purpose: string;
   actionPrincipale: { type: string; title: string; minimalPlan: string } | null;

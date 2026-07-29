@@ -1,14 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prisma, listSnapshots, saveSnapshot, readPatientSession, isSessionValideForPatient, resolveProtocoleDiffuse } = vi.hoisted(() => ({
+const {
+  prisma, listSnapshots, saveSnapshot, readPatientSession, isSessionValideForPatient,
+  resolveProtocoleDiffuse, authorizePortail,
+} = vi.hoisted(() => ({
   prisma: {
     patient: { findUnique: vi.fn() },
+    assignation: { findFirst: vi.fn() },
   },
   listSnapshots: vi.fn(),
   saveSnapshot: vi.fn(),
   readPatientSession: vi.fn(),
   isSessionValideForPatient: vi.fn(),
   resolveProtocoleDiffuse: vi.fn(),
+  authorizePortail: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -20,7 +25,12 @@ vi.mock('@/lib/patient-session', () => ({
   readPatientSession,
   isSessionValideForPatient,
 }));
-vi.mock('@/lib/protocol/portailProtocol', () => ({ resolveProtocoleDiffuse }));
+vi.mock('@/lib/protocol/portailProtocol', () => ({
+  resolveProtocoleDiffuse,
+  authorizePortail,
+  // Dérivation réelle : c'est elle qui doit rendre la MÊME ancre des deux côtés.
+  ancreDepuisAssignation: (id: string) => id.replace(/[^A-Za-z0-9_-]/g, ''),
+}));
 
 import { GET, POST } from './route';
 
@@ -63,6 +73,7 @@ describe('api/portail/ja/observations', () => {
       email: 'sophie.nicola@example.test',
     });
     isSessionValideForPatient.mockReturnValue(true);
+    authorizePortail.mockResolvedValue({ idPatient: 'PAT_TEST', idAssignation: 'ASS_1' });
     resolveProtocoleDiffuse.mockResolvedValue({
       protocolDraftId: 'PD_1',
       protocolDraftInputHash: 'abcdef0123456789ZZZZ',
@@ -186,7 +197,9 @@ describe('api/portail/ja/observations', () => {
     expect(saveSnapshot).not.toHaveBeenCalled();
   });
 
-  it('POST refuse quand plus aucun protocole n’est diffusé', async () => {
+  // Sans protocole diffusé, l'identité légitime est celle du bilan de calibrage
+  // — et elle seule : un épisode de cycle n'a plus cours.
+  it('POST refuse un épisode de cycle quand plus aucun protocole n’est diffusé', async () => {
     resolveProtocoleDiffuse.mockResolvedValue(null);
     const res = await POST(
       new Request('http://localhost/api/portail/ja/observations', {
@@ -198,6 +211,59 @@ describe('api/portail/ja/observations', () => {
 
     expect(res.status).toBe(409);
     expect(saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  // L'ancre ne vient jamais du client : une identité forgée est refusée.
+  it('POST refuse une ancre de calibrage forgée', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          episode: { ...payload.episode, episodeId: 'ja_PAT_TEST_calibrage_ASS_FORGEE' },
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(409);
+    expect(saveSnapshot).not.toHaveBeenCalled();
+  });
+
+  // Accord GET ↔ POST : les deux passent par la même résolution d'assignation.
+  it('POST élit l’assignation par la résolution partagée du portail', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    saveSnapshot.mockResolvedValue({ draftId: 'JA_D' });
+    await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          episode: { ...payload.episode, episodeId: 'ja_PAT_TEST_calibrage_ASS_1' },
+        }),
+      }),
+    );
+    expect(authorizePortail).toHaveBeenCalled();
+  });
+
+  it('POST accepte le bilan de calibrage tant qu’aucun protocole n’est diffusé', async () => {
+    resolveProtocoleDiffuse.mockResolvedValue(null);
+    saveSnapshot.mockResolvedValue({ draftId: 'JA_DRAFT_CAL' });
+    const res = await POST(
+      new Request('http://localhost/api/portail/ja/observations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...payload,
+          episode: { ...payload.episode, episodeId: 'ja_PAT_TEST_calibrage_ASS_1' },
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(201);
+    expect(saveSnapshot).toHaveBeenCalled();
   });
 
   // Le patient ne chaîne que sur ses propres transmissions : le filtre est posé
