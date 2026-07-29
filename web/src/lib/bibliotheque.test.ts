@@ -46,6 +46,36 @@ describe('listeBibliotheque', () => {
     }
   });
 
+  it('ne contient aucun doublon de TITRE — le sélecteur n’affiche que ça', () => {
+    // La garde d'identifiant ci-dessous ne voyait pas ce défaut. Le sélecteur
+    // d'assignation (`api/praticien/questionnaires`) ne filtre que sur `actif` et
+    // rend « titre (catégorie) », sans badge : deux entrées au même libellé y
+    // sont indiscernables, et l'une des deux peut être un alias sans grille, qui
+    // échoue en 404. C'est ce qu'a produit l'ajout de l'entrée `Q_NEU_11` face à
+    // son alias `Q_STR_07`, avant désambiguïsation. Relevé en revue.
+    const parTitre = new Map<string, string[]>();
+    for (const e of entrees) parTitre.set(e.titre, [...(parTitre.get(e.titre) ?? []), e.id]);
+    const doublons = [...parTitre].filter(([, ids]) => ids.length > 1);
+    expect(doublons, `titres partagés :\n  ${doublons.map(([t, ids]) => `${t} → ${ids}`).join('\n  ')}`)
+      .toEqual([]);
+  });
+
+  it('un alias suit sa cible dans la suspension', () => {
+    // La promesse de gouvernabilité du lot du 2026-07-29 : `actif: false` sur la
+    // grille doit suffire à la fermer. Elle ne tient que si l'alias suit — sinon
+    // il reste au rayon avec son aperçu, et l'usage licencié se poursuit sur
+    // papier, exactement l'argument qui a sorti le MMSE de `PASSATION_PRATICIEN`
+    // dans #460. Vert à vide aujourd'hui : aucun alias ne vise un suspendu. Il
+    // mordra le jour où l'un le fera.
+    for (const [alias, cible] of Object.entries(ALIAS_HISTORIQUES)) {
+      if (IDS_SUSPENDUS.has(cible)) {
+        expect(IDS_SUSPENDUS.has(alias), `${alias} doit suivre ${cible}`).toBe(true);
+      }
+    }
+    // Anti-vacuité : la boucle porte bien sur des paires réelles.
+    expect(Object.keys(ALIAS_HISTORIQUES).length).toBeGreaterThan(0);
+  });
+
   it('ne contient aucun doublon d’identifiant', () => {
     expect(parId.size).toBe(entrees.length);
   });
@@ -160,6 +190,27 @@ describe('questionnaire suspendu (actif: false)', () => {
     expect(cancero.every(q => !q.actif)).toBe(true);
   });
 
+  it('HAD est servable par l’interface, et son alias reste refusé', () => {
+    // Arbitrage du 2026-07-29. Avant : aucune entrée de rayon, donc proposé par
+    // aucun écran — mais accepté par un appel direct à la route d'assignation.
+    // Après : proposé, assignable, et surtout ATTEIGNABLE par `actif: false`, ce
+    // qui n'était pas le cas. Sur un instrument sous licence tierce non
+    // instruite, la gouvernabilité était l'enjeu.
+    const had = QUESTIONNAIRES_CATALOG.find(q => q.id === 'Q_NEU_11');
+    expect(had, 'Q_NEU_11 doit exister au catalogue').toBeDefined();
+    expect(had?.actif).toBe(true);
+    expect(IDS_ASSIGNABLES.has('Q_NEU_11'), 'et porter une définition').toBe(true);
+    expect(IDS_SUSPENDUS.has('Q_NEU_11')).toBe(false);
+
+    // L'alias historique reste ce qu'il est : affiché, jamais assignable, et
+    // pointant vers la grille. Assigner `Q_STR_07` échouerait — il n'a pas de
+    // définition de scoring, et c'est pour cela que HAD n'était servable par
+    // aucun chemin d'interface avant ce lot.
+    expect(ALIAS_HISTORIQUES.Q_STR_07).toBe('Q_NEU_11');
+    expect(CATALOGUE_DEFINITIONS['Q_STR_07']).toBeUndefined();
+    expect(IDS_ASSIGNABLES.has('Q_STR_07')).toBe(false);
+  });
+
   it('les instruments laissés hors suspension le restent', () => {
     // L'arbitrage a porté sur CINQ des huit sous licence. Sans cette garde, un
     // élargissement silencieux de la suspension passerait pour la décision
@@ -174,6 +225,8 @@ describe('questionnaire suspendu (actif: false)', () => {
     expect(IDS_ASSIGNABLES.has('Q_INF_04')).toBe(true);
     expect(IDS_ASSIGNABLES.has('Q_STR_07')).toBe(false);
     expect(CATALOGUE_DEFINITIONS['Q_STR_07']).toBeUndefined();
+    // HAD, lui, est désormais assignable — c'est l'objet du lot du 2026-07-29.
+    expect(IDS_ASSIGNABLES.has('Q_NEU_11')).toBe(true);
   });
 
   it('les définitions sans entrée de rayon sont recensées, jamais découvertes', () => {
@@ -186,17 +239,17 @@ describe('questionnaire suspendu (actif: false)', () => {
     // laquelle `questionnaires-catalog.ts` met en garde, et celle que ce lot a
     // fermée sur `Q_GEO_04`.
     //
-    // Elle reste ouverte sur DEUX autres, et c'est mesuré ici plutôt que
-    // supposé. `Q_NEU_11` est le plus gênant : c'est HAD, l'un des huit
-    // instruments sous licence tierce, celui que l'arbitrage du 2026-07-29 a
-    // laissé servi — alors qu'aucun chemin d'interface ne sait le servir, son
-    // alias `Q_STR_07` n'ayant pas de définition. Hors périmètre de ce lot, qui
-    // ne ferme que les cinq décidés ; nommé pour ne pas être redécouvert.
+    // `Q_NEU_11` (HAD) en est SORTI le 2026-07-29 : il a reçu une entrée de rayon
+    // active, sur arbitrage praticien. Il n'y reste donc que `Q_NEU_12`, cible de
+    // l'alias `Q_SOM_08` et dans la même position exactement — définition
+    // présente, aucune entrée de rayon, donc invisible et pourtant accepté par un
+    // appel direct. Nommé pour ne pas être redécouvert ; son sort n'a pas été
+    // arbitré.
     const auRayon = new Set(QUESTIONNAIRES_CATALOG.map(q => q.id));
     const enPassation = new Set(PASSATION_PRATICIEN.map(p => p.id));
     const orphelins = Object.keys(QUESTIONNAIRE_CATALOGUE)
       .filter(id => !auRayon.has(id) && !enPassation.has(id))
       .sort();
-    expect(orphelins).toEqual(['Q_NEU_11', 'Q_NEU_12']);
+    expect(orphelins).toEqual(['Q_NEU_12']);
   });
 });

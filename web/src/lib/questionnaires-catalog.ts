@@ -14,8 +14,12 @@
 //
 // Note d'historique : certaines entrées héritées (`Q_SOM_08`, `Q_STR_07`) ont
 // été remplacées dans le catalogue de scoring (respectivement par `Q_NEU_12` et
-// `Q_NEU_11`). Elles restent exposées pour préserver la liste offerte en
-// production, avec les catégories affichées selon le regroupement courant.
+// `Q_NEU_11`). Depuis le 2026-07-29, `Q_NEU_11` a sa PROPRE entrée : l'alias
+// `Q_STR_07` n'est donc plus la seule exposition de cette grille, et son titre a
+// été désambiguïsé pour que les deux ne se confondent pas au sélecteur.
+// `Q_NEU_12` reste dans l'ancienne situation. Elles restent exposées pour
+// préserver la liste offerte en production, avec les catégories affichées selon
+// le regroupement courant.
 // Toute recuration relève d'une tâche clinique dédiée (documentation
 // `CHANGELOG.md` requise).
 
@@ -90,6 +94,27 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Évaluez la dépendance cognitive aux tranquillisants et somnifères (10 items vrai/faux).`, duree: '5 min', actif: true },
   { id: 'Q_NEU_10', titre: 'Dépendance à Internet', categorie: 'Neuro-psychologie',
     description: `Évaluez votre usage problématique d'Internet en 20 questions.`, duree: '10 min', actif: true },
+  // Entrée AJOUTÉE le 2026-07-29 sur arbitrage praticien. `Q_NEU_11` portait une
+  // définition de scoring sans aucune entrée ici : il n'était donc proposé par
+  // aucun écran — son ancien identifiant `Q_STR_07` figure bien au catalogue,
+  // mais en ALIAS sans grille, que la route d'assignation refuse — et pourtant
+  // un appel direct à `api/praticien/assignations` l'acceptait, cette route
+  // n'exigeant qu'une définition. « Invisible et assignable » : la combinaison
+  // que ce fichier désigne plus bas comme la pire, et que #460 a fermée sur le
+  // MMSE pour cette raison même.
+  //
+  // Le rendre visible le rend surtout GOUVERNABLE : `actif: false` l'atteint
+  // désormais, ce qui n'était pas le cas. C'est ce qui a décidé l'arbitrage —
+  // HAD est sous licence tierce non instruite (« GL Assessment, copyright
+  // déclaré, à vérifier ») ET la source UNIQUE du besoin 8 de « Mon équilibre »,
+  // en grade A : le fermer coûtait un besoin entier, le laisser hors de portée
+  // du mécanisme ordinaire coûtait la maîtrise. L'entrée résout les deux.
+  //
+  // Son alias `Q_STR_07` reste au catalogue : il pointe vers cette grille et
+  // continue d'être refusé à l'assignation, ce qui est exactement ce qu'un alias
+  // historique doit faire.
+  { id: 'Q_NEU_11', titre: 'HAD — Échelle Hospitalière Anxiété-Dépression', categorie: 'Neuro-psychologie',
+    description: `Dépistez anxiété (score A) et dépression (score D) en 14 questions.`, duree: '5 min', actif: true },
 
   // ── CARDIOLOGIE ─────────────────────────────────────────────────────────────
   { id: 'Q_CAR_01', titre: 'Questionnaire cardio-métabolique SIIN', categorie: 'Cardiologie',
@@ -169,8 +194,15 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Dépistez un état d'épuisement professionnel (burnout) en 10 questions.`, duree: '5 min', actif: true },
   { id: 'Q_STR_06', titre: 'Questionnaire de Karasek', categorie: 'Stress',
     description: `Évaluez votre stress au travail : latitude décisionnelle, demande psychologique, soutien social.`, duree: '10 min', actif: true },
-  { id: 'Q_STR_07', titre: 'HAD — Échelle Hospitalière Anxiété-Dépression', categorie: 'Stress',
-    description: `Dépistez anxiété (score A) et dépression (score D) en 14 questions.`, duree: '5 min', actif: true },
+  // Titre DÉSAMBIGUÏSÉ le 2026-07-29, et c'est la contrepartie de l'entrée
+  // `Q_NEU_11` ajoutée plus haut. Les deux portaient le même libellé exact — le
+  // rayon les distingue par son badge « Alias historique », mais le SÉLECTEUR
+  // d'assignation (`api/praticien/questionnaires`) ne filtre que sur `actif` et
+  // n'affiche que « titre (catégorie) » : le praticien y voyait deux « HAD », et
+  // celui-ci échoue en 404, faute de grille. Un échec devenu aléatoire coûte
+  // plus cher en confiance qu'un échec total. Relevé en revue adversariale.
+  { id: 'Q_STR_07', titre: 'HAD (ancien code) — remplacé par la grille Neuro-psychologie', categorie: 'Stress',
+    description: `Entrée historique conservée pour les packs qui la référencent encore. La grille est servie sous « HAD — Échelle Hospitalière Anxiété-Dépression » (Neuro-psychologie) : c'est celle-là qu'il faut assigner.`, duree: '5 min', actif: true },
   { id: 'Q_STR_08', titre: `WART — Test d'addiction au travail`, categorie: 'Stress',
     description: `Identifiez les comportements de workaholisme et d'addiction au travail (25 items).`, duree: '10 min', actif: true },
 
