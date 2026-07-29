@@ -292,6 +292,19 @@ export PORT="$APP_PORT"
 export VITEST_MAX_FORKS="${VITEST_MAX_FORKS:-4}"
 export VITEST_MAX_THREADS="${VITEST_MAX_THREADS:-4}"
 
+# macOS + PostgreSQL 15 : sans locale valide dans l'environnement, le postmaster
+# refuse de démarrer — « postmaster became multithreaded during startup », HINT
+# « Set the LC_ALL environment variable to a valid locale ». Certaines sessions
+# arrivent avec LANG/LC_ALL vides (shell non interactif, cron, agents) : initdb,
+# lui, réussit car on lui passe --locale explicitement, mais le postmaster hérite
+# de l'environnement au démarrage et échoue. On aligne son exécution sur la même
+# locale que le cluster, sans écraser une locale valide déjà héritée. Réservé à
+# Darwin : le symptôme est propre à macOS et en_US.UTF-8 y est toujours présent
+# (sur Debian il faudrait la générer — ne pas l'imposer au runner Linux/CI).
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  export LC_ALL="${LC_ALL:-en_US.UTF-8}"
+fi
+
 # Un environnement shell hérité peut exporter NODE_ENV globalement ; la CI ne
 # le définit pas. Un NODE_ENV non standard pendant `next build` mélange les
 # builds React dev/prod et fait planter le prerender (useContext null) —
