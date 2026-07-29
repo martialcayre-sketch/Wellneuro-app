@@ -400,16 +400,18 @@ describe('sous-score non mesuré — null, jamais zéro', () => {
       sections: [{ id: 'S', questions: [
         { id: 'D1', type: 'number', min: 1, max: 4 },
         { id: 'L1', type: 'number', min: 1, max: 4 },
+        { id: 'S1', type: 'number', min: 1, max: 4 },
       ] }],
       scoring: {
         type: 'karasek',
         subScores: [
           { id: 'DEM', label: 'Demande', items: ['D1'], max: 4, seuil: 2, seuilDir: 'gte' },
           { id: 'LAT', label: 'Latitude', items: ['L1'], max: 4 },
+          { id: 'SOU', label: 'Soutien', items: ['S1'], max: 4, seuil: 2, seuilDir: 'lt' },
         ],
       },
     };
-    const r: any = computeScoreFromDef(def, { D1: 1 });
+    const r: any = computeScoreFromDef(def, { D1: 1, S1: 4 });
     const lat = r.subScores.find((s: any) => s.id === 'LAT');
     expect(lat.total, 'LAT n’a aucune réponse').toBeNull();
     expect(lat.atRisk, 'faute de seuil publié, il reste false PAR DÉFAUT').toBe(false);
@@ -417,8 +419,116 @@ describe('sous-score non mesuré — null, jamais zéro', () => {
 
     // Anti-sur-filtrage : le même axe RENSEIGNÉ, toujours sans seuil, laisse bien
     // sortir le verdict — la garde porte sur la mesure, pas sur le seuil.
-    const rempli: any = computeScoreFromDef(def, { D1: 1, L1: 4 });
+    const rempli: any = computeScoreFromDef(def, { D1: 1, L1: 4, S1: 4 });
     expect(rempli.interpretation.label).toBe('Situation professionnelle équilibrée');
+  });
+
+  it('Karasek : « équilibrée » exige aussi le soutien social hors risque', () => {
+    // Arbitrage praticien du 2026-07-29. « Équilibrée » ne portait que sur les
+    // deux axes du Job Strain : un patient à demande basse, latitude haute et
+    // soutien social ÉTABLI à risque ressortait en vert. C'était le dernier
+    // verdict rassurant du moteur, et le seul qui contredisait son propre
+    // `atRisk`.
+    const items = Object.fromEntries(itemsDe('Q_STR_06').map((q: any) => [q.id, q]));
+    const sc = (QUESTIONNAIRE_CATALOGUE as any).Q_STR_06.scoring;
+    const sou = sc.subScores.find((s: any) => s.id === 'SOU');
+
+    // Passation complète au MAXIMUM — demande à risque mise à part, tous les
+    // axes sont au-dessus de leurs seuils — puis le soutien social effondré.
+    const base = Object.fromEntries(itemsDe('Q_STR_06').map((q: any) => [q.id, valMax(q)]));
+    const demBasse = { ...base, ...axeALaBorne('DEM', 'min') };
+    const parBase: any = calculateScore('Q_STR_06', demBasse);
+    const axes = Object.fromEntries(parBase.subScores.map((s: any) => [s.id, s]));
+    expect(axes.DEM.atRisk, 'demande hors risque').toBe(false);
+    expect(axes.LAT.atRisk, 'latitude hors risque').toBe(false);
+    expect(axes.SOU.atRisk, 'soutien hors risque').toBe(false);
+    expect(parBase.interpretation.label,
+      'les trois axes hors risque ⇒ le verdict vert existe toujours')
+      .toBe('Situation professionnelle équilibrée');
+
+    // Le même patient, soutien social effondré : plus de vert.
+    const souBas: Record<string, number> = { ...demBasse };
+    for (const id of sou.items) {
+      const vals = items[id].options.map((o: any) => Number(o.v ?? o.value));
+      souBas[id] = Math.min(...vals);
+    }
+    const r: any = calculateScore('Q_STR_06', souBas);
+    const parSou = Object.fromEntries(r.subScores.map((s: any) => [s.id, s]));
+    expect(parSou.DEM.atRisk, 'demande toujours hors risque').toBe(false);
+    expect(parSou.LAT.atRisk, 'latitude toujours hors risque').toBe(false);
+    expect(parSou.SOU.atRisk, 'mais le soutien est établi à risque').toBe(true);
+    expect(r.jobStrain, 'ce n’est pas un Job Strain — SOU n’y entre pas').toBe(false);
+    expect(r.interpretation, 'et plus aucun verdict rassurant').toBeNull();
+  });
+
+  it('Karasek : « équilibrée » exige TOUS les axes mesurés, seuil ou pas', () => {
+    // Relevé en revue sur la première rédaction de ce lot, qui nommait trois axes
+    // au lieu d’énoncer la règle. Elle fermait le cas du soutien social et
+    // laissait sortir le vert sur une reconnaissance au plus bas — « on me traite
+    // injustement » et « ma sécurité d’emploi est menacée » au maximum — et même
+    // sur une section reconnaissance ENTIÈREMENT VIDE.
+    //
+    // `REC` ne publie aucun seuil : il ne peut donc pas entrer dans le test de
+    // RISQUE (son `atRisk` vaut `false` par défaut et ne signifie rien), mais il
+    // entre dans le test de MESURE. Les deux conditions ne portent pas sur les
+    // mêmes axes, et c’est le fond de la règle.
+    const sc = (QUESTIONNAIRE_CATALOGUE as any).Q_STR_06.scoring;
+    const par = Object.fromEntries(sc.subScores.map((s: any) => [s.id, s.items]));
+    const serein = {
+      ...axeALaBorne('DEM', 'min'), ...axeALaBorne('LAT', 'max'), ...axeALaBorne('SOU', 'max'),
+    };
+    // Référence : les trois axes à seuil hors risque ET la reconnaissance
+    // renseignée ⇒ le verdict vert existe.
+    const complet: any = calculateScore('Q_STR_06', { ...serein, ...axeALaBorne('REC', 'max') });
+    expect(complet.interpretation.label).toBe('Situation professionnelle équilibrée');
+
+    // Reconnaissance au PLUS BAS : le vert sortait quand même.
+    const recBasse: any = calculateScore('Q_STR_06', { ...serein, ...axeALaBorne('REC', 'min') });
+    const parRec = Object.fromEntries(recBasse.subScores.map((s: any) => [s.id, s]));
+    expect(parRec.REC.total, 'reconnaissance minimale, et mesurée').toBe(12);
+    expect(parRec.REC.seuil ?? null, 'aucun seuil publié').toBeNull();
+    expect(recBasse.interpretation?.label,
+      'mesurée : le verdict reste rendu — c’est un seuil qui manque, pas une mesure')
+      .toBe('Situation professionnelle équilibrée');
+
+    // Reconnaissance ENTIÈREMENT VIDE : là, plus de verdict.
+    const recVide: any = calculateScore('Q_STR_06', serein);
+    expect(recVide.subScores.find((s: any) => s.id === 'REC').total).toBeNull();
+    expect(recVide.interpretation, 'un quart de l’instrument non rempli ⇒ rien à conclure')
+      .toBeNull();
+
+    // Et le soutien social non mesuré, ou PARTIEL, retire aussi le verdict — la
+    // moitié « mesure » de la règle, distincte de la moitié « hors risque ».
+    const sansSou: any = calculateScore('Q_STR_06',
+      { ...axeALaBorne('DEM', 'min'), ...axeALaBorne('LAT', 'max'), ...axeALaBorne('REC', 'max') });
+    expect(sansSou.subScores.find((s: any) => s.id === 'SOU').atRisk).toBeNull();
+    expect(sansSou.interpretation).toBeNull();
+
+    const items = Object.fromEntries(itemsDe('Q_STR_06').map((q: any) => [q.id, q]));
+    const souPartiel: Record<string, number> = { ...serein, ...axeALaBorne('REC', 'max') };
+    for (const id of par.SOU.slice(-3)) delete souPartiel[id];
+    const partiel: any = calculateScore('Q_STR_06', souPartiel);
+    expect(partiel.subScores.find((s: any) => s.id === 'SOU').total,
+      'un axe partiel porte bien un total').not.toBeNull();
+    expect(partiel.interpretation, 'mais il n’est pas jugeable').toBeNull();
+    expect(items).toBeDefined();
+  });
+
+  it('Karasek : une définition sans axe à seuil ne conclut pas à l’équilibre', () => {
+    // Non-vacuité. `every` sur un tableau vide vaut `true` : sans cette garde, un
+    // instrument dont aucun axe ne publie de seuil ressortirait « équilibrée » du
+    // seul fait d’avoir été rempli. Aucun instrument du catalogue n’est dans ce
+    // cas — d’où la définition forgée, qui est le seul chemin vers la branche.
+    const def = {
+      sections: [{ id: 'S', questions: [{ id: 'A1', type: 'number', min: 1, max: 4 }] }],
+      scoring: {
+        type: 'karasek',
+        subScores: [{ id: 'REC', label: 'Reconnaissance', items: ['A1'], max: 4 }],
+      },
+    };
+    const r: any = computeScoreFromDef(def, { A1: 4 });
+    expect(r.subScores[0].total, 'l’axe est bien mesuré').toBe(4);
+    expect(r.interpretation, 'mais aucun seuil ne fonde l’absence de risque').toBeNull();
   });
 
   it('Karasek : sur une passation complète, les verdicts restent ÉTABLIS', () => {

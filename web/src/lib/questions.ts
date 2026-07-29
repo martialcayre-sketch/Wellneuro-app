@@ -2467,11 +2467,43 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     //     équilibrée ». Aucun instrument du catalogue n'est dans ce cas — `DEM` et
     //     `LAT` publient tous deux leur seuil —, mais le prochain le sera peut-être.
     //     Relevé en revue adversariale, sur définition forgée.
+    //
+    // Et il exige le SOUTIEN SOCIAL hors risque, sur arbitrage praticien du
+    // 2026-07-29. Le verdict portait jusque-là sur les deux seuls axes du Job
+    // Strain : un patient à demande basse, latitude haute et soutien social à
+    // 8 sur 32 pour un seuil à 24 ressortait « équilibrée », en vert, à côté d'un
+    // axe ÉTABLI à risque. C'était le dernier verdict rassurant du moteur, et le
+    // seul qui contredisait encore son propre `atRisk`. `SOU` n'entre pas dans le
+    // Job Strain — il n'entre que dans l'Iso-Strain — mais « équilibrée » est le
+    // seul énoncé qui conclue à l'ABSENCE de risque : il lui faut tous les axes
+    // qui en portent un.
     const mesure = (s: any) => Boolean(s) && s.total !== null;
+    // La règle est écrite sur TOUS les axes émis, et non sur trois nommés. Une
+    // règle nominative ferme le cas qu'on vient de voir et laisse les autres :
+    // la revue de ce lot a montré qu'exiger `DEM`, `LAT` et `SOU` hors risque
+    // laissait sortir le vert sur une reconnaissance au plus bas (12 sur 24) —
+    // « on me traite injustement » et « ma sécurité d'emploi est menacée » au
+    // maximum — et même sur une section reconnaissance ENTIÈREMENT VIDE.
+    //
+    // Deux conditions, et elles ne portent pas sur les mêmes axes :
+    //   · TOUS les axes doivent être mesurés. « Équilibrée » parle de la
+    //     situation professionnelle entière ; elle ne se prononce pas sur une
+    //     section jamais remplie. C'est le contrat « non mesuré », appliqué à un
+    //     énoncé plutôt qu'à une valeur.
+    //   · Ceux qui PUBLIENT UN SEUIL doivent être établis hors risque. `REC` n'en
+    //     publie aucun (`seuil: null`) : son `atRisk` vaut `false` par défaut et
+    //     ne signifie rien — l'inclure dans le test de risque ferait passer une
+    //     valeur vide pour un verdict. Lui donner un seuil est une décision
+    //     clinique, portée en réserve.
+    // La non-vacuité est exigée dans les deux cas : un instrument sans axe, ou
+    // sans axe à seuil, ne conclut pas à l'absence de risque par défaut.
+    const aSeuil = subResults.filter((s: any) => typeof s.seuil === 'number');
+    const equilibree = subResults.length > 0 && subResults.every(mesure)
+                    && aSeuil.length > 0 && aSeuil.every((s: any) => s.atRisk === false);
     const interp = isoStrain === true ? {label:'Iso-Strain — risque burnout élevé',color:'danger'}
                  : jobStrain === true ? {label:'Job Strain — stress professionnel',color:'warning'}
                  : dem?.atRisk === true ? {label:'Forte demande psychologique',color:'info'}
-                 : (mesure(dem) && mesure(lat) && dem.atRisk === false && lat.atRisk === false)
+                 : equilibree
                    ? {label:'Situation professionnelle équilibrée',color:'success'}
                    : null;
     return {type:'karasek', subScores:subResults, jobStrain, isoStrain, interpretation:interp, note: sc.note || null, certification: sc.certification || null};
