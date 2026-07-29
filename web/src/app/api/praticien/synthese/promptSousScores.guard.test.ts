@@ -592,16 +592,21 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     expect(par.DEM.atRisk).toBe(true);
 
     // Les axes NON mesurés ne valent plus zéro, et ne déclenchent plus rien.
-    for (const id of ['LAT', 'SOU', 'REC']) {
+    // Depuis le lot des drapeaux (2026-07-29), leur `atRisk` vaut `null` : un
+    // `false` y affirmait « pas à risque » sur une question jamais posée. `REC`
+    // reste à `false` — il ne publie aucun seuil, cas que la consigne décrit.
+    for (const id of ['LAT', 'SOU']) {
       expect(par[id].total, `${id} devrait être non mesuré`).toBeNull();
-      expect(par[id].atRisk, `${id} ne peut pas être « à risque » sans donnée`).toBe(false);
+      expect(par[id].atRisk, `${id} ne peut pas être « à risque » sans donnée`).toBeNull();
     }
+    expect(par.REC.total).toBeNull();
+    expect(par.REC.atRisk, 'REC ne publie aucun seuil : false par défaut').toBe(false);
 
     // Et le verdict composite ne se déduit plus de deux absences : il reste celui
     // du seul axe mesuré, pas l'Iso-Strain.
     expect(demSeule.interpretation.label).toBe('Forte demande psychologique');
-    expect(demSeule.jobStrain).toBe(false);
-    expect(demSeule.isoStrain).toBe(false);
+    expect(demSeule.jobStrain, 'indéterminé, jamais faux : LAT n’est pas jugeable').toBeNull();
+    expect(demSeule.isoStrain).toBeNull();
   });
 
   it('horsTotal existe, et exclut réellement le sous-score du total global', () => {

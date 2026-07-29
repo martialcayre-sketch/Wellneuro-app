@@ -2397,26 +2397,48 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       // sous-échelle à laquelle personne n'a répondu déclenchait tous les seuils
       // « faible si < X », et trois d'entre eux suffisaient à annoncer un
       // « Iso-Strain — risque burnout élevé ».
-      let atRisk = false;
+      //
+      // Et il vaut `null`, jamais `false`, quand l'axe n'est pas JUGEABLE : un
+      // `false` y affirmerait « pas à risque » sur un axe que personne n'a
+      // rempli. Mesuré le 2026-07-29 : une passation ne renseignant que la
+      // demande psychologique rendait `LAT`, `SOU` et `REC` à `total: null` ET
+      // `atRisk: false` — trois verdicts rassurants sur des questions jamais
+      // posées. C'est le dernier résidu du contrat « non mesuré » posé le même
+      // jour sur seize moteurs.
+      //
       // Les DEUX conditions portent. `complet` refuse le seuil sur un axe partiel ;
       // `total !== null` refuse le cas de l'axe déclaré SANS items, où
       // `repondus === items.length` vaut `0 === 0` et donnerait « complet » sur une
       // absence — et c'est aussi ce qui permet à TypeScript d'affiner le type.
-      if (total !== null && complet && typeof sub.seuil === 'number' && sub.seuilDir) {
-        atRisk = sub.seuilDir === 'gte' ? total >= sub.seuil
+      let atRisk: boolean | null = false;
+      if (typeof sub.seuil === 'number' && sub.seuilDir) {
+        atRisk = (total === null || !complet) ? null
+              : sub.seuilDir === 'gte' ? total >= sub.seuil
               : sub.seuilDir === 'gt'  ? total > sub.seuil
               : total < sub.seuil;
       }
+      // Sans seuil publié, `atRisk` reste `false` PAR DÉFAUT et ne signifie rien
+      // (`Q_STR_06/REC`). Comportement inchangé, et la consigne de synthèse le
+      // décrit déjà mot pour mot : le corriger demanderait un bump de version
+      // pour une ambiguïté qui est déjà nommée au modèle.
       return {id:sub.id, label:sub.label, total, rawTotal, max:sub.max, seuil:sub.seuil, atRisk, seuilLabel:sub.seuilLabel};
     });
     const dem = subResults.find((s: any) => s.id==='DEM'), lat = subResults.find((s: any) => s.id==='LAT'),
           sou = subResults.find((s: any) => s.id==='SOU');
-    // Un Job Strain se CONSTATE sur deux axes mesurés, il ne se déduit pas de deux
-    // absences — et c'est déjà acquis : `atRisk` ne peut plus valoir `true` sur un
-    // total nul (garde ci-dessus). Doubler ce test ici ne serait pas une sécurité
-    // mais du code qu'aucune mutation ne ferait rougir.
-    const jobStrain = dem && lat ? dem.atRisk && lat.atRisk : false;
-    const isoStrain = jobStrain && sou && sou.atRisk;
+    // ET à TROIS valeurs, parce que `atRisk` en a désormais trois. La règle est
+    // monotone, comme celle du Berlin : un « et » est ÉTABLI faux dès qu'un seul
+    // opérande est faux — peu importe ce qu'on ignore de l'autre —, établi vrai
+    // si les deux le sont, et indéterminé sinon.
+    //
+    // `false && null` vaut `false` en JavaScript, mais `true && null` vaut
+    // `null` : s'en remettre à l'opérateur natif donnerait le bon résultat ici et
+    // le mauvais ailleurs. On l'écrit, plutôt que de dépendre d'une coïncidence.
+    const et = (a: boolean | null, b: boolean | null): boolean | null =>
+      (a === false || b === false) ? false
+      : (a === true && b === true) ? true
+      : null;
+    const jobStrain = (dem && lat) ? et(dem.atRisk, lat.atRisk) : null;
+    const isoStrain = et(jobStrain, sou ? sou.atRisk : null);
     // Chaque verdict exige les axes QU'IL nomme, ni plus ni moins :
     //   · Iso-Strain et Job Strain se lisent sur DEM et LAT (plus SOU pour le
     //     premier) — déjà acquis, `atRisk` ne peut plus valoir vrai sans mesure ;
@@ -2426,11 +2448,30 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     //     l'ABSENCE de risque — il lui faut donc les deux axes mesurés. Sans ce
     //     test, une passation ne renseignant que « reconnaissance », le seul axe
     //     sans seuil, ressortait « équilibrée », en vert. Relevé en revue.
+    //
+    // Les `=== true` disent l'INTENTION — un drapeau à trois valeurs se lit sur
+    // sa valeur établie — mais ils ne gardent rien : `null` et `false` sont tous
+    // deux falsy, le test truthy serait strictement équivalent. Aucune mutation
+    // ne peut les faire rougir, et c'est écrit ici plutôt que laissé croire à une
+    // sécurité. La garde réelle est la ligne suivante.
+    //
+    // « Équilibrée » exige les deux axes MESURÉS **et** établis hors risque. Les
+    // deux moitiés portent, et pour des raisons différentes :
+    //   · `atRisk === false` refuse l'axe incomplet ou vide, dont le verdict est
+    //     désormais `null` — c'est le défaut que ce lot ferme, et c'est aussi le
+    //     cas où `karasekValue` sous-estime le plus, comptant l'absence pour zéro ;
+    //   · `mesure()` refuse l'axe SANS SEUIL PUBLIÉ, dont l'`atRisk` reste `false`
+    //     par défaut et ne signifie rien. Une première rédaction de ce lot avait
+    //     remplacé `mesure()` par le seul test d'`atRisk` : un axe sans seuil et
+    //     sans une réponse ressortait alors « Situation professionnelle
+    //     équilibrée ». Aucun instrument du catalogue n'est dans ce cas — `DEM` et
+    //     `LAT` publient tous deux leur seuil —, mais le prochain le sera peut-être.
+    //     Relevé en revue adversariale, sur définition forgée.
     const mesure = (s: any) => Boolean(s) && s.total !== null;
-    const interp = isoStrain ? {label:'Iso-Strain — risque burnout élevé',color:'danger'}
-                 : jobStrain ? {label:'Job Strain — stress professionnel',color:'warning'}
-                 : dem && dem.atRisk ? {label:'Forte demande psychologique',color:'info'}
-                 : (mesure(dem) && mesure(lat))
+    const interp = isoStrain === true ? {label:'Iso-Strain — risque burnout élevé',color:'danger'}
+                 : jobStrain === true ? {label:'Job Strain — stress professionnel',color:'warning'}
+                 : dem?.atRisk === true ? {label:'Forte demande psychologique',color:'info'}
+                 : (mesure(dem) && mesure(lat) && dem.atRisk === false && lat.atRisk === false)
                    ? {label:'Situation professionnelle équilibrée',color:'success'}
                    : null;
     return {type:'karasek', subScores:subResults, jobStrain, isoStrain, interpretation:interp, note: sc.note || null, certification: sc.certification || null};
