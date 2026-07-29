@@ -33,18 +33,27 @@ const CY = 100;
 const R = 70;
 const PAS_MINUTES = 15;
 
-// Tolérance de prise, en unités du repère de dessin, mesurée le long de
-// l'anneau : un appui accroche la poignée la plus proche tant que l'arc qui les
-// sépare reste sous ce seuil. 26 unités valent ~34 px une fois le cadran rendu
-// à 300 px, soit une cible de ~68 px — au-delà des 44 px recommandés, et
-// surtout PLEINE : la v1 n'offrait qu'un anneau de 6 px autour de chaque
-// poignée, son centre étant couvert par le cercle visible (voir plus bas).
+// Rayon de prise, en unités du repère de dessin : un appui accroche la poignée
+// la plus proche tant qu'il tombe dans le DISQUE de ce rayon autour d'elle.
+// 26 unités valent ~34 px une fois le cadran rendu à 300 px, soit une cible de
+// ~68 px — au-delà des 44 px recommandés, et pleine : la v1 n'offrait qu'un
+// anneau de 6 px autour de chaque poignée, son centre étant couvert par le
+// cercle visible (voir plus bas).
+//
+// La distance est EUCLIDIENNE, et non un écart d'angle. Un seuil purement
+// angulaire n'aurait borné la prise que par le bas (la zone morte) : tout le
+// secteur, jusqu'au coin du cadran, serait devenu saisissable. Le formulaire est
+// long et le cadran le coiffe, avec `touch-action: none` sur toute sa boîte —
+// un balayage de défilement posé dans le secteur aurait accroché la poignée et
+// écrit une heure de coucher que le patient n'a jamais donnée.
 const RAYON_PRISE = 26;
 
-// Zone morte centrale. `atan2` devient arbitrairement sensible près du centre :
-// à 5 unités, un tremblement de doigt balaie l'heure entière. En deçà de ce
-// rayon on n'accroche rien et on ignore le mouvement, en conservant la dernière
-// valeur — plutôt que de laisser la poignée partir en vrille.
+// Zone morte centrale, appliquée au MOUVEMENT (la prise, elle, est déjà bornée
+// par le disque ci-dessus : au centre, on est à 70 unités de toute poignée).
+// `atan2` devient arbitrairement sensible près du centre : à 5 unités, un
+// tremblement de doigt balaie l'heure entière. En deçà de ce rayon on ignore le
+// mouvement et on conserve la dernière valeur, plutôt que de laisser la poignée
+// partir en vrille.
 const RAYON_MORT = 25;
 
 // Le repère de dessin reste 0–200 (centre 100,100), mais le viewBox déborde de
@@ -252,7 +261,10 @@ export function CadranNuit({
   // — à condition de partir de l'ORIGINE du viewBox et non de zéro. On rend
   // AUSSI la distance au centre : c'est elle qui arme la zone morte.
   const positionPointeur = useCallback(
-    (clientX: number, clientY: number): { minutes: number; distance: number } | null => {
+    (
+      clientX: number,
+      clientY: number,
+    ): { minutes: number; distance: number; x: number; y: number } | null => {
       const svg = svgRef.current;
       if (!svg) return null;
       const rect = svg.getBoundingClientRect();
@@ -263,6 +275,10 @@ export function CadranNuit({
       return {
         minutes: (((deg + 360) % 360) / 360) * 1440,
         distance: Math.hypot(x, y),
+        // Coordonnées centrées, gardées telles quelles : la prise mesure une
+        // distance à une POIGNÉE, pas au centre.
+        x,
+        y,
       };
     },
     [],
@@ -293,30 +309,28 @@ export function CadranNuit({
     ] as (Poignee | null)[]
   ).filter((p): p is Poignee => p !== null);
 
-  // Prise par PROXIMITÉ, sur toute la surface du cadran, et non par contact avec
-  // une cible. La poignée retenue est la plus proche angulairement de l'appui,
-  // à condition que l'arc qui les sépare tienne sous `RAYON_PRISE`. Deux
-  // poignées voisines (mise au lit 30 min avant l'extinction, soit 9 unités
-  // d'arc) sont donc toutes deux candidates — la plus proche gagne, et l'écart
-  // de prise l'empêche ensuite de sauter sur sa voisine.
+  // Prise par PROXIMITÉ et non par contact avec une cible : la poignée retenue
+  // est la plus proche de l'appui, à condition qu'il tombe dans son disque de
+  // `RAYON_PRISE`. Deux poignées voisines (mise au lit 30 min avant
+  // l'extinction, soit 9 unités) sont donc toutes deux candidates — la plus
+  // proche gagne, et l'écart de prise l'empêche ensuite de sauter sur sa
+  // voisine. À égalité stricte de distance, la première des `visibles` répond.
   function saisir(e: React.PointerEvent) {
     if (pointeurActif.current !== null) return;
     const p = positionPointeur(e.clientX, e.clientY);
-    if (!p || p.distance < RAYON_MORT) return;
+    if (!p) return;
 
     let choisie: Poignee | null = null;
-    let meilleurEcart = Infinity;
+    let meilleureDistance = Infinity;
     for (const poignee of visibles) {
-      const ecart = Math.abs(ecartCirculaire(p.minutes, MINUTES[poignee]));
-      if (ecart < meilleurEcart) {
-        meilleurEcart = ecart;
+      const centre = point(MINUTES[poignee]);
+      const d = Math.hypot(p.x - (centre.x - CX), p.y - (centre.y - CY));
+      if (d < meilleureDistance) {
+        meilleureDistance = d;
         choisie = poignee;
       }
     }
-    // Écart de temps → longueur d'arc sur l'anneau, la seule unité comparable à
-    // une tolérance exprimée en unités de dessin.
-    const arc = (meilleurEcart / 1440) * 2 * Math.PI * R;
-    if (choisie === null || arc > RAYON_PRISE) return;
+    if (choisie === null || meilleureDistance > RAYON_PRISE) return;
 
     e.preventDefault();
     // Capture posée sur la RACINE, un nœud stable : la v1 la posait sur la cible
@@ -466,8 +480,8 @@ export function CadranNuit({
             valeur={extinction}
             label={LABEL_EXTINCTION}
             icone="🌑"
-              refCercle={memoriserCercle}
-              onClavier={auClavier}
+            refCercle={memoriserCercle}
+            onClavier={auClavier}
           />
           {afficherReveilFinal && (
             <PoigneeCadran
@@ -486,8 +500,8 @@ export function CadranNuit({
             valeur={sortieDuLit}
             label={LABEL_SORTIE_DU_LIT}
             icone="🌅"
-              refCercle={memoriserCercle}
-              onClavier={auClavier}
+            refCercle={memoriserCercle}
+            onClavier={auClavier}
           />
         </svg>
       </div>

@@ -50,19 +50,24 @@ const CENTRE = { clientX: TAILLE_PX / 2, clientY: TAILLE_PX / 2 };
 function Harnais({
   onChange,
   afficherMiseAuLit = false,
+  afficherReveilFinal = false,
 }: {
   onChange: (poignee: string, valeur: string) => void;
   afficherMiseAuLit?: boolean;
+  afficherReveilFinal?: boolean;
 }) {
   const [extinction, setExtinction] = useState<string | undefined>(undefined);
   const [sortie, setSortie] = useState<string | undefined>(undefined);
   const [lit, setLit] = useState<string | undefined>(undefined);
+  const [reveil, setReveil] = useState<string | undefined>(undefined);
   return (
     <CadranNuit
       extinction={extinction}
       sortieDuLit={sortie}
       miseAuLit={lit}
       afficherMiseAuLit={afficherMiseAuLit}
+      reveilFinal={reveil}
+      afficherReveilFinal={afficherReveilFinal}
       suggestionExtinction={EXTINCTION}
       suggestionSortie={SORTIE}
       onChange={(poignee, valeur) => {
@@ -70,14 +75,21 @@ function Harnais({
         if (poignee === 'extinction') setExtinction(valeur);
         if (poignee === 'sortie') setSortie(valeur);
         if (poignee === 'lit') setLit(valeur);
+        if (poignee === 'reveil') setReveil(valeur);
       }}
     />
   );
 }
 
-function rendre(afficherMiseAuLit = false) {
+function rendre(afficherMiseAuLit = false, afficherReveilFinal = false) {
   const onChange = vi.fn();
-  const { container } = render(<Harnais onChange={onChange} afficherMiseAuLit={afficherMiseAuLit} />);
+  const { container } = render(
+    <Harnais
+      onChange={onChange}
+      afficherMiseAuLit={afficherMiseAuLit}
+      afficherReveilFinal={afficherReveilFinal}
+    />,
+  );
   const svg = container.querySelector('svg') as SVGSVGElement;
   // jsdom rend des zéros : sans cette géométrie, toute conversion écran → heure
   // dégénère. Le composant s'en protège (il ignore un rect nul) — d'où ce stub.
@@ -144,12 +156,61 @@ describe('prise de la poignée', () => {
     expect(onChange).toHaveBeenCalledWith('lit', '22:30');
   });
 
+  it('la quatrième poignée répond quand les quatre sont à l’écran', () => {
+    // Mise au lit 22:30, extinction 23:00, réveil final 03:00 (mi-chemin),
+    // sortie 07:00. Configuration la plus chargée que le cadran produise.
+    const { onChange } = rendre(true, true);
+    expect(poignees()).toHaveLength(4);
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(180) });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('reveil', '03:00');
+  });
+
   it('un appui loin de toute poignée n’accroche rien', () => {
     // 02:00 : 3 h après l'extinction, 5 h avant le lever. Sur l'anneau, mais
     // hors tolérance — sinon un simple contact confirmerait une valeur que le
     // patient n'a pas donnée.
     const { onChange } = rendre();
     fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(120) });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+// Sans ces bornes, `RAYON_PRISE` accepte n'importe quelle valeur entre 19 et 50
+// et `RAYON_MORT` entre 6 et 60 sans qu'un seul test rougisse : la couverture
+// serait de façade sur les deux décisions que porte ce correctif.
+describe('frontières de la prise', () => {
+  it('à 25 unités de la poignée on accroche, à 27 on n’accroche plus', () => {
+    const { onChange } = rendre();
+    // Sur le rayon de la poignée : la distance à celle-ci est exactement l'écart
+    // de rayon, sans composante angulaire.
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380, R - 25) });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    cleanup();
+    const second = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380, R - 27) });
+    expect(second.onChange).not.toHaveBeenCalled();
+  });
+
+  it('un appui dans l’axe de la poignée mais loin du cadran n’accroche rien', () => {
+    // LE défaut que ferme ce garde : borner la prise au seul écart d'ANGLE
+    // laissait tout le secteur saisissable jusqu'au coin du cadran. Le
+    // formulaire est long, le cadran le coiffe avec `touch-action: none` — un
+    // balayage de défilement posé là accrochait la poignée et écrivait une heure
+    // de coucher jamais donnée.
+    const { onChange } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380, 115) });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('un balayage vertical posé hors des poignées ne déplace rien', () => {
+    // Le geste de défilement du patient : pouce posé en haut du widget, balayage
+    // vers le bas. Doit rester sans effet de bout en bout.
+    const { onChange, svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(0, 92) });
+    fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(660, 92) });
+    fireEvent.pointerUp(svg, { pointerId: 1, ...clientDepuisMinutes(660, 92) });
     expect(onChange).not.toHaveBeenCalled();
   });
 });
@@ -172,6 +233,18 @@ describe('zone morte centrale', () => {
     const appels = onChange.mock.calls.length;
     fireEvent.pointerMove(svg, { pointerId: 1, ...CENTRE });
     expect(onChange.mock.calls.length).toBe(appels);
+  });
+
+  it('à 26 unités du centre le mouvement passe, à 24 il est ignoré', () => {
+    const { onChange, svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+
+    fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(0, 26) });
+    expect(onChange).toHaveBeenLastCalledWith('extinction', '00:00');
+
+    // Même geste, un peu plus près du centre : la valeur doit rester figée.
+    fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(300, 24) });
+    expect(onChange).toHaveBeenLastCalledWith('extinction', '00:00');
   });
 });
 
@@ -196,6 +269,25 @@ describe('robustesse du glissement', () => {
     const appels = onChange.mock.calls.length;
     fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(300) });
     expect(onChange.mock.calls.length).toBe(appels);
+  });
+
+  it('un pointercancel relâche la prise aussi sûrement qu’un pointerup', () => {
+    const { onChange, svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    fireEvent.pointerCancel(svg, { pointerId: 1, ...clientDepuisMinutes(1380) });
+
+    const appels = onChange.mock.calls.length;
+    fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(300) });
+    expect(onChange.mock.calls.length).toBe(appels);
+  });
+
+  it('la prise pose le focus sur la poignée, pour la suite au clavier', () => {
+    // `preventDefault` supprime le focus implicite : sans ce geste, un patient
+    // qui touche une poignée puis veut l'affiner aux flèches n'a rien de ciblé.
+    const { onChange } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(document.activeElement).toBe(poignees()[0]);
   });
 
   it('le chemin clavier survit au déplacement des gestionnaires', () => {
