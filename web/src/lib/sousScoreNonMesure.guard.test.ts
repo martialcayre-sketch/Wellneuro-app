@@ -115,12 +115,20 @@ describe('sous-score non mesuré — null, jamais zéro', () => {
     expect(par.DEM.total).toBe(33);
     expect(par.DEM.atRisk).toBe(true);
     // Les autres ne valent plus zéro et ne déclenchent plus leur seuil « < X ».
-    for (const id of ['LAT', 'SOU', 'REC']) {
+    // Depuis le lot des drapeaux (2026-07-29), leur `atRisk` vaut `null` et non
+    // plus `false` : `false` affirmait « pas à risque » sur un axe jamais rempli.
+    // `REC` fait exception — il ne publie AUCUN seuil, son `atRisk` reste `false`
+    // par défaut et ne signifie rien, ce que la consigne de synthèse décrit déjà.
+    for (const id of ['LAT', 'SOU']) {
       expect(par[id].total, `${id}`).toBeNull();
-      expect(par[id].atRisk, `${id}`).toBe(false);
+      expect(par[id].atRisk, `${id}`).toBeNull();
     }
-    expect(demSeule.jobStrain).toBe(false);
-    expect(demSeule.isoStrain).toBe(false);
+    expect(par.REC.total).toBeNull();
+    expect(par.REC.atRisk).toBe(false);
+    expect(par.REC.seuil ?? null).toBeNull();
+    // Indéterminés, et surtout jamais `true` : c'est ce que ce test protège.
+    expect(demSeule.jobStrain).toBeNull();
+    expect(demSeule.isoStrain).toBeNull();
     expect(demSeule.interpretation.label).toBe('Forte demande psychologique');
   });
 
@@ -250,8 +258,10 @@ describe('sous-score non mesuré — null, jamais zéro', () => {
 
     const r: any = calculateScore('Q_STR_06', reponses);
     const parAxe = Object.fromEntries(r.subScores.map((s: any) => [s.id, s]));
-    expect(parAxe.LAT.atRisk, 'un axe incomplet ne peut pas franchir son seuil').toBe(false);
-    expect(r.jobStrain).toBe(false);
+    // `null`, et non `false` : un axe incomplet ne franchit pas son seuil, mais
+    // il ne permet pas non plus d'affirmer qu'il ne le franchirait pas.
+    expect(parAxe.LAT.atRisk, 'un axe incomplet ne peut pas franchir son seuil').toBeNull();
+    expect(r.jobStrain, 'DEM à risque et LAT indéterminé ⇒ indéterminé').toBeNull();
   });
 
   it('Karasek : un axe déclaré sans items ne franchit pas son seuil', () => {
@@ -271,7 +281,8 @@ describe('sous-score non mesuré — null, jamais zéro', () => {
     const r: any = computeScoreFromDef(def, { D1: 4 });
     const lat = r.subScores.find((s: any) => s.id === 'LAT');
     expect(lat.total).toBeNull();
-    expect(lat.atRisk, 'un axe sans items ne peut pas être « à risque »').toBe(false);
+    expect(lat.atRisk, 'un axe sans items ne peut pas être « à risque »').toBeNull();
+    expect(lat.atRisk, 'et surtout jamais vrai').not.toBe(true);
   });
 
   it('Karasek : « situation équilibrée » exige les deux axes qui la fondent', () => {
@@ -282,6 +293,176 @@ describe('sous-score non mesuré — null, jamais zéro', () => {
     expect(parAxe.DEM.total).toBeNull();
     expect(parAxe.LAT.total).toBeNull();
     expect(recSeul.interpretation).toBeNull();
+  });
+
+  // ── Drapeaux composites du Karasek (2026-07-29, second lot) ────────────────
+  //
+  // Dernier résidu du contrat « non mesuré » : `atRisk`, `jobStrain` et
+  // `isoStrain` valaient `false` sur un axe jamais rempli — « pas à risque » sur
+  // trois questions jamais posées. Le « et » du Job Strain devient donc un ET à
+  // TROIS valeurs, monotone comme la règle du Berlin.
+
+  /** Réponses saturées à la borne haute ou basse d’un axe nommé. */
+  function axeALaBorne(sousScore: string, borne: 'min' | 'max') {
+    const items = Object.fromEntries(itemsDe('Q_STR_06').map((q: any) => [q.id, q]));
+    const sc = (QUESTIONNAIRE_CATALOGUE as any).Q_STR_06.scoring;
+    const liste = sc.subScores.find((s: any) => s.id === sousScore).items;
+    return Object.fromEntries(liste.map((i: string) => {
+      const vals = items[i].options.map((o: any) => Number(o.v ?? o.value));
+      return [i, borne === 'max' ? Math.max(...vals) : Math.min(...vals)];
+    }));
+  }
+
+  it('Karasek : le « et » du Job Strain est ÉTABLI faux, jamais deviné faux', () => {
+    // Un « et » se conclut faux dès qu'un seul opérande est faux — peu importe ce
+    // qu'on ignore de l'autre. C'est ce qui distingue « établi » d'« ignoré », et
+    // c'est la seule chose qui autorise encore un verdict sur une passation
+    // partielle.
+    const demBasse: any = calculateScore('Q_STR_06', axeALaBorne('DEM', 'min'));
+    const par = Object.fromEntries(demBasse.subScores.map((s: any) => [s.id, s]));
+    expect(par.DEM.atRisk, 'DEM complet et sous son seuil').toBe(false);
+    expect(par.LAT.atRisk, 'LAT jamais rempli').toBeNull();
+    // DEM établi hors risque ⇒ pas de Job Strain, quoi qu'on ignore de LAT.
+    expect(demBasse.jobStrain).toBe(false);
+    expect(demBasse.isoStrain).toBe(false);
+    // Mais « équilibrée » exige les DEUX axes jugeables, et LAT ne l’est pas.
+    expect(demBasse.interpretation).toBeNull();
+  });
+
+  it('Karasek : « équilibrée » exige deux axes JUGEABLES, pas seulement mesurés', () => {
+    // Le cas que l’ancienne garde laissait passer : elle exigeait `total !== null`.
+    // Un axe à moitié rempli a bien un total — et c’est justement celui où
+    // `karasekValue` sous-estime le plus, puisqu’il compte l’absence pour zéro.
+    const sc = (QUESTIONNAIRE_CATALOGUE as any).Q_STR_06.scoring;
+    const lat = sc.subScores.find((s: any) => s.id === 'LAT');
+    const items = Object.fromEntries(itemsDe('Q_STR_06').map((q: any) => [q.id, q]));
+    const reponses: Record<string, number> = { ...axeALaBorne('DEM', 'min') };
+    for (const id of lat.items.slice(0, -2)) reponses[id] = valMax(items[id]);
+
+    const r: any = calculateScore('Q_STR_06', reponses);
+    const parAxe = Object.fromEntries(r.subScores.map((s: any) => [s.id, s]));
+    expect(parAxe.LAT.total, 'LAT partiel porte bien un total').not.toBeNull();
+    expect(parAxe.LAT.atRisk, 'mais il n’est pas jugeable').toBeNull();
+    expect(r.jobStrain, 'DEM hors risque ⇒ établi faux').toBe(false);
+    expect(r.interpretation, 'et pourtant aucun verdict rassurant').toBeNull();
+  });
+
+  it('Karasek : `null && false` vaut null, et c’est pourquoi le ET est écrit', () => {
+    // Le cas qui distingue le ET à trois valeurs de l’opérateur natif. `&&` rend
+    // son opérande GAUCHE quand il est falsy : `null && false` vaut donc `null`
+    // — « on ne sait pas » — alors que la réponse est ÉTABLIE : une latitude
+    // complète et au-dessus de son seuil suffit à exclure le Job Strain, quoi
+    // qu’on ignore de la demande. S’en remettre à `&&` donnerait le bon résultat
+    // sur trois cas et le mauvais sur celui-ci.
+    const latSeule: any = calculateScore('Q_STR_06', axeALaBorne('LAT', 'max'));
+    const par = Object.fromEntries(latSeule.subScores.map((s: any) => [s.id, s]));
+    expect(par.DEM.atRisk, 'DEM jamais rempli').toBeNull();
+    expect(par.LAT.atRisk, 'LAT complet, au-dessus de son seuil').toBe(false);
+    expect(latSeule.jobStrain, 'établi faux par LAT seul').toBe(false);
+    expect(latSeule.isoStrain).toBe(false);
+    // Mais toujours pas de verdict rassurant : DEM n’est pas jugeable.
+    expect(latSeule.interpretation).toBeNull();
+  });
+
+  it('Karasek : un axe de soutien ABSENT de la définition ne conclut pas l’Iso-Strain', () => {
+    // Aucun instrument du catalogue n’est dans ce cas — prouvé sur définition
+    // forgée, seul moyen d’éprouver la branche. `sou` absent ne vaut pas
+    // « soutien social suffisant » : l’Iso-Strain reste indéterminé.
+    const def = {
+      sections: [{ id: 'S', questions: [
+        { id: 'D1', type: 'number', min: 1, max: 4 },
+        { id: 'L1', type: 'number', min: 1, max: 4 },
+      ] }],
+      scoring: {
+        type: 'karasek',
+        subScores: [
+          { id: 'DEM', label: 'Demande', items: ['D1'], max: 4, seuil: 2, seuilDir: 'gte' },
+          { id: 'LAT', label: 'Latitude', items: ['L1'], max: 4, seuil: 3, seuilDir: 'lt' },
+        ],
+      },
+    };
+    const r: any = computeScoreFromDef(def, { D1: 4, L1: 1 });
+    expect(r.jobStrain, 'les deux axes sont à risque').toBe(true);
+    expect(r.isoStrain, 'mais le soutien n’existe pas : indéterminé').toBeNull();
+    expect(r.interpretation.label).toBe('Job Strain — stress professionnel');
+  });
+
+  it('Karasek : un axe SANS SEUIL publié ne fonde pas « équilibrée »', () => {
+    // Régression introduite par ce lot, corrigée avant le merge. `atRisk` est
+    // initialisé à `false` et n'est réécrit que si l'axe publie un seuil : un axe
+    // sans seuil ET sans une seule réponse le conserve donc à `false`, et
+    // satisfaisait le nouveau test du verdict vert. L'ancienne garde `mesure()`
+    // l'attrapait ; la remplacer par le seul `atRisk === false` l'avait perdue.
+    //
+    // Aucun instrument du catalogue n'est dans ce cas — `DEM` et `LAT` publient
+    // tous deux leur seuil. D'où la définition forgée : c'est le seul chemin.
+    const def = {
+      sections: [{ id: 'S', questions: [
+        { id: 'D1', type: 'number', min: 1, max: 4 },
+        { id: 'L1', type: 'number', min: 1, max: 4 },
+      ] }],
+      scoring: {
+        type: 'karasek',
+        subScores: [
+          { id: 'DEM', label: 'Demande', items: ['D1'], max: 4, seuil: 2, seuilDir: 'gte' },
+          { id: 'LAT', label: 'Latitude', items: ['L1'], max: 4 },
+        ],
+      },
+    };
+    const r: any = computeScoreFromDef(def, { D1: 1 });
+    const lat = r.subScores.find((s: any) => s.id === 'LAT');
+    expect(lat.total, 'LAT n’a aucune réponse').toBeNull();
+    expect(lat.atRisk, 'faute de seuil publié, il reste false PAR DÉFAUT').toBe(false);
+    expect(r.interpretation, 'et ce false ne fonde aucun verdict rassurant').toBeNull();
+
+    // Anti-sur-filtrage : le même axe RENSEIGNÉ, toujours sans seuil, laisse bien
+    // sortir le verdict — la garde porte sur la mesure, pas sur le seuil.
+    const rempli: any = computeScoreFromDef(def, { D1: 1, L1: 4 });
+    expect(rempli.interpretation.label).toBe('Situation professionnelle équilibrée');
+  });
+
+  it('Karasek : sur une passation complète, les verdicts restent ÉTABLIS', () => {
+    // Anti-sur-filtrage : une garde qui annulerait tous les drapeaux passerait
+    // chacun des tests ci-dessus. Aux deux bornes, tout ce qui est jugeable doit
+    // l’être — aucun `null` sur un axe complet portant un seuil.
+    const items = itemsDe('Q_STR_06');
+    const haut: any = calculateScore('Q_STR_06',
+      Object.fromEntries(items.map((q: any) => [q.id, valMax(q)])));
+    const bas: any = calculateScore('Q_STR_06', Object.fromEntries(items.map((q: any) => {
+      const vals = q.options.map((o: any) => Number(o.v ?? o.value));
+      return [q.id, Math.min(...vals)];
+    })));
+    for (const r of [haut, bas]) {
+      for (const s of r.subScores) {
+        if (typeof s.seuil === 'number') expect(s.atRisk, `${s.id} complet`).not.toBeNull();
+      }
+      expect(r.jobStrain, 'passation complète ⇒ verdict établi').not.toBeNull();
+      expect(r.isoStrain).not.toBeNull();
+    }
+    // Attendus écrits à la main. À la borne HAUTE : forte demande, mais latitude
+    // et soutien au-dessus de leurs seuils — pas de Job Strain.
+    expect(haut.interpretation.label).toBe('Forte demande psychologique');
+    expect(haut.jobStrain).toBe(false);
+
+    // À la borne BASSE, un TROU DE GRILLE que ce lot met au jour sans le créer.
+    // Demande faible (12 < 21, hors risque) mais latitude 42 < 72 ET soutien
+    // 8 < 24, tous deux À RISQUE. Le Job Strain se conclut faux — il exige les
+    // deux —, et aucune des quatre bandes ne décrit cette situation : elles ne
+    // parlent que de la demande et de la conjonction demande × latitude.
+    //
+    // L’ancienne version rendait ici « Situation professionnelle équilibrée », en
+    // vert, à un patient dont DEUX axes sont sous leur seuil : elle n’exigeait que
+    // des totaux non nuls. C’est une fausse réassurance de moins ; en contrepartie
+    // l’instrument ne dit plus rien de ce profil, que le modèle de Karasek nomme
+    // pourtant (« job passif »). Ajouter la bande est une décision de seuil
+    // clinique — elle ne se prend pas dans un lot de code, et elle est portée au
+    // changelog comme réserve.
+    const parBas = Object.fromEntries(bas.subScores.map((s: any) => [s.id, s]));
+    expect(parBas.DEM.atRisk).toBe(false);
+    expect(parBas.LAT.atRisk).toBe(true);
+    expect(parBas.SOU.atRisk).toBe(true);
+    expect(bas.jobStrain).toBe(false);
+    expect(bas.interpretation, 'aucune bande ne décrit ce profil').toBeNull();
   });
 
   it('sur une passation complète, aucun instrument ne perd son total', () => {
