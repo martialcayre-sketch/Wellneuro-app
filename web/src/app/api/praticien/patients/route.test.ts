@@ -134,7 +134,13 @@ describe('GET /api/praticien/patients — filtre de statut des assignations', ()
     prisma.assignation.count.mockResolvedValue(48);
     const res = await GET(get('statut=Complété'));
     const json = await res.json();
-    expect(json.assignationsMeta).toEqual({ total: 48, plafond: 40, statut: 'Complété' });
+    expect(json.assignationsMeta).toEqual({
+      total: 48,
+      plafond: 40,
+      statut: 'Complété',
+      statutReponses: null,
+      idPatient: null,
+    });
   });
 
   // Un 400 sur un paramètre d'affichage priverait le praticien de sa liste
@@ -171,6 +177,116 @@ describe('GET /api/praticien/patients — filtre de statut des assignations', ()
     expect(prisma.assignation.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { patient: portee, statut: 'En attente' } })
     );
+  });
+});
+
+// Même défaut, autre colonne et autre surface : `FichePatientPanel` filtrait
+// `modification_demandee` ET le dossier en mémoire, après la même troncature à
+// 40 — sur les assignations de TOUS les patients. Le tri étant `dateAssignation
+// desc`, ce sont les dossiers anciens, ceux qu'on corrige le plus tard, qui
+// tombaient hors fenêtre : la demande n'apparaissait nulle part et n'était donc
+// jamais débloquée.
+describe('GET /api/praticien/patients — filtre par dossier et statut de réponse', () => {
+  const portee = { praticienEmail: { equals: 'p@wellneuro.fr', mode: 'insensitive' } };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getServerSession.mockResolvedValue({ user: { email: 'p@wellneuro.fr' } });
+    prisma.patient.findMany.mockResolvedValue([]);
+    prisma.patient.count.mockResolvedValue(0);
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.assignation.count.mockResolvedValue(0);
+  });
+
+  // LE test du défaut : sans ces deux clés dans le `where`, aucune ligne au-delà
+  // du 40ᵉ rang ne peut être rendue, quoi que le client en fasse ensuite.
+  it('descend le dossier ET le statut de réponse jusqu’au where Prisma', async () => {
+    await GET(get('idPatient=PAT001&statutReponses=modification_demandee'));
+    expect(prisma.assignation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { patient: portee, statutReponses: 'modification_demandee', idPatient: 'PAT001' },
+        take: 40,
+      })
+    );
+  });
+
+  it('applique le même where au compte qu’à la liste', async () => {
+    await GET(get('idPatient=PAT001&statutReponses=modification_demandee'));
+    const whereListe = prisma.assignation.findMany.mock.calls[0][0].where;
+    expect(prisma.assignation.count).toHaveBeenCalledWith({ where: whereListe });
+  });
+
+  // L'écho permet au client de vérifier que sa demande a été honorée avant de
+  // conclure quoi que ce soit sur la troncature.
+  it('écho les deux filtres appliqués dans assignationsMeta', async () => {
+    prisma.assignation.count.mockResolvedValue(3);
+    const res = await GET(get('idPatient=PAT001&statutReponses=modification_demandee'));
+    const json = await res.json();
+    expect(json.assignationsMeta).toEqual({
+      total: 3,
+      plafond: 40,
+      statut: null,
+      statutReponses: 'modification_demandee',
+      idPatient: 'PAT001',
+    });
+  });
+
+  it('ignore un statut de réponse hors registre au lieu de rejeter la requête', async () => {
+    const res = await GET(get('statutReponses=brouillon'));
+    expect(res.status).toBe(200);
+    expect(prisma.assignation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { patient: portee } })
+    );
+  });
+
+  // Contrairement aux statuts, un idPatient inconnu n'est PAS ignoré : l'ignorer
+  // rendrait les assignations de TOUS les patients à un appelant qui en demande
+  // un seul, et la fiche afficherait les demandes de correction d'un autre
+  // dossier. Une valeur qui ne correspond à rien rend une liste vide.
+  it('n’ignore jamais un idPatient : une valeur inconnue filtre au lieu d’ouvrir', async () => {
+    await GET(get('idPatient=PAT_INEXISTANT'));
+    const where = prisma.assignation.findMany.mock.calls[0][0].where;
+    expect(where.idPatient).toBe('PAT_INEXISTANT');
+  });
+
+  it('sans paramètre, ne filtre rien — comportement historique inchangé', async () => {
+    await GET(get());
+    expect(prisma.assignation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { patient: portee } })
+    );
+  });
+
+  // Les filtres s'AJOUTENT à la garde de portée. Demander le dossier d'un autre
+  // praticien ne doit rien ouvrir : le `where` reste une conjonction.
+  it('ne desserre jamais la portée praticien', async () => {
+    await GET(get('idPatient=PAT_AUTRE_PRATICIEN&statutReponses=verrouille'));
+    const where = prisma.assignation.findMany.mock.calls[0][0].where;
+    expect(where.patient).toEqual(portee);
+    expect(where.idPatient).toBe('PAT_AUTRE_PRATICIEN');
+  });
+
+  it('filtre aussi dans la branche paginée', async () => {
+    await GET(get('page=1&idPatient=PAT001&statutReponses=modification_demandee'));
+    expect(prisma.assignation.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { patient: portee, statutReponses: 'modification_demandee', idPatient: 'PAT001' },
+      })
+    );
+  });
+
+  // Les quatre valeurs qu'écrit le code : défaut du schéma, soumission patient,
+  // demande de correction, déblocage praticien. Vérifié en base le 2026-07-29 :
+  // aucune ligne hors de cette liste.
+  it('accepte les quatre statuts de réponse que le code écrit', async () => {
+    for (const valeur of ['non_rempli', 'verrouille', 'modification_demandee', 'deverrouille']) {
+      vi.clearAllMocks();
+      prisma.assignation.findMany.mockResolvedValue([]);
+      prisma.assignation.count.mockResolvedValue(0);
+      prisma.patient.findMany.mockResolvedValue([]);
+      await GET(get(`statutReponses=${valeur}`));
+      const where = prisma.assignation.findMany.mock.calls[0][0].where;
+      expect(where.statutReponses).toBe(valeur);
+    }
   });
 });
 

@@ -13,12 +13,30 @@ const MAX_ASSIGNATIONS = 40;
 // donc invisibles ET inannulables depuis le tableau praticien.
 const STATUTS_ASSIGNATION = ['En attente', 'Complété', 'Annulée'] as const;
 
+// Statuts de RÉPONSE filtrables côté serveur — autre colonne, même défaut.
+// `FichePatientPanel` filtrait `modification_demandee` en mémoire APRÈS la
+// troncature à `MAX_ASSIGNATIONS`, et sur les assignations de TOUS les patients :
+// une demande de correction au-delà du 40ᵉ rang n'apparaissait nulle part, et
+// n'était donc jamais débloquée — le questionnaire restait verrouillé côté
+// patient sans que rien ne le signale au praticien.
+//
+// Les quatre valeurs sont celles qu'écrit le code : `non_rempli` (défaut du
+// schéma), `verrouille` (soumission patient, clôture d'agenda),
+// `modification_demandee` (demande de correction du patient) et `deverrouille`
+// (déblocage praticien). Au 2026-07-29, la base n'en porte que deux
+// (`verrouille` 65, `non_rempli` 28) et aucune valeur hors de cette liste.
+const STATUTS_REPONSES = ['non_rempli', 'verrouille', 'modification_demandee', 'deverrouille'] as const;
+
 // Une valeur inconnue est IGNORÉE, pas rejetée : même choix que `sortBy` plus
 // bas. Un 400 sur un paramètre d'affichage priverait le praticien de sa liste
 // entière pour une faute de frappe dans une URL.
-function statutDemande(searchParams: URLSearchParams): string | null {
-  const brut = searchParams.get('statut');
-  return (STATUTS_ASSIGNATION as readonly string[]).includes(brut ?? '') ? brut : null;
+function valeurAutorisee(
+  searchParams: URLSearchParams,
+  cle: string,
+  autorisees: readonly string[],
+): string | null {
+  const brut = searchParams.get(cle);
+  return autorisees.includes(brut ?? '') ? brut : null;
 }
 
 type Patient = {
@@ -62,6 +80,14 @@ export type AssignationsMeta = {
   total: number;
   plafond: number;
   statut: string | null;
+  // Écho des deux autres filtres. Facultatifs à dessein : ils décrivent ce que
+  // CE serveur a appliqué, et un client déployé avant eux doit pouvoir constater
+  // leur absence plutôt que la supposer. Le client s'en sert pour vérifier que
+  // sa demande a bien été honorée avant de conclure quoi que ce soit sur la
+  // troncature — un `total` de 93 sous un filtre ignoré se lirait sinon comme
+  // une troncature massive.
+  statutReponses?: string | null;
+  idPatient?: string | null;
 };
 
 export type PatientsApiResponse = {
@@ -141,10 +167,21 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
   // « 40 sur 48 » parle du même ensemble que les 40 lignes rendues. La garde de
   // portée praticien reste en tête — le filtre de statut s'y ajoute, il ne la
   // remplace pas.
-  const statut = statutDemande(searchParams);
+  const statut = valeurAutorisee(searchParams, 'statut', STATUTS_ASSIGNATION);
+  const statutReponses = valeurAutorisee(searchParams, 'statutReponses', STATUTS_REPONSES);
+  // Restriction à un patient. Contrairement aux statuts, une valeur inconnue
+  // n'est PAS ignorée : l'ignorer rendrait les assignations de TOUS les patients
+  // à un appelant qui en demande un seul, et la fiche afficherait alors les
+  // demandes de correction d'un autre dossier. Le filtre est donc appliqué tel
+  // quel — une valeur qui ne correspond à rien rend une liste vide, jamais celle
+  // d'autrui. La garde de portée praticien reste en tête du `where` : elle n'est
+  // pas remplacée, un idPatient d'un autre praticien ne rend rien.
+  const idPatientDemande = (searchParams.get('idPatient') ?? '').trim().slice(0, 100) || null;
   const whereAssignations = {
     patient: filtrePatientsDuPraticien(email),
     ...(statut ? { statut } : {}),
+    ...(statutReponses ? { statutReponses } : {}),
+    ...(idPatientDemande ? { idPatient: idPatientDemande } : {}),
   };
 
   try {
@@ -185,7 +222,13 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
       return NextResponse.json({
         patients: dbPatients.map(patientToDto),
         assignations: dbAssignations.map(assignationToDto),
-        assignationsMeta: { total: totalAssignations, plafond: MAX_ASSIGNATIONS, statut },
+        assignationsMeta: {
+          total: totalAssignations,
+          plafond: MAX_ASSIGNATIONS,
+          statut,
+          statutReponses,
+          idPatient: idPatientDemande,
+        },
         pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) },
       });
     }
@@ -203,7 +246,13 @@ export async function GET(req: Request): Promise<NextResponse<PatientsApiRespons
     return NextResponse.json({
       patients: dbPatients.map(patientToDto),
       assignations: dbAssignations.map(assignationToDto),
-      assignationsMeta: { total: totalAssignations, plafond: MAX_ASSIGNATIONS, statut },
+      assignationsMeta: {
+        total: totalAssignations,
+        plafond: MAX_ASSIGNATIONS,
+        statut,
+        statutReponses,
+        idPatient: idPatientDemande,
+      },
     });
   } catch (err) {
     console.error('[patients GET]', err instanceof Error ? err.message : String(err));
