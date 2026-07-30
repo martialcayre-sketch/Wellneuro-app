@@ -226,3 +226,297 @@ describe('PractitionerFoodObservationPanel', () => {
     expect(screen.getByText(/note de décision plus précise/i)).toBeTruthy();
   });
 });
+
+// Lot 4 — le bloc de calibrage affichait trois phrases écrites en dur, servies à
+// l'identique quel que soit le patient. L'assertion NÉGATIVE est le cœur de ce
+// test : sans elle, réintroduire la phrase passerait au vert.
+describe('PractitionerFoodObservationPanel — le calibrage ne s’invente plus', () => {
+  beforeEach(() => {
+    cleanup();
+    window.sessionStorage.clear();
+  });
+
+  it('n’affiche aucune structure tant qu’aucune journée n’est ouverte', async () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    const bloc = await screen.findByTestId('ja-praticien-calibrage');
+
+    expect(bloc.textContent).toContain('Aucune journée décrite à ce jour');
+    expect(bloc.textContent).not.toContain('Structure observée');
+    expect(bloc.textContent).not.toContain('3 prises principales');
+    expect(bloc.textContent).not.toMatch(/variabilité surtout le soir/i);
+    expect(bloc.textContent).not.toMatch(/petit-déjeuner sauté/i);
+  });
+
+  it('ne promet plus une validation que le bouton ne fait pas', () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    expect(screen.queryByText('Valider la revue locale')).toBeNull();
+    expect(screen.getByText('Préparer la décision')).toBeTruthy();
+  });
+});
+
+// ─── Constats de la revue adversariale du 2026-07-30 ────────────────────────
+// Le bloc de calibrage dépendait du dépliant : il annonçait « Aucune journée
+// décrite » au-dessus d'une liste affichant douze journées, et sous-estimait la
+// couverture dès qu'une transmission ancienne était ouverte.
+
+const JOURNEE = (localDate: string, typeJournee: string) => ({
+  journeeId: `j_${localDate}`,
+  episodeId: 'ja_PAT_TEST_abcdef0123456789',
+  localDate,
+  typeJournee,
+  momentsObserves: ['matin'],
+  marqueursPresents: [],
+  schemaVersion: 'ja-domaine-v2',
+  marqueursVersion: 'marqueurs-ja-v1',
+});
+
+const TRACE_MOT = {
+  traceId: 't1',
+  episodeId: 'ja_PAT_TEST_abcdef0123456789',
+  localDate: '2026-07-28',
+  occasionPresentee: true,
+  faisable: true,
+  issue: 'fait',
+  motLibre: 'plus simple quand je prépare la veille',
+  frictionsVersion: 'frictions-v1',
+};
+
+function monterAvecTransmissions(options: {
+  liste: Record<string, unknown>[];
+  details: Record<string, Record<string, unknown>>;
+  tronquee?: boolean;
+  retard?: Record<string, number>;
+}) {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (url.includes('/api/praticien/ja/cycle')) {
+      return new Response(JSON.stringify(CYCLE_DIFFUSE), { status: 200 });
+    }
+    if (url.includes('/api/praticien/ja/activation')) {
+      return new Response(JSON.stringify({ ok: true, activation: null }), { status: 200 });
+    }
+    if (url.includes('/api/praticien/ja/observations') && (init?.method ?? 'GET') === 'GET') {
+      const draftId = new URL(url, 'http://localhost').searchParams.get('draftId');
+      if (draftId) {
+        const attente = options.retard?.[draftId] ?? 0;
+        if (attente > 0) await new Promise((r) => setTimeout(r, attente));
+        const snapshot = options.details[draftId];
+        if (!snapshot) {
+          return new Response(JSON.stringify({ ok: false, reason: 'snapshot_introuvable' }), { status: 404 });
+        }
+        return new Response(JSON.stringify({ ok: true, snapshot }), { status: 200 });
+      }
+      return new Response(
+        JSON.stringify({ ok: true, snapshots: options.liste, tronquee: options.tronquee === true }),
+        { status: 200 },
+      );
+    }
+    return new Response(JSON.stringify({ ok: false }), { status: 404 });
+  }));
+  render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+}
+
+function instantane(over: Record<string, unknown>): Record<string, unknown> {
+  return {
+    draftId: 'JA_1',
+    idPatient: 'PAT_TEST',
+    episodeId: 'ja_PAT_TEST_abcdef0123456789',
+    createdAt: '2026-07-28T10:00:00.000Z',
+    supersedesDraftId: null,
+    actor: 'patient',
+    tracesCount: 0,
+    pausesCount: 0,
+    plansCount: 0,
+    solutionsCount: 0,
+    careersCount: 0,
+    journeesCount: 0,
+    traces: [],
+    pauses: [],
+    plans: [],
+    solutions: [],
+    journees: [],
+    elementsEcartes: 0,
+    ...over,
+  };
+}
+
+describe('le bilan de calibrage porte l’état du recueil', () => {
+  beforeEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('ne dit pas « aucune journée » quand des journées ont été transmises', async () => {
+    monterAvecTransmissions({
+      liste: [{ draftId: 'JA_2', createdAt: '2026-07-30T10:00:00.000Z', actor: 'patient', journeesCount: 3, tracesCount: 0, pausesCount: 0, solutionsCount: 0 }],
+      details: {
+        JA_2: instantane({
+          draftId: 'JA_2',
+          createdAt: '2026-07-30T10:00:00.000Z',
+          journeesCount: 3,
+          journees: [
+            JOURNEE('2026-07-28', 'travail_matin'),
+            JOURNEE('2026-07-29', 'travail_matin'),
+            JOURNEE('2026-07-30', 'repos'),
+          ],
+        }),
+      },
+    });
+
+    await waitFor(() => {
+      const bloc = screen.getByTestId('ja-praticien-calibrage');
+      expect(bloc.textContent).toContain('3 journée(s) décrite(s)');
+    });
+    const bloc = screen.getByTestId('ja-praticien-calibrage');
+    expect(bloc.textContent).not.toContain('Aucune journée décrite');
+    expect(bloc.textContent).toContain('2 type(s) de journée sur 4');
+    // Il nomme sa source, pour qu'on ne le prenne pas pour l'état d'un dépliant.
+    expect(bloc.textContent).toMatch(/D’après la transmission du 2026-07-30/);
+  });
+
+  it('ne suit PAS la transmission ouverte : ouvrir une ancienne ne change pas le bilan', async () => {
+    monterAvecTransmissions({
+      liste: [
+        { draftId: 'JA_2', createdAt: '2026-07-30T10:00:00.000Z', actor: 'patient', journeesCount: 3, tracesCount: 0, pausesCount: 0, solutionsCount: 0 },
+        { draftId: 'JA_1', createdAt: '2026-07-01T10:00:00.000Z', actor: 'patient', journeesCount: 1, tracesCount: 0, pausesCount: 0, solutionsCount: 0 },
+      ],
+      details: {
+        JA_2: instantane({
+          draftId: 'JA_2',
+          createdAt: '2026-07-30T10:00:00.000Z',
+          journeesCount: 3,
+          journees: [
+            JOURNEE('2026-07-28', 'travail_matin'),
+            JOURNEE('2026-07-29', 'travail_matin'),
+            JOURNEE('2026-07-30', 'repos'),
+          ],
+        }),
+        JA_1: instantane({
+          draftId: 'JA_1',
+          createdAt: '2026-07-01T10:00:00.000Z',
+          journeesCount: 1,
+          journees: [JOURNEE('2026-07-01', 'travail_matin')],
+        }),
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('ja-praticien-calibrage').textContent).toContain('3 journée(s)');
+    });
+
+    fireEvent.click(screen.getByTestId('ja-praticien-transmission-JA_1'));
+    await screen.findByTestId('ja-praticien-transmission-detail');
+
+    // Les transmissions sont cumulatives : une ancienne est un sous-ensemble.
+    // Faire piloter le bilan par le dépliant le ferait sous-estimer.
+    expect(screen.getByTestId('ja-praticien-calibrage').textContent).toContain('3 journée(s)');
+  });
+});
+
+describe('le dépliant rend ce que le patient a écrit', () => {
+  beforeEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const listeUne = [{ draftId: 'JA_1', createdAt: '2026-07-28T10:00:00.000Z', actor: 'patient', journeesCount: 0, tracesCount: 1, pausesCount: 0, solutionsCount: 0 }];
+
+  it('affiche le mot libre, la friction et le plan minimal', async () => {
+    monterAvecTransmissions({
+      liste: listeUne,
+      details: {
+        JA_1: instantane({
+          tracesCount: 1,
+          plansCount: 1,
+          traces: [{ ...TRACE_MOT, frictionCode: 'F1' }],
+          plans: [{ eventId: 'p1', episodeId: 'e', from: '2026-07-29', dureeJours: 3, activatedBy: 'patient', rationaleRequired: false }],
+        }),
+      },
+    });
+
+    await screen.findByTestId('ja-praticien-transmission-JA_1');
+    fireEvent.click(screen.getByTestId('ja-praticien-transmission-JA_1'));
+    const detail = await screen.findByTestId('ja-praticien-transmission-detail');
+
+    await waitFor(() => {
+      expect(detail.textContent).toContain('plus simple quand je prépare la veille');
+    });
+    // Un plan minimal activé est le signal de friction le plus fort du carnet :
+    // le charger sans le rendre revenait à nier sa présence.
+    expect(detail.textContent).toContain('plan minimal de 3 jour(s)');
+    expect(detail.textContent).not.toContain('aucun élément lisible');
+  });
+
+  it('dit combien d’éléments ont été écartés', async () => {
+    monterAvecTransmissions({
+      liste: listeUne,
+      details: { JA_1: instantane({ tracesCount: 3, traces: [TRACE_MOT], elementsEcartes: 2 }) },
+    });
+
+    await screen.findByTestId('ja-praticien-transmission-JA_1');
+    fireEvent.click(screen.getByTestId('ja-praticien-transmission-JA_1'));
+    const detail = await screen.findByTestId('ja-praticien-transmission-detail');
+
+    await waitFor(() => {
+      expect(detail.textContent).toContain('2 élément(s) illisible(s)');
+    });
+  });
+
+  // Sans contrôle de correspondance, le mot libre d'une transmission
+  // s'affichait sous la date d'une autre.
+  it('n’affiche pas le contenu d’une transmission sous l’en-tête d’une autre', async () => {
+    monterAvecTransmissions({
+      liste: [
+        { draftId: 'JA_2', createdAt: '2026-07-30T10:00:00.000Z', actor: 'patient', journeesCount: 0, tracesCount: 1, pausesCount: 0, solutionsCount: 0 },
+        { draftId: 'JA_1', createdAt: '2026-07-01T10:00:00.000Z', actor: 'patient', journeesCount: 0, tracesCount: 1, pausesCount: 0, solutionsCount: 0 },
+      ],
+      details: {
+        JA_2: instantane({ draftId: 'JA_2', createdAt: '2026-07-30T10:00:00.000Z', traces: [{ ...TRACE_MOT, motLibre: 'mot de JA_2' }] }),
+        JA_1: instantane({ draftId: 'JA_1', createdAt: '2026-07-01T10:00:00.000Z', traces: [{ ...TRACE_MOT, motLibre: 'mot de JA_1' }] }),
+      },
+      retard: { JA_1: 60 },
+    });
+
+    await screen.findByTestId('ja-praticien-transmission-JA_1');
+    fireEvent.click(screen.getByTestId('ja-praticien-transmission-JA_1'));
+    fireEvent.click(screen.getByTestId('ja-praticien-transmission-JA_2'));
+
+    const detail = await screen.findByTestId('ja-praticien-transmission-detail');
+    await new Promise((r) => setTimeout(r, 150));
+    expect(detail.textContent).not.toContain('mot de JA_1');
+  });
+});
+
+describe('la troncature de la liste', () => {
+  beforeEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  const dix = Array.from({ length: 10 }, (_, i) => ({
+    draftId: `JA_${i}`,
+    createdAt: '2026-07-28T10:00:00.000Z',
+    actor: 'patient',
+    journeesCount: 0,
+    tracesCount: 0,
+    pausesCount: 0,
+    solutionsCount: 0,
+  }));
+
+  it('est annoncée quand la fenêtre est saturée', async () => {
+    monterAvecTransmissions({ liste: dix, details: { JA_0: instantane({ draftId: 'JA_0' }) }, tronquee: true });
+    const bloc = await screen.findByTestId('ja-praticien-transmissions');
+    await waitFor(() => {
+      expect(bloc.textContent).toContain('Il peut en exister d’autres');
+    });
+  });
+
+  it('reste muette quand elle ne l’est pas', async () => {
+    monterAvecTransmissions({ liste: dix.slice(0, 2), details: { JA_0: instantane({ draftId: 'JA_0' }) } });
+    const bloc = await screen.findByTestId('ja-praticien-transmissions');
+    expect(bloc.textContent).not.toContain('Il peut en exister d’autres');
+  });
+});

@@ -36,6 +36,28 @@ export type JaObservationSnapshotInput = {
   actor: 'praticien' | 'patient';
 };
 
+/**
+ * Contenu d'UN instantané, pour la lecture praticien.
+ *
+ * Distinct de `JaObservationSnapshot`, qui ne porte que des comptes : la liste
+ * en rend jusqu'à cinquante (dix telles que la route les demande), et y charger
+ * les payloads ferait payer à chaque ouverture de fiche un contenu que le
+ * praticien n'a pas demandé.
+ *
+ * Les listes sont rendues TELLES QUE LE PATIENT LES A ÉCRITES, mots libres
+ * compris (arbitrage du 2026-07-30). Elles sont en base depuis le lot 2 : ce
+ * détail n'ajoute aucune donnée, il ouvre une surface de lecture.
+ */
+export type JaObservationSnapshotDetail = JaObservationSnapshot & {
+  traces: TrialTrace[];
+  pauses: PatientPauseEvent[];
+  plans: MinimalPlanEvent[];
+  solutions: IntraEpisodeSolution[];
+  journees: JourneeRepere[];
+  /** Éléments présents au payload mais illisibles, donc non rendus. */
+  elementsEcartes: number;
+};
+
 export type JaObservationSnapshot = {
   draftId: string;
   idPatient: string;
@@ -296,6 +318,163 @@ export async function listJaObservationSnapshots(
       journeesCount: Array.isArray(data.journees) ? data.journees.length : 0,
     };
   });
+}
+
+
+// ─── Relecture des éléments transmis ─────────────────────────────────────────
+// Ces lecteurs existent parce qu'une assertion de type (`v as TrialTrace`) ne
+// lève JAMAIS : elle laisserait passer n'importe quoi, et un champ inattendu
+// rendu par React fait disparaître le panneau entier du praticien. La voie
+// d'écriture ne valide ces listes que sur leur `episodeId` ; la relecture est
+// donc le seul endroit où la forme est vérifiée.
+//
+// Le contrôle est STRUCTUREL et minimal — les champs que l'affichage lit, rien
+// de plus : durcir davantage écarterait des lignes parfaitement affichables.
+
+function champChaine(v: Record<string, unknown>, champ: string): string {
+  const valeur = v[champ];
+  if (typeof valeur !== 'string' || valeur === '') {
+    throw new TypeError(`Champ « ${champ} » illisible.`);
+  }
+  return valeur;
+}
+
+function champChaineFacultative(v: Record<string, unknown>, champ: string): string | undefined {
+  const valeur = v[champ];
+  if (valeur === undefined || valeur === null) return undefined;
+  if (typeof valeur !== 'string') throw new TypeError(`Champ « ${champ} » illisible.`);
+  return valeur;
+}
+
+function objet(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new TypeError('Élément illisible.');
+  }
+  return value as Record<string, unknown>;
+}
+
+function lireTrace(value: unknown): TrialTrace {
+  const v = objet(value);
+  champChaine(v, 'traceId');
+  champChaine(v, 'localDate');
+  champChaine(v, 'issue');
+  champChaineFacultative(v, 'frictionCode');
+  champChaineFacultative(v, 'motLibre');
+  return v as unknown as TrialTrace;
+}
+
+function lirePause(value: unknown): PatientPauseEvent {
+  const v = objet(value);
+  champChaine(v, 'eventId');
+  champChaine(v, 'semaineDu');
+  champChaineFacultative(v, 'motifCode');
+  return v as unknown as PatientPauseEvent;
+}
+
+function lirePlan(value: unknown): MinimalPlanEvent {
+  const v = objet(value);
+  champChaine(v, 'eventId');
+  champChaine(v, 'from');
+  if (![1, 3, 7].includes(v.dureeJours as number)) {
+    throw new TypeError('Durée de plan minimal illisible.');
+  }
+  return v as unknown as MinimalPlanEvent;
+}
+
+function lireSolution(value: unknown): IntraEpisodeSolution {
+  const v = objet(value);
+  champChaine(v, 'solutionId');
+  champChaine(v, 'labelPatient');
+  champChaine(v, 'contexte');
+  return v as unknown as IntraEpisodeSolution;
+}
+
+/**
+ * Lecture du CONTENU d'un instantané, pour la fiche praticien.
+ *
+ * Le filtre porte sur `idPatient` autant que sur `draftId` : un identifiant seul
+ * laisserait lire l'instantané d'un autre patient à qui saurait le deviner. Rend
+ * `null` quand la ligne n'existe pas OU n'appartient pas à ce patient — la route
+ * en fait un 404, jamais un 200 vide, qui se lirait « ce patient n'a rien écrit ».
+ *
+ * Les listes sont relues élément par élément et les éléments illisibles sont
+ * ÉCARTÉS plutôt que de faire échouer la lecture entière : une ligne écrite par
+ * un client antérieur ne doit pas rendre muette une transmission par ailleurs
+ * lisible. Le décompte, lui, reste celui du payload, et `elementsEcartes` dit
+ * l'écart — sans quoi le praticien lirait « 5 traces » au-dessus de deux
+ * lignes, sans rien pour l'expliquer.
+ */
+export async function readJaObservationSnapshot(
+  idPatientRaw: string,
+  draftId: string,
+): Promise<JaObservationSnapshotDetail | null> {
+  const idPatient = ensurePatientId(idPatientRaw);
+  if (typeof draftId !== 'string' || draftId.trim() === '') return null;
+
+  const row = await prisma.protocolDraft.findFirst({
+    where: {
+      id: draftId,
+      idPatient,
+      contractVersion: JA_FOOD_OBSERVATION_CONTRACT_VERSION,
+      selectedPriorityId: JA_SELECTED_PRIORITY_ID,
+    },
+    select: {
+      id: true,
+      idPatient: true,
+      supersedesDraftId: true,
+      createdAt: true,
+      payload: true,
+    },
+  });
+  if (!row) return null;
+
+  const data = (row.payload ?? {}) as {
+    actor?: 'praticien' | 'patient';
+    episode?: { episodeId?: string };
+    traces?: unknown[];
+    pauses?: unknown[];
+    plans?: unknown[];
+    solutions?: unknown[];
+    actionCareer?: unknown[];
+    journees?: unknown[];
+  };
+
+  let ecartes = 0;
+  const lisibles = <T>(brut: unknown, lire: (v: unknown) => T): T[] => {
+    if (!Array.isArray(brut)) return [];
+    const out: T[] = [];
+    for (const element of brut) {
+      try {
+        out.push(lire(element));
+      } catch {
+        // Élément illisible : écarté, jamais deviné — et compté, sans quoi
+        // l'écart avec le décompte du payload serait muet.
+        ecartes += 1;
+      }
+    }
+    return out;
+  };
+
+  return {
+    draftId: row.id,
+    idPatient: row.idPatient,
+    episodeId: data.episode?.episodeId ?? 'episode_inconnu',
+    createdAt: row.createdAt.toISOString(),
+    supersedesDraftId: row.supersedesDraftId,
+    actor: data.actor === 'patient' ? 'patient' : 'praticien',
+    tracesCount: Array.isArray(data.traces) ? data.traces.length : 0,
+    pausesCount: Array.isArray(data.pauses) ? data.pauses.length : 0,
+    plansCount: Array.isArray(data.plans) ? data.plans.length : 0,
+    solutionsCount: Array.isArray(data.solutions) ? data.solutions.length : 0,
+    careersCount: Array.isArray(data.actionCareer) ? data.actionCareer.length : 0,
+    journeesCount: Array.isArray(data.journees) ? data.journees.length : 0,
+    traces: lisibles(data.traces, lireTrace),
+    pauses: lisibles(data.pauses, lirePause),
+    plans: lisibles(data.plans, lirePlan),
+    solutions: lisibles(data.solutions, lireSolution),
+    journees: lisibles(data.journees, readJourneeRepere),
+    elementsEcartes: ecartes,
+  };
 }
 
 export async function activateJaObservationSnapshot(input: JaActivationInput): Promise<JaActivationSummary> {

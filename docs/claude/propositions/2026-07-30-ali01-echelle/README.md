@@ -59,3 +59,37 @@ Le banc `certify` reste aveugle à `WN_ALI_01_SIIN57`. Tant qu'il n'est pas rejo
 avec la position de production, il continuera de mesurer la forme courte et de
 rétablir cette divergence. Le geste minimal — poser le drapeau dans l'invocation du
 banc — n'est pas fait dans ce lot et reste au dossier des réserves de la campagne.
+
+---
+
+## Addendum du 2026-07-30 (soir) — la source a été relue, elle tranche
+
+Le constat n° 2 de ce dossier avait été **refusé en revue** : il s'appuyait sur une
+arithmétique fausse (« 57 items à 2 points font 90 » — ils en font 114) et sur une
+prémisse sans pièce (« la source déclare un total /90 »), les deux lectures du banc
+rendant `bornesTotal: null`. La divergence avait donc été rouverte, à juste titre.
+
+Le support « pro » de la source a été relu directement. Il tranche :
+
+- Il porte en tête de colonne **« Votre score (0, 1 ou 2) »** et **« Si vous avez
+  répondu… alors comptez … points »**. Le 0-2 est le **nombre de points d'un item**,
+  énoncé comme tel — pas le codage de la réponse du patient.
+- Il donne le barème **item par item**. Relevé et compté : **24 items à 1 point,
+  33 items à 2 points, total 90.**
+- Le barème servi a **les mêmes effectifs et le même total** : 24 et 33, somme 90.
+- Les quatre bandes de la source — moins de 25, de 26 à 50, de 51 à 70, plus de 71 —
+  sont servies à l'identique sur ce /90.
+
+La divergence `echelle_de_cotation` est **annulée sur pièce**, sans aucune
+modification du servi. Le scénario redouté par la revue — des bandes de la source
+portant sur un /114 appliquées à un /90, déclassant chaque patient d'une à deux
+bandes — est écarté : la source elle-même compte 90.
+
+**Résidu déclaré.** La source laisse deux valeurs sans bande : 25 (elle dit « < 25 »
+puis « 26 à 50 ») et 71 (« 51 à 70 » puis « > 71 »). Le servi comble les deux, dans
+des sens opposés — 25 vers la bande la plus sévère, 71 vers la plus rassurante.
+Comblement de trou par arbitrage, pas alignement.
+
+**Ce que la réserve d'outillage devient.** Le banc consigne désormais la position des
+drapeaux dans son empreinte : la confusion de forme qui a valu ce dossier ne peut
+plus se reproduire en silence.

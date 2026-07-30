@@ -942,3 +942,43 @@ budget anti-harcèlement est par **recueil**, pas par patient (deux agendas ouve
 existent en prod) ; ratifier le verdict doctrinal par une ligne au
 `REGISTRE_FRONTIERES.md`, sans quoi le prochain audit relira `PROPOSITION:280` au
 pied de la lettre.
+## 2026-07-30 (soir) — Campagne « terminer les 17 » : 47 → 53, et quatre NO-GO
+
+**Décisions** : quatre PR (#479 droits déclarés + 4 montées, #483 cotation EORTC
+officielle, #484 Conners refermés + fraîcheur des verdicts). Les deux EORTC passent
+de la somme brute aux échelles 0-100 de leurs manuels — dont l'inversion des items
+44-46, relevée à la source et non de mémoire. Trois dettes d'outillage fermées :
+l'empreinte du banc consigne la position des drapeaux, son croisement compte des
+lecteurs et non des occurrences, et un verdict ne peut plus être antérieur à ce
+qu'il certifie.
+
+**Écarté** : rouvrir Q_PNE_01 (c'est le VQ11 de Ninot et al., échelle publiée) et
+Q_PED_02 (sous-score « Opposition » sans aucun item d'opposition) ; monter Q_ALI_01
+(l'annulation reposait sur une arithmétique fausse, 57 × 2 = 114) ; monter Q_SOM_09
+(verdict vacueux : 0 item et 0 seuil lus).
+
+**Prochaine action** : raccorder la garde de fraîcheur à l'empreinte servie — son
+témoin actuel est déclaratif et la moitié du registre lui échappe.
+
+**Questions ouvertes** : la règle du « nombre d'items » n'est pas écrite et s'applique
+dans un seul sens (PSQI 24/18, Q_NEU_12 36/48, Q_GEO_01 16/20) ; Q_ALI_01 attend la
+répartition des points de sa source ; Q_NEU_06, Q_SOM_09, VQ11 attendent une décision.
+
+## 2026-07-30 (clôture) — Q_ALI_01 tranché sur pièce : 54 sur 64
+
+**Décisions** : la source de l'Enquête alimentaire SIIN a été relue directement
+(WN-SRC-0471). Elle porte « Votre score (0, 1 ou 2) » et « alors comptez … points » :
+le 0-2 est un barème par item, pas un codage de réponse. Compté — 24 items à
+1 point, 33 à 2, total 90 — soit exactement les effectifs du barème servi, bandes
+comprises. Divergence annulée sur pièce, instrument monté (#487).
+
+**Écarté** : la même annulation le matin, sur l'arithmétique « 57 × 2 = 90 » (faux,
+114) et une prémisse sans pièce — refusée en revue, à juste titre. La conclusion
+était bonne, la preuve ne l'était pas.
+
+**Prochaine action** : raccorder la garde de fraîcheur à l'empreinte servie, seul
+témoin non déclaratif.
+
+**Questions ouvertes** : Q_NEU_06 (suspendre ou reconstruire), Q_SOM_09 (banc
+vacueux), VQ11 = Q_PNE_01 (instruire les droits d'une échelle publiée), règle du
+« nombre d'items » non écrite (PSQI 24/18, Q_NEU_12 36/48, Q_GEO_01 16/20).

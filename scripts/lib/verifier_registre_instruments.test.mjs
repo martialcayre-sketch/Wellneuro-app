@@ -517,3 +517,56 @@ test('structures manquantes : signalées plutôt que traversées', () => {
   const sansNom = verifier({ registre: { instruments: [entree({ instrument: {} })] } });
   assert.ok(sansNom.erreurs.some(e => /nomOfficiel manquant/.test(e)));
 });
+
+// ── Fraîcheur du verdict de banc ────────────────────────────────────────────
+//
+// Un verdict certifie un scoring À UN INSTANT DONNÉ, et rien ne le reliait au
+// code qu'il certifie : le 2026-07-30, deux instruments étaient `scoring_verifie`
+// sur un verdict antérieur à la réécriture de leur propre grille — le QDRS a vu
+// ses cinq bandes réalignées le matin et portait encore le verdict de la veille.
+const VERDICT = { banc: 'certify', date: '2026-07-30', divergencesCritiques: 0 };
+
+test('verdict antérieur à sa propre révision : refusé', () => {
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({
+      verdictScoring: { ...VERDICT, date: '2026-07-29', revision: { date: '2026-07-30', notes: ['grille réécrite'] } },
+    })] },
+  });
+  assert.ok(
+    erreurs.some(e => /verdictScoring daté du 2026-07-29/.test(e)),
+    `attendu un refus de fraîcheur, obtenu ${JSON.stringify(erreurs)}`,
+  );
+});
+
+test('verdict postérieur ou égal à sa révision : accepté', () => {
+  for (const date of ['2026-07-30', '2026-07-31']) {
+    const { erreurs } = verifier({
+      registre: { instruments: [entree({
+        verdictScoring: { ...VERDICT, date, revision: { date: '2026-07-30', notes: ['note'] } },
+      })] },
+    });
+    assert.equal(erreurs.filter(e => /daté du/.test(e)).length, 0, `date ${date} refusée à tort`);
+  }
+});
+
+test('SANS bloc `revision`, la garde ne voit rien — angle mort assumé, pas tacite', () => {
+  // Ce test ne verrouille pas une protection : il verrouille son ABSENCE, pour
+  // qu'elle soit lisible. La garde n'a qu'un témoin, `revision.date`, et ce
+  // témoin est écrit à la main. La moitié du registre n'en porte pas, et le cas
+  // vraiment dangereux — quelqu'un modifie une grille dans `questions.ts` sans
+  // toucher au registre — la laisse muette dans TOUS les cas.
+  //
+  // Le seul témoin honnête est déjà produit par le banc (`empreinte-servie.json`,
+  // hors dépôt) : y stocker une empreinte et la recomparer au catalogue relierait
+  // enfin le verdict au code. C'est un lot à part, et cette assertion est le
+  // repère qui rougira quand il sera fait.
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({
+      verdictScoring: { ...VERDICT, date: '2020-01-01' },
+    })] },
+  });
+  assert.equal(
+    erreurs.filter(e => /daté du/.test(e)).length, 0,
+    'la garde est censée rester muette faute de témoin — si elle parle, elle a gagné un témoin, et ce test doit être réécrit',
+  );
+});
