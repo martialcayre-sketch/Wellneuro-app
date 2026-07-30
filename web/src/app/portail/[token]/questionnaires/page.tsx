@@ -5,13 +5,19 @@ import { useParams, useRouter } from 'next/navigation';
 import type { PortailAssignationsResponse } from '@/app/api/portail/assignations/route';
 import type { AssignationPatient } from '@/lib/consultation/mapAssignation';
 import { hasDraft } from '@/lib/questionnaire-draft';
-import { Badge, type BadgeVariant } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/Badge';
 import { PatientCard, patientCardClassName } from '@/components/patient/ui/PatientCard';
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
 import { detecterChangementsEtMettreAJour, type ChangementVisite } from '@/lib/portail-visite';
-import { deriverRappelAgenda, type EtatAgendaPortail } from '@/lib/agenda-sommeil/rappelPortail';
-import { AGENDA_SOMMEIL_ID, NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
+import {
+  affichage,
+  calculerActionRecommandee,
+  GROUPES,
+  GROUPES_SECONDAIRES,
+  type AgendaPortail,
+  type Groupe,
+} from '@/lib/portail/hubQuestionnaires';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
@@ -19,130 +25,11 @@ import { MonParcoursAccueil, type EtapeDuMoment } from '@/components/patient/Mon
 import { PropositionPackReevaluation } from '@/components/patient/PropositionPackReevaluation';
 import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
 
-type Groupe = 'a_completer' | 'correction' | 'transmis' | 'expire';
-
-type Affichage = {
-  groupe: Groupe;
-  badge: string;
-  badgeVariant: BadgeVariant;
-  action: string | null; // libellé du bouton, null si non cliquable
-  ghost?: boolean;
-};
-
-// Dérive l'affichage patient à partir des statuts de l'assignation.
-function affichage(
-  a: AssignationPatient,
-  avecBrouillon: boolean,
-  agenda?: AgendaPortail,
-): Affichage {
-  if (a.statutReponses === 'verrouille') {
-    return { groupe: 'transmis', badge: 'Transmis au praticien', badgeVariant: 'info', action: 'Consulter', ghost: true };
-  }
-  if (a.statutReponses === 'modification_demandee') {
-    return { groupe: 'correction', badge: 'Correction demandée', badgeVariant: 'warning', action: 'Consulter', ghost: true };
-  }
-  if (a.statutReponses === 'deverrouille') {
-    return { groupe: 'a_completer', badge: 'Déverrouillé par le praticien', badgeVariant: 'warning', action: 'Corriger' };
-  }
-  if (!a.estEnAttenteSaisie) {
-    return { groupe: 'expire', badge: 'Expiré', badgeVariant: 'neutral', action: null };
-  }
-  // L'agenda du sommeil se lit à son propre rythme : un recueil quotidien
-  // n'est ni « à compléter » ni un brouillon. Le badge dit ce qui reste à
-  // faire AUJOURD'HUI — jamais ce qui a été manqué.
-  if (a.idQuestionnaire === AGENDA_SOMMEIL_ID && agenda) {
-    const rappel = deriverRappelAgenda(agenda, NB_JOURS_AGENDA);
-    const badge =
-      rappel.etat === 'a_transmettre'
-        ? 'À transmettre'
-        : rappel.etat === 'a_jour'
-          ? 'Nuit notée ce matin'
-          : rappel.etat === 'a_commencer'
-            ? 'À commencer'
-            : 'Nuit du jour à noter';
-    return {
-      groupe: 'a_completer',
-      badge,
-      badgeVariant: 'neutral',
-      action: rappel.cta ?? 'Consulter',
-    };
-  }
-  return {
-    groupe: 'a_completer',
-    badge: avecBrouillon ? 'Brouillon enregistré' : 'À compléter',
-    badgeVariant: 'neutral',
-    action: avecBrouillon ? 'Reprendre' : 'Commencer',
-  };
-}
-
 // Extrait le nombre de minutes d'une durée catalogue du type "5 min".
 function parseDureeMinutes(duree: string | null): number {
   if (!duree) return 0;
   const m = duree.match(/(\d+)/);
   return m ? parseInt(m[1], 10) : 0;
-}
-
-const GROUPES: { cle: Groupe; titre: string }[] = [
-  { cle: 'a_completer', titre: 'À compléter' },
-  { cle: 'correction', titre: 'Correction demandée' },
-  { cle: 'transmis', titre: 'Transmis au praticien' },
-  { cle: 'expire', titre: 'Expiré' },
-];
-
-// Groupes affichés en sections secondaires (repliables) : "à compléter"
-// reste toujours visible en premier plan, le reste est du détail consultable.
-const GROUPES_SECONDAIRES = new Set<Groupe>(['correction', 'transmis', 'expire']);
-
-type Enrichi = { a: AssignationPatient; aff: Affichage };
-type ActionRecommandee = EtapeDuMoment;
-type AgendaPortail = EtatAgendaPortail & { idAssignation: string };
-
-// Une seule action mise en avant, en priorité une reprise de brouillon, sinon
-// le premier "à compléter" (Commencer/Corriger déverrouillé confondus,
-// tous deux réellement actionnables), sinon une correction demandée en
-// attente (non actionnable tant que le praticien ne l'a pas déverrouillée —
-// présentée en information, pas en CTA), sinon un état stable sans action.
-function calculerActionRecommandee(
-  enriched: Enrichi[],
-  brouillons: Set<string>,
-  agendas: AgendaPortail[],
-): ActionRecommandee {
-  if (enriched.length === 0) return { kind: 'vide' };
-
-  // L'agenda du sommeil passe DEVANT, y compris devant un brouillon : c'est la
-  // seule tâche périssable du portail — `estDateSaisissable` referme la porte
-  // à J-2, alors qu'un brouillon attend sans rien perdre.
-  for (const agenda of agendas) {
-    const rappel = deriverRappelAgenda(agenda, NB_JOURS_AGENDA);
-    if (!rappel.prioritaire || rappel.cta === null) continue;
-    const cible = enriched.find(
-      e => e.a.idAssignation === agenda.idAssignation && e.aff.groupe === 'a_completer',
-    );
-    // Un agenda DÉVERROUILLÉ par le praticien est un recueil déjà clôturé
-    // qu'il rouvre pour faire corriger : lui proposer « transmettre » ferait
-    // créer une seconde QuestionnaireReponse. Son état praticien prime.
-    if (cible && cible.a.statutReponses !== 'deverrouille') {
-      return {
-        kind: 'action',
-        idAssignation: agenda.idAssignation,
-        cta: rappel.cta,
-        appui: rappel.factuel,
-      };
-    }
-  }
-
-  const brouillon = enriched.find(e => e.aff.groupe === 'a_completer' && brouillons.has(e.a.idAssignation));
-  const cible = brouillon ?? enriched.find(e => e.aff.groupe === 'a_completer');
-  if (cible) {
-    const titre = cible.a.titre || cible.a.idQuestionnaire;
-    return { kind: 'action', idAssignation: cible.a.idAssignation, cta: `${cible.aff.action} « ${titre} »` };
-  }
-  const enAttente = enriched.find(e => e.aff.groupe === 'correction');
-  if (enAttente) {
-    const titre = enAttente.a.titre || enAttente.a.idQuestionnaire;
-    return { kind: 'attente', texte: `Votre demande de correction sur « ${titre} » est en attente de traitement par votre praticien.` };
-  }
-  return { kind: 'stable' };
 }
 
 export default function QuestionnairesHubPage() {
