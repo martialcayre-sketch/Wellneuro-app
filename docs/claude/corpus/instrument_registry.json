@@ -1495,7 +1495,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "11 items en une seule section, chacun coté de 0 à 4. Scoring de type « count_threshold » : maxTotal déclaré 11, mais le balayage ne rend aucune borne numérique, le résultat étant catégoriel. Quatre bandes d'interprétation (0–1, 2–3, 4–5, 6–11), dont aucune ne porte de protocole.",
+        "description": "11 items en une seule section, chacun coté de 0 à 4. Scoring `count_threshold` : le score est le NOMBRE d'items cotés 3 ou 4, de 0 à 11 — les deux lectures de source du banc confirment que c'est bien sur ce comptage que portent les seuils, et non sur une somme des cotations. Quatre bandes (0–1, 2–3, 4–5, 6–11), dont aucune ne porte de protocole ; la valeur 6, laissée sans bande par la source, est rattachée à « critique » par arbitrage praticien du 23/06/2026.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
         "statutContenu": "cree_localement"
@@ -1512,7 +1512,7 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "contenu_verrouille",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1526,12 +1526,13 @@
       "statutBibliographique": "referentiel_interne_siin",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-29",
-        "divergencesCritiques": 1,
+        "date": "2026-07-30",
+        "divergencesCritiques": 0,
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "total_numerique_absent 0–11 : arbitrage praticien du 2026-07-30 — RELECTURE DE SOURCE demandée avant toute décision. Le moteur count_threshold reste servi tel quel ; la divergence critique reste OUVERTE et bloque scoring_verifie à dessein."
+            "total_numerique_absent 0–11 : RELECTURE DE SOURCE FAITE le 2026-07-30, elle tranche seule. Les DEUX lectures du banc donnent `bornesTotal {min:0,max:11}` et portent TOUS leurs seuils sur « nombre de questions cotées 3 ou 4 » — c'est-à-dire le comptage, pas une somme des cotations (qui irait à 44). Le moteur `count_threshold` rend précisément ce nombre (`count`, `maxTotal: 11`, questions.ts:2037-2057) : le total numérique 0–11 EST servi. Le banc le cherchait sous la clé `total` et ne l'a pas vu sous la clé `count` — même classe d'aveuglement d'extraction que les 17 divergences requalifiées le 2026-07-30. Critique annulée, aucune modification du servi.",
+            "RÉSIDU DÉCLARÉ : la source laisse 6 sans bande (« important <= 5 », « critique > 6 »). Le servi attribue 6 à « critique » — arbitrage praticien confirmé le 23/06/2026 et consigné dans le code (questions.ts:510). Comblement de trou, pas alignement : même famille qu'Epworth 6/15."
           ]
         }
       }
