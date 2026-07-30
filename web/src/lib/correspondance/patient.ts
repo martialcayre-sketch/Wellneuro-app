@@ -7,6 +7,7 @@ export const TYPES_CORRESPONDANCE_PATIENT = {
   questionnaire: 'questionnaire',
   questionnaires: 'questionnaires',
   accuseQuestionnaire: 'accuse_questionnaire',
+  relanceAgendaSommeil: 'relance_agenda_sommeil',
 } as const;
 
 export type TypeCorrespondancePatient =
