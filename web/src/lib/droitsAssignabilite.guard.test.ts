@@ -25,10 +25,27 @@ import { IDS_SUSPENDUS, QUESTIONNAIRES_CATALOG } from './questionnaires-catalog'
 // l'exposition constatée soit exactement celle qui a été décidée.
 const REGISTRE = JSON.parse(
   readFileSync(resolve(process.cwd(), '../docs/claude/corpus/instrument_registry.json'), 'utf8'),
-) as { instruments: { questionnaireId: string; droits?: { statut?: string } }[] };
+) as {
+  instruments: { questionnaireId: string; droits?: { statut?: string; detail?: string } }[];
+};
 
-const SOUS_LICENCE = REGISTRE.instruments
-  .filter(i => i.droits?.statut === 'licence_requise')
+// LE PRÉDICAT A CHANGÉ DE FORME LE 2026-07-30, PAS DE SENS.
+//
+// Ce jour-là, le praticien a déclaré couvert l'usage clinique des huit
+// instruments qui étaient `licence_requise`, en connaissance des réserves et
+// contre l'avis consigné. Lire `statut === 'licence_requise'` ne rendait plus
+// personne : la garde serait passée au vert en ayant cessé de regarder — et
+// c'est précisément la classe de défaut que son troisième test dénonce.
+//
+// Ce qui subsiste, et qui est la vraie population à garder, c'est l'instrument
+// dont le droit d'usage repose sur une DÉCLARATION posée par-dessus une réserve
+// qu'on n'a pas levée. Le registre le dit littéralement : la déclaration
+// conserve la réserve derrière le marqueur ci-dessous. Un statut dégagé sans
+// réserve au dossier (`libre`, permission d'un ayant droit réellement obtenue)
+// ne relève pas de cette garde.
+const MARQUEUR_RESERVE = 'RÉSERVE CONSERVÉE';
+const SOUS_RESERVE = REGISTRE.instruments
+  .filter(i => (i.droits?.detail ?? '').includes(MARQUEUR_RESERVE))
   .map(i => i.questionnaireId)
   .sort();
 
@@ -44,9 +61,15 @@ const SOUS_LICENCE = REGISTRE.instruments
 const assignableParLaRoute = (id: string) =>
   CATALOGUE_DEFINITIONS[id] !== undefined && !IDS_SUSPENDUS.has(id);
 
-// Les instruments sous licence non dégagée que l'arbitrage praticien laisse
-// ouverts. Un identifiant n'entre ici que par une décision, et la décision est
-// écrite à côté de lui.
+// Les instruments dont le droit repose sur une déclaration surmontant une
+// réserve, et que l'arbitrage praticien laisse ouverts. Un identifiant n'entre
+// ici que par une décision, et la décision est écrite à côté de lui.
+//
+// La liste s'est allongée le 2026-07-30 : la déclaration de ce jour vaut aussi
+// ouverture pour les instruments qu'elle couvre et qui sont actifs au catalogue.
+// Ceux qui restent suspendus (Conners ×2, MMSE, EORTC ×2) ne figurent pas ici —
+// leur droit est déclaré, mais leur route est fermée, et c'est ce que le test
+// constate.
 const LAISSES_ASSIGNABLES = [
   // HIT-6 — « © QualityMetric (licence requise, à vérifier) ». Laissé ouvert le
   // 2026-07-29 : 0 divergence critique au banc, aucune assignation ouverte.
@@ -63,9 +86,9 @@ const LAISSES_ASSIGNABLES = [
   'Q_SOM_02',
 ].sort();
 
-describe('droits et assignabilité — les instruments sous licence non dégagée', () => {
+describe('droits et assignabilité — les instruments dont le droit surmonte une réserve', () => {
   it('aucun n’est assignable sans avoir été nommé ici', () => {
-    const exposes = SOUS_LICENCE.filter(assignableParLaRoute).sort();
+    const exposes = SOUS_RESERVE.filter(assignableParLaRoute).sort();
 
     // Le message distingue les deux dérives, qui n'appellent pas le même geste.
     const nouveaux = exposes.filter(id => !LAISSES_ASSIGNABLES.includes(id));
@@ -74,12 +97,13 @@ describe('droits et assignabilité — les instruments sous licence non dégagé
       exposes,
       [
         nouveaux.length
-          ? `EXPOSÉS SANS DÉCISION : ${nouveaux.join(', ')} — un instrument sous licence non `
-            + `dégagée est assignable. Le fermer (\`actif: false\`) ou l'inscrire ici avec le motif.`
+          ? `EXPOSÉS SANS DÉCISION : ${nouveaux.join(', ')} — un instrument dont le droit `
+            + `surmonte une réserve non levée est assignable. Le fermer (\`actif: false\`) ou `
+            + `l'inscrire ici avec le motif.`
           : '',
         partis.length
-          ? `NOMMÉS MAIS PLUS EXPOSÉS : ${partis.join(', ')} — fermés, ou leurs droits dégagés au `
-            + `registre. Retirer la ligne plutôt que la laisser vieillir.`
+          ? `NOMMÉS MAIS PLUS EXPOSÉS : ${partis.join(', ')} — fermés, ou leur réserve réellement `
+            + `levée au registre. Retirer la ligne plutôt que la laisser vieillir.`
           : '',
       ].filter(Boolean).join('\n'),
     ).toEqual(LAISSES_ASSIGNABLES);
@@ -96,28 +120,30 @@ describe('droits et assignabilité — les instruments sous licence non dégagé
     // La liste attendue est VIDE, et c'est la décision du 2026-07-29 : aucun
     // instrument sous licence non dégagée ne reste en passation praticien.
     const enPassation = PASSATION_PRATICIEN.map(p => p.id)
-      .filter(id => SOUS_LICENCE.includes(id))
+      .filter(id => SOUS_RESERVE.includes(id))
       .sort();
     expect(
       enPassation,
-      `grille exposée en consultation sur un instrument sous licence : ${enPassation.join(', ')}`,
+      `grille exposée en consultation sur un instrument sous réserve : ${enPassation.join(', ')}`,
     ).toEqual([]);
   });
 
   it('ne se tait pas parce qu’il ne lit plus rien', () => {
-    // ANTI-VACUITÉ. Les deux assertions ci-dessus portent sur `SOUS_LICENCE` :
-    // qu'il soit vide — chemin faux, champ `droits.statut` renommé, registre
+    // ANTI-VACUITÉ. Les deux assertions ci-dessus portent sur `SOUS_RESERVE` :
+    // qu'il soit vide — chemin faux, marqueur de réserve reformulé, registre
     // déplacé — et la seconde passe au vert sans avoir rien vérifié. La première
-    // rougirait, mais avec un message qui parlerait de trois instruments
-    // « partis » au lieu d'un fichier illisible.
-    expect(SOUS_LICENCE.length, 'le registre ne porte plus aucun licence_requise').toBeGreaterThan(0);
+    // rougirait, mais avec un message qui parlerait d'instruments « partis » au
+    // lieu d'un fichier illisible. Ce test a déjà servi une fois : c'est lui qui
+    // a rendu visible, le 2026-07-30, que la déclaration en bloc vidait la
+    // population lue par la version précédente de cette garde.
+    expect(SOUS_RESERVE.length, 'le registre ne porte plus aucun droit sous réserve conservée').toBeGreaterThan(0);
     for (const id of LAISSES_ASSIGNABLES) {
-      expect(SOUS_LICENCE, `${id} n'est plus licence_requise au registre`).toContain(id);
+      expect(SOUS_RESERVE, `${id} ne porte plus de réserve conservée au registre`).toContain(id);
     }
     // Et les identifiants du registre désignent bien des instruments du dépôt :
     // une coquille dans le registre sortirait l'instrument du filtre en silence.
     const auRayon = new Set(QUESTIONNAIRES_CATALOG.map(q => q.id));
-    const inconnus = SOUS_LICENCE.filter(
+    const inconnus = SOUS_RESERVE.filter(
       id => !auRayon.has(id) && CATALOGUE_DEFINITIONS[id] === undefined,
     );
     expect(inconnus, `ids du registre inconnus du dépôt : ${inconnus.join(', ')}`).toEqual([]);

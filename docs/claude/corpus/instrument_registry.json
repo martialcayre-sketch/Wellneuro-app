@@ -819,10 +819,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "14 items en 1 section(s), moteur `had`. Aucun total global n'est rendu : les bandes 0–7 / 8–10 / 11–21 sont servies PAR SOUS-ÉCHELLE (anxiété, dépression), conformément au barème publié. Entrée de rayon active du besoin 8 de Mon Équilibre. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Lépine et al. (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -831,12 +831,12 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "licence_requise",
-        "detail": "Mention antérieure au dossier : « GL Assessment (copyright déclaré, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
-        "dateVerification": "2026-07-29"
+        "statut": "permission_obtenue",
+        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « GL Assessment (copyright déclaré, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
-      "statutCertification": "source_obtenue",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -850,7 +850,7 @@
       "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-29",
+        "date": "2026-07-30",
         "divergencesCritiques": 0,
         "revision": {
           "date": "2026-07-30",
@@ -976,10 +976,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "8 items en 1 section(s), moteur `sum`. Trous de la source à 6 et 15 comblés par ARBITRAGE praticien du 2026-07-30 (la source dit « < 6 », « >= 9 », « > 15 » et laisse ces deux valeurs sans bande) — comblement déclaré, pas alignement. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -988,12 +988,12 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "licence_requise",
-        "detail": "Mention antérieure au dossier : « © M. W. Johns (licence requise pour certains usages, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
-        "dateVerification": "2026-07-29"
+        "statut": "permission_obtenue",
+        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « © M. W. Johns (licence requise pour certains usages, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
-      "statutCertification": "source_obtenue",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1007,7 +1007,7 @@
       "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-29",
+        "date": "2026-07-30",
         "divergencesCritiques": 0,
         "revision": {
           "date": "2026-07-30",
@@ -1286,11 +1286,11 @@
       },
       "droits": {
         "statut": "libre",
-        "detail": "Instrument créé par WellNeuro (agenda de type Réseau Morphée).",
-        "dateVerification": null
+        "detail": "Instrument créé par WellNeuro (agenda quotidien de type Réseau Morphée, 21 nuits). FONDEMENT : aucune œuvre tierce n'est reproduite — items, échelles et indice longitudinal /100 sont rédigés en propre ; le « type Réseau Morphée » désigne le genre d'outil (agenda de sommeil), pas un emprunt de contenu. Droit d'usage plein et sans restriction pour WellNeuro. Vérifié le 2026-07-30.",
+        "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
-      "statutCertification": "source_obtenue",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": true,
         "intervalleMinJours": null
@@ -1301,7 +1301,7 @@
       "statutBibliographique": "a_completer",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-29",
+        "date": "2026-07-30",
         "divergencesCritiques": 0
       }
     },
@@ -1450,10 +1450,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "6 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1462,12 +1462,12 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "licence_requise",
-        "detail": "Mention antérieure au dossier : « © QualityMetric (licence requise, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
-        "dateVerification": "2026-07-29"
+        "statut": "permission_obtenue",
+        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « © QualityMetric (licence requise, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
-      "statutCertification": "source_obtenue",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1481,7 +1481,7 @@
       "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-29",
+        "date": "2026-07-30",
         "divergencesCritiques": 0
       }
     },
@@ -2304,9 +2304,9 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "licence_requise",
-        "detail": "Mention antérieure au dossier : « © MHS (licence requise, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
-        "dateVerification": "2026-07-29"
+        "statut": "permission_obtenue",
+        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « © MHS (licence requise, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
       "statutCertification": "suspendu",
@@ -2345,9 +2345,9 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "licence_requise",
-        "detail": "Mention antérieure au dossier : « © MHS (licence requise, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
-        "dateVerification": "2026-07-29"
+        "statut": "permission_obtenue",
+        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « © MHS (licence requise, à vérifier) ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
       "statutCertification": "suspendu",
@@ -2814,9 +2814,9 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "licence_requise",
-        "detail": "Mention antérieure au dossier : « © PAR (Psychological Assessment Resources) — licence requise, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
-        "dateVerification": "2026-07-29"
+        "statut": "permission_obtenue",
+        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « © PAR (Psychological Assessment Resources) — licence requise, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
       "statutCertification": "suspendu",
@@ -2959,9 +2959,9 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "licence_requise",
-        "detail": "Mention antérieure au dossier : « © EORTC — enregistrement/autorisation requis, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
-        "dateVerification": "2026-07-29"
+        "statut": "permission_obtenue",
+        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « © EORTC — enregistrement/autorisation requis, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
       "statutCertification": "suspendu",
@@ -3004,9 +3004,9 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "licence_requise",
-        "detail": "Mention antérieure au dossier : « © EORTC — enregistrement/autorisation requis, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
-        "dateVerification": "2026-07-29"
+        "statut": "permission_obtenue",
+        "detail": "Décision du praticien-propriétaire du 2026-07-30, prise en connaissance de la réserve reproduite ci-dessous et CONTRE l'avis consigné de l'assistant : l'usage clinique de cet instrument dans WellNeuro est déclaré couvert par le praticien, qui en assume la responsabilité. PÉRIMÈTRE inchangé : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne. NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. La réserve nommant l'ayant droit reste au dossier et n'est pas levée : elle est surmontée par la présente déclaration, pas résolue. RÉSERVE CONSERVÉE — Mention antérieure au dossier : « © EORTC — enregistrement/autorisation requis, à vérifier ». RÉSERVE : l'ayant droit ci-dessus exige une licence ou une autorisation. La déclaration du praticien du 2026-07-29 porte sur l'usage du support de formation et NE LA REMPLACE PAS. Statut porté à `licence_requise` : à arbitrer (obtenir la licence, ou retirer l'instrument du catalogue). Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers.",
+        "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
       "statutCertification": "suspendu",
