@@ -233,6 +233,9 @@ export function CadranNuit({
   // Le doigt qui tient la poignée. Une seconde touche pendant un glissement ne
   // doit pas voler la prise en cours.
   const pointeurActif = useRef<number | null>(null);
+  // La dernière poignée prise, seul arbitre restant quand deux superposées ont le
+  // même statut de confirmation : sans elle, la première monopoliserait le point.
+  const dernierePrise = useRef<Poignee | null>(null);
   const cercles = useRef<Partial<Record<Poignee, SVGCircleElement | null>>>({});
   const memoriserCercle = useCallback((poignee: Poignee, el: SVGCircleElement | null) => {
     cercles.current[poignee] = el;
@@ -256,10 +259,21 @@ export function CadranNuit({
   const posLit = miseAuLit ?? versHHMM(minExtinction - 30);
   const minLit = minutesDepuisMinuit(posLit);
 
-  // Coordonnées écran → position sur le cadran. Le viewBox est carré et le
-  // conteneur aussi : la projection est uniforme, un rapport de largeur suffit
-  // — à condition de partir de l'ORIGINE du viewBox et non de zéro. On rend
-  // AUSSI la distance au centre : c'est elle qui arme la zone morte.
+  // Coordonnées écran → position sur le cadran, en reproduisant la projection
+  // que le navigateur applique VRAIMENT : `preserveAspectRatio` valant par
+  // défaut `xMidYMid meet`, le viewBox est mis à l'échelle UNIFORMÉMENT (le plus
+  // petit des deux rapports) puis centré dans la boîte, avec des bandes vides sur
+  // les deux côtés les plus longs.
+  //
+  // Une version antérieure divisait `x` par la largeur et `y` par la hauteur,
+  // indépendamment : c'est la projection d'un `preserveAspectRatio="none"`. Tant
+  // que la boîte reste carrée les deux formules coïncident — et elle l'est
+  // aujourd'hui (`w-full` sur un viewBox carré). Mais la prémisse n'était nulle
+  // part vérifiée, alors qu'elle décide désormais AUSSI de la zone morte et de la
+  // distance aux poignées. Un jour où une feuille de style borne la hauteur, tout
+  // le cadran se décale sans qu'une seule ligne d'ici ne bouge.
+  //
+  // On rend aussi la distance au centre : c'est elle qui arme la zone morte.
   const positionPointeur = useCallback(
     (
       clientX: number,
@@ -269,8 +283,11 @@ export function CadranNuit({
       if (!svg) return null;
       const rect = svg.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return null;
-      const x = VB_ORIGINE + ((clientX - rect.left) / rect.width) * VB_TAILLE - CX;
-      const y = VB_ORIGINE + ((clientY - rect.top) / rect.height) * VB_TAILLE - CY;
+      const echelle = Math.min(rect.width, rect.height) / VB_TAILLE;
+      const margeX = (rect.width - VB_TAILLE * echelle) / 2;
+      const margeY = (rect.height - VB_TAILLE * echelle) / 2;
+      const x = VB_ORIGINE + (clientX - rect.left - margeX) / echelle - CX;
+      const y = VB_ORIGINE + (clientY - rect.top - margeY) / echelle - CY;
       const deg = (Math.atan2(y, x) * 180) / Math.PI + 90;
       return {
         minutes: (((deg + 360) % 360) / 360) * 1440,
@@ -313,19 +330,49 @@ export function CadranNuit({
   // est la plus proche de l'appui, à condition qu'il tombe dans son disque de
   // `RAYON_PRISE`. Deux poignées voisines (mise au lit 30 min avant
   // l'extinction, soit 9 unités) sont donc toutes deux candidates — la plus
-  // proche gagne, et l'écart de prise l'empêche ensuite de sauter sur sa
-  // voisine. À égalité stricte de distance, la première des `visibles` répond.
+  // proche gagne, et l'écart de prise l'empêche ensuite de sauter sur sa voisine.
+  //
+  // ÉGALITÉ STRICTE : deux poignées superposées (tout se cale sur la grille de
+  // 15 min, il n'y a qu'un cran à franchir) sont à la même distance de tout
+  // appui. Un simple `<` rendait alors la seconde définitivement inatteignable au
+  // doigt — le patient voyait « la mauvaise poignée bouge » sans explication. Deux
+  // règles la rendent joignable, dans cet ordre :
+  //
+  //  1. la poignée NON CONFIRMÉE d'abord. Une poignée déjà répondue a sa valeur ;
+  //     celle qui n'a pas encore été touchée attend le geste qui la fera exister,
+  //     et c'est ce geste que la doctrine du composant réclame ;
+  //  2. sinon, celle qui n'a pas été prise au coup précédent. Deux appuis
+  //     successifs au même endroit alternent donc entre les superposées, ce qui
+  //     suffit à atteindre les deux — sans quoi la première monopoliserait le
+  //     point à jamais.
+  //
+  // À défaut, l'ordre d'affichage tranche.
   function saisir(e: React.PointerEvent) {
     if (pointeurActif.current !== null) return;
     const p = positionPointeur(e.clientX, e.clientY);
     if (!p) return;
 
+    const confirmee: Record<Poignee, boolean> = {
+      lit: miseAuLit !== undefined,
+      extinction: extinction !== undefined,
+      reveil: reveilFinal !== undefined,
+      sortie: sortieDuLit !== undefined,
+    };
     let choisie: Poignee | null = null;
     let meilleureDistance = Infinity;
     for (const poignee of visibles) {
       const centre = point(MINUTES[poignee]);
       const d = Math.hypot(p.x - (centre.x - CX), p.y - (centre.y - CY));
-      if (d < meilleureDistance) {
+      // La comparaison est à l'ULP près : deux poignées de même valeur produisent
+      // exactement le même flottant, jamais deux voisins.
+      const exAequo = choisie !== null && d === meilleureDistance;
+      const preferable = exAequo
+        ? (!confirmee[poignee] && confirmee[choisie!]) ||
+          (confirmee[poignee] === confirmee[choisie!] &&
+            dernierePrise.current === choisie &&
+            dernierePrise.current !== poignee)
+        : d < meilleureDistance;
+      if (preferable) {
         meilleureDistance = d;
         choisie = poignee;
       }
@@ -339,6 +386,7 @@ export function CadranNuit({
     // exécutable en test.
     svgRef.current?.setPointerCapture?.(e.pointerId);
     pointeurActif.current = e.pointerId;
+    dernierePrise.current = choisie;
     ecartPrise.current = ecartCirculaire(p.minutes, MINUTES[choisie]);
     setActive(choisie);
     // `preventDefault` supprime le focus implicite : on le pose donc à la main,
@@ -356,7 +404,13 @@ export function CadranNuit({
     // n'a plus de sens.
     if (!p || p.distance < RAYON_MORT) return;
     e.preventDefault();
-    onChange(active, versHHMM(p.minutes - ecartPrise.current));
+    // Le pas est de 15 min, soit ~9 unités d'arc : la grande majorité des
+    // mouvements retombe sur la valeur déjà affichée. Ne remonter que les
+    // CHANGEMENTS évite de faire porter au parent — qui écrit dans son état à
+    // chaque appel — le rythme du doigt plutôt que celui de la saisie.
+    const valeur = versHHMM(p.minutes - ecartPrise.current);
+    if (valeur === POSITIONS[active]) return;
+    onChange(active, valeur);
   }
 
   function relacher(e: React.PointerEvent) {
@@ -408,6 +462,14 @@ export function CadranNuit({
           onPointerMove={deplacer}
           onPointerUp={relacher}
           onPointerCancel={relacher}
+          // Filet de sécurité : si un `pointerup` se perd — onglet masqué, geste
+          // interrompu par le système —, `pointeurActif` resterait armé et
+          // refuserait TOUTE prise ultérieure pour la durée du montage, sans
+          // aucun chemin de réinitialisation. Le navigateur, lui, émet
+          // `lostpointercapture` dans tous les cas. Après un relâchement normal
+          // l'événement arrive aussi, mais `relacher` a déjà remis le compteur à
+          // zéro et n'y reconnaît plus son pointeur : l'appel est inerte.
+          onLostPointerCapture={relacher}
         >
           {/* Cadran : 24 h, minuit en haut. Quatre repères discrets, aucune
               graduation chiffrée — on estime, on ne lit pas une horloge. */}
