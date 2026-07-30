@@ -2738,13 +2738,15 @@
       "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
+        "date": "2026-07-31",
         "divergencesCritiques": 0,
         "revision": {
-          "date": "2026-07-30",
+          "date": "2026-07-31",
           "notes": [
             "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite.",
-            "nombre_items 16/20 : adaptation déclarée (ce lot)."
+            "nombre_items 16/20 : adaptation déclarée (ce lot).",
+            "nombre_items 16/20 : PROUVÉ COMME DÉCOMPOSITION le 2026-07-31, et non plus « adaptation déclarée ». Le servi éclate deux items de la source en sous-items — la rotation de 360° en deux temps (TI_EQ8a/TI_EQ8b), la longueur et la hauteur du pas en quatre (TI_MA11a à TI_MA11d, pied droit et pied gauche, en balancement puis en élévation) : c'est le découpage canonique du POMA. Les deux axes de la source sont servis à l'identique, avec leurs maximums (ÉQUILIBRE 16, MARCHE 12) et le même total /28. Les neuf libellés à similarité 0,00 à partir de la position 9 sont un ARTEFACT D'ALIGNEMENT — le banc compare par position, et les positions se décalent après le premier éclatement. La divergence est donc annulée sur preuve, sans modification du servi.",
+            "RÈGLE POSÉE À CETTE OCCASION (docs/claude/propositions/2026-07-31-arbitrage-suspendus) : le nombre d'items ne se compare pas ; ce qui se compare, ce sont les axes, leur composition et le total. Un écart de comptage à axes et total identiques est une mise en forme (ce cas) ; un comptage IDENTIQUE à contenus différents est une substitution, et c'est le cas dangereux, parce que c'est le seul que le compteur déclare conforme — précédent Q_PED_02, 28 items des deux côtés et un autre instrument."
           ]
         }
       }
