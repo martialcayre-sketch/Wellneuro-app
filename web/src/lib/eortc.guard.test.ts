@@ -26,27 +26,27 @@ describe('EORTC — transformation linéaire 0-100 du manuel', () => {
     // → S = (1 − 0/3) × 100 = 100. Symptômes : S = 0. Globale : (7−1)/6 × 100.
     const r: any = calculateScore('Q_CAN_01', { ...uniforme('QL', 28, 1), QL29: 7, QL30: 7 });
     expect(r.total, "l'EORTC ne définit aucun score global d'instrument").toBeNull();
-    for (const id of ['PF2', 'RF2', 'EF', 'CF', 'SF']) {
+    for (const id of ['C30PF2', 'C30RF2', 'C30EF', 'C30CF', 'C30SF']) {
       expect(echelle(r, id).total, `${id} fonctionnelle au maximum`).toBe(100);
     }
-    for (const id of ['FA', 'NV', 'PA', 'DY', 'SL', 'AP', 'CO', 'DI', 'FI']) {
+    for (const id of ['C30FA', 'C30NV', 'C30PA', 'C30DY', 'C30SL', 'C30AP', 'C30CO', 'C30DI', 'C30FI']) {
       expect(echelle(r, id).total, `${id} symptôme au minimum`).toBe(0);
     }
-    expect(echelle(r, 'QL2').total, 'santé globale au maximum').toBe(100);
+    expect(echelle(r, 'C30QL2').total, 'santé globale au maximum').toBe(100);
   });
 
   it('QLQ-C30 : le patient le plus atteint obtient 0 en fonctionnel et 100 en symptômes', () => {
     const r: any = calculateScore('Q_CAN_01', { ...uniforme('QL', 28, 4), QL29: 1, QL30: 1 });
-    expect(echelle(r, 'PF2').total).toBe(0);
-    expect(echelle(r, 'FA').total).toBe(100);
-    expect(echelle(r, 'QL2').total, 'santé globale au minimum').toBe(0);
+    expect(echelle(r, 'C30PF2').total).toBe(0);
+    expect(echelle(r, 'C30FA').total).toBe(100);
+    expect(echelle(r, 'C30QL2').total, 'santé globale au minimum').toBe(0);
   });
 
   it('QLQ-C30 : une valeur intermédiaire suit exactement la formule du manuel', () => {
     // Fonctionnement émotionnel, items 21-24 à 2, 3, 3, 4 → RS = 3.
     // S = (1 − (3−1)/3) × 100 = 33,3. Le manuel donne cet exemple textuellement.
     const r: any = calculateScore('Q_CAN_01', { QL21: 2, QL22: 3, QL23: 3, QL24: 4 });
-    expect(echelle(r, 'EF').total).toBe(33.3);
+    expect(echelle(r, 'C30EF').total).toBe(33.3);
   });
 
   it('la santé globale utilise une étendue de 6, les autres de 3', () => {
@@ -54,9 +54,9 @@ describe('EORTC — transformation linéaire 0-100 du manuel', () => {
     // et 2,5 sur 1-4 donnent tous deux 50. Un range de 3 appliqué aux items 1-7
     // rendrait 200 — c'est cette confusion que le test épingle.
     const r: any = calculateScore('Q_CAN_01', { QL29: 4, QL30: 4, QL8: 2, QL11: 3 });
-    expect(echelle(r, 'QL2').total).toBe(50);
-    expect(echelle(r, 'DY').total, 'dyspnée : (2−1)/3 × 100').toBe(33.3);
-    expect(echelle(r, 'SL').total, 'insomnie : (3−1)/3 × 100').toBe(66.7);
+    expect(echelle(r, 'C30QL2').total).toBe(50);
+    expect(echelle(r, 'C30DY').total, 'dyspnée : (2−1)/3 × 100').toBe(33.3);
+    expect(echelle(r, 'C30SL').total, 'insomnie : (3−1)/3 × 100').toBe(66.7);
   });
 });
 
@@ -103,18 +103,41 @@ describe('EORTC — absence et non-applicabilité ne sont pas des zéros', () =>
     expect(echelle(quatre, 'BRST').total, 'quatre items sur sept : la moitié est atteinte').toBe(100);
   });
 
-  it('une passation vide ne rend aucun score, et surtout pas des zéros', () => {
-    // La garde posée en #451 intercepte AVANT le moteur : une passation sans
-    // aucune réponse ne produit pas de verdict du tout. On vérifie qu'elle couvre
-    // aussi ce moteur-ci — et qu'aucune échelle n'en sort à 0.
+  it('une passation vide n’atteint même pas le moteur', () => {
+    // Le contrat exact, et la première rédaction de ce test ne le prouvait pas :
+    // elle écrivait `(vide?.subScores ?? []).every(...)`, or la garde de #451
+    // retourne AVANT le moteur et n'émet aucune clé `subScores` — `[].every()`
+    // vaut `true` et l'assertion passait sans rien vérifier.
     for (const id of ['Q_CAN_01', 'Q_CAN_02']) {
       const vide: any = calculateScore(id, {});
-      expect(vide?.total ?? null, `${id} : aucun total sur une passation vide`).toBeNull();
-      expect(
-        (vide?.subScores ?? []).every((s: any) => s.total === null),
-        `${id} : aucune échelle scorée sur une passation vide`,
-      ).toBe(true);
+      expect(vide.scored, `${id} : passation vide non scorée`).toBe(false);
+      expect(vide.subScores, `${id} : aucune échelle émise du tout`).toBeUndefined();
+      expect(vide.total ?? null).toBeNull();
     }
+  });
+
+  it('un déclencheur NON RÉPONDU laisse l’échelle indéterminée, pas « sans objet »', () => {
+    // La faute que ce test empêche : `evalConditionnel` rend `false` aussi bien
+    // sur un déclencheur répondu par la négative que sur un déclencheur MUET. Les
+    // deux tombaient dans la même branche et l'échelle sortait « sans objet pour
+    // cette patiente » — une phrase qui part dans la charge du modèle de synthèse,
+    // donc dans ce que le praticien lit et dans le narratif rendu au patient. On
+    // affirmait qu'une patiente n'avait pas eu d'activité sexuelle alors qu'elle
+    // n'avait rien dit.
+    const muet: any = calculateScore('Q_CAN_02', { BR1: 2 });
+    expect(echelle(muet, 'BRSEE').notApplicable, 'rien n’autorise « sans objet »').toBeUndefined();
+    expect(echelle(muet, 'BRHL').notApplicable).toBeUndefined();
+    expect(muet.notApplicable).toEqual([]);
+    // Indéterminé veut dire manquant : le badge « N manquant(s) » les relance.
+    expect(muet.missingIds).toContain('BR16');
+    expect(muet.missingIds).toContain('BR5');
+
+    // Contre-épreuve : déclencheur RÉPONDU et négatif — là, « sans objet » est le
+    // mot juste, et c'est ce que dit le manuel (« if item 45 is "not at all" »).
+    const declare: any = calculateScore('Q_CAN_02', { BR1: 2, BR4: 1, BR15: 1 });
+    expect(echelle(declare, 'BRSEE').notApplicable).toBe(true);
+    expect(echelle(declare, 'BRHL').notApplicable).toBe(true);
+    expect(declare.missingIds).not.toContain('BR16');
   });
 
   it('une seule réponse ne suffit à scorer que les échelles à un item', () => {
@@ -122,9 +145,9 @@ describe('EORTC — absence et non-applicabilité ne sont pas des zéros', () =>
     // bien, et la règle de la demi-moitié fait le tri. Un seul item répondu score
     // sa propre échelle mono-item et laisse toutes les autres à `null`.
     const r: any = calculateScore('Q_CAN_01', { QL8: 3 });
-    expect(echelle(r, 'DY').total, 'dyspnée, échelle à un item').toBe(66.7);
-    expect(echelle(r, 'PF2').total, 'fonctionnement physique : 0 item sur 5').toBeNull();
-    expect(echelle(r, 'QL2').total, 'santé globale : 0 item sur 2').toBeNull();
+    expect(echelle(r, 'C30DY').total, 'dyspnée, échelle à un item').toBe(66.7);
+    expect(echelle(r, 'C30PF2').total, 'fonctionnement physique : 0 item sur 5').toBeNull();
+    expect(echelle(r, 'C30QL2').total, 'santé globale : 0 item sur 2').toBeNull();
   });
 
   it('le plaisir sexuel est SANS OBJET, pas manquant, si l’activité est « pas du tout »', () => {
@@ -162,6 +185,57 @@ describe('EORTC — ce que la somme brute faisait et qui est réparé', () => {
         expect([0, 100], `${id}/${s.id} à la borne haute`).toContain(s.total);
       }
     }
+  });
+
+  it('chaque échelle est lue dans SON sens — les deux bornes, en valeur signée', () => {
+    // Le test des bornes ci-dessus n'assert que « 0 ou 100 » : formule et sens
+    // basculent ENSEMBLE, si bien qu'inverser le sens d'une échelle le laisse
+    // vert. Passer `BRAS` en fonctionnelle afficherait « symptômes du bras :
+    // 100/100 » à une patiente qui n'en a aucun, sans qu'un test bouge. Ici
+    // chaque échelle est nommée avec sa valeur attendue, dans les deux sens.
+    const rien: any = calculateScore('Q_CAN_02', uniforme('BR', 23, 1));
+    const tout: any = calculateScore('Q_CAN_02', uniforme('BR', 23, 4));
+    const attendu: Array<[string, number | null, number | null]> = [
+      ['BRST', 0, 100],   // symptôme
+      ['BRAS', 0, 100],   // symptôme
+      ['BRBS', 0, 100],   // symptôme
+      ['BRBI', 100, 0],   // fonctionnelle, items formulés en négatif
+      ['BRFU', 100, 0],   // fonctionnelle, item formulé en négatif
+      ['BRSEF', 0, 100],  // fonctionnelle INVERSÉE : peu d'intérêt → fonctionnement bas
+    ];
+    for (const [id, bas, haut] of attendu) {
+      expect(echelle(rien, id).total, `${id} avec toutes les réponses au minimum`).toBe(bas);
+      expect(echelle(tout, id).total, `${id} avec toutes les réponses au maximum`).toBe(haut);
+    }
+    // BRHL et BRSEE dépendent d'un déclencheur : au minimum ils sont sans objet
+    // (pas de perte de cheveux, pas d'activité), au maximum ils sont scorés.
+    expect(echelle(rien, 'BRHL').notApplicable).toBe(true);
+    expect(echelle(tout, 'BRHL').total, 'contrariété maximale').toBe(100);
+    expect(echelle(rien, 'BRSEE').notApplicable).toBe(true);
+    expect(echelle(tout, 'BRSEE').total, 'plaisir maximal (item inversé)').toBe(100);
+  });
+
+  it('les échelles à un item du C30 ne sont pas interverties', () => {
+    // Toutes les autres épreuves emploient des réponses uniformes : un échange
+    // entre constipation (item 16) et diarrhée (item 17) y passerait en silence.
+    // Une réponse distincte par item l'attrape.
+    const r: any = calculateScore('Q_CAN_01', { QL8: 4, QL11: 3, QL13: 2, QL16: 1, QL17: 4, QL28: 3 });
+    expect(echelle(r, 'C30DY').total, 'dyspnée = item 8').toBe(100);
+    expect(echelle(r, 'C30SL').total, 'insomnie = item 11').toBe(66.7);
+    expect(echelle(r, 'C30AP').total, 'perte d’appétit = item 13').toBe(33.3);
+    expect(echelle(r, 'C30CO').total, 'constipation = item 16').toBe(0);
+    expect(echelle(r, 'C30DI').total, 'diarrhée = item 17').toBe(100);
+    expect(echelle(r, 'C30FI').total, 'difficultés financières = item 28').toBe(66.7);
+  });
+
+  it('la frontière de la demi-moitié tombe juste sur une échelle PAIRE', () => {
+    // 3-vs-4 sur sept items ne dit rien du cas pair : la règle du manuel est
+    // `XNUM >= NITEMS / 2`, donc 2 sur 4 SCORE et 1 sur 4 non. Un « strictement
+    // plus » passerait à sept items et échouerait ici.
+    const deux: any = calculateScore('Q_CAN_02', { BR9: 1, BR10: 1 });
+    expect(echelle(deux, 'BRBI').total, 'image du corps, 2 items sur 4').toBe(100);
+    const un: any = calculateScore('Q_CAN_02', { BR9: 1 });
+    expect(echelle(un, 'BRBI').total, 'image du corps, 1 item sur 4').toBeNull();
   });
 
   it('plus aucun total global n’est fabriqué', () => {

@@ -39,12 +39,15 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
-// v12, le 2026-07-30 : la consigne décrit le champ `sens` des sous-scores.
+// v12, le 2026-07-30 : la consigne décrit trois champs nouveaux — le champ `sens` des sous-scores.
 // Il arrive avec la cotation EORTC, et sans lui un score de 100 est illisible —
 // « fonctionnement sexuel » et « symptômes du bras » se lisent en sens
 // CONTRAIRES, et rien dans leur libellé ne le dit. C'est le banc des sous-scores
-// qui a exigé cette ligne : il refuse tout champ livré au modèle et non décrit.
-const EMPREINTE_V12 = '08708593ee861945';
+// qui a exigé ces lignes : il refuse tout champ livré au modèle et non décrit.
+// S'y ajoutent 'notApplicable' et 'raisonNonScore', que la garde ne voyait PAS :
+// elle recense les champs sur des passations SATURÉES, où aucune échelle n'est
+// sans objet. Elle restait verte en ratant exactement la classe qu'elle nomme.
+const EMPREINTE_V12 = '1963a73aeccdfe33';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;

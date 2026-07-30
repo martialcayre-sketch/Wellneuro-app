@@ -49,6 +49,31 @@ export function buildMiniSynthese(scores: ScoreInput): string {
       .filter(a => estPerturbe(a.interpretation) && a.interpretation?.label)
       .sort((a, b) => (SEVERITE[b.interpretation?.color ?? ''] ?? 0) - (SEVERITE[a.interpretation?.color ?? ''] ?? 0));
 
+    // ÉCHELLES ORIENTÉES (EORTC) — aucune ne porte de bande, et le manuel n'en
+    // définit aucune. Sans ce cas, l'inbox praticien restait VIDE sur un
+    // questionnaire complet : ni score principal, ni bande, ni synthèse. Le
+    // résumé ci-dessous est strictement FACTUEL — il nomme les deux extrêmes
+    // avec leur sens, et n'invente aucun verdict là où la source n'en donne pas.
+    const orientees = axes.filter(a => a.sens && typeof a.total === 'number');
+    if (perturbes.length === 0 && orientees.length > 0) {
+      const symptomes = orientees
+        .filter(a => a.sens === 'symptome')
+        .sort((a, b) => (b.total as number) - (a.total as number));
+      const fonctions = orientees
+        .filter(a => a.sens !== 'symptome')
+        .sort((a, b) => (a.total as number) - (b.total as number));
+      const bouts: string[] = [];
+      if (symptomes[0] && (symptomes[0].total as number) > 0) {
+        bouts.push(`symptôme le plus marqué — ${symptomes[0].label.toLowerCase()} ${symptomes[0].total}/100`);
+      }
+      if (fonctions[0]) {
+        bouts.push(`fonctionnement le plus bas — ${fonctions[0].label.toLowerCase()} ${fonctions[0].total}/100`);
+      }
+      return bouts.length
+        ? `${orientees.length} échelles 0-100 : ${bouts.join(' ; ')}.`
+        : '';
+    }
+
     if (perturbes.length === 0) {
       // Une absence de bande n'est PAS une bande basse.
       //

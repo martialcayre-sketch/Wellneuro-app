@@ -245,6 +245,11 @@ ids.filter(id => QUESTIONNAIRE_CATALOGUE[id].scoring?.type === 'eortc').forEach(
   );
   const vus = new Map();
   (def.scoring.echelles || []).forEach(e => {
+    assert(
+      !auQuestionnaire.has(e.id),
+      `${id} : l'échelle '${e.id}' porte le même identifiant qu'un ITEM du questionnaire — `
+      + `deux grandeurs sans rapport se retrouveraient sous un même nom dans la charge du modèle`
+    );
     assert(e.range === 3 || e.range === 6, `${id}/${e.id} : étendue ${e.range} inattendue (3 ou 6)`);
     assert(
       ['fonctionnelle', 'symptome', 'globale'].includes(e.sens),
@@ -289,11 +294,11 @@ function assertCertification(result, expectedStatus, idQuestionnaire) {
 const c30Bas = calculateScore('Q_CAN_01', fill('Q_CAN_01', 1));
 assertEqual(c30Bas.total, null, 'Q_CAN_01 ne rend aucun score global');
 assertEqual(
-  c30Bas.subScores.find(s => s.id === 'PF2').total, 100,
+  c30Bas.subScores.find(s => s.id === 'C30PF2').total, 100,
   'Q_CAN_01 fonctionnement physique au maximum quand rien ne gêne'
 );
 assertEqual(
-  c30Bas.subScores.find(s => s.id === 'FA').total, 0,
+  c30Bas.subScores.find(s => s.id === 'C30FA').total, 0,
   'Q_CAN_01 fatigue au minimum quand rien ne gêne'
 );
 const c30Missing = fill('Q_CAN_01', 1);

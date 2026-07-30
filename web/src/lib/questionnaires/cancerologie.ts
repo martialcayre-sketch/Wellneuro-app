@@ -66,22 +66,27 @@ export const Q_CAN_01 = {
     type:'eortc',
     certification:{source:'manuel_eortc', status:'certifie'},
     note:'Scores 0-100 par échelle selon le manuel EORTC QLQ-C30 v3.0. Aucun score global d\'instrument : le manuel n\'en definit pas.',
+    // Sigles PRÉFIXÉS. Sans le préfixe, l'échelle « santé globale » du manuel
+    // s'appelle `QL2` — exactement comme l'ITEM 2 du questionnaire (« difficultés
+    // à faire une longue promenade »). La charge livrée au modèle contenait alors
+    // `rawAnswers.QL2 = 3` et `subScores[0] = {id:'QL2', total: 50}` : deux
+    // grandeurs sans rapport sous un même nom. Le BR23 préfixait déjà les siens.
     echelles:[
-      {id:'QL2', label:'Santé globale / qualité de vie', sens:'globale',        range:6, items:['QL29','QL30']},
-      {id:'PF2', label:'Fonctionnement physique',        sens:'fonctionnelle',  range:3, items:['QL1','QL2','QL3','QL4','QL5']},
-      {id:'RF2', label:'Fonctionnement de rôle',         sens:'fonctionnelle',  range:3, items:['QL6','QL7']},
-      {id:'EF',  label:'Fonctionnement émotionnel',      sens:'fonctionnelle',  range:3, items:['QL21','QL22','QL23','QL24']},
-      {id:'CF',  label:'Fonctionnement cognitif',        sens:'fonctionnelle',  range:3, items:['QL20','QL25']},
-      {id:'SF',  label:'Fonctionnement social',          sens:'fonctionnelle',  range:3, items:['QL26','QL27']},
-      {id:'FA',  label:'Fatigue',                        sens:'symptome',       range:3, items:['QL10','QL12','QL18']},
-      {id:'NV',  label:'Nausées et vomissements',        sens:'symptome',       range:3, items:['QL14','QL15']},
-      {id:'PA',  label:'Douleur',                        sens:'symptome',       range:3, items:['QL9','QL19']},
-      {id:'DY',  label:'Dyspnée',                        sens:'symptome',       range:3, items:['QL8']},
-      {id:'SL',  label:'Insomnie',                       sens:'symptome',       range:3, items:['QL11']},
-      {id:'AP',  label:'Perte d\'appétit',               sens:'symptome',       range:3, items:['QL13']},
-      {id:'CO',  label:'Constipation',                   sens:'symptome',       range:3, items:['QL16']},
-      {id:'DI',  label:'Diarrhée',                       sens:'symptome',       range:3, items:['QL17']},
-      {id:'FI',  label:'Difficultés financières',        sens:'symptome',       range:3, items:['QL28']},
+      {id:'C30QL2', label:'Santé globale / qualité de vie', sens:'globale',        range:6, items:['QL29','QL30']},
+      {id:'C30PF2', label:'Fonctionnement physique',        sens:'fonctionnelle',  range:3, items:['QL1','QL2','QL3','QL4','QL5']},
+      {id:'C30RF2', label:'Fonctionnement de rôle',         sens:'fonctionnelle',  range:3, items:['QL6','QL7']},
+      {id:'C30EF',  label:'Fonctionnement émotionnel',      sens:'fonctionnelle',  range:3, items:['QL21','QL22','QL23','QL24']},
+      {id:'C30CF',  label:'Fonctionnement cognitif',        sens:'fonctionnelle',  range:3, items:['QL20','QL25']},
+      {id:'C30SF',  label:'Fonctionnement social',          sens:'fonctionnelle',  range:3, items:['QL26','QL27']},
+      {id:'C30FA',  label:'Fatigue',                        sens:'symptome',       range:3, items:['QL10','QL12','QL18']},
+      {id:'C30NV',  label:'Nausées et vomissements',        sens:'symptome',       range:3, items:['QL14','QL15']},
+      {id:'C30PA',  label:'Douleur',                        sens:'symptome',       range:3, items:['QL9','QL19']},
+      {id:'C30DY',  label:'Dyspnée',                        sens:'symptome',       range:3, items:['QL8']},
+      {id:'C30SL',  label:'Insomnie',                       sens:'symptome',       range:3, items:['QL11']},
+      {id:'C30AP',  label:'Perte d\'appétit',               sens:'symptome',       range:3, items:['QL13']},
+      {id:'C30CO',  label:'Constipation',                   sens:'symptome',       range:3, items:['QL16']},
+      {id:'C30DI',  label:'Diarrhée',                       sens:'symptome',       range:3, items:['QL17']},
+      {id:'C30FI',  label:'Difficultés financières',        sens:'symptome',       range:3, items:['QL28']},
     ]
   }
 };

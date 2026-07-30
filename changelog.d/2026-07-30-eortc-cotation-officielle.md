@@ -46,3 +46,32 @@ sexuelle. Ces deux cas se ressemblaient sous l'ancien moteur.
   Aucun rescorage rétroactif — il reste derrière son go séparé.
 
 Les deux instruments montent à `scoring_verifie` : **53 sur 64**.
+
+**Ce que la revue adversariale a corrigé avant merge :**
+
+- **Une absence de réponse devenait une affirmation clinique.** `evalConditionnel`
+  rend `false` aussi bien sur un déclencheur répondu par la négative que sur un
+  déclencheur MUET : l'échelle sortait alors « sans objet pour cette patiente », et
+  cette phrase part dans la charge du modèle de synthèse. On affirmait qu'une
+  patiente n'avait pas eu d'activité sexuelle, ou pas perdu ses cheveux, alors
+  qu'elle n'avait rien dit — la symétrie exacte du défaut du 2026-07-29, où une
+  absence devenait la valeur la plus basse. Un déclencheur non répondu rend
+  désormais l'item **indéterminé**, donc manquant, et le badge de relance le compte.
+- **Le résultat était invisible là où il arrive.** Sans bande ni score global, le fil
+  praticien affichait « Sans score principal » et aucune synthèse sur un
+  questionnaire pourtant complet. Le résumé court rend maintenant un constat
+  strictement factuel — les deux extrêmes, avec leur sens, sans verdict inventé.
+- **La direction était expliquée au modèle et cachée à l'humain.** La fiche affichait
+  « Fatigue 100/100 » et « Fonctionnement physique 100/100 » à l'identique. Le sens
+  y figure désormais.
+- **Le badge disait « Non certifié »** sur un instrument que le registre porte à
+  `scoring_verifie` : `manuel_eortc` n'était pas une provenance connue du type.
+- **Un second bloc `eortc` mort** portait le même discriminant avec un contrat
+  incompatible — piège armé pour le prochain moteur. Supprimé.
+- **L'échelle « santé globale » s'appelait `QL2`, comme l'item 2** du questionnaire :
+  deux grandeurs sans rapport sous un même nom dans la charge du modèle. Les sigles
+  du C30 sont préfixés, et une garde de forme refuse désormais la collision.
+- **Quatre tests manquaient**, dont celui qui rendait une inversion de sens
+  indétectable : le contrôle des bornes n'assertait que « 0 ou 100 », or formule et
+  sens basculent ensemble. Chaque échelle est maintenant nommée avec sa valeur
+  attendue dans les deux sens.

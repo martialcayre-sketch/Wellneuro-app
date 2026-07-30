@@ -77,7 +77,13 @@ describe('calculateScore', () => {
     // qu'un septième de son échelle, laquelle reste donc sans score.
     expect(result.total).toBeNull();
     expect(result.subScores.find((s: any) => s.id === 'BRST').total).toBeNull();
-    // Sans réponse au déclencheur, les items conditionnels BR5/BR16 restent non applicables.
-    expect([...result.notApplicable].sort()).toEqual(['BR16', 'BR5']);
+    // Sans réponse au DÉCLENCHEUR, BR5 et BR16 ne sont plus « non applicables »
+    // depuis le 2026-07-30 : ils sont INDÉTERMINÉS, donc comptés comme manquants.
+    // Les déclarer sans objet revenait à affirmer, dans la charge du modèle de
+    // synthèse, que la patiente n'avait pas perdu ses cheveux et n'avait pas eu
+    // d'activité sexuelle — alors qu'elle n'avait rien dit.
+    expect(result.notApplicable).toEqual([]);
+    expect(result.missingIds).toContain('BR5');
+    expect(result.missingIds).toContain('BR16');
   });
 });

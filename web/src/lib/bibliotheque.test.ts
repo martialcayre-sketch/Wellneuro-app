@@ -144,7 +144,7 @@ describe('questionnaire suspendu (actif: false)', () => {
   // pour chaque instrument ouvert sous réserve.
   const SUSPENDUS_DROITS = ['Q_PED_02', 'Q_PED_03', 'Q_GEO_04'];
 
-  it('les cinq instruments à droits non dégagés sont fermés à l’assignation', () => {
+  it('les instruments à droits non dégagés sont fermés à l’assignation', () => {
     for (const id of SUSPENDUS_DROITS) {
       const entree = QUESTIONNAIRES_CATALOG.find(q => q.id === id);
       expect(entree, `${id} doit exister au catalogue`).toBeDefined();

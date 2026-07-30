@@ -1999,6 +1999,26 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       let inapplicables = 0;
       for (const id of e.items) {
         const q = allQ.find(x => x.id === id);
+        // « SANS OBJET » EXIGE UNE RÉPONSE, PAS UNE ABSENCE.
+        //
+        // `evalConditionnel` rend `false` aussi bien quand le déclencheur est
+        // répondu par la négative que lorsqu'il n'est PAS RÉPONDU — les deux
+        // tombaient dans la même branche, et l'échelle sortait « sans objet pour
+        // cette patiente ». Cette phrase part dans la charge du modèle de
+        // synthèse : on affirmait en français qu'une patiente n'avait pas eu
+        // d'activité sexuelle, ou pas perdu ses cheveux, alors qu'elle n'avait
+        // rien dit. C'est la symétrie exacte du défaut du 2026-07-29 — là une
+        // absence devenait la valeur la plus basse, ici elle devenait un fait
+        // positif. Le manuel dit « not applicable IF ITEM 45 IS "not at all" » :
+        // une réponse donnée.
+        const declencheur = q?.conditionnel ? String(q.conditionnel).match(/^(\w+)/)?.[1] : null;
+        if (declencheur && getVal(declencheur) === null) {
+          // Le déclencheur manque : l'item n'est ni applicable ni inapplicable,
+          // il est INDÉTERMINÉ. On le compte donc comme manquant — il l'est, et
+          // le badge « N manquant(s) » de la fiche le relançait en moins.
+          if (!missingIds.includes(id)) missingIds.push(id);
+          continue;
+        }
         if (q && q.conditionnel && !evalConditionnel(q.conditionnel)) {
           inapplicables++;
           if (!notApplicable.includes(id)) notApplicable.push(id);
@@ -2189,50 +2209,14 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     return {type:'subscore', subScores: subResults, total: globalTotal, note: sc.note || null, certification: sc.certification || null};
   }
 
-  // ── EORTC QLQ ───────────────────────────────────────
-  // Source : EORTC scoring manuals. Raw score = moyenne des items renseignés ;
-  // score 0-100 direct = ((RS-1)/range)*100 ; inverse = (1-(RS-1)/range)*100.
-  if (sc.type === 'eortc') {
-    const subResults = sc.subScores.map((sub: any) => {
-      const activeItems = sub.items.filter((id: any) => {
-        const q = allQ.find(q => q.id === id);
-        return !(q && q.conditionnel && !evalConditionnel(q.conditionnel));
-      });
-      let rawTotal = 0;
-      let answered = 0;
-      activeItems.forEach((id: any) => {
-        const v = getVal(id);
-        if (v === null) return;
-        rawTotal += v;
-        answered++;
-      });
-      const rawMean = answered ? rawTotal / answered : null;
-      const range = sub.range || 3;
-      let score = null;
-      if (rawMean !== null) {
-        const direct = ((rawMean - 1) / range) * 100;
-        score = sub.transform === 'inverse' ? 100 - direct : direct;
-        score = Number(Math.max(0, Math.min(100, score)).toFixed(1));
-      }
-      return {
-        id: sub.id,
-        label: sub.label,
-        total: score,
-        score,
-        rawTotal,
-        rawMean: rawMean === null ? null : Number(rawMean.toFixed(2)),
-        answered,
-        missing: activeItems.length - answered,
-        max: 100,
-        transform: sub.transform
-      };
-    });
-    const scored = subResults.filter((r: any) => r.score !== null);
-    const total = scored.length
-      ? Number((scored.reduce((sum: any, r: any) => sum + r.score, 0) / scored.length).toFixed(1))
-      : null;
-    return {type:'eortc', subScores: subResults, total, maxTotal:100};
-  }
+  // Un SECOND bloc `if (sc.type === 'eortc')` vivait ici jusqu'au 2026-07-30 :
+  // même discriminant que celui du haut, contrat incompatible (il lisait
+  // `sc.subScores` et `sub.transform === 'inverse'`, et rendait une moyenne des
+  // échelles comme score global). Il était mort — aucun instrument ne déclarait
+  // ce type — mais c'était un piège armé : le prochain moteur écrit sur SA forme
+  // serait tombé dans le bloc du haut, qui aurait lu `sc.echelles || []` et rendu
+  // `subScores: []` avec `total: null`, sans erreur ni item manquant. Supprimé
+  // plutôt que renommé : deux contrats pour un nom se retrouvent toujours.
 
   // ── GROUP_MAJORITY (Q_STR_01) ────────────────────────
   if (sc.type === 'group_majority') {
