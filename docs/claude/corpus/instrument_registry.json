@@ -2010,10 +2010,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "16 items en 4 section(s), moteur `sum`. Questionnaire du référentiel interne SIIN : la source au dossier ne porte que la mention de droits SIIN, sans attribution tierce — aucune échelle publiée n'est reproduite. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas). Réserve levée : le plafond de grille (32) est sous le maximum atteignable (36), et un banc dédié prouve que 36 reçoit bien la bande de tête.",
         "langue": "fr",
         "traductionValidee": "fr",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2027,7 +2027,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "suspendu",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2038,11 +2038,17 @@
         "WN-SRC-0495"
       ],
       "driveMd": "questionnaire_dependance_cannabis.md",
-      "statutBibliographique": "a_completer",
+      "statutBibliographique": "referentiel_interne_siin",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "date": "2026-07-30",
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "Réactivé le 2026-07-30, même fondement (WN-SRC-0494/0495, mention SIIN seule). La réserve écrite à sa fermeture — plafond de grille 32 pour un total atteignable 36 — est levée par une PREUVE et non par un avis : `bandesInterpretation.guard.test.ts` vérifie qu'un total de 36 reçoit la bande de tête « Dépendance probable » (règle posée en #450). Verdict du banc au 2026-07-30 : 0 critique."
+          ]
+        }
       }
     },
     {
@@ -2106,10 +2112,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "11 items en 1 section(s), moteur `subscore`. Questionnaire du référentiel interne SIIN : la source au dossier ne porte que la mention de droits SIIN, sans attribution tierce — aucune échelle publiée n'est reproduite. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2123,7 +2129,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "suspendu",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2133,11 +2139,17 @@
         "WN-SRC-0503"
       ],
       "driveMd": "questionnaire_bpco_pneumologie.md",
-      "statutBibliographique": "a_completer",
+      "statutBibliographique": "referentiel_interne_siin",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "date": "2026-07-30",
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "Réactivé le 2026-07-30. La condition posée par sa suspension — « réactivation à la première source identifiée » — est remplie : WN-SRC-0503 est au dossier et les DEUX lectures du banc n'y relèvent que la mention de droits SIIN, sans attribution tierce. L'instrument est un questionnaire du référentiel interne : « aucun auteur nommé » le décrivait, au lieu de signaler une perte. Verdict du banc au 2026-07-30 : 0 divergence, aucune critique."
+          ]
+        }
       }
     },
     {

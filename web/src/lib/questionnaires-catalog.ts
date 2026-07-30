@@ -133,14 +133,15 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Mesurez votre dépendance physique à la nicotine (6 questions, score /10).`, duree: '5 min', actif: true },
 
   // ── PNEUMOLOGIE ─────────────────────────────────────────────────────────────
-  // Suspendu le 2026-07-29 sur arbitrage praticien, pour un motif de
-  // DOCUMENTATION et non de droits — ceux-ci sont couverts par la déclaration
-  // étendue du même jour. Le registre ne nomme AUCUN auteur pour cet instrument
-  // et sa référence bibliographique est à compléter : on ne sait pas dire ce
-  // qu'il est, donc on ne peut pas le certifier. Ni assignation ni réponse.
-  // Réactivation à la première source identifiée.
+  // RÉACTIVÉ le 2026-07-30, à la condition que sa suspension avait elle-même
+  // posée : « réactivation à la première source identifiée ». Elle l'est —
+  // WN-SRC-0503, « Questionnaire BPCO Def PRO.pdf », dont les DEUX lectures du
+  // banc ne relèvent que la mention de droits SIIN, sans aucune attribution
+  // tierce. L'instrument n'est donc pas une échelle publiée dont l'auteur aurait
+  // été perdu : c'est un questionnaire du référentiel interne, et « aucun auteur
+  // nommé » était la description exacte de ce qu'il est.
   { id: 'Q_PNE_01', titre: 'Questionnaire de qualité de vie BPCO', categorie: 'Pneumologie',
-    description: `Évaluez l'impact de votre maladie respiratoire sur votre qualité de vie (11 items, score /33 — comparatif).`, duree: '10 min', actif: false },
+    description: `Évaluez l'impact de votre maladie respiratoire sur votre qualité de vie (11 items, score /33 — comparatif).`, duree: '10 min', actif: true },
 
   // ── UROLOGIE ────────────────────────────────────────────────────────────────
   { id: 'Q_URO_01', titre: 'IPSS — Score International des Symptômes Prostatiques', categorie: 'Urologie',
@@ -227,14 +228,16 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // ── TABACOLOGIE (suite) ─────────────────────────────────────────────────────
   { id: 'Q_TAB_03', titre: 'QCT2 de Gilliard — Comportement tabagique', categorie: 'Tabacologie',
     description: `Analysez votre profil tabagique selon 4 dimensions : Dépendance, Sevrage, Appétence, Habitude (28 items).`, duree: '10 min', actif: true },
-  // Suspendu le 2026-07-29, même motif que `Q_PNE_01` : aucun auteur nommé au
-  // registre, référence bibliographique à compléter. Les droits, eux, sont
-  // couverts par la déclaration étendue du même jour — la fermeture ne les
-  // concerne pas. Ni assignation ni réponse. À savoir pour la réactivation : sa
-  // grille porte un plafond écrit sous le maximum atteignable (32 pour un total
-  // de 36), corrigé côté moteur en #450 par la règle de la bande de tête.
+  // RÉACTIVÉ le 2026-07-30, même geste que `Q_PNE_01` et pour la même raison :
+  // les sources WN-SRC-0494/0495 sont au dossier et ne portent que la mention de
+  // droits SIIN, sans attribution tierce — l'absence d'auteur nommé décrivait un
+  // questionnaire du référentiel interne, pas une échelle publiée égarée.
+  // La réserve de sa fermeture est levée par une preuve, pas par un avis : le
+  // plafond de grille (32) est sous le maximum atteignable (36), et le banc
+  // `bandesInterpretation.guard.test.ts` vérifie qu'un 36 reçoit bien la bande de
+  // tête « Dépendance probable » depuis la règle posée en #450.
   { id: 'Q_TAB_04', titre: `Questionnaire d'évaluation du cannabis`, categorie: 'Tabacologie',
-    description: `Évaluez votre consommation de cannabis et ses conséquences (16 items).`, duree: '10 min', actif: false },
+    description: `Évaluez votre consommation de cannabis et ses conséquences (16 items).`, duree: '10 min', actif: true },
   { id: 'Q_TAB_05', titre: 'Di Franza — Dépendance nicotinique adolescent (HONC)', categorie: 'Tabacologie',
     description: `Dépistez la dépendance à la nicotine chez l'adolescent en 10 questions oui/non.`, duree: '3 min', actif: true },
 

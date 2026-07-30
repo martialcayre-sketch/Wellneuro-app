@@ -218,7 +218,14 @@ describe('questionnaire suspendu (actif: false)', () => {
   // ce qui manque est l'identité de l'instrument. Le registre ne nomme aucun
   // auteur et sa référence bibliographique est à compléter — on ne sait pas dire
   // ce qu'il est, donc on ne peut pas le certifier.
-  const FERMES_DOCUMENTATION = ['Q_TAB_04', 'Q_PNE_01', 'Q_FIB_03'];
+  //
+  // La liste s'est VIDÉE de deux entrées le 2026-07-30. `Q_TAB_04` et `Q_PNE_01`
+  // sont rouverts parce que leur condition de réouverture est remplie : leurs
+  // sources sont au dossier et ne portent que la mention de droits SIIN, sans
+  // attribution tierce — l'absence d'auteur nommé décrivait un questionnaire du
+  // référentiel interne. `Q_FIB_03` reste fermé : son cas relève d'une
+  // reconstruction, pas d'une identification.
+  const FERMES_DOCUMENTATION = ['Q_FIB_03'];
 
   it('les instruments sans auteur nommé sont fermés à l’assignation', () => {
     for (const id of FERMES_DOCUMENTATION) {
@@ -232,23 +239,24 @@ describe('questionnaire suspendu (actif: false)', () => {
     }
   });
 
-  it('la pneumologie est fermée en entier, et c’est assumé', () => {
+  it('la pneumologie tient à un seul instrument, désormais rouvert', () => {
     // Anti-surprise, même garde que pour la cancérologie dans #460 : `Q_PNE_01`
     // est le SEUL instrument de pneumologie du catalogue. Le fermer ferme le
-    // domaine. Le dire ici évite de le redécouvrir en production, et fait rougir
-    // le jour où un second arrive sans que sa documentation ait été instruite.
+    // domaine ; le rouvrir le rouvre en entier. Ce test dit la FRAGILITÉ, pas
+    // l'état : un domaine à un seul instrument bascule tout entier au moindre
+    // geste, et c'est ce qu'il faut voir dans le diff.
     const pneumo = QUESTIONNAIRES_CATALOG.filter(q => q.categorie === 'Pneumologie');
     expect(pneumo.map(q => q.id)).toEqual(['Q_PNE_01']);
-    expect(pneumo.every(q => !q.actif)).toBe(true);
+    expect(pneumo.every(q => q.actif)).toBe(true);
   });
 
-  it('la tabacologie garde quatre instruments servis', () => {
-    // Contrepartie : `Q_TAB_04` part, mais son domaine survit. Sans ce test, la
-    // fermeture d'un domaine entier et celle d'un instrument parmi d'autres se
+  it('la tabacologie sert ses cinq instruments', () => {
+    // Contrepartie : `Q_TAB_04` est parti, puis revenu le 2026-07-30, sans que son
+    // domaine bascule jamais. Sans ce test, ce cas et celui d'un domaine entier se
     // liraient de la même façon dans le diff.
     const tabaco = QUESTIONNAIRES_CATALOG.filter(q => q.categorie === 'Tabacologie');
     expect(tabaco.filter(q => q.actif).map(q => q.id))
-      .toEqual(['Q_TAB_01', 'Q_TAB_02', 'Q_TAB_03', 'Q_TAB_05']);
+      .toEqual(['Q_TAB_01', 'Q_TAB_02', 'Q_TAB_03', 'Q_TAB_04', 'Q_TAB_05']);
   });
 
   it('les instruments laissés hors suspension le restent', () => {
