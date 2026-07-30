@@ -20,7 +20,10 @@ import { evaluerReprise, phraseReprise } from '@/lib/patient/reprise';
  */
 
 export type EtapeDuMoment =
-  | { kind: 'action'; idAssignation: string; cta: string }
+  // `appui` : une phrase FACTUELLE sous le bouton (« 5 nuits notées sur 21 »).
+  // Jamais un compte à rebours, jamais un reproche — cf. lib/agenda-sommeil/
+  // rappelPortail.ts, qui la produit et dont le banc tient le vocabulaire.
+  | { kind: 'action'; idAssignation: string; cta: string; appui?: string }
   | { kind: 'attente'; texte: string }
   | { kind: 'stable' }
   | { kind: 'vide' };
@@ -72,6 +75,7 @@ export function MonParcoursAccueil({
             >
               {etape.cta}
             </a>
+            {etape.appui && <p className="mt-2 text-sm text-foreground">{etape.appui}</p>}
             <p className="mt-2 text-xs text-muted-foreground">
               Une fois transmis, un questionnaire est verrouillé et votre praticien en est informé.
             </p>
