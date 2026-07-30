@@ -29,6 +29,10 @@ const MODULES_INTERDITS = [
   'lib/protocol/adhesion',
   'lib/protocol/meteoPatientele',
   'api/praticien/meteo-adhesion',
+  // Suivi des agendas du sommeil : même famille — un signal de pilotage
+  // praticien (silences, retards) qui ne doit jamais atteindre le patient.
+  'lib/agenda-sommeil/suivi',
+  'api/praticien/agenda-sommeil/suivi',
 ];
 
 const EXTENSIONS = new Set(['.ts', '.tsx']);
