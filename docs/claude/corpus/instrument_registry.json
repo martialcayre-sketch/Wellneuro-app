@@ -135,7 +135,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "echelle_de_cotation 'null–null' : absence de lecture. Servi 0–5 conforme au support. Critique annulée — dossier 2026-07-30."
+          ]
+        }
       }
     },
     {
@@ -180,7 +186,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "seuil_non_represente '>= 0' : c'est une borne d'échelle, pas un seuil. Le moteur subscore sert les trois sous-échelles D/A/S. Divergence majeure écartée — dossier 2026-07-30."
+          ]
+        }
       }
     },
     {
@@ -270,7 +282,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "seuil_non_represente '> 21' : le seuil EST servi (DEM, seuil: 21, seuilDir: 'gt'). Le banc ne l'a pas reconnu sous cette forme. Majeure écartée — dossier 2026-07-30."
+          ]
+        }
       }
     },
     {
@@ -373,10 +391,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "MADRS servie avec ses bandes publiées ; 4 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -405,7 +423,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite."
+          ]
+        }
       }
     },
     {
@@ -494,7 +518,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "echelle_de_cotation 'null–null' : absence de lecture, pas d'écart. SCOFF oui/non servi 0–1. Critique annulée — dossier 2026-07-30."
+          ]
+        }
       }
     },
     {
@@ -552,10 +582,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "MMT SIIN servi avec ses bandes ; 4 bandes portent une conduite ajoutée par le cabinet. RESTENT OUVERTS : seuil '>= 1' non représenté et échelle 0–2/0–3, hors du périmètre de cette déclaration. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -581,7 +611,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 1,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite."
+          ]
+        }
       }
     },
     {
@@ -671,7 +707,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "echelle_de_cotation 'null–1' : borne basse non lue par le banc ; servi 0–1 conforme. Critique annulée. RESTE OUVERT : plancher 0 de la source inatteignable (item 10 inversé, minimum servi 1) — établi sans balayage, à arbitrer au lot bornes."
+          ]
+        }
       }
     },
     {
@@ -806,7 +848,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "bareme_sans_source : le banc a cherché un total global sur un instrument qui n'en produit pas. Les bandes servies sont 0–7/8–10/11–21 PAR SOUS-ÉCHELLE A et D, soit le barème publié de Zigmond & Snaith. Critique annulée — troisième cas où l'application a raison et le corpus a tort. RESTE OUVERT : seuil '<= 7' non représenté (famille seuils, arbitrage praticien)."
+          ]
+        }
       }
     },
     {
@@ -999,10 +1047,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "IRLS servie avec ses bandes publiées ; 4 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1031,7 +1079,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite."
+          ]
+        }
       }
     },
     {
@@ -1613,7 +1667,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "echelle_de_cotation 'null–null' : le banc n'a pas lu l'échelle de la source (questionnaire oui/non, servi 0–1 conforme). Défaut de lecture du banc, divergence critique annulée — dossier 2026-07-30-divergences-scoring."
+          ]
+        }
       }
     },
     {
@@ -1972,7 +2032,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "echelle_de_cotation 'null–null' : absence de lecture. HONC oui/non servi 0–1. Critique annulée — dossier 2026-07-30."
+          ]
+        }
       }
     },
     {
@@ -2061,7 +2127,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 2
+        "divergencesCritiques": 1,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "nombre_items 7/8 et sous_echelles 1/2 : l'application sert les 7 items de symptômes et marque le 8e (qualité de vie) horsTotal, exactement comme la source le rapporte à part — plus fidèle que le banc ne le crédite. echelle_de_cotation 0–5/0–6 : à re-vérifier à l'extraction, la cotation servie des 7 items de symptômes est 0–5. RESTE OUVERT : seuil '<= 7' non représenté."
+          ]
+        }
       }
     },
     {
@@ -2515,10 +2587,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "Grille de Tinetti servie avec ses bandes publiées ; les 3 bandes portent chacune une CONDUITE ajoutée par le cabinet (orientation, prévention de chute), absente de la source. La conduite est retirée du prompt de synthèse par scoresPourPrompt. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2546,7 +2618,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 1,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite."
+          ]
+        }
       }
     },
     {
@@ -2559,10 +2637,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "SARC-F servi avec ses bandes publiées ; 2 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2591,7 +2669,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite."
+          ]
+        }
       }
     },
     {
@@ -2604,10 +2688,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "AQ de Sabbagh servi avec ses bandes publiées ; 3 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2635,7 +2719,14 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "echelle_de_cotation 'null–null' : absence de lecture, pas d'écart. Oui/non servi 0–1. Critique annulée — dossier 2026-07-30.",
+            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite."
+          ]
+        }
       }
     },
     {
@@ -2767,7 +2858,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "nombre_items 5/10 : les 5 mots de Dubois sont servis en DEUX PHASES de 5 items (rappel immédiat puis différé) — c'est le protocole, pas un ajout. Critique de nombre d'items annulée — dossier 2026-07-30."
+          ]
+        }
       }
     },
     {
