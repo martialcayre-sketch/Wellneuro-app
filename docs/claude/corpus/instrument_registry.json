@@ -856,7 +856,8 @@
           "date": "2026-07-30",
           "notes": [
             "bareme_sans_source : le banc a cherché un total global sur un instrument qui n'en produit pas. Les bandes servies sont 0–7/8–10/11–21 PAR SOUS-ÉCHELLE A et D, soit le barème publié de Zigmond & Snaith. Critique annulée — troisième cas où l'application a raison et le corpus a tort. RESTE OUVERT : seuil '<= 7' non représenté (famille seuils, arbitrage praticien).",
-            "seuil '<= 7' : SERVI — bandes A et D 0–7 « Absence de symptomatologie ». Divergence annulée, dernière critique soldée."
+            "seuil '<= 7' : SERVI — bandes A et D 0–7 « Absence de symptomatologie ». Divergence annulée, dernière critique soldée.",
+            "PRÉCISION DU 2026-07-30 : le rapport du banc de ce jour conclut « 1 critique » en lecture B et « ne peut pas être proposé à la certification en l'état ». Le compteur `divergencesCritiques: 0` suit la convention du banc — une critique n'est comptée que CONFIRMÉE PAR LES DEUX LECTURES — et la lecture C n'en porte aucune. La montée s'appuie sur ce croisement et sur l'annulation motivée ci-dessus, pas sur la ligne de synthèse d'une lecture isolée."
           ]
         }
       }
@@ -1286,23 +1287,31 @@
       },
       "droits": {
         "statut": "libre",
-        "detail": "Instrument créé par WellNeuro (agenda quotidien de type Réseau Morphée, 21 nuits). FONDEMENT : aucune œuvre tierce n'est reproduite — items, échelles et indice longitudinal /100 sont rédigés en propre ; le « type Réseau Morphée » désigne le genre d'outil (agenda de sommeil), pas un emprunt de contenu. Droit d'usage plein et sans restriction pour WellNeuro. Vérifié le 2026-07-30.",
+        "detail": "Agenda de sommeil quotidien sur 21 nuits, servi par WellNeuro. CE QUI EST ÉTABLI : le praticien en autorise l'usage (déclaration du référentiel SIIN, cf. WN-SRC-0420 « Questionnaire Agenda du sommeil def.pdf », corpus INSTRUMENTS_CABINET, dont la lecture C du banc relève la mention de droits SIIN). CE QUI NE L'EST PAS : le rapprochement entre le servi et ce document n'est PAS instruit — les deux lectures du banc rendent 0 item et 0 seuil, elles n'ont donc rien comparé. Une revendication d'originalité (« aucune œuvre tierce reproduite ») a été écrite ici le 2026-07-30 puis RETIRÉE le même jour : elle n'avait aucune pièce derrière elle et le seul artefact au dossier penchait dans l'autre sens.",
         "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
-      "statutCertification": "scoring_verifie",
+      "statutCertification": "droits_verifies",
       "politiqueSuivi": {
         "readministrable": true,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": true,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0420"
+      ],
       "driveMd": null,
       "statutBibliographique": "a_completer",
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-30",
-        "divergencesCritiques": 0
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "VERDICT VACUEUX, montée annulée. Le « 0 divergence critique » ne dit pas que le servi correspond à sa source : les deux lectures rendent `items: []` et `seuils: []` — aucune source n'a été lue. L'instrument avait été monté à `scoring_verifie` sur ce silence le 2026-07-30, puis redescendu à `droits_verifies` le même jour, la revue adversariale ayant montré qu'un banc qui se tait n'est pas un banc qui approuve. Reste à faire : une passe de banc qui lise réellement WN-SRC-0420."
+          ]
+        }
       }
     },
     {
@@ -2521,10 +2530,10 @@
         "proprietaireDroits": "S.I.I.N. — Scientific Institute for Intelligent Nutrition"
       },
       "versionServie": {
-        "description": null,
+        "description": "57 items en 12 sections, moteur `seuils_points` : chaque item vaut 1 ou 2 points si la quantité déclarée franchit son seuil, pour un total de 90 — la somme des 57 valeurs du barème est vérifiée par `scoring-check`. Mesuré DRAPEAU `WN_ALI_01_SIIN57` ALLUMÉ, c'est-à-dire dans la position de la production depuis le 2026-07-28 ; les passages antérieurs du banc décrivaient le dépistage court à 14 items, forme qui n'est plus servie. Contenu verrouillé le 2026-07-30 sur cette empreinte (statut `adapte` : aucune identité au mot près n'est affirmée).",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2538,7 +2547,7 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2552,8 +2561,15 @@
       "statutBibliographique": "referentiel_interne_siin",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "date": "2026-07-30",
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "echelle_de_cotation : ANNULÉE. Dossier docs/claude/propositions/2026-07-30-ali01-echelle/. Deux constats. (1) Le banc mesurait la forme courte à 14 items : `WN_ALI_01_SIIN57` est allumé en production depuis le 2026-07-28 mais éteint par défaut, et le banc ne le pose pas. Rejoué hors ligne drapeau allumé : 57 items des deux côtés. (2) Sur la bonne forme, l'échelle « 0 à 2 » de la source est le NOMBRE DE POINTS d'un item, pas le codage de la réponse — 57 items à 2 points font 90, ce que le total de la source confirme et que le barème servi applique exactement. Les valeurs 0-3, 7, 8, 10, 12 sont des quantités déclarées, lues par les seuils. Même malentendu barème/quantités qu'en #452.",
+            "RÉSERVE : le banc `certify` reste aveugle à `WN_ALI_01_SIIN57`. Sans le poser dans son invocation, son prochain passage remesurera la forme courte et rétablira cette divergence."
+          ]
+        }
       }
     },
     {

@@ -43,11 +43,34 @@ const REGISTRE = JSON.parse(
 // conserve la réserve derrière le marqueur ci-dessous. Un statut dégagé sans
 // réserve au dossier (`libre`, permission d'un ayant droit réellement obtenue)
 // ne relève pas de cette garde.
+// Le prédicat est une DISJONCTION, et c'est le point : remplacer le statut par le
+// marqueur aurait fait cesser la surveillance de la valeur canonique. Or
+// `licence_requise` et `restreint` restent des statuts légaux et vivants
+// (`scripts/lib/verifier_registre_instruments.js`, `STATUTS_DROITS` /
+// `DROITS_DEGAGES`) : la prochaine instruction qui conclut « licence requise »
+// reprendra le gabarit de 2026-07-29, lequel ne contient PAS le marqueur — inventé
+// le lendemain. L'instrument aurait alors été invisible pour cette garde, et
+// assignable en silence. C'est le constat B1 de la revue adversariale du
+// 2026-07-30, et il portait sur la version qui avait remplacé au lieu d'ajouter.
 const MARQUEUR_RESERVE = 'RÉSERVE CONSERVÉE';
+const STATUTS_NON_DEGAGES = new Set(['licence_requise', 'restreint']);
 const SOUS_RESERVE = REGISTRE.instruments
-  .filter(i => (i.droits?.detail ?? '').includes(MARQUEUR_RESERVE))
+  .filter(i => STATUTS_NON_DEGAGES.has(i.droits?.statut ?? '')
+    || (i.droits?.detail ?? '').includes(MARQUEUR_RESERVE))
   .map(i => i.questionnaireId)
   .sort();
+
+// Les huit instruments dont le droit repose sur la déclaration du 2026-07-30. La
+// liste est ÉPINGLÉE, et non seulement comptée : le marqueur vit dans du texte
+// libre, que la prochaine réécriture d'un `detail` peut emporter sans le vouloir —
+// la phrase « Statut porté à `licence_requise` : à arbitrer » y est d'ailleurs
+// devenue fausse et appelle une correction. Un `length > 0` laisserait cinq
+// instruments quitter la population sans qu'un test bouge ; le MMSE (© PAR)
+// redeviendrait assignable dans le silence. Constat M2 de la même revue.
+const SOUS_RESERVE_ATTENDUS = [
+  'Q_CAN_01', 'Q_CAN_02', 'Q_GEO_04', 'Q_INF_04',
+  'Q_NEU_11', 'Q_PED_02', 'Q_PED_03', 'Q_SOM_02',
+];
 
 // LE BON PRÉDICAT EST CELUI DE LA ROUTE, PAS `IDS_ASSIGNABLES`.
 //
@@ -136,10 +159,12 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
     // lieu d'un fichier illisible. Ce test a déjà servi une fois : c'est lui qui
     // a rendu visible, le 2026-07-30, que la déclaration en bloc vidait la
     // population lue par la version précédente de cette garde.
-    expect(SOUS_RESERVE.length, 'le registre ne porte plus aucun droit sous réserve conservée').toBeGreaterThan(0);
-    for (const id of LAISSES_ASSIGNABLES) {
-      expect(SOUS_RESERVE, `${id} ne porte plus de réserve conservée au registre`).toContain(id);
-    }
+    expect(
+      SOUS_RESERVE,
+      'la population sous réserve a changé — un instrument est entré ou sorti sans que '
+        + 'la décision soit écrite ici. Vérifier son `droits` au registre avant de mettre '
+        + 'cette liste à jour : une sortie silencieuse rouvre une assignation.',
+    ).toEqual(SOUS_RESERVE_ATTENDUS);
     // Et les identifiants du registre désignent bien des instruments du dépôt :
     // une coquille dans le registre sortirait l'instrument du filtre en silence.
     const auRayon = new Set(QUESTIONNAIRES_CATALOG.map(q => q.id));
