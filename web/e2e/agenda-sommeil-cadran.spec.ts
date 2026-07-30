@@ -22,15 +22,23 @@ const CX = 100;
 const CY = 100;
 const R = 70;
 
-/** Heure du cadran → point à l'écran, projection inverse de celle du composant. */
+/**
+ * Heure du cadran → point à l'écran. Reproduit la projection `xMidYMid meet` du
+ * navigateur : échelle uniforme puis centrage. `rayon` permet de viser ailleurs
+ * que sur l'anneau.
+ */
 function pointEcran(
   boite: { x: number; y: number; width: number; height: number },
   minutes: number,
+  rayon = R,
 ): { x: number; y: number } {
   const a = ((minutes / 1440) * 360 - 90) * (Math.PI / 180);
+  const echelle = Math.min(boite.width, boite.height) / VB_TAILLE;
+  const margeX = (boite.width - VB_TAILLE * echelle) / 2;
+  const margeY = (boite.height - VB_TAILLE * echelle) / 2;
   return {
-    x: boite.x + ((CX + R * Math.cos(a) - VB_ORIGINE) / VB_TAILLE) * boite.width,
-    y: boite.y + ((CY + R * Math.sin(a) - VB_ORIGINE) / VB_TAILLE) * boite.height,
+    x: boite.x + margeX + (CX + rayon * Math.cos(a) - VB_ORIGINE) * echelle,
+    y: boite.y + margeY + (CY + rayon * Math.sin(a) - VB_ORIGINE) * echelle,
   };
 }
 
@@ -86,6 +94,30 @@ test.describe('cadran de la nuit — glissement', () => {
     await expect(extinction).toHaveAttribute('aria-valuenow', '30');
     await expect(extinction).toHaveAttribute('aria-valuetext', /0 heures 30/);
     await expect(extinction).not.toHaveAttribute('aria-valuetext', /proposition/);
+  });
+
+  test('un balayage loin de l’anneau ne saisit ni ne déplace rien', async ({ page }) => {
+    // Le geste de défilement, dans un vrai navigateur : le doigt part dans l'AXE
+    // d'une poignée mais très au-delà de l'anneau, puis balaie. C'est le seul des
+    // trois tests de ce fichier qui échoue sur la première version du correctif,
+    // où la prise n'était bornée qu'en angle : elle accrochait alors la poignée
+    // depuis le coin du cadran et écrivait une heure jamais donnée.
+    await ouvrirAgenda(page);
+
+    const cadran = page.locator('svg:has([role="slider"])').first();
+    const extinction = page.getByRole('slider').first();
+    const boite = await cadran.boundingBox();
+    expect(boite).not.toBeNull();
+
+    const depart = pointEcran(boite!, 1380, 112);
+    const arrivee = pointEcran(boite!, 660, 112);
+    await page.mouse.move(depart.x, depart.y);
+    await page.mouse.down();
+    await page.mouse.move(arrivee.x, arrivee.y, { steps: 10 });
+    await page.mouse.up();
+
+    await expect(extinction).toHaveAttribute('aria-valuenow', '1380');
+    await expect(extinction).toHaveAttribute('aria-valuetext', /proposition/);
   });
 
   test('une pression hors tolérance ne confirme aucune valeur', async ({ page }) => {

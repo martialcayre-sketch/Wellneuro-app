@@ -31,14 +31,26 @@ const TAILLE_PX = 300;
 const EXTINCTION = '23:00'; // 1380 min
 const SORTIE = '07:00'; //  420 min
 
-/** Heure du cadran → coordonnées client, projection inverse de celle du composant. */
-function clientDepuisMinutes(minutes: number, rayon = R): { clientX: number; clientY: number } {
+/**
+ * Heure du cadran → coordonnées client. Reproduit la projection `xMidYMid meet`
+ * du navigateur : échelle UNIFORME (le plus petit des deux rapports) puis
+ * centrage, avec des bandes vides sur les côtés les plus longs. Sur une boîte
+ * carrée — le cas courant — les marges sont nulles.
+ */
+function clientDepuisMinutes(
+  minutes: number,
+  rayon = R,
+  boite: { width: number; height: number } = { width: TAILLE_PX, height: TAILLE_PX },
+): { clientX: number; clientY: number } {
   const a = ((minutes / 1440) * 360 - 90) * (Math.PI / 180);
   const x = CX + rayon * Math.cos(a);
   const y = CY + rayon * Math.sin(a);
+  const echelle = Math.min(boite.width, boite.height) / VB_TAILLE;
+  const margeX = (boite.width - VB_TAILLE * echelle) / 2;
+  const margeY = (boite.height - VB_TAILLE * echelle) / 2;
   return {
-    clientX: ((x - VB_ORIGINE) / VB_TAILLE) * TAILLE_PX,
-    clientY: ((y - VB_ORIGINE) / VB_TAILLE) * TAILLE_PX,
+    clientX: margeX + (x - VB_ORIGINE) * echelle,
+    clientY: margeY + (y - VB_ORIGINE) * echelle,
   };
 }
 
@@ -47,19 +59,26 @@ const CENTRE = { clientX: TAILLE_PX / 2, clientY: TAILLE_PX / 2 };
 
 // Le composant est piloté : sans état parent, une poignée relâchée reviendrait à
 // sa position d'ouverture et aucun glissement ne serait observable.
+type Initial = { extinction?: string; sortie?: string; lit?: string; reveil?: string };
+
 function Harnais({
   onChange,
   afficherMiseAuLit = false,
   afficherReveilFinal = false,
+  initial = {},
 }: {
   onChange: (poignee: string, valeur: string) => void;
   afficherMiseAuLit?: boolean;
   afficherReveilFinal?: boolean;
+  // Valeurs DÉJÀ confirmées à l'ouverture — le seul moyen de poser deux poignées
+  // exactement superposées, et de leur donner des statuts de confirmation
+  // différents.
+  initial?: Initial;
 }) {
-  const [extinction, setExtinction] = useState<string | undefined>(undefined);
-  const [sortie, setSortie] = useState<string | undefined>(undefined);
-  const [lit, setLit] = useState<string | undefined>(undefined);
-  const [reveil, setReveil] = useState<string | undefined>(undefined);
+  const [extinction, setExtinction] = useState<string | undefined>(initial.extinction);
+  const [sortie, setSortie] = useState<string | undefined>(initial.sortie);
+  const [lit, setLit] = useState<string | undefined>(initial.lit);
+  const [reveil, setReveil] = useState<string | undefined>(initial.reveil);
   return (
     <CadranNuit
       extinction={extinction}
@@ -81,13 +100,19 @@ function Harnais({
   );
 }
 
-function rendre(afficherMiseAuLit = false, afficherReveilFinal = false) {
+function rendre(
+  afficherMiseAuLit = false,
+  afficherReveilFinal = false,
+  initial: Initial = {},
+  boite: { width: number; height: number } = { width: TAILLE_PX, height: TAILLE_PX },
+) {
   const onChange = vi.fn();
   const { container } = render(
     <Harnais
       onChange={onChange}
       afficherMiseAuLit={afficherMiseAuLit}
       afficherReveilFinal={afficherReveilFinal}
+      initial={initial}
     />,
   );
   const svg = container.querySelector('svg') as SVGSVGElement;
@@ -96,10 +121,10 @@ function rendre(afficherMiseAuLit = false, afficherReveilFinal = false) {
   vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
     left: 0,
     top: 0,
-    width: TAILLE_PX,
-    height: TAILLE_PX,
-    right: TAILLE_PX,
-    bottom: TAILLE_PX,
+    width: boite.width,
+    height: boite.height,
+    right: boite.width,
+    bottom: boite.height,
     x: 0,
     y: 0,
     toJSON: () => ({}),
@@ -215,6 +240,99 @@ describe('frontières de la prise', () => {
   });
 });
 
+// Deux poignées peuvent se superposer exactement : tout se cale sur la grille de
+// 15 min, il n'y a qu'un cran à franchir. Elles sont alors à la même distance de
+// TOUT appui, et un simple `<` rendait la seconde définitivement inatteignable au
+// doigt.
+describe('égalité stricte entre deux poignées superposées', () => {
+  it('la poignée non confirmée répond avant celle qui a déjà sa valeur', () => {
+    // Mise au lit déjà confirmée à 23:00 ; l'extinction y est aussi, mais encore
+    // à l'état de proposition. C'est elle qui attend le geste du patient.
+    const { onChange } = rendre(true, false, { lit: '23:00' });
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('extinction', '23:00');
+  });
+
+  it('à statut égal, deux appuis successifs alternent entre les deux', () => {
+    // Les deux confirmées et superposées : sans second arbitre, la première
+    // monopoliserait le point à jamais.
+    const { onChange, svg } = rendre(true, false, { lit: '23:00', extinction: '23:00' });
+
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    fireEvent.pointerUp(svg, { pointerId: 1, ...clientDepuisMinutes(1380) });
+    const premiere = onChange.mock.calls[0][0];
+
+    fireEvent.pointerDown(poignees()[0], { pointerId: 2, ...clientDepuisMinutes(1380) });
+    fireEvent.pointerUp(svg, { pointerId: 2, ...clientDepuisMinutes(1380) });
+    const seconde = onChange.mock.calls[1][0];
+
+    expect(new Set([premiere, seconde])).toEqual(new Set(['lit', 'extinction']));
+  });
+
+  it('TROIS poignées superposées sont toutes joignables', () => {
+    // Une préférence deux-à-deux ne sait permuter qu'entre deux éléments : elle
+    // laissait la troisième définitivement injoignable. La rotation porte donc sur
+    // le groupe entier. Configuration cliniquement absurde — trois repères de la
+    // nuit à la même minute —, mais une règle qui ne tient que pour deux ne se
+    // décrit pas comme close.
+    const { onChange, svg } = rendre(true, true, {
+      lit: '23:00',
+      extinction: '23:00',
+      reveil: '23:00',
+    });
+
+    const prises: string[] = [];
+    for (let i = 1; i <= 3; i += 1) {
+      fireEvent.pointerDown(poignees()[0], { pointerId: i, ...clientDepuisMinutes(1380) });
+      fireEvent.pointerUp(svg, { pointerId: i, ...clientDepuisMinutes(1380) });
+      prises.push(onChange.mock.calls[i - 1][0]);
+    }
+    expect(new Set(prises)).toEqual(new Set(['lit', 'extinction', 'reveil']));
+  });
+
+  // L'ORDRE des deux règles n'est pinné par aucun test, et ce n'est pas un oubli :
+  // filtre et rotation ne peuvent pas se contredire tant que le parent applique
+  // les valeurs qu'on lui remonte. Il faudrait, pour les séparer, que la dernière
+  // poignée prise soit encore NON confirmée — donc un parent qui n'applique pas,
+  // ce qu'aucune surface ne fait aujourd'hui. Un test de cet ordre serait un test
+  // du harnais, pas du composant.
+});
+
+// `preserveAspectRatio` vaut par défaut `xMidYMid meet` : le viewBox est mis à
+// l'échelle uniformément puis centré. Diviser `x` par la largeur et `y` par la
+// hauteur suppose au contraire un `none`, et décale tout le cadran dès que la
+// boîte cesse d'être carrée.
+describe('projection sur une boîte non carrée', () => {
+  // Un seul test ici, délibérément. Sur une boîte 400 × 300, l'ancienne formule
+  // se trompe d'environ 17 unités sur la position de la poignée — moins que le
+  // rayon de prise, donc l'APPUI réussit quand même. Un test qui se contenterait
+  // de vérifier qu'on accroche passerait avec le défaut : il ne garderait rien.
+  // C'est la VALEUR produite par le glissement qui est fausse, et c'est elle qu'on
+  // mesure.
+  // Ce qui n'est PAS pinné ici, et pourquoi : `meet` contre `slice`. Les deux
+  // projections sont uniformes et centrées symétriquement, donc toutes deux
+  // préservent l'ANGLE depuis le centre — elles ne diffèrent que par le rayon.
+  // Comme l'heure ne dérive que de l'angle, échanger l'une pour l'autre ne change
+  // aucune valeur produite : seul le rayon EFFECTIF de prise se met à l'échelle
+  // (sur une boîte 300 × 400, la poignée est vue à 52 unités du centre au lieu de
+  // 70, soit une erreur de 17 — sous la tolérance de 26, donc l'appui réussit
+  // quand même). Il faudrait une boîte deux fois plus haute que large pour rendre
+  // la différence observable, configuration qu'un viewBox carré en `w-full` ne
+  // produit jamais. Un test de cette mutation serait un test d'une géométrie
+  // impossible.
+  it('le glissement suit la même projection sur une boîte non carrée', () => {
+    const boite = { width: 400, height: 300 };
+    const { onChange, svg } = rendre(false, false, {}, boite);
+    fireEvent.pointerDown(poignees()[0], {
+      pointerId: 1,
+      ...clientDepuisMinutes(1380, R, boite),
+    });
+    fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(1440, R, boite) });
+    expect(onChange).toHaveBeenLastCalledWith('extinction', '00:00');
+  });
+});
+
 describe('zone morte centrale', () => {
   it('un appui au centre du cadran n’accroche rien', () => {
     const { onChange } = rendre();
@@ -279,6 +397,72 @@ describe('robustesse du glissement', () => {
     const appels = onChange.mock.calls.length;
     fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(300) });
     expect(onChange.mock.calls.length).toBe(appels);
+  });
+
+  it('un pointerup perdu ne condamne pas la saisie — lostpointercapture débloque', () => {
+    // Onglet masqué, geste interrompu par le système : le `pointerup` peut ne
+    // jamais arriver. `pointeurActif` resterait alors armé et refuserait TOUTE
+    // prise ultérieure pour la durée du montage. Le navigateur émet
+    // `lostpointercapture` dans tous les cas.
+    const { onChange, svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    fireEvent.lostPointerCapture(svg, { pointerId: 1 });
+
+    // Une prise neuve, avec un autre pointeur : elle doit être acceptée.
+    fireEvent.pointerDown(poignees()[1], { pointerId: 2, ...clientDepuisMinutes(420) });
+    expect(onChange).toHaveBeenLastCalledWith('sortie', SORTIE);
+  });
+
+  it('un basculement de capture ne coupe pas le glissement en cours', () => {
+    // Sur tactile, la capture implicite appartient d'abord au cercle touché : la
+    // poser sur la racine fait émettre `lostpointercapture` sur l'ANCIENNE cible,
+    // d'où l'événement remonte jusqu'à la racine avec le pointeur EN COURS. Pris
+    // pour une perte, il couperait le geste avant le premier mouvement — le tap
+    // confirmerait l'heure suggérée et le glissement ne ferait plus rien.
+    // L'événement est émis SUR LA RACINE, là où le gestionnaire est réellement
+    // écouté. Le navigateur, lui, l'émet sur l'enfant et le laisse remonter — mais
+    // jsdom ne délivre pas cette remontée jusqu'au gestionnaire React, et un test
+    // qui la simulerait ne garderait rien (vérifié par mutation : le filet
+    // indiscriminé y survivait). Ce qui est éprouvé ici est donc la DÉCISION du
+    // filtre, pas le chemin de propagation — lequel reste à la charge de l'essai
+    // sur appareil réel.
+    const { onChange, svg } = rendre();
+    // jsdom n'implémente pas la capture : on la déclare encore à nous, ce que rend
+    // `hasPointerCapture` pendant un basculement — capture EN ATTENTE comprise.
+    // `releasePointerCapture` doit être stubbé AUSSI : sans lui l'appel lève, et
+    // la levée interrompt `relacher` avant qu'il ne remette le compteur à zéro —
+    // un filet indiscriminé passerait alors le test pour une mauvaise raison
+    // (constaté par mutation).
+    Object.assign(svg, {
+      hasPointerCapture: () => true,
+      releasePointerCapture: () => undefined,
+    });
+
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    fireEvent.lostPointerCapture(svg, { pointerId: 1 });
+
+    fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(1440) });
+    expect(onChange).toHaveBeenLastCalledWith('extinction', '00:00');
+  });
+
+  it('un mouvement qui retombe sur la même valeur ne remonte rien', () => {
+    // Le pas est de 15 min, soit ~9 unités d'arc : la plupart des mouvements ne
+    // changent pas la valeur affichée. Les remonter ferait porter au parent le
+    // rythme du doigt plutôt que celui de la saisie.
+    const { onChange, svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    // +5 min : arrondi au quart d'heure, on retombe sur 23:00.
+    fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(1385) });
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    // +10 min : le quart d'heure suivant est atteint, la valeur change.
+    fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(1390) });
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(onChange).toHaveBeenLastCalledWith('extinction', '23:15');
   });
 
   it('la prise pose le focus sur la poignée, pour la suite au clavier', () => {
