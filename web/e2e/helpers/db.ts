@@ -32,6 +32,12 @@ const prisma = new PrismaClient({ adapter });
  * ici).
  */
 export async function resetPortailState(idPatient: string): Promise<void> {
+  // Les nuits d'agenda AVANT les assignations : la clé étrangère
+  // `agenda_sommeil_nuits_id_assignation_fkey` n'a pas de cascade, si bien
+  // qu'une seule nuit laissée en base faisait échouer ce reset — et donc tous
+  // les specs suivants du même patient, avec un message qui ne désignait pas
+  // le coupable.
+  await prisma.agendaSommeilNuit.deleteMany({ where: { idPatient } });
   await prisma.assignation.deleteMany({ where: { idPatient } });
   await prisma.consultation.deleteMany({ where: { idPatient } });
   await prisma.questionnaireReponse.deleteMany({ where: { idPatient, idAssignation: { not: null } } });
@@ -101,6 +107,30 @@ export async function preparerReprisePourTest(idPatient: string): Promise<string
   await prisma.packProposition.deleteMany({ where: { idPatient } });
 
   return accessToken;
+}
+
+/**
+ * Pose l'accusé de lecture du cadre TRUST, et rien d'autre.
+ *
+ * `resetPortailState` l'efface, si bien qu'un spec qui ouvre le hub tombe sur
+ * la séquence « Avant de commencer » (4 écrans) au lieu de l'écran qu'il teste.
+ * `preparerReprisePourTest` le pose aussi, mais en antidatant les réponses —
+ * ce qui déclencherait la bannière de reprise. D'où ce helper minimal.
+ */
+export async function accuserCadreTrust(idPatient: string): Promise<void> {
+  const cadre = getDocumentCourant('cadre_accompagnement');
+  await prisma.trustAcknowledgement.deleteMany({
+    where: { idPatient, documentKey: 'cadre_accompagnement' },
+  });
+  await prisma.trustAcknowledgement.create({
+    data: {
+      idPatient,
+      documentKey: 'cadre_accompagnement',
+      documentVersion: cadre.version,
+      contentHash: 'e2e-cadre',
+      type: 'pris_connaissance',
+    },
+  });
 }
 
 /** Nettoie l'état de reprise laissé par un run (jeton, propositions, ack). */

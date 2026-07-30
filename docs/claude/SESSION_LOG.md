@@ -903,3 +903,42 @@ n'exécute pas ce script, l'intégration du bloc de #473 n'est donc pas prouvée
 assignation ouverte, six jamais utilisés) ; `Q_NEU_12`, dernier « invisible mais
 assignable » ; consigne v11 écrite, mais les deux booléens de `Q_NEU_12` restent
 sans consigne.
+
+## 2026-07-30 — Nuits oubliées de l'agenda : trois lots livrés (#477, #478, #480)
+
+**Décisions** : le levier contre les nuits perdues n'est pas la fenêtre de saisie
+(borne J-1 confirmée) mais la visibilité de l'oubli. Verdict doctrinal établi et
+opposable : la frontière écrite interdit la relance **automatique**, pas le geste
+praticien — les deux migrations opposent cron et clic dans la même phrase, et
+« Renvoyer le lien » est déjà une relance praticien en prod. Trois lots : vue
+transverse « agendas en cours » (5 états par faits datés, jamais un score),
+relance au clic sous `WN_AGENDA_RELANCE` (fermé), rappel dans l'espace patient.
+Aucune migration.
+
+**Écartés** : la relance automatique (renverserait la frontière) ; le lien profond
+vers l'agenda (le segment `[token]` est le jeton permanent, retiré des e-mails par
+LOT-04).
+
+**Corrigé de mon propre cadrage** : j'avais annoncé les portes patient éteintes —
+`WN_G4_LIEN_MAGIQUE` et `WN_G5_GOOGLE_PATIENT` sont **allumées** depuis le 07-21/22
+(commentaire périmé dans `portail/featureFlag.ts`). Il n'y avait donc aucun blocage
+de lien.
+
+**Revues adversariales** : trois NO-GO, tous justifiés. (1) un test mockait la garde
+de scoping qu'il prétendait couvrir ; (2) un échec SMTP ambigu défaisait les DEUX
+protections — N clics = N e-mails reçus, tous consignés « Erreur » ; (3) le hub
+invitait à transmettre le matin du 21ᵉ jour, et le suivre clôturait
+irréversiblement en abandonnant la dernière nuit.
+
+**Validations** : T1 vert à chaque étape, T2 `--fast`, `verify` vert sur les trois
+PR (8m51 à 10m52), mergées, branches supprimées.
+
+**Prochaine action** : allumer `WN_AGENDA_RELANCE` en production — après les deux
+points ci-dessous.
+
+**Questions ouvertes** : le relais SMTP n'est identifié nulle part (code ni doc) et
+ce lot augmente le volume de courrier patient, à l'échéance HDS du 2026-10-21 ; le
+budget anti-harcèlement est par **recueil**, pas par patient (deux agendas ouverts
+existent en prod) ; ratifier le verdict doctrinal par une ligne au
+`REGISTRE_FRONTIERES.md`, sans quoi le prochain audit relira `PROPOSITION:280` au
+pied de la lettre.
