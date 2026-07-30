@@ -25,12 +25,16 @@ export const RAYON_MICRONUTRITION = 'micronutrition' as const;
 
 // Correspondance rayon → notebook (libellé exact du registre sanitaire). Le
 // rayon est une étagère clinique ; le notebook en est l'unité d'organisation.
-// Seul « micronutrition » a un consommateur aujourd'hui (C4) ; « biologie » et
-// « nutrition » sont déclarés mais inertes tant qu'aucun écran ne les appelle.
+// Seul « micronutrition » a un consommateur aujourd'hui (C4) ; les autres
+// (« biologie », « nutrition », « stress », « humeur », « sommeil ») sont
+// déclarés mais inertes tant qu'aucun écran ne les appelle.
 export const RAYON_VERS_NOTEBOOK: Readonly<Record<string, string>> = {
   [RAYON_MICRONUTRITION]: '10 — Micronutrition et compléments',
   biologie: '08 — Biologie fonctionnelle',
   nutrition: '09 — Nutrition et aliments vedettes',
+  stress: '03 — Stress et burnout',
+  humeur: '04 — Humeur',
+  sommeil: '02 — Sommeil et chronobiologie',
 } as const;
 
 export type ClaimRayon = {
