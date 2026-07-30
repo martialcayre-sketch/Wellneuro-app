@@ -26,7 +26,7 @@ import { createRequire } from 'node:module';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { empreinteServie } from './lib/servi.mjs';
-import { comparer } from './lib/comparaison.mjs';
+import { comparer, croiserLectures } from './lib/comparaison.mjs';
 
 const require = createRequire(import.meta.url);
 const home = os.homedir();
@@ -212,7 +212,6 @@ function redigerRapport({ instrument, sources, empreinte, verdicts, croisement, 
 }
 
 /** Clé d'identité d'une divergence : le même écart doit se reconnaître d'une lecture à l'autre. */
-const cleDivergence = (d) => `${d.code}|${d.item ?? ''}`;
 
 async function traiter({ instrument, sources, entree, calculateScore, specs }) {
   const empreinte = empreinteServie(instrument, entree, calculateScore);
@@ -224,31 +223,7 @@ async function traiter({ instrument, sources, entree, calculateScore, specs }) {
   const verdicts = specs.filter((s) => s.spec).map((s) => ({ lecteur: s.lecteur, resultat: comparer(empreinte, s.spec) }));
   if (verdicts.length === 0) throw new Error('aucune spécification exploitable');
 
-  // Croisement : confirmée = vue par toutes les lectures disponibles.
-  const parCle = new Map();
-  for (const v of verdicts) {
-    for (const d of v.resultat.divergences) {
-      const cle = cleDivergence(d);
-      // Un ENSEMBLE de lecteurs, pas une liste. Une même lecture peut émettre
-      // plusieurs fois la même divergence — huit occurrences de
-      // `seuil_non_represente` chez l'une, quatre chez l'autre — et le tableau
-      // comptait alors douze entrées pour deux lecteurs. La comparaison
-      // `lecteurs.length === verdicts.length` échouait, et une divergence
-      // RÉELLEMENT vue des deux côtés était déclassée en simple signalement.
-      // L'erreur allait dans le sens rassurant, ce qui est le pire des deux.
-      if (!parCle.has(cle)) parCle.set(cle, { divergence: d, lecteurs: new Set() });
-      parCle.get(cle).lecteurs.add(v.lecteur);
-    }
-  }
-  // Le croisement n'a de sens qu'à deux lectures. Si l'une a échoué, RIEN
-  // n'est « confirmé » : une divergence vue une seule fois reste à confirmer,
-  // sans quoi une lecture solitaire se présenterait comme une lecture croisée.
-  const croiseeEffective = verdicts.length >= 2;
-  const croisement = { croiseeEffective, confirmees: [], aConfirmer: [] };
-  for (const { divergence, lecteurs } of parCle.values()) {
-    if (croiseeEffective && lecteurs.size === verdicts.length) croisement.confirmees.push(divergence);
-    else croisement.aConfirmer.push({ ...divergence, vuePar: [...lecteurs].join(', ') });
-  }
+  const croisement = croiserLectures(verdicts);
 
   const dossier = path.join(SORTIE, instrument);
   await fs.mkdir(dossier, { recursive: true });

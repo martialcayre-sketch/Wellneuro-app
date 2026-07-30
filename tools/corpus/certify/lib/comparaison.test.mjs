@@ -9,7 +9,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { comparer, similarite, normaliserTexte, echelleServie } from './comparaison.mjs';
+import { comparer, similarite, normaliserTexte, echelleServie, croiserLectures } from './comparaison.mjs';
 import { empreinteServie, reponsesExtremes, itemsDuServi } from './servi.mjs';
 
 /** Empreinte servie minimale, surchargeable par cas de test. */
@@ -518,4 +518,49 @@ test('normaliserTexte neutralise casse, accents et ponctuation', () => {
 test('similarite : identique vaut 1, disjoint vaut 0', () => {
   assert.equal(similarite('abc def', 'abc def'), 1);
   assert.equal(similarite('abc', 'xyz'), 0);
+});
+
+
+const div = (code, item) => ({ code, item: item ?? null, gravite: 'critique' });
+const lecture = (lecteur, divergences) => ({ lecteur, resultat: { divergences } });
+
+test('croiserLectures — une divergence vue par les deux lectures est confirmée', () => {
+  const c = croiserLectures([
+    lecture('B', [div('bareme_sans_source')]),
+    lecture('C', [div('bareme_sans_source')]),
+  ]);
+  assert.equal(c.confirmees.length, 1);
+  assert.equal(c.aConfirmer.length, 0);
+});
+
+test('croiserLectures — une lecture qui RÉPÈTE sa divergence ne la fait pas passer pour croisée', () => {
+  // Le défaut d'origine : `lecteurs` était une liste. Trois occurrences chez B
+  // et zéro chez C donnaient `length === 3`, différent de 2, donc « à
+  // confirmer » — juste par accident. Le vrai risque est l'inverse, ci-dessous.
+  const c = croiserLectures([
+    lecture('B', [div('seuil_non_represente', 'Q1'), div('seuil_non_represente', 'Q1')]),
+    lecture('C', []),
+  ]);
+  assert.equal(c.confirmees.length, 0);
+  assert.equal(c.aConfirmer[0].vuePar, 'B');
+});
+
+test('croiserLectures — la répétition ne DÉCLASSE plus une divergence réellement croisée', () => {
+  // Le cas mesuré sur `Q_NEU_11` le 2026-07-30 : B émet huit fois la même
+  // divergence, C quatre fois. Douze entrées pour deux lecteurs, et le test
+  // `length === 2` échouait — une divergence vue des DEUX côtés se présentait
+  // comme un simple signalement. L'erreur allait dans le sens rassurant.
+  const c = croiserLectures([
+    lecture('B', Array.from({ length: 8 }, () => div('seuil_non_represente', 'Q1'))),
+    lecture('C', Array.from({ length: 4 }, () => div('seuil_non_represente', 'Q1'))),
+  ]);
+  assert.equal(c.confirmees.length, 1, 'vue par B et par C : confirmée');
+  assert.equal(c.aConfirmer.length, 0);
+});
+
+test('croiserLectures — une lecture solitaire ne confirme rien', () => {
+  const c = croiserLectures([lecture('B', [div('nombre_items')])]);
+  assert.equal(c.croiseeEffective, false);
+  assert.equal(c.confirmees.length, 0);
+  assert.equal(c.aConfirmer.length, 1);
 });
