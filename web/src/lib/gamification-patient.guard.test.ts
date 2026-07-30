@@ -37,6 +37,10 @@ const SURFACES_PATIENT = [
   'components/patient-food-observation',
   'components/food-observation',
   'app/portail',
+  // Textes patient sortis des composants : le rappel de l'agenda vit dans un
+  // module pur, hors de `components/patient` — sans cette entrée, un « 5 jours
+  // d'affilée » y passerait sous le radar du garde.
+  'lib/agenda-sommeil/rappelPortail.ts',
   'app/patient',
 ];
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
   prisma: {
@@ -9,6 +9,7 @@ const { prisma } = vi.hoisted(() => ({
     // + booklet envoyé. Par défaut : aucun des deux — l'état le plus prudent.
     consultation: { findFirst: vi.fn() },
     bookletEnvoi: { findFirst: vi.fn() },
+    agendaSommeilNuit: { findMany: vi.fn() },
   },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
@@ -129,5 +130,79 @@ describe('GET /api/portail/assignations — liaison session au compte', () => {
     const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
     const corps = await (await GET(request(cookie))).json();
     expect(corps.assignations.map((a: { idAssignation: string }) => a.idAssignation)).toContain('ASS_1');
+  });
+});
+
+
+// L'agenda du sommeil au portail : le hub reçoit le compte de nuits et la
+// position dans la fenêtre, JAMAIS un agrégat ni un score.
+describe('GET /api/portail/assignations — agendas du sommeil', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-30T10:00:00.000Z'));
+    prisma.patient.findUnique.mockResolvedValue(patient);
+    prisma.questionnaireReponse.aggregate.mockResolvedValue({ _max: { dateReponse: null } });
+    prisma.consultation.findFirst.mockResolvedValue(null);
+    prisma.bookletEnvoi.findFirst.mockResolvedValue(null);
+    prisma.assignation.findMany.mockResolvedValue([
+      {
+        idAssignation: 'ASS_AGD',
+        idPatient: 'PAT_TEST',
+        idQuestionnaire: 'Q_SOM_09',
+        titre: 'Agenda du sommeil — 21 nuits',
+        statut: 'En attente',
+        statutReponses: 'non_rempli',
+        dateAssignation: new Date('2026-07-29T09:00:00.000Z'),
+        dateLimite: null,
+        notes: null,
+        createdAt: new Date('2026-07-29T09:00:00.000Z'),
+      },
+    ]);
+    prisma.agendaSommeilNuit.findMany.mockResolvedValue([
+      { idAssignation: 'ASS_AGD', dateNuit: '2026-07-29' },
+      { idAssignation: 'ASS_AGD', dateNuit: '2026-07-29' },
+    ]);
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('sert le compte de nuits distinctes et l’état du jour, sans aucun agrégat', async () => {
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
+    const res = await GET(request(cookie));
+    const json = await res.json();
+
+    expect(json.agendas).toEqual([
+      {
+        idAssignation: 'ASS_AGD',
+        nbRenseignees: 1,
+        jourCourant: 2,
+        nuitDuJourNotee: false,
+        cloturablePatient: false,
+      },
+    ]);
+
+    // Assertion NÉGATIVE : aucune clé d'agrégat ni de score ne doit sortir.
+    const brut = JSON.stringify(json);
+    for (const interdit of [
+      'AGD_TST_MOY',
+      'AGD_EFF_MOY',
+      'AGD_LAT_MED',
+      'scorePrincipal',
+      'interpretation',
+      'reponses',
+    ]) {
+      expect(brut).not.toContain(interdit);
+    }
+    // Et la requête ne demande jamais le JSONB des réponses.
+    const select = prisma.agendaSommeilNuit.findMany.mock.calls[0][0].select;
+    expect(select).not.toHaveProperty('reponses');
+  });
+
+  it('n’interroge pas les nuits quand aucun agenda n’est ouvert', async () => {
+    prisma.assignation.findMany.mockResolvedValue([]);
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
+    const res = await GET(request(cookie));
+    expect((await res.json()).agendas).toEqual([]);
+    expect(prisma.agendaSommeilNuit.findMany).not.toHaveBeenCalled();
   });
 });

@@ -10,6 +10,8 @@ import { PatientCard, patientCardClassName } from '@/components/patient/ui/Patie
 import { patientButtonClassName } from '@/components/patient/ui/PatientButton';
 import { PatientJourneyProgress, buildJourneySteps } from '@/components/patient/PatientJourneyProgress';
 import { detecterChangementsEtMettreAJour, type ChangementVisite } from '@/lib/portail-visite';
+import { deriverRappelAgenda, type EtatAgendaPortail } from '@/lib/agenda-sommeil/rappelPortail';
+import { AGENDA_SOMMEIL_ID, NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
 import { PatientErrorState } from '@/components/patient/PatientErrorState';
 import { AvantDeCommencer } from '@/components/patient/trust/AvantDeCommencer';
 import { PatientCompanionHome } from '@/components/patient-companion/PatientCompanionHome';
@@ -28,7 +30,11 @@ type Affichage = {
 };
 
 // Dérive l'affichage patient à partir des statuts de l'assignation.
-function affichage(a: AssignationPatient, avecBrouillon: boolean): Affichage {
+function affichage(
+  a: AssignationPatient,
+  avecBrouillon: boolean,
+  agenda?: AgendaPortail,
+): Affichage {
   if (a.statutReponses === 'verrouille') {
     return { groupe: 'transmis', badge: 'Transmis au praticien', badgeVariant: 'info', action: 'Consulter', ghost: true };
   }
@@ -40,6 +46,26 @@ function affichage(a: AssignationPatient, avecBrouillon: boolean): Affichage {
   }
   if (!a.estEnAttenteSaisie) {
     return { groupe: 'expire', badge: 'Expiré', badgeVariant: 'neutral', action: null };
+  }
+  // L'agenda du sommeil se lit à son propre rythme : un recueil quotidien
+  // n'est ni « à compléter » ni un brouillon. Le badge dit ce qui reste à
+  // faire AUJOURD'HUI — jamais ce qui a été manqué.
+  if (a.idQuestionnaire === AGENDA_SOMMEIL_ID && agenda) {
+    const rappel = deriverRappelAgenda(agenda, NB_JOURS_AGENDA);
+    const badge =
+      rappel.etat === 'a_transmettre'
+        ? 'À transmettre'
+        : rappel.etat === 'a_jour'
+          ? 'Nuit notée ce matin'
+          : rappel.etat === 'a_commencer'
+            ? 'À commencer'
+            : 'Nuit du jour à noter';
+    return {
+      groupe: 'a_completer',
+      badge,
+      badgeVariant: 'neutral',
+      action: rappel.cta ?? 'Consulter',
+    };
   }
   return {
     groupe: 'a_completer',
@@ -69,14 +95,42 @@ const GROUPES_SECONDAIRES = new Set<Groupe>(['correction', 'transmis', 'expire']
 
 type Enrichi = { a: AssignationPatient; aff: Affichage };
 type ActionRecommandee = EtapeDuMoment;
+type AgendaPortail = EtatAgendaPortail & { idAssignation: string };
 
 // Une seule action mise en avant, en priorité une reprise de brouillon, sinon
 // le premier "à compléter" (Commencer/Corriger déverrouillé confondus,
 // tous deux réellement actionnables), sinon une correction demandée en
 // attente (non actionnable tant que le praticien ne l'a pas déverrouillée —
 // présentée en information, pas en CTA), sinon un état stable sans action.
-function calculerActionRecommandee(enriched: Enrichi[], brouillons: Set<string>): ActionRecommandee {
+function calculerActionRecommandee(
+  enriched: Enrichi[],
+  brouillons: Set<string>,
+  agendas: AgendaPortail[],
+): ActionRecommandee {
   if (enriched.length === 0) return { kind: 'vide' };
+
+  // L'agenda du sommeil passe DEVANT, y compris devant un brouillon : c'est la
+  // seule tâche périssable du portail — `estDateSaisissable` referme la porte
+  // à J-2, alors qu'un brouillon attend sans rien perdre.
+  for (const agenda of agendas) {
+    const rappel = deriverRappelAgenda(agenda, NB_JOURS_AGENDA);
+    if (!rappel.prioritaire || rappel.cta === null) continue;
+    const cible = enriched.find(
+      e => e.a.idAssignation === agenda.idAssignation && e.aff.groupe === 'a_completer',
+    );
+    // Un agenda DÉVERROUILLÉ par le praticien est un recueil déjà clôturé
+    // qu'il rouvre pour faire corriger : lui proposer « transmettre » ferait
+    // créer une seconde QuestionnaireReponse. Son état praticien prime.
+    if (cible && cible.a.statutReponses !== 'deverrouille') {
+      return {
+        kind: 'action',
+        idAssignation: agenda.idAssignation,
+        cta: rappel.cta,
+        appui: rappel.factuel,
+      };
+    }
+  }
+
   const brouillon = enriched.find(e => e.aff.groupe === 'a_completer' && brouillons.has(e.a.idAssignation));
   const cible = brouillon ?? enriched.find(e => e.aff.groupe === 'a_completer');
   if (cible) {
@@ -97,6 +151,10 @@ export default function QuestionnairesHubPage() {
   const [state, setState] = useState<{ status: 'loading' | 'ready' | 'error'; error?: string }>({ status: 'loading' });
   const [patient, setPatient] = useState<{ idPatient: string; prenom: string; nom: string } | null>(null);
   const [assignations, setAssignations] = useState<AssignationPatient[]>([]);
+  // Agendas du sommeil en cours : compte de nuits et position dans la fenêtre,
+  // rien d'autre. En cas d'échec de lecture, tableau vide — le hub retombe sur
+  // son comportement d'avant, jamais sur une supposition.
+  const [agendas, setAgendas] = useState<AgendaPortail[]>([]);
   const [derniereReponseLe, setDerniereReponseLe] = useState<string | null>(null);
   const [brouillons, setBrouillons] = useState<Set<string>>(new Set());
   const [changements, setChangements] = useState<ChangementVisite[]>([]);
@@ -159,6 +217,7 @@ export default function QuestionnairesHubPage() {
       }
       setPatient(data.patient);
       setAssignations(data.assignations);
+      setAgendas(data.agendas ?? []);
       setDerniereReponseLe(data.derniereReponseLe);
       setSignauxParcours(data.parcours ?? { consultationStatut: null, bookletEnvoye: false });
       // Protocole diffusé / fin de cycle : route existante, lecture résiliente
@@ -226,11 +285,18 @@ export default function QuestionnairesHubPage() {
     );
   }
 
-  const enriched = assignations.map(a => ({ a, aff: affichage(a, brouillons.has(a.idAssignation)) }));
+  const enriched = assignations.map(a => ({
+    a,
+    aff: affichage(
+      a,
+      brouillons.has(a.idAssignation),
+      agendas.find(g => g.idAssignation === a.idAssignation),
+    ),
+  }));
   const aCompleterItems = enriched.filter(e => e.aff.groupe === 'a_completer');
   const aCompleter = aCompleterItems.length;
   const dureeACompleterMin = aCompleterItems.reduce((somme, e) => somme + parseDureeMinutes(e.a.duree), 0);
-  const actionRecommandee = calculerActionRecommandee(enriched, brouillons);
+  const actionRecommandee = calculerActionRecommandee(enriched, brouillons, agendas);
 
   // Parcours synchronisé (SP-CONV LOT-04) : les étapes 5-6 vivent enfin —
   // dérivées du contrat partagé sur les seuls signaux que le portail sert
