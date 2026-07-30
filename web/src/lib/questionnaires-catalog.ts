@@ -239,19 +239,40 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Dépistez la dépendance à la nicotine chez l'adolescent en 10 questions oui/non.`, duree: '3 min', actif: true },
 
   // ── PÉDIATRIE (suite) ───────────────────────────────────────────────────────
-  // Suspendus le 2026-07-29 sur arbitrage praticien : droits non dégagés
-  // (« © MHS, licence requise » au registre des instruments). Ni assignation ni
-  // passation depuis l'ouverture, et le banc de certification ne les a jamais
-  // comparés à leur source — ce sont les deux seuls du catalogue dans ce cas.
-  // S'y ajoute une réserve scientifique déjà consignée : le seuil de 15 de
-  // l'échelle de Conners vient d'un rapport non publié, et le laboratoire de son
-  // propre auteur l'a désavoué en 1985 en recommandant d'abandonner
-  // l'instrument. Réactivation possible sur licence obtenue ET reconstruction
-  // depuis la source.
+  // Fermés le 2026-07-29, et leur sort DIVERGE depuis le 2026-07-30 : le banc de
+  // certification y est enfin passé — ils en étaient les deux seuls absents,
+  // parce que leur comparaison coûte des appels de modèle.
+  //
+  // L'ENSEIGNANT A ÉTÉ ROUVERT PUIS REFERMÉ LE MÊME JOUR, et le motif vaut d'être
+  // lu avant toute nouvelle tentative. Son banc rend « 0 divergence critique » —
+  // mais la source lue ne déclare ni sous-échelle, ni seuil, ni bornes, ni
+  // barème : les deux seuls contrôles critiques possibles étaient le nombre
+  // d'items et l'échelle de cotation, et les deux formes ont bien 28 items cotés
+  // 0-3. Zéro critique voulait donc dire « les deux choses vérifiables l'étaient »,
+  // pas « le servi est l'instrument ».
+  //
+  // Ce que les 27 divergences « mineures » disaient : la similarité item à item
+  // est de 0,00 pour dix-sept d'entre elles. Le servi porte les critères DSM du
+  // TDAH là où la source porte les items d'opposition de Conners. Et le sous-score
+  // intitulé « Opposition / Impulsivité » repose sur cinq items d'IMPULSIVITÉ et
+  // aucun d'opposition : un praticien y lirait un trouble oppositionnel chez un
+  // enfant à qui la question n'a jamais été posée.
+  //
+  // Réouverture conditionnée à l'un des deux : reconstruire le servi sur les 28
+  // items de la source, ou DÉBAPTISER — un dépistage TDAH local par l'enseignant,
+  // sans le nom Conners ni les intitulés empruntés, ne pose ni le problème
+  // d'identité ni celui de MHS.
   { id: 'Q_PED_02', titre: 'Conners Enseignant — Évaluation TDAH (forme courte)', categorie: 'Pédiatrie',
     description: `Évaluation du TDAH par l'enseignant : opposition, inattention, hyperactivité (28 items, 0-3).`, duree: '10 min', actif: false },
+  // Le Conners parent RESTE FERMÉ, et son banc dit pourquoi : la lecture de la
+  // source y trouve 110 items là où l'application en sert 108. Deux items
+  // manquants ne sont pas un défaut de scoring, c'est un autre instrument —
+  // précédent du MFI-20 (#418) et de la méthode Monnier. S'y ajoute que la
+  // lecture croisée a échoué deux fois (sortie tronquée sur 108 items) : rien
+  // n'est confirmé par deux lectures indépendantes. Les relances payantes ont
+  // été arrêtées à deux essais.
   { id: 'Q_PED_03', titre: 'Conners Parents — Évaluation TDAH (forme courte)', categorie: 'Pédiatrie',
-    description: `Évaluation du TDAH par les parents : opposition, inattention, hyperactivité (27 items, 0-3).`, duree: '10 min', actif: false },
+    description: `Évaluation du TDAH par les parents : opposition, inattention, hyperactivité (108 items, 0-3).`, duree: '30 min', actif: false },
 
   // ── GÉRONTOLOGIE (MMSE) ─────────────────────────────────────────────────────
   // Entrée AJOUTÉE le 2026-07-29 pour pouvoir suspendre l'instrument, et non

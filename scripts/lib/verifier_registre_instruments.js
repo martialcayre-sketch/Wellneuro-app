@@ -314,6 +314,41 @@ function verifierRegistreInstruments({
         + `divergencesCritiques ${JSON.stringify(v.divergencesCritiques)})`
       );
     }
+    // FRAÎCHEUR DU VERDICT.
+    //
+    // Un verdict de banc certifie un scoring à un instant donné. Rien ne le
+    // reliait au code qu'il certifie : le 2026-07-30, deux instruments étaient
+    // `scoring_verifie` sur un verdict ANTÉRIEUR à la réécriture de leur propre
+    // grille — le QDRS a vu ses cinq bandes réalignées le matin et portait encore
+    // le verdict de la veille. Un verdict périmé se lit exactement comme un
+    // verdict frais.
+    //
+    // La date de la note de révision est le repère disponible : c'est elle qu'on
+    // écrit quand on touche à l'instrument. Un verdict daté AVANT sa propre
+    // révision décrit donc un état qui n'existe plus.
+    //
+    // CE QUE CETTE GARDE NE COUVRE PAS, et il faut le lire avant de s'y fier :
+    // son témoin est DÉCLARATIF, écrit à la main dans le même fichier. La moitié
+    // des entrées ne porte aucun bloc `revision` et lui échappe entièrement ; et
+    // le cas vraiment dangereux — quelqu'un réaligne une grille dans
+    // `questions.ts` sans rien écrire au registre — la laisse muette dans tous
+    // les cas. Elle n'attrape que la faute inverse, la plus rare : on écrit la
+    // note et on oublie de re-dater le verdict.
+    //
+    // Le seul témoin honnête est déjà produit par le banc — `empreinte-servie.json`
+    // décrit le servi tel qu'il est. Y stocker une empreinte dans `verdictScoring`
+    // et la recalculer depuis le catalogue au moment du contrôle relierait enfin
+    // le verdict au code. C'est un lot à part ; l'angle mort est verrouillé par un
+    // test qui le nomme (`verifier_registre_instruments.test.mjs`).
+    if (v != null && v.revision != null && estUneDate(v.revision.date) && estUneDate(v.date)) {
+      ajouter(
+        v.date >= v.revision.date,
+        `${id} : verdictScoring daté du ${v.date} alors que sa dernière révision date du `
+        + `${v.revision.date} — le verdict est antérieur à ce qu'il certifie, il faut rejouer `
+        + `le banc (\`certify --recomparer\`, hors ligne) et reporter la date`
+      );
+    }
+
     if (barreau >= ECHELLE.indexOf('scoring_verifie')) {
       // La pièce de ce barreau-là : le verdict du banc, INSCRIT AU REGISTRE. Sans
       // lui, le critère ne vivait que dans un fichier hors dépôt, sur une machine —
