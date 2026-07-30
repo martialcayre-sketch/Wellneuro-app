@@ -36,7 +36,7 @@ import {
   type ValeurQualiteFormulation,
 } from './types';
 
-export const C4_CATALOGUE_VERSION = 'c4-catalogue-v2' as const;
+export const C4_CATALOGUE_VERSION = 'c4-catalogue-v3' as const;
 
 // Bornes de pagination. 50 fiches × ~5 Ko ≈ 250 Ko : marge large sous la limite
 // de réponse de la fonction. L'offset est plafonné parce que personne ne
@@ -66,6 +66,23 @@ export type ValeurBiodisponibilite =
 export type ValeurInteractions = 'signalees' | 'aucune_connue' | 'non_evaluee';
 export type ValeurCumul = 'signale' | 'aucun' | 'non_evaluee';
 export type ValeurDonneesManquantes = 'liste_explicite' | 'aucune' | 'non_evaluee';
+
+/**
+ * Ce que l'on sait de la composition d'une fiche — jamais un booléen.
+ *
+ * `absente`   aucune ligne de composition n'est enregistrée ;
+ * `partielle` des lignes existent, sans preuve qu'elles soient TOUTES là ;
+ * `integre`   toutes les lignes actives de la source sont résolues.
+ *
+ * La distinction n'est pas cosmétique. La résolution nominatif→ingrédient se
+ * fera par vagues : une vague de 289 libellés laisse 30,8 % des fiches
+ * partiellement résolues, une vague de 453 en laisse 18,5 % (mesure du corpus
+ * source, 141 388 fiches). Une fiche partielle A des compositions : lue par un
+ * simple `compositions.length > 0`, elle repasserait « connue » et rendrait de
+ * nouveau « Compatible » et « Aucun cumul » alors qu'un ingrédient sur cinq lui
+ * est invisible — exactement le feu vert tiré du vide fermé en #482.
+ */
+export type CompletudeComposition = 'absente' | 'partielle' | 'integre';
 
 export type CompositionFiche = {
   ingredientCode: string;
@@ -146,6 +163,13 @@ export type FicheComplement = {
   statutFiche: string;
   statutLabel: string;
   composition: CompositionFiche[];
+  /**
+   * Ce que vaut `composition` ci-dessus. À lire AVANT les dimensions : sur
+   * `partielle`, la liste des ingrédients est incomplète, donc le compteur
+   * `reglesCorrespondantes` est sous-estimé et toute absence de signal est sans
+   * valeur.
+   */
+  completudeComposition: CompletudeComposition;
   dimensions: DimensionsFiche;
   // Compteur FACTUEL — nombre de règles cliniques validées correspondant à la
   // composition de la fiche. Ce n'est PAS un score : aucune pondération, aucun
@@ -201,6 +225,27 @@ export const TRIS_INDISPONIBLES = ['reglesCorrespondantes'] as const;
 
 export const MESSAGE_INDISPONIBLE =
   "Ce critère sera disponible après l'import de la composition des produits.";
+
+/**
+ * Valeurs d'une facette PAR AILLEURS servie dont le prédicat SQL n'est pas
+ * fiable tant que la complétude de composition n'est pas prouvée.
+ *
+ * `interactions = aucune_connue` vaut « un seuil actif existe, mais aucun ne
+ * bascule avec alerte ». Sur une fiche partiellement résolue, c'est vrai alors
+ * que l'ingrédient porteur du signal peut être précisément celui qui n'a pas
+ * été résolu : un faux vert DANS UN FILTRE, pire qu'à l'affichage puisqu'il
+ * décide de ce que le praticien voit. L'intégrité n'étant pas exprimable en
+ * base avant la preuve de complétude (phase 1b), la valeur est refusée.
+ *
+ * Les deux autres valeurs restent servies et sont saines : `signalees` est un
+ * vrai positif, `non_evaluee` est déjà l'abstention.
+ */
+export const VALEURS_FACETTE_INDISPONIBLES: Partial<Record<CleFacetteServie, readonly string[]>> = {
+  interactions: ['aucune_connue'],
+};
+
+export const MESSAGE_VALEUR_INDISPONIBLE =
+  "Ce critère ne sera fiable qu'une fois la composition des produits entièrement résolue.";
 
 export type FiltresCatalogue = {
   qualite?: ValeurQualiteFormulation[];
@@ -461,13 +506,104 @@ function calculerCumul(
   };
 }
 
-/** Composition inconnue : rien à croiser, donc rien à conclure. */
-function cumulNonEvaluable(): DimensionsFiche['cumulVsSeuils'] {
+// ─── Complétude de composition ──────────────────────────────────────────────
+
+/**
+ * Lit ce que l'on sait de la composition d'une fiche.
+ *
+ * `integre` exige une PREUVE POSITIVE que toutes les lignes actives de la
+ * source ont été résolues — le nombre de lignes attendu, à comparer au nombre
+ * de lignes écrites. Cette preuve n'existe pas encore : la colonne qui la
+ * portera (`composition_source_lignes` sur `supplement_products`) arrive avec
+ * le résolveur de la phase 1b, et une migration appliquée ne se retouche jamais
+ * — on ne fige donc pas sa forme avant de connaître celle du résolveur.
+ *
+ * D'ici là `lignesSourceAttendues` vaut `null` et toute fiche portant des
+ * compositions est `partielle`. C'est fail-closed : le sens correct de
+ * l'erreur, puisqu'une fiche partielle traitée comme intègre rend un feu vert
+ * infondé, quand l'inverse ne fait que s'abstenir.
+ */
+export function lireCompletudeComposition(
+  nombreLignesResolues: number,
+  lignesSourceAttendues: number | null,
+): CompletudeComposition {
+  if (nombreLignesResolues === 0) return 'absente';
+  if (lignesSourceAttendues !== null && nombreLignesResolues >= lignesSourceAttendues) return 'integre';
+  return 'partielle';
+}
+
+const RAISON_COMPLETUDE: Record<Exclude<CompletudeComposition, 'integre'>, string> = {
+  absente: 'Composition inconnue pour cette fiche',
+  partielle: 'Composition partiellement résolue : les ingrédients non résolus restent invisibles',
+};
+
+const MENTION_LISTE_PARTIELLE =
+  ' Liste établie sur une composition partiellement résolue : elle est incomplète.';
+
+/**
+ * Applique la complétude aux dimensions qui se lisent par INTERSECTION avec la
+ * composition. Point de conception du lot, et seul endroit où la règle vit.
+ *
+ * L'asymétrie est délibérée : **un signal trouvé reste un signal**, même sur une
+ * composition incomplète — le taire masquerait un risque réel, et un positif ne
+ * dépend pas de ce qu'on ignore. **Une absence de signal, elle, ne vaut rien**
+ * tant que la composition n'est pas intègre : c'est l'ignorance qui produit
+ * l'intersection vide, jamais l'absence de conflit. Non renseigné n'est pas
+ * zéro (leçon Q_ALI_01), et l'absence de signal ne vaut pas absence de risque.
+ *
+ * Sur `integre`, identité — les calculateurs font foi.
+ */
+export function appliquerCompletude(
+  dimensions: DimensionsFiche,
+  completude: CompletudeComposition,
+): DimensionsFiche {
+  if (completude === 'integre') return dimensions;
+  const raison = RAISON_COMPLETUDE[completude];
+
+  // Cumul vs seuils — « signale » survit, « aucun » s'abstient.
+  const cumulVsSeuils: DimensionsFiche['cumulVsSeuils'] =
+    dimensions.cumulVsSeuils.valeur === 'signale'
+      ? dimensions.cumulVsSeuils
+      : {
+        valeur: 'non_evaluee',
+        signaux: [],
+        justification: `${raison} : cumuls et seuils ne sont pas évaluables. L'absence de signal ne vaut pas absence de risque.`,
+      };
+
+  // Compatibilité protocole — les deux lectures de vigilance survivent, seul le
+  // feu vert « compatible » exige une composition intègre.
+  const compatibiliteProtocole: DimensionsFiche['compatibiliteProtocole'] =
+    dimensions.compatibiliteProtocole.valeur === 'vigilance_requise'
+    || dimensions.compatibiliteProtocole.valeur === 'compatible_avec_vigilance'
+      ? dimensions.compatibiliteProtocole
+      : {
+        valeur: 'non_evaluee',
+        justification: `${raison} : la compatibilité protocole ne se lit que sur une composition connue.`,
+      };
+
+  // Interactions — « signalees » survit, « aucune_connue » s'abstient.
+  const interactionsSignalees: DimensionsFiche['interactionsSignalees'] =
+    dimensions.interactionsSignalees.valeur === 'signalees'
+      ? dimensions.interactionsSignalees
+      : {
+        ...dimensions.interactionsSignalees,
+        valeur: 'non_evaluee',
+        signalements: [],
+        justification: `${raison} : les interactions ne sont pas évaluables. L'absence de signal ne vaut pas absence de risque.`,
+      };
+
+  // Énumérations, pas des verdicts : la liste reste, mais elle est annoncée
+  // incomplète. Sur « absente » les calculateurs disent déjà le vide.
+  const marquerListe = <T extends { justification: string }>(bloc: T): T =>
+    completude === 'partielle' ? { ...bloc, justification: bloc.justification + MENTION_LISTE_PARTIELLE } : bloc;
+
   return {
-    valeur: 'non_evaluee',
-    signaux: [],
-    justification:
-      'Composition inconnue pour cette fiche : cumuls et seuils ne sont pas évaluables. L\'absence de signal ne vaut pas absence de risque.',
+    ...dimensions,
+    biodisponibiliteForme: marquerListe(dimensions.biodisponibiliteForme),
+    gradePreuveParIntention: marquerListe(dimensions.gradePreuveParIntention),
+    compatibiliteProtocole,
+    interactionsSignalees,
+    cumulVsSeuils,
   };
 }
 
@@ -529,10 +665,15 @@ function predicatFacette(cle: CleFacetteServie, valeur: string): Prisma.Suppleme
     case 'interactions':
       if (valeur === 'signalees') return porteUnSeuil(SEUIL_SIGNALANT);
       if (valeur === 'aucune_connue') {
-        // Un seuil actif existe, mais aucun ne bascule avec alerte.
-        return { AND: [porteUnSeuil(SEUIL_ACTIF), neePorteAucunSeuil(SEUIL_SIGNALANT)] };
+        // Refusée en amont (VALEURS_FACETTE_INDISPONIBLES). Le prédicat « un
+        // seuil actif existe, aucun ne bascule avec alerte » est FAUX sur une
+        // fiche partiellement résolue. Levée plutôt que silence : rouvrir cette
+        // valeur en phase 1b impose de la conjoindre à la preuve de complétude,
+        // et rien ici ne doit laisser croire que le prédicat actuel suffit.
+        throw new CatalogueRequeteInvalide('valeur_facette_indisponible', MESSAGE_VALEUR_INDISPONIBLE);
       }
       // « non_evaluee » : aucun ingrédient de la fiche ne porte de seuil actif.
+      // Sain même sur une fiche partielle — c'est déjà l'abstention.
       return neePorteAucunSeuil(SEUIL_ACTIF);
   }
 }
@@ -648,6 +789,17 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
   const filtres = options.filtres ?? {};
   const intentionCode = options.intentionCode?.trim() || null;
   const recherche = (options.recherche ?? '').trim().slice(0, RECHERCHE_MAX);
+
+  // Valeur de facette non fiable : refus AVANT toute requête, y compris avant
+  // la résolution d'intention. Refuser, jamais ignorer (précédent #482) : un
+  // critère silencieusement écarté rendrait des fiches hors critère en laissant
+  // croire qu'il s'était appliqué.
+  for (const [cle, interdites] of Object.entries(VALEURS_FACETTE_INDISPONIBLES)) {
+    const selection = filtres[cle as CleFacetteServie];
+    if (selection?.some((valeur) => interdites.includes(valeur))) {
+      throw new CatalogueRequeteInvalide('valeur_facette_indisponible', MESSAGE_VALEUR_INDISPONIBLE);
+    }
+  }
 
   const parPage = Math.max(1, Math.min(Math.trunc(options.parPage ?? PAR_PAGE_DEFAUT), PAR_PAGE_MAX));
   const page = Math.max(1, Math.trunc(options.page ?? 1));
@@ -765,25 +917,24 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
       unite: c.unite,
     }));
 
-    // Une fiche sans composition connue n'est PAS une fiche sans conflit : on
-    // ignore ce qu'elle contient. Les deux dimensions qui se lisent par
-    // intersection avec la composition (compatibilité, cumul) rendraient
-    // sinon « Compatible » et « Aucun cumul » — un feu vert tiré du vide.
-    // Abstention, comme partout ailleurs : non renseigné n'est jamais zéro.
-    const compositionConnue = p.compositions.length > 0;
+    // Ce que l'on sait de la composition gouverne ce que l'on ose en dire. La
+    // preuve de complétude (nombre de lignes attendu) n'existe pas encore :
+    // toute fiche portant des compositions est donc « partielle ». Phase 1b y
+    // passera `p.compositionSourceLignes`.
+    const completudeComposition = lireCompletudeComposition(p.compositions.length, null);
 
     const qualiteValeur = QUALITE_PAR_COMPLETUDE[p.niveauCompletude] ?? 'non_evaluee';
     const biodisponibiliteForme = calculerBiodisponibilite(p.compositions, vue);
     const gradePreuveParIntention = calculerGrades(p.compositions, vue);
     const interactionsSignalees = calculerInteractions(p.compositions, seuilsParIngredient, ingredientCodeParId);
-    const cumulVsSeuils = compositionConnue
-      ? calculerCumul(p.compositions, candidatsSentinelle)
-      : cumulNonEvaluable();
+    const cumulVsSeuils = calculerCumul(p.compositions, candidatsSentinelle);
     const donneesManquantes = calculerDonneesManquantes(p.donneesManquantes ?? []);
 
     // Compatibilité protocole : lecture RÉUTILISÉE de construireTableauCompatibilite,
-    // alimentée par les signaux de la sentinelle touchant CETTE fiche.
-    const candidatsFiche = candidatsSentinelle === null || !compositionConnue
+    // alimentée par les signaux de la sentinelle touchant CETTE fiche. Le
+    // filtrage par complétude n'est PAS fait ici : il est centralisé dans
+    // appliquerCompletude, seul endroit où vit l'asymétrie.
+    const candidatsFiche = candidatsSentinelle === null
       ? null
       : candidatsSentinelle.filter((candidat) =>
         candidat.ingredientsConcernes.some((code) => composition.some((c) => c.ingredientCode === code)));
@@ -806,7 +957,7 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
       0,
     );
 
-    const dimensions: DimensionsFiche = {
+    const dimensionsBrutes: DimensionsFiche = {
       qualiteFormulation: {
         valeur: qualiteValeur,
         justification:
@@ -840,7 +991,8 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
       statutFiche: p.statutFiche,
       statutLabel: statutLabel(p.statutFiche),
       composition,
-      dimensions,
+      completudeComposition,
+      dimensions: appliquerCompletude(dimensionsBrutes, completudeComposition),
       reglesCorrespondantes,
       referencesScientifiques: [...refMap.values()].sort((a, b) => comparerTexte(a.citation, b.citation)),
     };

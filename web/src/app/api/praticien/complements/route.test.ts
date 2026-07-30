@@ -119,6 +119,36 @@ describe('/api/praticien/complements', () => {
     },
   );
 
+  it('refuse « interactions=aucune_connue », dont le prédicat n’est pas fiable', async () => {
+    // Motif DISTINCT des facettes ci-dessus : la donnée existe, c'est sa
+    // complétude qui n'est pas prouvée. Le message doit le dire, sinon le
+    // praticien attend un import qui ne débloquera pas ce critère à lui seul.
+    const res = await GET(new Request(`${URL_BASE}?interactions=aucune_connue`));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.reason).toBe('valeur_facette_indisponible');
+    expect(json.error).toMatch(/entièrement résolue/i);
+    expect(listerCatalogue).not.toHaveBeenCalled();
+  });
+
+  it('refuse « aucune_connue » même mêlée à une valeur servie', async () => {
+    const res = await GET(new Request(`${URL_BASE}?interactions=signalees,aucune_connue`));
+    expect(res.status).toBe(400);
+    expect((await res.json()).reason).toBe('valeur_facette_indisponible');
+    expect(listerCatalogue).not.toHaveBeenCalled();
+  });
+
+  it.each(['signalees', 'non_evaluee'])(
+    'sert toujours « interactions=%s », dont le prédicat reste sain',
+    async (valeur) => {
+      const res = await GET(new Request(`${URL_BASE}?interactions=${valeur}`));
+      expect(res.status).toBe(200);
+      expect(listerCatalogue).toHaveBeenCalledWith(expect.objectContaining({
+        filtres: expect.objectContaining({ interactions: [valeur] }),
+      }));
+    },
+  );
+
   it('refuse le tri par nombre de règles correspondantes (aucune règle en base)', async () => {
     const res = await GET(new Request(`${URL_BASE}?tri=reglesCorrespondantes`));
     expect(res.status).toBe(400);

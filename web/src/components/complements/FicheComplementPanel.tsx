@@ -183,6 +183,16 @@ export function FicheComplementPanel({
             ))}
           </ul>
         )}
+        {/* La liste ci-dessus peut être incomplète : le dire, sinon elle se lit
+            comme la composition entière et l'absence d'un ingrédient comme son
+            absence du produit. */}
+        {fiche.completudeComposition === 'partielle' && (
+          <p className="mt-2 text-xs font-medium text-foreground">
+            Composition partiellement résolue : des ingrédients déclarés par la source ne
+            figurent pas dans cette liste. Les dimensions qui se lisent sur la composition
+            restent non évaluées — l&apos;absence de signal ne vaut pas absence de risque.
+          </p>
+        )}
       </section>
 
       <Dimension titre="Qualité de formulation" justification={d.qualiteFormulation.justification}>

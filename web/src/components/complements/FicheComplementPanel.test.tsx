@@ -17,6 +17,7 @@ const FICHE: FicheComplement = {
   composition: [
     { ingredientCode: 'magnesium', ingredientNomFr: 'Magnésium', formeCode: 'bisglycinate', formeLabelFr: 'Bisglycinate', doseParPortion: 200, unite: 'mg' },
   ],
+  completudeComposition: 'integre',
   dimensions: {
     qualiteFormulation: { valeur: 'bien_documentee', justification: 'Qualité lue du niveau de complétude.' },
     biodisponibiliteForme: {
@@ -153,4 +154,24 @@ describe('FicheComplementPanel (fiche justificative multi-dimensions)', () => {
     expect(String(url)).toContain('/api/praticien/complements/corpus?rayon=micronutrition');
     expect(String(url)).toContain('requete=');
   });
+
+  // ─── Complétude de composition ────────────────────────────────────────────
+
+  it('annonce qu’une composition partielle est incomplète, sous la liste', () => {
+    // Sans cette mention, la liste se lit comme la composition ENTIÈRE : un
+    // ingrédient non résolu passerait pour un ingrédient absent du produit.
+    fetchMock.mockResolvedValue(json(CORPUS_VIDE));
+    render(<FicheComplementPanel fiche={{ ...FICHE, completudeComposition: 'partielle' }} />);
+    expect(screen.getByText(/Composition partiellement résolue/i)).toBeTruthy();
+    expect(screen.getByText(/absence de signal ne vaut pas absence de risque/i)).toBeTruthy();
+  });
+
+  it.each(['integre', 'absente'] as const)(
+    'n’affiche AUCUNE mention de partialité sur une composition « %s »',
+    (completude) => {
+      fetchMock.mockResolvedValue(json(CORPUS_VIDE));
+      render(<FicheComplementPanel fiche={{ ...FICHE, completudeComposition: completude }} />);
+      expect(screen.queryByText(/Composition partiellement résolue/i)).toBeNull();
+    },
+  );
 });

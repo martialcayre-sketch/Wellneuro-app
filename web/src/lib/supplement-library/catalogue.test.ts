@@ -15,7 +15,10 @@ import {
   OFFSET_MAX,
   PAR_PAGE_DEFAUT,
   PAR_PAGE_MAX,
+  appliquerCompletude,
   listerCatalogue,
+  lireCompletudeComposition,
+  type DimensionsFiche,
 } from './catalogue';
 
 const tagSommeil = {
@@ -96,7 +99,7 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     expect(res.fiches).toEqual([]);
     expect(res.total).toBe(0);
     expect(res.aucunScoreGlobal).toBe(true);
-    expect(res.contractVersion).toBe('c4-catalogue-v2');
+    expect(res.contractVersion).toBe('c4-catalogue-v3');
   });
 
   it('ne produit AUCUN score global agrégé', async () => {
@@ -282,12 +285,28 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     );
   });
 
-  it('« aucune interaction connue » exige un seuil actif SANS bascule signalante', async () => {
-    await listerCatalogue({ filtres: { interactions: ['aucune_connue'] } });
-    const serialise = JSON.stringify(conditions());
-    // Les deux volets sont présents : présence d'un seuil, absence d'alerte.
-    expect(serialise).toContain('"some"');
-    expect(serialise).toContain('"none"');
+  it('« aucune interaction connue » est REFUSÉE tant que la complétude n’est pas prouvée', async () => {
+    // Le prédicat « un seuil actif existe, aucun ne bascule » se lit sur les
+    // ingrédients RÉSOLUS : sur une fiche partielle, le porteur du signal peut
+    // être justement celui qui manque. Un faux vert dans un filtre décide de ce
+    // que le praticien voit — refuser, jamais servir approximativement.
+    await expect(listerCatalogue({ filtres: { interactions: ['aucune_connue'] } }))
+      .rejects.toBeInstanceOf(CatalogueRequeteInvalide);
+    expect(prisma.supplementProduct.findMany).not.toHaveBeenCalled();
+    expect(prisma.supplementProduct.count).not.toHaveBeenCalled();
+  });
+
+  it('refuse « aucune_connue » même mêlée à des valeurs servies (jamais un tri partiel)', async () => {
+    await expect(listerCatalogue({ filtres: { interactions: ['signalees', 'aucune_connue'] } }))
+      .rejects.toBeInstanceOf(CatalogueRequeteInvalide);
+    expect(prisma.supplementProduct.findMany).not.toHaveBeenCalled();
+  });
+
+  it('refuse AVANT de résoudre l’intention (aucun travail inutile)', async () => {
+    await expect(
+      listerCatalogue({ intentionCode: 'sommeil_fragmente', filtres: { interactions: ['aucune_connue'] } }),
+    ).rejects.toBeInstanceOf(CatalogueRequeteInvalide);
+    expect(prisma.clinicalIntentTag.findMany).not.toHaveBeenCalled();
   });
 
   it('« interactions non évaluées » exige l’ABSENCE de tout seuil actif', async () => {
@@ -392,6 +411,32 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     expect(fiche.dimensions.cumulVsSeuils.justification).toMatch(/ne vaut pas absence de risque/i);
   });
 
+  it('une fiche partiellement résolue ne rend AUCUN verdict positif', async () => {
+    // Le cas que la phase 1b va créer en masse : des compositions existent,
+    // sans preuve qu'elles soient toutes là. Lue par « length > 0 », la fiche
+    // repasserait « connue » et rendrait Compatible / Aucun cumul.
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
+    prisma.clinicalRule.findMany.mockResolvedValue([regleMag()]);
+
+    const [fiche] = (await listerCatalogue({ intentionCode: 'sommeil_fragmente' })).fiches;
+    expect(fiche.completudeComposition).toBe('partielle');
+    expect(fiche.dimensions.compatibiliteProtocole.valeur).toBe('non_evaluee');
+    expect(fiche.dimensions.cumulVsSeuils.valeur).toBe('non_evaluee');
+    expect(fiche.dimensions.interactionsSignalees.valeur).toBe('non_evaluee');
+  });
+
+  it('annonce l’état de la composition sur CHAQUE fiche servie', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([
+      produit({ id: 'p_vide', compositions: [] }),
+      produit({ id: 'p_partielle' }),
+    ]);
+    prisma.supplementProduct.count.mockResolvedValue(2);
+    const { fiches } = await listerCatalogue();
+    expect(fiches.map((f) => f.completudeComposition)).toEqual(['absente', 'partielle']);
+  });
+
   it('une intention INCONNUE n’ouvre aucune lecture (pas de feu vert par saisie au hasard)', async () => {
     prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
     prisma.supplementProduct.count.mockResolvedValue(1);
@@ -433,5 +478,145 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     prisma.supplementProduct.count.mockResolvedValue(2);
     const res = await listerCatalogue();
     expect(res.fiches.map(f => f.nomCommercial)).toEqual(['Zinc Basique', 'Acérola']);
+  });
+});
+
+// ─── Complétude de composition ──────────────────────────────────────────────
+
+describe('lireCompletudeComposition', () => {
+  it('aucune ligne : « absente »', () => {
+    expect(lireCompletudeComposition(0, null)).toBe('absente');
+    expect(lireCompletudeComposition(0, 12)).toBe('absente');
+  });
+
+  it('des lignes SANS preuve du total attendu : « partielle », jamais « integre »', () => {
+    // L'état de production après la première vague de résolution.
+    expect(lireCompletudeComposition(1, null)).toBe('partielle');
+    expect(lireCompletudeComposition(999, null)).toBe('partielle');
+  });
+
+  it('moins de lignes que la source n’en déclare : « partielle »', () => {
+    expect(lireCompletudeComposition(3, 12)).toBe('partielle');
+    expect(lireCompletudeComposition(11, 12)).toBe('partielle');
+  });
+
+  it('toutes les lignes de la source résolues : « integre »', () => {
+    expect(lireCompletudeComposition(12, 12)).toBe('integre');
+  });
+
+  it('« integre » est INATTEIGNABLE sans preuve — c’est le fail-closed du lot', () => {
+    // La preuve (colonne `composition_source_lignes`) arrive en phase 1b. Tant
+    // qu'elle vaut `null`, aucune fiche ne peut franchir le seuil, quel que
+    // soit le nombre de lignes résolues.
+    for (const n of [1, 5, 50, 10_000]) {
+      expect(lireCompletudeComposition(n, null)).not.toBe('integre');
+    }
+  });
+});
+
+describe('appliquerCompletude — l’asymétrie positif / feu vert', () => {
+  function dimensions(over: Partial<DimensionsFiche> = {}): DimensionsFiche {
+    return {
+      qualiteFormulation: { valeur: 'bien_documentee', justification: 'q' },
+      biodisponibiliteForme: { valeurs: [], valeursPresentes: [], justification: 'bio' },
+      gradePreuveParIntention: { valeurs: [], justification: 'grade' },
+      compatibiliteProtocole: { valeur: 'compatible', justification: 'compat' },
+      interactionsSignalees: {
+        valeur: 'aucune_connue', signalements: [], mentionMedecin: 'm', justification: 'inter',
+      },
+      cumulVsSeuils: { valeur: 'aucun', signaux: [], justification: 'cumul' },
+      donneesManquantes: { valeur: 'aucune', elements: [], justification: 'dm' },
+      fraicheurProvenance: {
+        provenance: 'dgccrf', identifiantSource: 'X', urlSource: null,
+        dateDerniereVerification: null, versionFormulation: 1,
+        statutFiche: 'importee', statutLabel: 'Importée', justification: 'f',
+      },
+      ...over,
+    };
+  }
+
+  it('sur « integre », rend les dimensions à l’identique (les calculateurs font foi)', () => {
+    const d = dimensions();
+    expect(appliquerCompletude(d, 'integre')).toBe(d);
+  });
+
+  // Le feu vert exige une composition intègre — dans les deux états incomplets.
+  it.each(['absente', 'partielle'] as const)(
+    'sur « %s », les trois verdicts positifs par ABSENCE tombent à « non évaluée »',
+    (completude) => {
+      const d = appliquerCompletude(dimensions(), completude);
+      expect(d.cumulVsSeuils.valeur).toBe('non_evaluee');
+      expect(d.compatibiliteProtocole.valeur).toBe('non_evaluee');
+      expect(d.interactionsSignalees.valeur).toBe('non_evaluee');
+    },
+  );
+
+  // Un signal TROUVÉ ne dépend pas de ce qu'on ignore : le taire masquerait un
+  // risque réel. C'est l'autre moitié de l'asymétrie, et la plus facile à
+  // casser en généralisant « tout devient non_evaluee ».
+  it.each(['absente', 'partielle'] as const)(
+    'sur « %s », un cumul SIGNALÉ survit intact',
+    (completude) => {
+      const signal = { valeur: 'signale' as const, signaux: [], justification: 'trouvé' };
+      const d = appliquerCompletude(dimensions({ cumulVsSeuils: signal }), completude);
+      expect(d.cumulVsSeuils).toEqual(signal);
+    },
+  );
+
+  it.each(['absente', 'partielle'] as const)(
+    'sur « %s », des interactions SIGNALÉES survivent intactes',
+    (completude) => {
+      const signalees = {
+        valeur: 'signalees' as const,
+        signalements: [{ code: 'a', messageFr: 'm', niveauAlerte: 'orange', ingredientCode: 'zinc' }],
+        mentionMedecin: 'm', justification: 'trouvé',
+      };
+      const d = appliquerCompletude(dimensions({ interactionsSignalees: signalees }), completude);
+      expect(d.interactionsSignalees).toEqual(signalees);
+    },
+  );
+
+  it.each(['vigilance_requise', 'compatible_avec_vigilance'] as const)(
+    'la lecture de vigilance « %s » survit à une composition partielle',
+    (valeur) => {
+      const compat = { valeur, justification: 'signal de la sentinelle' };
+      const d = appliquerCompletude(dimensions({ compatibiliteProtocole: compat }), 'partielle');
+      expect(d.compatibiliteProtocole).toEqual(compat);
+    },
+  );
+
+  it('sur « partielle », les énumérations restent mais s’annoncent incomplètes', () => {
+    const d = appliquerCompletude(dimensions(), 'partielle');
+    expect(d.biodisponibiliteForme.justification).toMatch(/incomplète/i);
+    expect(d.gradePreuveParIntention.justification).toMatch(/incomplète/i);
+  });
+
+  it('sur « absente », les énumérations ne portent PAS la mention de liste partielle', () => {
+    const d = appliquerCompletude(dimensions(), 'absente');
+    expect(d.biodisponibiliteForme.justification).toBe('bio');
+    expect(d.gradePreuveParIntention.justification).toBe('grade');
+  });
+
+  it('distingue les deux ignorances dans la justification servie au praticien', () => {
+    expect(appliquerCompletude(dimensions(), 'absente').cumulVsSeuils.justification)
+      .toMatch(/composition inconnue/i);
+    expect(appliquerCompletude(dimensions(), 'partielle').cumulVsSeuils.justification)
+      .toMatch(/partiellement résolue/i);
+  });
+
+  it('n’efface jamais la mention « l’absence de signal ne vaut pas absence de risque »', () => {
+    for (const completude of ['absente', 'partielle'] as const) {
+      const d = appliquerCompletude(dimensions(), completude);
+      expect(d.cumulVsSeuils.justification).toMatch(/ne vaut pas absence de risque/i);
+      expect(d.interactionsSignalees.justification).toMatch(/ne vaut pas absence de risque/i);
+    }
+  });
+
+  it('ne touche à AUCUNE dimension indépendante de la composition', () => {
+    const d = dimensions();
+    const apres = appliquerCompletude(d, 'partielle');
+    expect(apres.qualiteFormulation).toEqual(d.qualiteFormulation);
+    expect(apres.donneesManquantes).toEqual(d.donneesManquantes);
+    expect(apres.fraicheurProvenance).toEqual(d.fraicheurProvenance);
   });
 });
