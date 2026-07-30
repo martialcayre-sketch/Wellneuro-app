@@ -42,8 +42,14 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Situez la qualité globale de votre alimentation : légumes, fruits, protéines, graisses, sucres et comportements alimentaires. Repérage d'habitudes, non validé comme instrument de mesure — les résultats orientent l'entretien, ils ne concluent pas.`, duree: '15 min', actif: true },
   { id: 'Q_ALI_02', titre: 'Alimentation — Diète méditerranéenne SIIN', categorie: 'Alimentaire',
     description: `Évaluez votre adhérence au régime méditerranéen en 14 questions (score /14).`, duree: '10 min', actif: true },
+  // Suspendu le 2026-07-30 sur arbitrage praticien, pour un motif de CONTENU :
+  // l'application sert 10 items là où la source (méthode Monnier) en compte 39 —
+  // un quart d'un instrument n'est pas une adaptation, c'est un autre instrument.
+  // Même précédent que Q_SOM_07 (« ce n'est pas un défaut de scoring, c'est un
+  // autre instrument »). Les droits, eux, sont couverts. Sa réponse enregistrée
+  // reste lisible ; réactivation à la reconstruction depuis la source.
   { id: 'Q_ALI_03', titre: 'Fréquences de consommation alimentaire (adapté de la méthode Monnier)', categorie: 'Alimentaire',
-    description: `Situez vos fréquences de consommation par groupe d'aliments. Ne calcule ni apports caloriques ni apports protéiques : la version servie produit des indices de fréquence, pas des quantités. Source non certifiée.`, duree: '10 min', actif: true },
+    description: `Situez vos fréquences de consommation par groupe d'aliments. Ne calcule ni apports caloriques ni apports protéiques : la version servie produit des indices de fréquence, pas des quantités. Source non certifiée.`, duree: '10 min', actif: false },
 
   // ── FIBROMYALGIE ────────────────────────────────────────────────────────────
   { id: 'Q_FIB_01', titre: 'FiRST — Dépistage de la fibromyalgie', categorie: 'Fibromyalgie',

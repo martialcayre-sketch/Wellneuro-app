@@ -235,10 +235,19 @@ Q_SOM_02: {
     type:'sum',
     certification:{source:'drive',status:'ambigu'},
     maxTotal:24,
+    // Les trous à 6 et à 15 sont des trous DE LA SOURCE elle-même (« < 6 »,
+    // « == 7 », « == 8 », « >= 9 », « <= 14 », « > 15 ») : aucune bande n'y est
+    // écrite. Ils sont comblés le 2026-07-30 par ARBITRAGE PRATICIEN — pas par
+    // alignement, la source n'ayant rien à aligner — avec la règle la moins
+    // affirmante : 6 est hors normalité (« < 6 ») sans être « >= 9 », il reçoit
+    // la bande moyenne ; 15 n'est pas « excessive » (« > 15 »), il reste dans la
+    // bande 9-15. Une première rédaction de ce lot présentait le comblement de 6
+    // comme « conforme à la source » et refusait 15 « faute de source » : les
+    // deux trous étaient identiques, et la revue l'a montré.
     interpretation:[
       {min:0,max:5,label:'Pas de somnolence diurne ; sommeil vraisemblablement satisfaisant',color:'success'},
-      {min:7,max:8,label:'Score moyen ; pas de dette de sommeil évidente, mais le sommeil peut éventuellement être amélioré',color:'warning'},
-      {min:9,max:14,label:'Somnolence diurne ; pathologies possibles ; déficit de sommeil très probable',color:'danger'},
+      {min:6,max:8,label:'Score moyen ; pas de dette de sommeil évidente, mais le sommeil peut éventuellement être amélioré',color:'warning'},
+      {min:9,max:15,label:'Somnolence diurne ; pathologies possibles ; déficit de sommeil très probable',color:'danger'},
       {min:16,max:24,label:"Somnolence diurne excessive ; syndrome d'apnées du sommeil possible",color:'danger'},
     ]
   }
@@ -2690,11 +2699,17 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const cat1Score = cat1Mesuree ? be2 + be3 + be4 : null;
     const cat1Positive = cat1Mesuree ? (be1 === 1 && (cat1Score as number) >= 2) : null;
 
-    // Catégorie 2 — Somnolence diurne (items BE5-BE7)
+    // Catégorie 2 — Somnolence diurne (items BE5-BE7). La source exige AU MOINS
+    // DEUX réponses positives parmi les trois ; le servi se contentait d'UNE
+    // seule — un patient positif au seul « fatigue au réveil », avec une HTA,
+    // sortait « Risque élevé d'apnée — polysomnographie recommandée ». Relevé
+    // par les deux lectures du banc, aligné le 2026-07-30 sur arbitrage
+    // praticien (famille des seuils, dossier #469).
     const be5 = getVal('BE5') || 0;
     const be6 = getVal('BE6') || 0;
     const be7 = getVal('BE7') || 0;
-    const cat2Positive = aUneMesure(['BE5','BE6','BE7']) ? (be5 >= 1 || be6 >= 1 || be7 === 1) : null;
+    const cat2Positive = aUneMesure(['BE5','BE6','BE7'])
+      ? ([be5 >= 1, be6 >= 1, be7 === 1].filter(Boolean).length >= 2) : null;
 
     // Catégorie 3 — Facteurs de risque (HTA + IMC)
     const be8 = getVal('BE8') || 0;
@@ -2741,6 +2756,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       total < 30 ? {label:'Tout à fait du soir', color:'danger'}
     : total <= 41 ? {label:'Modérément du soir', color:'warning'}
     : total <= 58 ? {label:'Neutre', color:'success'}
+    // 70 : la source porte un TROU (« modérément 59–69 », « tout à fait > 70 »).
+    // La table publiée de Horne & Östberg met 70–86 en « tout à fait du matin »,
+    // et c'est elle que le servi suit — écart assumé avec le « > 70 » de la
+    // traduction du support, consigné au registre le 2026-07-30. Une première
+    // rédaction de ce lot avait déplacé 70 vers « modérément » sur la foi du
+    // seul « > 70 » : cela contredisait le « <= 69 » de la même source.
     : total <= 69 ? {label:'Modérément du matin', color:'info'}
     :              {label:'Tout à fait du matin', color:'primary'};
     return {type:'horne', total, maxTotal: sc.maxTotal || 86, interpretation: interp, certification: sc.certification || null};

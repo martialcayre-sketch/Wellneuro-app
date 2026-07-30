@@ -615,7 +615,9 @@
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite."
+            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite.",
+            "seuil '>= 1' : les bandes servies couvrent 0–30 sans trou, et le sens du '>= 1' de la source est inintelligible sans relecture du support (le MMT est coté en points, pas en erreurs). Écart DOCUMENTÉ, non ajouté à l'aveugle — dernière critique soldée sur la foi de la couverture complète des bandes.",
+            "CORRECTION DE REVUE : la critique est RESTAURÉE. Le décrément s'appuyait sur la couverture des bandes, sans rapport avec le seuil non représenté — et la relecture du rapport montre pire : les 10 libellés servis ne partagent RIEN avec la source (MMT administré : orientation, 3 mots, calcul) et le sens de l'échelle est INVERSÉ (servi 0-30 plus haut = mieux ; source plus haut = pire). C'est la classe Q_ALI_03/Q_SOM_07 — arbitrage praticien requis : suspendre, ou reconstruire."
           ]
         }
       }
@@ -711,7 +713,8 @@
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "echelle_de_cotation 'null–1' : borne basse non lue par le banc ; servi 0–1 conforme. Critique annulée. RESTE OUVERT : plancher 0 de la source inatteignable (item 10 inversé, minimum servi 1) — établi sans balayage, à arbitrer au lot bornes."
+            "echelle_de_cotation 'null–1' : borne basse non lue par le banc ; servi 0–1 conforme. Critique annulée. RESTE OUVERT : plancher 0 de la source inatteignable (item 10 inversé, minimum servi 1) — établi sans balayage, à arbitrer au lot bornes.",
+            "bornes 0-10 : les DEUX bornes sont atteignables — le vrai extremum inverse EC10 par rapport aux autres items. La note du 2026-07-30 qui déclarait le plancher 0 inatteignable « établi sans balayage » refaisait l'erreur de saturation en sens inverse ; elle est retirée par celle-ci, preuve au banc."
           ]
         }
       }
@@ -852,7 +855,8 @@
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "bareme_sans_source : le banc a cherché un total global sur un instrument qui n'en produit pas. Les bandes servies sont 0–7/8–10/11–21 PAR SOUS-ÉCHELLE A et D, soit le barème publié de Zigmond & Snaith. Critique annulée — troisième cas où l'application a raison et le corpus a tort. RESTE OUVERT : seuil '<= 7' non représenté (famille seuils, arbitrage praticien)."
+            "bareme_sans_source : le banc a cherché un total global sur un instrument qui n'en produit pas. Les bandes servies sont 0–7/8–10/11–21 PAR SOUS-ÉCHELLE A et D, soit le barème publié de Zigmond & Snaith. Critique annulée — troisième cas où l'application a raison et le corpus a tort. RESTE OUVERT : seuil '<= 7' non représenté (famille seuils, arbitrage praticien).",
+            "seuil '<= 7' : SERVI — bandes A et D 0–7 « Absence de symptomatologie ». Divergence annulée, dernière critique soldée."
           ]
         }
       }
@@ -867,10 +871,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "IDTAS-AE servi en 48 items pour 36 à la source : la source pose SIX énoncés par liste saisonnière (se sentir moins bien, manger davantage, prendre du poids…) auxquels le patient répond en cochant des mois ; le servi AFFAISSE ces six construits en un comptage mensuel unique par liste (12 items par liste), sur lequel les seuils source (> 4 mois) sont appliqués. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — les 5 parties et leurs seuils restent ceux de Terman & Williams.",
         "langue": "fr",
         "traductionValidee": "fr",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -899,7 +903,14 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "seuil '> 5' : SERVI — partie1DepressionThreshold: 5 avec comparaison stricte. Divergence annulée, dernière critique soldée. RESTE : nombre d'items 48/36 (adapte, ce lot).",
+            "CORRECTION DE REVUE : la description « comptages dépliés par mois » sous-décrivait l'écart — c'est un affaissement de six construits par liste, pas un dépliage. Reformulée."
+          ]
+        }
       }
     },
     {
@@ -912,10 +923,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "PSQI servi en 18 items là où la source en compte 24 : l'application recueille les composantes par items directs (horaires, durées) sans les sous-questions 5j-open/10 de l'auto-questionnaire complet. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — les 7 composantes et le total /21 restent ceux de Buysse 1989.",
         "langue": "fr",
         "traductionValidee": "fr — Blais et al. (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -944,7 +955,15 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "nombre_items 24/18 : adaptation déclarée (ce lot). RESTE : bornes atteignables (lot dédié).",
+            "CORRECTION DE REVUE : la critique est RESTAURÉE — la note du même jour dit elle-même « RESTE : bornes atteignables (lot dédié) ». Un compteur à zéro avec un écart ouvert ouvrirait le barreau scoring_verifie sur une prose qui dit le contraire.",
+            "bornes_score_non_atteintes 0-21 : RÉSOLU par construction ciblée (lot bornes du 2026-07-30). 21 est atteint par un pire-dormeur réel (coucher 20h, 2h d'endormissement, 3h dormies, tout au maximum) et 0 par un dormeur parfait — le balayage saturait les réponses, or l'efficacité vaut 0 quand elle est BONNE. Preuves épinglées dans bornesAtteignables.guard.test.ts. Critique soldée."
+          ]
+        }
       }
     },
     {
@@ -989,7 +1008,14 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "seuil '< 6' : la bande 0–5 était SERVIE (le banc ne lisait que le seuil, pas la bande). Le vrai écart était le trou à 6, fermé le 2026-07-30 : la bande moyenne descend à 6, conformément à la source. Le trou à 15 reste, aucune frontière de source au dossier.",
+            "CORRECTION DE REVUE : les trous à 6 ET à 15 sont des trous DE LA SOURCE (« < 6 », « == 7 », « == 8 », « >= 9 », « <= 14 », « > 15 »). Leur comblement est un ARBITRAGE PRATICIEN, pas un alignement — 6 reçoit la bande moyenne (hors normalité sans être >= 9), 15 la bande 9-15 (pas « excessive » au sens du « > 15 »). Une première note du même jour disait « conformément à la source » : c'était faux."
+          ]
+        }
       }
     },
     {
@@ -1034,7 +1060,14 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "seuil '>= 2' : SERVI — le moteur berlin rend highRisk sur posCount >= 2. Codé au moteur, invisible au banc. Divergence annulée.",
+            "CORRECTION DE REVUE : la requalification du seuil « catégorie 1 >= 2 » citait posCount >= 2 — la règle FINALE, qui partage le chiffre — alors que la règle de catégorie 1 (be1 ET somme >= 2) est bien servie par ailleurs. Et le seuil voisin « catégorie 2 >= 2 », rapporté par les deux lectures, n'était PAS servi : une seule réponse positive suffisait. Corrigé le 2026-07-30 : la catégorie 2 exige deux positives parmi les trois items, comme la source."
+          ]
+        }
       }
     },
     {
@@ -1130,7 +1163,14 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "seuil '> 70' : frontière corrigée le 2026-07-30 — 70 était servi « tout à fait du matin », il appartient à « modérément ».",
+            "CORRECTION DE REVUE : le déplacement de 70 vers « modérément » contredisait le « <= 69 » de la même source, et la table publiée de Horne & Östberg met 70-86 en « tout à fait du matin ». REVERT : 70 reste « tout à fait », l'écart avec le « > 70 » de la traduction du support est ASSUMÉ et documenté. Restent non testés : 30 (trou symétrique), et le moteur horne ne rend jamais null."
+          ]
+        }
       }
     },
     {
@@ -1487,7 +1527,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 1,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "total_numerique_absent 0–11 : arbitrage praticien du 2026-07-30 — RELECTURE DE SOURCE demandée avant toute décision. Le moteur count_threshold reste servi tel quel ; la divergence critique reste OUVERTE et bloque scoring_verifie à dessein."
+          ]
+        }
       }
     },
     {
@@ -1718,7 +1764,15 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "seuil '== 0' : SERVI — le moteur qif rend « Score peu compatible avec le diagnostic » sur total 0 (bande codée au moteur, invisible au banc qui ne lit que l'interprétation déclarée). Divergence annulée, dernière critique soldée. RESTE : bornes atteignables (lot dédié).",
+            "CORRECTION DE REVUE : la critique est RESTAURÉE — même motif que Q_SOM_01, bornes atteignables en lot dédié.",
+            "bornes_score_non_atteintes 0-100 : RÉSOLU par construction ciblée. Maximum réel 99,9 (le moteur multiplie par 3,3 où la source divise par 3 — écart d'arrondi de 0,1, pas bande morte), qui relève bien de la bande « maximum théorique » ; minimum 0 atteint. La saturation rendait 89,9 parce qu'elle mettait Q12 à 7 (sept bons jours = zéro point). Preuves épinglées. Critique soldée."
+          ]
+        }
       }
     },
     {
@@ -2127,11 +2181,12 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1,
+        "divergencesCritiques": 0,
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "nombre_items 7/8 et sous_echelles 1/2 : l'application sert les 7 items de symptômes et marque le 8e (qualité de vie) horsTotal, exactement comme la source le rapporte à part — plus fidèle que le banc ne le crédite. echelle_de_cotation 0–5/0–6 : à re-vérifier à l'extraction, la cotation servie des 7 items de symptômes est 0–5. RESTE OUVERT : seuil '<= 7' non représenté."
+            "nombre_items 7/8 et sous_echelles 1/2 : l'application sert les 7 items de symptômes et marque le 8e (qualité de vie) horsTotal, exactement comme la source le rapporte à part — plus fidèle que le banc ne le crédite. echelle_de_cotation 0–5/0–6 : à re-vérifier à l'extraction, la cotation servie des 7 items de symptômes est 0–5. RESTE OUVERT : seuil '<= 7' non représenté.",
+            "seuil '<= 7' : SERVI — bande IPSS 0–7 « Symptômes légers ». Le banc ne rapprochait pas le seuil de la bande. Divergence annulée, dernière critique soldée."
           ]
         }
       }
@@ -2555,11 +2610,11 @@
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-26, étendant celle du 2026-07-25 aux instruments dont la source du cabinet ne porte qu'une attribution tierce. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE JURIDIQUE : cette déclaration enregistre la position du praticien et l'engage ; elle ne constitue PAS une licence et n'éteint aucun droit détenu par l'auteur ou l'éditeur de l'échelle d'origine. Aucune autorisation n'a été sollicitée ni obtenue auprès des ayants droit identifiés au champ instrument.auteurs. CORRECTION DU 2026-07-29 [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] : le statut portait `permission_obtenue` alors que ce même detail constate qu'aucune autorisation n'a été sollicitée ni obtenue. Une étiquette ne vaut pas une permission : statut ramené à `a_verifier`, droits de l'échelle d'origine NON INSTRUITS. La date de vérification est retirée, aucune vérification n'ayant eu lieu. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi. SUSPENSION DU 2026-07-30 : motif de CONTENU (10 items servis sur 39), pas de droits.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "suspendu",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2574,7 +2629,14 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "divergencesCritiques": 1,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "nombre_items 39/10 : l'application sert un QUART de l'instrument de sa source — ce n'est pas une adaptation, c'est un autre instrument (précédent Q_SOM_07). SUSPENDU le 2026-07-30 sur arbitrage praticien, jusqu'à reconstruction depuis la source. Sa réponse enregistrée reste lisible.",
+            "RÉSERVE (revue) : la suspension ferme le robinet, pas le réservoir. Les 5 sous-scores de la réponse enregistrée continuent d'alimenter le prompt de synthèse, calculés sur 10 items de 39 — l'ajout à MOTIFS_PASSATION_NON_INTERPRETABLE (précédent Q_SOM_07) est une décision praticien, non prise ici."
+          ]
+        }
       }
     },
     {
@@ -2587,7 +2649,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "Grille de Tinetti servie avec ses bandes publiées ; les 3 bandes portent chacune une CONDUITE ajoutée par le cabinet (orientation, prévention de chute), absente de la source. La conduite est retirée du prompt de synthèse par scoresPourPrompt. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
+        "description": "Grille de Tinetti servie avec ses bandes publiées ; les 3 bandes portent chacune une CONDUITE ajoutée par le cabinet (orientation, prévention de chute), absente de la source. La conduite est retirée du prompt de synthèse par scoresPourPrompt. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision. Tinetti servie en 20 items pour 16 à la source : la grille POMA est dépliée par sous-épreuve. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — le total /28 et ses seuils de risque de chute restent ceux de Tinetti 1986.",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
@@ -2618,11 +2680,12 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1,
+        "divergencesCritiques": 0,
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite."
+            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite.",
+            "nombre_items 16/20 : adaptation déclarée (ce lot)."
           ]
         }
       }
@@ -2814,7 +2877,14 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 0
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "seuil '<= 1' : frontière servie 0–1,5 corrigée à 0–1 le 2026-07-30 — un patient à 1,5 sortait Normal au lieu de MCI. Bandes en pas de 0,5 : aucun trou atteignable.",
+            "CORRECTION DE REVUE : la première rédaction n'avait corrigé que la borne 1,5 — or les spec-B/C portent la grille source COMPLÈTE : 0-1 / 1,5-5,5 / 6-12 / 12,5-17 / 17,5-30. Les bornes 12,5 et 17,5 appartenaient encore à deux bandes, et le patient le plus atteint recevait la plus rassurante (12,5 « légère » au lieu de modérée, 17,5 « légère à modérée » au lieu de sévère). Grille entière alignée le 2026-07-30."
+          ]
+        }
       }
     },
     {
