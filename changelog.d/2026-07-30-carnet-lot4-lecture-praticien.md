@@ -68,3 +68,41 @@ que les journées portent » reste ouvert. Pas de marqueurs vedettes cochés par
 praticien (arbitré le 2026-07-30, lot ultérieur). Pas de clôture d'épisode.
 Aucune migration, aucun changement de `BESOIN_SOURCES`, aucun bump de
 `VERSION_SCORE_EQUILIBRE`.
+
+### Corrigé après revue adversariale (même lot)
+
+Une passe `wn-reviewer` a rendu un **NO-GO** : le lot retirait une affirmation
+fausse et en installait deux autres, sur la surface qu'il prétend assainir.
+
+- **Le bilan de calibrage dérivait du dépliant.** Tant qu'aucune transmission
+  n'était ouverte — l'état par défaut de la page — le bloc affichait « Aucune
+  journée décrite à ce jour » **au-dessus d'une liste annonçant douze
+  journées**. Et ouvrir une transmission ancienne sous-estimait
+  systématiquement la couverture : les transmissions sont **cumulatives par
+  cycle**, la plus récente contient les précédentes. Fausse présence hier,
+  fausse absence aujourd'hui. Le bloc suit désormais la **dernière**
+  transmission, chargée d'office, et nomme sa source et sa date.
+- **« Les éléments illisibles sont écartés » était faux pour quatre listes sur
+  cinq.** Elles passaient par `v as TrialTrace` — et une assertion de type ne
+  lève jamais. Rien n'était écarté. Une trace dont `localDate` est un objet
+  faisait **disparaître tout le panneau praticien** : une donnée venue du
+  navigateur patient blanchissait la vue dossier. Quatre lecteurs réels
+  vérifient maintenant la forme des champs que l'affichage lit.
+- **Deux ouvertures rapprochées mélangeaient leurs contenus** : le mot libre
+  d'une transmission s'affichait sous la date d'une autre. La garde comparait
+  la réponse à l'argument de l'appel, qui correspond toujours ; c'est à
+  l'ouverture *courante* qu'il faut la comparer.
+- **Les plans minimaux étaient chargés, jamais rendus, et leur absence
+  affirmée.** Une transmission n'en portant que disait « aucun élément
+  lisible » — alors que l'activation d'un plan minimal est le signal de
+  friction le plus fort du carnet.
+- **L'écart entre le décompte et l'affichage n'était dit nulle part** : « 5
+  trace(s) » au-dessus de deux lignes. Le nombre d'éléments écartés est
+  désormais rendu.
+
+Le reproche le plus juste portait sur les tests : le cloisonnement n'était
+vérifié que contre un mock, et toute la nouvelle interface pouvait disparaître
+sans rien casser. Vingt tests ajoutés, dont huit sur la persistance réelle.
+Quatre mutations — calibrage repiqué au dépliant, garde de course retirée,
+lecteur de trace redevenu un cast, filtre patient retiré du `where` — en tuent
+chacune un.

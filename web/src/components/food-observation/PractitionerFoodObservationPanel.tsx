@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   C5B_RECOMMENDED_PLATES,
@@ -65,6 +65,7 @@ type JaSnapshotDetail = JaSnapshotRecu & {
   plans: MinimalPlanEvent[];
   solutions: IntraEpisodeSolution[];
   journees: JourneeRepere[];
+  elementsEcartes: number;
 };
 
 type PractitionerFoodObservationDraft = {
@@ -182,6 +183,11 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   const [transmissions, setTransmissions] = useState<JaSnapshotRecu[]>([]);
   const [listeTronquee, setListeTronquee] = useState(false);
   const [detailOuvert, setDetailOuvert] = useState<string | null>(null);
+  const [calibrage, setCalibrage] = useState<JaSnapshotDetail | null>(null);
+  // Dernière ouverture demandée. Comparer la réponse à l'argument de l'appel ne
+  // sert à rien — il correspond toujours ; c'est à l'ouverture COURANTE qu'il
+  // faut la comparer, et l'état React est périmé dans la clôture.
+  const detailDemande = useRef<string | null>(null);
   const [detail, setDetail] = useState<JaSnapshotDetail | null>(null);
   const [detailErreur, setDetailErreur] = useState('');
   const [traces, setTraces] = useState<TrialTrace[]>(() => initialDraft?.traces ?? []);
@@ -257,8 +263,27 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         if (!mounted || !res.ok || !json.ok || !json.snapshots) return;
         // Le filtre d'acteur est déjà posé en base ; celui-ci n'est qu'une
         // ceinture, il ne porte plus la fenêtre de lecture.
-        setTransmissions(json.snapshots.filter(s => s.actor === 'patient'));
+        const duPatient = json.snapshots.filter(s => s.actor === 'patient');
+        setTransmissions(duPatient);
         setListeTronquee(json.tronquee === true);
+
+        // Le bilan de calibrage porte l'ÉTAT DU RECUEIL, pas ce que le
+        // praticien a déplié. Il suit donc la transmission la plus récente, et
+        // elle seule : les transmissions sont cumulatives par cycle — le
+        // patient renvoie tout son brouillon — donc la dernière est la plus
+        // complète, et sommer les instantanés compterait deux fois les mêmes
+        // journées.
+        const derniere = duPatient[0];
+        if (derniere) {
+          const resDetail = await fetch(
+            `/api/praticien/ja/observations?idPatient=${encodeURIComponent(idPatient)}&draftId=${encodeURIComponent(derniere.draftId)}`,
+            { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
+          );
+          const jsonDetail = (await resDetail.json()) as { ok: boolean; snapshot?: JaSnapshotDetail };
+          if (mounted && resDetail.ok && jsonDetail.ok && jsonDetail.snapshot) {
+            setCalibrage(jsonDetail.snapshot);
+          }
+        }
       } catch {
         // Repli silencieux : la revue praticien reste utilisable.
       }
@@ -383,10 +408,12 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
   const basculerDetail = async (draftId: string) => {
     setDetailErreur('');
     if (detailOuvert === draftId) {
+      detailDemande.current = null;
       setDetailOuvert(null);
       setDetail(null);
       return;
     }
+    detailDemande.current = draftId;
     setDetailOuvert(draftId);
     setDetail(null);
     try {
@@ -396,19 +423,27 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
       );
       const json = (await res.json()) as { ok: boolean; snapshot?: JaSnapshotDetail };
       if (!res.ok || !json.ok || !json.snapshot) {
-        setDetailErreur('Cette transmission n’a pas pu être ouverte.');
+        if (detailDemande.current === draftId) {
+          setDetailErreur('Cette transmission n’a pas pu être ouverte.');
+        }
         return;
       }
+      // Deux ouvertures rapprochées peuvent revenir dans le désordre : sans ce
+      // contrôle, le mot libre d'une transmission s'affichait sous la date
+      // d'une autre.
+      if (detailDemande.current !== draftId || json.snapshot.draftId !== draftId) return;
       setDetail(json.snapshot);
     } catch {
       setDetailErreur('Cette transmission n’a pas pu être ouverte.');
     }
   };
 
-  // Ce que le praticien voit du calibrage vient EXCLUSIVEMENT des journées
-  // qu'il a ouvertes. Tant qu'aucune transmission n'est dépliée, il n'y a rien
-  // à restituer — et le bloc le dit, au lieu de le combler.
-  const journeesTransmises = detail?.journees ?? [];
+  // Ce que le praticien voit du calibrage vient de la DERNIÈRE transmission,
+  // chargée d'office — jamais de ce qu'il a déplié. Faire dépendre ce bloc du
+  // dépliant faisait dire « aucune journée décrite » au-dessus d'une liste
+  // annonçant douze journées, et faisait sous-estimer la couverture dès qu'une
+  // transmission ancienne était ouverte.
+  const journeesTransmises = calibrage?.journees ?? [];
   const couvertureTransmise = useMemo(
     () => couvertureJournees(journeesTransmises),
     [journeesTransmises],
@@ -575,7 +610,7 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         </h3>
         {listeTronquee && (
           <p className="text-xs text-muted-foreground">
-            Les 10 transmissions les plus récentes. Il peut en exister d’autres, plus anciennes.
+            Les transmissions les plus récentes. Il peut en exister d’autres, plus anciennes.
           </p>
         )}
         {transmissions.length === 0 ? (
@@ -679,9 +714,28 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
                           </ul>
                         )}
 
+                        {detail.plans.length > 0 && (
+                          <ul className="space-y-1 text-xs text-muted-foreground">
+                            {detail.plans.map((plan) => (
+                              <li key={plan.eventId}>
+                                {plan.from} · plan minimal de {plan.dureeJours} jour(s), activé par{' '}
+                                {plan.activatedBy === 'patient' ? 'le patient' : 'le praticien'}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {detail.elementsEcartes > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {detail.elementsEcartes} élément(s) illisible(s), non affiché(s) — le
+                            décompte ci-dessus les inclut.
+                          </p>
+                        )}
+
                         {detail.journees.length === 0
                           && detail.traces.length === 0
                           && detail.pauses.length === 0
+                          && detail.plans.length === 0
                           && detail.solutions.length === 0 && (
                           <p className="text-xs text-muted-foreground">
                             Cette transmission ne porte aucun élément lisible.
@@ -807,7 +861,11 @@ export function PractitionerFoodObservationPanel({ idPatient }: { idPatient: str
         ) : (
           <>
             <p className="text-base text-foreground">
-              {journeesTransmises.length} journée(s) décrite(s), {couvertureTransmise.typesCouverts.length} type(s) de journée sur 4.
+              {couvertureTransmise.compte} journée(s) décrite(s),{' '}
+              {couvertureTransmise.typesCouverts.length} type(s) de journée sur 4.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              D’après la transmission du {calibrage ? dateLocale(new Date(calibrage.createdAt)) : '—'}.
             </p>
             {couvertureTransmise.typesAbsents.length > 0 && (
               <p className="text-sm text-muted-foreground">
