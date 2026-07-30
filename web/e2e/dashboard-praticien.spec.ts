@@ -402,9 +402,18 @@ test.describe('Praticien Dashboard', () => {
     await expect(page.getByTestId('ja-praticien-moments-explorer')).toBeVisible();
     await expect(page.getByTestId('ja-praticien-revue-decision')).toBeVisible();
 
+    // Lot 4 : ce bloc servait trois phrases écrites en dur, identiques pour tout
+    // patient. Sans journée transmise, il ne dit plus rien qu'il ne sache.
+    await expect(page.getByTestId('ja-praticien-calibrage')).toContainText(
+      'Aucune journée décrite à ce jour',
+    );
+    await expect(page.getByTestId('ja-praticien-calibrage')).not.toContainText('Structure observée');
+
     await page.getByTestId('ja-praticien-assiette').selectOption('ASSIETTE_SOIR_LEGER');
     await page.getByTestId('ja-praticien-valider-revue').click();
+    // Le bouton ne prétend plus valider : il prépare, et le dit.
     await expect(page.getByTestId('ja-praticien-review-summary')).toContainText('Accepté');
+    await expect(page.getByTestId('ja-praticien-review-summary')).toContainText('non transmise');
   });
 
   test('session expires on missing NEXTAUTH_SECRET', async ({ page }) => {

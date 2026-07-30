@@ -226,3 +226,30 @@ describe('PractitionerFoodObservationPanel', () => {
     expect(screen.getByText(/note de décision plus précise/i)).toBeTruthy();
   });
 });
+
+// Lot 4 — le bloc de calibrage affichait trois phrases écrites en dur, servies à
+// l'identique quel que soit le patient. L'assertion NÉGATIVE est le cœur de ce
+// test : sans elle, réintroduire la phrase passerait au vert.
+describe('PractitionerFoodObservationPanel — le calibrage ne s’invente plus', () => {
+  beforeEach(() => {
+    cleanup();
+    window.sessionStorage.clear();
+  });
+
+  it('n’affiche aucune structure tant qu’aucune journée n’est ouverte', async () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    const bloc = await screen.findByTestId('ja-praticien-calibrage');
+
+    expect(bloc.textContent).toContain('Aucune journée décrite à ce jour');
+    expect(bloc.textContent).not.toContain('Structure observée');
+    expect(bloc.textContent).not.toContain('3 prises principales');
+    expect(bloc.textContent).not.toMatch(/variabilité surtout le soir/i);
+    expect(bloc.textContent).not.toMatch(/petit-déjeuner sauté/i);
+  });
+
+  it('ne promet plus une validation que le bouton ne fait pas', () => {
+    render(<PractitionerFoodObservationPanel idPatient="PAT_TEST" />);
+    expect(screen.queryByText('Valider la revue locale')).toBeNull();
+    expect(screen.getByText('Préparer la décision')).toBeTruthy();
+  });
+});

@@ -36,6 +36,25 @@ export type JaObservationSnapshotInput = {
   actor: 'praticien' | 'patient';
 };
 
+/**
+ * Contenu d'UN instantané, pour la lecture praticien.
+ *
+ * Distinct de `JaObservationSnapshot`, qui ne porte que des comptes : la liste
+ * en rend jusqu'à cinquante, et y charger les payloads ferait payer à chaque
+ * ouverture de fiche le contenu que le praticien n'a pas demandé.
+ *
+ * Les listes sont rendues TELLES QUE LE PATIENT LES A ÉCRITES, mots libres
+ * compris (arbitrage du 2026-07-30). Elles sont en base depuis le lot 2 : ce
+ * détail n'ajoute aucune donnée, il ouvre une surface de lecture.
+ */
+export type JaObservationSnapshotDetail = JaObservationSnapshot & {
+  traces: TrialTrace[];
+  pauses: PatientPauseEvent[];
+  plans: MinimalPlanEvent[];
+  solutions: IntraEpisodeSolution[];
+  journees: JourneeRepere[];
+};
+
 export type JaObservationSnapshot = {
   draftId: string;
   idPatient: string;
@@ -296,6 +315,89 @@ export async function listJaObservationSnapshots(
       journeesCount: Array.isArray(data.journees) ? data.journees.length : 0,
     };
   });
+}
+
+/**
+ * Lecture du CONTENU d'un instantané, pour la fiche praticien.
+ *
+ * Le filtre porte sur `idPatient` autant que sur `draftId` : un identifiant seul
+ * laisserait lire l'instantané d'un autre patient à qui saurait le deviner. Rend
+ * `null` quand la ligne n'existe pas OU n'appartient pas à ce patient — la route
+ * en fait un 404, jamais un 200 vide, qui se lirait « ce patient n'a rien écrit ».
+ *
+ * Les listes sont relues élément par élément et les éléments illisibles sont
+ * ÉCARTÉS plutôt que de faire échouer la lecture entière : une ligne écrite par
+ * un client antérieur ne doit pas rendre muette une transmission par ailleurs
+ * lisible. Le décompte, lui, reste celui du payload — l'écart entre les deux se
+ * voit.
+ */
+export async function readJaObservationSnapshot(
+  idPatientRaw: string,
+  draftId: string,
+): Promise<JaObservationSnapshotDetail | null> {
+  const idPatient = ensurePatientId(idPatientRaw);
+  if (typeof draftId !== 'string' || draftId.trim() === '') return null;
+
+  const row = await prisma.protocolDraft.findFirst({
+    where: {
+      id: draftId,
+      idPatient,
+      contractVersion: JA_FOOD_OBSERVATION_CONTRACT_VERSION,
+      selectedPriorityId: JA_SELECTED_PRIORITY_ID,
+    },
+    select: {
+      id: true,
+      idPatient: true,
+      supersedesDraftId: true,
+      createdAt: true,
+      payload: true,
+    },
+  });
+  if (!row) return null;
+
+  const data = (row.payload ?? {}) as {
+    actor?: 'praticien' | 'patient';
+    episode?: { episodeId?: string };
+    traces?: unknown[];
+    pauses?: unknown[];
+    plans?: unknown[];
+    solutions?: unknown[];
+    actionCareer?: unknown[];
+    journees?: unknown[];
+  };
+
+  const lisibles = <T>(brut: unknown, lire: (v: unknown) => T): T[] => {
+    if (!Array.isArray(brut)) return [];
+    const out: T[] = [];
+    for (const element of brut) {
+      try {
+        out.push(lire(element));
+      } catch {
+        // Élément illisible : écarté, jamais deviné.
+      }
+    }
+    return out;
+  };
+
+  return {
+    draftId: row.id,
+    idPatient: row.idPatient,
+    episodeId: data.episode?.episodeId ?? 'episode_inconnu',
+    createdAt: row.createdAt.toISOString(),
+    supersedesDraftId: row.supersedesDraftId,
+    actor: data.actor === 'patient' ? 'patient' : 'praticien',
+    tracesCount: Array.isArray(data.traces) ? data.traces.length : 0,
+    pausesCount: Array.isArray(data.pauses) ? data.pauses.length : 0,
+    plansCount: Array.isArray(data.plans) ? data.plans.length : 0,
+    solutionsCount: Array.isArray(data.solutions) ? data.solutions.length : 0,
+    careersCount: Array.isArray(data.actionCareer) ? data.actionCareer.length : 0,
+    journeesCount: Array.isArray(data.journees) ? data.journees.length : 0,
+    traces: lisibles(data.traces, (v) => v as TrialTrace),
+    pauses: lisibles(data.pauses, (v) => v as PatientPauseEvent),
+    plans: lisibles(data.plans, (v) => v as MinimalPlanEvent),
+    solutions: lisibles(data.solutions, (v) => v as IntraEpisodeSolution),
+    journees: lisibles(data.journees, readJourneeRepere),
+  };
 }
 
 export async function activateJaObservationSnapshot(input: JaActivationInput): Promise<JaActivationSummary> {
