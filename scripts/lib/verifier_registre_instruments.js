@@ -256,6 +256,20 @@ function verifierRegistreInstruments({
         `${id} : statutCertification '${entry.statutCertification}' alors que les droits ne sont pas dégagés `
         + `(droits.statut ${entry.droits?.statut}, dateVerification ${entry.droits?.dateVerification ?? 'absente'})`
       );
+      // Un statut de droits dégagé ne se pose pas nu : il doit dire SUR QUOI il
+      // repose. Sans cette exigence, `permission_obtenue` + une date suffisaient à
+      // franchir le barreau avec un `detail` vide — c'est-à-dire à faire autorité
+      // sans rien produire à l'appui. Le 2026-07-29, 42 instruments ont été
+      // dégagés sur une déclaration du praticien et non sur une pièce signée de
+      // l'ayant droit : la distinction ne vit que dans ce champ, et rien ne la
+      // gardait. Le seuil est volontairement bas — on exige une phrase, pas une
+      // forme : un garde qui imposerait un gabarit serait contourné par un
+      // gabarit vide.
+      ajouter(
+        typeof entry.droits?.detail === 'string' && entry.droits.detail.trim().length >= 40,
+        `${id} : droits '${entry.droits?.statut}' sans fondement écrit — `
+        + `droits.detail doit dire sur quoi la permission repose`
+      );
     }
     if (barreau >= ECHELLE.indexOf('contenu_verrouille')) {
       ajouter(

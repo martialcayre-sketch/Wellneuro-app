@@ -211,6 +211,46 @@ describe('questionnaire suspendu (actif: false)', () => {
     expect(IDS_ASSIGNABLES.has('Q_STR_07')).toBe(false);
   });
 
+  // ── Fermetures du 2026-07-29, motif DOCUMENTATION ──────────────────────────
+  //
+  // Distinctes des cinq de #460, qui étaient fermées pour motif de DROITS. Ici
+  // les droits sont couverts par la déclaration praticien étendue le même jour :
+  // ce qui manque est l'identité de l'instrument. Le registre ne nomme aucun
+  // auteur et sa référence bibliographique est à compléter — on ne sait pas dire
+  // ce qu'il est, donc on ne peut pas le certifier.
+  const FERMES_DOCUMENTATION = ['Q_TAB_04', 'Q_PNE_01', 'Q_FIB_03'];
+
+  it('les instruments sans auteur nommé sont fermés à l’assignation', () => {
+    for (const id of FERMES_DOCUMENTATION) {
+      const entree = QUESTIONNAIRES_CATALOG.find(q => q.id === id);
+      expect(entree, `${id} doit exister au catalogue`).toBeDefined();
+      expect(entree?.actif, id).toBe(false);
+      expect(IDS_SUSPENDUS.has(id), id).toBe(true);
+      expect(IDS_ASSIGNABLES.has(id), id).toBe(false);
+      // Fermé, pas effacé : les passations enregistrées restent lisibles.
+      expect(CATALOGUE_DEFINITIONS[id], id).toBeDefined();
+    }
+  });
+
+  it('la pneumologie est fermée en entier, et c’est assumé', () => {
+    // Anti-surprise, même garde que pour la cancérologie dans #460 : `Q_PNE_01`
+    // est le SEUL instrument de pneumologie du catalogue. Le fermer ferme le
+    // domaine. Le dire ici évite de le redécouvrir en production, et fait rougir
+    // le jour où un second arrive sans que sa documentation ait été instruite.
+    const pneumo = QUESTIONNAIRES_CATALOG.filter(q => q.categorie === 'Pneumologie');
+    expect(pneumo.map(q => q.id)).toEqual(['Q_PNE_01']);
+    expect(pneumo.every(q => !q.actif)).toBe(true);
+  });
+
+  it('la tabacologie garde quatre instruments servis', () => {
+    // Contrepartie : `Q_TAB_04` part, mais son domaine survit. Sans ce test, la
+    // fermeture d'un domaine entier et celle d'un instrument parmi d'autres se
+    // liraient de la même façon dans le diff.
+    const tabaco = QUESTIONNAIRES_CATALOG.filter(q => q.categorie === 'Tabacologie');
+    expect(tabaco.filter(q => q.actif).map(q => q.id))
+      .toEqual(['Q_TAB_01', 'Q_TAB_02', 'Q_TAB_03', 'Q_TAB_05']);
+  });
+
   it('les instruments laissés hors suspension le restent', () => {
     // L'arbitrage a porté sur CINQ des huit sous licence. Sans cette garde, un
     // élargissement silencieux de la suspension passerait pour la décision
