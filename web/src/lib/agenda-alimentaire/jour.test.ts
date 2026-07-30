@@ -5,7 +5,7 @@ import {
   ensureJourReponses,
   estDateSaisissable,
   estDateValide,
-  estPlausible,
+  fenetrePlausible,
   fenetreAlimentaire,
   minutesDepuisAncre,
   resolveJoursActifs,
@@ -194,19 +194,19 @@ describe('fenêtre alimentaire et plausibilité', () => {
     expect(fenetreAlimentaire(JOUR_VALIDE as never)).toBe(750); // 07:30 → 20:00
   });
 
-  it('exclut une journée dont la fenêtre dépasse 18 h', () => {
+  it('déclare la fenêtre hors bornes au-delà de 18 h', () => {
     const large = {
       prises: [
         { heure: '05:00', nature: 'repas' as const },
         { heure: '00:30', nature: 'hors_repas' as const },
       ],
     };
-    expect(estPlausible(large)).toBe(false);
-    expect(estPlausible(JOUR_VALIDE as never)).toBe(true);
+    expect(fenetrePlausible(large)).toBe(false);
+    expect(fenetrePlausible(JOUR_VALIDE as never)).toBe(true);
   });
 
-  it('tient une journée sans prise pour plausible', () => {
-    expect(estPlausible({ aucunePrise: true })).toBe(true);
+  it('ne se prononce pas sur une journée sans prise — il n’y a pas de fenêtre', () => {
+    expect(fenetrePlausible({ aucunePrise: true })).toBe(true);
   });
 });
 
@@ -247,5 +247,102 @@ describe('resolveJoursActifs — la correction supplante, elle n’écrase pas',
     ]);
     expect(actifs).toHaveLength(1);
     expect(actifs[0].id).toBe('B');
+  });
+});
+
+// Constats de la revue adversariale du 2026-07-30.
+describe('lecture : relire plutôt que lever', () => {
+  // Le patron l'écrit noir sur blanc : une règle d'ordre appliquée en lecture
+  // ferait lever le GET entier d'un patient sur une seule ligne bancale.
+  it('relit et trie une ligne dont les prises sont désordonnées', () => {
+    const out = ensureJourReponses({
+      prises: [
+        { heure: '12:30', nature: 'repas' },
+        { heure: '07:30', nature: 'repas' },
+      ],
+    });
+    expect(out.prises?.map((p) => p.heure)).toEqual(['07:30', '12:30']);
+  });
+
+  it('relit une ligne portant plus de dix prises', () => {
+    const prises = Array.from({ length: 12 }, (_, i) => ({
+      heure: `${String(5 + i).padStart(2, '0')}:00`,
+      nature: 'hors_repas' as const,
+    }));
+    expect(ensureJourReponses({ prises }).prises).toHaveLength(12);
+  });
+
+  it('relit une ligne panachée sans lever', () => {
+    const out = ensureJourReponses({ aucunePrise: true, legumesDeuxPrises: false });
+    expect(out.aucunePrise).toBe(true);
+  });
+});
+
+describe('estDateSaisissable valide ses arguments', () => {
+  it('refuse une date impossible ou une non-date', () => {
+    expect(estDateSaisissable('2026-02-31', '2026-02-31')).toBe(false);
+    expect(estDateSaisissable('pouet', 'pouet')).toBe(false);
+    expect(estDateSaisissable('2026-07-30', 'pouet')).toBe(false);
+  });
+});
+
+describe('resolveJoursActifs — anomalies de chaînage', () => {
+  const ligne = (over: Partial<JourRow>): JourRow => ({
+    id: 'L1',
+    idPatient: 'PAT_TEST',
+    idAssignation: 'ASS_1',
+    dateJour: '2026-07-30',
+    reponses: { aucunePrise: true },
+    canal: 'portail',
+    supersedesJourId: null,
+    soumisLe: '2026-07-30T08:00:00.000Z',
+    ...over,
+  });
+
+  it('ne fait pas disparaître une date sur un cycle A↔B', () => {
+    const actifs = resolveJoursActifs([
+      ligne({ id: 'A', supersedesJourId: 'B' }),
+      ligne({ id: 'B', supersedesJourId: 'A', soumisLe: '2026-07-30T09:00:00.000Z' }),
+    ]);
+    // Une anomalie de chaînage ne doit pas se lire comme « rien saisi ce jour-là ».
+    expect(actifs).toHaveLength(1);
+    expect(actifs[0].id).toBe('B');
+  });
+
+  it('n’efface pas une autre date via un supersedes croisé', () => {
+    const actifs = resolveJoursActifs([
+      ligne({ id: 'HIER', dateJour: '2026-07-29' }),
+      ligne({ id: 'AUJ', dateJour: '2026-07-30', supersedesJourId: 'HIER' }),
+    ]);
+    expect(actifs.map((l) => l.dateJour)).toEqual(['2026-07-29', '2026-07-30']);
+  });
+
+  it('départage deux lignes de même horodatage indépendamment de l’ordre reçu', () => {
+    const a = ligne({ id: 'A' });
+    const b = ligne({ id: 'B' });
+    expect(resolveJoursActifs([a, b])[0].id).toBe(resolveJoursActifs([b, a])[0].id);
+  });
+});
+
+describe('bornes horaires autour de l’ancre', () => {
+  it('ordonne 04:00, 23:45, 00:00 et 03:45 dans cet ordre', () => {
+    const out = ensureJourReponses(
+      {
+        prises: [
+          { heure: '04:00', nature: 'repas' },
+          { heure: '23:45', nature: 'repas' },
+          { heure: '00:00', nature: 'hors_repas' },
+          { heure: '03:45', nature: 'hors_repas' },
+        ],
+        premierePriseProteines: true,
+        legumesDeuxPrises: true,
+        fruitsOuOleagineux: true,
+        ultraTransformes: false,
+      },
+      { exigerObligatoires: true },
+    );
+    expect(out.prises?.map((p) => p.heure)).toEqual(['04:00', '23:45', '00:00', '03:45']);
+    // 04:00 → 03:45 le lendemain matin : 23 h 45, la journée entière.
+    expect(fenetreAlimentaire(out)).toBe(1425);
   });
 });

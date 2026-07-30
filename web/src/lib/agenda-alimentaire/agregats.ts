@@ -11,9 +11,11 @@
 // accepté et documenté, plutôt qu'un stockage UTC qui ferait mentir l'heure
 // affichée au patient.
 
-import { estPlausible, fenetreAlimentaire, minutesDepuisAncre } from './jour';
+import { fenetreAlimentaire, fenetrePlausible, minutesDepuisAncre } from './jour';
 import {
+  JEUNE_MAX_PLAUSIBLE,
   MIN_JOURS_AGREGATS,
+  MIN_JOURS_AXE,
   MIN_JOURS_INDICE,
   MIN_JOURS_WEEKEND_INDICE,
   MIN_PAIRES_JEUNE,
@@ -27,6 +29,10 @@ export type AgregatsAgendaAli = {
   nbJours: number;
   nbJoursWeekEnd: number;
   nbJoursSansPrise: number;
+  /** Journées PORTEUSES de prises — dénominateur des grandeurs horaires. */
+  nbJoursAvecPrises: number;
+  /** Journées dont la fenêtre alimentaire est connue (≥ 2 prises, bornes tenues). */
+  nbJoursFenetreConnue: number;
   nbPairesJeune: number;
   nbJoursProteinesConnu: number;
   nbJoursContenuConnu: number;
@@ -141,7 +147,8 @@ function derive(jour: JourAgregable): JourDerive {
     nbPrises: prises.length,
     nbRepas: prises.filter((p) => p.nature === 'repas').length,
     nbHorsRepas: prises.filter((p) => p.nature === 'hors_repas').length,
-    fenetre: fenetreAlimentaire(reponses),
+    // Hors bornes ⇒ grandeur inconnue, et la journée reste comptée.
+    fenetre: fenetrePlausible(reponses) ? fenetreAlimentaire(reponses) : null,
   };
 }
 
@@ -170,6 +177,10 @@ function jeunesNocturnes(derives: JourDerive[]): number[] {
     // Échelle absolue depuis l'ancre du jour de référence : la dernière prise de
     // la veille et la première du jour vivent sur deux journées distinctes.
     const jeune = jour.premiere + 1440 - veille.derniere;
+    // Deux journées porteuses de prises suffisent à produire plus de 24 h :
+    // dernière prise à 05:00, première du lendemain à 03:45. Ce n'est plus un
+    // jeûne nocturne — l'admettre décrirait un patient qui n'existe pas.
+    if (jeune > JEUNE_MAX_PLAUSIBLE) continue;
     jeunes.push(jeune);
   }
   return jeunes;
@@ -184,8 +195,22 @@ function decalerDateLocale(date: string, n: number): string {
 
 // ─── Couverture et agrégats ──────────────────────────────────────────────────
 
-export function compterJoursPlausibles(jours: JourAgregable[]): number {
-  return jours.filter((j) => estPlausible(j.reponses)).length;
+/** Journées dont la fenêtre alimentaire est exploitable. */
+export function compterFenetresConnues(jours: JourAgregable[]): number {
+  return jours.filter((j) => fenetrePlausible(j.reponses) && fenetreAlimentaire(j.reponses) !== null)
+    .length;
+}
+
+/**
+ * Déduplication par date. `calculerAgregatsAli` consomme normalement la sortie
+ * de `resolveJoursActifs`, mais une précondition non tenue doublerait les
+ * journées ET les paires de jeûne sans que rien ne le signale. À date égale, la
+ * dernière reçue l'emporte, comme la résolution de chaîne.
+ */
+function dedupliquerParDate(jours: JourAgregable[]): JourAgregable[] {
+  const parDate = new Map<string, JourAgregable>();
+  for (const jour of jours) parDate.set(jour.dateJour, jour);
+  return [...parDate.values()].sort((a, b) => a.dateJour.localeCompare(b.dateJour));
 }
 
 /**
@@ -195,9 +220,20 @@ export function compterJoursPlausibles(jours: JourAgregable[]): number {
  * et se présenterait pour celle d'une vie.
  */
 export function couvertureSuffisante(jours: JourAgregable[]): boolean {
-  const plausibles = jours.filter((j) => estPlausible(j.reponses));
-  const weekEnd = plausibles.filter((j) => estWeekEnd(j.dateJour)).length;
-  return plausibles.length >= MIN_JOURS_INDICE && weekEnd >= MIN_JOURS_WEEKEND_INDICE;
+  const uniques = dedupliquerParDate(jours);
+  const weekEnd = uniques.filter((j) => estWeekEnd(j.dateJour)).length;
+  // Troisième condition, et non la moindre : des journées PORTEUSES de prises.
+  // Vingt et une journées « aucune prise » satisfont le compte et le week-end,
+  // et ne mesurent aucune heure — déclarer ce recueil exploitable ferait lire
+  // quinze grandeurs nulles comme un profil.
+  const avecPrises = uniques.filter(
+    (j) => j.reponses.aucunePrise !== true && (j.reponses.prises?.length ?? 0) > 0,
+  ).length;
+  return (
+    uniques.length >= MIN_JOURS_INDICE
+    && weekEnd >= MIN_JOURS_WEEKEND_INDICE
+    && avecPrises >= MIN_JOURS_AXE
+  );
 }
 
 /**
@@ -206,7 +242,7 @@ export function couvertureSuffisante(jours: JourAgregable[]): boolean {
  * compte, qu'il tient d'ailleurs lui-même — pas un objet rempli de zéros.
  */
 export function calculerAgregatsAli(jours: JourAgregable[]): AgregatsAgendaAli | null {
-  const plausibles = jours.filter((j) => estPlausible(j.reponses));
+  const plausibles = dedupliquerParDate(jours);
   if (plausibles.length < MIN_JOURS_AGREGATS) return null;
 
   const derives = plausibles.map(derive);
@@ -234,6 +270,8 @@ export function calculerAgregatsAli(jours: JourAgregable[]): AgregatsAgendaAli |
     nbJours: plausibles.length,
     nbJoursWeekEnd: derives.filter((d) => d.weekEnd).length,
     nbJoursSansPrise: derives.filter((d) => d.sansPrise).length,
+    nbJoursAvecPrises: avecPrises.length,
+    nbJoursFenetreConnue: avecPrises.filter((d) => d.fenetre !== null).length,
     nbPairesJeune: jeunes.length,
     nbJoursProteinesConnu: proteinesConnues.length,
     nbJoursContenuConnu: contenuConnu.length,
@@ -294,7 +332,7 @@ export function calculerAgregatsAli(jours: JourAgregable[]): AgregatsAgendaAli |
  */
 export function heuresHabituelles(jours: JourAgregable[]): number[] | null {
   const avecPrises = jours
-    .filter((j) => estPlausible(j.reponses) && !j.reponses.aucunePrise && j.reponses.prises?.length)
+    .filter((j) => !j.reponses.aucunePrise && j.reponses.prises?.length)
     .map((j) => j.reponses.prises as NonNullable<JourReponses['prises']>);
   if (avecPrises.length < 3) return null;
 

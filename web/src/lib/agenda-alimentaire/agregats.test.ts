@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   calculerAgregatsAli,
-  compterJoursPlausibles,
+  compterFenetresConnues,
   couvertureSuffisante,
   estWeekEnd,
   heuresHabituelles,
@@ -55,7 +55,11 @@ describe('calculerAgregatsAli — le seuil des agrégats', () => {
     expect(a?.nbJours).toBe(7);
   });
 
-  it('exclut une journée non plausible du décompte', () => {
+  // Une fenêtre hors bornes rend CETTE grandeur inconnue, et rien d'autre.
+  // L'exclusion de la journée entière retirait son week-end, ses présences et
+  // ses jeûnes — donc les journées les plus dysrégulées, celles pour lesquelles
+  // l'instrument existe.
+  it('garde la journée dont la fenêtre est hors bornes, et n’en perd que la fenêtre', () => {
     const jours = serie(8);
     jours[3].reponses = {
       prises: [
@@ -63,8 +67,12 @@ describe('calculerAgregatsAli — le seuil des agrégats', () => {
         { heure: '00:30', nature: 'hors_repas' },
       ],
     };
-    expect(compterJoursPlausibles(jours)).toBe(7);
-    expect(calculerAgregatsAli(jours)?.nbJours).toBe(7);
+    expect(compterFenetresConnues(jours)).toBe(7);
+    const a = calculerAgregatsAli(jours);
+    expect(a?.nbJours).toBe(8);
+    expect(a?.nbJoursFenetreConnue).toBe(7);
+    // La journée garde ses prises et son appartenance au week-end.
+    expect(a?.nbJoursAvecPrises).toBe(8);
   });
 });
 
@@ -247,5 +255,90 @@ describe('heuresHabituelles — des suggestions, pas une mesure', () => {
     );
     // La quatrième prise n'est vue que 2 fois sur 9 : la suggérer inviterait à la saisir.
     expect(heuresHabituelles(jours)).toHaveLength(3);
+  });
+});
+
+// Constats de la revue adversariale du 2026-07-30 : ces cas n'étaient couverts
+// par aucun test, et la mutation qui les inverse passait le CI.
+describe('null jamais 0 — la doctrine centrale, désormais gardée', () => {
+  it('rend null sur TOUTES les grandeurs horaires quand rien n’est mangé', () => {
+    const jours = Array.from({ length: 21 }, (_, i) => ({
+      dateJour: decalerDate(DEBUT, i),
+      reponses: { aucunePrise: true } as JourReponses,
+    }));
+    const a = calculerAgregatsAli(jours);
+    expect(a?.nbJours).toBe(21);
+    expect(a?.nbJoursSansPrise).toBe(21);
+    // Sous mutation `null → 0`, ces quatre-là diraient « ce patient ne mange
+    // pas » comme si c'était une mesure.
+    expect(a?.fenetreAliMoyenne).toBeNull();
+    expect(a?.nbPrisesMoyen).toBeNull();
+    expect(a?.nbRepasMoyen).toBeNull();
+    expect(a?.jeuneMedian).toBeNull();
+    expect(a?.regularitePremiereEcartType).toBeNull();
+  });
+
+  it('ne déclare pas exploitable un recueil qui ne mesure aucune heure', () => {
+    const jours = Array.from({ length: 21 }, (_, i) => ({
+      dateJour: decalerDate(DEBUT, i),
+      reponses: { aucunePrise: true } as JourReponses,
+    }));
+    // Le compte et le week-end sont atteints ; les journées porteuses, non.
+    expect(couvertureSuffisante(jours)).toBe(false);
+  });
+
+  it('ne déclare pas exploitable un recueil majoritairement sans prise', () => {
+    const jours = serie(16).map((j, i) =>
+      i < 10 ? { ...j, reponses: { aucunePrise: true } as JourReponses } : j,
+    );
+    expect(couvertureSuffisante(jours)).toBe(false);
+  });
+});
+
+describe('les trois présences valent ENSEMBLE ou pas du tout', () => {
+  // Le type l'écrit ; aucun test ne l'exerçait, et remplacer le ET par un OU
+  // passait la suite entière.
+  it('n’inclut pas une journée à deux présences sur trois', () => {
+    const a = calculerAgregatsAli(
+      serie(10, (i) => (i < 5 ? { ultraTransformes: undefined } : {})),
+    );
+    expect(a?.nbJoursContenuConnu).toBe(5);
+    // Les cinq journées incomplètes ne comptent ni au numérateur ni au dénominateur.
+    expect(a?.freqLegumesSem).toBe(7);
+  });
+});
+
+describe('le jeûne nocturne a une borne haute', () => {
+  it('écarte un intervalle de plus de 24 h entre deux journées qui mangent', () => {
+    // Prise unique, alternée 05:00 / 20:00 : les intervalles font 39 h et 9 h.
+    const jours = serie(10, (i) => ({
+      prises: [{ heure: i % 2 === 0 ? '05:00' : '20:00', nature: 'repas' as const }],
+    }));
+    const a = calculerAgregatsAli(jours);
+    expect(a?.jeuneMedian === null || (a?.jeuneMedian ?? 0) <= 1440).toBe(true);
+    // Seuls les intervalles courts survivent : les longs ne sont pas nocturnes.
+    expect(a?.nbPairesJeune).toBeLessThan(9);
+  });
+});
+
+describe('la fenêtre alimentaire porte son dénominateur', () => {
+  it('distingue une moyenne bâtie sur une journée d’une moyenne bâtie sur sept', () => {
+    const jours = serie(7, (i) =>
+      i < 6 ? { prises: [{ heure: '19:30', nature: 'repas' as const }] } : {},
+    );
+    const a = calculerAgregatsAli(jours);
+    expect(a?.nbJours).toBe(7);
+    // Six journées à prise unique n'ont pas de fenêtre : la moyenne ne repose
+    // que sur la septième, et le compteur le dit.
+    expect(a?.nbJoursFenetreConnue).toBe(1);
+  });
+});
+
+describe('déduplication par date', () => {
+  it('ne compte pas deux fois une journée reçue en double', () => {
+    const jours = serie(7);
+    const a = calculerAgregatsAli([...jours, ...jours]);
+    expect(a?.nbJours).toBe(7);
+    expect(a?.nbPairesJeune).toBe(6);
   });
 });

@@ -58,6 +58,10 @@ export function estDateValide(value: unknown): value is string {
  * preuve tient au mot « observé ». Le trou est assumé.
  */
 export function estDateSaisissable(dateJour: string, aujourdHui: string): boolean {
+  // Les deux arguments sont validés AVANT toute comparaison : sans cela,
+  // `estDateSaisissable('pouet', 'pouet')` rendait `true`, et le garde ne
+  // valait que ce que valait son appelant.
+  if (!estDateValide(dateJour) || !estDateValide(aujourdHui)) return false;
   return dateJour === aujourdHui || dateJour === decalerDate(aujourdHui, -1);
 }
 
@@ -113,22 +117,26 @@ export function ensureJourReponses(
   }
   const v = value as Record<string, unknown>;
 
+  const exiger = options.exigerObligatoires === true;
   const aucunePrise = v.aucunePrise === true;
   const prisesBrutes = v.prises;
 
   if (aucunePrise) {
     // Une journée sans prise est une réponse entière : elle ne se panache pas
-    // avec des observations qui la contrediraient.
-    if (Array.isArray(prisesBrutes) && prisesBrutes.length > 0) {
+    // avec des observations qui la contrediraient. Contrôle d'ÉCRITURE
+    // seulement — une ligne déjà en base, même bancale, doit rester relisible,
+    // sans quoi une seule ligne rendrait tout l'agenda du patient illisible
+    // (leçon `agenda-sommeil/nuit.ts`).
+    if (exiger && Array.isArray(prisesBrutes) && prisesBrutes.length > 0) {
       throw new TypeError('Une journée sans prise ne peut pas porter de prises.');
     }
-    for (const champ of [
+    for (const champ of exiger ? ([
       'premierePriseProteines',
       'soirPlusCopieux',
       'legumesDeuxPrises',
       'fruitsOuOleagineux',
       'ultraTransformes',
-    ] as const) {
+    ] as const) : []) {
       if (v[champ] !== undefined && v[champ] !== null) {
         throw new TypeError('Une journée sans prise ne porte aucune observation de contenu.');
       }
@@ -139,17 +147,23 @@ export function ensureJourReponses(
   if (!Array.isArray(prisesBrutes) || prisesBrutes.length === 0) {
     throw new TypeError('Renseignez au moins une prise, ou déclarez une journée sans prise.');
   }
-  if (prisesBrutes.length > NB_PRISES_MAX) {
+  if (exiger && prisesBrutes.length > NB_PRISES_MAX) {
     throw new TypeError(`Au plus ${NB_PRISES_MAX} prises par journée.`);
   }
 
   const prises = prisesBrutes.map((p, i) => ensurePrise(p, i));
 
   // Strictement croissantes sur l'échelle ancrée : deux prises à la même heure
-  // ne se distinguent pas, et un ordre inversé ferait un jeûne négatif.
+  // ne se distinguent pas, et un ordre inversé ferait un jeûne négatif. Contrôle
+  // d'ÉCRITURE : en lecture, on TRIE plutôt que de lever — refuser une ligne
+  // historique un peu bancale ferait disparaître tout l'agenda du patient.
   for (let i = 1; i < prises.length; i += 1) {
     if (minutesDepuisAncre(prises[i].heure) <= minutesDepuisAncre(prises[i - 1].heure)) {
-      throw new TypeError('Les prises doivent être renseignées dans l’ordre, sans doublon d’heure.');
+      if (exiger) {
+        throw new TypeError('Les prises doivent être renseignées dans l’ordre, sans doublon d’heure.');
+      }
+      prises.sort((a, b) => minutesDepuisAncre(a.heure) - minutesDepuisAncre(b.heure));
+      break;
     }
   }
 
@@ -197,12 +211,16 @@ export function fenetreAlimentaire(reponses: JourReponses): number | null {
 }
 
 /**
- * Une journée dont la fenêtre dépasse la borne de plausibilité est exclue des
- * agrégats mais reste visible au praticien : elle signale plus probablement une
- * saisie erronée qu'un comportement, et la trancher silencieusement priverait
- * le praticien de l'information.
+ * La FENÊTRE de cette journée est-elle dans les bornes ?
+ *
+ * Ce prédicat porte sur une grandeur, pas sur la journée. Une fenêtre hors
+ * bornes rend `fenetreAlimentaire` inconnue et rien d'autre : la journée reste
+ * comptée, avec son week-end, ses présences et ses jeûnes. L'écarter
+ * entièrement retirerait du recueil les journées les plus dysrégulées — celles
+ * pour lesquelles l'instrument existe — et rendrait la moyenne d'un patient qui
+ * grignote de 05:00 à 00:30 identique à celle d'un patient régulier.
  */
-export function estPlausible(reponses: JourReponses): boolean {
+export function fenetrePlausible(reponses: JourReponses): boolean {
   const fenetre = fenetreAlimentaire(reponses);
   return fenetre === null || fenetre <= FENETRE_ALI_MAX_PLAUSIBLE;
 }
@@ -215,16 +233,35 @@ export function estPlausible(reponses: JourReponses): boolean {
  * autre ne supplante ; à égalité, la plus récemment soumise.
  */
 export function resolveJoursActifs(lignes: JourRow[]): JourRow[] {
-  const supplantees = new Set(
-    lignes.map((l) => l.supersedesJourId).filter((id): id is string => Boolean(id)),
-  );
-  const parDate = new Map<string, JourRow>();
+  // Regroupement par date AVANT toute résolution : un `supersedesJourId` qui
+  // désignerait une ligne d'une autre date ne doit pas faire disparaître cette
+  // autre date. Un ensemble global de supplantées le permettrait.
+  const parDate = new Map<string, JourRow[]>();
   for (const ligne of lignes) {
-    if (supplantees.has(ligne.id)) continue;
-    const courante = parDate.get(ligne.dateJour);
-    if (!courante || ligne.soumisLe > courante.soumisLe) {
-      parDate.set(ligne.dateJour, ligne);
-    }
+    const lot = parDate.get(ligne.dateJour) ?? [];
+    lot.push(ligne);
+    parDate.set(ligne.dateJour, lot);
   }
-  return [...parDate.values()].sort((a, b) => a.dateJour.localeCompare(b.dateJour));
+
+  const actifs: JourRow[] = [];
+  for (const [, lot] of parDate) {
+    const supplantees = new Set(
+      lot.map((l) => l.supersedesJourId).filter((id): id is string => Boolean(id)),
+    );
+    const tetes = lot.filter((l) => !supplantees.has(l.id));
+    // Repli sur le lot entier si aucune tête ne survit : un cycle A↔B ferait
+    // sinon disparaître la date, ce qui se lirait comme « le patient n'a rien
+    // saisi ce jour-là » — une absence fabriquée par une anomalie de chaînage.
+    const candidats = tetes.length > 0 ? tetes : lot;
+    // Départage par `soumisLe` puis par `id` : sans le second, le résultat
+    // dépendrait de l'ordre dans lequel la requête a rendu les lignes.
+    const gagnante = candidats.reduce((meilleure, ligne) =>
+      ligne.soumisLe > meilleure.soumisLe
+      || (ligne.soumisLe === meilleure.soumisLe && ligne.id > meilleure.id)
+        ? ligne
+        : meilleure,
+    );
+    actifs.push(gagnante);
+  }
+  return actifs.sort((a, b) => a.dateJour.localeCompare(b.dateJour));
 }

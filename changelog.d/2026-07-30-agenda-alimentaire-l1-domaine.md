@@ -66,3 +66,47 @@ praticien, **aucun branchement à `BESOIN_SOURCES`** et donc aucun bump de
 branchement clinique sont les lots 2 à 5, et le branchement reste suspendu à
 trois arbitrages praticien : les poids dans les groupes, le barème des cinq
 axes, et l'amendement de la frontière C5.
+
+### Corrigé après revue adversariale (même lot)
+
+Une passe `wn-reviewer` a rendu un GO conditionnel. Sept constats corrigés ici,
+dont trois qui auraient été lus comme des mesures par le lot suivant :
+
+- **Une fenêtre hors bornes n'exclut plus la journée entière.** Elle rendait
+  inconnue cette seule grandeur en apparence, mais retirait en réalité la
+  journée du recueil — avec son week-end, ses présences et ses jeûnes. Un
+  patient grignotant de 05:00 à 00:30 les samedis et dimanches perdait **tous**
+  ses jours de week-end, devenait inéligible à l'indice sans qu'aucun champ ne
+  l'explique, et rendait une fenêtre moyenne de patient régulier. La journée
+  reste désormais comptée ; seule sa fenêtre devient `null`.
+- **Un jeûne « nocturne » de 39 heures était servi comme tel.** Deux journées
+  porteuses de prises suffisent : dernière prise à 05:00, première du lendemain
+  à 03:45. Le commentaire justifiait déjà l'exclusion des jours sans prise par
+  « plus de 24 h n'est pas un jeûne nocturne » — le code ne couvrait pas sa
+  propre justification. Borne haute ajoutée.
+- **Vingt et une journées « aucune prise » étaient déclarées exploitables.** Le
+  compte et le week-end étaient atteints, et les quinze grandeurs valaient
+  `null`. `couvertureSuffisante` exige désormais aussi des journées **porteuses
+  de prises**.
+- **La fenêtre alimentaire n'avait pas de dénominateur** : une moyenne bâtie sur
+  une journée était indiscernable d'une moyenne bâtie sur sept.
+  `nbJoursFenetreConnue` et `nbJoursAvecPrises` le publient.
+- **L'ordre des prises, le plafond et le panachage s'appliquaient en LECTURE.**
+  Une seule ligne bancale en base aurait rendu tout l'agenda du patient
+  illisible — la leçon est écrite dans le patron sommeil. En lecture, on trie
+  plutôt que de lever ; en écriture, les contrôles restent stricts.
+- **`resolveJoursActifs` perdait trois gardes du patron** : un cycle A↔B faisait
+  disparaître la date entière (soit « rien saisi ce jour-là », une absence
+  fabriquée par une anomalie de chaînage), un `supersedesJourId` croisé effaçait
+  une **autre** date, et deux lignes de même horodatage rendaient un résultat
+  dépendant de l'ordre de la requête.
+- **`estDateSaisissable('pouet', 'pouet')` valait `true`** : le garde ne validait
+  pas ses arguments.
+
+Deux mutations survivaient à la suite de tests : remplacer `null` par `0` dans
+`moyenneOuNull`/`medianeOuNull`, et transformer le ET des trois présences en OU
+— la doctrine écrite dans le type, inversée, passait le CI. Les deux tuent
+désormais un test. La suite passe de 57 à 72 tests.
+
+Reste hors de ce lot, par nature : la valeur de la borne des 18 h relève d'une
+décision clinique, non d'un correctif.

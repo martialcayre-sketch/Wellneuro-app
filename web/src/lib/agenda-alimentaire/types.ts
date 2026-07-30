@@ -51,6 +51,7 @@ export const NB_JOURS_AGENDA_ALI = 21;
 export const MIN_JOURS_AGREGATS = 7;
 export const MIN_JOURS_INDICE = 14;
 export const MIN_JOURS_WEEKEND_INDICE = 4;
+/** Minimum de journées PORTEUSES DE PRISES pour qu'un axe horaire soit couvert. */
 export const MIN_JOURS_AXE = 7;
 
 /**
@@ -61,8 +62,22 @@ export const MIN_JOURS_AXE = 7;
  */
 export const MIN_PAIRES_JEUNE = 7;
 
-/** Bornes de plausibilité d'une journée (minutes). */
-export const FENETRE_ALI_MAX_PLAUSIBLE = 1080; // 18 h entre première et dernière prise
+/**
+ * Borne de plausibilité de la FENÊTRE ALIMENTAIRE d'une journée (minutes).
+ * Au-delà, c'est cette grandeur-là qui devient inconnue — la journée, elle,
+ * reste comptée : l'exclure entièrement retirerait aussi son week-end, ses
+ * présences et ses jeûnes, et ferait disparaître du recueil précisément les
+ * journées les plus dysrégulées.
+ */
+export const FENETRE_ALI_MAX_PLAUSIBLE = 1080; // 18 h
+
+/**
+ * Borne haute d'un jeûne NOCTURNE (minutes). Deux journées porteuses de prises
+ * peuvent produire un intervalle de plus de vingt-quatre heures — dernière
+ * prise à 05:00, première prise du lendemain à 03:45. Ce n'est plus un jeûne
+ * nocturne, et l'inclure dans la médiane décrirait un patient qui n'existe pas.
+ */
+export const JEUNE_MAX_PLAUSIBLE = 1440; // 24 h
 export const NB_PRISES_MAX = 10;
 
 export type NaturePrise = 'repas' | 'hors_repas';
