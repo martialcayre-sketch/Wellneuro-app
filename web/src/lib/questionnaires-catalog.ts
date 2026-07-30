@@ -68,8 +68,18 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Identifiez votre type de transit intestinal selon les 7 types de la classification de Bristol.`, duree: '2 min', actif: true },
 
   // ── GÉRONTOLOGIE ────────────────────────────────────────────────────────────
+  // `actif: false` depuis le 2026-07-31, et ce n'est PAS une suspension : c'est
+  // le passage à la passation en consultation. L'instrument a été reconstruit
+  // depuis sa source, qui écrit en première ligne « Complétez ce questionnaire
+  // avec votre patient en consultation » — trois de ses items forment un rappel
+  // différé que le patient contournerait en remontant la page. Sa ligne
+  // `PASSATION_PRATICIEN` (lib/bibliotheque.ts) porte l'affichage de la grille ;
+  // celle-ci ferme la ROUTE d'assignation via `IDS_SUSPENDUS`. Les deux gestes
+  // sont indépendants, et il faut les deux — c'est la leçon du MMSE en #460,
+  // appliquée dans l'autre sens : ici on veut fermer l'auto-passation SANS
+  // fermer l'usage.
   { id: 'Q_NEU_06', titre: 'MMT — Mini Mental Test SIIN', categorie: 'Gérontologie',
-    description: `Dépistage des troubles cognitifs et mnésiques (10 questions, interprétation pour micronutrition).`, duree: '10 min', actif: true },
+    description: `Test cognitif administré en consultation : âge, heure, rappel de trois mots, soustractions de 7 (10 épreuves, 0-2, score /20).`, duree: '10 min', actif: false },
   { id: 'Q_NEU_09', titre: `Grille de Zarit — Fardeau de l'aidant`, categorie: 'Gérontologie',
     description: `Évaluez la charge globale des proches aidants (22 questions, score de léger à sévère).`, duree: '10 min', actif: true },
 

@@ -484,47 +484,79 @@ export const Q_NEU_03 = {
     note:'Source Drive SIGH-SAD-SA : les questions 15 à 17 donnent un score corrigé unique reporté dans le groupe A et dans le groupe B. Si le maximum vaut 2, score corrigé = 1 ; si le score le plus élevé est 3 ou 4 à la question 17, score corrigé = 2.'
   }
 };
+// MMT — Mini Mental Test SIIN (Q_NEU_06). RECONSTRUIT le 2026-07-31 depuis sa
+// source, sur arbitrage praticien : « reconstruire Q_NEU_06 ».
+//
+// CE QUI ÉTAIT SERVI N'ÉTAIT PAS CET INSTRUMENT. Dix plaintes cognitives
+// auto-rapportées (« J'oublie des informations récentes »), cotées 0-3 dans le
+// sens INVERSE — plus haut valait mieux, sur 30 — sous quatre bandes de
+// fabrication locale. La source (WN-SRC-0445, « MMT Mini Mental Test.pdf »)
+// porte dix ÉPREUVES administrées — âge, heure, rappel de trois mots,
+// soustractions de 7 — cotées 0-2 dans le sens des troubles, sur 20. Les deux
+// formes ne partageaient aucun libellé : similarité item à item de 0,00 à 0,06
+// sur les dix. Aucune assignation ni réponse n'existait en production
+// (vérifié le 2026-07-31), la reconstruction ne réécrit donc aucun historique.
+//
+// PASSATION EN CONSULTATION, et c'est la source qui l'écrit en première ligne :
+// « Complétez ce questionnaire avec votre patient en consultation ». Ce n'est
+// pas une préférence de forme. Les items 3, 5 et 10 forment une séquence
+// enregistrement → rappel immédiat → rappel différé sur les mêmes trois mots
+// (CITRON, CLÉ, BALLON) : dans un formulaire auto-rempli, le patient relit les
+// trois mots plus haut dans la page, et les deux items de rappel — les plus
+// discriminants du test — deviennent des points offerts. Les items 1, 2 et 4
+// demandent en outre un examinateur, puisqu'ils distinguent « juste d'emblée »
+// de « juste au second essai ».
+//
+// L'instrument sort donc du catalogue assignable (`actif: false`) et rejoint
+// `PASSATION_PRATICIEN` — même raisonnement que le MMSE le 2026-07-29, et le
+// registre le suit : `actif: false` ne vaut plus « retiré de la production »
+// pour un instrument à passation praticien.
 export const Q_NEU_06 = {
-  id:'Q_NEU_06', titre:'Questionnaire cognitif SIIN — Évaluation fonctionnelle',
-  instructions:'Ce questionnaire évalue votre fonctionnement cognitif au quotidien. Répondez selon votre expérience des 4 dernières semaines.',
+  id:'Q_NEU_06', titre:'MMT — Mini Mental Test SIIN',
+  instructions:"À compléter AVEC le patient en consultation : les épreuves 1 à 5 et 10 se posent oralement, et le rappel des trois mots ne vaut que si le patient ne les a pas sous les yeux. Cotation en points de TROUBLE — 0 pour une réponse juste, 2 pour une réponse absente ou inexacte.",
   sections:[
-    { id:'A', titre:'Mémoire',
+    { id:'MMT', titre:'Épreuves',
+      description:"Item 5 — en cas d'échec total ou ponctuel, sans refaire l'exercice, suggérez une association pour aider le rappel en fin de test.",
       questions:[
-        qs('MM1','J\'oublie des informations récentes (noms, rendez-vous, mots)',
-          [{v:3,l:'Jamais'},{v:2,l:'Rarement'},{v:1,l:'Souvent'},{v:0,l:'Très souvent'}]),
-        qs('MM2','Je perds mes affaires (clés, lunettes, téléphone)',
-          [{v:3,l:'Jamais'},{v:2,l:'Rarement'},{v:1,l:'Souvent'},{v:0,l:'Très souvent'}]),
-        qs('MM3','J\'entre dans une pièce et je ne sais plus pourquoi',
-          [{v:3,l:'Jamais'},{v:2,l:'Rarement'},{v:1,l:'Souvent'},{v:0,l:'Très souvent'}]),
-      ]},
-    { id:'B', titre:'Attention & Concentration',
-      questions:[
-        qs('MM4','J\'ai du mal à me concentrer sur une tâche',
-          [{v:3,l:'Jamais'},{v:2,l:'Rarement'},{v:1,l:'Souvent'},{v:0,l:'Très souvent'}]),
-        qs('MM5','Je dois relire plusieurs fois pour comprendre',
-          [{v:3,l:'Jamais'},{v:2,l:'Rarement'},{v:1,l:'Souvent'},{v:0,l:'Très souvent'}]),
-        qs('MM6','J\'ai du mal à suivre une conversation ou un film',
-          [{v:3,l:'Jamais'},{v:2,l:'Rarement'},{v:1,l:'Souvent'},{v:0,l:'Très souvent'}]),
-      ]},
-    { id:'C', titre:'Orientation & Planification',
-      questions:[
-        qs('MM7','Je me repère bien dans le temps (date, jour de la semaine)',
-          [{v:3,l:'Toujours'},{v:2,l:'Parfois je dois vérifier'},{v:1,l:'Souvent incertain(e)'},{v:0,l:'Fréquemment perdu(e)'}]),
-        qs('MM8','Je peux planifier et organiser mes activités quotidiennes',
-          [{v:3,l:'Facilement'},{v:2,l:'Avec un peu d\'effort'},{v:1,l:'Avec beaucoup d\'effort'},{v:0,l:'Grande difficulté'}]),
-        qs('MM9','Je trouve facilement mes mots en conversation',
-          [{v:3,l:'Toujours'},{v:2,l:'La plupart du temps'},{v:1,l:'Souvent des trous de mémoire'},{v:0,l:'Très souvent en difficulté'}]),
-        qs('MM10','Mon fonctionnement cognitif a évolué par rapport à il y a 2-5 ans',
-          [{v:3,l:'Identique ou meilleur'},{v:2,l:'Légèrement moins bon'},{v:1,l:'Nettement moins bon'},{v:0,l:'Déclin important'}]),
+        qs('MM1','« Quel âge avez-vous ? » (si la réponse est une année, redemandez : « Cela vous fait quel âge ? »)',
+          [{v:0,l:"Réponse juste d'emblée"},{v:1,l:'Réponse juste au second essai'},{v:2,l:'Inexacte ou pas de réponse'}]),
+        qs('MM2','« Quelle heure est-il à votre montre ? Et dans 45 minutes, quelle heure sera-t-il exactement ? »',
+          [{v:0,l:'Réponses justes'},{v:1,l:'Une réponse juste'},{v:2,l:'Inexacte ou pas de réponse'}]),
+        qs('MM3','« Répétez avec moi » : CITRON – CLÉ – BALLON',
+          [{v:0,l:'Trois mots justes'},{v:1,l:'Deux mots justes sur trois'},{v:2,l:'Un mot juste ou pas de réponse'}]),
+        qs('MM4','« Combien font » : (100 − 7)… (93 − 7)… et (86 − 7) ? (réponses : 93 – 86 – 79)',
+          [{v:0,l:'Trois réponses justes'},{v:1,l:'Deux réponses justes'},{v:2,l:'Une réponse juste ou pas de réponse'}]),
+        qs('MM5','« Pouvez-vous me rappeler les trois mots que je vous ai demandé de répéter ? »',
+          [{v:0,l:'Trois réponses justes'},{v:1,l:'Deux réponses justes'},{v:2,l:'Un mot juste ou pas de réponse'}]),
+        qs('MM6',"« Vous arrive-t-il d'oublier un trajet que vous connaissez bien ? »",
+          [{v:0,l:'Jamais'},{v:1,l:'Quelquefois'},{v:2,l:'Souvent'}]),
+        qs('MM7',"« Vous arrive-t-il d'acheter plusieurs fois la même chose parce que vous avez oublié l'avoir achetée ? »",
+          [{v:0,l:'Jamais'},{v:1,l:'Quelquefois'},{v:2,l:'Souvent'}]),
+        qs('MM8',"« Vous arrive-t-il d'oublier la date à laquelle nous sommes, et si oui, la retrouvez-vous en faisant un effort ? »",
+          [{v:0,l:"Pas d'oubli"},{v:1,l:'Retrouve après effort'},{v:2,l:'Oubli total'}]),
+        qs('MM9','« Vos difficultés de mémoire vous empêchent-elles de faire certaines choses dans la vie quotidienne ? »',
+          [{v:0,l:'Jamais'},{v:1,l:'Quelquefois'},{v:2,l:'Souvent'}]),
+        qs('MM10',"« Et maintenant, pouvez-vous me répéter les trois mots de tout à l'heure ? »",
+          [{v:0,l:'Trois mots justes'},{v:1,l:'Deux mots justes sur trois'},{v:2,l:'Un mot juste ou pas de réponse'}]),
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:30,
+    type:'sum', maxTotal:20,
+    // Bandes de la source, à un arbitrage près, DÉCLARÉ. Elle écrit « De 0 à 1 :
+    // Rien à signaler » puis « De 1 à 4 : Troubles fonctionnels » — les deux
+    // revendiquent la valeur 1. L'arbitrage donne 1 à la bande la plus sévère,
+    // dans le sens qui ne rassure pas à tort ; même famille que les comblements
+    // Epworth 6/15 et Q_ALI_01 25/71. Ce n'est pas un trou, c'est un
+    // CHEVAUCHEMENT de la source, et le servi ne peut pas en porter deux.
+    //
+    // Aucune clé `protocol` : les libellés de la source SONT la conduite. La
+    // divergence `protocole_dans_interpretation` disparaît de ce fait, au lieu
+    // d'être déclarée.
     interpretation:[
-      {min:25,max:30,label:'Fonctionnement cognitif préservé',color:'success',protocol:'Pas d\'indication — prévention micronutritionnelle si facteurs de risque'},
-      {min:18,max:24,label:'Plaintes cognitives légères',color:'info',protocol:'Bilan micronutritionnel : B12, folates, Mg, Zn, oméga-3, iode'},
-      {min:10,max:17,label:'Plaintes cognitives modérées',color:'warning',protocol:'Consultation spécialisée + bilan biologique complet + neuronutrition ciblée'},
-      {min:0, max:9, label:'Plaintes cognitives importantes — évaluation neuropsychologique recommandée',color:'danger',protocol:'Orientation neurologue ou gériatre — bilan approfondi urgent'},
+      {min:0, max:0, label:'Rien à signaler',color:'success'},
+      {min:1, max:4, label:'Troubles fonctionnels : micronutrition',color:'info'},
+      {min:5, max:10,label:'Faire un Mini Mental State Examination (MMSE)',color:'warning'},
+      {min:11,max:20,label:'Troubles organiques — avis spécialisé demandé',color:'danger'},
     ]
   }
 };

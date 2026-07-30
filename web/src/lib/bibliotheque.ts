@@ -49,6 +49,16 @@ export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   // contre-épreuve à l'appui. Le retrait tient, la raison change.
   { id: 'Q_GEO_05', categorie: 'Gérontologie' },
   { id: 'Q_GEO_06', categorie: 'Gérontologie' },
+  // `Q_NEU_06` (MMT) est ENTRÉ ici le 2026-07-31, en même temps que sa
+  // reconstruction depuis la source. Il diffère des quatre autres sur un point
+  // qui compte : il a une entrée au catalogue, en `actif: false`. C'est
+  // délibéré, et c'est la position que #460 réclamait — la ligne de catalogue
+  // ferme la ROUTE d'assignation (`IDS_SUSPENDUS`), celle-ci ouvre l'AFFICHAGE
+  // de la grille en consultation. Les quatre autres n'ont pas d'entrée de
+  // catalogue et restent donc dans la combinaison « invisible et assignable »
+  // que `questionnaires-catalog.ts` dénonce ; leur régularisation n'est pas
+  // l'objet de ce lot, mais elle est nommée ici pour ne pas être oubliée.
+  { id: 'Q_NEU_06', categorie: 'Gérontologie' },
   { id: 'Q_URO_02', categorie: 'Urologie' },
 ];
 

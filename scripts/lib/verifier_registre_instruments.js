@@ -138,6 +138,37 @@ function extraireIdsSuspendus(catalogueSource) {
 }
 
 /**
+ * Extrait les instruments à PASSATION PRATICIEN depuis `lib/bibliotheque.ts`.
+ *
+ * POURQUOI le registre a besoin de cette liste. Le contrôle « retiré de la
+ * production » plus bas lit `actif: false` au catalogue d'affichage et en déduit
+ * un état terminal. La déduction est fausse pour une classe entière : un test
+ * administré EN CONSULTATION est `actif: false` — il n'est pas proposé à
+ * l'auto-passation — sans être retiré pour autant. Le catalogue compte déjà
+ * cinq membres de cette classe.
+ *
+ * C'est bien l'appartenance à `PASSATION_PRATICIEN` qui dit « en usage », et non
+ * `actif` : le précédent est écrit noir sur blanc dans #460, où fermer l'usage
+ * du MMSE a consisté à RETIRER sa ligne d'ici, le `actif: false` ne fermant que
+ * la route d'assignation. Suspendre un instrument de consultation se fait donc
+ * en le sortant de cette liste, jamais en le laissant dedans.
+ *
+ * Les commentaires sont neutralisés avant lecture : celui qui précède
+ * `Q_NEU_06` cite d'autres identifiants en prose, et un garde qui les compterait
+ * exempterait des instruments que personne n'a placés là.
+ */
+function extrairePassationPraticien(passationSource) {
+  if (!passationSource) return null;
+  const sansCommentaires = neutraliser(passationSource, { chaines: false });
+  const debut = sansCommentaires.indexOf('PASSATION_PRATICIEN');
+  if (debut === -1) return null;
+  const fin = sansCommentaires.indexOf('];', debut);
+  if (fin === -1) return null;
+  const bloc = sansCommentaires.slice(debut, fin);
+  return new Set([...bloc.matchAll(/id:\s*'(Q_[A-Z]{3}_\d{2})'/g)].map(m => m[1]));
+}
+
+/**
  * @returns {{erreurs: string[], sourcesEquilibre: Set<string>|null, aCompleter: number}}
  */
 function verifierRegistreInstruments({
@@ -148,6 +179,7 @@ function verifierRegistreInstruments({
   matriceDrive,
   evidence,
   catalogueSource,
+  passationSource,
 }) {
   const erreurs = [];
   const ajouter = (condition, message) => {
@@ -184,6 +216,10 @@ function verifierRegistreInstruments({
   const idsSuspendus = extraireIdsSuspendus(catalogueSource);
   if (!idsSuspendus) {
     erreurs.push('instruments suspendus introuvables dans le catalogue — le contrôle registre ↔ actif:false ne peut pas rester muet');
+  }
+  const idsPassationPraticien = extrairePassationPraticien(passationSource);
+  if (!idsPassationPraticien) {
+    erreurs.push('PASSATION_PRATICIEN introuvable dans lib/bibliotheque.ts — l’exemption de l’état terminal ne peut pas être décidée à l’aveugle');
   }
 
   instruments.forEach(entry => {
@@ -228,7 +264,21 @@ function verifierRegistreInstruments({
     // `questionnaires-catalog.ts` annonce noir sur blanc pour Q_SOM_07 : l'instrument
     // serait revenu en production en gardant `suspendu`, donc dispensé de source, de
     // droits, de contenu et de verdict — hors échelle, et le CI muet.
-    if (idsSuspendus) {
+    // EXEMPTION, et une seule : les instruments à passation praticien. Pour eux
+    // `actif: false` veut dire « pas proposé à l'auto-passation », pas « retiré
+    // de la production » — ils sont administrés en consultation, et c'est leur
+    // ligne `PASSATION_PRATICIEN` qui l'atteste. Sans elle, un test de
+    // consultation ne pourrait jamais franchir un barreau, et la seule façon de
+    // le certifier serait de le rendre auto-administrable : exactement l'inverse
+    // de ce que sa source demande.
+    //
+    // L'exemption porte sur les DEUX sens du contrôle, parce que `actif` ne
+    // renseigne plus rien pour cette classe. Ce n'est pas un trou : sortir un
+    // instrument de `PASSATION_PRATICIEN` le ramène aussitôt sous la règle
+    // générale, et c'est précisément le geste par lequel on ferme son usage.
+    const aPassationPraticien = idsPassationPraticien?.has(id) === true;
+
+    if (idsSuspendus && !aPassationPraticien) {
       if (idsSuspendus.has(id)) {
         ajouter(
           ETATS_TERMINAUX.has(entry.statutCertification),

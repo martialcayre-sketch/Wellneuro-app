@@ -575,14 +575,14 @@
     {
       "questionnaireId": "Q_NEU_06",
       "instrument": {
-        "nomOfficiel": "Questionnaire cognitif SIIN (historique)",
+        "nomOfficiel": "MMT — Mini Mental Test (SIIN)",
         "auteurs": null,
         "anneePublication": null,
         "formePubliee": null,
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "MMT SIIN servi avec ses bandes ; 4 bandes portent une conduite ajoutée par le cabinet. RESTENT OUVERTS : seuil '>= 1' non représenté et échelle 0–2/0–3, hors du périmètre de cette déclaration. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
+        "description": "10 épreuves en 1 section, moteur `sum`, cotation 0-2, score /20 dans le sens des TROUBLES. RECONSTRUIT LE 2026-07-31 depuis WN-SRC-0445 sur arbitrage praticien : ce qui était servi jusque-là était un autre instrument — dix plaintes cognitives auto-rapportées cotées 0-3 en sens inverse sur 30, sans un libellé commun avec la source (similarité item à item de 0,00 à 0,06). Items, modalités et bandes repris de la source. UN SEUL ARBITRAGE, déclaré : la source chevauche à la valeur 1 (« De 0 à 1 : Rien à signaler » puis « De 1 à 4 : Troubles fonctionnels »), et le servi attribue 1 à la bande la plus sévère — même famille que les comblements Epworth 6/15. Aucune clé `protocol` : les libellés de la source SONT la conduite, la divergence protocole_dans_interpretation disparaît au lieu d'être déclarée. PASSATION EN CONSULTATION, exigée par la première ligne de la source (« Complétez ce questionnaire avec votre patient en consultation ») et par la séquence de rappel différé des items 3/5/10 : l'instrument est `actif: false` au catalogue (route d'assignation fermée) et inscrit en PASSATION_PRATICIEN (grille affichée pour la consultation). Aucune assignation ni réponse en production au moment de la reconstruction (vérifié le 2026-07-31).",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
         "statutContenu": "adapte"
@@ -590,8 +590,8 @@
       "references": {
         "doi": null,
         "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "dateVerification": "2026-07-31",
+        "verifiePar": "banc certify + relecture directe de la source (Drive)"
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -599,25 +599,28 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0445"
+      ],
       "driveMd": null,
       "statutBibliographique": "referentiel_interne_siin",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
-        "divergencesCritiques": 1,
+        "date": "2026-07-31",
+        "divergencesCritiques": 0,
         "revision": {
-          "date": "2026-07-30",
+          "date": "2026-07-31",
           "notes": [
-            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite.",
-            "seuil '>= 1' : les bandes servies couvrent 0–30 sans trou, et le sens du '>= 1' de la source est inintelligible sans relecture du support (le MMT est coté en points, pas en erreurs). Écart DOCUMENTÉ, non ajouté à l'aveugle — dernière critique soldée sur la foi de la couverture complète des bandes.",
-            "CORRECTION DE REVUE : la critique est RESTAURÉE. Le décrément s'appuyait sur la couverture des bandes, sans rapport avec le seuil non représenté — et la relecture du rapport montre pire : les 10 libellés servis ne partagent RIEN avec la source (MMT administré : orientation, 3 mots, calcul) et le sens de l'échelle est INVERSÉ (servi 0-30 plus haut = mieux ; source plus haut = pire). C'est la classe Q_ALI_03/Q_SOM_07 — arbitrage praticien requis : suspendre, ou reconstruire."
+            "RECONSTRUIT, et non requalifié. Les trois divergences ouvertes au 2026-07-30 — dix libellés étrangers, échelle 0-2/0-3, seuil '>= 1' non représenté — tombent parce que le servi a changé, pas parce qu'on a changé d'avis sur lui. Le banc rejoué hors ligne (--recomparer, aucun appel de modèle) le constate sur le code.",
+            "protocole_dans_interpretation : soldée par SUPPRESSION des clés protocol. Les quatre conduites logées dans les bandes venaient du cabinet ; celles de la source ('Faire un MMSE', 'avis spécialisé demandé') sont désormais les libellés eux-mêmes.",
+            "CHEVAUCHEMENT DE LA SOURCE, pas trou du servi : la valeur 1 est revendiquée par deux bandes de la source. Arbitrée vers la plus sévère, dans le sens qui ne rassure pas à tort. Épinglée nommément par mmtReconstruit.guard.test.ts pour qu'un rebasculement se rediscute au lieu de glisser.",
+            "PASSATION : l'instrument sort de l'auto-passation. Trois de ses items forment un enregistrement puis deux rappels des mêmes trois mots — dans un formulaire auto-rempli, le patient remonte la page et les deux items les plus discriminants deviennent des points offerts. Le registre ne lit donc plus 'actif: false' comme un retrait de production pour cette classe : l'appartenance à PASSATION_PRATICIEN atteste l'usage, et c'est le retrait de CETTE ligne qui ferme un instrument de consultation (précédent MMSE, #460)."
           ]
         }
       }
@@ -1305,12 +1308,16 @@
       "statutBibliographique": "a_completer",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
+        "date": "2026-07-31",
         "divergencesCritiques": 0,
         "revision": {
-          "date": "2026-07-30",
+          "date": "2026-07-31",
           "notes": [
-            "VERDICT VACUEUX, montée annulée. Le « 0 divergence critique » ne dit pas que le servi correspond à sa source : les deux lectures rendent `items: []` et `seuils: []` — aucune source n'a été lue. L'instrument avait été monté à `scoring_verifie` sur ce silence le 2026-07-30, puis redescendu à `droits_verifies` le même jour, la revue adversariale ayant montré qu'un banc qui se tait n'est pas un banc qui approuve. Reste à faire : une passe de banc qui lise réellement WN-SRC-0420."
+            "VERDICT VACUEUX, montée annulée (2026-07-30). Le « 0 divergence critique » ne disait pas que le servi correspond à sa source : les deux lectures rendaient des listes d'items et de seuils VIDES. L'instrument avait été monté sur ce silence, puis redescendu le même jour, la revue adversariale ayant montré qu'un banc qui se tait n'est pas un banc qui approuve.",
+            "CORRECTION DU 2026-07-31 : LE BANC NE S'ÉTAIT PAS TU, IL AVAIT LU JUSTE. La source (WN-SRC-0420) a été relue directement — c'est une GRILLE DE RECUEIL VIERGE : 21 lignes (Lun a Dim, trois fois), colonnes horaires de 19 h a 18 h, une case « Hypnotique (cocher) », deux colonnes de notation et une colonne « Remarques ». Aucun item, aucun seuil, aucun total, aucune consigne de cotation. Une liste d'items vide est donc la structure EXACTE de cette source, et non une absence de lecture. Le praticien confirme le pendant côté produit le 2026-07-31 : « en cours de recueil de données, donc pas de score pour l'instant, normal » — 8 assignations sont En attente en production, aucune Complété, aucune réponse enregistrée. L'absence de score PENDANT le recueil est une conception : l'indice n'est produit qu'à la clôture.",
+            "MAIS LA MONTÉE RESTE REFUSÉE, sur DEUX écarts que le banc ne pouvait pas voir — ses contrôles item par item sont tous inapplicables quand la source ne déclare aucun item (même classe que Q_PED_02, le 2026-07-30). Relevés en relisant la source. (1) ÉCHELLE : la source note la qualité du sommeil « de 1 à 10 » ; le servi la recueille de 1 à 5 (champ qualite de la nuit, saisi en emoji). (2) AXE MANQUANT : la source porte une seconde colonne, « Qualité de l'éveil : noter de 1 à 10 (état dans la journée, en forme ou non) », que le servi ne recueille pas du tout. Or le sous-indice « qualité vécue » de l'indice sur 100 ne repose que sur la qualité du SOMMEIL — un quart de l'indice porte donc sur la moitié de ce que la source appelle qualité.",
+            "CONTRAINTE DE CALENDRIER, à ne pas manquer : 8 agendas sont EN COURS. Aligner l'échelle de 1-5 sur 1-10 pendant un recueil rendrait les nuits d'avant et d'après incomparables À L'INTÉRIEUR d'un même patient, sur les 21 nuits qui font justement la régularité. Toute décision d'alignement doit donc attendre la clôture des recueils ouverts, ou ne porter que sur de nouvelles séries.",
+            "CE QUI N'EST PAS AFFIRMÉ ICI : rien sur les droits au-delà de ce que le registre porte déjà. La formule « aucune œuvre tierce n'est reproduite », écrite le 2026-07-30 sans pièce, reste RETIRÉE — la source est un support SIIN, et le statut de droits de cette entrée ne vient pas d'elle."
           ]
         }
       }

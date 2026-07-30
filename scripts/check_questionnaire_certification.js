@@ -186,6 +186,7 @@ const verdictRegistre = verifierRegistreInstruments({
   matriceDrive: mapping,
   evidence,
   catalogueSource: fs.readFileSync(path.join(root, 'web/src/lib/questionnaires-catalog.ts'), 'utf8'),
+  passationSource: fs.readFileSync(path.join(root, 'web/src/lib/bibliotheque.ts'), 'utf8'),
 });
 assertEqual(verdictRegistre.erreurs, [], 'registre de certification des instruments');
 
@@ -997,17 +998,25 @@ for (const id of instrumentsADimensions) {
   const ALI01_SERT_UNE_CONDUITE = QUESTIONNAIRE_CATALOGUE.Q_ALI_01.scoring.maxTotal !== 90;
   const porteursAttendus = [
     ...(ALI01_SERT_UNE_CONDUITE ? ['Q_ALI_01'] : []),
+    // `Q_NEU_06` (MMT) est SORTI de cette liste le 2026-07-31, et c'est une
+    // perte voulue : sa reconstruction depuis la source a supprimé ses quatre
+    // `protocol:`. Ils portaient des conduites du cabinet ; celles de la source
+    // — « Faire un MMSE », « avis spécialisé demandé » — sont désormais les
+    // libellés de bande eux-mêmes. La conduite n'a pas disparu, elle a cessé
+    // d'être un ajout local voyageant avec l'instrument.
     'Q_ALI_02', 'Q_CAR_01', 'Q_GEO_01', 'Q_GEO_02', 'Q_GEO_03', 'Q_GEO_04',
-    'Q_NEU_02', 'Q_NEU_06', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01', 'Q_TAB_04',
+    'Q_NEU_02', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01', 'Q_TAB_04',
   ].sort();
   assertEqual(
     porteursServis.sort(),
     porteursAttendus,
     'liste des instruments servant une conduite clinique — un ajout ou une perte doit être vu en revue, pas subi',
   );
-  // 12 déclarants avec le dépistage court, 11 avec l'Enquête SIIN : même
-  // raison que juste au-dessus, `Q_ALI_01` est le seul à varier.
-  const declarantsAttendus = ALI01_SERT_UNE_CONDUITE ? 12 : 11;
+  // 11 déclarants avec le dépistage court, 10 avec l'Enquête SIIN : même
+  // raison que juste au-dessus, `Q_ALI_01` est le seul à varier. Un de moins
+  // dans les deux positions depuis le 2026-07-31 — les quatre `protocol:` de
+  // `Q_NEU_06` ont disparu avec sa reconstruction depuis la source.
+  const declarantsAttendus = ALI01_SERT_UNE_CONDUITE ? 11 : 10;
   assert(
     attendusPorteurs.size === declarantsAttendus,
     `${declarantsAttendus} instruments déclarent une conduite dans leurs bandes ; obtenu ${attendusPorteurs.size}`,
