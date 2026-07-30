@@ -314,6 +314,27 @@ function verifierRegistreInstruments({
         + `divergencesCritiques ${JSON.stringify(v.divergencesCritiques)})`
       );
     }
+    // FRAÎCHEUR DU VERDICT.
+    //
+    // Un verdict de banc certifie un scoring à un instant donné. Rien ne le
+    // reliait au code qu'il certifie : le 2026-07-30, deux instruments étaient
+    // `scoring_verifie` sur un verdict ANTÉRIEUR à la réécriture de leur propre
+    // grille — le QDRS a vu ses cinq bandes réalignées le matin et portait encore
+    // le verdict de la veille. Un verdict périmé se lit exactement comme un
+    // verdict frais.
+    //
+    // La date de la dernière note de révision est le repère disponible : c'est
+    // elle qu'on écrit quand on touche à l'instrument. Un verdict daté AVANT sa
+    // propre dernière révision décrit donc un état qui n'existe plus.
+    if (v != null && v.revision != null && estUneDate(v.revision.date) && estUneDate(v.date)) {
+      ajouter(
+        v.date >= v.revision.date,
+        `${id} : verdictScoring daté du ${v.date} alors que sa dernière révision date du `
+        + `${v.revision.date} — le verdict est antérieur à ce qu'il certifie, il faut rejouer `
+        + `le banc (\`certify --recomparer\`, hors ligne) et reporter la date`
+      );
+    }
+
     if (barreau >= ECHELLE.indexOf('scoring_verifie')) {
       // La pièce de ce barreau-là : le verdict du banc, INSCRIT AU REGISTRE. Sans
       // lui, le critère ne vivait que dans un fichier hors dépôt, sur une machine —

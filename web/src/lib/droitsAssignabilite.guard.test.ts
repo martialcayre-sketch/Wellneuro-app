@@ -117,6 +117,13 @@ const LAISSES_ASSIGNABLES = [
   // refermer referme le domaine.
   'Q_CAN_01',
   'Q_CAN_02',
+  // Conners enseignant — « © MHS, licence requise ». Rouvert le 2026-07-30 après
+  // son premier passage au banc (0 divergence critique, deux lectures
+  // concordantes). MHS vend cet instrument : c'est ici que l'écart entre
+  // « déclaré couvert » et « obtenu » est le plus large de tout le catalogue, et
+  // la réserve reste au dossier. La réserve SCIENTIFIQUE (seuil de 15 désavoué
+  // en 1985) ne vise pas le servi, qui ne rend aucun seuil de ce type.
+  'Q_PED_02',
   // HIT-6 — « © QualityMetric (licence requise, à vérifier) ». Laissé ouvert le
   // 2026-07-29 : 0 divergence critique au banc, aucune assignation ouverte.
   'Q_INF_04',

@@ -239,17 +239,32 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Dépistez la dépendance à la nicotine chez l'adolescent en 10 questions oui/non.`, duree: '3 min', actif: true },
 
   // ── PÉDIATRIE (suite) ───────────────────────────────────────────────────────
-  // Suspendus le 2026-07-29 sur arbitrage praticien : droits non dégagés
-  // (« © MHS, licence requise » au registre des instruments). Ni assignation ni
-  // passation depuis l'ouverture, et le banc de certification ne les a jamais
-  // comparés à leur source — ce sont les deux seuls du catalogue dans ce cas.
-  // S'y ajoute une réserve scientifique déjà consignée : le seuil de 15 de
-  // l'échelle de Conners vient d'un rapport non publié, et le laboratoire de son
-  // propre auteur l'a désavoué en 1985 en recommandant d'abandonner
-  // l'instrument. Réactivation possible sur licence obtenue ET reconstruction
-  // depuis la source.
+  // Fermés le 2026-07-29, et leur sort DIVERGE depuis le 2026-07-30 : le banc de
+  // certification y est enfin passé — ils en étaient les deux seuls absents,
+  // parce que leur comparaison coûte des appels de modèle.
+  //
+  // La condition de réouverture écrite à la fermeture était « licence obtenue ET
+  // reconstruction depuis la source ». Aucune licence n'a été obtenue : le
+  // praticien-propriétaire a DÉCLARÉ l'usage couvert le 2026-07-30, en
+  // connaissance de la réserve « © MHS », qui reste au dossier. MHS est l'ayant
+  // droit le plus commercialement actif de la campagne — l'écart entre déclarer
+  // et obtenir est ici le plus large, et il est assumé, pas effacé.
+  //
+  // La réserve scientifique, elle, est TRAITÉE et non contournée : le seuil de 15
+  // de l'échelle de Conners vient d'un rapport non publié que le laboratoire de
+  // son propre auteur a désavoué en 1985. Or le servi n'applique AUCUN seuil de
+  // ce type — il rend quatre sous-scores. La réserve porte sur un usage que
+  // WellNeuro ne fait pas, et le banc confirme que le servi correspond à sa
+  // source. Arbitrage praticien du 2026-07-30, sur ce raisonnement.
   { id: 'Q_PED_02', titre: 'Conners Enseignant — Évaluation TDAH (forme courte)', categorie: 'Pédiatrie',
-    description: `Évaluation du TDAH par l'enseignant : opposition, inattention, hyperactivité (28 items, 0-3).`, duree: '10 min', actif: false },
+    description: `Évaluation du TDAH par l'enseignant : opposition, inattention, hyperactivité (28 items, 0-3).`, duree: '10 min', actif: true },
+  // Le Conners parent RESTE FERMÉ, et son banc dit pourquoi : la lecture de la
+  // source y trouve 110 items là où l'application en sert 108. Deux items
+  // manquants ne sont pas un défaut de scoring, c'est un autre instrument —
+  // précédent du MFI-20 (#418) et de la méthode Monnier. S'y ajoute que la
+  // lecture croisée a échoué deux fois (sortie tronquée sur 108 items) : rien
+  // n'est confirmé par deux lectures indépendantes. Les relances payantes ont
+  // été arrêtées à deux essais.
   { id: 'Q_PED_03', titre: 'Conners Parents — Évaluation TDAH (forme courte)', categorie: 'Pédiatrie',
     description: `Évaluation du TDAH par les parents : opposition, inattention, hyperactivité (27 items, 0-3).`, duree: '10 min', actif: false },
 
