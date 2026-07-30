@@ -10,10 +10,16 @@ import {
   FACETTES_INDISPONIBLES,
   FACETTES_SERVIES,
   OFFSET_MAX,
+  VALEURS_FACETTE_INDISPONIBLES,
   type CatalogueResult,
   type FicheComplement,
 } from '@/lib/supplement-library/catalogue';
-import { OFFSET_MAX_ECRAN, RayonComplementsPanel, VALEURS_FACETTE } from './RayonComplementsPanel';
+import {
+  OFFSET_MAX_ECRAN,
+  RayonComplementsPanel,
+  VALEURS_FACETTE,
+  VALEURS_FACETTE_GRISEES,
+} from './RayonComplementsPanel';
 
 // La fiche justificative est stubbée : on teste ici l'instrument (liste,
 // facettes, tri, tiroir), pas le détail déjà couvert par FicheComplementPanel.test.
@@ -35,6 +41,7 @@ function fiche(over: Partial<FicheComplement> = {}): FicheComplement {
     statutFiche: over.statutFiche ?? 'importee',
     statutLabel: 'Fiche importée — non vérifiée',
     composition: [],
+    completudeComposition: over.completudeComposition ?? 'absente',
     dimensions: {
       qualiteFormulation: { valeur: 'bien_documentee', justification: '' },
       biodisponibiliteForme: { valeurs: [], valeursPresentes: ['non_evaluee'], justification: '' },
@@ -56,7 +63,7 @@ function fiche(over: Partial<FicheComplement> = {}): FicheComplement {
 
 function catalogue(over: Partial<CatalogueResult> = {}): CatalogueResult {
   return {
-    contractVersion: 'c4-catalogue-v2',
+    contractVersion: 'c4-catalogue-v3',
     aucunScoreGlobal: true,
     intentionFiltre: over.intentionFiltre ?? null,
     codesInconnus: [],
@@ -119,8 +126,80 @@ describe('RayonComplementsPanel (instrument à tiroir)', () => {
     }
   });
 
+  it('les valeurs grisées de l’écran sont EXACTEMENT celles que le service refuse', () => {
+    // Deuxième garde de dérive, sur la même faille : une valeur retirée du
+    // service et laissée cliquable ici produirait un 400 en face d'un clic
+    // légitime ; l'inverse laisserait un critère mort à l'écran.
+    expect(VALEURS_FACETTE_GRISEES).toEqual(VALEURS_FACETTE_INDISPONIBLES);
+  });
+
+  it('toute valeur grisée appartient bien au vocabulaire de sa facette', () => {
+    for (const [cle, valeurs] of Object.entries(VALEURS_FACETTE_GRISEES)) {
+      for (const valeur of valeurs ?? []) {
+        expect(VALEURS_FACETTE[cle as keyof typeof VALEURS_FACETTE]).toContain(valeur);
+      }
+    }
+  });
+
   it('le plafond d’offset de l’écran est celui du service', () => {
     expect(OFFSET_MAX_ECRAN).toBe(OFFSET_MAX);
+  });
+
+  it('annonce dans la LISTE qu’un compteur de règles est sous-estimé', async () => {
+    // C'est la liste que le praticien parcourt, pas le tiroir : sans mention
+    // ici, « 3 règles correspondantes » se lit comme un décompte complet.
+    fetchMock.mockImplementation(routerFetch(catalogue({
+      fiches: [fiche({ completudeComposition: 'partielle', reglesCorrespondantes: 3 })],
+      total: 1,
+    })));
+    render(<RayonComplementsPanel />);
+    rechercher('magnésium');
+    await waitFor(() => expect(screen.getByText(/composition partiellement résolue/i)).toBeTruthy());
+  });
+
+  it('n’ajoute aucune mention sur une fiche à composition absente', async () => {
+    fetchMock.mockImplementation(routerFetch(catalogue({
+      fiches: [fiche({ completudeComposition: 'absente', reglesCorrespondantes: 0 })],
+      total: 1,
+    })));
+    render(<RayonComplementsPanel />);
+    rechercher('magnésium');
+    await waitFor(() => expect(screen.getByText(/Magnésium Plus/)).toBeTruthy());
+    expect(screen.queryByText(/composition partiellement résolue/i)).toBeNull();
+  });
+
+  // ─── Valeur de facette non fiable : montrée, désactivée, expliquée ─────────
+
+  it('« Aucune connue » est affichée mais NON cliquable, avec sa raison', () => {
+    render(<RayonComplementsPanel />);
+    const bouton = screen.getByRole('button', { name: 'Aucune connue' }) as HTMLButtonElement;
+    expect(bouton.disabled).toBe(true);
+    expect(screen.getByText(/Fiable seulement une fois la composition/i)).toBeTruthy();
+  });
+
+  it('un clic sur la valeur grisée ne pose AUCUN critère et n’interroge rien', () => {
+    render(<RayonComplementsPanel />);
+    fireEvent.click(screen.getByRole('button', { name: 'Aucune connue' }));
+    expect(urlsAppelees()).toHaveLength(0);
+    // L'écran reste sur son mur d'entrée : la valeur grisée n'est pas un critère.
+    expect(screen.getByText(/Recherchez un nom, une marque/i)).toBeTruthy();
+  });
+
+  it('les valeurs SAINES de la même facette restent cliquables', () => {
+    render(<RayonComplementsPanel />);
+    expect((screen.getByRole('button', { name: 'Signalées' }) as HTMLButtonElement).disabled).toBe(false);
+    // « Non évaluée » est partagée par deux facettes : aucune n'est désactivée.
+    const nonEvaluee = screen.getAllByRole('button', { name: 'Non évaluée' }) as HTMLButtonElement[];
+    expect(nonEvaluee.length).toBeGreaterThan(0);
+    expect(nonEvaluee.every((b) => !b.disabled)).toBe(true);
+  });
+
+  it('une seule valeur est grisée dans tout l’écran — la désactivation ne déborde pas', () => {
+    render(<RayonComplementsPanel />);
+    const grises = (screen.getAllByRole('button') as HTMLButtonElement[])
+      .filter((b) => b.disabled)
+      .map((b) => b.textContent);
+    expect(grises).toEqual(['Aucune connue']);
   });
 
   // ─── Le mur d'entrée : rien n'est chargé sans critère ─────────────────────

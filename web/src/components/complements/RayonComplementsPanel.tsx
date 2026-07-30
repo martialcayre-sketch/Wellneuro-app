@@ -84,6 +84,17 @@ export const VALEURS_FACETTE: Record<FacetteCle, readonly string[]> = {
   statut: ['importee', 'verifiee'],
 };
 
+// Valeurs d'une facette PAR AILLEURS servie qui ne sont pas fiables tant que la
+// complétude de composition n'est pas prouvée. « Aucune interaction connue »
+// se lit sur les ingrédients résolus : sur une fiche partiellement résolue,
+// l'ingrédient porteur du signal peut être justement celui qui manque. Montrée
+// et désactivée, jamais retirée en silence — le praticien doit savoir que le
+// critère existe et pourquoi il ne répond pas encore. Recopié du service
+// (VALEURS_FACETTE_INDISPONIBLES), avec garde de test contre la dérive.
+export const VALEURS_FACETTE_GRISEES: Partial<Record<FacetteCle, readonly string[]>> = {
+  interactions: ['aucune_connue'],
+};
+
 // Recopié de OFFSET_MAX du service, pour la même raison que le vocabulaire
 // ci-dessus. Une garde de test interdit la dérive.
 export const OFFSET_MAX_ECRAN = 10_000;
@@ -91,6 +102,8 @@ export const OFFSET_MAX_ECRAN = 10_000;
 const MESSAGE_CRITERE_ATTENDU =
   'Recherchez un nom, une marque, une intention clinique, ou choisissez un filtre pour afficher des fiches.';
 const MESSAGE_FACETTE_GRISEE = 'Disponible après l’import de la composition des produits.';
+const MESSAGE_VALEUR_GRISEE =
+  'Fiable seulement une fois la composition des produits entièrement résolue.';
 
 function libelleValeur(valeur: string): string {
   return LABEL_VALEUR[valeur] ?? valeur;
@@ -331,23 +344,33 @@ export function RayonComplementsPanel() {
                   {LABEL_FACETTE[cle]}
                 </legend>
                 {VALEURS_FACETTE[cle].map((valeur) => {
-                  const actif = selections[cle].includes(valeur);
+                  const grisee = VALEURS_FACETTE_GRISEES[cle]?.includes(valeur) ?? false;
+                  const actif = !grisee && selections[cle].includes(valeur);
                   return (
                     <button
                       key={valeur}
                       type="button"
                       aria-pressed={actif}
+                      disabled={grisee}
+                      title={grisee ? MESSAGE_VALEUR_GRISEE : undefined}
                       onClick={() => basculerFacette(cle, valeur)}
                       className={`inline-flex items-center rounded-full border px-3 py-1 text-2xs font-semibold transition-colors ${
-                        actif
-                          ? 'border-indigo-600 bg-indigo-600/10 text-primary'
-                          : 'border-border bg-surface text-muted-foreground hover:border-primary/40'
+                        grisee
+                          ? 'cursor-not-allowed border-dashed border-border bg-surface text-muted-foreground'
+                          : actif
+                            ? 'border-indigo-600 bg-indigo-600/10 text-primary'
+                            : 'border-border bg-surface text-muted-foreground hover:border-primary/40'
                       }`}
                     >
                       {libelleValeur(valeur)}
                     </button>
                   );
                 })}
+                {VALEURS_FACETTE_GRISEES[cle] && (
+                  <span className="basis-full text-2xs text-muted-foreground">
+                    {MESSAGE_VALEUR_GRISEE}
+                  </span>
+                )}
               </fieldset>
             ))}
 
@@ -410,6 +433,12 @@ export function RayonComplementsPanel() {
                       {fiche.reglesCorrespondantes > 1 ? 's' : ''} clinique
                       {fiche.reglesCorrespondantes > 1 ? 's' : ''} correspondante
                       {fiche.reglesCorrespondantes > 1 ? 's' : ''}
+                      {/* Le compteur se calcule sur les ingrédients RÉSOLUS : sur
+                          une fiche partielle il est sous-estimé, et c'est la
+                          liste — pas le tiroir — que le praticien parcourt. */}
+                      {fiche.completudeComposition === 'partielle'
+                        ? ' (au moins — composition partiellement résolue)'
+                        : ''}
                     </span>
                     <span className="mt-1.5 flex flex-wrap gap-1">
                       <Badge variant="neutral">

@@ -8,10 +8,12 @@ import {
   FACETTES,
   FACETTES_INDISPONIBLES,
   MESSAGE_INDISPONIBLE,
+  MESSAGE_VALEUR_INDISPONIBLE,
   PAR_PAGE_MAX,
   RECHERCHE_MAX,
   TRIS,
   TRIS_INDISPONIBLES,
+  VALEURS_FACETTE_INDISPONIBLES,
   listerCatalogue,
   type CatalogueResult,
   type CleTri,
@@ -78,6 +80,19 @@ export async function GET(req: Request): Promise<NextResponse<ComplementsApiResp
     // laissant croire qu'il s'est appliqué.
     for (const cle of FACETTES_INDISPONIBLES) {
       if (searchParams.get(cle)) return echec('facette_indisponible', MESSAGE_INDISPONIBLE, 400);
+    }
+
+    // Une facette peut être servie sans que TOUTES ses valeurs le soient. Motif
+    // distinct du précédent : ici la donnée existe, c'est sa complétude qui
+    // n'est pas prouvée — donc le prédicat n'est pas fiable. Le service refuse
+    // aussi (garde de fond) ; ce contrôle-ci évite le travail inutile en amont.
+    for (const [cle, interdites] of Object.entries(VALEURS_FACETTE_INDISPONIBLES)) {
+      const brut = searchParams.get(cle);
+      if (!brut) continue;
+      const demandees = brut.split(',').map((v) => v.trim());
+      if (demandees.some((v) => interdites.includes(v))) {
+        return echec('valeur_facette_indisponible', MESSAGE_VALEUR_INDISPONIBLE, 400);
+      }
     }
     const triBrut = (searchParams.get('tri') ?? '').trim();
     if ((TRIS_INDISPONIBLES as readonly string[]).includes(triBrut)) {
