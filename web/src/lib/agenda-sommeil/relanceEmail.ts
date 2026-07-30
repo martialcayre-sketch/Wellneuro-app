@@ -23,6 +23,13 @@
  * tirerait Prisma et nodemailer dans le bundle client. */
 export const JOURS_ENTRE_RELANCES = 3;
 
+/** Tentatives au plus par recueil et par fenêtre, TOUS statuts confondus.
+ * Deux, et non une : un échec SMTP n'est pas la preuve d'une non-livraison
+ * (le socket expire à 20 s, un relais lent peut avoir accepté le message sans
+ * que l'accusé revienne), donc chaque tentative doit être comptée comme
+ * possiblement reçue — mais une panne franche doit rester rattrapable. */
+export const MAX_TENTATIVES_FENETRE = 2;
+
 export const SUJET_RELANCE = 'Un recueil en cours dans votre espace — Wellneuro';
 
 /** Objet consigné au registre (praticien seul, jamais dans l'e-mail). */

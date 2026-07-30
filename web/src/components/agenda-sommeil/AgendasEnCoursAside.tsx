@@ -150,7 +150,7 @@ export function AgendasEnCoursAside() {
                   <span className="shrink-0 text-xs text-muted-foreground">{e.titre}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">{e.detail}</p>
-                {ligne.relancable && (
+                {ligne.relancable && data.relanceActive && (
                   <button
                     type="button"
                     onClick={() => relancer(ligne)}

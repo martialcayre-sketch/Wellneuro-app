@@ -13,11 +13,13 @@ import {
 import { TYPES_CORRESPONDANCE_PATIENT } from '@/lib/correspondance/patient';
 import { sanitizeAuditError } from '@/lib/anthropic';
 import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
+import { isDeadlineExpired } from '@/lib/patient-access';
 import { dateJourParis } from '@/lib/agenda-sommeil/portail';
 import { calculerFenetreDepuisDates } from '@/lib/agenda-sommeil/fenetre';
 import { isRelanceAgendaEnabled } from '@/lib/agenda-sommeil/featureFlag';
 import {
   JOURS_ENTRE_RELANCES,
+  MAX_TENTATIVES_FENETRE,
   OBJET_TRACE_RELANCE,
   SUJET_RELANCE,
   construireCorpsRelance,
@@ -125,8 +127,10 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
 
     const aujourdHui = dateJourParis();
     // Date limite dépassée : la route patient rendrait 410. Inviter à saisir
-    // serait promettre une porte fermée.
-    if (ass.dateLimite && ass.dateLimite < aujourdHui) {
+    // serait promettre une porte fermée. MÊME prédicat que le portail
+    // (`isDeadlineExpired`) — deux implémentations divergeraient sur la nuit
+    // du jour d'échéance.
+    if (isDeadlineExpired(ass.dateLimite)) {
       return refus('date_limite_depassee', 'La période de recueil est terminée.', 409);
     }
 
@@ -137,8 +141,11 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     const dates = nuits.map((n) => n.dateNuit);
     const fenetre = calculerFenetreDepuisDates(dates, aujourdHui);
 
-    // Fenêtre écoulée : demander de noter une nuit que `estDateSaisissable`
-    // refusera serait mentir au patient. Le geste utile est la clôture.
+    // Fenêtre écoulée : les 21 emplacements sont consommés, donc une nuit
+    // saisie maintenant ne trouverait plus de place dans la frise ni dans les
+    // agrégats. (Le POST portail ne borne PAS la fenêtre — `estDateSaisissable`
+    // ne connaît que J/J-1 — mais inviter à remplir une case qui n'existe plus
+    // resterait un mensonge.) Le geste utile ici est la clôture praticien.
     if (fenetre.dateDebut !== null && fenetre.jourCourant === null) {
       return refus(
         'fenetre_ecoulee',
@@ -151,19 +158,28 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     }
 
     // Mécanisme B — anti-harcèlement (politique). Distinct de l'unicité.
+    //
+    // Compte TOUTES les tentatives, quel que soit leur statut. Un échec SMTP
+    // n'est PAS la preuve d'une non-livraison : le socket expire à 20 s, si
+    // bien qu'un relais lent peut avoir accepté le message après DATA sans
+    // que le 250 revienne. Ne compter que `Envoye` laissait donc N clics
+    // produire N e-mails réellement reçus, tous consignés « Erreur ». De
+    // même, un `update` final perdu laisse la ligne en `Non_envoye` alors que
+    // le message est parti.
+    //
+    // D'où deux tentatives au plus par fenêtre : une de plus que la relance
+    // voulue, pour qu'une panne franche reste rattrapable, et pas une de plus.
     const depuis = new Date(Date.now() - JOURS_ENTRE_RELANCES * 86_400_000);
-    const recente = await prisma.correspondancePatient.findFirst({
+    const tentatives = await prisma.correspondancePatient.count({
       where: {
         idPatient,
         referenceType: 'assignation',
         referenceId: idAssignation,
         type: TYPES_CORRESPONDANCE_PATIENT.relanceAgendaSommeil,
-        statut: 'Envoye',
         enregistreLe: { gte: depuis },
       },
-      select: { enregistreLe: true },
     });
-    if (recente) {
+    if (tentatives >= MAX_TENTATIVES_FENETRE) {
       return refus(
         'relance_recente',
         `Une relance a déjà été envoyée pour ce recueil il y a moins de ${JOURS_ENTRE_RELANCES} jours.`,
@@ -196,15 +212,19 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       if ((err as { code?: string }).code === 'P2002') {
         return refus(
           'deja_relance',
-          "Une relance a déjà été envoyée aujourd'hui pour ce recueil.",
+          "Une relance a déjà été enregistrée aujourd'hui pour ce recueil.",
           409,
         );
       }
       throw err;
     }
 
-    const transporter = creerTransportSmtp(smtpUrl);
+    // À partir d'ici, TOUT échec doit libérer le créneau du jour : sinon une
+    // panne survenue AVANT l'envoi (URL SMTP malformée, par exemple) laisse
+    // une réservation qui fait répondre « déjà enregistrée » à tous les
+    // réessais du jour — le praticien croirait le patient relancé.
     try {
+      const transporter = creerTransportSmtp(smtpUrl);
       await transporter.sendMail({
         from: '"Wellneuro" <noreply@wellneuro.fr>',
         to: patient.email,
@@ -214,7 +234,8 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     } catch (erreur) {
       // Un seul update : trace conservée ET créneau du jour libéré (le
       // `sourceId` est suffixé), pour que le praticien puisse réessayer sans
-      // être puni d'une panne SMTP.
+      // être puni d'une panne SMTP. La ligne reste comptée par le plafond de
+      // cadence, qui ignore le statut — un échec ambigu compte comme reçu.
       await prisma.correspondancePatient
         .update({
           where: { id: reservation.id },

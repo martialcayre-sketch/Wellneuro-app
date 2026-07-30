@@ -19,6 +19,7 @@ const { getServerSession, prisma, sendMail, creerTransportSmtp, ordre } = vi.hoi
       assignation: { findUnique: vi.fn((_a: Args) => Promise.resolve<Any>(null)) },
       agendaSommeilNuit: { findMany: vi.fn((_a: Args) => Promise.resolve<Any>([])) },
       correspondancePatient: {
+        count: vi.fn((_a: Args) => Promise.resolve<Any>(0)),
         findFirst: vi.fn((_a: Args) => Promise.resolve<Any>(null)),
         create: vi.fn(async (_a: Args): Promise<Any> => {
           ordre.push('create');
@@ -41,7 +42,7 @@ vi.mock('@/lib/email/transportSmtp', () => ({ creerTransportSmtp }));
 // la garde de dossier clos sont des invariants de cette route.
 
 import { POST } from './route';
-import { JOURS_ENTRE_RELANCES } from '@/lib/agenda-sommeil/relanceEmail';
+import { JOURS_ENTRE_RELANCES, MAX_TENTATIVES_FENETRE } from '@/lib/agenda-sommeil/relanceEmail';
 
 const PRATICIEN = 'praticien@wellneuro.fr';
 const session = { user: { email: PRATICIEN } };
@@ -82,6 +83,7 @@ beforeEach(() => {
   prisma.assignation.findUnique.mockResolvedValue(assOk);
   prisma.agendaSommeilNuit.findMany.mockResolvedValue([{ dateNuit: '2026-07-29' }]);
   prisma.correspondancePatient.findFirst.mockResolvedValue(null);
+  prisma.correspondancePatient.count.mockResolvedValue(0);
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -194,10 +196,7 @@ describe('POST relance — les refus n’envoient jamais', () => {
       'relance récente',
       409,
       'relance_recente',
-      () =>
-        prisma.correspondancePatient.findFirst.mockResolvedValue({
-          enregistreLe: new Date('2026-07-29T10:00:00Z'),
-        }),
+      () => prisma.correspondancePatient.count.mockResolvedValue(MAX_TENTATIVES_FENETRE),
     ],
   ])('%s → %i (%s), sans sendMail', async (_nom, status, reason, arrange) => {
     arrange();
@@ -259,13 +258,48 @@ describe('POST relance — idempotence', () => {
     expect(ordre).toEqual(['create', 'sendMail', 'update']);
   });
 
-  it('le plafond de cadence interroge bien la fenêtre de N jours', async () => {
+  it('le plafond compte TOUTES les tentatives de la fenêtre, quel que soit leur statut', async () => {
     await POST(req());
-    const where = prisma.correspondancePatient.findFirst.mock.calls[0][0].where;
-    expect(where.statut).toBe('Envoye');
+    const where = prisma.correspondancePatient.count.mock.calls[0][0].where;
+    // L'absence de filtre sur `statut` est l'invariant : un échec SMTP peut
+    // avoir livré (socket 20 s, 250 perdu), un `update` raté laisse
+    // « Non_envoye » sur un message parti. Les deux comptent comme reçus.
+    expect(where.statut).toBeUndefined();
     expect(where.referenceId).toBe('ASS_1');
+    expect(where.type).toBe('relance_agenda_sommeil');
     const attendu = new Date('2026-07-30T10:00:00.000Z').getTime() - JOURS_ENTRE_RELANCES * 86_400_000;
     expect(where.enregistreLe.gte.getTime()).toBe(attendu);
+  });
+
+  it('un échec SMTP ambigu est rattrapable UNE fois, pas deux', async () => {
+    // 1re tentative : échec. Le créneau du jour est libéré...
+    sendMail.mockRejectedValueOnce(new Error('socket timeout'));
+    expect((await POST(req())).status).toBe(502);
+
+    // ...mais la ligne reste comptée : le message a PEUT-ÊTRE été livré.
+    prisma.correspondancePatient.count.mockResolvedValue(1);
+    expect((await POST(req())).status).toBe(200);
+
+    // 3e clic : le plafond ferme, même si les deux traces disent « Erreur ».
+    prisma.correspondancePatient.count.mockResolvedValue(2);
+    const troisieme = await POST(req());
+    expect(troisieme.status).toBe(409);
+    expect((await troisieme.json()).reason).toBe('relance_recente');
+    expect(sendMail).toHaveBeenCalledTimes(2);
+  });
+
+  it('une panne AVANT l’envoi libère aussi le créneau du jour', async () => {
+    // URL SMTP malformée : `creerTransportSmtp` lève avant tout sendMail.
+    creerTransportSmtp.mockImplementationOnce(() => {
+      throw new Error('URL SMTP invalide');
+    });
+    const res = await POST(req());
+    expect(res.status).toBe(502);
+    expect(sendMail).not.toHaveBeenCalled();
+    // Le sourceId est suffixé : un réessai n'obtient pas « déjà enregistrée ».
+    const maj = prisma.correspondancePatient.update.mock.calls[0][0].data;
+    expect(maj.statut).toBe('Erreur');
+    expect(maj.sourceId).toContain('erreur');
   });
 });
 

@@ -6,10 +6,15 @@ import { emailPraticien, filtrePatientsDuPraticien } from '@/lib/praticien/appar
 import { resumerAgendasEnCours, type LigneSuiviAgenda, type NuitsSuivi } from '@/lib/agenda-sommeil/suivi';
 import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
 import { dateJourParis } from '@/lib/agenda-sommeil/portail';
+import { isRelanceAgendaEnabled } from '@/lib/agenda-sommeil/featureFlag';
 
 export type SuiviAgendasApiResponse = {
   ok: boolean;
   lignes: LigneSuiviAgenda[];
+  // Le drapeau de la relance, servi à l'écran. Sans lui, le bouton
+  // « Relancer ce patient » s'afficherait drapeau ÉTEINT et promettrait un
+  // e-mail que la route refuse : un lancement « dark » qui ne l'est pas.
+  relanceActive?: boolean;
   unavailable?: boolean;
   error?: string;
 };
@@ -17,6 +22,7 @@ export type SuiviAgendasApiResponse = {
 const INDISPONIBLE: Omit<SuiviAgendasApiResponse, 'error'> = {
   ok: false,
   lignes: [],
+  relanceActive: false,
   unavailable: true,
 };
 
@@ -34,7 +40,14 @@ export async function GET(): Promise<NextResponse<SuiviAgendasApiResponse>> {
 
   try {
     const patients = await prisma.patient.findMany({
-      where: { actif: true, ...filtrePatientsDuPraticien(emailPraticien(session) ?? '') },
+      where: {
+        actif: true,
+        // Mêmes gardes que la relance : ne pas offrir un bouton sur un dossier
+        // qu'elle refusera en 409 (accès révoqué, suivi clôturé).
+        accessTokenRevoked: false,
+        suiviClotureLe: null,
+        ...filtrePatientsDuPraticien(emailPraticien(session) ?? ''),
+      },
       select: { idPatient: true, prenom: true, nom: true },
       take: 200,
     });
@@ -108,7 +121,7 @@ export async function GET(): Promise<NextResponse<SuiviAgendasApiResponse>> {
       aujourdHui: dateJourParis(),
     });
 
-    return NextResponse.json({ ok: true, lignes });
+    return NextResponse.json({ ok: true, lignes, relanceActive: isRelanceAgendaEnabled() });
   } catch (err) {
     console.error('[agenda-sommeil suivi GET]', err instanceof Error ? err.message : String(err));
     return NextResponse.json({ ...INDISPONIBLE, error: 'Erreur technique.' }, { status: 500 });
