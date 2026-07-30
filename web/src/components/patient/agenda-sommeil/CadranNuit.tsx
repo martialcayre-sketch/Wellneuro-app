@@ -338,15 +338,19 @@ export function CadranNuit({
   // doigt — le patient voyait « la mauvaise poignée bouge » sans explication. Deux
   // règles la rendent joignable, dans cet ordre :
   //
-  //  1. la poignée NON CONFIRMÉE d'abord. Une poignée déjà répondue a sa valeur ;
-  //     celle qui n'a pas encore été touchée attend le geste qui la fera exister,
-  //     et c'est ce geste que la doctrine du composant réclame ;
-  //  2. sinon, celle qui n'a pas été prise au coup précédent. Deux appuis
-  //     successifs au même endroit alternent donc entre les superposées, ce qui
-  //     suffit à atteindre les deux — sans quoi la première monopoliserait le
-  //     point à jamais.
+  //  1. un FILTRE : s'il existe des poignées non confirmées parmi les ex-aequo, la
+  //     réponse se cherche parmi elles seules. Une poignée déjà répondue a sa
+  //     valeur ; celle qui n'a pas encore été touchée attend le geste qui la fera
+  //     exister, et c'est ce geste que la doctrine du composant réclame ;
+  //  2. une ROTATION dans le groupe retenu : on prend celle qui SUIT la dernière
+  //     prise. Des appuis successifs au même endroit parcourent donc tout le
+  //     groupe — sans quoi la première monopoliserait le point à jamais.
   //
-  // À défaut, l'ordre d'affichage tranche.
+  // La rotation porte sur le groupe et non sur un duo : une préférence deux-à-deux
+  // ne sait permuter qu'entre deux éléments, et laissait la TROISIÈME d'un groupe
+  // de trois définitivement injoignable. La configuration est cliniquement absurde
+  // (trois repères de la nuit à la même minute), mais une règle qui ne tient que
+  // pour deux ne se décrit pas comme close.
   function saisir(e: React.PointerEvent) {
     if (pointeurActif.current !== null) return;
     const p = positionPointeur(e.clientX, e.clientY);
@@ -358,26 +362,22 @@ export function CadranNuit({
       reveil: reveilFinal !== undefined,
       sortie: sortieDuLit !== undefined,
     };
-    let choisie: Poignee | null = null;
-    let meilleureDistance = Infinity;
-    for (const poignee of visibles) {
+    const distances = visibles.map((poignee) => {
       const centre = point(MINUTES[poignee]);
-      const d = Math.hypot(p.x - (centre.x - CX), p.y - (centre.y - CY));
-      // La comparaison est à l'ULP près : deux poignées de même valeur produisent
-      // exactement le même flottant, jamais deux voisins.
-      const exAequo = choisie !== null && d === meilleureDistance;
-      const preferable = exAequo
-        ? (!confirmee[poignee] && confirmee[choisie!]) ||
-          (confirmee[poignee] === confirmee[choisie!] &&
-            dernierePrise.current === choisie &&
-            dernierePrise.current !== poignee)
-        : d < meilleureDistance;
-      if (preferable) {
-        meilleureDistance = d;
-        choisie = poignee;
-      }
-    }
-    if (choisie === null || meilleureDistance > RAYON_PRISE) return;
+      return { poignee, d: Math.hypot(p.x - (centre.x - CX), p.y - (centre.y - CY)) };
+    });
+    const plusCourte = Math.min(...distances.map((c) => c.d));
+    if (!Number.isFinite(plusCourte) || plusCourte > RAYON_PRISE) return;
+
+    // La comparaison est à l'ULP près, et c'est voulu : deux poignées de MÊME
+    // valeur produisent exactement le même flottant, tandis que deux valeurs
+    // différentes équidistantes d'un appui diffèrent toujours de quelques 1e-14.
+    // Seule la superposition réelle forme donc un groupe.
+    const exAequo = distances.filter((c) => c.d === plusCourte).map((c) => c.poignee);
+    const nonConfirmees = exAequo.filter((poignee) => !confirmee[poignee]);
+    const groupe = nonConfirmees.length > 0 ? nonConfirmees : exAequo;
+    const rang = dernierePrise.current ? groupe.indexOf(dernierePrise.current) : -1;
+    const choisie = groupe[(rang + 1) % groupe.length];
 
     e.preventDefault();
     // Capture posée sur la RACINE, un nœud stable : la v1 la posait sur la cible
@@ -411,6 +411,25 @@ export function CadranNuit({
     const valeur = versHHMM(p.minutes - ecartPrise.current);
     if (valeur === POSITIONS[active]) return;
     onChange(active, valeur);
+  }
+
+  // `lostpointercapture` sert de FILET (un `pointerup` peut ne jamais arriver),
+  // mais il ne doit pas tuer un glissement en cours. Sur tactile, la capture
+  // IMPLICITE appartient d'abord au cercle touché ; poser la capture sur la
+  // racine fait émettre `lostpointercapture` sur l'ANCIENNE cible — l'enfant —
+  // d'où l'événement REMONTE jusqu'ici avec le pointeur en cours. Relâcher là
+  // couperait le geste avant le premier mouvement : le tap confirmerait l'heure
+  // suggérée et le glissement ne ferait plus rien — sur le doigt, sur le geste le
+  // plus courant. Chromium ne produit pas cette séquence (mesuré) ; WebKit, le
+  // moteur de l'iPhone, n'est pas mesuré.
+  //
+  // On ne relâche donc que si la capture n'est PLUS à nous. `hasPointerCapture`
+  // rend vrai aussi pour une capture EN ATTENTE, ce qui couvre exactement
+  // l'instant du basculement. Absente (jsdom), elle rend `undefined` et le filet
+  // se comporte comme avant.
+  function capturePerdue(e: React.PointerEvent) {
+    if (svgRef.current?.hasPointerCapture?.(e.pointerId)) return;
+    relacher(e);
   }
 
   function relacher(e: React.PointerEvent) {
@@ -468,8 +487,10 @@ export function CadranNuit({
           // aucun chemin de réinitialisation. Le navigateur, lui, émet
           // `lostpointercapture` dans tous les cas. Après un relâchement normal
           // l'événement arrive aussi, mais `relacher` a déjà remis le compteur à
-          // zéro et n'y reconnaît plus son pointeur : l'appel est inerte.
-          onLostPointerCapture={relacher}
+          // zéro et n'y reconnaît plus son pointeur : l'appel est inerte. Le
+          // filtre `capturePerdue` distingue une perte réelle d'un simple
+          // basculement de capture (voir son commentaire).
+          onLostPointerCapture={capturePerdue}
         >
           {/* Cadran : 24 h, minuit en haut. Quatre repères discrets, aucune
               graduation chiffrée — on estime, on ne lit pas une horloge. */}

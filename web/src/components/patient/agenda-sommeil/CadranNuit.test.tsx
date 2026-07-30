@@ -269,6 +269,34 @@ describe('égalité stricte entre deux poignées superposées', () => {
 
     expect(new Set([premiere, seconde])).toEqual(new Set(['lit', 'extinction']));
   });
+
+  it('TROIS poignées superposées sont toutes joignables', () => {
+    // Une préférence deux-à-deux ne sait permuter qu'entre deux éléments : elle
+    // laissait la troisième définitivement injoignable. La rotation porte donc sur
+    // le groupe entier. Configuration cliniquement absurde — trois repères de la
+    // nuit à la même minute —, mais une règle qui ne tient que pour deux ne se
+    // décrit pas comme close.
+    const { onChange, svg } = rendre(true, true, {
+      lit: '23:00',
+      extinction: '23:00',
+      reveil: '23:00',
+    });
+
+    const prises: string[] = [];
+    for (let i = 1; i <= 3; i += 1) {
+      fireEvent.pointerDown(poignees()[0], { pointerId: i, ...clientDepuisMinutes(1380) });
+      fireEvent.pointerUp(svg, { pointerId: i, ...clientDepuisMinutes(1380) });
+      prises.push(onChange.mock.calls[i - 1][0]);
+    }
+    expect(new Set(prises)).toEqual(new Set(['lit', 'extinction', 'reveil']));
+  });
+
+  // L'ORDRE des deux règles n'est pinné par aucun test, et ce n'est pas un oubli :
+  // filtre et rotation ne peuvent pas se contredire tant que le parent applique
+  // les valeurs qu'on lui remonte. Il faudrait, pour les séparer, que la dernière
+  // poignée prise soit encore NON confirmée — donc un parent qui n'applique pas,
+  // ce qu'aucune surface ne fait aujourd'hui. Un test de cet ordre serait un test
+  // du harnais, pas du composant.
 });
 
 // `preserveAspectRatio` vaut par défaut `xMidYMid meet` : le viewBox est mis à
@@ -282,6 +310,17 @@ describe('projection sur une boîte non carrée', () => {
   // de vérifier qu'on accroche passerait avec le défaut : il ne garderait rien.
   // C'est la VALEUR produite par le glissement qui est fausse, et c'est elle qu'on
   // mesure.
+  // Ce qui n'est PAS pinné ici, et pourquoi : `meet` contre `slice`. Les deux
+  // projections sont uniformes et centrées symétriquement, donc toutes deux
+  // préservent l'ANGLE depuis le centre — elles ne diffèrent que par le rayon.
+  // Comme l'heure ne dérive que de l'angle, échanger l'une pour l'autre ne change
+  // aucune valeur produite : seul le rayon EFFECTIF de prise se met à l'échelle
+  // (sur une boîte 300 × 400, la poignée est vue à 52 unités du centre au lieu de
+  // 70, soit une erreur de 17 — sous la tolérance de 26, donc l'appui réussit
+  // quand même). Il faudrait une boîte deux fois plus haute que large pour rendre
+  // la différence observable, configuration qu'un viewBox carré en `w-full` ne
+  // produit jamais. Un test de cette mutation serait un test d'une géométrie
+  // impossible.
   it('le glissement suit la même projection sur une boîte non carrée', () => {
     const boite = { width: 400, height: 300 };
     const { onChange, svg } = rendre(false, false, {}, boite);
@@ -374,6 +413,38 @@ describe('robustesse du glissement', () => {
     // Une prise neuve, avec un autre pointeur : elle doit être acceptée.
     fireEvent.pointerDown(poignees()[1], { pointerId: 2, ...clientDepuisMinutes(420) });
     expect(onChange).toHaveBeenLastCalledWith('sortie', SORTIE);
+  });
+
+  it('un basculement de capture ne coupe pas le glissement en cours', () => {
+    // Sur tactile, la capture implicite appartient d'abord au cercle touché : la
+    // poser sur la racine fait émettre `lostpointercapture` sur l'ANCIENNE cible,
+    // d'où l'événement remonte jusqu'à la racine avec le pointeur EN COURS. Pris
+    // pour une perte, il couperait le geste avant le premier mouvement — le tap
+    // confirmerait l'heure suggérée et le glissement ne ferait plus rien.
+    // L'événement est émis SUR LA RACINE, là où le gestionnaire est réellement
+    // écouté. Le navigateur, lui, l'émet sur l'enfant et le laisse remonter — mais
+    // jsdom ne délivre pas cette remontée jusqu'au gestionnaire React, et un test
+    // qui la simulerait ne garderait rien (vérifié par mutation : le filet
+    // indiscriminé y survivait). Ce qui est éprouvé ici est donc la DÉCISION du
+    // filtre, pas le chemin de propagation — lequel reste à la charge de l'essai
+    // sur appareil réel.
+    const { onChange, svg } = rendre();
+    // jsdom n'implémente pas la capture : on la déclare encore à nous, ce que rend
+    // `hasPointerCapture` pendant un basculement — capture EN ATTENTE comprise.
+    // `releasePointerCapture` doit être stubbé AUSSI : sans lui l'appel lève, et
+    // la levée interrompt `relacher` avant qu'il ne remette le compteur à zéro —
+    // un filet indiscriminé passerait alors le test pour une mauvaise raison
+    // (constaté par mutation).
+    Object.assign(svg, {
+      hasPointerCapture: () => true,
+      releasePointerCapture: () => undefined,
+    });
+
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    fireEvent.lostPointerCapture(svg, { pointerId: 1 });
+
+    fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(1440) });
+    expect(onChange).toHaveBeenLastCalledWith('extinction', '00:00');
   });
 
   it('un mouvement qui retombe sur la même valeur ne remonte rien', () => {
