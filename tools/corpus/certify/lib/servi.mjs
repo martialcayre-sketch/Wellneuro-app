@@ -77,6 +77,13 @@ export function reponsesExtremes(items, sens) {
  *
  * @returns {{min: number|null, max: number|null, erreur: string|null, categoriel: boolean}}
  */
+/**
+ * Les variables d'environnement qui changent la FORME servie d'un instrument.
+ * Toute nouvelle bascule de ce genre doit être ajoutée ici : c'est la liste que
+ * l'empreinte consigne, et donc la seule trace de ce qui a réellement été mesuré.
+ */
+export const DRAPEAUX_DE_FORME = ['WN_ALI_01_SIIN57'];
+
 export function bornesExecutees(idQuestionnaire, items, calculateScore) {
   if (typeof calculateScore !== 'function') {
     return { min: null, max: null, erreur: 'calculateScore absent', categoriel: false, nature: 'inconnue' };
@@ -291,6 +298,21 @@ export function empreinteServie(id, entree, calculateScore) {
   return {
     id,
     titre: entree.titre ?? '',
+    // POSITION DES DRAPEAUX AU MOMENT DE LA MESURE.
+    //
+    // Sans elle, une empreinte ne dit pas DE QUOI elle est l'empreinte. Le
+    // 2026-07-30, `Q_ALI_01` en a fait la démonstration : `WN_ALI_01_SIIN57` est
+    // allumé en production depuis le 28 mais ÉTEINT par défaut, et le banc ne le
+    // pose pas. Ses passages du 25 et du 29 ont donc mesuré le dépistage court à
+    // 14 items — une forme que plus aucun patient ne reçoit — et rien, ni dans
+    // l'empreinte ni dans le rapport, ne permettait de s'en apercevoir. Une
+    // description de contenu dérivée de cette empreinte aurait certifié un
+    // questionnaire que la production n'administre pas.
+    //
+    // La réserve avait été écrite ; une réserve écrite n'est pas une garde.
+    drapeaux: Object.fromEntries(
+      DRAPEAUX_DE_FORME.map((nom) => [nom, process.env[nom] === 'true']),
+    ),
     sections: (entree.sections ?? []).map((s) => ({
       id: s.id ?? null,
       titre: s.titre ?? '',

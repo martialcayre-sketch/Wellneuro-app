@@ -164,6 +164,12 @@ function redigerRapport({ instrument, sources, empreinte, verdicts, croisement, 
 
   l.push('## Ce que sert l\'application');
   l.push('');
+  // La position des drapeaux en TÊTE du relevé : c'est elle qui dit de quelle
+  // forme parle tout ce qui suit.
+  const drapeaux = Object.entries(empreinte.drapeaux ?? {});
+  if (drapeaux.length) {
+    l.push(`- drapeaux de forme : ${drapeaux.map(([k, v]) => `\`${k}\`=${v ? 'ALLUMÉ' : 'éteint'}`).join(' · ')}`);
+  }
   l.push(`- items : ${empreinte.items.length}`);
   l.push(`- sections (écran) : ${empreinte.sections.length} (${empreinte.sections.map((s) => s.titre || s.id).join(' · ')})`);
   l.push(`- dimensions **calculées** : ${empreinte.dimensions.noms.length} via \`${empreinte.dimensions.origine}\`${empreinte.dimensions.noms.length ? ` (${empreinte.dimensions.noms.join(' · ')})` : ''}`);
@@ -223,8 +229,15 @@ async function traiter({ instrument, sources, entree, calculateScore, specs }) {
   for (const v of verdicts) {
     for (const d of v.resultat.divergences) {
       const cle = cleDivergence(d);
-      if (!parCle.has(cle)) parCle.set(cle, { divergence: d, lecteurs: [] });
-      parCle.get(cle).lecteurs.push(v.lecteur);
+      // Un ENSEMBLE de lecteurs, pas une liste. Une même lecture peut émettre
+      // plusieurs fois la même divergence — huit occurrences de
+      // `seuil_non_represente` chez l'une, quatre chez l'autre — et le tableau
+      // comptait alors douze entrées pour deux lecteurs. La comparaison
+      // `lecteurs.length === verdicts.length` échouait, et une divergence
+      // RÉELLEMENT vue des deux côtés était déclassée en simple signalement.
+      // L'erreur allait dans le sens rassurant, ce qui est le pire des deux.
+      if (!parCle.has(cle)) parCle.set(cle, { divergence: d, lecteurs: new Set() });
+      parCle.get(cle).lecteurs.add(v.lecteur);
     }
   }
   // Le croisement n'a de sens qu'à deux lectures. Si l'une a échoué, RIEN
@@ -233,8 +246,8 @@ async function traiter({ instrument, sources, entree, calculateScore, specs }) {
   const croiseeEffective = verdicts.length >= 2;
   const croisement = { croiseeEffective, confirmees: [], aConfirmer: [] };
   for (const { divergence, lecteurs } of parCle.values()) {
-    if (croiseeEffective && lecteurs.length === verdicts.length) croisement.confirmees.push(divergence);
-    else croisement.aConfirmer.push({ ...divergence, vuePar: lecteurs.join(', ') });
+    if (croiseeEffective && lecteurs.size === verdicts.length) croisement.confirmees.push(divergence);
+    else croisement.aConfirmer.push({ ...divergence, vuePar: [...lecteurs].join(', ') });
   }
 
   const dossier = path.join(SORTIE, instrument);
