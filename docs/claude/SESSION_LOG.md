@@ -925,3 +925,22 @@ témoin actuel est déclaratif et la moitié du registre lui échappe.
 **Questions ouvertes** : la règle du « nombre d'items » n'est pas écrite et s'applique
 dans un seul sens (PSQI 24/18, Q_NEU_12 36/48, Q_GEO_01 16/20) ; Q_ALI_01 attend la
 répartition des points de sa source ; Q_NEU_06, Q_SOM_09, VQ11 attendent une décision.
+
+## 2026-07-30 (clôture) — Q_ALI_01 tranché sur pièce : 54 sur 64
+
+**Décisions** : la source de l'Enquête alimentaire SIIN a été relue directement
+(WN-SRC-0471). Elle porte « Votre score (0, 1 ou 2) » et « alors comptez … points » :
+le 0-2 est un barème par item, pas un codage de réponse. Compté — 24 items à
+1 point, 33 à 2, total 90 — soit exactement les effectifs du barème servi, bandes
+comprises. Divergence annulée sur pièce, instrument monté (#487).
+
+**Écarté** : la même annulation le matin, sur l'arithmétique « 57 × 2 = 90 » (faux,
+114) et une prémisse sans pièce — refusée en revue, à juste titre. La conclusion
+était bonne, la preuve ne l'était pas.
+
+**Prochaine action** : raccorder la garde de fraîcheur à l'empreinte servie, seul
+témoin non déclaratif.
+
+**Questions ouvertes** : Q_NEU_06 (suspendre ou reconstruire), Q_SOM_09 (banc
+vacueux), VQ11 = Q_PNE_01 (instruire les droits d'une échelle publiée), règle du
+« nombre d'items » non écrite (PSQI 24/18, Q_NEU_12 36/48, Q_GEO_01 16/20).
