@@ -29,18 +29,6 @@ export const QUESTIONNAIRES_CATALOG = [
 // Les instruments suspendus — \`actif: false\`. À importer par les routes.
 `;
 
-// Extrait de `lib/bibliotheque.ts`, dans sa forme réelle : la liste, précédée
-// d'un COMMENTAIRE qui cite un identifiant en prose. Le vrai fichier en porte
-// un — celui qui explique l'entrée du MMT et nomme le MMSE au passage. Une
-// extraction qui compterait les identifiants cités exempterait de l'état
-// terminal des instruments que personne n'a placés en passation praticien.
-const PASSATION_VALIDE = `
-// \`Q_SOM_07\` est SORTI de cette liste : cette phrase ne l'y remet pas.
-export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
-  { id: 'Q_GEO_03', categorie: 'Gérontologie' },
-];
-`;
-
 const CONSTANTS_VALIDE = `
 export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
   1: [{ idQuestionnaire: 'Q_ALI_01', max: 42, inverser: false }],
@@ -77,7 +65,6 @@ function verifier(surcharge = {}) {
     matriceDrive: '| `Q_ALI_01` | `questionnaire_alimentaire_siin_contexte.md` | certifié |',
     evidence: { etudes: [] },
     catalogueSource: CATALOGUE_VALIDE,
-    passationSource: PASSATION_VALIDE,
     ...surcharge,
   });
 }
@@ -401,71 +388,6 @@ test("instrument retiré de la production (actif: false) au-dessus de 'repere' :
     });
     assert.deepEqual(erreurs, [], `${statut} doit être accepté pour un instrument suspendu`);
   }
-});
-
-test("passation praticien : `actif: false` ne vaut plus « retiré » — et l'exemption ne déborde pas", () => {
-  // Un instrument de CONSULTATION est `actif: false` sans être retiré : il n'est
-  // pas proposé à l'auto-passation, il est administré par le praticien. Sans
-  // cette exemption il resterait bloqué à `repere` pour toujours, et la seule
-  // façon de le certifier serait de le rendre auto-administrable — l'inverse de
-  // ce que sa source demande.
-  const enConsultation = `
-export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
-  { id: 'Q_SOM_07', categorie: 'Sommeil' },
-];
-`;
-  const monte = verifier({
-    idsCatalogue: ['Q_SOM_07'],
-    sourceIdsCorpus: new Set(['WN-SRC-0001']),
-    passationSource: enConsultation,
-    registre: { instruments: [entree({
-      questionnaireId: 'Q_SOM_07', driveMd: null, sourceMonEquilibre: false,
-      statutCertification: 'source_obtenue', sourceIds: ['WN-SRC-0001'],
-    })] },
-  });
-  assert.ok(!monte.erreurs.some(e => /retiré de la production/.test(e)),
-    'un instrument à passation praticien doit pouvoir gravir l’échelle');
-
-  // CONTRE-ÉPREUVE — l'exemption ne vaut QUE pour les membres de la liste. Le
-  // même instrument, la même position dans l'échelle, mais absent de
-  // `PASSATION_PRATICIEN` : la règle générale reprend, sinon l'exemption serait
-  // une porte ouverte plutôt qu'une classe.
-  const horsListe = verifier({
-    idsCatalogue: ['Q_SOM_07'],
-    sourceIdsCorpus: new Set(['WN-SRC-0001']),
-    registre: { instruments: [entree({
-      questionnaireId: 'Q_SOM_07', driveMd: null, sourceMonEquilibre: false,
-      statutCertification: 'source_obtenue', sourceIds: ['WN-SRC-0001'],
-    })] },
-  });
-  assert.ok(horsListe.erreurs.some(e => /retiré de la production/.test(e)),
-    'hors de la liste, un instrument suspendu ne gravit toujours pas l’échelle');
-});
-
-test('PASSATION_PRATICIEN illisible : le garde se déclare aveugle au lieu d’exempter', () => {
-  // Une liste introuvable ne doit pas se lire « personne n'est exempté » en
-  // silence : c'est le même parti que pour les suspendus. Le fichier a pu
-  // changer de forme, et l'exemption serait alors décidée sur du vide.
-  const absent = verifier({ passationSource: 'export const AUTRE_CHOSE = [];' });
-  assert.ok(absent.erreurs.some(e => /PASSATION_PRATICIEN introuvable/.test(e)));
-});
-
-test('PASSATION_PRATICIEN : les identifiants cités en COMMENTAIRE n’exemptent personne', () => {
-  // Le vrai fichier porte un commentaire qui nomme d'autres instruments. Les
-  // compter exempterait de l'état terminal des instruments que personne n'a
-  // placés en passation praticien — le pendant exact du faux vert du 2026-07-29
-  // sur `actif: false` cité en prose.
-  const suspendu = verifier({
-    idsCatalogue: ['Q_SOM_07'],
-    sourceIdsCorpus: new Set(['WN-SRC-0001']),
-    registre: { instruments: [entree({
-      questionnaireId: 'Q_SOM_07', driveMd: null, sourceMonEquilibre: false,
-      statutCertification: 'scoring_verifie', sourceIds: ['WN-SRC-0001'],
-    })] },
-  });
-  // `PASSATION_VALIDE` cite `Q_SOM_07` dans son commentaire de tête et ne
-  // l'inscrit pas dans la liste : l'erreur doit tomber.
-  assert.ok(suspendu.erreurs.some(e => /retiré de la production/.test(e)));
 });
 
 test('catalogue illisible : le garde des suspendus échoue au lieu de rester muet', () => {

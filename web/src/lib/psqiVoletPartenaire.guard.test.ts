@@ -52,6 +52,15 @@ describe('PSQI — les 24 items de la source sont servis', () => {
       expect(parId.get(id).conditionnel, `${id} doit rester facultatif`).toBe('Q10>=1');
     }
   });
+
+  it('les six items sont marqués HORS BARÈME, et eux seuls', () => {
+    // `conditionnel` ne suffit pas et ne peut pas suffire : il est lu dans deux
+    // sens opposés — facultatif côté formulaire, obligatoire côté prédicat de
+    // complétude du moteur clinique. `horsBareme` est ce qui dit « aucun score
+    // ne lit cet item », et c'est lui que le moteur clinique honore.
+    const horsBareme = items().filter((q: any) => q.horsBareme === true).map((q: any) => q.id);
+    expect(horsBareme).toEqual(['Q10', 'Q11a', 'Q11b', 'Q11c', 'Q11d', 'Q11e']);
+  });
 });
 
 describe('PSQI — le volet partenaire n’entre dans AUCUN score', () => {

@@ -45,6 +45,16 @@ export const Q_SOM_01 = {
     // remaniement pourrait les faire entrer dans une composante sans que rien
     // ne s'y oppose.
     //
+    // D'où `horsBareme: true`, et pas seulement `conditionnel`. Relevé en revue
+    // adversariale sur la première rédaction de ce lot : `conditionnel` est lu
+    // dans DEUX SENS OPPOSÉS. Le formulaire patient en fait un item facultatif ;
+    // le prédicat de complétude du moteur clinique
+    // (`clinicalSnapshot.hasExploitableRawAnswers`) le rend au contraire
+    // OBLIGATOIRE dès que la condition est remplie. Sans `horsBareme`, un
+    // patient déclarant un conjoint puis laissant 11a-e vides sortait le PSQI
+    // entier du bilan — et `Q10`, qui n'a aucune condition, en sortait aussi
+    // TOUTES les passations antérieures, qui ne peuvent pas la porter.
+    //
     // Leur valeur est ailleurs : `11a` et `11b` — ronflement fort, pauses
     // respiratoires observées — sont les deux signaux d'apnée que seul un tiers
     // peut rapporter, et le questionnaire ne les recueillait pas. Ils
@@ -54,15 +64,16 @@ export const Q_SOM_01 = {
     // Comme `Q5j`, `Q11e` est servie sans son champ « décrivez » : l'UI patient
     // n'a pas de champ texte libre (même motif que Q109/Q110 du Conners 3).
     { id:'partenaire', titre:'Conjoint ou camarade de chambre',
-      description:"Ces questions ne comptent pas dans le score : elles renseignent le praticien sur ce qu'un tiers observe de vos nuits.\nSi vous avez un conjoint ou un camarade de chambre, demandez-lui à quelle fréquence, au cours du dernier mois, il a observé les situations suivantes. Sans conjoint ni camarade de chambre, laissez-les sans réponse.",
+      description:"Ces questions ne comptent pas dans le score : elles renseignent le praticien sur ce qu'un tiers observe de vos nuits.\nLa première est à renseigner par tout le monde. Les cinq suivantes sont facultatives : si vous avez un conjoint ou un camarade de chambre, demandez-lui à quelle fréquence, au cours du dernier mois, il a observé ces situations — sinon, laissez-les sans réponse.",
       questions:[
         q('Q10',"Avez-vous un conjoint ou un camarade de chambre ?",
-          [{v:0,l:'Pas de conjoint ni de camarade de chambre'},{v:1,l:'Conjoint ou camarade dans une autre chambre'},{v:2,l:'Conjoint dans la même chambre, mais pas dans le même lit'},{v:3,l:'Conjoint dans le même lit'}]),
-        q('Q11a',"Un ronflement fort",O_03jt,{conditionnel:'Q10>=1'}),
-        q('Q11b',"De longues pauses respiratoires pendant votre sommeil",O_03jt,{conditionnel:'Q10>=1'}),
-        q('Q11c',"Des saccades ou des secousses des jambes pendant que vous dormiez",O_03jt,{conditionnel:'Q10>=1'}),
-        q('Q11d',"Des épisodes de désorientation ou de confusion pendant le sommeil",O_03jt,{conditionnel:'Q10>=1'}),
-        q('Q11e',"D'autres motifs d'agitation pendant le sommeil",O_03jt,{conditionnel:'Q10>=1'}),
+          [{v:0,l:'Pas de conjoint ni de camarade de chambre'},{v:1,l:'Conjoint ou camarade dans une autre chambre'},{v:2,l:'Conjoint dans la même chambre, mais pas dans le même lit'},{v:3,l:'Conjoint dans le même lit'}],
+          {horsBareme:true}),
+        q('Q11a',"Un ronflement fort",O_03jt,{conditionnel:'Q10>=1',horsBareme:true}),
+        q('Q11b',"De longues pauses respiratoires pendant votre sommeil",O_03jt,{conditionnel:'Q10>=1',horsBareme:true}),
+        q('Q11c',"Des saccades ou des secousses des jambes pendant que vous dormiez",O_03jt,{conditionnel:'Q10>=1',horsBareme:true}),
+        q('Q11d',"Des épisodes de désorientation ou de confusion pendant le sommeil",O_03jt,{conditionnel:'Q10>=1',horsBareme:true}),
+        q('Q11e',"D'autres motifs d'agitation pendant le sommeil",O_03jt,{conditionnel:'Q10>=1',horsBareme:true}),
       ]}
   ],
   scoring:{type:'psqi'}

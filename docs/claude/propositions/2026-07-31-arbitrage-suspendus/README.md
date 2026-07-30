@@ -143,9 +143,17 @@ Suspendu pour documentation seule. Mais la relecture donne **deux défauts réel
 que la suspension masquait** :
 
 1. **`maxTotal` déclaré 32, maximum réellement atteignable 36.** Compté sur les
-   items : 4×4 + 4×1 + 4×3 + 4×1 = 36. La bande la plus haute s'arrête à 32 : un
-   patient qui score 33 à 36 — le plus consommateur — **ne reçoit aucune bande**,
-   et sa fiche afficherait « 34/32 ».
+   items : 4×4 + 4×1 + 4×3 + 4×1 = 36. Sa fiche afficherait donc « 34/32 » — un
+   score au-dessus de son propre dénominateur.
+
+   *Rectification (revue du 2026-07-31)* : une première rédaction ajoutait qu'un
+   patient à 33-36 **ne recevrait aucune bande**. C'est faux, et le code le dit :
+   `interpretRanges` traite nommément le dépassement de plafond et rend la bande
+   de tête — le commentaire cite `Q_TAB_04` en exemple (« plafond 32, total
+   atteignable 36 »). Il ne reste donc que le dénominateur menteur, ce qui est
+   moins grave que ce qui était écrit. C'est la classe de défaut qui revient dans
+   cette campagne : une conclusion juste sur le fond, tirée d'une prémisse que
+   personne n'était allé vérifier.
 2. **La grille d'interprétation n'est pas celle de la source.** La source pose
    trois bandes (0-5 « risque faible », 6-15 « risque réel », 16-36 « risque
    aigu ») ; le servi en pose quatre, à des coupures différentes (0-6, 7-14,
@@ -178,10 +186,16 @@ et ils se traitent séparément :
 - **Passation** : c'est un test administré par un clinicien — le motif est écrit
   dans le code depuis le 2026-07-29, et il est **indépendant de la licence**.
 
-La surface qui manquait pour le rouvrir sans le rendre auto-administrable existe
-depuis ce lot : c'est celle que `Q_NEU_06` vient d'inaugurer — entrée de catalogue
-en `actif: false` (route fermée) plus ligne `PASSATION_PRATICIEN` (grille
-affichée), le registre ne lisant plus le premier comme un retrait de production.
+**La surface manque toujours, et ce lot en a fait l'expérience.** Une première
+rédaction créait la position « entrée de catalogue `actif: false` (route fermée)
+plus ligne `PASSATION_PRATICIEN` (grille affichée) » et l'inaugurait sur
+`Q_NEU_06`. Deux gardes existants l'ont refusée, à raison : `PASSATION_PRATICIEN`
+affiche le **verbatim**, que la déclaration du praticien exclut explicitement de
+son périmètre, et la décision du 2026-07-29 interdit d'y laisser un instrument
+sous réserve. Rouvrir le MMSE demande donc d'abord de **décider ce qu'est une
+surface de consultation** qui ne publie pas le verbatim — une consigne
+d'administration sans grille, par exemple. C'est une décision produit, pas un
+aménagement de garde.
 
 ### `Q_FIB_03` — ELFE → **RESTE FERMÉ**, et c'est le seul
 

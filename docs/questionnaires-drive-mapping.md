@@ -32,7 +32,7 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 | `Q_NEU_03` | `questionnaire_sigh_sad_sa.md` | certifié | certifié | n/a | certifié | n/a | certifié | 25 items, groupes A/B, règle Q15-Q17 Drive |
 | `Q_NEU_04` | `questionnaire_scoff.md` | certifié | certifié | n/a | certifié | certifié | certifié | SCOFF, 5 items oui/non, seuil positif ≥ 2 |
 | `Q_NEU_05` | `questionnaire_upps_impulsivite.md` | certifié | certifié | n/a | certifié | n/a | certifié | UPPS, 45 items Q001-Q045, 4 sous-échelles avec items renversés ; aucun seuil clinique fourni par la source |
-| `Q_NEU_06` | aucun MD Drive équivalent identifié | historique | historique | n/a | historique | historique | à faire | Questionnaire cognitif SIIN, absent Drive |
+| `Q_NEU_06` | aucun MD Drive équivalent identifié | historique | historique | n/a | historique | historique | n/a | MMT reconstruit le 2026-07-31 sur le PDF source `WN-SRC-0445`, non sur un MD Drive ; certifié par le banc `certify`, hors de cette matrice. Passation praticien, non assignable |
 | `Q_NEU_07` | `questionnaire_audit_alcool.md` | certifié | certifié | n/a | certifié | certifié | certifié | AUDIT alcool, 10 items Q001-Q010, score 0-40, seuils différenciés femme/homme |
 | `Q_NEU_08` | `ecab_echelle_cognitive_attachement_benzodiazepines.md` | certifié | certifié | n/a | certifié | certifié | certifié | ECAB, 10 items vrai/faux, item 10 inversé, seuil ≥ 6 |
 | `Q_NEU_09` | `zarit_grille_charge_proches_aidants.md` | certifié | certifié | n/a | certifié | certifié | certifié | Zarit, 22 items Q001-Q022, score 0-88, seuils fardeau léger à sévère |
@@ -97,5 +97,5 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 
 - Les seuils incohérents déjà présents dans les MD Drive QLQ-C30 (`< 28`) et QLQ-BR23 (`< 14`) sont conservés en note de scoring, sans correction contre source externe.
 - `Q_PED_03` conserve les 108 items scorés du MD Drive ; les deux questions ouvertes Conners ne sont pas créées tant que le rendu patient ne supporte pas les champs texte dans ce catalogue.
-- `Q_NEU_06` et `Q_GEO_03` restent explicitement hors certification Drive faute de MD correspondant identifié dans l'inventaire.
+- `Q_GEO_03` reste explicitement hors certification Drive faute de MD correspondant identifié dans l'inventaire. `Q_NEU_06` l'était aussi jusqu'au 2026-07-31 : il a depuis été **reconstruit sur le PDF source** `WN-SRC-0445` (« MMT Mini Mental Test.pdf »), relu directement dans Drive, et non sur un MD de l'inventaire. Sa certification passe donc par le banc `certify`, qui compare au verbatim de la source, pas par cette matrice — et il est désormais à passation praticien, non assignable.
 - La commande `cd web && npm run scoring-check` vérifie la couverture de cette matrice et les fixtures certifiées actuelles.

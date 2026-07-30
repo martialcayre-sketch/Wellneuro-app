@@ -31,14 +31,12 @@ describe('listeBibliotheque', () => {
     }
   });
 
-  it('expose les 5 passations praticien, jamais assignables', () => {
+  it('expose les 4 passations praticien, jamais assignables', () => {
     // Quatre depuis le 2026-07-29 : `Q_GEO_04` (MMSE) en est sorti sur arbitrage
-    // des droits. Cinq depuis le 2026-07-31 : `Q_NEU_06` (MMT) y est entré avec
-    // sa reconstruction, sa source demandant une passation en consultation. Le
-    // compte est exact à dessein — sans lui, une boucle sur une liste amputée
-    // resterait verte.
+    // des droits. Le compte est exact à dessein — sans lui, une boucle sur une
+    // liste amputée resterait verte.
     expect(PASSATION_PRATICIEN.map(p => p.id))
-      .toEqual(['Q_GEO_03', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06', 'Q_URO_02']);
+      .toEqual(['Q_GEO_03', 'Q_GEO_05', 'Q_GEO_06', 'Q_URO_02']);
     for (const { id } of PASSATION_PRATICIEN) {
       const entree = parId.get(id);
       expect(entree, id).toBeDefined();
@@ -102,25 +100,8 @@ describe('questionnaire suspendu (actif: false)', () => {
   });
 
   it('disparaît du rayon affiché et des ids assignables', () => {
-    // `actif: false` porte DEUX significations depuis le 2026-07-31, et une
-    // seule des deux assertions vaut pour les deux. « Non assignable » vaut
-    // toujours — c'est la propriété de sécurité, et elle couvre la classe
-    // entière. « Absent du rayon » ne vaut que pour les vraies suspensions : un
-    // instrument à passation praticien est `actif: false` parce qu'il n'est pas
-    // auto-administré, et sa grille DOIT rester affichée, sans quoi la
-    // consultation n'y a plus accès.
-    const enPassation = new Set(PASSATION_PRATICIEN.map(p => p.id));
-    const vraimentSuspendus = suspendus.filter(q => !enPassation.has(q.id));
-    // Anti-vacuité : le retrait ci-dessus ne doit pas vider l'ensemble, sinon
-    // la garde d'affichage ne porterait plus sur rien.
-    expect(vraimentSuspendus.length).toBeGreaterThan(0);
-
-    for (const q of vraimentSuspendus) {
-      expect(affiches.has(q.id), q.id).toBe(false);
-    }
-    // Aucune exception ici : suspendu ou en consultation, rien de tout cela ne
-    // s'assigne à un patient.
     for (const q of suspendus) {
+      expect(affiches.has(q.id), q.id).toBe(false);
       expect(IDS_ASSIGNABLES.has(q.id), q.id).toBe(false);
     }
   });

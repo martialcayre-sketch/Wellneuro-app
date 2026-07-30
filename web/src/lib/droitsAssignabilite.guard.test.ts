@@ -82,9 +82,19 @@ const SOUS_RESERVE = REGISTRE.instruments
 // devenue fausse et appelle une correction. Un `length > 0` laisserait cinq
 // instruments quitter la population sans qu'un test bouge ; le MMSE (© PAR)
 // redeviendrait assignable dans le silence. Constat M2 de la même revue.
+// `Q_NEU_06` (MMT) est ENTRÉ dans cette population le 2026-07-31, avec sa
+// reconstruction depuis la source. Sa réserve ne porte pas sur un ayant droit
+// nommé, comme les huit autres, mais sur l'IDENTITÉ : les items 1-5 et 10 sont
+// de la famille MMSE, les items 6-9 de celle des questionnaires de plainte
+// mnésique, et aucune publication ne lui est rattachée. Tant que l'origine n'est
+// pas instruite, on ne peut pas affirmer qu'aucun tiers n'a de droit dessus — et
+// conclure au référentiel interne parce que le support ne cite pas ses sources
+// serait le renversement de charge commis sur le VQ11 la veille. C'est cette
+// entrée qui a fait rougir les deux gardes ci-dessous quand le lot voulait
+// afficher sa grille en consultation ; l'instrument est resté fermé.
 const SOUS_RESERVE_ATTENDUS = [
   'Q_CAN_01', 'Q_CAN_02', 'Q_GEO_04', 'Q_INF_04',
-  'Q_NEU_11', 'Q_PED_02', 'Q_PED_03', 'Q_SOM_02',
+  'Q_NEU_06', 'Q_NEU_11', 'Q_PED_02', 'Q_PED_03', 'Q_SOM_02',
 ];
 
 // LE BON PRÉDICAT EST CELUI DE LA ROUTE, PAS `IDS_ASSIGNABLES`.

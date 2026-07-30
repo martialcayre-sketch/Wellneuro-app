@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 import { IDS_ASSIGNABLES, PASSATION_PRATICIEN, listeBibliotheque } from '@/lib/bibliotheque';
+import REGISTRE from '../../../docs/claude/corpus/instrument_registry.json';
 
 const DEF: any = (QUESTIONNAIRE_CATALOGUE as any).Q_NEU_06;
 const ITEMS = ['MM1','MM2','MM3','MM4','MM5','MM6','MM7','MM8','MM9','MM10'];
@@ -115,21 +116,33 @@ describe('MMT — les trois mots, et la passation qui les protège', () => {
     expect(items.get('MM10').texte).toContain('trois mots');
   });
 
-  it('l’instrument n’est plus assignable au patient, et reste visible en consultation', () => {
-    // Les DEUX gestes, et il faut les deux. `actif: false` ferme la ROUTE
-    // d'assignation (`IDS_SUSPENDUS`, que les quatre routes consultent) ; la
-    // ligne `PASSATION_PRATICIEN` garde l'AFFICHAGE de la grille pour la
-    // consultation. Fermer seulement l'écran laisserait un appel direct passer ;
-    // fermer seulement la route retirerait l'usage que la source demande.
+  it('l’instrument est fermé des DEUX côtés — la route et le verbatim', () => {
+    // La reconstruction ne le rouvre pas, et les deux fermetures ont chacune
+    // leur raison. La ROUTE, parce qu'un rappel différé auto-rempli n'en est
+    // pas un : le patient remonte la page. Le VERBATIM, parce que
+    // `PASSATION_PRATICIEN` affiche la grille et que la décision du 2026-07-29
+    // interdit d'y laisser un instrument sous réserve — l'origine de ce test
+    // n'est pas instruite. Fermer un seul des deux laisserait passer l'autre :
+    // c'est la leçon du MMSE en #460.
     expect(IDS_SUSPENDUS.has('Q_NEU_06')).toBe(true);
     expect(IDS_ASSIGNABLES.has('Q_NEU_06')).toBe(false);
-    expect(PASSATION_PRATICIEN.map(p => p.id)).toContain('Q_NEU_06');
+    expect(PASSATION_PRATICIEN.map(p => p.id)).not.toContain('Q_NEU_06');
+    expect(listeBibliotheque().filter(e => e.id === 'Q_NEU_06')).toHaveLength(0);
 
-    const auRayon = listeBibliotheque().filter(e => e.id === 'Q_NEU_06');
-    expect(auRayon, 'exactement une entrée, pas zéro ni deux').toHaveLength(1);
-    expect(auRayon[0].passationPraticien).toBe(true);
-    expect(auRayon[0].assignable).toBe(false);
-    expect(auRayon[0].nbQuestions).toBe(10);
-    expect(auRayon[0].scoreMax).toBe(20);
+    // Mais il reste SCORABLE : fermer n'est pas effacer, et la grille
+    // reconstruite doit rester exécutable pour le jour où l'identité est
+    // instruite.
+    expect(calculateScore('Q_NEU_06', toutA(0))).not.toHaveProperty('error');
+  });
+
+  it('le registre dit ce que la fermeture doit, et n’affirme pas l’identité', () => {
+    // Le registre est la seule pièce qui porte le motif. S'il repassait
+    // `referentiel_interne_siin`, l'affirmation « instrument interne » serait de
+    // retour sans qu'aucun test ne bouge — et c'est exactement la faute du
+    // VQ11, le 2026-07-30 : conclure de ce qu'un support ne dit pas.
+    const entree: any = (REGISTRE as any).instruments.find((i: any) => i.questionnaireId === 'Q_NEU_06');
+    expect(entree.statutCertification).toBe('suspendu');
+    expect(entree.statutBibliographique).not.toBe('referentiel_interne_siin');
+    expect(entree.sourceIds).toContain('WN-SRC-0445');
   });
 });

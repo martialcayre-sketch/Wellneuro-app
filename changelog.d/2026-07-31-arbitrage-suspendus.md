@@ -36,7 +36,7 @@ seul instrument dont la fermeture ne coûte aucun usage.
 
 **Deux défauts trouvés au passage, sur un instrument déclaré « 0 critique »** : le
 questionnaire cannabis déclare `maxTotal: 32` quand ses items en autorisent **36**
-— un patient à 33-36 ne reçoit **aucune bande** et sa fiche afficherait « 34/32 » —
+— sa fiche afficherait « 34/32 », un score au-dessus de son propre dénominateur —
 et sa grille d'interprétation n'est pas celle de la source (quatre bandes contre
 trois, à des coupures différentes).
 
