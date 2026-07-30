@@ -853,3 +853,24 @@ six jamais utilisés.
 **Questions ouvertes** : 8 instruments via 7 moteurs rendent encore un axe à zéro sur une
 passation partielle ; consigne v11 à écrire (le total global `null` n'y est pas nommé) ;
 le banc golden n'est pas dans `test:worktree`.
+
+## 2026-07-30 — Campagne scoring : 47/64 en `scoring_verifie`
+
+**Décisions** : campagne d'un jour vers « tous les scoring exacts et validés » —
+quatre PR (#469 dossier des 29 divergents, #470 requalifications, #471 frontières
++ bornes, #472 montée de 37). 10 → 47 `scoring_verifie`. Corrigé dans le servi :
+grille QDRS (3 bornes chevauchées), Berlin cat2 (≥2 positifs), trous Epworth
+comblés par arbitrage déclaré ; `Q_ALI_03` suspendu (10/39 items). 17 fausses
+divergences requalifiées avec preuves (bornes PSQI/QIF/ECAB prouvées par
+construction). Arbitrages praticien : 9 seuils ajoutés, découpages « aligner sur
+la source » (lot 5 reporté), Q_INF_05 relecture d'abord.
+
+**Écarté** : atteindre 64 — exigerait de défaire les suspensions arbitrées ;
+plafond 55 annoncé au routage.
+
+**Prochaine action** : garde de fraîcheur verdict↔code, puis correction de
+l'extraction du banc (sinon son prochain passage rétablit les divergences
+annulées).
+
+**Questions ouvertes** : Q_NEU_06 (suspendre ou reconstruire), Q_ALI_01 (échelle
+0–2/0–15 vs #452), Q_INF_05, sémantique `adapte`, lot 5 découpages.
