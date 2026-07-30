@@ -1,4 +1,8 @@
-export type CertificationSource = 'drive' | 'historique' | 'externe' | 'non_certifie';
+// `manuel_eortc` depuis le 2026-07-30 : la cotation des deux questionnaires EORTC
+// vient de leurs manuels officiels, pas du support Drive qui les reproduit. La
+// distinction est le sujet même de la campagne de certification — la ranger sous
+// `drive` l'effacerait.
+export type CertificationSource = 'drive' | 'manuel_eortc' | 'historique' | 'externe' | 'non_certifie';
 
 export type CertificationStatus = 'certifie' | 'ambigu' | 'a_verifier' | 'non_score';
 
@@ -26,6 +30,14 @@ export type ScoreSubScore = {
   total: number | null;
   max?: number;
   interpretation?: ScoreInterpretation | null;
+  /**
+   * Direction de lecture, quand l'instrument la définit (échelles EORTC).
+   * `fonctionnelle` et `globale` : un score haut est une bonne nouvelle.
+   * `symptome` : un score haut est une charge de symptômes élevée.
+   * Sans ce champ, deux scores de 100 affichés côte à côte sont illisibles —
+   * « fatigue » et « fonctionnement physique » se lisent en sens contraires.
+   */
+  sens?: 'fonctionnelle' | 'symptome' | 'globale';
 };
 
 export type ScoreResultBase = {

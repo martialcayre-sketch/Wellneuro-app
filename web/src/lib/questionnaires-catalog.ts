@@ -280,18 +280,22 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Test cognitif administré par le clinicien : orientation, apprentissage, attention, rappel, langage, praxie (30 points).`, duree: '15 min', actif: false },
 
   // ── CANCÉROLOGIE ────────────────────────────────────────────────────────────
-  // Suspendus le 2026-07-29 sur arbitrage praticien : droits non dégagés
-  // (« © EORTC — enregistrement/autorisation requis » au registre). Aucun usage
-  // ni sur l'un ni sur l'autre. Ce sont les deux SEULS instruments de
-  // cancérologie du catalogue : les suspendre suspend le domaine, et c'est
-  // assumé le temps de l'enregistrement — l'EORTC pratique une autorisation
-  // gratuite pour l'usage clinique et académique, pas une licence payante.
-  // Leurs bandes portent par ailleurs des libellés que le catalogue déclare déjà
-  // douteux (« seuil source < 28 incohérent »), à revoir à la réactivation.
+  // RÉACTIVÉS le 2026-07-30, sur décision du praticien-propriétaire déclarant
+  // l'usage couvert — la réserve « © EORTC, enregistrement requis » reste au
+  // registre et n'est pas levée. Ce sont les deux seuls instruments de
+  // cancérologie du catalogue : les rouvrir rouvre le domaine.
+  //
+  // La réserve technique posée à leur fermeture est traitée, pas contournée :
+  // les bandes « douteuses » (« seuil source < 28 incohérent ») n'existent plus.
+  // Les deux questionnaires suivent désormais la cotation officielle de leurs
+  // manuels EORTC — quinze et huit échelles 0-100, aucune somme brute, aucun
+  // score global. Le défaut que ces libellés signalaient était réel : la bande
+  // « aucun problème signalé » du BR23 couvrait 0-13 pour un plancher de 23, et
+  // la patiente sans aucune plainte ne pouvait donc jamais la recevoir.
   { id: 'Q_CAN_01', titre: 'QLQ-C30 — Qualité de vie oncologique (EORTC)', categorie: 'Cancérologie',
-    description: `Questionnaire de qualité de vie validé pour les patients atteints de cancer (30 items, fonctions + symptômes).`, duree: '15 min', actif: false },
+    description: `Questionnaire de qualité de vie validé pour les patients atteints de cancer (30 items, fonctions + symptômes).`, duree: '15 min', actif: true },
   { id: 'Q_CAN_02', titre: 'QLQ-BR23 — Module cancer du sein (EORTC)', categorie: 'Cancérologie',
-    description: `Module complémentaire QLQ-C30 spécifique cancer du sein : image corporelle, symptômes traitement, bras, sein (23 items).`, duree: '10 min', actif: false },
+    description: `Module complémentaire QLQ-C30 spécifique cancer du sein : image corporelle, symptômes traitement, bras, sein (23 items).`, duree: '10 min', actif: true },
 ];
 
 // Les instruments suspendus — `actif: false`. À importer par les routes

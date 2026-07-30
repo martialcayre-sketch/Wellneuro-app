@@ -137,7 +137,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v11';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v12';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -212,6 +212,9 @@ Enfin, un axe marqué **horsTotal** ne contribue pas au total : son absence ne f
 - **rawTotal** — un total intermédiaire, avant pondération. Ce n'est pas le score : le score reste total, et rapporter rawTotal à un seuil peut inverser la conclusion.
 - **horsTotal** à vrai — ce sous-score est rapporté à part et **n'entre pas** dans le total global du questionnaire. N'en conclus pas pour autant que les autres s'additionnent : un sous-score peut recouper des items déjà comptés ailleurs.
 - **seuil**, **seuilLabel** et **atRisk** — un seuil de l'instrument et son verdict. Quand un seuil existe, le verdict est **atRisk** et il ne se recalcule pas depuis le total. Mais **seuil peut valoir null** : l'instrument ne publie alors aucun seuil pour ce sous-score, atRisk vaut false **par défaut et ne signifie rien** — lis seuilLabel, et n'en conclus ni risque, ni absence de risque.
+- **sens** — la DIRECTION de lecture du sous-score, et sans elle un 100 est illisible. Trois valeurs. **fonctionnelle** : un score élevé est une BONNE nouvelle — 100 veut dire que la personne fonctionne pleinement sur cet axe, 0 qu'elle ne fonctionne plus du tout. **globale** : un score élevé est une bonne qualité de vie. **symptome** : c'est l'inverse — un score élevé veut dire BEAUCOUP de symptômes, donc une situation plus lourde, et 0 veut dire aucun symptôme. Ne suppose jamais la direction depuis le libellé : « fonctionnement sexuel » et « symptômes du bras » se lisent en sens contraires alors que rien dans leur nom ne le dit. Quand ce champ est présent, il fait foi.
+- **notApplicable** à vrai — ce sous-score est **sans objet** pour cette personne : l'instrument lui-même l'a écarté, parce qu'une réponse antérieure le rendait hors sujet. Ce n'est ni un score, ni une donnée manquante, ni un motif de relance. Dis-le comme un fait de protocole, jamais comme un constat clinique — et surtout n'en déduis rien sur la personne.
+- **raisonNonScore** — pourquoi ce sous-score n'a pas de valeur. Reprends-en le sens, ne l'invente pas : « moins de la moitié des items renseignés » appelle une relance, « sans objet » n'en appelle aucune. Ces deux cas ne se ressemblent que par l'absence de valeur qu'ils produisent.
 - **interpretation** — la bande de ce sous-score-là, jamais celle du questionnaire entier.
 
 Un champ **booléen à null** — un drapeau de risque, d'alerte ou de positivité — se lit de la même façon : la question n'a pas été posée, ou l'axe qui le fonde n'a pas été mesuré. Ce n'est **pas** « non ». N'en conclus ni la présence, ni l'absence de ce que le drapeau nomme, et ne compte pas un drapeau à null parmi les drapeaux négatifs.

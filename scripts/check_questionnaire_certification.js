@@ -202,6 +202,7 @@ const supportedScoringTypes = new Set([
   'ecab',
   'francis',
   'group_majority',
+  'eortc',
   'had',
   'horne',
   'idtas_ae',
@@ -229,6 +230,41 @@ const unknownScoringTypes = ids
   .filter(type => type && !supportedScoringTypes.has(type));
 assertEqual([...new Set(unknownScoringTypes)], [], 'chaque scoring.type déclaré doit être connu du check');
 
+// Les tables de cotation EORTC sont recopiées à la main depuis les manuels : une
+// coquille d'identifiant y est invisible — l'item disparaît de sa moyenne sans
+// erreur, et le score de l'échelle glisse en silence. Trois contrôles de forme,
+// tous vérifiables sans le manuel :
+//   - chaque item d'une échelle existe dans le questionnaire ;
+//   - aucun item ne sert deux échelles (« no item occurs in more than one
+//     scale », manuel C30) ;
+//   - aucun item du questionnaire n'est oublié de toutes les échelles.
+ids.filter(id => QUESTIONNAIRE_CATALOGUE[id].scoring?.type === 'eortc').forEach(id => {
+  const def = QUESTIONNAIRE_CATALOGUE[id];
+  const auQuestionnaire = new Set(
+    (def.sections || []).flatMap(s => (s.questions || []).map(q => q.id))
+  );
+  const vus = new Map();
+  (def.scoring.echelles || []).forEach(e => {
+    assert(
+      !auQuestionnaire.has(e.id),
+      `${id} : l'échelle '${e.id}' porte le même identifiant qu'un ITEM du questionnaire — `
+      + `deux grandeurs sans rapport se retrouveraient sous un même nom dans la charge du modèle`
+    );
+    assert(e.range === 3 || e.range === 6, `${id}/${e.id} : étendue ${e.range} inattendue (3 ou 6)`);
+    assert(
+      ['fonctionnelle', 'symptome', 'globale'].includes(e.sens),
+      `${id}/${e.id} : sens '${e.sens}' inconnu`
+    );
+    (e.items || []).forEach(item => {
+      assert(auQuestionnaire.has(item), `${id}/${e.id} : item '${item}' absent du questionnaire`);
+      assert(!vus.has(item), `${id} : l'item '${item}' sert deux échelles (${vus.get(item)} et ${e.id})`);
+      vus.set(item, e.id);
+    });
+  });
+  const orphelins = [...auQuestionnaire].filter(item => !vus.has(item));
+  assertEqual(orphelins, [], `${id} : items du questionnaire rattachés à aucune échelle EORTC`);
+});
+
 ids.forEach(id => {
   const result = calculateScore(id, defaultAnswers(id));
   assert(!result.error, `${id} ne doit pas retourner une erreur avec des réponses synthétiques`);
@@ -237,27 +273,56 @@ ids.forEach(id => {
 
 function assertCertification(result, expectedStatus, idQuestionnaire) {
   assert(result.certification, `${idQuestionnaire} doit exposer une métadonnée certification`);
-  assertEqual(result.certification.source, 'drive', `${idQuestionnaire} doit être sourcé Drive`);
+  // La provenance n'est plus « Drive ou rien » depuis le 2026-07-30 : la cotation
+  // des deux EORTC vient de leurs manuels officiels, pas du support de formation
+  // qui les reproduit. Confondre les deux effacerait justement la distinction que
+  // la campagne de certification cherche à établir — d'où le nom propre.
+  const provenances = ['drive', 'manuel_eortc'];
+  assert(
+    provenances.includes(result.certification.source),
+    `${idQuestionnaire} : provenance '${result.certification.source}' inconnue (attendu ${provenances.join(' ou ')})`
+  );
   assertEqual(result.certification.status, expectedStatus, `${idQuestionnaire} statut certification incorrect`);
 }
 
-assertEqual(calculateScore('Q_CAN_01', fill('Q_CAN_01', 1)).total, 28, 'Q_CAN_01 score minimal');
-assertEqual(calculateScore('Q_CAN_01', fill('Q_CAN_01', 4)).total, 112, 'Q_CAN_01 score maximal');
-assertEqual(calculateScore('Q_CAN_01', fill('Q_CAN_01', 2)).total, 56, 'Q_CAN_01 score médian');
+// Les deux EORTC ne rendent plus de somme brute depuis le 2026-07-30 : le manuel
+// officiel ne définit aucun score global d'instrument, et celui que WellNeuro
+// fabriquait portait une bande de tête inatteignable côté BR23. Les assertions
+// qui suivent portent donc sur les ÉCHELLES 0-100, pas sur un total.
+// Le détail des formules et de l'inversion des items 44-46 est prouvé dans
+// `web/src/lib/eortc.guard.test.ts` ; ici on garde le contrat de sortie.
+const c30Bas = calculateScore('Q_CAN_01', fill('Q_CAN_01', 1));
+assertEqual(c30Bas.total, null, 'Q_CAN_01 ne rend aucun score global');
+assertEqual(
+  c30Bas.subScores.find(s => s.id === 'C30PF2').total, 100,
+  'Q_CAN_01 fonctionnement physique au maximum quand rien ne gêne'
+);
+assertEqual(
+  c30Bas.subScores.find(s => s.id === 'C30FA').total, 0,
+  'Q_CAN_01 fatigue au minimum quand rien ne gêne'
+);
 const c30Missing = fill('Q_CAN_01', 1);
 delete c30Missing.QL1;
 assertEqual(calculateScore('Q_CAN_01', c30Missing).missingIds, ['QL1'], 'Q_CAN_01 missingIds');
-assertCertification(calculateScore('Q_CAN_01', fill('Q_CAN_01', 1)), 'ambigu', 'Q_CAN_01');
+assertCertification(c30Bas, 'certifie', 'Q_CAN_01');
 
 const brMasked = fill('Q_CAN_02', 1);
 brMasked.BR4 = 1;
 brMasked.BR15 = 1;
 const brMaskedScore = calculateScore('Q_CAN_02', brMasked);
-assertEqual(brMaskedScore.total, 21, 'Q_CAN_02 conditionnels masqués total');
-assertEqual(brMaskedScore.notApplicable, ['BR5', 'BR16'], 'Q_CAN_02 notApplicable');
-assertEqual(calculateScore('Q_CAN_02', fill('Q_CAN_02', 4)).total, 92, 'Q_CAN_02 score maximal');
-assertEqual(calculateScore('Q_CAN_02', fill('Q_CAN_02', 2)).total, 46, 'Q_CAN_02 score médian');
-assertCertification(calculateScore('Q_CAN_02', fill('Q_CAN_02', 2)), 'ambigu', 'Q_CAN_02');
+assertEqual(brMaskedScore.total, null, 'Q_CAN_02 ne rend aucun score global');
+// L'ordre suit désormais celui des échelles, pas celui des items : on compare des ensembles.
+assertEqual([...brMaskedScore.notApplicable].sort(), ['BR16', 'BR5'], 'Q_CAN_02 notApplicable');
+// Sans objet, et pas manquant : la distinction est celle du manuel.
+assertEqual(
+  brMaskedScore.subScores.find(s => s.id === 'BRSEE').notApplicable, true,
+  'Q_CAN_02 plaisir sexuel sans objet quand il n’y a pas eu d’activité'
+);
+assertEqual(
+  calculateScore('Q_CAN_02', fill('Q_CAN_02', 4)).subScores.find(s => s.id === 'BRSEF').total, 100,
+  'Q_CAN_02 fonctionnement sexuel maximal quand l’intérêt est maximal (items inversés)'
+);
+assertCertification(calculateScore('Q_CAN_02', fill('Q_CAN_02', 2)), 'certifie', 'Q_CAN_02');
 
 assertEqual(calculateScore('Q_PED_03', fill('Q_PED_03', 0)).total, 0, 'Q_PED_03 score minimal');
 assertEqual(calculateScore('Q_PED_03', fill('Q_PED_03', 3)).total, 324, 'Q_PED_03 score maximal');

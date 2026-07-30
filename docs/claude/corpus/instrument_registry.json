@@ -2971,10 +2971,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "15 échelles 0–100 (santé globale, 5 fonctionnelles, 3 de symptômes, 6 items isolés) calculées selon l'EORTC QLQ-C30 Scoring Manual, 3e éd. 2001 : score brut = moyenne des items de l'échelle, puis transformation linéaire — (1 − (RS−1)/étendue) × 100 pour une fonctionnelle, ((RS−1)/étendue) × 100 pour un symptôme et pour la santé globale. Étendue 3 partout, 6 pour la santé globale (items cotés 1 à 7). AUCUN score global d'instrument : le manuel n'en définit pas. Contenu verrouillé le 2026-07-30 (statut `adapte` : la cotation suit le manuel officiel, aucune identité au mot près des items n'est affirmée).",
         "langue": "fr",
         "traductionValidee": "fr — traduction officielle EORTC",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2988,7 +2988,7 @@
         "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
-      "statutCertification": "suspendu",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -3002,8 +3002,16 @@
       "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "date": "2026-07-30",
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "MOTEUR RECONSTRUIT le 2026-07-30 sur arbitrage praticien. L'instrument était servi par une SOMME BRUTE de ses items avec des bandes locales — un nombre que la littérature EORTC ne décrit nulle part. La divergence `bornes_score_sous_plancher` disparaît par construction : elle signalait que la bande « aucun problème signalé » (0–13 pour le BR23, 0–28 pour le C30) était sous le plancher de l'instrument, donc INATTEIGNABLE. La patiente sans aucune plainte ne pouvait pas la recevoir. La cotation du manuel n'a pas de bande : elle rend des scores 0–100 dont les deux extrêmes sont atteints, ce qu'un banc dédié prouve aux deux bornes.",
+            "PIÈCES : EORTC QLQ-C30 Scoring Manual (3e éd., 2001) et EORTC QLQ-BR23 Scoring Manual (version révisée), tous deux relevés le 2026-07-30. Le second exige l'inversion des questions 44 à 46 avant analyse — sans elle, la patiente la plus intéressée reçoit le score de fonctionnement sexuel le PLUS BAS. Preuve par mutation : retirer `inverser: true` fait rougir `web/src/lib/eortc.guard.test.ts`.",
+            "DROITS : la déclaration du praticien du 2026-07-30 couvre l'usage, la réserve « © EORTC — enregistrement/autorisation requis » reste au dossier. Suivre le manuel de cotation ne change rien à cette réserve."
+          ]
+        }
       }
     },
     {
@@ -3016,10 +3024,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "8 échelles 0–100 (image du corps, perspective d'avenir, fonctionnement et plaisir sexuels, effets du traitement, perte de cheveux, symptômes du bras et du sein) calculées selon l'EORTC QLQ-BR23 Scoring Manual (version révisée), mêmes formules, étendue 3. Les items BR14, BR15 et BR16 sont INVERSÉS avant moyenne, comme le manuel l'exige pour ses questions 44 à 46. AUCUN score global d'instrument. Contenu verrouillé le 2026-07-30 (statut `adapte` : la cotation suit le manuel officiel, aucune identité au mot près des items n'est affirmée).",
         "langue": "fr",
         "traductionValidee": "fr — traduction officielle EORTC",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -3033,7 +3041,7 @@
         "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
-      "statutCertification": "suspendu",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -3047,8 +3055,17 @@
       "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-29",
-        "divergencesCritiques": 1
+        "date": "2026-07-30",
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-30",
+          "notes": [
+            "MOTEUR RECONSTRUIT le 2026-07-30 sur arbitrage praticien. L'instrument était servi par une SOMME BRUTE de ses items avec des bandes locales — un nombre que la littérature EORTC ne décrit nulle part. La divergence `bornes_score_sous_plancher` disparaît par construction : elle signalait que la bande « aucun problème signalé » (0–13 pour le BR23, 0–28 pour le C30) était sous le plancher de l'instrument, donc INATTEIGNABLE. La patiente sans aucune plainte ne pouvait pas la recevoir. La cotation du manuel n'a pas de bande : elle rend des scores 0–100 dont les deux extrêmes sont atteints, ce qu'un banc dédié prouve aux deux bornes.",
+            "PIÈCES : EORTC QLQ-C30 Scoring Manual (3e éd., 2001) et EORTC QLQ-BR23 Scoring Manual (version révisée), tous deux relevés le 2026-07-30. Le second exige l'inversion des questions 44 à 46 avant analyse — sans elle, la patiente la plus intéressée reçoit le score de fonctionnement sexuel le PLUS BAS. Preuve par mutation : retirer `inverser: true` fait rougir `web/src/lib/eortc.guard.test.ts`.",
+            "DROITS : la déclaration du praticien du 2026-07-30 couvre l'usage, la réserve « © EORTC — enregistrement/autorisation requis » reste au dossier. Suivre le manuel de cotation ne change rien à cette réserve.",
+            "total_numerique_absent : divergence ATTENDUE et annulée. Le banc rejoué le 2026-07-30 après la reconstruction réclame un total numérique global ; le manuel EORTC n'en définit aucun, et en fabriquer un était précisément le défaut corrigé — la somme brute 23→92 et sa bande de tête inatteignable. Le banc mesure ici l'écart entre le servi et un support de formation qui, lui, proposait cette somme. Même classe que Q_INF_05 : le banc cherche `total` et l'instrument n'en a pas. RÉSERVE : tant que le banc ne sait pas lire un instrument à échelles sans total, il rétablira cette divergence à chaque passage."
+          ]
+        }
       }
     }
   ]

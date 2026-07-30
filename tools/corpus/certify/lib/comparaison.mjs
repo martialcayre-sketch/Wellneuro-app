@@ -402,3 +402,38 @@ export function comparer(servi, spec) {
     },
   };
 }
+
+/**
+ * Croisement des lectures indépendantes : une divergence n'est CONFIRMÉE que si
+ * toutes les lectures disponibles l'ont vue.
+ *
+ * Compter des LECTEURS, pas des occurrences. Une même lecture peut émettre
+ * plusieurs fois la même divergence — huit fois `seuil_non_represente` chez
+ * l'une, quatre chez l'autre — et une simple liste portait alors douze entrées
+ * pour deux lecteurs. Le test d'égalité échouait, et une divergence réellement
+ * vue des deux côtés était déclassée en simple signalement : l'erreur allait
+ * dans le sens rassurant, ce qui est le pire des deux sens.
+ *
+ * Le croisement n'a par ailleurs de sens qu'à deux lectures au moins : si l'une
+ * a échoué, RIEN n'est confirmé — sans quoi une lecture solitaire se
+ * présenterait comme une lecture croisée.
+ */
+export const cleDivergence = (d) => `${d.code}|${d.item ?? ''}`;
+
+export function croiserLectures(verdicts) {
+  const parCle = new Map();
+  for (const v of verdicts) {
+    for (const d of v.resultat.divergences) {
+      const cle = cleDivergence(d);
+      if (!parCle.has(cle)) parCle.set(cle, { divergence: d, lecteurs: new Set() });
+      parCle.get(cle).lecteurs.add(v.lecteur);
+    }
+  }
+  const croiseeEffective = verdicts.length >= 2;
+  const croisement = { croiseeEffective, confirmees: [], aConfirmer: [] };
+  for (const { divergence, lecteurs } of parCle.values()) {
+    if (croiseeEffective && lecteurs.size === verdicts.length) croisement.confirmees.push(divergence);
+    else croisement.aConfirmer.push({ ...divergence, vuePar: [...lecteurs].join(', ') });
+  }
+  return croisement;
+}

@@ -119,6 +119,12 @@ function certificationBadge(certification: ScoreCertification | null) {
   if (certification.source === 'drive' && certification.status === 'ambigu') {
     return { label: 'Drive ambigu', variant: 'warning' as BadgeVariant };
   }
+  if (certification.source === 'manuel_eortc' && certification.status === 'certifie') {
+    // Sans cette branche, le badge tombait sur « Non certifié » alors que le
+    // registre porte `scoring_verifie` et que le moteur suit le manuel officiel :
+    // la fiche contredisait le dossier.
+    return { label: 'Certifié manuel EORTC', variant: 'success' as BadgeVariant };
+  }
   if (certification.status === 'a_verifier') {
     return { label: 'À vérifier', variant: 'warning' as BadgeVariant };
   }
@@ -797,6 +803,21 @@ export function FichePatientPanel({
                               <span className="text-xs text-muted-foreground w-28 truncate" title={sub.label}>
                                 {sub.label}
                               </span>
+                              {/* La direction, quand l'instrument la définit. Sans elle,
+                                  « Fatigue 100/100 » et « Fonctionnement physique 100/100 »
+                                  s'affichent à l'identique alors qu'ils disent le contraire
+                                  l'un de l'autre. La consigne du modèle décrit ce champ
+                                  depuis la v12 ; le praticien y a droit aussi. */}
+                              {sub.sens && (
+                                <span
+                                  className="text-[10px] px-1 rounded bg-muted text-muted-foreground"
+                                  title={sub.sens === 'symptome'
+                                    ? 'Score élevé = symptômes plus importants'
+                                    : 'Score élevé = meilleur fonctionnement'}
+                                >
+                                  {sub.sens === 'symptome' ? '↑ symptômes' : '↑ mieux'}
+                                </span>
+                              )}
                               {typeof sub.total === 'number' && typeof sub.max === 'number' && (
                                 <ScoreZones
                                   value={sub.total}

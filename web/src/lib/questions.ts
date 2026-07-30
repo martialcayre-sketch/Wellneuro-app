@@ -1949,6 +1949,116 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
 
 
   // ── SUM_ITEMS (source Drive) ─────────────────────────
+  // ── EORTC ────────────────────────────────────────────────────────────────
+  //
+  // Cotation officielle des questionnaires du groupe Qualité de Vie de l'EORTC,
+  // relevée dans les deux manuels : QLQ-C30 Scoring Manual (3e éd., 2001) et
+  // QLQ-BR23 Scoring Manual (version révisée). Elle remplace la somme brute que
+  // WellNeuro servait, laquelle produisait un nombre que la littérature EORTC ne
+  // décrit nulle part et des bandes locales sans étalonnage.
+  //
+  // Deux étapes, identiques pour toutes les échelles :
+  //   1. score brut  RS = moyenne des items de l'échelle ;
+  //   2. transformation linéaire vers 0–100 —
+  //        fonctionnelle       S = (1 − (RS − 1) / étendue) × 100
+  //        symptôme / globale  S = ((RS − 1) / étendue) × 100
+  //
+  // L'étendue vaut 3 partout (items cotés 1 à 4), sauf la santé globale du C30
+  // dont les deux items sont cotés 1 à 7 : étendue 6.
+  //
+  // TROIS POINTS QU'IL A FALLU ALLER CHERCHER À LA SOURCE, et qu'une
+  // implémentation de mémoire aurait manqués :
+  //
+  //  1. `inverser`. Le manuel BR23 exige que « the scoring of questions 44, 45
+  //     and 46 must be reversed prior to statistical analysis » — soit, chez
+  //     nous, BR14, BR15 et BR16 (fonctionnement et plaisir sexuels). Les traiter
+  //     comme les autres échelles fonctionnelles INVERSE le résultat de la
+  //     patiente : celle qui déclare le plus d'intérêt reçoit le score le plus
+  //     bas. L'inversion se fait sur l'item, AVANT la moyenne, et vaut `5 − v`
+  //     sur une cotation 1–4.
+  //  2. La règle des données manquantes est « au moins la MOITIÉ des items »
+  //     (`XNUM >= NITEMS / 2` dans le code SAS du manuel), et l'échelle qui n'y
+  //     satisfait pas est MANQUANTE — pas nulle. C'est la même frontière que
+  //     celle posée le 2026-07-29 sur les moteurs à sous-scores : une absence ne
+  //     se lit jamais comme la valeur la plus basse.
+  //  3. La non-applicabilité conditionnelle est celle des questionnaires, pas une
+  //     invention : le plaisir sexuel ne s'applique pas si l'activité sexuelle
+  //     est « pas du tout », la contrariété due à la perte de cheveux ne
+  //     s'applique pas s'il n'y a pas eu de perte. Ces items portent déjà leur
+  //     garde `conditionnel` ; l'échelle correspondante rend `null`.
+  //
+  // Un score élevé se lit selon le SENS de l'échelle : fonctionnement élevé pour
+  // une fonctionnelle, qualité de vie élevée pour la globale, symptômes élevés
+  // pour une échelle de symptômes. Aucun total unique n'est rendu — l'EORTC n'en
+  // définit pas, et en fabriquer un était précisément le défaut corrigé ici.
+  if (sc.type === 'eortc') {
+    const missingIds: string[] = [];
+    const notApplicable: string[] = [];
+    const echelles = (sc.echelles || []).map((e: any) => {
+      const retenues: number[] = [];
+      let inapplicables = 0;
+      for (const id of e.items) {
+        const q = allQ.find(x => x.id === id);
+        // « SANS OBJET » EXIGE UNE RÉPONSE, PAS UNE ABSENCE.
+        //
+        // `evalConditionnel` rend `false` aussi bien quand le déclencheur est
+        // répondu par la négative que lorsqu'il n'est PAS RÉPONDU — les deux
+        // tombaient dans la même branche, et l'échelle sortait « sans objet pour
+        // cette patiente ». Cette phrase part dans la charge du modèle de
+        // synthèse : on affirmait en français qu'une patiente n'avait pas eu
+        // d'activité sexuelle, ou pas perdu ses cheveux, alors qu'elle n'avait
+        // rien dit. C'est la symétrie exacte du défaut du 2026-07-29 — là une
+        // absence devenait la valeur la plus basse, ici elle devenait un fait
+        // positif. Le manuel dit « not applicable IF ITEM 45 IS "not at all" » :
+        // une réponse donnée.
+        const declencheur = q?.conditionnel ? String(q.conditionnel).match(/^(\w+)/)?.[1] : null;
+        if (declencheur && getVal(declencheur) === null) {
+          // Le déclencheur manque : l'item n'est ni applicable ni inapplicable,
+          // il est INDÉTERMINÉ. On le compte donc comme manquant — il l'est, et
+          // le badge « N manquant(s) » de la fiche le relançait en moins.
+          if (!missingIds.includes(id)) missingIds.push(id);
+          continue;
+        }
+        if (q && q.conditionnel && !evalConditionnel(q.conditionnel)) {
+          inapplicables++;
+          if (!notApplicable.includes(id)) notApplicable.push(id);
+          continue;
+        }
+        const v = getVal(id);
+        if (v === null) {
+          if (!missingIds.includes(id)) missingIds.push(id);
+          continue;
+        }
+        retenues.push(e.inverser ? (e.max ?? 4) + (e.min ?? 1) - v : v);
+      }
+      const commun = {id: e.id, label: e.label, max: 100, sens: e.sens};
+      // Une échelle dont TOUS les items sont hors protocole n'est pas manquante :
+      // elle ne s'applique pas. La distinction se perdait dans un `null` unique.
+      if (inapplicables === e.items.length) {
+        return {...commun, total: null, notApplicable: true, raisonNonScore: 'sans objet pour cette patiente'};
+      }
+      if (retenues.length * 2 < e.items.length) {
+        return {...commun, total: null, raisonNonScore: 'moins de la moitié des items renseignés'};
+      }
+      const rs = retenues.reduce((a, b) => a + b, 0) / retenues.length;
+      const brut = e.sens === 'fonctionnelle'
+        ? (1 - (rs - 1) / e.range) * 100
+        : ((rs - 1) / e.range) * 100;
+      return {...commun, total: Math.round(brut * 10) / 10};
+    });
+    return {
+      type: 'eortc',
+      // Pas de `total` : l'EORTC ne définit aucun score global d'instrument.
+      total: null,
+      subScores: echelles,
+      missing: missingIds.length,
+      missingIds,
+      notApplicable,
+      note: sc.note || null,
+      certification: sc.certification || null,
+    };
+  }
+
   if (sc.type === 'sum_items') {
     const items = sc.items || allQ.map(q => q.id);
     let total = 0;
@@ -2099,50 +2209,14 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     return {type:'subscore', subScores: subResults, total: globalTotal, note: sc.note || null, certification: sc.certification || null};
   }
 
-  // ── EORTC QLQ ───────────────────────────────────────
-  // Source : EORTC scoring manuals. Raw score = moyenne des items renseignés ;
-  // score 0-100 direct = ((RS-1)/range)*100 ; inverse = (1-(RS-1)/range)*100.
-  if (sc.type === 'eortc') {
-    const subResults = sc.subScores.map((sub: any) => {
-      const activeItems = sub.items.filter((id: any) => {
-        const q = allQ.find(q => q.id === id);
-        return !(q && q.conditionnel && !evalConditionnel(q.conditionnel));
-      });
-      let rawTotal = 0;
-      let answered = 0;
-      activeItems.forEach((id: any) => {
-        const v = getVal(id);
-        if (v === null) return;
-        rawTotal += v;
-        answered++;
-      });
-      const rawMean = answered ? rawTotal / answered : null;
-      const range = sub.range || 3;
-      let score = null;
-      if (rawMean !== null) {
-        const direct = ((rawMean - 1) / range) * 100;
-        score = sub.transform === 'inverse' ? 100 - direct : direct;
-        score = Number(Math.max(0, Math.min(100, score)).toFixed(1));
-      }
-      return {
-        id: sub.id,
-        label: sub.label,
-        total: score,
-        score,
-        rawTotal,
-        rawMean: rawMean === null ? null : Number(rawMean.toFixed(2)),
-        answered,
-        missing: activeItems.length - answered,
-        max: 100,
-        transform: sub.transform
-      };
-    });
-    const scored = subResults.filter((r: any) => r.score !== null);
-    const total = scored.length
-      ? Number((scored.reduce((sum: any, r: any) => sum + r.score, 0) / scored.length).toFixed(1))
-      : null;
-    return {type:'eortc', subScores: subResults, total, maxTotal:100};
-  }
+  // Un SECOND bloc `if (sc.type === 'eortc')` vivait ici jusqu'au 2026-07-30 :
+  // même discriminant que celui du haut, contrat incompatible (il lisait
+  // `sc.subScores` et `sub.transform === 'inverse'`, et rendait une moyenne des
+  // échelles comme score global). Il était mort — aucun instrument ne déclarait
+  // ce type — mais c'était un piège armé : le prochain moteur écrit sur SA forme
+  // serait tombé dans le bloc du haut, qui aurait lu `sc.echelles || []` et rendu
+  // `subScores: []` avec `total: null`, sans erreur ni item manquant. Supprimé
+  // plutôt que renommé : deux contrats pour un nom se retrouvent toujours.
 
   // ── GROUP_MAJORITY (Q_STR_01) ────────────────────────
   if (sc.type === 'group_majority') {
