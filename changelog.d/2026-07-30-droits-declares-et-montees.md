@@ -24,7 +24,7 @@
 - **Verdicts re-datés au 2026-07-30 pour ces trois instruments seulement**, après
   un passage `certify --recomparer` **hors ligne** (aucun appel de modèle) : le
   verdict d'un instrument dont le scoring a changé depuis ne vaut rien, et Q_SOM_02
-  avait été modifié le jour même, *après* le verdict qu'il portait. **Réserve : 47
+  avait été modifié le jour même, *après* le verdict qu'il portait. **Réserve : 54
   verdicts restent datés du 2026-07-29**, dont celui du QDRS (`Q_GEO_05`) dont la
   grille entière a été réécrite le 2026-07-30. Le rejeu est fait et gratuit ; la
   garde qui relierait la date d'un verdict à la dernière modification de son

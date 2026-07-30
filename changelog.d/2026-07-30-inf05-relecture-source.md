@@ -14,4 +14,4 @@ d'extraction que les 17 divergences requalifiées le même jour.
 arbitrage praticien du 23/06/2026, déjà consigné dans le code. Comblement de trou,
 pas alignement — même famille qu'Epworth 6 et 15.
 
-L'instrument monte à `scoring_verifie` : **52 sur 64**.
+L'instrument monte à `scoring_verifie` : **51 sur 64**.

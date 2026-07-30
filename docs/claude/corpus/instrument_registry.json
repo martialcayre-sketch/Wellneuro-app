@@ -2019,10 +2019,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "16 items en 4 section(s), moteur `sum`. Questionnaire du référentiel interne SIIN : la source au dossier ne porte que la mention de droits SIIN, sans attribution tierce — aucune échelle publiée n'est reproduite. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas). Réserve levée : le plafond de grille (32) est sous le maximum atteignable (36), et un banc dédié prouve que 36 reçoit bien la bande de tête.",
+        "description": null,
         "langue": "fr",
         "traductionValidee": "fr",
-        "statutContenu": "adapte"
+        "statutContenu": "a_auditer"
       },
       "references": {
         "doi": null,
@@ -2036,7 +2036,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "scoring_verifie",
+      "statutCertification": "suspendu",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2047,17 +2047,11 @@
         "WN-SRC-0495"
       ],
       "driveMd": "questionnaire_dependance_cannabis.md",
-      "statutBibliographique": "referentiel_interne_siin",
+      "statutBibliographique": "a_completer",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
-        "divergencesCritiques": 0,
-        "revision": {
-          "date": "2026-07-30",
-          "notes": [
-            "Réactivé le 2026-07-30, même fondement (WN-SRC-0494/0495, mention SIIN seule). La réserve écrite à sa fermeture — plafond de grille 32 pour un total atteignable 36 — est levée par une PREUVE et non par un avis : `bandesInterpretation.guard.test.ts` vérifie qu'un total de 36 reçoit la bande de tête « Dépendance probable » (règle posée en #450). Verdict du banc au 2026-07-30 : 0 critique."
-          ]
-        }
+        "date": "2026-07-29",
+        "divergencesCritiques": 0
       }
     },
     {
@@ -2115,16 +2109,16 @@
       "questionnaireId": "Q_PNE_01",
       "instrument": {
         "nomOfficiel": "Questionnaire de qualité de vie BPCO",
-        "auteurs": null,
-        "anneePublication": null,
+        "auteurs": "Ninot et al. (VQ11) — identification à confirmer",
+        "anneePublication": 2010,
         "formePubliee": null,
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "11 items en 1 section(s), moteur `subscore`. Questionnaire du référentiel interne SIIN : la source au dossier ne porte que la mention de droits SIIN, sans attribution tierce — aucune échelle publiée n'est reproduite. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": null,
         "langue": "fr",
         "traductionValidee": "fr",
-        "statutContenu": "adapte"
+        "statutContenu": "a_auditer"
       },
       "references": {
         "doi": null,
@@ -2138,7 +2132,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "scoring_verifie",
+      "statutCertification": "suspendu",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2148,15 +2142,15 @@
         "WN-SRC-0503"
       ],
       "driveMd": "questionnaire_bpco_pneumologie.md",
-      "statutBibliographique": "referentiel_interne_siin",
+      "statutBibliographique": "a_completer",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
+        "date": "2026-07-29",
         "divergencesCritiques": 0,
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "Réactivé le 2026-07-30. La condition posée par sa suspension — « réactivation à la première source identifiée » — est remplie : WN-SRC-0503 est au dossier et les DEUX lectures du banc n'y relèvent que la mention de droits SIIN, sans attribution tierce. L'instrument est un questionnaire du référentiel interne : « aucun auteur nommé » le décrivait, au lieu de signaler une perte. Verdict du banc au 2026-07-30 : 0 divergence, aucune critique."
+            "RÉACTIVATION TENTÉE PUIS ANNULÉE le 2026-07-30. Le fondement invoqué — « la source ne porte que la mention de droits SIIN, donc l'instrument est du référentiel interne » — est un renversement de charge : qu'un support de formation ne cite pas ses sources ne dit rien des droits d'un tiers. La revue adversariale a identifié le servi comme le VQ11 (Ninot et al., 2010) : 11 items et TROIS composantes publiées — fonctionnelle BP1/4/5/7/8, psychologique BP2/6/10, relationnelle BP3/9/11 — que le servi reproduit à l'identique, à l'échelle de réponse près (4 niveaux au lieu de 5). Le champ `droits.detail` de cette même entrée le disait déjà : « échelle tierce que le support reproduit, droits NON INSTRUITS ». Réouverture conditionnée à l'instruction de ces droits, pas à une relecture du PDF."
           ]
         }
       }
@@ -2547,7 +2541,7 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "scoring_verifie",
+      "statutCertification": "contenu_verrouille",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2562,12 +2556,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-30",
-        "divergencesCritiques": 0,
+        "divergencesCritiques": 1,
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "echelle_de_cotation : ANNULÉE. Dossier docs/claude/propositions/2026-07-30-ali01-echelle/. Deux constats. (1) Le banc mesurait la forme courte à 14 items : `WN_ALI_01_SIIN57` est allumé en production depuis le 2026-07-28 mais éteint par défaut, et le banc ne le pose pas. Rejoué hors ligne drapeau allumé : 57 items des deux côtés. (2) Sur la bonne forme, l'échelle « 0 à 2 » de la source est le NOMBRE DE POINTS d'un item, pas le codage de la réponse — 57 items à 2 points font 90, ce que le total de la source confirme et que le barème servi applique exactement. Les valeurs 0-3, 7, 8, 10, 12 sont des quantités déclarées, lues par les seuils. Même malentendu barème/quantités qu'en #452.",
-            "RÉSERVE : le banc `certify` reste aveugle à `WN_ALI_01_SIIN57`. Sans le poser dans son invocation, son prochain passage remesurera la forme courte et rétablira cette divergence."
+            "CONSTAT 1, ÉTABLI ET MAINTENU : le banc mesurait le dépistage court à 14 items. `WN_ALI_01_SIIN57` est allumé en production depuis le 2026-07-28 mais éteint par défaut, et le banc ne le pose pas. Rejoué hors ligne drapeau allumé : 57 items lus des deux côtés, 12 dimensions, moteur `seuils_points`. C'est cette empreinte qui verrouille le contenu.",
+            "CONSTAT 2, RETIRÉ le 2026-07-30 par la revue adversariale : l'annulation de `echelle_de_cotation` reposait sur deux erreurs. (a) L'arithmétique invoquée — « 57 items à 2 points font 90 » — est fausse : 57 × 2 = 114. Le total de 90 vient d'une répartition INÉGALE (24 items à 1 point, 33 à 2), ce qui n'a rien d'une preuve. (b) « La source déclare un total /90 » n'a AUCUNE pièce au banc : les deux lectures rendent `bornesTotal: null` et leurs seuils s'arrêtent à « > 71 ». La divergence critique est donc ROUVERTE.",
+            "CE QUI RESTE À TRANCHER, et il n'est pas décidable en l'état : si la source attribue 2 points à chacun de ses 57 items (max 114) et que ses bandes 0-25 / 26-50 / 51-70 / > 71 portent sur ce /114, alors le servi applique les mêmes bandes sur un /90 et déclasse chaque patient d'une à deux bandes. Écart clinique, pas faux positif de catégorie. Pièce nécessaire : une lecture ciblée de WN-SRC-0470/0471 sur la répartition des points item par item et sur le total déclaré."
           ]
         }
       }

@@ -52,6 +52,21 @@ const REGISTRE = JSON.parse(
 // le lendemain. L'instrument aurait alors été invisible pour cette garde, et
 // assignable en silence. C'est le constat B1 de la revue adversariale du
 // 2026-07-30, et il portait sur la version qui avait remplacé au lieu d'ajouter.
+// CE QUE CETTE GARDE NE PEUT PAS FAIRE, et qu'il a fallu apprendre.
+//
+// La revue du 2026-07-30 lui reprochait (constat A3) de ne pas voir `Q_PNE_01` ni
+// `Q_TAB_04`, dont le `detail` porte « échelle tierce que le support reproduit,
+// droits NON INSTRUITS ». Élargir le prédicat à cette formule a été essayé : elle
+// est présente dans QUARANTE-DEUX entrées, toutes assorties d'une clause
+// « [SUPERSÉDÉ le 2026-07-29] ». La garde ne désignait plus une population, elle
+// désignait presque tout le catalogue — et une garde qui accuse tout le monde
+// n'accuse personne.
+//
+// Ces deux instruments-là n'échappaient pas à une réserve de droits : ils
+// échappaient à un contrôle d'IDENTITÉ. Ce que le lot avait écrit de faux, c'est
+// « aucune échelle publiée n'est reproduite » sur ce qui est le VQ11 de Ninot et
+// al. Ce contrôle-là appartient au vérificateur du registre, où il a été posé, et
+// pas ici : celle-ci garde l'exposition, pas la bibliographie.
 const MARQUEUR_RESERVE = 'RÉSERVE CONSERVÉE';
 const STATUTS_NON_DEGAGES = new Set(['licence_requise', 'restreint']);
 const SOUS_RESERVE = REGISTRE.instruments

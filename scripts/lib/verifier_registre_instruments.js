@@ -271,6 +271,30 @@ function verifierRegistreInstruments({
         + `droits.detail doit dire sur quoi la permission repose`
       );
     }
+    // « Référentiel interne » est une AFFIRMATION SUR L'IDENTITÉ, pas un statut par
+    // défaut. Le 2026-07-30, deux instruments ont été déclarés tels sur un
+    // raisonnement inversé — « le PDF du support ne cite aucun tiers, donc aucun
+    // tiers n'a de droits » — puis rouverts à l'assignation. L'un d'eux est le VQ11
+    // de Ninot et al. : onze items et trois composantes publiées, reproduits à
+    // l'échelle de réponse près. Le champ `droits.detail` de sa propre entrée
+    // disait déjà « échelle tierce que le support reproduit ».
+    //
+    // Un support de formation qui ne cite pas ses sources ne prouve rien : le
+    // silence d'un document n'est pas une pièce. Le contrôle exige donc une
+    // identification POSITIVE — pas de tiers nommé chez soi, ou alors la
+    // reconnaissance explicite de l'emprunt.
+    if (entry.statutBibliographique === 'referentiel_interne_siin') {
+      const detail = entry.droits?.detail ?? '';
+      const revendiqueUnTiers = entry.instrument?.auteurs != null
+        || /échelle tierce|instrument tiers/i.test(detail);
+      ajouter(
+        !revendiqueUnTiers,
+        `${id} : statutBibliographique 'referentiel_interne_siin' alors que l'entrée nomme un `
+        + `ayant droit tiers (auteurs ${JSON.stringify(entry.instrument?.auteurs ?? null)}) — `
+        + `un instrument du référentiel interne ne reproduit pas une échelle publiée`
+      );
+    }
+
     if (barreau >= ECHELLE.indexOf('contenu_verrouille')) {
       ajouter(
         entry.versionServie?.statutContenu !== 'a_auditer',

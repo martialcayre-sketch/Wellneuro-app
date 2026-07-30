@@ -1,30 +1,32 @@
-### Q_ALI_01 — la divergence d'échelle était une mesure de la mauvaise forme
+### Q_ALI_01 — le banc mesurait la mauvaise forme ; la critique, elle, reste ouverte
 
 Dossier : `docs/claude/propositions/2026-07-30-ali01-echelle/`.
 
-Deux constats, dont le premier invalide la mesure :
+**Ce qui est établi.** Le banc de certification mesurait le dépistage court à
+14 items : `WN_ALI_01_SIIN57` est allumé en production depuis le 2026-07-28 mais
+éteint par défaut, et le banc ne le pose pas. Ses passages du 25 et du 29
+décrivaient donc une forme que plus personne ne reçoit — une description de contenu
+dérivée de cette empreinte aurait certifié un questionnaire que la production
+n'administre pas. C'est la classe nommée pendant la campagne SIIN 57 : **un garde
+aveugle à la position du drapeau ne garde rien.** Rejoué hors ligne drapeau allumé,
+le contenu est verrouillé sur l'empreinte de la forme réellement servie : 57 items,
+12 sections, moteur `seuils_points`. L'instrument passe à `contenu_verrouille`.
 
-1. **Le banc mesurait le dépistage court à 14 items.** `WN_ALI_01_SIIN57` est
-   allumé en production depuis le 2026-07-28, mais éteint par défaut — et le banc
-   de certification ne le pose pas. Ses passages du 2026-07-25 et du 2026-07-29
-   décrivaient donc une forme que plus personne ne reçoit. Une description de
-   contenu dérivée de cette empreinte aurait certifié un instrument que la
-   production n'administre pas. C'est la classe nommée pendant la campagne SIIN 57 :
-   **un garde aveugle à la position du drapeau ne garde rien.**
-2. **Sur la bonne forme, l'échelle est un barème.** Le rejeu hors ligne, drapeau
-   allumé, laisse une seule critique — `echelle_de_cotation` — et elle est un faux
-   positif de catégorie, vérifiable par l'arithmétique : la source déclare une
-   échelle « 0 à 2 » et un total « /90 », deux nombres qui ne se concilient qu'à une
-   lecture — 0 à 2 est le **nombre de points d'un item**, pas le codage de la
-   réponse (57 items à 2 points font 90 ; 57 réponses cotées 2 en feraient 114). Le
-   servi applique exactement cela : moteur `seuils_points`, 57 items valant 1 ou 2
-   points, somme vérifiée par `scoring-check`. Les valeurs 0-3, 7, 8, 10, 12 des
-   options sont les **quantités déclarées** que les seuils lisent. Même malentendu
-   barème/quantités qu'en #452.
+**Ce qui ne l'est pas, et que la revue adversariale a renvoyé.** Une première
+rédaction annulait la divergence `echelle_de_cotation` en soutenant que l'échelle
+« 0 à 2 » de la source est un nombre de points par item. L'argument est retiré :
+son arithmétique se contredisait — 57 × 2 fait 114, pas 90, et le total de 90 vient
+d'une répartition inégale (24 items à 1 point, 33 à 2), ce qui ne prouve rien — et
+sa prémisse (« la source déclare un total /90 ») n'a **aucune pièce au banc**, dont
+les deux lectures rendent `bornesTotal: null`.
 
-Divergence annulée **sans modifier le servi** ; l'instrument est verrouillé sur
-l'empreinte mesurée drapeau allumé et monte à `scoring_verifie`.
+**Ce qui reste à trancher, et pourquoi ça compte.** Si la source attribue 2 points à
+chacun de ses 57 items (max 114) et que ses bandes 0-25 / 26-50 / 51-70 / > 71
+portent sur ce /114, alors le servi applique ces mêmes bandes sur un /90 et
+**déclasse chaque patient d'une à deux bandes**. Écart clinique, pas faux positif de
+catégorie. Pièce nécessaire : une lecture ciblée de WN-SRC-0470/0471 sur la
+répartition des points item par item et sur le total déclaré. La divergence critique
+reste donc **ouverte** et bloque `scoring_verifie` à dessein.
 
-**Réserve maintenue** : le banc `certify` reste aveugle à `WN_ALI_01_SIIN57`. Tant
-que le drapeau n'est pas posé dans son invocation, son prochain passage remesurera
-la forme courte et rétablira cette divergence.
+**Réserve maintenue** : le banc `certify` reste aveugle à `WN_ALI_01_SIIN57`. Sans
+le poser dans son invocation, son prochain passage remesurera la forme courte.
