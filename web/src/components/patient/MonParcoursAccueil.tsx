@@ -76,9 +76,14 @@ export function MonParcoursAccueil({
               {etape.cta}
             </a>
             {etape.appui && <p className="mt-2 text-sm text-foreground">{etape.appui}</p>}
-            <p className="mt-2 text-xs text-muted-foreground">
-              Une fois transmis, un questionnaire est verrouillé et votre praticien en est informé.
-            </p>
+            {/* La garde de verrouillage ne vaut QUE pour une transmission :
+                noter une nuit ne transmet ni ne verrouille rien, et l'écrire
+                là ferait différer une saisie quotidienne par prudence. */}
+            {!etape.appui && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Une fois transmis, un questionnaire est verrouillé et votre praticien en est informé.
+              </p>
+            )}
           </>
         )}
 

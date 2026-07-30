@@ -149,11 +149,22 @@ export async function GET(req: Request): Promise<NextResponse> {
     // MÊME arithmétique que le journal (calculerFenetreDepuisDates), donc le
     // hub et l'agenda ne peuvent pas se contredire.
     const idsAgendas = assignationsDb
-      .filter(a => a.idQuestionnaire === AGENDA_SOMMEIL_ID && a.statutReponses !== 'verrouille')
+      .filter(
+        a =>
+          a.idQuestionnaire === AGENDA_SOMMEIL_ID &&
+          a.statutReponses !== 'verrouille' &&
+          // Un agenda annulé n'a plus d'écran : `authorizeAgendaPortail` rend
+          // 410. L'exclure ici plutôt que de compter sur un invariant logé
+          // dans un autre module.
+          a.statut !== 'Annulée',
+      )
       .map(a => a.idAssignation);
     const nuitsAgendas = idsAgendas.length
       ? await prisma.agendaSommeilNuit.findMany({
-          where: { idAssignation: { in: idsAgendas } },
+          // `idPatient` en défense de profondeur : les ids viennent déjà des
+          // assignations de la session, mais c'est le seul accès aux nuits du
+          // dépôt qui n'aurait pas sa garde patient (cf. `listNuits`).
+          where: { idAssignation: { in: idsAgendas }, idPatient: session.idPatient },
           select: { idAssignation: true, dateNuit: true },
         })
       : [];

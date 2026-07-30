@@ -118,7 +118,10 @@ function calculerActionRecommandee(
     const cible = enriched.find(
       e => e.a.idAssignation === agenda.idAssignation && e.aff.groupe === 'a_completer',
     );
-    if (cible) {
+    // Un agenda DÉVERROUILLÉ par le praticien est un recueil déjà clôturé
+    // qu'il rouvre pour faire corriger : lui proposer « transmettre » ferait
+    // créer une seconde QuestionnaireReponse. Son état praticien prime.
+    if (cible && cible.a.statutReponses !== 'deverrouille') {
       return {
         kind: 'action',
         idAssignation: agenda.idAssignation,

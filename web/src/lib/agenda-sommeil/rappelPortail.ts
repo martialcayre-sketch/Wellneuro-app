@@ -41,40 +41,63 @@ export function deriverRappelAgenda(
     etat.nbRenseignees > 1 ? 's' : ''
   } sur ${nbJoursAgenda}.`;
 
-  if (etat.cloturablePatient) {
-    return {
-      etat: 'a_transmettre',
-      cta: 'Terminer et transmettre à mon praticien',
-      factuel: 'Votre recueil est complet côté calendrier.',
-      prioritaire: true,
-    };
-  }
-
+  // Jamais commencé. NON prioritaire, et c'est délibéré : l'argument de
+  // péremption ne s'applique pas ici — la fenêtre s'ancre sur la PREMIÈRE nuit
+  // saisie, donc rien ne se perd à commencer demain. Le mettre en tête
+  // enterrerait sans terme un pack assigné avant une consultation.
   if (etat.nbRenseignees === 0) {
     return {
       etat: 'a_commencer',
       cta: 'Commencer mon agenda du sommeil',
       factuel: `Une minute chaque matin, pendant ${nbJoursAgenda} jours.`,
-      prioritaire: true,
-    };
-  }
-
-  if (etat.nuitDuJourNotee) {
-    return {
-      etat: 'a_jour',
-      cta: null,
-      factuel: `Nuit notée ce matin. ${notees}`,
       prioritaire: false,
     };
   }
 
-  // La seule tâche PÉRISSABLE du portail : `estDateSaisissable` referme la
-  // porte à J-2. D'où la priorité — et la phrase, reprise mot pour mot du
-  // journal, qui dit qu'une nuit manquée n'appelle aucun rattrapage.
+  // Hors fenêtre : plus aucun emplacement à remplir, la transmission est le
+  // seul geste restant.
+  if (etat.jourCourant === null) {
+    return {
+      etat: 'a_transmettre',
+      cta: 'Terminer et transmettre à mon praticien',
+      factuel: notees,
+      prioritaire: true,
+    };
+  }
+
+  // La nuit du jour manque et la fenêtre est ouverte : cet état passe AVANT la
+  // transmission, y compris le matin du 21e jour où `cloturablePatient` est
+  // déjà vrai. Sinon le hub inviterait à transmettre pendant que le journal
+  // ouvre le formulaire — et le patient qui suit le hub clôturerait
+  // IRRÉVERSIBLEMENT en abandonnant sa dernière nuit.
+  if (!etat.nuitDuJourNotee) {
+    // La seule tâche PÉRISSABLE du portail : `estDateSaisissable` referme la
+    // porte à J-2, alors qu'un brouillon attend sans rien perdre.
+    return {
+      etat: 'nuit_a_noter',
+      cta: 'Noter ma nuit',
+      factuel: notees,
+      prioritaire: true,
+    };
+  }
+
+  // Nuit du jour notée et fenêtre atteinte : tout est en place pour clôturer.
+  // Le compte de nuits reste dit — c'est lui qui qualifie la décision, et
+  // clôturer sous 7 nuits produit une réponse sans agrégat. Ne pas écrire
+  // « complet » : la fenêtre l'est, le recueil pas forcément.
+  if (etat.cloturablePatient) {
+    return {
+      etat: 'a_transmettre',
+      cta: 'Terminer et transmettre à mon praticien',
+      factuel: notees,
+      prioritaire: true,
+    };
+  }
+
   return {
-    etat: 'nuit_a_noter',
-    cta: 'Noter ma nuit',
-    factuel: notees,
-    prioritaire: true,
+    etat: 'a_jour',
+    cta: null,
+    factuel: `Nuit notée ce matin. ${notees}`,
+    prioritaire: false,
   };
 }
