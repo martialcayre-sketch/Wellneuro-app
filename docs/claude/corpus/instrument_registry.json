@@ -713,7 +713,8 @@
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "echelle_de_cotation 'null–1' : borne basse non lue par le banc ; servi 0–1 conforme. Critique annulée. RESTE OUVERT : plancher 0 de la source inatteignable (item 10 inversé, minimum servi 1) — établi sans balayage, à arbitrer au lot bornes."
+            "echelle_de_cotation 'null–1' : borne basse non lue par le banc ; servi 0–1 conforme. Critique annulée. RESTE OUVERT : plancher 0 de la source inatteignable (item 10 inversé, minimum servi 1) — établi sans balayage, à arbitrer au lot bornes.",
+            "bornes 0-10 : les DEUX bornes sont atteignables — le vrai extremum inverse EC10 par rapport aux autres items. La note du 2026-07-30 qui déclarait le plancher 0 inatteignable « établi sans balayage » refaisait l'erreur de saturation en sens inverse ; elle est retirée par celle-ci, preuve au banc."
           ]
         }
       }
@@ -954,12 +955,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1,
+        "divergencesCritiques": 0,
         "revision": {
           "date": "2026-07-30",
           "notes": [
             "nombre_items 24/18 : adaptation déclarée (ce lot). RESTE : bornes atteignables (lot dédié).",
-            "CORRECTION DE REVUE : la critique est RESTAURÉE — la note du même jour dit elle-même « RESTE : bornes atteignables (lot dédié) ». Un compteur à zéro avec un écart ouvert ouvrirait le barreau scoring_verifie sur une prose qui dit le contraire."
+            "CORRECTION DE REVUE : la critique est RESTAURÉE — la note du même jour dit elle-même « RESTE : bornes atteignables (lot dédié) ». Un compteur à zéro avec un écart ouvert ouvrirait le barreau scoring_verifie sur une prose qui dit le contraire.",
+            "bornes_score_non_atteintes 0-21 : RÉSOLU par construction ciblée (lot bornes du 2026-07-30). 21 est atteint par un pire-dormeur réel (coucher 20h, 2h d'endormissement, 3h dormies, tout au maximum) et 0 par un dormeur parfait — le balayage saturait les réponses, or l'efficacité vaut 0 quand elle est BONNE. Preuves épinglées dans bornesAtteignables.guard.test.ts. Critique soldée."
           ]
         }
       }
@@ -1762,12 +1764,13 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-29",
-        "divergencesCritiques": 1,
+        "divergencesCritiques": 0,
         "revision": {
           "date": "2026-07-30",
           "notes": [
             "seuil '== 0' : SERVI — le moteur qif rend « Score peu compatible avec le diagnostic » sur total 0 (bande codée au moteur, invisible au banc qui ne lit que l'interprétation déclarée). Divergence annulée, dernière critique soldée. RESTE : bornes atteignables (lot dédié).",
-            "CORRECTION DE REVUE : la critique est RESTAURÉE — même motif que Q_SOM_01, bornes atteignables en lot dédié."
+            "CORRECTION DE REVUE : la critique est RESTAURÉE — même motif que Q_SOM_01, bornes atteignables en lot dédié.",
+            "bornes_score_non_atteintes 0-100 : RÉSOLU par construction ciblée. Maximum réel 99,9 (le moteur multiplie par 3,3 où la source divise par 3 — écart d'arrondi de 0,1, pas bande morte), qui relève bien de la bande « maximum théorique » ; minimum 0 atteint. La saturation rendait 89,9 parce qu'elle mettait Q12 à 7 (sept bons jours = zéro point). Preuves épinglées. Critique soldée."
           ]
         }
       }
