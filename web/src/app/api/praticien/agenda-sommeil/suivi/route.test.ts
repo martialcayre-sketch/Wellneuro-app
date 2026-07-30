@@ -43,8 +43,17 @@ describe('GET /api/praticien/agenda-sommeil/suivi', () => {
     prisma.patient.findMany.mockResolvedValue([]);
     const res = await GET();
     const json = await res.json();
-    expect(json).toEqual({ ok: true, lignes: [] });
+    expect(json).toEqual({ ok: true, lignes: [], relanceActive: false });
     expect(prisma.assignation.findMany).not.toHaveBeenCalled();
+  });
+
+  it('sert l’état du drapeau : sans lui, le bouton promettrait un envoi refusé', async () => {
+    getServerSession.mockResolvedValue(session);
+    prisma.patient.findMany.mockResolvedValue([]);
+    expect((await (await GET()).json()).relanceActive).toBe(false);
+    process.env.WN_AGENDA_RELANCE = 'true';
+    expect((await (await GET()).json()).relanceActive).toBe(true);
+    delete process.env.WN_AGENDA_RELANCE;
   });
 
   it('borne la lecture des patients au praticien en session (clause réelle, non mockée)', async () => {
@@ -53,6 +62,10 @@ describe('GET /api/praticien/agenda-sommeil/suivi', () => {
     await GET();
     const where = prisma.patient.findMany.mock.calls[0][0].where;
     expect(where.actif).toBe(true);
+    // Mêmes gardes que la relance : pas de bouton sur un dossier qu'elle
+    // refuserait (accès révoqué, suivi clôturé).
+    expect(where.accessTokenRevoked).toBe(false);
+    expect(where.suiviClotureLe).toBeNull();
     expect(where.praticienEmail).toEqual({
       equals: 'praticien@wellneuro.fr',
       mode: 'insensitive',

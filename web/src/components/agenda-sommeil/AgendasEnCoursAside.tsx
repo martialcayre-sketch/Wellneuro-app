@@ -5,6 +5,7 @@ import Link from 'next/link';
 import type { SuiviAgendasApiResponse } from '@/app/api/praticien/agenda-sommeil/suivi/route';
 import type { LigneSuiviAgenda } from '@/lib/agenda-sommeil/suivi';
 import { NB_JOURS_AGENDA } from '@/lib/agenda-sommeil/types';
+import { JOURS_ENTRE_RELANCES } from '@/lib/agenda-sommeil/relanceEmail';
 
 /** Panneau « Agendas du sommeil en cours » de l'aside du Fil. Faits datés
  * seulement — nuits notées, dernière nuit reçue — jamais un score de
@@ -60,6 +61,10 @@ function etiquette(ligne: LigneSuiviAgenda): { titre: string; detail: string } {
 export function AgendasEnCoursAside() {
   const [data, setData] = useState<SuiviAgendasApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  // Un envoi en cours, et le retour de la dernière tentative — par
+  // assignation : un patient peut porter deux agendas ouverts.
+  const [envoiEnCours, setEnvoiEnCours] = useState<string | null>(null);
+  const [retours, setRetours] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetch('/api/praticien/agenda-sommeil/suivi')
@@ -68,6 +73,38 @@ export function AgendasEnCoursAside() {
       .catch(() => setData({ ok: false, lignes: [], unavailable: true }))
       .finally(() => setLoading(false));
   }, []);
+
+  async function relancer(ligne: LigneSuiviAgenda) {
+    const confirme = window.confirm(
+      `Envoyer un e-mail de relance à ${ligne.patient} ?\n\n` +
+        "Il ne contient aucune donnée de santé et pointe la page d'accès à son espace. " +
+        `Une relance au plus tous les ${JOURS_ENTRE_RELANCES} jours pour ce recueil.`,
+    );
+    if (!confirme) return;
+    setEnvoiEnCours(ligne.idAssignation);
+    try {
+      const r = await fetch('/api/praticien/agenda-sommeil/relance', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          idPatient: ligne.idPatient,
+          idAssignation: ligne.idAssignation,
+        }),
+      });
+      const json = (await r.json()) as { ok: boolean; error?: string };
+      setRetours(p => ({
+        ...p,
+        [ligne.idAssignation]: json.ok ? 'Relance envoyée.' : (json.error ?? 'Envoi impossible.'),
+      }));
+    } catch {
+      setRetours(p => ({
+        ...p,
+        [ligne.idAssignation]: "L'envoi a échoué. Vous pouvez réessayer.",
+      }));
+    } finally {
+      setEnvoiEnCours(null);
+    }
+  }
 
   return (
     <section
@@ -113,6 +150,21 @@ export function AgendasEnCoursAside() {
                   <span className="shrink-0 text-xs text-muted-foreground">{e.titre}</span>
                 </div>
                 <p className="text-xs text-muted-foreground">{e.detail}</p>
+                {ligne.relancable && data.relanceActive && (
+                  <button
+                    type="button"
+                    onClick={() => relancer(ligne)}
+                    disabled={envoiEnCours === ligne.idAssignation}
+                    className="mt-1 self-start rounded-md border border-border px-2 py-1 text-xs text-foreground hover:bg-muted disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  >
+                    {envoiEnCours === ligne.idAssignation ? 'Envoi…' : 'Relancer ce patient'}
+                  </button>
+                )}
+                {retours[ligne.idAssignation] && (
+                  <p role="status" className="text-xs text-muted-foreground">
+                    {retours[ligne.idAssignation]}
+                  </p>
+                )}
               </li>
             );
           })}
