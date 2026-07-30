@@ -2308,10 +2308,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "28 items en 4 sections, moteur `subscore` à 4 sous-scores. Passé au banc de certification le 2026-07-30 — c'était le seul instrument du catalogue à n'y être jamais passé, avec le Conners parent. Les deux lectures indépendantes lisent 28 items chacune et concordent : zéro divergence critique, zéro majeure, 27 écarts mineurs de libellé. Contenu verrouillé le 2026-07-30 sur cette empreinte (statut `adapte` : aucune identité au mot près n'est affirmée).",
+        "description": null,
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "adapte"
+        "statutContenu": "a_auditer"
       },
       "references": {
         "doi": null,
@@ -2325,7 +2325,7 @@
         "dateVerification": "2026-07-30"
       },
       "cosmin": "inconnu",
-      "statutCertification": "scoring_verifie",
+      "statutCertification": "suspendu",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2344,8 +2344,11 @@
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "PREMIER PASSAGE AU BANC, le 2026-07-30. Cet instrument et le Conners parent étaient les deux seuls absents du cache : leur comparaison coûtait des appels de modèle, et elle attendait un go explicite. Résultat : 28 items lus des deux côtés, 0 critique, 0 majeure, 27 mineures (libellés d'items). Rien à corriger dans le servi.",
-            "DROITS : la réserve « © MHS, licence requise » reste au dossier. C'est l'ayant droit le plus commercialement actif de la campagne — MHS vend cet instrument. La déclaration du praticien-propriétaire du 2026-07-30 couvre l'usage et l'assume ; elle ne l'obtient pas. La note du dossier sur le seuil de 15, issu d'un rapport non publié désavoué en 1985, ne concerne PAS cette forme : le servi ne rend aucun seuil de ce type, il rend quatre sous-scores."
+            "PREMIER PASSAGE AU BANC, le 2026-07-30 : 28 items lus des deux côtés, 0 divergence critique, 0 majeure, 27 mineures. Le verdict reste au dossier — c'est une pièce, et elle est bonne.",
+            "MONTÉE TENTÉE PUIS ANNULÉE LE MÊME JOUR. « 0 divergence critique » ne voulait pas dire ce qu'on lui a fait dire : la source lue ne déclare NI sous-échelle, NI seuil, NI bornes de total, NI barème. Les deux seuls contrôles critiques que le banc pouvait exercer — nombre d'items et échelle de cotation — passaient parce que les deux formes ont bien 28 items cotés 0-3. Tout le reste du comparateur était hors-jeu par construction. Zéro critique signifiait ici : les deux choses vérifiables l'étaient, et rien d'autre n'a été vérifié.",
+            "CE QUE LES 27 DIVERGENCES « MINEURES » DISAIENT, et que le compteur ne pouvait pas dire : la similarité item à item est de 0,00 pour dix-sept d'entre elles. Une bonne moitié des items servis n'a AUCUN correspondant dans la source — le servi porte les critères DSM du TDAH (ne fait pas attention aux détails, ne semble pas écouter, évite l'effort mental soutenu, perd ses affaires, parle trop, répond sans réfléchir) là où la source porte les items d'opposition de Conners (provocant, rancunier, réplique, s'oppose activement, crises de colère).",
+            "LE DÉFAUT CLINIQUE, vérifié dans le code : le sous-score `OPP` s'intitule « Opposition / Impulsivité » et repose sur CE1, CE2, CE5, CE6, CE7 — excitable, mal à rester assis, interrompt, répond sans réfléchir, mal à attendre son tour. AUCUN de ces cinq items ne mesure l'opposition ; les cinq mesurent l'impulsivité, et les six items d'opposition de la source sont absents du servi. Un praticien lisant « Opposition / Impulsivité : 13/15 » sur une fiche titrée « Conners Enseignant » conclurait à un trouble oppositionnel chez un enfant à qui aucune question d'opposition n'a été posée.",
+            "LA MÊME RÈGLE, DANS LES DEUX SENS. Le registre ferme le Conners parent trois entrées plus bas au motif qu'« un instrument à qui il manque des items n'est pas l'instrument qu'il nomme ». La rouvrir ici sur quatorze items étrangers appliquait la règle à l'envers le même jour. Décision à instruire : reconstruire le servi sur les 28 items de la source, ou DÉBAPTISER — un instrument local de dépistage TDAH par l'enseignant, sans le nom Conners ni les intitulés de sous-échelles empruntés, ne pose ni le problème d'identité ni celui de MHS."
           ]
         }
       }
@@ -2396,9 +2399,9 @@
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "PREMIER PASSAGE AU BANC, le 2026-07-30 — et il NE PASSE PAS. Deux motifs, cumulés. (1) `nombre_items` : la lecture lit 110 items là où l'application en sert 108. Un instrument à qui il manque deux items n'est pas l'instrument qu'il nomme — même motif que le MFI-20 (#418) et la méthode Monnier. (2) La lecture croisée a ÉCHOUÉ DEUX FOIS, sur une erreur de format de sortie (JSON tronqué, aux positions 8503 puis 11715) : le croisement n'a jamais eu lieu, donc rien n'est confirmé par deux lectures indépendantes. Une seule lecture ne confirme rien, et le banc le dit lui-même en tête de son rapport.",
-            "RELANCE ARRÊTÉE À DEUX ESSAIS, conformément à la règle du dépôt : un échec rejoué une fois est une intermittence, deux fois est un fait. Ici le fait est probablement la TAILLE — 108 items est le plus gros questionnaire du catalogue, et la sortie de la lecture C est tronquée. Aucun troisième appel payant n'a été lancé.",
-            "RESTE À FAIRE, dans cet ordre : établir quels deux items manquent au servi (comparaison item par item avec la source, sans nouvel appel), puis obtenir une lecture croisée — ce qui suppose de découper la lecture C, donc de toucher au banc."
+            "PREMIER PASSAGE AU BANC, le 2026-07-30 — et il NE PASSE PAS, pour un motif unique et suffisant : LA LECTURE CROISÉE A ÉCHOUÉ DEUX FOIS (sortie tronquée, aux positions 8503 puis 11715). Le croisement n'a jamais eu lieu, donc rien n'est confirmé par deux lectures indépendantes, et le banc le dit lui-même en tête de son rapport. La cause probable est la TAILLE : 108 items, le plus gros questionnaire du catalogue.",
+            "RELANCES ARRÊTÉES À DEUX ESSAIS, conformément à la règle du dépôt. Aucun troisième appel payant n'a été lancé.",
+            "CORRECTION DE REVUE : une première note comptait aussi la divergence `nombre_items` (110 lus / 108 servis) comme motif de fermeture, en l'assimilant au précédent du MFI-20. C'était surchargé — les deux items d'écart sont les questions OUVERTES Q109/Q110, écartées faute de champ texte dans l'UI patient, et le code le dit déjà (`web/src/lib/questionnaires/pediatrie.ts:188`). Deux champs libres non cotés ne sont pas deux items de score manquants. Le sens de la décision ne change pas ; son motif se réduit à ce qui le porte."
           ]
         }
       }

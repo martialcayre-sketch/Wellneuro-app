@@ -142,12 +142,12 @@ describe('questionnaire suspendu (actif: false)', () => {
   // officiels. La réserve « © EORTC » n'est pas levée pour autant — elle est
   // gardée par `droitsAssignabilite.guard.test.ts`, qui exige une décision écrite
   // pour chaque instrument ouvert sous réserve.
-  // Q_PED_02 est sorti de cette liste le 2026-07-30, après son premier passage au
-  // banc : rouvert sur décision du praticien, réserve « © MHS » maintenue au
-  // registre et gardée par le banc des droits ci-dessus. Le Conners PARENT y
-  // reste, et pour un motif de CONTENU cette fois — la lecture de sa source y
-  // trouve 110 items là où l'application en sert 108.
-  const SUSPENDUS_DROITS = ['Q_PED_03', 'Q_GEO_04'];
+  // Q_PED_02 est SORTI puis REVENU dans cette liste le 2026-07-30 : rouvert sur
+  // son verdict de banc, refermé le jour même quand la revue a montré que « 0
+  // divergence critique » portait sur les deux seuls contrôles que la source
+  // permettait, et que le servi porte des items DSM là où Conners porte les
+  // siens. Le motif complet est au catalogue, à côté de l'entrée.
+  const SUSPENDUS_DROITS = ['Q_PED_02', 'Q_PED_03', 'Q_GEO_04'];
 
   it('les instruments à droits non dégagés sont fermés à l’assignation', () => {
     for (const id of SUSPENDUS_DROITS) {

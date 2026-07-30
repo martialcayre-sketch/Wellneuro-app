@@ -323,9 +323,23 @@ function verifierRegistreInstruments({
     // le verdict de la veille. Un verdict périmé se lit exactement comme un
     // verdict frais.
     //
-    // La date de la dernière note de révision est le repère disponible : c'est
-    // elle qu'on écrit quand on touche à l'instrument. Un verdict daté AVANT sa
-    // propre dernière révision décrit donc un état qui n'existe plus.
+    // La date de la note de révision est le repère disponible : c'est elle qu'on
+    // écrit quand on touche à l'instrument. Un verdict daté AVANT sa propre
+    // révision décrit donc un état qui n'existe plus.
+    //
+    // CE QUE CETTE GARDE NE COUVRE PAS, et il faut le lire avant de s'y fier :
+    // son témoin est DÉCLARATIF, écrit à la main dans le même fichier. La moitié
+    // des entrées ne porte aucun bloc `revision` et lui échappe entièrement ; et
+    // le cas vraiment dangereux — quelqu'un réaligne une grille dans
+    // `questions.ts` sans rien écrire au registre — la laisse muette dans tous
+    // les cas. Elle n'attrape que la faute inverse, la plus rare : on écrit la
+    // note et on oublie de re-dater le verdict.
+    //
+    // Le seul témoin honnête est déjà produit par le banc — `empreinte-servie.json`
+    // décrit le servi tel qu'il est. Y stocker une empreinte dans `verdictScoring`
+    // et la recalculer depuis le catalogue au moment du contrôle relierait enfin
+    // le verdict au code. C'est un lot à part ; l'angle mort est verrouillé par un
+    // test qui le nomme (`verifier_registre_instruments.test.mjs`).
     if (v != null && v.revision != null && estUneDate(v.revision.date) && estUneDate(v.date)) {
       ajouter(
         v.date >= v.revision.date,
