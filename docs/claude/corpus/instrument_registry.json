@@ -2550,7 +2550,7 @@
         "proprietaireDroits": "S.I.I.N. — Scientific Institute for Intelligent Nutrition"
       },
       "versionServie": {
-        "description": "57 items en 12 sections, moteur `seuils_points` : chaque item vaut 1 ou 2 points si la quantité déclarée franchit son seuil, pour un total de 90 — la somme des 57 valeurs du barème est vérifiée par `scoring-check`. Mesuré DRAPEAU `WN_ALI_01_SIIN57` ALLUMÉ, c'est-à-dire dans la position de la production depuis le 2026-07-28 ; les passages antérieurs du banc décrivaient le dépistage court à 14 items, forme qui n'est plus servie. Contenu verrouillé le 2026-07-30 sur cette empreinte (statut `adapte` : aucune identité au mot près n'est affirmée).",
+        "description": "57 items en 12 sections, moteur `seuils_points` : chaque item vaut 1 ou 2 points si la quantité déclarée franchit son seuil. La source attribue 1 point à 24 items et 2 points à 33, pour un total de 90 ; le barème servi a les mêmes effectifs et le même total, et les quatre bandes de la source (< 25, 26-50, 51-70, > 71) sont servies à l'identique. Mesuré DRAPEAU `WN_ALI_01_SIIN57` ALLUMÉ, c'est-à-dire dans la position de la production depuis le 2026-07-28. Deux valeurs laissées sans bande par la source, 25 et 71, sont comblées par arbitrage — la première vers la bande la plus sévère, la seconde vers la plus rassurante. Contenu verrouillé le 2026-07-30 (statut `adapte` : aucune identité au mot près n'est affirmée).",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
         "statutContenu": "adapte"
@@ -2567,7 +2567,7 @@
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "contenu_verrouille",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2582,13 +2582,14 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-30",
-        "divergencesCritiques": 1,
+        "divergencesCritiques": 0,
         "revision": {
           "date": "2026-07-30",
           "notes": [
-            "CONSTAT 1, ÉTABLI ET MAINTENU : le banc mesurait le dépistage court à 14 items. `WN_ALI_01_SIIN57` est allumé en production depuis le 2026-07-28 mais éteint par défaut, et le banc ne le pose pas. Rejoué hors ligne drapeau allumé : 57 items lus des deux côtés, 12 dimensions, moteur `seuils_points`. C'est cette empreinte qui verrouille le contenu.",
-            "CONSTAT 2, RETIRÉ le 2026-07-30 par la revue adversariale : l'annulation de `echelle_de_cotation` reposait sur deux erreurs. (a) L'arithmétique invoquée — « 57 items à 2 points font 90 » — est fausse : 57 × 2 = 114. Le total de 90 vient d'une répartition INÉGALE (24 items à 1 point, 33 à 2), ce qui n'a rien d'une preuve. (b) « La source déclare un total /90 » n'a AUCUNE pièce au banc : les deux lectures rendent `bornesTotal: null` et leurs seuils s'arrêtent à « > 71 ». La divergence critique est donc ROUVERTE.",
-            "CE QUI RESTE À TRANCHER, et il n'est pas décidable en l'état : si la source attribue 2 points à chacun de ses 57 items (max 114) et que ses bandes 0-25 / 26-50 / 51-70 / > 71 portent sur ce /114, alors le servi applique les mêmes bandes sur un /90 et déclasse chaque patient d'une à deux bandes. Écart clinique, pas faux positif de catégorie. Pièce nécessaire : une lecture ciblée de WN-SRC-0470/0471 sur la répartition des points item par item et sur le total déclaré."
+            "CONSTAT 1, ÉTABLI : le banc mesurait le dépistage court à 14 items. `WN_ALI_01_SIIN57` est allumé en production depuis le 2026-07-28 mais éteint par défaut, et le banc ne le posait pas. Rejoué drapeau allumé : 57 items lus des deux côtés. L'empreinte consigne désormais la position du drapeau, si bien que cette confusion ne peut plus se reproduire en silence.",
+            "CONSTAT 2, TRANCHÉ SUR PIÈCE le 2026-07-30 — la source a été relue directement (WN-SRC-0471, support « pro »), après qu'une première annulation eut été REFUSÉE en revue pour s'appuyer sur une arithmétique fausse (« 57 items à 2 points font 90 » : ils en font 114). La source dit en toutes lettres « Votre score (0, 1 ou 2) » et « Si vous avez répondu… alors comptez … points » : 0 à 2 est bien le NOMBRE DE POINTS d'un item, pas le codage de la réponse du patient. Elle donne ensuite le barème item par item.",
+            "VÉRIFICATION CHIFFRÉE, et elle est exacte : la source attribue 1 point à 24 items et 2 points à 33, somme = 90. Le barème servi attribue 1 point à 24 items et 2 points à 33, somme = 90 — mêmes effectifs, même total. Les quatre bandes de la source (< 25, 26 à 50, 51 à 70, > 71) sont servies à l'identique sur ce /90. La divergence `echelle_de_cotation` est donc ANNULÉE sur pièce, sans aucune modification du servi.",
+            "RÉSIDU DÉCLARÉ : la source laisse DEUX valeurs sans bande — 25 (elle dit « < 25 » puis « 26 à 50 ») et 71 (elle dit « 51 à 70 » puis « > 71 »). Le servi comble les deux, et dans des sens opposés : 25 reçoit la bande la plus sévère, 71 la plus rassurante. Comblement de trou par arbitrage, pas alignement — même famille qu'Epworth 6 et 15, et que la valeur 6 de Q_INF_05."
           ]
         }
       }
