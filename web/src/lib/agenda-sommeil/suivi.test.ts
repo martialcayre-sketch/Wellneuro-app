@@ -9,6 +9,7 @@ function ass(over: Partial<AssignationSuivi> = {}): AssignationSuivi {
     idPatient: 'PAT_1',
     titre: 'Agenda du sommeil — 21 nuits',
     dateAssignation: '2026-07-29T08:00:00.000Z',
+    dateAssignationJour: '2026-07-29',
     ...over,
   };
 }
@@ -28,7 +29,9 @@ function resume(assignations: AssignationSuivi[], nuits: [string, NuitsSuivi][] 
 
 describe('resumerAgendasEnCours — les cinq états', () => {
   it('aucune nuit : jamais_commence, relançable, avec les jours depuis l’assignation', () => {
-    const [l] = resume([ass({ dateAssignation: '2026-07-26T10:00:00.000Z' })]);
+    const [l] = resume([
+      ass({ dateAssignation: '2026-07-26T10:00:00.000Z', dateAssignationJour: '2026-07-26' }),
+    ]);
     expect(l.etat).toBe('jamais_commence');
     expect(l.relancable).toBe(true);
     expect(l.nbRenseignees).toBe(0);
@@ -75,6 +78,18 @@ describe('resumerAgendasEnCours — les cinq états', () => {
     expect(l.jourCourant).toBeNull();
   });
 
+  it('fenêtre écoulée ET nuit du jour notée : a_transmettre gagne (ordre des branches)', () => {
+    // La saisie n'est pas bornée à la fenêtre (`estDateSaisissable` ne
+    // connaît que J/J-1) : un patient peut encore noter au jour 25. Le geste
+    // attendu reste la clôture — l'état hors fenêtre prime sur « à jour ».
+    const [l] = resume(
+      [ass()],
+      [['ASS_1', { dates: ['2026-07-08', '2026-07-30'], derniereSaisie: null }]],
+    );
+    expect(l.etat).toBe('a_transmettre');
+    expect(l.relancable).toBe(false);
+  });
+
   it('borne exacte : jour 21 encore dans la fenêtre, jour 22 hors fenêtre', () => {
     // Ancre 2026-07-10 → 2026-07-30 est le jour 21.
     const [j21] = resume([ass()], [['ASS_1', { dates: ['2026-07-10'], derniereSaisie: null }]]);
@@ -118,6 +133,16 @@ describe('resumerAgendasEnCours — pièges de données réelles', () => {
     expect(l.patient).toBe('');
     expect(l.etat).toBe('jamais_commence');
   });
+
+  it('assignation nocturne : le jour Paris fait foi, pas le jour UTC', () => {
+    // Assignée le 30/07 à 00 h 30 heure de Paris = 29/07 22 h 30 UTC. Le jour
+    // Paris (fourni par la route via dateJourParis) donne 0 jour d'écart —
+    // un slice de l'ISO en donnerait 1 le jour même de l'assignation.
+    const [l] = resume([
+      ass({ dateAssignation: '2026-07-29T22:30:00.000Z', dateAssignationJour: '2026-07-30' }),
+    ]);
+    expect(l.joursDepuisAssignation).toBe(0);
+  });
 });
 
 describe('resumerAgendasEnCours — tri', () => {
@@ -131,6 +156,7 @@ describe('resumerAgendasEnCours — tri', () => {
           idAssignation: 'JAMAIS',
           idPatient: 'PAT_1',
           dateAssignation: '2026-07-20T08:00:00.000Z',
+          dateAssignationJour: '2026-07-20',
         }),
         ass({ idAssignation: 'TRANSMETTRE', idPatient: 'PAT_2' }),
         ass({ idAssignation: 'HIER', idPatient: 'PAT_3' }),

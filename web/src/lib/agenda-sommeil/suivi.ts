@@ -23,7 +23,11 @@ export type AssignationSuivi = {
   idAssignation: string;
   idPatient: string;
   titre: string;
-  dateAssignation: string; // ISO
+  dateAssignation: string; // ISO (affichage)
+  // Jour de l'assignation en AAAA-MM-JJ, fuseau Europe/Paris (dateJourParis).
+  // JAMAIS un slice d'ISO : une assignation à 00 h 30 à Paris porte la veille
+  // en UTC, et l'écart en jours serait faux de un entre minuit et 2 h.
+  dateAssignationJour: string;
 };
 
 export type NuitsSuivi = {
@@ -71,9 +75,9 @@ function deriverLigne(
   nomComplet: string,
   aujourdHui: string,
 ): LigneSuiviAgenda {
-  const dates = nuits?.dates ?? [];
+  const dates = [...(nuits?.dates ?? [])].sort();
   const fenetre = calculerFenetreDepuisDates(dates, aujourdHui);
-  const derniereNuitNotee = dates.length > 0 ? [...dates].sort()[dates.length - 1] : null;
+  const derniereNuitNotee = dates.length > 0 ? dates[dates.length - 1] : null;
 
   let etat: EtatSuiviAgenda;
   if (fenetre.dateDebut === null) {
@@ -94,7 +98,6 @@ function deriverLigne(
     etat = 'silencieux';
   }
 
-  const dateAssignationJour = ass.dateAssignation.slice(0, 10);
   return {
     idAssignation: ass.idAssignation,
     idPatient: ass.idPatient,
@@ -108,7 +111,7 @@ function deriverLigne(
     joursDepuisDerniereNuit:
       derniereNuitNotee === null ? null : ecartJours(derniereNuitNotee, aujourdHui),
     dateAssignation: ass.dateAssignation,
-    joursDepuisAssignation: ecartJours(dateAssignationJour, aujourdHui),
+    joursDepuisAssignation: ecartJours(ass.dateAssignationJour, aujourdHui),
     relancable:
       etat === 'jamais_commence' || etat === 'nuit_du_jour_manquante' || etat === 'silencieux',
   };

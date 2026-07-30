@@ -34,11 +34,16 @@ function etiquette(ligne: LigneSuiviAgenda): { titre: string; detail: string } {
         titre: `Sans nouvelle nuit depuis ${ligne.joursDepuisDerniereNuit} jours`,
         detail: `Dernière nuit reçue : ${ligne.derniereNuitNotee ? dateLisible(ligne.derniereNuitNotee) : '—'} · jour ${ligne.jourCourant ?? '—'} sur ${NB_JOURS_AGENDA}.`,
       };
-    case 'jamais_commence':
+    case 'jamais_commence': {
+      const depuis =
+        ligne.joursDepuisAssignation === 0
+          ? "Assigné aujourd'hui"
+          : `Assigné il y a ${ligne.joursDepuisAssignation} jour${ligne.joursDepuisAssignation > 1 ? 's' : ''}`;
       return {
         titre: 'Pas encore commencé',
-        detail: `Assigné il y a ${ligne.joursDepuisAssignation} jour${ligne.joursDepuisAssignation > 1 ? 's' : ''} — aucune nuit notée. La fenêtre de ${NB_JOURS_AGENDA} nuits s'ouvrira à la première.`,
+        detail: `${depuis} — aucune nuit notée. La fenêtre de ${NB_JOURS_AGENDA} nuits s'ouvrira à la première.`,
       };
+    }
     case 'nuit_du_jour_manquante':
       return {
         titre: 'Nuit du jour pas encore notée',

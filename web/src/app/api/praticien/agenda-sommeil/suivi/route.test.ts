@@ -13,10 +13,9 @@ const { getServerSession, prisma, journaliserAccesDossier } = vi.hoisted(() => (
 vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
-vi.mock('@/lib/praticien/appartenance', () => ({
-  emailPraticien: () => 'praticien@wellneuro.fr',
-  filtrePatientsDuPraticien: () => ({}),
-}));
+// `@/lib/praticien/appartenance` N'EST PAS mocké : le scoping praticien est
+// l'invariant central de cette route, le test doit exercer la clause réelle
+// (patron météo-adhésion — un mock ferait passer une route sans filtre).
 vi.mock('@/lib/praticien/journalAcces', () => ({ journaliserAccesDossier }));
 
 import { GET } from './route';
@@ -46,6 +45,18 @@ describe('GET /api/praticien/agenda-sommeil/suivi', () => {
     const json = await res.json();
     expect(json).toEqual({ ok: true, lignes: [] });
     expect(prisma.assignation.findMany).not.toHaveBeenCalled();
+  });
+
+  it('borne la lecture des patients au praticien en session (clause réelle, non mockée)', async () => {
+    getServerSession.mockResolvedValue(session);
+    prisma.patient.findMany.mockResolvedValue([]);
+    await GET();
+    const where = prisma.patient.findMany.mock.calls[0][0].where;
+    expect(where.actif).toBe(true);
+    expect(where.praticienEmail).toEqual({
+      equals: 'praticien@wellneuro.fr',
+      mode: 'insensitive',
+    });
   });
 
   it('résume les agendas ouverts, dédupliqué par date, sans jamais lire les réponses', async () => {
@@ -93,12 +104,19 @@ describe('GET /api/praticien/agenda-sommeil/suivi', () => {
     // La requête de nuits ne sélectionne jamais le JSONB des réponses.
     const selectNuits = prisma.agendaSommeilNuit.findMany.mock.calls[0][0].select;
     expect(selectNuits).not.toHaveProperty('reponses');
-    // Et le filtre d'assignations exclut annulées et verrouillées.
+    // Et le filtre d'assignations est une liste BLANCHE : seul un recueil en
+    // cours (`non_rempli`) entre — `deverrouille`/`modification_demandee`
+    // désignent un agenda déjà clôturé rouvert, l'inclure inviterait à une
+    // seconde clôture.
     const whereAss = prisma.assignation.findMany.mock.calls[0][0].where;
     expect(whereAss.statut).toEqual({ not: 'Annulée' });
-    expect(whereAss.statutReponses).toEqual({ not: 'verrouille' });
+    expect(whereAss.statutReponses).toBe('non_rempli');
   });
 
+  // Garde RÉSIDUELLE : elle n'attraperait qu'un import direct de
+  // `journaliserAccesDossier` ajouté plus tard dans route.ts — le chemin
+  // indirect (via `verifierAppartenancePatient` + option `acces`) est déjà
+  // exclu par construction, la route ne l'appelle pas.
   it('ne journalise JAMAIS d’accès dossier : liste de cabinet, pas ouverture de dossier', async () => {
     getServerSession.mockResolvedValue(session);
     prisma.patient.findMany.mockResolvedValue([{ idPatient: 'PAT_1', prenom: 'Sophie', nom: 'Nicola' }]);

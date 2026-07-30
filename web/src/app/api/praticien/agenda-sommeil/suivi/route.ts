@@ -49,7 +49,13 @@ export async function GET(): Promise<NextResponse<SuiviAgendasApiResponse>> {
             idPatient: { in: ids },
             idQuestionnaire: AGENDA_SOMMEIL_ID,
             statut: { not: 'Annulée' },
-            statutReponses: { not: 'verrouille' },
+            // Liste BLANCHE, pas liste noire : un recueil en cours est
+            // toujours `non_rempli` (saveNuit ne touche jamais l'assignation).
+            // `deverrouille` et `modification_demandee` désignent un agenda
+            // DÉJÀ clôturé rouvert — l'y inclure inviterait à une seconde
+            // clôture, donc une seconde QuestionnaireReponse pour la même
+            // assignation (aucune contrainte d'unicité ne l'empêche).
+            statutReponses: 'non_rempli',
           },
           select: {
             idAssignation: true,
@@ -91,6 +97,9 @@ export async function GET(): Promise<NextResponse<SuiviAgendasApiResponse>> {
         idPatient: a.idPatient,
         titre: a.titre,
         dateAssignation: a.dateAssignation.toISOString(),
+        // Jour PARIS, jamais un slice d'ISO : à 00 h 30 heure de Paris,
+        // l'ISO porte encore la veille (UTC).
+        dateAssignationJour: dateJourParis(a.dateAssignation),
       })),
       nuitsParAssignation,
       noms: new Map(patients.map(p => [p.idPatient, `${p.prenom} ${p.nom}`.trim()])),
