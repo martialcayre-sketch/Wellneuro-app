@@ -82,10 +82,16 @@ const PORTEURS_ATTENDUS = [
 ];
 
 /** Les 17 émetteurs de `subScores`, par identifiant : un compte ne voit pas une substitution. */
+// Dix-neuf depuis le 2026-07-30. `Q_CAN_01` et `Q_CAN_02` sont entrés en même
+// temps que la cotation officielle EORTC : leurs quinze et huit échelles 0-100
+// remplacent la somme brute qui leur tenait lieu de score, et ce sont désormais
+// ces échelles qui arrivent au modèle de synthèse. Entrée VOULUE — un score de
+// fonctionnement physique dit quelque chose à la consultation, une somme de 28 à
+// 112 ne disait rien.
 const EMETTEURS_SUBSCORES = [
-  'Q_ALI_03', 'Q_GAS_01', 'Q_GEO_01', 'Q_INF_03', 'Q_MOD_01', 'Q_MOD_03', 'Q_NEU_03',
-  'Q_NEU_05', 'Q_NEU_11', 'Q_PED_02', 'Q_PNE_01', 'Q_SOM_09', 'Q_STR_01', 'Q_STR_04',
-  'Q_STR_06', 'Q_TAB_03', 'Q_URO_01',
+  'Q_ALI_03', 'Q_CAN_01', 'Q_CAN_02', 'Q_GAS_01', 'Q_GEO_01', 'Q_INF_03', 'Q_MOD_01',
+  'Q_MOD_03', 'Q_NEU_03', 'Q_NEU_05', 'Q_NEU_11', 'Q_PED_02', 'Q_PNE_01', 'Q_SOM_09',
+  'Q_STR_01', 'Q_STR_04', 'Q_STR_06', 'Q_TAB_03', 'Q_URO_01',
 ];
 
 /** Champs de `subScores` que la consigne n'a pas à décrire : ils se lisent seuls. */
@@ -376,7 +382,7 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     expect([...releve.porteurs].sort()).toEqual(PORTEURS_ATTENDUS);
   });
 
-  it('les 17 émetteurs de subScores sont épinglés par identifiant, pas par compte', () => {
+  it('les 19 émetteurs de subScores sont épinglés par identifiant, pas par compte', () => {
     // Un compte ne voit pas une substitution : un instrument qui cesse d'émettre et
     // un autre qui commence laisseraient `toBe(17)` vert — soit exactement la
     // disparition silencieuse que ce fichier existe pour rendre bruyante.
@@ -394,7 +400,9 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
 
   it('balaye réellement le catalogue — anti-vacuité', () => {
     expect(ids.length).toBeGreaterThanOrEqual(60);
-    expect(releve.sousScoresBalayes, 'aucun sous-score balayé').toBe(66);
+    // 66 jusqu'au 2026-07-30 ; +23 avec les quinze échelles du QLQ-C30 et les huit
+    // du QLQ-BR23, qui remplacent deux sommes brutes.
+    expect(releve.sousScoresBalayes, 'aucun sous-score balayé').toBe(89);
   });
 
   it('aucun total à null n’apparaît sur une passation SATURÉE', () => {
@@ -647,6 +655,12 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
   });
 
   it('un questionnaire à sous-scores peut n’avoir AUCUN total global', () => {
-    expect(releve.sansTotalGlobal).toEqual(['Q_STR_06']);
+    // Trois désormais, et les deux nouveaux le sont par CONSTRUCTION : le manuel
+    // EORTC ne définit aucun score global d'instrument, seulement des échelles
+    // 0-100. La somme brute que WellNeuro rendait à leur place — 28→112 pour le
+    // C30, 23→92 pour le BR23 — était une mesure fabriquée, avec pour le BR23 une
+    // bande de tête inatteignable. Ne pas rendre de total est ici la correction,
+    // pas une lacune.
+    expect(releve.sansTotalGlobal.slice().sort()).toEqual(['Q_CAN_01', 'Q_CAN_02', 'Q_STR_06']);
   });
 });

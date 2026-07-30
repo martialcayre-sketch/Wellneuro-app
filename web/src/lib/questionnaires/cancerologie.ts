@@ -57,17 +57,31 @@ export const Q_CAN_01 = {
           [{v:1,l:'1 — Très mauvais'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4'},{v:5,l:'5'},{v:6,l:'6'},{v:7,l:'7 — Excellent'}])
       ]},
   ],
+  // Cotation officielle du QLQ-C30 version 3.0 (EORTC Scoring Manual, 3e éd.,
+  // 2001, table 1). Quinze échelles, aucune addition globale : l'EORTC n'en
+  // définit pas. La somme brute servie jusqu'au 2026-07-30 (28→112, quatre bandes
+  // locales) ne correspondait à rien de publié et portait un seuil « < 28 »
+  // inatteignable, la source elle-même le signalant sans le corriger.
   scoring:{
-    type:'sum_items',
-    certification:{source:'drive',status:'ambigu'},
-    items:['QL1','QL2','QL3','QL4','QL5','QL6','QL7','QL8','QL9','QL10','QL11','QL12','QL13','QL14','QL15','QL16','QL17','QL18','QL19','QL20','QL21','QL22','QL23','QL24','QL25','QL26','QL27','QL28'],
-    maxTotal:112,
-    note:'Source Drive QLQ-C30 : score brut de la première partie détaillée Q001-Q028, cotée 28-112. Q029-Q030 complètent le recueil global subjectif hors score détaillé. Point de vigilance source : seuil < 28 incohérent avec un score minimal de 28.',
-    interpretation:[
-      {min:0, max:28, label:'Aucun problème signalé (seuil source < 28 incohérent)', color:'success'},
-      {min:29,max:56, label:'Rares problèmes occasionnels', color:'info'},
-      {min:57,max:84, label:'Problèmes à prendre en compte', color:'warning'},
-      {min:85,max:112,label:'Problèmes ayant un fort impact au quotidien', color:'danger'},
+    type:'eortc',
+    certification:{source:'manuel_eortc', status:'certifie'},
+    note:'Scores 0-100 par échelle selon le manuel EORTC QLQ-C30 v3.0. Aucun score global d\'instrument : le manuel n\'en definit pas.',
+    echelles:[
+      {id:'QL2', label:'Santé globale / qualité de vie', sens:'globale',        range:6, items:['QL29','QL30']},
+      {id:'PF2', label:'Fonctionnement physique',        sens:'fonctionnelle',  range:3, items:['QL1','QL2','QL3','QL4','QL5']},
+      {id:'RF2', label:'Fonctionnement de rôle',         sens:'fonctionnelle',  range:3, items:['QL6','QL7']},
+      {id:'EF',  label:'Fonctionnement émotionnel',      sens:'fonctionnelle',  range:3, items:['QL21','QL22','QL23','QL24']},
+      {id:'CF',  label:'Fonctionnement cognitif',        sens:'fonctionnelle',  range:3, items:['QL20','QL25']},
+      {id:'SF',  label:'Fonctionnement social',          sens:'fonctionnelle',  range:3, items:['QL26','QL27']},
+      {id:'FA',  label:'Fatigue',                        sens:'symptome',       range:3, items:['QL10','QL12','QL18']},
+      {id:'NV',  label:'Nausées et vomissements',        sens:'symptome',       range:3, items:['QL14','QL15']},
+      {id:'PA',  label:'Douleur',                        sens:'symptome',       range:3, items:['QL9','QL19']},
+      {id:'DY',  label:'Dyspnée',                        sens:'symptome',       range:3, items:['QL8']},
+      {id:'SL',  label:'Insomnie',                       sens:'symptome',       range:3, items:['QL11']},
+      {id:'AP',  label:'Perte d\'appétit',               sens:'symptome',       range:3, items:['QL13']},
+      {id:'CO',  label:'Constipation',                   sens:'symptome',       range:3, items:['QL16']},
+      {id:'DI',  label:'Diarrhée',                       sens:'symptome',       range:3, items:['QL17']},
+      {id:'FI',  label:'Difficultés financières',        sens:'symptome',       range:3, items:['QL28']},
     ]
   }
 };
@@ -112,17 +126,26 @@ export const Q_CAN_02 = {
         q("BR23","Avez-vous eu des problèmes de peau dans la région de votre sein traité (démangeaisons, peau qui pèle, peau sèche) ?", [{v:1,l:'Pas du tout'},{v:2,l:'Un peu'},{v:3,l:'Assez'},{v:4,l:'Beaucoup'}])
       ]},
   ],
+  // Cotation officielle du QLQ-BR23 (EORTC QLQ-BR23 Scoring Manual, version
+  // révisée, table 1). Huit échelles, aucune addition globale.
+  //
+  // `inverser: true` sur SEF et SEE n'est pas un choix : le manuel exige que la
+  // cotation des questions 44, 45 et 46 — nos BR14, BR15, BR16 — soit inversée
+  // avant analyse. Sans cette inversion, la patiente qui déclare le plus
+  // d'intérêt et de plaisir reçoit le score de fonctionnement le plus BAS.
   scoring:{
-    type:'sum_items',
-    certification:{source:'drive',status:'ambigu'},
-    items:['BR1','BR2','BR3','BR4','BR5','BR6','BR7','BR8','BR9','BR10','BR11','BR12','BR13','BR14','BR15','BR16','BR17','BR18','BR19','BR20','BR21','BR22','BR23'],
-    maxTotal:92,
-    note:'Source Drive QLQ-BR23 : somme brute Q001-Q023, cotée 23-92. Les items Q005 et Q016 sont conditionnels ; la source ne précise pas de cotation stricte quand ils sont masqués, ils sont donc retournés en notApplicable.',
-    interpretation:[
-      {min:0, max:13, label:'Aucun problème signalé (seuil source < 14 incohérent)', color:'success'},
-      {min:14,max:46, label:'Rares problèmes occasionnels', color:'info'},
-      {min:47,max:69, label:'Problèmes à prendre en compte', color:'warning'},
-      {min:70,max:92, label:'Problèmes ayant un fort impact au quotidien', color:'danger'},
+    type:'eortc',
+    certification:{source:'manuel_eortc', status:'certifie'},
+    note:'Scores 0-100 par échelle selon le manuel EORTC QLQ-BR23. Les items BR14, BR15 et BR16 sont inversés avant moyenne, comme le manuel l\'exige. Aucun score global d\'instrument.',
+    echelles:[
+      {id:'BRBI',  label:'Image du corps',                       sens:'fonctionnelle', range:3, items:['BR9','BR10','BR11','BR12']},
+      {id:'BRFU',  label:'Perspective d\'avenir',                 sens:'fonctionnelle', range:3, items:['BR13']},
+      {id:'BRSEF', label:'Fonctionnement sexuel',                sens:'fonctionnelle', range:3, items:['BR14','BR15'], inverser:true},
+      {id:'BRSEE', label:'Plaisir sexuel',                       sens:'fonctionnelle', range:3, items:['BR16'], inverser:true},
+      {id:'BRST',  label:'Effets secondaires du traitement',     sens:'symptome',      range:3, items:['BR1','BR2','BR3','BR4','BR6','BR7','BR8']},
+      {id:'BRHL',  label:'Contrariété due à la perte de cheveux',sens:'symptome',      range:3, items:['BR5']},
+      {id:'BRAS',  label:'Symptômes du bras',                    sens:'symptome',      range:3, items:['BR17','BR18','BR19']},
+      {id:'BRBS',  label:'Symptômes du sein',                    sens:'symptome',      range:3, items:['BR20','BR21','BR22','BR23']},
     ]
   }
 };

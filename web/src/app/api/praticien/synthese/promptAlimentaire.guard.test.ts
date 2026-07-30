@@ -35,10 +35,16 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v11`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v12`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
-const EMPREINTE_V11 = '34031e3de3ab2389';
+//
+// v12, le 2026-07-30 : la consigne décrit le champ `sens` des sous-scores.
+// Il arrive avec la cotation EORTC, et sans lui un score de 100 est illisible —
+// « fonctionnement sexuel » et « symptômes du bras » se lisent en sens
+// CONTRAIRES, et rien dans leur libellé ne le dit. C'est le banc des sous-scores
+// qui a exigé cette ligne : il refuse tout champ livré au modèle et non décrit.
+const EMPREINTE_V12 = '08708593ee861945';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -143,7 +149,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v11', empreinte: EMPREINTE_V11 });
+    ).toEqual({ version: 'synthese-v12', empreinte: EMPREINTE_V12 });
   });
 
   it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {

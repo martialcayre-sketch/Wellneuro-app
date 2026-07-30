@@ -137,7 +137,12 @@ describe('questionnaire suspendu (actif: false)', () => {
   // alimente `IDS_SUSPENDUS`, que les trois routes d'assignation consultent —
   // parce qu'il est déjà câblé ET déjà gardé par le vérificateur du CI. Aucun
   // code neuf, donc aucune garde neuve à se tromper.
-  const SUSPENDUS_DROITS = ['Q_PED_02', 'Q_PED_03', 'Q_GEO_04', 'Q_CAN_01', 'Q_CAN_02'];
+  // Les deux EORTC ont quitté cette liste le 2026-07-30 : rouverts sur décision
+  // du praticien, en même temps que leur cotation est passée aux manuels
+  // officiels. La réserve « © EORTC » n'est pas levée pour autant — elle est
+  // gardée par `droitsAssignabilite.guard.test.ts`, qui exige une décision écrite
+  // pour chaque instrument ouvert sous réserve.
+  const SUSPENDUS_DROITS = ['Q_PED_02', 'Q_PED_03', 'Q_GEO_04'];
 
   it('les cinq instruments à droits non dégagés sont fermés à l’assignation', () => {
     for (const id of SUSPENDUS_DROITS) {
@@ -180,14 +185,15 @@ describe('questionnaire suspendu (actif: false)', () => {
     expect(calculateScore('Q_GEO_04', {})).not.toHaveProperty('error');
   });
 
-  it('la cancérologie est suspendue en entier, et c’est assumé', () => {
+  it('la cancérologie tient à deux instruments, désormais rouverts', () => {
     // Anti-surprise : `Q_CAN_01` et `Q_CAN_02` sont les SEULS instruments de
-    // cancérologie. Les fermer ferme le domaine — le dire ici évite de le
-    // redécouvrir en production, et fait rougir le jour où un troisième arrive
+    // cancérologie. Le domaine bascule donc tout entier au moindre geste — il a
+    // été fermé le 2026-07-29, rouvert le 2026-07-30 — et ce test dit cette
+    // fragilité plutôt qu'un état. Il fait rougir le jour où un troisième arrive
     // sans que la question de sa licence ait été posée.
     const cancero = QUESTIONNAIRES_CATALOG.filter(q => q.categorie === 'Cancérologie');
     expect(cancero.map(q => q.id)).toEqual(['Q_CAN_01', 'Q_CAN_02']);
-    expect(cancero.every(q => !q.actif)).toBe(true);
+    expect(cancero.every(q => q.actif)).toBe(true);
   });
 
   it('HAD est servable par l’interface, et son alias reste refusé', () => {

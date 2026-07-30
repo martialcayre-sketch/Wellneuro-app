@@ -34,12 +34,25 @@ describe('calculateScore', () => {
 
     const result = calculateScore('Q_CAN_02', answers);
 
-    expect(result.type).toBe('sum_items');
+    // Le moteur est passé de `sum_items` à `eortc` le 2026-07-30 : la somme brute
+    // de 42 et sa bande « Rares problèmes occasionnels » n'existent plus — le
+    // manuel EORTC ne définit aucun score global d'instrument. Ce que ce test
+    // garde reste le même : le traitement des items conditionnels.
+    expect(result.type).toBe('eortc');
     expect(result.notApplicable).toEqual(['BR5']);
     expect(result.missingIds).toEqual(['BR16']);
     expect(result.missing).toBe(1);
-    expect(result.total).toBe(42);
-    expect(result.interpretation.label).toBe('Rares problèmes occasionnels');
+    expect(result.total).toBeNull();
+    // BR5 est le seul item de son échelle : sans objet, elle n'est pas scorée.
+    const hl = result.subScores.find((s: any) => s.id === 'BRHL');
+    expect(hl.total).toBeNull();
+    expect(hl.notApplicable).toBe(true);
+    // BR16 manque mais BR15 a répondu : l'échelle du plaisir sexuel est bien
+    // applicable, et c'est l'absence de réponse — pas le protocole — qui la laisse
+    // sans score. Les deux cas se ressemblaient dans l'ancien `notApplicable`.
+    const see = result.subScores.find((s: any) => s.id === 'BRSEE');
+    expect(see.total).toBeNull();
+    expect(see.notApplicable).toBeUndefined();
   });
 
   it('Q_CAN_02 (sum_items) — aucune réponse ne provoque pas de throw et dégrade proprement', () => {
@@ -60,8 +73,11 @@ describe('calculateScore', () => {
     // reprend la main et rend `missing`, `notApplicable` et son total.
     const result = calculateScore('Q_CAN_02', { BR1: 1 });
     expect(result.scored).not.toBe(false);
-    expect(result.total).toBe(1);
+    // Plus de total global (moteur `eortc`) : une réponse isolée ne renseigne
+    // qu'un septième de son échelle, laquelle reste donc sans score.
+    expect(result.total).toBeNull();
+    expect(result.subScores.find((s: any) => s.id === 'BRST').total).toBeNull();
     // Sans réponse au déclencheur, les items conditionnels BR5/BR16 restent non applicables.
-    expect(result.notApplicable).toEqual(['BR5', 'BR16']);
+    expect([...result.notApplicable].sort()).toEqual(['BR16', 'BR5']);
   });
 });

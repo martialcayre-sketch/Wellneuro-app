@@ -105,10 +105,18 @@ const assignableParLaRoute = (id: string) =>
 //
 // La liste s'est allongée le 2026-07-30 : la déclaration de ce jour vaut aussi
 // ouverture pour les instruments qu'elle couvre et qui sont actifs au catalogue.
-// Ceux qui restent suspendus (Conners ×2, MMSE, EORTC ×2) ne figurent pas ici —
-// leur droit est déclaré, mais leur route est fermée, et c'est ce que le test
-// constate.
+// Ceux qui restent suspendus (Conners ×2, MMSE) ne figurent pas ici — leur droit
+// est déclaré, mais leur route est fermée, et c'est ce que le test constate.
 const LAISSES_ASSIGNABLES = [
+  // EORTC QLQ-C30 et QLQ-BR23 — « © EORTC, enregistrement/autorisation requis ».
+  // Rouverts le 2026-07-30 par décision du praticien-propriétaire, en même temps
+  // que leur cotation est passée aux manuels officiels. L'EORTC accorde une
+  // autorisation gratuite pour l'usage clinique : la réserve porte sur une
+  // démarche à faire, pas sur une redevance à payer, et elle reste au dossier.
+  // Ce sont les deux seuls instruments de cancérologie du catalogue — les
+  // refermer referme le domaine.
+  'Q_CAN_01',
+  'Q_CAN_02',
   // HIT-6 — « © QualityMetric (licence requise, à vérifier) ». Laissé ouvert le
   // 2026-07-29 : 0 divergence critique au banc, aucune assignation ouverte.
   'Q_INF_04',
