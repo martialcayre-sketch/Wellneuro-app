@@ -158,11 +158,21 @@ export const Q_GEO_05 = {
   scoring:{
     type:'sum_decimal',
     maxTotal:30,
+    // Grille alignée sur la source le 2026-07-30 (arbitrage praticien, Galvin
+    // 2015, relevée à l'identique par les DEUX lectures du banc) : 0–1 / 1,5–5,5
+    // / 6–12 / 12,5–17 / 17,5–30. Les bandes servies chevauchaient leurs bornes
+    // — 1,5, 12,5 et 17,5 appartenaient chacun à deux bandes, et
+    // `interpretRanges` prenant la première, le patient LE PLUS ATTEINT recevait
+    // la bande la plus rassurante : 12,5 sortait « démence légère » au lieu de
+    // modérée, 17,5 « légère à modérée » au lieu de sévère. La première revue de
+    // ce lot n'avait corrigé que 1,5 ; la relecture des spec-B/C a montré que
+    // les trois frontières étaient dans les mêmes fichiers. Scores en pas de
+    // 0,5 : aucun trou atteignable.
     interpretation:[
-      {min:0,   max:1.5, label:'Normal ou oublis bénins',         color:'success'},
+      {min:0,   max:1,   label:'Normal ou oublis bénins',         color:'success'},
       {min:1.5, max:5.5, label:'MCI — Déclin cognitif léger',     color:'info'},
-      {min:5.5, max:12.5,label:'Démence légère',                  color:'warning'},
-      {min:12.5,max:17.5,label:'Démence légère à modérée',        color:'warning'},
+      {min:6,   max:12,  label:'Démence légère',                  color:'warning'},
+      {min:12.5,max:17,  label:'Démence légère à modérée',        color:'warning'},
       {min:17.5,max:30,  label:'Démence modérée à sévère',        color:'danger'},
     ]
   }

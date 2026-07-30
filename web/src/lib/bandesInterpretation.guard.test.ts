@@ -33,24 +33,6 @@ function repartir(id: string, total: number, min = 0, max = 10) {
 }
 
 describe('bandes d’interprétation — aucune bande plutôt qu’une bande fausse', () => {
-  it('Q_SOM_02 (Epworth) : 6 et 15 sont atteignables et ne relèvent d’aucune bande', () => {
-    // Bandes : 0-5, 7-8, 9-14, 16-24. Huit items cotés 0 à 3 : tous les entiers de
-    // 0 à 24 sont atteignables, 6 et 15 compris. Ils recevaient « Somnolence
-    // diurne excessive ; syndrome d'apnées du sommeil possible » — la bande écrite
-    // en dernier, et la plus alarmante de l'instrument.
-    for (const total of [6, 15]) {
-      const r: any = calculateScore('Q_SOM_02', repartir('Q_SOM_02', total, 0, 3));
-      expect(r.total).toBe(total);
-      expect(r.interpretation).toBeNull();
-    }
-
-    // Et un score QUI relève d'une bande la reçoit toujours : le garde refuse une
-    // bande fausse, il n'en supprime aucune de vraie.
-    const couvert: any = calculateScore('Q_SOM_02', repartir('Q_SOM_02', 12, 0, 3));
-    expect(couvert.total).toBe(12);
-    expect(couvert.interpretation?.label).toBeTruthy();
-  });
-
   it('Q_MOD_03 : une moyenne à décimale ne relève d’aucune bande bornée sur des entiers', () => {
     // Bandes [1-3], [4-6], [7-8], [9-10] ; la valeur servie est une moyenne au
     // dixième. 28 % des totaux atteignables tombent entre deux bandes, et
@@ -263,3 +245,118 @@ describe('bandes d’interprétation — aucune bande plutôt qu’une bande fau
     expect(avecBande.interpretation?.dominant).toBe('A');
   });
 });
+describe('frontières du 2026-07-30 — alignées sur la source, ou arbitrées en le disant', () => {
+  // Première rédaction refusée en revue : elle présentait le comblement du trou
+  // Epworth à 6 comme « conforme à la source » (faux — la source a les MÊMES
+  // trous à 6 et 15), déplaçait Horne 70 contre le « <= 69 » de sa propre source,
+  // et n'avait corrigé qu'une des TROIS bornes chevauchées du QDRS.
+
+  it('Epworth : les deux trous de source sont comblés par le même arbitrage', () => {
+    // Source : « < 6 », « == 7 », « == 8 », « >= 9 », « <= 14 », « > 15 » — 6 et
+    // 15 n'appartiennent à rien. Arbitrage praticien : 6 → bande moyenne (hors
+    // normalité sans être >= 9), 15 → bande 9-15 (pas « excessive » au sens du
+    // « > 15 »).
+    expect((calculateScore('Q_SOM_02', repartir('Q_SOM_02', 6, 0, 3)) as any)
+      .interpretation?.label).toContain('Score moyen');
+    expect((calculateScore('Q_SOM_02', repartir('Q_SOM_02', 15, 0, 3)) as any)
+      .interpretation?.label).toContain('pathologies possibles');
+    // Les frontières de source, elles, ne bougent pas.
+    expect((calculateScore('Q_SOM_02', repartir('Q_SOM_02', 5, 0, 3)) as any)
+      .interpretation?.label).toContain('Pas de somnolence');
+    expect((calculateScore('Q_SOM_02', repartir('Q_SOM_02', 16, 0, 3)) as any)
+      .interpretation?.label).toContain('excessive');
+  });
+
+  it('QDRS : les TROIS bornes chevauchées vont à la bande la plus atteinte', () => {
+    // Grille source, relevée à l'identique par les deux lectures du banc :
+    // 0-1 / 1,5-5,5 / 6-12 / 12,5-17 / 17,5-30. Avant : 1,5 sortait « Normal »,
+    // 12,5 « Démence légère », 17,5 « légère à modérée » — le patient le plus
+    // atteint recevait la bande la plus rassurante, à chaque borne partagée.
+    const items = itemsDe('Q_GEO_05');
+    const totalDe = (t: number) => {
+      // scores en pas de 0,5 : répartir t sur les items (max 3 chacun)
+      const r: Record<string, number> = {};
+      let reste = t;
+      for (const q of items) { const v = Math.min(3, reste); r[q.id] = v; reste = +(reste - v).toFixed(1); }
+      return r;
+    };
+    const cas: Array<[number, string]> = [
+      [1, 'Normal'], [1.5, 'MCI'], [5.5, 'MCI'], [6, 'Démence légère'],
+      [12, 'Démence légère'], [12.5, 'légère à modérée'], [17, 'légère à modérée'],
+      [17.5, 'modérée à sévère'],
+    ];
+    for (const [t, attendu] of cas) {
+      const r: any = calculateScore('Q_GEO_05', totalDe(t));
+      expect(r.total, `total ${t}`).toBe(t);
+      expect(r.interpretation?.label, `total ${t}`).toContain(attendu);
+    }
+  });
+
+  it('Horne : 70 reste « Tout à fait du matin », comme la table publiée', () => {
+    // La source du support porte un TROU à 70 (« modérément <= 69 », « tout à
+    // fait > 70 ») ; la table publiée de Horne & Östberg met 70-86 en « tout à
+    // fait ». Une première rédaction avait déplacé 70 vers « modérément » sur la
+    // foi du seul « > 70 » : elle contredisait le « <= 69 » de la même source.
+    expect((calculateScore('Q_SOM_05', repartir('Q_SOM_05', 69, 1, 5)) as any)
+      .interpretation?.label).toBe('Modérément du matin');
+    expect((calculateScore('Q_SOM_05', repartir('Q_SOM_05', 70, 1, 5)) as any)
+      .interpretation?.label).toBe('Tout à fait du matin');
+  });
+
+  it('aucune grille du catalogue ne partage une borne entre deux bandes', () => {
+    // La garde de CLASSE, écrite après que la borne 1,5 du QDRS a été corrigée
+    // seule : un balayage attrape les deux autres et toutes les futures. Une
+    // borne partagée est toujours résolue par l'ordre d'écriture — c'est-à-dire
+    // par accident.
+    // Exemption UNIQUE, nommée : la grille de l'AUDIT est différenciée par
+    // population (« 0-6 homme », « 6-12 femme ») — le chevauchement est ENTRE
+    // populations, par conception, et le moteur `audit` applique lui-même les
+    // seuils par sexe sans passer par `interpretRanges` : l'ordre d'écriture ne
+    // résout rien, parce que rien ne le lit. Toute nouvelle exemption doit venir
+    // avec sa raison ici.
+    const EXEMPTES = new Set(['Q_NEU_07']);
+    const coupables: string[] = [];
+    for (const [id, q] of Object.entries(QUESTIONNAIRE_CATALOGUE as any)) {
+      if (EXEMPTES.has(id)) continue;
+      const jeux: any[][] = [];
+      const sc = (q as any).scoring;
+      if (Array.isArray(sc?.interpretation) && sc.interpretation.every((b: any) => typeof b?.min === 'number')) {
+        jeux.push(sc.interpretation);
+      }
+      for (const sub of sc?.subScores ?? []) if (Array.isArray(sub.ranges)) jeux.push(sub.ranges);
+      for (const grp of Array.isArray(sc?.interpretation) ? sc.interpretation : []) {
+        if (Array.isArray(grp?.ranges)) jeux.push(grp.ranges);
+      }
+      for (const bandes of jeux) {
+        for (const a of bandes) for (const b of bandes) {
+          if (a === b) continue;
+          if (typeof a.max === 'number' && typeof b.min === 'number' && a.max === b.min) {
+            coupables.push(`${id} : ${a.max} appartient à deux bandes`);
+          }
+        }
+      }
+    }
+    expect(coupables, coupables.join('\n')).toEqual([]);
+  });
+
+  it('Berlin : la catégorie somnolence exige DEUX réponses positives, comme la source', () => {
+    // Servi jusqu'ici : UNE seule suffisait. Un patient positif au seul
+    // « fatigue au réveil », avec une HTA, sortait « Risque élevé d'apnée —
+    // polysomnographie recommandée ». Les deux lectures du banc portent le
+    // « >= 2 » de la source.
+    const unSeul: any = calculateScore('Q_SOM_03',
+      { BE1: 0, BE2: 0, BE3: 0, BE4: 0, BE5: 0, BE6: 2, BE7: 0, BE8: 1, BE9: 25 });
+    const cat2 = unSeul.categories.find((c: any) => c.id === 'C2');
+    expect(cat2.positive, 'une seule réponse positive ne suffit plus').toBe(false);
+    expect(unSeul.highRisk).toBe(false);
+    expect(unSeul.interpretation?.label).toContain('Risque faible');
+
+    // Deux positives : la catégorie bascule, et le verdict avec elle.
+    const deux: any = calculateScore('Q_SOM_03',
+      { BE1: 0, BE2: 0, BE3: 0, BE4: 0, BE5: 1, BE6: 2, BE7: 0, BE8: 1, BE9: 25 });
+    expect(deux.categories.find((c: any) => c.id === 'C2').positive).toBe(true);
+    expect(deux.highRisk, 'somnolence + facteurs de risque = deux catégories').toBe(true);
+  });
+});
+
+
