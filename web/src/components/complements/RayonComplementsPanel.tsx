@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
@@ -14,18 +14,18 @@ import type { CatalogueResult, FicheComplement } from '@/lib/supplement-library/
 // facettes INDÉPENDANTES (aucune ne pondère les autres), tri MONO-DIMENSION
 // (ordre neutre par défaut) et fiche justificative ouverte en tiroir. Jamais
 // de score global : la présentation reste multi-dimensions.
+//
+// Le catalogue compte 140 148 fiches : l'écran ne charge RIEN tant qu'aucun
+// critère n'est posé, et la base ne sert ensuite qu'une page. Le mur d'entrée
+// est délibéré, pas un oubli.
 
-type FacetteCle =
-  | 'qualite'
-  | 'biodisponibilite'
-  | 'grade'
-  | 'compatibilite'
-  | 'interactions'
-  | 'cumul'
-  | 'donneesManquantes'
-  | 'statut';
+type FacetteCle = 'qualite' | 'interactions' | 'donneesManquantes' | 'statut';
 
-const LABEL_FACETTE: Record<FacetteCle, string> = {
+// Facettes dont la donnée n'existe pas encore (composition des produits) :
+// affichées, désactivées et expliquées — jamais un filtre qui ne filtre rien.
+type FacetteGrisee = 'grade' | 'biodisponibilite' | 'compatibilite' | 'cumul';
+
+const LABEL_FACETTE: Record<FacetteCle | FacetteGrisee, string> = {
   qualite: 'Qualité de formulation',
   biodisponibilite: 'Biodisponibilité',
   grade: 'Grade de preuve',
@@ -66,81 +66,126 @@ const LABEL_TRI: Record<string, string> = {
   marque: 'Par marque',
   statut: 'Par statut de fiche',
   fraicheur: 'Par fraîcheur',
-  reglesCorrespondantes: 'Par nombre de règles correspondantes',
 };
 
-const FACETTES_ORDRE: FacetteCle[] = [
-  'qualite',
-  'biodisponibilite',
-  'grade',
-  'compatibilite',
-  'interactions',
-  'cumul',
-  'donneesManquantes',
-  'statut',
-];
+const FACETTES_ORDRE: FacetteCle[] = ['qualite', 'interactions', 'donneesManquantes', 'statut'];
+const FACETTES_GRISEES: FacetteGrisee[] = ['grade', 'biodisponibilite', 'compatibilite', 'cumul'];
+
+// Vocabulaire des facettes servies. Recopié du service À DESSEIN : importer
+// `catalogue.ts` depuis un composant client embarquerait Prisma dans le paquet
+// navigateur. Les valeurs doivent être connues AVANT toute réponse, sinon
+// aucune facette n'est cliquable tant qu'aucun critère n'est posé — et comme
+// une facette EST un critère, l'écran resterait sans issue. Un test de garde
+// interdit la dérive avec FACETTES.
+export const VALEURS_FACETTE: Record<FacetteCle, readonly string[]> = {
+  qualite: ['bien_documentee', 'partielle', 'lacunaire'],
+  interactions: ['signalees', 'aucune_connue', 'non_evaluee'],
+  donneesManquantes: ['liste_explicite', 'aucune', 'non_evaluee'],
+  statut: ['importee', 'verifiee'],
+};
+
+// Recopié de OFFSET_MAX du service, pour la même raison que le vocabulaire
+// ci-dessus. Une garde de test interdit la dérive.
+export const OFFSET_MAX_ECRAN = 10_000;
+
+const MESSAGE_CRITERE_ATTENDU =
+  'Recherchez un nom, une marque, une intention clinique, ou choisissez un filtre pour afficher des fiches.';
+const MESSAGE_FACETTE_GRISEE = 'Disponible après l’import de la composition des produits.';
 
 function libelleValeur(valeur: string): string {
   return LABEL_VALEUR[valeur] ?? valeur;
 }
 
 export function RayonComplementsPanel() {
+  const [rechercheSaisie, setRechercheSaisie] = useState('');
+  const [recherche, setRecherche] = useState('');
   const [intentionSaisie, setIntentionSaisie] = useState('');
   const [intention, setIntention] = useState('');
   const [tri, setTri] = useState('neutre');
+  const [page, setPage] = useState(1);
   const [selections, setSelections] = useState<Record<FacetteCle, string[]>>({
     qualite: [],
-    biodisponibilite: [],
-    grade: [],
-    compatibilite: [],
     interactions: [],
-    cumul: [],
     donneesManquantes: [],
     statut: [],
   });
 
   const [catalogue, setCatalogue] = useState<CatalogueResult | null>(null);
-  const [enCours, setEnCours] = useState(true);
-  const [echec, setEchec] = useState(false);
+  const [enCours, setEnCours] = useState(false);
+  const [messageEchec, setMessageEchec] = useState<string | null>(null);
   const [ficheOuverte, setFicheOuverte] = useState<FicheComplement | null>(null);
+
+  // Un critère au moins doit être posé : sans lui, la requête ramènerait le
+  // catalogue entier, que la fonction ne peut pas servir.
+  const aucunCritere = useMemo(
+    () => !recherche && !intention && FACETTES_ORDRE.every((cle) => selections[cle].length === 0),
+    [recherche, intention, selections],
+  );
 
   const requete = useMemo(() => {
     const params = new URLSearchParams();
+    if (recherche) params.set('q', recherche);
     if (intention) params.set('intention', intention);
     if (tri && tri !== 'neutre') params.set('tri', tri);
     for (const cle of FACETTES_ORDRE) {
       const valeurs = selections[cle];
       if (valeurs.length > 0) params.set(cle, valeurs.join(','));
     }
+    if (page > 1) params.set('page', String(page));
     const q = params.toString();
     return `/api/praticien/complements${q ? `?${q}` : ''}`;
-  }, [intention, tri, selections]);
+  }, [recherche, intention, tri, selections, page]);
+
+  // Jeton de séquence : seule la DERNIÈRE requête émise a le droit d'écrire à
+  // l'écran. Sans lui, une réponse lente arrivée après une réponse rapide
+  // affiche des fiches qui ne correspondent plus aux critères cochés — le tort
+  // exact que la route refuse en 400, réintroduit par le client.
+  const sequence = useRef(0);
 
   const charger = useCallback(async () => {
+    const jeton = ++sequence.current;
+    const perimee = () => jeton !== sequence.current;
     setEnCours(true);
-    setEchec(false);
+    setMessageEchec(null);
     try {
       const res = await fetch(requete, { cache: 'no-store' });
       const json = (await res.json()) as ComplementsApiResponse;
+      if (perimee()) return;
       if (!res.ok || !json.ok) {
-        setEchec(true);
+        setMessageEchec(!json.ok && json.error ? json.error : 'Impossible de charger le catalogue.');
         setCatalogue(null);
         return;
       }
       setCatalogue(json);
     } catch {
-      setEchec(true);
+      if (perimee()) return;
+      setMessageEchec('Impossible de charger le catalogue.');
       setCatalogue(null);
     } finally {
-      setEnCours(false);
+      // Le voyant ne s'éteint que pour la requête courante : une réponse
+      // périmée ne doit pas rouvrir la pagination pendant que l'autre vole.
+      if (!perimee()) setEnCours(false);
     }
   }, [requete]);
 
   useEffect(() => {
+    if (aucunCritere) {
+      // Invalide toute réponse encore en vol : sinon elle repeuplerait un
+      // écran que l'utilisateur vient de vider.
+      sequence.current += 1;
+      setCatalogue(null);
+      setMessageEchec(null);
+      setEnCours(false);
+      return;
+    }
     void charger();
-  }, [charger]);
+  }, [charger, aucunCritere]);
 
+  // Tout changement de critère ramène à la première page : sans cela, une
+  // recherche neuve s'ouvrirait sur la page 7 de la précédente — le plus
+  // souvent vide.
   function basculerFacette(cle: FacetteCle, valeur: string) {
+    setPage(1);
     setSelections((prev) => {
       const actuelles = prev[cle];
       const suivantes = actuelles.includes(valeur)
@@ -150,11 +195,25 @@ export function RayonComplementsPanel() {
     });
   }
 
+  function lancerRecherche() {
+    setPage(1);
+    setRecherche(rechercheSaisie.trim());
+  }
+
   function explorerIntention() {
+    setPage(1);
     setIntention(intentionSaisie.trim());
   }
 
-  const facettes = catalogue?.facettes ?? null;
+  const parPage = catalogue?.parPage ?? 25;
+  const total = catalogue?.total ?? 0;
+  // Le nombre de pages ANNONCÉ est celui des pages réellement atteignables :
+  // le service refuse au-delà de l'offset plafond. Annoncer « page 1 sur 5606 »
+  // quand la 402e est refusée serait un compte faux.
+  const nombrePages = Math.min(
+    total > 0 ? Math.ceil(total / parPage) : 1,
+    Math.floor(OFFSET_MAX_ECRAN / parPage) + 1,
+  );
 
   return (
     <div className="flex flex-col gap-4">
@@ -163,6 +222,42 @@ export function RayonComplementsPanel() {
           Choix multicritères sans score global : chaque dimension filtre indépendamment, le tri
           reste mono-dimension. L&apos;alimentation d&apos;abord — la supplémentation ensuite.
         </p>
+
+        {/* Recherche par nom ou marque */}
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
+            Nom ou marque
+            <input
+              value={rechercheSaisie}
+              onChange={(e) => setRechercheSaisie(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  lancerRecherche();
+                }
+              }}
+              placeholder="Ex. magnésium"
+              aria-label="Rechercher un produit ou une marque"
+              className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </label>
+          <Button type="button" variant="outline" onClick={lancerRecherche}>
+            Rechercher
+          </Button>
+          {recherche && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setPage(1);
+                setRecherche('');
+                setRechercheSaisie('');
+              }}
+            >
+              Effacer la recherche
+            </Button>
+          )}
+        </div>
 
         {/* Entrée par intention clinique */}
         <div className="mt-3 flex flex-wrap items-end gap-2">
@@ -210,7 +305,12 @@ export function RayonComplementsPanel() {
             Tri
             <select
               value={tri}
-              onChange={(e) => setTri(e.target.value)}
+              onChange={(e) => {
+                // Changer l'ordre rebat les fiches : rester en page 7 y
+                // montrerait un fragment sans rapport avec ce qu'on lisait.
+                setPage(1);
+                setTri(e.target.value);
+              }}
               aria-label="Clé de tri (mono-dimension)"
               className="ml-2 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             >
@@ -223,15 +323,14 @@ export function RayonComplementsPanel() {
           </label>
         </div>
 
-        {/* Facettes indépendantes */}
-        {facettes && (
-          <div className="mt-4 flex flex-col gap-3">
+        {/* Facettes indépendantes — disponibles dès l'ouverture de l'écran. */}
+        <div className="mt-4 flex flex-col gap-3">
             {FACETTES_ORDRE.map((cle) => (
               <fieldset key={cle} className="flex flex-wrap items-center gap-1.5">
                 <legend className="mr-2 text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
                   {LABEL_FACETTE[cle]}
                 </legend>
-                {(facettes[cle] as string[]).map((valeur) => {
+                {VALEURS_FACETTE[cle].map((valeur) => {
                   const actif = selections[cle].includes(valeur);
                   return (
                     <button
@@ -251,8 +350,17 @@ export function RayonComplementsPanel() {
                 })}
               </fieldset>
             ))}
-          </div>
-        )}
+
+            {/* Critères sans donnée : montrés, désactivés, expliqués. */}
+            {FACETTES_GRISEES.map((cle) => (
+              <fieldset key={cle} className="flex flex-wrap items-center gap-1.5">
+                <legend className="mr-2 text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
+                  {LABEL_FACETTE[cle]}
+                </legend>
+                <span className="text-2xs text-muted-foreground">{MESSAGE_FACETTE_GRISEE}</span>
+              </fieldset>
+            ))}
+        </div>
       </div>
 
       {/* Résultats */}
@@ -265,20 +373,20 @@ export function RayonComplementsPanel() {
         </div>
 
         <div className="p-4">
-          {enCours ? (
+          {aucunCritere ? (
+            <p className="text-sm text-muted-foreground">{MESSAGE_CRITERE_ATTENDU}</p>
+          ) : enCours ? (
             <p className="text-sm text-muted-foreground">Chargement du catalogue…</p>
-          ) : echec ? (
+          ) : messageEchec ? (
             <div role="alert" className="flex flex-col gap-2 text-sm text-status-danger">
-              <p>Impossible de charger le catalogue.</p>
+              <p>{messageEchec}</p>
               <Button type="button" variant="outline" onClick={() => void charger()}>
                 Réessayer
               </Button>
             </div>
           ) : !catalogue || catalogue.fiches.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              {catalogue && catalogue.total === 0 && intention
-                ? 'Aucune fiche ne correspond à ces critères pour cette intention.'
-                : 'Catalogue en cours de constitution — les fiches DGCCRF / Compl’Alim s’afficheront ici dès leur import.'}
+              Aucune fiche ne correspond à ces critères.
             </p>
           ) : (
             <ul className="flex flex-col gap-2">
@@ -317,6 +425,36 @@ export function RayonComplementsPanel() {
                 </li>
               ))}
             </ul>
+          )}
+
+          {catalogue && catalogue.fiches.length > 0 && (
+            <nav
+              aria-label="Pagination du catalogue"
+              className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3"
+            >
+              <span className="font-mono text-2xs text-muted-foreground">
+                Page {catalogue.page} sur {nombrePages} · {catalogue.total} fiche
+                {catalogue.total > 1 ? 's' : ''} au total
+              </span>
+              <span className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={catalogue.page <= 1 || enCours}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Page précédente
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={catalogue.page >= nombrePages || enCours}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Page suivante
+                </Button>
+              </span>
+            </nav>
           )}
         </div>
       </div>

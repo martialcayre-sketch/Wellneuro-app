@@ -10,6 +10,18 @@
 // Réutilise le socle déjà mergé : resoudreIntentions (grades GRADE + forme
 // préférée par intention), evaluerSentinelle (cumuls / dépassements de seuils),
 // construireTableauCompatibilite (lecture de compatibilité protocole).
+//
+// Sélection, tri, comptage et pagination se font DANS POSTGRES ; les huit
+// dimensions ne sont calculées que pour la page servie (≤ 50 fiches). Le
+// catalogue de production compte 140 148 fiches : les charger toutes pour
+// filtrer en mémoire dépassait la limite de réponse de la fonction (~4,5 Mo)
+// et l'écran ne se chargeait plus du tout.
+//
+// Règle qui découle de la pagination, non négociable : AUCUN filtre ne
+// s'applique après elle. Une facette est exprimée en base, ou elle est
+// indisponible (grisée à l'écran) — un filtre appliqué en mémoire sur la page
+// produirait des pages à trous et un total faux.
+import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/prisma';
 import { isC4Enabled } from './featureFlag';
 import { resoudreIntentions } from './resolution';
@@ -24,7 +36,15 @@ import {
   type ValeurQualiteFormulation,
 } from './types';
 
-export const C4_CATALOGUE_VERSION = 'c4-catalogue-v1' as const;
+export const C4_CATALOGUE_VERSION = 'c4-catalogue-v2' as const;
+
+// Bornes de pagination. 50 fiches × ~5 Ko ≈ 250 Ko : marge large sous la limite
+// de réponse de la fonction. L'offset est plafonné parce que personne ne
+// feuillette la page 401 d'un catalogue — au-delà, on demande d'affiner.
+export const PAR_PAGE_DEFAUT = 25;
+export const PAR_PAGE_MAX = 50;
+export const OFFSET_MAX = 10_000;
+export const RECHERCHE_MAX = 200;
 
 // Vocabulaire fermé aligné sur les CHECK de la migration catalogue
 // (20260724133000_c4_supplement_product_catalogue). Le niveau de complétude du
@@ -155,26 +175,48 @@ export const FACETTES = {
   statut: ['importee', 'verifiee'] as string[],
 } as const;
 
+// Facettes SERVIES : celles dont le prédicat s'exprime en base sur des colonnes
+// de la fiche. Les autres (grade, biodisponibilité, compatibilité, cumul)
+// dépendent de la composition des produits et des règles cliniques — deux
+// tables VIDES en production tant que l'import des compositions n'a pas eu
+// lieu. Les servir donnerait un filtre qui a l'air de marcher et ne filtre
+// rien : elles sont déclarées indisponibles et refusées explicitement, jamais
+// silencieusement ignorées.
+export const FACETTES_SERVIES = ['qualite', 'statut', 'donneesManquantes', 'interactions'] as const;
+export const FACETTES_INDISPONIBLES = [
+  'grade',
+  'biodisponibilite',
+  'compatibilite',
+  'cumul',
+] as const;
+export type CleFacetteServie = (typeof FACETTES_SERVIES)[number];
+
 // Tri MONO-DIMENSION explicite (§5). L'ordre par défaut est NEUTRE
 // (alphabétique par nom commercial) — jamais un tri « meilleur produit ».
-export const TRIS = ['neutre', 'marque', 'statut', 'fraicheur', 'reglesCorrespondantes'] as const;
+export const TRIS = ['neutre', 'marque', 'statut', 'fraicheur'] as const;
 export type CleTri = (typeof TRIS)[number];
+// Même raison que les facettes ci-dessus : trier par nombre de règles
+// correspondantes suppose des règles cliniques ; il n'y en a aucune en base.
+export const TRIS_INDISPONIBLES = ['reglesCorrespondantes'] as const;
+
+export const MESSAGE_INDISPONIBLE =
+  "Ce critère sera disponible après l'import de la composition des produits.";
 
 export type FiltresCatalogue = {
   qualite?: ValeurQualiteFormulation[];
-  biodisponibilite?: ValeurBiodisponibilite[];
-  grade?: GradePreuveScientifique[];
-  compatibilite?: ValeurCompatibiliteProtocole[];
   interactions?: ValeurInteractions[];
-  cumul?: ValeurCumul[];
   donneesManquantes?: ValeurDonneesManquantes[];
   statut?: string[];
 };
 
 export type OptionsCatalogue = {
   intentionCode?: string | null;
+  /** Recherche libre sur le nom commercial ou la marque (insensible à la casse). */
+  recherche?: string | null;
   filtres?: FiltresCatalogue;
   tri?: CleTri;
+  page?: number;
+  parPage?: number;
 };
 
 export type CatalogueResult = {
@@ -184,10 +226,27 @@ export type CatalogueResult = {
   intentionFiltre: { code: string; labelFr: string } | null;
   codesInconnus: string[];
   tri: CleTri;
+  recherche: string;
+  page: number;
+  parPage: number;
+  /** Total des fiches correspondant aux critères — PAS la taille de la page. */
   total: number;
   fiches: FicheComplement[];
   facettes: typeof FACETTES;
+  facettesServies: typeof FACETTES_SERVIES;
+  facettesIndisponibles: typeof FACETTES_INDISPONIBLES;
 };
+
+/**
+ * Requête refusée pour une raison exprimable à l'utilisateur (pagination hors
+ * bornes). La route la traduit en 400 ; elle ne signale JAMAIS une panne.
+ */
+export class CatalogueRequeteInvalide extends Error {
+  constructor(readonly raison: string, message: string) {
+    super(message);
+    this.name = 'CatalogueRequeteInvalide';
+  }
+}
 
 // ─── Libellés honnêtes de statut de fiche ───────────────────────────────────
 
@@ -402,6 +461,16 @@ function calculerCumul(
   };
 }
 
+/** Composition inconnue : rien à croiser, donc rien à conclure. */
+function cumulNonEvaluable(): DimensionsFiche['cumulVsSeuils'] {
+  return {
+    valeur: 'non_evaluee',
+    signaux: [],
+    justification:
+      'Composition inconnue pour cette fiche : cumuls et seuils ne sont pas évaluables. L\'absence de signal ne vaut pas absence de risque.',
+  };
+}
+
 function calculerDonneesManquantes(donnees: string[]): DimensionsFiche['donneesManquantes'] {
   if (donnees.length === 0) {
     return {
@@ -417,65 +486,156 @@ function calculerDonneesManquantes(donnees: string[]): DimensionsFiche['donneesM
   };
 }
 
-// ─── Filtrage à FACETTES INDÉPENDANTES ──────────────────────────────────────
-// Chaque facette est un test d'appartenance ; aucune ne pondère les autres.
-// Une fiche passe une facette si l'une de ses valeurs pour cette dimension est
-// sélectionnée (OU intra-facette) ; les facettes se combinent en ET.
-
-function passeFacette<T>(selection: T[] | undefined, valeursFiche: T[]): boolean {
-  if (!selection || selection.length === 0) return true;
-  return valeursFiche.some((v) => selection.includes(v));
-}
-
-function fichePasseFiltres(fiche: FicheComplement, filtres: FiltresCatalogue): boolean {
-  return (
-    passeFacette(filtres.qualite, [fiche.dimensions.qualiteFormulation.valeur])
-    && passeFacette(filtres.biodisponibilite, fiche.dimensions.biodisponibiliteForme.valeursPresentes)
-    && passeFacette(filtres.grade, fiche.dimensions.gradePreuveParIntention.valeurs.map((v) => v.grade))
-    && passeFacette(filtres.compatibilite, [fiche.dimensions.compatibiliteProtocole.valeur])
-    && passeFacette(filtres.interactions, [fiche.dimensions.interactionsSignalees.valeur])
-    && passeFacette(filtres.cumul, [fiche.dimensions.cumulVsSeuils.valeur])
-    && passeFacette(filtres.donneesManquantes, [fiche.dimensions.donneesManquantes.valeur])
-    && passeFacette(filtres.statut, [fiche.statutFiche])
-  );
-}
-
-// ─── Tri mono-dimension (ordre neutre par défaut) ───────────────────────────
-
 function comparerTexte(a: string, b: string): number {
   return a.localeCompare(b, 'fr');
 }
 
-function trierFiches(fiches: FicheComplement[], tri: CleTri): FicheComplement[] {
-  const parNom = (a: FicheComplement, b: FicheComplement) =>
-    comparerTexte(a.nomCommercial, b.nomCommercial) || comparerTexte(a.produitId, b.produitId);
-  const copie = [...fiches];
+// ─── Facettes INDÉPENDANTES, exprimées en base ──────────────────────────────
+// Chaque facette est un test d'appartenance ; aucune ne pondère les autres.
+// Intra-facette les valeurs se combinent en OU, les facettes entre elles en ET
+// — sémantique identique à celle qui était calculée en mémoire, mais évaluée
+// AVANT la pagination.
+
+/** Le seuil qui rend une interaction « signalée » : actif, bascule, alerte. */
+const SEUIL_SIGNALANT = { actif: true, basculeRisque: true, safetyAlertId: { not: null } } as const;
+const SEUIL_ACTIF = { actif: true } as const;
+
+function porteUnSeuil(seuil: Prisma.IngredientFunctionalThresholdWhereInput): Prisma.SupplementProductWhereInput {
+  return { compositions: { some: { ingredient: { functionalThresholds: { some: seuil } } } } };
+}
+
+function neePorteAucunSeuil(
+  seuil: Prisma.IngredientFunctionalThresholdWhereInput,
+): Prisma.SupplementProductWhereInput {
+  return { compositions: { none: { ingredient: { functionalThresholds: { some: seuil } } } } };
+}
+
+/**
+ * Traduit une valeur de facette en prédicat. `null` = valeur qu'aucune fiche ne
+ * peut porter (le calcul en mémoire ne la produit jamais) : elle n'ajoute pas
+ * un prédicat toujours vrai, elle retire simplement une branche du OU.
+ */
+function predicatFacette(cle: CleFacetteServie, valeur: string): Prisma.SupplementProductWhereInput | null {
+  switch (cle) {
+    case 'qualite':
+      return { niveauCompletude: valeur };
+    case 'statut':
+      return { statutFiche: valeur };
+    case 'donneesManquantes':
+      if (valeur === 'aucune') return { donneesManquantes: { isEmpty: true } };
+      if (valeur === 'liste_explicite') return { donneesManquantes: { isEmpty: false } };
+      // « non_evaluee » : calculerDonneesManquantes ne la produit jamais.
+      return null;
+    case 'interactions':
+      if (valeur === 'signalees') return porteUnSeuil(SEUIL_SIGNALANT);
+      if (valeur === 'aucune_connue') {
+        // Un seuil actif existe, mais aucun ne bascule avec alerte.
+        return { AND: [porteUnSeuil(SEUIL_ACTIF), neePorteAucunSeuil(SEUIL_SIGNALANT)] };
+      }
+      // « non_evaluee » : aucun ingrédient de la fiche ne porte de seuil actif.
+      return neePorteAucunSeuil(SEUIL_ACTIF);
+  }
+}
+
+/**
+ * Neutralise les jokers de `ILIKE` saisis par le praticien. Sans cela, chercher
+ * « B_12 » remonte aussi « B-12 » et « B912 », et « 100% » remonte tout ce qui
+ * commence par « 100 » : le champ cherche autre chose que ce qui y est écrit.
+ * L'antislash est l'échappement par défaut de `LIKE` en PostgreSQL — il se
+ * neutralise donc lui-même en premier.
+ */
+function echapperJokers(saisie: string): string {
+  return saisie.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
+/**
+ * Construit le `where` complet. Rend `null` quand une facette sélectionnée ne
+ * retient AUCUNE valeur satisfiable : le résultat est alors vide par
+ * construction, sans interroger la base — jamais un filtre silencieusement
+ * ignoré (qui servirait tout le catalogue).
+ */
+function construireWhere(
+  filtres: FiltresCatalogue,
+  recherche: string,
+): Prisma.SupplementProductWhereInput | null {
+  const conditions: Prisma.SupplementProductWhereInput[] = [
+    // Le pointeur de version courante EST la source des fiches servies.
+    { versionCourante: { isNot: null } },
+    { statutFiche: { not: 'inactive' } },
+  ];
+
+  if (recherche) {
+    const motif = echapperJokers(recherche);
+    conditions.push({
+      OR: [
+        { nomCommercial: { contains: motif, mode: 'insensitive' } },
+        { marque: { contains: motif, mode: 'insensitive' } },
+      ],
+    });
+  }
+
+  for (const cle of FACETTES_SERVIES) {
+    const selection = filtres[cle];
+    if (!selection || selection.length === 0) continue;
+    const branches = selection
+      .map((valeur) => predicatFacette(cle, valeur))
+      .filter((p): p is Prisma.SupplementProductWhereInput => p !== null);
+    if (branches.length === 0) return null;
+    conditions.push(branches.length === 1 ? branches[0] : { OR: branches });
+  }
+
+  return { AND: conditions };
+}
+
+// ─── Tri mono-dimension (ordre neutre par défaut) ───────────────────────────
+// Toujours départagé par l'identifiant : sans clé totale, deux pages
+// successives peuvent réafficher ou sauter une fiche.
+
+function construireOrderBy(tri: CleTri): Prisma.SupplementProductOrderByWithRelationInput[] {
   switch (tri) {
     case 'marque':
-      return copie.sort((a, b) => comparerTexte(a.marque, b.marque) || parNom(a, b));
+      return [{ marque: 'asc' }, { nomCommercial: 'asc' }, { id: 'asc' }];
     case 'statut':
-      return copie.sort((a, b) => comparerTexte(a.statutFiche, b.statutFiche) || parNom(a, b));
+      return [{ statutFiche: 'asc' }, { nomCommercial: 'asc' }, { id: 'asc' }];
     case 'fraicheur':
       // Plus récent d'abord ; une fiche sans date de vérification passe en fin.
-      return copie.sort((a, b) => {
-        const da = a.dimensions.fraicheurProvenance.dateDerniereVerification;
-        const db = b.dimensions.fraicheurProvenance.dateDerniereVerification;
-        if (da && db) return db.localeCompare(da) || parNom(a, b);
-        if (da) return -1;
-        if (db) return 1;
-        return parNom(a, b);
-      });
-    case 'reglesCorrespondantes':
-      // Compteur factuel décroissant — clé de tri explicite choisie par le
-      // praticien, jamais un tri « meilleur produit » par défaut.
-      return copie.sort((a, b) => b.reglesCorrespondantes - a.reglesCorrespondantes || parNom(a, b));
+      return [
+        { dateDerniereVerification: { sort: 'desc', nulls: 'last' } },
+        { nomCommercial: 'asc' },
+        { id: 'asc' },
+      ];
     case 'neutre':
     default:
-      return copie.sort(parNom);
+      return [{ nomCommercial: 'asc' }, { id: 'asc' }];
   }
 }
 
 // ─── Point d'entrée ─────────────────────────────────────────────────────────
+
+function resultatVide(params: {
+  tri: CleTri;
+  recherche: string;
+  page: number;
+  parPage: number;
+  intentionFiltre: { code: string; labelFr: string } | null;
+  codesInconnus: string[];
+}): CatalogueResult {
+  return {
+    contractVersion: C4_CATALOGUE_VERSION,
+    aucunScoreGlobal: true,
+    intentionFiltre: params.intentionFiltre,
+    codesInconnus: params.codesInconnus,
+    tri: params.tri,
+    recherche: params.recherche,
+    page: params.page,
+    parPage: params.parPage,
+    total: 0,
+    fiches: [],
+    facettes: FACETTES,
+    facettesServies: FACETTES_SERVIES,
+    facettesIndisponibles: FACETTES_INDISPONIBLES,
+  };
+}
 
 export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<CatalogueResult> {
   if (!isC4Enabled()) {
@@ -487,6 +647,17 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
   const tri: CleTri = options.tri && TRIS.includes(options.tri) ? options.tri : 'neutre';
   const filtres = options.filtres ?? {};
   const intentionCode = options.intentionCode?.trim() || null;
+  const recherche = (options.recherche ?? '').trim().slice(0, RECHERCHE_MAX);
+
+  const parPage = Math.max(1, Math.min(Math.trunc(options.parPage ?? PAR_PAGE_DEFAUT), PAR_PAGE_MAX));
+  const page = Math.max(1, Math.trunc(options.page ?? 1));
+  const offset = (page - 1) * parPage;
+  if (offset > OFFSET_MAX) {
+    throw new CatalogueRequeteInvalide(
+      'offset_trop_loin',
+      'Cette page est trop loin dans le catalogue — affinez la recherche.',
+    );
+  }
 
   // Entrée par intention clinique : résolution une fois, partagée par toutes
   // les fiches (grades, forme préférée, sentinelle). Aucune intention → aucune
@@ -497,48 +668,64 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
   const codesInconnus: string[] = [];
   if (intentionCode) {
     resolution = await resoudreIntentions([intentionCode]);
-    candidatsSentinelle = await evaluerSentinelle(resolution);
     const trouvee = resolution.intentions[0]?.intention ?? null;
     intentionFiltre = trouvee ? { code: trouvee.code, labelFr: trouvee.labelFr } : null;
     codesInconnus.push(...resolution.codesInconnus);
+    // Une intention NON RÉSOLUE n'ouvre aucune lecture : sans elle, la
+    // sentinelle rend une liste vide, que les dimensions liraient comme
+    // « aucun signal » — soit un feu vert tiré d'un code saisi au hasard.
+    if (trouvee) candidatsSentinelle = await evaluerSentinelle(resolution);
   }
   const vue = projeterResolution(resolution);
 
-  // Le pointeur de version courante EST la source des fiches servies.
-  const lignes = (await prisma.supplementProductVersionCourante.findMany({
-    select: {
-      productId: true,
-      product: {
-        select: {
-          id: true,
-          nomCommercial: true,
-          marque: true,
-          marche: true,
-          sourceProvenance: true,
-          sourceIdentifiant: true,
-          sourceUrl: true,
-          dateDerniereVerification: true,
-          statutFiche: true,
-          niveauCompletude: true,
-          donneesManquantes: true,
-          versionFormulation: true,
-          compositions: {
-            orderBy: { position: 'asc' },
-            select: {
-              doseParPortion: true,
-              unite: true,
-              position: true,
-              ingredient: { select: { id: true, code: true, nomFr: true } },
-              forme: { select: { id: true, code: true, labelFr: true } },
-            },
+  const where = construireWhere(filtres, recherche);
+  // Facette dont aucune valeur n'est satisfiable : résultat vide PAR
+  // CONSTRUCTION, sans requête. Ne jamais retomber sur un where absent, qui
+  // servirait le catalogue entier.
+  if (where === null) {
+    return resultatVide({ tri, recherche, page, parPage, intentionFiltre, codesInconnus });
+  }
+
+  // Sélection, tri, comptage et pagination en base : seule la page traverse
+  // ensuite le calcul des dimensions.
+  const [total, produits] = await Promise.all([
+    prisma.supplementProduct.count({ where }),
+    prisma.supplementProduct.findMany({
+      where,
+      orderBy: construireOrderBy(tri),
+      skip: offset,
+      take: parPage,
+      select: {
+        id: true,
+        nomCommercial: true,
+        marque: true,
+        marche: true,
+        sourceProvenance: true,
+        sourceIdentifiant: true,
+        sourceUrl: true,
+        dateDerniereVerification: true,
+        statutFiche: true,
+        niveauCompletude: true,
+        donneesManquantes: true,
+        versionFormulation: true,
+        compositions: {
+          orderBy: { position: 'asc' },
+          select: {
+            doseParPortion: true,
+            unite: true,
+            position: true,
+            ingredient: { select: { id: true, code: true, nomFr: true } },
+            forme: { select: { id: true, code: true, labelFr: true } },
           },
         },
       },
-    },
-  })) as LigneFiche[];
+    }),
+  ]);
 
-  // Fiches inactives exclues ; catalogue vide géré proprement en amont.
-  const fichesActives = lignes.filter((l) => l.product.statutFiche !== 'inactive');
+  const fichesActives = (produits as LigneFiche['product'][]).map((product) => ({
+    productId: product.id,
+    product,
+  }));
 
   // Seuils fonctionnels des ingrédients présents — pour les interactions
   // (signalement) au niveau fiche, indépendamment de toute intention.
@@ -578,16 +765,25 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
       unite: c.unite,
     }));
 
+    // Une fiche sans composition connue n'est PAS une fiche sans conflit : on
+    // ignore ce qu'elle contient. Les deux dimensions qui se lisent par
+    // intersection avec la composition (compatibilité, cumul) rendraient
+    // sinon « Compatible » et « Aucun cumul » — un feu vert tiré du vide.
+    // Abstention, comme partout ailleurs : non renseigné n'est jamais zéro.
+    const compositionConnue = p.compositions.length > 0;
+
     const qualiteValeur = QUALITE_PAR_COMPLETUDE[p.niveauCompletude] ?? 'non_evaluee';
     const biodisponibiliteForme = calculerBiodisponibilite(p.compositions, vue);
     const gradePreuveParIntention = calculerGrades(p.compositions, vue);
     const interactionsSignalees = calculerInteractions(p.compositions, seuilsParIngredient, ingredientCodeParId);
-    const cumulVsSeuils = calculerCumul(p.compositions, candidatsSentinelle);
+    const cumulVsSeuils = compositionConnue
+      ? calculerCumul(p.compositions, candidatsSentinelle)
+      : cumulNonEvaluable();
     const donneesManquantes = calculerDonneesManquantes(p.donneesManquantes ?? []);
 
     // Compatibilité protocole : lecture RÉUTILISÉE de construireTableauCompatibilite,
     // alimentée par les signaux de la sentinelle touchant CETTE fiche.
-    const candidatsFiche = candidatsSentinelle === null
+    const candidatsFiche = candidatsSentinelle === null || !compositionConnue
       ? null
       : candidatsSentinelle.filter((candidat) =>
         candidat.ingredientsConcernes.some((code) => composition.some((c) => c.ingredientCode === code)));
@@ -650,17 +846,22 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
     };
   });
 
-  const filtrees = fiches.filter((fiche) => fichePasseFiltres(fiche, filtres));
-  const triees = trierFiches(filtrees, tri);
-
+  // Les fiches arrivent déjà filtrées et triées par la base : aucun filtre, ni
+  // aucun tri, ne s'applique ici — il porterait sur la page seule et rendrait
+  // le total incohérent avec ce qui est affiché.
   return {
     contractVersion: C4_CATALOGUE_VERSION,
     aucunScoreGlobal: true,
     intentionFiltre,
     codesInconnus,
     tri,
-    total: triees.length,
-    fiches: triees,
+    recherche,
+    page,
+    parPage,
+    total,
+    fiches,
     facettes: FACETTES,
+    facettesServies: FACETTES_SERVIES,
+    facettesIndisponibles: FACETTES_INDISPONIBLES,
   };
 }

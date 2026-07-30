@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
   prisma: {
-    supplementProductVersionCourante: { findMany: vi.fn() },
+    supplementProduct: { findMany: vi.fn(), count: vi.fn() },
     ingredientFunctionalThreshold: { findMany: vi.fn() },
     clinicalIntentTag: { findMany: vi.fn() },
     clinicalRule: { findMany: vi.fn() },
@@ -10,7 +10,13 @@ const { prisma } = vi.hoisted(() => ({
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
-import { listerCatalogue } from './catalogue';
+import {
+  CatalogueRequeteInvalide,
+  OFFSET_MAX,
+  PAR_PAGE_DEFAUT,
+  PAR_PAGE_MAX,
+  listerCatalogue,
+} from './catalogue';
 
 const tagSommeil = {
   id: 'tag_sommeil', code: 'sommeil_fragmente', labelFr: 'Sommeil fragmenté', categorie: 'sommeil',
@@ -30,8 +36,8 @@ function regleMag(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function ligneProduit(over: Partial<{ id: string; nomCommercial: string; marque: string; statutFiche: string; niveauCompletude: string; donneesManquantes: string[]; dateDerniereVerification: Date | null; compositions: unknown[] }> = {}) {
-  const product = {
+function produit(over: Partial<{ id: string; nomCommercial: string; marque: string; statutFiche: string; niveauCompletude: string; donneesManquantes: string[]; dateDerniereVerification: Date | null; compositions: unknown[] }> = {}) {
+  return {
     id: over.id ?? 'prod_mag',
     nomCommercial: over.nomCommercial ?? 'Magnésium Plus',
     marque: over.marque ?? 'MarqueA',
@@ -52,14 +58,26 @@ function ligneProduit(over: Partial<{ id: string; nomCommercial: string; marque:
       },
     ],
   };
-  return { productId: product.id, product };
+}
+
+/** Le `where` transmis à la base pour la page (les deux requêtes le partagent). */
+function whereEnvoye() {
+  return prisma.supplementProduct.findMany.mock.calls[0][0].where;
+}
+function argsPage() {
+  return prisma.supplementProduct.findMany.mock.calls[0][0];
+}
+/** Aplatit les conditions du `AND` en une liste inspectable. */
+function conditions() {
+  return whereEnvoye().AND as Record<string, unknown>[];
 }
 
 describe('listerCatalogue (service catalogue C4A)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.WN_C4_ENABLED = 'true';
-    prisma.supplementProductVersionCourante.findMany.mockResolvedValue([]);
+    prisma.supplementProduct.findMany.mockResolvedValue([]);
+    prisma.supplementProduct.count.mockResolvedValue(0);
     prisma.ingredientFunctionalThreshold.findMany.mockResolvedValue([]);
     prisma.clinicalIntentTag.findMany.mockResolvedValue([]);
     prisma.clinicalRule.findMany.mockResolvedValue([]);
@@ -70,7 +88,7 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     await expect(listerCatalogue()).rejects.toThrow(/WN_C4_ENABLED/);
     process.env.WN_C4_ENABLED = 'false';
     await expect(listerCatalogue()).rejects.toThrow(/WN_C4_ENABLED/);
-    expect(prisma.supplementProductVersionCourante.findMany).not.toHaveBeenCalled();
+    expect(prisma.supplementProduct.findMany).not.toHaveBeenCalled();
   });
 
   it('gère un catalogue vide sans erreur (aucune fiche)', async () => {
@@ -78,20 +96,220 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     expect(res.fiches).toEqual([]);
     expect(res.total).toBe(0);
     expect(res.aucunScoreGlobal).toBe(true);
+    expect(res.contractVersion).toBe('c4-catalogue-v2');
   });
 
   it('ne produit AUCUN score global agrégé', async () => {
-    prisma.supplementProductVersionCourante.findMany.mockResolvedValue([ligneProduit()]);
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
     const res = await listerCatalogue();
     expect(res.aucunScoreGlobal).toBe(true);
-    // Aucune clé de score / classement / note / rang en sortie.
     expect(JSON.stringify(res)).not.toMatch(/"(score|note|rang|classement|poids|meilleurChoix)":/i);
   });
 
+  // ─── Pagination : le cœur du lot ──────────────────────────────────────────
+
+  it('ne charge QUE la page demandée, jamais le catalogue entier', async () => {
+    prisma.supplementProduct.count.mockResolvedValue(140148);
+    await listerCatalogue({ page: 3, parPage: 10 });
+    const args = argsPage();
+    expect(args.take).toBe(10);
+    expect(args.skip).toBe(20);
+  });
+
+  it('le total est celui de la BASE, pas la taille de la page', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(140148);
+    const res = await listerCatalogue({ recherche: 'magnésium' });
+    expect(res.total).toBe(140148);
+    expect(res.fiches).toHaveLength(1);
+  });
+
+  it('le comptage porte EXACTEMENT le même filtre que la page (sinon total incohérent)', async () => {
+    await listerCatalogue({ recherche: 'zinc', filtres: { statut: ['verifiee'] } });
+    expect(prisma.supplementProduct.count.mock.calls[0][0].where).toEqual(whereEnvoye());
+  });
+
+  it('borne parPage et page, et refuse un offset hors d’atteinte', async () => {
+    await listerCatalogue({ parPage: 5000 });
+    expect(argsPage().take).toBe(PAR_PAGE_MAX);
+
+    vi.clearAllMocks();
+    prisma.supplementProduct.findMany.mockResolvedValue([]);
+    prisma.supplementProduct.count.mockResolvedValue(0);
+    await listerCatalogue({});
+    expect(argsPage().take).toBe(PAR_PAGE_DEFAUT);
+    expect(argsPage().skip).toBe(0);
+
+    vi.clearAllMocks();
+    prisma.supplementProduct.findMany.mockResolvedValue([]);
+    prisma.supplementProduct.count.mockResolvedValue(0);
+    await listerCatalogue({ page: -4 });
+    expect(argsPage().skip).toBe(0);
+
+    // Au-delà du plafond : refus explicite, jamais une requête qui rame.
+    const pageTropLoin = Math.floor(OFFSET_MAX / PAR_PAGE_DEFAUT) + 3;
+    await expect(listerCatalogue({ page: pageTropLoin })).rejects.toBeInstanceOf(CatalogueRequeteInvalide);
+  });
+
+  it('trie TOUJOURS avec un départage par identifiant (pages stables)', async () => {
+    await listerCatalogue({ tri: 'marque' });
+    const ordre = argsPage().orderBy as Record<string, unknown>[];
+    expect(ordre[0]).toEqual({ marque: 'asc' });
+    expect(ordre[ordre.length - 1]).toEqual({ id: 'asc' });
+  });
+
+  it('le tri par fraîcheur place les fiches sans date en fin, jamais en tête', async () => {
+    await listerCatalogue({ tri: 'fraicheur' });
+    const ordre = argsPage().orderBy as Record<string, unknown>[];
+    expect(ordre[0]).toEqual({ dateDerniereVerification: { sort: 'desc', nulls: 'last' } });
+  });
+
+  it('une clé de tri inconnue retombe sur l’ordre neutre', async () => {
+    const res = await listerCatalogue({ tri: 'meilleur' as never });
+    expect(res.tri).toBe('neutre');
+    expect((argsPage().orderBy as Record<string, unknown>[])[0]).toEqual({ nomCommercial: 'asc' });
+  });
+
+  // ─── Filtres : exprimés en base, JAMAIS après la pagination ───────────────
+
+  it('n’applique aucun filtre après la pagination (la page revient telle quelle)', async () => {
+    // La base rend une fiche « lacunaire » alors que la facette demande
+    // « bien_documentee » : si un filtre mémoire subsistait, elle disparaîtrait
+    // de la page tout en restant comptée dans le total — page à trous.
+    prisma.supplementProduct.findMany.mockResolvedValue([produit({ niveauCompletude: 'lacunaire' })]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    const res = await listerCatalogue({ filtres: { qualite: ['bien_documentee'] } });
+    expect(res.fiches).toHaveLength(1);
+    expect(res.total).toBe(1);
+  });
+
+  it('exclut en base les fiches inactives et exige un pointeur de version courante', async () => {
+    await listerCatalogue();
+    expect(conditions()).toEqual(
+      expect.arrayContaining([
+        { versionCourante: { isNot: null } },
+        { statutFiche: { not: 'inactive' } },
+      ]),
+    );
+  });
+
+  it('la recherche porte sur le nom ET la marque, insensible à la casse', async () => {
+    await listerCatalogue({ recherche: '  Magnésium  ' });
+    expect(conditions()).toEqual(
+      expect.arrayContaining([
+        {
+          OR: [
+            { nomCommercial: { contains: 'Magnésium', mode: 'insensitive' } },
+            { marque: { contains: 'Magnésium', mode: 'insensitive' } },
+          ],
+        },
+      ]),
+    );
+  });
+
+  it('neutralise les jokers ILIKE saisis (le champ cherche ce qui y est écrit)', async () => {
+    await listerCatalogue({ recherche: 'B_12 100% a\\b' });
+    expect(conditions()).toEqual(
+      expect.arrayContaining([
+        {
+          OR: [
+            { nomCommercial: { contains: 'B\\_12 100\\% a\\\\b', mode: 'insensitive' } },
+            { marque: { contains: 'B\\_12 100\\% a\\\\b', mode: 'insensitive' } },
+          ],
+        },
+      ]),
+    );
+  });
+
+  it('une recherche vide n’ajoute aucun prédicat de texte', async () => {
+    await listerCatalogue({ recherche: '   ' });
+    expect(JSON.stringify(conditions())).not.toContain('contains');
+  });
+
+  it('les facettes se combinent en ET, les valeurs d’une même facette en OU', async () => {
+    await listerCatalogue({ filtres: { qualite: ['bien_documentee', 'partielle'], statut: ['verifiee'] } });
+    const conds = conditions();
+    expect(conds).toEqual(
+      expect.arrayContaining([
+        { OR: [{ niveauCompletude: 'bien_documentee' }, { niveauCompletude: 'partielle' }] },
+        { statutFiche: 'verifiee' },
+      ]),
+    );
+  });
+
+  it('traduit « données manquantes » en test sur le tableau, dans les deux sens', async () => {
+    await listerCatalogue({ filtres: { donneesManquantes: ['aucune'] } });
+    expect(conditions()).toEqual(
+      expect.arrayContaining([{ donneesManquantes: { isEmpty: true } }]),
+    );
+
+    vi.clearAllMocks();
+    prisma.supplementProduct.findMany.mockResolvedValue([]);
+    prisma.supplementProduct.count.mockResolvedValue(0);
+    await listerCatalogue({ filtres: { donneesManquantes: ['liste_explicite'] } });
+    expect(conditions()).toEqual(
+      expect.arrayContaining([{ donneesManquantes: { isEmpty: false } }]),
+    );
+  });
+
+  it('une facette dont AUCUNE valeur n’est satisfiable rend un vide, sans requête', async () => {
+    // « non_evaluee » n'est jamais produite pour les données manquantes : le
+    // filtre ne doit pas être ignoré (ce qui servirait tout le catalogue).
+    const res = await listerCatalogue({ filtres: { donneesManquantes: ['non_evaluee'] } });
+    expect(res.fiches).toEqual([]);
+    expect(res.total).toBe(0);
+    expect(prisma.supplementProduct.findMany).not.toHaveBeenCalled();
+    expect(prisma.supplementProduct.count).not.toHaveBeenCalled();
+  });
+
+  it('« interactions signalées » exige un seuil actif qui bascule ET porte une alerte', async () => {
+    await listerCatalogue({ filtres: { interactions: ['signalees'] } });
+    expect(conditions()).toEqual(
+      expect.arrayContaining([
+        {
+          compositions: {
+            some: {
+              ingredient: {
+                functionalThresholds: {
+                  some: { actif: true, basculeRisque: true, safetyAlertId: { not: null } },
+                },
+              },
+            },
+          },
+        },
+      ]),
+    );
+  });
+
+  it('« aucune interaction connue » exige un seuil actif SANS bascule signalante', async () => {
+    await listerCatalogue({ filtres: { interactions: ['aucune_connue'] } });
+    const serialise = JSON.stringify(conditions());
+    // Les deux volets sont présents : présence d'un seuil, absence d'alerte.
+    expect(serialise).toContain('"some"');
+    expect(serialise).toContain('"none"');
+  });
+
+  it('« interactions non évaluées » exige l’ABSENCE de tout seuil actif', async () => {
+    await listerCatalogue({ filtres: { interactions: ['non_evaluee'] } });
+    expect(conditions()).toEqual(
+      expect.arrayContaining([
+        {
+          compositions: {
+            none: { ingredient: { functionalThresholds: { some: { actif: true } } } },
+          },
+        },
+      ]),
+    );
+  });
+
+  // ─── Dimensions : calculées sur la page, sémantique inchangée ─────────────
+
   it('lit la qualité de formulation du niveau de complétude et le statut honnête de la fiche', async () => {
-    prisma.supplementProductVersionCourante.findMany.mockResolvedValue([
-      ligneProduit({ id: 'p1', statutFiche: 'importee', niveauCompletude: 'partielle', donneesManquantes: ['excipients'] }),
+    prisma.supplementProduct.findMany.mockResolvedValue([
+      produit({ id: 'p1', statutFiche: 'importee', niveauCompletude: 'partielle', donneesManquantes: ['excipients'] }),
     ]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
     const [fiche] = (await listerCatalogue()).fiches;
     expect(fiche.dimensions.qualiteFormulation.valeur).toBe('partielle');
     expect(fiche.statutFiche).toBe('importee');
@@ -101,19 +319,31 @@ describe('listerCatalogue (service catalogue C4A)', () => {
   });
 
   it('sans intention : dimensions dépendant du protocole restent « non évaluées » honnêtement', async () => {
-    prisma.supplementProductVersionCourante.findMany.mockResolvedValue([ligneProduit()]);
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
     const [fiche] = (await listerCatalogue()).fiches;
     expect(fiche.dimensions.compatibiliteProtocole.valeur).toBe('non_evaluee');
     expect(fiche.dimensions.cumulVsSeuils.valeur).toBe('non_evaluee');
     expect(fiche.dimensions.gradePreuveParIntention.valeurs).toEqual([]);
     expect(fiche.dimensions.biodisponibiliteForme.valeursPresentes).toEqual(['non_evaluee']);
     expect(fiche.reglesCorrespondantes).toBe(0);
-    // La résolution n'a pas été appelée : aucune intention demandée.
     expect(prisma.clinicalRule.findMany).not.toHaveBeenCalled();
   });
 
+  it('les seuils ne sont chargés QUE pour les ingrédients de la page', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(140148);
+    await listerCatalogue({ recherche: 'magnésium' });
+    expect(prisma.ingredientFunctionalThreshold.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { ingredientId: { in: ['ing_mag'] }, actif: true },
+      }),
+    );
+  });
+
   it('signale les interactions depuis les alertes de sécurité des seuils (sans intention)', async () => {
-    prisma.supplementProductVersionCourante.findMany.mockResolvedValue([ligneProduit()]);
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
     prisma.ingredientFunctionalThreshold.findMany.mockResolvedValue([
       {
         ingredientId: 'ing_mag', basculeRisque: true,
@@ -125,12 +355,12 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     expect(fiche.dimensions.interactionsSignalees.valeur).toBe('signalees');
     expect(fiche.dimensions.interactionsSignalees.signalements[0].messageFr).toMatch(/digestif/);
     expect(fiche.dimensions.interactionsSignalees.mentionMedecin).toMatch(/médecin traitant/i);
-    // La source du seuil enrichit les références scientifiques de la fiche.
     expect(fiche.referencesScientifiques.map(r => r.id)).toContain('src_seuil');
   });
 
   it('entrée par intention : grade GRADE par intention, forme préférée et compteur factuel', async () => {
-    prisma.supplementProductVersionCourante.findMany.mockResolvedValue([ligneProduit()]);
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
     prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
     prisma.clinicalRule.findMany.mockResolvedValue([regleMag()]);
 
@@ -140,15 +370,45 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     expect(fiche.dimensions.gradePreuveParIntention.valeurs).toEqual([
       expect.objectContaining({ intentionCode: 'sommeil_fragmente', ingredientCode: 'magnesium', grade: 'modere' }),
     ]);
-    // La forme de la fiche (bisglycinate) EST la forme préférée de la règle.
     expect(fiche.dimensions.biodisponibiliteForme.valeursPresentes).toContain('forme_preferee');
     expect(fiche.reglesCorrespondantes).toBe(1);
     expect(fiche.referencesScientifiques.map(r => r.id)).toContain('src_1');
   });
 
+  // ─── Abstention clinique : ne jamais tirer un feu vert du vide ────────────
+
+  it('une fiche SANS composition reste « non évaluée », même avec une intention posée', async () => {
+    // C'est le cas de TOUT le catalogue de production (0 composition).
+    // Sans cette garde, l'intersection vide se lit « Compatible » et
+    // « Aucun cumul » — deux verdicts positifs tirés de l'ignorance.
+    prisma.supplementProduct.findMany.mockResolvedValue([produit({ compositions: [] })]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
+    prisma.clinicalRule.findMany.mockResolvedValue([regleMag()]);
+
+    const [fiche] = (await listerCatalogue({ intentionCode: 'sommeil_fragmente' })).fiches;
+    expect(fiche.dimensions.compatibiliteProtocole.valeur).toBe('non_evaluee');
+    expect(fiche.dimensions.cumulVsSeuils.valeur).toBe('non_evaluee');
+    expect(fiche.dimensions.cumulVsSeuils.justification).toMatch(/ne vaut pas absence de risque/i);
+  });
+
+  it('une intention INCONNUE n’ouvre aucune lecture (pas de feu vert par saisie au hasard)', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    // Aucun tag ne correspond : le code saisi est inconnu.
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([]);
+    prisma.clinicalRule.findMany.mockResolvedValue([]);
+
+    const res = await listerCatalogue({ intentionCode: 'xyz_nimporte_quoi' });
+    expect(res.intentionFiltre).toBeNull();
+    const [fiche] = res.fiches;
+    expect(fiche.dimensions.compatibiliteProtocole.valeur).toBe('non_evaluee');
+    expect(fiche.dimensions.cumulVsSeuils.valeur).toBe('non_evaluee');
+  });
+
   it('marque une forme non préférée quand elle diffère de la forme gouvernée', async () => {
-    prisma.supplementProductVersionCourante.findMany.mockResolvedValue([
-      ligneProduit({
+    prisma.supplementProduct.findMany.mockResolvedValue([
+      produit({
         compositions: [
           {
             doseParPortion: 200, unite: 'mg', position: 0,
@@ -158,47 +418,20 @@ describe('listerCatalogue (service catalogue C4A)', () => {
         ],
       }),
     ]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
     prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
     prisma.clinicalRule.findMany.mockResolvedValue([regleMag()]);
     const [fiche] = (await listerCatalogue({ intentionCode: 'sommeil_fragmente' })).fiches;
     expect(fiche.dimensions.biodisponibiliteForme.valeursPresentes).toContain('non_preferee');
   });
 
-  it('les facettes filtrent INDÉPENDAMMENT (chaque dimension, sans pondérer les autres)', async () => {
-    prisma.supplementProductVersionCourante.findMany.mockResolvedValue([
-      ligneProduit({ id: 'p_bien', nomCommercial: 'Alpha', niveauCompletude: 'bien_documentee' }),
-      ligneProduit({ id: 'p_lac', nomCommercial: 'Bravo', niveauCompletude: 'lacunaire' }),
+  it('l’ordre rendu est celui de la base, jamais retrié en mémoire', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([
+      produit({ id: 'p_z', nomCommercial: 'Zinc Basique' }),
+      produit({ id: 'p_a', nomCommercial: 'Acérola' }),
     ]);
-    const toutes = await listerCatalogue();
-    expect(toutes.fiches).toHaveLength(2);
-
-    // Facette qualité seule : ne garde que la fiche « bien documentée ».
-    const filtre = await listerCatalogue({ filtres: { qualite: ['bien_documentee'] } });
-    expect(filtre.fiches.map(f => f.produitId)).toEqual(['p_bien']);
-
-    // Facette statut indépendante : les deux sont « importee » → aucune exclue.
-    const parStatut = await listerCatalogue({ filtres: { statut: ['importee'] } });
-    expect(parStatut.fiches).toHaveLength(2);
-
-    // Deux facettes se combinent en ET : qualité bien_documentee ET statut verifiee → aucune.
-    const combine = await listerCatalogue({ filtres: { qualite: ['bien_documentee'], statut: ['verifiee'] } });
-    expect(combine.fiches).toHaveLength(0);
-  });
-
-  it('trie en mono-dimension, ordre neutre alphabétique par défaut', async () => {
-    prisma.supplementProductVersionCourante.findMany.mockResolvedValue([
-      ligneProduit({ id: 'p_z', nomCommercial: 'Zinc Basique' }),
-      ligneProduit({ id: 'p_a', nomCommercial: 'Acérola' }),
-    ]);
-    const neutre = await listerCatalogue();
-    expect(neutre.tri).toBe('neutre');
-    expect(neutre.fiches.map(f => f.nomCommercial)).toEqual(['Acérola', 'Zinc Basique']);
-
-    const parMarque = await listerCatalogue({ tri: 'marque' });
-    expect(parMarque.tri).toBe('marque');
-
-    // Une clé de tri inconnue retombe sur l'ordre neutre.
-    const inconnu = await listerCatalogue({ tri: 'meilleur' as never });
-    expect(inconnu.tri).toBe('neutre');
+    prisma.supplementProduct.count.mockResolvedValue(2);
+    const res = await listerCatalogue();
+    expect(res.fiches.map(f => f.nomCommercial)).toEqual(['Zinc Basique', 'Acérola']);
   });
 });
