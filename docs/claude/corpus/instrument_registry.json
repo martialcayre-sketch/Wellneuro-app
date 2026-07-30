@@ -1,6 +1,6 @@
 {
   "version": "instrument-registry-v2",
-  "dateAudit": "2026-07-29",
+  "dateAudit": "2026-07-30",
   "commentaire": "Registre de certification des instruments du catalogue (campagne 2026-07-25-certification-corpus-questionnaires, lot 1, schéma v2 après intégration de l'audit externe et de la revue indépendante). Une entrée par clé de QUESTIONNAIRE_CATALOGUE. Axes SÉPARÉS, jamais fusionnés : - instrument.formePubliee : ce que décrit la publication d'origine (items, dimensions, bornes). N'affirme RIEN sur ce que l'application administre. - versionServie : ce que l'application administre RÉELLEMENT. `description` reste null tant que le banc de certification (lot 3) ne l'a pas établie contre le catalogue — la renseigner de mémoire ferait disparaître les divergences que la campagne cherche justement à révéler (Berlin, MFI-20, PSQI sont déjà connus divergents). `statutContenu` : verbatim | traduit | adapte | cree_localement | a_auditer. - statutBibliographique : reference_identifiee | a_completer | referentiel_interne_siin. `references.dateVerification` null = auteurs/année NON vérifiés contre la source primaire (identifiés de mémoire) ; ils ne font autorité qu'une fois le PDF source au dossier. - statutCertification (cycle de vie WellNeuro) : repere → source_obtenue → droits_verifies → contenu_verrouille → scoring_verifie → psychometrie_revue → mapping_clinique_approuve → publie ; états terminaux suspendu | remplace. Toutes les entrées démarrent à 'repere'. - cosmin : A | B | C | inconnu — qualité psychométrique publiée (à renseigner depuis measurement_evidence.json). Ne JAMAIS confondre avec les niveaux A/B/C/D WellNeuro : NIVEAU_PREUVE_PAR_SOURCE (web/src/lib/equilibre/constants.ts) reste la source unique de cet axe-là, volontairement non dupliqué ici. - droits.statut : a_verifier | libre | licence_requise | permission_obtenue | restreint. - sourceMonEquilibre : l'instrument alimente BESOIN_SOURCES (fait dérivé de constants.ts, contrôlé par le garde CI). Aucun DOI/PMID n'est renseigné sans vérification (null). Le libellé d'usage est « Validé pour l'usage WellNeuro » avec son périmètre — jamais « certifié médicalement ».",
   "instruments": [
     {
@@ -58,10 +58,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "10 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Bellinghausen et al. 2009 (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -75,7 +75,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -103,10 +103,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "11 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr (instrument francophone)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -120,7 +120,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -154,10 +154,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "21 items en 1 section(s), moteur `subscore`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -171,7 +171,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -205,10 +205,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "10 items en 1 section(s), moteur `bms_average`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -222,7 +222,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -250,10 +250,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "32 items en 4 section(s), moteur `karasek`. Découpage servi en 4 sous-scores là où la source en distingue 7 — réalignement arbitré (dossier #469, famille découpages), lot dédié à venir. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Niedhammer et al. (enquête SUMER, à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -267,7 +267,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -301,10 +301,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "25 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -318,7 +318,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -346,10 +346,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "13 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Collet & Cottraux (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -363,7 +363,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -391,7 +391,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "MADRS servie avec ses bandes publiées ; 4 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
+        "description": "10 items en 1 section(s), moteur `sum`. MADRS servie avec ses bandes publiées ; 4 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
@@ -408,7 +408,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -442,10 +442,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "25 items en 1 section(s), moteur `sigh_sad_sa`. 3 sous-scores servis pour 2 groupes à la source (le score corrigé 15-17 est rapporté séparément) — réalignement arbitré, lot dédié à venir. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -459,7 +459,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -486,10 +486,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "5 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — SCOFF-F, Garcia et al. (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -503,7 +503,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -537,10 +537,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "45 items en 5 section(s), moteur `upps`. L'étendue réellement servie n'est PAS établie — le balayage du banc a rendu un encadrement incohérent (120–105), consigné au dossier du 2026-07-29. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Van der Linden et al. (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -554,7 +554,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -632,10 +632,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "10 items en 3 section(s), moteur `audit`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Gache et al. (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -649,7 +649,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -677,10 +677,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "10 items en 1 section(s), moteur `ecab`. Étendue prouvée par construction : 0–10 (bornesAtteignables.guard.test.ts). Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr (instrument francophone)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -694,7 +694,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -729,10 +729,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "22 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Hébert et al. (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -746,7 +746,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -774,10 +774,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "20 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Khazaal et al. (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -791,7 +791,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -871,7 +871,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "IDTAS-AE servi en 48 items pour 36 à la source : la source pose SIX énoncés par liste saisonnière (se sentir moins bien, manger davantage, prendre du poids…) auxquels le patient répond en cochant des mois ; le servi AFFAISSE ces six construits en un comptage mensuel unique par liste (12 items par liste), sur lequel les seuils source (> 4 mois) sont appliqués. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — les 5 parties et leurs seuils restent ceux de Terman & Williams.",
+        "description": "48 items en 5 section(s), moteur `idtas_ae`. IDTAS-AE servi en 48 items pour 36 à la source : la source pose SIX énoncés par liste saisonnière (se sentir moins bien, manger davantage, prendre du poids…) auxquels le patient répond en cochant des mois ; le servi AFFAISSE ces six construits en un comptage mensuel unique par liste (12 items par liste), sur lequel les seuils source (> 4 mois) sont appliqués. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — les 5 parties et leurs seuils restent ceux de Terman & Williams. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr",
         "statutContenu": "adapte"
@@ -888,7 +888,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -923,7 +923,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "PSQI servi en 18 items là où la source en compte 24 : l'application recueille les composantes par items directs (horaires, durées) sans les sous-questions 5j-open/10 de l'auto-questionnaire complet. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — les 7 composantes et le total /21 restent ceux de Buysse 1989.",
+        "description": "18 items en 3 section(s), moteur `psqi`. PSQI servi en 18 items là où la source en compte 24 : l'application recueille les composantes par items directs (horaires, durées) sans les sous-questions 5j-open/10 de l'auto-questionnaire complet. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — les 7 composantes et le total /21 restent ceux de Buysse 1989. Étendue prouvée par construction : 0–21 (bornesAtteignables.guard.test.ts). Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Blais et al. (à confirmer)",
         "statutContenu": "adapte"
@@ -940,7 +940,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1028,10 +1028,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "9 items en 3 section(s), moteur `berlin`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1045,7 +1045,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1080,7 +1080,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "IRLS servie avec ses bandes publiées ; 4 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
+        "description": "10 items en 1 section(s), moteur `sum`. IRLS servie avec ses bandes publiées ; 4 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
@@ -1097,7 +1097,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1131,10 +1131,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "19 items en 1 section(s), moteur `horne`. Écart assumé avec la traduction du support sur la borne 70 (la table publiée de Horne & Östberg fait foi) ; trou de source à 30 non traité. Le moteur ne rend jamais d'absence de bande : un seul item répondu reçoit un verdict de chronotype — résidu nommé, famille « donnée absente lue comme donnée basse ». Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Taillard et al. (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1148,7 +1148,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1183,10 +1183,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "8 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr (instrument francophone)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1200,7 +1200,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1591,10 +1591,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "7 items en 1 section(s), moteur `francis`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1608,7 +1608,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1636,10 +1636,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "1 items en 1 section(s), moteur `bristol`. Score global seul là où la source distingue 3 catégories de transit — réalignement arbitré, lot dédié à venir. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1653,7 +1653,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1681,10 +1681,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "6 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr (instrument d'origine francophone)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1698,7 +1698,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1732,10 +1732,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "20 items en 2 section(s), moteur `qif`.9. Étendue prouvée par construction : 0–99,9 — le 100 exact manque de 0,1 par arrondi ×3,3 (bornesAtteignables.guard.test.ts). Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Perrot et al. (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1749,7 +1749,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1874,10 +1874,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "4 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr (instrument francophone)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1891,7 +1891,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1919,10 +1919,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "6 items en 1 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1936,7 +1936,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1964,10 +1964,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "28 items en 4 section(s), moteur `subscore`. Découpage servi en 4 sous-scores pour 5 dimensions à la source — réalignement arbitré, lot dédié à venir. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -1981,7 +1981,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2054,10 +2054,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "10 items en 2 section(s), moteur `sum`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2071,7 +2071,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2149,10 +2149,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "8 items en 2 section(s), moteur `subscore`. L'échelle de cotation rapportée 0–5/0–6 par une lecture du banc reste à re-vérifier à la prochaine extraction. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2166,7 +2166,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2201,10 +2201,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "6 items en 3 section(s), moteur `journal`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr (outil clinique francophone)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2218,7 +2218,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2245,10 +2245,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "10 items en 1 section(s), moteur `sum_no_interpretation`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr (instrument francophone)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2262,7 +2262,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2649,7 +2649,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "Grille de Tinetti servie avec ses bandes publiées ; les 3 bandes portent chacune une CONDUITE ajoutée par le cabinet (orientation, prévention de chute), absente de la source. La conduite est retirée du prompt de synthèse par scoresPourPrompt. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision. Tinetti servie en 20 items pour 16 à la source : la grille POMA est dépliée par sous-épreuve. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — le total /28 et ses seuils de risque de chute restent ceux de Tinetti 1986.",
+        "description": "20 items en 2 section(s), moteur `weighted_per_axis`. Grille de Tinetti servie avec ses bandes publiées ; les 3 bandes portent chacune une CONDUITE ajoutée par le cabinet (orientation, prévention de chute), absente de la source. La conduite est retirée du prompt de synthèse par scoresPourPrompt. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision. Tinetti servie en 20 items pour 16 à la source : la grille POMA est dépliée par sous-épreuve. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — le total /28 et ses seuils de risque de chute restent ceux de Tinetti 1986. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
@@ -2666,7 +2666,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2700,7 +2700,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "SARC-F servi avec ses bandes publiées ; 2 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
+        "description": "5 items en 1 section(s), moteur `sum`. SARC-F servi avec ses bandes publiées ; 2 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision. Score global seul là où la source distingue 5 dimensions — réalignement arbitré, lot dédié à venir. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
@@ -2717,7 +2717,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2751,7 +2751,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "AQ de Sabbagh servi avec ses bandes publiées ; 3 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
+        "description": "21 items en 1 section(s), moteur `sum`. AQ de Sabbagh servi avec ses bandes publiées ; 3 bandes portent une conduite ajoutée par le cabinet, absente de la source. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
         "statutContenu": "adapte"
@@ -2768,7 +2768,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2846,10 +2846,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "10 items en 1 section(s), moteur `sum_decimal`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — à confirmer",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2863,7 +2863,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2897,10 +2897,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "10 items en 2 section(s), moteur `sum_two_phases`. Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr (instrument francophone)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2914,7 +2914,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "droits_verifies",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
