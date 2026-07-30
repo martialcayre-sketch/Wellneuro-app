@@ -853,3 +853,32 @@ six jamais utilisés.
 **Questions ouvertes** : 8 instruments via 7 moteurs rendent encore un axe à zéro sur une
 passation partielle ; consigne v11 à écrire (le total global `null` n'y est pas nommé) ;
 le banc golden n'est pas dans `test:worktree`.
+
+## 2026-07-30 — Deux gardes posées : droits ↔ assignabilité, et le palier T3
+
+**Décisions** : #461 mergée (une donnée absente cesse d'être lue comme une donnée
+basse — `??` sur les replis PSQI, seuils monotones asymétriques, `estComplet`).
+Puis deux lots nés de ce que le lot précédent avait nommé sans faire. #466 : la
+garde `licence_requise` ↔ assignabilité, adossée au **registre** et non à une
+liste tapée à la main — le prédicat retenu est celui de la ROUTE (définition +
+hors `IDS_SUSPENDUS`), plus permissif qu'`IDS_ASSIGNABLES`, et c'est cet écart
+qui est la position « invisible et assignable ». #473 : `test:worktree` ne jouait
+aucun des cinq bancs `node --test` du CI ; deux étant dans T1, **T3 était plus
+étroit que T1**. Liste extraite de `ci.yml`, jamais recopiée.
+
+**Écarté** : la charnière SIGH-SAD-SA 15-17 (arbitrage clinique, pas correctif) ;
+brancher les droits sur la route à l'exécution — une route patient dépendrait
+d'un fichier de documentation.
+
+**Validations** : T1 vert sur les deux lots (304 fichiers, 2699 tests) ; `verify`
+complet lu avant chaque merge (12 min 42, 10 min 49) ; quatre preuves par
+mutation sur #466, trois exécutions de contrôle sur #473. T2/T3 indisponibles ici
+— le proxy refuse `cdn.playwright.dev`.
+
+**Prochaine action** : passer `npm run test:worktree` depuis le Mac — le CI
+n'exécute pas ce script, l'intégration du bloc de #473 n'est donc pas prouvée.
+
+**Questions ouvertes** : les huit instruments sous licence tierce (aucune
+assignation ouverte, six jamais utilisés) ; `Q_NEU_12`, dernier « invisible mais
+assignable » ; consigne v11 écrite, mais les deux booléens de `Q_NEU_12` restent
+sans consigne.
