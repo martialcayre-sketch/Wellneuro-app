@@ -35,6 +35,34 @@ export const Q_SOM_01 = {
         q('Q8',"Au cours du dernier mois, avec quelle fréquence avez-vous eu des difficultés à rester éveillé(e) (pendant les repas, la conduite, activités sociales) ?",O_03jt),
         q('Q9',"Au cours du dernier mois, dans quelle mesure avez-vous eu des difficultés à effectuer votre travail avec suffisamment d'enthousiasme ?",
           [{v:0,l:'Aucune difficulté'},{v:1,l:'Un peu difficile'},{v:2,l:'Assez difficile'},{v:3,l:'Très difficile'}]),
+      ]},
+    // Questions 10 et 11 du PSQI — le volet « conjoint ou camarade de chambre ».
+    //
+    // ELLES NE SONT PAS COTÉES, et c'est la source qui le dit : Buysse 1989
+    // construit les sept composantes et le total /21 sur les seules questions
+    // 1 à 9. Le moteur `psqi` est donc inchangé par leur ajout, et un banc de
+    // garde le prouve (psqiVoletPartenaire.guard.test.ts) : sans lui, un futur
+    // remaniement pourrait les faire entrer dans une composante sans que rien
+    // ne s'y oppose.
+    //
+    // Leur valeur est ailleurs : `11a` et `11b` — ronflement fort, pauses
+    // respiratoires observées — sont les deux signaux d'apnée que seul un tiers
+    // peut rapporter, et le questionnaire ne les recueillait pas. Ils
+    // atteignent le praticien par les réponses lisibles de l'inbox et par la
+    // synthèse, jamais par un score.
+    //
+    // Comme `Q5j`, `Q11e` est servie sans son champ « décrivez » : l'UI patient
+    // n'a pas de champ texte libre (même motif que Q109/Q110 du Conners 3).
+    { id:'partenaire', titre:'Conjoint ou camarade de chambre',
+      description:"Ces questions ne comptent pas dans le score : elles renseignent le praticien sur ce qu'un tiers observe de vos nuits.\nSi vous avez un conjoint ou un camarade de chambre, demandez-lui à quelle fréquence, au cours du dernier mois, il a observé les situations suivantes. Sans conjoint ni camarade de chambre, laissez-les sans réponse.",
+      questions:[
+        q('Q10',"Avez-vous un conjoint ou un camarade de chambre ?",
+          [{v:0,l:'Pas de conjoint ni de camarade de chambre'},{v:1,l:'Conjoint ou camarade dans une autre chambre'},{v:2,l:'Conjoint dans la même chambre, mais pas dans le même lit'},{v:3,l:'Conjoint dans le même lit'}]),
+        q('Q11a',"Un ronflement fort",O_03jt,{conditionnel:'Q10>=1'}),
+        q('Q11b',"De longues pauses respiratoires pendant votre sommeil",O_03jt,{conditionnel:'Q10>=1'}),
+        q('Q11c',"Des saccades ou des secousses des jambes pendant que vous dormiez",O_03jt,{conditionnel:'Q10>=1'}),
+        q('Q11d',"Des épisodes de désorientation ou de confusion pendant le sommeil",O_03jt,{conditionnel:'Q10>=1'}),
+        q('Q11e',"D'autres motifs d'agitation pendant le sommeil",O_03jt,{conditionnel:'Q10>=1'}),
       ]}
   ],
   scoring:{type:'psqi'}

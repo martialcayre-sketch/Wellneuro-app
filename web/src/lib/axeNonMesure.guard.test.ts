@@ -262,13 +262,21 @@ describe('axe non mesuré hors subScores déclarés — null, jamais zéro', () 
   });
 
   it('PSQI : une seule réponse ne rend plus un verdict sur les sept composantes', () => {
-    // Les dix-huit items du PSQI entrent TOUS dans une composante — vérifié ici,
-    // parce que la première rédaction de ce banc supposait le contraire et
+    // Les items du barème du PSQI entrent TOUS dans une composante — vérifié
+    // ici, parce que la première rédaction de ce banc supposait le contraire et
     // cherchait un item « hors barème » qui n'existe pas. Le cas vivant est donc
     // une réponse à un item du barème, et une seule : les six autres composantes
     // retombaient sur leurs défauts — 23 h, 30 min, 7 h.
+    //
+    // Les SIX items hors barème sont nommés, et pas seulement tolérés : depuis le
+    // passage aux 24 items de la source (2026-07-31), le volet « conjoint ou
+    // camarade de chambre » est servi sans être coté — Buysse 1989 bâtit ses
+    // sept composantes sur les seules questions 1 à 9. Les énumérer garde à
+    // l'assertion sa morsure : un item du barème qui sortirait d'un périmètre
+    // la fait toujours tomber, une liste ouverte ne l'aurait pas fait.
     const dansUnAxe = new Set(Object.values(PERIMETRES.Q_SOM_01).flat());
-    expect(itemsDe('Q_SOM_01').filter((q: any) => !dansUnAxe.has(q.id))).toEqual([]);
+    expect(itemsDe('Q_SOM_01').filter((q: any) => !dansUnAxe.has(q.id)).map((q: any) => q.id))
+      .toEqual(['Q10', 'Q11a', 'Q11b', 'Q11c', 'Q11d', 'Q11e']);
 
     // Q6 seul, à sa PIRE valeur : « qualité de sommeil très mauvaise ». Le PSQI
     // rendait alors 3 + 1 + 1 + 0 + 0 + 0 + 0 = 5 sur 21, « Troubles du sommeil

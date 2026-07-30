@@ -924,7 +924,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "18 items en 3 section(s), moteur `psqi`. PSQI servi en 18 items là où la source en compte 24 : l'application recueille les composantes par items directs (horaires, durées) sans les sous-questions 5j-open/10 de l'auto-questionnaire complet. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — les 7 composantes et le total /21 restent ceux de Buysse 1989. Étendue prouvée par construction : 0–21 (bornesAtteignables.guard.test.ts). Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": "24 items en 4 section(s), moteur `psqi`. L'ADAPTATION SUR LE NOMBRE D'ITEMS EST LEVÉE le 2026-07-31 sur arbitrage praticien (« le PSQI doit servir 24 items ») : le volet « conjoint ou camarade de chambre » — question 10 et sous-questions 11a à 11e — est désormais servi, et le banc lit 24 items des deux côtés. Ces six items NE SONT PAS COTÉS, conformément à Buysse 1989 qui bâtit les 7 composantes et le total /21 sur les seules questions 1 à 9 ; le moteur est inchangé et psqiVoletPartenaire.guard.test.ts le prouve par mutation. Ils atteignent le praticien par les réponses lisibles et la synthèse — 11a et 11b (ronflement fort, pauses respiratoires observées) sont les deux signaux d'apnée que seul un tiers peut rapporter. RÉSIDU ASSUMÉ : comme Q5j, Q11e est servie sans son champ « décrivez », l'UI patient n'ayant pas de champ texte libre. Étendue prouvée par construction : 0–21 (bornesAtteignables.guard.test.ts). Contenu verrouillé le 2026-07-31 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Blais et al. (à confirmer)",
         "statutContenu": "adapte"
@@ -955,14 +955,15 @@
       "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
+        "date": "2026-07-31",
         "divergencesCritiques": 0,
         "revision": {
-          "date": "2026-07-30",
+          "date": "2026-07-31",
           "notes": [
             "nombre_items 24/18 : adaptation déclarée (ce lot). RESTE : bornes atteignables (lot dédié).",
             "CORRECTION DE REVUE : la critique est RESTAURÉE — la note du même jour dit elle-même « RESTE : bornes atteignables (lot dédié) ». Un compteur à zéro avec un écart ouvert ouvrirait le barreau scoring_verifie sur une prose qui dit le contraire.",
-            "bornes_score_non_atteintes 0-21 : RÉSOLU par construction ciblée (lot bornes du 2026-07-30). 21 est atteint par un pire-dormeur réel (coucher 20h, 2h d'endormissement, 3h dormies, tout au maximum) et 0 par un dormeur parfait — le balayage saturait les réponses, or l'efficacité vaut 0 quand elle est BONNE. Preuves épinglées dans bornesAtteignables.guard.test.ts. Critique soldée."
+            "bornes_score_non_atteintes 0-21 : RÉSOLU par construction ciblée (lot bornes du 2026-07-30). 21 est atteint par un pire-dormeur réel (coucher 20h, 2h d'endormissement, 3h dormies, tout au maximum) et 0 par un dormeur parfait — le balayage saturait les réponses, or l'efficacité vaut 0 quand elle est BONNE. Preuves épinglées dans bornesAtteignables.guard.test.ts. Critique soldée.",
+            "nombre_items 24/18 : LA CRITIQUE N'EST PLUS DÉCLARÉE, ELLE EST CLOSE. Arbitrage praticien du 2026-07-31 — « le PSQI doit servir 24 items ». Le volet conjoint (Q10, Q11a-e) est ajouté au servi ; le banc rejoué hors ligne (--recomparer, aucun appel de modèle) lit 24 items des deux côtés et ne rend plus aucune divergence critique. La montée du 2026-07-30 reposait sur une déclaration d'adaptation ; celle-ci repose sur le code."
           ]
         }
       }
