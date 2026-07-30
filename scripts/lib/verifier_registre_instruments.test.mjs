@@ -160,7 +160,10 @@ test('driveMd absent de la matrice Drive : détecté', () => {
 // barreau, pas les PIÈCES qui le portent. Les cas ci-dessous montent chaque
 // barreau sans sa pièce et exigent un refus.
 
-const DEGAGE = { statut: 'permission_obtenue', detail: 'déclaration', dateVerification: '2026-07-29' };
+// `detail` porte un vrai fondement : depuis le 2026-07-29 le vérificateur exige
+// qu'un statut de droits dégagé dise SUR QUOI il repose. Une fixture qui s'en
+// dispenserait ne représenterait plus une entrée valide.
+const DEGAGE = { statut: 'permission_obtenue', detail: "déclaration du praticien du 2026-07-29, périmètre cabinet ; fondement écrit au dossier, non une pièce signée de l'ayant droit", dateVerification: '2026-07-29' };
 const VERDICT_PROPRE = { banc: 'certify', date: '2026-07-29', divergencesCritiques: 0 };
 
 test('barreau source_obtenue et au-delà sans aucune source : détecté', () => {
@@ -175,6 +178,41 @@ test('barreau source_obtenue et au-delà sans aucune source : détecté', () => 
   }
 });
 
+test('barreau droits_verifies sans FONDEMENT écrit : détecté', () => {
+  // Ajouté le 2026-07-29. `permission_obtenue` + une date suffisaient à franchir
+  // le barreau avec un `detail` vide : le registre faisait alors autorité sans
+  // rien produire à l'appui. Le jour même, 42 instruments ont été dégagés sur une
+  // DÉCLARATION du praticien et non sur une pièce signée de l'ayant droit — la
+  // distinction ne vit que dans ce champ, et rien ne la gardait. Le changelog de
+  // ce lot affirmait d'ailleurs l'existence d'un contrôle qui n'existait pas ;
+  // c'est celui-ci.
+  for (const detail of [null, '', '   ', 'ok', 'déclaration']) {
+    const { erreurs } = verifier({
+      registre: {
+        instruments: [entree({
+          statutCertification: 'droits_verifies',
+          sourceIds: ['WN-SRC-0001'],
+          droits: { statut: 'permission_obtenue', detail, dateVerification: '2026-07-29' },
+        })],
+      },
+    });
+    assert.ok(
+      erreurs.some(e => /sans fondement écrit/.test(e)),
+      `detail ${JSON.stringify(detail)} : le barreau devait être refusé faute de fondement`
+    );
+  }
+  // Anti-sur-filtrage : un fondement réellement écrit passe. Sans ce contrôle, la
+  // garde pourrait refuser tout le monde et rester verte sur les cas ci-dessus.
+  const { erreurs } = verifier({
+    registre: {
+      instruments: [entree({
+        statutCertification: 'droits_verifies', sourceIds: ['WN-SRC-0001'], droits: DEGAGE,
+      })],
+    },
+  });
+  assert.deepEqual(erreurs.filter(e => /sans fondement écrit/.test(e)), []);
+});
+
 test('barreau droits_verifies sans droits dégagés : détecté dans les trois cas', () => {
   const cas = [
     // Droits jamais tranchés.
@@ -182,7 +220,7 @@ test('barreau droits_verifies sans droits dégagés : détecté dans les trois c
     // Verdict rendu, mais NÉGATIF : une licence manque. Il ne dégage rien.
     { statut: 'licence_requise', detail: '© MHS', dateVerification: '2026-07-29' },
     // Statut favorable, mais sans date : rien ne dit quand ni sur quelle pièce.
-    { statut: 'permission_obtenue', detail: 'déclaration', dateVerification: null },
+    { statut: 'permission_obtenue', detail: "déclaration du praticien du 2026-07-29, périmètre cabinet ; fondement écrit au dossier, non une pièce signée de l'ayant droit", dateVerification: null },
   ];
   for (const droits of cas) {
     const { erreurs } = verifier({
@@ -378,7 +416,7 @@ test('dateVerification : une forme de date qui n’est pas une date est refusée
         instruments: [entree({
           statutCertification: 'droits_verifies',
           sourceIds: ['WN-SRC-0001'],
-          droits: { statut: 'permission_obtenue', detail: 'x', dateVerification: date },
+          droits: { statut: 'permission_obtenue', detail: "déclaration du praticien du 2026-07-29, périmètre cabinet ; fondement écrit au dossier, non une pièce signée de l'ayant droit", dateVerification: date },
         })],
       },
     });

@@ -1,14 +1,27 @@
 # Les 42 instruments aux droits non instruits — dossier d'arbitrage
 
+> **INSTANTANÉ CONSOMMÉ — 2026-07-29.** Le praticien a tranché sur ce dossier :
+> les deux déclarations couvrent les instruments tiers reproduits dans les supports
+> SIIN, sur le périmètre des **42** ; les instruments sans usage ni auteur nommé
+> sont fermés. Les 42 entrées sont passées à `permission_obtenue`, 38 à
+> `droits_verifies`, et `Q_TAB_04` / `Q_PNE_01` en `suspendu`.
+>
+> **Ce document n'est donc plus l'état du registre — il est l'état sur lequel la
+> décision a été prise**, et c'est à ce titre qu'il est conservé. Ses chiffres ne
+> doivent pas être remis à jour : le banc qui les vérifiait
+> (`scripts/dossier_droits_42.test.mjs`) a été retiré dans la PR de la décision,
+> avec son étape de CI, selon la procédure que son en-tête décrivait.
+
 Suite de l'arbitrage du 2026-07-29 sur les huit instruments sous licence tierce
 (#460, mergée le même jour). Celui-ci porte sur les **42 entrées `a_verifier`**
 du registre. Il a le même statut : **il ne décide de rien**, il rend vérifiable ce
 sur quoi vous déciderez.
 
-Ses chiffres sont recalculés depuis `docs/claude/corpus/instrument_registry.json`
-par `scripts/dossier_droits_42.test.mjs`, qui échoue si le registre bouge sans que
-ce texte suive. Sa première rédaction en portait six faux, dont deux qui
-changeaient la décision ; le banc existe pour cette raison.
+Ses chiffres ont été recalculés depuis `docs/claude/corpus/instrument_registry.json`
+par `scripts/dossier_droits_42.test.mjs` — banc **retiré avec la décision**, voir
+l'encadré ci-dessus. Sa première rédaction en portait six faux, dont deux qui
+changeaient la décision ; le banc a existé pour cette raison, et il a attrapé une
+septième erreur à sa première exécution.
 
 **Note de concordance** : le document frère `droits.md` (#448) écrivait « 43 »
 pour ce même ensemble, et « 32 / 11 » pour sa complétude bibliographique. Le

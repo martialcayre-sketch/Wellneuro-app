@@ -127,8 +127,14 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Mesurez votre dépendance physique à la nicotine (6 questions, score /10).`, duree: '5 min', actif: true },
 
   // ── PNEUMOLOGIE ─────────────────────────────────────────────────────────────
+  // Suspendu le 2026-07-29 sur arbitrage praticien, pour un motif de
+  // DOCUMENTATION et non de droits — ceux-ci sont couverts par la déclaration
+  // étendue du même jour. Le registre ne nomme AUCUN auteur pour cet instrument
+  // et sa référence bibliographique est à compléter : on ne sait pas dire ce
+  // qu'il est, donc on ne peut pas le certifier. Ni assignation ni réponse.
+  // Réactivation à la première source identifiée.
   { id: 'Q_PNE_01', titre: 'Questionnaire de qualité de vie BPCO', categorie: 'Pneumologie',
-    description: `Évaluez l'impact de votre maladie respiratoire sur votre qualité de vie (11 items, score /33 — comparatif).`, duree: '10 min', actif: true },
+    description: `Évaluez l'impact de votre maladie respiratoire sur votre qualité de vie (11 items, score /33 — comparatif).`, duree: '10 min', actif: false },
 
   // ── UROLOGIE ────────────────────────────────────────────────────────────────
   { id: 'Q_URO_01', titre: 'IPSS — Score International des Symptômes Prostatiques', categorie: 'Urologie',
@@ -215,8 +221,14 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // ── TABACOLOGIE (suite) ─────────────────────────────────────────────────────
   { id: 'Q_TAB_03', titre: 'QCT2 de Gilliard — Comportement tabagique', categorie: 'Tabacologie',
     description: `Analysez votre profil tabagique selon 4 dimensions : Dépendance, Sevrage, Appétence, Habitude (28 items).`, duree: '10 min', actif: true },
+  // Suspendu le 2026-07-29, même motif que `Q_PNE_01` : aucun auteur nommé au
+  // registre, référence bibliographique à compléter. Les droits, eux, sont
+  // couverts par la déclaration étendue du même jour — la fermeture ne les
+  // concerne pas. Ni assignation ni réponse. À savoir pour la réactivation : sa
+  // grille porte un plafond écrit sous le maximum atteignable (32 pour un total
+  // de 36), corrigé côté moteur en #450 par la règle de la bande de tête.
   { id: 'Q_TAB_04', titre: `Questionnaire d'évaluation du cannabis`, categorie: 'Tabacologie',
-    description: `Évaluez votre consommation de cannabis et ses conséquences (16 items).`, duree: '10 min', actif: true },
+    description: `Évaluez votre consommation de cannabis et ses conséquences (16 items).`, duree: '10 min', actif: false },
   { id: 'Q_TAB_05', titre: 'Di Franza — Dépendance nicotinique adolescent (HONC)', categorie: 'Tabacologie',
     description: `Dépistez la dépendance à la nicotine chez l'adolescent en 10 questions oui/non.`, duree: '3 min', actif: true },
 

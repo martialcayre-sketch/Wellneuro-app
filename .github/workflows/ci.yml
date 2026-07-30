@@ -75,9 +75,20 @@ jobs:
           # certification scoring la vérifie contre le catalogue, et cette
           # certification vit désormais sur le chemin code (elle transpile le
           # TS du catalogue, donc a besoin de web/node_modules).
+          # Le REGISTRE DES INSTRUMENTS est classé CODE pour la même raison, et
+          # elle est plus tranchante encore : il vit sous `docs/` mais il fait
+          # autorité — statut de droits, barreau de certification, date de
+          # vérification. Une PR qui ne toucherait que lui obtenait `docs_only`,
+          # donc un `verify` vert SANS qu'aucun contrôle du registre ne s'exécute :
+          # les deux étapes qui le lisent (`Scoring certification`, `Registre des
+          # instruments`) sont toutes deux gatées. Deux merges de l'historique ont
+          # exactement cette forme, dont un qui éditait des statuts de droits.
+          # Relevé en revue adversariale le 2026-07-29, quand le retrait d'un banc
+          # ad hoc a laissé le fichier sans aucun filet.
           hors_docs="$(printf '%s\n' "$fichiers" | grep -vE '(^docs/|\.md$)' || true)"
           mapping="$(printf '%s\n' "$fichiers" | grep -E '^docs/questionnaires-drive-mapping\.md$' || true)"
-          if [ -z "$fichiers" ] || [ -n "$hors_docs" ] || [ -n "$mapping" ]; then
+          registre="$(printf '%s\n' "$fichiers" | grep -E '^docs/claude/corpus/instrument_registry\.json$' || true)"
+          if [ -z "$fichiers" ] || [ -n "$hors_docs" ] || [ -n "$mapping" ] || [ -n "$registre" ]; then
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
           else
             echo "docs_only=true" >> "$GITHUB_OUTPUT"
@@ -96,15 +107,11 @@ jobs:
       - name: Anti-secrets (banc du contrôle)
         run: node --test scripts/check_no_secrets.test.mjs
 
-      # Chiffres du dossier d'arbitrage des droits contre le registre dont ils
-      # sont tirés. VOLONTAIREMENT SANS le garde `docs_only` : ce banc protège un
-      # DOCUMENT, et une PR qui ne touche que des documents est précisément celle
-      # où il doit mordre. L'y soumettre ferait un garde qui saute exactement
-      # quand il servirait. Il n'a besoin ni de npm ni de build — node, et deux
-      # fichiers du dépôt.
-      - name: Dossier des droits (chiffres contre le registre)
-        run: node --test scripts/dossier_droits_42.test.mjs
-
+      # L'étape « Dossier des droits (chiffres contre le registre) » a été
+      # RETIRÉE le 2026-07-29, dans la PR qui applique l'arbitrage qu'elle
+      # gardait. C'est la procédure que son banc décrivait lui-même : le dossier
+      # est un instantané daté, le registre a bougé, le banc devait partir avec
+      # sa raison d'être plutôt que d'être rafistolé pour rester vert.
       - name: Campaign rules audit (blocking)
         run: node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
 
