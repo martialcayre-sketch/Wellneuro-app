@@ -299,6 +299,31 @@ describe('grille d’apports — le zéro fabriqué', () => {
     expect(r.raisonNonScore).toContain('protéique');
   });
 
+  it('une ligne protéique renseignée À ZÉRO ne rend pas « 0 g » non plus', () => {
+    // La faute de la première rédaction de cette garde : elle testait la
+    // PRÉSENCE d'une réponse, alors que `getVal` rend `0` pour une réponse à
+    // zéro et non `null`. `{ AP1: 0 }` sortait donc « 0 g de protéines par
+    // jour », et depuis que la fiche rend le porteur `apports`, ce zéro
+    // s'affichait au praticien en unité physique.
+    //
+    // Il est démontrablement fabriqué : le forfait selon le sexe est une ligne
+    // protéique dont aucune option ne vaut zéro. Une passation complète rend
+    // donc au moins 10 g.
+    const r: any = calculateScore('Q_ALI_03', { AP1: 0, AP15: 2 });
+    expect(r.scored).toBe(false);
+    expect(r.proteinesG).toBeNull();
+    expect(r.apports).toBeUndefined();
+  });
+
+  it('le forfait selon le sexe ne propose aucune option à zéro', () => {
+    // C'est CETTE propriété qui rend le zéro impossible sur une passation
+    // complète, donc qui justifie la garde ci-dessus. Ajouter un « ne se
+    // prononce pas » à 0 g la défairait en silence.
+    const forfait = items().find((q: any) => q.id === 'AP13');
+    expect(forfait.options.length).toBeGreaterThan(0);
+    for (const o of forfait.options) expect(Number(o.v)).toBeGreaterThan(0);
+  });
+
   it('une seule ligne protéique suffit à calculer (contrôle négatif)', () => {
     const r: any = calculateScore('Q_ALI_03', { AP7: 2, AP14: 0 });
     expect(r.scored).not.toBe(false);

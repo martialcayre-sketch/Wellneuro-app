@@ -64,12 +64,26 @@ de la même racine : la reconstruction s'était arrêtée au moteur.
 - **« 0 g de protéines » restait fabriquable.** La garde de passation vide exige que
   TOUS les items soient nuls ; une seule ligne calorique renseignée — « aucun
   grignotage », réponse légitime — suffisait à sortir un signal de dénutrition sévère.
-  La garde porte désormais sur la partie protéique, la seule qui puisse se lire ainsi.
+  Une **contre-revue** a montré que le premier correctif ratait encore sa cible : il
+  testait la présence d'une réponse, alors qu'une réponse *à zéro* est présente. Le
+  moteur teste désormais le RÉSULTAT — un apport protéique nul est démontrablement
+  impossible sur une passation complète, le forfait selon le sexe ne proposant aucune
+  option à zéro. Un banc tient cette propriété, puisque c'est elle qui justifie la garde.
 - **Aucune borne n'était appliquée côté serveur.** `min`/`max` n'étaient que des
   attributs HTML, et ce moteur MULTIPLIE chaque saisie : « 999999 portions » rendait
   vingt millions de grammes, persistés et transmis au modèle comme une déclaration du
   patient. La route refuse désormais, plutôt que de borner en silence — ramener une
-  valeur aberrante inventerait une déclaration que le patient n'a pas faite.
+  valeur aberrante inventerait une déclaration que le patient n'a pas faite. Le
+  contrôle porte sur les **deux formes de saisie** : la contre-revue a montré qu'un
+  garde calibré sur le type de l'item laissait passer la même faute par l'autre porte —
+  les deux items à choix unique de cet instrument portent une quantité dans leur valeur
+  d'option, et un forfait à 9 999 rendait 9 999 g de protéines par jour.
+
+**Conséquence à connaître, hors de cet instrument** : ce contrôle s'applique à tout
+questionnaire porteur d'une définition. Deux bornes du catalogue deviennent des refus
+serveur là où seul le navigateur les tenait — l'IMC de l'index de Berlin (max 60) et la
+latence d'endormissement du PSQI (max 120 min). Aucune n'est atteignable par l'interface,
+mais un patient réellement au-delà serait désormais refusé au lieu d'être seulement gêné.
 
 **Deux réserves restent ouvertes, et appellent un arbitrage** : la colonne calorique
 n'a reçu aucune des vérifications qui ont condamné deux constantes protéiques (au même

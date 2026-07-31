@@ -302,6 +302,19 @@ describe('POST /api/patient/submit — bornes des saisies chiffrées', () => {
     expect(prisma.assignation.update).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['un forfait hors des options proposées', { AP1: 1, AP13: 9999 }],
+    ['un grignotage hors des options proposées', { AP1: 1, AP14: 999999 }],
+  ])('refuse %s : 400, aucune persistance', async (_libelle, answers) => {
+    // Les deux items à CHOIX UNIQUE dont la valeur d'option EST la quantité —
+    // 15 ou 10 g de forfait, 0/150/300 kcal de grignotage. Un garde calibré sur
+    // `type: 'number'` les laissait passer, et `{ AP13: 9999 }` rendait 9 999 g
+    // de protéines par jour, affichés sur la fiche avec leur unité.
+    const res = await postSubmit(requeteApports(answers));
+    expect(res.status).toBe(400);
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+  });
+
   it('accepte une valeur dans les bornes (contrôle négatif)', async () => {
     // Sans lui, un refus inconditionnel ferait passer les trois cas ci-dessus.
     const res = await postSubmit(requeteApports({ AP1: 2 }));

@@ -2214,15 +2214,6 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // lire comme un signal de dénutrition — et non sur « au moins une réponse »,
   // qui aurait laissé passer exactement ce cas.
   if (sc.type === 'apports_ponderes') {
-    const lignesProteines = sc.proteines ?? [];
-    if (!lignesProteines.some((l: any) => getVal(l.id) !== null)) {
-      return {
-        type: 'apports_ponderes', scored: false, total: null,
-        proteinesG: null, caloriesKcal: null, interpretation: null,
-        note: sc.note || null, certification: sc.certification || null,
-        raisonNonScore: 'aucune ligne d’apport protéique renseignée',
-      };
-    }
     const cumul = (liste: any[]) => liste.reduce((somme: number, ligne: any) => {
       const v = getVal(ligne.id);
       if (v === null) return somme;
@@ -2233,6 +2224,27 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       return somme + parJour * ligne.coefficient;
     }, 0);
     const proteinesG = cumul(sc.proteines ?? []);
+    // LE ZÉRO NE SE TESTE PAS SUR LA PRÉSENCE DES RÉPONSES, MAIS SUR LE RÉSULTAT.
+    //
+    // Une première rédaction exigeait « au moins une ligne protéique
+    // renseignée ». Elle ratait le cas exact qu'elle visait : `getVal` rend `0`
+    // pour une réponse à zéro, pas `null`, et `{ AP1: 0 }` sortait donc
+    // « 0 g de protéines par jour » — affiché depuis ce lot sur la fiche, en
+    // unité physique et sous un libellé d'autorité.
+    //
+    // Un zéro est ici DÉMONTRABLEMENT fabriqué, sans arbitrage clinique : le
+    // forfait selon le sexe est une ligne protéique dont aucune option ne vaut
+    // zéro (15 g ou 10 g). Une passation complète rend donc au moins 10 g, et
+    // `proteinesG <= 0` signifie « passation incomplète », jamais « ne mange
+    // aucune protéine » — un état qui, lui, n'existe pas chez un vivant.
+    if (!(proteinesG > 0)) {
+      return {
+        type: 'apports_ponderes', scored: false, total: null,
+        proteinesG: null, caloriesKcal: null, interpretation: null,
+        note: sc.note || null, certification: sc.certification || null,
+        raisonNonScore: 'apport protéique nul — passation incomplète',
+      };
+    }
     // « Conversion en calories : X 24 » — le facteur de la source, appliqué au
     // total protéique, auquel s'ajoutent les calories directes de sa partie 2.
     const caloriesKcal = proteinesG * (sc.facteurCalorique ?? 0) + cumul(sc.calories ?? []);
