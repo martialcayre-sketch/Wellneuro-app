@@ -285,3 +285,44 @@ Les lots restants, par ordre de valeur clinique décroissante :
 5. `Q_NEU_12` — la restructuration de la partie 3, seule divergence encore
    inconnue du dossier avant aujourd'hui ;
 6. `Q_PED_03` — un passage de banc, lecture découpée.
+
+---
+
+## 4. Deux chantiers ouverts par la reconstruction de `Q_ALI_03`
+
+Consignés ici plutôt que dans un fil de revue : un « lot à part » qui ne vit que
+dans une conversation n'existe pas.
+
+### Un garde de CLASSE sur les champs livrés au modèle
+
+Le garde actuel (`promptSousScores.guard.test.ts`) vérifie que tout champ livré
+au modèle est décrit par la consigne — mais il collecte ses champs **à
+l'intérieur** de la boucle des sous-scores, sous un `continue` qui saute tout
+instrument qui n'en porte pas. Il ne balaie jamais `rawAnswers` : `unite`,
+`quantiteDeclaree` et `valeurNonResolue` lui échappent tous les trois. `unite`
+est décrit dans la consigne parce qu'on l'a écrit, pas parce qu'un garde l'a
+exigé.
+
+Et la direction **inverse** n'a aucun garde du tout — la consigne nomme un champ
+que la charge ne porte pas. C'est exactement le bloquant B2 de ce lot : la
+consigne annonçait au modèle une unité et une périodicité qu'il ne recevait pas.
+Elle est aujourd'hui fermée pour un instrument sur 64, par un test dédié.
+
+**Pourquoi un lot à part** : l'étendre à `rawAnswers` n'est pas un ajout mais une
+restructuration du relevé, qui déplace aussi les compteurs de porteurs et cinq
+assertions à nombres exacts. Et un garde de classe doit prouver qu'il
+échouerait, dans les deux sens — cela demande une conception, pas un correctif
+glissé dans une PR qui a une autre finalité. Le dépôt porte déjà trois précédents
+de gardes verts pour une mauvaise raison.
+
+### Deux réponses patient qui n'arrivent nulle part (`Q_GAS_02`)
+
+Trouvé en balayant le catalogue pour cette revue, sans rapport avec ce lot.
+`FR_Q001` et `FR_Q004` portent des options `'oui'`/`'non'`, et le formulaire
+patient convertit chaque réponse en nombre avant l'envoi : la clé est
+**supprimée** de la charge. Ces deux réponses ne sont jamais persistées, ni
+affichées au praticien.
+
+Ce sont des questions filtres non scorées — le score est donc intact, et rien
+n'est faux à l'écran. Mais le patient répond à « Souffrez-vous actuellement de
+douleurs abdominales ? » et personne ne reçoit sa réponse.

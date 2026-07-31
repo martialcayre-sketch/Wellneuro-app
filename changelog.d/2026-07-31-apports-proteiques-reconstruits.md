@@ -80,10 +80,12 @@ de la même racine : la reconstruction s'était arrêtée au moteur.
   d'option, et un forfait à 9 999 rendait 9 999 g de protéines par jour.
 
 **Conséquence à connaître, hors de cet instrument** : ce contrôle s'applique à tout
-questionnaire porteur d'une définition. Deux bornes du catalogue deviennent des refus
-serveur là où seul le navigateur les tenait — l'IMC de l'index de Berlin (max 60) et la
-latence d'endormissement du PSQI (max 120 min). Aucune n'est atteignable par l'interface,
-mais un patient réellement au-delà serait désormais refusé au lieu d'être seulement gêné.
+questionnaire porteur d'une définition. Trois bornes du catalogue deviennent des refus
+serveur là où seul le navigateur les tenait — l'IMC de l'index de Berlin (max 60), et deux
+items du PSQI : la latence d'endormissement (max 120 min) et la durée de sommeil effectif
+(max 14 h). Aucune n'est atteignable par l'interface, mais un patient réellement au-delà
+serait désormais refusé au lieu d'être seulement gêné. Les deux dernières sont les plus
+susceptibles d'être rencontrées dans un cabinet qui explore le sommeil.
 
 **Deux réserves restent ouvertes, et appellent un arbitrage** : la colonne calorique
 n'a reçu aucune des vérifications qui ont condamné deux constantes protéiques (au même
