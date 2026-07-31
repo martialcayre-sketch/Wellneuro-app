@@ -2181,6 +2181,97 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   }
 
   // ── SUBSCORE ─────────────────────────────────────────
+  // ── APPORTS PONDÉRÉS ────────────────────────────────────────────────────
+  //
+  // Un coefficient PAR ITEM, et une périodicité par item. Aucune branche
+  // existante ne sait faire cela : `subscore` ne pondère qu'une sous-échelle
+  // entière (`sub.multiplier`), et toutes les autres additionnent des réponses
+  // brutes. Écrit pour `Q_ALI_03`, dont la source est une feuille de calcul —
+  // « Nombre de portions » × « Protéines par portion », puis une conversion en
+  // calories.
+  //
+  // CE QUE CE MOTEUR NE FAIT PAS, et c'est délibéré : aucune bande. La source
+  // ne donne aucun seuil, et une valeur d'apport sans population de référence
+  // ne se lit pas comme un verdict. Le total est rendu brut, avec sa note.
+  //
+  // GARDE — une passation sans aucune réponse ne rend AUCUN chiffre. Sans elle,
+  // un dossier vide sortirait « 0 g de protéines par jour », c'est-à-dire un
+  // signal de dénutrition sévère fabriqué à partir de rien. C'est exactement le
+  // défaut qu'un bloc `monnier` fantôme a produit ici jusqu'au 2026-07-27, en
+  // cherchant des sous-scores inexistants : quatre valeurs à zéro, invariantes
+  // aux réponses, persistées en base et transmises au modèle de synthèse. La
+  // leçon n'est pas « ne calcule pas », c'est « ne calcule pas sur rien ».
+  //
+  // La garde générale de passation vide (#451, plus haut dans cette fonction)
+  // couvre la passation TOTALEMENT vide, et elle seule : elle exige que TOUS les
+  // items soient nuls. Elle ne couvre donc PAS le cas qui produit vraiment le
+  // chiffre dangereux — une passation où seules des lignes CALORIQUES sont
+  // renseignées. `{ AP14: 0 }` suffisait à sortir « 0 g de protéines par jour »,
+  // et rien côté serveur n'exige la complétude d'un questionnaire du catalogue
+  // (`patient/submit` ne le fait que pour les instruments de cabinet).
+  //
+  // La garde porte donc sur la PARTIE PROTÉIQUE, qui est la seule à pouvoir se
+  // lire comme un signal de dénutrition — et non sur « au moins une réponse »,
+  // qui aurait laissé passer exactement ce cas.
+  if (sc.type === 'apports_ponderes') {
+    const cumul = (liste: any[]) => liste.reduce((somme: number, ligne: any) => {
+      const v = getVal(ligne.id);
+      if (v === null) return somme;
+      // `parJour: false` déclare une ligne HEBDOMADAIRE. La source additionne
+      // les deux bases sans règle de conversion ; le servi ramène tout au jour,
+      // écart déclaré au registre.
+      const parJour = ligne.parJour === false ? v / 7 : v;
+      return somme + parJour * ligne.coefficient;
+    }, 0);
+    const proteinesG = cumul(sc.proteines ?? []);
+    // LE ZÉRO NE SE TESTE PAS SUR LA PRÉSENCE DES RÉPONSES, MAIS SUR LE RÉSULTAT.
+    //
+    // Une première rédaction exigeait « au moins une ligne protéique
+    // renseignée ». Elle ratait le cas exact qu'elle visait : `getVal` rend `0`
+    // pour une réponse à zéro, pas `null`, et `{ AP1: 0 }` sortait donc
+    // « 0 g de protéines par jour » — affiché depuis ce lot sur la fiche, en
+    // unité physique et sous un libellé d'autorité.
+    //
+    // Un zéro est ici DÉMONTRABLEMENT fabriqué, sans arbitrage clinique : le
+    // forfait selon le sexe est une ligne protéique dont aucune option ne vaut
+    // zéro (15 g ou 10 g). Une passation complète rend donc au moins 10 g, et
+    // `proteinesG <= 0` signifie « passation incomplète », jamais « ne mange
+    // aucune protéine » — un état qui, lui, n'existe pas chez un vivant.
+    if (!(proteinesG > 0)) {
+      return {
+        type: 'apports_ponderes', scored: false, total: null,
+        proteinesG: null, caloriesKcal: null, interpretation: null,
+        note: sc.note || null, certification: sc.certification || null,
+        raisonNonScore: 'apport protéique nul — passation incomplète',
+      };
+    }
+    // « Conversion en calories : X 24 » — le facteur de la source, appliqué au
+    // total protéique, auquel s'ajoutent les calories directes de sa partie 2.
+    const caloriesKcal = proteinesG * (sc.facteurCalorique ?? 0) + cumul(sc.calories ?? []);
+    const arrondi = (x: number) => Math.round(x * 10) / 10;
+    return {type:'apports_ponderes',
+      proteinesG: arrondi(proteinesG),
+      caloriesKcal: Math.round(caloriesKcal),
+      // LES DEUX GRANDEURS, SOUS UN PORTEUR QUE LA FICHE SAIT RENDRE.
+      //
+      // Les deux clés ci-dessus ne sont lues par aucune surface : la fiche
+      // praticien balaie des porteurs nommés (`dimensions`, `components`,
+      // `categories`, `parts`, `phases`), et un moteur qui invente ses propres
+      // clés n'y apparaît nulle part. Sans ce bloc, l'instrument calculait
+      // exactement ce que sa description promet au patient — et ne l'affichait
+      // à personne, colonne Score à « — ». C'est le défaut du 2026-07-26
+      // retourné : hier le titre promettait ce que le moteur ne produisait pas,
+      // aujourd'hui le moteur produirait ce que rien n'affiche.
+      apports: [
+        {id:'PROT', label:'Apports protéiques estimés', total: arrondi(proteinesG), unite:'g/jour'},
+        {id:'KCAL', label:'Apports caloriques estimés', total: Math.round(caloriesKcal), unite:'kcal/jour'},
+      ],
+      // Pas de score global : ces deux grandeurs ont des unités différentes et
+      // ne s'additionnent pas. `total: null` le dit au lieu de le laisser deviner.
+      total: null,
+      note: sc.note || null, certification: sc.certification || null};
+  }
+
   if (sc.type === 'subscore') {
     const subResults = sc.subScores.map((sub: any) => {
       // `sub.reversed` et non plus `[]` en dur. DANS CETTE BRANCHE, la liste

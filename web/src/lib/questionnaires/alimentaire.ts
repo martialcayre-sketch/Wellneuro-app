@@ -451,63 +451,157 @@ export const Q_ALI_02 = {
     ]
   }
 };
-// P0 métrologique (audit du 2026-07-26, point 2) : le titre et les consignes
-// promettaient une estimation d'apports en grammes et en kilocalories que le
-// scoring ne produit pas — il ne calcule que des indices ordinaux de fréquence
-// (voir `subScores` plus bas, tous nommés « index »). Estimer un apport
-// protéique exigerait le poids, les portions réellement consommées et une table
-// de composition ; rien de tout cela n'est recueilli. Promesse retirée, source
-// non certifiée signalée. La méthode Monnier reste citée comme origine.
+// APPORTS PROTÉIQUES ET CALORIQUES — reconstruit le 2026-07-31 depuis sa source
+// (WN-SRC-0473 / WN-SRC-0474), sur arbitrage praticien, et DÉBAPTISÉ.
+//
+// CE QUI ÉTAIT SERVI RENVERSAIT LA NATURE DE L'INSTRUMENT. La source est une
+// FEUILLE DE CALCUL à cinq colonnes — « Groupes d'aliments ou comportements »,
+// « Nombre de portions » en saisie libre, « Protéines par portion » portant une
+// table de conversion complète, « Apports en protéines », « Apports en
+// calories » — dont les deux dernières lignes s'appellent « Apports totaux en
+// calories » et « Apports totaux en protéines ». Le servi en avait fait dix
+// questions à tranches cotées 0-4 rendant cinq « index » sans unité : une
+// quantité déclarée devenue un ordinal, donc irrécupérable (une tranche « 3-4 »
+// ne se multiplie pas par 20 g).
+//
+// Un commentaire de ce fichier et un autre de `questions.ts` justifiaient ce
+// renoncement en écrivant qu'estimer un apport « exigerait le poids, les
+// portions et une table de composition ; rien de tout cela n'est recueilli ».
+// C'était vrai de la FORME SERVIE et faux de la SOURCE, qui fournit la table et
+// recueille les portions. Le poids, lui, n'est pas nécessaire : la source rend
+// des grammes et des kilocalories absolus, jamais des g/kg.
+//
+// TROIS ÉCARTS À LA SOURCE, décidés par le praticien le 2026-07-31 et inscrits
+// au registre. La source n'est pas servie verbatim, et l'instrument est
+// débaptisé en conséquence — il n'est plus « selon Monnier ».
+//   1. « 2 œufs = 3,6 g » devient 13 g. Deux œufs pèsent ~13 g de protéines.
+//   2. « 150 g de poissons = 3,6 g » devient 30 g (~20 g pour 100 g).
+//      Les deux valeurs sont lues à l'identique par les deux lectures du banc et
+//      confirmées sur l'image : ce n'est pas une erreur d'extraction, c'est la
+//      source qui les porte. Les servir aurait produit un chiffre en grammes
+//      faux d'un facteur 4 à 8 sur ces lignes.
+//   3. Les lignes déclarées « par semaine » sont ramenées au jour (division par
+//      sept). La source les additionne aux lignes journalières sans aucune règle
+//      de conversion — son total mêle donc deux bases.
+//
+// CE QUI RESTE DE LA SOURCE, ET QUI N'EST PAS CORRIGÉ : le coefficient « X 24 »
+// de la conversion en calories. Il n'est pas le facteur d'Atwater (4 kcal/g) et
+// la source ne l'explique nulle part ; il extrapole vraisemblablement l'énergie
+// totale depuis le seul apport protéique. Il n'est pas démontrablement faux —
+// écart déclaré, non corrigé.
+//
+// AUCUN SEUIL, et c'est la source qui n'en donne aucun : ni par âge, ni par
+// sexe, ni par poids, alors même que son volet professionnel recommande l'outil
+// « pour une évaluation des apports protéinés chez la personne au-delà de
+// 60 ans ». Les deux totaux sont rendus bruts.
+//
+// LES MASSES SONT ENTRE PARENTHÈSES, délibérément : `libellePourLeModele` retire
+// les parenthèses portant une masse avant que le libellé n'atteigne le modèle de
+// synthèse, pour qu'il ne puisse pas multiplier « 3 portions par 100 g ». Ici
+// c'est le MOTEUR qui multiplie, à partir d'une table déclarée — la parade reste
+// donc utile et s'applique.
 export const Q_ALI_03 = {
-  id:'Q_ALI_03', titre:'Fréquences de consommation alimentaire (adapté de la méthode Monnier)',
-  instructions:'Renseignez vos habitudes habituelles. Ce questionnaire situe vos fréquences de consommation par groupe d\'aliments ; il ne calcule ni calories ni grammes de protéines.',
+  id:'Q_ALI_03', titre:'Estimation des apports protéiques et caloriques (grille WellNeuro, dérivée de la méthode Monnier)',
+  instructions:"Indiquez, pour chaque ligne, le NOMBRE de portions que vous consommez — 0 si vous n'en consommez pas. Les périodicités sont celles de chaque bloc : certaines lignes se comptent par jour, d'autres par semaine.",
   sections:[
-    { id:'A', titre:'Protéines animales',
+    { id:'VIANDE', titre:'Viande — portions par jour',
       questions:[
-        qs('MO1','Viande ou volaille : combien de portions par semaine ? (1 portion = 100-120 g)',
-          [{v:0,l:'0'},{v:1,l:'1-2'},{v:2,l:'3-4'},{v:3,l:'5-7'},{v:4,l:'8 ou plus'}]),
-        qs('MO2','Poisson : combien de portions par semaine ? (1 portion = 120-150 g)',
-          [{v:0,l:'0'},{v:1,l:'1-2'},{v:2,l:'3-4'},{v:3,l:'5-7'},{v:4,l:'8 ou plus'}]),
-        qs('MO3','Œufs : combien d\'unités par semaine ?',
-          [{v:0,l:'0'},{v:1,l:'1-2'},{v:2,l:'3-4'},{v:3,l:'5-7'},{v:4,l:'8 ou plus'}]),
-        qs('MO4','Produits laitiers (lait, yaourt, fromage) : combien de portions par jour ?',
-          [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4 ou plus'}]),
+        qn('AP1','Viande — petite portion (100 g)',0,10,1,'portions/jour'),
+        qn('AP2','Viande — portion moyenne (125 g)',0,10,1,'portions/jour'),
+        qn('AP3','Viande — grande portion (150 g)',0,10,1,'portions/jour'),
       ]},
-    { id:'B', titre:'Protéines végétales & Glucides',
+    { id:'EQUIV', titre:'Équivalents viande — portions par semaine',
       questions:[
-        qs('MO5','Légumineuses (lentilles, pois, haricots) : portions par semaine ?',
-          [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2-3'},{v:3,l:'4-5'},{v:4,l:'6 ou plus'}]),
-        qs('MO6','Féculents (pain, pâtes, riz, pommes de terre) : portions par jour ?',
-          [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4 ou plus'}]),
-        qs('MO7','Fruits et légumes confondus : nombre de portions par jour ?',
-          [{v:0,l:'0-1'},{v:1,l:'2'},{v:2,l:'3-4'},{v:3,l:'5-6'},{v:4,l:'7 ou plus'}]),
+        qn('AP4','2 œufs',0,21,1,'portions/semaine'),
+        qn('AP5','Poisson (150 g)',0,21,1,'portions/semaine'),
       ]},
-    { id:'C', titre:'Matières grasses & Produits sucrés',
+    { id:'LAIT', titre:'Produits laitiers — portions par jour',
       questions:[
-        qs('MO8','Matières grasses ajoutées (huile, beurre, sauce) : cuillères à soupe par jour ?',
-          [{v:0,l:'0-1'},{v:1,l:'2-3'},{v:2,l:'4-5'},{v:3,l:'6-7'},{v:4,l:'8 ou plus'}]),
-        qs('MO9','Produits sucrés (desserts, sodas, confiseries) : portions par jour ?',
-          [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4 ou plus'}]),
+        qn('AP6','Lait (200 ml)',0,10,1,'portions/jour'),
+        qn('AP7','1 yaourt',0,10,1,'portions/jour'),
+        qn('AP8','Fromage (30 g)',0,10,1,'portions/jour'),
+        qn('AP9','Fromage blanc (100 g)',0,10,1,'portions/jour'),
       ]},
-    // MO10 est collecté sans entrer dans aucun sous-score : il est demandé au
-    // patient et jamais exploité. Le retirer modifierait le contenu d'un
-    // instrument déjà administré, le câbler créerait un sous-score non validé —
-    // les deux sont des arbitrages cliniques, pas des corrections de forme.
-    // Signalé au rapport d'audit, en attente de décision praticien.
-    { id:'D', titre:'Contexte',
+    { id:'PAIN', titre:'Pain et équivalents — portions par jour',
       questions:[
-        qs('MO10','Votre niveau d\'activité physique global est :',
-          [{v:1,l:'Très sédentaire (bureau, peu de marche)'},{v:2,l:'Peu actif (quelques marches)'},{v:3,l:'Modérément actif (sport 1-2x/sem)'},{v:4,l:'Actif (sport 3-4x/sem)'},{v:5,l:'Très actif (sport quotidien / travail physique)'}]),
+        qn('AP10','Pain (50 g)',0,20,1,'portions/jour'),
+        qn('AP11','1 biscotte',0,20,1,'portions/jour'),
+        qn('AP12','Céréales type corn flakes (30 g)',0,10,1,'portions/jour'),
+      ]},
+    { id:'FORFAIT', titre:'Ajout forfaitaire',
+      description:"Un apport de base est ajouté une fois, selon le sexe.",
+      questions:[
+        qs('AP13','Vous êtes :',
+          [{v:15,l:'Homme'},{v:10,l:'Femme'}]),
+      ]},
+    { id:'GRIGNOT', titre:'Grignotage',
+      questions:[
+        qs('AP14','Grignotage ?',
+          [{v:0,l:'Aucun'},{v:150,l:'Grignotage modéré'},{v:300,l:'Grignotage important'}]),
+      ]},
+    { id:'BOISSONS', titre:'Boissons sucrées ou alcoolisées — verres par jour',
+      questions:[
+        qn('AP15','Vin (120 ml)',0,15,1,'verres/jour'),
+        qn('AP16','Bière (120 ml)',0,15,1,'verres/jour'),
+        qn('AP17','Jus de fruits (120 ml)',0,15,1,'verres/jour'),
+        qn('AP18','Apéritif (30 ml)',0,15,1,'verres/jour'),
+      ]},
+    { id:'ENTREES', titre:'Entrées salées — par semaine',
+      questions:[
+        qn('AP19','Tarte salée',0,21,1,'portions/semaine'),
+        qn('AP20','Charcuterie',0,21,1,'portions/semaine'),
+      ]},
+    { id:'DESSERTS', titre:'Desserts sucrés — par semaine',
+      questions:[
+        qn('AP21','Tarte sucrée, gâteaux',0,21,1,'portions/semaine'),
+        qn('AP22','Crème glacée ou autres sucreries',0,21,1,'portions/semaine'),
+      ]},
+    { id:'FESTIF', titre:'Repas festifs — par semaine',
+      questions:[
+        qn('AP23','Repas festif',0,7,1,'repas/semaine'),
       ]},
   ],
   scoring:{
-    type:'subscore',
-    subScores:[
-      {id:'P_AN', label:'Apports en protéines animales (index)', items:['MO1','MO2','MO3','MO4'], max:16},
-      {id:'P_VG', label:'Apports en protéines végétales (index)', items:['MO5'], max:4},
-      {id:'GL',   label:'Apports glucidiques (index)', items:['MO6','MO7'], max:8},
-      {id:'LIP',  label:'Apports lipidiques (index)', items:['MO8'], max:4},
-      {id:'SU',   label:'Produits sucrés (index)', items:['MO9'], max:4},
-    ]
+    type:'apports_ponderes',
+    // `coefficient` : la valeur de la colonne « Protéines par portion » (g) ou
+    // « Apports en calories » (kcal) de la source. `parJour: false` déclare une
+    // ligne hebdomadaire, ramenée au jour par le moteur.
+    //
+    // `coefficient: 1` sur AP13 et AP14 : leur RÉPONSE porte déjà la quantité —
+    // 15 ou 10 g pour le forfait, 0/150/300 kcal pour le grignotage. La source
+    // les pose comme des états, pas comme des comptages : y mettre un nombre de
+    // portions n'aurait pas de sens (« trois grignotages modérés »).
+    proteines:[
+      {id:'AP1',  coefficient:20,   parJour:true},
+      {id:'AP2',  coefficient:25,   parJour:true},
+      {id:'AP3',  coefficient:30,   parJour:true},
+      // Corrigé : la source porte 3,6 g pour deux œufs.
+      {id:'AP4',  coefficient:13,   parJour:false},
+      // Corrigé : la source porte 3,6 g pour 150 g de poisson.
+      {id:'AP5',  coefficient:30,   parJour:false},
+      {id:'AP6',  coefficient:7,    parJour:true},
+      {id:'AP7',  coefficient:3.5,  parJour:true},
+      {id:'AP8',  coefficient:7,    parJour:true},
+      {id:'AP9',  coefficient:7,    parJour:true},
+      {id:'AP10', coefficient:5,    parJour:true},
+      {id:'AP11', coefficient:1.25, parJour:true},
+      {id:'AP12', coefficient:5,    parJour:true},
+      {id:'AP13', coefficient:1,    parJour:true},
+    ],
+    // « Conversion en calories : X 24 » — appliqué au total protéique.
+    facteurCalorique:24,
+    calories:[
+      {id:'AP14', coefficient:1,   parJour:true},
+      {id:'AP15', coefficient:70,  parJour:true},
+      {id:'AP16', coefficient:70,  parJour:true},
+      {id:'AP17', coefficient:70,  parJour:true},
+      {id:'AP18', coefficient:70,  parJour:true},
+      {id:'AP19', coefficient:50,  parJour:false},
+      {id:'AP20', coefficient:50,  parJour:false},
+      {id:'AP21', coefficient:50,  parJour:false},
+      {id:'AP22', coefficient:50,  parJour:false},
+      {id:'AP23', coefficient:200, parJour:false},
+    ],
+    note:"Estimation dérivée de la méthode Monnier, corrigée sur trois points (protéines des œufs et du poisson, périodicités hebdomadaires ramenées au jour) et déclarée comme telle. Le coefficient de conversion en calories (fois 24) est celui de la source, qui ne l'explique pas. AUCUN seuil : la source n'en donne aucun, ni par âge, ni par sexe, ni par poids — ces valeurs s'apprécient au cas par cas et ne valent pas verdict.",
   }
 };

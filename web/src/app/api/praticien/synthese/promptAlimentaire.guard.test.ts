@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v12`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v13`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -47,7 +47,19 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // S'y ajoutent 'notApplicable' et 'raisonNonScore', que la garde ne voyait PAS :
 // elle recense les champs sur des passations SATURÉES, où aucune échelle n'est
 // sans objet. Elle restait verte en ratant exactement la classe qu'elle nomme.
-const EMPREINTE_V12 = '1963a73aeccdfe33';
+// v13, le 2026-07-31 : la consigne affirmait « Le patient n'a jamais saisi un
+// nombre : il a coché une tranche dans une liste ». C'était vrai jusqu'à la
+// reconstruction de `Q_ALI_03`, qui demande désormais un NOMBRE DE PORTIONS par
+// ligne. La phrase serait devenue une contre-vérité au moment précis où le
+// modèle reçoit le cas qu'elle nie — et elle l'aurait invité à traiter une
+// quantité déclarée comme un code de barème, c'est-à-dire à l'ignorer.
+// La même version décrit `unite`, champ NOUVEAU dans la charge. Il porte la
+// PÉRIODICITÉ, qui ne vivait jusque-là que dans le titre de section — jamais
+// transmis : « 2 » par jour et « 2 » par semaine arrivaient identiques. Et elle
+// corrige la définition de `quantiteDeclaree`, qui la disait réservée aux
+// tranches sans correspondance : un instrument de saisie chiffrée n'a aucune
+// tranche, et la consigne se serait contredite sur ses propres champs.
+const EMPREINTE_V13 = '1758ced6a7adcf7b';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -85,6 +97,15 @@ function questionsDe(id: string): Array<{ id: string; options?: Array<{ v: unkno
 function reponsesALaBorne(id: string, borne: 'min' | 'max'): Record<string, number> {
   return Object.fromEntries(
     questionsDe(id).map(q => {
+      // Item de SAISIE CHIFFRÉE : ses bornes sont `min`/`max`, pas des options.
+      // Sans cette branche, `Math.min(...[])` rendait `Infinity` et le contrôle
+      // de dégénérescence ci-dessous faisait échouer la garde sur son propre
+      // helper — ce qui est arrivé le 2026-07-31, quand `Q_ALI_03` reconstruit a
+      // apporté 21 items chiffrés.
+      const anyQ = q as { type?: string; min?: number; max?: number };
+      if (anyQ.type === 'number') {
+        return [q.id, borne === 'min' ? (anyQ.min ?? 0) : (anyQ.max ?? 0)];
+      }
       const valeurs = (q.options ?? []).map(o => Number(o.v)).filter(Number.isFinite);
       return [q.id, borne === 'min' ? Math.min(...valeurs) : Math.max(...valeurs)];
     })
@@ -152,7 +173,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v12', empreinte: EMPREINTE_V12 });
+    ).toEqual({ version: 'synthese-v13', empreinte: EMPREINTE_V13 });
   });
 
   it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {
@@ -272,7 +293,12 @@ describe('garde-fou alimentaire — aucune quantité non étalonnée dans le pro
       const charge = scoresPourPrompt({ ...scores, rawAnswers: reponses });
       const chemins = cheminsDeQuantite(charge);
       expect(chemins, `${id} (${borne}) laisse passer ${chemins.join(', ')}`).toEqual([]);
-      totaux[borne] = Number(scores?.total);
+      // La grandeur observable n'est pas toujours `total` : `Q_ALI_03` rend deux
+      // apports d'unités différentes et AUCUN total global — les additionner
+      // n'aurait pas de sens. On prend donc ce que l'instrument produit
+      // réellement, faute de quoi l'anti-vacuité ci-dessous comparerait deux
+      // fois zéro et ne prouverait rien.
+      totaux[borne] = Number(scores?.total ?? scores?.proteinesG);
     }
     // Anti-vacuité, sur la sortie cette fois : les deux bornes doivent produire
     // des totaux finis et **distincts**. Un balayage qui rend deux fois le même
@@ -416,8 +442,18 @@ describe('garde-fou alimentaire — la charge porte la tranche cochée, pas son 
     }
     expect(fautifs, `masses transmises : ${fautifs.join(' | ')}`).toEqual([]);
     // Anti-vacuité : une fonction identité passerait l'assertion ci-dessus si
-    // aucun libellé ne portait de masse. Dix en portent.
-    expect(nettoyes, 'aucun libellé nettoyé — la parade ne s’applique nulle part').toBe(10);
+    // aucun libellé ne portait de masse. Dix en portaient jusqu'au 2026-07-31 ;
+    // seize depuis. `Q_ALI_03` reconstruit en apporte huit — « Petite portion
+    // (100 g) », « Poisson (150 g) », « Fromage (30 g) »… — et en retire deux,
+    // ses anciens `MO1`/`MO2`.
+    //
+    // Les masses y sont ENTRE PARENTHÈSES délibérément : c'est la forme que la
+    // parade sait retirer, et il fallait qu'elle sache. Sur cet instrument la
+    // multiplication « 3 portions × 100 g » est faite par le MOTEUR, à partir de
+    // la table de conversion de la source ; le modèle, lui, n'a aucune raison de
+    // la refaire et ne reçoit donc ni la masse unitaire, ni le total pondéré
+    // (`scoresPourPrompt` écarte `proteinesG` et `caloriesKcal`).
+    expect(nettoyes, 'aucun libellé nettoyé — la parade ne s’applique nulle part').toBe(16);
   });
 
   it('le nettoyage ne mutile pas le libellé', () => {

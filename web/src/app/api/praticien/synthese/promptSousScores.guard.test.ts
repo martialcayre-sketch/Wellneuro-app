@@ -62,6 +62,7 @@ const SANS_SOUS_SCORES = ['Q_URO_02', 'Q_FIB_03'];
  */
 const REMPLISSAGE_NON_REPRESENTATIF: Record<string, string> = {
   Q_SOM_09: 'agrégats numériques — fixture fournie',
+  Q_ALI_03: 'nombres de portions en saisie chiffrée ; n’émet pas `subScores` mais deux apports pondérés (hors périmètre)',
   Q_MOD_03: 'échelles 0-10 en saisie directe — fixtures partielle et vide fournies',
   Q_NEU_12: 'comptages mensuels ; n’émet pas `subScores` mais `parts` (hors périmètre)',
   Q_SOM_01: 'PSQI ; n’émet pas `subScores` mais `components` (hors périmètre)',
@@ -91,8 +92,15 @@ const PORTEURS_ATTENDUS = [
 // `Q_SOM_07` (MFI-20) a rejoint la liste le 2026-07-31 : reconstruit depuis sa
 // source, il passe du scoring `sum` — une somme brute sur /80, que sa source ne
 // définit pas — à `subscore`, avec les cinq sous-échelles qu'elle déclare.
+//
+// `Q_ALI_03` l'a QUITTÉE le même jour, et pour la raison inverse : reconstruit
+// depuis sa feuille de calcul source, il ne rend plus cinq « index » ordinaux
+// mais deux grandeurs pondérées (grammes de protéines, kilocalories) sous le
+// moteur `apports_ponderes`. Elles ne sont pas des sous-scores et n'atteignent
+// pas le prompt — `scoresPourPrompt` les écarte, la consigne interdisant au
+// modèle de conclure à une masse consommée.
 const EMETTEURS_SUBSCORES = [
-  'Q_ALI_03', 'Q_CAN_01', 'Q_CAN_02', 'Q_GAS_01', 'Q_GEO_01', 'Q_INF_03', 'Q_MOD_01',
+  'Q_CAN_01', 'Q_CAN_02', 'Q_GAS_01', 'Q_GEO_01', 'Q_INF_03', 'Q_MOD_01',
   'Q_MOD_03', 'Q_NEU_03', 'Q_NEU_05', 'Q_NEU_11', 'Q_PED_02', 'Q_PNE_01', 'Q_SOM_07',
   'Q_SOM_09', 'Q_STR_01', 'Q_STR_04', 'Q_STR_06', 'Q_TAB_03', 'Q_URO_01',
 ];
@@ -385,7 +393,7 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     expect([...releve.porteurs].sort()).toEqual(PORTEURS_ATTENDUS);
   });
 
-  it('les 20 émetteurs de subScores sont épinglés par identifiant, pas par compte', () => {
+  it('les 19 émetteurs de subScores sont épinglés par identifiant, pas par compte', () => {
     // Un compte ne voit pas une substitution : un instrument qui cesse d'émettre et
     // un autre qui commence laisseraient `toBe(17)` vert — soit exactement la
     // disparition silencieuse que ce fichier existe pour rendre bruyante.
@@ -405,8 +413,9 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     expect(ids.length).toBeGreaterThanOrEqual(60);
     // 66 jusqu'au 2026-07-30 ; +23 avec les quinze échelles du QLQ-C30 et les huit
     // du QLQ-BR23, qui remplacent deux sommes brutes ; +5 le 2026-07-31 avec les
-    // cinq sous-échelles du MFI-20 reconstruit.
-    expect(releve.sousScoresBalayes, 'aucun sous-score balayé').toBe(94);
+    // cinq sous-échelles du MFI-20 reconstruit, −5 le même jour avec celles de
+    // `Q_ALI_03`, qui quitte `subscore` pour deux apports pondérés.
+    expect(releve.sousScoresBalayes, 'aucun sous-score balayé').toBe(89);
   });
 
   it('aucun total à null n’apparaît sur une passation SATURÉE', () => {

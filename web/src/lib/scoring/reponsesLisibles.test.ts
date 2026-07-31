@@ -155,14 +155,29 @@ describe('invariants du catalogue alimentaire', () => {
     QUESTIONNAIRE_CATALOGUE['Q_ALI_02'], QUESTIONNAIRE_CATALOGUE['Q_ALI_03'],
   ] as any[];
 
-  it('aucun item alimentaire n’est en saisie chiffrée libre', () => {
-    // Le module suppose que TOUTE réponse alimentaire vient d'une liste. Le jour
-    // où un `type: 'number'` apparaît, sa valeur réelle serait annoncée « non
-    // exploitable » au modèle. Ce test le fait savoir avant, pas après.
+  it('tout item alimentaire en saisie chiffrée porte une UNITÉ', () => {
+    // Le module supposait que TOUTE réponse alimentaire venait d'une liste, et
+    // ce test interdisait donc la saisie chiffrée : sans unité, une valeur
+    // réelle aurait été annoncée « non exploitable » au modèle.
+    //
+    // `Q_ALI_03` en porte depuis le 2026-07-31 — reconstruit depuis sa feuille
+    // de calcul source, il demande des nombres de portions. L'invariant change
+    // donc de forme sans changer de rôle : la saisie chiffrée est permise, mais
+    // seulement AVEC une unité, qui est ce qui la rend lisible comme quantité
+    // déclarée (`resoudreItem`). Un nombre nu resterait un code.
+    const sansUnite = defs.flatMap(d =>
+      d.sections.flatMap((s: any) => s.questions
+        .filter((q: any) => q.type === 'number' && !(typeof q.unit === 'string' && q.unit.trim()))
+        .map((q: any) => q.id))
+    );
+    expect(sansUnite, `saisie chiffrée sans unité : ${sansUnite.join(', ')} — l’ajouter, ou revenir à une liste`).toEqual([]);
+
+    // Anti-vacuité : l'invariant ne porterait sur rien si plus aucun item n'était
+    // en saisie chiffrée. `Q_ALI_03` en porte 21.
     const chiffres = defs.flatMap(d =>
       d.sections.flatMap((s: any) => s.questions.filter((q: any) => q.type === 'number').map((q: any) => q.id))
     );
-    expect(chiffres, `items en saisie chiffrée : ${chiffres.join(', ')} — étendre resoudreItem`).toEqual([]);
+    expect(chiffres.length, 'plus aucun item chiffré : cet invariant ne garde plus rien').toBeGreaterThan(0);
   });
 
   it('le catalogue relie bien `Q_ALI_01` à son moteur, dans la position servie', () => {
@@ -203,9 +218,15 @@ describe('invariants du catalogue alimentaire', () => {
     expect(fautifs, `options portant une masse : ${fautifs.join(' | ')}`).toEqual([]);
   });
 
-  it('chaque item porte au moins deux options', () => {
+  it('chaque item À LISTE porte au moins deux options', () => {
+    // Un item à liste avec une seule option ne laisse aucun choix : c'est une
+    // erreur de définition. Les items de SAISIE CHIFFRÉE n'ont pas d'options par
+    // nature et sont donc hors de cet invariant — leur propre contrôle est
+    // au-dessus, celui de l'unité, qui est ce qui les rend lisibles.
     const sansOptions = defs.flatMap(d =>
-      d.sections.flatMap((s: any) => s.questions.filter((q: any) => (q.options ?? []).length < 2).map((q: any) => q.id))
+      d.sections.flatMap((s: any) => s.questions
+        .filter((q: any) => q.type !== 'number' && (q.options ?? []).length < 2)
+        .map((q: any) => q.id))
     );
     expect(sansOptions).toEqual([]);
   });

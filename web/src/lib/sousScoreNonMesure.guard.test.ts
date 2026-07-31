@@ -67,9 +67,12 @@ describe('sous-score non mesuré — null, jamais zéro', () => {
   it('aucun axe non répondu ne reçoit de total ni de bande, sur tout le catalogue', () => {
     const instruments = instrumentsAPlusieursAxes();
     // Le balayage doit mordre : une liste vide passerait pour un succès.
-    // Quinze depuis le 2026-07-31 : le MFI-20 reconstruit passe du scoring
-    // `sum` à `subscore` et déclare ses cinq sous-échelles.
-    expect(instruments.length).toBe(15);
+    // Quinze le 2026-07-31 au matin : le MFI-20 reconstruit passe du scoring
+    // `sum` à `subscore` et déclare ses cinq sous-échelles. Quatorze le même
+    // soir : `Q_ALI_03`, reconstruit à son tour, QUITTE `subscore` — sa source
+    // est une feuille de calcul qui rend deux grandeurs pondérées, pas des
+    // sous-scores ordinaux.
+    expect(instruments.length).toBe(14);
 
     const coupables: string[] = [];
     let axesNonMesures = 0;
@@ -86,9 +89,10 @@ describe('sous-score non mesuré — null, jamais zéro', () => {
       }
     }
     // Valeur EXACTE : un plancher lâche laisserait passer une régression sur une
-    // dizaine d'axes sans rougir. Quarante-deux depuis le 2026-07-31 : les quatre
-    // sous-échelles non premières du MFI-20 reconstruit s'y ajoutent.
-    expect(axesNonMesures).toBe(42);
+    // dizaine d'axes sans rougir. Le 2026-07-31, deux reconstructions se
+    // compensent presque : le MFI-20 en apporte quatre (ses sous-échelles non
+    // premières), `Q_ALI_03` en retire quatre en quittant `subscore`.
+    expect(axesNonMesures).toBe(38);
     expect(coupables, `axes non mesurés portant une valeur :\n  ${coupables.join('\n  ')}`).toEqual([]);
   });
 

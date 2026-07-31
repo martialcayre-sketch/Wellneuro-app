@@ -45,6 +45,14 @@ export type ReponseLisible = {
    */
   quantiteDeclaree?: string | number;
   /**
+   * Unité de `quantiteDeclaree`, quand la question en porte une. C'est elle qui
+   * porte la PÉRIODICITÉ — « portions/jour » contre « portions/semaine » —, qui
+   * ne vit nulle part ailleurs dans la charge : le titre de section n'est pas
+   * transmis, et deux nombres égaux de périodicités différentes arrivaient
+   * indiscernables.
+   */
+  unite?: string;
+  /**
    * Valeur brute d'un CODE dont aucune option ne porte la valeur, ou d'un item
    * étranger à la forme servie. Jamais un libellé inventé : rattacher à
    * l'option la plus proche refabriquerait la déclaration qu'on corrige.
@@ -129,15 +137,42 @@ function resoudreItem(
   // quantité. Décider sur le seul moteur ferait de « Choisissez-vous du pain
   // complet ? » une quantité — la faute que ce module corrige, replacée à
   // l'autre bout. Et une valeur non numérique n'est jamais une quantité.
+  //
+  // DEUXIÈME VOIE, ouverte le 2026-07-31 : un item de SAISIE CHIFFRÉE portant
+  // une unité. `Q_ALI_03`, reconstruit depuis sa feuille de calcul source,
+  // demande des nombres de portions — « 3 » à la ligne « Petite portion
+  // (100 g) », avec `unit: 'portions/jour'`. C'est la quantité déclarée la plus
+  // directe qui soit, et la faire passer pour « non exploitable » serait
+  // exactement l'inverse de ce que ce module protège.
+  //
+  // La condition tient à la DÉFINITION, pas au moteur : `type: 'number'` avec
+  // une unité écrite. Un nombre sans unité resterait non résolu — c'est un code,
+  // et rien ne dit de quoi.
+  const estSaisieChiffreeAvecUnite =
+    question.type === 'number' &&
+    typeof question.unit === 'string' &&
+    question.unit.trim() !== '' &&
+    typeof valeur === 'number' &&
+    Number.isFinite(valeur);
   const estQuantitatif =
-    valeurEstQuantite &&
+    estSaisieChiffreeAvecUnite ||
+    (valeurEstQuantite &&
     typeof valeur === 'number' &&
     Number.isFinite(valeur) &&
     options.length > 2 &&
-    options.every(o => Number.isFinite(Number(o.v)));
-  return estQuantitatif
-    ? { question: libelle, quantiteDeclaree: brute }
-    : { question: libelle, valeurNonResolue: brute };
+    options.every(o => Number.isFinite(Number(o.v))));
+  if (!estQuantitatif) return { question: libelle, valeurNonResolue: brute };
+  // L'UNITÉ PART AVEC LE NOMBRE, quand la question en porte une.
+  //
+  // Sans elle, « 2 » à la ligne « Tarte salée » et « 2 » à la ligne « Petite
+  // portion » arrivent identiques alors que l'une se compte par semaine et
+  // l'autre par jour : le modèle ne peut pas les distinguer, et la consigne
+  // l'autorise pourtant à restituer la déclaration « dans l'unité de la
+  // question ». L'unité est ce qui porte la périodicité — elle vivait jusqu'ici
+  // dans le seul titre de section, que la charge ne transmet pas.
+  return question.unit
+    ? { question: libelle, quantiteDeclaree: brute, unite: String(question.unit) }
+    : { question: libelle, quantiteDeclaree: brute };
 }
 
 /**

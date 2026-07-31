@@ -42,14 +42,23 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Situez la qualité globale de votre alimentation : légumes, fruits, protéines, graisses, sucres et comportements alimentaires. Repérage d'habitudes, non validé comme instrument de mesure — les résultats orientent l'entretien, ils ne concluent pas.`, duree: '15 min', actif: true },
   { id: 'Q_ALI_02', titre: 'Alimentation — Diète méditerranéenne SIIN', categorie: 'Alimentaire',
     description: `Évaluez votre adhérence au régime méditerranéen en 14 questions (score /14).`, duree: '10 min', actif: true },
-  // Suspendu le 2026-07-30 sur arbitrage praticien, pour un motif de CONTENU :
-  // l'application sert 10 items là où la source (méthode Monnier) en compte 39 —
-  // un quart d'un instrument n'est pas une adaptation, c'est un autre instrument.
-  // Même précédent que Q_SOM_07 (« ce n'est pas un défaut de scoring, c'est un
-  // autre instrument »). Les droits, eux, sont couverts. Sa réponse enregistrée
-  // reste lisible ; réactivation à la reconstruction depuis la source.
-  { id: 'Q_ALI_03', titre: 'Fréquences de consommation alimentaire (adapté de la méthode Monnier)', categorie: 'Alimentaire',
-    description: `Situez vos fréquences de consommation par groupe d'aliments. Ne calcule ni apports caloriques ni apports protéiques : la version servie produit des indices de fréquence, pas des quantités. Source non certifiée.`, duree: '10 min', actif: false },
+  // Suspendu le 2026-07-30 pour un motif de CONTENU — 10 items servis là où la
+  // source en porte 39 —, RECONSTRUIT et réactivé le 2026-07-31.
+  //
+  // La source n'était pas un questionnaire de fréquences : c'est une feuille de
+  // calcul à cinq colonnes, avec un nombre de portions par ligne, une table de
+  // protéines par portion, et deux totaux — grammes de protéines, calories. Le
+  // servi en avait fait des indices de fréquence, soit l'exact contraire de ce
+  // que son titre annonçait.
+  //
+  // Il est DÉBAPTISÉ parce qu'il est corrigé : deux constantes de la source sont
+  // manifestement fausses (2 œufs et 150 g de poisson y valent 3,6 g de
+  // protéines) et ses périodicités mélangent le jour et la semaine sans règle de
+  // conversion. Trois écarts déclarés au registre, donc ce n'est plus « la
+  // méthode Monnier » mais une grille qui en dérive. Aucun seuil : la source
+  // n'en donne aucun.
+  { id: 'Q_ALI_03', titre: 'Estimation des apports protéiques et caloriques (grille WellNeuro, dérivée de la méthode Monnier)', categorie: 'Alimentaire',
+    description: `Indiquez, ligne par ligne, le nombre de portions que vous consommez. L'outil en estime vos apports quotidiens en protéines et en calories. Cette estimation n'est pas un verdict : elle s'apprécie avec le praticien, aucun seuil n'y est attaché.`, duree: '10 min', actif: true },
 
   // ── FIBROMYALGIE ────────────────────────────────────────────────────────────
   { id: 'Q_FIB_01', titre: 'FiRST — Dépistage de la fibromyalgie', categorie: 'Fibromyalgie',

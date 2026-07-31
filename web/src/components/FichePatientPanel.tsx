@@ -63,7 +63,7 @@ function getArrayField(scores: Record<string, unknown> | null, key: string): str
 }
 
 /**
- * Les CINQ porteurs d'un découpage descriptif, ramenés à une même ligne.
+ * Les SIX porteurs d'un découpage descriptif, ramenés à une même ligne.
  *
  * `dimensions` était seul rendu ; `components` (PSQI, QIF, Francis),
  * `categories` (Berlin), `parts` (IDTAS-AE) et `phases` (5 mots de Dubois) ne
@@ -79,7 +79,11 @@ function getArrayField(scores: Record<string, unknown> | null, key: string): str
 type AxeDescriptif = { cle: string; id: string; label: string; texte: string };
 
 function descriptifsDeScores(scores: Record<string, unknown> | null): AxeDescriptif[] {
-  const PORTEURS = ['dimensions', 'components', 'categories', 'parts', 'phases'];
+  // `apports` (2026-07-31) : deux grandeurs en UNITÉS PHYSIQUES, sans
+  // dénominateur — des grammes et des kilocalories par jour, pas un x/y. Sans
+  // ce porteur, un instrument qui calcule ce que sa description promet
+  // n'afficherait rien du tout au praticien.
+  const PORTEURS = ['dimensions', 'components', 'categories', 'parts', 'phases', 'apports'];
   const sortie: AxeDescriptif[] = [];
   for (const cle of PORTEURS) {
     const axes = scores?.[cle];
@@ -90,7 +94,11 @@ function descriptifsDeScores(scores: Record<string, unknown> | null): AxeDescrip
       const max = [axe.max, axe.maxTotal].find(v => typeof v === 'number') as number | undefined;
       let texte: string;
       if (typeof valeur === 'number') {
-        texte = typeof max === 'number' ? `${valeur}/${max}` : String(valeur);
+        // Une unité écrite l'emporte sur le dénominateur : « 86,6 g/jour » est
+        // une mesure, « 86,6 » un nombre nu que le praticien devrait deviner.
+        const unite = typeof axe.unite === 'string' ? axe.unite : null;
+        if (unite) texte = `${valeur} ${unite}`;
+        else texte = typeof max === 'number' ? `${valeur}/${max}` : String(valeur);
       } else if (axe.positive === true) {
         texte = 'positive';
       } else if (axe.positive === false) {

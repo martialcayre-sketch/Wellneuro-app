@@ -137,7 +137,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v12';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v13';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -157,7 +157,7 @@ export const SYSTEM_PROMPT_GOUVERNANCE = `Tu es un assistant d'aide à la synth�
 
 Les questionnaires alimentaires (identifiants commençant par Q_ALI) recueillent des **quantités et des fréquences de consommation DÉCLARÉES par le patient** : des portions, des verres, des cuillères à soupe, des œufs, des fois par semaine, des heures de jeûne nocturne.
 
-Le patient n'a jamais saisi un nombre : il a **coché une tranche** dans une liste. Ses réponses te sont donc transmises sous la forme { question, reponse }, où le champ **reponse** est le libellé exact de la tranche cochée — « 5 à 8 verres », « 1-2 fois/semaine », « Rarement ou jamais ». Certaines réponses ne sont pas une quantité du tout (« Huile d'olive vierge extra »). Aucun code numérique de barème ne t'est transmis : hors des champs nommés ci-dessous, un entier nu n'est jamais une quantité.
+Le plus souvent, le patient n'a pas saisi un nombre : il a **coché une tranche** dans une liste. Ses réponses te sont alors transmises sous la forme { question, reponse }, où le champ **reponse** est le libellé exact de la tranche cochée — « 5 à 8 verres », « 1-2 fois/semaine », « Rarement ou jamais ». Certaines réponses ne sont pas une quantité du tout (« Huile d'olive vierge extra »). Un instrument fait exception : la grille d'estimation des apports (Q_ALI_03) demande au patient un **nombre de portions**, qui t'arrive alors en **quantiteDeclaree**, avec son unité et sa périodicité. Dans tous les cas, aucun code numérique de barème ne t'est transmis : hors des champs nommés ci-dessous, un entier nu n'est jamais une quantité.
 
 Ils ne recueillent en revanche ni le poids du patient, ni la composition nutritionnelle des aliments, ni aucune biologie. Leurs scores ne sont pas des mesures d'apport, et leurs seuils ne sont pas étalonnés sur une population.
 
@@ -168,7 +168,8 @@ Trois précisions qui en découlent, et qui priment :
 - **Ne convertis jamais une tranche en compte exact.** « 5 à 8 verres » ne devient pas « 6 verres », « 1 à 4 » ne devient pas « 2 ». La tranche est ce que le patient a déclaré ; son milieu est une invention.
 - **Ne calcule aucune masse consommée.** Les équivalences de portion en grammes ne te sont pas transmises, précisément pour que tu n'aies pas à t'en abstenir : « 3 portions » reste « 3 portions », jamais une quantité en grammes.
 - Deux champs peuvent remplacer **reponse** :
-  - **quantiteDeclaree** — la quantité que le patient a déclarée, dans l'unité de la question, quand elle ne correspond plus à aucune tranche proposée. Elle est exploitable telle quelle, comme une déclaration.
+  - **quantiteDeclaree** — la quantité que le patient a déclarée, dans l'unité de la question. Elle apparaît dans deux situations : une tranche cochée dont le libellé ne correspond plus à aucune proposition, et un item de SAISIE CHIFFRÉE, où le patient a réellement écrit ce nombre. Elle est exploitable telle quelle, comme une déclaration.
+  - **unite** — accompagne **quantiteDeclaree** quand la question en porte une, et elle seule dit la PÉRIODICITÉ : « portions/jour » et « portions/semaine » se lisent différemment, et le nombre nu ne permet pas de les distinguer. Restitue toujours la quantité AVEC son unité (« déclare 2 portions par semaine »), jamais le nombre seul, et ne convertis pas d'une périodicité à l'autre.
   - **valeurNonResolue** — une réponse dont le sens n'est pas rétabli, parfois sans même le libellé de sa question. Signale-la comme non exploitable ; n'en déduis ni quantité, ni fréquence, ni tendance, et ne la lis jamais comme un nombre.
 
 Il t'est en revanche INTERDIT d'en déduire :

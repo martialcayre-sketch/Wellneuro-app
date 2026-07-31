@@ -250,6 +250,79 @@ describe('POST /api/patient/submit — instruments du cabinet', () => {
   });
 });
 
+// BORNES DES SAISIES CHIFFRÉES — ajoutées le 2026-07-31 avec `Q_ALI_03`.
+//
+// `min`/`max` d'un item `type: 'number'` n'étaient que des attributs HTML : le
+// navigateur les respecte, une requête directe non. Le moteur de `Q_ALI_03`
+// MULTIPLIE chaque saisie par un coefficient, donc une valeur aberrante ne reste
+// pas aberrante — elle devient une estimation d'apport aberrante, persistée en
+// base et renvoyée au modèle de synthèse comme une déclaration du patient.
+describe('POST /api/patient/submit — bornes des saisies chiffrées', () => {
+  function requeteApports(answers: Record<string, unknown>): Request {
+    const cookie = signPatientSession({
+      idPatient: assignation.idPatient,
+      email: assignation.emailPatient,
+    });
+    return new Request('http://localhost/api/patient/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookie)}` },
+      body: JSON.stringify({
+        idAssignation: assignation.idAssignation,
+        idQuestionnaire: 'Q_ALI_03',
+        answers,
+      }),
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+    prisma.assignation.findUnique.mockResolvedValue({ ...assignation, idQuestionnaire: 'Q_ALI_03' });
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: assignation.idPatient,
+      actif: true,
+      email: assignation.emailPatient,
+      accessToken: 'TOKEN_TEST',
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+    });
+    prisma.assignation.update.mockResolvedValue(assignation);
+    prisma.questionnaireReponse.create.mockResolvedValue({});
+  });
+
+  it.each([
+    ['au-dessus du maximum déclaré', { AP1: 999999 }],
+    ['négative', { AP1: -50 }],
+    ['non numérique', { AP1: 'beaucoup' }],
+  ])('refuse une valeur %s : 400, aucune persistance ni verrouillage', async (_libelle, answers) => {
+    const res = await postSubmit(requeteApports(answers));
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toContain('limites autorisées');
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['un forfait hors des options proposées', { AP1: 1, AP13: 9999 }],
+    ['un grignotage hors des options proposées', { AP1: 1, AP14: 999999 }],
+  ])('refuse %s : 400, aucune persistance', async (_libelle, answers) => {
+    // Les deux items à CHOIX UNIQUE dont la valeur d'option EST la quantité —
+    // 15 ou 10 g de forfait, 0/150/300 kcal de grignotage. Un garde calibré sur
+    // `type: 'number'` les laissait passer, et `{ AP13: 9999 }` rendait 9 999 g
+    // de protéines par jour, affichés sur la fiche avec leur unité.
+    const res = await postSubmit(requeteApports(answers));
+    expect(res.status).toBe(400);
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+  });
+
+  it('accepte une valeur dans les bornes (contrôle négatif)', async () => {
+    // Sans lui, un refus inconditionnel ferait passer les trois cas ci-dessus.
+    const res = await postSubmit(requeteApports({ AP1: 2 }));
+    expect(res.status).toBe(200);
+    expect(prisma.questionnaireReponse.create).toHaveBeenCalledTimes(1);
+  });
+});
+
 // Les questionnaires fonctionnels — `Q_PLAINTES` — n'ont pas de définition dans
 // QUESTIONNAIRE_CATALOGUE : leur donnée clinique est la réponse brute, persistée
 // avec un champ error depuis toujours. Le 409 défensif est réservé aux CAB_ —
