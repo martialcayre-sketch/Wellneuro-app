@@ -65,6 +65,42 @@ describe('MFI-20 — les dix inversions de la clé de correction', () => {
     );
   });
 
+  it('COHÉRENCE DE POLARITÉ : tout item inversé est formulé positivement, et réciproquement', () => {
+    // Le seul contrôle qui attrape une MAUVAISE LECTURE de la grille source.
+    // Cette grille a été lue sur une image — son extraction automatique rendait
+    // une table vidée de sa mise en page — et une case mal relevée déplacerait
+    // une inversion sans qu'aucun calcul ne s'en plaigne : les totaux
+    // resteraient dans leurs bornes, les cinq sous-échelles garderaient quatre
+    // items, et tous les autres tests de ce fichier passeraient.
+    //
+    // La règle est celle de l'instrument lui-même : on inverse un item quand
+    // être d'accord avec lui signifie ALLER BIEN. Les dix items inversés
+    // doivent donc être les dix formulés en positif, et les dix directs les dix
+    // formulés en négatif. Vérifié : la clé relevée sur l'image respecte cette
+    // partition sans exception — c'est une confirmation indépendante de la
+    // lecture.
+    const POSITIFS = ['M1', 'M3', 'M4', 'M6', 'M7', 'M8', 'M11', 'M12', 'M15', 'M20'];
+    const inverses = DEF.scoring.subScores.flatMap((s: any) => s.reversed ?? []).sort();
+    expect(inverses).toEqual(POSITIFS.slice().sort());
+
+    // Et les dix autres sont bien les dix directs : la partition est complète,
+    // aucun item n'est ni l'un ni l'autre, aucun n'est les deux.
+    const directs = ITEMS.filter(id => !inverses.includes(id));
+    expect(directs).toHaveLength(10);
+    expect(directs.some(id => POSITIFS.includes(id))).toBe(false);
+  });
+
+  it('chaque sous-échelle est sémantiquement homogène — deux inversés, deux directs', () => {
+    // Seconde confirmation indépendante de la lecture de la grille : les cinq
+    // sous-échelles du MFI-20 sont construites en paires équilibrées, deux
+    // items positifs et deux négatifs chacune. Une case relevée dans la
+    // mauvaise colonne casserait cet équilibre sur DEUX sous-échelles à la fois.
+    for (const { id, items, inverses } of CLE) {
+      expect(items, `${id} : quatre items`).toHaveLength(4);
+      expect(inverses, `${id} : deux inversés sur quatre`).toHaveLength(2);
+    }
+  });
+
   it('un item inversé compte À L’ENVERS — le cœur du défaut corrigé', () => {
     // LA garde. « Je me sens en forme » (M1) à 5, tout à fait d'accord : la
     // fatigue générale doit BAISSER. Sans inversion, elle montait.
