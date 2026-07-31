@@ -41,6 +41,26 @@ reste intégral dans le fichier. Le 2026-07-20, six exécutions complètes du m�
 fichier de test se sont enchaînées avec `| tail -N` croissant (6→12→20→25→30→45)
 faute de cette redirection.
 
+## Un palier sauté se dit — il ne se compte pas comme vert
+
+Rendre la **commande** et sa **sortie**, pas leur résumé : « vert » n'est pas
+une observation tant que le code de retour n'a pas été lu. Ne jamais annoncer
+un succès qui n'a pas été observé dans cette session.
+
+Un contrôle qui ne peut pas s'exécuter — outil absent, base indisponible,
+palier hors de portée de la machine — est un contrôle **non exécuté**, jamais
+un contrôle réussi. Le compter comme vert produit exactement le rapport
+rassurant qui a permis de rater ce qu'il annonçait couvrir : le 2026-07-31, le
+`selfcheck` d'un dépôt tiers a rendu « all checks passed » alors qu'il avait
+sauté l'intégralité de ses tests, faute de l'outil qui les lance.
+
+En pratique, dans la sortie :
+
+- palier exécuté → commande, code de retour, résumé de la sortie ;
+- palier sauté → dire lequel, pourquoi, et **ce qui reste donc non vérifié** ;
+- E2E non joués (PC, ou run concurrent) → le parcours n'est pas vérifié, quel
+  que soit l'état de Vitest.
+
 ## Règles
 
 1. Classer les fichiers modifiés : docs, UI, API, scoring, Prisma, scripts.
