@@ -41,6 +41,16 @@ reste intégral dans le fichier. Le 2026-07-20, six exécutions complètes du m�
 fichier de test se sont enchaînées avec `| tail -N` croissant (6→12→20→25→30→45)
 faute de cette redirection.
 
+**La redirection économise deux fois, et la seconde est la plus grosse.** Elle
+évite de réexécuter — et surtout elle empêche une sortie de suite entière
+d'entrer dans le contexte, où elle serait relue à **chaque tour suivant** de la
+session (mesuré le 2026-08-01 : ~202 000 tokens relus par requête, ~37 tours par
+session). Sur un `test:worktree` complet, c'est la différence entre lire 30
+lignes une fois et repayer des milliers de lignes trente fois.
+
+Ne jamais faire entrer une sortie complète : rediriger, lire la queue, puis
+`grep` sur **le même fichier** pour tout détail supplémentaire.
+
 ## Un palier sauté se dit — il ne se compte pas comme vert
 
 Rendre la **commande** et sa **sortie**, pas leur résumé : « vert » n'est pas

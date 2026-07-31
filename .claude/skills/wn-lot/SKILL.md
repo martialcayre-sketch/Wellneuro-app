@@ -67,20 +67,46 @@ Puis classer sur les fichiers probables — la classe la plus haute atteinte l'e
 | **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | `opus` | **T3** | `wn-reviewer` **avant** de passer la main | confirmation distincte ; **vérifier la base après merge** (`execute_sql`) |
 | **Auth** — `lib/auth.ts`, portail, tokens, consentement | `opus` | **T3** | `wn-reviewer` **avant** de passer la main | idem migration : la revue de diff ne voit pas ce que le lot **ne fait pas** |
 
-Politique de coût, appliquée sans la réexpliquer : **`haiku` pour localiser et lire,
-`sonnet` pour écrire, `opus` seulement là où un faux verdict coûte cher.** Monter en
-modèle sur une étape de lecture est le gaspillage le plus courant ; descendre sur une
-revue clinique est le plus cher.
+Le modèle du tableau vaut pour la **qualité du verdict**, pas pour le coût :
+descendre sur une revue clinique est un vrai risque, monter sur une lecture ne coûte
+presque rien. La dépense se joue ailleurs.
+
+## Le coût est dans le contexte, pas dans le modèle
+
+Mesuré le 2026-08-01 sur 35 194 appels : une requête relit **~202 000 tokens** pour
+produire ~600 tokens. **Ce qu'une étape fait entrer dans le contexte est relu par
+toutes les étapes suivantes** — et un lot en compte sept.
+
+Deux règles, à appliquer sans les réexpliquer :
+
+- **L'étape de cadrage se délègue dès qu'elle dépasse deux ou trois fichiers.** Un
+  sous-agent lit dans son propre contexte, jeté à la fin, donc jamais repayé : 28
+  fois moins cher par appel qu'une lecture faite dans la session. Ce facteur ne
+  vient pas du tarif du modèle mais de l'isolement — il vaut donc aussi pour un
+  agent cher. **Ce qui remonte du sous-agent est la conclusion, jamais les
+  fichiers.**
+- **Rien de volumineux n'entre en direct.** Sortie de suite, dump, fichier long :
+  rediriger puis lire la partie utile ; `Grep`/`Glob` pour localiser avant tout
+  `Read` ; `offset`/`limit` sur un fichier long.
+
+La proposition annonce **ce que la séquence ne fera pas entrer dans le contexte** —
+c'est la partie vérifiable de son économie, et la seule.
 
 ## Ce que ce pilote ne mesure pas — et ne prétendra pas mesurer
 
 **Aucun compteur de tokens n'est accessible depuis un skill.** Ce pilote économise en
-réduisant ce qui est chargé et le nombre d'allers-retours, pas en pilotant un budget.
+réduisant ce qui entre dans le contexte et le nombre d'allers-retours, pas en pilotant
+un budget.
 
-Ne jamais afficher un « coût estimé » chiffré : ce serait un nombre sans source. Ce
-qui se dit honnêtement, et se compte vraiment : le nombre d'étapes, les délégations
-prévues, le palier de test retenu, et ce qui a été **évité** (contexte non rechargé,
-palier non élargi).
+Ne jamais afficher un « coût estimé » chiffré : ce serait un nombre sans source. La
+consommation réelle se mesure hors session, en agrégeant les compteurs des transcripts
+`~/.claude/projects/**/*.jsonl` (`input_tokens`, `output_tokens`,
+`cache_creation_input_tokens`, `cache_read_input_tokens`) — c'est cette mesure, et
+elle seule, qui a établi les chiffres de ce fichier.
+
+Ce qui se dit honnêtement dans la proposition : le nombre d'étapes, les délégations
+prévues, le palier retenu, et surtout **ce qui n'entrera pas dans le contexte de la
+session** — fichiers lus par un sous-agent, sorties redirigées, paliers non élargis.
 
 ## Séquence proposée
 

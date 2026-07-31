@@ -117,6 +117,47 @@ Les deux coexistent, aucune n'est dépréciée : périmètres disjoints, fronti�
 réserves d'audit (R6 = double source roadmap). Toujours qualifier la série ; un
 `R6` nu est ambigu.
 
+## Économie de contexte — le poste de dépense réel
+
+Mesuré le 2026-08-01 sur 13 jours et 35 194 appels : **chaque requête relit
+~202 000 tokens de contexte pour produire ~600 tokens de réponse.** 93 % de la
+consommation est côté entrée, dont **0,03 % de texte neuf** — tout le reste est
+du contexte déjà lu, relu à chaque tour.
+
+D'où la seule règle qui compte : **un token entré dans le contexte est repayé à
+chaque tour suivant** (~37 tours par session). Un fichier de 50 000 tokens lu au
+tour 3 coûte 34 relectures, pas une lecture.
+
+Trois gestes, par rendement décroissant :
+
+1. **Ne pas faire entrer le volume.** `Grep`/`Glob` pour localiser *avant* de
+   lire ; `Read` avec `offset`/`limit` sur un gros fichier ; rediriger une sortie
+   volumineuse vers un fichier et n'en lire que la partie utile.
+2. **Déléguer l'investigation volumineuse à un sous-agent.** Son contexte est
+   jeté à la fin : rien de ce qu'il a lu n'est jamais repayé. Mesuré — un appel
+   `wn-explorer` (44 k de contexte) coûte **28 fois moins** qu'un appel Opus
+   (224 k). C'est le contexte isolé qui paie, pas le tarif du modèle.
+3. **`/clear` entre deux sujets sans rapport.** Une session longue repaie son
+   début à chaque tour.
+
+**Ce qui ne paie pas :** raccourcir les réponses (la sortie est 8,5 % du coût),
+et router les lectures vers un modèle bon marché sans les isoler (la lecture pure
+est 3,5 %). Écrire court reste utile pour la lisibilité — pas pour la dépense.
+
+## Parcours type d'une tâche
+
+| Étape | Geste | Qui |
+|---|---|---|
+| 1. Situer | localiser les fichiers, vérifier les hypothèses contre le dépôt | **sous-agent** (`wn-explorer`) dès que ça dépasse deux ou trois fichiers |
+| 2. Cadrer | périmètre, risques, palier de test, gardes applicables | session (`/wn-plan`, ou `/wn-lot` sur un lot de campagne) |
+| 3. Écrire | mode Plan, puis édition bornée au périmètre | session |
+| 4. Valider | palier T1/T2/T3, sortie redirigée puis relue | session |
+| 5. Revoir | diff, sécurité, clinique | `/wn-review` ; sous-agent `wn-reviewer` si migration/auth |
+| 6. Clore | statut, journal, promotions | `/wn-finish` puis `/wn-pr` |
+
+L'étape 1 est celle qui décide du coût de toutes les autres : ce qu'elle fait
+entrer dans le contexte est relu jusqu'à la fin de la session.
+
 ## Commandes utiles
 
 ```bash
