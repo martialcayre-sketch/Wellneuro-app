@@ -53,11 +53,11 @@ describe('POST /api/praticien/assignations — lien portail', () => {
   });
 
   // Le refus doit être DANS la route, pas dans l'écran : retirer l'entrée du
-  // sélecteur laisse passer un appel direct. `Q_SOM_07` est nommé exprès — un
+  // sélecteur laisse passer un appel direct. `Q_FIB_03` est nommé exprès — un
   // invariant générique sur « les suspendus » resterait vert si on le
   // réactivait, et c'est cette décision-là qu'on verrouille ici.
   it('refuse un questionnaire suspendu, avant toute écriture et tout envoi', async () => {
-    const response = await POST(request('Q_SOM_07'));
+    const response = await POST(request('Q_FIB_03'));
     expect(response.status).toBe(409);
     expect(await response.json()).toMatchObject({
       success: false,
@@ -98,7 +98,7 @@ describe('PATCH /api/praticien/assignations — déverrouillage', () => {
 
   it('refuse de rouvrir la saisie d’un instrument suspendu, avant toute écriture', async () => {
     prisma.assignation.findFirst.mockResolvedValue({
-      idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_07', idPatient: 'PAT_1',
+      idAssignation: 'ASS_1', idQuestionnaire: 'Q_FIB_03', idPatient: 'PAT_1',
     });
     const response = await PATCH(patchRequest());
     expect(response.status).toBe(409);

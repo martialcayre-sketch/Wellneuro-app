@@ -26,6 +26,14 @@ export const O_PSS_INVERSE = [{v:5,l:'Jamais'},{v:4,l:'Presque jamais'},{v:3,l:'
 export const O_ZARIT= [{v:0,l:'Jamais'},{v:1,l:'Rarement'},{v:2,l:'Quelques fois'},{v:3,l:'Assez souvent'},{v:4,l:'Presque toujours'}];
 export const O_DASS = [{v:0,l:'Ne s’applique pas du tout à moi'},{v:1,l:'S’applique un peu à moi, ou une partie du temps'},{v:2,l:'S’applique beaucoup à moi, ou une bonne partie du temps'},{v:3,l:'S’applique entièrement à moi, ou la grande majorité du temps'}];
 export const O_CONNERS = [{v:0,l:'Pas vrai du tout — Jamais ou rarement'},{v:1,l:"Un peu vrai — À l'occasion"},{v:2,l:'Assez vrai — Souvent'},{v:3,l:'Très vrai — Très souvent'}];
+// MFI-20 : échelle d'ACCORD de 1 à 5, et non de fréquence. La source n'ancre
+// que ses deux extrêmes — « vous répondrez 1 si vous n'êtes pas du tout
+// d'accord et, à l'inverse, 5 si vous êtes tout à fait d'accord ; toutes les
+// nuances entre 1 et 5 sont possibles ». Les trois valeurs intermédiaires
+// restent donc des chiffres nus : leur inventer des libellés changerait
+// l'instrument, et la clé de correction (« 6 − réponse ») porte sur ces
+// nombres-là.
+export const O_MFI = [{v:1,l:"1 — Pas du tout d'accord"},{v:2,l:'2'},{v:3,l:'3'},{v:4,l:'4'},{v:5,l:"5 — Tout à fait d'accord"}];
 
 // ─── FABRIQUES D'ITEMS ───────────────────────────────────────────────────────
 // meta : objet optionnel — ex. {conditionnel:'BR4>=2'} pour items conditionnels

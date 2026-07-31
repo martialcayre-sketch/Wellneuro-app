@@ -111,7 +111,7 @@ describe('GET /api/portail/assignations — liaison session au compte', () => {
   // au patient un temps qu'on sait d'avance inutile.
   it('n’affiche plus un questionnaire suspendu encore à remplir', async () => {
     prisma.assignation.findMany.mockResolvedValue([
-      { idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_07', titre: 'MFI-20', statut: 'Envoyé', dateAssignation: new Date('2026-07-01'), dateLimite: null, idPatient: patient.idPatient, emailPatient: patient.email, statutReponses: null, createdAt: new Date('2026-07-01') },
+      { idAssignation: 'ASS_1', idQuestionnaire: 'Q_FIB_03', titre: 'ELFE', statut: 'Envoyé', dateAssignation: new Date('2026-07-01'), dateLimite: null, idPatient: patient.idPatient, emailPatient: patient.email, statutReponses: null, createdAt: new Date('2026-07-01') },
       { idAssignation: 'ASS_2', idQuestionnaire: 'Q_SOM_06', titre: 'Pichot', statut: 'Envoyé', dateAssignation: new Date('2026-07-02'), dateLimite: null, idPatient: patient.idPatient, emailPatient: patient.email, statutReponses: null, createdAt: new Date('2026-07-02') },
     ]);
     const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
@@ -125,7 +125,7 @@ describe('GET /api/portail/assignations — liaison session au compte', () => {
     // Contrôle négatif du filtre : sans lui, on effacerait de l'historique du
     // patient un questionnaire qu'il a bel et bien rempli.
     prisma.assignation.findMany.mockResolvedValue([
-      { idAssignation: 'ASS_1', idQuestionnaire: 'Q_SOM_07', titre: 'MFI-20', statut: 'Complété', dateAssignation: new Date('2026-07-01'), dateLimite: null, idPatient: patient.idPatient, emailPatient: patient.email, statutReponses: 'verrouille', createdAt: new Date('2026-07-01') },
+      { idAssignation: 'ASS_1', idQuestionnaire: 'Q_FIB_03', titre: 'ELFE', statut: 'Complété', dateAssignation: new Date('2026-07-01'), dateLimite: null, idPatient: patient.idPatient, emailPatient: patient.email, statutReponses: 'verrouille', createdAt: new Date('2026-07-01') },
     ]);
     const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
     const corps = await (await GET(request(cookie))).json();

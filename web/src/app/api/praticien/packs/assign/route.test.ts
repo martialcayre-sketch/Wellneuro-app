@@ -75,7 +75,7 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
   // à l'envoi. Le pack part amputé plutôt que d'échouer en bloc.
   it('écarte un questionnaire suspendu du pack sans faire échouer l’envoi', async () => {
     vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({
-      qids: ['Q_NEU_03', 'Q_SOM_07'],
+      qids: ['Q_NEU_03', 'Q_FIB_03'],
       source: 'legacy',
     });
     const response = await POST(request());
@@ -91,7 +91,7 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
-        message: expect.stringContaining('Q_SOM_07'),
+        message: expect.stringContaining('Q_FIB_03'),
       })
     );
   });

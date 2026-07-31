@@ -118,7 +118,7 @@ describe('POST /api/patient/submit — aucun score renvoyé au patient', () => {
   it('refuse la soumission d’un instrument suspendu, sans rien calculer ni écrire', async () => {
     prisma.assignation.findUnique.mockResolvedValue({
       ...assignation,
-      idQuestionnaire: 'Q_SOM_07',
+      idQuestionnaire: 'Q_FIB_03',
     });
     const res = await postSubmit(requeteSoumission());
     expect(res.status).toBe(409);

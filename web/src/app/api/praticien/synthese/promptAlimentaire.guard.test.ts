@@ -196,7 +196,11 @@ describe('garde-fou alimentaire — couplage consigne / charge utile', () => {
     if (!SYSTEM_PROMPT_GOUVERNANCE.includes('mesureNonInterpretable')) return;
     expect(SOURCE_ROUTE).toMatch(/mesureNonInterpretable:\s*motifNonMesure/);
     // Et le motif doit venir du registre, pas d'un littéral recopié sur place.
-    expect(SOURCE_ROUTE).toMatch(/motifNonInterpretable\(r\.idQuestionnaire\)/);
+    // La DATE de la passation est passée avec l'identifiant depuis le
+    // 2026-07-31 : le registre ne marque plus un instrument entier mais les
+    // passations antérieures à sa reconstruction. L'omettre ferait retomber sur
+    // la frontière fermée — toutes les passations marquées, y compris les neuves.
+    expect(SOURCE_ROUTE).toMatch(/motifNonInterpretable\(r\.idQuestionnaire,\s*r\.date\)/);
   });
 
   it('livre réellement les sous-scores que la consigne décrit', () => {

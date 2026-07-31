@@ -28,34 +28,92 @@ describe('registre — contenu', () => {
   });
 
   it('donne un motif exploitable, pas une étiquette creuse', () => {
-    for (const [id, motif] of MOTIFS_PASSATION_NON_INTERPRETABLE) {
+    for (const [id, entree] of MOTIFS_PASSATION_NON_INTERPRETABLE) {
       // Le motif s'affiche tel quel au praticien et part dans le prompt :
       // « non interprétable » sans le pourquoi ne l'aide ni ne le protège.
-      expect(motif.length, `${id} : motif trop court`).toBeGreaterThan(80);
-      expect(motif, `${id} : motif non ponctué`).toMatch(/\.$/);
+      expect(entree.motif.length, `${id} : motif trop court`).toBeGreaterThan(80);
+      expect(entree.motif, `${id} : motif non ponctué`).toMatch(/\.$/);
     }
   });
 });
 
-describe('registre — inclusion dans les suspendus', () => {
-  // C'est LA garde du piège de réactivation. La table est indexée par
-  // instrument, pas par passation : réactiver `Q_SOM_07` sans statuer sur les
-  // passations historiques marquerait les nouvelles à tort. Le CI le refuse.
+describe('frontière datée — la reconstruction ne blanchit pas le passé', () => {
+  const AVANT = new Date('2026-07-21T08:00:00.000Z');
+  const APRES = new Date('2026-08-01T08:00:00.000Z');
+
+  it('une passation ANTÉRIEURE à la reconstruction reste non interprétable', () => {
+    // Les quatre passations de production du MFI-20 datent d'avant : ce qui a
+    // été calculé sur l'ancienne grille l'a été, et le redater ne le corrige pas.
+    expect(motifNonInterpretable('Q_SOM_07', AVANT)).toContain('inversions');
+  });
+
+  it('une passation POSTÉRIEURE est une mesure ordinaire', () => {
+    // C'est ce que la reconstruction achète : sans cette branche, réactiver
+    // l'instrument marquerait ses passations neuves du défaut de l'ancien.
+    expect(motifNonInterpretable('Q_SOM_07', APRES)).toBeNull();
+  });
+
+  it('le jour même de la mise en service compte comme APRÈS', () => {
+    // La frontière est « à partir de », pas « après » : une passation du
+    // 2026-07-31 porte déjà le servi corrigé.
+    expect(motifNonInterpretable('Q_SOM_07', new Date('2026-07-31T00:00:00.000Z'))).toBeNull();
+    expect(motifNonInterpretable('Q_SOM_07', '2026-07-31')).toBeNull();
+    expect(motifNonInterpretable('Q_SOM_07', '2026-07-30')).not.toBeNull();
+  });
+
+  it('FRONTIÈRE FERMÉE : sans date, ou sur une date illisible, la passation est marquée', () => {
+    // Le sens de l'erreur est choisi. Marquer à tort affiche « interprétation
+    // retirée » sur une mesure saine — visible, corrigible d'un regard. Ne pas
+    // marquer servirait au praticien un score qui n'en est pas un, en silence.
+    expect(motifNonInterpretable('Q_SOM_07')).not.toBeNull();
+    expect(motifNonInterpretable('Q_SOM_07', null)).not.toBeNull();
+    expect(motifNonInterpretable('Q_SOM_07', 'pas une date')).not.toBeNull();
+  });
+
+  // BRANCHE NON ÉPROUVÉE, et nommée plutôt que faussement couverte : celle d'une
+  // entrée SANS `reconstruitLe`, qui doit marquer ses passations pour toujours.
+  // Aucune entrée du registre n'est dans ce cas aujourd'hui, et le seul test
+  // possible serait une réimplémentation de la fonction sur une table forgée —
+  // c'est-à-dire un test de sa copie, pas d'elle. La garde ci-dessous couvre le
+  // risque réel : une entrée sans date DOIT alors être suspendue au catalogue.
+});
+
+describe('registre — suspendu, OU daté', () => {
+  // C'ÉTAIT la garde du piège de réactivation, et elle a changé de forme le
+  // 2026-07-31 sans changer de rôle. Elle exigeait que tout instrument listé ici
+  // soit `actif: false` — ce qui tenait la porte FERMÉE : elle interdisait la
+  // réactivation au lieu de la rendre possible. Le MFI-20 ayant été reconstruit,
+  // il fallait une troisième voie, et c'est la date.
+  //
+  // L'alternative est exclusive dans les faits mais pas dans la forme : un
+  // instrument peut être daté ET suspendu (reconstruit mais pas encore rouvert).
+  // Ce que la garde interdit, c'est le cas dangereux — ACTIF et SANS date, où
+  // chaque passation neuve serait marquée du défaut de l'ancien servi.
   it.each([...MOTIFS_PASSATION_NON_INTERPRETABLE.keys()])(
-    '%s est suspendu dans le catalogue',
+    '%s est suspendu au catalogue, ou porte une date de reconstruction',
     id => {
-      const entree = QUESTIONNAIRES_CATALOG.find(q => q.id === id);
-      expect(entree, `${id} absent du catalogue`).toBeDefined();
+      const auCatalogue = QUESTIONNAIRES_CATALOG.find(q => q.id === id);
+      expect(auCatalogue, `${id} absent du catalogue`).toBeDefined();
+      const entree = MOTIFS_PASSATION_NON_INTERPRETABLE.get(id);
       expect(
-        entree?.actif,
-        `${id} est de nouveau actif : statuer sur ses passations historiques avant de le retirer du registre`,
-      ).toBe(false);
+        auCatalogue?.actif === false || entree?.reconstruitLe !== undefined,
+        `${id} est actif au catalogue SANS date de reconstruction : ses passations neuves porteraient le motif de l'ancien servi. Le reconstruire et dater, ou le suspendre.`,
+      ).toBe(true);
       // Pas d'assertion sur `IDS_SUSPENDUS` ici : il est DÉRIVÉ de `!actif`
       // (`questionnaires-catalog.ts`), donc la vérifier après `actif === false`
       // est une tautologie — elle donnerait l'impression d'une double garde là
       // où il n'y en a qu'une. Relevé en revue le 2026-07-27.
     },
   );
+
+  it('ANTI-VACUITÉ : la garde ci-dessus discrimine réellement', () => {
+    // Sans ceci, une entrée dont les DEUX branches seraient fausses passerait
+    // inaperçue si la boucle venait à ne plus itérer. Et surtout : la branche
+    // « datée » doit être celle qui porte aujourd'hui, sinon la garde serait
+    // encore l'ancienne sous un nouveau nom.
+    const mfi = MOTIFS_PASSATION_NON_INTERPRETABLE.get('Q_SOM_07');
+    expect(mfi?.reconstruitLe, 'Q_SOM_07 doit porter sa date de reconstruction').toBeInstanceOf(Date);
+  });
 
   it('n’impose PAS la réciproque — Q_FIB_03 est suspendu ET parfaitement lisible', () => {
     // `Q_FIB_03` (ELFE) est inactif depuis toujours parce qu'il n'a jamais été
@@ -85,8 +143,10 @@ describe('motifNonInterpretable', () => {
   });
 
   it('rend le motif sur un instrument du registre', () => {
+    // L'entrée porte désormais `{ motif, reconstruitLe }` : c'est le MOTIF qui
+    // ressort, pas l'entrée entière.
     expect(motifNonInterpretable('Q_SOM_07')).toBe(
-      MOTIFS_PASSATION_NON_INTERPRETABLE.get('Q_SOM_07'),
+      MOTIFS_PASSATION_NON_INTERPRETABLE.get('Q_SOM_07')?.motif,
     );
   });
 });

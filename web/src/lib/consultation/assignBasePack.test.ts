@@ -33,8 +33,14 @@ describe('assignPackToPatient — instruments suspendus', () => {
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
   });
 
+  // L'instrument témoin était `Q_SOM_07` jusqu'au 2026-07-31 ; il a été
+  // reconstruit depuis sa source et rouvert, donc il ne témoigne plus de rien
+  // ici. `Q_FIB_03` (ELFE) le remplace : suspendu depuis toujours, et le seul
+  // dont l'arbitrage du 2026-07-31 a explicitement décidé qu'il le RESTE — son
+  // usage ne coûte rien à personne, sa reconstruction ne servirait aujourd'hui
+  // aucun usage.
   it('écarte un instrument suspendu sans faire échouer le reste du pack', async () => {
-    const cree = await assigner(['Q_NEU_03', 'Q_SOM_07']);
+    const cree = await assigner(['Q_NEU_03', 'Q_FIB_03']);
     expect(cree).toHaveLength(1);
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
     const arg = prisma.assignation.create.mock.calls[0][0] as { data: { idQuestionnaire: string } };
@@ -45,12 +51,12 @@ describe('assignPackToPatient — instruments suspendus', () => {
   // pack de base serait invisible — ce chemin n'a aucun praticien pour lire un
   // écart de comptage. La fonction est ici, la trace dans `api/portail/valider`.
   it('expose les qids écartés, pour que l’appelant puisse les tracer', () => {
-    expect(qidsSuspendus(['Q_NEU_03', 'Q_SOM_07'])).toEqual(['Q_SOM_07']);
+    expect(qidsSuspendus(['Q_NEU_03', 'Q_FIB_03'])).toEqual(['Q_FIB_03']);
     expect(qidsSuspendus(['Q_NEU_03'])).toEqual([]);
   });
 
   it('n’écrit rien si le pack ne contient que des instruments suspendus', async () => {
-    const cree = await assigner(['Q_SOM_07']);
+    const cree = await assigner(['Q_FIB_03']);
     expect(cree).toHaveLength(0);
     expect(prisma.assignation.create).not.toHaveBeenCalled();
   });

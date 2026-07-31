@@ -1237,16 +1237,16 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "20 items en 1 section, moteur `subscore`, cotation 1-5 (échelle d'ACCORD, non de fréquence), cinq sous-échelles de quatre items chacune bornées 4-20, dix items inversés (6 − réponse), AUCUN score global et AUCUNE bande. RECONSTRUIT LE 2026-07-31 depuis WN-SRC-0397. Ce qui était servi jusque-là n'était pas cet instrument : échelle 1→5 servie en 0→4, aucune des dix inversions appliquée, cinq sous-échelles servies en deux sections inventées, trois bandes sur un /80 que la source récuse explicitement, et onze des vingt libellés étrangers à la source — plusieurs de polarité inverse. La clé de correction vient de la source elle-même, non de la littérature : sa dernière page porte une « Grille de calcul de l'échelle MFI » dont l'extraction automatique ne rendait rien (table vidée de sa mise en page), et qui a été lue sur l'image de la page. Affectations : Générale 1/5/12/16, Physique 2/8/14/20, Mentale 7/11/13/19, Activité 3/6/10/17, Motivation 4/9/15/18 ; inversions 1, 3, 4, 6, 7, 8, 11, 12, 15, 20 — recoupant exactement la liste que la source énonce en toutes lettres deux pages plus haut. Bornes prouvées par exécution, sous-échelle par sous-échelle (mfi20Reconstruit.guard.test.ts) : 4 au plancher, 20 au plafond, ce qui n'est atteignable qu'en inversant correctement.",
         "langue": "fr",
         "traductionValidee": "fr — Gentile et al. (à confirmer)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
         "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "dateVerification": "2026-07-31",
+        "verifiePar": "banc certify (--recomparer) + relecture directe de la source et de sa grille de calcul (Drive)"
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -1254,7 +1254,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "suspendu",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -1268,8 +1268,21 @@
       "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
-        "divergencesCritiques": 3
+        "date": "2026-07-31",
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-31",
+          "notes": [
+            "RECONSTRUIT, non requalifié. Les trois divergences CRITIQUES du 2026-07-27 — echelle_de_cotation, inversion_absente sur dix items, bareme_sans_source — tombent parce que le servi a changé, pas parce qu'on a changé d'avis sur lui. Le banc rejoué hors ligne (--recomparer, aucun appel de modèle) passe de 29 divergences dont 3 critiques et 7 majeures à UNE SEULE, majeure. La divergence sous_echelles disparaît aussi (cinq sous-échelles déclarées au lieu de deux sections), ainsi que les onze libellés étrangers.",
+            "RÉSIDU DÉCLARÉ, et c'est la divergence qui reste : seuil_non_represente. La source donne des seuils suggérant une fatigue significative POUR LA SEULE sous-échelle « Fatigue générale », et ils dépendent du SEXE et de l'ÂGE (hommes ≥ 9 / 11 / 14 ; femmes ≥ 11 / 12 / 14, selon trois tranches). Le moteur de scoring ne reçoit que des réponses : appliquer ces seuils exigerait le sexe et l'âge du patient, qu'aucun item ne recueille, et les appliquer sans eux reviendrait à choisir une population au hasard. Ils sont donc RENDUS AU PRATICIEN en toutes lettres dans `scoring.note`, jamais convertis en bandes. Ce n'est pas un oubli, c'est le refus d'une bande fabriquée.",
+            "AUCUN SCORE GLOBAL, par déclaration explicite (`scoring.sansTotalGlobal`). La source écrit « Il n'y a pas de barème interprétation » et ne totalise jamais ses cinq sous-échelles. L'ancien servi affichait trois bandes sur /80 ; une somme sur 100 se lirait de la même façon, comme une sévérité. Q_SOM_07 est le premier instrument du catalogue à le déclarer par ce drapeau — les deux EORTC l'obtiennent de leur moteur dédié.",
+            "MOTEUR CORRIGÉ AU PASSAGE, dans la branche `subscore` : elle appelait `totalSousScore(sub.items, [])` — liste d'inversions VIDE, écrite en dur. Une définition à ce type de scoring pouvait déclarer `reversed` sans effet, en silence. Additionner sans inverser revient à sommer la fatigue et la vigueur dans le même sens : « je me sens en forme » comptait comme un symptôme. PORTÉE EXACTE, corrigée en revue : le défaut était LOCAL à cette branche — `upps` passait déjà `sub.reversed` et inverse 25 items, `karasek` passe `reversedItems`. Une première rédaction écrivait « aucune sous-échelle du catalogue ne POUVAIT inverser un item », ce qui était faux. Correctif additif ; ce qui le rend sûr pour les autres instruments à sous-scores n'est pas une inspection mais un invariant tenu par `inversionsDeclarees.guard.test.ts` — aucun d'eux ne déclare `reversed`, et le jour où l'un le ferait sur une branche restée à `[]`, le CI le dirait.",
+            "LES QUATRE PASSATIONS HISTORIQUES RESTENT NEUTRALISÉES. Elles ne sont pas recalculables : elles portent sur d'autres items, sur une autre échelle. La table `MOTIFS_PASSATION_NON_INTERPRETABLE` était indexée par INSTRUMENT et son propre garde interdisait la réactivation — il tenait la porte fermée au lieu de la rendre franchissable. Elle porte désormais une DATE de reconstruction : passation antérieure marquée, passation postérieure lisible. Frontière FERMÉE — une date absente ou illisible fait marquer la passation, parce que marquer à tort se voit et se corrige, tandis que ne pas marquer sert au praticien un score qui n'en est pas un.",
+            "CORRECTION DE REVUE (2026-07-31) — LA RELECTURE DES PASSATIONS ANCIENNES ÉTAIT DEVENUE FAUSSE. `construireReponsesLisibles` apparie les clés de `rawAnswers` aux questions de la définition COURANTE, sans notion de date. Les identifiants d'items étant conservés (M1 à M20 des deux côtés), les anciennes réponses se retrouvaient appariées aux NOUVEAUX libellés : un patient ayant répondu 4 à « J'ai le sentiment de ne rien faire » aurait été lu « Je me sens très actif — 4 ». Renversé, et muet — le bandeau « Interprétation retirée » porte sur le score, pas sur les items. La route retire désormais la définition dès que la passation est non interprétable : il reste l'identifiant et la valeur brute. `relectureApresReconstruction.guard.test.ts` tient la règle en INVARIANT, pour la prochaine reconstruction autant que pour celle-ci.",
+            "statutContenu `adapte` et non `verbatim`, sur le précédent du 2026-07-29 (Q_TAB_01 ramené de l'un à l'autre) : le servi est fidèle AU PDF SOURCE mot pour mot, mais `references.doi` et `pmid` restent nuls, la traduction française reste « à confirmer », et WN-SRC-0397 est encore `raw` / `not_reviewed` au registre des sources. Fidélité à un support n'est pas fidélité à une forme publiée documentée.",
+            "RÉSIDUS DÉCLARÉS, relevés en revue et NON traités dans ce lot. (1) `avertissementSyntheseAnterieure` appelle `motifNonInterpretable` SANS date — ses deux appelants ne disposent que d'identifiants — et retombe donc sur la frontière fermée : un dossier ne portant qu'une passation neuve, avec une synthèse antérieure au 2026-07-28, reçoit l'avertissement à tort. Faux positif, sens conservateur. (2) Le champ `note` n'est pas filtré par `scoresPourPrompt` : les seuils par sexe et âge atteignent le modèle de synthèse, qui dispose par ailleurs du contexte anamnestique — il a donc de quoi produire la bande que la source refuse. (3) Aucune garde de complétude côté serveur : un POST partiel rend un axe mesuré sur un item de quatre, dont le total de 1 à 5 se lit comme un 4-20 rassurant. Le formulaire patient exige tout ; le cas n'est atteignable que par appel direct."
+          ]
+        }
       }
     },
     {

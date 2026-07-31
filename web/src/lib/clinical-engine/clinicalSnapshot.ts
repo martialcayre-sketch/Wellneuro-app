@@ -161,7 +161,7 @@ export function buildClinicalSnapshot(input: {
     // L'ordre compte : une passation non interprétable l'est quel que soit
     // l'état de ses réponses brutes. La dire « calculable » laisserait le C1
     // annoncer une mesure disponible là où il n'y en a pas.
-    const motifNonMesure = motifNonInterpretable(response.questionnaireId);
+    const motifNonMesure = motifNonInterpretable(response.questionnaireId, response.observedAt);
     if (motifNonMesure) {
       return {
         responseId: response.responseId,
