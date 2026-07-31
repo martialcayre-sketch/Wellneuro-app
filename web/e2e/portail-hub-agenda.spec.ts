@@ -53,7 +53,19 @@ test.describe('Hub patient — agenda du sommeil', () => {
     await expect(page.getByRole('link', { name: 'Noter ma nuit' })).toHaveCount(0);
 
     // 2. Le patient note une nuit — celle d'HIER, donc celle du jour manque.
-    const hier = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    //
+    // La date se calcule en EUROPE/PARIS, comme le serveur (`dateJourParis`), et
+    // surtout pas en UTC. `toISOString().slice(0, 10)` rendait la date UTC :
+    // entre minuit et 2 h du matin l'été, UTC a un jour de retard sur Paris, et
+    // « hier » tombait donc DEUX jours avant le « hier » du serveur.
+    // `estDateSaisissable` n'accepte qu'aujourd'hui ou la veille — la saisie
+    // était refusée, et ce test échouait deux heures par nuit, sur `main` comme
+    // sur toute branche qui en descend. Le CI du 2026-07-30 à 23 h 29 UTC, soit
+    // 1 h 29 à Paris, est tombé dedans.
+    const dateParis = (decalageJours: number) => new Intl.DateTimeFormat('fr-CA', {
+      timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date(Date.now() + decalageJours * 86_400_000));
+    const hier = dateParis(-1);
     const saisie = await page.request.post('/api/portail/agenda-sommeil', {
       data: {
         idAssignation,
