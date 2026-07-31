@@ -60,6 +60,18 @@ export const RAISON_MAX = 2000;
 export const LABEL_MAX = 200;
 export const CATEGORIE_MAX = 100;
 
+/**
+ * Borne du nombre d'ingrédients servis par le vocabulaire de l'atelier (C4-1c),
+ * le référentiel Compl'Alim en versant ~2 000 d'un coup. Non réglable par le
+ * client. Elle vit ICI et non dans la route : Next.js refuse tout export de
+ * valeur hors de sa liste blanche dans un `route.ts`, et `tsc --noEmit` ne le
+ * voit pas — seul `next build` le rejette.
+ */
+export const INGREDIENTS_MAX = 50;
+
+/** Longueur retenue d'une recherche d'ingrédient (le surplus est coupé). */
+export const REQUETE_INGREDIENT_MAX = 200;
+
 // ─── Sélections Prisma partagées ────────────────────────────────────────────
 
 export const SELECTION_REGLE = {

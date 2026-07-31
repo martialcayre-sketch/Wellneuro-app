@@ -14,6 +14,8 @@ import type { RegleRevisionApiResponse } from '@/app/api/praticien/regles/revisi
 import type { RegleValidationApiResponse } from '@/app/api/praticien/regles/validation/route';
 import type { RegleDesactivationApiResponse } from '@/app/api/praticien/regles/desactivation/route';
 import type {
+  EntreeIngredient,
+  FormeIngredient,
   ReglesVocabulaireApiResponse,
   VocabulaireCreationApiResponse,
 } from '@/app/api/praticien/regles/vocabulaire/route';
@@ -75,6 +77,144 @@ function BadgeGrade({ grade }: { grade: GradePreuveScientifique }) {
 }
 
 type Etat = 'chargement' | 'chargee' | 'erreur';
+
+/** Délai avant qu'une frappe ne devienne une requête (motif PatientsPanel). */
+const DELAI_RECHERCHE_MS = 250;
+
+// ─── Sélecteur d'ingrédient (C4-1c) ────────────────────────────────────────
+//
+// Le référentiel Compl'Alim verse ~2 000 ingrédients d'un coup : un `<select>`
+// nu y devient inutilisable. D'où une recherche servie par le serveur, bornée à
+// `INGREDIENTS_MAX`.
+//
+// L'ingrédient choisi est tenu ICI, comme OBJET COMPLET — jamais redéduit de la
+// liste de résultats. C'est le point qui compte : la liste change à chaque
+// frappe, et un choix déduit d'elle s'évaporerait dès que la recherche cesse de
+// le contenir, emportant en silence la forme préférée déjà sélectionnée.
+
+function SelecteurIngredient({
+  choisi,
+  initiaux,
+  initialTotal,
+  desactive,
+  onChoix,
+}: {
+  choisi: EntreeIngredient | null;
+  initiaux: EntreeIngredient[];
+  initialTotal: number;
+  desactive: boolean;
+  onChoix: (ingredient: EntreeIngredient | null) => void;
+}) {
+  const [recherche, setRecherche] = useState('');
+  const [resultats, setResultats] = useState<EntreeIngredient[]>(initiaux);
+  const [total, setTotal] = useState(initialTotal);
+  const [enCours, setEnCours] = useState(false);
+  const [echec, setEchec] = useState(false);
+  const generationRef = useRef(0);
+  const premierRenduRef = useRef(true);
+
+  useEffect(() => {
+    // Le premier rendu se contente de ce que le chargement initial du panneau a
+    // déjà rapporté : une requête de plus pour le même résultat n'apprend rien.
+    if (premierRenduRef.current) {
+      premierRenduRef.current = false;
+      return;
+    }
+    let monte = true;
+    const minuteur = setTimeout(() => {
+      const generation = ++generationRef.current;
+      setEnCours(true);
+      setEchec(false);
+      void (async () => {
+        try {
+          const reponse = await fetch(
+            `/api/praticien/regles/vocabulaire?requete=${encodeURIComponent(recherche.trim())}`,
+          );
+          const payload = (await reponse.json()) as ReglesVocabulaireApiResponse;
+          // Garde d'obsolescence : une réponse en retard n'écrase pas la frappe
+          // qui l'a suivie.
+          if (!monte || generation !== generationRef.current) return;
+          if (!reponse.ok || !payload.ok) {
+            setEchec(true);
+            return;
+          }
+          setResultats(payload.ingredients);
+          setTotal(payload.ingredientsTotal);
+        } catch {
+          if (monte && generation === generationRef.current) setEchec(true);
+        } finally {
+          if (monte && generation === generationRef.current) setEnCours(false);
+        }
+      })();
+    }, DELAI_RECHERCHE_MS);
+    return () => {
+      monte = false;
+      clearTimeout(minuteur);
+    };
+  }, [recherche]);
+
+  if (choisi) {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-sm">
+        <span className="flex-1 truncate text-foreground">Ingrédient : {choisi.nomFr}</span>
+        <button
+          type="button"
+          disabled={desactive}
+          onClick={() => onChoix(null)}
+          className="shrink-0 text-xs font-medium text-primary underline disabled:opacity-50"
+        >
+          Changer
+        </button>
+      </div>
+    );
+  }
+
+  const tronque = total > resultats.length;
+  return (
+    <div className="flex flex-col gap-1">
+      <input
+        type="search"
+        aria-label="Rechercher un ingrédient"
+        value={recherche}
+        disabled={desactive}
+        onChange={(event) => setRecherche(event.target.value)}
+        placeholder="Rechercher un ingrédient (nom ou code)…"
+        className={classeChamp()}
+      />
+      <div aria-live="polite" className="text-xs text-muted-foreground">
+        {echec
+          ? 'La recherche d’ingrédients a échoué. Réessayez.'
+          : enCours
+            ? 'Recherche en cours…'
+            : resultats.length === 0
+              ? 'Aucun ingrédient ne correspond.'
+              : tronque
+                ? `${total} ingrédients correspondent — les ${resultats.length} premiers sont proposés, précisez la recherche.`
+                : `${resultats.length} ingrédient${resultats.length > 1 ? 's' : ''} proposé${resultats.length > 1 ? 's' : ''}.`}
+      </div>
+      {resultats.length > 0 && (
+        <ul className="max-h-48 overflow-y-auto rounded-lg border border-border">
+          {resultats.map((entree) => (
+            <li key={entree.id}>
+              <button
+                type="button"
+                disabled={desactive}
+                onClick={() => onChoix(entree)}
+                className="w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted disabled:opacity-50"
+              >
+                {entree.nomFr}{' '}
+                {/* Le code est montré parce que la recherche porte AUSSI sur lui :
+                    sans lui, chercher par code rend des lignes où le texte tapé
+                    n'apparaît nulle part. */}
+                <span className="text-xs text-muted-foreground">{entree.code}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
 
 // ─── Encart « tester une intention » (prévisualisation de résolution) ───────
 
@@ -195,7 +335,7 @@ function FormulaireCreation({
   onCree: () => void;
 }) {
   const [intentTagId, setIntentTagId] = useState('');
-  const [ingredientId, setIngredientId] = useState('');
+  const [ingredient, setIngredient] = useState<EntreeIngredient | null>(null);
   const [formePrefereeId, setFormePrefereeId] = useState('');
   const [typeRegle, setTypeRegle] = useState('recommande');
   const [grade, setGrade] = useState<GradePreuveScientifique | ''>('');
@@ -209,7 +349,7 @@ function FormulaireCreation({
   const [erreur, setErreur] = useState('');
   const [succes, setSucces] = useState('');
 
-  const ingredient = vocabulaire.ingredients.find((entree) => entree.id === ingredientId) ?? null;
+  const ingredientId = ingredient?.id ?? '';
   const pret =
     intentTagId && ingredientId && typeRegle.trim() && grade && justification.trim() && sourceReferenceId;
 
@@ -278,21 +418,18 @@ function FormulaireCreation({
               <option key={entree.id} value={entree.id}>{entree.labelFr}</option>
             ))}
           </select>
-          <select
-            aria-label="Ingrédient"
-            value={ingredientId}
-            disabled={fige}
-            onChange={(event) => {
-              setIngredientId(event.target.value);
+          <SelecteurIngredient
+            choisi={ingredient}
+            initiaux={vocabulaire.ingredients}
+            initialTotal={vocabulaire.ingredientsTotal}
+            desactive={fige}
+            onChoix={(entree) => {
+              setIngredient(entree);
+              // Changer d'ingrédient invalide la forme préférée : une forme
+              // appartient à un ingrédient et à un seul.
               setFormePrefereeId('');
             }}
-            className={classeChamp()}
-          >
-            <option value="">Ingrédient…</option>
-            {vocabulaire.ingredients.map((entree) => (
-              <option key={entree.id} value={entree.id}>{entree.nomFr}</option>
-            ))}
-          </select>
+          />
           <select
             aria-label="Forme préférée (optionnelle)"
             value={formePrefereeId}
@@ -432,7 +569,52 @@ function FormulaireRevision({
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState('');
 
-  const ingredient = vocabulaire.ingredients.find((entree) => entree.id === regle.ingredient.id) ?? null;
+  // Les formes de l'ingrédient de CETTE règle, chargées à la demande : depuis
+  // C4-1c le vocabulaire ne porte plus qu'une page d'ingrédients, et l'ingrédient
+  // d'une règle existante n'a aucune raison d'y figurer. Une seule révision est
+  // ouverte à la fois, donc une seule requête.
+  const [formes, setFormes] = useState<FormeIngredient[] | null>(null);
+  const [formesEchec, setFormesEchec] = useState(false);
+
+  useEffect(() => {
+    let monte = true;
+    setFormes(null);
+    setFormesEchec(false);
+    void (async () => {
+      try {
+        const reponse = await fetch(
+          `/api/praticien/regles/vocabulaire?ingredientId=${encodeURIComponent(regle.ingredient.id)}`,
+        );
+        const payload = (await reponse.json()) as ReglesVocabulaireApiResponse;
+        if (!monte) return;
+        if (!reponse.ok || !payload.ok) {
+          setFormesEchec(true);
+          return;
+        }
+        setFormes(payload.ingredients[0]?.formes ?? []);
+      } catch {
+        if (monte) setFormesEchec(true);
+      }
+    })();
+    return () => {
+      monte = false;
+    };
+  }, [regle.ingredient.id]);
+
+  // La forme préférée COURANTE est TOUJOURS une option, quel que soit l'état du
+  // chargement — en cours, en échec, ou réussi mais sans elle. Ce dernier cas
+  // est le plus traître : l'ingrédient a pu être désactivé (la route ne sert que
+  // l'actif), ou la forme elle-même ; la liste revient alors vide ou amputée,
+  // sans être `null`. Sans cette option, `formePrefereeId` n'aurait aucune
+  // option correspondante, le `<select>` retomberait sur « Sans forme préférée »
+  // — et soumettrait pourtant la forme, que la route de révision accepte.
+  // Afficher autre chose que ce qui part est le défaut que ce lot ferme.
+  const formesOptions: FormeIngredient[] = (() => {
+    const chargees = formes ?? [];
+    const courante = regle.formePreferee;
+    if (!courante || chargees.some((forme) => forme.id === courante.id)) return chargees;
+    return [courante, ...chargees];
+  })();
 
   const soumettre = async () => {
     if (envoi || !justification.trim() || !sourceReferenceId) return;
@@ -495,18 +677,30 @@ function FormulaireRevision({
             <option key={source.id} value={source.id}>{source.citation}</option>
           ))}
         </select>
-        <select
-          aria-label="Forme préférée de la révision"
-          value={formePrefereeId}
-          disabled={fige}
-          onChange={(event) => setFormePrefereeId(event.target.value)}
-          className={classeChamp()}
-        >
-          <option value="">Sans forme préférée</option>
-          {(ingredient?.formes ?? []).map((forme) => (
-            <option key={forme.id} value={forme.id}>{forme.labelFr}</option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-1">
+          <select
+            aria-label="Forme préférée de la révision"
+            value={formePrefereeId}
+            // Désactivé pendant le chargement seulement. Sur échec, le champ
+            // redevient utilisable : sinon le praticien ne pourrait plus RETIRER
+            // la forme préférée, un choix bloqué faute d'avoir pu lire la liste.
+            disabled={fige || (formes === null && !formesEchec)}
+            onChange={(event) => setFormePrefereeId(event.target.value)}
+            className={classeChamp()}
+          >
+            <option value="">Sans forme préférée</option>
+            {formesOptions.map((forme) => (
+              <option key={forme.id} value={forme.id}>{forme.labelFr}</option>
+            ))}
+          </select>
+          {formes === null && (
+            <p aria-live="polite" className="text-xs text-muted-foreground">
+              {formesEchec
+                ? 'Les formes de cet ingrédient n’ont pas pu être lues ; la forme actuelle est conservée.'
+                : 'Chargement des formes…'}
+            </p>
+          )}
+        </div>
         <div className="flex gap-3">
           <input
             type="number"
