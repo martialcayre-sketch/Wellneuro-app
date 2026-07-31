@@ -18,6 +18,8 @@ import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import { motifNonInterpretable } from '@/lib/scoring/passationsNonInterpretables';
+import { reponsesLisiblesPourPrompt } from '@/lib/scoring/reponsesLisibles';
+import { scoresPourPrompt } from '@/lib/scoring/scoresPourPrompt';
 
 const DEF: any = (QUESTIONNAIRE_CATALOGUE as any).Q_ALI_03;
 const items = (): any[] => (DEF.sections ?? []).flatMap((s: any) => s.questions ?? []);
@@ -25,7 +27,7 @@ const SC: any = DEF.scoring;
 const lignes = (): any[] => [...(SC.proteines ?? []), ...(SC.calories ?? [])];
 
 describe('grille d’apports — ce qui est servi', () => {
-  it('sert 23 items, tous en saisie d’une quantité', () => {
+  it('sert 23 items — 21 saisies chiffrées et 2 états exclusifs', () => {
     // 23 et non 39 : les 39 « items » que le banc de certification lit dans la
     // source sont ses 39 LIGNES DE TABLEAU — 25 lignes de saisie, 10 intitulés
     // de bloc et 4 lignes de calcul. Les 25 lignes de saisie sont toutes
@@ -36,6 +38,12 @@ describe('grille d’apports — ce qui est servi', () => {
     expect(tous.map((q: any) => q.id)).toEqual(
       Array.from({ length: 23 }, (_, i) => `AP${i + 1}`),
     );
+    // Le compte des DEUX formes, et non « 23 items de saisie chiffrée » : les
+    // deux paires fondues (le sexe, l'état de grignotage) sont des choix
+    // uniques. Trois pièces du dossier ont porté cette approximation.
+    expect(tous.filter((q: any) => q.type === 'number')).toHaveLength(21);
+    expect(tous.filter((q: any) => q.type !== 'number').map((q: any) => q.id))
+      .toEqual(['AP13', 'AP14']);
   });
 
   it('n’emploie AUCUN identifiant de la forme abandonnée', () => {
@@ -204,5 +212,96 @@ describe('grille d’apports — la frontière datée et le catalogue', () => {
     expect(entree.titre).toBe(DEF.titre);
     expect(entree.titre).toContain('dérivée de la méthode Monnier');
     expect(entree.titre).not.toContain('Fréquences');
+  });
+});
+
+describe('grille d’apports — ce qui atteint le praticien et le modèle', () => {
+  it('les deux grandeurs partent sous un porteur que la fiche sait rendre', () => {
+    // Défaut trouvé en revue adversariale : `proteinesG` et `caloriesKcal`
+    // n'étaient lus par AUCUNE surface. La fiche praticien balaie des porteurs
+    // NOMMÉS ; un moteur qui invente ses propres clés n'y apparaît nulle part,
+    // et l'instrument affichait « — » en calculant exactement ce que sa
+    // description promet au patient.
+    const r: any = calculateScore('Q_ALI_03', { AP3: 1 });
+    expect(Array.isArray(r.apports)).toBe(true);
+    expect(r.apports.map((a: any) => a.id)).toEqual(['PROT', 'KCAL']);
+    // Chaque axe porte sa valeur ET son unité : sans elle, la fiche afficherait
+    // « 86,6 » nu, que le praticien devrait deviner.
+    for (const axe of r.apports) {
+      expect(typeof axe.total).toBe('number');
+      expect(typeof axe.unite).toBe('string');
+      expect(axe.unite.endsWith('/jour')).toBe(true);
+    }
+    expect(r.apports[0].total).toBe(r.proteinesG);
+    expect(r.apports[1].total).toBe(r.caloriesKcal);
+  });
+
+  it('mais AUCUNE des trois formes n’atteint le modèle de synthèse', () => {
+    // La consigne système interdit au modèle de conclure à une masse consommée.
+    // Lui livrer une estimation d'apport le mettrait en contradiction avec son
+    // instruction — et filtrer les deux clés nues en laissant passer le porteur
+    // qui les répète n'aurait rien filtré du tout.
+    const r: any = calculateScore('Q_ALI_03', { AP3: 1 });
+    // Contrôle sur les CLÉS et non sur le texte sérialisé : `type` vaut
+    // « apports_ponderes », et une recherche de sous-chaîne y trouverait
+    // « apports » sans qu'aucune valeur ne soit passée.
+    const filtre = scoresPourPrompt(r) as Record<string, unknown>;
+    expect(Object.keys(filtre)).not.toContain('proteinesG');
+    expect(Object.keys(filtre)).not.toContain('caloriesKcal');
+    expect(Object.keys(filtre)).not.toContain('apports');
+    // Contrôle négatif : le filtre ne vide pas tout — la note et son type
+    // restent, sinon ce test passerait sur un objet vide.
+    expect(filtre.type).toBe('apports_ponderes');
+    expect(typeof filtre.note).toBe('string');
+  });
+
+  it('chaque quantité déclarée part AVEC son unité, donc avec sa périodicité', () => {
+    // « 2 » à la ligne « Tarte salée » (par semaine) et « 2 » à la ligne
+    // « Viande — petite portion » (par jour) arrivaient identiques au modèle :
+    // la périodicité ne vivait que dans le titre de section, jamais transmis.
+    const lisible: any = reponsesLisiblesPourPrompt('Q_ALI_03', { rawAnswers: { AP1: 2, AP19: 2 } });
+    const items = lisible.rawAnswers;
+    expect(items.AP1.quantiteDeclaree).toBe(2);
+    expect(items.AP1.unite).toBe('portions/jour');
+    expect(items.AP19.unite).toBe('portions/semaine');
+    // Et jamais « non exploitable » : une saisie chiffrée avec unité EST la
+    // déclaration la plus directe qui soit.
+    expect(items.AP1.valeurNonResolue).toBeUndefined();
+  });
+
+  it('le libellé transmis nomme encore l’aliment après retrait des masses', () => {
+    // `libellePourLeModele` retire la parenthèse pour que le modèle ne puisse
+    // pas multiplier « 3 portions » par « 100 g ». Sur trois items, elle
+    // emportait le seul mot qui disait DE QUOI il s'agissait — « Petite
+    // portion » de quoi ? L'aliment est désormais dans le libellé lui-même, pas
+    // dans le titre de section.
+    const lisible: any = reponsesLisiblesPourPrompt('Q_ALI_03', { rawAnswers: { AP1: 1, AP2: 1, AP3: 1 } });
+    for (const id of ['AP1', 'AP2', 'AP3']) {
+      const q: string = lisible.rawAnswers[id].question;
+      expect(q).toContain('Viande');
+      expect(q).not.toMatch(/\d+\s*g/);
+    }
+  });
+});
+
+describe('grille d’apports — le zéro fabriqué', () => {
+  it('une passation SANS ligne protéique ne rend pas « 0 g de protéines »', () => {
+    // La garde générale de passation vide (#451) exige que TOUS les items
+    // soient nuls : elle ne couvrait donc pas le seul cas qui produit vraiment
+    // le chiffre dangereux. `{ AP14: 0 }` — « aucun grignotage », une réponse
+    // parfaitement légitime — sortait « 0 g de protéines par jour », c'est-à-dire
+    // un signal de dénutrition sévère fabriqué à partir de rien. Et rien côté
+    // serveur n'exigeait la complétude d'un questionnaire du catalogue.
+    const r: any = calculateScore('Q_ALI_03', { AP14: 0 });
+    expect(r.scored).toBe(false);
+    expect(r.proteinesG).toBeNull();
+    expect(r.caloriesKcal).toBeNull();
+    expect(r.raisonNonScore).toContain('protéique');
+  });
+
+  it('une seule ligne protéique suffit à calculer (contrôle négatif)', () => {
+    const r: any = calculateScore('Q_ALI_03', { AP7: 2, AP14: 0 });
+    expect(r.scored).not.toBe(false);
+    expect(r.proteinesG).toBe(7);
   });
 });

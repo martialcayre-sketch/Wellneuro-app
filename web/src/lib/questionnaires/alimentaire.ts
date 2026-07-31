@@ -506,9 +506,9 @@ export const Q_ALI_03 = {
   sections:[
     { id:'VIANDE', titre:'Viande — portions par jour',
       questions:[
-        qn('AP1','Petite portion (100 g)',0,10,1,'portions/jour'),
-        qn('AP2','Portion moyenne (125 g)',0,10,1,'portions/jour'),
-        qn('AP3','Grande portion (150 g)',0,10,1,'portions/jour'),
+        qn('AP1','Viande — petite portion (100 g)',0,10,1,'portions/jour'),
+        qn('AP2','Viande — portion moyenne (125 g)',0,10,1,'portions/jour'),
+        qn('AP3','Viande — grande portion (150 g)',0,10,1,'portions/jour'),
       ]},
     { id:'EQUIV', titre:'Équivalents viande — portions par semaine',
       questions:[
@@ -529,9 +529,9 @@ export const Q_ALI_03 = {
         qn('AP12','Céréales type corn flakes (30 g)',0,10,1,'portions/jour'),
       ]},
     { id:'FORFAIT', titre:'Ajout forfaitaire',
-      description:"La source ajoute un forfait protéique quotidien qui dépend du sexe. Il est compté une fois.",
+      description:"Un apport de base est ajouté une fois, selon le sexe.",
       questions:[
-        qs('AP13','Ajout forfaitaire en fonction du sexe',
+        qs('AP13','Vous êtes :',
           [{v:15,l:'Homme'},{v:10,l:'Femme'}]),
       ]},
     { id:'GRIGNOT', titre:'Grignotage',

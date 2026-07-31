@@ -117,7 +117,12 @@ const DISPLAY_POLICY_REGISTRY: Readonly<Record<string, DisplayPolicy>> = Object.
   }),
   Q_ALI_03: Object.freeze({
     administration: 'strict',
-    renderer: 'compact_repeated_scale',
+    // `guided_sections` et non plus `compact_repeated_scale` : reconstruit le
+    // 2026-07-31, l'instrument n'a plus AUCUNE échelle répétée — ce sont 21
+    // saisies chiffrées réparties en dix blocs, dont la périodicité change d'un
+    // bloc à l'autre. Le profil restait inerte (`activation: 'candidate'`, donc
+    // rendu `standard`) : il aurait été faux le jour de son activation.
+    renderer: 'guided_sections',
     itemOrder: 'fixed',
     optionOrder: Object.freeze({ mode: 'fixed' }),
     activation: 'candidate',

@@ -53,7 +53,13 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // ligne. La phrase serait devenue une contre-vérité au moment précis où le
 // modèle reçoit le cas qu'elle nie — et elle l'aurait invité à traiter une
 // quantité déclarée comme un code de barème, c'est-à-dire à l'ignorer.
-const EMPREINTE_V13 = '218fe3ff3d511330';
+// La même version décrit `unite`, champ NOUVEAU dans la charge. Il porte la
+// PÉRIODICITÉ, qui ne vivait jusque-là que dans le titre de section — jamais
+// transmis : « 2 » par jour et « 2 » par semaine arrivaient identiques. Et elle
+// corrige la définition de `quantiteDeclaree`, qui la disait réservée aux
+// tranches sans correspondance : un instrument de saisie chiffrée n'a aucune
+// tranche, et la consigne se serait contredite sur ses propres champs.
+const EMPREINTE_V13 = '1758ced6a7adcf7b';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;

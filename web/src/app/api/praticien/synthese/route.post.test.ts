@@ -203,7 +203,10 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
     // Elle portait sur `Q_ALI_03` jusqu'au 2026-07-31 ; reconstruit depuis sa
     // feuille de calcul source, cet instrument ne pose plus de tranches mais des
     // nombres de portions, et ne peut donc plus témoigner d'une tranche cochée.
-    // Le cas qu'il illustre désormais est éprouvé juste en dessous.
+    // La charge produite pour `Q_ALI_03` — quantité déclarée, unité, libellé
+    // qui nomme encore l'aliment — est éprouvée par
+    // `apportsPonderesReconstruit.guard.test.ts`, et non « juste en dessous » :
+    // le test qui suit ici est le contrôle négatif sur `Q_ALI_02`.
     // Les libellés des deux formes de `Q_ALI_01` sont gardés séparément, dans
     // les deux positions, par `promptAlimentaire.guard.test.ts`.
     //

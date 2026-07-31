@@ -46,3 +46,33 @@
   nombre nu arrive au modèle comme non exploitable. Elle exige désormais que toute
   saisie chiffrée porte une **unité**, qui est ce qui la rend lisible comme quantité
   déclarée.
+
+**Quatre bloquants relevés en revue adversariale, tous soldés avant merge** — tous
+de la même racine : la reconstruction s'était arrêtée au moteur.
+
+- **Les deux grandeurs n'atteignaient aucun écran.** La fiche praticien balaie des
+  porteurs nommés ; un moteur qui invente ses propres clés n'y apparaît nulle part.
+  L'instrument aurait calculé exactement ce que sa description promet au patient et
+  l'aurait affiché à personne, colonne Score à « — ». Le moteur émet désormais un
+  porteur `apports` avec l'unité de chaque grandeur — et un commentaire qui affirmait
+  le contraire est corrigé.
+- **La périodicité n'atteignait pas le modèle.** Elle ne vivait que dans le titre de
+  section, que la charge ne transmet pas : « 2 » par jour et « 2 » par semaine
+  arrivaient indiscernables. L'unité part maintenant avec la quantité déclarée, et la
+  consigne la décrit. Trois libellés perdaient en outre le nom de l'aliment au retrait
+  des masses — « Petite portion » de quoi ? — et le portent désormais eux-mêmes.
+- **« 0 g de protéines » restait fabriquable.** La garde de passation vide exige que
+  TOUS les items soient nuls ; une seule ligne calorique renseignée — « aucun
+  grignotage », réponse légitime — suffisait à sortir un signal de dénutrition sévère.
+  La garde porte désormais sur la partie protéique, la seule qui puisse se lire ainsi.
+- **Aucune borne n'était appliquée côté serveur.** `min`/`max` n'étaient que des
+  attributs HTML, et ce moteur MULTIPLIE chaque saisie : « 999999 portions » rendait
+  vingt millions de grammes, persistés et transmis au modèle comme une déclaration du
+  patient. La route refuse désormais, plutôt que de borner en silence — ramener une
+  valeur aberrante inventerait une déclaration que le patient n'a pas faite.
+
+**Deux réserves restent ouvertes, et appellent un arbitrage** : la colonne calorique
+n'a reçu aucune des vérifications qui ont condamné deux constantes protéiques (au même
+étalon, plusieurs de ses valeurs paraissent fausses du même ordre) ; et les deux
+corrections protéiques se propagent au total calorique par le « × 24 », soit +13 % sur
+le cas de référence, sur une grandeur déclarée non corrigée.

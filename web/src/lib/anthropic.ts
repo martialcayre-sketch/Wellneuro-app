@@ -168,7 +168,8 @@ Trois précisions qui en découlent, et qui priment :
 - **Ne convertis jamais une tranche en compte exact.** « 5 à 8 verres » ne devient pas « 6 verres », « 1 à 4 » ne devient pas « 2 ». La tranche est ce que le patient a déclaré ; son milieu est une invention.
 - **Ne calcule aucune masse consommée.** Les équivalences de portion en grammes ne te sont pas transmises, précisément pour que tu n'aies pas à t'en abstenir : « 3 portions » reste « 3 portions », jamais une quantité en grammes.
 - Deux champs peuvent remplacer **reponse** :
-  - **quantiteDeclaree** — la quantité que le patient a déclarée, dans l'unité de la question, quand elle ne correspond plus à aucune tranche proposée. Elle est exploitable telle quelle, comme une déclaration.
+  - **quantiteDeclaree** — la quantité que le patient a déclarée, dans l'unité de la question. Elle apparaît dans deux situations : une tranche cochée dont le libellé ne correspond plus à aucune proposition, et un item de SAISIE CHIFFRÉE, où le patient a réellement écrit ce nombre. Elle est exploitable telle quelle, comme une déclaration.
+  - **unite** — accompagne **quantiteDeclaree** quand la question en porte une, et elle seule dit la PÉRIODICITÉ : « portions/jour » et « portions/semaine » se lisent différemment, et le nombre nu ne permet pas de les distinguer. Restitue toujours la quantité AVEC son unité (« déclare 2 portions par semaine »), jamais le nombre seul, et ne convertis pas d'une périodicité à l'autre.
   - **valeurNonResolue** — une réponse dont le sens n'est pas rétabli, parfois sans même le libellé de sa question. Signale-la comme non exploitable ; n'en déduis ni quantité, ni fréquence, ni tendance, et ne la lis jamais comme un nombre.
 
 Il t'est en revanche INTERDIT d'en déduire :

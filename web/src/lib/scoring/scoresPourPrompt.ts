@@ -47,10 +47,13 @@ const CLES_CONDUITE = new Set(['conduite', 'protocol']);
 // pas la même que celle du bloc `monnier` : la consigne système interdit au
 // modèle de conclure à une masse consommée, et lui en livrer une le mettrait en
 // contradiction avec l'instruction qu'il reçoit. Le praticien, lui, les voit sur
-// la fiche — c'est là qu'une estimation d'apport se lit, avec sa note et ses
-// réserves. Les livrer au modèle serait un autre lot, avec sa version de
-// consigne.
-const CLES_QUANTITE_NON_ETALONNEE = new Set(['monnier', 'proteinesG', 'caloriesKcal']);
+// la fiche — porteur `apports`, rendu par `descriptifsDeScores` avec son unité.
+// Les livrer au modèle serait un autre lot, avec sa version de consigne.
+//
+// `apports` est donc filtré AUSSI, et pour la même raison : c'est le porteur qui
+// alimente la fiche, et il redit les deux mêmes grandeurs. Filtrer les deux clés
+// nues en laissant passer le bloc qui les répète n'aurait rien filtré du tout.
+const CLES_QUANTITE_NON_ETALONNEE = new Set(['monnier', 'proteinesG', 'caloriesKcal', 'apports']);
 
 /**
  * Copie profonde de `scores` privée des clés `conduite` et `protocol`, à toute

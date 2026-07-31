@@ -2202,12 +2202,27 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // aux réponses, persistées en base et transmises au modèle de synthèse. La
   // leçon n'est pas « ne calcule pas », c'est « ne calcule pas sur rien ».
   //
-  // Cette branche n'écrit PAS sa propre garde, et c'est délibéré : la garde
-  // générale de passation vide (#451, plus haut dans cette fonction) intercepte
-  // le cas avant d'arriver ici, puisque les items servis sont exactement les
-  // lignes du barème. Une seconde garde y serait inatteignable — et une garde
-  // qu'aucun cas ne peut faire jouer se lit comme une protection sans en être une.
+  // La garde générale de passation vide (#451, plus haut dans cette fonction)
+  // couvre la passation TOTALEMENT vide, et elle seule : elle exige que TOUS les
+  // items soient nuls. Elle ne couvre donc PAS le cas qui produit vraiment le
+  // chiffre dangereux — une passation où seules des lignes CALORIQUES sont
+  // renseignées. `{ AP14: 0 }` suffisait à sortir « 0 g de protéines par jour »,
+  // et rien côté serveur n'exige la complétude d'un questionnaire du catalogue
+  // (`patient/submit` ne le fait que pour les instruments de cabinet).
+  //
+  // La garde porte donc sur la PARTIE PROTÉIQUE, qui est la seule à pouvoir se
+  // lire comme un signal de dénutrition — et non sur « au moins une réponse »,
+  // qui aurait laissé passer exactement ce cas.
   if (sc.type === 'apports_ponderes') {
+    const lignesProteines = sc.proteines ?? [];
+    if (!lignesProteines.some((l: any) => getVal(l.id) !== null)) {
+      return {
+        type: 'apports_ponderes', scored: false, total: null,
+        proteinesG: null, caloriesKcal: null, interpretation: null,
+        note: sc.note || null, certification: sc.certification || null,
+        raisonNonScore: 'aucune ligne d’apport protéique renseignée',
+      };
+    }
     const cumul = (liste: any[]) => liste.reduce((somme: number, ligne: any) => {
       const v = getVal(ligne.id);
       if (v === null) return somme;
@@ -2225,6 +2240,20 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     return {type:'apports_ponderes',
       proteinesG: arrondi(proteinesG),
       caloriesKcal: Math.round(caloriesKcal),
+      // LES DEUX GRANDEURS, SOUS UN PORTEUR QUE LA FICHE SAIT RENDRE.
+      //
+      // Les deux clés ci-dessus ne sont lues par aucune surface : la fiche
+      // praticien balaie des porteurs nommés (`dimensions`, `components`,
+      // `categories`, `parts`, `phases`), et un moteur qui invente ses propres
+      // clés n'y apparaît nulle part. Sans ce bloc, l'instrument calculait
+      // exactement ce que sa description promet au patient — et ne l'affichait
+      // à personne, colonne Score à « — ». C'est le défaut du 2026-07-26
+      // retourné : hier le titre promettait ce que le moteur ne produisait pas,
+      // aujourd'hui le moteur produirait ce que rien n'affiche.
+      apports: [
+        {id:'PROT', label:'Apports protéiques estimés', total: arrondi(proteinesG), unite:'g/jour'},
+        {id:'KCAL', label:'Apports caloriques estimés', total: Math.round(caloriesKcal), unite:'kcal/jour'},
+      ],
       // Pas de score global : ces deux grandeurs ont des unités différentes et
       // ne s'additionnent pas. `total: null` le dit au lieu de le laisser deviner.
       total: null,

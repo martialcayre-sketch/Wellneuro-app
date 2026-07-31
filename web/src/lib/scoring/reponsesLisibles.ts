@@ -45,6 +45,14 @@ export type ReponseLisible = {
    */
   quantiteDeclaree?: string | number;
   /**
+   * Unité de `quantiteDeclaree`, quand la question en porte une. C'est elle qui
+   * porte la PÉRIODICITÉ — « portions/jour » contre « portions/semaine » —, qui
+   * ne vit nulle part ailleurs dans la charge : le titre de section n'est pas
+   * transmis, et deux nombres égaux de périodicités différentes arrivaient
+   * indiscernables.
+   */
+  unite?: string;
+  /**
    * Valeur brute d'un CODE dont aucune option ne porte la valeur, ou d'un item
    * étranger à la forme servie. Jamais un libellé inventé : rattacher à
    * l'option la plus proche refabriquerait la déclaration qu'on corrige.
@@ -153,9 +161,18 @@ function resoudreItem(
     Number.isFinite(valeur) &&
     options.length > 2 &&
     options.every(o => Number.isFinite(Number(o.v))));
-  return estQuantitatif
-    ? { question: libelle, quantiteDeclaree: brute }
-    : { question: libelle, valeurNonResolue: brute };
+  if (!estQuantitatif) return { question: libelle, valeurNonResolue: brute };
+  // L'UNITÉ PART AVEC LE NOMBRE, quand la question en porte une.
+  //
+  // Sans elle, « 2 » à la ligne « Tarte salée » et « 2 » à la ligne « Petite
+  // portion » arrivent identiques alors que l'une se compte par semaine et
+  // l'autre par jour : le modèle ne peut pas les distinguer, et la consigne
+  // l'autorise pourtant à restituer la déclaration « dans l'unité de la
+  // question ». L'unité est ce qui porte la périodicité — elle vivait jusqu'ici
+  // dans le seul titre de section, que la charge ne transmet pas.
+  return question.unit
+    ? { question: libelle, quantiteDeclaree: brute, unite: String(question.unit) }
+    : { question: libelle, quantiteDeclaree: brute };
 }
 
 /**
