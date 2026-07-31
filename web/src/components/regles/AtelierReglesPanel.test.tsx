@@ -76,7 +76,16 @@ const VOCABULAIRE = {
       formes: [{ id: 'forme_bisg', code: 'bisglycinate', labelFr: 'Bisglycinate' }],
     },
   ],
+  ingredientsTotal: 1,
   sources: [{ id: 'src_1', citation: 'Revue Micronutrition, 2024', lienUrl: null }],
+};
+
+/** Un ingrédient qui n'est PAS dans la page servie au chargement. */
+const INGREDIENT_ZINC = {
+  id: 'ing_zinc',
+  code: 'zinc',
+  nomFr: 'Zinc',
+  formes: [{ id: 'forme_zbis', code: 'zinc_bisglycinate', labelFr: 'Zinc bisglycinate' }],
 };
 
 const RESOLUTION_PREVIEW = {
@@ -122,6 +131,14 @@ function router(
     listes?: Record<string, unknown>;
     listeDefaut?: unknown;
     posts?: Record<string, { payload: unknown; ok?: boolean }>;
+    /** Réponses du vocabulaire indexées par `requete` (C4-1c). */
+    recherches?: Record<string, unknown>;
+    /** Réponses du vocabulaire indexées par `ingredientId` (C4-1c). */
+    hydratations?: Record<string, unknown>;
+    /** Fait échouer toute lecture du vocabulaire portant des paramètres. */
+    vocabulaireEnEchec?: boolean;
+    /** Remplace la réponse du chargement initial (appel nu). */
+    vocabulaire?: unknown;
   } = {},
 ) {
   return (url: string, options?: { method?: string }) => {
@@ -150,7 +167,29 @@ function router(
       }
       return Promise.resolve(json({}, false));
     }
-    if (url === URL_VOCABULAIRE) return Promise.resolve(json(VOCABULAIRE));
+    if (url.startsWith(URL_VOCABULAIRE)) {
+      const params = new URLSearchParams(url.split('?')[1] ?? '');
+      const ingredientId = params.get('ingredientId');
+      const requete = params.get('requete');
+      // Le chargement initial du panneau est l'appel NU : ni recherche ni
+      // hydratation. Lui doit toujours répondre, même quand le test fait
+      // échouer les lectures paramétrées.
+      const parametre = ingredientId !== null || requete !== null;
+      if (parametre && surcharges.vocabulaireEnEchec) return Promise.resolve(json({}, false));
+      if (ingredientId !== null) {
+        const hydrate = surcharges.hydratations?.[ingredientId];
+        return Promise.resolve(
+          json(hydrate ?? { ...VOCABULAIRE, ingredients: [], ingredientsTotal: 0 }),
+        );
+      }
+      if (requete) {
+        const trouve = surcharges.recherches?.[requete];
+        return Promise.resolve(
+          json(trouve ?? { ...VOCABULAIRE, ingredients: [], ingredientsTotal: 0 }),
+        );
+      }
+      return Promise.resolve(json(surcharges.vocabulaire ?? VOCABULAIRE));
+    }
     if (url.startsWith(URL_LISTE_PREFIX)) {
       const statut = new URLSearchParams(url.split('?')[1]).get('statut') ?? '';
       const parStatut = surcharges.listes?.[statut];
@@ -340,7 +379,7 @@ describe('AtelierReglesPanel (Atelier de règles cliniques v1)', () => {
     expect(bouton.disabled).toBe(true); // rien de rempli : pas de création possible
 
     fireEvent.change(screen.getByLabelText('Intention clinique'), { target: { value: 'tag_sommeil' } });
-    fireEvent.change(screen.getByLabelText('Ingrédient'), { target: { value: 'ing_mag' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Magnésium' }));
     fireEvent.change(screen.getByLabelText('Grade de preuve scientifique (échelle GRADE)'), {
       target: { value: 'fort' },
     });
@@ -366,6 +405,222 @@ describe('AtelierReglesPanel (Atelier de règles cliniques v1)', () => {
       });
     });
     expect(await screen.findByText(/Brouillon créé/)).toBeTruthy();
+  });
+
+  // ─── C4-1c : le sélecteur d'ingrédients face à un référentiel de milliers ──
+
+  it('le choix d’ingrédient SURVIT à un changement de recherche qui l’exclut', async () => {
+    // Le piège : déduire l'ingrédient choisi de la liste de résultats. La liste
+    // change à chaque frappe ; le choix s'évaporerait dès qu'elle cesse de le
+    // contenir, emportant en silence la forme préférée déjà sélectionnée.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      fetchMock.mockImplementation(
+        router({ recherches: { zinc: { ...VOCABULAIRE, ingredients: [INGREDIENT_ZINC], ingredientsTotal: 1 } } }),
+      );
+      await attendreLaListe();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Magnésium' }));
+      fireEvent.change(screen.getByLabelText('Forme préférée (optionnelle)'), {
+        target: { value: 'forme_bisg' },
+      });
+
+      // Changer d'avis : rouvrir la recherche et taper autre chose.
+      fireEvent.click(screen.getByRole('button', { name: 'Changer' }));
+      fireEvent.change(screen.getByLabelText('Rechercher un ingrédient'), {
+        target: { value: 'zinc' },
+      });
+      await vi.advanceTimersByTimeAsync(400);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Zinc' })).toBeTruthy());
+
+      // Choisir le nouvel ingrédient : la forme préférée de l'ANCIEN ne doit
+      // pas suivre — une forme appartient à un ingrédient et à un seul.
+      fireEvent.click(screen.getByRole('button', { name: 'Zinc' }));
+      expect(screen.getByText('Ingrédient : Zinc')).toBeTruthy();
+      const formes = screen.getByLabelText('Forme préférée (optionnelle)') as HTMLSelectElement;
+      expect(formes.value).toBe('');
+      expect(screen.getByRole('option', { name: 'Zinc bisglycinate' })).toBeTruthy();
+
+      fireEvent.change(screen.getByLabelText('Intention clinique'), { target: { value: 'tag_sommeil' } });
+      fireEvent.change(screen.getByLabelText('Grade de preuve scientifique (échelle GRADE)'), {
+        target: { value: 'fort' },
+      });
+      fireEvent.change(screen.getByLabelText('Source'), { target: { value: 'src_1' } });
+      fireEvent.change(screen.getByLabelText('Justification'), {
+        target: { value: 'Règle sourcée sur le zinc.' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Créer le brouillon' }));
+
+      await waitFor(() => {
+        const posts = appelsPost();
+        expect(posts).toHaveLength(1);
+        // C'est bien le zinc qui part, et sans forme préférée héritée.
+        expect(JSON.parse(posts[0][1].body).ingredientId).toBe('ing_zinc');
+        expect(JSON.parse(posts[0][1].body)).not.toHaveProperty('formePrefereeId');
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('annonce la troncature au lieu de la taire', async () => {
+    // 50 résultats sur 1 240, sans le dire, se lisent « il n'y en a que 50 ».
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      fetchMock.mockImplementation(
+        router({ recherches: { mag: { ...VOCABULAIRE, ingredients: [INGREDIENT_ZINC], ingredientsTotal: 1240 } } }),
+      );
+      await attendreLaListe();
+
+      fireEvent.change(screen.getByLabelText('Rechercher un ingrédient'), { target: { value: 'mag' } });
+      await vi.advanceTimersByTimeAsync(400);
+
+      expect(
+        await screen.findByText(/1240 ingrédients correspondent — les 1 premiers sont proposés/),
+      ).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('tient la charge MAXIMALE que le serveur peut désormais émettre', async () => {
+    // Le référentiel Compl'Alim compte ~2 000 ingrédients ; la borne serveur
+    // (INGREDIENTS_MAX) fait que l'écran n'en voit jamais plus de 50, formes
+    // comprises. C'est ce plafond-là qu'on éprouve — pas les 2 000, qui ne
+    // peuvent plus l'atteindre.
+    const CHARGE = Array.from({ length: 50 }, (_, i) => ({
+      id: `ing_${i}`,
+      code: `ingredient_${i}`,
+      nomFr: `Ingrédient ${i}`,
+      formes: Array.from({ length: 10 }, (_, j) => ({
+        id: `forme_${i}_${j}`,
+        code: `forme_${i}_${j}`,
+        labelFr: `Forme ${i}-${j}`,
+      })),
+    }));
+    fetchMock.mockImplementation(
+      router({ vocabulaire: { ...VOCABULAIRE, ingredients: CHARGE, ingredientsTotal: 1965 } }),
+    );
+    await attendreLaListe();
+
+    // La troncature est annoncée : 1 965 correspondent, 50 sont proposés.
+    expect(screen.getByText(/1965 ingrédients correspondent — les 50 premiers sont proposés/)).toBeTruthy();
+
+    // Et le choix reste faisable : les formes suivent l'ingrédient retenu.
+    fireEvent.click(screen.getByRole('button', { name: 'Ingrédient 37' }));
+    expect(screen.getByText('Ingrédient : Ingrédient 37')).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Forme 37-4' })).toBeTruthy();
+    expect(screen.queryByRole('option', { name: 'Forme 12-4' })).toBeNull();
+  });
+
+  it('une réponse de recherche en retard n’écrase pas la frappe qui l’a suivie', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const base = router({
+        recherches: {
+          mag: { ...VOCABULAIRE, ingredients: [VOCABULAIRE.ingredients[0]], ingredientsTotal: 1 },
+          zinc: { ...VOCABULAIRE, ingredients: [INGREDIENT_ZINC], ingredientsTotal: 1 },
+        },
+      });
+      // « mag » répond APRÈS « zinc » : sans garde d'obsolescence, la liste
+      // finirait sur le magnésium alors que le champ porte « zinc ».
+      const differe: { relacher: (() => void) | null } = { relacher: null };
+      fetchMock.mockImplementation((url: string, options?: { method?: string }) => {
+        const reponse = base(url, options);
+        if (String(url).includes('requete=mag')) {
+          return new Promise((resolve) => {
+            differe.relacher = () => resolve(reponse);
+          });
+        }
+        return reponse;
+      });
+      await attendreLaListe();
+
+      const champ = screen.getByLabelText('Rechercher un ingrédient');
+      fireEvent.change(champ, { target: { value: 'mag' } });
+      await vi.advanceTimersByTimeAsync(400);
+      fireEvent.change(champ, { target: { value: 'zinc' } });
+      await vi.advanceTimersByTimeAsync(400);
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Zinc' })).toBeTruthy());
+
+      differe.relacher?.();
+      await vi.advanceTimersByTimeAsync(50);
+
+      expect(screen.getByRole('button', { name: 'Zinc' })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Magnésium' })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('la révision affiche la forme préférée COURANTE avant l’arrivée des formes, et la soumet', async () => {
+    // Le piège : la révision lisait les formes dans le vocabulaire complet.
+    // Bornée, la liste ne contient plus l'ingrédient de la règle ; sans option
+    // de repli, le `<select>` afficherait autre chose que ce qui est soumis.
+    fetchMock.mockImplementation(
+      router({
+        vocabulaireEnEchec: true,
+        listes: { validee: { ...LISTE, statut: 'validee', regles: [REGLE_VALIDEE] } },
+      }),
+    );
+    await attendreLaListe();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validées' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Réviser' }));
+
+    const formes = (await screen.findByLabelText(
+      'Forme préférée de la révision',
+    )) as HTMLSelectElement;
+    // La valeur affichée EST la forme préférée en base, dès le premier rendu.
+    expect(formes.value).toBe('forme_bisg');
+    expect(screen.getByRole('option', { name: 'Bisglycinate' })).toBeTruthy();
+    // L'échec est dit, et la forme actuelle explicitement conservée.
+    expect(
+      await screen.findByText(/n’ont pas pu être lues ; la forme actuelle est conservée/),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Créer la révision (brouillon)' }));
+    await waitFor(() => {
+      const posts = appelsPost();
+      expect(posts).toHaveLength(1);
+      expect(posts[0][0]).toBe(URL_REVISION);
+      expect(JSON.parse(posts[0][1].body).formePrefereeId).toBe('forme_bisg');
+    });
+  });
+
+  it('la révision hydrate les formes de SON ingrédient, absent de la page servie', async () => {
+    fetchMock.mockImplementation(
+      router({
+        hydratations: {
+          ing_mag: {
+            ...VOCABULAIRE,
+            ingredients: [
+              {
+                ...VOCABULAIRE.ingredients[0],
+                formes: [
+                  { id: 'forme_bisg', code: 'bisglycinate', labelFr: 'Bisglycinate' },
+                  { id: 'forme_citrate', code: 'citrate', labelFr: 'Citrate' },
+                ],
+              },
+            ],
+            ingredientsTotal: 1,
+          },
+        },
+        listes: { validee: { ...LISTE, statut: 'validee', regles: [REGLE_VALIDEE] } },
+      }),
+    );
+    await attendreLaListe();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validées' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Réviser' }));
+
+    // L'appel cible l'ingrédient de la règle, pas une recherche.
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.some(
+          ([url]) => String(url) === `${URL_VOCABULAIRE}?ingredientId=ing_mag`,
+        ),
+      ).toBe(true),
+    );
+    expect(await screen.findByRole('option', { name: 'Citrate' })).toBeTruthy();
   });
 
   it('teste une intention : la prévisualisation marque les brouillons comme non servis', async () => {

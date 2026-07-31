@@ -18,9 +18,28 @@ import {
 // (ingrédients + formes, sources) : leur gouvernance d'écriture appartient à
 // d'autres lots (C4A, décision n°11 — une source externe ne produit que des
 // brouillons) et n'a pas de POST ici.
+//
+// C4-1c — les INGRÉDIENTS sont bornés, les autres non. Le référentiel officiel
+// Compl'Alim y déverse ~2 000 entrées d'un coup ; intentions, critères et
+// sources restent gouvernés à la main, entrée par entrée, et ne reçoivent aucun
+// déversement externe. Deux paramètres facultatifs :
+//   - `requete`      filtre les ingrédients (nom OU code, insensible à la casse) ;
+//   - `ingredientId` hydrate UN ingrédient et ses formes, qu'il corresponde ou
+//                    non à la recherche — ce dont le formulaire de révision a
+//                    besoin, sa règle citant un ingrédient qui n'a aucune raison
+//                    d'être dans les 50 premiers. `ingredientId` PRIME sur
+//                    `requete` : la réponse porte alors cet ingrédient seul.
+// `ingredientsTotal` dit combien d'ingrédients correspondent AVANT troncature —
+// sans lui, 50 résultats sur 1 240 se liraient « il n'y en a que 50 ».
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+/** Borne serveur du nombre d'ingrédients rendus. Non réglable par le client. */
+export const INGREDIENTS_MAX = 50;
+
+/** Longueur retenue d'une recherche (le surplus est coupé, jamais refusé). */
+const REQUETE_MAX = 200;
 
 export type EntreeVocabulaire = {
   id: string;
@@ -29,17 +48,24 @@ export type EntreeVocabulaire = {
   categorie: string | null;
 };
 
+export type FormeIngredient = { id: string; code: string; labelFr: string };
+
+export type EntreeIngredient = {
+  id: string;
+  code: string;
+  nomFr: string;
+  formes: FormeIngredient[];
+};
+
 export type ReglesVocabulaireApiResponse =
   | {
       ok: true;
       intentions: EntreeVocabulaire[];
       criteres: EntreeVocabulaire[];
-      ingredients: Array<{
-        id: string;
-        code: string;
-        nomFr: string;
-        formes: Array<{ id: string; code: string; labelFr: string }>;
-      }>;
+      /** Au plus `INGREDIENTS_MAX` entrées — voir `ingredientsTotal`. */
+      ingredients: EntreeIngredient[];
+      /** Ingrédients actifs correspondant à la recherche, AVANT troncature. */
+      ingredientsTotal: number;
       sources: Array<{ id: string; citation: string; lienUrl: string | null }>;
     }
   | { ok: false; reason: string; error: string };
@@ -52,8 +78,8 @@ function echec(reason: string, error: string, status: number) {
   return NextResponse.json({ ok: false as const, reason, error }, { status });
 }
 
-// GET /api/praticien/regles/vocabulaire
-export async function GET(): Promise<NextResponse<ReglesVocabulaireApiResponse>> {
+// GET /api/praticien/regles/vocabulaire?requete=…&ingredientId=…
+export async function GET(req: Request): Promise<NextResponse<ReglesVocabulaireApiResponse>> {
   try {
     const session = await getServerSession(authOptions);
     if (!session) return echec('unauthenticated', 'Authentification requise.', 401);
@@ -61,7 +87,26 @@ export async function GET(): Promise<NextResponse<ReglesVocabulaireApiResponse>>
       return echec('flag_eteint', 'Atelier de règles indisponible (rayon compléments désactivé).', 404);
     }
 
-    const [intentions, criteres, ingredients, sources] = await Promise.all([
+    const params = new URL(req.url).searchParams;
+    const ingredientId = (params.get('ingredientId') ?? '').trim();
+    const requete = (params.get('requete') ?? '').trim().slice(0, REQUETE_MAX);
+
+    // `ingredientId` prime : hydratation ciblée pour le formulaire de révision.
+    // Un identifiant inconnu rend une liste vide — c'est une absence, pas une
+    // erreur, et l'écran doit rester utilisable.
+    const filtreIngredients = ingredientId
+      ? { actif: true, id: ingredientId }
+      : requete
+        ? {
+            actif: true,
+            OR: [
+              { nomFr: { contains: requete, mode: 'insensitive' as const } },
+              { code: { contains: requete, mode: 'insensitive' as const } },
+            ],
+          }
+        : { actif: true };
+
+    const [intentions, criteres, ingredients, ingredientsTotal, sources] = await Promise.all([
       prisma.clinicalIntentTag.findMany({
         where: { actif: true },
         orderBy: [{ labelFr: 'asc' }],
@@ -73,8 +118,9 @@ export async function GET(): Promise<NextResponse<ReglesVocabulaireApiResponse>>
         select: { id: true, code: true, labelFr: true, categorie: true },
       }),
       prisma.supplementIngredient.findMany({
-        where: { actif: true },
+        where: filtreIngredients,
         orderBy: [{ nomFr: 'asc' }],
+        take: INGREDIENTS_MAX,
         select: {
           id: true,
           code: true,
@@ -86,6 +132,7 @@ export async function GET(): Promise<NextResponse<ReglesVocabulaireApiResponse>>
           },
         },
       }),
+      prisma.supplementIngredient.count({ where: filtreIngredients }),
       prisma.supplementSourceReference.findMany({
         where: { actif: true },
         orderBy: [{ citation: 'asc' }],
@@ -93,7 +140,14 @@ export async function GET(): Promise<NextResponse<ReglesVocabulaireApiResponse>>
       }),
     ]);
 
-    return NextResponse.json({ ok: true, intentions, criteres, ingredients, sources });
+    return NextResponse.json({
+      ok: true,
+      intentions,
+      criteres,
+      ingredients,
+      ingredientsTotal,
+      sources,
+    });
   } catch (err) {
     console.error('[praticien/regles/vocabulaire GET]', err instanceof Error ? err.message : String(err));
     return echec('exception', 'Erreur technique.', 500);
