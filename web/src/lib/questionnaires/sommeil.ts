@@ -1,4 +1,4 @@
-import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_ZARIT, O_DASS, O_CONNERS, q, qn, qs } from './shared';
+import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_ZARIT, O_DASS, O_CONNERS, O_MFI, q, qn, qs } from './shared';
 
 export const Q_SOM_01 = {
   id:'Q_SOM_01', titre:'PSQI — Index de qualité du sommeil de Pittsburgh',
@@ -78,45 +78,81 @@ export const Q_SOM_01 = {
   ],
   scoring:{type:'psqi'}
 };
+// MFI-20 (Q_SOM_07). RECONSTRUIT le 2026-07-31 depuis sa source
+// (WN-SRC-0397, « Echelle multidimensionnelle de fatigue pro def.pdf »), sur la
+// règle du praticien : le servi porte les items de sa source.
+//
+// CE QUI ÉTAIT SERVI ÉTAIT L'INSTRUMENT LE PLUS ABÎMÉ DU CATALOGUE. Trois
+// divergences critiques, et elles se composaient :
+//   · l'échelle d'ACCORD 1→5 de la source était servie en fréquence 0→4 ;
+//   · AUCUNE des dix inversions n'était appliquée ;
+//   · les cinq sous-échelles étaient servies en deux sections inventées ;
+//   · et trois bandes s'affichaient sur un /80, là où la source écrit « Il n'y a
+//     pas de barème interprétation ».
+// S'y ajoutait, mesuré au banc : ONZE des vingt libellés n'étaient pas ceux de
+// la source, plusieurs de polarité inverse — l'item 14 de la source dit
+// « Physiquement, je me sens en mauvaise condition », le servi disait « en état
+// de faire beaucoup de choses ».
+//
+// Additionner sans inverser revient à sommer la fatigue et la vigueur dans le
+// même sens : « je me sens en forme » comptait comme un symptôme. Le total
+// enregistré n'était pas une mesure de fatigue, et c'est pourquoi les quatre
+// passations de production sont neutralisées depuis le 2026-07-27.
+//
+// LA CLÉ DE CORRECTION VIENT DE LA SOURCE, pas de la littérature. Sa dernière
+// page porte une « Grille de calcul de l'échelle MFI » — une colonne par
+// sous-échelle, la case de chaque item marquée dans sa colonne, et « 6-réponse »
+// inscrit sur les items à inverser. L'extraction automatique n'en rendait rien
+// (une table vidée de sa mise en page) ; elle a été lue sur l'image de la page.
+// Les dix inversions qu'elle donne — 1, 3, 4, 6, 7, 8, 11, 12, 15, 20 —
+// recoupent exactement la liste que la source énonce en toutes lettres deux
+// pages plus haut, ce qui vaut contrôle croisé.
 export const Q_SOM_07 = {
-  id:'Q_SOM_07', titre:'MFI-20 — Inventaire multidimensionnel de la fatigue',
-  instructions:'Par ces affirmations, nous souhaitons connaître comment vous vous êtes senti(e) au cours des derniers jours.',
+  id:'Q_SOM_07', titre:'MFI-20 — Échelle multidimensionnelle de fatigue',
+  instructions:"Nous aimerions comprendre comment vous vous sentiez récemment. Pour chaque affirmation, répondez 1 si vous n'êtes pas du tout d'accord, 5 si vous êtes tout à fait d'accord — toutes les nuances entre les deux sont possibles.",
   sections:[
-    { id:'GF', titre:'Fatigue générale & physique',
+    { id:'MFI', titre:'Vos réponses',
       questions:[
-        q('M1',"Je me sens en forme",O_04),
-        q('M2',"Physiquement, je ne me sens pas en état de faire grand-chose",O_04),
-        q('M5',"Je me sens fatiguée(e)",O_04),
-        q('M6',"Je pense accomplir beaucoup de choses dans ma journée",O_04),
-        q('M9',"Je redoute les choses à faire",O_04),
-        q('M10',"Je pense que je ne fais pas grand-chose dans une journée",O_04),
-        q('M13',"Je me sens très actif(ve)",O_04),
-        q('M14',"Physiquement, je me sens en état de faire beaucoup de choses",O_04),
-      ]},
-    { id:'AM', titre:'Fatigue mentale & motivation',
-      questions:[
-        q('M3',"J'ai le sentiment de ne rien faire",O_04),
-        q('M4',"J'ai des difficultés à me concentrer",O_04),
-        q('M7',"J'ai des difficultés à démarrer",O_04),
-        q('M8',"Je pense accomplir beaucoup de choses",O_04),
-        q('M11',"Je peux me concentrer facilement",O_04),
-        q('M12',"Je me sens reposé(e)",O_04),
-        q('M15',"Je me sens peu motivé(e) pour faire quoi que ce soit",O_04),
-        q('M16',"Je dois fournir un effort pour faire quoi que ce soit",O_04),
-        q('M17',"Je n'ai pas envie de faire quoi que ce soit",O_04),
-        q('M18',"Mes pensées s'embrouillent facilement",O_04),
-        q('M19',"Je me sens en pleine forme",O_04),
-        q('M20',"Je ne me sens pas capable de faire quoi que ce soit",O_04),
+        q('M1',"Je me sens en forme",O_MFI),
+        q('M2',"Physiquement, je n'ai pas la force de faire grand-chose",O_MFI),
+        q('M3',"Je me sens très actif",O_MFI),
+        q('M4',"J'ai envie de faire plein de choses agréables",O_MFI),
+        q('M5',"Je me sens fatigué(e)",O_MFI),
+        q('M6',"Je crois que j'en fais beaucoup dans une journée",O_MFI),
+        q('M7',"Je suis capable de me concentrer sur ce que j'entreprends",O_MFI),
+        q('M8',"J'ai une bonne résistance physique",O_MFI),
+        q('M9',"Je suis stressé(e) à l'idée d'avoir quelque chose à faire",O_MFI),
+        q('M10',"Je crois que je fais très peu dans une journée",O_MFI),
+        q('M11',"J'arrive facilement à me concentrer",O_MFI),
+        q('M12',"Je me sens reposé(e)",O_MFI),
+        q('M13',"Il me faut beaucoup d'efforts pour me concentrer",O_MFI),
+        q('M14',"Physiquement, je me sens en mauvaise condition",O_MFI),
+        q('M15',"J'ai beaucoup de projets",O_MFI),
+        q('M16',"Je me fatigue facilement",O_MFI),
+        q('M17',"Je n'achève que très peu de choses",O_MFI),
+        q('M18',"J'ai envie de ne rien faire",O_MFI),
+        q('M19',"Je me laisse facilement distraire",O_MFI),
+        q('M20',"Physiquement, je me sens en excellente forme",O_MFI),
       ]}
   ],
   scoring:{
-    type:'sum',
-    maxTotal:80,
-    interpretation:[
-      {min:0,max:40,label:'Fatigue dans les limites normales',color:'success'},
-      {min:41,max:59,label:'Fatigue notable',color:'warning'},
-      {min:60,max:80,label:'Fatigue sévère',color:'danger'},
-    ]
+    type:'subscore',
+    // AUCUN SCORE GLOBAL, et c'est la source qui l'impose : elle ne totalise
+    // jamais ses cinq sous-échelles et écrit « Il n'y a pas de barème
+    // interprétation ». Une somme sur 100 se lirait comme une sévérité.
+    sansTotalGlobal:true,
+    subScores:[
+      {id:'GEN', label:'Fatigue générale', items:['M1','M5','M12','M16'], reversed:['M1','M12'], max:20},
+      {id:'PHY', label:'Fatigue physique', items:['M2','M8','M14','M20'], reversed:['M8','M20'], max:20},
+      {id:'MEN', label:'Fatigue mentale', items:['M7','M11','M13','M19'], reversed:['M7','M11'], max:20},
+      {id:'ACT', label:'Réduction des activités', items:['M3','M6','M10','M17'], reversed:['M3','M6'], max:20},
+      {id:'MOT', label:'Réduction de la motivation', items:['M4','M9','M15','M18'], reversed:['M4','M15'], max:20},
+    ],
+    // Les seuils de la source dépendent du SEXE et de l'ÂGE, et ne portent que
+    // sur la fatigue générale. Le moteur ne reçoit que des réponses : il ne peut
+    // pas les appliquer sans se tromper de population. Ils sont donc rendus au
+    // praticien en toutes lettres, jamais convertis en bandes.
+    note:"Cinq sous-échelles de quatre items, chacune de 4 à 20 ; dix items sont inversés (6 − réponse) selon la clé de la source. L'instrument ne définit AUCUN score global ni barème d'interprétation. Seuils suggérant une fatigue significative, pour la seule sous-échelle « Fatigue générale », issus de données épidémiologiques allemandes (Schwarz et al. 2003 ; Singer et al. 2011, 25e percentile) — hommes : ≥ 9 avant 40 ans, ≥ 11 de 40 à 59 ans, ≥ 14 à partir de 60 ans ; femmes : ≥ 11 avant 40 ans, ≥ 12 de 40 à 59 ans, ≥ 14 à partir de 60 ans.",
   }
 };
 export const Q_SOM_03 = {

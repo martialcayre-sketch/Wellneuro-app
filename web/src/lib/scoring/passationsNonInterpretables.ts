@@ -28,32 +28,70 @@
 // suspendu, jamais l'inverse. `passationsNonInterpretables.guard.test.ts`
 // vérifie ce sens-là — et lui seul.
 //
-// ── Le piège de la réactivation ──────────────────────────────────────────────
+// ── Le piège de la réactivation, et comment il a été désarmé ─────────────────
 //
-// Cette table est indexée par identifiant d'instrument, pas par passation. Si
-// `Q_SOM_07` est un jour reconstruit depuis sa source et réactivé, ses NOUVELLES
-// passations seraient marquées à tort par cette même entrée. Rien dans le code
-// ne le rattraperait — sauf le garde : il exige que tout instrument listé ici
-// soit `actif: false`. Réactiver sans statuer sur les passations historiques
-// fait donc échouer le CI, au lieu de faire mentir un écran.
+// Cette table était indexée par identifiant d'instrument, pas par passation.
+// Elle portait donc en elle-même l'avertissement suivant : si `Q_SOM_07` est un
+// jour reconstruit depuis sa source et réactivé, ses NOUVELLES passations
+// seraient marquées à tort. Le garde tenait la porte — il exigeait que tout
+// instrument listé ici soit `actif: false` — mais il la tenait FERMÉE : il
+// interdisait la réactivation au lieu de la rendre possible.
+//
+// Le 2026-07-31, le MFI-20 a été reconstruit. Il fallait donc trancher pour de
+// bon, et c'est une DATE qui le fait : chaque entrée porte la date à partir de
+// laquelle le servi a cessé d'être fautif. Une passation ANTÉRIEURE reste non
+// interprétable — ce qui a été calculé sur l'ancienne grille l'a été, et le
+// redater ne le corrigerait pas ; une passation POSTÉRIEURE est une mesure
+// ordinaire.
+//
+// FRONTIÈRE FERMÉE, jamais ouverte : une passation dont la date est absente ou
+// illisible est traitée comme ANTÉRIEURE, donc marquée. Se tromper dans ce
+// sens-là affiche « interprétation retirée » sur une mesure saine — visible, et
+// corrigible d'un regard. Se tromper dans l'autre servirait au praticien un
+// score qui n'en est pas un, en silence. Ce n'est pas le même prix.
+//
+// `reconstruitLe` reste facultatif : une entrée sans date se comporte comme
+// avant — marquée pour toujours, et le garde exige alors que l'instrument soit
+// suspendu.
+type EntreeNonInterpretable = {
+  motif: string;
+  /** Date de mise en service du servi corrigé. Les passations enregistrées à
+   *  partir de ce jour-là sont des mesures ordinaires. */
+  reconstruitLe?: Date;
+};
+
 const MOTIF_Q_SOM_07 =
-  "L'instrument servi sous ce nom n'est pas le MFI-20 publié : échelle d'accord 1→5 " +
+  "L'instrument servi sous ce nom n'était pas le MFI-20 publié : échelle d'accord 1→5 " +
   'servie en fréquence 0→4, aucune des 10 inversions appliquée, 5 sous-échelles ' +
   'servies en 2 sections, et 3 bandes sur /80 alors que la source indique qu\'il ' +
   "n'existe pas de barème d'interprétation. Le total et la bande enregistrés ne " +
-  'sont donc pas une mesure de fatigue.';
+  'sont donc pas une mesure de fatigue. L\'instrument a été reconstruit depuis sa ' +
+  'source le 2026-07-31 ; cette mention ne vise que les passations antérieures.';
 
-export const MOTIFS_PASSATION_NON_INTERPRETABLE: ReadonlyMap<string, string> = new Map([
-  ['Q_SOM_07', MOTIF_Q_SOM_07],
+export const MOTIFS_PASSATION_NON_INTERPRETABLE: ReadonlyMap<string, EntreeNonInterpretable> = new Map([
+  ['Q_SOM_07', { motif: MOTIF_Q_SOM_07, reconstruitLe: new Date('2026-07-31T00:00:00.000Z') }],
 ]);
 
 /**
- * Motif pour lequel le résultat enregistré d'un instrument ne peut pas être lu
- * comme une mesure — `null` si l'instrument n'est pas concerné.
+ * Motif pour lequel le résultat enregistré d'une passation ne peut pas être lu
+ * comme une mesure — `null` si elle n'est pas concernée.
+ *
+ * `dateReponse` est la date de la PASSATION, pas celle du jour. L'omettre fait
+ * retomber sur la frontière fermée décrite plus haut : la passation est traitée
+ * comme antérieure, donc marquée.
  */
-export function motifNonInterpretable(idQuestionnaire: string | null | undefined): string | null {
+export function motifNonInterpretable(
+  idQuestionnaire: string | null | undefined,
+  dateReponse?: Date | string | null,
+): string | null {
   if (!idQuestionnaire) return null;
-  return MOTIFS_PASSATION_NON_INTERPRETABLE.get(idQuestionnaire) ?? null;
+  const entree = MOTIFS_PASSATION_NON_INTERPRETABLE.get(idQuestionnaire);
+  if (!entree) return null;
+  if (!entree.reconstruitLe) return entree.motif;
+  if (dateReponse === undefined || dateReponse === null) return entree.motif;
+  const le = dateReponse instanceof Date ? dateReponse : new Date(dateReponse);
+  if (Number.isNaN(le.getTime())) return entree.motif;
+  return le < entree.reconstruitLe ? entree.motif : null;
 }
 
 // Phrase courte, affichable telle quelle à la place du score. Le motif long

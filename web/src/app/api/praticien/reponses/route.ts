@@ -76,7 +76,7 @@ export async function GET(req: Request): Promise<NextResponse<ReponsesApiRespons
       // exactement la raison pour laquelle `actif: false` n'a gardé que les
       // écrans au lot précédent, et pourquoi les trois chemins d'assignation
       // sont passés à côté.
-      const nonInterpretable = motifNonInterpretable(pg.idQuestionnaire);
+      const nonInterpretable = motifNonInterpretable(pg.idQuestionnaire, pg.dateReponse);
       if (nonInterpretable) {
         return {
           idReponse: pg.idReponse,

@@ -88,10 +88,13 @@ const PORTEURS_ATTENDUS = [
 // ces échelles qui arrivent au modèle de synthèse. Entrée VOULUE — un score de
 // fonctionnement physique dit quelque chose à la consultation, une somme de 28 à
 // 112 ne disait rien.
+// `Q_SOM_07` (MFI-20) a rejoint la liste le 2026-07-31 : reconstruit depuis sa
+// source, il passe du scoring `sum` — une somme brute sur /80, que sa source ne
+// définit pas — à `subscore`, avec les cinq sous-échelles qu'elle déclare.
 const EMETTEURS_SUBSCORES = [
   'Q_ALI_03', 'Q_CAN_01', 'Q_CAN_02', 'Q_GAS_01', 'Q_GEO_01', 'Q_INF_03', 'Q_MOD_01',
-  'Q_MOD_03', 'Q_NEU_03', 'Q_NEU_05', 'Q_NEU_11', 'Q_PED_02', 'Q_PNE_01', 'Q_SOM_09',
-  'Q_STR_01', 'Q_STR_04', 'Q_STR_06', 'Q_TAB_03', 'Q_URO_01',
+  'Q_MOD_03', 'Q_NEU_03', 'Q_NEU_05', 'Q_NEU_11', 'Q_PED_02', 'Q_PNE_01', 'Q_SOM_07',
+  'Q_SOM_09', 'Q_STR_01', 'Q_STR_04', 'Q_STR_06', 'Q_TAB_03', 'Q_URO_01',
 ];
 
 /** Champs de `subScores` que la consigne n'a pas à décrire : ils se lisent seuls. */
@@ -382,7 +385,7 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     expect([...releve.porteurs].sort()).toEqual(PORTEURS_ATTENDUS);
   });
 
-  it('les 19 émetteurs de subScores sont épinglés par identifiant, pas par compte', () => {
+  it('les 20 émetteurs de subScores sont épinglés par identifiant, pas par compte', () => {
     // Un compte ne voit pas une substitution : un instrument qui cesse d'émettre et
     // un autre qui commence laisseraient `toBe(17)` vert — soit exactement la
     // disparition silencieuse que ce fichier existe pour rendre bruyante.
@@ -401,8 +404,9 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
   it('balaye réellement le catalogue — anti-vacuité', () => {
     expect(ids.length).toBeGreaterThanOrEqual(60);
     // 66 jusqu'au 2026-07-30 ; +23 avec les quinze échelles du QLQ-C30 et les huit
-    // du QLQ-BR23, qui remplacent deux sommes brutes.
-    expect(releve.sousScoresBalayes, 'aucun sous-score balayé').toBe(89);
+    // du QLQ-BR23, qui remplacent deux sommes brutes ; +5 le 2026-07-31 avec les
+    // cinq sous-échelles du MFI-20 reconstruit.
+    expect(releve.sousScoresBalayes, 'aucun sous-score balayé').toBe(94);
   });
 
   it('aucun total à null n’apparaît sur une passation SATURÉE', () => {
@@ -655,12 +659,16 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
   });
 
   it('un questionnaire à sous-scores peut n’avoir AUCUN total global', () => {
-    // Trois désormais, et les deux nouveaux le sont par CONSTRUCTION : le manuel
-    // EORTC ne définit aucun score global d'instrument, seulement des échelles
-    // 0-100. La somme brute que WellNeuro rendait à leur place — 28→112 pour le
-    // C30, 23→92 pour le BR23 — était une mesure fabriquée, avec pour le BR23 une
-    // bande de tête inatteignable. Ne pas rendre de total est ici la correction,
-    // pas une lacune.
-    expect(releve.sansTotalGlobal.slice().sort()).toEqual(['Q_CAN_01', 'Q_CAN_02', 'Q_STR_06']);
+    // Quatre désormais, et trois le sont par CONSTRUCTION. Le manuel EORTC ne
+    // définit aucun score global d'instrument, seulement des échelles 0-100 : la
+    // somme brute que WellNeuro rendait à leur place — 28→112 pour le C30, 23→92
+    // pour le BR23 — était une mesure fabriquée, avec pour le BR23 une bande de
+    // tête inatteignable. Le MFI-20 rejoint la liste le 2026-07-31, pour la même
+    // raison dite par sa propre source : « Il n'y a pas de barème
+    // interprétation », et elle ne totalise jamais ses cinq sous-échelles. Il est
+    // le premier à le déclarer explicitement, par `scoring.sansTotalGlobal` —
+    // les deux EORTC l'obtiennent de leur moteur dédié. Ne pas rendre de total
+    // est ici la correction, pas une lacune.
+    expect(releve.sansTotalGlobal.slice().sort()).toEqual(['Q_CAN_01', 'Q_CAN_02', 'Q_SOM_07', 'Q_STR_06']);
   });
 });

@@ -8,6 +8,7 @@ import {
 } from './bibliotheque';
 import { IDS_SUSPENDUS, QUESTIONNAIRES_CATALOG } from './questionnaires-catalog';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from './questions';
+import { motifNonInterpretable } from './scoring/passationsNonInterpretables';
 
 describe('listeBibliotheque', () => {
   const entrees = listeBibliotheque();
@@ -118,16 +119,30 @@ describe('questionnaire suspendu (actif: false)', () => {
     }
   });
 
-  // Les trois gardes ci-dessus étaient VERTES avant la suspension de Q_SOM_07 :
-  // Q_FIB_03 les satisfaisait déjà à lui seul. Un invariant sur « les
-  // suspendus » verrouille le mécanisme, jamais la décision — le repasser à
-  // `actif: true` laisserait la suite entièrement verte. D'où cette assertion
-  // nommée, qui est la seule à tomber si la suspension est défaite.
-  it('Q_SOM_07 (MFI-20 divergent) est suspendu et le reste', () => {
+  // Les trois gardes ci-dessus verrouillent le MÉCANISME, jamais la décision :
+  // un invariant sur « les suspendus » reste vert quand un instrument précis
+  // change de camp. D'où une assertion NOMMÉE, qui est la seule à tomber quand
+  // la décision bouge — et elle est tombée le 2026-07-31, comme prévu.
+  //
+  // Elle disait « Q_SOM_07 est suspendu et le reste ». Il ne l'est plus : il a
+  // été reconstruit depuis sa source, et sa suspension du 2026-07-27 annonçait
+  // elle-même « réactivation prévue à la reconstruction depuis la source ». Ce
+  // qui doit rester nommé, c'est donc le couple que la réactivation ne doit PAS
+  // défaire — l'instrument rouvert d'un côté, ses passations historiques
+  // toujours neutralisées de l'autre. Rouvrir en blanchissant le passé serait la
+  // régression que ce test existe désormais pour empêcher.
+  it('Q_SOM_07 est rouvert, SANS blanchir ses passations historiques', () => {
     const mfi = QUESTIONNAIRES_CATALOG.find(q => q.id === 'Q_SOM_07');
     expect(mfi, 'Q_SOM_07 doit exister au catalogue').toBeDefined();
-    expect(mfi?.actif).toBe(false);
-    expect(IDS_SUSPENDUS.has('Q_SOM_07')).toBe(true);
+    expect(mfi?.actif).toBe(true);
+    expect(IDS_SUSPENDUS.has('Q_SOM_07')).toBe(false);
+
+    // Les quatre passations de production datent d'avant la reconstruction :
+    // elles portent une autre échelle et d'autres items, et restent illisibles
+    // comme mesure.
+    expect(motifNonInterpretable('Q_SOM_07', new Date('2026-07-21T08:00:00.000Z'))).not.toBeNull();
+    // Une passation neuve, elle, est une mesure ordinaire.
+    expect(motifNonInterpretable('Q_SOM_07', new Date('2026-08-01T08:00:00.000Z'))).toBeNull();
   });
 
   // ── Arbitrage des droits du 2026-07-29 ──────────────────────────────────────

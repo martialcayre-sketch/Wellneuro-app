@@ -89,10 +89,10 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
   });
 
   // Cas réel : le pack « Florence 1 » enregistré en production contient encore
-  // `Q_SOM_07`. Rien ne retire le qid de `pack.qids` — la garde doit donc agir
+  // `Q_FIB_03`. Rien ne retire le qid de `pack.qids` — la garde doit donc agir
   // à la validation, sur un chemin où le patient est seul.
   it('écarte l’instrument suspendu et n’en assigne pas l’assignation', async () => {
-    const response = await POST(post(['Q_NEU_03', 'Q_SOM_07']));
+    const response = await POST(post(['Q_NEU_03', 'Q_FIB_03']));
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ok: true, count: 1 });
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
@@ -105,12 +105,12 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
   // invisible sur le seul chemin qui n'a aucun praticien pour lire un écart
   // de comptage.
   it('journalise le qid écarté, sous son propre code d’événement', async () => {
-    await POST(post(['Q_NEU_03', 'Q_SOM_07']));
+    await POST(post(['Q_NEU_03', 'Q_FIB_03']));
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({
         event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU,
         domain: 'ASSIGNATION',
-        message: expect.stringContaining('Q_SOM_07'),
+        message: expect.stringContaining('Q_FIB_03'),
       })
     );
   });
@@ -119,7 +119,7 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
   // rempli son anamnèse, la lui refaire refaire pour un défaut de catalogue
   // serait le punir d'une décision clinique qui n'est pas la sienne.
   it('valide quand même la consultation', async () => {
-    await POST(post(['Q_NEU_03', 'Q_SOM_07']));
+    await POST(post(['Q_NEU_03', 'Q_FIB_03']));
     expect(prisma.consultation.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { idConsultation: 'CONS_TEST' },

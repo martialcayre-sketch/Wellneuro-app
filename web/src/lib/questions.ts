@@ -2177,7 +2177,21 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── SUBSCORE ─────────────────────────────────────────
   if (sc.type === 'subscore') {
     const subResults = sc.subScores.map((sub: any) => {
-      const {total} = totalSousScore(sub.items, []);
+      // `sub.reversed` et non plus `[]` en dur. Aucune sous-échelle du catalogue
+      // ne POUVAIT inverser un item : la liste d'inversions était une liste vide
+      // écrite dans le code, si bien qu'un `reversed` déclaré dans une définition
+      // n'aurait rien fait — en silence, et sans qu'aucun test ne s'y oppose.
+      //
+      // Ce que cela coûtait, mesuré sur le MFI-20 : sa source impose d'inverser
+      // dix de ses vingt items (« 6 – réponse »), et le servi n'en inversait
+      // aucun. Additionner sans inverser revient à sommer la fatigue et la
+      // vigueur dans le même sens — « je me sens en forme » comptant comme un
+      // symptôme. Le total enregistré n'était pas une mesure de fatigue.
+      //
+      // Additif : `sub.reversed` absent vaut `undefined`, que `sumItems` traite
+      // exactement comme la liste vide d'avant. Les six autres instruments à
+      // `subScores` sont donc inchangés, et un banc le prouve.
+      const {total} = totalSousScore(sub.items, sub.reversed);
       // `null * multiplier` vaut 0 : sans ce test, l'axe non mesuré revenait par
       // la porte du score pondéré.
       const scaled = total === null ? null : (sub.multiplier ? total * sub.multiplier : total);
@@ -2191,7 +2205,19 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // `horsTotal` : une sous-échelle que l'instrument rapporte À PART et qui ne
     // s'additionne pas au score global (question de qualité de vie de l'IPSS).
     // Drapeau déclaratif, additif : sans lui, le comportement est inchangé.
-    const globalTotal = totalGlobalDepuisSousScores(subResults.filter((r: any) => !r.horsTotal));
+    //
+    // `sansTotalGlobal` dit autre chose, et il fallait le dire à part : que
+    // l'instrument N'A PAS de score global, du tout. Le MFI-20 est dans ce cas —
+    // sa source écrit « Il n'y a pas de barème interprétation » et ne totalise
+    // jamais ses cinq sous-échelles. Marquer les cinq en `horsTotal` aurait
+    // produit le même `null` par accident, en détournant un drapeau qui veut
+    // dire « rapportée à part » et en faisant rougir la garde qui épingle son
+    // unique porteur. Une somme sur 100 affichée là où l'instrument n'en définit
+    // aucune se lirait comme une sévérité, et c'est précisément ce que la source
+    // refuse.
+    const globalTotal = sc.sansTotalGlobal === true
+      ? null
+      : totalGlobalDepuisSousScores(subResults.filter((r: any) => !r.horsTotal));
 
     // Un bloc `monnier` était calculé ici pour `Q_ALI_03`, censé rendre des
     // protéines en g/j et des calories en kcal/j. Il cherchait des sous-scores

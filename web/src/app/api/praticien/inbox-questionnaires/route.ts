@@ -201,7 +201,7 @@ export async function GET(req: Request): Promise<NextResponse<InboxQuestionnaire
           // brutes et leur relecture item par item RESTENT — c'est ce que le
           // patient a réellement répondu ; seule la lecture qu'on en avait
           // tirée s'en va.
-          const nonInterpretable = motifNonInterpretable(r.idQuestionnaire);
+          const nonInterpretable = motifNonInterpretable(r.idQuestionnaire, r.dateReponse);
           return {
             idReponse: r.idReponse,
             idPatient: r.idPatient,

@@ -81,7 +81,7 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string): string {
     // temps, et un dossier où elle disparaîtrait sans un mot laisserait croire
     // qu'elle n'a pas été remplie. C'est l'arbitrage « marquer et laisser en
     // place », pas « effacer ».
-    const motifNonMesure = motifNonInterpretable(r.idQuestionnaire);
+    const motifNonMesure = motifNonInterpretable(r.idQuestionnaire, r.date);
     if (motifNonMesure) {
       return {
         idQuestionnaire: r.idQuestionnaire,
