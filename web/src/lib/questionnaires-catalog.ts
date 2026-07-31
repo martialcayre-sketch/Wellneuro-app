@@ -68,8 +68,39 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Identifiez votre type de transit intestinal selon les 7 types de la classification de Bristol.`, duree: '2 min', actif: true },
 
   // ── GÉRONTOLOGIE ────────────────────────────────────────────────────────────
+  // SUSPENDU le 2026-07-31, en même temps que son contenu était reconstruit
+  // depuis sa source (WN-SRC-0445). Les deux gestes vont ensemble et aucun ne
+  // se comprend sans l'autre.
+  //
+  // Ce qui était servi n'était PAS cet instrument : dix plaintes cognitives
+  // auto-rapportées, cotées 0-3 dans le sens inverse sur 30, sans un libellé
+  // commun avec la source. La reconstruction remet les dix épreuves
+  // administrées de la source, cotées 0-2 sur 20 dans le sens des troubles.
+  // Aucune assignation ni réponse n'existait en production (vérifié) : rien
+  // n'est réécrit.
+  //
+  // Mais il n'est pas rouvert pour autant, et ce n'est pas une prudence de
+  // principe. Sa source écrit en première ligne « Complétez ce questionnaire
+  // avec votre patient en consultation », et ses items 3, 5 et 10 forment un
+  // enregistrement puis deux rappels des MÊMES trois mots : auto-rempli, le
+  // patient remonte la page et les deux items les plus discriminants deviennent
+  // des points offerts. Il ne peut donc pas rester assignable.
+  //
+  // Et il ne peut pas non plus rejoindre `PASSATION_PRATICIEN` : cette liste
+  // porte l'AFFICHAGE de la grille, donc du verbatim, que la déclaration du
+  // praticien ne couvre justement pas — et la décision du 2026-07-29, tenue par
+  // `droitsAssignabilite.guard.test.ts`, interdit d'y laisser un instrument sous
+  // réserve. Or l'origine de ce test n'est pas instruite : ses items 1-5 et 10
+  // sont de la famille MMSE, ses items 6-9 de celle des questionnaires de
+  // plainte mnésique, et aucune publication ne lui est rattachée. Conclure au
+  // référentiel interne parce que le support ne cite pas ses sources serait le
+  // renversement de charge commis sur le VQ11 le 2026-07-30.
+  //
+  // Rouvrir demande donc DEUX pièces, dans cet ordre : instruire l'identité
+  // bibliographique, puis décider d'une surface de consultation qui n'expose pas
+  // le verbatim d'un instrument sous réserve.
   { id: 'Q_NEU_06', titre: 'MMT — Mini Mental Test SIIN', categorie: 'Gérontologie',
-    description: `Dépistage des troubles cognitifs et mnésiques (10 questions, interprétation pour micronutrition).`, duree: '10 min', actif: true },
+    description: `Test cognitif administré en consultation : âge, heure, rappel de trois mots, soustractions de 7 (10 épreuves, 0-2, score /20).`, duree: '10 min', actif: false },
   { id: 'Q_NEU_09', titre: `Grille de Zarit — Fardeau de l'aidant`, categorie: 'Gérontologie',
     description: `Évaluez la charge globale des proches aidants (22 questions, score de léger à sévère).`, duree: '10 min', actif: true },
 

@@ -575,14 +575,14 @@
     {
       "questionnaireId": "Q_NEU_06",
       "instrument": {
-        "nomOfficiel": "Questionnaire cognitif SIIN (historique)",
+        "nomOfficiel": "MMT — Mini Mental Test (SIIN)",
         "auteurs": null,
         "anneePublication": null,
         "formePubliee": null,
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "MMT SIIN servi avec ses bandes ; 4 bandes portent une conduite ajoutée par le cabinet. RESTENT OUVERTS : seuil '>= 1' non représenté et échelle 0–2/0–3, hors du périmètre de cette déclaration. Bandes et cotation conformes à la source pour le reste — banc de certification du 2026-07-25, rejoué le 2026-07-29 ; divergences résiduelles consignées dans verdictScoring.revision.",
+        "description": "10 épreuves en 1 section, moteur `sum`, cotation 0-2, score /20 dans le sens des TROUBLES. RECONSTRUIT LE 2026-07-31 depuis WN-SRC-0445 sur arbitrage praticien : ce qui était servi jusque-là était un autre instrument — dix plaintes cognitives auto-rapportées cotées 0-3 en sens inverse sur 30, sans un libellé commun avec la source (similarité item à item de 0,00 à 0,06). Items, modalités et bandes repris de la source. UN SEUL ARBITRAGE, déclaré : la source chevauche à la valeur 1 (« De 0 à 1 : Rien à signaler » puis « De 1 à 4 : Troubles fonctionnels »), et le servi attribue 1 à la bande la plus sévère — même famille que les comblements Epworth 6/15. Aucune clé `protocol` : les libellés de la source SONT la conduite, la divergence protocole_dans_interpretation disparaît au lieu d'être déclarée. PASSATION EN CONSULTATION, exigée par la première ligne de la source (« Complétez ce questionnaire avec votre patient en consultation ») et par la séquence de rappel différé des items 3/5/10 : l'instrument est `actif: false` au catalogue (route d'assignation fermée) et inscrit en PASSATION_PRATICIEN (grille affichée pour la consultation). Aucune assignation ni réponse en production au moment de la reconstruction (vérifié le 2026-07-31).",
         "langue": "fr",
         "traductionValidee": "fr (référentiel d'origine)",
         "statutContenu": "adapte"
@@ -590,34 +590,41 @@
       "references": {
         "doi": null,
         "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "dateVerification": "2026-07-31",
+        "verifiePar": "banc certify + relecture directe de la source (Drive)"
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien-propriétaire du 2026-07-25 : les questionnaires du référentiel SIIN sont libres d'usage dans le cadre de la pratique du cabinet de neuronutrition, la licence ne s'appliquant pas à l'usage par le praticien. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003 : les claims ne sortent pas de l'application). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. Pour les instruments qui adaptent une échelle publiée par un tiers, cette déclaration porte sur l'adaptation SIIN et laisse intacts les droits de l'échelle d'origine — à traiter entrée par entrée au banc de certification.",
+        "detail": "Déclaration du praticien-propriétaire du 2026-07-25, ÉTENDUE le 2026-07-29 : les questionnaires des supports de formation du SIIN sont d'usage libre pour l'exercice du cabinet, et l'extension couvre AUSSI les instruments tiers que ces supports reproduisent. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée d'un ayant droit. RÉSERVE CONSERVÉE, et elle porte ici sur l'IDENTITÉ, pas sur les droits : l'instrument n'est rattaché à aucune publication. Ses items 1 à 5 et 10 sont de la famille MMSE — orientation, enregistrement puis double rappel de trois mots, soustractions de 7 en série — et sa propre bande 5-10 renvoie au MMSE ; ses items 6 à 9 relèvent des questionnaires de plainte mnésique. WN-SRC-0445 porte encore `rightsStatus: to_verify` au registre des sources. C'est pourquoi statutBibliographique passe de `referentiel_interne_siin` à `a_completer` le 2026-07-31 : conclure au référentiel interne parce qu'un support ne cite pas ses sources est un renversement de charge, et c'est la faute commise sur le VQ11 le 2026-07-30.",
         "dateVerification": "2026-07-25"
       },
       "cosmin": "inconnu",
-      "statutCertification": "repere",
+      "statutCertification": "suspendu",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
       },
       "sourceMonEquilibre": false,
-      "sourceIds": [],
+      "sourceIds": [
+        "WN-SRC-0445"
+      ],
       "driveMd": null,
-      "statutBibliographique": "referentiel_interne_siin",
+      "statutBibliographique": "a_completer",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
-        "divergencesCritiques": 1,
+        "date": "2026-07-31",
+        "divergencesCritiques": 0,
         "revision": {
-          "date": "2026-07-30",
+          "date": "2026-07-31",
           "notes": [
-            "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite.",
-            "seuil '>= 1' : les bandes servies couvrent 0–30 sans trou, et le sens du '>= 1' de la source est inintelligible sans relecture du support (le MMT est coté en points, pas en erreurs). Écart DOCUMENTÉ, non ajouté à l'aveugle — dernière critique soldée sur la foi de la couverture complète des bandes.",
-            "CORRECTION DE REVUE : la critique est RESTAURÉE. Le décrément s'appuyait sur la couverture des bandes, sans rapport avec le seuil non représenté — et la relecture du rapport montre pire : les 10 libellés servis ne partagent RIEN avec la source (MMT administré : orientation, 3 mots, calcul) et le sens de l'échelle est INVERSÉ (servi 0-30 plus haut = mieux ; source plus haut = pire). C'est la classe Q_ALI_03/Q_SOM_07 — arbitrage praticien requis : suspendre, ou reconstruire."
+            "RECONSTRUIT, et non requalifié. Les trois divergences ouvertes au 2026-07-30 — dix libellés étrangers, échelle 0-2/0-3, seuil '>= 1' non représenté — tombent parce que le servi a changé, pas parce qu'on a changé d'avis sur lui. Le banc rejoué hors ligne (--recomparer, aucun appel de modèle) le constate sur le code.",
+            "protocole_dans_interpretation : soldée par SUPPRESSION des clés protocol. Les quatre conduites logées dans les bandes venaient du cabinet ; celles de la source ('Faire un MMSE', 'avis spécialisé demandé') sont désormais les libellés eux-mêmes.",
+            "CHEVAUCHEMENT DE LA SOURCE, pas trou du servi : la valeur 1 est revendiquée par deux bandes de la source. Arbitrée vers la plus sévère, dans le sens qui ne rassure pas à tort. Épinglée nommément par mmtReconstruit.guard.test.ts pour qu'un rebasculement se rediscute au lieu de glisser.",
+            "PASSATION : l'instrument sort de l'auto-passation. Trois de ses items forment un enregistrement puis deux rappels des mêmes trois mots — dans un formulaire auto-rempli, le patient remonte la page et les deux items les plus discriminants deviennent des points offerts. Le registre ne lit donc plus 'actif: false' comme un retrait de production pour cette classe : l'appartenance à PASSATION_PRATICIEN atteste l'usage, et c'est le retrait de CETTE ligne qui ferme un instrument de consultation (précédent MMSE, #460).",
+            "PIÈCE DE PRODUCTION, jointe pour que l'affirmation soit falsifiable et non crue sur parole. Requête du 2026-07-31 sur la base de production (MCP Supabase, lecture seule) : `SELECT (SELECT count(*) FROM assignations WHERE id_questionnaire='Q_NEU_06') AS assignations, (SELECT count(*) FROM questionnaire_reponses WHERE id_questionnaire='Q_NEU_06') AS reponses;` → 0 et 0. C'est ce qui autorise à réutiliser les identifiants MM1 à MM10 : la garde de passation vide ne peut PAS attraper une relecture d'anciennes réponses sous la nouvelle grille, les identifiants étant identiques et la cotation inversée. Sans ce zéro, une valeur 2 enregistrée sous l'ancienne échelle (« Rarement », deuxième meilleure) se relirait « Inexacte ou pas de réponse », la pire.",
+            "CORRECTION DE REVUE (2026-07-31) : l'identité bibliographique n'est pas instruite, et le registre ne l'affirme plus. Les droits restent couverts par l'extension du 2026-07-29, qui vise explicitement les instruments tiers reproduits dans les supports SIIN — la réserve conservée porte donc sur l'identité, pas sur l'usage. Ce que le barreau scoring_verifie affirme est borné en conséquence : le scoring servi correspond à LA SOURCE AU DOSSIER (WN-SRC-0445, 0 divergence d'aucune gravité), et rien n'est affirmé sur l'instrument publié dont cette source dérive peut-être.",
+            "SUSPENDU, ET NON MONTÉ — correction de revue du 2026-07-31, deuxième passe. Le lot avait fait franchir quatre barreaux d'un coup à cet instrument et l'avait inscrit en PASSATION_PRATICIEN pour l'administrer en consultation. Deux gardes existants ont refusé, et ils avaient raison : cette liste porte l'AFFICHAGE de la grille, donc du verbatim, que la déclaration du praticien ne couvre pas — et la décision du 2026-07-29 interdit d'y laisser un instrument sous réserve. L'origine de ce test n'étant pas instruite, la réserve s'applique. La reconstruction du contenu TIENT (elle retire du catalogue un instrument qui n'était pas celui qu'il nommait) ; c'est la réouverture qui est refusée.",
+            "CE QU'IL FAUT POUR ROUVRIR, dans cet ordre : (1) instruire l'identité bibliographique — les items 1-5 et 10 sont de la famille MMSE, les items 6-9 de celle des questionnaires de plainte mnésique, et aucune publication n'est rattachée ; l'absence d'auteur au registre est à ce jour une NON-RECHERCHE, pas un constat. (2) Décider d'une surface de consultation qui n'expose pas le verbatim d'un instrument sous réserve — le geste manque au dépôt, et une première tentative pour le créer a été retirée de ce lot faute d'un usage qui la justifie sans elle."
           ]
         }
       }
@@ -924,7 +931,7 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": "18 items en 3 section(s), moteur `psqi`. PSQI servi en 18 items là où la source en compte 24 : l'application recueille les composantes par items directs (horaires, durées) sans les sous-questions 5j-open/10 de l'auto-questionnaire complet. ADAPTATION DÉCLARÉE le 2026-07-30 sur arbitrage praticien — les 7 composantes et le total /21 restent ceux de Buysse 1989. Étendue prouvée par construction : 0–21 (bornesAtteignables.guard.test.ts). Contenu verrouillé le 2026-07-30 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
+        "description": "24 items en 4 section(s), moteur `psqi`. L'ADAPTATION SUR LE NOMBRE D'ITEMS EST LEVÉE le 2026-07-31 sur arbitrage praticien (« le PSQI doit servir 24 items ») : le volet « conjoint ou camarade de chambre » — question 10 et sous-questions 11a à 11e — est désormais servi, et le banc lit 24 items des deux côtés. Ces six items NE SONT PAS COTÉS, conformément à Buysse 1989 qui bâtit les 7 composantes et le total /21 sur les seules questions 1 à 9 ; le moteur est inchangé et psqiVoletPartenaire.guard.test.ts le prouve par mutation. Ils atteignent le praticien par les réponses lisibles et la synthèse — 11a et 11b (ronflement fort, pauses respiratoires observées) sont les deux signaux d'apnée que seul un tiers peut rapporter. RÉSIDU ASSUMÉ : comme Q5j, Q11e est servie sans son champ « décrivez », l'UI patient n'ayant pas de champ texte libre. Étendue prouvée par construction : 0–21 (bornesAtteignables.guard.test.ts). Contenu verrouillé le 2026-07-31 sur l'empreinte servie du banc (statut `adapte` : aucune identité au mot près n'est affirmée, le banc ne la mesure pas).",
         "langue": "fr",
         "traductionValidee": "fr — Blais et al. (à confirmer)",
         "statutContenu": "adapte"
@@ -955,14 +962,15 @@
       "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
+        "date": "2026-07-31",
         "divergencesCritiques": 0,
         "revision": {
-          "date": "2026-07-30",
+          "date": "2026-07-31",
           "notes": [
             "nombre_items 24/18 : adaptation déclarée (ce lot). RESTE : bornes atteignables (lot dédié).",
             "CORRECTION DE REVUE : la critique est RESTAURÉE — la note du même jour dit elle-même « RESTE : bornes atteignables (lot dédié) ». Un compteur à zéro avec un écart ouvert ouvrirait le barreau scoring_verifie sur une prose qui dit le contraire.",
-            "bornes_score_non_atteintes 0-21 : RÉSOLU par construction ciblée (lot bornes du 2026-07-30). 21 est atteint par un pire-dormeur réel (coucher 20h, 2h d'endormissement, 3h dormies, tout au maximum) et 0 par un dormeur parfait — le balayage saturait les réponses, or l'efficacité vaut 0 quand elle est BONNE. Preuves épinglées dans bornesAtteignables.guard.test.ts. Critique soldée."
+            "bornes_score_non_atteintes 0-21 : RÉSOLU par construction ciblée (lot bornes du 2026-07-30). 21 est atteint par un pire-dormeur réel (coucher 20h, 2h d'endormissement, 3h dormies, tout au maximum) et 0 par un dormeur parfait — le balayage saturait les réponses, or l'efficacité vaut 0 quand elle est BONNE. Preuves épinglées dans bornesAtteignables.guard.test.ts. Critique soldée.",
+            "nombre_items 24/18 : LA CRITIQUE N'EST PLUS DÉCLARÉE, ELLE EST CLOSE. Arbitrage praticien du 2026-07-31 — « le PSQI doit servir 24 items ». Le volet conjoint (Q10, Q11a-e) est ajouté au servi ; le banc rejoué hors ligne (--recomparer, aucun appel de modèle) lit 24 items des deux côtés et ne rend plus aucune divergence critique. La montée du 2026-07-30 reposait sur une déclaration d'adaptation ; celle-ci repose sur le code."
           ]
         }
       }
@@ -1304,12 +1312,16 @@
       "statutBibliographique": "a_completer",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
+        "date": "2026-07-31",
         "divergencesCritiques": 0,
         "revision": {
-          "date": "2026-07-30",
+          "date": "2026-07-31",
           "notes": [
-            "VERDICT VACUEUX, montée annulée. Le « 0 divergence critique » ne dit pas que le servi correspond à sa source : les deux lectures rendent `items: []` et `seuils: []` — aucune source n'a été lue. L'instrument avait été monté à `scoring_verifie` sur ce silence le 2026-07-30, puis redescendu à `droits_verifies` le même jour, la revue adversariale ayant montré qu'un banc qui se tait n'est pas un banc qui approuve. Reste à faire : une passe de banc qui lise réellement WN-SRC-0420."
+            "VERDICT VACUEUX, montée annulée (2026-07-30). Le « 0 divergence critique » ne disait pas que le servi correspond à sa source : les deux lectures rendaient des listes d'items et de seuils VIDES. L'instrument avait été monté sur ce silence, puis redescendu le même jour, la revue adversariale ayant montré qu'un banc qui se tait n'est pas un banc qui approuve.",
+            "CORRECTION DU 2026-07-31 : LE BANC NE S'ÉTAIT PAS TU, IL AVAIT LU JUSTE. La source (WN-SRC-0420) a été relue directement — c'est une GRILLE DE RECUEIL VIERGE : 21 lignes (Lun a Dim, trois fois), colonnes horaires de 19 h a 18 h, une case « Hypnotique (cocher) », deux colonnes de notation et une colonne « Remarques ». Aucun item, aucun seuil, aucun total, aucune consigne de cotation. Une liste d'items vide est donc la structure EXACTE de cette source, et non une absence de lecture. Le praticien confirme le pendant côté produit le 2026-07-31 : « en cours de recueil de données, donc pas de score pour l'instant, normal » — 8 assignations sont En attente en production, aucune Complété, aucune réponse enregistrée. L'absence de score PENDANT le recueil est une conception : l'indice n'est produit qu'à la clôture.",
+            "MAIS LA MONTÉE RESTE REFUSÉE, sur DEUX écarts que le banc ne pouvait pas voir — ses contrôles item par item sont tous inapplicables quand la source ne déclare aucun item (même classe que Q_PED_02, le 2026-07-30). Relevés en relisant la source. (1) ÉCHELLE : la source note la qualité du sommeil « de 1 à 10 » ; le servi la recueille de 1 à 5 (champ qualite de la nuit, saisi en emoji). (2) AXE MANQUANT : la source porte une seconde colonne, « Qualité de l'éveil : noter de 1 à 10 (état dans la journée, en forme ou non) », que le servi ne recueille pas du tout. Or le sous-indice « qualité vécue » de l'indice sur 100 ne repose que sur la qualité du SOMMEIL — un quart de l'indice porte donc sur la moitié de ce que la source appelle qualité.",
+            "CONTRAINTE DE CALENDRIER, à ne pas manquer : 8 agendas sont EN COURS. Aligner l'échelle de 1-5 sur 1-10 pendant un recueil rendrait les nuits d'avant et d'après incomparables À L'INTÉRIEUR d'un même patient, sur les 21 nuits qui font justement la régularité. Toute décision d'alignement doit donc attendre la clôture des recueils ouverts, ou ne porter que sur de nouvelles séries.",
+            "CE QUI N'EST PAS AFFIRMÉ ICI : rien sur les droits au-delà de ce que le registre porte déjà. La formule « aucune œuvre tierce n'est reproduite », écrite le 2026-07-30 sans pièce, reste RETIRÉE — la source est un support SIIN, et le statut de droits de cette entrée ne vient pas d'elle."
           ]
         }
       }
@@ -2730,13 +2742,15 @@
       "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
+        "date": "2026-07-31",
         "divergencesCritiques": 0,
         "revision": {
-          "date": "2026-07-30",
+          "date": "2026-07-31",
           "notes": [
             "protocole_dans_interpretation : conduite du cabinet DÉCLARÉE (statutContenu adapte). Ce n'est pas une erreur de scoring : la bande vient de la source, la conduite de WellNeuro, et la distinction est désormais écrite.",
-            "nombre_items 16/20 : adaptation déclarée (ce lot)."
+            "nombre_items 16/20 : adaptation déclarée (ce lot).",
+            "nombre_items 16/20 : PROUVÉ COMME DÉCOMPOSITION le 2026-07-31, et non plus « adaptation déclarée ». Le servi éclate deux items de la source en sous-items — la rotation de 360° en deux temps (TI_EQ8a/TI_EQ8b), la longueur et la hauteur du pas en quatre (TI_MA11a à TI_MA11d, pied droit et pied gauche, en balancement puis en élévation) : c'est le découpage canonique du POMA. Les deux axes de la source sont servis à l'identique, avec leurs maximums (ÉQUILIBRE 16, MARCHE 12) et le même total /28. Les neuf libellés à similarité 0,00 à partir de la position 9 sont un ARTEFACT D'ALIGNEMENT — le banc compare par position, et les positions se décalent après le premier éclatement. La divergence est donc annulée sur preuve, sans modification du servi.",
+            "RÈGLE POSÉE À CETTE OCCASION (docs/claude/propositions/2026-07-31-arbitrage-suspendus) : le nombre d'items ne se compare pas ; ce qui se compare, ce sont les axes, leur composition et le total. Un écart de comptage à axes et total identiques est une mise en forme (ce cas) ; un comptage IDENTIQUE à contenus différents est une substitution, et c'est le cas dangereux, parce que c'est le seul que le compteur déclare conforme — précédent Q_PED_02, 28 items des deux côtés et un autre instrument."
           ]
         }
       }

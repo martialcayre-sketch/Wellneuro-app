@@ -63,9 +63,18 @@ function hasExploitableRawAnswers(response: QuestionnaireResponseInput): boolean
   // Le catalogue mêle fabriques typées et littéraux bruts (levée @ts-nocheck
   // par vagues, lot G-TRUST-04) : on ne dépend ici que de `id`/`conditionnel`.
   const questions = definition.sections.flatMap(
-    section => section.questions as ReadonlyArray<{ id: string; conditionnel?: string }>,
+    section => section.questions as ReadonlyArray<{ id: string; conditionnel?: string; horsBareme?: boolean }>,
   );
+  // Les items HORS BARÈME sortent du prédicat, et il faut qu'ils en sortent :
+  // aucun score ne les lit, donc leur absence ne rend pas la passation
+  // inexploitable. Sans ce filtre, le volet « conjoint » ajouté au PSQI le
+  // 2026-07-31 faisait tomber l'instrument hors du bilan clinique dans deux cas
+  // ordinaires — un patient qui déclare un conjoint sans l'avoir interrogé, et
+  // TOUTES les passations antérieures, qui ne portent pas la question 10.
+  // `conditionnel` ne pouvait pas jouer ce rôle : ici il rend l'item
+  // obligatoire, quand le formulaire patient le rend facultatif.
   return questions
+    .filter(question => question.horsBareme !== true)
     .filter(question => conditionApplies((question as { conditionnel?: string }).conditionnel, answers))
     .every(question => answers[question.id] !== undefined && answers[question.id] !== '');
 }
