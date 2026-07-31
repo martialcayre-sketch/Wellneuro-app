@@ -68,8 +68,25 @@ const MOTIF_Q_SOM_07 =
   'sont donc pas une mesure de fatigue. L\'instrument a été reconstruit depuis sa ' +
   'source le 2026-07-31 ; cette mention ne vise que les passations antérieures.';
 
+const MOTIF_Q_ALI_03 =
+  "L'instrument servi sous ce nom n'était pas la grille d'apports de sa source : " +
+  'la source est une feuille de CALCUL — un nombre de portions par ligne, une table ' +
+  'de protéines par portion, deux totaux en grammes et en calories — et le servi en ' +
+  'avait fait un questionnaire de FRÉQUENCES de 10 items, sans aucune quantité. Le ' +
+  "total et les 5 sous-scores enregistrés ne mesurent donc pas des apports, et " +
+  "l'instrument n'en calculait aucun. Il a été reconstruit depuis sa source le " +
+  '2026-07-31 ; cette mention ne vise que les passations antérieures.';
+
 export const MOTIFS_PASSATION_NON_INTERPRETABLE: ReadonlyMap<string, EntreeNonInterpretable> = new Map([
   ['Q_SOM_07', { motif: MOTIF_Q_SOM_07, reconstruitLe: new Date('2026-07-31T00:00:00.000Z') }],
+  // Mesuré en production le 2026-07-31 : UNE passation, du 2026-07-25, porteuse
+  // de `MO1`…`MO10` et d'un `scores_json` à clés `monnier`, `subScores` et
+  // `total`. Les identifiants du servi reconstruit sont NEUFS (`AP1`…`AP23`) :
+  // même sans cette entrée, aucune réponse ancienne ne correspondrait à un item
+  // neuf, et la relecture se dégraderait au lieu de se renverser. L'entrée reste
+  // nécessaire pour le RÉSULTAT déjà enregistré, que rien n'efface — c'est la
+  // distinction « le robinet et le réservoir » rappelée en tête de fichier.
+  ['Q_ALI_03', { motif: MOTIF_Q_ALI_03, reconstruitLe: new Date('2026-07-31T00:00:00.000Z') }],
 ]);
 
 /**

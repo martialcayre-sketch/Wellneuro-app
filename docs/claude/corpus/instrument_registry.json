@@ -2686,10 +2686,10 @@
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "RECONSTRUIT LE 2026-07-31 depuis la source (WN-SRC-0473/0474), et DÉBAPTISÉ à cette occasion : « Estimation des apports protéiques et caloriques (grille WellNeuro, dérivée de la méthode Monnier) ». 23 items de saisie chiffrée en 10 sections, moteur `apports_ponderes` (neuf) : Σ (portions × coefficient × périodicité) pour les protéines, puis calories = protéines × 24 + Σ des lignes caloriques. AUCUNE bande, aucun seuil — la source n'en donne aucun, ni par âge, ni par sexe, ni par poids. TROIS ÉCARTS DÉCLARÉS à la source, et eux seuls : (1) « 2 œufs » servi à 13 g de protéines quand la source porte 3,6 g ; (2) « poisson 150 g » servi à 30 g quand la source porte 3,6 g — les deux valeurs de la source sont manifestement fausses (~6,5 g par œuf, ~20 g/100 g de poisson), lues à l'image par deux lectures indépendantes ; (3) les lignes hebdomadaires sont divisées par 7, la source mélangeant jour et semaine SANS règle de conversion alors qu'elle additionne les deux colonnes. NON CORRIGÉ, et déclaré tel : le coefficient « × 24 » de conversion en calories, que la source n'explique pas — il n'est pas le facteur d'Atwater, mais il n'est pas démontrablement faux (il extrapole l'énergie totale depuis l'apport protéique). Identifiants NEUFS (`AP1`…`AP23`) et non `MO1`…`MO10` : aucune réponse de l'ancienne forme ne peut correspondre à un item de la nouvelle, ce qui fait mordre d'elle-même la garde de passation vide (#451) au lieu de renverser une relecture — défaut trouvé en revue sur le MFI-20.",
         "langue": "fr",
         "traductionValidee": "fr (méthode francophone)",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
@@ -2703,7 +2703,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "suspendu",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2717,13 +2717,16 @@
       "statutBibliographique": "a_completer",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
-        "divergencesCritiques": 1,
+        "date": "2026-07-31",
+        "divergencesCritiques": 0,
         "revision": {
-          "date": "2026-07-30",
+          "date": "2026-07-31",
           "notes": [
-            "nombre_items 39/10 : l'application sert un QUART de l'instrument de sa source — ce n'est pas une adaptation, c'est un autre instrument (précédent Q_SOM_07). SUSPENDU le 2026-07-30 sur arbitrage praticien, jusqu'à reconstruction depuis la source. Sa réponse enregistrée reste lisible.",
-            "RÉSERVE (revue) : la suspension ferme le robinet, pas le réservoir. Les 5 sous-scores de la réponse enregistrée continuent d'alimenter le prompt de synthèse, calculés sur 10 items de 39 — l'ajout à MOTIFS_PASSATION_NON_INTERPRETABLE (précédent Q_SOM_07) est une décision praticien, non prise ici."
+            "HISTORIQUE (2026-07-30) : nombre_items 39/10 — l'application servait un QUART de l'instrument de sa source, ce qui n'est pas une adaptation mais un autre instrument (précédent Q_SOM_07). SUSPENDU sur arbitrage praticien jusqu'à reconstruction. La réserve alors écrite — « la suspension ferme le robinet, pas le réservoir », les sous-scores enregistrés continuant d'alimenter le prompt — est soldée par l'entrée Q_ALI_03 de MOTIFS_PASSATION_NON_INTERPRETABLE, posée ce jour.",
+            "RECONSTRUIT LE 2026-07-31 sur arbitrage praticien « le calcul, mais corrigé ». Le servi passe de 10 items de fréquence à 23 items de saisie chiffrée, et l'instrument rend enfin les deux grandeurs que sa source nomme : apports totaux en protéines (g) et en calories (kcal). Les trois écarts déclarés et le « × 24 » conservé sont décrits au champ versionServie.description.",
+            "nombre_items 39/23 : REQUALIFIÉ SUR PREUVE, non « adaptation déclarée ». Les 39 « items » que le banc lit dans la source sont les 39 LIGNES DE TABLEAU du PDF : 25 lignes de saisie, 10 intitulés de bloc (« Viande », « Produits laitiers », « Boissons »…) et 4 lignes de calcul (dont « Apports totaux en calories » et « Apports totaux en protéines »). Un intitulé de bloc et une ligne de total ne sont pas des items. Le servi couvre les 25 lignes de saisie, deux paires étant fondues en items à choix unique — le forfait selon le sexe (homme OU femme) et le grignotage (aucun / modéré / important) —, que la source pose comme des états mutuellement exclusifs et non comme des comptages : 25 − 2 = 23. Aucune ligne de saisie de la source n'est omise, et aucun item servi n'est absent de la source. Même forme de requalification que Q_GEO_01 (Tinetti 16/20), et même règle appliquée.",
+            "RÈGLE APPLIQUÉE (docs/claude/propositions/2026-07-31-arbitrage-suspendus) : le nombre d'items ne se compare pas ; ce qui se compare, ce sont les axes, leur composition et le total. Ici les deux totaux de la source sont servis et calculés, et les blocs de la source sont servis un pour un.",
+            "RÉSERVE que le banc ne peut pas porter : il compare le SERVI au SUPPORT du cabinet, jamais le support à une méthode publiée de L. Monnier. Les 0 divergence critique ne disent donc rien de la fidélité à cette méthode — c'est précisément pourquoi l'instrument est débaptisé et statutBibliographique reste `a_completer`. Les libellés relevés « mineurs » par le banc (AP1 à AP8) tiennent aux masses mises entre parenthèses dans le servi, pour que libellePourLeModele puisse les retirer avant le prompt de synthèse."
           ]
         }
       }

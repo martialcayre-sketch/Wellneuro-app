@@ -2201,9 +2201,13 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // cherchant des sous-scores inexistants : quatre valeurs à zéro, invariantes
   // aux réponses, persistées en base et transmises au modèle de synthèse. La
   // leçon n'est pas « ne calcule pas », c'est « ne calcule pas sur rien ».
+  //
+  // Cette branche n'écrit PAS sa propre garde, et c'est délibéré : la garde
+  // générale de passation vide (#451, plus haut dans cette fonction) intercepte
+  // le cas avant d'arriver ici, puisque les items servis sont exactement les
+  // lignes du barème. Une seconde garde y serait inatteignable — et une garde
+  // qu'aucun cas ne peut faire jouer se lit comme une protection sans en être une.
   if (sc.type === 'apports_ponderes') {
-    const lignes = [...(sc.proteines ?? []), ...(sc.calories ?? [])];
-    const repondu = lignes.some((l: any) => getVal(l.id) !== null);
     const cumul = (liste: any[]) => liste.reduce((somme: number, ligne: any) => {
       const v = getVal(ligne.id);
       if (v === null) return somme;
@@ -2213,11 +2217,6 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       const parJour = ligne.parJour === false ? v / 7 : v;
       return somme + parJour * ligne.coefficient;
     }, 0);
-    if (!repondu) {
-      return {type:'apports_ponderes', proteinesG: null, caloriesKcal: null, total: null,
-        scored: false, raisonNonScore: 'aucune ligne renseignée',
-        note: sc.note || null, certification: sc.certification || null};
-    }
     const proteinesG = cumul(sc.proteines ?? []);
     // « Conversion en calories : X 24 » — le facteur de la source, appliqué au
     // total protéique, auquel s'ajoutent les calories directes de sa partie 2.

@@ -72,7 +72,14 @@ beforeEach(() => {
     // la consigne système désigne les questionnaires alimentaires par leur
     // identifiant. La fixture doit le porter, sinon `JSON.stringify` élide la
     // clé et aucun test n'observe jamais l'identifiant réellement transmis.
-    { idQuestionnaire: 'Q_ALI_03', titre: 'BDI', dateReponse: new Date('2026-07-10'), scoresJson: {}, scorePrincipal: 12, interpretation: null },
+    //
+    // L'identifiant porté ici est `Q_ALI_02`. Il portait `Q_ALI_03` jusqu'au
+    // 2026-07-31 : cet instrument est depuis inscrit au registre des passations
+    // non interprétables pour ses passations ANTÉRIEURES à sa reconstruction, et
+    // la fixture est datée du 2026-07-10 — le contrôle négatif d'en bas
+    // (« un questionnaire courant garde ses chiffres ») se serait donc mis à
+    // observer une mesure retirée, c'est-à-dire l'inverse de ce qu'il garde.
+    { idQuestionnaire: 'Q_ALI_02', titre: 'Diète méditerranéenne', dateReponse: new Date('2026-07-10'), scoresJson: {}, scorePrincipal: 12, interpretation: null },
   ]);
   prisma.consultation.findFirst.mockResolvedValue(null);
   validateSyntheseSchema.mockReturnValue({ points_de_vigilance: [] });
@@ -137,7 +144,7 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
     // `JSON.stringify`, là où une clé absente du type disparaît sans bruit.
     await POST(req(CORPS));
     const message = anthropicCreate.mock.calls[0][0].messages[0].content;
-    expect(message).toContain('"idQuestionnaire": "Q_ALI_03"');
+    expect(message).toContain(`"idQuestionnaire": "Q_ALI_02"`);
   });
 
   it('ne passe AUCUNE option Anthropic (défauts SDK inchangés, Vercel intact)', async () => {

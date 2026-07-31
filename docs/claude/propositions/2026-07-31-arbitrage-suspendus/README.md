@@ -111,6 +111,31 @@ d'alimenter le prompt de synthèse, calculés sur 10 items de 39. L'ajouter à
 `MOTIFS_PASSATION_NON_INTERPRETABLE` est la décision qui ferme le réservoir, et
 elle n'a pas été prise.
 
+> **FAIT LE 2026-07-31 — et deux points de cette section sont à corriger.**
+>
+> 1. **« Amputation » était le bon verdict, « sur 39 items » la mauvaise
+>    mesure.** La source n'est pas un questionnaire de 39 items : c'est une
+>    feuille de calcul dont le tableau compte 39 LIGNES — 25 de saisie, 10
+>    intitulés de bloc, 4 lignes de calcul. Le défaut n'était donc pas un
+>    comptage mais une NATURE : la source calcule des apports en grammes et en
+>    calories, le servi rendait des indices de fréquence. Le reconstruit sert les
+>    25 lignes de saisie en 23 items — deux paires que la source pose comme des
+>    états exclusifs (le forfait selon le sexe, l'état de grignotage) sont
+>    fondues en choix uniques. La règle de ce dossier s'applique telle quelle :
+>    ce sont les axes et les totaux qui se comparent, et les deux totaux de la
+>    source sont désormais servis.
+> 2. **La réserve est fermée** : `Q_ALI_03` est entré dans
+>    `MOTIFS_PASSATION_NON_INTERPRETABLE`, avec la frontière datée du MFI-20.
+>    L'unique passation de production (2026-07-25, mesurée le 2026-07-31) est
+>    antérieure, donc marquée.
+>
+> Trois écarts à la source sont servis et déclarés, sur arbitrage praticien
+> « le calcul, mais corrigé » : deux constantes manifestement fausses (2 œufs et
+> 150 g de poisson valent 3,6 g de protéines dans la source) et les périodicités
+> hebdomadaires ramenées au jour. L'instrument est donc **débaptisé**. Le
+> coefficient « × 24 » de conversion en calories est conservé, non expliqué par
+> la source mais non démontrablement faux.
+
 ### `Q_PED_02` — Conners enseignant → **DÉBAPTISER**, plutôt que reconstruire
 
 Les deux options étaient ouvertes depuis le 2026-07-30. Je tranche pour la

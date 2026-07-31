@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v12`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v13`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -47,7 +47,13 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // S'y ajoutent 'notApplicable' et 'raisonNonScore', que la garde ne voyait PAS :
 // elle recense les champs sur des passations SATURÉES, où aucune échelle n'est
 // sans objet. Elle restait verte en ratant exactement la classe qu'elle nomme.
-const EMPREINTE_V12 = '1963a73aeccdfe33';
+// v13, le 2026-07-31 : la consigne affirmait « Le patient n'a jamais saisi un
+// nombre : il a coché une tranche dans une liste ». C'était vrai jusqu'à la
+// reconstruction de `Q_ALI_03`, qui demande désormais un NOMBRE DE PORTIONS par
+// ligne. La phrase serait devenue une contre-vérité au moment précis où le
+// modèle reçoit le cas qu'elle nie — et elle l'aurait invité à traiter une
+// quantité déclarée comme un code de barème, c'est-à-dire à l'ignorer.
+const EMPREINTE_V13 = '218fe3ff3d511330';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -161,7 +167,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v12', empreinte: EMPREINTE_V12 });
+    ).toEqual({ version: 'synthese-v13', empreinte: EMPREINTE_V13 });
   });
 
   it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {
