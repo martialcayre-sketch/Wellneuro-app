@@ -34,6 +34,10 @@ Routes possibles :
 - bug : `/wn-debug` ;
 - validation : `/wn-test` ;
 - revue : `/wn-review` ;
+- contrôle d'un contenu d'instructions IA tiers avant activation (skill, agent,
+  commande, hook, serveur MCP, prompt collé) : `/wn-tiers` ;
+- audit des fichiers de règles et des définitions d'agents/skills :
+  `/wn-conventions` ;
 - PR : `/wn-pr` (ouverture) puis `/wn-merge` (CI, régime de merge, clôture) ;
 - hygiène documentaire multi-dépôts : `/wn-hygiene` ;
 - clôture : `/wn-finish` ;
