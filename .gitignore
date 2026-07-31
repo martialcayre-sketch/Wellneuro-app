@@ -45,3 +45,9 @@ Thumbs.db
 # Worktrees git locaux des sessions parallèles. Sans cette règle, un
 # `git add -A` les indexe comme liens git et les committe.
 .claude/worktrees/
+
+# Cache de moisson du référentiel Compl'Alim (tools/supplements/referentiel).
+# NE JAMAIS COMMITTER : ce contenu n'est publié sous AUCUNE licence énoncée
+# (voir tools/supplements/referentiel/README.md, « Provenance et licence »).
+# Il est régénérable par `node moisson.mjs`, et sa reprise se fait sur cache.
+tools/supplements/referentiel/referentiel/

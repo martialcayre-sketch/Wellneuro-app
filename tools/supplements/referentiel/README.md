@@ -65,13 +65,23 @@ Les identifiants **absents** sont donc mémorisés eux aussi, dans
 une : sur `plants`, parcouru de 1 à 2 200 pour ~1 021 fiches, un arrêt coûterait
 ~1 179 requêtes refaites — exactement ce que la politesse cherche à éviter.
 
-## À trancher avant l'étape 3
+## Le verrou de l'étape 3 — levé le 2026-07-31
 
 L'ingestion pose plusieurs milliers d'ingrédients `actif = true`. L'atelier de
-règles (`/dashboard/regles`) sert aujourd'hui **tout** le vocabulaire actif dans
-un `<select>` nu, sans recherche ni pagination : sur un pivot vide c'est sans
-conséquence, sur le référentiel entier le praticien ne peut plus désigner son
-ingrédient. Le sélecteur doit précéder l'ingestion.
+règles (`/dashboard/regles`) servait **tout** le vocabulaire actif dans un
+`<select>` nu : sur un pivot vide c'était sans conséquence, sur le référentiel
+entier le praticien n'aurait plus pu désigner son ingrédient. **Le sélecteur
+devait précéder l'ingestion ; c'est fait** (PR #499) — recherche servie par le
+serveur, bornée à `INGREDIENTS_MAX` (50), et hydratation ciblée par
+`ingredientId` pour les formes d'une règle existante.
+
+Deux réserves restent ouvertes, à juger sur la donnée une fois ingérée :
+
+- le tri est alphabétique sur un `contains`, pas un `startsWith` — « calcium »
+  fait remonter « Acide … de calcium » avant « Calcium » ;
+- aucun E2E ne couvre `/dashboard/regles`. Une passe Playwright n'a de sens
+  qu'**après** l'ingestion : sur des tables vides, l'écran affiche en permanence
+  « Aucun ingrédient ne correspond ».
 
 ## Ce que ces outils n'écrivent pas
 
