@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { resumerAgendasEnCours, type AssignationSuivi, type NuitsSuivi } from './suivi';
+import {
+  evaluerRelanceDepuisNuits,
+  resumerAgendasEnCours,
+  type AssignationSuivi,
+  type NuitsSuivi,
+} from './suivi';
 
 const AUJOURDHUI = '2026-07-30';
 
@@ -28,7 +33,7 @@ function resume(assignations: AssignationSuivi[], nuits: [string, NuitsSuivi][] 
 }
 
 describe('resumerAgendasEnCours — les cinq états', () => {
-  it('aucune nuit : jamais_commence, relançable, avec les jours depuis l’assignation', () => {
+  it('aucune nuit : jamais_commence, relançable passé le délai de grâce', () => {
     const [l] = resume([
       ass({ dateAssignation: '2026-07-26T10:00:00.000Z', dateAssignationJour: '2026-07-26' }),
     ]);
@@ -41,6 +46,28 @@ describe('resumerAgendasEnCours — les cinq états', () => {
     expect(l.joursDepuisAssignation).toBe(4);
   });
 
+  it.each([
+    ['le jour même', '2026-07-30', 0, false],
+    ['le lendemain', '2026-07-29', 1, false],
+    ['le surlendemain', '2026-07-28', 2, true],
+  ])(
+    'jamais commencé, assigné %s : relançable = %s à J+%d',
+    (_libelle, jourAssignation, ecart, attendu) => {
+      // La borne exacte du délai de grâce. Sans ce banc, passer le seuil de 2 à
+      // 3 jours resterait vert : le test « assigné il y a 4 jours » ne dit rien
+      // de l'endroit où la règle bascule.
+      const [l] = resume([
+        ass({
+          dateAssignation: `${jourAssignation}T10:00:00.000Z`,
+          dateAssignationJour: jourAssignation,
+        }),
+      ]);
+      expect(l.etat).toBe('jamais_commence');
+      expect(l.joursDepuisAssignation).toBe(ecart);
+      expect(l.relancable).toBe(attendu);
+    },
+  );
+
   it('dernière nuit = aujourd’hui : a_jour, non relançable', () => {
     const [l] = resume(
       [ass()],
@@ -52,11 +79,48 @@ describe('resumerAgendasEnCours — les cinq états', () => {
     expect(l.jourCourant).toBe(2);
   });
 
-  it('dernière nuit = hier : nuit_du_jour_manquante, relançable', () => {
+  it('dernière nuit = hier : nuit_du_jour_manquante, PAS relançable', () => {
+    // LE cas qui a motivé le seuil du 2026-07-31. `estDateSaisissable` accepte
+    // la nuit du jour ET celle de la veille : ce patient a jusqu'à demain matin
+    // pour noter cette nuit-ci, il n'a rien oublié. L'état reste affiché — le
+    // praticien a besoin du fait — mais il n'ouvre plus la relance. Avant, le
+    // bouton apparaissait dès 00 h 05 sur un patient parfaitement à jour.
     const [l] = resume([ass()], [['ASS_1', { dates: ['2026-07-29'], derniereSaisie: null }]]);
     expect(l.etat).toBe('nuit_du_jour_manquante');
-    expect(l.relancable).toBe(true);
+    expect(l.relancable).toBe(false);
     expect(l.joursDepuisDerniereNuit).toBe(1);
+  });
+
+  it.each([
+    ['hier', '2026-07-29', 'nuit_du_jour_manquante', false],
+    ['avant-hier', '2026-07-28', 'silencieux', true],
+  ])(
+    'borne du seuil : dernière nuit %s → %s, relançable = %s',
+    (_libelle, derniereNuit, etatAttendu, relancable) => {
+      // LA borne que ce lot existe pour poser : « deux nuits manquantes, pas
+      // une ». Sans ce banc, élargir la branche de `deriverEtat` d'un jour
+      // ferait glisser le seuil de 2 à 3 nuits en restant VERT — le test
+      // `silencieux` le plus proche est à J-4, il ne dit rien de l'endroit où
+      // la règle bascule.
+      const [l] = resume([ass()], [['ASS_1', { dates: [derniereNuit], derniereSaisie: null }]]);
+      expect(l.etat).toBe(etatAttendu);
+      expect(l.relancable).toBe(relancable);
+    },
+  );
+
+  it('des trous ANTÉRIEURS ne rouvrent pas la relance si la nuit d’hier est notée', () => {
+    // Arbitrage explicite du 2026-07-31 : seule la série en cours compte. Ce
+    // patient a cinq nuits manquantes dans sa fenêtre mais a noté hier — il est
+    // tenu pour actif. Le mauvais remplisseur régulier reste donc invisible
+    // ici : manque assumé, verrouillé pour qu'il reste un choix relisible.
+    const [l] = resume(
+      [ass({ dateAssignationJour: '2026-07-22' })],
+      [['ASS_1', { dates: ['2026-07-23', '2026-07-29'], derniereSaisie: null }]],
+    );
+    expect(l.etat).toBe('nuit_du_jour_manquante');
+    expect(l.nbRenseignees).toBe(2);
+    expect(l.jourCourant).toBe(8);
+    expect(l.relancable).toBe(false);
   });
 
   it('dernière nuit avant-hier : silencieux, avec l’écart en jours', () => {
@@ -177,6 +241,39 @@ describe('resumerAgendasEnCours — tri', () => {
       'HIER',
       'A_JOUR',
     ]);
+  });
+});
+
+// Le point d'entrée de la route d'envoi. Le panneau passe par
+// `resumerAgendasEnCours` ; la route, elle, ne dispose que des lignes brutes
+// d'un `findMany` — c'est le chemin éprouvé ici.
+describe('evaluerRelanceDepuisNuits — le prédicat servi à la route', () => {
+  const AUJ = { aujourdHui: AUJOURDHUI, dateAssignationJour: '2026-07-22' };
+
+  it('trie les dates avant de lire la dernière nuit', () => {
+    // `agendaSommeilNuit.findMany` n'a AUCUN `orderBy` : Postgres rend un ordre
+    // arbitraire. Sans le tri, `dates[dates.length - 1]` désignerait une nuit
+    // quelconque — ici le 24, qui rendrait `silencieux` (donc relançable) alors
+    // que la dernière nuit réelle est celle d'hier.
+    expect(
+      evaluerRelanceDepuisNuits({ ...AUJ, dates: ['2026-07-26', '2026-07-29', '2026-07-24'] }),
+    ).toEqual({ etat: 'nuit_du_jour_manquante', relancable: false });
+  });
+
+  it('reste relançable sur un silence, dates désordonnées', () => {
+    expect(
+      evaluerRelanceDepuisNuits({ ...AUJ, dates: ['2026-07-27', '2026-07-23', '2026-07-25'] }),
+    ).toEqual({ etat: 'silencieux', relancable: true });
+  });
+
+  it('rend l’état avec le verdict — la route en tire deux messages distincts', () => {
+    expect(
+      evaluerRelanceDepuisNuits({
+        aujourdHui: AUJOURDHUI,
+        dateAssignationJour: AUJOURDHUI,
+        dates: [],
+      }),
+    ).toEqual({ etat: 'jamais_commence', relancable: false });
   });
 });
 

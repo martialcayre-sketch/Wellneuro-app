@@ -16,6 +16,7 @@ import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
 import { isDeadlineExpired } from '@/lib/patient-access';
 import { dateJourParis } from '@/lib/agenda-sommeil/portail';
 import { calculerFenetreDepuisDates } from '@/lib/agenda-sommeil/fenetre';
+import { evaluerRelanceDepuisNuits } from '@/lib/agenda-sommeil/suivi';
 import { isRelanceAgendaEnabled } from '@/lib/agenda-sommeil/featureFlag';
 import {
   JOURS_ENTRE_RELANCES,
@@ -111,6 +112,8 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
         statut: true,
         statutReponses: true,
         dateLimite: true,
+        // Jour d'assignation : seuil de démarrage d'un agenda jamais commencé.
+        dateAssignation: true,
       },
     });
     if (
@@ -155,6 +158,33 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     }
     if (dates.includes(aujourdHui)) {
       return refus('nuit_du_jour_deja_notee', "Ce patient a déjà noté sa nuit aujourd'hui.", 409);
+    }
+
+    // SEUIL DE RELANCE — même prédicat que le panneau du cabinet, importé et non
+    // recopié : un seuil dupliqué est un seuil qui finit par diverger. Le bouton
+    // n'est déjà pas rendu pour ces cas ; cette garde couvre l'onglet resté
+    // ouvert, dont la page porte un `relancable` calculé la veille.
+    //
+    // Elle retire au praticien la possibilité de relancer délibérément un
+    // patient dont seule la nuit du jour manque. C'est voulu : cette nuit-là
+    // reste notable jusqu'à demain matin, il n'y a rien à rattraper.
+    const verdict = evaluerRelanceDepuisNuits({
+      dates,
+      aujourdHui,
+      dateAssignationJour: dateJourParis(ass.dateAssignation),
+    });
+    if (!verdict.relancable) {
+      // Deux populations, deux raisons : un message unique serait faux pour
+      // l'une des deux. Le praticien qui rouvre un onglet lit « Assigné
+      // aujourd'hui — aucune nuit notée » à l'écran ; lui répondre que la nuit
+      // du jour reste notable ne correspondrait à rien de ce qu'il voit.
+      return refus(
+        'non_relancable',
+        verdict.etat === 'jamais_commence'
+          ? "Cet agenda vient d'être assigné : laissez-lui deux jours avant de relancer."
+          : "Ce patient n'a pas de nuit en retard : la nuit du jour reste notable jusqu'à demain matin.",
+        409,
+      );
     }
 
     // Mécanisme B — anti-harcèlement (politique). Distinct de l'unicité.
