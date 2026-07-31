@@ -107,7 +107,7 @@ function rendre(
   boite: { width: number; height: number } = { width: TAILLE_PX, height: TAILLE_PX },
 ) {
   const onChange = vi.fn();
-  const { container } = render(
+  const { container, rerender: rerendreRTL } = render(
     <Harnais
       onChange={onChange}
       afficherMiseAuLit={afficherMiseAuLit}
@@ -115,6 +115,18 @@ function rendre(
       initial={initial}
     />,
   );
+  // Re-rend le MÊME arbre avec d'autres poignées visibles. Sert à éprouver ce
+  // qui survit à une mise à jour sans remontage — l'écouteur de défilement, par
+  // exemple, qui n'est posé qu'au montage.
+  const rerender = (lit: boolean, reveil: boolean) =>
+    rerendreRTL(
+      <Harnais
+        onChange={onChange}
+        afficherMiseAuLit={lit}
+        afficherReveilFinal={reveil}
+        initial={initial}
+      />,
+    );
   const svg = container.querySelector('svg') as SVGSVGElement;
   // jsdom rend des zéros : sans cette géométrie, toute conversion écran → heure
   // dégénère. Le composant s'en protège (il ignore un rect nul) — d'où ce stub.
@@ -129,7 +141,7 @@ function rendre(
     y: 0,
     toJSON: () => ({}),
   } as DOMRect);
-  return { onChange, svg };
+  return { onChange, svg, rerender };
 }
 
 /** Les cercles `role="slider"`, dans l'ordre de rendu du composant. */
@@ -221,9 +233,9 @@ describe('frontières de la prise', () => {
   it('un appui dans l’axe de la poignée mais loin du cadran n’accroche rien', () => {
     // LE défaut que ferme ce garde : borner la prise au seul écart d'ANGLE
     // laissait tout le secteur saisissable jusqu'au coin du cadran. Le
-    // formulaire est long, le cadran le coiffe avec `touch-action: none` — un
-    // balayage de défilement posé là accrochait la poignée et écrivait une heure
-    // de coucher jamais donnée.
+    // formulaire est long et le cadran le coiffe — un balayage de défilement
+    // posé là accrochait la poignée et écrivait une heure de coucher jamais
+    // donnée.
     const { onChange } = rendre();
     fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380, 115) });
     expect(onChange).not.toHaveBeenCalled();
@@ -237,6 +249,93 @@ describe('frontières de la prise', () => {
     fireEvent.pointerMove(svg, { pointerId: 1, ...clientDepuisMinutes(660, 92) });
     fireEvent.pointerUp(svg, { pointerId: 1, ...clientDepuisMinutes(660, 92) });
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+// Le pendant du garde précédent. « Ça n'écrit pas de valeur » ne suffisait pas :
+// le geste était aussi AVALÉ. `touch-action: none` couvrait toute la boîte du
+// cadran (~300 x 300 px) alors que les disques de prise n'en occupent que 8 à
+// 15 % — pouce posé sur le cadran, la page ne défilait plus. Les deux se lisent
+// désormais en paire : l'ancien dit « ça n'écrit rien », celui-ci « ça défile ».
+//
+// `fireEvent` rend le retour de `dispatchEvent` : FAUX si un gestionnaire a
+// appelé `preventDefault`. C'est l'observable exacte du correctif.
+describe('défilement de la page', () => {
+  it('un balayage posé hors des poignées laisse la page défiler', () => {
+    const { svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(0, 92) });
+    expect(fireEvent.touchMove(svg)).toBe(true);
+  });
+
+  it('un balayage qui tient une poignée ne fait pas défiler', () => {
+    const { onChange, svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(fireEvent.touchMove(svg)).toBe(false);
+  });
+
+  it('le relâchement rend le défilement', () => {
+    // Sans cette symétrie, une fuite de `pointeurActif` figerait le défilement
+    // sur le cadran pour toute la durée du montage, sans chemin de retour.
+    const { svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    fireEvent.pointerUp(svg, { pointerId: 1, ...clientDepuisMinutes(1380) });
+    expect(fireEvent.touchMove(svg)).toBe(true);
+  });
+
+  it('un pointercancel rend le défilement aussi sûrement qu’un pointerup', () => {
+    // Le chemin par lequel le SYSTÈME reprend le geste (appel entrant, bascule
+    // d'application). S'il ne désarmait pas, le cadran resterait figé après.
+    const { svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    fireEvent.pointerCancel(svg, { pointerId: 1, ...clientDepuisMinutes(1380) });
+    expect(fireEvent.touchMove(svg)).toBe(true);
+  });
+
+  it('un touchmove déjà non annulable : preventDefault n’est même pas tenté', () => {
+    // Quand le navigateur a DÉJÀ engagé le défilement, plus rien n'est
+    // annulable : insister n'a aucun effet et lève un avertissement console.
+    //
+    // L'observable est l'APPEL, pas le retour de `dispatchEvent` : sur un
+    // événement non annulable celui-ci rend `true` quoi que fasse le code
+    // (`preventDefault` ne pose le drapeau que si `cancelable`). Une assertion
+    // sur ce retour serait vraie par construction — elle passerait au vert même
+    // si le garde disparaissait.
+    const { svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    const nonAnnulable = new Event('touchmove', { bubbles: true, cancelable: false });
+    const espion = vi.spyOn(nonAnnulable, 'preventDefault');
+    svg.dispatchEvent(nonAnnulable);
+    expect(espion).not.toHaveBeenCalled();
+  });
+
+  it('l’écouteur survit à un changement du nombre de poignées', () => {
+    // Le prédicat de cycle de vie dont tout dépend. L'effet ne s'exécute qu'au
+    // montage : si le `<svg>` était un jour remonté (conditionnel, `key`), le
+    // blocage s'attacherait à un nœud mort et le glissement écrirait de nouveau
+    // des heures fausses pendant un défilement — SANS qu'aucun test ne rougisse.
+    const { svg, rerender } = rendre();
+    rerender(true, true);
+    expect(poignees().length).toBeGreaterThan(2);
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    expect(fireEvent.touchMove(svg)).toBe(false);
+  });
+
+  it('un touchmove parti d’une poignée remonte jusqu’au blocage', () => {
+    // Un vrai doigt atterrit sur un enfant du `<svg>`, jamais sur la racine :
+    // c'est le chemin de bulle qui porte le correctif en production.
+    const { svg } = rendre();
+    fireEvent.pointerDown(poignees()[0], { pointerId: 1, ...clientDepuisMinutes(1380) });
+    expect(fireEvent.touchMove(poignees()[0])).toBe(false);
+    expect(svg).toBeTruthy();
+  });
+
+  it('la racine ne bloque plus le défilement par CSS', () => {
+    // Garde de régression contre le retour de `touch-none` : seul, il ne
+    // garderait rien — c'est la paire ci-dessus qui porte la preuve.
+    const { svg } = rendre();
+    expect(svg.getAttribute('class')).not.toContain('touch-none');
+    expect(svg.getAttribute('class')).toContain('touch-manipulation');
   });
 });
 
