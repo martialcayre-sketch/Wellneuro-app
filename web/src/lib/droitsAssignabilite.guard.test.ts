@@ -75,7 +75,8 @@ const SOUS_RESERVE = REGISTRE.instruments
   .map(i => i.questionnaireId)
   .sort();
 
-// Les huit instruments dont le droit repose sur la déclaration du 2026-07-30. La
+// Les instruments dont le droit repose sur la déclaration du 2026-07-30 — huit à
+// l'origine, DIX depuis le 2026-07-31 (entrées de `Q_NEU_06` puis `Q_PNE_01`). La
 // liste est ÉPINGLÉE, et non seulement comptée : le marqueur vit dans du texte
 // libre, que la prochaine réécriture d'un `detail` peut emporter sans le vouloir —
 // la phrase « Statut porté à `licence_requise` : à arbitrer » y est d'ailleurs
@@ -155,7 +156,7 @@ const LAISSES_ASSIGNABLES = [
   //
   // Il est le SEUL instrument de pneumologie du catalogue : l'ouvrir rouvre le
   // domaine. La réserve sur les droits de Ninot et al. reste au registre, comme
-  // pour les quatre au-dessus, et l'usage repose sur la déclaration étendue du
+  // pour les cinq au-dessus, et l'usage repose sur la déclaration étendue du
   // 2026-07-29 — laquelle n'éteint aucun droit détenu par un tiers.
   'Q_PNE_01',
 ].sort();
