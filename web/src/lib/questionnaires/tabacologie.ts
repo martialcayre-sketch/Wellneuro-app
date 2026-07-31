@@ -125,12 +125,32 @@ export const Q_TAB_04 = {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:32,
+    // BORNE CORRIGÉE le 2026-07-31 : 36, et non 32. Comptée sur les items —
+    // 4 × 4 + 4 × 1 + 4 × 3 + 4 × 1 — et confirmée par la source, qui donne
+    // 0–36. Le `maxTotal: 32` déclaré jusque-là faisait afficher « 34/32 » à la
+    // fiche : un score au-dessus de son propre dénominateur.
+    type:'sum', maxTotal:36,
+    // GRILLE ALIGNÉE SUR LA SOURCE, sur arbitrage du praticien du 2026-07-31.
+    // Elle en pose TROIS — 0-5 « risque faible », 6-15 « risque réel »,
+    // 16-36 « risque aigu » — là où le servi en posait quatre, à des coupures
+    // qui n'étaient pas les siennes.
+    //
+    // LES QUATRE CONDUITES DU CABINET SONT CONSERVÉES, aucune n'est abandonnée :
+    // les deux plus sévères sont FUSIONNÉES, parce que la source réunit leurs
+    // intervalles (15-21 et 22-32) dans une seule bande. Fusionner plutôt que
+    // choisir préserve ce qui avait été écrit ; c'est la seule opération que
+    // l'alignement rendait nécessaire.
+    //
+    // DEUX VALEURS CHANGENT DE BANDE, et il faut les connaître :
+    //   · un score de 6 passait pour « risque faible », il devient « risque
+    //     réel » — plus sévère ;
+    //   · un score de 15 relevait de « usage nocif probable », il devient
+    //     « risque réel » — moins sévère.
+    // Ce sont les frontières de la source, pas un arbitrage local.
     interpretation:[
-      {min:0, max:6,  label:'Usage expérimental ou occasionnel — risque faible',color:'success',protocol:'Information et prévention'},
-      {min:7, max:14, label:'Usage à risque',color:'warning',protocol:'Counseling motivationnel — réduction des risques — suivi régulier'},
-      {min:15,max:21, label:'Usage nocif probable',color:'danger',protocol:'Consultation addictologue — accompagnement au sevrage progressif'},
-      {min:22,max:32, label:'Dépendance probable',color:'danger',protocol:'Prise en charge spécialisée addictologie — TCC + accompagnement pharmacologique si nécessaire'},
+      {min:0, max:5,  label:'Risque faible',color:'success',protocol:'Information et prévention'},
+      {min:6, max:15, label:'Risque réel',color:'warning',protocol:'Counseling motivationnel — réduction des risques — suivi régulier'},
+      {min:16,max:36, label:'Risque aigu',color:'danger',protocol:'Consultation addictologue — accompagnement au sevrage progressif ; prise en charge spécialisée en addictologie, TCC et accompagnement pharmacologique si nécessaire'},
     ]
   }
 };

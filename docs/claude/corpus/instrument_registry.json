@@ -2075,8 +2075,15 @@
       "statutBibliographique": "a_completer",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
-        "divergencesCritiques": 0
+        "date": "2026-07-31",
+        "divergencesCritiques": 0,
+        "revision": {
+          "date": "2026-07-31",
+          "notes": [
+            "CONTENU CORRIGÉ le 2026-07-31, sur arbitrage du praticien — l'instrument RESTE FERMÉ pour autant. Deux défauts réels que la suspension masquait : (1) `maxTotal` déclaré 32 quand les items en autorisent 36 (4×4 + 4×1 + 4×3 + 4×1), ce qui faisait afficher « 34/32 » ; (2) la grille d'interprétation n'était pas celle de la source — quatre bandes à des coupures locales contre les trois de la source (0-5 risque faible, 6-15 risque réel, 16-36 risque aigu). Les deux sont corrigés, et les QUATRE conduites du cabinet sont conservées : les deux plus sévères sont fusionnées, la source réunissant leurs intervalles. Deux valeurs changent de bande — 6 devient plus sévère, 15 moins.",
+            "MAIS LA RÉOUVERTURE EST REFUSÉE, et pour le motif même de sa fermeture, qui n'est pas résolu : le registre ne nomme aucun auteur, `statutBibliographique` reste `a_completer`, et sa suspension du 2026-07-29 disait « on ne sait pas dire ce qu'il est, donc on ne peut pas le certifier ». Le dossier d'arbitrage du 2026-07-31 le classait pourtant « à réactiver après deux corrections » : c'était une inconséquence, corrigée ici. Appliquer à cet instrument une barre plus basse qu'à Q_NEU_06, fermé la veille pour exactement cette raison, serait revenir au renversement de charge du VQ11 — conclure de ce qu'un support ne dit pas. Réactivation à l'identification de la source, comme pour Q_PNE_01 dont c'est ce qui vient de lever la fermeture."
+          ]
+        }
       }
     },
     {
@@ -2133,31 +2140,31 @@
     {
       "questionnaireId": "Q_PNE_01",
       "instrument": {
-        "nomOfficiel": "Questionnaire de qualité de vie BPCO",
-        "auteurs": "Ninot et al. (VQ11) — identification à confirmer",
+        "nomOfficiel": "VQ11 — Questionnaire de qualité de vie dans la BPCO",
+        "auteurs": "Ninot et al.",
         "anneePublication": 2010,
-        "formePubliee": null,
+        "formePubliee": "11 items, 3 composantes (fonctionnelle, psychologique, relationnelle), réponses à 5 niveaux",
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "11 items en 1 section, moteur `subscore`, trois composantes — fonctionnelle (BP1, BP4, BP5, BP7, BP8), psychologique (BP2, BP6, BP10), relationnelle (BP3, BP9, BP11) — sans bande d'interprétation. Le banc ne rend AUCUNE divergence, d'aucune gravité, contre le support du dossier (WN-SRC-0503) : c'est l'instrument le mieux aligné du catalogue sur sa source. ADAPTATION DÉCLARÉE, et elle porte un cran plus haut que le banc : le support SIIN reproduit le VQ11 avec des réponses à QUATRE niveaux, quand la forme publiée en compte CINQ. Le servi suit le support, donc le banc se tait — il compare le servi au support, jamais le support à l'instrument publié. La conséquence est bornée : le servi ne porte aucune bande et n'applique aucune norme, les trois composantes étant rendues brutes. Aucun seuil publié n'est donc appliqué à une échelle qui n'est pas la sienne.",
         "langue": "fr",
         "traductionValidee": "fr",
-        "statutContenu": "a_auditer"
+        "statutContenu": "adapte"
       },
       "references": {
         "doi": null,
         "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "dateVerification": "2026-07-31",
+        "verifiePar": "revue adversariale du 2026-07-30 (identification), banc certify (--recomparer)"
       },
       "droits": {
         "statut": "permission_obtenue",
-        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi. FERMÉ le 2026-07-29 sur arbitrage praticien, pour un motif de DOCUMENTATION et non de droits : NI LE REGISTRE NI LA SOURCE ne nomme d'origine pour cet instrument — `instrument.auteurs` est nul, la référence bibliographique est à compléter, et le banc n'a relevé dans le document d'extraction aucune mention hors du pied de page du SIIN. Le critère porte sur les DEUX, et c'est ce qui distingue ce cas de `Q_NEU_12` : son registre est muet lui aussi, mais sa source nomme trois œuvres amont (Terman & Williams, le Prime-MD de Spitzer & Williams, le Seasonal Pattern Assessment Questionnaire de Rosenthal, Bradt & Wehr). Un instrument dont la source nomme son origine reste instruisable ; celui dont rien ne la nomme, non. Il ne porte ni assignation ni réponse. Un instrument dont on ne sait pas dire ce qu'il est ne peut pas être certifié, quelle que soit la couverture de droits.",
+        "detail": "Déclaration du praticien du 2026-07-29 : les questionnaires utilisés dans le cadre de sa formation — supports de cours du SIIN, dont les documents à l'origine des extractions du corpus — sont d'usage libre pour son exercice de neuronutrition, tant que leur diffusion ne dépasse pas le cadre de la consultation et de l'utilisation de WellNeuro. PÉRIMÈTRE : administration aux patients du cabinet, scoring, restitution praticien et patient, et indexation dans le corpus RAG interne (barrière D-003). NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. PORTÉE : cette déclaration couvre les supports de formation du SIIN. Cet instrument N'EST PAS un questionnaire du référentiel SIIN (statutBibliographique « a_completer ») : c'est une échelle tierce que le support reproduit. Les droits de l'échelle d'origine restent entiers et NON INSTRUITS à ce jour — cette réserve reste VRAIE après l'extension du 2026-07-29 : une déclaration du praticien n'éteint aucun droit détenu par un tiers. [SUPERSÉDÉ le 2026-07-29, voir l'extension en fin d'entrée] Statut maintenu à `a_verifier` : la déclaration du praticien ne les dégage pas. EXTENSION DU 2026-07-29 (arbitrage praticien) : la déclaration couvre AUSSI les instruments tiers reproduits dans les supports de formation du SIIN, et non les seuls supports eux-mêmes. Le périmètre d'usage reste celui déclaré — administration aux patients du cabinet, scoring, restitution praticien et patient, indexation dans le corpus RAG interne ; il NE COUVRE PAS la rediffusion hors cabinet, la publication du verbatim, ni la cession à un tiers. FONDEMENT : déclaration du praticien, non une pièce signée de l'ayant droit — `permission_obtenue` se lit ici « permission tenue pour acquise sous la déclaration du 2026-07-29 », et c'est sur cette base que le barreau `droits_verifies` est franchi. FERMÉ le 2026-07-29 sur arbitrage praticien, pour un motif de DOCUMENTATION et non de droits : NI LE REGISTRE NI LA SOURCE ne nomme d'origine pour cet instrument — `instrument.auteurs` est nul, la référence bibliographique est à compléter, et le banc n'a relevé dans le document d'extraction aucune mention hors du pied de page du SIIN. Le critère porte sur les DEUX, et c'est ce qui distingue ce cas de `Q_NEU_12` : son registre est muet lui aussi, mais sa source nomme trois œuvres amont (Terman & Williams, le Prime-MD de Spitzer & Williams, le Seasonal Pattern Assessment Questionnaire de Rosenthal, Bradt & Wehr). Un instrument dont la source nomme son origine reste instruisable ; celui dont rien ne la nomme, non. Il ne porte ni assignation ni réponse. Un instrument dont on ne sait pas dire ce qu'il est ne peut pas être certifié, quelle que soit la couverture de droits. RÉSERVE CONSERVÉE (2026-07-31) : le servi est le VQ11 de Ninot et al. (2010), une échelle PUBLIÉE que le support SIIN reproduit. Les droits de ses ayants droit restent entiers et non instruits ; ce que la déclaration étendue du 2026-07-29 couvre, c'est l'usage — administration aux patients du cabinet, scoring, restitution — et non la publication du verbatim ni la cession à un tiers. L'instrument rouvre sous ce régime, exactement comme les cinq autres laissés assignables sous réserve.",
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "suspendu",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2167,15 +2174,17 @@
         "WN-SRC-0503"
       ],
       "driveMd": "questionnaire_bpco_pneumologie.md",
-      "statutBibliographique": "a_completer",
+      "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-30",
+        "date": "2026-07-31",
         "divergencesCritiques": 0,
         "revision": {
-          "date": "2026-07-30",
+          "date": "2026-07-31",
           "notes": [
-            "RÉACTIVATION TENTÉE PUIS ANNULÉE le 2026-07-30. Le fondement invoqué — « la source ne porte que la mention de droits SIIN, donc l'instrument est du référentiel interne » — est un renversement de charge : qu'un support de formation ne cite pas ses sources ne dit rien des droits d'un tiers. La revue adversariale a identifié le servi comme le VQ11 (Ninot et al., 2010) : 11 items et TROIS composantes publiées — fonctionnelle BP1/4/5/7/8, psychologique BP2/6/10, relationnelle BP3/9/11 — que le servi reproduit à l'identique, à l'échelle de réponse près (4 niveaux au lieu de 5). Le champ `droits.detail` de cette même entrée le disait déjà : « échelle tierce que le support reproduit, droits NON INSTRUITS ». Réouverture conditionnée à l'instruction de ces droits, pas à une relecture du PDF."
+            "RÉACTIVATION TENTÉE PUIS ANNULÉE le 2026-07-30. Le fondement invoqué — « la source ne porte que la mention de droits SIIN, donc l'instrument est du référentiel interne » — est un renversement de charge : qu'un support de formation ne cite pas ses sources ne dit rien des droits d'un tiers. La revue adversariale a identifié le servi comme le VQ11 (Ninot et al., 2010) : 11 items et TROIS composantes publiées — fonctionnelle BP1/4/5/7/8, psychologique BP2/6/10, relationnelle BP3/9/11 — que le servi reproduit à l'identique, à l'échelle de réponse près (4 niveaux au lieu de 5). Le champ `droits.detail` de cette même entrée le disait déjà : « échelle tierce que le support reproduit, droits NON INSTRUITS ». Réouverture conditionnée à l'instruction de ces droits, pas à une relecture du PDF.",
+            "RÉOUVERTURE DU 2026-07-31, et le motif de la fermeture est cette fois RÉSOLU, non contourné. L'instrument avait été fermé le 2026-07-29 « pour un motif de DOCUMENTATION et non de droits — le registre ne nomme AUCUN auteur, on ne sait pas dire ce qu'il est, donc on ne peut pas le certifier », avec réactivation prévue « à la première source identifiée ». Elle l'est : c'est le VQ11 de Ninot et al. (2010), établi par la revue adversariale du 2026-07-30 sur la correspondance exacte des onze items et des trois composantes publiées. `statutBibliographique` passe de `a_completer` à `reference_identifiee`.",
+            "CE QUE LE BANC NE POUVAIT PAS VOIR, nommé plutôt que tu : ses zéro divergence portent sur le couple servi ↔ support SIIN, jamais sur le couple support ↔ instrument publié. Or le support reproduit le VQ11 avec quatre niveaux de réponse au lieu de cinq. Le servi est donc fidèle à son support et ADAPTÉ par rapport à la forme publiée — d'où `statutContenu: adapte`. Ce qui borne la portée : aucune bande, aucune norme publiée appliquée, trois composantes rendues brutes. C'est la même classe que Q_PED_02 le 2026-07-30 (un compteur à zéro qui mesure moins qu'on ne croit), attrapée cette fois avant la montée et non après."
           ]
         }
       }

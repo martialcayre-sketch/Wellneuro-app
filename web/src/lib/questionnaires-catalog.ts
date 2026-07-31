@@ -164,14 +164,27 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
     description: `Mesurez votre dépendance physique à la nicotine (6 questions, score /10).`, duree: '5 min', actif: true },
 
   // ── PNEUMOLOGIE ─────────────────────────────────────────────────────────────
-  // Suspendu le 2026-07-29 sur arbitrage praticien, pour un motif de
-  // DOCUMENTATION et non de droits — ceux-ci sont couverts par la déclaration
-  // étendue du même jour. Le registre ne nomme AUCUN auteur pour cet instrument
-  // et sa référence bibliographique est à compléter : on ne sait pas dire ce
-  // qu'il est, donc on ne peut pas le certifier. Ni assignation ni réponse.
-  // Réactivation à la première source identifiée.
-  { id: 'Q_PNE_01', titre: 'Questionnaire de qualité de vie BPCO', categorie: 'Pneumologie',
-    description: `Évaluez l'impact de votre maladie respiratoire sur votre qualité de vie (11 items, score /33 — comparatif).`, duree: '10 min', actif: false },
+  // RÉACTIVÉ le 2026-07-31, et c'est bien la condition posée à sa fermeture qui
+  // est remplie — « réactivation à la première source identifiée ».
+  //
+  // Il avait été suspendu le 2026-07-29 pour un motif de DOCUMENTATION et non de
+  // droits : le registre ne nommait aucun auteur, on ne savait pas dire ce qu'il
+  // était. On le sait : c'est le VQ11 de Ninot et al. (2010), établi par la revue
+  // adversariale du 2026-07-30 sur la correspondance exacte des onze items et des
+  // trois composantes publiées — fonctionnelle, psychologique, relationnelle.
+  //
+  // C'est l'instrument le mieux aligné du catalogue : le banc ne rend AUCUNE
+  // divergence, d'aucune gravité, contre le support du dossier. Avec une réserve
+  // que le banc ne pouvait pas voir, et qui est écrite au registre : le support
+  // SIIN reproduit le VQ11 avec quatre niveaux de réponse là où la forme publiée
+  // en compte cinq. Portée bornée — le servi ne porte aucune bande et n'applique
+  // aucune norme publiée.
+  //
+  // Les droits de Ninot et al. restent entiers et non instruits : l'instrument
+  // rouvre sous la déclaration étendue du 2026-07-29, réserve conservée au
+  // registre, exactement comme les cinq autres laissés assignables sous réserve.
+  { id: 'Q_PNE_01', titre: 'VQ11 — Qualité de vie dans la BPCO', categorie: 'Pneumologie',
+    description: `Situez l'impact de votre maladie respiratoire sur votre vie quotidienne, selon trois composantes : fonctionnelle, psychologique et relationnelle (11 items). Trois sous-scores rapportés séparément, sans bande d'interprétation.`, duree: '10 min', actif: true },
 
   // ── UROLOGIE ────────────────────────────────────────────────────────────────
   { id: 'Q_URO_01', titre: 'IPSS — Score International des Symptômes Prostatiques', categorie: 'Urologie',
@@ -265,12 +278,24 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // ── TABACOLOGIE (suite) ─────────────────────────────────────────────────────
   { id: 'Q_TAB_03', titre: 'QCT2 de Gilliard — Comportement tabagique', categorie: 'Tabacologie',
     description: `Analysez votre profil tabagique selon 4 dimensions : Dépendance, Sevrage, Appétence, Habitude (28 items).`, duree: '10 min', actif: true },
-  // Suspendu le 2026-07-29, même motif que `Q_PNE_01` : aucun auteur nommé au
-  // registre, référence bibliographique à compléter. Les droits, eux, sont
-  // couverts par la déclaration étendue du même jour — la fermeture ne les
-  // concerne pas. Ni assignation ni réponse. À savoir pour la réactivation : sa
-  // grille porte un plafond écrit sous le maximum atteignable (32 pour un total
-  // de 36), corrigé côté moteur en #450 par la règle de la bande de tête.
+  // TOUJOURS SUSPENDU, et pour le motif même de sa fermeture le 2026-07-29 :
+  // aucun auteur nommé au registre, référence bibliographique à compléter. Les
+  // droits, eux, sont couverts par la déclaration étendue du même jour — la
+  // fermeture ne les concerne pas. Ni assignation ni réponse.
+  //
+  // Son CONTENU a été corrigé le 2026-07-31 sur arbitrage praticien, sans que
+  // cela le rouvre : le plafond déclaré passe de 32 au maximum réellement
+  // atteignable (36 — il faisait afficher « 34/32 »), et la grille
+  // d'interprétation est alignée sur les trois bandes de la source au lieu des
+  // quatre coupures locales. Les quatre conduites du cabinet sont conservées,
+  // les deux plus sévères fusionnées puisque la source réunit leurs intervalles.
+  //
+  // Le dossier d'arbitrage du 2026-07-31 le classait « à réactiver après ces
+  // corrections » : c'était une inconséquence. Lui appliquer une barre plus
+  // basse qu'à `Q_NEU_06`, fermé la veille faute d'identité instruite, serait
+  // refaire le renversement de charge du VQ11 — conclure de ce qu'un support ne
+  // dit pas. Réactivation à l'identification de la source, comme pour
+  // `Q_PNE_01`, dont c'est ce qui vient de lever la fermeture.
   { id: 'Q_TAB_04', titre: `Questionnaire d'évaluation du cannabis`, categorie: 'Tabacologie',
     description: `Évaluez votre consommation de cannabis et ses conséquences (16 items).`, duree: '10 min', actif: false },
   { id: 'Q_TAB_05', titre: 'Di Franza — Dépendance nicotinique adolescent (HONC)', categorie: 'Tabacologie',
