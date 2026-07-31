@@ -12,59 +12,103 @@ effort: low
 !`git status --short`
 !`test -f docs/claude/SESSION_LOG.md && tail -n 20 docs/claude/SESSION_LOG.md || true`
 !`test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
-!`cat .claude/skills/wn/SKILL.md 2>/dev/null`
-!`cat .claude/skills/wn-model/SKILL.md 2>/dev/null`
-!`cat .claude/skills/wn-ultra/SKILL.md 2>/dev/null`
 
 Demande : `$ARGUMENTS`
 
 ## Rôle
 
-`wn-route` ne remplace ni `/wn`, ni `/wn-model`, ni `/wn-ultra` — il les combine en une
-seule passe au lieu de trois invocations séquentielles. Ces trois skills restent
-utilisables séparément en cours de session pour re-router explicitement. `wn-route`
-sert au tout premier passage : démarrage de session, ou juste après `/clear`, avant de
-traiter la première demande — une fois par session, pas à chaque message.
+`wn-route` combine `/wn`, `/wn-model` et `/wn-ultra` en une passe au lieu de trois
+invocations. Il sert au **tout premier passage** — démarrage de session ou juste après
+`/clear` —, une fois par session, pas à chaque message. Les trois skills restent
+invocables séparément pour re-router en cours de route.
 
 Ne jamais interpréter ce skill comme une autorisation de migration, d'écriture
 Supabase, de déploiement ou de modification clinique : les garde-fous restent ceux de
-`CLAUDE.md`, pas ceux de ce skill.
+`CLAUDE.md`.
+
+## Les grilles ci-dessous sont des résumés — les complètes coûtent et attendent
+
+Ce fichier portait les trois grilles **en entier**, chargées par `cat` à chaque
+démarrage : ~2 700 tokens payés avant même de savoir si la demande justifiait un
+routage, alors que la règle d'économie plus bas dit que la plupart tombent sur le
+défaut. On payait la grille pour découvrir qu'on n'en avait pas besoin.
+
+Les condensés suffisent aux cas courants. **Dès qu'une demande ne tombe dans aucune
+ligne, invoquer la grille complète** — `/wn`, `/wn-model` ou `/wn-ultra` — plutôt que
+de trancher au jugé. C'est le seul cas qui justifie de la charger.
+
+### Route — la demande vers son skill
+
+| La demande… | Route |
+|---|---|
+| cadre une tâche avant de coder | `/wn-plan` |
+| ouvre une série de développements | `/wn-campaign` |
+| reprend un lot de campagne | `/wn-lot` (pilote complet) ou `/wn-campaign-run` |
+| signale un bug ou une erreur | `/wn-debug` |
+| demande de valider | `/wn-test` |
+| demande une revue de diff | `/wn-review` |
+| ouvre ou termine une PR | `/wn-pr` puis `/wn-merge` |
+| porte sur la documentation | `/wn-docs` ; multi-dépôts : `/wn-hygiene` |
+| porte sur les fichiers de règles ou les définitions d'agents | `/wn-conventions` |
+| apporte un contenu d'instructions IA tiers | `/wn-tiers` |
+| clôt un lot | `/wn-finish` |
+| reprend le contexte | `/wn-context` ou `/wn-handoff` |
+| compacte le journal | `/wn-compact-sessionlog` |
+
+Préférer audit, plan et test avant développement. Si des edits sont envisagés, imposer
+explicitement le passage en mode Plan.
+
+### Modèle — contexte vers couple modèle/effort
+
+| Contexte | Alias | Effort | Réflexion |
+|---|---|---|---|
+| Débogage, revue, clinique, sécurité | `opus` | high | `think hard` |
+| Développement courant, docs, cadrage | `sonnet` | medium | `think` |
+| Exploration, reprise de contexte, routage | `haiku` | low | — |
+
+Overrides nommables par l'utilisateur : `fable` (`/model claude-fable-5`, le plus
+coûteux — $10/$50 par MTok, réservé aux tâches long-cours), `opus`, `sonnet`, `haiku`,
+`plan` (`/model opusplan`). Déléguer à un sous-agent `wn-*` bascule de modèle : ils
+sont déjà épinglés.
+
+### Mode d'exécution — solo par défaut
+
+| Situation | Mode |
+|---|---|
+| Aucun signal fort de largeur ni de confiance critique | **Solo** (défaut) |
+| Un seul axe borné : largeur modérée, ou une passe de vérification indépendante | **Multi-agent léger** — réutiliser une brique existante |
+| Plusieurs signaux : ≥ ~5 unités parallélisables, exhaustivité demandée, échelle > un contexte, **et** enjeu où un faux résultat coûte cher | **Ultracode** |
+
+Ultracode exige un **opt-in explicite** (mot-clé `ultracode`, réglage de session, ou
+demande de Workflow). Sans opt-in : ne rien lancer, proposer. C'est un mode
+d'exécution, jamais une autorisation.
 
 ## Décision
 
-À partir de la demande et des trois grilles chargées ci-dessus en contexte, produire en
-une passe :
+Produire en une passe : **route**, **modèle**, **mode**, et une **séquence** seulement
+si plus d'une étape est nécessaire (ordre des appels, modèle de chaque étape).
 
-1. **Route** — quel skill ou agent principal traite la demande (grille `/wn`).
-2. **Modèle** — alias `/model`, effort, mot-clé de réflexion (grille `/wn-model`).
-3. **Mode d'exécution** — solo / multi-agent léger / ultracode (grille `/wn-ultra`).
-4. **Séquence**, seulement si plus d'une étape est nécessaire — ordre des appels
-   (agent puis skill, skill puis revue, etc.), avec le modèle de chaque étape.
-
-Un override explicite de l'utilisateur (modèle nommé, `ultracode`/`leger`/`solo`, ou
-skill `/wn-*` précis) prime sur toute grille.
+Un override explicite de l'utilisateur — modèle nommé, `ultracode`/`leger`/`solo`, ou
+skill `/wn-*` précis — prime sur toute grille.
 
 ## Règle d'économie — sortie courte par défaut
 
-La majorité des demandes tombent sur le défaut : route = traitement direct, modèle
-Sonnet, solo, aucune délégation. Dans ce cas, **appliquer sans l'afficher**. N'afficher
-le routage que s'il change quelque chose d'observable :
+La majorité des demandes tombent sur le défaut : traitement direct, Sonnet, solo,
+aucune délégation. Dans ce cas, **appliquer sans afficher**. N'afficher le routage que
+s'il change quelque chose d'observable :
 
-- changement de modèle recommandé (`opus`, `haiku`, `fable`) ;
+- modèle autre que Sonnet ;
 - délégation à un sous-agent, ou déclenchement d'un skill spécialisé ;
-- mode d'exécution autre que solo ;
+- mode autre que solo ;
 - un garde-fou de `CLAUDE.md` s'applique (migration, Supabase, auth, clinique).
 
-Une demande conversationnelle simple (question directe, sans tâche ni changement de
-code) ne justifie jamais un plan affiché.
+Une question conversationnelle ne justifie jamais un plan affiché.
 
 ## Sortie (uniquement si non par défaut)
 
 1. Nature détectée (une phrase).
-2. Décision : route + modèle/alias/effort/réflexion + mode d'exécution, sur une seule
-   ligne si possible.
-3. Séquence hiérarchisée si plusieurs étapes (numérotée, un agent/skill par ligne,
-   modèle inclus).
-4. Garde-fous applicables (seulement ceux qui s'appliquent réellement à cette demande).
-5. Commande(s) exactes à exécuter, ou instruction explicite de passage en mode Plan si
-   des edits sont envisagés.
+2. Décision : route + modèle/effort/réflexion + mode, sur une ligne si possible.
+3. Séquence hiérarchisée si plusieurs étapes (un agent/skill par ligne, modèle inclus).
+4. Garde-fous qui s'appliquent réellement à cette demande.
+5. Commande(s) exactes, ou instruction de passage en mode Plan si des edits sont
+   envisagés.

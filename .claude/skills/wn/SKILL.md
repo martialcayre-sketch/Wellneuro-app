@@ -28,7 +28,9 @@ Routes possibles :
 
 - cadrage : `/wn-plan` ;
 - série de développements : `/wn-campaign` ;
-- reprise du prochain lot : `/wn-campaign-run` ;
+- lot de campagne piloté de bout en bout (classe le lot, en déduit modèle, palier,
+  revue et gardes, propose la séquence puis s'arrête) : `/wn-lot` ;
+- reprise du prochain lot, étape par étape : `/wn-campaign-run` ;
 - documentation : `/wn-docs` ;
 - compaction du journal de session : `/wn-compact-sessionlog` ;
 - bug : `/wn-debug` ;
