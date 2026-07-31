@@ -1688,6 +1688,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // qui a fondé ce lot cherchait les trous et les planchers, jamais les
     // plafonds.
     //
+    // IL N'EN RESTE QU'UNE depuis le 2026-07-31 : le plafond de `Q_TAB_04` a été
+    // porté à 36, son maximum réellement atteignable, en même temps que sa grille
+    // s'alignait sur la source. Ce repli n'est donc plus exercé que par
+    // `Q_MOD_01`. Le garder n'en est pas moins nécessaire — il protège d'un
+    // défaut, pas d'un instrument.
+    //
     // On prend la bande au `max` le plus haut, et non la dernière écrite : la
     // règle reste vraie quel que soit l'ordre de rédaction de la grille.
     //

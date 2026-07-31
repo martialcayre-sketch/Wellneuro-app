@@ -246,7 +246,17 @@ describe('questionnaire suspendu (actif: false)', () => {
   // ce qui manque est l'identité de l'instrument. Le registre ne nomme aucun
   // auteur et sa référence bibliographique est à compléter — on ne sait pas dire
   // ce qu'il est, donc on ne peut pas le certifier.
-  const FERMES_DOCUMENTATION = ['Q_TAB_04', 'Q_PNE_01', 'Q_FIB_03'];
+  // `Q_PNE_01` en est SORTI le 2026-07-31 : la condition posée à sa fermeture —
+  // « réactivation à la première source identifiée » — est remplie. C'est le
+  // VQ11 de Ninot et al. (2010), établi par la revue adversariale du 2026-07-30
+  // sur la correspondance exacte des onze items et des trois composantes
+  // publiées.
+  //
+  // `Q_TAB_04` y RESTE, alors même que son contenu a été corrigé le même jour
+  // (plafond 32 → 36, grille alignée sur les trois bandes de la source) : son
+  // motif de fermeture est l'identité, pas la grille, et l'identité n'est pas
+  // instruite. Corriger un contenu ne dit pas ce qu'est l'instrument.
+  const FERMES_DOCUMENTATION = ['Q_TAB_04', 'Q_FIB_03'];
 
   it('les instruments sans auteur nommé sont fermés à l’assignation', () => {
     for (const id of FERMES_DOCUMENTATION) {
@@ -260,14 +270,19 @@ describe('questionnaire suspendu (actif: false)', () => {
     }
   });
 
-  it('la pneumologie est fermée en entier, et c’est assumé', () => {
+  it('la pneumologie tient à un seul instrument, désormais rouvert', () => {
     // Anti-surprise, même garde que pour la cancérologie dans #460 : `Q_PNE_01`
-    // est le SEUL instrument de pneumologie du catalogue. Le fermer ferme le
-    // domaine. Le dire ici évite de le redécouvrir en production, et fait rougir
-    // le jour où un second arrive sans que sa documentation ait été instruite.
+    // est le SEUL instrument de pneumologie du catalogue. Le fermer fermait le
+    // domaine ; le rouvrir le rouvre en entier. Ce test dit cette fragilité
+    // plutôt qu'un état, et il fait rougir le jour où un second arrive sans que
+    // sa documentation ait été instruite.
+    //
+    // Rouvert le 2026-07-31 : la condition posée à sa fermeture — « réactivation
+    // à la première source identifiée » — est remplie, c'est le VQ11 de Ninot et
+    // al. (2010).
     const pneumo = QUESTIONNAIRES_CATALOG.filter(q => q.categorie === 'Pneumologie');
     expect(pneumo.map(q => q.id)).toEqual(['Q_PNE_01']);
-    expect(pneumo.every(q => !q.actif)).toBe(true);
+    expect(pneumo.every(q => q.actif)).toBe(true);
   });
 
   it('la tabacologie garde quatre instruments servis', () => {

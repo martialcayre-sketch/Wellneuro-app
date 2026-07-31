@@ -75,7 +75,8 @@ const SOUS_RESERVE = REGISTRE.instruments
   .map(i => i.questionnaireId)
   .sort();
 
-// Les huit instruments dont le droit repose sur la déclaration du 2026-07-30. La
+// Les instruments dont le droit repose sur la déclaration du 2026-07-30 — huit à
+// l'origine, DIX depuis le 2026-07-31 (entrées de `Q_NEU_06` puis `Q_PNE_01`). La
 // liste est ÉPINGLÉE, et non seulement comptée : le marqueur vit dans du texte
 // libre, que la prochaine réécriture d'un `detail` peut emporter sans le vouloir —
 // la phrase « Statut porté à `licence_requise` : à arbitrer » y est d'ailleurs
@@ -92,9 +93,15 @@ const SOUS_RESERVE = REGISTRE.instruments
 // serait le renversement de charge commis sur le VQ11 la veille. C'est cette
 // entrée qui a fait rougir les deux gardes ci-dessous quand le lot voulait
 // afficher sa grille en consultation ; l'instrument est resté fermé.
+// `Q_PNE_01` (VQ11) est ENTRÉ dans cette population le 2026-07-31, avec sa
+// réouverture. Sa réserve est de la même famille que celle des cinq autres
+// laissés assignables : le servi est une échelle PUBLIÉE — le VQ11 de Ninot et
+// al. (2010) — que le support SIIN reproduit, et les droits de ses ayants droit
+// restent entiers et non instruits. Ce que la déclaration étendue du 2026-07-29
+// couvre, c'est l'usage ; elle n'éteint aucun droit détenu par un tiers.
 const SOUS_RESERVE_ATTENDUS = [
   'Q_CAN_01', 'Q_CAN_02', 'Q_GEO_04', 'Q_INF_04',
-  'Q_NEU_06', 'Q_NEU_11', 'Q_PED_02', 'Q_PED_03', 'Q_SOM_02',
+  'Q_NEU_06', 'Q_NEU_11', 'Q_PED_02', 'Q_PED_03', 'Q_PNE_01', 'Q_SOM_02',
 ];
 
 // LE BON PRÉDICAT EST CELUI DE LA ROUTE, PAS `IDS_ASSIGNABLES`.
@@ -140,6 +147,18 @@ const LAISSES_ASSIGNABLES = [
   // mention distingue des usages sans dire lesquels ; aucun substitut au
   // catalogue ne mesure la somnolence diurne.
   'Q_SOM_02',
+  // VQ11 — Ninot et al. (2010), échelle publiée que le support SIIN reproduit.
+  // Rouvert le 2026-07-31 : sa fermeture du 2026-07-29 tenait à un motif de
+  // DOCUMENTATION — « on ne sait pas dire ce qu'il est » — et la condition
+  // qu'elle posait, « réactivation à la première source identifiée », est
+  // remplie. L'identification vient de la revue adversariale du 2026-07-30, sur
+  // la correspondance exacte des onze items et des trois composantes publiées.
+  //
+  // Il est le SEUL instrument de pneumologie du catalogue : l'ouvrir rouvre le
+  // domaine. La réserve sur les droits de Ninot et al. reste au registre, comme
+  // pour les cinq au-dessus, et l'usage repose sur la déclaration étendue du
+  // 2026-07-29 — laquelle n'éteint aucun droit détenu par un tiers.
+  'Q_PNE_01',
 ].sort();
 
 describe('droits et assignabilité — les instruments dont le droit surmonte une réserve', () => {

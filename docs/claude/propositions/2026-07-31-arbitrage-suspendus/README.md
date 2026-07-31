@@ -136,7 +136,15 @@ Les deux items « manquants » (110 lus / 108 servis) sont les questions ouverte
 Q109/Q110, écartées faute de champ texte dans l'UI patient — déjà documenté dans
 le code, ce n'est pas un motif.
 
-### `Q_TAB_04` — cannabis → **RÉACTIVER**, après deux corrections
+### `Q_TAB_04` — cannabis → **CORRIGER, mais NE PAS réactiver**
+
+> **Rectification du 2026-07-31, après exécution.** Ce dossier concluait
+> « réactiver après deux corrections ». C'était une inconséquence : le motif de
+> sa fermeture est l'IDENTITÉ — « on ne sait pas dire ce qu'il est » — et
+> corriger une grille ne dit pas ce qu'est un instrument. Lui appliquer une barre
+> plus basse qu'à `Q_NEU_06`, fermé la veille pour exactement cette raison,
+> aurait refait le renversement de charge du VQ11. Les deux corrections sont
+> faites ; l'instrument reste fermé, jusqu'à identification de sa source.
 
 Zéro divergence critique, droits couverts par la déclaration du praticien.
 Suspendu pour documentation seule. Mais la relecture donne **deux défauts réels
@@ -163,7 +171,21 @@ Le premier point est un bug, à corriger. Le second est un **arbitrage clinique*
 aligner sur la source fait passer de quatre conduites à trois, et décider laquelle
 disparaît n'est pas une décision d'outillage.
 
-### `Q_PNE_01` — VQ11 (Ninot et al., 2010) → **RÉACTIVER** sous la déclaration
+> **Arbitrage rendu le 2026-07-31** : aligner sur les trois bandes de la source.
+> Aucune conduite n'est abandonnée — les deux plus sévères sont **fusionnées**,
+> la source réunissant leurs intervalles (15-21 et 22-32 deviennent 16-36).
+>
+> **Ce que la fusion coûte, mesuré** : la conduite rendue change pour **23 des
+> 37 totaux**, et non pour deux comme une première rédaction l'annonçait. Un
+> score de 6 devient « risque réel » (plus sévère) ; un score de 15 aussi (moins
+> sévère) ; 16 à 21 reçoivent en plus la prise en charge spécialisée que
+> l'ancienne grille réservait à 22+. Surtout, **un score de 16 et un score de 30
+> rendent désormais le même verdict** : la distinction « usage nocif » /
+> « dépendance » disparaît, et c'était la seule information que portait la
+> quatrième bande. Épinglé par `reactivations20260731.guard.test.ts`, pour que sa
+> restauration se rediscute au lieu de se perdre.
+
+### `Q_PNE_01` — VQ11 (Ninot et al., 2010) → **RÉACTIVÉ le 2026-07-31**
 
 **Zéro divergence, d'aucune gravité** : 11 items, trois composantes, tout
 correspond. C'est l'instrument le mieux aligné du catalogue.
@@ -175,6 +197,20 @@ correcte — c'est le VQ11 publié — ne ferme rien par elle-même : l'extensio
 2026-07-29 couvre explicitement « les instruments tiers reproduits dans les
 supports de formation du SIIN ». Il relève donc du même régime que les huit autres
 déclarés couverts, **réserve conservée au dossier**, ni plus ni moins.
+
+> **Fait le 2026-07-31.** Une condition contraire, posée le 2026-07-30 —
+> « réouverture conditionnée à l'instruction de ces droits » — restait au
+> registre : elle y est désormais marquée superséde, avec son motif. Les droits
+> de Ninot et al. ne sont toujours pas instruits, et l'entrée ne prétend pas le
+> contraire ; ce qui a changé, c'est que cinq instruments dans exactement la
+> même position sont ouverts depuis le 2026-07-30. Maintenir celui-ci fermé
+> aurait été une exception sans fondement.
+>
+> **Une réserve que le banc ne pouvait pas voir** a été trouvée au passage : ses
+> zéro divergence portent sur le couple *servi ↔ support SIIN*, jamais sur
+> *support ↔ instrument publié*. Le support reproduit le VQ11 avec **quatre**
+> niveaux de réponse là où la forme publiée en compte **cinq**. Portée bornée —
+> aucune bande, aucune norme publiée appliquée — et gardée par un test.
 
 ### `Q_GEO_04` — MMSE GRECO → **RÉACTIVER en passation praticien**
 
@@ -216,8 +252,9 @@ Il ne réactive rien. Chaque réactivation reprend l'échelle de certification �
 Les lots restants, par ordre de valeur clinique décroissante :
 
 1. `Q_SOM_07` (MFI-20) — un résultat enregistré qui n'est pas une mesure ;
-2. `Q_GEO_04`, `Q_PNE_01`, `Q_TAB_04` — trois réactivations, dont une correction
-   de borne à faire au passage ;
+2. ~~`Q_PNE_01`~~ **fait le 2026-07-31** ; `Q_TAB_04` corrigé mais maintenu fermé
+   (identité non instruite) ; `Q_GEO_04` bloqué sur la même question que
+   `Q_NEU_06` — une surface de consultation qui n'expose pas le verbatim ;
 3. `Q_GEO_01` — requalification sur preuve, aucun code à changer ;
 4. `Q_ALI_03` (Monnier), puis `Q_PED_02` (débaptiser) ;
 5. `Q_NEU_12` — la restructuration de la partie 3, seule divergence encore
