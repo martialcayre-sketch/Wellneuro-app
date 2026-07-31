@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   LABEL_EXTINCTION,
   LABEL_MISE_AU_LIT,
@@ -43,9 +43,14 @@ const PAS_MINUTES = 15;
 // La distance est EUCLIDIENNE, et non un écart d'angle. Un seuil purement
 // angulaire n'aurait borné la prise que par le bas (la zone morte) : tout le
 // secteur, jusqu'au coin du cadran, serait devenu saisissable. Le formulaire est
-// long et le cadran le coiffe, avec `touch-action: none` sur toute sa boîte —
-// un balayage de défilement posé dans le secteur aurait accroché la poignée et
-// écrit une heure de coucher que le patient n'a jamais donnée.
+// long et le cadran le coiffe — un balayage de défilement posé dans le secteur
+// aurait accroché la poignée et écrit une heure de coucher que le patient n'a
+// jamais donnée.
+//
+// Cette borne porte DEUX décisions, et non plus une seule : elle dit si le geste
+// saisit une poignée, et — depuis le correctif de défilement (voir l'effet
+// `bloquerDefilement` plus bas) — si la page a le droit de défiler sous le
+// doigt. L'élargir ouvrirait la prise ET figerait d'autant le défilement.
 const RAYON_PRISE = 26;
 
 // Zone morte centrale, appliquée au MOUVEMENT (la prise, elle, est déjà bornée
@@ -239,6 +244,58 @@ export function CadranNuit({
   const cercles = useRef<Partial<Record<Poignee, SVGCircleElement | null>>>({});
   const memoriserCercle = useCallback((poignee: Poignee, el: SVGCircleElement | null) => {
     cercles.current[poignee] = el;
+  }, []);
+
+  // DÉFILEMENT DE LA PAGE. Le formulaire de saisie est long et le cadran le
+  // coiffe : un balayage posé sur le cadran doit faire défiler la page, SAUF
+  // s'il tient une poignée. Trois voies ont été écartées avant celle-ci.
+  //
+  //  — `touch-action: none` sur la racine (l'état antérieur) : le navigateur lit
+  //    cette valeur AU TOUCHER, sur l'élément touché et ses ancêtres, une fois
+  //    pour toute la séquence. Il ne connaît que des boîtes CSS, et la boîte du
+  //    cadran fait ~300 x 300 px là où les disques de prise n'en couvrent que 8
+  //    à 15 % selon le nombre de poignées visibles. Le pouce posé partout
+  //    ailleurs bloquait le défilement pour rien.
+  //  — La basculer en JS au `pointerdown` : sans effet sur le geste en cours. La
+  //    valeur est déjà lue quand notre gestionnaire s'exécute, et le rendu React
+  //    vient encore après.
+  //  — `touch-action: pan-y` sur la racine : rendrait au navigateur tout geste à
+  //    dominante verticale. Or aux flancs du cadran (06:00 à droite, 18:00 à
+  //    gauche) la poignée se déplace précisément vers le haut ou le bas ; le
+  //    navigateur s'emparerait du geste et émettrait `pointercancel` en plein
+  //    glissement — la prise sauterait sous le doigt.
+  //
+  // Reste l'échappatoire des Touch Events, antérieure à `touch-action` et jamais
+  // retirée : `preventDefault()` sur un `touchmove` NON PASSIF supprime le
+  // défilement, et se décide ÉVÉNEMENT PAR ÉVÉNEMENT — ce que `touch-action`, qui
+  // fige tout au premier contact, ne sait pas faire. La prise est déjà tranchée
+  // au `pointerdown` (`saisir` sort sans rien armer au-delà de `RAYON_PRISE`),
+  // donc le tout premier `touchmove` sait déjà si le geste sert à quelque chose.
+  //
+  // L'écouteur est posé à la main : react-dom enregistre `touchmove` en PASSIF
+  // sur la racine de l'application, où un `preventDefault()` est ignoré. Le garde
+  // `e.cancelable` couvre le cas où le navigateur a déjà engagé le défilement —
+  // on ne peut alors plus rien annuler, et insister lèverait un avertissement.
+  //
+  // La cible d'une séquence tactile reste l'élément du `touchstart` pour toute sa
+  // durée : le blocage tient donc encore quand le doigt sort de la boîte en
+  // glissant — cas très réel, une poignée étant à 70 unités du centre et son
+  // disque de prise portant jusqu'à 96, pour un demi-viewBox de 116.
+  //
+  // Pendant une prise, TOUS les `touchmove` du cadran sont annulés, y compris
+  // ceux d'un second doigt. C'est délibéré : laisser passer le multi-touch
+  // ferait défiler la page sous le premier doigt, donc bouger la boîte qui sert
+  // à convertir écran → minutes, et la poignée sauterait. Un geste indivisible
+  // vaut mieux qu'un repère mobile.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const bloquerDefilement = (e: TouchEvent) => {
+      if (pointeurActif.current === null) return;
+      if (e.cancelable) e.preventDefault();
+    };
+    svg.addEventListener('touchmove', bloquerDefilement, { passive: false });
+    return () => svg.removeEventListener('touchmove', bloquerDefilement);
   }, []);
 
   // Position affichée : la valeur si elle existe, la suggestion sinon.
@@ -476,7 +533,15 @@ export function CadranNuit({
         <svg
           ref={svgRef}
           viewBox={`${VB_ORIGINE} ${VB_ORIGINE} ${VB_TAILLE} ${VB_TAILLE}`}
-          className="w-full touch-none"
+          // `touch-manipulation` et non un retrait sec : laisse passer le
+          // défilement ET le pincement pour zoomer TANT QU'AUCUNE POIGNÉE N'EST
+          // TENUE (WCAG 1.4.10 — des patients à basse vision ; pendant une prise
+          // `bloquerDefilement` annule tout, pinch compris, voir son commentaire).
+          // Il supprime en revanche le zoom au double-tapotement, qu'un patient
+          // confirmant deux poignées voisines coup sur coup déclencherait sans le
+          // vouloir. Le blocage pendant un glissement réel est pris en charge par
+          // l'écouteur, pas par le CSS.
+          className="w-full touch-manipulation"
           onPointerDown={saisir}
           onPointerMove={deplacer}
           onPointerUp={relacher}
