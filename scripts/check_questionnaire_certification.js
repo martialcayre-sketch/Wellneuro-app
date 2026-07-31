@@ -193,6 +193,7 @@ console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.ins
 
 const supportedScoringTypes = new Set([
   'agenda_sommeil',
+  'apports_ponderes',
   'audit',
   'berlin',
   'bms_average',
@@ -1035,6 +1036,36 @@ assertEqual(porteursHorsTotal, ['Q_URO_01'], '`horsTotal` sort une sous-échelle
 assertEqual(calculateScore('Q_MOD_01', fillByOptionBoundary('Q_MOD_01', 'max')).total, 180, 'Q_MOD_01 total maximal');
 assertEqual(calculateScore('Q_TAB_03', fillByOptionBoundary('Q_TAB_03', 'max')).total, 84, 'Q_TAB_03 total maximal');
 assertEqual(calculateScore('Q_PED_02', fillByOptionBoundary('Q_PED_02', 'max')).total, 84, 'Q_PED_02 total maximal');
-assertEqual(calculateScore('Q_ALI_03', fillByOptionBoundary('Q_ALI_03', 'max')).total, 36, 'Q_ALI_03 total maximal');
+// `Q_ALI_03` n'est plus un `subscore` depuis le 2026-07-31 : reconstruit depuis
+// sa source, il rend deux GRANDEURS d'unités différentes (g de protéines,
+// kilocalories) et AUCUN total global — les additionner n'aurait pas de sens.
+// La fixture est donc un cas RÉALISTE, calculé à la main, plutôt qu'un plafond :
+// le maximum de cette grille est un patient qui mangerait dix grandes portions
+// de viande par jour, il ne prouve rien d'utile.
+//
+// Un homme : une portion moyenne de viande par jour (25 g), trois portions de
+// deux œufs et deux de poisson par semaine (3/7 × 13 et 2/7 × 30), un lait, un
+// yaourt, un fromage, trois pains, et le forfait masculin de 15 g.
+{
+  const cas = { AP2: 1, AP4: 3, AP5: 2, AP6: 1, AP7: 1, AP8: 1, AP10: 3, AP13: 15,
+                AP14: 150, AP15: 1, AP20: 1, AP21: 1, AP23: 1 };
+  const r = calculateScore('Q_ALI_03', cas);
+  assertEqual(r.proteinesG, 86.6, 'Q_ALI_03 apport protéique du cas de référence');
+  assertEqual(r.caloriesKcal, 2342, 'Q_ALI_03 apport calorique du cas de référence');
+  assertEqual(r.total, null, 'Q_ALI_03 ne rend AUCUN total global — deux unités ne s’additionnent pas');
+  // Et sur une passation vide, aucun chiffre : « 0 g de protéines par jour » est
+  // un signal de dénutrition sévère, et le fabriquer est le défaut qui a fait
+  // retirer le bloc `monnier` le 2026-07-27. Deux gardes se superposent ici — la
+  // garde générale de passation vide (#451) répond AVANT le moteur, et le moteur
+  // porte la sienne pour le cas où une réponse existe sans qu'aucune ligne du
+  // barème ne soit renseignée. On éprouve les deux.
+  const vide = calculateScore('Q_ALI_03', {});
+  assertEqual(vide.scored, false, 'Q_ALI_03 passation vide — aucune mesure');
+  assert(vide.proteinesG === undefined || vide.proteinesG === null,
+    'Q_ALI_03 passation vide — aucun apport protéique ne doit sortir');
+  const horsBareme = calculateScore('Q_ALI_03', { AP99: 3 });
+  assert(horsBareme.proteinesG === undefined || horsBareme.proteinesG === null,
+    'Q_ALI_03 réponse étrangère au barème — aucun apport ne doit sortir');
+}
 
 console.log(`[questionnaires] OK — ${ids.length} questionnaires documentés, fixtures scoring certifiées validées.`);

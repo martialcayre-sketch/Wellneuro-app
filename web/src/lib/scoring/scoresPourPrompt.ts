@@ -40,7 +40,17 @@ const CLES_CONDUITE = new Set(['conduite', 'protocol']);
 // juste à côté d'une consigne système qui lui interdit de conclure à une
 // quantité. Retiré du prompt, pas de la base : la donnée historique reste
 // lisible, elle cesse d'être soumise au raisonnement clinique.
-const CLES_QUANTITE_NON_ETALONNEE = new Set(['monnier']);
+// S'y ajoutent, depuis le 2026-07-31, les deux grandeurs que `Q_ALI_03`
+// reconstruit calcule VRAIMENT — `proteinesG` et `caloriesKcal`. Elles ne sont
+// pas fabriquées, cette fois : le moteur les tire de la table de conversion de
+// la source. Elles restent pourtant hors du prompt, et pour une raison qui n'est
+// pas la même que celle du bloc `monnier` : la consigne système interdit au
+// modèle de conclure à une masse consommée, et lui en livrer une le mettrait en
+// contradiction avec l'instruction qu'il reçoit. Le praticien, lui, les voit sur
+// la fiche — c'est là qu'une estimation d'apport se lit, avec sa note et ses
+// réserves. Les livrer au modèle serait un autre lot, avec sa version de
+// consigne.
+const CLES_QUANTITE_NON_ETALONNEE = new Set(['monnier', 'proteinesG', 'caloriesKcal']);
 
 /**
  * Copie profonde de `scores` privée des clés `conduite` et `protocol`, à toute

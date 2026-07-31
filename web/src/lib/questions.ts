@@ -2181,6 +2181,57 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   }
 
   // ── SUBSCORE ─────────────────────────────────────────
+  // ── APPORTS PONDÉRÉS ────────────────────────────────────────────────────
+  //
+  // Un coefficient PAR ITEM, et une périodicité par item. Aucune branche
+  // existante ne sait faire cela : `subscore` ne pondère qu'une sous-échelle
+  // entière (`sub.multiplier`), et toutes les autres additionnent des réponses
+  // brutes. Écrit pour `Q_ALI_03`, dont la source est une feuille de calcul —
+  // « Nombre de portions » × « Protéines par portion », puis une conversion en
+  // calories.
+  //
+  // CE QUE CE MOTEUR NE FAIT PAS, et c'est délibéré : aucune bande. La source
+  // ne donne aucun seuil, et une valeur d'apport sans population de référence
+  // ne se lit pas comme un verdict. Le total est rendu brut, avec sa note.
+  //
+  // GARDE — une passation sans aucune réponse ne rend AUCUN chiffre. Sans elle,
+  // un dossier vide sortirait « 0 g de protéines par jour », c'est-à-dire un
+  // signal de dénutrition sévère fabriqué à partir de rien. C'est exactement le
+  // défaut qu'un bloc `monnier` fantôme a produit ici jusqu'au 2026-07-27, en
+  // cherchant des sous-scores inexistants : quatre valeurs à zéro, invariantes
+  // aux réponses, persistées en base et transmises au modèle de synthèse. La
+  // leçon n'est pas « ne calcule pas », c'est « ne calcule pas sur rien ».
+  if (sc.type === 'apports_ponderes') {
+    const lignes = [...(sc.proteines ?? []), ...(sc.calories ?? [])];
+    const repondu = lignes.some((l: any) => getVal(l.id) !== null);
+    const cumul = (liste: any[]) => liste.reduce((somme: number, ligne: any) => {
+      const v = getVal(ligne.id);
+      if (v === null) return somme;
+      // `parJour: false` déclare une ligne HEBDOMADAIRE. La source additionne
+      // les deux bases sans règle de conversion ; le servi ramène tout au jour,
+      // écart déclaré au registre.
+      const parJour = ligne.parJour === false ? v / 7 : v;
+      return somme + parJour * ligne.coefficient;
+    }, 0);
+    if (!repondu) {
+      return {type:'apports_ponderes', proteinesG: null, caloriesKcal: null, total: null,
+        scored: false, raisonNonScore: 'aucune ligne renseignée',
+        note: sc.note || null, certification: sc.certification || null};
+    }
+    const proteinesG = cumul(sc.proteines ?? []);
+    // « Conversion en calories : X 24 » — le facteur de la source, appliqué au
+    // total protéique, auquel s'ajoutent les calories directes de sa partie 2.
+    const caloriesKcal = proteinesG * (sc.facteurCalorique ?? 0) + cumul(sc.calories ?? []);
+    const arrondi = (x: number) => Math.round(x * 10) / 10;
+    return {type:'apports_ponderes',
+      proteinesG: arrondi(proteinesG),
+      caloriesKcal: Math.round(caloriesKcal),
+      // Pas de score global : ces deux grandeurs ont des unités différentes et
+      // ne s'additionnent pas. `total: null` le dit au lieu de le laisser deviner.
+      total: null,
+      note: sc.note || null, certification: sc.certification || null};
+  }
+
   if (sc.type === 'subscore') {
     const subResults = sc.subScores.map((sub: any) => {
       // `sub.reversed` et non plus `[]` en dur. DANS CETTE BRANCHE, la liste

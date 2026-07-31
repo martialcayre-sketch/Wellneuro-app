@@ -85,6 +85,15 @@ function questionsDe(id: string): Array<{ id: string; options?: Array<{ v: unkno
 function reponsesALaBorne(id: string, borne: 'min' | 'max'): Record<string, number> {
   return Object.fromEntries(
     questionsDe(id).map(q => {
+      // Item de SAISIE CHIFFRÉE : ses bornes sont `min`/`max`, pas des options.
+      // Sans cette branche, `Math.min(...[])` rendait `Infinity` et le contrôle
+      // de dégénérescence ci-dessous faisait échouer la garde sur son propre
+      // helper — ce qui est arrivé le 2026-07-31, quand `Q_ALI_03` reconstruit a
+      // apporté 21 items chiffrés.
+      const anyQ = q as { type?: string; min?: number; max?: number };
+      if (anyQ.type === 'number') {
+        return [q.id, borne === 'min' ? (anyQ.min ?? 0) : (anyQ.max ?? 0)];
+      }
       const valeurs = (q.options ?? []).map(o => Number(o.v)).filter(Number.isFinite);
       return [q.id, borne === 'min' ? Math.min(...valeurs) : Math.max(...valeurs)];
     })
@@ -272,7 +281,12 @@ describe('garde-fou alimentaire — aucune quantité non étalonnée dans le pro
       const charge = scoresPourPrompt({ ...scores, rawAnswers: reponses });
       const chemins = cheminsDeQuantite(charge);
       expect(chemins, `${id} (${borne}) laisse passer ${chemins.join(', ')}`).toEqual([]);
-      totaux[borne] = Number(scores?.total);
+      // La grandeur observable n'est pas toujours `total` : `Q_ALI_03` rend deux
+      // apports d'unités différentes et AUCUN total global — les additionner
+      // n'aurait pas de sens. On prend donc ce que l'instrument produit
+      // réellement, faute de quoi l'anti-vacuité ci-dessous comparerait deux
+      // fois zéro et ne prouverait rien.
+      totaux[borne] = Number(scores?.total ?? scores?.proteinesG);
     }
     // Anti-vacuité, sur la sortie cette fois : les deux bornes doivent produire
     // des totaux finis et **distincts**. Un balayage qui rend deux fois le même
@@ -416,8 +430,18 @@ describe('garde-fou alimentaire — la charge porte la tranche cochée, pas son 
     }
     expect(fautifs, `masses transmises : ${fautifs.join(' | ')}`).toEqual([]);
     // Anti-vacuité : une fonction identité passerait l'assertion ci-dessus si
-    // aucun libellé ne portait de masse. Dix en portent.
-    expect(nettoyes, 'aucun libellé nettoyé — la parade ne s’applique nulle part').toBe(10);
+    // aucun libellé ne portait de masse. Dix en portaient jusqu'au 2026-07-31 ;
+    // seize depuis. `Q_ALI_03` reconstruit en apporte huit — « Petite portion
+    // (100 g) », « Poisson (150 g) », « Fromage (30 g) »… — et en retire deux,
+    // ses anciens `MO1`/`MO2`.
+    //
+    // Les masses y sont ENTRE PARENTHÈSES délibérément : c'est la forme que la
+    // parade sait retirer, et il fallait qu'elle sache. Sur cet instrument la
+    // multiplication « 3 portions × 100 g » est faite par le MOTEUR, à partir de
+    // la table de conversion de la source ; le modèle, lui, n'a aucune raison de
+    // la refaire et ne reçoit donc ni la masse unitaire, ni le total pondéré
+    // (`scoresPourPrompt` écarte `proteinesG` et `caloriesKcal`).
+    expect(nettoyes, 'aucun libellé nettoyé — la parade ne s’applique nulle part').toBe(16);
   });
 
   it('le nettoyage ne mutile pas le libellé', () => {

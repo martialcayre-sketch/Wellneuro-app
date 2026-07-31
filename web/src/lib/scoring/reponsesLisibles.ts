@@ -129,12 +129,30 @@ function resoudreItem(
   // quantité. Décider sur le seul moteur ferait de « Choisissez-vous du pain
   // complet ? » une quantité — la faute que ce module corrige, replacée à
   // l'autre bout. Et une valeur non numérique n'est jamais une quantité.
+  //
+  // DEUXIÈME VOIE, ouverte le 2026-07-31 : un item de SAISIE CHIFFRÉE portant
+  // une unité. `Q_ALI_03`, reconstruit depuis sa feuille de calcul source,
+  // demande des nombres de portions — « 3 » à la ligne « Petite portion
+  // (100 g) », avec `unit: 'portions/jour'`. C'est la quantité déclarée la plus
+  // directe qui soit, et la faire passer pour « non exploitable » serait
+  // exactement l'inverse de ce que ce module protège.
+  //
+  // La condition tient à la DÉFINITION, pas au moteur : `type: 'number'` avec
+  // une unité écrite. Un nombre sans unité resterait non résolu — c'est un code,
+  // et rien ne dit de quoi.
+  const estSaisieChiffreeAvecUnite =
+    question.type === 'number' &&
+    typeof question.unit === 'string' &&
+    question.unit.trim() !== '' &&
+    typeof valeur === 'number' &&
+    Number.isFinite(valeur);
   const estQuantitatif =
-    valeurEstQuantite &&
+    estSaisieChiffreeAvecUnite ||
+    (valeurEstQuantite &&
     typeof valeur === 'number' &&
     Number.isFinite(valeur) &&
     options.length > 2 &&
-    options.every(o => Number.isFinite(Number(o.v)));
+    options.every(o => Number.isFinite(Number(o.v))));
   return estQuantitatif
     ? { question: libelle, quantiteDeclaree: brute }
     : { question: libelle, valeurNonResolue: brute };
