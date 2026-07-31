@@ -69,6 +69,7 @@ const assOk = {
   statut: 'En attente',
   statutReponses: 'non_rempli',
   dateLimite: null,
+  dateAssignation: new Date('2026-07-24T08:00:00.000Z'),
 };
 
 beforeEach(() => {
@@ -81,7 +82,11 @@ beforeEach(() => {
   getServerSession.mockResolvedValue(session);
   prisma.patient.findFirst.mockResolvedValue(patientOk);
   prisma.assignation.findUnique.mockResolvedValue(assOk);
-  prisma.agendaSommeilNuit.findMany.mockResolvedValue([{ dateNuit: '2026-07-29' }]);
+  // Cas nominal = `silencieux` : dernière nuit le 27, aujourd'hui le 30, donc
+  // au moins une nuit DÉFINITIVEMENT perdue. Le 29 (nuit du jour seule
+  // manquante) tenait ce rôle avant le seuil du 2026-07-31 — il est depuis un
+  // cas de REFUS, éprouvé comme tel dans la table ci-dessous.
+  prisma.agendaSommeilNuit.findMany.mockResolvedValue([{ dateNuit: '2026-07-27' }]);
   prisma.correspondancePatient.findFirst.mockResolvedValue(null);
   prisma.correspondancePatient.count.mockResolvedValue(0);
 });
@@ -198,6 +203,27 @@ describe('POST relance — les refus n’envoient jamais', () => {
       'relance_recente',
       () => prisma.correspondancePatient.count.mockResolvedValue(MAX_TENTATIVES_FENETRE),
     ],
+    [
+      // Seuil du 2026-07-31. Le bouton n'est déjà pas rendu ; cette garde couvre
+      // l'onglet resté ouvert, dont la page porte un `relancable` de la veille.
+      'seule la nuit du jour manque',
+      409,
+      'non_relancable',
+      () => prisma.agendaSommeilNuit.findMany.mockResolvedValue([{ dateNuit: '2026-07-29' }]),
+    ],
+    [
+      // Délai de grâce au démarrage : pas de relance le jour de la consultation.
+      'jamais commencé, assigné aujourd’hui',
+      409,
+      'non_relancable',
+      () => {
+        prisma.assignation.findUnique.mockResolvedValue({
+          ...assOk,
+          dateAssignation: new Date('2026-07-30T08:00:00.000Z'),
+        });
+        prisma.agendaSommeilNuit.findMany.mockResolvedValue([]);
+      },
+    ],
   ])('%s → %i (%s), sans sendMail', async (_nom, status, reason, arrange) => {
     arrange();
     const res = await POST(req());
@@ -205,6 +231,25 @@ describe('POST relance — les refus n’envoient jamais', () => {
     expect((await res.json()).reason).toBe(reason);
     expect(sendMail).not.toHaveBeenCalled();
     expect(prisma.correspondancePatient.create).not.toHaveBeenCalled();
+  });
+
+  it('les deux causes de non-relance ne rendent PAS le même message', async () => {
+    // Un seul `reason` couvre deux populations. Le message, lui, doit coller à
+    // ce que le praticien a sous les yeux : « Assigné aujourd'hui — aucune nuit
+    // notée » n'a rien à voir avec une nuit encore notable. La table ci-dessus
+    // n'assert que `reason` : elle passerait au vert avec un message faux.
+    prisma.agendaSommeilNuit.findMany.mockResolvedValue([{ dateNuit: '2026-07-29' }]);
+    const nuitDuJour = await (await POST(req())).json();
+    expect(nuitDuJour.error).toContain('notable');
+
+    prisma.assignation.findUnique.mockResolvedValue({
+      ...assOk,
+      dateAssignation: new Date('2026-07-30T08:00:00.000Z'),
+    });
+    prisma.agendaSommeilNuit.findMany.mockResolvedValue([]);
+    const jamaisCommence = await (await POST(req())).json();
+    expect(jamaisCommence.error).toContain('deux jours');
+    expect(jamaisCommence.error).not.toBe(nuitDuJour.error);
   });
 
   it('charge utile invalide → 400 sans lire la base', async () => {

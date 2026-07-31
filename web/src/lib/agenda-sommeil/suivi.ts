@@ -69,6 +69,98 @@ const RANG_ETAT: Record<EtatSuiviAgenda, number> = {
   a_jour: 4,
 };
 
+// SEUIL DE RELANCE — décision clinique du 2026-07-31. Ne pas la changer sans
+// documenter, comme toute modification de seuil (CLAUDE.md).
+//
+// La règle tient en une phrase : ON NE RELANCE JAMAIS POUR UNE NUIT QUE LE
+// PATIENT PEUT ENCORE NOTER. `estDateSaisissable` (./nuit) accepte la nuit
+// d'aujourd'hui ET celle de la veille — un patient qui a noté hier a donc
+// jusqu'à demain matin pour noter celle-ci, et n'a rien oublié.
+//
+// Avant cette règle, `nuit_du_jour_manquante` ouvrait la relance : le bouton
+// apparaissait dès 00 h 05 sur un patient parfaitement à jour, la référence
+// temporelle étant une date nue (`dateJourParis`, sans heure). Le suivi
+// traitait en retard ce que la saisie traite comme normal. L'état reste
+// affiché — c'est un fait utile au praticien — mais il n'ouvre plus rien.
+//
+// La relance s'ouvre donc à `silencieux` : la dernière nuit notée date
+// d'avant-hier ou plus tôt, donc au moins une nuit est DÉFINITIVEMENT perdue,
+// `estDateSaisissable` la refusant déjà. Soit deux nuits manquantes, pas une.
+//
+// Un agenda `jamais_commence` n'a aucune nuit à comparer : son seuil est un
+// délai depuis l'assignation, le temps de laisser passer le jour de la
+// consultation et le lendemain.
+export const JOURS_AVANT_RELANCE_DEMARRAGE = 2;
+
+// Éligibilité à la relance praticien. Exportée parce que DEUX surfaces en
+// dépendent — le panneau du cabinet et la route d'envoi — et qu'un seuil
+// dupliqué est un seuil qui finit par diverger. Un onglet resté ouvert
+// enverrait sinon une relance que la règle interdit.
+//
+// Volontairement aveugle aux trous ANTÉRIEURS : un patient qui a noté hier est
+// tenu pour actif quels que soient ses oublis passés (arbitrage du
+// 2026-07-31 — seule la série en cours compte). Le mauvais remplisseur
+// régulier reste donc invisible ici ; c'est un manque assumé, pas un oubli.
+export function estRelancable(etat: EtatSuiviAgenda, joursDepuisAssignation: number): boolean {
+  if (etat === 'silencieux') return true;
+  if (etat === 'jamais_commence') return joursDepuisAssignation >= JOURS_AVANT_RELANCE_DEMARRAGE;
+  // `a_transmettre` : le geste qui sauve la donnée est la clôture, pas une
+  // relance. `nuit_du_jour_manquante` et `a_jour` : rien n'est encore perdu.
+  return false;
+}
+
+// Dérivation de l'état à partir des seules dates de nuits. Extraite pour que la
+// route d'envoi (`api/praticien/agenda-sommeil/relance`) applique EXACTEMENT le
+// même arbitrage que le panneau, sans en reconstruire la chaîne de branches.
+//
+// PRÉCONDITION : `dates` doit être TRIÉE — la dernière nuit est lue en
+// `dates[dates.length - 1]`. Un `findMany` Prisma sans `orderBy` rend un ordre
+// arbitraire, et un appelant qui le passerait brut obtiendrait un état faux sans
+// la moindre erreur. Les deux points d'entrée trient (`deriverLigne`,
+// `evaluerRelanceDepuisNuits`) ; un troisième doit le faire aussi.
+function deriverEtat(dates: string[], aujourdHui: string): EtatSuiviAgenda {
+  const fenetre = calculerFenetreDepuisDates(dates, aujourdHui);
+  const derniereNuitNotee = dates.length > 0 ? dates[dates.length - 1] : null;
+
+  if (fenetre.dateDebut === null) {
+    // La fenêtre s'ancre à la première nuit : rien n'est perdu, un démarrage
+    // tardif donne 21 nuits pleines. Relançable seulement passé le délai de
+    // grâce (`JOURS_AVANT_RELANCE_DEMARRAGE`) — pas le jour de la consultation.
+    return 'jamais_commence';
+  }
+  if (fenetre.jourCourant === null) {
+    // Fenêtre écoulée sans clôture : rien en base ne ferme cet agenda. Le
+    // geste qui sauve la donnée est la clôture praticien, pas une relance —
+    // demander de noter une nuit que `estDateSaisissable` refusera serait
+    // mentir au patient.
+    return 'a_transmettre';
+  }
+  if (derniereNuitNotee === aujourdHui) return 'a_jour';
+  if (derniereNuitNotee === decalerDate(aujourdHui, -1)) return 'nuit_du_jour_manquante';
+  return 'silencieux';
+}
+
+// Éligibilité calculée depuis les données BRUTES d'un agenda — le point d'entrée
+// de la route d'envoi, qui dispose des dates de nuits et du jour d'assignation
+// mais ne construit aucune `LigneSuiviAgenda`.
+//
+// Rend l'ÉTAT avec le verdict, et non un booléen nu : la route refuse deux
+// populations très différentes (nuit du jour encore notable / agenda pas encore
+// démarré) et doit pouvoir le dire au praticien dans les termes de ce qu'il a
+// sous les yeux. Un message unique serait faux pour l'une des deux.
+export function evaluerRelanceDepuisNuits(params: {
+  dates: string[];
+  aujourdHui: string;
+  dateAssignationJour: string;
+}): { relancable: boolean; etat: EtatSuiviAgenda } {
+  const dates = [...params.dates].sort();
+  const etat = deriverEtat(dates, params.aujourdHui);
+  return {
+    etat,
+    relancable: estRelancable(etat, ecartJours(params.dateAssignationJour, params.aujourdHui)),
+  };
+}
+
 function deriverLigne(
   ass: AssignationSuivi,
   nuits: NuitsSuivi | undefined,
@@ -78,25 +170,8 @@ function deriverLigne(
   const dates = [...(nuits?.dates ?? [])].sort();
   const fenetre = calculerFenetreDepuisDates(dates, aujourdHui);
   const derniereNuitNotee = dates.length > 0 ? dates[dates.length - 1] : null;
-
-  let etat: EtatSuiviAgenda;
-  if (fenetre.dateDebut === null) {
-    // La fenêtre s'ancre à la première nuit : rien n'est perdu, un démarrage
-    // tardif donne 21 nuits pleines. C'est l'état le plus relançable.
-    etat = 'jamais_commence';
-  } else if (fenetre.jourCourant === null) {
-    // Fenêtre écoulée sans clôture : rien en base ne ferme cet agenda. Le
-    // geste qui sauve la donnée est la clôture praticien, pas une relance —
-    // demander de noter une nuit que `estDateSaisissable` refusera serait
-    // mentir au patient.
-    etat = 'a_transmettre';
-  } else if (derniereNuitNotee === aujourdHui) {
-    etat = 'a_jour';
-  } else if (derniereNuitNotee === decalerDate(aujourdHui, -1)) {
-    etat = 'nuit_du_jour_manquante';
-  } else {
-    etat = 'silencieux';
-  }
+  const etat = deriverEtat(dates, aujourdHui);
+  const joursDepuisAssignation = ecartJours(ass.dateAssignationJour, aujourdHui);
 
   return {
     idAssignation: ass.idAssignation,
@@ -111,9 +186,8 @@ function deriverLigne(
     joursDepuisDerniereNuit:
       derniereNuitNotee === null ? null : ecartJours(derniereNuitNotee, aujourdHui),
     dateAssignation: ass.dateAssignation,
-    joursDepuisAssignation: ecartJours(ass.dateAssignationJour, aujourdHui),
-    relancable:
-      etat === 'jamais_commence' || etat === 'nuit_du_jour_manquante' || etat === 'silencieux',
+    joursDepuisAssignation,
+    relancable: estRelancable(etat, joursDepuisAssignation),
   };
 }
 
