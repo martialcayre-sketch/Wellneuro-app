@@ -656,3 +656,61 @@ export const QUESTIONNAIRES_CATALOG = [
   });
   assert.ok(erreurs.some(e => /Q_XXX_99 : retiré de la production/.test(e)));
 });
+
+test('passation praticien : un plancher de barreau est exigé', () => {
+  // La contrepartie « pas d'état terminal » ne posait AUCUNE exigence : tous les
+  // contrôles de pièces sont conditionnés à `barreau >= …`, et à `repere` aucun
+  // n'est armé. Un instrument pouvait donc être servi en consultation — affiché
+  // au rayon, verbatim livré par l'aperçu — sans source, sans droits, sans
+  // contenu verrouillé et sans verdict. Mesuré par mutation le 2026-08-01.
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({ questionnaireId: 'Q_GEO_03', statutCertification: 'droits_verifies', sourceMonEquilibre: false, driveMd: null })] },
+    idsCatalogue: ['Q_GEO_03'],
+  });
+  assert.ok(erreurs.some(e => /elle exige donc au moins 'contenu_verrouille'/.test(e)));
+});
+
+test('passation praticien : `contenu_verrouille` suffit (contrôle négatif)', () => {
+  // Sans lui, un plancher placé trop haut passerait inaperçu — et fermerait la
+  // consultation à des instruments légitimes.
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({ questionnaireId: 'Q_GEO_03', statutCertification: 'contenu_verrouille', versionServie: { description: 'x', langue: 'fr', traductionValidee: null, statutContenu: 'adapte' }, sourceIds: ['WN-SRC-0001'], droits: { statut: 'libre', detail: 'Domaine public, vérifié le 2026-08-01 sur la publication d’origine.', dateVerification: '2026-08-01' }, sourceMonEquilibre: false, driveMd: null, statutBibliographique: 'a_completer' })] },
+    idsCatalogue: ['Q_GEO_03'],
+  });
+  assert.deepEqual(erreurs.filter(e => /passation praticien/.test(e)), []);
+});
+
+test("'reference_identifiee' sans aucun champ qui désigne la référence : détecté", () => {
+  // L'étiquette n'était qu'un mot d'un vocabulaire fermé : une montée de
+  // `a_completer` à `reference_identifiee` pouvait être PUREMENT DÉCLARATIVE.
+  // C'est le reproche fait au VQ11 le 2026-07-30, puis à Q_NEU_06 le 2026-07-31 —
+  // dont tous les champs d'identification restaient `null` pendant que
+  // l'étiquette changeait.
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({ statutBibliographique: 'reference_identifiee' })] },
+  });
+  assert.ok(erreurs.some(e => /sans aucun champ qui désigne la référence/.test(e)));
+});
+
+test("'reference_identifiee' : UN champ suffit, et chacun compte", () => {
+  // Seuil volontairement bas — on exige que la référence soit désignable, pas
+  // qu'elle soit publiée à comité de lecture : un gabarit strict serait contourné
+  // par un gabarit vide. Les cinq champs sont éprouvés un par un, sinon quatre
+  // d'entre eux pourraient être retirés du prédicat sans qu'un test bouge.
+  const champs = [
+    { instrument: { nomOfficiel: 'X', auteurs: 'Folstein MF', anneePublication: null, formePubliee: null, proprietaireDroits: null } },
+    { instrument: { nomOfficiel: 'X', auteurs: null, anneePublication: 2005, formePubliee: null, proprietaireDroits: null } },
+    { instrument: { nomOfficiel: 'X', auteurs: null, anneePublication: null, formePubliee: 'PDF IEDM 2005', proprietaireDroits: null } },
+    { references: { doi: '10.1016/0022-3956(75)90026-6', pmid: null, dateVerification: null, verifiePar: null } },
+    { references: { doi: null, pmid: '1202204', dateVerification: null, verifiePar: null } },
+  ];
+  for (const surcharge of champs) {
+    const { erreurs } = verifier({
+      registre: { instruments: [entree({ statutBibliographique: 'reference_identifiee', ...surcharge })] },
+    });
+    assert.deepEqual(
+      erreurs.filter(e => /sans aucun champ qui désigne la référence/.test(e)),
+      [], `champ suffisant non reconnu : ${JSON.stringify(surcharge)}`
+    );
+  }
+});

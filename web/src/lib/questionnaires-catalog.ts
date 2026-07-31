@@ -95,19 +95,27 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // patient remonte la page et les deux items les plus discriminants deviennent
   // des points offerts. Il ne peut donc pas rester assignable.
   //
-  // Et il ne peut pas non plus rejoindre `PASSATION_PRATICIEN` : cette liste
-  // porte l'AFFICHAGE de la grille, donc du verbatim, que la déclaration du
-  // praticien ne couvre justement pas — et la décision du 2026-07-29, tenue par
-  // `droitsAssignabilite.guard.test.ts`, interdit d'y laisser un instrument sous
-  // réserve. Or l'origine de ce test n'est pas instruite : ses items 1-5 et 10
-  // sont de la famille MMSE, ses items 6-9 de celle des questionnaires de
-  // plainte mnésique, et aucune publication ne lui est rattachée. Conclure au
-  // référentiel interne parce que le support ne cite pas ses sources serait le
-  // renversement de charge commis sur le VQ11 le 2026-07-30.
+  // [ÉTAT DU 2026-07-31, SUPERSÉDÉ LE 2026-08-01 — conservé parce qu'il dit ce
+  // que la réouverture a dû produire.] Il ne pouvait pas non plus rejoindre
+  // `PASSATION_PRATICIEN` : cette liste porte l'AFFICHAGE de la grille, donc du
+  // verbatim, et la décision du 2026-07-29 interdisait d'y laisser un instrument
+  // sous réserve. L'origine du test n'était pas instruite, et conclure au
+  // référentiel interne parce que le support ne cite pas ses sources aurait été
+  // le renversement de charge commis sur le VQ11 le 2026-07-30.
   //
-  // Rouvrir demande donc DEUX pièces, dans cet ordre : instruire l'identité
-  // bibliographique, puis décider d'une surface de consultation qui n'expose pas
-  // le verbatim d'un instrument sous réserve.
+  // Rouvrir demandait DEUX pièces, dans cet ordre, et les DEUX ont été
+  // produites le 2026-08-01 :
+  //   1. L'IDENTITÉ est instruite — le servi correspond au document « MMT ou
+  //      Mini Mental Test » diffusé par l'IEDM (PDF de 2005), dix items au mot
+  //      près, mêmes bandes. Et il n'est pas le MMSE : sa bande 5-10 ordonne
+  //      « Faire MMS ».
+  //   2. La SURFACE est décidée — `PASSATION_PRATICIEN`, avec une entrée de
+  //      catalogue `actif: false` qui maintient la route d'assignation fermée,
+  //      et un aperçu qui refuse désormais le verbatim de tout instrument
+  //      suspendu ET hors consultation.
+  //
+  // La réserve subsiste et n'est pas levée : le document IEDM ne nomme aucun
+  // auteur, donc aucun ayant droit n'est identifiable pour être sollicité.
   { id: 'Q_NEU_06', titre: 'MMT — Mini Mental Test SIIN', categorie: 'Gérontologie',
     description: `Test cognitif administré en consultation : âge, heure, rappel de trois mots, soustractions de 7 (10 épreuves, 0-2, score /20).`, duree: '10 min', actif: false },
   { id: 'Q_NEU_09', titre: `Grille de Zarit — Fardeau de l'aidant`, categorie: 'Gérontologie',
@@ -358,11 +366,18 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // l'écran seul produit, et que ce fichier met en garde contre juste en dessous.
   // Sans entrée au catalogue, `actif: false` ne pouvait pas l'atteindre.
   //
-  // Sa ligne `PASSATION_PRATICIEN` est retirée EN PLUS, et pour une autre
-  // raison : elle portait l'aperçu de la grille, donc l'usage en consultation.
-  // Les deux gestes sont indépendants — celui-ci ferme la route, celui-là ferme
-  // l'usage — et il fallait les deux pour que la fermeture veuille dire quelque
-  // chose sur un instrument que le portail patient n'offrait déjà pas.
+  // Sa ligne `PASSATION_PRATICIEN` a été retirée EN PLUS le 2026-07-29, et pour
+  // une autre raison : elle portait l'aperçu de la grille, donc l'usage en
+  // consultation. Les deux gestes sont indépendants — celui-ci ferme la route,
+  // celui-là ferme l'usage.
+  //
+  // [MISE À JOUR DU 2026-08-01] Le SECOND geste est repris, le premier non. La
+  // ligne `PASSATION_PRATICIEN` est rétablie ; `actif: false` reste, donc la
+  // route d'assignation reste fermée. Motif : une asymétrie qui ne se défendait
+  // pas — six instruments portant la même classe de réserve de droits sont, eux,
+  // ENVOYÉS AU PATIENT, ce qui expose davantage que d'afficher une grille au
+  // praticien qui porte la déclaration d'usage. La réserve « © PAR, licence
+  // requise » n'est pas levée pour autant, et le registre la porte.
   //
   // Suspendu sur arbitrage praticien : droits non dégagés (« © PAR, licence
   // requise » au registre), aucun usage, et trois instruments de dépistage
@@ -371,6 +386,35 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // se pose indépendamment de la licence.
   { id: 'Q_GEO_04', titre: 'MMSE — Mini Mental State Examination (GRECO)', categorie: 'Gérontologie',
     description: `Test cognitif administré par le clinicien : orientation, apprentissage, attention, rappel, langage, praxie (30 points).`, duree: '15 min', actif: false },
+
+  // ── LES QUATRE AUTRES INSTRUMENTS DE CONSULTATION ───────────────────────────
+  //
+  // Entrées AJOUTÉES le 2026-08-01, et elles ferment un trou que ce dépôt
+  // nommait depuis #460 sans l'avoir refermé partout.
+  //
+  // Ces quatre-là n'avaient AUCUNE entrée ici : ils ne figuraient qu'en
+  // `PASSATION_PRATICIEN`, une liste d'AFFICHAGE que les routes d'assignation ne
+  // consultent pas. Mesuré le 2026-08-01 : les trois routes (`praticien/
+  // assignations`, `packs/assign`, `assignBasePack`) n'exigent qu'une définition
+  // une fois passé le filtre `IDS_SUSPENDUS` — elles ACCEPTAIENT donc les quatre
+  // par appel direct. Trois tests cognitifs de gérontologie et un catalogue
+  // mictionnel, administrés en consultation, pouvaient partir au portail patient.
+  //
+  // C'est exactement la position « invisible et assignable » contre laquelle ce
+  // fichier met en garde plus haut, et que #460 a fermée sur le seul MMSE. Sans
+  // entrée au catalogue, `actif: false` ne peut pas les atteindre.
+  //
+  // `actif: false` ne les retire de RIEN à l'écran : le rayon ne montrait déjà
+  // pas ces entrées, et leur affichage vient de `PASSATION_PRATICIEN`, qui est
+  // inchangé. Le seul effet est de fermer la route.
+  { id: 'Q_GEO_03', titre: 'AQ — Questionnaire Alzheimer (Sabbagh 2010)', categorie: 'Gérontologie',
+    description: `Repérage du risque de maladie d'Alzheimer, renseigné en consultation avec l'informant (21 items).`, duree: '10 min', actif: false },
+  { id: 'Q_GEO_05', titre: 'QDRS — Quick Dementia Rating System (Galvin 2015)', categorie: 'Gérontologie',
+    description: `Évaluation rapide du retentissement cognitif et fonctionnel, renseignée en consultation (10 domaines).`, duree: '10 min', actif: false },
+  { id: 'Q_GEO_06', titre: 'Test des 5 mots — Dubois (rappel en 2 phases)', categorie: 'Gérontologie',
+    description: `Test cognitif administré par le clinicien : encodage puis rappel de cinq mots, libre et indicé, en deux phases.`, duree: '10 min', actif: false },
+  { id: 'Q_URO_02', titre: 'Catalogue Mictionnel — CHU de Nice', categorie: 'Urologie',
+    description: `Relevé mictionnel renseigné avec le clinicien : horaires, volumes et fuites.`, duree: '24 h', actif: false },
 
   // ── CANCÉROLOGIE ────────────────────────────────────────────────────────────
   // RÉACTIVÉS le 2026-07-30, sur décision du praticien-propriétaire déclarant

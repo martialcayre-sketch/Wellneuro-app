@@ -37,7 +37,7 @@ export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   // `Q_GEO_04` (MMSE) REVIENT le 2026-07-31, sur arbitrage praticien. Son
   // retrait du 2026-07-29 fermait l'usage en consultation d'un instrument dont
   // les droits ne sont pas dégagés (« © PAR, licence requise »). La décision est
-  // reprise pour une raison d'asymétrie : cinq instruments portant la même
+  // reprise pour une raison d'asymétrie : six instruments portant la même
   // classe de réserve sont, eux, ENVOYÉS AU PATIENT — ce qui expose davantage
   // que d'afficher une grille au praticien qui porte la déclaration d'usage.
   //

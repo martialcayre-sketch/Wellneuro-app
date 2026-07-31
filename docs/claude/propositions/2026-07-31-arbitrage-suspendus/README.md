@@ -258,6 +258,38 @@ surface de consultation** qui ne publie pas le verbatim — une consigne
 d'administration sans grille, par exemple. C'est une décision produit, pas un
 aménagement de garde.
 
+> **TRANCHÉ LE 2026-08-01 — et pas dans le sens que ce paragraphe supposait.**
+>
+> La décision produit a été prise, et elle est plus simple que « une consigne
+> d'administration sans grille » : **la surface de consultation EST l'affichage
+> du verbatim**, parce qu'on ne peut pas administrer un MMSE sans lire ses items
+> au patient. Ce qui manquait n'était pas une surface, c'était une **raison de
+> refuser** — et elle ne tenait pas.
+>
+> Le motif du renversement est une asymétrie : **six** instruments portant la
+> même classe de réserve de droits sont, eux, **envoyés au patient**. Adresser un
+> instrument à un patient expose davantage que d'en montrer la grille au
+> praticien qui porte la déclaration d'usage. Interdire le moins en autorisant le
+> plus n'était pas défendable.
+>
+> Deux garde-fous accompagnent la décision, et ce ne sont pas des aménagements :
+> l'aperçu **refuse** désormais le verbatim de tout instrument suspendu ET hors
+> consultation (il le servait jusque-là pour n'importe quel identifiant, par
+> simple appel direct) ; et le vérificateur exige qu'un instrument servi en
+> consultation ait atteint au moins `contenu_verrouille`, puisque c'est le
+> verbatim qu'il publie.
+>
+> Ce que la décision NE fait pas : lever une réserve. Le MMSE reste © PAR. Et
+> l'affirmation, écrite d'abord, selon laquelle il serait le seul de cette
+> population dont l'ayant droit vend activement la licence est **fausse** — HIT-6
+> (QualityMetric) et HAD (GL Assessment) sont dans le même cas, et tous deux sont
+> déjà envoyés au patient. Ce fait renforce l'asymétrie au lieu de l'affaiblir.
+>
+> Reste ouverte, et elle appartient au praticien qui a signé la déclaration : la
+> déclaration exclut explicitement « la publication du verbatim » de son
+> périmètre. L'argument d'asymétrie répond « a fortiori, l'afficher au praticien
+> est couvert » ; c'est une déduction, pas une signature.
+
 ### `Q_FIB_03` — ELFE → **RESTE FERMÉ**, et c'est le seul
 
 Deux divergences critiques, 7 items à la source contre 12 servis, échelle 0-10
@@ -276,15 +308,20 @@ Il ne réactive rien. Chaque réactivation reprend l'échelle de certification �
 `repere` et demande ses pièces — c'est le verrou du vérificateur, et il tient.
 Les lots restants, par ordre de valeur clinique décroissante :
 
-1. `Q_SOM_07` (MFI-20) — un résultat enregistré qui n'est pas une mesure ;
-2. ~~`Q_PNE_01`~~ **fait le 2026-07-31** ; `Q_TAB_04` corrigé mais maintenu fermé
-   (identité non instruite) ; `Q_GEO_04` bloqué sur la même question que
-   `Q_NEU_06` — une surface de consultation qui n'expose pas le verbatim ;
-3. `Q_GEO_01` — requalification sur preuve, aucun code à changer ;
-4. `Q_ALI_03` (Monnier), puis `Q_PED_02` (débaptiser) ;
+1. ~~`Q_SOM_07` (MFI-20)~~ **fait le 2026-07-31** ;
+2. ~~`Q_PNE_01`~~ **fait le 2026-07-31** ; ~~`Q_GEO_04` et `Q_NEU_06`~~ **faits le
+   2026-08-01** — la surface de consultation a été tranchée (voir l'encadré de la
+   section `Q_GEO_04`) ; `Q_TAB_04` **change de verdict** : son identité est
+   instruite depuis le 2026-08-01, et c'est le **Know Cannabis Test** (clinique
+   Jellinek, publié par l'OFDT), dont le servi ne partage qu'un item — à
+   reconstruire, pas à rouvrir ;
+3. ~~`Q_GEO_01`~~ **fait le 2026-07-31** ;
+4. ~~`Q_ALI_03` (Monnier)~~ **fait le 2026-07-31** ; `Q_PED_02` à débaptiser ;
 5. `Q_NEU_12` — la restructuration de la partie 3, seule divergence encore
-   inconnue du dossier avant aujourd'hui ;
-6. `Q_PED_03` — un passage de banc, lecture découpée.
+   inconnue du dossier avant le 2026-07-31 ;
+6. `Q_PED_03` — un passage de banc. **Le motif d'échec a changé** : la lecture
+   n'était pas trop longue, son plafond de sortie était quatre fois plus bas que
+   celui de l'autre lecture, et sans garde de troncature.
 
 ---
 

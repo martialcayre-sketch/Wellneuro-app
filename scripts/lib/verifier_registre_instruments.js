@@ -315,6 +315,52 @@ function verifierRegistreInstruments({
         + `est '${entry.statutCertification}' — un instrument administré en consultation est en `
         + `production : le retirer de cette liste, ou lui faire reprendre l'échelle`
       );
+      // ET UN PLANCHER, sans quoi la contrepartie ci-dessus ne vaut rien.
+      //
+      // Interdire les deux états terminaux ne posait AUCUNE exigence : tous les
+      // contrôles de pièces sont conditionnés à `barreau >= …`, et à `repere`
+      // aucun n'est armé. Un instrument pouvait donc être servi en consultation,
+      // affiché au rayon et livrer son verbatim intégral sans source, sans
+      // droits vérifiés, sans contenu verrouillé et sans verdict de banc — le CI
+      // restant vert. Mesuré par mutation le 2026-07-31, sur les deux entrées
+      // que ce lot fait monter.
+      //
+      // Le plancher est `contenu_verrouille` et non `scoring_verifie` : ce qui
+      // est publié en consultation, c'est le VERBATIM des items. Exiger que le
+      // contenu servi soit verrouillé est exactement ce qui correspond à ce que
+      // cette surface expose.
+      ajouter(
+        ECHELLE.indexOf(entry.statutCertification) >= ECHELLE.indexOf('contenu_verrouille'),
+        `${id} : servi en passation praticien alors que statutCertification est `
+        + `'${entry.statutCertification}' — cette surface publie le VERBATIM des items, elle `
+        + `exige donc au moins 'contenu_verrouille'`
+      );
+    }
+
+    // `reference_identifiee` DOIT DÉSIGNER QUELQUE CHOSE.
+    //
+    // Le statut n'était qu'un mot d'un vocabulaire fermé : rien n'obligeait
+    // l'entrée à nommer la référence qu'elle prétend avoir identifiée. Une
+    // montée de `a_completer` à `reference_identifiee` pouvait donc être
+    // purement déclarative — exactement le reproche fait au VQ11 le 2026-07-30,
+    // et à `Q_NEU_06` le 2026-07-31, dont tous les champs d'identification
+    // restaient à `null` pendant que l'étiquette changeait.
+    //
+    // Le seuil est volontairement bas : UN champ suffit. On exige que la
+    // référence soit désignable, pas qu'elle soit publiée à comité de lecture —
+    // un gabarit strict serait contourné par un gabarit vide.
+    if (entry.statutBibliographique === 'reference_identifiee') {
+      const nonVide = valeur => typeof valeur === 'string' ? valeur.trim().length > 0 : valeur != null;
+      ajouter(
+        nonVide(entry.instrument?.auteurs)
+        || nonVide(entry.instrument?.anneePublication)
+        || nonVide(entry.instrument?.formePubliee)
+        || nonVide(entry.references?.doi)
+        || nonVide(entry.references?.pmid),
+        `${id} : statutBibliographique 'reference_identifiee' sans aucun champ qui désigne la `
+        + `référence — renseigner au moins instrument.auteurs, instrument.anneePublication, `
+        + `instrument.formePubliee, references.doi ou references.pmid`
+      );
     }
 
     if (barreau >= ECHELLE.indexOf('source_obtenue')) {

@@ -261,3 +261,41 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
     expect(inconnus, `ids du registre inconnus du dépôt : ${inconnus.join(', ')}`).toEqual([]);
   });
 });
+
+// ── LA GARDE QUI MANQUAIT, ET QUI AURAIT ROUGI DEPUIS TOUJOURS ──────────────
+//
+// Trouvée en revue le 2026-08-01. `PASSATION_PRATICIEN` est une liste
+// d'AFFICHAGE : les trois routes d'assignation ne la consultent pas. Elles
+// n'exigent qu'une définition, une fois passé le filtre `IDS_SUSPENDUS`.
+//
+// Quatre des six instruments de consultation n'avaient AUCUNE entrée de
+// catalogue — ils échappaient donc à `IDS_SUSPENDUS`, et un POST direct sur
+// `api/praticien/assignations` les acceptait. Trois tests cognitifs de
+// gérontologie et un catalogue mictionnel, administrés en consultation,
+// pouvaient partir au portail patient.
+//
+// C'est la position « invisible et assignable » que #460 avait fermée sur le
+// seul MMSE, en lui donnant une entrée `actif: false`. Les quatre autres l'ont
+// reçue le 2026-08-01 — et ce test est ce qui empêche la prochaine ligne de
+// `PASSATION_PRATICIEN` d'être ajoutée sans elle.
+describe('passation praticien — aucun n’est assignable par la route', () => {
+  it('les six sont fermés au prédicat que la route exécute vraiment', () => {
+    // Le prédicat est celui de la route, PAS `IDS_ASSIGNABLES` : les deux
+    // diffèrent, et c'est l'écart entre eux qui était le trou. `IDS_ASSIGNABLES`
+    // exige une entrée de rayon active ; la route se contente d'une définition.
+    const ouverts = PASSATION_PRATICIEN.map(p => p.id).filter(assignableParLaRoute);
+    expect(
+      ouverts,
+      `assignables par appel direct alors qu'ils sont administrés en consultation : `
+        + `${ouverts.join(', ')} — leur donner une entrée de catalogue \`actif: false\``,
+    ).toEqual([]);
+  });
+
+  it('ne se tait pas parce qu’il ne lit plus rien', () => {
+    // ANTI-VACUITÉ : sur une liste vide, l'assertion ci-dessus est vraie sans
+    // rien avoir vérifié.
+    expect(PASSATION_PRATICIEN.length).toBeGreaterThanOrEqual(6);
+    // Et le prédicat doit encore savoir dire OUI, sinon il ne dit rien.
+    expect(assignableParLaRoute('Q_SOM_01')).toBe(true);
+  });
+});

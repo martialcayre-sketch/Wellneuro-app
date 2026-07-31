@@ -120,7 +120,13 @@ describe('questionnaire suspendu (actif: false)', () => {
   // et cette exception est une LISTE FERMÉE, pas un prédicat — `passationPraticien`
   // aurait fait passer au vert n'importe quel ajout futur à cette liste, y
   // compris celui qu'on n'aurait pas voulu.
-  const AFFICHES_EN_CONSULTATION = ['Q_GEO_04', 'Q_NEU_06'];
+  // SIX depuis le 2026-08-01 : les quatre autres instruments de consultation ont
+  // reçu leur entrée `actif: false` le même jour, pour fermer leur route
+  // d'assignation — mesurée ouverte par appel direct. Ils étaient déjà affichés
+  // par `PASSATION_PRATICIEN` ; seule leur route change.
+  const AFFICHES_EN_CONSULTATION = [
+    'Q_GEO_03', 'Q_GEO_04', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06', 'Q_URO_02',
+  ];
 
   it('n’est jamais assignable, quel qu’en soit le motif', () => {
     for (const q of suspendus) {
@@ -233,7 +239,7 @@ describe('questionnaire suspendu (actif: false)', () => {
     // second est repris. La ROUTE reste fermée — `actif: false`, `IDS_SUSPENDUS`,
     // non assignable — et c'est elle qui protège le patient. L'USAGE EN
     // CONSULTATION rouvre : le MMSE est un test administré par un clinicien, et
-    // cinq instruments portant la même classe de réserve sont, eux, ENVOYÉS AU
+    // six instruments portant la même classe de réserve sont, eux, ENVOYÉS AU
     // PATIENT. Interdire le moins exposant en autorisant le plus ne tenait pas.
     //
     // Ce qui suit garde donc la SÉPARATION des deux gestes, qui est le vrai

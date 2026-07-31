@@ -513,6 +513,13 @@ export const Q_NEU_03 = {
 // pour un instrument à passation praticien.
 export const Q_NEU_06 = {
   id:'Q_NEU_06', titre:'MMT — Mini Mental Test SIIN',
+  // ⚠️ CLINICIEN UNIQUEMENT — les items 3, 5 et 10 forment un enregistrement de
+  // trois mots puis deux rappels : auto-rempli, le patient remonte la page.
+  // C'est ce champ, et lui seul, qui fait afficher le bandeau « Instrument à
+  // faire passer en consultation — jamais envoyé au portail » dans l'aperçu
+  // praticien : sans lui, la réouverture en consultation livrerait la grille
+  // sans son avertissement.
+  administrationMode: 'clinicien',
   instructions:"À compléter AVEC le patient en consultation : les épreuves 1 à 5 et 10 se posent oralement, et le rappel des trois mots ne vaut que si le patient ne les a pas sous les yeux. Cotation en points de TROUBLE — 0 pour une réponse juste, 2 pour une réponse absente ou inexacte.",
   sections:[
     { id:'MMT', titre:'Épreuves',
