@@ -982,3 +982,23 @@ témoin non déclaratif.
 **Questions ouvertes** : Q_NEU_06 (suspendre ou reconstruire), Q_SOM_09 (banc
 vacueux), VQ11 = Q_PNE_01 (instruire les droits d'une échelle publiée), règle du
 « nombre d'items » non écrite (PSQI 24/18, Q_NEU_12 36/48, Q_GEO_01 16/20).
+
+## 2026-07-31 — Certification : 54 → 56 sur 64, quatre PR
+
+**Décisions** : PSQI aux 24 items de sa source (volet conjoint non coté, drapeau
+`horsBareme` pour le moteur clinique) ; MMT et MFI-20 **reconstruits** depuis
+leurs sources — le MFI-20 passe de 3 divergences critiques à 0, sa clé
+d'inversion lue sur l'image de la grille de correction ; VQ11 rouvert, son
+identité étant établie ; cannabis aligné sur les trois bandes de la source. La
+règle du « nombre d'items » est écrite : ce sont les axes et le total qui se
+comparent, jamais le compteur.
+
+**Écarté** : rouvrir Q_NEU_06 et Q_TAB_04 — identité non instruite, même barre
+pour les deux ; et une surface de passation praticien, qui aurait publié le
+verbatim d'un instrument sous réserve.
+
+**Prochaine action** : reconstruire le Monnier (10 items servis sur 39).
+
+**Questions ouvertes** : surface de consultation sans verbatim (bloque Q_NEU_06
+et Q_GEO_04) ; échelle de Q_SOM_09, à ne pas changer avant clôture des 8 agendas
+en cours ; perte de discrimination 16/30 sur le cannabis, si elle ne convient pas.
