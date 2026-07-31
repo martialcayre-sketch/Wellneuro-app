@@ -714,3 +714,26 @@ test("'reference_identifiee' : UN champ suffit, et chacun compte", () => {
     );
   }
 });
+
+test("'reference_identifiee' : un champ VIDE mais non nul ne suffit pas", () => {
+  // `valeur != null` laissait passer `0`, `false`, `[]` et `{}`. Un champ vide
+  // qui satisfait un garde est pire qu'un champ absent : il éteint l'alerte au
+  // lieu de la déclencher, et l'étiquette redevient purement déclarative — le
+  // défaut même que ce garde a été écrit pour fermer.
+  const vides = [
+    { instrument: { nomOfficiel: 'X', auteurs: '   ', anneePublication: null, formePubliee: null, proprietaireDroits: null } },
+    { instrument: { nomOfficiel: 'X', auteurs: [], anneePublication: null, formePubliee: null, proprietaireDroits: null } },
+    { instrument: { nomOfficiel: 'X', auteurs: null, anneePublication: 0, formePubliee: null, proprietaireDroits: null } },
+    { instrument: { nomOfficiel: 'X', auteurs: null, anneePublication: null, formePubliee: '', proprietaireDroits: null } },
+    { references: { doi: false, pmid: null, dateVerification: null, verifiePar: null } },
+  ];
+  for (const surcharge of vides) {
+    const { erreurs } = verifier({
+      registre: { instruments: [entree({ statutBibliographique: 'reference_identifiee', ...surcharge })] },
+    });
+    assert.ok(
+      erreurs.some(e => /sans aucun champ qui désigne la référence/.test(e)),
+      `champ vide accepté à tort : ${JSON.stringify(surcharge)}`
+    );
+  }
+});

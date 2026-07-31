@@ -203,11 +203,17 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
     // porte la déclaration d'usage expose strictement moins que de l'adresser à
     // un patient. Interdire le moins en autorisant le plus ne tenait pas.
     //
-    // Ce que cette liste n'est PAS : une levée de droits. Le MMSE reste © PAR —
-    // et il est le seul de cette population dont l'ayant droit vend activement
-    // la licence, là où les cinq autres portent une formalité à accomplir ou des
-    // droits non instruits. L'asymétrie de NATURE subsiste, et le registre la
-    // porte ; seule la décision d'usage change.
+    // Ce que cette liste n'est PAS : une levée de droits. Le MMSE reste © PAR,
+    // et aucune des réserves de cette population n'est levée — seule la décision
+    // d'USAGE change.
+    //
+    // Une première rédaction ajoutait que le MMSE serait le seul dont l'ayant
+    // droit vend activement la licence. C'est faux : QualityMetric (HIT-6) et
+    // GL Assessment (HAD) portent la même mention au registre, et tous deux sont
+    // dans `LAISSES_ASSIGNABLES` ci-dessus, donc envoyés au patient. Le fait
+    // rectifié RENFORCE l'asymétrie qui motive cette liste — ce n'est pas que le
+    // MMSE serait un cas à part, c'est que des instruments de même statut de
+    // droits sont déjà servis plus largement que lui.
     const EN_PASSATION_ATTENDUS = [
       // MMSE (GRECO) — test administré par le clinicien : rappel différé et copie
       // de figure n'ont aucun sens en auto-remplissage. Son entrée de catalogue
@@ -297,5 +303,36 @@ describe('passation praticien — aucun n’est assignable par la route', () => 
     expect(PASSATION_PRATICIEN.length).toBeGreaterThanOrEqual(6);
     // Et le prédicat doit encore savoir dire OUI, sinon il ne dit rien.
     expect(assignableParLaRoute('Q_SOM_01')).toBe(true);
+  });
+});
+
+// ── LE BANDEAU D'AVERTISSEMENT, QUE RIEN NE GARDAIT ─────────────────────────
+//
+// Relevé en revue le 2026-08-01, et c'est la vraie lacune du lot : le champ
+// `administrationMode: 'clinicien'` est ce qui fait afficher, dans l'aperçu
+// praticien, « Instrument à faire passer en consultation — jamais envoyé au
+// portail ». Aucun test ne le lisait. Il pouvait donc être retiré sans qu'une
+// ligne rougisse — et la grille d'un test qui SE CORRIGE TOUT SEUL s'il est
+// auto-rempli serait alors affichée sans son avertissement.
+//
+// Ce n'est pas une garde d'affichage : c'est le seul endroit du dépôt où la
+// raison clinique de ne pas auto-administrer ces instruments est portée jusqu'à
+// l'écran.
+describe('passation praticien — l’avertissement clinicien atteint l’écran', () => {
+  it('les instruments à rappel différé le déclarent', () => {
+    // La liste est nommée, pas dérivée : ce sont les instruments dont un item
+    // vaut zéro point s'il est lu avant d'être répondu — rappel de mots, copie
+    // de figure. Un instrument de consultation peut légitimement ne pas en
+    // porter (un catalogue mictionnel se remplit chez soi) ; ceux-ci non.
+    for (const id of ['Q_GEO_04', 'Q_NEU_06', 'Q_GEO_06']) {
+      const def = CATALOGUE_DEFINITIONS[id] as { administrationMode?: string } | undefined;
+      expect(def, id).toBeDefined();
+      expect(
+        def?.administrationMode,
+        `${id} : sans \`administrationMode: 'clinicien'\`, l'aperçu affiche la grille `
+          + `SANS le bandeau « jamais envoyé au portail » — et ces instruments se corrigent `
+          + `d'eux-mêmes en auto-remplissage (rappel différé, copie de figure)`,
+      ).toBe('clinicien');
+    }
   });
 });

@@ -46,9 +46,13 @@ export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   // clinicien ; les deux gestes de #460 restent indépendants, seul celui-ci est
   // repris.
   //
-  // Réserve qui ne se lève pas et qui n'est pas de même nature que les cinq
-  // autres : PAR vend activement cette licence. Les autres réserves portent sur
-  // une formalité à accomplir ou sur des droits non instruits.
+  // La réserve « © PAR, licence requise » ne se lève PAS pour autant, et le
+  // registre la porte. Elle n'est pas non plus d'une nature à part : une
+  // première rédaction affirmait ici que PAR serait le seul ayant droit de cette
+  // population à vendre activement sa licence — c'est FAUX, QualityMetric
+  // (HIT-6) et GL Assessment (HAD) sont dans le même cas, et tous deux sont déjà
+  // ENVOYÉS AU PATIENT. Le fait rectifié renforce l'asymétrie qui motive cette
+  // ligne au lieu de l'affaiblir.
   { id: 'Q_GEO_04', categorie: 'Gérontologie' },
   // `Q_GEO_04` (MMSE) est sorti d'ici le 2026-07-29, sur arbitrage praticien :
   // droits non dégagés (« © PAR, licence requise »). Cette ligne portait son

@@ -350,7 +350,18 @@ function verifierRegistreInstruments({
     // référence soit désignable, pas qu'elle soit publiée à comité de lecture —
     // un gabarit strict serait contourné par un gabarit vide.
     if (entry.statutBibliographique === 'reference_identifiee') {
-      const nonVide = valeur => typeof valeur === 'string' ? valeur.trim().length > 0 : valeur != null;
+      // `valeur != null` ne suffisait pas : `0`, `false`, `[]` et `{}` passaient
+      // tous. `anneePublication: 0` ou `auteurs: []` sont des vecteurs
+      // réalistes — un champ vide qui satisfait un garde est pire qu'un champ
+      // absent, puisqu'il éteint l'alerte au lieu de la déclencher.
+      const nonVide = valeur => {
+        if (valeur === null || valeur === undefined) return false;
+        if (typeof valeur === 'string') return valeur.trim().length > 0;
+        if (typeof valeur === 'number') return Number.isFinite(valeur) && valeur > 0;
+        if (Array.isArray(valeur)) return valeur.length > 0;
+        if (typeof valeur === 'boolean') return false;
+        return Object.keys(valeur).length > 0;
+      };
       ajouter(
         nonVide(entry.instrument?.auteurs)
         || nonVide(entry.instrument?.anneePublication)

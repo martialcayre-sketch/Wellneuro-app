@@ -104,3 +104,47 @@ l'écran, seule la route se ferme — et une garde neuve exécute désormais le
 prédicat **de la route**, pas `IDS_ASSIGNABLES`, sur les six.
 
 Douze mutations éprouvées au total, chacune vérifiée échouante puis restaurée.
+
+
+**Seconde passe de revue : quatre bloquants de plus, tous soldés.**
+
+- **Le MMSE redescend à `contenu_verrouille`.** `scoring_verifie` affirme que LE
+  SCORING est vérifié — or le scoring d'un MMSE n'est pas la somme, c'est la
+  **bande**. Aucune des quatre n'a été comparée à quoi que ce soit, elles viennent
+  d'une transcription HAS 2011, et rien dans le dépôt n'a vérifié que
+  27-30 / 21-26 / 10-20 / 0-9 est bien ce que la HAS écrit : un second saut, non
+  mesuré lui non plus. Ce sont pourtant ces bandes qui transforment un entier en
+  « Démence sévère ». `Q_SOM_09` a vu sa montée annulée pour une vacuité de même
+  nature ; invoquer ce précédent dans la description tout en gardant le barreau
+  était une inconséquence. Le barreau recule à ce qui a été mesuré — les items et
+  la structure — et **la réouverture en consultation y survit intacte**, le
+  plancher posé par ce même lot étant à ce barreau.
+- **La correction du motif faux était écrite au mauvais endroit.** Elle vivait
+  dans ce fragment de changelog — transitoire — pendant que l'affirmation
+  survivait mot pour mot dans le registre, dans `bibliotheque.ts` et dans la
+  garde. Le registre est la pièce qui dure : c'est là que la rectification est
+  désormais portée.
+- **Quatre routes fermées sans avoir lu la production.** Le dépôt exige de mesurer
+  avant d'écrire, et je ne l'avais fait que pour le MMSE. Lecture du 2026-08-01
+  pour `Q_GEO_03`, `Q_GEO_05`, `Q_GEO_06` et `Q_URO_02` : **zéro** assignation,
+  zéro assignation non complétée, zéro réponse, zéro appartenance à un pack. La
+  fermeture ne retire donc aucune ligne d'un portail patient, ne refuse aucune
+  soumission en vol et ne vide aucun pack. La requête est jointe au registre.
+- **Deux identités affirmées sans pièce**, dans le dossier d'arbitrage — la classe
+  de défaut que la première passe venait de faire corriger, rejouée dans le commit
+  qui la corrigeait. Le *Know Cannabis Test* et le plafond de sortie du banc
+  redeviennent des **pistes datées**, à instruire, tant que rien n'est au registre.
+- **Un morceau de sécurité clinique ne tenait à rien** : `administrationMode:
+  'clinicien'` est le seul endroit du dépôt où la raison de ne pas auto-administrer
+  ces tests atteint l'écran — c'est lui qui affiche « jamais envoyé au portail ».
+  Aucun test ne le lisait. Il en a un.
+- `nonVide` acceptait `0`, `false`, `[]` et `{}` : un champ vide qui satisfait un
+  garde est pire qu'un champ absent, puisqu'il éteint l'alerte au lieu de la
+  déclencher. Corrigé, avec cinq cas de fixture.
+
+Note de lecture du diff : `questionnaires/neuropsychologie.ts` apparaît réécrit sur
+562 lignes. C'est la normalisation CRLF → LF que `.gitattributes` (`* text=auto
+eol=lf`) applique au premier contact ; **la modification réelle est de sept
+lignes**, visible avec `git diff --ignore-all-space`.
+
+Quatorze mutations éprouvées au total, chacune vérifiée échouante puis restaurée.

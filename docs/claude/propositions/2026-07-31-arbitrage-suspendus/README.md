@@ -311,17 +311,21 @@ Les lots restants, par ordre de valeur clinique décroissante :
 1. ~~`Q_SOM_07` (MFI-20)~~ **fait le 2026-07-31** ;
 2. ~~`Q_PNE_01`~~ **fait le 2026-07-31** ; ~~`Q_GEO_04` et `Q_NEU_06`~~ **faits le
    2026-08-01** — la surface de consultation a été tranchée (voir l'encadré de la
-   section `Q_GEO_04`) ; `Q_TAB_04` **change de verdict** : son identité est
-   instruite depuis le 2026-08-01, et c'est le **Know Cannabis Test** (clinique
-   Jellinek, publié par l'OFDT), dont le servi ne partage qu'un item — à
-   reconstruire, pas à rouvrir ;
+   section `Q_GEO_04`) ; `Q_TAB_04` reste fermé, **avec une piste d'identification
+   à instruire** : les deux lectures du banc et un guide public de l'OFDT
+   convergent vers le *Know Cannabis Test* (clinique Jellinek), dont le servi ne
+   partagerait qu'un item. **Rien de cela n'est encore au registre** — tant que la
+   pièce n'y est pas, c'est une piste, pas un verdict, et la présente ligne ne
+   vaut pas instruction ;
 3. ~~`Q_GEO_01`~~ **fait le 2026-07-31** ;
 4. ~~`Q_ALI_03` (Monnier)~~ **fait le 2026-07-31** ; `Q_PED_02` à débaptiser ;
 5. `Q_NEU_12` — la restructuration de la partie 3, seule divergence encore
    inconnue du dossier avant le 2026-07-31 ;
-6. `Q_PED_03` — un passage de banc. **Le motif d'échec a changé** : la lecture
-   n'était pas trop longue, son plafond de sortie était quatre fois plus bas que
-   celui de l'autre lecture, et sans garde de troncature.
+6. `Q_PED_03` — un passage de banc. **Piste sur le motif d'échec, à confirmer en
+   rejouant** : la lecture n'était peut-être pas trop longue — le plafond de
+   sortie de la lecture GPT est quatre fois plus bas que celui de la lecture
+   Claude, et elle ne porte aucune garde de troncature. À vérifier par
+   l'expérience avant d'être écrit où que ce soit comme un fait.
 
 ---
 
