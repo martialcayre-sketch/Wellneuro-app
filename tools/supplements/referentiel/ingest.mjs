@@ -50,9 +50,24 @@ function charger(nom) {
   return readFileSync(chemin, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
 }
 
-/** Code lisible et stable : c'est lui que les règles cliniques manipuleront. */
+/**
+ * Format exigé par le service (`parseReferentielPayload`). Le connaître ICI
+ * permet de refuser AVANT d'écrire quoi que ce soit — voir la validation
+ * préalable plus bas.
+ */
+const CODE_ATTENDU = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
+
+/**
+ * Code lisible et stable : c'est lui que les règles cliniques manipuleront.
+ *
+ * L'ORDRE COMPTE : on tronque À 80, PUIS on retire les tirets de bord.
+ * L'inverse — trimmer avant de couper — laisse la troncature retomber sur un
+ * tiret, que le service refuse. Deux noms officiels tombaient dedans le
+ * 2026-07-31, dont « Sel de sodium de 3-sialyllactose… » : l'ingestion s'est
+ * arrêtée au 3e lot sur 9, 800 ingrédients déjà écrits.
+ */
 function slug(nom) {
-  return nom.normalize('NFD').replace(/[\u0300-\u036f]/g, "")    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 80)
+  return nom.normalize('NFD').replace(/[\u0300-\u036f]/g, "")    .toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80).replace(/^-+|-+$/g, '')
     || 'sans-nom';
 }
 
@@ -118,6 +133,25 @@ for (const p of plantes) {
 for (const m of micro) {
   const id = `microorganism:${m.id}`;
   ingredients.push({ sourceIdentifiant: id, code: codeUnique(m.name, id), nomFr: m.name, formes: [] });
+}
+
+// ── Validation préalable ───────────────────────────────────────────────────
+// TOUTE la projection est vérifiée AVANT le premier envoi. Le service valide
+// lot par lot : un code mal formé au 3e lot sur 9 laisse 800 ingrédients écrits
+// et la campagne à moitié faite. C'est arrivé le 2026-07-31. Une campagne
+// s'arrête avant d'écrire, ou elle va au bout — pas entre les deux.
+const malFormes = [];
+for (const e of ingredients) {
+  if (!CODE_ATTENDU.test(e.code)) malFormes.push(`${e.sourceIdentifiant} → « ${e.code} »`);
+  for (const f of e.formes) {
+    if (!CODE_ATTENDU.test(f.code)) malFormes.push(`${f.sourceIdentifiant} → « ${f.code} »`);
+  }
+}
+if (malFormes.length > 0) {
+  console.error(`\n${malFormes.length} code(s) au format refusé par le service — RIEN n'a été envoyé :`);
+  for (const m of malFormes.slice(0, 20)) console.error(`  ${m}`);
+  if (malFormes.length > 20) console.error(`  … et ${malFormes.length - 20} autres.`);
+  process.exit(1);
 }
 
 const nbFormes = ingredients.reduce((n, i) => n + i.formes.length, 0);
