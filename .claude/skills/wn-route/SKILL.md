@@ -71,6 +71,16 @@ coûteux — $10/$50 par MTok, réservé aux tâches long-cours), `opus`, `sonne
 `plan` (`/model opusplan`). Déléguer à un sous-agent `wn-*` bascule de modèle : ils
 sont déjà épinglés.
 
+### Délégation — le seul réflexe qui change la dépense
+
+Avant de lire plus de deux ou trois fichiers **soi-même**, déléguer à
+`wn-explorer` (ou à l'agent adapté). Son contexte est jeté à la fin ; ce qu'il
+lit n'est jamais repayé, alors qu'un fichier lu dans la session est relu à
+chaque tour suivant. Mesuré le 2026-08-01 : **28 fois moins cher par appel**.
+
+Ce qui remonte est la conclusion, pas les fichiers. Voir `CLAUDE.md`,
+« Économie de contexte ».
+
 ### Mode d'exécution — solo par défaut
 
 | Situation | Mode |
