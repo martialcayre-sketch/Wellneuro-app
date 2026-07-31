@@ -9,34 +9,58 @@ effort: medium
 
 # WellNeuro — audit des règles et des définitions d'agents
 
-!`git log -1 --format='%ad  %s' -- CLAUDE.md AGENTS.md`
-!`ls .claude/agents/ .claude/skills/`
+!`git log -1 --format='%ad  %s' -- CLAUDE.md AGENTS.md .github/copilot-instructions.md`
+!`ls .claude/agents/ .claude/skills/ .github/agents/ .github/instructions/ .github/prompts/`
 
-Cible : `$ARGUMENTS` (vide : `CLAUDE.md`, `AGENTS.md`, `.claude/agents/*.md`,
-`.claude/skills/wn*/SKILL.md`, `.claude/settings.json`)
+Cible : `$ARGUMENTS` (vide : tout le parc ci-dessous)
+
+## Le parc est à deux étages — les auditer ensemble
+
+Ce dépôt instruit **deux** familles d'agents, et n'en auditer qu'une laisse
+l'autre dériver seule :
+
+| Lecteur | Fichiers |
+|---|---|
+| Claude Code | `CLAUDE.md`, `.claude/agents/*.md`, `.claude/skills/wn*/SKILL.md`, `.claude/settings.json` |
+| Copilot — qui **revoit et merge** les PR | `.github/copilot-instructions.md`, `.github/instructions/*.instructions.md`, `.github/agents/*.agent.md`, `.github/prompts/*.prompt.md` |
+| Les deux | `AGENTS.md` |
+
+Le second étage est le plus facile à oublier — il n'est jamais chargé dans la
+session qui l'audite — et le plus coûteux à laisser dériver, puisqu'il instruit
+le relecteur. Ne jamais rendre un audit qui ne l'a pas ouvert.
+
+**Un `applyTo:` est une affirmation vérifiable, pas une intention.** Un glob de
+`.github/instructions/` qui ne matche aucun fichier existant est une règle qui
+ne s'applique jamais, et rien ne le signale. Développer chaque glob contre le
+dépôt réel. Le 2026-07-31, `clinical.instructions.md` visait
+`web/src/lib/questions/**` — un répertoire qui n'existe pas — alors que le
+catalogue et le moteur de scoring tiennent dans `web/src/lib/questions.ts` :
+la garde clinique ne couvrait pas le fichier clinique.
 
 Lecture seule. Rendre des écarts d'adhérence, jamais des préférences de style.
 
-## 1. Un fichier de règles que rien ne référence est un fichier que rien ne lit
+## 1. Qui lit ce fichier — et la question ne se répond pas dans un seul dossier
 
-C'est le premier contrôle, et le plus rentable. Pour chaque fichier
-d'instructions : **qui le charge ?** Chargement automatique déclaré, import
-depuis un autre fichier de règles, ou mention explicite dans `CLAUDE.md`. Aucun
-des trois : le fichier est mort, et **ses règles avec lui — y compris celles
-qui n'existent nulle part ailleurs**.
+Premier contrôle, et le plus rentable. Pour chaque fichier d'instructions :
+**qui le charge ?** Chargement automatique déclaré, ou référence depuis un
+autre fichier de règles — **des deux étages**. Aucun des deux : le fichier est
+mort, et ses règles avec lui, y compris celles qui n'existent nulle part
+ailleurs.
 
-Le 2026-07-31, `AGENTS.md` était dans cet état : dernière modification le
-2026-07-14, aucune mention dans `CLAUDE.md`, une architecture d'avant le corpus
-RAG, la migration HDS/Scalingo et la règle « une session = un worktree ». Il
-portait pourtant seul trois règles de gouvernance du scoring (mise à jour de
-`docs/questionnaires-drive-mapping.md`, fixture obligatoire dans
-`scripts/check_questionnaire_certification.js` pour un questionnaire
-`certifié`, métadonnée `certification` dans `scoresJson`). Une règle vraie dans
-un fichier mort ne protège de rien.
+**Chercher la référence dans tout le dépôt, jamais dans un seul fichier.** Le
+2026-07-31, `AGENTS.md` a été déclaré orphelin sur la foi d'un `grep` dans le
+seul `CLAUDE.md` ; il était en réalité chargé depuis
+`.github/copilot-instructions.md`, donc servi au relecteur des PR. Le
+diagnostic « personne ne le lit » était faux, et il menait à la mauvaise
+conclusion : le vrai défaut n'était pas un fichier mort mais **un instantané
+périmé servi à un agent** — plus grave, et corrigé autrement.
 
-Pour chaque fichier orphelin, rendre les trois issues et recommander une :
-le raccrocher (référence depuis `CLAUDE.md`), en extraire les règles uniques
-vers un fichier vivant, ou le retirer. Ne jamais retirer sans confirmation.
+Une fois le lecteur identifié, deux cas :
+
+- **lu et périmé** — le pire état : ses affirmations fausses circulent. Le
+  ramener à ce qui ne peut pas dériver, ou le remettre à jour ;
+- **lu par personne** — extraire les règles uniques vers un fichier vivant
+  avant toute autre décision. Ne jamais retirer sans confirmation.
 
 ## 2. Dérive : ce que le fichier affirme contre ce que le dépôt fait
 
@@ -49,22 +73,33 @@ Une affirmation invérifiable se signale comme telle plutôt que d'être accept�
 
 Couper ce qui se déduit de la lecture du code ou des conventions générales du
 langage. Un fichier de règles long se lit moins bien qu'un fichier court, et
-son coût est payé à **chaque** session. Signaler les redites entre `CLAUDE.md`
-et `AGENTS.md` : la même règle en deux exemplaires dérive toujours d'un côté.
+son coût est payé à **chaque** session. Signaler les redites entre `CLAUDE.md`,
+`AGENTS.md` et `.github/copilot-instructions.md` : la même règle en trois
+exemplaires dérive toujours d'au moins un côté, et c'est le côté qu'on ne
+relit pas.
 
-## 4. Définitions d'agents et de skills
+## 4. Définitions d'agents — des deux étages
 
-Pour chaque `.claude/agents/*.md` et `.claude/skills/wn*/SKILL.md` :
+Pour chaque `.claude/agents/*.md`, `.claude/skills/wn*/SKILL.md` **et**
+`.github/agents/*.agent.md` :
 
 - **un métier par définition** — un agent qui fait deux choses n'est appelé pour
   aucune ;
-- **outils au minimum nécessaire** — un agent en lecture seule ne déclare ni
-  `Write`, ni `Edit`, ni un `Bash` sans restriction ;
-- **`model` et `effort` explicites**, cohérents avec `/wn-model` ;
+- **outils au minimum nécessaire** — un agent qui se dit en lecture seule ne
+  déclare ni écriture, ni exécution. Rapprocher le frontmatter du texte : c'est
+  le frontmatter qui décide, le texte ne fait qu'exprimer une intention ;
+- **une seule convention de nommage d'outils par famille** — deux syntaxes
+  coexistantes dans un même dossier signifient qu'au moins une est ignorée
+  silencieusement ;
+- **`model` et `effort` explicites** côté Claude, cohérents avec `/wn-model` ;
 - **la `description` dit *quand* déléguer**, pas ce que l'agent sait faire :
   c'est elle, et elle seule, qui décide de l'appel ;
-- **pas de doublon fonctionnel** — deux skills qui se recouvrent produisent un
-  routage arbitraire. Le repérer, nommer celui qui garde le périmètre.
+- **pas de doublon fonctionnel** — deux définitions qui se recouvrent produisent
+  un routage arbitraire. Le repérer, nommer celle qui garde le périmètre.
+
+Vérifier aussi que les **paires d'agents équivalents** entre les deux étages
+n'ont pas divergé : un `Reviewer` qui ignore une règle que son homologue
+applique rend deux verdicts différents sur le même diff.
 
 ## 5. Une règle en prose qui ne tient pas doit devenir exécutable
 
@@ -83,8 +118,9 @@ test, script), et ce qui reste à écrire.
 
 ## Sortie
 
-1. **Critique** — fichier orphelin portant des règles uniques ; affirmation
-   fausse pouvant conduire à un geste risqué ; agent sur-doté en outils.
+1. **Critique** — fichier lu mais périmé ; règle unique portée par un fichier
+   que rien ne lit ; `applyTo` qui ne matche aucun fichier ; affirmation fausse
+   pouvant conduire à un geste risqué ; agent sur-doté en outils.
 2. **À corriger** — dérive, doublon, `description` qui ne dit pas quand
    déléguer, modèle absent.
 3. **Optionnel** — allègements, redites sans conséquence.

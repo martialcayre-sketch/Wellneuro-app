@@ -1,5 +1,5 @@
 ---
-applyTo: "web/src/lib/questions/**,web/src/lib/equilibre/**,web/src/lib/consultation/**,prompts/**"
+applyTo: "web/src/lib/questions*,web/src/lib/questions/**,web/src/lib/equilibre/**,web/src/lib/consultation/**,prompts/**"
 ---
 
 # Logique clinique et IA
@@ -12,3 +12,15 @@ applyTo: "web/src/lib/questions/**,web/src/lib/equilibre/**,web/src/lib/consulta
 - Documenter toute modification clinique dans un fragment `changelog.d/`
   (replié dans `CHANGELOG.md` à la consolidation — voir `changelog.d/README.md`).
 - Utiliser uniquement des données fictives autorisées dans les tests.
+
+## Gouvernance d'un questionnaire ou d'un score
+
+- Respecter `docs/gouvernance-questionnaires-scoring.md`, et mettre à jour
+  `docs/questionnaires-drive-mapping.md` à toute modification de questionnaire
+  ou de scoring.
+- Un questionnaire marqué `certifié` dans la matrice doit avoir une fixture
+  dans `scripts/check_questionnaire_certification.js`.
+- Un score Drive certifié ou ambigu expose la métadonnée `certification` dans
+  `scoresJson`.
+- Une absence de réponse rend **non scoré**, jamais `0` : un zéro implicite
+  déplace le score sans que rien ne le signale.

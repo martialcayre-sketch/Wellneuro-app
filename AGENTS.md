@@ -1,85 +1,52 @@
 # AGENTS.md — Wellneuro NNPP2
 
-## Identité du projet
+Wellneuro NNPP2 est une application de consultation en neuronutrition **en
+production**. Priorité absolue : sa stabilité. Le code applicatif est dans
+`web/`.
 
-Wellneuro NNPP2 est une application de consultation en neuronutrition en production, construite sur **Next.js 14 (App Router) + TypeScript + Prisma + PostgreSQL (Supabase) + NextAuth**, déployée sur **Vercel** (`app.wellneuro.fr`).
+## Les cinq interdits
 
-Le déploiement Google Apps Script (GAS) historique a été décommissionné le 2026-07-03 (lot C5) : web app et déclencheurs arrêtés côté console Apps Script. Le code est conservé pour référence dans `archive/gas-legacy/` mais n'est plus exécuté ni maintenu.
+Ils n'ont pas bougé depuis l'origine et ne bougeront pas. Leur violation ne se
+rattrape pas — un secret poussé est un secret à révoquer, une donnée patient
+commitée est une fuite, une migration lancée a déjà écrit.
 
-**Décommission Google Sheets terminée (2026-07-07)** : la dépendance à l'API Google Sheets a été entièrement retirée du runtime. Le scope OAuth se limite à `openid email profile` (`web/src/lib/auth.ts`), la route `migrate-historique` a été supprimée, et toutes les routes praticien lisent/écrivent exclusivement PostgreSQL via Prisma. Aucune route n'appelle plus `sheets.googleapis.com`.
+1. **Aucun secret** en dur : clé, jeton, mot de passe, chaîne de connexion.
+   Ne jamais lire, afficher ni modifier un fichier `.env*`.
+2. **Aucune donnée patient réelle**, même rencontrée dans un fichier ouvert ou
+   un log collé par erreur — ne pas la reproduire, ne pas la « compléter ».
+   Seuls patients fictifs autorisés : Sophie Nicola, Jennifer Martin,
+   Michel Dogné.
+3. **Aucune migration** Prisma ou SQL, aucune modification de `schema.prisma`,
+   aucune écriture Supabase sans demande explicite et confirmation distincte.
+4. **Aucune modification de la logique clinique ni des seuils de scoring** sans
+   demande explicite, source, et fragment dans `changelog.d/`.
+5. **Changement minimal** : pas de refactor, de renommage ni de réorganisation
+   non demandés. Les textes visibles par l'utilisateur sont en français.
 
-## Architecture actuelle
+## Où sont les règles complètes
 
-- `web/src/app/dashboard/*` : portail praticien (auth Google via NextAuth, restreint au domaine `@wellneuro.fr`)
-- `web/src/app/portail/[token]` : portail patient permanent (token d'accès révocable, cookie signé `wn_portail`, onboarding consentement/fiche/anamnèse, hub « Mes questionnaires ») — flux patient principal
-- `web/src/app/patient/[idAssignation]` : ancien flux patient (email gate, pas d'auth Google) — conservé en compatibilité (legacy)
-- `web/src/app/api/*` : routes serveur — praticien (patients, assignations, questionnaires, reponses, metrics, packs, consultations, token, synthèse IA, booklet) et portail patient (`api/portail/*` : session, consentement, fiche, assignations, valider)
-  - Toutes ces routes s'appuient sur PostgreSQL via Prisma (plus aucun appel Google Sheets)
-- `web/prisma/schema.prisma` : schéma PostgreSQL (Patient, Assignation, QuestionnaireReponse, SyntheseIA, BookletEnvoi, ...)
-- `web/src/lib/questions.ts` : catalogue des questionnaires et moteur de scoring
-- `web/src/lib/auth.ts`, `web/src/lib/prisma.ts` : auth et client base de données
-- `archive/gas-legacy/` : ancien code GAS (`Code.gs`, `Questions.gs`, `index.html`, `appsscript.json`) — référence historique uniquement, ne pas modifier ni réactiver
+Ce fichier est délibérément court. **Tout le reste vit ailleurs, en un seul
+exemplaire :**
 
-## Chemins importants
+| Besoin | Fichier |
+|---|---|
+| Règles de travail complètes, validations, workflow PR | `CLAUDE.md` |
+| Règles par type de fichier (clinique, Prisma, front, docs) | `.github/instructions/` |
+| État du projet et contexte à jour | `docs/claude/PROJET_CONTEXTE.md` |
+| Décisions structurantes, avec date et conséquences | `docs/DECISIONS.md` |
+| Sécurité, RGPD, données de santé | `docs/securite_rgpd.md` |
 
-- Contexte projet à jour : `docs/claude/PROJET_CONTEXTE.md`
-- Scripts de contrôle : `scripts/`
-- Exemple d'environnement sans secret : `web/.env.local.example`
+## La règle qui garde ce fichier court
 
-## Règles critiques de sécurité
+**Ne rien écrire ici qui soit déjà écrit ailleurs, et rien de datable** — pas
+d'architecture, pas de liste de routes, pas de commande, pas de compteur, pas
+de date. Ces choses changent ; leur copie ici ne changerait pas avec elles.
 
-- Ne jamais écrire de secret en dur dans le code ou les commits (`DATABASE_URL`, `SHEET_ID`, `ANTHROPIC_API_KEY`, `GOOGLE_CLIENT_SECRET`, `NEXTAUTH_SECRET`, `SMTP_URL`, etc.)
-- Toute configuration sensible passe par les variables d'environnement : `web/.env.local` en développement (jamais commité), variables d'environnement Vercel en production
-- Ne jamais committer de données patients réelles
-- Ne jamais committer de clés API, fichiers `.env*` réels, identifiants Google, jetons OAuth, exports patients ou fichiers de résultats réels
-- Les seuls patients fictifs autorisés sont : Sophie Nicola, Jennifer Martin et Michel Dogné
+Ce fichier l'a appris à ses dépens : parti de 86 lignes décrivant
+l'architecture, il a dérivé dix-sept jours durant en décrivant un état du dépôt
+qui n'existait plus — tout en restant chargé par
+`.github/copilot-instructions.md`, donc servi au relecteur des PR. Une règle
+fausse lue par un agent est pire qu'une règle absente.
 
-## Règles RGPD et données de santé
-
-- Minimiser les données manipulées dans le dépôt
-- Anonymiser ou fictiviser toute donnée de démonstration
-- Refuser l'ajout de données patient identifiantes ou réalistes
-- Ne pas inclure de secrets dans les journaux, captures, commits, issues ou pull requests
-
-## Règles cliniques et scoring
-
-- Ne pas modifier la logique clinique existante sans demande explicite
-- Ne pas modifier les seuils de scoring sans source et documentation
-- Ne pas inventer de questionnaire, score, seuil ou recommandation clinique
-- Toute modification clinique doit être documentée dans `CHANGELOG.md`
-- Toute modification de questionnaire/scoring doit aussi mettre à jour `docs/questionnaires-drive-mapping.md` et respecter `docs/gouvernance-questionnaires-scoring.md`
-- Un questionnaire marqué `certifié` dans la matrice doit avoir une fixture dans `scripts/check_questionnaire_certification.js`
-- Les scores Drive certifiés ou ambigus doivent exposer une métadonnée `certification` dans `scoresJson`
-
-## Priorités produit et techniques
-
-- Priorité actuelle : stabilité de l'application en production (`app.wellneuro.fr`).
-- Pas de nouvelle migration technologique sans demande explicite.
-- Ne pas modifier `archive/gas-legacy/` : ce code est gelé et hors service.
-- Ne pas modifier la logique clinique sans consigne claire.
-
-## Règles de style
-
-- Interface et textes utilisateur en français
-- Code lisible pour un praticien non-développeur
-- Fonctions courtes, noms explicites, commentaires utiles
-- Éviter les abstractions prématurées
-- Préserver les noms et structures existants sauf demande explicite
-
-## Commandes utiles
-
-```bash
-cd web && npm run dev             # serveur de développement
-cd web && npm run type-check      # vérification TypeScript
-cd web && npm run scoring-check   # certification questionnaires/scoring
-cd web && npm run prisma:generate # régénérer le client Prisma après modif du schéma
-bash scripts/check_no_secrets.sh  # contrôle anti-secrets avant commit
-```
-
-## Consignes pour les agents IA
-
-- Lire ce fichier avant toute modification
-- Vérifier l'état Git avant de modifier le dépôt
-- Préserver le contenu utile des fichiers existants
-- Ne pas écraser une configuration locale ou un secret
-- Mentionner clairement les fichiers modifiés dans les réponses et pull requests
+Le seul contenu admis ici est celui qui **ne peut pas dériver** parce qu'il ne
+décrit rien : les interdits ci-dessus, et les renvois.
