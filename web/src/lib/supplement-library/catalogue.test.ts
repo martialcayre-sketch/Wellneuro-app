@@ -55,7 +55,7 @@ function produit(over: Partial<{ id: string; nomCommercial: string; marque: stri
     versionFormulation: 1,
     compositions: over.compositions ?? [
       {
-        doseParPortion: 200, unite: 'mg', position: 0,
+        doseParDjr: 200, unite: 'mg', position: 0,
         ingredient: { id: 'ing_mag', code: 'magnesium', nomFr: 'Magnésium' },
         forme: { id: 'forme_bisg', code: 'bisglycinate', labelFr: 'Bisglycinate' },
       },
@@ -99,7 +99,7 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     expect(res.fiches).toEqual([]);
     expect(res.total).toBe(0);
     expect(res.aucunScoreGlobal).toBe(true);
-    expect(res.contractVersion).toBe('c4-catalogue-v3');
+    expect(res.contractVersion).toBe('c4-catalogue-v4');
   });
 
   it('ne produit AUCUN score global agrégé', async () => {
@@ -456,7 +456,7 @@ describe('listerCatalogue (service catalogue C4A)', () => {
       produit({
         compositions: [
           {
-            doseParPortion: 200, unite: 'mg', position: 0,
+            doseParDjr: 200, unite: 'mg', position: 0,
             ingredient: { id: 'ing_mag', code: 'magnesium', nomFr: 'Magnésium' },
             forme: { id: 'forme_oxyde', code: 'oxyde', labelFr: 'Oxyde' },
           },
@@ -505,12 +505,27 @@ describe('lireCompletudeComposition', () => {
   });
 
   it('« integre » est INATTEIGNABLE sans preuve — c’est le fail-closed du lot', () => {
-    // La preuve (colonne `composition_source_lignes`) arrive en phase 1b. Tant
-    // qu'elle vaut `null`, aucune fiche ne peut franchir le seuil, quel que
-    // soit le nombre de lignes résolues.
+    // La colonne `composition_source_lignes` existe depuis 20260731200000 mais
+    // rien ne l'écrit : elle vaut `null` sur les 140 148 fiches. Aucune ne peut
+    // donc franchir le seuil, quel que soit le nombre de lignes résolues.
     for (const n of [1, 5, 50, 10_000]) {
       expect(lireCompletudeComposition(n, null)).not.toBe('integre');
     }
+  });
+
+  // Un compte attendu de zéro n'est PAS une preuve d'exhaustivité. Sans ce
+  // garde, `n >= 0` serait vrai pour toute fiche portant au moins une ligne :
+  // une valeur creuse ouvrirait les trois verdicts positifs (`Compatible`,
+  // `Aucun cumul`, `Aucune interaction connue`) sur une fiche dont on ne sait
+  // rien. Le CHECK en base interdit le négatif, pas le zéro — et zéro est une
+  // valeur légitime : 406 fiches de la source ne déclarent aucun actif.
+  it('un compte source de ZÉRO ne prouve rien : « partielle », jamais « integre »', () => {
+    for (const n of [1, 5, 50, 10_000]) {
+      expect(lireCompletudeComposition(n, 0)).toBe('partielle');
+    }
+    // Et une valeur négative, si elle franchissait un jour la base, ne doit pas
+    // davantage valoir preuve.
+    expect(lireCompletudeComposition(3, -1)).toBe('partielle');
   });
 });
 

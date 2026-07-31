@@ -21,6 +21,11 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
+// La projection vit dans `lib/projection.mjs` : l'outil de projection des
+// compositions doit résoudre les libellés contre EXACTEMENT cet index-là.
+// Deux copies divergeraient en silence.
+import { projeterReferentiel } from './lib/projection.mjs';
+
 const args = process.argv.slice(2);
 const opt = (nom, defaut = null) => {
   const i = args.indexOf(nom);
@@ -57,83 +62,13 @@ function charger(nom) {
  */
 const CODE_ATTENDU = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
 
-/**
- * Code lisible et stable : c'est lui que les règles cliniques manipuleront.
- *
- * L'ORDRE COMPTE : on tronque À 80, PUIS on retire les tirets de bord.
- * L'inverse — trimmer avant de couper — laisse la troncature retomber sur un
- * tiret, que le service refuse. Deux noms officiels tombaient dedans le
- * 2026-07-31, dont « Sel de sodium de 3-sialyllactose… » : l'ingestion s'est
- * arrêtée au 3e lot sur 9, 800 ingrédients déjà écrits.
- */
-function slug(nom) {
-  return nom.normalize('NFD').replace(/[\u0300-\u036f]/g, "")    .toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 80).replace(/^-+|-+$/g, '')
-    || 'sans-nom';
-}
-
 const substances = charger('substances');
 const formes = charger('other-ingredients');
 const plantes = charger('plants');
 const micro = charger('microorganisms');
 
 // ── Projection ─────────────────────────────────────────────────────────────
-const ingredients = [];
-const codesPris = new Map(); // code -> sourceIdentifiant, pour désambiguïser
-
-/** Deux noms officiels peuvent produire le même code : on suffixe, jamais on n'écrase. */
-function codeUnique(nom, sourceIdentifiant) {
-  const base = slug(nom);
-  if (!codesPris.has(base)) { codesPris.set(base, sourceIdentifiant); return base; }
-  if (codesPris.get(base) === sourceIdentifiant) return base;
-  const suffixe = `${base}-${sourceIdentifiant.replace(':', '-')}`;
-  codesPris.set(suffixe, sourceIdentifiant);
-  return suffixe;
-}
-
-// Les formes d'apport, rangées par substance qu'elles apportent.
-const formesParSubstance = new Map();
-const formesSansSubstance = [];
-for (const f of formes) {
-  const liens = f.substances ?? [];
-  if (liens.length === 0) { formesSansSubstance.push(f); continue; }
-  for (const s of liens) {
-    if (!formesParSubstance.has(s.id)) formesParSubstance.set(s.id, []);
-    formesParSubstance.get(s.id).push(f);
-  }
-}
-
-for (const s of substances) {
-  const id = `substance:${s.id}`;
-  const codesFormes = new Set();
-  const listeFormes = [];
-  for (const f of formesParSubstance.get(s.id) ?? []) {
-    let c = slug(f.name);
-    while (codesFormes.has(c)) c = `${c}-${f.id}`; // collision intra-ingrédient
-    codesFormes.add(c);
-    listeFormes.push({ sourceIdentifiant: `form_of_supply:${f.id}`, code: c, labelFr: f.name });
-  }
-  ingredients.push({ sourceIdentifiant: id, code: codeUnique(s.name, id), nomFr: s.name, formes: listeFormes });
-}
-
-// Une forme d'apport sans substance rattachée EST son propre ingrédient.
-for (const f of formesSansSubstance) {
-  const id = `form_of_supply:${f.id}`;
-  ingredients.push({ sourceIdentifiant: id, code: codeUnique(f.name, id), nomFr: f.name, formes: [] });
-}
-
-// Plantes et micro-organismes : l'ESPÈCE est l'ingrédient. Leurs formes
-// (partie × préparation pour une plante, souche pour un micro-organisme) ne
-// sont PAS engendrées ici : seules comptent les combinaisons réellement
-// déclarées, que seul le transport des compositions connaît. Les inventer
-// d'avance produirait des milliers de formes que personne n'emploie.
-for (const p of plantes) {
-  const id = `plant:${p.id}`;
-  ingredients.push({ sourceIdentifiant: id, code: codeUnique(p.name, id), nomFr: p.name, formes: [] });
-}
-for (const m of micro) {
-  const id = `microorganism:${m.id}`;
-  ingredients.push({ sourceIdentifiant: id, code: codeUnique(m.name, id), nomFr: m.name, formes: [] });
-}
+const ingredients = projeterReferentiel({ substances, formes, plantes, micro });
 
 // ── Validation préalable ───────────────────────────────────────────────────
 // TOUTE la projection est vérifiée AVANT le premier envoi. Le service valide
@@ -155,8 +90,12 @@ if (malFormes.length > 0) {
 }
 
 const nbFormes = ingredients.reduce((n, i) => n + i.formes.length, 0);
+// Les formes d'apport orphelines se relisent sur la PROJECTION, la variable
+// intermédiaire vivant désormais dans `lib/projection.mjs`. Le chiffre est le
+// même — la ligne le comptait déjà après coup.
+const nbOrphelines = ingredients.filter((i) => i.sourceIdentifiant.startsWith('form_of_supply:')).length;
 console.log(`Projection : ${ingredients.length} ingrédients, ${nbFormes} formes.`);
-console.log(`  substances ${substances.length} · formes d'apport sans substance ${formesSansSubstance.length}`
+console.log(`  substances ${substances.length} · formes d'apport sans substance ${nbOrphelines}`
   + ` · plantes ${plantes.length} · micro-organismes ${micro.length}`);
 
 if (DRY) {

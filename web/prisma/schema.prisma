@@ -690,6 +690,10 @@ model SupplementProduct {
   contenuSha256            String?   @map("contenu_sha256")
   donneesManquantes        String[]  @default([]) @map("donnees_manquantes")
   incertitudes             String?   @map("incertitudes")
+  // Nombre de lignes ACTIVES déclarées par la source. NULL = on ne sait pas
+  // (fail-closed : `integre` reste hors d'atteinte) ; 0 = la source ne déclare
+  // aucun actif, ce qui est une information et non une ignorance.
+  compositionSourceLignes  Int?      @map("composition_source_lignes")
   labels                   String[]  @default([]) @map("labels")
   allergenes               String[]  @default([]) @map("allergenes")
   excipients               String[]  @default([]) @map("excipients")
@@ -713,7 +717,10 @@ model SupplementProductComposition {
   productId      String   @map("product_id")
   ingredientId   String   @map("ingredient_id")
   formeId        String?  @map("forme_id")
-  doseParPortion Float?   @map("dose_par_portion")
+  // `doseParDjr`, et non « par portion » : la source déclare une quantité par
+  // DOSE JOURNALIÈRE RECOMMANDÉE. Les deux grandeurs diffèrent d'un facteur
+  // égal au nombre de prises — voir 20260731200000_c4_composition_dose.
+  doseParDjr     Float?   @map("dose_par_djr")
   unite          String?  @map("unite")
   position       Int      @default(0) @map("position")
   createdAt      DateTime @default(now()) @map("created_at")

@@ -22,7 +22,11 @@ export type SupplementCompositionInput = {
   // FK vers supplement_ingredient_formes (optionnelle).
   formeId?: string;
   // Dose et unité vont ensemble (CHECK dose_unite) : les deux ou aucune.
-  doseParPortion?: number;
+  // « par DJR » et non « par portion » : la source déclare une quantité par
+  // dose journalière recommandée. Un produit à 3 gélules/jour déclare 300 mg
+  // par DJR, soit 100 mg par gélule — les deux grandeurs diffèrent d'un facteur
+  // égal au nombre de prises, et la sentinelle de cumul rapprochera celle-ci.
+  doseParDjr?: number;
   unite?: SupplementUnite;
   position?: number;
 };
@@ -99,7 +103,7 @@ function parseComposition(value: unknown, ficheLabel: string, index: number): Su
   const record = asRecord(value, label);
   const ingredientId = requiredString(record, 'ingredientId', label);
   const formeId = optionalString(record, 'formeId', label);
-  const dose = optionalFiniteNumber(record, 'doseParPortion', label);
+  const dose = optionalFiniteNumber(record, 'doseParDjr', label);
   const unite = optionalString(record, 'unite', label);
   const positionRaw = optionalFiniteNumber(record, 'position', label);
   const position = positionRaw === undefined ? index : Math.trunc(positionRaw);
@@ -120,7 +124,7 @@ function parseComposition(value: unknown, ficheLabel: string, index: number): Su
   return {
     ingredientId,
     formeId,
-    doseParPortion: dose,
+    doseParDjr: dose,
     unite: unite as SupplementUnite | undefined,
     position,
   };
@@ -251,11 +255,20 @@ export function contenuSha256ForFiche(fiche: Omit<SupplementFicheInput, 'contenu
   // (parseComposition assigne alors position = index) produiraient des
   // positions différentes → hash différent → fausse « nouvelle version »
   // (revue #352, R1).
+  // L'empreinte sérialise ses CLÉS : les renommer change le hash. Celle-ci a
+  // pourtant suivi le renommage de 2026-07-31 sans coût, parce que les 140 148
+  // fiches en base ont toutes été ingérées avec `compositions: []` — le JSON
+  // haché y contient `"composition":[]` et la clé n'y figure nulle part.
+  // Vérifié par recalcul : empreinte identique dans les deux graphies tant que
+  // la composition est vide. Ce sera FAUX dès la première composition écrite :
+  // à partir de là, renommer cette clé rendra 140 148 fiches « modifiées » sans
+  // qu'aucune formulation ait bougé. Le test d'empreinte figée
+  // (validation.test.ts) verrouille la valeur exacte.
   const composition = [...fiche.compositions]
     .map((c) => ({
       ingredientId: c.ingredientId,
       formeId: c.formeId ?? null,
-      doseParPortion: c.doseParPortion ?? null,
+      doseParDjr: c.doseParDjr ?? null,
       unite: c.unite ?? null,
     }))
     .sort((a, b) => {

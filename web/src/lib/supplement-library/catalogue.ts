@@ -36,7 +36,10 @@ import {
   type ValeurQualiteFormulation,
 } from './types';
 
-export const C4_CATALOGUE_VERSION = 'c4-catalogue-v3' as const;
+// v4 (2026-07-31) : `composition[].doseParPortion` devient `doseParDjr`. La
+// source déclare une quantité par dose journalière recommandée, pas par unité
+// de prise — le champ portait un nom qui trompait son prochain lecteur.
+export const C4_CATALOGUE_VERSION = 'c4-catalogue-v4' as const;
 
 // Bornes de pagination. 50 fiches × ~5 Ko ≈ 250 Ko : marge large sous la limite
 // de réponse de la fonction. L'offset est plafonné parce que personne ne
@@ -89,7 +92,9 @@ export type CompositionFiche = {
   ingredientNomFr: string;
   formeCode: string | null;
   formeLabelFr: string | null;
-  doseParPortion: number | null;
+  // Par DOSE JOURNALIÈRE RECOMMANDÉE, jamais par unité de prise : c'est ce que
+  // la source déclare (voir 20260731200000_c4_composition_dose).
+  doseParDjr: number | null;
   unite: string | null;
 };
 
@@ -310,7 +315,7 @@ function statutLabel(statut: string): string {
 type LigneComposition = {
   ingredient: { id: string; code: string; nomFr: string };
   forme: { id: string; code: string; labelFr: string } | null;
-  doseParPortion: number | null;
+  doseParDjr: number | null;
   unite: string | null;
   position: number;
 };
@@ -329,6 +334,9 @@ type LigneFiche = {
     statutFiche: string;
     niveauCompletude: string;
     donneesManquantes: string[];
+    // Nombre de lignes actives déclarées par la source ; NULL = inconnu, donc
+    // aucune preuve d'exhaustivité (voir lireCompletudeComposition).
+    compositionSourceLignes: number | null;
     versionFormulation: number;
     compositions: LigneComposition[];
   };
@@ -513,22 +521,35 @@ function calculerCumul(
  *
  * `integre` exige une PREUVE POSITIVE que toutes les lignes actives de la
  * source ont été résolues — le nombre de lignes attendu, à comparer au nombre
- * de lignes écrites. Cette preuve n'existe pas encore : la colonne qui la
- * portera (`composition_source_lignes` sur `supplement_products`) arrive avec
- * le résolveur de la phase 1b, et une migration appliquée ne se retouche jamais
- * — on ne fige donc pas sa forme avant de connaître celle du résolveur.
+ * de lignes écrites. La colonne qui la porte, `composition_source_lignes` sur
+ * `supplement_products`, existe depuis 20260731200000 ; **rien ne l'écrit
+ * encore**, elle vaut donc NULL sur les 140 148 fiches et toute fiche portant
+ * des compositions reste `partielle`.
  *
- * D'ici là `lignesSourceAttendues` vaut `null` et toute fiche portant des
- * compositions est `partielle`. C'est fail-closed : le sens correct de
- * l'erreur, puisqu'une fiche partielle traitée comme intègre rend un feu vert
- * infondé, quand l'inverse ne fait que s'abstenir.
+ * C'est fail-closed, et c'est le sens correct de l'erreur : une fiche partielle
+ * traitée comme intègre rend un feu vert infondé, quand l'inverse ne fait que
+ * s'abstenir.
+ *
+ * UN COMPTE ATTENDU ≤ 0 NE PROUVE RIEN. `0 lignes attendues` comparé à
+ * `n ≥ 1 résolues` satisferait `n >= attendues` et déclarerait intègre une
+ * fiche dont on ne sait rien — le CHECK en base interdit le négatif, mais rien
+ * n'interdit le zéro, qui est une valeur légitime (406 fiches de la source ne
+ * déclarent aucun actif). Un compte nul ou négatif est donc traité comme une
+ * absence de preuve, pas comme une preuve d'exhaustivité. Le jour où `integre`
+ * deviendra atteignable, ce sera par une preuve, jamais par un trou.
  */
 export function lireCompletudeComposition(
   nombreLignesResolues: number,
   lignesSourceAttendues: number | null,
 ): CompletudeComposition {
   if (nombreLignesResolues === 0) return 'absente';
-  if (lignesSourceAttendues !== null && nombreLignesResolues >= lignesSourceAttendues) return 'integre';
+  if (
+    lignesSourceAttendues !== null &&
+    lignesSourceAttendues > 0 &&
+    nombreLignesResolues >= lignesSourceAttendues
+  ) {
+    return 'integre';
+  }
   return 'partielle';
 }
 
@@ -859,11 +880,12 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
         statutFiche: true,
         niveauCompletude: true,
         donneesManquantes: true,
+        compositionSourceLignes: true,
         versionFormulation: true,
         compositions: {
           orderBy: { position: 'asc' },
           select: {
-            doseParPortion: true,
+            doseParDjr: true,
             unite: true,
             position: true,
             ingredient: { select: { id: true, code: true, nomFr: true } },
@@ -913,15 +935,19 @@ export async function listerCatalogue(options: OptionsCatalogue = {}): Promise<C
       ingredientNomFr: c.ingredient.nomFr,
       formeCode: c.forme?.code ?? null,
       formeLabelFr: c.forme?.labelFr ?? null,
-      doseParPortion: c.doseParPortion,
+      doseParDjr: c.doseParDjr,
       unite: c.unite,
     }));
 
-    // Ce que l'on sait de la composition gouverne ce que l'on ose en dire. La
-    // preuve de complétude (nombre de lignes attendu) n'existe pas encore :
-    // toute fiche portant des compositions est donc « partielle ». Phase 1b y
-    // passera `p.compositionSourceLignes`.
-    const completudeComposition = lireCompletudeComposition(p.compositions.length, null);
+    // Ce que l'on sait de la composition gouverne ce que l'on ose en dire.
+    // `compositionSourceLignes` est NULL sur les 140 148 fiches — rien ne
+    // l'écrit encore — donc toute fiche portant des compositions reste
+    // « partielle ». La colonne est câblée ici pour que son remplissage soit un
+    // geste de DONNÉE, sans retoucher ce chemin de lecture clinique.
+    const completudeComposition = lireCompletudeComposition(
+      p.compositions.length,
+      p.compositionSourceLignes,
+    );
 
     const qualiteValeur = QUALITE_PAR_COMPLETUDE[p.niveauCompletude] ?? 'non_evaluee';
     const biodisponibiliteForme = calculerBiodisponibilite(p.compositions, vue);

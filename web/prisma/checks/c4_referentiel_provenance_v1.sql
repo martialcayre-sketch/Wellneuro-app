@@ -75,8 +75,23 @@ BEGIN
   -- calcium). Elle apparaît légitimement sous plusieurs ingrédients : rendre
   -- cet index unique refuserait la seconde attache et ferait échouer
   -- l'ingestion — en ayant l'air d'un durcissement.
+  -- DEUX assertions, pas une. Compter les index UNIQUES portant ce nom et
+  -- exiger zéro est satisfait aussi bien par « l'index existe et n'est pas
+  -- unique » — ce qu'on veut — que par « l'index a disparu » ou « il a été
+  -- renommé », qu'on ne veut pas du tout : la re-synchronisation par
+  -- identifiant officiel perdrait son index sans que rien ne le dise. On
+  -- vérifie donc d'abord l'EXISTENCE, ensuite la NON-UNICITÉ.
   SELECT count(*) INTO nb FROM pg_indexes
-   WHERE tablename = 'supplement_ingredient_formes'
+   WHERE schemaname = 'public'
+     AND tablename = 'supplement_ingredient_formes'
+     AND indexname = 'supplement_ingredient_formes_source_idx';
+  IF nb <> 1 THEN
+    RAISE EXCEPTION 'supplement_ingredient_formes_source_idx absent ou renommé';
+  END IF;
+
+  SELECT count(*) INTO nb FROM pg_indexes
+   WHERE schemaname = 'public'
+     AND tablename = 'supplement_ingredient_formes'
      AND indexname = 'supplement_ingredient_formes_source_idx'
      AND indexdef ILIKE 'CREATE UNIQUE INDEX%';
   IF nb <> 0 THEN

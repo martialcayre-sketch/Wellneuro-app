@@ -63,7 +63,7 @@ function fiche(over: Partial<FicheComplement> = {}): FicheComplement {
 
 function catalogue(over: Partial<CatalogueResult> = {}): CatalogueResult {
   return {
-    contractVersion: 'c4-catalogue-v3',
+    contractVersion: 'c4-catalogue-v4',
     aucunScoreGlobal: true,
     intentionFiltre: over.intentionFiltre ?? null,
     codesInconnus: [],

@@ -75,7 +75,7 @@ function contenuSha256(fiche) {
     .map((c, i) => ({
       ingredientId: c.ingredientId,
       formeId: c.formeId ?? null,
-      doseParPortion: c.doseParPortion ?? null,
+      doseParDjr: c.doseParDjr ?? null,
       unite: c.unite ?? null,
       position: c.position ?? i,
     }))
@@ -147,9 +147,9 @@ async function ingestUneFiche(client, fiche) {
     let position = 0;
     for (const c of fiche.compositions ?? []) {
       await client.query(
-        `INSERT INTO supplement_product_compositions (id, product_id, ingredient_id, forme_id, dose_par_portion, unite, position)
+        `INSERT INTO supplement_product_compositions (id, product_id, ingredient_id, forme_id, dose_par_djr, unite, position)
          VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-        [randomUUID(), id, c.ingredientId, c.formeId ?? null, c.doseParPortion ?? null, c.unite ?? null, c.position ?? position],
+        [randomUUID(), id, c.ingredientId, c.formeId ?? null, c.doseParDjr ?? null, c.unite ?? null, c.position ?? position],
       );
       position++;
     }
@@ -226,8 +226,8 @@ async function demoComposition(client) {
     allergenes: [],
     excipients: [],
     compositions: [
-      { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParPortion: 300, unite: 'mg', position: 0 },
-      { ingredientId: 'ing_vitamine_b6', doseParPortion: 1.4, unite: 'mg', position: 1 },
+      { ingredientId: 'ing_magnesium', formeId: 'forme_bisglycinate', doseParDjr: 300, unite: 'mg', position: 0 },
+      { ingredientId: 'ing_vitamine_b6', doseParDjr: 1.4, unite: 'mg', position: 1 },
     ],
   };
 
@@ -235,7 +235,7 @@ async function demoComposition(client) {
   console.log(`  v1 : ${JSON.stringify(r1)}`);
   const r2 = await ingestUneFiche(client, base);
   console.log(`  ré-import identique : ${JSON.stringify(r2)} (attendu inchangee)`);
-  const doseModifiee = { ...base, compositions: [{ ...base.compositions[0], doseParPortion: 200 }, base.compositions[1]] };
+  const doseModifiee = { ...base, compositions: [{ ...base.compositions[0], doseParDjr: 200 }, base.compositions[1]] };
   const r3 = await ingestUneFiche(client, doseModifiee);
   console.log(`  dose modifiée : ${JSON.stringify(r3)} (attendu nouvelle_version)`);
 

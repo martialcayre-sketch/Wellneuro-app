@@ -93,3 +93,15 @@ Les formes des **plantes** (partie × préparation) et des **micro-organismes**
 (souche) ne sont pas engendrées : seules comptent les combinaisons réellement
 déclarées, que seul le transport des compositions connaît. Les inventer d'avance
 produirait des milliers de formes que personne n'emploie.
+
+## La projection a deux lecteurs
+
+Depuis le 2026-07-31, la projection (substances × formes d'apport, plantes,
+micro-organismes → entrées du référentiel) vit dans `lib/projection.mjs`,
+importée par `ingest.mjs` **et** par
+`tools/supplements/compositions/projeter.mjs`.
+
+Ce dernier résout les libellés de composition contre l'index du référentiel : il
+lui faut **exactement** celui qui est en base. Deux copies de cette projection
+divergeraient au premier ajustement, et la divergence serait silencieuse — le
+rapport de couverture porterait sur un référentiel qui n'existe pas.
