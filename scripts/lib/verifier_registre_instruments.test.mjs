@@ -29,6 +29,18 @@ export const QUESTIONNAIRES_CATALOG = [
 // Les instruments suspendus — \`actif: false\`. À importer par les routes.
 `;
 
+// Extrait de `bibliotheque.ts`, dans sa forme réelle : la liste des instruments
+// administrés EN CONSULTATION. Elle porte, comme le vrai fichier, un commentaire
+// en prose entre deux entrées — c'est la même chausse-trappe que pour le
+// catalogue, et l'extraction doit y survivre.
+const BIBLIOTHEQUE_VALIDE = `
+export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
+  { id: 'Q_GEO_03', categorie: 'Gérontologie' },
+  // Ce commentaire cite \`{ id: 'Q_XXX_99' }\` sans rien déclarer : c'est de la prose.
+  { id: 'Q_URO_02', categorie: 'Urologie' },
+];
+`;
+
 const CONSTANTS_VALIDE = `
 export const BESOIN_SOURCES: Record<number, SourceQuestionnaire[]> = {
   1: [{ idQuestionnaire: 'Q_ALI_01', max: 42, inverser: false }],
@@ -65,6 +77,7 @@ function verifier(surcharge = {}) {
     matriceDrive: '| `Q_ALI_01` | `questionnaire_alimentaire_siin_contexte.md` | certifié |',
     evidence: { etudes: [] },
     catalogueSource: CATALOGUE_VALIDE,
+    bibliothequeSource: BIBLIOTHEQUE_VALIDE,
     ...surcharge,
   });
 }
@@ -569,4 +582,77 @@ test('SANS bloc `revision`, la garde ne voit rien — angle mort assumé, pas ta
     erreurs.filter(e => /daté du/.test(e)).length, 0,
     'la garde est censée rester muette faute de témoin — si elle parle, elle a gagné un témoin, et ce test doit être réécrit',
   );
+});
+
+
+// ── `actif: false` porte deux sens, et l'exemption qui les sépare ────────────
+//
+// Ajouté le 2026-07-31. Le contrôle « actif: false ⟹ état terminal » traitait un
+// test ADMINISTRÉ PAR LE CLINICIEN comme un instrument retiré : son entrée de
+// catalogue inactive — posée exprès pour fermer la route d'assignation — le
+// rendait incapable de gravir l'échelle pour toujours.
+
+test('instrument de consultation : actif:false ne l’épingle plus à un état terminal', () => {
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({ questionnaireId: 'Q_GEO_03', statutCertification: 'contenu_verrouille', versionServie: { description: 'x', langue: 'fr', traductionValidee: null, statutContenu: 'adapte' }, sourceIds: ['WN-SRC-0001'], droits: { statut: 'libre', detail: 'Domaine public, vérifié le 2026-07-31 sur la publication d’origine.', dateVerification: '2026-07-31' }, sourceMonEquilibre: false, driveMd: null, statutBibliographique: 'reference_identifiee' })] },
+    idsCatalogue: ['Q_GEO_03'],
+    catalogueSource: `
+export const QUESTIONNAIRES_CATALOG = [
+  { id: 'Q_GEO_03', titre: 'Test clinicien', categorie: 'Gérontologie', duree: '5 min', actif: false },
+];`,
+  });
+  assert.deepEqual(erreurs.filter(e => /retiré de la production/.test(e)), []);
+});
+
+test('instrument RETIRÉ (hors consultation) : la règle terminale s’applique toujours', () => {
+  // Contrôle négatif de la précédente : sans lui, une exemption trop large
+  // dispenserait TOUS les inactifs, et le test ci-dessus resterait vert.
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({ questionnaireId: 'Q_SOM_07', statutCertification: 'contenu_verrouille', sourceMonEquilibre: false, driveMd: null })] },
+    idsCatalogue: ['Q_SOM_07'],
+  });
+  assert.ok(erreurs.some(e => /Q_SOM_07 : retiré de la production/.test(e)));
+});
+
+test('la contrepartie : un instrument servi en consultation ne peut pas être suspendu', () => {
+  // Sans elle, l'exemption serait à DOUBLE SENS et rouvrirait le trou qu'elle
+  // ferme : inscrire un identifiant dans PASSATION_PRATICIEN deviendrait le
+  // moyen de le servir tout en le laissant dispensé de source, de droits, de
+  // contenu et de verdict. C'est le reproche fait le 2026-07-31 à une exemption
+  // écrite pour ce même Q_NEU_06.
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({ questionnaireId: 'Q_GEO_03', statutCertification: 'suspendu', sourceMonEquilibre: false, driveMd: null })] },
+    idsCatalogue: ['Q_GEO_03'],
+    catalogueSource: `
+export const QUESTIONNAIRES_CATALOG = [
+  { id: 'Q_GEO_03', titre: 'Test clinicien', categorie: 'Gérontologie', duree: '5 min', actif: false },
+];`,
+  });
+  assert.ok(erreurs.some(e => /servi en passation praticien/.test(e)));
+});
+
+test('PASSATION_PRATICIEN introuvable ou vide : le garde échoue au lieu de rester muet', () => {
+  // Même discipline que BESOIN_SOURCES : une extraction cassée doit rougir. Un
+  // garde borgne aurait exempté TOUT LE MONDE en silence, ce qui est pire que
+  // l'état d'avant.
+  const introuvable = verifier({ bibliothequeSource: 'export const AUTRE_CHOSE = [];' });
+  assert.ok(introuvable.erreurs.some(e => /PASSATION_PRATICIEN introuvable/.test(e)));
+
+  const vide = verifier({ bibliothequeSource: 'export const PASSATION_PRATICIEN = [\n];' });
+  assert.ok(vide.erreurs.some(e => /PASSATION_PRATICIEN introuvable/.test(e)));
+});
+
+test('l’extraction PASSATION_PRATICIEN ignore la prose des commentaires', () => {
+  // La fixture cite `{ id: 'Q_XXX_99' }` dans un commentaire. Le compter
+  // exempterait un instrument que personne n'a déclaré — la faute exacte commise
+  // le 2026-07-29 sur les `actif: false` cités en prose.
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({ questionnaireId: 'Q_XXX_99', statutCertification: 'contenu_verrouille', sourceMonEquilibre: false, driveMd: null })] },
+    idsCatalogue: ['Q_XXX_99'],
+    catalogueSource: `
+export const QUESTIONNAIRES_CATALOG = [
+  { id: 'Q_XXX_99', titre: 'Cité en prose seulement', categorie: 'X', duree: '5 min', actif: false },
+];`,
+  });
+  assert.ok(erreurs.some(e => /Q_XXX_99 : retiré de la production/.test(e)));
 });

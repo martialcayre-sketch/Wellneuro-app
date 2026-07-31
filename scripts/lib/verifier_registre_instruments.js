@@ -108,6 +108,42 @@ function neutraliser(source, { chaines }) {
   return out;
 }
 
+/**
+ * Extrait les instruments à PASSATION PRATICIEN depuis `bibliotheque.ts`.
+ *
+ * `actif: false` porte deux sens que rien ne distinguait, et le contrôle plus
+ * bas les confondait :
+ *   · « retiré de la production » — un instrument fermé, qu'on ne sert plus ;
+ *   · « jamais destiné au patient » — un test administré PAR LE CLINICIEN, dont
+ *     l'absence du portail est l'état normal et permanent.
+ *
+ * Confondre les deux avait une conséquence structurelle : `Q_GEO_04` (MMSE) et
+ * `Q_NEU_06` (MMT) portent une entrée de catalogue inactive posée EXPRÈS par
+ * #460 pour fermer la route d'assignation — et se retrouvaient de ce fait
+ * épinglés à un état terminal, donc **incapables de gravir l'échelle pour
+ * toujours**. Les quatre autres instruments de consultation (`Q_GEO_03/05/06`,
+ * `Q_URO_02`) n'y échappaient que parce qu'ils n'ont AUCUNE entrée de
+ * catalogue — c'est-à-dire par la position « invisible et assignable » que #460
+ * a précisément fermée. L'échappatoire était le trou.
+ *
+ * Même discipline d'extraction que ci-dessus : `null` = erreur bruyante, jamais
+ * un silence. Un garde qui ne lit plus rien ne garde rien.
+ */
+function extrairePassationPraticien(bibliothequeSource) {
+  if (!bibliothequeSource || !bibliothequeSource.includes('PASSATION_PRATICIEN')) return null;
+  const sansChaines = neutraliser(bibliothequeSource, { chaines: true });
+  const debut = sansChaines.indexOf('PASSATION_PRATICIEN');
+  if (debut === -1) return null;
+  const fin = sansChaines.indexOf('\n];', debut);
+  if (fin === -1) return null;
+  // Les chaînes sont préservées sur la seconde passe, de mêmes indices : c'est
+  // elle qui porte les identifiants, la première ne sert qu'à délimiter le bloc
+  // sans se laisser prendre par un `];` cité en commentaire.
+  const bloc = neutraliser(bibliothequeSource, { chaines: false }).slice(debut, fin);
+  const ids = [...bloc.matchAll(/id:\s*'(Q_[A-Z]{3}_\d{2})'/g)].map(m => m[1]);
+  return ids.length > 0 ? new Set(ids) : null;
+}
+
 function extraireIdsSuspendus(catalogueSource) {
   if (!catalogueSource || !catalogueSource.includes('actif')) return null;
   // Deux passes de MÊME LONGUEUR, donc d'indices comparables : la première efface
@@ -148,6 +184,7 @@ function verifierRegistreInstruments({
   matriceDrive,
   evidence,
   catalogueSource,
+  bibliothequeSource,
 }) {
   const erreurs = [];
   const ajouter = (condition, message) => {
@@ -184,6 +221,11 @@ function verifierRegistreInstruments({
   const idsSuspendus = extraireIdsSuspendus(catalogueSource);
   if (!idsSuspendus) {
     erreurs.push('instruments suspendus introuvables dans le catalogue — le contrôle registre ↔ actif:false ne peut pas rester muet');
+  }
+
+  const idsPassationPraticien = extrairePassationPraticien(bibliothequeSource);
+  if (!idsPassationPraticien) {
+    erreurs.push('PASSATION_PRATICIEN introuvable dans bibliotheque.ts — l\'exemption des instruments de consultation ne peut pas rester muette');
   }
 
   instruments.forEach(entry => {
@@ -229,17 +271,50 @@ function verifierRegistreInstruments({
     // serait revenu en production en gardant `suspendu`, donc dispensé de source, de
     // droits, de contenu et de verdict — hors échelle, et le CI muet.
     if (idsSuspendus) {
-      if (idsSuspendus.has(id)) {
+      // L'EXEMPTION, et son seul sens. Un instrument listé en
+      // `PASSATION_PRATICIEN` n'est pas « retiré » : il est administré par le
+      // clinicien, et son absence du portail patient est sa forme normale. Son
+      // `actif: false` ferme la route d'assignation — c'est le geste de #460, et
+      // il reste entier ; il ne dit rien de sa certification.
+      //
+      // L'exemption ne vaut QUE dans ce sens. Un instrument de consultation
+      // reste tenu par tout le reste de l'échelle : source, droits, contenu
+      // verrouillé, verdict de banc. Il gagne le droit de gravir, pas celui de
+      // sauter un barreau.
+      const enConsultation = idsPassationPraticien ? idsPassationPraticien.has(id) : false;
+      if (idsSuspendus.has(id) && !enConsultation) {
         ajouter(
           ETATS_TERMINAUX.has(entry.statutCertification),
           `${id} : retiré de la production (actif: false) mais statutCertification '${entry.statutCertification}' — attendu 'suspendu' ou 'remplace'`
         );
-      } else if (ETATS_TERMINAUX.has(entry.statutCertification) && idsCatalogue.includes(id)) {
+      } else if (!idsSuspendus.has(id) && ETATS_TERMINAUX.has(entry.statutCertification) && idsCatalogue.includes(id)) {
         ajouter(
           false,
           `${id} : statutCertification '${entry.statutCertification}' alors que l'instrument est ACTIF au catalogue — une réactivation doit reprendre l'échelle à 'repere'`
         );
       }
+    }
+
+    // LA CONTREPARTIE DE L'EXEMPTION, sans laquelle elle rouvrirait le trou
+    // qu'elle ferme.
+    //
+    // Exempter les instruments de consultation de la règle « actif: false ⟹
+    // terminal » les sortait des DEUX contrôles à la fois : inscrire un
+    // identifiant dans `PASSATION_PRATICIEN` serait devenu le moyen de servir un
+    // instrument en consultation tout en le laissant `suspendu`, c'est-à-dire
+    // dispensé de source, de droits, de contenu verrouillé et de verdict.
+    //
+    // C'est le reproche exact adressé le 2026-07-31 à une exemption écrite pour
+    // ce même `Q_NEU_06` : « à double sens, elle rouvre le trou qu'elle ferme ».
+    // Un instrument servi en consultation EST en production ; son état ne peut
+    // donc pas être terminal.
+    if (idsPassationPraticien && idsPassationPraticien.has(id)) {
+      ajouter(
+        !ETATS_TERMINAUX.has(entry.statutCertification),
+        `${id} : servi en passation praticien (PASSATION_PRATICIEN) alors que statutCertification `
+        + `est '${entry.statutCertification}' — un instrument administré en consultation est en `
+        + `production : le retirer de cette liste, ou lui faire reprendre l'échelle`
+      );
     }
 
     if (barreau >= ECHELLE.indexOf('source_obtenue')) {

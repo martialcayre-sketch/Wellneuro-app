@@ -192,15 +192,50 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
     // continuant d'afficher la grille laisse l'usage licencié se poursuivre sur
     // papier.
     //
-    // La liste attendue est VIDE, et c'est la décision du 2026-07-29 : aucun
-    // instrument sous licence non dégagée ne reste en passation praticien.
+    // LA LISTE N'EST PLUS VIDE DEPUIS LE 2026-07-31, et c'est un RENVERSEMENT de
+    // la décision du 2026-07-29 — pas son application. Il se lit comme tel, avec
+    // son motif à côté de chaque identifiant, parce qu'une liste qui s'allonge
+    // en silence est une décision qu'on ne reprend jamais.
+    //
+    // Le motif est commun aux deux : une asymétrie qui ne se défendait pas. SIX
+    // instruments portant la même classe de réserve sont ENVOYÉS AU PATIENT
+    // (`LAISSES_ASSIGNABLES` ci-dessus). Afficher une grille au praticien qui
+    // porte la déclaration d'usage expose strictement moins que de l'adresser à
+    // un patient. Interdire le moins en autorisant le plus ne tenait pas.
+    //
+    // Ce que cette liste n'est PAS : une levée de droits. Le MMSE reste © PAR —
+    // et il est le seul de cette population dont l'ayant droit vend activement
+    // la licence, là où les cinq autres portent une formalité à accomplir ou des
+    // droits non instruits. L'asymétrie de NATURE subsiste, et le registre la
+    // porte ; seule la décision d'usage change.
+    const EN_PASSATION_ATTENDUS = [
+      // MMSE (GRECO) — test administré par le clinicien : rappel différé et copie
+      // de figure n'ont aucun sens en auto-remplissage. Son entrée de catalogue
+      // reste `actif: false`, donc la route d'assignation reste fermée : c'est
+      // l'usage EN CONSULTATION qui rouvre, et lui seul.
+      'Q_GEO_04',
+      // MMT — sa réserve n'est pas de droits mais d'IDENTITÉ, et elle a changé de
+      // nature le 2026-07-31 : la recherche bibliographique l'identifie au
+      // document « MMT ou Mini Mental Test » diffusé par l'IEDM (2005), dix items
+      // au mot près, mêmes bandes. Sa propre bande 5-10 ordonne « Faire MMS » —
+      // il n'est donc pas le MMSE, et la réserve « © PAR » ne le concerne pas.
+      // Ce qui subsiste : le document ne nomme aucun auteur, donc aucun ayant
+      // droit n'est identifiable pour être sollicité.
+      //
+      // Lui aussi reste hors auto-passation, et pour une raison de MESURE : trois
+      // de ses items forment un enregistrement de trois mots puis deux rappels.
+      // Rempli seul, le test se corrige en remontant la page.
+      'Q_NEU_06',
+    ].sort();
     const enPassation = PASSATION_PRATICIEN.map(p => p.id)
       .filter(id => SOUS_RESERVE.includes(id))
       .sort();
     expect(
       enPassation,
-      `grille exposée en consultation sur un instrument sous réserve : ${enPassation.join(', ')}`,
-    ).toEqual([]);
+      `grille exposée en consultation sur un instrument sous réserve : ${enPassation.join(', ')} — `
+        + `chaque entrée demande une décision écrite, et chaque sortie une vérification `
+        + `(retirer la ligne plutôt que la laisser vieillir)`,
+    ).toEqual(EN_PASSATION_ATTENDUS);
   });
 
   it('ne se tait pas parce qu’il ne lit plus rien', () => {

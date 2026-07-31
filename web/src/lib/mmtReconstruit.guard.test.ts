@@ -116,33 +116,44 @@ describe('MMT — les trois mots, et la passation qui les protège', () => {
     expect(items.get('MM10').texte).toContain('trois mots');
   });
 
-  it('l’instrument est fermé des DEUX côtés — la route et le verbatim', () => {
-    // La reconstruction ne le rouvre pas, et les deux fermetures ont chacune
-    // leur raison. La ROUTE, parce qu'un rappel différé auto-rempli n'en est
-    // pas un : le patient remonte la page. Le VERBATIM, parce que
-    // `PASSATION_PRATICIEN` affiche la grille et que la décision du 2026-07-29
-    // interdit d'y laisser un instrument sous réserve — l'origine de ce test
-    // n'est pas instruite. Fermer un seul des deux laisserait passer l'autre :
-    // c'est la leçon du MMSE en #460.
+  it('garde sa route fermée, et rouvre son usage en consultation', () => {
+    // Les deux fermetures n'avaient PAS la même raison, et une seule est levée.
+    //
+    // La ROUTE reste fermée, et c'est une question de MESURE, pas de droits :
+    // trois items forment un enregistrement de trois mots puis deux rappels.
+    // Auto-rempli, le test se corrige en remontant la page, et les deux items
+    // les plus discriminants deviennent des points offerts. Aucune instruction
+    // bibliographique ne changera cela.
+    //
+    // Le VERBATIM rouvre, parce que son motif est tombé : la grille était
+    // fermée « faute d'identité instruite », et l'identité l'est depuis le
+    // 2026-07-31 — document « MMT ou Mini Mental Test » diffusé par l'IEDM
+    // (2005), dix items au mot près, mêmes bandes. Sa bande 5-10 ordonne « Faire
+    // MMS » : il n'est donc pas le MMSE, et la réserve © PAR ne le vise pas.
     expect(IDS_SUSPENDUS.has('Q_NEU_06')).toBe(true);
     expect(IDS_ASSIGNABLES.has('Q_NEU_06')).toBe(false);
-    expect(PASSATION_PRATICIEN.map(p => p.id)).not.toContain('Q_NEU_06');
-    expect(listeBibliotheque().filter(e => e.id === 'Q_NEU_06')).toHaveLength(0);
+    expect(PASSATION_PRATICIEN.map(p => p.id)).toContain('Q_NEU_06');
+    const enRayon = listeBibliotheque().find(e => e.id === 'Q_NEU_06');
+    expect(enRayon?.passationPraticien).toBe(true);
+    expect(enRayon?.assignable).toBe(false);
 
-    // Mais il reste SCORABLE : fermer n'est pas effacer, et la grille
-    // reconstruite doit rester exécutable pour le jour où l'identité est
-    // instruite.
+    // Et il reste SCORABLE : c'était vrai fermé, ça le reste ouvert.
     expect(calculateScore('Q_NEU_06', toutA(0))).not.toHaveProperty('error');
   });
 
-  it('le registre dit ce que la fermeture doit, et n’affirme pas l’identité', () => {
-    // Le registre est la seule pièce qui porte le motif. S'il repassait
-    // `referentiel_interne_siin`, l'affirmation « instrument interne » serait de
-    // retour sans qu'aucun test ne bouge — et c'est exactement la faute du
-    // VQ11, le 2026-07-30 : conclure de ce qu'un support ne dit pas.
+  it('le registre porte l’identité instruite, et ne la surdéclare pas', () => {
+    // Le registre est la seule pièce qui porte le motif. `referentiel_interne_siin`
+    // reste INTERDIT : ce serait conclure de ce qu'un support ne dit pas — la
+    // faute commise sur le VQ11 le 2026-07-30. L'identité est établie par un
+    // exemplaire INDÉPENDANT et public, pas par le silence du support SIIN.
     const entree: any = (REGISTRE as any).instruments.find((i: any) => i.questionnaireId === 'Q_NEU_06');
-    expect(entree.statutCertification).toBe('suspendu');
+    expect(entree.statutCertification).toBe('scoring_verifie');
+    expect(entree.statutBibliographique).toBe('reference_identifiee');
     expect(entree.statutBibliographique).not.toBe('referentiel_interne_siin');
     expect(entree.sourceIds).toContain('WN-SRC-0445');
+    // Le contenu n'est PAS déclaré `verbatim` : la consigne de passation est
+    // réécrite, et le chevauchement de bandes à la valeur 1 est arbitré. Deux
+    // écarts petits, mais réels — sous-déclarer est ici le bon sens de l'erreur.
+    expect(entree.versionServie.statutContenu).toBe('adapte');
   });
 });
