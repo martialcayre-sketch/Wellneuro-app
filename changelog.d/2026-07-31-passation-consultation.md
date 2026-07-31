@@ -147,4 +147,10 @@ Note de lecture du diff : `questionnaires/neuropsychologie.ts` apparaît réécr
 eol=lf`) applique au premier contact ; **la modification réelle est de sept
 lignes**, visible avec `git diff --ignore-all-space`.
 
-Quatorze mutations éprouvées au total, chacune vérifiée échouante puis restaurée.
+Et le barreau du MMSE est désormais épinglé **par le haut** aussi : il n'était
+gardé que par le plancher, et le remonter à `scoring_verifie` — refaire
+exactement l'erreur que ce lot corrige — traversait le CI en silence. Le scénario
+est celui qu'un lot a déjà joué : rejouer le banc, lire « 0 divergence critique »,
+remonter le barreau sans rouvrir la question des bandes.
+
+Quinze mutations éprouvées au total, chacune vérifiée échouante puis restaurée.

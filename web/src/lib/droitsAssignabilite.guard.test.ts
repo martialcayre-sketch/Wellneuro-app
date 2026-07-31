@@ -336,3 +336,30 @@ describe('passation praticien — l’avertissement clinicien atteint l’écran
     }
   });
 });
+
+// ── LE BARREAU DU MMSE, ÉPINGLÉ PAR LE HAUT ────────────────────────────────
+//
+// `Q_GEO_04` n'était gardé que par le bas — le plancher du vérificateur, qui
+// l'empêche de descendre sous `contenu_verrouille`. Rien ne l'empêchait de
+// REMONTER : mesuré le 2026-08-01, le repasser à `scoring_verifie` traverse le
+// CI en silence.
+//
+// Le scénario est réaliste, et c'est exactement celui qu'un lot a déjà joué :
+// quelqu'un rejoue le banc, lit « 0 divergence critique », et remonte le barreau
+// sans rouvrir la question des bandes. Or ce zéro est VACUEUX — les deux
+// lectures rendent `seuils: []` — et les quatre bandes viennent d'une
+// transcription HAS 2011 que rien dans le dépôt n'a vérifiée.
+describe('MMSE — le barreau ne remonte pas sans que la question des bandes soit rouverte', () => {
+  it('reste à `contenu_verrouille`', () => {
+    const entree = REGISTRE.instruments.find(i => i.questionnaireId === 'Q_GEO_04') as
+      { statutCertification?: string } | undefined;
+    expect(
+      entree?.statutCertification,
+      'Le MMSE ne peut pas porter `scoring_verifie` : ses quatre bandes — celles qui rendent '
+        + '« Démence sévère » — n\'ont été comparées à RIEN (les deux lectures du banc rendent '
+        + '`seuils: []`), et elles viennent d\'une transcription HAS 2011 non vérifiée. Un « 0 '
+        + 'divergence critique » ne dit ici rien du scoring. Précédent : la montée de Q_SOM_09, '
+        + 'annulée le 2026-07-30 pour une vacuité de même nature.',
+    ).toBe('contenu_verrouille');
+  });
+});
