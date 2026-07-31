@@ -120,6 +120,7 @@ function SelecteurIngredient({
       premierRenduRef.current = false;
       return;
     }
+    let monte = true;
     const minuteur = setTimeout(() => {
       const generation = ++generationRef.current;
       setEnCours(true);
@@ -132,7 +133,7 @@ function SelecteurIngredient({
           const payload = (await reponse.json()) as ReglesVocabulaireApiResponse;
           // Garde d'obsolescence : une réponse en retard n'écrase pas la frappe
           // qui l'a suivie.
-          if (generation !== generationRef.current) return;
+          if (!monte || generation !== generationRef.current) return;
           if (!reponse.ok || !payload.ok) {
             setEchec(true);
             return;
@@ -140,13 +141,16 @@ function SelecteurIngredient({
           setResultats(payload.ingredients);
           setTotal(payload.ingredientsTotal);
         } catch {
-          if (generation === generationRef.current) setEchec(true);
+          if (monte && generation === generationRef.current) setEchec(true);
         } finally {
-          if (generation === generationRef.current) setEnCours(false);
+          if (monte && generation === generationRef.current) setEnCours(false);
         }
       })();
     }, DELAI_RECHERCHE_MS);
-    return () => clearTimeout(minuteur);
+    return () => {
+      monte = false;
+      clearTimeout(minuteur);
+    };
   }, [recherche]);
 
   if (choisi) {
@@ -198,7 +202,11 @@ function SelecteurIngredient({
                 onClick={() => onChoix(entree)}
                 className="w-full px-3 py-1.5 text-left text-sm text-foreground hover:bg-muted disabled:opacity-50"
               >
-                {entree.nomFr}
+                {entree.nomFr}{' '}
+                {/* Le code est montré parce que la recherche porte AUSSI sur lui :
+                    sans lui, chercher par code rend des lignes où le texte tapé
+                    n'apparaît nulle part. */}
+                <span className="text-xs text-muted-foreground">{entree.code}</span>
               </button>
             </li>
           ))}
@@ -593,12 +601,20 @@ function FormulaireRevision({
     };
   }, [regle.ingredient.id]);
 
-  // Tant que les formes ne sont pas là — chargement en cours ou échec — la liste
-  // porte quand même la forme préférée COURANTE. Sans cette option, la valeur en
-  // état n'aurait aucune option correspondante et le `<select>` afficherait
-  // autre chose que ce qui serait soumis.
-  const formesOptions: FormeIngredient[] =
-    formes ?? (regle.formePreferee ? [regle.formePreferee] : []);
+  // La forme préférée COURANTE est TOUJOURS une option, quel que soit l'état du
+  // chargement — en cours, en échec, ou réussi mais sans elle. Ce dernier cas
+  // est le plus traître : l'ingrédient a pu être désactivé (la route ne sert que
+  // l'actif), ou la forme elle-même ; la liste revient alors vide ou amputée,
+  // sans être `null`. Sans cette option, `formePrefereeId` n'aurait aucune
+  // option correspondante, le `<select>` retomberait sur « Sans forme préférée »
+  // — et soumettrait pourtant la forme, que la route de révision accepte.
+  // Afficher autre chose que ce qui part est le défaut que ce lot ferme.
+  const formesOptions: FormeIngredient[] = (() => {
+    const chargees = formes ?? [];
+    const courante = regle.formePreferee;
+    if (!courante || chargees.some((forme) => forme.id === courante.id)) return chargees;
+    return [courante, ...chargees];
+  })();
 
   const soumettre = async () => {
     if (envoi || !justification.trim() || !sourceReferenceId) return;
@@ -665,7 +681,10 @@ function FormulaireRevision({
           <select
             aria-label="Forme préférée de la révision"
             value={formePrefereeId}
-            disabled={fige || formes === null}
+            // Désactivé pendant le chargement seulement. Sur échec, le champ
+            // redevient utilisable : sinon le praticien ne pourrait plus RETIRER
+            // la forme préférée, un choix bloqué faute d'avoir pu lire la liste.
+            disabled={fige || (formes === null && !formesEchec)}
             onChange={(event) => setFormePrefereeId(event.target.value)}
             className={classeChamp()}
           >

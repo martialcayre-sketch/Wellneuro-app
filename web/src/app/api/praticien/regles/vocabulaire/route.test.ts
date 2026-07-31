@@ -14,7 +14,8 @@ vi.mock('next-auth', () => ({ getServerSession }));
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 
-import { GET, INGREDIENTS_MAX, POST } from './route';
+import { INGREDIENTS_MAX } from '@/lib/supplement-library/gouvernance';
+import { GET, POST } from './route';
 
 const URL_BASE = 'http://localhost/api/praticien/regles/vocabulaire';
 
@@ -87,11 +88,22 @@ describe('/api/praticien/regles/vocabulaire', () => {
     expect(prisma.supplementIngredient.findMany.mock.calls[0][0].take).toBe(INGREDIENTS_MAX);
     // Sans ce total, 50 résultats sur 1 240 se liraient « il n'y en a que 50 ».
     expect(json.ingredientsTotal).toBe(1240);
-    // Le compte porte sur le MÊME filtre que la liste, sinon il annonce une
-    // couverture qui n'est pas celle des résultats rendus.
-    expect(prisma.supplementIngredient.count.mock.calls[0][0].where).toEqual(
-      prisma.supplementIngredient.findMany.mock.calls[0][0].where,
-    );
+  });
+
+  it('le total suit le filtre de RECHERCHE, pas le référentiel entier', async () => {
+    // Un `count` resté sur `{ actif: true }` annoncerait « 1 965 correspondent »
+    // sur une recherche qui n'en rend que trois : le compteur mentirait au
+    // moment précis où il sert à décider d'affiner la recherche.
+    await GET(lecture({ requete: 'zinc' }));
+    const filtreListe = prisma.supplementIngredient.findMany.mock.calls[0][0].where;
+    expect(prisma.supplementIngredient.count.mock.calls[0][0].where).toEqual(filtreListe);
+    expect(filtreListe).toHaveProperty('OR');
+  });
+
+  it('ne propose jamais une forme désactivée', async () => {
+    await GET(lecture());
+    const select = prisma.supplementIngredient.findMany.mock.calls[0][0].select;
+    expect(select.formes.where).toEqual({ actif: true });
   });
 
   it('cherche sur le nom ET sur le code, insensible à la casse', async () => {

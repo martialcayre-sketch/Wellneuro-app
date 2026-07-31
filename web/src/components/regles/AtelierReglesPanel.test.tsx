@@ -379,7 +379,7 @@ describe('AtelierReglesPanel (Atelier de règles cliniques v1)', () => {
     expect(bouton.disabled).toBe(true); // rien de rempli : pas de création possible
 
     fireEvent.change(screen.getByLabelText('Intention clinique'), { target: { value: 'tag_sommeil' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Magnésium' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Magnésium/ }));
     fireEvent.change(screen.getByLabelText('Grade de preuve scientifique (échelle GRADE)'), {
       target: { value: 'fort' },
     });
@@ -420,7 +420,7 @@ describe('AtelierReglesPanel (Atelier de règles cliniques v1)', () => {
       );
       await attendreLaListe();
 
-      fireEvent.click(screen.getByRole('button', { name: 'Magnésium' }));
+      fireEvent.click(screen.getByRole('button', { name: /^Magnésium/ }));
       fireEvent.change(screen.getByLabelText('Forme préférée (optionnelle)'), {
         target: { value: 'forme_bisg' },
       });
@@ -431,11 +431,11 @@ describe('AtelierReglesPanel (Atelier de règles cliniques v1)', () => {
         target: { value: 'zinc' },
       });
       await vi.advanceTimersByTimeAsync(400);
-      await waitFor(() => expect(screen.getByRole('button', { name: 'Zinc' })).toBeTruthy());
+      await waitFor(() => expect(screen.getByRole('button', { name: /^Zinc/ })).toBeTruthy());
 
       // Choisir le nouvel ingrédient : la forme préférée de l'ANCIEN ne doit
       // pas suivre — une forme appartient à un ingrédient et à un seul.
-      fireEvent.click(screen.getByRole('button', { name: 'Zinc' }));
+      fireEvent.click(screen.getByRole('button', { name: /^Zinc/ }));
       expect(screen.getByText('Ingrédient : Zinc')).toBeTruthy();
       const formes = screen.getByLabelText('Forme préférée (optionnelle)') as HTMLSelectElement;
       expect(formes.value).toBe('');
@@ -507,7 +507,7 @@ describe('AtelierReglesPanel (Atelier de règles cliniques v1)', () => {
     expect(screen.getByText(/1965 ingrédients correspondent — les 50 premiers sont proposés/)).toBeTruthy();
 
     // Et le choix reste faisable : les formes suivent l'ingrédient retenu.
-    fireEvent.click(screen.getByRole('button', { name: 'Ingrédient 37' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Ingrédient 37 / }));
     expect(screen.getByText('Ingrédient : Ingrédient 37')).toBeTruthy();
     expect(screen.getByRole('option', { name: 'Forme 37-4' })).toBeTruthy();
     expect(screen.queryByRole('option', { name: 'Forme 12-4' })).toBeNull();
@@ -541,13 +541,13 @@ describe('AtelierReglesPanel (Atelier de règles cliniques v1)', () => {
       await vi.advanceTimersByTimeAsync(400);
       fireEvent.change(champ, { target: { value: 'zinc' } });
       await vi.advanceTimersByTimeAsync(400);
-      await waitFor(() => expect(screen.getByRole('button', { name: 'Zinc' })).toBeTruthy());
+      await waitFor(() => expect(screen.getByRole('button', { name: /^Zinc/ })).toBeTruthy());
 
       differe.relacher?.();
       await vi.advanceTimersByTimeAsync(50);
 
-      expect(screen.getByRole('button', { name: 'Zinc' })).toBeTruthy();
-      expect(screen.queryByRole('button', { name: 'Magnésium' })).toBeNull();
+      expect(screen.getByRole('button', { name: /^Zinc/ })).toBeTruthy();
+      expect(screen.queryByRole('button', { name: /^Magnésium/ })).toBeNull();
     } finally {
       vi.useRealTimers();
     }
@@ -585,6 +585,79 @@ describe('AtelierReglesPanel (Atelier de règles cliniques v1)', () => {
       expect(posts[0][0]).toBe(URL_REVISION);
       expect(JSON.parse(posts[0][1].body).formePrefereeId).toBe('forme_bisg');
     });
+  });
+
+  it('la forme courante reste une option même quand l’hydratation RÉUSSIT sans elle', async () => {
+    // Le cas le plus traître, et celui qu'un repli sur `formes === null` rate :
+    // l'hydratation aboutit, mais l'ingrédient a été désactivé (la route ne sert
+    // que l'actif) — la liste revient VIDE sans être `null`. Le `<select>`
+    // retomberait sur « Sans forme préférée » tout en soumettant la forme, que
+    // la route de révision accepte : affiché ≠ soumis, au référentiel.
+    fetchMock.mockImplementation(
+      router({
+        hydratations: { ing_mag: { ...VOCABULAIRE, ingredients: [], ingredientsTotal: 0 } },
+        listes: { validee: { ...LISTE, statut: 'validee', regles: [REGLE_VALIDEE] } },
+      }),
+    );
+    await attendreLaListe();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validées' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Réviser' }));
+
+    const formes = (await screen.findByLabelText(
+      'Forme préférée de la révision',
+    )) as HTMLSelectElement;
+    await waitFor(() => expect(formes.disabled).toBe(false));
+    expect(formes.value).toBe('forme_bisg');
+    expect(screen.getByRole('option', { name: 'Bisglycinate' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Créer la révision (brouillon)' }));
+    await waitFor(() =>
+      expect(JSON.parse(appelsPost()[0][1].body).formePrefereeId).toBe('forme_bisg'),
+    );
+  });
+
+  it('la forme préférée reste RETIRABLE quand l’hydratation échoue', async () => {
+    // Un champ bloqué faute d'avoir pu lire la liste enferme le praticien dans
+    // un choix qu'il voulait défaire.
+    fetchMock.mockImplementation(
+      router({
+        vocabulaireEnEchec: true,
+        listes: { validee: { ...LISTE, statut: 'validee', regles: [REGLE_VALIDEE] } },
+      }),
+    );
+    await attendreLaListe();
+    fireEvent.click(screen.getByRole('tab', { name: 'Validées' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Réviser' }));
+
+    const formes = (await screen.findByLabelText(
+      'Forme préférée de la révision',
+    )) as HTMLSelectElement;
+    await waitFor(() => expect(formes.disabled).toBe(false));
+    fireEvent.change(formes, { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Créer la révision (brouillon)' }));
+
+    await waitFor(() => {
+      const corps = JSON.parse(appelsPost()[0][1].body);
+      expect(corps).not.toHaveProperty('formePrefereeId');
+    });
+  });
+
+  it('ne relance pas une recherche au montage, et gèle les résultats pendant un envoi', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      fetchMock.mockImplementation(router());
+      await attendreLaListe();
+      await vi.advanceTimersByTimeAsync(600);
+
+      // Le chargement initial du panneau a déjà rapporté la première page :
+      // aucune lecture PARAMÉTRÉE ne doit partir tant que rien n'est tapé.
+      const parametrees = fetchMock.mock.calls.filter(([url]) =>
+        String(url).startsWith(`${URL_VOCABULAIRE}?`),
+      );
+      expect(parametrees).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('la révision hydrate les formes de SON ingrédient, absent de la page servie', async () => {

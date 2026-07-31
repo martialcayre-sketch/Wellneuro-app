@@ -6,7 +6,9 @@ import { isC4Enabled } from '@/lib/supplement-library/featureFlag';
 import {
   CATEGORIE_MAX,
   CODE_GOUVERNE_RE,
+  INGREDIENTS_MAX,
   LABEL_MAX,
+  REQUETE_INGREDIENT_MAX,
 } from '@/lib/supplement-library/gouvernance';
 
 // Vocabulaire gouverné de l'atelier de règles (C4, LOT-03b).
@@ -34,12 +36,6 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-/** Borne serveur du nombre d'ingrédients rendus. Non réglable par le client. */
-export const INGREDIENTS_MAX = 50;
-
-/** Longueur retenue d'une recherche (le surplus est coupé, jamais refusé). */
-const REQUETE_MAX = 200;
 
 export type EntreeVocabulaire = {
   id: string;
@@ -89,7 +85,7 @@ export async function GET(req: Request): Promise<NextResponse<ReglesVocabulaireA
 
     const params = new URL(req.url).searchParams;
     const ingredientId = (params.get('ingredientId') ?? '').trim();
-    const requete = (params.get('requete') ?? '').trim().slice(0, REQUETE_MAX);
+    const requete = (params.get('requete') ?? '').trim().slice(0, REQUETE_INGREDIENT_MAX);
 
     // `ingredientId` prime : hydratation ciblée pour le formulaire de révision.
     // Un identifiant inconnu rend une liste vide — c'est une absence, pas une
