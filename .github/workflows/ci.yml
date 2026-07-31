@@ -160,6 +160,21 @@ jobs:
         if: steps.scope.outputs.docs_only != 'true'
         run: node --test tools/corpus/certify/lib/comparaison.test.mjs
 
+      # Résolution des compositions Compl'Alim vers le référentiel. Le libellé
+      # n'atteint jamais le serveur — c'est l'outil qui lit le CSV, résout, et
+      # n'envoie que des identifiants officiels — donc cette logique clinique
+      # vit hors de Vitest et doit être branchée ici pour tourner.
+      #
+      # Ce que ses cas verrouillent : « Huile de poisson » rend UN actif et non
+      # les sept constituants dont elle est la forme d'apport ; une forme à deux
+      # parents (« D-pantothénate de calcium » → calcium ET vitamine B5) n'est
+      # pas écrite mais rapportée ; une ligne « plantes » ne s'accroche jamais à
+      # une substance ; aucune unité n'est devinée. Le banc relit aussi
+      # `SUPPLEMENTS_UNITES` dans config.ts et refuse une recopie divergente.
+      - name: Résolution des compositions (banc du résolveur)
+        if: steps.scope.outputs.docs_only != 'true'
+        run: node --test tools/supplements/compositions/lib/resolution.test.mjs
+
       # Banc golden de scoring : verrouille calculateScore/buildMiniSynthese
       # contre quatre fixtures représentatives + un cas d'erreur. Débranché de
       # tout runner jusqu'ici — son chargeur (concaténation des sources TS de
@@ -252,6 +267,34 @@ jobs:
       # rejoue DANS sa transaction avant COMMIT (`prisma/importNabm.ts`) : une
       # violation structurelle annule alors l'import au lieu d'être constatée
       # après coup.
+      # C4 — provenance du référentiel d'ingrédients. Le fichier existe depuis
+      # #493 et son changelog affirmait « câblé au CI » : il ne l'était pas, et
+      # n'a donc JAMAIS tourné, ni ici ni dans wn-test-worktree.sh (qui dérive
+      # sa liste de ce fichier). Ce qu'il vérifie : la nullabilité APPARIÉE de
+      # (source_provenance, source_identifiant) — sans elle, une demi-clé
+      # échappe à la fois à l'index unique et au findFirst de l'ingestion, et le
+      # même identifiant officiel s'insère indéfiniment ; le vocabulaire clos
+      # des provenances ; la RLS ; et surtout que l'index côté FORME n'est PAS
+      # unique — assertion inversée, délibérée : le rendre unique refuserait la
+      # seconde attache d'une forme multi-substances en ayant l'air d'un
+      # durcissement.
+      - name: C4 référentiel provenance contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/c4_referentiel_provenance_v1.sql
+
+      # C4 — structure du catalogue produits et de leurs compositions. Inerte
+      # depuis le LOT-01 ; c'est la table de ce lot qu'il garde. Il vérifie
+      # notamment l'index partiel `..._produit_ingredient_sans_forme`, sans
+      # lequel PostgreSQL laisserait réinsérer sans fin un couple
+      # (produit, ingrédient) sans forme — deux NULL n'entrant jamais en
+      # conflit — et l'absence de colonne produit dans `clinical_rules`, qui
+      # est la frontière entre le vocabulaire et le jugement.
+      - name: C4 supplement catalogue contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/c4_supplement_catalogue_v1.sql
+
       - name: CB-01 biology structure contract
         if: steps.scope.outputs.docs_only != 'true'
         working-directory: web

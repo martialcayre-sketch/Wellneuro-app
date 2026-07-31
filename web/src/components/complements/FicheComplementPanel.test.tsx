@@ -15,7 +15,7 @@ const FICHE: FicheComplement = {
   statutFiche: 'importee',
   statutLabel: 'Fiche importée — non vérifiée',
   composition: [
-    { ingredientCode: 'magnesium', ingredientNomFr: 'Magnésium', formeCode: 'bisglycinate', formeLabelFr: 'Bisglycinate', doseParPortion: 200, unite: 'mg' },
+    { ingredientCode: 'magnesium', ingredientNomFr: 'Magnésium', formeCode: 'bisglycinate', formeLabelFr: 'Bisglycinate', doseParDjr: 200, unite: 'mg' },
   ],
   completudeComposition: 'integre',
   dimensions: {

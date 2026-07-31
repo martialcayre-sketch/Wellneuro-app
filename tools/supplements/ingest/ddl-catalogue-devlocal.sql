@@ -63,14 +63,14 @@ CREATE TABLE IF NOT EXISTS supplement_product_compositions (
   product_id       text NOT NULL REFERENCES supplement_products (id) ON DELETE RESTRICT,
   ingredient_id    text NOT NULL REFERENCES supplement_ingredients (id) ON DELETE RESTRICT,
   forme_id         text REFERENCES supplement_ingredient_formes (id) ON DELETE RESTRICT,
-  dose_par_portion double precision,
+  dose_par_djr double precision,
   unite            text,
   position         integer NOT NULL DEFAULT 0,
   created_at       timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT supplement_product_compositions_dose_unite_check
-    CHECK ((dose_par_portion IS NULL) = (unite IS NULL)),
+    CHECK ((dose_par_djr IS NULL) = (unite IS NULL)),
   CONSTRAINT supplement_product_compositions_unite_check
-    CHECK (unite IS NULL OR unite IN ('µg', 'mg', 'g', 'mL', 'UI'))
+    CHECK (unite IS NULL OR unite IN ('µg', 'mg', 'g', 'mL', 'UI', 'UFC'))
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS supplement_product_compositions_produit_ingredient_forme_key

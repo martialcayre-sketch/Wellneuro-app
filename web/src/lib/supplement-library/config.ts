@@ -14,7 +14,13 @@ export const SUPPLEMENTS_MAX_BATCH_SIZE = 500;
 // ensembles est rejetée à la validation (jamais laissée à la base).
 export const SUPPLEMENTS_PROVENANCES = ['complalim', 'dgccrf', 'saisie_praticien'] as const;
 export const SUPPLEMENTS_NIVEAUX_COMPLETUDE = ['bien_documentee', 'partielle', 'lacunaire'] as const;
-export const SUPPLEMENTS_UNITES = ['µg', 'mg', 'g', 'mL', 'UI'] as const;
+// `UFC` (2026-07-31) : les 21 805 lignes de micro-organismes de Compl'Alim
+// portent une quantité et AUCUNE unité — l'UFC y est implicite. Sans elle au
+// vocabulaire, le CHECK qui apparie dose et unité ne laisse qu'une issue :
+// jeter la dose, et perdre 21 478 dosages probiotiques en silence.
+// Élargissement, pas assouplissement — le vocabulaire reste clos, et reste la
+// garde qui empêche de rapprocher des grandeurs incomparables.
+export const SUPPLEMENTS_UNITES = ['µg', 'mg', 'g', 'mL', 'UI', 'UFC'] as const;
 
 // Seul statut que la voie d'ingestion écrit : décision n°11 du moteur
 // d'intention clinique — une source externe ne produit que des brouillons.

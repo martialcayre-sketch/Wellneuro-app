@@ -178,7 +178,7 @@ export function FicheComplementPanel({
               <li key={`${c.ingredientCode}-${c.formeCode ?? 'sans-forme'}`}>
                 <span className="font-medium">{c.ingredientNomFr}</span>
                 {c.formeLabelFr ? ` — ${c.formeLabelFr}` : ''}
-                {c.doseParPortion != null ? ` · ${c.doseParPortion} ${c.unite ?? ''}`.trimEnd() : ''}
+                {c.doseParDjr != null ? ` · ${c.doseParDjr} ${c.unite ?? ''}`.trimEnd() : ''}
               </li>
             ))}
           </ul>

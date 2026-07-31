@@ -153,7 +153,7 @@ async function ingestUneFiche(fiche: SupplementFicheInput): Promise<FicheIngestR
                 create: fiche.compositions.map((c, i) => ({
                   ingredientId: c.ingredientId,
                   formeId: c.formeId ?? null,
-                  doseParPortion: c.doseParPortion ?? null,
+                  doseParDjr: c.doseParDjr ?? null,
                   unite: c.unite ?? null,
                   position: c.position ?? i,
                 })),

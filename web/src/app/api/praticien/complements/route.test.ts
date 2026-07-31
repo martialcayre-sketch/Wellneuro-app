@@ -19,7 +19,7 @@ import { GET } from './route';
 const URL_BASE = 'http://localhost/api/praticien/complements';
 
 const CATALOGUE = {
-  contractVersion: 'c4-catalogue-v2',
+  contractVersion: 'c4-catalogue-v4',
   aucunScoreGlobal: true,
   intentionFiltre: null,
   codesInconnus: [],
