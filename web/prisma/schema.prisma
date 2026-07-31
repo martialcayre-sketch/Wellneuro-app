@@ -462,6 +462,15 @@ model SupplementIngredient {
   code      String   @unique @map("code")
   nomFr     String   @map("nom_fr")
   actif     Boolean  @default(true) @map("actif")
+  // Provenance de l'entrée quand elle vient d'un référentiel externe
+  // (`complalim` + identifiant officiel). NULLABLES à dessein : une entrée
+  // créée à la main par le praticien n'en a pas, et PostgreSQL ne fait pas
+  // conflit entre deux NULL — l'unicité ci-dessous ne les gêne donc pas.
+  // C'est la clé de RE-SYNCHRONISATION : sans elle, un réalignement devrait
+  // deviner l'appariement par le nom. `code` reste lisible (« selenium »),
+  // parce que c'est lui que les règles cliniques manipulent.
+  sourceProvenance  String? @map("source_provenance")
+  sourceIdentifiant String? @map("source_identifiant")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -470,6 +479,7 @@ model SupplementIngredient {
   functionalThresholds IngredientFunctionalThreshold[]
   compositions         SupplementProductComposition[]
 
+  @@unique([sourceProvenance, sourceIdentifiant], map: "supplement_ingredients_source_key")
   @@map("supplement_ingredients")
 }
 
@@ -479,6 +489,14 @@ model SupplementIngredientForme {
   code         String   @map("code")
   labelFr      String   @map("label_fr")
   actif        Boolean  @default(true) @map("actif")
+  // Traçabilité SEULEMENT — pas une clé, contrairement à l'ingrédient.
+  // Une même forme d'apport officielle relève parfois de PLUSIEURS substances
+  // (mesuré : 69 cas, dont « D-pantothénate de calcium » → vitamine B5 ET
+  // calcium). Elle apparaît donc légitimement sous plusieurs ingrédients, et
+  // un index unique sur (provenance, identifiant) bloquerait l'ingestion.
+  // L'unicité réelle reste `[ingredientId, code]`, qui la décrit exactement.
+  sourceProvenance  String? @map("source_provenance")
+  sourceIdentifiant String? @map("source_identifiant")
   createdAt    DateTime @default(now()) @map("created_at")
 
   ingredient    SupplementIngredient @relation(fields: [ingredientId], references: [id])
@@ -486,6 +504,7 @@ model SupplementIngredientForme {
   compositions  SupplementProductComposition[]
 
   @@unique([ingredientId, code])
+  @@index([sourceProvenance, sourceIdentifiant], map: "supplement_ingredient_formes_source_idx")
   @@map("supplement_ingredient_formes")
 }
 
