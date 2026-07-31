@@ -34,6 +34,26 @@ export const ALIAS_HISTORIQUES: Record<string, string> = {
 // consultation (clinicien/informant/journal), jamais auto-administrés.
 export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   { id: 'Q_GEO_03', categorie: 'Gérontologie' },
+  // `Q_GEO_04` (MMSE) REVIENT le 2026-07-31, sur arbitrage praticien. Son
+  // retrait du 2026-07-29 fermait l'usage en consultation d'un instrument dont
+  // les droits ne sont pas dégagés (« © PAR, licence requise »). La décision est
+  // reprise pour une raison d'asymétrie : six instruments portant la même
+  // classe de réserve sont, eux, ENVOYÉS AU PATIENT — ce qui expose davantage
+  // que d'afficher une grille au praticien qui porte la déclaration d'usage.
+  //
+  // `actif: false` est CONSERVÉ au catalogue : la route d'assignation reste
+  // fermée, et le MMSE ne part chez personne. C'est un test administré par le
+  // clinicien ; les deux gestes de #460 restent indépendants, seul celui-ci est
+  // repris.
+  //
+  // La réserve « © PAR, licence requise » ne se lève PAS pour autant, et le
+  // registre la porte. Elle n'est pas non plus d'une nature à part : une
+  // première rédaction affirmait ici que PAR serait le seul ayant droit de cette
+  // population à vendre activement sa licence — c'est FAUX, QualityMetric
+  // (HIT-6) et GL Assessment (HAD) sont dans le même cas, et tous deux sont déjà
+  // ENVOYÉS AU PATIENT. Le fait rectifié renforce l'asymétrie qui motive cette
+  // ligne au lieu de l'affaiblir.
+  { id: 'Q_GEO_04', categorie: 'Gérontologie' },
   // `Q_GEO_04` (MMSE) est sorti d'ici le 2026-07-29, sur arbitrage praticien :
   // droits non dégagés (« © PAR, licence requise »). Cette ligne portait son
   // AFFICHAGE et l'aperçu de sa grille — le seul accès, dans l'application, aux
@@ -49,6 +69,24 @@ export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   // contre-épreuve à l'appui. Le retrait tient, la raison change.
   { id: 'Q_GEO_05', categorie: 'Gérontologie' },
   { id: 'Q_GEO_06', categorie: 'Gérontologie' },
+  // `Q_NEU_06` (MMT) ENTRE ici le 2026-07-31, et pour un motif levé sur pièce.
+  //
+  // Il était fermé parce que « le registre ne nomme aucun auteur, on ne sait pas
+  // dire ce qu'il est ». La recherche bibliographique du 2026-07-31 l'instruit :
+  // c'est le « MMT ou Mini Mental Test » diffusé par l'IEDM (Institut Européen
+  // de Diététique et Micronutrition), document de 2005 — dix items au mot près,
+  // mêmes options, même cotation 0/1/2, mêmes quatre bandes que le servi.
+  //
+  // Et il n'est PAS le MMSE, contrairement à ce que la parenté de ses six
+  // premières épreuves laissait craindre : sa propre bande 5-10 ordonne « Faire
+  // MMS ». Un instrument qui prescrit le MMSE n'est pas le MMSE, et la réserve
+  // « © PAR » ne le concerne pas.
+  //
+  // Il ne peut pas être auto-administré, et c'est indépendant de ses droits :
+  // trois de ses items forment un enregistrement de trois mots puis deux
+  // rappels. Dans un formulaire rempli seul, le patient remonte la page et les
+  // deux items les plus discriminants deviennent des points offerts.
+  { id: 'Q_NEU_06', categorie: 'Gérontologie' },
   { id: 'Q_URO_02', categorie: 'Urologie' },
 ];
 

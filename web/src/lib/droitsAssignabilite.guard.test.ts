@@ -192,15 +192,56 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
     // continuant d'afficher la grille laisse l'usage licencié se poursuivre sur
     // papier.
     //
-    // La liste attendue est VIDE, et c'est la décision du 2026-07-29 : aucun
-    // instrument sous licence non dégagée ne reste en passation praticien.
+    // LA LISTE N'EST PLUS VIDE DEPUIS LE 2026-07-31, et c'est un RENVERSEMENT de
+    // la décision du 2026-07-29 — pas son application. Il se lit comme tel, avec
+    // son motif à côté de chaque identifiant, parce qu'une liste qui s'allonge
+    // en silence est une décision qu'on ne reprend jamais.
+    //
+    // Le motif est commun aux deux : une asymétrie qui ne se défendait pas. SIX
+    // instruments portant la même classe de réserve sont ENVOYÉS AU PATIENT
+    // (`LAISSES_ASSIGNABLES` ci-dessus). Afficher une grille au praticien qui
+    // porte la déclaration d'usage expose strictement moins que de l'adresser à
+    // un patient. Interdire le moins en autorisant le plus ne tenait pas.
+    //
+    // Ce que cette liste n'est PAS : une levée de droits. Le MMSE reste © PAR,
+    // et aucune des réserves de cette population n'est levée — seule la décision
+    // d'USAGE change.
+    //
+    // Une première rédaction ajoutait que le MMSE serait le seul dont l'ayant
+    // droit vend activement la licence. C'est faux : QualityMetric (HIT-6) et
+    // GL Assessment (HAD) portent la même mention au registre, et tous deux sont
+    // dans `LAISSES_ASSIGNABLES` ci-dessus, donc envoyés au patient. Le fait
+    // rectifié RENFORCE l'asymétrie qui motive cette liste — ce n'est pas que le
+    // MMSE serait un cas à part, c'est que des instruments de même statut de
+    // droits sont déjà servis plus largement que lui.
+    const EN_PASSATION_ATTENDUS = [
+      // MMSE (GRECO) — test administré par le clinicien : rappel différé et copie
+      // de figure n'ont aucun sens en auto-remplissage. Son entrée de catalogue
+      // reste `actif: false`, donc la route d'assignation reste fermée : c'est
+      // l'usage EN CONSULTATION qui rouvre, et lui seul.
+      'Q_GEO_04',
+      // MMT — sa réserve n'est pas de droits mais d'IDENTITÉ, et elle a changé de
+      // nature le 2026-07-31 : la recherche bibliographique l'identifie au
+      // document « MMT ou Mini Mental Test » diffusé par l'IEDM (2005), dix items
+      // au mot près, mêmes bandes. Sa propre bande 5-10 ordonne « Faire MMS » —
+      // il n'est donc pas le MMSE, et la réserve « © PAR » ne le concerne pas.
+      // Ce qui subsiste : le document ne nomme aucun auteur, donc aucun ayant
+      // droit n'est identifiable pour être sollicité.
+      //
+      // Lui aussi reste hors auto-passation, et pour une raison de MESURE : trois
+      // de ses items forment un enregistrement de trois mots puis deux rappels.
+      // Rempli seul, le test se corrige en remontant la page.
+      'Q_NEU_06',
+    ].sort();
     const enPassation = PASSATION_PRATICIEN.map(p => p.id)
       .filter(id => SOUS_RESERVE.includes(id))
       .sort();
     expect(
       enPassation,
-      `grille exposée en consultation sur un instrument sous réserve : ${enPassation.join(', ')}`,
-    ).toEqual([]);
+      `grille exposée en consultation sur un instrument sous réserve : ${enPassation.join(', ')} — `
+        + `chaque entrée demande une décision écrite, et chaque sortie une vérification `
+        + `(retirer la ligne plutôt que la laisser vieillir)`,
+    ).toEqual(EN_PASSATION_ATTENDUS);
   });
 
   it('ne se tait pas parce qu’il ne lit plus rien', () => {
@@ -224,5 +265,101 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
       id => !auRayon.has(id) && CATALOGUE_DEFINITIONS[id] === undefined,
     );
     expect(inconnus, `ids du registre inconnus du dépôt : ${inconnus.join(', ')}`).toEqual([]);
+  });
+});
+
+// ── LA GARDE QUI MANQUAIT, ET QUI AURAIT ROUGI DEPUIS TOUJOURS ──────────────
+//
+// Trouvée en revue le 2026-08-01. `PASSATION_PRATICIEN` est une liste
+// d'AFFICHAGE : les trois routes d'assignation ne la consultent pas. Elles
+// n'exigent qu'une définition, une fois passé le filtre `IDS_SUSPENDUS`.
+//
+// Quatre des six instruments de consultation n'avaient AUCUNE entrée de
+// catalogue — ils échappaient donc à `IDS_SUSPENDUS`, et un POST direct sur
+// `api/praticien/assignations` les acceptait. Trois tests cognitifs de
+// gérontologie et un catalogue mictionnel, administrés en consultation,
+// pouvaient partir au portail patient.
+//
+// C'est la position « invisible et assignable » que #460 avait fermée sur le
+// seul MMSE, en lui donnant une entrée `actif: false`. Les quatre autres l'ont
+// reçue le 2026-08-01 — et ce test est ce qui empêche la prochaine ligne de
+// `PASSATION_PRATICIEN` d'être ajoutée sans elle.
+describe('passation praticien — aucun n’est assignable par la route', () => {
+  it('les six sont fermés au prédicat que la route exécute vraiment', () => {
+    // Le prédicat est celui de la route, PAS `IDS_ASSIGNABLES` : les deux
+    // diffèrent, et c'est l'écart entre eux qui était le trou. `IDS_ASSIGNABLES`
+    // exige une entrée de rayon active ; la route se contente d'une définition.
+    const ouverts = PASSATION_PRATICIEN.map(p => p.id).filter(assignableParLaRoute);
+    expect(
+      ouverts,
+      `assignables par appel direct alors qu'ils sont administrés en consultation : `
+        + `${ouverts.join(', ')} — leur donner une entrée de catalogue \`actif: false\``,
+    ).toEqual([]);
+  });
+
+  it('ne se tait pas parce qu’il ne lit plus rien', () => {
+    // ANTI-VACUITÉ : sur une liste vide, l'assertion ci-dessus est vraie sans
+    // rien avoir vérifié.
+    expect(PASSATION_PRATICIEN.length).toBeGreaterThanOrEqual(6);
+    // Et le prédicat doit encore savoir dire OUI, sinon il ne dit rien.
+    expect(assignableParLaRoute('Q_SOM_01')).toBe(true);
+  });
+});
+
+// ── LE BANDEAU D'AVERTISSEMENT, QUE RIEN NE GARDAIT ─────────────────────────
+//
+// Relevé en revue le 2026-08-01, et c'est la vraie lacune du lot : le champ
+// `administrationMode: 'clinicien'` est ce qui fait afficher, dans l'aperçu
+// praticien, « Instrument à faire passer en consultation — jamais envoyé au
+// portail ». Aucun test ne le lisait. Il pouvait donc être retiré sans qu'une
+// ligne rougisse — et la grille d'un test qui SE CORRIGE TOUT SEUL s'il est
+// auto-rempli serait alors affichée sans son avertissement.
+//
+// Ce n'est pas une garde d'affichage : c'est le seul endroit du dépôt où la
+// raison clinique de ne pas auto-administrer ces instruments est portée jusqu'à
+// l'écran.
+describe('passation praticien — l’avertissement clinicien atteint l’écran', () => {
+  it('les instruments à rappel différé le déclarent', () => {
+    // La liste est nommée, pas dérivée : ce sont les instruments dont un item
+    // vaut zéro point s'il est lu avant d'être répondu — rappel de mots, copie
+    // de figure. Un instrument de consultation peut légitimement ne pas en
+    // porter (un catalogue mictionnel se remplit chez soi) ; ceux-ci non.
+    for (const id of ['Q_GEO_04', 'Q_NEU_06', 'Q_GEO_06']) {
+      const def = CATALOGUE_DEFINITIONS[id] as { administrationMode?: string } | undefined;
+      expect(def, id).toBeDefined();
+      expect(
+        def?.administrationMode,
+        `${id} : sans \`administrationMode: 'clinicien'\`, l'aperçu affiche la grille `
+          + `SANS le bandeau « jamais envoyé au portail » — et ces instruments se corrigent `
+          + `d'eux-mêmes en auto-remplissage (rappel différé, copie de figure)`,
+      ).toBe('clinicien');
+    }
+  });
+});
+
+// ── LE BARREAU DU MMSE, ÉPINGLÉ PAR LE HAUT ────────────────────────────────
+//
+// `Q_GEO_04` n'était gardé que par le bas — le plancher du vérificateur, qui
+// l'empêche de descendre sous `contenu_verrouille`. Rien ne l'empêchait de
+// REMONTER : mesuré le 2026-08-01, le repasser à `scoring_verifie` traverse le
+// CI en silence.
+//
+// Le scénario est réaliste, et c'est exactement celui qu'un lot a déjà joué :
+// quelqu'un rejoue le banc, lit « 0 divergence critique », et remonte le barreau
+// sans rouvrir la question des bandes. Or ce zéro est VACUEUX — les deux
+// lectures rendent `seuils: []` — et les quatre bandes viennent d'une
+// transcription HAS 2011 que rien dans le dépôt n'a vérifiée.
+describe('MMSE — le barreau ne remonte pas sans que la question des bandes soit rouverte', () => {
+  it('reste à `contenu_verrouille`', () => {
+    const entree = REGISTRE.instruments.find(i => i.questionnaireId === 'Q_GEO_04') as
+      { statutCertification?: string } | undefined;
+    expect(
+      entree?.statutCertification,
+      'Le MMSE ne peut pas porter `scoring_verifie` : ses quatre bandes — celles qui rendent '
+        + '« Démence sévère » — n\'ont été comparées à RIEN (les deux lectures du banc rendent '
+        + '`seuils: []`), et elles viennent d\'une transcription HAS 2011 non vérifiée. Un « 0 '
+        + 'divergence critique » ne dit ici rien du scoring. Précédent : la montée de Q_SOM_09, '
+        + 'annulée le 2026-07-30 pour une vacuité de même nature.',
+    ).toBe('contenu_verrouille');
   });
 });

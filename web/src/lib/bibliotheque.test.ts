@@ -32,12 +32,19 @@ describe('listeBibliotheque', () => {
     }
   });
 
-  it('expose les 4 passations praticien, jamais assignables', () => {
-    // Quatre depuis le 2026-07-29 : `Q_GEO_04` (MMSE) en est sorti sur arbitrage
-    // des droits. Le compte est exact à dessein — sans lui, une boucle sur une
-    // liste amputée resterait verte.
+  it('expose les 6 passations praticien, jamais assignables', () => {
+    // SIX depuis le 2026-07-31 : `Q_GEO_04` (MMSE) y REVIENT et `Q_NEU_06` (MMT)
+    // y ENTRE, tous deux sur arbitrage praticien — le premier par renversement de
+    // la décision du 2026-07-29, le second parce que son identité est désormais
+    // instruite (document IEDM de 2005, dix items au mot près). Les motifs sont
+    // écrits à côté de chaque ligne dans `bibliotheque.ts`, et la décision
+    // d'exposition est gardée par `droitsAssignabilite.guard.test.ts`.
+    //
+    // Le compte est exact à dessein — sans lui, une boucle sur une liste amputée
+    // resterait verte. La liste est ORDONNÉE comme la source : une entrée qui se
+    // glisse ailleurs qu'à sa place se voit.
     expect(PASSATION_PRATICIEN.map(p => p.id))
-      .toEqual(['Q_GEO_03', 'Q_GEO_05', 'Q_GEO_06', 'Q_URO_02']);
+      .toEqual(['Q_GEO_03', 'Q_GEO_04', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06', 'Q_URO_02']);
     for (const { id } of PASSATION_PRATICIEN) {
       const entree = parId.get(id);
       expect(entree, id).toBeDefined();
@@ -102,10 +109,39 @@ describe('questionnaire suspendu (actif: false)', () => {
     expect(suspendus.length).toBeGreaterThan(0);
   });
 
-  it('disparaît du rayon affiché et des ids assignables', () => {
+  // L'INVARIANT S'EST DÉDOUBLÉ LE 2026-07-31, parce que `actif: false` portait
+  // deux sens qu'il a fallu séparer : « retiré » et « jamais destiné au
+  // patient ». Un test administré par le clinicien est `actif: false` À VIE —
+  // c'est ainsi que sa route d'assignation reste fermée — tout en devant
+  // s'afficher au praticien pour être administré.
+  //
+  // La partie ASSIGNATION reste absolue et ne souffre aucune exception : elle
+  // est ce qui protège réellement le patient. La partie AFFICHAGE en admet une,
+  // et cette exception est une LISTE FERMÉE, pas un prédicat — `passationPraticien`
+  // aurait fait passer au vert n'importe quel ajout futur à cette liste, y
+  // compris celui qu'on n'aurait pas voulu.
+  // SIX depuis le 2026-08-01 : les quatre autres instruments de consultation ont
+  // reçu leur entrée `actif: false` le même jour, pour fermer leur route
+  // d'assignation — mesurée ouverte par appel direct. Ils étaient déjà affichés
+  // par `PASSATION_PRATICIEN` ; seule leur route change.
+  const AFFICHES_EN_CONSULTATION = [
+    'Q_GEO_03', 'Q_GEO_04', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06', 'Q_URO_02',
+  ];
+
+  it('n’est jamais assignable, quel qu’en soit le motif', () => {
     for (const q of suspendus) {
-      expect(affiches.has(q.id), q.id).toBe(false);
       expect(IDS_ASSIGNABLES.has(q.id), q.id).toBe(false);
+    }
+  });
+
+  it('disparaît du rayon affiché, sauf les deux instruments de consultation', () => {
+    for (const q of suspendus) {
+      expect(affiches.has(q.id), q.id).toBe(AFFICHES_EN_CONSULTATION.includes(q.id));
+    }
+    // Et l'exception est REMPLIE, pas seulement tolérée : sans ceci, retirer les
+    // deux lignes de `PASSATION_PRATICIEN` laisserait ce test vert.
+    for (const id of AFFICHES_EN_CONSULTATION) {
+      expect(affiches.has(id), `${id} doit rester affiché pour être administré`).toBe(true);
     }
   });
 
@@ -179,7 +215,7 @@ describe('questionnaire suspendu (actif: false)', () => {
     }
   });
 
-  it('le MMSE est fermé des DEUX côtés — la route et l’usage', () => {
+  it('le MMSE garde sa route fermée, et rouvre son usage en consultation', () => {
     // Il n'avait aucune entrée au catalogue : il ne figurait qu'en
     // `PASSATION_PRATICIEN`, une liste d'AFFICHAGE que les routes d'assignation
     // ne consultent pas. Non proposé à l'écran, donc — mais accepté par un appel
@@ -199,10 +235,24 @@ describe('questionnaire suspendu (actif: false)', () => {
     // qui n'existe pas : `listeBibliotheque` ne montre jamais une entrée
     // inactive. Le geste tenait, sa raison était fausse — et une raison fausse
     // ne garde rien, puisqu'elle serait retirée sans que rien ne rougisse.
-    expect(listeBibliotheque().filter(e => e.id === 'Q_GEO_04')).toHaveLength(0);
-    expect(PASSATION_PRATICIEN.map(p => p.id)).not.toContain('Q_GEO_04');
+    // RENVERSEMENT DU 2026-07-31, sur arbitrage praticien : des deux gestes, le
+    // second est repris. La ROUTE reste fermée — `actif: false`, `IDS_SUSPENDUS`,
+    // non assignable — et c'est elle qui protège le patient. L'USAGE EN
+    // CONSULTATION rouvre : le MMSE est un test administré par un clinicien, et
+    // six instruments portant la même classe de réserve sont, eux, ENVOYÉS AU
+    // PATIENT. Interdire le moins exposant en autorisant le plus ne tenait pas.
+    //
+    // Ce qui suit garde donc la SÉPARATION des deux gestes, qui est le vrai
+    // acquis de #460 — pas la valeur qu'ils avaient ce jour-là.
+    expect(listeBibliotheque().filter(e => e.id === 'Q_GEO_04')).toHaveLength(1);
+    expect(PASSATION_PRATICIEN.map(p => p.id)).toContain('Q_GEO_04');
     expect(IDS_SUSPENDUS.has('Q_GEO_04')).toBe(true);
     expect(IDS_ASSIGNABLES.has('Q_GEO_04')).toBe(false);
+    // Affiché en consultation, JAMAIS proposé à l'auto-remplissage : c'est la
+    // distinction que porte `passationPraticien`, et elle doit être vraie ici.
+    const enRayon = listeBibliotheque().find(e => e.id === 'Q_GEO_04');
+    expect(enRayon?.passationPraticien).toBe(true);
+    expect(enRayon?.assignable).toBe(false);
     // Et il reste scorable : les passations déjà enregistrées restent lisibles.
     expect(calculateScore('Q_GEO_04', {})).not.toHaveProperty('error');
   });
