@@ -88,9 +88,22 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
     expect(logger.warn).not.toHaveBeenCalled();
   });
 
-  // Cas réel : le pack « Florence 1 » enregistré en production contient encore
-  // `Q_FIB_03`. Rien ne retire le qid de `pack.qids` — la garde doit donc agir
-  // à la validation, sur un chemin où le patient est seul.
+  // Le cas réel qui a motivé cette garde était le pack « Florence 1 » de
+  // production, qui contenait `Q_SOM_07` : rien ne retire un qid de
+  // `pack.qids`, la garde doit donc agir à la validation, sur un chemin où le
+  // patient est seul.
+  //
+  // Le témoin est `Q_FIB_03` depuis le 2026-07-31 — `Q_SOM_07` a été reconstruit
+  // depuis sa source puis rouvert, il n'illustre plus rien ici. Une première
+  // rédaction de ce commentaire a été obtenue par substitution mécanique et
+  // affirmait que « Florence 1 » contenait `Q_FIB_03` : c'était un fait de
+  // production INVENTÉ, relevé en revue. Le mécanisme testé, lui, est le même
+  // quel que soit l'instrument suspendu.
+  //
+  // CONSÉQUENCE À CONNAÎTRE, hors de ce test : la réouverture de `Q_SOM_07`
+  // réarme « Florence 1 », qui recommence donc à envoyer le MFI-20 à chaque
+  // validation de consultation. C'est cohérent — l'instrument est réparé — mais
+  // c'est un effet de la réactivation, pas une décision distincte.
   it('écarte l’instrument suspendu et n’en assigne pas l’assignation', async () => {
     const response = await POST(post(['Q_NEU_03', 'Q_FIB_03']));
     expect(response.status).toBe(200);

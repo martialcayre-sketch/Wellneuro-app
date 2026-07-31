@@ -152,7 +152,7 @@ export const Q_SOM_07 = {
     // sur la fatigue générale. Le moteur ne reçoit que des réponses : il ne peut
     // pas les appliquer sans se tromper de population. Ils sont donc rendus au
     // praticien en toutes lettres, jamais convertis en bandes.
-    note:"Cinq sous-échelles de quatre items, chacune de 4 à 20 ; dix items sont inversés (6 − réponse) selon la clé de la source. L'instrument ne définit AUCUN score global ni barème d'interprétation. Seuils suggérant une fatigue significative, pour la seule sous-échelle « Fatigue générale », issus de données épidémiologiques allemandes (Schwarz et al. 2003 ; Singer et al. 2011, 25e percentile) — hommes : ≥ 9 avant 40 ans, ≥ 11 de 40 à 59 ans, ≥ 14 à partir de 60 ans ; femmes : ≥ 11 avant 40 ans, ≥ 12 de 40 à 59 ans, ≥ 14 à partir de 60 ans.",
+    note:"Cinq sous-échelles de quatre items, chacune de 4 à 20 ; dix items sont inversés (6 − réponse) selon la clé de la source. L'instrument ne définit AUCUN score global ni barème d'interprétation. La source cite par ailleurs, pour la seule sous-échelle « Fatigue générale », des seuils suggérant une fatigue significative — hommes : ≥ 9 avant 40 ans, ≥ 11 de 40 à 59 ans, ≥ 14 à partir de 60 ans ; femmes : ≥ 11 avant 40 ans, ≥ 12 de 40 à 59 ans, ≥ 14 à partir de 60 ans. Elle les rapporte à des données épidémiologiques allemandes (25e percentile) qu'elle attribue à Schwarz et al. 2003 et Singer et al. 2011 ; ces deux références ne sont pas au dossier et ne sont donc pas vérifiées ici. Ils dépendent du sexe et de l'âge, que le scoring ne reçoit pas : ils s'apprécient au cas par cas et ne valent pas bande.",
   }
 };
 export const Q_SOM_03 = {

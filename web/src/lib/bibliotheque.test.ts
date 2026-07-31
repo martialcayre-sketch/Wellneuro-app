@@ -89,7 +89,9 @@ describe('listeBibliotheque', () => {
 //
 // Formulé en invariant sur TOUS les suspendus, et non sur un identifiant
 // nommé : la propriété doit valoir pour la prochaine suspension aussi. Au
-// 2026-07-27 il y en a deux — Q_FIB_03 (ELFE) et Q_SOM_07 (MFI-20 divergent).
+// 2026-07-31 ils sont huit — `Q_SOM_07` en est SORTI, reconstruit depuis sa
+// source et rouvert, et `Q_FIB_03` (ELFE) reste le témoin de référence : fermé
+// faute d'usage, non pour un défaut de mesure.
 describe('questionnaire suspendu (actif: false)', () => {
   const suspendus = QUESTIONNAIRES_CATALOG.filter(q => !q.actif);
   const affiches = new Set(listeBibliotheque().map(e => e.id));

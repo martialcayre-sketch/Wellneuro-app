@@ -2177,20 +2177,30 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── SUBSCORE ─────────────────────────────────────────
   if (sc.type === 'subscore') {
     const subResults = sc.subScores.map((sub: any) => {
-      // `sub.reversed` et non plus `[]` en dur. Aucune sous-échelle du catalogue
-      // ne POUVAIT inverser un item : la liste d'inversions était une liste vide
-      // écrite dans le code, si bien qu'un `reversed` déclaré dans une définition
-      // n'aurait rien fait — en silence, et sans qu'aucun test ne s'y oppose.
+      // `sub.reversed` et non plus `[]` en dur. DANS CETTE BRANCHE, la liste
+      // d'inversions était une liste vide écrite dans le code : un `reversed`
+      // déclaré par une définition à `type: 'subscore'` n'aurait rien fait, en
+      // silence, et sans qu'aucun test ne s'y oppose.
       //
-      // Ce que cela coûtait, mesuré sur le MFI-20 : sa source impose d'inverser
-      // dix de ses vingt items (« 6 – réponse »), et le servi n'en inversait
-      // aucun. Additionner sans inverser revient à sommer la fatigue et la
-      // vigueur dans le même sens — « je me sens en forme » comptant comme un
-      // symptôme. Le total enregistré n'était pas une mesure de fatigue.
+      // PORTÉE EXACTE, corrigée en revue : une première rédaction écrivait
+      // « aucune sous-échelle du catalogue ne pouvait inverser un item ».
+      // C'était faux — la branche `upps` passait déjà `sub.reversed` et inverse
+      // 25 items de l'UPPS, et `karasek` passe `sub.reversedItems`. Le défaut
+      // était local à `subscore`, ce qui ne le rendait pas moins coûteux : c'est
+      // là que vivait le MFI-20.
+      //
+      // Ce que cela coûtait, mesuré sur lui : sa source impose d'inverser dix de
+      // ses vingt items (« 6 – réponse »), et le servi n'en inversait aucun.
+      // Additionner sans inverser revient à sommer la fatigue et la vigueur dans
+      // le même sens — « je me sens en forme » comptant comme un symptôme. Le
+      // total enregistré n'était pas une mesure de fatigue.
       //
       // Additif : `sub.reversed` absent vaut `undefined`, que `sumItems` traite
-      // exactement comme la liste vide d'avant. Les six autres instruments à
-      // `subScores` sont donc inchangés, et un banc le prouve.
+      // exactement comme la liste vide d'avant. Ce qui rend le correctif sûr
+      // pour les autres instruments à `subScores` n'est donc pas une inspection,
+      // c'est un invariant — aucun d'eux ne déclare `reversed` — et
+      // `inversionsDeclarees.guard.test.ts` le tient, pour ceux-là comme pour
+      // les sept autres branches restées à `[]`.
       const {total} = totalSousScore(sub.items, sub.reversed);
       // `null * multiplier` vaut 0 : sans ce test, l'axe non mesuré revenait par
       // la porte du score pondéré.

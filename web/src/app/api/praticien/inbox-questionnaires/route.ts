@@ -216,8 +216,28 @@ export async function GET(req: Request): Promise<NextResponse<InboxQuestionnaire
             scorePrincipal: nonInterpretable ? null : (r.scorePrincipal ?? null),
             interpretation: nonInterpretable ? '' : (r.interpretation ?? ''),
             subScoreRanges: nonInterpretable ? null : getSubScoreRanges(r.idQuestionnaire),
+            // DÉFINITION RETIRÉE sur une passation non interprétable, et c'est
+            // le point le plus contre-intuitif de ce chemin.
+            //
+            // `construireReponsesLisibles` apparie les clés de `rawAnswers` aux
+            // questions de la définition COURANTE, sans notion de date. Quand un
+            // instrument est reconstruit en gardant ses identifiants d'items —
+            // le cas du MFI-20 le 2026-07-31, `M1`…`M20` des deux côtés — les
+            // anciennes réponses se retrouvent appariées aux NOUVEAUX libellés.
+            // Onze des vingt textes ont changé, plusieurs de polarité inverse :
+            // un patient ayant répondu 4 à « J'ai le sentiment de ne rien
+            // faire » aurait été lu « Je me sens très actif — 4 ». La lecture
+            // n'aurait pas seulement été approximative, elle aurait été
+            // RENVERSÉE, et rien à l'écran ne l'aurait dit — le bandeau
+            // « Interprétation retirée » porte sur le score, pas sur les items.
+            //
+            // Sans définition, les libellés sortent à `null` et l'écran dégrade
+            // en identifiant + valeur brute. C'est exactement la doctrine
+            // « marquer, pas effacer » : ce que le patient a répondu reste, la
+            // lecture qu'on n'est plus en droit d'en faire s'en va.
+            // Trouvé en revue adversariale.
             reponsesLisibles: construireReponsesLisibles(
-              definitions.get(r.idQuestionnaire) ?? null,
+              nonInterpretable ? null : (definitions.get(r.idQuestionnaire) ?? null),
               rawAnswers,
             ),
             nonInterpretable,

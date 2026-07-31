@@ -22,12 +22,16 @@ table ayant perdu sa mise en page ; elle a été lue sur l'image. Les dix
 inversions qu'elle donne recoupent exactement la liste que la source énonce en
 toutes lettres deux pages plus haut.
 
-**Un défaut de moteur qui valait pour tout le catalogue.** La branche `subscore`
-appelait `totalSousScore(sub.items, [])` — liste d'inversions **vide, écrite en
-dur**. Aucune sous-échelle ne *pouvait* inverser un item, et un `reversed`
-déclaré dans une définition n'aurait rien fait, en silence. Le correctif est
-additif : `reversed` absent se comporte comme avant, et les six autres
-instruments à sous-scores sont inchangés.
+**Un défaut de moteur, local mais coûteux.** La branche `subscore` appelait
+`totalSousScore(sub.items, [])` — liste d'inversions **vide, écrite en dur** : un
+`reversed` déclaré par une définition à ce type de scoring n'aurait rien fait, en
+silence. Le défaut ne valait que pour cette branche — `upps` passait déjà
+`sub.reversed` et inverse 25 items, `karasek` passe `reversedItems` — mais c'est
+là que vivait le MFI-20. Le correctif est additif ; ce qui le rend sûr pour les
+autres instruments à sous-scores n'est pas une inspection mais un **invariant
+tenu par un banc** : aucun d'eux ne déclare `reversed`, et le jour où l'un le
+ferait sur l'une des sept branches restées à `[]`, le CI le dirait au lieu de
+calculer un score faux.
 
 **Aucun score global**, par déclaration explicite (`scoring.sansTotalGlobal`) :
 la source ne totalise jamais ses cinq sous-échelles, et une somme sur 100 se
@@ -50,7 +54,27 @@ date absente ou illisible fait marquer la passation, parce que marquer à tort s
 voit et se corrige, tandis que ne pas marquer sert au praticien un score qui n'en
 est pas un.
 
+**La relecture item par item des anciennes passations était devenue fausse**, et
+c'est la revue adversariale qui l'a trouvé. `construireReponsesLisibles` apparie
+les réponses stockées aux questions de la définition **courante**, sans notion de
+date ; les identifiants d'items étant conservés, un patient ayant répondu 4 à
+« J'ai le sentiment de ne rien faire » aurait été lu **« Je me sens très actif —
+4 »**. Renversé, et muet : le bandeau « Interprétation retirée » porte sur le
+score, pas sur les items. La route retire désormais la définition dès que la
+passation est non interprétable — il reste l'identifiant et la valeur brute. La
+règle est posée en invariant, pour la prochaine reconstruction autant que pour
+celle-ci.
+
+**Résidus déclarés, non traités ici** : `avertissementSyntheseAnterieure` n'a pas
+la date de passation à sa disposition et retombe sur la frontière fermée (faux
+positif conservateur) ; le champ `note` n'est pas filtré du prompt de synthèse,
+si bien que les seuils par sexe et âge atteignent le modèle ; et aucune garde de
+complétude côté serveur n'empêche un axe mesuré sur un item de quatre — cas
+atteignable en appel direct seulement, le formulaire patient exigeant tout.
+
 **Périmètre vérifié en production** : 3 assignations, **toutes `Complété`** —
 aucune assignation ouverte n'est perturbée par le changement d'items et
 d'échelle ; 4 passations enregistrées, **toutes antérieures** à la
-reconstruction, donc toutes encore neutralisées.
+reconstruction, donc toutes encore neutralisées. La réouverture réarme au passage
+le pack « Florence 1 », qui renverra donc le MFI-20 — désormais réparé — à chaque
+validation de consultation.
