@@ -3,10 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { prisma, tx } = vi.hoisted(() => {
   const tx = {
     supplementIngredient: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
-    supplementIngredientForme: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
-    clinicalRule: { create: vi.fn(), update: vi.fn() },
-    ingredientFunctionalThreshold: { create: vi.fn(), update: vi.fn() },
-    supplementSafetyAlert: { create: vi.fn(), update: vi.fn() },
+    supplementIngredientForme: { findFirst: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
+    clinicalRule: {
+      create: vi.fn(), update: vi.fn(), upsert: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), updateMany: vi.fn(),
+    },
+    ingredientFunctionalThreshold: {
+      create: vi.fn(), update: vi.fn(), upsert: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), updateMany: vi.fn(),
+    },
+    supplementSafetyAlert: {
+      create: vi.fn(), update: vi.fn(), upsert: vi.fn(), delete: vi.fn(), deleteMany: vi.fn(), updateMany: vi.fn(),
+    },
   };
   return { tx, prisma: { $transaction: vi.fn(async (fn: (t: typeof tx) => unknown) => fn(tx)) } };
 });
@@ -56,6 +62,26 @@ describe('parseReferentielPayload', () => {
       .toThrow(/wikipedia.*hors vocabulaire/i);
   });
 
+  it('refuse « saisie_praticien » : cette voie est un import EXTERNE', () => {
+    // La provenance est lue telle quelle dans le message de conflit. Laisser un
+    // porteur du secret estampiller ses lignes « saisie praticien » leur
+    // donnerait, à la lecture, une autorité qu'elles n'ont pas.
+    expect(() => parseReferentielPayload(payload({ provenance: 'saisie_praticien' })))
+      .toThrow(/hors vocabulaire/);
+  });
+
+  it('borne le nombre total de FORMES, que la taille de lot ne compte pas', () => {
+    const gros = Array.from({ length: 200 }, (_, i) => ({
+      ...SELENIUM,
+      sourceIdentifiant: `substance:${i}`,
+      code: `code-${i}`,
+      formes: Array.from({ length: 30 }, (_, j) => ({
+        sourceIdentifiant: `form_of_supply:${i * 30 + j}`, code: `f-${i}-${j}`, labelFr: `Forme ${i}-${j}`,
+      })),
+    }));
+    expect(() => parseReferentielPayload(payload({ ingredients: gros }))).toThrow(/formes.*découper en lots/);
+  });
+
   it('EXIGE un espace de noms dans l’identifiant source', () => {
     // Sans lui, la substance 303 et la plante 303 collisionnent sur l'index
     // unique : deux ingrédients sans rapport fusionneraient en silence.
@@ -100,8 +126,26 @@ describe('ingestReferentiel', () => {
     tx.supplementIngredient.findFirst.mockResolvedValue(null);
     tx.supplementIngredient.findUnique.mockResolvedValue(null);
     tx.supplementIngredient.create.mockResolvedValue({ id: 'ing_se' });
+    tx.supplementIngredientForme.findFirst.mockResolvedValue(null);
     tx.supplementIngredientForme.findUnique.mockResolvedValue(null);
   });
+
+  /** L'ingrédient est déjà en base, apparié par sa source. */
+  const ingredientDejaLa = (over: Record<string, unknown> = {}) => {
+    tx.supplementIngredient.findFirst.mockResolvedValue({
+      id: 'ing_se', code: 'selenium', nomFr: 'sélénium', ...over,
+    });
+    tx.supplementIngredient.findUnique.mockResolvedValue({
+      id: 'ing_se', sourceProvenance: 'complalim', sourceIdentifiant: 'substance:303',
+    });
+  };
+  /** Les deux formes sont déjà en base, appariées par leur IDENTIFIANT source. */
+  const formesDejaLa = (over: (f: typeof SELENIUM.formes[number]) => Record<string, unknown> = () => ({})) => {
+    tx.supplementIngredientForme.findFirst.mockImplementation(async ({ where }) => {
+      const f = SELENIUM.formes.find((x) => x.sourceIdentifiant === where.sourceIdentifiant);
+      return f ? { id: `f_${f.code}`, code: f.code, labelFr: f.labelFr, ...over(f) } : null;
+    });
+  };
 
   it('crée l’ingrédient et ses formes, avec leur provenance', async () => {
     const bilan = await ingestReferentiel(parseReferentielPayload(payload()));
@@ -126,13 +170,8 @@ describe('ingestReferentiel', () => {
   });
 
   it('est IDEMPOTENT : rejouer le même lot n’écrit rien', async () => {
-    tx.supplementIngredient.findFirst.mockResolvedValue({ id: 'ing_se', code: 'selenium', nomFr: 'sélénium' });
-    tx.supplementIngredient.findUnique.mockResolvedValue({ id: 'ing_se', sourceProvenance: 'complalim', sourceIdentifiant: 'substance:303' });
-    tx.supplementIngredientForme.findUnique.mockImplementation(async ({ where }) => ({
-      id: `f_${where.ingredientId_code.code}`,
-      labelFr: SELENIUM.formes.find((f) => f.code === where.ingredientId_code.code)!.labelFr,
-      sourceIdentifiant: SELENIUM.formes.find((f) => f.code === where.ingredientId_code.code)!.sourceIdentifiant,
-    }));
+    ingredientDejaLa();
+    formesDejaLa();
 
     const bilan = await ingestReferentiel(parseReferentielPayload(payload()));
     expect(bilan).toMatchObject({ ingredientsCrees: 0, ingredientsInchanges: 1, formesCreees: 0, formesInchangees: 2 });
@@ -143,11 +182,78 @@ describe('ingestReferentiel', () => {
   });
 
   it('met à jour un nom officiel qui a changé, sans recréer', async () => {
-    tx.supplementIngredient.findFirst.mockResolvedValue({ id: 'ing_se', code: 'selenium', nomFr: 'ancien nom' });
-    tx.supplementIngredient.findUnique.mockResolvedValue({ id: 'ing_se', sourceProvenance: 'complalim', sourceIdentifiant: 'substance:303' });
+    ingredientDejaLa({ nomFr: 'ancien nom' });
+    formesDejaLa();
     const bilan = await ingestReferentiel(parseReferentielPayload(payload()));
     expect(bilan.ingredientsMisAJour).toBe(1);
     expect(tx.supplementIngredient.create).not.toHaveBeenCalled();
+  });
+
+  it('apparie la forme par sa SOURCE, pas par son code — un libellé renommé ne crée pas de doublon', async () => {
+    // Le code d'une forme est fabriqué depuis son nom officiel : si le nom
+    // change en amont, le code change. Apparier par le code créerait une
+    // SECONDE ligne, l'ancienne demeurant (rien n'est jamais désactivé ici),
+    // et les compositions déjà écrites resteraient accrochées à l'obsolète.
+    ingredientDejaLa();
+    formesDejaLa((f) => ({ code: `${f.code}-ancien`, labelFr: 'Ancien libellé officiel' }));
+
+    const bilan = await ingestReferentiel(parseReferentielPayload(payload()));
+    expect(tx.supplementIngredientForme.create).not.toHaveBeenCalled();
+    expect(bilan.formesMisesAJour).toBe(2);
+    // Seul le libellé bouge : le code en place est conservé, et la divergence
+    // est RENDUE plutôt que subie.
+    for (const [appel] of tx.supplementIngredientForme.update.mock.calls) {
+      expect(Object.keys(appel.data)).toEqual(['labelFr']);
+    }
+    expect(bilan.codesConserves).toHaveLength(2);
+    expect(bilan.codesConserves[0]).toMatch(/conservé/);
+  });
+
+  it('ne réécrit JAMAIS le code d’un ingrédient existant, et rend la divergence', async () => {
+    // `code` est la chaîne que les règles cliniques manipulent, et que
+    // `ProtocolReviewFlag.ingredientsConcernes` stocke dénormalisée. Un
+    // renommage désapparierait silencieusement un drapeau de sécurité.
+    ingredientDejaLa({ code: 'selenium', nomFr: 'sélénium' });
+    formesDejaLa();
+    const bilan = await ingestReferentiel(parseReferentielPayload(payload({
+      ingredients: [{ ...SELENIUM, code: 'selenium-substance-303' }],
+    })));
+    expect(tx.supplementIngredient.update).not.toHaveBeenCalled();
+    expect(bilan.codesConserves).toEqual([
+      expect.stringContaining('« selenium » conservé'),
+    ]);
+  });
+
+  it('REFUSE d’écraser une forme saisie à la main qui porte le même code', async () => {
+    // Symétrique de la garde côté ingrédient. Réécrire substituerait une autre
+    // substance chimique sous le même identifiant de ligne, et les
+    // compositions qui la désignent changeraient de sens sans que rien ne le note.
+    ingredientDejaLa();
+    tx.supplementIngredientForme.findFirst.mockResolvedValue(null);
+    tx.supplementIngredientForme.findUnique.mockResolvedValue({
+      sourceProvenance: null, sourceIdentifiant: null,
+    });
+    await expect(ingestReferentiel(parseReferentielPayload(payload())))
+      .rejects.toThrow(/code de forme.*déjà porté.*saisie manuelle/);
+    expect(tx.supplementIngredientForme.create).not.toHaveBeenCalled();
+  });
+
+  it('rend un BILAN PARTIEL quand le lot s’arrête sur un conflit', async () => {
+    // Un lot interrompu à mi-parcours laisse derrière lui ce qu'il a commité.
+    // Sans ce bilan, l'opérateur relance à l'aveugle.
+    const AUTRE = { ...SELENIUM, sourceIdentifiant: 'substance:999', code: 'zinc', formes: [] };
+    tx.supplementIngredient.findFirst.mockResolvedValue(null);
+    tx.supplementIngredient.findUnique.mockImplementation(async ({ where }) => (
+      where.code === 'zinc' ? { id: 'ing_autre', sourceProvenance: null, sourceIdentifiant: null } : null
+    ));
+
+    const erreur = await ingestReferentiel(parseReferentielPayload(payload({
+      ingredients: [{ ...SELENIUM, formes: [] }, AUTRE],
+    }))).catch((e) => e);
+
+    expect(erreur).toBeInstanceOf(ReferentielPayloadInvalide);
+    // Le premier ingrédient EST passé : le bilan doit le dire.
+    expect(erreur.bilanPartiel).toMatchObject({ ok: false, ingredientsCrees: 1 });
   });
 
   it('REFUSE de détourner un code déjà porté par une autre entrée', async () => {
@@ -163,16 +269,19 @@ describe('ingestReferentiel', () => {
   });
 
   it('n’écrit JAMAIS de jugement clinique — ni règle, ni seuil, ni alerte', async () => {
-    // La frontière du lot : il pose le vocabulaire, pas le jugement.
+    // La frontière du lot : il pose le vocabulaire, pas le jugement. La garde
+    // porte sur TOUS les verbes d'écriture, pas seulement `create` : un futur
+    // `clinicalRule.update` franchirait la frontière tout aussi bien.
     await ingestReferentiel(parseReferentielPayload(payload()));
-    expect(tx.clinicalRule.create).not.toHaveBeenCalled();
-    expect(tx.ingredientFunctionalThreshold.create).not.toHaveBeenCalled();
-    expect(tx.supplementSafetyAlert.create).not.toHaveBeenCalled();
+    for (const modele of [tx.clinicalRule, tx.ingredientFunctionalThreshold, tx.supplementSafetyAlert]) {
+      for (const verbe of ['create', 'update', 'upsert', 'delete', 'deleteMany', 'updateMany'] as const) {
+        expect(modele[verbe], verbe).not.toHaveBeenCalled();
+      }
+    }
   });
 
   it('ne désactive ni ne supprime rien — un retrait est un geste praticien signé', async () => {
-    tx.supplementIngredient.findFirst.mockResolvedValue({ id: 'ing_se', code: 'selenium', nomFr: 'sélénium' });
-    tx.supplementIngredient.findUnique.mockResolvedValue({ id: 'ing_se', sourceProvenance: 'complalim', sourceIdentifiant: 'substance:303' });
+    ingredientDejaLa();
     await ingestReferentiel(parseReferentielPayload(payload({ ingredients: [{ ...SELENIUM, formes: [] }] })));
     const ecritures = tx.supplementIngredient.update.mock.calls.map(([a]) => JSON.stringify(a.data));
     for (const e of ecritures) expect(e).not.toMatch(/"actif":\s*false/);

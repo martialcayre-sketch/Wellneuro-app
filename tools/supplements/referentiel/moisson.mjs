@@ -44,18 +44,40 @@ function dejaVus(fichier) {
   return vus;
 }
 
+/**
+ * Les identifiants ABSENTS (404) sont mémorisés eux aussi. Sans cela, la
+ * reprise annoncée plus haut n'en est pas une : sur `plants`, 1..2200 pour
+ * ~1 021 fiches, un arrêt coûterait ~1 179 requêtes refaites au service
+ * public — précisément ce que la politesse cherche à éviter.
+ */
+function absentsConnus(fichier) {
+  if (!existsSync(fichier)) return new Set();
+  return new Set(
+    readFileSync(fichier, 'utf8').split('\n')
+      .map((l) => Number.parseInt(l, 10))
+      .filter((n) => Number.isInteger(n)),
+  );
+}
+
 if (!existsSync(SORTIE)) mkdirSync(SORTIE, { recursive: true });
 
 for (const { nom, max } of TYPES) {
   const fichier = join(SORTIE, `ref-${nom}.ndjson`);
+  const fichierAbsents = join(SORTIE, `ref-${nom}.absents`);
   const vus = dejaVus(fichier);
+  const absentsVus = absentsConnus(fichierAbsents);
   let trouves = vus.size;
   let absents = 0;
   let erreurs = 0;
   console.log(`\n=== ${nom} (1..${max}) — ${vus.size} déjà en cache ===`);
 
+  // Nombre de ralentissements consécutifs sur le MÊME identifiant. Sans borne,
+  // un 503 de maintenance prolongée ferait boucler indéfiniment, toutes les
+  // 15 s, contre un service public — l'inverse de la politesse annoncée.
+  let ralentis = 0;
+
   for (let id = 1; id <= max; id += 1) {
-    if (vus.has(id)) continue;
+    if (vus.has(id) || absentsVus.has(id)) { if (absentsVus.has(id)) absents += 1; continue; }
     let rep;
     try {
       rep = await fetch(`${BASE}/${nom}/${id}`, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
@@ -66,13 +88,25 @@ for (const { nom, max } of TYPES) {
       id -= 1;
       continue;
     }
-    if (rep.status === 404) { absents += 1; await dodo(PAUSE_MS); continue; }
+    if (rep.status === 404) {
+      absents += 1;
+      ralentis = 0;
+      appendFileSync(fichierAbsents, `${id}\n`, 'utf8');
+      await dodo(PAUSE_MS);
+      continue;
+    }
     if (rep.status === 429 || rep.status >= 500) {
-      console.log(`  ${rep.status} sur ${id} — pause 15 s.`);
+      ralentis += 1;
+      if (ralentis > 8) {
+        console.error(`  ABANDON ${nom} : le service répond ${rep.status} depuis 8 tentatives sur l'id ${id}. Relancer plus tard — le cache reprendra ici.`);
+        break;
+      }
+      console.log(`  ${rep.status} sur ${id} (${ralentis}/8) — pause 15 s.`);
       await dodo(15000);
       id -= 1;
       continue;
     }
+    ralentis = 0;
     if (!rep.ok) { erreurs += 1; await dodo(PAUSE_MS); continue; }
     appendFileSync(fichier, `${JSON.stringify({ ...(await rep.json()), _type: nom })}\n`, 'utf8');
     trouves += 1;
@@ -82,7 +116,16 @@ for (const { nom, max } of TYPES) {
   console.log(`  ${nom} TERMINÉ : ${trouves} fiches, ${absents} identifiants absents, ${erreurs} erreurs.`);
 }
 
-// Les sept vocabulaires tiennent en UN appel.
-const champs = await fetch(`${BASE}/declarationFieldData/`, { headers: { 'User-Agent': UA } });
-writeFileSync(join(SORTIE, 'ref-vocabulaires.json'), JSON.stringify(await champs.json(), null, 2), 'utf8');
-console.log('\nVocabulaires groupés écrits.');
+// Les sept vocabulaires tiennent en UN appel. Enveloppé : après vingt minutes
+// de moisson, une réponse inattendue ne doit pas se solder par une trace de
+// pile — le NDJSON, lui, est déjà sur disque et reste exploitable.
+await dodo(PAUSE_MS);
+try {
+  const champs = await fetch(`${BASE}/declarationFieldData/`, { headers: { 'User-Agent': UA, Accept: 'application/json' } });
+  if (!champs.ok) throw new Error(`statut ${champs.status}`);
+  writeFileSync(join(SORTIE, 'ref-vocabulaires.json'), JSON.stringify(await champs.json(), null, 2), 'utf8');
+  console.log('\nVocabulaires groupés écrits.');
+} catch (e) {
+  console.error(`\nVocabulaires groupés NON récupérés (${e.message}). Les fiches sont sauves ; relancer pour ce seul appel.`);
+  process.exitCode = 1;
+}

@@ -9,6 +9,11 @@ import {
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Un lot ouvre une transaction PAR ingrédient (jusqu'à 500), chacune de
+// plusieurs allers-retours vers Supabase. Sous la limite par défaut, le lot
+// serait coupé à mi-parcours : les ingrédients déjà commités resteraient, le
+// bilan serait perdu, et l'opérateur relancerait à l'aveugle.
+export const maxDuration = 300;
 
 // Voie d'ingestion du RÉFÉRENTIEL d'ingrédients (C4, phase 1b). Même patron et
 // mêmes gardes que /api/internal/supplements/ingest : secret partagé, ordre
@@ -53,12 +58,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: bilan.ok, statut: 'REFERENTIEL_INGERE', resume: bilan });
   } catch (error) {
     // Un conflit de code est une erreur de DEMANDE, pas une panne : elle se
-    // corrige côté client en renommant, et elle doit le dire.
+    // corrige côté client en renommant, et elle doit le dire. Le bilan partiel
+    // l'accompagne : le lot s'arrête au premier conflit, les ingrédients déjà
+    // écrits restent, et l'opérateur doit savoir lesquels.
     if (error instanceof ReferentielPayloadInvalide) {
-      return NextResponse.json({ error: error.message }, { status: 422 });
+      return NextResponse.json(
+        { error: error.message, resume: error.bilanPartiel ?? null },
+        { status: 422 },
+      );
     }
-    const message = error instanceof Error ? error.message : "Échec d'ingestion du référentiel.";
+    // Message GÉNÉRIQUE : une panne d'écriture porte volontiers le détail de la
+    // connexion. Le détail part au journal serveur, pas au client.
     console.error('Ingestion référentiel : écriture échouée —', error);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: "Échec d'ingestion du référentiel." },
+      { status: 500 },
+    );
   }
 }

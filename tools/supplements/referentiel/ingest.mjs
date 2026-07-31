@@ -134,11 +134,38 @@ if (DRY) {
   process.exit(0);
 }
 
-// ── Envoi par lots ─────────────────────────────────────────────────────────
+// ── Découpage en lots ──────────────────────────────────────────────────────
+// Deux bornes, parce que le service en applique deux : le NOMBRE d'ingrédients
+// et le nombre total de FORMES. Découper sur les seuls ingrédients laisserait
+// passer un lot de 400 entrées lourdement fournies, refusé côté serveur après
+// que l'opérateur a lancé la campagne.
+const FORMES_MAX = 5000;
+const lots = [];
+let courant = [];
+let formesCourant = 0;
+for (const e of ingredients) {
+  if (courant.length >= LOT || formesCourant + e.formes.length > FORMES_MAX) {
+    lots.push(courant); courant = []; formesCourant = 0;
+  }
+  courant.push(e);
+  formesCourant += e.formes.length;
+}
+if (courant.length > 0) lots.push(courant);
+
+// ── Envoi ──────────────────────────────────────────────────────────────────
 let envoyes = 0;
 const cumul = {};
-for (let i = 0; i < ingredients.length; i += LOT) {
-  const lot = ingredients.slice(i, i + LOT);
+const codesConserves = [];
+
+/** Un bilan partiel n'est pas un détail : c'est ce qui dit où reprendre. */
+const cumuler = (resume) => {
+  for (const [k, v] of Object.entries(resume ?? {})) {
+    if (typeof v === 'number') cumul[k] = (cumul[k] ?? 0) + v;
+  }
+  if (Array.isArray(resume?.codesConserves)) codesConserves.push(...resume.codesConserves);
+};
+
+for (const [n, lot] of lots.entries()) {
   const rep = await fetch(`${URL_BASE}/api/internal/supplements/referentiel`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SECRET}` },
@@ -146,13 +173,20 @@ for (let i = 0; i < ingredients.length; i += LOT) {
   });
   const corps = await rep.json().catch(() => ({}));
   if (!rep.ok) {
-    console.error(`Lot ${i / LOT + 1} refusé (HTTP ${rep.status}) : ${corps.error ?? '—'}`);
+    console.error(`Lot ${n + 1}/${lots.length} refusé (HTTP ${rep.status}) : ${corps.error ?? '—'}`);
+    // Le lot s'arrête au premier conflit, mais ce qui précédait est commité.
+    cumuler(corps.resume);
+    console.error('Écrit avant l’arrêt (cumul) :', JSON.stringify(cumul));
+    console.error(`Reprise : l’ingestion est idempotente, relancer après arbitrage rejouera sans doublon.`);
     process.exit(1);
   }
-  for (const [k, v] of Object.entries(corps.resume ?? {})) {
-    if (typeof v === 'number') cumul[k] = (cumul[k] ?? 0) + v;
-  }
+  cumuler(corps.resume);
   envoyes += lot.length;
-  console.log(`  lot ${i / LOT + 1} : ${envoyes}/${ingredients.length}`);
+  console.log(`  lot ${n + 1}/${lots.length} : ${envoyes}/${ingredients.length}`);
 }
 console.log('\nBilan cumulé :', JSON.stringify(cumul));
+if (codesConserves.length > 0) {
+  // Ni une erreur ni un succès muet : un arbitrage à porter au praticien.
+  console.log(`\n${codesConserves.length} code(s) CONSERVÉ(S) — la source en proposait un autre :`);
+  for (const c of codesConserves) console.log(`  ${c}`);
+}

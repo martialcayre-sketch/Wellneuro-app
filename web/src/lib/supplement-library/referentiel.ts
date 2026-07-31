@@ -48,6 +48,12 @@ export type ReferentielBilan = {
   formesCreees: number;
   formesMisesAJour: number;
   formesInchangees: number;
+  /**
+   * Codes que la source propose de changer et que l'on a CONSERVÉS tels quels
+   * (voir `ingestReferentiel`). Ni une erreur ni un succès muet : un arbitrage
+   * à porter au praticien, donc une liste rendue au client.
+   */
+  codesConserves: string[];
 };
 
 /**
@@ -60,13 +66,34 @@ const IDENTIFIANT = /^[a-z_]+:[0-9]+$/;
 /** Code lisible : c'est lui que les règles cliniques manipulent. */
 const CODE = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
 
-const PROVENANCES = new Set<string>(SUPPLEMENTS_PROVENANCES);
+/**
+ * Provenances acceptées PAR CETTE VOIE. `saisie_praticien` est délibérément
+ * exclue du vocabulaire commun : cette route est un import externe, et laisser
+ * un porteur du secret estampiller ses lignes « saisie praticien » leur
+ * donnerait, à la lecture, une autorité qu'elles n'ont pas — jusque dans le
+ * message de conflit ci-dessous, qui nomme la provenance du porteur du code.
+ */
+const PROVENANCES = new Set<string>(
+  SUPPLEMENTS_PROVENANCES.filter((p) => p !== 'saisie_praticien'),
+);
 const LONGUEUR_MAX = 300;
+/**
+ * Chaque forme coûte au moins un aller-retour DANS la transaction de son
+ * ingrédient. Sans borne, un lot de 500 ingrédients à mille formes chacun
+ * tiendrait la connexion ouverte indéfiniment — la taille de lot ne compte
+ * que les ingrédients, elle ne protège de rien ici.
+ */
+const FORMES_MAX_PAR_LOT = 5000;
 
 export class ReferentielPayloadInvalide extends Error {
-  constructor(message: string) {
+  /** Ce qui a été écrit AVANT le refus. Un lot interrompu à mi-parcours doit
+   *  dire ce qu'il laisse derrière lui, sinon l'opérateur relance à l'aveugle. */
+  readonly bilanPartiel?: ReferentielBilan;
+
+  constructor(message: string, bilanPartiel?: ReferentielBilan) {
     super(message);
     this.name = 'ReferentielPayloadInvalide';
+    this.bilanPartiel = bilanPartiel;
   }
 }
 
@@ -102,7 +129,7 @@ export function parseReferentielPayload(brut: unknown): ReferentielPayload {
   const provenance = texte(racine, 'provenance', 'payload');
   if (!PROVENANCES.has(provenance)) {
     throw new ReferentielPayloadInvalide(
-      `payload.provenance « ${provenance} » hors vocabulaire ${SUPPLEMENTS_PROVENANCES.join(', ')}.`,
+      `payload.provenance « ${provenance} » hors vocabulaire ${[...PROVENANCES].join(', ')}.`,
     );
   }
 
@@ -165,6 +192,13 @@ export function parseReferentielPayload(brut: unknown): ReferentielPayload {
     return { sourceIdentifiant, code, nomFr, formes };
   });
 
+  const nbFormes = ingredients.reduce((n, i) => n + i.formes.length, 0);
+  if (nbFormes > FORMES_MAX_PAR_LOT) {
+    throw new ReferentielPayloadInvalide(
+      `payload porte ${nbFormes} formes, au-delà de ${FORMES_MAX_PAR_LOT} — découper en lots.`,
+    );
+  }
+
   return { provenance: provenance as SupplementProvenance, ingredients };
 }
 
@@ -178,6 +212,24 @@ export function parseReferentielPayload(brut: unknown): ReferentielPayload {
  *   de bord d'une synchronisation ;
  * — aucune écriture dans `clinical_rules`, `ingredient_functional_thresholds`
  *   ni `supplement_safety_alerts`. Le vocabulaire n'est pas le jugement.
+ *
+ * DEUX RÈGLES D'IDENTITÉ, et elles ne sont pas décoratives :
+ *
+ * 1. **L'appariement se fait par la SOURCE, jamais par le libellé.** Le `code`
+ *    d'une forme est fabriqué en amont à partir de son nom officiel ; si ce nom
+ *    change, le code change. Chercher la ligne existante par son code créerait
+ *    alors un DOUBLON — l'ancienne ligne demeurant, puisque rien n'est jamais
+ *    désactivé ici — et les compositions déjà écrites resteraient accrochées à
+ *    l'obsolète. L'identifiant officiel, lui, ne bouge pas : c'est lui qui
+ *    apparie.
+ *
+ * 2. **Un `code` déjà en base n'est JAMAIS réécrit.** C'est la chaîne que les
+ *    règles cliniques manipulent, et que `ProtocolReviewFlag.ingredientsConcernes`
+ *    stocke dénormalisée. Renommer « selenium » en « selenium-substance-303 »
+ *    parce qu'un homonyme est apparu en amont désapparierait silencieusement un
+ *    drapeau de sécurité. On conserve donc le code en place, on met à jour le
+ *    seul libellé, et on REND la divergence dans `codesConserves` : c'est un
+ *    arbitrage praticien, pas une décision de synchronisation.
  */
 export async function ingestReferentiel(payload: ReferentielPayload): Promise<ReferentielBilan> {
   const bilan: ReferentielBilan = {
@@ -188,6 +240,7 @@ export async function ingestReferentiel(payload: ReferentielPayload): Promise<Re
     formesCreees: 0,
     formesMisesAJour: 0,
     formesInchangees: 0,
+    codesConserves: [],
   };
 
   for (const entree of payload.ingredients) {
@@ -209,6 +262,7 @@ export async function ingestReferentiel(payload: ReferentielPayload): Promise<Re
       if (porteurDuCode && porteurDuCode.id !== existant?.id) {
         throw new ReferentielPayloadInvalide(
           `Le code « ${entree.code} » appartient déjà à une autre entrée (${porteurDuCode.sourceProvenance ?? 'saisie manuelle'} / ${porteurDuCode.sourceIdentifiant ?? '—'}) : ingestion refusée pour ${entree.sourceIdentifiant}.`,
+          { ...bilan, ok: false, codesConserves: [...bilan.codesConserves] },
         );
       }
 
@@ -222,10 +276,16 @@ export async function ingestReferentiel(payload: ReferentielPayload): Promise<Re
         bilan.ingredientsCrees += 1;
       } else {
         ingredientId = existant.id;
-        if (existant.code !== entree.code || existant.nomFr !== entree.nomFr) {
+        // Règle d'identité n°2 : le code en place ne bouge pas.
+        if (existant.code !== entree.code) {
+          bilan.codesConserves.push(
+            `${entree.sourceIdentifiant} : « ${existant.code} » conservé, la source propose « ${entree.code} ».`,
+          );
+        }
+        if (existant.nomFr !== entree.nomFr) {
           await tx.supplementIngredient.update({
             where: { id: existant.id },
-            data: { code: entree.code, nomFr: entree.nomFr },
+            data: { nomFr: entree.nomFr },
           });
           bilan.ingredientsMisAJour += 1;
         } else {
@@ -234,37 +294,61 @@ export async function ingestReferentiel(payload: ReferentielPayload): Promise<Re
       }
 
       for (const forme of entree.formes) {
-        const formeExistante = await tx.supplementIngredientForme.findUnique({
-          where: { ingredientId_code: { ingredientId, code: forme.code } },
-          select: { id: true, labelFr: true, sourceIdentifiant: true },
+        // Règle d'identité n°1 : on apparie par l'identifiant officiel.
+        const parLaSource = await tx.supplementIngredientForme.findFirst({
+          where: {
+            ingredientId,
+            sourceProvenance: payload.provenance,
+            sourceIdentifiant: forme.sourceIdentifiant,
+          },
+          select: { id: true, code: true, labelFr: true },
         });
-        if (!formeExistante) {
-          await tx.supplementIngredientForme.create({
-            data: {
-              ingredientId,
-              code: forme.code,
-              labelFr: forme.labelFr,
-              sourceProvenance: payload.provenance,
-              sourceIdentifiant: forme.sourceIdentifiant,
-            },
-          });
-          bilan.formesCreees += 1;
-        } else if (
-          formeExistante.labelFr !== forme.labelFr
-          || formeExistante.sourceIdentifiant !== forme.sourceIdentifiant
-        ) {
-          await tx.supplementIngredientForme.update({
-            where: { id: formeExistante.id },
-            data: {
-              labelFr: forme.labelFr,
-              sourceProvenance: payload.provenance,
-              sourceIdentifiant: forme.sourceIdentifiant,
-            },
-          });
-          bilan.formesMisesAJour += 1;
-        } else {
-          bilan.formesInchangees += 1;
+
+        if (parLaSource) {
+          if (parLaSource.code !== forme.code) {
+            bilan.codesConserves.push(
+              `${forme.sourceIdentifiant} : « ${parLaSource.code} » conservé, la source propose « ${forme.code} ».`,
+            );
+          }
+          if (parLaSource.labelFr !== forme.labelFr) {
+            await tx.supplementIngredientForme.update({
+              where: { id: parLaSource.id },
+              data: { labelFr: forme.labelFr },
+            });
+            bilan.formesMisesAJour += 1;
+          } else {
+            bilan.formesInchangees += 1;
+          }
+          continue;
         }
+
+        // Aucune ligne de cette source. Le code est-il libre sous cet
+        // ingrédient ? S'il est pris, la ligne qui le porte relève d'une AUTRE
+        // origine — une autre forme officielle, ou une saisie praticien. La
+        // réécrire lui substituerait une autre substance chimique sous le même
+        // identifiant de ligne, et les compositions qui la désignent
+        // changeraient de sens sans que rien ne le note. On refuse.
+        const porteurDuCodeForme = await tx.supplementIngredientForme.findUnique({
+          where: { ingredientId_code: { ingredientId, code: forme.code } },
+          select: { sourceProvenance: true, sourceIdentifiant: true },
+        });
+        if (porteurDuCodeForme) {
+          throw new ReferentielPayloadInvalide(
+            `Le code de forme « ${forme.code} » est déjà porté sous ${entree.sourceIdentifiant} par une autre origine (${porteurDuCodeForme.sourceProvenance ?? 'saisie manuelle'} / ${porteurDuCodeForme.sourceIdentifiant ?? '—'}) : ingestion refusée pour ${forme.sourceIdentifiant}.`,
+            { ...bilan, ok: false, codesConserves: [...bilan.codesConserves] },
+          );
+        }
+
+        await tx.supplementIngredientForme.create({
+          data: {
+            ingredientId,
+            code: forme.code,
+            labelFr: forme.labelFr,
+            sourceProvenance: payload.provenance,
+            sourceIdentifiant: forme.sourceIdentifiant,
+          },
+        });
+        bilan.formesCreees += 1;
       }
     });
   }

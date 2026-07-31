@@ -53,3 +53,31 @@ CREATE UNIQUE INDEX "supplement_ingredients_source_key"
 
 CREATE INDEX "supplement_ingredient_formes_source_idx"
   ON "supplement_ingredient_formes" ("source_provenance", "source_identifiant");
+
+-- ── Contraintes que le drift check de Prisma NE VOIT PAS ────────────────────
+-- `migrate diff` ignore les CHECK : sans ces quatre contraintes, seule la
+-- discipline applicative empêcherait une provenance inventée ou une demi-clé.
+-- Reprises telles quelles du LOT-01 (`20260724133000_c4_supplement_product_-
+-- catalogue`), qui les pose déjà sur les colonnes homonymes de
+-- `supplement_products` — même nom de colonne, même vocabulaire, même garde.
+--
+-- La NULLABILITÉ APPARIÉE est celle qui compte. Une ligne à provenance NULL et
+-- identifiant renseigné est invisible du `findFirst` de la voie d'ingestion
+-- (qui filtre sur les deux) tout en échappant à l'index unique (PostgreSQL ne
+-- fait pas conflit entre deux NULL) : le même identifiant officiel pourrait
+-- alors être inséré autant de fois qu'on voudrait, et l'idempotence annoncée
+-- plus haut ne tiendrait plus. La contrainte ferme ce trou en base, et pas
+-- seulement dans le code qui écrit aujourd'hui.
+ALTER TABLE "supplement_ingredients"
+  ADD CONSTRAINT "supplement_ingredients_source_provenance_check"
+    CHECK ("source_provenance" IS NULL
+           OR "source_provenance" IN ('complalim', 'dgccrf', 'saisie_praticien')),
+  ADD CONSTRAINT "supplement_ingredients_source_paire_check"
+    CHECK (("source_provenance" IS NULL) = ("source_identifiant" IS NULL));
+
+ALTER TABLE "supplement_ingredient_formes"
+  ADD CONSTRAINT "supplement_ingredient_formes_source_provenance_check"
+    CHECK ("source_provenance" IS NULL
+           OR "source_provenance" IN ('complalim', 'dgccrf', 'saisie_praticien')),
+  ADD CONSTRAINT "supplement_ingredient_formes_source_paire_check"
+    CHECK (("source_provenance" IS NULL) = ("source_identifiant" IS NULL));

@@ -51,11 +51,27 @@ node ingest.mjs --url https://app.wellneuro.fr --source ./referentiel
 - 250 ms entre deux appels ;
 - `User-Agent` identifiant par le domaine de l'application, **sans donnée
   personnelle** ;
-- pause de 15 s sur `429` ou `5xx` — le service demande de ralentir, on obéit ;
+- pause de 15 s sur `429` ou `5xx` — le service demande de ralentir, on obéit —
+  puis **abandon après 8 ralentissements consécutifs** sur le même identifiant :
+  une maintenance prolongée ne doit pas faire boucler le script indéfiniment
+  contre le service ;
 - **reprise sur cache**, jamais relance : un arrêt ne refait pas le travail déjà fait.
 
 L'API ne propose pas d'énumération : on parcourt les identifiants (les trous rendent
 404) ; `POST /search/` refuse les termes courts et ne permet pas d'énumérer non plus.
+
+Les identifiants **absents** sont donc mémorisés eux aussi, dans
+`ref-<type>.absents` à côté du `.ndjson`. Sans cela la reprise n'en serait pas
+une : sur `plants`, parcouru de 1 à 2 200 pour ~1 021 fiches, un arrêt coûterait
+~1 179 requêtes refaites — exactement ce que la politesse cherche à éviter.
+
+## À trancher avant l'étape 3
+
+L'ingestion pose plusieurs milliers d'ingrédients `actif = true`. L'atelier de
+règles (`/dashboard/regles`) sert aujourd'hui **tout** le vocabulaire actif dans
+un `<select>` nu, sans recherche ni pagination : sur un pivot vide c'est sans
+conséquence, sur le référentiel entier le praticien ne peut plus désigner son
+ingrédient. Le sélecteur doit précéder l'ingestion.
 
 ## Ce que ces outils n'écrivent pas
 

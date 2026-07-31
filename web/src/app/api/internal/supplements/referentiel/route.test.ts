@@ -93,19 +93,29 @@ describe('POST /api/internal/supplements/referentiel', () => {
     expect(ingest).not.toHaveBeenCalled();
   });
 
-  it('traduit un conflit de code en 422 explicite, pas en panne', async () => {
+  it('traduit un conflit de code en 422 explicite, avec le BILAN PARTIEL', async () => {
+    // Le lot s'arrête au premier conflit ; les ingrédients déjà écrits restent.
+    // Sans ce bilan, l'opérateur ne sait pas ce qui a atterri et relance à l'aveugle.
     const { ReferentielPayloadInvalide } = await import('@/lib/supplement-library/referentiel');
-    ingest.mockRejectedValue(new ReferentielPayloadInvalide('Le code « selenium » appartient déjà à une autre entrée'));
+    ingest.mockRejectedValue(new ReferentielPayloadInvalide(
+      'Le code « selenium » appartient déjà à une autre entrée',
+      { ok: false, ingredientsCrees: 12, ingredientsMisAJour: 0, ingredientsInchanges: 3, formesCreees: 40, formesMisesAJour: 0, formesInchangees: 0, codesConserves: [] },
+    ));
     const res = await POST(requete(LOT));
     expect(res.status).toBe(422);
-    expect((await res.json()).error).toMatch(/appartient déjà/);
+    const corps = await res.json();
+    expect(corps.error).toMatch(/appartient déjà/);
+    expect(corps.resume).toMatchObject({ ok: false, ingredientsCrees: 12 });
   });
 
   it('reste en 500 générique sur une panne réelle', async () => {
+    // « Générique » est la propriété testée, pas le seul code de statut : un
+    // message d'erreur d'écriture porte volontiers le détail de la connexion.
     const erreur = vi.spyOn(console, 'error').mockImplementation(() => {});
     ingest.mockRejectedValue(new Error('connexion base perdue: user=admin'));
     const res = await POST(requete(LOT));
     expect(res.status).toBe(500);
+    expect((await res.json()).error).not.toMatch(/user=admin/);
     erreur.mockRestore();
   });
 });
