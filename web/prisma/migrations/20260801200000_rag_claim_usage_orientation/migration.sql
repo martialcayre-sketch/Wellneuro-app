@@ -97,6 +97,7 @@ DO $$
 DECLARE
   conflits int;
   marques int;
+  restants int;
 BEGIN
   SELECT count(*) INTO conflits
   FROM public.rag_corpus_claims c
@@ -110,13 +111,43 @@ BEGIN
       conflits;
   END IF;
 
+  -- `updated_at` N'EST PAS TOUCHÉ, et c'est le point le plus important de ce
+  -- bloc. Cette colonne DATE L'ACTE PRATICIEN sur un claim : `deciderClaim` la
+  -- pose avec la signature (`revue.ts` — « un rejet n'est pas une validation ;
+  -- updated_at date l'acte »). L'estamper ici rendrait `updated_at > valide_at`
+  -- vrai sur 709 claims signés — la signature exacte d'une modification
+  -- post-signature — sans aucune ligne de journal en face, et sans retour
+  -- possible : un audit ultérieur ne pourrait plus les distinguer d'une
+  -- altération réelle. La migration affirme plus haut que ce marquage n'est PAS
+  -- une décision praticien ; elle ne peut pas, dans le même geste, estamper la
+  -- colonne qui date les décisions praticien. Sa trace est ce fichier.
   UPDATE public.rag_corpus_claims c
-  SET metadata = c.metadata || jsonb_build_object('usage', 'orientation'),
-      updated_at = now()
+  SET metadata = c.metadata || jsonb_build_object('usage', 'orientation')
   FROM public.rag_claim_orientation_sources() s
   WHERE s.source_id = c.source_id
     AND NOT (c.metadata ? 'usage');
 
   GET DIAGNOSTICS marques = ROW_COUNT;
   RAISE NOTICE 'marquage usage=orientation : % claim(s) marqués (0 attendu au rejeu, l''opération est idempotente).', marques;
+
+  -- POST-CONDITION — sans elle, un no-op total passerait pour un succès.
+  -- Le seul retour de ce bloc est un NOTICE, noyé dans le log de build Vercel.
+  -- Si l'UPDATE ne touchait aucune ligne en production (table renommée par une
+  -- migration concurrente, identifiants normalisés autrement, rejeu après un
+  -- `migrate resolve`), `migrate deploy` sortirait en succès, la migration
+  -- serait marquée appliquée, le build serait vert — et le lot 9 ne verrait
+  -- aucun claim d'orientation, c'est-à-dire exactement ce que ce fichier existe
+  -- pour empêcher. L'assertion porte donc sur l'ÉTAT FINAL, pas sur un volume :
+  -- elle est vraie à vide (base du CI), vraie au rejeu, et fausse sur le no-op
+  -- silencieux.
+  SELECT count(*) INTO restants
+  FROM public.rag_corpus_claims c
+  JOIN public.rag_claim_orientation_sources() s ON s.source_id = c.source_id
+  WHERE c.metadata->>'usage' IS DISTINCT FROM 'orientation';
+
+  IF restants > 0 THEN
+    RAISE EXCEPTION
+      'marquage usage=orientation : % claim(s) du périmètre ne portent PAS la marque après l''UPDATE. La migration n''a pas fait son travail — ne pas la marquer appliquée.',
+      restants;
+  END IF;
 END $$;
