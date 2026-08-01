@@ -1741,7 +1741,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   if (!PORTE_SON_PROPRE_NON_SCORE.includes(sc.type)
       && allQ.length > 0 && allQ.every((q: any) => getVal(q.id) === null)) {
     return {
-      type: sc.type, scored: false, total: null, maxTotal: sc.maxTotal,
+      // Même règle que la branche `sum` plus bas : `sansTotalGlobal` retire le
+      // dénominateur. Sans cela une passation VIDE rendait `maxTotal: 36` et une
+      // passation remplie n'en rendait aucun — deux formes contradictoires pour
+      // le même instrument, toutes deux persistées dans `scores_json`.
+      type: sc.type, scored: false, total: null,
+      maxTotal: sc.sansTotalGlobal === true ? undefined : sc.maxTotal,
       interpretation: null, note: sc.note || null,
       certification: sc.certification || null,
       raisonNonScore: 'aucune réponse ne correspond aux items de cet instrument',
@@ -1773,8 +1778,26 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       const {total: sousTotal} = totalSousScore(d.items, []);
       return {id: d.id, label: d.label, total: sousTotal, max: d.max ?? null, interpretation: null};
     });
+    // `sansTotalGlobal` VAUT AUSSI ICI depuis le 2026-08-01, et il ne valait que
+    // pour `subscore` jusque-là. Un drapeau qui ne fait rien sur la moitié des
+    // moteurs est pire qu'un drapeau absent : on le pose, on croit avoir agi, et
+    // le total continue de partir. Il a été posé exactement ainsi sur `Q_TAB_04`,
+    // et c'est en le mesurant qu'on l'a vu.
+    //
+    // Ce qu'il dit est le même dans les deux moteurs : l'instrument ne produit
+    // AUCUN score global, et la somme de ses items n'en est pas un. Sur une
+    // grille dont on vient de retirer les bandes, un « 24 » nu s'afficherait
+    // « Score brut » à la fiche, sans dénominateur ni lecture — c'est-à-dire une
+    // sévérité qu'aucun barème ne définit.
+    const totalServi = sc.sansTotalGlobal === true ? null : total;
     return {
-      type:'sum', total, maxTotal: sc.maxTotal, interpretation: interp,
+      type:'sum', total: totalServi, maxTotal: sc.sansTotalGlobal === true ? undefined : sc.maxTotal,
+      // La bande tombe AVEC le total. Un instrument qui garderait ses bandes
+      // sous `sansTotalGlobal` rendrait « Risque aigu » avec `total: null` : un
+      // verdict privé du nombre qui le fonde, donc invérifiable par le praticien.
+      // C'est la même classe de défaut que le drapeau qui ne faisait rien sur la
+      // moitié des moteurs — elle survivait dans la branche qu'on venait de réparer.
+      interpretation: sc.sansTotalGlobal === true ? null : interp,
       ...(dimensions.length > 0 ? {dimensions} : {}),
       note: sc.note || null, certification: sc.certification || null,
     };

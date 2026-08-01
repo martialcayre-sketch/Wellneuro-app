@@ -2054,23 +2054,23 @@
     {
       "questionnaireId": "Q_TAB_04",
       "instrument": {
-        "nomOfficiel": "Questionnaire d'évaluation de la consommation de cannabis",
+        "nomOfficiel": "Repérage des conduites de consommation de cannabis (grille WellNeuro)",
         "auteurs": null,
         "anneePublication": null,
-        "formePubliee": null,
+        "formePubliee": "Grille créée localement. La SOURCE du cabinet (WN-SRC-0494 / WN-SRC-0495) est, elle, identifiée depuis le 2026-08-01 : c'est le Know Cannabis Test de la clinique Jellinek (Amsterdam), en traduction française — l'OFDT en publie l'original anglais dans son « Guide pratique des principaux outils de repérage de l'usage problématique de cannabis », avec les mêmes 16 items et les mêmes trois bandes. Le servi N'EST PAS cet instrument : il ne partage qu'un item avec lui.",
         "proprietaireDroits": null
       },
       "versionServie": {
-        "description": null,
+        "description": "16 items en 4 sections (fréquence et quantité 0-4, critères de dépendance 0-1, retentissement 0-3, santé 0-1), moteur `sum`. AUCUNE bande, AUCUN seuil, AUCUN total global depuis le 2026-08-01. DÉBAPTISÉ ET DÉGRÉÉ CE JOUR, sur arbitrage praticien, et pour deux constats vérifiés sur les pièces primaires. (1) LA SOURCE EST IDENTIFIÉE — Know Cannabis Test, clinique Jellinek, publié par l'OFDT — et LE SERVI NE PARTAGE QU'UN ITEM AVEC ELLE : elle demande la somme dépensée par semaine, la fréquence d'ivresse cannabique, avec qui l'on fume, les raisons de consommer ; le servi demande l'âge de début, la tolérance, le manque, les symptômes respiratoires. C'est le cas Q_PED_02 à l'identique — 16 items des deux côtés, /36 des deux côtés, mêmes trois bandes, ZÉRO divergence critique, et un autre instrument : le seul cas que le compteur déclare conforme. (2) LA SOURCE NE DONNE AUCUN POINT PAR OPTION. Elle porte ses 16 items avec leurs modalités, puis « Résultats : De 0 à 5 points… » à sa dernière page — et rien entre les deux. Reconstruire le servi sur elle exigeait donc d'INVENTER la cotation menant à ce /36, c'est-à-dire d'ajouter un barème qu'aucune source ne porte. La reconstruction, arbitrée le 2026-07-31, a été ABANDONNÉE sur ce constat.",
         "langue": "fr",
         "traductionValidee": "fr",
-        "statutContenu": "a_auditer"
+        "statutContenu": "cree_localement"
       },
       "references": {
         "doi": null,
         "pmid": null,
-        "dateVerification": null,
-        "verifiePar": null
+        "dateVerification": "2026-08-01",
+        "verifiePar": "lecture directe des images de source (WN-SRC-0494 p1-3, WN-SRC-0495 p1-3) + banc certify (deux lectures concordantes) + recoupement à l'original anglais publié par l'OFDT"
       },
       "droits": {
         "statut": "permission_obtenue",
@@ -2078,7 +2078,7 @@
         "dateVerification": "2026-07-29"
       },
       "cosmin": "inconnu",
-      "statutCertification": "suspendu",
+      "statutCertification": "scoring_verifie",
       "politiqueSuivi": {
         "readministrable": null,
         "intervalleMinJours": null
@@ -2089,23 +2089,24 @@
         "WN-SRC-0495"
       ],
       "driveMd": "questionnaire_dependance_cannabis.md",
-      "statutBibliographique": "a_completer",
+      "statutBibliographique": "reference_identifiee",
       "verdictScoring": {
         "banc": "certify",
-        "date": "2026-07-31",
+        "date": "2026-08-01",
         "divergencesCritiques": 0,
-        "reserve": {
-          "date": "2026-08-01",
-          "plafond": "source_obtenue",
-          "motif": "identité non établie, et c'est le motif même de la fermeture du 2026-07-29 : le registre ne nomme aucun auteur, `statutBibliographique` reste `a_completer`, et la source ne dit pas de quoi elle est la reproduction. On ne certifie pas un contenu contre une source qu'on ne sait pas nommer. La piste *Know Cannabis Test* (clinique Jellinek) n'est pas instruite ; les deux corrections de grille du 2026-07-31 ne lèvent pas ce motif. DÉCISION ASSUMÉE, et non une reprise de notes : ce plafond à `source_obtenue` interdit désormais `droits_verifies` à un instrument dont le champ `droits.statut` porte `permission_obtenue`, daté et motivé. Le motif est qu'on ne dégage pas des droits sur une source qu'on ne sait pas nommer — l'identification du servi n'est pas instruite, et la piste du Know Cannabis Test reste une piste tant qu'aucune pièce n'est au registre. Le champ `droits` n'est pas corrigé pour autant : la déclaration du praticien reste ce qu'elle est, c'est sa PORTÉE sur un instrument non identifié qui est plafonnée ici."
-        },
         "revision": {
-          "date": "2026-07-31",
+          "date": "2026-08-01",
           "notes": [
             "CONTENU CORRIGÉ le 2026-07-31, sur arbitrage du praticien — l'instrument RESTE FERMÉ pour autant. Deux défauts réels que la suspension masquait : (1) `maxTotal` déclaré 32 quand les items en autorisent 36 (4×4 + 4×1 + 4×3 + 4×1), ce qui faisait afficher « 34/32 » ; (2) la grille d'interprétation n'était pas celle de la source — quatre bandes à des coupures locales contre les trois de la source (0-5 risque faible, 6-15 risque réel, 16-36 risque aigu). Les deux sont corrigés, et les QUATRE conduites du cabinet sont conservées : les deux plus sévères sont fusionnées, la source réunissant leurs intervalles. Deux valeurs changent de bande — 6 devient plus sévère, 15 moins.",
             "MAIS LA RÉOUVERTURE EST REFUSÉE, et pour le motif même de sa fermeture, qui n'est pas résolu : le registre ne nomme aucun auteur, `statutBibliographique` reste `a_completer`, et sa suspension du 2026-07-29 disait « on ne sait pas dire ce qu'il est, donc on ne peut pas le certifier ». Le dossier d'arbitrage du 2026-07-31 le classait pourtant « à réactiver après deux corrections » : c'était une inconséquence, corrigée ici. Appliquer à cet instrument une barre plus basse qu'à Q_NEU_06, fermé la veille pour exactement cette raison, serait revenir au renversement de charge du VQ11 — conclure de ce qu'un support ne dit pas. Réactivation à l'identification de la source, comme pour Q_PNE_01 dont c'est ce qui vient de lever la fermeture.",
             "B3 — CE QUE LA FUSION COÛTE, mesuré et non estimé. Une première rédaction annonçait « deux valeurs changent de bande » : c'est vrai des BANDES (6 et 15) et faux des CONDUITES. Balayage des 37 totaux : la conduite rendue change pour VINGT-TROIS d'entre eux. 6 passe de « information et prévention » à « counseling motivationnel » ; 15 passe de la consultation addictologue au counseling ; 16 à 21 reçoivent EN PLUS la prise en charge spécialisée, que l'ancienne grille réservait à 22 et au-delà ; 22 à 36 reçoivent en plus la consultation addictologue. Conséquence clinique à connaître : un score de 16 et un score de 30 rendent désormais un verdict IDENTIQUE — la distinction « usage nocif probable » / « dépendance probable » disparaît, et c'était la seule information que portait la quatrième bande. « Aucune conduite n'est abandonnée » reste vrai des textes, et faux de la discrimination. Prix de l'alignement, assumé ; épinglé par reactivations20260731.guard.test.ts pour que sa restauration se rediscute au lieu de se perdre.",
-            "PIÈCE DE PRODUCTION, jointe pour la même raison. Lecture du 2026-07-31 : Q_TAB_04 porte 0 assignation et 0 réponse. Aucun score enregistré n'est donc relu par la nouvelle grille, et aucune entrée à MOTIFS_PASSATION_NON_INTERPRETABLE n'est requise. La mention « ni assignation ni réponse » du 2026-07-29 n'était pas reconduite sur parole : elle a été revérifiée."
+            "PIÈCE DE PRODUCTION, jointe pour la même raison. Lecture du 2026-07-31 : Q_TAB_04 porte 0 assignation et 0 réponse. Aucun score enregistré n'est donc relu par la nouvelle grille, et aucune entrée à MOTIFS_PASSATION_NON_INTERPRETABLE n'est requise. La mention « ni assignation ni réponse » du 2026-07-29 n'était pas reconduite sur parole : elle a été revérifiée.",
+            "RÉSERVE LEVÉE LE 2026-08-01, et c'est la première levée depuis que le mécanisme existe. Son plafond était `source_obtenue`, et son motif : « on ne dégage pas des droits sur une source qu'on ne sait pas nommer ». La source est nommée — Know Cannabis Test, clinique Jellinek, lue à l'image sur les six pages du support et recoupée à l'original publié par l'OFDT. Le motif de la réserve est donc éteint, et la ligne correspondante est retirée de RESERVES_ATTENDUES dans le même diff : c'est ce que le mécanisme exige.",
+            "CE QUE LA LEVÉE NE DIT PAS : que le servi soit fidèle à cette source. C'est l'inverse — l'identification établit qu'il ne l'est PAS, et c'est ce qui le fait débaptiser. La réserve portait sur l'IDENTITÉ de la source, pas sur la conformité du servi ; l'une est instruite, l'autre est tranchée par la débaptisation.",
+            "LES BANDES DE #497 SONT RETIRÉES, et ce lot supersède cet arbitrage. Elles étaient exactes — 0-5, 6-15, 16-36 se lisent bien à la dernière page de WN-SRC-0495 — mais appliquées à des items qui ne sont pas ceux pour lesquels elles ont été établies. Une grille de lecture validée sur un instrument, posée sur un autre, ne mesure rien. Les quatre conduites du cabinet qu'elles portaient partent avec elles ; le contrôle du CI qui recense les porteurs de conduite en compte donc un de moins.",
+            "SANS TOTAL GLOBAL, et il a fallu corriger le moteur pour que ce soit vrai : `sansTotalGlobal` n'était honoré que par la branche `subscore`. Posé sur un moteur `sum`, il ne faisait RIEN — le total continuait de partir. Un drapeau qui ne fait rien sur la moitié des moteurs est pire qu'un drapeau absent : on le pose, on croit avoir agi. Corrigé le 2026-08-01 ; il vaut désormais dans les deux moteurs.",
+            "PIÈCE DE PRODUCTION, lue le 2026-08-01 AVANT le geste : count(*) sur assignations, sur assignations non 'Complété', sur questionnaire_reponses et sur pack_questionnaires pour id_questionnaire='Q_TAB_04' → 0, 0, 0, 0. Aucun score enregistré n'est relu par la grille modifiée, et aucune passation ne perd sa bande.",
+            "LE BANC REND DÉSORMAIS DEUX DIVERGENCES QUE CE LOT A CRÉÉES EXPRÈS, et `divergencesCritiques: 0` les requalifie plutôt que de les nier — il faut le lire avant de s'y fier. `total_numerique_absent` (critique) : le servi ne rend plus de total, la source en rend un. `seuil_non_represente` (majeur) : le servi n'a plus de bande, la source en a trois. Les DEUX sont la conséquence VOULUE de la débaptisation, et elles ne pouvaient pas ne pas apparaître. La requalification repose sur le même raisonnement que Q_PED_02 : tant que l'instrument s'annonçait comme sa source, la comparaison le condamnait à juste titre ; débaptisé, il ne prétend plus la reproduire, et la QUESTION change — on ne lui demande plus s'il est fidèle à un instrument publié, mais si le scoring servi correspond à ce qu'il déclare de lui-même. Il déclare n'avoir ni bande ni total, et il n'en a ni l'un ni l'autre. CE QUE CETTE REQUALIFICATION NE COUVRE PAS : elle vaut parce que le servi ne peut plus RIEN rendre qui se lise comme un verdict. Le jour où une bande y serait réintroduite, la comparaison à la source redeviendrait la bonne question, et ces deux codes redeviendraient des divergences réelles. Un banc de garde épingle l'absence de bande et de total pour que ce jour-là se rediscute au lieu de se glisser."
           ]
         }
       }

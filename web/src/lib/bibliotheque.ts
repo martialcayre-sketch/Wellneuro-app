@@ -13,7 +13,7 @@ import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 
 export type DefinitionCatalogue = QuestionnaireDef & {
-  scoring?: { maxTotal?: number; certification?: { status?: string } };
+  scoring?: { maxTotal?: number; sansTotalGlobal?: boolean; certification?: { status?: string } };
   administrationMode?: string;
 };
 
@@ -107,7 +107,15 @@ export function nbQuestions(def: DefinitionCatalogue | undefined): number | null
   return def.sections.reduce((n, s) => n + (s.questions?.length ?? 0), 0);
 }
 
+// `sansTotalGlobal` PRIME sur `maxTotal` depuis le 2026-08-01. Le rayon et
+// l'aperçu lisent le dénominateur dans la DÉFINITION, pas dans le retour du
+// moteur : un instrument dont le moteur a cessé de rendre un total continuait
+// d'annoncer « · /36 » au praticien. Mesuré sur `Q_TAB_04`, dont le registre
+// déclare pourtant « AUCUN total global ». Le praticien lisait un dénominateur,
+// assignait, ne recevait rien — et n'avait plus qu'à refaire à la main la somme
+// que le lot venait de déclarer non reconstructible.
 export function scoreMax(def: DefinitionCatalogue | undefined): number | null {
+  if (def?.scoring?.sansTotalGlobal === true) return null;
   const max = def?.scoring?.maxTotal;
   return typeof max === 'number' ? max : null;
 }

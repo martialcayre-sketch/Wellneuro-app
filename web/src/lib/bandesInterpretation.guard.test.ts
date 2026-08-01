@@ -108,23 +108,13 @@ describe('bandes d’interprétation — aucune bande plutôt qu’une bande fau
     // l'ancien repli rendait la BONNE réponse, et le supprimer sans nuance
     // effaçait le résultat le plus sévère d'un instrument. Deux cas réels.
 
-    // `Q_TAB_04` (cannabis) : 16 items, total atteignable 36. Sa grille avait un
-    // plafond écrit SOUS ce maximum (32) — c'est ce qui rendait ce cas réel. Le
-    // plafond a été corrigé le 2026-07-31 et la grille alignée sur les trois
-    // bandes de la source, si bien que 36 y tombe désormais NORMALEMENT, dans la
-    // bande de tête « Risque aigu » (16-36). L'assertion reste : elle vérifie
-    // qu'un maximum atteignable reçoit bien une bande, ce qui vaut que le
-    // plafond soit juste ou non. Le second cas ci-dessous, lui, porte encore un
-    // plafond sous le maximum et continue d'éprouver le repli.
-    const cannabisMax: any = calculateScore(
-      'Q_TAB_04',
-      Object.fromEntries(itemsDe('Q_TAB_04').map((q: any) => [
-        q.id,
-        q.options?.length ? Math.max(...q.options.map((o: any) => Number(o.v ?? o.value))) : (q.max ?? 0),
-      ])),
-    );
-    expect(cannabisMax.total).toBe(36);
-    expect(cannabisMax.interpretation?.label).toBe('Risque aigu');
+    // `Q_TAB_04` PORTAIT CE CAS jusqu'au 2026-08-01, et il en est sorti : ses
+    // bandes ont été RETIRÉES, parce qu'elles étaient celles d'un instrument dont
+    // le servi ne partage qu'un item. Il ne rend donc plus ni total ni bande, et
+    // ne peut plus rien éprouver ici. Le cas qu'il illustrait — un plafond de
+    // grille écrit SOUS le maximum atteignable — reste couvert par celui qui
+    // suit, qui porte encore cet écart. Une garde ne se supprime pas parce que
+    // son exemple disparaît ; elle se rattache à l'exemple qui subsiste.
 
     // `Q_MOD_01/ADAPTATION_STRESS` : plafond 24, atteignable 28 — et ici la bande
     // de tête est la RASSURANTE. La règle suit l'ordre des scores, pas la
