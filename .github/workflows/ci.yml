@@ -256,6 +256,18 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_reprise_bornes_v1.sql
 
+      # Le marquage `usage = orientation` (20260801200000) écrit lui aussi des
+      # données de production, et il est tout aussi invisible sur la base vide
+      # du CI. Ce banc éprouve la fonction de périmètre sur ce qui porte une
+      # décision clinique — la perfusion exclue, la quarantaine qui exclut même
+      # un domaine réintégré par la décision f — et sur les deux propriétés que
+      # le marquage doit tenir : idempotence, et refus d'écraser un usage
+      # existant.
+      - name: RAG claim usage orientation contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_usage_orientation_v1.sql
+
       # Le rayon corpus filtre PAR NOTEBOOK (rayonCorpus.ts, décision 7 des
       # arbitrages 2026-07-27) : ce contrat éprouve que le notebook d'une source
       # est un fait univoque et présent en base. Sur la base CI (vide) il passe
