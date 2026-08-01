@@ -200,7 +200,13 @@ describe('questionnaire suspendu (actif: false)', () => {
   // divergence critique » portait sur les deux seuls contrôles que la source
   // permettait, et que le servi porte des items DSM là où Conners porte les
   // siens. Le motif complet est au catalogue, à côté de l'entrée.
-  const SUSPENDUS_DROITS = ['Q_PED_02', 'Q_PED_03', 'Q_GEO_04'];
+  // `Q_PED_02` en est SORTI le 2026-08-01, et lui seul : débaptisé, sa réserve
+  // visait l'échelle de Conners qu'il ne reproduit pas, et il redevient
+  // assignable. `Q_GEO_04` RESTE dans cette liste — sa réouverture du 2026-08-01
+  // porte sur l'usage en CONSULTATION, pas sur la route : il est toujours
+  // `actif: false`, toujours dans `IDS_SUSPENDUS`, toujours non assignable, et
+  // c'est exactement ce que ces cinq assertions vérifient.
+  const SUSPENDUS_DROITS = ['Q_PED_03', 'Q_GEO_04'];
 
   it('les instruments à droits non dégagés sont fermés à l’assignation', () => {
     for (const id of SUSPENDUS_DROITS) {

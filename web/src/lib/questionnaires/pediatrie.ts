@@ -1,10 +1,31 @@
 import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PAS, O_ZARIT, O_DASS, O_CONNERS, q, qn, qs } from './shared';
 
+// DÉBAPTISÉ LE 2026-08-01, sur arbitrage praticien du 2026-07-31.
+//
+// Cet instrument s'appelait « Échelle de Conners — Version Enseignant ». Il ne
+// l'était pas : le banc du 2026-07-30 a lu 28 items des deux côtés, 0 divergence
+// critique — et 27 divergences « mineures » dont DIX-SEPT à similarité 0,00. Le
+// servi porte les critères diagnostiques du TDAH ; la source porte les items de
+// Conners, dont ses six items d'opposition, absents ici.
+//
+// C'est le cas que la règle du « nombre d'items » désigne comme le plus
+// dangereux : un comptage IDENTIQUE à contenus différents est une substitution,
+// et c'est le seul cas que le compteur déclare conforme.
+//
+// Deux options étaient ouvertes — reconstruire sur les 28 items de Conners, ou
+// débaptiser. La seconde a été retenue : le servi n'est pas un Conners abîmé,
+// c'est une grille cohérente avec elle-même. La reconstruire jetterait un
+// instrument utilisable pour en fabriquer un autre dont les droits (© MHS) ne
+// sont pas dégagés.
 export const Q_PED_02 = {
-  id:'Q_PED_02', titre:'Échelle de Conners — Version Enseignant (TDAH, forme courte)',
+  id:'Q_PED_02', titre:'Repérage du TDAH par l’enseignant (grille WellNeuro, critères DSM)',
   instructions:'Ce questionnaire est destiné aux ENSEIGNANTS. Évaluez le comportement de l\'élève au cours du dernier mois. 0 = Pas du tout · 1 = Un peu · 2 = Souvent · 3 = Très souvent.',
   sections:[
-    { id:'A', titre:'Opposition et comportement',
+    // « Opposition et comportement » jusqu'au 2026-08-01. Aucun de ces sept items
+    // ne porte sur l'opposition — refus d'obéir, colères, provocation : ils
+    // portent sur l'impulsivité et l'agitation motrice, plus deux items
+    // attentionnels (CE3, CE4) que le barème rattache d'ailleurs à `INA`.
+    { id:'A', titre:'Impulsivité et agitation',
       questions:[
         q('CE1','Est excitable, impulsif(ve)',           [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
         q('CE2','A du mal à rester assis(e) — se lève souvent',   [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
@@ -48,7 +69,18 @@ export const Q_PED_02 = {
   scoring:{
     type:'subscore',
     subScores:[
-      {id:'OPP',label:'Opposition / Impulsivité',items:['CE1','CE2','CE5','CE6','CE7'],max:15},
+      // `OPP` → `IMP`, et « Opposition / Impulsivité » → « Impulsivité ». LE POINT
+      // LE PLUS IMPORTANT DE CE LOT, et il était indépendant du nom de
+      // l'instrument : les cinq items sont excitable, mal à rester assis,
+      // interrompt, répond sans réfléchir, mal à attendre son tour. Les cinq
+      // mesurent l'impulsivité, AUCUN ne mesure l'opposition. Un praticien
+      // lisant « Opposition / Impulsivité : 13/15 » aurait conclu à un trouble
+      // oppositionnel chez un enfant à qui la question n'a jamais été posée.
+      //
+      // L'identifiant change AUSSI, et c'est possible sans précaution : la
+      // production porte zéro assignation et zéro réponse pour cet instrument
+      // (lu le 2026-08-01). Aucune passation enregistrée ne porte la clé `OPP`.
+      {id:'IMP',label:'Impulsivité',items:['CE1','CE2','CE5','CE6','CE7'],max:15},
       {id:'INA',label:'Inattention / Cognitif',  items:['CE3','CE4','CE8','CE9','CE10','CE11','CE12','CE13','CE14'],max:27},
       {id:'HYP',label:'Hyperactivité',            items:['CE15','CE16','CE17','CE18','CE19','CE20'],max:18},
       {id:'IDX',label:'Index TDAH',               items:['CE21','CE22','CE23','CE24','CE25','CE26','CE27','CE28'],max:24},

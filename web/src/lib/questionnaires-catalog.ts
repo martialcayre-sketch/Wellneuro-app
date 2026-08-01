@@ -342,8 +342,19 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // items de la source, ou DÉBAPTISER — un dépistage TDAH local par l'enseignant,
   // sans le nom Conners ni les intitulés empruntés, ne pose ni le problème
   // d'identité ni celui de MHS.
-  { id: 'Q_PED_02', titre: 'Conners Enseignant — Évaluation TDAH (forme courte)', categorie: 'Pédiatrie',
-    description: `Évaluation du TDAH par l'enseignant : opposition, inattention, hyperactivité (28 items, 0-3).`, duree: '10 min', actif: false },
+  //
+  // DÉBAPTISÉ ET ROUVERT LE 2026-08-01 : c'est la seconde branche qui a été
+  // retenue, sur arbitrage praticien. Le servi n'est pas un Conners abîmé, c'est
+  // une grille cohérente avec elle-même ; la reconstruire jetterait un instrument
+  // utilisable pour en fabriquer un autre dont les droits ne sont pas dégagés.
+  //
+  // Le sous-score « Opposition / Impulsivité » est renommé « Impulsivité » —
+  // point INDÉPENDANT du nom de l'instrument, et qui devait être corrigé dans les
+  // deux branches. Zéro assignation et zéro réponse en production (lu le
+  // 2026-08-01) : ni la réouverture ni le changement d'identifiant de sous-score
+  // ne touchent un dossier.
+  { id: 'Q_PED_02', titre: 'Repérage du TDAH par l’enseignant (grille WellNeuro)', categorie: 'Pédiatrie',
+    description: `Grille remplie par l'enseignant : impulsivité, inattention, hyperactivité, retentissement scolaire (28 items, 0-3). Repérage destiné à orienter l'entretien — il ne pose aucun diagnostic et ne rend aucun seuil.`, duree: '10 min', actif: true },
   // Le Conners parent RESTE FERMÉ, et son banc dit pourquoi : la lecture de la
   // source y trouve 110 items là où l'application en sert 108. Deux items
   // manquants ne sont pas un défaut de scoring, c'est un autre instrument —
