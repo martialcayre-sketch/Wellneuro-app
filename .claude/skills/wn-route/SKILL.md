@@ -1,7 +1,12 @@
 ---
-description: Point d'entrée automatique WellNeuro — combine route (/wn), modèle (/wn-model) et mode d'exécution (/wn-ultra) en une décision unique, appliquée en début de session ou juste après /clear, avec le plan hiérarchisé d'agents/skills à appeler.
+description: Point d'entrée automatique WellNeuro — combine route (/wn), modèle (/wn-model) et mode d'exécution (/wn-ultra) en une décision unique, appliquée en début de session ou juste après /clear, avec le plan hiérarchisé d'agents/skills à appeler. À n'invoquer qu'UNE FOIS, au tout premier passage d'une session — jamais sur les messages suivants, qui sont déjà routés.
 argument-hint: "[demande de l'utilisateur]"
-disable-model-invocation: true
+# EXCEPTION DÉLIBÉRÉE — ne pas rétablir `disable-model-invocation: true` ici.
+# Les 27 autres skills `wn` le portent ; celui-ci est le seul à en être exempt,
+# parce que `CLAUDE.md` demande de l'invoquer sans qu'on le tape, au tout premier
+# passage d'une session. Le drapeau rendait cette consigne inapplicable : elle n'a
+# jamais pu s'exécuter une seule fois depuis qu'elle est écrite. Uniformiser la
+# suite `wn` sur ce point la remettrait en panne, silencieusement.
 effort: low
 ---
 
