@@ -358,6 +358,150 @@ test('barreau scoring_verifie sans verdict de banc exploitable : détecté', () 
   }
 });
 
+// ── Réserve opposable ──────────────────────────────────────────────────────
+// Ajoutés le 2026-08-01. `divergencesCritiques === 0` ne suffit pas.
+//
+// La mesure exacte, rejouée sur le code d'avant ce lot : des cinq instruments
+// hors échelle, QUATRE affichaient 0 au compteur, mais DEUX seulement passaient
+// réellement le vérificateur (`Q_SOM_09`, `Q_GEO_04`). Vrai du compteur, faux du
+// verrou — les trois `suspendu` étaient déjà tenus par deux gardes préexistants.
+// Une première rédaction annonçait quatre ; corrigé après revue, parce que
+// surestimer le trou d'un facteur deux dans la pièce qui explique la garde,
+// c'est refaire ici la faute que cette campagne attaque partout ailleurs.
+//
+// Ce qui retenait les deux instruments réellement libres n'était écrit qu'en
+// français dans `revision.notes`, et rien ne le lisait. Ces cas exigent qu'une
+// réserve inscrite MORDE.
+
+const MOTIF = "aucun des 19 à 34 seuils de la source n'est servi, aucune bande d'interprétation ; 4 dimensions à la source dont 2 de validité, 0 calculée par le moteur";
+
+test('réserve : un statut AU-DESSUS de son plafond est refusé, même à 0 divergence critique', () => {
+  // Le cas Q_PED_03, celui qui nomme le trou : verdict irréprochable au compteur,
+  // et une réserve qui dit que le scoring n'est pas vérifié pour autant.
+  const { erreurs } = verifier({
+    registre: {
+      instruments: [entree({
+        statutCertification: 'scoring_verifie',
+        sourceIds: ['WN-SRC-0001'],
+        droits: DEGAGE,
+        versionServie: { description: '108 items', statutContenu: 'adapte' },
+        verdictScoring: {
+          ...VERDICT_PROPRE,
+          reserve: { date: '2026-08-01', plafond: 'contenu_verrouille', motif: MOTIF },
+        },
+      })],
+    },
+  });
+  assert.ok(
+    erreurs.some(e => /au-dessus du plafond 'contenu_verrouille'/.test(e)),
+    'un barreau au-dessus du plafond de sa propre réserve devait être refusé'
+  );
+  // Et la garde du compteur, elle, se tait : c'est bien la réserve qui refuse,
+  // pas un effet de bord de l'ancienne condition.
+  assert.deepEqual(erreurs.filter(e => /sans verdict de banc exploitable/.test(e)), []);
+});
+
+test('réserve : un statut AU plafond, ou en dessous, passe', () => {
+  // Anti-sur-filtrage. Sans ce cas, la garde pourrait refuser tout instrument
+  // porteur d'une réserve et rester verte sur le précédent.
+  for (const statut of ['contenu_verrouille', 'droits_verifies', 'repere']) {
+    const { erreurs } = verifier({
+      registre: {
+        instruments: [entree({
+          statutCertification: statut,
+          sourceIds: ['WN-SRC-0001'],
+          droits: DEGAGE,
+          versionServie: { description: '108 items', statutContenu: 'adapte' },
+          verdictScoring: {
+            ...VERDICT_PROPRE,
+            reserve: { date: '2026-08-01', plafond: 'contenu_verrouille', motif: MOTIF },
+          },
+        })],
+      },
+    });
+    assert.deepEqual(erreurs, [], `${statut} est au plafond ou en dessous : rien ne doit être refusé`);
+  }
+});
+
+test('réserve mal formée : refusée, y compris SOUS le barreau qu’elle contraint', () => {
+  // Inscrite bas, une réserve mal formée devient vraie le jour de la montée —
+  // même raison qu'au contrôle de forme du verdict.
+  const cas = [
+    { date: null, plafond: 'contenu_verrouille', motif: MOTIF },
+    { date: '2026-13-45', plafond: 'contenu_verrouille', motif: MOTIF },
+    // `suspendu` est un état terminal, pas un barreau : il ne peut pas plafonner.
+    { date: '2026-08-01', plafond: 'suspendu', motif: MOTIF },
+    { date: '2026-08-01', plafond: 'inconnu', motif: MOTIF },
+    { date: '2026-08-01', plafond: 'contenu_verrouille', motif: null },
+    { date: '2026-08-01', plafond: 'contenu_verrouille', motif: 'à voir' },
+  ];
+  for (const reserve of cas) {
+    const { erreurs } = verifier({
+      registre: {
+        instruments: [entree({
+          statutCertification: 'repere',
+          verdictScoring: { ...VERDICT_PROPRE, reserve },
+        })],
+      },
+    });
+    assert.ok(
+      erreurs.some(e => /reserve mal formée/.test(e)),
+      `reserve ${JSON.stringify(reserve)} : la forme devait être refusée`
+    );
+  }
+});
+
+test('réserve sur un état terminal : hors comparaison de plafond, mais toujours bien formée', () => {
+  const suspendu = {
+    questionnaireId: 'Q_SOM_07', driveMd: null, sourceMonEquilibre: false,
+    statutCertification: 'suspendu', sourceIds: [],
+  };
+  const commun = { idsCatalogue: ['Q_SOM_07'] };
+  // `suspendu` rend `barreau === -1` : aucun plafond ne lui est opposé aujourd'hui.
+  // La réserve n'y dort pas : elle mordra à la réactivation. Le contrôle voisin
+  // n'impose AUCUN barreau de reprise — il interdit seulement de rester terminal.
+  const terminal = verifier({
+    ...commun,
+    registre: {
+      instruments: [entree({
+        ...suspendu,
+        verdictScoring: { ...VERDICT_PROPRE, reserve: { date: '2026-08-01', plafond: 'source_obtenue', motif: MOTIF } },
+      })],
+    },
+  });
+  assert.deepEqual(terminal.erreurs, []);
+
+  // La bonne forme, elle, reste exigée : un état terminal n'est pas une dispense
+  // d'écrire une réserve lisible.
+  const malFormee = verifier({
+    ...commun,
+    registre: {
+      instruments: [entree({
+        ...suspendu,
+        verdictScoring: { ...VERDICT_PROPRE, reserve: { date: '2026-08-01', plafond: 'source_obtenue', motif: 'trop court' } },
+      })],
+    },
+  });
+  assert.ok(malFormee.erreurs.some(e => /reserve mal formée/.test(e)));
+});
+
+test('absence de réserve : le comportement d’avant le 2026-08-01 est inchangé', () => {
+  // Les 59 instruments certifiés n'en portent aucune. Une garde qui les refuserait
+  // n'aurait pas fermé un trou, elle aurait fermé la campagne.
+  const { erreurs } = verifier({
+    registre: {
+      instruments: [entree({
+        statutCertification: 'scoring_verifie',
+        sourceIds: ['WN-SRC-0001'],
+        droits: DEGAGE,
+        versionServie: { description: '21 items', statutContenu: 'adapte' },
+        verdictScoring: VERDICT_PROPRE,
+      })],
+    },
+  });
+  assert.deepEqual(erreurs, []);
+});
+
 test('les barreaux au-dessus de scoring_verifie en héritent la pièce', () => {
   for (const statut of ['psychometrie_revue', 'mapping_clinique_approuve', 'publie']) {
     const { erreurs } = verifier({
@@ -736,4 +880,106 @@ test("'reference_identifiee' : un champ VIDE mais non nul ne suffit pas", () => 
       `champ vide accepté à tort : ${JSON.stringify(surcharge)}`
     );
   }
+});
+
+// ── L'ANCRAGE SUR LE REGISTRE RÉEL ──────────────────────────────────────────
+//
+// Les cas ci-dessus éprouvent la FONCTION sur des fixtures. Ils ne peuvent rien
+// dire de la SUPPRESSION d'une réserve du registre réel — ni de son renommage
+// (`reserves`), ni de son déplacement (`revision.reserve`), qui sont tous deux
+// silencieusement inertes.
+//
+// Une première rédaction de ce lot s'en remettait à « supprimer un bloc est une
+// ligne de diff qu'une revue voit ». La revue adversariale a défait l'argument :
+// porter `plafond` à `publie` lève la réserve en UN JETON, le bloc restant
+// visiblement en place avec son motif intact. Un relecteur qui vérifie « la
+// réserve est-elle toujours là ? » répond oui.
+//
+// Cet ancrage est le seul geste qui ferme la famille entière. Le précédent existe
+// dans le dépôt : `mmtReconstruit.guard.test.ts` lit déjà le registre réel.
+const REGISTRE_REEL = JSON.parse(
+  readFileSync(new URL('../../docs/claude/corpus/instrument_registry.json', import.meta.url), 'utf8')
+);
+
+// Chaque ligne est une DÉCISION. Lever une réserve, c'est retirer sa ligne d'ici
+// dans le même diff que le registre — donc en le disant.
+//
+// LA DATE EST ÉPINGLÉE AVEC LE PLAFOND — et il faut dire exactement ce que cela
+// apporte, parce que ce n'est PAS ce qu'une première rédaction en annonçait.
+//
+// Elle ferme un geste, et un seul : re-dater une réserve dans le REGISTRE SEUL —
+// la faire paraître courante — est rouge. Sur le plafond, elle n'oblige à rien.
+// Relever un plafond dans les DEUX fichiers du même diff,
+// sans toucher à la date, reste vert : mesuré, et c'est la mutation qui a défait
+// l'argument. Rien ne peut forcer une re-datation depuis un test statique, qui
+// n'a pas d'historique.
+//
+// Ce qu'elle apporte, et qui n'est pas rien : la date de chaque décision est
+// LISIBLE ici, donc un plafond relevé sous une date ancienne se voit à l'œil nu
+// en revue, à côté du motif qu'il contredit. C'est un appui à la relecture, pas
+// un verrou.
+//
+// LE TROU RÉSIDUEL, ASSUMÉ : relever un plafond de façon cohérente dans les deux
+// fichiers est une décision écrite deux fois, et aucune garde automatique ne peut
+// distinguer une décision légitime d'une complaisance. Ce qui reste alors est ce
+// que ce dépôt oppose partout ailleurs à ce genre de trou — une revue qui lit le
+// motif à côté du plafond.
+const RESERVES_ATTENDUES = {
+  Q_SOM_09: { plafond: 'droits_verifies', date: '2026-08-01' },
+  Q_GEO_04: { plafond: 'contenu_verrouille', date: '2026-08-01' },
+  Q_PED_03: { plafond: 'contenu_verrouille', date: '2026-08-01' },
+  Q_FIB_03: { plafond: 'contenu_verrouille', date: '2026-08-01' },
+  Q_TAB_04: { plafond: 'source_obtenue', date: '2026-08-01' },
+};
+
+test('les réserves du registre réel sont exactement celles qui ont été décidées', () => {
+  const constatees = Object.fromEntries(
+    REGISTRE_REEL.instruments
+      .filter(e => e?.verdictScoring?.reserve != null)
+      .map(e => [e.questionnaireId, { plafond: e.verdictScoring.reserve.plafond, date: e.verdictScoring.reserve.date }])
+  );
+  assert.deepEqual(
+    constatees,
+    RESERVES_ATTENDUES,
+    'une réserve a été ajoutée, retirée, renommée, déplacée, ou son plafond a changé — '
+    + 'chacun de ces gestes est une décision qui doit être écrite ici en même temps ; '
+    + 're-dater la réserve fait partie de la décision, même si ce banc ne peut pas '
+    + 'l\'exiger — un plafond qui monte sous une date ancienne laisse un motif qui dit '
+    + 'l\'inverse juste à côté'
+  );
+});
+
+test('aucune réserve du registre réel ne plafonne au sommet de l’échelle', () => {
+  // `publie` est bien formé et ne contraint rien : c'est la levée qui ne se voit
+  // pas. Le contrôle ci-dessus l'attraperait déjà par le plafond attendu ; celui-ci
+  // le nomme, pour que le message d'échec dise POURQUOI.
+  for (const e of REGISTRE_REEL.instruments) {
+    const r = e?.verdictScoring?.reserve;
+    if (!r) continue;
+    assert.notEqual(r.plafond, 'publie', `${e.questionnaireId} : une réserve plafonnée à \`publie\` ne plafonne rien`);
+  }
+});
+
+test('le registre réel est lisible et porte exactement cinq réserves', () => {
+  // Le titre dit ce que ce test fait, et rien de plus — une rédaction antérieure
+  // annonçait « passe le vérificateur », qu'il n'appelle jamais. Le registre réel
+  // EST bien passé au vérificateur, mais par `scoring-check`, dans la même chaîne
+  // T1 et en CI ; pas ici.
+  //
+  // Ce que ce test tient, et qui n'est pas rien : le COMPTE. C'est lui, et non le
+  // `deepEqual`, qui attrape le retrait d'une réserve des DEUX fichiers à la fois.
+  // Un nettoyage qui le jugerait redondant rouvrirait ce cas sans bruit.
+  assert.ok(Array.isArray(REGISTRE_REEL.instruments) && REGISTRE_REEL.instruments.length >= 60);
+  assert.equal(Object.keys(RESERVES_ATTENDUES).length, 5);
+});
+
+test('plafond `publie` : refusé, parce qu’il ne plafonne rien', () => {
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({
+      statutCertification: 'repere',
+      verdictScoring: { banc: 'certify', date: '2026-08-01', divergencesCritiques: 0,
+        reserve: { date: '2026-08-01', plafond: 'publie', motif: 'Motif suffisamment long pour franchir le seuil de quarante caractères.' } },
+    })] },
+  });
+  assert.ok(erreurs.some(e => /reserve mal formée/.test(e)));
 });
