@@ -57,7 +57,8 @@ de trancher au jugé. C'est le seul cas qui justifie de la charger.
 | porte sur les fichiers de règles ou les définitions d'agents | `/wn-conventions` |
 | apporte un contenu d'instructions IA tiers | `/wn-tiers` |
 | clôt un lot | `/wn-finish` |
-| reprend le contexte | `/wn-context` ou `/wn-handoff` |
+| reprend le contexte (affichage seul) | `/wn-context` |
+| écrit un document de reprise | `/wn-handoff` |
 | compacte le journal | `/wn-compact-sessionlog` |
 
 Préférer audit, plan et test avant développement. Si des edits sont envisagés, imposer
@@ -67,12 +68,17 @@ explicitement le passage en mode Plan.
 
 | Contexte | Alias | Effort | Réflexion |
 |---|---|---|---|
+| Refonte transverse, raisonnement long-cours | `fable` | high | `think hard` |
 | Débogage, revue, clinique, sécurité | `opus` | high | `think hard` |
 | Développement courant, docs, cadrage | `sonnet` | medium | `think` |
 | Exploration, reprise de contexte, routage | `haiku` | low | — |
 
-Overrides nommables par l'utilisateur : `fable` (`/model claude-fable-5`, le plus
-coûteux — $10/$50 par MTok, réservé aux tâches long-cours), `opus`, `sonnet`, `haiku`,
+La ligne `fable` (`/model claude-fable-5`) ne se prend pas par défaut : c'est le
+modèle le plus coûteux — **$10/$50 par MTok, deux fois Opus** — et il ne se
+justifie que si la tâche tient sur plusieurs heures ou traverse tout le dépôt.
+Sur un lot ordinaire, `opus` suffit.
+
+Overrides nommables par l'utilisateur : `fable`, `opus`, `sonnet`, `haiku`,
 `plan` (`/model opusplan`). Déléguer à un sous-agent `wn-*` bascule de modèle : ils
 sont déjà épinglés.
 

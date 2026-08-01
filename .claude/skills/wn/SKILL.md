@@ -43,7 +43,8 @@ Routes possibles :
 - PR : `/wn-pr` (ouverture) puis `/wn-merge` (CI, régime de merge, clôture) ;
 - hygiène documentaire multi-dépôts : `/wn-hygiene` ;
 - clôture : `/wn-finish` ;
-- reprise de contexte : `/wn-context` ou `/wn-handoff` ;
+- reprise de contexte, affichage seul : `/wn-context` ;
+- document de reprise écrit (`docs/claude/HANDOFF_CURRENT.md`) : `/wn-handoff` ;
 - choix du modèle/effort selon le contexte : `/wn-model` ;
 - choix du mode d'exécution (solo / multi-agent / ultracode) : `/wn-ultra` ;
 - routage combiné (route + modèle + mode en une passe) : `/wn-route` — normalement automatique en début de session, voir `CLAUDE.md` ;

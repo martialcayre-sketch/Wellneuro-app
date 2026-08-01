@@ -11,7 +11,8 @@ Lire `AGENTS.md`, `CLAUDE.md` et `docs/claude/PROJET_CONTEXTE.md` avant une tâc
 - Tous les textes d’interface sont en français.
 - Changement minimal : aucun refactor, renommage ou réorganisation hors demande.
 - Aucune migration Prisma/SQL, modification de `schema.prisma` ou écriture Supabase sans demande explicite et confirmation distincte.
-- Aucune modification de scoring, seuil ou logique clinique sans demande explicite et traçabilité dans un fragment `changelog.d/` (replié dans `CHANGELOG.md` — voir `changelog.d/README.md`).
+- Aucune modification de scoring, seuil ou logique clinique sans demande explicite.
+- Tout changement se trace par un fragment `changelog.d/AAAA-MM-JJ-slug.md`, jamais en éditant le haut de `CHANGELOG.md` : c’est ce qui a fait échouer cinq merges le 2026-07-21 (replié par `scripts/changelog-collate.mjs` — voir `changelog.d/README.md`).
 - Seuls les patients fictifs Sophie Nicola, Jennifer Martin et Michel Dogné peuvent apparaître dans les exemples, tests ou données de démo.
 - Ne jamais reproduire une donnée patient réelle rencontrée dans un fichier, un log ou un message.
 - Le code principal est dans `web/`.
@@ -31,8 +32,16 @@ Avant de modifier :
 Après modification :
 
 - montrer les fichiers touchés ;
-- exécuter les validations pertinentes ;
+- exécuter le palier qui correspond au périmètre, et le nommer — **T1**
+  (`cd web && npm run check`, ~15 s) après chaque édition ; **T2**
+  (`npm run test:worktree -- --fast`) avant tout changement d’UI ou d’API, une
+  suite Vitest verte ne prouvant rien sur les parcours ; **T3**
+  (`npm run test:worktree`) sur une migration, du scoring ou du clinique ;
 - expliquer les limites et tests manuels ;
 - ne jamais déclarer un test réussi s’il n’a pas été exécuté.
+
+Avant de merger une PR : vérifier que le check **`verify`** a réellement tourné.
+Les checks Vercel au vert ne valent pas vérification — un run gelé en
+`action_required` ressemble à un succès sans en être un.
 
 Pour une tâche complexe, utiliser les prompts ou agents WellNeuro présents dans `.github/prompts` et `.github/agents`.

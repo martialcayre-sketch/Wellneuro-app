@@ -1038,3 +1038,34 @@ reste hors de `npm run check`. `extraireJson` n'a toujours aucun banc, alors que
 c'est son message qui a menti deux jours. La garde `scoring_verifie` ne lit que
 `divergencesCritiques` : elle laisserait passer un instrument que les notes
 interdisent de certifier.
+## 2026-08-01 — Hygiène de handoff : doublon de skills, agents Copilot, Fable 5
+
+**Décisions** : `/wn-context` et `/wn-handoff` lançaient la même commande et
+écrivaient le même fichier — ils sont désormais séparés par ce qu'ils
+produisent, le premier affichant sans écrire, le second seul auteur de
+`HANDOFF_CURRENT.md`. Les cinq agents Copilot, posés en un commit d'installation
+et jamais relus, apprennent les trois paliers, le fragment `changelog.d/` et,
+pour `Reviewer`, la classe de défaut de la PR #202 — ce que le diff **ne fait
+pas**. Fable 5, décrit partout mais routable nulle part, entre dans les grilles
+de `/wn-route` et `/wn-lot`, avec pour seul critère la durée et l'étendue de la
+tâche.
+
+**Écarté** : toucher `CLAUDE.md` pour y nommer Fable — sa propre règle
+d'économie s'y oppose, un token posé là étant relu à chaque tour de chaque
+session. Écarté aussi, et pour cause : « réparer » le pointeur `AGENTS.md` de
+Copilot (valide depuis #502) et corriger le tarif Fable (exact, vérifié à la
+source). Deux hypothèses de départ fausses, zéro édition.
+
+**État des deux worktrees C4 — aucun n'est abandonné, ne rien supprimer.**
+`c4-transport-compositions` porte la **PR B1** (13 fichiers, +602/−160, T1 vert,
+non commité, avec son `HANDOFF_CURRENT.md`) ; `c4-compositions-transport` porte
+la **PR B2** (`web/src/lib/supplement-library/compositions.ts` et sa route
+interne, non suivis). B1 corrige les écrans pendant qu'ils sont inertes, B2
+écrit les compositions : B1 part d'abord.
+
+**Prochaine action** : reprendre B1 là où son handoff s'arrête —
+`npm run test:worktree`, puis revue adversariale avant PR.
+
+**Questions ouvertes** : les cinq agents `.github/agents/` sont-ils réellement
+chargés par Copilot ? Personne ne l'a vérifié ; s'ils ne le sont pas, ils se
+désynchroniseront en silence malgré cet alignement.
