@@ -1124,3 +1124,21 @@ Mac — puis run d'ingestion sommeil sur le poste local.
 
 **Questions ouvertes** : « gates G0-G4 » du contexte compact, toujours sans
 source identifiée.
+
+## 2026-08-01 — PR #517 mergée ; préparation lot 8 dans le dépôt
+
+**Décisions** : #517 mergée (squash 3d406d5) sur demande du praticien, branche
+repartie de main. Préparation lot 8 : `--usage orientation` dans draft.mjs
+(clé metadata.usage, passe-plat serveur couvert par trois tests),
+filtre par construction dans lib/filtre-orientation.mjs (quarantaine ≠
+décision f ; perfusion WN-SRC-0244 seule exclusion A-009 restante), banc
+branché dans run-certify-bancs.sh (exige des bancs dans les deux dossiers),
+runbook du run sommeil (12 PDF ingérables sur 17 — 4 MP4 à transcrire,
+WN-SRC-0318 en quarantaine).
+
+**Écarté** : corriger le trou d'immuabilité de metadata dans store.ts
+(documenté au runbook, changement minimal) ; T2 local (téléchargement
+Playwright bloqué par la politique réseau — verify CI fait foi, aucun code
+runtime web touché).
+
+**Prochaine action** : PR draft, CI, puis run sommeil sur le Mac.

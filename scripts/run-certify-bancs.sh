@@ -17,16 +17,19 @@
 set -euo pipefail
 
 racine="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-dossier="$racine/tools/corpus/certify/lib"
+dossiers=("$racine/tools/corpus/certify/lib" "$racine/tools/corpus/claims/lib")
 
 shopt -s nullglob
-bancs=("$dossier"/*.test.mjs)
-
-if [ ${#bancs[@]} -eq 0 ]; then
-  echo "ÉCHEC : aucun banc *.test.mjs dans $dossier" >&2
-  echo "        dossier renommé, suffixe de test changé, ou bancs supprimés." >&2
-  exit 1
-fi
+bancs=()
+for dossier in "${dossiers[@]}"; do
+  bancs_du_dossier=("$dossier"/*.test.mjs)
+  if [ ${#bancs_du_dossier[@]} -eq 0 ]; then
+    echo "ÉCHEC : aucun banc *.test.mjs dans $dossier" >&2
+    echo "        dossier renommé, suffixe de test changé, ou bancs supprimés." >&2
+    exit 1
+  fi
+  bancs+=("${bancs_du_dossier[@]}")
+done
 
 echo "bancs de certification exécutés (${#bancs[@]}) :"
 for b in "${bancs[@]}"; do echo "  - ${b#"$racine"/}"; done
