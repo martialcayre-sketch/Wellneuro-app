@@ -11,7 +11,19 @@
   HAS 2011 n'ont jamais été comparées à une source, escalade SIIN ouverte).
 
   Ce que cette clôture **ne fait pas** : aucune promotion de statut — celle de
-  Q_GEO_04 est explicitement interdite par le plafond posé au registre ; aucun
-  lancement des lots 5–13 (orientation adaptative), gatés sur la table de règles
-  signée par le praticien. L'état machine (`.wn/state.json`), figé au
-  2026-07-23, est réaligné sur cet état réel.
+  Q_GEO_04 est explicitement interdite par le plafond posé au registre. L'état
+  machine (`.wn/state.json`), figé au 2026-07-23, est réaligné sur cet état
+  réel.
+
+- **Arbitrages praticien du 2026-08-01, rendus en session et transcrits.**
+  Q_PED_03 (Conners 3 parent) **reste `suspendu`** : sur trois options
+  instruites (statu quo, reconstruction dimensionnelle complète, recueil non
+  scoré), le praticien retient le statu quo — à rouvrir sur usage, et alors
+  avec le scoring dimensionnel complet, jamais la somme brute. L'axe
+  orientation adaptative est **lancé** — et le cadrage a montré que le lot 7
+  était déjà livré depuis le 2026-07-25 (#361), dormant en fail-closed (table
+  vide, flag absent) : la prochaine étape réelle est le lot 8 (ingestion des
+  fiches NNPP2, gates coût API / écriture prod / validation claim par claim),
+  puis la signature de la table au lot 9. Transcrit au registre
+  (`verdictScoring` de Q_PED_03), dans l'arbitrage du 2026-07-31 et dans
+  `.wn/state.json`.

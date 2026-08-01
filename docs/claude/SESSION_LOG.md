@@ -1087,3 +1087,21 @@ de validité), table de règles signée conditionnant les lots 5–13.
 
 **Questions ouvertes** : la source des « gates G0–G4 » affichés par le contexte
 compact reste introuvable (`.wn/orchestrator.json` n'en porte aucun).
+
+## 2026-08-01 — Arbitrages praticien : Q_PED_03 et orientation adaptative
+
+**Décisions** (praticien, en session) : Q_PED_03 reste `suspendu` — rouvrir sur
+usage seulement, avec le scoring dimensionnel complet (4 dimensions, 2 échelles
+de validité, seuils source), jamais la somme brute. Axe orientation lancé :
+lot 7 autorisé (sans gate), lot 8 ensuite avec ses gates (coût API, écriture
+prod, validation claim par claim) ; signature de la table de règles au lot 9.
+
+**Écarté** : reconstruction immédiate du scoring Conners (aucun usage en
+production) ; recueil non scoré (sans restitution, peu de valeur).
+
+**Prochaine action** : le cadrage a montré le lot 7 DÉJÀ LIVRÉ (#361,
+2026-07-25, dormant fail-closed) — passer au cadrage du lot 8 et à la
+confirmation de ses gates avant toute exécution.
+
+**Questions ouvertes** : source des « gates G0–G4 » du contexte compact,
+toujours introuvable.

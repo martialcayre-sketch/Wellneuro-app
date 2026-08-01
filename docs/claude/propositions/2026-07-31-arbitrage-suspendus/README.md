@@ -351,6 +351,14 @@ Les lots restants, par ordre de valeur clinique décroissante :
    passation avant tout score. Le blocage technique est levé ; **l'arbitrage
    clinique est ouvert et revient au praticien**.
 
+   > **TRANCHÉ LE 2026-08-01.** Le praticien-propriétaire a arbitré, sur trois
+   > options instruites (statu quo, reconstruction dimensionnelle complète,
+   > recueil non scoré) : `Q_PED_03` **reste `suspendu`** — aucun usage en
+   > production ne justifie le chantier. À rouvrir sur usage, et alors avec le
+   > scoring dimensionnel complet, jamais la somme brute ; la réactivation
+   > reprendra l'échelle à `repere` avec ses pièces. Détail au registre
+   > (`verdictScoring.revision`).
+
 ---
 
 ## 4. Deux chantiers ouverts par la reconstruction de `Q_ALI_03`
