@@ -285,10 +285,23 @@ aménagement de garde.
 > (QualityMetric) et HAD (GL Assessment) sont dans le même cas, et tous deux sont
 > déjà envoyés au patient. Ce fait renforce l'asymétrie au lieu de l'affaiblir.
 >
-> Reste ouverte, et elle appartient au praticien qui a signé la déclaration : la
-> déclaration exclut explicitement « la publication du verbatim » de son
-> périmètre. L'argument d'asymétrie répond « a fortiori, l'afficher au praticien
-> est couvert » ; c'est une déduction, pas une signature.
+> **La signature est donnée — 2026-08-01.** La question restée ouverte était
+> celle-ci : la déclaration d'usage exclut explicitement « la publication du
+> verbatim », et l'argument d'asymétrie y répondait par déduction. Le
+> praticien-propriétaire a déclaré expressément que **cette exclusion ne vise pas
+> l'affichage de la grille au praticien lui-même, en consultation**, pour
+> administrer l'instrument à son patient.
+>
+> C'est cohérent avec le reste de la déclaration, qui couvre « l'administration
+> aux patients du cabinet » : un test administré par un clinicien ne s'administre
+> pas sans que ses items soient lus. L'exclusion garde tout son effet là où elle
+> visait — rediffusion hors cabinet, mise à disposition du texte à un tiers,
+> cession.
+>
+> **Ce que cette signature n'est pas**, et le registre le dit à côté d'elle : une
+> pièce signée d'un ayant droit. Elle engage le praticien, elle est datée et
+> tracée, et elle n'éteint aucun droit détenu par PAR, par l'IEDM ou par
+> quiconque. Les réserves nommant les ayants droit restent entières.
 
 ### `Q_FIB_03` — ELFE → **RESTE FERMÉ**, et c'est le seul
 
