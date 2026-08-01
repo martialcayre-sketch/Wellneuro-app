@@ -1009,8 +1009,16 @@ for (const id of instrumentsADimensions) {
     // — « Faire un MMSE », « avis spécialisé demandé » — sont désormais les
     // libellés de bande eux-mêmes. La conduite n'a pas disparu, elle a cessé
     // d'être un ajout local voyageant avec l'instrument.
+    // `Q_TAB_04` est SORTI le 2026-08-01, et c'est une perte voulue de la même
+    // famille : ses quatre conduites vivaient dans ses bandes d'interprétation,
+    // et les bandes ont été retirées. Elles avaient été alignées le 2026-07-31
+    // sur celles de sa source — qui sont bien les siennes, 0-5 / 6-15 / 16-36 se
+    // lisant à la dernière page de WN-SRC-0495 — mais appliquées à des items qui
+    // ne sont PAS ceux pour lesquels elles ont été établies : le servi ne partage
+    // qu'un item avec le Know Cannabis Test. Une grille de lecture validée sur un
+    // instrument, posée sur un autre, ne mesure rien.
     'Q_ALI_02', 'Q_CAR_01', 'Q_GEO_01', 'Q_GEO_02', 'Q_GEO_03', 'Q_GEO_04',
-    'Q_NEU_02', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01', 'Q_TAB_04',
+    'Q_NEU_02', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01',
   ].sort();
   assertEqual(
     porteursServis.sort(),
@@ -1018,10 +1026,11 @@ for (const id of instrumentsADimensions) {
     'liste des instruments servant une conduite clinique — un ajout ou une perte doit être vu en revue, pas subi',
   );
   // 11 déclarants avec le dépistage court, 10 avec l'Enquête SIIN : même
-  // raison que juste au-dessus, `Q_ALI_01` est le seul à varier. Un de moins
-  // dans les deux positions depuis le 2026-07-31 — les quatre `protocol:` de
-  // `Q_NEU_06` ont disparu avec sa reconstruction depuis la source.
-  const declarantsAttendus = ALI01_SERT_UNE_CONDUITE ? 11 : 10;
+  // raison que juste au-dessus, `Q_ALI_01` est le seul à varier. DEUX de moins
+  // dans les deux positions depuis le 2026-08-01 — les quatre `protocol:` de
+  // `Q_NEU_06` ont disparu avec sa reconstruction depuis la source (2026-07-31),
+  // et les quatre de `Q_TAB_04` avec le retrait de ses bandes empruntées.
+  const declarantsAttendus = ALI01_SERT_UNE_CONDUITE ? 10 : 9;
   assert(
     attendusPorteurs.size === declarantsAttendus,
     `${declarantsAttendus} instruments déclarent une conduite dans leurs bandes ; obtenu ${attendusPorteurs.size}`,

@@ -10,65 +10,73 @@ import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 const DEF_TAB: any = (QUESTIONNAIRE_CATALOGUE as any).Q_TAB_04;
 const DEF_PNE: any = (QUESTIONNAIRE_CATALOGUE as any).Q_PNE_01;
 
-describe('Q_TAB_04 — les frontières de la source, et ce que la fusion coûte', () => {
-  it('les deux valeurs qui CHANGENT DE BANDE sont 6 et 15, et elles changent dans les sens annoncés', () => {
-    // Le lot annonce ces deux bascules ; sans épingle, un déplacement de
-    // frontière les défait en silence. Le dépôt a le patron à côté — les 6 et 15
-    // d'Epworth, les bornes du QDRS.
-    const bande = (total: number) =>
-      DEF_TAB.scoring.interpretation.find((b: any) => total >= b.min && total <= b.max)?.label;
-    // 5 reste rassurant, 6 ne l'est plus : la frontière descend d'un cran.
-    expect(bande(5)).toBe('Risque faible');
-    expect(bande(6)).toBe('Risque réel');
-    // 15 quitte la bande sévère, 16 y entre : la seconde frontière monte d'un cran.
-    expect(bande(15)).toBe('Risque réel');
-    expect(bande(16)).toBe('Risque aigu');
+describe('Q_TAB_04 — les bandes empruntées, et pourquoi elles sont parties', () => {
+  // CE BLOC A CHANGÉ DE SENS LE 2026-08-01, et le récit vaut d'être gardé.
+  //
+  // Il épinglait, jusque-là, l'alignement du 2026-07-31 (#497) : trois bandes
+  // 0-5 / 6-15 / 16-36 reprises « de la source », la fusion des deux conduites
+  // sévères, et le coût de cette fusion sur 23 des 37 totaux. Tout cela était
+  // exact — les trois bandes SONT bien celles de la source, elles se lisent à la
+  // dernière page de WN-SRC-0495.
+  //
+  // Ce qui ne l'était pas : elles s'appliquaient à des items qui ne sont PAS
+  // ceux pour lesquels elles ont été établies. La source est le Know Cannabis
+  // Test, et le servi ne partage qu'UN item avec lui — elle demande la somme
+  // dépensée par semaine, la fréquence d'ivresse cannabique, avec qui l'on fume ;
+  // le servi demande l'âge de début, la tolérance, le manque, les symptômes
+  // respiratoires. Une grille de lecture validée sur un instrument, posée sur un
+  // autre, ne mesure rien.
+  //
+  // Et reconstruire le servi sur la source était impossible sans inventer : elle
+  // porte ses 16 items avec leurs modalités, puis la grille de résultats — et
+  // AUCUN point par option entre les deux. Arbitrage praticien du 2026-08-01 :
+  // débaptiser et retirer les bandes.
+  const def: any = (QUESTIONNAIRE_CATALOGUE as any).Q_TAB_04;
+
+  it('ne porte plus aucune bande, et plus aucune conduite', () => {
+    expect(def.scoring.interpretation).toBeUndefined();
+    const tout = Object.fromEntries(
+      (def.sections ?? []).flatMap((sec: any) => sec.questions ?? [])
+        .map((q: any) => [q.id, Math.max(...q.options.map((o: any) => o.v))]),
+    );
+    const r: any = calculateScore('Q_TAB_04', tout);
+    expect(r.interpretation ?? null).toBeNull();
+    // Le contrôle porte sur le TEXTE servi, pas seulement sur l'absence de clé :
+    // une conduite réintroduite dans un libellé de bande serait invisible d'un
+    // `toBeUndefined`.
+    expect(JSON.stringify(def.scoring)).not.toMatch(/protocol/);
   });
 
-  it('le pavage couvre 0 à 36 sans trou ni recouvrement', () => {
-    for (let total = 0; total <= 36; total++) {
-      const bandes = DEF_TAB.scoring.interpretation.filter(
-        (b: any) => total >= b.min && total <= b.max);
-      expect(bandes, `total ${total}`).toHaveLength(1);
-    }
-    expect(DEF_TAB.scoring.maxTotal).toBe(36);
+  it('ne rend plus de total : la somme elle-même est retirée', () => {
+    // Ce moteur est une `sum` — sans bande, son total serait un « Score brut »
+    // nu, sans dénominateur ni lecture, c'est-à-dire une sévérité qu'aucun
+    // barème ne définit. `sansTotalGlobal` ne valait que pour `subscore` jusqu'au
+    // 2026-08-01 ; il vaut maintenant dans les deux moteurs, et c'est en le
+    // mesurant ICI qu'on a vu qu'il ne faisait rien.
+    expect(def.scoring.sansTotalGlobal).toBe(true);
+    const tout = Object.fromEntries(
+      (def.sections ?? []).flatMap((sec: any) => sec.questions ?? [])
+        .map((q: any) => [q.id, Math.max(...q.options.map((o: any) => o.v))]),
+    );
+    const r: any = calculateScore('Q_TAB_04', tout);
+    expect(r.total).toBeNull();
   });
 
-  it('le maximum DÉCLARÉ est le maximum EXÉCUTÉ — une borne déclarée peut mentir', () => {
-    // Le défaut que ce lot corrige : 32 déclaré pour 36 atteignable, donc
-    // « 34/32 » à la fiche. Le contrôle porte sur le moteur, pas sur le champ.
-    const items = (DEF_TAB.sections ?? []).flatMap((s: any) => s.questions ?? []);
-    const sature = Object.fromEntries(items.map((q: any) => [
-      q.id,
-      q.options?.length ? Math.max(...q.options.map((o: any) => Number(o.v ?? o.value))) : (q.max ?? 0),
-    ]));
-    const r: any = calculateScore('Q_TAB_04', sature);
-    expect(r.total).toBe(DEF_TAB.scoring.maxTotal);
+  it('est débaptisé : il ne s’annonce plus comme une évaluation, ni comme sa source', () => {
+    // Il ne peut pas porter le nom de ce qu'il n'est pas — et « questionnaire
+    // d'évaluation » promettait une mesure qu'il ne fait plus.
+    expect(def.titre).toContain('WellNeuro');
+    expect(def.titre.toLowerCase()).not.toContain('évaluation');
+    expect(def.titre.toLowerCase()).not.toContain('know cannabis');
   });
 
-  it('LA FUSION : les deux conduites sévères survivent toutes deux dans la bande de tête', () => {
-    // « Aucune conduite n'est abandonnée » était vrai des CHAÎNES et faux de la
-    // DISCRIMINATION — la quatrième bande portait la distinction usage nocif /
-    // dépendance, et elle disparaît. Ce test garde ce qui peut l'être : les deux
-    // textes. Un futur éditeur qui raccourcirait la conduite fusionnée en perdrait
-    // un sans qu'aucun autre test bouge.
-    const tete = DEF_TAB.scoring.interpretation.find((b: any) => b.max === 36);
-    expect(tete.protocol).toContain('addictologue');
-    expect(tete.protocol).toContain('sevrage progressif');
-    expect(tete.protocol).toContain('prise en charge spécialisée');
-    expect(tete.protocol).toContain('pharmacologique');
-  });
-
-  it('CE QUE LA FUSION COÛTE, épinglé plutôt que tu : 16 et 30 rendent le MÊME verdict', () => {
-    // Avant, 16 relevait de « Usage nocif probable » et 30 de « Dépendance
-    // probable » — deux orientations distinctes. La source ne connaît qu'une
-    // bande sur cet intervalle : la distinction est perdue, et c'est le prix de
-    // l'alignement, assumé par arbitrage praticien du 2026-07-31. Le jour où on
-    // voudra la rétablir, ce test dira exactement ce qu'on avait accepté.
-    const bande = (total: number) =>
-      DEF_TAB.scoring.interpretation.find((b: any) => total >= b.min && total <= b.max);
-    expect(bande(16)?.label).toBe(bande(30)?.label);
-    expect(bande(16)?.protocol).toBe(bande(30)?.protocol);
+  it('sert toujours ses 16 items (contrôle négatif)', () => {
+    // Sans lui, vider l'instrument ferait passer les trois tests ci-dessus.
+    const items = (def.sections ?? []).flatMap((sec: any) => sec.questions ?? []);
+    expect(items).toHaveLength(16);
+    expect(items.map((q: any) => q.id)).toEqual(
+      Array.from({ length: 16 }, (_, k) => `CA${k + 1}`),
+    );
   });
 });
 

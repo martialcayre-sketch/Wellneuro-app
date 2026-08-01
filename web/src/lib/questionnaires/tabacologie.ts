@@ -84,7 +84,7 @@ export const Q_TAB_03 = {
   }
 };
 export const Q_TAB_04 = {
-  id:'Q_TAB_04', titre:'Questionnaire d\'évaluation de la consommation de cannabis',
+  id:'Q_TAB_04', titre:'Repérage des conduites de consommation de cannabis (grille WellNeuro)',
   instructions:'Ce questionnaire évalue votre consommation de cannabis et ses conséquences. Répondez honnêtement — vos réponses sont confidentielles.',
   sections:[
     { id:'A', titre:'Consommation',
@@ -125,32 +125,41 @@ export const Q_TAB_04 = {
       ]},
   ],
   scoring:{
-    // BORNE CORRIGÉE le 2026-07-31 : 36, et non 32. Comptée sur les items —
-    // 4 × 4 + 4 × 1 + 4 × 3 + 4 × 1 — et confirmée par la source, qui donne
-    // 0–36. Le `maxTotal: 32` déclaré jusque-là faisait afficher « 34/32 » à la
-    // fiche : un score au-dessus de son propre dénominateur.
+    // DÉBAPTISÉ LE 2026-08-01, ET SES BANDES RETIRÉES. Le geste tient en deux
+    // constats, tous deux vérifiés sur les pièces primaires.
+    //
+    // 1. LA SOURCE EST LE KNOW CANNABIS TEST (clinique Jellinek, Amsterdam), que
+    //    l'OFDT publie dans son guide des outils de repérage. Les deux lectures
+    //    du banc concordent item par item avec le support du cabinet, et celui-ci
+    //    recoupe l'original anglais. Or LE SERVI NE PARTAGE QU'UN ITEM AVEC LUI :
+    //    la source demande la somme dépensée par semaine, la fréquence d'ivresse
+    //    cannabique, avec qui l'on fume, les raisons de consommer ; le servi
+    //    demande l'âge de début, la tolérance, le manque, les symptômes
+    //    respiratoires. C'est le cas Q_PED_02 à l'identique — 16 items des deux
+    //    côtés, /36 des deux côtés, mêmes trois bandes, ZÉRO divergence critique,
+    //    et un autre instrument. Le seul cas que le compteur déclare conforme.
+    //
+    // 2. LA SOURCE NE DONNE AUCUN POINT PAR OPTION. Elle porte ses 16 items avec
+    //    leurs modalités, puis une grille de résultats sur 0-36 — et rien entre
+    //    les deux. Reconstruire le servi sur elle exigerait donc d'INVENTER la
+    //    cotation qui mène à ce /36. C'est ce que cette campagne refuse partout
+    //    ailleurs, et il n'y avait pas de raison d'en faire ici la première
+    //    exception. Arbitrage praticien du 2026-08-01, sur ce constat.
+    //
+    // LES BANDES PARTENT DONC, et c'est le cœur du lot. Elles avaient été
+    // alignées le 2026-07-31 (#497) sur « les trois bandes de la source » — ce
+    // qu'elles sont bien : 0-5, 6-15, 16-36 se lisent à la dernière page de
+    // WN-SRC-0495. Mais elles s'appliquaient à des items qui ne sont pas ceux
+    // pour lesquels elles ont été établies. Une grille de lecture validée sur un
+    // instrument, posée sur un autre, ne mesure rien — et c'est ce que #497 a
+    // fait sans le savoir, sur ma recommandation.
+    //
+    // Il ne reste donc AUCUN seuil, AUCUNE bande, AUCUN total global — ce moteur
+    // est une somme, et c'est la somme elle-même qui est retirée. Le praticien
+    // lit les réponses, et rien qui puisse se lire comme un verdict. Même issue
+    // que le repérage TDAH enseignant, pour la même raison.
     type:'sum', maxTotal:36,
-    // GRILLE ALIGNÉE SUR LA SOURCE, sur arbitrage du praticien du 2026-07-31.
-    // Elle en pose TROIS — 0-5 « risque faible », 6-15 « risque réel »,
-    // 16-36 « risque aigu » — là où le servi en posait quatre, à des coupures
-    // qui n'étaient pas les siennes.
-    //
-    // LES QUATRE CONDUITES DU CABINET SONT CONSERVÉES, aucune n'est abandonnée :
-    // les deux plus sévères sont FUSIONNÉES, parce que la source réunit leurs
-    // intervalles (15-21 et 22-32) dans une seule bande. Fusionner plutôt que
-    // choisir préserve ce qui avait été écrit ; c'est la seule opération que
-    // l'alignement rendait nécessaire.
-    //
-    // DEUX VALEURS CHANGENT DE BANDE, et il faut les connaître :
-    //   · un score de 6 passait pour « risque faible », il devient « risque
-    //     réel » — plus sévère ;
-    //   · un score de 15 relevait de « usage nocif probable », il devient
-    //     « risque réel » — moins sévère.
-    // Ce sont les frontières de la source, pas un arbitrage local.
-    interpretation:[
-      {min:0, max:5,  label:'Risque faible',color:'success',protocol:'Information et prévention'},
-      {min:6, max:15, label:'Risque réel',color:'warning',protocol:'Counseling motivationnel — réduction des risques — suivi régulier'},
-      {min:16,max:36, label:'Risque aigu',color:'danger',protocol:'Consultation addictologue — accompagnement au sevrage progressif ; prise en charge spécialisée en addictologie, TCC et accompagnement pharmacologique si nécessaire'},
-    ]
+    sansTotalGlobal:true,
+    note:"Repérage local des conduites de consommation, bâti sur les critères d'usage problématique. Il ne reprend aucune grille d'interprétation publiée : aucun seuil n'y est attaché. Les réponses orientent l'entretien, elles ne concluent pas.",
   }
 };

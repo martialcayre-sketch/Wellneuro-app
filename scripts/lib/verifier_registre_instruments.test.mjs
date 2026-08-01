@@ -929,7 +929,6 @@ const RESERVES_ATTENDUES = {
   Q_GEO_04: { plafond: 'contenu_verrouille', date: '2026-08-01' },
   Q_PED_03: { plafond: 'contenu_verrouille', date: '2026-08-01' },
   Q_FIB_03: { plafond: 'contenu_verrouille', date: '2026-08-01' },
-  Q_TAB_04: { plafond: 'source_obtenue', date: '2026-08-01' },
 };
 
 test('les réserves du registre réel sont exactement celles qui ont été décidées', () => {
@@ -960,7 +959,7 @@ test('aucune réserve du registre réel ne plafonne au sommet de l’échelle', 
   }
 });
 
-test('le registre réel est lisible et porte exactement cinq réserves', () => {
+test('le registre réel est lisible et porte exactement quatre réserves', () => {
   // Le titre dit ce que ce test fait, et rien de plus — une rédaction antérieure
   // annonçait « passe le vérificateur », qu'il n'appelle jamais. Le registre réel
   // EST bien passé au vérificateur, mais par `scoring-check`, dans la même chaîne
@@ -970,7 +969,7 @@ test('le registre réel est lisible et porte exactement cinq réserves', () => {
   // `deepEqual`, qui attrape le retrait d'une réserve des DEUX fichiers à la fois.
   // Un nettoyage qui le jugerait redondant rouvrirait ce cas sans bruit.
   assert.ok(Array.isArray(REGISTRE_REEL.instruments) && REGISTRE_REEL.instruments.length >= 60);
-  assert.equal(Object.keys(RESERVES_ATTENDUES).length, 5);
+  assert.equal(Object.keys(RESERVES_ATTENDUES).length, 4);
 });
 
 test('plafond `publie` : refusé, parce qu’il ne plafonne rien', () => {

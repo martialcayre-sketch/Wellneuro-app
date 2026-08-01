@@ -313,8 +313,24 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // refaire le renversement de charge du VQ11 — conclure de ce qu'un support ne
   // dit pas. Réactivation à l'identification de la source, comme pour
   // `Q_PNE_01`, dont c'est ce qui vient de lever la fermeture.
-  { id: 'Q_TAB_04', titre: `Questionnaire d'évaluation du cannabis`, categorie: 'Tabacologie',
-    description: `Évaluez votre consommation de cannabis et ses conséquences (16 items).`, duree: '10 min', actif: false },
+  //
+  // RÉACTIVÉ LE 2026-08-01, débaptisé et dégréé de ses bandes. La condition posée
+  // ci-dessus — « réactivation à l'identification de la source » — est remplie :
+  // la source EST le Know Cannabis Test de la clinique Jellinek, lue à l'image
+  // sur les six pages du support et recoupée à l'original que publie l'OFDT.
+  //
+  // Mais l'identification a produit l'inverse de ce qu'on en attendait. Le servi
+  // ne partage QU'UN item avec cette source, et la source ne donne AUCUN point
+  // par option — reconstruire aurait exigé d'inventer le barème menant à son /36.
+  // L'instrument est donc débaptisé, et ses bandes retirées : elles étaient bien
+  // celles de la source, mais appliquées à des items qui ne sont pas les siens.
+  //
+  // Il redevient assignable, et c'est cohérent avec ce qu'il est : un
+  // questionnaire AUTO-ADMINISTRÉ, rempli par le patient à la première personne —
+  // contrairement au MMSE et au repérage TDAH enseignant, fermés à la route le
+  // même mois parce qu'un clinicien ou un tiers les renseigne.
+  { id: 'Q_TAB_04', titre: `Repérage des conduites de consommation de cannabis`, categorie: 'Tabacologie',
+    description: `Situez vos conduites de consommation : fréquence, quantité, retentissement et signes de dépendance (16 questions). Repérage destiné à orienter l'entretien — aucun seuil n'y est attaché, et il ne conclut rien.`, duree: '5 min', actif: true },
   { id: 'Q_TAB_05', titre: 'Di Franza — Dépendance nicotinique adolescent (HONC)', categorie: 'Tabacologie',
     description: `Dépistez la dépendance à la nicotine chez l'adolescent en 10 questions oui/non.`, duree: '3 min', actif: true },
 

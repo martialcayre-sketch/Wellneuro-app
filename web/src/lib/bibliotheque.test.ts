@@ -310,11 +310,19 @@ describe('questionnaire suspendu (actif: false)', () => {
   // sur la correspondance exacte des onze items et des trois composantes
   // publiées.
   //
-  // `Q_TAB_04` y RESTE, alors même que son contenu a été corrigé le même jour
-  // (plafond 32 → 36, grille alignée sur les trois bandes de la source) : son
-  // motif de fermeture est l'identité, pas la grille, et l'identité n'est pas
-  // instruite. Corriger un contenu ne dit pas ce qu'est l'instrument.
-  const FERMES_DOCUMENTATION = ['Q_TAB_04', 'Q_FIB_03'];
+  // `Q_TAB_04` en est SORTI le 2026-08-01, et par le chemin que sa fermeture
+  // annonçait : « réactivation à l'identification de la source ». La source est
+  // identifiée — c'est le Know Cannabis Test de la clinique Jellinek, lu à
+  // l'image sur les six pages du support et recoupé à l'original que publie
+  // l'OFDT.
+  //
+  // Mais l'identification a produit l'inverse de ce qu'on en attendait : le servi
+  // ne partage QU'UN item avec cette source, et la source ne donne AUCUN point
+  // par option. Il est donc débaptisé et dégréé de ses bandes, plutôt que
+  // reconstruit — reconstruire aurait exigé d'inventer le barème menant à son
+  // /36. Ce qui rouvre l'instrument n'est pas la conformité à sa source : c'est
+  // qu'il cesse de s'en réclamer.
+  const FERMES_DOCUMENTATION = ['Q_FIB_03'];
 
   it('les instruments sans auteur nommé sont fermés à l’assignation', () => {
     for (const id of FERMES_DOCUMENTATION) {
@@ -343,13 +351,15 @@ describe('questionnaire suspendu (actif: false)', () => {
     expect(pneumo.every(q => q.actif)).toBe(true);
   });
 
-  it('la tabacologie garde quatre instruments servis', () => {
-    // Contrepartie : `Q_TAB_04` part, mais son domaine survit. Sans ce test, la
-    // fermeture d'un domaine entier et celle d'un instrument parmi d'autres se
-    // liraient de la même façon dans le diff.
+  it('la tabacologie sert ses cinq instruments', () => {
+    // Ce test disait « quatre » du 2026-07-29 au 2026-08-01, pendant la
+    // suspension de `Q_TAB_04` : sa contrepartie était que le domaine survive à
+    // la fermeture d'un instrument. Il revient, débaptisé — le compte redevient
+    // cinq, et le test garde toujours la même chose : qu'on distingue dans le
+    // diff la fermeture d'un domaine de celle d'un instrument parmi d'autres.
     const tabaco = QUESTIONNAIRES_CATALOG.filter(q => q.categorie === 'Tabacologie');
     expect(tabaco.filter(q => q.actif).map(q => q.id))
-      .toEqual(['Q_TAB_01', 'Q_TAB_02', 'Q_TAB_03', 'Q_TAB_05']);
+      .toEqual(['Q_TAB_01', 'Q_TAB_02', 'Q_TAB_03', 'Q_TAB_04', 'Q_TAB_05']);
   });
 
   it('les instruments laissés hors suspension le restent', () => {

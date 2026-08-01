@@ -1773,8 +1773,21 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       const {total: sousTotal} = totalSousScore(d.items, []);
       return {id: d.id, label: d.label, total: sousTotal, max: d.max ?? null, interpretation: null};
     });
+    // `sansTotalGlobal` VAUT AUSSI ICI depuis le 2026-08-01, et il ne valait que
+    // pour `subscore` jusque-là. Un drapeau qui ne fait rien sur la moitié des
+    // moteurs est pire qu'un drapeau absent : on le pose, on croit avoir agi, et
+    // le total continue de partir. Il a été posé exactement ainsi sur `Q_TAB_04`,
+    // et c'est en le mesurant qu'on l'a vu.
+    //
+    // Ce qu'il dit est le même dans les deux moteurs : l'instrument ne produit
+    // AUCUN score global, et la somme de ses items n'en est pas un. Sur une
+    // grille dont on vient de retirer les bandes, un « 24 » nu s'afficherait
+    // « Score brut » à la fiche, sans dénominateur ni lecture — c'est-à-dire une
+    // sévérité qu'aucun barème ne définit.
+    const totalServi = sc.sansTotalGlobal === true ? null : total;
     return {
-      type:'sum', total, maxTotal: sc.maxTotal, interpretation: interp,
+      type:'sum', total: totalServi, maxTotal: sc.sansTotalGlobal === true ? undefined : sc.maxTotal,
+      interpretation: interp,
       ...(dimensions.length > 0 ? {dimensions} : {}),
       note: sc.note || null, certification: sc.certification || null,
     };
