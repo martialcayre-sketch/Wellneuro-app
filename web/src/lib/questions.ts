@@ -1741,7 +1741,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   if (!PORTE_SON_PROPRE_NON_SCORE.includes(sc.type)
       && allQ.length > 0 && allQ.every((q: any) => getVal(q.id) === null)) {
     return {
-      type: sc.type, scored: false, total: null, maxTotal: sc.maxTotal,
+      // Même règle que la branche `sum` plus bas : `sansTotalGlobal` retire le
+      // dénominateur. Sans cela une passation VIDE rendait `maxTotal: 36` et une
+      // passation remplie n'en rendait aucun — deux formes contradictoires pour
+      // le même instrument, toutes deux persistées dans `scores_json`.
+      type: sc.type, scored: false, total: null,
+      maxTotal: sc.sansTotalGlobal === true ? undefined : sc.maxTotal,
       interpretation: null, note: sc.note || null,
       certification: sc.certification || null,
       raisonNonScore: 'aucune réponse ne correspond aux items de cet instrument',
@@ -1787,7 +1792,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const totalServi = sc.sansTotalGlobal === true ? null : total;
     return {
       type:'sum', total: totalServi, maxTotal: sc.sansTotalGlobal === true ? undefined : sc.maxTotal,
-      interpretation: interp,
+      // La bande tombe AVEC le total. Un instrument qui garderait ses bandes
+      // sous `sansTotalGlobal` rendrait « Risque aigu » avec `total: null` : un
+      // verdict privé du nombre qui le fonde, donc invérifiable par le praticien.
+      // C'est la même classe de défaut que le drapeau qui ne faisait rien sur la
+      // moitié des moteurs — elle survivait dans la branche qu'on venait de réparer.
+      interpretation: sc.sansTotalGlobal === true ? null : interp,
       ...(dimensions.length > 0 ? {dimensions} : {}),
       note: sc.note || null, certification: sc.certification || null,
     };

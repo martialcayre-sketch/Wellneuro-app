@@ -41,6 +41,21 @@
   requalification vaut **parce que** le servi ne peut plus rien rendre qui se lise
   comme un verdict ; le jour où une bande y serait réintroduite, ces deux codes
   redeviendraient des divergences réelles. Un banc épingle cette absence.
+- **Le rayon annonçait encore `/36`, et le moteur ne le servait plus.** Relevé en
+  revue adversariale sur ce lot même. Le rayon et l'aperçu lisent le dénominateur
+  dans la **définition**, jamais dans le retour du moteur : retirer le total sans
+  toucher `maxTotal` laissait le praticien lire « · /36 », assigner, et ne rien
+  recevoir — donc refaire à la main la somme que ce lot déclare non
+  reconstructible. `scoreMax()` honore désormais `sansTotalGlobal`, la branche
+  « passation vide » cesse de rendre un dénominateur que la branche pleine ne rend
+  pas, et la bande tombe **avec** le total plutôt qu'à côté. C'est la clause de
+  validité de la requalification ci-dessus : elle ne valait qu'à condition que le
+  servi ne puisse plus rien rendre qui se lise comme un verdict.
+- **La moitié de la correction moteur n'était tenue par rien** : remettre
+  `maxTotal: sc.maxTotal` dans la branche `sum` laissait passer les 3 229 tests de
+  la suite. Deux bancs l'épinglent maintenant, l'un nominatif sur l'instrument,
+  l'autre **générique** sur tout porteur de `sansTotalGlobal` — mutations vérifiées
+  rouges avant restauration.
 - **Réactivé à l'assignation**, contrairement au MMSE et au repérage TDAH
   enseignant fermés à la route le même mois : celui-ci est **auto-administré**,
   rempli par le patient à la première personne.

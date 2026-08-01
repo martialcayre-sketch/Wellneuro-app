@@ -5,6 +5,7 @@ import {
   IDS_ASSIGNABLES,
   PASSATION_PRATICIEN,
   listeBibliotheque,
+  scoreMax,
 } from './bibliotheque';
 import { IDS_SUSPENDUS, QUESTIONNAIRES_CATALOG } from './questionnaires-catalog';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from './questions';
@@ -13,6 +14,28 @@ import { motifNonInterpretable } from './scoring/passationsNonInterpretables';
 describe('listeBibliotheque', () => {
   const entrees = listeBibliotheque();
   const parId = new Map(entrees.map(e => [e.id, e]));
+
+  it('n’annonce aucun dénominateur pour un instrument sans total global', () => {
+    // Relevé en revue le 2026-08-01. Le rayon et l'aperçu lisent `maxTotal` dans
+    // la DÉFINITION, pas dans le retour du moteur : `Q_TAB_04` continuait
+    // d'afficher « · /36 » alors que son moteur avait cessé de rendre un total,
+    // et que le registre déclare « AUCUN total global ». Le praticien lisait le
+    // dénominateur au rayon, assignait, ne recevait rien.
+    //
+    // La garde est GÉNÉRIQUE, pas nominative : tout instrument qui posera
+    // `sansTotalGlobal` demain héritera de la propriété sans qu'on y repense.
+    const porteurs = Object.entries(CATALOGUE_DEFINITIONS)
+      .filter(([, def]) => (def as any)?.scoring?.sansTotalGlobal === true)
+      .map(([id]) => id);
+    // Contrôle négatif : sans lui, vider `sansTotalGlobal` du catalogue rendrait
+    // la boucle vide et le test vert.
+    expect(porteurs).toContain('Q_TAB_04');
+    for (const id of porteurs) {
+      expect(scoreMax(CATALOGUE_DEFINITIONS[id]), id).toBeNull();
+      const entree = parId.get(id);
+      if (entree) expect(entree.scoreMax, id).toBeNull();
+    }
+  });
 
   it('expose les instruments assignables avec leur nombre de questions', () => {
     const pss = parId.get('Q_STR_02');

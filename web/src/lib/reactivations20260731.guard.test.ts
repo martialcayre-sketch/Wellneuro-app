@@ -60,6 +60,22 @@ describe('Q_TAB_04 — les bandes empruntées, et pourquoi elles sont parties', 
     );
     const r: any = calculateScore('Q_TAB_04', tout);
     expect(r.total).toBeNull();
+    // ET LE DÉNOMINATEUR AVEC. Ajouté le 2026-08-01 après revue : remettre
+    // `maxTotal: sc.maxTotal` dans la branche `sum` laissait passer les 3229
+    // tests de la suite. La moitié de la correction moteur n'était tenue par
+    // rien. Un `/36` sans total n'est pas une demi-mesure, c'est une invitation
+    // à refaire la somme à la main.
+    expect(r.maxTotal).toBeUndefined();
+  });
+
+  it('rend la MÊME forme sur une passation vide que sur une passation pleine', () => {
+    // La branche « aucune réponse ne correspond » est un autre chemin de sortie,
+    // et elle rendait `maxTotal: 36` là où la branche pleine n'en rendait aucun.
+    // Deux formes contradictoires pour le même instrument, toutes deux
+    // persistées dans `scores_json` — donc relues plus tard par la fiche.
+    const vide: any = calculateScore('Q_TAB_04', {});
+    expect(vide.total).toBeNull();
+    expect(vide.maxTotal).toBeUndefined();
   });
 
   it('est débaptisé : il ne s’annonce plus comme une évaluation, ni comme sa source', () => {
