@@ -1069,3 +1069,58 @@ interne, non suivis). B1 corrige les écrans pendant qu'ils sont inertes, B2
 **Questions ouvertes** : les cinq agents `.github/agents/` sont-ils réellement
 chargés par Copilot ? Personne ne l'a vérifié ; s'ils ne le sont pas, ils se
 désynchroniseront en silence malgré cet alignement.
+
+## 2026-08-01 — Clôture montée certification 62/64
+
+**Décisions** : la phase de montée (lots 1–4) est déclarée close à 62/64 —
+60 `scoring_verifie`, 2 suspendus terminaux — et l'état machine
+(`.wn/state.json`, figé au 2026-07-23) est réaligné. Pas de promotion de
+Q_GEO_04 : la question n'a pas eu à être arbitrée, le plafond
+`contenu_verrouille` posé au registre le 2026-08-01 (bandes HAS 2011 jamais
+sourcées, escalade SIIN ouverte) la tranche déjà.
+
+**Écarté** : transcrire la signature praticien dans `droits.detail` — déjà fait
+par #515/#516, le cadrage initial du sous-agent était en retard sur le registre.
+
+**Prochaine action** : arbitrages praticien — Q_PED_03 (dimensions et échelles
+de validité), table de règles signée conditionnant les lots 5–13.
+
+**Questions ouvertes** : la source des « gates G0–G4 » affichés par le contexte
+compact reste introuvable (`.wn/orchestrator.json` n'en porte aucun).
+
+## 2026-08-01 — Arbitrages praticien : Q_PED_03 et orientation adaptative
+
+**Décisions** (praticien, en session) : Q_PED_03 reste `suspendu` — rouvrir sur
+usage seulement, avec le scoring dimensionnel complet (4 dimensions, 2 échelles
+de validité, seuils source), jamais la somme brute. Axe orientation lancé :
+lot 7 autorisé (sans gate), lot 8 ensuite avec ses gates (coût API, écriture
+prod, validation claim par claim) ; signature de la table de règles au lot 9.
+
+**Écarté** : reconstruction immédiate du scoring Conners (aucun usage en
+production) ; recueil non scoré (sans restitution, peu de valeur).
+
+**Prochaine action** : le cadrage a montré le lot 7 DÉJÀ LIVRÉ (#361,
+2026-07-25, dormant fail-closed) — passer au cadrage du lot 8 et à la
+confirmation de ses gates avant toute exécution.
+
+**Questions ouvertes** : source des « gates G0–G4 » du contexte compact,
+toujours introuvable.
+
+## 2026-08-01 — Lot 8 : décision f amendée, gates confirmés
+
+**Décisions** (praticien, en session) : question f close en AMENDANT A-009 pour
+l'orientation — seule la perfusion reste exclue ; sevrages médicamenteux,
+psychotropes et Alzheimer réintégrés dans le drafting, chaque claim restant
+soumis à la validation individuelle (voie lente, D-003). Coût accepté
+(~11-17 $ / 106 fiches) ; premier lot d'ingestion : sommeil complet
+(17 fiches), pas de pilote préalable.
+
+**Écarté** : pilote 1-2 fiches avant volume (choix praticien) ; exécution du
+pipeline depuis cette session (secrets et PDF n'existent que sur le Mac).
+
+**Prochaine action** : après merge de #517, PR de préparation lot 8 —
+`metadata.usage='orientation'` dans draft.mjs, filtre A-009 amendé, runbook
+Mac — puis run d'ingestion sommeil sur le poste local.
+
+**Questions ouvertes** : « gates G0-G4 » du contexte compact, toujours sans
+source identifiée.
