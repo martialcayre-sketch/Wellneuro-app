@@ -382,6 +382,22 @@ done <<< "$bancs"
 [[ "$bancs_joues" == "$bancs_attendus" ]] \
   || die "$bancs_joues banc(s) joué(s) pour $bancs_attendus extrait(s) de ci.yml — la boucle s'est interrompue sans le dire."
 
+# Les bancs que le CI lance par un SCRIPT et non par un `node --test` littéral
+# échappent à l'extraction ci-dessus — elle ne reconnaît que la forme littérale.
+# Le 2026-08-01, faire passer les bancs de certification par
+# `run-certify-bancs.sh` les a retirés de ce palier sans un bruit : l'extraction
+# trouvait encore d'autres bancs, donc le garde de la ligne 366 ne disait rien.
+# Une extraction qui ne voit qu'une forme d'appel doit être complétée à la main
+# pour les autres — ou bien elle prétend couvrir ce qu'elle ne couvre plus.
+step "Bancs de certification (script dédié du CI)"
+(cd "$ROOT" && bash scripts/run-certify-bancs.sh > /dev/null < /dev/null) \
+  || die "bancs de certification en échec — les relancer seuls pour en lire la sortie (\`bash scripts/run-certify-bancs.sh\`)."
+
+# Le CI doit bien les lancer, lui aussi : sans ce contrôle, retirer le pas de
+# ci.yml laisserait ce palier vert et seul à les jouer.
+grep -q 'run-certify-bancs.sh' "$ROOT/.github/workflows/ci.yml" \
+  || die "ci.yml ne lance plus scripts/run-certify-bancs.sh — les bancs de certification ne tourneraient qu'en local."
+
 cd "$WEB"
 
 step "Client Prisma (generate)"

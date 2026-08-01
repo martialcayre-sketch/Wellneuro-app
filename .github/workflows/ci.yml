@@ -156,9 +156,18 @@ jobs:
       # inversion absente ou partielle, un barème sans source — et qu'il se
       # tait quand l'inversion est portée par la clé de réponse. Un
       # comparateur permissif certifierait n'importe quoi en silence.
-      - name: Comparateur de certification (banc du comparateur)
+      #
+      # TOUS les bancs de `lib/`, et non un fichier nommé :
+      # `troncature.test.mjs`, posé le 2026-08-01, n'aurait jamais tourné ici
+      # sans qu'on y repense. Un banc qu'il faut penser à brancher finit par ne
+      # pas l'être.
+      #
+      # Le script, et pas un motif écrit ici : un motif sans correspondance rend
+      # `# tests 0` avec un code de retour 0 sous bash comme sous sh. Le script
+      # refuse explicitement d'être vert sur zéro banc.
+      - name: Bancs du banc de certification (comparateur, gardes de troncature)
         if: steps.scope.outputs.docs_only != 'true'
-        run: node --test tools/corpus/certify/lib/comparaison.test.mjs
+        run: bash scripts/run-certify-bancs.sh
 
       # Résolution des compositions Compl'Alim vers le référentiel. Le libellé
       # n'atteint jamais le serveur — c'est l'outil qui lit le CSV, résout, et
