@@ -19,9 +19,11 @@
   l'enseignant (grille WellNeuro) » et `statutContenu: cree_localement`.
 - **Le sous-score renommé est un fait clinique, indépendant du nom de
   l'instrument** — il devait être corrigé dans les deux branches de l'arbitrage.
-  `OPP` « Opposition / Impulsivité » devient `IMP` « Impulsivité et agitation » : ses cinq
-  items — excitable, mal à rester assis, interrompt, répond sans réfléchir, mal à
-  attendre son tour — mesurent **tous** l'impulsivité et **aucun** l'opposition.
+  `OPP` « Opposition / Impulsivité » devient `IMP` « Impulsivité et agitation » : ses
+  cinq items — excitable, mal à rester assis, interrompt, répond sans réfléchir, mal
+  à attendre son tour — mesurent l'impulsivité et l'agitation motrice, et **aucun**
+  ne mesure l'opposition. (« Mal à rester assis » est un item d'agitation : c'est
+  pourquoi l'étiquette ne dit pas « Impulsivité » seule.)
   Un praticien lisant « Opposition / Impulsivité : 13/15 » aurait conclu à un
   trouble oppositionnel chez un enfant à qui la question n'a jamais été posée. La
   section A perd pour la même raison son titre « Opposition et comportement ».
@@ -41,11 +43,12 @@
 - **Aucun seuil, aucune bande, aucun total global** : c'est ce qui distingue cet
   instrument du MMSE, tenu au barreau inférieur le même jour parce que **ses**
   bandes rendent « Démence sévère » sans avoir été comparées à rien. Ici, rien ne
-  peut se lire comme un verdict, et la description patient promet explicitement
-  l'inverse d'un diagnostic.
+  peut se lire comme un verdict — et c'est le **code** qui le garantit, pas une
+  phrase d'écran : l'instrument étant en passation praticien, sa description patient
+  n'est plus rendue nulle part.
 - **Production lue le 2026-08-01, avant le geste** : zéro assignation, zéro
-  réponse, zéro pack. Ni la réouverture ni le changement d'identifiant de
-  sous-score ne rendent illisible une passation — il n'en existe aucune.
+  réponse, zéro pack. Le changement d'identifiant de sous-score ne rend donc
+  illisible aucune passation — il n'en existe aucune.
 
 **Quatre bloquants relevés en revue adversariale, tous soldés.**
 
@@ -84,7 +87,33 @@ et `traductionValidee`, conservés sur une grille déclarée créée localement.
 `sourceIds` et le `driveMd`, eux, restent — délibérément : ce sont les pièces de
 la comparaison qui établit la **non**-correspondance.
 
-Onze mutations éprouvées, chacune vérifiée échouante puis restaurée — dont
+**Seconde passe de revue : deux bloquants de plus, et le premier est le défaut de
+ce lot rejoué dans le lot lui-même.**
+
+- **Ma propre garde affirmait plus qu'elle ne vérifiait.** Elle s'intitule
+  « n'emprunte plus AUCUN intitulé d'échelle publiée » et n'itérait que les
+  sous-scores : les deux motifs qu'elle interdit **survivaient dans les titres de
+  sections** — « Inattention et cognitif », et « Index TDAH — Items clés ». Or
+  l'aperçu praticien affiche ces titres en capitales : sur la **seule surface qui
+  reste**, le praticien lisait « INDEX TDAH » en tête de la dernière section
+  pendant que l'axe correspondant portait un autre nom. Le test frère, trois blocs
+  plus haut dans le même fichier, itérait bien les sections pour « opposition ».
+- **Le libellé de l'axe `IDX` a dû être corrigé deux fois.** « Retentissement
+  scolaire et relationnel » ne couvrait que **cinq** de ses huit items : la
+  rêverie (de l'inattention, comptée hors de l'axe « Inattention »), la tolérance
+  à la frustration et la labilité de l'humeur en débordaient. C'était remplacer un
+  emprunt par une approximation — la même mécanique en mineur. L'axe s'appelle
+  « Items clés de repérage » : neutre, et vrai des huit.
+- **Trois affirmations étaient devenues fausses** avec le retour à `actif: false` :
+  « ni la réouverture… », « ses cinq items mesurent **tous** l'impulsivité » (la
+  phrase contredisait le renommage qu'elle annonçait), et « la description patient
+  promet l'inverse d'un diagnostic » — invoquée deux fois comme garantie alors que
+  cette description n'est plus rendue nulle part.
+- **Trois titres divergeaient, et le seul visible n'était déclaré par aucun
+  document** : l'aperçu rend `def.titre`, qui portait « … critères DSM » quand le
+  rayon et le registre portaient autre chose. Une garde neuve exige l'accord.
+
+Quatorze mutations éprouvées, chacune vérifiée échouante puis restaurée — dont
 « provocant », que la première version de la garde d'opposition laissait passer,
-et l'ajout d'un vingt-neuvième item, que seul l'épinglage des identifiants
-attrape.
+l'ajout d'un vingt-neuvième item, que seul l'épinglage des identifiants attrape,
+et les deux emprunts réintroduits en titre de section.

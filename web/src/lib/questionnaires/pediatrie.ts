@@ -18,7 +18,7 @@ import { O_RPS, O_JPT, O_04, O_03jt, O_YN, O_UPPS, O_YOUNG, O_BMS, O_CUNGI, O_PA
 // instrument utilisable pour en fabriquer un autre dont les droits (© MHS) ne
 // sont pas dégagés.
 export const Q_PED_02 = {
-  id:'Q_PED_02', titre:'Repérage du TDAH par l’enseignant (grille WellNeuro, critères DSM)',
+  id:'Q_PED_02', titre:'Repérage du TDAH par l’enseignant (grille WellNeuro)',
   instructions:'Ce questionnaire est destiné aux ENSEIGNANTS. Évaluez le comportement de l\'élève au cours du dernier mois. 0 = Pas du tout · 1 = Un peu · 2 = Souvent · 3 = Très souvent.',
   sections:[
     // « Opposition et comportement » jusqu'au 2026-08-01. Aucun de ces sept items
@@ -35,7 +35,7 @@ export const Q_PED_02 = {
         q('CE6','Répond sans réfléchir aux questions — avant la fin de la question', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
         q('CE7','A du mal à attendre son tour',         [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
       ]},
-    { id:'B', titre:'Inattention et cognitif',
+    { id:'B', titre:'Inattention',
       questions:[
         q('CE8','Ne fait pas attention aux détails / fait des erreurs d\'étourderie', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
         q('CE9','A du mal à soutenir l\'attention sur une tâche ou un jeu', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
@@ -54,7 +54,11 @@ export const Q_PED_02 = {
         q('CE19','Parle trop',                            [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
         q('CE20','Agit comme si il/elle était "sur la brèche"', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
       ]},
-    { id:'D', titre:'Index TDAH — Items clés',
+    // « Index TDAH — Items clés » jusqu'au 2026-08-01. Le premier membre était le
+    // « Conners' ADHD Index » au mot près — celui-là même qui venait d'être retiré
+    // du libellé d'axe pour ce motif. Le praticien lisait donc l'emprunt en tête
+    // de section pendant que l'axe correspondant portait un autre nom.
+    { id:'D', titre:'Items clés de repérage',
       questions:[
         q('CE21','Ses résultats scolaires sont en dessous de ses capacités', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
         q('CE22','Manque d\'attention — se perd facilement dans sa rêverie', [{v:0,l:'0'},{v:1,l:'1'},{v:2,l:'2'},{v:3,l:'3'}]),
@@ -102,7 +106,13 @@ export const Q_PED_02 = {
       // items mesurent réellement.
       {id:'INA',label:'Inattention',  items:['CE3','CE4','CE8','CE9','CE10','CE11','CE12','CE13','CE14'],max:27},
       {id:'HYP',label:'Hyperactivité',            items:['CE15','CE16','CE17','CE18','CE19','CE20'],max:18},
-      {id:'IDX',label:'Retentissement scolaire et relationnel', items:['CE21','CE22','CE23','CE24','CE25','CE26','CE27','CE28'],max:24},
+      // `IDX` : « Retentissement scolaire et relationnel » couvrait CE21, CE24,
+      // CE26, CE27 et CE28 — mais pas CE22 (rêverie : de l'inattention, comptée
+      // HORS de l'axe « Inattention »), ni CE23 (tolérance à la frustration), ni
+      // CE25 (labilité de l'humeur). C'était remplacer un emprunt par une
+      // approximation, la même mécanique en mineur. Un libellé neutre est plus
+      // honnête que l'un ou l'autre.
+      {id:'IDX',label:'Items clés de repérage', items:['CE21','CE22','CE23','CE24','CE25','CE26','CE27','CE28'],max:24},
     ]
   }
 };

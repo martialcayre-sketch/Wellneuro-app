@@ -14,6 +14,12 @@ import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import { PASSATION_PRATICIEN, listeBibliotheque } from '@/lib/bibliotheque';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+
+const REGISTRE = JSON.parse(
+  readFileSync(resolve(process.cwd(), '../docs/claude/corpus/instrument_registry.json'), 'utf8'),
+) as { instruments: any[] };
 
 const DEF: any = (QUESTIONNAIRE_CATALOGUE as any).Q_PED_02;
 const items = (): any[] => (DEF.sections ?? []).flatMap((s: any) => s.questions ?? []);
@@ -86,12 +92,38 @@ describe('TDAH enseignant — le sous-score qui nommait un trouble jamais mesur�
     // quatre échelles du CTRS-R:S, dans l'ordre. « Index TDAH » en particulier
     // est le « Conners' ADHD Index » au mot près : l'architecture s'en réclamait
     // encore quand le nom ne s'en réclamait plus.
+    // ET LES TITRES DE SECTIONS, que la première rédaction de ce test ne
+    // regardait pas — alors que le test frère, trois blocs plus haut, les
+    // regardait pour « opposition ». Deux motifs interdits y survivaient donc
+    // pendant que le test s'intitulait « n'emprunte plus AUCUN intitulé » :
+    // « Inattention et cognitif » et surtout « Index TDAH — Items clés ». Sur la
+    // seule surface qui reste — l'aperçu praticien — le titre de section est
+    // affiché en capitales : le praticien lisait « INDEX TDAH » en tête de la
+    // dernière section pendant que l'axe correspondant portait un autre nom.
+    //
+    // Un test qui affirme plus qu'il ne vérifie est exactement le défaut que ce
+    // lot existe pour corriger, rejoué dans le lot lui-même.
     const EMPRUNTS = [/index\s*tdah/i, /cognitif/i, /opposition/i];
-    for (const axe of sousScores()) {
+    const intitules = [
+      ...sousScores().map((a: any) => ({ ou: `sous-score ${a.id}`, texte: String(a.label) })),
+      ...DEF.sections.map((sec: any) => ({ ou: `section ${sec.id}`, texte: String(sec.titre) })),
+    ];
+    for (const { ou, texte } of intitules) {
       for (const motif of EMPRUNTS) {
-        expect(motif.test(String(axe.label)), `sous-score ${axe.id} : « ${axe.label} »`).toBe(false);
+        expect(motif.test(texte), `${ou} : « ${texte} »`).toBe(false);
       }
     }
+  });
+
+  it('porte le MÊME titre dans les trois pièces qui le nomment', () => {
+    // Trois variantes circulaient, dont une — « … (grille WellNeuro, critères
+    // DSM) » — qu'aucun document ne déclarait et qui était pourtant la SEULE
+    // visible dans l'application : l'aperçu praticien rend `def.titre`, et le
+    // changelog citait l'autre. Rien ne s'en apercevait.
+    const auRayon: any = (QUESTIONNAIRES_CATALOG as any[]).find(q => q.id === 'Q_PED_02');
+    const entree: any = REGISTRE.instruments.find((i: any) => i.questionnaireId === 'Q_PED_02');
+    expect(DEF.titre).toBe(auRayon.titre);
+    expect(entree.instrument.nomOfficiel).toBe(auRayon.titre);
   });
 
   it('aucun item de la grille n’interroge l’opposition', () => {
@@ -124,8 +156,10 @@ describe('TDAH enseignant — ce que le scoring rend, et ce qu’il ne rend pas'
   it('ne rend AUCUN seuil, aucune bande, aucun total global', () => {
     // C'est ce qui distingue cet instrument de `Q_GEO_04`, tenu au barreau
     // inférieur le même jour : là-bas des bandes non vérifiées rendaient
-    // « Démence sévère ». Ici il n'y a rien qui puisse se lire comme un verdict,
-    // et la description patient promet explicitement l'inverse d'un diagnostic.
+    // « Démence sévère ». Ici il n'y a rien qui puisse se lire comme un verdict —
+    // et c'est le CODE qui le garantit, pas une phrase d'écran : depuis que
+    // l'instrument est en passation praticien, `listeBibliotheque` rend sa
+    // description à `null`. Une garantie qui ne s'affiche plus ne garantit rien.
     expect(DEF.scoring.interpretation).toBeUndefined();
     expect(DEF.scoring.maxTotal).toBeUndefined();
     // LE TOTAL, et c'est lui qui manquait. Sans `sansTotalGlobal`, le moteur
