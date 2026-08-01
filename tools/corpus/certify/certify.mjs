@@ -27,6 +27,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { empreinteServie } from './lib/servi.mjs';
 import { comparer, croiserLectures } from './lib/comparaison.mjs';
+import { verifierReponseClaude, verifierReponseGpt } from './lib/troncature.mjs';
 
 const require = createRequire(import.meta.url);
 const home = os.homedir();
@@ -121,7 +122,7 @@ async function lectureStructuranteClaude(verbatim) {
     })
     .finalMessage();
   const texte = rep.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n');
-  if (rep.stop_reason === 'max_tokens') throw new Error('réponse tronquée (max_tokens) — spécification incomplète');
+  verifierReponseClaude(rep);
   return extraireJson(texte);
 }
 
@@ -129,10 +130,17 @@ async function lectureStructuranteGpt(verbatim) {
   const rep = await new OpenAI().responses.create({
     model: MODELE_OPENAI,
     reasoning: { effort: 'medium' },
-    max_output_tokens: 8192,
+    // Même budget que la lecture B, et pour deux raisons qui se cumulent : une
+    // spécification de 108 items est longue, et sur l'API Responses les jetons
+    // de RAISONNEMENT sont décomptés de ce même plafond. À 8192, le
+    // raisonnement consommait le budget avant que la spécification ne soit
+    // écrite — c'est ce qui a coupé les deux lectures de `Q_PED_03` le
+    // 2026-07-30, sans qu'aucun garde ne sache le dire.
+    max_output_tokens: 32000,
     instructions: CONSIGNE,
     input: [{ role: 'user', content: [{ type: 'input_text', text: `Source :\n\n${verbatim}` }] }],
   });
+  verifierReponseGpt(rep);
   return extraireJson(rep.output_text || '');
 }
 

@@ -1002,3 +1002,39 @@ verbatim d'un instrument sous réserve.
 **Questions ouvertes** : surface de consultation sans verbatim (bloque Q_NEU_06
 et Q_GEO_04) ; échelle de Q_SOM_09, à ne pas changer avant clôture des 8 agendas
 en cours ; perte de discrimination 16/30 sur le cannabis, si elle ne convient pas.
+
+## 2026-08-01 — `Q_PED_03` : le banc savait échouer, pas le dire
+
+**Décisions** : la fermeture de `Q_PED_03` reposait sur un faux diagnostic. La
+lecture GPT plafonnait à 8192 contre 32000 pour la lecture Claude — jetons de
+raisonnement décomptés du même plafond — et ne portait **aucune garde de
+troncature** : une réponse coupée partait au parse, qui échouait à l'offset de
+coupure. « Position 8503 » était un décalage de caractère, jamais un motif.
+Reproduit sur l'API réelle avant d'être écrit. Plafonds alignés, garde symétrique
+en liste blanche (`failed`/`cancelled`/`refusal` compris), **et le câblage sous
+test** — retirer l'appel laissait les cas du garde verts. Banc rejoué : le
+croisement a eu lieu, 108 items des deux côtés, 0 divergence critique.
+`Q_PED_03` **reste `suspendu`** : le motif technique tombe, le motif clinique
+s'ouvre — aucun des 19 (B) / 34 (C) seuils de la source n'est servi, ni bande, ni
+dimension, là où deux des quatre dimensions sont des échelles de *validité*.
+
+**Écarté** : réactiver l'instrument sur « 0 critique ». Le compteur agrège les
+divergences par genre — « 1 confirmée » comptait une famille de 19 à 34 seuils
+absents. Un chiffre de tête qu'on citerait dans six mois.
+
+**Effet de bord attrapé en cours de route** : faire passer les bancs par un
+script les a **retirés du palier T3**, dont l'extraction ne reconnaît que la
+forme littérale `node --test`. Le garde d'extraction ne dit rien tant qu'il
+trouve d'autres bancs. Étape explicite ajoutée, plus un contrôle que la CI les
+lance toujours.
+
+**Prochaine action** : arbitrage praticien sur `Q_PED_03` — reconstruire aux
+sous-échelles de la source, ou le retirer.
+
+**Questions ouvertes** : `.wn/state.json` et `ACTIVE_CAMPAIGN.md` sont figés au
+2026-07-23 (`idle`, aucune campagne) alors que la campagne tourne depuis neuf
+jours — non réparé ici, cela engage la gouvernance des campagnes. `registry-check`
+reste hors de `npm run check`. `extraireJson` n'a toujours aucun banc, alors que
+c'est son message qui a menti deux jours. La garde `scoring_verifie` ne lit que
+`divergencesCritiques` : elle laisserait passer un instrument que les notes
+interdisent de certifier.

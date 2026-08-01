@@ -331,14 +331,25 @@ Les lots restants, par ordre de valeur clinique décroissante :
    pièce n'y est pas, c'est une piste, pas un verdict, et la présente ligne ne
    vaut pas instruction ;
 3. ~~`Q_GEO_01`~~ **fait le 2026-07-31** ;
-4. ~~`Q_ALI_03` (Monnier)~~ **fait le 2026-07-31** ; `Q_PED_02` à débaptiser ;
-5. `Q_NEU_12` — la restructuration de la partie 3, seule divergence encore
-   inconnue du dossier avant le 2026-07-31 ;
-6. `Q_PED_03` — un passage de banc. **Piste sur le motif d'échec, à confirmer en
-   rejouant** : la lecture n'était peut-être pas trop longue — le plafond de
-   sortie de la lecture GPT est quatre fois plus bas que celui de la lecture
-   Claude, et elle ne porte aucune garde de troncature. À vérifier par
-   l'expérience avant d'être écrit où que ce soit comme un fait.
+4. ~~`Q_ALI_03` (Monnier)~~ **fait le 2026-07-31** ; ~~`Q_PED_02` à débaptiser~~
+   **fait le 2026-08-01** (#509) ;
+5. ~~`Q_NEU_12` — la restructuration de la partie 3~~ **fait le 2026-07-30** —
+   au registre en `scoring_verifie`, 0 divergence critique, l'affaissement des
+   six construits par liste saisonnière déclaré comme adaptation ;
+6. ~~`Q_PED_03` — un passage de banc~~ **banc rejoué le 2026-08-01**. La piste
+   était la bonne, et elle est désormais un fait : la lecture GPT plafonnait à
+   8192 contre 32000 pour la lecture Claude, sans aucune garde de troncature —
+   d'où un « aucun objet JSON » qui masquait un « réponse coupée ». Les deux
+   défauts corrigés, **le croisement a eu lieu** : 108 items lus des deux côtés,
+   **0 divergence critique**.
+   **L'instrument reste `suspendu` pour autant, et le motif change de nature** :
+   1 divergence confirmée (`seuil_non_represente`, « Positive Impression >= 5 »
+   absent du servi) et 1 vue par une seule lecture (`sous_echelles`, 4 dimensions
+   à la source contre 0 au servi) disent ensemble que le servi est une **somme
+   brute des 108 items que la source ne demande nulle part** — dont deux des
+   quatre dimensions sont des échelles de *validité*, qui qualifient la
+   passation avant tout score. Le blocage technique est levé ; **l'arbitrage
+   clinique est ouvert et revient au praticien**.
 
 ---
 
