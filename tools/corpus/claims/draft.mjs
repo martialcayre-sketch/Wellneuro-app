@@ -14,7 +14,11 @@
 // Clés lues dans l'environnement (ANTHROPIC_API_KEY, OPENAI_API_KEY).
 //
 //   node --env-file=web/.env.local --import ./tools/corpus/lib/register-alias.mjs \
-//     tools/corpus/claims/draft.mjs --pilote WN-SRC-0056,… [--batch 001]
+//     tools/corpus/claims/draft.mjs --pilote WN-SRC-0056,… [--batch 001] [--usage orientation]
+//
+// `--usage orientation` (lot 8) : marque chaque claim (`metadata.usage`) et
+// active le filtre par construction (quarantaine + perfusion A-009 amendé) —
+// voir lib/filtre-orientation.mjs.
 
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -22,6 +26,7 @@ import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { chunksDeSource, batchId } from '../chunk/chunk.mjs';
+import { exclureDeLOrientation } from './lib/filtre-orientation.mjs';
 
 const { parseRagClaimsIngestPayload } = await import('@/lib/rag/claims/validation');
 const { normalizeWellneuroText, sha256WellneuroText } = await import('@/lib/rag/validation');
@@ -104,16 +109,20 @@ async function verifierFidelite(verbatim, claimTexte) {
   return { fidele: v.fidele === true, raison: String(v.raison || '') };
 }
 
-async function construireChunks(sourceIds, bId) {
+async function construireChunks(sourceIds, bId, usage) {
   const man = JSON.parse(await fs.readFile(MANIFEST, 'utf8')).manifeste;
   const reg = JSON.parse(await fs.readFile(path.resolve('docs/claude/corpus/source_registry.json'), 'utf8'));
   const byId = Object.fromEntries(reg.map((n) => [n.sourceId, n]));
   const out = [];
   for (const sid of sourceIds) {
+    const notice = byId[sid] || {};
+    if (usage === 'orientation') {
+      const { exclu, motif } = exclureDeLOrientation({ sourceId: sid, ...notice });
+      if (exclu) { console.error(`  ${sid} : EXCLU du drafting d'orientation — ${motif}`); continue; }
+    }
     let canonicalMd;
     try { canonicalMd = await fs.readFile(path.join(EXTRACTED, sid, 'canonical.md'), 'utf8'); }
     catch { console.error(`  ${sid} : canonical.md absent — ignoré`); continue; }
-    const notice = byId[sid] || {};
     const chunks = chunksDeSource({
       batchId: bId, sourceId: sid, notebook: notice.primaryNotebook || '',
       titre: notice.title || sid, canonicalMd, registre: notice,
@@ -125,11 +134,12 @@ async function construireChunks(sourceIds, bId) {
 
 function parseArgs() {
   const a = process.argv.slice(2);
-  const o = { pilote: [], batch: '001', date: null };
+  const o = { pilote: [], batch: '001', date: null, usage: null };
   for (let i = 0; i < a.length; i++) {
     if (a[i] === '--pilote') o.pilote = a[++i].split(',').map((s) => s.trim());
     else if (a[i] === '--batch') o.batch = a[++i];
     else if (a[i] === '--date') o.date = a[++i];
+    else if (a[i] === '--usage') o.usage = a[++i];
   }
   return o;
 }
@@ -142,7 +152,7 @@ async function main() {
   }
   const dateISO = o.date || new Date().toISOString().slice(0, 10);
   const bId = batchId(o.batch, dateISO);
-  const parSource = await construireChunks(o.pilote, bId);
+  const parSource = await construireChunks(o.pilote, bId, o.usage);
 
   const claims = [];
   const revue = [];
@@ -187,7 +197,7 @@ async function main() {
           ...(b.classe_autorite ? { classeAutorite: String(b.classe_autorite) } : {}),
           ...(b.niveau_preuve ? { niveauPreuve: String(b.niveau_preuve) } : {}),
           modeleReviseur: MODELE_REVISEUR,
-          metadata: { source_chunk: chunk.chunkId, section: chunk.section, page: chunk.metadata?.page_source ?? null },
+          metadata: { source_chunk: chunk.chunkId, section: chunk.section, page: chunk.metadata?.page_source ?? null, ...(o.usage ? { usage: o.usage } : {}) },
           sources: [{ chunkId: chunk.chunkId, versionChunk: chunk.versionChunk }],
           patientIdentifiable: false,
           compartment: 'ACTIF',

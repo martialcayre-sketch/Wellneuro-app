@@ -97,6 +97,30 @@ describe('validation ingestion des claims RAG', () => {
     expect(payload.claims[0].prescriptif).toBe(true);
   });
 
+  it('laisse traverser metadata intact, clé usage comprise', () => {
+    const claim = {
+      ...validClaim(),
+      metadata: { arbitrages: 'D352', usage: 'orientation' },
+    };
+    const payload = parseRagClaimsIngestPayload({ claims: [claim] });
+    expect(payload.claims[0].metadata).toEqual({ arbitrages: 'D352', usage: 'orientation' });
+  });
+
+  it('remplace un metadata absent par un objet vide', () => {
+    const { metadata: _ignore, ...sansMetadata } = validClaim();
+    const payload = parseRagClaimsIngestPayload({ claims: [sansMetadata] });
+    expect(payload.claims[0].metadata).toEqual({});
+  });
+
+  it('refuse un metadata qui n’est pas un objet', () => {
+    expect(() =>
+      parseRagClaimsIngestPayload({ claims: [{ ...validClaim(), metadata: ['orientation'] }] }),
+    ).toThrow(/metadata/);
+    expect(() =>
+      parseRagClaimsIngestPayload({ claims: [{ ...validClaim(), metadata: null }] }),
+    ).toThrow(/metadata/);
+  });
+
   it('vectorise l’affirmation normalisée', () => {
     const claim = validClaim();
     expect(embeddingTextForClaim(claim.texteNormalise)).toBe(
