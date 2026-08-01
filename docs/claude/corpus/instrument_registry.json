@@ -1334,6 +1334,11 @@
         "banc": "certify",
         "date": "2026-07-31",
         "divergencesCritiques": 0,
+        "reserve": {
+          "date": "2026-08-01",
+          "plafond": "droits_verifies",
+          "motif": "échelle de qualité du sommeil notée de 1 à 10 par la source, recueillie de 1 à 5 par le servi ; second axe de la source, « qualité de l'éveil », pas recueilli du tout, alors qu'un quart de l'indice /100 repose sur la seule qualité du sommeil. Alignement suspendu à la clôture des 8 agendas en cours : le changer pendant un recueil rendrait les nuits d'avant et d'après incomparables à l'intérieur d'un même patient"
+        },
         "revision": {
           "date": "2026-07-31",
           "notes": [
@@ -1858,7 +1863,12 @@
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-30",
-        "divergencesCritiques": 2
+        "divergencesCritiques": 2,
+        "reserve": {
+          "date": "2026-08-01",
+          "plafond": "contenu_verrouille",
+          "motif": "2 divergences critiques au banc du 2026-07-30 ; 7 items à la source contre 12 servis, échelle 0-10 de la source non servie, et `type: journal` ne produit aucun score. Jamais déployé, jamais assigné : arbitrage du 2026-07-31 — reste fermé, à rouvrir le jour où un usage le demande. PIÈCE DE PRODUCTION, jointe le 2026-08-01 parce qu'une première rédaction affirmait « jamais assigné » sans la requête, là où les entrées voisines consignent le count(*) rejouable : count(*) sur assignations, questionnaire_reponses et pack_questionnaires pour id_questionnaire='Q_FIB_03' → 0, 0, 0. RÉSERVE : cette entrée n'a AUCUN bloc `revision`, donc ce motif ne « reprend » pas de notes existantes — il est corroboré autrement, par les deux codes critiques du comparateur (nombre_items 7/12, echelle_de_cotation) qui expliquent exactement son divergencesCritiques de 2, et par `questions.ts` où le servi porte 12 items en `type: journal`."
+        }
       }
     },
     {
@@ -2084,6 +2094,11 @@
         "banc": "certify",
         "date": "2026-07-31",
         "divergencesCritiques": 0,
+        "reserve": {
+          "date": "2026-08-01",
+          "plafond": "source_obtenue",
+          "motif": "identité non établie, et c'est le motif même de la fermeture du 2026-07-29 : le registre ne nomme aucun auteur, `statutBibliographique` reste `a_completer`, et la source ne dit pas de quoi elle est la reproduction. On ne certifie pas un contenu contre une source qu'on ne sait pas nommer. La piste *Know Cannabis Test* (clinique Jellinek) n'est pas instruite ; les deux corrections de grille du 2026-07-31 ne lèvent pas ce motif. DÉCISION ASSUMÉE, et non une reprise de notes : ce plafond à `source_obtenue` interdit désormais `droits_verifies` à un instrument dont le champ `droits.statut` porte `permission_obtenue`, daté et motivé. Le motif est qu'on ne dégage pas des droits sur une source qu'on ne sait pas nommer — l'identification du servi n'est pas instruite, et la piste du Know Cannabis Test reste une piste tant qu'aucune pièce n'est au registre. Le champ `droits` n'est pas corrigé pour autant : la déclaration du praticien reste ce qu'elle est, c'est sa PORTÉE sur un instrument non identifié qui est plafonnée ici."
+        },
         "revision": {
           "date": "2026-07-31",
           "notes": [
@@ -2446,6 +2461,11 @@
         "banc": "certify",
         "date": "2026-08-01",
         "divergencesCritiques": 0,
+        "reserve": {
+          "date": "2026-08-01",
+          "plafond": "contenu_verrouille",
+          "motif": "le croisement du 2026-08-01 a bien eu lieu (108 items des deux côtés, 0 divergence critique) et ne rend pas l'instrument conforme pour autant : aucun des 19 (lecture B) à 34 (lecture C) seuils de la source n'est servi, aucune bande d'interprétation n'est posée, et la source distingue 4 dimensions — dont 2 échelles de validité, Positive Impression et Negative Impression — quand le servi en calcule 0 et rend une somme brute des 108 items sur 324. Arbitrage clinique praticien ouvert"
+        },
         "revision": {
           "date": "2026-08-01",
           "notes": [
@@ -2948,6 +2968,11 @@
         "banc": "certify",
         "date": "2026-07-31",
         "divergencesCritiques": 0,
+        "reserve": {
+          "date": "2026-08-01",
+          "plafond": "contenu_verrouille",
+          "motif": "les quatre bandes (27-30, 21-26, 10-20, 0-9) n'ont jamais été comparées à une source : les deux lectures du banc rendent une liste de seuils VIDE, et l'attribution à la HAS 2011 n'a été vérifiée par personne dans ce dépôt. Or le scoring d'un MMSE n'est pas la somme, c'est la bande — c'est elle qui transforme un entier en « Démence sévère ». Escalade SIIN du 2026-07-25 toujours ouverte. Le banc a établi les items et la structure : c'est exactement `contenu_verrouille`"
+        },
         "revision": {
           "date": "2026-07-31",
           "notes": [

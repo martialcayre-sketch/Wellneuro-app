@@ -481,6 +481,108 @@ function verifierRegistreInstruments({
       );
     }
 
+    // RÉSERVE OPPOSABLE.
+    //
+    // `divergencesCritiques === 0` était la seule condition du barreau
+    // `scoring_verifie`, et elle ne suffit pas.
+    //
+    // LA MESURE, rejouée instrument par instrument sur le code d'AVANT ce lot, en
+    // montant chacun à `scoring_verifie` pour voir ce qui rougissait. Une première
+    // rédaction annonçait « quatre des cinq » sur le seul compteur : c'est vrai du
+    // compteur et FAUX du verrou. Le trou réel était de DEUX.
+    //
+    //   Q_SOM_09  → passait      (rien ne l'arrêtait)
+    //   Q_GEO_04  → passait      (rien ne l'arrêtait)
+    //   Q_TAB_04  → arrêté       (actif:false ⟹ terminal, et contenu 'a_auditer')
+    //   Q_PED_03  → arrêté       (idem)
+    //   Q_FIB_03  → arrêté       (idem, plus divergencesCritiques = 2)
+    //
+    // Les trois `suspendu` étaient donc déjà tenus par deux gardes préexistants.
+    // Q_PED_03, que cette rédaction désignait comme « le cas vivant que rien
+    // n'arrêtait », était arrêté DEUX FOIS. Corrigé après revue : surestimer le
+    // trou d'un facteur deux dans le commentaire qui explique pourquoi la garde
+    // existe, c'est refaire ici la faute que cette campagne attaque partout
+    // ailleurs — croire un compteur avant de lire ce qu'il compte.
+    //
+    // Ce qui fonde la garde n'en est pas affaibli : sur les deux instruments
+    // réellement libres, ce qui les retenait n'était écrit qu'en français dans
+    // `verdictScoring.revision.notes` — « la montée reste refusée », « barreau
+    // ramené à contenu_verrouille » — et aucun code ne le lisait. Pour les trois
+    // autres, la réserve ne mord pas aujourd'hui (`barreau === -1`, hors
+    // comparaison) : elle vivra à la réactivation. Et là encore, mesuré plutôt
+    // qu'affirmé — un seul des deux gardes cesse. Celui qui refuse un contenu
+    // `a_auditer` SURVIT à la réactivation. La réserve n'ajoute donc quelque
+    // chose DÈS ce moment-là que pour Q_TAB_04, dont le plafond est sous
+    // `contenu_verrouille` ; pour Q_PED_03 et Q_FIB_03 elle devient porteuse le
+    // jour où leur contenu sera audité.
+    //
+    // Le compteur agrège d'ailleurs PAR GENRE (`comparaison.mjs`, par conception) :
+    // son « 1 » recouvrait une famille entière. Un chiffre de tête ne peut pas
+    // porter cette décision.
+    //
+    // La réserve rend la note opposable : elle plafonne le barreau, et le plafond
+    // est vérifié à chaque `npm run check`.
+    //
+    // CE QU'ELLE NE COUVRE PAS, et il faut le lire avant de s'y fier :
+    //  1. elle ne détecte pas une réserve JAMAIS ÉCRITE — un instrument certifié
+    //     sans que personne n'ait vu le problème lui échappe entièrement ;
+    //  2. elle ne détecte pas, PAR ELLE-MÊME, la suppression d'une réserve ni son
+    //     déplacement (`reserves` mal orthographié, `revision.reserve` au mauvais
+    //     niveau : les deux sont silencieusement inertes). Une première rédaction
+    //     s'en remettait à « supprimer un bloc est une ligne de diff qu'une revue
+    //     voit » — argument qui ne tient pas, la revue ayant montré qu'un plafond
+    //     porté à `publie` levait la réserve en UN JETON, bloc et motif restant
+    //     en place. C'est le banc qui ferme cette famille : il épingle les cinq
+    //     réserves du registre RÉEL, par identifiant, par plafond et par date, et attrape
+    //     donc d'un coup la suppression, le `null`, le renommage, le déplacement
+    //     et le plafond au sommet ;
+    //  3. elle lit une DÉCLARATION, pas le code : elle ne vérifie pas que le servi
+    //     manque réellement ses seuils. Le remède existe et il est nommé — faire
+    //     écrire au banc la COUVERTURE de sa comparaison (items, seuils,
+    //     sous-échelles, de chaque côté) et refuser un verdict vacueux. Lot à
+    //     part : les rapports hors dépôt des 59 certifiés sont antérieurs à deux
+    //     reconstructions du 2026-07-31 (Q_ALI_03, Q_SOM_07), et les rétro-remplir
+    //     écrirait 59 affirmations que personne n'a vérifiées.
+    const reserve = v?.reserve;
+    if (reserve != null) {
+      // Contrôlée PARTOUT, pas seulement là où elle mord : une réserve mal formée
+      // inscrite sous son plafond devient vraie le jour de la montée — même raison
+      // qu'au contrôle de forme du verdict, ci-dessus.
+      // `publie` est REFUSÉ comme plafond, et c'est la moitié du correctif de
+      // revue. Il est dans `ECHELLE`, donc bien formé — mais c'est le SOMMET :
+      // une réserve qui y plafonne ne contraint rien tout en restant visiblement
+      // en place, motif intact. Le diff tient alors en un jeton, et un relecteur
+      // qui vérifie « la réserve est-elle toujours là ? » répond oui. Le garde
+      // validerait exactement le geste contre lequel il a été écrit.
+      const plafondValide = ECHELLE.includes(reserve.plafond) && reserve.plafond !== 'publie';
+      ajouter(
+        estUneDate(reserve.date)
+        && plafondValide
+        && typeof reserve.motif === 'string' && reserve.motif.trim().length >= 40,
+        `${id} : verdictScoring.reserve mal formée (date ${JSON.stringify(reserve.date)}, `
+        + `plafond ${JSON.stringify(reserve.plafond)}, motif de `
+        + `${typeof reserve.motif === 'string' ? reserve.motif.trim().length : 0} caractères) — `
+        + `une réserve doit dire À QUELLE DATE, JUSQU'OÙ et SUR QUOI elle repose. `
+        + `\`publie\` n'est pas un plafond : c'est le sommet de l'échelle`
+      );
+      // Les états terminaux (`suspendu`, `remplace`) rendent `barreau === -1` : ils
+      // sont hors échelle, donc hors comparaison. La réserve n'y dort pas pour
+      // autant : le contrôle plus haut interdit seulement de RESTER terminal, il
+      // n'impose aucun barreau de reprise — c'est précisément pourquoi la réserve
+      // est utile là. Quel que soit le barreau choisi à la réactivation,
+      // l'instrument ne peut plus franchir son propre plafond sans que la réserve
+      // soit levée explicitement.
+      if (barreau !== -1 && plafondValide) {
+        ajouter(
+          barreau <= ECHELLE.indexOf(reserve.plafond),
+          `${id} : statutCertification '${entry.statutCertification}' au-dessus du plafond `
+          + `'${reserve.plafond}' posé par la réserve du ${reserve.date} — `
+          + `${reserve.motif}. Lever la réserve est une décision explicite, pas une `
+          + `conséquence d'un compteur de divergences à zéro`
+        );
+      }
+    }
+
     if (barreau >= ECHELLE.indexOf('scoring_verifie')) {
       // La pièce de ce barreau-là : le verdict du banc, INSCRIT AU REGISTRE. Sans
       // lui, le critère ne vivait que dans un fichier hors dépôt, sur une machine —
