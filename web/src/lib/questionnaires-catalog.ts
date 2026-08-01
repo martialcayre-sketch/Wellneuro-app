@@ -342,8 +342,32 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // items de la source, ou DÉBAPTISER — un dépistage TDAH local par l'enseignant,
   // sans le nom Conners ni les intitulés empruntés, ne pose ni le problème
   // d'identité ni celui de MHS.
-  { id: 'Q_PED_02', titre: 'Conners Enseignant — Évaluation TDAH (forme courte)', categorie: 'Pédiatrie',
-    description: `Évaluation du TDAH par l'enseignant : opposition, inattention, hyperactivité (28 items, 0-3).`, duree: '10 min', actif: false },
+  //
+  // DÉBAPTISÉ LE 2026-08-01 : c'est la seconde branche qui a été retenue, sur
+  // arbitrage praticien. Le servi n'est pas un Conners abîmé, c'est une grille
+  // cohérente avec elle-même ; la reconstruire jetterait un instrument utilisable
+  // pour en fabriquer un autre dont les droits ne sont pas dégagés.
+  //
+  // Le sous-score « Opposition / Impulsivité » est renommé — point INDÉPENDANT du
+  // nom de l'instrument, et qui devait être corrigé dans les deux branches.
+  //
+  // MAIS `actif: false` EST CONSERVÉ, et une première rédaction de ce lot avait
+  // eu tort de le passer à `true`. L'arbitrage du 2026-07-31 tranchait l'IDENTITÉ
+  // de l'instrument, pas sa SURFACE — et la surface pose un problème propre :
+  // cette grille est renseignée par un ENSEIGNANT, pas par le patient. L'ouvrir
+  // au portail patient laissait deux issues, toutes deux mauvaises. Ou bien le
+  // parent remplit à la place de l'enseignant, et l'instrument ment sur son
+  // informant : ses consignes disent « destiné aux ENSEIGNANTS » et huit de ses
+  // items portent sur le comportement EN CLASSE, qu'un parent n'observe pas. Ou
+  // bien le lien magique est transmis à l'enseignant, qui accède alors à tout le
+  // portail du patient — ses autres questionnaires, son parcours, son historique.
+  //
+  // Il rejoint donc `PASSATION_PRATICIEN`, exactement comme son homologue
+  // `Q_GEO_03` — « renseigné en consultation avec l'informant ». C'est la
+  // population que cette liste nomme depuis toujours : « clinicien/INFORMANT/
+  // journal, jamais auto-administrés ».
+  { id: 'Q_PED_02', titre: 'Repérage du TDAH par l’enseignant (grille WellNeuro)', categorie: 'Pédiatrie',
+    description: `Grille renseignée avec l'enseignant : impulsivité et agitation, inattention, hyperactivité, items clés de repérage (28 items, 0-3). Repérage destiné à orienter l'entretien — il ne pose aucun diagnostic et ne rend aucun seuil.`, duree: '10 min', actif: false },
   // Le Conners parent RESTE FERMÉ, et son banc dit pourquoi : la lecture de la
   // source y trouve 110 items là où l'application en sert 108. Deux items
   // manquants ne sont pas un défaut de scoring, c'est un autre instrument —

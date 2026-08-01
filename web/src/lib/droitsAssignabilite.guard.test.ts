@@ -232,6 +232,18 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
       // de ses items forment un enregistrement de trois mots puis deux rappels.
       // Rempli seul, le test se corrige en remontant la page.
       'Q_NEU_06',
+      // Repérage du TDAH par l'enseignant — DÉBAPTISÉ le 2026-08-01, et servi en
+      // consultation, pas au portail. Sa réserve visait « © MHS », c'est-à-dire
+      // l'échelle de Conners : l'instrument ne la reproduit pas et ne s'en
+      // réclame plus. Il reste DANS la population sous réserve, délibérément —
+      // ce qui remplace MHS n'est pas instruit (les items reprennent des critères
+      // diagnostiques dont l'APA est l'éditeur), et la mention MHS REVIVRAIT si
+      // la grille était un jour reconstruite sur les items de Conners.
+      //
+      // Il n'est PAS assignable : la grille est renseignée par un ENSEIGNANT, et
+      // l'envoyer au portail ferait remplir le parent à sa place, ou ferait
+      // transiter le lien magique du patient vers un tiers.
+      'Q_PED_02',
     ].sort();
     const enPassation = PASSATION_PRATICIEN.map(p => p.id)
       .filter(id => SOUS_RESERVE.includes(id))

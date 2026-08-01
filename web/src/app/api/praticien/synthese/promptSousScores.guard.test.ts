@@ -678,6 +678,14 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     // le premier à le déclarer explicitement, par `scoring.sansTotalGlobal` —
     // les deux EORTC l'obtiennent de leur moteur dédié. Ne pas rendre de total
     // est ici la correction, pas une lacune.
-    expect(releve.sansTotalGlobal.slice().sort()).toEqual(['Q_CAN_01', 'Q_CAN_02', 'Q_SOM_07', 'Q_STR_06']);
+    //
+    // CINQ depuis le 2026-08-01 : `Q_PED_02` rejoint la liste avec sa
+    // débaptisation, et pour une raison qui ne tient pas à sa source mais à
+    // l'absence de source — aucune ne donne de sens à un /84 sur cette grille.
+    // Le moteur en rendait un, qui partait en `scorePrincipal` et s'affichait
+    // « Score brut » au Fil sans dénominateur ni bande. C'est ce test qui observe
+    // ce que le modèle de synthèse reçoit réellement.
+    expect(releve.sansTotalGlobal.slice().sort())
+      .toEqual(['Q_CAN_01', 'Q_CAN_02', 'Q_PED_02', 'Q_SOM_07', 'Q_STR_06']);
   });
 });
