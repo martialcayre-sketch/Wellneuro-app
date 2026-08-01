@@ -1069,3 +1069,21 @@ interne, non suivis). B1 corrige les écrans pendant qu'ils sont inertes, B2
 **Questions ouvertes** : les cinq agents `.github/agents/` sont-ils réellement
 chargés par Copilot ? Personne ne l'a vérifié ; s'ils ne le sont pas, ils se
 désynchroniseront en silence malgré cet alignement.
+
+## 2026-08-01 — Clôture montée certification 62/64
+
+**Décisions** : la phase de montée (lots 1–4) est déclarée close à 62/64 —
+60 `scoring_verifie`, 2 suspendus terminaux — et l'état machine
+(`.wn/state.json`, figé au 2026-07-23) est réaligné. Pas de promotion de
+Q_GEO_04 : la question n'a pas eu à être arbitrée, le plafond
+`contenu_verrouille` posé au registre le 2026-08-01 (bandes HAS 2011 jamais
+sourcées, escalade SIIN ouverte) la tranche déjà.
+
+**Écarté** : transcrire la signature praticien dans `droits.detail` — déjà fait
+par #515/#516, le cadrage initial du sous-agent était en retard sur le registre.
+
+**Prochaine action** : arbitrages praticien — Q_PED_03 (dimensions et échelles
+de validité), table de règles signée conditionnant les lots 5–13.
+
+**Questions ouvertes** : la source des « gates G0–G4 » affichés par le contexte
+compact reste introuvable (`.wn/orchestrator.json` n'en porte aucun).
