@@ -12,13 +12,16 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 
 import {
   CatalogueRequeteInvalide,
+  FACETTES_INDISPONIBLES,
   OFFSET_MAX,
   PAR_PAGE_DEFAUT,
   PAR_PAGE_MAX,
+  PREDICATS_INTERACTIONS_INERTES,
   appliquerCompletude,
   listerCatalogue,
   lireCompletudeComposition,
   type DimensionsFiche,
+  type FiltresCatalogue,
 } from './catalogue';
 
 const tagSommeil = {
@@ -39,8 +42,14 @@ function regleMag(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function produit(over: Partial<{ id: string; nomCommercial: string; marque: string; statutFiche: string; niveauCompletude: string; donneesManquantes: string[]; dateDerniereVerification: Date | null; compositions: unknown[] }> = {}) {
+function produit(over: Partial<{ id: string; nomCommercial: string; marque: string; statutFiche: string; niveauCompletude: string; donneesManquantes: string[]; dateDerniereVerification: Date | null; compositions: unknown[]; compositionSourceLignes: number | null }> = {}) {
   return {
+    // EXPLICITE, et non omis : `lireCompletudeComposition(n, undefined)` rend
+    // « partielle » par accident (`undefined !== null`, puis `undefined > 0`
+    // faux). Un test d'`integre` écrit sur une fixture muette serait donc vert
+    // sans rien prouver. `null` est la valeur de production tant que le
+    // transport n'a pas écrit le compte.
+    compositionSourceLignes: over.compositionSourceLignes ?? null,
     id: over.id ?? 'prod_mag',
     nomCommercial: over.nomCommercial ?? 'Magnésium Plus',
     marque: over.marque ?? 'MarqueA',
@@ -266,60 +275,100 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     expect(prisma.supplementProduct.count).not.toHaveBeenCalled();
   });
 
-  it('« interactions signalées » exige un seuil actif qui bascule ET porte une alerte', async () => {
-    await listerCatalogue({ filtres: { interactions: ['signalees'] } });
-    expect(conditions()).toEqual(
-      expect.arrayContaining([
-        {
-          compositions: {
-            some: {
-              ingredient: {
-                functionalThresholds: {
-                  some: { actif: true, basculeRisque: true, safetyAlertId: { not: null } },
-                },
-              },
-            },
-          },
-        },
-      ]),
-    );
-  });
-
-  it('« aucune interaction connue » est REFUSÉE tant que la complétude n’est pas prouvée', async () => {
-    // Le prédicat « un seuil actif existe, aucun ne bascule » se lit sur les
-    // ingrédients RÉSOLUS : sur une fiche partielle, le porteur du signal peut
-    // être justement celui qui manque. Un faux vert dans un filtre décide de ce
-    // que le praticien voit — refuser, jamais servir approximativement.
-    await expect(listerCatalogue({ filtres: { interactions: ['aucune_connue'] } }))
-      .rejects.toBeInstanceOf(CatalogueRequeteInvalide);
+  // La facette `interactions` a rejoint les indisponibles le 2026-08-01, AVANT
+  // que la composition n'arrive. Ses trois valeurs étaient inoffensives sur une
+  // table vide et deviennent trompeuses sur une table pleine — c'est le seul
+  // moment où la corriger ne se voit pas.
+  it('REFUSE la facette « interactions », qui n’est plus servie', async () => {
+    // Le typage l'interdit déjà ; le `as` reproduit ce que fait un appelant qui
+    // construit ses filtres depuis des paramètres d'URL.
+    for (const valeur of ['signalees', 'aucune_connue', 'non_evaluee']) {
+      await expect(
+        listerCatalogue({ filtres: { interactions: [valeur] } as unknown as FiltresCatalogue }),
+      ).rejects.toBeInstanceOf(CatalogueRequeteInvalide);
+    }
     expect(prisma.supplementProduct.findMany).not.toHaveBeenCalled();
     expect(prisma.supplementProduct.count).not.toHaveBeenCalled();
   });
 
-  it('refuse « aucune_connue » même mêlée à des valeurs servies (jamais un tri partiel)', async () => {
-    await expect(listerCatalogue({ filtres: { interactions: ['signalees', 'aucune_connue'] } }))
-      .rejects.toBeInstanceOf(CatalogueRequeteInvalide);
+  // LE test de la bascule. `construireWhere` n'itère que sur `FACETTES_SERVIES` :
+  // sortir une facette de cette liste sans garde d'exécution la ferait ignorer
+  // EN SILENCE — la route rendrait 200 avec des fiches hors critère, en laissant
+  // croire que le filtre s'est appliqué. C'est le tort exact que tout ce fichier
+  // combat, et il se serait installé par une simple soustraction.
+  it('une facette indisponible est REFUSÉE, jamais ignorée en silence', async () => {
+    for (const cle of FACETTES_INDISPONIBLES) {
+      await expect(
+        listerCatalogue({ filtres: { [cle]: ['peu importe'] } as unknown as FiltresCatalogue }),
+      ).rejects.toBeInstanceOf(CatalogueRequeteInvalide);
+    }
     expect(prisma.supplementProduct.findMany).not.toHaveBeenCalled();
   });
 
   it('refuse AVANT de résoudre l’intention (aucun travail inutile)', async () => {
     await expect(
-      listerCatalogue({ intentionCode: 'sommeil_fragmente', filtres: { interactions: ['aucune_connue'] } }),
+      listerCatalogue({
+        intentionCode: 'sommeil_fragmente',
+        filtres: { interactions: ['non_evaluee'] } as unknown as FiltresCatalogue,
+      }),
     ).rejects.toBeInstanceOf(CatalogueRequeteInvalide);
     expect(prisma.clinicalIntentTag.findMany).not.toHaveBeenCalled();
   });
 
-  it('« interactions non évaluées » exige l’ABSENCE de tout seuil actif', async () => {
-    await listerCatalogue({ filtres: { interactions: ['non_evaluee'] } });
-    expect(conditions()).toEqual(
-      expect.arrayContaining([
-        {
-          compositions: {
-            none: { ingredient: { functionalThresholds: { some: { actif: true } } } },
+  // Les prédicats survivent à la mise en sommeil de leur facette : ils portent
+  // la seule définition écrite de ce qu'est une interaction « signalée ». Les
+  // figer garantit qu'ils seront rouverts tels qu'ils ont été pensés.
+  it('les prédicats d’interactions restent définis, et disent encore ce qu’ils disaient', () => {
+    expect(PREDICATS_INTERACTIONS_INERTES.signalees()).toEqual({
+      compositions: {
+        some: {
+          ingredient: {
+            functionalThresholds: {
+              some: { actif: true, basculeRisque: true, safetyAlertId: { not: null } },
+            },
           },
         },
-      ]),
-    );
+      },
+    });
+    expect(PREDICATS_INTERACTIONS_INERTES.nonEvaluee()).toEqual({
+      compositions: { none: { ingredient: { functionalThresholds: { some: { actif: true } } } } },
+    });
+  });
+
+  // ─── La justification ne doit affirmer que ce qui a eu lieu ───────────────
+
+  // L'ÉTAT DE PRODUCTION APRÈS LE TRANSPORT : composition pleine, et
+  // `clinical_rules` toujours vide. Le discriminant d'origine était la longueur
+  // de la COMPOSITION, si bien que le texte allait affirmer « Comparaison,
+  // ingrédient par ingrédient, … à la forme préférée des règles cliniques » sur
+  // 100 % du catalogue — à côté d'un badge « Non évaluée » qui, lui, dit vrai.
+  it('composition pleine et AUCUNE règle : la justification ne prétend aucune comparaison', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    const [fiche] = (await listerCatalogue()).fiches;
+    expect(fiche.dimensions.biodisponibiliteForme.justification).not.toMatch(/Comparaison/);
+    expect(fiche.dimensions.biodisponibiliteForme.justification).toMatch(/n’est comparée à rien|n'est comparée à rien/);
+    expect(fiche.dimensions.biodisponibiliteForme.justification).toMatch(/ne vaut pas absence de risque/);
+  });
+
+  // La justification se qualifie elle-même ET la liste s'annonce incomplète :
+  // les deux sont vraies, et disent deux choses différentes — rien n'a été
+  // comparé (le référentiel est vide), et la liste des ingrédients sur laquelle
+  // ce constat porte est elle-même partielle.
+  it('une abstention porte les DEUX mentions : rien de comparé, et liste incomplète', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([produit()]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    const [fiche] = (await listerCatalogue()).fiches;
+    expect(fiche.completudeComposition).toBe('partielle');
+    expect(fiche.dimensions.biodisponibiliteForme.justification).toMatch(/n’est comparée à rien|n'est comparée à rien/);
+    expect(fiche.dimensions.biodisponibiliteForme.justification).toMatch(/incomplète/i);
+  });
+
+  it('aucune composition : la justification le dit, et ne parle pas de comparaison', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([produit({ compositions: [] })]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    const [fiche] = (await listerCatalogue()).fiches;
+    expect(fiche.dimensions.biodisponibiliteForme.justification).toMatch(/Aucune composition connue/);
   });
 
   // ─── Dimensions : calculées sur la page, sémantique inchangée ─────────────
@@ -425,6 +474,55 @@ describe('listerCatalogue (service catalogue C4A)', () => {
     expect(fiche.dimensions.compatibiliteProtocole.valeur).toBe('non_evaluee');
     expect(fiche.dimensions.cumulVsSeuils.valeur).toBe('non_evaluee');
     expect(fiche.dimensions.interactionsSignalees.valeur).toBe('non_evaluee');
+  });
+
+  // ─── La sixième trappe : composition INTÈGRE, référentiel clinique VIDE ───
+  //
+  // L'état exact que la PR B2 créera le jour où elle écrira les compositions ET
+  // `composition_source_lignes` : la fiche devient `integre`,
+  // `appliquerCompletude` rend les dimensions à l'identique — et ne voit pas
+  // que « Compatible » et « Aucun cumul » ne dépendent pas de la composition
+  // mais de `clinical_rules`, toujours vide. Deux feux verts sur les 140 148
+  // fiches, allumés par un lot qui ne touche pas à ce fichier.
+  //
+  // `clinical_intent_tags` et `clinical_rules` sont DEUX TABLES : l'intention
+  // se résout (le filtre s'affiche, le libellé est juste) pendant qu'aucune
+  // règle ne gouverne le moindre ingrédient.
+  it('composition INTÈGRE et AUCUNE règle clinique : toujours aucun feu vert', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([
+      produit({ compositionSourceLignes: 1 }),
+    ]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
+    prisma.clinicalRule.findMany.mockResolvedValue([]);
+
+    const res = await listerCatalogue({ intentionCode: 'sommeil_fragmente' });
+    const [fiche] = res.fiches;
+    // L'intention est bien résolue : ce n'est pas une saisie au hasard.
+    expect(res.intentionFiltre?.code).toBe('sommeil_fragmente');
+    expect(fiche.completudeComposition).toBe('integre');
+    expect(fiche.dimensions.compatibiliteProtocole.valeur).not.toBe('compatible');
+    expect(fiche.dimensions.compatibiliteProtocole.valeur).toBe('non_evaluee');
+    expect(fiche.dimensions.cumulVsSeuils.valeur).not.toBe('aucun');
+    expect(fiche.dimensions.cumulVsSeuils.valeur).toBe('non_evaluee');
+  });
+
+  // Le pendant : dès qu'une règle gouverne un ingrédient, la sentinelle a de
+  // quoi conclure, et l'absence de signal redevient une information. Sans ce
+  // test, la garde ci-dessus pourrait éteindre TOUTE lecture et personne ne le
+  // verrait — un fail-closed qui ne s'ouvre jamais ne garde rien, il casse.
+  it('une règle qui gouverne un ingrédient rouvre la lecture (la garde n’est pas un mur)', async () => {
+    prisma.supplementProduct.findMany.mockResolvedValue([
+      produit({ compositionSourceLignes: 1 }),
+    ]);
+    prisma.supplementProduct.count.mockResolvedValue(1);
+    prisma.clinicalIntentTag.findMany.mockResolvedValue([tagSommeil]);
+    prisma.clinicalRule.findMany.mockResolvedValue([regleMag()]);
+
+    const [fiche] = (await listerCatalogue({ intentionCode: 'sommeil_fragmente' })).fiches;
+    expect(fiche.completudeComposition).toBe('integre');
+    expect(fiche.dimensions.compatibiliteProtocole.valeur).toBe('compatible');
+    expect(fiche.dimensions.cumulVsSeuils.valeur).toBe('aucun');
   });
 
   it('annonce l’état de la composition sur CHAQUE fiche servie', async () => {
@@ -601,8 +699,75 @@ describe('appliquerCompletude — l’asymétrie positif / feu vert', () => {
   );
 
   it('sur « partielle », les énumérations restent mais s’annoncent incomplètes', () => {
+    // La fixture doit porter de quoi énumérer : une liste VIDE ne s'annonce pas
+    // incomplète (test suivant), et la marquer sans regarder son contenu était
+    // le défaut. Une entrée COMPARÉE — donc `formePreferee` non nul.
+    const d = appliquerCompletude(
+      dimensions({
+        biodisponibiliteForme: {
+          valeurs: [
+            {
+              ingredientCode: 'magnesium',
+              valeur: 'forme_preferee',
+              formeFiche: 'bisglycinate',
+              formePreferee: 'bisglycinate',
+            },
+          ],
+          valeursPresentes: ['forme_preferee'],
+          justification: 'bio',
+        },
+        gradePreuveParIntention: {
+          valeurs: [
+            {
+              ingredientCode: 'magnesium',
+              intentionCode: 'sommeil',
+              intentionLabelFr: 'Sommeil',
+              grade: 'modere',
+              gradeLabel: 'Modéré',
+            },
+          ],
+          justification: 'grade',
+        },
+      }),
+      'partielle',
+    );
+    expect(d.biodisponibiliteForme.justification).toMatch(/incomplète/i);
+    expect(d.gradePreuveParIntention.justification).toMatch(/incomplète/i);
+  });
+
+  // UNE LISTE VIDE EST LE CAS OÙ LA MENTION PORTE LE PLUS. Ce test a d'abord
+  // affirmé le contraire — « on ne qualifie pas un vide » — au motif que
+  // suffixer « elle est incomplète » à une abstention enchaîne deux
+  // affirmations. Le raisonnement néglige ce que dit l'abstention : le texte de
+  // grade servi sur une liste vide n'est pas un silence, c'est « aucune règle
+  // validée POUR CETTE COMPOSITION ». Sur une composition partiellement
+  // résolue, cette absence peut n'être due qu'aux ingrédients non résolus, et
+  // sans la mention le praticien la lit comme un fait sur le produit.
+  //
+  // La phrase bancale qui avait motivé la condition est traitée à sa source :
+  // la justification de biodisponibilité se qualifie elle-même (trois cas).
+  it('une liste VIDE s’annonce incomplète — l’absence porte sur ce qui a été résolu', () => {
     const d = appliquerCompletude(dimensions(), 'partielle');
     expect(d.biodisponibiliteForme.justification).toMatch(/incomplète/i);
+    expect(d.gradePreuveParIntention.justification).toMatch(/incomplète/i);
+  });
+
+  // Le cas de la revue : une règle validée existe, mais ne porte que sur un
+  // ingrédient NON RÉSOLU. La liste de grades est vide et son texte affirme
+  // « aucune règle validée pour cette composition ». Sans la mention, le
+  // praticien conclut qu'aucune preuve n'existe sur ce produit.
+  it('une absence de grade due aux ingrédients non résolus est annoncée comme telle', () => {
+    const d = appliquerCompletude(
+      dimensions({
+        gradePreuveParIntention: {
+          valeurs: [],
+          justification:
+            'Aucune intention sélectionnée, ou aucune règle validée pour cette composition : grade de preuve non applicable.',
+        },
+      }),
+      'partielle',
+    );
+    expect(d.gradePreuveParIntention.justification).toMatch(/aucune règle validée/i);
     expect(d.gradePreuveParIntention.justification).toMatch(/incomplète/i);
   });
 

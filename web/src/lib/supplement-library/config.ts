@@ -26,6 +26,15 @@ export const SUPPLEMENTS_UNITES = ['µg', 'mg', 'g', 'mL', 'UI', 'UFC'] as const
 // d'intention clinique — une source externe ne produit que des brouillons.
 export const SUPPLEMENTS_STATUT_IMPORT = 'importee' as const;
 
+// Longueur maximale de la requête du rayon corpus (route
+// `api/praticien/complements/corpus`), au-delà de laquelle elle répond 400.
+//
+// ELLE VIT ICI ET NON DANS LA ROUTE. Next.js valide les exports d'un
+// `route.ts` contre une liste fermée (`GET`, `runtime`, `dynamic`…) : y
+// exporter une valeur fait échouer `next build` avec « is not a valid Route
+// export field ». Le type-check de T1 ne le voit pas, seul le build l'attrape.
+export const REQUETE_CORPUS_MAX = 500;
+
 export type SupplementProvenance = (typeof SUPPLEMENTS_PROVENANCES)[number];
 export type SupplementNiveauCompletude = (typeof SUPPLEMENTS_NIVEAUX_COMPLETUDE)[number];
 export type SupplementUnite = (typeof SUPPLEMENTS_UNITES)[number];

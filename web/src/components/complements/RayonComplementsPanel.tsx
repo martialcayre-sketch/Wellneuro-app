@@ -19,11 +19,17 @@ import type { CatalogueResult, FicheComplement } from '@/lib/supplement-library/
 // critère n'est posé, et la base ne sert ensuite qu'une page. Le mur d'entrée
 // est délibéré, pas un oubli.
 
-type FacetteCle = 'qualite' | 'interactions' | 'donneesManquantes' | 'statut';
+type FacetteCle = 'qualite' | 'donneesManquantes' | 'statut';
 
-// Facettes dont la donnée n'existe pas encore (composition des produits) :
-// affichées, désactivées et expliquées — jamais un filtre qui ne filtre rien.
-type FacetteGrisee = 'grade' | 'biodisponibilite' | 'compatibilite' | 'cumul';
+// Facettes dont le prédicat n'est pas fiable : affichées, désactivées et
+// expliquées — jamais un filtre qui ne filtre rien.
+//
+// `interactions` les a rejointes le 2026-08-01, avant l'arrivée de la
+// composition. Ses valeurs étaient inoffensives sur une table vide et
+// deviennent trompeuses sur une table pleine : « Signalées » rendrait 0 fiche
+// sur un catalogue composé — lu comme une innocuité générale — et « Non
+// évaluée » servirait les 140 148 fiches en franchissant le mur d'entrée.
+type FacetteGrisee = 'grade' | 'biodisponibilite' | 'compatibilite' | 'cumul' | 'interactions';
 
 const LABEL_FACETTE: Record<FacetteCle | FacetteGrisee, string> = {
   qualite: 'Qualité de formulation',
@@ -68,8 +74,13 @@ const LABEL_TRI: Record<string, string> = {
   fraicheur: 'Par fraîcheur',
 };
 
-const FACETTES_ORDRE: FacetteCle[] = ['qualite', 'interactions', 'donneesManquantes', 'statut'];
-const FACETTES_GRISEES: FacetteGrisee[] = ['grade', 'biodisponibilite', 'compatibilite', 'cumul'];
+const FACETTES_ORDRE: FacetteCle[] = ['qualite', 'donneesManquantes', 'statut'];
+// Exporté pour que la garde anti-dérive puisse le comparer à
+// FACETTES_INDISPONIBLES : rien ne vérifiait jusqu'ici que l'écran grisait bien
+// les mêmes facettes que le service refuse.
+export const FACETTES_GRISEES: FacetteGrisee[] = [
+  'grade', 'biodisponibilite', 'compatibilite', 'cumul', 'interactions',
+];
 
 // Vocabulaire des facettes servies. Recopié du service À DESSEIN : importer
 // `catalogue.ts` depuis un composant client embarquerait Prisma dans le paquet
@@ -79,21 +90,16 @@ const FACETTES_GRISEES: FacetteGrisee[] = ['grade', 'biodisponibilite', 'compati
 // interdit la dérive avec FACETTES.
 export const VALEURS_FACETTE: Record<FacetteCle, readonly string[]> = {
   qualite: ['bien_documentee', 'partielle', 'lacunaire'],
-  interactions: ['signalees', 'aucune_connue', 'non_evaluee'],
   donneesManquantes: ['liste_explicite', 'aucune', 'non_evaluee'],
   statut: ['importee', 'verifiee'],
 };
 
-// Valeurs d'une facette PAR AILLEURS servie qui ne sont pas fiables tant que la
-// complétude de composition n'est pas prouvée. « Aucune interaction connue »
-// se lit sur les ingrédients résolus : sur une fiche partiellement résolue,
-// l'ingrédient porteur du signal peut être justement celui qui manque. Montrée
-// et désactivée, jamais retirée en silence — le praticien doit savoir que le
-// critère existe et pourquoi il ne répond pas encore. Recopié du service
-// (VALEURS_FACETTE_INDISPONIBLES), avec garde de test contre la dérive.
-export const VALEURS_FACETTE_GRISEES: Partial<Record<FacetteCle, readonly string[]>> = {
-  interactions: ['aucune_connue'],
-};
+// Valeurs d'une facette PAR AILLEURS servie qui ne sont pas fiables. VIDE
+// depuis le 2026-08-01 : son seul occupant, « Aucune interaction connue », a
+// suivi sa facette entière chez les grisées. Le mécanisme reste — c'est le seul
+// moyen de désactiver UNE valeur d'une facette par ailleurs saine. Recopié du
+// service (VALEURS_FACETTE_INDISPONIBLES), avec garde de test contre la dérive.
+export const VALEURS_FACETTE_GRISEES: Partial<Record<FacetteCle, readonly string[]>> = {};
 
 // Recopié de OFFSET_MAX du service, pour la même raison que le vocabulaire
 // ci-dessus. Une garde de test interdit la dérive.
@@ -101,7 +107,12 @@ export const OFFSET_MAX_ECRAN = 10_000;
 
 const MESSAGE_CRITERE_ATTENDU =
   'Recherchez un nom, une marque, une intention clinique, ou choisissez un filtre pour afficher des fiches.';
-const MESSAGE_FACETTE_GRISEE = 'Disponible après l’import de la composition des produits.';
+// Ce message promettait « après l'import de la composition ». L'import a lieu,
+// et les critères restent indisponibles : ce sont les règles cliniques et les
+// seuils qui manquent, pas les compositions. Une promesse datée qui ne se
+// réalise pas au terme annoncé use la confiance dans toutes les autres.
+const MESSAGE_FACETTE_GRISEE =
+  'Disponible quand les règles cliniques et les seuils d’ingrédients seront renseignés.';
 const MESSAGE_VALEUR_GRISEE =
   'Fiable seulement une fois la composition des produits entièrement résolue.';
 
@@ -118,7 +129,6 @@ export function RayonComplementsPanel() {
   const [page, setPage] = useState(1);
   const [selections, setSelections] = useState<Record<FacetteCle, string[]>>({
     qualite: [],
-    interactions: [],
     donneesManquantes: [],
     statut: [],
   });

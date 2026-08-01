@@ -15,6 +15,7 @@ import {
   type FicheComplement,
 } from '@/lib/supplement-library/catalogue';
 import {
+  FACETTES_GRISEES,
   OFFSET_MAX_ECRAN,
   RayonComplementsPanel,
   VALEURS_FACETTE,
@@ -131,6 +132,19 @@ describe('RayonComplementsPanel (instrument à tiroir)', () => {
     // service et laissée cliquable ici produirait un 400 en face d'un clic
     // légitime ; l'inverse laisserait un critère mort à l'écran.
     expect(VALEURS_FACETTE_GRISEES).toEqual(VALEURS_FACETTE_INDISPONIBLES);
+    // Les deux sont VIDES depuis la bascule d'`interactions` (2026-08-01) :
+    // l'égalité ci-dessus est donc tautologique, et le resterait si les deux
+    // divergeaient un jour vers deux formes vides différentes. On le dit
+    // plutôt que de laisser croire à une garde active.
+    expect(Object.keys(VALEURS_FACETTE_GRISEES)).toEqual([]);
+  });
+
+  // La garde qui MANQUAIT : rien ne comparait les facettes grisées de l'écran
+  // aux facettes que le service déclare indisponibles. Basculer `interactions`
+  // côté service sans toucher l'écran aurait laissé une facette cliquable dont
+  // chaque clic rendait 400.
+  it('les facettes grisées de l’écran sont EXACTEMENT celles que le service déclare indisponibles', () => {
+    expect([...FACETTES_GRISEES].sort()).toEqual([...FACETTES_INDISPONIBLES].sort());
   });
 
   it('toute valeur grisée appartient bien au vocabulaire de sa facette', () => {
@@ -168,38 +182,42 @@ describe('RayonComplementsPanel (instrument à tiroir)', () => {
     expect(screen.queryByText(/composition partiellement résolue/i)).toBeNull();
   });
 
-  // ─── Valeur de facette non fiable : montrée, désactivée, expliquée ─────────
+  // ─── Facette entière indisponible : montrée, désactivée, expliquée ────────
 
-  it('« Aucune connue » est affichée mais NON cliquable, avec sa raison', () => {
+  it('« Interactions » est affichée mais entièrement désactivée, avec sa raison', () => {
     render(<RayonComplementsPanel />);
-    const bouton = screen.getByRole('button', { name: 'Aucune connue' }) as HTMLButtonElement;
-    expect(bouton.disabled).toBe(true);
-    expect(screen.getByText(/Fiable seulement une fois la composition/i)).toBeTruthy();
+    expect(screen.getByText('Interactions')).toBeTruthy();
+    // Aucune de ses trois valeurs n'est offerte au clic.
+    for (const valeur of ['Signalées', 'Aucune connue']) {
+      expect(screen.queryByRole('button', { name: valeur })).toBeNull();
+    }
+    expect(
+      screen.getAllByText(/règles cliniques et les seuils d’ingrédients/i).length,
+    ).toBeGreaterThan(0);
   });
 
-  it('un clic sur la valeur grisée ne pose AUCUN critère et n’interroge rien', () => {
+  // Le message promettait « après l'import de la composition ». L'import a
+  // lieu, et les critères restent indisponibles : ce sont les règles et les
+  // seuils qui manquent. Une promesse datée qui ne se réalise pas au terme
+  // annoncé use la confiance dans toutes les autres.
+  it('la raison affichée ne promet plus l’import de la composition', () => {
     render(<RayonComplementsPanel />);
-    fireEvent.click(screen.getByRole('button', { name: 'Aucune connue' }));
-    expect(urlsAppelees()).toHaveLength(0);
-    // L'écran reste sur son mur d'entrée : la valeur grisée n'est pas un critère.
-    expect(screen.getByText(/Recherchez un nom, une marque/i)).toBeTruthy();
+    expect(screen.queryByText(/après l’import de la composition/i)).toBeNull();
   });
 
-  it('les valeurs SAINES de la même facette restent cliquables', () => {
-    render(<RayonComplementsPanel />);
-    expect((screen.getByRole('button', { name: 'Signalées' }) as HTMLButtonElement).disabled).toBe(false);
-    // « Non évaluée » est partagée par deux facettes : aucune n'est désactivée.
-    const nonEvaluee = screen.getAllByRole('button', { name: 'Non évaluée' }) as HTMLButtonElement[];
-    expect(nonEvaluee.length).toBeGreaterThan(0);
-    expect(nonEvaluee.every((b) => !b.disabled)).toBe(true);
-  });
-
-  it('une seule valeur est grisée dans tout l’écran — la désactivation ne déborde pas', () => {
+  it('aucune valeur n’est grisée à l’unité — la facette entière l’est', () => {
     render(<RayonComplementsPanel />);
     const grises = (screen.getAllByRole('button') as HTMLButtonElement[])
       .filter((b) => b.disabled)
       .map((b) => b.textContent);
-    expect(grises).toEqual(['Aucune connue']);
+    expect(grises).toEqual([]);
+  });
+
+  it('« Non évaluée » reste cliquable là où elle est encore servie', () => {
+    render(<RayonComplementsPanel />);
+    const nonEvaluee = screen.getAllByRole('button', { name: 'Non évaluée' }) as HTMLButtonElement[];
+    expect(nonEvaluee.length).toBeGreaterThan(0);
+    expect(nonEvaluee.every((b) => !b.disabled)).toBe(true);
   });
 
   // ─── Le mur d'entrée : rien n'est chargé sans critère ─────────────────────
@@ -406,10 +424,14 @@ describe('RayonComplementsPanel (instrument à tiroir)', () => {
     rechercher('magnésium');
     await waitFor(() => expect(screen.getByText('Magnésium Plus')).toBeTruthy());
 
-    expect(screen.getAllByText(/Disponible après l’import de la composition/).length).toBeGreaterThan(0);
-    // Aucune valeur de ces facettes n'est cliquable.
+    expect(
+      screen.getAllByText(/règles cliniques et les seuils d’ingrédients/i).length,
+    ).toBeGreaterThan(0);
+    // Aucune valeur de ces facettes n'est cliquable — `Signalées` incluse
+    // depuis que la facette `interactions` a rejoint les grisées.
     expect(screen.queryByRole('button', { name: 'Forme préférée' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Fort' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Signalées' })).toBeNull();
   });
 
   it('le tri indisponible n’est pas proposé', async () => {

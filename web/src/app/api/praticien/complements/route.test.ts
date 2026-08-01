@@ -119,35 +119,40 @@ describe('/api/praticien/complements', () => {
     },
   );
 
-  it('refuse « interactions=aucune_connue », dont le prédicat n’est pas fiable', async () => {
-    // Motif DISTINCT des facettes ci-dessus : la donnée existe, c'est sa
-    // complétude qui n'est pas prouvée. Le message doit le dire, sinon le
-    // praticien attend un import qui ne débloquera pas ce critère à lui seul.
-    const res = await GET(new Request(`${URL_BASE}?interactions=aucune_connue`));
-    expect(res.status).toBe(400);
-    const json = await res.json();
-    expect(json.reason).toBe('valeur_facette_indisponible');
-    expect(json.error).toMatch(/entièrement résolue/i);
-    expect(listerCatalogue).not.toHaveBeenCalled();
-  });
-
-  it('refuse « aucune_connue » même mêlée à une valeur servie', async () => {
-    const res = await GET(new Request(`${URL_BASE}?interactions=signalees,aucune_connue`));
-    expect(res.status).toBe(400);
-    expect((await res.json()).reason).toBe('valeur_facette_indisponible');
-    expect(listerCatalogue).not.toHaveBeenCalled();
-  });
-
-  it.each(['signalees', 'non_evaluee'])(
-    'sert toujours « interactions=%s », dont le prédicat reste sain',
+  // La facette `interactions` a rejoint les indisponibles le 2026-08-01, AVANT
+  // que la composition n'arrive : ses valeurs étaient inoffensives sur une
+  // table vide et deviennent trompeuses sur une table pleine. Le motif de refus
+  // passe donc de `valeur_facette_indisponible` à `facette_indisponible` — la
+  // facette entière est en cause, plus une seule de ses valeurs.
+  it.each(['signalees', 'aucune_connue', 'non_evaluee'])(
+    'refuse « interactions=%s » — la facette entière n’est plus servie',
     async (valeur) => {
       const res = await GET(new Request(`${URL_BASE}?interactions=${valeur}`));
-      expect(res.status).toBe(200);
-      expect(listerCatalogue).toHaveBeenCalledWith(expect.objectContaining({
-        filtres: expect.objectContaining({ interactions: [valeur] }),
-      }));
+      expect(res.status).toBe(400);
+      const json = await res.json();
+      expect(json.reason).toBe('facette_indisponible');
+      expect(listerCatalogue).not.toHaveBeenCalled();
     },
   );
+
+  // « Signalées » aurait été le plus dangereux des trois : son prédicat traverse
+  // désormais de la matière et rendrait pourtant 0 fiche, faute de seuil. Le
+  // praticien y aurait lu que le catalogue entier est propre.
+  it('refuse « signalees » même mêlée à une autre valeur (jamais un tri partiel)', async () => {
+    const res = await GET(new Request(`${URL_BASE}?interactions=signalees,non_evaluee`));
+    expect(res.status).toBe(400);
+    expect((await res.json()).reason).toBe('facette_indisponible');
+    expect(listerCatalogue).not.toHaveBeenCalled();
+  });
+
+  // Le message ne promet plus un import qui a lieu et ne débloque rien.
+  it('la raison du refus nomme ce qui manque VRAIMENT : règles et seuils', async () => {
+    const res = await GET(new Request(`${URL_BASE}?interactions=signalees`));
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toMatch(/règles cliniques et les seuils/i);
+    expect(json.error).not.toMatch(/import de la composition/i);
+  });
 
   it('refuse le tri par nombre de règles correspondantes (aucune règle en base)', async () => {
     const res = await GET(new Request(`${URL_BASE}?tri=reglesCorrespondantes`));

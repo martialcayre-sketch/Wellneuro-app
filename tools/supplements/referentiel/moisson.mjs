@@ -15,12 +15,21 @@
 //
 // Usage : node moisson.mjs [dossier-de-sortie]
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 const BASE = 'https://compl-alim.beta.gouv.fr/api/v1';
 const UA = 'Wellneuro-app/1.0 (+https://app.wellneuro.fr) referentiel-complalim';
 const PAUSE_MS = 250;
-const SORTIE = process.argv[2] ?? './referentiel';
+// EMPLACEMENT DURABLE PAR DÉFAUT, hors du dépôt.
+//
+// Le défaut était `./referentiel`, donc un dossier DANS le worktree. Or une
+// session = un worktree, et un worktree se supprime après sa PR : le cache
+// mourait avec lui, et la moisson suivante repartait de zéro — 25 minutes et
+// ~6 000 requêtes à un service public, pour rien. Le NDJSON des fiches, lui,
+// vit sous `~/.wellneuro/supplements/` depuis toujours et a survécu à toutes
+// les sessions. Le cache du référentiel le rejoint.
+const SORTIE = process.argv[2] ?? join(homedir(), '.wellneuro/supplements/referentiel');
 
 // Bornes constatées le 2026-07-31 (404 au-delà). Volontairement larges : un
 // identifiant absent ne coûte qu'une requête, un identifiant manqué coûte un
