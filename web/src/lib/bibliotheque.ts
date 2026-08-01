@@ -46,6 +46,12 @@ export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   // clinicien ; les deux gestes de #460 restent indépendants, seul celui-ci est
   // repris.
   //
+  // Point tranché le 2026-08-01, sur déclaration expresse du praticien : la
+  // déclaration d'usage exclut « la publication du verbatim », et cette exclusion
+  // ne vise PAS l'affichage de la grille au praticien en consultation — sans quoi
+  // elle contredirait « l'administration aux patients du cabinet » qu'elle couvre
+  // expressément. C'est cette ligne-ci qui en dépendait.
+  //
   // La réserve « © PAR, licence requise » ne se lève PAS pour autant, et le
   // registre la porte. Elle n'est pas non plus d'une nature à part : une
   // première rédaction affirmait ici que PAR serait le seul ayant droit de cette
