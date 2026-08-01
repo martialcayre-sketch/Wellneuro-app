@@ -31,16 +31,28 @@ régime est un jour publié.
 
 ## Usage
 
+Les trois commandes lisent et écrivent `~/.wellneuro/supplements/referentiel`
+par défaut — **hors du dépôt, et volontairement** : une session = un worktree,
+et un worktree se supprime après sa PR. Le cache y mourait avec lui, et la
+moisson suivante repartait de zéro : 25 minutes et ~6 000 requêtes à un service
+public, pour rien. L'emplacement survit désormais aux sessions, comme le NDJSON
+des fiches qui le voisine.
+
+**Ne pas passer un chemin dans le dépôt.** Le `.gitignore` ne couvre que
+`tools/supplements/referentiel/referentiel/` : moissonner ailleurs sous la
+racine y dépose ~6 000 fiches qu'un `git add -A` indexerait — un contenu publié
+sous aucune licence énoncée (voir « Provenance et licence » ci-dessus).
+
 ```bash
-# 1. Moissonner (~20 min, ~4 requêtes/s, reprise possible)
-node moisson.mjs ./referentiel
+# 1. Moissonner (~20 min, ~4 requêtes/s, reprise sur cache)
+node moisson.mjs
 
 # 2. Vérifier la projection sans rien envoyer
-node ingest.mjs --dry-run --source ./referentiel
+node ingest.mjs --dry-run
 
 # 3. Ingérer
 export SUPPLEMENTS_INTERNAL_SECRET=…      # jamais en argument de commande
-node ingest.mjs --url https://app.wellneuro.fr --source ./referentiel
+node ingest.mjs --url https://app.wellneuro.fr
 ```
 
 ## Politesse envers un service public

@@ -29,8 +29,7 @@
 import { createReadStream, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
 import { projeterReferentiel } from '../referentiel/lib/projection.mjs';
 import {
@@ -46,10 +45,11 @@ const opt = (nom, defaut = null) => {
 };
 
 const FICHES = opt('--fiches', join(homedir(), '.wellneuro/supplements/normalized/fiches.ndjson'));
-// `fileURLToPath` plutôt que `import.meta.dirname`, qui n'existe qu'à partir de
-// Node 21.2 : l'outil doit tourner partout où le dépôt tourne.
-const ICI = dirname(fileURLToPath(import.meta.url));
-const REFERENTIEL = opt('--referentiel', join(ICI, '../referentiel/referentiel'));
+// Emplacement durable, hors du dépôt : un worktree se supprime après sa PR et
+// emportait le cache avec lui (voir `referentiel/moisson.mjs`). Le chemin ne
+// dérive donc plus de celui du script — `fileURLToPath`, qui servait à le
+// calculer, n'a plus d'objet ici.
+const REFERENTIEL = opt('--referentiel', join(homedir(), '.wellneuro/supplements/referentiel'));
 const RAPPORT = opt('--rapport', null);
 const LIMITE = Number(opt('--limite', '0')) || Infinity;
 const EXEMPLES = Number(opt('--exemples', '25'));

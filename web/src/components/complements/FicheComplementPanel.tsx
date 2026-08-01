@@ -65,6 +65,29 @@ function formaterDate(iso: string | null): string {
   return Number.isNaN(date.getTime()) ? 'non renseignée' : date.toLocaleDateString('fr-FR');
 }
 
+/**
+ * Nombre d'ingrédients cités dans la requête corpus. Borne SÉMANTIQUE, pas
+ * typographique : la dilution de l'embedding est le motif, pas la longueur de
+ * la chaîne — au-delà, la requête tend vers un centroïde qui ne ressemble à
+ * aucun claim et passe sous le seuil de similarité du rayon.
+ *
+ * LE 8 EST CHOISI, PAS MESURÉ. Il n'a pas été passé au banc qualité corpus ; il
+ * couvre les formulations courantes sans diluer un complexe multivitaminé sur
+ * quinze lignes. À reprendre au banc le jour où le rayon sert des compositions
+ * réelles — c'est-à-dire après le transport, seul moment où la mesure aura un
+ * corpus de requêtes à mesurer.
+ */
+const INGREDIENTS_CITES_MAX = 8;
+
+/**
+ * Recopié de `REQUETE_CORPUS_MAX` (`lib/supplement-library/config.ts`).
+ *
+ * Ce composant est client : importer le module de configuration y ferait entrer
+ * la lecture du secret d'ingestion — même motif que le vocabulaire de facettes
+ * recopié dans `RayonComplementsPanel`, et même garde : un test compare les deux.
+ */
+export const REQUETE_CORPUS_MAX_ECRAN = 500;
+
 function Dimension({
   titre,
   justification,
@@ -103,9 +126,50 @@ export function FicheComplementPanel({
 
   const d = fiche.dimensions;
 
-  const requeteCorpus = useMemo(() => {
-    const ingredients = fiche.composition.map((c) => c.ingredientNomFr).join(', ');
-    return [fiche.nomCommercial, intentionLabel, ingredients].filter(Boolean).join(' · ');
+  // La requête corpus cite un NOMBRE BORNÉ d'ingrédients, jamais toute la
+  // composition tronquée.
+  //
+  // Deux raisons, la seconde décisive. D'abord la borne serveur :
+  // `REQUETE_CORPUS_MAX` vaut 500 caractères et rend 400 au-delà — une fiche à une vingtaine de
+  // composants la franchit sans effort, et l'écran affichait alors un bandeau
+  // d'erreur là où le praticien attend les claims sourcés. Ensuite la
+  // PERTINENCE, qui se dégrade bien avant 500 caractères : concaténer vingt
+  // noms produit un embedding centroïde qui ne ressemble à aucun claim, passe
+  // sous le plancher de similarité du rayon, et fait afficher « corpus en cours
+  // de constitution » sur un corpus peuplé. L'écran mentirait alors dans
+  // l'autre sens, et sans alerte.
+  //
+  // Borner le nombre d'ingrédients plutôt que la chaîne : une troncature
+  // couperait « Vitamine B12 » en « Vitamine B1 » et enverrait à l'embedding un
+  // AUTRE nutriment — pire qu'une omission.
+  //
+  // D'où une construction À BUDGET, et non un `slice` final. Un `slice` posé en
+  // « filet qui ne doit pas mordre » mord dès que l'en-tête est long : le nom
+  // commercial est un TEXT non borné en base, sans validation de longueur à
+  // l'ingestion, et les libellés à rallonge sont courants dans la source. Un
+  // nom de 470 caractères suffit à faire couper le premier ingrédient — le
+  // défaut même que la borne par nombre était censée écarter. On n'ajoute donc
+  // un nom que s'il tient ENTIER, et l'en-tête, lui, est tronqué en dernier
+  // ressort : mieux vaut un nom de produit coupé qu'un nutriment travesti.
+  const { requeteCorpus, ingredientsCites, ingredientsOmis } = useMemo(() => {
+    const entete = [fiche.nomCommercial, intentionLabel]
+      .filter(Boolean)
+      .join(' · ')
+      .slice(0, REQUETE_CORPUS_MAX_ECRAN);
+    const cites: string[] = [];
+    let longueur = entete.length;
+    for (const c of fiche.composition.slice(0, INGREDIENTS_CITES_MAX)) {
+      // ' · ' au premier nom, ', ' aux suivants.
+      const cout = (cites.length === 0 ? 3 : 2) + c.ingredientNomFr.length;
+      if (longueur + cout > REQUETE_CORPUS_MAX_ECRAN) break;
+      cites.push(c.ingredientNomFr);
+      longueur += cout;
+    }
+    return {
+      requeteCorpus: cites.length > 0 ? `${entete} · ${cites.join(', ')}` : entete,
+      ingredientsCites: cites.length,
+      ingredientsOmis: fiche.composition.length - cites.length,
+    };
   }, [fiche.nomCommercial, fiche.composition, intentionLabel]);
 
   useEffect(() => {
@@ -178,10 +242,35 @@ export function FicheComplementPanel({
               <li key={`${c.ingredientCode}-${c.formeCode ?? 'sans-forme'}`}>
                 <span className="font-medium">{c.ingredientNomFr}</span>
                 {c.formeLabelFr ? ` — ${c.formeLabelFr}` : ''}
-                {c.doseParDjr != null ? ` · ${c.doseParDjr} ${c.unite ?? ''}`.trimEnd() : ''}
+                {/* UNE DOSE ABSENTE SE DIT. La source ne dose JAMAIS les
+                    nutriments : sur un complexe multivitaminé, l'ancien
+                    affichage rendait quinze lignes sans un chiffre ni un mot,
+                    et rien ne distinguait « la fiche ignore la dose » de « le
+                    produit n'en déclare pas ». « Non renseigné n'est pas
+                    zéro » — la règle est écrite dans le service, l'écran ne
+                    l'appliquait pas ici.
+                    Et la grandeur est nommée : la source déclare une quantité
+                    par dose journalière recommandée, pas par prise. L'écran
+                    était le dernier maillon resté muet après le renommage. */}
+                {c.doseParDjr != null ? (
+                  <>
+                    {' · '}
+                    {c.doseParDjr} {c.unite ?? ''} par{' '}
+                    <abbr title="dose journalière recommandée">DJR</abbr>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground"> · dose non renseignée</span>
+                )}
               </li>
             ))}
           </ul>
+        )}
+        {fiche.composition.some((c) => c.doseParDjr == null) && (
+          <p className="mt-2 text-2xs text-muted-foreground">
+            « Dose non renseignée » signifie que la source ne porte aucune quantité pour cette
+            ligne : ce n&apos;est pas une dose nulle. Les doses affichées sont exprimées par dose
+            journalière recommandée, telle que la source la déclare — jamais par unité de prise.
+          </p>
         )}
         {/* La liste ci-dessus peut être incomplète : le dire, sinon elle se lit
             comme la composition entière et l'absence d'un ingrédient comme son
@@ -313,6 +402,16 @@ export function FicheComplementPanel({
         <h4 className="text-2xs font-semibold uppercase tracking-[.08em] text-muted-foreground">
           Corpus micronutrition — claims validés
         </h4>
+        {/* La liste des claims porte sur les ingrédients CITÉS, pas sur toute la
+            composition : le dire, sinon son silence sur un ingrédient se lit
+            comme l'absence de claim à son sujet. */}
+        {ingredientsOmis > 0 && (
+          <p className="mt-1.5 text-2xs text-muted-foreground">
+            {ingredientsCites === 0
+              ? `Aucun ingrédient n’a pu être cité dans la recherche : les ${ingredientsOmis} de la composition n’y entrent pas.`
+              : `Corpus interrogé sur ${ingredientsCites === 1 ? 'le premier ingrédient' : `les ${ingredientsCites} premiers ingrédients`} de la composition : ${ingredientsOmis === 1 ? 'le suivant n’entre pas' : `les ${ingredientsOmis} suivants n’entrent pas`} dans la recherche.`}
+          </p>
+        )}
         {corpusEnCours ? (
           <p className="mt-1.5 text-xs text-muted-foreground">Lecture du corpus…</p>
         ) : corpusEchec ? (

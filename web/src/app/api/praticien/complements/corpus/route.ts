@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { emailPraticien } from '@/lib/praticien/appartenance';
+import { REQUETE_CORPUS_MAX } from '@/lib/supplement-library/config';
 import { isC4Enabled } from '@/lib/supplement-library/featureFlag';
 import {
   RAYON_MICRONUTRITION,
@@ -17,7 +18,9 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const REQUETE_MAX = 500;
+// `REQUETE_CORPUS_MAX` vit dans `lib/supplement-library/config.ts` : un
+// `route.ts` n'accepte qu'une liste fermée d'exports, et y exporter une valeur
+// casse `next build` sans que le type-check de T1 en dise un mot.
 const RAYON_RE = /^[a-z][a-z0-9_]{1,40}$/;
 
 export type ComplementsCorpusApiResponse =
@@ -46,8 +49,8 @@ export async function GET(req: Request): Promise<NextResponse<ComplementsCorpusA
       return echec('rayon_invalide', 'Rayon invalide.', 400);
     }
     const requete = (searchParams.get('requete') ?? '').trim();
-    if (requete.length > REQUETE_MAX) {
-      return echec('requete_invalide', `La requête ne doit pas dépasser ${REQUETE_MAX} caractères.`, 400);
+    if (requete.length > REQUETE_CORPUS_MAX) {
+      return echec('requete_invalide', `La requête ne doit pas dépasser ${REQUETE_CORPUS_MAX} caractères.`, 400);
     }
 
     const resultat = await servirRayonCorpus({ rayon: rayonBrut, requete });

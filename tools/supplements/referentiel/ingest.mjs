@@ -19,6 +19,7 @@
 // Secret lu dans SUPPLEMENTS_INTERNAL_SECRET (jamais en argument : la ligne de
 // commande est visible des autres processus).
 import { readFileSync, existsSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 // La projection vit dans `lib/projection.mjs` : l'outil de projection des
@@ -32,7 +33,9 @@ const opt = (nom, defaut = null) => {
   return i >= 0 && args[i + 1] ? args[i + 1] : defaut;
 };
 const URL_BASE = opt('--url');
-const SOURCE = opt('--source', './referentiel');
+// Même emplacement durable que la moisson (voir moisson.mjs) : hors du
+// worktree, qui se supprime après sa PR.
+const SOURCE = opt('--source', join(homedir(), '.wellneuro/supplements/referentiel'));
 const DRY = args.includes('--dry-run');
 const LOT = 400; // sous SUPPLEMENTS_MAX_BATCH_SIZE (500)
 

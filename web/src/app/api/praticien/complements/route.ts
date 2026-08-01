@@ -20,10 +20,7 @@ import {
   type FiltresCatalogue,
 } from '@/lib/supplement-library/catalogue';
 import type { ValeurQualiteFormulation } from '@/lib/supplement-library/types';
-import type {
-  ValeurDonneesManquantes,
-  ValeurInteractions,
-} from '@/lib/supplement-library/catalogue';
+import type { ValeurDonneesManquantes } from '@/lib/supplement-library/catalogue';
 
 // Service du catalogue de compléments (C4A) — PRATICIEN SEUL. Le référentiel
 // est documentaire et global au cabinet ; la garde est la session NextAuth
@@ -116,7 +113,9 @@ export async function GET(req: Request): Promise<NextResponse<ComplementsApiResp
 
     const filtres: FiltresCatalogue = {
       qualite: facette<ValeurQualiteFormulation>(searchParams.get('qualite'), FACETTES.qualite),
-      interactions: facette<ValeurInteractions>(searchParams.get('interactions'), FACETTES.interactions),
+      // `interactions` n'est plus construite ici : la facette a rejoint les
+      // indisponibles et la boucle plus haut la refuse en 400. La bâtir quand
+      // même la ferait ignorer en silence par `construireWhere`.
       donneesManquantes: facette<ValeurDonneesManquantes>(
         searchParams.get('donneesManquantes'),
         FACETTES.donneesManquantes,
