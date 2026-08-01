@@ -1014,9 +1014,12 @@ for (const id of instrumentsADimensions) {
     // et les bandes ont été retirées. Elles avaient été alignées le 2026-07-31
     // sur celles de sa source — qui sont bien les siennes, 0-5 / 6-15 / 16-36 se
     // lisant à la dernière page de WN-SRC-0495 — mais appliquées à des items qui
-    // ne sont PAS ceux pour lesquels elles ont été établies : le servi ne partage
-    // qu'un item avec le Know Cannabis Test. Une grille de lecture validée sur un
-    // instrument, posée sur un autre, ne mesure rien.
+    // ne sont PAS ceux pour lesquels elles ont été établies : sur les 32 items
+    // relevés un à un, le servi ne partage AUCUN item avec le Know Cannabis Test
+    // au sens strict — zéro paire de même question ET mêmes modalités, neuf de
+    // même construit seulement, sept items propres à chaque côté (9 + 7 = 16).
+    // Une grille de lecture validée sur un instrument, posée sur un autre, ne
+    // mesure rien.
     'Q_ALI_02', 'Q_CAR_01', 'Q_GEO_01', 'Q_GEO_02', 'Q_GEO_03', 'Q_GEO_04',
     'Q_NEU_02', 'Q_SOM_03', 'Q_SOM_04', 'Q_STR_01',
   ].sort();
@@ -1025,11 +1028,20 @@ for (const id of instrumentsADimensions) {
     porteursAttendus,
     'liste des instruments servant une conduite clinique — un ajout ou une perte doit être vu en revue, pas subi',
   );
-  // 11 déclarants avec le dépistage court, 10 avec l'Enquête SIIN : même
+  // ATTENTION AU MOT : les 11 / 10 ci-dessous sont les PORTEURS SERVIS comptés
+  // juste au-dessus, pas les DÉCLARANTS que l'assertion qui suit attend (10 / 9).
+  // L'écart d'un vient de `Q_SOM_03`, expliqué douze lignes plus haut. Une
+  // rédaction antérieure disait « déclarants » ici, à trois lignes du compteur
+  // qu'elle décrivait.
+  // 11 porteurs servis avec le dépistage court, 10 avec l'Enquête SIIN : même
   // raison que juste au-dessus, `Q_ALI_01` est le seul à varier. DEUX de moins
-  // dans les deux positions depuis le 2026-08-01 — les quatre `protocol:` de
-  // `Q_NEU_06` ont disparu avec sa reconstruction depuis la source (2026-07-31),
-  // et les quatre de `Q_TAB_04` avec le retrait de ses bandes empruntées.
+  // dans les deux positions qu'avant le 2026-07-31, et les deux départs sont de
+  // DATES DIFFÉRENTES — les quatre `protocol:` de `Q_NEU_06` ont disparu avec sa
+  // reconstruction depuis la source LE 2026-07-31, ceux de `Q_TAB_04` avec le
+  // retrait de ses bandes empruntées LE 2026-08-01. Le compte n'a donc baissé
+  // que d'UN chacun de ces deux jours. Une rédaction antérieure datait les deux
+  // du 2026-08-01 : elle faisait chercher deux départs là où il n'y en avait
+  // qu'un, et c'est le genre d'écart qui fait rouvrir un banc pour rien.
   const declarantsAttendus = ALI01_SERT_UNE_CONDUITE ? 10 : 9;
   assert(
     attendusPorteurs.size === declarantsAttendus,

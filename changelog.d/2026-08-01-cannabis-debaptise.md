@@ -5,7 +5,14 @@
   source » — est remplie : c'est le **Know Cannabis Test** de la clinique Jellinek
   (Amsterdam), que l'OFDT publie dans son guide des outils de repérage. Lu à
   l'image sur les six pages du support du cabinet, et recoupé à l'original anglais.
-- **Mais le servi ne partage qu'un item avec elle.** La source demande la somme
+- ~~**Mais le servi ne partage qu'un item avec elle.**~~ **RECTIFIÉ le même jour, voir
+  l'entrée « la source du cannabis avait un nom, pas une pièce » plus bas** : le relevé
+  item par item donne **zéro** item partagé au sens strict et **neuf** au sens du
+  construit, et « le manque » — cité ci-dessous comme propre au servi — est l'item 13 de
+  la source. La conclusion du lot ne bouge pas ; c'est le zéro strict qui la porte. Le
+  texte d'origine est conservé tel quel ci-dessous parce qu'il date l'état de la
+  connaissance au moment du geste.
+- **~~Mais le servi ne partage qu'un item avec elle.~~** La source demande la somme
   dépensée par semaine, la fréquence d'ivresse cannabique, avec qui l'on fume, les
   raisons de consommer ; le servi demande l'âge de début, la tolérance, le manque,
   les symptômes respiratoires. C'est le cas `Q_PED_02` à l'identique — 16 items des

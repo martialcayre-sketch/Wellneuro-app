@@ -316,11 +316,18 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   //
   // RÉACTIVÉ LE 2026-08-01, débaptisé et dégréé de ses bandes. La condition posée
   // ci-dessus — « réactivation à l'identification de la source » — est remplie :
-  // la source EST le Know Cannabis Test de la clinique Jellinek, lue à l'image
-  // sur les six pages du support et recoupée à l'original que publie l'OFDT.
+  // la source EST le Know Cannabis Test de Roel Kerssemakers (clinique Jellinek,
+  // Amsterdam, 2000), lue à l'image sur les deux volets de trois pages du support
+  // et recoupée à la fiche que l'OFDT lui consacre (« Guide pratique des
+  // principaux outils de repérage de l'usage problématique de cannabis chez les
+  // adolescents », janvier 2013, p. 32). Cette pièce est au registre des sources.
   //
   // Mais l'identification a produit l'inverse de ce qu'on en attendait. Le servi
-  // ne partage QU'UN item avec cette source, et la source ne donne AUCUN point
+  // ne partage AUCUN item avec cette source au sens strict — zéro paire de même
+  // question ET mêmes modalités sur les 32 items relevés ; neuf paires de même
+  // construit aux modalités différentes, sept items propres au servi et sept
+  // propres à la source, soit 9 + 7 = 16 de chaque côté — et la source ne donne
+  // AUCUN point
   // par option — reconstruire aurait exigé d'inventer le barème menant à son /36.
   // L'instrument est donc débaptisé, et ses bandes retirées : elles étaient bien
   // celles de la source, mais appliquées à des items qui ne sont pas les siens.

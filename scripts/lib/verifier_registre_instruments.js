@@ -494,6 +494,9 @@ function verifierRegistreInstruments({
     //   Q_SOM_09  → passait      (rien ne l'arrêtait)
     //   Q_GEO_04  → passait      (rien ne l'arrêtait)
     //   Q_TAB_04  → arrêté       (actif:false ⟹ terminal, et contenu 'a_auditer')
+    //                            [ÉTAT DU 2026-07-30. Q_TAB_04 est `actif: true`
+    //                             depuis le 2026-08-01 : ce relevé décrit la
+    //                             situation qui a motivé la garde, pas l'actuelle.]
     //   Q_PED_03  → arrêté       (idem)
     //   Q_FIB_03  → arrêté       (idem, plus divergencesCritiques = 2)
     //
@@ -515,6 +518,13 @@ function verifierRegistreInstruments({
     // chose DÈS ce moment-là que pour Q_TAB_04, dont le plafond est sous
     // `contenu_verrouille` ; pour Q_PED_03 et Q_FIB_03 elle devient porteuse le
     // jour où leur contenu sera audité.
+    //
+    // [CADUC POUR Q_TAB_04 DEPUIS LE 2026-08-01. Sa réserve a été LEVÉE ce
+    //  jour-là — la première levée du mécanisme — et sa ligne retirée de
+    //  RESERVES_ATTENDUES. Le raisonnement ci-dessus reste juste et vaut
+    //  toujours pour Q_PED_03 et Q_FIB_03 ; il ne décrit simplement plus le seul
+    //  cas dont il se servait d'exemple. Conservé plutôt que réécrit : c'est lui
+    //  qui explique pourquoi la garde existe.]
     //
     // Le compteur agrège d'ailleurs PAR GENRE (`comparaison.mjs`, par conception) :
     // son « 1 » recouvrait une famille entière. Un chiffre de tête ne peut pas
