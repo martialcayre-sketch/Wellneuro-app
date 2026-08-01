@@ -1,6 +1,6 @@
 ---
-description: Produit un contexte WellNeuro compact et factuel pour reprendre une session sans recharger toute la documentation.
-argument-hint: "[afficher|write]"
+description: Affiche un contexte WellNeuro compact et factuel pour reprendre une session sans recharger toute la documentation. N'écrit rien — pour produire un document de reprise, voir /wn-handoff.
+argument-hint: "[afficher]"
 disable-model-invocation: true
 effort: low
 ---
@@ -11,7 +11,9 @@ effort: low
 
 Argument : `$ARGUMENTS`
 
-- Par défaut, afficher le contexte généré sans modifier le dépôt.
-- Avec `write`, écrire le résultat dans `docs/claude/HANDOFF_CURRENT.md`.
+- **Affichage seul : ce skill n'écrit aucun fichier.** Il rend l'état factuel —
+  branche, campagne, corpus, derniers commits — et rien d'autre. Le document de
+  reprise (décisions, interdits, prochaine action) est le ressort de
+  `/wn-handoff`, seul à écrire `docs/claude/HANDOFF_CURRENT.md`.
 - Ne jamais inclure de secret, valeur `.env`, token patient ou donnée patient réelle.
 - Limiter le document à 120 lignes.

@@ -67,6 +67,15 @@ Puis classer sur les fichiers probables — la classe la plus haute atteinte l'e
 | **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | `opus` | **T3** | `wn-reviewer` **avant** de passer la main | confirmation distincte ; **vérifier la base après merge** (`execute_sql`) |
 | **Auth** — `lib/auth.ts`, portail, tokens, consentement | `opus` | **T3** | `wn-reviewer` **avant** de passer la main | idem migration : la revue de diff ne voit pas ce que le lot **ne fait pas** |
 
+**Une classe se lit sur les fichiers ; une seule chose la déborde.** Un lot dont
+le raisonnement traverse le dépôt ou tient sur plusieurs jours — refonte
+transverse, architecture, campagne à réordonner — monte à `fable`
+(`claude-fable-5`) quel que soit le type de ses fichiers, et redescend dès que
+la conception est arrêtée. Ce n'est pas un défaut : à $10/$50 par MTok, deux
+fois Opus, il faut que la durée de la tâche le justifie. Un lot ordinaire, même
+sur du clinique, reste à `opus`. C'est **la seule** ligne où le choix du modèle
+pèse sur la facture — la remarque qui suit vaut pour tout le reste du tableau.
+
 Le modèle du tableau vaut pour la **qualité du verdict**, pas pour le coût :
 descendre sur une revue clinique est un vrai risque, monter sur une lecture ne coûte
 presque rien. La dépense se joue ailleurs.
