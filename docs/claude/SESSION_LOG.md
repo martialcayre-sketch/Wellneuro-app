@@ -1105,3 +1105,22 @@ confirmation de ses gates avant toute exécution.
 
 **Questions ouvertes** : source des « gates G0–G4 » du contexte compact,
 toujours introuvable.
+
+## 2026-08-01 — Lot 8 : décision f amendée, gates confirmés
+
+**Décisions** (praticien, en session) : question f close en AMENDANT A-009 pour
+l'orientation — seule la perfusion reste exclue ; sevrages médicamenteux,
+psychotropes et Alzheimer réintégrés dans le drafting, chaque claim restant
+soumis à la validation individuelle (voie lente, D-003). Coût accepté
+(~11-17 $ / 106 fiches) ; premier lot d'ingestion : sommeil complet
+(17 fiches), pas de pilote préalable.
+
+**Écarté** : pilote 1-2 fiches avant volume (choix praticien) ; exécution du
+pipeline depuis cette session (secrets et PDF n'existent que sur le Mac).
+
+**Prochaine action** : après merge de #517, PR de préparation lot 8 —
+`metadata.usage='orientation'` dans draft.mjs, filtre A-009 amendé, runbook
+Mac — puis run d'ingestion sommeil sur le poste local.
+
+**Questions ouvertes** : « gates G0-G4 » du contexte compact, toujours sans
+source identifiée.

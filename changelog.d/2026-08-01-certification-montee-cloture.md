@@ -27,3 +27,13 @@
   puis la signature de la table au lot 9. Transcrit au registre
   (`verdictScoring` de Q_PED_03), dans l'arbitrage du 2026-07-31 et dans
   `.wn/state.json`.
+
+- **Décision f close — périmètre A-009 amendé pour l'orientation.** Sur
+  confirmation expresse du praticien (2026-08-01) : seule la **perfusion**
+  reste exclue du moteur d'orientation ; sevrages médicamenteux, psychotropes
+  et Alzheimer sont **réintégrés** dans le drafting des claims. Ce qui ne
+  change pas : la voie lente — chaque claim passe individuellement par la
+  validation praticien de l'Atelier corpus avant d'exister pour le moteur
+  (barrière D-003). Gates du lot 8 confirmés dans la foulée : coût accepté,
+  premier lot d'ingestion = sommeil complet (17 fiches), exécution sur le
+  poste local (les secrets du pipeline n'existent que là).
