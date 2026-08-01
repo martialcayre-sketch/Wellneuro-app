@@ -6,6 +6,7 @@
 // d'une composante à l'autre.
 import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
+import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 
 const DEF_TAB: any = (QUESTIONNAIRE_CATALOGUE as any).Q_TAB_04;
 const DEF_PNE: any = (QUESTIONNAIRE_CATALOGUE as any).Q_PNE_01;
@@ -21,11 +22,21 @@ describe('Q_TAB_04 — les bandes empruntées, et pourquoi elles sont parties', 
   //
   // Ce qui ne l'était pas : elles s'appliquaient à des items qui ne sont PAS
   // ceux pour lesquels elles ont été établies. La source est le Know Cannabis
-  // Test, et le servi ne partage qu'UN item avec lui — elle demande la somme
-  // dépensée par semaine, la fréquence d'ivresse cannabique, avec qui l'on fume ;
-  // le servi demande l'âge de début, la tolérance, le manque, les symptômes
-  // respiratoires. Une grille de lecture validée sur un instrument, posée sur un
+  // Test (Kerssemakers, clinique Jellinek, 2000), et le servi ne partage AUCUN
+  // item avec lui au sens strict — sur les 32 items relevés un à un, zéro paire
+  // ne présente la même question ET les mêmes modalités ; neuf paires de même
+  // construit, sept items propres au servi, sept propres à la source, soit
+  // 9 + 7 = 16 de chaque côté. Elle demande la somme dépensée par semaine, la
+  // fréquence d'ivresse cannabique, avec qui l'on fume ; le servi demande l'âge
+  // de début, l'ancienneté, les symptômes respiratoires, les épisodes de
+  // paranoïa. Une grille de lecture validée sur un instrument, posée sur un
   // autre, ne mesure rien.
+  //
+  // NE PAS RÉÉCRIRE « qu'UN item », ni citer « le manque » comme propre au
+  // servi : CA6 a pour contrepartie l'item 13 de la source. Et FAIRE L'ADDITION
+  // avant de republier un décompte — la rédaction qui a corrigé le « un item »
+  // annonçait six paires et laissait sept items dans aucune catégorie. Les trois
+  // versions ont été données pour « vérifiées ».
   //
   // Et reconstruire le servi sur la source était impossible sans inventer : elle
   // porte ses 16 items avec leurs modalités, puis la grille de résultats — et
@@ -81,9 +92,46 @@ describe('Q_TAB_04 — les bandes empruntées, et pourquoi elles sont parties', 
   it('est débaptisé : il ne s’annonce plus comme une évaluation, ni comme sa source', () => {
     // Il ne peut pas porter le nom de ce qu'il n'est pas — et « questionnaire
     // d'évaluation » promettait une mesure qu'il ne fait plus.
+    //
+    // LES QUATRE SURFACES, ET NON LE SEUL TITRE, depuis le 2026-08-01. Cette
+    // garde ne balayait que `def.titre` : le mot « évalue » a donc survécu dans
+    // les INSTRUCTIONS lues par le patient, juste sous un titre d'où elle
+    // l'interdisait. Relevé en revue adversariale. Le patron est celui de la
+    // débaptisation jumelle, `tdahEnseignantDebaptise.guard.test.ts` — les deux
+    // catalogues portent des textes distincts, et le patient comme le praticien
+    // ne voient pas le même : les garder tous les quatre est ce qui empêche d'en
+    // débaptiser un seul.
+    const auRayon: any = (QUESTIONNAIRES_CATALOG as any[]).find(q => q.id === 'Q_TAB_04');
+    expect(auRayon, 'Q_TAB_04 doit exister au catalogue d’affichage').toBeDefined();
+    for (const texte of [def.titre, def.instructions, auRayon.titre, auRayon.description]) {
+      const t = String(texte).toLowerCase();
+      expect(t, texte).not.toContain('évalu');
+      expect(t, texte).not.toContain('know cannabis');
+      expect(t, texte).not.toContain('jellinek');
+      // Le dénominateur retiré du moteur ne doit pas revenir par la prose.
+      expect(t, texte).not.toContain('/36');
+    }
     expect(def.titre).toContain('WellNeuro');
-    expect(def.titre.toLowerCase()).not.toContain('évaluation');
-    expect(def.titre.toLowerCase()).not.toContain('know cannabis');
+  });
+
+  it('la promesse faite au patient est tenue par le moteur', () => {
+    // Le couplage que rien ne gardait : les instructions annoncent au patient
+    // qu'il ne calcule aucun score et ne conclut rien. Si une bande était
+    // réintroduite un jour — la note [11] du registre prévoit explicitement ce
+    // cas — l'instrument recommencerait à conclure pendant que le texte lu par
+    // le patient continuerait de promettre l'inverse. Le mensonge s'inverserait
+    // sans que rien ne rougisse.
+    expect(def.instructions.toLowerCase()).toContain('ne calcule aucun score');
+    const tout = Object.fromEntries(
+      (def.sections ?? []).flatMap((sec: any) => sec.questions ?? [])
+        .map((q: any) => [q.id, Math.max(...q.options.map((o: any) => o.v))]),
+    );
+    for (const reponses of [tout, {}]) {
+      const r: any = calculateScore('Q_TAB_04', reponses);
+      expect(r.total).toBeNull();
+      expect(r.maxTotal).toBeUndefined();
+      expect(r.interpretation ?? null).toBeNull();
+    }
   });
 
   it('sert toujours ses 16 items (contrôle négatif)', () => {

@@ -335,12 +335,16 @@ describe('questionnaire suspendu (actif: false)', () => {
   //
   // `Q_TAB_04` en est SORTI le 2026-08-01, et par le chemin que sa fermeture
   // annonçait : « réactivation à l'identification de la source ». La source est
-  // identifiée — c'est le Know Cannabis Test de la clinique Jellinek, lu à
-  // l'image sur les six pages du support et recoupé à l'original que publie
-  // l'OFDT.
+  // identifiée — c'est le Know Cannabis Test de Roel Kerssemakers (clinique
+  // Jellinek, Amsterdam, 2000), lu à l'image sur les deux volets de trois pages
+  // du support et recoupé à la fiche p. 32 du guide de repérage de l'OFDT
+  // (janvier 2013), pièce inscrite au registre des sources.
   //
   // Mais l'identification a produit l'inverse de ce qu'on en attendait : le servi
-  // ne partage QU'UN item avec cette source, et la source ne donne AUCUN point
+  // ne partage AUCUN item avec cette source au sens strict — zéro paire de même
+  // question ET mêmes modalités sur 32 items ; neuf de même construit, sept
+  // propres au servi, sept propres à la source, 9 + 7 = 16 de chaque côté — et la
+  // source ne donne AUCUN point
   // par option. Il est donc débaptisé et dégréé de ses bandes, plutôt que
   // reconstruit — reconstruire aurait exigé d'inventer le barème menant à son
   // /36. Ce qui rouvre l'instrument n'est pas la conformité à sa source : c'est

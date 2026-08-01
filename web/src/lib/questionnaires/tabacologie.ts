@@ -85,7 +85,11 @@ export const Q_TAB_03 = {
 };
 export const Q_TAB_04 = {
   id:'Q_TAB_04', titre:'Repérage des conduites de consommation de cannabis (grille WellNeuro)',
-  instructions:'Ce questionnaire évalue votre consommation de cannabis et ses conséquences. Répondez honnêtement — vos réponses sont confidentielles.',
+  // La garde interdit « évaluation » dans le TITRE ; le mot vivait juste en
+  // dessous, dans la phrase que le patient lit. Un instrument qui ne rend ni
+  // score ni bande n'évalue rien, et le lui annoncer promet une mesure qu'il ne
+  // fera pas. Corrigé le 2026-08-01, avec le relevé qui l'a débaptisé.
+  instructions:'Ce questionnaire situe vos conduites de consommation de cannabis. Il ne calcule aucun score et ne conclut rien : vos réponses servent à préparer l\'entretien avec votre praticien. Répondez librement — elles sont confidentielles.',
   sections:[
     { id:'A', titre:'Consommation',
       questions:[
@@ -128,14 +132,32 @@ export const Q_TAB_04 = {
     // DÉBAPTISÉ LE 2026-08-01, ET SES BANDES RETIRÉES. Le geste tient en deux
     // constats, tous deux vérifiés sur les pièces primaires.
     //
-    // 1. LA SOURCE EST LE KNOW CANNABIS TEST (clinique Jellinek, Amsterdam), que
-    //    l'OFDT publie dans son guide des outils de repérage. Les deux lectures
-    //    du banc concordent item par item avec le support du cabinet, et celui-ci
-    //    recoupe l'original anglais. Or LE SERVI NE PARTAGE QU'UN ITEM AVEC LUI :
-    //    la source demande la somme dépensée par semaine, la fréquence d'ivresse
-    //    cannabique, avec qui l'on fume, les raisons de consommer ; le servi
-    //    demande l'âge de début, la tolérance, le manque, les symptômes
-    //    respiratoires. C'est le cas Q_PED_02 à l'identique — 16 items des deux
+    // 1. LA SOURCE EST LE KNOW CANNABIS TEST (Roel Kerssemakers, clinique
+    //    Jellinek, Amsterdam, 2000), que l'OFDT fiche p. 32 de son « Guide
+    //    pratique des principaux outils de repérage de l'usage problématique de
+    //    cannabis chez les adolescents » (janvier 2013). Les deux lectures du banc
+    //    concordent item par item avec le support du cabinet, et celui-ci recoupe
+    //    l'original anglais. Or LE SERVI NE PARTAGE AUCUN ITEM AVEC LUI AU SENS
+    //    STRICT : sur les 32 items relevés un à un, ZÉRO paire ne présente la même
+    //    question ET les mêmes modalités. NEUF partagent le construit sans les
+    //    modalités — CA1/S1 fréquence, CA5/S9 capacité d'arrêt, CA6/S13 manque,
+    //    CA7/S4 escalade pour l'effet, CA9/S11 retentissement, CA10/S6 moment,
+    //    CA11/S16 inquiétude d'un tiers, CA12/S7 motif d'usage, CA13/S15 mémoire.
+    //    SEPT n'appartiennent qu'au servi — âge de début, ancienneté, quantité par
+    //    occasion, persistance, symptômes respiratoires, paranoïa, aggravation —
+    //    et SEPT qu'à la source : somme dépensée par semaine, fréquence d'ivresse
+    //    cannabique, poly-consommation, entourage, intention d'arrêter, report
+    //    d'obligations, inquiétude pour soi-même. LE COMPTE FERME : 9 + 7 = 16 de
+    //    chaque côté.
+    //
+    //    DEUX RÉDACTIONS ONT ÉCHOUÉ ICI AVANT CELLE-CI, toutes deux données pour
+    //    vérifiées. « Il ne partage qu'un item », avec « le manque » en exemple :
+    //    faux, CA6 a pour contrepartie l'item 13 de la source. Puis « six paires,
+    //    sept propres au servi, six propres à la source » : 13 et 12 items classés
+    //    sur 16, sept orphelins muets. AVANT DE RÉÉCRIRE CE BLOC, FAIRE
+    //    L'ADDITION — un recensement qui ne totalise pas son propre effectif n'est
+    //    pas une mesure. C'est le ZÉRO strict, non le décompte des paires, qui
+    //    interdit de transporter un barème. C'est le cas Q_PED_02 à l'identique — 16 items des deux
     //    côtés, /36 des deux côtés, mêmes trois bandes, ZÉRO divergence critique,
     //    et un autre instrument. Le seul cas que le compteur déclare conforme.
     //

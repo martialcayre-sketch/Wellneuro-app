@@ -110,7 +110,12 @@ describe('bandes d’interprétation — aucune bande plutôt qu’une bande fau
 
     // `Q_TAB_04` PORTAIT CE CAS jusqu'au 2026-08-01, et il en est sorti : ses
     // bandes ont été RETIRÉES, parce qu'elles étaient celles d'un instrument dont
-    // le servi ne partage qu'un item. Il ne rend donc plus ni total ni bande, et
+    // le servi ne partage AUCUN item au sens strict — zéro paire de même question
+    // ET mêmes modalités sur les 32 items relevés un à un ; neuf de même construit
+    // seulement. (Cette ligne portait « ne partage qu'un item » : le SEPTIÈME
+    // emplacement de cette affirmation, et le seul que le lot du 2026-08-01 avait
+    // manqué en annonçant les avoir tous corrigés — il se comptait six.)
+    // Il ne rend donc plus ni total ni bande, et
     // ne peut plus rien éprouver ici. Le cas qu'il illustrait — un plafond de
     // grille écrit SOUS le maximum atteignable — reste couvert par celui qui
     // suit, qui porte encore cet écart. Une garde ne se supprime pas parce que
