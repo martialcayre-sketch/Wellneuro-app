@@ -13,6 +13,7 @@
 import { describe, expect, it } from 'vitest';
 import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
+import { PASSATION_PRATICIEN, listeBibliotheque } from '@/lib/bibliotheque';
 
 const DEF: any = (QUESTIONNAIRE_CATALOGUE as any).Q_PED_02;
 const items = (): any[] => (DEF.sections ?? []).flatMap((s: any) => s.questions ?? []);
@@ -31,9 +32,22 @@ describe('TDAH enseignant — le nom ne revendique plus ce que le servi n’est 
     expect(DEF.titre).toContain('WellNeuro');
   });
 
-  it('est rouvert à l’assignation', () => {
+  it('n’est PAS envoyé au portail patient : c’est l’enseignant qui le renseigne', () => {
+    // Une première rédaction de ce lot le rouvrait à l'assignation. L'arbitrage
+    // du 2026-07-31 tranchait l'IDENTITÉ, pas la SURFACE — et la surface pose un
+    // problème propre. Deux issues, toutes deux mauvaises : le parent remplit à
+    // la place de l'informant annoncé (les consignes disent « destiné aux
+    // ENSEIGNANTS » et huit items portent sur le comportement EN CLASSE), ou le
+    // lien magique du patient est transmis à un tiers, qui accède alors à TOUT
+    // son portail.
     const auRayon: any = (QUESTIONNAIRES_CATALOG as any[]).find(q => q.id === 'Q_PED_02');
-    expect(auRayon.actif).toBe(true);
+    expect(auRayon.actif).toBe(false);
+    expect(PASSATION_PRATICIEN.map(p => p.id)).toContain('Q_PED_02');
+    // Et il reste servi en consultation : sans ceci, le fermer des deux côtés
+    // passerait ce test en ayant supprimé l'usage.
+    const enRayon = listeBibliotheque().find(e => e.id === 'Q_PED_02');
+    expect(enRayon?.passationPraticien).toBe(true);
+    expect(enRayon?.assignable).toBe(false);
   });
 });
 
@@ -53,13 +67,31 @@ describe('TDAH enseignant — le sous-score qui nommait un trouble jamais mesur�
     }
   });
 
-  it('nomme « Impulsivité » l’axe dont les cinq items mesurent l’impulsivité', () => {
+  it('nomme l’axe d’après ce que ses cinq items mesurent', () => {
     const axe = sousScores().find((s: any) => s.id === 'IMP');
     expect(axe, 'le sous-score IMP doit exister').toBeDefined();
-    expect(axe.label).toBe('Impulsivité');
+    // « et agitation », pas « Impulsivité » seule : CE2 (« mal à rester assis »)
+    // est un item d'agitation motrice. L'étiquette doit couvrir ses cinq items.
+    expect(axe.label).toBe('Impulsivité et agitation');
     // La composition est épinglée : renommer l'étiquette en changeant les items
     // rendrait le nom faux d'une autre manière.
     expect(axe.items).toEqual(['CE1', 'CE2', 'CE5', 'CE6', 'CE7']);
+  });
+
+  it('n’emprunte plus AUCUN intitulé d’échelle publiée', () => {
+    // L'arbitrage demandait de retirer « ni le nom Conners NI LES INTITULÉS
+    // empruntés ». Une première rédaction n'avait retiré que celui qui était
+    // cliniquement faux : les trois autres — « Inattention / Cognitif »,
+    // « Hyperactivité », « Index TDAH » — sont les traductions littérales des
+    // quatre échelles du CTRS-R:S, dans l'ordre. « Index TDAH » en particulier
+    // est le « Conners' ADHD Index » au mot près : l'architecture s'en réclamait
+    // encore quand le nom ne s'en réclamait plus.
+    const EMPRUNTS = [/index\s*tdah/i, /cognitif/i, /opposition/i];
+    for (const axe of sousScores()) {
+      for (const motif of EMPRUNTS) {
+        expect(motif.test(String(axe.label)), `sous-score ${axe.id} : « ${axe.label} »`).toBe(false);
+      }
+    }
   });
 
   it('aucun item de la grille n’interroge l’opposition', () => {
@@ -67,9 +99,24 @@ describe('TDAH enseignant — le sous-score qui nommait un trouble jamais mesur�
     // l'étiquette qui était fausse, c'est l'écart entre elle et le contenu. Si
     // un item d'opposition était ajouté un jour, ce test rougirait — et il
     // faudrait alors rediscuter l'étiquette, pas le supprimer.
-    const OPPOSITION = /refuse d.obéir|s.oppose|provoqu|colère|défie|conteste l.autorité|rancun/i;
+    // La première rédaction de cette regex laissait passer DIX formulations sur
+    // douze — « provocant », « réplique », « refuse activement », « désobéit »,
+    // « s'obstine »… dont six qui sont, mot pour mot, des items du Conners parent
+    // déjà présent dans le dépôt. Un banc qui ne les attrape pas ne protège pas
+    // de la mutation la plus probable : recopier un item du fichier d'à côté.
+    const OPPOSITION =
+      /refus|désobé|oppos|provoc|répliqu|s.obstine|veng|rancun|colère|défie|blâme|délibérément|conteste|susceptib/i;
     const fautifs = items().filter((q: any) => OPPOSITION.test(q.label ?? q.texte ?? ''));
     expect(fautifs.map((q: any) => q.id)).toEqual([]);
+  });
+
+  it('sert exactement les 28 items connus, et pas un de plus', () => {
+    // LE CONTRÔLE HONNÊTE, celui qui ne dépend d'aucun vocabulaire. Une regex,
+    // si large soit-elle, reste un pari sur la formulation de l'item qu'on
+    // n'a pas écrit. Épingler les identifiants fait rougir TOUTE addition, et
+    // oblige alors à rediscuter l'étiquette de l'axe qui l'accueille.
+    expect(items().map((q: any) => q.id))
+      .toEqual(Array.from({ length: 28 }, (_, i) => `CE${i + 1}`));
   });
 });
 
@@ -81,8 +128,17 @@ describe('TDAH enseignant — ce que le scoring rend, et ce qu’il ne rend pas'
     // et la description patient promet explicitement l'inverse d'un diagnostic.
     expect(DEF.scoring.interpretation).toBeUndefined();
     expect(DEF.scoring.maxTotal).toBeUndefined();
+    // LE TOTAL, et c'est lui qui manquait. Sans `sansTotalGlobal`, le moteur
+    // additionne les quatre axes et rend 84 : ce nombre partait en
+    // `scorePrincipal`, s'affichait « Score brut : 62 » au Fil praticien — sans
+    // dénominateur, sans bande — et arrivait au modèle de synthèse. Aucune
+    // source ne donne de sens à un /84 sur cette grille.
+    //
+    // Le contrôle porte sur le RÉSULTAT du moteur, pas sur le drapeau : un
+    // moteur qui cesserait de lire `sansTotalGlobal` rougirait ici.
+    expect(DEF.scoring.sansTotalGlobal).toBe(true);
     const r: any = calculateScore('Q_PED_02', { CE1: 3, CE2: 3, CE5: 3, CE6: 3, CE7: 3 });
-    expect(r.interpretation ?? null).toBeNull();
+    expect(r.total).toBeNull();
   });
 
   it('rend les quatre axes, et l’axe impulsivité se calcule', () => {

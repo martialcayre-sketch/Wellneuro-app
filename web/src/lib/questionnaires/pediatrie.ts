@@ -68,6 +68,15 @@ export const Q_PED_02 = {
   ],
   scoring:{
     type:'subscore',
+    // AUCUN TOTAL GLOBAL, et il fallait le DÉCLARER pour que ce soit vrai.
+    //
+    // Sans ce drapeau, le moteur additionne les quatre axes et rend 84 sur une
+    // grille saturée. Ce nombre partait ensuite en `scorePrincipal`, s'affichait
+    // au Fil praticien « Score brut : 62 » — sans dénominateur, sans bande — et
+    // arrivait au modèle de synthèse. Or aucune source ne donne de sens à un /84
+    // sur cette grille : il se lirait comme une sévérité qu'aucun barème ne
+    // définit. Même parade que pour le MFI-20, et pour la même raison.
+    sansTotalGlobal:true,
     subScores:[
       // `OPP` → `IMP`, et « Opposition / Impulsivité » → « Impulsivité ». LE POINT
       // LE PLUS IMPORTANT DE CE LOT, et il était indépendant du nom de
@@ -80,10 +89,20 @@ export const Q_PED_02 = {
       // L'identifiant change AUSSI, et c'est possible sans précaution : la
       // production porte zéro assignation et zéro réponse pour cet instrument
       // (lu le 2026-08-01). Aucune passation enregistrée ne porte la clé `OPP`.
-      {id:'IMP',label:'Impulsivité',items:['CE1','CE2','CE5','CE6','CE7'],max:15},
-      {id:'INA',label:'Inattention / Cognitif',  items:['CE3','CE4','CE8','CE9','CE10','CE11','CE12','CE13','CE14'],max:27},
+      // « Impulsivité et agitation », comme le titre de sa section : CE2 (« mal à
+      // rester assis ») est un item d'agitation motrice, pas d'impulsivité pure.
+      // L'étiquette doit couvrir ses cinq items, pas quatre.
+      {id:'IMP',label:'Impulsivité et agitation',items:['CE1','CE2','CE5','CE6','CE7'],max:15},
+      // Les trois libellés ci-dessous étaient les traductions littérales des
+      // échelles publiées du CTRS-R:S — « Cognitive Problems/Inattention »,
+      // « Hyperactivity », « Conners' ADHD Index ». L'arbitrage demandait de
+      // retirer « ni le nom Conners NI LES INTITULÉS empruntés » : seul celui qui
+      // était cliniquement faux l'avait été. « Index TDAH » en particulier est
+      // l'index de Conners au mot près ; il est remplacé par ce que ses huit
+      // items mesurent réellement.
+      {id:'INA',label:'Inattention',  items:['CE3','CE4','CE8','CE9','CE10','CE11','CE12','CE13','CE14'],max:27},
       {id:'HYP',label:'Hyperactivité',            items:['CE15','CE16','CE17','CE18','CE19','CE20'],max:18},
-      {id:'IDX',label:'Index TDAH',               items:['CE21','CE22','CE23','CE24','CE25','CE26','CE27','CE28'],max:24},
+      {id:'IDX',label:'Retentissement scolaire et relationnel', items:['CE21','CE22','CE23','CE24','CE25','CE26','CE27','CE28'],max:24},
     ]
   }
 };

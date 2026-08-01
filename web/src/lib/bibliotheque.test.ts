@@ -32,7 +32,7 @@ describe('listeBibliotheque', () => {
     }
   });
 
-  it('expose les 6 passations praticien, jamais assignables', () => {
+  it('expose les 7 passations praticien, jamais assignables', () => {
     // SIX depuis le 2026-07-31 : `Q_GEO_04` (MMSE) y REVIENT et `Q_NEU_06` (MMT)
     // y ENTRE, tous deux sur arbitrage praticien — le premier par renversement de
     // la décision du 2026-07-29, le second parce que son identité est désormais
@@ -43,8 +43,12 @@ describe('listeBibliotheque', () => {
     // Le compte est exact à dessein — sans lui, une boucle sur une liste amputée
     // resterait verte. La liste est ORDONNÉE comme la source : une entrée qui se
     // glisse ailleurs qu'à sa place se voit.
+    // SEPT depuis le 2026-08-01 : `Q_PED_02`, débaptisé, y entre parce qu'il est
+    // renseigné par un ENSEIGNANT — l'envoyer au portail patient ferait remplir
+    // le parent à la place de l'informant annoncé, ou ferait transiter le lien
+    // magique du patient vers un tiers.
     expect(PASSATION_PRATICIEN.map(p => p.id))
-      .toEqual(['Q_GEO_03', 'Q_GEO_04', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06', 'Q_URO_02']);
+      .toEqual(['Q_GEO_03', 'Q_GEO_04', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06', 'Q_PED_02', 'Q_URO_02']);
     for (const { id } of PASSATION_PRATICIEN) {
       const entree = parId.get(id);
       expect(entree, id).toBeDefined();
@@ -125,7 +129,7 @@ describe('questionnaire suspendu (actif: false)', () => {
   // d'assignation — mesurée ouverte par appel direct. Ils étaient déjà affichés
   // par `PASSATION_PRATICIEN` ; seule leur route change.
   const AFFICHES_EN_CONSULTATION = [
-    'Q_GEO_03', 'Q_GEO_04', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06', 'Q_URO_02',
+    'Q_GEO_03', 'Q_GEO_04', 'Q_GEO_05', 'Q_GEO_06', 'Q_NEU_06', 'Q_PED_02', 'Q_URO_02',
   ];
 
   it('n’est jamais assignable, quel qu’en soit le motif', () => {
@@ -200,13 +204,11 @@ describe('questionnaire suspendu (actif: false)', () => {
   // divergence critique » portait sur les deux seuls contrôles que la source
   // permettait, et que le servi porte des items DSM là où Conners porte les
   // siens. Le motif complet est au catalogue, à côté de l'entrée.
-  // `Q_PED_02` en est SORTI le 2026-08-01, et lui seul : débaptisé, sa réserve
-  // visait l'échelle de Conners qu'il ne reproduit pas, et il redevient
-  // assignable. `Q_GEO_04` RESTE dans cette liste — sa réouverture du 2026-08-01
-  // porte sur l'usage en CONSULTATION, pas sur la route : il est toujours
-  // `actif: false`, toujours dans `IDS_SUSPENDUS`, toujours non assignable, et
-  // c'est exactement ce que ces cinq assertions vérifient.
-  const SUSPENDUS_DROITS = ['Q_PED_03', 'Q_GEO_04'];
+  // `Q_PED_02` et `Q_GEO_04` restent tous deux dans cette liste après le
+  // 2026-08-01 : leur réouverture porte sur l'usage EN CONSULTATION, jamais sur
+  // la route. Tous deux restent `actif: false`, dans `IDS_SUSPENDUS`, non
+  // assignables — et c'est exactement ce que ces cinq assertions vérifient.
+  const SUSPENDUS_DROITS = ['Q_PED_02', 'Q_PED_03', 'Q_GEO_04'];
 
   it('les instruments à droits non dégagés sont fermés à l’assignation', () => {
     for (const id of SUSPENDUS_DROITS) {

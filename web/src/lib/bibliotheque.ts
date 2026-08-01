@@ -87,6 +87,12 @@ export const PASSATION_PRATICIEN: { id: string; categorie: string }[] = [
   // rappels. Dans un formulaire rempli seul, le patient remonte la page et les
   // deux items les plus discriminants deviennent des points offerts.
   { id: 'Q_NEU_06', categorie: 'Gérontologie' },
+  // `Q_PED_02` ENTRE ici le 2026-08-01, avec sa débaptisation. Sa place n'est pas
+  // au portail patient : la grille est renseignée par un ENSEIGNANT. L'y envoyer
+  // ferait remplir le parent à la place de l'informant annoncé, ou ferait
+  // transiter le lien magique du patient vers un tiers — qui accéderait alors à
+  // tout son portail. Même position que `Q_GEO_03`, renseigné avec l'informant.
+  { id: 'Q_PED_02', categorie: 'Pédiatrie' },
   { id: 'Q_URO_02', categorie: 'Urologie' },
 ];
 

@@ -29,6 +29,10 @@ const allowedStatuses = new Set(['certifié', 'mappé', 'ambigu', 'n/a', 'absent
 
 const certifiedFixtures = new Set([
   'Q_CAN_01',
+  // `Q_PED_02` entre ici le 2026-08-01, avec sa débaptisation : il porte
+  // désormais une fixture qui vérifie l'ABSENCE de total global et le calcul de
+  // ses quatre axes. Elle est plus bas dans ce fichier.
+  'Q_PED_02',
   'Q_CAN_02',
   'Q_GEO_01',
   'Q_GEO_02',
@@ -1036,7 +1040,15 @@ assertEqual(porteursHorsTotal, ['Q_URO_01'], '`horsTotal` sort une sous-échelle
 // un `horsTotal` posé par erreur amputerait leur score sans qu'un test bronche.
 assertEqual(calculateScore('Q_MOD_01', fillByOptionBoundary('Q_MOD_01', 'max')).total, 180, 'Q_MOD_01 total maximal');
 assertEqual(calculateScore('Q_TAB_03', fillByOptionBoundary('Q_TAB_03', 'max')).total, 84, 'Q_TAB_03 total maximal');
-assertEqual(calculateScore('Q_PED_02', fillByOptionBoundary('Q_PED_02', 'max')).total, 84, 'Q_PED_02 total maximal');
+// `Q_PED_02` ne rend PLUS de total depuis le 2026-08-01 : débaptisé, il déclare
+// `sansTotalGlobal`. Aucune source ne donne de sens à un /84 sur cette grille, et
+// ce nombre partait en `scorePrincipal`, s'affichait « Score brut : 62 » au Fil —
+// sans dénominateur ni bande — et arrivait au modèle de synthèse. La fixture
+// vérifie donc l'ABSENCE de total, et que les quatre axes se calculent quand
+// même : sans la seconde moitié, un moteur qui ne rendrait plus rien passerait.
+const pedMax = calculateScore('Q_PED_02', fillByOptionBoundary('Q_PED_02', 'max'));
+assertEqual(pedMax.total, null, 'Q_PED_02 ne rend aucun total global');
+assertEqual(pedMax.subScores.map(s => s.total), [15, 27, 18, 24], 'Q_PED_02 totaux par axe');
 // `Q_ALI_03` n'est plus un `subscore` depuis le 2026-07-31 : reconstruit depuis
 // sa source, il rend deux GRANDEURS d'unités différentes (g de protéines,
 // kilocalories) et AUCUN total global — les additionner n'aurait pas de sens.

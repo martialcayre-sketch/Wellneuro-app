@@ -159,19 +159,6 @@ const LAISSES_ASSIGNABLES = [
   // pour les cinq au-dessus, et l'usage repose sur la déclaration étendue du
   // 2026-07-29 — laquelle n'éteint aucun droit détenu par un tiers.
   'Q_PNE_01',
-  // Repérage du TDAH par l'enseignant — DÉBAPTISÉ le 2026-08-01, et c'est ce qui
-  // l'ouvre. Sa réserve visait « © MHS (licence requise) », c'est-à-dire
-  // l'échelle de Conners : l'instrument ne la reproduit pas et ne s'en réclame
-  // plus — dix-sept libellés à similarité 0,00, six items d'opposition absents.
-  //
-  // Il reste DANS cette population, et le choix est délibéré : sa réserve change
-  // d'objet au lieu de disparaître. Ce qui remplace MHS n'est pas instruit — les
-  // items reprennent des critères diagnostiques du TDAH, reformulés pour
-  // l'observation en classe, dont l'APA est l'éditeur. Et la mention MHS
-  // REVIVRAIT si la grille était un jour reconstruite sur les items de Conners.
-  // L'effacer aurait fait sortir l'instrument de toute surveillance au moment
-  // même où l'on rouvre son assignation.
-  'Q_PED_02',
 ].sort();
 
 describe('droits et assignabilité — les instruments dont le droit surmonte une réserve', () => {
@@ -245,6 +232,18 @@ describe('droits et assignabilité — les instruments dont le droit surmonte un
       // de ses items forment un enregistrement de trois mots puis deux rappels.
       // Rempli seul, le test se corrige en remontant la page.
       'Q_NEU_06',
+      // Repérage du TDAH par l'enseignant — DÉBAPTISÉ le 2026-08-01, et servi en
+      // consultation, pas au portail. Sa réserve visait « © MHS », c'est-à-dire
+      // l'échelle de Conners : l'instrument ne la reproduit pas et ne s'en
+      // réclame plus. Il reste DANS la population sous réserve, délibérément —
+      // ce qui remplace MHS n'est pas instruit (les items reprennent des critères
+      // diagnostiques dont l'APA est l'éditeur), et la mention MHS REVIVRAIT si
+      // la grille était un jour reconstruite sur les items de Conners.
+      //
+      // Il n'est PAS assignable : la grille est renseignée par un ENSEIGNANT, et
+      // l'envoyer au portail ferait remplir le parent à sa place, ou ferait
+      // transiter le lien magique du patient vers un tiers.
+      'Q_PED_02',
     ].sort();
     const enPassation = PASSATION_PRATICIEN.map(p => p.id)
       .filter(id => SOUS_RESERVE.includes(id))
