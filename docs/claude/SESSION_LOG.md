@@ -1142,3 +1142,22 @@ Playwright bloqué par la politique réseau — verify CI fait foi, aucun code
 runtime web touché).
 
 **Prochaine action** : PR draft, CI, puis run sommeil sur le Mac.
+
+## 2026-08-01 — Clôture de session : #517 et #518 mergées, main prêt pour le run sommeil
+
+**Décisions** : #518 mergée (squash 2ddeb52) sur demande du praticien après
+verify vert lu. La journée livre : montée en certification close (62/64),
+Q_PED_03 arbitré (suspendu), décision f close (A-009 amendé : perfusion seule
+exclue), pipeline prêt pour le lot 8 (marquage usage, filtre par construction,
+banc branché, runbook).
+
+**Écarté** : réécrire 2ddeb52 signalé par le stop-hook — c'est le commit de
+squash GitHub sur main, pas un commit local ; faux positif récurrent
+post-merge.
+
+**Prochaine action** : run sommeil sur le Mac (`tools/corpus/claims/README.md`,
+12 PDF, ~2-3 $), puis validation claim par claim dans l'Atelier, puis lot 9.
+
+**Questions ouvertes** : source des « gates G0-G4 » du contexte compact,
+toujours inconnue ; entrée DECISIONS.md pour l'amendement A-009 (proposée, en
+attente d'accord).
