@@ -87,7 +87,8 @@ et `traductionValidee`, conservés sur une grille déclarée créée localement.
 `sourceIds` et le `driveMd`, eux, restent — délibérément : ce sont les pièces de
 la comparaison qui établit la **non**-correspondance.
 
-**Seconde passe de revue : deux bloquants de plus, et le premier est le défaut de
+**Seconde passe de revue : deux bloquants de plus — les deux premiers ci-dessous,
+suivis de deux remarques soldées avec eux. Et le premier bloquant est le défaut de
 ce lot rejoué dans le lot lui-même.**
 
 - **Ma propre garde affirmait plus qu'elle ne vérifiait.** Elle s'intitule

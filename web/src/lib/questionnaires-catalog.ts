@@ -367,7 +367,7 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // population que cette liste nomme depuis toujours : « clinicien/INFORMANT/
   // journal, jamais auto-administrés ».
   { id: 'Q_PED_02', titre: 'Repérage du TDAH par l’enseignant (grille WellNeuro)', categorie: 'Pédiatrie',
-    description: `Grille renseignée avec l'enseignant : impulsivité, inattention, hyperactivité, retentissement scolaire (28 items, 0-3). Repérage destiné à orienter l'entretien — il ne pose aucun diagnostic et ne rend aucun seuil.`, duree: '10 min', actif: false },
+    description: `Grille renseignée avec l'enseignant : impulsivité et agitation, inattention, hyperactivité, items clés de repérage (28 items, 0-3). Repérage destiné à orienter l'entretien — il ne pose aucun diagnostic et ne rend aucun seuil.`, duree: '10 min', actif: false },
   // Le Conners parent RESTE FERMÉ, et son banc dit pourquoi : la lecture de la
   // source y trouve 110 items là où l'application en sert 108. Deux items
   // manquants ne sont pas un défaut de scoring, c'est un autre instrument —
