@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Ingestion, gouvernance et référentiel de produits"
-statut: "à faire"
+statut: "fait"
 dépend_de: "LOT-00"
 ---
 
@@ -11,11 +11,11 @@ dépend_de: "LOT-00"
 
 Clarifier la chaîne d’ingestion et la gouvernance du référentiel de produits déjà amorcée dans les branches C4.
 
-## Travaux
+## Travaux réalisés
 
-- vérifier la cohérence des routes d’ingestion et de référentiel ;
-- confirmer la qualité du vocabulaire et des gardes de validation ;
-- définir les priorités de données externes et leurs limites.
+- la cohérence des routes d’ingestion et de référentiel a été stabilisée avec des réponses d’erreur explicites (`ok: false`) ;
+- les gardes de validation fail-closed restent explicites sans modifier la logique clinique ni le schéma ;
+- les priorités de données externes et leurs limites sont désormais documentées dans la campagne et dans le handoff final.
 
 ## Critères de fin
 

@@ -247,7 +247,8 @@ describe('RayonComplementsPanel (instrument à tiroir)', () => {
     });
     render(<RayonComplementsPanel />);
     rechercher('magnésium');
-    await waitFor(() => expect(screen.getByText(/Le rayon compléments n’est pas encore activé/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/Le rayon compléments n['’]est pas encore ouvert sur cet environnement/i)).toBeTruthy());
+    expect(screen.getByRole('status').textContent).toContain('Les filtres et la consultation du catalogue');
     const input = screen.getByLabelText('Rechercher un produit ou une marque') as HTMLInputElement;
     expect(input.disabled).toBe(true);
     expect(screen.getByRole('button', { name: 'Rechercher' }).getAttribute('disabled')).not.toBeNull();

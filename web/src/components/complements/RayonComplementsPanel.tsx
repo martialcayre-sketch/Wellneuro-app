@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { FicheComplementPanel } from '@/components/complements/FicheComplementPanel';
 import type { ComplementsApiResponse } from '@/app/api/praticien/complements/route';
 import type { CatalogueResult, FicheComplement } from '@/lib/supplement-library/catalogue';
+import { getC4DisabledMessage } from '@/lib/supplement-library/featureFlag';
 
 // Rayon compléments (C4) — instrument « à tiroir » consultable, calqué sur le
 // patron de la Boussole alimentaire (C5). Entrée par intention clinique,
@@ -179,7 +180,7 @@ export function RayonComplementsPanel() {
       if (!res.ok || !json.ok) {
         if (json.ok === false && json.reason === 'flag_eteint') {
           setSurfaceIndisponible(true);
-          setMessageEchec('Le rayon compléments n’est pas encore activé dans cette instance.');
+          setMessageEchec(null);
         } else {
           setMessageEchec(!json.ok && json.error ? json.error : 'Impossible de charger le catalogue.');
         }
@@ -254,6 +255,16 @@ export function RayonComplementsPanel() {
           Choix multicritères sans score global : chaque dimension filtre indépendamment, le tri
           reste mono-dimension. L&apos;alimentation d&apos;abord — la supplémentation ensuite.
         </p>
+
+        {surfaceIndisponible && (
+          <div role="status" className="mt-3 rounded-lg border border-border bg-surface p-3 text-sm text-foreground">
+            <p className="font-semibold text-status-warning">{getC4DisabledMessage()}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Les filtres et la consultation du catalogue restent indisponibles tant que l’activation
+              métier n’est pas ouverte.
+            </p>
+          </div>
+        )}
 
         {/* Recherche par nom ou marque */}
         <div className="mt-3 flex flex-wrap items-end gap-2">

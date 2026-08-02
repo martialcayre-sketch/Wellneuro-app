@@ -63,8 +63,10 @@ describe('POST /api/internal/supplements/referentiel', () => {
     getConfig.mockImplementation(() => { throw new Error('SUPPLEMENTS_INTERNAL_SECRET absent'); });
     const res = await POST(requete(LOT));
     expect(res.status).toBe(503);
+    const corps = await res.json();
+    expect(corps.ok).toBe(false);
     // Fail-closed : la cause exacte ne fuit pas, et on n'a rien tenté d'écrire.
-    expect((await res.json()).error).not.toMatch(/SUPPLEMENTS_INTERNAL_SECRET/);
+    expect(corps.error).not.toMatch(/SUPPLEMENTS_INTERNAL_SECRET/);
     expect(isAuthorized).not.toHaveBeenCalled();
     expect(ingest).not.toHaveBeenCalled();
   });
@@ -73,6 +75,7 @@ describe('POST /api/internal/supplements/referentiel', () => {
     isAuthorized.mockReturnValue(false);
     const res = await POST(requete(LOT));
     expect(res.status).toBe(401);
+    expect((await res.json()).ok).toBe(false);
     expect(ingest).not.toHaveBeenCalled();
   });
 
@@ -90,6 +93,9 @@ describe('POST /api/internal/supplements/referentiel', () => {
   ])('répond 422 et n’écrit rien : %s', async (_titre, corps) => {
     const res = await POST(requete(corps));
     expect(res.status).toBe(422);
+    const json = await res.json();
+    expect(json.ok).toBe(false);
+    expect(json.error).toBeTruthy();
     expect(ingest).not.toHaveBeenCalled();
   });
 

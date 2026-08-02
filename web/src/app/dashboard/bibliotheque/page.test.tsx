@@ -28,7 +28,7 @@ describe('BibliothequePage — garde-fou du rayon compléments', () => {
     // Le panneau du rayon n'est PAS monté.
     expect(screen.queryByTestId('rayon-complements-panel')).toBeNull();
     // Bannière d'indisponibilité présente.
-    expect(screen.getByText(/n.est pas encore ouvert sur cet environnement/)).toBeTruthy();
+    expect(screen.getByText(/n['’]est pas encore ouvert sur cet environnement/i)).toBeTruthy();
     // Aucun code de chantier visible (« C4 », « différé »).
     expect(document.body.textContent).not.toMatch(/\bC4\b/);
     expect(document.body.textContent).not.toMatch(/diff[eé]r[eé]/i);
@@ -39,6 +39,6 @@ describe('BibliothequePage — garde-fou du rayon compléments', () => {
     render(<BibliothequePage />);
 
     expect(screen.getByTestId('rayon-complements-panel')).toBeTruthy();
-    expect(screen.queryByText(/n.est pas encore ouvert sur cet environnement/)).toBeNull();
+    expect(screen.queryByText(/n['’]est pas encore ouvert sur cet environnement/i)).toBeNull();
   });
 });

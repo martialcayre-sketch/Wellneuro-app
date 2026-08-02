@@ -1,6 +1,6 @@
 import type { Session } from 'next-auth';
 import { emailPraticien } from '@/lib/praticien/appartenance';
-import { isC4Enabled } from '@/lib/supplement-library/featureFlag';
+import { getC4DisabledMessage, isC4Enabled } from '@/lib/supplement-library/featureFlag';
 
 export type PractitionerC4AccessResult =
   | { ok: true; session: Session }
@@ -29,7 +29,7 @@ export function getPractitionerC4Access(session: Session | null): PractitionerC4
     return {
       ok: false,
       reason: 'flag_eteint',
-      error: 'Rayon compléments indisponible.',
+      error: getC4DisabledMessage(),
       status: 404,
     };
   }
