@@ -216,7 +216,11 @@ export const Q_GEO_06 = {
       {min:0, max:7,  phase2_key:true, label:'Trouble de la mémoire épisodique — consultation neurologique', color:'danger'},
       {min:8, max:10, label:'Mémoire dans les limites normales',   color:'success'},
     ],
-    // Note clinique : un score de rappel différé < 3/5 est hautement spécifique de la MA
-    note:'Un score de rappel différé ≤ 2/5 est fortement évocateur de maladie d\'Alzheimer (sensibilité 85 %, spécificité 90 % — Dubois 2002).'
+    // Note clinique : un score de rappel différé < 3/5 est hautement spécifique de la MA.
+    // Les valeurs chiffrées sont ATTRIBUÉES à Dubois 2002 et déclarées PROVISOIRES
+    // (décision h du 2026-08-02) : le registre ne porte ni doi, ni pmid, ni
+    // dateVerification pour cet instrument — personne dans ce dépôt ne les a
+    // confrontées à la publication. Même doctrine que le plafond de Q_GEO_04.
+    note:'Un score de rappel différé ≤ 2/5 est fortement évocateur de maladie d\'Alzheimer (sensibilité 85 %, spécificité 90 % attribuées à Dubois 2002 — valeurs provisoires, non vérifiées contre la source primaire).'
   }
 };

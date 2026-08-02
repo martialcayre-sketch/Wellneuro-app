@@ -62,7 +62,7 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
 
   // ── FIBROMYALGIE ────────────────────────────────────────────────────────────
   { id: 'Q_FIB_01', titre: 'FiRST — Dépistage de la fibromyalgie', categorie: 'Fibromyalgie',
-    description: `Dépistage rapide de la fibromyalgie en 6 questions (sensibilité 90,5% pour score ≥ 5/6).`, duree: '3 min', actif: true },
+    description: `Dépistage rapide de la fibromyalgie en 6 questions (sensibilité annoncée à 90,5 % pour un score ≥ 5/6 — valeur de la publication d'origine, non vérifiée contre la source primaire).`, duree: '3 min', actif: true },
   { id: 'Q_FIB_02', titre: `QIF — Questionnaire d'Impact de la Fibromyalgie`, categorie: 'Fibromyalgie',
     description: `Mesurez l'impact de la fibromyalgie sur vos activités quotidiennes, travail et qualité de vie.`, duree: '10 min', actif: true },
   { id: 'Q_FIB_03', titre: `ELFE — Liste Européenne d'évaluation de la Fibromyalgie`, categorie: 'Fibromyalgie',
