@@ -1246,3 +1246,24 @@ en cohérence.
 **Prochaine action** : aucune immédiate sur le fond technique.
 
 **Questions ouvertes** : aucune.
+
+## 2026-08-03 — Nettoyage branches biologie (CB) + cadrage campagne CB-03→CB-09
+
+**Décisions** : audit des branches liées au rayon biologie — CB-00 à CB-02b
+déjà fusionnées en production (#364, #369, #374, #381, #394, #433) ; 9
+branches locales obsolètes supprimées (remote déjà « gone »), 1 worktree
+retiré. Campagne `2026-08-02-rayon-biologie-cb` créée (LOT-00→LOT-06,
+numérotation métier CB-03→CB-09 conservée en contenu) : PR #525 mergée
+(squash 6f8e23a) après correction CI — les id de lot doivent respecter
+`LOT-\d{2}` (garde-fou `wn-campaign-audit.mjs`), pas de préfixe libre.
+
+**Écarté** : activer la campagne (`--activate`) — CB-03 est bloqué sur les
+lots 8-9 de la certification (table NNPP2 signée), encore en cours.
+
+**Prochaine action** : vérifier l'état des lots 8-9 certification avant
+d'ouvrir CB-03 ; sinon reprendre le run sommeil (lot 8) puis lot 9.
+
+**Questions ouvertes** : promotion proposée — `scripts/wn-campaign.mjs
+create --prefix` permet un id de lot hors format `LOT-NN`, non détecté avant
+CI ; à corriger dans le script ou documenter dans le skill (en attente
+d'accord).
