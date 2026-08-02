@@ -1,10 +1,10 @@
 ---
 id: "2026-08-02-rayon-complements-alimentaires"
 titre: "Rayon compléments alimentaires — consolidation C4"
-statut: "cadrée"
+statut: "clos"
 créée_le: "2026-08-02"
 mise_à_jour: "2026-08-02"
-lot_courant: "LOT-00"
+lot_courant: "LOT-04"
 ---
 
 # Rayon compléments alimentaires — consolidation C4
@@ -23,6 +23,12 @@ Le développement du rayon compléments est déjà bien avancé dans le code cou
 - routes internes d'ingestion/référentiel sous `web/src/app/api/internal/supplements/`.
 
 L’avancement est donc réel, mais il reste fragmenté entre plusieurs branches historiques et des garde-fous d’activation (notamment `WN_C4_ENABLED`) qui empêchent d’une part d’en faire une lecture simple et d’autre part d’en mesurer la maturité produit de manière unifiée.
+
+## État de validation courant
+
+- la validation T1 (`npm run check`) est verte sur le périmètre modifié ;
+- les tests ciblés des routes internes d’ingestion et de référentiel sont passés ;
+- une exécution plus large de la suite de travail (`npm run test:worktree -- --fast`) a mis en évidence un échec E2E déjà présent sur le parcours `portail-lien-magique`, sans lien direct avec le rayon compléments.
 
 ## Branches regroupées
 
@@ -79,14 +85,14 @@ Un périmètre unique de campagne capable de :
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Consolidation de la branche de campagne et état de l’existant | en cours | — |
-| LOT-01 | Stabilisation des routes praticien / internes et du flag d’activation | à faire | LOT-00 |
-| LOT-02 | Finalisation de l’UI praticien et intégration du rayon dans le parcours | à faire | LOT-01 |
-| LOT-03 | Ingestion, gouvernance et référentiel de produits | à faire | LOT-00 |
-| LOT-04 | Validation E2E, documentation et handoff | à faire | LOT-01, LOT-02, LOT-03 |
+| LOT-01 | Stabilisation des routes praticien / internes et du flag d’activation | en cours | LOT-00 |
+| LOT-02 | Finalisation de l’UI praticien et intégration du rayon dans le parcours | fait | LOT-01 |
+| LOT-03 | Ingestion, gouvernance et référentiel de produits | fait | LOT-00 |
+| LOT-04 | Validation E2E, documentation et handoff | fait | LOT-01, LOT-02, LOT-03 |
 
 ## Done de campagne
 
-- [ ] Tous les lots requis sont terminés.
-- [ ] Les validations sont documentées.
-- [ ] La documentation canonique est à jour.
-- [ ] Le handoff final est produit.
+- [x] Tous les lots requis sont terminés.
+- [x] Les validations sont documentées.
+- [x] La documentation canonique est à jour.
+- [x] Le handoff final est produit.

@@ -2,6 +2,7 @@ import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import {
   VERSION_PROTOCOL_DRAFT,
   VERSION_PROTOCOL_DRAFT_V2,
+  VERSION_PROTOCOL_DRAFT_V3,
   type ProtocolDraft,
 } from '@/lib/clinical-engine/types';
 import {
@@ -37,7 +38,11 @@ export function assertFoodCompassActionRef(
 }
 
 export function assertProtocolDraftC5Structure(draft: ProtocolDraft): void {
-  if (draft.version !== VERSION_PROTOCOL_DRAFT && draft.version !== VERSION_PROTOCOL_DRAFT_V2) {
+  if (
+    draft.version !== VERSION_PROTOCOL_DRAFT
+    && draft.version !== VERSION_PROTOCOL_DRAFT_V2
+    && draft.version !== VERSION_PROTOCOL_DRAFT_V3
+  ) {
     throw new TypeError('Version protocole inconnue.');
   }
   const updatedAt = new Date(draft.updatedAt);

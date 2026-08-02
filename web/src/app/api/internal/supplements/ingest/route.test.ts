@@ -50,6 +50,7 @@ describe('POST /api/internal/supplements/ingest', () => {
     });
     const res = await POST(requete({ fiches: [ficheValide] }));
     expect(res.status).toBe(503);
+    expect((await res.json()).ok).toBe(false);
     expect(ingest).not.toHaveBeenCalled();
   });
 
@@ -57,6 +58,7 @@ describe('POST /api/internal/supplements/ingest', () => {
     isAuthorized.mockReturnValue(false);
     const res = await POST(requete({ fiches: [ficheValide] }));
     expect(res.status).toBe(401);
+    expect((await res.json()).ok).toBe(false);
     expect(ingest).not.toHaveBeenCalled();
   });
 

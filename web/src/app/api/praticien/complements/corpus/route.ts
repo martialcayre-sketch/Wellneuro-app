@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { emailPraticien } from '@/lib/praticien/appartenance';
 import { REQUETE_CORPUS_MAX } from '@/lib/supplement-library/config';
-import { isC4Enabled } from '@/lib/supplement-library/featureFlag';
+import { getPractitionerC4Access } from '@/lib/supplement-library/access';
 import {
   RAYON_MICRONUTRITION,
   servirRayonCorpus,
@@ -34,13 +33,9 @@ function echec(reason: string, error: string, status: number) {
 // GET /api/praticien/complements/corpus?requete=&rayon=micronutrition
 export async function GET(req: Request): Promise<NextResponse<ComplementsCorpusApiResponse>> {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return echec('unauthenticated', 'Authentification requise.', 401);
-    if (!emailPraticien(session)) {
-      return echec('unauthenticated', 'Session praticien sans e-mail.', 401);
-    }
-    if (!isC4Enabled()) {
-      return echec('flag_eteint', 'Rayon compléments indisponible.', 404);
+    const access = getPractitionerC4Access(await getServerSession(authOptions));
+    if (!access.ok) {
+      return echec(access.reason, access.error, access.status);
     }
 
     const { searchParams } = new URL(req.url);

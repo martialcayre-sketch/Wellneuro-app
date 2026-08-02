@@ -17,8 +17,8 @@
 //     tools/corpus/claims/draft.mjs --pilote WN-SRC-0056,… [--batch 001] [--usage orientation]
 //
 // `--usage orientation` (lot 8) : marque chaque claim (`metadata.usage`) et
-// active le filtre par construction (quarantaine + perfusion A-009 amendé) —
-// voir lib/filtre-orientation.mjs.
+// active le filtre par construction (quarantaine non prescriptive + perfusion
+// A-009 amendé) — voir lib/filtre-orientation.mjs.
 
 import fs from 'node:fs/promises';
 import os from 'node:os';

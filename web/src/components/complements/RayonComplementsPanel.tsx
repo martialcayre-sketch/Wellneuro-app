@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { FicheComplementPanel } from '@/components/complements/FicheComplementPanel';
 import type { ComplementsApiResponse } from '@/app/api/praticien/complements/route';
 import type { CatalogueResult, FicheComplement } from '@/lib/supplement-library/catalogue';
+import { getC4DisabledMessage } from '@/lib/supplement-library/featureFlag';
 
 // Rayon compléments (C4) — instrument « à tiroir » consultable, calqué sur le
 // patron de la Boussole alimentaire (C5). Entrée par intention clinique,
@@ -136,6 +137,7 @@ export function RayonComplementsPanel() {
   const [catalogue, setCatalogue] = useState<CatalogueResult | null>(null);
   const [enCours, setEnCours] = useState(false);
   const [messageEchec, setMessageEchec] = useState<string | null>(null);
+  const [surfaceIndisponible, setSurfaceIndisponible] = useState(false);
   const [ficheOuverte, setFicheOuverte] = useState<FicheComplement | null>(null);
 
   // Un critère au moins doit être posé : sans lui, la requête ramènerait le
@@ -170,15 +172,22 @@ export function RayonComplementsPanel() {
     const perimee = () => jeton !== sequence.current;
     setEnCours(true);
     setMessageEchec(null);
+    setSurfaceIndisponible(false);
     try {
       const res = await fetch(requete, { cache: 'no-store' });
       const json = (await res.json()) as ComplementsApiResponse;
       if (perimee()) return;
       if (!res.ok || !json.ok) {
-        setMessageEchec(!json.ok && json.error ? json.error : 'Impossible de charger le catalogue.');
+        if (json.ok === false && json.reason === 'flag_eteint') {
+          setSurfaceIndisponible(true);
+          setMessageEchec(null);
+        } else {
+          setMessageEchec(!json.ok && json.error ? json.error : 'Impossible de charger le catalogue.');
+        }
         setCatalogue(null);
         return;
       }
+      setSurfaceIndisponible(false);
       setCatalogue(json);
     } catch {
       if (perimee()) return;
@@ -198,6 +207,7 @@ export function RayonComplementsPanel() {
       sequence.current += 1;
       setCatalogue(null);
       setMessageEchec(null);
+      setSurfaceIndisponible(false);
       setEnCours(false);
       return;
     }
@@ -246,12 +256,23 @@ export function RayonComplementsPanel() {
           reste mono-dimension. L&apos;alimentation d&apos;abord — la supplémentation ensuite.
         </p>
 
+        {surfaceIndisponible && (
+          <div role="status" className="mt-3 rounded-lg border border-border bg-surface p-3 text-sm text-foreground">
+            <p className="font-semibold text-status-warning">{getC4DisabledMessage()}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Les filtres et la consultation du catalogue restent indisponibles tant que l’activation
+              métier n’est pas ouverte.
+            </p>
+          </div>
+        )}
+
         {/* Recherche par nom ou marque */}
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="flex flex-col gap-1 text-xs font-semibold text-foreground">
             Nom ou marque
             <input
               value={rechercheSaisie}
+              disabled={surfaceIndisponible}
               onChange={(e) => setRechercheSaisie(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
@@ -264,13 +285,14 @@ export function RayonComplementsPanel() {
               className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </label>
-          <Button type="button" variant="outline" onClick={lancerRecherche}>
+          <Button type="button" variant="outline" onClick={lancerRecherche} disabled={surfaceIndisponible}>
             Rechercher
           </Button>
           {recherche && (
             <Button
               type="button"
               variant="outline"
+              disabled={surfaceIndisponible}
               onClick={() => {
                 setPage(1);
                 setRecherche('');
@@ -288,19 +310,21 @@ export function RayonComplementsPanel() {
             Intention clinique
             <input
               value={intentionSaisie}
+              disabled={surfaceIndisponible}
               onChange={(e) => setIntentionSaisie(e.target.value)}
               placeholder="Ex. sommeil_fragmente"
               aria-label="Code d’intention clinique"
               className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
             />
           </label>
-          <Button type="button" variant="outline" onClick={explorerIntention}>
+          <Button type="button" variant="outline" onClick={explorerIntention} disabled={surfaceIndisponible}>
             Explorer cette intention
           </Button>
           {intention && (
             <Button
               type="button"
               variant="outline"
+              disabled={surfaceIndisponible}
               onClick={() => {
                 setIntention('');
                 setIntentionSaisie('');
@@ -328,6 +352,7 @@ export function RayonComplementsPanel() {
             Tri
             <select
               value={tri}
+              disabled={surfaceIndisponible}
               onChange={(e) => {
                 // Changer l'ordre rebat les fiches : rester en page 7 y
                 // montrerait un fragment sans rapport avec ce qu'on lisait.
@@ -361,7 +386,7 @@ export function RayonComplementsPanel() {
                       key={valeur}
                       type="button"
                       aria-pressed={actif}
-                      disabled={grisee}
+                      disabled={grisee || surfaceIndisponible}
                       title={grisee ? MESSAGE_VALEUR_GRISEE : undefined}
                       onClick={() => basculerFacette(cle, valeur)}
                       className={`inline-flex items-center rounded-full border px-3 py-1 text-2xs font-semibold transition-colors ${
@@ -413,7 +438,7 @@ export function RayonComplementsPanel() {
           ) : messageEchec ? (
             <div role="alert" className="flex flex-col gap-2 text-sm text-status-danger">
               <p>{messageEchec}</p>
-              <Button type="button" variant="outline" onClick={() => void charger()}>
+              <Button type="button" variant="outline" onClick={() => void charger()} disabled={surfaceIndisponible}>
                 Réessayer
               </Button>
             </div>

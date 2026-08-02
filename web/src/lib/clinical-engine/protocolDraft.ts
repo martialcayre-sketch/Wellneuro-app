@@ -58,7 +58,7 @@ function validateDecisionCard(card: DecisionCard): string {
   return selectedId;
 }
 
-function normalizeActions(actions: ProtocolAction[]): ProtocolAction[] {
+function normalizeActions(actions: ProtocolAction[], version: ProtocolDraft['version']): ProtocolAction[] {
   if (actions.length > 3) throw new TypeError('Un protocole 21 jours ne peut contenir que trois actions maximum.');
   const ids = new Set<string>();
   return actions.map(action => {
@@ -69,7 +69,7 @@ function normalizeActions(actions: ProtocolAction[]): ProtocolAction[] {
     if (action.foodCompassRef !== undefined) {
       throw new TypeError('Une référence C5 exige un payload protocole V2 explicite.');
     }
-    if (action.supplementCatalogRef !== undefined) {
+    if (action.supplementCatalogRef !== undefined && version !== VERSION_PROTOCOL_DRAFT_V3) {
       throw new TypeError('Une référence catalogue de compléments exige un payload protocole V3 explicite.');
     }
     if (action.type === 'supplement_exploration') {
@@ -109,13 +109,22 @@ export function buildProtocolDraft(input: {
   therapeuticLoad: TherapeuticLoad;
   review?: ProtocolReview | null;
   limitations?: string[];
+  version?: ProtocolDraft['version'];
 }): ProtocolDraft {
   const protocolDraftId = nonEmpty(input.protocolDraftId, 'protocolDraftId');
   const selectedPriorityId = validateDecisionCard(input.decisionCard);
   canonicalIso(input.createdAt, 'createdAt');
   canonicalIso(input.updatedAt, 'updatedAt');
   if (input.updatedAt < input.createdAt) throw new TypeError('updatedAt ne peut pas précéder createdAt.');
-  const actions = normalizeActions(input.actions ?? []);
+  let requestedVersion: ProtocolDraft['version'];
+  if (input.version !== undefined) {
+    requestedVersion = input.version;
+  } else if (input.actions?.some(action => action.supplementCatalogRef !== undefined)) {
+    throw new TypeError('Une référence catalogue de compléments exige un payload protocole V3 explicite.');
+  } else {
+    requestedVersion = VERSION_PROTOCOL_DRAFT;
+  }
+  const actions = normalizeActions(input.actions ?? [], requestedVersion);
   const therapeuticLoad = normalizeLoad(input.therapeuticLoad);
   let review = input.review ?? null;
   if (review !== null) {
@@ -134,7 +143,7 @@ export function buildProtocolDraft(input: {
     selectedPriorityId,
     createdAt: input.createdAt,
     updatedAt: input.updatedAt,
-    version: VERSION_PROTOCOL_DRAFT,
+    version: requestedVersion,
     status: review ? 'practitioner_reviewed' as const : 'draft' as const,
     purpose: nonEmpty(input.purpose, 'raison d’être'),
     followUpCriterion: nonEmpty(input.followUpCriterion, 'critère observable à J21'),
@@ -145,7 +154,11 @@ export function buildProtocolDraft(input: {
     limitations: uniqueSorted(input.limitations ?? []),
   };
   const { protocolDraftId: _protocolDraftId, ...hashInput } = withoutHash;
-  return { ...withoutHash, inputHash: canonicalSha256(hashInput) };
+  const builtDraft = { ...withoutHash, inputHash: canonicalSha256(hashInput) } as ProtocolDraft;
+  if (builtDraft.version === VERSION_PROTOCOL_DRAFT_V3) {
+    assertProtocolDraftSupplementStructure(builtDraft);
+  }
+  return builtDraft;
 }
 
 // Contrat V3 (C4 LOT-04) — validation structurelle d'une référence catalogue de
@@ -183,6 +196,13 @@ export function assertSupplementCatalogRef(ref: SupplementCatalogRef): void {
 // sans référence reste valide. La garde des champs libres interdits s'applique
 // à toute version, V3 comprise.
 export function assertProtocolDraftSupplementStructure(draft: ProtocolDraft): void {
+  if (!Array.isArray(draft.actions)) {
+    if (draft.version === VERSION_PROTOCOL_DRAFT_V3) {
+      throw new TypeError('Actions protocole invalides.');
+    }
+    return;
+  }
+
   draft.actions.forEach(action => {
     if (action.type === 'supplement_exploration') {
       assertNoForbiddenSupplementFields(action);
@@ -220,5 +240,6 @@ export function reviseProtocolDraft(input: {
     therapeuticLoad: input.therapeuticLoad ?? input.existing.therapeuticLoad,
     limitations: input.existing.limitations,
     review: null,
+    version: input.existing.version,
   });
 }

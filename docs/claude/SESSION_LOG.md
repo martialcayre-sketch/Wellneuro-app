@@ -1161,3 +1161,88 @@ post-merge.
 **Questions ouvertes** : source des « gates G0-G4 » du contexte compact,
 toujours inconnue ; entrée DECISIONS.md pour l'amendement A-009 (proposée, en
 attente d'accord).
+
+## 2026-08-02 — CERT-Q LOT-03 handoff
+
+**Décisions** : LOT-03 terminé pour CERT-Q ; les lots 01 à 03 sont consolidés,
+avec distinction explicite entre l'état daté 62/64 (2026-07-29) et le registre
+courant 64/64. Le handoff campagne est produit, sans changement de scoring.
+
+**Écarté** : suppression automatique des branches historiques ; aucune branche
+supprimée dans ce lot.
+
+**Prochaine action** : arbitrer `feat/mini-synthese-par-rubrique` (PR #372),
+puis confirmer séparément le nettoyage des 20 branches candidates.
+
+**Questions ouvertes** : intégration amendée ou clôture sans merge de PR #372.
+
+## 2026-08-02 — CERT-Q PR #372 validée et lot clôturé
+
+**Décisions** : l’arbitrage PR #372 a été intégré avec amendements minimes :
+mini-synthèse rétablie, helper de coupe remis au bon scope, métadonnées de
+campagne complétées, et couverture ajoutée pour le second marqueur de coupe.
+T1, T3 et les tests ciblés sont verts ; la revue indépendante n’a relevé qu’un
+point de vigilance déjà traité côté commit (inclusion des nouveaux fichiers
+`rubriques.*`).
+
+**Écarté** : élargir le changement au-delà de l’intégration amendée de
+`feat/mini-synthese-par-rubrique`.
+
+**Prochaine action** : commit/push de la branche de campagne puis éventuel
+nettoyage des branches candidates, si confirmé séparément.
+
+**Questions ouvertes** : aucune sur le fond technique ; reste la décision de
+gouvernance sur le nettoyage des branches.
+
+## 2026-08-02 — CERT-Q arbitrage final de la branche restante
+
+**Décisions** : `feat/mini-synthese-par-rubrique` est arbitrée en faveur d’une
+intégration amendée dans la branche de campagne `campagne/certification-questionnaires-consolidation`.
+Le périmètre reste dans CERT-Q, sans lot scoring séparé.
+
+**Écarté** : clôture sans merge de la branche restante.
+
+**Prochaine action** : gouvernance du nettoyage séparé des branches candidates.
+
+**Questions ouvertes** : aucune sur la branche restante ; reste le nettoyage.
+
+## 2026-08-02 — CERT-Q nettoyage des branches candidates exécuté
+
+**Décisions** : les 20 branches candidates de CERT-Q ont été supprimées localement
+et à distance quand les refs distantes existaient déjà ; la branche de campagne
+reste seule porteuse du consolidé.
+
+**Écarté** : conserver les branches candidates après arbitrage.
+
+**Prochaine action** : aucune côté CERT-Q, hors éventuelle revue de sécurité du
+nettoyage si demandée.
+
+**Questions ouvertes** : aucune.
+
+## 2026-08-02 — Rayon compléments : lot d’ingestion/référentiel stabilisé
+
+**Décisions** : le lot a été bouclé sur le périmètre API et documentation du rayon
+compléments, avec une réponse d’erreur cohérente `ok: false` sur les payloads
+invalides des routes internes d’ingestion/référentiel.
+
+**Écarté** : ouvrir une nouvelle surface fonctionnelle ou modifier la logique
+clinique ; la stabilisation est restée bornée aux routes et à la campagne.
+
+**Prochaine action** : poursuivre la campagne sur un autre périmètre concret si
+nécessaire, par exemple l’activation métier ou une validation complémentaire.
+
+**Questions ouvertes** : l’activation métier du rayon reste à cadrer avec le
+produit et la gouvernance.
+
+## 2026-08-02 — Claims orientation : levée de quarantaine prescriptive
+
+**Décisions** : la quarantaine d’orientation ne bloque plus les sources
+prescriptives du périmètre ; 8 sources réintégrées, la perfusion reste exclue.
+Le filtre, le contrat SQL de périmètre et les bancs de régression ont été mis
+en cohérence.
+
+**Écarté** : lever la quarantaine pour les sources non prescriptives.
+
+**Prochaine action** : aucune immédiate sur le fond technique.
+
+**Questions ouvertes** : aucune.

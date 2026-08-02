@@ -29,20 +29,20 @@ export async function POST(req: Request) {
     // Fail-closed : avant authentification, aucun détail sur la cause exacte.
     console.error('Ingestion référentiel : configuration invalide —', error);
     return NextResponse.json(
-      { error: "Voie d'ingestion du référentiel non configurée." },
+      { ok: false, error: "Voie d'ingestion du référentiel non configurée." },
       { status: 503 },
     );
   }
 
   if (!isAuthorizedSupplementsRequest(req)) {
-    return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
+    return NextResponse.json({ ok: false, error: 'Non autorisé.' }, { status: 401 });
   }
 
   let rawBody: unknown;
   try {
     rawBody = await req.json();
   } catch {
-    return NextResponse.json({ error: 'JSON invalide.' }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'JSON invalide.' }, { status: 400 });
   }
 
   let payload;
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     payload = parseReferentielPayload(rawBody);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Payload de référentiel invalide.';
-    return NextResponse.json({ error: message }, { status: 422 });
+    return NextResponse.json({ ok: false, error: message }, { status: 422 });
   }
 
   try {
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
     // écrits restent, et l'opérateur doit savoir lesquels.
     if (error instanceof ReferentielPayloadInvalide) {
       return NextResponse.json(
-        { error: error.message, resume: error.bilanPartiel ?? null },
+        { ok: false, error: error.message, resume: error.bilanPartiel ?? null },
         { status: 422 },
       );
     }
@@ -71,7 +71,7 @@ export async function POST(req: Request) {
     // connexion. Le détail part au journal serveur, pas au client.
     console.error('Ingestion référentiel : écriture échouée —', error);
     return NextResponse.json(
-      { error: "Échec d'ingestion du référentiel." },
+      { ok: false, error: "Échec d'ingestion du référentiel." },
       { status: 500 },
     );
   }

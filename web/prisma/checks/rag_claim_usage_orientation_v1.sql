@@ -32,17 +32,24 @@ BEGIN
       MESSAGE = 'périmètre orientation : WN-SRC-0244 (perfusion) présent alors que A-009 amendé l''exclut.';
   END IF;
 
-  -- 3. La quarantaine sanitaire exclut, et la décision f ne la lève pas.
-  --    WN-SRC-0318 (« premières ordonnances », vigilance Élevée) et
-  --    WN-SRC-0370 (addictions et sevrage — domaine RÉINTÉGRÉ par la décision f,
-  --    mais source toujours en quarantaine) sont les deux cas qui distinguent
-  --    « domaine réintégré » de « source ingérable ».
+  -- 3. La quarantaine sanitaire n'exclut plus les sources prescriptives du
+  --    périmètre. WN-SRC-0318 (« premières ordonnances », vigilance Élevée) et
+  --    WN-SRC-0370 (addictions et sevrage) sont désormais réintégrées ;
+  --    WN-SRC-0090 (non prescriptive) reste hors périmètre.
   SELECT count(*) INTO n
   FROM public.rag_claim_orientation_sources()
   WHERE source_id IN ('WN-SRC-0318', 'WN-SRC-0370');
+  IF n <> 2 THEN
+    RAISE EXCEPTION USING ERRCODE = 'WN001',
+      MESSAGE = 'périmètre orientation : les sources prescriptives réintégrées par la levée de quarantaine n''y figurent pas.';
+  END IF;
+
+  SELECT count(*) INTO n
+  FROM public.rag_claim_orientation_sources()
+  WHERE source_id = 'WN-SRC-0090';
   IF n <> 0 THEN
     RAISE EXCEPTION USING ERRCODE = 'WN001',
-      MESSAGE = 'périmètre orientation : une source en quarantaine y figure — la décision f réintègre des domaines, elle ne lève aucune quarantaine.';
+      MESSAGE = 'périmètre orientation : WN-SRC-0090 (non prescriptive en quarantaine) y figure alors qu''elle doit rester hors périmètre.';
   END IF;
 
   -- 4. Le périmètre ne déborde pas sur les notebooks hors orientation. Le

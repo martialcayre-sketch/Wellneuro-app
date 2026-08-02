@@ -2,7 +2,9 @@
 //
 // Deux exclusions, et rien d'autre :
 // - la quarantaine sanitaire (`lifecycleStatus: 'quarantined'`) — gate
-//   indépendant de la décision f, qu'aucun amendement de périmètre ne lève ;
+//   indépendant de la décision f ; les sources prescriptives du périmètre
+//   d'orientation sont réintégrées par la levée actée le 2026-08-02, les
+//   autres restent exclues ;
 // - la perfusion, seule survivante de A-009 après l'amendement du 2026-08-01
 //   (décision f : sevrages médicamenteux, psychotropes et Alzheimer sont
 //   réintégrés dans le drafting). Par sourceId : WN-SRC-0244 est l'unique
@@ -12,8 +14,8 @@
 export const EXCLUSIONS_A009 = ['WN-SRC-0244'];
 
 export function exclureDeLOrientation(notice) {
-  if (notice.lifecycleStatus === 'quarantined') {
-    return { exclu: true, motif: 'quarantaine sanitaire (non levée par la décision f)' };
+  if (notice.lifecycleStatus === 'quarantined' && notice.prescriptive !== true) {
+    return { exclu: true, motif: 'quarantaine sanitaire — source non prescriptive (prescriptives levées le 2026-08-02)' };
   }
   if (EXCLUSIONS_A009.includes(notice.sourceId)) {
     return { exclu: true, motif: 'perfusion — A-009 amendé (décision f, 2026-08-01)' };

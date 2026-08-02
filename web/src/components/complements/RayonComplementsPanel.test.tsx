@@ -237,6 +237,23 @@ describe('RayonComplementsPanel (instrument à tiroir)', () => {
     expect(urlsAppelees().some((u) => u.includes('q=magn'))).toBe(true);
   });
 
+  it('affiche un message métier clair et désactive le panneau quand le rayon est désactivé', async () => {
+    fetchMock.mockImplementation((url: string | URL) => {
+      const u = String(url);
+      if (u.includes('/api/praticien/complements')) {
+        return Promise.resolve(json({ ok: false, reason: 'flag_eteint', error: "Le rayon compléments n'est pas encore ouvert sur cet environnement. Son activation métier se fait via le flag WN_C4_ENABLED." }, false));
+      }
+      return Promise.resolve(json({ ok: true, corpusVide: true, claims: [], message: '' }));
+    });
+    render(<RayonComplementsPanel />);
+    rechercher('magnésium');
+    await waitFor(() => expect(screen.getByText(/Le rayon compléments n['’]est pas encore ouvert sur cet environnement/i)).toBeTruthy());
+    expect(screen.getByRole('status').textContent).toContain('Les filtres et la consultation du catalogue');
+    const input = screen.getByLabelText('Rechercher un produit ou une marque') as HTMLInputElement;
+    expect(input.disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Rechercher' }).getAttribute('disabled')).not.toBeNull();
+  });
+
   it('une facette seule suffit à déclencher le chargement', async () => {
     fetchMock.mockImplementation(routerFetch(catalogue({ fiches: [fiche()] })));
     render(<RayonComplementsPanel />);

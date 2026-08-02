@@ -1,7 +1,7 @@
 import { BibliothequePanel } from '@/components/BibliothequePanel';
 import { RayonComplementsPanel } from '@/components/complements/RayonComplementsPanel';
 import { listeBibliotheque } from '@/lib/bibliotheque';
-import { isC4Enabled } from '@/lib/supplement-library/featureFlag';
+import { getC4DisabledMessage, isC4Enabled } from '@/lib/supplement-library/featureFlag';
 
 export const metadata = { title: 'Wellneuro — Bibliothèque' };
 // Le rayon compléments lit son drapeau à la requête : rendu dynamique.
@@ -62,9 +62,8 @@ export default function BibliothequePage() {
             role="status"
             className="rounded-xl border border-border bg-surface p-5 text-base text-muted-foreground shadow-card"
           >
-            Le rayon compléments n&apos;est pas encore ouvert sur cet environnement. Le catalogue et
-            les fiches justificatives s&apos;afficheront ici dès son ouverture — rien n&apos;est
-            perdu, le référentiel reste intact.
+            {getC4DisabledMessage()} Le catalogue et les fiches justificatives s&apos;afficheront ici dès
+            son ouverture — rien n&apos;est perdu, le référentiel reste intact.
           </div>
         )}
       </section>
