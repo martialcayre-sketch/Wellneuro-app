@@ -121,6 +121,22 @@ describe('FicheComplementPanel (fiche justificative multi-dimensions)', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('affiche le message métier renvoyé par l’API quand le corpus est indisponible', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      json: async () => ({
+        ok: false,
+        reason: 'flag_eteint',
+        error: 'Le rayon compléments n’est pas encore ouvert sur cet environnement.',
+      }),
+    });
+    render(<FicheComplementPanel fiche={FICHE} />);
+    await waitFor(() =>
+      expect(screen.getByText(/Le rayon compléments n’est pas encore ouvert/i)).toBeTruthy(),
+    );
+    expect(screen.getByRole('alert')).toBeTruthy();
+  });
+
   it('affiche les claims validés du corpus quand ils existent', async () => {
     fetchMock.mockResolvedValue(json(CORPUS_PLEIN));
     render(<FicheComplementPanel fiche={FICHE} />);

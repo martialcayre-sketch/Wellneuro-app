@@ -5,6 +5,7 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { labelGradePreuve, type GradePreuveScientifique } from '@/lib/supplement-library/types';
 import type { FicheComplement } from '@/lib/supplement-library/catalogue';
 import type { ComplementsCorpusApiResponse } from '@/app/api/praticien/complements/corpus/route';
+import { MESSAGE_INDISPONIBLE, MESSAGE_VIDE } from '@/lib/supplement-library/corpusMessages';
 
 // Fiche justificative sourcée (C4, outil n°2) — badge multi-dimensions +
 // fiche détaillée avec provenance/fraîcheur, citations du rayon corpus (claims
@@ -123,6 +124,7 @@ export function FicheComplementPanel({
   const [corpus, setCorpus] = useState<Extract<ComplementsCorpusApiResponse, { ok: true }> | null>(null);
   const [corpusEnCours, setCorpusEnCours] = useState(true);
   const [corpusEchec, setCorpusEchec] = useState(false);
+  const [corpusMessage, setCorpusMessage] = useState<string | null>(null);
 
   const d = fiche.dimensions;
 
@@ -176,6 +178,8 @@ export function FicheComplementPanel({
     let monté = true;
     setCorpusEnCours(true);
     setCorpusEchec(false);
+    setCorpus(null);
+    setCorpusMessage(null);
     (async () => {
       try {
         const url = `/api/praticien/complements/corpus?rayon=${encodeURIComponent(rayon)}&requete=${encodeURIComponent(requeteCorpus)}`;
@@ -184,11 +188,20 @@ export function FicheComplementPanel({
         if (!monté) return;
         if (!res.ok || !json.ok) {
           setCorpusEchec(true);
+          setCorpusMessage(
+            !json.ok && typeof json.error === 'string' && json.error.trim()
+              ? json.error
+              : MESSAGE_INDISPONIBLE,
+          );
           return;
         }
         setCorpus(json);
+        setCorpusMessage(null);
       } catch {
-        if (monté) setCorpusEchec(true);
+        if (monté) {
+          setCorpusEchec(true);
+          setCorpusMessage(MESSAGE_INDISPONIBLE);
+        }
       } finally {
         if (monté) setCorpusEnCours(false);
       }
@@ -203,6 +216,9 @@ export function FicheComplementPanel({
   const interactions = LABEL_INTERACTIONS[d.interactionsSignalees.valeur] ?? LABEL_INTERACTIONS.non_evaluee;
   const cumul = LABEL_CUMUL[d.cumulVsSeuils.valeur] ?? LABEL_CUMUL.non_evaluee;
   const donnees = LABEL_DONNEES[d.donneesManquantes.valeur] ?? LABEL_DONNEES.non_evaluee;
+  const messageCorpus = corpus?.message?.trim()
+    ? corpus.message
+    : corpusMessage ?? MESSAGE_VIDE;
 
   return (
     <div className="flex flex-col gap-4">
@@ -416,7 +432,7 @@ export function FicheComplementPanel({
           <p className="mt-1.5 text-xs text-muted-foreground">Lecture du corpus…</p>
         ) : corpusEchec ? (
           <p role="alert" className="mt-1.5 text-xs text-status-danger">
-            Lecture du corpus impossible pour le moment.
+            {corpusMessage ?? MESSAGE_INDISPONIBLE}
           </p>
         ) : corpus && corpus.claims.length > 0 ? (
           <ul className="mt-1.5 flex flex-col gap-2 text-xs text-foreground">
@@ -442,7 +458,7 @@ export function FicheComplementPanel({
           </ul>
         ) : (
           <p className="mt-1.5 text-xs text-muted-foreground">
-            {corpus?.message ?? 'Corpus en cours de constitution.'}
+            {messageCorpus}
           </p>
         )}
       </section>
