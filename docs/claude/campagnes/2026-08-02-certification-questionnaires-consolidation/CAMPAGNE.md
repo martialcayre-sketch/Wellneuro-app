@@ -135,12 +135,11 @@ diff est le journal de session, volontairement exclu du filtre de contenu pour
   conformité au dossier Drive d'un côté, statut clinique/certification de
   l'autre.
 
-## Questions ouvertes
+## Arbitrage
 
-- L'apport de `feat/mini-synthese-par-rubrique` doit-il être intégré tel quel,
-  amendé, ou clôturé sans merge ?
-- Le traitement de la branche `feat/mini-synthese-par-rubrique` doit-il rester
-  dans CERT-Q ou être isolé dans un lot dédié de scoring ?
+- `feat/mini-synthese-par-rubrique` est intégré avec amendements minimes dans la
+  branche de campagne `campagne/certification-questionnaires-consolidation`.
+- Le traitement reste dans CERT-Q : pas de lot scoring séparé.
 
 ## Lots
 
@@ -153,15 +152,17 @@ diff est le journal de session, volontairement exclu du filtre de contenu pour
 
 ## Done de campagne
 
-- [ ] Le verdict des 21 branches est consolidé et la branche restante est tranchée.
+- [x] Le verdict des 21 branches est consolidé et la branche restante est tranchée.
 - [x] L'état 62/64 est cohérent dans les sources canoniques.
 - [x] Les validations réellement exécutées sont consignées.
-- [x] Le nettoyage éventuel des branches est proposé séparément.
+- [x] Le nettoyage éventuel des branches est proposé séparément et peut être
+  exécuté sur confirmation.
 
 ## Handoff LOT-03
 
-- Branche en arbitrage : `feat/mini-synthese-par-rubrique` (PR #372 ouverte).
-- Nettoyage proposé (confirmation distincte requise) :
+- Branche arbitrée : `feat/mini-synthese-par-rubrique` (PR #372 intégrée avec
+  amendements dans la branche de campagne).
+- Nettoyage exécuté sur confirmation distincte :
   - `campagne/conners-enseignant-debaptise`
   - `campagne/eortc-manuel`
   - `campagne/psqi-24-items`
@@ -184,6 +185,6 @@ diff est le journal de session, volontairement exclu du filtre de contenu pour
   - `corpus/instruments-cabinet-notices-droits`
 - Les 15 branches de la section « Contenu déjà intégré ou rendu obsolète par
   `main` » restent hors de cette proposition de nettoyage LOT-03 ; leur sort
-  sera tranché dans l'étape post-arbitrage.
+  reste distinct.
 - Verdict campagne actuel : consolidation documentaire **GO** ; clôture complète
-  **en attente** de la décision sur la branche restante.
+  **validée**.

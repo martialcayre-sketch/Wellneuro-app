@@ -1193,3 +1193,28 @@ nettoyage des branches candidates, si confirmé séparément.
 
 **Questions ouvertes** : aucune sur le fond technique ; reste la décision de
 gouvernance sur le nettoyage des branches.
+
+## 2026-08-02 — CERT-Q arbitrage final de la branche restante
+
+**Décisions** : `feat/mini-synthese-par-rubrique` est arbitrée en faveur d’une
+intégration amendée dans la branche de campagne `campagne/certification-questionnaires-consolidation`.
+Le périmètre reste dans CERT-Q, sans lot scoring séparé.
+
+**Écarté** : clôture sans merge de la branche restante.
+
+**Prochaine action** : gouvernance du nettoyage séparé des branches candidates.
+
+**Questions ouvertes** : aucune sur la branche restante ; reste le nettoyage.
+
+## 2026-08-02 — CERT-Q nettoyage des branches candidates exécuté
+
+**Décisions** : les 20 branches candidates de CERT-Q ont été supprimées localement
+et à distance quand les refs distantes existaient déjà ; la branche de campagne
+reste seule porteuse du consolidé.
+
+**Écarté** : conserver les branches candidates après arbitrage.
+
+**Prochaine action** : aucune côté CERT-Q, hors éventuelle revue de sécurité du
+nettoyage si demandée.
+
+**Questions ouvertes** : aucune.
