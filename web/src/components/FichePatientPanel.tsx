@@ -108,6 +108,7 @@ function descriptifsDeScores(scores: Record<string, unknown> | null): AxeDescrip
         // donnée » est exactement ce que ce lot rend visible.
         texte = 'non mesuré';
       }
+
       sortie.push({
         cle,
         id: `${cle}:${String(axe.id ?? sortie.length)}`,
@@ -117,6 +118,16 @@ function descriptifsDeScores(scores: Record<string, unknown> | null): AxeDescrip
     }
   }
   return sortie;
+}
+
+function syntheseSansRedondanceSousScores(texte: string, aDesSousScores: boolean): string {
+  if (!aDesSousScores || !texte) return texte;
+  const marqueurs = ['. Détail — ', '. Rubriques à noter — '];
+  for (const marqueur of marqueurs) {
+    const idx = texte.indexOf(marqueur);
+    if (idx > 0) return texte.slice(0, idx).trim();
+  }
+  return texte;
 }
 
 function certificationBadge(certification: ScoreCertification | null) {
@@ -770,7 +781,10 @@ export function FichePatientPanel({
                 // que les composantes RÉELLEMENT mesurées existent dans
                 // `scores_json`. Relevé en revue adversariale du même lot.
                 const axesDescriptifs = descriptifsDeScores(scores);
-                const miniSynthese = buildMiniSynthese(scores);
+                const miniSynthese = syntheseSansRedondanceSousScores(
+                  buildMiniSynthese(scores),
+                  subScores.length > 0,
+                );
                 return (
                   <tr key={r.idReponse} className="border-t border-border align-top">
                     <td className="px-4 py-2 whitespace-nowrap text-muted-foreground">

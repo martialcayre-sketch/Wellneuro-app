@@ -100,7 +100,9 @@ function loadQuestionsModule() {
 }
 
 function loadMiniSynthese() {
-  const source = stripModuleSyntax(eraseTypes(fs.readFileSync(miniSynthesePath, "utf8")));
+  const parts = [];
+  inlineModule(miniSynthesePath, new Set(), parts);
+  const source = parts.join("\n");
   return new Function(`${source}\nreturn { buildMiniSynthese };`)();
 }
 

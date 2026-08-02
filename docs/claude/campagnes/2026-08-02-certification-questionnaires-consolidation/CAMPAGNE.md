@@ -6,6 +6,8 @@ créée_le: "2026-08-02"
 mise_à_jour: "2026-08-02"
 lot_courant: "LOT-03"
 branche_campagne: "campagne/certification-questionnaires-consolidation"
+cible_pr_lot: "campagne/certification-questionnaires-consolidation"
+branche_lot_courant: "campagne/certification-questionnaires-consolidation/lot-03"
 cible_pr_campagne: "main"
 ---
 

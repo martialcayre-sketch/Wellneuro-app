@@ -65,7 +65,7 @@ type Options = {
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'enVol';
   // « bloquee » = abstention clinique non levée : aucun protocole proposable.
   decision?: 'actionnable' | 'bloquee';
-  reponses?: 'defaut' | 'dimensions' | 'dimensions-degradees' | 'non-interpretable';
+  reponses?: 'defaut' | 'dimensions' | 'dimensions-degradees' | 'non-interpretable' | 'subscores-detail';
 };
 
 // Passation dont le résultat enregistré n'est pas une mesure (réservoir
@@ -161,6 +161,47 @@ const REPONSES_A_DIMENSIONS_DEGRADEES = {
   ],
 };
 
+const REPONSES_A_SUBSCORES_AVEC_DETAIL = {
+  reponses: [
+    {
+      idReponse: 'REP005',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_TEST_C',
+      titre: 'Instrument à sous-scores avec détail global',
+      dateSoumission: '2026-07-05T10:00:00.000Z',
+      scorePrincipal: 14,
+      interpretation: 'Perturbation modérée',
+      scoresParsed: {
+        type: 'subscore',
+        interpretation: { label: 'Perturbation modérée', color: 'warning' },
+        subScores: [
+          { id: 'S1', label: 'Axe 1', total: 8, max: 10, interpretation: { label: 'Perturbation modérée', color: 'warning' } },
+          { id: 'S2', label: 'Axe 2', total: 6, max: 10, interpretation: { label: 'Perturbation légère', color: 'warning' } },
+        ],
+      },
+      subScoreRanges: null,
+    },
+    {
+      idReponse: 'REP006',
+      idAssignation: 'ASG001',
+      idQuestionnaire: 'Q_TEST_D',
+      titre: 'Instrument à sous-scores avec rubriques à noter',
+      dateSoumission: '2026-07-06T10:00:00.000Z',
+      scorePrincipal: 16,
+      interpretation: 'Perturbation modérée',
+      scoresParsed: {
+        type: 'subscore',
+        interpretation: { label: 'Perturbation modérée', color: 'warning' },
+        subScores: [
+          { id: 'S1', label: 'Axe alpha', total: 9, max: 10, interpretation: { label: 'Perturbation majeure', color: 'danger' } },
+          { id: 'S2', label: 'Axe beta', total: 7, max: 10, interpretation: { label: 'Perturbation légère', color: 'warning' } },
+        ],
+      },
+      subScoreRanges: null,
+    },
+  ],
+};
+
 // Cycle de trajectoire : T0 toujours mesuré (l'ancre), J21 selon le scénario.
 // Un T0 confirmé seul ne constitue PAS une réévaluation (A8-2).
 function cycleTrajectoire(j21Mesure: boolean) {
@@ -216,6 +257,7 @@ function stubFetch(options: Options = {}) {
       if (options.reponses === 'dimensions') return ok(REPONSES_A_DIMENSIONS);
       if (options.reponses === 'dimensions-degradees') return ok(REPONSES_A_DIMENSIONS_DEGRADEES);
       if (options.reponses === 'non-interpretable') return ok(REPONSES_NON_INTERPRETABLE);
+      if (options.reponses === 'subscores-detail') return ok(REPONSES_A_SUBSCORES_AVEC_DETAIL);
       return ok(REPONSES);
     }
     if (url.includes('/api/praticien/patients')) {
@@ -686,6 +728,23 @@ describe('FichePatientPanel — deep-link ?onglet= (Fiche-trajectoire 5.0)', () 
     const ligneSansTotal = screen.getByText('Instrument à dimensions sans total').closest('tr')!;
     expect(within(ligneSansTotal).getByText('Dimension B')).toBeTruthy();
     expect(within(ligneSansTotal).getByText('3/4')).toBeTruthy();
+  });
+
+  it('sous-scores : la synthèse n’affiche pas la clause de détail déjà visible en colonnes', async () => {
+    await rendreFiche({ reponses: 'subscores-detail' });
+    fireEvent.click(screen.getByRole('button', { name: /Détail des réponses/i }));
+
+    const ligneDetail = (await screen.findByText('Instrument à sous-scores avec détail global')).closest('tr')!;
+    expect(ligneDetail.textContent).toContain('Synthèse : Perturbation modérée');
+    expect(ligneDetail.textContent).not.toContain('Détail —');
+    expect(within(ligneDetail).getByText('Axe 1')).toBeTruthy();
+    expect(within(ligneDetail).getByText('8/10')).toBeTruthy();
+
+    const ligneRubriques = (await screen.findByText('Instrument à sous-scores avec rubriques à noter')).closest('tr')!;
+    expect(ligneRubriques.textContent).toContain('Synthèse : Perturbation modérée');
+    expect(ligneRubriques.textContent).not.toContain('Rubriques à noter —');
+    expect(within(ligneRubriques).getByText('Axe alpha')).toBeTruthy();
+    expect(within(ligneRubriques).getByText('9/10')).toBeTruthy();
   });
 
   it('passation non interprétable : la ligne DIT pourquoi, au lieu de trois tirets muets', async () => {

@@ -1175,3 +1175,21 @@ supprimée dans ce lot.
 puis confirmer séparément le nettoyage des 20 branches candidates.
 
 **Questions ouvertes** : intégration amendée ou clôture sans merge de PR #372.
+
+## 2026-08-02 — CERT-Q PR #372 validée et lot clôturé
+
+**Décisions** : l’arbitrage PR #372 a été intégré avec amendements minimes :
+mini-synthèse rétablie, helper de coupe remis au bon scope, métadonnées de
+campagne complétées, et couverture ajoutée pour le second marqueur de coupe.
+T1, T3 et les tests ciblés sont verts ; la revue indépendante n’a relevé qu’un
+point de vigilance déjà traité côté commit (inclusion des nouveaux fichiers
+`rubriques.*`).
+
+**Écarté** : élargir le changement au-delà de l’intégration amendée de
+`feat/mini-synthese-par-rubrique`.
+
+**Prochaine action** : commit/push de la branche de campagne puis éventuel
+nettoyage des branches candidates, si confirmé séparément.
+
+**Questions ouvertes** : aucune sur le fond technique ; reste la décision de
+gouvernance sur le nettoyage des branches.
