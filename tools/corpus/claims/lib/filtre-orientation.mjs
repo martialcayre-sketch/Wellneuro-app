@@ -15,7 +15,7 @@ export const EXCLUSIONS_A009 = ['WN-SRC-0244'];
 
 export function exclureDeLOrientation(notice) {
   if (notice.lifecycleStatus === 'quarantined' && notice.prescriptive !== true) {
-    return { exclu: true, motif: 'quarantaine sanitaire (non levée par la décision f)' };
+    return { exclu: true, motif: 'quarantaine sanitaire — source non prescriptive (prescriptives levées le 2026-08-02)' };
   }
   if (EXCLUSIONS_A009.includes(notice.sourceId)) {
     return { exclu: true, motif: 'perfusion — A-009 amendé (décision f, 2026-08-01)' };
