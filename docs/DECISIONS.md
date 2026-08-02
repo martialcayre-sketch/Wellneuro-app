@@ -4,6 +4,15 @@
 
 ## Décisions actives
 
+### D-008 — Contrat V3 des compléments : validation structurelle au runtime, à la persistence et à la relecture
+
+- Date : 2026-08-03
+- Statut : accepté (lot C4, session de consolidation)
+- Domaine : architecture, protocoles et rayon compléments
+- Décision : le contrat V3 des références catalogue de compléments est désormais validé de bout en bout sur la construction du draft, la persistence côté API praticien et la relecture depuis PostgreSQL. Un payload V3 mal formé est refusé explicitement ; les versions V1/V2 restent inchangées, et le chemin C5 ne se mélange pas au contrat V3.
+- Conséquences : la contrainte structurelle est désormais appliquée au point d’entrée d’écriture et au point de reconstitution des protocoles, ce qui évite qu’un draft invalide soit persisté ou réhydrater sans rejet. La gouvernance du rayon compléments reste fail-closed tant qu’aucune activation métier n’est décidée.
+- Référence : [docs/claude/campagnes/2026-08-02-rayon-complements-alimentaires/HANDOFF.md](docs/claude/campagnes/2026-08-02-rayon-complements-alimentaires/HANDOFF.md), [web/src/lib/clinical-engine/protocolDraft.ts](web/src/lib/clinical-engine/protocolDraft.ts), [web/src/app/api/praticien/protocoles/route.ts](web/src/app/api/praticien/protocoles/route.ts), [web/src/lib/protocol/fromPrisma.ts](web/src/lib/protocol/fromPrisma.ts)
+
 ### D-007 — Orientation adaptative : A-009 amendé, seule la perfusion reste hors moteur
 
 - Date : 2026-08-01 (amendement) — 2026-08-02 (consignation)

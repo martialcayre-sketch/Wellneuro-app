@@ -3,8 +3,8 @@ id: "2026-08-02-rayon-complements-alimentaires"
 titre: "Rayon compléments alimentaires — consolidation C4"
 statut: "clos"
 créée_le: "2026-08-02"
-mise_à_jour: "2026-08-02"
-lot_courant: "LOT-04"
+mise_à_jour: "2026-08-03"
+lot_courant: "LOT-05"
 ---
 
 # Rayon compléments alimentaires — consolidation C4
@@ -89,6 +89,7 @@ Un périmètre unique de campagne capable de :
 | LOT-02 | Finalisation de l’UI praticien et intégration du rayon dans le parcours | fait | LOT-01 |
 | LOT-03 | Ingestion, gouvernance et référentiel de produits | fait | LOT-00 |
 | LOT-04 | Validation E2E, documentation et handoff | fait | LOT-01, LOT-02, LOT-03 |
+| LOT-05 | Contrat de corpus et maturité du rayon compléments | fait | LOT-02 |
 
 ## Done de campagne
 
@@ -96,3 +97,4 @@ Un périmètre unique de campagne capable de :
 - [x] Les validations sont documentées.
 - [x] La documentation canonique est à jour.
 - [x] Le handoff final est produit.
+- [x] Le lot de maturité du contrat de corpus a été exécuté et validé.

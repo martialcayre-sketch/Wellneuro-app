@@ -18,6 +18,12 @@ import { prisma } from '@/lib/prisma';
 import { createEmbeddings } from '@/lib/rag/embeddings';
 import { sourcesDuNotebook } from '@/lib/rag/claims/notebooks';
 import { isC4Enabled } from './featureFlag';
+import {
+  MESSAGE_INDISPONIBLE,
+  MESSAGE_REQUETE_VIDE,
+  MESSAGE_RAYON_INCONNU,
+  MESSAGE_VIDE,
+} from './corpusMessages';
 
 export const C4_RAYON_CORPUS_VERSION = 'c4-rayon-corpus-v2' as const;
 
@@ -63,10 +69,12 @@ export type RayonCorpusResult = {
   message: string;
 };
 
-const MESSAGE_VIDE = 'Corpus en cours de constitution — aucun claim validé pour ce rayon.';
-const MESSAGE_INDISPONIBLE = 'Le rayon corpus n\'est pas encore disponible sur cet environnement.';
-const MESSAGE_REQUETE_VIDE = 'Aucune requête fournie : le rayon corpus n\'a rien à restituer.';
-const MESSAGE_RAYON_INCONNU = 'Rayon inconnu — aucun notebook associé.';
+export {
+  MESSAGE_INDISPONIBLE,
+  MESSAGE_REQUETE_VIDE,
+  MESSAGE_RAYON_INCONNU,
+  MESSAGE_VIDE,
+} from './corpusMessages';
 
 function vectorLiteral(values: number[]): string {
   return `[${values.join(',')}]`;

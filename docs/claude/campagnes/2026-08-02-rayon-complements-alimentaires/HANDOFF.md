@@ -20,6 +20,7 @@ Le socle du rayon compléments alimentaires est désormais visible dans le dép�
 - l’UI praticien du panneau de rayon affiche désormais un état explicite lorsque le rayon est désactivé ;
 - le contrat d’activation du rayon est maintenant centralisé et partagé entre l’API praticien, la page bibliothèque et le panneau de consultation, avec un message métier unique quand le flag `WN_C4_ENABLED` reste fermé ;
 - les routes internes d’ingestion et de référentiel répondent avec un payload d’erreur cohérent (`ok: false`) en cas de garde fail-closed ;
+- le contrat du corpus du rayon distingue désormais explicitement le cas vide (corpus en cours de constitution) du cas indisponible (erreur métier ou garde fail-closed), avec le message métier remonté dans l’UI praticien ;
 - la campagne documente désormais l’état de validation, les limites connues et les prochaines pistes de consolidation.
 
 ## Limites connues

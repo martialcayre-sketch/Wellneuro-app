@@ -2,6 +2,16 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-08-03 — Rayon compléments alimentaires : contrat de corpus stabilisé
+
+**Décisions** : clôture du lot de consolidation autour du contrat de corpus du rayon compléments alimentaires. L’UI praticien distingue désormais explicitement un corpus vide (état normal, « en cours de constitution ») d’un corpus indisponible ou bloqué par une garde métier, et affiche le message métier renvoyé par l’API. Le changement reste borné au périmètre C4 déjà existant : pas de migration, pas de changement clinique, pas de nouveau flux de données.
+
+**Livré** : messages de corpus centralisés dans [web/src/lib/supplement-library/corpusMessages.ts](/Users/wellneuro/Wellneuro-app/Wellneuro-app.worktrees/wn-docs-setup/web/src/lib/supplement-library/corpusMessages.ts), réutilisés par [web/src/lib/supplement-library/rayonCorpus.ts](/Users/wellneuro/Wellneuro-app/Wellneuro-app.worktrees/wn-docs-setup/web/src/lib/supplement-library/rayonCorpus.ts) et consommés par [web/src/components/complements/FicheComplementPanel.tsx](/Users/wellneuro/Wellneuro-app/Wellneuro-app.worktrees/wn-docs-setup/web/src/components/complements/FicheComplementPanel.tsx). Une régression ciblée couvre le cas indisponible dans [web/src/components/complements/FicheComplementPanel.test.tsx](/Users/wellneuro/Wellneuro-app/Wellneuro-app.worktrees/wn-docs-setup/web/src/components/complements/FicheComplementPanel.test.tsx).
+
+**Validations** : `cd web && npx vitest run src/components/complements/FicheComplementPanel.test.tsx src/lib/supplement-library/rayonCorpus.test.ts`, puis `cd web && npm run type-check && npm run lint`.
+
+**Prochaine action** : préparer la clôture de campagne avec le handoff mis à jour et le statut de lot/campagne aligné.
+
 ## 2026-07-22 — Corpus 5.0 : banc qualité d'extraction (triple lecture croisée)
 
 **Décisions** : reprise du chantier pgvector/corpus, phase 2 de la proposition
