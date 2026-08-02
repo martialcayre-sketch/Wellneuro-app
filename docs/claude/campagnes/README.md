@@ -1,6 +1,6 @@
 # Campagnes WellNeuro — index
 
-> Mis à jour le 2026-07-18. Les frontières, invariants et arbitrages sont
+> Mis à jour le 2026-08-02. Les frontières, invariants et arbitrages sont
 > dans `docs/claude/REGISTRE_FRONTIERES.md` (source normative). La séquence
 > active est dans **`PROGRAMME_WELLNEURO_5_0.md`** (qui réintègre les
 > campagnes cadrées du programme 3.2 sans les dupliquer). Statuts « cadrée »
@@ -13,6 +13,7 @@
 | HC-F | Hybrid Clinical Foundation | **terminée** (2026-07-14, GO avec dettes — `DETTE_UX_RESIDUELLE.md`) | C0-UX | 6 |
 | C1 | Décision clinique 21 jours V1 | **terminée** (2026-07-14 — GO technique ; runtime/activation/diffusion : NO-GO, repris par SP-RUN) | HC-F LOT-02 | 7 |
 | QX | Expérience questionnaires | **terminée** (2026-07-14, renderer `micro_batch` seul activé) | HC-F LOT-01+04 | 5 |
+| **CERT-Q** | Certification questionnaires — consolidation 62/64 | **en cours** (LOT-00 terminé ; 36 branches classées, 21 à revoir) | QX ✓ + registre 64 questionnaires | 4 |
 | **SP-FIL** | Le Fil du jour v1 | **terminée** (2026-07-15 — accueil = Fil, rail regroupé, PR #74-#76) | — | 2 |
 | **SP-RUN** | Cockpit vivant (runtime C1) | **terminée** — runtime et branchement cockpit validés le 2026-07-17 | — | N+1 |
 | C2A | Points d'étape + persistance minimale | **terminée** (2026-07-18 — 7 lots en prod, gate migration levé) | C1 ✓ | 7 |
