@@ -4,7 +4,7 @@ titre: "Certification questionnaires — consolidation 62/64"
 statut: "en_cours"
 créée_le: "2026-08-02"
 mise_à_jour: "2026-08-02"
-lot_courant: "LOT-01"
+lot_courant: "LOT-02"
 branche_campagne: "campagne/certification-questionnaires-consolidation"
 cible_pr_campagne: "main"
 ---
@@ -89,6 +89,16 @@ suppression.
 diff est le journal de session, volontairement exclu du filtre de contenu pour
 éviter de sélectionner presque toutes les branches.
 
+### Verdict LOT-01 (appliqué)
+
+- 20 branches sur 21 sont classées `deja-integre` ou
+  `obsolescent-main-en-avance`, avec preuves PR/Git (effet squash-merge
+  inclus).
+- 1 branche garde un apport non intégré et reste en arbitrage praticien :
+  `feat/mini-synthese-par-rubrique` (PR #372 ouverte).
+- Conséquence : LOT-02 ne traite plus que cette branche et la consolidation
+  canonique 62/64, sans réouverture du reste.
+
 ## Résultat observable
 
 - une matrice unique des 36 branches et de leur disposition ;
@@ -115,10 +125,10 @@ diff est le journal de session, volontairement exclu du filtre de contenu pour
 
 ## Questions ouvertes
 
-- Les 21 branches à revoir contiennent-elles encore un apport absent de
-  `main` ?
-- Quels outils de banc historiques ont une valeur générique justifiant leur
-  conservation ?
+- L'apport de `feat/mini-synthese-par-rubrique` doit-il être intégré tel quel,
+  amendé, ou clôturé sans merge ?
+- Les 20 branches intégrées ou obsolescentes peuvent-elles être proposées au
+  nettoyage en LOT-03, avec confirmation distincte ?
 - Le registre, qui marque encore `Q_PED_03` certifié sur plusieurs axes, doit-il
   expliciter séparément sa suspension clinique ?
 
@@ -127,13 +137,13 @@ diff est le journal de session, volontairement exclu du filtre de contenu pour
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Inventaire et classification des 36 branches | terminé | — |
-| LOT-01 | Revue des 21 apports résiduels possibles | à_faire | LOT-00 |
+| LOT-01 | Revue des 21 apports résiduels possibles | terminé | LOT-00 |
 | LOT-02 | Consolidation de l'état canonique 62/64 | à_faire | LOT-01 |
 | LOT-03 | Validation, matrice finale et handoff | à_faire | LOT-02 |
 
 ## Done de campagne
 
-- [ ] Les 21 branches incertaines ont un verdict documenté.
+- [ ] Le verdict des 21 branches est consolidé et la branche restante est tranchée.
 - [ ] L'état 62/64 est cohérent dans les sources canoniques.
 - [ ] Les validations réellement exécutées sont consignées.
 - [ ] Le nettoyage éventuel des branches est proposé séparément.
