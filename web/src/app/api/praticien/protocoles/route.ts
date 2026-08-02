@@ -7,6 +7,7 @@ import type {
   DecisionCard,
   ProtocolDraft,
 } from '@/lib/clinical-engine/types';
+import { assertProtocolDraftSupplementStructure } from '@/lib/clinical-engine/protocolDraft';
 import {
   deriveProtocolDraftId,
   resolveCycleId,
@@ -99,6 +100,20 @@ export async function POST(req: Request): Promise<NextResponse<PersistResponse>>
         { status: 400 },
       );
     }
+
+    try {
+      assertProtocolDraftSupplementStructure(draft as ProtocolDraft);
+    } catch (error) {
+      return NextResponse.json(
+        {
+          ok: false,
+          reason: 'invalid_draft',
+          error: error instanceof Error ? error.message : 'Structure de protocole invalide.',
+        },
+        { status: 400 },
+      );
+    }
+
     if (
       !isNonEmptyString(episode.patientId) ||
       !isNonEmptyString(episode.assessmentEpisodeId) ||

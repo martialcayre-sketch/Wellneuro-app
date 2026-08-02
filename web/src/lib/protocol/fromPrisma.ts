@@ -2,8 +2,10 @@ import { canonicalSha256 } from '@/lib/clinical-engine/canonical';
 import {
   VERSION_PROTOCOL_DRAFT,
   VERSION_PROTOCOL_DRAFT_V2,
+  VERSION_PROTOCOL_DRAFT_V3,
   type ProtocolDraft,
 } from '@/lib/clinical-engine/types';
+import { assertProtocolDraftSupplementStructure } from '@/lib/clinical-engine/protocolDraft';
 import { assertProtocolDraftC5Structure } from '@/lib/food-compass/refValidation';
 
 // Reconstruction d'un `ProtocolDraft` depuis le `payload` JSONB persisté, avec
@@ -37,7 +39,11 @@ export function reconstructProtocolDraft(
   if (typeof draft.protocolDraftId !== 'string' || typeof draft.inputHash !== 'string') {
     throw new ProtocolPayloadIntegrityError('Payload de protocole incomplet.');
   }
-  if (draft.version !== VERSION_PROTOCOL_DRAFT && draft.version !== VERSION_PROTOCOL_DRAFT_V2) {
+  if (
+    draft.version !== VERSION_PROTOCOL_DRAFT
+    && draft.version !== VERSION_PROTOCOL_DRAFT_V2
+    && draft.version !== VERSION_PROTOCOL_DRAFT_V3
+  ) {
     throw new ProtocolPayloadIntegrityError('Version de payload protocole inconnue.');
   }
   const recomputed = recomputeDraftInputHash(draft);
@@ -48,8 +54,19 @@ export function reconstructProtocolDraft(
   }
   try {
     assertProtocolDraftC5Structure(draft);
-  } catch {
-    throw new ProtocolPayloadIntegrityError('Structure ou référence C5 du protocole invalide.');
+    assertProtocolDraftSupplementStructure(draft);
+  } catch (error) {
+    const isC5Payload = draft.version === VERSION_PROTOCOL_DRAFT_V2
+      || (Array.isArray(draft.actions) && draft.actions.some(action => action.foodCompassRef !== undefined));
+    if (isC5Payload) {
+      throw new ProtocolPayloadIntegrityError('Structure ou référence C5');
+    }
+    const message = error instanceof Error ? error.message : 'Structure ou référence du protocole invalide.';
+    throw new ProtocolPayloadIntegrityError(
+      message.includes('C5') || message.includes('c5')
+        ? 'Structure ou référence C5'
+        : 'Structure ou référence du protocole invalide.',
+    );
   }
   return draft;
 }

@@ -241,7 +241,7 @@ describe('RayonComplementsPanel (instrument à tiroir)', () => {
     fetchMock.mockImplementation((url: string | URL) => {
       const u = String(url);
       if (u.includes('/api/praticien/complements')) {
-        return Promise.resolve(json({ ok: false, reason: 'flag_eteint', error: 'Rayon compléments indisponible.' }, false));
+        return Promise.resolve(json({ ok: false, reason: 'flag_eteint', error: "Le rayon compléments n'est pas encore ouvert sur cet environnement. Son activation métier se fait via le flag WN_C4_ENABLED." }, false));
       }
       return Promise.resolve(json({ ok: true, corpusVide: true, claims: [], message: '' }));
     });
