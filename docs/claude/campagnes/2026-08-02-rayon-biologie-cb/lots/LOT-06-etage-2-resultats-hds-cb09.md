@@ -1,11 +1,11 @@
 ---
-id: "CB-09"
-titre: "etage-2-resultats-hds"
+id: "LOT-06"
+titre: "etage-2-resultats-hds-cb09"
 statut: "hors_périmètre — gate dur HDS"
 dépend_de: "HDS obtenu (attestation) ; WN_CB_RESULTS_ENABLED"
 ---
 
-# CB-09 — Étage 2 : résultats biologiques réels (post-HDS uniquement)
+# LOT-06 (CB-09) — Étage 2 : résultats biologiques réels (post-HDS uniquement)
 
 ## But
 

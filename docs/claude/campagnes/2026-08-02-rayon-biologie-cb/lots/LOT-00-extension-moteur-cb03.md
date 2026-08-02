@@ -1,11 +1,11 @@
 ---
-id: "CB-03"
-titre: "extension-moteur"
+id: "LOT-00"
+titre: "extension-moteur-cb03"
 statut: "bloqué"
 dépend_de: "CB-02b (fait) ; lots 8-9 de la campagne certification-corpus-questionnaires (table NNPP2 stabilisée et signée)"
 ---
 
-# CB-03 — Extension du moteur d'orientation aux cibles biologie
+# LOT-00 (CB-03) — Extension du moteur d'orientation aux cibles biologie
 
 ## But
 

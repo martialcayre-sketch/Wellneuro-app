@@ -1,11 +1,11 @@
 ---
-id: "CB-06"
-titre: "regimes-diffusion"
+id: "LOT-03"
+titre: "regimes-diffusion-cb06"
 statut: "à_faire"
-dépend_de: "CB-05"
+dépend_de: "LOT-02 (CB-05)"
 ---
 
-# CB-06 — Régimes de diffusion (courrier médecin / document patient)
+# LOT-03 (CB-06) — Régimes de diffusion (courrier médecin / document patient)
 
 ## But
 

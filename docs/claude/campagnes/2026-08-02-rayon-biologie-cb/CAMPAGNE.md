@@ -4,9 +4,9 @@ titre: "Rayon biologie fonctionnelle — achever CB-03 à CB-09"
 statut: "cadrée"
 créée_le: "2026-08-02"
 mise_à_jour: "2026-08-03"
-lot_courant: "CB-03"
+lot_courant: "LOT-00"
 branche_campagne: "campaign/2026-08-02-rayon-biologie-cb/integration"
-branche_lot_courant: "campaign/2026-08-02-rayon-biologie-cb/cb-03"
+branche_lot_courant: "campaign/2026-08-02-rayon-biologie-cb/lot-00"
 cible_pr_lot: "campaign/2026-08-02-rayon-biologie-cb/integration"
 cible_pr_campagne: "main"
 ---
@@ -99,27 +99,29 @@ gate HDS n'est pas levé — l'étage 2 (résultats réels).
 
 ## Artefacts de préparation
 
-- BRIEF_COMPILED.md : synthèse structurée des sources.
-- CAMPAIGN_DRAFT.md : canevas R0→R6.
 - Cadrage source :
   `docs/claude/propositions/2026-07-25-rayon-biologie-fonctionnelle/README.md`
   (§8, tableau des lots CB-00→CB-09).
 
 ## Lots
 
-| Lot | Objet | Statut | Dépend de |
+Les lots de cette campagne (`LOT-00` → `LOT-06`) reprennent la numérotation
+métier du cadrage CB (CB-03 → CB-09) ; CB-00 → CB-02b sont déjà en production
+et ne sont pas des lots de cette campagne.
+
+| Lot | Objet CB | Statut | Dépend de |
 |---|---|---|---|
-| CB-00 | Cadrage + décisions 0/A→G + audit source NABM | **fait** (PR #364) | — |
-| CB-01 | Migration catalogue CB-A (11 tables) + deux flags | **fait** (PR #369) | CB-00 |
-| CB-02a | Import NABM (987 actes) + migration additive | **fait** (PR #374, #381, #433) | CB-01 |
-| CB-02b | Corpus notebook biologie (135 chunks, 758 claims) | **fait** (PR #394) | décision G levée |
-| CB-03 | Extension moteur (cibles analyse/panel_bio) + table de règles vide signée-sha | **bloqué** — attend lots 8-9 certification | CB-02b |
-| CB-04 | Compilateur `tools/corpus/biologie/compile.mjs` | à_faire | CB-03 + claims validés |
-| CB-05 | Migration + machine à états `BiologyExplorationProposal`/`Item` | à_faire — **confirmation obligatoire (migration)** | CB-01, CB-03 |
-| CB-06 | Régimes de diffusion (courrier médecin / document patient) | à_faire | CB-05 |
-| CB-07 | Contrat protocole V4 `BiologyCatalogRef` | à_faire — revue adversariale requise | CB-05 |
-| CB-08 | UI : rayon bibliothèque, fiche analyte, encart patient, cartes du fil | à_faire | CB-05, CB-06 |
-| CB-09 | Étage 2 : `BiologyResult`, saisie/import, estimé↔mesuré | **hors périmètre — gate dur HDS** | HDS obtenu |
+| — | CB-00 : Cadrage + décisions 0/A→G + audit source NABM | **fait** (PR #364) | — |
+| — | CB-01 : Migration catalogue CB-A (11 tables) + deux flags | **fait** (PR #369) | CB-00 |
+| — | CB-02a : Import NABM (987 actes) + migration additive | **fait** (PR #374, #381, #433) | CB-01 |
+| — | CB-02b : Corpus notebook biologie (135 chunks, 758 claims) | **fait** (PR #394) | décision G levée |
+| LOT-00 | CB-03 : Extension moteur (cibles analyse/panel_bio) + table de règles vide signée-sha | **bloqué** — attend lots 8-9 certification | CB-02b |
+| LOT-01 | CB-04 : Compilateur `tools/corpus/biologie/compile.mjs` | à_faire | LOT-00 + claims validés |
+| LOT-02 | CB-05 : Migration + machine à états `BiologyExplorationProposal`/`Item` | à_faire — **confirmation obligatoire (migration)** | CB-01, LOT-00 |
+| LOT-03 | CB-06 : Régimes de diffusion (courrier médecin / document patient) | à_faire | LOT-02 |
+| LOT-04 | CB-07 : Contrat protocole V4 `BiologyCatalogRef` | à_faire — revue adversariale requise | LOT-02 |
+| LOT-05 | CB-08 : UI : rayon bibliothèque, fiche analyte, encart patient, cartes du fil | à_faire | LOT-02, LOT-03 |
+| LOT-06 | CB-09 : Étage 2 : `BiologyResult`, saisie/import, estimé↔mesuré | **hors périmètre — gate dur HDS** | HDS obtenu |
 
 ## Done de campagne
 

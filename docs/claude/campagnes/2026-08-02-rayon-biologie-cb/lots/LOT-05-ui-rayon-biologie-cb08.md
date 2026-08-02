@@ -1,11 +1,11 @@
 ---
-id: "CB-08"
-titre: "ui-rayon-biologie"
+id: "LOT-05"
+titre: "ui-rayon-biologie-cb08"
 statut: "à_faire"
-dépend_de: "CB-05, CB-06"
+dépend_de: "LOT-02 (CB-05), LOT-03 (CB-06)"
 ---
 
-# CB-08 — UI : rayon biologie dans la bibliothèque, fiche patient, fil
+# LOT-05 (CB-08) — UI : rayon biologie dans la bibliothèque, fiche patient, fil
 
 ## But
 

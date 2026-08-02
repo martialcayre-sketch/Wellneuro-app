@@ -1,11 +1,11 @@
 ---
-id: "CB-04"
-titre: "compilateur-regles"
+id: "LOT-01"
+titre: "compilateur-regles-cb04"
 statut: "à_faire"
-dépend_de: "CB-03 ; claims biologie validés dans l'Atelier"
+dépend_de: "LOT-00 (CB-03) ; claims biologie validés dans l'Atelier"
 ---
 
-# CB-04 — Compilateur de la table de règles biologie
+# LOT-01 (CB-04) — Compilateur de la table de règles biologie
 
 ## But
 

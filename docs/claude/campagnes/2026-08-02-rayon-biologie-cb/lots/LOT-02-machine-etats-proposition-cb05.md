@@ -1,11 +1,11 @@
 ---
-id: "CB-05"
-titre: "machine-etats-proposition"
+id: "LOT-02"
+titre: "machine-etats-proposition-cb05"
 statut: "à_faire"
-dépend_de: "CB-01 (fait) ; CB-03"
+dépend_de: "CB-01 (fait) ; LOT-00 (CB-03)"
 ---
 
-# CB-05 — Machine à états de la proposition d'exploration
+# LOT-02 (CB-05) — Machine à états de la proposition d'exploration
 
 ## But
 

@@ -1,11 +1,11 @@
 ---
-id: "CB-07"
-titre: "contrat-protocole-v4"
+id: "LOT-04"
+titre: "contrat-protocole-v4-cb07"
 statut: "à_faire"
-dépend_de: "CB-05"
+dépend_de: "LOT-02 (CB-05)"
 ---
 
-# CB-07 — Contrat protocole V4 `BiologyCatalogRef`
+# LOT-04 (CB-07) — Contrat protocole V4 `BiologyCatalogRef`
 
 ## But
 
