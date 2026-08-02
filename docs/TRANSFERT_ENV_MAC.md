@@ -34,7 +34,7 @@ vercel env pull .env.local
 
 Cette commande récupère les variables de l'environnement lié à Vercel dans le projet local du Mac.
 
-Le script [scripts/bootstrap-mac.sh](scripts/bootstrap-mac.sh) automatise cette séquence si `web/.vercel/project.json` est déjà présent et si `web/.env.local` n'existe pas encore.
+Le script [scripts/bootstrap-mac.sh](../scripts/bootstrap-mac.sh) automatise cette séquence si `web/.vercel/project.json` est déjà présent et si `web/.env.local` n'existe pas encore.
 
 ## Méthode locale pour variables présentes dans le shell Windows
 

@@ -28,7 +28,7 @@ La migration depuis le MVP Google Apps Script (GAS) a débuté le 2026-06-29 et 
 cd web
 npm install
 npm run prisma:generate
-cp .env.local.example .env.local   # puis renseigner les valeurs (jamais commiter .env.local)
+cp ../.env.example .env.local   # puis renseigner les valeurs (jamais commiter .env.local)
 npm run dev                        # http://localhost:3000
 ```
 

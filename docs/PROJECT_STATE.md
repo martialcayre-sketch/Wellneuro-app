@@ -1,6 +1,6 @@
 # État du projet Wellneuro
 
-> Dernier snapshot : 2026-07-11 (WN-0)
+> Dernier snapshot : 2026-07-11 (WN-0). Ce document sert de snapshot historique ; la source de vérité opérationnelle actuelle est `docs/claude/PROJET_CONTEXTE.md`.
 
 ## Production
 
@@ -29,7 +29,7 @@
 - **Source unique runtime** : PostgreSQL via Prisma (depuis 2026-07-07)
 - **Google Sheets** : entièrement décommissionné, code archivé dans `archive/gas-legacy/`
 - **Registre questionnaires** : normalisé (tables relationnelles), fallback temporaire sur `packs.qids` legacy
-- **67 questionnaires** portés avec moteur de scoring dans `web/src/lib/questions.ts`
+- **64 questionnaires** portés avec moteur de scoring dans `web/src/lib/questions.ts`
 
 ## Authentification
 

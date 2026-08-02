@@ -2,7 +2,7 @@
 
 Guide pratique pour conduire des sessions de réflexion avec Claude sur le dev à venir, tout en minimisant la consommation de tokens.
 
-Ce document sert quand l’objectif est d’explorer, arbitrer ou préparer un lot avant implémentation. Pour les prompts de correction, de revue ou d’ajout de documentation, voir aussi [docs/claude/TEMPLATES_PROMPTS.md](docs/claude/TEMPLATES_PROMPTS.md).
+Ce document sert quand l’objectif est d’explorer, arbitrer ou préparer un lot avant implémentation. Pour les prompts de correction, de revue ou d’ajout de documentation, voir aussi [TEMPLATES_PROMPTS.md](TEMPLATES_PROMPTS.md).
 
 ---
 

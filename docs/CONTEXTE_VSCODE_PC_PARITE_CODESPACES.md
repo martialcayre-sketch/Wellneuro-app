@@ -28,7 +28,7 @@ cd wellneuro-app
 cd web && npm install
 ```
 
-Si l'application requiert des variables d'environnement locales, partir de `web/.env.local.example`, renseigner les valeurs attendues, puis ne jamais committer le fichier réel.
+Si l'application requiert des variables d'environnement locales, partir de `../.env.example` depuis `web/`, renseigner les valeurs attendues, puis ne jamais committer le fichier réel.
 
 ## Extensions VS Code recommandées
 
