@@ -1161,3 +1161,17 @@ post-merge.
 **Questions ouvertes** : source des « gates G0-G4 » du contexte compact,
 toujours inconnue ; entrée DECISIONS.md pour l'amendement A-009 (proposée, en
 attente d'accord).
+
+## 2026-08-02 — CERT-Q LOT-03 handoff
+
+**Décisions** : LOT-03 terminé pour CERT-Q ; les lots 01 à 03 sont consolidés,
+avec distinction explicite entre l'état daté 62/64 (2026-07-29) et le registre
+courant 64/64. Le handoff campagne est produit, sans changement de scoring.
+
+**Écarté** : suppression automatique des branches historiques ; aucune branche
+supprimée dans ce lot.
+
+**Prochaine action** : arbitrer `feat/mini-synthese-par-rubrique` (PR #372),
+puis confirmer séparément le nettoyage des 20 branches candidates.
+
+**Questions ouvertes** : intégration amendée ou clôture sans merge de PR #372.

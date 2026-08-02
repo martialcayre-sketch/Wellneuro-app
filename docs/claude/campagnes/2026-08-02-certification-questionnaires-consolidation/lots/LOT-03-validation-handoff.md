@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Validation et handoff"
-statut: "à_faire"
+statut: "terminé"
 dépend_de: "LOT-02"
 ---
 
@@ -37,3 +37,30 @@ réversible.
 - verdict GO/NO-GO explicite ;
 - état 62/64 traçable ;
 - aucune branche supprimée sans accord.
+
+## Résultats
+
+- T1 exécuté et vert : `cd web && npm run check`.
+- Revue indépendante exécutée sur les changements documentaires des lots 01 à
+  03.
+- Matrice finale consolidée : 36 branches recensées ; 35 classées
+  intégrées/obsolescentes, 1 branche restante en arbitrage
+  (`feat/mini-synthese-par-rubrique`).
+- Proposition de nettoyage immédiat bornée à 20 branches ; les 15 autres
+  restent hors périmètre de nettoyage tant que l'arbitrage final n'est pas
+  rendu.
+- Aucune branche supprimée ; nettoyage uniquement proposé.
+
+## Verdict
+
+- **GO** pour la consolidation documentaire et la traçabilité 62/64.
+- **NO-GO** pour la clôture complète de campagne tant que l'arbitrage sur
+  `feat/mini-synthese-par-rubrique` n'est pas tranché.
+
+## Handoff court
+
+1. Trancher le sort de `feat/mini-synthese-par-rubrique` (merge amendé ou
+   clôture sans merge).
+2. Après arbitrage, confirmer séparément la suppression des 20 branches
+   candidates.
+3. Mettre à jour la checklist finale de campagne et clôturer CERT-Q.
