@@ -8,10 +8,18 @@ vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/rag/embeddings', () => ({ createEmbeddings }));
 
 import { servirRayonCorpus, RAYON_VERS_NOTEBOOK } from './rayonCorpus';
-import { sourcesDuNotebook } from '@/lib/rag/claims/notebooks';
+import {
+  estSourceEnQuarantaine,
+  sansSourcesEnQuarantaine,
+  sourcesDuNotebook,
+} from '@/lib/rag/claims/notebooks';
 
 const NOTEBOOK_MICRO = '10 — Micronutrition et compléments';
-const SOURCES_MICRO = sourcesDuNotebook(NOTEBOOK_MICRO);
+// Ce que le rayon SERT : les sources du notebook, MOINS celles sous quarantaine
+// sanitaire. Le notebook 10 en compte cinq — leur absence de la liste servie
+// est le contrat, pas un effet de bord.
+const SOURCES_MICRO_BRUTES = sourcesDuNotebook(NOTEBOOK_MICRO);
+const SOURCES_MICRO = sansSourcesEnQuarantaine(SOURCES_MICRO_BRUTES);
 
 // La 4ᵉ valeur interpolée du $queryRaw est la liste des source_ids jointe par
 // virgule (filter_source_ids). Ordre des interpolations : littéral, matchCount,
@@ -99,6 +107,15 @@ describe('servirRayonCorpus (rayon corpus par notebook, barrière D-003)', () =>
     expect(call[3]).toBe(0.5);
     expect(call[4]).toBe(SOURCES_MICRO.join(','));
     expect(filtreSourcesDuDernierAppel()).toBe(SOURCES_MICRO.join(','));
+
+    // Et la quarantaine sanitaire ne franchit pas la barrière : aucune des
+    // sources servies n'est en quarantaine, alors que le notebook brut en
+    // contient. Un claim VALIDÉ d'une notice mise en relecture pour raison de
+    // sécurité n'a pas à être servi comme contenu clinique ordinaire.
+    const servies = filtreSourcesDuDernierAppel().split(',');
+    expect(servies.some((id) => estSourceEnQuarantaine(id))).toBe(false);
+    expect(SOURCES_MICRO_BRUTES.some((id) => estSourceEnQuarantaine(id))).toBe(true);
+    expect(servies.length).toBeLessThan(SOURCES_MICRO_BRUTES.length);
   });
 
   it('restitue tous les claims retournés par le filtre SQL, avec le rayon demandé', async () => {
