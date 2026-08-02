@@ -1218,3 +1218,31 @@ reste seule porteuse du consolidé.
 nettoyage si demandée.
 
 **Questions ouvertes** : aucune.
+
+## 2026-08-02 — Rayon compléments : lot d’ingestion/référentiel stabilisé
+
+**Décisions** : le lot a été bouclé sur le périmètre API et documentation du rayon
+compléments, avec une réponse d’erreur cohérente `ok: false` sur les payloads
+invalides des routes internes d’ingestion/référentiel.
+
+**Écarté** : ouvrir une nouvelle surface fonctionnelle ou modifier la logique
+clinique ; la stabilisation est restée bornée aux routes et à la campagne.
+
+**Prochaine action** : poursuivre la campagne sur un autre périmètre concret si
+nécessaire, par exemple l’activation métier ou une validation complémentaire.
+
+**Questions ouvertes** : l’activation métier du rayon reste à cadrer avec le
+produit et la gouvernance.
+
+## 2026-08-02 — Claims orientation : levée de quarantaine prescriptive
+
+**Décisions** : la quarantaine d’orientation ne bloque plus les sources
+prescriptives du périmètre ; 8 sources réintégrées, la perfusion reste exclue.
+Le filtre, le contrat SQL de périmètre et les bancs de régression ont été mis
+en cohérence.
+
+**Écarté** : lever la quarantaine pour les sources non prescriptives.
+
+**Prochaine action** : aucune immédiate sur le fond technique.
+
+**Questions ouvertes** : aucune.

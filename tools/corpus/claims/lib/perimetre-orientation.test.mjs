@@ -2,12 +2,12 @@
 //
 // Sans ce banc, le périmètre d'orientation vit dans une liste morte que rien ne
 // surveille : la migration `20260801200000_rag_claim_usage_orientation` grave
-// 98 identifiants au 2026-08-01, et le registre continue d'évoluer sans elle.
-// Une source qui passe en `quarantined` après coup — c'est exactement l'usage
-// du mécanisme, 8 sources du périmètre y sont déjà passées — garderait sa
-// marque `usage = 'orientation'` pour toujours : la migration est one-shot, il
-// n'existe aucun chemin de démarquage, et rien au runtime ne relit
-// `lifecycleStatus`.
+// 106 identifiants au 2026-08-02, et le registre continue d'évoluer sans elle.
+// Une source qui passe en `quarantined` après coup n'est pas traitée de la même
+// manière selon son type : les sources prescriptives du périmètre sont
+// réintégrées par la levée actée le 2026-08-02, les autres restent exclues.
+// La migration est one-shot ; elle fige le contrat de périmètre au moment du
+// marquage, et le banc force à décider quoi faire des claims déjà marqués.
 //
 // Ce banc échoue au premier écart. C'est le but : il force à DÉCIDER quoi faire
 // des claims déjà marqués, au lieu de laisser la base et le registre diverger
@@ -37,7 +37,7 @@ function perimetreDepuisRegistre() {
     registre
       .filter((n) => n.corpus === CORPUS)
       .filter((n) => NOTEBOOKS.has(String(n.primaryNotebook || '').slice(0, 2)))
-      .filter((n) => n.lifecycleStatus !== 'quarantined')
+      .filter((n) => n.lifecycleStatus !== 'quarantined' || n.prescriptive === true)
       .filter((n) => !EXCLUSIONS_A009.includes(n.sourceId))
       .map((n) => n.sourceId),
   );
@@ -69,18 +69,10 @@ test('la liste figée dans la migration est exactement le périmètre du registr
   );
 });
 
-test('les sources en quarantaine du périmètre sont bien hors de la liste', () => {
-  const registre = JSON.parse(fs.readFileSync(REGISTRE, 'utf8'));
+test('les 8 sources prescriptives réintégrées figurent dans la migration', () => {
   const grave = listeDeLaMigration();
-  const quarantaine = registre
-    .filter((n) => n.corpus === CORPUS)
-    .filter((n) => NOTEBOOKS.has(String(n.primaryNotebook || '').slice(0, 2)))
-    .filter((n) => n.lifecycleStatus === 'quarantined')
-    .map((n) => n.sourceId);
-
-  assert.ok(quarantaine.length > 0, 'aucune source en quarantaine : le banc ne prouverait rien');
-  for (const sid of quarantaine) {
-    assert.ok(!grave.has(sid), `${sid} est en quarantaine et pourtant marquée par la migration`);
+  for (const sid of ['WN-SRC-0318', 'WN-SRC-0327', 'WN-SRC-0328', 'WN-SRC-0329', 'WN-SRC-0331', 'WN-SRC-0332', 'WN-SRC-0358', 'WN-SRC-0370']) {
+    assert.ok(grave.has(sid), `${sid} doit être réintégré dans le périmètre orientation`);
   }
 });
 
