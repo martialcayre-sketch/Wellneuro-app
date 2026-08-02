@@ -33,7 +33,20 @@ test('une notice raw ordinaire passe', () => {
   assert.equal(motif, null);
 });
 
-test('WN-SRC-0370 (sevrage, réintégré par la décision f) passe', () => {
+// La décision f réintègre des DOMAINES (sevrages, psychotropes, Alzheimer) ;
+// elle ne lève aucune quarantaine. WN-SRC-0370 (addictions et sevrage) est le
+// cas qui distingue les deux : son domaine est réintégré, sa notice est
+// `quarantined` au registre — il reste donc exclu aujourd'hui.
+test('un domaine réintégré ne suffit pas : WN-SRC-0370 reste exclu, car en quarantaine', () => {
+  const { exclu, motif } = exclureDeLOrientation({
+    sourceId: 'WN-SRC-0370',
+    lifecycleStatus: 'quarantined',
+  });
+  assert.equal(exclu, true);
+  assert.match(motif, /quarantaine/);
+});
+
+test('la même source hors quarantaine passerait — rien n’exclut son domaine', () => {
   const { exclu } = exclureDeLOrientation({
     sourceId: 'WN-SRC-0370',
     lifecycleStatus: 'raw',
