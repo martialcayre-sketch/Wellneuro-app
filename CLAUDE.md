@@ -155,7 +155,8 @@ est 3,5 %). Écrire court reste utile pour la lisibilité — pas pour la dépen
 | 3. Écrire | mode Plan, puis édition bornée au périmètre | session |
 | 4. Valider | palier T1/T2/T3, sortie redirigée puis relue | session |
 | 5. Revoir | diff, sécurité, clinique | `/wn-review` ; sous-agent `wn-reviewer` si migration/auth |
-| 6. Clore | statut, journal, promotions | `/wn-finish` puis `/wn-pr` |
+| 6. Clore | statut, journal, promotions, handoff | `/wn-finish` puis `/wn-handoff write` |
+| 7. Livrer | PR, CI, merge | `/wn-pr` puis `/wn-merge` |
 
 L'étape 1 est celle qui décide du coût de toutes les autres : ce qu'elle fait
 entrer dans le contexte est relu jusqu'à la fin de la session.
@@ -172,6 +173,8 @@ cd web && npm run test:e2e         # parcours E2E Playwright seuls (démarre nex
 cd web && npm run test:worktree    # réplique locale du job CI verify, E2E inclus
 bash scripts/check_no_secrets.sh          # anti-secrets, dépôt entier
 bash scripts/check_no_secrets.sh --staged # anti-secrets, lignes indexées seules
+node scripts/wn-cycle.mjs                 # phase du cycle de lot et geste suivant
+node scripts/wn-cycle.mjs --appliquer     # + resynchronise ACTIVE_CAMPAIGN.md et .wn/state.json
 ```
 
 ### Trois paliers de validation
@@ -211,6 +214,14 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
   changement d'UI, le vérifier en rejouant les E2E (`npm run test:worktree`,
   `-- --fast` pour une passe courte) : **une suite Vitest verte ne prouve rien
   sur les parcours**, elle n'exécute pas Playwright.
+- **La clôture passe avant la PR, pas après le merge.** `/wn-finish` puis
+  `/wn-handoff write` s'écrivent sur la branche vivante, et partent dans la PR du
+  lot. Le merge est un squash (`--squash --delete-branch`) : ce qui s'écrit
+  ensuite n'est plus dans l'ascendance de `main` et coûte une seconde PR de doc —
+  c'est ce qui a produit les PR #547 et #548 le 2026-08-03, après #545. En cas de
+  doute sur la phase, `node scripts/wn-cycle.mjs` ; il sort en échec quand la
+  fenêtre est déjà fermée. Une fois fermée, écrire depuis `main`, **jamais** en
+  rebranchant sur la branche squashée.
 - Ouvrir la PR avec un corps via `--body-file` et un diff d'une seule finalité,
   puis **attendre son CI sans le sonder en boucle** (idiome ci-dessous) ; avant
   d'annoncer une PR prête à merger, en **lire** le résultat — les E2E n'y sont pas

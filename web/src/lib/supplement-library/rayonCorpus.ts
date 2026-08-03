@@ -17,7 +17,6 @@
 import { prisma } from '@/lib/prisma';
 import { createEmbeddings } from '@/lib/rag/embeddings';
 import { sourcesDuNotebook } from '@/lib/rag/claims/notebooks';
-import { isC4Enabled } from './featureFlag';
 import {
   MESSAGE_INDISPONIBLE,
   MESSAGE_REQUETE_VIDE,
@@ -31,7 +30,8 @@ export const RAYON_MICRONUTRITION = 'micronutrition' as const;
 
 // Correspondance rayon → notebook (libellé exact du registre sanitaire). Le
 // rayon est une étagère clinique ; le notebook en est l'unité d'organisation.
-// Seul « micronutrition » a un consommateur aujourd'hui (C4) ; les autres
+// « micronutrition » (C4) et « cognition »/« intestin » (recherche corpus
+// clinique, dashboard/bibliotheque) ont un consommateur ; les autres
 // (« biologie », « nutrition », « stress », « humeur », « sommeil ») sont
 // déclarés mais inertes tant qu'aucun écran ne les appelle.
 export const RAYON_VERS_NOTEBOOK: Readonly<Record<string, string>> = {
@@ -41,7 +41,18 @@ export const RAYON_VERS_NOTEBOOK: Readonly<Record<string, string>> = {
   stress: '03 — Stress et burnout',
   humeur: '04 — Humeur',
   sommeil: '02 — Sommeil et chronobiologie',
+  cognition: '05 — Cognition et mémoire',
+  intestin: '07 — Axe intestin-cerveau',
 } as const;
+
+// Allowlist de la route /api/praticien/corpus/rayons (WN_RECHERCHE_CORPUS_ENABLED)
+// — DÉLIBÉRÉMENT plus étroite que RAYON_VERS_NOTEBOOK. servirRayonCorpus() ne
+// gate plus sur aucun flag produit (voir sa JSDoc) : sans cette allowlist,
+// n'importe quelle route acceptant un `rayon` en paramètre pourrait servir
+// N'IMPORTE LEQUEL des rayons déclarés ci-dessus — y compris micronutrition,
+// en contournant WN_C4_ENABLED. Chaque route qui expose un `rayon` en entrée
+// libre doit restreindre à SES rayons, jamais à la carte entière.
+export const RAYONS_RECHERCHE_CORPUS: ReadonlyArray<string> = ['cognition', 'intestin'];
 
 export type ClaimRayon = {
   claimId: string;
@@ -95,10 +106,18 @@ type LigneClaim = {
 
 /**
  * Sert les claims validés d'un rayon pour une requête donnée (la fiche : nom du
- * complément, intention, ingrédient). Filtre AU NIVEAU SQL sur les sources du
- * notebook associé au rayon (filter_source_ids). Ne lève jamais pour une
- * absence de claims : le vide est un état, pas une erreur. Un rayon inconnu ou
- * un notebook sans source rend un résultat vide — JAMAIS un filtre ignoré.
+ * complément, intention, ingrédient ; ou une recherche libre pour un rayon de
+ * recherche corpus clinique). Filtre AU NIVEAU SQL sur les sources du notebook
+ * associé au rayon (filter_source_ids). Ne lève jamais pour une absence de
+ * claims : le vide est un état, pas une erreur. Un rayon inconnu ou un
+ * notebook sans source rend un résultat vide — JAMAIS un filtre ignoré.
+ *
+ * Le gate produit (quel flag active quel rayon — WN_C4_ENABLED pour
+ * micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour cognition/intestin, etc.)
+ * n'est PAS ici : il appartient à la couche accès de chaque route appelante
+ * (`getPractitionerC4Access`, `getPractitionerRechercheCorpusAccess`…), ET à
+ * une allowlist par route (ex. `RAYONS_RECHERCHE_CORPUS` ci-dessous) — ce
+ * service ne restreint plus QUEL rayon de la carte peut être demandé.
  */
 export async function servirRayonCorpus(params: {
   rayon: string;
@@ -106,12 +125,6 @@ export async function servirRayonCorpus(params: {
   matchCount?: number;
   minSimilarity?: number;
 }): Promise<RayonCorpusResult> {
-  if (!isC4Enabled()) {
-    throw new Error(
-      'Rayon compléments désactivé : WN_C4_ENABLED doit valoir « true » (fail-closed).',
-    );
-  }
-
   const rayon = params.rayon.trim();
   const requete = params.requete.trim();
   const matchCount = Math.max(1, Math.min(params.matchCount ?? 24, 50));

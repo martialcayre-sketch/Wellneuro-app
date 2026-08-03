@@ -11,6 +11,9 @@ vi.mock('@/components/BibliothequePanel', () => ({
 vi.mock('@/components/complements/RayonComplementsPanel', () => ({
   RayonComplementsPanel: () => <div data-testid="rayon-complements-panel" />,
 }));
+vi.mock('@/components/corpus/RechercheCorpusRayonPanel', () => ({
+  RechercheCorpusRayonPanel: () => <div data-testid="recherche-corpus-panel" />,
+}));
 vi.mock('@/lib/bibliotheque', () => ({ listeBibliotheque: () => [] }));
 
 import BibliothequePage from './page';
@@ -18,6 +21,7 @@ import BibliothequePage from './page';
 afterEach(() => {
   cleanup();
   delete process.env.WN_C4_ENABLED;
+  delete process.env.WN_RECHERCHE_CORPUS_ENABLED;
 });
 
 describe('BibliothequePage — garde-fou du rayon compléments', () => {
@@ -40,5 +44,31 @@ describe('BibliothequePage — garde-fou du rayon compléments', () => {
 
     expect(screen.getByTestId('rayon-complements-panel')).toBeTruthy();
     expect(screen.queryByText(/n['’]est pas encore ouvert sur cet environnement/i)).toBeNull();
+  });
+});
+
+describe('BibliothequePage — garde-fou de la recherche corpus clinique', () => {
+  it('drapeau éteint : rien n’est monté, une bannière d’indisponibilité dédiée', () => {
+    delete process.env.WN_RECHERCHE_CORPUS_ENABLED;
+    render(<BibliothequePage />);
+
+    expect(screen.queryByTestId('recherche-corpus-panel')).toBeNull();
+    expect(screen.getByText(/recherche corpus clinique n['’]est pas encore ouverte/i)).toBeTruthy();
+  });
+
+  it('drapeau levé : le panneau de recherche corpus est monté, pas de bannière d’indisponibilité', () => {
+    process.env.WN_RECHERCHE_CORPUS_ENABLED = 'true';
+    render(<BibliothequePage />);
+
+    expect(screen.getByTestId('recherche-corpus-panel')).toBeTruthy();
+    expect(screen.queryByText(/recherche corpus clinique n['’]est pas encore ouverte/i)).toBeNull();
+  });
+
+  it('ce drapeau est indépendant de WN_C4_ENABLED', () => {
+    delete process.env.WN_C4_ENABLED;
+    process.env.WN_RECHERCHE_CORPUS_ENABLED = 'true';
+    render(<BibliothequePage />);
+
+    expect(screen.getByTestId('recherche-corpus-panel')).toBeTruthy();
   });
 });

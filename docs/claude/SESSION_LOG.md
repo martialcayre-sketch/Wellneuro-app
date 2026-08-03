@@ -2,6 +2,27 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-08-03 — LOT-02 partiel : rayons cognition/intestin branchés (PR #546)
+
+**Décisions** : NB05/07 vérifiés 100 % VALIDE en base (`execute_sql` direct, pas
+le doc d'inventaire de campagne qui porte sur un sous-ensemble différent) ;
+ajoutés à `RAYON_VERS_NOTEBOOK` avec un appelant neuf (`dashboard/bibliotheque`,
+route `/api/praticien/corpus/rayons`), flag `WN_RECHERCHE_CORPUS_ENABLED`
+dédié plutôt que réutiliser `WN_C4_ENABLED`. Revue `wn-reviewer` a trouvé un
+bloquant avant merge : une regex seule aurait laissé la route servir
+n'importe quel rayon (micronutrition compris) en contournant le flag
+compléments — corrigé par une allowlist testée. Couplage caché retiré au
+passage : `servirRayonCorpus` forçait `WN_C4_ENABLED` pour tout rayon.
+
+**Écarté** : notebook 06 (douleurs chroniques), non validé — même route déjà
+générique, à étendre plus tard.
+
+**Prochaine action** : brancher 06 une fois validé, ou LOT-01/05/06 de la
+campagne moteur d'intervention.
+
+**Questions ouvertes** : calibration `minSimilarity`/`matchCount` (réglés sur
+un profil fiche-produit) non vérifiée pour une recherche en langage libre.
+
 ## 2026-08-03 — Repurposage de ROADMAP_TECHNIQUE.md en architecture technique système
 
 **Décisions** : `docs/ROADMAP_TECHNIQUE.md` cesse d'être un suivi de chantiers (lots R0→R10, dette) pour devenir la cartographie d'architecture technique système (stack, routes, modèle de données, sous-systèmes `lib/`, auth, RAG, déploiement) — décision explicite de l'utilisateur, périmètre = toute l'application. L'ancien contenu est archivé intégralement dans le nouveau `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` avant réécriture, rien n'est perdu.
@@ -1741,6 +1762,30 @@ commentaire de `orientationRulesV1.ts` y renvoie ; (2) aucun banc ne confronte
 les `claimId` à `rag_corpus_claims` (pas de base en Vitest) : la vérification
 reste manuelle avant chaque signature ; (3) 10 des 16 packs de doctrine n'existent
 toujours pas en base, et `PACK_HUMEUR_NEURO` y est inactif.
+
+## 2026-08-03 — Fenêtre de clôture d'un lot : `scripts/wn-cycle.mjs`
+
+**Décisions** — La clôture (`/wn-finish`) et le handoff (`/wn-handoff write`)
+s'écrivent sur la branche vivante et partent dans la PR du lot. Le merge étant
+un squash, la frontière n'est pas la suppression de la branche mais le merge
+lui-même. Un script rend la phase du cycle et sort en échec quand la fenêtre est
+fermée ; il est chargé par le bloc `!` de `/wn-finish` et `/wn-handoff`, seul
+chaînage exécutable entre skills (`disable-model-invocation: true` interdit
+l'invocation croisée). Correctif au passage : `writeActiveCampaignView()`
+tronquait le garde « cette vue est générée » dans sa branche idle.
+
+**Écarté** — Écrire le handoff après le merge et avant le nettoyage (fenêtre
+inexistante) ; une PR de doc séparée par défaut (deux PR par lot) ; un contrôle
+CI bloquant réclamant le handoff (bloquerait les correctifs urgents).
+
+**Validations** — banc 15/15, cross-invocation 0, audit campagne 0, anti-secrets
+0, T1 vert (70 tests). Chemin `gh` vérifié sur les PR réelles #545/#547/#548.
+
+**Prochaine action** — Ouvrir la PR, lire `verify`.
+
+**Questions ouvertes** — `--appliquer` écrit `git.branch` dans `.wn/state.json` :
+un nom de worktree éphémère, donc du bruit et un conflit potentiel entre
+sessions parallèles si on le committe. Non committé ici.
 
 ## 2026-08-03 — LOT-06 : consommateur praticien de l'orientation, restitution IA
 
