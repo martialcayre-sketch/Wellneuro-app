@@ -1596,3 +1596,22 @@ d'ouvrir CB-03 ; sinon reprendre le run sommeil (lot 8) puis lot 9.
 create --prefix` permet un id de lot hors format `LOT-NN`, non détecté avant
 CI ; à corriger dans le script ou documenter dans le skill (en attente
 d'accord).
+
+## 2026-08-03 — Kit `wn` : reprompting, et le garde qui ferme la classe
+
+**Décisions** : `/wn-reprompt` créé et branché dans six skills (#529) — contexte
+isolé, sortie ≤ 180 mots, `PASSE` par défaut, un reformulage inutile coûtant le
+tour qu'il prétend économiser. Son drapeau `disable-model-invocation` rendait ces
+six branchements inexécutables : levé (#530), deuxième exemption assumée après
+`wn-route`. Un garde bloquant ferme la classe (#532) et a trouvé une troisième
+instance — `wn-route` ordonnait d'invoquer `/wn`, `/wn-model`, `/wn-ultra`, tous
+porteurs du drapeau.
+
+**Écarté** : inscrire le reprompting dans `CLAUDE.md` (le ferait payer à toutes
+les sessions, y compris celles dont la demande est claire) ; lever trois drapeaux
+de plus pour `wn-route` (remplacé par un `Read` ciblé du fichier de grille) ; un
+garde épinglant toute mention de skill (mur de faux positifs sur les routeurs).
+
+**Prochaine action** : aucune en attente.
+
+**Questions ouvertes** : aucune. Notice d'exploitation du kit publiée en artefact.
