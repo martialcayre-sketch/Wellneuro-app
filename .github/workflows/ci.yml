@@ -333,6 +333,16 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_usage_orientation_v1.sql
 
+      # La barrière D-003 (aucun claim non signé ne sort du corpus RAG) tient
+      # à match_wellneuro_rag_claims (20260722150000) : ce banc éprouve ses
+      # cinq conditions par fixture (contrôle positif A, puis B/C/D/E qui
+      # doivent chacun échouer isolément), et assère structurellement les deux
+      # CHECK qu'aucune fixture ne peut violer sans échouer à l'INSERT.
+      - name: RAG claim barrière D-003 contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/rag_claim_barriere_d003_v1.sql
+
       # Le rayon corpus filtre PAR NOTEBOOK (rayonCorpus.ts, décision 7 des
       # arbitrages 2026-07-27) : ce contrat éprouve que le notebook d'une source
       # est un fait univoque et présent en base. Sur la base CI (vide) il passe

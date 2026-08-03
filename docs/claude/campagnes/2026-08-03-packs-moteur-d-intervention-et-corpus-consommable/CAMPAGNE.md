@@ -4,9 +4,9 @@ titre: "Packs, moteur d'intervention et corpus consommable"
 statut: "en_cours"
 créée_le: "2026-08-03"
 mise_à_jour: "2026-08-03"
-lot_courant: "LOT-06"
+lot_courant: "LOT-07"
 branche_campagne: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
-branche_lot_courant: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/lot-06"
+branche_lot_courant: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/lot-07"
 cible_pr_lot: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
 cible_pr_campagne: "main"
 ---
@@ -46,7 +46,7 @@ conservés ici parce qu'ils expliquent la forme des lots.
 |---|---|---|
 | « Terminer la certification et le score-check » | Clos et mergé — `#528`, commit `22766e67`. `node scripts/check_questionnaire_certification.js` sort vert sur 64. | Hors périmètre, sauf le reliquat bibliographique isolé en LOT-07. |
 | « Concevoir un moteur d'intervention » | Le moteur existe : `orientationEngine.ts` (303 l.), `orientationRulesV1.ts`, route avec double verrou fail-closed, modèles `QuestionnairePackTrigger` et `PackProposition`. Mais `ORIENTATION_RULES_V1 = []` et **aucun appelant**. | Remplir et brancher, jamais reconcevoir (LOT-05, LOT-06). |
-| « Utiliser les claims même s'ils ne sont pas validés » | Le fail-closed n'est pas le blocage. Sur les 95 sources d'intervention : **1247 VALIDE, 755 en attente** — de l'ordre de la journée de revue, pas 50 à 100 h. | Valider les 755 (LOT-01) plutôt qu'assouplir la porte D-003. |
+| « Utiliser les claims même s'ils ne sont pas validés » | Le fail-closed n'est pas le blocage. Sur les 95 sources d'intervention : **1247 VALIDE, 755 en attente** — de l'ordre de la journée de revue, pas 50 à 100 h. **(Mesure du cadrage, 2026-08-03 au matin — périmée le soir même : 2002 / 0 sur le périmètre, 8224 / 0 sur le corpus actif.)** | Valider les 755 (LOT-01) plutôt qu'assouplir la porte D-003. |
 
 **Ce qui a été confirmé, en revanche** : les fiches de synthèse NNPP2 sont bien
 ingérées et réparties par thématique. 95 sources d'intervention — fiches de
@@ -120,7 +120,7 @@ inventer. Inventaire complet : `INVENTAIRE_SOURCES_INTERVENTION.md`.
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Registre des 95 sources d'intervention NNPP2 | livré | — |
-| LOT-01 | Validation ciblée des 755 claims d'intervention | **livré** — clos sur preuve en base, pas par exécution | LOT-00 |
+| LOT-01 | Validation ciblée des 755 claims d'intervention | **livré** — clos sur preuve en base, pas par exécution ; garde D-003 ajouté | LOT-00 |
 | LOT-02 | Rayons cognition / douleur / intestin + premier appelant | **livré** (#546 puis clôture `douleur`) | LOT-01 |
 | LOT-03 | Refactor des packs : source de vérité unique | livré | LOT-00 |
 | LOT-04 | Structuration de l'intake | livré (#539) | — |
