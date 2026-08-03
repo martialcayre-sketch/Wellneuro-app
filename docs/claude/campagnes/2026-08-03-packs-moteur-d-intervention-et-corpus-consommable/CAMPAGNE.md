@@ -4,9 +4,9 @@ titre: "Packs, moteur d'intervention et corpus consommable"
 statut: "en_cours"
 créée_le: "2026-08-03"
 mise_à_jour: "2026-08-03"
-lot_courant: "LOT-06"
+lot_courant: "LOT-02"
 branche_campagne: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
-branche_lot_courant: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/lot-06"
+branche_lot_courant: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/lot-02"
 cible_pr_lot: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
 cible_pr_campagne: "main"
 ---
@@ -46,7 +46,7 @@ conservés ici parce qu'ils expliquent la forme des lots.
 |---|---|---|
 | « Terminer la certification et le score-check » | Clos et mergé — `#528`, commit `22766e67`. `node scripts/check_questionnaire_certification.js` sort vert sur 64. | Hors périmètre, sauf le reliquat bibliographique isolé en LOT-07. |
 | « Concevoir un moteur d'intervention » | Le moteur existe : `orientationEngine.ts` (303 l.), `orientationRulesV1.ts`, route avec double verrou fail-closed, modèles `QuestionnairePackTrigger` et `PackProposition`. Mais `ORIENTATION_RULES_V1 = []` et **aucun appelant**. | Remplir et brancher, jamais reconcevoir (LOT-05, LOT-06). |
-| « Utiliser les claims même s'ils ne sont pas validés » | Le fail-closed n'est pas le blocage. Sur les 95 sources d'intervention : **1247 VALIDE, 755 en attente** — de l'ordre de la journée de revue, pas 50 à 100 h. | Valider les 755 (LOT-01) plutôt qu'assouplir la porte D-003. |
+| « Utiliser les claims même s'ils ne sont pas validés » | Le fail-closed n'est pas le blocage. Sur les 95 sources d'intervention : **1247 VALIDE, 755 en attente** — de l'ordre de la journée de revue, pas 50 à 100 h. **(Mesure du cadrage, 2026-08-03 au matin. Périmée le soir même : la revue a eu lieu, le périmètre est à 2002 / 0 et le corpus actif entier à 8224 / 0.)** | Valider les 755 (LOT-01) plutôt qu'assouplir la porte D-003. |
 
 **Ce qui a été confirmé, en revanche** : les fiches de synthèse NNPP2 sont bien
 ingérées et réparties par thématique. 95 sources d'intervention — fiches de
@@ -120,12 +120,12 @@ inventer. Inventaire complet : `INVENTAIRE_SOURCES_INTERVENTION.md`.
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Registre des 95 sources d'intervention NNPP2 | livré | — |
-| LOT-01 | Validation ciblée des 755 claims d'intervention | à_faire | LOT-00 |
-| LOT-02 | Rayons cognition / douleur / intestin + premier appelant | à_faire | LOT-01 |
+| LOT-01 | Validation ciblée des 755 claims d'intervention | livré — revue praticien du 2026-08-03 + garde D-003 | LOT-00 |
+| LOT-02 | Rayons cognition / douleur / intestin + premier appelant | **partiel** — cognition/intestin livrés (#546), douleur (06) à_faire | LOT-01 |
 | LOT-03 | Refactor des packs : source de vérité unique | livré | LOT-00 |
 | LOT-04 | Structuration de l'intake | livré (#539) | — |
 | LOT-05 | Table de règles d'orientation V1 : remplir et signer | **livré_partiel** (#545) — remplie, **non signée** | LOT-03 + LOT-04 |
-| LOT-06 | Consommateur praticien et restitution IA | en_cours | LOT-05 |
+| LOT-06 | Consommateur praticien et restitution IA | livré (#550) | LOT-05 |
 | LOT-07 | Reliquat de certification : bibliographie et psychométrie | à_faire | — |
 
 LOT-04 et LOT-07 n'ont aucune dépendance : ils peuvent être menés en parallèle du
@@ -184,9 +184,9 @@ Revue adversariale `wn-reviewer` obligatoire sur LOT-01, LOT-04 et LOT-05.
 ## Done de campagne
 
 - [x] Les 95 sources d'intervention sont désignées par un registre versionné.
-- [ ] `2002 / 0` sur les claims d'intervention, vérifié en base après merge.
+- [x] `2002 / 0` sur les claims d'intervention, vérifié en base (2026-08-03) — et le corpus actif entier à 8224 / 0.
 - [x] Les 16 packs ont une composition faisant foi (`packs.qids`, option C) et une identité gardée par un test.
 - [ ] `ORIENTATION_RULES_V1` est non vide, signée, et sert des recommandations.
-- [ ] Un écran praticien appelle réellement la route d'orientation.
+- [x] Un écran praticien appelle réellement la route d'orientation (LOT-06, #550).
 - [ ] `check_questionnaire_certification.js` reste vert sur les 64.
 - [ ] Aucun claim non signé n'est exposé, aucune assignation n'est automatique.

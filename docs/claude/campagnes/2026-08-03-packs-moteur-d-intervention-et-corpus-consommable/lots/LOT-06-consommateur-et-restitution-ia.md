@@ -1,7 +1,7 @@
 ---
 id: "LOT-06"
 titre: "Consommateur praticien et restitution IA"
-statut: "en_revue"
+statut: "livré"
 dépend_de: "LOT-05"
 palier: "T2"
 ---
