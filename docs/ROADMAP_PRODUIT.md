@@ -7,16 +7,18 @@
 >
 > - **Ici** : les **priorités produit** — séries D, R et E, ce que l'application
 >   doit savoir faire.
-> - **Dans `ROADMAP_TECHNIQUE.md`** : la **consolidation technique** —
->   historique de la migration GAS → Next.js et lots de reprise R0 → R10 (dette,
->   build, tests, fiabilisation).
+> - **Dans `ROADMAP_TECHNIQUE.md`** : l'**architecture technique système**
+>   (cartographie de l'existant, depuis le 2026-08-03). L'historique de la
+>   migration GAS → Next.js et des lots de reprise R0 → R10 (dette, build,
+>   tests, fiabilisation) est archivé dans `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`.
 > - **Ni l'un ni l'autre ne fait foi sur l'état courant** : c'est
 >   `docs/claude/PROJET_CONTEXTE.md`. L'exécution est pilotée par les campagnes
 >   (`docs/claude/campagnes/`) et le registre de frontières.
 >
 > **Attention au préfixe `R`.** Il désigne **trois séries distinctes**, numérotées
 > indépendamment : `R6` **produit** (ci-dessous, §4) = workflow RDV complet ;
-> `R6` **technique** = stabilisation build/tests ; `R6` **de l'audit 5.0** =
+> `R6` **technique** = stabilisation build/tests (historique dans
+> `HISTORIQUE_CHANTIERS_TECHNIQUES.md`) ; `R6` **de l'audit 5.0** =
 > double source roadmap, c'est-à-dire cette clarification même. **Toujours
 > qualifier la série** — un `R6` nu est ambigu et doit être corrigé, pas deviné.
 >
@@ -185,9 +187,10 @@ logique de PatientsPanel.
 
 ### R8 — Authentification patient MyWellneuro
 
-> Sigle partagé par erreur avec `ROADMAP_TECHNIQUE.md` R8 (filet de sécurité
-> CI, sans rapport, livré 2026-07-11) : les deux roadmaps numérotent
-> indépendamment. Ce R8-ci (produit) reste à faire ; campagne **IDP**.
+> Sigle partagé par erreur avec le R8 technique (filet de sécurité CI, sans
+> rapport, livré 2026-07-11, archivé dans `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`) :
+> les deux roadmaps numérotent indépendamment. Ce R8-ci (produit) reste à
+> faire ; campagne **IDP**.
 - Prérequis de tout l'espace patient persistant (dashboard, carnet de bord,
   messagerie).
 - Socle : **magic link email** ; surcouche : **passkeys (WebAuthn)**.

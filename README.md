@@ -89,7 +89,8 @@ Contrôle OAuth Google Cloud Console (production) :
 ## Documentation
 
 - Contexte projet et état actuel : `docs/claude/PROJET_CONTEXTE.md`
-- Roadmap technique (consolidation R0→R10) : `docs/ROADMAP_TECHNIQUE.md`
+- Architecture technique système : `docs/ROADMAP_TECHNIQUE.md`
+- Historique des chantiers techniques (lots R0→R10) : `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
 - Roadmap produit (séries D/R/E) : `docs/ROADMAP_PRODUIT.md`
 - Sécurité RGPD : `docs/securite_rgpd.md`
 - Checklist de validation end-to-end : `docs/checklist_tests_end_to_end.md`
