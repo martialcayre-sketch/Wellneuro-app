@@ -1,121 +1,133 @@
-# Handoff — 2026-08-03 — LOT-06 : consommateur praticien de l'orientation, restitution IA
+# Handoff — 2026-08-03 — LOT-02 clos : rayon `douleur`, et une allowlist reprise en défaut
 
 ## Git
 
-- Worktree `.claude/worktrees/lot-06-consommateur-orientation`, branche
-  `worktree-lot-06-consommateur-orientation`, partie de `main`, **PR #550**.
-- `main` a avancé **deux fois** pendant le lot — #547/#548/#549 jusqu'à
-  `8cc4ef11`, puis #551 (`92adb17a`) — et `origin/main` a été fusionné à chaque
-  fois. Deux conflits, tous deux dans de la documentation : `SESSION_LOG.md`
-  (append contre append : les deux entrées conservées, la mienne en dernier) et
-  `HANDOFF_CURRENT.md` (résolu **en faveur de la branche** — ce fichier est
-  remplacé à chaque handoff, jamais fusionné).
-- **PR #550 : `verify` vert en 10 min 19 s** sur le head fusionné `c6ec5a4f`.
-  Merge et suppression de branche = ressort Copilot. Rien n'est en attente côté
-  assistant.
+- Worktree `.claude/worktrees/lot-02-rayon-douleur`, branche
+  `worktree-lot-02-rayon-douleur`, partie de `main` à `3b96170b` (**après** le
+  merge de #550/LOT-06, survenu pendant cette session).
 - Campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`,
-  LOT-06, palier T2.
+  reliquat du **LOT-02**, palier T2.
+- Clôture et handoff écrits **sur la branche vivante**, avant la PR.
 
-## Objectif du lot
+## Objectif atteint
 
-Rendre la couche orientation réellement consommée : `GET /api/praticien/orientation`
-existait depuis la campagne de certification et **personne ne l'appelait**. Y
-brancher une surface praticien, et faire **restituer** la recommandation par la
-synthèse IA sans jamais lui laisser la produire (PMI-5).
+Brancher le rayon corpus `douleur` (notebook 06 — Douleurs chroniques) sur la
+recherche corpus praticien, ce que #546 n'avait pas pu faire : le notebook 06
+n'avait alors aucun claim validé. **La condition est levée** — le corpus entier
+est signé. Le LOT-02 passe de `partiel` à `livré`, et le LOT-01 est clos **sur
+preuve**.
 
-## Décisions prises
+## Le fait qui a rouvert le lot, vérifié en base et non dans un document
 
-| # | Décision | Raison |
-|---|---|---|
-| 1 | Surface = onglet **Trajectoire** de la fiche patient, au présent seulement | `/dashboard/trajectoires` n'est qu'une liste ; afficher une recommandation en lecture datée la ferait passer pour ce que la table proposait à cette date-là |
-| 2 | Extraire l'évaluation vers `lib/clinical/orientationService.ts` | La synthèse en devient un second consommateur ; un fail-closed dupliqué est un fail-closed qu'on peut oublier de corriger dans une des deux copies. Et un `route.ts` ne peut pas exporter de valeur |
-| 3 | Le verrou reste **avant** le contrôle d'appartenance | `verifierAppartenancePatient` journalise l'accès au dossier : table non signée → aucune lecture → aucun accès consigné qui n'a pas eu lieu |
-| 4 | Aucun bloc injecté quand rien n'est recommandé | Doctrine #408 : retirer la donnée protège, la consigne seule non. Un en-tête vide invite le modèle à le remplir |
-| 5 | Écart de restitution : **on journalise, on ne censure pas** | L'objet actionnable — la carte et son bouton — vient de la route déterministe ; un pack cité à tort dans la prose ne peut rien déclencher, et un faux positif textuel ne doit pas priver le praticien de sa synthèse. **Candidat à `docs/DECISIONS.md` (D-009), non écrit** |
-| 6 | Assignation en deux temps, bouton non réarmé après succès | Le geste envoie un e-mail ; `packs/assign` ne déduplique pas |
-| 7 | `emailPatient` passé seulement s'il désigne le patient affiché | Le panneau calcule sur `idPatient`, l'assignation part sur l'email : deux sources dont aucune ne vérifiait l'autre |
+`execute_sql`, agrégat par `rag_corpus_chunks.notebook` :
 
-**Écarté** : neutraliser la synthèse sur écart (trop brutal pour une
-correspondance textuelle) ; ouvrir `packs/assign` à `idPatient` (modifie une
-route d'écriture existante, hors finalité) ; signer la table dans ce lot.
+| claims actifs | VALIDE | en attente | VALIDE sans validateur |
+|--------------:|-------:|-----------:|-----------------------:|
+|         8 224 |  8 224 |      **0** |                  **0** |
 
-## Fichiers modifiés
+Les douze notebooks 01→12 sont à 100 % (06 = 651/651). Le 13 « Instruments »
+reste à 0 claim **par conception**. Tout document annonçant « 2982 en attente »,
+« 06/11/12 non validés » ou « restant à ingérer » est périmé.
 
-**Créés** — `web/src/lib/clinical/orientationService.ts` (+ test) ;
-`web/src/lib/clinical/verifierRestitutionOrientation.ts` (+ test) ;
-`web/src/components/patient-cockpit/OrientationPanel.tsx` (+ test) ;
-`web/src/app/api/praticien/synthese/orientation.restitution.test.ts` ;
-`changelog.d/2026-08-03-lot-06-consommateur-orientation.md`.
+Deux contrôles avant d'écrire une ligne de code, qui auraient chacun produit un
+rayon silencieusement vide s'ils avaient échoué :
 
-**Modifiés** — `api/praticien/orientation/route.ts` (devient un enveloppeur
-HTTP) ; `api/praticien/synthese/route.ts` (bloc, garde, métadonnées) ;
-`lib/anthropic.ts` (section de consigne, `synthese-v14`) ;
-`lib/observability/eventCodes.ts` (deux codes) ;
-`components/patient-cockpit/TrajectoirePanel.tsx` ; `components/FichePatientPanel.tsx` ;
-trois mocks de test de la synthèse ; `docs/FEATURE_FLAGS.md` ; `CAMPAGNE.md` et
-les fiches LOT-05 / LOT-06.
+- `'06 — Douleurs chroniques' = notebook` rend **vrai** (102 chunks) — le libellé
+  du mapping correspond au caractère près, tiret cadratin compris ;
+- les 651 claims portent 16 `source_id`, **tous** parmi les 17 que le registre
+  déclare pour ce notebook (seule `WN-SRC-0176` n'a aucun claim) : le
+  `filter_source_ids` recouvre la donnée.
+
+## Le défaut de la revue — la même règle prise en défaut à l'autre bout
+
+`/api/praticien/complements/corpus` (tiroir justificatif du catalogue
+compléments) validait `rayon` par une **regex syntaxique seule**, puis passait la
+valeur à `servirRayonCorpus`. Elle servait donc **toute** entrée de
+`RAYON_VERS_NOTEBOOK` derrière `WN_C4_ENABLED` — allumé en production — sans
+jamais consulter `WN_RECHERCHE_CORPUS_ENABLED`.
+
+Conséquence si le lot avait été mergé tel quel : `?rayon=douleur` sur cette route
+aurait rendu des claims du notebook 06 **dès le merge**, alors que le lot annonce
+un lancement dark. Et le jour où l'on éteint le drapeau pour une raison clinique
+— un claim douleur fautif à retirer — l'interrupteur n'aurait rien coupé.
+
+C'est le **miroir** du défaut jugé bloquant sur #546 : là on sortait de la
+recherche corpus vers micronutrition, ici on y entre par la porte compléments.
+`cognition` et `intestin` y étaient déjà exposés depuis #546.
+
+Corrigé par une allowlist d'un seul rayon (`rayonBrut !== RAYON_MICRONUTRITION`).
+Aucun appelant ne passait autre chose (`FicheComplementPanel`, prop par défaut
+jamais surchargée) : rien ne casse, et l'exposition héritée se ferme avec.
+
+## Décisions à ne pas rejouer
+
+1. **Une allowlist par route, jamais la carte entière.** Ajouter une paire à
+   `RAYON_VERS_NOTEBOOK` n'est pas un geste local : il faut relire **toutes** les
+   routes qui acceptent un `rayon` en entrée libre. La règle existait depuis
+   #546 ; elle n'avait été appliquée qu'à la route qui l'avait révélée.
+2. **Les listes de rayons refusés sont désormais dérivées du mapping**
+   (`Object.keys(RAYON_VERS_NOTEBOOK).filter(…)`), dans les deux routes : le
+   prochain rayon ajouté sans allowlist est couvert par les tests d'office. Une
+   liste littérale ne protège que du passé.
+3. **Un test qui mocke le service ne prouve que le routage.** Le titre du test
+   `douleur` le dit maintenant, et un test distinct lie `douleur` au
+   `filter_source_ids` du notebook 06 — sans lui, `douleur: '05 — Cognition et
+   mémoire'` passerait toute la suite au vert en servant des claims de cognition
+   sous l'étiquette « Douleurs chroniques ».
+4. **Écarté** : ouvrir `stress`, `humeur`, `sommeil` dans la foulée. Ils sont
+   mappés, validés à 100 %, et sans appelant — décision produit, hors périmètre.
+5. **Écarté** : clore le LOT-01 en l'exécutant. Il n'y avait plus rien à valider ;
+   il est clos sur preuve, avec son critère « modalité de revue tracée » laissé
+   **décoché** — l'information est dans les journaux de décision, pas reconstituée.
 
 ## Validations exécutées
 
-- **T1** `npm run check` vert : 3 440 tests unitaires, 906 bancs, type-check,
-  lint, anti-secrets.
-- **T2** `npm run test:worktree -- --fast` vert : 108 E2E, dont le parcours
-  praticien, l'onglet Trajectoire et la Spirale peuplée.
-- **CI** : `verify` vert sur le head fusionné `c6ec5a4f`.
-- **Deux revues adversariales `wn-reviewer`, deux NO-GO levés**, plus une
-  relecture de l'entrée `SESSION_LOG` qui a corrigé deux affirmations fausses.
+**T1** vert (3 451 + 92 Vitest, 70 bancs Node, anti-secrets 0). **T2**
+`test:worktree -- --fast` **vert en 6 min 9 s**, E2E compris.
 
-Deux échecs E2E rencontrés et diagnostiqués, non écartés :
-`portail-lien-magique:48` (anti-oracle de temps, 21 s contre un seuil de 800 ms)
-et `fiche-trajectoire-peuplee:23` (page bloquée sur « Chargement de la fiche
-patient… », état `loading` **en amont** du montage de l'encart). Verts au rejeu,
-le second après purge de `.next`.
+⚠ La **première** passe de T2 avait rendu 2 échecs sur
+`e2e/portail-lien-magique.spec.ts:48` (Chromium + iPhone 13) — l'anti-oracle de
+temps documenté comme flake local. La seconde passe, après correctifs, est verte
+sans rien changer à ce sous-système : c'était bien le flake, pas une régression.
+
+Revue adversariale `wn-reviewer` : **GO** sous réserve du MAJEUR ci-dessus,
+tranché par le praticien en session (« fermer dans cette PR »).
+
+## Pièges rencontrés
+
+- **Le checkout principal était en retard d'un commit** (`92adb17a` au démarrage,
+  `main` réel à `3b96170b`) : les premières lectures de `CAMPAGNE.md` y ont montré
+  un état périmé — LOT-04 `à_faire`, LOT-05/06 absents — et m'ont fait annoncer un
+  écart documentaire qui n'existait pas. **Lire les documents de campagne depuis
+  le worktree du lot, jamais depuis le checkout principal**, ou faire
+  `git pull --ff-only` avant.
+- `main` a avancé **pendant** la session (#550 mergée). La branche en est partie,
+  aucun conflit.
+- Worktree neuf : `npx prisma generate` avant `npm run check`.
 
 ## Problèmes ouverts
 
-1. **La table du LOT-05 n'est pas signée.** `validationExterne: false` : le seul
-   chemin exerçable en production est `actif: false`, l'écran affiche « en cours
-   de constitution ». Le chemin `actif: true` n'est couvert que par des tests.
-2. **Toutes les synthèses de production partent désormais en `synthese-v14`**
-   avec la consigne de restitution, alors qu'aucun bloc n'a jamais été transmis :
-   la section du prompt système est inconditionnelle. Le seul discriminant est
-   `donneesEntree.orientationInjectee`.
-3. **Un écart mesuré par heuristique textuelle est écrit dans `donneesEntree`**
-   du dossier patient. A-t-il sa place ailleurs que dans le journal ? Non tranché.
-4. **Le garde a quatre angles morts déclarés** (en-tête du module) : pack nommé
-   sans « pack » avant lui, pack cité loin derrière son introducteur, exploration
-   en langage libre, et le **réordonnancement** — interdit par la consigne, mais
-   invérifiable par occurrences.
-5. `.wn/state.json` et `ACTIVE_CAMPAIGN.md` restent sur `idle` (2026-08-01 /
-   2026-07-23) alors que la campagne tourne. Vues générées ; `scripts/wn-cycle.mjs`
-   vient d'arriver sur `main` et son `--appliquer` écrit `git.branch`, un nom de
-   worktree éphémère. Non éditées à la main.
-6. **Promotion proposée, non écrite** : l'idiome d'attente du CI de `CLAUDE.md`
-   ne distingue pas « aucun check en attente » de « aucun check tout court ». Il
-   a rendu la main sur deux checks Vercel verts alors que `verify` n'existait
-   pas — parce que `main` avait bougé et que la PR était `CONFLICTING`, état dans
-   lequel **GitHub ne crée aucun run**. C'est une **troisième** cause de `verify`
-   absent, en plus des deux déjà documentées. Correctif : exiger d'abord
-   l'existence de `verify`, puis attendre la fin des checks.
+- **`stress`, `humeur`, `sommeil`** : mappés, 100 % validés, sans appelant. Trois
+  lignes de code chacun ; c'est la décision produit qui manque, pas le code.
+- **`lot_courant: "LOT-06"`** dans l'en-tête de `CAMPAGNE.md` alors que #550 est
+  mergée — non touché ici, ce n'est pas le lot de cette PR. La ligne du tableau,
+  elle, a été corrigée en `livré (#550)`.
+- **LOT-05 toujours `livré_partiel`** : la table d'orientation porte ses six
+  règles mais n'est pas signée. Tant que la signature clinique n'a pas eu lieu,
+  le LOT-06 livré ne peut afficher que « en cours de constitution ».
+- Le critère « modalité de revue tracée » du LOT-01 reste décoché.
 
 ## Prochaine action exacte
 
-**Signer `ORIENTATION_METADATA` après relecture clinique des six règles, ET
-poser `WN_ENABLE_ORIENTATION_NNPP2=1` en production.** Le verrou est un ET :
-signer seul n'allume rien — c'est désormais écrit dans `docs/FEATURE_FLAGS.md`.
-Avant de signer, refaire la lecture en base des neuf `claimId` (aucun test
-unitaire n'ouvre `rag_corpus_claims`).
-
-À défaut : **LOT-01**, validation des 755 claims d'intervention — c'est la porte
-D-003, et sans elle le done de campagne « 2002 / 0 » reste inatteignable.
+Ouvrir la PR de ce lot, lire son `verify`, merger. Ensuite, deux candidats sans
+dépendance : le **LOT-07** (reliquat de certification, bibliographie et
+psychométrie), ou la **signature clinique des six règles du LOT-05** — geste
+praticien, qui débloque l'affichage réel du LOT-06.
 
 ## Interdits encore actifs
 
-- Ne **jamais** contourner `tableSignee()` ni forcer `validationExterne` pour
-  « voir » la feature.
-- Aucune auto-assignation, aucune exposition patient de la recommandation.
-- Aucune modification des 64 instruments certifiés, aucune migration Prisma.
-- Ne pas ouvrir ni modifier `POST /api/praticien/packs/assign`.
-- Pas de secret, pas de donnée patient réelle (Sophie Nicola, Jennifer Martin,
-  Michel Dogné seulement), aucun texte UI en anglais.
-- Merge et suppression de branche : ressort **Copilot**.
+Aucune migration, aucune écriture Supabase (lectures seules ici), aucun
+changement clinique. `WN_RECHERCHE_CORPUS_ENABLED` reste **éteint** : l'allumer
+est un geste de production distinct, postérieur au merge. Ne jamais forcer un
+merge sur une PR gelée en `action_required` — `enforce_admins` est actif,
+`verify` obligatoire. Après un merge en squash, repartir de `main`.

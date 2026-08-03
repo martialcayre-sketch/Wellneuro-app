@@ -78,7 +78,7 @@ export default function BibliothequePage() {
       <section aria-labelledby="recherche-corpus-titre" className="flex flex-col gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[.06em] text-solar-ink">
-            Recherche corpus clinique · cognition, axe intestin-cerveau
+            Recherche corpus clinique · cognition, douleurs chroniques, axe intestin-cerveau
           </p>
           <h3
             id="recherche-corpus-titre"

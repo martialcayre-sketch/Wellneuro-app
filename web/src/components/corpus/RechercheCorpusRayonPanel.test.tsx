@@ -92,6 +92,31 @@ describe('RechercheCorpusRayonPanel', () => {
     await waitFor(() => expect(urlsAppelees()[0]).toContain('rayon=intestin'));
   });
 
+  it('propose le rayon douleur et interroge la route avec rayon=douleur quand il est sélectionné', async () => {
+    fetchMock.mockResolvedValue(
+      json({
+        ok: true,
+        contractVersion: 'c4-rayon-corpus-v2',
+        rayon: 'douleur',
+        disponible: true,
+        corpusVide: true,
+        claims: [],
+        message: 'Corpus en cours de constitution — aucun claim validé pour ce rayon.',
+      }),
+    );
+    render(<RechercheCorpusRayonPanel />);
+    expect(screen.getByRole('option', { name: /douleurs chroniques/i })).toBeTruthy();
+    fireEvent.change(screen.getByLabelText(/rayon de recherche corpus/i), {
+      target: { value: 'douleur' },
+    });
+    fireEvent.change(screen.getByLabelText(/recherche dans le rayon/i), {
+      target: { value: 'douleurs chroniques' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /rechercher/i }));
+
+    await waitFor(() => expect(urlsAppelees()[0]).toContain('rayon=douleur'));
+  });
+
   it('un corpus vide affiche le message du service, jamais une erreur', async () => {
     fetchMock.mockResolvedValue(
       json({

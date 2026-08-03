@@ -1814,3 +1814,37 @@ l'envoi best-effort ne garantit pas.
 place dans `donneesEntree` du dossier, ou seulement au journal ? (2) le garde a
 quatre angles morts déclarés, dont le réordonnancement — interdit par la
 consigne, invérifiable par occurrences.
+
+## 2026-08-03 — LOT-02 clos : rayon `douleur` (notebook 06) et une allowlist reprise en défaut
+
+Le reliquat du LOT-02 attendait la validation du notebook 06. Vérification en base
+avant toute écriture : le corpus entier est signé — **8 224 claims actifs, 8 224
+VALIDE, 0 en attente**, douze notebooks à 100 %. Le rayon `douleur` est donc branché
+(mapping, allowlist, sélecteur, en-tête, doc des flags), et le **LOT-01 est clos sur
+preuve** plutôt qu'exécuté : il n'y avait plus rien à valider.
+
+Deux contrôles préalables ont écarté les deux façons dont ce rayon aurait pu être
+vide sans erreur : le libellé du mapping correspond à la base au caractère près
+(tiret cadratin), et les 651 claims portent 16 `source_id` tous présents dans les 17
+du registre.
+
+**Décision de l'utilisateur en séance** : fermer dans cette PR le défaut trouvé par la
+revue adversariale — `/api/praticien/complements/corpus` validait `rayon` par regex
+seule et servait tout `RAYON_VERS_NOTEBOOK` derrière `WN_C4_ENABLED`, sans consulter
+`WN_RECHERCHE_CORPUS_ENABLED`. Le rayon douleur aurait été joignable en production dès
+le merge, malgré son lancement dark. Options écartées : dette écrite puis PR séparée,
+et statu quo. Allowlist d'un seul rayon désormais ; l'exposition héritée de
+`cognition`/`intestin` se ferme avec.
+
+Les listes de rayons refusés des deux routes sont maintenant **dérivées** du mapping :
+le prochain rayon ajouté sans allowlist est couvert d'office. T1 vert, T2 vert en
+6 min 9 s (E2E compris — la première passe avait rendu le flake connu
+`portail-lien-magique`, verte à la seconde sans toucher ce sous-système).
+
+Piège à retenir : le checkout principal était en retard d'un commit, ce qui a fait
+lire un `CAMPAGNE.md` périmé et annoncer un écart documentaire inexistant. Lire les
+documents de campagne depuis le worktree du lot.
+
+Prochaine action : PR, `verify`, merge. Puis LOT-07, ou la signature clinique des six
+règles du LOT-05 — sans elle, le LOT-06 livré n'affiche rien. Questions ouvertes :
+`stress`/`humeur`/`sommeil` restent mappés, validés, sans appelant.

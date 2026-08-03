@@ -14,6 +14,10 @@ vi.mock('@/lib/supplement-library/rayonCorpus', async (importActual) => {
 });
 
 import { GET } from './route';
+import {
+  RAYONS_RECHERCHE_CORPUS,
+  RAYON_VERS_NOTEBOOK,
+} from '@/lib/supplement-library/rayonCorpus';
 
 const URL_BASE = 'http://localhost/api/praticien/corpus/rayons';
 
@@ -70,9 +74,13 @@ describe('/api/praticien/corpus/rayons', () => {
   // Le défaut bloquant trouvé en revue : une regex syntaxique seule laisserait
   // cette route servir N'IMPORTE QUEL rayon de RAYON_VERS_NOTEBOOK, y compris
   // micronutrition — en contournant WN_C4_ENABLED. L'allowlist
-  // RAYONS_RECHERCHE_CORPUS doit refuser tout rayon hors cognition/intestin,
-  // même syntaxiquement valide et même déclaré ailleurs dans la carte.
-  it.each(['micronutrition', 'biologie', 'nutrition', 'stress', 'humeur', 'sommeil'])(
+  // RAYONS_RECHERCHE_CORPUS doit refuser tout rayon hors cognition/douleur/
+  // intestin, même syntaxiquement valide et même déclaré ailleurs dans la carte.
+  // Liste DÉRIVÉE du mapping, pas littérale : un rayon ajouté demain à
+  // RAYON_VERS_NOTEBOOK sans l'être à l'allowlist est couvert d'office.
+  it.each(
+    Object.keys(RAYON_VERS_NOTEBOOK).filter((r) => !RAYONS_RECHERCHE_CORPUS.includes(r)),
+  )(
     'refuse le rayon « %s » (hors allowlist de cette route, malgré sa présence dans RAYON_VERS_NOTEBOOK)',
     async (rayon) => {
       const res = await GET(new Request(`${URL_BASE}?rayon=${rayon}&requete=mémoire`));
@@ -97,6 +105,18 @@ describe('/api/praticien/corpus/rayons', () => {
     expect(json.ok).toBe(true);
     expect(json.corpusVide).toBe(true);
     expect(servirRayonCorpus).toHaveBeenCalledWith({ rayon: 'intestin', requete: 'microbiote axe' });
+  });
+
+  // Le service est mocké : ce test prouve le ROUTAGE (le rayon franchit
+  // l'allowlist et arrive au service), pas le contenu du notebook 06 — celui-là
+  // est couvert par le filter_source_ids de rayonCorpus.test.ts.
+  it('sert le rayon douleur : franchit l’allowlist et atteint le service (200)', async () => {
+    const res = await GET(new Request(`${URL_BASE}?rayon=douleur&requete=douleurs%20chroniques`));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.ok).toBe(true);
+    expect(json.corpusVide).toBe(true);
+    expect(servirRayonCorpus).toHaveBeenCalledWith({ rayon: 'douleur', requete: 'douleurs chroniques' });
   });
 
   it('requête absente avec un rayon valide : appelle le service avec une requête vide (corpusVide attendu)', async () => {

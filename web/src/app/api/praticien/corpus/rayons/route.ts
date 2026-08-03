@@ -9,7 +9,7 @@ import {
   type RayonCorpusResult,
 } from '@/lib/supplement-library/rayonCorpus';
 
-// Recherche corpus clinique (rayons cognition, intestin…) — PRATICIEN SEUL,
+// Recherche corpus clinique (rayons cognition, douleur, intestin…) — PRATICIEN SEUL,
 // derrière WN_RECHERCHE_CORPUS_ENABLED (fail-closed, 404 flag éteint). Gate
 // distincte de WN_C4_ENABLED : ces rayons n'ont rien à voir avec le catalogue
 // de compléments. Restitue les claims validés (barrière D-003 via
