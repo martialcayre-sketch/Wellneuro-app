@@ -1639,3 +1639,28 @@ sources reste due. Et le champ `prescriptive` de `source_registry.json` est faux
 52 des 95 sources — 640 claims prescriptifs déclarés non prescriptifs, erreur
 toujours dans le même sens ; aucun code ne le lit, mais la sous-déclaration
 mériterait d'être instruite à la source.
+
+## 2026-08-03 — LOT-03 : le moteur d'orientation ne pouvait proposer aucun pack
+
+**Décisions** : correction d'un défaut structurel (#536). Les `PackId` du code et
+les `id_pack` de la base formaient deux espaces de noms disjoints ; la route
+d'orientation les comparait directement, donc `compositionPacks` restait vide et
+le fail-closed rejetait TOUTE recommandation de pack. Traduction posée dans les
+deux sens, réponse enrichie de l'`id_pack` attendu par l'assignation. Option C
+retenue : `packs.qids` fait foi pour la composition, le code ne gouverne que
+l'identité. Repli legacy qualifié par cause — seule une divergence réelle alerte.
+
+**Écarté** : le correctif du `niveau` dans `syncPackToRegistry`, retiré à la revue
+— il n'atteignait pas les packs existants (sync déclenché à l'édition seulement)
+et aucun code ne lit `questionnaire_packs.niveau`. Écarté aussi : aligner
+`estAdministrableParLaRoute` sur `IDS_ASSIGNABLES` — arbitrage clinique, et le
+risque est théorique (aucun instrument à passation praticien dans les 6 packs de
+doctrine, vérifié en base).
+
+**Prochaine action** : LOT-04 (structuration de l'intake), sans dépendance, ou
+LOT-01 (validation praticien des 755 claims).
+
+**Questions ouvertes** : `estAdministrableParLaRoute` ne vérifie pas `actif`
+contrairement à `IDS_ASSIGNABLES` — à trancher avant que des packs contenant des
+instruments à passation praticien existent. Et 10 des 16 packs de doctrine
+n'existent pas en base : les créer est une décision produit.
