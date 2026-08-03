@@ -76,6 +76,33 @@ Le garde structurel de `effacement.test.ts` relit `schema.prisma` et exige la ch
   patient, avec un message qui ne désigne pas le coupable. Ajouté avant qu'une seule
   ligne n'existe.
 
+#### Ce que la revue adversariale a corrigé
+
+- **Condition de merge — la POSITION de la ligne d'effacement n'était gardée par
+  rien.** Le garde structurel est un `String.includes` : il attrape la ligne
+  retirée, il est aveugle à la ligne **déplacée**. Or c'est le déplacement qui
+  casse — un futur lot réordonnant le bloc ferait lever `effacerDossier` sur la FK
+  RESTRICT, et l'effacement RGPD deviendrait **impossible** pour tout dossier
+  portant une journée d'agenda, découvert sur la demande d'un patient. Mes quatre
+  mutations testaient le retrait, jamais le déplacement — la mutation manquante
+  était verte. Test d'ordre ajouté, calqué sur celui du sommeil, morsure vérifiée.
+- **Contradiction interne — une ligne illisible emportait tout l'agenda.**
+  `listJours` faisait `rows.map(toJourRow)` : une seule ligne refusée faisait
+  disparaître les vingt et une. C'est exactement le mode de panne que `jour.ts`
+  refuse en toutes lettres (« refuser une ligne historique un peu bancale ferait
+  disparaître tout l'agenda du patient ») — l'introduire au même moment était une
+  contradiction, pas un arbitrage. Et le scénario ne suppose ni corruption ni
+  attaquant : un rollback de déploiement restaurant une liste de versions lues
+  plus étroite suffit. `listJours` rend désormais `{ jours, illisibles }` : la
+  ligne est mise en quarantaine, **et le compte remonte** — l'avaler laisserait un
+  lot tronqué franchir les seuils d'exploitabilité en ayant perdu des journées,
+  soit un agrégat d'apparence valide. Même règle que « null jamais 0 », côté
+  lecture.
+- Un test dont le nom promettait plus que son assertion — sur un lot d'une seule
+  ligne, « rejeter la ligne » et « rejeter la collection » sont indiscernables. Il
+  porte maintenant sur un lot mixte. Et `contrat.ts`, couvert seulement
+  indirectement, a son banc.
+
 #### Validations
 
 `npm run check` vert dans les **deux** positions de `WN_AGENDA_ALI` (3 485 tests, +26).
@@ -83,10 +110,19 @@ Le garde structurel de `effacement.test.ts` relit `schema.prisma` et exige la ch
 manuel réellement exécuté —, **drift check `migrate diff --exit-code`** confirmant
 l'équivalence schéma ↔ migrations, contrats SQL, seed, et 108 E2E.
 
-**Quatre mutations vérifiées** : un prédicat de couverture remis en `!== undefined`
+**Cinq mutations vérifiées** : un prédicat de couverture remis en `!== undefined`
 (2 tests tombent), la ligne d'effacement retirée (1), l'entrée de la liste de mocks
-retirée (8), et — au lot précédent — le drapeau en fail-open. Un garde vert qui n'a pas
-mordu ne prouve rien.
+retirée (8), la ligne d'effacement **déplacée** après les assignations (1) — celle-là
+était verte avant la revue —, et au lot précédent le drapeau en fail-open. Un garde vert
+qui n'a pas mordu ne prouve rien.
+
+#### Réserve déclarée
+
+`persistence.test.ts` mocke Prisma intégralement et aucune route n'existe : **aucune
+ligne n'a jamais été écrite ni relue contre une vraie base.** T3 atteste la structure
+(migration appliquée, drift check vert), pas l'aller-retour — or c'est à cette frontière
+que `as unknown as object` efface la garantie de type. Le véhicule idiomatique du dépôt
+est `prisma/checks/*.sql`, rejoué par le CI et par T3 ; à poser **avant L4**.
 
 #### Ce que ce lot ne fait pas
 

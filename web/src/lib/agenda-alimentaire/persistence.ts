@@ -155,14 +155,43 @@ export async function saveJour(input: JourInput): Promise<JourRow> {
 }
 
 /**
+ * Résultat d'une lecture. `illisibles` n'est PAS décoratif : voir plus bas.
+ */
+export type LectureJours = {
+  jours: JourRow[];
+  /** Lignes en base qu'on n'a pas su relire — mises en quarantaine, pas perdues. */
+  illisibles: number;
+};
+
+/**
  * Lit les journées d'un patient, éventuellement bornées à une assignation.
  * Tri par `soumisLe` ASCENDANT : c'est l'ordre d'écriture, celui dont
  * `resolveJoursActifs` a besoin pour départager deux lignes de même date.
+ *
+ * ── QUARANTAINE PAR LIGNE, ET NON REJET DE LA COLLECTION ────────────────────
+ * `toJourRow` lève sur une ligne qu'il ne sait pas relire. Une première version
+ * de cette fonction faisait `rows.map(toJourRow)` : UNE ligne illisible faisait
+ * alors disparaître TOUT l'agenda du patient. C'est précisément le mode de
+ * panne que `jour.ts` refuse en toutes lettres — « refuser une ligne historique
+ * un peu bancale ferait disparaître tout l'agenda du patient » — et l'introduire
+ * ici était une contradiction interne, pas un arbitrage.
+ *
+ * Le scénario n'a rien d'exotique et ne suppose ni corruption ni attaquant :
+ * un rollback de déploiement qui restaure une liste de versions lues plus
+ * étroite suffit à rendre illisibles les lignes écrites entre-temps. Vingt et un
+ * jours de recueil disparaîtraient de l'écran pour trois lignes.
+ *
+ * ── POURQUOI LE COMPTE REMONTE, ET N'EST PAS AVALÉ ──────────────────────────
+ * Écarter en silence serait l'autre défaut : les seuils d'exploitabilité
+ * (14 jours, 4 week-ends, 7 paires) se calculent sur ce qui remonte. Un lot
+ * tronqué sans bruit pourrait franchir le seuil en ayant perdu des journées, et
+ * produire un agrégat qui a l'air valide. `illisibles > 0` oblige l'appelant à
+ * en décider — c'est la même règle que « null jamais 0 » appliquée à la lecture.
  */
 export async function listJours(
   idPatientRaw: string,
   idAssignationRaw?: string,
-): Promise<JourRow[]> {
+): Promise<LectureJours> {
   const idPatient = ensureId(idPatientRaw, 'Identifiant patient');
   const where: { idPatient: string; idAssignation?: string } = { idPatient };
   if (idAssignationRaw !== undefined) {
@@ -173,5 +202,15 @@ export async function listJours(
     orderBy: { soumisLe: 'asc' },
     select: SELECT_JOUR,
   });
-  return rows.map(toJourRow);
+
+  const jours: JourRow[] = [];
+  let illisibles = 0;
+  for (const row of rows) {
+    try {
+      jours.push(toJourRow(row));
+    } catch {
+      illisibles += 1;
+    }
+  }
+  return { jours, illisibles };
 }

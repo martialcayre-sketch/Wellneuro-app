@@ -98,6 +98,23 @@ describe('effacerDossier', () => {
     expect(appels.indexOf('agendaSommeilNuit')).toBeLessThan(appels.indexOf('assignation'));
   });
 
+  // Journées d'agenda alimentaire : même FK RESTRICT, donc même exigence.
+  //
+  // CE TEST GARDE LA POSITION, ET RIEN D'AUTRE NE LE FAIT. Le garde structurel
+  // plus bas est un `source.includes('tx.agendaAlimentaireJour.deleteMany')` :
+  // il attrape la ligne RETIRÉE, il est aveugle à la ligne DÉPLACÉE. Or c'est
+  // le déplacement qui casse en production — un futur lot réordonnant le bloc
+  // « petits-enfants » ferait lever `effacerDossier` sur la contrainte, la
+  // transaction serait annulée, et l'effacement RGPD deviendrait IMPOSSIBLE
+  // pour tout dossier portant une journée d'agenda. Sans ce test, aucune suite
+  // ne rougirait ; le défaut se découvrirait sur la demande d'effacement d'un
+  // patient, avec un message qui ne désigne pas le coupable.
+  it('supprime les journées d’agenda alimentaire avant les assignations', async () => {
+    await effacerDossier('PAT_SEED_03');
+    expect(appels).toContain('agendaAlimentaireJour');
+    expect(appels.indexOf('agendaAlimentaireJour')).toBeLessThan(appels.indexOf('assignation'));
+  });
+
   it('tout passe par une seule transaction', async () => {
     await effacerDossier('PAT_SEED_03');
     expect(prisma.$transaction).toHaveBeenCalledTimes(1);

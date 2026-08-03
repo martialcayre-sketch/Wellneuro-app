@@ -135,22 +135,41 @@ describe('saveJour — la correction ne traverse pas les dossiers', () => {
   });
 });
 
-describe('lecture — la version de contrat est vérifiée avant le contenu', () => {
-  it('refuse une ligne écrite sous une version inconnue, en la nommant', async () => {
-    // Le trou qu'on ne reproduit pas : côté sommeil, la liste des versions lues
-    // n'est consultée nulle part, si bien qu'une ligne v2 serait relue sous les
-    // règles v1 sans un bruit.
+describe('lecture — la ligne illisible est mise en quarantaine, pas l’agenda', () => {
+  it('écarte la ligne fautive et CONSERVE les autres', async () => {
+    // LE CAS QUI DÉPARTAGE. Avec une seule ligne dans le lot, « rejeter la
+    // ligne » et « rejeter la collection » sont indiscernables : les deux font
+    // disparaître le seul élément. Il faut un lot MIXTE pour que l'assertion
+    // porte sur le comportement et non sur son nom.
     prisma.agendaAlimentaireJour.findMany.mockResolvedValue([
-      ligne({ reponses: { contractVersion: 'agenda-alimentaire-v9', ...REPONSES } }),
+      ligne({ id: 'J1' }),
+      ligne({ id: 'J2', reponses: { contractVersion: 'agenda-alimentaire-v9', ...REPONSES } }),
+      ligne({ id: 'J3' }),
     ]);
-    await expect(listJours(ENTREE.idPatient)).rejects.toThrow(/agenda-alimentaire-v9/);
+    const { jours, illisibles } = await listJours(ENTREE.idPatient);
+    expect(jours.map((j) => j.id)).toEqual(['J1', 'J3']);
+    expect(illisibles).toBe(1);
+  });
+
+  it('remonte le compte plutôt que de l’avaler', async () => {
+    // Écarter en silence laisserait un lot tronqué franchir les seuils
+    // d'exploitabilité en ayant perdu des journées — un agrégat d'apparence
+    // valide. Même règle que « null jamais 0 », côté lecture.
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([
+      ligne({ id: 'J1', reponses: { contractVersion: 'agenda-alimentaire-v9', ...REPONSES } }),
+      ligne({ id: 'J2', reponses: { prises: 'pas un tableau' } }),
+    ]);
+    const { jours, illisibles } = await listJours(ENTREE.idPatient);
+    expect(jours).toHaveLength(0);
+    expect(illisibles).toBe(2);
   });
 
   it('tolère une ligne sans version — elle doit rester relisible', async () => {
     prisma.agendaAlimentaireJour.findMany.mockResolvedValue([ligne({ reponses: REPONSES })]);
-    const rows = await listJours(ENTREE.idPatient);
-    expect(rows).toHaveLength(1);
-    expect(rows[0].reponses).toEqual(REPONSES);
+    const { jours, illisibles } = await listJours(ENTREE.idPatient);
+    expect(jours).toHaveLength(1);
+    expect(jours[0].reponses).toEqual(REPONSES);
+    expect(illisibles).toBe(0);
   });
 });
 
@@ -168,7 +187,9 @@ describe('listJours', () => {
 
   it('sans assignation, ne borne pas', async () => {
     prisma.agendaAlimentaireJour.findMany.mockResolvedValue([]);
-    await listJours(ENTREE.idPatient);
+    const { jours, illisibles } = await listJours(ENTREE.idPatient);
+    expect(jours).toEqual([]);
+    expect(illisibles).toBe(0);
     const arg = prisma.agendaAlimentaireJour.findMany.mock.calls[0][0] as {
       where: Record<string, unknown>;
     };

@@ -1,119 +1,136 @@
-# Handoff — 2026-08-03 — Agenda alimentaire `Q_ALI_09` assignable (L1-bis)
+# Handoff — 2026-08-04 — Persistance de l'agenda alimentaire (L3)
 
 ## Git
 
-- `main` à `df195963` — PR #554 mergée en squash, `verify` réellement passé
-  (9 min 41 s), worktree et branche distante supprimés. Arbre propre.
-- Hors campagne, sans entrée `.wn/state.json` : premier lot d'une série. Aucune
-  migration, auth ni changement du score servi en production.
+- Worktree `.claude/worktrees/agenda-ali-l3`, branche `worktree-agenda-ali-l3`,
+  partie de `main` à `059fcaaa` (après #555). PR à ouvrir.
+- Hors campagne, sans entrée `.wn/state.json` : deuxième lot d'une série sur
+  l'agenda alimentaire, après L1-bis (PR #554).
+- **Lot à MIGRATION** : `schema.prisma` + `prisma/migrations/`, plus l'effacement
+  RGPD. Aucune auth, aucune route, aucun changement du score servi.
 
-## Objectif de la série, et l'ordre choisi
+## Où en est la série
 
-Rendre l'agenda alimentaire **réellement collectable**. Le domaine pur existait
-depuis le 2026-07-30 (`web/src/lib/agenda-alimentaire/`, 1 624 lignes, 72 tests)
-et **n'avait aucun appelant hors de ses propres tests**. Un audit externe proposait
-de commencer par le scorer, puis douze indices nutritionnels. Écarté sur deux
-constats : **aucun barème n'est arbitrable** — les cinq axes, les poids 2/1 et la
-borne des 18 h supposent une distribution réelle qui n'existe pas, et un barème
-posé avant la première passation est une donnée clinique inventée ; et **le seuil
-d'exploitabilité (14 jours, 4 week-ends, 7 paires) n'a jamais été confronté à
-l'observance réelle** — si les patients abandonnent à 9 jours, le module ne rendra
-jamais rien, et on ne l'apprendrait qu'après avoir tout livré. Une journée
-alimentaire, c'est 4 à 6 saisies contre une ligne pour une nuit : l'analogie avec
-l'agenda du sommeil est un faux ami sur ce point.
+L1-bis a rendu `Q_ALI_09` assignable et non scoré, drapeau `WN_AGENDA_ALI` éteint.
+L3 le rend **persistable**. Il ne livre ni saisie (L4) ni barème (L2) : l'ordre
+décidé avec le praticien est **collecte d'abord, calibrage ensuite** — aucune
+journée n'a jamais été recueillie, donc les cinq axes, leurs poids et la borne des
+18 h n'ont aucune distribution réelle sur quoi s'appuyer.
 
-**Inversion décidée avec le praticien : persistance et collecte AVANT scorer.**
+## Les décisions qui ferment des options
 
-## Décisions actées (elles ferment des options)
+**L'abstention, et son asymétrie.** Les quatre présences obligatoires acceptent
+`null` — « je ne sais pas » —, distinct de la clé absente. Sans ce troisième état,
+un patient ignorant le contenu d'une journée devait répondre au hasard ou **sauter
+la journée entière**, perdant aussi ses horaires, qui sont la mesure principale.
+**`soirPlusCopieux` ne l'accepte pas** (arbitrage praticien du 2026-08-04) :
+facultatif, il n'alimente qu'un drapeau. Fait maintenant parce qu'aucune ligne
+n'existe ; après le premier patient, cela coûtait un contrat v2 et une fenêtre de
+recueil incomparable à elle-même.
 
-| # | Décision | Conséquence |
-| --- | --- | --- |
-| D1 | Abstention « je ne sais pas » **par champ**, contrat **v1**, dès L3 | `boolean \| null` sur les quatre présences — la journée survit sans son contenu, donc ses horaires aussi |
-| D2 | Drapeau `WN_AGENDA_ALI` pilotant `actif` | ferme route d'assignation **et** bibliothèque d'un geste |
-| D3 | Pas de vue praticien en L4 | collecte seule ; la lecture se conçoit sur données réelles |
-| D4 | La discordance déclaré/observé est un **objet clinique séparé** | l'agenda n'est PAS une 2ᵉ source du besoin 3 |
-| D5 | Nom « Agenda alimentaire — 21 jours » | « boussole » désigne déjà C5, surface patient visible |
+**`null !== undefined` est vrai en JS — et il y avait CINQ prédicats, pas un.**
+Le plan initial en nommait un seul. Un prédicat de couverture laissé en
+`!== undefined` aurait compté la journée comme connue, puis le filtre `=== true`
+l'aurait lue comme un « non » : un dénominateur divergeant de ses voisins, en
+silence. Tous passent à `typeof … === 'boolean'`. La différence de contrat vit
+dans le **type** et le **validateur**, jamais dans les prédicats.
 
-**D4 est la plus structurante.** Le besoin 3 est déjà sourcé par `RYTHME_CHRONO` de
-`Q_ALI_01` ; y brancher l'agenda ferait deux mesures d'un même thème — le piège que
-`lib/anthropic.ts:209` documente pour `RYTHME_ALIMENTAIRE` /10 contre
-`RYTHME_CHRONO` /7, dont l'agenda serait le **troisième** porteur. La valeur est
-dans l'**écart** : trois profils, dont « déclare bon / observe mauvais », où
-l'action porte sur la perception. **Dépendance** : cet objet suppose la forme
-SIIN 57 servie — sous la forme courte `MAX_RYTHME_CHRONO` vaut 0, aucun rythme n'est
-déclaré, et l'écart devra rendre `null`, **jamais 0**.
+**Quarantaine par ligne à la lecture.** Une première version faisait
+`rows.map(toJourRow)` : une ligne illisible faisait disparaître **tout** l'agenda
+du patient — exactement le mode de panne que `jour.ts` refuse en toutes lettres.
+`listJours` rend désormais `{ jours, illisibles }` ; le compte remonte au lieu
+d'être avalé, sans quoi un lot tronqué pourrait franchir les seuils
+d'exploitabilité en ayant perdu des journées.
 
-## État réel de `Q_ALI_01` (l'audit externe se trompe)
+**Aucune contrainte unique** sur `(id_assignation, date_jour)`, délibérément :
+`count(lignes) − count(distinct date_jour)` est le taux de correction, et avec
+`soumisLe` la courbe d'abandon se lit en SQL, sans nouvelle migration.
 
-Scoré (`maxTotal: 90`) **et actif en production** : `WN_ALI_01_SIIN57` est allumé
-depuis le 2026-07-28 par variable d'environnement, même si le défaut du **code**
-est éteint (`questionnaires/alimentaire.ts:405`) — son P0 « activation maîtrisée du
-SIIN 57 » est sans objet. Trois autres erreurs du même audit : le Carnet
-`food-observation` est déjà persisté serveur, le découpage est en 5 lots et non 7,
-et l'orientation ne peut pas encore cibler `Q_ALI_09`.
+**Trois écarts assumés au patron sommeil** : `persistence.ts` ne réexporte rien
+(l'alimentaire a un `index.ts` pur — réexporter ferait entrer Prisma dans un
+import client) ; la version de contrat est vérifiée en lecture (côté sommeil la
+liste des versions lues n'est consultée nulle part, la constante y est
+décorative) ; `canal` est honoré contre une liste fermée plutôt que forcé en dur.
 
-## Livré en L1-bis (PR #554)
+## Validations
 
-`Q_ALI_09` au catalogue, `sections: []`, scoring `journal` (`scored: false`),
-derrière `WN_AGENDA_ALI` **éteint**. Douze fichiers, dont `featureFlag.ts`, un refus
-409 dans `api/patient/submit`, un garde de drapeau neuf et trois gardes ajustés. Pas
-de pseudo-items `AGD_*` : le scorer `journal` ne lit rien, et les déclarer figerait
-les agrégats d'un scorer non écrit.
-**La revue adversariale a rendu NO-GO**, et corrigé trois défauts :
+`npm run check` vert dans les **deux** positions de `WN_AGENDA_ALI`. **T3 complet
+vert en 2 min 6 s** : PostgreSQL éphémère, `prisma migrate deploy` — le SQL manuel
+réellement exécuté —, **drift check `migrate diff --exit-code`**, contrats SQL,
+seed, 108 E2E.
 
-- **Bloquant** — le registre portait `droits.statut: "libre"` avec « construction
-  WellNeuro sans source tierce », quatre lignes au-dessus de « aucun rapprochement
-  n'a été instruit ». Revendication retirée de `Q_SOM_09` le 2026-07-30, et pas
-  inerte : `libre` ∈ `DROITS_DEGAGES` pré-autorisait une montée à `droits_verifies`
-  sans pièce → `a_verifier`.
-- **Majeur** — le garde de drapeau simulait la variable absente par une chaîne
-  vide ; une implémentation « ouvert sauf mention contraire » serait restée
-  **verte** en ouvrant l'instrument sur Vercel, où la variable n'existe pas.
-- **Majeur** — textes patient promettant une frise et une transmission inexistantes.
+**Cinq mutations vérifiées**, chacune tue un test : un prédicat remis en
+`!== undefined` (2), la ligne d'effacement retirée (1), l'entrée de la liste de
+mocks retirée (8), la ligne d'effacement **déplacée** (1), et au lot précédent le
+drapeau en fail-open. Un garde vert qui n'a pas mordu ne prouve rien.
 
-## Validations exécutées
+## Ce que la revue adversariale a corrigé
 
-`npm run check` vert dans les **deux** positions de `WN_AGENDA_ALI` (3 459 tests),
-`scoring-check` vert dans les deux positions du SIIN, anti-secrets vert sur le dépôt
-entier, `verify` vert en CI. **Trois mutations vérifiées** — `actif: true`,
-fail-open du drapeau, suppression du refus 409 : chacune rougit ; un garde vert qui
-n'a pas mordu ne prouve rien. `npm run check` **inclut déjà** `test:siin57`, donc
-`WN_AGENDA_ALI=true npm run check` couvre l'état de production.
+- **Condition de merge** — la position de la ligne d'effacement n'était gardée par
+  rien : le garde structurel est un `String.includes`, aveugle au **déplacement**.
+  Or c'est le déplacement qui casse — `effacerDossier` lèverait sur la FK RESTRICT
+  et l'effacement RGPD deviendrait impossible pour tout dossier portant une
+  journée. Mes quatre mutations testaient le retrait, jamais le déplacement. Test
+  d'ordre ajouté, morsure vérifiée.
+- **Contradiction interne** — le rejet de collection décrit plus haut.
+- Un test dont le nom promettait plus que son assertion (lot d'une seule ligne :
+  rejeter la ligne et rejeter la collection y sont indiscernables), et l'absence
+  de banc direct pour `contrat.ts`. Les deux comblés.
 
 ## Problèmes ouverts
 
-- **`normaliserQids`** (`api/praticien/packs/route.ts`) filtre sur le catalogue de
-  scoring et non sur `IDS_SUSPENDUS` : un POST direct fait entrer un instrument
-  suspendu dans un pack. Défaut **antérieur** (vaut pour `Q_GEO_04`, `Q_URO_02`…),
-  aucune donnée patient exposée. Non corrigé : hors périmètre.
+- **Aucun aller-retour contre une vraie base.** `persistence.test.ts` mocke Prisma
+  intégralement, et aucune route n'existe. La thèse « l'abstention survit en
+  base » n'est donc attestée que par un `vi.fn()` — or c'est précisément là que
+  `as unknown as object` efface la garantie de type. Le véhicule idiomatique du
+  dépôt est `prisma/checks/*.sql`, rejoué par le CI et par T3 ; **à poser avant
+  L4**.
+- **`null` ne se défend pas contre `if (x)`, `!x`, `Boolean(x)`** : TypeScript
+  accepte ces tests sur `boolean | null` et ils lisent l'abstention comme un
+  « non ». Aucun consommateur hors du domaine aujourd'hui ; l'écran de saisie L4
+  est exactement le lieu où ce raccourci s'écrira. Un prédicat exporté
+  (`estObserve(v): v is boolean`) rendrait la règle réutilisable.
+- **`soirPlusCopieux` rejette `null` en silence**, sans erreur : un écran L4
+  offrant trois états sur les cinq champs perdrait celui-ci sans signal.
+- **RLS sans `REVOKE` nominatif** : conforme au patron sommeil et suffisant (RLS
+  active sans policy bloque `anon`/`authenticated` sous PostgREST), mais en
+  retrait du patron `c5_ciqual` qui révoque nominativement. À vérifier après merge
+  sur des faits : `relrowsecurity` et `has_table_privilege('anon', …, 'SELECT')`.
+- **`normaliserQids`** (`api/praticien/packs`) filtre sur le catalogue de scoring
+  et non sur `IDS_SUSPENDUS` — défaut antérieur, hors périmètre.
 - Le cycle protocole→épisode reste à **zéro ligne en base**. Gate HDS
-  `G-TRUST-04`, échéance 2026-10-21 : persister un carnet nominatif sous
-  hébergement non-HDS est une décision de conformité, pas de technique (staging
-  Scalingo validé de bout en bout depuis le 2026-07-24).
-- **Reporté du handoff précédent** — campagne `2026-08-03-packs…` : LOT-07, et
-  surtout la **signature clinique des six règles du LOT-05**, sans laquelle le
-  LOT-06 livré n'affiche rien (`validationExterne: false` ⟹ production fermée).
+  `G-TRUST-04`, échéance 2026-10-21.
+- **Reporté** — campagne `2026-08-03-packs…` : LOT-07, et surtout la **signature
+  clinique des six règles du LOT-05**, sans laquelle le LOT-06 livré n'affiche
+  rien (`validationExterne: false` ⟹ production fermée).
 
 ## Prochaine action exacte
 
-**L3** — `EnterWorktree`, puis : (1) l'abstention D1 dans le domaine pur
-(`types.ts` ; `jour.ts` — variante `ensureBooleenOuNull`, `exigerObligatoires` exige
-la **clé présente** ; `agregats.ts` où `contenuConnu` passe de `!== undefined` à
-`typeof === 'boolean'` ; ~10 tests sur 72) ; (2) modèle `AgendaAlimentaireJour`
-calqué sur `AgendaSommeilNuit` (`schema.prisma:958`) ; (3) migration
-`agenda_alimentaire_v1` ; (4) `persistence.ts` ; (5) entrée IDP2. Lot à migration :
-hook en « demande », **T3 obligatoire**, revue `wn-reviewer` avant PR, `execute_sql`
-après merge. Plan : `~/.claude/plans/inversion-l3-l2-oui-distributed-candle.md`.
+Ouvrir la PR, lire `verify`, merger. **Puis vérifier la base** par `execute_sql`
+(agréger `_prisma_migrations` **par nom** — un nom porte plusieurs lignes).
+
+Ensuite **L4** : `portail.ts` (authorize dédié, patron `agenda-sommeil/portail.ts`),
+routes GET/POST `/api/portail/agenda-alimentaire`, aiguillage dans
+`portail/[token]/questionnaires/[idAssignation]/page.tsx`, et la surface de saisie
+— cible < 30 s/jour, rien de pré-coché. **La route devra dériver `idPatient` et
+`idAssignation` de la SESSION, jamais du corps de requête** : sinon une journée
+s'écrit dans le dossier A en pointant l'assignation de B, et l'effacement de B
+devient impossible (FK RESTRICT). `saveJour` ne le vérifie pas, comme son jumeau
+sommeil, parce que c'est la route qui le garantit.
 
 ## Interdits encore actifs
 
 - **Frontière JA** — aucune quantité, aucun gramme, aucune kcal, aucune projection
   vers `Q_ALI_01`/`Q_ALI_02`. Sur les aliments, la formule exacte du contrat fait
   foi : « aucun aliment identifié **au-delà des présences ci-dessus** ».
-- **Ne pas toucher** `BESOIN_SOURCES` ni `VERSION_SCORE_EQUILIBRE` ; **aucun barème,
-  aucun indice /100** avant d'avoir vu des données réelles. **Ne pas allumer
-  `WN_AGENDA_ALI`** avant L3 et L4 : le patient verrait un écran sans question.
+- **Ne pas toucher** `BESOIN_SOURCES` ni `VERSION_SCORE_EQUILIBRE` ; **aucun
+  barème, aucun indice /100** avant d'avoir vu des données réelles. La discordance
+  déclaré/observé reste un objet séparé, et elle suppose la forme SIIN 57 servie —
+  sous forme courte `MAX_RYTHME_CHRONO` vaut 0 et l'écart devra rendre `null`,
+  jamais 0.
+- **Ne pas allumer `WN_AGENDA_ALI`** avant L4 : le patient verrait un écran sans
+  question.
 - **IDP2** — toute table fille de `patients` entre dans la transaction
-  d'effacement ; le garde de `effacement.test.ts` l'attrape seul. Et **aucune
-  contrainte unique** sur `(id_assignation, date_jour)` : c'est elle qui rend
-  lisible le taux de correction sans nouvelle migration.
+  d'effacement, **avant** les assignations. Le garde structurel n'attrape que le
+  retrait, pas le déplacement : c'est le test d'ordre qui tient la position.
+- **Aucune contrainte unique** sur `(id_assignation, date_jour)`.
