@@ -1786,3 +1786,31 @@ CI bloquant réclamant le handoff (bloquerait les correctifs urgents).
 **Questions ouvertes** — `--appliquer` écrit `git.branch` dans `.wn/state.json` :
 un nom de worktree éphémère, donc du bruit et un conflit potentiel entre
 sessions parallèles si on le committe. Non committé ici.
+
+## 2026-08-03 — LOT-06 : consommateur praticien de l'orientation, restitution IA
+
+**Décisions** : la route d'orientation a enfin un appelant — encart dans l'onglet
+Trajectoire (canal fiche, au présent seulement). L'évaluation quitte `route.ts`
+pour `orientationService.ts`, dont la synthèse est le second consommateur. Aucun
+bloc n'est injecté sans recommandation, **mais la consigne système est
+inconditionnelle : toutes les synthèses de production partent désormais en
+`synthese-v14` sans qu'aucun bloc n'ait jamais été transmis** — le discriminant
+est `donneesEntree.orientationInjectee`. La table du LOT-05 reste non signée :
+l'écran affiche « en cours de constitution ».
+
+**Écarté** : neutraliser la synthèse sur écart de restitution (on journalise —
+l'objet actionnable vient de la route) ; ouvrir `packs/assign` à `idPatient`.
+
+**Deux NO-GO adversariaux levés** : un garde tournant à allowlist vide qui
+accusait quatre syntagmes cliniques ordinaires, l'accusation persistée au
+dossier ; puis un e-mail d'assignation pouvant viser le patient **précédent**
+(`data` en retard sur `idPatient`), et une phrase affirmant une réception que
+l'envoi best-effort ne garantit pas.
+
+**Prochaine action** : signer la table **et** poser `WN_ENABLE_ORIENTATION_NNPP2`
+— le verrou est un ET, signer seul n'allume rien. Sinon LOT-01 (755 claims).
+
+**Questions ouvertes** : (1) un écart mesuré par heuristique textuelle a-t-il sa
+place dans `donneesEntree` du dossier, ou seulement au journal ? (2) le garde a
+quatre angles morts déclarés, dont le réordonnancement — interdit par la
+consigne, invérifiable par occurrences.

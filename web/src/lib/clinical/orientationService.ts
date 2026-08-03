@@ -1,0 +1,186 @@
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/generated/prisma';
+import {
+  ORIENTATION_METADATA,
+  ORIENTATION_RULES_SHA256,
+  ORIENTATION_RULES_V1,
+} from '@/lib/clinical/orientationRulesV1';
+import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
+import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
+import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
+import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
+
+// Évaluation de l'orientation NNPP2 pour un patient — LECTURE SEULE, et le seul
+// endroit où cette évaluation existe.
+//
+// Ce module a été extrait de `api/praticien/orientation/route.ts` au LOT-06,
+// quand la synthèse IA est devenue un second consommateur. Le motif n'est pas
+// l'esthétique : le double verrou fail-closed et le filtre d'administrabilité
+// vivent ici, donc une seule fois. Un fail-closed dupliqué dans deux routes est
+// un fail-closed qu'on peut oublier de corriger dans l'une des deux.
+//
+// Deuxième raison, propre à Next.js : un `route.ts` ne peut pas exporter de
+// valeur — `next build` casse, et le T1 (`tsc --noEmit`) ne le voit pas. Le
+// point d'appel partagé devait donc quitter la route de toute façon.
+//
+// Ce que ce module NE fait PAS : ni authentification, ni contrôle
+// d'appartenance, ni journalisation d'accès. Ces gestes appartiennent à chaque
+// appelant, qui les pose AVANT d'appeler ici.
+
+export const MESSAGE_ORIENTATION_INACTIVE =
+  "Orientation en cours de constitution — les règles NNPP2 ne sont pas encore validées.";
+
+/**
+ * Une recommandation servie, augmentée de l'`id_pack` de la base pour les
+ * cibles de type pack.
+ *
+ * Le moteur raisonne en `PackId` de doctrine ; le seul point d'assignation
+ * (`POST /api/praticien/packs/assign`) attend un `id_pack`. Sans ce champ, un
+ * client devrait refaire la jointure lui-même — ou, plus probablement, envoyer
+ * le slug et récolter un `pack_not_found`. On donne donc les deux.
+ */
+export type RecommandationServie = RecommandationExploration & { idPackBase?: string };
+
+export type ResultatOrientationInactif = { actif: false; version: string; message: string };
+
+export type ResultatOrientation =
+  | ResultatOrientationInactif
+  | { actif: true; version: string; sha256: string; recommandations: RecommandationServie[] };
+
+// Verrou auto-portant : `validationExterne` seul serait un booléen qu'un flip
+// isolé suffirait à ouvrir. Une table réellement signée porte aussi sa date de
+// validation et les claims qui la fondent.
+function tableSignee(): boolean {
+  return ORIENTATION_METADATA.validationExterne
+    && ORIENTATION_METADATA.dateValidation !== null
+    && ORIENTATION_METADATA.claimsSource.length > 0;
+}
+
+/**
+ * Double verrou fail-closed (patron `CORPUS_CLINIQUE_ACTIF` de
+ * `lib/anthropic.ts`) : le flag d'environnement ET la signature praticien de la
+ * table.
+ *
+ * Exporté parce que l'appelant doit pouvoir le consulter AVANT ses propres
+ * lectures. La route d'orientation s'en sert pour ne pas journaliser un accès
+ * au dossier qui n'a pas eu lieu : quand le verrou est fermé, elle répond sans
+ * jamais avoir touché au patient.
+ */
+export function orientationActive(): boolean {
+  return process.env.WN_ENABLE_ORIENTATION_NNPP2 === '1' && tableSignee();
+}
+
+export function resultatInactif(): ResultatOrientationInactif {
+  return { actif: false, version: ORIENTATION_METADATA.version, message: MESSAGE_ORIENTATION_INACTIVE };
+}
+
+/**
+ * Évalue la table de règles signée sur le dossier déjà stocké du patient.
+ *
+ * Ne propose rien d'autre que des explorations : aucune assignation n'est
+ * créée ici, ni ailleurs à partir d'ici. L'appelant est responsable d'avoir
+ * vérifié que ce praticien a le droit de lire ce patient.
+ */
+export async function evaluerOrientationPourPatient(idPatient: string): Promise<ResultatOrientation> {
+  // Le verrou est re-vérifié ici même si l'appelant l'a déjà consulté : c'est
+  // ce qui garantit qu'aucun futur appelant ne puisse lire le dossier à travers
+  // ce module sans que le double verrou soit passé. La lecture Prisma est en
+  // aval de ce test, jamais en amont.
+  if (!orientationActive()) return resultatInactif();
+
+  const [reponses, assignations, packs, consultation] = await Promise.all([
+    prisma.questionnaireReponse.findMany({
+      where: { idPatient },
+      select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true },
+      orderBy: { dateReponse: 'desc' },
+    }),
+    prisma.assignation.findMany({
+      where: { idPatient },
+      select: { idQuestionnaire: true },
+    }),
+    prisma.pack.findMany({
+      where: { actif: true },
+      select: { idPack: true, qids: true },
+    }),
+    // Anamnèse la plus récente du patient — ce qu'il a DÉCLARÉ, à côté de ce
+    // que les instruments ont mesuré.
+    //
+    // La consultation la plus récente QUI PORTE UNE ANAMNÈSE, et non la plus
+    // récente tout court : une consultation naît sans anamnèse (`statut:
+    // 'creee'`, `api/praticien/consultations`) et ne la reçoit qu'à la
+    // validation du patient (`api/portail/valider`). Prendre la dernière
+    // ferait donc disparaître toutes les règles de drapeau pendant la fenêtre
+    // — création d'un suivi, patient pas encore passé — où le praticien
+    // regarde justement l'orientation. Même sélection que
+    // `api/praticien/synthese`.
+    prisma.consultation.findFirst({
+      where: { idPatient, NOT: { anamnese: { equals: Prisma.DbNull } } },
+      select: { anamnese: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+
+  // Traduire AVANT de comparer. `pack.idPack` vient de la base
+  // (`PACK_SOCLE_INIT`), les règles parlent en slugs de doctrine
+  // (`pack_socle_initial_neuronutrition`) : les deux espaces de noms sont
+  // disjoints. Comparer directement ne rend jamais rien — c'est ce qui rendait
+  // toute recommandation de pack impossible avant le LOT-03 du 2026-08-03.
+  //
+  // Un pack sans correspondance de doctrine (pack composé par le praticien)
+  // n'entre pas : il n'est pas une cible d'orientation.
+  const compositionPacks: Partial<Record<PackId, string[]>> = {};
+  for (const pack of packs) {
+    const packId = packIdDepuisIdBase(pack.idPack);
+    if (packId === null) continue;
+    compositionPacks[packId] = pack.qids;
+  }
+
+  const recommandations = evaluerOrientation({
+    reponses: reponses.map(reponse => ({
+      idQuestionnaire: reponse.idQuestionnaire,
+      dateReponse: reponse.dateReponse.toISOString(),
+      idReponse: reponse.idReponse,
+      scores: reponse.scoresJson as Record<string, unknown>,
+    })),
+    idsQuestionnairesAssignes: assignations.map(assignation => assignation.idQuestionnaire),
+    regles: ORIENTATION_RULES_V1,
+    compositionPacks,
+    estAdministrable: estAdministrableParLaRoute,
+    // Aucune consultation, ou aucune anamnèse : on ne passe RIEN plutôt qu'un
+    // objet aux huit drapeaux vides. Le moteur distingue les deux — des
+    // drapeaux absents n'atteignent aucun déclencheur, alors que des drapeaux
+    // vides affirmeraient que le patient n'a rien déclaré.
+    drapeaux: consultation?.anamnese == null
+      ? undefined
+      : extraireDrapeauxAnamnese(consultation.anamnese),
+  });
+
+  // Fail-closed explicite : sans composition de pack, on n'affirme aucune
+  // recommandation pack administrable.
+  const recommandationsFiltrees = recommandations.filter(recommandation => {
+    if (recommandation.cible.type === 'questionnaire') {
+      return estAdministrableParLaRoute(recommandation.cible.questionnaireId);
+    }
+    const qids = compositionPacks[recommandation.cible.packId as PackId];
+    if (!Array.isArray(qids) || qids.length === 0) return false;
+    return qids.every(qid => estAdministrableParLaRoute(qid));
+  });
+
+  // Chemin retour : la cible pack repart avec l'`id_pack` que
+  // `/api/praticien/packs/assign` attend. Un pack qui a franchi le filtre a
+  // forcément une correspondance — il vient de `compositionPacks`, construit
+  // par traduction — mais on ne le suppose pas : sans `idPackBase`, le champ
+  // reste absent plutôt que faux.
+  const recommandationsServies: RecommandationServie[] = recommandationsFiltrees.map(recommandation => {
+    if (recommandation.cible.type !== 'pack') return recommandation;
+    const idPackBase = idBaseDepuisPackId(recommandation.cible.packId);
+    return idPackBase === null ? recommandation : { ...recommandation, idPackBase };
+  });
+
+  return {
+    actif: true,
+    version: ORIENTATION_METADATA.version,
+    sha256: ORIENTATION_RULES_SHA256,
+    recommandations: recommandationsServies,
+  };
+}

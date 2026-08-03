@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Table de règles d'orientation V1 — remplir et signer"
-statut: "à_faire"
+statut: "livré_partiel"
 dépend_de: "LOT-03 + LOT-04"
 palier: "T3"
 ---
@@ -118,12 +118,41 @@ une PR relue.
 
 ## Critères de done
 
-- [ ] La table est non vide, signée, et sert des recommandations.
-- [ ] Chaque règle porte ses claims sources signés.
-- [ ] Aucune auto-assignation possible.
-- [ ] Revue adversariale `wn-reviewer` passée.
-- [ ] Validation clinique du praticien tracée par écrit.
+- [ ] La table est non vide, signée, et sert des recommandations. — **moitié
+      atteinte** : non vide (6 règles), **non signée**, ne sert donc rien.
+- [x] Chaque règle porte ses claims sources signés.
+- [x] Aucune auto-assignation possible.
+- [x] Revue adversariale `wn-reviewer` passée (deux passes, deux NO-GO levés).
+- [ ] Validation clinique du praticien tracée par écrit. — **en attente**.
 
 ## Résultats
 
-À compléter à la clôture.
+**Livré le 2026-08-03 par la PR #545 (commit `a3d3c29a`), volontairement non
+signée.** Statut `livré_partiel` et non `livré` : écrire les règles et les signer
+sont deux gestes, et le second est praticien.
+
+- `ORIENTATION_RULES_V1` porte **6 règles** adossées à **9 claims `VALIDE`**
+  vérifiés en base à la main le 2026-08-03 (`version_claim = 'v1.0'`,
+  `prescriptif = true`, `active = true`). Aucun test unitaire n'ouvre
+  `rag_corpus_claims` : le CI n'atteint que le **format** d'un `claimId`. Cette
+  lecture est à refaire à chaque ajout de règle et **avant la signature**.
+- `ORIENTATION_METADATA` reste `validationExterne: false`, `dateValidation: null`,
+  `claimsSource: []` → `tableSignee()` est faux → **la route demeure fail-closed
+  et ne sert aucune recommandation**.
+- Le moteur sait lire les drapeaux d'anamnèse du LOT-04, qui n'avait jusque-là
+  aucun consommateur.
+- Trois arbitrages praticien : bande d'entrée choisie **instrument par
+  instrument** (PSQI à `info`, PSS-10 et TFD à `warning`) ; `signauxAlerte` ne
+  porte aucune règle — un signal d'alerte appelle un adressage, quand la table ne
+  sait produire qu'une exploration ; une déclaration seule propose un instrument,
+  jamais un pack.
+- Quatre défauts silencieux corrigés : `OrientationZone` ignorait `dark` **et**
+  `info` (le même trou aux deux bouts) ; une composition de pack inconnue était
+  traitée comme autorisée ; la route retenait la consultation la plus récente, or
+  une consultation naît sans anamnèse — les règles de drapeau se seraient tues
+  dans la fenêtre exacte où le praticien regarde l'orientation.
+
+**Ce qui reste à faire pour clore ce lot** : la relecture clinique des six règles
+par le praticien, puis le renseignement de `ORIENTATION_METADATA` en PR relue.
+Tant que ce geste n'a pas eu lieu, le LOT-06 ne peut afficher que l'état
+« en cours de constitution ».

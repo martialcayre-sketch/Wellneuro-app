@@ -33,6 +33,15 @@ import {
   validerBrouillonPraticien,
 } from '@/lib/synthese-praticien';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
+import {
+  evaluerOrientationPourPatient,
+  type ResultatOrientation,
+} from '@/lib/clinical/orientationService';
+import {
+  formaterEcarts,
+  verifierRestitutionOrientation,
+} from '@/lib/clinical/verifierRestitutionOrientation';
+import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -40,6 +49,7 @@ import {
   finalizeLogContext,
   withCorrelationHeader,
 } from '@/lib/observability/requestContext';
+import type { RequestContext } from '@/lib/observability/types';
 
 type ReponseInput = {
   // Transmis au modèle depuis le 2026-07-27 : la consigne système désigne les
@@ -64,11 +74,118 @@ type ReponseInput = {
 // modifier les données d'entrée ni la logique clinique.
 const MAX_TOKENS_SYNTHESE = 8192;
 
+const TITRE_PACK_DOCTRINE: ReadonlyMap<PackId, string> = new Map(
+  PACKS_REGISTRY.map(pack => [pack.id, pack.titre]),
+);
+
+/**
+ * Un bloc d'orientation a-t-il réellement été injecté dans le prompt ?
+ *
+ * C'est la condition du garde de restitution, et elle ne va pas de soi : tant
+ * que la table n'est pas signée, `actif` vaut `false`, aucun bloc ne part — et
+ * un garde qui tournerait quand même comparerait la prose du modèle aux seize
+ * titres de packs avec une allowlist vide. Il accuserait alors une synthèse de
+ * citer un pack « hors recommandation » alors qu'aucune recommandation ne lui a
+ * jamais été présentée : une assertion fausse écrite dans un dossier patient, et
+ * un code d'événement noyé de bruit avant d'être observable.
+ */
+function orientationInjectee(orientation: ResultatOrientation | null): boolean {
+  return orientation?.actif === true && orientation.recommandations.length > 0;
+}
+
+/** Les packs effectivement transmis au modèle — l'allowlist du garde de restitution. */
+function packsTransmis(orientation: ResultatOrientation | null): PackId[] {
+  if (!orientation || !orientation.actif) return [];
+  return orientation.recommandations
+    .filter(recommandation => recommandation.cible.type === 'pack')
+    .map(recommandation => (recommandation.cible as { type: 'pack'; packId: PackId }).packId);
+}
+
+/**
+ * Les identifiants de questionnaire que le PROMPT SYSTÈME cite lui-même.
+ *
+ * `SYSTEM_PROMPT_GOUVERNANCE` nomme des instruments en exemple — « la grille
+ * d'estimation des apports (Q_ALI_03) demande au patient un nombre de
+ * portions ». Le modèle a donc ces identifiants sous les yeux avant même de
+ * voir le dossier : les lui reprocher reviendrait à l'accuser d'avoir inventé
+ * ce qu'on lui a soufflé. Dérivé du prompt réel, et non recopié à la main, pour
+ * qu'un exemple ajouté demain n'ouvre pas une fausse accusation.
+ */
+const QUESTIONNAIRES_CITES_PAR_LA_CONSIGNE: readonly string[] = [
+  ...new Set(SYSTEM_PROMPT_SYNTHESE.match(/\bQ_[A-Z]{3}_\d{2}\b/g) ?? []),
+];
+
+/**
+ * Les questionnaires que le modèle a le droit de nommer.
+ *
+ * Trois sources, et en oublier une rend le garde absurde : les cibles
+ * questionnaire de l'orientation, **tous les questionnaires du dossier** — le
+ * modèle les reçoit dans « Résultats des questionnaires », les citer est son
+ * travail — et ceux que la consigne système lui a mis en bouche.
+ */
+function questionnairesTransmis(
+  orientation: ResultatOrientation | null,
+  reponses: ReponseInput[],
+): string[] {
+  const cibles =
+    orientation?.actif === true
+      ? orientation.recommandations
+          .filter(recommandation => recommandation.cible.type === 'questionnaire')
+          .map(
+            recommandation =>
+              (recommandation.cible as { type: 'questionnaire'; questionnaireId: string }).questionnaireId,
+          )
+      : [];
+  return [
+    ...new Set([
+      ...cibles,
+      ...reponses.map(reponse => reponse.idQuestionnaire),
+      ...QUESTIONNAIRES_CITES_PAR_LA_CONSIGNE,
+    ]),
+  ];
+}
+
 // Pseudonymisation (audit HDS 2026-07-24) : aucune identité patient ne part
 // vers l'API Anthropic. Le nom n'apporte rien au raisonnement clinique, et
 // `buildContexteClinique` exclut l'identité par construction — seule cette
 // ligne d'en-tête la faisait sortir.
-function buildUserMessage(reponses: ReponseInput[], contexte: string): string {
+/**
+ * Bloc d'orientation déterministe, ou chaîne vide.
+ *
+ * Vide quand la table n'est pas signée, ou quand elle ne recommande rien : le
+ * modèle ne peut pas restituer ce qu'il n'a pas reçu. C'est la même doctrine que
+ * les passations non interprétables ci-dessous — retirer la donnée est ce qui
+ * protège, la consigne ne fait qu'expliquer le trou.
+ *
+ * L'ordre des recommandations est celui servi par le moteur (priorité, puis
+ * nombre de motifs, puis clé de cible). La numérotation le matérialise pour que
+ * le modèle n'ait aucune raison de le refaire.
+ */
+function buildBlocOrientation(orientation: ResultatOrientation | null): string {
+  if (!orientation || !orientation.actif || orientation.recommandations.length === 0) return '';
+
+  const lignes = orientation.recommandations.map((recommandation, index) => {
+    const cible =
+      recommandation.cible.type === 'pack'
+        ? `pack « ${TITRE_PACK_DOCTRINE.get(recommandation.cible.packId) ?? recommandation.cible.packId} »`
+        : `questionnaire ${recommandation.cible.questionnaireId}`;
+    const motifs = recommandation.motifs
+      .map(motif => `${motif.regleId} : ${motif.conditions.join(' ; ')}`)
+      .join(' | ');
+    const objectifs = recommandation.objectifs.length > 0 ? ` Objectifs : ${recommandation.objectifs.join(', ')}.` : '';
+    return `${index + 1}. ${cible} (niveau ${recommandation.niveau}).${objectifs} Motifs — ${motifs}`;
+  });
+
+  return [
+    "## Recommandation d'exploration déterministe",
+    `Version: ${orientation.version}`,
+    `SHA-256: ${orientation.sha256}`,
+    '',
+    ...lignes,
+  ].join('\n');
+}
+
+function buildUserMessage(reponses: ReponseInput[], contexte: string, blocOrientation = ''): string {
   const filtered = reponses.map(r => {
     // Passation dont le résultat enregistré n'est pas une mesure (registre
     // `passationsNonInterpretables`). Le modèle n'en reçoit AUCUN chiffre et
@@ -122,7 +239,11 @@ function buildUserMessage(reponses: ReponseInput[], contexte: string): string {
   const blocContexte = contexte
     ? `## Contexte anamnestique et signalétique du patient\n\n${contexte}`
     : '## Contexte anamnestique et signalétique du patient\n\nContexte anamnestique non renseigné pour ce patient.';
-  return `Nombre de questionnaires complétés : ${filtered.length}\n\n${blocContexte}\n\n## Résultats des questionnaires\n\n${JSON.stringify(filtered, null, 2)}`;
+  // Le bloc d'orientation s'insère entre le contexte et les résultats — et
+  // disparaît entièrement quand il est vide, plutôt que de laisser un en-tête
+  // sans contenu que le modèle pourrait se croire tenu de remplir.
+  const blocs = [blocContexte, ...(blocOrientation ? [blocOrientation] : [])].join('\n\n');
+  return `Nombre de questionnaires complétés : ${filtered.length}\n\n${blocs}\n\n## Résultats des questionnaires\n\n${JSON.stringify(filtered, null, 2)}`;
 }
 
 // Fusionne les points de vigilance déterministes (garantis) en tête de ceux
@@ -154,6 +275,10 @@ type GenererArgs = {
   vigilanceDeterministe: string[];
   reponsesInput: ReponseInput[];
   contexteClinique: string;
+  /** Recommandation déterministe transmise au modèle, `null` si aucune. */
+  orientation: ResultatOrientation | null;
+  /** Contexte de corrélation, pour journaliser depuis les deux transports. */
+  requestContext: RequestContext;
 };
 
 // Appel Anthropic + validation de schéma + persistance. IDENTIQUE quel que soit
@@ -211,6 +336,28 @@ async function genererSynthesePersistee(
   const synthese = validateSyntheseSchema(parsed);
   // Garantit la présence des vigilances déterministes en tête, LLM ou non.
   synthese.points_de_vigilance = fusionnerVigilance(args.vigilanceDeterministe, synthese.points_de_vigilance);
+
+  // Garde de restitution (LOT-06) : le modèle a-t-il cité un pack qu'on ne lui a
+  // pas donné ? On journalise, on ne censure pas — la carte d'orientation et son
+  // bouton d'assignation viennent de la route déterministe, jamais d'ici, donc
+  // un pack cité à tort dans la prose ne peut rien déclencher.
+  // Le garde ne tourne QUE si un bloc a réellement été injecté : sans bloc, il
+  // n'y a rien à restituer, donc rien à trahir (voir `orientationInjectee`).
+  const ecartsRestitution = orientationInjectee(args.orientation)
+    ? verifierRestitutionOrientation(synthese, {
+        packs: packsTransmis(args.orientation),
+        questionnaires: questionnairesTransmis(args.orientation, args.reponsesInput),
+      })
+    : [];
+  if (ecartsRestitution.length > 0) {
+    logger.warn({
+      event: EVENT_CODES.SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE,
+      domain: 'SYNTHESE_IA',
+      message: `Restitution d'orientation infidèle : cibles citées hors recommandation (${formaterEcarts(ecartsRestitution)})`,
+      context: finalizeLogContext(args.requestContext, { retryable: false }),
+    });
+  }
+
   state.idSynthese = createPublicId('SYN');
 
   const record = await prisma.syntheseIA.create({
@@ -236,6 +383,23 @@ async function genererSynthesePersistee(
           corpusActif: CORPUS_CLINIQUE_ACTIF,
           corpusValidationExterne: CORPUS_CLINIQUE_METADATA.validationExterne,
           corpusDateValidation: CORPUS_CLINIQUE_METADATA.dateValidation,
+          // Orientation (LOT-06) : la version et le sha256 de la table qui a
+          // produit le bloc transmis. Sans eux, on ne pourrait pas dire, six
+          // mois plus tard, quelle table a fondé telle restitution.
+          // Deux faits distincts, et les confondre perdrait de l'information :
+          // `orientationVersion` dit quelle table était EN VIGUEUR — utile même
+          // quand elle n'a rien produit, pour savoir six mois plus tard sous
+          // quelle table la synthèse a été rédigée ; `orientationInjectee` dit
+          // si un bloc est réellement parti, et `orientationSha256` n'existe que
+          // dans ce cas.
+          orientationInjectee: orientationInjectee(args.orientation),
+          orientationVersion: args.orientation?.version ?? null,
+          orientationSha256:
+            orientationInjectee(args.orientation) && args.orientation?.actif === true
+              ? args.orientation.sha256
+              : null,
+          orientationPacksTransmis: packsTransmis(args.orientation),
+          orientationEcartsRestitution: ecartsRestitution,
         },
         metriquesAnthropic: metricsCache,
       } as any,
@@ -484,7 +648,25 @@ export async function POST(req: Request) {
       });
     }
 
-    const userMessage = buildUserMessage(reponsesInput, contexteClinique);
+    // Orientation déterministe (LOT-06) — best-effort, comme le contexte
+    // clinique : une synthèse ne doit pas échouer parce que la table
+    // d'orientation est indisponible. Appelée APRÈS le contrôle d'appartenance
+    // ci-dessus ; le service re-vérifie de son côté le double verrou et ne lit
+    // rien tant que la table n'est pas signée.
+    let orientation: ResultatOrientation | null = null;
+    try {
+      orientation = await evaluerOrientationPourPatient(idPatient);
+    } catch (orientErr) {
+      logger.warn({
+        event: EVENT_CODES.SYNTHESE_ORIENTATION_INDISPONIBLE,
+        domain: 'SYNTHESE_IA',
+        message: 'Orientation déterministe indisponible, synthèse sans bloc orientation',
+        context: finalizeLogContext(requestContext, { retryable: true }),
+        error: orientErr,
+      });
+    }
+
+    const userMessage = buildUserMessage(reponsesInput, contexteClinique, buildBlocOrientation(orientation));
     const genererArgs: GenererArgs = {
       idPatient,
       emailPatient: patient.email,
@@ -492,6 +674,8 @@ export async function POST(req: Request) {
       vigilanceDeterministe,
       reponsesInput,
       contexteClinique,
+      orientation,
+      requestContext,
     };
 
     // Transport JSON historique (défaut, y compris Vercel) — inchangé.
