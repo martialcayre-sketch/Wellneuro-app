@@ -51,6 +51,7 @@
 
 - Architecture technique : `docs/claude/PROJET_CONTEXTE.md`
 - Règles de travail : `docs/claude/REGLES_CRITIQUES.md`
-- Roadmap technique : `docs/ROADMAP_TECHNIQUE.md`
+- Architecture technique système : `docs/ROADMAP_TECHNIQUE.md`
+- Historique des chantiers techniques : `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
 - Roadmap produit : `docs/ROADMAP_PRODUIT.md`
 - Historique sessions : `docs/claude/SESSION_LOG.md`

@@ -1,111 +1,213 @@
-# Roadmap Wellneuro NNPP2 — consolidation technique
+# Architecture technique système — Wellneuro NNPP2
 
-> **Frontière avec `ROADMAP_PRODUIT.md`** (arbitrage du 2026-07-21, réserve R6
-> de l'audit 5.0). **Aucun des deux fichiers n'est déprécié** : ils ne parlent
-> pas de la même chose et ne se recouvrent pas.
+> **Ce que ce document est** : la cartographie de l'architecture technique
+> système actuelle — comment l'application est construite, sur tout le
+> périmètre applicatif. Une photo de l'existant, pas un plan d'action ni un
+> suivi de chantiers.
 >
-> - **Ici** : la **consolidation technique** — historique de la migration
->   GAS → Next.js (lots 0, C2→C5) et lots de reprise **R0 → R10** (dette, build,
->   tests, fiabilisation). Rien qui décrive une fonctionnalité pour l'utilisateur.
-> - **Dans `ROADMAP_PRODUIT.md`** : les **priorités produit** — séries D, R et E,
->   ce que l'application doit savoir faire.
-> - **Ni l'un ni l'autre ne fait foi sur l'état courant** : c'est
->   `docs/claude/PROJET_CONTEXTE.md`. L'exécution, elle, est pilotée par les
->   campagnes (`docs/claude/campagnes/`) et le registre de frontières.
+> **Ce qu'il n'est pas** :
 >
-> **Le piège, et la vraie raison de ce bloc.** Le préfixe `R` désigne **trois
-> séries distinctes** dans ce dépôt, numérotées indépendamment :
+> - priorités et fonctionnalités produit → `docs/ROADMAP_PRODUIT.md` ;
+> - architecture clinique **cible** (C1→C5B) → `docs/claude/ARCHITECTURE_CLINIQUE_3_2.md` ;
+> - relation praticien/patient et frontières fonctionnelles → `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` ;
+> - historique des chantiers et lots de consolidation R0→R10 → `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` ;
+> - état courant condensé pour reprise rapide → `docs/claude/PROJET_CONTEXTE.md` (qui renvoie ici pour le détail).
 >
-> | Écriture | Sens | Exemple |
-> |---|---|---|
-> | `R<n>` **technique** (ce fichier) | lot de consolidation | **R6** = stabilisation build/tests/go-no-go |
-> | `R<n>` **produit** (`ROADMAP_PRODUIT.md` §4) | module fonctionnel | **R6** = workflow RDV complet |
-> | `R<n>` **audit** (`campagnes/AUDIT_CONFORMITE_5_0_2026-07-20.md` §10) | réserve d'audit | **R6** = double source roadmap |
->
-> Trois « R6 » sans rapport. **Toujours qualifier la série** en écrivant :
-> « R6 technique », « R6 produit », « R6 de l'audit 5.0 ». Un `R6` nu dans une
-> PR, un commit ou une session est ambigu et doit être corrigé, pas deviné.
+> Mis à jour le 2026-08-03. Ce document décrit l'état constaté au moment de la
+> rédaction — en cas de doute, le code fait foi, pas ce texte.
 
-## Migration GAS → Next.js — terminée (2026-06-29 → 2026-07-03)
+## 1. Vue d'ensemble
 
-| Lot | Contenu | Statut |
+Wellneuro-app est une application de consultation en neuronutrition, en
+production sur `app.wellneuro.fr`. Deux portails distincts partagent la même
+base de données :
+
+```text
+                    ┌─────────────────────────┐
+                    │   Vercel (Next.js 14)    │  région fra1
+                    └───────────┬─────────────┘
+         ┌────────────────────┬─┴───────────────────┐
+         │                    │                      │
+  dashboard/*            portail/[token]      patient/[idAssignation]
+  (praticien,          (patient permanent,      (legacy, passation
+   session NextAuth)    session cookie)          sans session)
+         │                    │                      │
+         └────────────────────┴──────────┬───────────┘
+                                          │
+                              api/{praticien,portail,patient,internal}/*
+                                          │
+                    ┌─────────────────────┼─────────────────────┐
+                    │                     │                     │
+            PostgreSQL (Supabase)   Anthropic (synthèse IA,   SMTP (envoi
+            via Prisma 7            corpus clinique)          booklet/relance)
+                    │
+        + tables SQL-brut pgvector (rag_corpus_*, hors diff Prisma)
+```
+
+## 2. Stack technique
+
+| Composant | Détail |
+|---|---|
+| Framework | Next.js 14, App Router, TypeScript, Tailwind CSS |
+| Auth praticien | NextAuth 4, provider Google OAuth, domaine restreint `@wellneuro.fr` |
+| Auth patient | Cookie signé HMAC (portail) ou email gate (legacy) — indépendant de NextAuth |
+| Base de données | PostgreSQL (Supabase), Prisma 7 (driver adapter `pg`) |
+| IA | Anthropic SDK (synthèse praticien, corpus clinique injecté, prompt caching) |
+| Recherche/embeddings | OpenAI (embeddings du corpus RAG, clé Vercel partagée) |
+| Email | Nodemailer (SMTP) |
+| Déploiement | Vercel, région `fra1` |
+
+## 3. Cartographie applicative (routes App Router)
+
+### Pages (`web/src/app/`)
+
+| Groupe | Rôle |
+|---|---|
+| `dashboard/*` | Back-office praticien (session NextAuth) : `patients/[idPatient]`, `synthese`, `trajectoires`, `regles`, `biologie`, `bibliotheque`, `copilote`, `corpus`, `correspondance`, `documents`, `droits`, `agenda`, `parametres` — un dossier par module, `page.tsx` + `layout.tsx` commun |
+| `patient/[idAssignation]` | Parcours de passation questionnaire côté patient, legacy, sans session |
+| `portail/[token]` | Espace patient authentifié par token : `alimentation`, `informations`, `questionnaires`, `suivi`, `connexion`, `google/retour`, `lien/[jeton]` (lien magique), `lien/indisponible` |
+| `login` | Connexion praticien |
+| `dev/*` | Pages de vitrine/validation en développement, hors production |
+
+### API (`web/src/app/api/`)
+
+| Groupe | Rôle |
+|---|---|
+| `api/auth/[...nextauth]` | NextAuth (Google Workspace) |
+| `api/patient/*` | Actions patient sur session portail : `submit`, `questionnaire`, `reponses`, `protocole`, `equilibre`, `consentement`, `assignations` |
+| `api/portail/*` | Endpoints portail patient par token : `agenda-sommeil`, `boussole`, `trust`, `session`, `ja`, `valider`, `pack-reevaluation`… |
+| `api/praticien/*` | Le gros du back-office (~40 sous-dossiers) : `orientation`, `packs`, `protocoles`, `regles`, `bibliotheque`, `corpus`, `copilote`, `cockpit`, `synthese`, `trajectoire(s)`, `complements`, `boussole`, `fil`, `documents`, `correspondance-medecin`, `metrics`… |
+| `api/internal/*` | Jobs internes non exposés praticien : `rag/{ingest,search,health,claims/ingest}`, `supplements/{ingest,referentiel}` |
+
+## 4. Modèle de données
+
+### 4.1 Domaines Prisma
+
+`web/prisma/schema.prisma` fait foi ; ne pas figer de compte en dur — vérifier
+avec `grep -c '^model ' web/prisma/schema.prisma` (66 au 2026-08-03). Domaines
+principaux :
+
+| Domaine | Modèles clés |
+|---|---|
+| Cœur patient | `Patient`, `Consultation`, `Assignation`, `QuestionnaireReponse`, `SyntheseIA`, `AssessmentEpisode`, `ProtocolDraft`/`ProtocolCheckin`/`ProtocolDiffusionApproval` |
+| Questionnaires/packs | `QuestionnaireDefinition` ↔ `QuestionnaireCategory`/`QuestionnaireSecondaryCategory`, `Pack`/`QuestionnairePack` (jonction `QuestionnairePackQuestionnaire`, déclenchement `QuestionnairePackTrigger`) |
+| Nutrition/compléments | `NeuroAxis`, `NutrientAxisWeight`, `CiqualNutrientValue` (référentiel CIQUAL), `SupplementIngredient`/`SupplementProduct`/`SupplementProductComposition` |
+| Moteur clinique/règles | `ClinicalIntentTag`, `ClinicalCriterion`, `FunctionalCategory`, `ClinicalRule`, `IngredientFunctionalThreshold` |
+| Biologie (référentiel NABM) | `BiologyAnalyte`, `BiologyNabmActe`, `BiologyReferenceRange`/`BiologyFunctionalRange`, `BiologyPanel`/`BiologyPanelItem` |
+| Trust/gouvernance patient | `TrustAcknowledgement`, `TrustChoiceEvent`, `TrustAdverseEffectReport`, `TrustRightsRequest` |
+| Correspondance/portail | `CorrespondancePatient`, `CorrespondanceMedecin`, `PortailMagicLink`, `PortailConnexionGoogle`, `JournalAccesDossier` |
+
+### 4.2 Tables SQL-brut hors Prisma (pgvector)
+
+`web/prisma.config.ts` (`experimental.externalTables`) déclare 4 tables
+externes : `rag_corpus_chunks`, `rag_corpus_claims`, `rag_corpus_claim_sources`,
+`rag_corpus_claim_decisions`. Créées et versionnées par des migrations SQL
+classiques, mais exclues du diff déclaratif Prisma (type `vector(1536)` non
+modélisable, ou mécanique portée par la base comme les triggers append-only du
+journal de décisions). Accès applicatif via SQL brut dans `lib/rag/store.ts`
+et `lib/rag/claims/store.ts`. Détail complet : `docs/RAG_PGVECTOR_PRODUCTION.md`.
+
+## 5. Sous-systèmes métier (`web/src/lib/`)
+
+| Sous-système | Dossier(s) | Rôle |
 |---|---|---|
-| Lot 0 — Scaffold Next.js | App web `web/`, auth Google (NextAuth), login page, dashboard praticien | ✅ Livré |
-| Lot C2 — Métriques dashboard | `GET /api/praticien/metrics` | ✅ Livré |
-| Lot C3 — Patients & assignations | CRUD patients, assignations, résultats questionnaires | ✅ Livré |
-| Lot C4 — IA & Booklet | Synthèse IA (Anthropic), booklet HTML, envoi SMTP, PostgreSQL via Prisma | ✅ Livré, validé E2E 2026-06-30 |
-| Lot C5 — Décommission GAS | Migration historique Sheets → Supabase exécutée en prod, déclencheur `sendReminders` supprimé, déploiement GAS retiré, `src/gas/` archivé dans `archive/gas-legacy/` | ✅ Livré 2026-07-03 |
+| Moteur d'orientation clinique | `lib/clinical/`, `lib/clinical-engine/` | Pipeline de décision (règles, seuils, cartes de décision) exposé via `api/praticien/orientation`. Cible fonctionnelle décrite dans `ARCHITECTURE_CLINIQUE_3_2.md` ; implémentation présente décrite ici uniquement |
+| Packs / protocoles | `lib/consultation/` (`packRegistry*.ts`), `lib/protocol/` | Registre relationnel packs↔questionnaires (lecture primaire), fallback legacy `packs.qids` ; adhésion, check-ins, diffusion, trajectoire, versioning |
+| RAG / claims | `lib/rag/` (config, embeddings, store, auth, verification, validation, `claims/*`) | Voir section 7 |
+| Bibliothèque de compléments | `lib/supplement-library/` | Catalogue, compatibilité, ingestion, résolution, gouvernance, sentinelle — aucun doc dédié, décrit uniquement ici |
+| Biologie fonctionnelle | `lib/biology-library/` | Feature flag, référentiel NABM remboursable — aucun doc dédié, décrit uniquement ici |
+| Questionnaires + scoring | `lib/questionnaires/` (un fichier par thématique clinique), `lib/scoring/` | Organisation technique des fichiers ; règles de gouvernance dans `docs/gouvernance-questionnaires-scoring.md` |
+| Boussole alimentaire | `lib/food-compass/`, `lib/food-observation/` | Recommandations et observation alimentaire patient |
+| Agendas patient | `lib/agenda-alimentaire/`, `lib/agenda-sommeil/` | Carnets de suivi quotidien |
+| Équilibre | `lib/equilibre/` | Score d'équilibre patient |
+| Trust | `lib/trust/` | Consentement et gouvernance côté portail |
+| Fil, documents, observabilité | `lib/fil/`, `lib/documents/`, `lib/observability/` | Fil d'actualité praticien, génération de documents/booklets, logs et event codes |
 
-`app.wellneuro.fr` est l'unique point d'entrée en production.
+## 6. Authentification et autorisation
 
-## Pilotage actif — architecture campagnes (2026-07-11, révisé 2026-07-15)
+| Modèle | Mécanisme |
+|---|---|
+| Praticien | NextAuth, provider Google OAuth unique, scope `openid email profile`, session JWT 8h, page `/login` custom. `profilPraticienAutorise` (`lib/auth.ts`) applique 3 contrôles cumulatifs : domaine email dans `ALLOWED_DOMAINS=['wellneuro.fr']`, `email_verified === true`, et `hd` (si présent) dans le domaine autorisé — non exigé si absent, pour ne pas fermer l'accès si Google cesse de le renvoyer |
+| Portail patient (`/portail/[token]`) | Token révocable + cookie signé HMAC (`lib/patient-session.ts`), indépendant de NextAuth |
+| Legacy (`/patient/[idAssignation]`) | Email gate sans session (`lib/patient-access.ts`), vérification de deadline d'accès |
 
-- Le pilotage opérationnel des évolutions produit est désormais structuré par campagnes (`C0`, `C0-UX`, `C1`…`C5`, `SP-*`) dans `docs/claude/campagnes/*`.
-- La séquence des campagnes à venir est portée par `docs/claude/campagnes/PROGRAMME_WELLNEURO_5_0.md` (disposition « la Spirale », décision A6) ; la campagne active fait foi pour l'ordre d'exécution courant : `docs/claude/campagnes/ACTIVE_CAMPAIGN.md`.
-- Cette roadmap conserve le suivi de consolidation technique (historique C0/C2/C3/C4/C5 et lots R0→R10).
+## 7. Pipeline RAG et corpus clinique
 
-## Décommission Google Sheets — ✅ Résolu (2026-07-07)
+Flux résumé :
 
-- Les routes praticien (`metrics`, `patients`, `assignations`, `questionnaires`, `reponses`, `packs`…) lisent/écrivent désormais **exclusivement PostgreSQL** via Prisma. Plus aucun appel à `sheets.googleapis.com`.
-- La route `api/praticien/migrate-historique` a été **supprimée**.
-- Le scope OAuth a été réduit à `openid email profile` (`spreadsheets` retiré) et `SHEET_ID` n'est plus une variable d'environnement requise.
-- Le code GAS reste archivé dans `archive/gas-legacy/` (référence uniquement).
+```text
+NotebookLM (rédaction/validation) → statut MATERIALISE_RAG_MD
+  → Apps Script construit les chunks actifs
+  → POST /api/internal/rag/ingest (auth RAG_INTERNAL_SECRET, embeddings OpenAI,
+    upsert idempotent) → statut INDEXE_RAG_PRODUCTION
+  → POST /api/internal/rag/claims/ingest (validation, embeddings, upsertRagClaims,
+    verifyRagClaimsBatch)
+  → logique métier claims (tirage, revue praticien, recherche) exposée via
+    api/praticien/corpus/claims/*
+```
 
-## Dette technique restante
+Renvois différenciés — ne pas confondre les deux documents :
 
-- **Registre relationnel packs/questionnaires** : lot R3 **livré** (lecture primaire registre + fallback `packs.qids`). Reste en surveillance via `npm run check:pack-registry`; aucun calendrier de décommission de `packs.qids` à ce stade (décision R10).
-- Pagination patients/assignations : nécessaire si le volume dépasse ~100 lignes.
-- Fallback `http://localhost:3000` sur `NEXTAUTH_URL` dans `api/praticien/assignations/route.ts` (signalé dans le runbook du 2026-07-01) — vérifier qu'il ne peut pas produire de lien incorrect en production.
+- infrastructure pgvector et chunks → `docs/RAG_PGVECTOR_PRODUCTION.md` ;
+- procédure de validation des claims → `docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md`.
 
-## Roadmap de reprise R0 → R6 (2026-07-09)
+## 8. Déploiement et CI/CD
 
-Principe directeur : **consolider avant d'évoluer**. Ordre recommandé, chaque lot conditionne le suivant.
+Vercel, région `fra1`, build piloté par `web/scripts/vercel-build.sh` +
+`vercel.json`. En preview/local, aucune migration n'est appliquée.
 
-| Lot | Objet | Statut |
-|---|---|---|
-| **R0** | Réalignement documentaire (docs au niveau réel du code : décommission Sheets, portail patient unifié, registre relationnel, synthèse IA enrichie) | ✅ Validé (2026-07-10) — `docs/claude/PROJET_CONTEXTE.md` corrigé (registre relationnel décrit comme livré, R2/R3 retirés des points ouverts, incohérence `SHEET_ID`, typo patient fictif) |
-| **R1** | Validation E2E du parcours patient unifié (`/portail/[token]`) sur patient fictif — voir `docs/checklist_tests_end_to_end.md`, Phase 0 | ✅ Validé (2026-07-10) — reste le test tactile sur téléphone réel |
-| **R2** | Finalisation du pack « Base de consultation » (contenu, ordre, anti-doublon anamnèse, rendu mobile, `par_defaut`) | ✅ Validé (2026-07-10) |
-| **R3** | Transition progressive vers le registre relationnel (lecture primaire `questionnaire_packs`, fallback `packs.qids`, rapport d'écarts, aucune migration destructive) | ✅ Livré (2026-07-10, commit `3f367a7`) — statut corrigé le 2026-07-10, était resté à tort « à faire » ; validation navigateur des routes d'assignation manquante → R9 |
-| **R4** | Harmonisation UX patient / design system (tokens deep teal / champagne gold, statut jamais codé par la seule couleur, mobile first) | ✅ Livré (2026-07-10, commit `eaad01a`) — statut corrigé le 2026-07-10, était resté à tort « à faire » ; validation navigateur réelle manquante → R9 |
-| **R5** | Validation de la synthèse IA enrichie (scénarios fiche/anamnèse/alerte/traitements/DNSM, dégradation gracieuse) | ✅ Validé (2026-07-10, audit statique 7/7 conforme, aucun correctif requis) |
-| **R6** | Stabilisation build/tests/go-no-go (aligné sur `.claude/skills/wn-r6/SKILL.md` : type-check, lint, scoring-check, no-secrets, build, vérification ciblée parcours patient, diff review) — pas de nouvelle fonctionnalité | ✅ GO (2026-07-10) — type-check/scoring-check/build OK, no-secrets faux positif connu, lint non configuré (dette pré-existante → R8), pas de test navigateur réel |
+**État actuel (transitoire) — deux mécanismes coexistent** :
 
-## Piste technique transverse — R7 / R8 (fiabilisation, indépendante de la séquence produit R0→R6)
+- `web/scripts/vercel-build.sh` porte encore, en production
+  (`VERCEL_ENV=production`), un préflight SQL en lecture seule puis
+  `prisma migrate deploy` inline si `MIGRATE_DATABASE_URL` est renseignée
+  (session mode, port 5432, distinct du pooler runtime), suivi des imports
+  optionnels armés par variables Vercel dédiées (CIQUAL C5, NABM CB-02a, avec
+  confirmation SHA-256 + contrôle Supabase advisors + contrat SQL post-import).
+  Le script se termine toujours par `prisma generate && next build`.
+- Un workflow GitHub Actions séparé, `release-db.yml`, existe en parallèle
+  (déclenché à la main, gaté par l'environnement protégé `production` —
+  second gate humain) et porte la même logique de manière isolée du build.
+  Il est destiné à devenir le chemin unique — un « lot de bascule » doit
+  encore alléger `vercel-build.sh` pour retirer sa logique inline — mais ce
+  lot n'a pas eu lieu au 2026-08-03 : les deux mécanismes sont actifs
+  aujourd'hui, pas seulement l'un ou l'autre.
 
-> Ce R8 (filet de sécurité CI, livré) ne doit pas être confondu avec le R8 de
-> `ROADMAP_PRODUIT.md` (authentification patient, campagne IDP, non livré) :
-> deux roadmaps, deux numérotations indépendantes.
+Renvois : détail du runbook de release DB → `docs/DEPLOIEMENT_RELEASE_DB.md` ;
+exploitation générale → `docs/RUNBOOK.md` ; coordination multi-machines/sessions
+→ `docs/ROLES_MACHINES.md`.
 
-Décidée le 2026-07-10 suite à une revue critique de l'organisation du projet (process, outillage Claude Code, stack). Ces deux lots ne bloquent pas et ne sont pas bloqués par R3→R6 : exécutables à tout moment, y compris en parallèle du reste. Détail complet : entrée SESSION_LOG du 2026-07-10.
+## 9. Sécurité, secrets, RGPD
 
-| Lot | Objet | Statut |
-|---|---|---|
-| **R7** | Hygiène repo/doc : `.gitattributes` (fin de ligne LF), réalignement de `docs/claude/REGLES_CRITIQUES.md` (mention obsolète Sheets/`SHEET_ID` encore requis, à corriger pour cohérence avec `PROJET_CONTEXTE.md`), nettoyage racine (`.clasp.example.json`/`.claspignore` → `archive/gas-legacy/` ou suppression, `wellneuro_claude_automation_kit.zip`, `package-lock.json` racine stub), peuplement de la mémoire persistante Claude Code (`memory/`) avec les invariants déjà validés (dry-run avant écriture prod, format SESSION_LOG) | ✅ Livré (2026-07-10) |
-| **R8** | Filet de sécurité technique : CI GitHub Actions minimale (type-check + `scoring-check` + `check_no_secrets.sh` + lint, sans secrets prod dans un premier temps), tests unitaires (vitest) sur les fonctions déterministes existantes (scoring, `miniSynthese.ts`, `contexteClinique.ts`, `resolvePackQuestionnaireIds`), formalisation en tests Playwright commités des parcours critiques (session portail, verrouillage/déverrouillage réponse) au lieu de les réinstaller puis jeter à chaque lot (cf. risques résiduels R1/R4) | ✅ Livré (2026-07-11, mis à jour depuis 2026-07-10 — voir SESSION_LOG R8.2/R8.3) — ESLint+CI (partiel, commit `ac1eb60`) puis Vitest (**61 tests, 9 fichiers**, migration complète depuis les anciens `.check.ts` supprimés) + Playwright committé (`web/e2e/portail-parcours.spec.ts`, `web/e2e/dashboard-praticien.spec.ts`) **désormais exécuté en CI réelle** (service PostgreSQL provisionné dans `.github/workflows/ci.yml`, `prisma migrate deploy` + seed avant les tests). `resolvePackQuestionnaireIds` sans test unitaire dédié (décision explicite, couvert par Playwright) ; `scoring-check` reste hors CI (décision explicite) ; iPhone 13/WebKit jamais exécuté en conditions CI réelles (à confirmer au prochain run) |
+Secrets uniquement en variables d'environnement (jamais en dur), garde-fous
+`scripts/check_no_secrets.sh`. Détail : `docs/securite_rgpd.md`,
+`docs/claude/REGLES_CRITIQUES.md`, `docs/PROCEDURE_VIOLATION_DONNEES.md`.
 
-> Définition de **R6** tranchée le 2026-07-10 (R10, point 1) : c'est celle de `.claude/skills/wn-r6/SKILL.md` qui fait foi (stabilisation build/tests/go-no-go). Le contenu « moteur clinique avancé » (priorisation, protocoles 21 jours, boussole alimentaire, compléments clean label) précédemment décrit sous R6 n'est pas perdu : il est déjà couvert par les modules produit de [ROADMAP_PRODUIT.md](ROADMAP_PRODUIT.md) (série D/R — protocole 21j, arborescence `corpus/`).
+## 10. Feature flags et quality gate
 
-## R9 / R10 — Clôture des points en suspens R0→R6 (ajoutée le 2026-07-10)
+Les gates vivent dans le code (`lib/*/featureFlag.ts`). Détail complet :
+`docs/FEATURE_FLAGS.md`, `docs/QUALITY_GATE.md`.
 
-Consolidation des « Questions ouvertes » et risques résiduels laissés par les entrées SESSION_LOG des lots R0 à R6 (détail : entrée SESSION_LOG du 2026-07-10 « Clôture des questions en suspens R0→R6 »).
+## 11. Cartographie documentaire — où trouver quoi
 
-| Lot | Objet | Statut |
-|---|---|---|
-| **R9** | Clôture technique R0→R4 : (1) email retiré de la query string sur le hub patient unifié (`ConsultationScreen`, `MonEquilibreAccueil`, `MonEquilibreDetail`), qui s'appuient désormais uniquement sur la session cookie ; parcours legacy `/patient/[idAssignation]` (sans cookie) volontairement inchangé ; (2) validation navigateur réelle R2/R3/R4 ; (3) test tactile téléphone réel R1 | ✅ Validé (2026-07-10) |
-| **R10** | Décisions produit tranchées le 2026-07-10 : (1) définition de R6 = celle de `wn-r6/SKILL.md` (stabilisation), voir note ci-dessus ; (2) lien portail patient exposé dans le frontend praticien (bouton « Copier le lien » dans `PatientsPanel.tsx`, en plus de l'email existant) ; (3) pas de calendrier de décommission de `packs.qids` — reste en statut « surveillance » ; (4) `QuestionnaireDefinition.niveau`/`.publicCible` : statut « surveillance » inchangé, pas d'action requise maintenant | ✅ Tranché (2026-07-10) |
+| Sujet | Document qui fait foi |
+|---|---|
+| État courant condensé, onboarding | `docs/claude/PROJET_CONTEXTE.md` |
+| Priorités et fonctionnalités produit | `docs/ROADMAP_PRODUIT.md` |
+| Architecture clinique cible (C1→C5B) | `docs/claude/ARCHITECTURE_CLINIQUE_3_2.md` |
+| Relation praticien/patient | `docs/RELATION_PRATICIEN_PATIENT_SOURCE.md` |
+| Historique des chantiers R0→R10 | `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` |
+| Infra RAG/pgvector (chunks) | `docs/RAG_PGVECTOR_PRODUCTION.md` |
+| Validation des claims | `docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md` |
+| Release DB (migrations/imports hors build) | `docs/DEPLOIEMENT_RELEASE_DB.md` |
+| Exploitation générale | `docs/RUNBOOK.md` |
+| Rôles des machines et sessions | `docs/ROLES_MACHINES.md` |
+| Sécurité et RGPD | `docs/securite_rgpd.md`, `docs/claude/REGLES_CRITIQUES.md` |
+| Gouvernance questionnaires/scoring | `docs/gouvernance-questionnaires-scoring.md` |
+| Feature flags | `docs/FEATURE_FLAGS.md` |
+| Quality gate | `docs/QUALITY_GATE.md` |
 
-Points mineurs pré-R0, non bloquants, à traiter opportunément (R7 ou un futur lot produit) : enrichir `MOTIFS_CONSULTATION` (1er RDV, suivi…) ; décider d'exposer la mini-synthèse déterministe côté portail patient (masquage de `protocol`) ; décider d'exposer le contexte clinique dans le booklet patient ; standardiser la procédure locale Supabase + Prisma dans la doc ; retirer l'avertissement `supabase/seed.sql` absent si non pertinent.
+## 12. Historique des chantiers techniques
 
-## Hors périmètre (sauf demande explicite)
-
-- Hébergement HDS certifié (requis si données de santé réelles en production)
-- ~~Import massif PDF SIIN / RAG vectoriel complet~~ — **entré au périmètre le
-  2026-07-21** sur demande explicite (D-004, registre A9) : infrastructure
-  pgvector PR #196, extraction croisée du stock, Atelier corpus à venir.
-- Génération PDF native (actuellement HTML + impression navigateur)
-- Signature électronique praticien sur le booklet
-- Coaching patient autonome
-- Auth0 / SSO praticien multi-établissement
-
-> Note : le « portail patient autonome avec historique des questionnaires » (auparavant hors périmètre) est **livré** — hub « Mes questionnaires » avec consultation permanente des réponses (portail `/portail/[token]`).
+L'historique des lots de migration et de reprise (R0→R10) ainsi que la dette
+technique close est archivé dans `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`.

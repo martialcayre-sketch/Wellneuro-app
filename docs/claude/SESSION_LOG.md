@@ -2,6 +2,18 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-08-03 — Repurposage de ROADMAP_TECHNIQUE.md en architecture technique système
+
+**Décisions** : `docs/ROADMAP_TECHNIQUE.md` cesse d'être un suivi de chantiers (lots R0→R10, dette) pour devenir la cartographie d'architecture technique système (stack, routes, modèle de données, sous-systèmes `lib/`, auth, RAG, déploiement) — décision explicite de l'utilisateur, périmètre = toute l'application. L'ancien contenu est archivé intégralement dans le nouveau `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` avant réécriture, rien n'est perdu.
+
+**Écarté** : dupliquer le détail déjà couvert par `PROJET_CONTEXTE.md`, `ARCHITECTURE_CLINIQUE_3_2.md`, `RAG_PGVECTOR_PRODUCTION.md` — le nouveau doc résume et renvoie plutôt que de recopier.
+
+**Livré** : réécriture complète + renvois mis à jour dans `CLAUDE.md`, `README.md`, `docs/PROJECT_STATE.md`, `docs/claude/README.md`, `docs/claude/PROJET_CONTEXTE.md`, `docs/ROADMAP_PRODUIT.md`. Aucun `npm run check` requis (documentaire), vérifié : `grep -c '^model '` (66), aucun lien mort, `grep ROADMAP_TECHNIQUE` cohérent.
+
+**Prochaine action** : relire le diff, committer, ouvrir la PR.
+
+**Questions ouvertes** : `vercel-build.sh` porte encore la logique `migrate deploy` inline en parallèle de `release-db.yml` — le « lot de bascule » qui doit l'alléger n'a pas eu lieu, documenté tel quel.
+
 ## 2026-08-03 — Rayon compléments alimentaires : contrat de corpus stabilisé
 
 **Décisions** : clôture du lot de consolidation autour du contrat de corpus du rayon compléments alimentaires. L’UI praticien distingue désormais explicitement un corpus vide (état normal, « en cours de constitution ») d’un corpus indisponible ou bloqué par une garde métier, et affiche le message métier renvoyé par l’API. Le changement reste borné au périmètre C4 déjà existant : pas de migration, pas de changement clinique, pas de nouveau flux de données.
