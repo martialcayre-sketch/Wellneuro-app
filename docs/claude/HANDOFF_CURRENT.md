@@ -2,98 +2,81 @@
 
 ## Git
 
-- Session dans le worktree `.claude/worktrees/lot-04-drapeaux-anamnese`, branche
-  `worktree-lot-04-drapeaux-anamnese` — **mergée et supprimée côté distant**
-  (PR #539, squash). Le worktree local n'a pas encore été nettoyé (`ExitWorktree`
-  n'est pas invoqué proactivement par consigne de l'outil).
-- Arbre propre, aucun diff non commité.
-- `main` a reçu #539 depuis cette session ; repartir de `main` (pas de cette
-  branche squashée) pour le lot suivant.
+- Branche `main`, arbre propre. Dernier commit : PR **#541** (squash), mergée
+  et branche distante supprimée depuis cette session.
+- Campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`
+  **inchangée par ce lot** : LOT-00, LOT-03, LOT-04 restent livrés. Ce lot est
+  orthogonal à la campagne — documentaire, hors périmètre packs/moteur.
 
-## Objectif atteint
+## Objectif de ce lot
 
-LOT-04 de la campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`
-— structurer l'intake pour un moteur d'orientation déterministe. **Livré et
-mergé**, recadré au cadrage sur son périmètre résiduel réel.
+Repurposer `docs/ROADMAP_TECHNIQUE.md`, qui servait de suivi de chantiers
+(historique R0→R10, dette technique), en documentation d'architecture
+technique système (stack, routes App Router, modèle de données, sous-systèmes
+`lib/`, auth, pipeline RAG, déploiement) — décision explicite de l'utilisateur,
+périmètre = toute l'application. **Livré et mergé** (#541).
 
 ## Décisions prises, et pourquoi
 
-- **Le lot d'origine a été recadré** : « schéma applicatif » (motifs, formulaire
-  d'anamnèse) déjà existant (`motifs.ts`, `anamnese.ts`). Ce qui manquait pour
-  LOT-05 (table de règles) : une extraction **typée et nommée**, pas de la
-  prose (`contexteClinique.ts` produit du texte pour un LLM, pas des drapeaux).
-- **Valeurs autorisées lues dynamiquement dans `ANAMNESE_SECTIONS`**, jamais
-  dupliquées en constantes locales — élimine le risque de divergence de
-  libellé (apostrophes typographiques notamment) entre deux sources de vérité.
-- **`Consultation.motif` et `anamnese.motif_principal` restent hors périmètre** :
-  le premier peut être `null` (non fiable), le second est du texte libre — ni
-  l'un ni l'autre ne devient un drapeau.
-- **Revue adversariale `wn-reviewer` avant clôture, deux défauts majeurs
-  corrigés** : tests initiaux tautologiques (l'attendu dérivait du même code
-  que l'extraction) → remplacés par des libellés **figés en dur**, qui cassent
-  bruyamment si `anamnese.ts` dérive ; filtrage qui passait par un helper
-  borné à 50 éléments bruts avant dédup (ordre dépendant du stockage, risque
-  théorique de perte d'un signal valide) → réécrit pour itérer sur l'énuméré
-  clinique (ordre canonique, pas de troncature avant filtrage).
-- **Écarté** : ajouter un champ `signauxAlerteNonReconnus` pour distinguer un
-  signal hors énuméré d'un signal absent — pas de consommateur aujourd'hui
-  (LOT-05 non écrit), aurait anticipé un besoin hypothétique. Documenté en
-  commentaire de type à la place.
-- **Pas de promotion `docs/DECISIONS.md`** : le point le plus proche d'une
-  décision structurante (`signaux_alerte` filtré n'est pas une garantie de
-  sécurité, `extraireVigilanceDeterministe` non filtré l'est) est un corollaire
-  de D-003 déjà au registre, pas une nouvelle frontière — et porte sur une
-  fonction qu'aucun code ne consomme encore. À revisiter explicitement au
-  cadrage de LOT-05.
+- **Contenu archivé avant réécriture** : l'ancien `ROADMAP_TECHNIQUE.md` est
+  recopié tel quel dans le nouveau `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
+  — rien n'est perdu, l'historique R0→R10 reste consultable.
+- **Résumer et renvoyer plutôt que dupliquer** : chaque section du nouveau
+  document renvoie vers le doc détaillé existant quand il y en a un
+  (`RAG_PGVECTOR_PRODUCTION.md`, `VALIDATION_CLAIMS_DEUX_VITESSES.md`,
+  `ARCHITECTURE_CLINIQUE_3_2.md`…) ; description complète seulement là où
+  aucun doc ne couvrait déjà le sujet (cartographie des routes, sous-systèmes
+  `lib/`, comparatif des 3 modèles d'auth).
+- **Section déploiement documentée comme transitoire, pas comme tranchée** :
+  `vercel-build.sh` porte encore `migrate deploy` inline en parallèle du
+  workflow `release-db.yml` plus récent — vérifié dans le code avant
+  d'écrire, pour ne pas recopier aveuglément l'un des deux documents source.
+- **Compte de modèles Prisma jamais figé en dur** : renvoi à
+  `grep -c '^model ' web/prisma/schema.prisma` (66 au 2026-08-03) plutôt qu'un
+  chiffre écrit dans le texte, qui aurait dérivé au premier modèle ajouté.
+- **Pas de promotion `docs/DECISIONS.md`** : réorganisation documentaire, pas
+  une décision structurante d'architecture/sécurité/clinique.
 
 ## Fichiers livrés
 
-- `web/src/lib/consultation/drapeauxAnamnese.ts` — `extraireDrapeauxAnamnese`,
-  8 drapeaux (5 `checkbox-multi` + 3 `radio`).
-- `web/src/lib/consultation/drapeauxAnamnese.test.ts` — garde anti-dérive à
-  libellés figés + cas adverses (null, type inattendu, hors énuméré, doublons,
-  ordre, espaces).
-- `web/src/lib/consultation/motifs.test.ts` — `isMotifValide` n'avait aucun test.
-- `web/src/lib/consultation/contexteClinique.ts` — `asRecord`/`texte`/`liste`
-  passés en `export` (3 mots, comportement inchangé).
-- `docs/claude/campagnes/2026-08-03-.../lots/LOT-04-structuration-intake.md`
-  (statut `livré` + `## Résultats`), `docs/claude/SESSION_LOG.md`,
-  `changelog.d/2026-08-03-lot-04-drapeaux-anamnese.md`.
+- `docs/ROADMAP_TECHNIQUE.md` — réécriture complète (12 sections).
+- `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` — nouveau, archive de l'ancien contenu.
+- `CLAUDE.md`, `README.md`, `docs/PROJECT_STATE.md`, `docs/claude/README.md`,
+  `docs/claude/PROJET_CONTEXTE.md`, `docs/ROADMAP_PRODUIT.md` — renvois mis à jour.
 
 ## Validations exécutées
 
-- T1 (`npm run check`) : vert, deux fois (avant et après corrections de revue).
-- T2 (`npm run test:worktree -- --fast`) : vert, 108 tests E2E, deux fois.
-- CI de la PR #539 : `verify` présent et vert (pas de gel `action_required`),
-  checks Vercel verts.
-- Aucun secret introduit (`check_no_secrets.sh`) ; aucune donnée patient réelle
-  (Sophie Nicola uniquement).
+- Changement purement documentaire : pas de `npm run check` requis.
+- Existence vérifiée de tous les fichiers renvoyés par le nouveau document
+  (aucun lien mort).
+- `grep -rn "ROADMAP_TECHNIQUE" --include="*.md" .` (hors archive/campagnes/
+  CHANGELOG) cohérent avec le nouveau rôle.
+- CI de la PR #541 : `verify` présent et vert, checks Vercel verts.
 
 ## Problèmes ouverts
 
-- **LOT-05 devra trancher explicitement** : `signauxAlerte` peut-il porter une
-  décision de sécurité malgré son filtrage silencieux, ou reste-t-il un signal
-  secondaire avec `extraireVigilanceDeterministe` en filet de sécurité ?
-- Le worktree `lot-04-drapeaux-anamnese` n'a pas été supprimé (branche déjà
-  morte côté distant) — à nettoyer à la prochaine ouverture de session dessus.
-- Questions héritées de LOT-03, toujours ouvertes : `estAdministrableParLaRoute`
-  ne vérifie pas `actif` contrairement à `IDS_ASSIGNABLES` ; 10 des 16 packs de
-  doctrine n'existent pas en base (décision produit).
+- Hérité de ce lot : le « lot de bascule » qui doit alléger `vercel-build.sh`
+  de sa logique `migrate deploy` inline (au profit exclusif de
+  `release-db.yml`) n'a pas eu lieu — documenté tel quel, pas dans mon
+  périmètre.
+- Hérité de la campagne packs/moteur (LOT-04, non retouché ici) : LOT-05 devra
+  trancher si `signauxAlerte` peut porter une décision de sécurité malgré son
+  filtrage silencieux ; `estAdministrableParLaRoute` ne vérifie pas `actif`
+  contrairement à `IDS_ASSIGNABLES` ; 10 des 16 packs de doctrine n'existent
+  pas en base (décision produit).
 
 ## Prochaine action exacte
 
-**LOT-05** (table de règles d'orientation — dépend de LOT-03 et LOT-04, les
+La priorité reste celle de la campagne packs/moteur, non affectée par ce lot :
+**LOT-05** (table de règles d'orientation, dépend de LOT-03 et LOT-04, tous
 deux livrés) ou **LOT-01** (validation praticien des 755 claims d'intervention,
-sans dépendance). Les deux sont disponibles ; LOT-05 est le consommateur direct
-de ce lot.
+sans dépendance).
 
 ## Interdits encore actifs
 
-- **Pas de migration Prisma** sur les lots de cette campagne sauf demande
-  explicite distincte.
+- **Pas de migration Prisma** sauf demande explicite distincte.
 - **Pas de branchement de `extraireDrapeauxAnamnese`** dans une route sans
-  cadrer d'abord la question de sécurité ci-dessus (LOT-05).
-- **Repartir de `main`** pour le prochain lot, jamais de la branche squashée
-  `worktree-lot-04-drapeaux-anamnese`.
-- **Ne pas merger sans avoir lu `verify`** — les seuls checks Vercel ne prouvent
-  rien (régime en vigueur, `CLAUDE.md`).
+  cadrer d'abord la question de sécurité LOT-05 (héritée, inchangée).
+- **Repartir de `main`** pour le prochain lot.
+- **Ne pas merger sans avoir lu `verify`** — les seuls checks Vercel ne
+  prouvent rien.
