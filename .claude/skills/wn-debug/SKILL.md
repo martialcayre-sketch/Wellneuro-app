@@ -11,6 +11,9 @@ effort: high
 
 Symptôme : `$ARGUMENTS`
 
+- Un symptôme sans observable — « ça ne marche pas », « c'est cassé » — n'est pas une
+  entrée de débogage : le passer à `/wn-reprompt` avant d'ouvrir des hypothèses, sinon
+  les trois hypothèses portent sur trois bugs différents.
 - Reproduire ou obtenir une preuve observable.
 - Distinguer UI, API, auth, Prisma, réseau, configuration et données.
 - Formuler au maximum trois hypothèses ordonnées.

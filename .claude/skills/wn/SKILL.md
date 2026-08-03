@@ -26,6 +26,9 @@ Demande : `$ARGUMENTS`
 
 Routes possibles :
 
+- demande trop floue pour être routée sans deviner : `/wn-reprompt` — reformulation en
+  contexte isolé, avant tout autre skill ; à ne déclencher que si deux lectures de la
+  demande mèneraient à deux travaux différents ;
 - cadrage : `/wn-plan` ;
 - série de développements : `/wn-campaign` ;
 - lot de campagne piloté de bout en bout (classe le lot, en déduit modèle, palier,

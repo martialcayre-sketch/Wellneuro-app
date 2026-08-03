@@ -124,7 +124,10 @@ réellement — un lot documentaire n'a pas besoin de T2, un lot sans migration 
 besoin de la revue préalable.
 
 1. **Cadrage** — écarts entre le lot et le dépôt réel, périmètre confirmé, hors
-   périmètre nommé.
+   périmètre nommé. Si le `## But` du lot ne dit pas ce qui aura changé une fois fait,
+   ou si son périmètre se lit de deux façons, passer d'abord par `/wn-reprompt` :
+   reformuler coûte un appel en contexte isolé, exécuter le lot à côté coûte les sept
+   étapes.
 2. **Plan technique** — mode Plan, obligatoire avant toute édition.
 3. **Exécution** — fichiers du lot seulement ; ne pas élargir.
 4. **Validation** — le palier de la classe, sortie redirigée une fois puis relue.
