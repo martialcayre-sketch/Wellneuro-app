@@ -30,8 +30,8 @@ export const RAYON_MICRONUTRITION = 'micronutrition' as const;
 
 // Correspondance rayon → notebook (libellé exact du registre sanitaire). Le
 // rayon est une étagère clinique ; le notebook en est l'unité d'organisation.
-// « micronutrition » (C4) et « cognition »/« intestin » (recherche corpus
-// clinique, dashboard/bibliotheque) ont un consommateur ; les autres
+// « micronutrition » (C4) et « cognition »/« douleur »/« intestin » (recherche
+// corpus clinique, dashboard/bibliotheque) ont un consommateur ; les autres
 // (« biologie », « nutrition », « stress », « humeur », « sommeil ») sont
 // déclarés mais inertes tant qu'aucun écran ne les appelle.
 export const RAYON_VERS_NOTEBOOK: Readonly<Record<string, string>> = {
@@ -43,6 +43,7 @@ export const RAYON_VERS_NOTEBOOK: Readonly<Record<string, string>> = {
   sommeil: '02 — Sommeil et chronobiologie',
   cognition: '05 — Cognition et mémoire',
   intestin: '07 — Axe intestin-cerveau',
+  douleur: '06 — Douleurs chroniques',
 } as const;
 
 // Allowlist de la route /api/praticien/corpus/rayons (WN_RECHERCHE_CORPUS_ENABLED)
@@ -52,7 +53,7 @@ export const RAYON_VERS_NOTEBOOK: Readonly<Record<string, string>> = {
 // N'IMPORTE LEQUEL des rayons déclarés ci-dessus — y compris micronutrition,
 // en contournant WN_C4_ENABLED. Chaque route qui expose un `rayon` en entrée
 // libre doit restreindre à SES rayons, jamais à la carte entière.
-export const RAYONS_RECHERCHE_CORPUS: ReadonlyArray<string> = ['cognition', 'intestin'];
+export const RAYONS_RECHERCHE_CORPUS: ReadonlyArray<string> = ['cognition', 'douleur', 'intestin'];
 
 export type ClaimRayon = {
   claimId: string;
@@ -113,7 +114,8 @@ type LigneClaim = {
  * notebook sans source rend un résultat vide — JAMAIS un filtre ignoré.
  *
  * Le gate produit (quel flag active quel rayon — WN_C4_ENABLED pour
- * micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour cognition/intestin, etc.)
+ * micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour cognition/douleur/intestin,
+ * etc.)
  * n'est PAS ici : il appartient à la couche accès de chaque route appelante
  * (`getPractitionerC4Access`, `getPractitionerRechercheCorpusAccess`…), ET à
  * une allowlist par route (ex. `RAYONS_RECHERCHE_CORPUS` ci-dessous) — ce

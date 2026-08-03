@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Validation ciblée des claims d'intervention"
-statut: "livré"
+statut: "livré — clos sur preuve en base le 2026-08-03 ; garde D-003 ajouté"
 dépend_de: "LOT-00"
 palier: "T3"
 ---
@@ -95,29 +95,53 @@ au niveau du **claim** fait foi pour décider d'une voie de revue.
 
 ## Critères de done
 
-- [x] `2002 / 0` vérifié en base — **lu, pas supposé** (2026-08-03).
-- [x] Chaque claim signé porte `validateur` et `valide_at` — 2002 / 2002.
-- [x] La modalité de revue est tracée et auditable.
-- [x] Revue adversariale `wn-reviewer` passée — GO sous deux correctifs, appliqués.
+- [x] `2002 / 0` vérifié en base — a fortiori : **0 claim en attente dans tout le
+  corpus**, donc 0 sur ce périmètre.
+- [x] Chaque claim signé porte un `validateur` (0 `VALIDE` sans signature).
+- [x] La modalité de revue est tracée et auditable — consignée dans
+  `docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md` : validateur unique,
+  fenêtre 2026-07-23 → 2026-08-03, répartition par jour. La clôture du 2026-08-03
+  au soir laissait ce critère décoché ; c'est ce lot qui le ferme.
+- [x] Revue adversariale `wn-reviewer` passée — GO sous deux correctifs,
+  appliqués. Elle avait un objet : ce lot ajoute un contrat SQL.
 
 ## Résultats
 
-**Ce lot n'a pas été exécuté : il a été rattrapé par le geste praticien.** La
-revue des 755 claims a eu lieu **le 2026-08-03**, hors de la machinerie de
-campagne. Constaté au cadrage par lecture de la base de production, non par
-lecture du fichier de lot.
+**Clos le 2026-08-03 sur preuve en base, sans avoir été exécuté comme lot.** La
+revue praticien a été menée dans l'Atelier, en dehors de cette campagne, et est
+allée bien au-delà du périmètre visé : ce ne sont pas les 755 claims des sources
+du registre LOT-00 qui ont été signés, mais **le corpus entier**.
 
-| Mesure | Valeur |
-|---|---|
-| Périmètre des 95 sources du registre LOT-00 | **2002 VALIDE / 0 en attente** |
-| Corpus actif entier | **8224 / 0** |
-| `validateur` et `valide_at` renseignés | 2002 / 2002 |
-| Validateurs distincts | 1 — `martialcayre@wellneuro.fr` |
-| Fenêtre de signature | 2026-07-23 → 2026-08-03 |
-| Signés le 2026-08-03 | **755**, dont 367 prescriptifs |
+Relevé `execute_sql` du 2026-08-03 (soir), sur `rag_corpus_claims WHERE active` :
 
-Le résultat observable du lot (`2002 / 0`) était donc **déjà atteint avant
-l'ouverture du lot**, et trois de ses quatre critères de done avec lui.
+| claims actifs | VALIDE | en attente | VALIDE sans signature |
+|--------------:|-------:|-----------:|----------------------:|
+|         8 224 |  8 224 |      **0** |                 **0** |
+
+Les douze notebooks 01→12 sont à 100 % : 01=415, 02=671, 03=486, 04=621,
+05=1114, 06=651, 07=370, 08=758, 09=1145, 10=796, 11=781, 12=416. (Le 13
+« Instruments » reste à 0 claim **par conception** : un instrument de mesure
+n'est pas une assertion à certifier, il passe par le banc `certify`.)
+
+Le tableau du périmètre ci-dessus — 242 en attente sur le notebook 11, 235 sur
+le 05, 168 sur le 06, 60 sur le 12, 50 sur le 07 — est donc **périmé** ; il
+décrit l'état au cadrage, conservé comme trace.
+
+**Ce que la clôture du soir ne prouvait pas, et que ce lot ajoute** : la
+modalité de revue. Elle est désormais tracée dans
+`docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md` — validateur unique
+`martialcayre@wellneuro.fr`, fenêtre du 2026-07-23 au 2026-08-03, répartition
+par jour (15 / 457 / 317 / 398 / 60 / **755**), et les surfaces qui voient
+légitimement un claim en attente.
+
+**Conséquence de cadrage pour la suite de la campagne** : la première porte
+(D-003, validation praticien) est franchie **pour tout le corpus**. Le seul
+déficit restant est la **seconde porte, le consommateur** — cf. LOT-02, et
+`stress`/`humeur`/`sommeil` toujours mappés sans appelant.
+
+---
+
+## Le garde de la barrière D-003, livré par ce lot
 
 **Ce qui restait, et qui a été livré** : le test de non-régression que le lot
 demandait. Énoncé du lot : « invisible de toute surface » — à lire **surface de

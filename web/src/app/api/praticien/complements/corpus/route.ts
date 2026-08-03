@@ -20,7 +20,6 @@ export const dynamic = 'force-dynamic';
 // `REQUETE_CORPUS_MAX` vit dans `lib/supplement-library/config.ts` : un
 // `route.ts` n'accepte qu'une liste fermée d'exports, et y exporter une valeur
 // casse `next build` sans que le type-check de T1 en dise un mot.
-const RAYON_RE = /^[a-z][a-z0-9_]{1,40}$/;
 
 export type ComplementsCorpusApiResponse =
   | ({ ok: true } & RayonCorpusResult)
@@ -40,7 +39,13 @@ export async function GET(req: Request): Promise<NextResponse<ComplementsCorpusA
 
     const { searchParams } = new URL(req.url);
     const rayonBrut = (searchParams.get('rayon') ?? RAYON_MICRONUTRITION).trim();
-    if (!RAYON_RE.test(rayonBrut)) {
+    // Allowlist d'UN SEUL rayon, pas une validation syntaxique. Une regex laisse
+    // passer n'importe quelle entrée de RAYON_VERS_NOTEBOOK (cognition, douleur,
+    // intestin…) : cette route les servirait alors derrière WN_C4_ENABLED, en
+    // contournant WN_RECHERCHE_CORPUS_ENABLED qui est censé les garder. Même
+    // correctif que sur /api/praticien/corpus/rayons (#546) : chaque route qui
+    // accepte un `rayon` en entrée libre restreint à SES rayons, jamais à la carte.
+    if (rayonBrut !== RAYON_MICRONUTRITION) {
       return echec('rayon_invalide', 'Rayon invalide.', 400);
     }
     const requete = (searchParams.get('requete') ?? '').trim();

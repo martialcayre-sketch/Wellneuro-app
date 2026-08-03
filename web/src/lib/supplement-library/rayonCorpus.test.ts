@@ -16,6 +16,8 @@ const NOTEBOOK_COGNITION = '05 — Cognition et mémoire';
 const SOURCES_COGNITION = sourcesDuNotebook(NOTEBOOK_COGNITION);
 const NOTEBOOK_INTESTIN = '07 — Axe intestin-cerveau';
 const SOURCES_INTESTIN = sourcesDuNotebook(NOTEBOOK_INTESTIN);
+const NOTEBOOK_DOULEUR = '06 — Douleurs chroniques';
+const SOURCES_DOULEUR = sourcesDuNotebook(NOTEBOOK_DOULEUR);
 
 // La 4ᵉ valeur interpolée du $queryRaw est la liste des source_ids jointe par
 // virgule (filter_source_ids). Ordre des interpolations : littéral, matchCount,
@@ -68,15 +70,15 @@ describe('servirRayonCorpus (rayon corpus par notebook, barrière D-003)', () =>
 
   // servirRayonCorpus ne gate plus sur un flag produit (retiré : un service
   // générique par rayon ne peut pas présumer lequel des flags — WN_C4_ENABLED
-  // pour micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour cognition/intestin —
-  // s'applique à l'appelant). Le fail-closed vit désormais dans chaque
-  // fonction d'accès par route (`getPractitionerC4Access`,
+  // pour micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour cognition/douleur/
+  // intestin — s'applique à l'appelant). Le fail-closed vit désormais dans
+  // chaque fonction d'accès par route (`getPractitionerC4Access`,
   // `getPractitionerRechercheCorpusAccess`, testées dans access.test.ts) ET
   // dans l'allowlist RAYONS_RECHERCHE_CORPUS que chaque route doit appliquer
   // (route.test.ts) — servirRayonCorpus lui-même ne restreint plus rien.
 
-  it('RAYONS_RECHERCHE_CORPUS ne contient QUE cognition et intestin (allowlist de la route dédiée)', () => {
-    expect([...RAYONS_RECHERCHE_CORPUS].sort()).toEqual(['cognition', 'intestin']);
+  it('RAYONS_RECHERCHE_CORPUS ne contient QUE cognition, douleur et intestin (allowlist de la route dédiée)', () => {
+    expect([...RAYONS_RECHERCHE_CORPUS].sort()).toEqual(['cognition', 'douleur', 'intestin']);
   });
 
   it('sans requête : ne fait aucun appel, rend corpusVide sans erreur', async () => {
@@ -119,6 +121,18 @@ describe('servirRayonCorpus (rayon corpus par notebook, barrière D-003)', () =>
     prisma.$queryRaw.mockResolvedValue([claim()]);
     await servirRayonCorpus({ rayon: 'intestin', requete: 'microbiote' });
     expect(filtreSourcesDuDernierAppel()).toBe(SOURCES_INTESTIN.join(','));
+  });
+
+  // Le garde anti-typo générique plus haut prouve que le libellé existe au
+  // registre, PAS que « douleur » pointe le bon notebook : `douleur: '05 —
+  // Cognition et mémoire'` passerait toute la suite au vert et servirait des
+  // claims de cognition sous l'étiquette « Douleurs chroniques » — une
+  // attribution clinique fausse sur un instrument de consultation.
+  it('sert le rayon douleur avec le filter_source_ids du notebook 06', async () => {
+    prisma.$queryRaw.mockResolvedValue([claim()]);
+    await servirRayonCorpus({ rayon: 'douleur', requete: 'douleur neuropathique' });
+    expect(SOURCES_DOULEUR.length).toBeGreaterThan(0);
+    expect(filtreSourcesDuDernierAppel()).toBe(SOURCES_DOULEUR.join(','));
   });
 
   it('restitue tous les claims retournés par le filtre SQL, avec le rayon demandé', async () => {

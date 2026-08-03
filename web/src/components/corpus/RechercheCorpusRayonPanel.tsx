@@ -11,11 +11,13 @@ import type { ClaimRayon } from '@/lib/supplement-library/rayonCorpus';
 // rayon compléments (catalogue de 140 148 fiches produit), il n'y a ici ni
 // facette, ni pagination, ni fiche produit : juste la barrière D-003
 // (match_wellneuro_rag_claims) exposée pour les rayons sans navigateur de
-// catalogue dédié (cognition, intestin — d'autres pourront s'ajouter ici sans
-// nouvel écran, à condition d'étendre RAYONS_RECHERCHE_CORPUS côté service).
+// catalogue dédié (cognition, douleur, intestin — d'autres pourront
+// s'ajouter ici sans nouvel écran, à condition d'étendre
+// RAYONS_RECHERCHE_CORPUS côté service).
 
 const RAYONS_DISPONIBLES: ReadonlyArray<{ valeur: string; libelle: string }> = [
   { valeur: 'cognition', libelle: 'Cognition et mémoire' },
+  { valeur: 'douleur', libelle: 'Douleurs chroniques' },
   { valeur: 'intestin', libelle: 'Axe intestin-cerveau' },
 ];
 
@@ -114,7 +116,7 @@ export function RechercheCorpusRayonPanel() {
                 void rechercher();
               }
             }}
-            placeholder="Ex. mémoire de travail, microbiote"
+            placeholder="Ex. mémoire de travail, douleur neuropathique, microbiote"
             aria-label="Recherche dans le rayon"
             className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
           />
