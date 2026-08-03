@@ -39,8 +39,14 @@ routage, alors que la règle d'économie plus bas dit que la plupart tombent sur
 défaut. On payait la grille pour découvrir qu'on n'en avait pas besoin.
 
 Les condensés suffisent aux cas courants. **Dès qu'une demande ne tombe dans aucune
-ligne, invoquer la grille complète** — `/wn`, `/wn-model` ou `/wn-ultra` — plutôt que
-de trancher au jugé. C'est le seul cas qui justifie de la charger.
+ligne, lire la grille complète** — `.claude/skills/wn/SKILL.md`, `wn-model/SKILL.md`
+ou `wn-ultra/SKILL.md` — plutôt que de trancher au jugé. C'est le seul cas qui
+justifie de la charger.
+
+Un `Read` ciblé, et non une invocation de ces trois skills : ils portent
+`disable-model-invocation: true`, donc seul l'utilisateur peut les taper. La consigne
+précédente demandait de les invoquer et ne pouvait pas s'exécuter — lire le fichier
+obtient la même grille sans dépendre d'une capacité absente.
 
 ### Route — la demande vers son skill
 

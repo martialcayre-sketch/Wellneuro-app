@@ -115,6 +115,28 @@ jobs:
       - name: Campaign rules audit (blocking)
         run: node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields
 
+      # Une consigne impérative d'un skill vers un AUTRE skill ne vaut que si
+      # la cible est exposée à l'outil `Skill`. `disable-model-invocation: true`
+      # l'en retire : la consigne reste une prose valide qui désigne une
+      # capacité absente, et rien ne la voit. Deux fois le cas ici — la consigne
+      # de `CLAUDE.md` vers `wn-route`, puis les six branchements vers
+      # `/wn-reprompt` (PR #529, verte de bout en bout).
+      #
+      # SANS le filtre `docs_only`, délibérément : une PR qui ne touche que des
+      # `SKILL.md` est classée documentaire par l'étape « Périmètre du diff »
+      # (tout finit en `.md`). La gater reviendrait à ne jamais l'exécuter sur
+      # exactement les PR qu'elle vise. Ni npm ni build : node suffit.
+      - name: Invocations croisées entre skills (blocking)
+        run: node scripts/lib/skill-cross-invocation.mjs
+
+      # Banc du contrôle ci-dessus. Il prouve qu'il épingle une consigne morte,
+      # et surtout qu'il se tait sur les trois formes qui le feraient
+      # débrancher : la mention en table d'un routeur, l'interdiction qui cite
+      # le même verbe, et le drapeau cité en commentaire de frontmatter. Un
+      # garde devenu permissif — ou bavard — resterait vert sans lui.
+      - name: Invocations croisées entre skills (banc du contrôle)
+        run: node --test scripts/lib/skill-cross-invocation.test.mjs
+
       - uses: actions/setup-node@v4
         if: steps.scope.outputs.docs_only != 'true'
         with:
