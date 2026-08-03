@@ -46,7 +46,8 @@ export type PractitionerRechercheCorpusAccessResult =
   | { ok: true; session: Session }
   | { ok: false; reason: 'unauthenticated' | 'flag_eteint'; error: string; status: 401 | 404 };
 
-// Gate distincte de C4 : la recherche corpus clinique (cognition, intestin…)
+// Gate distincte de C4 : la recherche corpus clinique (cognition, douleur,
+// intestin…)
 // n'a rien à voir avec le catalogue de compléments et ne doit pas dépendre de
 // son flag — éteindre WN_C4_ENABLED pour une raison compléments ne doit pas
 // faire disparaître ce rayon.

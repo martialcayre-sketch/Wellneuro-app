@@ -120,12 +120,12 @@ inventer. Inventaire complet : `INVENTAIRE_SOURCES_INTERVENTION.md`.
 | Lot | Objet | Statut | Dépend de |
 |---|---|---|---|
 | LOT-00 | Registre des 95 sources d'intervention NNPP2 | livré | — |
-| LOT-01 | Validation ciblée des 755 claims d'intervention | à_faire | LOT-00 |
-| LOT-02 | Rayons cognition / douleur / intestin + premier appelant | à_faire | LOT-01 |
+| LOT-01 | Validation ciblée des 755 claims d'intervention | **livré** — clos sur preuve en base, pas par exécution | LOT-00 |
+| LOT-02 | Rayons cognition / douleur / intestin + premier appelant | **livré** (#546 puis clôture `douleur`) | LOT-01 |
 | LOT-03 | Refactor des packs : source de vérité unique | livré | LOT-00 |
 | LOT-04 | Structuration de l'intake | livré (#539) | — |
 | LOT-05 | Table de règles d'orientation V1 : remplir et signer | **livré_partiel** (#545) — remplie, **non signée** | LOT-03 + LOT-04 |
-| LOT-06 | Consommateur praticien et restitution IA | en_cours | LOT-05 |
+| LOT-06 | Consommateur praticien et restitution IA | livré (#550) | LOT-05 |
 | LOT-07 | Reliquat de certification : bibliographie et psychométrie | à_faire | — |
 
 LOT-04 et LOT-07 n'ont aucune dépendance : ils peuvent être menés en parallèle du
@@ -170,6 +170,32 @@ c'est une limite connue et assumée, pas un défaut de ce lot.
   sur les packs existants.
 - Le prochain lot utile est `LOT-04` (intake), sans dépendance, ou `LOT-01`
   (validation praticien des 755 claims).
+
+## État après LOT-02 (clôture du reliquat `douleur`, 2026-08-03 soir)
+
+- **La première porte est franchie pour tout le corpus.** Relevé `execute_sql` :
+  **8 224 claims actifs, 8 224 VALIDE, 0 en attente, 0 signé sans validateur**,
+  sur les douze notebooks 01→12. Le LOT-01 est donc clos **sur preuve**, sans
+  avoir été exécuté comme lot : la revue praticien a eu lieu dans l'Atelier, hors
+  campagne, et a dépassé les 755 claims visés.
+- Le tableau de périmètre du LOT-01 (242 en attente sur le 11, 235 sur le 05, 168
+  sur le 06…) décrit l'état au cadrage et n'a plus de valeur d'état.
+- **Ce qui reste déficitaire est la seconde porte, le consommateur.**
+  `RAYON_VERS_NOTEBOOK` déclare huit rayons ; l'allowlist réellement servie par la
+  recherche corpus en compte trois (`cognition`, `douleur`, `intestin`).
+  **`stress`, `humeur` et `sommeil` restent mappés, validés à 100 %, et sans
+  appelant** — décision produit ouverte, hors périmètre du LOT-02.
+- **Une allowlist par route, jamais la carte entière** — la règle posée en #546 a
+  été prise en défaut une seconde fois, à l'autre bout de la chaîne : la route du
+  tiroir compléments validait `rayon` par regex syntaxique et servait donc tout le
+  mapping derrière `WN_C4_ENABLED`. Ajouter une paire à `RAYON_VERS_NOTEBOOK`
+  n'est jamais un geste local : **il faut relire toutes les routes qui acceptent
+  un `rayon` en entrée libre.** Corrigé dans ce lot, listes de refus désormais
+  dérivées du mapping pour que le prochain rayon soit couvert d'office.
+- Le prochain lot utile est le **LOT-07** (reliquat de certification, sans
+  dépendance), ou la **signature clinique de la table du LOT-05** — geste
+  praticien, sans lequel le LOT-06 livré ne peut rien afficher d'autre que
+  « en cours de constitution ».
 
 ## Paliers de validation
 

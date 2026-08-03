@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Validation ciblée des claims d'intervention"
-statut: "à_faire"
+statut: "livré — clos sur preuve en base le 2026-08-03, pas par exécution"
 dépend_de: "LOT-00"
 palier: "T3"
 ---
@@ -95,11 +95,41 @@ au niveau du **claim** fait foi pour décider d'une voie de revue.
 
 ## Critères de done
 
-- [ ] `2002 / 0` vérifié en base après merge, pas supposé.
-- [ ] Chaque claim signé porte `validateur` et `valide_at`.
-- [ ] La modalité de revue est tracée et auditable.
-- [ ] Revue adversariale `wn-reviewer` passée.
+- [x] `2002 / 0` vérifié en base — a fortiori : **0 claim en attente dans tout le
+  corpus**, donc 0 sur ce périmètre.
+- [x] Chaque claim signé porte un `validateur` (0 `VALIDE` sans signature).
+- [ ] La modalité de revue est tracée et auditable. — non vérifié par ce lot ; la
+  revue a eu lieu hors campagne, dans l'Atelier.
+- [ ] Revue adversariale `wn-reviewer` — sans objet : aucune ligne de code.
 
 ## Résultats
 
-À compléter à la clôture.
+**Clos le 2026-08-03 sur preuve en base, sans avoir été exécuté comme lot.** La
+revue praticien a été menée dans l'Atelier, en dehors de cette campagne, et est
+allée bien au-delà du périmètre visé : ce ne sont pas les 755 claims des sources
+du registre LOT-00 qui ont été signés, mais **le corpus entier**.
+
+Relevé `execute_sql` du 2026-08-03 (soir), sur `rag_corpus_claims WHERE active` :
+
+| claims actifs | VALIDE | en attente | VALIDE sans signature |
+|--------------:|-------:|-----------:|----------------------:|
+|         8 224 |  8 224 |      **0** |                 **0** |
+
+Les douze notebooks 01→12 sont à 100 % : 01=415, 02=671, 03=486, 04=621,
+05=1114, 06=651, 07=370, 08=758, 09=1145, 10=796, 11=781, 12=416. (Le 13
+« Instruments » reste à 0 claim **par conception** : un instrument de mesure
+n'est pas une assertion à certifier, il passe par le banc `certify`.)
+
+Le tableau du périmètre ci-dessus — 242 en attente sur le notebook 11, 235 sur
+le 05, 168 sur le 06, 60 sur le 12, 50 sur le 07 — est donc **périmé** ; il
+décrit l'état au cadrage, conservé comme trace.
+
+**Ce que ce lot ne prouve pas** : la modalité de revue employée n'a pas été
+reconstituée ici (voie individuelle, voie rapide par source, revue en lot). Le
+critère correspondant reste décoché — l'information est dans les journaux de
+décision, pas dans ce document.
+
+**Conséquence de cadrage pour la suite de la campagne** : la première porte
+(D-003, validation praticien) est franchie **pour tout le corpus**. Le seul
+déficit restant est la **seconde porte, le consommateur** — cf. LOT-02, et
+`stress`/`humeur`/`sommeil` toujours mappés sans appelant.
