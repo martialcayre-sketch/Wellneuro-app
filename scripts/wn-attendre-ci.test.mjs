@@ -268,9 +268,28 @@ test('StatusContext avec `status: null` : `__typename` tranche', () => {
 test('formes dégradées : nom à espacer, entrée sans nom, COMPLETED sans conclusion', () => {
   assert.equal(normaliserCheck({ name: '  verify  ', status: 'COMPLETED', conclusion: 'SUCCESS' }).nom, 'verify');
   assert.equal(normaliserCheck({ status: 'COMPLETED', conclusion: 'SUCCESS' }).nom, '');
-  // Un `COMPLETED` sans conclusion n'est pas vert : il penche du côté sûr.
+  // Un `COMPLETED` sans conclusion n'est pas vert : il penche du côté sûr. Et
+  // il ne se dit pas « en cours », qui est l'état exactement opposé.
   const v = diagnostiquer(faits({ rollup: [{ name: 'verify', status: 'COMPLETED' }] }));
   assert.equal(v.sortie, SORTIE_ECHEC);
+  assert.match(v.message, /verify → sans conclusion/);
+  assert.doesNotMatch(v.message, /en cours/);
+});
+
+// L'ordre §4a (liste illisible) avant §4b (conflit) est un arbitrage : une PR à
+// la fois en conflit et à protection illisible rend 4, pas 5 — ne pas savoir ce
+// qu'il fallait attendre est une ignorance plus fondamentale qu'un vert périmé.
+// Aucune des deux ne rend 0 ; ce test fige l'ordre, que rien ne testait.
+test('conflit ET protection illisible : sortie 4, pas 5', () => {
+  const v = diagnostiquer(
+    faits({
+      contextesRequis: null,
+      rollup: [VERIFY_VERT],
+      pr: { numero: 1, etat: 'OPEN', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY' },
+    }),
+  );
+  assert.equal(v.sortie, SORTIE_INDETERMINE);
+  assert.notEqual(v.sortie, SORTIE_NON_FUSIONNABLE);
 });
 
 // SURVIVANT — `null` (API illisible) et `[]` (protection sans check) doivent

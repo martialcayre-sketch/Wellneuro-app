@@ -37,7 +37,9 @@
     qualifiés de « NON obligatoires » — au moment précis où l'on venait
     d'échouer à lire lesquels l'étaient. `null` et `[]` sont maintenant traités
     pareil, et aucun des deux ne mène au vert.
-- **Sur `2`, le script nomme la cause au lieu de la laisser deviner.** Trois
+- **Sur `2`, le script nomme les causes au lieu de les laisser deviner** — et
+  les **cumule** : une PR peut être à la fois en conflit et gelée, n'en nommer
+  qu'une enverrait corriger la moitié du problème. Trois
   causes connues d'un `verify` absent, dont **une seule était documentée** : PR
   en conflit (GitHub ne crée aucun run — le cas #550), branche squashée puis
   rebranchée, commit de tête attribué à Copilot (run gelé en `action_required`).
@@ -51,7 +53,8 @@
   constante : `verify` en est aujourd'hui le seul membre (`strict: false`,
   `enforce_admins` actif — relu sur GitHub, pas dans un document). Un second
   check rendu obligatoire sera suivi sans toucher au script. Si la protection est
-  illisible, repli sur `verify` **avec avertissement imprimé**, jamais en silence.
+  illisible, `verify` sert encore à **diagnostiquer**, mais plus à conclure : le
+  verdict est `4`, jamais `0`.
 - **Le banc a vu chaque décision échouer.** 30 cas, et 19 mutations appliquées
   une par une : chacune doit faire tomber le test qui la vise. **Le premier
   banc, à 18 cas, en laissait deux survivre** — la déduplication par nom et la

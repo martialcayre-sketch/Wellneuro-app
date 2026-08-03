@@ -189,7 +189,9 @@ export function diagnostiquer(faits) {
   const echoues = requis.map((nom) => parNom.get(nom)).filter((a) => a && a.aEchec);
   if (echoues.length > 0) {
     const detail = echoues
-      .map((a) => `${a.nom} → ${a.entrees.map((e) => e.conclusion ?? 'en cours').join('/')}`)
+      // Un `COMPLETED` sans conclusion n'est pas « en cours » — c'est l'état
+      // exactement opposé, et le nommer ainsi enverrait attendre un run fini.
+      .map((a) => `${a.nom} → ${a.entrees.map((e) => e.conclusion ?? (e.termine ? 'sans conclusion' : 'non terminé')).join('/')}`)
       .join(', ');
     return {
       sortie: SORTIE_ECHEC,
@@ -335,10 +337,14 @@ function jsonOuNull(texte) {
 // Ce qui ne dépend que du SHA de tête est lu UNE fois. Sans ce cache, une
 // attente de 15 minutes coûtait 4 appels toutes les 20 s, soit 180 appels —
 // plus que les 81 appels de sondage qui ont motivé la règle d'économie.
+//
+// La clé porte la base ET le SHA : `contextesRequis` dépend de la branche
+// cible, qui peut changer à SHA de tête constant.
 const cacheParSha = new Map();
 
 function faitsDuSha(sha, baseRefName) {
-  if (cacheParSha.has(sha)) return cacheParSha.get(sha);
+  const cle = `${baseRefName}@${sha}`;
+  if (cacheParSha.has(cle)) return cacheParSha.get(cle);
   const protection = jsonOuNull(
     gh([
       'api',
@@ -358,7 +364,13 @@ function faitsDuSha(sha, baseRefName) {
     // permet d'accuser une branche squashée.
     runsExistent: runs === null ? null : runs.n > 0,
   };
-  cacheParSha.set(sha, faits);
+  // On ne mémoïse QUE ce qui a été lu. Cacher un échec figerait une défaillance
+  // transitoire pour tout le run : une seule erreur sur la lecture de la
+  // protection — le point le plus sensible aux droits — rendrait `4` jusqu'au
+  // bout, là où un simple tour de boucle suffisait à s'en remettre.
+  if (faits.contextesRequis !== null && faits.auteurCommitTete !== null && faits.runsExistent !== null) {
+    cacheParSha.set(cle, faits);
+  }
   return faits;
 }
 
@@ -374,6 +386,9 @@ function collecter(numero) {
   );
   if (!vue) return { pr: null };
   return {
+    // Étalé EN TÊTE : une quatrième clé ajoutée un jour à `faitsDuSha` ne
+    // pourra pas écraser `pr` ni `rollup`, qui sont relus à chaque tour.
+    ...faitsDuSha(vue.headRefOid, vue.baseRefName),
     pr: {
       numero: vue.number,
       etat: vue.state,
@@ -381,7 +396,6 @@ function collecter(numero) {
       mergeStateStatus: vue.mergeStateStatus,
     },
     rollup: Array.isArray(vue.statusCheckRollup) ? vue.statusCheckRollup : [],
-    ...faitsDuSha(vue.headRefOid, vue.baseRefName),
     delaiDepasse: false,
   };
 }
