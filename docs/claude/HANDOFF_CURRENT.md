@@ -1,91 +1,118 @@
-# Handoff — 2026-08-03 — Fenêtre de clôture d'un lot (`wn-cycle`)
+# Handoff — 2026-08-03 — LOT-06 : consommateur praticien de l'orientation, restitution IA
 
 ## Git
 
-- Worktree `.claude/worktrees/wn-cycle-cloture-lot`, branche
-  `worktree-wn-cycle-cloture-lot`, partie de `main` à `a3d3c29a`, **PR #549**.
-- `main` a avancé pendant le lot (#546 code, #547 clôture, #548 handoff, jusqu'à
-  `d8d3c69c`) : `origin/main` fusionné dans la branche. Un seul conflit,
-  `HANDOFF_CURRENT.md`, résolu **en faveur de la branche** — ce fichier est
-  remplacé à chaque handoff, jamais fusionné. `SESSION_LOG.md` s'est fusionné
-  seul, étant append-only.
-- Campagne : aucune active (`.wn/state.json` = idle) — ce lot est orthogonal aux
-  campagnes en cours, il porte sur l'orchestration.
+- Worktree `.claude/worktrees/lot-06-consommateur-orientation`, branche
+  `worktree-lot-06-consommateur-orientation`, partie de `main`, **PR #550**.
+- `main` a avancé pendant le lot (#547, #548, #549 jusqu'à `8cc4ef11`) :
+  `origin/main` fusionné dans la branche (`c6ec5a4f`). Un seul conflit,
+  `SESSION_LOG.md`, append contre append — les deux entrées conservées, la
+  mienne en dernier.
+- **PR #550 : `verify` vert en 10 min 19 s, `MERGEABLE`.** Merge et suppression
+  de branche = ressort Copilot. Rien n'est en attente côté assistant.
+- Campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`,
+  LOT-06, palier T2.
 
-Ce conflit est le sujet du lot : #547 et #548 sont deux PR de doc post-merge, et
-ce sont elles qui ont conflicté. Une clôture partie dans la PR du lot n'aurait
-produit ni l'une ni l'autre.
+## Objectif du lot
 
-## Objectif
+Rendre la couche orientation réellement consommée : `GET /api/praticien/orientation`
+existait depuis la campagne de certification et **personne ne l'appelait**. Y
+brancher une surface praticien, et faire **restituer** la recommandation par la
+synthèse IA sans jamais lui laisser la produire (PMI-5).
 
-Rendre exécutable l'ordre du cycle de lot. Le merge d'une PR de lot est un
-squash : `SESSION_LOG.md` et `HANDOFF_CURRENT.md` écrits après lui ne sont plus
-dans l'ascendance de `main` et coûtent une seconde PR de doc. Cas réel du
-2026-08-03 : PR #545 (le lot) ne portait que `SESSION_LOG.md`, puis #547 et #548
-ont suivi en PR de doc séparées.
+## Décisions prises
 
-## Décisions prises, et pourquoi
+| # | Décision | Raison |
+|---|---|---|
+| 1 | Surface = onglet **Trajectoire** de la fiche patient, au présent seulement | `/dashboard/trajectoires` n'est qu'une liste ; afficher une recommandation en lecture datée la ferait passer pour ce que la table proposait à cette date-là |
+| 2 | Extraire l'évaluation vers `lib/clinical/orientationService.ts` | La synthèse en devient un second consommateur ; un fail-closed dupliqué est un fail-closed qu'on peut oublier de corriger dans une des deux copies. Et un `route.ts` ne peut pas exporter de valeur |
+| 3 | Le verrou reste **avant** le contrôle d'appartenance | `verifierAppartenancePatient` journalise l'accès au dossier : table non signée → aucune lecture → aucun accès consigné qui n'a pas eu lieu |
+| 4 | Aucun bloc injecté quand rien n'est recommandé | Doctrine #408 : retirer la donnée protège, la consigne seule non. Un en-tête vide invite le modèle à le remplir |
+| 5 | Écart de restitution : **on journalise, on ne censure pas** | L'objet actionnable — la carte et son bouton — vient de la route déterministe ; un pack cité à tort dans la prose ne peut rien déclencher, et un faux positif textuel ne doit pas priver le praticien de sa synthèse. **Candidat à `docs/DECISIONS.md` (D-009), non écrit** |
+| 6 | Assignation en deux temps, bouton non réarmé après succès | Le geste envoie un e-mail ; `packs/assign` ne déduplique pas |
+| 7 | `emailPatient` passé seulement s'il désigne le patient affiché | Le panneau calcule sur `idPatient`, l'assignation part sur l'email : deux sources dont aucune ne vérifiait l'autre |
 
-1. **La frontière est le merge, pas la suppression de la branche.** Écrire après
-   le merge et avant le nettoyage ne sert à rien — sous squash, les commits
-   postérieurs au merge ne remontent pas vers `main`.
-2. **La clôture passe avant `/wn-pr`, dans le même push.** Zéro CI
-   supplémentaire, zéro cycle de PR en plus. Perte assumée : le handoff ne cite
-   pas le numéro de PR, que `git log` rend de toute façon.
-3. **L'automatisation est un script, pas de la prose.** Les 31 skills portent
-   `disable-model-invocation: true` et un contrôle CI bloquant
-   (`scripts/lib/skill-cross-invocation.mjs`) refuse toute consigne impérative
-   d'un skill vers un autre. Le seul chaînage exécutable est un bloc `!`.
-4. **Constat par défaut, réparation sous `--appliquer`** (convention de
-   `nettoyage-branches.sh`). Le script n'écrit jamais `SESSION_LOG.md` ni
-   `HANDOFF_CURRENT.md` : leur contenu est du raisonnement.
+**Écarté** : neutraliser la synthèse sur écart (trop brutal pour une
+correspondance textuelle) ; ouvrir `packs/assign` à `idPatient` (modifie une
+route d'écriture existante, hors finalité) ; signer la table dans ce lot.
 
 ## Fichiers modifiés
 
-- **Nouveau** `scripts/wn-cycle.mjs` — 5 phases (`hors-lot`, `travail`,
-  `pret-pr`, `pr-ouverte`, `apres-merge`), logique pure `diagnostiquer()`
-  exportée, câblage CLI séparé. Sorties 0 / 1 (fenêtre ratée) / 2 (hors dépôt).
-- **Nouveau** `scripts/wn-cycle.test.mjs` — 15 cas sur faits injectés, sans git
-  ni réseau. Câblé dans `ci.yml` (job `verify`, hors filtre `docs_only`).
-- `.claude/skills/wn-finish/SKILL.md`, `wn-handoff/SKILL.md` — bloc
-  `!node scripts/wn-cycle.mjs` + garde après-merge.
-- `.claude/skills/wn-lot/SKILL.md` (étape 6), `wn-campaign-run/SKILL.md`,
-  `CLAUDE.md` — ordre explicité.
-- `scripts/wn-campaign.mjs` — `writeActiveCampaignView()` tronquait le garde
-  « cette vue est générée » dans sa branche idle ; rétabli.
-- `changelog.d/2026-08-03-wn-cycle-fenetre-de-cloture.md`.
+**Créés** — `web/src/lib/clinical/orientationService.ts` (+ test) ;
+`web/src/lib/clinical/verifierRestitutionOrientation.ts` (+ test) ;
+`web/src/components/patient-cockpit/OrientationPanel.tsx` (+ test) ;
+`web/src/app/api/praticien/synthese/orientation.restitution.test.ts` ;
+`changelog.d/2026-08-03-lot-06-consommateur-orientation.md`.
+
+**Modifiés** — `api/praticien/orientation/route.ts` (devient un enveloppeur
+HTTP) ; `api/praticien/synthese/route.ts` (bloc, garde, métadonnées) ;
+`lib/anthropic.ts` (section de consigne, `synthese-v14`) ;
+`lib/observability/eventCodes.ts` (deux codes) ;
+`components/patient-cockpit/TrajectoirePanel.tsx` ; `components/FichePatientPanel.tsx` ;
+trois mocks de test de la synthèse ; `docs/FEATURE_FLAGS.md` ; `CAMPAGNE.md` et
+les fiches LOT-05 / LOT-06.
 
 ## Validations exécutées
 
-`node --test scripts/wn-cycle.test.mjs` 15/15 · `wn-campaign.test.mjs` 6/6 ·
-`skill-cross-invocation.mjs` 0 violation sur 32 skills · `wn-campaign-audit.mjs`
-avec les 7 codes bloquants 0 · `check_no_secrets.sh` 0 · **T1**
-(`npm run check`) vert, 70 tests. Chemin `gh` vérifié sur #545/#547/#548 réels.
-`wn-kit-doctor.mjs` rend 41/42 — le seul échec est « git status (dirty) »,
-attendu sur un arbre en cours, et il n'est pas en CI.
+- **T1** `npm run check` vert : 3 440 tests unitaires, 906 bancs, type-check,
+  lint, anti-secrets.
+- **T2** `npm run test:worktree -- --fast` vert : 108 E2E, dont le parcours
+  praticien, l'onglet Trajectoire et la Spirale peuplée.
+- **CI** : `verify` vert sur le head fusionné `c6ec5a4f`.
+- **Deux revues adversariales `wn-reviewer`, deux NO-GO levés**, plus une
+  relecture de l'entrée `SESSION_LOG` qui a corrigé deux affirmations fausses.
 
-Worktree neuf : `npx prisma generate` est requis avant `npm run check`, sinon
-`@/generated/prisma` manque et le type-check casse en cascade.
+Deux échecs E2E rencontrés et diagnostiqués, non écartés :
+`portail-lien-magique:48` (anti-oracle de temps, 21 s contre un seuil de 800 ms)
+et `fiche-trajectoire-peuplee:23` (page bloquée sur « Chargement de la fiche
+patient… », état `loading` **en amont** du montage de l'encart). Verts au rejeu,
+le second après purge de `.next`.
 
 ## Problèmes ouverts
 
-- `--appliquer` écrit `git.branch` dans `.wn/state.json` : un nom de worktree
-  éphémère. Committé, c'est du bruit à chaque PR et un conflit entre sessions
-  parallèles. **Non committé ici** — à trancher avant de l'ajouter à un
-  workflow.
-- La détection `apres-merge` repose sur `gh`. Hors ligne, le verdict est partiel
-  (`PR inconnue`) et ne peut pas signaler une fenêtre ratée. Choix assumé : un
-  verdict partiel vaut mieux qu'un skill qui ne se charge pas.
-- `scripts/changelog-collate.test.mjs` reste non câblé en CI (constat, hors
-  périmètre).
+1. **La table du LOT-05 n'est pas signée.** `validationExterne: false` : le seul
+   chemin exerçable en production est `actif: false`, l'écran affiche « en cours
+   de constitution ». Le chemin `actif: true` n'est couvert que par des tests.
+2. **Toutes les synthèses de production partent désormais en `synthese-v14`**
+   avec la consigne de restitution, alors qu'aucun bloc n'a jamais été transmis :
+   la section du prompt système est inconditionnelle. Le seul discriminant est
+   `donneesEntree.orientationInjectee`.
+3. **Un écart mesuré par heuristique textuelle est écrit dans `donneesEntree`**
+   du dossier patient. A-t-il sa place ailleurs que dans le journal ? Non tranché.
+4. **Le garde a quatre angles morts déclarés** (en-tête du module) : pack nommé
+   sans « pack » avant lui, pack cité loin derrière son introducteur, exploration
+   en langage libre, et le **réordonnancement** — interdit par la consigne, mais
+   invérifiable par occurrences.
+5. `.wn/state.json` et `ACTIVE_CAMPAIGN.md` restent sur `idle` (2026-08-01 /
+   2026-07-23) alors que la campagne tourne. Vues générées ; `scripts/wn-cycle.mjs`
+   vient d'arriver sur `main` et son `--appliquer` écrit `git.branch`, un nom de
+   worktree éphémère. Non éditées à la main.
+6. **Promotion proposée, non écrite** : l'idiome d'attente du CI de `CLAUDE.md`
+   ne distingue pas « aucun check en attente » de « aucun check tout court ». Il
+   a rendu la main sur deux checks Vercel verts alors que `verify` n'existait
+   pas — parce que `main` avait bougé et que la PR était `CONFLICTING`, état dans
+   lequel **GitHub ne crée aucun run**. C'est une **troisième** cause de `verify`
+   absent, en plus des deux déjà documentées. Correctif : exiger d'abord
+   l'existence de `verify`, puis attendre la fin des checks.
 
 ## Prochaine action exacte
 
-Ouvrir la PR (`--body-file`), attendre le CI avec l'idiome bloquant, **vérifier
-que `verify` a tourné** et pas seulement les checks Vercel, puis merger.
+**Signer `ORIENTATION_METADATA` après relecture clinique des six règles, ET
+poser `WN_ENABLE_ORIENTATION_NNPP2=1` en production.** Le verrou est un ET :
+signer seul n'allume rien — c'est désormais écrit dans `docs/FEATURE_FLAGS.md`.
+Avant de signer, refaire la lecture en base des neuf `claimId` (aucun test
+unitaire n'ouvre `rag_corpus_claims`).
+
+À défaut : **LOT-01**, validation des 755 claims d'intervention — c'est la porte
+D-003, et sans elle le done de campagne « 2002 / 0 » reste inatteignable.
 
 ## Interdits encore actifs
 
-Aucune migration, aucune écriture Supabase, aucun changement clinique dans ce
-lot. Ne pas forcer un merge sur une PR gelée en `action_required`. Après un
-merge en squash, repartir de `main` — jamais de la branche squashée.
+- Ne **jamais** contourner `tableSignee()` ni forcer `validationExterne` pour
+  « voir » la feature.
+- Aucune auto-assignation, aucune exposition patient de la recommandation.
+- Aucune modification des 64 instruments certifiés, aucune migration Prisma.
+- Ne pas ouvrir ni modifier `POST /api/praticien/packs/assign`.
+- Pas de secret, pas de donnée patient réelle (Sophie Nicola, Jennifer Martin,
+  Michel Dogné seulement), aucun texte UI en anglais.
+- Merge et suppression de branche : ressort **Copilot**.
