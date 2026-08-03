@@ -3,9 +3,18 @@
 ## Git
 
 - Worktree `.claude/worktrees/wn-cycle-cloture-lot`, branche
-  `worktree-wn-cycle-cloture-lot`, partie de `main` à `a3d3c29a`.
-- Rien de mergé encore. Campagne : aucune active (`.wn/state.json` = idle) — ce
-  lot est orthogonal aux campagnes en cours, il porte sur l'orchestration.
+  `worktree-wn-cycle-cloture-lot`, partie de `main` à `a3d3c29a`, **PR #549**.
+- `main` a avancé pendant le lot (#546 code, #547 clôture, #548 handoff, jusqu'à
+  `d8d3c69c`) : `origin/main` fusionné dans la branche. Un seul conflit,
+  `HANDOFF_CURRENT.md`, résolu **en faveur de la branche** — ce fichier est
+  remplacé à chaque handoff, jamais fusionné. `SESSION_LOG.md` s'est fusionné
+  seul, étant append-only.
+- Campagne : aucune active (`.wn/state.json` = idle) — ce lot est orthogonal aux
+  campagnes en cours, il porte sur l'orchestration.
+
+Ce conflit est le sujet du lot : #547 et #548 sont deux PR de doc post-merge, et
+ce sont elles qui ont conflicté. Une clôture partie dans la PR du lot n'aurait
+produit ni l'une ni l'autre.
 
 ## Objectif
 
