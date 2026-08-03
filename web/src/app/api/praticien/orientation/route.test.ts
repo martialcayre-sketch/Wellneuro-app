@@ -8,6 +8,8 @@ const { getServerSession, prisma, mockMeta, mockRegles } = vi.hoisted(() => ({
     questionnaireReponse: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
     pack: { findMany: vi.fn() },
+    // Anamnèse la plus récente : source des déclencheurs `drapeau` (LOT-05).
+    consultation: { findFirst: vi.fn() },
   },
   mockMeta: {
     version: 'orientation-nnpp2-v1',
@@ -51,6 +53,9 @@ describe('GET /api/praticien/orientation', () => {
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.assignation.findMany.mockResolvedValue([]);
     prisma.pack.findMany.mockResolvedValue([]);
+    // Par défaut aucune consultation : les déclencheurs `drapeau` ne portent
+    // pas, ce qui est le cas fail-closed attendu.
+    prisma.consultation.findFirst.mockResolvedValue(null);
   });
 
   afterEach(() => {
@@ -252,6 +257,73 @@ describe('GET /api/praticien/orientation', () => {
       prisma.pack.findMany.mockResolvedValue([
         { idPack: 'PACK_-bG21yeIvVYRhrdlYuWIMnFz', qids: ['Q_STR_04', 'Q_STR_05'] },
       ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
+    });
+
+    // --- Drapeaux d'anamnèse (LOT-04 branché par LOT-05) ---
+    //
+    // `extraireDrapeauxAnamnese` n'avait aucun consommateur avant ce lot. Ces
+    // bancs prouvent que la route lit bien l'anamnèse et la passe au moteur —
+    // le banc unitaire du moteur, lui, ne dit rien du câblage.
+
+    function regleSurAttenteSommeil() {
+      mockRegles.push({
+        id: 'R-TEST-ANA',
+        statut: 'publiee',
+        declencheurs: [{ type: 'drapeau', champ: 'attentes', valeurs: ['Améliorer le sommeil'] }],
+        suggestions: [{ questionnaireId: 'Q_SOM_01', priorite: 1 }],
+        justificationClaims: [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }],
+        niveau: 'socle',
+      });
+    }
+
+    it("une attente déclarée en anamnèse déclenche une recommandation", async () => {
+      regleSurAttenteSommeil();
+      prisma.consultation.findFirst.mockResolvedValue({
+        anamnese: { attentes: ['Améliorer le sommeil'] },
+      });
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toHaveLength(1);
+      expect(payload.recommandations[0].cible).toEqual({ type: 'questionnaire', questionnaireId: 'Q_SOM_01' });
+    });
+
+    // Ces deux-là épinglent le contrat sans prouver de différence observable :
+    // aucune anamnèse et une anamnèse vide donnent aujourd'hui le même vide.
+    it("sans consultation, une règle de drapeau ne déclenche pas", async () => {
+      regleSurAttenteSommeil();
+      prisma.consultation.findFirst.mockResolvedValue(null);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
+    });
+
+    it("une consultation sans anamnèse ne déclenche pas non plus", async () => {
+      regleSurAttenteSommeil();
+      prisma.consultation.findFirst.mockResolvedValue({ anamnese: null });
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
+    });
+
+    // Celui-ci, lui, mord : il échouerait si la route retenait la consultation
+    // la plus récente au lieu de la plus récente PORTEUSE d'une anamnèse — le
+    // défaut trouvé en revue. La sélection se lit dans l'argument passé à
+    // Prisma, seul endroit où elle est observable depuis un banc mocké.
+    it("retient la dernière consultation qui porte une anamnèse, pas la dernière", async () => {
+      regleSurAttenteSommeil();
+      prisma.consultation.findFirst.mockResolvedValue({
+        anamnese: { attentes: ['Améliorer le sommeil'] },
+      });
+      await GET(getRequest());
+      const critere = prisma.consultation.findFirst.mock.calls[0][0];
+      expect(critere.where.NOT).toBeDefined();
+      expect(critere.orderBy).toEqual({ createdAt: 'desc' });
+    });
+
+    it("un libellé d'attente hors énuméré est ignoré, jamais deviné", async () => {
+      regleSurAttenteSommeil();
+      prisma.consultation.findFirst.mockResolvedValue({
+        anamnese: { attentes: ['Ameliorer le sommeil'] },
+      });
       const payload = await (await GET(getRequest())).json();
       expect(payload.recommandations).toEqual([]);
     });

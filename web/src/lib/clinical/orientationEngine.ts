@@ -1,3 +1,4 @@
+import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import type { OrientationDeclencheur, OrientationRule, OrientationZone } from './orientationRulesV1';
 
@@ -77,6 +78,11 @@ export type EntreeOrientation = {
    *  membre connu ne l'est pas. Absent = tout est administrable (le registre
    *  des instruments sera branché au lot 10). */
   estAdministrable?: (questionnaireId: string) => boolean;
+  /** Drapeaux d'anamnèse du patient (`extraireDrapeauxAnamnese`, LOT-04) —
+   *  ce qu'il a DÉCLARÉ, à côté de ce que les instruments ont mesuré. Absent =
+   *  aucun déclencheur `drapeau` n'est atteint (fail-closed) : une anamnèse non
+   *  fournie ne vaut pas une anamnèse vide qu'on aurait le droit d'interpréter. */
+  drapeaux?: DrapeauxAnamnese;
 };
 
 const NIVEAU_PACK = new Map(PACKS_REGISTRY.map(pack => [pack.id, pack.niveau]));
@@ -166,11 +172,32 @@ function comparer(valeur: number, operateur: '>=' | '<=' | '>' | '<' | '==', ref
   }
 }
 
+// Libellés du champ d'anamnèse visé, quelle que soit sa forme : les champs
+// liste rendent un tableau, les champs radio une valeur unique ou `null`.
+function valeursDuDrapeau(drapeaux: DrapeauxAnamnese, champ: keyof DrapeauxAnamnese): string[] {
+  const brut = drapeaux[champ];
+  if (Array.isArray(brut)) return brut;
+  return typeof brut === 'string' && brut ? [brut] : [];
+}
+
 /** Description lisible du déclencheur atteint, ou null s'il ne matche pas. */
 function evaluerDeclencheur(
   declencheur: OrientationDeclencheur,
-  dernieres: Map<string, ReponseOrientation>
+  dernieres: Map<string, ReponseOrientation>,
+  drapeaux: DrapeauxAnamnese | undefined
 ): string | null {
+  if (declencheur.type === 'drapeau') {
+    // Pas d'anamnèse fournie : le déclencheur n'est pas atteint. On ne déduit
+    // rien d'une absence — voir `EntreeOrientation.drapeaux`.
+    if (!drapeaux) return null;
+    const presentes = new Set(valeursDuDrapeau(drapeaux, declencheur.champ));
+    // Ordre de la règle, et non ordre de stockage : le motif affiché au
+    // praticien est stable d'un patient à l'autre.
+    const atteintes = declencheur.valeurs.filter(valeur => presentes.has(valeur));
+    if (atteintes.length === 0) return null;
+    return `anamnèse — ${declencheur.champ} : ${atteintes.map(v => `« ${v} »`).join(', ')}`;
+  }
+
   const reponse = dernieres.get(declencheur.idQuestionnaire);
   if (!reponse) return null;
   const { valeur, interpretation } = extraireCible(reponse.scores, declencheur.sousScore);
@@ -197,7 +224,19 @@ function estAdministrable(entree: EntreeOrientation, questionnaireId: string): b
 function packAdministrable(entree: EntreeOrientation, packId: PackId): boolean {
   if (!entree.estAdministrable) return true;
   const composition = entree.compositionPacks?.[packId];
-  if (!Array.isArray(composition)) return true;
+  // Composition inconnue alors qu'un filtre d'administrabilité est en place :
+  // le pack est ÉCARTÉ, au lieu d'être laissé passer comme avant.
+  //
+  // Ce n'est PAS la réparation d'un incident : la route refiltre déjà en sortie
+  // et rejetait ce cas (`api/praticien/orientation/route.ts`). C'est le moteur
+  // qui se met d'accord avec elle — pour que le prochain appelant hérite du
+  // fail-closed sans avoir à le redécouvrir, et pour que le banc de la table,
+  // qui décrivait déjà ce comportement, dise vrai.
+  //
+  // Le cas est réel : la route ne charge que les packs `actif: true`, si bien
+  // qu'un pack désactivé arrive ici sans composition. Vérifié en base le
+  // 2026-08-03 — `PACK_HUMEUR_NEURO` est précisément dans ce cas.
+  if (!Array.isArray(composition)) return false;
   return composition.every(qid => estAdministrable(entree, qid));
 }
 
@@ -217,7 +256,7 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
     const conditions: string[] = [];
     let tousAtteints = true;
     for (const declencheur of regle.declencheurs) {
-      const condition = evaluerDeclencheur(declencheur, dernieres);
+      const condition = evaluerDeclencheur(declencheur, dernieres, entree.drapeaux);
       if (!condition) {
         tousAtteints = false;
         break;
