@@ -385,3 +385,46 @@ describe('TrajectoirePanel — suture time-travel (SP-CONV LOT-03)', () => {
     expect(screen.queryByText(/Vous lisez l’état du/)).toBeNull();
   });
 });
+
+// Montage de l'encart d'orientation (LOT-06). Relevé à la relecture de clôture :
+// c'est l'une des deux gardes les plus proches d'un accident patient, et elle
+// n'était garantie que par construction.
+describe('TrajectoirePanel — montage de l’encart d’orientation', () => {
+  const trajectoireVide: Trajectoire = { index: [], cycles: [], comparaison: null } as unknown as Trajectoire;
+
+  function stubFetch() {
+    const appels: string[] = [];
+    const mock = vi.fn((url: string) => {
+      appels.push(url);
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ ok: true, actif: false, version: 'v1', message: 'en cours de constitution' }),
+      });
+    });
+    vi.stubGlobal('fetch', mock);
+    return appels;
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('ne monte pas l’encart sans idPatient — l’autre appelant reste inerte', () => {
+    const appels = stubFetch();
+    // `ClinicalRuntimeSection` monte TrajectoirePanel sans idPatient : l'encart
+    // ne doit pas y appeler la route d'orientation.
+    render(<TrajectoirePanel trajectoire={trajectoireVide} modeViePresent={null} />);
+    expect(appels.some(url => url.includes('praticien/orientation'))).toBe(false);
+  });
+
+  it('ne monte pas l’encart hors canal fiche', () => {
+    const appels = stubFetch();
+    render(<TrajectoirePanel trajectoire={trajectoireVide} idPatient="PAT_SEED_03" />);
+    expect(appels.some(url => url.includes('praticien/orientation'))).toBe(false);
+  });
+
+  it('monte l’encart au présent, sur le canal fiche et avec un patient', async () => {
+    const appels = stubFetch();
+    render(<TrajectoirePanel trajectoire={trajectoireVide} idPatient="PAT_SEED_03" modeViePresent={null} />);
+    expect(await screen.findByRole('region', { name: 'Orientation des explorations' })).toBeTruthy();
+    expect(appels.some(url => url.includes('praticien/orientation'))).toBe(true);
+  });
+});

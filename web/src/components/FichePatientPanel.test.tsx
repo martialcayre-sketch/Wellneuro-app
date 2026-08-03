@@ -63,6 +63,10 @@ type Options = {
   //   d'un AUTRE dossier et n'écho aucun filtre.
   patients?: 'defaut' | 'erreur' | 'tronque' | 'filtresIgnores';
   trajectoire?: 'ok' | '401' | 'cycleT0Seul' | 'cycleJ21Mesure' | 'enVol';
+  // `GET /api/praticien/orientation` (LOT-06). `actif` sert la seule branche
+  // où un bouton d'assignation peut exister — donc la seule où le garde
+  // d'identité du destinataire est observable.
+  orientation?: 'inactif' | 'actif';
   // « bloquee » = abstention clinique non levée : aucun protocole proposable.
   decision?: 'actionnable' | 'bloquee';
   reponses?: 'defaut' | 'dimensions' | 'dimensions-degradees' | 'non-interpretable' | 'subscores-detail';
@@ -321,6 +325,30 @@ function stubFetch(options: Options = {}) {
       if (runtime === 'proposal') return ok({ status: 'proposal_required', proposal: { assessmentEpisodeId: 'ep1', milestone: 'T0', inWindowResponseIds: [], candidateResponses: [] }, proposalHash: 'h' });
       if (runtime === 'unauthenticated') return ok({ status: 'unavailable', reason: 'unauthenticated', error: 'Authentification requise.' }, 401);
       return ok({ status: 'unavailable', reason: 'exception', error: 'Indisponible.' });
+    }
+    if (url.includes('/api/praticien/orientation')) {
+      if ((options.orientation ?? 'inactif') === 'inactif') {
+        return ok({ ok: true, actif: false, version: 'v1', message: 'Orientation en cours de constitution.' });
+      }
+      return ok({
+        ok: true,
+        actif: true,
+        version: 'v1',
+        sha256: 'sha-test',
+        recommandations: [
+          {
+            cible: { type: 'pack', packId: 'pack_sommeil_chronobiologie' },
+            idPackBase: 'PACK_SOMMEIL_CHRONO',
+            priorite: 1,
+            niveau: 'approfondissement',
+            objectifs: [],
+            needIds: [],
+            dejaAssigne: false,
+            dejaRepondu: false,
+            motifs: [{ regleId: 'R-SOM-01', conditions: ['PSQI élevé'], claims: [] }],
+          },
+        ],
+      });
     }
     if (url.includes('/api/praticien/protocoles/versions')) return ok({ ok: true, active: null, history: [] });
     if (url.includes('/api/praticien/protocoles/diffusion')) return ok({ ok: true, approval: null, stale: false });
@@ -930,5 +958,47 @@ describe('FichePatientPanel — demandes de correction (filtre serveur)', () => 
     // Et l'on n'affirme rien sur la troncature : les filtres n'ayant pas été
     // honorés, le `total` rendu ne parle pas du même ensemble que la liste.
     expect(screen.queryByText(/Liste tronquée/i)).toBeNull();
+  });
+});
+
+// Garde d'identité du destinataire (LOT-06, relevé à la relecture de clôture).
+//
+// Le panneau d'orientation calcule ses recommandations sur `idPatient` ; le seul
+// point d'assignation, lui, identifie le patient par son EMAIL. Les deux
+// viennent de deux sources, et rien ne vérifiait qu'elles désignent le même
+// dossier — or ce bouton déclenche un e-mail. Sur une navigation A→B, une
+// réponse `equilibre` en retard laisse `data` sur A pendant que `idPatient` vaut
+// déjà B : l'e-mail serait parti au patient précédent.
+describe('FichePatientPanel — destinataire de l’assignation depuis l’orientation', () => {
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  it('propose l’assignation quand le dossier chargé EST le patient affiché', async () => {
+    stubFetch({ orientation: 'actif' });
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT001" ongletInitial="trajectoire" />
+      </C5FeatureProvider>,
+    );
+
+    expect(await screen.findByRole('button', { name: /assigner ce pack/i })).toBeTruthy();
+  });
+
+  it('retire le bouton quand le dossier chargé n’est PAS le patient affiché', async () => {
+    // Le stub rend toujours PAT001 : rendre la fiche de PAT002 simule exactement
+    // la fenêtre où `data` porte encore le dossier précédent.
+    stubFetch({ orientation: 'actif' });
+    render(
+      <C5FeatureProvider enabled={false}>
+        <FichePatientPanel idPatient="PAT002" ongletInitial="trajectoire" />
+      </C5FeatureProvider>,
+    );
+
+    // La recommandation s'affiche — elle est en lecture seule et sans danger.
+    await screen.findByRole('region', { name: 'Orientation des explorations' });
+    // Le geste sortant, lui, disparaît plutôt que de viser le mauvais patient.
+    expect(screen.queryByRole('button', { name: /assigner ce pack/i })).toBeNull();
   });
 });

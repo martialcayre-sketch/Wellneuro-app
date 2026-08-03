@@ -50,10 +50,15 @@ clinique**. Ne pas forcer la métadonnée de validation pour « voir » la featu
 | Flag | Valeur ON | 2ᵉ condition | État au 2026-07-28 |
 |---|---|---|---|
 | `WN_ENABLE_CORPUS_CLINIQUE_V1` | `1` | `CORPUS_CLINIQUE_METADATA.validationExterne` | `false` → **fermé quoi qu'on pose** |
-| `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (validation + date + claims) | table vide, `validationExterne: false` → **fermé** |
+| `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (validation + date + claims) | **6 règles** depuis le LOT-05 (#545), `validationExterne: false` → **fermé** |
 
 Débloquer ces deux-là = **valider le contenu clinique** (décision clinique,
 documentée au `CHANGELOG`), pas flipper un flag.
+
+**Et signer ne suffit pas non plus** : le verrou est un ET. Sur l'orientation,
+signer la table sans poser `WN_ENABLE_ORIENTATION_NNPP2=1` en production laisse
+l'écran praticien du LOT-06 sur « en cours de constitution ». Les deux gestes
+vont ensemble, dans cet ordre : validation clinique d'abord, flag ensuite.
 
 ## D. Gate dur HDS — ne jamais ouvrir avant l'attestation HDS
 
