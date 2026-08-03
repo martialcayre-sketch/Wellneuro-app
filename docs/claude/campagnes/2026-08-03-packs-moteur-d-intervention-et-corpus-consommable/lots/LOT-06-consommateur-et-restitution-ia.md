@@ -176,10 +176,44 @@ mais sur celles **relatives aux explorations** — trois règles mutuellement
 suprêmes ne forment pas un ordre ; et `orientationVersion` n'est plus inscrit
 quand aucun bloc n'est parti.
 
-**Non traité, inscrit en réserve** : le garde ne voit pas un pack nommé sans le
-mot « pack », ni une exploration en langage libre, ni un **réordonnancement** —
-pourtant interdit, mais qui demanderait de comparer des positions dans une prose.
-C'est écrit dans l'en-tête du module pour qu'aucun lecteur ne le croie couvert.
+**Contre-revue : NO-GO à son tour, sur trois défauts que le premier correctif
+avait créés ou laissés.** Aucun n'était structurel, tous étaient réels.
+
+1. **Une affirmation que le code contredit.** L'écran disait « le patient a reçu
+   son e-mail ». Or `packs/assign` envoie en **best-effort** et rend
+   `success: true` même sur échec SMTP — le dépôt distingue explicitement les
+   deux (`statut: 'Non_envoye'`). Un praticien lisant cette phrase ne relance pas.
+   L'UI dit désormais « Pack déjà assigné depuis cet écran », ce que la route
+   garantit et rien de plus. C'était le seul défaut du lot qui **affirmait au
+   praticien un fait faux**.
+2. **La classe de défaut du premier NO-GO revenait par les questionnaires.** Le
+   prompt système cite lui-même seize identifiants en exemple (`Q_ALI_03`…). Le
+   modèle les a sous les yeux avant de voir le dossier : les lui reprocher, c'est
+   l'accuser d'avoir inventé ce qu'on lui a soufflé — et persister l'accusation
+   dans le dossier. L'allowlist a une **troisième source**, dérivée du prompt réel
+   et non recopiée, pour qu'un exemple ajouté demain n'ouvre pas la même faille.
+3. **L'état d'assignation survivait au patient.** Les clés (`pack:slug`) ne
+   portent pas l'identifiant : sans démontage, un patient B héritait du « déjà
+   assigné » de A — affirmation fausse **et** geste légitime bloqué. Remise à zéro
+   sur `idPatient` seul, dans un effet séparé : la relancer sur « Réessayer »
+   rouvrirait la porte à une seconde assignation.
+
+Deux points mineurs traités dans la foulée : l'adjacence « pack » ratait le
+pluriel (« les packs X et Y ») alors que **l'énumération est la formulation
+naturelle d'un bloc numéroté**, et c'est exactement là qu'un pack inventé se
+glisse à côté d'un légitime — remplacée par une fenêtre de 40 caractères tolérant
+pluriel et qualificatif intercalé ; et `orientationVersion` est de nouveau
+persisté même sans bloc, parce que « quelle table était en vigueur » et « un bloc
+est-il parti » sont deux faits distincts que `orientationInjectee` sépare déjà.
+
+**Non traité, inscrit en réserve** : le garde ne voit pas un pack nommé sans
+« pack » nulle part avant lui, ni un pack cité loin derrière son introducteur, ni
+une exploration en langage libre, ni un **réordonnancement** — pourtant interdit,
+mais qui demanderait de comparer des positions dans une prose. C'est écrit dans
+l'en-tête du module pour qu'aucun lecteur ne le croie couvert. Reste aussi
+ouverte la question de fond soulevée par la revue : un écart mesuré par
+heuristique textuelle a-t-il sa place dans `donneesEntree` du dossier, ou
+seulement dans le journal ?
 
 **Validation** : T1 vert (3 393 tests unitaires + 872 bancs). T2
 (`test:worktree -- --fast`) vert en 3 min 53 s. Un premier T2 avait échoué sur

@@ -63,11 +63,23 @@
   mot « pack » (le slug, lui, n'a aucun homonyme naturel et reste cherché
   partout). Cinq cas de prose clinique ordinaire sont désormais au banc comme
   contrôles négatifs.
+- **L'allowlist des questionnaires a trois sources**, et en oublier une rendrait
+  le garde absurde : les cibles de l'orientation, tous les questionnaires du
+  dossier — le modèle les reçoit, les citer est son travail — et **ceux que la
+  consigne système lui met en bouche**. Le prompt cite seize instruments en
+  exemple ; les lui reprocher reviendrait à l'accuser d'avoir inventé ce qu'on lui
+  a soufflé. La liste est dérivée du prompt réel, pas recopiée, pour qu'un exemple
+  ajouté demain n'ouvre pas la même faille.
 - **Ce que le garde ne voit pas est écrit dans son en-tête**, et ne doit pas être
-  supposé couvert : un pack désigné par son titre sans le mot « pack », une
-  exploration décrite en langage libre, et un **réordonnancement** de la
-  recommandation — pourtant interdit par la consigne, mais qui demanderait de
-  comparer des positions dans une prose, pas des occurrences.
+  supposé couvert : un pack désigné par son titre sans le mot « pack » nulle part
+  avant lui, un pack cité loin derrière son introducteur, une exploration décrite
+  en langage libre, et un **réordonnancement** de la recommandation — pourtant
+  interdit par la consigne, mais qui demanderait de comparer des positions dans
+  une prose, pas des occurrences.
+- **L'écran n'affirme pas la réception de l'e-mail.** `packs/assign` envoie en
+  best-effort et rend `success: true` même si l'envoi échoue : dire « le patient a
+  reçu son e-mail » aurait affirmé ce que la route ignore, et un praticien qui le
+  lit ne relance pas. L'écran dit ce qui est garanti — le pack est assigné.
 - **Invariant nouveau** : aucun déclencheur de la table d'orientation ne porte sur
   une passation inscrite au registre `passationsNonInterpretables`. La disjonction
   était vraie par accident et rien ne la gardait ; une règle ajoutée demain sur un

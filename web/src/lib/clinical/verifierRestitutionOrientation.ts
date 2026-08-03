@@ -21,8 +21,11 @@ import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 // journalise ; il ne censure pas.
 //
 // CE QU'IL NE VOIT PAS, et qu'il ne faut pas croire couvert :
-// - un pack désigné par son titre SANS le mot « pack » (« je propose Sommeil et
-//   chronobiologie ») — voir la note sur l'adjacence plus bas ;
+// - un pack désigné par son titre SANS le mot « pack » nulle part avant lui
+//   (« je propose Sommeil et chronobiologie ») — voir l'adjacence plus bas ;
+// - un pack cité très loin derrière son « pack » introducteur : l'adjacence
+//   tolère le pluriel et quelques mots intercalés (« les packs X et Y »,
+//   « le pack d'exploration X »), mais pas une énumération longue ;
 // - une exploration décrite en langage libre, sans nommer de cible ;
 // - un RÉORDONNANCEMENT de la recommandation, qui est pourtant interdit par la
 //   consigne. Cela demanderait de comparer des positions dans une prose, pas
@@ -49,6 +52,32 @@ const DIACRITIQUES_COMBINANTS = new RegExp('[\\u0300-\\u036f]', 'g');
 
 /** Identifiants de questionnaire du catalogue : `Q_SOM_09`, `Q_ALI_01`… */
 const MOTIF_QUESTIONNAIRE = /\bQ_[A-Z]{3}_\d{2}\b/g;
+
+/**
+ * Fenêtre, en caractères normalisés, dans laquelle le mot « pack » doit
+ * précéder un titre pour que celui-ci compte comme une citation de pack.
+ *
+ * 40 est un arbitrage, pas une constante de la nature. Assez large pour
+ * « les packs X et Y » (l'énumération est la formulation naturelle d'un bloc
+ * numéroté) et « le pack d'exploration X » ; assez étroite pour qu'une mention
+ * légitime de pack en début de phrase ne contamine pas un syntagme clinique
+ * ordinaire qui la suit.
+ */
+const FENETRE_ADJACENCE_PACK = 40;
+
+const MOT_PACK = /\bpacks?\b/;
+
+/** Le titre est-il cité comme un pack, et non comme un syntagme clinique ? */
+function citeCommePack(texte: string, titre: string): boolean {
+  let depuis = 0;
+  for (;;) {
+    const position = texte.indexOf(titre, depuis);
+    if (position === -1) return false;
+    const amont = texte.slice(Math.max(0, position - FENETRE_ADJACENCE_PACK), position);
+    if (MOT_PACK.test(amont)) return true;
+    depuis = position + 1;
+  }
+}
 
 /**
  * Normalise pour une comparaison robuste : minuscules, accents retirés, et
@@ -114,7 +143,7 @@ export function verifierRestitutionOrientation(
       const titre = normaliser(pack.titre);
       const slug = normaliser(pack.id);
       if (!titre) continue;
-      if (texte.includes(`pack ${titre}`) || texte.includes(slug)) {
+      if (citeCommePack(texte, titre) || texte.includes(slug)) {
         ecarts.push({ type: 'pack', identifiant: pack.id });
       }
     }

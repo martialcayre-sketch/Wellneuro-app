@@ -102,12 +102,26 @@ function packsTransmis(orientation: ResultatOrientation | null): PackId[] {
 }
 
 /**
+ * Les identifiants de questionnaire que le PROMPT SYSTÈME cite lui-même.
+ *
+ * `SYSTEM_PROMPT_GOUVERNANCE` nomme des instruments en exemple — « la grille
+ * d'estimation des apports (Q_ALI_03) demande au patient un nombre de
+ * portions ». Le modèle a donc ces identifiants sous les yeux avant même de
+ * voir le dossier : les lui reprocher reviendrait à l'accuser d'avoir inventé
+ * ce qu'on lui a soufflé. Dérivé du prompt réel, et non recopié à la main, pour
+ * qu'un exemple ajouté demain n'ouvre pas une fausse accusation.
+ */
+const QUESTIONNAIRES_CITES_PAR_LA_CONSIGNE: readonly string[] = [
+  ...new Set(SYSTEM_PROMPT_SYNTHESE.match(/\bQ_[A-Z]{3}_\d{2}\b/g) ?? []),
+];
+
+/**
  * Les questionnaires que le modèle a le droit de nommer.
  *
- * Deux sources, et oublier la seconde rendrait le garde absurde : les cibles
- * questionnaire de l'orientation, ET **tous les questionnaires du dossier** —
- * le modèle les reçoit dans « Résultats des questionnaires », les citer est son
- * travail.
+ * Trois sources, et en oublier une rend le garde absurde : les cibles
+ * questionnaire de l'orientation, **tous les questionnaires du dossier** — le
+ * modèle les reçoit dans « Résultats des questionnaires », les citer est son
+ * travail — et ceux que la consigne système lui a mis en bouche.
  */
 function questionnairesTransmis(
   orientation: ResultatOrientation | null,
@@ -122,7 +136,13 @@ function questionnairesTransmis(
               (recommandation.cible as { type: 'questionnaire'; questionnaireId: string }).questionnaireId,
           )
       : [];
-  return [...new Set([...cibles, ...reponses.map(reponse => reponse.idQuestionnaire)])];
+  return [
+    ...new Set([
+      ...cibles,
+      ...reponses.map(reponse => reponse.idQuestionnaire),
+      ...QUESTIONNAIRES_CITES_PAR_LA_CONSIGNE,
+    ]),
+  ];
 }
 
 // Pseudonymisation (audit HDS 2026-07-24) : aucune identité patient ne part
@@ -366,11 +386,14 @@ async function genererSynthesePersistee(
           // Orientation (LOT-06) : la version et le sha256 de la table qui a
           // produit le bloc transmis. Sans eux, on ne pourrait pas dire, six
           // mois plus tard, quelle table a fondé telle restitution.
-          // `orientationInjectee`, et non `actif` : une table signée qui ne
-          // recommande rien n'a rien transmis. Écrire une version et un sha256
-          // dans ce cas laisserait croire qu'un bloc est parti.
+          // Deux faits distincts, et les confondre perdrait de l'information :
+          // `orientationVersion` dit quelle table était EN VIGUEUR — utile même
+          // quand elle n'a rien produit, pour savoir six mois plus tard sous
+          // quelle table la synthèse a été rédigée ; `orientationInjectee` dit
+          // si un bloc est réellement parti, et `orientationSha256` n'existe que
+          // dans ce cas.
           orientationInjectee: orientationInjectee(args.orientation),
-          orientationVersion: orientationInjectee(args.orientation) ? args.orientation?.version ?? null : null,
+          orientationVersion: args.orientation?.version ?? null,
           orientationSha256:
             orientationInjectee(args.orientation) && args.orientation?.actif === true
               ? args.orientation.sha256

@@ -156,7 +156,7 @@ describe('OrientationPanel', () => {
     // envoie un e-mail au patient, un geste sortant ne part pas sur un clic.
     fireEvent.click(screen.getByRole('button', { name: /assigner ce pack/i }));
     expect(appels.some(a => a.url.includes('packs/assign'))).toBe(false);
-    expect(screen.getByText(/enverra un e-mail au patient/i)).toBeTruthy();
+    expect(screen.getByText(/déclenche un e-mail au patient/i)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: /confirmer l’assignation/i }));
     expect(await screen.findByText(/assigné\(s\)/i)).toBeTruthy();
@@ -197,7 +197,43 @@ describe('OrientationPanel', () => {
     // `packs/assign` ne déduplique pas : un second clic créerait des
     // assignations en double ET un second e-mail au patient.
     expect(screen.queryByRole('button', { name: /assigner ce pack/i })).toBeNull();
-    expect(screen.getByText(/le patient a reçu son e-mail/i)).toBeTruthy();
+    expect(screen.getByText(/déjà assigné depuis cet écran/i)).toBeTruthy();
+    expect(appels.filter(a => a.url.includes('packs/assign'))).toHaveLength(1);
+  });
+
+  it('n’affirme jamais la réception de l’e-mail — la route ne la garantit pas', async () => {
+    stubFetch(ACTIF);
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    await screen.findByText(/Sommeil et chronobiologie/i);
+    fireEvent.click(screen.getByRole('button', { name: /assigner ce pack/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmer l’assignation/i }));
+    await screen.findByText(/assigné\(s\)/i);
+
+    // `packs/assign` envoie l'e-mail en best-effort et rend `success: true`
+    // même si l'envoi échoue. L'UI ne doit pas affirmer ce que la route ignore.
+    expect(screen.queryByText(/a reçu son e-mail/i)).toBeNull();
+  });
+
+  it('remet l’état d’assignation à zéro quand le patient change', async () => {
+    const { appels } = stubFetch(ACTIF);
+
+    const { rerender } = render(
+      <OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />,
+    );
+
+    await screen.findByText(/Sommeil et chronobiologie/i);
+    fireEvent.click(screen.getByRole('button', { name: /assigner ce pack/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmer l’assignation/i }));
+    await screen.findByText(/déjà assigné depuis cet écran/i);
+
+    // Les clés d'assignation (`pack:slug`) ne portent pas le patient : sans
+    // remise à zéro, le second patient hériterait du « déjà assigné » du premier.
+    rerender(<OrientationPanel idPatient="PAT_SEED_01" emailPatient="jennifer@example.test" />);
+
+    expect(await screen.findByRole('button', { name: /assigner ce pack/i })).toBeTruthy();
+    expect(screen.queryByText(/déjà assigné depuis cet écran/i)).toBeNull();
     expect(appels.filter(a => a.url.includes('packs/assign'))).toHaveLength(1);
   });
 

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // LOT-06 — ce que la synthèse reçoit de l'orientation déterministe, et ce
@@ -35,7 +37,9 @@ vi.mock('@/lib/praticien/journalAcces', () => ({ journaliserAccesDossier: vi.fn(
 vi.mock('@/lib/anthropic', () => ({
   anthropic: { messages: { create: anthropicCreate } },
   CLAUDE_MODEL: 'claude-test',
-  SYSTEM_PROMPT_SYNTHESE: '',
+  // Non vide, et citant un instrument : c'est de cette chaîne que la route
+  // dérive les identifiants « soufflés » au modèle par la consigne.
+  SYSTEM_PROMPT_SYNTHESE: "Exemple de consigne : la grille d'apports (Q_ALI_03) demande un nombre de portions.",
   VERSION_CORPUS_SYNTHESE: 'v',
   VERSION_PROMPT_SYNTHESE: 'v',
   VERSION_SCHEMA_SYNTHESE: 'v',
@@ -213,13 +217,15 @@ describe('métadonnées d’audit', () => {
     expect(meta.orientationPacksTransmis).toEqual(['pack_sommeil_chronobiologie']);
   });
 
-  it('n’inscrit ni version ni sha256 quand aucun bloc n’est parti', async () => {
+  it('n’inscrit pas de sha256 quand aucun bloc n’est parti, mais garde la version en vigueur', async () => {
     await POST(req());
     const meta = metadonneesPersistees();
     expect(meta.orientationInjectee).toBe(false);
+    // Le sha256 signe un bloc transmis : sans bloc, il n'existe pas.
     expect(meta.orientationSha256).toBeNull();
-    // Une version sans bloc laisserait croire qu'un bloc est parti.
-    expect(meta.orientationVersion).toBeNull();
+    // La version, elle, dit quelle table était EN VIGUEUR — un fait distinct,
+    // et le seul moyen de savoir plus tard sous quelle table on a rédigé.
+    expect(meta.orientationVersion).toBe('orientation-nnpp2-v1');
   });
 
   it('n’inscrit rien non plus sur une table signée qui ne recommande rien', async () => {
@@ -325,6 +331,21 @@ describe('garde de restitution', () => {
     expect(codesJournalises()).not.toContain('SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE');
   });
 
+  it('ne signale pas un identifiant que la consigne système lui a mis en bouche', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      // `Q_ALI_03` est cité en exemple par SYSTEM_PROMPT_GOUVERNANCE et absent
+      // du dossier : le reprocher au modèle serait l'accuser d'avoir inventé ce
+      // qu'on lui a soufflé.
+      limites: 'La grille d’estimation des apports (Q_ALI_03) n’a pas été renseignée.',
+    });
+
+    await POST(req());
+
+    expect(codesJournalises()).not.toContain('SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE');
+  });
+
   it('signale en revanche un questionnaire absent du dossier et de la recommandation', async () => {
     evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
     validateSyntheseSchema.mockReturnValue({
@@ -353,5 +374,42 @@ describe('transport SSE (WN_SYNTHESE_STREAM)', () => {
 
     expect(messageEnvoye()).toContain("## Recommandation d'exploration déterministe");
     expect(messageEnvoye()).toContain('SHA-256: abc123def456');
+  });
+
+  it('applique la même allowlist qu’en JSON — vérifié par exécution', async () => {
+    process.env.WN_SYNTHESE_STREAM = 'true';
+    evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      // Q_ALI_02 est au dossier, Q_NEU_11 ne l'est nulle part.
+      resume_praticien: 'Le Q_ALI_02 est lu ; faire passer Q_NEU_11.',
+    });
+
+    const res = await POST(req());
+    await res.text();
+
+    expect(metadonneesPersistees().orientationEcartsRestitution).toEqual([
+      { type: 'questionnaire', identifiant: 'Q_NEU_11' },
+    ]);
+  });
+});
+
+describe('cohérence du prédicat d’injection', () => {
+  // Le défaut B1 était une divergence entre « un bloc est-il parti ? » et
+  // « le garde doit-il tourner ? ». Les deux dérivent maintenant du même
+  // prédicat ; ce banc structurel échoue si l'un des deux s'en détache.
+  it('le garde et le builder consultent le même prédicat', () => {
+    const source = readFileSync(join(__dirname, 'route.ts'), 'utf8');
+    const occurrences = source.match(/orientationInjectee\(/g) ?? [];
+    // Une définition, plus les appels : garde, métadonnée, version.
+    expect(occurrences.length).toBeGreaterThanOrEqual(3);
+    // `buildBlocOrientation` doit rendre '' sur exactement la négation du
+    // prédicat — même conditions, même ordre.
+    expect(source).toContain(
+      "if (!orientation || !orientation.actif || orientation.recommandations.length === 0) return '';",
+    );
+    expect(source).toContain(
+      "return orientation?.actif === true && orientation.recommandations.length > 0;",
+    );
   });
 });

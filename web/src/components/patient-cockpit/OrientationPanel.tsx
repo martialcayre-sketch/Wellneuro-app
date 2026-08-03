@@ -74,6 +74,20 @@ export function OrientationPanel({
   const [rechargement, setRechargement] = useState(0);
   const relire = useCallback(() => setRechargement(n => n + 1), []);
 
+  // L'état d'assignation appartient au PATIENT affiché, pas au composant. Les
+  // clés (`pack:slug`) ne le portent pas : sans cette remise à zéro, une
+  // navigation d'un patient à l'autre sans démontage afficherait « déjà
+  // assigné » sous la recommandation d'un patient qui ne l'a jamais été, et une
+  // confirmation restée ouverte armerait le bouton du suivant.
+  //
+  // Effet séparé, sur `idPatient` SEUL : le relancer sur un « Réessayer »
+  // rouvrirait la porte à une seconde assignation du même pack.
+  useEffect(() => {
+    setAssignees(new Set());
+    setIssue(null);
+    setConfirmation(null);
+  }, [idPatient]);
+
   useEffect(() => {
     let annule = false;
     setLecture('chargement');
@@ -227,16 +241,19 @@ export function OrientationPanel({
                   {assignable && (
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       {assignees.has(cle) ? (
-                        <span className="text-xs text-status-success">
-                          Pack assigné — le patient a reçu son e-mail.
-                        </span>
+                        // Ce que la route garantit, et rien de plus : elle crée
+                        // les assignations, puis tente l'envoi de l'e-mail en
+                        // best-effort et rend `success: true` même s'il échoue.
+                        // Affirmer la réception serait affirmer ce que le code
+                        // ne sait pas.
+                        <span className="text-xs text-status-success">Pack déjà assigné depuis cet écran.</span>
                       ) : confirmation === cle ? (
                         <>
                           {/* Deux temps, délibérément : l'assignation envoie un
                               e-mail au patient. Un geste sortant ne se déclenche
                               pas sur un clic unique depuis un écran de lecture. */}
                           <span className="text-xs text-muted-foreground">
-                            Assigner ce pack enverra un e-mail au patient.
+                            Assigner ce pack déclenche un e-mail au patient.
                           </span>
                           <button
                             type="button"

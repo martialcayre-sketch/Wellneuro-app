@@ -63,6 +63,25 @@ describe('verifierRestitutionOrientation — ce qu’il signale', () => {
     ]);
   });
 
+  it('voit un pack cité au pluriel dans une énumération', () => {
+    // Le bloc injecté est numéroté et peut porter plusieurs entrées :
+    // l'énumération est la formulation naturelle, et c'est exactement là qu'un
+    // pack inventé se glisse à côté d'un pack légitime.
+    const synthese: TexteSynthese = {
+      resume_praticien: 'Les packs Sommeil et chronobiologie et Migraine et cephalees sont indiqués.',
+    };
+    expect(
+      verifierRestitutionOrientation(synthese, { packs: ['pack_sommeil_chronobiologie'], questionnaires: [] }),
+    ).toEqual([{ type: 'pack', identifiant: 'pack_migraine_cephalees' }]);
+  });
+
+  it('tolère un qualificatif intercalé entre « pack » et le titre', () => {
+    const synthese: TexteSynthese = { limites: 'Orienter vers le pack d’exploration Migraine et cephalees.' };
+    expect(verifierRestitutionOrientation(synthese, RIEN)).toEqual([
+      { type: 'pack', identifiant: 'pack_migraine_cephalees' },
+    ]);
+  });
+
   it('inspecte l’intérieur des axes prioritaires', () => {
     const synthese: TexteSynthese = {
       axes_prioritaires: [
