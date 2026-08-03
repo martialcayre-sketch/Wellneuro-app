@@ -23,6 +23,11 @@ Sujet : `$ARGUMENTS`
    - questions ouvertes.
 5. Ne jamais réécrire les entrées précédentes.
 6. Produire ensuite un handoff court.
+7. Si le lot clos relevait d'une classe à risque du tableau de `/wn-lot`
+   (Scoring/clinique, Prisma/migration, Auth), faire relire l'entrée
+   `SESSION_LOG` par `Agent(subagent_type: "wn-reviewer")` (prompt portant
+   `think hard`) avant de l'ajouter — une clôture inexacte sur ce périmètre
+   coûte plus cher qu'une relecture.
 
 ## Deux promotions à examiner à chaque clôture
 
