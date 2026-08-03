@@ -1,0 +1,1742 @@
+{
+  "version": "nnpp2-interventions-registry-v1",
+  "dateAudit": "2026-08-03",
+  "commentaire": "Registre des sources d'intervention NNPP2 — campagne 2026-08-03-packs-moteur-d-intervention-et-corpus-consommable, LOT-00. CE QU'IL DÉSIGNE : les sources du corpus qui portent une CONDUITE (fiche de synthèse, ordonnance commentée, fiche protocole, doctrine d'exploration), par opposition aux supports de cours. Critère de sélection, rejouable : documentType ∈ {Protocole / outil décisionnel, Synthèse clinique, Outil clinique} UNION titre contenant synth|ordonnance|protocole|prise en charge|conduite, MOINS le notebook 00 (hors RAG clinique, décision du 2026-07-26). Le documentType déclaré prime sur le motif de titre : le titre seul ratait 51 sources sur 99, dont toute la doctrine d'exploration (WN-SRC-0046/0047/0049/0050/0051/0052). CE QU'IL N'ATTESTE PAS : ni la validité clinique d'une conduite, ni sa validation praticien. `claims` est un INSTANTANÉ daté (mesureLe) lu en base de production ; le garde ne le confronte pas à la base — le CI n'y a pas accès, et un compteur périmé ne doit pas rougir le CI. `statutValidation` dérive des compteurs, il ne se saisit pas. DEUX NIVEAUX, jamais confondus : `axeId` est CANONIQUE et vient du notebook par table explicite (un axe, un identifiant — aucun doublon fabriqué par un slug de repli) ; `sousAxe` vient d'une règle ordonnée sur le titre et reste null quand aucune ne reconnaît la source. Les deux GROUPENT et ne sont pas uniques ; les sources d'un même axe se distinguent par `tableauClinique`. `neCouvrePas` reste null tant que la revue praticien ne l'a pas renseigné : le remplir de mémoire produirait le faux savoir que la campagne cherche à éviter. DISJONCTION GARDÉE : aucune source d'intervention n'appartient aux sourceIds de instrument_registry.json — un instrument relève du banc certify, pas de la chaîne de claims.",
+  "interventions": [
+    {
+      "axeId": "biologie-fonctionnelle",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0046",
+      "notebook": "08 — Biologie fonctionnelle",
+      "documentType": "Outil clinique",
+      "titre": "10 Les explorations catégorielles optionnelles.pdf",
+      "tableauClinique": "Les explorations catégorielles optionnelles",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 35,
+        "enAttente": 0,
+        "prescriptifs": 5,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "biologie-fonctionnelle",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0047",
+      "notebook": "08 — Biologie fonctionnelle",
+      "documentType": "Outil clinique",
+      "titre": "9 Exploration catégorielle fondamentale.pdf",
+      "tableauClinique": "Exploration catégorielle fondamentale",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 33,
+        "enAttente": 0,
+        "prescriptifs": 8,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "biologie-fonctionnelle",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0049",
+      "notebook": "08 — Biologie fonctionnelle",
+      "documentType": "Outil clinique",
+      "titre": "7 Exploration dimensionnelle des neurotransmetteurs.pdf",
+      "tableauClinique": "Exploration dimensionnelle des neurotransmetteurs",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 16,
+        "enAttente": 0,
+        "prescriptifs": 3,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "fondements-12-besoins",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0050",
+      "notebook": "01 — Fondements et 12 besoins",
+      "documentType": "Outil clinique",
+      "titre": "6 Exploration contextuelle corporelle.pdf",
+      "tableauClinique": "Exploration contextuelle corporelle",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 20,
+        "enAttente": 0,
+        "prescriptifs": 0,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "stress-burnout",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0051",
+      "notebook": "03 — Stress et burnout",
+      "documentType": "Outil clinique",
+      "titre": "5 explorations contextuelles du stress.pdf",
+      "tableauClinique": "explorations contextuelles du stress",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 36,
+        "enAttente": 0,
+        "prescriptifs": 9,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0052",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Outil clinique",
+      "titre": "4 exploration contextuelle du sommeil.pdf",
+      "tableauClinique": "exploration contextuelle du sommeil",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 73,
+        "enAttente": 0,
+        "prescriptifs": 51,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0053",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Outil clinique",
+      "titre": "3 Enquête alimentaire.pdf",
+      "tableauClinique": "Enquête alimentaire",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 15,
+        "enAttente": 0,
+        "prescriptifs": 3,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "biologie-fonctionnelle",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0054",
+      "notebook": "08 — Biologie fonctionnelle",
+      "documentType": "Outil clinique",
+      "titre": "2 Bilan et repérage.pdf",
+      "tableauClinique": "Bilan et repérage",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 21,
+        "enAttente": 0,
+        "prescriptifs": 0,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "biologie-fonctionnelle",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0055",
+      "notebook": "08 — Biologie fonctionnelle",
+      "documentType": "Outil clinique",
+      "titre": "1 Bilan, évaluation et profil individuel.pdf",
+      "tableauClinique": "Bilan, évaluation et profil individuel",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 7,
+        "enAttente": 0,
+        "prescriptifs": 2,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "micronutrition-complements",
+      "sousAxe": "prescription-micronutrition",
+      "sourceId": "WN-SRC-0062",
+      "notebook": "10 — Micronutrition et compléments",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "16 Posologie et protocoles de prescription.pdf",
+      "tableauClinique": "Posologie et protocoles de prescription",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 44,
+        "enAttente": 0,
+        "prescriptifs": 32,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0067",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Outil clinique",
+      "titre": "11 De l’enquête aux conseils les comportements.pdf",
+      "tableauClinique": "De l’enquête aux conseils les comportements",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 18,
+        "enAttente": 0,
+        "prescriptifs": 15,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0068",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Outil clinique",
+      "titre": "10 De l’enquête aux conseils les aliments vedettes.pdf",
+      "tableauClinique": "De l’enquête aux conseils les aliments vedettes",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 9,
+        "enAttente": 0,
+        "prescriptifs": 5,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0069",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Outil clinique",
+      "titre": "9 De l’enquête aux conseils les produits sucrés.pdf",
+      "tableauClinique": "De l’enquête aux conseils les produits sucrés",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 12,
+        "enAttente": 0,
+        "prescriptifs": 5,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0070",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Outil clinique",
+      "titre": "8 De l’enquête aux conseils les poissons et les viandes.pdf",
+      "tableauClinique": "De l’enquête aux conseils les poissons et les viandes",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 22,
+        "enAttente": 0,
+        "prescriptifs": 11,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0071",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Outil clinique",
+      "titre": "7 De l’enquête aux conseils les matières grasses.pdf",
+      "tableauClinique": "De l’enquête aux conseils les matières grasses",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 27,
+        "enAttente": 0,
+        "prescriptifs": 7,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0072",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Outil clinique",
+      "titre": "6 De lenquête aux conseils les végétaux.pdf",
+      "tableauClinique": "De lenquête aux conseils les végétaux",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 33,
+        "enAttente": 0,
+        "prescriptifs": 16,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0073",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Outil clinique",
+      "titre": "5 De l’enquête aux conseils boissons.pdf",
+      "tableauClinique": "De l’enquête aux conseils boissons",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 24,
+        "enAttente": 0,
+        "prescriptifs": 13,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "stress-burnout",
+      "sousAxe": "stress-burnout",
+      "sourceId": "WN-SRC-0105",
+      "notebook": "03 — Stress et burnout",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "4d Ordonnances et prise en charge globale du stress.pdf",
+      "tableauClinique": "Ordonnances et prise en charge globale du stress",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 40,
+        "enAttente": 0,
+        "prescriptifs": 29,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "depression",
+      "sourceId": "WN-SRC-0124",
+      "notebook": "04 — Humeur",
+      "documentType": "Outil clinique",
+      "titre": "12 Les outils de prise en charge de la dépression.pdf",
+      "tableauClinique": "Les outils de prise en charge de la dépression",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 25,
+        "enAttente": 0,
+        "prescriptifs": 12,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "depression",
+      "sourceId": "WN-SRC-0127",
+      "notebook": "04 — Humeur",
+      "documentType": "Synthèse clinique",
+      "titre": "9 les troubles dépressifs aspect clinique.pdf",
+      "tableauClinique": "les troubles dépressifs aspect clinique",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 32,
+        "enAttente": 0,
+        "prescriptifs": 5,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0139",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Cours / référence",
+      "titre": "10 Les troubles des conduites alimentaires pathologiques.pdf",
+      "tableauClinique": "Les troubles des conduites alimentaires pathologiques",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 22,
+        "prescriptifs": 5,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": "cognition",
+      "sourceId": "WN-SRC-0153",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Cours / référence",
+      "titre": "2E Prise en charge dun trouble de la mémoire.pdf",
+      "tableauClinique": "Prise en charge dun trouble de la mémoire",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 27,
+        "enAttente": 0,
+        "prescriptifs": 13,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0154",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Outil clinique",
+      "titre": "2D Lexploration dun trouble de la mémoire.pdf",
+      "tableauClinique": "Lexploration dun trouble de la mémoire",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 33,
+        "enAttente": 21,
+        "prescriptifs": 22,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "partiel"
+    },
+    {
+      "axeId": "douleurs-chroniques",
+      "sousAxe": "douleur",
+      "sourceId": "WN-SRC-0163",
+      "notebook": "06 — Douleurs chroniques",
+      "documentType": "Cours / référence",
+      "titre": "10 prise en charge de la douleur B.pdf",
+      "tableauClinique": "prise en charge de la douleur B",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 52,
+        "prescriptifs": 12,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "douleurs-chroniques",
+      "sousAxe": "douleur",
+      "sourceId": "WN-SRC-0164",
+      "notebook": "06 — Douleurs chroniques",
+      "documentType": "Cours / référence",
+      "titre": "10 prise en charge de la douleur A.pdf",
+      "tableauClinique": "prise en charge de la douleur A",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 48,
+        "prescriptifs": 12,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0167",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Outil clinique",
+      "titre": "7 Bilan et prise en charge des troubles neurodégénératifs.pdf",
+      "tableauClinique": "Bilan et prise en charge des troubles neurodégénératifs",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 35,
+        "prescriptifs": 12,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0168",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Outil clinique",
+      "titre": "6 Bilan de la neurosenescence.pdf",
+      "tableauClinique": "Bilan de la neurosenescence",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 28,
+        "prescriptifs": 24,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0177",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "15 Le programme de 21  jours.pdf",
+      "tableauClinique": "Le programme de 21 jours",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 5,
+        "prescriptifs": 5,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "stress-burnout",
+      "sousAxe": "stress-burnout",
+      "sourceId": "WN-SRC-0236",
+      "notebook": "03 — Stress et burnout",
+      "documentType": "Synthèse clinique",
+      "titre": "1 fiche synthèse les troubles de ladaptation.pdf",
+      "tableauClinique": "fiche synthèse les troubles de ladaptation",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 27,
+        "enAttente": 0,
+        "prescriptifs": 9,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "stress-burnout",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0238",
+      "notebook": "03 — Stress et burnout",
+      "documentType": "Synthèse clinique",
+      "titre": "Synthèse des prises en charge.pdf",
+      "tableauClinique": "Synthèse des prises en charge",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 6,
+        "enAttente": 0,
+        "prescriptifs": 0,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "stress-burnout",
+      "sousAxe": "stress-burnout",
+      "sourceId": "WN-SRC-0243",
+      "notebook": "03 — Stress et burnout",
+      "documentType": "Outil clinique",
+      "titre": "Outil de détection précoce du burnout DEF.pdf",
+      "tableauClinique": "Outil de détection précoce du burnout",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 6,
+        "enAttente": 0,
+        "prescriptifs": 2,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "audit-contradictions",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0244",
+      "notebook": "12 — Audit des contradictions",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "fiche protocole perfusion magnésium.pdf",
+      "tableauClinique": "fiche protocole perfusion magnésium",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 8,
+        "prescriptifs": 6,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "biologie-fonctionnelle",
+      "sousAxe": "biologie-fonctionnelle",
+      "sourceId": "WN-SRC-0282",
+      "notebook": "08 — Biologie fonctionnelle",
+      "documentType": "Outil clinique",
+      "titre": "NNPP atelier de biologie.pdf",
+      "tableauClinique": "NNPP atelier de biologie",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 19,
+        "enAttente": 0,
+        "prescriptifs": 19,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "micronutrition-complements",
+      "sousAxe": "prescription-micronutrition",
+      "sourceId": "WN-SRC-0283",
+      "notebook": "10 — Micronutrition et compléments",
+      "documentType": "Outil clinique",
+      "titre": "Atelier 1 tt nut et micronut.pdf",
+      "tableauClinique": "Atelier 1 tt nut et micronut",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 6,
+        "enAttente": 0,
+        "prescriptifs": 2,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0284",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette végétale def.pdf",
+      "tableauClinique": "protocole assiette végétale",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 6,
+        "enAttente": 0,
+        "prescriptifs": 5,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0285",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette dépargne digestive def.pdf",
+      "tableauClinique": "protocole assiette dépargne digestive",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 12,
+        "enAttente": 0,
+        "prescriptifs": 10,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0286",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette méthylation optimale def.pdf",
+      "tableauClinique": "protocole assiette méthylation optimale",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 7,
+        "enAttente": 0,
+        "prescriptifs": 4,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0287",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette détoxication def docx.pdf",
+      "tableauClinique": "protocole assiette détoxication docx",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 13,
+        "enAttente": 0,
+        "prescriptifs": 10,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0288",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette protéinée def.pdf",
+      "tableauClinique": "protocole assiette protéinée",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 15,
+        "enAttente": 0,
+        "prescriptifs": 13,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0289",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette dopaminergique def.pdf",
+      "tableauClinique": "protocole assiette dopaminergique",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 6,
+        "enAttente": 0,
+        "prescriptifs": 3,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0290",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette sérotoninergique def.pdf",
+      "tableauClinique": "protocole assiette sérotoninergique",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 15,
+        "enAttente": 0,
+        "prescriptifs": 11,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0291",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette psychobiotique def.pdf",
+      "tableauClinique": "protocole assiette psychobiotique",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 16,
+        "enAttente": 0,
+        "prescriptifs": 10,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0292",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette anti oxydante def.pdf",
+      "tableauClinique": "protocole assiette anti oxydante",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 6,
+        "enAttente": 0,
+        "prescriptifs": 4,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0293",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette anti inflammatoire def.pdf",
+      "tableauClinique": "protocole assiette anti inflammatoire",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 13,
+        "enAttente": 0,
+        "prescriptifs": 8,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0294",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette oméga 3 def.pdf",
+      "tableauClinique": "protocole assiette oméga 3",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 8,
+        "enAttente": 0,
+        "prescriptifs": 2,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "nutrition-aliments",
+      "sousAxe": "assiette-protocolaire",
+      "sourceId": "WN-SRC-0295",
+      "notebook": "09 — Nutrition et aliments vedettes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole assiette chronobiologique def.pdf",
+      "tableauClinique": "protocole assiette chronobiologique",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 14,
+        "enAttente": 0,
+        "prescriptifs": 13,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": "insomnie",
+      "sourceId": "WN-SRC-0312",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Synthèse clinique",
+      "titre": "Fiche synthèse travail posté def.pdf",
+      "tableauClinique": "Fiche synthèse travail posté",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 22,
+        "enAttente": 0,
+        "prescriptifs": 13,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": "insomnie",
+      "sourceId": "WN-SRC-0313",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Synthèse clinique",
+      "titre": "Fiche synthèse insomnie et stress intense ou chronique def.pdf",
+      "tableauClinique": "Fiche synthèse insomnie et stress intense ou chronique",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 24,
+        "enAttente": 0,
+        "prescriptifs": 15,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": "insomnie",
+      "sourceId": "WN-SRC-0314",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Synthèse clinique",
+      "titre": "Fiche synthèse insomnie et stress chronique et épuisement def.pdf",
+      "tableauClinique": "Fiche synthèse insomnie et stress chronique et épuisement",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 33,
+        "enAttente": 0,
+        "prescriptifs": 25,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": "insomnie",
+      "sourceId": "WN-SRC-0315",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Synthèse clinique",
+      "titre": "Fiche synthèse insomnie et troubles dépressifs def.pdf",
+      "tableauClinique": "Fiche synthèse insomnie et troubles dépressifs",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 20,
+        "enAttente": 0,
+        "prescriptifs": 16,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": "insomnie",
+      "sourceId": "WN-SRC-0316",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Synthèse clinique",
+      "titre": "Fiche synthèse insomnie et troubles anxieux def.pdf",
+      "tableauClinique": "Fiche synthèse insomnie et troubles anxieux",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 29,
+        "enAttente": 0,
+        "prescriptifs": 23,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": "insomnie",
+      "sourceId": "WN-SRC-0317",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Synthèse clinique",
+      "titre": "Fiche synthèse insomnie récente et stress modéré def.pdf",
+      "tableauClinique": "Fiche synthèse insomnie récente et stress modéré",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 11,
+        "enAttente": 0,
+        "prescriptifs": 7,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": "insomnie",
+      "sourceId": "WN-SRC-0318",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "Fiche synthèse Les insomnies premières ordonnances def .pdf",
+      "tableauClinique": "Fiche synthèse Les insomnies premières ordonnances",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 29,
+        "enAttente": 0,
+        "prescriptifs": 20,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0320",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "protocole troubles du sommeil shéma.pdf",
+      "tableauClinique": "protocole troubles du sommeil shéma",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 7,
+        "enAttente": 0,
+        "prescriptifs": 3,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": "conduite-de-consultation",
+      "sourceId": "WN-SRC-0321",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Outil clinique",
+      "titre": "Fiche outils pour la consultation sommeil def.pdf",
+      "tableauClinique": "Fiche outils pour la consultation sommeil",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 13,
+        "enAttente": 0,
+        "prescriptifs": 1,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "audit-contradictions",
+      "sousAxe": "sevrage",
+      "sourceId": "WN-SRC-0322",
+      "notebook": "12 — Audit des contradictions",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "Fiche outils de protocole sevrage des benzodiazépines def.pdf",
+      "tableauClinique": "Fiche outils de protocole sevrage des benzodiazépines",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 22,
+        "prescriptifs": 12,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "sommeil-chronobiologie",
+      "sousAxe": "exploration-doctrine",
+      "sourceId": "WN-SRC-0323",
+      "notebook": "02 — Sommeil et chronobiologie",
+      "documentType": "Outil clinique",
+      "titre": "Fiche outils cliniques exploration des troubles du sommeil def.pdf",
+      "tableauClinique": "Fiche outils cliniques exploration des troubles du sommeil",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 36,
+        "enAttente": 0,
+        "prescriptifs": 17,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "depression",
+      "sourceId": "WN-SRC-0327",
+      "notebook": "04 — Humeur",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "ordonnance commentée dune dépression intense et résistante aux traitements DEF.pdf",
+      "tableauClinique": "ordonnance commentée dune dépression intense et résistante aux traitements",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 11,
+        "enAttente": 0,
+        "prescriptifs": 9,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "depression",
+      "sourceId": "WN-SRC-0328",
+      "notebook": "04 — Humeur",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "ordonnance commentée dune dépression chronique ou récidivante DEF.pdf",
+      "tableauClinique": "ordonnance commentée dune dépression chronique ou récidivante",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 12,
+        "enAttente": 0,
+        "prescriptifs": 10,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "depression",
+      "sourceId": "WN-SRC-0329",
+      "notebook": "04 — Humeur",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "ordonnance commentée dune dépression simple et inaugurale DEF.pdf",
+      "tableauClinique": "ordonnance commentée dune dépression simple et inaugurale",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 14,
+        "enAttente": 0,
+        "prescriptifs": 11,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "depression",
+      "sourceId": "WN-SRC-0330",
+      "notebook": "04 — Humeur",
+      "documentType": "Synthèse clinique",
+      "titre": "Fiche synthèse dépressions NNPP DEF.pdf",
+      "tableauClinique": "Fiche synthèse dépressions NNPP",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 36,
+        "enAttente": 0,
+        "prescriptifs": 10,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "anxiete",
+      "sourceId": "WN-SRC-0331",
+      "notebook": "04 — Humeur",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "ordonnance commentée dun trouble anxieux généralisé DEF.pdf",
+      "tableauClinique": "ordonnance commentée dun trouble anxieux généralisé",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 13,
+        "enAttente": 0,
+        "prescriptifs": 12,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "anxiete",
+      "sourceId": "WN-SRC-0332",
+      "notebook": "04 — Humeur",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "ordonnance commentée dune anxiété modérée DEF.pdf",
+      "tableauClinique": "ordonnance commentée dune anxiété modérée",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 5,
+        "enAttente": 0,
+        "prescriptifs": 5,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "anxiete",
+      "sourceId": "WN-SRC-0333",
+      "notebook": "04 — Humeur",
+      "documentType": "Synthèse clinique",
+      "titre": "fiche de synthèse anxiété et troubles anxieux DEF.pdf",
+      "tableauClinique": "fiche de synthèse anxiété et troubles anxieux",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 51,
+        "enAttente": 0,
+        "prescriptifs": 19,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "depression",
+      "sourceId": "WN-SRC-0334",
+      "notebook": "04 — Humeur",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "arborescence décisionnelle dépression.pdf",
+      "tableauClinique": "arborescence décisionnelle dépression",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 8,
+        "enAttente": 0,
+        "prescriptifs": 8,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "anxiete",
+      "sourceId": "WN-SRC-0335",
+      "notebook": "04 — Humeur",
+      "documentType": "Outil clinique",
+      "titre": "la consultation des troubles anxieux.pdf",
+      "tableauClinique": "la consultation des troubles anxieux",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 13,
+        "enAttente": 0,
+        "prescriptifs": 8,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "depression",
+      "sourceId": "WN-SRC-0336",
+      "notebook": "04 — Humeur",
+      "documentType": "Outil clinique",
+      "titre": "consultation pratique en NN des troubles dépressifs.pdf",
+      "tableauClinique": "consultation pratique en NN des troubles dépressifs",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 28,
+        "enAttente": 0,
+        "prescriptifs": 10,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "depression",
+      "sourceId": "WN-SRC-0339",
+      "notebook": "04 — Humeur",
+      "documentType": "Synthèse clinique",
+      "titre": "depression_adulte_fiche_de_synthese_diagnostic.pdf",
+      "tableauClinique": "depression_adulte_fiche_de_synthese_diagnostic",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 20,
+        "enAttente": 0,
+        "prescriptifs": 8,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "humeur",
+      "sousAxe": "depression",
+      "sourceId": "WN-SRC-0340",
+      "notebook": "04 — Humeur",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "Fiche protocole biologie dépressions DEF.pdf",
+      "tableauClinique": "Fiche protocole biologie dépressions",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 15,
+        "enAttente": 0,
+        "prescriptifs": 5,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "complet"
+    },
+    {
+      "axeId": "intestin-cerveau",
+      "sousAxe": "intestin-cerveau",
+      "sourceId": "WN-SRC-0344",
+      "notebook": "07 — Axe intestin-cerveau",
+      "documentType": "Synthèse clinique",
+      "titre": "Synthèse Troubles fonctionnels intestinaux 2024.pdf",
+      "tableauClinique": "Synthèse Troubles fonctionnels intestinaux 2024",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 29,
+        "prescriptifs": 13,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "audit-contradictions",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0347",
+      "notebook": "12 — Audit des contradictions",
+      "documentType": "Synthèse clinique",
+      "titre": "FS système cannabinoïde NNPP DEF.pdf",
+      "tableauClinique": "FS système cannabinoïde NNPP",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 30,
+        "prescriptifs": 5,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "intestin-cerveau",
+      "sousAxe": "intestin-cerveau",
+      "sourceId": "WN-SRC-0348",
+      "notebook": "07 — Axe intestin-cerveau",
+      "documentType": "Synthèse clinique",
+      "titre": "FS Intestin irritable NNPP DEF.pdf",
+      "tableauClinique": "FS Intestin irritable NNPP",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 21,
+        "prescriptifs": 12,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "douleurs-chroniques",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0349",
+      "notebook": "06 — Douleurs chroniques",
+      "documentType": "Synthèse clinique",
+      "titre": "FS fibromyalgie NNPP def.pdf",
+      "tableauClinique": "FS fibromyalgie NNPP",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 26,
+        "prescriptifs": 13,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "douleurs-chroniques",
+      "sousAxe": "douleur",
+      "sourceId": "WN-SRC-0350",
+      "notebook": "06 — Douleurs chroniques",
+      "documentType": "Synthèse clinique",
+      "titre": "FS Douleurs chroniques def.pdf",
+      "tableauClinique": "FS Douleurs chroniques",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 37,
+        "prescriptifs": 15,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "douleurs-chroniques",
+      "sousAxe": "douleur",
+      "sourceId": "WN-SRC-0351",
+      "notebook": "06 — Douleurs chroniques",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "douleurs chronique organigramme.drawio.pdf",
+      "tableauClinique": "douleurs chronique organigramme",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 5,
+        "prescriptifs": 4,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0358",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "FS Fatigues psychiques ordonnances_V3_oli.pdf",
+      "tableauClinique": "FS Fatigues psychiques ordonnances_V3_oli",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 25,
+        "prescriptifs": 11,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0359",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Synthèse clinique",
+      "titre": "FS Fatigues chroniques_V3_oli.pdf",
+      "tableauClinique": "FS Fatigues chroniques_V3_oli",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 51,
+        "prescriptifs": 31,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": "conduite-de-consultation",
+      "sourceId": "WN-SRC-0363",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Outil clinique",
+      "titre": "stratégie de consultation des cas complexes.pdf",
+      "tableauClinique": "stratégie de consultation des cas complexes",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 16,
+        "prescriptifs": 6,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0364",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "cas compliqués.drawio.pdf",
+      "tableauClinique": "cas compliqués",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 6,
+        "prescriptifs": 6,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0365",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "mal-être.drawio.pdf",
+      "tableauClinique": "mal-être",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 0,
+        "prescriptifs": 0,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "sans_claim",
+      "motifSansClaim": "Schéma (.drawio) — aucun verbatim exploitable par la chaîne de claims ; chunké sans assertion."
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0366",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Synthèse clinique",
+      "titre": "FS troubles du comportement  alimentaire_V3_OLI.pdf",
+      "tableauClinique": "FS troubles du comportement alimentaire_V3_OLI",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 22,
+        "prescriptifs": 12,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0367",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Synthèse clinique",
+      "titre": "FS grignotages  NNPP_V3_OLI.pdf",
+      "tableauClinique": "FS grignotages NNPP_V3_OLI",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 15,
+        "prescriptifs": 9,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0368",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Synthèse clinique",
+      "titre": "FS compulsions glucidiques NNPP_V3_OLI.pdf",
+      "tableauClinique": "FS compulsions glucidiques NNPP_V3_OLI",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 20,
+        "prescriptifs": 10,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0369",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Synthèse clinique",
+      "titre": "FS anorexie boulimie orthorexie_V3_OLI.pdf",
+      "tableauClinique": "FS anorexie boulimie orthorexie_V3_OLI",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 29,
+        "prescriptifs": 16,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": "sevrage",
+      "sourceId": "WN-SRC-0370",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Synthèse clinique",
+      "titre": "FS  addictions et sevrage_V3_oli.pdf",
+      "tableauClinique": "FS addictions et sevrage_V3_oli",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 12,
+        "prescriptifs": 10,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": "conduite-de-consultation",
+      "sourceId": "WN-SRC-0371",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Outil clinique",
+      "titre": "La consultation de Neuro-Nutrition et les troubles du comportement.pdf",
+      "tableauClinique": "La consultation de Neuro-Nutrition et les troubles du comportement",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 7,
+        "prescriptifs": 4,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cas-complexes",
+      "sousAxe": "sevrage",
+      "sourceId": "WN-SRC-0372",
+      "notebook": "11 — Cas complexes",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "Fiche de protocole darrêt du tabac NNPP.pdf",
+      "tableauClinique": "Fiche de protocole darrêt du tabac NNPP",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 12,
+        "prescriptifs": 9,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0375",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Outil clinique",
+      "titre": "tableau outil heure de sommeil.pdf",
+      "tableauClinique": "tableau outil heure de sommeil",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 0,
+        "prescriptifs": 0,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "sans_claim",
+      "motifSansClaim": "Tableau d'aide à la saisie — support de recueil, pas une assertion clinique."
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0376",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Synthèse clinique",
+      "titre": "FS Troubles du spectre autistique_V3OLI.pdf",
+      "tableauClinique": "FS Troubles du spectre autistique_V3OLI",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 27,
+        "prescriptifs": 16,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0377",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Synthèse clinique",
+      "titre": "FS apprentissage scolarité TDAH_V3_OLI (1).pdf",
+      "tableauClinique": "FS apprentissage scolarité TDAH_V3_OLI (1)",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 36,
+        "prescriptifs": 19,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": "conduite-de-consultation",
+      "sourceId": "WN-SRC-0378",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Outil clinique",
+      "titre": "La consultation de Neuro-Nutrition.pdf",
+      "tableauClinique": "La consultation de Neuro-Nutrition",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 14,
+        "prescriptifs": 13,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": null,
+      "sourceId": "WN-SRC-0387",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Synthèse clinique",
+      "titre": "Fiche synthèse maladies neurodégénératives def.pdf",
+      "tableauClinique": "Fiche synthèse maladies neurodégénératives",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 33,
+        "prescriptifs": 19,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": "cognition",
+      "sourceId": "WN-SRC-0388",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Synthèse clinique",
+      "titre": "Fiche synthèse troubles de la mémoire DEF.pdf",
+      "tableauClinique": "Fiche synthèse troubles de la mémoire",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 21,
+        "prescriptifs": 14,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "cognition-memoire",
+      "sousAxe": "cognition",
+      "sourceId": "WN-SRC-0390",
+      "notebook": "05 — Cognition et mémoire",
+      "documentType": "Protocole / outil décisionnel",
+      "titre": "Fiche protocole biologie mémoire DEF.pdf",
+      "tableauClinique": "Fiche protocole biologie mémoire",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": true,
+      "claims": {
+        "valide": 0,
+        "enAttente": 20,
+        "prescriptifs": 3,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "aucun"
+    },
+    {
+      "axeId": "instruments-cabinet",
+      "sousAxe": "douleur",
+      "sourceId": "WN-SRC-0485",
+      "notebook": "13 — Instruments du cabinet",
+      "documentType": "Questionnaire / échelle",
+      "titre": "douleur_chronique_synthese HAS.pdf",
+      "tableauClinique": "douleur_chronique_synthese HAS",
+      "neCouvrePas": null,
+      "prescriptiveDeclaree": false,
+      "claims": {
+        "valide": 0,
+        "enAttente": 0,
+        "prescriptifs": 0,
+        "mesureLe": "2026-08-03"
+      },
+      "statutValidation": "sans_claim",
+      "motifSansClaim": "Notebook 13 « Instruments du cabinet » — chunks seuls PAR CONCEPTION ; les instruments passent par le banc certify, jamais par la chaîne de claims."
+    }
+  ],
+  "ecartees": [
+    {
+      "sourceId": "WN-SRC-0183",
+      "titre": "5 La consultation ou l’entretien.pdf",
+      "motif": "notebook 00 « Gouvernance du corpus » — exclu du RAG clinique par la décision du 2026-07-26 ; présent en bibliothèque NotebookLM seulement."
+    },
+    {
+      "sourceId": "WN-SRC-0247",
+      "titre": "exploration catégorielle.pdf",
+      "motif": "notebook 00 « Gouvernance du corpus » — exclu du RAG clinique par la décision du 2026-07-26 ; présent en bibliothèque NotebookLM seulement."
+    },
+    {
+      "sourceId": "WN-SRC-0249",
+      "titre": "Atelier d’utilisation NEW.pdf",
+      "motif": "notebook 00 « Gouvernance du corpus » — exclu du RAG clinique par la décision du 2026-07-26 ; présent en bibliothèque NotebookLM seulement."
+    },
+    {
+      "sourceId": "WN-SRC-0267",
+      "titre": "La consultation de Neuro-Nutrition newdef.pdf",
+      "motif": "notebook 00 « Gouvernance du corpus » — exclu du RAG clinique par la décision du 2026-07-26 ; présent en bibliothèque NotebookLM seulement."
+    }
+  ]
+}

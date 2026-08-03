@@ -10,16 +10,17 @@ palier: "T3"
 
 ## But
 
-Faire signer les 327 claims en attente **des seules sources du registre LOT-00**,
+Faire signer les 755 claims en attente **des seules sources du registre LOT-00**,
 pour que la couche intervention devienne servable sans toucher à la porte D-003.
 
 ## Pourquoi ce ciblage plutôt que l'Atelier v2
 
 La demande initiale visait à « utiliser les claims même s'ils ne sont pas
 validés ». Mesure faite, ce n'est pas nécessaire : le déficit sur la couche
-intervention est de **327 claims**, pas de 2982. À 1-2 min pièce
-(`docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md`), la revue individuelle
-passe l'échelle — ce qu'elle ne fait pas sur le corpus entier.
+intervention est de **755 claims**, pas de 2982. À 1-2 min pièce
+(`docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md`), c'est de l'ordre de la
+journée de travail praticien — la revue individuelle passe l'échelle, ce qu'elle
+ne fait pas sur le corpus entier.
 
 Et la voie rapide ne s'appliquerait pas de toute façon : elle est réservée aux
 claims déclarés/observés **non prescriptifs**, or **54 % de ces claims sont
@@ -34,27 +35,33 @@ En base de production, sur les sources du registre LOT-00 :
 SELECT count(*) FILTER (WHERE statut = 'VALIDE')  AS valide,
        count(*) FILTER (WHERE statut <> 'VALIDE') AS attente
 FROM rag_corpus_claims WHERE active AND source_id IN (<registre LOT-00>);
--- attendu : 979 / 0   (état au cadrage : 652 / 327)
+-- attendu : 2002 / 0   (état au cadrage : 1247 / 755)
 ```
 
 ## Périmètre
 
-Les 327 claims en attente, répartis :
+Les 755 claims en attente, répartis :
 
 | Notebook | Claims en attente |
 |---|---:|
-| 05 — Cognition et mémoire | 109 |
-| 06 — Douleurs chroniques | 100 |
-| 11 — Cas complexes | 59 |
-| 12 — Audit des contradictions | 30 |
-| 07 — Axe intestin-cerveau | 29 |
+| 11 — Cas complexes | 242 |
+| 05 — Cognition et mémoire | 235 |
+| 06 — Douleurs chroniques | 168 |
+| 12 — Audit des contradictions | 60 |
+| 07 — Axe intestin-cerveau | 50 |
 
 La porte D-003 ne bouge pas : `validateur` et `valide_at` posés sur **chaque**
 claim, modalité de revue tracée et distinguable en audit.
 
+⚠ **Ne pas prioriser sur `prescriptiveDeclaree`.** Le champ `prescriptive` de
+`source_registry.json` est faux sur 52 des 95 sources du registre — déclarées non
+prescriptives alors qu'elles portent 640 claims prescriptifs (64 % du total).
+L'erreur va toujours dans le même sens, jamais l'inverse. Seul le `prescriptif`
+au niveau du **claim** fait foi pour décider d'une voie de revue.
+
 ## Hors périmètre
 
-- L'Atelier v2 et les ~2650 claims restants du corpus — chantier distinct.
+- L'Atelier v2 et les ~2225 claims restants du corpus — chantier distinct.
 - Toute modification de `match_wellneuro_rag_claims`.
 - Toute exposition d'un claim non signé, praticien compris.
 
@@ -74,10 +81,10 @@ claim, modalité de revue tracée et distinguable en audit.
 
 ## Étapes
 
-- [ ] Extraire la liste exacte des 327 claims depuis le registre LOT-00.
+- [ ] Extraire la liste exacte des 755 claims depuis le registre LOT-00 (95 `sourceId`).
 - [ ] Vérifier que la surface de revue les présente avec leur verbatim source.
 - [ ] Mener la revue (geste praticien).
-- [ ] Relire la base : compteur `979 / 0` sur le périmètre.
+- [ ] Relire la base : compteur `2002 / 0` sur le périmètre.
 - [ ] Consigner la modalité de revue employée.
 
 ## Tests
@@ -88,7 +95,7 @@ claim, modalité de revue tracée et distinguable en audit.
 
 ## Critères de done
 
-- [ ] `979 / 0` vérifié en base après merge, pas supposé.
+- [ ] `2002 / 0` vérifié en base après merge, pas supposé.
 - [ ] Chaque claim signé porte `validateur` et `valide_at`.
 - [ ] La modalité de revue est tracée et auditable.
 - [ ] Revue adversariale `wn-reviewer` passée.

@@ -31,3 +31,31 @@ Ultimate v2. Il s'agit d'un inventaire documentaire, pas d'un corpus runtime.
 
 La date source déclarée par le pack est le 2026-07-14. L'audit et
 l'intégration réels ont été réalisés le 2026-07-13.
+
+## Registres dérivés
+
+Trois registres coexistent, de portées disjointes. Les confondre est l'erreur à
+éviter : une source est soit un instrument de mesure, soit une conduite, jamais
+les deux.
+
+| Fichier | Ce qu'il désigne | Garde |
+|---|---|---|
+| `source_registry.json` | l'inventaire documentaire — toutes les notices | — |
+| `instrument_registry.json` | les 64 instruments du catalogue et leur certification de **scoring** | `npm run scoring-check`, `registry-check` |
+| `nnpp2_interventions_registry.json` | les sources qui portent une **conduite** — fiches de synthèse, ordonnances commentées, protocoles, doctrine d'exploration | `npm run interventions-check` |
+
+`nnpp2_interventions_registry.json` (LOT-00 de la campagne
+`2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`) retient **95
+sources sur 11 notebooks**, sélectionnées par un critère rejouable — `documentType`
+∈ {Protocole / outil décisionnel, Synthèse clinique, Outil clinique} ∪ motif de
+titre, moins le notebook 00. Le champ déclaré prime sur le titre : le titre seul
+ratait 51 sources sur 99, dont toute la doctrine d'exploration.
+
+Deux propriétés à ne pas défaire :
+
+- **La disjonction avec `instrument_registry.json` est gardée.** Aucune source
+  d'intervention n'y est rattachée (mesuré nul au 2026-08-03) ; un instrument
+  relève du banc `certify`, pas de la chaîne de claims.
+- **Les compteurs de claims sont un instantané daté** (`claims.mesureLe`), lu en
+  production. Le garde ne les confronte pas à la base : le CI n'y a pas accès, et
+  un compteur périmé ne doit pas rougir le CI.
