@@ -1,112 +1,114 @@
-# Handoff — 2026-08-02
+# Handoff — 2026-08-03
 
 ## Git
 
-- Branche `claude/resume-ye9sbj`, repartie de `origin/main` après merge, arbre propre.
-- `main` = `071c7b1`. Trois PR livrées cette session : **#517** (clôture
-  certification 62/64 + arbitrages), **#518** (préparation pipeline lot 8),
-  **#519** (migration de marquage `usage=orientation`).
-- Aucune PR ouverte. Aucun suivi CI en cours.
+- `main` = `2aa0a9ab`, arbre propre, aucun worktree de lot ouvert.
+- Quatre PR livrées cette session : **#531** (cadrage de campagne), **#534**
+  (LOT-00, registre des interventions), **#536** (LOT-03, correspondance des
+  identifiants de packs), plus **#535** / **#537** (journal).
+- Aucune PR ouverte, aucun suivi CI en cours.
 
-## Objectif atteint
+## Objectif de la campagne
 
-Clore la montée en certification, transcrire les arbitrages praticien, et
-rendre le corpus d'orientation exploitable par le futur compilateur de règles
-(lot 9). **C'est fait et vérifié en production.**
+`2026-08-03-packs-moteur-d-intervention-et-corpus-consommable` — rendre le moteur
+d'intervention réellement utilisable : une recommandation de pack ou de
+questionnaires, reproductible, signée, sourcée sur les fiches NNPP2, et affichée
+sur une surface praticien qui l'appelle vraiment.
+
+Chemin critique `LOT-00 → LOT-03 → LOT-05 → LOT-06`. Les deux premiers sont
+livrés. LOT-04 et LOT-07 sont parallélisables ; LOT-01 n'attend qu'un geste
+praticien.
 
 ## Décisions prises, et pourquoi
 
-- **Q_PED_03 (Conners 3) reste `suspendu`** — arbitrage praticien sur trois
-  options instruites. Aucun usage en production ne justifie de reconstruire le
-  scoring dimensionnel. À rouvrir sur usage, et alors avec les 4 dimensions et
-  les 2 échelles de validité — **jamais la somme brute** servie aujourd'hui.
-- **Décision f close en AMENDANT A-009** : seule la **perfusion** reste exclue
-  du moteur d'orientation ; sevrages médicamenteux, psychotropes et Alzheimer
-  sont réintégrés. La voie lente est inchangée — chaque claim passe par la
-  validation praticien (D-003).
-- **La quarantaine sanitaire n'est pas un domaine.** L'amendement réintègre des
-  *thèmes* ; il ne lève aucune quarantaine. WN-SRC-0318, 0322, 0389, 0370
-  restent exclus tant que leur relecture n'est pas faite. Cette distinction est
-  gravée dans le filtre et dans deux bancs.
-- **Marquage rétroactif par migration, pas par ré-ingestion.** Le contrôle
-  d'immuabilité de `store.ts` ne compare pas `metadata` : ré-ingérer un claim
-  existant est un **no-op silencieux**. Sans la migration, `usage` serait resté
-  nul pour toujours et le lot 9 n'aurait vu aucun claim.
-- **Le lot 7 était déjà livré** (#361, 2026-07-25) — contrat, moteur, route à
-  double verrou, dormant fail-closed. Rien à re-développer.
+- **Le cadrage a corrigé trois points de la demande initiale.** La certification
+  des questionnaires était close depuis #528 ; le moteur d'orientation existait
+  déjà mais avec une table vide et **aucun appelant** ; et l'assouplissement du
+  fail-closed visait un blocage mal situé.
+- **Le critère de sélection des sources d'intervention est le `documentType`
+  déclaré, pas le motif de titre.** Le titre ratait 51 sources sur 99 — dont
+  toute la doctrine d'exploration (`WN-SRC-0046/0047/0049/0050/0051/0052`).
+  Périmètre retenu : 95 sources, 2002 claims.
+- **Option C sur les packs** : `packs.qids` fait foi pour la **composition**, le
+  code ne gouverne que l'**identité** (slug canonique, `id_pack`, axe). Le
+  praticien reste libre d'éditer un pack de doctrine — assumé, pas subi. Un pack
+  qu'il compose n'est jamais une cible d'orientation.
+- **La synthèse IA restituera la recommandation, ne la produira jamais.** Une
+  recommandation générée par un modèle n'a ni table signée ni `sha256` : six mois
+  plus tard, rien ne dirait pourquoi tel pack a été proposé.
+- **La porte D-003 ne bouge pas.** Valider 755 claims coûte moins cher
+  qu'assouplir le fail-closed, et la voie rapide ne s'appliquerait pas de toute
+  façon (50 % de prescriptifs).
+- **Retiré à la revue** : le correctif du `niveau` dans `syncPackToRegistry`. Il
+  n'atteignait pas les packs existants et aucun code ne lit
+  `questionnaire_packs.niveau`.
 
-## Fichiers livrés
+## Fichiers modifiés
 
-- `tools/corpus/claims/draft.mjs` — flag `--usage`, filtre appliqué avant tout
-  appel LLM.
-- `tools/corpus/claims/lib/filtre-orientation.mjs` + deux bancs
-  (`filtre-orientation.test.mjs`, `perimetre-orientation.test.mjs`).
-- `tools/corpus/claims/README.md` — runbook du run d'ingestion.
-- `web/prisma/migrations/20260801200000_rag_claim_usage_orientation/` +
-  `prisma/checks/rag_claim_usage_orientation_v1.sql` + étape `ci.yml`.
-- `web/src/lib/rag/claims/validation.test.ts` — 3 tests du passe-plat `metadata`.
-- `scripts/run-certify-bancs.sh` — balaie `certify/lib` **et** `claims/lib`.
-- `.wn/state.json`, `changelog.d/`, `docs/claude/SESSION_LOG.md`, README de
-  campagne (décision f close).
+- `docs/claude/corpus/nnpp2_interventions_registry.json` — **créé**, 95 sources
+- `scripts/lib/verifier_registre_interventions.{js,test.mjs}` — **créés**, 26 cas
+- `web/src/lib/questionnaires-functional.ts` — `idPackBase`, `axeId`, traduction
+  bidirectionnelle (`packIdDepuisIdBase`, `idBaseDepuisPackId`)
+- `web/src/app/api/praticien/orientation/route.ts` — traduction avant comparaison
+- `web/src/lib/consultation/packRegistry.ts` — repli qualifié par cause
+- `web/src/app/api/{portail/valider,praticien/packs/assign}/route.ts` —
+  journalisation de la dérive réelle seule
+- `web/prisma/checkPackRegistryConsistency.ts` — correspondances orphelines
+- `web/package.json` — `interventions-check` dans `npm run check`
 
 ## Validations exécutées
 
-- CI `verify` **vert** sur chacune des trois PR (E2E incluses).
-- Bancs Node : **70 tests, 0 échec**. T1 vert.
-- Migration **éprouvée sur PostgreSQL 16 éphémère** avec fixtures : périmètre
-  marqué, quarantaine et perfusion épargnées, `updated_at` intact, rejeu à
-  0 ligne, et les deux gardes lèvent bien leur exception quand on les met en
-  défaut.
-- **Vérification production après merge** (lecture `execute_sql`) :
-  migration appliquée (1 étape, aucun rollback) ; **1 716 / 1 716** claims du
-  périmètre marqués ; **0** claim hors liste marqué ; **0** claim de quarantaine
-  ou de perfusion marqué ; **0** claim `VALIDE` estampé sur 5 242 — aucune
-  signature praticien touchée.
-- Revue adversariale (migration) : GO sous réserve, **trois réserves bloquantes
-  levées** — `updated_at` préservé, post-condition sur l'état final, banc
-  rattachant la liste figée au registre.
+- T1 `npm run check` : vert — 330 fichiers, 3283 tests.
+- T3 `npm run test:worktree` : vert, E2E inclus — 1 min 54.
+- **Falsification** : en remettant la comparaison directe, 3 tests rougissent ;
+  en mutant le registre (dérive, statut menteur, entrée retirée), les 3 rougissent.
+- Revue `wn-reviewer` sur LOT-03 : GO SOUS RÉSERVE, 3 majeurs + 5 mineurs traités.
+- CI `verify` lu et vert sur les quatre PR.
+- Relecture base après merge : les 8 `packs` intacts, `updated_at` inchangés.
 
 ## Problèmes ouverts
 
-- **Trois défauts majeurs à trancher avant le lot 9** : trois des quatre
-  assertions cliniques du contrat SQL sont des tautologies (leurs témoins sont
-  exclus par plusieurs critères à la fois) ; le filtre du pipeline et la
-  migration définissent le périmètre **différemment** (un `--usage orientation`
-  sur une source hors périmètre entrerait sans que rien ne le détecte) ; le
-  marquage ignore `statut`, donc des claims `EN_ATTENTE` portent la marque.
-- **Hors campagne, à connaître** : rien au runtime ne filtre `lifecycleStatus`.
-  Les 248 claims validés de sources en quarantaine — dont WN-SRC-0318,
-  vigilance Élevée — restent remontables par le RAG. Le marquage ne crée pas ce
-  trou, il le rend visible.
-- **En attente praticien** : Q_SOM_09 (fin de recueil avant tout scoring),
-  transcription des 4 MP4 sommeil, levée éventuelle de quarantaine WN-SRC-0318.
-- **Deux promotions proposées, sans accord à ce jour** : entrée
-  `docs/DECISIONS.md` pour l'amendement A-009 ; correction du stop-hook
-  `~/.claude/stop-hook-git-check.sh`, qui réclame après chaque merge la
-  réécriture du commit de squash GitHub — faux positif invitant à un geste
-  dangereux sur `main`.
-- **Question sans réponse** : la source des « gates G0–G4 » du contexte compact
-  reste introuvable (`.wn/orchestrator.json` n'en porte aucun).
-- `.wn/state.json` date du 2026-08-01T19:10 : il ignore le merge de #519 et la
-  vérification production.
+- **`.wn/state.json` est faux** : `status: idle`, `active_campaign: null`,
+  `last_completed_lot` pointant sur la certification de juillet — alors que
+  `CAMPAGNE.md` déclare trois lots livrés et `lot_courant: LOT-04`. La campagne
+  n'a jamais été activée (`--activate`). Décision en attente.
+- **`prescriptive` de `source_registry.json` est faux sur 52 des 95 sources** :
+  640 claims prescriptifs déclarés non prescriptifs, erreur toujours dans le même
+  sens. Aucun code ne le lit — piège de triage, pas bug vivant. Ne pas prioriser
+  la revue LOT-01 dessus.
+- **`estAdministrableParLaRoute` ne vérifie pas `actif`**, contrairement à
+  `IDS_ASSIGNABLES` : les instruments à passation praticien sont « administrables »
+  au sens de l'orientation. Vérifié en base — aucun ne figure dans les 6 packs de
+  doctrine, donc théorique. Arbitrage clinique à rendre.
+- **10 des 16 packs de doctrine n'existent pas en base** (`idPackBase: null`). Un
+  banc empêche une règle de les citer ; les créer est une décision produit.
+- **La validation praticien de la pré-classification des 95 sources reste due** —
+  le critère de done du LOT-00 est décoché.
+- **Deux promotions proposées, en attente d'accord** : ajouter
+  `npm run prisma:generate` en tête de `npm run check` (T1 échoue sur un worktree
+  neuf avec des erreurs TypeScript qui ne nomment pas la cause) ; et consigner
+  l'option C en **D-009** dans `docs/DECISIONS.md`.
 
 ## Prochaine action exacte
 
-**Lot 9** — écrire `tools/corpus/orientation/compile.mjs` (inexistant) : il
-compile la table `ORIENTATION_RULES_V1` depuis les claims `VALIDE` portant
-`metadata.usage = 'orientation'`, par PR revue, puis la signature praticien
-bascule `ORIENTATION_METADATA.validationExterne`. Trancher les trois défauts
-majeurs **au cadrage**, pas après. Les données sont prêtes : 709 claims validés
-marqués, sur 85 sources.
+**LOT-04 — structuration de l'intake.** Sans dépendance. Poser un schéma
+applicatif dans les colonnes `Json` existantes de `Consultation` : motif en
+énuméré, anamnèse en drapeaux nommés, parsing tolérant sur les consultations
+historiques. **Aucune migration Prisma** — si le besoin apparaît, le lot s'arrête
+et le geste fait l'objet d'un lot marqué « confirmation obligatoire ».
+
+Alternative si le praticien est disponible : **LOT-01**, revue des 755 claims en
+attente sur les 95 sources du registre (NB11 242, NB05 235, NB06 168, NB12 60,
+NB07 50) — de l'ordre de la journée de travail, geste humain dans l'Atelier.
 
 ## Interdits encore actifs
 
-- **Ne pas promouvoir Q_GEO_04** à `scoring_verifie` : plafond adversarial du
-  2026-08-01 (bandes HAS 2011 jamais sourcées, escalade SIIN ouverte).
-- **Ne pas lever de quarantaine** par un raisonnement de domaine — c'est une
-  décision praticien distincte, avec relecture.
-- **Ne pas rejouer le pipeline depuis une session distante** : clés API,
-  `RAG_INTERNAL_SECRET` et PDF n'existent que sur le Mac.
+- **Ne pas rouvrir le `64/64`** gelé par #528 : le refactor porte sur les packs,
+  jamais sur les instruments, leur contenu ou leur scoring.
+- **Ne pas assouplir le fail-closed** : un claim non signé, un pack à composition
+  inconnue, un instrument suspendu ou verrouillé ne remontent pas.
+- **Ne pas laisser un modèle produire une recommandation de pack** — il restitue.
+- **Ne pas déclarer un rayon sans appelant dans le même lot** : cinq le sont déjà.
 - **Ne pas écrire en base hors migration relue** ; toute migration passe par la
   revue adversariale **et** la vérification production après merge.
 - **Ne pas merger sans avoir lu `verify`** — les seuls checks Vercel ne prouvent
