@@ -133,3 +133,52 @@ d'abord les sources utiles aux consultations en cours.
 5. **Le pilote passe en deux vitesses** — 49 claims en individuel
    (38 prescriptifs + 11 interprétés), 87 en voie rapide (échantillon 30 %) :
    première application réelle de la procédure, ~1 h 30 estimée.
+
+## Revue terminée (2026-08-03) et barrière D-003 gardée
+
+La revue des claims d'intervention est **terminée** : **755 claims signés le
+2026-08-03**, dernier jour de la campagne.
+
+Périmètre des 95 sources du registre LOT-00 : **2002 VALIDE / 0 en attente**.
+Corpus actif entier : **8224 VALIDE / 0 en attente**.
+
+Un seul validateur, `martialcayre@wellneuro.fr`, signatures du 2026-07-23 au
+2026-08-03. Les 2002 claims du périmètre LOT-00 portent tous `validateur` ET
+`valide_at`. Répartition par jour :
+
+| Date | Claims signés |
+| --- | --- |
+| 2026-07-23 | 15 |
+| 2026-07-28 | 457 |
+| 2026-07-29 | 317 |
+| 2026-07-30 | 398 |
+| 2026-07-31 | 60 |
+| 2026-08-03 | 755 |
+
+### Surfaces qui voient légitimement un claim en attente
+
+Un claim `statut = 'EN_ATTENTE_VALIDATION'` reste visible sur plusieurs
+surfaces du code, ce qui est attendu : ce sont l'établi de validation, pas une
+restitution clinique.
+
+- `web/src/lib/rag/claims/revue.ts` — établi de validation lui-même : il doit
+  pouvoir lire un claim non signé pour le présenter au praticien.
+- `web/src/lib/rag/claims/recherche.ts` — revue d'une source, déjà documenté
+  comme tel dans son en-tête.
+- `web/src/lib/rag/claims/questionnaire.ts` — génération du questionnaire de
+  restitution de la **voie rapide** : une question par chunk atteignable de la
+  source, rédigée depuis les claims de ce chunk, avant signature.
+- `web/src/lib/rag/claims/evaluation.ts` — évaluation de la voie rapide. Elle ne
+  compare pas un claim à son verbatim : elle confronte une **réponse rédigée
+  hors de l'application** (collée à la main depuis NotebookLM, décision du
+  2026-07-24) aux claims validables de la source, et propose
+  « conforme / non_conforme ». L'IA propose, le praticien confirme — le verdict
+  reste un acte D-003.
+
+Aucune de ces quatre surfaces n'est une voie de **restitution** au patient ou
+au praticien en consultation. La seule voie de restitution est
+`public.match_wellneuro_rag_claims` — c'est elle, et seulement elle, que garde
+le contrat `web/prisma/checks/rag_claim_barriere_d003_v1.sql` (câblé dans
+`.github/workflows/ci.yml`), par fixtures A-E sur une base CI construite vide :
+un claim signé et rattaché à un chunk source remonte (contrôle positif), un
+claim en attente, rejeté, désactivé, ou orphelin de source ne remonte jamais.

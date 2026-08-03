@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "Validation ciblée des claims d'intervention"
-statut: "livré — clos sur preuve en base le 2026-08-03, pas par exécution"
+statut: "livré — clos sur preuve en base le 2026-08-03 ; garde D-003 ajouté"
 dépend_de: "LOT-00"
 palier: "T3"
 ---
@@ -98,9 +98,12 @@ au niveau du **claim** fait foi pour décider d'une voie de revue.
 - [x] `2002 / 0` vérifié en base — a fortiori : **0 claim en attente dans tout le
   corpus**, donc 0 sur ce périmètre.
 - [x] Chaque claim signé porte un `validateur` (0 `VALIDE` sans signature).
-- [ ] La modalité de revue est tracée et auditable. — non vérifié par ce lot ; la
-  revue a eu lieu hors campagne, dans l'Atelier.
-- [ ] Revue adversariale `wn-reviewer` — sans objet : aucune ligne de code.
+- [x] La modalité de revue est tracée et auditable — consignée dans
+  `docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md` : validateur unique,
+  fenêtre 2026-07-23 → 2026-08-03, répartition par jour. La clôture du 2026-08-03
+  au soir laissait ce critère décoché ; c'est ce lot qui le ferme.
+- [x] Revue adversariale `wn-reviewer` passée — GO sous deux correctifs,
+  appliqués. Elle avait un objet : ce lot ajoute un contrat SQL.
 
 ## Résultats
 
@@ -124,12 +127,109 @@ Le tableau du périmètre ci-dessus — 242 en attente sur le notebook 11, 235 s
 le 05, 168 sur le 06, 60 sur le 12, 50 sur le 07 — est donc **périmé** ; il
 décrit l'état au cadrage, conservé comme trace.
 
-**Ce que ce lot ne prouve pas** : la modalité de revue employée n'a pas été
-reconstituée ici (voie individuelle, voie rapide par source, revue en lot). Le
-critère correspondant reste décoché — l'information est dans les journaux de
-décision, pas dans ce document.
+**Ce que la clôture du soir ne prouvait pas, et que ce lot ajoute** : la
+modalité de revue. Elle est désormais tracée dans
+`docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md` — validateur unique
+`martialcayre@wellneuro.fr`, fenêtre du 2026-07-23 au 2026-08-03, répartition
+par jour (15 / 457 / 317 / 398 / 60 / **755**), et les surfaces qui voient
+légitimement un claim en attente.
 
 **Conséquence de cadrage pour la suite de la campagne** : la première porte
 (D-003, validation praticien) est franchie **pour tout le corpus**. Le seul
 déficit restant est la **seconde porte, le consommateur** — cf. LOT-02, et
 `stress`/`humeur`/`sommeil` toujours mappés sans appelant.
+
+---
+
+## Le garde de la barrière D-003, livré par ce lot
+
+**Ce qui restait, et qui a été livré** : le test de non-régression que le lot
+demandait. Énoncé du lot : « invisible de toute surface » — à lire **surface de
+restitution**, la nuance compte et la revue l'a exigée : l'établi de validation
+voit légitimement les claims en attente, c'est son objet. Aucun banc ne couvrait
+la fermeture. Il est d'autant plus nécessaire que le
+compteur est à zéro : sans claim en attente en production, rien ne signalerait
+une régression de la barrière avant la prochaine ingestion, qui en recréera —
+`store.ts` insère toujours en `EN_ATTENTE_VALIDATION`.
+
+`web/prisma/checks/rag_claim_barriere_d003_v1.sql` éprouve
+`match_wellneuro_rag_claims`, seule voie de restitution, par sept fixtures sur
+une base CI construite vide (d'où fixtures + `ROLLBACK` : un contrat purement
+observateur y passerait par vacuité).
+
+**Trois constats du lot, à ne pas redécouvrir :**
+
+1. **Deux des cinq conditions ne sont pas falsifiables par FIXTURE** —
+   `patient_identifiable = false` et `compartment = 'ACTIF'` sont tenues par des
+   `CHECK` de table : l'`INSERT` échouerait avant l'assertion. Ce n'est pas une
+   impossibilité (le DDL est transactionnel, on pourrait lever le `CHECK` dans
+   la transaction) mais un **choix** : tant que le `CHECK` tient, le prédicat de
+   la fonction est redondant, et la disparition du `CHECK` est attrapée
+   structurellement. Une des deux couches tient toujours. Formulation corrigée
+   à la revue, qui la trouvait trop absolue.
+2. **Un embedding de fixture nul rendrait le contrat vert quoi qu'il arrive.**
+   Le patron copié ailleurs (`repeat('0,', 1535)`) donne un vecteur nul, dont la
+   distance cosinus est indéfinie : `1 - (embedding <=> query)` vaut `NaN`, le
+   seuil de similarité est faux, et le contrôle positif ne remonte jamais.
+   Vecteur `[1,0,…,0]`, requête identique.
+3. **L'ordre des assertions décide de ce qu'un échec raconte — et je m'y suis
+   repris à deux fois.** Écrites compte-d'abord, les quatre assertions par cas
+   étaient **inatteignables** : un compte de 1 valant la fixture A implique
+   l'absence de B, C, D et E. Mesuré en falsifiant B — l'échec rendait une
+   disjonction au lieu de nommer le coupable. Réordonné… ce qui a déplacé le
+   point mort sur le **contrôle positif** : après les quatre `EXISTS` et le
+   compte, la ligne unique ne pouvait plus être qu'A, donc son assertion
+   d'identité ne pouvait plus tirer. C'est la revue adversariale qui l'a vu,
+   et ma propre table de preuve enregistrait le symptôme sans le nommer.
+   Le contrôle positif passe désormais **en premier**.
+
+**Preuve que le garde mord** — **sept** falsifications jouées contre la base
+éphémère, une par assertion nommée, le témoin restant vert à chaque fois.
+Chacune a rendu SON message, et aucune n'en a rendu un autre : c'est la preuve
+qu'il ne reste plus d'assertion muette.
+
+| Falsification | Assertion qui a tiré |
+|---|---|
+| A privée de sa jonction | CONTRÔLE POSITIF en échec — A ne remonte pas |
+| B passée en `VALIDE` | B (EN_ATTENTE_VALIDATION) remonte |
+| C passée en `VALIDE` | C (REJETE) remonte |
+| D passée en `active=true` | D (VALIDE, active=false) remonte |
+| E dotée d'une jonction | E (orphelin de source) remonte |
+| filtre élargi à `WN-SRC-9997` | F (hors périmètre) remonte |
+| vecteur de G rendu colinéaire | G (hors seuil de similarité) remonte |
+
+Nuance à ne pas gommer : pour A→E la falsification porte sur la **fixture**,
+donc sur la condition gardée elle-même ; pour F et G elle porte sur la
+**requête d'assertion**, ce qui prouve l'atteignabilité de l'assertion, non le
+retrait du prédicat de la fonction.
+
+**Câblage vérifié par exécution, pas par lecture** : `wn-test-worktree.sh`
+extrait la liste des contrats depuis `ci.yml` par `sed`. `ci.yml` en déclarait
+**11** avant ce lot et **12** après ; les **12 ont été joués** au palier T3, le
+nouveau nommément présent dans le journal. Un fichier posé
+dans `prisma/checks/` sans étape dans `ci.yml` ne tournerait nulle part —
+précédent dans le dépôt : `c4_referentiel_provenance_v1.sql`.
+
+**Deux correctifs ajoutés à la revue.** Le contrat n'assérait rien sur ce qui
+empêche de **contourner** la fonction : il prouvait que la porte ferme pendant
+qu'on pouvait entrer par la fenêtre. Un `DROP FUNCTION` + `CREATE` (le
+`CREATE OR REPLACE`, lui, conserve les grants) ou un `DISABLE ROW LEVEL
+SECURITY` rendrait les claims en attente lisibles par PostgREST sans jamais
+appeler la barrière. Sont désormais assérés : `EXECUTE` refusé à `anon` et
+`authenticated` (conditionné à l'existence du rôle — vide en CI, mordant en
+production, c'est le piège « REVOKE FROM PUBLIC ne révoque rien »), et la RLS
+active sur les deux tables. Second correctif : deux fixtures de plus, F hors
+périmètre et G hors seuil, pour que `filter_source_ids` et `min_similarity`
+cessent d'être les deux seuls prédicats sans témoin — le premier est ce qui
+enferme un rayon dans son notebook.
+
+**Plage de sentinelles déplacée** en `WN-*-9998` : `rag_claim_decisions_journal_v1.sql`
+occupe déjà `WN-CL-9999-001..004`, et la table porte `UNIQUE (claim_id,
+version_claim)`. Sans conséquence aujourd'hui — transactions séparées — mais un
+rejeu dans une transaction commune les ferait entrer en collision.
+
+**Arbitrage pris en session** : quatre modules lisent les claims sans filtrer
+`statut` (`revue.ts`, `recherche.ts`, `questionnaire.ts`, `evaluation.ts`). Ce
+sont l'établi de validation, pas une restitution clinique. Ils sont **documentés
+comme légitimes** dans `VALIDATION_CLAIMS_DEUX_VITESSES.md` plutôt que gardés
+par du code — un garde par `grep` sur le dépôt serait fragile.
