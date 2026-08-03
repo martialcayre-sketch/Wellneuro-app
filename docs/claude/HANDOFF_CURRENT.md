@@ -1,104 +1,91 @@
-# Handoff — 2026-08-03
+# Handoff — 2026-08-03 — Fenêtre de clôture d'un lot (`wn-cycle`)
 
 ## Git
 
-- Branche `main`, arbre propre.
-- PR **#546** (squash, mergée, branche distante supprimée) : code du lot.
-- PR **#547** (squash, mergée, branche distante supprimée) : clôture
-  (`SESSION_LOG.md` + statut du lot).
-- Campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`
-  **inchangée dans son ensemble** : ce lot correspond à la partie
-  cognition/intestin de `LOT-02` (fichier mis à jour), pas au reste de la
-  campagne.
+- Worktree `.claude/worktrees/wn-cycle-cloture-lot`, branche
+  `worktree-wn-cycle-cloture-lot`, partie de `main` à `a3d3c29a`, **PR #549**.
+- `main` a avancé pendant le lot (#546 code, #547 clôture, #548 handoff, jusqu'à
+  `d8d3c69c`) : `origin/main` fusionné dans la branche. Un seul conflit,
+  `HANDOFF_CURRENT.md`, résolu **en faveur de la branche** — ce fichier est
+  remplacé à chaque handoff, jamais fusionné. `SESSION_LOG.md` s'est fusionné
+  seul, étant append-only.
+- Campagne : aucune active (`.wn/state.json` = idle) — ce lot est orthogonal aux
+  campagnes en cours, il porte sur l'orchestration.
 
-## Objectif de ce lot
+Ce conflit est le sujet du lot : #547 et #548 sont deux PR de doc post-merge, et
+ce sont elles qui ont conflicté. Une clôture partie dans la PR du lot n'aurait
+produit ni l'une ni l'autre.
 
-Brancher les rayons corpus « cognition » (notebook 05) et « intestin »
-(notebook 07) — désormais 100 % validés en base — à un écran praticien réel,
-demande explicite de l'utilisateur. Notebook 06 (douleurs, aussi visé par
-`LOT-02`) volontairement laissé de côté : pas encore validé.
+## Objectif
+
+Rendre exécutable l'ordre du cycle de lot. Le merge d'une PR de lot est un
+squash : `SESSION_LOG.md` et `HANDOFF_CURRENT.md` écrits après lui ne sont plus
+dans l'ascendance de `main` et coûtent une seconde PR de doc. Cas réel du
+2026-08-03 : PR #545 (le lot) ne portait que `SESSION_LOG.md`, puis #547 et #548
+ont suivi en PR de doc séparées.
 
 ## Décisions prises, et pourquoi
 
-- **Vérifié en base plutôt que sur un doc de campagne** : `execute_sql` direct
-  (join `rag_corpus_chunks`→`rag_corpus_claim_sources`→`rag_corpus_claims`) a
-  confirmé NB05 = 1114/1114 VALIDE, NB07 = 370/370 VALIDE. Le doc
-  `INVENTAIRE_SOURCES_INTERVENTION.md` donnait des ratios plus bas (60/295,
-  0/50) : il porte sur un **sous-ensemble différent** (« sources
-  d'intervention », campagne distincte), pas le corpus général — piège à ne
-  pas répéter, documenté dans la mémoire `claims-ingestion-chaine`.
-- **`RayonComplementsPanel` n'est pas un navigateur de corpus générique** :
-  c'est l'écran du catalogue produit (140 148 fiches), le corpus n'y apparaît
-  qu'en tiroir justificatif. Nouveau composant simple à la place
-  (`RechercheCorpusRayonPanel`) : un rayon, une requête libre, les claims.
-- **Gate produit sorti de `servirRayonCorpus()`** : la fonction forçait
-  `WN_C4_ENABLED` pour **tout** rayon demandé, pas seulement micronutrition —
-  couplage caché qui aurait éteint cognition/intestin avec le catalogue de
-  compléments. Le gate vit désormais dans la couche accès de chaque route.
-- **Nouveau flag `WN_RECHERCHE_CORPUS_ENABLED`** (éteint par défaut, dark
-  launch comme tous les rayons précédents), nommé pour ne pas se confondre
-  avec `WN_ENABLE_CORPUS_CLINIQUE_V1` (double-verrou clinique sans rapport) —
-  documenté dans `docs/FEATURE_FLAGS.md`.
-- **Défaut bloquant trouvé par une revue adversariale (`wn-reviewer`), corrigé
-  avant merge** : la nouvelle route validait `rayon` par une simple regex
-  syntaxique, ce qui l'aurait laissée servir n'importe quel rayon de la carte
-  — micronutrition compris — en contournant `WN_C4_ENABLED`. Corrigé par une
-  allowlist dédiée `RAYONS_RECHERCHE_CORPUS`, testée (`?rayon=micronutrition`
-  → 400).
-- **Autres correctifs issus de la même revue** : claims restés affichés après
-  un changement de rayon (composant corrigé + testé) ; fonction d'accès
-  `getPractitionerRechercheCorpusAccess` non testée alors qu'un commentaire
-  affirmait le contraire (`access.test.ts` créé) ; clé React collisionnable
-  (`claimId` seul → `claimId-versionClaim`).
+1. **La frontière est le merge, pas la suppression de la branche.** Écrire après
+   le merge et avant le nettoyage ne sert à rien — sous squash, les commits
+   postérieurs au merge ne remontent pas vers `main`.
+2. **La clôture passe avant `/wn-pr`, dans le même push.** Zéro CI
+   supplémentaire, zéro cycle de PR en plus. Perte assumée : le handoff ne cite
+   pas le numéro de PR, que `git log` rend de toute façon.
+3. **L'automatisation est un script, pas de la prose.** Les 31 skills portent
+   `disable-model-invocation: true` et un contrôle CI bloquant
+   (`scripts/lib/skill-cross-invocation.mjs`) refuse toute consigne impérative
+   d'un skill vers un autre. Le seul chaînage exécutable est un bloc `!`.
+4. **Constat par défaut, réparation sous `--appliquer`** (convention de
+   `nettoyage-branches.sh`). Le script n'écrit jamais `SESSION_LOG.md` ni
+   `HANDOFF_CURRENT.md` : leur contenu est du raisonnement.
 
 ## Fichiers modifiés
 
-- `web/src/lib/supplement-library/rayonCorpus.ts` (+ `.test.ts`) — mapping,
-  allowlist `RAYONS_RECHERCHE_CORPUS`, retrait du gate C4.
-- `web/src/lib/supplement-library/featureFlag.ts` (+ `.test.ts`), `access.ts`
-  (+ nouveau `access.test.ts`) — flag et accès dédiés.
-- `web/src/app/api/praticien/corpus/rayons/route.ts` (+ `.test.ts`) — nouvelle
-  route.
-- `web/src/components/corpus/RechercheCorpusRayonPanel.tsx` (+ `.test.tsx`) —
-  nouvel écran.
-- `web/src/app/dashboard/bibliotheque/page.tsx` (+ `.test.tsx`) — section
-  branchée.
-- `docs/FEATURE_FLAGS.md`, `changelog.d/2026-08-03-rayons-cognition-intestin.md`.
-- `docs/claude/SESSION_LOG.md`, `docs/claude/campagnes/…/LOT-02-…md` (statut).
+- **Nouveau** `scripts/wn-cycle.mjs` — 5 phases (`hors-lot`, `travail`,
+  `pret-pr`, `pr-ouverte`, `apres-merge`), logique pure `diagnostiquer()`
+  exportée, câblage CLI séparé. Sorties 0 / 1 (fenêtre ratée) / 2 (hors dépôt).
+- **Nouveau** `scripts/wn-cycle.test.mjs` — 15 cas sur faits injectés, sans git
+  ni réseau. Câblé dans `ci.yml` (job `verify`, hors filtre `docs_only`).
+- `.claude/skills/wn-finish/SKILL.md`, `wn-handoff/SKILL.md` — bloc
+  `!node scripts/wn-cycle.mjs` + garde après-merge.
+- `.claude/skills/wn-lot/SKILL.md` (étape 6), `wn-campaign-run/SKILL.md`,
+  `CLAUDE.md` — ordre explicité.
+- `scripts/wn-campaign.mjs` — `writeActiveCampaignView()` tronquait le garde
+  « cette vue est générée » dans sa branche idle ; rétabli.
+- `changelog.d/2026-08-03-wn-cycle-fenetre-de-cloture.md`.
 
 ## Validations exécutées
 
-- `npm run check` (T1) — vert.
-- `npm run test:worktree -- --fast` (T2) — vert (335 fichiers Vitest, 3341
-  tests) ; seul échec : le flake E2E connu et documenté
-  `e2e/portail-lien-magique.spec.ts` (défense temps-constant sous charge),
-  sans rapport avec ce diff.
-- CI GitHub (`verify` + Vercel) verte sur les deux PR avant merge.
+`node --test scripts/wn-cycle.test.mjs` 15/15 · `wn-campaign.test.mjs` 6/6 ·
+`skill-cross-invocation.mjs` 0 violation sur 32 skills · `wn-campaign-audit.mjs`
+avec les 7 codes bloquants 0 · `check_no_secrets.sh` 0 · **T1**
+(`npm run check`) vert, 70 tests. Chemin `gh` vérifié sur #545/#547/#548 réels.
+`wn-kit-doctor.mjs` rend 41/42 — le seul échec est « git status (dirty) »,
+attendu sur un arbre en cours, et il n'est pas en CI.
+
+Worktree neuf : `npx prisma generate` est requis avant `npm run check`, sinon
+`@/generated/prisma` manque et le type-check casse en cascade.
 
 ## Problèmes ouverts
 
-- **Calibration non vérifiée** : `minSimilarity`/`matchCount` de
-  `servirRayonCorpus` ont été réglés pour une requête fiche-produit
-  (nom de complément) ; leur pertinence sur une recherche en langage libre
-  (« mémoire de travail ») n'a pas été validée manuellement.
-- **Aucun E2E** ne couvre le nouvel écran (non bloquant, flag éteint par
-  défaut — à faire avant armement en prod).
-- **Notebook 06** (douleurs) reste hors périmètre : même route déjà générique,
-  il suffira d'étendre `RAYON_VERS_NOTEBOOK` et `RAYONS_RECHERCHE_CORPUS` une
-  fois ses claims validés.
+- `--appliquer` écrit `git.branch` dans `.wn/state.json` : un nom de worktree
+  éphémère. Committé, c'est du bruit à chaque PR et un conflit entre sessions
+  parallèles. **Non committé ici** — à trancher avant de l'ajouter à un
+  workflow.
+- La détection `apres-merge` repose sur `gh`. Hors ligne, le verdict est partiel
+  (`PR inconnue`) et ne peut pas signaler une fenêtre ratée. Choix assumé : un
+  verdict partiel vaut mieux qu'un skill qui ne se charge pas.
+- `scripts/changelog-collate.test.mjs` reste non câblé en CI (constat, hors
+  périmètre).
 
 ## Prochaine action exacte
 
-Brancher `douleur` (notebook 06) dès que ses claims sont validés en base —
-même patron, pas de nouveau lot nécessaire. Sinon, reprendre LOT-01/05/06 de
-la campagne moteur d'intervention.
+Ouvrir la PR (`--body-file`), attendre le CI avec l'idiome bloquant, **vérifier
+que `verify` a tourné** et pas seulement les checks Vercel, puis merger.
 
 ## Interdits encore actifs
 
-- Pas d'armement de `WN_RECHERCHE_CORPUS_ENABLED` en prod sans décision
-  explicite (reste dark par défaut).
-- Pas de rayon supplémentaire sans appelant réel dans le même lot.
-- Pas de contournement du filtre `VALIDE` (barrière D-003, `match_wellneuro_
-  rag_claims`) — non touché par ce lot.
-- Pas de fusion de `RAYONS_RECHERCHE_CORPUS` avec `RAYON_VERS_NOTEBOOK` : la
-  seconde carte reste plus large que ce qu'une route donnée doit servir.
+Aucune migration, aucune écriture Supabase, aucun changement clinique dans ce
+lot. Ne pas forcer un merge sur une PR gelée en `action_required`. Après un
+merge en squash, repartir de `main` — jamais de la branche squashée.

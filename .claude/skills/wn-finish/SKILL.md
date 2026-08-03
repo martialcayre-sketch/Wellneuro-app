@@ -7,11 +7,17 @@ effort: medium
 
 # WellNeuro — fin de lot
 
-!`git status --short`
-!`git diff --stat`
+!`node scripts/wn-cycle.mjs`
 !`test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 
 Sujet : `$ARGUMENTS`
+
+Le bloc de phase ci-dessus remplace `git status` et `git diff --stat`, qu'il
+subsume. **Il commande.** S'il rend `apres-merge` avec « fenêtre de clôture
+ratée », la branche a été squashée : plus rien de ce qu'on y écrit ne remonte
+vers `main`. Écrire alors depuis `main`, en PR de doc séparée — et surtout pas
+en rebranchant sur la branche squashée, qui ferait ré-embarquer le lot précédent
+à la PR suivante.
 
 1. Vérifier que le périmètre est respecté.
 2. Résumer les validations réellement exécutées.
@@ -22,7 +28,9 @@ Sujet : `$ARGUMENTS`
    - prochaine action prioritaire ;
    - questions ouvertes.
 5. Ne jamais réécrire les entrées précédentes.
-6. Produire ensuite un handoff court.
+6. Étape suivante : `/wn-handoff write`, dans la foulée et sur la même branche.
+   Le handoff part **dans la PR du lot**, jamais après le merge — le squash
+   ferme la fenêtre, et une clôture écrite après coup coûte une seconde PR.
 7. Si le lot clos relevait d'une classe à risque du tableau de `/wn-lot`
    (Scoring/clinique, Prisma/migration, Auth), faire relire l'entrée
    `SESSION_LOG` par `Agent(subagent_type: "wn-reviewer")` (prompt portant
