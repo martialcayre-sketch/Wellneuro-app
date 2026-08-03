@@ -137,6 +137,15 @@ jobs:
       - name: Invocations croisées entre skills (banc du contrôle)
         run: node --test scripts/lib/skill-cross-invocation.test.mjs
 
+      # Banc de `scripts/wn-cycle.mjs`, le verdict de phase chargé par le bloc
+      # `!` de `/wn-finish` et `/wn-handoff`. Ce qu'il protège tient en un cas :
+      # une PR mergée en squash SANS sa clôture doit sortir en échec, pas en
+      # constat — sinon le skill écrit sur une branche dont plus rien ne remonte
+      # vers `main`. Même absence de filtre `docs_only` que l'étape ci-dessus, et
+      # pour la même raison. Ni npm ni build : node suffit.
+      - name: Phase du cycle de lot (banc du verdict)
+        run: node --test scripts/wn-cycle.test.mjs
+
       - uses: actions/setup-node@v4
         if: steps.scope.outputs.docs_only != 'true'
         with:

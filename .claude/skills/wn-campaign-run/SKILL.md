@@ -26,4 +26,7 @@ Arguments : `$ARGUMENTS`
 - Ne jamais lancer migration, écriture Supabase, déploiement ou changement clinique sans confirmation distincte.
 - Lancer les validations du lot.
 - Mettre à jour seulement le statut et les résultats du fichier de lot.
-- Terminer par `/wn-review`, puis recommander `/wn-finish`.
+- Terminer par `/wn-review`, puis recommander `/wn-finish` et `/wn-handoff write`.
+- Ensuite seulement la PR : `/wn-pr` puis `/wn-merge`. Cet ordre n'est pas
+  cosmétique — le merge est un squash, et une clôture écrite après lui ne
+  remonte plus vers `main`. `node scripts/wn-cycle.mjs` rend la phase courante.

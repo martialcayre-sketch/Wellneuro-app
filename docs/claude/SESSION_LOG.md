@@ -1741,3 +1741,27 @@ commentaire de `orientationRulesV1.ts` y renvoie ; (2) aucun banc ne confronte
 les `claimId` à `rag_corpus_claims` (pas de base en Vitest) : la vérification
 reste manuelle avant chaque signature ; (3) 10 des 16 packs de doctrine n'existent
 toujours pas en base, et `PACK_HUMEUR_NEURO` y est inactif.
+
+## 2026-08-03 — Fenêtre de clôture d'un lot : `scripts/wn-cycle.mjs`
+
+**Décisions** — La clôture (`/wn-finish`) et le handoff (`/wn-handoff write`)
+s'écrivent sur la branche vivante et partent dans la PR du lot. Le merge étant
+un squash, la frontière n'est pas la suppression de la branche mais le merge
+lui-même. Un script rend la phase du cycle et sort en échec quand la fenêtre est
+fermée ; il est chargé par le bloc `!` de `/wn-finish` et `/wn-handoff`, seul
+chaînage exécutable entre skills (`disable-model-invocation: true` interdit
+l'invocation croisée). Correctif au passage : `writeActiveCampaignView()`
+tronquait le garde « cette vue est générée » dans sa branche idle.
+
+**Écarté** — Écrire le handoff après le merge et avant le nettoyage (fenêtre
+inexistante) ; une PR de doc séparée par défaut (deux PR par lot) ; un contrôle
+CI bloquant réclamant le handoff (bloquerait les correctifs urgents).
+
+**Validations** — banc 15/15, cross-invocation 0, audit campagne 0, anti-secrets
+0, T1 vert (70 tests). Chemin `gh` vérifié sur les PR réelles #545/#547/#548.
+
+**Prochaine action** — Ouvrir la PR, lire `verify`.
+
+**Questions ouvertes** — `--appliquer` écrit `git.branch` dans `.wn/state.json` :
+un nom de worktree éphémère, donc du bruit et un conflit potentiel entre
+sessions parallèles si on le committe. Non committé ici.

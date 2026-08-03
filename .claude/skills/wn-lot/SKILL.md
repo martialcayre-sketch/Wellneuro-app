@@ -186,7 +186,11 @@ besoin de la revue préalable.
 5. **Revue** — `/wn-review` (fork `Explore`) pour Docs/UI/API ; `Agent(wn-reviewer)`
    pour Scoring/Migration/Auth, **avant** de passer la main sur ces deux dernières.
 6. **Clôture** — `/wn-finish` : statut du lot, entrée `SESSION_LOG`, et les deux
-   promotions (règle oubliée → exécutable, décision → `docs/DECISIONS.md`).
+   promotions (règle oubliée → exécutable, décision → `docs/DECISIONS.md`) ;
+   puis `/wn-handoff write`. Les deux **avant** l'étape 7, sur la branche
+   vivante — le merge est un squash, ce qui s'écrit après lui ne remonte plus
+   vers `main` et exige une seconde PR. `node scripts/wn-cycle.mjs` rend la
+   phase courante et refuse de laisser croire que la fenêtre est encore ouverte.
 7. **PR** — `/wn-pr` puis `/wn-merge`, selon le régime de `CLAUDE.md`.
 
 ## Sortie de la proposition (mode par défaut)

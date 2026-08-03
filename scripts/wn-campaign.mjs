@@ -430,7 +430,11 @@ function writeActiveCampaignView() {
     : "Aucune campagne parallèle active.";
   const content = hasActivity
     ? `# Campagnes actives\n\n${primaryBlock}\n## Activités parallèles\n\n${parallelBlock}\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.\n`
-    : `# Campagnes actives\n\nAucune campagne active.\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`.\n`;
+    // Même pied de page que la branche active : la phrase « cette vue est
+    // générée » est ce qui dissuade de l'éditer à la main. La tronquer quand
+    // la campagne est idle retirait le garde exactement là où le fichier est
+    // le plus court, donc le plus tentant à corriger à la main.
+    : `# Campagnes actives\n\nAucune campagne active.\n\n**Statut global** : ${status}\n**Mise à jour** : ${updatedAt}\n\n> La source de vérité machine est \`.wn/state.json\`. Cette vue est générée ; elle ne doit pas être modifiée manuellement.\n`;
   fs.writeFileSync(path.join(baseDir, "ACTIVE_CAMPAIGN.md"), content, "utf8");
 }
 function createCampaign() {
