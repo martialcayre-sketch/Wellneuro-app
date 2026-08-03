@@ -135,6 +135,15 @@ test('porcelain : un fichier écrit mais non committé compte', () => {
   assert.deepEqual(chemins, ['web/src/lib/questions.ts', HANDOFF, SESSION_LOG]);
 });
 
+// Régression du 2026-08-03, trouvée par le script sur lui-même : le wrapper git
+// appliquait un `.trim()` global, qui mange l'espace de tête de la PREMIÈRE
+// ligne (` M chemin`). Le découpage par position emportait alors le premier
+// caractère du chemin — `docs/…` devenait `ocs/…` — et la clôture disparaissait
+// du verdict, en silence et sur la seule première ligne.
+test('porcelain : une première ligne dont l’espace de tête a été rogné reste intacte', () => {
+  assert.deepEqual(cheminsDuPorcelain(`M ${HANDOFF}\n M ${SESSION_LOG}`), [HANDOFF, SESSION_LOG]);
+});
+
 test('porcelain : un renommage compte par sa destination', () => {
   assert.deepEqual(cheminsDuPorcelain('R  docs/vieux.md -> docs/neuf.md'), ['docs/neuf.md']);
 });

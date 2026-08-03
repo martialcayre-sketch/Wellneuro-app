@@ -183,8 +183,19 @@ export function diagnostiquer(faits) {
 // ── Collecte des faits ──────────────────────────────────────────────────────
 
 function git(args, cwd = RACINE) {
+  const brut = gitBrut(args, cwd);
+  return brut === null ? null : brut.trim();
+}
+
+/**
+ * Sans `.trim()`. Indispensable pour `status --porcelain`, dont la première
+ * ligne commence par un espace quand le fichier n'est pas indexé (` M chemin`) :
+ * le trim global l'emportait et décalait le découpage d'un caractère, rendant
+ * `docs/…` en `ocs/…`. La clôture devenait alors invisible au verdict.
+ */
+function gitBrut(args, cwd = RACINE) {
   try {
-    return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
   } catch {
     return null;
   }
@@ -250,9 +261,12 @@ export function cheminsDuPorcelain(porcelain) {
   if (!porcelain) return [];
   return porcelain
     .split('\n')
-    .filter(Boolean)
+    .filter((ligne) => ligne.trim() !== '')
     .map((ligne) => {
-      const chemin = ligne.slice(3);
+      // Le bloc de statut fait deux caractères puis un espace. On le retire par
+      // motif plutôt que par position : une ligne dont l'espace de tête a été
+      // rogné en amont resterait sinon décalée d'un caractère, en silence.
+      const chemin = ligne.replace(/^[ MADRCU?!]{1,2} /, '');
       // Renommage : `R  ancien -> nouveau`. Seule la destination compte.
       const fleche = chemin.indexOf(' -> ');
       return fleche === -1 ? chemin : chemin.slice(fleche + 4);
@@ -270,7 +284,7 @@ function collecterFaits() {
 
   const diff = base && branche !== defaut ? git(['diff', '--name-only', `${base}...HEAD`]) : '';
   const committes = diff ? diff.split('\n').filter(Boolean) : [];
-  const fichiersDuLot = [...new Set([...committes, ...cheminsDuPorcelain(git(['status', '--porcelain']))])];
+  const fichiersDuLot = [...new Set([...committes, ...cheminsDuPorcelain(gitBrut(['status', '--porcelain']))])];
 
   const ghDisponible = gh(['--version']) !== null;
   let prOuverte = null;
