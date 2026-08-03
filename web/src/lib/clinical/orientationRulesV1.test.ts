@@ -4,7 +4,7 @@ import { ORIENTATION_METADATA, ORIENTATION_RULES_SHA256, ORIENTATION_RULES_V1 } 
 import { idBaseDepuisPackId, type PackId } from '@/lib/questionnaires-functional';
 import { ANAMNESE_SECTIONS } from '@/lib/consultation/anamnese';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
-import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
+import { extraireDrapeauxAnamnese, type DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 
 // Épinglage du verrou sombre (patron questions.pss10.test.ts) : si ce test
@@ -84,8 +84,9 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
   }
 
   // Les clés typées de `DrapeauxAnamnese` ne portent pas le nom du champ
-  // d'anamnèse : la correspondance est faite par `extraireDrapeauxAnamnese` et
-  // doit être répétée ici, sinon la garde chercherait dans le vide.
+  // d'anamnèse : la correspondance est faite par `extraireDrapeauxAnamnese`.
+  // Recopiée ici, elle dériverait en silence — d'où le banc qui suit, qui la
+  // confronte à l'extraction réelle plutôt que de la croire sur parole.
   const CHAMP_ANAMNESE: Record<string, string> = {
     signauxAlerte: 'signaux_alerte',
     antecedentsDomaines: 'antecedents_domaines',
@@ -96,6 +97,29 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
     evolution: 'evolution',
     variationPoids: 'variation_poids',
   };
+
+  // La correspondance clé typée ↔ champ d'anamnèse, vérifiée contre
+  // l'extraction RÉELLE et non recopiée : on injecte la première option du
+  // champ et on exige de la retrouver sous la clé attendue. Si
+  // `extraireDrapeauxAnamnese` change de mapping, la garde du dessous
+  // chercherait dans le mauvais champ et resterait verte — celle-ci rougit.
+  it('CHAMP_ANAMNESE décrit bien ce que extraireDrapeauxAnamnese fait', () => {
+    const drapeauxVides = extraireDrapeauxAnamnese({});
+    // Aucune clé oubliée : un neuvième drapeau forcerait la mise à jour.
+    expect(Object.keys(CHAMP_ANAMNESE).sort()).toEqual(Object.keys(drapeauxVides).sort());
+    for (const [cle, champId] of Object.entries(CHAMP_ANAMNESE)) {
+      const options = optionsDuChamp(champId);
+      expect(options.length, `aucune option pour ${champId}`).toBeGreaterThan(0);
+      // Un champ liste se stocke en tableau, un champ radio en valeur seule :
+      // injecter la mauvaise forme ferait échouer la garde sur sa propre
+      // fixture au lieu du mapping. La forme se lit sur l'extraction vide.
+      const estListe = Array.isArray(drapeauxVides[cle as keyof DrapeauxAnamnese]);
+      const extrait = extraireDrapeauxAnamnese({ [champId]: estListe ? [options[0]] : options[0] });
+      const valeur = extrait[cle as keyof typeof extrait];
+      const obtenues = Array.isArray(valeur) ? valeur : valeur === null ? [] : [valeur];
+      expect(obtenues, `${cle} ne lit pas ${champId}`).toContain(options[0]);
+    }
+  });
 
   // LA garde du lot. Un libellé retouché dans `anamnese.ts` — une apostrophe,
   // un accent — ferait taire la règle sans rien casser. Ici, elle casse le CI.
@@ -148,7 +172,7 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
   // `dark`, ou `warning` sans ce qui suit, laisserait dehors des patients PLUS
   // atteints que ceux qu'on retient. C'est le défaut que LOT-05 a corrigé dans
   // le type ; ce banc empêche de le réintroduire règle par règle.
-  const GRAVITE = ['warning', 'danger', 'dark'] as const;
+  const GRAVITE = ['info', 'warning', 'danger', 'dark'] as const;
 
   it('une zone de couleur ne s\'arrête jamais sous la bande la plus sévère', () => {
     const trous: string[] = [];
@@ -156,7 +180,11 @@ describe('orientationRulesV1 — gardes anti-dérive', () => {
       if (declencheur.type !== 'zone' || declencheur.zone.type !== 'couleur') continue;
       const citees = declencheur.zone.couleurs;
       if (citees.length === 0) { trous.push(`${regleId} → aucune couleur`); continue; }
-      const plusBasse = Math.min(...citees.map(c => GRAVITE.indexOf(c)));
+      // Une couleur hors de l'échelle rendrait -1, et `slice(-1)` ne vérifierait
+      // plus que la dernière bande : on la refuse plutôt que de la subir.
+      const rangs = citees.map(c => GRAVITE.indexOf(c));
+      if (rangs.some(rang => rang < 0)) { trous.push(`${regleId} → couleur hors échelle`); continue; }
+      const plusBasse = Math.min(...rangs);
       // Tout ce qui est au-dessus de la plus basse couleur citée doit l'être aussi.
       for (const attendue of GRAVITE.slice(plusBasse)) {
         if (!citees.includes(attendue)) trous.push(`${regleId} → ${attendue} manquante`);
@@ -189,13 +217,24 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
   const reponse = (idQuestionnaire: string, scores: Record<string, unknown>): ReponseOrientation =>
     ({ idQuestionnaire, dateReponse: '2026-08-01T10:00:00.000Z', scores });
 
-  it('R-SOM-01 : un PSQI en zone défavorable propose HAD puis PSS-10', () => {
+  it('R-SOM-01 : un PSQI en zone défavorable propose HAD puis Cungi', () => {
     const recos = evaluer([
       reponse('Q_SOM_01', { total: 14, interpretation: { label: 'Troubles du sommeil modérés', color: 'warning' } }),
     ]);
     const cibles = recos.map(r => r.cible);
     expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_NEU_11' });
-    expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_02' });
+    // Cungi, nommé par le claim WN-CL-0323-013 — pas le PSS-10.
+    expect(cibles).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_STR_03' });
+  });
+
+  // Arbitrage du 2026-08-03 : bande d'entrée par instrument. Le PSQI démarre à
+  // `info` (total 5-10), au-dessus du seuil de 4 qu'il publie. Ce banc échoue si
+  // quelqu'un « harmonise » les règles en les faisant toutes partir de warning.
+  it("R-SOM-01 : un PSQI en bande `info` déclenche déjà", () => {
+    const recos = evaluer([
+      reponse('Q_SOM_01', { total: 7, interpretation: { label: 'Troubles du sommeil légers', color: 'info' } }),
+    ]);
+    expect(recos.map(r => r.cible)).toContainEqual({ type: 'questionnaire', questionnaireId: 'Q_NEU_11' });
   });
 
   it('R-STR-01 : un PSS-10 défavorable propose le BMS-10', () => {

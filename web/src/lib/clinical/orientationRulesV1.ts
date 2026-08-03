@@ -16,10 +16,11 @@ import { sha256 } from './corpusSyntheseV1';
 // praticien décide ; rien n'est jamais auto-assigné ; le LLM de synthèse ne
 // reçoit que des candidats issus de cette table, jamais l'inverse.
 //
-// V1 : table VIDE, `validationExterne: false` — le moteur et la route existent
-// mais ne recommandent rien tant que le praticien n'a pas validé les claims
-// d'orientation puis signé la table compilée (même discipline que
-// CORPUS_CLINIQUE_METADATA dans ./corpusSyntheseV1.ts).
+// V1 (LOT-05, 2026-08-03) : table REMPLIE — six règles — mais
+// `validationExterne: false`. Le moteur et la route existent et ne recommandent
+// toujours rien : la table est écrite, pas signée. Le praticien signe après
+// relecture clinique (même discipline que CORPUS_CLINIQUE_METADATA dans
+// ./corpusSyntheseV1.ts).
 
 export type OrientationZone =
   // Plage numérique inclusive sur le score brut (total ou sous-score).
@@ -29,13 +30,21 @@ export type OrientationZone =
   // Couleurs de zone servies par le catalogue (jamais `success` : une zone
   // favorable ne déclenche pas d'exploration).
   //
-  // `dark` EST une couleur défavorable, et la plus sévère de toutes : les
-  // grilles l'emploient pour les bandes « Très sévère » (DASS-21, cf.
-  // `questions.ts`). Elle manquait à cette union, si bien qu'une règle écrite
-  // sur `['warning', 'danger']` aurait ignoré exactement les patients les plus
-  // atteints — sans erreur ni trace. Une règle qui vise une zone défavorable
-  // doit citer les TROIS couleurs.
-  | { type: 'couleur'; couleurs: Array<'warning' | 'danger' | 'dark'> };
+  // L'union couvre les QUATRE couleurs défavorables, par ordre de gravité
+  // croissante — `info`, `warning`, `danger`, `dark`. Les deux extrémités
+  // manquaient et chacune ouvrait le même trou, en miroir : `dark` porte les
+  // bandes « Très sévère » (DASS-21), si bien qu'une règle écrite sur
+  // `['warning', 'danger']` ignorait les patients les PLUS atteints ; `info`
+  // porte des bandes légères mais actionnables (PSQI « Troubles du sommeil
+  // légers », 5-10, au-dessus du seuil de 4 que l'instrument publie), et
+  // l'omettre laissait dehors le versant bas.
+  //
+  // Le banc n'exige pas de citer les quatre : il exige qu'une règle ne
+  // s'arrête jamais SOUS la plus sévère. Viser `danger` seul est licite ; viser
+  // `danger` sans `dark` ne l'est pas. Où COMMENCER, en revanche, est un
+  // arbitrage clinique par instrument, qu'aucun banc ne peut prendre — chaque
+  // règle le motive sur place.
+  | { type: 'couleur'; couleurs: Array<'info' | 'warning' | 'danger' | 'dark'> };
 
 export type OrientationDeclencheur =
   | {
@@ -125,11 +134,21 @@ export type OrientationRule = {
 // ─────────────────────────────────────────────────────────────────────────────
 // Table V1 — six règles, chacune adossée à des claims VALIDE du corpus NNPP2.
 //
-// AUCUN SEUIL CLINIQUE N'EST INTRODUIT ICI. Les déclencheurs de score citent la
-// bande d'interprétation que la grille certifiée produit déjà (`type:
-// 'couleur'`), jamais un nombre choisi à cet endroit : décider qu'un PSS-10 est
-// « élevé » appartient à la grille, pas à cette table. C'est aussi ce qui rend
-// les règles insensibles à une recalibration de barème.
+// AUCUN SEUIL N'EST CALCULÉ ICI — mais il ne faut pas se raconter que la table
+// serait pour autant sans décision clinique. Les déclencheurs citent la bande
+// d'interprétation que la grille certifiée produit déjà (`type: 'couleur'`),
+// jamais un nombre écrit à cet endroit : décider qu'un PSS-10 vaut « élevé »
+// appartient à la grille, et les règles survivent donc à une recalibration de
+// barème.
+//
+// En revanche, CHOISIR LA BANDE D'ENTRÉE est bien un arbitrage clinique, et il
+// est pris ici. Arbitrage praticien du 2026-08-03 : il se prend INSTRUMENT PAR
+// INSTRUMENT, et non par une règle uniforme — chaque grille a ses propres
+// bandes et son propre seuil publié. Chaque règle motive donc sa bande de
+// départ sur place. En pratique, seul le PSQI émet une bande `info` porteuse de
+// sens (« Troubles du sommeil légers », 5-10, au-dessus du seuil de 4 qu'il
+// publie) ; le PSS-10 et le TFD SIIN n'en émettent aucune, et `warning` y est
+// déjà leur première bande défavorable.
 //
 // Ce que la table NE fait PAS : elle ne s'auto-signe pas. `ORIENTATION_METADATA`
 // reste non validée plus bas, donc la route demeure fail-closed et ne sert
@@ -155,21 +174,24 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     id: 'R-SOM-01',
     statut: 'publiee',
     // PSQI : interprétation globale (success / info / warning / danger).
+    // Bande d'entrée `info` — et c'est délibéré : `info` y couvre un total de 5
+    // à 10, donc au-dessus du seuil de 4 que l'instrument publie lui-même.
+    // Commencer à `warning` aurait laissé dehors des patients que le PSQI
+    // considère déjà comme mauvais dormeurs.
     declencheurs: [
-      { type: 'zone', idQuestionnaire: 'Q_SOM_01', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
+      { type: 'zone', idQuestionnaire: 'Q_SOM_01', zone: { type: 'couleur', couleurs: ['info', 'warning', 'danger', 'dark'] } },
     ],
     suggestions: [
       { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Explorer la dimension de l'humeur, que la source désigne explicitement par le test HAD." },
-      { questionnaireId: 'Q_STR_02', priorite: 2, objectif: 'Explorer la dimension du stress associée au trouble du sommeil.' },
+      { questionnaireId: 'Q_STR_03', priorite: 2, objectif: "Explorer la dimension du stress par le test de Cungi, que la source juge le plus pertinent dans les troubles du sommeil." },
     ],
     justificationClaims: [
-      // « Le test de stress de Cungi est plus pertinent […] pour explorer la
-      // dimension du stress dans les troubles du sommeil, tandis que le test HAD
-      // suffit à explorer la dimension de l'humeur. » Le test de Cungi n'est pas
-      // au catalogue : la dimension stress est portée par le PSS-10, seule
-      // échelle de stress perçu disponible — substitution assumée, et c'est
-      // pourquoi elle est en priorité 2 quand HAD, lui nommé par la source,
-      // est en priorité 1.
+      // « Le test de stress de Cungi est plus pertinent et sensible pour
+      // explorer la dimension du stress dans les troubles du sommeil, tandis que
+      // le test HAD suffit à explorer la dimension de l'humeur. » Les deux
+      // instruments nommés par la source existent au catalogue et sont
+      // administrables : Cungi = Q_STR_03, HAD = Q_NEU_11. Aucune substitution —
+      // la règle propose exactement ce que le claim désigne.
       { claimId: 'WN-CL-0323-013', versionClaim: 'v1.0' },
       { claimId: 'WN-CL-0323-001', versionClaim: 'v1.0' },
     ],
@@ -178,6 +200,10 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
   {
     id: 'R-STR-01',
     statut: 'publiee',
+    // Bande d'entrée `warning` : le PSS-10 n'émet PAS de bande `info` — ses
+    // trois bandes sont `success` (10-20), `warning` (21-26) et `danger`
+    // (27-50). `warning` y est donc déjà sa première bande défavorable, et non
+    // un choix de resserrer.
     declencheurs: [
       { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
     ],
@@ -214,7 +240,9 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
   {
     id: 'R-GAS-01',
     statut: 'publiee',
-    // TFD SIIN : interprétation globale sur 93 (A / B / C).
+    // TFD SIIN : interprétation globale sur 93 (A / B / C). Comme le PSS-10, il
+    // n'émet pas de bande `info` — `warning` (bande B, 24-49) est sa première
+    // bande défavorable.
     declencheurs: [
       { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
     ],

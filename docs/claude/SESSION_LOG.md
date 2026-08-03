@@ -1698,3 +1698,46 @@ LOT-04) ou LOT-01 (validation praticien des 755 claims).
 
 **Questions ouvertes** : LOT-05 devra trancher explicitement si `signauxAlerte`
 peut porter une décision de sécurité malgré son filtrage silencieux.
+
+## 2026-08-03 — LOT-05 : table de règles d'orientation V1
+
+**Décisions** : `ORIENTATION_RULES_V1` remplie de six règles adossées à neuf
+claims `VALIDE` vérifiés en base, et **volontairement non signée** — écrire les
+règles et les signer sont deux gestes, le second est praticien. La route reste
+donc fail-closed. Le moteur sait enfin lire les drapeaux d'anamnèse (LOT-04, qui
+n'avait aucun consommateur). Trois arbitrages praticien : la bande d'entrée se
+choisit **instrument par instrument** (PSQI à `info`, au-dessus de son seuil
+publié de 4 ; PSS-10 et TFD à `warning`, déjà leur première bande défavorable) ;
+`signauxAlerte` ne porte aucune règle, non parce qu'il est filtré — tous le
+sont — mais parce qu'un signal d'alerte appelle un adressage, quand la table ne
+sait produire qu'une exploration ; une déclaration seule propose un instrument,
+jamais un pack (R-ANA-01 alignée sur R-STR-02).
+
+**Quatre défauts silencieux corrigés** : `OrientationZone` ignorait `dark`
+(patients « Très sévère ») et `info` — le même trou aux deux bouts ; le moteur
+traitait une composition de pack inconnue comme autorisée, à rebours de son banc
+(la route refiltrait, donc aucune recommandation erronée n'en est sortie) ; la
+route retenait la consultation la plus récente, or une consultation naît sans
+anamnèse — les règles de drapeau se seraient tues dans la fenêtre exacte où le
+praticien regarde l'orientation.
+
+**Écarté** : signer la table dans la même PR ; citer les `sourceId` du registre
+faute de `claimId` (le registre LOT-00 n'en contient aucun — ils ont été lus en
+base) ; cibler `pack_humeur_motivation_neurochimie`, inactif en base.
+
+**Deux revues adversariales, deux NO-GO levés.** La seconde a trouvé une erreur
+factuelle : j'avais écrit que le test de Cungi n'était pas au catalogue et fait
+proposer le PSS-10 à sa place, alors que Cungi **est** `Q_STR_03`, actif — la
+règle propose désormais ce que le claim désigne. Elle a aussi trouvé un
+commentaire affirmant un incident qui n'avait pas eu lieu, et trois bancs qui ne
+mordaient pas.
+
+**Prochaine action** : LOT-06 (consommateur praticien) ou la signature de la
+table après relecture clinique des six règles.
+
+**Questions ouvertes** : (1) **la surface qui affichera un signal d'alerte sans
+le traiter comme une exploration reste à écrire** — c'est un lot dédié, et le
+commentaire de `orientationRulesV1.ts` y renvoie ; (2) aucun banc ne confronte
+les `claimId` à `rag_corpus_claims` (pas de base en Vitest) : la vérification
+reste manuelle avant chaque signature ; (3) 10 des 16 packs de doctrine n'existent
+toujours pas en base, et `PACK_HUMEUR_NEURO` y est inactif.

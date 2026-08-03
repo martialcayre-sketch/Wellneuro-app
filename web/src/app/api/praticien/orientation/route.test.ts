@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Prisma } from '@/generated/prisma';
 
 const { getServerSession, prisma, mockMeta, mockRegles } = vi.hoisted(() => ({
   getServerSession: vi.fn(),
@@ -315,7 +316,10 @@ describe('GET /api/praticien/orientation', () => {
       });
       await GET(getRequest());
       const critere = prisma.consultation.findFirst.mock.calls[0][0];
-      expect(critere.where.NOT).toBeDefined();
+      // Égalité stricte au sentinel : `Prisma.JsonNull` à la place de
+      // `Prisma.DbNull` cesserait d'exclure les NULL SQL et ferait revenir le
+      // défaut, sans qu'une assertion « NOT est défini » s'en aperçoive.
+      expect(critere.where.NOT).toEqual({ anamnese: { equals: Prisma.DbNull } });
       expect(critere.orderBy).toEqual({ createdAt: 'desc' });
     });
 

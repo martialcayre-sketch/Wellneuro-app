@@ -1,10 +1,13 @@
 ### Orientation — table de règles V1 (LOT-05)
 
 - `ORIENTATION_RULES_V1` n'est plus vide : six règles d'orientation, chacune
-  adossée à des claims `VALIDE` du corpus NNPP2 (`rag_corpus_claims`). Aucun
-  seuil clinique nouveau n'est introduit — les déclencheurs de score citent la
+  adossée à des claims `VALIDE` du corpus NNPP2 (`rag_corpus_claims`), vérifiés
+  en base. Aucun seuil n'est calculé dans la table : les déclencheurs citent la
   bande d'interprétation que la grille certifiée produit déjà, jamais un nombre
-  choisi dans la table.
+  écrit à cet endroit. En revanche la **bande d'entrée** est un arbitrage
+  clinique, pris instrument par instrument et motivé sur chaque règle — le PSQI
+  démarre à `info` (total 5-10, au-dessus du seuil de 4 qu'il publie), le PSS-10
+  et le TFD SIIN à `warning`, qui est déjà leur première bande défavorable.
 - **La table n'est PAS signée.** `ORIENTATION_METADATA` reste
   `validationExterne: false` : la route `/api/praticien/orientation` demeure
   fail-closed et ne sert encore aucune recommandation. La signature est un acte
@@ -28,8 +31,10 @@
 - **La bande la plus sévère était invisible.** `OrientationZone` n'admettait que
   `warning` et `danger` ; les grilles emploient aussi `dark` pour les bandes
   « Très sévère ». Une règle écrite sur la couleur aurait ignoré exactement les
-  patients les plus atteints, sans erreur ni trace. `dark` est ajoutée, et un
-  banc exige désormais les trois couleurs.
+  patients les plus atteints, sans erreur ni trace. Le versant bas manquait de
+  même : `info` porte des bandes légères mais actionnables. Les deux sont
+  ajoutées, et un banc interdit désormais qu'une règle s'arrête sous la bande la
+  plus sévère.
 - **Le moteur traitait une composition de pack inconnue comme autorisée**, à
   rebours de ce que le banc de la table décrivait. Aucune recommandation
   erronée n'en est sortie — la route refiltre en sortie et rejetait déjà ce cas
