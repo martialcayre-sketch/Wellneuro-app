@@ -1,4 +1,5 @@
 import { calculateScore } from '../questions';
+import { IDS_SUSPENDUS } from '../questionnaires-catalog';
 import {
   BESOINS,
   BESOINS_FONDATIONS_CRITIQUES,
@@ -71,6 +72,9 @@ export function calculerCouvertureSource(
   source: SourceQuestionnaire,
   reponses: ReponsesParQuestionnaire
 ): number | null {
+  // Fail-closed : une source suspendue ne doit plus nourrir Mon Équilibre,
+  // même si des passations historiques existent encore en base.
+  if (IDS_SUSPENDUS.has(source.idQuestionnaire)) return null;
   // `max` nul ou absent : une division par 0 rend `Infinity`, que `clamp01`
   // ramènerait à 1 — le pire rendu possible pour une absence de mesure. Ce cas
   // existe depuis que `BESOIN_SOURCES` porte un `max` DÉRIVÉ : la forme qui ne

@@ -35,6 +35,7 @@ export async function GET() {
         nbQuestions: resume.nbQuestions,
         scoreMax: resume.scoreMax,
         certifie: false,
+        statutCertification: 'non_certifie',
         assignable: row.statutRelecture === 'valide',
         aliasVers: null,
         passationPraticien: false,

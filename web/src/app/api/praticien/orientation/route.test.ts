@@ -7,6 +7,7 @@ const { getServerSession, prisma, mockMeta, mockRegles } = vi.hoisted(() => ({
     journalAccesDossier: { create: vi.fn(), deleteMany: vi.fn() },
     questionnaireReponse: { findMany: vi.fn() },
     assignation: { findMany: vi.fn() },
+    pack: { findMany: vi.fn() },
   },
   mockMeta: {
     version: 'orientation-nnpp2-v1',
@@ -49,6 +50,7 @@ describe('GET /api/praticien/orientation', () => {
     prisma.journalAccesDossier.deleteMany.mockResolvedValue({ count: 0 });
     prisma.questionnaireReponse.findMany.mockResolvedValue([]);
     prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.pack.findMany.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -127,9 +129,7 @@ describe('GET /api/praticien/orientation', () => {
       erreur.mockRestore();
     });
 
-    it("ne passe ni composition de packs ni filtre d'administrabilité tant que le lot 10 ne les fournit pas", async () => {
-      // Test de contrat : si le lot 10 branche le registre des instruments, il
-      // doit modifier ce test — l'oubli ne peut pas passer inaperçu.
+    it("filtre un pack recommandé si sa composition contient un questionnaire non administrable", async () => {
       mockRegles.push({
         id: 'R-TEST-02',
         statut: 'publiee',
@@ -138,12 +138,14 @@ describe('GET /api/praticien/orientation', () => {
         justificationClaims: [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }],
         niveau: 'approfondissement',
       });
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'pack_stress_chronique_burnout', qids: ['Q_STR_04', 'Q_PED_03'] },
+      ]);
       prisma.questionnaireReponse.findMany.mockResolvedValue([
         { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
       ]);
       const payload = await (await GET(getRequest())).json();
-      expect(payload.recommandations[0].dejaAssigne).toBe(false);
-      expect(payload.recommandations[0].dejaRepondu).toBeNull();
+      expect(payload.recommandations).toEqual([]);
     });
 
     it('évalue les règles sur les scores stockés et journalise la lecture', async () => {
@@ -160,6 +162,9 @@ describe('GET /api/praticien/orientation', () => {
       prisma.questionnaireReponse.findMany.mockResolvedValue([
         { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
       ]);
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'pack_stress_chronique_burnout', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
       const payload = await (await GET(getRequest())).json();
       expect(payload.ok).toBe(true);
       expect(payload.actif).toBe(true);
@@ -170,6 +175,7 @@ describe('GET /api/praticien/orientation', () => {
         priorite: 1,
         dejaAssigne: false,
       });
+      expect(prisma.pack.findMany).toHaveBeenCalledTimes(1);
       expect(prisma.journalAccesDossier.create).toHaveBeenCalledTimes(1);
     });
 

@@ -29,6 +29,22 @@ type Rayon = 'questionnaires' | 'analyses' | 'conseils';
 
 type PatientOption = { email: string; prenom: string; nom: string };
 
+function badgeCertification(entree: BibliothequeEntree): { label: string; variant: 'success' | 'warning' | 'neutral' } {
+  if (entree.certifie || entree.statutCertification === 'certifie') {
+    return { label: 'Certifié', variant: 'success' };
+  }
+  if (entree.statutCertification === 'ambigu') {
+    return { label: 'Certification ambiguë', variant: 'warning' };
+  }
+  if (entree.statutCertification === 'a_verifier') {
+    return { label: 'Certification à vérifier', variant: 'warning' };
+  }
+  if (entree.statutCertification === 'non_score') {
+    return { label: 'Non scoré', variant: 'neutral' };
+  }
+  return { label: 'Non certifié', variant: 'neutral' };
+}
+
 // Rayon Questionnaires de la Bibliothèque (arbitrages 2026-07-23) :
 // chercher → prévisualiser tel que le patient le verra → ajouter à la file →
 // envoyer, un seul mail et un seul lien portail par patient.
@@ -444,39 +460,43 @@ export function BibliothequePanel({ entrees }: { entrees: BibliothequeEntree[] }
                 ))}
               </div>
               <ul className="max-h-[520px] overflow-y-auto p-2">
-                {filtres.map(e => (
-                  <li key={e.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectionId(e.id)}
-                      aria-pressed={selectionId === e.id}
-                      className={`w-full rounded-lg px-3 py-2.5 text-left transition-colors ${
-                        selectionId === e.id
-                          ? 'bg-indigo-600/10 ring-1 ring-inset ring-indigo-600/40'
-                          : 'hover:bg-muted'
-                      }`}
-                    >
-                      <span className="block font-display text-sm font-semibold text-foreground">
-                        {e.titre}
-                      </span>
-                      <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                        <span className="font-mono text-2xs text-muted-foreground">
-                          {e.id}
-                          {e.nbQuestions != null ? ` · ${e.nbQuestions} questions` : ''}
-                          {e.scoreMax != null ? ` · /${e.scoreMax}` : ''}
+                {filtres.map(e => {
+                  // Badge explicite : évite de laisser « sans badge » ambigu sur un instrument actif.
+                  const badgeCertif = badgeCertification(e);
+                  return (
+                    <li key={e.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectionId(e.id)}
+                        aria-pressed={selectionId === e.id}
+                        className={`w-full rounded-lg px-3 py-2.5 text-left transition-colors ${
+                          selectionId === e.id
+                            ? 'bg-indigo-600/10 ring-1 ring-inset ring-indigo-600/40'
+                            : 'hover:bg-muted'
+                        }`}
+                      >
+                        <span className="block font-display text-sm font-semibold text-foreground">
+                          {e.titre}
                         </span>
-                        <Badge variant="neutral">{e.categorie}</Badge>
-                        {e.certifie && <Badge variant="success">Certifié</Badge>}
-                        {e.passationPraticien && <Badge variant="warning">Passation praticien</Badge>}
-                        {e.aliasVers && <Badge variant="neutral">Alias historique</Badge>}
-                        {e.cabinet && <Badge variant="warning">Cabinet — non certifié</Badge>}
-                        {e.cabinet && e.cabinet.statutRelecture !== 'valide' && (
-                          <BadgeStatutInstrument statut={e.cabinet.statutRelecture} />
-                        )}
-                      </span>
-                    </button>
-                  </li>
-                ))}
+                        <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                          <span className="font-mono text-2xs text-muted-foreground">
+                            {e.id}
+                            {e.nbQuestions != null ? ` · ${e.nbQuestions} questions` : ''}
+                            {e.scoreMax != null ? ` · /${e.scoreMax}` : ''}
+                          </span>
+                          <Badge variant="neutral">{e.categorie}</Badge>
+                          <Badge variant={badgeCertif.variant}>{badgeCertif.label}</Badge>
+                          {e.passationPraticien && <Badge variant="warning">Passation praticien</Badge>}
+                          {e.aliasVers && <Badge variant="neutral">Alias historique</Badge>}
+                          {e.cabinet && <Badge variant="warning">Cabinet — non certifié</Badge>}
+                          {e.cabinet && e.cabinet.statutRelecture !== 'valide' && (
+                            <BadgeStatutInstrument statut={e.cabinet.statutRelecture} />
+                          )}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
                 {filtres.length === 0 && (
                   <li className="px-3 py-6 text-center text-sm text-muted-foreground">
                     Aucun instrument ne correspond à cette recherche.

@@ -7,7 +7,7 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 ## Codes de statut
 
 | Code | Sens |
-|---|---|
+| --- | --- |
 | `certifié` | Vérifié contre le MD Drive et couvert par fixture automatisée quand le scoring est concerné. |
 | `mappé` | Source MD identifiée, audit détaillé à poursuivre. |
 | `ambigu` | Source Drive conservée mais contient une incohérence ou une règle incomplète. |
@@ -19,7 +19,7 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 ## Matrice catalogue
 
 | ID code | Source MD Drive | Items | Options | Conditionnels | Scoring | Interprétation | Tests | Notes |
-|---|---|---:|---:|---:|---:|---:|---:|---|
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | `Q_STR_01` | `questionnaire_stress_siin.md` | certifié | certifié | n/a | certifié | certifié | certifié | Stress SIIN, 21 items, score 0-42 ; seuils Drive 4 et 15 harmonisés sans trou automatique |
 | `Q_STR_02` | `questionnaire_stress_cohen_pss.md` | certifié | certifié | n/a | certifié | certifié | certifié | PSS, 10 items, score 10-50 ; score 27 rattaché au seuil haut pour couvrir la borne Drive non explicite |
 | `Q_STR_03` | `questionnaire_stress_cungi.md` | certifié | certifié | n/a | certifié | certifié | certifié | Cungi, 11 items, score interne professionnel 0-55 |
@@ -69,7 +69,7 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 | `Q_URO_02` | `02_catalogue_mictionnel.md` | certifié | certifié | n/a | non scoré | n/a | certifié | Catalogue mictionnel, journal 3 jours, aucun score automatique |
 | `Q_PED_01` | `pediatrie_01_matinalite_vesperalite_enfant.md` | certifié | certifié | n/a | certifié | n/a | certifié | Chronotype enfant, 10 items, score brut 10-43 sans interprétation automatisée |
 | `Q_PED_02` | `pediatrie_03_conners_enseignant_ctrs_rs.md` | mappé | mappé | n/a | mappé | mappé | certifié | DÉBAPTISÉ le 2026-08-01 — « Repérage du TDAH par l'enseignant (grille WellNeuro) ». Le fichier Drive garde son nom : il désigne la SOURCE Conners contre laquelle le servi a été comparé, et cette comparaison est la pièce qui établit que le servi n'en est pas. Statut registre : `scoring_verifie` (banc rejoué le 2026-08-01). |
-| `Q_PED_03` | `pediatrie_02_conners_parent.md` | certifié | certifié | n/a | certifié | n/a | certifié | 108 items scorés, somme brute 0-324, pas de T-score sans tables normatives. Statut registre : `suspendu` (arbitrage clinique du 2026-08-01 ; banc rejoué et croisement obtenu). |
+| `Q_PED_03` | `pediatrie_02_conners_parent.md` | certifié | certifié | n/a | ambigu | ambigu | ambigu | 108 items scorés servis, mais la source distingue 4 dimensions dont 2 échelles de validité ; somme brute /324 conservée en interne, instrument maintenu suspendu. Statut registre : `suspendu` (arbitrage clinique du 2026-08-01 ; banc rejoué et croisement obtenu). |
 | `Q_ALI_01` | `questionnaire_alimentaire_siin_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Alimentaire SIIN |
 | `Q_ALI_02` | `questionnaire_diete_mediterraneenne_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Méditerranéen |
 | `Q_ALI_03` | `questionnaire_monnier_apports_caloriques_proteiques_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Monnier |
@@ -88,7 +88,7 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 ## MD Drive sans questionnaire code correspondant
 
 | Source MD Drive | Statut | Décision |
-|---|---|---|
+| --- | --- | --- |
 | `sommeil_08_agenda_sommeil_eveil.md` | bonus | Recueil agenda, pas de création automatique dans cette passe. |
 | `gastro_03_score_francis (1).md` | doublon | Doublon Drive de `gastro_03_score_francis.md`, pas de création automatique. |
 | `00_index_*.md` | index | Fichiers d'index exclus de l'audit fonctionnel. |
@@ -96,6 +96,6 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 ## Points de vigilance
 
 - Les seuils incohérents déjà présents dans les MD Drive QLQ-C30 (`< 28`) et QLQ-BR23 (`< 14`) sont conservés en note de scoring, sans correction contre source externe.
-- `Q_PED_03` conserve les 108 items scorés du MD Drive ; les deux questions ouvertes Conners ne sont pas créées tant que le rendu patient ne supporte pas les champs texte dans ce catalogue. Cet état « certifié » dans la matrice décrit la conformité Drive ; le registre clinique maintient `Q_PED_03` en `suspendu`.
+- `Q_PED_03` conserve les 108 items scorés du MD Drive ; les deux questions ouvertes Conners ne sont pas créées tant que le rendu patient ne supporte pas les champs texte dans ce catalogue. Cet état « ambigu » dans la matrice décrit la conformité Drive partielle ; le registre clinique maintient `Q_PED_03` en `suspendu`.
 - `Q_GEO_03` reste explicitement hors certification Drive faute de MD correspondant identifié dans l'inventaire. `Q_NEU_06` l'était aussi jusqu'au 2026-07-31 : il a depuis été **reconstruit sur le PDF source** `WN-SRC-0445` (« MMT Mini Mental Test.pdf »), relu directement dans Drive, et non sur un MD de l'inventaire. Sa certification passe donc par le banc `certify`, qui compare au verbatim de la source, pas par cette matrice — et il est désormais à passation praticien, non assignable.
 - La commande `cd web && npm run scoring-check` vérifie la couverture de cette matrice et les fixtures certifiées actuelles.

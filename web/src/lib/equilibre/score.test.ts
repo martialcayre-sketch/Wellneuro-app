@@ -276,6 +276,20 @@ describe('besoin 5 — mouvement et repos à parts égales', () => {
     expect(attendu).not.toBeNull();
     expect(calculerCouvertureBesoin(9, reponses)).toBeCloseTo(attendu!, 6);
   });
+
+  it('une source suspendue reste non mesurée dans Mon Équilibre (fail-closed)', () => {
+    const couverture = calculerCouvertureSource(
+      { idQuestionnaire: 'Q_PED_03', max: 324, inverser: true },
+      {
+        Q_PED_03: {
+          CP001: 3,
+          CP002: 3,
+          CP003: 3,
+        },
+      },
+    );
+    expect(couverture).toBeNull();
+  });
 });
 
 // Invariants ancrés par la revue adversariale du 2026-07-27 (P0 métrologique).

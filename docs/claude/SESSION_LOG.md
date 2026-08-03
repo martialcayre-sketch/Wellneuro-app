@@ -1080,6 +1080,325 @@ interne, non suivis). B1 corrige les écrans pendant qu'ils sont inertes, B2
 chargés par Copilot ? Personne ne l'a vérifié ; s'ils ne le sont pas, ils se
 désynchroniseront en silence malgré cet alignement.
 
+## 2026-07-27 — Fil du jour : carte « Synthèse à générer » (PR #402 mergée)
+
+**Décisions** : bug rapporté (patients lus sans synthèse invisibles du Fil et de l'inbox) tracé au retrait immédiat de l'inbox sur lecture confirmée, combiné à l'absence de carte Fil hors synthèse déjà existante (LOT-02). Choix arbitré parmi trois options : nouvelle carte `synthese_a_generer`, symétrique de `synthese_a_valider`, refusable G1 — plutôt que garder l'item dans l'inbox. Revue adversariale (`wn-reviewer`) : GO, aucun défaut bloquant.
+
+**Écarté** : garder l'item dans l'inbox jusqu'à génération, et l'option combinant les deux — la carte au Fil seule couvrait la demande.
+
+**Validations** : T1 vert ; T2 vert (2131/2131 unitaires, 94/98 E2E — 4 échecs = faux-positif connu portail-google/lien-magique en worktree, confirmé par retry) ; CI `verify` vert (9m12) ; merge squash + worktree nettoyé.
+
+**Prochaine action** : aucune côté code ; deux notes mineures de revue (clarté d'une égalité stricte de dates, tests complémentaires) laissées non bloquantes.
+
+**Questions ouvertes** : aucune.
+
+## 2026-07-27 — Édition d'une synthèse IA avant validation + rechercher/remplacer (PR #409 mergée)
+
+**Décisions** : gap comblé — une synthèse IA (`Brouillon_IA`) n'était jamais éditable, seulement validable telle quelle ou rejetable en bloc. Garde PATCH `enregistrer` relâchée, avec la coercion permissive de génération (`validateSyntheseSchema`), pas celle du brouillon praticien qui écrase `limites` et borne des longueurs pensées pour la saisie manuelle. Barre rechercher/occurrence suivante/remplacer/remplacer tout ajoutée à `SynthesePraticienEditor`.
+
+**Écarté** : réutiliser `validerBrouillonPraticien` pour la branche IA (aurait rejeté un contenu déjà long, écrasé `limites`).
+
+**Validations** : T1 vert ; T2 vert (2132/2132 unitaires, 93/98 E2E — 5 faux positifs connus, confirmés par retry) ; NO-GO initial en revue adversariale (positions de remplacement obsolètes ; CRLF pré-existant vérifié non-régression) — corrigé (revalidation d'empan + `key` par synthèse) ; `verify` vert.
+
+**Prochaine action** : aucune côté code.
+
+**Questions ouvertes** : aucune.
+
+## 2026-07-27 — Push Drive du notebook 08 (Biologie fonctionnelle)
+
+**Décisions** : versement du notebook « 08 — Biologie fonctionnelle » dans la bibliothèque NotebookLM. Export local (`exporter.mjs`, 27 sources du registre, toutes avec `canonical.md`) puis `push-drive.mjs` → `WELLNEURO_BIBLIOTHEQUE/08 — Biologie fonctionnelle` : **28 fichiers créés** (MANIFESTE + 27), 0 mise à jour. Auth compte de service + impersonation OK, racine Drive résolue. Aucun changement de code, aucune écriture base.
+
+**Écarté** : rien — pipeline établi (extracted → export → push), `--dry-run` confirmé avant le push réel (validé par l'utilisateur).
+
+**Validations** : dry-run propre (28 créés / 0 màj) puis push réel identique.
+
+**Prochaine action** : geste manuel non outillé — NotebookLM → Sources → Ajouter → Google Drive pour brancher le dossier 08. Puis campagne « repartir des premiers notebooks » : restent 02, 11, 12 (+ décision sur 00).
+
+**Questions ouvertes** : aucune.
+
+## 2026-07-28 — Déblocage HDS : D-006, features par config, Sentry client
+
+**Décisions** : D-006 gravé — cap tout-Scalingo, patients réels dès la phase de test, découplé du juridique, sans double-implantation permanente ; l'entrée lève explicitement le gate F « GO données réelles » et impose l'ordre DPA e-signé + périmètre HDS région confirmé avant toute donnée réelle. D-005 : confirmation DPO du RLS enregistrée. Sentry client tague l'environnement neutre (Scalingo). `docs/FEATURE_FLAGS.md` : débloquer les features par config (env), pas en retirant les gâtes du code. Runbook : région → `osc-fr1 --hds-resource`.
+
+**Écarté** : retirer les gâtes du code (fuite prod) → config ; pincer Node 22 (changerait le runtime prod Vercel) → différé ; `osc-secnum-fr1` SecNumCloud → `osc-fr1` HDS, à confirmer acceptable.
+
+**Validations** : 5 PR mergées (#415/#417/#423/#424/#425), `verify` vert partout (E2E sur #417) ; revues adversariales #417 et #424 (NO-GO → GO) ; anti-secrets vert.
+
+**Prochaine action** : ⚙️ responsable — e-signer le DPA Scalingo + archiver la preuve écrite du périmètre HDS `osc-fr1`, puis provisionner l'app prod HDS (bloc D).
+
+**Questions ouvertes** : confirmation DPO « réel sur Scalingo en test » ? ; `osc-fr1` acceptable (HDS non SecNumCloud) ? ; Node — pincer 24 ou laisser.
+
+## 2026-07-28 — Agenda du sommeil : refonte complète, revue, merge (#427 mergée)
+
+**Décisions** : refonte de Q_SOM_09 en trois lots + correctifs de revue, partie d'un audit de maquette. Cadran tactile sans clavier (4 repères, 2 conditionnels), fin du pré-remplissage, éveil obligatoire, barème à 4 axes indépendants avec plancher de couverture par axe, couverture par métrique, réveil final + aide au sommeil + mise au lit (TIB = mise au lit → lever, l'efficacité BAISSE), bornes d'éveil 15/30/60, métriques de fréquence, niveau de preuve B→D, besoin 5 regroupé (mouvement/repos), `VERSION_SCORE_EQUILIBRE` v8/v9. Couvre 8 des 9 items du Consensus Sleep Diary.
+
+**Écarté** : score montré au patient (orthosomnie) ; facteurs/fréquence/aide dans l'indice (expositions) ; conversion des classes d'éveil v1.
+
+**Revue adversariale** : no-go initial, 4 constats bloquants confirmés et corrigés (compte de réveils réécrivant l'éveil, indice sur 1 nuit/21, pondération changeant le score sans agenda, éveil du matin mal dessiné).
+
+**Merge** : conflits CRLF/LF + collision de version v5 résolus ; 3 tests mis à jour (bump version, garde « aucune réponse », B→D). `verify` vert (9 min 23), squash-mergée.
+
+**Prochaine action** : confronter les 7 gestes obligatoires du matin à l'assiduité d'une première cohorte.
+
+**Questions ouvertes** : `test:worktree` rend 0 quand PostgreSQL ne démarre pas ; `portail-google.spec.ts` dépend du `.env.local` local (2 E2E rouges hors périmètre) — deux chips spawn ouverts.
+
+## 2026-07-29 — Rayon corpus par notebook (#441), certification, ingestion NB02
+
+**Décisions** : rayon compléments filtré par **notebook** via `filter_source_ids` (décision 7 : ni migration ni backfill) — PR #441 mergée, `verify` vert, revue `wn-reviewer` GO, prod OK (étagère micronutrition = 796 VALIDE). Gates 08/10 armées (Vercel) ; NB10 complété (5 sources, 121 claims) et NB02 Sommeil ingéré (LOT_009 : 108 chunks, 671 claims EN_ATTENTE), tous deux poussés Drive.
+
+**Écarté** : backfill `metadata.rayon` (écriture prod inutile, filtre notebook déjà tranché) ; certifier Q_ALI_03/Q_NEU_06 (décalage source↔servi confirmé → arbitrage clinique) ; Conners Q_PED_02/03 (hors registre + droits tiers).
+
+**Validations** : T1 vert, `rayonCorpus.test` 11/11, contrat SQL, `execute_sql` (0 orphelin partout). Instruments propres : Q_SOM_09, Q_STR_06, Q_PED_01.
+
+**Prochaine action** : validation praticien des claims EN_ATTENTE (NB01/NB02) — c'est le levier, pas l'ingestion.
+
+**Questions ouvertes** : droits + curation registre Conners ; arbitrages Q_ALI_03/Q_NEU_06 ; lacune #438 (filtrer les assignations côté serveur, pas le plafond 40).
+
+## 2026-07-29 — Trois points ouverts : cohorte gestes du matin, test:worktree, E2E .env.local (PR #444 mergée)
+
+**Décisions** : #1 (assiduité aux 7 gestes du matin) non actionnable — agenda Q_SOM_09 assigné à 1 seul patient en prod, 0 nuit soumise, pas de cohorte à mesurer. #2 : le « test:worktree rend 0 » ne se reproduit pas (code de sortie déjà 1, prouvé bout-en-bout) ; la vraie cause du chip est que PostgreSQL ne démarre pas sur macOS sans locale (« postmaster became multithreaded during startup ») → corrigé par `LC_ALL=en_US.UTF-8` (macOS seul). #3 : `webServer.env` fuitait le vrai client OAuth patient via `...process.env` → neutralisé (`''`), `portail-google` 6/6 vert sous pollution réelle. PR #444 (2 commits), `verify` vert 10m20, mergée squash, worktree nettoyé.
+
+**Écartées** : toucher au code de sortie du script (déjà correct) ; corriger le flake `portail-lien-magique` iPhone 13 (hors périmètre, vert en CI).
+
+**Prochaine action** : assigner l'agenda sommeil à une vraie cohorte — préalable opérationnel avant toute mesure d'assiduité aux gestes du matin.
+
+**Questions ouvertes** : le « rend 0 » observé venait-il d'un pipe/wrapper (poste PC) ? ; checkout principal 38 commits derrière `origin/main` (noté en mémoire — lire/corriger depuis un worktree off `origin/main`).
+
+## 2026-07-30 — Cadran nuit : interaction réparée (#459, #467) + atteignabilité du corpus sommeil
+
+**Décisions** : correctif d'interaction seul sur `CadranNuit`. Cause racine : le
+hit-testing SVG suit l'ordre de peinture — le cercle porteur du handler était
+peint **sous** le cercle visible, donc injoignable, et le `<svg>` n'avait aucun
+`onPointerDown`. Réparé par handlers à la racine + prise par **distance
+euclidienne** à la poignée, décalage de prise conservé, zone morte centrale,
+capture sur nœud stable, garde multi-pointeurs. #467 solde les 8 constats non
+bloquants : rotation des ex æquo, projection `meet` réelle, filet
+`lostpointercapture`, garde d'égalité, 3ᵉ E2E discriminant. 23 tests jsdom + 3
+E2E, 7 mutations tuées, `verify` vert (10m05 / 9m56), les deux mergées, prod READY.
+
+**Écartés** : fenêtre de rattrapage J-2 et amorçage local (hors périmètre
+demandé) ; `prettier --write` (pas le formateur du dépôt) ; ordre des deux
+règles d'ex æquo (improuvable tant que le parent applique les valeurs — écrit
+dans le banc).
+
+**Revue adversariale** : NO-GO initial — un swipe de défilement sur le cadran
+écrivait une heure de coucher fausse (défaut que **j'avais introduit** : prise
+bornée en angle seulement). Mes tests passaient **avec** trois des défauts ;
+corrigés puis re-prouvés par mutation. Le relecteur s'est trompé une fois (total
+E2E), vérifié plutôt que « corrigé ».
+
+**Claims sommeil** : NB02 = 671 claims, **tous VALIDE**, 28 sources, 336
+prescriptifs. Corpus : 4671 VALIDE, reste 221 EN_ATTENTE (12 sources de NB04
+Humeur).
+
+**Prochaine action** : décider quel écran clinique citera le corpus sommeil —
+`RAYON_VERS_NOTEBOOK` ne déclare que micronutrition/biologie/nutrition, aucun
+rayon `sommeil`, et le seul consommateur d'UI est câblé en dur sur
+`micronutrition`. Validation nécessaire mais **non suffisante** : c'est la classe
+de #441 remontée d'un cran (pas d'étagère du tout).
+
+**Questions ouvertes** : tenue du glisser sous WebKit (test iPhone réel, seul
+juge) ; comment le patient défile une page dont les ~300 px hauts portent
+`touch-action: none` ; la route `claims/recherche` n'a aucun appelant.
+
+## 2026-07-30 — Corpus RAG : ingestion NB03/NB04, validation, NB00 bibliothèque
+
+**Décisions** : NB03 « Stress » (BATCH_010 : 83 chunks, 486 claims) et NB04 « Humeur »
+(BATCH_011 : 102 chunks, 621 claims) ingérés + poussés Drive ; praticien a tout validé le
+07-30 → corpus 100 % (4892/4892 VALIDE, 0 sans signature). NB00 « Gouvernance » extrait +
+poussé Drive **sans injection RAG** (0 chunk/0 claim, vérifié `execute_sql`) — bibliothèque
+miroir, exclu du RAG clinique. `--validate` avant chaque POST prod, dry-run avant chaque push.
+
+**Écarté** : accepter le trou de couverture NB04 (4 chunks tombés en 529 Overloaded Anthropic,
+sautés sans retry par `draft.mjs`) → re-draft des sources touchées en batch distinct + fusion
+par source (621 claims, 4 chunks récupérés) avant le POST.
+
+**Prochaine action** : ingérer NB05 (Cognition) sur go explicite. Rappel : « validé ≠ servi » —
+NB02/03/04 validés mais sans rayon (`RAYON_VERS_NOTEBOOK` = 08/09/10 seuls).
+
+**Questions ouvertes** : ajouter des rayons Stress/Humeur/Sommeil = décision produit ?
+branchement manuel NotebookLM (00/02/03/04) restant.
+
+## 2026-07-30 — Carnet alimentaire, lot 3 : journée repère et bilan de calibrage (PR #447 mergée)
+
+**Décisions** : la trace d'essai dit si l'action a tenu, pas à quoi ressemble une journée — d'où la journée repère, unique par date et par épisode, c'est cette unicité qui rend la couverture calculable. Le régime `calibrage`, typé depuis JA5-01 et jamais produit par aucune surface, devient l'avant-protocole : un patient sans protocole diffusé n'avait, depuis le lot 2, que des notes locales intransmissibles. Le moteur de couverture est inclus sur arbitrage du praticien — retour assumé sur « affichage d'abord, aucun moteur » (A7-11), sur ce point seul ; il suggère et ne conclut jamais que l'observation suffit. Moment approximatif retenu, pas l'heure réelle.
+
+**Écarté** : dériver le régime du type d'action du protocole (une devinette à conséquence clinique) ; un champ de régime déclaré par le praticien (contrat de diffusion à toucher, carnet inatteignable en attendant).
+
+**Corrigé au passage** : `joursSansTrace: traces.length === 0 ? 7 : 0` — un 7 en dur qui ne comptait aucun jour.
+
+**Validations** : T1 vert ; Vitest complet vert (296 fichiers, 2537 tests) ; E2E impossibles dans cet environnement (proxy refusant `cdn.playwright.dev`) ; `verify` vert avant merge.
+
+**Prochaine action** : dériver le `DietaryObservationProfile` — les journées sont capturées et comptées, le profil qui les résume reste à écrire.
+
+**Questions ouvertes** : le praticien ne voit que le **nombre** de journées transmises, pas leur couverture ; le bilan de calibrage n'est pas borné dans le temps côté serveur ; marqueurs vedettes acceptés par le domaine mais pas encore proposés à la saisie.
+
+## 2026-07-31 — Rayon compléments, phase 1b : le référentiel d'ingrédients (PR #493 mergée)
+
+**Décisions** : le pivot `supplement_ingredients` cesse d'être vide — c'était le
+bloqueur unique du rayon. La nomenclature de 1 955 entrées ne se signe plus à la
+main : le praticien a objecté que tout vient de la même base, et il avait raison —
+le référentiel officiel Compl'Alim couvre 100 % des 883 libellés chimiques, 1 021
+espèces végétales et 61 micro-organismes du catalogue. Migration additive
+(4 colonnes de provenance, 4 CHECK, 2 index), voie d'ingestion interne, outils de
+moisson et d'ingestion.
+
+**Écarté** : l'unicité côté forme (69 formes officielles relèvent de plusieurs
+substances — « D-pantothénate de calcium » = B5 ET calcium ; l'index unique aurait
+fait échouer l'ingestion en ayant l'air d'un durcissement).
+
+**Revue adversariale : NO-GO, trois bloquants, tous corrigés.** L'appariement d'une
+forme se faisait par un `code` dérivé du libellé — un renommage amont aurait créé un
+doublon, l'ancienne ligne subsistant, et les compositions seraient restées
+accrochées à l'obsolète. Le `code` d'une entrée existante était réécrit : un
+homonyme apparaissant en amont aurait renommé « selenium », désappariant en silence
+un drapeau de sécurité. Et la garde anti-détournement n'existait que côté ingrédient.
+Trois branches qu'aucun test n'atteignait sont maintenant couvertes.
+
+**Validations** : T1, T3 complet (contrats SQL inclus), `verify` vert 9 min 50 s.
+Base de production relue après merge : migration appliquée en une tentative,
+structure conforme, 0 ingrédient écrit — le lot n'ingère rien, par conception.
+
+**Prochaine action** : lot 1c, le sélecteur d'ingrédient de `/dashboard/regles`.
+Il sert aujourd'hui tout le vocabulaire actif dans un `<select>` nu, sans recherche
+ni pagination : sans lui, l'ingestion rendrait l'atelier de règles inutilisable.
+**Le sélecteur doit précéder l'ingestion.**
+
+**Questions ouvertes** : les données moissonnées ne sont plus sur disque (relancer
+`moisson.mjs`, ~20 min). Le référentiel n'est publié sous aucune licence énoncée —
+intégration décidée en connaissance de la lacune, à réexaminer. Les contrats
+`c4_supplement_catalogue_v1.sql` et `c4_clinical_rules_lignee_v1.sql` ne sont
+câblés à aucun workflow : ils ne gardent rien aujourd'hui.
+
+## 2026-07-31 — Agenda du sommeil : campagne close côté code (#492, #476, #495, #496)
+
+**Décisions** : seuil de relance posé — « on ne relance jamais pour une nuit que le
+patient peut encore noter ». `nuit_du_jour_manquante` sort de `relancable` (le bouton
+s'affichait dès 00 h 05 sur un patient à jour, alors que `estDateSaisissable` lui laisse
+jusqu'à demain matin) ; délai de grâce de 2 jours au démarrage ; règle appliquée aussi
+côté serveur via le même prédicat exporté (#495). Défilement du cadran rendu à la page :
+blocage décidé geste par geste par un `touchmove` non passif, plus par `touch-action`
+figé au premier contact — `touch-none` couvrait 300 × 300 px pour 8-15 % d'utile (#496).
+Rayon `sommeil` déclaré (#476), fuseau E2E corrigé (#492).
+
+**Écartés** : `pan-y` sur la racine (casse le glissement aux flancs) ; `touch-action` sur
+des `<circle>` SVG (ne s'y applique pas, et reconduit le piège d'ordre de peinture de
+#459) ; compter les trous antérieurs (seule la série en cours compte, verrouillé par test).
+
+**Revues** : deux GO, chacune sur un test qui ne prouvait rien — la borne J-2 absente
+(l'off-by-one passait vert), et un garde `e.cancelable` dont l'assertion était vraie par
+construction. Six mutations éprouvées ensuite.
+
+**Prochaine action** : essayer le glisser sur un iPhone réel — seul juge du postulat
+WebKit de #496 ; à défaut, dégradation propre bornée à un cran de 15 min.
+
+**Questions ouvertes** : aucun écran ne consomme le rayon `sommeil` (`FicheComplementPanel`
+code `micronutrition` en dur) ; aucun agenda n'a atteint le seuil de scoring en production
+(max 3 nuits sur 7 requises, 9 assignations ouvertes) ; le panneau praticien n'a aucune
+couverture navigateur.
+
+## 2026-07-31 — Carnet lot 4 (#485) et agenda alimentaire lot 1 (#481)
+
+**Décisions** : le carnet praticien cesse d'affirmer sans savoir — les trois phrases
+en dur retirées, le bloc calibrage suit désormais la **dernière** transmission,
+chargée d'office et nommée avec sa date. Quatre lecteurs réels remplacent des casts
+`as` qui ne validaient rien : une trace au `localDate` objet faisait tomber le panneau
+entier. Le carnet reste qualitatif ; l'instrument de mesure sera `Q_ALI_09`, dont le
+domaine pur est posé (fenêtre 21 jours, seuils à quatre étages, agrégats `null` jamais 0).
+
+**Écartés** : le moment approximatif pour l'agenda (l'heure réelle est la condition écrite
+du déverrouillage de la frontière C5) ; les quantités et toute reconstruction d'un SIIN.
+
+**Revues** : GO conditionnel sur L1 (7 constats, dont une fenêtre hors bornes qui excluait
+la journée entière et 21 jours vides déclarés exploitables) ; **NO-GO** sur le lot 4 — une
+fausse absence installée là où une fausse présence venait d'être retirée. Tout corrigé.
+
+**Prochaine action** : agenda L2 (catalogue + scorer, drapeau éteint) — mais quatre
+arbitrages précèdent L5 : poids 2/1, barème des cinq axes, frontière C5, borne des 18 h.
+
+**Questions ouvertes** : `GenericQuestionnaire.test.tsx` fait échouer T2 **avant**
+Playwright deux fois sur trois (timeout 5 s, 12-15 s sous charge) ; un palier qui s'arrête
+avant les parcours qu'il vérifie ne protège plus. Le checkout principal était 29 commits
+en retard en début de session.
+
+## 2026-07-31 — Rayon compléments, lot 1c : le sélecteur d'ingrédients (PR #499 mergée)
+
+**Décisions** : le verrou avant l'ingestion Compl'Alim est levé. `GET
+/api/praticien/regles/vocabulaire` borne les ingrédients à 50, cherche sur nom
+ET code, rend `ingredientsTotal` ; `ingredientId` hydrate un ingrédient hors
+recherche. Champ de recherche à la place du `<select>` nu. Seuls les ingrédients
+sont bornés — intentions, critères et sources sont gouvernés à la main et
+restent entiers, fixé par un test.
+
+**Trois pièges d'une même famille** : une liste d'options qui rétrécit fait
+mentir un champ déjà rempli. Le `<select>` retombe sur sa première option
+pendant que l'état garde l'ancienne valeur — et c'est celle-là qui part.
+
+**Écarté** : hydrater la révision en agrégeant les ingrédients des règles de la
+page (couplerait le vocabulaire au rechargement de la liste) ; borner aussi
+intentions/critères/sources (refactor non demandé, aucun déversement externe ne
+les alimente) ; inventer une sémantique ARIA de combobox, absente du dépôt.
+
+**Revue adversariale : NO-GO**, deux défauts réels. (1) `export const
+INGREDIENTS_MAX` dans un `route.ts` fait échouer `next build` — **invisible de
+T1**, `tsc --noEmit` n'incluant `.next/types` que si le dossier existe : la PR
+serait partie rouge en CI sans qu'aucun palier local ne l'annonce. (2) Le repli
+sur la forme préférée courante ne couvrait que `formes === null` ; le cas
+« hydratation réussie sans elle » — ingrédient désactivé, liste vide sans être
+`null` — lui échappait, et `POST /regles/revision` ne vérifiant que la forme, la
+valeur fantôme aurait été écrite au référentiel.
+
+**Validations** : T1 vert ; T3 vert, trois échecs E2E `portail-lien-magique`
+**identiques à une exécution de la même suite sans le diff** (mesuré) ; épreuve
+au plafond réel (50 × 10 formes) ; sept gardes vérifiées par mutation ; `verify`
+vert 9 min 52 avant merge.
+
+**Prochaine action** : l'ingestion elle-même, sur go explicite — moisson (~20
+min, données plus sur disque), dry-run, puis ingestion réelle.
+
+**Questions ouvertes** : tri alphabétique sur un `contains` et non un
+`startsWith` ; aucun E2E sur `/dashboard/regles`, à écrire après l'ingestion
+seulement ; `SESSION_LOG.md` du checkout principal divergent de `origin/main`
+(entrées non committées de plusieurs sessions).
+
+## 2026-07-31 — Rayon compléments : le référentiel est ingéré (PR #500 mergée)
+
+**Fait** : 3 444 ingrédients et 665 formes en production, provenance
+`complalim`. Le pivot `supplement_ingredients`, vide depuis l'origine, ne l'est
+plus — c'était le bloqueur unique du rayon.
+
+**Le compte n'est pas celui annoncé** : 3 444 et non ~1 965. Ce dernier chiffre
+comptait les libellés *employés par le catalogue* ; le référentiel officiel est
+plus large. Restreindre exigerait les compositions, qui ne sont pas chargées —
+et une règle clinique peut précéder le produit qui la porte.
+
+**Garde clinique vérifiée sur la donnée réelle** : « Hydrogénosélénite de
+sodium » est rattachée au sélénium ET au sodium, « Iodure de potassium » à
+l'iode et au potassium. Une lecture du libellé n'aurait retenu que le second
+terme. C'est aussi ce qui justifie l'index non unique côté forme.
+
+**L'incident, et sa vraie leçon** : l'ingestion s'est arrêtée au 3e lot sur 9,
+800 ingrédients déjà écrits, sur un code refusé — `slug()` retirait les tirets
+de bord avant de tronquer à 80. Deux entrées fautives sur 3 444. Mais le service
+valide lot par lot et l'outil ne validait rien : 0,06 % d'entrées mal formées
+ont suffi à laisser la base à moitié peuplée, sans avertissement avant le
+lancement. `ingest.mjs` valide désormais toute la projection avant le premier
+envoi. L'idempotence a tenu à la reprise (800 ingrédients et 628 formes
+« inchangés », aucun doublon).
+
+**Écarté** : committer le cache de moisson — aucune licence énoncée, ce serait
+le rediffuser ; il passe en `.gitignore`.
+
+**Validations** : `verify` vert 9 min 43 ; base de production relue (3 444 codes
+distincts, 0 provenance incomplète, 0 règle / 0 seuil / 0 alerte).
+
+**Prochaine action** : les compositions — les 140 148 fiches restent des
+coquilles, le pivot qui les débloque est désormais peuplé.
+
+**Questions ouvertes** : tri alphabétique sur un `contains` dans le sélecteur ;
+aucun E2E sur `/dashboard/regles`, désormais écrivable puisque les tables ne
+sont plus vides.
+
 ## 2026-08-01 — Clôture montée certification 62/64
 
 **Décisions** : la phase de montée (lots 1–4) est déclarée close à 62/64 —

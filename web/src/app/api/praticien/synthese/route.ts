@@ -32,6 +32,7 @@ import {
   nouveauBrouillonPraticien,
   validerBrouillonPraticien,
 } from '@/lib/synthese-praticien';
+import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -439,14 +440,18 @@ export async function POST(req: Request) {
       orderBy: { dateReponse: 'desc' },
     });
 
-    if (reponses.length === 0) {
+    // Fail-closed : le prompt IA ne doit consommer que des questionnaires dont
+    // l'usage runtime est explicitement autorisé.
+    const reponsesAdministrables = reponses.filter(r => estAdministrableParLaRoute(r.idQuestionnaire));
+
+    if (reponsesAdministrables.length === 0) {
       return withCorrelationHeader(NextResponse.json(
         { error: 'Aucun résultat de questionnaire disponible pour ce patient.' },
         { status: 422 }
       ), requestContext);
     }
 
-    const reponsesInput: ReponseInput[] = reponses.map(r => ({
+    const reponsesInput: ReponseInput[] = reponsesAdministrables.map(r => ({
       idQuestionnaire: r.idQuestionnaire,
       titre: r.titre,
       date: r.dateReponse.toISOString().split('T')[0],
