@@ -88,5 +88,5 @@
   ne se censure pas — né d'un détecteur qui, à allowlist vide, avait accusé une
   synthèse fidèle et persisté l'accusation au dossier). Aucune ne double D-003
   ni D-007, qui citent la barrière sans dire comment elle est gardée.
-- D-010 référence le contrat livré par la PR #553, **encore ouverte** au moment
-  d'écrire : référence en avant assumée.
+- D-010 référence le contrat de la PR #553, mergée entre-temps (`cd7c1b9b`) : la
+  décision et sa mise en œuvre sont sur `main`.
