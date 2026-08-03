@@ -42,6 +42,9 @@ function badgeCertification(entree: BibliothequeEntree): { label: string; varian
   if (entree.statutCertification === 'non_score') {
     return { label: 'Non scoré', variant: 'neutral' };
   }
+  if (entree.statutCertification === 'inconnu') {
+    return { label: 'Statut inconnu', variant: 'neutral' };
+  }
   return { label: 'Non certifié', variant: 'neutral' };
 }
 
