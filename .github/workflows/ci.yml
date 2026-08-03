@@ -167,6 +167,19 @@ jobs:
       - name: Phase du cycle de lot (banc du verdict)
         run: node --test scripts/wn-cycle.test.mjs
 
+      # Banc de `scripts/wn-attendre-ci.mjs`, le verdict qui décide si le CI
+      # d'une PR a RÉELLEMENT tourné. Ce qu'il protège : l'idiome qu'il remplace
+      # attendait que plus rien ne soit `pending` et rendait donc la main sur
+      # deux checks Vercel verts quand `verify` n'avait jamais été créé — cas
+      # rencontré sur la PR #550 le 2026-08-03. Les cas qui doivent tomber sont
+      # ceux où un verdict vert serait faux : check absent, run gelé en
+      # `action_required`, délai dépassé. Un garde qui rend 0 en expirant ne
+      # prouve que sa propre patience. Même absence de filtre `docs_only` que
+      # les étapes ci-dessus, et pour la même raison. Ni npm ni build : node
+      # suffit.
+      - name: Attente du CI d'une PR (banc du verdict)
+        run: node --test scripts/wn-attendre-ci.test.mjs
+
       - uses: actions/setup-node@v4
         if: steps.scope.outputs.docs_only != 'true'
         with:

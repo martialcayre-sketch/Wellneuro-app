@@ -27,12 +27,15 @@ l'autorisation transitoire est bornée dans le temps et peut avoir été retiré
 
 1. **Identifier la PR.** Numéro en argument, sinon déduit de la branche
    courante. Aucune PR trouvée → s'arrêter et le dire.
-2. **Attendre et lire le CI** avec l'idiome bloquant chargé ci-dessus (un seul
-   appel en tâche de fond) — jamais de `gh pr checks` répété en boucle.
-3. **Vérifier que `verify` a réellement tourné**, pas seulement les checks
-   Vercel. Son absence signale le piège `action_required` (commit de tête signé
-   Copilot) : le déblocage se fait en poussant un commit sous le compte du
-   dépôt, jamais en forçant le merge.
+2. **Attendre et lire le CI** — `node scripts/wn-attendre-ci.mjs <N>`, un seul
+   appel en tâche de fond ; jamais de `gh pr checks` répété en boucle.
+3. **Le code de sortie décide, et `0` seul autorise la suite.** Le script
+   vérifie que les checks obligatoires ont *réellement tourné*, pas seulement
+   que rien n'est en attente — c'est ce que l'idiome remplacé ne savait pas
+   faire. **`2` = `verify` n'a pas tourné** : le script nomme laquelle des trois
+   causes (PR en conflit, branche squashée, commit de tête Copilot gelant le run
+   en `action_required`). Aucune ne se débloque en forçant le merge ; la
+   dernière se débloque en poussant un commit sous le compte du dépôt.
 4. **Déduire le régime courant** du texte chargé ci-dessus :
    - la section « Période transitoire » y est toujours présente et décrit une
      autorisation active → cycle complet possible (étapes 6-7) ;

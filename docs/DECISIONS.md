@@ -4,6 +4,26 @@
 
 ## Décisions actives
 
+### D-010 — La barrière D-003 se garde au point de passage, pas chez ses lecteurs
+
+- Date : 2026-08-03
+- Statut : accepté (clôture du LOT-01 de la campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`)
+- Domaine : architecture, corpus et sécurité clinique
+- Décision : la fermeture de la barrière D-003 — aucun claim non signé ne remonte vers une restitution — est **éprouvée sur `public.match_wellneuro_rag_claims`**, seule voie de restitution du corpus, par le contrat `web/prisma/checks/rag_claim_barriere_d003_v1.sql`. Elle n'est **pas** obtenue en imposant un filtre `statut` à chaque module qui lit `rag_corpus_claims`. Le contrat assère aussi ce qui empêche de **contourner** la fonction : `EXECUTE` refusé à `anon` et `authenticated`, RLS active sur les deux tables.
+- Conséquences : quatre modules (`revue.ts`, `recherche.ts`, `questionnaire.ts`, `evaluation.ts`) lisent la table sans filtrer `statut`, et **ce n'est pas un défaut** — ce sont l'établi de validation, qui doit voir un claim non signé pour le présenter au praticien. Ils sont documentés comme tels dans `docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md`, pas gardés par du code. En contrepartie, **toute nouvelle voie de restitution doit passer par la fonction** : un `SELECT` direct sur la table depuis une surface de consultation échapperait au garde, qui ne le verrait pas. C'est le prix de ce dessin, et il est assumé — un garde au point de passage tient quel que soit le nombre de lecteurs, une allowlist se périme au premier module ajouté.
+- Réserves : le refus d'`EXECUTE` n'est assérable que si les rôles PostgREST existent — la clause est donc **vide sur la base éphémère du CI et mordante en production**. C'est le piège déjà rencontré avec `REVOKE FROM PUBLIC` : la partie du contrat qui protège le plus est celle que le CI ne joue pas. Deux des cinq conditions de la fonction (`patient_identifiable = false`, `compartment = 'ACTIF'`) ne sont pas falsifiables par fixture — tenues par des `CHECK` de table — et sont assérées structurellement dans `pg_constraint`.
+- Référence : [web/prisma/checks/rag_claim_barriere_d003_v1.sql](web/prisma/checks/rag_claim_barriere_d003_v1.sql), [.github/workflows/ci.yml](.github/workflows/ci.yml), [docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md](docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md), PR #553
+
+### D-009 — Écart de restitution de l'IA : on journalise, on ne censure pas
+
+- Date : 2026-08-03
+- Statut : accepté (clôture du LOT-06 de la même campagne)
+- Domaine : clinique et IA (prolonge **D-003**, ne le contredit pas)
+- Décision : quand un détecteur constate un écart entre la synthèse **rédigée par l'IA** et le matériel déterministe qui lui a été transmis — un pack ou un questionnaire cité sans avoir été fourni —, l'écart est **consigné** dans les métadonnées de la synthèse, au dossier. La synthèse n'est ni supprimée, ni tronquée, ni masquée au praticien. Le détecteur est un instrument de mesure, pas une censure.
+- Conséquences : le praticien voit la synthèse **et** l'écart, et tranche. Le garde ne s'exécute que si le bloc d'orientation a réellement été injecté (`orientationInjectee`) : sans injection, il n'y a pas de matériel de référence, donc pas d'écart mesurable — seulement une accusation possible. L'allowlist est dérivée des **trois** sources réellement transmises, dont les questionnaires que la consigne système cite elle-même : reprocher au modèle d'avoir repris ce qu'on lui a donné revient à l'accuser d'avoir inventé ce qu'il a lu.
+- Réserves : ce dessin est né d'un défaut mesuré, pas d'un principe. Pendant le LOT-06, le détecteur tournait avec une allowlist vide sur le seul chemin de production et comparait la prose à 16 titres de packs, dont quatre sont des tournures cliniques françaises ordinaires (« digestif et intestin-cerveau », « stress chronique et burnout ») : **une synthèse fidèle a été accusée, et l'accusation persistée au dossier**. Un détecteur qui peut se tromper ne doit pas avoir le pouvoir de supprimer. S'il gagne un jour ce pouvoir, ce sera par une décision distincte, pas par dérive.
+- Référence : [web/src/lib/clinical/verifierRestitutionOrientation.ts](web/src/lib/clinical/verifierRestitutionOrientation.ts), [web/src/app/api/praticien/synthese/route.ts](web/src/app/api/praticien/synthese/route.ts), PR #550
+
 ### D-008 — Contrat V3 des compléments : validation structurelle au runtime, à la persistence et à la relecture
 
 - Date : 2026-08-03

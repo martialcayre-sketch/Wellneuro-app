@@ -34,16 +34,22 @@ revue.
 
 ## Attendre le CI sans le sonder en boucle
 
-Un seul appel, en tâche de fond, qui rend la main dès que les checks se figent :
+Un seul appel, en tâche de fond :
 
 ```bash
-until [ -z "$(gh pr checks <N> --json bucket --jq '.[]|select(.bucket=="pending")' 2>/dev/null)" ]; do sleep 20; done
-gh pr checks <N>
+node scripts/wn-attendre-ci.mjs <N>
 ```
 
 Ne pas enchaîner `gh pr checks` / `gh pr view` manuellement : le 2026-07-20 la
-session a produit 81 appels de sondage pour l'information que cette boucle rend
-en un seul.
+session a produit 81 appels de sondage pour l'information que cet appel rend en
+un seul.
+
+Et ne pas revenir à la boucle `until … bucket=="pending"` qu'il remplace : elle
+confondait « aucun check en attente » avec « aucun check du tout », et rendait
+donc la main sur deux checks Vercel verts quand `verify` n'avait jamais été créé
+(PR #550, le 2026-08-03). Le script sort en **`2`** dans ce cas et nomme la
+cause ; **`0` est le seul code qui autorise à annoncer une PR prête**. Codes de
+sortie et périmètre : `CLAUDE.md`, section « Attendre le CI d'une PR ».
 
 Avant d’annoncer qu’une PR est prête à merger, **lire son CI** : `npm test`
 n’exécute pas les E2E, une suite Vitest verte ne dit rien des parcours.
