@@ -1,133 +1,115 @@
-# Handoff — 2026-08-03 — LOT-02 clos : rayon `douleur`, et une allowlist reprise en défaut
+# Handoff — 2026-08-03 — LOT-01 réduit : le garde de la barrière D-003
+
+Écrit sur la branche vivante, avant le merge de #553.
 
 ## Git
 
-- Worktree `.claude/worktrees/lot-02-rayon-douleur`, branche
-  `worktree-lot-02-rayon-douleur`, partie de `main` à `3b96170b` (**après** le
-  merge de #550/LOT-06, survenu pendant cette session).
+- Worktree `.claude/worktrees/lot-01-garde-barriere-d003`, branche
+  `worktree-lot-01-garde-barriere-d003`.
+- PR **#553** — `state: OPEN`, `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`.
+- `verify` a **réellement tourné** : vert en 9 min 37 s. Ce n'est pas une PR gelée.
+- `origin/main` fusionné dans la branche avant l'ouverture (elle avait gagné #552
+  entre-temps) ; T3 rejoué **après** cette fusion. Tête `f52051a0`.
 - Campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`,
-  reliquat du **LOT-02**, palier T2.
-- Clôture et handoff écrits **sur la branche vivante**, avant la PR.
+  palier T3, classe API.
 
 ## Objectif atteint
 
-Brancher le rayon corpus `douleur` (notebook 06 — Douleurs chroniques) sur la
-recherche corpus praticien, ce que #546 n'avait pas pu faire : le notebook 06
-n'avait alors aucun claim validé. **La condition est levée** — le corpus entier
-est signé. Le LOT-02 passe de `partiel` à `livré`, et le LOT-01 est clos **sur
-preuve**.
+Poser le test de non-régression que LOT-01 réclamait et qu'aucun banc ne couvrait :
+un claim `EN_ATTENTE_VALIDATION` ne remonte par aucune surface de **restitution**.
 
-## Le fait qui a rouvert le lot, vérifié en base et non dans un document
+Le reste du lot était déjà fait à son ouverture — les 755 claims ont été signés
+le 2026-08-03 par le praticien, hors machinerie de campagne (périmètre 2002/0,
+corpus actif 8224/0), et #552 avait clos LOT-01 documentairement. Le lot s'est
+réduit à sa seule pièce manquante.
 
-`execute_sql`, agrégat par `rag_corpus_chunks.notebook` :
+## Décisions prises
 
-| claims actifs | VALIDE | en attente | VALIDE sans validateur |
-|--------------:|-------:|-----------:|-----------------------:|
-|         8 224 |  8 224 |      **0** |                  **0** |
+1. **Réduire le lot à son garde plutôt que le déclarer fait.** Le compteur à zéro
+   rend le contrat *plus* nécessaire, pas moins : sans claim en attente en
+   production, rien ne signalerait une régression avant la prochaine ingestion —
+   et `store.ts` insère toujours en `EN_ATTENTE_VALIDATION`.
+2. **Fixtures + `ROLLBACK`, jamais un contrat observateur.** La base du CI est
+   construite vide par `migrate deploy` seul : un contrat qui se contente de
+   regarder y passe **par vacuité** et se lit pourtant comme un garde.
+3. **Embedding `[1,0,…,0]`, pas le patron `repeat('0,',1535)` copié ailleurs.**
+   Un vecteur nul rend la distance cosinus indéfinie : `1 - (a <=> b)` vaut `NaN`,
+   le seuil de similarité est faux, le contrôle positif ne remonte jamais — le
+   contrat serait vert quoi qu'il arrive.
+4. **Ordre des assertions : contrôle positif, puis les cas nommés, puis le compte
+   en filet.** Écrites compte-d'abord, les quatre assertions par cas étaient
+   inatteignables (un compte de 1 implique l'absence des autres) ; réordonnées,
+   c'est le contrôle positif qui devenait muet.
+5. **Assérer aussi ce qui empêche de CONTOURNER la fonction** — ajout de la revue,
+   qui a vu qu'on prouvait que la porte ferme en laissant la fenêtre ouverte.
+   `EXECUTE` refusé à `anon`/`authenticated` (conditionné à l'existence du rôle :
+   vide en CI, mordant en production) et RLS active sur les deux tables. Un
+   `DROP FUNCTION` + `CREATE` — le `CREATE OR REPLACE`, lui, conserve les grants —
+   rendrait sinon les claims en attente lisibles par PostgREST.
+6. **Deux des cinq conditions ne sont pas falsifiables par fixture.**
+   `patient_identifiable = false` et `compartment = 'ACTIF'` sont tenues par des
+   `CHECK` de table : l'`INSERT` échouerait avant l'assertion. Assérées
+   structurellement dans `pg_constraint` — une des deux couches tient toujours.
+7. **Ne pas garder par allowlist les quatre modules qui lisent sans filtrer
+   `statut`** (`revue.ts`, `recherche.ts`, `questionnaire.ts`, `evaluation.ts`) :
+   ce sont l'établi de validation, pas une restitution clinique. Documentés
+   comme légitimes plutôt que gardés par du code.
 
-Les douze notebooks 01→12 sont à 100 % (06 = 651/651). Le 13 « Instruments »
-reste à 0 claim **par conception**. Tout document annonçant « 2982 en attente »,
-« 06/11/12 non validés » ou « restant à ingérer » est périmé.
+## Fichiers
 
-Deux contrôles avant d'écrire une ligne de code, qui auraient chacun produit un
-rayon silencieusement vide s'ils avaient échoué :
+**Créés** — `web/prisma/checks/rag_claim_barriere_d003_v1.sql` (le livrable) ;
+`changelog.d/2026-08-03-lot-01-garde-barriere-d003.md`.
 
-- `'06 — Douleurs chroniques' = notebook` rend **vrai** (102 chunks) — le libellé
-  du mapping correspond au caractère près, tiret cadratin compris ;
-- les 651 claims portent 16 `source_id`, **tous** parmi les 17 que le registre
-  déclare pour ce notebook (seule `WN-SRC-0176` n'a aucun claim) : le
-  `filter_source_ids` recouvre la donnée.
-
-## Le défaut de la revue — la même règle prise en défaut à l'autre bout
-
-`/api/praticien/complements/corpus` (tiroir justificatif du catalogue
-compléments) validait `rayon` par une **regex syntaxique seule**, puis passait la
-valeur à `servirRayonCorpus`. Elle servait donc **toute** entrée de
-`RAYON_VERS_NOTEBOOK` derrière `WN_C4_ENABLED` — allumé en production — sans
-jamais consulter `WN_RECHERCHE_CORPUS_ENABLED`.
-
-Conséquence si le lot avait été mergé tel quel : `?rayon=douleur` sur cette route
-aurait rendu des claims du notebook 06 **dès le merge**, alors que le lot annonce
-un lancement dark. Et le jour où l'on éteint le drapeau pour une raison clinique
-— un claim douleur fautif à retirer — l'interrupteur n'aurait rien coupé.
-
-C'est le **miroir** du défaut jugé bloquant sur #546 : là on sortait de la
-recherche corpus vers micronutrition, ici on y entre par la porte compléments.
-`cognition` et `intestin` y étaient déjà exposés depuis #546.
-
-Corrigé par une allowlist d'un seul rayon (`rayonBrut !== RAYON_MICRONUTRITION`).
-Aucun appelant ne passait autre chose (`FicheComplementPanel`, prop par défaut
-jamais surchargée) : rien ne casse, et l'exposition héritée se ferme avec.
-
-## Décisions à ne pas rejouer
-
-1. **Une allowlist par route, jamais la carte entière.** Ajouter une paire à
-   `RAYON_VERS_NOTEBOOK` n'est pas un geste local : il faut relire **toutes** les
-   routes qui acceptent un `rayon` en entrée libre. La règle existait depuis
-   #546 ; elle n'avait été appliquée qu'à la route qui l'avait révélée.
-2. **Les listes de rayons refusés sont désormais dérivées du mapping**
-   (`Object.keys(RAYON_VERS_NOTEBOOK).filter(…)`), dans les deux routes : le
-   prochain rayon ajouté sans allowlist est couvert par les tests d'office. Une
-   liste littérale ne protège que du passé.
-3. **Un test qui mocke le service ne prouve que le routage.** Le titre du test
-   `douleur` le dit maintenant, et un test distinct lie `douleur` au
-   `filter_source_ids` du notebook 06 — sans lui, `douleur: '05 — Cognition et
-   mémoire'` passerait toute la suite au vert en servant des claims de cognition
-   sous l'étiquette « Douleurs chroniques ».
-4. **Écarté** : ouvrir `stress`, `humeur`, `sommeil` dans la foulée. Ils sont
-   mappés, validés à 100 %, et sans appelant — décision produit, hors périmètre.
-5. **Écarté** : clore le LOT-01 en l'exécutant. Il n'y avait plus rien à valider ;
-   il est clos sur preuve, avec son critère « modalité de revue tracée » laissé
-   **décoché** — l'information est dans les journaux de décision, pas reconstituée.
+**Modifiés** — `.github/workflows/ci.yml` (une étape ; sans elle le contrat ne
+tourne **nulle part** — précédent `c4_referentiel_provenance_v1.sql`) ;
+`docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md` (modalité de la revue,
+répartition par jour, les quatre surfaces légitimes) ; `CAMPAGNE.md` et les
+fiches LOT-01 / LOT-06 ; `docs/claude/SESSION_LOG.md`.
 
 ## Validations exécutées
 
-**T1** vert (3 451 + 92 Vitest, 70 bancs Node, anti-secrets 0). **T2**
-`test:worktree -- --fast` **vert en 6 min 9 s**, E2E compris.
+- **T1** vert.
+- **Sept falsifications**, une par assertion nommée, chacune rendant SON message
+  et aucun autre, le témoin restant vert. C'est la seule preuve qu'il ne reste
+  plus d'assertion muette — et il en restait deux, dont une trouvée par la revue.
+- **T3** complet après la fusion de `main` : **12 contrats joués contre 11 avant**.
+  C'est ce compteur, pas le fichier posé dans le dossier, qui prouve le câblage.
+- Revue adversariale `wn-reviewer` : GO sous deux correctifs (points 4 et 5),
+  appliqués.
+- `verify` vert sur #553.
 
-⚠ La **première** passe de T2 avait rendu 2 échecs sur
-`e2e/portail-lien-magique.spec.ts:48` (Chromium + iPhone 13) — l'anti-oracle de
-temps documenté comme flake local. La seconde passe, après correctifs, est verte
-sans rien changer à ce sous-système : c'était bien le flake, pas une régression.
-
-Revue adversariale `wn-reviewer` : **GO** sous réserve du MAJEUR ci-dessus,
-tranché par le praticien en session (« fermer dans cette PR »).
-
-## Pièges rencontrés
-
-- **Le checkout principal était en retard d'un commit** (`92adb17a` au démarrage,
-  `main` réel à `3b96170b`) : les premières lectures de `CAMPAGNE.md` y ont montré
-  un état périmé — LOT-04 `à_faire`, LOT-05/06 absents — et m'ont fait annoncer un
-  écart documentaire qui n'existait pas. **Lire les documents de campagne depuis
-  le worktree du lot, jamais depuis le checkout principal**, ou faire
-  `git pull --ff-only` avant.
-- `main` a avancé **pendant** la session (#550 mergée). La branche en est partie,
-  aucun conflit.
-- Worktree neuf : `npx prisma generate` avant `npm run check`.
+Aucune vérification de base après merge n'est due : le lot n'écrit rien en production.
 
 ## Problèmes ouverts
 
-- **`stress`, `humeur`, `sommeil`** : mappés, 100 % validés, sans appelant. Trois
-  lignes de code chacun ; c'est la décision produit qui manque, pas le code.
-- **`lot_courant: "LOT-06"`** dans l'en-tête de `CAMPAGNE.md` alors que #550 est
-  mergée — non touché ici, ce n'est pas le lot de cette PR. La ligne du tableau,
-  elle, a été corrigée en `livré (#550)`.
-- **LOT-05 toujours `livré_partiel`** : la table d'orientation porte ses six
-  règles mais n'est pas signée. Tant que la signature clinique n'a pas eu lieu,
-  le LOT-06 livré ne peut afficher que « en cours de constitution ».
-- Le critère « modalité de revue tracée » du LOT-01 reste décoché.
+- **Le patron du vecteur nul est copié dans les autres contrats du dépôt.** Aucun
+  n'a été relu sous cet angle ; s'ils comparent des embeddings, ils peuvent être
+  verts par `NaN`.
+- **L'idiome d'attente du CI de `CLAUDE.md` ne distingue pas « aucun check en
+  attente » de « aucun check du tout ».** Trois causes connues d'un `verify`
+  absent — commit de tête Copilot, branche squashée, PR en conflit — dont une
+  seule est documentée. Corrigé à la main ici, pas dans le dépôt.
+- **Deux promotions proposées, aucune écrite, en attente d'accord** : un
+  `scripts/wn-pr-attendre-ci.sh` qui attend que `verify` **existe** avant
+  d'attendre qu'il finisse ; et une entrée de registre — D-009 « écart de
+  restitution de l'IA : on journalise, on ne censure pas » (proposée dès LOT-06)
+  ou D-010 « la barrière D-003 se garde au point de passage, pas par des
+  allowlists sur ses lecteurs ».
+- Hérités de LOT-06 : les six règles du LOT-05 ne sont pas signées cliniquement —
+  sans cette signature, le consommateur livré n'affiche rien ; `stress`, `humeur`
+  et `sommeil` restent mappés et validés, sans appelant.
 
 ## Prochaine action exacte
 
-Ouvrir la PR de ce lot, lire son `verify`, merger. Ensuite, deux candidats sans
-dépendance : le **LOT-07** (reliquat de certification, bibliographie et
-psychométrie), ou la **signature clinique des six règles du LOT-05** — geste
-praticien, qui débloque l'affichage réel du LOT-06.
+Merger #553 (`gh pr merge 553 --squash --delete-branch`) **si et seulement si**
+l'autorisation est donnée : celle du lot précédent portait sur #550 et ne s'étend
+pas. Puis supprimer le worktree, repartir de `main`, et ouvrir **LOT-07** —
+dernier lot de la campagne, reliquat de certification, documentaire, sans dépendance.
 
 ## Interdits encore actifs
 
-Aucune migration, aucune écriture Supabase (lectures seules ici), aucun
-changement clinique. `WN_RECHERCHE_CORPUS_ENABLED` reste **éteint** : l'allumer
-est un geste de production distinct, postérieur au merge. Ne jamais forcer un
-merge sur une PR gelée en `action_required` — `enforce_admins` est actif,
-`verify` obligatoire. Après un merge en squash, repartir de `main`.
+- Aucune migration Prisma, aucune écriture Supabase (`execute_sql` en lecture seule).
+- Ne pas toucher `match_wellneuro_rag_claims` : c'est l'objet gardé.
+- Ne jamais affaiblir un fail-closed ni contourner `tableSignee()`.
+- Ne pas merger sur les seuls checks Vercel : `verify` absent **bloque**.
+- Repartir de `main` pour le lot suivant, jamais de la branche squashée.

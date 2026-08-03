@@ -1848,3 +1848,24 @@ documents de campagne depuis le worktree du lot.
 Prochaine action : PR, `verify`, merge. Puis LOT-07, ou la signature clinique des six
 règles du LOT-05 — sans elle, le LOT-06 livré n'affiche rien. Questions ouvertes :
 `stress`/`humeur`/`sommeil` restent mappés, validés, sans appelant.
+
+## 2026-08-03 — LOT-01 réduit : le garde de la barrière D-003
+
+Décisions — Le cadrage a lu la base plutôt que la fiche : les 755 claims étaient
+déjà signés (périmètre 2002/0, corpus actif 8224/0), et #552 avait clos LOT-01
+documentairement. Le lot s'est réduit à sa seule pièce manquante : le contrat
+`rag_claim_barriere_d003_v1.sql`, qui éprouve `match_wellneuro_rag_claims` par
+sept fixtures et assère aussi ce qui empêche de la CONTOURNER (EXECUTE refusé à
+anon/authenticated, RLS) — ajout de la revue, qui a vu qu'on prouvait la porte
+en laissant la fenêtre.
+
+Écarté — Garder par allowlist les quatre modules qui lisent sans filtrer
+`statut` : ce sont l'établi de validation, documentés comme légitimes.
+
+Validations — T1 vert ; sept falsifications, une par assertion nommée ; T3 après
+merge de `main`, 12 contrats joués (11 avant). PR #553, `verify` vert 9 min 37 s.
+
+Prochaine action — LOT-07, dernier lot de la campagne.
+
+Questions ouvertes — Un vecteur nul rend `NaN` : les autres contrats du dépôt
+copient ce patron, aucun n'a été relu sous cet angle.
