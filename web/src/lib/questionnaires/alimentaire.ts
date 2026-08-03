@@ -605,3 +605,68 @@ export const Q_ALI_03 = {
     note:"Estimation dérivée de la méthode Monnier, corrigée sur trois points (protéines des œufs et du poisson, périodicités hebdomadaires ramenées au jour) et déclarée comme telle. Le coefficient de conversion en calories (fois 24) est celui de la source, qui ne l'explique pas. AUCUN seuil : la source n'en donne aucun, ni par âge, ni par sexe, ni par poids — ces valeurs s'apprécient au cas par cas et ne valent pas verdict.",
   }
 };
+
+/**
+ * AGENDA ALIMENTAIRE — 21 JOURS (Q_ALI_09).
+ *
+ * Instrument de RECUEIL longitudinal, saisi par le patient via un composant
+ * dédié (jamais le rendu générique). Le domaine pur vit dans
+ * `lib/agenda-alimentaire/` ; cette entrée le rend seulement ASSIGNABLE.
+ *
+ * ── POURQUOI `sections: []` ET AUCUN PSEUDO-ITEM ────────────────────────────
+ * `Q_SOM_09` porte 25 pseudo-items `AGD_*` parce que son scorer `agenda_sommeil`
+ * les lit dans `rawAnswers` à la clôture. Ici le scoring est `journal` : il ne
+ * lit RIEN et rend `scored: false`. Déclarer des pseudo-items reviendrait à
+ * figer la liste des agrégats d'un scorer qui n'existe pas encore, et à choisir
+ * aujourd'hui ce que seules des données observées peuvent trancher. Le tableau
+ * est VIDE et non absent : les helpers font `def.sections.flatMap`.
+ *
+ * ── AUCUN SCORE, ET CE N'EST PAS PROVISOIRE PAR NÉGLIGENCE ──────────────────
+ * Aucune journée n'a jamais été recueillie dans ce dépôt. Un barème posé avant
+ * la première passation serait une donnée clinique inventée : les cinq axes,
+ * leurs poids et la borne des 18 h supposent une distribution réelle. L'ordre
+ * retenu est donc collecte → calibrage, et non l'inverse.
+ *
+ * ── FRONTIÈRE JA — CE QU'IL NE MESURERA PAS ────────────────────────────────
+ * Aucune quantité, aucun gramme, aucune kcal, aucun aliment identifié, aucune
+ * projection vers `Q_ALI_01` ou `Q_ALI_02`, aucun score SIIN. L'interdit est
+ * écrit en tête de `lib/agenda-alimentaire/types.ts` et à l'entrée JA du
+ * registre des frontières ; il vaut aussi pour cette définition.
+ *
+ * ── IL N'ALIMENTE PAS LE BESOIN 3, ET C'EST UNE DÉCISION ───────────────────
+ * Le besoin 3 « Rythme alimentaire » est déjà sourcé par le sous-score
+ * `RYTHME_CHRONO` de `Q_ALI_01` (cf. `equilibre/constants.ts`). Y ajouter
+ * l'agenda ferait DEUX mesures d'un même thème — le piège que `lib/anthropic.ts`
+ * documente déjà pour `RYTHME_ALIMENTAIRE` /10 contre `RYTHME_CHRONO` /7, et
+ * l'agenda en serait le TROISIÈME porteur. `BESOIN_SOURCES` n'est donc pas
+ * touché et `sourceMonEquilibre` vaut `false` au registre.
+ *
+ * La valeur clinique visée est ailleurs : dans l'ÉCART entre le rythme DÉCLARÉ
+ * (Q_ALI_01) et le rythme OBSERVÉ (21 jours). Un patient qui déclare un bon
+ * rythme et en observe un mauvais est un profil distinct des deux profils
+ * concordants — l'action y porte sur la perception, pas sur le rythme. Cet
+ * objet de discordance reste à écrire ; il DÉPEND de la forme servie : sous la
+ * forme courte à 14 items, `RYTHME_CHRONO` n'existe pas et `MAX_RYTHME_CHRONO`
+ * vaut 0. Il n'y a alors aucun rythme déclaré à comparer, et l'écart devra
+ * rendre `null` — jamais 0, qui se lirait « pas d'écart ».
+ *
+ * ── NOMMAGE ────────────────────────────────────────────────────────────────
+ * « Agenda alimentaire », jamais « boussole alimentaire » : ce nom désigne déjà
+ * un autre objet clinique, visible du patient (cf. `lib/food-compass/`). Et
+ * jamais « rythme » nu dans un libellé, pour la raison ci-dessus.
+ */
+export const Q_ALI_09 = {
+  id:'Q_ALI_09', titre:'Agenda alimentaire — 21 jours',
+  instructions:"Chaque jour pendant trois semaines, notez en moins d'une minute les horaires de vos prises alimentaires. Vos saisies restent visibles sous forme d'une frise ; elles sont transmises à votre praticien à la fin du recueil.",
+  sections:[],
+  scoring:{
+    type:'journal',
+    // Pas de bloc `certification` — comme `Q_SOM_09`, et pour la même raison.
+    // Les provenances connues du vérificateur sont `drive` et `manuel_eortc` :
+    // cet instrument ne vient ni de l'un ni de l'autre, il est créé localement.
+    // Inventer une provenance ici la ferait passer pour une pièce au dossier.
+    // Le barreau de certification est porté par `instrument_registry.json`
+    // (`statutCertification: 'repere'`), seul endroit qui l'instruit.
+    note:"Recueil longitudinal sur 21 jours — aucun score, aucun indice. Les horaires de prises, le jeûne nocturne et les présences déclarées sont restitués bruts ; leur interprétation appartient au praticien. Un barème ne sera arrêté qu'après observation de données réelles.",
+  }
+};

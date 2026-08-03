@@ -276,6 +276,31 @@ describe('garde-fou alimentaire — aucune quantité non étalonnée dans le pro
   });
 
   it.each(idsAlimentaires)('%s ne fait sortir aucune clé de quantité vers le modèle', id => {
+    // BRANCHE « instrument de recueil », et non un filtre sur l'identifiant.
+    // `Q_ALI_09` (agenda alimentaire) ne porte AUCUN item : sa saisie passe par
+    // un composant patient dédié, jour par jour. Le balayage aux bornes n'a donc
+    // rien à balayer, et l'anti-vacuité ci-dessous exigerait deux totaux
+    // distincts d'un moteur qui n'en produit aucun.
+    //
+    // Le sortir de `idsAlimentaires` serait plus court et serait une TRAPPE —
+    // c'est le mot qu'emploie `promptSousScores.guard.test.ts` pour la même
+    // tentation. L'exigence est donc REMPLACÉE, pas levée : ce que cette garde
+    // protège (aucune quantité ne part au modèle) doit rester vrai ici, et l'est
+    // même plus fortement, puisque rien ne part du tout.
+    const definition = (QUESTIONNAIRE_CATALOGUE as any)[id];
+    const sansItems = !(definition?.sections ?? []).flatMap((s: any) => s.questions ?? []).length;
+    if (sansItems) {
+      const scores = (calculateScore as any)(id, {});
+      expect(scores?.scored, `${id} : instrument sans item, il doit rendre scored:false`).toBe(false);
+      expect(scores?.total, `${id} : instrument sans item, aucun total ne doit être produit`).toBeUndefined();
+      // La vraie exigence de ce fichier, exercée sur le chemin réel du prompt.
+      const charge = scoresPourPrompt({ ...scores, rawAnswers: {} });
+      expect(
+        cheminsDeQuantite(charge),
+        `${id} : instrument sans item, mais des quantités partent au modèle`,
+      ).toEqual([]);
+      return;
+    }
     const totaux: Record<string, number> = {};
     for (const borne of ['min', 'max'] as const) {
       const reponses = reponsesALaBorne(id, borne);

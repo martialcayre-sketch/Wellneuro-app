@@ -2777,6 +2777,44 @@
       }
     },
     {
+      "questionnaireId": "Q_ALI_09",
+      "instrument": {
+        "nomOfficiel": "Agenda alimentaire WellNeuro — 21 jours",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": "Recueil quotidien sur 21 jours : horaires et nature des prises alimentaires, présences déclarées. Aucun score, aucun indice.",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": "Instrument de recueil sans items saisissables : la saisie passe par un composant patient dédié, et le catalogue ne porte que l'entrée assignable (sections vides, moteur `journal`, scored:false). Aucun barème n'est arrêté — les cinq axes envisagés, leurs poids et la borne des 18 h supposent une distribution réelle qui n'existe pas encore. L'ordre retenu est donc collecte puis calibrage, et non l'inverse : un barème posé avant la première passation serait une donnée clinique inventée.",
+        "langue": "fr",
+        "traductionValidee": "fr (créé localement)",
+        "statutContenu": "cree_localement"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "libre",
+        "detail": "Construction WellNeuro sans source tierce : le recueil porte des horaires de prises et quatre présences déclarées, aucun item repris d'une échelle publiée. La frontière JA (docs/claude/REGISTRE_FRONTIERES.md) lui interdit par ailleurs toute quantité, tout aliment identifié et toute projection vers Q_ALI_01 ou Q_ALI_02 — il ne peut donc pas reproduire le contenu d'un instrument tiers sans franchir cet interdit. CE QUI N'EST PAS AFFIRMÉ ICI : aucun rapprochement avec un support du cabinet n'a été instruit, et `sourceIds` est vide en conséquence — le barreau reste `repere`, le premier de l'échelle.",
+        "dateVerification": "2026-08-03"
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": true,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": null,
+      "statutBibliographique": "a_completer",
+      "verdictScoring": null
+    },
+    {
       "questionnaireId": "Q_GEO_01",
       "instrument": {
         "nomOfficiel": "Grille de Tinetti — équilibre et marche (POMA)",

@@ -23,6 +23,8 @@
 // Toute recuration relève d'une tâche clinique dédiée (documentation
 // `CHANGELOG.md` requise).
 
+import { isAgendaAlimentaireEnabled } from './agenda-alimentaire/featureFlag';
+
 export type QuestionnaireCatalogEntry = {
   id: string;
   titre: string;
@@ -59,6 +61,26 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // n'en donne aucun.
   { id: 'Q_ALI_03', titre: 'Estimation des apports protéiques et caloriques (grille WellNeuro, dérivée de la méthode Monnier)', categorie: 'Alimentaire',
     description: `Indiquez, ligne par ligne, le nombre de portions que vous consommez. L'outil en estime vos apports quotidiens en protéines et en calories. Cette estimation n'est pas un verdict : elle s'apprécie avec le praticien, aucun seuil n'y est attaché.`, duree: '10 min', actif: true },
+  // Agenda alimentaire 21 jours — instrument de RECUEIL, saisi par le patient
+  // via un composant dédié. Fermé tant que la chaîne de collecte n'est pas
+  // livrée : `actif` est piloté par `WN_AGENDA_ALI`, éteint par défaut.
+  //
+  // Le drapeau porte sur `actif` et non sur l'appartenance au catalogue, pour
+  // deux raisons mesurées. Retirer l'entrée du tableau ferait rougir
+  // `verifier_registre_instruments` dans l'une des deux positions (il exige
+  // l'entrée de registre et l'entrée de catalogue ensemble) ; et `actif: false`
+  // ferme les DEUX surfaces d'un coup — la route d'assignation via
+  // `IDS_SUSPENDUS` juste en dessous, et la bibliothèque via `IDS_ASSIGNABLES`.
+  // « Invisible et assignable » est la pire des combinaisons, cf. Q_GEO_04.
+  //
+  // CONTREPARTIE À CONNAÎTRE : `extraireIdsSuspendus` cherche le LITTÉRAL
+  // `actif: false` dans le texte de ce fichier. Un appel de fonction lui est
+  // invisible, donc la règle « suspendu ⟹ statutCertification terminal » ne
+  // s'applique pas ici — c'est délibéré (l'instrument n'est pas « retiré de la
+  // production », il n'y est jamais entré ; son barreau est `repere`), et c'est
+  // épinglé par `agendaAlimentaireDrapeau.guard.test.ts`.
+  { id: 'Q_ALI_09', titre: 'Agenda alimentaire — 21 jours', categorie: 'Alimentaire',
+    description: `Notez chaque jour, en moins d'une minute, les horaires de vos prises alimentaires. Après trois semaines, votre praticien dispose du déroulé réel de vos journées. Ce recueil ne produit aucun score.`, duree: '1 min par jour, 21 jours', actif: isAgendaAlimentaireEnabled() },
 
   // ── FIBROMYALGIE ────────────────────────────────────────────────────────────
   { id: 'Q_FIB_01', titre: 'FiRST — Dépistage de la fibromyalgie', categorie: 'Fibromyalgie',

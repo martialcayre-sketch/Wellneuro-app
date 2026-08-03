@@ -70,6 +70,7 @@ const REMPLISSAGE_NON_REPRESENTATIF: Record<string, string> = {
   Q_GAS_02: 'n’émet pas `subScores` mais `components` (hors périmètre)',
   Q_SOM_03: 'Berlin ; n’émet pas `subScores` mais `categories` (hors périmètre)',
   Q_URO_02: 'type `journal` — aucun sous-score',
+  Q_ALI_09: 'agenda alimentaire : AUCUN item (`sections: []`), la saisie passe par un composant patient dédié — le remplissage générique n’a rien à remplir. Type `journal`, donc aucun sous-score non plus',
 };
 
 /**

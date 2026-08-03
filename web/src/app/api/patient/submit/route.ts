@@ -104,6 +104,15 @@ export async function POST(req: Request): Promise<NextResponse> {
     if (ass.idQuestionnaire === 'Q_SOM_09') {
       return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unavailable', error: "L'agenda du sommeil se remplit nuit par nuit, il ne se soumet pas ici." }, { status: 409 }), requestContext);
     }
+    // L'agenda alimentaire (Q_ALI_09) est fermé ici pour une raison VOISINE mais
+    // pas identique. Sa définition ne porte AUCUN item (`sections: []`) : la
+    // saisie passe par un composant dédié, jour par jour. Sans ce refus, une
+    // soumission par l'écran générique passerait `statutReponses` à `verrouille`
+    // sur un agenda à zéro journée — un recueil mort-né, et irrécupérable
+    // puisque le verrouillage est ce qui clôt la fenêtre de saisie.
+    if (ass.idQuestionnaire === 'Q_ALI_09') {
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unavailable', error: "L'agenda alimentaire se remplit jour par jour, il ne se soumet pas ici." }, { status: 409 }), requestContext);
+    }
     // Assignation annulée par le praticien (Fil A) : soumission refusée. Refus
     // défensif symétrique à celui de `patient/questionnaire` — une annulée ne se
     // remplit ni ne se soumet, quel que soit le chemin. 409 : un retrait, pas une
