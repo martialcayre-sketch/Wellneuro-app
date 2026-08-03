@@ -38,23 +38,56 @@
   se croirait tenu de remplir. C'est la doctrine de `#408` : « une interdiction
   dont le critère de déclenchement n'arrive pas vaut moins que rien ».
 - **Un écart de restitution est mesuré, pas supposé.**
-  `verifierRestitutionOrientation` — fonction pure — compare le texte rendu au
-  **vocabulaire fermé** des seize packs de doctrine et rend ceux cités hors de
-  ceux transmis. La question « le modèle a-t-il inventé quelque chose » est
-  indécidable ; « un nom de cette liste connue apparaît-il hors des noms
-  fournis » ne l'est pas. L'écart est journalisé sous un code propre
-  (`SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE`, distinct de
-  `CONTEXT_UNAVAILABLE` : le premier dit qu'une donnée a manqué, celui-ci qu'une
-  donnée a été inventée) et persisté dans `metadonneesPrompt`. La synthèse est
-  **rendue quand même** : l'objet actionnable — la carte et son bouton — vient de
-  la route déterministe, jamais du modèle, donc un pack cité à tort dans la prose
-  ne peut rien déclencher.
+  `verifierRestitutionOrientation` — fonction pure — compare le texte rendu aux
+  **vocabulaires fermés** des seize packs de doctrine et des identifiants de
+  questionnaire, et rend les cibles citées hors de celles transmises. La question
+  « le modèle a-t-il inventé quelque chose » est indécidable ; « un nom d'une
+  liste connue apparaît-il hors des noms fournis » ne l'est pas. L'écart est
+  journalisé sous un code propre (`SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE`,
+  distinct de `CONTEXT_UNAVAILABLE` : le premier dit qu'une donnée a manqué,
+  celui-ci qu'une donnée a été inventée) et persisté dans `metadonneesPrompt`. La
+  synthèse est **rendue quand même** : l'objet actionnable — la carte et son
+  bouton — vient de la route déterministe, jamais du modèle, donc un pack cité à
+  tort dans la prose ne peut rien déclencher.
+- **Le garde ne tourne pas quand il n'y a rien à trahir**, et c'est ce que la
+  revue adversariale a corrigé. Sans cette condition, il s'exécutait avec une
+  allowlist vide sur le seul chemin que la production emprunte aujourd'hui — table
+  non signée — et comparait la prose aux seize titres. Quatre d'entre eux sont
+  des syntagmes cliniques français ordinaires : « digestif et intestin-cerveau »,
+  « stress chronique et burnout », « sommeil et chronobiologie », « migraine et
+  cephalees ». Une synthèse parfaitement fidèle se voyait donc accusée d'avoir
+  cité un pack hors recommandation, l'accusation était **écrite dans le dossier
+  patient**, et le code d'événement créé pour mesurer l'infidélité aurait été
+  noyé de bruit avant d'être observable. Deux gestes : le garde est conditionné à
+  l'injection effective d'un bloc, et un titre de pack ne compte que précédé du
+  mot « pack » (le slug, lui, n'a aucun homonyme naturel et reste cherché
+  partout). Cinq cas de prose clinique ordinaire sont désormais au banc comme
+  contrôles négatifs.
+- **Ce que le garde ne voit pas est écrit dans son en-tête**, et ne doit pas être
+  supposé couvert : un pack désigné par son titre sans le mot « pack », une
+  exploration décrite en langage libre, et un **réordonnancement** de la
+  recommandation — pourtant interdit par la consigne, mais qui demanderait de
+  comparer des positions dans une prose, pas des occurrences.
+- **Invariant nouveau** : aucun déclencheur de la table d'orientation ne porte sur
+  une passation inscrite au registre `passationsNonInterpretables`. La disjonction
+  était vraie par accident et rien ne la gardait ; une règle ajoutée demain sur un
+  de ces instruments aurait réintroduit dans le prompt, sous l'étiquette
+  « recommandation signée », le chiffre que `buildUserMessage` en retire.
 - **L'assignation reste le geste manuel existant, en deux temps.** Le bouton
   rejoue `POST /api/praticien/packs/assign` sans modifier son contrat, et n'est
   rendu que si trois conditions sont réunies — cible pack, correspondance
   `idPackBase` en base, email patient disponible. Un bouton présent puis voué au
   `pack_not_found` est pire qu'un bouton absent. Assigner envoie un e-mail au
   patient : une confirmation explicite est demandée avant l'envoi, et un banc
-  vérifie que le seul affichage ne déclenche aucune requête.
+  vérifie que le seul affichage ne déclenche aucune requête. **Après un succès,
+  le bouton ne revient pas** — `packs/assign` ne déduplique pas, un second clic
+  créerait des assignations en double et un second e-mail. Un échec, lui, laisse
+  le geste possible : aucun e-mail n'est parti.
+- **L'e-mail n'est passé au panneau que s'il désigne le patient affiché.**
+  Le panneau calcule sur `idPatient`, l'assignation part sur `emailPatient` : deux
+  identifiants venus de deux sources, dont aucune ne vérifiait l'autre. Sur une
+  navigation d'un patient à l'autre, une réponse en retard pouvait brièvement les
+  désaccorder — et le désaccord aurait fait partir un e-mail au mauvais patient.
+  Une comparaison d'une ligne dans `FichePatientPanel` le ferme.
 - Une couverture inconnue (`dejaRepondu: null`, composition de pack inconnue)
   est affichée comme **inconnue**, jamais comme négative.

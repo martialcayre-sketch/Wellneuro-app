@@ -207,22 +207,36 @@ describe('métadonnées d’audit', () => {
     await POST(req());
     const meta = metadonneesPersistees();
 
-    expect(meta.orientationActive).toBe(true);
+    expect(meta.orientationInjectee).toBe(true);
     expect(meta.orientationSha256).toBe('abc123def456');
     expect(meta.orientationVersion).toBe('orientation-nnpp2-v1');
     expect(meta.orientationPacksTransmis).toEqual(['pack_sommeil_chronobiologie']);
   });
 
-  it('marque l’orientation inactive sans prétendre à un sha256', async () => {
+  it('n’inscrit ni version ni sha256 quand aucun bloc n’est parti', async () => {
     await POST(req());
     const meta = metadonneesPersistees();
-    expect(meta.orientationActive).toBe(false);
+    expect(meta.orientationInjectee).toBe(false);
+    expect(meta.orientationSha256).toBeNull();
+    // Une version sans bloc laisserait croire qu'un bloc est parti.
+    expect(meta.orientationVersion).toBeNull();
+  });
+
+  it('n’inscrit rien non plus sur une table signée qui ne recommande rien', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({ ...ORIENTATION_ACTIVE, recommandations: [] });
+    await POST(req());
+    const meta = metadonneesPersistees();
+    expect(meta.orientationInjectee).toBe(false);
     expect(meta.orientationSha256).toBeNull();
   });
 });
 
+function codesJournalises(): string[] {
+  return loggerWarn.mock.calls.map(appel => appel[0].event);
+}
+
 describe('garde de restitution', () => {
-  it('ne journalise rien quand la synthèse ne cite aucun pack', async () => {
+  it('ne journalise rien quand la synthèse restitue fidèlement', async () => {
     evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
     validateSyntheseSchema.mockReturnValue({
       points_de_vigilance: [],
@@ -231,8 +245,7 @@ describe('garde de restitution', () => {
 
     await POST(req());
 
-    const codes = loggerWarn.mock.calls.map(appel => appel[0].event);
-    expect(codes).not.toContain('SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE');
+    expect(codesJournalises()).not.toContain('SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE');
   });
 
   it('journalise l’écart quand un pack non transmis est cité', async () => {
@@ -248,7 +261,7 @@ describe('garde de restitution', () => {
       appel => appel[0].event === 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
     );
     expect(ecart).toBeTruthy();
-    expect(ecart?.[0].message).toContain('pack_stress_chronique_burnout');
+    expect(ecart?.[0].message).toContain('pack:pack_stress_chronique_burnout');
   });
 
   it('rend tout de même la synthèse : on journalise, on ne censure pas', async () => {
@@ -264,6 +277,81 @@ describe('garde de restitution', () => {
     // déterministe, jamais d'ici : un pack cité à tort ne peut rien déclencher.
     expect(res.status).toBe(200);
     expect(prisma.syntheseIA.create).toHaveBeenCalledOnce();
-    expect(metadonneesPersistees().orientationPacksCitesATort).toEqual(['pack_stress_chronique_burnout']);
+    expect(metadonneesPersistees().orientationEcartsRestitution).toEqual([
+      { type: 'pack', identifiant: 'pack_stress_chronique_burnout' },
+    ]);
+  });
+
+  // Le défaut trouvé à la revue adversariale, et le chemin que la production
+  // exécute réellement tant que la table n'est pas signée.
+  it('NE TOURNE PAS quand aucun bloc n’a été injecté, même sur une prose évocatrice', async () => {
+    // Orientation inactive : allowlist vide. Un garde qui tournerait quand même
+    // comparerait cette phrase aux seize titres et accuserait une synthèse à
+    // qui aucune recommandation n'a jamais été présentée.
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      resume_praticien:
+        "Prioriser l'axe digestif et intestin-cerveau ; un stress chronique et burnout débutant sont évoqués.",
+    });
+
+    await POST(req());
+
+    expect(codesJournalises()).not.toContain('SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE');
+    expect(metadonneesPersistees().orientationEcartsRestitution).toEqual([]);
+  });
+
+  it('ne tourne pas non plus sur une table signée sans recommandation', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({ ...ORIENTATION_ACTIVE, recommandations: [] });
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      resume_praticien: 'Je propose le pack Stress chronique et burnout.',
+    });
+
+    await POST(req());
+
+    expect(codesJournalises()).not.toContain('SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE');
+  });
+
+  it('ne signale pas les questionnaires du dossier, qui sont au prompt', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      // Q_ALI_02 est la fixture du dossier : le citer est le travail du modèle.
+      resume_praticien: 'Le Q_ALI_02 montre une exposition faible aux légumineuses.',
+    });
+
+    await POST(req());
+
+    expect(codesJournalises()).not.toContain('SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE');
+  });
+
+  it('signale en revanche un questionnaire absent du dossier et de la recommandation', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
+    validateSyntheseSchema.mockReturnValue({
+      points_de_vigilance: [],
+      resume_praticien: 'Faire passer Q_NEU_11 en complément.',
+    });
+
+    await POST(req());
+
+    const ecart = loggerWarn.mock.calls.find(
+      appel => appel[0].event === 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
+    );
+    expect(ecart?.[0].message).toContain('questionnaire:Q_NEU_11');
+  });
+});
+
+describe('transport SSE (WN_SYNTHESE_STREAM)', () => {
+  it('transmet le même bloc d’orientation que le transport JSON', async () => {
+    process.env.WN_SYNTHESE_STREAM = 'true';
+    evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
+
+    const res = await POST(req());
+    // Le corps est un flux : on n'assert pas dessus, mais l'appel modèle a bien
+    // eu lieu avec le même message — les deux transports partagent `genererArgs`.
+    await res.text();
+
+    expect(messageEnvoye()).toContain("## Recommandation d'exploration déterministe");
+    expect(messageEnvoye()).toContain('SHA-256: abc123def456');
   });
 });

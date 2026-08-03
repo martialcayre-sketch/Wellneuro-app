@@ -142,9 +142,52 @@ avec `sha256`, exporté par `corpusSyntheseV1`. Trois suites de la synthèse
 mockaient ce module sans exposer `sha256` — l'import cassait dès que la route
 atteignait le service. Mock complété dans les trois.
 
-**Validation** : T1 vert, T2 (`test:worktree -- --fast`) vert en 4 min 3 s —
-108 E2E passés, dont le parcours praticien et l'onglet Trajectoire. 29 nouveaux
-tests unitaires (10 panneau, 10 service, 9 garde) plus 10 sur la restitution.
+**Revue adversariale : NO-GO, puis GO.** Le défaut bloquant n'était pas dans le
+chemin nominal mais dans **le seul que la production exécute**. Table non signée
+→ aucun bloc injecté → allowlist vide → et le garde tournait quand même,
+comparant la prose du modèle aux seize titres de packs. Quatre d'entre eux sont
+des syntagmes cliniques français ordinaires (« digestif et intestin-cerveau »,
+« stress chronique et burnout », « sommeil et chronobiologie », « migraine et
+cephalees ») : une synthèse fidèle se voyait accusée d'avoir cité un pack hors
+recommandation, **l'accusation était persistée dans le dossier patient**, et le
+code d'événement créé pour mesurer l'infidélité aurait été saturé de bruit avant
+que le chemin qu'il surveille existe. Reproduit à la main avant correction.
+
+Six correctifs issus de cette revue :
+
+1. Le garde est conditionné à l'**injection effective** d'un bloc, pas à `actif`.
+2. Un titre de pack ne compte que **précédé du mot « pack »** ; le slug, sans
+   homonyme naturel, reste cherché partout. Cinq proses cliniques ordinaires sont
+   au banc en contrôles négatifs.
+3. Le garde couvre désormais aussi les **questionnaires** — la consigne les
+   interdisait déjà, et le modèle a leur vocabulaire en main puisqu'il reçoit le
+   dossier. L'allowlist inclut donc les questionnaires du dossier : les citer est
+   son travail.
+4. `emailPatient` n'est passé que s'il **désigne le patient affiché** : deux
+   identifiants de deux sources dont aucune ne vérifiait l'autre, pour un geste
+   qui envoie un e-mail.
+5. Après une assignation réussie, le bouton **ne revient pas** — la route ne
+   déduplique pas. Un échec, lui, laisse réessayer.
+6. Invariant : aucun déclencheur de la table ne porte sur une passation du
+   registre `passationsNonInterpretables`. Vrai par accident, désormais gardé.
+
+Et deux points de forme : la nouvelle consigne ne prime plus « sur toute autre »
+mais sur celles **relatives aux explorations** — trois règles mutuellement
+suprêmes ne forment pas un ordre ; et `orientationVersion` n'est plus inscrit
+quand aucun bloc n'est parti.
+
+**Non traité, inscrit en réserve** : le garde ne voit pas un pack nommé sans le
+mot « pack », ni une exploration en langage libre, ni un **réordonnancement** —
+pourtant interdit, mais qui demanderait de comparer des positions dans une prose.
+C'est écrit dans l'en-tête du module pour qu'aucun lecteur ne le croie couvert.
+
+**Validation** : T1 vert (3 393 tests unitaires + 872 bancs). T2
+(`test:worktree -- --fast`) vert en 3 min 53 s. Un premier T2 avait échoué sur
+`portail-lien-magique.spec.ts:48` — l'anti-oracle de temps du portail patient,
+qui compare deux durées à 800 ms près et mesurait 21 s sur une machine chargée.
+Sans rapport avec ce diff, qui ne touche pas le portail, et vert au rejeu.
+41 nouveaux tests unitaires : 13 panneau, 10 service, 18 garde, plus 16 sur la
+restitution et l'invariant.
 
 **Reste ouvert** : la signature de la table (geste praticien) ; aucun banc ne
 confronte les `claimId` à `rag_corpus_claims` — la vérification reste manuelle

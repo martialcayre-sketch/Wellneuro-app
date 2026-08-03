@@ -6,6 +6,7 @@ import { ANAMNESE_SECTIONS } from '@/lib/consultation/anamnese';
 import { evaluerOrientation, type ReponseOrientation } from './orientationEngine';
 import { extraireDrapeauxAnamnese, type DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
+import { MOTIFS_PASSATION_NON_INTERPRETABLE } from '@/lib/scoring/passationsNonInterpretables';
 
 // Épinglage du verrou sombre (patron questions.pss10.test.ts) : si ce test
 // casse, la table de règles ou son statut de validation a changé — cela
@@ -288,5 +289,39 @@ describe('orientationRulesV1 — les règles livrées, dans le moteur', () => {
       reponse('Q_STR_02', { total: 14, interpretation: { label: 'Bonne gestion du stress', color: 'success' } }),
     ]);
     expect(recos).toEqual([]);
+  });
+});
+
+// Invariant relevé à la revue adversariale du LOT-06.
+//
+// Depuis ce lot, les motifs d'orientation entrent dans le prompt de la synthèse
+// IA. Or `buildUserMessage` RETIRE délibérément les chiffres des passations
+// inscrites au registre `passationsNonInterpretables` — mais le moteur
+// d'orientation, lui, lit toutes les réponses sans ce filtre. Une règle
+// déclenchée sur une telle passation réintroduirait dans le prompt, sous
+// l'étiquette « recommandation déterministe signée », le score que l'autre bloc
+// vient d'ôter — et sous une consigne qui déclare ce bloc prioritaire.
+//
+// La disjonction est vraie aujourd'hui par accident : la table V1 déclenche sur
+// Q_GAS_01, Q_SOM_01 et Q_STR_02, le registre porte d'autres instruments. Rien
+// ne la gardait. C'est ce test.
+describe('disjonction avec les passations non interprétables', () => {
+  it('aucun déclencheur ne porte sur une passation dont le résultat n’est pas une mesure', () => {
+    const instrumentsDeclencheurs = new Set(
+      ORIENTATION_RULES_V1.flatMap(regle =>
+        regle.declencheurs
+          .filter(declencheur => declencheur.type === 'zone' || declencheur.type === 'comparaison')
+          .map(declencheur => (declencheur as { idQuestionnaire: string }).idQuestionnaire),
+      ),
+    );
+
+    const collisions = [...instrumentsDeclencheurs].filter(id =>
+      MOTIFS_PASSATION_NON_INTERPRETABLE.has(id),
+    );
+
+    expect(
+      collisions,
+      'une règle déclenche sur une passation non interprétable : son motif ferait entrer dans le prompt de synthèse le chiffre que buildUserMessage en retire',
+    ).toEqual([]);
   });
 });

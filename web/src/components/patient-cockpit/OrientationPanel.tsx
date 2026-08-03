@@ -65,6 +65,11 @@ export function OrientationPanel({
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [assignationEnCours, setAssignationEnCours] = useState<string | null>(null);
   const [issue, setIssue] = useState<{ cle: string; succes: boolean; message: string } | null>(null);
+  // Cibles déjà assignées pendant cette session d'affichage. La route
+  // d'assignation ne déduplique pas : un second clic créerait des assignations
+  // en double ET un second e-mail au patient. Le double-temps protège du clic
+  // accidentel, pas du clic répété — celui-ci s'en charge.
+  const [assignees, setAssignees] = useState<ReadonlySet<string>>(new Set());
 
   const [rechargement, setRechargement] = useState(0);
   const relire = useCallback(() => setRechargement(n => n + 1), []);
@@ -78,10 +83,18 @@ export function OrientationPanel({
       .then((payload: OrientationApiResponse) => {
         if (annule) return;
         // Une erreur de lecture n'est jamais rendue comme un état vide : les
-        // deux disent des choses opposées au praticien.
+        // deux disent des choses opposées au praticien. Une charge `ok: true`
+        // malformée (`recommandations` absent) tombe ici plutôt que de jeter
+        // pendant le rendu.
         if (!payload?.ok) {
           setReponse(null);
           setErreur(payload?.error ?? "L'orientation n'a pas pu être lue.");
+          setLecture('erreur');
+          return;
+        }
+        if (payload.actif === true && !Array.isArray(payload.recommandations)) {
+          setReponse(null);
+          setErreur("L'orientation n'a pas pu être lue (réponse inattendue).");
           setLecture('erreur');
           return;
         }
@@ -112,15 +125,16 @@ export function OrientationPanel({
         });
         const payload: { success?: boolean; count?: number; packNom?: string; error?: string } =
           await reponseAssignation.json();
-        setIssue(
-          payload?.success
-            ? {
-                cle,
-                succes: true,
-                message: `${payload.count ?? 0} questionnaire(s) du pack « ${payload.packNom ?? idPack} » assigné(s).`,
-              }
-            : { cle, succes: false, message: payload?.error ?? "L'assignation a échoué." },
-        );
+        if (payload?.success) {
+          setAssignees(precedent => new Set(precedent).add(cle));
+          setIssue({
+            cle,
+            succes: true,
+            message: `${payload.count ?? 0} questionnaire(s) du pack « ${payload.packNom ?? idPack} » assigné(s).`,
+          });
+        } else {
+          setIssue({ cle, succes: false, message: payload?.error ?? "L'assignation a échoué." });
+        }
       } catch {
         setIssue({ cle, succes: false, message: 'Erreur réseau. Réessayez.' });
       } finally {
@@ -212,7 +226,11 @@ export function OrientationPanel({
 
                   {assignable && (
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {confirmation === cle ? (
+                      {assignees.has(cle) ? (
+                        <span className="text-xs text-status-success">
+                          Pack assigné — le patient a reçu son e-mail.
+                        </span>
+                      ) : confirmation === cle ? (
                         <>
                           {/* Deux temps, délibérément : l'assignation envoie un
                               e-mail au patient. Un geste sortant ne se déclenche

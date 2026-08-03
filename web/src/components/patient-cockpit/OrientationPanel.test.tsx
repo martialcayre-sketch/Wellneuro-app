@@ -184,6 +184,45 @@ describe('OrientationPanel', () => {
     expect(screen.getByRole('button', { name: /assigner ce pack/i })).toBeTruthy();
   });
 
+  it('ne propose pas une seconde assignation après un succès', async () => {
+    const { appels } = stubFetch(ACTIF);
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    await screen.findByText(/Sommeil et chronobiologie/i);
+    fireEvent.click(screen.getByRole('button', { name: /assigner ce pack/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmer l’assignation/i }));
+    await screen.findByText(/assigné\(s\)/i);
+
+    // `packs/assign` ne déduplique pas : un second clic créerait des
+    // assignations en double ET un second e-mail au patient.
+    expect(screen.queryByRole('button', { name: /assigner ce pack/i })).toBeNull();
+    expect(screen.getByText(/le patient a reçu son e-mail/i)).toBeTruthy();
+    expect(appels.filter(a => a.url.includes('packs/assign'))).toHaveLength(1);
+  });
+
+  it('laisse réessayer après un échec d’assignation', async () => {
+    stubFetch(ACTIF, { success: false, error: 'Portail révoqué.' });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" emailPatient="sophie@example.test" />);
+
+    await screen.findByText(/Sommeil et chronobiologie/i);
+    fireEvent.click(screen.getByRole('button', { name: /assigner ce pack/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirmer l’assignation/i }));
+    await screen.findByText(/portail révoqué/i);
+
+    // Un échec n'a envoyé aucun e-mail : le geste doit rester possible.
+    expect(screen.getByRole('button', { name: /assigner ce pack/i })).toBeTruthy();
+  });
+
+  it('tombe en erreur plutôt que de jeter sur une charge ok:true malformée', async () => {
+    stubFetch({ ok: true, actif: true, version: 'v1', sha256: 'abc' });
+
+    render(<OrientationPanel idPatient="PAT_SEED_03" />);
+
+    expect(await screen.findByRole('alert')).toBeTruthy();
+  });
+
   it('rend l’échec d’assignation sans le confondre avec un succès', async () => {
     stubFetch(ACTIF, { success: false, error: 'Portail révoqué.' });
 

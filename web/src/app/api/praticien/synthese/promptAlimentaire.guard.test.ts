@@ -64,7 +64,7 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // sha256 d'une table relue, et la consigne lui interdit d'en proposer un autre,
 // d'en changer l'ordre ou d'en inventer la justification. Le bump est ce qui
 // distingue une synthèse rédigée sous ce garde d'une rédigée sans.
-const EMPREINTE_V14 = '803a2dbfcb0d6afa';
+const EMPREINTE_V14 = '828c5ed28738ed94';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;

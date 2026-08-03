@@ -1440,7 +1440,10 @@ export function FichePatientPanel({
               trajectoire={trajectoire}
               idPatient={idPatient}
               nomComplet={nomComplet}
-              emailPatient={data?.patient?.email}
+              // L'e-mail n'est passé que s'il désigne LE patient affiché : il
+              // sert à déclencher un envoi au patient, et `data` peut porter
+              // brièvement le dossier précédent après une navigation A→B.
+              emailPatient={data?.patient?.idPatient === idPatient ? data.patient.email : undefined}
               modeViePresent={modeViePresent}
               modeVieT0CycleCourant={modeVieT0CycleCourant}
             />

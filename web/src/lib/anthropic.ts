@@ -270,7 +270,7 @@ Il t'est INTERDIT :
 
 Ce que tu peux en dire, et seulement cela : reprendre chaque élément dans l'ordre donné, expliquer en langage clinique le motif déjà énoncé, et relier ce motif aux scores et au contexte que tu as par ailleurs. Si le bloc est absent, n'en parle pas.
 
-Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se contredire.
+Cette règle prime sur toute autre consigne de ce prompt **relative aux explorations à proposer**. Elle ne relève en revanche aucune des interdictions posées plus haut : une exploration recommandée ne t'autorise ni à conclure à une carence, ni à reconstituer le score d'une passation non interprétable.
 
 ## Consignes de réponse
 

@@ -4,11 +4,12 @@ import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 //
 // La synthèse IA reçoit la recommandation d'orientation déterministe et doit la
 // RESTITUER, jamais la produire. Ce module vérifie l'énoncé inverse : le texte
-// rendu cite-t-il un pack qui ne lui a pas été donné ?
+// rendu cite-t-il une cible qui ne lui a pas été donnée ?
 //
 // Pourquoi c'est vérifiable ici, alors que « le modèle a-t-il inventé quelque
-// chose » ne l'est pas en général : les packs forment un **vocabulaire fermé**
-// de seize entrées déclarées dans `PACKS_REGISTRY`. On ne cherche pas une
+// chose » ne l'est pas en général : packs et questionnaires forment des
+// **vocabulaires fermés** — seize entrées déclarées dans `PACKS_REGISTRY`, et
+// des identifiants de questionnaire de forme fixe. On ne cherche pas une
 // invention quelconque, on cherche l'apparition d'un nom d'une liste connue en
 // dehors de ceux fournis. C'est une question décidable.
 //
@@ -18,6 +19,14 @@ import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 // prose ne peut donc rien déclencher. Priver le praticien de sa synthèse sur une
 // correspondance textuelle coûterait plus que l'écart lui-même. L'appelant
 // journalise ; il ne censure pas.
+//
+// CE QU'IL NE VOIT PAS, et qu'il ne faut pas croire couvert :
+// - un pack désigné par son titre SANS le mot « pack » (« je propose Sommeil et
+//   chronobiologie ») — voir la note sur l'adjacence plus bas ;
+// - une exploration décrite en langage libre, sans nommer de cible ;
+// - un RÉORDONNANCEMENT de la recommandation, qui est pourtant interdit par la
+//   consigne. Cela demanderait de comparer des positions dans une prose, pas
+//   des occurrences.
 
 /** Les champs de `SyntheseSchema` qui portent du texte libre. */
 export type TexteSynthese = {
@@ -29,6 +38,18 @@ export type TexteSynthese = {
   limites?: string;
 };
 
+export type EcartRestitution =
+  | { type: 'pack'; identifiant: PackId }
+  | { type: 'questionnaire'; identifiant: string };
+
+// Plage des diacritiques combinants (U+0300–U+036F), construite depuis une
+// chaîne : écrits littéralement dans un littéral d'expression régulière, ces
+// caractères sont invisibles à la relecture d'un diff.
+const DIACRITIQUES_COMBINANTS = new RegExp('[\\u0300-\\u036f]', 'g');
+
+/** Identifiants de questionnaire du catalogue : `Q_SOM_09`, `Q_ALI_01`… */
+const MOTIF_QUESTIONNAIRE = /\bQ_[A-Z]{3}_\d{2}\b/g;
+
 /**
  * Normalise pour une comparaison robuste : minuscules, accents retirés, et
  * toute suite de non-alphanumériques ramenée à un espace unique.
@@ -37,11 +58,6 @@ export type TexteSynthese = {
  * aidants » quand un modèle écrira volontiers « cognition, vieillissement et
  * aidants ». Comparer sans normaliser reviendrait à ne rien vérifier.
  */
-// Plage des diacritiques combinants (U+0300–U+036F), construite depuis une
-// chaîne : écrits littéralement dans un littéral d'expression régulière, ces
-// caractères sont invisibles à la relecture d'un diff.
-const DIACRITIQUES_COMBINANTS = new RegExp('[\\u0300-\\u036f]', 'g');
-
 function normaliser(texte: string): string {
   return texte
     .normalize('NFD')
@@ -51,8 +67,8 @@ function normaliser(texte: string): string {
     .trim();
 }
 
-function texteIntegral(synthese: TexteSynthese): string {
-  const morceaux: string[] = [
+function morceaux(synthese: TexteSynthese): string[] {
+  const out: string[] = [
     synthese.resume_praticien ?? '',
     synthese.narratif_patient ?? '',
     synthese.limites ?? '',
@@ -60,42 +76,67 @@ function texteIntegral(synthese: TexteSynthese): string {
     ...(synthese.questions_entretien ?? []),
   ];
   for (const axe of synthese.axes_prioritaires ?? []) {
-    morceaux.push(axe.axe ?? '');
-    morceaux.push(...(axe.arguments ?? []));
-    morceaux.push(...(axe.points_a_confirmer ?? []));
+    out.push(axe.axe ?? '');
+    out.push(...(axe.arguments ?? []));
+    out.push(...(axe.points_a_confirmer ?? []));
   }
-  return normaliser(morceaux.join(' \n '));
+  return out;
 }
 
 /**
- * Rend les packs cités par la synthèse mais absents de la recommandation qui lui
- * a été transmise. Tableau vide = restitution fidèle.
+ * Rend les cibles citées par la synthèse mais absentes de la recommandation qui
+ * lui a été transmise. Tableau vide = restitution fidèle.
  *
- * Un pack est « cité » si son titre de doctrine ou son slug apparaît dans le
- * texte. Deux formes, parce que le modèle reçoit le titre mais qu'un slug peut
- * fuir d'un exemple ou d'un identifiant recopié.
+ * **Adjacence exigée sur les titres de pack.** Un titre seul ne suffit pas : il
+ * faut « pack » juste avant. Quatre des seize titres sont des syntagmes
+ * cliniques français ordinaires — « digestif et intestin-cerveau », « stress
+ * chronique et burnout », « sommeil et chronobiologie », « migraine et
+ * cephalees » — qu'un praticien écrit dans une synthèse sans jamais désigner un
+ * pack. Sans cette contrainte, le garde accusait la prose clinique normale, et
+ * ce faux signal aurait noyé le vrai dès le premier jour. Le slug, lui, n'a
+ * aucun homonyme naturel : il est cherché partout.
  */
 export function verifierRestitutionOrientation(
   synthese: TexteSynthese,
-  packsFournis: readonly PackId[],
-): string[] {
-  const texte = texteIntegral(synthese);
-  if (!texte) return [];
+  fournis: {
+    packs: readonly PackId[];
+    questionnaires: readonly string[];
+  },
+): EcartRestitution[] {
+  const parties = morceaux(synthese);
+  const texte = normaliser(parties.join(' \n '));
+  const ecarts: EcartRestitution[] = [];
 
-  const autorises = new Set<PackId>(packsFournis);
-  const ecarts: string[] = [];
+  if (texte) {
+    const packsAutorises = new Set<PackId>(fournis.packs);
+    for (const pack of PACKS_REGISTRY) {
+      if (packsAutorises.has(pack.id)) continue;
+      const titre = normaliser(pack.titre);
+      const slug = normaliser(pack.id);
+      if (!titre) continue;
+      if (texte.includes(`pack ${titre}`) || texte.includes(slug)) {
+        ecarts.push({ type: 'pack', identifiant: pack.id });
+      }
+    }
+  }
 
-  for (const pack of PACKS_REGISTRY) {
-    if (autorises.has(pack.id)) continue;
-    const titre = normaliser(pack.titre);
-    const slug = normaliser(pack.id);
-    // Un titre vide après normalisation ne peut rien prouver : on ne le teste
-    // pas, plutôt que de le déclarer présent partout.
-    if (!titre) continue;
-    if (texte.includes(titre) || texte.includes(slug)) {
-      ecarts.push(pack.id);
+  // Les identifiants de questionnaire sont cherchés sur le texte NON normalisé :
+  // leur forme est déjà canonique, et la normalisation détruirait les
+  // séparateurs qui la définissent.
+  const questionnairesAutorises = new Set(fournis.questionnaires);
+  const vus = new Set<string>();
+  for (const partie of parties) {
+    for (const trouve of partie.match(MOTIF_QUESTIONNAIRE) ?? []) {
+      if (questionnairesAutorises.has(trouve) || vus.has(trouve)) continue;
+      vus.add(trouve);
+      ecarts.push({ type: 'questionnaire', identifiant: trouve });
     }
   }
 
   return ecarts;
+}
+
+/** Rendu court pour un journal : `pack:slug`, `questionnaire:Q_SOM_09`. */
+export function formaterEcarts(ecarts: readonly EcartRestitution[]): string {
+  return ecarts.map(ecart => `${ecart.type}:${ecart.identifiant}`).join(', ');
 }

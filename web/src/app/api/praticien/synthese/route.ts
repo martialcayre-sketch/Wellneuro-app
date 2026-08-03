@@ -37,7 +37,10 @@ import {
   evaluerOrientationPourPatient,
   type ResultatOrientation,
 } from '@/lib/clinical/orientationService';
-import { verifierRestitutionOrientation } from '@/lib/clinical/verifierRestitutionOrientation';
+import {
+  formaterEcarts,
+  verifierRestitutionOrientation,
+} from '@/lib/clinical/verifierRestitutionOrientation';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
@@ -75,12 +78,51 @@ const TITRE_PACK_DOCTRINE: ReadonlyMap<PackId, string> = new Map(
   PACKS_REGISTRY.map(pack => [pack.id, pack.titre]),
 );
 
+/**
+ * Un bloc d'orientation a-t-il réellement été injecté dans le prompt ?
+ *
+ * C'est la condition du garde de restitution, et elle ne va pas de soi : tant
+ * que la table n'est pas signée, `actif` vaut `false`, aucun bloc ne part — et
+ * un garde qui tournerait quand même comparerait la prose du modèle aux seize
+ * titres de packs avec une allowlist vide. Il accuserait alors une synthèse de
+ * citer un pack « hors recommandation » alors qu'aucune recommandation ne lui a
+ * jamais été présentée : une assertion fausse écrite dans un dossier patient, et
+ * un code d'événement noyé de bruit avant d'être observable.
+ */
+function orientationInjectee(orientation: ResultatOrientation | null): boolean {
+  return orientation?.actif === true && orientation.recommandations.length > 0;
+}
+
 /** Les packs effectivement transmis au modèle — l'allowlist du garde de restitution. */
 function packsTransmis(orientation: ResultatOrientation | null): PackId[] {
   if (!orientation || !orientation.actif) return [];
   return orientation.recommandations
     .filter(recommandation => recommandation.cible.type === 'pack')
     .map(recommandation => (recommandation.cible as { type: 'pack'; packId: PackId }).packId);
+}
+
+/**
+ * Les questionnaires que le modèle a le droit de nommer.
+ *
+ * Deux sources, et oublier la seconde rendrait le garde absurde : les cibles
+ * questionnaire de l'orientation, ET **tous les questionnaires du dossier** —
+ * le modèle les reçoit dans « Résultats des questionnaires », les citer est son
+ * travail.
+ */
+function questionnairesTransmis(
+  orientation: ResultatOrientation | null,
+  reponses: ReponseInput[],
+): string[] {
+  const cibles =
+    orientation?.actif === true
+      ? orientation.recommandations
+          .filter(recommandation => recommandation.cible.type === 'questionnaire')
+          .map(
+            recommandation =>
+              (recommandation.cible as { type: 'questionnaire'; questionnaireId: string }).questionnaireId,
+          )
+      : [];
+  return [...new Set([...cibles, ...reponses.map(reponse => reponse.idQuestionnaire)])];
 }
 
 // Pseudonymisation (audit HDS 2026-07-24) : aucune identité patient ne part
@@ -279,12 +321,19 @@ async function genererSynthesePersistee(
   // pas donné ? On journalise, on ne censure pas — la carte d'orientation et son
   // bouton d'assignation viennent de la route déterministe, jamais d'ici, donc
   // un pack cité à tort dans la prose ne peut rien déclencher.
-  const packsCitesATort = verifierRestitutionOrientation(synthese, packsTransmis(args.orientation));
-  if (packsCitesATort.length > 0) {
+  // Le garde ne tourne QUE si un bloc a réellement été injecté : sans bloc, il
+  // n'y a rien à restituer, donc rien à trahir (voir `orientationInjectee`).
+  const ecartsRestitution = orientationInjectee(args.orientation)
+    ? verifierRestitutionOrientation(synthese, {
+        packs: packsTransmis(args.orientation),
+        questionnaires: questionnairesTransmis(args.orientation, args.reponsesInput),
+      })
+    : [];
+  if (ecartsRestitution.length > 0) {
     logger.warn({
       event: EVENT_CODES.SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE,
       domain: 'SYNTHESE_IA',
-      message: `Restitution d'orientation infidèle : packs cités hors recommandation (${packsCitesATort.join(', ')})`,
+      message: `Restitution d'orientation infidèle : cibles citées hors recommandation (${formaterEcarts(ecartsRestitution)})`,
       context: finalizeLogContext(args.requestContext, { retryable: false }),
     });
   }
@@ -317,11 +366,17 @@ async function genererSynthesePersistee(
           // Orientation (LOT-06) : la version et le sha256 de la table qui a
           // produit le bloc transmis. Sans eux, on ne pourrait pas dire, six
           // mois plus tard, quelle table a fondé telle restitution.
-          orientationActive: args.orientation?.actif === true,
-          orientationVersion: args.orientation?.version ?? null,
-          orientationSha256: args.orientation?.actif === true ? args.orientation.sha256 : null,
+          // `orientationInjectee`, et non `actif` : une table signée qui ne
+          // recommande rien n'a rien transmis. Écrire une version et un sha256
+          // dans ce cas laisserait croire qu'un bloc est parti.
+          orientationInjectee: orientationInjectee(args.orientation),
+          orientationVersion: orientationInjectee(args.orientation) ? args.orientation?.version ?? null : null,
+          orientationSha256:
+            orientationInjectee(args.orientation) && args.orientation?.actif === true
+              ? args.orientation.sha256
+              : null,
           orientationPacksTransmis: packsTransmis(args.orientation),
-          orientationPacksCitesATort: packsCitesATort,
+          orientationEcartsRestitution: ecartsRestitution,
         },
         metriquesAnthropic: metricsCache,
       } as any,
