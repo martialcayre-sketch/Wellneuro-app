@@ -2,6 +2,27 @@
 
 > **Archivage** : les entrées du 2026-07-04 au 2026-07-10 sont compactées dans `docs/archive/sessions/SESSION_LOG_2026-07-04_to_2026-07-10_compact.md`, celles du 2026-07-11 au 2026-07-14 dans `docs/archive/sessions/SESSION_LOG_2026-07-11_to_2026-07-14_compact.md`, et celles du 2026-07-14 au 2026-07-22 dans `docs/archive/sessions/SESSION_LOG_2026-07-14_to_2026-07-22_compact.md`. Le journal actif ne conserve que les entrées récentes utiles à la reprise.
 
+## 2026-08-03 — LOT-02 partiel : rayons cognition/intestin branchés (PR #546)
+
+**Décisions** : NB05/07 vérifiés 100 % VALIDE en base (`execute_sql` direct, pas
+le doc d'inventaire de campagne qui porte sur un sous-ensemble différent) ;
+ajoutés à `RAYON_VERS_NOTEBOOK` avec un appelant neuf (`dashboard/bibliotheque`,
+route `/api/praticien/corpus/rayons`), flag `WN_RECHERCHE_CORPUS_ENABLED`
+dédié plutôt que réutiliser `WN_C4_ENABLED`. Revue `wn-reviewer` a trouvé un
+bloquant avant merge : une regex seule aurait laissé la route servir
+n'importe quel rayon (micronutrition compris) en contournant le flag
+compléments — corrigé par une allowlist testée. Couplage caché retiré au
+passage : `servirRayonCorpus` forçait `WN_C4_ENABLED` pour tout rayon.
+
+**Écarté** : notebook 06 (douleurs chroniques), non validé — même route déjà
+générique, à étendre plus tard.
+
+**Prochaine action** : brancher 06 une fois validé, ou LOT-01/05/06 de la
+campagne moteur d'intervention.
+
+**Questions ouvertes** : calibration `minSimilarity`/`matchCount` (réglés sur
+un profil fiche-produit) non vérifiée pour une recherche en langage libre.
+
 ## 2026-08-03 — Repurposage de ROADMAP_TECHNIQUE.md en architecture technique système
 
 **Décisions** : `docs/ROADMAP_TECHNIQUE.md` cesse d'être un suivi de chantiers (lots R0→R10, dette) pour devenir la cartographie d'architecture technique système (stack, routes, modèle de données, sous-systèmes `lib/`, auth, RAG, déploiement) — décision explicite de l'utilisateur, périmètre = toute l'application. L'ancien contenu est archivé intégralement dans le nouveau `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` avant réécriture, rien n'est perdu.
