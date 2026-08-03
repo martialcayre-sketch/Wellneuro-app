@@ -7,7 +7,7 @@ effort: low
 
 # WellNeuro — contexte compact
 
-!`node scripts/wn-context-pack.mjs --format markdown`
+!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-context-pack.mjs --format markdown`
 
 Argument : `$ARGUMENTS`
 

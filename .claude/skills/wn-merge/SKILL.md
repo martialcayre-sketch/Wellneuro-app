@@ -10,8 +10,8 @@ effort: medium
 ## Contexte
 
 !`gh pr view $ARGUMENTS --json number,title,headRefName,url,files 2>/dev/null || echo "Passer le numéro de PR en argument, ou se placer sur sa branche."`
-!`sed -n '/^### Attendre le CI d.une PR sans le sonder/,/^## Revue, merge et suppression des branches/p' CLAUDE.md | sed '$d'`
-!`sed -n '/^## Revue, merge et suppression des branches/,/^## Définition de done pour une tâche standard/p' CLAUDE.md | sed '$d'`
+!`cd "$(git rev-parse --show-toplevel)" && sed -n '/^### Attendre le CI d.une PR sans le sonder/,/^## Revue, merge et suppression des branches/p' CLAUDE.md | sed '$d'`
+!`cd "$(git rev-parse --show-toplevel)" && sed -n '/^## Revue, merge et suppression des branches/,/^## Définition de done pour une tâche standard/p' CLAUDE.md | sed '$d'`
 !`git worktree list 2>/dev/null || true`
 
 Arguments : `$ARGUMENTS`
