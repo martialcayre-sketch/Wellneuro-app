@@ -1615,3 +1615,27 @@ garde épinglant toute mention de skill (mur de faux positifs sur les routeurs).
 **Prochaine action** : aucune en attente.
 
 **Questions ouvertes** : aucune. Notice d'exploitation du kit publiée en artefact.
+
+## 2026-08-03 — Campagne packs/moteur d'intervention + LOT-00 registre des interventions
+
+**Décisions** : campagne cadrée et mergée (#531, 8 lots), puis LOT-00 livré (#534).
+Le cadrage a corrigé trois points de la demande : la certification était déjà close
+(#528), le moteur d'orientation existe mais sa table est vide et n'a aucun appelant,
+et l'assouplissement du fail-closed visait un blocage mal situé. LOT-00 a produit
+`docs/claude/corpus/nnpp2_interventions_registry.json` — 95 sources, 2002 claims —
+et son garde `npm run interventions-check` (26 cas, un échec prouvé par invariant).
+
+**Écarté** : partir du motif de TITRE pour désigner les sources d'intervention. Le
+champ structuré `documentType` du registre sanitaire prime — le titre ratait 51
+sources sur 99, dont toute la doctrine d'exploration. Écarté aussi : l'Atelier v2
+comme prérequis (hors chemin critique), et « l'IA propose un pack » (elle restitue,
+elle ne décide pas).
+
+**Prochaine action** : LOT-01 (755 claims à valider, geste praticien), ou LOT-03 /
+LOT-04 en parallèle du chemin critique.
+
+**Questions ouvertes** : la validation praticien de la pré-classification des 95
+sources reste due. Et le champ `prescriptive` de `source_registry.json` est faux sur
+52 des 95 sources — 640 claims prescriptifs déclarés non prescriptifs, erreur
+toujours dans le même sens ; aucun code ne le lit, mais la sous-déclaration
+mériterait d'être instruite à la source.
