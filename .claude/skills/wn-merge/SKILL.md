@@ -43,10 +43,11 @@ l'autorisation transitoire est bornée dans le temps et peut avoir été retiré
    l'authentification — praticien (`web/src/lib/auth.ts`, routes `api/auth`)
    **ou** portail patient (`web/src/middleware.ts`, lien magique, cookie de
    session, `patients.access_token`), ou plus largement tout chemin touchant
-   session/token : une revue adversariale indépendante (sous-agent `wn-reviewer`) est
-   obligatoire avant le merge si elle n'a pas déjà eu lieu, et une vérification
-   de la base de production (`execute_sql` MCP Supabase — jamais `psql`, jamais
-   une commande Bash) après. Ces deux passes s'appliquent même en régime
+   session/token : une revue adversariale indépendante — `Agent(subagent_type:
+   "wn-reviewer")`, prompt portant `think hard`/`think harder` — est obligatoire
+   avant le merge si elle n'a pas déjà eu lieu, et une vérification de la base
+   de production (`execute_sql` MCP Supabase — jamais `psql`, jamais une
+   commande Bash) après. Ces deux passes s'appliquent même en régime
    transitoire ; ne jamais les sauter sur ce périmètre.
 6. **Sans `apply`** : ne rien exécuter. Rendre le numéro de PR, l'état CI,
    présence de `verify`, régime déduit, applicabilité de l'exception — puis la

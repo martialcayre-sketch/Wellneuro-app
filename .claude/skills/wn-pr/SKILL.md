@@ -25,6 +25,13 @@ Sans `apply` : ne créer ni branche, ni commit, ni push, ni PR.
 
 Avec `apply` : branche et commit locaux autorisés. Le push, la création ou le merge d’une PR nécessitent encore une demande explicite claire.
 
+**Modèle et réflexion selon le diff.** Si les fichiers du diff relèvent d'une
+classe à risque du tableau de `/wn-lot` (Scoring/clinique, Prisma/migration,
+Auth), rédiger la section « risques » via `Agent(subagent_type: "wn-reviewer")`
+avec le mot-clé `think hard`/`think harder` dans le prompt, plutôt qu'en
+session — la description d'une PR de migration mérite le même effort que sa
+revue.
+
 ## Attendre le CI sans le sonder en boucle
 
 Un seul appel, en tâche de fond, qui rend la main dès que les checks se figent :
