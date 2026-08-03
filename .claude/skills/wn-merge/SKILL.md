@@ -32,10 +32,14 @@ l'autorisation transitoire est bornée dans le temps et peut avoir été retiré
 3. **Le code de sortie décide, et `0` seul autorise la suite.** Le script
    vérifie que les checks obligatoires ont *réellement tourné*, pas seulement
    que rien n'est en attente — c'est ce que l'idiome remplacé ne savait pas
-   faire. **`2` = `verify` n'a pas tourné** : le script nomme laquelle des trois
-   causes (PR en conflit, branche squashée, commit de tête Copilot gelant le run
-   en `action_required`). Aucune ne se débloque en forçant le merge ; la
-   dernière se débloque en poussant un commit sous le compte du dépôt.
+   faire. **`2` = `verify` n'a pas tourné** : le script nomme toutes les causes
+   applicables (PR en conflit, branche squashée, commit de tête Copilot gelant
+   le run en `action_required`). **`5` = les checks sont verts mais la PR est en
+   conflit** — le vert porte alors sur un commit qui n'est pas le résultat
+   fusionné ; fusionner la base et relancer. **`4` = indéterminé**, y compris
+   quand la liste des checks obligatoires n'a pas pu être lue. Aucun de ces
+   codes ne se débloque en forçant le merge ; le cas Copilot se débloque en
+   poussant un commit sous le compte du dépôt.
 4. **Déduire le régime courant** du texte chargé ci-dessus :
    - la section « Période transitoire » y est toujours présente et décrit une
      autorisation active → cycle complet possible (étapes 6-7) ;

@@ -250,13 +250,23 @@ refait à la main sur #553. Une règle oubliée deux fois devient exécutable.
 |---|---|---|
 | `0` | les checks **obligatoires** ont tourné et sont verts | annoncer la PR prête |
 | `1` | un check obligatoire a échoué | lire le log, corriger |
-| `2` | un check obligatoire **n'a pas tourné** — absent, ou gelé en `action_required` | le script nomme laquelle des trois causes ; **ne pas merger** |
+| `2` | un check obligatoire **n'a pas tourné** — absent, ou gelé en `action_required` | le script nomme **toutes** les causes applicables ; ne pas merger |
 | `3` | délai dépassé sans conclusion | expirer n'est pas réussir |
-| `4` | PR illisible, déjà mergée, ou `gh` indisponible | aucun verdict |
+| `4` | **indéterminé** — PR illisible ou mergée, `gh` muet, ou liste des checks obligatoires illisible | aucun verdict ; ne pas merger |
+| `5` | les checks sont verts mais la PR est **en conflit** | ce vert porte sur un commit qui n'est pas le résultat fusionné |
+
+**`0` est le seul code qui autorise à annoncer une PR prête.** Les cinq autres
+disent, chacun à sa façon, qu'on ne peut pas l'affirmer — y compris `4`, qui
+couvre le cas où la liste des checks obligatoires n'a pas pu être lue : ne
+sachant plus ce qu'il fallait attendre, le script se tait plutôt que de replier
+en silence sur `verify`.
 
 La liste des checks attendus vient de la **protection de branche** (`verify`
 aujourd'hui), pas d'une constante : un second check rendu obligatoire est suivi
 sans toucher au script. Ce qu'il ne fait pas : merger, ou dire s'il faut merger.
+Un même nom porté par **deux runs** (le cas des branches `campaign/**`, que
+`ci.yml` déclenche sur `push` *et* sur `pull_request`) n'est vert que si les
+deux le sont — le rouge ne se laisse pas écraser par l'ordre du tableau.
 
 Gabarit de corps de PR et check-list complète : le skill `/wn-pr` (invocation
 manuelle ; ces idiomes valent pour **toute** ouverture de PR, `/wn-pr` invoqué ou non).

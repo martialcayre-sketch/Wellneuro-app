@@ -2,8 +2,8 @@
 //
 // Les faits sont injectés : aucun appel `gh`, aucun réseau, aucune PR requise.
 // Ce qui est vérifié ici est la seule chose que le script décide vraiment —
-// « le check obligatoire a-t-il RÉELLEMENT TOURNÉ ? », question que l'idiome
-// remplacé confondait avec « reste-t-il quelque chose en attente ? ».
+// « puis-je annoncer cette PR prête ? », question que l'idiome remplacé
+// confondait avec « reste-t-il quelque chose en attente ? ».
 //
 // C'est une donnée d'entrée qui décide de ce qui est imprimé : la classe de
 // défaut qui est déjà revenue quatre fois sur le garde anti-secrets. Elle ne se
@@ -12,25 +12,33 @@
 // Chaque cas assère AUSSI un fragment distinctif du message : un verdict qui
 // rendrait le bon code avec le mauvais message enverrait chercher la mauvaise
 // cause, et resterait vert sans cette vérification.
+//
+// Les cas marqués « survivant » ont été ajoutés après une revue adversariale
+// qui a fait passer 18 tests verts à une logique fausse. Ils sont les seuls à
+// tuer ces mutations-là.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  causeDuCheckAbsent,
+  agregerParNom,
+  analyserArguments,
+  causesDuCheckAbsent,
   diagnostiquer,
   normaliserCheck,
   SORTIE_VERT,
   SORTIE_ECHEC,
   SORTIE_N_A_PAS_TOURNE,
   SORTIE_DELAI,
-  SORTIE_PRECONDITION,
+  SORTIE_INDETERMINE,
+  SORTIE_NON_FUSIONNABLE,
 } from './wn-attendre-ci.mjs';
 
 const VERCEL = [
   { name: 'Vercel', status: 'COMPLETED', conclusion: 'SUCCESS' },
   { name: 'Vercel Preview Comments', status: 'COMPLETED', conclusion: 'SUCCESS' },
 ];
+const VERIFY_VERT = { name: 'verify', status: 'COMPLETED', conclusion: 'SUCCESS' };
 
 function faits(surcharge = {}) {
   return {
@@ -45,9 +53,7 @@ function faits(surcharge = {}) {
 }
 
 test('verify vert : sortie 0, et le message dit qu\'il a réellement tourné', () => {
-  const v = diagnostiquer(
-    faits({ rollup: [...VERCEL, { name: 'verify', status: 'COMPLETED', conclusion: 'SUCCESS' }] }),
-  );
+  const v = diagnostiquer(faits({ rollup: [...VERCEL, VERIFY_VERT] }));
   assert.equal(v.sortie, SORTIE_VERT);
   assert.equal(v.attendre, false);
   assert.match(v.message, /a réellement tourné, et est vert/);
@@ -60,6 +66,39 @@ test('verify en échec : sortie 1, la conclusion est nommée', () => {
   assert.equal(v.sortie, SORTIE_ECHEC);
   assert.match(v.message, /ÉCHEC \(verify → FAILURE\)/);
   assert.match(v.message, /Ne pas merger/);
+});
+
+// SURVIVANT — `ci.yml` se déclenche sur `push` ET `pull_request` : une PR issue
+// d'une branche `campaign/**` porte DEUX runs nommés `verify` (observé sur la
+// PR #528). Un `Map` construit par `.map()` gardait la DERNIÈRE entrée, c'est-à-
+// dire l'ordre du tableau — que l'API ne garantit pas.
+test('deux entrées « verify », une rouge une verte : sortie 1, jamais 0', () => {
+  const rouge = { name: 'verify', status: 'COMPLETED', conclusion: 'FAILURE' };
+  for (const rollup of [[rouge, VERIFY_VERT], [VERIFY_VERT, rouge]]) {
+    const v = diagnostiquer(faits({ rollup }));
+    assert.equal(v.sortie, SORTIE_ECHEC, `ordre ${JSON.stringify(rollup.map((c) => c.conclusion))}`);
+    assert.notEqual(v.sortie, SORTIE_VERT);
+  }
+});
+
+test('deux entrées « verify », une en cours une verte : on attend, jamais 0', () => {
+  const enCours = { name: 'verify', status: 'IN_PROGRESS', conclusion: null };
+  for (const rollup of [[enCours, VERIFY_VERT], [VERIFY_VERT, enCours]]) {
+    const v = diagnostiquer(faits({ rollup }));
+    assert.equal(v.attendre, true);
+    assert.notEqual(v.sortie, SORTIE_VERT);
+  }
+});
+
+test('agregerParNom cumule les entrées homonymes au lieu de les écraser', () => {
+  const agg = agregerParNom(
+    [
+      { nom: 'verify', termine: true, conclusion: 'FAILURE' },
+      { nom: 'verify', termine: true, conclusion: 'SUCCESS' },
+    ],
+  );
+  assert.equal(agg.get('verify').entrees.length, 2);
+  assert.equal(agg.get('verify').aEchec, true);
 });
 
 // LE CAS QUI A MOTIVÉ LE SCRIPT — PR #550, le 2026-08-03. Deux checks Vercel
@@ -90,6 +129,24 @@ test('pas de verify + aucun run pour le sha : sortie 2, la cause est la branche 
   assert.match(v.message, /squashée/);
 });
 
+// Une PR peut être à la fois en conflit ET gelée : n'en nommer qu'une enverrait
+// corriger la moitié du problème.
+test('plusieurs causes simultanées : toutes sont nommées', () => {
+  const causes = causesDuCheckAbsent(
+    faits({ pr: { numero: 1, etat: 'OPEN', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY' }, auteurCommitTete: 'Copilot', runsExistent: false }),
+  );
+  assert.equal(causes.length, 3);
+  const v = diagnostiquer(
+    faits({
+      rollup: VERCEL,
+      pr: { numero: 1, etat: 'OPEN', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY' },
+      auteurCommitTete: 'Copilot',
+    }),
+  );
+  assert.match(v.message, /CONFLIT/);
+  assert.match(v.message, /action_required/);
+});
+
 test('pas de verify, aucune cause diagnosticable : on attend, on ne conclut pas', () => {
   const v = diagnostiquer(faits({ rollup: VERCEL }));
   assert.equal(v.sortie, null);
@@ -103,7 +160,6 @@ test('pas de verify, aucune cause diagnosticable : on attend, on ne conclut pas'
 test('pas de verify, sans cause, à l\'expiration : sortie 2 et NON 3', () => {
   const v = diagnostiquer(faits({ rollup: VERCEL, delaiDepasse: true }));
   assert.equal(v.sortie, SORTIE_N_A_PAS_TOURNE);
-  assert.notEqual(v.sortie, SORTIE_DELAI);
   assert.match(v.message, /non diagnosticable/);
 });
 
@@ -127,7 +183,6 @@ test('verify en cours à l\'expiration : sortie 3, jamais 0', () => {
     faits({ rollup: [{ name: 'verify', status: 'IN_PROGRESS', conclusion: null }], delaiDepasse: true }),
   );
   assert.equal(v.sortie, SORTIE_DELAI);
-  assert.notEqual(v.sortie, SORTIE_VERT);
   assert.match(v.message, /Expirer n'est pas réussir/);
 });
 
@@ -143,9 +198,37 @@ test('verify en action_required : sortie 2, décrit comme gelé et non comme un 
   assert.match(v.message, /n'a pas eu lieu/);
 });
 
+// SURVIVANT — reproduit sur la PR #553 le 2026-08-03 : `verify` vert, mais
+// `main` avait bougé et la PR était passée en CONFLICTING. Le vert portait sur
+// un commit qui n'est pas le résultat de la fusion, et le script annonçait
+// « PR prête ».
+test('verify vert mais PR en conflit : sortie 5, jamais 0', () => {
+  const v = diagnostiquer(
+    faits({
+      rollup: [...VERCEL, VERIFY_VERT],
+      pr: { numero: 553, etat: 'OPEN', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY' },
+    }),
+  );
+  assert.equal(v.sortie, SORTIE_NON_FUSIONNABLE);
+  assert.notEqual(v.sortie, SORTIE_VERT);
+  assert.match(v.message, /pas le résultat de la fusion/);
+});
+
+// `BLOCKED` couvre le cas ordinaire d'une PR en attente de revue, et `UNKNOWN`
+// le temps que GitHub calcule la fusion : bloquer dessus bloquerait presque
+// toutes les PR.
+test('BLOCKED et UNKNOWN ne sont PAS traités comme un conflit', () => {
+  for (const [mergeable, etat] of [['MERGEABLE', 'BLOCKED'], ['UNKNOWN', 'UNKNOWN']]) {
+    const v = diagnostiquer(
+      faits({ rollup: [VERIFY_VERT], pr: { numero: 1, etat: 'OPEN', mergeable, mergeStateStatus: etat } }),
+    );
+    assert.equal(v.sortie, SORTIE_VERT, `${mergeable}/${etat}`);
+  }
+});
+
 test('PR illisible : sortie 4, aucun verdict', () => {
   const v = diagnostiquer(faits({ pr: null }));
-  assert.equal(v.sortie, SORTIE_PRECONDITION);
+  assert.equal(v.sortie, SORTIE_INDETERMINE);
   assert.match(v.message, /Aucun verdict rendu/);
 });
 
@@ -153,14 +236,14 @@ test('PR déjà mergée : sortie 4, rien à attendre', () => {
   const v = diagnostiquer(
     faits({ pr: { numero: 550, etat: 'MERGED', mergeable: 'UNKNOWN', mergeStateStatus: 'UNKNOWN' } }),
   );
-  assert.equal(v.sortie, SORTIE_PRECONDITION);
+  assert.equal(v.sortie, SORTIE_INDETERMINE);
   assert.match(v.message, /pas OPEN/);
 });
 
 // Le rollup mélange deux formes. Lire `name`/`status` seuls rendrait un
 // StatusContext invisible — donc « absent », donc un faux positif de sortie 2.
 test('forme StatusContext : `context` + `state` sont lus comme un check', () => {
-  assert.deepEqual(normaliserCheck({ context: 'verify', state: 'SUCCESS' }), {
+  assert.deepEqual(normaliserCheck({ __typename: 'StatusContext', context: 'verify', state: 'SUCCESS' }), {
     nom: 'verify',
     termine: true,
     conclusion: 'SUCCESS',
@@ -174,45 +257,85 @@ test('forme StatusContext : `context` + `state` sont lus comme un check', () => 
   assert.equal(v.sortie, SORTIE_VERT);
 });
 
-// Ne pas pouvoir lire la protection de branche ne doit pas passer en silence :
-// la liste attendue n'est alors PAS celle qui décide du merge.
-test('protection illisible : repli sur verify, et l\'avertissement est imprimé', () => {
+// Si `gh` émettait un jour `status: null` sur un StatusContext, la
+// discrimination par « status absent » basculerait chaque statut en « en
+// cours » : attente puis sortie 3 systématique. `__typename` tranche.
+test('StatusContext avec `status: null` : `__typename` tranche', () => {
+  assert.equal(normaliserCheck({ __typename: 'StatusContext', context: 'v', state: 'FAILURE', status: null }).termine, true);
+  assert.equal(normaliserCheck({ __typename: 'CheckRun', name: 'v', status: 'IN_PROGRESS' }).termine, false);
+});
+
+test('formes dégradées : nom à espacer, entrée sans nom, COMPLETED sans conclusion', () => {
+  assert.equal(normaliserCheck({ name: '  verify  ', status: 'COMPLETED', conclusion: 'SUCCESS' }).nom, 'verify');
+  assert.equal(normaliserCheck({ status: 'COMPLETED', conclusion: 'SUCCESS' }).nom, '');
+  // Un `COMPLETED` sans conclusion n'est pas vert : il penche du côté sûr.
+  const v = diagnostiquer(faits({ rollup: [{ name: 'verify', status: 'COMPLETED' }] }));
+  assert.equal(v.sortie, SORTIE_ECHEC);
+});
+
+// SURVIVANT — `null` (API illisible) et `[]` (protection sans check) doivent
+// être traités PAREIL. Traiter `[]` comme « rien à attendre » rendait un vert
+// inconditionnel sur un rollup vide : une mutation d'un caractère suffisait.
+test('contextesRequis vide + verify vert : sortie 4, jamais 0', () => {
+  const v = diagnostiquer(faits({ contextesRequis: [], rollup: [VERIFY_VERT] }));
+  assert.notEqual(v.sortie, SORTIE_VERT);
+  assert.equal(v.sortie, SORTIE_INDETERMINE);
+  assert.match(v.message, /On ignore ce qu'il fallait attendre/);
+});
+
+test('contextesRequis vide + rollup vide : on attend, puis 2 — jamais 0', () => {
+  assert.notEqual(diagnostiquer(faits({ contextesRequis: [], rollup: [] })).sortie, SORTIE_VERT);
+  assert.equal(diagnostiquer(faits({ contextesRequis: [], rollup: [] })).attendre, true);
+  assert.equal(diagnostiquer(faits({ contextesRequis: [], rollup: [], delaiDepasse: true })).sortie, SORTIE_N_A_PAS_TOURNE);
+});
+
+// Ne pas pouvoir lire la protection ne doit pas passer en silence, ET ne doit
+// pas rendre le code qui autorise à annoncer une PR prête.
+test('protection illisible : sortie 4 même si verify est vert', () => {
+  const v = diagnostiquer(faits({ contextesRequis: null, rollup: [VERIFY_VERT] }));
+  assert.equal(v.sortie, SORTIE_INDETERMINE);
+  assert.match(v.message, /liste des checks OBLIGATOIRES n'a pas pu être lue/);
+});
+
+// Et surtout : ne pas qualifier « NON obligatoire » ce qu'on vient d'échouer à
+// lire. C'était affirmer le contraire de ce qu'on sait.
+test('protection illisible + second check rouge : aucune qualification « non obligatoire »', () => {
   const v = diagnostiquer(
-    faits({ contextesRequis: null, rollup: [{ name: 'verify', status: 'COMPLETED', conclusion: 'SUCCESS' }] }),
+    faits({ contextesRequis: null, rollup: [VERIFY_VERT, { name: 'e2e', status: 'COMPLETED', conclusion: 'FAILURE' }] }),
   );
-  assert.equal(v.sortie, SORTIE_VERT);
-  assert.match(v.message, /protection de branche illisible/);
-  assert.match(v.message, /n'a pas été vérifiée/);
+  assert.equal(v.sortie, SORTIE_INDETERMINE);
+  assert.doesNotMatch(v.message, /NON obligatoire/);
 });
 
 // Vercel ne garde pas `main` : son échec est signalé, il ne décide pas.
-test('check NON obligatoire en échec : sortie 0, mais signalé', () => {
+test('check NON obligatoire en échec, liste connue : sortie 0, mais signalé', () => {
   const v = diagnostiquer(
-    faits({
-      rollup: [
-        { name: 'Vercel', status: 'COMPLETED', conclusion: 'FAILURE' },
-        { name: 'verify', status: 'COMPLETED', conclusion: 'SUCCESS' },
-      ],
-    }),
+    faits({ rollup: [{ name: 'Vercel', status: 'COMPLETED', conclusion: 'FAILURE' }, VERIFY_VERT] }),
   );
   assert.equal(v.sortie, SORTIE_VERT);
-  assert.match(v.message, /NON obligatoire\(s\) en échec : Vercel → FAILURE/);
+  assert.match(v.message, /NON obligatoire\(s\) en échec : Vercel/);
 });
 
 // La liste obligatoire vient de la protection de branche, pas d'une constante :
 // un second check rendu obligatoire doit être attendu sans toucher au script.
 test('deux contextes obligatoires : le second manquant suffit à bloquer', () => {
   const v = diagnostiquer(
-    faits({
-      contextesRequis: ['verify', 'e2e'],
-      rollup: [{ name: 'verify', status: 'COMPLETED', conclusion: 'SUCCESS' }],
-      runsExistent: false,
-    }),
+    faits({ contextesRequis: ['verify', 'e2e'], rollup: [VERIFY_VERT], runsExistent: false }),
   );
   assert.equal(v.sortie, SORTIE_N_A_PAS_TOURNE);
   assert.match(v.message, /« e2e »/);
 });
 
-test('causeDuCheckAbsent rend null quand rien n\'est diagnosticable', () => {
-  assert.equal(causeDuCheckAbsent(faits()), null);
+test('causesDuCheckAbsent rend une liste vide quand rien n\'est diagnosticable', () => {
+  assert.deepEqual(causesDuCheckAbsent(faits()), []);
+});
+
+// `--delai 60 553` retenait « 60 » comme numéro de PR : le message le disait,
+// le code de sortie — seul consommé par un skill — ne le disait pas.
+test('analyserArguments : le drapeau et sa valeur ne sont pas pris pour un numéro', () => {
+  assert.deepEqual(analyserArguments(['--delai', '60', '553']), { numero: '553', delai: 60 });
+  assert.deepEqual(analyserArguments(['553', '--delai', '60']), { numero: '553', delai: 60 });
+  assert.equal(analyserArguments(['553']).delai, 900);
+  assert.equal(analyserArguments([]).numero, null);
+  assert.equal(analyserArguments(['--delai']).numero, null);
 });

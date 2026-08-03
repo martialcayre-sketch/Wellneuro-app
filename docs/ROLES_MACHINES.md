@@ -101,7 +101,9 @@ Le mode de travail nominal, quand les deux machines servent :
 2. **PC** — committer et pousser la branche. Ouvrir la PR si besoin.
 3. **Mac** — `git pull`, puis validation complète : `npm run test:worktree`
    (séquence rapide `-- --fast` : ~1 min 20 s, 26 tests E2E source inclus).
-4. **Mac** — lire le CI (`gh pr checks`), puis merger.
+4. **Mac** — lire le CI (`node scripts/wn-attendre-ci.mjs 〈n°〉`), puis merger.
+   C'est le poste qui merge : `gh pr checks` seul y était le plus coûteux, en
+   lisant les checks présents sans vérifier que `verify` en fasse partie.
 
 Un seul principe à retenir : **le PC propose, le Mac valide vite.**
 
