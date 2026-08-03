@@ -85,7 +85,14 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ ok: true, count: 2 });
     expect(prisma.assignation.create).toHaveBeenCalledTimes(2);
-    expect(logger.warn).not.toHaveBeenCalled();
+    // L'assertion porte sur le code d'événement, pas sur « aucun warn » : la
+    // fixture n'a pas de registre relationnel (`questionnairePack` rend null),
+    // donc le repli legacy est légitimement pris et journalisé depuis le
+    // LOT-03. Un « jamais de warn » confondrait les deux signaux.
+    expect(
+      vi.mocked(logger.warn).mock.calls
+        .filter(([payload]) => payload.event === EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU),
+    ).toEqual([]);
   });
 
   // Le cas réel qui a motivé cette garde était le pack « Florence 1 » de

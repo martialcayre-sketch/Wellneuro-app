@@ -4,9 +4,9 @@ titre: "Packs, moteur d'intervention et corpus consommable"
 statut: "cadrée"
 créée_le: "2026-08-03"
 mise_à_jour: "2026-08-03"
-lot_courant: "LOT-01"
+lot_courant: "LOT-04"
 branche_campagne: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
-branche_lot_courant: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/lot-01"
+branche_lot_courant: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/lot-04"
 cible_pr_lot: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
 cible_pr_campagne: "main"
 ---
@@ -122,7 +122,7 @@ inventer. Inventaire complet : `INVENTAIRE_SOURCES_INTERVENTION.md`.
 | LOT-00 | Registre des 95 sources d'intervention NNPP2 | livré | — |
 | LOT-01 | Validation ciblée des 755 claims d'intervention | à_faire | LOT-00 |
 | LOT-02 | Rayons cognition / douleur / intestin + premier appelant | à_faire | LOT-01 |
-| LOT-03 | Refactor des packs : source de vérité unique | à_faire | LOT-00 |
+| LOT-03 | Refactor des packs : source de vérité unique | livré | LOT-00 |
 | LOT-04 | Structuration de l'intake | à_faire | — |
 | LOT-05 | Table de règles d'orientation V1 : remplir et signer | à_faire | LOT-03 + LOT-04 |
 | LOT-06 | Consommateur praticien et restitution IA | à_faire | LOT-05 |
@@ -148,6 +148,22 @@ chemin critique `LOT-00 → LOT-03 → LOT-05 → LOT-06`.
 - Reste ouvert : la **validation praticien** de la pré-classification.
 - Le prochain lot utile est `LOT-01`, ou `LOT-03` / `LOT-04` en parallèle.
 
+## État après LOT-03
+
+- **Le moteur d'orientation était structurellement muet sur les packs.** Les
+  `PackId` du code et les `id_pack` de la base formaient deux espaces de noms
+  disjoints ; la route les comparait directement, `compositionPacks` restait vide,
+  et le fail-closed rejetait toute recommandation de pack. Corrigé et testé dans
+  les deux sens.
+- 6 packs de doctrine sur 16 existent réellement en base ; les 10 autres portent
+  `idPackBase: null` et ne sont pas citables par une règle — un banc l'impose.
+- Le repli `legacy` de la composition de pack distingue désormais un registre
+  absent d'une dérive réelle, et n'alerte que sur la seconde.
+- Retiré à la revue : le correctif du `niveau`, sans consommateur et sans effet
+  sur les packs existants.
+- Le prochain lot utile est `LOT-04` (intake), sans dépendance, ou `LOT-01`
+  (validation praticien des 755 claims).
+
 ## Paliers de validation
 
 | Lot | Palier | Motif |
@@ -162,7 +178,7 @@ Revue adversariale `wn-reviewer` obligatoire sur LOT-01, LOT-04 et LOT-05.
 
 - [x] Les 95 sources d'intervention sont désignées par un registre versionné.
 - [ ] `2002 / 0` sur les claims d'intervention, vérifié en base après merge.
-- [ ] Les 16 packs ont une composition faisant foi, gardée par un test.
+- [x] Les 16 packs ont une composition faisant foi (`packs.qids`, option C) et une identité gardée par un test.
 - [ ] `ORIENTATION_RULES_V1` est non vide, signée, et sert des recommandations.
 - [ ] Un écran praticien appelle réellement la route d'orientation.
 - [ ] `check_questionnaire_certification.js` reste vert sur les 64.

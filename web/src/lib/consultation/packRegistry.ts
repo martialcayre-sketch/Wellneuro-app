@@ -16,6 +16,15 @@ export async function syncPackToRegistry(tx: Prisma.TransactionClient, pack: {
   actif: boolean;
   qids: string[];
 }) {
+  // `niveau` reste au défaut, VOLONTAIREMENT. Le prendre depuis la doctrine
+  // avait été tenté au LOT-03 puis retiré à la revue : `syncPackToRegistry`
+  // n'est appelé que sur création/édition/suppression d'un pack (et par le
+  // backfill manuel, absent de `vercel-build.sh`), donc les packs existants
+  // n'auraient jamais été repris — et surtout, AUCUN code ne lit
+  // `questionnaire_packs.niveau` : l'UI lit celui de `PACKS_REGISTRY`. Écrire
+  // une colonne morte au prix d'un correctif qui ne s'applique qu'aux cas
+  // futurs n'aurait rien corrigé. Si ce champ trouve un jour un lecteur, il
+  // faudra le poser ET rejouer un sync sur les packs existants.
   const registryPack = await tx.questionnairePack.upsert({
     where: { packId: pack.idPack },
     create: {
@@ -57,7 +66,20 @@ export async function syncPackToRegistry(tx: Prisma.TransactionClient, pack: {
   }
 }
 
-export type ResolvedPackQuestionnaires = { qids: string[]; source: 'registry' | 'legacy' };
+/**
+ * Pourquoi le registre relationnel n'a pas été suivi.
+ *
+ * La distinction n'est pas cosmétique : `registre_absent` et `registre_vide`
+ * décrivent un pack jamais synchronisé — bénin, et vrai pour tout pack neuf.
+ * `ensembles_divergents` décrit une VRAIE dérive entre deux descriptions du
+ * même pack. Les journaliser sous le même signal rendrait l'alarme permanente,
+ * donc inutile : c'est le défaut du repli muet, retourné.
+ */
+export type RaisonRepliLegacy = 'registre_absent' | 'registre_vide' | 'ensembles_divergents';
+
+export type ResolvedPackQuestionnaires =
+  | { qids: string[]; source: 'registry'; raison: null; registryCount: number }
+  | { qids: string[]; source: 'legacy'; raison: RaisonRepliLegacy; registryCount: number };
 
 // Lecture primaire registre, fallback legacy : on ne fait confiance au
 // registre que s'il couvre exactement le même ensemble de qids que
@@ -78,13 +100,24 @@ export async function resolvePackQuestionnaireIds(pack: {
     },
   });
 
-  if (registryPack) {
-    const registryQids = registryPack.questionnaires.map(item => item.questionnaire.questionnaireId);
-    const resolved = resolveQidsLogic(registryQids, pack.qids);
-    if (resolved !== null) {
-      return { qids: resolved, source: 'registry' };
-    }
+  if (!registryPack) {
+    return { qids: pack.qids, source: 'legacy', raison: 'registre_absent', registryCount: 0 };
   }
 
-  return { qids: pack.qids, source: 'legacy' };
+  const registryQids = registryPack.questionnaires.map(item => item.questionnaire.questionnaireId);
+  if (registryQids.length === 0) {
+    return { qids: pack.qids, source: 'legacy', raison: 'registre_vide', registryCount: 0 };
+  }
+
+  const resolved = resolveQidsLogic(registryQids, pack.qids);
+  if (resolved !== null) {
+    return { qids: resolved, source: 'registry', raison: null, registryCount: registryQids.length };
+  }
+
+  return {
+    qids: pack.qids,
+    source: 'legacy',
+    raison: 'ensembles_divergents',
+    registryCount: registryQids.length,
+  };
 }

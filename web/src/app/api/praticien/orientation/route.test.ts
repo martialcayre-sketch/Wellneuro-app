@@ -139,7 +139,7 @@ describe('GET /api/praticien/orientation', () => {
         niveau: 'approfondissement',
       });
       prisma.pack.findMany.mockResolvedValue([
-        { idPack: 'pack_stress_chronique_burnout', qids: ['Q_STR_04', 'Q_PED_03'] },
+        { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_PED_03'] },
       ]);
       prisma.questionnaireReponse.findMany.mockResolvedValue([
         { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
@@ -162,8 +162,12 @@ describe('GET /api/praticien/orientation', () => {
       prisma.questionnaireReponse.findMany.mockResolvedValue([
         { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
       ]);
+      // `idPack` porte la valeur RÉELLE de la base (`PACK_STRESS_BURNOUT`), pas
+      // le slug de doctrine. Jusqu'au LOT-03 cette fixture inventait un
+      // `id_pack` égal au slug : le test passait au vert alors que la route ne
+      // pouvait rien produire en production.
       prisma.pack.findMany.mockResolvedValue([
-        { idPack: 'pack_stress_chronique_burnout', qids: ['Q_STR_04', 'Q_STR_05'] },
+        { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_STR_05'] },
       ]);
       const payload = await (await GET(getRequest())).json();
       expect(payload.ok).toBe(true);
@@ -182,6 +186,95 @@ describe('GET /api/praticien/orientation', () => {
     it('aucune réponse : recommandations vides, jamais une erreur', async () => {
       const payload = await (await GET(getRequest())).json();
       expect(payload).toMatchObject({ ok: true, actif: true, recommandations: [] });
+    });
+
+    // --- Correspondance base ↔ doctrine (LOT-03) ---
+    //
+    // Les `id_pack` de la base et les `PackId` du code sont deux espaces de noms
+    // disjoints. Sans traduction, aucune recommandation de pack ne pouvait
+    // sortir — et aucun test ne le voyait, faute de fixture réaliste.
+    //
+    // Attention à ce que chaque cas garde RÉELLEMENT. Seuls les deux premiers
+    // ci-dessous rougissent si l'on remet la comparaison directe ; les deux
+    // suivants gardent le fail-closed, qui passait déjà avant. Les compter
+    // comme garde anti-retour serait se rassurer à bon compte.
+
+    function regleVersStress() {
+      mockRegles.push({
+        id: 'R-TEST-03',
+        statut: 'publiee',
+        declencheurs: [{ type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 } }],
+        suggestions: [{ packId: 'pack_stress_chronique_burnout', priorite: 1 }],
+        justificationClaims: [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }],
+        niveau: 'approfondissement',
+      });
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
+      ]);
+    }
+
+    it("un id_pack de production est traduit et la recommandation sort", async () => {
+      regleVersStress();
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toHaveLength(1);
+      expect(payload.recommandations[0].cible).toEqual({ type: 'pack', packId: 'pack_stress_chronique_burnout' });
+    });
+
+    it("la recommandation porte l'id_pack attendu par l'assignation", async () => {
+      // Sans ce champ, un praticien qui clique « assigner » enverrait le slug de
+      // doctrine à `/api/praticien/packs/assign`, qui cherche un `id_pack` :
+      // 404. Une recommandation qu'on ne peut pas suivre n'est pas une
+      // recommandation.
+      regleVersStress();
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations[0].idPackBase).toBe('PACK_STRESS_BURNOUT');
+    });
+
+    it("un slug de doctrine trouvé tel quel en base n'est PAS traité comme un id_pack", async () => {
+      // Garde anti-retour : si un jour la traduction redevenait une comparaison
+      // directe, ce cas repasserait au vert et le défaut reviendrait sans bruit.
+      regleVersStress();
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'pack_stress_chronique_burnout', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
+    });
+
+    it("un pack composé par le praticien n'est jamais une cible d'orientation", async () => {
+      regleVersStress();
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'PACK_-bG21yeIvVYRhrdlYuWIMnFz', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
+    });
+
+    it("un pack de doctrine sans existence en base n'est jamais recommandé", async () => {
+      mockRegles.push({
+        id: 'R-TEST-04',
+        statut: 'publiee',
+        declencheurs: [{ type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 } }],
+        // `pack_migraine_cephalees` porte `idPackBase: null` : déclaré en
+        // doctrine, jamais créé en base, donc non assignable.
+        suggestions: [{ packId: 'pack_migraine_cephalees', priorite: 1 }],
+        justificationClaims: [{ claimId: 'WN-CL-0001-001', versionClaim: 'v1' }],
+        niveau: 'approfondissement',
+      });
+      prisma.questionnaireReponse.findMany.mockResolvedValue([
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
+      ]);
+      prisma.pack.findMany.mockResolvedValue([
+        { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_STR_05'] },
+      ]);
+      const payload = await (await GET(getRequest())).json();
+      expect(payload.recommandations).toEqual([]);
     });
   });
 });

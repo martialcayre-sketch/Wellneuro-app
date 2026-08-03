@@ -16,6 +16,7 @@ import { PrismaClient } from '@/generated/prisma';
 import { Pool } from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { withSupabaseSslMode, supabasePoolSsl } from '@/lib/postgres';
+import { PACKS_REGISTRY, packDoctrineDepuisIdBase } from '@/lib/questionnaires-functional';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -70,8 +71,40 @@ async function main() {
   }
 
   console.log(`\n${packs.length} pack(s) — MATCH=${packs.length - mismatches - empty} MISMATCH=${mismatches} EMPTY-REGISTRY=${empty}`);
+
+  // Deuxième axe (LOT-03) : la correspondance base ↔ doctrine. Le CI ne peut
+  // pas la vérifier — il n'a pas cette base — donc c'est ici, et seulement ici,
+  // qu'on voit si un `id_pack` de doctrine a disparu ou si un pack de base
+  // reste inconnu du code.
+  console.log('\nCorrespondance base ↔ doctrine :');
+  const idsBaseVus = new Set(packs.map(pack => pack.idPack));
+  let orphelinsDoctrine = 0;
+
+  for (const pack of packs) {
+    const doctrine = packDoctrineDepuisIdBase(pack.idPack);
+    if (doctrine) {
+      console.log(`DOCTRINE        ${pack.nom} (${pack.idPack}) → ${doctrine.id}${doctrine.axeId ? ` [axe ${doctrine.axeId}]` : ''}`);
+    } else {
+      // Pas une anomalie : un pack composé par le praticien n'a pas de
+      // doctrine, et ne doit jamais être une cible d'orientation.
+      console.log(`HORS-DOCTRINE   ${pack.nom} (${pack.idPack}) — jamais proposé par l'orientation`);
+    }
+  }
+
+  for (const item of PACKS_REGISTRY) {
+    if (item.idPackBase === null) continue;
+    if (!idsBaseVus.has(item.idPackBase)) {
+      orphelinsDoctrine += 1;
+      console.log(`ORPHELIN        ${item.id} déclare idPackBase=${item.idPackBase}, absent de la base`);
+    }
+  }
+
+  if (orphelinsDoctrine > 0) {
+    console.log(`\n${orphelinsDoctrine} correspondance(s) de doctrine pointent vers un pack absent : le moteur d'orientation ne pourra pas les proposer.`);
+  }
+
   await prisma.$disconnect();
-  if (mismatches > 0) process.exit(1);
+  if (mismatches > 0 || orphelinsDoctrine > 0) process.exit(1);
 }
 
 main().catch(async err => {
