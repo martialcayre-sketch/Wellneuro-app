@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@/generated/prisma';
 import { emailPraticien, verifierAppartenancePatient } from '@/lib/praticien/appartenance';
 import {
   ORIENTATION_METADATA,
@@ -9,6 +10,7 @@ import {
   ORIENTATION_RULES_V1,
 } from '@/lib/clinical/orientationRulesV1';
 import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
+import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 
@@ -101,7 +103,7 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' }, { status: 403 });
     }
 
-    const [reponses, assignations, packs] = await Promise.all([
+    const [reponses, assignations, packs, consultation] = await Promise.all([
       prisma.questionnaireReponse.findMany({
         where: { idPatient },
         select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true },
@@ -114,6 +116,23 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       prisma.pack.findMany({
         where: { actif: true },
         select: { idPack: true, qids: true },
+      }),
+      // Anamnèse la plus récente du patient — ce qu'il a DÉCLARÉ, à côté de ce
+      // que les instruments ont mesuré. Lue APRÈS le contrôle d'appartenance,
+      // comme les autres lectures cliniques de cette route.
+      //
+      // La consultation la plus récente QUI PORTE UNE ANAMNÈSE, et non la plus
+      // récente tout court : une consultation naît sans anamnèse (`statut:
+      // 'creee'`, `api/praticien/consultations`) et ne la reçoit qu'à la
+      // validation du patient (`api/portail/valider`). Prendre la dernière
+      // ferait donc disparaître toutes les règles de drapeau pendant la fenêtre
+      // — création d'un suivi, patient pas encore passé — où le praticien
+      // regarde justement l'orientation. Même sélection que
+      // `api/praticien/synthese`.
+      prisma.consultation.findFirst({
+        where: { idPatient, NOT: { anamnese: { equals: Prisma.DbNull } } },
+        select: { anamnese: true },
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
@@ -143,6 +162,13 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       regles: ORIENTATION_RULES_V1,
       compositionPacks,
       estAdministrable: estAdministrableParLaRoute,
+      // Aucune consultation, ou aucune anamnèse : on ne passe RIEN plutôt qu'un
+      // objet aux huit drapeaux vides. Le moteur distingue les deux — des
+      // drapeaux absents n'atteignent aucun déclencheur, alors que des drapeaux
+      // vides affirmeraient que le patient n'a rien déclaré.
+      drapeaux: consultation?.anamnese == null
+        ? undefined
+        : extraireDrapeauxAnamnese(consultation.anamnese),
     });
 
     // Fail-closed explicite : sans composition de pack, on n'affirme aucune

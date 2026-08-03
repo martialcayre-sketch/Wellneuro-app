@@ -1,3 +1,4 @@
+import type { DrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import type { FunctionalCategoryId, PackId } from '@/lib/questionnaires-functional';
 import { sha256 } from './corpusSyntheseV1';
 
@@ -15,10 +16,11 @@ import { sha256 } from './corpusSyntheseV1';
 // praticien décide ; rien n'est jamais auto-assigné ; le LLM de synthèse ne
 // reçoit que des candidats issus de cette table, jamais l'inverse.
 //
-// V1 : table VIDE, `validationExterne: false` — le moteur et la route existent
-// mais ne recommandent rien tant que le praticien n'a pas validé les claims
-// d'orientation puis signé la table compilée (même discipline que
-// CORPUS_CLINIQUE_METADATA dans ./corpusSyntheseV1.ts).
+// V1 (LOT-05, 2026-08-03) : table REMPLIE — six règles — mais
+// `validationExterne: false`. Le moteur et la route existent et ne recommandent
+// toujours rien : la table est écrite, pas signée. Le praticien signe après
+// relecture clinique (même discipline que CORPUS_CLINIQUE_METADATA dans
+// ./corpusSyntheseV1.ts).
 
 export type OrientationZone =
   // Plage numérique inclusive sur le score brut (total ou sous-score).
@@ -27,7 +29,22 @@ export type OrientationZone =
   | { type: 'interpretation'; labels: string[] }
   // Couleurs de zone servies par le catalogue (jamais `success` : une zone
   // favorable ne déclenche pas d'exploration).
-  | { type: 'couleur'; couleurs: Array<'warning' | 'danger'> };
+  //
+  // L'union couvre les QUATRE couleurs défavorables, par ordre de gravité
+  // croissante — `info`, `warning`, `danger`, `dark`. Les deux extrémités
+  // manquaient et chacune ouvrait le même trou, en miroir : `dark` porte les
+  // bandes « Très sévère » (DASS-21), si bien qu'une règle écrite sur
+  // `['warning', 'danger']` ignorait les patients les PLUS atteints ; `info`
+  // porte des bandes légères mais actionnables (PSQI « Troubles du sommeil
+  // légers », 5-10, au-dessus du seuil de 4 que l'instrument publie), et
+  // l'omettre laissait dehors le versant bas.
+  //
+  // Le banc n'exige pas de citer les quatre : il exige qu'une règle ne
+  // s'arrête jamais SOUS la plus sévère. Viser `danger` seul est licite ; viser
+  // `danger` sans `dark` ne l'est pas. Où COMMENCER, en revanche, est un
+  // arbitrage clinique par instrument, qu'aucun banc ne peut prendre — chaque
+  // règle le motive sur place.
+  | { type: 'couleur'; couleurs: Array<'info' | 'warning' | 'danger' | 'dark'> };
 
 export type OrientationDeclencheur =
   | {
@@ -43,6 +60,38 @@ export type OrientationDeclencheur =
       sousScore?: string;
       operateur: '>=' | '<=' | '>' | '<' | '==';
       valeur: number;
+    }
+  // Drapeau d'anamnèse (`extraireDrapeauxAnamnese`, LOT-04) : ce que le patient
+  // a DÉCLARÉ, par opposition à ce qu'un instrument a mesuré. Un déclencheur de
+  // ce type est atteint si le drapeau porte au moins une des `valeurs` (champ
+  // liste) ou lui est égal (champ radio).
+  //
+  // `champ` est typé par `keyof` : un nom de champ erroné ne compile pas. Les
+  // `valeurs`, elles, sont des chaînes libres — c'est le banc anti-dérive de
+  // `orientationRulesV1.test.ts` qui les confronte aux options réelles de
+  // `ANAMNESE_SECTIONS`, car un libellé qui dérive ferait taire la règle sans
+  // rien casser.
+  //
+  // JAMAIS `signauxAlerte` — et le motif n'est PAS le filtrage.
+  //
+  // Ce drapeau est bien filtré contre l'énuméré courant, mais tous les autres le
+  // sont aussi, `attentes` et `antecedentsDomaines` compris, qui eux portent des
+  // règles : « c'est filtré » ne distinguerait donc rien. La vraie raison est
+  // qu'un signal d'alerte — « Idées noires ou suicidaires », « Douleur
+  // thoracique » — appelle un ADRESSAGE, pas une exploration. Or cette table ne
+  // sait produire qu'une cible (questionnaire ou pack) : y répondre par un
+  // questionnaire ferait passer un signal d'alerte pour une chose que l'outil
+  // traite. Mieux vaut ne rien produire que produire la mauvaise forme.
+  //
+  // Arbitrage praticien du 2026-08-03 : ces signaux DOIVENT être visibles à la
+  // surface d'orientation, mais sans être présentés comme une exploration. La
+  // surface manque — c'est un lot dédié, pas une règle. Question ouverte
+  // consignée au SESSION_LOG. En attendant, `extraireVigilanceDeterministe`
+  // (non filtré) reste le seul chemin par lequel ces signaux remontent.
+  | {
+      type: 'drapeau';
+      champ: keyof DrapeauxAnamnese;
+      valeurs: string[];
     };
 
 type SuggestionBase = {
@@ -82,7 +131,167 @@ export type OrientationRule = {
   niveau: 'socle' | 'approfondissement' | 'specialise';
 };
 
-export const ORIENTATION_RULES_V1: OrientationRule[] = [];
+// ─────────────────────────────────────────────────────────────────────────────
+// Table V1 — six règles, chacune adossée à des claims VALIDE du corpus NNPP2.
+//
+// AUCUN SEUIL N'EST CALCULÉ ICI — mais il ne faut pas se raconter que la table
+// serait pour autant sans décision clinique. Les déclencheurs citent la bande
+// d'interprétation que la grille certifiée produit déjà (`type: 'couleur'`),
+// jamais un nombre écrit à cet endroit : décider qu'un PSS-10 vaut « élevé »
+// appartient à la grille, et les règles survivent donc à une recalibration de
+// barème.
+//
+// En revanche, CHOISIR LA BANDE D'ENTRÉE est bien un arbitrage clinique, et il
+// est pris ici. Arbitrage praticien du 2026-08-03 : il se prend INSTRUMENT PAR
+// INSTRUMENT, et non par une règle uniforme — chaque grille a ses propres
+// bandes et son propre seuil publié. Chaque règle motive donc sa bande de
+// départ sur place. En pratique, seul le PSQI émet une bande `info` porteuse de
+// sens (« Troubles du sommeil légers », 5-10, au-dessus du seuil de 4 qu'il
+// publie) ; le PSS-10 et le TFD SIIN n'en émettent aucune, et `warning` y est
+// déjà leur première bande défavorable.
+//
+// Ce que la table NE fait PAS : elle ne s'auto-signe pas. `ORIENTATION_METADATA`
+// reste non validée plus bas, donc la route demeure fail-closed et ne sert
+// encore RIEN. La signature est un acte praticien, postérieur à la relecture
+// clinique de ces six règles.
+//
+// TRAÇABILITÉ DES CLAIMS — ce que le CI vérifie, et ce qu'il ne peut pas.
+// Le banc n'atteint que le FORMAT d'un `claimId` : les claims vivent dans
+// `rag_corpus_claims` (base), qu'aucun test unitaire n'ouvre. Un identifiant
+// inventé passerait donc le CI. Les neuf claims cités ci-dessous ont été
+// vérifiés à la main le 2026-08-03 par lecture de la base — tous existent en
+// `version_claim = 'v1.0'`, `statut = 'VALIDE'`, `prescriptif = true`,
+// `active = true`. Refaire cette lecture à chaque ajout de règle, et avant la
+// signature de la table : c'est le maillon que l'automatisation ne couvre pas.
+//
+// `pack_humeur_motivation_neurochimie` n'est cible d'aucune règle : le pack
+// correspondant (`PACK_HUMEUR_NEURO`) est `actif: false` en base. La route ne
+// charge que les packs actifs, et une exploration humeur passe donc ici par le
+// questionnaire HAD (`Q_NEU_11`) directement. Le jour où le pack est réactivé,
+// c'est une décision produit — pas une correction de code.
+export const ORIENTATION_RULES_V1: OrientationRule[] = [
+  {
+    id: 'R-SOM-01',
+    statut: 'publiee',
+    // PSQI : interprétation globale (success / info / warning / danger).
+    // Bande d'entrée `info` — et c'est délibéré : `info` y couvre un total de 5
+    // à 10, donc au-dessus du seuil de 4 que l'instrument publie lui-même.
+    // Commencer à `warning` aurait laissé dehors des patients que le PSQI
+    // considère déjà comme mauvais dormeurs.
+    declencheurs: [
+      { type: 'zone', idQuestionnaire: 'Q_SOM_01', zone: { type: 'couleur', couleurs: ['info', 'warning', 'danger', 'dark'] } },
+    ],
+    suggestions: [
+      { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Explorer la dimension de l'humeur, que la source désigne explicitement par le test HAD." },
+      { questionnaireId: 'Q_STR_03', priorite: 2, objectif: "Explorer la dimension du stress par le test de Cungi, que la source juge le plus pertinent dans les troubles du sommeil." },
+    ],
+    justificationClaims: [
+      // « Le test de stress de Cungi est plus pertinent et sensible pour
+      // explorer la dimension du stress dans les troubles du sommeil, tandis que
+      // le test HAD suffit à explorer la dimension de l'humeur. » Les deux
+      // instruments nommés par la source existent au catalogue et sont
+      // administrables : Cungi = Q_STR_03, HAD = Q_NEU_11. Aucune substitution —
+      // la règle propose exactement ce que le claim désigne.
+      { claimId: 'WN-CL-0323-013', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0323-001', versionClaim: 'v1.0' },
+    ],
+    niveau: 'socle',
+  },
+  {
+    id: 'R-STR-01',
+    statut: 'publiee',
+    // Bande d'entrée `warning` : le PSS-10 n'émet PAS de bande `info` — ses
+    // trois bandes sont `success` (10-20), `warning` (21-26) et `danger`
+    // (27-50). `warning` y est donc déjà sa première bande défavorable, et non
+    // un choix de resserrer.
+    declencheurs: [
+      { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
+    ],
+    suggestions: [
+      { questionnaireId: 'Q_STR_05', priorite: 1, objectif: "Ajouter l'évaluation d'un risque éventuel de burnout à l'intensité du stress chronique." },
+    ],
+    justificationClaims: [
+      { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0319-010', versionClaim: 'v1.0' },
+      // « Les questionnaires de surinvestissement (BMS et/ou Karasek) doivent
+      // être utilisés pour évaluer le risque de burnout. » → BMS-10 = Q_STR_05.
+      { claimId: 'WN-CL-0228-009', versionClaim: 'v1.0' },
+    ],
+    niveau: 'approfondissement',
+  },
+  {
+    id: 'R-STR-02',
+    statut: 'publiee',
+    // Déclaré ET mesuré : le facteur déclenchant seul ne suffit pas à engager un
+    // pack entier. C'est l'ET logique du moteur qui l'impose.
+    declencheurs: [
+      { type: 'drapeau', champ: 'facteursDeclenchants', valeurs: ['Stress aigu / burn-out'] },
+      { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
+    ],
+    suggestions: [
+      { packId: 'pack_stress_chronique_burnout', priorite: 1, objectif: 'Engager la prise en charge globale du stress : bilan personnalisé, puis rééquilibrage et suivi.' },
+    ],
+    justificationClaims: [
+      { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
+    ],
+    niveau: 'approfondissement',
+  },
+  {
+    id: 'R-GAS-01',
+    statut: 'publiee',
+    // TFD SIIN : interprétation globale sur 93 (A / B / C). Comme le PSS-10, il
+    // n'émet pas de bande `info` — `warning` (bande B, 24-49) est sa première
+    // bande défavorable.
+    declencheurs: [
+      { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
+    ],
+    suggestions: [
+      { packId: 'pack_digestif_intestin_cerveau', priorite: 1, objectif: 'Approfondir l\'axe intestin-cerveau quand le score de troubles fonctionnels intestinaux est élevé.' },
+    ],
+    justificationClaims: [
+      { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
+    ],
+    niveau: 'approfondissement',
+  },
+  {
+    id: 'R-ANA-01',
+    statut: 'publiee',
+    // Une seule case cochée, aucune mesure : cette règle propose donc un
+    // INSTRUMENT, jamais un pack. C'est la même ligne que R-STR-02 tient plus
+    // haut — « le facteur déclenchant seul ne suffit pas à engager un pack
+    // entier » — et il n'y a pas de raison qu'une attente déclarée en fasse
+    // davantage qu'un facteur déclenchant. Le PSQI mesuré pourra ensuite
+    // déclencher R-SOM-01, qui, elle, s'appuie sur une mesure.
+    declencheurs: [
+      { type: 'drapeau', champ: 'attentes', valeurs: ['Améliorer le sommeil'] },
+    ],
+    suggestions: [
+      { questionnaireId: 'Q_SOM_01', priorite: 1, objectif: "L'exploration du sommeil est systématique dans la démarche de neuronutrition." },
+    ],
+    justificationClaims: [
+      { claimId: 'WN-CL-0323-001', versionClaim: 'v1.0' },
+    ],
+    niveau: 'socle',
+  },
+  {
+    id: 'R-ANA-02',
+    statut: 'publiee',
+    declencheurs: [
+      { type: 'drapeau', champ: 'antecedentsDomaines', valeurs: ['Psychiatrique (anxiété, dépression, burn-out)'] },
+    ],
+    // Le questionnaire HAD, et non le pack humeur : celui-ci est inactif en base
+    // (voir l'en-tête de la table).
+    suggestions: [
+      { questionnaireId: 'Q_NEU_11', priorite: 1, objectif: "Objectiver l'humeur et l'anxiété quand un antécédent psychiatrique est déclaré au bilan initial." },
+    ],
+    justificationClaims: [
+      { claimId: 'WN-CL-0339-010', versionClaim: 'v1.0' },
+      { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
+    ],
+    niveau: 'socle',
+  },
+];
 
 export type OrientationMetadata = {
   version: string;

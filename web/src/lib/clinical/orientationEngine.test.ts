@@ -386,3 +386,144 @@ describe('evaluerOrientation — invariants de doctrine', () => {
     }
   });
 });
+
+describe('evaluerOrientation — drapeaux d\'anamnèse (LOT-04/LOT-05)', () => {
+  const DRAPEAUX = {
+    signauxAlerte: [],
+    antecedentsDomaines: ['Cardiovasculaire'],
+    facteursDeclenchants: ['Stress aigu / burn-out'],
+    attentes: ['Améliorer le sommeil'],
+    automedication: [],
+    debut: 'Brutal',
+    evolution: null,
+    variationPoids: null,
+  };
+
+  const regleDrapeau = (surcharge = {}) =>
+    regle({
+      declencheurs: [{ type: 'drapeau', champ: 'attentes', valeurs: ['Améliorer le sommeil'] }],
+      ...surcharge,
+    });
+
+  it('déclenche sur un champ liste et nomme la valeur atteinte', () => {
+    const recos = evaluerOrientation({
+      reponses: [],
+      idsQuestionnairesAssignes: [],
+      regles: [regleDrapeau()],
+      drapeaux: DRAPEAUX,
+    });
+    expect(recos).toHaveLength(1);
+    expect(recos[0].motifs[0].conditions[0]).toContain('Améliorer le sommeil');
+  });
+
+  it('déclenche sur un champ radio (valeur unique)', () => {
+    const recos = evaluerOrientation({
+      reponses: [],
+      idsQuestionnairesAssignes: [],
+      regles: [regleDrapeau({ declencheurs: [{ type: 'drapeau', champ: 'debut', valeurs: ['Brutal'] }] })],
+      drapeaux: DRAPEAUX,
+    });
+    expect(recos).toHaveLength(1);
+  });
+
+  // Fail-closed sur l'absence : aucun déclencheur n'est atteint sans drapeaux.
+  //
+  // Honnêteté sur ce que ce banc prouve : avec les déclencheurs d'aujourd'hui,
+  // des drapeaux ABSENTS et des drapeaux VIDES produisent le même résultat —
+  // aucune valeur ne peut matcher dans les deux cas. Il épingle donc le contrat
+  // (ne pas lever, ne rien déclencher), pas une différence observable. Elle le
+  // deviendrait le jour où un déclencheur testerait une absence.
+  it('ne déclenche pas quand les drapeaux sont absents', () => {
+    const recos = evaluerOrientation({
+      reponses: [],
+      idsQuestionnairesAssignes: [],
+      regles: [regleDrapeau()],
+    });
+    expect(recos).toEqual([]);
+  });
+
+  it('ne déclenche pas sur une valeur absente du drapeau', () => {
+    const recos = evaluerOrientation({
+      reponses: [],
+      idsQuestionnairesAssignes: [],
+      regles: [regleDrapeau({ declencheurs: [{ type: 'drapeau', champ: 'attentes', valeurs: ['Améliorer la digestion / le transit'] }] })],
+      drapeaux: DRAPEAUX,
+    });
+    expect(recos).toEqual([]);
+  });
+
+  it('exige TOUS les déclencheurs quand drapeau et score sont combinés', () => {
+    const mixte = regle({
+      declencheurs: [
+        { type: 'drapeau', champ: 'facteursDeclenchants', valeurs: ['Stress aigu / burn-out'] },
+        { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'plage', min: 27, max: 50 } },
+      ],
+    });
+    // Drapeau atteint mais score sous la plage : rien.
+    expect(evaluerOrientation({
+      reponses: [reponse({ scores: { total: 12 } })],
+      idsQuestionnairesAssignes: [],
+      regles: [mixte],
+      drapeaux: DRAPEAUX,
+    })).toEqual([]);
+    // Les deux atteints : recommandé.
+    expect(evaluerOrientation({
+      reponses: [reponse({ scores: { total: 30 } })],
+      idsQuestionnairesAssignes: [],
+      regles: [mixte],
+      drapeaux: DRAPEAUX,
+    })).toHaveLength(1);
+  });
+});
+
+describe('evaluerOrientation — couleurs et administrabilité (correctifs LOT-05)', () => {
+  // `dark` porte les bandes « Très sévère ». Omise de l'union, elle faisait
+  // manquer les patients les plus atteints — sans erreur ni trace.
+  it('déclenche sur la couleur `dark`, la plus sévère', () => {
+    const recos = evaluerOrientation({
+      reponses: [reponse({ scores: { total: 20, interpretation: { label: 'Très sévère', color: 'dark' } } })],
+      idsQuestionnairesAssignes: [],
+      regles: [regle({
+        declencheurs: [{ type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } }],
+      })],
+    });
+    expect(recos).toHaveLength(1);
+  });
+
+  // Régression de l'écart 3 : la route ne charge que les packs actifs, donc un
+  // pack désactivé arrive sans composition. Il doit être ÉCARTÉ, pas recommandé
+  // à un praticien qui ne peut pas l'assigner.
+  it('écarte un pack de composition inconnue quand un filtre est en place', () => {
+    const recos = evaluerOrientation({
+      reponses: [reponse({ scores: { total: 30 } })],
+      idsQuestionnairesAssignes: [],
+      regles: [regle({})],
+      compositionPacks: {},
+      estAdministrable: () => true,
+    });
+    expect(recos).toEqual([]);
+  });
+
+  it('recommande le pack dès que sa composition est connue et administrable', () => {
+    const recos = evaluerOrientation({
+      reponses: [reponse({ scores: { total: 30 } })],
+      idsQuestionnairesAssignes: [],
+      regles: [regle({})],
+      compositionPacks: { pack_stress_chronique_burnout: ['Q_STR_02', 'Q_STR_05'] },
+      estAdministrable: () => true,
+    });
+    expect(recos).toHaveLength(1);
+  });
+
+  // Sans filtre du tout (bancs unitaires, lot 10 non branché), l'ancien
+  // comportement permissif reste : ne pas exiger une composition qu'on n'a pas
+  // demandée.
+  it('reste permissif quand aucun filtre d\'administrabilité n\'est fourni', () => {
+    const recos = evaluerOrientation({
+      reponses: [reponse({ scores: { total: 30 } })],
+      idsQuestionnairesAssignes: [],
+      regles: [regle({})],
+    });
+    expect(recos).toHaveLength(1);
+  });
+});
