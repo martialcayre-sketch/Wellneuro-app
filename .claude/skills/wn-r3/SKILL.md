@@ -7,7 +7,7 @@ effort: low
 
 # R3 — legacy (redirigé)
 
-!`test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
+!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 !`git status --short`
 
 Argument : `$ARGUMENTS`

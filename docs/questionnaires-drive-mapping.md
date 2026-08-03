@@ -73,6 +73,7 @@ Source de vérité de cette passe : fichiers `.md` du dossier Google Drive `QUES
 | `Q_ALI_01` | `questionnaire_alimentaire_siin_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Alimentaire SIIN |
 | `Q_ALI_02` | `questionnaire_diete_mediterraneenne_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Méditerranéen |
 | `Q_ALI_03` | `questionnaire_monnier_apports_caloriques_proteiques_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Monnier |
+| `Q_ALI_09` | n/a (instrument WellNeuro) | n/a | n/a | n/a | non scoré | n/a | n/a | Agenda alimentaire 21 jours — recueil quotidien d'horaires de prises, sans score ni indice. Pas de source Drive : construction WellNeuro. N'alimente PAS Mon Équilibre (le besoin 3 est sourcé par le sous-score `RYTHME_CHRONO` de `Q_ALI_01`) ; barème suspendu à l'observation de données réelles. Fermé par `WN_AGENDA_ALI` tant que la chaîne de collecte n'est pas livrée |
 | `Q_MOD_01` | `questionnaire_contextuel_mode_de_vie_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Mode de vie contexte |
 | `Q_MOD_02` | `questionnaire_activite_depense_energetique_globale_siin_contexte.md` | mappé | mappé | n/a | mappé | mappé | à faire | Activité globale |
 | `Q_MOD_03` | `questionnaire_plaintes_actuelles_troubles_ressentis.md` | certifié | certifié | n/a | certifié | certifié | certifié | Plaintes actuelles, 7 échelles 1-10, score total 7-70 et moyenne descriptive 1-10 sans seuil diagnostique |

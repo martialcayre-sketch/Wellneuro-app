@@ -391,3 +391,63 @@ describe('POST /api/patient/submit — questionnaires fonctionnels sans définit
     expect(prisma.assignation.update).toHaveBeenCalledTimes(1);
   });
 });
+
+// Les DEUX agendas sont refusés par cette route, et rien d'autre ne le garantit.
+//
+// Ce refus était non couvert : `Q_SOM_09` depuis son ajout, `Q_ALI_09` en
+// héritait. Drapeau éteint, `IDS_SUSPENDUS` masque le trou en empêchant
+// l'assignation ; drapeau ALLUMÉ, ces quelques lignes de `route.ts` sont la
+// seule chose qui empêche une passation fabriquée — et les supprimer ne faisait
+// rougir aucun test. C'est exactement la classe de défaut que ce dépôt traque :
+// une protection dont la disparition est silencieuse.
+//
+// Ce qu'une soumission générique produirait sans elles : une
+// `QuestionnaireReponse` à `rawAnswers: {}` et une assignation passée à
+// `Complété` / `verrouille`, sur un agenda à zéro journée saisie.
+describe('POST /api/patient/submit — les agendas ne se soumettent pas ici', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    process.env.NEXTAUTH_SECRET = 'secret-de-test-non-production';
+  });
+
+  it.each([
+    ['Q_SOM_09', /nuit par nuit/],
+    ['Q_ALI_09', /jour par jour/],
+  ])('%s est refusé en 409 sans rien écrire', async (idQuestionnaire, motif) => {
+    const agenda = { ...assignation, idQuestionnaire, statutReponses: 'en_cours' };
+    prisma.assignation.findUnique.mockResolvedValue(agenda);
+    prisma.patient.findUnique.mockResolvedValue({
+      idPatient: agenda.idPatient,
+      actif: true,
+      email: agenda.emailPatient,
+      accessToken: 'TOKEN_TEST',
+      accessTokenRevoked: false,
+      sessionsInvalidesAvant: null,
+    });
+
+    const cookie = signPatientSession({ idPatient: agenda.idPatient, email: agenda.emailPatient });
+    const res = await postSubmit(
+      new Request('http://localhost/api/patient/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', cookie: `wn_portail=${encodeURIComponent(cookie)}` },
+        body: JSON.stringify({
+          idAssignation: agenda.idAssignation,
+          idQuestionnaire,
+          // Une charge NON VIDE : la route refuse pour l'instrument, pas parce
+          // que le corps serait vide (un corps vide part en 400 bien plus haut,
+          // et le test passerait alors pour une raison qui n'est pas la sienne).
+          answers: { AGD_NB_NUITS: 21 },
+        }),
+      }),
+    );
+
+    expect(res.status).toBe(409);
+    const corps = await res.json();
+    expect(corps.reason).toBe('unavailable');
+    expect(corps.error).toMatch(motif);
+    // LE point du test : aucune écriture. Un 409 qui aurait déjà persisté la
+    // réponse ne protégerait rien.
+    expect(prisma.questionnaireReponse.create).not.toHaveBeenCalled();
+    expect(prisma.assignation.update).not.toHaveBeenCalled();
+  });
+});

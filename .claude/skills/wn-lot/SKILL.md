@@ -9,10 +9,10 @@ effort: medium
 
 ## Contexte — chargé ici une fois, et une seule
 
-!`test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
+!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 !`git status --short`
 !`git diff --stat 2>/dev/null | tail -n 1`
-!`node scripts/wn-context-pack.mjs --format markdown 2>/dev/null || true`
+!`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-context-pack.mjs --format markdown 2>/dev/null || true`
 
 Arguments : `$ARGUMENTS`
 

@@ -2777,6 +2777,44 @@
       }
     },
     {
+      "questionnaireId": "Q_ALI_09",
+      "instrument": {
+        "nomOfficiel": "Agenda alimentaire WellNeuro — 21 jours",
+        "auteurs": null,
+        "anneePublication": null,
+        "formePubliee": "Recueil quotidien sur 21 jours : horaires et nature des prises alimentaires, présences déclarées. Aucun score, aucun indice.",
+        "proprietaireDroits": null
+      },
+      "versionServie": {
+        "description": "Instrument de recueil sans items saisissables : la saisie passe par un composant patient dédié, et le catalogue ne porte que l'entrée assignable (sections vides, moteur `journal`, scored:false). Aucun barème n'est arrêté — les cinq axes envisagés, leurs poids et la borne des 18 h supposent une distribution réelle qui n'existe pas encore. L'ordre retenu est donc collecte puis calibrage, et non l'inverse : un barème posé avant la première passation serait une donnée clinique inventée.",
+        "langue": "fr",
+        "traductionValidee": "fr (créé localement)",
+        "statutContenu": "cree_localement"
+      },
+      "references": {
+        "doi": null,
+        "pmid": null,
+        "dateVerification": null,
+        "verifiePar": null
+      },
+      "droits": {
+        "statut": "a_verifier",
+        "detail": "DROITS NON INSTRUITS. Aucun rapprochement avec un support du cabinet n'a été fait : `sourceIds` est vide en conséquence, et le barreau reste `repere`, le premier de l'échelle. Une recherche du 2026-08-03 dans `source_registry.json` (507 sources) n'a remonté aucun support de type agenda, journal ou carnet alimentaire — c'est une absence de pièce, PAS une preuve d'originalité. CE QUI N'EST DÉLIBÉRÉMENT PAS AFFIRMÉ ICI : que l'instrument serait une construction WellNeuro sans source tierce. Cette formule a été écrite le 2026-08-03 puis retirée le même jour, sur revue adversariale — elle n'avait aucune pièce derrière elle, et c'est exactement la revendication retirée de l'entrée `Q_SOM_09` le 2026-07-30, pour la même raison. Le contrat du domaine (`lib/agenda-alimentaire/types.ts`) qualifie d'ailleurs le support — un semainier alimentaire horodaté — d'« instrument courant », ce qui penche plutôt dans l'autre sens. À noter enfin que la frontière JA n'établit AUCUN statut de droits : elle interdit les quantités et les aliments identifiés, pas la reprise d'une structure ou d'une mise en page. `a_verifier` plutôt que `libre` : au barreau `repere` les deux passent le vérificateur à l'identique, mais `libre` appartient à `DROITS_DEGAGES` et pré-autoriserait la montée à `droits_verifies` sans qu'aucune source ait jamais été instruite.",
+        "dateVerification": null
+      },
+      "cosmin": "inconnu",
+      "statutCertification": "repere",
+      "politiqueSuivi": {
+        "readministrable": true,
+        "intervalleMinJours": null
+      },
+      "sourceMonEquilibre": false,
+      "sourceIds": [],
+      "driveMd": null,
+      "statutBibliographique": "a_completer",
+      "verdictScoring": null
+    },
+    {
       "questionnaireId": "Q_GEO_01",
       "instrument": {
         "nomOfficiel": "Grille de Tinetti — équilibre et marche (POMA)",

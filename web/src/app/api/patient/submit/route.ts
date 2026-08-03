@@ -104,6 +104,21 @@ export async function POST(req: Request): Promise<NextResponse> {
     if (ass.idQuestionnaire === 'Q_SOM_09') {
       return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unavailable', error: "L'agenda du sommeil se remplit nuit par nuit, il ne se soumet pas ici." }, { status: 409 }), requestContext);
     }
+    // L'agenda alimentaire (Q_ALI_09) est fermé ici pour une raison VOISINE mais
+    // pas identique. Sa définition ne porte AUCUN item (`sections: []`) : la
+    // saisie passe par un composant dédié, jour par jour. Sans ce refus, une
+    // soumission par l'écran générique créerait une `QuestionnaireReponse` à
+    // `rawAnswers: {}` en passant l'assignation à `Complété` / `verrouille` —
+    // c'est-à-dire une PASSATION FABRIQUÉE au dossier du patient, pas seulement
+    // une fenêtre de recueil fermée trop tôt.
+    //
+    // Ne pas justifier ce refus par « irrécupérable » : un déverrouillage
+    // praticien existe (`PUT /api/praticien/assignations`), et il fonctionne
+    // précisément dans la position où le scénario peut se produire — drapeau
+    // allumé. Ce qui ne se rattrape pas, c'est la ligne fausse au dossier.
+    if (ass.idQuestionnaire === 'Q_ALI_09') {
+      return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unavailable', error: "L'agenda alimentaire se remplit jour par jour, il ne se soumet pas ici." }, { status: 409 }), requestContext);
+    }
     // Assignation annulée par le praticien (Fil A) : soumission refusée. Refus
     // défensif symétrique à celui de `patient/questionnaire` — une annulée ne se
     // remplit ni ne se soumet, quel que soit le chemin. 409 : un retrait, pas une

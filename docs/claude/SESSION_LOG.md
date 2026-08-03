@@ -1869,3 +1869,34 @@ Prochaine action — LOT-07, dernier lot de la campagne.
 
 Questions ouvertes — Un vecteur nul rend `NaN` : les autres contrats du dépôt
 copient ce patron, aucun n'a été relu sous cet angle.
+## 2026-08-03 — Les blocs `!` des skills ancrés à la racine du dépôt
+
+`/wn-handoff` échouait en `MODULE_NOT_FOUND`. Le diagnostic a montré que le défaut
+dépassait de loin le message : les sessions tournent depuis `web/`, et **32 blocs `!`
+de `SKILL.md`** désignaient des chemins relatifs à la racine. Mesuré un par un depuis
+`web/` : **27 rendaient une sortie vide avec un code de retour 0**, 5 seulement
+échouaient bruyamment. `/wn-route`, `/wn`, `/wn-lot`, `/wn-ultra` et les six `/wn-rN`
+annonçaient « aucune campagne active » et planifiaient sur du vide.
+
+Les 32 blocs sont ancrés par `cd "$(git rev-parse --show-toplevel)" &&` — vérifié :
+depuis un worktree, cette commande rend la racine **du worktree**, donc l'ancre tient
+dans le mode nominal. Un contrôle CI (`scripts/lib/skill-bang-cwd.mjs`, banc de 17
+cas) le rend durable, hors filtre `docs_only` puisqu'une PR de `SKILL.md` est classée
+documentaire.
+
+Décision de conception révisée en cours de route, sur constat de la revue : la
+détection **interroge le dépôt** (« ce premier segment existe-t-il à la racine ? »)
+au lieu de comparer à une liste fermée de six préfixes, qui laissait passer
+`./scripts/`, `web/`, `changelog.d/`, `tools/`, `CHANGELOG.md`. Écarté : ancrer les
+30 blocs sans chemin (`git status --short` couvre le dépôt entier depuis n'importe
+où) ; documenter la convention dans `CLAUDE.md` (le CI rouge dit déjà quoi faire).
+
+La revue a aussi trouvé que `/wn-auto` lisait `docs/roadmap.md`, **qui n'existe pas** :
+le bloc serait resté muet même ancré. Corrigé vers les deux roadmaps réelles.
+
+Garde vérifié **sur l'état d'avant** — rejoué contre les `SKILL.md` de `main`, il rend
+exactement 32 violations. Un garde vert sur un dépôt déjà corrigé ne prouve rien.
+
+Prochaine action : PR, `verify`, merge. Puis LOT-07, ou la signature clinique des six
+règles du LOT-05. Question ouverte : les blocs `!` d'un même skill partagent-ils un
+shell ? Si oui, un seul `cd` en tête suffirait.
