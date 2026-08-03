@@ -71,6 +71,13 @@ export const EVENT_CODES = {
 
   SYNTHESE_GET_EXCEPTION: 'SYNTHESE_IA.GET.QUERY_FAILED',
   SYNTHESE_POST_CONTEXT_UNAVAILABLE: 'SYNTHESE_IA.GENERATION.CONTEXT_UNAVAILABLE',
+  // LOT-06 — le modèle a cité un pack absent de la recommandation déterministe
+  // qu'on lui a transmise. Code DISTINCT de CONTEXT_UNAVAILABLE : le premier dit
+  // qu'une donnée a manqué, celui-ci qu'une donnée a été inventée. Les
+  // confondre rendrait l'écart de restitution invisible dans les journaux, ce
+  // qui est exactement ce qu'on cherche à mesurer.
+  SYNTHESE_ORIENTATION_RESTITUTION_INFIDELE: 'SYNTHESE_IA.ORIENTATION.RESTITUTION_INFIDELE',
+  SYNTHESE_ORIENTATION_INDISPONIBLE: 'SYNTHESE_IA.ORIENTATION.INDISPONIBLE',
   SYNTHESE_POST_EXCEPTION: 'SYNTHESE_IA.GENERATION.FAILED',
   SYNTHESE_PATCH_EXCEPTION: 'SYNTHESE_IA.UPDATE.FAILED',
 

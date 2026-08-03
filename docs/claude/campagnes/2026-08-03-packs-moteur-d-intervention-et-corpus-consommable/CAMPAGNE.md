@@ -1,12 +1,12 @@
 ---
 id: "2026-08-03-packs-moteur-d-intervention-et-corpus-consommable"
 titre: "Packs, moteur d'intervention et corpus consommable"
-statut: "cadrée"
+statut: "en_cours"
 créée_le: "2026-08-03"
 mise_à_jour: "2026-08-03"
-lot_courant: "LOT-04"
+lot_courant: "LOT-06"
 branche_campagne: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
-branche_lot_courant: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/lot-04"
+branche_lot_courant: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/lot-06"
 cible_pr_lot: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
 cible_pr_campagne: "main"
 ---
@@ -123,13 +123,20 @@ inventer. Inventaire complet : `INVENTAIRE_SOURCES_INTERVENTION.md`.
 | LOT-01 | Validation ciblée des 755 claims d'intervention | à_faire | LOT-00 |
 | LOT-02 | Rayons cognition / douleur / intestin + premier appelant | à_faire | LOT-01 |
 | LOT-03 | Refactor des packs : source de vérité unique | livré | LOT-00 |
-| LOT-04 | Structuration de l'intake | à_faire | — |
-| LOT-05 | Table de règles d'orientation V1 : remplir et signer | à_faire | LOT-03 + LOT-04 |
-| LOT-06 | Consommateur praticien et restitution IA | à_faire | LOT-05 |
+| LOT-04 | Structuration de l'intake | livré (#539) | — |
+| LOT-05 | Table de règles d'orientation V1 : remplir et signer | **livré_partiel** (#545) — remplie, **non signée** | LOT-03 + LOT-04 |
+| LOT-06 | Consommateur praticien et restitution IA | en_cours | LOT-05 |
 | LOT-07 | Reliquat de certification : bibliographie et psychométrie | à_faire | — |
 
 LOT-04 et LOT-07 n'ont aucune dépendance : ils peuvent être menés en parallèle du
 chemin critique `LOT-00 → LOT-03 → LOT-05 → LOT-06`.
+
+**`livré_partiel` sur le LOT-05 n'est pas une nuance de comptabilité.** La table
+porte ses six règles mais `ORIENTATION_METADATA.validationExterne` reste `false` :
+`tableSignee()` est faux, et la route ne sert **rien**. La signature est un geste
+praticien, postérieur à la relecture clinique des six règles. Tant qu'il n'a pas
+eu lieu, le LOT-06 ne peut afficher que l'état « en cours de constitution » —
+c'est une limite connue et assumée, pas un défaut de ce lot.
 
 ## État après LOT-00
 

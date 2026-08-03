@@ -12,6 +12,7 @@ import { SpiraleEpisodes } from '@/components/ui/SpiraleEpisodes';
 import { ModeDeViePanel } from '@/components/patient-cockpit/ModeDeViePanel';
 import { MomentumPanel } from '@/components/patient-cockpit/MomentumPanel';
 import { EstimeMesurePanel } from '@/components/patient-cockpit/EstimeMesurePanel';
+import { OrientationPanel } from '@/components/patient-cockpit/OrientationPanel';
 import { LectureEtatPassePanel } from '@/components/copilote/LectureEtatPassePanel';
 
 // Fiche-trajectoire praticien (C2B LOT-09, registre A8) — LECTURE SEULE.
@@ -40,6 +41,7 @@ export function TrajectoirePanel({
   trajectoire,
   idPatient,
   nomComplet,
+  emailPatient,
   modeViePresent,
   modeVieT0CycleCourant,
 }: {
@@ -47,6 +49,9 @@ export function TrajectoirePanel({
   idPatient?: string;
   /** Identité affichée en tête de la fiche-trajectoire (maquette 5.0). */
   nomComplet?: string;
+  /** Email du patient — seule clé acceptée par `packs/assign`. Absent : le
+   *  panneau d'orientation reste en lecture seule, sans bouton. */
+  emailPatient?: string;
   /** Mode de vie au présent (LOT-02) — undefined : appelant sans ce canal,
    *  le panneau n'est pas rendu ; null : non mesuré, l'état est affiché. */
   modeViePresent?: ModeVieDate | null;
@@ -243,6 +248,11 @@ export function TrajectoirePanel({
             />
           )}
           <EstimeMesurePanel />
+          {/* Orientation NNPP2 (LOT-06) — au présent seulement. Une
+              recommandation d'exploration se lit sur l'état courant du dossier ;
+              l'afficher en lecture datée la ferait passer pour ce que la table
+              proposait à cette date-là, ce qu'aucun calcul ne dit ici. */}
+          {idPatient && <OrientationPanel idPatient={idPatient} emailPatient={emailPatient} />}
         </div>
       )}
 

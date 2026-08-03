@@ -1440,6 +1440,7 @@ export function FichePatientPanel({
               trajectoire={trajectoire}
               idPatient={idPatient}
               nomComplet={nomComplet}
+              emailPatient={data?.patient?.email}
               modeViePresent={modeViePresent}
               modeVieT0CycleCourant={modeVieT0CycleCourant}
             />

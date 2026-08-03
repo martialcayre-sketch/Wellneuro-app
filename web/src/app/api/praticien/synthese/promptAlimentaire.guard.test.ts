@@ -59,7 +59,12 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // corrige la définition de `quantiteDeclaree`, qui la disait réservée aux
 // tranches sans correspondance : un instrument de saisie chiffrée n'a aucune
 // tranche, et la consigne se serait contredite sur ses propres champs.
-const EMPREINTE_V13 = '1758ced6a7adcf7b';
+// v14 (2026-08-03, LOT-06) : section « Recommandation d'exploration
+// déterministe ». Le modèle reçoit désormais un bloc numéroté, signé par le
+// sha256 d'une table relue, et la consigne lui interdit d'en proposer un autre,
+// d'en changer l'ordre ou d'en inventer la justification. Le bump est ce qui
+// distingue une synthèse rédigée sous ce garde d'une rédigée sans.
+const EMPREINTE_V14 = '803a2dbfcb0d6afa';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -173,7 +178,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v13', empreinte: EMPREINTE_V13 });
+    ).toEqual({ version: 'synthese-v14', empreinte: EMPREINTE_V14 });
   });
 
   it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {

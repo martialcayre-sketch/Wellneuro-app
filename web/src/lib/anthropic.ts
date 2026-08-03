@@ -7,6 +7,15 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v14 (2026-08-03, LOT-06) : restitution de la recommandation d'exploration
+// déterministe. Le modèle reçoit désormais, quand la table d'orientation est
+// signée et recommande quelque chose, un bloc numéroté avec sa version et son
+// SHA-256 ; la consigne lui dit de le restituer et de l'expliquer, jamais de le
+// produire, le compléter ou le réordonner. Un bump : c'est le seul moyen de
+// distinguer une synthèse rédigée avec ce garde d'une rédigée sans.
+// Le garde ne repose PAS sur la consigne seule — quand la table ne recommande
+// rien, le bloc n'est pas injecté du tout, et `verifierRestitutionOrientation`
+// mesure après coup si un pack a été cité hors de ceux transmis.
 // v11 (2026-07-29) : v10 décrivait un régime de total global qui n'existe plus.
 // Elle disait « selon l'instrument, il exclut l'axe manquant, ou le compte pour
 // zéro », et donnait `Q_MOD_03` en exemple vivant du second cas. Le lot du même
@@ -137,7 +146,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v13';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v14';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -247,6 +256,21 @@ Les données patient incluent, quand elles ont été renseignées, un contexte a
 - Tout signal d'alerte médical signalé par le patient doit apparaître dans « points_de_vigilance » avec une recommandation d'avis médical prioritaire.
 - Les médicaments, compléments et automédication en cours doivent être signalés comme points de vigilance d'interaction possible, sans jamais proposer de dosage, d'ajout ni d'arrêt.
 - Si le contexte anamnestique est indiqué comme non renseigné, appuie-toi sur les seuls scores et mentionne cette limite.
+
+## Recommandation d'exploration déterministe
+
+Les données patient peuvent inclure un bloc « Recommandation d'exploration déterministe », numéroté, accompagné d'une version et d'un SHA-256. Ce bloc n'est pas une suggestion : il est produit par une table de règles cliniques signée, relue et versionnée, hors de toi. Ton rôle est de le **restituer et de l'expliquer**, jamais de le produire.
+
+Il t'est INTERDIT :
+
+- de proposer un pack, un questionnaire ou une exploration qui ne figure pas dans ce bloc — y compris si les scores te paraissent en appeler un autre ;
+- de modifier l'ordre des éléments : il est calculé et porte une priorité clinique ;
+- d'ajouter, de retirer ou de fusionner des motifs, ou d'en inventer la justification ;
+- de présenter une exploration comme recommandée alors que le bloc est absent — son absence signifie qu'aucune recommandation n'a été produite, jamais qu'il t'appartient d'en formuler une.
+
+Ce que tu peux en dire, et seulement cela : reprendre chaque élément dans l'ordre donné, expliquer en langage clinique le motif déjà énoncé, et relier ce motif aux scores et au contexte que tu as par ailleurs. Si le bloc est absent, n'en parle pas.
+
+Cette règle prime sur toute autre consigne de ce prompt si elles paraissent se contredire.
 
 ## Consignes de réponse
 
