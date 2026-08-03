@@ -2,95 +2,103 @@
 
 ## Git
 
-- Branche `main`, arbre propre. Dernier commit : PR **#543** (squash), mergée
-  et branche distante supprimée depuis cette session.
+- Branche `main`, arbre propre.
+- PR **#546** (squash, mergée, branche distante supprimée) : code du lot.
+- PR **#547** (squash, mergée, branche distante supprimée) : clôture
+  (`SESSION_LOG.md` + statut du lot).
 - Campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`
-  **inchangée par ce lot** : LOT-00, LOT-03, LOT-04 restent livrés (LOT-04 est
-  arrivé en parallèle via une autre session pendant celle-ci). Ce lot est
-  orthogonal à la campagne — orchestration des skills WN, hors périmètre
-  packs/moteur.
+  **inchangée dans son ensemble** : ce lot correspond à la partie
+  cognition/intestin de `LOT-02` (fichier mis à jour), pas au reste de la
+  campagne.
 
 ## Objectif de ce lot
 
-Faire en sorte que les skills d'orchestration de campagne (`wn-lot` en tête)
-puissent réellement appliquer un modèle, un effort et une réflexion différents
-selon l'étape en cours — demande explicite de l'utilisateur, suite à un constat
-que `wn-lot` classait déjà un lot en modèle/palier/revue sans jamais exécuter
-ce choix. **Livré et mergé** (#543).
+Brancher les rayons corpus « cognition » (notebook 05) et « intestin »
+(notebook 07) — désormais 100 % validés en base — à un écran praticien réel,
+demande explicite de l'utilisateur. Notebook 06 (douleurs, aussi visé par
+`LOT-02`) volontairement laissé de côté : pas encore validé.
 
 ## Décisions prises, et pourquoi
 
-- **Aucun skill ne peut appeler `/model`** : la commande est interceptée par le
-  harnais avant d'atteindre le modèle. Conclusion tirée avant d'écrire une
-  ligne : le seul levier réel pour changer de modèle est de déléguer l'étape
-  via l'outil `Agent` (sous-agent épinglé, ou paramètre `model` explicite qui
-  prime sur l'épinglage par défaut).
-- **`wn-lot` confie désormais chaque étape de sa séquence à un appel `Agent`**
-  (cadrage → `wn-explorer`/`wn-reviewer`, exécution → `general-purpose`, revue →
-  `wn-reviewer`/fork `Explore`), avec le mot-clé de réflexion natif
-  (`think`/`think hard`/`think harder`) écrit littéralement dans le prompt —
-  seul levier scriptable pour l'effort, l'outil `Agent` n'exposant pas de
-  paramètre effort séparé (contrairement à `Workflow`, hors mécanisme utilisé
-  ici).
-- **Exception documentée et corrigée en cours de route** : le mode Plan
-  (`EnterPlanMode`) reste **natif à la session**, jamais délégué. Un premier
-  jet le déléguait à un agent `Plan` — revu et corrigé, parce que déléguer
-  aurait supprimé la porte d'approbation humaine (`ExitPlanMode`) qui est tout
-  le sens de l'étape. Si le modèle de cette étape doit correspondre à la
-  classe, c'est `/wn-model` qui recommande `/model opusplan` **avant**, pas une
-  délégation.
-- **Étendu à `wn-plan`, `wn-pr`, `wn-finish`, `wn-merge`** (demande explicite de
-  l'utilisateur) : chacun gagne une échappatoire vers `Agent(wn-reviewer)` sur
-  les classes à risque (Scoring/clinique, Prisma/migration, Auth), utilisable
-  même hors séquence `wn-lot` — `wn-lot` reste la seule source de vérité pour
-  la table de classification, référencée par les 4 autres, pas dupliquée.
+- **Vérifié en base plutôt que sur un doc de campagne** : `execute_sql` direct
+  (join `rag_corpus_chunks`→`rag_corpus_claim_sources`→`rag_corpus_claims`) a
+  confirmé NB05 = 1114/1114 VALIDE, NB07 = 370/370 VALIDE. Le doc
+  `INVENTAIRE_SOURCES_INTERVENTION.md` donnait des ratios plus bas (60/295,
+  0/50) : il porte sur un **sous-ensemble différent** (« sources
+  d'intervention », campagne distincte), pas le corpus général — piège à ne
+  pas répéter, documenté dans la mémoire `claims-ingestion-chaine`.
+- **`RayonComplementsPanel` n'est pas un navigateur de corpus générique** :
+  c'est l'écran du catalogue produit (140 148 fiches), le corpus n'y apparaît
+  qu'en tiroir justificatif. Nouveau composant simple à la place
+  (`RechercheCorpusRayonPanel`) : un rayon, une requête libre, les claims.
+- **Gate produit sorti de `servirRayonCorpus()`** : la fonction forçait
+  `WN_C4_ENABLED` pour **tout** rayon demandé, pas seulement micronutrition —
+  couplage caché qui aurait éteint cognition/intestin avec le catalogue de
+  compléments. Le gate vit désormais dans la couche accès de chaque route.
+- **Nouveau flag `WN_RECHERCHE_CORPUS_ENABLED`** (éteint par défaut, dark
+  launch comme tous les rayons précédents), nommé pour ne pas se confondre
+  avec `WN_ENABLE_CORPUS_CLINIQUE_V1` (double-verrou clinique sans rapport) —
+  documenté dans `docs/FEATURE_FLAGS.md`.
+- **Défaut bloquant trouvé par une revue adversariale (`wn-reviewer`), corrigé
+  avant merge** : la nouvelle route validait `rayon` par une simple regex
+  syntaxique, ce qui l'aurait laissée servir n'importe quel rayon de la carte
+  — micronutrition compris — en contournant `WN_C4_ENABLED`. Corrigé par une
+  allowlist dédiée `RAYONS_RECHERCHE_CORPUS`, testée (`?rayon=micronutrition`
+  → 400).
+- **Autres correctifs issus de la même revue** : claims restés affichés après
+  un changement de rayon (composant corrigé + testé) ; fonction d'accès
+  `getPractitionerRechercheCorpusAccess` non testée alors qu'un commentaire
+  affirmait le contraire (`access.test.ts` créé) ; clé React collisionnable
+  (`claimId` seul → `claimId-versionClaim`).
 
-## Fichiers livrés
+## Fichiers modifiés
 
-- `.claude/skills/wn-lot/SKILL.md` — colonne « Effort · réflexion » dans le
-  tableau de classification, section « Comment le modèle et l'effort
-  s'appliquent réellement », séquence et sortie de proposition mises à jour.
-- `.claude/skills/wn-plan/SKILL.md`, `wn-pr/SKILL.md`, `wn-finish/SKILL.md`,
-  `wn-merge/SKILL.md` — échappatoire `Agent(wn-reviewer)` sur classes à risque.
+- `web/src/lib/supplement-library/rayonCorpus.ts` (+ `.test.ts`) — mapping,
+  allowlist `RAYONS_RECHERCHE_CORPUS`, retrait du gate C4.
+- `web/src/lib/supplement-library/featureFlag.ts` (+ `.test.ts`), `access.ts`
+  (+ nouveau `access.test.ts`) — flag et accès dédiés.
+- `web/src/app/api/praticien/corpus/rayons/route.ts` (+ `.test.ts`) — nouvelle
+  route.
+- `web/src/components/corpus/RechercheCorpusRayonPanel.tsx` (+ `.test.tsx`) —
+  nouvel écran.
+- `web/src/app/dashboard/bibliotheque/page.tsx` (+ `.test.tsx`) — section
+  branchée.
+- `docs/FEATURE_FLAGS.md`, `changelog.d/2026-08-03-rayons-cognition-intestin.md`.
+- `docs/claude/SESSION_LOG.md`, `docs/claude/campagnes/…/LOT-02-…md` (statut).
 
 ## Validations exécutées
 
-- Changement purement documentaire (skills de session) : pas de `npm run check`
-  requis, hors périmètre `web/`.
-- `bash scripts/check_no_secrets.sh` : OK.
-- Relecture de cohérence manuelle entre la nouvelle section de `wn-lot` et le
-  reste du fichier (séquence, sortie de proposition) — a fait remonter et
-  corriger l'erreur sur le mode Plan avant merge.
-- CI de la PR #543 : `verify` présent et vert, checks Vercel verts.
+- `npm run check` (T1) — vert.
+- `npm run test:worktree -- --fast` (T2) — vert (335 fichiers Vitest, 3341
+  tests) ; seul échec : le flake E2E connu et documenté
+  `e2e/portail-lien-magique.spec.ts` (défense temps-constant sous charge),
+  sans rapport avec ce diff.
+- CI GitHub (`verify` + Vercel) verte sur les deux PR avant merge.
 
 ## Problèmes ouverts
 
-- Aucun héritage de ce lot : documentation d'orchestration seule, aucun code
-  applicatif touché.
-- Hérité de la campagne packs/moteur (non retouché ici) : LOT-05 devra trancher
-  si `signauxAlerte` peut porter une décision de sécurité malgré son filtrage
-  silencieux ; `estAdministrableParLaRoute` ne vérifie pas `actif` contrairement
-  à `IDS_ASSIGNABLES` ; 10 des 16 packs de doctrine n'existent pas en base
-  (décision produit).
+- **Calibration non vérifiée** : `minSimilarity`/`matchCount` de
+  `servirRayonCorpus` ont été réglés pour une requête fiche-produit
+  (nom de complément) ; leur pertinence sur une recherche en langage libre
+  (« mémoire de travail ») n'a pas été validée manuellement.
+- **Aucun E2E** ne couvre le nouvel écran (non bloquant, flag éteint par
+  défaut — à faire avant armement en prod).
+- **Notebook 06** (douleurs) reste hors périmètre : même route déjà générique,
+  il suffira d'étendre `RAYON_VERS_NOTEBOOK` et `RAYONS_RECHERCHE_CORPUS` une
+  fois ses claims validés.
 
 ## Prochaine action exacte
 
-La priorité reste celle de la campagne packs/moteur, non affectée par ce lot :
-**LOT-05** (table de règles d'orientation, dépend de LOT-03 et LOT-04, tous
-deux livrés) ou **LOT-01** (validation praticien des 755 claims d'intervention,
-sans dépendance). Côté orchestration : la classification de `wn-lot` reste une
-heuristique textuelle, pas un contrôle automatisé — à observer sur le premier
-lot réel qui l'utilisera pour vérifier que la délégation `Agent` proposée est
-suivie dans la pratique, pas seulement écrite.
+Brancher `douleur` (notebook 06) dès que ses claims sont validés en base —
+même patron, pas de nouveau lot nécessaire. Sinon, reprendre LOT-01/05/06 de
+la campagne moteur d'intervention.
 
 ## Interdits encore actifs
 
-- **Pas de migration Prisma** sauf demande explicite distincte.
-- **Pas de branchement de `extraireDrapeauxAnamnese`** dans une route sans
-  cadrer d'abord la question de sécurité LOT-05 (héritée, inchangée).
-- **Le mode Plan ne se délègue jamais** à un sous-agent — nouvelle règle posée
-  par ce lot, à ne pas rouvrir sans revoir la porte d'approbation humaine
-  qu'elle protège.
-- **Repartir de `main`** pour le prochain lot.
-- **Ne pas merger sans avoir lu `verify`** — les seuls checks Vercel ne
-  prouvent rien.
+- Pas d'armement de `WN_RECHERCHE_CORPUS_ENABLED` en prod sans décision
+  explicite (reste dark par défaut).
+- Pas de rayon supplémentaire sans appelant réel dans le même lot.
+- Pas de contournement du filtre `VALIDE` (barrière D-003, `match_wellneuro_
+  rag_claims`) — non touché par ce lot.
+- Pas de fusion de `RAYONS_RECHERCHE_CORPUS` avec `RAYON_VERS_NOTEBOOK` : la
+  seconde carte reste plus large que ce qu'une route donnée doit servir.
