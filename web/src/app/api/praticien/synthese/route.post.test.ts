@@ -240,6 +240,49 @@ describe('POST /api/praticien/synthese — transport JSON (défaut, Vercel)', ()
     expect(message).not.toContain('mesureNonInterpretable');
   });
 
+  it('n’envoie pas un questionnaire suspendu au modèle quand une mesure administrable existe', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idQuestionnaire: 'Q_PED_03',
+        titre: 'Conners Parent',
+        dateReponse: new Date('2026-07-20'),
+        scoresJson: { total: 108 },
+        scorePrincipal: 108,
+        interpretation: null,
+      },
+      {
+        idQuestionnaire: 'Q_ALI_02',
+        titre: 'Diète méditerranéenne',
+        dateReponse: new Date('2026-07-22'),
+        scoresJson: { total: 7 },
+        scorePrincipal: 7,
+        interpretation: null,
+      },
+    ]);
+
+    await POST(req(CORPS));
+    const message: string = anthropicCreate.mock.calls[0][0].messages[0].content;
+    expect(message).toContain('"idQuestionnaire": "Q_ALI_02"');
+    expect(message).not.toContain('"idQuestionnaire": "Q_PED_03"');
+  });
+
+  it('retourne 422 si toutes les réponses du dossier sont non administrables', async () => {
+    prisma.questionnaireReponse.findMany.mockResolvedValue([
+      {
+        idQuestionnaire: 'Q_PED_03',
+        titre: 'Conners Parent',
+        dateReponse: new Date('2026-07-20'),
+        scoresJson: { total: 108 },
+        scorePrincipal: 108,
+        interpretation: null,
+      },
+    ]);
+
+    const res = await POST(req(CORPS));
+    expect(res.status).toBe(422);
+    expect(anthropicCreate).not.toHaveBeenCalled();
+  });
+
   it('échec du modèle : 500, aucune synthèse persistée', async () => {
     anthropicCreate.mockRejectedValue(new Error('API indisponible'));
     const res = await POST(req(CORPS));

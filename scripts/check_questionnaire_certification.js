@@ -59,7 +59,6 @@ const certifiedFixtures = new Set([
   'Q_NEU_10',
   'Q_NEU_12',
   'Q_PED_01',
-  'Q_PED_03',
   'Q_PNE_01',
   'Q_SOM_02',
   'Q_SOM_05',
@@ -334,7 +333,7 @@ assertEqual(calculateScore('Q_PED_03', fill('Q_PED_03', 0)).total, 0, 'Q_PED_03 
 assertEqual(calculateScore('Q_PED_03', fill('Q_PED_03', 3)).total, 324, 'Q_PED_03 score maximal');
 assertEqual(calculateScore('Q_PED_03', fill('Q_PED_03', 1)).total, 108, 'Q_PED_03 score médian');
 assertEqual(questions('Q_PED_03').length, 108, 'Q_PED_03 doit contenir 108 items scorés');
-assertCertification(calculateScore('Q_PED_03', fill('Q_PED_03', 0)), 'certifie', 'Q_PED_03');
+assertCertification(calculateScore('Q_PED_03', fill('Q_PED_03', 0)), 'ambigu', 'Q_PED_03');
 
 assertEqual(calculateScore('Q_NEU_03', fillByOptionBoundary('Q_NEU_03', 'min')).total, 0, 'Q_NEU_03 score minimal');
 assertEqual(calculateScore('Q_NEU_03', fillByOptionBoundary('Q_NEU_03', 'max')).total, 74, 'Q_NEU_03 score maximal');

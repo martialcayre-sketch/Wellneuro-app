@@ -9,6 +9,8 @@ import {
   ORIENTATION_RULES_V1,
 } from '@/lib/clinical/orientationRulesV1';
 import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
+import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
+import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 
 // Orientation des explorations NNPP2 (campagne certification corpus, lot 7) —
 // LECTURE SEULE. Évalue la table de règles signée sur les scores déjà stockés
@@ -21,6 +23,7 @@ import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinic
 // constitution », jamais une erreur (patron rayon corpus C4).
 
 const ROUTE_JOURNAL = '/api/praticien/orientation';
+const IDS_PACKS_CONNUS = new Set(PACKS_REGISTRY.map(pack => pack.id));
 
 // Verrou auto-portant : `validationExterne` seul serait un booléen qu'un flip
 // isolé suffirait à ouvrir. Une table réellement signée porte aussi sa date de
@@ -88,7 +91,7 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Patient non accessible pour ce praticien.' }, { status: 403 });
     }
 
-    const [reponses, assignations] = await Promise.all([
+    const [reponses, assignations, packs] = await Promise.all([
       prisma.questionnaireReponse.findMany({
         where: { idPatient },
         select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true },
@@ -98,7 +101,17 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
         where: { idPatient },
         select: { idQuestionnaire: true },
       }),
+      prisma.pack.findMany({
+        where: { actif: true },
+        select: { idPack: true, qids: true },
+      }),
     ]);
+
+    const compositionPacks: Partial<Record<PackId, string[]>> = {};
+    for (const pack of packs) {
+      if (!IDS_PACKS_CONNUS.has(pack.idPack as PackId)) continue;
+      compositionPacks[pack.idPack as PackId] = pack.qids;
+    }
 
     const recommandations = evaluerOrientation({
       reponses: reponses.map(reponse => ({
@@ -109,10 +122,19 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       })),
       idsQuestionnairesAssignes: assignations.map(assignation => assignation.idQuestionnaire),
       regles: ORIENTATION_RULES_V1,
-      // Composition réelle des packs et filtre d'administrabilité (droits /
-      // certification du registre des instruments) branchés au lot 10 — sans
-      // eux, aucun pack n'est marqué « déjà assigné » et rien n'est filtré
-      // (jamais un faux positif, jamais une exclusion silencieuse non sourcée).
+      compositionPacks,
+      estAdministrable: estAdministrableParLaRoute,
+    });
+
+    // Fail-closed explicite : sans composition de pack, on n'affirme aucune
+    // recommandation pack administrable.
+    const recommandationsFiltrees = recommandations.filter(recommandation => {
+      if (recommandation.cible.type === 'questionnaire') {
+        return estAdministrableParLaRoute(recommandation.cible.questionnaireId);
+      }
+      const qids = compositionPacks[recommandation.cible.packId as PackId];
+      if (!Array.isArray(qids) || qids.length === 0) return false;
+      return qids.every(qid => estAdministrableParLaRoute(qid));
     });
 
     return NextResponse.json({
@@ -120,7 +142,7 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       actif: true,
       version: ORIENTATION_METADATA.version,
       sha256: ORIENTATION_RULES_SHA256,
-      recommandations,
+      recommandations: recommandationsFiltrees,
     });
   } catch (err) {
     // Trace serveur seulement (patron de la route trajectoire) : le corps de

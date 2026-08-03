@@ -243,9 +243,9 @@ export const Q_PED_03 = {
   ],
   scoring:{
     type:'sum_items',
-    certification:{source:'drive',status:'certifie'},
+    certification:{source:'drive',status:'ambigu'},
     items:['CP001','CP002','CP003','CP004','CP005','CP006','CP007','CP008','CP009','CP010','CP011','CP012','CP013','CP014','CP015','CP016','CP017','CP018','CP019','CP020','CP021','CP022','CP023','CP024','CP025','CP026','CP027','CP028','CP029','CP030','CP031','CP032','CP033','CP034','CP035','CP036','CP037','CP038','CP039','CP040','CP041','CP042','CP043','CP044','CP045','CP046','CP047','CP048','CP049','CP050','CP051','CP052','CP053','CP054','CP055','CP056','CP057','CP058','CP059','CP060','CP061','CP062','CP063','CP064','CP065','CP066','CP067','CP068','CP069','CP070','CP071','CP072','CP073','CP074','CP075','CP076','CP077','CP078','CP079','CP080','CP081','CP082','CP083','CP084','CP085','CP086','CP087','CP088','CP089','CP090','CP091','CP092','CP093','CP094','CP095','CP096','CP097','CP098','CP099','CP100','CP101','CP102','CP103','CP104','CP105','CP106','CP107','CP108'],
     maxTotal:324,
-    note:"Source Drive Conners 3 Parent : 108 items cotés 0-3 en somme brute. Les deux questions ouvertes Q109/Q110 et les informations administratives ne sont pas codées ici car l'UI patient ne prend pas en charge les champs texte dans le catalogue. Aucune conversion T-score automatisée sans tables normatives validées."
+    note:"Source Drive Conners 3 Parent : 108 items cotés 0-3 en somme brute. Les deux questions ouvertes Q109/Q110 et les informations administratives ne sont pas codées ici car l'UI patient ne prend pas en charge les champs texte dans le catalogue. Aucune conversion T-score automatisée sans tables normatives validées. Arbitrage du 2026-08-01 : cette somme brute reste un comportement interne non certifié ; la réouverture exige le scoring dimensionnel complet, avec échelles de validité."
   }
 };

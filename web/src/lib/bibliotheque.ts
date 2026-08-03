@@ -8,7 +8,7 @@
 // ailleurs), et les instruments à passation praticien (définis mais jamais
 // proposés à l'auto-remplissage : tests cliniciens ou journaux).
 
-import { QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
+import { IDS_SUSPENDUS, QUESTIONNAIRES_CATALOG } from '@/lib/questionnaires-catalog';
 import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 import type { QuestionnaireDef } from '@/lib/questionnaire-types';
 
@@ -16,6 +16,14 @@ export type DefinitionCatalogue = QuestionnaireDef & {
   scoring?: { maxTotal?: number; sansTotalGlobal?: boolean; certification?: { status?: string } };
   administrationMode?: string;
 };
+
+export type StatutCertificationRuntime =
+  | 'certifie'
+  | 'ambigu'
+  | 'a_verifier'
+  | 'non_score'
+  | 'non_certifie'
+  | 'inconnu';
 
 export const CATALOGUE_DEFINITIONS = QUESTIONNAIRE_CATALOGUE as Record<
   string,
@@ -124,6 +132,22 @@ export function estCertifie(def: DefinitionCatalogue | undefined): boolean {
   return def?.scoring?.certification?.status === 'certifie';
 }
 
+export function statutCertificationRuntime(def: DefinitionCatalogue | undefined): StatutCertificationRuntime {
+  const status = def?.scoring?.certification?.status;
+  if (status === 'certifie') return 'certifie';
+  if (status === 'ambigu') return 'ambigu';
+  if (status === 'a_verifier') return 'a_verifier';
+  if (status === 'non_score') return 'non_score';
+  if (typeof status === 'string' && status.length > 0) return 'non_certifie';
+  return 'inconnu';
+}
+
+// Prédicat d'administrabilité côté route : une définition doit exister, et
+// l'instrument ne doit pas être suspendu au catalogue.
+export function estAdministrableParLaRoute(idQuestionnaire: string): boolean {
+  return Boolean(CATALOGUE_DEFINITIONS[idQuestionnaire]) && !IDS_SUSPENDUS.has(idQuestionnaire);
+}
+
 // Les ids réellement assignables depuis la bibliothèque : actifs à
 // l'affichage ET porteurs d'une définition. Exclut de fait les alias
 // historiques (pas de définition) — et les passations praticien (absentes
@@ -141,6 +165,7 @@ export type BibliothequeEntree = {
   nbQuestions: number | null;
   scoreMax: number | null;
   certifie: boolean;
+  statutCertification: StatutCertificationRuntime;
   assignable: boolean;
   aliasVers: string | null;
   passationPraticien: boolean;
@@ -162,6 +187,7 @@ export function listeBibliotheque(): BibliothequeEntree[] {
       nbQuestions: nbQuestions(def),
       scoreMax: scoreMax(def),
       certifie: estCertifie(def),
+      statutCertification: statutCertificationRuntime(def),
       assignable: IDS_ASSIGNABLES.has(q.id),
       aliasVers,
       passationPraticien: false,
@@ -180,6 +206,7 @@ export function listeBibliotheque(): BibliothequeEntree[] {
         nbQuestions: nbQuestions(def),
         scoreMax: scoreMax(def),
         certifie: estCertifie(def),
+        statutCertification: statutCertificationRuntime(def),
         assignable: false,
         aliasVers: null,
         passationPraticien: true,
