@@ -46,6 +46,7 @@ de trancher au jugé. C'est le seul cas qui justifie de la charger.
 
 | La demande… | Route |
 |---|---|
+| est trop floue pour qu'on sache ce qui aura changé une fois faite | `/wn-reprompt`, **avant** de router |
 | cadre une tâche avant de coder | `/wn-plan` |
 | ouvre une série de développements | `/wn-campaign` |
 | reprend un lot de campagne | `/wn-lot` (pilote complet) ou `/wn-campaign-run` |
@@ -63,6 +64,13 @@ de trancher au jugé. C'est le seul cas qui justifie de la charger.
 
 Préférer audit, plan et test avant développement. Si des edits sont envisagés, imposer
 explicitement le passage en mode Plan.
+
+**Reformuler avant de router — mais rarement.** Une demande qu'on ne peut pas router
+sans deviner passe d'abord par `/wn-reprompt` : contexte isolé, sortie ≤ 180 mots. Un
+tour de reformulation coûte moins que les tours de rattrapage d'un routage à côté. Le
+test est celui du skill et il est falsifiable : **si deux lectures de la demande mènent
+au même diff, router directement.** Le défaut reste donc « pas de reformulation » — un
+reformulage inutile dépense exactement ce qu'il prétend économiser.
 
 ### Modèle — contexte vers couple modèle/effort
 

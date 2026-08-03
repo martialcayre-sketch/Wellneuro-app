@@ -2,6 +2,12 @@
 
 Ces templates servent a obtenir des reponses robustes et compatibles avec la stack Wellneuro NNPP2 (Next.js + Prisma + PostgreSQL).
 
+> **Ces gabarits sont statiques ; `/wn-reprompt` ne l'est pas.** Un gabarit ne peut ni
+> verifier une hypothese contre le depot, ni detecter qu'un terme est ambigu ici. Pour
+> une demande floue, invoquer `/wn-reprompt` : il tourne en contexte isole, donc ce
+> qu'il lit n'est jamais repaye par la session. Ces templates restent utiles pour un
+> prompt tape a la main, hors session Claude Code.
+
 ## 1) Correction ciblee
 
 ```text
@@ -9,7 +15,7 @@ Contexte: projet Wellneuro NNPP2 (Next.js + Prisma + PostgreSQL, deploye sur Ver
 Tache: corrige le bug suivant dans [fichier]: [description bug].
 Contraintes:
 - ne pas modifier la logique clinique,
-- ne pas ajouter de secret ou de SHEET_ID en dur,
+- ne pas ajouter de secret en dur,
 - conserver les textes UI en francais,
 - changements minimaux.
 Verification demandee:
@@ -42,7 +48,7 @@ Pour chaque point: cause, impact, correction proposee.
 Contexte de securite:
 - pas de donnees patients reelles,
 - pas de secrets,
-- secrets et SHEET_ID uniquement via variables d'environnement (jamais en dur).
+- secrets uniquement via variables d'environnement (jamais en dur).
 ```
 
 ## 4) Ajout de documentation

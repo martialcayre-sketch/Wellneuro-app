@@ -13,6 +13,7 @@ Tâche : `$ARGUMENTS`
 
 ## Règles
 
+- **Si la tâche n’est pas exécutable telle qu’écrite** — aucun résultat observable, terme ambigu dans ce dépôt, ou deux lectures menant à deux diffs différents —, rendre la reformulation (`/wn-reprompt`) au lieu de bâtir un plan sur une hypothèse. Un plan cadré sur la mauvaise demande fait payer l’erreur au lot entier, pas au cadrage.
 - Lire d’abord `CLAUDE.md`, la dernière entrée de `SESSION_LOG.md` et uniquement les fichiers nécessaires.
 - Ne modifier aucun fichier.
 - Ce skill cadre la tâche ; il ne remplace pas le mode Plan pour la planification technique détaillée.
