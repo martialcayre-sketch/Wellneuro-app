@@ -132,8 +132,25 @@ inertes — le commentaire du fichier le dit lui-même.
 
 ## 6. Les fiches de synthèse — présentes, thématisées, majoritairement signées
 
-48 sources d'intervention identifiées dans `source_registry.json` (titres en
-*fiche synthèse*, *ordonnance commentée*, *fiche protocole*, *prise en charge*),
+> **Révisé au LOT-00 (2026-08-03).** Le premier relevé partait d'un motif de
+> TITRE et donnait 48 sources. Le registre porte en réalité un champ structuré
+> `documentType` — `Protocole / outil décisionnel` (32), `Outil clinique` (35),
+> `Synthèse clinique` (27). Union des deux critères : **99 sources, dont 51 que
+> le titre ratait**, parmi lesquelles toute la doctrine d'exploration
+> (`WN-SRC-0046/0047/0049/0050/0051/0052`, cette dernière portant 73 claims dont
+> 51 prescriptifs). Périmètre retenu : **95 sources**, moins les 4 du notebook 00.
+> Lire ce que la source DÉCLARE avant de croire un critère dérivé.
+>
+> Chiffres révisés : **2002 claims — 1247 validés, 755 en attente, 1004
+> prescriptifs (50 %)**. Vue par source :
+> `INVENTAIRE_SOURCES_INTERVENTION.md` ; artefact qui fait foi :
+> `docs/claude/corpus/nnpp2_interventions_registry.json`.
+>
+> **Disjonction vérifiée** : `instrument_registry.json` rattache 116 `sourceIds`
+> à ses 64 instruments ; **aucun n'appartient aux 99**. Les deux registres sont
+> disjoints, et le garde `interventions-check` maintient cette disjonction.
+
+Relevé initial, conservé pour mémoire — 48 sources par motif de titre,
 réparties sur 11 notebooks :
 
 | Notebook | Sources | Validés | En attente |
@@ -160,12 +177,13 @@ conditionnées à un tableau clinique.
 
 Deux conséquences pour le cadrage :
 
-1. **Le déblocage coûte 327 claims de revue, pas 2982.** À 1-2 min pièce
-   (`docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md`), c'est quelques
-   heures. L'Atelier v2 reste utile pour le corpus entier mais n'est pas un
-   prérequis ici.
+1. **Le déblocage coûte 755 claims de revue, pas 2982** (327 sur le relevé
+   initial par titre). À 1-2 min pièce
+   (`docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md`), c'est de l'ordre de
+   la journée de travail praticien. L'Atelier v2 reste utile pour le corpus
+   entier mais n'est pas un prérequis ici.
 2. **La voie rapide ne s'applique pas.** Elle est réservée aux claims
-   déclarés/observés **non prescriptifs** ; à 54 % de prescriptifs, ces 327
+   déclarés/observés **non prescriptifs** ; à 50 % de prescriptifs, ces 755
    relèvent de la revue pièce à pièce de toute façon.
 
 `WN-SRC-0485` (NB13) n'a aucun claim : NB13 est en chunks seuls par conception.
