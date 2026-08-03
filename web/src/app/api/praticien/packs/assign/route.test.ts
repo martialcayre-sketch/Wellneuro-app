@@ -14,7 +14,7 @@ vi.mock('next-auth', () => ({ getServerSession: vi.fn().mockResolvedValue({ user
 vi.mock('@/lib/auth', () => ({ authOptions: {} }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
 vi.mock('@/lib/consultation/packRegistry', () => ({
-  resolvePackQuestionnaireIds: vi.fn().mockResolvedValue({ qids: ['Q_NEU_03'] }),
+  resolvePackQuestionnaireIds: vi.fn().mockResolvedValue({ qids: ['Q_NEU_03'], source: 'legacy', raison: 'registre_absent', registryCount: 0 }),
 }));
 vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) } }));
 vi.mock('@/lib/observability/logger', () => ({
@@ -47,7 +47,7 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     // `clearAllMocks` efface les appels, PAS les implémentations : un
     // `mockResolvedValue` posé dans un test fuiterait sur les suivants. On
     // repose donc la valeur de la fabrique à chaque cas.
-    vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({ qids: ['Q_NEU_03'], source: 'legacy' });
+    vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({ qids: ['Q_NEU_03'], source: 'legacy', raison: 'registre_absent', registryCount: 0 });
     process.env.SMTP_URL = 'smtp://test';
     process.env.NEXTAUTH_URL = 'https://app.wellneuro.fr';
     prisma.patient.findFirst.mockResolvedValue(patient);
@@ -77,6 +77,8 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({
       qids: ['Q_NEU_03', 'Q_FIB_03'],
       source: 'legacy',
+      raison: 'registre_absent',
+      registryCount: 0,
     });
     const response = await POST(request());
     expect(response.status).toBe(200);
@@ -111,5 +113,43 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     expect(await response.json()).toMatchObject({ reason: 'portal_revoked' });
     expect(prisma.assignation.create).not.toHaveBeenCalled();
     expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  // --- Dérive du registre de packs (LOT-03) ---
+  //
+  // Le repli sur `packs.qids` reste le comportement de sécurité : il n'échoue
+  // jamais. Ce qui change, c'est qu'une VRAIE divergence se voit — et qu'un
+  // registre simplement absent ne déclenche rien, sans quoi l'alarme serait
+  // allumée en permanence et ne distinguerait plus rien.
+
+  function replisEmis() {
+    return vi.mocked(logger.warn).mock.calls
+      .filter(([payload]) => payload.event === EVENT_CODES.PACK_REGISTRE_REPLI_LEGACY);
+  }
+
+  it('journalise une divergence réelle entre le registre et packs.qids', async () => {
+    vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({
+      qids: ['Q_NEU_03'], source: 'legacy', raison: 'ensembles_divergents', registryCount: 4,
+    });
+    await POST(request());
+    const emis = replisEmis();
+    expect(emis).toHaveLength(1);
+    expect(emis[0][0].message).toContain('4');
+  });
+
+  it('ne journalise rien quand le registre est simplement absent', async () => {
+    vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({
+      qids: ['Q_NEU_03'], source: 'legacy', raison: 'registre_absent', registryCount: 0,
+    });
+    await POST(request());
+    expect(replisEmis()).toEqual([]);
+  });
+
+  it('ne journalise rien quand le registre concorde', async () => {
+    vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({
+      qids: ['Q_NEU_03'], source: 'registry', raison: null, registryCount: 1,
+    });
+    await POST(request());
+    expect(replisEmis()).toEqual([]);
   });
 });

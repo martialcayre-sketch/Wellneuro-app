@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Refactor des packs — source de vérité unique"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "LOT-00"
 palier: "T3"
 ---
@@ -92,4 +92,59 @@ basculer en repli legacy sans que personne le sache.
 
 ## Résultats
 
-À compléter à la clôture.
+Le cadrage a trouvé un défaut plus grave que la double source de vérité annoncée :
+**les deux espaces de noms étaient disjoints**. `PACKS_REGISTRY` dit
+`pack_socle_initial_neuronutrition`, la base dit `PACK_SOCLE_INIT`, et
+`orientation/route.ts` comparait les deux directement. `compositionPacks` restait
+donc toujours vide, et le filtre fail-closed rejetait **toute** recommandation de
+pack. Le moteur, même doté d'une table signée, n'aurait jamais pu proposer autre
+chose qu'un questionnaire.
+
+Livré :
+
+- `PackRegistryItem` porte `idPackBase` (l'`id_pack` réel, 6 cas sur 16) et
+  `axeId` (le lien vers le registre d'intervention du LOT-00) ;
+- traduction **dans les deux sens** — `packIdDepuisIdBase` et
+  `idBaseDepuisPackId` ; la réponse d'orientation porte `idPackBase` pour que la
+  recommandation soit suivable jusqu'à `/api/praticien/packs/assign` ;
+- le repli `legacy` de `resolvePackQuestionnaireIds` distingue ses causes
+  (`registre_absent` / `registre_vide` / `ensembles_divergents`) et n'alerte que
+  sur la dérive réelle ;
+- `checkPackRegistryConsistency` signale les correspondances orphelines.
+
+**Preuve que le correctif corrige** : en remettant la comparaison directe, 3 tests
+rougissent. Et le test qui aurait dû attraper le défaut d'origine existait — il
+moquait `idPack: 'pack_stress_chronique_burnout'`, un `id_pack` qui n'a jamais
+existé en base. Une fixture qui invente sa base ne prouve rien sur la base.
+
+### Ce que la revue adversariale a changé
+
+`wn-reviewer` a rendu GO SOUS RÉSERVE avec trois majeurs, tous traités :
+
+1. **Le correctif `niveau` n'atteignait pas la production** — `syncPackToRegistry`
+   n'est appelé que sur édition d'un pack, et **aucun code ne lit**
+   `questionnaire_packs.niveau`. Le changement a été **retiré** : hors périmètre,
+   sans consommateur, et le garder aurait exigé soit un commentaire faux, soit un
+   re-sync que ce lot n'autorise pas.
+2. **La traduction n'existait que dans un sens** — une recommandation aurait
+   désigné un slug là où l'assignation attend un `id_pack` : 404, cul-de-sac. La
+   traduction inverse est livrée et testée.
+3. **L'alarme de dérive naissait saturée** — le pack par défaut étant en dérive,
+   le `warn` serait parti à chaque onboarding sans distinguer un registre absent
+   d'une divergence réelle. Qualifié par cause, avec les deux comptages dans le
+   message.
+
+Deux de ses mineurs portaient sur des tests qui ne gardaient pas ce qu'ils
+annonçaient (un commentaire trop large, un banc qui recopiait sa source au lieu
+de l'itérer) — corrigés. Un garde a été ajouté sur la table de règles : vacant
+aujourd'hui, il empêchera au LOT-05 qu'une règle cite un pack sans existence en
+base, cas où la recommandation disparaîtrait en silence.
+
+### Signalé, non traité — décision clinique
+
+`estAdministrableParLaRoute` ne vérifie pas `actif` dans le catalogue,
+contrairement à `IDS_ASSIGNABLES`. Des instruments à passation praticien
+(`Q_GEO_03/04/05/06`, `Q_URO_02`, `Q_PED_02`) sont donc « administrables » au sens
+de l'orientation. Vérifié en base le 2026-08-03 : **aucun d'eux ne figure dans les
+6 packs de doctrine**, le risque est théorique. Aligner ce prédicat est un
+arbitrage clinique, hors périmètre de ce lot.

@@ -78,6 +78,14 @@ export const EVENT_CODES = {
   BOOKLET_SEND_EXCEPTION: 'BOOKLET.SEND.FAILED',
 
   DOCUMENT_COMPOSE_EXCEPTION: 'PRATICIEN.DOCUMENT_C3.COMPOSE_FAILED',
+
+  // LOT-03. `resolvePackQuestionnaireIds` retombe sur `packs.qids` quand le
+  // registre relationnel ne couvre pas exactement le même ensemble. Ce repli
+  // est le comportement de SÉCURITÉ voulu — il ne bloque rien — mais il était
+  // muet : le pack par défaut était en dérive (5 qids legacy contre 4 au
+  // registre) sans que personne puisse le savoir. Un repli silencieux finit par
+  // se lire comme une absence de repli.
+  PACK_REGISTRE_REPLI_LEGACY: 'ASSIGNATION.PACK.REGISTRE_REPLI_LEGACY',
 } as const satisfies Record<string, EventCode>;
 
 export type KnownEventCode = (typeof EVENT_CODES)[keyof typeof EVENT_CODES];

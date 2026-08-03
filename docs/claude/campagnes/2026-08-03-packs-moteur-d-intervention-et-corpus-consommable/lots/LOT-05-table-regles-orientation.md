@@ -48,6 +48,18 @@ même d'une règle d'orientation : une condition clinique, une conduite. 527 des
 recommandations non vides pour un patient de démonstration ayant répondu au pack
 initial, avec le `sha256` de la table servie.
 
+## Prérequis levé par le LOT-03
+
+Jusqu'au 2026-08-03, remplir la table n'aurait rien produit : les `PackId` des
+règles et les `id_pack` de la base formaient deux espaces disjoints, donc toute
+recommandation de pack était rejetée par le fail-closed. La correspondance est
+désormais en place et testée.
+
+**Deux conséquences pour ce lot** : une règle ne peut cibler que les 6 packs
+portant un `idPackBase` — un banc de `orientationRulesV1.test.ts` échoue sur toute
+règle citant un pack sans existence en base. Et les 10 packs de doctrine restants
+devront être créés en base avant d'être citables.
+
 ## Périmètre
 
 - Écrire les règles V1 : condition sur les scores du pack initial **et** sur les

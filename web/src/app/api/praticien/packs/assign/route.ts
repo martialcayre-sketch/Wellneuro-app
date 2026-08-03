@@ -138,7 +138,19 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     const notesPack = notes || `Pack ${pack.nom}`;
     const nowIso = new Date().toISOString();
-    const { qids } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
+    const { qids, raison, registryCount } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
+    // Repli voulu, mais plus muet — et seulement quand il signale une VRAIE
+    // divergence. Un registre absent ou vide décrit un pack jamais synchronisé,
+    // pas une dérive : alerter dessus rendrait le signal permanent, donc nul.
+    // Rien n'est bloqué dans aucun cas : `packs.qids` fait foi.
+    if (raison === 'ensembles_divergents') {
+      logger.warn({
+        event: EVENT_CODES.PACK_REGISTRE_REPLI_LEGACY,
+        domain: 'ASSIGNATION',
+        message: `Dérive du pack ${pack.idPack} : ${pack.qids.length} qids côté packs.qids contre ${registryCount} au registre relationnel. Composition legacy retenue.`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+      });
+    }
     const aCreer = qids.flatMap(idQuestionnaire => {
       const questionnaire = catalogue[idQuestionnaire];
       // Un instrument suspendu est écarté comme un id inconnu : le pack part

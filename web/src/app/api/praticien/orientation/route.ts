@@ -9,7 +9,7 @@ import {
   ORIENTATION_RULES_V1,
 } from '@/lib/clinical/orientationRulesV1';
 import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinical/orientationEngine';
-import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
+import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 
 // Orientation des explorations NNPP2 (campagne certification corpus, lot 7) —
@@ -23,7 +23,6 @@ import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
 // constitution », jamais une erreur (patron rayon corpus C4).
 
 const ROUTE_JOURNAL = '/api/praticien/orientation';
-const IDS_PACKS_CONNUS = new Set(PACKS_REGISTRY.map(pack => pack.id));
 
 // Verrou auto-portant : `validationExterne` seul serait un booléen qu'un flip
 // isolé suffirait à ouvrir. Une table réellement signée porte aussi sa date de
@@ -38,6 +37,17 @@ function orientationActive(): boolean {
   return process.env.WN_ENABLE_ORIENTATION_NNPP2 === '1' && tableSignee();
 }
 
+/**
+ * Une recommandation servie, augmentée de l'`id_pack` de la base pour les
+ * cibles de type pack.
+ *
+ * Le moteur raisonne en `PackId` de doctrine ; le seul point d'assignation
+ * (`POST /api/praticien/packs/assign`) attend un `id_pack`. Sans ce champ, un
+ * client devrait refaire la jointure lui-même — ou, plus probablement, envoyer
+ * le slug et récolter un `pack_not_found`. La route donne donc les deux.
+ */
+export type RecommandationServie = RecommandationExploration & { idPackBase?: string };
+
 export type OrientationApiResponse =
   | {
       ok: true;
@@ -50,7 +60,7 @@ export type OrientationApiResponse =
       actif: true;
       version: string;
       sha256: string;
-      recommandations: RecommandationExploration[];
+      recommandations: RecommandationServie[];
     }
   | { ok: false; reason: 'unauthenticated' | 'invalid' | 'patient_not_found' | 'forbidden' | 'exception'; error: string };
 
@@ -107,10 +117,19 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       }),
     ]);
 
+    // Traduire AVANT de comparer. `pack.idPack` vient de la base
+    // (`PACK_SOCLE_INIT`), les règles parlent en slugs de doctrine
+    // (`pack_socle_initial_neuronutrition`) : les deux espaces de noms sont
+    // disjoints. Comparer directement ne rend jamais rien — c'est ce qui rendait
+    // toute recommandation de pack impossible avant le LOT-03 du 2026-08-03.
+    //
+    // Un pack sans correspondance de doctrine (pack composé par le praticien)
+    // n'entre pas : il n'est pas une cible d'orientation.
     const compositionPacks: Partial<Record<PackId, string[]>> = {};
     for (const pack of packs) {
-      if (!IDS_PACKS_CONNUS.has(pack.idPack as PackId)) continue;
-      compositionPacks[pack.idPack as PackId] = pack.qids;
+      const packId = packIdDepuisIdBase(pack.idPack);
+      if (packId === null) continue;
+      compositionPacks[packId] = pack.qids;
     }
 
     const recommandations = evaluerOrientation({
@@ -137,12 +156,23 @@ export async function GET(req: Request): Promise<NextResponse<OrientationApiResp
       return qids.every(qid => estAdministrableParLaRoute(qid));
     });
 
+    // Chemin retour : la cible pack repart avec l'`id_pack` que
+    // `/api/praticien/packs/assign` attend. Un pack qui a franchi le filtre a
+    // forcément une correspondance — il vient de `compositionPacks`, construit
+    // par traduction — mais on ne le suppose pas : sans `idPackBase`, le champ
+    // reste absent plutôt que faux.
+    const recommandationsServies: RecommandationServie[] = recommandationsFiltrees.map(recommandation => {
+      if (recommandation.cible.type !== 'pack') return recommandation;
+      const idPackBase = idBaseDepuisPackId(recommandation.cible.packId);
+      return idPackBase === null ? recommandation : { ...recommandation, idPackBase };
+    });
+
     return NextResponse.json({
       ok: true,
       actif: true,
       version: ORIENTATION_METADATA.version,
       sha256: ORIENTATION_RULES_SHA256,
-      recommandations: recommandationsFiltrees,
+      recommandations: recommandationsServies,
     });
   } catch (err) {
     // Trace serveur seulement (patron de la route trajectoire) : le corps de
