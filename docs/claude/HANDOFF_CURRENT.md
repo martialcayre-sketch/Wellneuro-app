@@ -4,12 +4,15 @@
 
 - Worktree `.claude/worktrees/lot-06-consommateur-orientation`, branche
   `worktree-lot-06-consommateur-orientation`, partie de `main`, **PR #550**.
-- `main` a avancé pendant le lot (#547, #548, #549 jusqu'à `8cc4ef11`) :
-  `origin/main` fusionné dans la branche (`c6ec5a4f`). Un seul conflit,
-  `SESSION_LOG.md`, append contre append — les deux entrées conservées, la
-  mienne en dernier.
-- **PR #550 : `verify` vert en 10 min 19 s, `MERGEABLE`.** Merge et suppression
-  de branche = ressort Copilot. Rien n'est en attente côté assistant.
+- `main` a avancé **deux fois** pendant le lot — #547/#548/#549 jusqu'à
+  `8cc4ef11`, puis #551 (`92adb17a`) — et `origin/main` a été fusionné à chaque
+  fois. Deux conflits, tous deux dans de la documentation : `SESSION_LOG.md`
+  (append contre append : les deux entrées conservées, la mienne en dernier) et
+  `HANDOFF_CURRENT.md` (résolu **en faveur de la branche** — ce fichier est
+  remplacé à chaque handoff, jamais fusionné).
+- **PR #550 : `verify` vert en 10 min 19 s** sur le head fusionné `c6ec5a4f`.
+  Merge et suppression de branche = ressort Copilot. Rien n'est en attente côté
+  assistant.
 - Campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`,
   LOT-06, palier T2.
 
