@@ -10,7 +10,7 @@ effort: low
 ## Contexte
 
 !`git status --short`
-!`test -f docs/claude/SESSION_LOG.md && tail -n 20 docs/claude/SESSION_LOG.md || true`
+!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 20 docs/claude/SESSION_LOG.md || true`
 
 Demande : `$ARGUMENTS`
 

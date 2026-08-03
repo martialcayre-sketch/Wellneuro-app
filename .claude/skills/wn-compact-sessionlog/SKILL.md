@@ -7,8 +7,8 @@ effort: medium
 
 # WellNeuro — compaction de SESSION_LOG
 
-!`test -f docs/claude/SESSION_LOG.md && tail -n 70 docs/claude/SESSION_LOG.md || true`
-!`test -f docs/claude/SESSION_LOG.md && grep -n '^## ' docs/claude/SESSION_LOG.md || true`
+!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 70 docs/claude/SESSION_LOG.md || true`
+!`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && grep -n '^## ' docs/claude/SESSION_LOG.md || true`
 !`git status --short`
 
 Arguments : `$ARGUMENTS`

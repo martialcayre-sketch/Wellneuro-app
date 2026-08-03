@@ -137,6 +137,27 @@ jobs:
       - name: Invocations croisées entre skills (banc du contrôle)
         run: node --test scripts/lib/skill-cross-invocation.test.mjs
 
+      # Un bloc `!` de skill qui désigne un chemin relatif à la RACINE n'est
+      # exécutable que si la session tourne depuis la racine. Lancée depuis
+      # `web/` — le cas courant — la même ligne échoue, ou pire se tait :
+      # mesuré le 2026-08-03 sur les 32 blocs fautifs, **27 rendaient une sortie
+      # VIDE avec un code de retour 0**, et 5 seulement échouaient bruyamment.
+      # Le skill croyait avoir lu l'état du dépôt et planifiait sur du vide,
+      # sans un message ni un code d'erreur.
+      # Même absence de filtre `docs_only` que les deux étapes ci-dessus, et
+      # pour la même raison. Ni npm ni build : node suffit.
+      - name: 'Blocs `!` des skills ancrés à la racine (blocking)'
+        run: node scripts/lib/skill-bang-cwd.mjs
+
+      # Banc du contrôle ci-dessus. Il prouve qu'il attrape le cas silencieux,
+      # et surtout qu'il se tait sur ce qui le ferait débrancher : les commandes
+      # git réellement agnostiques (`git status --short` rend la même chose
+      # depuis n'importe où), `--stat`/`--show-toplevel` qu'on ne doit pas
+      # confondre avec un `--` de pathspec, et les chemins qui ne visent pas la
+      # racine (`web/docs/…`).
+      - name: 'Blocs `!` des skills ancrés à la racine (banc du contrôle)'
+        run: node --test scripts/lib/skill-bang-cwd.test.mjs
+
       # Banc de `scripts/wn-cycle.mjs`, le verdict de phase chargé par le bloc
       # `!` de `/wn-finish` et `/wn-handoff`. Ce qu'il protège tient en un cas :
       # une PR mergée en squash SANS sa clôture doit sortir en échec, pas en
