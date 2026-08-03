@@ -38,6 +38,10 @@ export async function resetPortailState(idPatient: string): Promise<void> {
   // les specs suivants du même patient, avec un message qui ne désignait pas
   // le coupable.
   await prisma.agendaSommeilNuit.deleteMany({ where: { idPatient } });
+  // Journées d'agenda alimentaire : même FK RESTRICT vers `assignations`, donc
+  // même piège, ajouté AVANT qu'une seule ligne n'existe. Attendre que le
+  // symptôme revienne aurait coûté le diagnostic une seconde fois.
+  await prisma.agendaAlimentaireJour.deleteMany({ where: { idPatient } });
   await prisma.assignation.deleteMany({ where: { idPatient } });
   await prisma.consultation.deleteMany({ where: { idPatient } });
   await prisma.questionnaireReponse.deleteMany({ where: { idPatient, idAssignation: { not: null } } });

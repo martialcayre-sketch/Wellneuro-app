@@ -65,6 +65,7 @@ model Patient {
   envoiBrouillons            EnvoiBrouillon[]
   rendezVous                 RendezVous[]
   agendaSommeilNuits         AgendaSommeilNuit[]
+  agendaAlimentaireJours     AgendaAlimentaireJour[]
 
   @@map("patients")
 }
@@ -133,8 +134,9 @@ model Assignation {
   correctionDemandeeDate DateTime? @map("correction_demandee_date")
 
   patient            Patient             @relation(fields: [idPatient], references: [idPatient])
-  protocolCheckins   ProtocolCheckin[]
-  agendaSommeilNuits AgendaSommeilNuit[]
+  protocolCheckins       ProtocolCheckin[]
+  agendaSommeilNuits     AgendaSommeilNuit[]
+  agendaAlimentaireJours AgendaAlimentaireJour[]
 
   @@map("assignations")
 }
@@ -971,6 +973,45 @@ model AgendaSommeilNuit {
   @@index([idPatient, dateNuit], map: "agd_som_patient_date_idx")
   @@index([idAssignation, dateNuit], map: "agd_som_assignation_date_idx")
   @@map("agenda_sommeil_nuits")
+}
+
+// Agenda alimentaire 21 jours (Q_ALI_09) — une ligne = une journée déclarée par
+// le patient. Patron AgendaSommeilNuit : append-only chaîné (supersedesJourId),
+// écriture via session portail uniquement.
+//
+// `dateJour` = journée LOCALE ANCRÉE À 04:00 (AAAA-MM-JJ) : une prise à 00:30
+// appartient à la veille. Sans cette ancre, une prise nocturne casserait à la
+// fois l'ordre des prises et le calcul du jeûne. Les heures sont des chaînes
+// HH:MM locales dans `reponses` — aucune conversion de fuseau (cf.
+// lib/agenda-alimentaire).
+//
+// FRONTIÈRE JA : ce JSONB ne porte AUCUNE quantité, aucun gramme, aucune kcal,
+// et aucun aliment identifié au-delà des trois présences déclarées. Aucun
+// agrégat, aucun score, aucun indice n'y vit — le scorer reste `journal`
+// (scored:false) tant qu'aucune donnée observée n'existe.
+//
+// AUCUNE CONTRAINTE UNIQUE sur (id_assignation, date_jour), délibérément : les
+// lignes supplantées restent, et « lignes − dates distinctes » est le taux de
+// correction, seul signal de friction lisible sans nouvelle migration.
+//
+// Toute nouvelle table fille de `patients` doit entrer dans la transaction
+// d'effacement IDP2 (lib/patient/effacement.ts).
+model AgendaAlimentaireJour {
+  id               String   @id @default(cuid()) @map("id")
+  idPatient        String   @map("id_patient")
+  idAssignation    String   @map("id_assignation")
+  dateJour         String   @map("date_jour") // AAAA-MM-JJ (journée 04:00 → 03:59)
+  reponses         Json     @map("reponses") // contrat agenda-alimentaire-v1
+  canal            String   @default("portail") @map("canal")
+  supersedesJourId String?  @map("supersedes_jour_id")
+  soumisLe         DateTime @default(now()) @map("soumis_le")
+
+  patient     Patient     @relation(fields: [idPatient], references: [idPatient])
+  assignation Assignation @relation(fields: [idAssignation], references: [idAssignation])
+
+  @@index([idPatient, dateJour], map: "agd_ali_patient_date_idx")
+  @@index([idAssignation, dateJour], map: "agd_ali_assignation_date_idx")
+  @@map("agenda_alimentaire_jours")
 }
 
 // Approbation praticien « pour diffusion » (C2A LOT-03 Part B). Mapping 1:1 du

@@ -62,6 +62,11 @@ export async function effacerDossier(idPatient: string): Promise<ResultatEffacem
     // assignations — supprimées avant les assignations (ligne plus bas), sinon
     // l'effacement échouerait sur la contrainte.
     supprimees.agendaSommeilNuits = (await tx.agendaSommeilNuit.deleteMany({ where: par })).count;
+    // Journées d'agenda alimentaire (Q_ALI_09) : mêmes FK RESTRICT que le
+    // sommeil, vers patients ET assignations — même position, même raison.
+    supprimees.agendaAlimentaireJours = (
+      await tx.agendaAlimentaireJour.deleteMany({ where: par })
+    ).count;
     supprimees.protocolDiffusionApprovals = (
       await tx.protocolDiffusionApproval.deleteMany({ where: par })
     ).count;

@@ -1,111 +1,136 @@
-# Handoff — 2026-08-03 — Les blocs `!` des skills ancrés à la racine
+# Handoff — 2026-08-04 — Persistance de l'agenda alimentaire (L3)
 
 ## Git
 
-- Worktree `.claude/worktrees/skills-blocs-bang-ancres`, branche
-  `worktree-skills-blocs-bang-ancres`, partie de `main` à `f3e6b73b` (après le
-  merge de #552).
-- Hors campagne : correctif d'outillage, aucun lot.
-- Rien sous `web/` n'est touché. Aucune migration, aucune auth, aucun changement
-  clinique.
+- Worktree `.claude/worktrees/agenda-ali-l3`, branche `worktree-agenda-ali-l3`,
+  partie de `main` à `059fcaaa` (après #555). PR à ouvrir.
+- Hors campagne, sans entrée `.wn/state.json` : deuxième lot d'une série sur
+  l'agenda alimentaire, après L1-bis (PR #554).
+- **Lot à MIGRATION** : `schema.prisma` + `prisma/migrations/`, plus l'effacement
+  RGPD. Aucune auth, aucune route, aucun changement du score servi.
 
-## Le défaut, et pourquoi il ne se voyait pas
+## Où en est la série
 
-Le répertoire de travail des sessions est `web/`, pas la racine du dépôt. Or 32
-blocs `!` de `SKILL.md` désignaient des chemins relatifs à la **racine**.
+L1-bis a rendu `Q_ALI_09` assignable et non scoré, drapeau `WN_AGENDA_ALI` éteint.
+L3 le rend **persistable**. Il ne livre ni saisie (L4) ni barème (L2) : l'ordre
+décidé avec le praticien est **collecte d'abord, calibrage ensuite** — aucune
+journée n'a jamais été recueillie, donc les cinq axes, leurs poids et la borne des
+18 h n'ont aucune distribution réelle sur quoi s'appuyer.
 
-Mesuré depuis `web/` sur les 32, un par un — pas estimé :
+## Les décisions qui ferment des options
 
-| régime | nombre | ce qu'on voit |
-| --- | ---: | --- |
-| **muet** (code 0, sortie vide) | **27** | rien du tout |
-| bruyant (code ≠ 0) | 5 | `MODULE_NOT_FOUND`, le skill refuse de se charger |
+**L'abstention, et son asymétrie.** Les quatre présences obligatoires acceptent
+`null` — « je ne sais pas » —, distinct de la clé absente. Sans ce troisième état,
+un patient ignorant le contenu d'une journée devait répondre au hasard ou **sauter
+la journée entière**, perdant aussi ses horaires, qui sont la mesure principale.
+**`soirPlusCopieux` ne l'accepte pas** (arbitrage praticien du 2026-08-04) :
+facultatif, il n'alimente qu'un drapeau. Fait maintenant parce qu'aucune ligne
+n'existe ; après le premier patient, cela coûtait un contrat v2 et une fenêtre de
+recueil incomparable à elle-même.
 
-Les 5 bruyants sont ceux qui ont déclenché le diagnostic (`wn-context`,
-`wn-finish`, `wn-handoff` ×2, `wn-conventions:13`). **Les 27 autres étaient le
-vrai problème** : `/wn-route`, `/wn`, `/wn-lot`, `/wn-ultra`, `/wn-auto` et les
-six `/wn-rN` rendaient « aucune campagne active », « aucun SESSION_LOG », et
-planifiaient sur un état qu'ils croyaient avoir lu.
+**`null !== undefined` est vrai en JS — et il y avait CINQ prédicats, pas un.**
+Le plan initial en nommait un seul. Un prédicat de couverture laissé en
+`!== undefined` aurait compté la journée comme connue, puis le filtre `=== true`
+l'aurait lue comme un « non » : un dénominateur divergeant de ses voisins, en
+silence. Tous passent à `typeof … === 'boolean'`. La différence de contrat vit
+dans le **type** et le **validateur**, jamais dans les prédicats.
 
-Deux formes trompeuses valent d'être retenues, parce qu'elles ressemblent à des
-échecs et n'en sont pas :
+**Quarantaine par ligne à la lecture.** Une première version faisait
+`rows.map(toJourRow)` : une ligne illisible faisait disparaître **tout** l'agenda
+du patient — exactement le mode de panne que `jour.ts` refuse en toutes lettres.
+`listJours` rend désormais `{ jours, illisibles }` ; le compte remonte au lieu
+d'être avalé, sans quoi un lot tronqué pourrait franchir les seuils
+d'exploitabilité en ayant perdu des journées.
 
-- `sed -n '…' CLAUDE.md | sed '$d'` — le code de retour d'un **pipeline** est
-  celui du dernier élément ; `sed '$d'` sur une entrée vide sort en 0 ;
-- `git log … -- CLAUDE.md AGENTS.md` — un pathspec **littéral** non résolu depuis
-  `web/` rend une sortie vide, code 0.
+**Aucune contrainte unique** sur `(id_assignation, date_jour)`, délibérément :
+`count(lignes) − count(distinct date_jour)` est le taux de correction, et avec
+`soumisLe` la courbe d'abandon se lit en SQL, sans nouvelle migration.
 
-## Ce qui est en place
+**Trois écarts assumés au patron sommeil** : `persistence.ts` ne réexporte rien
+(l'alimentaire a un `index.ts` pur — réexporter ferait entrer Prisma dans un
+import client) ; la version de contrat est vérifiée en lecture (côté sommeil la
+liste des versions lues n'est consultée nulle part, la constante y est
+décorative) ; `canal` est honoré contre une liste fermée plutôt que forcé en dur.
 
-- **32 blocs ancrés** par `cd "$(git rev-parse --show-toplevel)" &&`. Vérifié, pas
-  supposé : depuis un worktree, cette commande rend la racine **du worktree**
-  (`--git-common-dir` pointerait, lui, vers le dépôt principal) — l'ancre est donc
-  correcte dans le mode nominal, « une session = un worktree ».
-- **`/wn-auto` lisait `docs/roadmap.md`, qui n'existe pas.** Le bloc serait resté
-  muet même ancré — la revue l'a trouvé, et c'est exactement la classe de défaut
-  que ce lot existe pour tuer. Il lit désormais les deux fichiers réels,
-  `ROADMAP_PRODUIT.md` et `ROADMAP_TECHNIQUE.md`.
-- **`scripts/lib/skill-bang-cwd.mjs`** + banc de 17 cas, câblés dans `verify`
-  **hors filtre `docs_only`** (une PR de `SKILL.md` est classée documentaire :
-  gater le contrôle reviendrait à ne jamais l'exécuter sur les PR qu'il vise).
+## Validations
 
-## Décisions à ne pas rejouer
+`npm run check` vert dans les **deux** positions de `WN_AGENDA_ALI`. **T3 complet
+vert en 2 min 6 s** : PostgreSQL éphémère, `prisma migrate deploy` — le SQL manuel
+réellement exécuté —, **drift check `migrate diff --exit-code`**, contrats SQL,
+seed, 108 E2E.
 
-1. **La détection interroge le dépôt, pas une liste de préfixes.** Une première
-   version listait six marqueurs (`scripts/`, `docs/`, `.github/`, `.claude/`,
-   `CLAUDE.md`, `AGENTS.md`) et laissait donc passer `./scripts/`, `web/`,
-   `changelog.d/`, `tools/`, `CHANGELOG.md` — des blocs muets sous un CI vert. La
-   règle est maintenant : un jeton est un chemin de racine **si son premier segment
-   existe à la racine**. Question exacte, réponse gratuite. Le banc verrouille les
-   cinq trous refermés.
-2. **Un pathspec à joker n'a pas besoin d'ancre.** `git log -- '*.md'` rend la même
-   sortie depuis `web/` et depuis la racine (le joker matche le chemin complet) ;
-   un pathspec **littéral** en a besoin. La première version ancrait les deux — la
-   révision a défait l'ancre de `wn-docs:12`, inutile.
-3. **L'ancre est exigée EN TÊTE de commande.** Trouvée n'importe où, elle laisserait
-   passer `node scripts/x.mjs; cd "$(…)" && true`, où elle arrive trop tard.
-4. **Les 30 blocs sans chemin ne sont PAS ancrés.** `git status --short` couvre le
-   dépôt entier depuis n'importe où — seule la **présentation** des chemins change
-   (`../.claude/…` depuis `web/`), pas l'ensemble rapporté. Les ancrer
-   stabiliserait cet affichage : c'est un autre sujet, et 30 blocs.
-5. **Écarté** : documenter la convention dans `CLAUDE.md`. Le CI rouge dit déjà quoi
-   faire, avec le chemin fautif et la commande à écrire.
+**Cinq mutations vérifiées**, chacune tue un test : un prédicat remis en
+`!== undefined` (2), la ligne d'effacement retirée (1), l'entrée de la liste de
+mocks retirée (8), la ligne d'effacement **déplacée** (1), et au lot précédent le
+drapeau en fail-open. Un garde vert qui n'a pas mordu ne prouve rien.
 
-## Validations exécutées
+## Ce que la revue adversariale a corrigé
 
-Garde bang **0 violation** sur 63 blocs · son banc **17/17** · garde d'invocations
-croisées 0 · son banc 13/13 · banc `wn-cycle` 16/16 · audit campagnes 0 ·
-anti-secrets 0 · **T1** vert (3 451 tests).
-
-**Vérifié sur l'état d'AVANT, pas seulement sur l'état d'après** : le garde rejoué
-contre les `SKILL.md` de `main` rend **exactement 32 violations** — les mêmes que le
-diagnostic. Un garde vert sur un dépôt déjà corrigé ne prouve rien.
-
-Revue adversariale `wn-reviewer` : **GO**, deux MAJEUR (le bloc `roadmap.md` mort et
-la liste de préfixes trouée) et quatre MINEUR corrigés dans la foulée — dont trois
-comptages faux, remplacés par une mesure.
+- **Condition de merge** — la position de la ligne d'effacement n'était gardée par
+  rien : le garde structurel est un `String.includes`, aveugle au **déplacement**.
+  Or c'est le déplacement qui casse — `effacerDossier` lèverait sur la FK RESTRICT
+  et l'effacement RGPD deviendrait impossible pour tout dossier portant une
+  journée. Mes quatre mutations testaient le retrait, jamais le déplacement. Test
+  d'ordre ajouté, morsure vérifiée.
+- **Contradiction interne** — le rejet de collection décrit plus haut.
+- Un test dont le nom promettait plus que son assertion (lot d'une seule ligne :
+  rejeter la ligne et rejeter la collection y sont indiscernables), et l'absence
+  de banc direct pour `contrat.ts`. Les deux comblés.
 
 ## Problèmes ouverts
 
-- **Les blocs `!` d'un même `SKILL.md` partagent-ils un shell ?** Si oui, le `cd`
-  d'un bloc déplacerait les suivants et la décision 4 ci-dessus disparaîtrait d'elle-
-  même. Non vérifiable depuis une session ; à trancher par l'observation.
-- **Hors dépôt git, l'ancre dégrade en silence** : `git rev-parse` échoue,
-  `cd "" &&` est un no-op de code 0, et le remède reproduit la maladie. Sans objet
-  en pratique.
-- `BLOC_BANG` exige le backtick fermant en fin de ligne : un bloc suivi de texte ne
-  serait ni compté ni contrôlé. Aucun cas aujourd'hui.
-- Le refus d'être vert sur zéro skill est testé ici, mais **pas** dans le banc du
-  contrôle voisin (`skill-cross-invocation.test.mjs`) — écart de convention connu.
+- **Aucun aller-retour contre une vraie base.** `persistence.test.ts` mocke Prisma
+  intégralement, et aucune route n'existe. La thèse « l'abstention survit en
+  base » n'est donc attestée que par un `vi.fn()` — or c'est précisément là que
+  `as unknown as object` efface la garantie de type. Le véhicule idiomatique du
+  dépôt est `prisma/checks/*.sql`, rejoué par le CI et par T3 ; **à poser avant
+  L4**.
+- **`null` ne se défend pas contre `if (x)`, `!x`, `Boolean(x)`** : TypeScript
+  accepte ces tests sur `boolean | null` et ils lisent l'abstention comme un
+  « non ». Aucun consommateur hors du domaine aujourd'hui ; l'écran de saisie L4
+  est exactement le lieu où ce raccourci s'écrira. Un prédicat exporté
+  (`estObserve(v): v is boolean`) rendrait la règle réutilisable.
+- **`soirPlusCopieux` rejette `null` en silence**, sans erreur : un écran L4
+  offrant trois états sur les cinq champs perdrait celui-ci sans signal.
+- **RLS sans `REVOKE` nominatif** : conforme au patron sommeil et suffisant (RLS
+  active sans policy bloque `anon`/`authenticated` sous PostgREST), mais en
+  retrait du patron `c5_ciqual` qui révoque nominativement. À vérifier après merge
+  sur des faits : `relrowsecurity` et `has_table_privilege('anon', …, 'SELECT')`.
+- **`normaliserQids`** (`api/praticien/packs`) filtre sur le catalogue de scoring
+  et non sur `IDS_SUSPENDUS` — défaut antérieur, hors périmètre.
+- Le cycle protocole→épisode reste à **zéro ligne en base**. Gate HDS
+  `G-TRUST-04`, échéance 2026-10-21.
+- **Reporté** — campagne `2026-08-03-packs…` : LOT-07, et surtout la **signature
+  clinique des six règles du LOT-05**, sans laquelle le LOT-06 livré n'affiche
+  rien (`validationExterne: false` ⟹ production fermée).
 
 ## Prochaine action exacte
 
-Ouvrir la PR, lire son `verify`, merger. Ensuite, reprise possible de la campagne
-`2026-08-03-packs…` : **LOT-07** (reliquat de certification) ou la **signature
-clinique des six règles du LOT-05**, sans laquelle le LOT-06 livré n'affiche rien.
+Ouvrir la PR, lire `verify`, merger. **Puis vérifier la base** par `execute_sql`
+(agréger `_prisma_migrations` **par nom** — un nom porte plusieurs lignes).
+
+Ensuite **L4** : `portail.ts` (authorize dédié, patron `agenda-sommeil/portail.ts`),
+routes GET/POST `/api/portail/agenda-alimentaire`, aiguillage dans
+`portail/[token]/questionnaires/[idAssignation]/page.tsx`, et la surface de saisie
+— cible < 30 s/jour, rien de pré-coché. **La route devra dériver `idPatient` et
+`idAssignation` de la SESSION, jamais du corps de requête** : sinon une journée
+s'écrit dans le dossier A en pointant l'assignation de B, et l'effacement de B
+devient impossible (FK RESTRICT). `saveJour` ne le vérifie pas, comme son jumeau
+sommeil, parce que c'est la route qui le garantit.
 
 ## Interdits encore actifs
 
-Aucune migration, aucune écriture Supabase, aucun changement clinique. Ne jamais
-forcer un merge sur une PR gelée en `action_required` — `enforce_admins` est actif,
-`verify` obligatoire. Après un merge en squash, repartir de `main`.
+- **Frontière JA** — aucune quantité, aucun gramme, aucune kcal, aucune projection
+  vers `Q_ALI_01`/`Q_ALI_02`. Sur les aliments, la formule exacte du contrat fait
+  foi : « aucun aliment identifié **au-delà des présences ci-dessus** ».
+- **Ne pas toucher** `BESOIN_SOURCES` ni `VERSION_SCORE_EQUILIBRE` ; **aucun
+  barème, aucun indice /100** avant d'avoir vu des données réelles. La discordance
+  déclaré/observé reste un objet séparé, et elle suppose la forme SIIN 57 servie —
+  sous forme courte `MAX_RYTHME_CHRONO` vaut 0 et l'écart devra rendre `null`,
+  jamais 0.
+- **Ne pas allumer `WN_AGENDA_ALI`** avant L4 : le patient verrait un écran sans
+  question.
+- **IDP2** — toute table fille de `patients` entre dans la transaction
+  d'effacement, **avant** les assignations. Le garde structurel n'attrape que le
+  retrait, pas le déplacement : c'est le test d'ordre qui tient la position.
+- **Aucune contrainte unique** sur `(id_assignation, date_jour)`.
