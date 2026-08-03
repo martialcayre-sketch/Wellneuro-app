@@ -2,81 +2,95 @@
 
 ## Git
 
-- Branche `main`, arbre propre. Dernier commit : PR **#541** (squash), mergée
+- Branche `main`, arbre propre. Dernier commit : PR **#543** (squash), mergée
   et branche distante supprimée depuis cette session.
 - Campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`
-  **inchangée par ce lot** : LOT-00, LOT-03, LOT-04 restent livrés. Ce lot est
-  orthogonal à la campagne — documentaire, hors périmètre packs/moteur.
+  **inchangée par ce lot** : LOT-00, LOT-03, LOT-04 restent livrés (LOT-04 est
+  arrivé en parallèle via une autre session pendant celle-ci). Ce lot est
+  orthogonal à la campagne — orchestration des skills WN, hors périmètre
+  packs/moteur.
 
 ## Objectif de ce lot
 
-Repurposer `docs/ROADMAP_TECHNIQUE.md`, qui servait de suivi de chantiers
-(historique R0→R10, dette technique), en documentation d'architecture
-technique système (stack, routes App Router, modèle de données, sous-systèmes
-`lib/`, auth, pipeline RAG, déploiement) — décision explicite de l'utilisateur,
-périmètre = toute l'application. **Livré et mergé** (#541).
+Faire en sorte que les skills d'orchestration de campagne (`wn-lot` en tête)
+puissent réellement appliquer un modèle, un effort et une réflexion différents
+selon l'étape en cours — demande explicite de l'utilisateur, suite à un constat
+que `wn-lot` classait déjà un lot en modèle/palier/revue sans jamais exécuter
+ce choix. **Livré et mergé** (#543).
 
 ## Décisions prises, et pourquoi
 
-- **Contenu archivé avant réécriture** : l'ancien `ROADMAP_TECHNIQUE.md` est
-  recopié tel quel dans le nouveau `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md`
-  — rien n'est perdu, l'historique R0→R10 reste consultable.
-- **Résumer et renvoyer plutôt que dupliquer** : chaque section du nouveau
-  document renvoie vers le doc détaillé existant quand il y en a un
-  (`RAG_PGVECTOR_PRODUCTION.md`, `VALIDATION_CLAIMS_DEUX_VITESSES.md`,
-  `ARCHITECTURE_CLINIQUE_3_2.md`…) ; description complète seulement là où
-  aucun doc ne couvrait déjà le sujet (cartographie des routes, sous-systèmes
-  `lib/`, comparatif des 3 modèles d'auth).
-- **Section déploiement documentée comme transitoire, pas comme tranchée** :
-  `vercel-build.sh` porte encore `migrate deploy` inline en parallèle du
-  workflow `release-db.yml` plus récent — vérifié dans le code avant
-  d'écrire, pour ne pas recopier aveuglément l'un des deux documents source.
-- **Compte de modèles Prisma jamais figé en dur** : renvoi à
-  `grep -c '^model ' web/prisma/schema.prisma` (66 au 2026-08-03) plutôt qu'un
-  chiffre écrit dans le texte, qui aurait dérivé au premier modèle ajouté.
-- **Pas de promotion `docs/DECISIONS.md`** : réorganisation documentaire, pas
-  une décision structurante d'architecture/sécurité/clinique.
+- **Aucun skill ne peut appeler `/model`** : la commande est interceptée par le
+  harnais avant d'atteindre le modèle. Conclusion tirée avant d'écrire une
+  ligne : le seul levier réel pour changer de modèle est de déléguer l'étape
+  via l'outil `Agent` (sous-agent épinglé, ou paramètre `model` explicite qui
+  prime sur l'épinglage par défaut).
+- **`wn-lot` confie désormais chaque étape de sa séquence à un appel `Agent`**
+  (cadrage → `wn-explorer`/`wn-reviewer`, exécution → `general-purpose`, revue →
+  `wn-reviewer`/fork `Explore`), avec le mot-clé de réflexion natif
+  (`think`/`think hard`/`think harder`) écrit littéralement dans le prompt —
+  seul levier scriptable pour l'effort, l'outil `Agent` n'exposant pas de
+  paramètre effort séparé (contrairement à `Workflow`, hors mécanisme utilisé
+  ici).
+- **Exception documentée et corrigée en cours de route** : le mode Plan
+  (`EnterPlanMode`) reste **natif à la session**, jamais délégué. Un premier
+  jet le déléguait à un agent `Plan` — revu et corrigé, parce que déléguer
+  aurait supprimé la porte d'approbation humaine (`ExitPlanMode`) qui est tout
+  le sens de l'étape. Si le modèle de cette étape doit correspondre à la
+  classe, c'est `/wn-model` qui recommande `/model opusplan` **avant**, pas une
+  délégation.
+- **Étendu à `wn-plan`, `wn-pr`, `wn-finish`, `wn-merge`** (demande explicite de
+  l'utilisateur) : chacun gagne une échappatoire vers `Agent(wn-reviewer)` sur
+  les classes à risque (Scoring/clinique, Prisma/migration, Auth), utilisable
+  même hors séquence `wn-lot` — `wn-lot` reste la seule source de vérité pour
+  la table de classification, référencée par les 4 autres, pas dupliquée.
 
 ## Fichiers livrés
 
-- `docs/ROADMAP_TECHNIQUE.md` — réécriture complète (12 sections).
-- `docs/HISTORIQUE_CHANTIERS_TECHNIQUES.md` — nouveau, archive de l'ancien contenu.
-- `CLAUDE.md`, `README.md`, `docs/PROJECT_STATE.md`, `docs/claude/README.md`,
-  `docs/claude/PROJET_CONTEXTE.md`, `docs/ROADMAP_PRODUIT.md` — renvois mis à jour.
+- `.claude/skills/wn-lot/SKILL.md` — colonne « Effort · réflexion » dans le
+  tableau de classification, section « Comment le modèle et l'effort
+  s'appliquent réellement », séquence et sortie de proposition mises à jour.
+- `.claude/skills/wn-plan/SKILL.md`, `wn-pr/SKILL.md`, `wn-finish/SKILL.md`,
+  `wn-merge/SKILL.md` — échappatoire `Agent(wn-reviewer)` sur classes à risque.
 
 ## Validations exécutées
 
-- Changement purement documentaire : pas de `npm run check` requis.
-- Existence vérifiée de tous les fichiers renvoyés par le nouveau document
-  (aucun lien mort).
-- `grep -rn "ROADMAP_TECHNIQUE" --include="*.md" .` (hors archive/campagnes/
-  CHANGELOG) cohérent avec le nouveau rôle.
-- CI de la PR #541 : `verify` présent et vert, checks Vercel verts.
+- Changement purement documentaire (skills de session) : pas de `npm run check`
+  requis, hors périmètre `web/`.
+- `bash scripts/check_no_secrets.sh` : OK.
+- Relecture de cohérence manuelle entre la nouvelle section de `wn-lot` et le
+  reste du fichier (séquence, sortie de proposition) — a fait remonter et
+  corriger l'erreur sur le mode Plan avant merge.
+- CI de la PR #543 : `verify` présent et vert, checks Vercel verts.
 
 ## Problèmes ouverts
 
-- Hérité de ce lot : le « lot de bascule » qui doit alléger `vercel-build.sh`
-  de sa logique `migrate deploy` inline (au profit exclusif de
-  `release-db.yml`) n'a pas eu lieu — documenté tel quel, pas dans mon
-  périmètre.
-- Hérité de la campagne packs/moteur (LOT-04, non retouché ici) : LOT-05 devra
-  trancher si `signauxAlerte` peut porter une décision de sécurité malgré son
-  filtrage silencieux ; `estAdministrableParLaRoute` ne vérifie pas `actif`
-  contrairement à `IDS_ASSIGNABLES` ; 10 des 16 packs de doctrine n'existent
-  pas en base (décision produit).
+- Aucun héritage de ce lot : documentation d'orchestration seule, aucun code
+  applicatif touché.
+- Hérité de la campagne packs/moteur (non retouché ici) : LOT-05 devra trancher
+  si `signauxAlerte` peut porter une décision de sécurité malgré son filtrage
+  silencieux ; `estAdministrableParLaRoute` ne vérifie pas `actif` contrairement
+  à `IDS_ASSIGNABLES` ; 10 des 16 packs de doctrine n'existent pas en base
+  (décision produit).
 
 ## Prochaine action exacte
 
 La priorité reste celle de la campagne packs/moteur, non affectée par ce lot :
 **LOT-05** (table de règles d'orientation, dépend de LOT-03 et LOT-04, tous
 deux livrés) ou **LOT-01** (validation praticien des 755 claims d'intervention,
-sans dépendance).
+sans dépendance). Côté orchestration : la classification de `wn-lot` reste une
+heuristique textuelle, pas un contrôle automatisé — à observer sur le premier
+lot réel qui l'utilisera pour vérifier que la délégation `Agent` proposée est
+suivie dans la pratique, pas seulement écrite.
 
 ## Interdits encore actifs
 
 - **Pas de migration Prisma** sauf demande explicite distincte.
 - **Pas de branchement de `extraireDrapeauxAnamnese`** dans une route sans
   cadrer d'abord la question de sécurité LOT-05 (héritée, inchangée).
+- **Le mode Plan ne se délègue jamais** à un sous-agent — nouvelle règle posée
+  par ce lot, à ne pas rouvrir sans revoir la porte d'approbation humaine
+  qu'elle protège.
 - **Repartir de `main`** pour le prochain lot.
 - **Ne pas merger sans avoir lu `verify`** — les seuls checks Vercel ne
   prouvent rien.
