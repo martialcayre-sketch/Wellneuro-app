@@ -7,11 +7,15 @@ const { prisma, createEmbeddings } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/rag/embeddings', () => ({ createEmbeddings }));
 
-import { servirRayonCorpus, RAYON_VERS_NOTEBOOK } from './rayonCorpus';
+import { servirRayonCorpus, RAYON_VERS_NOTEBOOK, RAYONS_RECHERCHE_CORPUS } from './rayonCorpus';
 import { sourcesDuNotebook } from '@/lib/rag/claims/notebooks';
 
 const NOTEBOOK_MICRO = '10 — Micronutrition et compléments';
 const SOURCES_MICRO = sourcesDuNotebook(NOTEBOOK_MICRO);
+const NOTEBOOK_COGNITION = '05 — Cognition et mémoire';
+const SOURCES_COGNITION = sourcesDuNotebook(NOTEBOOK_COGNITION);
+const NOTEBOOK_INTESTIN = '07 — Axe intestin-cerveau';
+const SOURCES_INTESTIN = sourcesDuNotebook(NOTEBOOK_INTESTIN);
 
 // La 4ᵉ valeur interpolée du $queryRaw est la liste des source_ids jointe par
 // virgule (filter_source_ids). Ordre des interpolations : littéral, matchCount,
@@ -42,7 +46,6 @@ function claim(over: Record<string, unknown> = {}) {
 describe('servirRayonCorpus (rayon corpus par notebook, barrière D-003)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.WN_C4_ENABLED = 'true';
     createEmbeddings.mockResolvedValue([[0.1, 0.2, 0.3]]);
     prisma.$queryRaw.mockResolvedValue([]);
   });
@@ -63,12 +66,17 @@ describe('servirRayonCorpus (rayon corpus par notebook, barrière D-003)', () =>
     }
   });
 
-  it('refuse tout service quand WN_C4_ENABLED est éteint (fail-closed)', async () => {
-    delete process.env.WN_C4_ENABLED;
-    await expect(servirRayonCorpus({ rayon: 'micronutrition', requete: 'magnésium' }))
-      .rejects.toThrow(/WN_C4_ENABLED/);
-    expect(createEmbeddings).not.toHaveBeenCalled();
-    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+  // servirRayonCorpus ne gate plus sur un flag produit (retiré : un service
+  // générique par rayon ne peut pas présumer lequel des flags — WN_C4_ENABLED
+  // pour micronutrition, WN_RECHERCHE_CORPUS_ENABLED pour cognition/intestin —
+  // s'applique à l'appelant). Le fail-closed vit désormais dans chaque
+  // fonction d'accès par route (`getPractitionerC4Access`,
+  // `getPractitionerRechercheCorpusAccess`, testées dans access.test.ts) ET
+  // dans l'allowlist RAYONS_RECHERCHE_CORPUS que chaque route doit appliquer
+  // (route.test.ts) — servirRayonCorpus lui-même ne restreint plus rien.
+
+  it('RAYONS_RECHERCHE_CORPUS ne contient QUE cognition et intestin (allowlist de la route dédiée)', () => {
+    expect([...RAYONS_RECHERCHE_CORPUS].sort()).toEqual(['cognition', 'intestin']);
   });
 
   it('sans requête : ne fait aucun appel, rend corpusVide sans erreur', async () => {
@@ -99,6 +107,18 @@ describe('servirRayonCorpus (rayon corpus par notebook, barrière D-003)', () =>
     expect(call[3]).toBe(0.5);
     expect(call[4]).toBe(SOURCES_MICRO.join(','));
     expect(filtreSourcesDuDernierAppel()).toBe(SOURCES_MICRO.join(','));
+  });
+
+  it('sert le rayon cognition avec le filter_source_ids du notebook 05', async () => {
+    prisma.$queryRaw.mockResolvedValue([claim()]);
+    await servirRayonCorpus({ rayon: 'cognition', requete: 'mémoire de travail' });
+    expect(filtreSourcesDuDernierAppel()).toBe(SOURCES_COGNITION.join(','));
+  });
+
+  it('sert le rayon intestin avec le filter_source_ids du notebook 07', async () => {
+    prisma.$queryRaw.mockResolvedValue([claim()]);
+    await servirRayonCorpus({ rayon: 'intestin', requete: 'microbiote' });
+    expect(filtreSourcesDuDernierAppel()).toBe(SOURCES_INTESTIN.join(','));
   });
 
   it('restitue tous les claims retournés par le filtre SQL, avec le rayon demandé', async () => {
