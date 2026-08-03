@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Structuration de l'intake de consultation"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "aucun"
 palier: "T2"
 ---
@@ -90,4 +90,40 @@ erreur.
 
 ## Résultats
 
-À compléter à la clôture.
+**Recadré au cadrage.** L'essentiel du « schéma applicatif » demandé existait déjà
+(`motifs.ts`, `anamnese.ts` à options fermées, `contexteClinique.ts` en parsing
+défensif vers du texte). Ce qui manquait réellement pour LOT-05 : une extraction
+**typée et nommée**, pas de la prose. Livré sur ce périmètre résiduel :
+`web/src/lib/consultation/drapeauxAnamnese.ts` (`extraireDrapeauxAnamnese`), 8
+drapeaux (5 `checkbox-multi` + 3 `radio`) filtrés contre les options actuelles de
+`ANAMNESE_SECTIONS`, lues **dynamiquement** — jamais recopiées — pour éliminer le
+risque de divergence de libellé. `asRecord`/`texte` exportés depuis
+`contexteClinique.ts` (3 mots, comportement inchangé) pour éviter de dupliquer le
+parsing défensif du champ le plus sensible (`signaux_alerte`).
+
+**Décision motif** : ni `Consultation.motif` (peut être `null`) ni
+`anamnese.motif_principal` (texte libre, seul champ obligatoire du formulaire) ne
+deviennent des drapeaux — restent hors périmètre, le texte libre continue
+d'alimenter `buildContexteClinique` seul.
+
+**Revue adversariale `wn-reviewer` passée**, deux défauts majeurs trouvés et
+corrigés avant clôture :
+
+- Tests initiaux tautologiques (dérivaient l'attendu du même code que
+  l'extraction) → remplacés par des libellés **figés en dur** dans
+  `drapeauxAnamnese.test.ts`, qui cassent bruyamment si `anamnese.ts` dérive —
+  contrepartie assumée du choix de dérivation dynamique côté production.
+- Ordre de sortie dépendait de l'ordre de stockage, et le filtrage passait par
+  un helper borné à 50 éléments bruts (risque théorique de perte d'un signal
+  valide) → `listeFiltree` réécrite pour itérer sur l'énuméré clinique
+  (ordre canonique, dédup de fait, pas de troncature avant filtrage).
+
+**Point documenté, pas corrigé (hors périmètre)** : `extraireDrapeauxAnamnese`
+filtre `signaux_alerte` contre l'énuméré ; `extraireVigilanceDeterministe`
+(existant) ne filtre pas et remonte tout signal brut en texte au praticien. Ce
+drapeau n'est donc **pas** une garantie de sécurité — commenté dans le type
+`DrapeauxAnamnese`. À trancher explicitement au cadrage de LOT-05 si ce drapeau
+sert une décision d'orientation liée à un signal d'alerte.
+
+**Validation** : T1 (`npm run check`) et T2 (`npm run test:worktree -- --fast`,
+108 tests E2E) verts après corrections. Aucune migration, aucune route touchée.

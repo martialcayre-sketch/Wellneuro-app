@@ -1664,3 +1664,25 @@ LOT-01 (validation praticien des 755 claims).
 contrairement à `IDS_ASSIGNABLES` — à trancher avant que des packs contenant des
 instruments à passation praticien existent. Et 10 des 16 packs de doctrine
 n'existent pas en base : les créer est une décision produit.
+
+## 2026-08-03 — LOT-04 : drapeaux d'anamnèse typés (recadré)
+
+**Décisions** : le « schéma d'intake » demandé existait déjà (motifs, formulaire
+à options fermées, parsing défensif en texte). Livré le résiduel réel : extraction
+typée `extraireDrapeauxAnamnese` (8 drapeaux), valeurs autorisées lues
+dynamiquement dans `ANAMNESE_SECTIONS` plutôt que dupliquées — évite toute
+divergence de libellé. Revue `wn-reviewer` a trouvé et fait corriger deux défauts
+avant clôture : tests tautologiques (remplacés par des libellés figés en dur,
+garde anti-dérive) et un filtrage borné à 50 éléments bruts avant dédup (réécrit
+pour itérer sur l'énuméré, ordre canonique).
+
+**Écarté** : ajouter un champ `signauxAlerteNonReconnus` pour distinguer un signal
+hors énuméré d'un signal absent — pas de consommateur (LOT-05 non écrit), aurait
+anticipé un besoin hypothétique. Documenté en commentaire de type à la place :
+`signaux_alerte` filtré n'est pas la garantie de sécurité, `extraireVigilanceDeterministe` (non filtré) l'est toujours.
+
+**Prochaine action** : LOT-05 (table de règles d'orientation, dépend de LOT-03 +
+LOT-04) ou LOT-01 (validation praticien des 755 claims).
+
+**Questions ouvertes** : LOT-05 devra trancher explicitement si `signauxAlerte`
+peut porter une décision de sécurité malgré son filtrage silencieux.
