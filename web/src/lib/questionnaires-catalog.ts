@@ -80,7 +80,7 @@ export const QUESTIONNAIRES_CATALOG: QuestionnaireCatalogEntry[] = [
   // production », il n'y est jamais entré ; son barreau est `repere`), et c'est
   // épinglé par `agendaAlimentaireDrapeau.guard.test.ts`.
   { id: 'Q_ALI_09', titre: 'Agenda alimentaire — 21 jours', categorie: 'Alimentaire',
-    description: `Notez chaque jour, en moins d'une minute, les horaires de vos prises alimentaires. Après trois semaines, votre praticien dispose du déroulé réel de vos journées. Ce recueil ne produit aucun score.`, duree: '1 min par jour, 21 jours', actif: isAgendaAlimentaireEnabled() },
+    description: `Notez chaque jour, en moins d'une minute, les horaires de vos prises alimentaires. Ce recueil ne produit aucun score : il donne à votre praticien le déroulé réel de vos journées.`, duree: '1 min par jour, 21 jours', actif: isAgendaAlimentaireEnabled() },
 
   // ── FIBROMYALGIE ────────────────────────────────────────────────────────────
   { id: 'Q_FIB_01', titre: 'FiRST — Dépistage de la fibromyalgie', categorie: 'Fibromyalgie',

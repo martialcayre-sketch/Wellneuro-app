@@ -107,9 +107,15 @@ export async function POST(req: Request): Promise<NextResponse> {
     // L'agenda alimentaire (Q_ALI_09) est fermé ici pour une raison VOISINE mais
     // pas identique. Sa définition ne porte AUCUN item (`sections: []`) : la
     // saisie passe par un composant dédié, jour par jour. Sans ce refus, une
-    // soumission par l'écran générique passerait `statutReponses` à `verrouille`
-    // sur un agenda à zéro journée — un recueil mort-né, et irrécupérable
-    // puisque le verrouillage est ce qui clôt la fenêtre de saisie.
+    // soumission par l'écran générique créerait une `QuestionnaireReponse` à
+    // `rawAnswers: {}` en passant l'assignation à `Complété` / `verrouille` —
+    // c'est-à-dire une PASSATION FABRIQUÉE au dossier du patient, pas seulement
+    // une fenêtre de recueil fermée trop tôt.
+    //
+    // Ne pas justifier ce refus par « irrécupérable » : un déverrouillage
+    // praticien existe (`PUT /api/praticien/assignations`), et il fonctionne
+    // précisément dans la position où le scénario peut se produire — drapeau
+    // allumé. Ce qui ne se rattrape pas, c'est la ligne fausse au dossier.
     if (ass.idQuestionnaire === 'Q_ALI_09') {
       return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unavailable', error: "L'agenda alimentaire se remplit jour par jour, il ne se soumet pas ici." }, { status: 409 }), requestContext);
     }

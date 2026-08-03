@@ -29,8 +29,15 @@ const ID = 'Q_ALI_09';
 
 async function chargerCatalogue(valeurDrapeau: string | undefined) {
   vi.resetModules();
-  if (valeurDrapeau === undefined) vi.stubEnv('WN_AGENDA_ALI', '');
-  else vi.stubEnv('WN_AGENDA_ALI', valeurDrapeau);
+  // `stubEnv(nom, undefined)` fait un `delete` : c'est la variable ABSENTE, et
+  // c'est l'état réel de Vercel aujourd'hui. Une première version posait la
+  // chaîne vide — une variable présente mais vide, qui n'est pas la même chose.
+  // Le trou était concret : une implémentation `value === undefined ? true :
+  // value === 'true'` (patron « ouvert sauf mention contraire ») serait restée
+  // VERTE sur `''` et aurait ouvert l'instrument en production, là où la
+  // variable n'existe pas. Un garde écrit contre le silence était silencieux
+  // exactement là où il fallait qu'il parle.
+  vi.stubEnv('WN_AGENDA_ALI', valeurDrapeau as string);
   const catalogue = await import('./questionnaires-catalog');
   const bibliotheque = await import('./bibliotheque');
   return {
@@ -72,7 +79,11 @@ describe('drapeau WN_AGENDA_ALI — agenda alimentaire Q_ALI_09', () => {
     // Une variable posée à « 1 », « TRUE » ou « yes » dans un panneau
     // d'environnement ne doit jamais ouvrir un chemin vers un patient par
     // accident. Même doctrine que WN_AGENDA_RELANCE / WN_C4_ENABLED.
-    for (const valeur of ['1', 'TRUE', 'True', 'yes', 'oui', ' true', 'true ']) {
+    //
+    // La chaîne VIDE est dans la liste, et distincte du cas « absente » testé
+    // plus haut : une variable créée puis effacée au panneau Vercel laisse une
+    // valeur vide, pas une variable supprimée. Les deux doivent fermer.
+    for (const valeur of ['', '1', 'TRUE', 'True', 'yes', 'oui', ' true', 'true ']) {
       const { entree } = await chargerCatalogue(valeur);
       expect(entree?.actif, `« ${valeur} » ne doit pas ouvrir l’instrument`).toBe(false);
     }

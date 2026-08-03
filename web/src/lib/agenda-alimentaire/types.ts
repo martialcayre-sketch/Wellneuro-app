@@ -16,8 +16,23 @@
 // alimentaire horodaté) est un instrument courant ; les MÉTRIQUES dérivées
 // (jeûne nocturne, fenêtre alimentaire, écart-type des ancres) sont des
 // grandeurs usuelles de chronutrition ; l'INDICE /100 et les deux composites
-// servis à « Mon équilibre » sont des constructions WellNeuro non validées —
-// niveau de preuve D. Indice longitudinal, jamais diagnostique.
+// seraient des constructions WellNeuro non validées — niveau de preuve D.
+// Indice longitudinal, jamais diagnostique.
+//
+// [CORRECTION DU 2026-08-03] Ce commentaire annonçait ces composites « servis à
+// Mon équilibre ». Ils ne le sont pas, et la décision est prise de ne pas les y
+// servir : le besoin 3 « Rythme alimentaire » a DÉJÀ une source, le sous-score
+// `RYTHME_CHRONO` de `Q_ALI_01` (`equilibre/constants.ts`). Y ajouter l'agenda
+// ferait deux mesures d'un même thème — le piège que `lib/anthropic.ts`
+// documente pour `RYTHME_ALIMENTAIRE` /10 contre `RYTHME_CHRONO` /7, dont
+// l'agenda serait le TROISIÈME porteur. `sourceMonEquilibre` vaut donc `false`
+// au registre des instruments, et `BESOIN_SOURCES` n'est pas touché.
+//
+// Ce qui est visé à la place : l'ÉCART entre le rythme DÉCLARÉ (`Q_ALI_01`) et
+// le rythme OBSERVÉ (21 jours), comme objet clinique distinct. Il reste à
+// écrire, et il dépend de la forme servie — sous la forme courte à 14 items,
+// `MAX_RYTHME_CHRONO` vaut 0 et il n'existe aucun rythme déclaré à comparer :
+// l'écart devra alors rendre `null`, jamais 0, qui se lirait « pas d'écart ».
 
 export const AGENDA_ALI_ID = 'Q_ALI_09' as const;
 export const AGENDA_ALI_TITRE = 'Agenda alimentaire — 21 jours' as const;

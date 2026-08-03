@@ -628,10 +628,14 @@ export const Q_ALI_03 = {
  * retenu est donc collecte → calibrage, et non l'inverse.
  *
  * ── FRONTIÈRE JA — CE QU'IL NE MESURERA PAS ────────────────────────────────
- * Aucune quantité, aucun gramme, aucune kcal, aucun aliment identifié, aucune
- * projection vers `Q_ALI_01` ou `Q_ALI_02`, aucun score SIIN. L'interdit est
- * écrit en tête de `lib/agenda-alimentaire/types.ts` et à l'entrée JA du
- * registre des frontières ; il vaut aussi pour cette définition.
+ * Aucune quantité, aucun gramme, aucune kcal, aucune projection vers `Q_ALI_01`
+ * ou `Q_ALI_02`, aucun score SIIN. Sur les aliments, l'interdit est plus précis
+ * qu'un « aucun aliment identifié » : `lib/agenda-alimentaire/types.ts` écrit
+ * « aucun aliment identifié AU-DELÀ des présences ci-dessus », et ces présences
+ * — légumes, fruits ou oléagineux, ultra-transformés — sont bien recueillies au
+ * niveau de la journée. Citer l'interdit en le durcissant le brouille autant
+ * que l'affaiblir : c'est la formule exacte du contrat qui fait foi, et elle
+ * est reprise à l'entrée JA du registre des frontières.
  *
  * ── IL N'ALIMENTE PAS LE BESOIN 3, ET C'EST UNE DÉCISION ───────────────────
  * Le besoin 3 « Rythme alimentaire » est déjà sourcé par le sous-score
@@ -657,7 +661,13 @@ export const Q_ALI_03 = {
  */
 export const Q_ALI_09 = {
   id:'Q_ALI_09', titre:'Agenda alimentaire — 21 jours',
-  instructions:"Chaque jour pendant trois semaines, notez en moins d'une minute les horaires de vos prises alimentaires. Vos saisies restent visibles sous forme d'une frise ; elles sont transmises à votre praticien à la fin du recueil.",
+  // Les textes décrivent ce qui EXISTE, jamais ce qui est prévu. Une première
+  // rédaction promettait une frise et une transmission en fin de recueil : ni
+  // l'une ni l'autre n'est livrée, et le seul geste qui sépare la production de
+  // cet écran est un `true` posé au panneau Vercel — pas une revue de code. Un
+  // texte qui décrit la surface d'un lot futur transforme donc une erreur de
+  // configuration en promesse rompue devant le patient.
+  instructions:"Chaque jour pendant trois semaines, notez en moins d'une minute les horaires de vos prises alimentaires.",
   sections:[],
   scoring:{
     type:'journal',

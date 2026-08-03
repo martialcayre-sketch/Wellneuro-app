@@ -2798,9 +2798,9 @@
         "verifiePar": null
       },
       "droits": {
-        "statut": "libre",
-        "detail": "Construction WellNeuro sans source tierce : le recueil porte des horaires de prises et quatre présences déclarées, aucun item repris d'une échelle publiée. La frontière JA (docs/claude/REGISTRE_FRONTIERES.md) lui interdit par ailleurs toute quantité, tout aliment identifié et toute projection vers Q_ALI_01 ou Q_ALI_02 — il ne peut donc pas reproduire le contenu d'un instrument tiers sans franchir cet interdit. CE QUI N'EST PAS AFFIRMÉ ICI : aucun rapprochement avec un support du cabinet n'a été instruit, et `sourceIds` est vide en conséquence — le barreau reste `repere`, le premier de l'échelle.",
-        "dateVerification": "2026-08-03"
+        "statut": "a_verifier",
+        "detail": "DROITS NON INSTRUITS. Aucun rapprochement avec un support du cabinet n'a été fait : `sourceIds` est vide en conséquence, et le barreau reste `repere`, le premier de l'échelle. Une recherche du 2026-08-03 dans `source_registry.json` (507 sources) n'a remonté aucun support de type agenda, journal ou carnet alimentaire — c'est une absence de pièce, PAS une preuve d'originalité. CE QUI N'EST DÉLIBÉRÉMENT PAS AFFIRMÉ ICI : que l'instrument serait une construction WellNeuro sans source tierce. Cette formule a été écrite le 2026-08-03 puis retirée le même jour, sur revue adversariale — elle n'avait aucune pièce derrière elle, et c'est exactement la revendication retirée de l'entrée `Q_SOM_09` le 2026-07-30, pour la même raison. Le contrat du domaine (`lib/agenda-alimentaire/types.ts`) qualifie d'ailleurs le support — un semainier alimentaire horodaté — d'« instrument courant », ce qui penche plutôt dans l'autre sens. À noter enfin que la frontière JA n'établit AUCUN statut de droits : elle interdit les quantités et les aliments identifiés, pas la reprise d'une structure ou d'une mise en page. `a_verifier` plutôt que `libre` : au barreau `repere` les deux passent le vérificateur à l'identique, mais `libre` appartient à `DROITS_DEGAGES` et pré-autoriserait la montée à `droits_verifies` sans qu'aucune source ait jamais été instruite.",
+        "dateVerification": null
       },
       "cosmin": "inconnu",
       "statutCertification": "repere",
