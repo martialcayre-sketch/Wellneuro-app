@@ -2451,7 +2451,48 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       // c'est un invariant — aucun d'eux ne déclare `reversed` — et
       // `inversionsDeclarees.guard.test.ts` le tient, pour ceux-là comme pour
       // les sept autres branches restées à `[]`.
-      const {total} = totalSousScore(sub.items, sub.reversed);
+      // LA COMPLÉTUDE DE L'AXE DEVIENT LISIBLE — `repondus` et `items`.
+      //
+      // `totalSousScore` compte depuis toujours ce qui a été répondu et ce qui
+      // manque ; cette branche jetait les deux. Le sous-score servi disait
+      // « 12 » sans dire sur combien d'items. Or sa frontière de mesure est
+      // « au moins un item » (voir sa doctrine plus haut) : un axe
+      // partiellement répondu rend un total RÉEL mais BIAISÉ VERS LE BAS,
+      // indiscernable d'un axe complet et bas pour qui ne lit que `total`.
+      //
+      // Ce que cette cécité coûtait, mesuré : le moteur d'orientation
+      // (`clinical/orientationEngine.ts`) compare ce total à des seuils, dont
+      // sept en `<=` sur `Q_MOD_01`, échelle INVERSÉE. Trois items répondus à
+      // leur MEILLEURE option, puis abandon, produisaient trois axes très bas
+      // — donc « dégradés » — et sept recommandations dont deux packs, au motif
+      // d'un « sommeil non réparateur » que le patient venait de déclarer
+      // excellent. Rien dans le sous-score ne disait que la passation était
+      // incomplète.
+      //
+      // POURQUOI `repondus`/`items` ET NON `missing`. Les trois sont
+      // équivalents (`items = repondus + missing`) et `missing` serait le plus
+      // direct — mais ces sous-scores partent aussi au modèle de synthèse, et
+      // `promptSousScores.guard.test.ts` exige que TOUT champ livré soit décrit
+      // dans la consigne. `items` et `repondus` y sont nommés, avec exactement
+      // ce sens (« combien la catégorie en contient, combien ont reçu une
+      // réponse ») ; `missing` ne l'est pas, et l'y ajouter imposerait de
+      // bumper `VERSION_PROMPT_SYNTHESE` et son empreinte — un acte visible qui
+      // n'appartient pas à ce lot. Le champ le plus court aurait donc coûté un
+      // versionnement de consigne ; les deux champs déjà décrits ne coûtent
+      // rien et disent la même chose.
+      //
+      // `items` = `repondus + missing`, JAMAIS `sub.items.length` : `sumItems`
+      // écarte les questions dont le conditionnel n'est pas satisfait (le
+      // QLQ-BR23 en porte deux). Une question légitimement non posée n'est pas
+      // une question sans réponse, et la compter ferait passer pour incomplet
+      // un axe qui ne l'est pas.
+      //
+      // Ce qui NE change PAS ici : `total`, `scaled` et `interpretation`. La
+      // frontière de mesure du 2026-07-29 reste celle des sous-scores, et
+      // d'autres consommateurs lisent `total`. On rend la complétude LISIBLE ;
+      // qui doit la faire RESPECTER le décide chez lui — même partage que
+      // `sum`, qui sert ses comptes d'items à côté de son total depuis #561.
+      const {total, missing, repondus} = totalSousScore(sub.items, sub.reversed);
       // `null * multiplier` vaut 0 : sans ce test, l'axe non mesuré revenait par
       // la porte du score pondéré.
       const scaled = total === null ? null : (sub.multiplier ? total * sub.multiplier : total);
@@ -2460,7 +2501,7 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
         const interpDef = sc.interpretation.find((i: any) => i.subscale === sub.id || i.subscale === '*');
         if (interpDef) interp = interpretRanges(scaled, interpDef.ranges);
       }
-      return {id: sub.id, label: sub.label, total, scaled, max: sub.max, maxScaled: sub.multiplier ? sub.max*sub.multiplier : sub.max, interpretation: interp, ...(sub.horsTotal === true ? {horsTotal: true} : {})};
+      return {id: sub.id, label: sub.label, total, scaled, max: sub.max, maxScaled: sub.multiplier ? sub.max*sub.multiplier : sub.max, interpretation: interp, repondus, items: repondus + missing, ...(sub.horsTotal === true ? {horsTotal: true} : {})};
     });
     // `horsTotal` : une sous-échelle que l'instrument rapporte À PART et qui ne
     // s'additionne pas au score global (question de qualité de vie de l'IPSS).
