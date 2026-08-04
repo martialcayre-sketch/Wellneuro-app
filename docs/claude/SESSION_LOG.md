@@ -2088,7 +2088,7 @@ la tentation d'appliquer partout le patron `changelog.d/`. `SESSION_LOG` prend
 un fichier par lot sous `docs/claude/handoffs/`, horodatés à la minute, sans fichier
 « courant » généré. `DECISIONS.md` reste à créneau unique mais sa numérotation devient
 gardée. Le garde de cross-invocation passe fail-closed, avec un marqueur qui NOMME sa
-cible. Registre : **D-016**.
+cible. Registre : **D-017**.
 
 **Écarté** — Le renommage de l'identifiant de décision en `D-AAAA-MM-JJ-slug` : collision
 impossible par construction, mais quatorze décisions citées depuis du code clinique à
@@ -2125,3 +2125,48 @@ est append-only par convention, pas par contrainte : `/wn-compact-sessionlog` le
 et une compaction concurrente ferait ressusciter des entrées — avertissement posé en tête
 de ce skill. (3) Le marqueur nominatif croît de façon monotone (100 mentions) et entre
 dans le contexte à chaque invocation de skill.
+## 2026-08-04 — Table d'orientation V2 : un premier tour qui existe
+
+**Le diagnostic** — La table V1 portait six règles publiées et ne pouvait **rien** proposer au
+premier rendez-vous : elles se déclenchent sur `Q_SOM_01`, `Q_STR_02` et `Q_GAS_01`, qui ne
+sont pas dans le pack de base réellement administré (`Q_MOD_03`, `Q_MOD_01`, `Q_INF_03`,
+`Q_ALI_01`). Aucun banc ne pouvait le voir : les règles étaient justes, et inatteignables.
+Table portée à **20 règles**, en deux tours — le premier sur le pack de base et l'anamnèse,
+le second sur les instruments que le premier fait revenir.
+
+**Décidé** — Signature écartée en l'état ; agendas exclus du premier tour ; un pack absorbe
+ses membres, sans plafond ; `R2-GAS-02` conservée mais requalifiée en **arbitrage praticien
+assumé** ; `R2-NEU-03` refondée sur la grille certifiée de l'instrument.
+
+**Écarté faute de source** — pack cardio-métabolique sur plainte de surpoids, `Q_FIB_01` sur
+plainte de douleur. Une règle envisagée puis **réintégrée** : le relecteur a montré que ma
+note « écarté faute de source » était fausse sur `Q_ALI_01` — `WN-CL-0287-009` fonde bien une
+porte alimentaire vers le pack digestif.
+
+**Le sourçage a corrigé mes seuils avant que je les écrive.** J'avais posé `Q_INF_03 ≥ 20` ;
+le corpus donne 10, et l'instrument aussi. Puis la revue a démoli ma justification : « ≥ 10
+est la négation exacte du profil favorable » — **la négation d'une conjonction est une
+disjonction**. Le seuil était bon, le raisonnement faux, et le claim venait d'un contexte de
+sevrage tabagique où le HAD est un *intrant*, pas une sortie.
+
+**Le vrai défaut était sous la table.** Le moteur `subscore` calcule un axe dès qu'**un** item
+est renseigné : un total partiel est biaisé vers le bas, et mes déclencheurs `<=` le lisaient
+comme une dégradation. Trois items répondus à leur **meilleure** valeur, puis abandon →
+**sept recommandations dont deux packs**, motivées par « Sommeil non réparateur » chez
+quelqu'un qui venait de déclarer un excellent sommeil. Les règles V1 en étaient protégées
+parce qu'elles lisaient une interprétation globale ; c'est mon passage à `comparaison` — juste
+par ailleurs, à cause du trou à 9 — qui a ouvert la brèche. Fermé aux deux étages.
+
+**Trois fois, un relecteur a vu ce que je ne voyais pas** : ce défaut-là ; qu'un pack
+s'affichait à côté de ses propres membres ; et qu'un déclencheur sur `Q_ALI_01` est **aveugle
+à la position du drapeau** — deux instruments derrière un identifiant, la forme courte servie
+partout où `WN_ALI_01_SIIN57` manque. Réparé en déclenchant sur les **libellés** de bande, que
+les deux formes ne partagent pas.
+
+**Prochaine action** — La signature (`ORIENTATION_METADATA`) reste à faire, puis le drapeau
+`WN_ENABLE_ORIENTATION_NNPP2`, puis la clôture de la campagne. Trois gestes distincts.
+
+**Questions ouvertes** — Le PSQI partiel n'est pas gardé (il ne publie aucun compte à la
+racine) : défaut pré-existant, nommé, non fermé. `R-STR-02` cite `WN-CL-0105-001`, qui porte
+sur l'alimentation méditerranéenne, pour engager le pack stress — citation mal appariée, à
+trancher avant la signature.

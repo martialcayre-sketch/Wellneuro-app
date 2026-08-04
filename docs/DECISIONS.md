@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-016 — Un artefact partagé se découpe ou se fusionne tout seul ; un garde qui ne peut pas mordre ne garde rien
+### D-017 — Un artefact partagé se découpe ou se fusionne tout seul ; un garde qui ne peut pas mordre ne garde rien
 
 - Date : 2026-08-04
 - Statut : accepté (lot outillage — créneaux partagés et chaîne de skills)
@@ -14,6 +14,16 @@
 - Réserves : `merge=union` n'est éprouvé **qu'en fusion locale** (merge et rebase) ; son honorabilité par un squash côté GitHub n'est pas établie. Le journal est append-only **par convention**, pas par contrainte — `/wn-compact-sessionlog` le réécrit, et une compaction concurrente d'un ajout ferait **ressusciter** silencieusement des entrées compactées ; l'avertissement est en tête de ce skill. Le garde `D-NNN` interdit les trous : un numéro ne se libère jamais, une décision retirée s'archive. Le marqueur nominatif croît de façon monotone (100 mentions déclarées aujourd'hui) et entre dans le contexte à chaque invocation de skill. Enfin, `docs/DECISIONS.md` **reste** le seul artefact partagé non découpé : sa collision est désormais visible et bloquante, pas impossible — c'est l'arbitrage assumé, le renommage de quatorze décisions citées depuis du code clinique n'ayant pas sa place dans un lot d'outillage.
 - Note de lecture : les lignes « Référence » antérieures à ce lot qui pointent `docs/claude/HANDOFF_CURRENT.md` — dont celle de **D-010** — désignent désormais le fragment correspondant de `docs/claude/handoffs/`. Le registre étant append-only, elles ne sont pas retouchées.
 - Référence : [../.gitattributes](../.gitattributes), [claude/handoffs/README.md](claude/handoffs/README.md), [../scripts/lib/skill-cross-invocation.mjs](../scripts/lib/skill-cross-invocation.mjs), [../scripts/lib/decisions-numerotation.mjs](../scripts/lib/decisions-numerotation.mjs), [../scripts/parite-check-ci.test.mjs](../scripts/parite-check-ci.test.mjs)
+
+### D-016 — Une règle d'orientation ne se déclenche que sur une mesure complète, et sur la forme réellement servie
+
+- Date : 2026-08-04
+- Statut : accepté (arbitrages praticien en session, table d'orientation V2)
+- Domaine : clinique, orientation et scoring
+- Décision : un déclencheur de la table d'orientation ne mord que sur une **mesure complète** — le moteur refuse un axe dont `repondus < items`, et un score global dont le porteur déclare un recueil partiel. Et il doit être **solidaire de la forme servie** : quand un `idQuestionnaire` désigne deux instruments selon un drapeau, le déclencheur porte sur les **libellés de bande**, que les deux formes ne partagent pas, et non sur une couleur, qu'elles partagent.
+- Conséquences : le moteur `subscore` calcule le total d'un axe **dès qu'un seul item est renseigné** ; un total partiel est donc biaisé **vers le bas**, et un déclencheur `<=` le lit comme une dégradation. Mesuré : trois items de `Q_MOD_01` répondus à leur **meilleure** valeur, puis abandon, produisaient **sept recommandations dont deux packs**, motivées par « Sommeil non réparateur » chez un patient qui venait de déclarer un excellent sommeil. Les sous-scores servent désormais `repondus` et `items` (et non `missing` : le décrire aurait imposé de bumper la consigne de synthèse, verrouillée par empreinte). Sur `Q_ALI_01`, dont la forme courte est servie partout où `WN_ALI_01_SIIN57` manque — CI, dev, preview —, le déclencheur porte sur les deux libellés de la forme SIIN57 : la règle cesse d'elle-même de mordre quand le drapeau est éteint, et reste solidaire du claim, qui parle de l'enquête « détaillée ».
+- Réserves : **le PSQI partiel n'est pas gardé.** `psqi` et `tfd` ne publient aucun compte à la racine, donc la garde globale ne sait pas quoi lire ; un PSQI à 8 réponses sur 24 rend `total: 14`, décroche une bande, et `R-SOM-01` s'allume. Défaut **pré-existant**, nommé dans le code, non fermé par ce lot. Par ailleurs `items = repondus + missing` n'est exercé par aucun instrument du catalogue (aucun instrument `subscore` ne porte d'item conditionnel) : une régression y serait silencieuse.
+- Référence : [web/src/lib/clinical/orientationEngine.ts](web/src/lib/clinical/orientationEngine.ts), [web/src/lib/clinical/orientationRulesV1.ts](web/src/lib/clinical/orientationRulesV1.ts), [web/src/lib/questions.ts](web/src/lib/questions.ts), [[D-014]]
 
 ### D-015 — Agenda alimentaire : la saisie patient exige un consentement enregistré, se ferme à la clôture de suivi, et le doublon se refuse au chemin d'écriture
 
