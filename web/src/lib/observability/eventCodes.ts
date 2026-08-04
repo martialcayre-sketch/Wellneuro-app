@@ -41,6 +41,31 @@ export const EVENT_CODES = {
   DOSSIER_EFFACE: 'SECURITY.CYCLE_DE_VIE.EFFACE',
   DOSSIER_CYCLE_DE_VIE_EXCEPTION: 'SECURITY.CYCLE_DE_VIE.EXCEPTION',
 
+  // Agenda alimentaire (Q_ALI_09), surface PORTAIL. Le jumeau du sommeil ne
+  // trace RIEN : une énumération d'`idAssignation` y est invisible, alors que
+  // `patient/submit` la trace depuis toujours. On ne reproduit pas ce trou.
+  //
+  // Le préfixe est `PORTAIL_PATIENT.` et non `AGENDA_ALIMENTAIRE.` : `EventCode`
+  // vaut `${LogDomain}.${string}`, et `AGENDA_ALIMENTAIRE` n'est pas un
+  // `LogDomain`. En ajouter un élargirait le contrat de journalisation de toute
+  // l'application pour un lot d'une seule route ; le domaine est bien le portail
+  // patient, l'agenda n'en est qu'une surface.
+  AGENDA_ALIMENTAIRE_PORTAIL_FORBIDDEN: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.FORBIDDEN',
+  AGENDA_ALIMENTAIRE_PORTAIL_UNAVAILABLE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.UNAVAILABLE',
+  AGENDA_ALIMENTAIRE_JOUR_REJETE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.JOUR_REJETE',
+  // Refus de FORME rendu AVANT toute barrière (413, JSON illisible). Code
+  // DISTINCT de `JOUR_REJETE`, qui suppose une session portail valide : les
+  // deux populations ne se comptent pas ensemble, et le seul NIVEAU ne suffit
+  // pas à les départager — le `413` est tracé en `WARN` comme les refus
+  // post-authentification.
+  AGENDA_ALIMENTAIRE_FORME_REJETEE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.FORME_REJETEE',
+  AGENDA_ALIMENTAIRE_JOUR_ENREGISTRE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.JOUR_ENREGISTRE',
+  AGENDA_ALIMENTAIRE_PORTAIL_EXCEPTION: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.EXCEPTION',
+  // Anomalie d'INTÉGRITÉ, distincte d'un refus patient : une ligne en base que
+  // la lecture n'a pas su relire (version de contrat inconnue). Le compte
+  // remonte au patient par le GET, mais c'est ce code qui ouvre un incident.
+  AGENDA_ALIMENTAIRE_LIGNE_ILLISIBLE: 'PORTAIL_PATIENT.AGENDA_ALIMENTAIRE.LIGNE_ILLISIBLE',
+
   QUESTIONNAIRE_SUBMIT_INVALID_PAYLOAD: 'QUESTIONNAIRE.SUBMIT.VALIDATION_FAILED',
   QUESTIONNAIRE_SUBMIT_FORBIDDEN: 'QUESTIONNAIRE.SUBMIT.FORBIDDEN',
   QUESTIONNAIRE_SUBMIT_ALREADY_DONE: 'QUESTIONNAIRE.SUBMIT.ALREADY_DONE',

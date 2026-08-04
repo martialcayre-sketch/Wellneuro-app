@@ -164,6 +164,26 @@ describe('lecture — la ligne illisible est mise en quarantaine, pas l’agenda
     expect(illisibles).toBe(2);
   });
 
+  it('NOMME les dates en quarantaine, dédoublonnées', async () => {
+    // Le COMPTE seul condamne l'appelant à refuser en bloc. `date_jour` est une
+    // COLONNE, lisible même quand le JSONB ne l'est pas : la date est là sans
+    // requête supplémentaire, et c'est elle qui permet au chemin d'écriture de
+    // borner son refus à la journée réellement illisible.
+    const illisible = { contractVersion: 'agenda-alimentaire-v9', ...REPONSES };
+    prisma.agendaAlimentaireJour.findMany.mockResolvedValue([
+      ligne({ id: 'J1' }),
+      ligne({ id: 'J2', dateJour: '2026-08-02', reponses: illisible }),
+      // MÊME date que J2 : append-only, une date peut porter deux lignes.
+      ligne({ id: 'J3', dateJour: '2026-08-02', reponses: illisible }),
+      ligne({ id: 'J4', dateJour: '2026-08-03', reponses: illisible }),
+    ]);
+    const { jours, illisibles, datesIllisibles } = await listJours(ENTREE.idPatient);
+    expect(jours.map((j) => j.id)).toEqual(['J1']);
+    // Le compte et la longueur du tableau NE SONT PAS interchangeables.
+    expect(illisibles).toBe(3);
+    expect(datesIllisibles).toEqual(['2026-08-02', '2026-08-03']);
+  });
+
   it('tolère une ligne sans version — elle doit rester relisible', async () => {
     prisma.agendaAlimentaireJour.findMany.mockResolvedValue([ligne({ reponses: REPONSES })]);
     const { jours, illisibles } = await listJours(ENTREE.idPatient);

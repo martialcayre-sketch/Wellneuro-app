@@ -59,11 +59,10 @@ export async function authorizeAgendaPortail(
 // Date du jour AAAA-MM-JJ dans le fuseau Europe/Paris — gère l'heure d'été sans
 // dépendre du fuseau du conteneur Vercel (UTC). C'est la référence de
 // `estDateSaisissable` et de la fenêtre : jamais la date du client (non fiable).
-export function dateJourParis(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat('fr-CA', {
-    timeZone: 'Europe/Paris',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(now);
-}
+//
+// La DÉFINITION a déménagé dans `@/lib/dateParis` : elle sert désormais deux
+// agendas (sommeil et alimentaire) et trois routes praticien, dont aucune ne
+// relève du sommeil. La recopier aurait posé une seconde horloge — voir
+// l'en-tête de `lib/dateParis.ts`. Le réexport est conservé pour ne toucher
+// aucun des appelants existants.
+export { dateJourParis } from '@/lib/dateParis';

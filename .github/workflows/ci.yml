@@ -428,7 +428,31 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1_negatif.sql
 
-      # Les deux contrats ci-dessus éprouvent la STRUCTURE ; ce banc éprouve le
+      # Agenda alimentaire (Q_ALI_09, lot L3 puis L4a). Le lot L3 a déclaré sa
+      # réserve : aucune ligne n'avait jamais été écrite ni relue contre une
+      # vraie base. Ce contrat éprouve ce que `migrate diff` ne voit pas — la
+      # RLS, l'action référentielle des deux clés étrangères (RESTRICT, sans
+      # lequel la suppression nommée de `patient/effacement.ts` deviendrait du
+      # code mort en silence), et le VERROU DE PÉRIMÈTRE qui refuse une colonne
+      # de gramme, de kcal, de score ou de quantité — la frontière « journal
+      # alimentaire, pas carnet de pesée » cesse d'être un commentaire. Le même
+      # verrou existe côté JSONB (clés de premier niveau de `reponses`), mais il
+      # est VACUE ICI : la base du CI est vide, donc sans clé à parcourir. C'est
+      # le chemin le moins coûteux pour ranger un agrégat, donc celui à rejouer
+      # à la main sur la production.
+      # Il porte aussi une assertion INVERSÉE, délibérée : AUCUN index unique
+      # sur (id_assignation, date_jour). En poser un ressemblerait à un
+      # durcissement et casserait le modèle append-only — les lignes supplantées
+      # restent, et `lignes − dates distinctes` est le taux de correction.
+      # Ses trois invariants de DONNÉES (verrou de périmètre JSONB ci-dessus,
+      # version de contrat, chaînage de correction) sont vacués sur la base CI,
+      # vide : ils sont là pour être rejoués en lecture seule sur la production.
+      - name: Agenda alimentaire contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/agenda_alimentaire_v1.sql
+
+      # Les contrats ci-dessus éprouvent la STRUCTURE ; ce banc éprouve le
       # CHEMIN D'ÉCRITURE de l'import CB-02a, que les tests Vitest ne touchent
       # pas (ils couvrent la logique pure). Il rejoue une rotation de millésime
       # sur fixtures : c'est le seul contexte où se manifeste le défaut trouvé
