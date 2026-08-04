@@ -32,6 +32,7 @@
 | **SP-CONV** | Convergence Spirale 5.0 : trajectoire partagée | **en cours** (activée le 2026-07-22 en campagne parallèle — g-trust-04 reste principale ; LOT-01 courant) | cycles G2 ✓ + SP-TT ✓ + signaux portail existants ; sans migration | 7 |
 | SP-CAB / SP-AMB | Disposition 5.0 (suite) | à cadrer — séquence au programme 5.0 | SP-CAB : `n ≥ 5` épisodes clos ; SP-AMB : **gate CNIL/RGPD bloquant** | — |
 | WN-AUTO | Orchestration | terminée | — | — |
+| **REPRISE** | [Reprise des chantiers en suspens](2026-08-04-reprise-chantiers-en-suspens/CAMPAGNE.md) — travail sauvé de worktrees orphelins | **ouverte** (2026-08-04) — trois branches poussées, aucune validée ni revue ; chaque lot se clôt par « livrer » ou « clore par écrit » | aucune ; LOT-01 porte une migration et un défaut clinique | 3 |
 
 ## Campagne active
 
