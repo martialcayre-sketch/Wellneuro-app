@@ -1,18 +1,14 @@
 ---
-id: "L4B"
+id: "LOT-04"
 titre: "Agenda alimentaire — aiguillage, hub patient, surface de saisie et borne des 21 jours"
 statut: "à faire"
-dépend_de: "L4a (PR #562)"
+dépend_de: "LOT-03"
 ---
 
-# L4B — Agenda alimentaire : la surface que le patient voit
+# LOT-04 — Agenda alimentaire : la surface que le patient voit
 
-> **Pourquoi ce fichier n'est pas sous `docs/claude/campagnes/`.** La série agenda
-> alimentaire (L1, L1-bis #554, L3 #557, L4a #562) n'a jamais eu de campagne : ses
-> lots ont vécu dans `docs/claude/handoffs/`. `scripts/wn-campaign-audit.mjs` ne scanne
-> que `docs/claude/campagnes` (ligne 9) ; fabriquer une campagne pour un lot unique
-> ajouterait un artefact audité sans rien clore. Ce répertoire accueille les briefs de
-> lot des séries sans campagne.
+> Anciennement « L4b » dans la série agenda alimentaire ; voir la correspondance
+> dans [CAMPAGNE.md](../CAMPAGNE.md).
 
 ## But
 
@@ -28,8 +24,8 @@ une journée en moins de 30 s, et le serveur refuse toute date hors de la fenêt
 - **Hub patient** — l'agenda apparaît dans la liste des questionnaires, avec son avancement.
 - **Surface de saisie** — une journée par écran, cible < 30 s/jour, consommant la route L4a.
 - **Borne des 21 jours** — le `POST` refuse toute `dateJour` hors de `[dateDebut, dateDebut + 20]`
-  (arbitrage [D-018](../../DECISIONS.md)).
-- **Deux dettes L4a explicitement datées L4b par [D-015](../../DECISIONS.md)** :
+  (arbitrage [D-018](../../../../DECISIONS.md)).
+- **Deux dettes L4a explicitement datées L4b par [D-015](../../../../DECISIONS.md)** :
   - un paramètre `{ verifierDateLimite: true }` porté par le **seul** `POST`, pour que
     « date limite dépassée » (`410`) morde avant le `403` de consentement ;
   - l'exemption `statutReponses = 'deverrouille'` côté `api/patient/consentement`.
@@ -51,10 +47,10 @@ une journée en moins de 30 s, et le serveur refuse toute date hors de la fenêt
 - **Aucune migration Prisma**, aucun `schema.prisma` touché.
 - **Aucun index unique** sur `(id_assignation, date_jour)` : le modèle est append-only et
   `web/prisma/checks/agenda_alimentaire_v1.sql` l'interdit — la métrique de friction
-  `count(lignes) − count(DISTINCT date_jour)` en dépend ([D-015](../../DECISIONS.md)).
+  `count(lignes) − count(DISTINCT date_jour)` en dépend ([D-015](../../../../DECISIONS.md)).
 - **Aucune colonne ni clé JSONB** de gramme, kcal, score, indice ou quantité : frontière
   « journal alimentaire, pas carnet de pesée », assérée par le même contrat SQL.
-- **Ne pas toucher l'agenda du sommeil** — dette nommée dans [D-015](../../DECISIONS.md),
+- **Ne pas toucher l'agenda du sommeil** — dette nommée dans [D-015](../../../../DECISIONS.md),
   hors périmètre.
 - **Ne pas créer `WN_AGENDA_ALI` sur Vercel avant la fin du lot** : `IDS_SUSPENDUS` étant
   dérivé du drapeau, l'allumer rend `Q_ALI_09` assignable depuis la bibliothèque praticien
@@ -71,7 +67,7 @@ une journée en moins de 30 s, et le serveur refuse toute date hors de la fenêt
   - `dateDebut + 20` → accepté ; `dateDebut + 21` → refusé ;
   - correction d'une journée déjà notée dans la fenêtre avec `supersedesJourId` → acceptée ;
   - **journée d'ancre en quarantaine** → la fenêtre se ré-ancre en silence et la borne
-    glisse avec elle ([D-018](../../DECISIONS.md), réserve 1) : le test doit exercer ce
+    glisse avec elle ([D-018](../../../../DECISIONS.md), réserve 1) : le test doit exercer ce
     glissement, pas l'ignorer.
 - Unitaires sur l'ordre des refus : assignation périmée **et** sans consentement → `410`,
   pas `403`.
