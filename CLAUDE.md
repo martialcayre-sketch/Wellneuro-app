@@ -232,17 +232,41 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
   c'est ce qui a fait échouer cinq merges le 2026-07-21. Repli : `node
   scripts/changelog-collate.mjs`. Détail : `changelog.d/README.md`.
 
-### Attendre le CI d'une PR sans le sonder (idiome, ex-`/wn-pr`)
-
-Un seul appel bloquant en tâche de fond, qui rend la main dès que les checks se
-figent — plutôt que des `gh pr checks` / `gh pr view` répétés (le 2026-07-20, une
-session a produit 81 appels de sondage pour l'information que cette boucle rend en
-un seul) :
+### Attendre le CI d'une PR — un script, plus un idiome
 
 ```bash
-until [ -z "$(gh pr checks <N> --json bucket --jq '.[]|select(.bucket=="pending")' 2>/dev/null)" ]; do sleep 20; done
-gh pr checks <N>
+node scripts/wn-attendre-ci.mjs <N>     # un seul appel bloquant, en tâche de fond
 ```
+
+Un seul appel bloquant remplace le sondage répété (le 2026-07-20, une session a
+produit 81 appels de `gh pr checks` pour l'information que cet appel rend en un
+seul). Mais la boucle `until … bucket=="pending"` qui tenait ce rôle jusqu'au
+2026-08-03 **ne distinguait pas « aucun check en attente » de « aucun check du
+tout »** : elle rendait la main sur deux checks Vercel verts quand `verify`
+n'avait jamais été créé. C'est arrivé sur la PR #550, et le correctif a dû être
+refait à la main sur #553. Une règle oubliée deux fois devient exécutable.
+
+| Code | Sens | Geste |
+|---|---|---|
+| `0` | les checks **obligatoires** ont tourné et sont verts | annoncer la PR prête |
+| `1` | un check obligatoire a échoué | lire le log, corriger |
+| `2` | un check obligatoire **n'a pas tourné** — absent, ou gelé en `action_required` | le script nomme **toutes** les causes applicables ; ne pas merger |
+| `3` | délai dépassé sans conclusion | expirer n'est pas réussir |
+| `4` | **indéterminé** — PR illisible ou mergée, `gh` muet, ou liste des checks obligatoires illisible | aucun verdict ; ne pas merger |
+| `5` | les checks sont verts mais la PR est **en conflit** | ce vert porte sur un commit qui n'est pas le résultat fusionné |
+
+**`0` est le seul code qui autorise à annoncer une PR prête.** Les cinq autres
+disent, chacun à sa façon, qu'on ne peut pas l'affirmer — y compris `4`, qui
+couvre le cas où la liste des checks obligatoires n'a pas pu être lue : ne
+sachant plus ce qu'il fallait attendre, le script se tait plutôt que de replier
+en silence sur `verify`.
+
+La liste des checks attendus vient de la **protection de branche** (`verify`
+aujourd'hui), pas d'une constante : un second check rendu obligatoire est suivi
+sans toucher au script. Ce qu'il ne fait pas : merger, ou dire s'il faut merger.
+Un même nom porté par **deux runs** (le cas des branches `campaign/**`, que
+`ci.yml` déclenche sur `push` *et* sur `pull_request`) n'est vert que si les
+deux le sont — le rouge ne se laisse pas écraser par l'ordre du tableau.
 
 Gabarit de corps de PR et check-list complète : le skill `/wn-pr` (invocation
 manuelle ; ces idiomes valent pour **toute** ouverture de PR, `/wn-pr` invoqué ou non).

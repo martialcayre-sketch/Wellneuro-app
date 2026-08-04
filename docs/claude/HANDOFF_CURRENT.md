@@ -1,136 +1,111 @@
-# Handoff — 2026-08-04 — Persistance de l'agenda alimentaire (L3)
+# Handoff — 2026-08-03 — Les deux promotions : attente du CI exécutable, et deux décisions au registre
+
+Écrit sur la branche vivante, avant le merge de #556.
 
 ## Git
 
-- Worktree `.claude/worktrees/agenda-ali-l3`, branche `worktree-agenda-ali-l3`,
-  partie de `main` à `059fcaaa` (après #555). PR à ouvrir.
-- Hors campagne, sans entrée `.wn/state.json` : deuxième lot d'une série sur
-  l'agenda alimentaire, après L1-bis (PR #554).
-- **Lot à MIGRATION** : `schema.prisma` + `prisma/migrations/`, plus l'effacement
-  RGPD. Aucune auth, aucune route, aucun changement du score servi.
+- Worktree `.claude/worktrees/promotions-attente-ci`, branche
+  `worktree-promotions-attente-ci`, partie de `main` à `059fcaaa` (après #555).
+- PR **#556** — `verify` vert en 8 min 37 s sur la tête précédente ; `main` a été
+  fusionné depuis (#553 mergée), **le CI est donc à relire sur la nouvelle tête**.
+- Hors campagne : dette de clôture de LOT-06 et LOT-01. Rien sous `web/src/`.
+- **#553 a été mergée** (`cd7c1b9b`) pendant cette session, sur autorisation
+  expresse. Son worktree est supprimé, sa branche distante aussi.
+
+## Objectif atteint
+
+Honorer les deux promotions que `/wn-finish` impose d'examiner à chaque clôture,
+proposées à la clôture de LOT-06 puis de LOT-01, et jamais écrites.
 
 ## Où en est la série
 
-L1-bis a rendu `Q_ALI_09` assignable et non scoré, drapeau `WN_AGENDA_ALI` éteint.
-L3 le rend **persistable**. Il ne livre ni saisie (L4) ni barème (L2) : l'ordre
-décidé avec le praticien est **collecte d'abord, calibrage ensuite** — aucune
-journée n'a jamais été recueillie, donc les cinq axes, leurs poids et la borne des
-18 h n'ont aucune distribution réelle sur quoi s'appuyer.
-
-## Les décisions qui ferment des options
-
-**L'abstention, et son asymétrie.** Les quatre présences obligatoires acceptent
-`null` — « je ne sais pas » —, distinct de la clé absente. Sans ce troisième état,
-un patient ignorant le contenu d'une journée devait répondre au hasard ou **sauter
-la journée entière**, perdant aussi ses horaires, qui sont la mesure principale.
-**`soirPlusCopieux` ne l'accepte pas** (arbitrage praticien du 2026-08-04) :
-facultatif, il n'alimente qu'un drapeau. Fait maintenant parce qu'aucune ligne
-n'existe ; après le premier patient, cela coûtait un contrat v2 et une fenêtre de
-recueil incomparable à elle-même.
-
-**`null !== undefined` est vrai en JS — et il y avait CINQ prédicats, pas un.**
-Le plan initial en nommait un seul. Un prédicat de couverture laissé en
-`!== undefined` aurait compté la journée comme connue, puis le filtre `=== true`
-l'aurait lue comme un « non » : un dénominateur divergeant de ses voisins, en
-silence. Tous passent à `typeof … === 'boolean'`. La différence de contrat vit
-dans le **type** et le **validateur**, jamais dans les prédicats.
-
-**Quarantaine par ligne à la lecture.** Une première version faisait
-`rows.map(toJourRow)` : une ligne illisible faisait disparaître **tout** l'agenda
-du patient — exactement le mode de panne que `jour.ts` refuse en toutes lettres.
-`listJours` rend désormais `{ jours, illisibles }` ; le compte remonte au lieu
-d'être avalé, sans quoi un lot tronqué pourrait franchir les seuils
-d'exploitabilité en ayant perdu des journées.
-
-**Aucune contrainte unique** sur `(id_assignation, date_jour)`, délibérément :
-`count(lignes) − count(distinct date_jour)` est le taux de correction, et avec
-`soumisLe` la courbe d'abandon se lit en SQL, sans nouvelle migration.
-
-**Trois écarts assumés au patron sommeil** : `persistence.ts` ne réexporte rien
-(l'alimentaire a un `index.ts` pur — réexporter ferait entrer Prisma dans un
-import client) ; la version de contrat est vérifiée en lecture (côté sommeil la
-liste des versions lues n'est consultée nulle part, la constante y est
-décorative) ; `canal` est honoré contre une liste fermée plutôt que forcé en dur.
-
-## Validations
+L'idiome documenté attendait que plus rien ne soit `pending`, puis lisait
+`gh pr checks`. Il ne distinguait pas **« aucun check en attente »** de
+**« aucun check du tout »** : il rendait la main sur deux checks Vercel verts
+quand `verify` — seul check obligatoire de la protection de `main` — n'avait
+jamais été créé. C'est arrivé sur #550 ; le correctif a été refait **à la main**
+sur #553. Une règle oubliée deux fois devient exécutable.
 
 `npm run check` vert dans les **deux** positions de `WN_AGENDA_ALI`. **T3 complet
 vert en 2 min 6 s** : PostgreSQL éphémère, `prisma migrate deploy` — le SQL manuel
 réellement exécuté —, **drift check `migrate diff --exit-code`**, contrats SQL,
 seed, 108 E2E.
 
-**Cinq mutations vérifiées**, chacune tue un test : un prédicat remis en
-`!== undefined` (2), la ligne d'effacement retirée (1), l'entrée de la liste de
-mocks retirée (8), la ligne d'effacement **déplacée** (1), et au lot précédent le
-drapeau en fail-open. Un garde vert qui n'a pas mordu ne prouve rien.
+1. **Six codes de sortie, et `0` seul autorise à annoncer une PR prête.**
+   `1` échec · `2` n'a pas tourné (absent ou gelé) · `3` délai · `4` indéterminé
+   · `5` vert mais PR en conflit. Chaque cas où l'on ne peut pas affirmer le vert
+   a son code : aucun ne se replie sur `0`.
+2. **La liste des checks attendus vient de la protection de branche**, jamais
+   d'une constante. Si elle est illisible, `verify` sert encore à diagnostiquer
+   mais plus à conclure — verdict `4`.
+3. **Expirer n'est pas réussir.** Une boucle d'attente qui rend `0` au bout de
+   son délai ne prouve que sa propre patience. Et l'absence d'un check rend `2`
+   même quand c'est le délai qui met fin à l'attente : l'absence est
+   l'information utile.
+4. **Les entrées homonymes sont agrégées, pas dédupliquées.** `ci.yml` se
+   déclenche sur `push` *et* `pull_request` : une PR issue de `campaign/**` porte
+   **deux** runs nommés `verify` (constaté sur #528). Un nom n'est vert que si
+   toutes ses entrées le sont.
+5. **Fonction pure + faits injectés.** Toute la décision est dans
+   `diagnostiquer()`, testable sans réseau ; `collecter()` ne fait que lire `gh`.
+   C'est ce dessin qui a rendu les défauts trouvables.
+6. **Écarté** : un contrôle CI bloquant réclamant l'usage du script — il
+   bloquerait un correctif urgent, dessin déjà écarté pour le handoff.
+
+## Ce qui est en place
+
+- `scripts/wn-attendre-ci.mjs` + banc **31 cas**, câblé dans `ci.yml` hors filtre
+  `docs_only` — **5 bancs déclarés avant, 6 après**.
+- L'idiome remplacé dans `CLAUDE.md`, `/wn-pr`, `/wn-merge`, et les **deux**
+  protocoles de `docs/ROLES_MACHINES.md`.
+- `docs/DECISIONS.md` : **D-012** (la barrière D-003 se garde au point de
+  passage, pas chez ses lecteurs) et **D-011** (un écart de restitution de l'IA
+  se journalise, ne se censure pas).
+- `docs/ROLES_MACHINES.md` affirmait `enforce_admins` **désactivé** : faux depuis
+  le 2026-07-21, démenti par la lecture directe du réglage.
 
 ## Ce que la revue adversariale a corrigé
 
-- **Condition de merge** — la position de la ligne d'effacement n'était gardée par
-  rien : le garde structurel est un `String.includes`, aveugle au **déplacement**.
-  Or c'est le déplacement qui casse — `effacerDossier` lèverait sur la FK RESTRICT
-  et l'effacement RGPD deviendrait impossible pour tout dossier portant une
-  journée. Mes quatre mutations testaient le retrait, jamais le déplacement. Test
-  d'ordre ajouté, morsure vérifiée.
-- **Contradiction interne** — le rejet de collection décrit plus haut.
-- Un test dont le nom promettait plus que son assertion (lot d'une seule ligne :
-  rejeter la ligne et rejeter la collection y sont indiscernables), et l'absence
-  de banc direct pour `contrat.ts`. Les deux comblés.
+- Banc 31/31 · **19 mutations, aucune ne survit** · T1 vert (340 fichiers,
+  3459 tests) · anti-secrets, cross-invocation, blocs `!`, audit campagnes : 0.
+- Exécution réelle : #553 en conflit → `5` · #550 mergée → `4` · numéro
+  inexistant → `4` · #556 → `0`, **le script a attendu son propre CI**.
+- **Deux revues adversariales** : NO-GO (3 bloquants) puis GO.
 
 ## Problèmes ouverts
 
-- **Aucun aller-retour contre une vraie base.** `persistence.test.ts` mocke Prisma
-  intégralement, et aucune route n'existe. La thèse « l'abstention survit en
-  base » n'est donc attestée que par un `vi.fn()` — or c'est précisément là que
-  `as unknown as object` efface la garantie de type. Le véhicule idiomatique du
-  dépôt est `prisma/checks/*.sql`, rejoué par le CI et par T3 ; **à poser avant
-  L4**.
-- **`null` ne se défend pas contre `if (x)`, `!x`, `Boolean(x)`** : TypeScript
-  accepte ces tests sur `boolean | null` et ils lisent l'abstention comme un
-  « non ». Aucun consommateur hors du domaine aujourd'hui ; l'écran de saisie L4
-  est exactement le lieu où ce raccourci s'écrira. Un prédicat exporté
-  (`estObserve(v): v is boolean`) rendrait la règle réutilisable.
-- **`soirPlusCopieux` rejette `null` en silence**, sans erreur : un écran L4
-  offrant trois états sur les cinq champs perdrait celui-ci sans signal.
-- **RLS sans `REVOKE` nominatif** : conforme au patron sommeil et suffisant (RLS
-  active sans policy bloque `anon`/`authenticated` sous PostgREST), mais en
-  retrait du patron `c5_ciqual` qui révoque nominativement. À vérifier après merge
-  sur des faits : `relrowsecurity` et `has_table_privilege('anon', …, 'SELECT')`.
-- **`normaliserQids`** (`api/praticien/packs`) filtre sur le catalogue de scoring
-  et non sur `IDS_SUSPENDUS` — défaut antérieur, hors périmètre.
-- Le cycle protocole→épisode reste à **zéro ligne en base**. Gate HDS
-  `G-TRUST-04`, échéance 2026-10-21.
-- **Reporté** — campagne `2026-08-03-packs…` : LOT-07, et surtout la **signature
-  clinique des six règles du LOT-05**, sans laquelle le LOT-06 livré n'affiche
-  rien (`validationExterne: false` ⟹ production fermée).
+- **Un banc vert ne prouve que ce qu'il sait interroger.** Le banc à 18 cas
+  laissait survivre deux mutations et trois faux verts ; c'est la revue qui les a
+  trouvés. Deux de mes mutations ne mutaient rien (`'' || x` vaut `x`) : le
+  pilote de falsification doit lui-même être falsifiable.
+- **Un commit de tête Copilot n'a PAS gelé le run de #553**, contrairement à la
+  doctrine de `CLAUDE.md`. Observation unique, non généralisée — mais l'un des
+  deux énoncés est faux.
+- La jq de la protection lit `.checks[].context` et **jette `app_id`**, auquel la
+  protection est pourtant liée : un commit status homonyme posté par un autre
+  acteur satisferait le script et pas GitHub. Théorique.
+- `mergeStateStatus: 'DRAFT'` rend `0`, comme `BLOCKED` : cohérent tant que `0`
+  signifie « les checks sont verts et rien de connu n'invalide ce vert ». Si `0`
+  devait un jour signifier « fusionnable », `DRAFT` rejoindrait `DIRTY`.
+- **Le handoff de LOT-01 n'a pas atteint `main`** : Copilot avait résolu les
+  conflits de #553 avant moi et gardé la version de #555 sur ce fichier à
+  créneau unique. Sa substance est dans `SESSION_LOG` et le changelog.
+- Le faux négatif connu de `skill-cross-invocation.test.mjs` (un drapeau en
+  commentaire lui échappe) reste ouvert — hors périmètre.
+- Hérités : les six règles du LOT-05 ne sont pas signées cliniquement, sans quoi
+  le LOT-06 livré n'affiche rien.
 
 ## Prochaine action exacte
 
-Ouvrir la PR, lire `verify`, merger. **Puis vérifier la base** par `execute_sql`
-(agréger `_prisma_migrations` **par nom** — un nom porte plusieurs lignes).
-
-Ensuite **L4** : `portail.ts` (authorize dédié, patron `agenda-sommeil/portail.ts`),
-routes GET/POST `/api/portail/agenda-alimentaire`, aiguillage dans
-`portail/[token]/questionnaires/[idAssignation]/page.tsx`, et la surface de saisie
-— cible < 30 s/jour, rien de pré-coché. **La route devra dériver `idPatient` et
-`idAssignation` de la SESSION, jamais du corps de requête** : sinon une journée
-s'écrit dans le dossier A en pointant l'assignation de B, et l'effacement de B
-devient impossible (FK RESTRICT). `saveJour` ne le vérifie pas, comme son jumeau
-sommeil, parce que c'est la route qui le garantit.
+Relire le `verify` de #556 sur la tête actuelle — `node scripts/wn-attendre-ci.mjs 556`,
+code `0` exigé — puis merger si l'autorisation est donnée. Ensuite **LOT-07**,
+dernier lot de la campagne : reliquat de certification, documentaire, sans
+dépendance. Repartir de `main`, jamais de la branche squashée.
 
 ## Interdits encore actifs
 
-- **Frontière JA** — aucune quantité, aucun gramme, aucune kcal, aucune projection
-  vers `Q_ALI_01`/`Q_ALI_02`. Sur les aliments, la formule exacte du contrat fait
-  foi : « aucun aliment identifié **au-delà des présences ci-dessus** ».
-- **Ne pas toucher** `BESOIN_SOURCES` ni `VERSION_SCORE_EQUILIBRE` ; **aucun
-  barème, aucun indice /100** avant d'avoir vu des données réelles. La discordance
-  déclaré/observé reste un objet séparé, et elle suppose la forme SIIN 57 servie —
-  sous forme courte `MAX_RYTHME_CHRONO` vaut 0 et l'écart devra rendre `null`,
-  jamais 0.
-- **Ne pas allumer `WN_AGENDA_ALI`** avant L4 : le patient verrait un écran sans
-  question.
-- **IDP2** — toute table fille de `patients` entre dans la transaction
-  d'effacement, **avant** les assignations. Le garde structurel n'attrape que le
-  retrait, pas le déplacement : c'est le test d'ordre qui tient la position.
-- **Aucune contrainte unique** sur `(id_assignation, date_jour)`.
+- Aucune migration, aucune écriture Supabase, rien sous `web/src/`.
+- Ne pas merger sur les seuls checks Vercel : `verify` absent **bloque**, et
+  `enforce_admins` est actif — personne ne passe outre, propriétaire compris.
+- Ne pas ajouter de contrôle CI bloquant réclamant le script (cf. décision 6).
+- Ne jamais forcer un `push` sur une branche qu'un autre agent a résolue.

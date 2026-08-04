@@ -81,12 +81,16 @@ Le 🚫 est la seule interdiction stricte de ce document.
    (E2E compris) tourne sur les runners GitHub à chaque PR, avec sa propre base
    éphémère, quelle que soit la machine qui a poussé. Le PC peut donc merger une
    PR dont `verify` est vert. En revanche, **ne jamais pousser directement sur
-   `main`** : `enforce_admins` étant désactivé, un push direct contourne le
-   check et court-circuite les E2E. Toujours passer par une PR.
+   `main`** : la branche est protégée, `verify` y est le seul check obligatoire
+   et `enforce_admins` est **actif** depuis le 2026-07-21 — personne ne passe
+   outre, propriétaire compris (réglage relu sur GitHub le 2026-08-03 ; ce
+   document affirmait l'inverse jusque-là). Toujours passer par une PR.
 4. **`git pull` avant de commencer**, sur les deux machines. Un dépôt local en
    retard produit des conflits ou des merges parasites au moment de pousser.
 5. **Ne jamais annoncer qu'une PR est prête sans avoir lu son CI**
-   (`gh pr checks`) : une suite Vitest verte ne prouve rien sur les parcours.
+   (`node scripts/wn-attendre-ci.mjs <N>`, code de sortie `0` exigé) : une suite
+   Vitest verte ne prouve rien sur les parcours, et un CI vert sur les seuls
+   checks Vercel ne prouve rien du tout.
 
 ## Protocole d'équipe
 
@@ -97,7 +101,9 @@ Le mode de travail nominal, quand les deux machines servent :
 2. **PC** — committer et pousser la branche. Ouvrir la PR si besoin.
 3. **Mac** — `git pull`, puis validation complète : `npm run test:worktree`
    (séquence rapide `-- --fast` : ~1 min 20 s, 26 tests E2E source inclus).
-4. **Mac** — lire le CI (`gh pr checks`), puis merger.
+4. **Mac** — lire le CI (`node scripts/wn-attendre-ci.mjs 〈n°〉`), puis merger.
+   C'est le poste qui merge : `gh pr checks` seul y était le plus coûteux, en
+   lisant les checks présents sans vérifier que `verify` en fasse partie.
 
 Un seul principe à retenir : **le PC propose, le Mac valide vite.**
 
@@ -110,7 +116,10 @@ Le PC n'est jamais bloqué. La validation locale du Mac est un **accélérateur*
 2. **PC** — ouvrir la PR. Le CI GitHub lance `verify`, **E2E compris**, sur sa
    propre base éphémère : aucune interaction avec la base partagée, donc aucun
    risque de contamination.
-3. **PC** — attendre le vert (`gh pr checks 〈n°〉 --watch`), puis merger.
+3. **PC** — attendre le vert (`node scripts/wn-attendre-ci.mjs 〈n°〉`), puis
+   merger. Le script tourne sur les deux machines (node + `gh`, rien d'autre) et
+   remplace `gh pr checks --watch`, qui suit les checks présents sans jamais
+   vérifier que `verify` en fait partie.
 
 C'est plus lent, pas moins sûr : la PR franchit exactement le même contrôle.
 Le seul interdit reste le push direct sur `main`, qui contournerait ce contrôle.

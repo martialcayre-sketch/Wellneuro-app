@@ -1,0 +1,444 @@
+#!/usr/bin/env node
+// Attend le CI d'une PR et rend un verdict qui distingue « aucun check en
+// attente » de « aucun check du tout ».
+//
+// Pourquoi ce script existe : l'idiome documenté attendait que plus rien ne
+// soit `pending`, puis lisait `gh pr checks`. Il ne sait pas dire si le check
+// obligatoire a seulement été CRÉÉ. Trois situations le font manquer, et dans
+// les trois la boucle rend la main immédiatement sur deux checks Vercel verts :
+//
+//   1. le commit de tête est signé Copilot — le run passe en `action_required`
+//      et n'exécute rien sans approbation humaine ;
+//   2. la branche a été squashée puis rebranchée — GitHub ne crée aucun run ;
+//   3. la PR est en conflit (`CONFLICTING`) — GitHub ne crée aucun run non plus.
+//
+// Seule la première est documentée. La troisième a trompé cette chaîne sur la
+// PR #550 le 2026-08-03 ; le correctif a été refait à la main sur #553. Une
+// règle qu'on oublie deux fois ne se réécrit pas une troisième : elle devient
+// exécutable.
+//
+// Ce script NE MERGE PAS : le régime du merge est celui de `CLAUDE.md`. Mais le
+// code `0` autorise à annoncer une PR prête, donc il doit se taire dès qu'il ne
+// peut PAS l'affirmer — un CI vert sur une PR en conflit, une liste de checks
+// obligatoires qu'on n'a pas pu lire, un nom de check porté par deux runs dont
+// un seul est vert. Chacun de ces cas a son code ; aucun ne rend 0.
+//
+// La logique est une fonction pure `diagnostiquer()` prenant des faits déjà
+// collectés (testable sans dépôt ni réseau) ; le bas du fichier est le câblage
+// CLI, qui collecte ces faits avec `gh`.
+
+import { execFileSync } from 'node:child_process';
+import { dirname, join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+export const SORTIE_VERT = 0;
+export const SORTIE_ECHEC = 1;
+export const SORTIE_N_A_PAS_TOURNE = 2;
+export const SORTIE_DELAI = 3;
+export const SORTIE_INDETERMINE = 4;
+export const SORTIE_NON_FUSIONNABLE = 5;
+
+// Repli si la protection de branche est illisible. Il sert à DIAGNOSTIQUER,
+// jamais à conclure au vert : sans la liste autoritaire, on ne sait pas ce
+// qu'on aurait dû attendre (voir `SORTIE_INDETERMINE`).
+export const CONTEXTE_PAR_DEFAUT = 'verify';
+
+const DELAI_PAR_DEFAUT_S = 900;
+const INTERVALLE_S = 20;
+
+// GitHub considère un check obligatoire `SKIPPED` ou `NEUTRAL` comme satisfait.
+// On s'aligne plutôt que d'inventer une règle plus stricte que la protection
+// elle-même, qui est ce qui décide réellement du merge.
+const CONCLUSIONS_VERTES = new Set(['SUCCESS', 'NEUTRAL', 'SKIPPED']);
+// `ACTION_REQUIRED` n'est pas un échec : c'est un run GELÉ, qui n'a rien
+// exécuté. Le confondre avec un échec ferait chercher un bug inexistant ;
+// le confondre avec un succès est le défaut que ce script existe pour tuer.
+const CONCLUSION_GELEE = 'ACTION_REQUIRED';
+
+// Un conflit rend la PR non fusionnable QUEL QUE SOIT l'état des checks : le
+// vert porte alors sur un commit qui n'est pas le résultat de la fusion.
+// `BLOCKED` est délibérément absent — il couvre le cas ordinaire d'une PR en
+// attente de revue, et bloquerait presque toutes les PR ; `UNKNOWN` l'est aussi,
+// GitHub le rendant le temps de calculer la fusion.
+const FUSION_IMPOSSIBLE = new Set(['DIRTY']);
+
+/**
+ * Normalise une entrée de `statusCheckRollup`, qui mélange deux formes :
+ * `CheckRun` (`name` + `status` + `conclusion`) et `StatusContext`
+ * (`context` + `state`). Lire une seule des deux laisse passer l'autre.
+ *
+ * @param {object} entree
+ * @returns {{nom: string, termine: boolean, conclusion: string|null}}
+ */
+export function normaliserCheck(entree) {
+  const nom = String(entree?.name ?? entree?.context ?? '').trim();
+  // `__typename` est le discriminant contractuel de l'API ; l'absence de
+  // `status` n'en est qu'un symptôme, qui cesserait d'être vrai si `gh`
+  // émettait un jour `status: null` — tous les StatusContext deviendraient
+  // alors « en cours », et l'attente n'aboutirait jamais.
+  const estContexte =
+    entree?.__typename === 'StatusContext' ||
+    (entree?.__typename === undefined && typeof entree?.state === 'string' && entree?.status === undefined);
+  if (estContexte) {
+    const etat = String(entree?.state ?? '').toUpperCase();
+    return { nom, termine: etat !== '' && etat !== 'PENDING', conclusion: etat === '' || etat === 'PENDING' ? null : etat };
+  }
+  const statut = String(entree?.status ?? '').toUpperCase();
+  const conclusion = entree?.conclusion ? String(entree.conclusion).toUpperCase() : null;
+  return { nom, termine: statut === 'COMPLETED', conclusion: statut === 'COMPLETED' ? conclusion : null };
+}
+
+/**
+ * Agrège TOUTES les entrées portant le même nom.
+ *
+ * Un `Map` construit par `checks.map(...)` garderait la DERNIÈRE entrée d'un
+ * nom, c'est-à-dire l'ordre du tableau — que l'API ne garantit pas. Ce n'est
+ * pas théorique : `ci.yml` se déclenche sur `push` ET sur `pull_request`, donc
+ * une PR issue d'une branche `campaign/**` porte DEUX runs nommés `verify`
+ * (observé sur la PR #528). Un rouge suivi d'un vert se lisait « vert ».
+ *
+ * @param {Array} checks
+ * @returns {Map<string, {nom: string, entrees: Array, aEchec: boolean, aGele: boolean, enCours: boolean}>}
+ */
+export function agregerParNom(checks) {
+  const parNom = new Map();
+  for (const c of checks) {
+    const agg = parNom.get(c.nom) ?? { nom: c.nom, entrees: [], aEchec: false, aGele: false, enCours: false };
+    agg.entrees.push(c);
+    if (!c.termine) agg.enCours = true;
+    else if (c.conclusion === CONCLUSION_GELEE) agg.aGele = true;
+    else if (!CONCLUSIONS_VERTES.has(c.conclusion)) agg.aEchec = true;
+    parNom.set(c.nom, agg);
+  }
+  return parNom;
+}
+
+/**
+ * Explique, quand un check obligatoire n'a pas tourné, POURQUOI. Les causes
+ * sont CUMULÉES : une PR peut être à la fois en conflit et gelée, et n'en
+ * nommer qu'une enverrait corriger la moitié du problème.
+ *
+ * Rend `[]` si aucune cause n'est diagnosticable : on continue alors d'attendre,
+ * un run pouvant simplement n'être pas encore enregistré.
+ *
+ * @param {object} faits
+ * @returns {string[]}
+ */
+export function causesDuCheckAbsent(faits) {
+  const causes = [];
+  const etatFusion = String(faits?.pr?.mergeStateStatus ?? '').toUpperCase();
+  const fusionnable = String(faits?.pr?.mergeable ?? '').toUpperCase();
+  if (FUSION_IMPOSSIBLE.has(etatFusion) || fusionnable === 'CONFLICTING') {
+    causes.push('la PR est en CONFLIT avec sa base — GitHub ne crée aucun run tant que le conflit dure. Fusionner la base dans la branche.');
+  }
+  if (faits?.auteurCommitTete && /copilot/i.test(faits.auteurCommitTete)) {
+    causes.push(
+      `le commit de tête est attribué à « ${faits.auteurCommitTete} » — le run passe en action_required et n'exécute rien sans approbation. Pousser un commit sous le compte du dépôt.`,
+    );
+  }
+  if (faits?.runsExistent === false) {
+    causes.push("aucun run n'existe pour le commit de tête — cas d'une branche squashée puis rebranchée. Repartir de `main`.");
+  }
+  return causes;
+}
+
+/**
+ * Verdict à partir de faits déjà collectés.
+ *
+ * L'ORDRE DES TESTS DÉCIDE DE CE QU'UN ÉCHEC RACONTE. Il est délibéré :
+ * préconditions, puis échec franc (le plus actionnable), puis « n'a pas
+ * tourné » (la raison d'être du script), puis l'attente, puis le délai, puis
+ * les deux réserves qui interdisent de conclure au vert, et le vert en dernier
+ * — il ne peut donc jamais être atteint par défaut, seulement en épuisant tout
+ * ce qui pourrait le contredire.
+ *
+ * @param {object} faits
+ * @returns {{sortie: number|null, attendre: boolean, message: string}}
+ */
+export function diagnostiquer(faits) {
+  if (!faits?.pr) {
+    return {
+      sortie: SORTIE_INDETERMINE,
+      attendre: false,
+      message: 'PR illisible (gh muet, non authentifié, ou numéro inexistant). Aucun verdict rendu.',
+    };
+  }
+  const numero = faits.pr.numero;
+  const etat = String(faits.pr.etat ?? '').toUpperCase();
+  if (etat && etat !== 'OPEN') {
+    return {
+      sortie: SORTIE_INDETERMINE,
+      attendre: false,
+      message: `PR #${numero} : état ${etat}, pas OPEN. Rien à attendre.`,
+    };
+  }
+
+  // `null` (API illisible) et `[]` (protection sans check obligatoire) sont
+  // TRAITÉS PAREIL et ne mènent jamais au vert : dans les deux cas, on ignore
+  // ce qu'il fallait attendre. Confondre `[]` avec « rien à attendre » rendrait
+  // un vert inconditionnel sur un rollup vide.
+  const listeConnue = Array.isArray(faits.contextesRequis) && faits.contextesRequis.length > 0;
+  const requis = listeConnue ? faits.contextesRequis : [CONTEXTE_PAR_DEFAUT];
+
+  const checks = (faits.rollup ?? []).map(normaliserCheck).filter((c) => c.nom !== '');
+  const parNom = agregerParNom(checks);
+
+  // 1. Un check obligatoire a CONCLU en échec — sur au moins une de ses entrées.
+  const echoues = requis.map((nom) => parNom.get(nom)).filter((a) => a && a.aEchec);
+  if (echoues.length > 0) {
+    const detail = echoues
+      // Un `COMPLETED` sans conclusion n'est pas « en cours » — c'est l'état
+      // exactement opposé, et le nommer ainsi enverrait attendre un run fini.
+      .map((a) => `${a.nom} → ${a.entrees.map((e) => e.conclusion ?? (e.termine ? 'sans conclusion' : 'non terminé')).join('/')}`)
+      .join(', ');
+    return {
+      sortie: SORTIE_ECHEC,
+      attendre: false,
+      message: `PR #${numero} : check obligatoire en ÉCHEC (${detail}). Ne pas merger.`,
+    };
+  }
+
+  // 2. Un check obligatoire n'a pas tourné — gelé, ou absent du rollup.
+  const geles = requis.map((nom) => parNom.get(nom)).filter((a) => a && a.aGele);
+  if (geles.length > 0) {
+    return {
+      sortie: SORTIE_N_A_PAS_TOURNE,
+      attendre: false,
+      message:
+        `PR #${numero} : le check obligatoire « ${geles.map((a) => a.nom).join(', ')} » est en action_required — ` +
+        `le run est GELÉ, il n'a rien exécuté. Ce n'est ni un succès ni un échec : la vérification n'a pas eu lieu.`,
+    };
+  }
+
+  const absents = requis.filter((nom) => !parNom.has(nom));
+  if (absents.length > 0) {
+    const causes = causesDuCheckAbsent(faits);
+    const vus = checks.length > 0 ? [...new Set(checks.map((c) => c.nom))].join(', ') : 'aucun';
+    const enTete =
+      `PR #${numero} : le check obligatoire « ${absents.join(', ')} » n'a JAMAIS été créé. ` +
+      `Checks présents : ${vus}. Un CI vert sur les autres checks ne prouve rien ici.`;
+    // Sans cause diagnosticable, un run peut simplement n'être pas encore
+    // enregistré : on attend. Mais à l'expiration, le verdict reste « n'a pas
+    // tourné » et JAMAIS « délai dépassé » — l'absence est l'information utile.
+    if (causes.length === 0 && !faits.delaiDepasse) {
+      return { sortie: null, attendre: true, message: `${enTete} Aucune cause diagnosticable pour l'instant ; on attend.` };
+    }
+    const detail = causes.length > 0 ? causes.map((c) => `\n  · ${c}`).join('') : "\n  · non diagnosticable — vérifier à la main pourquoi aucun run n'a été créé.";
+    return { sortie: SORTIE_N_A_PAS_TOURNE, attendre: false, message: `${enTete}\nCause(s) :${detail}` };
+  }
+
+  // 3. Les checks obligatoires existent mais n'ont pas tous conclu.
+  const enCours = requis.map((nom) => parNom.get(nom)).filter((a) => a && a.enCours);
+  if (enCours.length > 0) {
+    const noms = enCours.map((a) => a.nom).join(', ');
+    if (faits.delaiDepasse) {
+      return {
+        sortie: SORTIE_DELAI,
+        attendre: false,
+        message: `PR #${numero} : délai dépassé, « ${noms} » n'a pas conclu. Expirer n'est pas réussir — aucun verdict vert n'est rendu.`,
+      };
+    }
+    return { sortie: null, attendre: true, message: `PR #${numero} : ${noms} en cours.` };
+  }
+
+  // 4. Tous les checks obligatoires sont verts — mais deux réserves interdisent
+  // encore de le dire, parce que le code 0 autorise à annoncer une PR prête.
+
+  // 4a. La liste attendue n'a pas pu être lue : on ignore ce qu'on aurait dû
+  // attendre, et on ne peut donc pas qualifier les AUTRES checks de « non
+  // obligatoires » — ce serait affirmer ce qu'on vient d'échouer à lire.
+  if (!listeConnue) {
+    return {
+      sortie: SORTIE_INDETERMINE,
+      attendre: false,
+      message:
+        `PR #${numero} : « ${CONTEXTE_PAR_DEFAUT} » est vert, mais la liste des checks OBLIGATOIRES n'a pas pu être lue ` +
+        `(protection de branche illisible ou vide). On ignore ce qu'il fallait attendre : aucun verdict vert n'est rendu.`,
+    };
+  }
+
+  // 4b. Une PR en conflit n'est pas fusionnable, quel que soit l'état des
+  // checks : leur vert porte sur un commit qui n'est pas le résultat fusionné.
+  const etatFusion = String(faits.pr.mergeStateStatus ?? '').toUpperCase();
+  const fusionnable = String(faits.pr.mergeable ?? '').toUpperCase();
+  if (FUSION_IMPOSSIBLE.has(etatFusion) || fusionnable === 'CONFLICTING') {
+    return {
+      sortie: SORTIE_NON_FUSIONNABLE,
+      attendre: false,
+      message:
+        `PR #${numero} : ${requis.join(', ')} est vert, mais la PR est en CONFLIT avec sa base ` +
+        `(mergeable=${faits.pr.mergeable}, mergeStateStatus=${faits.pr.mergeStateStatus}). ` +
+        `Ce vert porte sur un commit qui n'est pas le résultat de la fusion. Fusionner la base, puis relancer.`,
+    };
+  }
+
+  // Les checks NON obligatoires en échec sont SIGNALÉS mais ne changent pas le
+  // code de sortie : ce n'est pas eux qui gardent `main`.
+  const autresEnEchec = [...parNom.values()].filter((a) => !requis.includes(a.nom) && a.aEchec);
+  const reserve =
+    autresEnEchec.length > 0
+      ? `\n⚠ check(s) NON obligatoire(s) en échec : ${autresEnEchec.map((a) => a.nom).join(', ')}.`
+      : '';
+  return {
+    sortie: SORTIE_VERT,
+    attendre: false,
+    message: `PR #${numero} : ${requis.join(', ')} — a réellement tourné, et est vert.${reserve}`,
+  };
+}
+
+/**
+ * Analyse les arguments. Les drapeaux et LEUR VALEUR sont consommés d'abord :
+ * sinon `--delai 60 553` retient « 60 » comme numéro de PR et rend un verdict
+ * sur une autre PR — visible dans le message, invisible dans le code de sortie,
+ * qui est ce que consomme l'appelant.
+ *
+ * @param {string[]} argv
+ * @returns {{numero: string|null, delai: number}}
+ */
+export function analyserArguments(argv) {
+  let delai = DELAI_PAR_DEFAUT_S;
+  const restants = [];
+  for (let i = 0; i < argv.length; i += 1) {
+    if (argv[i] === '--delai') {
+      if (/^\d+$/.test(argv[i + 1] ?? '')) delai = Number(argv[i + 1]);
+      i += 1;
+      continue;
+    }
+    restants.push(argv[i]);
+  }
+  const numero = restants.find((a) => /^\d+$/.test(a)) ?? null;
+  return { numero, delai };
+}
+
+// ---------------------------------------------------------------------------
+// Câblage CLI — collecte des faits. Rien ici n'est testé par le banc : tout ce
+// qui décide est au-dessus.
+// ---------------------------------------------------------------------------
+
+function gh(args) {
+  try {
+    return execFileSync('gh', args, { cwd: RACINE, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function jsonOuNull(texte) {
+  if (texte === null || texte === '') return null;
+  try {
+    return JSON.parse(texte);
+  } catch {
+    return null;
+  }
+}
+
+// Ce qui ne dépend que du SHA de tête est lu UNE fois. Sans ce cache, une
+// attente de 15 minutes coûtait 4 appels toutes les 20 s, soit 180 appels —
+// plus que les 81 appels de sondage qui ont motivé la règle d'économie.
+//
+// La clé porte la base ET le SHA : `contextesRequis` dépend de la branche
+// cible, qui peut changer à SHA de tête constant.
+const cacheParSha = new Map();
+
+function faitsDuSha(sha, baseRefName) {
+  const cle = `${baseRefName}@${sha}`;
+  if (cacheParSha.has(cle)) return cacheParSha.get(cle);
+  const protection = jsonOuNull(
+    gh([
+      'api',
+      `repos/:owner/:repo/branches/${baseRefName}/protection/required_status_checks`,
+      // `.checks` porte le contexte ET l'app qui doit le publier ; `.contexts`
+      // est le champ déprécié, conservé en repli.
+      '--jq',
+      '{c: ([.checks[]?.context] + (.contexts // []) | unique)}',
+    ]),
+  );
+  const commit = jsonOuNull(gh(['api', `repos/:owner/:repo/commits/${sha}`, '--jq', '{login: .author.login}']));
+  const runs = jsonOuNull(gh(['api', `repos/:owner/:repo/actions/runs?head_sha=${sha}`, '--jq', '{n: .total_count}']));
+  const faits = {
+    contextesRequis: Array.isArray(protection?.c) ? protection.c : null,
+    auteurCommitTete: commit?.login ?? null,
+    // `null` (appel en échec) n'est PAS `false` (aucun run) : seul `false`
+    // permet d'accuser une branche squashée.
+    runsExistent: runs === null ? null : runs.n > 0,
+  };
+  // On ne mémoïse QUE ce qui a été lu. Cacher un échec figerait une défaillance
+  // transitoire pour tout le run : une seule erreur sur la lecture de la
+  // protection — le point le plus sensible aux droits — rendrait `4` jusqu'au
+  // bout, là où un simple tour de boucle suffisait à s'en remettre.
+  if (faits.contextesRequis !== null && faits.auteurCommitTete !== null && faits.runsExistent !== null) {
+    cacheParSha.set(cle, faits);
+  }
+  return faits;
+}
+
+function collecter(numero) {
+  const vue = jsonOuNull(
+    gh([
+      'pr',
+      'view',
+      String(numero),
+      '--json',
+      'number,state,mergeable,mergeStateStatus,baseRefName,headRefOid,statusCheckRollup',
+    ]),
+  );
+  if (!vue) return { pr: null };
+  return {
+    // Étalé EN TÊTE : une quatrième clé ajoutée un jour à `faitsDuSha` ne
+    // pourra pas écraser `pr` ni `rollup`, qui sont relus à chaque tour.
+    ...faitsDuSha(vue.headRefOid, vue.baseRefName),
+    pr: {
+      numero: vue.number,
+      etat: vue.state,
+      mergeable: vue.mergeable,
+      mergeStateStatus: vue.mergeStateStatus,
+    },
+    rollup: Array.isArray(vue.statusCheckRollup) ? vue.statusCheckRollup : [],
+    delaiDepasse: false,
+  };
+}
+
+const dors = (s) => new Promise((resolve) => setTimeout(resolve, s * 1000));
+
+async function principal(argv) {
+  const { numero, delai } = analyserArguments(argv);
+  if (!numero) {
+    console.error('Usage : node scripts/wn-attendre-ci.mjs <n° de PR> [--delai <secondes>]');
+    return SORTIE_INDETERMINE;
+  }
+  if (gh(['--version']) === null) {
+    console.error('gh est indisponible. Aucun verdict rendu.');
+    return SORTIE_INDETERMINE;
+  }
+
+  const debut = Date.now();
+  let dernierMessage = '';
+  for (;;) {
+    const faits = collecter(numero);
+    faits.delaiDepasse = (Date.now() - debut) / 1000 >= delai;
+    const verdict = diagnostiquer(faits);
+    if (!verdict.attendre) {
+      console.log(verdict.message);
+      return verdict.sortie;
+    }
+    if (verdict.message !== dernierMessage) {
+      console.log(verdict.message);
+      dernierMessage = verdict.message;
+    }
+    await dors(INTERVALLE_S);
+  }
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) {
+  principal(process.argv.slice(2))
+    // Sans ce filet, une exception devient un rejet non géré : Node sort en 1,
+    // que la table de `CLAUDE.md` lit comme « un check obligatoire a échoué ».
+    // Un plantage déguisé en échec de CI enverrait lire un log inexistant.
+    .catch((err) => {
+      console.error(`Erreur inattendue : ${err?.message ?? err}`);
+      return SORTIE_INDETERMINE;
+    })
+    .then((code) => process.exit(code));
+}
