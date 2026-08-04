@@ -28,10 +28,14 @@ en rebranchant sur la branche squashée, qui ferait ré-embarquer le lot précé
    - prochaine action prioritaire ;
    - questions ouvertes.
 5. Ne jamais réécrire les entrées précédentes.
-6. Étape suivante : `/wn-handoff write`, dans la foulée et sur la même branche.
-   Le handoff part **dans la PR du lot**, jamais après le merge — le squash
-   ferme la fenêtre, et une clôture écrite après coup coûte une seconde PR.
-7. Si le lot clos relevait d'une classe à risque du tableau de `/wn-lot`
+6. Écrire ensuite le handoff du lot : un fragment
+   `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md`, dans la foulée et sur la même
+   branche (convention : `docs/claude/handoffs/README.md`). C'est
+   `/wn-handoff write` <!-- mention-seule: wn-handoff --> qui le produit, **invoqué à la main**
+   par l'utilisateur — aucun skill ne peut en ouvrir un autre. Le handoff part
+   **dans la PR du lot**, jamais après le merge — le squash ferme la fenêtre, et
+   une clôture écrite après coup coûte une seconde PR.
+7. Si le lot clos relevait d'une classe à risque du tableau de `/wn-lot` <!-- mention-seule: wn-lot -->
    (Scoring/clinique, Prisma/migration, Auth), faire relire l'entrée
    `SESSION_LOG` par `Agent(subagent_type: "wn-reviewer")` (prompt portant
    `think hard`) avant de l'ajouter — une clôture inexacte sur ce périmètre

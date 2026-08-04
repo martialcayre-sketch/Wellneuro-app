@@ -157,10 +157,17 @@ jobs:
 
       # Banc du contrôle ci-dessus. Il prouve qu'il attrape le cas silencieux,
       # et surtout qu'il se tait sur ce qui le ferait débrancher : les commandes
-      # git réellement agnostiques (`git status --short` rend la même chose
-      # depuis n'importe où), `--stat`/`--show-toplevel` qu'on ne doit pas
+      # git sans chemin de racine, `--stat`/`--show-toplevel` qu'on ne doit pas
       # confondre avec un `--` de pathspec, et les chemins qui ne visent pas la
       # racine (`web/docs/…`).
+      # Ce commentaire affirmait que « `git status --short` rend la même chose
+      # depuis n'importe où » : c'est FAUX au pied de la lettre — lancé depuis
+      # `web/`, il rapporte bien tout le dépôt, mais préfixe les chemins de
+      # `../`. Le garde ne les épingle pas (aucun chemin de racine dans la
+      # commande) ; les 20 blocs `!` de skills qui l'utilisaient ont pourtant
+      # été ancrés le 2026-08-04, en même temps qu'ils recevaient
+      # `--untracked-files=all` — sans quoi un répertoire entièrement non suivi
+      # est collapsé en une ligne et un handoff neuf passe inaperçu.
       - name: 'Blocs `!` des skills ancrés à la racine (banc du contrôle)'
         run: node --test scripts/lib/skill-bang-cwd.test.mjs
 
@@ -185,6 +192,52 @@ jobs:
       # suffit.
       - name: Attente du CI d'une PR (banc du verdict)
         run: node --test scripts/wn-attendre-ci.test.mjs
+
+      # `docs/DECISIONS.md` reste délibérément à créneau unique : une décision
+      # se lit dans la suite des autres et huit renvois croisés pointent vers
+      # des `D-NNN` précis. On ne supprime donc pas le conflit — on rend la
+      # collision impossible à manquer. Deux branches parallèles qui posent
+      # chacune leur décision en tête prennent le MÊME numéro : `D-013` le
+      # 2026-08-03, `D-014` le 2026-08-04, huit renvois à renuméroter chaque
+      # fois. Un conflit de merge est bruyant et se résout ; un doublon de
+      # numéro est silencieux et se propage.
+      # Même absence de filtre `docs_only` que les étapes ci-dessus, et pour la
+      # même raison — le fichier gardé EST un `.md`. Ni npm ni build.
+      - name: Numérotation du registre des décisions (blocking)
+        run: node scripts/lib/decisions-numerotation.mjs
+
+      # Banc du contrôle ci-dessus. Il prouve les trois morsures séparément —
+      # doublon, trou, désordre — et le silence sur l'état réel du dépôt. Un
+      # garde qui n'attrape qu'une des trois ressemblerait aux deux fois où la
+      # collision est passée.
+      - name: Numérotation du registre des décisions (banc du contrôle)
+        run: node --test scripts/lib/decisions-numerotation.test.mjs
+
+      # Banc de `scripts/changelog-collate.mjs`, qui replie les fragments de
+      # `changelog.d/` dans `CHANGELOG.md`. Il ne tournait NULLE PART : ni en
+      # CI, ni dans `npm run check`. Un banc qu'aucune passe n'exécute ne
+      # protège de rien — c'est la même classe de défaut que le lint hors du
+      # palier T1. Ni npm ni build : node suffit.
+      - name: Repli des fragments de changelog (banc du script)
+        run: node --test scripts/changelog-collate.test.mjs
+
+      # Banc de `scripts/wn-campaign.mjs`, qui tient `.wn/state.json` et
+      # régénère `ACTIVE_CAMPAIGN.md`. Même motif que ci-dessus : il existait
+      # sans jamais être exécuté, alors que `wn-cycle.mjs --appliquer` appelle
+      # `wn-campaign.mjs sync` pour resynchroniser la vue humaine.
+      - name: État de campagne et vue humaine (banc du script)
+        run: node --test scripts/wn-campaign.test.mjs
+
+      # Parité entre ce job et `npm run check`. Toutes les étapes ci-dessus sont
+      # bloquantes et ne demandent que node, git et bash : aucune raison qu'un
+      # développeur les découvre en CI. C'est la leçon du lint (2026-07-21),
+      # revenue à l'identique le 2026-08-04 quand sept bancs ont été câblés ici
+      # et laissés hors de `check`. Ce banc échoue dès qu'une étape bloquante du
+      # CI manque à `check` — y compris lui-même. L'inverse n'est pas contrôlé,
+      # et n'a pas à l'être : `check` fait légitimement plus (lint, type-check,
+      # Vitest).
+      - name: Parité `npm run check` / CI (banc de la liste)
+        run: node --test scripts/parite-check-ci.test.mjs
 
       - uses: actions/setup-node@v4
         if: steps.scope.outputs.docs_only != 'true'

@@ -14,7 +14,7 @@ effort: low
 
 ## Contexte
 
-!`git status --short`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 !`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 20 docs/claude/SESSION_LOG.md || true`
 !`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 
@@ -22,7 +22,7 @@ Demande : `$ARGUMENTS`
 
 ## Rôle
 
-`wn-route` combine `/wn`, `/wn-model` et `/wn-ultra` en une passe au lieu de trois
+`wn-route` combine `/wn`, `/wn-model` et `/wn-ultra` en une passe au lieu de trois <!-- mention-seule: wn, wn-model, wn-ultra -->
 invocations. Il sert au **tout premier passage** — démarrage de session ou juste après
 `/clear` —, une fois par session, pas à chaque message. Les trois skills restent
 invocables séparément pour re-router en cours de route.
@@ -53,20 +53,20 @@ obtient la même grille sans dépendre d'une capacité absente.
 | La demande… | Route |
 |---|---|
 | est trop floue pour qu'on sache ce qui aura changé une fois faite | `/wn-reprompt`, **avant** de router |
-| cadre une tâche avant de coder | `/wn-plan` |
-| ouvre une série de développements | `/wn-campaign` |
-| reprend un lot de campagne | `/wn-lot` (pilote complet) ou `/wn-campaign-run` |
-| signale un bug ou une erreur | `/wn-debug` |
-| demande de valider | `/wn-test` |
-| demande une revue de diff | `/wn-review` |
-| ouvre ou termine une PR | `/wn-pr` puis `/wn-merge` |
-| porte sur la documentation | `/wn-docs` ; multi-dépôts : `/wn-hygiene` |
-| porte sur les fichiers de règles ou les définitions d'agents | `/wn-conventions` |
-| apporte un contenu d'instructions IA tiers | `/wn-tiers` |
-| clôt un lot | `/wn-finish` |
-| reprend le contexte (affichage seul) | `/wn-context` |
-| écrit un document de reprise | `/wn-handoff` |
-| compacte le journal | `/wn-compact-sessionlog` |
+| cadre une tâche avant de coder | `/wn-plan` <!-- mention-seule: wn-plan -->|
+| ouvre une série de développements | `/wn-campaign` <!-- mention-seule: wn-campaign -->|
+| reprend un lot de campagne | `/wn-lot` (pilote complet) ou `/wn-campaign-run` <!-- mention-seule: wn-lot, wn-campaign-run -->|
+| signale un bug ou une erreur | `/wn-debug` <!-- mention-seule: wn-debug -->|
+| demande de valider | `/wn-test` <!-- mention-seule: wn-test -->|
+| demande une revue de diff | `/wn-review` <!-- mention-seule: wn-review -->|
+| ouvre ou termine une PR | `/wn-pr` puis `/wn-merge` <!-- mention-seule: wn-pr, wn-merge -->|
+| porte sur la documentation | `/wn-docs` ; multi-dépôts : `/wn-hygiene` <!-- mention-seule: wn-docs, wn-hygiene -->|
+| porte sur les fichiers de règles ou les définitions d'agents | `/wn-conventions` <!-- mention-seule: wn-conventions -->|
+| apporte un contenu d'instructions IA tiers | `/wn-tiers` <!-- mention-seule: wn-tiers -->|
+| clôt un lot | `/wn-finish` <!-- mention-seule: wn-finish -->|
+| reprend le contexte (affichage seul) | `/wn-context` <!-- mention-seule: wn-context -->|
+| écrit un document de reprise | `/wn-handoff` <!-- mention-seule: wn-handoff -->|
+| compacte le journal | `/wn-compact-sessionlog` <!-- mention-seule: wn-compact-sessionlog -->|
 
 Préférer audit, plan et test avant développement. Si des edits sont envisagés, imposer
 explicitement le passage en mode Plan.
@@ -124,7 +124,7 @@ Produire en une passe : **route**, **modèle**, **mode**, et une **séquence** s
 si plus d'une étape est nécessaire (ordre des appels, modèle de chaque étape).
 
 Un override explicite de l'utilisateur — modèle nommé, `ultracode`/`leger`/`solo`, ou
-skill `/wn-*` précis — prime sur toute grille.
+skill `/wn-*` précis — prime sur toute grille. <!-- mention-seule: wn -->
 
 ## Règle d'économie — sortie courte par défaut
 

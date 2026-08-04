@@ -10,7 +10,7 @@ effort: low
 !`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 80 docs/claude/SESSION_LOG.md || true`
 !`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
 !`cd "$(git rev-parse --show-toplevel)" && grep -nE 'Priorité|prochaine|à faire' docs/ROADMAP_PRODUIT.md docs/ROADMAP_TECHNIQUE.md | head -n 70 || true`
-!`git status --short`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 
 Argument : `$ARGUMENTS`
 

@@ -4,10 +4,11 @@
 // Pourquoi ce script existe : le merge d'une PR de lot est un squash
 // (`gh pr merge --squash --delete-branch`). Tout ce qui s'écrit après lui n'est
 // plus dans l'ascendance de `main` — la clôture (`SESSION_LOG.md`) et le
-// handoff (`HANDOFF_CURRENT.md`) doivent alors repartir de `main` dans une
-// seconde PR. L'ordre correct est déjà écrit dans `/wn-lot` (clôture en étape 6,
-// PR en étape 7) ; ce qui manquait, c'est de le *vérifier*. Une règle qu'on
-// oublie deux fois ne se réécrit pas une troisième : elle devient exécutable.
+// handoff (un fragment de `docs/claude/handoffs/`) doivent alors repartir de
+// `main` dans une seconde PR. L'ordre correct est déjà écrit dans `/wn-lot`
+// (clôture en étape 6, PR en étape 7) ; ce qui manquait, c'est de le *vérifier*.
+// Une règle qu'on oublie deux fois ne se réécrit pas une troisième : elle
+// devient exécutable.
 //
 // Le verdict est chargé par le bloc `!` de `/wn-finish` et `/wn-handoff` — il
 // arrive donc dans le contexte avant que quoi que ce soit ne soit écrit. Un
@@ -28,7 +29,34 @@ import { readCampaignTruth, readMachineState, writeMachineState } from './wn-sta
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const SESSION_LOG = 'docs/claude/SESSION_LOG.md';
-const HANDOFF = 'docs/claude/HANDOFF_CURRENT.md';
+const HANDOFFS = 'docs/claude/handoffs/';
+
+/**
+ * Le handoff n'est plus un chemin littéral mais un **fragment daté** posé dans
+ * `docs/claude/handoffs/` (voir le README du dossier). Le contrôle passe donc de
+ * « ce chemin a-t-il été touché ? » à « un fragment a-t-il été ajouté ? » —
+ * question qu'un chemin unique ne pouvait pas poser, et dont l'absence de
+ * réponse coûtait un conflit de merge à chaque lot parallèle.
+ *
+ * `README.md` est exclu : c'est la convention du dossier, pas un handoff. Le
+ * toucher dans un lot ne clôt rien.
+ *
+ * **L'horodatage est EXIGÉ, pas conseillé.** Le README du dossier désigne le
+ * handoff courant comme « le dernier au tri » ; sans contrainte de nom, un
+ * `notes.md` déposé là serait accepté comme handoff et, les lettres passant
+ * après les chiffres en tri C, désigné comme le plus récent. La règle du README
+ * n'était donc vraie que tant que personne ne posait un autre fichier — c'est
+ * ce motif-ci qui la rend vraie par construction.
+ */
+const NOM_DE_FRAGMENT = /^\d{4}-\d{2}-\d{2}-\d{4}-.+\.md$/;
+
+export function estFragmentDeHandoff(chemin) {
+  if (!chemin.startsWith(HANDOFFS)) return false;
+  const nom = chemin.slice(HANDOFFS.length);
+  if (nom === '' || nom.includes('/')) return false;
+  if (nom === 'README.md') return false;
+  return NOM_DE_FRAGMENT.test(nom);
+}
 
 export const SORTIE_OK = 0;
 export const SORTIE_FENETRE_RATEE = 1;
@@ -73,7 +101,7 @@ export function diagnostiquer(faits) {
 
   const cloture = {
     sessionLog: fichiersDuLot.includes(SESSION_LOG),
-    handoff: fichiersDuLot.includes(HANDOFF),
+    handoff: fichiersDuLot.some(estFragmentDeHandoff),
   };
   const clotureComplete = cloture.sessionLog && cloture.handoff;
 
@@ -85,7 +113,7 @@ export function diagnostiquer(faits) {
     // lot. `null` = information indisponible (gh muet) : on ne conclut pas.
     const portes = prMergee.fichiers;
     const clotureEmbarquee =
-      portes === null ? null : portes.includes(SESSION_LOG) && portes.includes(HANDOFF);
+      portes === null ? null : portes.includes(SESSION_LOG) && portes.some(estFragmentDeHandoff);
 
     if (clotureEmbarquee === true) {
       return {
@@ -107,7 +135,7 @@ export function diagnostiquer(faits) {
         fenetreRatee: false,
         suivant: [
           `PR #${prMergee.numero} mergée ; ses fichiers sont inconnus (gh muet).`,
-          'Vérifier à la main que SESSION_LOG.md et HANDOFF_CURRENT.md y étaient.',
+          'Vérifier à la main que SESSION_LOG.md et un fragment docs/claude/handoffs/ y étaient.',
         ],
         sortie: SORTIE_OK,
       };
@@ -119,7 +147,7 @@ export function diagnostiquer(faits) {
       fenetreRatee: true,
       suivant: [
         `Fenêtre de clôture ratée : PR #${prMergee.numero} mergée en squash sans la clôture.`,
-        'Écrire depuis `main` — SESSION_LOG.md et HANDOFF_CURRENT.md en PR de doc séparée.',
+        'Écrire depuis `main` — SESSION_LOG.md et le fragment de handoff en PR de doc séparée.',
         'Ne pas rebrancher sur cette branche : son contenu ne remonte plus vers `main`.',
       ],
       sortie: SORTIE_FENETRE_RATEE,
@@ -284,7 +312,13 @@ function collecterFaits() {
 
   const diff = base && branche !== defaut ? git(['diff', '--name-only', `${base}...HEAD`]) : '';
   const committes = diff ? diff.split('\n').filter(Boolean) : [];
-  const fichiersDuLot = [...new Set([...committes, ...cheminsDuPorcelain(gitBrut(['status', '--porcelain']))])];
+  // `--untracked-files=all` et non le défaut `normal` : ce dernier COLLAPSE un
+  // répertoire entièrement non suivi en une seule ligne — `?? docs/claude/handoffs/`
+  // au lieu des fragments qu'il contient. Le verdict rendait alors « handoff
+  // absent » sur un handoff fraîchement écrit, exactement le silence que ce
+  // script existe pour supprimer. Vu sur le lot qui a créé le dossier.
+  const porcelain = gitBrut(['status', '--porcelain', '--untracked-files=all']);
+  const fichiersDuLot = [...new Set([...committes, ...cheminsDuPorcelain(porcelain)])];
 
   const ghDisponible = gh(['--version']) !== null;
   let prOuverte = null;
@@ -310,7 +344,7 @@ function collecterFaits() {
 // ── Réparation d'état (`--appliquer`) ───────────────────────────────────────
 
 /**
- * Deux réparations, et rien d'autre. `SESSION_LOG.md` et `HANDOFF_CURRENT.md`
+ * Deux réparations, et rien d'autre. `SESSION_LOG.md` et le fragment de handoff
  * ne sont jamais écrits ici : leur contenu est du raisonnement, il reste du
  * ressort des skills.
  */
@@ -381,7 +415,7 @@ function rendre(faits, verdict) {
     const marque = (ok) => (ok ? '✓' : '✗');
     out.push(`fait     ${marque(faits.fichiersDuLot.length > 0)} diff du lot (${faits.fichiersDuLot.length} fichier(s))`);
     out.push(`         ${marque(verdict.cloture.sessionLog)} SESSION_LOG.md`);
-    out.push(`         ${marque(verdict.cloture.handoff)} HANDOFF_CURRENT.md`);
+    out.push(`         ${marque(verdict.cloture.handoff)} fragment docs/claude/handoffs/`);
   }
 
   out.push('');
@@ -406,7 +440,9 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   if (process.argv.includes('--appliquer')) {
     console.error('');
     for (const ligne of reparer(faits)) console.error(ligne);
-    console.error('SESSION_LOG.md et HANDOFF_CURRENT.md ne sont pas touchés — relire le diff avant de committer.');
+    console.error(
+      'SESSION_LOG.md et les fragments de handoff ne sont pas touchés — relire le diff avant de committer.',
+    );
   }
 
   process.exit(verdict.sortie);

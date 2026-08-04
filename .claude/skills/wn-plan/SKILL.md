@@ -22,7 +22,7 @@ Tâche : `$ARGUMENTS`
 - Identifier explicitement toute migration, logique clinique, donnée sensible ou dépendance production.
 - **Modèle et réflexion ne sont pas fixes.** Le fork `Explore` ci-dessus est le
   défaut ; si les fichiers visés relèvent d'une classe à risque du tableau de
-  `/wn-lot` (Scoring/clinique, Prisma/migration, Auth), déléguer explicitement
+  `/wn-lot` (Scoring/clinique, Prisma/migration, Auth), déléguer explicitement <!-- mention-seule: wn-lot -->
   le cadrage via `Agent(subagent_type: "wn-reviewer")` plutôt que le fork par
   défaut, et porter le mot-clé de réflexion de cette classe (`think hard` ou
   `think harder`) dans le prompt envoyé à l'agent — jamais en réglage caché,

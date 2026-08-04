@@ -10,8 +10,8 @@ effort: high
 # WellNeuro — revue
 
 !`git diff --stat`
-!`git diff --name-only`
-!`git status --short`
+!`cd "$(git rev-parse --show-toplevel)" && git diff --name-only`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 
 Argument : `$ARGUMENTS`
 

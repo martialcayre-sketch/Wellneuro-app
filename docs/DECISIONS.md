@@ -4,7 +4,18 @@
 
 ## Décisions actives
 
-### D-015 — Une règle d'orientation ne se déclenche que sur une mesure complète, et sur la forme réellement servie
+### D-017 — Un artefact partagé se découpe ou se fusionne tout seul ; un garde qui ne peut pas mordre ne garde rien
+
+- Date : 2026-08-04
+- Statut : accepté (lot outillage — créneaux partagés et chaîne de skills)
+- Domaine : outillage, travail parallèle, gardes CI
+- Décision : trois remèdes **différents** pour trois conflits qui se ressemblaient. `docs/claude/SESSION_LOG.md` prend `merge=union` — journal purement append-only, dont la résolution est toujours « garder les deux », donc git la fait seul. Les handoffs passent à **un fichier par lot** sous `docs/claude/handoffs/`, horodatés `AAAA-MM-JJ-HHMM-slug.md`, sur le patron de `changelog.d/` ; `HANDOFF_CURRENT.md` est supprimé et **aucun fichier « courant » n'est généré** — il recréerait le conflit qu'on supprime. `docs/DECISIONS.md` **reste** à créneau unique, mais sa numérotation devient gardée : doublon, trou et désordre bloquent. Et le garde de cross-invocation des skills passe **fail-closed** : toute référence à un skill non invocable est un constat, sauf marqueur `<!-- mention-seule: nom-du-skill -->` qui **nomme sa cible**.
+- Conséquences : le coût mesuré qui a motivé le lot — pendant le seul lot précédent, `main` a bougé trois fois, produisant **deux collisions de numéro de décision** (huit renvois renumérotés chacune), **une PR entière** dont l'objet unique était de réparer le handoff après un merge, et **trois handoffs perdus ou déplacés**, aujourd'hui restaurés comme fragments. Le garde de cross-invocation existait, était bloquant en CI et **vert** pendant que **neuf** branchements étaient morts : il exigeait un verbe impératif dans les 90 caractères amont, or les branchements étaient des titres d'étape nominaux. Trois scripts bloquants en CI étaient absents de `npm run check`, et leurs sept bancs aussi — `scripts/parite-check-ci.test.mjs` dérive désormais la liste depuis `ci.yml` et échoue dès qu'une étape bloquante du CI manque à `check`.
+- Réserves : `merge=union` n'est éprouvé **qu'en fusion locale** (merge et rebase) ; son honorabilité par un squash côté GitHub n'est pas établie. Le journal est append-only **par convention**, pas par contrainte — `/wn-compact-sessionlog` le réécrit, et une compaction concurrente d'un ajout ferait **ressusciter** silencieusement des entrées compactées ; l'avertissement est en tête de ce skill. Le garde `D-NNN` interdit les trous : un numéro ne se libère jamais, une décision retirée s'archive. Le marqueur nominatif croît de façon monotone (100 mentions déclarées aujourd'hui) et entre dans le contexte à chaque invocation de skill. Enfin, `docs/DECISIONS.md` **reste** le seul artefact partagé non découpé : sa collision est désormais visible et bloquante, pas impossible — c'est l'arbitrage assumé, le renommage de quatorze décisions citées depuis du code clinique n'ayant pas sa place dans un lot d'outillage.
+- Note de lecture : les lignes « Référence » antérieures à ce lot qui pointent `docs/claude/HANDOFF_CURRENT.md` — dont celle de **D-010** — désignent désormais le fragment correspondant de `docs/claude/handoffs/`. Le registre étant append-only, elles ne sont pas retouchées.
+- Référence : [../.gitattributes](../.gitattributes), [claude/handoffs/README.md](claude/handoffs/README.md), [../scripts/lib/skill-cross-invocation.mjs](../scripts/lib/skill-cross-invocation.mjs), [../scripts/lib/decisions-numerotation.mjs](../scripts/lib/decisions-numerotation.mjs), [../scripts/parite-check-ci.test.mjs](../scripts/parite-check-ci.test.mjs)
+
+### D-016 — Une règle d'orientation ne se déclenche que sur une mesure complète, et sur la forme réellement servie
 
 - Date : 2026-08-04
 - Statut : accepté (arbitrages praticien en session, table d'orientation V2)

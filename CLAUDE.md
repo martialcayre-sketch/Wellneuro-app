@@ -102,6 +102,7 @@ entière et non pour la migration qui l'avait motivée.
 ## Documentation de référence
 
 - Vue d'ensemble : `docs/claude/README.md`
+- Handoffs de lot (un fragment daté par lot, jamais de fichier partagé) : `docs/claude/handoffs/README.md`
 - Contexte projet et état actuel : `docs/claude/PROJET_CONTEXTE.md`
 - Règles de sécurité et clinique : `docs/claude/REGLES_CRITIQUES.md`
 - Workflow de dev : `docs/claude/WORKFLOW_DEVELOPPEMENT.md`
@@ -155,7 +156,7 @@ est 3,5 %). Écrire court reste utile pour la lisibilité — pas pour la dépen
 | 3. Écrire | mode Plan, puis édition bornée au périmètre | session |
 | 4. Valider | palier T1/T2/T3, sortie redirigée puis relue | session |
 | 5. Revoir | diff, sécurité, clinique | `/wn-review` ; sous-agent `wn-reviewer` si migration/auth |
-| 6. Clore | statut, journal, promotions, handoff | `/wn-finish` puis `/wn-handoff write` |
+| 6. Clore | statut, journal, promotions, fragment `docs/claude/handoffs/` | `/wn-finish` puis `/wn-handoff write` |
 | 7. Livrer | PR, CI, merge | `/wn-pr` puis `/wn-merge` |
 
 L'étape 1 est celle qui décide du coût de toutes les autres : ce qu'elle fait
@@ -214,6 +215,12 @@ E2E en parallèle. Répartition des rôles : `docs/ROLES_MACHINES.md`.
   changement d'UI, le vérifier en rejouant les E2E (`npm run test:worktree`,
   `-- --fast` pour une passe courte) : **une suite Vitest verte ne prouve rien
   sur les parcours**, elle n'exécute pas Playwright.
+- **Handoff par fragments, comme le changelog.** Ne pas réécrire un fichier de
+  reprise partagé : `/wn-handoff write` pose
+  `docs/claude/handoffs/AAAA-MM-JJ-HHMM-slug.md`, et le handoff courant est le
+  dernier au tri. Même motif que `changelog.d/` — un créneau unique que deux
+  branches réécrivent entre en conflit à tous les coups, et le 2026-08-04 en a
+  perdu trois. Convention : `docs/claude/handoffs/README.md`.
 - **La clôture passe avant la PR, pas après le merge.** `/wn-finish` puis
   `/wn-handoff write` s'écrivent sur la branche vivante, et partent dans la PR du
   lot. Le merge est un squash (`--squash --delete-branch`) : ce qui s'écrit

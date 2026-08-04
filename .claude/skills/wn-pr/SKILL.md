@@ -7,7 +7,7 @@ effort: medium
 
 # WellNeuro — préparation de PR
 
-!`git status --short`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 !`git diff --stat`
 !`git log -n 5 --oneline`
 
@@ -26,7 +26,7 @@ Sans `apply` : ne créer ni branche, ni commit, ni push, ni PR.
 Avec `apply` : branche et commit locaux autorisés. Le push, la création ou le merge d’une PR nécessitent encore une demande explicite claire.
 
 **Modèle et réflexion selon le diff.** Si les fichiers du diff relèvent d'une
-classe à risque du tableau de `/wn-lot` (Scoring/clinique, Prisma/migration,
+classe à risque du tableau de `/wn-lot` (Scoring/clinique, Prisma/migration, <!-- mention-seule: wn-lot -->
 Auth), rédiger la section « risques » via `Agent(subagent_type: "wn-reviewer")`
 avec le mot-clé `think hard`/`think harder` dans le prompt, plutôt qu'en
 session — la description d'une PR de migration mérite le même effort que sa
@@ -57,7 +57,7 @@ Avant d’annoncer qu’une PR est prête à merger, **lire son CI** : `npm test
 n’exécute pas les E2E, une suite Vitest verte ne dit rien des parcours.
 
 Une fois la PR ouverte, la suite du cycle (CI, régime de merge courant, exception
-migration/auth, merge et nettoyage) est du ressort de `/wn-merge`, pas de ce
+migration/auth, merge et nettoyage) est du ressort de `/wn-merge`, pas de ce <!-- mention-seule: wn-merge -->
 skill.
 
 ## Corps de PR
