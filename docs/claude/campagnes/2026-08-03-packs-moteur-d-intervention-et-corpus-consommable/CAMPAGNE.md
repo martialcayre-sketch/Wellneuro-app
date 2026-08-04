@@ -4,10 +4,10 @@ titre: "Packs, moteur d'intervention et corpus consommable"
 statut: "en_cours"
 créée_le: "2026-08-03"
 mise_à_jour: "2026-08-04"
-lot_courant: "LOT-07 (livré)"
+lot_courant: "LOT-07"
 branche_campagne: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
 branche_lot_courant: "worktree-lot-07-reliquat-certification"
-cible_pr_lot: "main"  # la branche d'intégration déclarée n'a jamais existé sur origin ; les LOT-00 à LOT-06 sont tous partis en PR directe sur main
+cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
 
@@ -196,6 +196,14 @@ c'est une limite connue et assumée, pas un défaut de ce lot.
   dépendance), ou la **signature clinique de la table du LOT-05** — geste
   praticien, sans lequel le LOT-06 livré ne peut rien afficher d'autre que
   « en cours de constitution ».
+- **LOT-07 livré le 2026-08-04** (PR #560) : la distinction entre scoring
+  vérifié, validité psychométrique et complétude bibliographique est écrite, et
+  trois écarts cliniques trouvés en chemin attendent un arbitrage praticien
+  (`Q_STR_03`, `Q_FIB_03`, `Q_NEU_03`). Détail dans le fichier du lot.
+- **`cible_pr_lot` corrigée en `main`.** La branche d'intégration déclarée par
+  `branche_campagne` **n'a jamais existé sur `origin`** : les LOT-00 à LOT-07
+  sont tous partis en PR directe sur `main`. Le champ décrivait une intention,
+  pas la pratique.
 
 ## Paliers de validation
 
