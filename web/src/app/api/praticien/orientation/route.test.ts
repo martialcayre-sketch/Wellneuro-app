@@ -35,6 +35,16 @@ vi.mock('@/lib/clinical/orientationRulesV1', () => ({
 
 import { GET } from './route';
 
+// PSS-10 complet, total 33 — bande « Niveau élevé de stress et désadaptation ».
+//
+// `rawAnswers` EST OBLIGATOIRE depuis le 2026-08-04 : la route ne relit plus le
+// score stocké, elle le RECALCULE depuis les réponses brutes (voir
+// `orientationService`). Une fixture réduite à `{ total: 33 }` décrit un dossier
+// que le service écarte — et c'est voulu : un score dont on ne peut pas
+// re-dériver la provenance sous la doctrine courante ne fonde aucune
+// recommandation. Les six items directs au maximum, les quatre inversés à 3/2/2/2.
+const PSS10_COMPLET_33 = { P1: 4, P2: 4, P3: 4, P6: 4, P9: 4, P10: 4, P4: 3, P5: 2, P7: 2, P8: 2 };
+
 function getRequest(query = '?idPatient=PAT_SEED_03') {
   return new Request(`http://test.local/api/praticien/orientation${query}`);
 }
@@ -148,7 +158,7 @@ describe('GET /api/praticien/orientation', () => {
         { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_PED_03'] },
       ]);
       prisma.questionnaireReponse.findMany.mockResolvedValue([
-        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33, rawAnswers: PSS10_COMPLET_33 } },
       ]);
       const payload = await (await GET(getRequest())).json();
       expect(payload.recommandations).toEqual([]);
@@ -166,7 +176,7 @@ describe('GET /api/praticien/orientation', () => {
         niveau: 'approfondissement',
       });
       prisma.questionnaireReponse.findMany.mockResolvedValue([
-        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33, rawAnswers: PSS10_COMPLET_33 } },
       ]);
       // `idPack` porte la valeur RÉELLE de la base (`PACK_STRESS_BURNOUT`), pas
       // le slug de doctrine. Jusqu'au LOT-03 cette fixture inventait un
@@ -215,7 +225,7 @@ describe('GET /api/praticien/orientation', () => {
         niveau: 'approfondissement',
       });
       prisma.questionnaireReponse.findMany.mockResolvedValue([
-        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33, rawAnswers: PSS10_COMPLET_33 } },
       ]);
     }
 
@@ -344,7 +354,7 @@ describe('GET /api/praticien/orientation', () => {
         niveau: 'approfondissement',
       });
       prisma.questionnaireReponse.findMany.mockResolvedValue([
-        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33 } },
+        { idReponse: 'R1', idQuestionnaire: 'Q_STR_02', dateReponse: new Date('2026-07-20T10:00:00.000Z'), scoresJson: { total: 33, rawAnswers: PSS10_COMPLET_33 } },
       ]);
       prisma.pack.findMany.mockResolvedValue([
         { idPack: 'PACK_STRESS_BURNOUT', qids: ['Q_STR_04', 'Q_STR_05'] },

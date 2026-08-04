@@ -104,7 +104,37 @@ import { Q_ALI_01 } from '../questionnaires/alimentaire';
 // nouveauté » de main revendiquaient tous deux v5 — deux définitions sous une
 // même étiquette, exactement ce que ce fichier interdit. Doctrine inchangée : un
 // épisode figé sous l'ancienne étiquette ne se compare pas aux nouvelles.
-export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v9' : 'v8';
+// v8/v9 → v10/v11 (garde de recueil partiel du PSQI, 2026-08-04) : `Q_SOM_01`
+// cesse d'alimenter le besoin 5 quand sa passation est incomplète. Aucun poids
+// ni seuil ne bouge — c'est la DISPONIBILITÉ d'une source qui change, et le
+// fichier range explicitement le mapping parmi ce qui impose un bump.
+//
+// LA DIRECTION DE L'EFFET, parce qu'elle n'est pas celle qu'on croit. `Q_SOM_01`
+// est une source `inverser: true` : retirer une mesure BASSE y est
+// RASSURANT, pas protecteur. Un PSQI à 14/21 renseigné à 17 items sur 18 donnait
+// une couverture repos de 1 − 14/21 = 0,333, sous le seuil d'effondrement 0,34
+// du besoin 5 — donc fondation critique, donc score global plafonné à 50. La
+// garde le rend « non mesuré » : plus de fondation critique, plus de plafond, et
+// le score global REMONTE. Relevé en revue adversariale ; c'est précisément
+// pourquoi l'étiquette ne peut pas rester la même.
+//
+// Le précédent est dans ce fichier : v3 → v4 retirait `Q_SOM_06` du besoin 2
+// pour ce même plafond. Doctrine inchangée — un épisode figé en v8/v9 ne se
+// compare pas à un épisode v10/v11.
+//
+// CE QUE LE BUMP COÛTE, et c'est la seule conséquence VISIBLE par le praticien :
+// `versionScore` est stocké et gouverne les comparaisons (`trajectoire-partagee`,
+// `protocol/cabinet`). Le bump COUPE donc l'historique de momentum de tous les
+// patients — un T0 figé en v9 ne se soustrait plus à un T1 v11 —, et l'agrégat
+// cabinet retombe à `nTotal = 0`, donc masqué, jusqu'à ce que deux cycles v11
+// existent. Coût assumé, déjà payé à v3 → v4 ; il est écrit ici pour qu'il ne se
+// redécouvre pas dans un tableau de bord vide.
+//
+// ⚠ AMBIGUÏTÉ CRÉÉE, à qualifier désormais : le dépôt porte DEUX séries `v11`
+// simultanées — la consigne de synthèse (`anthropic.ts`) et ce score. Un `v11` nu
+// dans un log ou une conversation ne désigne plus rien. Même piège que le préfixe
+// `R` des campagnes, décrit dans `CLAUDE.md`.
+export const VERSION_SCORE_EQUILIBRE = Q_ALI_01.scoring.maxTotal === 90 ? 'v11' : 'v10';
 
 /**
  * Maximum du sous-score servi au besoin 3, DÉRIVÉ du barème de la forme servie.

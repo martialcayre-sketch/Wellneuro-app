@@ -2170,3 +2170,40 @@ les deux formes ne partagent pas.
 racine) : défaut pré-existant, nommé, non fermé. `R-STR-02` cite `WN-CL-0105-001`, qui porte
 sur l'alimentation méditerranéenne, pour engager le pack stress — citation mal appariée, à
 trancher avant la signature.
+
+## 2026-08-04 — Signature de la table d'orientation, et clôture de la campagne packs/moteur
+
+Le praticien a répondu « signature » à l'arbitrage à deux branches (signer les
+vingt règles, ou clore la campagne avec le critère de signature non coché). Les
+deux points annoncés comme à trancher d'abord ont été traités, et l'un des deux
+n'existait pas.
+
+**Décisions.** Table signée (`validationExterne: true`, 23 claims relus en base le
+jour même). Garde de recueil partiel du PSQI fermée **au niveau item** (18 items
+cotés) et non au niveau composante, qui laissait passer le cas réel. Campagne
+`2026-08-03-packs-moteur…` close avec sept critères cochés sur huit ; le huitième
+— la route sert réellement — est **explicitement non coché** et attend
+`WN_ENABLE_ORIENTATION_NNPP2` côté Vercel. Campagne
+`2026-08-02-certification-questionnaires-consolidation` close aussi.
+
+**Options écartées.** Remplacer `WN-CL-0105-001` sur `R-STR-02` : relu à la
+source, le claim dit mot pour mot l'objectif de la règle — c'est l'alerte qui
+était fausse. Fondre le huitième critère dans le quatrième : aurait fermé la
+campagne sur une affirmation fausse. Garder la garde PSQI au niveau composante :
+sept composantes « mesurées à un item » produisaient encore une bande rassurante.
+
+**Ce que le lot a appris.** Le banc d'égalité exacte `claimsSource` ↔ claims cités
+a rougi à sa première exécution, sur la liste de celui qui l'écrivait : 24 claims
+au lieu de 23, `WN-CL-0178-016` n'existant que dans un commentaire. Deux `D-015`
+coexistaient dans le registre depuis la veille (#562 et #565) — collision réparée,
+la seconde devient `D-016` ; les nouvelles décisions sont `D-018` (périmètre
+signé) et `D-019` (score gelé) — décalées d'un cran, `main` ayant pris `D-017`
+pendant le lot.
+
+**Prochaine action prioritaire.** Poser `WN_ENABLE_ORIENTATION_NNPP2=1` en
+production Vercel — geste d'exploitation, hors campagne. Rien d'autre ne bloque.
+
+**Questions ouvertes.** `tfd` (`Q_GAS_01`, cible de `R-GAS-01`) reste hors de la
+garde de recueil partiel : il ne publie aucun compte à la racine. Même classe
+ouverte sur `sum_decimal`, `count_threshold` et `ecab`, sans règle publiée qui les
+vise.

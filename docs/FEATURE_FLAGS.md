@@ -48,10 +48,19 @@ clinique soit validé/signé dans le code (`validationExterne`, date, claims). C
 n'est pas une gâte « juridique » ni un confort de dev : c'est la **validation
 clinique**. Ne pas forcer la métadonnée de validation pour « voir » la feature.
 
-| Flag | Valeur ON | 2ᵉ condition | État au 2026-07-28 |
+| Flag | Valeur ON | 2ᵉ condition | État au 2026-08-04 |
 |---|---|---|---|
 | `WN_ENABLE_CORPUS_CLINIQUE_V1` | `1` | `CORPUS_CLINIQUE_METADATA.validationExterne` | `false` → **fermé quoi qu'on pose** |
-| `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (validation + date + claims) | **6 règles** depuis le LOT-05 (#545), `validationExterne: false` → **fermé** |
+| `WN_ENABLE_ORIENTATION_NNPP2` | `1` | `tableSignee()` (validation + date + claims) | **20 règles**, `validationExterne: true` depuis le 2026-08-04 → **la 2ᵉ condition est REMPLIE ; seul le drapeau tient encore le verrou** |
+
+**⚠ L'orientation a changé d'état le 2026-08-04.** Jusque-là, la valeur du
+drapeau était sans effet : `tableSignee()` était faux, donc le ET aussi, dans
+tous les environnements. Depuis la signature, **poser `WN_ENABLE_ORIENTATION_NNPP2=1`
+suffit à ouvrir la route** — y compris là où la variable vaudrait déjà `1` sans
+que personne s'en souvienne. Vérifier les trois scopes Vercel (Production,
+Preview, Development) et les `.env.local` de poste avant de considérer la route
+comme fermée. Rien ne la pose côté dépôt (CI, Playwright, scripts) : le risque
+est entièrement côté Vercel et postes.
 
 Débloquer ces deux-là = **valider le contenu clinique** (décision clinique,
 documentée au `CHANGELOG`), pas flipper un flag.
