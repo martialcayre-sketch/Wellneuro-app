@@ -20,6 +20,10 @@ type SousScoreLu = {
   label?: unknown;
   total?: unknown;
   interpretation?: InterpretationLue;
+  /** Comptes d'items — absents chez les moteurs qui ne les publient pas. */
+  repondus?: unknown;
+  items?: unknown;
+  missing?: unknown;
 };
 
 /** Résultat de scoring tel que stocké — typage défensif, JSON non garanti. */
@@ -116,6 +120,85 @@ function derniereReponseParQuestionnaire(reponses: ReponseOrientation[]): Map<st
   return dernieres;
 }
 
+/**
+ * GARDE DE COMPLÉTUDE — un recueil incomplet n'est pas une mesure basse.
+ *
+ * LE SCÉNARIO, prouvé en revue adversariale le 2026-08-04. Un patient répond à
+ * TROIS items de `Q_MOD_01`, un par axe, chacun à sa MEILLEURE option
+ * (`SOMMEIL_Q001 = 4` « Excellent sommeil », `RYTHME_BIOLOGIQUE_Q001 = 4`,
+ * `ADAPTATION_STRESS_Q001 = 8` « Je gère très bien »), puis abandonne. Les
+ * totaux servis valaient 4, 4 et 8 — c'est-à-dire, sur une échelle qui monte à
+ * 28 et 24, les zones les plus dégradées de la grille. Avec une apnée, un
+ * burn-out et une attente de sommeil déclarés par ailleurs, il recevait SEPT
+ * recommandations dont DEUX PACKS, motivées par un « Sommeil non réparateur »
+ * qu'il venait de décrire comme excellent.
+ *
+ * POURQUOI `<=` EST LE SENS DANGEREUX. Un total partiel est toujours biaisé
+ * VERS LE BAS : ce qui manque n'ajoute rien. Sur une échelle qui va dans le
+ * sens du trouble (`Q_INF_03`, `>=`), le biais protège — un axe incomplet
+ * déclenche moins. Sur une échelle INVERSÉE (`Q_MOD_01`, où un score bas est
+ * défavorable, et où sept déclencheurs comparent en `<=`), le même biais
+ * fabrique la dégradation. La garde ne fait donc pas de tri par opérateur :
+ * elle refuse la mesure, quel que soit le sens, parce que c'est la mesure qui
+ * n'existe pas.
+ *
+ * CE QUI EN PROTÉGEAIT LES RÈGLES V1 — ET CE QUI NE LES PROTÉGEAIT PAS. Les
+ * règles V1 lisent une `interpretation` GLOBALE. `sum` (`Q_STR_02`) la retire
+ * sur recueil partiel depuis #561 : celles-là sont couvertes. C'est le passage à
+ * `comparaison` sur des SOUS-SCORES qui a ouvert la brèche traitée ici, un étage
+ * plus bas que la garde existante.
+ *
+ * MAIS `psqi` NE REND PAS `null` SUR PASSATION INCOMPLÈTE, contrairement à ce
+ * que ce commentaire affirmait jusqu'au 2026-08-04. Son total ne tombe à `null`
+ * que si les SEPT composantes sont vides (`totalGlobalDepuisSousScores`) ; une
+ * composante se calcule dès qu'un de ses items est renseigné. Un PSQI à 8
+ * réponses sur 24 rend donc `total: 14`, bande « Troubles du sommeil modérés »,
+ * et `R-SOM-01` s'allume sur un instrument à un tiers rempli.
+ *
+ * LE TROU, NOMMÉ : la garde ci-dessous ne l'attrape pas. `psqi` ne publie AUCUN
+ * compte à la racine — ni `repondus`/`items`, ni `missing` —, si bien que
+ * `recueilIncomplet` rend `false` faute de savoir quoi lire, exactement comme il
+ * le fait pour `tfd`. C'est un défaut PRÉ-EXISTANT, de la même classe que celui
+ * que ce lot ferme, et ce lot NE LE FERME PAS : le fermer suppose de faire
+ * publier une complétude par ces deux moteurs, ce qui touche des scores servis
+ * ailleurs. Ne pas lire cette garde comme la clôture de la classe.
+ *
+ * ASYMÉTRIE À NE PAS PERDRE — `Q_MOD_03` est immunisé PAR CONSTRUCTION, et
+ * `Q_MOD_01` ne l'est pas. Le moteur `plaintes_actuelles` de `Q_MOD_03` fait de
+ * chaque domaine UN SEUL item (`total: getVal(domain.item)`) : un domaine sans
+ * réponse rend `total: null`, jamais un total partiel, et aucune comparaison ne
+ * peut s'y allumer. Le moteur `subscore` de `Q_MOD_01` et `Q_INF_03` somme dix
+ * items par axe et sert le total dès le PREMIER. Les deux instruments portent
+ * des règles écrites de la même façon ; un seul avait besoin de cette garde.
+ * Rien dans la table ne le disait — d'où cette phrase, ici et sur la table.
+ *
+ * `null` rendu, jamais un compte : cette fonction dit ce que la valeur EST,
+ * pas pourquoi elle manque. L'interprétation tombe avec la valeur — sur un
+ * recueil partiel, une bande de sous-score est lue par le bas exactement comme
+ * le total, et laisser vivre l'étiquette rouvrirait le même trou dès qu'une
+ * règle serait réécrite en `{type: 'zone'}`.
+ *
+ * DEUX FORMES LUES, parce que le catalogue en sert deux. Les moteurs à
+ * sous-scores publient `repondus` et `items` (le second vaut `repondus +
+ * missing` : les questions écartées par un conditionnel n'y sont pas) ; les
+ * moteurs à score global (`sum`, `seuils_points`, `sum_items`…) publient
+ * `missing`. Un porteur qui ne publie NI l'un NI l'autre rend `false` — on ne
+ * fabrique pas une complétude qu'on ne sait pas lire, on constate qu'on ne
+ * sait rien en dire.
+ */
+function recueilIncomplet(porteur: unknown): boolean {
+  if (!porteur || typeof porteur !== 'object') return false;
+  const nombre = (cle: 'repondus' | 'items' | 'missing') => {
+    const brut = (porteur as Record<string, unknown>)[cle];
+    return typeof brut === 'number' && Number.isFinite(brut) ? brut : null;
+  };
+  const repondus = nombre('repondus');
+  const items = nombre('items');
+  if (repondus !== null && items !== null) return repondus < items;
+  const missing = nombre('missing');
+  return missing !== null && missing > 0;
+}
+
 /** Valeur numérique et interprétation visées (score global ou sous-score). */
 function extraireCible(scores: ScoresStockes, sousScore: string | undefined): {
   valeur: number | null;
@@ -130,11 +213,28 @@ function extraireCible(scores: ScoresStockes, sousScore: string | undefined): {
     const axes = bruts as SousScoreLu[];
     const cible = axes.find(s => s?.id === sousScore) ?? axes.find(s => s?.label === sousScore);
     if (!cible) return { valeur: null, interpretation: null };
+    // Voir `recueilIncomplet` : un axe incomplet n'est pas une mesure basse.
+    if (recueilIncomplet(cible)) return { valeur: null, interpretation: null };
     return {
       valeur: typeof cible.total === 'number' && Number.isFinite(cible.total) ? cible.total : null,
       interpretation: cible.interpretation ?? null,
     };
   }
+  // MÊME GARDE AU NIVEAU GLOBAL, et elle n'est pas décorative : `seuils_points`
+  // (`Q_ALI_01`) sert son `interpretation` SANS condition de complétude, là où
+  // `sum` la retire depuis #561. Une enquête SIIN abandonnée après trois items
+  // rend donc un total de quelques points sur 90 — bande « danger » —, et
+  // `R2-ALI-01` y engagerait un PACK. C'est le scénario du dessus, transposé du
+  // sous-score au score global.
+  //
+  // Aucune règle existante ne change de comportement : `psqi` (`Q_SOM_01`) et
+  // `tfd` (`Q_GAS_01`) ne publient aucun compte d'items au niveau global, et
+  // `Q_STR_02` (`sum`) rend déjà `interpretation: null` sur recueil partiel.
+  //
+  // « Ne publient aucun compte » n'est PAS « sont protégés » — voir le trou
+  // nommé en tête de `recueilIncomplet` : un PSQI partiel passe ici sans être
+  // vu. Ce lot ne le ferme pas.
+  if (recueilIncomplet(scores)) return { valeur: null, interpretation: null };
   const total = (scores as { total?: unknown }).total;
   return {
     valeur: typeof total === 'number' && Number.isFinite(total) ? total : null,
@@ -332,9 +432,104 @@ export function evaluerOrientation(entree: EntreeOrientation): RecommandationExp
     }
   }
 
+  // ── UN PACK ABSORBE SES MEMBRES ────────────────────────────────────────────
+  //
+  // Arbitrage praticien du 2026-08-04. Quand un pack est recommandé, les
+  // questionnaires qui font partie de SA composition ne s'affichent plus en
+  // lignes distinctes. Vérifié en base le même jour : `PACK_SOMMEIL_CHRONO`
+  // contient `Q_SOM_01`…`Q_SOM_06`, `Q_INF_03` et `Q_NEU_11` ;
+  // `PACK_STRESS_BURNOUT` contient `Q_STR_02` et `Q_STR_05` ;
+  // `PACK_DIGESTIF_INTESTIN` contient `Q_GAS_01`. Le praticien voyait donc le
+  // pack ET plusieurs de ses propres membres, et devait déduire lui-même que
+  // les assigner tous ferait passer deux fois les mêmes instruments.
+  //
+  // PAS DE PLAFOND GLOBAL, décision explicite : tout ce qui reste justifié
+  // reste affiché, et c'est le praticien qui tranche. L'absorption ne retire
+  // que la REDONDANCE, jamais la quantité.
+  //
+  // ICI, ET PAS AILLEURS. Après la déduplication (une cible absorbée peut avoir
+  // agrégé plusieurs motifs, qu'on veut tous reporter) et avant le tri (le
+  // nombre de motifs est une clé de tri : trier puis absorber classerait sur un
+  // compte périmé).
+  //
+  // CE QUI EST REPORTÉ, ET CE QUI NE L'EST PAS. Quatre champs remontent sur le
+  // pack — `motifs`, `needIds`, `niveau`, `objectifs` —, et un seul ne remonte
+  // pas.
+  //
+  //   `motifs` et `needIds` : données de RÈGLE — pourquoi cette exploration est
+  //   proposée, et quels besoins elle vise. Les perdre effacerait la traçabilité
+  //   claim par claim qui fonde toute cette table.
+  //
+  //   `niveau` : LE PLUS FONDAMENTAL des deux (`socle` < `approfondissement` <
+  //   `specialise`), même ordre que l'agrégation à cible partagée plus haut.
+  //   Corrigé le 2026-08-04. Un pack absorbe des cibles d'un AUTRE axe clinique
+  //   — `PACK_SOMMEIL_CHRONO` contient `Q_NEU_11` (HAD) et `Q_INF_03` —, si bien
+  //   qu'un patient sévère voyait sa sortie tomber à trois packs tous
+  //   `approfondissement`, et PLUS RIEN au `socle`, alors que des règles `socle`
+  //   avaient bel et bien déclenché. L'absorption doit retirer la redondance,
+  //   pas dégrader ce que le praticien lit comme le plus fondamental.
+  //
+  //   `objectifs` : reportés PRÉFIXÉS PAR LA CIBLE ABSORBÉE (« via Q_NEU_11 :
+  //   … »). L'objectif est la seule phrase française qui dit POURQUOI, et elle
+  //   part aussi au modèle de synthèse (`buildBlocOrientation`) : la jeter
+  //   perdait l'information la plus lisible de la ligne. L'objection qui la
+  //   faisait jeter — « un objectif écrit pour la cible absorbée se lirait comme
+  //   une description du pack » — vaut pour une absorption du MÊME axe, pas
+  //   quand le HAD est absorbé par le pack sommeil. Le préfixe la lève : la
+  //   phrase dit de qui elle parle, et ne peut plus se lire comme une
+  //   description du pack.
+  //
+  // La `priorite` du pack, elle, ne bouge PAS : absorber un membre ne rend pas
+  // le pack plus urgent qu'il ne l'était.
+  //
+  // Composition inconnue = aucune absorption. On ne devine pas ce qu'un pack
+  // contient ; c'est la même prudence que `packAdministrable`.
+  //
+  // Un membre partagé par DEUX packs recommandés voit ses motifs reportés sur le
+  // PREMIER — l'ordre de `parCible`, c'est-à-dire l'ordre des règles dans la
+  // table, donc reproductible. Les dupliquer sur les deux gonflerait la clé de
+  // tri « cible la plus motivée » d'un même motif compté deux fois.
+  const recommandations = [...parCible.values()];
+  const membresDesPacksRecommandes = new Map<string, RecommandationExploration>();
+  for (const recommandation of recommandations) {
+    if (recommandation.cible.type !== 'pack') continue;
+    const composition = entree.compositionPacks?.[recommandation.cible.packId];
+    if (!Array.isArray(composition)) continue;
+    for (const qid of composition) {
+      if (!membresDesPacksRecommandes.has(qid)) membresDesPacksRecommandes.set(qid, recommandation);
+    }
+  }
+
+  const retenues = recommandations.filter(recommandation => {
+    if (recommandation.cible.type !== 'questionnaire') return true;
+    const pack = membresDesPacksRecommandes.get(recommandation.cible.questionnaireId);
+    if (!pack) return true;
+    for (const motif of recommandation.motifs) {
+      if (!pack.motifs.some(m => m.regleId === motif.regleId)) pack.motifs.push(motif);
+    }
+    for (const needId of recommandation.needIds) {
+      if (!pack.needIds.includes(needId)) pack.needIds.push(needId);
+    }
+    pack.needIds.sort((a, b) => a - b);
+    // Le niveau le plus fondamental l'emporte : un `socle` absorbé garde la
+    // ligne au socle.
+    if (RANG_NIVEAU[recommandation.niveau] < RANG_NIVEAU[pack.niveau]) {
+      pack.niveau = recommandation.niveau;
+    }
+    // Préfixé par la cible : la phrase ne peut pas se lire comme une
+    // description du pack. `questionnaireId` est garanti par le `return true`
+    // du dessus — seule une cible questionnaire arrive ici.
+    const qid = recommandation.cible.questionnaireId;
+    for (const objectif of recommandation.objectifs) {
+      const reporte = `via ${qid} : ${objectif}`;
+      if (!pack.objectifs.includes(reporte)) pack.objectifs.push(reporte);
+    }
+    return false;
+  });
+
   // Tri déterministe : priorité croissante, puis cibles les plus motivées,
   // puis clé stable.
-  return [...parCible.values()].sort((a, b) =>
+  return retenues.sort((a, b) =>
     a.priorite - b.priorite
     || b.motifs.length - a.motifs.length
     || cleCible(a.cible).localeCompare(cleCible(b.cible))

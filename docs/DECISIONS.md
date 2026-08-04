@@ -4,6 +4,16 @@
 
 ## Décisions actives
 
+### D-015 — Une règle d'orientation ne se déclenche que sur une mesure complète, et sur la forme réellement servie
+
+- Date : 2026-08-04
+- Statut : accepté (arbitrages praticien en session, table d'orientation V2)
+- Domaine : clinique, orientation et scoring
+- Décision : un déclencheur de la table d'orientation ne mord que sur une **mesure complète** — le moteur refuse un axe dont `repondus < items`, et un score global dont le porteur déclare un recueil partiel. Et il doit être **solidaire de la forme servie** : quand un `idQuestionnaire` désigne deux instruments selon un drapeau, le déclencheur porte sur les **libellés de bande**, que les deux formes ne partagent pas, et non sur une couleur, qu'elles partagent.
+- Conséquences : le moteur `subscore` calcule le total d'un axe **dès qu'un seul item est renseigné** ; un total partiel est donc biaisé **vers le bas**, et un déclencheur `<=` le lit comme une dégradation. Mesuré : trois items de `Q_MOD_01` répondus à leur **meilleure** valeur, puis abandon, produisaient **sept recommandations dont deux packs**, motivées par « Sommeil non réparateur » chez un patient qui venait de déclarer un excellent sommeil. Les sous-scores servent désormais `repondus` et `items` (et non `missing` : le décrire aurait imposé de bumper la consigne de synthèse, verrouillée par empreinte). Sur `Q_ALI_01`, dont la forme courte est servie partout où `WN_ALI_01_SIIN57` manque — CI, dev, preview —, le déclencheur porte sur les deux libellés de la forme SIIN57 : la règle cesse d'elle-même de mordre quand le drapeau est éteint, et reste solidaire du claim, qui parle de l'enquête « détaillée ».
+- Réserves : **le PSQI partiel n'est pas gardé.** `psqi` et `tfd` ne publient aucun compte à la racine, donc la garde globale ne sait pas quoi lire ; un PSQI à 8 réponses sur 24 rend `total: 14`, décroche une bande, et `R-SOM-01` s'allume. Défaut **pré-existant**, nommé dans le code, non fermé par ce lot. Par ailleurs `items = repondus + missing` n'est exercé par aucun instrument du catalogue (aucun instrument `subscore` ne porte d'item conditionnel) : une régression y serait silencieuse.
+- Référence : [web/src/lib/clinical/orientationEngine.ts](web/src/lib/clinical/orientationEngine.ts), [web/src/lib/clinical/orientationRulesV1.ts](web/src/lib/clinical/orientationRulesV1.ts), [web/src/lib/questions.ts](web/src/lib/questions.ts), [[D-014]]
+
 ### D-015 — Agenda alimentaire : la saisie patient exige un consentement enregistré, se ferme à la clôture de suivi, et le doublon se refuse au chemin d'écriture
 
 - Date : 2026-08-04
