@@ -161,6 +161,19 @@ export type LectureJours = {
   jours: JourRow[];
   /** Lignes en base qu'on n'a pas su relire — mises en quarantaine, pas perdues. */
   illisibles: number;
+  /**
+   * Les DATES touchées par la quarantaine, dédoublonnées et dans l'ordre de
+   * lecture. Le compte seul ne dit pas OÙ le trou se trouve, et un appelant
+   * réduit à ce compte n'a d'autre choix que de refuser tout l'agenda. Or
+   * `date_jour` est une COLONNE : la ligne fautive est en portée dans le `catch`
+   * ci-dessous, et `SELECT_JOUR` la sélectionne déjà — la date est là, sans une
+   * requête de plus. Le chemin d'écriture peut donc restreindre son refus à la
+   * journée qu'il ne sait effectivement pas relire.
+   *
+   * Une même date peut porter plusieurs lignes illisibles (append-only) : le
+   * compte et la longueur de ce tableau NE SONT PAS interchangeables.
+   */
+  datesIllisibles: string[];
 };
 
 /**
@@ -187,6 +200,10 @@ export type LectureJours = {
  * tronqué sans bruit pourrait franchir le seuil en ayant perdu des journées, et
  * produire un agrégat qui a l'air valide. `illisibles > 0` oblige l'appelant à
  * en décider — c'est la même règle que « null jamais 0 » appliquée à la lecture.
+ *
+ * Le compte remonte AVEC ses dates (`datesIllisibles`) : un appelant qui n'a que
+ * le compte ne peut refuser qu'en bloc, faute de savoir laquelle des journées
+ * est touchée. La date, elle, est disponible sans coût — voir `LectureJours`.
  */
 export async function listJours(
   idPatientRaw: string,
@@ -205,12 +222,17 @@ export async function listJours(
 
   const jours: JourRow[] = [];
   let illisibles = 0;
+  const datesIllisibles = new Set<string>();
   for (const row of rows) {
     try {
       jours.push(toJourRow(row));
     } catch {
       illisibles += 1;
+      // `row.dateJour` est une COLONNE, pas du JSONB : elle est lisible même
+      // quand le contenu de `reponses` ne l'est pas. C'est ce qui permet à
+      // l'appelant de nommer la journée en quarantaine au lieu de deviner.
+      datesIllisibles.add(row.dateJour);
     }
   }
-  return { jours, illisibles };
+  return { jours, illisibles, datesIllisibles: [...datesIllisibles] };
 }
