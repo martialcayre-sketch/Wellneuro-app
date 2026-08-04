@@ -4,6 +4,24 @@
 
 ## Décisions actives
 
+### D-010 — Agenda alimentaire : l'écart déclaré/observé est un objet clinique séparé, pas une source du besoin 3
+
+- Date : 2026-08-04
+- Statut : accepté (arbitrage praticien, lots L1-bis et L3 de l'agenda alimentaire)
+- Domaine : clinique, Mon Équilibre
+- Décision : l'agenda alimentaire `Q_ALI_09` **n'alimente pas** le besoin 3 « Rythme alimentaire », déjà sourcé par le sous-score `RYTHME_CHRONO` de `Q_ALI_01`. Ce que l'instrument doit produire est l'**écart** entre le rythme DÉCLARÉ (questionnaire) et le rythme OBSERVÉ (21 jours), comme objet distinct — trois profils, dont « déclare bon / observe mauvais », où l'action clinique porte sur la perception et non sur le rythme.
+- Conséquences : `BESOIN_SOURCES` et `VERSION_SCORE_EQUILIBRE` restent intouchés, et `sourceMonEquilibre` vaut `false` au registre des instruments. Y brancher l'agenda ferait deux mesures d'un même thème — l'agenda serait le **troisième** porteur du mot « rythme », après `RYTHME_ALIMENTAIRE` /10 (affichage) et `RYTHME_CHRONO` /7 (besoin), homonymie dont `lib/anthropic.ts` documente déjà le piège d'addition. L'objet d'écart **dépend de la forme servie** : sous la forme courte à 14 items, `MAX_RYTHME_CHRONO` vaut 0, aucun rythme n'est déclaré, et l'écart devra rendre `null` — jamais 0, qui se lirait « pas d'écart ».
+- Référence : [docs/claude/HANDOFF_CURRENT.md](docs/claude/HANDOFF_CURRENT.md), [web/src/lib/equilibre/constants.ts](web/src/lib/equilibre/constants.ts), [web/src/lib/agenda-alimentaire/types.ts](web/src/lib/agenda-alimentaire/types.ts), [web/src/lib/anthropic.ts](web/src/lib/anthropic.ts)
+
+### D-009 — Recueil longitudinal : collecter avant de calibrer, et l'abstention est un état clinique de plein droit
+
+- Date : 2026-08-04
+- Statut : accepté (arbitrage praticien, lots L1-bis et L3)
+- Domaine : clinique, méthode de mesure
+- Décision : sur un instrument de recueil, **aucun barème n'est arrêté avant d'avoir observé des données réelles** — un barème posé avant la première passation est une donnée clinique inventée. Et une question de recueil offre **trois états**, pas deux : observé vrai, observé faux, et `null` — « je ne sais pas » —, distinct de la clé absente qui reste la non-réponse.
+- Conséquences : l'ordre des lots est collecte → calibrage, jamais l'inverse ; un instrument peut donc être livré `scored: false` et le rester. L'abstention doit entrer au contrat **avant la première ligne en base** : après, elle coûte une version de contrat, une double lecture et une fenêtre de recueil incomparable à elle-même. Corollaire technique à ne pas manquer — `null !== undefined` est vrai en JavaScript : relâcher un booléen **réveille tous les prédicats qui comptent les valeurs connues**, et un seul laissé en `!== undefined` compte l'abstention comme connue puis la lit comme un « non ». Le test de connaissance s'écrit `typeof … === 'boolean'`, uniformément ; la différence de contrat entre champs vit dans le type et le validateur, jamais dans les prédicats.
+- Référence : [changelog.d/2026-08-04-agenda-alimentaire-l3-persistance.md](changelog.d/2026-08-04-agenda-alimentaire-l3-persistance.md), [web/src/lib/agenda-alimentaire/types.ts](web/src/lib/agenda-alimentaire/types.ts), [web/src/lib/agenda-alimentaire/agregats.ts](web/src/lib/agenda-alimentaire/agregats.ts)
+
 ### D-008 — Contrat V3 des compléments : validation structurelle au runtime, à la persistence et à la relecture
 
 - Date : 2026-08-03
