@@ -558,10 +558,18 @@ describe('garde-fou alimentaire — forme de la sortie moteur', () => {
   // le découpage DESCRIPTIF en 12 catégories (`{id,label,total,max}`, aucune
   // unité physiologique), `missing` un COMPTE d'items non répondus, `missingIds`
   // leurs identifiants. Aucun n'est un apport étalonné.
+  // `repondus` : ajouté au niveau RACINE le 2026-08-04, avec la garde de
+  // complétude des moteurs `sum` et `bms_average`. Il était déjà admis en
+  // imbriqué (voir plus bas) et pour la même raison, vérifiée à nouveau ici sur
+  // `questions.ts` avant admission : c'est un COMPTE de questions renseignées,
+  // pendant exact de `missing`, sans unité physiologique ni valeur de barème.
+  // Les deux disent pourquoi une bande manque, là où un `interpretation: null`
+  // nu laisserait croire à un trou de grille.
   const CLES_ADMISES = new Set([
     'type', 'total', 'maxTotal', 'subScores', 'interpretation', 'note',
     'certification', 'scored', 'rawAnswers', 'categories', 'bande',
     'dimensions', 'missing', 'missingIds', 'raisonNonScore', 'scoresBesoins',
+    'repondus',
   ]);
   // `scoresBesoins` : sous-scores SERVIS à un besoin de Mon équilibre, ajouté le
   // 2026-07-28 pour le besoin 3. Lu avant admission : même forme que

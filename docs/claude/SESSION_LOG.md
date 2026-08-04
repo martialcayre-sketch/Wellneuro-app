@@ -1999,3 +1999,41 @@ table du LOT-05, sans laquelle le LOT-06 livré n'affiche rien.
 requête ne sépare : « cherché, rien n'existe » et « trouvé, non indexé ». La distinction
 ne vit que dans une phrase française. Et le seuil servi de `Q_SOM_06` est ≥ 23 quand
 celui usuellement cité pour l'asthénie de Pichot est ≥ 22 — soupçon non vérifié.
+
+## 2026-08-04 — Trancher les écarts du LOT-07, et ce qu'on a trouvé dessous
+
+**Décidé** — Les trois écarts sont tranchés, et le plus gros a changé de nature. `Q_STR_03` :
+la cotation 0-55 contre 11-66 **n'est pas un défaut** — mêmes 11 items, mêmes six ancres,
+ré-encodage à partir de zéro, translation constante. Ce qui n'a aucune source, ce sont les
+**cinq bandes** : le manuscrit n'en publie aucune, et les jeux diffusés en aval ne sont
+signés de personne. Arbitrage praticien : ne pas échanger un jeu non sourcé contre un
+autre — réserve posée, bandes inchangées. `Q_NEU_03` : 1992 **et** 1998 datent l'entretien
+d'origine ; la version auto-évaluée servie est de **2008**. `Q_FIB_03` : piste ACR 1990
+fermée, le dépôt ne sert pas l'examen des 18 points.
+
+**Écarté** — Adopter les seuils d'un diffuseur (ils reclassaient des patients sans gagner
+une once de preuve) ; retirer les bandes (le praticien s'en sert) ; poser une réserve qui
+déclasse (plafond au barreau courant : enregistrer n'est pas rétrograder).
+
+**Le vrai sujet était ailleurs.** Le moteur `sum` jetait le `missing` de `sumItems` : un
+recueil partiel décrochait une bande calibrée sur la forme complète, **à sens unique, vers
+le sous-classement**. `bms_average` en pire, sa moyenne divisant par des items jamais
+posés. Fermé dans les deux, plus un étage plus bas dans `equilibre/score.ts` où le total
+**est** la lecture — sur une source `inverser: true`, un `Q_STR_03` tronqué rendait
+« besoin bien couvert ».
+
+**Trois fois, un chiffre supposé a failli devenir un fait.** « 5 items sur 20 » et « 13 sur
+20 » venaient de comptes que je n'avais pas lus ; le compte d'instruments `sum` a opposé
+deux sous-agents (26/25 contre 25/24) avant que le catalogue résolu ne tranche à **26
+éteint / 25 allumé**. La revue adversariale a par ailleurs démoli trois affirmations que le
+code écrivait sur lui-même — dont une **qui me sous-estimait** : côté serveur la complétude
+n'est exigée que pour `def.cabinet`, donc le trou était réel, pas théorique.
+
+**Prochaine action** — La classe n'est pas fermée : `sum_decimal` (`Q_GEO_05`, QDRS,
+gradation de démence), `count_threshold` (`Q_INF_05`) et `ecab` (`Q_NEU_08`) portent le
+même défaut et sont servis.
+
+**Questions ouvertes** — `Q_STR_03` sert au praticien et au prompt IA des bandes dont la
+réserve dit qu'elles n'ont aucune source : faut-il un signal côté fiche ? Et
+`plaintes_actuelles` met `total: null` sur recueil partiel là où `sum` sert le total —
+divergence assumée, à réexaminer si elle gêne.

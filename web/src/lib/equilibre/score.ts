@@ -58,6 +58,36 @@ function extraireValeurBrute(resultat: Record<string, unknown>, sousScore?: stri
     }
     return totaux.length === 1 ? totaux[0] : null;
   }
+  // GARDE — un recueil PARTIEL ne couvre rien, et surtout pas « bien ».
+  //
+  // Ici le total N'EST PAS servi à côté d'une bande : il EST la lecture.
+  // `calculerCouvertureSource` le divise juste après par `source.max`, qui est
+  // celui de la forme COMPLÈTE (`constants.ts`). Or un item non répondu n'est
+  // pas compté 0 par les moteurs de somme : il est IGNORÉ. Le total sort donc
+  // trop bas, et le ratio est faux.
+  //
+  // Sur une source `inverser: true`, l'erreur change de signe et devient
+  // rassurante : `Q_STR_03` (besoin 9, `max: 55`) tronqué rend un total bas,
+  // donc `1 - ratio` HAUT, c'est-à-dire « besoin bien couvert » sur un
+  // instrument qu'on n'a presque pas administré. C'est l'inversion exacte que la
+  // garde de recueil partiel de `sum`/`bms_average` ferme un étage plus haut —
+  // sauf que là-haut le total restait vérifiable à côté de `missing`, et qu'ici
+  // il ne l'est pas.
+  //
+  // `null`, jamais 0 : « non mesuré » est la doctrine du dépôt, et c'est déjà ce
+  // que cette fonction rend pour une source absente ou suspendue. Un besoin dont
+  // TOUTES les sources sont partielles ressort donc non mesuré, pas nul — un 0
+  // le ferait passer sous le seuil d'effondrement et plafonnerait « Mon
+  // équilibre » sur une mesure qui n'existe pas.
+  //
+  // PORTÉE — la branche à sous-score n'est délibérément PAS concernée. Le
+  // `missing` de la racine décrit l'instrument ENTIER : l'appliquer à un
+  // sous-score rendrait le besoin 3 non mesuré parce qu'un item quelconque des
+  // 57 de l'enquête alimentaire est vide, alors que les quatre items qui le
+  // fondent sont complets. Les porteurs de sous-scores tiennent déjà leur propre
+  // complétude, au bon grain — `scoresBesoins` rend `null` dès qu'un de SES
+  // items manque (`questions.ts`, branche `seuils_points`).
+  if (typeof resultat.missing === 'number' && resultat.missing > 0) return null;
   return typeof resultat.total === 'number' ? resultat.total : null;
 }
 

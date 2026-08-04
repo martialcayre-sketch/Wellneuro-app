@@ -4,6 +4,16 @@
 
 ## Décisions actives
 
+### D-014 — Une bande d'interprétation ne se lit que sur l'instrument complet
+
+- Date : 2026-08-04
+- Statut : accepté (arbitrage praticien en session, suite du LOT-07)
+- Domaine : clinique et scoring
+- Décision : sur un recueil **partiel**, les moteurs de somme ne rendent plus de bande d'interprétation. Un item non répondu n'est pas compté `0` — il est **ignoré** —, si bien que le total sort plus bas qu'il ne devrait et décroche une bande calibrée sur la forme complète. **L'erreur est à sens unique : sous-classement, jamais sur-classement**, c'est-à-dire le faux négatif sur un dépistage. Le `total` reste servi, accompagné de `missing` et `repondus` ; ce qui tombe est la **lecture**, pas la mesure. `bms_average` rend en plus `average: null` : sa moyenne divisait par des items que personne n'avait posés, et diviser par `repondus` aurait remplacé un nombre faux par un nombre inventé — la grille du BMS-10 n'a jamais été calibrée sur une moyenne partielle.
+- Conséquences : frontière **plus stricte** que celle des sous-scores voisins, qui tiennent un axe pour mesuré dès qu'un item est renseigné. Assumé : un sous-score **détaille** un total resté vérifiable à côté, une bande **affirme**. La règle vaut aussi un étage plus bas, dans `web/src/lib/equilibre/score.ts`, où le total **est** la lecture — il y est divisé par le `max` de la forme complète, et sur une source `inverser: true` l'erreur devient rassurante : un `Q_STR_03` tronqué rendait « besoin bien couvert ». Une source à recueil partiel n'entre donc plus dans la couverture ; un besoin dont toutes les sources sont partielles ressort **non mesuré**, jamais `0`.
+- Réserves : **la classe n'est pas fermée.** Trois moteurs servis portent encore le même défaut et n'ont pas été touchés — `sum_decimal` (`Q_GEO_05`, QDRS, où un recueil partiel décroche « Normal » sur une **gradation de démence**), `count_threshold` (`Q_INF_05`, qui calcule `missing` puis l'ignore) et `ecab` (`Q_NEU_08`, dépendance aux benzodiazépines). Portée du présent changement mesurée et **nulle sur l'existant** : les 21 réponses `sum` de production portent toutes exactement le nombre d'items attendu (lecture `execute_sql` du 2026-08-04). Mais le trou n'était **pas** théorique : côté serveur, la complétude n'est exigée que pour `def.cabinet`, et aucun instrument servi par `sum` n'est de cabinet — un POST partiel authentifié était accepté.
+- Référence : [web/src/lib/questions.ts](web/src/lib/questions.ts), [web/src/lib/equilibre/score.ts](web/src/lib/equilibre/score.ts), [docs/gouvernance-questionnaires-scoring.md](docs/gouvernance-questionnaires-scoring.md)
+
 ### D-013 — Une étiquette de certification ne vaut que ce que vaut la pièce qui la fonde
 
 - Date : 2026-08-04

@@ -541,7 +541,15 @@ describe('couplage consigne / charge — les champs décrits sont réellement li
     expect(car.dimensions.find((d: any) => d.id === 'VIE').total).toBeNull();
     expect(car.total).toBe(2);
     expect(car.maxTotal).toBe(25);
-    expect(car.interpretation?.label).toBe('Risque faible');
+    // La BANDE, elle, ne part plus : cette ligne attendait « Risque faible »
+    // jusqu'à la garde de complétude du moteur `sum`. Le régime 3 subsiste
+    // entier — un total non nul, servi à côté d'axes à `null`, sans compte
+    // d'axes couverts, et c'est bien pour lui que la consigne met en garde —
+    // mais il ne s'accompagne plus du verdict vert qui le faisait lire comme
+    // une mesure. La mise en garde reste donc nécessaire : le NOMBRE arrive
+    // toujours au modèle, et c'est le nombre qui est incomplet.
+    expect(car.interpretation).toBeNull();
+    expect(car.missing).toBe(carItems.length - 2);
     expect(car.nbAxesCouverts).toBeUndefined();
   });
 

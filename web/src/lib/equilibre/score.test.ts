@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { agregerEquilibre, calculerCouvertureBesoin, calculerCouvertureSource, clamp01 } from './score';
 import { PLAFOND_FONDATION_CRITIQUE } from './constants';
+import { QUESTIONNAIRE_CATALOGUE } from '../questions';
 
 // Scénarios portés depuis l'ancien score.check.ts (auto-vérification
 // "zéro dépendance", supprimé au profit de ce fichier Vitest). Rationale
@@ -275,6 +276,55 @@ describe('besoin 5 — mouvement et repos à parts égales', () => {
     );
     expect(attendu).not.toBeNull();
     expect(calculerCouvertureBesoin(9, reponses)).toBeCloseTo(attendu!, 6);
+  });
+
+  // ── Recueil partiel : la couverture ne se lit pas sur un instrument tronqué ──
+  //
+  // Ici le total N'EST PAS servi à côté d'une bande, il EST la lecture :
+  // couverture = total ÷ `max` de la forme COMPLÈTE. Un item non répondu étant
+  // ignoré et non compté 0, le total sort trop bas — et sur une source
+  // `inverser: true` l'erreur devient RASSURANTE.
+
+  it('Q_STR_03 partiel — la couverture ne monte plus quand la mesure manque', () => {
+    // Le cas qui mord. `Q_STR_03` sert le besoin 9 avec `inverser: true` et
+    // `max: 55` : moins le patient répond, plus le total est bas, plus
+    // `1 - ratio` est haut. Trois items sur onze suffisaient à faire sortir
+    // « besoin bien couvert » d'un instrument qu'on n'a presque pas administré.
+    const items = QUESTIONNAIRE_CATALOGUE.Q_STR_03.sections
+      .flatMap((s: any) => s.questions.map((q: any) => q.id));
+    const partiel: Record<string, number> = {};
+    for (const id of items.slice(0, 3)) partiel[id] = 5;
+
+    const source = { idQuestionnaire: 'Q_STR_03', max: 55, inverser: true } as const;
+    expect(calculerCouvertureSource(source, { Q_STR_03: partiel })).toBeNull();
+
+    // Et sur la forme complète, la source compte toujours : sans cette moitié,
+    // une garde qui rendrait `null` en toutes circonstances passerait.
+    const complet: Record<string, number> = {};
+    for (const id of items) complet[id] = 5;
+    const couvertureComplete = calculerCouvertureSource(source, { Q_STR_03: complet });
+    expect(couvertureComplete).not.toBeNull();
+  });
+
+  it('toutes les sources partielles — le besoin est NON MESURÉ, jamais 0', () => {
+    // La distinction qui compte pour « Mon équilibre » : `null` sort du calcul,
+    // `0` y entre et passe sous le seuil d'effondrement, plafonnant le score
+    // global sur une mesure qui n'existe pas. C'est la doctrine « non mesuré,
+    // jamais 0 » du dépôt, appliquée un étage plus bas que les moteurs.
+    const partielDe = (id: 'Q_STR_01' | 'Q_STR_02' | 'Q_STR_03', combien: number) => {
+      const items = (QUESTIONNAIRE_CATALOGUE as any)[id].sections
+        .flatMap((s: any) => s.questions.map((q: any) => q.id));
+      const r: Record<string, number> = {};
+      for (const q of items.slice(0, combien)) r[q] = 1;
+      return r;
+    };
+    const couverture = calculerCouvertureBesoin(9, {
+      Q_STR_01: partielDe('Q_STR_01', 2),
+      Q_STR_02: partielDe('Q_STR_02', 3),
+      Q_STR_03: partielDe('Q_STR_03', 2),
+    });
+    expect(couverture).toBeNull();
+    expect(couverture).not.toBe(0);
   });
 
   it('une source suspendue reste non mesurée dans Mon Équilibre (fail-closed)', () => {
