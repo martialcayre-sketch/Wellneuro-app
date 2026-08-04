@@ -158,11 +158,35 @@ describe('evidence — une source répondue mais non exploitable ne compte pas',
     // et le besoin devient NON_MESURE — au lieu d'afficher une preuve sur une
     // mesure que `score.ts` tenait déjà pour absente. Le besoin 1 est une
     // FONDATION CRITIQUE : c'est là que le badge fabriqué coûtait le plus.
-    const passationCourte = { Q_ALI_01: { AL1: '1', AL2: '2', AL5: '3' } };
+    // MIS À JOUR LE 2026-08-04, et il faut lire pourquoi avant de le « rétablir ».
+    // Ce test portait une passation de TROIS items sur quatorze, et attendait 'B'
+    // drapeau éteint. C'était l'ancien comportement, et il était faux pour une
+    // deuxième raison que celle-ci ne disait pas : la forme courte est un `sum`
+    // sur 42, `inverser: false`, et trois items renseignés rendaient une
+    // couverture de l'ordre de 14 % — SOUS le seuil d'effondrement, sur une
+    // FONDATION CRITIQUE, donc « Mon équilibre » plafonné à 50 pour un
+    // questionnaire presque pas administré. Le cas `AL*`/SIIN est rassurant à
+    // tort ; celui-là était alarmant à tort. Depuis la garde de recueil partiel
+    // (`score.ts`, `extraireValeurBrute`), un recueil partiel ne couvre plus
+    // rien, dans les DEUX positions du drapeau.
+    const passationPartielle = { Q_ALI_01: { AL1: '1', AL2: '2', AL5: '3' } };
+    expect(calculerNiveauPreuveBesoin(1, passationPartielle)).toBe('NON_MESURE');
+    expect(calculerCouvertureBesoin(1, passationPartielle)).toBeNull();
+
+    // Ce que le test prouvait à l'origine reste prouvé, mais il faut désormais
+    // une passation COMPLÈTE pour l'isoler — sinon les deux positions du drapeau
+    // rendent NON_MESURE pour deux raisons différentes et le test ne distingue
+    // plus rien. Drapeau éteint, la forme courte reconnaît ses quatorze clés et
+    // le besoin 1 vaut 'B' ; allumé, la forme SIIN n'en reconnaît aucune.
+    const passationComplete = {
+      Q_ALI_01: Object.fromEntries(
+        Array.from({ length: 14 }, (_, i) => [`AL${i + 1}`, '2']),
+      ),
+    };
     const attendu = process.env.WN_ALI_01_SIIN57 === 'true' ? 'NON_MESURE' : 'B';
-    expect(calculerNiveauPreuveBesoin(1, passationCourte)).toBe(attendu);
+    expect(calculerNiveauPreuveBesoin(1, passationComplete)).toBe(attendu);
     // Et la cohérence avec le score, dans les deux positions.
-    expect(calculerCouvertureBesoin(1, passationCourte) === null).toBe(attendu === 'NON_MESURE');
+    expect(calculerCouvertureBesoin(1, passationComplete) === null).toBe(attendu === 'NON_MESURE');
   });
 
   it('INVARIANT : NON_MESURE si et seulement si le besoin n’est pas couvert', () => {

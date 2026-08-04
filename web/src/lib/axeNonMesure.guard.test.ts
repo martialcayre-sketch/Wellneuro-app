@@ -252,13 +252,24 @@ describe('axe non mesuré hors subScores déclarés — null, jamais zéro', () 
     expect(sansEva.total).toBeNull();
     expect(sansEva.interpretation).toBeNull();
 
-    // La dimension, elle, ne fait rien tomber : le total reste la somme de tous
-    // les items répondus, sur son dénominateur d'origine.
+    // La dimension, elle, ne fait pas tomber le TOTAL : le total reste la somme
+    // de tous les items répondus, sur son dénominateur d'origine.
     const dims = perimetresDeclares('Q_CAR_01');
     const sansUneDim: any = calculateScore('Q_CAR_01', toutSauf('Q_CAR_01', dims.FAM));
     expect(sansUneDim.dimensions.find((d: any) => d.id === 'FAM').total).toBeNull();
     expect(sansUneDim.total).not.toBeNull();
-    expect(sansUneDim.interpretation).not.toBeNull();
+    // La BANDE, si. Ces deux lignes attendaient l'inverse — c'était le défaut du
+    // moteur `sum`, qui jetait le `missing` de `sumItems` : les items de la
+    // dimension absente n'entrent pas dans la dimension, mais ils entrent dans
+    // le total, où ils comptaient pour zéro. Le total sortait donc plus bas
+    // qu'il ne devait, et décrochait une bande calibrée sur l'instrument
+    // COMPLET — « Risque faible », en vert, sur une passation tronquée.
+    //
+    // Le total et la bande ne sont pas la même affirmation : le total est un
+    // nombre vérifiable à côté duquel `missing` dit ce qui lui manque, la bande
+    // est un verdict. Le premier survit à l'incomplétude, le second non.
+    expect(sansUneDim.interpretation).toBeNull();
+    expect(sansUneDim.missing).toBe(dims.FAM.length);
   });
 
   it('PSQI : une seule réponse ne rend plus un verdict sur les sept composantes', () => {

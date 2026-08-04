@@ -235,7 +235,7 @@ const MESSAGE_ERREUR_MASQUE = 'Message d’erreur non journalisé (peut citer la
  * (aucun n'interpole une valeur du patient). On l'assume plutôt que de trier au
  * cas par cas — un `TypeError` peut aussi venir d'ailleurs dans la pile, et le
  * motif du refus est déjà porté par le code d'événement et le statut HTTP, que
- * le `correlationId` relie à la requête. Piste consignée en D-014 : un code de
+ * le `correlationId` relie à la requête. Piste consignée en D-015 : un code de
  * domaine énuméré rendrait le diagnostic sans rien exposer.
  */
 function traceErreur(err: unknown): { error: Error; metadata?: Record<string, unknown> } {
@@ -333,7 +333,7 @@ function refuserFormeAvantAuth(
 /**
  * ANOMALIE D'INTÉGRITÉ, pas un événement patient : une ligne en base que la
  * lecture n'a pas su relire. Journalisée SUR LES DEUX CHEMINS — c'est ce que
- * D-014 et le changelog annoncent, et le borner au POST rendrait la phrase
+ * D-015 et le changelog annoncent, et le borner au POST rendrait la phrase
  * fausse : un agenda encore consulté mais plus alimenté n'ouvrirait jamais
  * d'incident. Or la quarantaine naît d'un rollback ou d'un conteneur v1 relisant
  * une ligne v2 — une fenêtre où les lectures dépassent de loin les écritures,

@@ -75,10 +75,76 @@ describe('bandes d’interprétation — aucune bande plutôt qu’une bande fau
     // (2026-07-29), un instrument sans aucune réponse sort avant les bandes. Une
     // réponse unique sur dix donne une moyenne de 0,1, sous le plancher de la
     // grille — c'est bien le chemin des bandes qui est exercé.
+    // DEPUIS LA GARDE DE COMPLÉTUDE (`bms_average`), la moyenne n'est plus
+    // servie du tout sur un recueil partiel : `0,1` n'était pas une moyenne
+    // sous le plancher de la grille, c'était une somme de 1 divisée par dix
+    // items dont neuf n'avaient jamais été posés. Ces lignes attendaient `0.1`.
+    //
+    // Conséquence à connaître avant de « réparer » ce test : ce chemin
+    // n'atteint plus `interpretRanges`. Le verrou est maintenant DEVANT, et
+    // aucun instrument du catalogue ne peut plus produire de valeur sous le
+    // plancher de sa grille par `sum` ou `bms_average` — vérifié en jouant les
+    // CINQ grilles à plancher non nul, celles que `questions.ts` énumère :
+    // `Q_STR_02` 10-50, `Q_STR_08` 25-100, `Q_STR_05` et `Q_GAS_03` 1-7,
+    // `Q_MOD_03` 1-10. (Cette ligne en a dit TROIS jusqu'au 2026-08-04, en
+    // recopiant les seuls instruments qu'elle avait joués.) Trois d'entre elles
+    // passent par ces deux moteurs — `Q_STR_02` et `Q_STR_08` en `sum`,
+    // `Q_STR_05` en `bms_average` — et rendent exactement leur plancher sur une
+    // passation COMPLÈTE au minimum. Les deux autres ne peuvent pas davantage
+    // passer dessous, par des moteurs différents : `Q_GAS_03` est `bristol` et
+    // `Q_MOD_03` est `plaintes_actuelles`. La conclusion tient donc sur les
+    // cinq, ce qui est le seul sens où elle vaut : elle prétend qu'AUCUN
+    // instrument ne descend sous son plancher, pas que trois n'y descendent pas.
+    //
+    // Ce que ce constat NE remplace pas : le chemin « sous le plancher » de
+    // `interpretRanges` lui-même, qu'aucun instrument servi n'exerce plus. Il
+    // est éprouvé sur définition forgée par le test suivant. Le repli
+    // au-dessus de la grille, lui, reste exercé plus bas.
     const presqueVide: any = calculateScore('Q_STR_05', { [itemsDe('Q_STR_05')[0].id]: 1 });
     expect(presqueVide.scored).not.toBe(false);
-    expect(presqueVide.average).toBe(0.1);
+    expect(presqueVide.average).toBeNull();
+    expect(presqueVide.missing).toBe(itemsDe('Q_STR_05').length - 1);
     expect(presqueVide.interpretation).toBeNull();
+  });
+
+  it('une valeur SOUS le plancher de la grille ne reçoit aucune bande', () => {
+    // L'ASYMÉTRIE délibérée d'`interpretRanges`, et la seule chose qui la tient.
+    // Au-DESSUS de la grille, la bande de tête est rendue — un plafond écrit
+    // sous le maximum atteignable n'est pas un trou. En DESSOUS, rien : sous le
+    // plancher on ne trouve pas un score extrême, on trouve une absence de
+    // mesure (`questions.ts`, « Rien de symétrique par le BAS, délibérément »).
+    //
+    // Ce chemin était éprouvé par une passation PARTIELLE de `Q_STR_05`. Depuis
+    // la garde de complétude de `bms_average`, cette passation s'arrête AVANT
+    // `interpretRanges` : la couverture a disparu avec le cas qui la portait, et
+    // le repli symétrique — `if (score < queue.min) return queue;` — repassait
+    // le banc entier au vert. Une garde dont la suppression ne casse rien n'est
+    // pas gardée.
+    //
+    // Définition FORGÉE, sur le modèle déjà employé plus bas : ce qui est
+    // vérifié est le contrat du moteur, pas l'état d'une grille qu'un arbitrage
+    // peut faire bouger demain — et aucune grille servie ne peut plus l'exercer.
+    // La passation est COMPLÈTE (`missing: 0`), sans quoi ce serait la garde de
+    // recueil partiel qui rendrait `null`, et le test prouverait autre chose.
+    const def = {
+      sections: [{ id: 'A', questions: [{ id: 'A1', type: 'number', min: 0, max: 50 }] }],
+      scoring: {
+        type: 'sum',
+        interpretation: [
+          { min: 10, max: 29, label: 'bas' },
+          { min: 30, max: 50, label: 'haut' },
+        ],
+      },
+    };
+    const sousLePlancher: any = computeScoreFromDef(def, { A1: 3 });
+    expect(sousLePlancher.total).toBe(3);
+    expect(sousLePlancher.missing, 'la passation doit être complète').toBe(0);
+    expect(sousLePlancher.interpretation).toBeNull();
+
+    // Le plancher lui-même appartient bien à sa bande : c'est un plancher, pas
+    // un trou. Sans cette moitié, un moteur muet passerait le test ci-dessus.
+    const auPlancher: any = computeScoreFromDef(def, { A1: 10 });
+    expect(auPlancher.interpretation?.label).toBe('bas');
   });
 
   it('les grilles du catalogue ne portent plus aucun repli silencieux', () => {

@@ -107,7 +107,7 @@ BEGIN
   -- doublon accidentel est tenu AILLEURS, au chemin d'écriture — un second envoi
   -- sur une date déjà notée est refusé en 409 sauf s'il porte un
   -- `supersedesJourId` désignant la journée active de cette date (décision
-  -- D-014). C'est la place correcte : la base ne peut pas distinguer un
+  -- D-015). C'est la place correcte : la base ne peut pas distinguer un
   -- double-clic d'une correction, le chemin d'écriture le peut.
   --
   -- DEUX assertions, pas une, pour la même raison que dans

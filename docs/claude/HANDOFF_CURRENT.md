@@ -12,7 +12,7 @@
   créneau unique, si bien que le handoff de L3 n'a jamais atteint `main`. Il reste
   lisible au commit `61e4d928`, et sa substance est dans `SESSION_LOG` et D-009/D-010.
 
-## Objectif atteint
+## Les écarts, tranchés
 
 La table `agenda_alimentaire_jours` existait depuis L3 mais **aucune route n'y
 menait** : rien ne pouvait être saisi. L4a ouvre l'accès serveur — `authorize` dédié,
@@ -26,7 +26,7 @@ route GET/POST, contrat SQL. La surface de saisie et l'aiguillage sont L4b.
   compteur `illisibles`) et POST (borne de corps, doublon, pré-contrôle d'abstention).
 - `web/prisma/checks/agenda_alimentaire_v1.sql` + son étape `ci.yml`.
 - `web/src/lib/dateParis.ts` — `dateJourParis` extrait, réexporté par le sommeil.
-- `docs/DECISIONS.md` **D-014** : trois arbitrages et **six réserves**.
+- `docs/DECISIONS.md` **D-015** : trois arbitrages et **six réserves**.
 
 ## Les quatre choses à savoir avant de toucher à ce code
 
@@ -92,15 +92,19 @@ n'y avait aucune ligne fautive à faire échouer.
   2026-07-21. Le rendre exécutable élargirait une PR d'authentification — à faire dans un
   lot d'outillage.
 
-## La leçon de méthode, revenue une troisième fois
+## La leçon de méthode
 
-Mes mutations testaient le **retrait** du contrôle, pas son **déplacement**. La
-mutation « hors de la boucle » a survécu au premier passage : un banc dont chaque
-cas n'instancie qu'**une** entrée ne distingue pas « dans la boucle » de « hors de
-la boucle ». Refermée, la variante « **dernière** entrée » a survécu à son tour —
-le cas correctif plaçait la faute en seconde et dernière position. Il a fallu un
-cas à **trois** entrées, faute au milieu. Un banc vert ne prouve que ce qu'il sait
-instancier.
+**Trois fois, un chiffre supposé a failli devenir un fait.** « 5 items sur 20 » et
+« 13 sur 20 » venaient de comptes que je n'avais pas lus — les instruments en
+comptaient exactement 5 et 13, tout était complet. Puis deux sous-agents se sont
+contredits sur le nombre d'instruments `sum` (26/25 contre 25/24) ; seul le
+catalogue **résolu à l'exécution** a tranché — 26 drapeau éteint, 25 allumé. Un
+compte obtenu au grep n'est pas un compte : il attrape les `parts` d'un moteur
+composite et ignore la résolution des drapeaux.
+
+Et la revue adversariale a démoli trois affirmations que le code écrivait sur
+lui-même, dont une **qui sous-estimait le lot**. Un commentaire faux dans un
+fichier de logique clinique ne survit pas au premier lecteur qui vérifie.
 
 ## Prochaine action exacte
 
@@ -121,15 +125,24 @@ un questionnaire ordinaire et mène à une impasse en 409), surface de saisie
   `enforce_admins` est actif.
 - Ne pas corriger le consentement ni la clôture côté sommeil dans ce lot.
 
-## Le handoff déplacé par cette fusion
+## Les handoffs déplacés par ces fusions
 
-Ce fichier n’a qu’un créneau. **#560 (LOT-07 — « ce que “certifié” ne dit pas »,
-dernier lot de la campagne packs/corpus) a été mergée pendant ce lot**, et son
-handoff occupait la place. Il est **conservé, pas effacé** : lisible au commit
-`71818caa`, et sa substance est dans `SESSION_LOG` et la décision **D-014**.
+Ce fichier n’a qu’**un créneau**, et `main` a bougé **deux fois** pendant ce lot.
+Les deux handoffs déplacés sont **conservés, pas effacés** :
 
-Sa mesure à retenir : **43 entrées du registre portent `reference_identifiee`,
-deux portent un identifiant.** L’écart est ce que l’étiquette ne dit pas.
+- **#560 — LOT-07, « ce que “certifié” ne dit pas »** (dernier lot de la campagne
+  packs/corpus). Lisible au commit `71818caa` ; sa décision est **D-013**. Sa mesure
+  à retenir : *43 entrées du registre portent `reference_identifiee`, deux portent un
+  identifiant* — l’écart est ce que l’étiquette ne dit pas.
+- **#561 — « Les écarts du LOT-07 tranchés, et le défaut trouvé dessous »**. Lisible
+  au commit `74f1ee49` ; sa décision est **D-015** — *une bande d’interprétation ne se
+  lit que sur l’instrument complet*.
 
-C’est la troisième collision sur ce fichier en deux jours (#556 sur #557, puis
-celle-ci). Le créneau unique est la cause ; la nommer ici évite de la rejouer.
+La substance des deux est dans `SESSION_LOG`, où les entrées ont été **fusionnées et
+non arbitrées**, et dans leurs décisions respectives.
+
+**C’est la quatrième collision sur ce fichier en deux jours** (#556 sur #557, puis ces
+deux-ci). Le créneau unique en est la cause. `SESSION_LOG` et `changelog.d/` ne la
+connaissent pas : le premier est append-only, le second a un fichier par lot. Un
+handoff par lot — `docs/claude/handoffs/AAAA-MM-JJ-slug.md` plus un pointeur — coûterait
+une PR et fermerait la classe. **Piste à instruire, pas encore décidée.**

@@ -25,7 +25,7 @@ la saisie patient reste à L4b, et `WN_AGENDA_ALI` reste **éteint**.
   c'est une **pré-position** : aucun chemin du dépôt n'écrit ce champ, donc aucun
   patient ne peut aujourd'hui retirer son consentement au niveau assignation. Elle
   attend le mécanisme qui n'existe pas encore. Les gardes sont posées sur
-  l'alimentaire **seul** : voir la décision **D-014**, qui nomme l'asymétrie et laisse
+  l'alimentaire **seul** : voir la décision **D-015**, qui nomme l'asymétrie et laisse
   la dette ouverte sur `api/patient/submit` et sur l'agenda du sommeil.
 - **Un second envoi sur une date déjà notée est refusé en `409`**, sauf s'il porte un
   `supersedesJourId` désignant la journée **active** de cette date — et l'écriture est
@@ -47,7 +47,7 @@ la saisie patient reste à L4b, et `WN_AGENDA_ALI` reste **éteint**.
   faire cette distinction, le chemin d'écriture le peut. Ce `409` rend le double-clic
   **improbable, pas impossible** : la lecture et l'écriture ne sont pas dans une
   transaction, et deux envois concurrents passent tous deux (réserve consignée en
-  D-014).
+  D-015).
 - **`modification_demandee` est refusé au même titre que `verrouille`**, aligné sur
   `api/patient/submit/route.ts`. Deux chemins d'écriture qui divergent sur le même
   statut d'assignation finissent par se contredire au dossier.
