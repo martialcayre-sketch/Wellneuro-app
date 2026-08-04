@@ -1,14 +1,18 @@
 # Handoff — 2026-08-04 — Les écarts du LOT-07 tranchés, et le défaut trouvé dessous
 
-Écrit sur la branche vivante, avant la PR.
+Écrit sur la branche vivante avant la PR, puis **rafraîchi depuis `main` après le
+merge** : seules cette section et « Prochaine action exacte » ont changé — le
+reste est le handoff d'origine, écrit avant de livrer.
 
 ## Git
 
-- Worktree `.claude/worktrees/ecarts-cungi-et-moteur-sum`, branche
-  `worktree-ecarts-cungi-et-moteur-sum`, partie de `main` après #560.
-- Suite directe du LOT-07 (#560, mergé) : ce lot tranche les trois écarts qu'il
-  avait trouvés sans les résoudre. **Changement de logique clinique** — T3, revue
-  adversariale et fragment de changelog obligatoires.
+- **Livré.** PR **#561** mergée en squash (`74f1ee49`), branche et worktree
+  supprimés. `verify` avait réellement tourné, et était vert.
+- Suite directe du LOT-07 (#560, `71818caa`) : ce lot tranche les trois écarts
+  qu'il avait trouvés sans les résoudre. **Changement de logique clinique** — T3
+  complet vert (3 504 tests unitaires + 108 E2E), revue adversariale passée,
+  fragment de changelog livré.
+- Décision **D-014** au registre.
 
 ## Les écarts, tranchés
 
@@ -76,10 +80,25 @@ fichier de logique clinique ne survit pas au premier lecteur qui vérifie.
 
 ## Prochaine action exacte
 
-Ouvrir la PR sur `main` avec `--body-file`, attendre
-`node scripts/wn-attendre-ci.mjs <N>` (**code `0` exigé** ; `2` signifie que
-`verify` n'a pas tourné), merger si l'autorisation est donnée. Ensuite : fermer la
-classe sur `sum_decimal`, `count_threshold` et `ecab`.
+**Fermer la classe du recueil partiel sur les trois moteurs restants**, en
+partant de `main` (jamais de la branche squashée). Par ordre de gravité
+clinique :
+
+1. `sum_decimal` → **`Q_GEO_05` (QDRS)** — un recueil partiel décroche la bande
+   « Normal » (0-1) sur une **gradation de démence**. C'est le plus sérieux.
+2. `count_threshold` → `Q_INF_05` — il **calcule** déjà `missing` et l'ignore
+   pour la bande : le correctif y tient en une condition.
+3. `ecab` → `Q_NEU_08` (dépendance aux benzodiazépines).
+
+Le dessin est déjà arrêté et éprouvé par D-014 : `interpretation: null` sur
+recueil partiel, `total` conservé à côté de `missing`, note en français. Reprendre
+les cas de `web/src/lib/questions.test.ts` et **éprouver le banc par mutation** —
+en particulier `missing > 0` remplacé par `repondus === 0`, celle qui rétablit
+l'ancienne tolérance en gardant l'apparence d'un garde.
+
+Deux décisions **produit** attendent par ailleurs le praticien, et ne bloquent pas
+ce travail : le signal côté fiche pour les bandes non sourcées de `Q_STR_03`, et
+la consultation de l'ouvrage de C. Cungi.
 
 ## Interdits encore actifs
 
