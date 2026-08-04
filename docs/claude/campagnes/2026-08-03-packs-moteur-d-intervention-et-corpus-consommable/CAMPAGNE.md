@@ -1,12 +1,12 @@
 ---
 id: "2026-08-03-packs-moteur-d-intervention-et-corpus-consommable"
 titre: "Packs, moteur d'intervention et corpus consommable"
-statut: "en_cours"
+statut: "terminé"
 créée_le: "2026-08-03"
 mise_à_jour: "2026-08-04"
-lot_courant: "LOT-07"
+lot_courant: "LOT-08"
 branche_campagne: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
-branche_lot_courant: "worktree-lot-07-reliquat-certification"
+branche_lot_courant: "worktree-signature-table-orientation"
 cible_pr_lot: "main"
 cible_pr_campagne: "main"
 ---
@@ -124,19 +124,26 @@ inventer. Inventaire complet : `INVENTAIRE_SOURCES_INTERVENTION.md`.
 | LOT-02 | Rayons cognition / douleur / intestin + premier appelant | **livré** (#546 puis clôture `douleur`) | LOT-01 |
 | LOT-03 | Refactor des packs : source de vérité unique | livré | LOT-00 |
 | LOT-04 | Structuration de l'intake | livré (#539) | — |
-| LOT-05 | Table de règles d'orientation V1 : remplir et signer | **livré_partiel** (#545) — remplie, **non signée** | LOT-03 + LOT-04 |
+| LOT-05 | Table de règles d'orientation V1 : remplir et signer | **livré** — remplie (#545), refondue en 20 règles (#565), **signée** (LOT-08) | LOT-03 + LOT-04 |
 | LOT-06 | Consommateur praticien et restitution IA | livré (#550) | LOT-05 |
-| LOT-07 | Reliquat de certification : bibliographie et psychométrie | à_faire | — |
+| LOT-07 | Reliquat de certification : bibliographie et psychométrie | livré (#560) | — |
+| LOT-08 | Signature de la table, et le dernier trou de recueil partiel | livré | LOT-05 |
 
 LOT-04 et LOT-07 n'ont aucune dépendance : ils peuvent être menés en parallèle du
 chemin critique `LOT-00 → LOT-03 → LOT-05 → LOT-06`.
 
-**`livré_partiel` sur le LOT-05 n'est pas une nuance de comptabilité.** La table
-porte ses six règles mais `ORIENTATION_METADATA.validationExterne` reste `false` :
-`tableSignee()` est faux, et la route ne sert **rien**. La signature est un geste
-praticien, postérieur à la relecture clinique des six règles. Tant qu'il n'a pas
-eu lieu, le LOT-06 ne peut afficher que l'état « en cours de constitution » —
-c'est une limite connue et assumée, pas un défaut de ce lot.
+**`livré_partiel` sur le LOT-05 n'était pas une nuance de comptabilité**, et il
+a fallu deux lots pour le lever. La table portait ses six règles mais
+`ORIENTATION_METADATA.validationExterne` restait `false` : `tableSignee()` était
+faux, et la route ne servait **rien**.
+
+La relecture clinique demandée a d'ailleurs commencé par **refuser** la
+signature : les six règles V1 se déclenchaient sur `Q_SOM_01`, `Q_STR_02` et
+`Q_GAS_01`, qui ne sont pas dans le pack de base — elles ne pouvaient rien
+proposer au premier rendez-vous. La table a donc été refondue en **vingt règles
+sur deux tours** (#565) avant d'être signée (LOT-08). Le geste praticien a servi
+à ce à quoi il sert : il a trouvé ce qu'aucun banc ne pouvait voir, des règles
+justes et inatteignables.
 
 ## État après LOT-00
 
@@ -218,9 +225,27 @@ Revue adversariale `wn-reviewer` obligatoire sur LOT-01, LOT-04 et LOT-05.
 ## Done de campagne
 
 - [x] Les 95 sources d'intervention sont désignées par un registre versionné.
-- [ ] `2002 / 0` sur les claims d'intervention, vérifié en base après merge.
+- [x] `2002 / 0` sur les claims d'intervention, vérifié en base après merge — **dépassé** : relevé `execute_sql` du 2026-08-03 soir, **8 224 actifs, 8 224 VALIDE, 0 en attente** sur les douze notebooks.
 - [x] Les 16 packs ont une composition faisant foi (`packs.qids`, option C) et une identité gardée par un test.
-- [ ] `ORIENTATION_RULES_V1` est non vide, signée, et sert des recommandations.
-- [ ] Un écran praticien appelle réellement la route d'orientation.
+- [x] `ORIENTATION_RULES_V1` est non vide (**20 règles, deux tours**) et **signée** le 2026-08-04 — `validationExterne: true`, 23 claims relus en base, banc d'égalité exacte du périmètre (LOT-08).
+- [x] Un écran praticien appelle réellement la route d'orientation — `OrientationPanel`, onglet Trajectoire (LOT-06, #550).
 - [x] `check_questionnaire_certification.js` reste vert sur les 65 (et non 64 : le registre en portait 65 dès le cadrage du LOT-07).
-- [ ] Aucun claim non signé n'est exposé, aucune assignation n'est automatique.
+- [x] Aucun claim non signé n'est exposé, aucune assignation n'est automatique — barrière D-003 au point de passage, vérifiée au LOT-06.
+
+### Le huitième point, et il n'est PAS coché
+
+- [ ] **La route sert des recommandations en production.** `orientationActive()`
+  est un ET : la table est signée, mais `WN_ENABLE_ORIENTATION_NNPP2` n'est pas
+  posé côté Vercel. Tant qu'il ne l'est pas, la route reste fail-closed et aucun
+  praticien ne voit de recommandation.
+
+**Pourquoi ce point a été SÉPARÉ du quatrième, et pas fondu dedans.** Le critère
+d'origine disait « non vide, signée, **et sert des recommandations** » — trois
+conditions dont la troisième ne dépend d'aucun code. Le cocher au prétexte que
+les deux premières sont vraies aurait fermé la campagne sur une affirmation
+fausse ; le laisser tel quel aurait rendu invisible tout ce qui est fait. Il est
+donc scindé, la part vraie cochée et la part fausse écrite en toutes lettres.
+
+Poser un drapeau d'environnement est un geste d'**exploitation**, distinct de la
+signature clinique. Il n'appartient pas à cette campagne, et c'est délibéré : le
+verrou est un ET précisément pour que les deux gestes aient deux responsables.

@@ -137,7 +137,7 @@ Les deux handoffs déplacés sont **conservés, pas effacés** :
   à retenir : *43 entrées du registre portent `reference_identifiee`, deux portent un
   identifiant* — l’écart est ce que l’étiquette ne dit pas.
 - **#561 — « Les écarts du LOT-07 tranchés, et le défaut trouvé dessous »**. Lisible
-  au commit `74f1ee49` ; sa décision est **D-015** — *une bande d’interprétation ne se
+  au commit `74f1ee49` ; sa décision est **D-014** — *une bande d’interprétation ne se
   lit que sur l’instrument complet*.
 
 La substance des deux est dans `SESSION_LOG`, où les entrées ont été **fusionnées et

@@ -2661,12 +2661,73 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     // Le total du PSQI est sur 21, sept composantes comprises : il ne se somme
     // pas sur celles qui ont répondu.
     const total = totalGlobalDepuisSousScores([C1, C2, C3, C4, C5, C6, C7].map(v => ({total: v})));
-    const interp = total === null ? null
+    // GARDE DE RECUEIL PARTIEL — au niveau ITEM, parce que le niveau composante
+    // ne suffit pas. Fermeture du trou nommé (et laissé ouvert) par #565.
+    //
+    // CE QUI ÉTAIT DÉJÀ COUVERT, et qu'il ne faut pas confondre avec le reste :
+    // `totalGlobalDepuisSousScores` rend `null` dès qu'UNE composante est vide.
+    // Une passation à qui il manque une composante entière ne produit donc ni
+    // total ni bande. Ce n'est PAS le cas ouvert.
+    //
+    // LE CAS OUVERT est celui où les sept composantes ont chacune au moins un
+    // item — `aUneMesure` les déclare mesurées — mais pas tous les leurs. Trois
+    // composantes se complètent alors par un défaut de `0`, la valeur la plus
+    // FAVORABLE de leur échelle : `Q5a` dans `C2`, les neuf `Q5b..Q5j` dans
+    // `C5`, `Q9` dans `C7`. Le total /21 est biaisé vers le bas, et la bande
+    // qu'il décroche est rassurante — sur un instrument à moitié rempli.
+    //
+    // Concrètement : `Q1 Q2 Q3 Q4 Q5b Q6 Q7 Q8` répondus, soit 8 items sur 18,
+    // suffisent à mesurer les sept composantes. Avec `Q5b` à sa PIRE valeur (3)
+    // et le reste au mieux, le total sortait à 1 sur 21 — « Pas de trouble du
+    // sommeil » — alors que dix items, dont presque tout le volet perturbations,
+    // sont sans réponse. Le chiffre est celui du banc, pas d'une estimation : il
+    // a été annoncé à 2 par une première rédaction, et le banc l'épingle
+    // désormais à l'unité près pour qu'il ne redérive pas.
+    //
+    // POURQUOI L'INTERPRÉTATION SEULE TOMBE, et pas le total. Même arbitrage que
+    // `sum` depuis #561 : le total part À CÔTÉ de `missing` et `repondus`, qui le
+    // rendent vérifiable ; c'est la BANDE qui conclut, et une bande ne se lit que
+    // sur l'instrument complet (`D-014`). Les sept composantes restent servies
+    // pour la même raison : elles décrivent le recueil, elles ne le jugent pas.
+    //
+    // LES 18 ITEMS COTÉS, et eux seuls. `Q10` et `Q11a-e` — le volet conjoint —
+    // sont `horsBareme` : Buysse 1989 construit les sept composantes et le total
+    // sur les seules questions 1 à 9. Les compter ici sortirait du barème toute
+    // passation sans conjoint, ce que `psqiVoletPartenaire.guard.test.ts`
+    // interdit par ailleurs. Aucun des 18 n'est conditionnel : la liste est fixe,
+    // et le compte se lit sans le détour de `sumItems`.
+    //
+    // DIX-HUIT, pas dix-neuf : `Q5` est éclatée en `Q5a` PLUS les neuf `Q5b..Q5j`
+    // de `c5Items`. Le compte se dérive de la liste, il ne s'écrit pas à la main.
+    const ITEMS_COTES = ['Q1','Q2','Q3','Q4','Q5a', ...c5Items, 'Q6','Q7','Q8','Q9'];
+    const repondus = ITEMS_COTES.filter(id => getVal(id) !== null).length;
+    const missing = ITEMS_COTES.length - repondus;
+    const recueilIncomplet = missing > 0;
+    const interp = total === null || recueilIncomplet ? null
                  : total <= 4 ? {label:'Pas de trouble du sommeil',color:'success'}
                  : total <= 10 ? {label:'Troubles du sommeil légers',color:'info'}
                  : total <= 16 ? {label:'Troubles du sommeil modérés',color:'warning'}
                  : {label:'Troubles du sommeil sévères',color:'danger'};
+    const noteRecueil = !recueilIncomplet ? null
+      : `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} coté${missing > 1 ? 's' : ''} sans réponse sur ${ITEMS_COTES.length}. Les bandes du PSQI supposent la forme complète ; les items sans réponse sont remplacés par un défaut, le plus souvent le plus favorable de leur échelle. L'interprétation n'est pas calculable.`;
     return {type:'psqi', total, maxTotal:21,
+      // Deux COMPTES d'items, même contrat que `sum` : ils disent POURQUOI la
+      // bande manque, là où un `interpretation: null` nu laisse croire à un trou
+      // de grille. Ce sont aussi les deux clés que lisent les gardes en aval —
+      // `recueilIncomplet` dans `clinical/orientationEngine.ts` et
+      // `extraireValeurBrute` dans `equilibre/score.ts` —, qui rendaient `false`
+      // faute de savoir quoi lire tant que le PSQI ne publiait aucun compte.
+      missing, repondus,
+      // La note de recueil s'AJOUTE à celle de l'instrument, elle ne la remplace
+      // pas — même forme que `sum` et `bms_average`. `Q_SOM_01` ne déclare
+      // aujourd'hui aucune `scoring.note`, donc rien n'est perdu ; écrire
+      // `note: noteRecueil` seul aurait posé un piège pour le jour où un lot de
+      // certification en ajoute une, qui serait alors silencieusement écrasée
+      // sur les passations COMPLÈTES — c'est-à-dire là où elle sert.
+      // `certification` est propagé pour la même raison, `francis` et `qif` le
+      // faisant déjà.
+      note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null,
+      certification: sc.certification || null,
       components:[
         {id:'C1',label:'Qualité subjective',val:C1},
         {id:'C2',label:'Latence du sommeil',val:C2},

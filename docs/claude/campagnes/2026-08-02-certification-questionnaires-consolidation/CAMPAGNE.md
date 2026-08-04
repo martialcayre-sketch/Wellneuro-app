@@ -1,9 +1,9 @@
 ---
 id: "2026-08-02-certification-questionnaires-consolidation"
 titre: "Certification questionnaires — consolidation 62/64"
-statut: "en_cours"
+statut: "terminé"
 créée_le: "2026-08-02"
-mise_à_jour: "2026-08-02"
+mise_à_jour: "2026-08-04"
 lot_courant: "LOT-03"
 branche_campagne: "campagne/certification-questionnaires-consolidation"
 cible_pr_lot: "campagne/certification-questionnaires-consolidation"

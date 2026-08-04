@@ -181,21 +181,47 @@ export type OrientationRule = {
 // arbitrages opposés — c'est précisément ce que « instrument par instrument »
 // veut dire, et l'écrire à deux exemples vaut mieux qu'à un.
 //
-// Ce que la table NE fait PAS : elle ne s'auto-signe pas. `ORIENTATION_METADATA`
-// reste non validée plus bas, donc la route demeure fail-closed et ne sert
-// encore RIEN. La signature est un acte praticien, postérieur à la relecture
-// clinique de ces règles.
+// LA TABLE EST SIGNÉE DEPUIS LE 2026-08-04 — `ORIENTATION_METADATA` plus bas
+// porte `validationExterne: true`, sa date et ses vingt-trois claims. La
+// signature est un acte PRATICIEN, demandé explicitement en session après
+// relecture des vingt règles ; elle n'a jamais été posée d'initiative, et ce
+// fichier ne s'auto-signe pas davantage aujourd'hui qu'hier.
+//
+// CE QUE LA SIGNATURE NE SUFFIT PAS À FAIRE. Le verrou de la route est un ET :
+// `tableSignee()` ET `WN_ENABLE_ORIENTATION_NNPP2 === '1'`. Tant que le drapeau
+// n'est pas posé en production — geste de déploiement, distinct de celui-ci —
+// la route reste fail-closed et ne sert RIEN. Deux gestes, deux responsables.
+//
+// Ce qui a été tranché à la signature, et qu'il faut savoir avant de toucher à
+// ces règles :
+//   · la citation `WN-CL-0105-001` de `R-STR-02` a été relue à la source et
+//     CONSERVÉE — l'alerte qui la disait mal appariée était fausse (détail sur
+//     la règle elle-même) ;
+//   · le trou du PSQI partiel, nommé et laissé ouvert par le lot précédent, est
+//     FERMÉ dans le moteur `psqi` (`questions.ts`) : il publie désormais
+//     `missing`/`repondus` et retire sa bande sur recueil partiel. `R-SOM-01` ne
+//     peut plus s'allumer sur un instrument à moitié rempli ;
+//   · `tfd` (`Q_GAS_01`) reste, lui, non couvert par cette classe de garde. Il
+//     est cible de `R-GAS-01`, au second tour. C'est la réserve connue de cette
+//     signature, écrite ici pour qu'elle ne se redécouvre pas.
 //
 // TRAÇABILITÉ DES CLAIMS — ce que le CI vérifie, et ce qu'il ne peut pas.
 // Le banc n'atteint que le FORMAT d'un `claimId` : les claims vivent dans
 // `rag_corpus_claims` (base), qu'aucun test unitaire n'ouvre. Un identifiant
 // inventé passerait donc le CI. Les claims cités ci-dessous ont été vérifiés à
-// la main par lecture de la base — les neuf de V1 le 2026-08-03, les quinze
-// ajoutés par V2 le 2026-08-04, soit vingt-quatre en tout (voir la note de
-// traçabilité en tête de table) — tous existent en
+// la main par lecture de la base, en 2026-08-03 puis 2026-08-04.
+//
+// LE COMPTE, MESURÉ et non additionné. Les quatre règles `R-*` de second tour
+// citent SEPT claims distincts, les seize règles `R2-*` en citent VINGT, et
+// quatre sont communs aux deux : l'union fait **vingt-trois**. Une rédaction
+// précédente annonçait vingt-quatre, en additionnant deux sous-ensembles qui se
+// recouvrent. Tous existent en
 // `version_claim = 'v1.0'`, `statut = 'VALIDE'`, `prescriptif = true`,
-// `active = true`. Refaire cette lecture à chaque ajout de règle, et avant la
-// signature de la table : c'est le maillon que l'automatisation ne couvre pas.
+// `active = true`. Cette lecture a été REFAITE EN BLOC à la signature, le
+// 2026-08-04, sur les vingt-quatre identifiants alors envisagés — les
+// vingt-trois retenus, plus un que seul un commentaire citait : tous répondent aux
+// quatre conditions. Refaire cette lecture à chaque ajout de règle, et avant
+// toute re-signature : c'est le maillon que l'automatisation ne couvre pas.
 //
 // `pack_humeur_motivation_neurochimie` n'est cible d'aucune règle : le pack
 // correspondant (`PACK_HUMEUR_NEURO`) est `actif: false` en base. La route ne
@@ -1035,20 +1061,26 @@ export const ORIENTATION_RULES_V1: OrientationRule[] = [
     // Déclaré ET mesuré : le facteur déclenchant seul ne suffit pas à engager un
     // pack entier. C'est l'ET logique du moteur qui l'impose.
     //
-    // ⚠ CITATION À TRANCHER PAR LE PRATICIEN — relevée le 2026-08-04, laissée
-    // EN PLACE. `WN-CL-0105-001`, cité ci-dessous en tête de justification,
-    // porte sur l'ÉDUCATION À UN MODÈLE ALIMENTAIRE MÉDITERRANÉEN. On ne voit
-    // pas ce qu'il fonde dans l'engagement d'un pack de stress et de burnout.
-    // Deux indices que l'appariement est fautif : `R2-STR-02` engage LE MÊME
-    // pack, au premier tour, et ne cite PAS ce claim ; et le claim qui porte
-    // réellement le volet burnout de ce pack — `WN-CL-0243-005`, qui nomme le
-    // BMS et le Karasek — est cité par `R2-STR-02` et `R2-STR-03`, mais pas
-    // ici.
+    // CITATION TRANCHÉE À LA SIGNATURE — `WN-CL-0105-001` RESTE, et l'alerte
+    // qui le contestait était FAUSSE. Une note portée ici le 2026-08-04
+    // affirmait que ce claim « porte sur l'éducation à un modèle alimentaire
+    // méditerranéen » et proposait de le remplacer. Relecture directe en base le
+    // même jour, sur `texte_normalise` : il porte sur « la prise en charge
+    // globale du stress [qui] comprend un bilan personnalisé, suivi d'un
+    // rééquilibrage sur 21 jours, puis d'un rendez-vous de contrôle et d'un
+    // suivi dans le temps » — c'est-à-dire, mot pour mot, l'objectif servi par
+    // cette règle. L'appariement est exact, et c'était l'alerte qui ne l'était
+    // pas.
     //
-    // Rien n'est retiré : une citation est une trace de relecture clinique, et
-    // la défaire sans le praticien remplacerait une erreur possible par une
-    // perte certaine. À trancher à la signature de la table — soit le claim
-    // reste et la raison s'écrit, soit il cède la place à `WN-CL-0243-005`.
+    // Les deux claims se répartissent le travail, et ce n'est pas un doublon :
+    // `WN-CL-0314-008` fonde le DÉCLENCHEUR (évaluer le stress chronique
+    // complété du risque de burnout), `WN-CL-0105-001` fonde ce que le pack
+    // PROPOSE une fois engagé. `R2-STR-02` n'a pas ce second besoin — au premier
+    // tour c'est le contenu du volet burnout qui est en jeu, d'où
+    // `WN-CL-0243-005` là-bas et pas ici.
+    //
+    // Ce que l'épisode laisse : une citation ne se juge pas sur son numéro ni
+    // sur la mémoire qu'on en a, mais sur son texte relu à la source.
     declencheurs: [
       { type: 'drapeau', champ: 'facteursDeclenchants', valeurs: ['Stress aigu / burn-out'] },
       { type: 'zone', idQuestionnaire: 'Q_STR_02', zone: { type: 'couleur', couleurs: ['warning', 'danger', 'dark'] } },
@@ -1124,11 +1156,59 @@ export type OrientationMetadata = {
   claimsSource: OrientationClaimRef[];
 };
 
+/**
+ * SIGNATURE DE LA TABLE — posée le 2026-08-04, sur demande explicite du
+ * praticien après relecture des vingt règles.
+ *
+ * `claimsSource` porte les VINGT-TROIS claims distincts cités par la table,
+ * dédoublonnés et triés. Vingt-trois, et non vingt-quatre : une première
+ * rédaction de cette liste en portait un de plus — `WN-CL-0178-016`, qui
+ * n'apparaît dans ce fichier que dans un COMMENTAIRE. Le banc d'égalité exacte
+ * ci-dessous l'a attrapé à sa première exécution ; il a été écrit pour ce défaut
+ * et l'a trouvé sur la liste de celui qui l'écrivait. Ce n'est pas une redite de `justificationClaims` : ces
+ * derniers disent ce qui fonde CHAQUE règle, celui-ci dit ce que la SIGNATURE
+ * couvre — le périmètre relu en une fois, à une date. Les deux divergeraient si
+ * une règle était ajoutée sans re-signature, et c'est précisément ce qu'un banc
+ * doit voir (voir `orientationRulesV1.test.ts`).
+ *
+ * Les vingt-trois ont été relus en base le 2026-08-04 : `statut = 'VALIDE'`,
+ * `prescriptif = true`, `active = true`, `version_claim = 'v1.0'`.
+ *
+ * CE QUE SIGNER N'ALLUME PAS. `orientationActive()` exige AUSSI
+ * `WN_ENABLE_ORIENTATION_NNPP2 === '1'`. Le verrou est un ET, délibérément :
+ * signer est un acte clinique, déployer est un acte d'exploitation, et l'un ne
+ * vaut pas l'autre. Tant que le drapeau n'est pas posé, la route reste
+ * fail-closed.
+ */
 export const ORIENTATION_METADATA: OrientationMetadata = {
   version: 'orientation-nnpp2-v1',
-  validationExterne: false,
-  dateValidation: null,
-  claimsSource: [],
+  validationExterne: true,
+  dateValidation: '2026-08-04',
+  claimsSource: [
+    { claimId: 'WN-CL-0047-008', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0105-001', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0136-003', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0136-004', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0154-013', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0178-017', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0228-009', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0228-010', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0234-010', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0234-011', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0243-005', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0287-009', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0312-021', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0314-008', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0314-012', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0315-007', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0319-010', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0323-001', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0323-013', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0323-023', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0323-025', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0339-010', versionClaim: 'v1.0' },
+    { claimId: 'WN-CL-0359-025', versionClaim: 'v1.0' },
+  ],
 };
 
 export const ORIENTATION_RULES_SHA256 = sha256(JSON.stringify(ORIENTATION_RULES_V1));
