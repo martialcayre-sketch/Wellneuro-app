@@ -1900,3 +1900,40 @@ exactement 32 violations. Un garde vert sur un dépôt déjà corrigé ne prouve
 Prochaine action : PR, `verify`, merge. Puis LOT-07, ou la signature clinique des six
 règles du LOT-05. Question ouverte : les blocs `!` d'un même skill partagent-ils un
 shell ? Si oui, un seul `cd` en tête suffirait.
+
+## 2026-08-04 — Agenda alimentaire : de l'instrument orphelin à la donnée persistable (L1-bis + L3)
+
+Le domaine pur de l'agenda alimentaire existait depuis le 2026-07-30 sans aucun appelant.
+Deux lots l'ont branché : `Q_ALI_09` assignable et non scoré (#554), puis la table, la
+persistance et l'effacement RGPD (#557).
+
+**Décidé** — collecte avant calibrage, contre l'ordre d'un audit externe : aucune journée
+n'ayant jamais été recueillie, un barème posé maintenant serait une donnée clinique
+inventée. L'abstention « je ne sais pas » entre au contrat **v1** (le faire après le
+premier patient coûtait une v2 et une fenêtre incomparable à elle-même), par champ, sauf
+`soirPlusCopieux`. Et l'agenda **n'alimente pas** le besoin 3, déjà sourcé par
+`RYTHME_CHRONO` : la valeur est dans l'écart déclaré/observé, objet séparé.
+
+**Écarté** — brancher l'agenda comme 2ᵉ source du besoin 3 (troisième porteur du mot
+« rythme », double comptage) ; les douze indices nutritionnels de l'audit (ajouter des
+instruments à un problème d'orchestration) ; déléguer l'exécution à un sous-agent (la
+session était déjà sur le modèle de la classe).
+
+**Trois défauts trouvés par la revue adversariale, pas par moi** : `droits: "libre"`
+adossé à une revendication non instruite ; un garde de drapeau qui simulait l'absence
+par une chaîne vide, donc aveugle au fail-open réel ; et un `rows.map` qui faisait
+disparaître tout un agenda pour une ligne illisible — la contradiction exacte que
+`jour.ts` refuse en toutes lettres.
+
+**La leçon de méthode** : mes mutations testaient la ligne d'effacement *retirée*, jamais
+*déplacée*. Or c'est le déplacement qui casse, et le garde structurel — un
+`String.includes` — y est aveugle. Un garde vert qui n'a pas mordu sur la bonne mutation
+ne prouve rien.
+
+**Prochaine action** — L4 : routes portail et surface de saisie (< 30 s/jour). La route
+devra dériver patient et assignation de la SESSION, jamais du corps de requête.
+
+**Questions ouvertes** — aucun aller-retour n'a été fait contre une vraie base (`as
+unknown as object` y efface la garantie de type) : un contrat `prisma/checks/*.sql` est à
+poser avant L4. Et `boolean | null` ne se défend pas contre `if (x)` : l'écran L4 est
+exactement le lieu où ce raccourci s'écrira.
