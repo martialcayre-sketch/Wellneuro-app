@@ -174,10 +174,19 @@ function derniereReponseParQuestionnaire(reponses: ReponseOrientation[]): Map<st
  * `orientationService` qui referme ce trou-là, en recalculant depuis
  * `rawAnswers` ; sans lui, cette garde n'aurait protégé que l'avenir.
  *
- * `tfd` (`Q_GAS_01`) RESTE, LUI, NON COUVERT, et c'est le dernier de la classe
- * atteignable par une règle publiée : il ne publie aucun compte à la racine, si
- * bien que `recueilIncomplet` rend `false` faute de savoir quoi lire. Ne pas
- * lire cette garde comme la clôture de la classe.
+ * `tfd` (`Q_GAS_01`) EST COUVERT DEPUIS LE 2026-08-04 — il était le dernier de la
+ * classe atteignable par une règle publiée. Il ne publiait aucun compte, si bien
+ * que `recueilIncomplet` rendait `false` faute de savoir quoi lire, et qu'un seul
+ * item répondu par axe suffisait à produire un total /93 biaisé vers le bas : cinq
+ * réponses sur trente-et-une, TOUTES au maximum de leur échelle, rendaient
+ * « A — Absence de troubles fonctionnels », et `R-GAS-01` lisait cette bande.
+ * Le moteur publie maintenant `missing`/`repondus` à la racine et `repondus`/
+ * `items` sur chaque axe : la garde ci-dessous l'attrape par ses deux branches,
+ * sans rien de spécifique au TFD.
+ *
+ * NE PAS LIRE CETTE GARDE COMME LA CLÔTURE DE LA CLASSE pour autant.
+ * `sum_decimal`, `count_threshold` et `ecab` la portent encore ; ce qui les
+ * distingue n'est pas d'être protégés, c'est qu'aucune règle publiée ne les vise.
  *
  * ASYMÉTRIE À NE PAS PERDRE — `Q_MOD_03` est immunisé PAR CONSTRUCTION, et
  * `Q_MOD_01` ne l'est pas. Le moteur `plaintes_actuelles` de `Q_MOD_03` fait de
@@ -245,9 +254,11 @@ function extraireCible(scores: ScoresStockes, sousScore: string | undefined): {
   //
   // `psqi` (`Q_SOM_01`) publie `missing`/`repondus` depuis le lot de signature
   // et passe donc par cette garde ; `Q_STR_02` (`sum`) rend déjà
-  // `interpretation: null` sur recueil partiel. Seul `tfd` (`Q_GAS_01`) ne
-  // publie aucun compte au niveau global — « ne publie aucun compte » n'est PAS
-  // « est protégé », voir le trou nommé en tête de `recueilIncomplet`.
+  // `interpretation: null` sur recueil partiel ; `tfd` (`Q_GAS_01`) publie ses
+  // comptes depuis le 2026-08-04 et y passe à son tour. Les trois porteurs de
+  // règles publiées sont donc couverts — ce qui ne vaut PAS pour les moteurs
+  // sans règle, voir le rappel en tête de `recueilIncomplet` : « ne publie aucun
+  // compte » n'est pas « est protégé ».
   if (recueilIncomplet(scores)) return { valeur: null, interpretation: null };
   const total = (scores as { total?: unknown }).total;
   return {

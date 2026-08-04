@@ -43,14 +43,16 @@ describe('forme alimentaire servie', () => {
   });
 
   it('l’étiquette de version suit le barème réellement servi', () => {
-    // v10 / v11 depuis la garde de recueil partiel du PSQI (2026-08-04) : la
-    // disponibilité de `Q_SOM_01` comme source du besoin 5 change, et le
-    // fichier `constants.ts` range le mapping parmi ce qui impose un bump.
-    // L'étape précédente était v8 / v9 (regroupement du besoin 5, 2026-07-28) ;
-    // chaque branche avance d'un cran, comme à chaque fois. Voir la note de
-    // `constants.ts` pour la DIRECTION de l'effet, qui est rassurante et non
-    // protectrice — c'est elle qui rend le bump obligatoire.
-    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v11' : 'v10');
+    // v12 / v13 depuis la garde de recueil partiel du TFD (2026-08-04) : la
+    // disponibilité de `Q_GAS_01` comme source change à son tour, et le fichier
+    // `constants.ts` range le mapping parmi ce qui impose un bump. Les étapes
+    // précédentes étaient v8 / v9 (regroupement du besoin 5, 2026-07-28) puis
+    // v10 / v11 (même garde, sur le PSQI, le matin même) ; chaque branche avance
+    // d'un cran, comme à chaque fois. Voir la note de `constants.ts` pour la
+    // DIRECTION de l'effet, qui est rassurante et non protectrice — c'est elle
+    // qui rend le bump obligatoire, sur `Q_GAS_01` comme sur `Q_SOM_01` : deux
+    // sources `inverser: true`, où retirer une mesure basse REMONTE la couverture.
+    expect(VERSION_SCORE_EQUILIBRE).toBe(SIIN57_ACTIF ? 'v13' : 'v12');
   });
 
   it('le besoin 1 reste une fondation critique — d’où l’exigence ci-dessus', () => {
