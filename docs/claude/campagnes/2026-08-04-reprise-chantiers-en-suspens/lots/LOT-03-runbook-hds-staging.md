@@ -1,10 +1,12 @@
 ---
-lot: "LOT-03"
-campagne: "2026-08-04-reprise-chantiers-en-suspens"
+id: "LOT-03"
 titre: "Runbook HDS — verser l'état du staging Scalingo"
-statut: "à instruire"
+statut: "à_faire"
+dépend_de: "aucun"
+palier: "T1"
 classe: "docs"
 branche: "sauvegarde/runbook-scalingo-staging"
+campagne: "2026-08-04-reprise-chantiers-en-suspens"
 ---
 
 # LOT-03 — Runbook HDS : verser l'état du staging

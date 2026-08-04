@@ -1,10 +1,12 @@
 ---
-lot: "LOT-02"
-campagne: "2026-08-04-reprise-chantiers-en-suspens"
+id: "LOT-02"
 titre: "Transport des compositions C4 — reprendre ou clore"
-statut: "à instruire"
+statut: "à_faire"
+dépend_de: "arbitrage produit sur le rayon compléments"
+palier: "T2"
 classe: "API"
 branche: "lot/handoff-skills-agents-copilot"
+campagne: "2026-08-04-reprise-chantiers-en-suspens"
 ---
 
 # LOT-02 — Transport des compositions : reprendre ou clore

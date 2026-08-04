@@ -1,10 +1,12 @@
 ---
-lot: "LOT-01"
-campagne: "2026-08-04-reprise-chantiers-en-suspens"
+id: "LOT-01"
 titre: "« Mon bilan » — reprendre ou clore"
-statut: "à instruire"
+statut: "à_faire"
+dépend_de: "aucun"
+palier: "T3"
 classe: "migration + clinique"
 branche: "feat/portail-bilan"
+campagne: "2026-08-04-reprise-chantiers-en-suspens"
 ---
 
 # LOT-01 — « Mon bilan » : reprendre ou clore
