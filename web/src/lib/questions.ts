@@ -1760,8 +1760,96 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   if (sc.type === 'sum') {
     const items = allQ.map(q => q.id);
 
-    const {total} = sumItems(items, []);
-    const interp = interpretRanges(total, sc.interpretation);
+    /**
+     * GARDE — une bande d'interprétation ne se lit que sur l'instrument COMPLET.
+     *
+     * `sumItems` rend `{total, missing, repondus}` ; ce moteur ne captait que
+     * `total` et jetait les deux autres. Un item non répondu n'est donc pas
+     * compté comme 0 : il est IGNORÉ. Le total sort plus bas qu'il ne devrait,
+     * et décroche une bande calibrée sur la forme complète. L'erreur est à sens
+     * unique — SOUS-classement, jamais sur-classement, c'est-à-dire le faux
+     * négatif sur un dépistage.
+     *
+     * COMBIEN D'INSTRUMENTS — recompté sur le catalogue RÉSOLU le 2026-08-04,
+     * et non relevé au grep : `sum` en sert **26 drapeau `WN_ALI_01_SIIN57`
+     * éteint, 25 allumé**. Le drapeau est allumé en production depuis le
+     * 2026-07-28, où `Q_ALI_01` résout vers `Q_ALI_01_SIIN_57` et bascule sur
+     * `seuils_points` : c'est 25 qui décrit la production. Deux pièges de
+     * comptage, tous deux déjà tombés :
+     *   · les trois `type:'sum'` de `questionnaires/neuropsychologie.ts` sont
+     *     des `parts` d'un `composite_multi_parties`, PAS des instruments — un
+     *     comptage textuel les ajoute ;
+     *   · un chiffre nu se périme au premier basculement de drapeau. D'où les
+     *     deux valeurs, et la position du drapeau écrite avec.
+     * Trois des 26 sont par ailleurs suspendus (`Q_GEO_03`, `Q_GEO_04`,
+     * `Q_NEU_06`) : ils ne sont plus assignables, mais leurs passations
+     * existantes se relisent encore par ce moteur.
+     *
+     * PORTÉE — le trou est RÉEL côté serveur ; ce qui est nul, c'est ce qui a
+     * déjà été écrit en base. La distinction n'est pas cosmétique : elle décide
+     * si cette garde protège l'avenir ou seulement le passé.
+     *
+     * Aucun de ces instruments n'a d'item conditionnel (vérifié, pas supposé),
+     * et `GenericQuestionnaire.tsx` refuse le passage à la section suivante tant
+     * qu'une question reste vide. Mais cette barrière-là est la SEULE, et elle
+     * est dans le NAVIGATEUR :
+     *   · elle exempte déjà les questions conditionnelles
+     *     (`GenericQuestionnaire.tsx`, `if (q.conditionnel) return true`) ;
+     *   · côté serveur, `api/patient/submit` n'exige la complétude que pour
+     *     `def.cabinet` — et **aucun** des instruments servis par `sum` n'est
+     *     un instrument de cabinet. Un POST partiel authentifié sur l'un d'eux
+     *     est donc accepté aujourd'hui, et produisait une bande fausse.
+     * C'est le trou que ce fichier nomme déjà plus bas, sur `apports_ponderes` :
+     * « rien côté serveur n'exige la complétude d'un questionnaire du
+     * catalogue ». Cette branche n'est donc pas du code défensif : elle est le
+     * seul endroit où la complétude est exigée pour ces 25 instruments.
+     *
+     * Ce qui est MESURÉ, et qui suffit à fermer sans rien déplacer : aucune
+     * réponse déjà en base n'est partielle — les 21 réponses `sum` de production
+     * portent toutes exactement le nombre d'items attendu (lecture
+     * `execute_sql` du 2026-08-04). Aucun résultat existant ne bouge donc ; ce
+     * que cette garde change est l'écriture suivante, pas les précédentes.
+     *
+     * FRONTIÈRE ASSUMÉE, plus stricte que celle des sous-scores. `aUneMesure`
+     * (plus haut) tient un axe pour MESURÉ dès qu'UN item est renseigné ; ici
+     * il faut TOUS les items. Les deux ne disent pas la même chose : un
+     * sous-score DÉTAILLE un total qui reste vérifiable à côté, une bande
+     * AFFIRME — « Fatigue excessive », « Somnolence diurne excessive » — et elle
+     * est calibrée sur la forme complète. Le total, lui, reste servi : ce qui
+     * tombe est la lecture, pas la mesure.
+     *
+     * Cette dernière phrase avait une exception, et c'est elle qui mordait :
+     * `equilibre/score.ts` RELISAIT ce total comme une lecture — couverture =
+     * total ÷ `max` de la forme complète — si bien qu'un recueil partiel sur une
+     * source `inverser: true` remontait la couverture au lieu de la baisser. Le
+     * total y était la lecture. Fermé au même endroit que cette garde, en
+     * écartant la source sur `missing > 0` (voir `extraireValeurBrute`).
+     *
+     * DIVERGENCE ASSUMÉE avec `plaintes_actuelles` (plus bas), qui répond à la
+     * même question en mettant `total: null` sur recueil partiel là où `sum`
+     * sert le total. Ce n'est pas un oubli. Là-bas chaque domaine EST un item et
+     * la valeur interprétée est une MOYENNE qui divise par le nombre d'items :
+     * un total partiel s'y lit directement comme une intensité, et rien ne dit
+     * au lecteur combien d'items le fondent. Ici le total sort À CÔTÉ de
+     * `missing` et `repondus`, qui le rendent vérifiable. Aligner les deux
+     * changerait des valeurs servies — ce serait un autre lot, pas une
+     * correction de celui-ci.
+     *
+     * `repondus === 0` : chemin résiduel. La garde générale de passation vide
+     * (plus haut) le couvre déjà quand AUCUNE réponse n'existe, mais pas quand
+     * les seules réponses présentes portent sur des items écartés par leur
+     * conditionnel — `repondus` vaut alors 0 sans que la garde ait mordu, et
+     * `total: 0` décrocherait la bande la plus basse.
+     */
+    const {total, missing, repondus} = sumItems(items, []);
+    const recueilIncomplet = missing > 0 || repondus === 0;
+    const interp = recueilIncomplet ? null : interpretRanges(total, sc.interpretation);
+    // La note s'AJOUTE à celle de l'instrument, elle ne la remplace pas : la
+    // note de `sc` porte souvent une harmonisation de seuils qu'on perdrait.
+    const noteRecueil = !recueilIncomplet ? null
+      : missing > 0
+        ? `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} sans réponse. Les bandes d'interprétation de cet instrument supposent la forme complète ; elles ne sont pas calculables sur un recueil partiel.`
+        : `Aucun item de cet instrument n'est renseigné : les bandes d'interprétation ne sont pas calculables.`;
     // `dimensions` : découpage DESCRIPTIF déclaré par l'instrument. Il n'entre
     // pas dans le total — celui-ci reste la somme de tous les items — et sert
     // uniquement à ne plus masquer un profil derrière un score global. Ajouté
@@ -1802,7 +1890,12 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
       // moitié des moteurs — elle survivait dans la branche qu'on venait de réparer.
       interpretation: sc.sansTotalGlobal === true ? null : interp,
       ...(dimensions.length > 0 ? {dimensions} : {}),
-      note: sc.note || null, certification: sc.certification || null,
+      // Deux COMPTES d'items, comme `sum_items` en rend depuis toujours : ils
+      // disent pourquoi la bande manque, là où un `interpretation: null` nu
+      // laisse croire à un trou de grille.
+      missing, repondus,
+      note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null,
+      certification: sc.certification || null,
     };
   }
 
@@ -2165,10 +2258,44 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   // ── BMS_AVERAGE ──────────────────────────────────────
   if (sc.type === 'bms_average') {
     const items = allQ.map(q => q.id);
-    const {total} = sumItems(items, []);
-    const average = parseFloat((total / items.length).toFixed(1));
-    const interp = interpretRanges(average, sc.interpretation);
-    return {type:'bms_average', total, average, minTotal: sc.minTotal, maxTotal: sc.maxTotal, interpretation: interp, certification: sc.certification || null};
+    /**
+     * GARDE — même défaut que `sum` (voir le commentaire de cette branche), en
+     * pire : la moyenne divise par `items.length`, donc par des items que
+     * personne n'a renseignés. Six réponses sur dix à « Souvent » (5) rendaient
+     * `30 / 10 = 3,0` — « Faible » — là où le patient n'a rien dit qui soit
+     * faible. Le biais est le même, vers le BAS, et il traverse en plus deux
+     * bandes de la grille BMS-10.
+     *
+     * `average: null` plutôt qu'un dénominateur « corrigé ». Diviser par
+     * `repondus` produirait une moyenne partielle que la source du BMS-10 ne
+     * définit pas, et dont la grille 1,0-7,0 n'a jamais été calibrée : ce serait
+     * remplacer un nombre faux par un nombre inventé. `total` reste servi — la
+     * somme des items répondus est ce qu'elle dit être.
+     *
+     * `interpretation: null` INDÉPENDAMMENT de `average`. `interpretRanges`
+     * rejette déjà une valeur non finie, si bien que la bande tomberait « toute
+     * seule » avec la moyenne ; s'appuyer là-dessus ferait dépendre une garde
+     * clinique d'un effet de bord d'une autre fonction, invisible à qui relit
+     * cette branche.
+     *
+     * PORTÉE — exactement celle de `sum`, et pour les mêmes raisons : lire ce
+     * paragraphe là-bas plutôt que de le résumer ici. En un mot, la seule
+     * barrière de complétude est dans le navigateur ; `api/patient/submit` ne
+     * l'exige que pour `def.cabinet`, et `Q_STR_05` — seul instrument servi par
+     * ce moteur, dix items, aucun conditionnel — n'est pas un instrument de
+     * cabinet. Un POST partiel est donc accepté. Ce qui est nul, c'est le
+     * déjà-écrit : aucune réponse en base n'est partielle (mesure du
+     * 2026-08-04).
+     */
+    const {total, missing, repondus} = sumItems(items, []);
+    const recueilIncomplet = missing > 0 || repondus === 0;
+    const average = recueilIncomplet ? null : parseFloat((total / items.length).toFixed(1));
+    const interp = recueilIncomplet ? null : interpretRanges(average, sc.interpretation);
+    const noteRecueil = !recueilIncomplet ? null
+      : missing > 0
+        ? `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} sans réponse. La moyenne et les bandes d'interprétation de cet instrument supposent la forme complète ; elles ne sont pas calculables sur un recueil partiel.`
+        : `Aucun item de cet instrument n'est renseigné : la moyenne et les bandes d'interprétation ne sont pas calculables.`;
+    return {type:'bms_average', total, average, missing, repondus, minTotal: sc.minTotal, maxTotal: sc.maxTotal, interpretation: interp, note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null, certification: sc.certification || null};
   }
 
   // ── COUNT_THRESHOLD ───────────────────────────────────

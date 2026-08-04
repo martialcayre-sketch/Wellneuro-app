@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calculateScore } from './questions';
+import { calculateScore, computeScoreFromDef } from './questions';
 
 describe('calculateScore', () => {
   it('renvoie une erreur explicite pour un identifiant de questionnaire inconnu', () => {
@@ -85,5 +85,192 @@ describe('calculateScore', () => {
     expect(result.notApplicable).toEqual([]);
     expect(result.missingIds).toContain('BR5');
     expect(result.missingIds).toContain('BR16');
+  });
+
+  // ── Une bande ne se lit que sur l'instrument complet (`sum`, `bms_average`) ──
+  //
+  // Ce que ces cas épinglent, et ce qu'ils N'épinglent pas. La garde ne protège
+  // pas d'un cas d'école : la seule barrière de complétude est celle du
+  // NAVIGATEUR, et `api/patient/submit` ne l'exige que pour `def.cabinet` — or
+  // aucun instrument servi par `sum` n'est de cabinet. Un POST partiel
+  // authentifié est accepté aujourd'hui. Ce qui est nul, c'est le déjà-écrit :
+  // aucune réponse en base n'est partielle. Le premier cas est donc le plus
+  // important de tous — il prouve que rien de ce qui existe ne bouge.
+  //
+  // Le compte d'instruments est dans `questions.ts` (26 drapeau éteint, 25
+  // allumé) ; ne pas le recopier ici, un chiffre à deux endroits se périme à un
+  // seul.
+
+  it('Q_SOM_06 (sum) complet — la bande est INCHANGÉE par la garde de complétude', () => {
+    const result = calculateScore('Q_SOM_06', {
+      P1: '3', P2: '3', P3: '3', P4: '3', P5: '3', P6: '3', P7: '3', P8: '3',
+    });
+    expect(result.total).toBe(24);
+    expect(result.missing).toBe(0);
+    expect(result.repondus).toBe(8);
+    // La bande haute de Pichot, servie comme avant.
+    expect(result.interpretation).not.toBeNull();
+    expect(result.interpretation.label).toBe(
+      'Signe de fatigue ; à évoquer avec le médecin ou le thérapeute'
+    );
+  });
+
+  it('Q_SOM_06 (sum) partiel — le total reste, la bande tombe', () => {
+    // Cinq items à 4 : 20, soit la bande « fatigue excessive » de l'instrument
+    // COMPLET. Trois items n'ont pas été posés — les compter pour zéro comme le
+    // faisait ce moteur SOUS-classait le patient, et c'est ici la direction
+    // inverse qui est en jeu : 20 sur cinq items n'est pas 20 sur huit.
+    const result = calculateScore('Q_SOM_06', {
+      P1: '4', P2: '4', P3: '4', P4: '4', P5: '4',
+    });
+    expect(result.type).toBe('sum');
+    expect(result.total).toBe(20);
+    expect(result.missing).toBe(3);
+    expect(result.repondus).toBe(5);
+    expect(result.interpretation).toBeNull();
+    expect(result.note).toContain('3 items');
+    expect(result.note).toContain('Recueil partiel');
+  });
+
+  it('Q_SOM_06 (sum) — un seul item manquant suffit à retirer la bande', () => {
+    // La mutation la plus tentante consiste à remplacer `missing > 0` par
+    // `repondus === 0` : elle rétablit l'ancienne tolérance en gardant
+    // l'apparence d'un garde. Un seul item manquant l'attrape.
+    const result = calculateScore('Q_SOM_06', {
+      P1: '2', P2: '2', P3: '1', P4: '1', P5: '1', P6: '1', P7: '1',
+    });
+    expect(result.missing).toBe(1);
+    expect(result.repondus).toBe(7);
+    expect(result.total).toBe(9);
+    expect(result.interpretation).toBeNull();
+    expect(result.note).toContain('1 item');
+  });
+
+  it('Q_SOM_06 (sum) — aucune réponse : la garde générale de passation vide prime', () => {
+    const result = calculateScore('Q_SOM_06', {});
+    expect(result.scored).toBe(false);
+    expect(result.total).toBeNull();
+    expect(result.interpretation).toBeNull();
+    expect(result.raisonNonScore).toBeTruthy();
+  });
+
+  it('Q_STR_05 (BMS-10, bms_average) complet — moyenne et bande INCHANGÉES', () => {
+    const answers: Record<string, string> = {};
+    for (let i = 1; i <= 10; i++) answers[`B${i}`] = '5';
+    const result = calculateScore('Q_STR_05', answers);
+    expect(result.type).toBe('bms_average');
+    expect(result.total).toBe(50);
+    expect(result.average).toBe(5);
+    expect(result.missing).toBe(0);
+    expect(result.repondus).toBe(10);
+    expect(result.interpretation.label).toBe('Élevé');
+  });
+
+  it('Q_STR_05 (bms_average) partiel — la moyenne tombe AVEC la bande', () => {
+    // Six « Souvent » (5) sur dix. L'ancien moteur divisait par 10 : 30/10 = 3,0,
+    // soit « Faible » — deux bandes sous ce que les six réponses disent. Le
+    // dénominateur n'est pas « corrigé » à 6 pour autant : la source ne définit
+    // aucune moyenne partielle, et la grille 1,0-7,0 n'y a jamais été calibrée.
+    const answers: Record<string, string> = {};
+    for (let i = 1; i <= 6; i++) answers[`B${i}`] = '5';
+    const result = calculateScore('Q_STR_05', answers);
+    expect(result.total).toBe(30);
+    expect(result.average).toBeNull();
+    expect(result.interpretation).toBeNull();
+    expect(result.missing).toBe(4);
+    expect(result.repondus).toBe(6);
+    expect(result.note).toContain('4 items');
+  });
+
+  it('Q_STR_05 (bms_average) — un seul item manquant retire moyenne ET bande', () => {
+    const answers: Record<string, string> = {};
+    for (let i = 1; i <= 9; i++) answers[`B${i}`] = '2';
+    const result = calculateScore('Q_STR_05', answers);
+    expect(result.missing).toBe(1);
+    expect(result.total).toBe(18);
+    // Sans la garde : 18/10 = 1,8 → « Très faible ». Avec : rien n'est affirmé.
+    expect(result.average).toBeNull();
+    expect(result.interpretation).toBeNull();
+  });
+
+  // ── Les deux branches que les cas ci-dessus ne touchent pas ────────────────
+
+  it("Q_STR_02 (sum) partiel — la note de recueil S'AJOUTE à celle de l'instrument", () => {
+    // `note: [sc.note || null, noteRecueil].filter(Boolean).join(' ')` n'était
+    // exercé par aucun cas : `Q_SOM_06` et `Q_STR_05` n'ont pas de `sc.note`, si
+    // bien que la concaténation et un simple remplacement rendaient la même
+    // chose. La mutation `note: noteRecueil || sc.note` passait T1 et T3 au vert
+    // en perdant l'harmonisation de seuils EXACTEMENT quand elle compte — sur le
+    // résultat où le praticien a le plus besoin de savoir comment le seuil est
+    // tranché.
+    //
+    // `Q_STR_02` (PSS-10) porte cette note-là : le 27 y est rattaché au niveau
+    // élevé, borne que le « >27 » de la source ne couvre pas explicitement.
+    const answers: Record<string, string> = {};
+    for (let i = 1; i <= 9; i++) answers[`P${i}`] = '3';
+    const result = calculateScore('Q_STR_02', answers);
+    expect(result.missing).toBe(1);
+    expect(result.interpretation).toBeNull();
+    // Les DEUX doivent être là. Tester la seule présence de « Recueil partiel »
+    // laisserait passer le remplacement.
+    expect(result.note).toContain('Le score 27 est rattaché au niveau élevé');
+    expect(result.note).toContain('Recueil partiel');
+
+    // Et sur une passation complète, la note de l'instrument est servie SEULE :
+    // sans cette moitié, une note qui concaténerait toujours passerait.
+    answers.P10 = '3';
+    const complet = calculateScore('Q_STR_02', answers);
+    expect(complet.missing).toBe(0);
+    expect(complet.note).toContain('Le score 27 est rattaché au niveau élevé');
+    expect(complet.note).not.toContain('Recueil partiel');
+  });
+
+  it('`repondus === 0` — tous les items écartés par leur conditionnel, sur `sum` et `bms_average`', () => {
+    // Clause INATTEIGNABLE par le catalogue : aucun instrument servi par ces
+    // deux moteurs n'a d'item conditionnel, si bien que la retirer laissait le
+    // banc vert. Elle n'est pourtant pas décorative — c'est le seul cas où
+    // `missing` vaut 0 sans qu'une seule réponse ait été comptée : un item
+    // conditionnel dont la condition n'est pas remplie sort de `sumItems` sans
+    // être compté nulle part (voir son commentaire). `total` vaut alors 0, et 0
+    // décroche la bande la plus basse.
+    //
+    // La garde générale de passation vide ne couvre pas ce cas : elle exige que
+    // TOUS les items soient nuls, et ici l'item déclencheur est renseigné.
+    //
+    // Définition forgée, faute d'instrument servi — même raison qu'ailleurs : ce
+    // qui est vérifié est le contrat du moteur.
+    const sections = [{
+      id: 'A',
+      questions: [
+        { id: 'A1', type: 'number', min: 0, max: 10, conditionnel: 'G>=2' },
+        { id: 'A2', type: 'number', min: 0, max: 10, conditionnel: 'G>=2' },
+      ],
+    }];
+    // `G` n'est pas un item de l'instrument : c'est un déclencheur renseigné à 0,
+    // qui empêche la garde de passation vide de mordre tout en laissant les deux
+    // items hors du calcul. `A1` est renseigné et reste pourtant non compté.
+    const reponses = { G: '0', A1: '7' };
+
+    const sum: any = computeScoreFromDef(
+      { sections, scoring: { type: 'sum', maxTotal: 20,
+        interpretation: [{ min: 0, max: 5, label: 'bas' }, { min: 6, max: 20, label: 'haut' }] } },
+      reponses,
+    );
+    expect(sum.repondus).toBe(0);
+    expect(sum.missing, 'aucun item MANQUANT : ils sont écartés, pas omis').toBe(0);
+    // Sans la clause : total 0 → bande « bas ».
+    expect(sum.interpretation).toBeNull();
+    expect(sum.note).toContain("Aucun item de cet instrument n'est renseigné");
+
+    const bms: any = computeScoreFromDef(
+      { sections, scoring: { type: 'bms_average', minTotal: 0, maxTotal: 20,
+        interpretation: [{ min: 0, max: 5, label: 'bas' }, { min: 6, max: 20, label: 'haut' }] } },
+      reponses,
+    );
+    expect(bms.repondus).toBe(0);
+    expect(bms.missing).toBe(0);
+    // Sans la clause : moyenne 0/2 = 0 → bande « bas ».
+    expect(bms.average).toBeNull();
+    expect(bms.interpretation).toBeNull();
   });
 });

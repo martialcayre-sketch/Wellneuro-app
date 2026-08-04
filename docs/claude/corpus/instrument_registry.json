@@ -132,7 +132,7 @@
       ],
       "driveMd": "questionnaire_stress_cungi.md",
       "statutBibliographique": "a_completer",
-      "motifBibliographique": "Recherche du 2026-08-04 : aucune publication indexée. L'échelle circule sous deux formes de littérature grise — un manuscrit de validation non publié (Cungi, Bouhana, Degoul, Bibollet, sans revue ni année) et l'ouvrage « Savoir gérer son stress » (C. Cungi, Retz). PubMed ne rend que des articles qui citent l'échelle ; Crossref, aucune notice. À signaler : le manuscrit décrit 11 items cotés 1-6, soit une étendue 11-66, quand le registre déclare 0-55 — écart de cotation non résolu, hors périmètre de ce lot.",
+      "motifBibliographique": "Recherche du 2026-08-04 : aucune publication indexée. L'échelle circule sous deux formes de littérature grise — un manuscrit de validation non publié (Cungi, Bouhana, Degoul, Bibollet, sans revue ni année) et l'ouvrage « Savoir gérer son stress » (C. Cungi, Retz). PubMed ne rend que des articles qui citent l'échelle ; Crossref, aucune notice. ÉCART DE COTATION TRANCHÉ le 2026-08-04, et ce n'en était pas un : la source cote 11 items de 1 à 6 (étendue 11-66), le dépôt sert les mêmes 11 items avec les mêmes six ancres, cotés 0 à 5 (0-55). C'est un ré-encodage à partir de zéro — servi = source − 11 —, donc une translation constante : le classement des patients est inchangé et la somme reste cohérente de bout en bout. Ce qui n'a pas de source, ce sont les cinq bandes d'interprétation : voir verdictScoring.reserve.",
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-30",
@@ -142,6 +142,11 @@
           "notes": [
             "echelle_de_cotation 'null–null' : absence de lecture. Servi 0–5 conforme au support. Critique annulée — dossier 2026-07-30."
           ]
+        },
+        "reserve": {
+          "date": "2026-08-04",
+          "plafond": "scoring_verifie",
+          "motif": "Les cinq bandes d'interprétation servies (0-9, 10-15, 16-21, 22-30, 31-55) n'ont aucune source. Le manuscrit de validation n'en publie aucune — il ne donne que des moyennes par catégorie diagnostique — et les jeux de seuils diffusés en aval ne sont signés de personne : trois sites publient des bornes qui se chevauchent, un quatrième une réécriture propre sans source citée, un cinquième les déclare « adaptées » par un tiers. Arbitrage praticien du 2026-08-04 : ne pas échanger un jeu non sourcé contre un autre, et enregistrer le constat. Le calcul, lui, reste vérifié — la réserve plafonne au barreau courant, elle ne déclasse pas. À rouvrir si l'ouvrage de C. Cungi publie des seuils signés de l'auteur."
         }
       }
     },
@@ -438,7 +443,7 @@
       "instrument": {
         "nomOfficiel": "SIGH-SAD, version auto-évaluation (SIGH-SAD-SA)",
         "auteurs": "Williams, Link, Rosenthal & Terman",
-        "anneePublication": 1992,
+        "anneePublication": 2008,
         "formePubliee": "25 items, groupes A/B",
         "proprietaireDroits": null
       },
@@ -471,7 +476,7 @@
       ],
       "driveMd": "questionnaire_sigh_sad_sa.md",
       "statutBibliographique": "a_completer",
-      "motifBibliographique": "Recherche du 2026-08-04 : référence d'origine localisée mais non indexée — Williams J.B.W., Link M.J., Rosenthal N.E., Terman M., « Structured Interview Guide for the Hamilton Depression Rating Scale, Seasonal Affective Disorder Version », New York State Psychiatric Institute ; manuel institutionnel diffusé par le Center for Environmental Therapeutics. Ni DOI ni PMID : PubMed ne l'indexe pas. La notice de l'éditeur date le manuel de 1998 quand le registre déclare 1992 — date à trancher avant toute promotion.",
+      "motifBibliographique": "Recherche du 2026-08-04 : référence d'origine localisée mais non indexée — Williams J.B.W., Link M.J., Rosenthal N.E., Terman M., « Structured Interview Guide for the Hamilton Depression Rating Scale, Seasonal Affective Disorder Version », New York State Psychiatric Institute ; manuel institutionnel, jamais publié en revue, ni DOI ni PMID. DATE TRANCHÉE le 2026-08-04 : les deux dates qui circulaient — 1992 au registre, 1998 sur la notice de l'éditeur — datent l'ENTRETIEN STRUCTURÉ d'origine, un autre objet. Le PDF diffusé par le Center for Environmental Therapeutics porte « SIGH-SAD-SA », « © 2008 » et « January 2008 version » pour la version auto-évaluation, qui est celle que sert le dépôt. anneePublication passe donc à 2008.",
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-30",
@@ -1865,7 +1870,7 @@
       ],
       "driveMd": "liste_elfe_evaluation_fibromyalgie_contexte_praticien.md",
       "statutBibliographique": "a_completer",
-      "motifBibliographique": "Recherche du 2026-08-04 : aucune publication d'origine. La Liste Européenne d'évaluation de la fibromyalgie (ELFE) est diffusée comme formulaire clinique sans auteur, sans date et sans référence ; PubMed et Crossref ne rendent rien. À signaler : si l'item servi est l'examen des 18 points sensibles, sa source publiée est le critère ACR 1990 (Wolfe et al.) et non l'ELFE — piste non vérifiée, à trancher sur le contenu réellement servi.",
+      "motifBibliographique": "Recherche du 2026-08-04 : aucune publication d'origine. La Liste Européenne d'évaluation de la fibromyalgie (ELFE) est diffusée comme formulaire clinique sans auteur, sans date et sans référence ; PubMed et Crossref ne rendent rien. PISTE ACR 1990 FERMÉE le 2026-08-04 : le dépôt ne sert pas l'examen des 18 points sensibles, mais 9 zones cotées 0-3 et 3 symptômes associés, en moteur « journal », sans score total et avec actif: false. Le critère ACR 1990 (Wolfe et al., PMID 2306288) ne décrit donc pas ce qui est servi — et il a de toute façon été abandonné par l'ACR 2010 (PMID 20461783), qui supprime l'examen des points sensibles.",
       "verdictScoring": {
         "banc": "certify",
         "date": "2026-07-30",
