@@ -262,7 +262,7 @@ test("barreau contenu_verrouille alors que le contenu reste 'a_auditer' : détec
   assert.ok(erreurs.some(e => /contenu servi reste 'a_auditer'/.test(e)));
 });
 
-test('barreau psychometrie_revue sans preuve au dossier : détecté', () => {
+test('barreau psychometrie_revue : une preuve PRÉSENTE ne suffit pas, il la faut CONCLUANTE', () => {
   const montee = {
     statutCertification: 'psychometrie_revue',
     sourceIds: ['WN-SRC-0001'],
@@ -271,15 +271,33 @@ test('barreau psychometrie_revue sans preuve au dossier : détecté', () => {
     verdictScoring: VERDICT_PROPRE,
   };
   const sansPreuve = verifier({ registre: { instruments: [entree(montee)] } });
-  assert.ok(sansPreuve.erreurs.some(e => /sans aucune preuve psychométrique/.test(e)));
+  assert.ok(sansPreuve.erreurs.some(e => /sans preuve psychométrique CONCLUANTE/.test(e)));
 
-  // Et la garde se lève dès qu'une étude porte sur cet instrument : sinon elle
-  // rendrait le barreau inatteignable, ce qui n'est pas garder mais interdire.
-  const avecPreuve = verifier({
+  // BRANCHE 1 — preuve PRÉSENTE mais toutes `inconnu`. C'est exactement l'état
+  // que le lot du 2026-08-04 a créé sur Q_PED_01, et que le test de présence
+  // laissait passer.
+  const preuveMuette = verifier({
+    registre: { instruments: [entree({ ...montee, cosmin: 'B' })] },
+    evidence: { etudes: [{ questionnaireId: 'Q_ALI_01', propriete: 'fidelite', conclusionCosmin: 'inconnu', doi: '10.0/x' }] },
+  });
+  assert.ok(preuveMuette.erreurs.some(e => /sans preuve psychométrique CONCLUANTE/.test(e)));
+
+  // BRANCHE 2 — preuve GRADUÉE mais `cosmin` d'entrée resté `inconnu` :
+  // « psychométrie revue » et « qualité psychométrique inconnue » ne peuvent pas
+  // coexister sur la même entrée.
+  const entreeMuette = verifier({
     registre: { instruments: [entree(montee)] },
     evidence: { etudes: [{ questionnaireId: 'Q_ALI_01', propriete: 'fidelite', conclusionCosmin: 'B', doi: '10.0/x' }] },
   });
-  assert.deepEqual(avecPreuve.erreurs, []);
+  assert.ok(entreeMuette.erreurs.some(e => /sans preuve psychométrique CONCLUANTE/.test(e)));
+
+  // BRANCHE 3 — les deux gradés, et concordants : la garde se lève. Sinon elle
+  // rendrait le barreau inatteignable, ce qui n'est pas garder mais interdire.
+  const lesDeuxGrades = verifier({
+    registre: { instruments: [entree({ ...montee, cosmin: 'B' })] },
+    evidence: { etudes: [{ questionnaireId: 'Q_ALI_01', propriete: 'fidelite', conclusionCosmin: 'B', doi: '10.0/x' }] },
+  });
+  assert.deepEqual(lesDeuxGrades.erreurs, []);
 });
 
 test('états terminaux : exemptés de la cohérence de barreau, pas traités comme `publie`', () => {
@@ -981,4 +999,231 @@ test('plafond `publie` : refusé, parce qu’il ne plafonne rien', () => {
     })] },
   });
   assert.ok(erreurs.some(e => /reserve mal formée/.test(e)));
+});
+
+// ── Complétude bibliographique et adossement du grade COSMIN ────────────────
+//
+// Ajoutés le 2026-08-04. Deux étiquettes faisaient autorité sans pièce :
+// `a_completer`, que le vérificateur se contentait de COMPTER en fin de passe,
+// et `cosmin`, tenu par son seul vocabulaire fermé. Écrire 'A' au registre
+// suffisait à afficher un grade de qualité psychométrique que rien n'adossait.
+
+const MOTIF_BIBLIO = "recherche du 2026-08-04 sur PubMed, Google Scholar et les actes du SIIN : aucune publication d'origine retrouvée, l'instrument étant construit localement";
+
+test("'a_completer' sans motif : la lacune muette est refusée", () => {
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({ statutBibliographique: 'a_completer' })] },
+  });
+  assert.ok(erreurs.some(e => /sans constat de recherche/.test(e)));
+});
+
+test("'a_completer' : un motif trop court ne suffit pas, 40 caractères oui", () => {
+  // Le seuil est celui de `droits.detail` et de `reserve.motif` : une phrase, pas
+  // un gabarit. Les deux bornes sont éprouvées — sans le cas à 39, un garde
+  // affaibli en `> 0` resterait vert ; sans le cas à 40, un garde qui refuserait
+  // tout le monde le resterait aussi.
+  for (const motif of [null, '', '   ', 'à faire', 'x'.repeat(39), `  ${'x'.repeat(39)}  `]) {
+    const { erreurs } = verifier({
+      registre: { instruments: [entree({ statutBibliographique: 'a_completer', motifBibliographique: motif })] },
+    });
+    assert.ok(
+      erreurs.some(e => /sans constat de recherche/.test(e)),
+      `motif ${JSON.stringify(motif)} : la lacune devait être refusée`
+    );
+  }
+  for (const motif of ['x'.repeat(40), MOTIF_BIBLIO]) {
+    const { erreurs } = verifier({
+      registre: { instruments: [entree({ statutBibliographique: 'a_completer', motifBibliographique: motif })] },
+    });
+    assert.deepEqual(erreurs, [], `motif de ${motif.trim().length} caractères : devait être accepté`);
+  }
+});
+
+test('un motif survivant à une promotion est refusé, sur chaque statut promu', () => {
+  // Le revers du contrôle ci-dessus. Un « aucune publication trouvée » laissé en
+  // place sous `reference_identifiee` contredit le champ d'à côté, et rien ne fait
+  // relire ce champ une fois le statut monté.
+  const identifiee = {
+    statutBibliographique: 'reference_identifiee',
+    instrument: { nomOfficiel: 'X', auteurs: 'Ninot et al.', anneePublication: 2007, formePubliee: null, proprietaireDroits: null },
+  };
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({ ...identifiee, motifBibliographique: MOTIF_BIBLIO })] },
+  });
+  assert.ok(erreurs.some(e => /motifBibliographique renseigné alors que/.test(e)));
+
+  // Et sur l'autre statut promu, pour que l'exigence ne tienne pas à une valeur.
+  const interne = verifier({
+    registre: { instruments: [entree({ motifBibliographique: MOTIF_BIBLIO })] },
+  });
+  assert.ok(interne.erreurs.some(e => /motifBibliographique renseigné alors que/.test(e)));
+
+  // Anti-sur-filtrage : l'absence et le `null` explicite passent tous les deux.
+  assert.deepEqual(verifier({ registre: { instruments: [entree(identifiee)] } }).erreurs, []);
+  assert.deepEqual(
+    verifier({ registre: { instruments: [entree({ ...identifiee, motifBibliographique: null })] } }).erreurs,
+    []
+  );
+});
+
+test('grade COSMIN sans étude au dossier : refusé', () => {
+  const { erreurs } = verifier({
+    registre: { instruments: [entree({ cosmin: 'B' })] },
+    evidence: { etudes: [] },
+  });
+  assert.ok(erreurs.some(e => /sans étude concordante/.test(e)));
+});
+
+test('grade COSMIN : la DOUBLE égalité est exigée, instrument ET conclusion', () => {
+  const etude = (surcharge = {}) => ({
+    questionnaireId: 'Q_ALI_01', propriete: 'fidelite', conclusionCosmin: 'B', doi: '10.0/x', ...surcharge,
+  });
+  // Le bon instrument, le bon grade : le seul cas qui fonde le grade.
+  const concordante = verifier({
+    registre: { instruments: [entree({ cosmin: 'B' })] },
+    evidence: { etudes: [etude()] },
+  });
+  assert.deepEqual(concordante.erreurs, []);
+
+  // Une étude concluant 'B' sur un AUTRE instrument ne fonde rien ici. Sans ce
+  // cas, un contrôle qui ne testerait que la conclusion resterait vert.
+  const autreInstrument = verifier({
+    registre: { instruments: [entree({ cosmin: 'B' })] },
+    evidence: { etudes: [etude({ questionnaireId: 'Q_STR_02' })] },
+  });
+  assert.ok(autreInstrument.erreurs.some(e => /sans étude concordante/.test(e)));
+
+  // Le bon instrument, mais l'étude conclut 'C' : elle ne fonde pas un 'B'. Sans
+  // ce cas, un contrôle réduit à la seule égalité sur `questionnaireId` — la
+  // mutation (d) du 2026-08-04 — resterait vert.
+  const autreConclusion = verifier({
+    registre: { instruments: [entree({ cosmin: 'B' })] },
+    evidence: { etudes: [etude({ conclusionCosmin: 'C' })] },
+  });
+  assert.ok(autreConclusion.erreurs.some(e => /sans étude concordante/.test(e)));
+
+  // `inconnu` n'affirme rien : il reste exempté, sinon la garde interdirait
+  // l'état par défaut de tout le registre au lieu de garder quoi que ce soit.
+  assert.deepEqual(verifier({ registre: { instruments: [entree({ cosmin: 'inconnu' })] } }).erreurs, []);
+});
+
+// L'ANCRAGE SUR LE REGISTRE RÉEL, pour la même raison qu'aux réserves : les cas
+// ci-dessus éprouvent la FONCTION sur des fixtures et ne peuvent rien dire d'un
+// motif retiré du vrai fichier. Le déplacement du contrôle hors de la boucle —
+// mutation (b) du 2026-08-04 — est également attrapé ici : sur fixtures, une
+// entrée unique rend « hors boucle » et « dans la boucle » indiscernables.
+test('registre réel : chaque `a_completer` porte son constat de recherche', () => {
+  const muettes = REGISTRE_REEL.instruments
+    .filter(e => e.statutBibliographique === 'a_completer')
+    .filter(e => typeof e.motifBibliographique !== 'string' || e.motifBibliographique.trim().length < 40)
+    .map(e => e.questionnaireId);
+  assert.deepEqual(muettes, [], 'un `a_completer` du registre réel ne dit pas ce qui a été cherché');
+
+  // Et le compte, pour que le retrait d'une entrée ne vide pas le contrôle en
+  // silence : un filtre sur zéro entrée passe toujours.
+  const aCompleter = REGISTRE_REEL.instruments.filter(e => e.statutBibliographique === 'a_completer');
+  assert.equal(aCompleter.length, 10);
+});
+
+test('registre réel : aucun motif ne survit à une promotion, aucun grade COSMIN nu', () => {
+  const survivants = REGISTRE_REEL.instruments
+    .filter(e => e.statutBibliographique !== 'a_completer' && e.motifBibliographique != null)
+    .map(e => e.questionnaireId);
+  assert.deepEqual(survivants, [], 'un motif de recherche a survécu à la promotion de son entrée');
+
+  const grades = REGISTRE_REEL.instruments.filter(e => e.cosmin !== 'inconnu').map(e => e.questionnaireId);
+  assert.deepEqual(grades, [], 'un grade COSMIN est apparu au registre : il doit être adossé à measurement_evidence.json');
+});
+
+test("les trois contrôles s'appliquent à CHAQUE entrée, pas à la première", () => {
+  // TROU DU BANC, MESURÉ LE 2026-08-04 ET REFERMÉ ICI. Tous les cas ci-dessus
+  // n'instancient qu'UNE entrée : « contrôlé dans la boucle » et « contrôlé une
+  // fois, hors de la boucle » y sont indiscernables. Déplacé hors du `forEach` et
+  // appliqué à `instruments[0]`, le contrôle du motif laissait le banc VERT — et
+  // les tests d'ancrage sur le registre réel n'y voient rien non plus, puisqu'ils
+  // lisent le fichier sans jamais appeler le vérificateur.
+  //
+  // C'est la leçon du 2026-08-03 : un banc éprouvé sur le seul RETRAIT d'un
+  // contrôle ne prouve rien, le déplacement est ce qui casse en vrai.
+  //
+  // ET LA FAMILLE SE FERME AUX DEUX BOUTS. Une première rédaction ne mettait que
+  // DEUX entrées, la fautive en seconde — donc en DERNIÈRE — position : mesuré le
+  // 2026-08-04, une mutation `if (entry === instruments[instruments.length - 1])`
+  // autour des contrôles laissait le banc VERT. La faute est donc encadrée : une
+  // entrée saine AVANT, une entrée saine APRÈS. Ni la première ni la dernière.
+  const sain = entree({ questionnaireId: 'Q_STR_02', driveMd: null, sourceMonEquilibre: true, statutBibliographique: 'a_completer', motifBibliographique: MOTIF_BIBLIO });
+  const sainApres = entree({ questionnaireId: 'Q_GEO_04', driveMd: null, sourceMonEquilibre: false });
+  const cas = [
+    [{ statutBibliographique: 'a_completer' }, /sans constat de recherche/],
+    [{ motifBibliographique: MOTIF_BIBLIO }, /motifBibliographique renseigné alors que/],
+    [{ cosmin: 'B' }, /sans étude concordante/],
+  ];
+  for (const [surcharge, motif] of cas) {
+    const { erreurs } = verifier({
+      registre: { instruments: [sain, entree(surcharge), sainApres] },
+      idsCatalogue: ['Q_STR_02', 'Q_ALI_01', 'Q_GEO_04'],
+    });
+    assert.ok(
+      erreurs.some(e => motif.test(e)),
+      `${motif} : la faute au MILIEU doit être vue — ni première, ni dernière`
+    );
+  }
+});
+
+// ANCRAGES SUR LE RÉEL — le fichier de preuves et les chiffres du document de
+// gouvernance. Même raison qu'aux réserves : les cas sur fixtures éprouvent la
+// FONCTION et ne peuvent rien dire de ce que les vrais fichiers contiennent.
+const PREUVES_REELLES = JSON.parse(
+  readFileSync(new URL('../../docs/claude/corpus/measurement_evidence.json', import.meta.url), 'utf8')
+);
+
+test('measurement_evidence réel : 3 lignes, aucune ne conclut quoi que ce soit', () => {
+  // Ce fichier est devenu PORTEUR D'UN BARREAU le 2026-08-04 : `psychometrie_revue`
+  // exige désormais qu'une de ses lignes conclue A, B ou C. Y écrire une ligne
+  // graduée n'est donc plus une addition documentaire, c'est ouvrir un barreau de
+  // certification — le compte est épinglé pour que ça se voie en revue.
+  assert.equal(PREUVES_REELLES.etudes.length, 3);
+  const concluantes = PREUVES_REELLES.etudes
+    .filter(e => e.conclusionCosmin !== 'inconnu')
+    .map(e => `${e.questionnaireId}|${e.conclusionCosmin}`);
+  assert.deepEqual(concluantes, [], 'une conclusion COSMIN est apparue au dossier : elle ouvre le barreau psychometrie_revue');
+});
+
+test('gouvernance : les chiffres écrits dans le document sont ceux des fichiers', () => {
+  // UN COMPTEUR FAUX DANS UN DOCUMENT DONT LA THÈSE EST « NE VOUS FIEZ PAS AUX
+  // ÉTIQUETTES » serait le défaut le plus embarrassant de ce lot. Les chiffres
+  // sont donc PARSÉS du markdown et recalculés depuis le registre et le fichier
+  // de preuves — jamais recopiés ici, ce qui ne ferait que déplacer d'un cran la
+  // possibilité d'un chiffre faux.
+  const doc = readFileSync(new URL('../../docs/gouvernance-questionnaires-scoring.md', import.meta.url), 'utf8');
+  const nombre = (motif, groupe = 1) => {
+    const trouve = doc.match(motif);
+    assert.ok(trouve, `chiffre introuvable dans le document : ${motif}`);
+    return Number(trouve[groupe]);
+  };
+
+  const entrees = REGISTRE_REEL.instruments;
+  assert.equal(nombre(/`cosmin` vaut `inconnu` sur les (\d+) entrées/), entrees.length);
+  assert.equal(nombre(/il contient (\d+) lignes/), PREUVES_REELLES.etudes.length);
+
+  const repartition = doc.match(
+    /sur les (\d+) entrées : (\d+) portent `reference_identifiee`, (\d+) `referentiel_interne_siin`, (\d+) `a_completer`/
+  );
+  assert.ok(repartition, 'la répartition de statutBibliographique est introuvable dans le document');
+  const compte = statut => entrees.filter(e => e.statutBibliographique === statut).length;
+  assert.equal(Number(repartition[1]), entrees.length);
+  assert.equal(Number(repartition[2]), compte('reference_identifiee'));
+  assert.equal(Number(repartition[3]), compte('referentiel_interne_siin'));
+  assert.equal(Number(repartition[4]), compte('a_completer'));
+
+  // Les entrées à identifiant vérifiable sont nommées dans le document : on
+  // compare la LISTE, pas le seul compte — deux erreurs qui se compensent
+  // passeraient sur un compte.
+  const nommees = doc.match(/entrées seulement\*\* \(([^)]+)\) portent un identifiant vérifiable/);
+  assert.ok(nommees, "la liste des entrées à identifiant vérifiable est introuvable dans le document");
+  const citees = nommees[1].match(/Q_[A-Z]+_\d+/g) ?? [];
+  const reelles = entrees
+    .filter(e => e.references?.doi || e.references?.pmid)
+    .map(e => e.questionnaireId);
+  assert.deepEqual([...citees].sort(), [...reelles].sort());
 });

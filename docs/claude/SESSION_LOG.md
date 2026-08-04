@@ -1959,3 +1959,43 @@ Prochaine action — LOT-07.
 
 Question ouverte — Un commit Copilot en tête n'a **pas** gelé le run de #553,
 contre la doctrine de `CLAUDE.md`.
+
+## 2026-08-04 — LOT-07 : ce que « certifié » ne dit pas
+
+**Décidé** — Une promotion à `reference_identifiee` n'est acquise que si un identifiant
+certifie **la forme servie**. Le garde n'exige qu'un champ non vide, et 8 des 12 entrées
+`a_completer` avaient déjà un nom d'auteur : s'y adosser aurait produit douze montées
+purement déclaratives. Deux entrées seulement portent au final un DOI ou un PMID.
+`cosmin` reste `inconnu` sur les 65 : aucune étude consultée ne porte d'appréciation
+COSMIN, et l'attribuer nous-mêmes aurait été fabriquer le jugement psychométrique que ce
+lot existe pour empêcher.
+
+**Écarté** — Poser une `verdictScoring.reserve` sur `Q_STR_03` malgré l'écart de cotation
+trouvé (source 1-6, étendue 11-66 ; le dépôt sert 0-5, `maxTotal: 55`, et alimente Mon
+Équilibre) : plafonner un barreau est une décision clinique, pas un geste de lot
+bibliographique. Écarté aussi, une 4ᵉ valeur `sans_publication_origine` pour les deux
+agendas WellNeuro — hors périmètre écrit, et `a_completer` **sous-évalue** la preuve là
+où `reference_identifiee` la surévaluerait ; la direction de l'erreur décide.
+
+**Trois défauts trouvés par la revue adversariale, pas par moi.** Écrire les trois
+premières lignes de `measurement_evidence.json` **ouvrait** le barreau
+`psychometrie_revue` pour `Q_PED_01` : son garde ne testait que la *présence* d'une
+preuve, jamais sa conclusion — et les trois lignes concluent `inconnu`. Le CI classait ce
+même fichier en `docs_only` : éditable seul, `verify` vert, sans qu'aucun contrôle ne le
+lise. Et `Q_ALI_03` allait recevoir le PMID d'une méthode en 8 questions alors que le
+code déclare l'instrument **débaptisé** et en sert 23 — redescendue en `a_completer`.
+
+**La leçon de méthode, revenue une fois de plus** : mes mutations ont testé le *retrait*
+du contrôle, pas son *déplacement*. La mutation « hors de la boucle » a survécu au
+premier passage — un banc dont chaque cas n'instancie qu'**une** entrée ne distingue pas
+« dans la boucle » de « hors de la boucle ». Refermé, puis la variante « dernière
+entrée » a survécu à son tour. Il a fallu un cas à trois entrées, faute au milieu.
+
+**Prochaine action** — Arbitrage praticien sur les trois écarts cliniques remontés
+(`Q_STR_03`, `Q_FIB_03`, `Q_NEU_03`). Côté campagne, il reste la signature clinique de la
+table du LOT-05, sans laquelle le LOT-06 livré n'affiche rien.
+
+**Questions ouvertes** — `a_completer` recouvre désormais deux situations qu'aucune
+requête ne sépare : « cherché, rien n'existe » et « trouvé, non indexé ». La distinction
+ne vit que dans une phrase française. Et le seuil servi de `Q_SOM_06` est ≥ 23 quand
+celui usuellement cité pour l'asthénie de Pichot est ≥ 22 — soupçon non vérifié.

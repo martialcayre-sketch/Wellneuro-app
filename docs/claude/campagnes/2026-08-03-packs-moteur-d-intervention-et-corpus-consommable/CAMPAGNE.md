@@ -3,11 +3,11 @@ id: "2026-08-03-packs-moteur-d-intervention-et-corpus-consommable"
 titre: "Packs, moteur d'intervention et corpus consommable"
 statut: "en_cours"
 créée_le: "2026-08-03"
-mise_à_jour: "2026-08-03"
-lot_courant: "LOT-07"
+mise_à_jour: "2026-08-04"
+lot_courant: "LOT-07 (livré)"
 branche_campagne: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
-branche_lot_courant: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/lot-07"
-cible_pr_lot: "campaign/2026-08-03-packs-moteur-d-intervention-et-corpus-consommable/integration"
+branche_lot_courant: "worktree-lot-07-reliquat-certification"
+cible_pr_lot: "main"  # la branche d'intégration déclarée n'a jamais existé sur origin ; les LOT-00 à LOT-06 sont tous partis en PR directe sur main
 cible_pr_campagne: "main"
 ---
 
@@ -214,5 +214,5 @@ Revue adversariale `wn-reviewer` obligatoire sur LOT-01, LOT-04 et LOT-05.
 - [x] Les 16 packs ont une composition faisant foi (`packs.qids`, option C) et une identité gardée par un test.
 - [ ] `ORIENTATION_RULES_V1` est non vide, signée, et sert des recommandations.
 - [ ] Un écran praticien appelle réellement la route d'orientation.
-- [ ] `check_questionnaire_certification.js` reste vert sur les 64.
+- [x] `check_questionnaire_certification.js` reste vert sur les 65 (et non 64 : le registre en portait 65 dès le cadrage du LOT-07).
 - [ ] Aucun claim non signé n'est exposé, aucune assignation n'est automatique.

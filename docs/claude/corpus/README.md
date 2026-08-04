@@ -41,7 +41,7 @@ les deux.
 | Fichier | Ce qu'il désigne | Garde |
 |---|---|---|
 | `source_registry.json` | l'inventaire documentaire — toutes les notices | — |
-| `instrument_registry.json` | les 64 instruments du catalogue et leur certification de **scoring** | `npm run scoring-check`, `registry-check` |
+| `instrument_registry.json` | les 65 instruments du catalogue et leur certification de **scoring** | `npm run scoring-check`, `registry-check` |
 | `nnpp2_interventions_registry.json` | les sources qui portent une **conduite** — fiches de synthèse, ordonnances commentées, protocoles, doctrine d'exploration | `npm run interventions-check` |
 
 `nnpp2_interventions_registry.json` (LOT-00 de la campagne

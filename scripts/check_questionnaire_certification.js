@@ -193,7 +193,7 @@ const verdictRegistre = verifierRegistreInstruments({
 });
 assertEqual(verdictRegistre.erreurs, [], 'registre de certification des instruments');
 
-console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.instruments.length} entrées, ${verdictRegistre.aCompleter} à compléter, ${verdictRegistre.sourcesEquilibre.size} sources Mon Équilibre, ${evidence.etudes.length} preuves psychométriques.`);
+console.log(`[questionnaires] registre instruments v2 : ${instrumentRegistry.instruments.length} entrées, ${verdictRegistre.aCompleter} à compléter dont ${verdictRegistre.aCompleterSansPublicationPossible} sans publication d'origine possible (instruments créés localement), ${verdictRegistre.sourcesEquilibre.size} sources Mon Équilibre, ${evidence.etudes.length} preuves psychométriques.`);
 
 const supportedScoringTypes = new Set([
   'agenda_sommeil',
