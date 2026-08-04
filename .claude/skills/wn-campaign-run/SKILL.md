@@ -8,7 +8,7 @@ effort: high
 # WellNeuro — exécution de campagne
 
 !`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
-!`git status --short`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 
 Arguments : `$ARGUMENTS`
 
@@ -26,7 +26,13 @@ Arguments : `$ARGUMENTS`
 - Ne jamais lancer migration, écriture Supabase, déploiement ou changement clinique sans confirmation distincte.
 - Lancer les validations du lot.
 - Mettre à jour seulement le statut et les résultats du fichier de lot.
-- Terminer par `/wn-review`, puis recommander `/wn-finish` et `/wn-handoff write`.
-- Ensuite seulement la PR : `/wn-pr` puis `/wn-merge`. Cet ordre n'est pas
+- Terminer par une revue indépendante : `Agent(wn-reviewer)` sur
+  Scoring/Migration/Auth, un fork `Explore` ailleurs.
+- Recommander alors à l'utilisateur, qui les tapera lui-même, `/wn-finish` puis <!-- mention-seule: wn-finish -->
+  `/wn-handoff write` <!-- mention-seule: wn-handoff --> : ils produisent l'entrée
+  `SESSION_LOG.md` et le fragment `docs/claude/handoffs/` qui closent le lot.
+- Ensuite seulement la PR, puis le merge selon le régime de `CLAUDE.md` — leur
+  gabarit vit dans `/wn-pr` et `/wn-merge` <!-- mention-seule: wn-pr, wn-merge -->, qui s'invoquent
+  eux aussi à la main. Cet ordre n'est pas
   cosmétique — le merge est un squash, et une clôture écrite après lui ne
   remonte plus vers `main`. `node scripts/wn-cycle.mjs` rend la phase courante.

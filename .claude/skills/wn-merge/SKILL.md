@@ -18,7 +18,7 @@ Arguments : `$ARGUMENTS`
 
 ## Mission
 
-Reprend le cycle là où `/wn-pr` s'arrête : une PR déjà ouverte, dont il faut lire
+Reprend le cycle là où `/wn-pr` s'arrête : une PR déjà ouverte, dont il faut lire <!-- mention-seule: wn-pr -->
 le CI, décider si elle se merge, et nettoyer derrière. Le régime qui autorise
 (ou non) le merge côté assistant n'est jamais supposé : il se lit à chaque
 invocation dans le texte de gouvernance chargé ci-dessus, pas dans ce fichier —
