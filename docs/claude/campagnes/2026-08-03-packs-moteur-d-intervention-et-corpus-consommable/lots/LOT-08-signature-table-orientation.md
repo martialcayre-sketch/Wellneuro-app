@@ -85,7 +85,7 @@ classe de la PR #202 : aucune ligne fautive, un rattrapage absent.
 
 Fermé à la racine plutôt qu'au cas : `orientationService` **recalcule** depuis
 `rawAnswers` et **écarte** ce qui n'est pas recalculable. Toute garde de scoring
-future s'applique d'office au passé, sans backfill ni migration. Décision `D-018`.
+future s'applique d'office au passé, sans backfill ni migration. Décision `D-019`.
 Mesuré avant de décider : 15 lignes sur 99 sans `rawAnswers`, toutes d'une forme
 antérieure au moteur actuel, donc **déjà inertes** — le servi ne change pas, il
 devient voulu.
@@ -157,9 +157,9 @@ Les bancs neufs, et ce que chacun tient :
 
 ## Décision au registre
 
-`D-017` — une signature porte sur un périmètre relu, pas sur un fichier.
+`D-018` — une signature porte sur un périmètre relu, pas sur un fichier.
 
-`D-018` — une garde de scoring ne protège que l'avenir, tant que son consommateur
+`D-019` — une garde de scoring ne protège que l'avenir, tant que son consommateur
 relit un score gelé.
 
 Au passage, une **collision de numéros** a été réparée : deux `D-015` coexistaient

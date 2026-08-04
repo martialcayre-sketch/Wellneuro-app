@@ -2080,6 +2080,51 @@ clôture ? Question produit, les deux réponses n'ont pas les mêmes effets clin
 Fait du panneau Vercel, invérifiable depuis le dépôt. (3) La dette consentement / suivi
 clos reste ouverte sur `patient/submit` et sur l'agenda du sommeil.
 
+## 2026-08-04 — Créneaux partagés et chaîne de skills : trois conflits, trois remèdes
+
+**Décisions** — Trois remèdes DIFFÉRENTS pour trois conflits qui se ressemblaient, contre
+la tentation d'appliquer partout le patron `changelog.d/`. `SESSION_LOG` prend
+`merge=union` — une ligne de `.gitattributes`, git fusionne seul. Les handoffs passent à
+un fichier par lot sous `docs/claude/handoffs/`, horodatés à la minute, sans fichier
+« courant » généré. `DECISIONS.md` reste à créneau unique mais sa numérotation devient
+gardée. Le garde de cross-invocation passe fail-closed, avec un marqueur qui NOMME sa
+cible. Registre : **D-017**.
+
+**Écarté** — Le renommage de l'identifiant de décision en `D-AAAA-MM-JJ-slug` : collision
+impossible par construction, mais quatorze décisions citées depuis du code clinique à
+renommer dans un lot d'outillage. La collision reste possible ; elle devient visible.
+
+**Validations** — `npm run check` code 0, portant désormais trois gardes, sept bancs et
+l'anti-secrets du dépôt entier ; 173 tests d'outillage. `merge=union` éprouvé par une
+fusion réelle dans un dépôt jetable, **avec son contrôle négatif** — la même fusion sans
+l'attribut conflicte. Deux revues adversariales, deux NO-GO.
+
+**À retenir — le coût mesuré qui a motivé le lot.** Pendant le seul lot précédent, `main`
+a bougé trois fois : deux collisions de numéro de décision (huit renvois renumérotés
+chacune), une PR entière dont l'objet unique était de réparer le handoff après un merge,
+trois handoffs perdus. Ils sont restaurés comme fragments — c'est la démonstration du
+remède autant que sa justification.
+
+**Second enseignement : le garde existait, était bloquant en CI, et était vert pendant
+que NEUF branchements étaient morts.** Il exigeait un verbe impératif dans les 90
+caractères amont ; les branchements étaient des titres d'étape nominaux. Puis, redessiné
+fail-closed sur ses références, il restait fail-OPEN sur la détermination de sa cible :
+`disable-model-invocation: yes` — booléen vrai en YAML 1.1 — le faisait sortir du
+périmètre. **Un garde n'est fail-closed que si les deux bouts le sont.**
+
+**Troisième : une de mes consignes a produit un contournement.** Demandant de supprimer
+21 marqueurs, j'ai obtenu le retrait des barres obliques — donc des lignes invisibles au
+garde. La morsure l'a montré sans discussion : avec barre oblique et sans marqueur, le
+garde mord ; sans barre oblique, il est muet. Restauré, avec marqueur nommé.
+
+**Prochaine action** — PR, `node scripts/wn-attendre-ci.mjs`, code 0 exigé. Puis L4b.
+
+**Questions ouvertes** — (1) `merge=union` est-il honoré par un squash côté GitHub ? Non
+établi ; il l'est en fusion et rebase locaux, qui est le cas où il sert. (2) Le journal
+est append-only par convention, pas par contrainte : `/wn-compact-sessionlog` le réécrit,
+et une compaction concurrente ferait ressusciter des entrées — avertissement posé en tête
+de ce skill. (3) Le marqueur nominatif croît de façon monotone (100 mentions) et entre
+dans le contexte à chaque invocation de skill.
 ## 2026-08-04 — Table d'orientation V2 : un premier tour qui existe
 
 **Le diagnostic** — La table V1 portait six règles publiées et ne pouvait **rien** proposer au
@@ -2151,7 +2196,9 @@ sept composantes « mesurées à un item » produisaient encore une bande rassur
 a rougi à sa première exécution, sur la liste de celui qui l'écrivait : 24 claims
 au lieu de 23, `WN-CL-0178-016` n'existant que dans un commentaire. Deux `D-015`
 coexistaient dans le registre depuis la veille (#562 et #565) — collision réparée,
-la seconde devient `D-016` ; la nouvelle décision est `D-017`.
+la seconde devient `D-016` ; les nouvelles décisions sont `D-018` (périmètre
+signé) et `D-019` (score gelé) — décalées d'un cran, `main` ayant pris `D-017`
+pendant le lot.
 
 **Prochaine action prioritaire.** Poser `WN_ENABLE_ORIENTATION_NNPP2=1` en
 production Vercel — geste d'exploitation, hors campagne. Rien d'autre ne bloque.

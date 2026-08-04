@@ -9,7 +9,7 @@ effort: low
 
 ## Contexte
 
-!`git status --short`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 !`git diff --stat 2>/dev/null | tail -n 1`
 !`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/SESSION_LOG.md && tail -n 20 docs/claude/SESSION_LOG.md || true`
 
@@ -32,7 +32,7 @@ Rappels techniques (à appliquer, pas à réexpliquer) :
 - **Multi-agent léger** = quelques sous-agents en parallèle sans la machinerie
   Workflow : réutiliser les briques existantes — sous-agents épinglés (`wn-reviewer`,
   `wn-debugger`, `wn-doc-auditor`, `wn-explorer`, `wn-fable`) ou campagnes
-  (`/wn-campaign`, `/wn-campaign-run`).
+  (`/wn-campaign`, `/wn-campaign-run`). <!-- mention-seule: wn-campaign, wn-campaign-run -->
 - **Solo** = exécution directe en un seul contexte. Le moins cher ; défaut.
 - Une édition de code passe toujours par le mode Plan + la revue + le circuit de
   merge habituels, que le mode soit solo ou ultracode. Le Workflow n'y déroge pas.
@@ -80,7 +80,7 @@ override explicite prime sur la grille.
 
 - **Solo** → traiter la demande en direct, sans sous-agent.
 - **Multi-agent léger** → déléguer au sous-agent ou à la campagne adaptés ; donner la
-  commande (`/wn-review`, `/wn-debug`, `/wn-campaign …`, ou délégation `wn-*`).
+  commande (`/wn-review`, `/wn-debug`, `/wn-campaign …`, ou délégation `wn-*`). <!-- mention-seule: wn-review, wn-debug, wn-campaign -->
 - **Ultracode** :
   - **Opt-in présent** (mot-clé `ultracode` dans la demande, réglage de session actif,
     ou demande explicite de Workflow) → appeler l'outil Workflow avec un script

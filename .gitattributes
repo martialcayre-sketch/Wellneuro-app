@@ -7,3 +7,26 @@
 *.gif binary
 *.ico binary
 *.zip binary
+
+# Journal de session : strictement append-only, une entrée ajoutée EN FIN à
+# chaque clôture de lot. La résolution d'un conflit y est toujours la même —
+# « garder les deux » —, et deux branches parallèles y entrent en conflit à tous
+# les coups. `merge=union` rend cette résolution automatique.
+#
+# Ce fichier et lui seul. `union` concatène les deux côtés d'un hunk conflictuel
+# sans marqueur : sur un fichier où l'on n'ajoute qu'à la fin, c'est exactement
+# la bonne réponse ; partout ailleurs, une ligne modifiée des deux côtés est
+# DUPLIQUÉE en silence. Surtout pas sur `docs/DECISIONS.md`, dont l'écriture se
+# fait en tête — c'est le garde `scripts/lib/decisions-numerotation.mjs` qui
+# tient ce fichier-là, pas une stratégie de fusion.
+#
+# UNE exception à surveiller, et elle est outillée : `/wn-compact-sessionlog`
+# RÉÉCRIT ce fichier — il en retire des entrées anciennes et en refait le
+# bandeau. Le journal n'est donc append-only que par CONVENTION, et le seul
+# skill qui la viole est celui qui existe pour ça. Une compaction qui vit sur
+# une branche pendant qu'une autre ajoute une entrée fait restaurer par `union`
+# les entrées compactées, ou duplique le bandeau : ce n'est pas une perte, c'est
+# une résurrection, invisible au diff de fusion. Ne jamais compacter tant qu'une
+# branche parallèle touche le journal, et relire le fichier après toute fusion
+# qui l'implique.
+docs/claude/SESSION_LOG.md merge=union

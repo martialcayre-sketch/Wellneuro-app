@@ -8,17 +8,25 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   cheminsDuPorcelain,
   diagnostiquer,
+  estFragmentDeHandoff,
   SORTIE_OK,
   SORTIE_FENETRE_RATEE,
   SORTIE_PRECONDITION,
 } from './wn-cycle.mjs';
 
+const RACINE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SESSION_LOG = 'docs/claude/SESSION_LOG.md';
-const HANDOFF = 'docs/claude/HANDOFF_CURRENT.md';
+// Un handoff est désormais un fragment daté du dossier, jamais un chemin
+// littéral partagé : c'est ce créneau unique qui produisait un conflit de merge
+// par lot parallèle, et deux handoffs perdus le 2026-08-04.
+const HANDOFF = 'docs/claude/handoffs/2026-08-04-1254-agenda-alimentaire-l4a.md';
 
 function faits(surcharge = {}) {
   return {
@@ -151,4 +159,92 @@ test('porcelain : un renommage compte par sa destination', () => {
 test('porcelain vide ou nul : aucun chemin', () => {
   assert.deepEqual(cheminsDuPorcelain(''), []);
   assert.deepEqual(cheminsDuPorcelain(null), []);
+});
+
+// ── Le handoff n'est plus un chemin, c'est un fragment ──────────────────────
+//
+// Ce que ces cas protègent : le contrôle doit reconnaître **n'importe quel**
+// fragment daté, sinon on aurait juste déplacé le créneau unique d'un cran.
+
+test('un fragment de handoff, quel que soit son nom, clôt la fenêtre', () => {
+  const v = diagnostiquer(
+    faits({
+      fichiersDuLot: [SESSION_LOG, 'docs/claude/handoffs/2027-01-09-0803-un-autre-lot.md'],
+    }),
+  );
+  assert.equal(v.cloture.handoff, true);
+  assert.equal(v.phase, 'pret-pr');
+});
+
+test('le README du dossier n’est pas un handoff : la fenêtre reste ouverte', () => {
+  const v = diagnostiquer(faits({ fichiersDuLot: [SESSION_LOG, 'docs/claude/handoffs/README.md'] }));
+  assert.equal(v.cloture.handoff, false);
+  assert.equal(v.phase, 'travail');
+});
+
+// `git status --porcelain` sans `-uall` collapse un répertoire entièrement non
+// suivi en une seule ligne. Le dossier ne doit alors PAS passer pour un
+// fragment : c'est le collecteur qui demande `--untracked-files=all`, et si un
+// jour il l'oubliait, le verdict doit dire « handoff absent » plutôt que de
+// compter un dossier vide pour une clôture.
+test('un répertoire collapsé par porcelain ne vaut pas un fragment', () => {
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/'), false);
+  const v = diagnostiquer(faits({ fichiersDuLot: [SESSION_LOG, 'docs/claude/handoffs/'] }));
+  assert.equal(v.cloture.handoff, false);
+});
+
+test('l’ancien créneau unique ne compte plus pour un handoff', () => {
+  assert.equal(estFragmentDeHandoff('docs/claude/HANDOFF_CURRENT.md'), false);
+});
+
+test('estFragmentDeHandoff : ni sous-dossier, ni non-markdown, ni voisin de nom', () => {
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/2026-08-04-0150-l3.md'), true);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/archive/2026-01-01-x.md'), false);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/notes.txt'), false);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/'), false);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs-archives/2026-08-04-x.md'), false);
+});
+
+// ── MORSURE — la règle « le plus récent = le dernier au tri » ───────────────
+//
+// Le README du dossier désigne le handoff courant par un `ls … | tail -1`.
+// Cette règle n'est vraie que si TOUT fichier accepté porte un horodatage :
+// en tri C, les lettres passent après les chiffres, donc un `notes.md` déposé
+// là serait à la fois accepté comme handoff et désigné comme le plus récent.
+test('estFragmentDeHandoff : un nom sans horodatage est refusé', () => {
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/notes.md'), false);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/brouillon-lot-07.md'), false);
+  // La date seule ne suffit pas : c'est l'heure qui ordonne les lots d'un même
+  // jour, et le 2026-08-04 en a porté quatre.
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/2026-08-04-l3.md'), false);
+  assert.equal(estFragmentDeHandoff('docs/claude/handoffs/2026-08-04-0150-l3.md'), true);
+});
+
+test('les fragments réellement présents dans le dépôt passent le motif', () => {
+  // Un motif qui refuserait les fichiers existants ferait échouer la clôture
+  // du lot suivant, et se découvrirait au pire moment.
+  const dossier = 'docs/claude/handoffs';
+  for (const nom of readdirSync(join(RACINE, dossier))) {
+    if (nom === 'README.md') continue;
+    assert.equal(estFragmentDeHandoff(`${dossier}/${nom}`), true, nom);
+  }
+});
+
+test('PR mergée avec un fragment de handoff embarqué : rien à reprendre', () => {
+  const v = diagnostiquer(
+    faits({
+      prMergee: {
+        numero: 562,
+        fichiers: ['web/src/lib/questions.ts', SESSION_LOG, 'docs/claude/handoffs/2026-08-04-1254-x.md'],
+      },
+    }),
+  );
+  assert.equal(v.fenetreRatee, false);
+  assert.equal(v.sortie, SORTIE_OK);
+});
+
+test('PR mergée avec le SESSION_LOG mais aucun fragment : fenêtre ratée', () => {
+  const v = diagnostiquer(faits({ prMergee: { numero: 562, fichiers: [SESSION_LOG] } }));
+  assert.equal(v.fenetreRatee, true);
+  assert.equal(v.sortie, SORTIE_FENETRE_RATEE);
 });

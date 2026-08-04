@@ -10,7 +10,7 @@ effort: medium
 ## Contexte — chargé ici une fois, et une seule
 
 !`cd "$(git rev-parse --show-toplevel)" && test -f docs/claude/campagnes/ACTIVE_CAMPAIGN.md && cat docs/claude/campagnes/ACTIVE_CAMPAIGN.md || true`
-!`git status --short`
+!`cd "$(git rev-parse --show-toplevel)" && git status --short --untracked-files=all`
 !`git diff --stat 2>/dev/null | tail -n 1`
 !`cd "$(git rev-parse --show-toplevel)" && node scripts/wn-context-pack.mjs --format markdown 2>/dev/null || true`
 
@@ -18,15 +18,15 @@ Arguments : `$ARGUMENTS`
 
 ## Ce que ce skill fait, et pourquoi il existe
 
-Une campagne s'exécutait en sept invocations — `/wn-campaign-run`, mode Plan,
-`/wn-review`, `/wn-finish`, `/wn-pr`, `/wn-merge` — dont **chacune rechargeait le
+Une campagne s'exécutait en sept invocations — `/wn-campaign-run`, mode Plan, <!-- mention-seule: wn-campaign-run -->
+`/wn-review`, `/wn-finish`, `/wn-pr`, `/wn-merge` — dont **chacune rechargeait le <!-- mention-seule: wn-review, wn-finish, wn-pr, wn-merge -->
 même contexte** sans rien transmettre à la suivante. Le coût d'une campagne n'est pas
 le choix des agents : c'est la répétition.
 
 Ce pilote lit le contexte **au-dessus, une fois**, et le porte jusqu'au bout.
 
 **Interdit à toutes les étapes qui suivent : relancer `wn-context-pack`, re-`cat`
-`ACTIVE_CAMPAIGN.md`, refaire un `git status` complet, ou réinvoquer `/wn-context`.**
+`ACTIVE_CAMPAIGN.md`, refaire un `git status` complet, ou réinvoquer `/wn-context`.** <!-- mention-seule: wn-context -->
 Le contexte est en session. Si une étape en a besoin, elle le lit ici. Ne relire un
 fichier que si une écriture l'a modifié entre-temps.
 
@@ -60,12 +60,17 @@ Puis classer sur les fichiers probables — la classe la plus haute atteinte l'e
 
 | Classe | Modèle | Effort · réflexion | Palier | Revue | Garde particulier |
 |---|---|---|---|---|---|
-| **Docs** — `.md`, `docs/`, `changelog.d/` | `sonnet` | medium · `think` | T1 | `/wn-review` | fragment `changelog.d/`, jamais le haut de `CHANGELOG.md` |
-| **UI** — `web/src/app/**`, `components/**`, `.css` | `sonnet` | medium · `think` | **T2** | `/wn-review` | une suite Vitest verte ne prouve rien sur les parcours |
-| **API** — `web/src/app/api/**`, `lib/` hors scoring | `sonnet` | high · `think hard` | **T2** | `/wn-review` | contrôle d'accès **avant** la lecture des données |
-| **Scoring / clinique** — `questions*.ts`, `equilibre/`, `consultation/`, `prompts/` | `opus` | high · `think hard` | **T3** | `/wn-review` + `wn-reviewer` | source obligatoire ; absence de réponse → **non scoré**, jamais `0` |
-| **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | `opus` | high · `think harder` | **T3** | `wn-reviewer` **avant** de passer la main | confirmation distincte ; **vérifier la base après merge** (`execute_sql`) |
-| **Auth** — `lib/auth.ts`, portail, tokens, consentement | `opus` | high · `think harder` | **T3** | `wn-reviewer` **avant** de passer la main | idem migration : la revue de diff ne voit pas ce que le lot **ne fait pas** |
+| **Docs** — `.md`, `docs/`, `changelog.d/` | `sonnet` | medium · `think` | T1 | fork `Explore` | fragment `changelog.d/`, jamais le haut de `CHANGELOG.md` |
+| **UI** — `web/src/app/**`, `components/**`, `.css` | `sonnet` | medium · `think` | **T2** | fork `Explore` | une suite Vitest verte ne prouve rien sur les parcours |
+| **API** — `web/src/app/api/**`, `lib/` hors scoring | `sonnet` | high · `think hard` | **T2** | fork `Explore` | contrôle d'accès **avant** la lecture des données |
+| **Scoring / clinique** — `questions*.ts`, `equilibre/`, `consultation/`, `prompts/` | `opus` | high · `think hard` | **T3** | `Agent(wn-reviewer)` | source obligatoire ; absence de réponse → **non scoré**, jamais `0` |
+| **Prisma / migration** — `schema.prisma`, `prisma/migrations/` | `opus` | high · `think harder` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | confirmation distincte ; **vérifier la base après merge** (`execute_sql`) |
+| **Auth** — `lib/auth.ts`, portail, tokens, consentement | `opus` | high · `think harder` | **T3** | `Agent(wn-reviewer)` **avant** de passer la main | idem migration : la revue de diff ne voit pas ce que le lot **ne fait pas** |
+
+La colonne « Revue » donne le **mécanisme**, parce que ce tableau se lit comme une
+prescription et qu'un mécanisme est ce qui s'exécute. Le skill `/wn-review` <!-- mention-seule: wn-review -->
+produit la même chose et **s'invoque à la main**, par l'utilisateur : aucun skill
+n'en ouvre un autre (étape 5).
 
 **Une classe se lit sur les fichiers ; une seule chose la déborde.** Un lot dont
 le raisonnement traverse le dépôt ou tient sur plusieurs jours — refonte
@@ -110,7 +115,7 @@ n'ont que `Read, Grep, Glob, Bash`) :
 | Cadrage | `Agent(wn-explorer)` (léger) ou `Agent(wn-reviewer)` (classes à risque) | haiku / opus | non |
 | Plan technique | mode Plan **natif** (`EnterPlanMode`, dans la session, jamais délégué) | celui de la session | non |
 | Exécution | `Agent(subagent_type: "general-purpose")` (seul type avec `Edit`/`Write` disponible) | `model` = celui de la classe | oui |
-| Revue | `Agent(wn-reviewer)` (classes à risque) ou fork `Explore` via `/wn-review` (autres) | opus / défaut | non |
+| Revue | `Agent(wn-reviewer)` (classes à risque) ou fork `Explore` (autres) | opus / défaut | non |
 
 **Une exception à la règle « tout se confie à un agent » : le mode Plan.**
 `EnterPlanMode` n'est pas un skill mais un mode de la session en cours, avec sa
@@ -118,8 +123,10 @@ propre porte d'approbation (`ExitPlanMode` rendue à l'utilisateur) — le
 déléguer à un sous-agent supprimerait cette approbation humaine, qui est tout
 le sens de l'étape. La session l'appelle donc elle-même. Le modèle de cette
 étape est celui déjà actif pour la session : s'il doit correspondre à la
-classe, c'est `/wn-model` qui recommande de basculer via `/model opusplan`
-**avant** cette étape — jamais une délégation. Le mot-clé de réflexion de la
+classe, ce que le pilote produit est une **recommandation à l'utilisateur** de
+basculer la session (`/model opusplan`, commande du harnais qu'il tape lui-même)
+**avant** cette étape — jamais une délégation. La grille complète des modèles se
+**lit** dans `.claude/skills/wn-model/SKILL.md`. Le mot-clé de réflexion de la
 classe, lui, s'écrit normalement dans l'instruction donnée au mode Plan.
 
 Pour les trois autres étapes, aucune ne s'exécute « dans la session » : même
@@ -175,23 +182,40 @@ besoin de la revue préalable.
    changé une fois fait, ou si son périmètre se lit de deux façons, passer d'abord
    par `/wn-reprompt` : reformuler coûte un appel en contexte isolé, exécuter le lot
    à côté coûte les sept étapes.
-2. **Plan technique** — mode Plan natif (`EnterPlanMode`, jamais délégué : c'est
-   l'étape qui rend la main pour approbation humaine) ; si la classe exige `opus`,
-   le recommander via `/wn-model` (`/model opusplan`) **avant** cette étape ;
-   porter le mot-clé de réflexion de la classe dans l'instruction du plan.
+2. **Plan technique** — ce que l'étape doit produire : un plan approuvé par
+   l'utilisateur, en mode Plan natif (`EnterPlanMode`, jamais délégué : c'est
+   l'étape qui rend la main pour approbation humaine). Si la classe exige `opus`,
+   le **dire** et laisser l'utilisateur basculer la session (`/model opusplan`)
+   **avant** cette étape — la grille des modèles se lit dans
+   `.claude/skills/wn-model/SKILL.md`, elle ne s'invoque pas d'ici. Porter le
+   mot-clé de réflexion de la classe dans l'instruction du plan.
 3. **Exécution** — `Agent(subagent_type: "general-purpose", model: <modèle de la
    classe>)`, prompt portant le mot-clé de réflexion et le périmètre du lot
    (fichiers du lot seulement ; ne pas élargir).
 4. **Validation** — le palier de la classe, sortie redirigée une fois puis relue.
-5. **Revue** — `/wn-review` (fork `Explore`) pour Docs/UI/API ; `Agent(wn-reviewer)`
-   pour Scoring/Migration/Auth, **avant** de passer la main sur ces deux dernières.
-6. **Clôture** — `/wn-finish` : statut du lot, entrée `SESSION_LOG`, et les deux
-   promotions (règle oubliée → exécutable, décision → `docs/DECISIONS.md`) ;
-   puis `/wn-handoff write`. Les deux **avant** l'étape 7, sur la branche
-   vivante — le merge est un squash, ce qui s'écrit après lui ne remonte plus
-   vers `main` et exige une seconde PR. `node scripts/wn-cycle.mjs` rend la
-   phase courante et refuse de laisser croire que la fenêtre est encore ouverte.
-7. **PR** — `/wn-pr` puis `/wn-merge`, selon le régime de `CLAUDE.md`.
+5. **Revue** — ce que l'étape doit produire : une revue par un regard qui n'a pas
+   écrit le code. `Agent(wn-reviewer)` pour Scoring/Migration/Auth, **avant** de
+   passer la main sur ces deux dernières ; un fork `Explore` pour Docs/UI/API. Le
+   skill `/wn-review` <!-- mention-seule: wn-review --> fait la même chose et s'invoque **à la
+   main**, par l'utilisateur : aucun skill ne peut en ouvrir un autre.
+6. **Clôture** — ce que l'étape doit produire, dans cet ordre et **sur la branche
+   vivante** : (a) le statut du lot à jour, (b) une entrée `SESSION_LOG.md` de moins
+   de 150 mots — décisions, options écartées, prochaine action, questions ouvertes —
+   avec les deux promotions (règle oubliée → exécutable, décision →
+   `docs/DECISIONS.md`), (c) un fragment `docs/claude/handoffs/`. Les skills
+   `/wn-finish` <!-- mention-seule: wn-finish --> et `/wn-handoff write` <!-- mention-seule: wn-handoff -->
+   produisent (b) et (c) et s'invoquent **à la main**. Quand l'un d'eux a refusé de
+   s'ouvrir, le 2026-08-04, les deux écrits faits à la main dans le même ordre ont
+   clos le lot normalement : l'étape est définie par ce qu'elle laisse dans le
+   dépôt, pas par la commande qui l'écrit. Les trois **avant** l'étape 7 — le merge
+   est un squash, ce qui s'écrit après lui ne remonte plus vers `main` et exige une
+   seconde PR. `node scripts/wn-cycle.mjs` rend la phase courante et refuse de
+   laisser croire que la fenêtre est encore ouverte.
+7. **PR** — ce que l'étape doit produire : une PR ouverte avec `--body-file` sur un
+   diff d'une seule finalité, son CI lu par `node scripts/wn-attendre-ci.mjs <N>`
+   (code `0` seul autorise à l'annoncer prête), puis le merge selon le régime de
+   `CLAUDE.md`. Le gabarit et la check-list vivent dans `/wn-pr` <!-- mention-seule: wn-pr -->
+   et `/wn-merge` <!-- mention-seule: wn-merge --> ; les deux s'invoquent **à la main**.
 
 ## Sortie de la proposition (mode par défaut)
 

@@ -91,7 +91,7 @@ Pour chaque `.claude/agents/*.md`, `.claude/skills/wn*/SKILL.md` **et**
 - **une seule convention de nommage d'outils par famille** — deux syntaxes
   coexistantes dans un même dossier signifient qu'au moins une est ignorée
   silencieusement ;
-- **`model` et `effort` explicites** côté Claude, cohérents avec `/wn-model` ;
+- **`model` et `effort` explicites** côté Claude, cohérents avec `/wn-model` ; <!-- mention-seule: wn-model -->
 - **la `description` dit *quand* déléguer**, pas ce que l'agent sait faire :
   c'est elle, et elle seule, qui décide de l'appel ;
 - **pas de doublon fonctionnel** — deux définitions qui se recouvrent produisent

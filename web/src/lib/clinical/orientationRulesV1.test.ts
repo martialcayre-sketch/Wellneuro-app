@@ -92,7 +92,7 @@ describe('orientationRulesV1 — verrou v1', () => {
   // Défaut pré-existant, sans conséquence tant que la table n'était pas signée —
   // et matériel depuis qu'elle l'est.
   //
-  // CE QUE LE LITTÉRAL AJOUTE. `D-017` dit qu'une signature porte sur un
+  // CE QUE LE LITTÉRAL AJOUTE. `D-018` dit qu'une signature porte sur un
   // périmètre RELU, et le périmètre relu ce sont les RÈGLES, pas la seule liste
   // des claims. Le banc d'égalité plus haut reste vert sur trois mutations que la
   // revue a nommées : élargir la zone de `R-SOM-01` à `success`, changer le
@@ -101,7 +101,7 @@ describe('orientationRulesV1 — verrou v1', () => {
   //
   // La sortie de secours n'est pas de mettre le sha à jour en silence : c'est de
   // RE-SIGNER — relire les claims en base, poser une nouvelle `dateValidation`,
-  // puis seulement épingler le nouveau sha. C'est ce que `D-017` décrit.
+  // puis seulement épingler le nouveau sha. C'est ce que `D-018` décrit.
   const SHA_SIGNE_2026_08_04 = '528004de579724f17da99d796025cdef430f4dcd498895315740ec93b750c603';
 
   it('le sha publié correspond au contenu de la table', () => {

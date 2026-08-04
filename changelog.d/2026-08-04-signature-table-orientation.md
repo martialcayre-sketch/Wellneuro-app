@@ -53,7 +53,7 @@ documents annonçaient le trou fermé. Classe de la PR #202 : aucune ligne fauti
 un rattrapage absent. Le moteur d'orientation **recalcule** désormais depuis
 `rawAnswers` et **écarte** ce qui n'est pas recalculable, ce qui ferme la classe
 et non le cas : toute garde de scoring future s'applique d'office au passé.
-Décision `D-018`. Mesuré avant de décider — 15 lignes sur 99 sans `rawAnswers`,
+Décision `D-019`. Mesuré avant de décider — 15 lignes sur 99 sans `rawAnswers`,
 toutes d'une forme antérieure au moteur actuel, donc déjà inertes.
 
 Le second : **« Mon équilibre » changeait sans bump de version.** `Q_SOM_01` est
@@ -65,12 +65,12 @@ rend « non mesuré », le plafond tombe et le score **remonte**.
 
 Corrigé au passage : le banc du `sha256` de la table était **tautologique** — il
 recalculait ce qu'il comparait, et trois mutations de règles restaient vertes. Il
-porte désormais un littéral, ce qui rend `D-017` exécutable. `FEATURE_FLAGS.md`
+porte désormais un littéral, ce qui rend `D-018` exécutable. `FEATURE_FLAGS.md`
 annonçait encore « 6 règles, `validationExterne: false` → fermé ». Et le total du
 scénario fondateur valait **1**, pas 2 : le banc l'épingle à l'unité plutôt que
 de le borner.
 
-**Registre des décisions** : `D-017` et `D-018`. Deux `D-015` coexistaient depuis la veille
+**Registre des décisions** : `D-018` et `D-019`. Deux `D-015` coexistaient depuis la veille
 (lots #562 et #565) ; celui du lot orientation devient `D-016`, et un pointeur
 faux du handoff (`D-015` attribué à #561 au lieu de `D-014`) est corrigé.
 

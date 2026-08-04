@@ -14,6 +14,6 @@ Argument : `$ARGUMENTS`
 - **Affichage seul : ce skill n'écrit aucun fichier.** Il rend l'état factuel —
   branche, campagne, corpus, derniers commits — et rien d'autre. Le document de
   reprise (décisions, interdits, prochaine action) est le ressort de
-  `/wn-handoff`, seul à écrire `docs/claude/HANDOFF_CURRENT.md`.
+  `/wn-handoff`, seul à poser un fragment dans `docs/claude/handoffs/`. <!-- mention-seule: wn-handoff -->
 - Ne jamais inclure de secret, valeur `.env`, token patient ou donnée patient réelle.
 - Limiter le document à 120 lignes.
