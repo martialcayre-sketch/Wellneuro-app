@@ -1,6 +1,8 @@
 # Handoff — 2026-08-04 — Agenda alimentaire : l'accès portail serveur (L4a)
 
-Écrit sur la branche vivante, avant la PR.
+Écrit sur la branche vivante avant la PR, puis **rafraîchi depuis `main` après le
+merge** : seules cette section et « Prochaine action exacte » ont changé — le
+reste est le handoff d'origine, écrit avant de livrer.
 
 ## Git
 
