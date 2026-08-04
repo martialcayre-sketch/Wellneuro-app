@@ -85,10 +85,16 @@ jobs:
           # exactement cette forme, dont un qui éditait des statuts de droits.
           # Relevé en revue adversariale le 2026-07-29, quand le retrait d'un banc
           # ad hoc a laissé le fichier sans aucun filet.
+          # Le FICHIER DE PREUVES psychométriques (`measurement_evidence.json`)
+          # rejoint le registre pour exactement la même raison depuis le
+          # 2026-08-04 : il commande le barreau `psychometrie_revue`, donc il fait
+          # autorité, et il était classé « docs » alors que les deux mêmes étapes
+          # gatées sont les seules à le lire.
           hors_docs="$(printf '%s\n' "$fichiers" | grep -vE '(^docs/|\.md$)' || true)"
           mapping="$(printf '%s\n' "$fichiers" | grep -E '^docs/questionnaires-drive-mapping\.md$' || true)"
           registre="$(printf '%s\n' "$fichiers" | grep -E '^docs/claude/corpus/instrument_registry\.json$' || true)"
-          if [ -z "$fichiers" ] || [ -n "$hors_docs" ] || [ -n "$mapping" ] || [ -n "$registre" ]; then
+          preuves="$(printf '%s\n' "$fichiers" | grep -E '^docs/claude/corpus/measurement_evidence\.json$' || true)"
+          if [ -z "$fichiers" ] || [ -n "$hors_docs" ] || [ -n "$mapping" ] || [ -n "$registre" ] || [ -n "$preuves" ]; then
             echo "docs_only=false" >> "$GITHUB_OUTPUT"
           else
             echo "docs_only=true" >> "$GITHUB_OUTPUT"

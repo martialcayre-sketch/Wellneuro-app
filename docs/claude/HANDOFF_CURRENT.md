@@ -26,7 +26,7 @@ route GET/POST, contrat SQL. La surface de saisie et l'aiguillage sont L4b.
   compteur `illisibles`) et POST (borne de corps, doublon, pré-contrôle d'abstention).
 - `web/prisma/checks/agenda_alimentaire_v1.sql` + son étape `ci.yml`.
 - `web/src/lib/dateParis.ts` — `dateJourParis` extrait, réexporté par le sommeil.
-- `docs/DECISIONS.md` **D-013** : trois arbitrages et **six réserves**.
+- `docs/DECISIONS.md` **D-014** : trois arbitrages et **six réserves**.
 
 ## Les quatre choses à savoir avant de toucher à ce code
 
@@ -92,6 +92,16 @@ n'y avait aucune ligne fautive à faire échouer.
   2026-07-21. Le rendre exécutable élargirait une PR d'authentification — à faire dans un
   lot d'outillage.
 
+## La leçon de méthode, revenue une troisième fois
+
+Mes mutations testaient le **retrait** du contrôle, pas son **déplacement**. La
+mutation « hors de la boucle » a survécu au premier passage : un banc dont chaque
+cas n'instancie qu'**une** entrée ne distingue pas « dans la boucle » de « hors de
+la boucle ». Refermée, la variante « **dernière** entrée » a survécu à son tour —
+le cas correctif plaçait la faute en seconde et dernière position. Il a fallu un
+cas à **trois** entrées, faute au milieu. Un banc vert ne prouve que ce qu'il sait
+instancier.
+
 ## Prochaine action exacte
 
 Ouvrir la PR, puis `node scripts/wn-attendre-ci.mjs <N>` — **code `0` exigé**, et vérifier
@@ -110,3 +120,16 @@ un questionnaire ordinaire et mène à une impasse en 409), surface de saisie
 - Ne pas merger sur les seuls checks Vercel : `verify` absent **bloque**, et
   `enforce_admins` est actif.
 - Ne pas corriger le consentement ni la clôture côté sommeil dans ce lot.
+
+## Le handoff déplacé par cette fusion
+
+Ce fichier n’a qu’un créneau. **#560 (LOT-07 — « ce que “certifié” ne dit pas »,
+dernier lot de la campagne packs/corpus) a été mergée pendant ce lot**, et son
+handoff occupait la place. Il est **conservé, pas effacé** : lisible au commit
+`71818caa`, et sa substance est dans `SESSION_LOG` et la décision **D-014**.
+
+Sa mesure à retenir : **43 entrées du registre portent `reference_identifiee`,
+deux portent un identifiant.** L’écart est ce que l’étiquette ne dit pas.
+
+C’est la troisième collision sur ce fichier en deux jours (#556 sur #557, puis
+celle-ci). Le créneau unique est la cause ; la nommer ici évite de la rejouer.

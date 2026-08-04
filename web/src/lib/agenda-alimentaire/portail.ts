@@ -169,7 +169,7 @@ export async function authorizeAgendaAlimentairePortail(
   // qu'il avait à son démarrage — ÉTEINDRE LE DRAPEAU EXIGE UN REDÉPLOIEMENT,
   // pas seulement un changement de variable d'environnement Vercel. Tant que les
   // conteneurs en vol n'ont pas été recyclés, cette barrière ne mord pas chez
-  // eux. Consigné en D-013 ; le geste opérationnel est « changer la variable
+  // eux. Consigné en D-014 ; le geste opérationnel est « changer la variable
   // PUIS redéployer », jamais l'un sans l'autre.
   if (IDS_SUSPENDUS.has(assignation.idQuestionnaire)) {
     return {
@@ -259,7 +259,7 @@ export async function authorizeAgendaAlimentairePortail(
   // arrivera par une route praticien ou patient qui écrira ce champ — et devra
   // trouver le chemin d'écriture de l'agenda déjà fermé, plutôt que d'avoir à
   // penser à le refermer. Le jumeau du sommeil ne la porte pas ; il ne portera
-  // pas davantage la barrière 8, et cette dette-là est réelle, elle (D-013).
+  // pas davantage la barrière 8, et cette dette-là est réelle, elle (D-014).
   //
   // Elle reste GROUPÉE avec la barrière 8, après les états terminaux : son
   // message renvoie lui aussi vers un geste (« contactez votre praticien pour le

@@ -1,6 +1,46 @@
 {
   "version": "measurement-evidence-v1",
-  "dateAudit": "2026-07-25",
-  "commentaire": "Preuves psychométriques par instrument (campagne 2026-07-25-certification-corpus-questionnaires, lot 1 — squelette, rempli aux lots 2-3 depuis les sources primaires et les claims validés). Une ligne par étude × propriété : questionnaireId, population, langue, tailleEchantillon, propriete (validite_contenu | structure_interne | coherence_interne | fidelite | erreur_mesure | validite_construit | sensibilite_changement | mdc | mcid), resultat, conclusionCosmin (A | B | C | inconnu), doi/pmid/sourceId, claimId validé correspondant. Aucune ligne n'est ajoutée sans référence vérifiable — ce fichier alimente l'axe `cosmin` du registre des instruments et les annotations « changement fiable » du momentum (lot 12).",
-  "etudes": []
+  "dateAudit": "2026-08-04",
+  "commentaire": "Preuves psychométriques par instrument (campagne 2026-07-25-certification-corpus-questionnaires, lot 1 — squelette, rempli aux lots 2-3 depuis les sources primaires et les claims validés). Une ligne par étude × propriété : questionnaireId, population, langue, tailleEchantillon, propriete (validite_contenu | structure_interne | coherence_interne | fidelite | erreur_mesure | validite_construit | sensibilite_changement | mdc | mcid), resultat, conclusionCosmin (A | B | C | inconnu), doi/pmid/sourceId, et `claimId` — facultatif : le garde exige au moins UNE référence vérifiable (doi, pmid OU sourceId), jamais un claim validé, et aucune des lignes présentes n'en porte. Ce fichier alimente l'axe `cosmin` du registre des instruments, commande le barreau `psychometrie_revue` depuis le 2026-08-04, et portera les annotations « changement fiable » du momentum (lot 12). LOT-07 (2026-08-04) : trois lignes amorcées sur Q_PED_01 depuis Caci H. et al., L'Encéphale 2005 ; aucune ne porte d'appréciation COSMIN, donc aucune ne peut fonder à elle seule un franchissement de `psychometrie_revue`.",
+  "etudes": [
+    {
+      "questionnaireId": "Q_PED_01",
+      "population": "Adolescents, échantillons communautaires et hospitaliers",
+      "langue": "fr",
+      "tailleEchantillon": 392,
+      "propriete": "coherence_interne",
+      "resultat": "alpha de Cronbach moyen = 0,76 sur trois échantillons indépendants",
+      "conclusionCosmin": "inconnu",
+      "doi": "10.1016/s0013-7006(05)82372-3",
+      "pmid": "15971640",
+      "sourceId": null,
+      "claimId": null
+    },
+    {
+      "questionnaireId": "Q_PED_01",
+      "population": "Adolescents, échantillons communautaires et hospitaliers",
+      "langue": "fr",
+      "tailleEchantillon": 392,
+      "propriete": "structure_interne",
+      "resultat": "structure à deux facteurs (Matinalité, Planification)",
+      "conclusionCosmin": "inconnu",
+      "doi": "10.1016/s0013-7006(05)82372-3",
+      "pmid": "15971640",
+      "sourceId": null,
+      "claimId": null
+    },
+    {
+      "questionnaireId": "Q_PED_01",
+      "population": "Adolescents",
+      "langue": "fr",
+      "tailleEchantillon": 20,
+      "propriete": "fidelite",
+      "resultat": "stabilité test-retest jugée acceptable sur un intervalle de 8 mois ; coefficient non rapporté dans la notice consultée",
+      "conclusionCosmin": "inconnu",
+      "doi": "10.1016/s0013-7006(05)82372-3",
+      "pmid": "15971640",
+      "sourceId": null,
+      "claimId": null
+    }
+  ]
 }
