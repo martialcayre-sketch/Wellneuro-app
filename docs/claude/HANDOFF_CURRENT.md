@@ -1,111 +1,117 @@
-# Handoff — 2026-08-03 — Les deux promotions : attente du CI exécutable, et deux décisions au registre
+# Handoff — 2026-08-04 — LOT-07 : ce que « certifié » ne dit pas
 
-Écrit sur la branche vivante, avant le merge de #556.
+Écrit sur la branche vivante, avant la PR.
 
 ## Git
 
-- Worktree `.claude/worktrees/promotions-attente-ci`, branche
-  `worktree-promotions-attente-ci`, partie de `main` à `059fcaaa` (après #555).
-- PR **#556** — `verify` vert en 8 min 37 s sur la tête précédente ; `main` a été
-  fusionné depuis (#553 mergée), **le CI est donc à relire sur la nouvelle tête**.
-- Hors campagne : dette de clôture de LOT-06 et LOT-01. Rien sous `web/src/`.
-- **#553 a été mergée** (`cd7c1b9b`) pendant cette session, sur autorisation
-  expresse. Son worktree est supprimé, sa branche distante aussi.
+- Worktree `.claude/worktrees/lot-07-reliquat-certification`, branche
+  `worktree-lot-07-reliquat-certification`, partie de `main` après #559.
+- Campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`,
+  **LOT-07 — dernier lot**. Rien sous `web/src/`.
+- `cible_pr_lot` corrigée en `main` : la branche d'intégration déclarée par
+  `CAMPAGNE.md` **n'a jamais existé sur origin**, les LOT-00 à LOT-06 sont tous
+  partis en PR directe.
 
 ## Objectif atteint
 
-Honorer les deux promotions que `/wn-finish` impose d'examiner à chaque clôture,
-proposées à la clôture de LOT-06 puis de LOT-01, et jamais écrites.
+Le score-check était vert sur 65 instruments, et ce vert portait sur le **calcul**.
+Rien n'empêchait d'y lire « instrument validé ». La distinction est désormais
+écrite dans `docs/gouvernance-questionnaires-scoring.md`, et les trois axes —
+scoring vérifié, validité psychométrique, complétude bibliographique — sont
+séparés et chiffrés.
 
-## Où en est la série
+## Le chiffre qui résume le lot
 
-L'idiome documenté attendait que plus rien ne soit `pending`, puis lisait
-`gh pr checks`. Il ne distinguait pas **« aucun check en attente »** de
-**« aucun check du tout »** : il rendait la main sur deux checks Vercel verts
-quand `verify` — seul check obligatoire de la protection de `main` — n'avait
-jamais été créé. C'est arrivé sur #550 ; le correctif a été refait **à la main**
-sur #553. Une règle oubliée deux fois devient exécutable.
+**43 entrées portent `reference_identifiee`. Deux portent un identifiant.**
 
-`npm run check` vert dans les **deux** positions de `WN_AGENDA_ALI`. **T3 complet
-vert en 2 min 6 s** : PostgreSQL éphémère, `prisma migrate deploy` — le SQL manuel
-réellement exécuté —, **drift check `migrate diff --exit-code`**, contrats SQL,
-seed, 108 E2E.
-
-1. **Six codes de sortie, et `0` seul autorise à annoncer une PR prête.**
-   `1` échec · `2` n'a pas tourné (absent ou gelé) · `3` délai · `4` indéterminé
-   · `5` vert mais PR en conflit. Chaque cas où l'on ne peut pas affirmer le vert
-   a son code : aucun ne se replie sur `0`.
-2. **La liste des checks attendus vient de la protection de branche**, jamais
-   d'une constante. Si elle est illisible, `verify` sert encore à diagnostiquer
-   mais plus à conclure — verdict `4`.
-3. **Expirer n'est pas réussir.** Une boucle d'attente qui rend `0` au bout de
-   son délai ne prouve que sa propre patience. Et l'absence d'un check rend `2`
-   même quand c'est le délai qui met fin à l'attente : l'absence est
-   l'information utile.
-4. **Les entrées homonymes sont agrégées, pas dédupliquées.** `ci.yml` se
-   déclenche sur `push` *et* `pull_request` : une PR issue de `campaign/**` porte
-   **deux** runs nommés `verify` (constaté sur #528). Un nom n'est vert que si
-   toutes ses entrées le sont.
-5. **Fonction pure + faits injectés.** Toute la décision est dans
-   `diagnostiquer()`, testable sans réseau ; `collecter()` ne fait que lire `gh`.
-   C'est ce dessin qui a rendu les défauts trouvables.
-6. **Écarté** : un contrôle CI bloquant réclamant l'usage du script — il
-   bloquerait un correctif urgent, dessin déjà écarté pour le handoff.
+Le garde n'exige, pour ce statut, qu'**un** champ non vide parmi `auteurs`,
+`anneePublication`, `formePubliee`, `doi`, `pmid`. Huit des douze entrées
+`a_completer` avaient déjà un nom d'auteur : s'adosser au garde aurait produit
+douze montées purement déclaratives, en CI vert. La règle retenue — un identifiant
+qui certifie **la forme servie** — en a laissé passer deux.
 
 ## Ce qui est en place
 
-- `scripts/wn-attendre-ci.mjs` + banc **31 cas**, câblé dans `ci.yml` hors filtre
-  `docs_only` — **5 bancs déclarés avant, 6 après**.
-- L'idiome remplacé dans `CLAUDE.md`, `/wn-pr`, `/wn-merge`, et les **deux**
-  protocoles de `docs/ROLES_MACHINES.md`.
-- `docs/DECISIONS.md` : **D-012** (la barrière D-003 se garde au point de
-  passage, pas chez ses lecteurs) et **D-011** (un écart de restitution de l'IA
-  se journalise, ne se censure pas).
-- `docs/ROLES_MACHINES.md` affirmait `enforce_admins` **désactivé** : faux depuis
-  le 2026-07-21, démenti par la lecture directe du réglage.
+- `motifBibliographique`, nouveau champ, sur les **10** entrées `a_completer` :
+  ce qui a été cherché, et pourquoi ça n'a rien donné. Seuil de 40 caractères,
+  repris de `droits.detail` et de `verdictScoring.reserve.motif`.
+- Trois contrôles dans `scripts/lib/verifier_registre_instruments.js` : motif
+  obligatoire sur `a_completer` ; motif **interdit** ailleurs (un constat survivant
+  à une promotion contredit son voisin) ; `cosmin !== 'inconnu'` exige une étude
+  concordante au dossier.
+- Le barreau `psychometrie_revue` exige désormais une preuve **graduée** et un
+  `cosmin` posé — voir « ce que le lot ouvrait » ci-dessous.
+- `measurement_evidence.json` rejoint `instrument_registry.json` du côté « code »
+  dans le classement `docs_only` de `ci.yml`.
+- 3 lignes de preuve psychométrique, toutes sur `Q_PED_01`, toutes `inconnu`.
+- 65 tests au banc, T1 vert.
 
-## Ce que la revue adversariale a corrigé
+## Ce que la revue adversariale a corrigé — et que je n'avais pas vu
 
-- Banc 31/31 · **19 mutations, aucune ne survit** · T1 vert (340 fichiers,
-  3459 tests) · anti-secrets, cross-invocation, blocs `!`, audit campagnes : 0.
-- Exécution réelle : #553 en conflit → `5` · #550 mergée → `4` · numéro
-  inexistant → `4` · #556 → `0`, **le script a attendu son propre CI**.
-- **Deux revues adversariales** : NO-GO (3 bloquants) puis GO.
+1. **Le lot ouvrait une porte en écrivant ses propres données.**
+   `measurement_evidence.json` était vide : personne ne pouvait franchir le
+   barreau `psychometrie_revue`, dont le garde ne teste que la **présence** d'une
+   preuve. Y écrire trois lignes concluant `inconnu` — dont une qui dit
+   « coefficient non rapporté dans la notice consultée » — le rendait franchissable
+   pour `Q_PED_01`, à un statut près. Fermé dans le lot.
+2. **Le fichier de preuves était classé `docs_only` par le CI** : éditable seul,
+   `verify` vert, sans qu'aucun contrôle ne le lise. Le commentaire de `ci.yml`
+   tenait déjà ce raisonnement mot pour mot pour le registre.
+3. **`Q_ALI_03` allait recevoir un PMID qui ne certifie pas la forme servie** :
+   la publication décrit 8 questions, le dépôt en sert 23 et déclare l'instrument
+   **débaptisé** (« il n'est plus selon Monnier »). Redescendue en `a_completer`.
 
 ## Problèmes ouverts
 
-- **Un banc vert ne prouve que ce qu'il sait interroger.** Le banc à 18 cas
-  laissait survivre deux mutations et trois faux verts ; c'est la revue qui les a
-  trouvés. Deux de mes mutations ne mutaient rien (`'' || x` vaut `x`) : le
-  pilote de falsification doit lui-même être falsifiable.
-- **Un commit de tête Copilot n'a PAS gelé le run de #553**, contrairement à la
-  doctrine de `CLAUDE.md`. Observation unique, non généralisée — mais l'un des
-  deux énoncés est faux.
-- La jq de la protection lit `.checks[].context` et **jette `app_id`**, auquel la
-  protection est pourtant liée : un commit status homonyme posté par un autre
-  acteur satisferait le script et pas GitHub. Théorique.
-- `mergeStateStatus: 'DRAFT'` rend `0`, comme `BLOCKED` : cohérent tant que `0`
-  signifie « les checks sont verts et rien de connu n'invalide ce vert ». Si `0`
-  devait un jour signifier « fusionnable », `DRAFT` rejoindrait `DIRTY`.
-- **Le handoff de LOT-01 n'a pas atteint `main`** : Copilot avait résolu les
-  conflits de #553 avant moi et gardé la version de #555 sur ce fichier à
-  créneau unique. Sa substance est dans `SESSION_LOG` et le changelog.
-- Le faux négatif connu de `skill-cross-invocation.test.mjs` (un drapeau en
-  commentaire lui échappe) reste ouvert — hors périmètre.
+- **Trois écarts cliniques trouvés, aucun tranché** — ils appellent le praticien :
+  - `Q_STR_03` : la source cote 11 items de 1 à 6 (étendue **11-66**) ; le dépôt
+    sert 0-5, `maxTotal: 55`, avec cinq bandes d'interprétation, et l'instrument
+    alimente Mon Équilibre (besoin 9). Si l'écart est réel, les bandes servies sont
+    décalées et `divergencesCritiques: 0` affirme plus que ce qui est su.
+  - `Q_FIB_03` : si l'item servi est l'examen des 18 points sensibles, sa source
+    publiée est le critère ACR 1990, pas l'ELFE.
+  - `Q_NEU_03` : l'éditeur date le manuel de 1998, le registre déclare 1992.
+  Aucune `verdictScoring.reserve` n'a été posée : plafonner un barreau est une
+  décision clinique, pas un geste de lot bibliographique.
+- **`a_completer` recouvre maintenant deux situations qu'aucune requête ne
+  sépare** : « cherché, rien n'existe » (`Q_STR_03`, `Q_NEU_12`, `Q_FIB_03`,
+  `Q_URO_02`) et « trouvé, non indexé » (`Q_NEU_03`, `Q_TAB_01`, `Q_TAB_03`).
+  La distinction ne vit que dans une phrase française. Un booléen
+  `referenceLocalisee` la rendrait interrogeable ; non fait, hors périmètre.
+- **Deux des dix `a_completer` ne fermeront jamais** (`Q_SOM_09`, `Q_ALI_09`,
+  créés par WellNeuro). Le compteur imprime le sous-compte à part, dérivé de
+  `versionServie.statutContenu` — un compteur qui ne peut pas atteindre zéro
+  cesse d'être lu.
+- **Soupçon non vérifié** : le seuil servi de `Q_SOM_06` est ≥ 23 quand celui
+  usuellement cité pour l'asthénie de Pichot est ≥ 22.
+- Le `commentaire` de `measurement_evidence.json` annonçait un « claimId validé
+  correspondant » que les trois lignes n'ont pas ; la phrase a été amendée, mais
+  le rattachement aux claims reste à faire.
 - Hérités : les six règles du LOT-05 ne sont pas signées cliniquement, sans quoi
   le LOT-06 livré n'affiche rien.
 
+## La leçon de méthode, revenue une troisième fois
+
+Mes mutations testaient le **retrait** du contrôle, pas son **déplacement**. La
+mutation « hors de la boucle » a survécu au premier passage : un banc dont chaque
+cas n'instancie qu'**une** entrée ne distingue pas « dans la boucle » de « hors de
+la boucle ». Refermée, la variante « **dernière** entrée » a survécu à son tour —
+le cas correctif plaçait la faute en seconde et dernière position. Il a fallu un
+cas à **trois** entrées, faute au milieu. Un banc vert ne prouve que ce qu'il sait
+instancier.
+
 ## Prochaine action exacte
 
-Relire le `verify` de #556 sur la tête actuelle — `node scripts/wn-attendre-ci.mjs 556`,
-code `0` exigé — puis merger si l'autorisation est donnée. Ensuite **LOT-07**,
-dernier lot de la campagne : reliquat de certification, documentaire, sans
-dépendance. Repartir de `main`, jamais de la branche squashée.
+Ouvrir la PR sur `main` avec `--body-file`, attendre son CI avec
+`node scripts/wn-attendre-ci.mjs <N>` (**code `0` exigé** ; `2` signifie que
+`verify` n'a pas tourné), puis merger si l'autorisation est donnée.
+Ensuite : arbitrage praticien sur les trois écarts cliniques ci-dessus, et
+signature clinique de la table du LOT-05.
 
 ## Interdits encore actifs
 
 - Aucune migration, aucune écriture Supabase, rien sous `web/src/`.
 - Ne pas merger sur les seuls checks Vercel : `verify` absent **bloque**, et
   `enforce_admins` est actif — personne ne passe outre, propriétaire compris.
-- Ne pas ajouter de contrôle CI bloquant réclamant le script (cf. décision 6).
-- Ne jamais forcer un `push` sur une branche qu'un autre agent a résolue.
+- Ne pas corriger l'écart de cotation de `Q_STR_03` sans décision du praticien :
+  c'est un seuil clinique servi en production.

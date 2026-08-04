@@ -1,7 +1,7 @@
 ---
 id: "LOT-07"
 titre: "Reliquat de certification — bibliographie et psychométrie"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "aucun"
 palier: "T1"
 ---
@@ -88,4 +88,43 @@ aujourd'hui, ne l'en empêche.
 
 ## Résultats
 
-À compléter à la clôture.
+Clos le 2026-08-04. Le lot annonçait 64 instruments et 11 entrées `a_completer` :
+le dépôt en portait **65** et **12**.
+
+**Ce qui a été trouvé.** Sur les dix instruments publiés, trois seulement ont une
+publication d'origine assortie d'un identifiant vérifiable : `Q_SOM_06`
+(PMID 6524792), `Q_PED_01` (PMID 15971640 + DOI) et `Q_ALI_03` (PMID 11431607).
+Trois autres ont une référence d'origine **localisée mais non indexée**
+(`Q_NEU_03`, `Q_TAB_01`, `Q_TAB_03`) ; quatre n'en ont aucune (`Q_STR_03`,
+`Q_NEU_12`, `Q_FIB_03`, `Q_URO_02`), et deux n'en auront jamais — `Q_SOM_09` et
+`Q_ALI_09` sont des instruments créés par WellNeuro.
+
+**Deux promotions, pas trois.** `Q_ALI_03` a été redescendue en `a_completer` en
+revue : le code déclare l'instrument **débaptisé** — « il n'est plus selon
+Monnier » — et sert 23 items quand la publication en décrit 8. Attacher son PMID
+aurait fait certifier par un identifiant une forme qu'il ne certifie pas. Le lien
+reste documentaire, dans le motif. État final : 43 `reference_identifiee`,
+12 `referentiel_interne_siin`, 10 `a_completer` toutes motivées, **2 entrées
+seulement** portant un DOI ou un PMID.
+
+**Ce que le lot a découvert et n'a pas tranché** — trois écarts cliniques,
+remontés au praticien : `Q_STR_03` (source cotée 1-6, étendue 11-66 ; le dépôt
+sert 0-5, `maxTotal: 55`, et alimente Mon Équilibre), `Q_FIB_03` (si l'item servi
+est l'examen des 18 points sensibles, sa source est le critère ACR 1990, pas
+l'ELFE), `Q_NEU_03` (l'éditeur date le manuel de 1998, le registre de 1992).
+Aucune `verdictScoring.reserve` n'a été posée : c'est une décision clinique.
+
+**Ce que le lot ouvrait sans le voir.** Écrire les trois premières lignes de
+`measurement_evidence.json` rendait le barreau `psychometrie_revue` franchissable
+pour `Q_PED_01` — son garde ne testait que la **présence** d'une preuve, jamais sa
+conclusion, et les trois lignes concluent `inconnu`. Trouvé en revue adversariale,
+fermé dans le lot : le barreau exige désormais une preuve **graduée** et un
+`cosmin` posé. Le CI classait par ailleurs `measurement_evidence.json` en
+`docs_only` — il pouvait être édité seul, `verify` vert, sans qu'aucun contrôle
+ne le lise ; il rejoint le registre du côté « code ».
+
+**Le banc a été vu échouer.** Quatre mutations éprouvées, dont deux ont survécu
+au premier passage : le **déplacement** du contrôle hors de la boucle (banc à une
+seule entrée — angle mort déjà rencontré le 2026-08-03), puis, après correctif,
+le déplacement vers la **dernière** entrée. Refermés par un cas à trois entrées,
+faute au milieu. 65 tests, T1 vert.

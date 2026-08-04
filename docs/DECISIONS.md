@@ -4,6 +4,16 @@
 
 ## Décisions actives
 
+### D-013 — Une étiquette de certification ne vaut que ce que vaut la pièce qui la fonde
+
+- Date : 2026-08-04
+- Statut : accepté (clôture du LOT-07 de la campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`)
+- Domaine : corpus des questionnaires, gouvernance clinique
+- Décision : un statut du registre des instruments ne se pose que sur une pièce qui **certifie l'objet réellement servi**, et un garde de statut vérifie la **teneur** de cette pièce, jamais sa seule présence. Trois applications, toutes exécutables : `statutBibliographique: reference_identifiee` exige un identifiant (DOI ou PMID) qui certifie la forme servie, et non un simple champ d'identification non vide ; `cosmin` autre qu'`inconnu` exige une ligne concordante de `measurement_evidence.json` sur le même `questionnaireId` **et** le même grade ; le barreau `statutCertification: psychometrie_revue` exige une preuve **graduée** — au moins une étude dont `conclusionCosmin !== 'inconnu'` — et un `cosmin` posé sur l'entrée.
+- Conséquences : sur 65 entrées, **43 portent `reference_identifiee` et 2 seulement un identifiant** — l'écart est la mesure exacte de ce que l'étiquette ne dit pas, et il est désormais écrit dans `docs/gouvernance-questionnaires-scoring.md`. Une entrée sans identifiant reste `a_completer` et porte un `motifBibliographique` d'au moins 40 caractères disant ce qui a été cherché ; le même champ est **interdit** sur les autres statuts, un constat survivant à une promotion contredisant son voisin. `Q_ALI_03` est le contre-exemple de référence : sa publication d'origine a été retrouvée et n'est délibérément pas portée en `references`, parce que la publication décrit 8 questions et que le dépôt en sert 23 sous un instrument qu'il déclare débaptisé.
+- Réserves : le garde générique du registre continue d'accepter `reference_identifiee` sur un seul champ non vide — seuil bas assumé pour les 43 entrées héritées, que ce lot n'a pas rouvertes. La règle du présent D-013 vaut pour toute **nouvelle** promotion, et c'est la revue qui la tient, pas le garde. Par ailleurs `a_completer` recouvre depuis ce lot deux situations qu'aucune requête ne sépare — « rien n'existe » et « trouvé mais non indexé » —, distinction qui ne vit que dans le motif.
+- Référence : [scripts/lib/verifier_registre_instruments.js](scripts/lib/verifier_registre_instruments.js), [docs/gouvernance-questionnaires-scoring.md](docs/gouvernance-questionnaires-scoring.md), [docs/claude/corpus/instrument_registry.json](docs/claude/corpus/instrument_registry.json)
+
 ### D-012 — La barrière D-003 se garde au point de passage, pas chez ses lecteurs
 
 - Date : 2026-08-03

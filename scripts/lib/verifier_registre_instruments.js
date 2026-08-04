@@ -39,6 +39,9 @@ function estUneDate(valeur) {
 }
 const STATUTS_CONTENU = new Set(['verbatim', 'traduit', 'adapte', 'cree_localement', 'a_auditer']);
 const COSMIN = new Set(['A', 'B', 'C', 'inconnu']);
+// Les grades qui CONCLUENT quelque chose. `inconnu` est dans COSMIN parce que
+// c'est une valeur licite du vocabulaire, pas parce qu'il porte une conclusion.
+const GRADES_CONCLUANTS = ['A', 'B', 'C'];
 const PROPRIETES_PSYCHOMETRIQUES = new Set([
   'validite_contenu', 'structure_interne', 'coherence_interne', 'fidelite', 'erreur_mesure',
   'validite_construit', 'sensibilite_changement', 'mdc', 'mcid',
@@ -212,10 +215,13 @@ function verifierRegistreInstruments({
     erreurs.push('BESOIN_SOURCES extrait mais vide — extraction cassée, contrôle sourceMonEquilibre non fiable');
   }
 
-  // Instruments pour lesquels une preuve psychométrique est au dossier — calculé
-  // avant la boucle, le barreau `psychometrie_revue` en dépendant.
-  const idsAvecPreuve = new Set(
-    (Array.isArray(evidence?.etudes) ? evidence.etudes : []).map(etude => etude.questionnaireId)
+  // Les couples (instrument, grade conclu) réellement au dossier. Calculé avant
+  // la boucle : le contrôle `cosmin` ET le barreau `psychometrie_revue` en
+  // dépendent tous les deux, et ils ont besoin des deux fichiers, pas d'une
+  // seconde source.
+  const gradesCosminAuDossier = new Set(
+    (Array.isArray(evidence?.etudes) ? evidence.etudes : [])
+      .map(etude => `${etude.questionnaireId}|${etude.conclusionCosmin}`)
   );
 
   const idsSuspendus = extraireIdsSuspendus(catalogueSource);
@@ -371,6 +377,65 @@ function verifierRegistreInstruments({
         `${id} : statutBibliographique 'reference_identifiee' sans aucun champ qui désigne la `
         + `référence — renseigner au moins instrument.auteurs, instrument.anneePublication, `
         + `instrument.formePubliee, references.doi ou references.pmid`
+      );
+    }
+
+    // `a_completer` DOIT DIRE CE QUI A ÉTÉ CHERCHÉ.
+    //
+    // Le statut n'était qu'un compteur : le vérificateur additionnait les
+    // `a_completer` en fin de passe et n'exigeait rien de chacun. Une entrée
+    // pouvait donc rester des mois dans cet état sans que personne sache si la
+    // recherche avait été faite et n'avait rien donné, ou si elle n'avait jamais
+    // été entreprise. Les deux se lisent pareil — c'est une lacune MUETTE, et
+    // une lacune muette ne se relit pas.
+    //
+    // Le seuil de 40 caractères est repris de `droits.detail` et de
+    // `verdictScoring.reserve.motif` : on exige une phrase, pas un gabarit. Un
+    // garde qui imposerait une forme serait contourné par une forme vide.
+    if (entry.statutBibliographique === 'a_completer') {
+      const motif = entry.motifBibliographique;
+      ajouter(
+        typeof motif === 'string' && motif.trim().length >= 40,
+        `${id} : statutBibliographique 'a_completer' sans constat de recherche — `
+        + `motifBibliographique fait ${typeof motif === 'string' ? motif.trim().length : 0} caractères, `
+        + `il doit énoncer ce qui a été cherché et pourquoi ça n'a rien donné`
+      );
+    } else {
+      // ET SON REVERS, sans lequel le contrôle ci-dessus fabriquerait de la donnée
+      // périmée. Un motif écrit sous `a_completer` — « aucune publication d'origine
+      // n'a été retrouvée » — survit à la promotion de l'entrée s'il n'est pas
+      // retiré : l'étiquette dit alors `reference_identifiee` pendant que le champ
+      // d'à côté raconte le contraire. Rien ne fait relire ce champ une fois le
+      // statut monté, donc rien ne le corrigerait jamais.
+      ajouter(
+        entry.motifBibliographique === undefined || entry.motifBibliographique === null,
+        `${id} : motifBibliographique renseigné alors que statutBibliographique vaut `
+        + `'${entry.statutBibliographique}' — ce constat de recherche ne vaut que sous `
+        + `'a_completer' ; le retirer au moment de la promotion`
+      );
+    }
+
+    // UN GRADE COSMIN NE SE POSE PAS SUR UNE DÉCLARATION.
+    //
+    // `cosmin` n'était tenu que par son vocabulaire fermé : écrire 'A' au registre
+    // suffisait à afficher un grade de qualité psychométrique que rien n'adossait
+    // au dossier. C'est le même défaut que `reference_identifiee` sans référence —
+    // une étiquette qui fait autorité sans pièce derrière, et d'autant plus
+    // trompeuse ici qu'elle porte un jugement sur l'instrument lui-même.
+    //
+    // La pièce existe déjà et elle est structurée : `measurement_evidence.json`.
+    // On exige donc qu'au moins UNE étude au dossier porte sur cet instrument ET
+    // conclue au même grade. La double égalité est le contrôle : une étude du bon
+    // instrument concluant 'C' ne fonde pas un 'B', et une étude concluant 'B' sur
+    // un AUTRE instrument ne fonde rien du tout.
+    //
+    // `inconnu` est exempté : c'est l'état par défaut, celui qui n'affirme rien.
+    if (entry.cosmin !== 'inconnu') {
+      ajouter(
+        gradesCosminAuDossier.has(`${id}|${entry.cosmin}`),
+        `${id} : cosmin '${entry.cosmin}' sans étude concordante dans `
+        + `measurement_evidence.json — un grade doit s'adosser à une étude au dossier `
+        + `portant le même questionnaireId ET le même conclusionCosmin`
       );
     }
 
@@ -604,9 +669,32 @@ function verifierRegistreInstruments({
       );
     }
     if (barreau >= ECHELLE.indexOf('psychometrie_revue')) {
+      // UNE PREUVE PRÉSENTE N'EST PAS UNE PREUVE CONCLUANTE.
+      //
+      // Le barreau se contentait de `idsAvecPreuve.has(id)` — un test de
+      // PRÉSENCE. Il ne coûtait rien tant qu'`etudes` était vide : personne ne
+      // pouvait le franchir. C'est ce lot (2026-08-04) qui a rendu le cas
+      // atteignable, en y écrivant trois lignes sur Q_PED_01 — toutes
+      // `conclusionCosmin: "inconnu"`, dont une qui dit en toutes lettres
+      // « coefficient non rapporté dans la notice consultée ». Une PR ultérieure
+      // aurait donc pu poser `psychometrie_revue` sur Q_PED_01 avec un CI vert,
+      // ce que la section « Ce que la certification ne dit pas » existe
+      // précisément pour interdire.
+      //
+      // Deux exigences, et la seconde n'est pas redondante : au moins une ligne
+      // au dossier qui CONCLUE quelque chose (grade A, B ou C — dérivé de
+      // `gradesCosminAuDossier`, la structure déjà construite pour le contrôle
+      // COSMIN, plutôt qu'un second parcours d'`etudes`), ET un `cosmin`
+      // d'entrée autre qu'`inconnu` — sans quoi « psychométrie revue »
+      // coexisterait avec « qualité psychométrique inconnue », contradiction
+      // dans les termes.
+      const preuveGraduee = GRADES_CONCLUANTS.some(grade => gradesCosminAuDossier.has(`${id}|${grade}`));
       ajouter(
-        idsAvecPreuve.has(id),
-        `${id} : statutCertification '${entry.statutCertification}' sans aucune preuve psychométrique au dossier`
+        preuveGraduee && entry.cosmin !== 'inconnu',
+        `${id} : statutCertification '${entry.statutCertification}' sans preuve psychométrique CONCLUANTE `
+        + `(measurement_evidence.json ${preuveGraduee ? 'porte' : 'ne porte'} une ligne de conclusion COSMIN pour cet instrument, `
+        + `cosmin d'entrée '${entry.cosmin}') — une preuve présente n'est pas une preuve concluante, `
+        + `et « psychométrie revue » ne peut pas coexister avec « qualité psychométrique inconnue »`
       );
     }
 
@@ -654,8 +742,16 @@ function verifierRegistreInstruments({
     });
   }
 
-  const aCompleter = instruments.filter(entry => entry.statutBibliographique === 'a_completer').length;
-  return { erreurs, sourcesEquilibre, aCompleter };
+  // UN COMPTEUR QUI NE PEUT PAS ATTEINDRE ZÉRO CESSE D'ÊTRE LU. Une partie des
+  // `a_completer` ne fermera JAMAIS : les instruments créés par WellNeuro n'ont
+  // aucune publication d'origine à retrouver. Le sous-compte est DÉRIVÉ de
+  // `versionServie.statutContenu === 'cree_localement'` — jamais d'une liste
+  // d'identifiants en dur : c'est une propriété des données, pas un relevé.
+  const entreesACompleter = instruments.filter(entry => entry.statutBibliographique === 'a_completer');
+  const aCompleter = entreesACompleter.length;
+  const aCompleterSansPublicationPossible = entreesACompleter
+    .filter(entry => entry.versionServie?.statutContenu === 'cree_localement').length;
+  return { erreurs, sourcesEquilibre, aCompleter, aCompleterSansPublicationPossible };
 }
 
 module.exports = { verifierRegistreInstruments, extraireSourcesEquilibre, extraireIdsSuspendus };

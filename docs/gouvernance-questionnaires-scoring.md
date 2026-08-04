@@ -35,6 +35,20 @@ Une modification clinique est notamment :
 - `doublon` : source ou questionnaire fonctionnellement doublonné, sans création automatique.
 - `absent Drive` : aucun MD équivalent identifié.
 
+## Ce que la certification ne dit pas
+
+`scoring_verifie` atteste que le calcul correspond à la forme publiée de l'instrument, et rien de plus. Ce n'est pas un jugement sur l'instrument.
+
+La validité psychométrique des instruments servis n'a jamais été évaluée. Au 2026-08-04, `cosmin` vaut `inconnu` sur les 65 entrées du registre.
+
+`measurement_evidence.json` est la seule pièce qui pourrait la porter. Au 2026-08-04 il contient 3 lignes, toutes sur `Q_PED_01`, aucune ne portant d'appréciation COSMIN.
+
+La complétude bibliographique est un troisième axe, distinct des deux précédents — et `statutBibliographique` s'y lit avec la même prudence. Au 2026-08-04, sur les 65 entrées : 43 portent `reference_identifiee`, 12 `referentiel_interne_siin`, 10 `a_completer`, chacune de ces dix avec un constat de recherche écrit dans `motifBibliographique`. Deux de ces dix ne fermeront jamais — `Q_SOM_09` et `Q_ALI_09` sont des instruments créés par WellNeuro, sans publication d'origine à retrouver. Le compteur de `check_questionnaire_certification.js` imprime ce sous-compte à part, dérivé de `versionServie.statutContenu`.
+
+Mais `reference_identifiee` n'exige qu'**un** champ d'identification non vide — un nom d'auteur suffit. **Deux entrées seulement** (`Q_SOM_06`, `Q_PED_01`) portent un identifiant vérifiable, DOI ou PMID, dans `references`. L'étiquette dit que la référence est désignable ; elle ne dit pas qu'elle a été retrouvée.
+
+`Q_ALI_03` en est le contre-exemple utile : la publication d'origine a bien été retrouvée le 2026-08-04 (Monnier L. et al., 2001), et elle n'est délibérément **pas** portée en `references`. La publication décrit une enquête en 8 questions ; le questionnaire servi en compte 23, avec trois écarts à la source, et le code le déclare débaptisé. Attacher l'identifiant reviendrait à faire certifier par un PMID une forme qu'il ne certifie pas. Le lien est documentaire — il vit dans `motifBibliographique`, et l'entrée reste `a_completer`.
+
 ## Sortie de scoring
 
 Les nouveaux moteurs doivent retourner une forme compatible avec `ScoreResultBase` :
