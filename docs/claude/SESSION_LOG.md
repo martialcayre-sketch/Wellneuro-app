@@ -1959,3 +1959,46 @@ Prochaine action — LOT-07.
 
 Question ouverte — Un commit Copilot en tête n'a **pas** gelé le run de #553,
 contre la doctrine de `CLAUDE.md`.
+
+## 2026-08-04 — Agenda alimentaire L4a : l'accès portail serveur, et trois NO-GO
+
+**Décisions** — Quatre arbitrages en session : `dateJourParis` extrait dans un module
+neutre (`src/lib/dateParis.ts`) ; gardes consentement et suivi clôturé posées sur
+l'alimentaire seul, asymétrie avec le sommeil assumée et nommée ; doublon du jour
+refusé en 409 sauf `supersedesJourId` explicite ; `modification_demandee` aligné sur
+`patient/submit`. Découpage L4a (serveur) / L4b (surface) retenu pour ne pas émousser
+la revue au moment où elle compte.
+
+**Écarté** — Le calque littéral du jumeau sommeil. Le cadrage a rendu « GO sur le lot,
+NO-GO sur le calque » : ma liste de six refus en comptait dix, et trois barrières
+manquaient.
+
+**Validations** — `npm run check` à 0 dans les deux positions de `WN_AGENDA_ALI` ;
+quatre `test:worktree` complets, le dernier à 3545 tests / 108 E2E / contrats SQL joués
+/ drift check vert. Contrat SQL éprouvé par mutation sur un PostgreSQL jetable, avec
+contrôles négatifs. Chaque garde vue mordre.
+
+**À retenir — trois revues adversariales, trois NO-GO, et la seconde a trouvé ce que la
+première avait créé.** C'est le fait marquant du lot. La passe de correctifs d'une revue
+est un endroit de régression au moins aussi dangereux que le code d'origine : deux
+défauts (nom de classe d'erreur anonymisé en `[id]`, verrouillage d'écriture sans porte
+de sortie) n'existaient pas avant qu'on corrige. **Ne jamais clore sur une passe de
+correctifs non re-revue.**
+
+Second enseignement : **quatre T3 complets verts n'ont rien vu.** Ni la garde de
+consentement posée sur un champ mort, ni le nom de classe redacté, ni le verrou sans
+issue. Ce sont des défauts d'absence ou de sens — il n'y avait aucune ligne fautive à
+faire échouer. La revue de diff et la suite de tests ne couvrent pas la même classe.
+
+Troisième : **deux de mes propres instructions étaient fausses** (aligner `domain` sur le
+préfixe du code, abaisser la journalisation pré-auth). Le dépôt les a démenties toutes
+les deux — la convention réelle était l'inverse, et le motif invoqué n'était pas atteint.
+
+**Prochaine action** — Ouvrir la PR, lire `verify` par `node scripts/wn-attendre-ci.mjs`,
+code 0 exigé. Puis L4b : aiguillage `page.tsx`, hub patient, surface de saisie, E2E.
+
+**Questions ouvertes** — (1) Aucune borne serveur aux 21 jours : borner au POST ou à la
+clôture ? Question produit, les deux réponses n'ont pas les mêmes effets cliniques.
+(2) `WN_AGENDA_ALI` est-il éteint sur TOUS les environnements Vercel, preview compris ?
+Fait du panneau Vercel, invérifiable depuis le dépôt. (3) La dette consentement / suivi
+clos reste ouverte sur `patient/submit` et sur l'agenda du sommeil.
