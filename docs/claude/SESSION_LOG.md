@@ -1900,3 +1900,25 @@ exactement 32 violations. Un garde vert sur un dépôt déjà corrigé ne prouve
 Prochaine action : PR, `verify`, merge. Puis LOT-07, ou la signature clinique des six
 règles du LOT-05. Question ouverte : les blocs `!` d'un même skill partagent-ils un
 shell ? Si oui, un seul `cd` en tête suffirait.
+
+## 2026-08-03 — Les deux promotions : attente du CI exécutable, deux décisions au registre
+
+Décisions — L'attente du CI devient `scripts/wn-attendre-ci.mjs` : six codes,
+`0` seul autorise à annoncer une PR prête ; la liste des checks attendus vient de
+la protection de branche, pas d'une constante. `DECISIONS.md` gagne
+D-010 (la barrière D-003 se garde au point de passage, pas chez ses lecteurs) et
+D-009 (un écart de restitution de l'IA se journalise, ne se censure pas).
+
+Écarté — Un contrôle CI bloquant réclamant le script : il bloquerait un
+correctif urgent.
+
+Validations — Banc 31 cas ; 19 mutations, aucune ne survit ; câblé (5 → 6) ;
+T1 vert ; deux revues, NO-GO puis GO.
+
+À retenir — **Trois faux verts subsistaient : banc à 18 cas vert, 13 mutations
+conformes**, dont `0` rendu sur #553 en conflit.
+
+Prochaine action — LOT-07.
+
+Question ouverte — Un commit Copilot en tête n'a **pas** gelé le run de #553,
+contre la doctrine de `CLAUDE.md`.
