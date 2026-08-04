@@ -346,3 +346,89 @@ describe('bornes horaires autour de l’ancre', () => {
     expect(fenetreAlimentaire(out)).toBe(1425);
   });
 });
+
+// ─── Abstention « je ne sais pas » (contrat v1, 2026-08-04) ──────────────────
+//
+// TROIS états, et non deux. `null` est une réponse ; la clé absente n'en est
+// pas une. Sans ce troisième état, un patient qui ignore le contenu d'une
+// journée devait répondre au hasard ou sauter la journée ENTIÈRE — et perdre
+// aussi ses horaires, qui sont la mesure principale de l'instrument.
+describe('ensureJourReponses — abstention sur les quatre présences', () => {
+  const ecrire = (v: unknown) => ensureJourReponses(v, { exigerObligatoires: true });
+  const lire = (v: unknown) => ensureJourReponses(v);
+
+  it('accepte `null` en écriture, et le conserve', () => {
+    const out = ecrire({ ...JOUR_VALIDE, legumesDeuxPrises: null });
+    expect(out.legumesDeuxPrises).toBeNull();
+    // Les autres présences restent des observations : une abstention ne
+    // contamine pas ses voisines.
+    expect(out.fruitsOuOleagineux).toBe(false);
+    expect(out.premierePriseProteines).toBe(true);
+  });
+
+  it('accepte les quatre à `null` d’un coup', () => {
+    const out = ecrire({
+      ...JOUR_VALIDE,
+      premierePriseProteines: null,
+      legumesDeuxPrises: null,
+      fruitsOuOleagineux: null,
+      ultraTransformes: null,
+    });
+    for (const champ of [
+      'premierePriseProteines',
+      'legumesDeuxPrises',
+      'fruitsOuOleagineux',
+      'ultraTransformes',
+    ] as const) {
+      expect(out[champ], champ).toBeNull();
+    }
+    // La journée reste écrivable : ses horaires survivent, et c'est tout
+    // l'intérêt de l'abstention.
+    expect(out.prises).toHaveLength(4);
+  });
+
+  it('refuse toujours la CLÉ ABSENTE en écriture — s’abstenir n’est pas sauter', () => {
+    const sansLaCle = { ...JOUR_VALIDE } as Record<string, unknown>;
+    delete sansLaCle.ultraTransformes;
+    expect(() => ecrire(sansLaCle)).toThrow(TypeError);
+  });
+
+  it('conserve `null` EN LECTURE — une abstention n’est pas une non-réponse', () => {
+    // Le garde `!== null` de la lecture a été retiré pour les quatre : le
+    // conserver aurait relu l'abstention comme une clé absente, sortant la
+    // journée du dénominateur pour une raison qui n'est pas la sienne.
+    const out = lire({ ...JOUR_VALIDE, fruitsOuOleagineux: null });
+    expect('fruitsOuOleagineux' in out).toBe(true);
+    expect(out.fruitsOuOleagineux).toBeNull();
+  });
+
+  it('refuse une valeur qui n’est ni booléen ni `null`', () => {
+    expect(() => ecrire({ ...JOUR_VALIDE, legumesDeuxPrises: 'peut-être' })).toThrow(TypeError);
+    expect(() => ecrire({ ...JOUR_VALIDE, legumesDeuxPrises: 0 })).toThrow(TypeError);
+  });
+});
+
+describe('ensureJourReponses — `soirPlusCopieux` n’a PAS d’abstention', () => {
+  // Arbitrage praticien du 2026-08-04 : ce champ facultatif n'alimente qu'un
+  // drapeau. Il reste donc booléen, et un `null` reçu doit être ÉCARTÉ — sans
+  // quoi il entrerait dans l'objet et le prédicat de couverture d'`agregats`,
+  // qui teste la connaissance, verrait une journée renseignée. `null !==
+  // undefined` étant vrai en JS, c'est exactement le piège que ce cas ferme.
+  it('écarte un `null` au lieu de le conserver', () => {
+    const out = ensureJourReponses({ ...JOUR_VALIDE, soirPlusCopieux: null });
+    expect('soirPlusCopieux' in out).toBe(false);
+  });
+
+  it('écarte aussi un `null` en écriture', () => {
+    const out = ensureJourReponses(
+      { ...JOUR_VALIDE, soirPlusCopieux: null },
+      { exigerObligatoires: true },
+    );
+    expect('soirPlusCopieux' in out).toBe(false);
+  });
+
+  it('conserve un booléen', () => {
+    const out = ensureJourReponses({ ...JOUR_VALIDE, soirPlusCopieux: true });
+    expect(out.soirPlusCopieux).toBe(true);
+  });
+});

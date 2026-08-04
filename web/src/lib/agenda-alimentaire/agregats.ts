@@ -252,18 +252,29 @@ export function calculerAgregatsAli(jours: JourAgregable[]): AgregatsAgendaAli |
 
   // Chaque booléen porte sa propre couverture : un patient qui a répondu aux
   // protéines mais pas au contenu doit voir l'un mesuré et l'autre non.
+  //
+  // LE TEST EST `typeof === 'boolean'`, ET IL DOIT L'ÊTRE SUR LES CINQ.
+  // Depuis l'abstention (contrat v1, 2026-08-04), une présence peut valoir
+  // `null` — « je ne sais pas ». Or `null !== undefined` est VRAI en
+  // JavaScript : un seul prédicat laissé en `!== undefined` compterait la
+  // journée comme connue, puis le filtre `=== true` plus bas la lirait comme un
+  // « non ». Le dénominateur d'une grandeur divergerait de celui de ses
+  // voisines, sans qu'aucun test ne parle. La règle est donc UNIFORME ici — la
+  // différence de contrat entre les quatre présences (abstention permise) et
+  // `soirPlusCopieux` (abstention refusée) vit dans le TYPE et dans le
+  // VALIDATEUR, jamais dans ces prédicats, seul moyen qu'ils ne divergent pas.
   const proteinesConnues = plausibles.filter(
-    (j) => !j.reponses.aucunePrise && j.reponses.premierePriseProteines !== undefined,
+    (j) => !j.reponses.aucunePrise && typeof j.reponses.premierePriseProteines === 'boolean',
   );
   const contenuConnu = plausibles.filter(
     (j) =>
       !j.reponses.aucunePrise &&
-      j.reponses.legumesDeuxPrises !== undefined &&
-      j.reponses.fruitsOuOleagineux !== undefined &&
-      j.reponses.ultraTransformes !== undefined,
+      typeof j.reponses.legumesDeuxPrises === 'boolean' &&
+      typeof j.reponses.fruitsOuOleagineux === 'boolean' &&
+      typeof j.reponses.ultraTransformes === 'boolean',
   );
   const soirConnu = plausibles.filter(
-    (j) => !j.reponses.aucunePrise && j.reponses.soirPlusCopieux !== undefined,
+    (j) => !j.reponses.aucunePrise && typeof j.reponses.soirPlusCopieux === 'boolean',
   );
 
   return {

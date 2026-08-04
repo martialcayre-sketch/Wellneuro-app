@@ -112,26 +112,52 @@ export type PriseJour = {
  * RÉPONSE — elle compte dans la couverture et vaut une information clinique ;
  * un emplacement non renseigné n'en est pas une, et reste un trou visible.
  */
+/**
+ * TROIS ÉTATS, ET NON DEUX, sur les quatre présences obligatoires.
+ *
+ * `true` / `false` sont des observations ; `null` est une ABSTENTION explicite
+ * — « je ne sais pas » —, distincte de la clé absente (`undefined`), qui reste
+ * la non-réponse d'une ligne écrite sous une version antérieure.
+ *
+ * Sans ce troisième état, un patient qui ignore le contenu d'une journée n'avait
+ * que deux issues : répondre au hasard, ou sauter la journée ENTIÈRE. La seconde
+ * perd aussi les horaires, qui sont la mesure principale de l'instrument — et
+ * c'est le seuil d'exploitabilité (14 jours, 4 week-ends, 7 paires de jeûne) qui
+ * en paie le prix. L'étage d'agrégation anticipait déjà cette connaissance
+ * partielle (`nbJoursContenuConnu` est un dénominateur) que l'étage d'écriture
+ * interdisait de produire : on lève une contradiction interne, on n'en crée pas.
+ *
+ * `soirPlusCopieux` NE porte PAS d'abstention (arbitrage praticien du
+ * 2026-08-04). Il reste `boolean | undefined`, et la lecture doit écarter un
+ * `null` reçu — sinon le prédicat de couverture, qui teste la connaissance,
+ * compterait cette journée comme renseignée.
+ */
 export type JourReponses = {
   prises?: PriseJour[];
   aucunePrise?: boolean;
   /**
-   * Obligatoire en ÉCRITURE dès que la journée porte des prises. Facultatif
-   * dans le type parce que la lecture ne doit jamais rendre illisible une
-   * ligne déjà en base. Sans cette obligation, l'axe MATIN récompenserait la
-   * non-réponse — le défaut corrigé en `agenda-sommeil-v2`.
+   * Obligatoire en ÉCRITURE dès que la journée porte des prises — la CLÉ doit
+   * être présente, sa valeur pouvant être `null`. Facultatif dans le type parce
+   * que la lecture ne doit jamais rendre illisible une ligne déjà en base. Sans
+   * cette obligation, l'axe MATIN récompenserait la non-réponse — le défaut
+   * corrigé en `agenda-sommeil-v2`.
    */
-  premierePriseProteines?: boolean;
-  /** Facultatif : n'alimente qu'un drapeau, jamais un point. */
+  premierePriseProteines?: boolean | null;
+  /**
+   * Facultatif : n'alimente qu'un drapeau, jamais un point. Seul champ de
+   * contenu SANS abstention — pas de `null` (voir l'en-tête du type).
+   */
   soirPlusCopieux?: boolean;
 
   // — Présences observées, obligatoires ensemble en écriture —
   // Renseigner deux présences sur trois ferait lire la troisième comme une
   // absence : le contenu serait dit pauvre là où il est simplement inconnu.
-  legumesDeuxPrises?: boolean;
-  fruitsOuOleagineux?: boolean;
+  // Une abstention (`null`) sur l'une des trois les sort TOUTES du dénominateur,
+  // pour la même raison.
+  legumesDeuxPrises?: boolean | null;
+  fruitsOuOleagineux?: boolean | null;
   /** Seule présence comptée à l'envers : présent = moins bien couvert. */
-  ultraTransformes?: boolean;
+  ultraTransformes?: boolean | null;
 };
 
 export type JourRow = {

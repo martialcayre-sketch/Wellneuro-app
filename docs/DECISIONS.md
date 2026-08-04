@@ -4,7 +4,7 @@
 
 ## Décisions actives
 
-### D-010 — La barrière D-003 se garde au point de passage, pas chez ses lecteurs
+### D-012 — La barrière D-003 se garde au point de passage, pas chez ses lecteurs
 
 - Date : 2026-08-03
 - Statut : accepté (clôture du LOT-01 de la campagne `2026-08-03-packs-moteur-d-intervention-et-corpus-consommable`) — le contrat qui matérialise cette décision a été mergé par la **PR #553** le 2026-08-03 (`cd7c1b9b`) : la décision et sa mise en œuvre sont toutes deux sur `main`.
@@ -14,7 +14,7 @@
 - Réserves : le refus d'`EXECUTE` n'est assérable que si les rôles PostgREST existent — la clause est donc **vide sur la base éphémère du CI et mordante en production**. C'est le piège déjà rencontré avec `REVOKE FROM PUBLIC` : la partie du contrat qui protège le plus est celle que le CI ne joue pas. Deux des cinq conditions de la fonction (`patient_identifiable = false`, `compartment = 'ACTIF'`) ne sont pas falsifiables par fixture — tenues par des `CHECK` de table — et sont assérées structurellement dans `pg_constraint`.
 - Référence : [web/prisma/checks/rag_claim_barriere_d003_v1.sql](web/prisma/checks/rag_claim_barriere_d003_v1.sql), [.github/workflows/ci.yml](.github/workflows/ci.yml), [docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md](docs/claude/corpus/VALIDATION_CLAIMS_DEUX_VITESSES.md), PR #553
 
-### D-009 — Écart de restitution de l'IA : on journalise, on ne censure pas
+### D-011 — Écart de restitution de l'IA : on journalise, on ne censure pas
 
 - Date : 2026-08-03
 - Statut : accepté (clôture du LOT-06 de la même campagne)
@@ -23,6 +23,23 @@
 - Conséquences : le praticien voit la synthèse **et** l'écart, et tranche. Le garde ne s'exécute que si le bloc d'orientation a réellement été injecté (`orientationInjectee`) : sans injection, il n'y a pas de matériel de référence, donc pas d'écart mesurable — seulement une accusation possible. L'allowlist est dérivée des **trois** sources réellement transmises, dont les questionnaires que la consigne système cite elle-même : reprocher au modèle d'avoir repris ce qu'on lui a donné revient à l'accuser d'avoir inventé ce qu'il a lu.
 - Réserves : ce dessin est né d'un défaut mesuré, pas d'un principe. Pendant le LOT-06, le détecteur tournait avec une allowlist vide sur le seul chemin de production et comparait la prose à 16 titres de packs, dont quatre sont des tournures cliniques françaises ordinaires (« digestif et intestin-cerveau », « stress chronique et burnout ») : **une synthèse fidèle a été accusée, et l'accusation persistée au dossier**. Un détecteur qui peut se tromper ne doit pas avoir le pouvoir de supprimer. S'il gagne un jour ce pouvoir, ce sera par une décision distincte, pas par dérive.
 - Référence : [web/src/lib/clinical/verifierRestitutionOrientation.ts](web/src/lib/clinical/verifierRestitutionOrientation.ts), [web/src/app/api/praticien/synthese/route.ts](web/src/app/api/praticien/synthese/route.ts), PR #550
+### D-010 — Agenda alimentaire : l'écart déclaré/observé est un objet clinique séparé, pas une source du besoin 3
+
+- Date : 2026-08-04
+- Statut : accepté (arbitrage praticien, lots L1-bis et L3 de l'agenda alimentaire)
+- Domaine : clinique, Mon Équilibre
+- Décision : l'agenda alimentaire `Q_ALI_09` **n'alimente pas** le besoin 3 « Rythme alimentaire », déjà sourcé par le sous-score `RYTHME_CHRONO` de `Q_ALI_01`. Ce que l'instrument doit produire est l'**écart** entre le rythme DÉCLARÉ (questionnaire) et le rythme OBSERVÉ (21 jours), comme objet distinct — trois profils, dont « déclare bon / observe mauvais », où l'action clinique porte sur la perception et non sur le rythme.
+- Conséquences : `BESOIN_SOURCES` et `VERSION_SCORE_EQUILIBRE` restent intouchés, et `sourceMonEquilibre` vaut `false` au registre des instruments. Y brancher l'agenda ferait deux mesures d'un même thème — l'agenda serait le **troisième** porteur du mot « rythme », après `RYTHME_ALIMENTAIRE` /10 (affichage) et `RYTHME_CHRONO` /7 (besoin), homonymie dont `lib/anthropic.ts` documente déjà le piège d'addition. L'objet d'écart **dépend de la forme servie** : sous la forme courte à 14 items, `MAX_RYTHME_CHRONO` vaut 0, aucun rythme n'est déclaré, et l'écart devra rendre `null` — jamais 0, qui se lirait « pas d'écart ».
+- Référence : [docs/claude/HANDOFF_CURRENT.md](docs/claude/HANDOFF_CURRENT.md), [web/src/lib/equilibre/constants.ts](web/src/lib/equilibre/constants.ts), [web/src/lib/agenda-alimentaire/types.ts](web/src/lib/agenda-alimentaire/types.ts), [web/src/lib/anthropic.ts](web/src/lib/anthropic.ts)
+
+### D-009 — Recueil longitudinal : collecter avant de calibrer, et l'abstention est un état clinique de plein droit
+
+- Date : 2026-08-04
+- Statut : accepté (arbitrage praticien, lots L1-bis et L3)
+- Domaine : clinique, méthode de mesure
+- Décision : sur un instrument de recueil, **aucun barème n'est arrêté avant d'avoir observé des données réelles** — un barème posé avant la première passation est une donnée clinique inventée. Et une question de recueil offre **trois états**, pas deux : observé vrai, observé faux, et `null` — « je ne sais pas » —, distinct de la clé absente qui reste la non-réponse.
+- Conséquences : l'ordre des lots est collecte → calibrage, jamais l'inverse ; un instrument peut donc être livré `scored: false` et le rester. L'abstention doit entrer au contrat **avant la première ligne en base** : après, elle coûte une version de contrat, une double lecture et une fenêtre de recueil incomparable à elle-même. Corollaire technique à ne pas manquer — `null !== undefined` est vrai en JavaScript : relâcher un booléen **réveille tous les prédicats qui comptent les valeurs connues**, et un seul laissé en `!== undefined` compte l'abstention comme connue puis la lit comme un « non ». Le test de connaissance s'écrit `typeof … === 'boolean'`, uniformément ; la différence de contrat entre champs vit dans le type et le validateur, jamais dans les prédicats.
+- Référence : [changelog.d/2026-08-04-agenda-alimentaire-l3-persistance.md](changelog.d/2026-08-04-agenda-alimentaire-l3-persistance.md), [web/src/lib/agenda-alimentaire/types.ts](web/src/lib/agenda-alimentaire/types.ts), [web/src/lib/agenda-alimentaire/agregats.ts](web/src/lib/agenda-alimentaire/agregats.ts)
 
 ### D-008 — Contrat V3 des compléments : validation structurelle au runtime, à la persistence et à la relecture
 

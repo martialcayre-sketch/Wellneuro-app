@@ -17,7 +17,7 @@
 Honorer les deux promotions que `/wn-finish` impose d'examiner à chaque clôture,
 proposées à la clôture de LOT-06 puis de LOT-01, et jamais écrites.
 
-## Le défaut, et pourquoi il ne se voyait pas
+## Où en est la série
 
 L'idiome documenté attendait que plus rien ne soit `pending`, puis lisait
 `gh pr checks`. Il ne distinguait pas **« aucun check en attente »** de
@@ -26,7 +26,10 @@ quand `verify` — seul check obligatoire de la protection de `main` — n'avait
 jamais été créé. C'est arrivé sur #550 ; le correctif a été refait **à la main**
 sur #553. Une règle oubliée deux fois devient exécutable.
 
-## Décisions à ne pas rejouer
+`npm run check` vert dans les **deux** positions de `WN_AGENDA_ALI`. **T3 complet
+vert en 2 min 6 s** : PostgreSQL éphémère, `prisma migrate deploy` — le SQL manuel
+réellement exécuté —, **drift check `migrate diff --exit-code`**, contrats SQL,
+seed, 108 E2E.
 
 1. **Six codes de sortie, et `0` seul autorise à annoncer une PR prête.**
    `1` échec · `2` n'a pas tourné (absent ou gelé) · `3` délai · `4` indéterminé
@@ -55,13 +58,13 @@ sur #553. Une règle oubliée deux fois devient exécutable.
   `docs_only` — **5 bancs déclarés avant, 6 après**.
 - L'idiome remplacé dans `CLAUDE.md`, `/wn-pr`, `/wn-merge`, et les **deux**
   protocoles de `docs/ROLES_MACHINES.md`.
-- `docs/DECISIONS.md` : **D-010** (la barrière D-003 se garde au point de
-  passage, pas chez ses lecteurs) et **D-009** (un écart de restitution de l'IA
+- `docs/DECISIONS.md` : **D-012** (la barrière D-003 se garde au point de
+  passage, pas chez ses lecteurs) et **D-011** (un écart de restitution de l'IA
   se journalise, ne se censure pas).
 - `docs/ROLES_MACHINES.md` affirmait `enforce_admins` **désactivé** : faux depuis
   le 2026-07-21, démenti par la lecture directe du réglage.
 
-## Validations exécutées
+## Ce que la revue adversariale a corrigé
 
 - Banc 31/31 · **19 mutations, aucune ne survit** · T1 vert (340 fichiers,
   3459 tests) · anti-secrets, cross-invocation, blocs `!`, audit campagnes : 0.

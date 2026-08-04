@@ -342,3 +342,64 @@ describe('déduplication par date', () => {
     expect(a?.nbPairesJeune).toBe(6);
   });
 });
+
+// ─── L'abstention sort du dénominateur, elle n'y entre pas comme un « non » ──
+//
+// LE PIÈGE QUE CES CAS FERMENT : `null !== undefined` est VRAI en JavaScript.
+// Les prédicats de couverture testaient `!== undefined` ; depuis que `null`
+// signifie « je ne sais pas », un seul d'entre eux laissé tel quel compterait
+// la journée comme connue, puis le filtre `=== true` la lirait comme un « non ».
+// Le dénominateur d'une grandeur divergerait de celui de ses voisines, en
+// silence. D'où le passage des CINQ prédicats à `typeof === 'boolean'`.
+describe('abstention — `null` n’est ni un oui, ni un non, ni une journée connue', () => {
+  it('sort la journée du dénominateur de contenu', () => {
+    // Cinq journées sur dix s'abstiennent sur une seule des trois présences.
+    const a = calculerAgregatsAli(serie(10, (i) => (i < 5 ? { legumesDeuxPrises: null } : {})));
+    expect(a?.nbJoursContenuConnu).toBe(5);
+    // Et pas 3,5/sem : les cinq abstenues ne sont ni au numérateur ni au
+    // dénominateur. C'est l'assertion qui tombe si le prédicat reste en
+    // `!== undefined` — la journée serait comptée, `legumes === true` serait
+    // faux, et la fréquence chuterait de moitié.
+    expect(a?.freqLegumesSem).toBe(7);
+  });
+
+  it('sort la journée du dénominateur des protéines, séparément', () => {
+    const a = calculerAgregatsAli(
+      serie(10, (i) => (i < 4 ? { premierePriseProteines: null } : {})),
+    );
+    expect(a?.nbJoursProteinesConnu).toBe(6);
+    expect(a?.freqProteinesMatinSem).toBe(7);
+    // La couverture reste portée métrique par métrique : s'abstenir sur les
+    // protéines ne retire rien au contenu.
+    expect(a?.nbJoursContenuConnu).toBe(10);
+  });
+
+  it('une abstention sur UNE présence sort les TROIS, comme une absence', () => {
+    const a = calculerAgregatsAli(serie(10, (i) => (i < 5 ? { ultraTransformes: null } : {})));
+    expect(a?.nbJoursContenuConnu).toBe(5);
+    expect(a?.freqFruitsSem).toBe(7);
+    expect(a?.freqUltraTransformesSem).toBe(0);
+  });
+
+  it('les horaires d’une journée abstenue restent mesurés — tout l’intérêt', () => {
+    // Le point de l'abstention : ne pas perdre la mesure principale de
+    // l'instrument parce que le patient ignore ce qu'il a mangé.
+    const a = calculerAgregatsAli(
+      serie(10, () => ({
+        premierePriseProteines: null,
+        legumesDeuxPrises: null,
+        fruitsOuOleagineux: null,
+        ultraTransformes: null,
+      })),
+    );
+    expect(a?.nbJours).toBe(10);
+    expect(a?.nbJoursContenuConnu).toBe(0);
+    expect(a?.nbJoursProteinesConnu).toBe(0);
+    // Les grandeurs horaires, elles, sont pleines.
+    expect(a?.nbPrisesMoyen).toBe(3);
+    expect(a?.jeuneMedian).not.toBeNull();
+    // Et aucune fréquence de contenu n'est inventée à 0.
+    expect(a?.freqLegumesSem).toBeNull();
+    expect(a?.freqProteinesMatinSem).toBeNull();
+  });
+});

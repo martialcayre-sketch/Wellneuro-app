@@ -55,7 +55,7 @@
   check rendu obligatoire sera suivi sans toucher au script. Si la protection est
   illisible, `verify` sert encore à **diagnostiquer**, mais plus à conclure : le
   verdict est `4`, jamais `0`.
-- **Le banc a vu chaque décision échouer.** 30 cas, et 19 mutations appliquées
+- **Le banc a vu chaque décision échouer.** 31 cas, et 19 mutations appliquées
   une par une : chacune doit faire tomber le test qui la vise. **Le premier
   banc, à 18 cas, en laissait deux survivre** — la déduplication par nom et la
   distinction `[]`/`null` —, et c'est la revue qui les a trouvées, pas le banc.
@@ -81,12 +81,19 @@
   le 2026-07-21, et démenti par la lecture directe du réglage. Sa conclusion
   (« toujours passer par une PR ») restait juste, sa prémisse promettait une
   échappatoire qui n'existe pas.
-- **Registre** — `D-010` (la barrière D-003 se garde au point de passage, pas
+- **Registre** — `D-012` (la barrière D-003 se garde au point de passage, pas
   chez ses lecteurs : ce qui rend légitimes les quatre modules qui lisent sans
   filtrer `statut`, et ce qui oblige toute nouvelle voie de restitution à passer
-  par la fonction) et `D-009` (un écart de restitution de l'IA se journalise et
+  par la fonction) et `D-011` (un écart de restitution de l'IA se journalise et
   ne se censure pas — né d'un détecteur qui, à allowlist vide, avait accusé une
   synthèse fidèle et persisté l'accusation au dossier). Aucune ne double D-003
   ni D-007, qui citent la barrière sans dire comment elle est gardée.
-- D-010 référence le contrat de la PR #553, mergée entre-temps (`cd7c1b9b`) : la
+- D-012 référence le contrat de la PR #553, mergée entre-temps (`cd7c1b9b`) : la
   décision et sa mise en œuvre sont sur `main`.
+- **Les deux entrées ont dû être renumérotées de D-009/D-010 en D-011/D-012** :
+  une session parallèle (#558, agenda alimentaire) avait pris les mêmes numéros
+  pour des décisions sans rapport, et a mergé la première. Un registre
+  append-only à numérotation séquentielle n'a pas d'arbitre entre branches
+  concurrentes : la collision ne se voit qu'au moment de la fusion, et seulement
+  si l'on relit les titres — deux entrées différentes portant le même numéro
+  fusionnent sans conflit dès qu'elles ne touchent pas les mêmes lignes.

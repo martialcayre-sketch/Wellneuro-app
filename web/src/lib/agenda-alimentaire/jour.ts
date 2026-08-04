@@ -81,6 +81,24 @@ function ensureBooleen(value: unknown, champ: string): boolean {
   return value;
 }
 
+/**
+ * Variante des QUATRE présences obligatoires, qui acceptent l'abstention.
+ *
+ * `null` est une réponse — « je ne sais pas » — et se distingue de la clé
+ * absente. C'est pourquoi l'écriture exige la CLÉ, pas une valeur non nulle :
+ * exiger un booléen strict poussait le patient à répondre au hasard ou à sauter
+ * la journée entière, donc à perdre aussi ses horaires.
+ *
+ * `soirPlusCopieux` n'utilise PAS cette fonction : il ne porte pas d'abstention.
+ */
+function ensureBooleenOuNull(value: unknown, champ: string): boolean | null {
+  if (value === null) return null;
+  if (typeof value !== 'boolean') {
+    throw new TypeError(`Réponse invalide pour « ${champ} ».`);
+  }
+  return value;
+}
+
 function ensurePrise(value: unknown, index: number): PriseJour {
   if (!value || typeof value !== 'object') {
     throw new TypeError(`Prise n° ${index + 1} illisible.`);
@@ -170,28 +188,45 @@ export function ensureJourReponses(
   const out: JourReponses = { prises };
 
   if (options.exigerObligatoires) {
-    out.premierePriseProteines = ensureBooleen(
+    // ÉCRITURE — la CLÉ est exigée, sa VALEUR peut être `null`. `undefined` ne
+    // passe pas `ensureBooleenOuNull` : sauter la question reste refusé, mais
+    // dire « je ne sais pas » devient possible. C'est toute la différence entre
+    // obliger à répondre et obliger à inventer.
+    out.premierePriseProteines = ensureBooleenOuNull(
       v.premierePriseProteines,
       'protéines à la première prise',
     );
-    out.legumesDeuxPrises = ensureBooleen(v.legumesDeuxPrises, 'légumes à au moins deux prises');
-    out.fruitsOuOleagineux = ensureBooleen(v.fruitsOuOleagineux, 'fruits ou fruits à coque');
-    out.ultraTransformes = ensureBooleen(v.ultraTransformes, 'produits ultra-transformés');
+    out.legumesDeuxPrises = ensureBooleenOuNull(
+      v.legumesDeuxPrises,
+      'légumes à au moins deux prises',
+    );
+    out.fruitsOuOleagineux = ensureBooleenOuNull(v.fruitsOuOleagineux, 'fruits ou fruits à coque');
+    out.ultraTransformes = ensureBooleenOuNull(v.ultraTransformes, 'produits ultra-transformés');
   } else {
-    if (v.premierePriseProteines !== undefined && v.premierePriseProteines !== null) {
-      out.premierePriseProteines = ensureBooleen(v.premierePriseProteines, 'protéines');
+    // LECTURE — `null` est SIGNIFIANT et doit survivre au passage. Une version
+    // antérieure de ce bloc l'écartait comme une absence : l'abstention aurait
+    // été relue en non-réponse, et la journée serait sortie du dénominateur
+    // pour une raison qui n'était pas la sienne. Seule la clé absente reste une
+    // non-réponse.
+    if (v.premierePriseProteines !== undefined) {
+      out.premierePriseProteines = ensureBooleenOuNull(v.premierePriseProteines, 'protéines');
     }
-    if (v.legumesDeuxPrises !== undefined && v.legumesDeuxPrises !== null) {
-      out.legumesDeuxPrises = ensureBooleen(v.legumesDeuxPrises, 'légumes');
+    if (v.legumesDeuxPrises !== undefined) {
+      out.legumesDeuxPrises = ensureBooleenOuNull(v.legumesDeuxPrises, 'légumes');
     }
-    if (v.fruitsOuOleagineux !== undefined && v.fruitsOuOleagineux !== null) {
-      out.fruitsOuOleagineux = ensureBooleen(v.fruitsOuOleagineux, 'fruits ou fruits à coque');
+    if (v.fruitsOuOleagineux !== undefined) {
+      out.fruitsOuOleagineux = ensureBooleenOuNull(v.fruitsOuOleagineux, 'fruits ou fruits à coque');
     }
-    if (v.ultraTransformes !== undefined && v.ultraTransformes !== null) {
-      out.ultraTransformes = ensureBooleen(v.ultraTransformes, 'produits ultra-transformés');
+    if (v.ultraTransformes !== undefined) {
+      out.ultraTransformes = ensureBooleenOuNull(v.ultraTransformes, 'produits ultra-transformés');
     }
   }
 
+  // `soirPlusCopieux` NE porte pas d'abstention : le `!== null` reste, et il est
+  // le seul de ce fichier. Sans lui, un `null` reçu entrerait dans `out`, et le
+  // prédicat de couverture d'`agregats.ts` — qui teste la CONNAISSANCE — verrait
+  // une journée renseignée là où elle ne l'est pas. `null !== undefined` est vrai
+  // en JavaScript : c'est exactement le piège que cette ligne ferme.
   if (v.soirPlusCopieux !== undefined && v.soirPlusCopieux !== null) {
     out.soirPlusCopieux = ensureBooleen(v.soirPlusCopieux, 'repas du soir le plus copieux');
   }
