@@ -38,9 +38,10 @@ supposée, et la réponse consignée ici avec sa date.
 Tant que ce point n'est pas tranché, les six autres exigences sont sans effet :
 elles peuvent toutes être satisfaites sans que le stockage devienne licite.
 
-Localisation de l'affirmation en production : `web/scripts/vercel-build.sh`
-applique `prisma migrate deploy` sur la base Supabase de production au build de
-`main` — c'est bien cette base qui reçoit les données.
+Localisation de l'affirmation en production : le workflow GitHub Actions
+`release-db` applique `prisma migrate deploy` sur la base Supabase de production,
+hors du build Vercel (`web/scripts/vercel-build.sh` n'écrit plus) — c'est bien
+cette base qui reçoit les données.
 
 ## Les sept exigences, une par une
 
@@ -131,8 +132,8 @@ Production seule ; runbook et contrôles dans
 ### Correction de fait : il n'existe pas de préproduction
 
 Le registre porte pour G4 la mention « livrable en préproduction ». **Aucune
-préproduction n'existe** : il n'y a qu'un projet Supabase, et
-`web/scripts/vercel-build.sh` ne migre qu'en production. Les déploiements
+préproduction n'existe** : il n'y a qu'un projet Supabase, et le seul chemin de
+migration (le workflow `release-db`) ne vise que la production. Les déploiements
 Preview lisent donc la base de production.
 
 Conséquence pratique, constatée le 2026-07-21 : `WN_G4_LIEN_MAGIQUE` avait été
@@ -260,9 +261,12 @@ ont toutes un repli déjà écrit. Aucun SDK `@supabase/*` au runtime : Supabase
 sert que de PostgreSQL managé, et Prisma parle à n'importe quel PostgreSQL.
 
 Restent : le script de build à renommer et sa condition `VERCEL_ENV` à remplacer,
-`prisma migrate deploy` à déplacer du build vers un hook de post-déploiement, une
-dizaine de variables à reporter, l'URI de redirection OAuth à ajouter, et
+une dizaine de variables à reporter, l'URI de redirection OAuth à ajouter, et
 `max: 1` dans `web/src/lib/prisma.ts` à relever (dimensionné pour le serverless).
+Un poste de cette liste est **déjà fait** : `prisma migrate deploy` a été sorti du
+build vers un chemin de post-déploiement — le workflow GitHub Actions `release-db`
+(gaté par l'environnement protégé `release-db`) —, ce qui aligne d'avance le
+déploiement sur le modèle attendu d'un autre hébergeur.
 **Le poste lourd n'est pas le code : c'est le transfert de la base et la fenêtre
 de bascule**, sur des dossiers de personnes réelles.
 

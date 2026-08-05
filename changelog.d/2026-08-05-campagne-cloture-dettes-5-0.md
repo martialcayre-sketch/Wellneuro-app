@@ -9,7 +9,8 @@ de ses points ont bougé. Le plus lourd inverse une priorité : le workflow
 retire les écritures de `web/scripts/vercel-build.sh`. Deux chemins d'écriture vers
 la base de production coexistent donc aujourd'hui, dont un non gaté — attendre pour
 merger #435 n'est pas prudent, c'est maintenir le défaut. Le blocage est ops
-(environnement GitHub `production`, secrets, reviewers distincts), pas du code.
+(environnement GitHub `release-db` — `production` est déjà pris par l'intégration
+Vercel —, secrets, reviewers distincts), pas du code.
 
 Deux autres corrections : le gate HDS G-TRUST-04 n'est pas en attente mais
 **arbitré** le 2026-07-22 (phase de test bornée au 2026-10-21), ce qui en fait une

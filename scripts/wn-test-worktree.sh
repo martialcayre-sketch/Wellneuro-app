@@ -9,8 +9,8 @@
 #   → Playwright (Chromium + WebKit) contre
 #   le build de production (`next start`), le même artefact que Vercel déploie.
 #
-# Gates de sûreté avant déploiement (chaîne web/scripts/vercel-build.sh —
-# `migrate deploy` s'exécute en production au build Vercel) :
+# Gates de sûreté avant déploiement (chaîne du workflow release-db —
+# `migrate deploy` s'exécute en production hors du build Vercel) :
 #   - dérive schéma↔migrations : `prisma migrate diff` compare la base
 #     éphémère (construite uniquement par `migrate deploy`) à schema.prisma
 #     et échoue si le schéma a évolué sans migration committée — le client
@@ -436,7 +436,7 @@ npx prisma migrate deploy
 
 step "Dérive schéma ↔ migrations (migrate diff)"
 # En production, seul le SQL des migrations committées est appliqué
-# (web/scripts/vercel-build.sh) : si schema.prisma a évolué sans migration,
+# (workflow release-db) : si schema.prisma a évolué sans migration,
 # le client Prisma déployé attendrait un schéma que la base n'aura jamais.
 # La base éphémère vient d'être construite uniquement par `migrate deploy` :
 # l'introspecter (--from-config-datasource lit DATABASE_URL) équivaut à

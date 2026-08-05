@@ -71,9 +71,11 @@ for (const motif of demande) {
         permissionDecision: "ask",
         permissionDecisionReason:
           `Écriture de schéma ou de migration Prisma (${motif}). ` +
-          `Le SQL committé sera appliqué à la base de production Supabase au ` +
-          `prochain build Vercel de main (web/scripts/vercel-build.sh, ` +
-          `prisma migrate deploy). Une migration doit rester additive : ` +
+          `Le SQL committé deviendra applicable à la base de production ` +
+          `Supabase HORS du build : rien ne part automatiquement, il faudra ` +
+          `déclencher à la main le workflow GitHub Actions release-db et le ` +
+          `faire approuver dans l'environnement protégé release-db. ` +
+          `Une migration doit rester additive : ` +
           `colonnes nullables, ni DROP ni renommage.`
       }
     }));

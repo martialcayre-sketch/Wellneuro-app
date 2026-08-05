@@ -47,8 +47,9 @@ la priorité :
   de `web/scripts/vercel-build.sh`** (−149 lignes) et aligne la doctrine. Donc
   aujourd'hui **deux chemins d'écriture coexistent**, dont celui du build, non
   gaté. « Ne pas merger #435 » n'est pas prudent : c'est laisser ouvert le chemin
-  faible. Le blocage est **ops** (environnement GitHub `production`, secrets,
-  reviewers distincts), pas du code.
+  faible. Le blocage est **ops** (environnement GitHub `release-db` — le nom
+  `production` est déjà pris par l'intégration Vercel —, secrets, reviewers
+  distincts), pas du code.
 - **Point 8 — le gate HDS n'est pas en attente, il est arbitré.** Décision du
   2026-07-22 : rester sur l'hébergement actuel, borner la phase de test au
   2026-10-21, ne pas instruire de migration HDS. Ce n'est pas une dette de 5.0
@@ -111,9 +112,11 @@ vrai. Les lots 02 à 05 sont indépendants entre eux et parallélisables.
 
 ## Dépendances
 
-- **Externe et bloquante** : création de l'environnement GitHub `production`,
-  ajout des secrets, désignation de reviewers distincts du déclencheur. Sans elle,
-  LOT-00 ne se merge pas.
+- **Externe et bloquante** : création de l'environnement GitHub `release-db`
+  (nom dédié : `Production` appartient déjà à l'intégration Vercel, et les noms
+  d'environnement GitHub sont insensibles à la casse), ajout des secrets,
+  désignation de reviewers distincts du déclencheur. Sans elle, LOT-00 ne se
+  merge pas.
 - G-TRUST-04 : phase de test bornée au 2026-10-21. LOT-06 avance les exigences
   indépendantes de l'hébergeur ; il ne lève pas le gate.
 - Campagne `2026-08-04-reprise-chantiers-en-suspens` (ouverte, 0/3) : vérifier au

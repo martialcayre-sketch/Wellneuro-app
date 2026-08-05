@@ -783,8 +783,9 @@
   activation avec données réelles = décision distincte.
   **Corrigé le 2026-07-21** : ce paragraphe portait « livrable en
   préproduction ». **Aucune préproduction n'existe** — un seul projet Supabase,
-  et `web/scripts/vercel-build.sh` ne migre qu'en production ; les déploiements
-  Preview lisent donc la base de production. La mention a induit en erreur le
+  et les migrations ne s'appliquent qu'en production (désormais via le workflow
+  `release-db`, plus par le build) ; les déploiements Preview lisent donc la
+  base de production. La mention a induit en erreur le
   2026-07-21, un drapeau ayant été posé sur Preview *et* Production.
   **Statut réel au 2026-07-21** : G4 est **activé en production**
   (`WN_G4_LIEN_MAGIQUE`), le canal public de redemande également

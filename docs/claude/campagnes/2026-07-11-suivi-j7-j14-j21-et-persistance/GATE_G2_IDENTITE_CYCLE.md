@@ -131,10 +131,12 @@ l'absence de dérive schéma ↔ migrations. Aucune base réelle n'est touchée.
 
 ## 5. Ce que le merge déclenche
 
-`web/scripts/vercel-build.sh` exécute `prisma migrate deploy` sur la base
-**Supabase de production** au build Vercel de `main` (scope production
-uniquement, jamais en preview). Merger la PR applique donc la migration en
-production — c'est l'intention du gate, mais cela doit être conscient.
+Le workflow GitHub Actions `release-db` exécute `prisma migrate deploy` sur la
+base **Supabase de production**, hors du build Vercel (déclenché à la main, gaté
+par l'environnement protégé `release-db`). Merger la PR ne migre donc rien à soi
+seul : c'est le déclenchement de `release-db`, approuvé par un reviewer, qui
+applique la migration en production — c'est l'intention du gate, mais cela doit
+être conscient.
 
 ## Les trois autres gates de la Vague 2
 

@@ -27,7 +27,7 @@ Priorité absolue : stabilité de l'application en production, pas de nouvelle m
 - **Pas de migration Prisma sans demande explicite** : ne jamais lancer `prisma migrate dev`, `prisma db push`, ou modifier `schema.prisma` sans confirmation explicite dans la conversation.
 - **Pas de SQL destructif** sans confirmation explicite (DROP, DELETE sans WHERE, TRUNCATE).
 - **Pas de modification de la logique clinique ou des seuils** sans demande explicite et documentation dans `CHANGELOG.md`.
-- **La base de production ne se modifie que par une migration relue** : migration committée → PR relue → merge sur `main` → `web/scripts/vercel-build.sh`. Aucun autre chemin.
+- **La base de production ne se modifie que par une migration relue** : migration committée → PR relue → merge sur `main` → application **hors du build** via le workflow GitHub Actions `release-db` (déclenché à la main, gaté par l'environnement protégé `release-db`). **Le build Vercel n'écrit plus en base.** Aucun autre chemin. Voir `docs/DEPLOIEMENT_RELEASE_DB.md`.
 
 ## Lire la base de production
 
@@ -348,8 +348,8 @@ une PR qui porte une migration ou touche l'authentification :
 2. **Après le merge, vérifier la base de production** — la migration s'est-elle
    appliquée, et le backfill a-t-il fait ce qu'il annonçait ? Une lecture
    `execute_sql` suffit (voir « Lire la base de production » plus haut). Sans
-   cela, un `migrate deploy` échoué pendant le build Vercel ne se voit nulle
-   part.
+   cela, un `migrate deploy` ou un import qui a échoué à mi-course lors de la
+   release (`release-db`) ne se voit nulle part ailleurs.
 
 Le coût de ces deux gestes se compte en minutes ; celui d'un raté sur
 l'authentification ou une migration se compte en accès patients rompus.

@@ -2358,3 +2358,27 @@ sha de la table couvrent désormais deux moteurs. La divergence gelé/recalculé
 de sens au lieu de disparaître. `detail` n'est pas amputé comme `protocol`. Le
 dénominateur d'axe exclut les questions conditionnelles. Classe toujours ouverte sur
 `sum_decimal`, `count_threshold`, `ecab`, `bms_average`.
+
+## 2026-08-05 — LOT-00 : un seul chemin d'écriture en base
+
+**Décisions.** Fusionner #435 plutôt que rebaser (`merge-tree` propre, un seul
+fichier bougé depuis la base). Environnement GitHub **`release-db`**, pas
+`production` — déjà pris par l'intégration Vercel, le protéger aurait gaté ses
+déploiements. Garde de branche en trois clés : `if:` sur le job, job frère qui
+échoue bruyamment hors `main`, restriction côté plateforme.
+
+**Options écartées.** Construire les gardes CI (PR mêlant migration et code,
+détection de release oubliée) — hors périmètre, écrits en réserve. Retoucher
+`BRIEF_COMPILED.md` — fichier généré, une retouche y serait effacée.
+
+**Ce que le lot a appris.** Trois balayages du même renommage, trois angles morts
+de forme : les accents, le repli de ligne Markdown, le cwd d'une commande de fond.
+Et trois réécritures du même commentaire, trois sur-généralisations — le code
+était juste à chaque fois.
+
+**Prochaine action prioritaire.** Réglages GitHub (environnement, deux secrets,
+branches restreintes à `main`), puis merge.
+
+**Questions ouvertes.** D-003 n'a jamais rencontré les données de production ;
+rien ne détecte une release oubliée ; « base en avance » n'est vrai que si la
+migration est additive, et rien ne le garde.

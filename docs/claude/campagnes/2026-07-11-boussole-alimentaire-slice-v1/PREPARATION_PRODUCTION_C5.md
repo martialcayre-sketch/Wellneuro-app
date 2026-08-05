@@ -17,11 +17,13 @@ confirmation de migration, ni confirmation d'import, ni activation C5.
   verrou n'est pour l'instant qu'une exigence documentaire.
 - La CI fournit PostgreSQL 15, rejoue toutes les migrations Prisma, contrôle la
   dérive schéma/migrations, puis exécute type-check, tests, lint, build et E2E.
-- Le merge sur `main` déclenche Vercel. En production,
-  `web/scripts/vercel-build.sh` exécute `prisma migrate deploy` avant le build
-  lorsque `MIGRATE_DATABASE_URL` est définie.
-- Le nom `MIGRATE_DATABASE_URL` est bien présent dans l'environnement Vercel
-  Production ; sa valeur chiffrée n'a pas été lue ni consignée.
+- Le merge sur `main` déclenche Vercel, qui ne fait plus que construire :
+  `web/scripts/vercel-build.sh` n'écrit plus en base. `prisma migrate deploy`
+  s'exécute hors du build, via le workflow GitHub Actions `release-db` déclenché
+  à la main et gaté par l'environnement protégé `release-db`.
+- `MIGRATE_DATABASE_URL` est désormais un secret de cet environnement GitHub
+  (auparavant une variable Vercel Production) ; sa valeur n'a pas été lue ni
+  consignée.
 - `WN_C5_ENABLED` est absent de l'environnement Vercel Production, ce qui doit
   rester équivalent à `false` dans l'implémentation.
 - La migration `20260718100010_c5_ciqual_reference_v1` et les 55 744 lignes

@@ -41,10 +41,11 @@ autorisation en un clic, dans la session, et c'est elle qui matérialise la
 > neutralisait le hook pour la session entière et non pour la migration qui
 > l'avait motivée. Ne pas la chercher, ne pas la réintroduire.
 
-Ce n'est pas une formalité. **Merger une PR de migration applique la migration
-sur la base Supabase de production** : `web/scripts/vercel-build.sh` exécute
-`prisma migrate deploy` au build Vercel de `main`. Le SQL doit donc être relu
-avant merge, pas après.
+Ce n'est pas une formalité. **Merger une PR de migration rend cette migration
+applicable sur la base Supabase de production** : elle part ensuite via le
+workflow GitHub Actions `release-db` (déclenché à la main, gaté par
+l'environnement protégé `release-db`) — le build Vercel n'écrit plus en base. Le
+SQL doit donc être relu avant merge, pas après.
 
 ## Vue d'ensemble
 

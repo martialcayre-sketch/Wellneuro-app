@@ -156,22 +156,19 @@ Renvois différenciés — ne pas confondre les deux documents :
 Vercel, région `fra1`, build piloté par `web/scripts/vercel-build.sh` +
 `vercel.json`. En preview/local, aucune migration n'est appliquée.
 
-**État actuel (transitoire) — deux mécanismes coexistent** :
+**État actuel — un seul mécanisme d'écriture** :
 
-- `web/scripts/vercel-build.sh` porte encore, en production
-  (`VERCEL_ENV=production`), un préflight SQL en lecture seule puis
-  `prisma migrate deploy` inline si `MIGRATE_DATABASE_URL` est renseignée
-  (session mode, port 5432, distinct du pooler runtime), suivi des imports
-  optionnels armés par variables Vercel dédiées (CIQUAL C5, NABM CB-02a, avec
-  confirmation SHA-256 + contrôle Supabase advisors + contrat SQL post-import).
-  Le script se termine toujours par `prisma generate && next build`.
-- Un workflow GitHub Actions séparé, `release-db.yml`, existe en parallèle
-  (déclenché à la main, gaté par l'environnement protégé `production` —
-  second gate humain) et porte la même logique de manière isolée du build.
-  Il est destiné à devenir le chemin unique — un « lot de bascule » doit
-  encore alléger `vercel-build.sh` pour retirer sa logique inline — mais ce
-  lot n'a pas eu lieu au 2026-08-03 : les deux mécanismes sont actifs
-  aujourd'hui, pas seulement l'un ou l'autre.
+- `web/scripts/vercel-build.sh` n'écrit plus en base : plus de préflight SQL, plus
+  de `prisma migrate deploy` inline, plus d'imports armés par variables Vercel
+  (CIQUAL C5, NABM CB-02a). Le script se réduit à
+  `prisma generate && next build`.
+- Le workflow GitHub Actions `release-db.yml` est le **chemin unique**
+  d'application (déclenché à la main, gaté par l'environnement protégé
+  `release-db` — second gate humain) : préflight en lecture seule,
+  `prisma migrate deploy`, et l'import NABM CB-02a en mode `import-cb` (advisors
+  Supabase + confirmation SHA-256 + contrat rejoué dans la transaction). Le « lot
+  de bascule » qui a allégé `vercel-build.sh` a eu lieu ; les deux mécanismes ne
+  coexistent plus.
 
 Renvois : détail du runbook de release DB → `docs/DEPLOIEMENT_RELEASE_DB.md` ;
 exploitation générale → `docs/RUNBOOK.md` ; coordination multi-machines/sessions
