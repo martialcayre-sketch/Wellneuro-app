@@ -124,3 +124,34 @@ test('le déclencheur automatique est borné à main et aux seules migrations', 
   const chemins = declencheurs.match(/^ {6}- '.*'$/gm) ?? [];
   assert.equal(chemins.length, 1, `un seul chemin attendu dans \`paths\`, trouvé ${chemins.length}`);
 });
+
+// Le commentaire de la section `on:` explique au relecteur ce que le filtre laisse
+// passer. S'il nomme un autre chemin que celui réellement appliqué, il enseigne le
+// faux à la seule personne qui relira ce fichier avant d'approuver une écriture en
+// production. C'est arrivé dès la première rédaction : le commentaire disait
+// `prisma/migrations/**` quand le filtre visait `web/prisma/migrations/**`.
+test('le commentaire du déclencheur nomme le chemin réellement filtré', () => {
+  const bloc = /^on:\n([\s\S]*?)^concurrency:/m.exec(SOURCE);
+  const declencheurs = bloc[1];
+  const chemin = /^ {6}- '(.+)'$/m.exec(declencheurs)?.[1];
+  assert.ok(chemin, 'aucun chemin lisible dans `paths`');
+
+  // Les spans sont relevés LIGNE PAR LIGNE : sur le texte entier, une regex
+  // apparie la backtick fermante d'une citation avec l'ouvrante de la suivante et
+  // capture la prose qui les sépare. Première rédaction de ce banc, et il rougissait
+  // sur un fichier sain.
+  const cites = declencheurs
+    .split('\n')
+    .filter((l) => /^\s*#/.test(l))
+    .flatMap((l) => l.match(/`[^`]+`/g) ?? [])
+    .filter((c) => c.includes('migrations/**'));
+
+  assert.ok(cites.length > 0, 'le commentaire doit citer le chemin filtré, pour que le relecteur sache');
+  for (const cite of cites) {
+    assert.equal(
+      cite,
+      `\`${chemin}\``,
+      `le commentaire cite ${cite} alors que le filtre applique \`${chemin}\``,
+    );
+  }
+});
