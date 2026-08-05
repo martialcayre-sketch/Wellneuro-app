@@ -119,7 +119,7 @@ amende le point 2 de D-022, hors lot).
 | LOT-02 | Persistance et abstention au contrat | livré | LOT-01 |
 | LOT-03 | Accès portail serveur et contrat SQL | livré | LOT-02 |
 | LOT-04 | Portail patient : aiguillage, hub, saisie, borne des 21 jours | livré | LOT-03 |
-| LOT-05 | Dossier de contrôle et lecteur praticien | en_cours | LOT-04 |
+| LOT-05 | Dossier de contrôle et lecteur praticien | livré | LOT-04 |
 | LOT-06 | Barème et indice — **pas avant un recueil suffisant pour calibrer (clôture des 21 jours)** | à écrire | recueil pilote (`RUNBOOK-allumage-drapeau.md`) |
 
 **Le recueil qui bloquait le barème a démarré, sans être encore suffisant pour

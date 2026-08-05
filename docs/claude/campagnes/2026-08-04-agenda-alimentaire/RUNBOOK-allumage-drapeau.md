@@ -192,10 +192,21 @@ verront tout de suite :
 - **passé `dateDebut + 20`, rien ne se ferme d'observable** : l'assignation reste
   ouverte côté praticien, le serveur refuse simplement d'écrire.
 
-## Lire le recueil — le seul chemin
+## Lire le recueil
 
-Aucun écran praticien ne lit `agenda_alimentaire_jours`. Les 21 journées se
-relisent par `execute_sql`, en lecture seule :
+Le lecteur praticien de `LOT-05` temps B est livré : le tiroir « Agenda
+alimentaire » de la fiche patient (`FichePatientPanel.tsx`, alimenté par
+`GET /api/praticien/agenda-alimentaire`) affiche, par assignation, la frise
+des 21 jours, le détail jour par jour (horaires de prises, cinq champs
+booléens) et les agrégats sous condition de couverture — sans aucun score,
+indice, gramme, kcal ni quantité (`D-026`, qui amende ce point de `D-025` :
+cette lecture n'est PAS gardée par `WN_AGENDA_ALI`, seulement par la session
+praticien et l'appartenance du dossier). C'est désormais le chemin normal
+pour suivre le pilote.
+
+`execute_sql` reste la porte de secours et celle du **détail brut** — le
+tiroir ne rend pas le JSON complet de `reponses` ligne à ligne, cette requête
+si :
 
 ```sql
 SELECT date_jour, canal, soumis_le, reponses
@@ -204,9 +215,7 @@ WHERE id_assignation = '<id>'
 ORDER BY date_jour, soumis_le;
 ```
 
-C'est le matériau de calibration de `LOT-06`, et il n'a pas d'autre porte pour
-l'instant — le lecteur praticien de `LOT-05` en ouvrira une seconde quand le
-temps B de ce lot sera livré.
+C'est aussi le matériau de calibration de `LOT-06`.
 
 ## Retour arrière
 

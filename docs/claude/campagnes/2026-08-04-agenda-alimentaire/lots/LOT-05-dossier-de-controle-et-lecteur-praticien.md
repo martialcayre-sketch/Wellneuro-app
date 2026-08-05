@@ -1,7 +1,7 @@
 ---
 id: "LOT-05"
 titre: "Dossier de contrôle et lecteur praticien de l'agenda alimentaire"
-statut: "en_cours"
+statut: "fait"
 dépend_de: "LOT-04"
 ---
 
@@ -130,3 +130,41 @@ Il redevient mordant à la première correction notée, ou à la clôture des
 - La décision amendant `D-025` sur ce point est posée dans
   `docs/DECISIONS.md` avant la PR.
 - T2 vert au minimum, `/wn-review` passé.
+
+## Résultats
+
+Les deux temps sont livrés le 2026-08-05.
+
+**Temps A.** Les trois assertions rejouées, chacune avec sa portée bornée — dont
+la découverte que `perimetre_jsonb` ne scanne que le **premier niveau** du JSONB
+et laisse les objets de `prises` hors du filtre. `CAMPAGNE.md`, le runbook et le
+handoff du 11:30 remis d'accord avec la base.
+
+**Temps B.** Route `GET /api/praticien/agenda-alimentaire` et panneau au dossier,
+`D-026` posée. Deux passes adversariales : dix constats à la première, cinq à la
+seconde, tous traités.
+
+**Ce que le lot a appris.** Trois des dix constats initiaux étaient des *gardes
+vertes pour une mauvaise raison* — un test de drapeau sur un dossier vide, un
+test d'ancrage dont la fixture ne pouvait pas bouger, un scan de frontière sur
+une charge utile sans agrégats. Et le correctif du test de correspondance a
+d'abord reproduit le défaut : deux champs `false` adjacents rendaient toute
+permutation indétectable.
+
+**Le constat qui ne se voyait dans aucune ligne.** `statut` était décalqué du
+sommeil : la branche `cloture` est **morte** pour `Q_ALI_09`, quand l'état
+réellement atteignable — `'Annulée'` — n'était ni lu ni affiché. Un praticien
+ayant annulé lisait « En cours · jour 12/21 » pendant que le portail répondait
+déjà 410 au patient.
+
+**Validation.** T1 vert ; T3 complet vert — 3 882 tests Vitest sur deux
+positions de drapeau, **112 E2E passés, aucun échec**. Deux passes T2
+antérieures avaient échoué sur deux tests **différents** du portail patient, sans
+recouvrement et sans chemin causal depuis ce lot : instabilité locale, confirmée
+par le T3 vert.
+
+**Ce qui reste ouvert.** Aucune bannière ne dit au praticien que le recueil est
+fermé quand le drapeau est éteint. Le déverrouillage praticien d'un `Q_ALI_09`
+reste possible par appel direct et retire silencieusement l'annulabilité. Le
+tiroir tait `canal`, `soumisLe` et `supersedesJourId` : le taux de correction,
+dont `LOT-06` aura besoin, se lit encore par `execute_sql`.

@@ -1,0 +1,240 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import type { EpisodeAgendaAli } from '@/app/api/praticien/agenda-alimentaire/route';
+import type { AgregatsAgendaAli } from '@/lib/agenda-alimentaire/agregats';
+import type { JourReponses, PriseJour } from '@/lib/agenda-alimentaire/types';
+import { MIN_JOURS_AGREGATS, NB_JOURS_AGENDA_ALI } from '@/lib/agenda-alimentaire/types';
+
+// Même conversion que le panneau du sommeil (`minutesEnHeures`,
+// `AgendaSommeilPraticienPanel.tsx`) : « 660 min » n'est pas une grandeur
+// interdite par la frontière de campagne (ce n'est ni un gramme, ni un kcal,
+// ni un score, ni un indice), mais elle est illisible en l'état.
+function minutesEnHeures(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = Math.round(min % 60);
+  return m === 0 ? `${h} h` : `${h} h ${String(m).padStart(2, '0')}`;
+}
+
+// Panneau praticien de l'agenda alimentaire : dossier de contrôle jour par
+// jour (horaires de prises, cinq champs booléens), frise des 21 jours,
+// agrégats sous condition de couverture, et compte de lignes en quarantaine.
+//
+// AUCUN score, indice, gramme, kcal ni quantité à l'écran — frontière de
+// campagne assertée en base par `web/prisma/checks/agenda_alimentaire_v1.sql`
+// et ici par la garde de test qui scanne le DOM rendu.
+
+/**
+ * Rendu d'un champ `boolean | null | undefined` — TROIS voire QUATRE états,
+ * jamais réduits à `if (x)` / `!x` / `Boolean(x)` : `null` est une abstention
+ * EXPLICITE du patient (« je ne sais pas »), distincte de `false` (observé
+ * absent) et de `undefined` (clé absente, ligne écrite sous un contrat qui ne
+ * la portait pas encore).
+ */
+function renduBooleen(valeur: boolean | null | undefined): string {
+  if (valeur === true) return 'Oui';
+  if (valeur === false) return 'Non';
+  if (valeur === null) return 'Sans réponse (abstention)';
+  return 'Non renseigné';
+}
+
+function ChampBooleen({ libelle, valeur }: { libelle: string; valeur: boolean | null | undefined }) {
+  return (
+    <div className="flex items-center justify-between gap-2 border-b border-border/60 py-1 text-sm last:border-b-0">
+      <span className="text-muted-foreground">{libelle}</span>
+      <span className="font-medium text-foreground">{renduBooleen(valeur)}</span>
+    </div>
+  );
+}
+
+function naturePriseLabel(nature: PriseJour['nature']): string {
+  return nature === 'repas' ? 'repas' : 'hors repas';
+}
+
+function JourneeCard({ dateJour, reponses }: { dateJour: string; reponses: JourReponses }) {
+  const prises = reponses.prises ?? [];
+  return (
+    <section className="flex flex-col gap-2 rounded-lg border border-border bg-background p-3">
+      <p className="text-sm font-semibold text-foreground">{dateJour}</p>
+
+      {reponses.aucunePrise ? (
+        <p className="text-sm text-muted-foreground">Aucune prise notée ce jour.</p>
+      ) : prises.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Aucune prise renseignée.</p>
+      ) : (
+        <ul className="flex flex-col gap-1">
+          {prises.map((p, i) => (
+            <li key={`${p.heure}-${i}`} className="flex items-center justify-between text-sm tabular-nums">
+              <span className="text-foreground">{p.heure}</span>
+              <span className="text-muted-foreground">{naturePriseLabel(p.nature)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-1 flex flex-col">
+        <ChampBooleen libelle="Première prise riche en protéines" valeur={reponses.premierePriseProteines} />
+        <ChampBooleen libelle="Repas du soir plus copieux" valeur={reponses.soirPlusCopieux} />
+        <ChampBooleen libelle="Légumes à deux prises" valeur={reponses.legumesDeuxPrises} />
+        <ChampBooleen libelle="Fruits ou oléagineux" valeur={reponses.fruitsOuOleagineux} />
+        <ChampBooleen libelle="Aliments ultra-transformés" valeur={reponses.ultraTransformes} />
+      </div>
+    </section>
+  );
+}
+
+// Sous MIN_JOURS_AGREGATS journées, `calculerAgregatsAli` rend `null` : la
+// couverture insuffisante doit être DITE, jamais laisser une zone vide sans
+// explication (le même signal trompeur que D-025 reproche à la bibliothèque).
+function CouvertureInsuffisante({ nbJours }: { nbJours: number }) {
+  return (
+    <p className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-muted-foreground">
+      Couverture insuffisante pour des moyennes — {nbJours}/{MIN_JOURS_AGREGATS} journées.
+    </p>
+  );
+}
+
+function ResumeAgregats({ a }: { a: AgregatsAgendaAli }) {
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="rounded-lg border border-border bg-surface px-3 py-2">
+        <p className="text-xs text-muted-foreground">Jeûne nocturne médian</p>
+        <p className="text-base font-semibold text-foreground tabular-nums">
+          {a.jeuneMedian === null ? 'Non renseigné' : minutesEnHeures(a.jeuneMedian)}
+        </p>
+      </div>
+      <div className="rounded-lg border border-border bg-surface px-3 py-2">
+        <p className="text-xs text-muted-foreground">Fenêtre alimentaire moyenne</p>
+        <p className="text-base font-semibold text-foreground tabular-nums">
+          {a.fenetreAliMoyenne === null ? 'Non renseigné' : minutesEnHeures(a.fenetreAliMoyenne)}
+        </p>
+      </div>
+      <div className="rounded-lg border border-border bg-surface px-3 py-2">
+        <p className="text-xs text-muted-foreground">Journées avec prises</p>
+        <p className="text-base font-semibold text-foreground tabular-nums">
+          {a.nbJoursAvecPrises} / {a.nbJours}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function FriseJours({ episode }: { episode: EpisodeAgendaAli }) {
+  return (
+    <div
+      className="flex flex-wrap gap-1"
+      role="group"
+      aria-label={`Frise des ${NB_JOURS_AGENDA_ALI} jours`}
+    >
+      {episode.fenetre.emplacements.map((e) => {
+        const classe = e.estAujourdHui
+          ? 'border-primary bg-primary/10 text-primary'
+          : e.illisible
+            ? 'border-status-danger/60 bg-status-danger/10 text-status-danger'
+            : e.renseignee
+              ? 'border-border bg-surface text-foreground'
+              : 'border-border/50 bg-background text-muted-foreground';
+        return (
+          <span
+            key={e.index}
+            title={e.dateJour}
+            className={`inline-flex h-6 w-6 items-center justify-center rounded text-[10px] font-medium tabular-nums ${classe}`}
+          >
+            {e.index}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: string }) {
+  const [etat, setEtat] = useState<'chargement' | 'pret' | 'erreur'>('chargement');
+  const [episodes, setEpisodes] = useState<EpisodeAgendaAli[]>([]);
+  const [message, setMessage] = useState('');
+
+  const charger = useCallback(async () => {
+    setEtat('chargement');
+    // Un message d'échec précédent ne doit pas survivre à un rechargement
+    // réussi : sans cette remise à zéro, un premier chargement en échec suivi
+    // d'un second réussi laissait une ligne d'erreur au-dessus d'un agenda
+    // correctement chargé.
+    setMessage('');
+    try {
+      const res = await fetch(`/api/praticien/agenda-alimentaire?idPatient=${encodeURIComponent(idPatient)}`);
+      const json = (await res.json()) as { ok: boolean; episodes?: EpisodeAgendaAli[]; error?: string };
+      if (!json.ok || !json.episodes) {
+        setMessage(json.error ?? 'Chargement impossible.');
+        setEtat('erreur');
+        return;
+      }
+      setEpisodes(json.episodes);
+      setEtat('pret');
+    } catch {
+      setMessage('Connexion interrompue.');
+      setEtat('erreur');
+    }
+  }, [idPatient]);
+
+  useEffect(() => {
+    void charger();
+  }, [charger]);
+
+  if (etat === 'chargement') {
+    return <p className="text-sm text-muted-foreground">Chargement de l’agenda alimentaire…</p>;
+  }
+  if (etat === 'erreur') {
+    return <p className="text-sm text-status-danger">{message}</p>;
+  }
+  if (episodes.length === 0) {
+    // Descriptif, sans impératif (D-026) : drapeau `WN_AGENDA_ALI` éteint,
+    // `IDS_SUSPENDUS` retire `Q_ALI_09` à la fois de la bibliothèque et de la
+    // route d'assignation — le geste « Assignez l'instrument » ne serait alors
+    // possible nulle part. Cette réponse ne lit ni ne sert la position du
+    // drapeau : c'est le sens même de D-026.
+    return (
+      <p className="text-sm text-muted-foreground">Aucun agenda alimentaire n’est assigné à ce patient.</p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {message && <p className="text-sm text-status-danger">{message}</p>}
+      {episodes.map((ep) => (
+        <section key={ep.idAssignation} className="flex flex-col gap-3 rounded-lg border border-border bg-background p-4">
+          <div>
+            <p className="text-sm font-semibold text-foreground">{ep.titre}</p>
+            <p className="text-xs text-muted-foreground">
+              {ep.statut === 'annulee' ? 'Annulée' : ep.statut === 'cloture' ? 'Clôturé' : 'En cours'} ·{' '}
+              {ep.fenetre.nbRenseignees} journée{ep.fenetre.nbRenseignees > 1 ? 's' : ''} notée
+              {ep.fenetre.nbRenseignees > 1 ? 's' : ''}
+              {ep.fenetre.jourCourant !== null ? ` · jour ${ep.fenetre.jourCourant}/${NB_JOURS_AGENDA_ALI}` : ''}
+            </p>
+            {ep.illisibles > 0 && (
+              // Un dossier de contrôle qui tait ses lignes en quarantaine ment
+              // par omission : ce compte reste visible même sans détail par ligne.
+              <p className="text-xs text-status-danger">
+                {ep.illisibles} ligne{ep.illisibles > 1 ? 's' : ''} en quarantaine, illisible
+                {ep.illisibles > 1 ? 's' : ''} — signalé pour intégrité, non affiché en détail ici.
+              </p>
+            )}
+          </div>
+
+          <FriseJours episode={ep} />
+
+          {ep.agregats ? (
+            <ResumeAgregats a={ep.agregats} />
+          ) : (
+            <CouvertureInsuffisante nbJours={ep.fenetre.nbRenseignees} />
+          )}
+
+          <div className="flex flex-col gap-2">
+            {ep.jours.map((j) => (
+              <JourneeCard key={j.id} dateJour={j.dateJour} reponses={j.reponses} />
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
