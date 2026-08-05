@@ -113,6 +113,27 @@ jobs:
       - name: Anti-secrets (banc du contrôle)
         run: node --test scripts/check_no_secrets.test.mjs
 
+      # Les hooks de `.claude/` sont le mur d'écriture du dépôt : ils refusent
+      # `.env*`, `.git/`, les commandes destructives et celles qui exposent un
+      # secret. `CLAUDE.md` désigne `block-risky-commands.test.mjs` comme leur
+      # banc — mais AUCUN workflow ne le jouait. Le mur n'avait donc pour filet
+      # que les exécutions locales, alors que c'est exactement le motif du banc
+      # anti-secrets ci-dessus : un garde redevenu muet reste vert.
+      #
+      # Le glob plutôt qu'un chemin en dur : un banc de hook ajouté demain est
+      # joué sans toucher ce fichier, et si le fichier disparaît le glob reste
+      # littéral et `node --test` échoue — la disparition est bruyante, pas
+      # silencieuse comme le serait `node --test .claude/hooks/`.
+      #
+      # SANS le filtre `docs_only`, délibérément, et pour une raison plus forte
+      # que les étapes voisines : `.claude/hooks/**` est du CODE de garde-fou,
+      # jamais de la prose. Le classer un jour côté documentaire rejouerait ce
+      # que le registre des instruments a déjà coûté — un fichier qui fait
+      # autorité sur le chemin court, ses seuls contrôles gatés, `verify` vert.
+      # Ni npm ni base : le banc n'a besoin que de node.
+      - name: Hooks de garde-fous (banc du mur d'écriture)
+        run: node --test .claude/hooks/*.test.mjs
+
       # L'étape « Dossier des droits (chiffres contre le registre) » a été
       # RETIRÉE le 2026-07-29, dans la PR qui applique l'arbitrage qu'elle
       # gardait. C'est la procédure que son banc décrivait lui-même : le dossier
