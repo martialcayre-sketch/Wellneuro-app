@@ -314,9 +314,16 @@ jobs:
       # pas écrite mais rapportée ; une ligne « plantes » ne s'accroche jamais à
       # une substance ; aucune unité n'est devinée. Le banc relit aussi
       # `SUPPLEMENTS_UNITES` dans config.ts et refuse une recopie divergente.
-      - name: Résolution des compositions (banc du résolveur)
+      #
+      # `transporter.test.mjs` est câblé ICI ET DANS `npm run check` (script
+      # `compositions-check`), jamais dans un seul des deux : il porte
+      # l'anti-dérive de `TAILLE_LOT_MAX` / `LIGNES_MAX_PAR_LOT` contre les
+      # constantes du serveur, la preuve que le dry-run n'ouvre aucune
+      # connexion, et la garde deux clés sur la cible d'envoi. Livré hors de
+      # tout runner, il n'aurait gardé rien du tout.
+      - name: Résolution et transport des compositions (bancs)
         if: steps.scope.outputs.docs_only != 'true'
-        run: node --test tools/supplements/compositions/lib/resolution.test.mjs
+        run: node --test tools/supplements/compositions/lib/resolution.test.mjs tools/supplements/compositions/transporter.test.mjs
 
       # Banc golden de scoring : verrouille calculateScore/buildMiniSynthese
       # contre quatre fixtures représentatives + un cas d'erreur. Débranché de
