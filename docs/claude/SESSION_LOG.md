@@ -2526,3 +2526,31 @@ sanctionné.
 
 **Questions ouvertes.** Aucune côté LOT-02. Celles héritées de LOT-01 (gates
 G0-G4, conflits de corpus) restent hors du périmètre de ce lot.
+
+## [2026-08-05] — LOT-03 : fermer sum_decimal, count_threshold, ecab
+
+**Décisions.** Cadrage (`wn-reviewer`) a trouvé le lot rédigé sur deux erreurs
+de fait : mauvais fichier (`instruments.ts` au lieu de `questions.ts`) et garde
+de référence périmée d'une version (#568 a ajouté un « plancher garanti »
+distinct de la garde de base #566/#567). Résolu en distinguant les deux
+mécanismes : la garde de base seule (gabarit `bms_average`) suffit au résultat
+observable exigé, sans arbitrage clinique sur `severiteCroissante` — laissé
+hors périmètre, conforme à l'interdit du lot. Les trois moteurs ne produisent
+plus de bande sur recueil incomplet ; total/count inchangés. Constat production :
+défaut théorique, 1 seule passation existante et complète.
+
+**Options écartées.** Reproduire le « plancher garanti » (aurait exigé un
+arbitrage clinique praticien sur le sens de chaque grille, hors périmètre).
+Basculer vers `sumItems()` partagé (comportement sur items conditionnels non
+vérifié pour ces trois moteurs — changement minimal préféré).
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire son CI, merger. Depuis
+`main` : `node scripts/wn-campaign.mjs activate LOT-04` puis `node
+scripts/wn-cycle.mjs --appliquer` (même geste que pour LOT-02→LOT-03).
+
+**Questions ouvertes.** Trois mineurs relevés en revue, non corrigés
+(changements minimaux) : commentaires périmés dans `orientationEngine.ts`/
+`orientationRulesV1.ts` ; absence d'`evalConditionnel` dans les trois boucles
+(latent) ; `noteRecueil` dupliqué texte-pour-texte dans les trois blocs.
+Non vérifié : l'UI praticien affiche-t-elle le champ `note` pour ces trois
+instruments (mécanisme pré-existant partagé avec PSQI/TFD).
