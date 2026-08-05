@@ -1,7 +1,7 @@
 ---
 id: "LOT-01"
 titre: "« Mon bilan » — reprendre ou clore"
-statut: "à_faire"
+statut: "livré"
 dépend_de: "aucun"
 palier: "T3"
 classe: "migration + clinique"
@@ -87,3 +87,38 @@ l'exclusivité du Mac.
 - soit une note écrite dit pourquoi le chantier est clos, et la branche est supprimée.
 - Dans les deux cas, le défaut « note modifiable après envoi » est tranché : fermé par la
   colonne, ou nommé comme réserve ouverte ailleurs qu'ici.
+
+## Ce qui a été fait — 2026-08-05
+
+**Repris, pas clos.** Le diff s'est rejoué sans un seul conflit : les trois fichiers
+touchés des deux côtés avaient des hunks disjoints, et les fichiers cibles n'avaient
+reçu aucun commit depuis la base commune.
+
+Quatre écarts par rapport à ce que ce lot supposait :
+
+1. **Le périmètre visait le mauvais fichier.** `annoter` n'est pas dans l'API booklet
+   mais dans `api/praticien/synthese/route.ts`.
+2. **La migration était datée dans le passé** — son horodatage la triait entre deux
+   migrations déjà appliquées en production. Renommée `20260805070000`, jamais
+   appliquée nulle part, renommage sans coût.
+3. **Le backfill reposait sur une mesure, pas sur un invariant.** Condition
+   `updated_at <= date_envoi` ajoutée : ne sont recopiés que les envois dont la
+   synthèse n'a provablement pas bougé. Lecture de la production le 2026-08-05 :
+   1 ligne recopiée, **0 exclue** — la garde ne coûte rien et retire la dépendance au
+   temps qui sépare la relecture du déploiement.
+4. **La garde réclamée sur `annoter` aurait cassé le renvoi.** Voir [[D-025]] : c'est
+   l'instantané qui ferme le défaut, pas un refus.
+
+**Ce que la revue a trouvé et que le lot ne prévoyait pas** : le hub proposait encore
+« Consulter mon bilan » après un rejet, vers une page répondant « ne vous a pas encore
+transmis ». La règle de visibilité vit désormais en **une seule** définition
+(`whereEnvoiVisible`), utilisée par les deux routes.
+
+**Travail n°3 (IDP2) confirmé plutôt que supposé** : `booklet_envois` est déjà supprimé
+en premier dans la transaction d'effacement, avant `syntheseIA` (FK `RESTRICT`). La
+colonne part avec la ligne, rien à ajouter.
+
+**Réserve ouverte** : sur un dossier clos, annoter reste possible et renvoyer ne l'est
+plus — la note du dossier peut alors diverger définitivement de ce que le patient a
+reçu, sans moyen de réconcilier. Sans conséquence pour le patient (le portail sert
+l'instantané), c'est une question de tenue de dossier.

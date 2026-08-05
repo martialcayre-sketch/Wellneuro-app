@@ -46,6 +46,17 @@ describe('buildBookletHTML (extrait de la route booklet)', () => {
     expect(html).not.toContain('assistance d’intelligence artificielle');
   });
 
+  // La branche par défaut, jusqu'ici non gardée : la mention de préparation est
+  // désormais une constante partagée avec la page « Mon bilan » du portail
+  // (`bilanPatient.ts`), et c'est exactement ce que la mise en commun déplace.
+  // `undefined` doit valoir `true` — l'appelant par défaut est la voie IA.
+  it('mentionne l’assistance IA par défaut, option absente comme option vraie', () => {
+    const attendu = 'Document préparé avec une assistance d’intelligence artificielle et validé par votre praticien.';
+    expect(buildBookletHTML('X', '2026', synthese(), '')).toContain(attendu);
+    expect(buildBookletHTML('X', '2026', synthese(), '', {})).toContain(attendu);
+    expect(buildBookletHTML('X', '2026', synthese(), '', { assistanceIA: true })).toContain(attendu);
+  });
+
   // Le booklet part par e-mail AU PATIENT. Le field-filter de `depuisSynthese`
   // est formel sur TROIS blocs : axes = « praticien (détaillé) + médecin ; jamais
   // patient » ; vigilance = « praticien + médecin ; jamais patient » ; questions

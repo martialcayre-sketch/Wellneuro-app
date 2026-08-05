@@ -30,6 +30,15 @@ vi.mock('@/lib/anthropic', () => ({
   maskEmail: (e: string) => `masqué(${e})`,
   sanitizeAuditError: (m: string) => m,
 }));
+// Transport SMTP stubé : sans lui, le seul chemin de SUCCÈS de la route est
+// hors de portée d'un test unitaire (la route s'arrête en 503 quand `SMTP_URL`
+// est absente) — donc l'écriture de l'instantané de note ne serait jamais
+// observée. Le stub ne sert QUE les tests qui posent `SMTP_URL` ; ailleurs la
+// variable reste absente et les 503 attendus tiennent.
+const sendMail = vi.fn(async () => ({}));
+vi.mock('@/lib/email/transportSmtp', () => ({
+  creerTransportSmtp: () => ({ sendMail: (...a: unknown[]) => sendMail(...(a as [])) }),
+}));
 vi.mock('@/lib/observability/logger', () => ({ logger: { error: vi.fn(), security: vi.fn() } }));
 vi.mock('@/lib/observability/requestContext', () => ({
   createRequestContext: () => ({}),
@@ -82,6 +91,8 @@ beforeEach(() => {
   createBookletEnvoi.mockResolvedValue({});
   findManyReponses.mockReset();
   findManyReponses.mockResolvedValue([]);
+  sendMail.mockReset();
+  sendMail.mockResolvedValue({});
 });
 afterEach(() => vi.clearAllMocks());
 
@@ -267,5 +278,118 @@ describe('POST /api/praticien/booklet — garde de registre anxiogène', () => {
     });
     const res = await envoyer({});
     expect(res.status).toBe(409);
+  });
+});
+
+// L'instantané de la note (`noteTransmise`) est ce que le portail patient sert
+// dans « Mon bilan ». Deux propriétés le rendent honnête, et aucune des deux ne
+// se lit sur le seul code de `logBookletEnvoi` : une ligne d'échec ne porte
+// rien, et un renvoi fige la note DU RENVOI, pas celle du premier envoi.
+describe('POST /api/praticien/booklet — instantané de la note transmise', () => {
+  const NOTE_PREMIER_ENVOI = 'Première note, celle du 18 juillet.';
+  const NOTE_CORRIGEE = 'Note corrigée avant le renvoi du 25 juillet.';
+
+  function envoyer(corps: Record<string, unknown>) {
+    return POST(
+      new Request('http://x/api/praticien/booklet', {
+        method: 'POST',
+        body: JSON.stringify({ idSynthese: 'SYN_1', relectureConfirmee: true, ...corps }),
+      }),
+    );
+  }
+
+  // Spread plutôt qu'affectation : le fixture type `notesPraticien` à `null`
+  // et `bookletEnvois` à `never[]`, l'écrasement par spread rend les vrais
+  // types sans cast.
+  function synthese(note: string | null, envoisPrecedents = 0) {
+    return {
+      ...syntheseFixture('Validee_Praticien'),
+      notesPraticien: note,
+      bookletEnvois: Array.from({ length: envoisPrecedents }, (_, i) => ({
+        id: `BE_${i + 1}`,
+        dateEnvoi: new Date('2026-07-18T00:00:00.000Z'),
+      })),
+    };
+  }
+
+  function derniereLigne(): Record<string, unknown> {
+    const appels = createBookletEnvoi.mock.calls;
+    return (appels[appels.length - 1][0] as { data: Record<string, unknown> }).data;
+  }
+
+  // --- (a) une ligne d'échec n'a rien transmis --------------------------
+
+  it('Erreur (relecture non confirmée) : aucune note dans la ligne', async () => {
+    findFirst.mockResolvedValue(synthese(NOTE_PREMIER_ENVOI));
+    await POST(
+      new Request('http://x/api/praticien/booklet', {
+        method: 'POST',
+        body: JSON.stringify({ idSynthese: 'SYN_1' }),
+      }),
+    );
+    expect(derniereLigne().statut).toBe('Erreur');
+    expect(derniereLigne().noteTransmise).toBeUndefined();
+  });
+
+  it('Erreur (synthèse non validée) : aucune note dans la ligne', async () => {
+    findFirst.mockResolvedValue({ ...synthese(NOTE_PREMIER_ENVOI), statut: 'Brouillon_IA' });
+    const res = await envoyer({});
+    expect(res.status).toBe(422);
+    expect(derniereLigne().statut).toBe('Erreur');
+    expect(derniereLigne().noteTransmise).toBeUndefined();
+  });
+
+  it('Erreur (SMTP absent) : rien n’est parti, donc aucune note figée', async () => {
+    findFirst.mockResolvedValue(synthese(NOTE_PREMIER_ENVOI));
+    const res = await envoyer({});
+    expect(res.status).toBe(503);
+    expect(derniereLigne().statut).toBe('Erreur');
+    expect(derniereLigne().noteTransmise).toBeUndefined();
+  });
+
+  it('Confirmation_Requise (renvoi non confirmé) : aucune note dans la ligne', async () => {
+    findFirst.mockResolvedValue(synthese(NOTE_PREMIER_ENVOI, 1));
+    const body = await (await envoyer({})).json();
+    expect(body.needsConfirmation).toBe(true);
+    expect(derniereLigne().statut).toBe('Confirmation_Requise');
+    expect(derniereLigne().operation).toBe('Renvoi');
+    expect(derniereLigne().noteTransmise).toBeUndefined();
+  });
+
+  // --- (b) un renvoi fige la note DU RENVOI ------------------------------
+
+  describe('avec un SMTP joignable', () => {
+    beforeEach(() => {
+      process.env.SMTP_URL = 'smtp://test:test@localhost:1025';
+    });
+    afterEach(() => {
+      delete process.env.SMTP_URL;
+    });
+
+    it('un renvoi écrit un instantané FRAIS, pas celui du premier envoi', async () => {
+      // Le premier envoi a figé `NOTE_PREMIER_ENVOI` ; le praticien a depuis
+      // corrigé la note (action `annoter`, volontairement sans garde) et
+      // renvoie. Précondition explicite : les deux notes DIVERGENT — sans quoi
+      // le test passerait même si la route recopiait l'ancien instantané.
+      expect(NOTE_CORRIGEE).not.toBe(NOTE_PREMIER_ENVOI);
+      findFirst.mockResolvedValue(synthese(NOTE_CORRIGEE, 1));
+
+      const res = await envoyer({ forceSend: true });
+      expect(res.status).toBe(200);
+      expect((await res.json()).success).toBe(true);
+      expect(sendMail).toHaveBeenCalledTimes(1);
+      expect(derniereLigne().statut).toBe('Envoye');
+      expect(derniereLigne().operation).toBe('Renvoi');
+      expect(derniereLigne().noteTransmise).toBe(NOTE_CORRIGEE);
+    });
+
+    it('un premier envoi fige la note du moment', async () => {
+      findFirst.mockResolvedValue(synthese(NOTE_PREMIER_ENVOI));
+      const res = await envoyer({});
+      expect(res.status).toBe(200);
+      expect(derniereLigne().statut).toBe('Envoye');
+      expect(derniereLigne().operation).toBe('Envoi');
+      expect(derniereLigne().noteTransmise).toBe(NOTE_PREMIER_ENVOI);
+    });
   });
 });

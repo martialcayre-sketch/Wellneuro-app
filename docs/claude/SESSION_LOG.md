@@ -2328,3 +2328,30 @@ sha de la table couvrent désormais deux moteurs. La divergence gelé/recalculé
 de sens au lieu de disparaître. `detail` n'est pas amputé comme `protocol`. Le
 dénominateur d'axe exclut les questions conditionnelles. Classe toujours ouverte sur
 `sum_decimal`, `count_threshold`, `ecab`, `bms_average`.
+
+## 2026-08-05 — « Mon bilan » : l'instantané plutôt que la garde
+
+**Décisions.** `D-025` : le portail sert `booklet_envois.note_transmise`, figé à
+l'envoi, jamais le champ vivant. L'absence de garde sur `annoter` est **assumée** —
+la garde évidente aurait cassé le renvoi corrigé, qui consiste précisément à
+corriger une note puis à la renvoyer. La visibilité s'écrit une fois
+(`whereEnvoiVisible`), mais l'accès au document et l'avancement de la frise
+restent **deux signaux**.
+
+**Options écartées.** Refuser `annoter` dès qu'un envoi existe (casse le renvoi) ;
+le refuser sur dossier clos seulement (élargit le périmètre) ; laisser le backfill
+reposer sur un comptage plutôt que sur l'invariant `updated_at <= date_envoi`.
+
+**Ce que le lot a appris.** Trois passes adversariales. La deuxième a trouvé que mon
+correctif du hub faisait **reculer la frise du parcours**, contre un invariant écrit
+noir sur blanc à côté. La troisième a montré qu'un garde de banc censé refuser toute
+condition non émulée ne voyait rien au-delà du premier niveau : remis dans son
+ancienne forme, une condition imbriquée passait 36/36 verte. **Un garde qui ne
+descend pas jusqu'où le défaut se cache inspire une confiance qu'il ne mérite pas.**
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire le code de sortie de
+`wn-attendre-ci.mjs`, puis vérifier la migration en base.
+
+**Questions ouvertes.** Dossier clos : annoter reste possible, renvoyer non — la note
+du dossier peut diverger sans réconciliation. Aucun code d'événement ne vise le bilan
+patient. `bilanConsultable ⇒ bookletEnvoye` est commenté, pas testé.

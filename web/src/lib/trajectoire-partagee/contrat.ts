@@ -195,6 +195,16 @@ export type EtatParcoursPatient = {
 // pas (une diffusion approuvée reste diffusée, un booklet envoyé reste
 // envoyé) ; si un signal manque (null), l'état reste au plus prudent — jamais
 // inventé.
+//
+// COROLLAIRE : L'ACCÈS À UN DOCUMENT ET L'AVANCEMENT DE LA FRISE SONT DEUX
+// SIGNAUX DISTINCTS. `bookletEnvoye` dit que l'envoi A EU LIEU, et rien
+// d'autre. Que le document soit encore LISIBLE est une seconde question, à
+// laquelle répond `parcours.bilanConsultable` (`api/portail/assignations`),
+// filtré par `whereEnvoiVisible` — c'est lui, et lui seul, qui gouverne le lien
+// « Consulter mon bilan ». Ne jamais brancher `bookletEnvoye` sur ce filtre :
+// un rejet après coup ramènerait le patient de « votre restitution est
+// disponible » à « votre praticien la prépare ». C'est arrivé, et c'est
+// précisément ce que cet invariant interdit.
 export function deriverEtatParcoursPatient(signaux: SignauxPortail): EtatParcoursPatient | null {
   if (!signaux.questionnairesTransmis) return null;
 

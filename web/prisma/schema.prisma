@@ -362,6 +362,17 @@ model BookletEnvoi {
   operation          String   @map("operation")
   relectureConfirmee Boolean  @default(false) @map("relecture_confirmee")
   erreurCourte       String?  @map("erreur_courte")
+  /// Instantané de la note du praticien AU MOMENT DE L'ENVOI.
+  ///
+  /// `SyntheseIA.notesPraticien` reste modifiable après un envoi réussi
+  /// (action `annoter`, sans garde de cycle de vie), si bien qu'une page qui
+  /// la lirait en direct publierait au patient un texte jamais transmis — y
+  /// compris sur un dossier clôturé, où tout renvoi est pourtant refusé. La
+  /// colonne fige ce qui est réellement parti ; c'est elle que sert
+  /// `api/portail/bilan`, jamais le champ vivant.
+  ///
+  /// Null sur les lignes d'échec : rien n'a été transmis.
+  noteTransmise      String?  @map("note_transmise")
 
   synthese SyntheseIA @relation(fields: [idSynthese], references: [idSynthese])
 

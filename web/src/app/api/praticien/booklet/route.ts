@@ -270,8 +270,12 @@ export async function POST(req: Request) {
       html,
     });
 
+    // La note passée ici est CELLE QUI VIENT DE PARTIR — `synthese` a été lue
+    // en début de requête et `buildBookletHTML` l'a rendue depuis le même
+    // objet. C'est ce que le portail servira.
     await logBookletEnvoi(idSynthese, synthese.idPatient, synthese.emailPatient,
-      'Envoye', forceSend ? 'Renvoi' : 'Envoi', relectureConfirmee, '');
+      'Envoye', forceSend ? 'Renvoi' : 'Envoi', relectureConfirmee, '',
+      synthese.notesPraticien);
 
     return withCorrelationHeader(NextResponse.json({ success: true, emailMasque: maskEmail(synthese.emailPatient) }), requestContext);
   } catch (err) {
@@ -289,7 +293,13 @@ export async function POST(req: Request) {
 
 async function logBookletEnvoi(
   idSynthese: string, idPatient: string, emailPatient: string,
-  statut: string, operation: string, relectureConfirmee: boolean, erreur: string
+  statut: string, operation: string, relectureConfirmee: boolean, erreur: string,
+  // Instantané de la note réellement partie. Renseigné sur le SEUL chemin de
+  // succès : une ligne d'échec n'a rien transmis, sa note reste nulle.
+  // `notes_praticien` reste modifiable après l'envoi (action `annoter`, sans
+  // garde de cycle de vie) — la page « Mon bilan » du portail sert cet
+  // instantané, jamais le champ vivant.
+  noteTransmise?: string | null,
 ) {
   try {
     const audit = await prisma.bookletEnvoi.create({
@@ -301,6 +311,7 @@ async function logBookletEnvoi(
         operation,
         relectureConfirmee,
         erreurCourte: erreur ? sanitizeAuditError(erreur) : undefined,
+        noteTransmise: noteTransmise?.trim() ? noteTransmise : undefined,
       },
     });
     await journaliserCorrespondancePatient({

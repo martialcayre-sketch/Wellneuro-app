@@ -54,9 +54,19 @@ export default function QuestionnairesHubPage() {
   // Parcours synchronisé (SP-CONV LOT-04, D11) : signaux servis par les
   // routes portail existantes. En cas d'échec de lecture, tout reste au plus
   // prudent (false / null) — le parcours n'avance jamais sur une supposition.
-  const [signauxParcours, setSignauxParcours] = useState<{ consultationStatut: string | null; bookletEnvoye: boolean }>({
+  // `bookletEnvoye` (historique, alimente la frise) et `bilanConsultable`
+  // (accès au document, gouverne le lien) sont DEUX signaux : le rejet d'un
+  // bilan retire l'accès sans faire reculer la frise. Voir le commentaire de
+  // `api/portail/assignations/route.ts` et l'invariant de
+  // `lib/trajectoire-partagee/contrat.ts`.
+  const [signauxParcours, setSignauxParcours] = useState<{
+    consultationStatut: string | null;
+    bookletEnvoye: boolean;
+    bilanConsultable: boolean;
+  }>({
     consultationStatut: null,
     bookletEnvoye: false,
+    bilanConsultable: false,
   });
   const [signauxProtocole, setSignauxProtocole] = useState<{ protocoleDiffuse: boolean; finDeCycle: boolean }>({
     protocoleDiffuse: false,
@@ -113,7 +123,9 @@ export default function QuestionnairesHubPage() {
       setAgendas(data.agendas ?? []);
       setAgendasAli(data.agendasAlimentaires ?? []);
       setDerniereReponseLe(data.derniereReponseLe);
-      setSignauxParcours(data.parcours ?? { consultationStatut: null, bookletEnvoye: false });
+      setSignauxParcours(
+        data.parcours ?? { consultationStatut: null, bookletEnvoye: false, bilanConsultable: false },
+      );
       // Protocole diffusé / fin de cycle : route existante, lecture résiliente
       // — un échec laisse les signaux au plus prudent, jamais bloquant.
       void (async () => {
@@ -247,6 +259,20 @@ export default function QuestionnairesHubPage() {
 
       {/* Accès secondaires : une ligne de liens, plus deux cartes rivales. */}
       <nav aria-label="Autres espaces" className="flex flex-wrap gap-3">
+        {/* Le bilan n'apparaît que si le praticien en a transmis un ET que le
+            document est encore lisible : `bilanConsultable`, pas
+            `bookletEnvoye`. Les deux se séparent au rejet — l'envoi reste
+            acquis pour la frise (elle ne recule pas), l'accès au document
+            disparaît. C'est la MÊME visibilité que sert `api/portail/bilan`,
+            sinon ce lien mènerait à « votre praticien ne vous a pas encore
+            transmis de bilan ». Il reste un accès secondaire : un document à
+            relire n'est jamais une tâche périssable, et il ne doit pas
+            concurrencer l'étape du moment. */}
+        {signauxParcours.bilanConsultable && (
+          <a href={`/portail/${token}/bilan`} className={patientButtonClassName('ghost')}>
+            Consulter mon bilan
+          </a>
+        )}
         <a href={`/portail/${token}/alimentation`} className={patientButtonClassName('ghost')}>
           Ouvrir Mon carnet alimentaire
         </a>

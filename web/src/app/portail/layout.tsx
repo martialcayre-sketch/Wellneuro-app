@@ -12,14 +12,18 @@ export default function PortailLayout({ children }: { children: ReactNode }) {
     // Canvas sable PLAT (maquette cible : les cartes crème flottent sur le
     // sable, pas de dégradé).
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="py-4 px-6 border-b border-border bg-surface/80 backdrop-blur flex items-center justify-between gap-3">
+      {/* À l'impression, le chrome de l'application disparaît : seule la page
+          sort. « Mon bilan » se montre au médecin traitant, et une capture
+          d'écran de logiciel n'est pas un document. Le contrôle de confort de
+          lecture est en outre interactif — il n'a aucun sens sur papier. */}
+      <header className="py-4 px-6 border-b border-border bg-surface/80 backdrop-blur flex items-center justify-between gap-3 print:hidden">
         <span className="font-display text-xl font-bold text-primary">Wellneuro</span>
         <ReadingComfortControl />
       </header>
       <main className="flex-1 flex flex-col items-center px-4 py-8">
         {children}
       </main>
-      <footer className="py-4 px-4 text-center text-xs text-muted-foreground/70 space-y-1">
+      <footer className="py-4 px-4 text-center text-xs text-muted-foreground/70 space-y-1 print:hidden">
         <p>
           Cet espace ne constitue pas un diagnostic médical. Vos informations sont transmises à votre praticien.
         </p>

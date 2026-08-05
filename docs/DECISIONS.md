@@ -4,6 +4,25 @@
 
 ## Décisions actives
 
+### D-025 — Ce que le patient lit est un instantané de l'envoi, pas le champ vivant
+
+- Date : 2026-08-05
+- Statut : accepté
+- Domaine : produit et clinique
+- Décision : la page « Mon bilan » du portail sert `booklet_envois.note_transmise`, figé au moment de l'envoi et nul sur toute ligne d'échec — **jamais** `syntheses_ia.notes_praticien`, qui reste modifiable après un envoi réussi. La visibilité se fonde sur un `BookletEnvoi` de statut `Envoye`, jamais sur le statut de la synthèse : un praticien valide souvent avant de décider s'il envoie.
+- **L'absence de garde sur `annoter` est un choix, pas une dette.** Une garde symétrique de celle d'`effacer` — refuser dès qu'un envoi existe — paraissait la réponse évidente, et elle est fausse : le renvoi corrigé (`forceSend`, opération `Renvoi`) consiste **précisément** à corriger une note puis à la renvoyer. La garde aurait interdit le geste qu'elle prépare. C'est l'instantané qui ferme le défaut, et un renvoi en écrit un frais.
+- **L'envoi accorde la visibilité, le rejet la retire.** Sans cette soupape, un praticien qui s'aperçoit après coup qu'il a transmis un bilan erroné n'aurait aucun recours : `effacer` est refusé dès qu'un envoi existe, et « Rejeter » resterait sans effet sur ce que le patient lit. Le seul moyen serait d'en envoyer un autre.
+- **Une règle de visibilité s'écrit une fois.** `whereEnvoiVisible` (`lib/documents/bilanPatient.ts`) est l'unique définition, servie à la page comme au hub. Les deux avaient déjà divergé — le hub proposait « Consulter mon bilan » après un rejet, vers une page répondant « ne vous a pas encore transmis ». Même classe que les PR #546/#552 : une liste dérivée d'une carte partagée, jamais deux copies d'un prédicat.
+- Conséquences :
+  - **Un backfill s'appuie sur un invariant, pas sur un comptage.** La condition `updated_at <= date_envoi` ne recopie que les envois dont la synthèse n'a provablement pas bougé ; les autres restent nuls — un manque visible, jamais un texte présenté comme transmis alors qu'il ne l'a pas été. Une mesure prise à la relecture ne dit rien de l'état au déploiement, et l'action qui pourrait l'invalider est justement celle qu'on laisse ouverte.
+  - **L'accès au document et l'avancement de la frise sont deux signaux.** Les servir depuis le même prédicat faisait reculer le parcours patient de « restitution disponible » à « votre praticien les prépare », contre l'invariant « jamais rétrograde » de `lib/trajectoire-partagee/contrat.ts`. L'envoi a eu lieu : l'historique le garde acquis, seul l'accès suit le rejet. `bilanConsultable` implique `bookletEnvoye`, jamais l'inverse. Après le rejet du dernier bilan, un envoi antérieur dont la synthèse reste valide **redevient visible** — il n'a jamais été repris au patient.
+  - **Le narratif, lui, n'est pas snapshotté.** Il n'est figé que par le refus d'`enregistrer` sur toute synthèse qui n'est plus un brouillon — un invariant qui vit dans une **autre** route. Épinglé par un test depuis ce lot ; il ne l'était par rien avant.
+  - **Un refus d'accès à un document clinique laisse une trace** (`logger.security` sur les deux refus), et le refus opposé à un compte révoqué rend `403` et non `401` : le client cessait d'afficher un motif et renvoyait vers le gate, qui refusait à son tour.
+- Réserves :
+  - **Sur un dossier clos, annoter reste possible et renvoyer ne l'est plus.** La note du dossier peut alors diverger définitivement de ce que le patient a reçu, sans moyen de réconcilier. Sans conséquence pour le patient — le portail sert l'instantané — mais c'est une question de tenue de dossier, et aucune des deux réponses envisagées ne la ferme.
+  - **`booklet_envois` n'est plus un journal d'audit.** Elle porte désormais du texte clinique libre. L'effacement patient la couvre déjà (supprimée en premier, avant `syntheseIA`), mais toute règle de conservation qui la traiterait comme de la métadonnée est devenue fausse.
+  - **Aucun code d'événement ne vise le bilan patient.** `PORTAIL_SESSION_EXCEPTION` est le moins faux des existants : un lecteur qui filtrerait cette famille y trouvera des échecs de lecture de bilan.
+
 ### D-024 — Un plancher allume une règle quand il ne reste plus une seule issue hors de sa zone
 
 - Date : 2026-08-05
