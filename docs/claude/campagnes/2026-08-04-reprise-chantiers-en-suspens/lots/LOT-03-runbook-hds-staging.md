@@ -1,7 +1,7 @@
 ---
 id: "LOT-03"
 titre: "Runbook HDS — verser l'état du staging Scalingo"
-statut: "à_faire"
+statut: "livré — runbook versé dans main, staging revérifié le 2026-08-05"
 dépend_de: "aucun"
 palier: "T1"
 classe: "docs"
@@ -74,3 +74,37 @@ seul. Aucun code.
 - Le runbook de `main` porte l'état réel du staging, daté, avec la mention de ce qui reste
   à poser ;
 - ou une note dit où ces faits ont été versés à la place, et la branche est supprimée.
+
+## Ce qui a été fait — 2026-08-05
+
+**Livré par la première voie** : le runbook de `main` porte l'état réel, daté, avec ce
+qui reste à poser.
+
+**Le staging existe encore, et c'est vérifié, pas supposé.** Le travail n°1 demandait de
+confronter les +85 lignes à la réalité — un runbook décrivant une infrastructure disparue
+est pire qu'un runbook vide. `scalingo apps-info`, `addons` et `ps` rendent : app
+`running`, `HDS: true`, add-on `postgresql-business-512` `running`, 2 containers `web`
+taille `S`. Deux écarts notés sans être interprétés : stack `scalingo-26`, et une seconde
+app `wellneuro` au statut `new`, non instruite ici. `scalingo env` **n'a pas été lu** —
+il aurait exposé les secrets.
+
+**La branche de sauvegarde n'a été ni mergée ni rebasée, et ce n'était pas un détail.**
+Elle est forkée du 2026-07-24 : la merger aurait supprimé **28 332 lignes** de
+documentation créée depuis, et son fichier seul aurait annulé deux PR déjà mergées : la
+PR #356 (SSE questionnaire) et surtout la **PR #425, qui corrige la région `osc-fr1` /
+`--hds-resource`, c'est-à-dire une partie de ce que la sauvegarde prétend apporter**. Le
+versement s'est donc fait par retouches ciblées sur la version de `main`.
+
+**Deux corrections que ni le lot ni la sauvegarde n'avaient vues :**
+
+1. #425 avait corrigé la région **en tête du document seulement** ; l'étape 1 disait
+   toujours « confirmer la syntaxe exacte du flag HDS ». Le lecteur qui suit la procédure
+   suivait la version fausse.
+2. La sauvegarde attribuait l'application des migrations à une branche `else` de
+   `vercel-build.sh`. Ce script **n'écrit plus en base depuis #435**, sur aucun chemin —
+   vérifié à la lecture. Sur Scalingo, c'est `postdeploy: npm run db:deploy` du `Procfile`
+   qui les applique. Le compte est daté : 35 au 2026-07-24, **49 au 2026-08-05**.
+
+**Reste ouvert, non fait ici** : la branche `sauvegarde/runbook-scalingo-staging` est
+désormais redondante et **dangereuse à merger** (28 332 suppressions). Sa suppression
+relève du ressort Copilot ; elle est nommée ici pour ne pas être oubliée.
