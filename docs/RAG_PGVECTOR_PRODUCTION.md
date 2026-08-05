@@ -29,19 +29,20 @@ Configurer dans Development, Preview et Production selon le besoin :
 - `DATABASE_URL` : pooler Supabase pour le runtime Vercel.
 
 Ne **pas** créer de variable `DIRECT_URL` dans Vercel : les migrations de
-production passent exclusivement par `MIGRATE_DATABASE_URL` (scope Production,
-URL Supabase en session mode, port 5432), appliquée par
-`web/scripts/vercel-build.sh` lors du build. C'est le seul chemin autorisé —
-voir « La base de production ne se modifie que par une migration relue »
-(`CLAUDE.md`).
+production passent par `MIGRATE_DATABASE_URL` (URL Supabase en session mode,
+port 5432), appliquée **hors du build** par le workflow GitHub Actions
+`release-db` (déclenché à la main, gaté par l'environnement protégé `release-db`).
+Le build Vercel ne migre plus. C'est le seul chemin autorisé — voir « La base de
+production ne se modifie que par une migration relue » (`CLAUDE.md`) et
+`docs/DEPLOIEMENT_RELEASE_DB.md`.
 
 Aucune valeur réelle ne doit être ajoutée au dépôt, aux journaux ou aux procès-verbaux.
 
 ## Migration
 
-En production : merge sur `main` → build Vercel → `web/scripts/vercel-build.sh`
-applique `prisma migrate deploy` via `MIGRATE_DATABASE_URL`. Aucune commande
-manuelle.
+En production : merge sur `main`, puis application des migrations **hors du
+build** via le workflow `release-db` (`docs/DEPLOIEMENT_RELEASE_DB.md`). Le build
+Vercel ne migre plus.
 
 En local ou CI (base éphémère uniquement) :
 

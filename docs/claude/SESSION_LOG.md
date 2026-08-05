@@ -2293,6 +2293,36 @@ est raconté, pas agi. Aucune surface praticien dédiée — le plancher d'axe d
 n'atteint que le modèle de synthèse. Classe toujours ouverte sur `sum_decimal`,
 `count_threshold`, `ecab` et `bms_average`.
 
+## 2026-08-05 — Le drapeau de l'agenda : lever une restriction devenue un mur
+
+**Décisions.** `D-025` amende le point 2 de `D-022` : `WN_AGENDA_ALI` se pose sur
+le scope Vercel **Production**, et la Preview est exclue — elle lit la base de
+production et le praticien ne peut pas s'y connecter (SSO sur `*.vercel.app`,
+callback OAuth sur `app.wellneuro.fr`). Le motif du report était éteint : `LOT-04`
+a livré l'écran dont `D-022` déplorait l'absence. Un runbook porte le geste, avec
+prérequis vérifiables et retour arrière.
+
+**Options écartées.** Rendre la Preview utilisable (alias de domaine + callback +
+SSO levé) : coût réel, isolation nulle, la base étant partagée. Insérer
+l'assignation par script : écriture hors chemin relu, et sans effet drapeau éteint.
+
+**Ce que le lot a appris.** Deux passes adversariales, un NO-GO puis un GO sous
+réserve. La première a trouvé que mon runbook prescrivait un **geste impossible** —
+les trois patients de graine sont inassignables, `actif = false` pour deux d'entre
+eux et une adresse qui n'existe pas pour les trois, alors que le lien d'entrée part
+par e-mail. C'est la règle de `D-023` point 5, enfreinte le lendemain de son
+écriture. Elle a aussi trouvé que je me créditais d'une relecture que `D-022` avait
+déjà faite : elle portait « 0 ligne et 0 assignation » depuis la veille. La seconde
+a trouvé que mes deux correctifs les plus concrets ne s'exécutaient pas — `qids` est
+`text[]` et non `jsonb`, et le contrat SQL est un bloc `DO $$` que le garde MCP
+refuse. **Prescrire un geste sans l'exécuter, c'est écrire une promesse.**
+
+**Prochaine action prioritaire.** PR, puis le geste Vercel — main du praticien.
+
+**Questions ouvertes.** Aucun écran praticien ne lit les journées : la calibration
+de `LOT-05` passera par `execute_sql`. Rien ne valide les `qids` d'un pack contre
+`IDS_SUSPENDUS`. La graine déclare quatre identifiants pour un pack par défaut qui
+en porte cinq.
 ## 2026-08-05 — Le plancher agi : quatre règles d'orientation rallumées
 
 **Décisions.** `D-024` : une règle `zone` s'allume sur un `bandePlancher` si et
@@ -2331,7 +2361,7 @@ dénominateur d'axe exclut les questions conditionnelles. Classe toujours ouvert
 
 ## 2026-08-05 — « Mon bilan » : l'instantané plutôt que la garde
 
-**Décisions.** `D-025` : le portail sert `booklet_envois.note_transmise`, figé à
+**Décisions.** `D-026` : le portail sert `booklet_envois.note_transmise`, figé à
 l'envoi, jamais le champ vivant. L'absence de garde sur `annoter` est **assumée** —
 la garde évidente aurait cassé le renvoi corrigé, qui consiste précisément à
 corriger une note puis à la renvoyer. La visibilité s'écrit une fois
@@ -2355,3 +2385,26 @@ descend pas jusqu'où le défaut se cache inspire une confiance qu'il ne mérite
 **Questions ouvertes.** Dossier clos : annoter reste possible, renvoyer non — la note
 du dossier peut diverger sans réconciliation. Aucun code d'événement ne vise le bilan
 patient. `bilanConsultable ⇒ bookletEnvoye` est commenté, pas testé.
+## 2026-08-05 — LOT-00 : un seul chemin d'écriture en base
+
+**Décisions.** Fusionner #435 plutôt que rebaser (`merge-tree` propre, un seul
+fichier bougé depuis la base). Environnement GitHub **`release-db`**, pas
+`production` — déjà pris par l'intégration Vercel, le protéger aurait gaté ses
+déploiements. Garde de branche en trois clés : `if:` sur le job, job frère qui
+échoue bruyamment hors `main`, restriction côté plateforme.
+
+**Options écartées.** Construire les gardes CI (PR mêlant migration et code,
+détection de release oubliée) — hors périmètre, écrits en réserve. Retoucher
+`BRIEF_COMPILED.md` — fichier généré, une retouche y serait effacée.
+
+**Ce que le lot a appris.** Trois balayages du même renommage, trois angles morts
+de forme : les accents, le repli de ligne Markdown, le cwd d'une commande de fond.
+Et trois réécritures du même commentaire, trois sur-généralisations — le code
+était juste à chaque fois.
+
+**Prochaine action prioritaire.** Réglages GitHub (environnement, deux secrets,
+branches restreintes à `main`), puis merge.
+
+**Questions ouvertes.** D-003 n'a jamais rencontré les données de production ;
+rien ne détecte une release oubliée ; « base en avance » n'est vrai que si la
+migration est additive, et rien ne le garde.

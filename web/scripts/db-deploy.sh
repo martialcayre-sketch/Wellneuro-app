@@ -3,8 +3,9 @@
 # build Vercel. Invoqué par le Procfile : `postdeploy: npm run db:deploy`.
 #
 # Modèles de déploiement, un par plateforme :
-# - Vercel (serverless, pas de hook postdeploy) applique les migrations au BUILD
-#   via scripts/vercel-build.sh, gardé sur VERCEL_ENV=production.
+# - Vercel (serverless, pas de hook postdeploy) : les migrations s'appliquent
+#   HORS du build, via le workflow GitHub Actions `release-db` — le build ne migre
+#   plus (voir docs/DEPLOIEMENT_RELEASE_DB.md).
 # - Scalingo lance ce script APRÈS le build, sur un conteneur postdeploy dédié :
 #   si `migrate deploy` échoue, Scalingo annule le déploiement et la production
 #   reste sur la release précédente (équivalent du « build en échec » Vercel).

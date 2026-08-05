@@ -106,7 +106,7 @@ Quatre écarts par rapport à ce que ce lot supposait :
    synthèse n'a provablement pas bougé. Lecture de la production le 2026-08-05 :
    1 ligne recopiée, **0 exclue** — la garde ne coûte rien et retire la dépendance au
    temps qui sépare la relecture du déploiement.
-4. **La garde réclamée sur `annoter` aurait cassé le renvoi.** Voir [[D-025]] : c'est
+4. **La garde réclamée sur `annoter` aurait cassé le renvoi.** Voir [[D-026]] : c'est
    l'instantané qui ferme le défaut, pas un refus.
 
 **Ce que la revue a trouvé et que le lot ne prévoyait pas** : le hub proposait encore

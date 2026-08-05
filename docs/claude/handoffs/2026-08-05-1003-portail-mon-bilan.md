@@ -4,7 +4,7 @@
 - Campagne : `docs/claude/campagnes/2026-08-04-reprise-chantiers-en-suspens/`
 - Lot : `lots/LOT-01-portail-mon-bilan.md` — **livré**
 - Branche : `worktree-lot01-portail-bilan`
-- Décision posée : **D-025**
+- Décision posée : **D-026**
 - Fragment de changelog : `changelog.d/2026-08-05-portail-bilan.md`
 - Migration : `20260805070000_booklet_note_transmise` (additive, backfill) — **à vérifier en base après merge**
 
@@ -26,7 +26,7 @@ supprimée.
    paraît évidente — refuser dès qu'un envoi existe, par symétrie avec `effacer` —
    **casserait le renvoi corrigé** (`forceSend` → opération `Renvoi`), qui consiste
    précisément à corriger une note puis à la renvoyer. C'est l'instantané qui ferme le
-   défaut ; un renvoi en écrit un frais. Voir D-025.
+   défaut ; un renvoi en écrit un frais. Voir D-026.
 2. **La visibilité s'écrit à un seul endroit** : `whereEnvoiVisible`
    (`lib/documents/bilanPatient.ts`). Le hub et la page la servaient différemment, et
    avaient déjà divergé. Toute nouvelle surface qui montre un bilan passe par elle.
@@ -83,9 +83,36 @@ supprimée.
   0 synthèse modifiée depuis son envoi. Le backfill recopiera **1 ligne**, l'invariant
   n'en exclut **aucune**.
 
-## Après le merge — obligatoire
+## Après le merge — la migration ne s'applique PLUS toute seule
 
-Classe migration. Lire la base :
+**Attention, la règle a changé sous ce lot.** Depuis #435, mergé le 2026-08-05 pendant
+que ce lot était en revue, `web/scripts/vercel-build.sh` **n'applique plus les
+migrations** : le build est redevenu un `next build` sans effet de bord. L'écriture en
+production passe par le workflow **`release-db`**, déclenché **à la main**
+(`workflow_dispatch`, mode `migrate-only`) et gaté par l'environnement protégé
+`release-db` — un second gate humain en plus de la revue de PR.
+
+Conséquence directe : **merger cette PR ne fait rien en base.** Tant que `release-db`
+n'a pas été déclenché, la colonne `note_transmise` n'existe pas en production, et la
+route portail échouera sur une colonne absente. Runbook :
+`docs/DEPLOIEMENT_RELEASE_DB.md`.
+
+**Et cette page n'est derrière aucun drapeau.** Elle est vivante dès que Vercel a
+déployé `main`, c'est-à-dire *avant* que `release-db` ait pu tourner. Entre les deux, un
+patient qui suit le lien « Consulter mon bilan » — le lien, lui, s'affiche : sa requête
+ne touche pas la colonne manquante — obtient une erreur technique. La fenêtre se compte
+en minutes si `release-db` est déclenché dans la foulée du merge, mais elle existe. Deux
+façons de la fermer, à trancher avant de merger :
+
+1. **Déclencher `release-db` immédiatement après le merge**, avant d'annoncer quoi que
+   ce soit — la migration est additive, elle ne casse aucun code déjà déployé.
+2. **Poser un drapeau sur la page** dans un lot de suivi, et ne l'allumer qu'une fois la
+   colonne vérifiée en base. C'est le motif retenu pour l'agenda alimentaire ([[D-025]]).
+
+Rien de tout cela n'était vrai quand ce lot a été cadré : `vercel-build.sh` appliquait
+alors les migrations, et l'ordre était garanti par le build lui-même.
+
+Puis, et seulement ensuite, lire la base :
 
 ```sql
 SELECT migration_name,
@@ -100,5 +127,6 @@ SELECT count(*) FILTER (WHERE note_transmise IS NOT NULL) AS notes_figees,
 FROM booklet_envois;
 ```
 
-Attendu : migration appliquée, `notes_figees = 1`, `lignes = 8`. Un `migrate deploy`
-échoué pendant le build Vercel ne se voit nulle part ailleurs.
+Attendu : migration appliquée, `notes_figees = 1`, `lignes = 8`. C'est la seule preuve
+que `release-db` a fait ce qu'il annonçait — le déploiement applicatif, lui, réussira
+que la migration soit passée ou non.

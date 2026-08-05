@@ -30,8 +30,11 @@ première distribution réelle existe.
 - Un patient à qui l'agenda est assigné le voit dans son hub, y entre depuis le
   portail, note une journée en moins de 30 s, et le serveur refuse toute date
   hors de la fenêtre de 21 jours.
-- `WN_AGENDA_ALI` reste éteint tant que la surface de saisie n'est pas livrée ;
-  il ne s'allume qu'une fois `LOT-04` fait, en dernier geste du lot.
+- `WN_AGENDA_ALI` reste éteint tant que la surface de saisie n'est pas livrée.
+  `LOT-04` étant fait, l'allumage est devenu un **geste d'exploitation hors lot**
+  — Production seule, en deux temps, décrit par `RUNBOOK-allumage-drapeau.md`
+  (**D-025**). Il n'est le dernier geste d'aucun lot : il n'y a pas de PR à
+  écrire pour lui.
 
 ## Correspondance des lots
 
@@ -77,14 +80,20 @@ Les arbitrages structurants de la série sont tracés dans `docs/DECISIONS.md` :
 surface — arbitrage pris avant `LOT-04`) et **D-023** (ancre calculée sur les
 dates enregistrées et non sur les seules relues, quarantaine bornée à la vraie
 tête de chaîne, borne supérieure seule, et l'exemption qui ne vaut que si les
-quatre portes du parcours la connaissent — lot `LOT-04`).
+quatre portes du parcours la connaissent — lot `LOT-04`) et **D-025** (le
+drapeau s'allume en Production, la Preview étant inatteignable par le praticien —
+amende le point 2 de D-022, hors lot).
 
 ## Hors périmètre
 
 - Le barème et l'indice de l'agenda (dépendent d'une distribution réelle,
   inexistante).
 - L'agenda du sommeil (série distincte, patron déjà livré).
-- Toute activation de `WN_AGENDA_ALI` avant la fin de `LOT-04`.
+- Toute activation de `WN_AGENDA_ALI` avant la fin de `LOT-04` — condition
+  **satisfaite** depuis la livraison de `LOT-04`, et non levée. La position du
+  drapeau est désormais réglée par **D-025**, qui amende le point 2 de `D-022` :
+  l'allumage en Production est autorisé, la Preview étant inatteignable par le
+  praticien. Marche à suivre : `RUNBOOK-allumage-drapeau.md`.
 
 ## Lots
 
@@ -95,8 +104,17 @@ quatre portes du parcours la connaissent — lot `LOT-04`).
 | LOT-02 | Persistance et abstention au contrat | livré | LOT-01 |
 | LOT-03 | Accès portail serveur et contrat SQL | livré | LOT-02 |
 | LOT-04 | Portail patient : aiguillage, hub, saisie, borne des 21 jours | livré | LOT-03 |
-| LOT-05 | Barème et indice — **pas avant un premier recueil réel** | à écrire | LOT-04 |
+| LOT-05 | Barème et indice — **pas avant un premier recueil réel** | à écrire | recueil pilote (`RUNBOOK-allumage-drapeau.md`) |
+
+**Ce qui bloque `LOT-05` n'est pas une attente, c'est un geste.** La lecture du
+2026-08-05 donne 0 ligne dans `agenda_alimentaire_jours` **et 0 assignation** de
+`Q_ALI_09` sur 113 : l'agenda n'a jamais été distribué. Le déblocage passe donc
+par `RUNBOOK-allumage-drapeau.md` — allumer le drapeau en Production, redéployer,
+assigner un recueil pilote à un **dossier de contrôle portant une adresse du
+praticien** — et non par du code. Aucun des trois patients de graine ne convient,
+et le runbook dit pourquoi pour chacun.
 
 ## Consigne finale
 
-Passer en mode Plan avant toute modification de code sur `LOT-04`.
+Passer en mode Plan avant toute modification de code sur les lots de cette
+campagne. `LOT-05` ne s'ouvre qu'après le recueil pilote.

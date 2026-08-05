@@ -180,11 +180,12 @@ grep -q "deux bases différentes" "$SORTIE" || {
   cat "$SORTIE" >&2; exit 1; }
 echo "  ✔ --base doit nommer l'hôte réellement visé"
 
-# Les deux cas suivants gardent le CÂBLAGE DANS LE BUILD VERCEL, où l'import
-# n'a plus d'opérateur devant lui : ce sont les épingles posées en constantes
-# de `scripts/vercel-build.sh` qui tiennent lieu de relecture. Sans elles, la
-# variable d'armement oubliée en place ferait importer, au prochain déploiement
-# venu, le millésime que l'ANS aura publié entre-temps.
+# Les deux cas suivants gardent le CÂBLAGE AUTOMATISÉ, où l'import n'a plus
+# d'opérateur qui relit son contenu : ce sont les épingles posées en constantes
+# dans `.github/workflows/release-db.yml` (leur unique lieu de définition depuis
+# que le build Vercel n'écrit plus) qui tiennent lieu de relecture. Sans elles,
+# un déclenchement de routine importerait le millésime que l'ANS aura publié
+# entre-temps.
 echo "── 9. Le millésime servi ne change pas sans PR ──"
 echec_attendu "millésime non épinglé" "V106 attendu" \
   --source "$FIXTURES/v105" --version V106
@@ -241,9 +242,9 @@ echo "  ✔ une variable d'armement oubliée ne déclenche plus d'appel réseau"
 echo "── 13. Les contrats du catalogue passent sur des données ──"
 # En CI ces contrats ne rencontrent qu'une base VIDE : les invariants de données
 # y sont muets. Ici il y a des données. Le contrat STRUCTUREL est le MÊME fichier
-# que l'import rejoue dans sa transaction avant COMMIT ; le contrat de DONNÉES est
-# celui que `vercel-build.sh` rejoue encore en production après l'import (jusqu'à
-# sa bascule).
+# que l'import rejoue dans sa transaction avant COMMIT ; le contrat de DONNÉES
+# (dont la barrière D-003, portée par d'autres lots) n'est plus rejoué sur le
+# chemin d'import — il reste un contrat de catalogue joué en CI.
 npx prisma db execute --file prisma/checks/cb_biologie_structure_v1.sql \
   >"$SORTIE" 2>&1 || { cat "$SORTIE" >&2; exit 1; }
 npx prisma db execute --file prisma/checks/cb_biologie_catalogue_v1.sql \
