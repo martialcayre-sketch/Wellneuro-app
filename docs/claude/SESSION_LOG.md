@@ -2502,6 +2502,35 @@ comparés) — `ACTIVE_CAMPAIGN.md` affirmait « aucune campagne parallèle » s
 l'outil puisse le voir. `validation.last_checked_at` reste signalé périmé sans
 qu'aucun outil ne le rafraîchisse.
 
+## 2026-08-05 — Transport des compositions : le manque n'était pas là où le lot le cherchait
+
+**Décisions.** Le lot livre la **capacité et la mesure**, pas le chargement :
+138 728 fiches sur 140 148 (99,0 %) passeraient de coquille à composition connue,
+mesuré sur les 284 Mo réels. Charger est une écriture en production, donc un geste
+d'exploitation distinct, gardé par deux clés (`--url` confronté à
+`SUPPLEMENTS_TRANSPORT_HOTE`), sur le modèle de l'import NABM.
+
+**Options écartées.** Merger les 526 lignes sauvées telles quelles — elles
+compilaient, mais **rien ne POSTait vers elles** : zéro fiche remplie. Sortir tous
+les doublons du dénominateur de complétude. Alimenter un `bilanPartiel` que le
+chemin d'écriture ne construit jamais : la promesse a été retirée, pas maquillée.
+
+**Ce que le lot a appris.** Deux revues, deux NO-GO. Le second a trouvé qu'un
+correctif écrit sous la pression du premier **inversait le sens d'un signal
+clinique** : sortir tous les doublons du dénominateur faisait passer au feu vert
+des fiches ayant perdu une dose. Mesuré ensuite : **7 307 doublons identiques,
+2 912 divergents** — 28,5 %, pas un cas limite. Et le piège qui rendait l'ordre
+irréversible : **le rejeu ne réparait pas le dénominateur**, alors que trois
+endroits le présentaient comme le geste de reprise complet. Un lot mal transporté
+aurait été figé à vie.
+
+**Prochaine action prioritaire.** PR, CI, merge. Puis LOT-03 (runbook HDS), qui
+ferme la campagne et dénoue le couplage avec les dettes 5.0.
+
+**Questions ouvertes.** 1 420 fiches ont des lignes source mais aucune résolue :
+non transportées, `compositionSourceLignes` nul, écran honnête mais muet sur ce
+qu'on sait. La garde de parité du dépôt ne couvre pas les étapes CI postérieures à
+`setup-node` — un banc y est branché à la main, pas garanti.
 ## [2026-08-05] — LOT-02 : observer le repli legacy des packs
 
 **Décisions.** Hypothèse de cadrage infirmée : `ensembles_divergents` était déjà

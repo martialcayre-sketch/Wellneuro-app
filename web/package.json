@@ -25,7 +25,7 @@
     "registry-check": "node --test ../scripts/lib/verifier_registre_instruments.test.mjs",
     "interventions-check": "node --test ../scripts/lib/verifier_registre_interventions.test.mjs",
     "certify-check": "bash ../scripts/run-certify-bancs.sh",
-    "compositions-check": "node --test ../tools/supplements/compositions/lib/resolution.test.mjs",
+    "compositions-check": "node --test ../tools/supplements/compositions/lib/resolution.test.mjs ../tools/supplements/compositions/transporter.test.mjs",
     "secrets-check": "node --test ../scripts/check_no_secrets.test.mjs",
     "hooks-check": "cd .. && node --test .claude/hooks/*.test.mjs",
     "campaign-audit-check": "cd .. && node scripts/wn-campaign-audit.mjs --fail-on-warning-codes missing_audit_root,missing_in_mirror,extra_in_mirror,status_drift_between_roots,closed_campaign_with_open_lots,inflight_without_active_lot,idle_with_active_fields",
