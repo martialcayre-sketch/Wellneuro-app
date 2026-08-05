@@ -77,6 +77,9 @@ profils (Desktop Chromium + iPhone 13) :
   uniquement). La doc de checklist reste à mettre à jour séparément.
 - La validation tactile sur téléphone réel (au-delà de l'émulation iPhone 13)
   reste hors périmètre de l'automatisation.
+- Si `fiche-trajectoire:12` timeout, purger `web/.next` avant de relancer — un
+  artefact de build périmé peut faire échouer spécifiquement ce test, sans
+  rapport avec le code qu'il vérifie.
 
 ## Exécution depuis un worktree git
 
