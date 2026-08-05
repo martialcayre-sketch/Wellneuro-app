@@ -2409,6 +2409,37 @@ branches restreintes à `main`), puis merge.
 rien ne détecte une release oubliée ; « base en avance » n'est vrai que si la
 migration est additive, et rien ne le garde.
 
+## 2026-08-05 — `release-db` se propose tout seul, sans s'approuver tout seul
+
+**Décisions.** Une migration qui atteint `main` crée son run de release
+(déclencheur `push` filtré sur `web/prisma/migrations/**`). **L'automatisation
+porte sur le déclenchement, jamais sur l'approbation** : `environment: release-db`
+est conservé, le run attend un relecteur. Un job `resume`, sans environnement donc
+joué avant le gate, écrit dans le Summary ce que le push apporte — et avertit qu'il
+n'est **pas** la liste de ce qui sera appliqué, `migrate deploy` emportant tout
+reliquat en attente.
+
+**Options écartées.** Dériver le mode par expression (inutile : `inputs` est vide
+hors dispatch). Faire dépendre la sûreté de ce seul raisonnement — les trois étapes
+d'import portent aussi `event_name == 'workflow_dispatch'`, aucun lint de workflow
+ne tournant ici. `continue-on-error` sur le résumé : un résumé illisible doit
+bloquer plutôt que faire approuver à l'aveugle.
+
+**Ce que le lot a appris.** **Automatiser un déclenchement a supprimé une barrière
+sans toucher au gate.** Il fallait deux choses pour écrire en production — qu'un
+humain clique, *et* que l'environnement gate ; il n'en reste qu'une. Un
+`environment:` retiré par mégarde était inoffensif tant que personne ne
+déclenchait. D'où le banc d'invariants et la vérification de la configuration
+GitHub (relecteurs présents, branches restreintes à `main`). Et un commentaire que
+j'ai dû corriger : il justifiait un `|| true` par un `set -e` qui ne se déclenche
+pas — sans `pipefail`, le statut d'un pipeline est celui de `sort`, pas de `grep`.
+
+**Prochaine action prioritaire.** PR, CI, merge — puis observer le premier
+déclenchement automatique réel.
+
+**Questions ouvertes.** `prevent_self_review` est désactivé (un seul relecteur) :
+le second gate est un temps d'arrêt, pas un second regard. Aucun `actionlint` en
+CI. La fenêtre entre déploiement du code et migration est raccourcie, pas fermée.
 ## 2026-08-05 — LOT-01 : vue de vérité générée depuis le code
 
 **Décisions.** `wn-etat-reel.mjs` rapporte, `wn-cycle --appliquer` répare — deux

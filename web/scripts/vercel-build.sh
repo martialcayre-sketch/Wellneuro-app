@@ -2,8 +2,9 @@
 # Build Vercel — construit l'application. N'ÉCRIT PLUS EN BASE DE PRODUCTION.
 #
 # Les migrations Prisma et l'import de nomenclature NABM (CB-02a) s'appliquent
-# désormais HORS du build, via le workflow GitHub Actions `release-db` (déclenché
-# à la main, gaté par l'environnement protégé `release-db`). Chemin, runbook et
+# désormais HORS du build, via le workflow GitHub Actions `release-db` (proposé
+# automatiquement dès qu'une migration atteint main, gaté par l'environnement
+# protégé `release-db`). Chemin, runbook et
 # étapes ops : docs/DEPLOIEMENT_RELEASE_DB.md.
 #
 # POURQUOI CE SCRIPT N'ÉCRIT PLUS. Il appliquait `migrate deploy` + imports au
