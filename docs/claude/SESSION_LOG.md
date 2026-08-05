@@ -2615,3 +2615,37 @@ scripts/wn-cycle.mjs --appliquer` (même geste que pour LOT-02→LOT-03).
 (latent) ; `noteRecueil` dupliqué texte-pour-texte dans les trois blocs.
 Non vérifié : l'UI praticien affiche-t-elle le champ `note` pour ces trois
 instruments (mécanisme pré-existant partagé avec PSQI/TFD).
+
+## 2026-08-05 — LOT-02 transport des compositions, puis LOT-03 runbook HDS
+
+**Décisions.** LOT-02 : livrer la capacité et le chiffre, pas le chargement — les
+138 728 fiches restent des coquilles jusqu'à un geste d'exploitation distinct,
+gardé par deux clés. Un doublon de composition identique sort du dénominateur de
+complétude, un doublon divergent y reste. LOT-03 : verser le runbook HDS par
+**retouches ciblées sur `main`**, jamais par reprise du fichier de la branche de
+sauvegarde.
+
+**Options écartées.** Merger ou rebaser `sauvegarde/runbook-scalingo-staging` :
+forkée du 2026-07-24, elle supprimerait 28 332 lignes et annulerait les PR #356 et
+#425 — dont #425 porte précisément la correction de région qu'elle prétend
+apporter. Sortir tous les doublons du dénominateur (LOT-02) : c'était inverser un
+signal clinique.
+
+**Ce que les lots ont appris.** Deux revues adversariales, deux NO-GO sur LOT-02 ;
+la seconde a trouvé qu'un correctif de la première faisait passer au feu vert des
+fiches ayant perdu une dose — 2 912 cas divergents mesurés sur 10 219. Trois tests
+verts pour une mauvaise raison, corrigés et signalés. Sur LOT-03, deux défauts que
+ni le lot ni la sauvegarde ne nommaient : la PR #425 avait corrigé la région à un
+seul des deux endroits, et le runbook décrivait un `vercel-build.sh` qui n'écrit
+plus depuis #435.
+
+**Prochaine action prioritaire.** PR LOT-03, CI, merge — ce lot **clôt la
+campagne** « reprise des chantiers en suspens ». Puis rendre la main à la campagne
+« Clôture des dettes Wellneuro 5.0 ».
+
+**Questions ouvertes.** Aucune passe T2 locale isolée n'a pu être obtenue : la
+session voisine relance Playwright en continu sur la base partagée, y compris en
+cours de passe — un `pgrep` préalable ne garde pas une fenêtre de 10 minutes.
+Seul le CI rend un verdict. Réserve LOT-02 non corrigée : 1 420 fiches ont des
+lignes source mais aucune résolue. Une seconde app Scalingo `wellneuro` existe au
+statut `new`, non instruite.
