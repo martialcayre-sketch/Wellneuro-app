@@ -76,7 +76,11 @@ export const Q_SOM_01 = {
         q('Q11e',"D'autres motifs d'agitation pendant le sommeil",O_03jt,{conditionnel:'Q10>=1',horsBareme:true}),
       ]}
   ],
-  scoring:{type:'psqi'}
+  // `severiteCroissante` : les quatre bandes du PSQI montent avec le total
+  // (0-4 « Pas de trouble » → 17-21 « sévères »), et ses sept composantes sont
+  // monotones. L'instrument est donc éligible au plancher garanti servi sur
+  // recueil partiel. La grille elle-même reste dans le moteur (Buysse 1989).
+  scoring:{type:'psqi', severiteCroissante:true}
 };
 // MFI-20 (Q_SOM_07). RECONSTRUIT le 2026-07-31 depuis sa source
 // (WN-SRC-0397, « Echelle multidimensionnelle de fatigue pro def.pdf »), sur la
@@ -286,7 +290,7 @@ export const Q_SOM_04 = {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:40,
+    type:'sum', severiteCroissante:true, maxTotal:40,
     interpretation:[
       {min:0, max:0,  label:'Absence de syndrome des jambes sans repos',color:'success',protocol:''},
       {min:1, max:10, label:'SJSR léger',color:'info',protocol:'Correction déficits : fer, magnésium, vitamine D, folates — hygiène de vie'},

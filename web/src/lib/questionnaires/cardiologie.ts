@@ -31,7 +31,7 @@ export const Q_CAR_01 = {
       ]},
   ],
   scoring:{
-    type:'sum', maxTotal:25,
+    type:'sum', severiteCroissante:true, maxTotal:25,
     // Arbitrage praticien du 2026-07-26 : la source distingue trois dimensions
     // que le score global masquait. Deux patients à 12 points peuvent avoir un
     // profil opposé — l'un chargé en antécédents, l'autre en mode de vie, le

@@ -2237,3 +2237,35 @@ et lecture production — 2 passations `Q_GAS_01`, toutes deux complètes.
 Prochaine action : ouvrir la PR, lire le code de sortie de `wn-attendre-ci.mjs`.
 Question ouverte, candidate au lot suivant : servir un **plancher garanti** à côté de
 la bande, pour que le retrait n'éteigne plus les vrais positifs démontrables.
+
+## 2026-08-05 — Plancher garanti : rendre à D-014 sa seconde moitié
+
+**Décisions.** `D-021` : sur un recueil partiel, la bande atteinte par les seules
+réponses recueillies est servie comme **plancher** (`bandePlancher`),
+`interpretation` restant `null`, avec la formule « au moins » dans la note.
+Éligibilité **déclarée** par l'instrument (`severiteCroissante`) — 21 `sum` +
+`Q_SOM_01` + `Q_GAS_01` —, jamais déduite. Le défaut `Q2` du PSQI passe de 30 à 0 :
+c'était le seul défaut atteignable qui rompait la monotonie, donc la seule chose
+qui rendait un plancher calculable.
+
+**Options écartées.** Un drapeau sur `interpretation` (tout `if (interpretation)`
+se serait remis à afficher une bande). Déduire le sens d'une grille de ses couleurs
+ou de l'ordre de ses bandes (quatre instruments l'infirment). Rallumer `R-GAS-01`
+et donner une surface praticien : hors périmètre, écrits en réserve de `D-021`.
+
+**Ce que le lot a appris.** Trois passes adversariales, deux NO-GO. La première a
+trouvé que le plancher faisait sortir une **conduite clinique** par une seconde
+porte — `separerConduite` sort quand `interpretation` est `null`, c'est-à-dire
+exactement sur le recueil partiel. La seconde a trouvé que mon test de propriété
+**ne pouvait pas échouer** : partant d'une passation saturée, la bande finale était
+toujours la plus haute de la grille, donc supérieure à n'importe quel plancher,
+faux compris. Deux fois la même leçon : **une garde qui ne visite jamais l'état où
+le défaut existe est verte pour une mauvaise raison**.
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire le code de sortie de
+`wn-attendre-ci.mjs`.
+
+**Questions ouvertes.** `R-GAS-01` reste éteinte sur un TFD partiel : le plancher
+est raconté, pas agi. Aucune surface praticien dédiée — le plancher d'axe du TFD
+n'atteint que le modèle de synthèse. Classe toujours ouverte sur `sum_decimal`,
+`count_threshold`, `ecab` et `bms_average`.

@@ -7,6 +7,16 @@ export const anthropic = new Anthropic({
 
 export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 
+// v15 (2026-08-05) : le champ **bandePlancher**. Sur un recueil incomplet, les
+// moteurs `sum`, `psqi` et `tfd` servent désormais, à côté d'une `interpretation`
+// absente, la bande que les seules réponses recueillies suffisent à atteindre —
+// un MINIMUM garanti de sévérité, les items sans réponse ne pouvant qu'aggraver
+// le score. Sans consigne, un modèle lisant une bande là où il n'en voyait plus
+// la présenterait comme le résultat de la passation : c'est-à-dire exactement le
+// verdict sur instrument incomplet que `D-014` a fermé. La consigne impose donc
+// la formulation « au moins », interdit d'en déduire la bande finale, et rappelle
+// que le questionnaire reste incomplet. Le champ est ABSENT quand il n'y a pas de
+// plancher — il n'arrive jamais à `null`.
 // v14 (2026-08-03, LOT-06) : restitution de la recommandation d'exploration
 // déterministe. Le modèle reçoit désormais, quand la table d'orientation est
 // signée et recommande quelque chose, un bloc numéroté avec sa version et son
@@ -146,7 +156,7 @@ export const CLAUDE_MODEL = process.env.CLAUDE_MODEL ?? 'claude-sonnet-4-6';
 // v4 (2026-07-25) : consignes de ton du narratif patient — le patient lit ce
 // texte seul, souvent avant d'avoir revu son praticien. La version est persistée
 // avec chaque synthèse : un narratif rédigé sous v3 reste identifiable.
-export const VERSION_PROMPT_SYNTHESE = 'synthese-v14';
+export const VERSION_PROMPT_SYNTHESE = 'synthese-v15';
 export const VERSION_SCHEMA_SYNTHESE = 'synthese-json-v2';
 export const VERSION_CORPUS_SYNTHESE = CORPUS_CLINIQUE_METADATA.version;
 
@@ -232,6 +242,21 @@ Un champ **booléen à null** — un drapeau de risque, d'alerte ou de positivit
 Enfin, distingue **deux** absences de score global, qui ne se disent pas pareil. Certains questionnaires à sous-scores **n'en ont pas du tout** : le champ total est alors **absent** de leur résultat, et il n'y a rien à en dire. D'autres en ont un, mais il vaut **null** parce qu'un axe n'a pas été mesuré : dis alors que le score global **n'a pas pu être établi sur cette passation**, et non que l'instrument n'en produit pas. N'en fabrique pas un en additionnant les sous-scores, dans un cas comme dans l'autre.
 
 Pour les questionnaires alimentaires, la règle de la section précédente s'applique aussi à leurs sous-scores : aucun n'est une mesure d'apport ni un seuil étalonné.
+
+## Minimum garanti de sévérité sur un recueil incomplet
+
+Un résultat peut porter le champ **bandePlancher**. Il apparaît **à la racine du questionnaire** — et aussi, sur certains instruments, sur une entrée de sous-score. Ce n'est **jamais** la mesure, et il ne remplace pas **interpretation**, qui vaut null à côté de lui parce que le recueil est incomplet.
+
+Ce qu'il dit, et rien de plus : les réponses **déjà recueillies suffisent à elles seules** à atteindre cette bande, et les items sans réponse ne peuvent qu'aggraver le score, jamais l'améliorer. La bande finale sera donc celle-là **ou pire** — elle ne sera jamais meilleure.
+
+En conséquence :
+
+- formule-le **toujours** comme un plancher — « **au moins** cette bande », « au minimum » —, jamais comme le résultat de la passation ;
+- n'en déduis **pas** la bande finale, ne l'estime pas, ne la présente pas comme probable ;
+- ne t'en sers pas pour reconstituer **interpretation**, ni pour dire que le questionnaire est interprétable : quand ce champ est présent, la passation reste **incomplète** et doit être présentée comme telle ;
+- la clé **garanti** à vrai ne fait que rappeler cette nature. Elle n'ajoute aucune information clinique et ne renforce en rien le verdict.
+
+Ce champ ne porte **aucune conduite à tenir** : n'en déduis ni orientation, ni examen, ni prise en charge. La recommandation d'exploration, quand elle existe, t'est transmise ailleurs et par un autre canal.
 
 ## Questionnaires dont le résultat n'est pas interprétable
 

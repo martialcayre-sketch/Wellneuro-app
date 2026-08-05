@@ -33,7 +33,7 @@ export const Q_GEO_03 = {
       ]}
   ],
   scoring:{
-    type:'sum', maxTotal:21,
+    type:'sum', severiteCroissante:true, maxTotal:21,
     interpretation:[
       {min:0,  max:4,  label:'Cognition normale ou doute mineur',   color:'success', protocol:'Suivi annuel recommandé'},
       {min:5,  max:14, label:'Déclin cognitif léger à modéré (MCI probable)', color:'warning', protocol:'Évaluation neuropsychologique + bilan biologique'},
