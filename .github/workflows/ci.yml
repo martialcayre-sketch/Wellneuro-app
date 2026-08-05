@@ -259,6 +259,17 @@ jobs:
       - name: État de campagne et vue humaine (banc du script)
         run: node --test scripts/wn-campaign.test.mjs
 
+      # Banc de `scripts/wn-matrice-consommation.mjs`, qui dérive du code la
+      # matrice « source de savoir → surface qui la consomme ». Le garde utile
+      # n'est pas « le script tourne » : c'est qu'une source SANS appelant
+      # apparaisse avec une surface vide au lieu d'être omise, et que toute
+      # source dormante porte un arbitrage daté dans
+      # `docs/claude/corpus/consommation_decisions.json`. Une source qui
+      # s'endort sans décision fait donc rougir ce banc — la dette se voit le
+      # jour où elle naît, pas six semaines plus tard.
+      - name: Matrice de consommation du savoir (banc du générateur)
+        run: node --test scripts/wn-matrice-consommation.test.mjs
+
       # Parité entre ce job et `npm run check`. Toutes les étapes ci-dessus sont
       # bloquantes et ne demandent que node, git et bash : aucune raison qu'un
       # développeur les découvre en CI. C'est la leçon du lint (2026-07-21),

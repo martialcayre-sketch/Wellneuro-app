@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "commentaire": "Arbitrage de chaque source de savoir DORMANTE — une source sans appelant doit porter une décision datée, sinon `node scripts/wn-matrice-consommation.mjs --strict` échoue en code 2. Trois verdicts seulement : `a_brancher` (dette assumée, avec un porteur), `dormante` (inerte volontairement, avec sa raison et sa date de réexamen), `a_retirer` (le code part). Brancher réellement une surface ou poser un drapeau en production reste une décision praticien, hors du LOT-05 (voir son périmètre). Ce fichier s'édite à la main ; la matrice, non.",
+  "misAJourLe": "2026-08-05",
+  "decisions": {
+    "catalogue-biologie": {
+      "verdict": "a_brancher",
+      "date": "2026-08-05",
+      "raison": "Les 987 actes NABM V105 sont en base depuis le 2026-07-26, mais AUCUN fichier hors de web/src/lib/biology-library/ ne les touche : ni route, ni écran, ni composant. WN_CB_ENABLED et WN_CB_RESULTS_ENABLED gardent une porte qui ne mène nulle part. C'est la dette la plus coûteuse de la matrice — une ingestion payée et jamais consommée.",
+      "porteur": "campagne 2026-08-02-rayon-biologie-cb",
+      "reexaminerLe": "2026-09-01"
+    },
+    "rayon:biologie": {
+      "verdict": "dormante",
+      "date": "2026-08-05",
+      "raison": "Notebook 08 ingéré et validé, mais le rayon suit le sort de la bibliothèque de biologie ci-dessus : le brancher avant elle servirait des claims sans écran pour les lire.",
+      "reexaminerLe": "2026-09-01"
+    },
+    "rayon:nutrition": {
+      "verdict": "dormante",
+      "date": "2026-08-05",
+      "raison": "Notebook 09 ingéré et validé. Son consommateur naturel est la boussole alimentaire (C5), qui ne demande pas de claims aujourd'hui. Inerte par absence de besoin, pas par défaut de corpus.",
+      "reexaminerLe": "2026-09-01"
+    },
+    "rayon:sommeil": {
+      "verdict": "dormante",
+      "date": "2026-08-05",
+      "raison": "Notebook 02 ingéré et validé. Aucun écran ne l'appelle ; l'allowlist RAYONS_RECHERCHE_CORPUS est délibérément limitée à cognition/douleur/intestin. L'élargir est une décision praticien, hors périmètre du LOT-05.",
+      "reexaminerLe": "2026-09-01"
+    },
+    "rayon:stress": {
+      "verdict": "dormante",
+      "date": "2026-08-05",
+      "raison": "Notebook 03 ingéré et validé. Même situation que le rayon sommeil : corpus prêt, allowlist volontairement étroite.",
+      "reexaminerLe": "2026-09-01"
+    },
+    "rayon:humeur": {
+      "verdict": "dormante",
+      "date": "2026-08-05",
+      "raison": "Notebook 04 ingéré et validé. Même situation que les rayons sommeil et stress.",
+      "reexaminerLe": "2026-09-01"
+    }
+  }
+}

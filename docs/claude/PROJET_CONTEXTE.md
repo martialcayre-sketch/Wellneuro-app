@@ -137,6 +137,36 @@ Ce qui reste humain, et que ces outils ne touchent pas : les arbitrages
 cliniques, `next_action` (le texte libre, pas les champs structurés), et les
 décisions de campagne (`docs/DECISIONS.md`).
 
+### Ce qui est consommé, et par quoi — `docs/claude/MATRICE_CONSOMMATION.md`
+
+L'ingestion du savoir est complète ; sa **consommation** ne l'est pas. Un
+corpus validé à 100 %, mappé, testé, et qu'aucun écran n'appelle ne produit
+aucun signal : rien n'est rouge, rien ne manque, et il ne sert à personne.
+
+`node scripts/wn-matrice-consommation.mjs --markdown` régénère la matrice
+« source de savoir → surface qui la consomme → décision produite → drapeaux →
+verrou de donnée → visible du patient ». La colonne des surfaces est **dérivée
+des imports**, jamais rédigée : une source sans appelant y apparaît avec une
+surface vide — c'est l'information recherchée. Trois précautions y sont
+lisibles, et ne doivent pas être perdues :
+
+- **atteignable ≠ consommé** : une surface qui atteint la source *à travers* un
+  relais est comptée séparément (`+ N indirecte(s)`). `corpusSyntheseV1`
+  traverse `lib/anthropic.ts`, que seize surfaces importent ;
+- **un drapeau référencé n'est pas un drapeau posé** — aucune valeur
+  d'environnement n'est lue ici, même asymétrie que `wn-etat-reel.mjs` ;
+- un **double verrou** (drapeau *et* condition de donnée) laisse une surface
+  fermée même drapeau posé : c'est le cas de la table d'orientation
+  (`WN_ENABLE_ORIENTATION_NNPP2` + `tableSignee()`).
+
+Les arbitrages, eux, ne se dérivent pas : ils vivent dans
+`docs/claude/corpus/consommation_decisions.json`, un verdict daté par source
+dormante (`a_brancher`, `dormante`, `a_retirer`). Une source qui s'endort sans
+décision fait rougir le banc en CI — la dette se voit le jour où elle naît.
+État au 2026-08-05 : 19 sources, 6 dormantes, dont la **bibliothèque de
+biologie fonctionnelle** — 987 actes NABM en base depuis le 2026-07-26 et
+**aucun appelant hors de son propre répertoire**.
+
 ## Ce qui reste ouvert (hors périmètre sauf demande explicite)
 
 - **R6** : stabilisation build/tests/go-no-go (`.claude/skills/wn-r6/SKILL.md` fait foi, tranché en R10) — gelé jusqu'à validation de R0.
