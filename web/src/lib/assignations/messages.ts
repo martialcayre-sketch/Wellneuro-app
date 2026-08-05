@@ -8,10 +8,19 @@
 export const RAISON_DEJA_ASSIGNE = 'deja_assigne';
 
 /**
- * Ne nomme AUCUN écran. L'annulation vit aujourd'hui dans la liste des
- * patients, pas sur la fiche qui porte le panneau d'orientation : nommer un
- * emplacement enverrait le praticien chercher un bouton là où il n'est pas.
+ * Ne nomme ni écran, ni objet, ni nombre — les trois seraient faux quelque part.
+ *
+ * Pas d'écran : l'annulation vit dans la liste des patients, pas sur la fiche
+ * qui porte le panneau d'orientation ; nommer un emplacement enverrait le
+ * praticien chercher un bouton là où il n'est pas.
+ *
+ * Pas d'objet : les quatre routes qui rendent ce refus portent tantôt UN
+ * questionnaire (assignation unitaire), tantôt un pack entier. « Ce
+ * questionnaire » s'afficherait sous une carte « pack » de huit instruments.
+ *
+ * Pas de nombre : un pack déjà couvert exige d'annuler chacune de ses lignes,
+ * pas « l'assignation existante » au singulier.
  */
 export const MESSAGE_DEJA_ASSIGNE =
-  'Ce questionnaire est déjà assigné à ce patient et en attente de réponse. ' +
-  'Pour le renvoyer, annulez d’abord l’assignation existante, puis réassignez-le.';
+  'Déjà assigné à ce patient et en attente de réponse. ' +
+  'Pour le renvoyer, annulez d’abord ce qui est déjà assigné, puis réassignez.';

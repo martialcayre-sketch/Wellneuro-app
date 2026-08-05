@@ -11,7 +11,9 @@ import type { Prisma, PrismaClient } from '@/generated/prisma';
 export const STATUTS_ASSIGNATION_TERMINAL = ['Complété', 'Annulée'] as const;
 
 // Réexportés depuis `messages.ts` : les écrans ont besoin du même texte de
-// refus que la route, et ne peuvent pas importer ce module-ci (types Prisma).
+// refus que la route. Ils POURRAIENT importer ce module-ci — son import Prisma
+// est un `import type`, effacé à la compilation — mais un module de messages
+// sans dépendance serveur ne dépend pas de cette propriété pour le rester.
 export { MESSAGE_DEJA_ASSIGNE, RAISON_DEJA_ASSIGNE } from './messages';
 
 type ClientLecture = PrismaClient | Prisma.TransactionClient;
