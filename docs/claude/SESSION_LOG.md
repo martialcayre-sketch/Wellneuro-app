@@ -2292,3 +2292,34 @@ le défaut existe est verte pour une mauvaise raison**.
 est raconté, pas agi. Aucune surface praticien dédiée — le plancher d'axe du TFD
 n'atteint que le modèle de synthèse. Classe toujours ouverte sur `sum_decimal`,
 `count_threshold`, `ecab` et `bms_average`.
+
+## 2026-08-05 — Le drapeau de l'agenda : lever une restriction devenue un mur
+
+**Décisions.** `D-024` amende le point 2 de `D-022` : `WN_AGENDA_ALI` se pose sur
+le scope Vercel **Production**, et la Preview est exclue — elle lit la base de
+production et le praticien ne peut pas s'y connecter (SSO sur `*.vercel.app`,
+callback OAuth sur `app.wellneuro.fr`). Le motif du report était éteint : `LOT-04`
+a livré l'écran dont `D-022` déplorait l'absence. Un runbook porte le geste, avec
+prérequis vérifiables et retour arrière.
+
+**Options écartées.** Rendre la Preview utilisable (alias de domaine + callback +
+SSO levé) : coût réel, isolation nulle, la base étant partagée. Insérer
+l'assignation par script : écriture hors chemin relu, et sans effet drapeau éteint.
+
+**Ce que le lot a appris.** Deux passes adversariales, un NO-GO puis un GO sous
+réserve. La première a trouvé que mon runbook prescrivait un **geste impossible** —
+les trois patients de graine sont inassignables, `actif = false` pour deux d'entre
+eux et une adresse qui n'existe pas pour les trois, alors que le lien d'entrée part
+par e-mail. C'est la règle de `D-023` point 5, enfreinte le lendemain de son
+écriture. Elle a aussi trouvé que je me créditais d'une relecture que `D-022` avait
+déjà faite : elle portait « 0 ligne et 0 assignation » depuis la veille. La seconde
+a trouvé que mes deux correctifs les plus concrets ne s'exécutaient pas — `qids` est
+`text[]` et non `jsonb`, et le contrat SQL est un bloc `DO $$` que le garde MCP
+refuse. **Prescrire un geste sans l'exécuter, c'est écrire une promesse.**
+
+**Prochaine action prioritaire.** PR, puis le geste Vercel — main du praticien.
+
+**Questions ouvertes.** Aucun écran praticien ne lit les journées : la calibration
+de `LOT-05` passera par `execute_sql`. Rien ne valide les `qids` d'un pack contre
+`IDS_SUSPENDUS`. La graine déclare quatre identifiants pour un pack par défaut qui
+en porte cinq.
