@@ -1,7 +1,7 @@
 ---
 id: "LOT-04"
 titre: "Agenda alimentaire — aiguillage, hub patient, surface de saisie et borne des 21 jours"
-statut: "à faire"
+statut: "fait"
 dépend_de: "LOT-03"
 ---
 
@@ -66,9 +66,11 @@ une journée en moins de 30 s, et le serveur refuse toute date hors de la fenêt
   - premier `POST` sur agenda vide → accepté, pose l'ancre ;
   - `dateDebut + 20` → accepté ; `dateDebut + 21` → refusé ;
   - correction d'une journée déjà notée dans la fenêtre avec `supersedesJourId` → acceptée ;
-  - **journée d'ancre en quarantaine** → la fenêtre se ré-ancre en silence et la borne
-    glisse avec elle ([D-018](../../../../DECISIONS.md), réserve 1) : le test doit exercer ce
-    glissement, pas l'ignorer.
+  - **journée d'ancre en quarantaine** → l'ancre **ne glisse pas**, et la borne avec elle
+    ([D-022](../../../../DECISIONS.md)). Le report de [D-018](../../../../DECISIONS.md)
+    (réserve 1) tenait à l'absence d'écran rendant le glissement visible ; ce lot livrant cet
+    écran, le correctif est fait ici et le test doit **prouver la correction**, pas exercer le
+    défaut — il attend un refus là où l'ancre glissante acceptait.
 - Unitaires sur l'ordre des refus : assignation périmée **et** sans consentement → `410`,
   pas `403`.
 

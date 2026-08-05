@@ -155,12 +155,56 @@ export async function saveJour(input: JourInput): Promise<JourRow> {
 }
 
 /**
+ * Une ligne mise en quarantaine, réduite à ce que la lecture SAIT ENCORE dire
+ * d'elle. `date_jour` et `soumis_le` sont des COLONNES, pas du JSONB : elles
+ * restent lisibles quand `reponses` ne l'est pas, et `SELECT_JOUR` les
+ * sélectionne déjà — aucune requête supplémentaire.
+ *
+ * `soumisLe` est une chaîne ISO 8601 UTC, EXACTEMENT comme `JourRow.soumisLe` :
+ * c'est ce qui permet de comparer une ligne en quarantaine à une ligne relue
+ * sans convertir, et de le faire avec l'ordre que `resolveJoursActifs` emploie
+ * déjà pour départager deux têtes.
+ *
+ * `null` quand l'horodatage lui-même n'est pas exploitable — l'appelant doit
+ * alors traiter la ligne comme INCOMPARABLE, donc bloquante (fail-closed).
+ */
+export type LigneIllisible = {
+  dateJour: string;
+  soumisLe: string | null;
+};
+
+/**
+ * `soumisLe` d'une ligne en quarantaine, ou `null` si la valeur n'est pas un
+ * instant exploitable. On ne fabrique JAMAIS d'horodatage de repli : une date
+ * inventée départagerait des têtes de chaîne avec une valeur qui ne vient pas
+ * de la base. `null` dit « je ne sais pas », et se lit fail-closed en aval.
+ */
+function soumisLeIllisible(value: unknown): string | null {
+  if (!(value instanceof Date)) return null;
+  // `Invalid Date` est bien une `Date` ; son `getTime()` vaut `NaN`, et
+  // `toISOString()` y lève. Le test précède l'appel.
+  if (!Number.isFinite(value.getTime())) return null;
+  return value.toISOString();
+}
+
+/**
  * Résultat d'une lecture. `illisibles` n'est PAS décoratif : voir plus bas.
  */
 export type LectureJours = {
   jours: JourRow[];
   /** Lignes en base qu'on n'a pas su relire — mises en quarantaine, pas perdues. */
   illisibles: number;
+  /**
+   * Les LIGNES en quarantaine, dans l'ordre de lecture (donc par `soumisLe`
+   * croissant), une entrée par ligne — jamais dédoublonnées.
+   *
+   * Ce que `datesIllisibles` seul ne permet pas de décider : si la date porte
+   * PAR AILLEURS une tête de chaîne relue, faut-il la bloquer ? Une ligne
+   * supplantée illisible ne bloque rien ; une ligne PLUS RÉCENTE que la tête
+   * relue, si — elle peut être la vraie tête, que la lecture n'a pas vue.
+   * Le départage demande donc l'horodatage, pas seulement la date.
+   */
+  lignesIllisibles: LigneIllisible[];
   /**
    * Les DATES touchées par la quarantaine, dédoublonnées et dans l'ordre de
    * lecture. Le compte seul ne dit pas OÙ le trou se trouve, et un appelant
@@ -172,6 +216,9 @@ export type LectureJours = {
    *
    * Une même date peut porter plusieurs lignes illisibles (append-only) : le
    * compte et la longueur de ce tableau NE SONT PAS interchangeables.
+   *
+   * DÉRIVÉ de `lignesIllisibles`, jamais construit en parallèle : deux collectes
+   * indépendantes finiraient par diverger sur les cas défensifs.
    */
   datesIllisibles: string[];
 };
@@ -204,6 +251,11 @@ export type LectureJours = {
  * Le compte remonte AVEC ses dates (`datesIllisibles`) : un appelant qui n'a que
  * le compte ne peut refuser qu'en bloc, faute de savoir laquelle des journées
  * est touchée. La date, elle, est disponible sans coût — voir `LectureJours`.
+ *
+ * Et AVEC son horodatage (`lignesIllisibles`), pour la même raison poussée d'un
+ * cran : la date seule ne dit pas si la ligne en quarantaine est une ligne
+ * supplantée sans conséquence ou la VRAIE tête de chaîne que la lecture n'a pas
+ * vue. `soumisLe` est le départage — celui de `resolveJoursActifs`.
  */
 export async function listJours(
   idPatientRaw: string,
@@ -222,17 +274,34 @@ export async function listJours(
 
   const jours: JourRow[] = [];
   let illisibles = 0;
-  const datesIllisibles = new Set<string>();
+  const lignesIllisibles: LigneIllisible[] = [];
   for (const row of rows) {
     try {
       jours.push(toJourRow(row));
     } catch {
       illisibles += 1;
-      // `row.dateJour` est une COLONNE, pas du JSONB : elle est lisible même
-      // quand le contenu de `reponses` ne l'est pas. C'est ce qui permet à
-      // l'appelant de nommer la journée en quarantaine au lieu de deviner.
-      datesIllisibles.add(row.dateJour);
+      // `row.dateJour` et `row.soumisLe` sont des COLONNES, pas du JSONB : elles
+      // sont lisibles même quand le contenu de `reponses` ne l'est pas. C'est ce
+      // qui permet à l'appelant de nommer la journée en quarantaine au lieu de
+      // deviner, ET de la situer dans l'ordre d'écriture.
+      //
+      // DÉFENSIF QUAND MÊME. La ligne est ici PARCE QU'on n'a pas su la relire :
+      // on ne suppose donc rien de ce qui l'entoure. Une date qui n'est pas une
+      // chaîne exploitable ne peut nommer aucune journée — on ne l'inscrit pas,
+      // et elle ne peut donc pas se faire passer pour une date du recueil ; le
+      // COMPTE `illisibles`, lui, la porte toujours, et c'est lui qui ouvre
+      // l'incident d'intégrité. L'horodatage manquant reste `null` (voir
+      // `soumisLeIllisible`) : incomparable, donc bloquant en aval.
+      const dateJour = typeof row.dateJour === 'string' ? row.dateJour.trim() : '';
+      if (dateJour) {
+        lignesIllisibles.push({ dateJour, soumisLe: soumisLeIllisible(row.soumisLe) });
+      }
     }
   }
-  return { jours, illisibles, datesIllisibles: [...datesIllisibles] };
+  return {
+    jours,
+    illisibles,
+    lignesIllisibles,
+    datesIllisibles: [...new Set(lignesIllisibles.map((l) => l.dateJour))],
+  };
 }

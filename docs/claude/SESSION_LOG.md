@@ -2170,3 +2170,27 @@ les deux formes ne partagent pas.
 racine) : défaut pré-existant, nommé, non fermé. `R-STR-02` cite `WN-CL-0105-001`, qui porte
 sur l'alimentation méditerranéenne, pour engager le pack stress — citation mal appariée, à
 trancher avant la signature.
+
+## 2026-08-05 — Agenda alimentaire, LOT-04 : la surface que le patient voit
+
+**Décisions** — D-022, cinq arbitrages. L'ancre des 21 jours se calcule sur l'union des
+dates enregistrées, relues ou non ; une quarantaine ne bloque une date que tant qu'une
+ligne illisible peut en être la vraie tête ; la borne est **supérieure seule** ; la date
+limite se dit avant le consentement ; et une exemption ne vaut que si les quatre portes
+du parcours la connaissent.
+
+**Options écartées** — Se contenter de *tester* le ré-ancrage silencieux comme le
+demandait le lot : D-018 le différait « faute d'écran », et ce lot livre l'écran. Borner
+la fenêtre des deux côtés : cela faisait perdre un jour de recueil au démarrage. Retirer
+le bouton « Modifier » plutôt qu'exposer `id` : le POST rend déjà `jourId` au client.
+
+**Ce que la revue a trouvé** — L'exemption `deverrouille` ne rouvrait rien : la première
+porte refusait avant elle. Aucune ligne fautive — la classe PR #202. Et la règle « un
+geste nommé doit être possible » vaut aussi pour ce qu'on **propose** : quatre promesses
+rattrapées.
+
+**Prochaine action** — Poser `WN_AGENDA_ALI=true` sur Development et Preview, **puis**
+redéployer. Jamais en Production.
+
+**Questions ouvertes** — La correction reste bornée à J et J-1. `soumisLe` estime là où
+`supersedesJourId` trancherait. Ni clôture patient ni vue praticien.

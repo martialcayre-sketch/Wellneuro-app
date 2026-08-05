@@ -52,7 +52,23 @@ export async function POST(req: Request): Promise<NextResponse<PatientConsenteme
     if (!ass || !accessAllowed) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Assignation non reconnue.' }, { status: 403 });
     }
-    if (isDeadlineExpired(ass.dateLimite)) {
+    // EXEMPTION `deverrouille`, alignée mot pour mot sur
+    // `api/portail/agenda-alimentaire` (barrière « 7 bis » de
+    // `agenda-alimentaire/portail.ts`) et sur `patient/submit/route.ts:145` —
+    // c'était la SEULE des trois qui testait `isDeadlineExpired` nue. Le bouton
+    // « déverrouiller » du praticien (`api/praticien/assignations`) repositionne
+    // `statutReponses` sans toucher à `dateLimite` : sans l'exemption, un
+    // questionnaire délibérément rouvert après la date limite restait incapable
+    // de recueillir un consentement, et l'instrument s'ouvrait sans base légale
+    // ou ne s'ouvrait pas du tout.
+    //
+    // PORTÉE : TOUS les questionnaires, pas seulement l'agenda alimentaire.
+    // C'est voulu (D-015) — la divergence entre les trois chemins était le
+    // défaut, pas la portée du correctif.
+    //
+    // Le contrôle NE DÉPLACE PAS : le refus `Annulée` ci-dessous doit rester
+    // APRÈS, une annulation étant plus définitive qu'une date limite.
+    if (ass.statutReponses !== 'deverrouille' && isDeadlineExpired(ass.dateLimite)) {
       return NextResponse.json({ ok: false, reason: 'expired', error: 'Ce lien a expiré.' }, { status: 410 });
     }
     // Assignation annulée par le praticien (Fil A) : ni consentement ni demande

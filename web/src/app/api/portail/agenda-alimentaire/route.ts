@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { isDeadlineExpired } from '@/lib/patient-access';
 import { dateJourParis } from '@/lib/dateParis';
 import {
   authorizeAgendaAlimentairePortail,
@@ -7,12 +6,14 @@ import {
 } from '@/lib/agenda-alimentaire/portail';
 import {
   calculerFenetreAli,
+  estAvantFinFenetreAli,
   estDateSaisissable,
   resolveJoursActifs,
   type FenetreAgendaAli,
   type JourReponses,
+  type JourRow,
 } from '@/lib/agenda-alimentaire';
-import { listJours, saveJour } from '@/lib/agenda-alimentaire/persistence';
+import { listJours, saveJour, type LigneIllisible } from '@/lib/agenda-alimentaire/persistence';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import {
@@ -28,11 +29,17 @@ import type { RequestContext } from '@/lib/observability/types';
 // POST → une journée (aujourd'hui ou correction de la veille), append-only
 // chaînée par `supersedesJourId`.
 //
-// Calque du jumeau `api/portail/agenda-sommeil/route.ts`, corrigé sur sept
+// Calque du jumeau `api/portail/agenda-sommeil/route.ts`, corrigé sur huit
 // points nommés en place : borne de taille du corps, exemption `deverrouille`
-// de la date limite, refus du doublon, remontée d'`illisibles` au GET, ARRÊT sur
+// de la date limite (barrière « 7 bis » de `portail.ts` depuis L4b), refus du
+// doublon, BORNE DES 21 JOURS au POST, remontée d'`illisibles` au GET, ARRÊT sur
 // la seule DATE en quarantaine au POST, journalisation des refus, et trace
 // d'erreur réduite au nom sur le chemin d'écriture.
+//
+// CONSÉQUENCE ASSUMÉE de la borne des 21 jours : une CORRECTION porteuse d'un
+// `supersedesJourId` sur une date hors fenêtre est refusée elle aussi. La borne
+// porte sur la DATE, pas sur l'état de la ligne — une date hors des 21 jours
+// n'appartient pas au recueil, qu'on l'écrive ou qu'on la corrige.
 //
 // AUCUN `export const` de valeur dans ce fichier : un export non standard dans
 // un `route.ts` rend `next build` rouge, et T1 ne le voit pas (`tsc --noEmit`
@@ -45,7 +52,27 @@ type GetResponse =
   | {
       ok: true;
       fenetre: FenetreAgendaAli;
-      jours: { dateJour: string; reponses: JourReponses }[];
+      /**
+       * `id` EST LA CLÉ DE CORRECTION, et son absence rendait la correction
+       * inatteignable depuis l'écran.
+       *
+       * Le POST accepte de corriger une journée déjà notée à condition de porter
+       * un `supersedesJourId` désignant la TÊTE DE CHAÎNE ACTIVE de cette date.
+       * Sans `id` au GET, le client n'avait aucun moyen de le connaître pour une
+       * journée écrite plus tôt : tout renvoi tombait en 409 `deja_notee`, et une
+       * capacité serveur écrite, testée et exigée par le lot restait morte.
+       *
+       * L'EXPOSER N'OUVRE AUCUNE SURFACE NOUVELLE. Le POST rend DÉJÀ `jourId` au
+       * patient dans sa réponse 201 : l'identifiant d'une ligne est donc déjà
+       * entre ses mains sur le chemin d'écriture. Le GET était simplement le seul
+       * à ne pas le rendre pour les journées écrites plus tôt — autre session,
+       * autre appareil, simple rechargement. On rend cohérents deux chemins qui
+       * ne l'étaient pas, on n'en ouvre pas un troisième.
+       *
+       * Ce n'est pas non plus une CLÉ DE PREMIER NIVEAU : la surface exacte de la
+       * réponse, épinglée par les tests, reste identique.
+       */
+      jours: { id: string; dateJour: string; reponses: JourReponses }[];
       derniereJournee: JourReponses | null;
       statutReponses: string;
       aujourdHui: string;
@@ -139,11 +166,40 @@ function precontrolerReponses(value: unknown): string | null {
   return null;
 }
 
-/** Refus d'accès (les neuf barrières) : journalisé, puis rendu tel quel. */
+/** Refus d'accès (les barrières d'autorisation) : journalisé, puis rendu tel quel. */
 function refuserAcces(
   auth: AgendaAliAuthError,
   requestContext: RequestContext,
 ): NextResponse<ErrorResponse> {
+  // DATE LIMITE DÉPASSÉE : un événement PATIENT banal et fréquent, pas un
+  // incident de sécurité. Le router en canal `security` gonflerait ce canal et
+  // changerait le compte de `…PORTAIL_FORBIDDEN` — la métrique de refus d'accès
+  // deviendrait illisible du jour où l'agenda entre en production.
+  //
+  // On émet donc EXACTEMENT ce qu'émettait `refuserEcriture` avant que la
+  // barrière ne déménage : même code d'événement, même domaine, même `metadata`.
+  // La métrique ne connaît aucune rupture — c'est ce qui rend le déplacement
+  // observable comme iso-comportement.
+  //
+  // Branche ATTEIGNABLE DEPUIS LE SEUL POST : `verifierDateLimite` n'est passée
+  // que là. Un GET sur un agenda périmé reste un 200, et le patient peut relire
+  // ses 21 jours.
+  if (auth.reason === 'expired') {
+    logger.warn({
+      event: EVENT_CODES.AGENDA_ALIMENTAIRE_JOUR_REJETE,
+      domain: 'PORTAIL_PATIENT',
+      message: 'Saisie de journée alimentaire refusée',
+      context: finalizeLogContext(requestContext, { statusCode: auth.status, retryable: false }),
+      metadata: { motif: auth.reason },
+    });
+    return withCorrelationHeader(
+      NextResponse.json(
+        { ok: false, reason: auth.reason, error: auth.error },
+        { status: auth.status },
+      ),
+      requestContext,
+    );
+  }
   // Un instrument suspendu n'est pas un incident de sécurité : c'est un retrait
   // de production, et le confondre avec une tentative d'accès rendrait
   // inexploitable l'alerte sur les secondes.
@@ -358,6 +414,87 @@ function journaliserLigneIllisible(
   });
 }
 
+/**
+ * Les dates RÉELLEMENT bloquées par la quarantaine — les dates des lignes
+ * illisibles, PRIVÉES de celles qui portent une tête de chaîne active relue
+ * POSTÉRIEURE à toutes leurs lignes illisibles.
+ *
+ * ── POURQUOI UN FILTRE ───────────────────────────────────────────────────────
+ * `listJours` remonte la date de TOUTE ligne illisible, y compris une ligne
+ * SUPPLANTÉE. Or le modèle est append-only : une date peut porter à la fois une
+ * correction parfaitement relue et la ligne qu'elle supplante, devenue illisible
+ * (rollback de déploiement, conteneur v1 relisant du v2). Le motif du refus —
+ * « on ne peut ni chaîner ni constater le doublon » — NE TIENT PAS dans ce cas :
+ * la tête est là, on sait exactement à quoi chaîner. Sans filtre, la route
+ * refusait tout POST sur cette date et l'écran la marquait bloquée, alors que
+ * rien n'empêchait de la corriger.
+ *
+ * ── POURQUOI LE FILTRE NE SUFFIT PAS, ET CE QUE `soumisLe` FERME ─────────────
+ * `resolveJoursActifs` ne voit que les lignes RELUES : la « tête » qu'il rend
+ * est la tête du SOUS-ENSEMBLE lisible. Si la VRAIE tête est la ligne en
+ * quarantaine et qu'une ligne déjà supplantée est, elle, relue, un filtre sur la
+ * seule présence d'une tête relue déclare la date ouverte. Une correction se
+ * chaîne alors sur une ligne DÉJÀ SUPPLANTÉE — et le défaut ne se voit qu'au
+ * moment où la quarantaine se lève : la date porte ce jour-là DEUX têtes
+ * concurrentes, départagées par un horodatage au lieu d'une intention. C'est
+ * exactement l'état que le 409 `correction_invalide` existe pour empêcher, et il
+ * arriverait ici sans qu'aucune requête ne l'ait demandé.
+ *
+ * D'où la règle : une date cesse d'être bloquante SEULEMENT si sa tête relue est
+ * postérieure à TOUTES ses lignes illisibles.
+ *
+ * ── POURQUOI `soumisLe` EST LE BON DÉPARTAGE ────────────────────────────────
+ * C'est celui que `resolveJoursActifs` emploie déjà (`jour.ts`) pour élire la
+ * tête parmi des candidates, et pour départager deux lignes de même date. La
+ * règle de BLOCAGE et la règle de RÉSOLUTION parlent donc la même langue : une
+ * ligne que le blocage juge « pas la tête » est aussi celle que la résolution
+ * écartera le jour où elle redeviendra lisible. Deux critères différents
+ * s'accorderaient par hasard, celui-ci s'accorde par construction. Les deux
+ * horodatages sont des chaînes ISO 8601 UTC (`persistence.ts`) : l'ordre
+ * lexicographique EST l'ordre chronologique, comme dans `jour.ts`.
+ *
+ * FAIL-CLOSED sur les deux cas où l'on ne peut pas trancher :
+ * - `soumisLe` illisible sur la ligne en quarantaine (`null`) — on ne sait pas
+ *   la situer, on la suppose tête ;
+ * - ÉGALITÉ d'horodatage — `resolveJoursActifs` départage alors par `id`, que la
+ *   ligne en quarantaine porte aussi ; rien ne garantit que la tête relue
+ *   gagnerait. Un doute se ferme, il ne s'arbitre pas.
+ *
+ * ── POURQUOI C'EST SÛR POUR L'ANCRAGE ────────────────────────────────────────
+ * Une date écartée par ce filtre porte, PAR CONSTRUCTION, une tête de chaîne
+ * relue : elle est donc déjà dans `joursActifs`, donc déjà dans l'union
+ * `dates ∪ datesIllisibles` que `calculerFenetreAliDepuisDates` calcule. Le
+ * filtrage est NEUTRE pour l'ancre — il ne peut jamais faire glisser
+ * `dateDebut` — et juste pour le blocage. C'est cette neutralité qui autorise à
+ * passer le même ensemble filtré aux deux usages.
+ *
+ * ── CE QU'IL NE TOUCHE PAS ───────────────────────────────────────────────────
+ * Le COMPTE `illisibles`, `journaliserLigneIllisible` et `dateVisee` portent sur
+ * l'ensemble COMPLET, sans filtre. Une ligne supplantée illisible reste un
+ * événement d'INTÉGRITÉ : elle vient d'un contrat qu'on ne sait plus relire, et
+ * le fait qu'une autre ligne sauve la journée du patient ne l'efface pas.
+ */
+function datesBloquantes(
+  lignesIllisibles: readonly LigneIllisible[],
+  joursActifs: JourRow[],
+): string[] {
+  const teteRelue = new Map(joursActifs.map(j => [j.dateJour, j.soumisLe]));
+  const bloquantes = new Set<string>();
+  for (const ligne of lignesIllisibles) {
+    const tete = teteRelue.get(ligne.dateJour);
+    // Aucune tête relue sur cette date : rien à quoi chaîner, cas inchangé.
+    if (tete === undefined) {
+      bloquantes.add(ligne.dateJour);
+      continue;
+    }
+    // Strictement postérieure, sinon la ligne en quarantaine peut être la tête.
+    if (ligne.soumisLe === null || ligne.soumisLe >= tete) {
+      bloquantes.add(ligne.dateJour);
+    }
+  }
+  return [...bloquantes];
+}
+
 // GET ?id=ASS…
 export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
   const requestContext = createRequestContext(req);
@@ -366,7 +503,7 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     const auth = await authorizeAgendaAlimentairePortail(req, searchParams.get('id'));
     if ('ok' in auth) return refuserAcces(auth, requestContext);
 
-    const { jours: lignes, illisibles } = await listJours(
+    const { jours: lignes, illisibles, lignesIllisibles } = await listJours(
       auth.idPatient,
       auth.assignation.idAssignation,
     );
@@ -376,10 +513,29 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
     // supplante portent la même date, et compter les deux gonflerait la frise.
     const joursActifs = resolveJoursActifs(lignes);
     const aujourdHui = dateJourParis();
-    const fenetre = calculerFenetreAli(joursActifs, aujourdHui);
+    // `datesIllisibles` entre dans la fenêtre pour DEUX raisons distinctes :
+    // l'ANCRE (une journée en quarantaine ne doit pas faire glisser le premier
+    // jour, donc la borne des 21 jours) et le DRAPEAU `illisible` porté par
+    // chaque emplacement. Ce drapeau est TRANSITIF : il traverse jusqu'à
+    // l'écran, sans clé de premier niveau supplémentaire (voir plus bas).
+    //
+    // FILTRÉ par `datesBloquantes` : une date dont la tête de chaîne est relue
+    // ET POSTÉRIEURE à toutes ses lignes en quarantaine n'est pas bloquée — le
+    // POST l'accepte —, donc l'écran ne doit pas la griser. Une ligne illisible
+    // plus récente que cette tête, en revanche, peut être la vraie tête : la
+    // date reste grisée. L'ancre n'y perd rien (voir le helper). Le COMPTE
+    // `illisibles`, lui, reste celui de l'ensemble complet : mesure d'intégrité.
+    const fenetre = calculerFenetreAli(joursActifs, aujourdHui, {
+      datesIllisibles: datesBloquantes(lignesIllisibles, joursActifs),
+    });
     // Saisies BRUTES du patient (ses propres réponses) — jamais un agrégat :
     // aucun `jeuneMedian`, aucune `freq…Sem`, aucun indice ne sort par ici.
-    const jours = joursActifs.map(j => ({ dateJour: j.dateJour, reponses: j.reponses }));
+    // Les `id` rendus sont ceux des TÊTES DE CHAÎNE (`resolveJoursActifs`),
+    // c'est-à-dire exactement ce que le POST accepte comme `supersedesJourId` :
+    // ni une ligne supplantée — le chaînage y produirait deux têtes concurrentes
+    // sur la même date (409 `correction_invalide`) —, ni une ligne en
+    // quarantaine, que `resolveJoursActifs` n'a jamais vue.
+    const jours = joursActifs.map(j => ({ id: j.id, dateJour: j.dateJour, reponses: j.reponses }));
     const derniereJournee = joursActifs.length > 0 ? joursActifs[joursActifs.length - 1].reponses : null;
 
     return withCorrelationHeader(
@@ -396,13 +552,18 @@ export async function GET(req: Request): Promise<NextResponse<GetResponse>> {
         // journées, et le praticien lirait un recueil « complet » qui ne l'est
         // pas. Voir `persistence.ts`, section « pourquoi le compte remonte ».
         //
-        // `datesIllisibles` N'EST PAS remonté, décision explicite : le patient
-        // n'a aucun geste à poser sur une ligne en quarantaine — s'il vise
-        // vraiment cette date, le POST le lui dit en 409 avec un message qui
-        // nomme la journée. Ajouter le tableau élargirait la surface rendue au
-        // patient sans qu'aucun écran n'en ait l'usage (L4b n'existe pas), et
-        // cette surface est épinglée EXACTEMENT par les tests. La donnée reste
-        // côté serveur, dans le journal d'intégrité.
+        // `datesIllisibles` N'EST TOUJOURS PAS remonté À LA RACINE, et la
+        // décision est désormais mieux fondée qu'avant : l'information de
+        // quarantaine sort bel et bien — mais PAR `fenetre.emplacements[].
+        // illisible`, là où l'écran la lit déjà avec le reste de la frise. Un
+        // écran EN A l'usage désormais (il grise la journée et annonce que la
+        // saisie sera refusée) ; c'est la version précédente de ce commentaire,
+        // qui affirmait le contraire, qui est corrigée ici.
+        //
+        // Une clé de premier niveau ferait DOUBLON de ce drapeau, et casserait
+        // l'épinglage EXACT des clés par les tests — épinglage qui est
+        // précisément ce qui rend l'élargissement par la fenêtre acceptable :
+        // toute nouvelle clé reste une décision, jamais un effet de bord.
         illisibles,
       }),
       requestContext,
@@ -456,10 +617,15 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       return refuserFormeAvantAuth('invalid', 'Corps de requête illisible.', 400, requestContext, 'debug');
     }
 
-    // 2 — les neuf barrières.
+    // 2 — les barrières d'autorisation, DATE LIMITE COMPRISE.
+    //
+    // `verifierDateLimite` n'est passée QUE d'ici : c'est ce qui laisse le GET
+    // ouvert sur un agenda périmé — le patient doit pouvoir relire ses 21 jours
+    // après la fin du recueil.
     const auth = await authorizeAgendaAlimentairePortail(
       req,
       typeof body.idAssignation === 'string' ? body.idAssignation : null,
+      { verifierDateLimite: true },
     );
     if ('ok' in auth) return refuserAcces(auth, requestContext);
 
@@ -473,15 +639,18 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       return refuserEcriture('locked', 'Cet agenda est clôturé.', 409, requestContext);
     }
 
-    // 4 — date limite. L'exemption `deverrouille` est un CORRECTIF du jumeau,
-    // qui teste `isDeadlineExpired` nu : le bouton « déverrouiller » du
-    // praticien (`api/praticien/assignations/route.ts`) repositionne
-    // `statutReponses` sans toucher à `dateLimite`, si bien que l'agenda du
-    // sommeil ne rouvre RIEN — l'écran annonce un agenda rouvert et la route le
-    // refuse toujours. Même exemption que `patient/submit` (route.ts:145).
-    if (ass.statutReponses !== 'deverrouille' && isDeadlineExpired(ass.dateLimite)) {
-      return refuserEcriture('expired', 'La période de recueil est terminée.', 410, requestContext);
-    }
+    // 4 — DATE LIMITE : PLUS ICI. Elle a déménagé dans la barrière « 7 bis » de
+    // `authorizeAgendaAlimentairePortail`, armée par `verifierDateLimite`
+    // ci-dessus. La garder EN PLUS aurait créé deux porteurs de l'exemption
+    // `deverrouille` devant rester d'accord — dont l'un serait devenu
+    // INATTEIGNABLE (la barrière mord plus haut), donc jamais exercé par un
+    // test, donc libre de dériver en silence.
+    //
+    // CONSÉQUENCE ASSUMÉE : `expired` PRÉCÈDE désormais `locked`. Un agenda à la
+    // fois verrouillé et périmé rendait 409 `locked`, il rend 410 `expired`. Les
+    // deux sont vrais et terminaux, et c'est la règle générale de D-015 — un
+    // refus qui nomme un geste vient après tout refus d'état terminal. Épinglé
+    // par un test, pas laissé implicite.
 
     // 5 — fenêtre de saisie. Aujourd'hui par défaut ; la veille est acceptée
     // pour une correction, au-delà c'est de la reconstruction de mémoire.
@@ -509,7 +678,7 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     //
     // On lit les têtes de chaîne, jamais le brut : une journée déjà corrigée
     // n'est « déjà notée » qu'une fois, par sa correction.
-    const { jours: lignes, illisibles, datesIllisibles } = await listJours(
+    const { jours: lignes, illisibles, datesIllisibles, lignesIllisibles } = await listJours(
       auth.idPatient,
       ass.idAssignation,
     );
@@ -550,13 +719,29 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
     // +1 sur `lignes − dates distinctes` — une métrique de friction interne.
     // Disproportion assumée dans l'autre sens désormais.
     //
-    // Reste refusé, et c'est le cas qui compte : écrire SUR la date qu'on ne sait
-    // pas relire. Là, on ne peut ni chaîner ni constater le doublon.
-    // Elle se journalise qu'on refuse ou non (voir `journaliserLigneIllisible`).
+    // Reste refusé, et c'est le cas qui compte : écrire SUR la date dont on ne
+    // sait relire AUCUNE ligne. Là, on ne peut ni chaîner ni constater le
+    // doublon. Une date dont la TÊTE DE CHAÎNE est relue, elle, n'est pas dans
+    // ce cas — même si une ligne supplantée de la même date est en quarantaine :
+    // le chaînage est parfaitement possible, et la refuser retirait au patient
+    // une correction légitime. D'où `datesBloquantes` (voir ce helper).
+    //
+    // À CONDITION que cette tête relue soit POSTÉRIEURE (`soumisLe`) à toutes
+    // les lignes en quarantaine de la date. Sinon la ligne illisible peut être
+    // la VRAIE tête, la « tête relue » n'étant que la tête du sous-ensemble
+    // lisible : chaîner dessus produirait deux têtes concurrentes le jour où la
+    // quarantaine se lève. Le doute se ferme, la date reste bloquée.
+    //
+    // La LIGNE DE JOURNAL, elle, porte sur l'ensemble COMPLET et non filtré :
+    // une ligne supplantée illisible reste un événement d'intégrité, et
+    // `dateVisee` répond à « l'écriture demandée portait-elle sur une des dates
+    // touchées », pas à « a-t-on refusé ». Elle s'émet qu'on refuse ou non.
+    const joursActifs = resolveJoursActifs(lignes);
+    const datesRefusees = datesBloquantes(lignesIllisibles, joursActifs);
     if (illisibles > 0) {
       journaliserLigneIllisible(requestContext, illisibles, datesIllisibles.includes(dateJour));
     }
-    if (datesIllisibles.includes(dateJour)) {
+    if (datesRefusees.includes(dateJour)) {
       return refuserEcriture(
         'agenda_illisible',
         'La journée que vous essayez de noter n’a pas pu être relue : votre saisie n’a pas été enregistrée, pour ne pas la dupliquer. Contactez votre praticien.',
@@ -565,7 +750,68 @@ export async function POST(req: Request): Promise<NextResponse<PostResponse>> {
       );
     }
 
-    const jourActif = resolveJoursActifs(lignes).find(j => j.dateJour === dateJour);
+    // 6 ter — BORNE DES 21 JOURS. Le recueil est un instrument à FENÊTRE FERMÉE :
+    // 21 emplacements ancrés sur le premier jour ENREGISTRÉ. Sans cette borne,
+    // rien n'empêchait d'écrire une 22e journée — l'agenda devenait un journal
+    // sans fin, et les seuils d'exploitabilité perdaient leur dénominateur.
+    //
+    // ── POURQUOI EXACTEMENT ICI ──────────────────────────────────────────────
+    // APRÈS le refus `agenda_illisible` : `journaliserLigneIllisible` doit être
+    // émis « qu'on refuse ou non » (D-015). Insérer la borne AVANT masquerait la
+    // ligne d'intégrité dès qu'un POST tombe hors fenêtre — un agenda à la fois
+    // CORROMPU et HORS PÉRIODE n'ouvrirait alors plus jamais d'incident, et
+    // c'est précisément la combinaison la plus longue à se produire.
+    //
+    // AVANT `deja_notee` / `correction_invalide` : sans elle, un POST sur une
+    // date hors fenêtre traverserait ces deux contrôles — qui ne portent que sur
+    // le CHAÎNAGE — et tomberait droit dans l'écriture de la 22e journée.
+    //
+    // L'ancre est REPRISE de la fenêtre, jamais recalculée à la main : la même
+    // borne écrite deux fois, c'est deux bornes à tenir d'accord. Et
+    // `datesIllisibles` y entre — une journée en quarantaine ne doit pas faire
+    // GLISSER l'ancre, sinon la fenêtre se déplace au rythme des corruptions.
+    // Le filtre de `datesBloquantes` est NEUTRE pour l'ancrage : une date qu'il
+    // écarte porte une tête relue, donc figure déjà dans `joursActifs`.
+    const fenetre = calculerFenetreAli(joursActifs, aujourdHui, {
+      datesIllisibles: datesRefusees,
+    });
+    // BORNE SUPÉRIEURE SEULE (D-018) : une date ANTÉRIEURE à l'ancre est
+    // acceptée et la RECULE — noter la veille juste après avoir noté aujourd'hui
+    // rend au patient le premier jour du recueil. `estDateSaisissable` (barrière
+    // 5) borne ce recul à un jour, et seulement au démarrage.
+    if (!estAvantFinFenetreAli(dateJour, fenetre.dateDebut)) {
+      // 409 et NON 410 : l'agenda reste LISIBLE, et ses journées internes
+      // restent corrigibles. Rien n'est terminé du point de vue de la ressource.
+      //
+      // Motif DISTINCT de `date_hors_fenetre` : celui-là dit « aujourd'hui ou
+      // hier », celui-ci dit « la période de 21 jours est écoulée ». Deux
+      // natures, deux réactions d'écran.
+      //
+      // Et surtout PAS `recueil_complet` : la fenêtre peut être TROUÉE — 21 jours
+      // parcourus, 8 renseignés. Le mot mentirait au patient sur ce qu'il a fait.
+      //
+      // LE MESSAGE PARLE DE LA PÉRIODE, JAMAIS DE CE QUI A ÉTÉ NOTÉ. « Votre
+      // recueil couvre déjà ses 21 jours » affirmait 21 journées notées à un
+      // patient qui pouvait n'en avoir noté qu'une : ce qui est écoulé, c'est la
+      // FENÊTRE, et c'est la seule chose que ce refus sait.
+      //
+      // Le message NE PROMET AUCUNE correction. Une première rédaction ajoutait
+      // « vous pouvez encore corriger les journées de la période » : faux dans
+      // les deux sens. L'écriture reste bornée à aujourd'hui ou la veille par
+      // `estDateSaisissable` (barrière 5, en amont), donc une journée fausse à
+      // J-5 n'est corrigible par aucun chemin ; et quand cette borne-ci mord,
+      // aujourd'hui est lui-même hors des 21 jours dans le cas général. Un refus
+      // qui nomme un geste doit nommer un geste POSSIBLE — c'est la règle de
+      // D-015, et elle vaut aussi pour la phrase, pas seulement pour l'ordre.
+      return refuserEcriture(
+        'hors_fenetre_21j',
+        'Votre période de recueil de 21 jours est écoulée : cette journée n’en fait pas partie.',
+        409,
+        requestContext,
+      );
+    }
+
+    const jourActif = joursActifs.find(j => j.dateJour === dateJour);
     if (jourActif && !supersedesJourId) {
       return refuserEcriture(
         'deja_notee',
