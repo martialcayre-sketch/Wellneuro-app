@@ -20,6 +20,8 @@ import { QUESTIONNAIRE_CATALOGUE, calculateScore } from '@/lib/questions';
 import { buildMiniSynthese } from '@/lib/scoring/miniSynthese';
 import { calculerCouvertureBesoin, calculerCouvertureSource } from '@/lib/equilibre/score';
 import { BESOINS_FONDATIONS_CRITIQUES, BESOIN_SOURCES, SEUIL_EFFONDREMENT } from '@/lib/equilibre/constants';
+import { evaluerOrientation } from '@/lib/clinical/orientationEngine';
+import { ORIENTATION_RULES_V1 } from '@/lib/clinical/orientationRulesV1';
 
 /** Les 31 items cotés, DÉRIVÉS du découpage — jamais réécrits à la main. */
 const ITEMS: string[] = ((QUESTIONNAIRE_CATALOGUE as any).Q_GAS_01.scoring.subScores as any[])
@@ -169,12 +171,22 @@ describe('TFD — recueil partiel', () => {
     expect(calculerCouvertureSource(source!, { Q_GAS_01: COMPLET_MIN })).toBe(1);
   });
 
-  it('LE COÛT, épinglé : un partiel DÉJÀ sévère cesse lui aussi d’être lu', () => {
+  it('LE COÛT, à moitié remboursé : un partiel DÉJÀ sévère sort de « Mon équilibre », mais l’orientation le relit', () => {
     // Ce que la garde emporte, écrit comme un attendu et non découvert plus tard.
     // Trente items sur trente-et-un, tous au maximum : le total atteint 90 sur 93.
     // Les items de `O_TFD` sont cotés 0 à 3, donc l'item manquant ne peut
-    // qu'AJOUTER — la sévérité est ACQUISE, pas probable. La garde l'écarte quand
-    // même, parce qu'une bande ne se lit que sur l'instrument complet (D-014).
+    // qu'AJOUTER — la sévérité est ACQUISE, pas probable. La garde retire quand
+    // même la BANDE, parce qu'une bande ne se lit que sur l'instrument complet
+    // (D-014).
+    //
+    // LA THÈSE DE CE CAS A CHANGÉ LE 2026-08-05, et la moitié qui a changé est
+    // celle qui coûtait le plus cher. Le titre disait « cesse lui aussi d'être
+    // lu » : c'est resté vrai de « Mon équilibre », qui lit une COUVERTURE et
+    // n'a que faire d'un minimum de sévérité, et c'est devenu FAUX de
+    // l'orientation, qui lit désormais le PLANCHER GARANTI servi à côté de la
+    // bande absente. Un partiel acquis en bande B rallume `R-GAS-01`, avec un
+    // motif en « au moins ». Les assertions d'origine restent vraies une à une —
+    // c'est leur lecture d'ensemble qui aurait vieilli en silence.
     //
     // Direction de l'effet sur « Mon équilibre », et c'est l'inverse de l'autre
     // branche : la couverture passait sous `SEUIL_EFFONDREMENT`, faisait du
@@ -202,6 +214,32 @@ describe('TFD — recueil partiel', () => {
     // entier ressort non mesuré, et non pas 0 — un 0 le replacerait sous le seuil
     // d'effondrement par la porte de derrière.
     expect(calculerCouvertureBesoin(4, { Q_GAS_01: trenteSurTrenteEtUn })).toBeNull();
+
+    // L'AUTRE MOITIÉ — l'orientation, elle, relit ce partiel. Le plancher est
+    // servi à côté de la bande absente, sa fermeture (`{danger}` ici, la bande C
+    // étant la plus haute) est contenue dans la zone de `R-GAS-01`, et la règle
+    // publiée s'allume. Le motif dit un MINIMUM, jamais une mesure.
+    const plancher = r.bandePlancher;
+    expect(plancher?.label).toBe('C — Prédominance de troubles fonctionnels majeurs');
+    expect(plancher?.couleursPossibles).toEqual(['danger']);
+
+    const rGas01 = ORIENTATION_RULES_V1.find(regle => regle.id === 'R-GAS-01');
+    expect(rGas01, 'R-GAS-01 a disparu de la table : ce cas ne dit plus rien').toBeDefined();
+    const recos = evaluerOrientation({
+      reponses: [{
+        idQuestionnaire: 'Q_GAS_01',
+        dateReponse: '2026-08-05T10:00:00.000Z',
+        scores: r as Record<string, unknown>,
+      }],
+      idsQuestionnairesAssignes: [],
+      regles: [rGas01!],
+    });
+    expect(recos).toHaveLength(1);
+    // Le SINGULIER, sur le seul cas du dépôt qui n'a qu'un item manquant : la
+    // mention se construit sur un compte réel, pas sur une formule figée.
+    expect(recos[0].motifs[0].conditions[0]).toBe(
+      'Q_GAS_01 : au moins zone danger (« C — Prédominance de troubles fonctionnels majeurs ») — recueil partiel, 1 item sans réponse sur 31',
+    );
   });
 
   it('la mini-synthèse ne conclut plus « peu perturbés » sur un axe non lu', () => {

@@ -35,7 +35,7 @@ import { SYSTEM_PROMPT_GOUVERNANCE, VERSION_PROMPT_SYNTHESE } from '@/lib/anthro
 
 const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 
-// Empreinte de la consigne système sous `synthese-v15`. À reporter en même temps
+// Empreinte de la consigne système sous `synthese-v16`. À reporter en même temps
 // que tout bump de `VERSION_PROMPT_SYNTHESE` — c'est le couple qui est verrouillé,
 // pas chacun des deux séparément.
 //
@@ -81,7 +81,15 @@ const SOURCE_ROUTE = readFileSync(join(__dirname, 'route.ts'), 'utf8');
 // définition aucun plancher n'existe. La description ne tient donc plus que par
 // cette empreinte et par la relecture. C'est écrit ici pour que la prochaine
 // passe le sache.
-const EMPREINTE_V15 = '5da8b16eb6cb1f60';
+// v16 (2026-08-05) : le plancher devient AGI. La table d'orientation décide
+// désormais sur `bandePlancher` — elle allume une règle quand toutes les bandes
+// encore atteignables restent dans la zone visée —, et transmet un motif en
+// « au moins ». La consigne v15 laissait le modèle libre de présenter un
+// plancher comme un constat à confirmer avant toute orientation, c'est-à-dire de
+// contredire, dans le même document, une recommandation déjà produite. Le bump
+// distingue une synthèse rédigée quand le plancher était inerte d'une rédigée
+// quand il oriente ; l'interdiction de fond, elle, ne bouge pas.
+const EMPREINTE_V16 = '77fbe825ce4acf1c';
 
 /** Clés dont le nom annonce une quantité physiologique étalonnée. */
 const MOTIFS_QUANTITE = /^(proteines|calories|kcal|glucides|lipides|monnier|apport)/i;
@@ -195,7 +203,7 @@ describe('garde-fou alimentaire — consigne système', () => {
     expect(
       { version: VERSION_PROMPT_SYNTHESE, empreinte },
       'consigne modifiée : incrémenter VERSION_PROMPT_SYNTHESE et reporter la nouvelle empreinte ici',
-    ).toEqual({ version: 'synthese-v15', empreinte: EMPREINTE_V15 });
+    ).toEqual({ version: 'synthese-v16', empreinte: EMPREINTE_V16 });
   });
 
   it('décrit les sous-scores livrés à la synthèse (dimensions et besoins)', () => {

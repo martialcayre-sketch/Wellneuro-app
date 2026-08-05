@@ -1,6 +1,6 @@
 # Runbook — allumer `WN_AGENDA_ALI` et lancer le recueil pilote
 
-Décision de référence : `D-024` (amende le point 2 de `D-022`) dans
+Décision de référence : `D-025` (amende le point 2 de `D-022`) dans
 `docs/DECISIONS.md`. Patron suivi : `ACTIVATION_RUNBOOK_G4.md` de la campagne
 `2026-07-19-idp-identite-patient-durable`.
 
@@ -12,7 +12,7 @@ par l'interface praticien.
 
 - Poser la variable sur un autre **scope Vercel** que Production. La Preview lit
   la base de production et le praticien ne peut de toute façon pas s'y connecter
-  (`D-024` point 1). Cela ne concerne pas le banc de test, où
+  (`D-025` point 1). Cela ne concerne pas le banc de test, où
   `web/playwright.config.ts` pose légitimement `WN_AGENDA_ALI: 'true'`.
 - Étendre le recueil à des dossiers patients réels. Le pilote porte sur **un**
   dossier de contrôle ; l'extension est une décision distincte, à consigner.
@@ -37,7 +37,7 @@ par l'interface praticien.
 
 ## Prérequis (à confirmer avant l'allumage)
 
-- [ ] `D-024` mergée sur `main`, CI verte.
+- [ ] `D-025` mergée sur `main`, CI verte.
 - [ ] **Aucun pack ne référence `Q_ALI_09`.** C'est le seul chemin qui
       assignerait l'agenda **sans clic praticien** : `assignPackToPatient`, appelé
       par l'onboarding portail, n'écarte que `IDS_SUSPENDUS`. Rien ne valide les

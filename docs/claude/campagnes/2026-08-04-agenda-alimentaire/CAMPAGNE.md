@@ -33,7 +33,7 @@ première distribution réelle existe.
 - `WN_AGENDA_ALI` reste éteint tant que la surface de saisie n'est pas livrée.
   `LOT-04` étant fait, l'allumage est devenu un **geste d'exploitation hors lot**
   — Production seule, en deux temps, décrit par `RUNBOOK-allumage-drapeau.md`
-  (**D-024**). Il n'est le dernier geste d'aucun lot : il n'y a pas de PR à
+  (**D-025**). Il n'est le dernier geste d'aucun lot : il n'y a pas de PR à
   écrire pour lui.
 
 ## Correspondance des lots
@@ -80,7 +80,7 @@ Les arbitrages structurants de la série sont tracés dans `docs/DECISIONS.md` :
 surface — arbitrage pris avant `LOT-04`) et **D-023** (ancre calculée sur les
 dates enregistrées et non sur les seules relues, quarantaine bornée à la vraie
 tête de chaîne, borne supérieure seule, et l'exemption qui ne vaut que si les
-quatre portes du parcours la connaissent — lot `LOT-04`) et **D-024** (le
+quatre portes du parcours la connaissent — lot `LOT-04`) et **D-025** (le
 drapeau s'allume en Production, la Preview étant inatteignable par le praticien —
 amende le point 2 de D-022, hors lot).
 
@@ -91,7 +91,7 @@ amende le point 2 de D-022, hors lot).
 - L'agenda du sommeil (série distincte, patron déjà livré).
 - Toute activation de `WN_AGENDA_ALI` avant la fin de `LOT-04` — condition
   **satisfaite** depuis la livraison de `LOT-04`, et non levée. La position du
-  drapeau est désormais réglée par **D-024**, qui amende le point 2 de `D-022` :
+  drapeau est désormais réglée par **D-025**, qui amende le point 2 de `D-022` :
   l'allumage en Production est autorisé, la Preview étant inatteignable par le
   praticien. Marche à suivre : `RUNBOOK-allumage-drapeau.md`.
 

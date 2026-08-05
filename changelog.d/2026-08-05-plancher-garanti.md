@@ -45,3 +45,8 @@ qui l'avait rendu aveugle.
 partielle, et les trois PSQI réels sont complets avec `Q2` renseigné. Ce que le lot
 ne fait **pas** : rallumer `R-GAS-01` (l'orientation écarte toujours sur recueil
 partiel), et donner au plancher une surface praticien dédiée.
+
+> **La première moitié a été faite le même jour.** L'orientation lit désormais le
+> plancher et quatre règles se rallument — voir *Orientation — un plancher de sévérité
+> peut désormais allumer une règle*, plus bas dans cette même section. La seconde
+> réserve, elle, tient toujours : aucune surface praticien **dédiée** au plancher.

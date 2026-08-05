@@ -1,7 +1,7 @@
 ### Le drapeau de l'agenda alimentaire s'allume en Production, et la Preview est exclue (2026-08-05)
 
 `D-022` posait que `WN_AGENDA_ALI` s'allumerait « sur Development et Preview, et
-sur elles seules ». `D-024` retourne la restriction : c'est la **Preview** qui est
+sur elles seules ». `D-025` retourne la restriction : c'est la **Preview** qui est
 désormais exclue, et la Production qui porte le drapeau.
 
 La Preview est fermée par deux verrous indépendants — `ssoProtection:

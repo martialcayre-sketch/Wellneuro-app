@@ -371,6 +371,15 @@ describe('evaluerOrientationPourPatient — le recueil partiel du TFD', () => {
     // TOUS sont au maximum de leur échelle —, sans aucun compte, à côté des
     // réponses brutes. La règle ci-dessus s'allume sur N'IMPORTE quelle couleur :
     // si le service relisait l'instantané, elle sortirait.
+    //
+    // POURQUOI CE CAS RESTE VIDE APRÈS LE LOT DU PLANCHER (2026-08-05), et ce
+    // n'est plus pour la même raison qu'hier. Un recueil partiel PEUT désormais
+    // rallumer une règle, par son plancher garanti. Pas celui-ci : cinq items à
+    // 3 font 15 sur 93, soit la bande A — la PLUS BASSE de la grille. « Au moins
+    // la bande la plus basse » ne dit rien, `bandePlancher` n'est donc pas servi
+    // (D-014), et il n'y a rien à allumer. Le cas suivant prend le même dossier
+    // huit items plus loin et s'allume, lui : c'est le couple qui prouve que
+    // c'est bien la bande atteinte qui décide, et non le fait d'être partiel.
     dossierTfd({
       type: 'tfd', total: 15, maxTotal: 93,
       interpretation: { label: 'A — Absence de troubles fonctionnels', color: 'success' },
@@ -396,6 +405,61 @@ describe('evaluerOrientationPourPatient — le recueil partiel du TFD', () => {
       if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
       expect(resultat.recommandations).toHaveLength(1);
       expect(resultat.recommandations[0].cible).toEqual({ type: 'questionnaire', questionnaireId: 'Q_GAS_03' });
+    });
+  });
+
+  /** Huit items à 3, répartis sur les cinq axes : total 24, bande B acquise. */
+  const PARTIEL_DEJA_EN_B = {
+    C1_1: 3, C1_2: 3, C1_3: 3, C1_4: 3,
+    C2_1: 3, C3_1: 3, C4_1: 3, C5_1: 3,
+  };
+
+  it('un partiel DÉJÀ SÉVÈRE rallume la règle, sur son plancher et en « au moins »', () => {
+    // D-024 vu depuis le service — c'est lui qui lève la réserve de D-021, dont
+    // le texte (append-only) dit encore « R-GAS-01 n'est PAS rallumée ». La
+    // bande reste absente, le
+    // plancher B est servi à côté, et ses bandes encore atteignables
+    // (`warning`, `danger`) sont toutes contenues dans la zone de la règle. Le
+    // dossier porte, comme en base, une bande PÉRIMÉE qui n'est pas relue : ce
+    // qui allume vient du rescoring de `rawAnswers`.
+    dossierTfd({
+      type: 'tfd', total: 15, maxTotal: 93,
+      interpretation: { label: 'A — Absence de troubles fonctionnels', color: 'success' },
+      rawAnswers: PARTIEL_DEJA_EN_B,
+    });
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      if (resultat.actif !== true) throw new Error('la table doit être active dans ce cas');
+      expect(resultat.recommandations).toHaveLength(1);
+      expect(resultat.recommandations[0].cible).toEqual({ type: 'questionnaire', questionnaireId: 'Q_GAS_03' });
+      // Le praticien lit `motif.conditions.join(' ; ')` : « au moins » n'est pas
+      // une précaution rédactionnelle, c'est ce qui empêche de relire un
+      // minimum acquis comme la mesure que la garde vient de retirer. Et la
+      // mention du recueil partiel dit d'où ce minimum est tiré — un libellé de
+      // bande peut être rassurant à côté d'une proposition qui ne l'est pas.
+      expect(resultat.recommandations[0].motifs[0].conditions[0]).toBe(
+        'Q_GAS_01 : au moins zone warning (« B — Troubles fonctionnels modérés à importants ») — recueil partiel, 23 items sans réponse sur 31',
+      );
+    });
+  });
+
+  it('LE MÊME partiel n’allume PAS une règle qui s’arrête à `warning`', () => {
+    // LE SEUL CAS QUI PROUVE LA FERMETURE. Le plancher est bien `warning`, et
+    // une implémentation naïve — « la couleur du plancher figure dans la zone »
+    // — s'allumerait ici. Elle aurait tort : les vingt-trois items sans réponse
+    // ne peuvent qu'ajouter, le score final peut donc atteindre `danger`,
+    // c'est-à-dire SORTIR de la zone visée. Rien n'est garanti, rien ne s'allume.
+    mockRegles.length = 0;
+    mockRegles.push({
+      ...REGLE_TFD,
+      id: 'R-TEST-GAS-ETROITE',
+      declencheurs: [
+        { type: 'zone', idQuestionnaire: 'Q_GAS_01', zone: { type: 'couleur', couleurs: ['warning'] } },
+      ],
+    });
+    dossierTfd({ type: 'tfd', total: null, interpretation: null, rawAnswers: PARTIEL_DEJA_EN_B });
+    return evaluerOrientationPourPatient('PAT-1').then(resultat => {
+      expect(resultat.actif).toBe(true);
+      expect(resultat.actif === true && resultat.recommandations).toEqual([]);
     });
   });
 });

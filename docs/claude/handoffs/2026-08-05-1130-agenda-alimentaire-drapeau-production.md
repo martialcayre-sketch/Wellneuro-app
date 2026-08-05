@@ -3,7 +3,7 @@
 - Date : 2026-08-05, 11:30
 - Campagne : `docs/claude/campagnes/2026-08-04-agenda-alimentaire/`
 - Lot : aucun — **arbitrage d'exploitation**, sans code
-- Décision posée : **D-024** (amende le point 2 de D-022)
+- Décision posée : **D-025** (amende le point 2 de D-022)
 - Fragment de changelog : `changelog.d/2026-08-05-agenda-alimentaire-drapeau-production.md`
 - Runbook : `docs/claude/campagnes/2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md`
 
@@ -14,7 +14,7 @@ qui le bloque n'est pas une attente, c'est un geste** : la production compte 0
 journée *et* 0 assignation de `Q_ALI_09` sur 113. L'agenda n'a jamais été
 distribué à personne.
 
-`D-024` lève ce qui l'empêchait de l'être. Le geste qui suit est de la main du
+`D-025` lève ce qui l'empêchait de l'être. Le geste qui suit est de la main du
 praticien, au panneau Vercel, et il n'appelle aucune PR.
 
 ## Ce que ce lot a changé, et ce qu'il n'a pas changé
