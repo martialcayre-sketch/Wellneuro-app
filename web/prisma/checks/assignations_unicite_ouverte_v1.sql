@@ -93,8 +93,9 @@ END $$;
 --    sur une base VIDE (les contrats et le seed viennent après `migrate
 --    deploy`), donc ses trois UPDATE touchent zéro ligne et sa garde compte
 --    zéro. C'est ce trou qui a laissé passer une garde comptant les CORRECTIONS
---    d'agenda comme des collisions — elle aurait fait échouer la migration en
---    production, où 4 couples (assignation, date) portent deux lignes.
+--    d'agenda comme des anomalies — elle aurait fait échouer la migration en
+--    production, où 4 couples (assignation, date) portent deux lignes. La garde
+--    a depuis été retirée : le domaine tranche déjà.
 --
 --    La fixture reproduit donc exactement le cas de production : deux
 --    assignations ouvertes du même couple, une nuit sur chacune à des dates
@@ -107,7 +108,7 @@ END $$;
 DROP INDEX "assignations_unicite_ouverte_idx";
 
 DO $$
-DECLARE pat text := 'PAT_CONTRAT_RATTACH'; nuits_survivante integer; collisions integer;
+DECLARE pat text := 'PAT_CONTRAT_RATTACH'; nuits_survivante integer;
 BEGIN
   INSERT INTO patients (id, id_patient, email, prenom, nom, praticien_email, updated_at)
   VALUES ('chk_rat_pat', pat, 'contrat-rattach@test.invalid', 'Contrat', 'Rattachement',
@@ -161,22 +162,13 @@ BEGIN
     RAISE EXCEPTION 'rattachement: la chaîne supersedes a été rompue';
   END IF;
 
-  -- ---- La garde ne doit PAS se déclencher : une correction n'est pas une collision ----
-  WITH survivantes AS (
-    SELECT g."id_assignation" FROM "assignations" g
-    WHERE g."statut" NOT IN ('Complété', 'Annulée')
-      AND EXISTS (SELECT 1 FROM "assignations" a
-                  WHERE a."id_patient" = g."id_patient" AND a."id_questionnaire" = g."id_questionnaire"
-                    AND a."id" <> g."id" AND a."statut" NOT IN ('Complété', 'Annulée'))
-  )
-  SELECT count(*) INTO collisions FROM (
-    SELECT 1 FROM "agenda_sommeil_nuits" n
-    WHERE n."id_assignation" IN (SELECT "id_assignation" FROM survivantes)
-      AND NOT EXISTS (SELECT 1 FROM "agenda_sommeil_nuits" s WHERE s."supersedes_nuit_id" = n."id")
-    GROUP BY n."id_assignation", n."date_nuit" HAVING count(*) > 1
-  ) t;
-  IF collisions <> 0 THEN
-    RAISE EXCEPTION 'garde: % collision(s) comptée(s) sur une simple correction d''agenda — la migration échouerait à tort', collisions;
+  -- La nuit corrigée (chaînée) et la nuit d'une autre date coexistent sous la
+  -- survivante : c'est `resolveNuitsActives` qui désigne la courante de chaque
+  -- date, pas la migration. Aucune garde ne doit s'y opposer — une rédaction
+  -- antérieure interrompait la migration ici, sur un geste patient ordinaire.
+  IF (SELECT count(DISTINCT date_nuit) FROM agenda_sommeil_nuits
+      WHERE id_assignation = 'ASS_CHK_RAT_ANCIENNE') <> 2 THEN
+    RAISE EXCEPTION 'rattachement: les deux dates de nuit n''ont pas suivi la survivante';
   END IF;
 END $$;
 

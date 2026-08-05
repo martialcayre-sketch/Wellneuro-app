@@ -107,67 +107,37 @@ WHERE j."id_assignation" = a."id_assignation"
            OR (x."date_assignation" = g."date_assignation" AND x."id" < g."id"))
   );
 
--- ── 2. GARDE — la mesure devient un invariant ──────────────────────────────
+-- ── 2. POURQUOI IL N'Y A PAS DE GARDE ICI ─────────────────────────────────
 --
--- Le rattachement ci-dessus réunit sous une même assignation des saisies qui
--- vivaient sous deux. Vérifié le 2026-08-05 : sur les couples concernés, aucune
--- date n'est portée deux fois. Mais cette migration ne s'applique pas le jour de
--- la mesure — `release-db` attend une approbation — et le patient peut saisir
--- entre-temps. La garde échoue alors bruyamment plutôt qu'en silence.
+-- Le rattachement réunit sous une même assignation des saisies qui vivaient
+-- sous deux. Une rédaction précédente interrompait la migration si une date se
+-- retrouvait alors portée deux fois, au motif qu'« on ne saurait pas laquelle
+-- fait foi ». Cette garde a été RETIRÉE : les deux prémisses étaient fausses.
 --
--- DEUX PRÉCAUTIONS, l'une et l'autre apprises d'une rédaction fautive de cette
--- même garde, qui aurait fait échouer la migration À COUP SÛR :
+-- 1. LE DOMAINE SAIT DÉJÀ TRANCHER. `resolveNuitsActives`
+--    (`lib/agenda-sommeil/nuit.ts`) définit la nuit courante d'une date comme la
+--    tête de chaîne, « la plus récente en cas d'égalité », et garantit « une
+--    seule nuit active par date ». Deux lignes de même date ne sont donc pas une
+--    ambiguïté : elles sont résolues par `soumis_le`, exactement comme
+--    aujourd'hui quand un patient corrige une saisie.
 --
--- 1. ELLE NE COMPTE QUE LES TÊTES DE CHAÎNE. Les deux agendas sont append-only
---    par conception (`lib/agenda-sommeil/persistence.ts`, `lib/agenda-
---    alimentaire/persistence.ts` : « create SEUL — jamais d'update ») : CORRIGER
---    une nuit ajoute une seconde ligne de MÊME date, chaînée par
---    `supersedes_nuit_id`. Une correction n'est donc pas une collision, c'est le
---    fonctionnement nominal — et `resolveNuitsActives` sait déjà laquelle fait
---    foi. Mesuré le 2026-08-05 : 4 couples (assignation, date) portent deux
---    lignes en base ; en ne gardant que les têtes, il en reste 3.
+-- 2. LE CAS EST NOMINAL, PAS EXCEPTIONNEL. Les deux agendas sont append-only
+--    (« create SEUL — jamais d'update »), mais l'agenda du SOMMEIL ne chaîne pas
+--    ses corrections : `AgendaSommeilJournal` poste sans `supersedesNuitId`, à la
+--    différence de l'agenda alimentaire. Corriger une nuit produit donc deux
+--    têtes non chaînées de même date — le geste patient le plus banal. C'est ce
+--    qui explique la mesure du 2026-08-05 : 4 couples (assignation, date)
+--    portent deux lignes, dont 3 non chaînés.
 --
--- 2. ELLE EST BORNÉE AUX ASSIGNATIONS QUE CETTE MIGRATION TOUCHE. Ces 3 cas
---    restants sont tous HORS du périmètre traité ici — d'autres patients,
---    d'autres assignations, une anomalie de données préexistante qui mérite un
---    examen mais qui n'a rien à voir avec ce lot. Une garde qui lit les tables
---    entières se serait déclenchée sur eux et aurait annulé la migration pour
---    des lignes qu'elle ne modifie même pas.
-DO $$
-DECLARE collisions integer;
-BEGIN
-  WITH survivantes AS (
-    SELECT g."id_assignation"
-    FROM "assignations" g
-    WHERE g."statut" NOT IN ('Complété', 'Annulée')
-      AND EXISTS (
-        SELECT 1 FROM "assignations" a
-        WHERE a."id_patient" = g."id_patient"
-          AND a."id_questionnaire" = g."id_questionnaire"
-          AND a."id" <> g."id"
-          AND a."statut" NOT IN ('Complété', 'Annulée')
-      )
-  )
-  SELECT count(*) INTO collisions FROM (
-    SELECT 1 FROM "agenda_sommeil_nuits" n
-    WHERE n."id_assignation" IN (SELECT "id_assignation" FROM survivantes)
-      AND NOT EXISTS (
-        SELECT 1 FROM "agenda_sommeil_nuits" s WHERE s."supersedes_nuit_id" = n."id"
-      )
-    GROUP BY n."id_assignation", n."date_nuit" HAVING count(*) > 1
-    UNION ALL
-    SELECT 1 FROM "agenda_alimentaire_jours" j
-    WHERE j."id_assignation" IN (SELECT "id_assignation" FROM survivantes)
-      AND NOT EXISTS (
-        SELECT 1 FROM "agenda_alimentaire_jours" s WHERE s."supersedes_jour_id" = j."id"
-      )
-    GROUP BY j."id_assignation", j."date_jour" HAVING count(*) > 1
-  ) t;
-  IF collisions > 0 THEN
-    RAISE EXCEPTION
-      'Rattachement impossible : % date(s) portent deux saisies actives (non chaînées) sur une assignation concernée. Arbitrage praticien requis avant de rejouer cette migration.', collisions;
-  END IF;
-END $$;
+-- Une garde qui s'arme sur un geste ordinaire, pour un cas que le produit résout
+-- déjà, n'est pas une sécurité : c'est un échec de `migrate deploy` en attente,
+-- sur une base où rien n'est cassé. Le rattachement laisse au domaine ce qui lui
+-- appartient.
+--
+-- CE QUE CELA IMPLIQUE, ET QUI EST ASSUMÉ : après fusion, une date portée par
+-- les deux exemplaires n'affichera que la saisie la plus récemment soumise.
+-- L'autre reste en base, jamais détruite. C'est le comportement déjà en vigueur
+-- pour toute correction.
 
 -- ── 3. BACKFILL — annuler les doublons désormais vides ─────────────────────
 --

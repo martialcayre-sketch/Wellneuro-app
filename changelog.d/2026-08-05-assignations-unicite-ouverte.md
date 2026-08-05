@@ -16,16 +16,15 @@
   exemplaires différents du même agenda ; les deux sont conservées sous
   l'exemplaire retenu, chaînes de correction comprises.
 
-  Une garde interrompt la migration si, **sur les assignations qu'elle touche**,
-  une date se retrouvait portée par deux saisies actives non chaînées — un cas
-  qu'elle ne saurait pas arbitrer. Elle ne compte que les têtes de chaîne : les
-  agendas sont append-only, une correction ajoute une ligne de même date et
-  n'est donc pas une collision. Une première rédaction ignorait ces deux points
-  et aurait fait échouer la migration à coup sûr, sur des lignes qu'elle ne
-  modifie même pas.
+  **Aucune garde n'interrompt la migration** si une date se retrouve portée par
+  deux saisies après fusion, et c'est délibéré : `resolveNuitsActives` désigne
+  déjà la saisie courante d'une date, et l'agenda du sommeil ne chaîne pas ses
+  corrections — deux lignes de même date y sont donc produites par le geste
+  patient le plus banal. Une première rédaction s'armait sur ce cas ; elle aurait
+  fait échouer le déploiement de la migration sur une base où rien n'est cassé.
 
   Un contrat SQL et un banc rendent tout cela exécutable : le prédicat de
-  l'index est comparé à la constante du code, et le rattachement comme la garde
-  sont rejoués sur une fixture qui reproduit le cas de production. Sans elle,
-  rien ne les exécutait jamais — la migration s'applique sur une base vide au
-  moment où les contrats tournent.
+  l'index est comparé à la constante du code, et le rattachement est rejoué sur
+  une fixture qui reproduit le cas de production. Sans elle, rien ne l'exécutait
+  jamais — la migration s'applique sur une base vide au moment où les contrats
+  tournent.
