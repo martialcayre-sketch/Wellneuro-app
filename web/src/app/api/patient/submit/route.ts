@@ -35,7 +35,6 @@ export type PatientSubmitResponse =
 type SubmitPayload = {
   idAssignation?: string;
   idPatient?: string;
-  email?: string;
   idQuestionnaire?: string;
   answers?: Record<string, unknown>;
 };
@@ -57,11 +56,13 @@ export async function POST(req: Request): Promise<NextResponse> {
   }
 
   const { idAssignation, answers } = payload;
-  // Identité : cookie de session portail en priorité, sinon email du corps (compat legacy).
+  // Session portail OBLIGATOIRE — le repli email est retiré (LOT-04). La
+  // navigation vers `/patient/[idAssignation]` est redirigée vers
+  // `/portail/connexion` (next.config.mjs) : plus aucun appelant légitime
+  // n'atteint cette route sans cookie.
   const patientSession = readPatientSession(req);
-  const email = patientSession?.email ?? payload.email;
 
-  if (!idAssignation || !answers || !email) {
+  if (!idAssignation || !answers) {
     logger.warn({
       event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_INVALID_PAYLOAD,
       domain: 'QUESTIONNAIRE',
@@ -73,8 +74,18 @@ export async function POST(req: Request): Promise<NextResponse> {
   if (!/^[A-Za-z0-9_-]{8,80}$/.test(idAssignation)) {
     return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiant invalide.' }, { status: 400 }), requestContext);
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Email invalide.' }, { status: 400 }), requestContext);
+  // Refus AVANT toute lecture en base, et journalisé comme les autres refus
+  // d'accès de cette route : un POST sans cookie n'est plus un cas légitime.
+  if (!patientSession) {
+    // 401, pas 403 : voir questionnaire/route.ts — une session expirée doit
+    // rester récupérable côté client, pas se présenter comme un refus définitif.
+    logger.security({
+      event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_FORBIDDEN,
+      domain: 'SECURITY',
+      message: 'Soumission questionnaire sans session portail',
+      context: finalizeLogContext(requestContext, { statusCode: 401, retryable: false }),
+    });
+    return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'unauthorized', error: 'Connexion au portail requise.' }, { status: 401 }), requestContext);
   }
   if (typeof answers !== 'object' || Array.isArray(answers)) {
     return withCorrelationHeader(NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Format réponses invalide.' }, { status: 400 }), requestContext);
@@ -86,10 +97,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
   try {
     const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
-    const accessAllowed = ass && (patientSession
-      ? await isSessionAuthorizedForAssignment(patientSession, ass)
-      : ass.emailPatient.toLowerCase() === email.toLowerCase());
-    if (!ass || !accessAllowed) {
+    if (!ass || !(await isSessionAuthorizedForAssignment(patientSession, ass))) {
       logger.security({
         event: EVENT_CODES.QUESTIONNAIRE_SUBMIT_FORBIDDEN,
         domain: 'SECURITY',

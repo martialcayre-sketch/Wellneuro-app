@@ -4,6 +4,14 @@
 
 ## Décisions actives
 
+### D-029 — Un repli d'accès sans session se retire, il ne se patche pas, une fois la reprise prouvée
+
+- Date : 2026-08-05
+- Statut : accepté
+- Domaine : sécurité et authentification patient
+- Décision : les 6 routes `api/patient/*` qui acceptaient un accès sans cookie de session (repli email + `idAssignation`, hérité du parcours legacy `/patient/[idAssignation]`) n'acceptent plus que la session portail `wn_portail` — alignées sur `api/patient/protocole`, déjà écrite ainsi. Le repli avait un défaut vivant (ne relisait jamais `patients.actif`/`accessTokenRevoked` : un patient révoqué gardait un accès complet), mais **le corriger n'a pas été retenu comme réponse suffisante** : une fois `/patient/[idAssignation]` redirigé vers `/portail/connexion` ([[D-002]]), plus aucun appelant légitime n'atteint ces routes sans session — patcher le repli aurait laissé debout une surface d'attaque sans usage. Le retrait n'a été posé qu'**après** vérification empirique (logs d'exécution Vercel, hors dépôt) que la cible de reprise (`/portail/connexion` — lien magique, Google, jeton) fonctionne réellement en production : retirer un chemin d'accès sans prouver d'abord que son remplaçant marche aurait échangé un risque de sécurité contre un risque de disponibilité.
+- Conséquences : règle générale pour tout futur retrait d'un chemin d'accès patient hérité — (1) mesurer l'usage réel, (2) prouver que le chemin de remplacement fonctionne en production, **puis seulement** (3) retirer plutôt que patcher un repli faible. Un correctif qui referme un trou de sécurité sans retirer la surface qui le portait n'est qu'une étape intermédiaire, pas une clôture. Le répertoire `web/src/app/patient/[idAssignation]/` reste dans le dépôt (page inatteignable, marquée datée) ; son retrait physique est un lot distinct, subordonné à la vérification que le portail couvre le consentement RGPD et la consultation de réponses verrouillées que la page legacy portait aussi.
+- Référence : campagne `2026-08-05-cloture-des-dettes-wellneuro-5-0`, LOT-04 (`docs/claude/campagnes/2026-08-05-cloture-des-dettes-wellneuro-5-0/lots/LOT-04-validation.md`), `changelog.d/2026-08-05-parcours-patient-unique.md`, [[D-002]], [[D-028]]
 ### D-028 — Le drapeau atteint l'écran par un provider de page, jamais par la route qui refuse de le lire
 
 - Date : 2026-08-05

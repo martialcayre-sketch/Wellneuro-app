@@ -26,7 +26,7 @@ export type PatientQuestionnaireResponse =
        */
       consentementPossible: boolean;
     }
-  | { ok: false; reason: 'not_found' | 'expired' | 'invalid' | 'annulee' | 'exception'; error: string };
+  | { ok: false; reason: 'not_found' | 'expired' | 'invalid' | 'unauthorized' | 'annulee' | 'exception'; error: string };
 
 export type AssignationInfo = {
   idAssignation: string;
@@ -41,21 +41,25 @@ export type AssignationInfo = {
   statutReponses: string;
 };
 
-// GET /api/patient/questionnaire?id=ASS...&email=...
+// GET /api/patient/questionnaire?id=ASS...
 export async function GET(req: Request): Promise<NextResponse<PatientQuestionnaireResponse>> {
   try {
     const { searchParams } = new URL(req.url);
     const idAssignation = (searchParams.get('id') ?? '').trim();
-    // Identité : cookie de session portail en priorité, sinon email en query
-    // (compat liens email legacy /patient/[idAssignation]).
+    // Session portail OBLIGATOIRE — le repli email est retiré (LOT-04). La
+    // navigation vers `/patient/[idAssignation]` est redirigée vers
+    // `/portail/connexion` (next.config.mjs) : plus aucun appelant légitime
+    // n'atteint cette route sans cookie.
     const patientSession = readPatientSession(req);
-    const emailRaw = (patientSession?.email ?? searchParams.get('email') ?? '').trim().toLowerCase();
 
     if (!idAssignation || !/^[A-Za-z0-9_-]+$/.test(idAssignation) || idAssignation.length > 64) {
       return NextResponse.json({ ok: false, reason: 'invalid', error: 'Identifiant invalide.' }, { status: 400 });
     }
-    if (!emailRaw || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
-      return NextResponse.json({ ok: false, reason: 'invalid', error: 'Email invalide.' }, { status: 400 });
+    if (!patientSession) {
+      // 401, pas 404 : le client (`portail/[token]/questionnaires/[idAssignation]`)
+      // ne redirige vers le gate que sur 400/401 — une session expirée doit
+      // rester récupérable, pas se présenter comme un lien mort.
+      return NextResponse.json({ ok: false, reason: 'unauthorized', error: 'Connexion au portail requise.' }, { status: 401 });
     }
 
     const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
@@ -63,11 +67,8 @@ export async function GET(req: Request): Promise<NextResponse<PatientQuestionnai
     if (!ass) {
       return NextResponse.json({ ok: false, reason: 'not_found', error: 'Questionnaire introuvable. Vérifiez votre lien.' }, { status: 404 });
     }
-    const accessAllowed = patientSession
-      ? await isSessionAuthorizedForAssignment(patientSession, ass)
-      : ass.emailPatient.toLowerCase() === emailRaw;
-    if (!accessAllowed) {
-      return NextResponse.json({ ok: false, reason: 'not_found', error: 'Adresse email non reconnue pour ce questionnaire.' }, { status: 404 });
+    if (!(await isSessionAuthorizedForAssignment(patientSession, ass))) {
+      return NextResponse.json({ ok: false, reason: 'not_found', error: 'Questionnaire non reconnu pour cette session.' }, { status: 404 });
     }
     // Assignation annulée par le praticien (Fil A) : indisponible. Refus dans la
     // route, pas seulement dans l'écran — un chemin patient oublié laisserait une

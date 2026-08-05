@@ -11,7 +11,6 @@ export type PatientConsentementResponse =
 
 type ConsentementPayload = {
   idAssignation?: string;
-  email?: string;
   action?: 'donner' | 'demander_modification';
   commentaire?: string;
 };
@@ -26,19 +25,23 @@ export async function POST(req: Request): Promise<NextResponse<PatientConsenteme
   }
 
   const { idAssignation } = payload;
-  // Identité : cookie de session portail en priorité, sinon email du corps (compat legacy).
+  // Session portail OBLIGATOIRE — le repli email est retiré (LOT-04). La
+  // navigation vers `/patient/[idAssignation]` est redirigée vers
+  // `/portail/connexion` (next.config.mjs) : plus aucun appelant légitime
+  // n'atteint cette route sans cookie.
   const patientSession = readPatientSession(req);
-  const email = patientSession?.email ?? payload.email;
   const action = payload.action ?? 'donner';
 
-  if (!idAssignation || !email) {
+  if (!idAssignation) {
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Données manquantes.' }, { status: 400 });
   }
   if (!/^[A-Za-z0-9_-]{8,80}$/.test(idAssignation)) {
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Identifiant invalide.' }, { status: 400 });
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Email invalide.' }, { status: 400 });
+  if (!patientSession) {
+    // 401, pas 403 : voir questionnaire/route.ts — une session expirée doit
+    // rester récupérable côté client, pas se présenter comme un refus définitif.
+    return NextResponse.json({ ok: false, reason: 'unauthorized', error: 'Connexion au portail requise.' }, { status: 401 });
   }
   if (action !== 'donner' && action !== 'demander_modification') {
     return NextResponse.json({ ok: false, reason: 'invalid_payload', error: 'Action invalide.' }, { status: 400 });
@@ -46,10 +49,7 @@ export async function POST(req: Request): Promise<NextResponse<PatientConsenteme
 
   try {
     const ass = await prisma.assignation.findUnique({ where: { idAssignation } });
-    const accessAllowed = ass && (patientSession
-      ? await isSessionAuthorizedForAssignment(patientSession, ass)
-      : ass.emailPatient.toLowerCase() === email.toLowerCase());
-    if (!ass || !accessAllowed) {
+    if (!ass || !(await isSessionAuthorizedForAssignment(patientSession, ass))) {
       return NextResponse.json({ ok: false, reason: 'forbidden', error: 'Assignation non reconnue.' }, { status: 403 });
     }
     // EXEMPTION `deverrouille`, alignée mot pour mot sur
