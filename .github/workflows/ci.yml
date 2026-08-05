@@ -213,6 +213,16 @@ jobs:
       - name: Numérotation du registre des décisions (banc du contrôle)
         run: node --test scripts/lib/decisions-numerotation.test.mjs
 
+      # Invariants de sûreté de `release-db`, le seul chemin d'écriture de la base
+      # de production. Depuis que ce workflow est proposé automatiquement, il ne
+      # reste plus qu'UNE barrière entre un merge et une écriture : l'environnement
+      # protégé. Un `environment:` retiré par mégarde était inoffensif tant que
+      # personne ne déclenchait ; il ne l'est plus. Aucun lint de workflow ne tourne
+      # ici, et une erreur dans ce fichier ne se révélerait qu'à l'exécution — avec
+      # une migration en attente.
+      - name: Invariants du workflow release-db
+        run: node --test scripts/release-db-invariants.test.mjs
+
       # Banc de `scripts/changelog-collate.mjs`, qui replie les fragments de
       # `changelog.d/` dans `CHANGELOG.md`. Il ne tournait NULLE PART : ni en
       # CI, ni dans `npm run check`. Un banc qu'aucune passe n'exécute ne

@@ -7,6 +7,7 @@ import { consultationCourante } from '@/lib/consultation/portail';
 import { AGENDA_SOMMEIL_ID } from '@/lib/agenda-sommeil/types';
 import { calculerFenetreDepuisDates } from '@/lib/agenda-sommeil/fenetre';
 import { dateJourParis } from '@/lib/agenda-sommeil/portail';
+import { whereEnvoiVisible } from '@/lib/documents/bilanPatient';
 import { AGENDA_ALI_ID } from '@/lib/agenda-alimentaire/types';
 import { calculerFenetreAliDepuisDates } from '@/lib/agenda-alimentaire/fenetre';
 import { logger } from '@/lib/observability/logger';
@@ -35,7 +36,21 @@ export type PortailAssignationsResponse =
       // statut de la consultation (déjà sur `/api/portail/session`) et le fait
       // qu'un booklet a été envoyé au patient (il l'a reçu par e-mail). Jamais
       // de score, de discordance ni de donnée réservée au praticien.
-      parcours: { consultationStatut: string | null; bookletEnvoye: boolean };
+      //
+      // DEUX SIGNAUX, DEUX QUESTIONS — ne pas les refondre en un seul :
+      //  - `bookletEnvoye` répond « l'envoi a-t-il EU LIEU ? ». C'est de
+      //    l'HISTORIQUE, et il alimente la frise du parcours, qui ne recule
+      //    jamais (`lib/trajectoire-partagee/contrat.ts`).
+      //  - `bilanConsultable` répond « le document est-il LISIBLE aujourd'hui ? ».
+      //    C'est de l'ACCÈS, et il suit le rejet : il gouverne le lien
+      //    « Consulter mon bilan », qui doit s'accorder avec `api/portail/bilan`.
+      // Le second implique le premier (`whereEnvoiVisible` est strictement plus
+      // étroit), jamais l'inverse.
+      parcours: {
+        consultationStatut: string | null;
+        bookletEnvoye: boolean;
+        bilanConsultable: boolean;
+      };
       // Agendas du sommeil en cours (recueil quotidien). STRICTEMENT ce que le
       // journal de l'agenda montre déjà au patient : le compte de nuits et la
       // position dans la fenêtre. Jamais un agrégat (durée, efficacité,
@@ -157,14 +172,36 @@ export async function GET(req: Request): Promise<NextResponse> {
       _max: { dateReponse: true },
     });
 
-    // Parcours synchronisé (SP-CONV LOT-04) : deux signaux existants, lus en
-    // sélection minimale. `Envoye` est le seul statut de succès du booklet
-    // (`api/praticien/booklet`, logBookletEnvoi) — un échec d'envoi ne fait
-    // jamais avancer le parcours du patient.
-    const [consultation, bookletEnvoye] = await Promise.all([
+    // Parcours synchronisé (SP-CONV LOT-04) : des signaux existants, lus en
+    // sélection minimale.
+    //
+    // DEUX REQUÊTES SUR `booklet_envois`, ET C'EST VOULU — elles ne répondent
+    // pas à la même question :
+    //
+    //  - HISTORIQUE (`bookletEnvoye`) : un envoi a-t-il réussi ? `Envoye` est le
+    //    seul statut de succès (`api/praticien/booklet`, logBookletEnvoi) — un
+    //    échec d'envoi ne fait jamais avancer le parcours. Aucun filtre de
+    //    rejet ici : la frise du parcours ne recule pas, un booklet envoyé
+    //    reste envoyé (invariant écrit dans `lib/trajectoire-partagee/contrat.ts`).
+    //    Une passe précédente avait fait passer ce signal sous
+    //    `whereEnvoiVisible` : un rejet ramenait alors le patient de « votre
+    //    restitution est disponible » à « votre praticien la prépare ».
+    //
+    //  - ACCÈS (`bilanConsultable`) : le document est-il lisible aujourd'hui ?
+    //    Le hub ANNONCE ce que `api/portail/bilan` sert, donc les deux surfaces
+    //    doivent lire la MÊME visibilité — d'où le prédicat partagé
+    //    `whereEnvoiVisible`, et non une seconde règle écrite ici, qui
+    //    ignorerait le rejet et mènerait « Consulter mon bilan » vers « votre
+    //    praticien ne vous a pas encore transmis de bilan ». Ce que la fonction
+    //    porte et pourquoi : `lib/documents/bilanPatient.ts`.
+    const [consultation, bookletEnvoye, bilanConsultable] = await Promise.all([
       consultationCourante(session.idPatient),
       prisma.bookletEnvoi.findFirst({
         where: { idPatient: session.idPatient, statut: 'Envoye' },
+        select: { id: true },
+      }),
+      prisma.bookletEnvoi.findFirst({
+        where: whereEnvoiVisible(session.idPatient),
         select: { id: true },
       }),
     ]);
@@ -287,6 +324,7 @@ export async function GET(req: Request): Promise<NextResponse> {
       parcours: {
         consultationStatut: consultation?.statut ?? null,
         bookletEnvoye: bookletEnvoye !== null,
+        bilanConsultable: bilanConsultable !== null,
       },
     }), requestContext);
   } catch (err) {

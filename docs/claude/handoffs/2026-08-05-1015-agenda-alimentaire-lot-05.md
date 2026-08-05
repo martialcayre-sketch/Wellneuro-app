@@ -3,7 +3,7 @@
 - Date : 2026-08-05, 10:15
 - Campagne : `docs/claude/campagnes/2026-08-04-agenda-alimentaire/`
 - Lot : `lots/LOT-05-dossier-de-controle-et-lecteur-praticien.md` — **livré**
-- Décision posée : **D-026**
+- Décision posée : **D-027**
 - Fragments de changelog : `changelog.d/2026-08-05-agenda-alimentaire-dossier-controle.md`, `changelog.d/2026-08-05-agenda-alimentaire-lecteur-praticien.md`
 
 ## Où en est la campagne
@@ -33,7 +33,7 @@ jamais eu de fichier, la bascule n'a coûté aucun renommage.
 2. **`chainage_fautif` est encore vacue.** Aucune ligne ne porte de
    `supersedes_jour_id`. Le zéro ne prouve rien tant qu'aucune correction
    n'existe — il redevient mordant à la première, ou à la clôture.
-3. **La lecture praticien n'est pas gardée par `WN_AGENDA_ALI`** (`D-026`).
+3. **La lecture praticien n'est pas gardée par `WN_AGENDA_ALI`** (`D-027`).
    L'absence de garde est délibérée et porte un test qui la nomme : sans lui, un
    relecteur futur « corrigerait » ce qu'il prendrait pour un oubli. Elle est
    gardée par deux verrous plus forts — session praticien, puis
@@ -52,7 +52,7 @@ jamais eu de fichier, la bascule n'a coûté aucun renommage.
 ## Ce qui reste ouvert, nommé et non corrigé
 
 - **Aucune bannière ne dit que le recueil est fermé.** Le panneau ne lit pas le
-  drapeau — c'est le sens de `D-026`. L'état vide a cessé de nommer un geste
+  drapeau — c'est le sens de `D-027`. L'état vide a cessé de nommer un geste
   impossible (« Assignez l'instrument » n'existe nulle part drapeau éteint),
   mais rien ne distingue encore « pas assigné » de « recueil fermé ».
 - **Le déverrouillage praticien retire silencieusement l'annulabilité.** Un

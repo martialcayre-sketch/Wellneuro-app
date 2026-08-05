@@ -187,11 +187,11 @@ export function AgendaAlimentairePraticienPanel({ idPatient }: { idPatient: stri
     return <p className="text-sm text-status-danger">{message}</p>;
   }
   if (episodes.length === 0) {
-    // Descriptif, sans impératif (D-026) : drapeau `WN_AGENDA_ALI` éteint,
+    // Descriptif, sans impératif (D-027) : drapeau `WN_AGENDA_ALI` éteint,
     // `IDS_SUSPENDUS` retire `Q_ALI_09` à la fois de la bibliothèque et de la
     // route d'assignation — le geste « Assignez l'instrument » ne serait alors
     // possible nulle part. Cette réponse ne lit ni ne sert la position du
-    // drapeau : c'est le sens même de D-026.
+    // drapeau : c'est le sens même de D-027.
     return (
       <p className="text-sm text-muted-foreground">Aucun agenda alimentaire n’est assigné à ce patient.</p>
     );

@@ -199,7 +199,7 @@ alimentaire » de la fiche patient (`FichePatientPanel.tsx`, alimenté par
 `GET /api/praticien/agenda-alimentaire`) affiche, par assignation, la frise
 des 21 jours, le détail jour par jour (horaires de prises, cinq champs
 booléens) et les agrégats sous condition de couverture — sans aucun score,
-indice, gramme, kcal ni quantité (`D-026`, qui amende ce point de `D-025` :
+indice, gramme, kcal ni quantité (`D-027`, qui amende ce point de `D-025` :
 cette lecture n'est PAS gardée par `WN_AGENDA_ALI`, seulement par la session
 praticien et l'appartenance du dossier). C'est désormais le chemin normal
 pour suivre le pilote.

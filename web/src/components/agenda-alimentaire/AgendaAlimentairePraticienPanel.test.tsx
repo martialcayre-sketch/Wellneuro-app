@@ -78,7 +78,7 @@ beforeEach(() => {
 });
 
 describe('AgendaAlimentairePraticienPanel', () => {
-  it('affiche un état vide DESCRIPTIF, sans geste impossible (D-026)', async () => {
+  it('affiche un état vide DESCRIPTIF, sans geste impossible (D-027)', async () => {
     mockFetch([]);
     render(<AgendaAlimentairePraticienPanel idPatient="PAT_1" />);
     // Sans impératif : drapeau éteint, IDS_SUSPENDUS retire Q_ALI_09 de la

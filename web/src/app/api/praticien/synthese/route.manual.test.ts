@@ -250,4 +250,25 @@ describe('brouillon praticien /api/praticien/synthese', () => {
     expect(response.status).toBe(409);
     expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
   });
+
+  // Ce refus est la SEULE chose qui fige le narratif servi au portail patient :
+  // contrairement à la note (`booklet_envois.noteTransmise`), `syntheseJson`
+  // n'est pas snapshotté à l'envoi — la page « Mon bilan » le lit vivant sur la
+  // synthèse. Si `enregistrer` redevenait possible après validation, le texte
+  // lu par le patient changerait sous ses yeux, sans nouvel envoi. Les deux
+  // statuts post-validation doivent donc être couverts, pas seulement le
+  // premier : `Corrigee_Praticien` est celui d'une synthèse rouverte puis
+  // revalidée, et c'est le plus susceptible d'être réédité.
+  it('refuse d’enregistrer une synthèse corrigée puis revalidée (Corrigee_Praticien)', async () => {
+    prisma.syntheseIA.findFirst.mockResolvedValue({ ...ligneSynthese(), statut: 'Corrigee_Praticien' });
+
+    const response = await PATCH(requete('PATCH', {
+      idSynthese: 'SYN_MANUEL_1',
+      action: 'enregistrer',
+      synthese: { ...brouillon, narratif_patient: 'Réécriture après validation.' },
+    }));
+
+    expect(response.status).toBe(409);
+    expect(prisma.syntheseIA.update).not.toHaveBeenCalled();
+  });
 });

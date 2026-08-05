@@ -19,6 +19,9 @@ vi.mock('@/lib/observability/logger', () => ({
 }));
 
 import { signPatientSession } from '@/lib/patient-session';
+// Importé pour jouer la chaîne complète route → frise : c'est l'ÉTAPE affichée
+// au patient qui prouve la non-régression, pas le booléen intermédiaire.
+import { deriverEtatParcoursPatient } from '@/lib/trajectoire-partagee/contrat';
 import { GET } from './route';
 
 const patient = {
@@ -34,6 +37,69 @@ const patient = {
 function request(cookie: string): Request {
   return new Request('http://localhost/api/portail/assignations', {
     headers: { cookie: `wn_portail=${encodeURIComponent(cookie)}` },
+  });
+}
+
+type EnvoiFixture = {
+  idPatient: string;
+  statut: string;
+  synthese: { idPatient: string; statut: string };
+};
+
+// Les clés que ce banc sait émuler, CHEMIN PAR CHEMIN. Un contrôle limité au
+// premier niveau laisserait passer en silence une condition ajoutée dans
+// `synthese.is` — ou tout un `AND`/`OR`/`NOT` imbriqué —, et le banc resterait
+// vert en prétendant émuler la requête. C'est pire qu'un mock naïf : il inspire
+// confiance. Un chemin absent de cette table est donc un territoire inconnu, et
+// toute clé qu'on y trouve fait échouer le banc.
+const CLES_EMULEES: Record<string, string[]> = {
+  '': ['idPatient', 'statut', 'synthese'],
+  synthese: ['is'],
+  'synthese.is': ['idPatient', 'statut'],
+  'synthese.is.statut': ['not'],
+};
+
+function verifierWhereEmule(noeud: unknown, chemin = ''): void {
+  if (noeud === null || typeof noeud !== 'object' || noeud instanceof Date) return;
+  if (Array.isArray(noeud)) {
+    // Un tableau ne peut venir que d'un opérateur (`AND`, `OR`, `in`…) : aucun
+    // n'est émulé, et le chemin qui y mène a déjà été refusé plus haut.
+    throw new Error(`Filtre non émulé par le banc : ${chemin}[]`);
+  }
+  const autorisees = CLES_EMULEES[chemin];
+  for (const cle of Object.keys(noeud as Record<string, unknown>)) {
+    const sousChemin = chemin ? `${chemin}.${cle}` : cle;
+    if (autorisees === undefined || !autorisees.includes(cle)) {
+      throw new Error(`Filtre non émulé par le banc : ${sousChemin}`);
+    }
+    verifierWhereEmule((noeud as Record<string, unknown>)[cle], sousChemin);
+  }
+}
+
+// Émule le filtrage de Prisma sur un petit jeu d'envois, au lieu de rendre
+// toujours la même ligne : c'est la seule façon que le `where` RÉELLEMENT émis
+// par la route décide du résultat. Un mock inconditionnel resterait vert quel
+// que soit le filtre, donc ne prouverait rien de la visibilité.
+//
+// Toute clé non émulée, À N'IMPORTE QUELLE PROFONDEUR, fait ÉCHOUER le banc
+// plutôt que d'être ignorée : un filtre silencieusement sauté rendrait le test
+// aveugle à ce qu'il affirme.
+function mockEnvoisBooklet(envois: EnvoiFixture[]): void {
+  prisma.bookletEnvoi.findFirst.mockImplementation(async (args: { where: Record<string, unknown> }) => {
+    const where = args.where as {
+      idPatient?: string;
+      statut?: string;
+      synthese?: { is?: { idPatient?: string; statut?: { not?: string } } };
+    };
+    verifierWhereEmule(where);
+    const retenu = envois.find(
+      e =>
+        (where.idPatient === undefined || e.idPatient === where.idPatient) &&
+        (where.statut === undefined || e.statut === where.statut) &&
+        (where.synthese?.is?.idPatient === undefined || e.synthese.idPatient === where.synthese.is.idPatient) &&
+        (where.synthese?.is?.statut?.not === undefined || e.synthese.statut !== where.synthese.is.statut.not),
+    );
+    return retenu ? { id: 'B1' } : null;
   });
 }
 
@@ -54,7 +120,74 @@ describe('GET /api/portail/assignations — liaison session au compte', () => {
     const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
 
     const corps = await (await GET(request(cookie))).json();
-    expect(corps.parcours).toEqual({ consultationStatut: 'en_cours', bookletEnvoye: true });
+    expect(corps.parcours).toEqual({
+      consultationStatut: 'en_cours',
+      bookletEnvoye: true,
+      bilanConsultable: true,
+    });
+  });
+
+  // Le hub ANNONCE le bilan que `api/portail/bilan` sert : les deux doivent
+  // lire la même visibilité, sinon « Consulter mon bilan » mène à « votre
+  // praticien ne vous a pas encore transmis de bilan ». C'est ce qui arrivait
+  // tant que cette route filtrait sur le seul `statut: 'Envoye'`.
+  it('cesse de proposer le bilan quand il a été rejeté après son envoi', async () => {
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
+
+    // Contrôle d'abord : un envoi dont la synthèse tient toujours est proposé.
+    // Sans lui, l'assertion suivante serait verte pour une mauvaise raison —
+    // un banc qui ne rend jamais rien la satisferait aussi.
+    mockEnvoisBooklet([
+      { idPatient: 'PAT_TEST', statut: 'Envoye', synthese: { idPatient: 'PAT_TEST', statut: 'Validee_Praticien' } },
+    ]);
+    expect((await (await GET(request(cookie))).json()).parcours.bilanConsultable).toBe(true);
+
+    // Puis le rejet après coup, seul recours du praticien qui s'aperçoit qu'il
+    // a transmis un bilan erroné : le hub doit cesser de le proposer.
+    mockEnvoisBooklet([
+      { idPatient: 'PAT_TEST', statut: 'Envoye', synthese: { idPatient: 'PAT_TEST', statut: 'Rejetee' } },
+    ]);
+    expect((await (await GET(request(cookie))).json()).parcours.bilanConsultable).toBe(false);
+  });
+
+  /**
+   * NON-RÉGRESSION DE LA FRISE — le défaut qu'a introduit le correctif
+   * ci-dessus avant d'être séparé en deux signaux.
+   *
+   * Faire lire `bookletEnvoye` par `whereEnvoiVisible` faisait RECULER le
+   * parcours du patient : un rejet le ramenait de l'étape 6 (« votre
+   * restitution est disponible ») à l'étape 5 (« votre praticien la prépare »),
+   * en violation directe de l'invariant « jamais rétrograde » de
+   * `lib/trajectoire-partagee/contrat.ts`.
+   *
+   * Le test se joue jusqu'au bout de la chaîne — la réponse de la route est
+   * passée telle quelle à `deriverEtatParcoursPatient`, comme le fait le hub —
+   * parce que c'est le RÉSULTAT sur la frise qui compte, pas le booléen. Il
+   * rougit dès qu'on rebranche `bookletEnvoye` sur `whereEnvoiVisible`.
+   */
+  it('un bilan rejeté retire l’accès sans faire reculer la frise', async () => {
+    const cookie = signPatientSession({ idPatient: patient.idPatient, email: patient.email });
+    const signauxDeBase = { questionnairesTransmis: true, protocoleDiffuse: false, finDeCycle: false };
+
+    // Avant le rejet : le document est là, et la frise est à l'étape 6.
+    mockEnvoisBooklet([
+      { idPatient: 'PAT_TEST', statut: 'Envoye', synthese: { idPatient: 'PAT_TEST', statut: 'Validee_Praticien' } },
+    ]);
+    const avant = (await (await GET(request(cookie))).json()).parcours;
+    expect(avant).toMatchObject({ bookletEnvoye: true, bilanConsultable: true });
+    const friseAvant = deriverEtatParcoursPatient({ ...signauxDeBase, ...avant });
+    expect(friseAvant).toMatchObject({ journeyCurrentId: 6, analyseTerminee: true });
+
+    // Après le rejet : l'ACCÈS tombe, l'HISTORIQUE reste — l'envoi a bien eu
+    // lieu, le patient a reçu l'e-mail, la frise le garde acquis.
+    mockEnvoisBooklet([
+      { idPatient: 'PAT_TEST', statut: 'Envoye', synthese: { idPatient: 'PAT_TEST', statut: 'Rejetee' } },
+    ]);
+    const apres = (await (await GET(request(cookie))).json()).parcours;
+    expect(apres).toMatchObject({ bookletEnvoye: true, bilanConsultable: false });
+
+    // Et la frise n'a pas bougé d'un cran.
+    expect(deriverEtatParcoursPatient({ ...signauxDeBase, ...apres })).toEqual(friseAvant);
   });
 
   // IDP2 LOT-02 : la révocation, et non plus la rotation du jeton, est ce qui

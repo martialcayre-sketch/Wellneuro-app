@@ -4,14 +4,14 @@
     "id": "wellneuro",
     "name": "Wellneuro"
   },
-  "status": "idle",
-  "active_campaign": null,
-  "active_lot": null,
-  "last_completed_lot": "2026-07-25-certification-corpus-questionnaires/montee-lots-1-4 (62/64)",
+  "status": "active",
+  "active_campaign": "2026-08-05-cloture-des-dettes-wellneuro-5-0",
+  "active_lot": "LOT-02",
+  "last_completed_lot": "2026-08-05-cloture-des-dettes-wellneuro-5-0/LOT-01 (#575)",
   "git": {
-    "branch": "worktree-signature-table-orientation",
-    "last_commit": "d9aac3b1",
-    "dirty": true
+    "branch": "main",
+    "last_commit": "3dafa9a0",
+    "dirty": false
   },
   "validation": {
     "overall_status": "passed",
@@ -25,12 +25,12 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "MONTÉE EN CERTIFICATION CLOSE le 2026-08-01 à 62/64 — 60 scoring_verifie + 2 suspendus terminaux (campagne 2026-07-25-certification-corpus-questionnaires, lots 1-4). EN VOL : Q_SOM_09 (droits_verifies — attendre la fin du recueil de données, décision praticien avant tout scoring) ; Q_GEO_04 (contenu_verrouille par plafond adversarial du 2026-08-01 — ne monter qu'après vérification des bandes 27-30/21-26/10-20/0-9 contre la HAS 2011 ou retour de l'escalade SIIN du 2026-07-25, toujours ouverte). ARBITRAGES DU 2026-08-01 (praticien, en session) : Q_PED_03 reste suspendu — rouvrir sur usage seulement, avec le scoring dimensionnel complet, jamais la somme brute ; ORIENTATION ADAPTATIVE LANCÉE — constat au cadrage : le lot 7 est DÉJÀ LIVRÉ depuis le 2026-07-25 (#361 : orientationRulesV1 contrat v2 table vide, orientationEngine pur, route GET double verrou fail-closed WN_ENABLE_ORIENTATION_NNPP2 + tableSignee, tests) et dort en fail-closed ; LOT 8 CADRÉ ET GATES CONFIRMÉS le 2026-08-01 : décision f close AMENDÉE (seule la perfusion reste exclue du moteur d'orientation ; sevrages médicamenteux, psychotropes et Alzheimer réintégrés — validation claim par claim et barrière D-003 inchangées), coût accepté (~11-17 USD sur les 106 fiches, estimation ±2-3x sur le drafting), premier lot : SOMMEIL COMPLET (17 fiches, notebook 02). EXÉCUTION SUR LE MAC UNIQUEMENT (web/.env.local : ANTHROPIC_API_KEY, OPENAI_API_KEY, RAG_INTERNAL_SECRET ; PDF sous ~/.wellneuro/corpus/). Préparation dépôt AVANT le run, en PR séparée après merge de #517 : marquer metadata.usage='orientation' dans tools/corpus/claims/draft.mjs, matérialiser le filtre A-009 amendé (perfusion seule), runbook. Puis lot 9 (compilation de la table par PR revue + signature praticien). Q_FIB_03 fermé définitivement — ne rouvrir que sur usage. EN ATTENTE HUMAINE (reconduites) : invitations aux 12 patients (précondition IDP2 LOT-04), visibilité patient du fil médecin, dérogation G-TRUST-04 au 2026-10-21, D-TRUST-02, registre EX-3. Notes locales : purger web/.next si fiche-trajectoire:12 timeout ; portail-lien-magique:45 échoue en local même sur main pur (anti-oracle de temps), vert en CI ; baselines pixel des nouveaux écrans trajectoires différées (captures de revue seules).",
+  "next_action": "Campagne active : 2026-08-05-cloture-des-dettes-wellneuro-5-0, LOT-02 à ouvrir (« Packs : observer le repli legacy avant de le fermer »). LOT-00 livré (#435, 2026-08-05) — chemin d'écriture base unique via release-db. LOT-01 livré (#575, 2026-08-05) — `scripts/wn-etat-reel.mjs` observe six dimensions du dépôt, en compare trois à ce fichier ; réserve nommée non fermée : `comparerEtat` ne confronte pas encore PR ouvertes/worktrees/parcours patient, et `validation.last_checked_at` (toujours daté du 2026-07-23) n'a aucun outil pour se rafraîchir. EN VOL, orphelins de campagnes closes, non repris ailleurs : Q_GEO_04 (contenu_verrouille par plafond adversarial du 2026-08-01, bandes HAS 2011 non sourcées — escalade SIIN du 2026-07-25 toujours sans réponse ; redondant avec CAMPAGNE.md de cloture-des-dettes, question ouverte du LOT-06) ; Q_SOM_09 (droits_verifies — recueil de données en cours, décision praticien avant tout scoring) ; Q_PED_03 suspendu — rouvrir sur usage seulement, scoring dimensionnel complet, jamais la somme brute ; Q_FIB_03 fermé définitivement, ne rouvrir que sur usage. EN ATTENTE HUMAINE (reconduites, dates inconnues, non trackées ailleurs) : invitations aux 12 patients (précondition IDP2 LOT-04) ; visibilité patient du fil médecin ; D-TRUST-02 ; registre EX-3. Notes opérationnelles : portail-lien-magique:45 échoue en local sur main pur (anti-oracle de temps), vert en CI ; baselines pixel des écrans trajectoires différées (captures de revue seules).",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-08-04T17:42:27Z",
+  "updated_at": "2026-08-05T09:05:00Z",
   "parallel_campaigns": []
 }

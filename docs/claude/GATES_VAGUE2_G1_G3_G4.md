@@ -43,8 +43,8 @@ autorisation en un clic, dans la session, et c'est elle qui matérialise la
 
 Ce n'est pas une formalité. **Merger une PR de migration rend cette migration
 applicable sur la base Supabase de production** : elle part ensuite via le
-workflow GitHub Actions `release-db` (déclenché à la main, gaté par
-l'environnement protégé `release-db`) — le build Vercel n'écrit plus en base. Le
+workflow GitHub Actions `release-db` (proposé automatiquement dès qu'une
+migration atteint `main`, gaté par l'environnement protégé `release-db`) — le build Vercel n'écrit plus en base. Le
 SQL doit donc être relu avant merge, pas après.
 
 ## Vue d'ensemble

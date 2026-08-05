@@ -141,7 +141,7 @@ et laisse les objets de `prises` hors du filtre. `CAMPAGNE.md`, le runbook et le
 handoff du 11:30 remis d'accord avec la base.
 
 **Temps B.** Route `GET /api/praticien/agenda-alimentaire` et panneau au dossier,
-`D-026` posée. Deux passes adversariales : dix constats à la première, cinq à la
+`D-027` posée. Deux passes adversariales : dix constats à la première, cinq à la
 seconde, tous traités.
 
 **Ce que le lot a appris.** Trois des dix constats initiaux étaient des *gardes

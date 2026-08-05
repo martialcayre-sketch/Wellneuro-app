@@ -99,6 +99,44 @@ Les paramètres cliniques non sourcés restent bloqués. Voir
 
 - Incident 404 production / DNS / config Vercel (2026-07-01), résolu — configuration de référence du projet Vercel (`projectId`, `rootDirectory`, variables d'env prod) : `docs/claude/CONTEXTE_SESSION_VERCEL_2026-07-01.md`.
 
+## État du dépôt : ce qui est généré, ce qui reste humain
+
+`.wn/state.json` a longtemps été maintenu à la main, et a fini par mentir —
+branche de worktree supprimée depuis des semaines, `dirty` figé, date de
+validation vieille de deux semaines. Deux outils se partagent maintenant la
+tâche, avec des rôles disjoints :
+
+- **`node scripts/wn-etat-reel.mjs`** *rapporte*. Il observe six dimensions
+  directement depuis leurs sources — flags `WN_*` référencés dans `web/src`
+  (jamais une valeur d'environnement lue, donc jamais présentés comme
+  « actifs »), noms de migrations sur disque (jamais une connexion à la base :
+  cette lecture reste réservée à l'outil MCP Supabase, en session — voir
+  « Lire la base de production » dans `CLAUDE.md`), registre de certification
+  (`docs/claude/corpus/instrument_registry.json`, 65 instruments — pas
+  `source_registry.json`, qui est un registre disjoint de 507 sources
+  bibliographiques du corpus clinique), PR ouvertes via `gh`, worktrees et
+  branches, routes patient/portail présentes — les compare à `.wn/state.json`,
+  et liste les écarts. **Il n'écrit jamais rien.**
+- **`node scripts/wn-cycle.mjs --appliquer`** *répare* deux champs précis
+  (`git.*`, `updated_at` de `.wn/state.json`, puis `ACTIVE_CAMPAIGN.md`) — et
+  seulement ça, jamais `SESSION_LOG.md` ni un fragment de handoff, qui restent
+  du raisonnement humain.
+
+**Piège découvert en écrivant ce lot, à ne pas reproduire** : `wn-cycle.mjs`
+traite explicitement `branche === 'main'` comme sa propre phase (`hors-lot`) —
+il est conçu pour être rejoué **depuis `main`**. Le lancer en cours de lot,
+depuis une branche de travail, écrit le nom de *cette* branche dans
+`git.branch` ; une fois la PR squashée et la branche supprimée (doctrine de
+merge), `.wn/state.json` pointe de nouveau une branche morte — exactement le
+défaut qu'il vient de corriger, recréé par le geste même censé le réparer.
+C'est très probablement l'origine du bug initial. La bonne séquence :
+`--appliquer` se joue **après** le merge, depuis `main`, jamais en cours de
+lot.
+
+Ce qui reste humain, et que ces outils ne touchent pas : les arbitrages
+cliniques, `next_action` (le texte libre, pas les champs structurés), et les
+décisions de campagne (`docs/DECISIONS.md`).
+
 ## Ce qui reste ouvert (hors périmètre sauf demande explicite)
 
 - **R6** : stabilisation build/tests/go-no-go (`.claude/skills/wn-r6/SKILL.md` fait foi, tranché en R10) — gelé jusqu'à validation de R0.

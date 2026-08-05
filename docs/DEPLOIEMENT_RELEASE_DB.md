@@ -13,8 +13,8 @@ imports **au build**.
 
 1. **L'écriture sans approbation** — toute PR mergée écrivait en production au
    déploiement suivant, sans autre gate que la revue de code. L'écriture est
-   désormais un acte explicite, déclenché à la main et approuvé dans un
-   environnement protégé.
+   désormais un acte explicite : **proposé** automatiquement, **approuvé** dans un
+   environnement protégé. Le déclenchement est mécanique, la décision ne l'est pas.
 2. **Rouge ≠ rien écrit** — le contrat CB-02a s'exécutait **après le COMMIT** de
    l'import : un échec de contrat laissait la donnée écrite et le build rouge.
    Les invariants structurels sont maintenant rejoués **dans** la transaction
@@ -24,11 +24,31 @@ imports **au build**.
 code↔schéma. Avant, `migrate deploy` tournait avant `next build` : la migration
 partait avec le code, et un échec rendait le build rouge — l'alignement était
 garanti **par construction** (le fail-open `MIGRATE_DATABASE_URL` absente en
-était l'exception connue). Désormais il repose sur un geste humain, et
-**rien ne rappelle une release oubliée** : merger une PR de migration sans
-déclencher `release-db` sert du code contre une base en retard, en silence. La
-garantie est passée du mécanique au procédural — d'où l'ordre expand/contract
-plus bas, qui n'est plus une bonne pratique mais la seule protection restante.
+était l'exception connue). Il est ensuite passé au procédural — et
+**rien ne rappelait une release oubliée** : merger une PR de migration sans
+déclencher `release-db` servait du code contre une base en retard, en silence.
+
+C'est ce que le déclenchement automatique a refermé : une migration qui atteint
+`main` crée son run, qui reste visible en attente jusqu'à ce qu'on l'approuve ou
+qu'on le rejette. Le rappel est redevenu mécanique ; **l'approbation, elle, reste
+humaine**. Ce qui subsiste est l'ordre expand/contract, décrit plus bas : le
+déclenchement automatique raccourcit la fenêtre entre le déploiement du code et
+l'application de la migration, il ne la ferme pas.
+
+> **Cette bascule déplace le risque, et il faut le savoir.** Avant, il fallait
+> DEUX choses pour écrire en production : qu'un humain clique « Run workflow »,
+> **et** que l'environnement gate. Il n'en reste qu'une. Si les *required
+> reviewers* de l'environnement `release-db` étaient vidés ou sa politique de
+> branches élargie, un push de migration s'appliquerait **sans aucune action
+> humaine** — alors qu'auparavant ce même défaut de configuration restait
+> inoffensif tant que personne ne déclenchait. Vérifié le 2026-08-05 :
+> reviewers = `martialcayre-sketch`, branches restreintes à `main`. À relire lors
+> de toute reprise du dépôt, et `scripts/release-db-invariants.test.mjs` verrouille
+> en CI ce que le dépôt, lui, peut garantir.
+>
+> À connaître aussi : `prevent_self_review` est **désactivé** — avec un seul
+> relecteur, l'activer rendrait toute release impossible. Le second gate est donc
+> un **temps d'arrêt**, pas un second regard.
 
 Le workflow `release-db` porte l'écriture ; le build est redevenu un pur
 `next build` sans effet de bord (bascule « le build Vercel n'écrit plus en
@@ -39,9 +59,25 @@ conteneur dédié.
 
 ## Ce que le workflow fait
 
-Déclenché à la main (`workflow_dispatch`), gaté par l'environnement protégé
-`release-db` (required reviewers = **second gate humain**, en plus de la revue de
-la PR qui a mergé la migration). Séquence :
+**Proposé automatiquement** dès qu'une migration atterrit sur `main` (déclencheur
+`push` filtré sur `web/prisma/migrations/**`), et toujours déclenchable à la main
+(`workflow_dispatch`) — seul chemin pour `import-cb`, qui exige de nommer l'hôte
+visé. Dans les deux cas, gaté par l'environnement protégé `release-db` (required
+reviewers = **second gate humain**, en plus de la revue de la PR qui a mergé la
+migration).
+
+**L'automatisation porte sur le déclenchement, jamais sur l'approbation.** Ce qui
+change n'est pas qui décide, c'est qui doit y penser : auparavant, rien ne
+rappelait qu'une migration mergée attendait sa release, et « rien ne détecte une
+release oubliée » figurait en question ouverte du lot qui a créé ce workflow. Un
+run en attente est désormais cette détection.
+
+Un déclenchement par `push` **est** un `migrate-only` par construction : sur cet
+événement le contexte `inputs` est vide, donc toutes les étapes gardées par
+`inputs.mode == 'import-cb'` s'écartent d'elles-mêmes. Ce n'est pas une
+convention à respecter, c'est une propriété du fichier.
+
+Séquence :
 
 ```
 préflight (lecture seule) → migrate deploy → [import-cb] advisors → import NABM
@@ -115,10 +151,63 @@ Ces gestes se font dans l'interface, hors code :
 > conditionnent la bascule « le build Vercel n'écrit plus en base » : elles
 > devaient être faites **avant** son merge, et sans elles plus aucun chemin
 > n'applique les migrations — la base fige. Si ce document est lu alors que le
-> workflow n'a jamais tourné, c'est la première chose à vérifier. Le workflow
-> étant manuel, il ne fait rien tant qu'on ne le déclenche pas.
+> workflow n'a jamais tourné, c'est la première chose à vérifier. Depuis que le
+> déclenchement est automatique, un run apparaît de lui-même à chaque migration
+> mergée — mais il **reste en attente** tant que personne n'approuve, et une
+> approbation donnée sans les secrets échouerait sur la garde
+> `MIGRATE_DATABASE_URL`. Un run en `waiting` qui s'éternise et un run absent
+> disent deux choses différentes : le premier attend un humain, le second dit que
+> le déclencheur n'a pas vu la migration.
+
+## Un run en attente n'est pas neutre — le rejeter, ou l'approuver
+
+Le groupe de concurrence `release-db-production` n'admet qu'une release à la fois,
+et `cancel-in-progress: false` fait patienter les suivantes plutôt que de les
+annuler. Un run laissé en `waiting` a donc trois effets qu'il vaut mieux connaître
+avant de le laisser traîner :
+
+1. **Il occupe le groupe.** Un `workflow_dispatch` urgent — reprise après échec, ou
+   `import-cb` — reste *pending* derrière lui. Il faut rejeter le premier pour
+   passer devant.
+2. **GitHub ne garde qu'un seul run en attente.** Trois migrations mergées coup sur
+   coup laissent le premier et le dernier ; le run intermédiaire est annulé. La
+   base finit correcte — `migrate deploy` applique tout ce qui est en attente — mais
+   **le résumé de la migration intermédiaire disparaît** avec son run.
+3. **Il ne périme pas.** Rien ne rappelle un run vieux d'une semaine ; c'est un
+   rappel, pas une alarme.
+
+Règle simple : un run qu'on ne veut pas approuver se **rejette**, il ne se laisse
+pas dormir. Le rejeter est une trace, l'ignorer n'en est pas une.
+
+## L'ordre que ce workflow ne peut pas garantir seul
+
+L'ordre attendu est **migration d'abord, code ensuite** : le code tolère une base
+« en avance », l'inverse n'est pas vrai.
+
+**Une PR unique ne peut pas tenir cet ordre.** `release-db` ne part que de `main`,
+et le merge qui y pose la migration **déclenche aussi le déploiement Vercel**. Si
+la migration et le code qui en dépend voyagent ensemble, le code est en production
+avant que la release ait pu être approuvée — et la surface concernée rend une
+erreur technique pendant tout l'intervalle. Constaté le 2026-08-05 sur #574 : la
+page « Mon bilan », sans drapeau, a été déployée alors que sa colonne n'existait
+pas encore.
+
+Deux façons de tenir l'ordre, à choisir **au cadrage du lot**, pas après :
+
+1. **Séparer en deux PR** — migration d'abord, release approuvée et vérifiée en
+   base, puis le code. C'est l'expand/contract classique.
+2. **Faire partir le code derrière un drapeau éteint**, allumé une fois la colonne
+   vérifiée en base. C'est le motif retenu pour l'agenda alimentaire.
+
+Le déclenchement automatique **raccourcit** cette fenêtre — la demande
+d'approbation s'affiche dès le merge au lieu d'attendre qu'on y pense — mais il ne
+la ferme pas. Seules les deux options ci-dessus la ferment.
 
 ## Déclencher une release
+
+Le cas courant n'a plus besoin de cette section : une migration mergée sur `main`
+crée son run toute seule, et il ne reste qu'à l'approuver. Ce qui suit vaut pour
+un déclenchement manuel — `import-cb`, ou une reprise après échec.
 
 Interface : **Actions → Release DB → Run workflow**, choisir le `mode` (et
 `nabm_base` pour `import-cb` : l'hôte de `MIGRATE_DATABASE_URL`). Ou :
