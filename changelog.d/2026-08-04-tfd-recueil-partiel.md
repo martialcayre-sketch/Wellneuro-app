@@ -51,6 +51,11 @@ l'agrégat cabinet reste masqué jusqu'à deux cycles `v13`.
 **acquise, pas probable**. C'est le coût symétrique et assumé de la doctrine — écrit
 près de la règle, et épinglé par un banc plutôt que laissé à découvrir.
 
+> **Coût remboursé depuis.** `R-GAS-01` s'allume de nouveau sur un tel partiel depuis le
+> 2026-08-05 — voir *Orientation — un plancher de sévérité peut désormais allumer une
+> règle*, plus bas dans cette même section. Ce qui reste vrai de ce lot-ci : la bande
+> **mesurée** exige toujours l'axe complet.
+
 Le mécanisme qui trancherait ce cas existe ailleurs dans le dépôt (`seuilMonotone` :
 « le franchissement observé est définitif, le non-franchissement ne vaut que sur un
 comptage complet »). L'appliquer aux bandes demanderait de servir un plancher garanti
