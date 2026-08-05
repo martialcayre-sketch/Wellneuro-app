@@ -395,6 +395,14 @@ jobs:
         working-directory: web
         run: npx prisma db execute --file prisma/checks/rag_claim_decisions_journal_v1.sql
 
+      # L'index unique partiel des assignations vit en SQL brut : Prisma ne sait
+      # pas le déclarer, donc le drift check ne le voit pas. Sans ce contrat, sa
+      # disparition ne rougirait nulle part.
+      - name: Assignations unicité ouverte contract
+        if: steps.scope.outputs.docs_only != 'true'
+        working-directory: web
+        run: npx prisma db execute --file prisma/checks/assignations_unicite_ouverte_v1.sql
+
       # Le garde de contenu de la voie rapide tient à un motif d'expression
       # régulière : « rappel 55/55, précision 65 % » est une mesure faite une
       # fois en production. Ce banc l'épingle sur trente-sept cas — les textes
