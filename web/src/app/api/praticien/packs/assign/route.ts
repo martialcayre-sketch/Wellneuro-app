@@ -139,16 +139,27 @@ export async function POST(req: Request): Promise<NextResponse> {
     const notesPack = notes || `Pack ${pack.nom}`;
     const nowIso = new Date().toISOString();
     const { qids, raison, registryCount } = await resolvePackQuestionnaireIds({ idPack: pack.idPack, qids: pack.qids });
-    // Repli voulu, mais plus muet — et seulement quand il signale une VRAIE
-    // divergence. Un registre absent ou vide décrit un pack jamais synchronisé,
-    // pas une dérive : alerter dessus rendrait le signal permanent, donc nul.
-    // Rien n'est bloqué dans aucun cas : `packs.qids` fait foi.
+    // Repli voulu dans les trois cas — rien n'est jamais bloqué, `packs.qids`
+    // fait foi. Seule `ensembles_divergents` alerte (WARN) : c'est la VRAIE
+    // dérive. `registre_absent`/`registre_vide` décrivent un pack jamais
+    // synchronisé, bénin et attendu pour tout pack neuf — les journaliser en WARN
+    // rendrait l'alarme permanente, donc nulle ; en INFO ils restent observables
+    // sans bruit (LOT-02).
     if (raison === 'ensembles_divergents') {
       logger.warn({
         event: EVENT_CODES.PACK_REGISTRE_REPLI_LEGACY,
         domain: 'ASSIGNATION',
         message: `Dérive du pack ${pack.idPack} : ${pack.qids.length} qids côté packs.qids contre ${registryCount} au registre relationnel. Composition legacy retenue.`,
         context: finalizeLogContext(requestContext, { retryable: false }),
+        metadata: { raison, registryCount },
+      });
+    } else if (raison === 'registre_absent' || raison === 'registre_vide') {
+      logger.info({
+        event: EVENT_CODES.PACK_REGISTRE_REPLI_LEGACY,
+        domain: 'ASSIGNATION',
+        message: `Repli legacy du pack ${pack.idPack} (${raison}) : composition legacy retenue.`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+        metadata: { raison, registryCount },
       });
     }
     const aCreer = qids.flatMap(idQuestionnaire => {

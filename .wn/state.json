@@ -6,11 +6,11 @@
   },
   "status": "active",
   "active_campaign": "2026-08-05-cloture-des-dettes-wellneuro-5-0",
-  "active_lot": "LOT-02",
-  "last_completed_lot": "2026-08-05-cloture-des-dettes-wellneuro-5-0/LOT-01 (#575)",
+  "active_lot": "LOT-03",
+  "last_completed_lot": "2026-08-05-cloture-des-dettes-wellneuro-5-0/LOT-02 (#581)",
   "git": {
     "branch": "main",
-    "last_commit": "3dafa9a0",
+    "last_commit": "1cbd3833",
     "dirty": false
   },
   "validation": {
@@ -25,12 +25,12 @@
       "corpus_registry": "inchangé"
     }
   },
-  "next_action": "Campagne active : 2026-08-05-cloture-des-dettes-wellneuro-5-0, LOT-02 à ouvrir (« Packs : observer le repli legacy avant de le fermer »). LOT-00 livré (#435, 2026-08-05) — chemin d'écriture base unique via release-db. LOT-01 livré (#575, 2026-08-05) — `scripts/wn-etat-reel.mjs` observe six dimensions du dépôt, en compare trois à ce fichier ; réserve nommée non fermée : `comparerEtat` ne confronte pas encore PR ouvertes/worktrees/parcours patient, et `validation.last_checked_at` (toujours daté du 2026-07-23) n'a aucun outil pour se rafraîchir. EN VOL, orphelins de campagnes closes, non repris ailleurs : Q_GEO_04 (contenu_verrouille par plafond adversarial du 2026-08-01, bandes HAS 2011 non sourcées — escalade SIIN du 2026-07-25 toujours sans réponse ; redondant avec CAMPAGNE.md de cloture-des-dettes, question ouverte du LOT-06) ; Q_SOM_09 (droits_verifies — recueil de données en cours, décision praticien avant tout scoring) ; Q_PED_03 suspendu — rouvrir sur usage seulement, scoring dimensionnel complet, jamais la somme brute ; Q_FIB_03 fermé définitivement, ne rouvrir que sur usage. EN ATTENTE HUMAINE (reconduites, dates inconnues, non trackées ailleurs) : invitations aux 12 patients (précondition IDP2 LOT-04) ; visibilité patient du fil médecin ; D-TRUST-02 ; registre EX-3. Notes opérationnelles : portail-lien-magique:45 échoue en local sur main pur (anti-oracle de temps), vert en CI ; baselines pixel des écrans trajectoires différées (captures de revue seules).",
+  "next_action": "Campagne active : 2026-08-05-cloture-des-dettes-wellneuro-5-0, LOT-03 à ouvrir (« Fermer `sum_decimal`, `count_threshold`, `ecab` »). LOT-00 livré (#435, 2026-08-05) — chemin d'écriture base unique via release-db. LOT-01 livré (#575, 2026-08-05) — `scripts/wn-etat-reel.mjs` observe six dimensions du dépôt, en compare trois à ce fichier ; réserve nommée non fermée : `comparerEtat` ne confronte pas encore PR ouvertes/worktrees/parcours patient, et `validation.last_checked_at` (toujours daté du 2026-07-23) n'a aucun outil pour se rafraîchir. LOT-02 livré (#581, 2026-08-05) — repli legacy des packs observable sur ses trois raisons ; recommandation datée : ne pas fermer le repli avant resynchronisation du pack de base (`Q_SOM_09` absent du registre, hors périmètre du lot). EN VOL, orphelins de campagnes closes, non repris ailleurs : Q_GEO_04 (contenu_verrouille par plafond adversarial du 2026-08-01, bandes HAS 2011 non sourcées — escalade SIIN du 2026-07-25 toujours sans réponse ; redondant avec CAMPAGNE.md de cloture-des-dettes, question ouverte du LOT-06) ; Q_SOM_09 (droits_verifies — recueil de données en cours, décision praticien avant tout scoring) ; Q_PED_03 suspendu — rouvrir sur usage seulement, scoring dimensionnel complet, jamais la somme brute ; Q_FIB_03 fermé définitivement, ne rouvrir que sur usage. EN ATTENTE HUMAINE (reconduites, dates inconnues, non trackées ailleurs) : invitations aux 12 patients (précondition IDP2 LOT-04) ; visibilité patient du fil médecin ; D-TRUST-02 ; registre EX-3. Notes opérationnelles : portail-lien-magique:45 échoue en local sur main pur (anti-oracle de temps), vert en CI ; baselines pixel des écrans trajectoires différées (captures de revue seules).",
   "blocking_issues": [
     "G-TRUST-04 : gate non levé. Hébergement HDS instruit le 2026-07-21 et NÉGATIF (Supabase et Vercel absents de l'annuaire ANS) ; phase de test autorisée par le responsable du traitement, bornée au 2026-10-21. ORIENTATION ARBITRÉE le 2026-07-22 : rester sur l'hébergement actuel et borner la phase de test — pas d'instruction de migration HDS pour l'instant ; avancer les exigences indépendantes de l'hébergeur (5 piste d'audit des accès légitimes, 6 procédure de violation de données, 7 dossier RGPD). Source à jour : CHECKLIST_ACTIVATION_G_TRUST_04.md"
   ],
   "recent_decision_ids": [],
   "last_session": null,
-  "updated_at": "2026-08-05T09:05:00Z",
+  "updated_at": "2026-08-05T10:35:00Z",
   "parallel_campaigns": []
 }

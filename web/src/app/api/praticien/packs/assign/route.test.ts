@@ -18,7 +18,7 @@ vi.mock('@/lib/consultation/packRegistry', () => ({
 }));
 vi.mock('nodemailer', () => ({ default: { createTransport: () => ({ sendMail }) } }));
 vi.mock('@/lib/observability/logger', () => ({
-  logger: { warn: vi.fn(), security: vi.fn(), error: vi.fn() },
+  logger: { warn: vi.fn(), info: vi.fn(), security: vi.fn(), error: vi.fn() },
 }));
 
 import { POST } from './route';
@@ -127,6 +127,14 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
       .filter(([payload]) => payload.event === EVENT_CODES.PACK_REGISTRE_REPLI_LEGACY);
   }
 
+  // LOT-02 : les deux cas bénins (registre absent/vide) restent muets côté
+  // WARN mais deviennent observables en INFO — même event code, niveau qui ne
+  // déclenche pas d'alerte.
+  function replisInfoEmis() {
+    return vi.mocked(logger.info).mock.calls
+      .filter(([payload]) => payload.event === EVENT_CODES.PACK_REGISTRE_REPLI_LEGACY);
+  }
+
   it('journalise une divergence réelle entre le registre et packs.qids', async () => {
     vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({
       qids: ['Q_NEU_03'], source: 'legacy', raison: 'ensembles_divergents', registryCount: 4,
@@ -135,14 +143,31 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     const emis = replisEmis();
     expect(emis).toHaveLength(1);
     expect(emis[0][0].message).toContain('4');
+    // Le WARN existant reste seul à alerter sur une vraie divergence : l'INFO
+    // ne se déclenche pas en plus.
+    expect(replisInfoEmis()).toEqual([]);
   });
 
-  it('ne journalise rien quand le registre est simplement absent', async () => {
+  it('journalise en info (pas en warn) quand le registre est simplement absent', async () => {
     vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({
       qids: ['Q_NEU_03'], source: 'legacy', raison: 'registre_absent', registryCount: 0,
     });
     await POST(request());
     expect(replisEmis()).toEqual([]);
+    const emisInfo = replisInfoEmis();
+    expect(emisInfo).toHaveLength(1);
+    expect(emisInfo[0][0]).toMatchObject({ metadata: { raison: 'registre_absent', registryCount: 0 } });
+  });
+
+  it('journalise en info (pas en warn) quand le registre est simplement vide', async () => {
+    vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({
+      qids: ['Q_NEU_03'], source: 'legacy', raison: 'registre_vide', registryCount: 0,
+    });
+    await POST(request());
+    expect(replisEmis()).toEqual([]);
+    const emisInfo = replisInfoEmis();
+    expect(emisInfo).toHaveLength(1);
+    expect(emisInfo[0][0]).toMatchObject({ metadata: { raison: 'registre_vide', registryCount: 0 } });
   });
 
   it('ne journalise rien quand le registre concorde', async () => {
@@ -151,5 +176,6 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     });
     await POST(request());
     expect(replisEmis()).toEqual([]);
+    expect(replisInfoEmis()).toEqual([]);
   });
 });

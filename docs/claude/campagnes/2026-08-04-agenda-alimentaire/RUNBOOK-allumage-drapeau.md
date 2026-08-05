@@ -22,7 +22,7 @@ par l'interface praticien.
 ## Ce qu'il faut savoir avant de commencer
 
 - **L'instrument est non scoré.** `scoring.type = 'journal'` ne lit rien et rend
-  `scored: false`. Ni barème, ni indice, ni seuil : c'est l'objet de `LOT-05`,
+  `scored: false`. Ni barème, ni indice, ni seuil : c'est l'objet de `LOT-06`,
   qui n'est pas écrit. Allumer n'expose aucune interprétation.
 - **Le geste est en deux temps, et l'ordre décide.** `IDS_SUSPENDUS` est un
   `const` de module calculé à l'import : poser la variable **sans** redéployer ne
@@ -36,6 +36,9 @@ par l'interface praticien.
   une anomalie de déploiement.
 
 ## Prérequis (à confirmer avant l'allumage)
+
+Ces cases valent pour **chaque** exécution du runbook ; celle du 2026-08-05 est
+consignée en fin de fichier, section « Rejeu du 2026-08-05 ».
 
 - [ ] `D-025` mergée sur `main`, CI verte.
 - [ ] **Aucun pack ne référence `Q_ALI_09`.** C'est le seul chemin qui
@@ -189,10 +192,21 @@ verront tout de suite :
 - **passé `dateDebut + 20`, rien ne se ferme d'observable** : l'assignation reste
   ouverte côté praticien, le serveur refuse simplement d'écrire.
 
-## Lire le recueil — le seul chemin
+## Lire le recueil
 
-Aucun écran praticien ne lit `agenda_alimentaire_jours`. Les 21 journées se
-relisent par `execute_sql`, en lecture seule :
+Le lecteur praticien de `LOT-05` temps B est livré : le tiroir « Agenda
+alimentaire » de la fiche patient (`FichePatientPanel.tsx`, alimenté par
+`GET /api/praticien/agenda-alimentaire`) affiche, par assignation, la frise
+des 21 jours, le détail jour par jour (horaires de prises, cinq champs
+booléens) et les agrégats sous condition de couverture — sans aucun score,
+indice, gramme, kcal ni quantité (`D-027`, qui amende ce point de `D-025` :
+cette lecture n'est PAS gardée par `WN_AGENDA_ALI`, seulement par la session
+praticien et l'appartenance du dossier). C'est désormais le chemin normal
+pour suivre le pilote.
+
+`execute_sql` reste la porte de secours et celle du **détail brut** — le
+tiroir ne rend pas le JSON complet de `reponses` ligne à ligne, cette requête
+si :
 
 ```sql
 SELECT date_jour, canal, soumis_le, reponses
@@ -201,7 +215,7 @@ WHERE id_assignation = '<id>'
 ORDER BY date_jour, soumis_le;
 ```
 
-C'est le matériau de calibration de `LOT-05`, et il n'a pas d'autre porte.
+C'est aussi le matériau de calibration de `LOT-06`.
 
 ## Retour arrière
 
@@ -209,3 +223,21 @@ Retirer la variable (ou lui donner une valeur autre que `true`) **puis**
 redéployer. `Q_ALI_09` disparaît de la bibliothèque et du hub patient, et la
 route agenda refuse en `409 unavailable`. Les journées déjà notées restent en
 base.
+
+## Rejeu du 2026-08-05 — le pilote a démarré
+
+Le drapeau a été allumé et le pilote lancé sur le dossier de contrôle `PAT006`,
+assignation `ASS_Ip45TpzqWujWgkOdEex-wxRj`. La première journée a été notée le
+même jour, ce qui pose l'ancre au 2026-08-05.
+
+Les trois assertions de l'étape 7 ont été rejouées le 2026-08-05, avec la
+requête ci-dessus :
+
+| assertion | résultat | portée |
+|---|---|---|
+| `perimetre_jsonb` | 0 | mordante **au premier niveau** — 7 clés de premier niveau scannées sur la seule journée existante ; les objets de `prises` ne sont pas traversés par la requête, la frontière n'y tient que par le code de saisie ; aucune des clés scannées ne matche gramme/kcal/score/indice/quantite |
+| `version_non_lue` | 0 | mordante — `contractVersion` présent et égal à la seule version lue |
+| `chainage_fautif` | 0 | encore vacue — aucune ligne ne porte `supersedes_jour_id`, donc zéro ligne éligible ; ce chiffre ne prouve rien tant qu'aucune correction n'a été notée |
+
+À rejouer de nouveau à la clôture des 21 jours, comme prescrit à l'étape 7 —
+ce rejeu-ci n'épuise pas l'obligation, il la déclenche.

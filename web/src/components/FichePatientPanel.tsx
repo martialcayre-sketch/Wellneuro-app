@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   Sparkles,
   Stethoscope,
+  Utensils,
   X,
   type LucideIcon,
 } from 'lucide-react';
@@ -50,6 +51,7 @@ import {
 } from '@/components/patient-cockpit/ClinicalRuntimeSection';
 import { TrajectoirePanel } from '@/components/patient-cockpit/TrajectoirePanel';
 import { AgendaSommeilPraticienPanel } from '@/components/agenda-sommeil/AgendaSommeilPraticienPanel';
+import { AgendaAlimentairePraticienPanel } from '@/components/agenda-alimentaire/AgendaAlimentairePraticienPanel';
 import { deriverEpisodeBandeau, phaseInitiale } from '@/lib/trajectoire-partagee/contrat';
 import type { ValidationErgoC1Fixture } from '@/lib/clinical-engine/validationErgoFixture';
 import type { RelectureProtocoleSoumission } from '@/components/patient-cockpit/ProtocolMiniBuilder';
@@ -1381,6 +1383,14 @@ export function FichePatientPanel({
                 large
               >
                 <AgendaSommeilPraticienPanel idPatient={idPatient} />
+              </InstrumentTiroir>
+              <InstrumentTiroir
+                libelle="Agenda alimentaire"
+                description="Dossier de contrôle (Q_ALI_09) : horaires de prises, présences observées, jour par jour."
+                icone={Utensils}
+                large
+              >
+                <AgendaAlimentairePraticienPanel idPatient={idPatient} />
               </InstrumentTiroir>
               <InstrumentTiroir
                 libelle="Détail des réponses"

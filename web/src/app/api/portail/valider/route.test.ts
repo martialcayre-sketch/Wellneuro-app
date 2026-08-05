@@ -15,12 +15,23 @@ const { prisma } = vi.hoisted(() => ({
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
 vi.mock('@/lib/observability/logger', () => ({
-  logger: { warn: vi.fn(), security: vi.fn(), error: vi.fn() },
+  logger: { warn: vi.fn(), info: vi.fn(), security: vi.fn(), error: vi.fn() },
 }));
+// `resolvePackQuestionnaireIds` reste VOLONTAIREMENT l'implémentation réelle
+// par défaut (enveloppée dans un `vi.fn` pour rester surchargeable au cas par
+// cas) — même motif que pour `assignBasePack` ci-dessous : c'est le câblage
+// qu'on veut prouver, pas la fonction en isolation. Seul le test LOT-02 sur le
+// repli `registre_absent` la surcharge, ponctuellement, via
+// `mockResolvedValueOnce`.
+vi.mock('@/lib/consultation/packRegistry', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/consultation/packRegistry')>();
+  return { ...actual, resolvePackQuestionnaireIds: vi.fn(actual.resolvePackQuestionnaireIds) };
+});
 
 import { signPatientSession } from '@/lib/patient-session';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { POST } from './route';
 
 // `assignBasePack` et `packRegistry` sont VOLONTAIREMENT réels : c'est le
@@ -146,5 +157,29 @@ describe('POST /api/portail/valider — instruments suspendus dans le pack de ba
         data: expect.objectContaining({ statut: 'validee' }),
       })
     );
+  });
+
+  // LOT-02 : le repli legacy du pack de base devient observable pour ses cas
+  // bénins (registre jamais synchronisé), en INFO — pas en WARN, qui reste
+  // réservé à une vraie divergence (`ensembles_divergents`).
+  it('journalise en info le repli legacy du pack de base quand le registre est simplement absent', async () => {
+    vi.mocked(resolvePackQuestionnaireIds).mockResolvedValueOnce({
+      qids: ['Q_NEU_03'],
+      source: 'legacy',
+      raison: 'registre_absent',
+      registryCount: 0,
+    });
+    const response = await POST(post(['Q_NEU_03']));
+    expect(response.status).toBe(200);
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: EVENT_CODES.PACK_REGISTRE_REPLI_LEGACY,
+        metadata: { raison: 'registre_absent', registryCount: 0 },
+      })
+    );
+    expect(
+      vi.mocked(logger.warn).mock.calls
+        .filter(([payload]) => payload.event === EVENT_CODES.PACK_REGISTRE_REPLI_LEGACY),
+    ).toEqual([]);
   });
 });

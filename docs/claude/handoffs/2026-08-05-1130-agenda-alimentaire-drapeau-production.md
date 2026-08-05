@@ -1,3 +1,10 @@
+> **[À JOUR AU 2026-08-05]** Le pilote a démarré depuis : 1 assignation
+> (`ASS_Ip45TpzqWujWgkOdEex-wxRj`, dossier `PAT006`) et 1 journée en
+> production. Voir
+> `docs/claude/campagnes/2026-08-04-agenda-alimentaire/RUNBOOK-allumage-drapeau.md`,
+> section « Rejeu du 2026-08-05 ». Dans ce document, « LOT-05 » désigne le
+> barème, devenu `LOT-06`.
+
 # Handoff — Agenda alimentaire, position du drapeau (hors lot)
 
 - Date : 2026-08-05, 11:30

@@ -2487,19 +2487,52 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
     const items = allQ.map(q => q.id);
     let count = 0;
     let missing = 0;
+    let repondus = 0;
     items.forEach(id => {
       const v = getVal(id);
       if (v === null) { missing++; return; }
+      repondus++;
       if (v >= threshold) count++;
     });
-    const interp = interpretRanges(count, sc.interpretation);
+    /**
+     * GARDE — `D-014`, même défaut que `sum` et `bms_average`, et `missing`
+     * était DÉJÀ compté ici : il n'était simplement lu par personne. Le biais
+     * est le même, vers le bas : un item sans réponse ne peut jamais faire
+     * monter le comptage, si bien que trois réponses sur onze à
+     * « Extrêmement » rendaient 3 — « Niveau d'anxiété modéré » — alors que la
+     * grille de `Q_INF_05` ouvre « critique » à 6 et que huit items restaient
+     * muets. Une bande décrochée sur un recueil partiel se lit comme la bande
+     * de l'instrument ; elle n'en est pas une.
+     *
+     * `count` reste servi — le nombre d'items cotés au-dessus du seuil est ce
+     * qu'il dit être — accompagné de `missing`/`repondus`, qui le rendent
+     * vérifiable. C'est la BANDE qui conclut, et c'est elle seule qui tombe.
+     *
+     * PORTÉE — `Q_INF_05` est le seul instrument du catalogue servi par ce
+     * moteur, mais pas le seul possible : `count_threshold` fait partie des
+     * trois types admis pour les instruments de cabinet
+     * (`TYPES_SCORING_CABINET`), dont la complétude est exigée par
+     * `api/patient/submit`. La garde vaut pour les deux chemins.
+     */
+    const recueilIncomplet = missing > 0 || repondus === 0;
+    const interp = recueilIncomplet ? null : interpretRanges(count, sc.interpretation);
+    const noteRecueil = !recueilIncomplet ? null
+      : missing > 0
+        ? `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} sans réponse. Les bandes d'interprétation de cet instrument supposent la forme complète ; elles ne sont pas calculables sur un recueil partiel.`
+        : `Aucun item de cet instrument n'est renseigné : les bandes d'interprétation ne sont pas calculables.`;
     return {
       type: 'count_threshold',
       threshold,
       count,
       maxTotal: sc.maxTotal || items.length,
       missing,
+      repondus,
       interpretation: interp,
+      // `note` composée, jamais écrasée : `sc.note` est absente sur les
+      // instruments servis aujourd'hui, et c'est précisément le jour où un lot
+      // de certification en ajoutera une qu'un `note: noteRecueil` nu la
+      // perdrait — sur les passations COMPLÈTES, là où elle sert.
+      note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null,
       certification: sc.certification || null
     };
   }
@@ -3293,14 +3326,41 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   if (sc.type === 'ecab') {
     const items = allQ.map(q => q.id);
     let total = 0;
+    let missing = 0;
+    let repondus = 0;
     items.forEach(id => {
       const v = getVal(id);
-      if (v === null) return;
+      if (v === null) { missing++; return; }
+      repondus++;
       if (id === 'EC10') total += (v === 0 ? 1 : 0);
       else total += v;
     });
-    const interp = interpretRanges(total, sc.interpretation);
-    return {type:'ecab', total, maxTotal: sc.maxTotal || 10, interpretation: interp, certification: sc.certification || null};
+    /**
+     * GARDE — `D-014`, même défaut que `sum` et `bms_average`. L'ECAB ne comptait
+     * RIEN de ce qui manque : un item sans réponse sortait de la boucle
+     * silencieusement, et le total /10 partiel décrochait quand même une bande.
+     * Le biais est vers le bas et la grille n'a que deux bandes, dont la
+     * frontière est à 6 : cinq « Vrai » sur dix items rendaient « Attachement
+     * cognitif non confirmé par le seuil de l'échelle » alors que les cinq items
+     * muets suffisaient à basculer l'échelle.
+     *
+     * `EC10` EST INVERSÉ, et c'est ce qui rend le comptage nécessaire ici plus
+     * qu'ailleurs : « Faux » (0) vaut UN point, « Vrai » (1) en vaut zéro. Un
+     * `EC10` sans réponse continue de n'ajouter aucun point — c'est correct, la
+     * source ne définit pas de valeur par défaut — mais il ne se distinguait pas
+     * d'un `EC10` répondu « Vrai », qui vaut zéro lui aussi. Le seul item dont
+     * l'absence est indiscernable de la réponse la plus fréquente était aussi le
+     * seul à n'être compté nulle part. Il compte désormais comme `missing`.
+     *
+     * `total` reste servi, avec `missing`/`repondus` qui le rendent vérifiable.
+     */
+    const recueilIncomplet = missing > 0 || repondus === 0;
+    const interp = recueilIncomplet ? null : interpretRanges(total, sc.interpretation);
+    const noteRecueil = !recueilIncomplet ? null
+      : missing > 0
+        ? `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} sans réponse. Les bandes d'interprétation de cet instrument supposent la forme complète ; elles ne sont pas calculables sur un recueil partiel.`
+        : `Aucun item de cet instrument n'est renseigné : les bandes d'interprétation ne sont pas calculables.`;
+    return {type:'ecab', total, missing, repondus, maxTotal: sc.maxTotal || 10, interpretation: interp, note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null, certification: sc.certification || null};
   }
 
   // ── AUDIT ────────────────────────────────────────────
@@ -3616,13 +3676,40 @@ function computeScoreFromDefBrut(def: any, answers: Record<string, any>): any {
   if (sc.type === 'sum_decimal') {
     const items = allQ.map(q => q.id);
     let total = 0;
+    let missing = 0;
+    let repondus = 0;
     items.forEach(id => {
       const v = getVal(id); // parseFloat() → gère 0.5
-      if (v !== null) total += v;
+      if (v === null) { missing++; return; }
+      repondus++;
+      total += v;
     });
     total = parseFloat(total.toFixed(1));
-    const interp = sc.interpretation ? interpretRanges(total, sc.interpretation) : null;
-    return {type:'sum_decimal', total, maxTotal: sc.maxTotal, interpretation: interp};
+    /**
+     * GARDE — `D-014`, même défaut que `sum` et `bms_average`. Le QDRS
+     * (`Q_GEO_05`) somme dix domaines cotés 0 à 3, et rien ne comptait ce qui
+     * manquait : quatre domaines à 3 rendaient 12 — « Démence légère » — quand
+     * les six domaines muets suffisaient à atteindre les 17,5 de « Démence
+     * modérée à sévère ». Le biais est vers le bas, et l'instrument est
+     * rempli par un AIDANT, qui peut ignorer de bonne foi ce qu'il n'observe
+     * pas : le recueil partiel y est plus probable qu'ailleurs.
+     *
+     * DEUX conditions, pas une. `sc.interpretation` disait déjà « cet
+     * instrument déclare-t-il une grille ? » ; `recueilIncomplet` dit « cette
+     * grille est-elle lisible sur ce recueil ? ». Les deux doivent être vraies,
+     * et elles répondent à des questions différentes — remplacer l'une par
+     * l'autre rendrait une bande sur un instrument sans grille, ou une grille
+     * sur un recueil partiel.
+     *
+     * `total` reste servi, avec `missing`/`repondus` qui le rendent vérifiable.
+     */
+    const recueilIncomplet = missing > 0 || repondus === 0;
+    const interp = (sc.interpretation && !recueilIncomplet) ? interpretRanges(total, sc.interpretation) : null;
+    const noteRecueil = !recueilIncomplet ? null
+      : missing > 0
+        ? `Recueil partiel : ${missing} item${missing > 1 ? 's' : ''} sans réponse. Les bandes d'interprétation de cet instrument supposent la forme complète ; elles ne sont pas calculables sur un recueil partiel.`
+        : `Aucun item de cet instrument n'est renseigné : les bandes d'interprétation ne sont pas calculables.`;
+    return {type:'sum_decimal', total, missing, repondus, maxTotal: sc.maxTotal, interpretation: interp, note: [sc.note || null, noteRecueil].filter(Boolean).join(' ') || null};
   }
 
   // ── SUM_TWO_PHASES — rappel immédiat + différé (Test 5 mots Dubois) ────────

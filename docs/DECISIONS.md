@@ -4,6 +4,26 @@
 
 ## Décisions actives
 
+### D-027 — Le drapeau ferme ce qui s'écrit, pas ce qui se relit : la lecture praticien de l'agenda n'est pas gardée
+
+- Date : 2026-08-05
+- Statut : accepté (arbitrage praticien en session — **amende la conséquence « l'extinction referme toutes les surfaces » de [[D-025]] et ferme sa réserve « aucun lecteur praticien des journées n'existe »**, le reste étant intact). [[D-025]] n'est pas retouché : une décision est un enregistrement daté, et c'est à celle-ci de nommer les deux points qu'elle déplace.
+- Domaine : exploitation (portée du drapeau). **Sans effet clinique** : l'instrument est non scoré, et la lecture n'en produit aucun.
+- Décision : **`WN_AGENDA_ALI` ne garde pas la route `GET /api/praticien/agenda-alimentaire` ni le panneau qu'elle alimente.** La conséquence de [[D-025]] se lit désormais : l'extinction referme toutes les surfaces **d'écriture et d'exposition patient** — bibliothèque praticien, sélecteur, route d'assignation, hub, saisie, `patient/submit`. Elle ne referme pas la **lecture au dossier**. Trois constats la fondent, et le troisième est celui qui décide.
+  1. **L'extinction n'efface rien.** Le modèle est append-only ([[D-015]]), et [[D-025]] le consigne lui-même : « éteindre referme les assignations mais n'efface pas les journées notées ; un pilote lancé laisse une trace en base après extinction ». Une donnée qui survit à l'extinction et un lecteur qui ne lui survit pas forment un état où la donnée existe sans porte.
+  2. **Le drapeau ne protège aucune isolation de données**, et [[D-025]] l'établit : il ne décide que de **quel déploiement affiche la surface**. Le retirer de la lecture ne retire donc aucune protection — il retire une coïncidence.
+  3. **Le moment où ce lecteur compte le plus est exactement celui où le drapeau serait éteint.** Un recueil de 21 jours se calibre **après** sa clôture, et la clôture est précisément ce qui rend l'extinction souhaitable. Garder le lecteur derrière le drapeau reviendrait à fermer la porte le jour où l'on entre — et à renvoyer `LOT-06` vers `execute_sql`, c'est-à-dire vers la dette que ce lot ferme.
+- **Ce que la lecture reste gardée par**, et qui est plus fort que le drapeau : une session praticien (`getServerSession`), puis `verifierAppartenancePatient` — appelée **avant la première lecture Prisma**, et qui écrit le journal d'accès dossier (G-TRUST-04). Le drapeau n'a jamais été un contrôle d'accès ; ces deux-là le sont, et ils sont nominatifs quand il est global.
+- Conséquences :
+  - La route répond drapeau éteint, et **un test le nomme** plutôt que de le laisser à l'absence de code : sans lui, un relecteur futur « corrigerait » l'absence de garde. La raison est aussi écrite en commentaire au-dessus de la route.
+  - Aucune surface patient ne change. Le patient dont l'agenda est éteint ne voit rien de plus ; c'est le praticien, sur un dossier qui lui appartient, qui relit ce qui a déjà été saisi.
+  - La réponse porte un compte `illisibles` distinct des journées actives — les lignes en quarantaine se comptent au dossier, elles ne se taisent pas.
+- Réserves :
+  - **L'écran ne dit pas que le recueil est fermé.** Le panneau ne lit pas la position du drapeau : un praticien peut donc relire un agenda que le patient ne peut plus alimenter, sans que rien ne l'indique. Faire dépendre le lecteur du drapeau qu'il refuse justement de lire a été écarté ; le dire par une bannière reste possible et n'est pas fait. Pour la même raison, l'état vide du panneau (aucun agenda assigné) a été rendu **descriptif**, sans impératif : drapeau éteint, `IDS_SUSPENDUS` retire `Q_ALI_09` à la fois de la bibliothèque et de la route d'assignation, si bien que le geste « Assignez l'instrument » que l'écran nommait auparavant n'existe alors nulle part — un écran ne doit pas proposer un geste impossible.
+  - **Sous sept journées, `calculerAgregatsAli` rend `null`** (`MIN_JOURS_AGREGATS`). Le panneau l'affiche en toutes lettres — « couverture insuffisante — N/7 » — parce qu'une zone vide serait le même signal trompeur que [[D-025]] reproche à la bibliothèque. Le pilote en cours est dans ce cas, à une journée sur vingt et une.
+  - **Rien ne mesure la position du drapeau côté dépôt**, réserve déjà portée par [[D-025]] et inchangée : cette décision ne la lève pas, elle la rend seulement moins coûteuse — un drapeau mal positionné ne rend plus la donnée illisible.
+- Référence : [../web/src/app/api/praticien/agenda-alimentaire/route.ts](../web/src/app/api/praticien/agenda-alimentaire/route.ts), [../web/src/components/agenda-alimentaire/AgendaAlimentairePraticienPanel.tsx](../web/src/components/agenda-alimentaire/AgendaAlimentairePraticienPanel.tsx), [claude/campagnes/2026-08-04-agenda-alimentaire/lots/LOT-05-dossier-de-controle-et-lecteur-praticien.md](claude/campagnes/2026-08-04-agenda-alimentaire/lots/LOT-05-dossier-de-controle-et-lecteur-praticien.md), [[D-015]], [[D-022]], [[D-025]]
+
 ### D-026 — Ce que le patient lit est un instantané de l'envoi, pas le champ vivant
 
 - Date : 2026-08-05
@@ -22,6 +42,7 @@
   - **Sur un dossier clos, annoter reste possible et renvoyer ne l'est plus.** La note du dossier peut alors diverger définitivement de ce que le patient a reçu, sans moyen de réconcilier. Sans conséquence pour le patient — le portail sert l'instantané — mais c'est une question de tenue de dossier, et aucune des deux réponses envisagées ne la ferme.
   - **`booklet_envois` n'est plus un journal d'audit.** Elle porte désormais du texte clinique libre. L'effacement patient la couvre déjà (supprimée en premier, avant `syntheseIA`), mais toute règle de conservation qui la traiterait comme de la métadonnée est devenue fausse.
   - **Aucun code d'événement ne vise le bilan patient.** `PORTAIL_SESSION_EXCEPTION` est le moins faux des existants : un lecteur qui filtrerait cette famille y trouvera des échecs de lecture de bilan.
+
 ### D-025 — Le drapeau de l'agenda s'allume en Production, seul environnement où un recueil de 21 jours puisse vivre
 
 - Date : 2026-08-05

@@ -2409,6 +2409,35 @@ branches restreintes à `main`), puis merge.
 rien ne détecte une release oubliée ; « base en avance » n'est vrai que si la
 migration est additive, et rien ne le garde.
 
+## 2026-08-05 — Le pilote avait démarré, et personne ne pouvait le lire
+
+**Décisions.** `D-027` : `WN_AGENDA_ALI` ferme ce qui s'écrit, pas ce qui se
+relit — la lecture praticien de l'agenda n'est pas gardée par le drapeau. Le
+modèle est append-only (`D-015`) ; fermer le lecteur avec le drapeau rendrait
+illisible la donnée déjà recueillie, au moment précis où le barème en a besoin.
+Renumérotation : `LOT-05` devient le dossier de contrôle, le barème descend en
+`LOT-06` — un `LOT-04b` aurait rendu l'ordinal `LOT-04` à l'audit, donc un CI
+rouge.
+
+**Options écartées.** Réécrire `D-025`, dont le « 0 ligne » est dépassé : une
+décision est un enregistrement daté, le fait nouveau vit dans le runbook. Servir
+la position du drapeau au panneau pour distinguer « pas assigné » de « recueil
+fermé » : cela rouvrait le point tranché ; l'état vide a seulement cessé de
+nommer un geste impossible.
+
+**Ce que le lot a appris.** Trois des dix premiers constats étaient des gardes
+**vertes pour une mauvaise raison** — test de drapeau sur dossier vide, fixture
+d'ancrage qui ne pouvait pas bouger, scan de frontière sans agrégats. Et le
+constat sans ligne fautive : `statut` décalqué du sommeil rendait « En cours »
+sur un agenda annulé, la branche `cloture` étant morte pour cet instrument.
+
+**Prochaine action prioritaire.** Débloquer `git push` (règle Bash), ouvrir la
+PR, lire le code de sortie de `wn-attendre-ci.mjs`.
+
+**Questions ouvertes.** Aucune bannière ne dit que le recueil est fermé. Le
+déverrouillage praticien d'un `Q_ALI_09` par appel direct retire silencieusement
+l'annulabilité. Le taux de correction, dont `LOT-06` aura besoin, se lit encore
+par `execute_sql`.
 ## 2026-08-05 — `release-db` se propose tout seul, sans s'approuver tout seul
 
 **Décisions.** Une migration qui atteint `main` crée son run de release
@@ -2502,3 +2531,55 @@ ferme la campagne et dénoue le couplage avec les dettes 5.0.
 non transportées, `compositionSourceLignes` nul, écran honnête mais muet sur ce
 qu'on sait. La garde de parité du dépôt ne couvre pas les étapes CI postérieures à
 `setup-node` — un banc y est branché à la main, pas garanti.
+## [2026-08-05] — LOT-02 : observer le repli legacy des packs
+
+**Décisions.** Hypothèse de cadrage infirmée : `ensembles_divergents` était déjà
+journalisé (WARN, depuis LOT-03) ; le vrai trou était `registre_absent`/
+`registre_vide`, muets. Ajout d'une branche `logger.info` dans les deux
+appelants (`packs/assign`, `portail/valider`), résolveur intact, même event
+code, niveau distinct pour préserver la décision anti-alarme-permanente déjà
+prise. Constat production (`execute_sql`) : 7/8 packs conformes, 1 dérive
+réelle sur le pack de base (`Q_SOM_09` absent du registre) — repli **non
+fermé**, recommandation datée : le fermer aujourd'hui viderait l'agenda du
+sommeil de chaque onboarding.
+
+**Options écartées.** Fonction de log partagée entre les deux routes (2
+call-sites seulement, duplication déjà le style du dépôt). Résynchroniser le
+pack de base dans ce lot (correction de donnée, hors périmètre observation).
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire son CI, merger. Puis LOT-03
+(`sum_decimal`, `count_threshold`, `ecab`). Réconciliation `CAMPAGNE.md`
+(`lot_courant`, tableau des lots) volontairement **non faite ici** — suit le
+même patron que LOT-01 : geste séparé, post-merge, depuis `main`, via l'outil
+sanctionné.
+
+**Questions ouvertes.** Aucune côté LOT-02. Celles héritées de LOT-01 (gates
+G0-G4, conflits de corpus) restent hors du périmètre de ce lot.
+
+## [2026-08-05] — LOT-03 : fermer sum_decimal, count_threshold, ecab
+
+**Décisions.** Cadrage (`wn-reviewer`) a trouvé le lot rédigé sur deux erreurs
+de fait : mauvais fichier (`instruments.ts` au lieu de `questions.ts`) et garde
+de référence périmée d'une version (#568 a ajouté un « plancher garanti »
+distinct de la garde de base #566/#567). Résolu en distinguant les deux
+mécanismes : la garde de base seule (gabarit `bms_average`) suffit au résultat
+observable exigé, sans arbitrage clinique sur `severiteCroissante` — laissé
+hors périmètre, conforme à l'interdit du lot. Les trois moteurs ne produisent
+plus de bande sur recueil incomplet ; total/count inchangés. Constat production :
+défaut théorique, 1 seule passation existante et complète.
+
+**Options écartées.** Reproduire le « plancher garanti » (aurait exigé un
+arbitrage clinique praticien sur le sens de chaque grille, hors périmètre).
+Basculer vers `sumItems()` partagé (comportement sur items conditionnels non
+vérifié pour ces trois moteurs — changement minimal préféré).
+
+**Prochaine action prioritaire.** Ouvrir la PR, lire son CI, merger. Depuis
+`main` : `node scripts/wn-campaign.mjs activate LOT-04` puis `node
+scripts/wn-cycle.mjs --appliquer` (même geste que pour LOT-02→LOT-03).
+
+**Questions ouvertes.** Trois mineurs relevés en revue, non corrigés
+(changements minimaux) : commentaires périmés dans `orientationEngine.ts`/
+`orientationRulesV1.ts` ; absence d'`evalConditionnel` dans les trois boucles
+(latent) ; `noteRecueil` dupliqué texte-pour-texte dans les trois blocs.
+Non vérifié : l'UI praticien affiche-t-elle le champ `note` pour ces trois
+instruments (mécanisme pré-existant partagé avec PSQI/TFD).
