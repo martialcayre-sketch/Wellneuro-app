@@ -52,6 +52,10 @@ export async function resetPortailState(idPatient: string): Promise<void> {
   await prisma.trustAdverseEffectReport.deleteMany({ where: { idPatient } });
   await prisma.trustPrivacyIncident.deleteMany({ where: { idPatient } });
   await prisma.trustRightsRequest.deleteMany({ where: { idPatient } });
+  // Le bilan transmis : sans ça, un run interrompu entre la provision et son
+  // `afterAll` laisse le patient fictif avec un bilan visible dans la base
+  // partagée — et un lien de plus dans la nav des specs suivants.
+  await cleanupBilanTransmis();
 }
 
 /**
@@ -148,6 +152,101 @@ export async function nettoyerReprise(idPatient: string): Promise<void> {
 
 export async function closePrisma(): Promise<void> {
   await prisma.$disconnect();
+}
+
+// ---------------------------------------------------------------------------
+// Fixture « bilan transmis » — une synthèse validée ET l'envoi réussi qui la
+// rend visible au patient. Les deux lignes comptent : la page « Mon bilan » ne
+// sert QUE ce que le praticien a transmis (`BookletEnvoi.statut = 'Envoye'`),
+// jamais une synthèse seulement validée. La fixture porte donc la paire.
+//
+// Le JSON embarque volontairement les trois blocs réservés au praticien (axes,
+// vigilance, questions d'entretien) : sans eux, le spec ne prouverait pas
+// qu'ils ne s'affichent pas.
+const ID_SYNTHESE_E2E = 'SYN_E2E_BILAN_TRANSMIS';
+
+export async function provisionBilanTransmis(
+  idPatient: string,
+  emailPatient: string,
+  // `statutEnvoi` permet de jouer le contrôle NÉGATIF : un envoi en `Erreur`
+  // n'a pas atteint le patient et ne doit rien rendre visible. Sans ce
+  // paramètre, le spec ne prouverait que la moitié de la règle.
+  options: { statutEnvoi?: 'Envoye' | 'Erreur' } = {},
+): Promise<void> {
+  await cleanupBilanTransmis();
+  await prisma.syntheseIA.create({
+    data: {
+      idSynthese: ID_SYNTHESE_E2E,
+      idPatient,
+      emailPatient,
+      modele: 'claude-opus-5',
+      donneesEntree: { source: 'e2e-bilan-transmis' },
+      syntheseJson: {
+        resume_praticien: 'Résumé réservé au praticien',
+        axes_prioritaires: [
+          {
+            axe: 'Sommeil',
+            niveau_priorite: 'eleve',
+            arguments: ['Réveils nocturnes répétés'],
+            points_a_confirmer: ['Doser la ferritine'],
+          },
+        ],
+        points_de_vigilance: ['Fatigue persistante à surveiller'],
+        questions_entretien: ['Depuis quand dormez-vous mal ?'],
+        narratif_patient: 'Vos réponses évoquent un sommeil fragmenté depuis plusieurs semaines.',
+        limites: 'À valider en consultation.',
+      },
+      statut: 'Validee_Praticien',
+      dateValidation: new Date('2026-07-18T09:00:00.000Z'),
+      notesPraticien: 'On en reparle à votre prochain rendez-vous.',
+    },
+  });
+  await prisma.bookletEnvoi.create({
+    data: {
+      idSynthese: ID_SYNTHESE_E2E,
+      idPatient,
+      emailPatientMasque: 'm***@fictif.wellneuro.fr',
+      statut: options.statutEnvoi ?? 'Envoye',
+      operation: 'Envoi',
+      dateEnvoi: new Date('2026-07-18T09:30:00.000Z'),
+      // L'instantané de ce qui est parti — ce que le portail sert. Il vaut ici
+      // la note de la synthèse : c'est l'état juste après un envoi réel.
+      noteTransmise: 'On en reparle à votre prochain rendez-vous.',
+    },
+  });
+}
+
+/**
+ * Réécrit la note de la SYNTHÈSE après coup, sans rien envoyer — le geste
+ * `annoter`, qui n'a aucune garde de cycle de vie. L'instantané de l'envoi
+ * n'est pas touché : c'est exactement ce que le portail doit continuer de
+ * servir, sans quoi un praticien publierait au patient un texte jamais
+ * transmis, y compris sur un dossier clôturé.
+ */
+export async function annoterApresEnvoi(texte: string): Promise<void> {
+  await prisma.syntheseIA.update({
+    where: { idSynthese: ID_SYNTHESE_E2E },
+    data: { notesPraticien: texte },
+  });
+}
+
+/**
+ * Rejette la synthèse déjà transmise — le geste du praticien qui s'aperçoit
+ * après coup que le bilan était erroné. L'envoi reste en base (il a bien eu
+ * lieu) ; c'est le rejet qui doit retirer le document de l'écran du patient.
+ */
+export async function rejeterBilanTransmis(): Promise<void> {
+  await prisma.syntheseIA.update({
+    where: { idSynthese: ID_SYNTHESE_E2E },
+    data: { statut: 'Rejetee' },
+  });
+}
+
+// L'envoi avant la synthèse : `booklet_envois.id_synthese` référence
+// `syntheses_ia` sans cascade.
+export async function cleanupBilanTransmis(): Promise<void> {
+  await prisma.bookletEnvoi.deleteMany({ where: { idSynthese: ID_SYNTHESE_E2E } });
+  await prisma.syntheseIA.deleteMany({ where: { idSynthese: ID_SYNTHESE_E2E } });
 }
 
 /**

@@ -1,5 +1,6 @@
 import { type SyntheseSchema } from '@/lib/anthropic';
 import { escapeHtml } from '@/lib/html';
+import { mentionPreparation as construireMentionPreparation } from '@/lib/documents/bilanPatient';
 
 // Rendu HTML du booklet patient (extrait verbatim de
 // `app/api/praticien/booklet/route.ts` — C3 LOT-03, principe « auditer avant de
@@ -48,9 +49,9 @@ export function buildBookletHTML(
   const dateDocumentHtml = escapeHtml(dateDocument);
   const narratifHtml = escapeHtml(s.narratif_patient || 'Synthèse à compléter par votre praticien.');
   const notesPraticienHtml = escapeHtml(notesPraticien);
-  const mentionPreparation = options.assistanceIA === false
-    ? 'Document rédigé et validé par votre praticien.'
-    : 'Document préparé avec une assistance d’intelligence artificielle et validé par votre praticien.';
+  // Phrase partagée avec la page « Mon bilan » du portail (`bilanPatient.ts`) :
+  // le même document ne peut pas s'attribuer différemment selon la surface.
+  const mentionPreparation = construireMentionPreparation(options.assistanceIA !== false);
 
   return `<!DOCTYPE html>
 <html lang="fr">
