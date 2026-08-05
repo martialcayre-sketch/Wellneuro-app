@@ -4,7 +4,7 @@ titre: "Clôture des dettes Wellneuro 5.0"
 statut: "en_cours"
 créée_le: "2026-08-05"
 mise_à_jour: "2026-08-05"
-lot_courant: "LOT-04"
+lot_courant: "LOT-05"
 branche_campagne: "campaign/2026-08-05-cloture-des-dettes-wellneuro-5-0/integration"
 branche_lot_courant: "aucune"
 cible_pr_lot: "main"
@@ -136,8 +136,8 @@ vrai. Les lots 02 à 05 sont indépendants entre eux et parallélisables.
 | LOT-01 | Vue de vérité générée — état réel du dépôt | livré (#575, 2026-08-05) | — |
 | LOT-02 | Packs : observer le repli legacy avant de le fermer | livré (#581, 2026-08-05) | LOT-01 |
 | LOT-03 | Fermer `sum_decimal`, `count_threshold`, `ecab` | livré (#583, 2026-08-05) | — |
-| LOT-04 | Un seul parcours patient | code prêt — PR à ouvrir | LOT-01 |
-| LOT-05 | Matrice de consommation du savoir | à_faire | LOT-01 |
+| LOT-04 | Un seul parcours patient | livré (#591, 2026-08-05) | LOT-01 |
+| LOT-05 | Matrice de consommation du savoir | livré (2026-08-05) | LOT-01 |
 | LOT-06 | Dettes psychométriques et exigences RGPD | à_faire | — |
 | LOT-07 | Clôture : PR ouvertes soldées, déclaration 5.0 | à_faire | LOT-00…06 |
 
