@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { isDeadlineExpired } from '@/lib/patient-access';
 import { isSessionAuthorizedForAssignment, readPatientSession } from '@/lib/patient-session';
 import { IDS_SUSPENDUS } from '@/lib/questionnaires-catalog';
 import { AGENDA_ALI_ID } from './types';
@@ -7,7 +8,8 @@ import { AGENDA_ALI_ID } from './types';
 // `agenda-sommeil/portail.ts`, CORRIGÉ sur deux points — le `select` explicite,
 // et QUATRE barrières que le sommeil ne porte pas (voir plus bas) : instrument
 // suspendu, suivi clos, consentement non donné, consentement retiré. Le sommeil
-// en compte cinq, celui-ci neuf.
+// en compte cinq, celui-ci neuf — plus une DIXIÈME, conditionnelle : la date
+// limite (« 7 bis »), armée par le seul appelant qui écrit.
 //
 // L'ORDRE des deux dernières est un CORRECTIF de revue : le consentement était
 // demandé AVANT que l'état terminal du dossier ne soit constaté. Un patient dont
@@ -77,7 +79,8 @@ export type AgendaAliAuthError = {
     | 'consentement_absent'
     | 'consentement_retire'
     | 'annulee'
-    | 'suivi_clos';
+    | 'suivi_clos'
+    | 'expired';
   error: string;
   status: number;
 };
@@ -85,7 +88,9 @@ export type AgendaAliAuthError = {
 export type AgendaAliAuth = { idPatient: string; assignation: AssignationAgendaAli };
 
 /**
- * Les NEUF barrières, dans cet ordre. L'ordre n'est pas décoratif : le motif
+ * Les NEUF barrières inconditionnelles, plus la « 7 bis » (date limite) que
+ * `options.verifierDateLimite` arme — dans cet ordre. L'ordre n'est pas
+ * décoratif : le motif
  * rendu au patient est celui de la première qui mord, et un motif d'accès
  * (404) ne doit jamais être précédé d'un motif d'état qui confirmerait
  * l'existence de la ressource.
@@ -107,6 +112,7 @@ export type AgendaAliAuth = { idPatient: string; assignation: AssignationAgendaA
 export async function authorizeAgendaAlimentairePortail(
   req: Request,
   idAssignationRaw: string | null | undefined,
+  options?: { verifierDateLimite?: boolean },
 ): Promise<AgendaAliAuth | AgendaAliAuthError> {
   // 1 — session portail.
   const session = readPatientSession(req);
@@ -213,6 +219,54 @@ export async function authorizeAgendaAlimentairePortail(
       ok: false,
       reason: 'suivi_clos',
       error: 'Votre suivi est clôturé : cet agenda n’est plus accessible.',
+      status: 410,
+    };
+  }
+
+  // 7 bis — DATE LIMITE DÉPASSÉE. Barrière CONDITIONNELLE : elle ne mord que
+  // si l'appelant l'arme (`verifierDateLimite`), et seul le POST l'arme. Un
+  // agenda périmé doit rester LISIBLE — le patient doit pouvoir relire ses
+  // 21 jours après la fin du recueil.
+  //
+  // Numérotée « 7 bis » et non « 8 » à dessein : renuméroter décalerait les
+  // barrières 8 et 9, nommées telles quelles dans ce fichier, dans la route et
+  // dans les tests. Même convention que le « 6 bis » de la route.
+  //
+  // ── POURQUOI ICI, ET PAS AILLEURS ────────────────────────────────────────
+  // APRÈS la 5 (`unavailable`) : le RETRAIT DE PRODUCTION prime sur tout état du
+  // dossier, sinon `WN_AGENDA_ALI` cesse d'être réversible — un agenda périmé
+  // rendrait `expired` là où l'instrument est censé avoir disparu.
+  //
+  // APRÈS la 6 (`annulee`) et la 7 (`suivi_clos`) : ces deux-là sont PLUS
+  // DÉFINITIVES qu'une date limite. Une date limite se contourne (le praticien
+  // repositionne `statutReponses` à `deverrouille`, exemption ci-dessous) ou se
+  // repousse ; une annulation et une clôture de suivi, non.
+  //
+  // AVANT la 8 (`consentement_absent`) et la 9 (`consentement_retire`) : c'est
+  // l'OBJET du correctif. Un 410 d'état terminal doit précéder un 403 qui NOMME
+  // UN GESTE, sinon on renvoie le patient vers `api/patient/consentement`, qui
+  // refuse en 410 sur une date limite dépassée. Le geste demandé serait
+  // impossible à poser — même défaut que celui déjà corrigé sur `annulee`.
+  //
+  // `isDeadlineExpired` est reprise TELLE QUELLE de la route : elle parse dans
+  // le fuseau du SERVEUR (écart connu d'environ 2 h avec Paris). Le déplacement
+  // doit être ISO-COMPORTEMENT ; corriger l'écart ici mêlerait deux
+  // changements et ferait tomber des tests qui prouvent justement l'identité.
+  //
+  // L'exemption `deverrouille` voyage AVEC la barrière : le bouton
+  // « déverrouiller » du praticien (`api/praticien/assignations`) repositionne
+  // `statutReponses` sans toucher à `dateLimite`. Sans elle, l'écran annonce un
+  // agenda rouvert et la route continue de refuser. Même exemption que
+  // `patient/submit` (route.ts:145).
+  if (
+    options?.verifierDateLimite === true
+    && assignation.statutReponses !== 'deverrouille'
+    && isDeadlineExpired(assignation.dateLimite)
+  ) {
+    return {
+      ok: false,
+      reason: 'expired',
+      error: 'La période de recueil est terminée.',
       status: 410,
     };
   }

@@ -15,6 +15,7 @@ import {
   calculerActionRecommandee,
   GROUPES,
   GROUPES_SECONDAIRES,
+  type AgendaAliPortail,
   type AgendaPortail,
   type Groupe,
 } from '@/lib/portail/hubQuestionnaires';
@@ -42,6 +43,11 @@ export default function QuestionnairesHubPage() {
   // rien d'autre. En cas d'échec de lecture, tableau vide — le hub retombe sur
   // son comportement d'avant, jamais sur une supposition.
   const [agendas, setAgendas] = useState<AgendaPortail[]>([]);
+  // Agendas alimentaires en cours : compte de journées et position dans la
+  // fenêtre, rien d'autre. Même résilience que ci-dessus — en cas d'échec de
+  // lecture, tableau vide : le hub retombe sur son comportement d'avant
+  // l'agenda alimentaire, jamais sur une supposition.
+  const [agendasAli, setAgendasAli] = useState<AgendaAliPortail[]>([]);
   const [derniereReponseLe, setDerniereReponseLe] = useState<string | null>(null);
   const [brouillons, setBrouillons] = useState<Set<string>>(new Set());
   const [changements, setChangements] = useState<ChangementVisite[]>([]);
@@ -105,6 +111,7 @@ export default function QuestionnairesHubPage() {
       setPatient(data.patient);
       setAssignations(data.assignations);
       setAgendas(data.agendas ?? []);
+      setAgendasAli(data.agendasAlimentaires ?? []);
       setDerniereReponseLe(data.derniereReponseLe);
       setSignauxParcours(data.parcours ?? { consultationStatut: null, bookletEnvoye: false });
       // Protocole diffusé / fin de cycle : route existante, lecture résiliente
@@ -178,12 +185,13 @@ export default function QuestionnairesHubPage() {
       a,
       brouillons.has(a.idAssignation),
       agendas.find(g => g.idAssignation === a.idAssignation),
+      agendasAli.find(g => g.idAssignation === a.idAssignation),
     ),
   }));
   const aCompleterItems = enriched.filter(e => e.aff.groupe === 'a_completer');
   const aCompleter = aCompleterItems.length;
   const dureeACompleterMin = aCompleterItems.reduce((somme, e) => somme + parseDureeMinutes(e.a.duree), 0);
-  const actionRecommandee = calculerActionRecommandee(enriched, brouillons, agendas);
+  const actionRecommandee = calculerActionRecommandee(enriched, brouillons, agendas, agendasAli);
 
   // Parcours synchronisé (SP-CONV LOT-04) : les étapes 5-6 vivent enfin —
   // dérivées du contrat partagé sur les seuls signaux que le portail sert

@@ -253,6 +253,30 @@ export default function PatientQuestionnairePage() {
 
   if (step.name === 'consent') {
     const { email, data } = step;
+    // ── MÊME GARDE QUE L'ÉCRAN PORTAIL, MÊME VERDICT SERVEUR ────────────────
+    // Cet écran-ci porte AUSSI le `ConsentScreen`, et il n'avait pas reçu le
+    // garde : l'élargissement « à tous les questionnaires » ne valait donc que
+    // sur un écran sur deux. Il consomme la MÊME route
+    // (`/api/patient/questionnaire`, plus haut dans `EmailGate`), donc le même
+    // `consentementPossible` — rien à recalculer, et surtout pas
+    // `isDeadlineExpired`, qui s'évaluerait dans le fuseau du navigateur.
+    //
+    // Le message ne dit pas que le questionnaire n'a pas été rempli : ce garde
+    // n'est atteignable que sur des assignations verrouillées ou en correction
+    // demandée, donc déjà transmises.
+    if (!data.consentementPossible) {
+      return (
+        <div className="w-full max-w-2xl">
+          <div className="bg-surface rounded-2xl shadow-card border border-border p-8 text-center">
+            <p className="text-status-warning">
+              La période est terminée : votre consentement ne peut plus être enregistré. Contactez
+              votre praticien pour la suite de votre suivi.
+            </p>
+          </div>
+          <QuestionnairesEnAttentePanel idAssignation={data.assignation.idAssignation} email={email} />
+        </div>
+      );
+    }
     return (
       <div className="w-full max-w-2xl">
         <ConsentScreen
