@@ -5,6 +5,7 @@ import type { OrientationApiResponse } from '@/app/api/praticien/orientation/rou
 import type { RecommandationServie } from '@/lib/clinical/orientationService';
 import { PACKS_REGISTRY, type PackId } from '@/lib/questionnaires-functional';
 import { CATALOGUE_DEFINITIONS } from '@/lib/bibliotheque';
+import { MESSAGE_DEJA_ASSIGNE } from '@/lib/assignations/messages';
 import { Badge } from '@/components/ui/Badge';
 
 // Orientation NNPP2 — le premier consommateur de `/api/praticien/orientation`
@@ -202,6 +203,11 @@ export function OrientationPanel({
               // une correspondance en base, et un email pour l'appeler. Sinon
               // le bouton est absent — jamais présent et voué à l'échec.
               const assignable = estPack && Boolean(idPackBase) && Boolean(emailPatient);
+              // Tout le contenu porte déjà une assignation ouverte : la route
+              // refuserait en 409. Le bouton n'est pas simplement retiré — le
+              // remplacer par rien laisserait croire à un défaut de droits ; il
+              // cède la place au geste réellement possible.
+              const dejaCouvert = recommandation.dejaAssigne === true;
               const issueCible = issue?.cle === cle ? issue : null;
 
               return (
@@ -238,7 +244,16 @@ export function OrientationPanel({
                     ))}
                   </ul>
 
-                  {assignable && (
+                  {assignable && dejaCouvert && (
+                    // Le texte vient de la route, il n'est pas réécrit ici :
+                    // deux formulations du même refus divergeraient, et c'est
+                    // l'écran qui mentirait.
+                    <p className="mt-2 text-xs text-muted-foreground" role="status">
+                      {MESSAGE_DEJA_ASSIGNE}
+                    </p>
+                  )}
+
+                  {assignable && !dejaCouvert && (
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       {assignees.has(cle) ? (
                         // Ce que la route garantit, et rien de plus : elle crée

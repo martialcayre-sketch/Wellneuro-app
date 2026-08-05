@@ -181,7 +181,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   const [assignationFeedback, setAssignationFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
   // Annulation d'assignation (Fil A) : cible de la modale, état d'envoi, erreur.
-  const [annulationCible, setAnnulationCible] = useState<{ idAssignation: string; titre: string; emailPatient: string } | null>(null);
+  const [annulationCible, setAnnulationCible] = useState<{ idAssignation: string; titre: string; emailPatient: string; nbJourneesAgenda: number | null } | null>(null);
   const [annulationEnCours, setAnnulationEnCours] = useState(false);
   const [erreurAnnulation, setErreurAnnulation] = useState<string | null>(null);
   const [editFeedback, setEditFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -1130,6 +1130,10 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
                             idAssignation: a.idAssignation,
                             titre: a.titre || a.idQuestionnaire || 'ce questionnaire',
                             emailPatient: a.emailPatient || '',
+                            // Fait d'affichage seul (LOT-08) : n'entre dans
+                            // aucune décision d'autorisation, `annulable` reste
+                            // décidé par `estAnnulable` seul, juste au-dessus.
+                            nbJourneesAgenda: a.nbJourneesAgenda ?? null,
                           });
                         }}
                         className="text-xs font-medium text-status-danger hover:underline"
@@ -1151,6 +1155,7 @@ export function PatientsPanel({ lienMagiqueActif = false }: { lienMagiqueActif?:
       <AnnulationAssignationDialog
         titreQuestionnaire={annulationCible?.titre ?? ''}
         emailPatient={annulationCible?.emailPatient ?? ''}
+        nbJourneesAgenda={annulationCible?.nbJourneesAgenda ?? null}
         open={annulationCible !== null}
         onOpenChange={ouvert => {
           if (!ouvert) {

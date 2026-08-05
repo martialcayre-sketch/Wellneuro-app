@@ -13,6 +13,12 @@ import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
 import { MESSAGE_DOSSIER_CLOS, RAISON_DOSSIER_CLOS, accepteNouvelEnvoi } from '@/lib/patient/cycleDeVie';
 import {
+  MESSAGE_DEJA_ASSIGNE,
+  RAISON_DEJA_ASSIGNE,
+  qidsDejaOuverts,
+  verrouillerPatient,
+} from '@/lib/assignations/dedup';
+import {
   createRequestContext,
   finalizeLogContext,
   withCorrelationHeader,
@@ -34,7 +40,7 @@ export type AssignPackResponse = {
   count?: number;
   packNom?: string;
   error?: string;
-  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'portal_revoked' | 'pack_not_found' | 'exception';
+  reason?: 'unauthenticated' | 'invalid_payload' | 'patient_not_found' | 'portal_revoked' | 'pack_not_found' | 'deja_assigne' | 'exception';
 };
 
 const catalogue = QUESTIONNAIRE_CATALOGUE as Record<string, { id: string; titre: string }>;
@@ -215,9 +221,15 @@ export async function POST(req: Request): Promise<NextResponse> {
       }, { status: 409 }), requestContext);
     }
 
-    await prisma.$transaction(
-      aCreer.map(item =>
-        prisma.assignation.create({
+    // Dédup sous verrou patient : un qid déjà porté par une assignation ouverte
+    // est écarté (le pack part amputé, comme pour un instrument suspendu) ; si
+    // tout le pack est déjà ouvert, refus explicite plutôt qu'un envoi vide.
+    const crees = await prisma.$transaction(async tx => {
+      await verrouillerPatient(tx, patient.idPatient);
+      const ouvertes = await qidsDejaOuverts(tx, patient.idPatient, aCreer.map(i => i.idQuestionnaire));
+      const aInserer = aCreer.filter(item => !ouvertes.has(item.idQuestionnaire));
+      for (const item of aInserer) {
+        await tx.assignation.create({
           data: {
             ...item,
             idPatient: patient.idPatient,
@@ -227,13 +239,28 @@ export async function POST(req: Request): Promise<NextResponse> {
             statut: 'En attente',
             notes: notesPack,
           },
-        }),
-      ),
-    );
+        });
+      }
+      return { aInserer, ecartes: [...ouvertes].sort() };
+    });
+    if (crees.ecartes.length > 0) {
+      logger.warn({
+        event: EVENT_CODES.ASSIGNATION_DEJA_ASSIGNE_ECARTE,
+        domain: 'ASSIGNATION',
+        message: `Questionnaires déjà assignés (ouverts) écartés du pack : ${crees.ecartes.join(', ')}`,
+        context: finalizeLogContext(requestContext, { retryable: false }),
+      });
+    }
+    if (crees.aInserer.length === 0) {
+      return withCorrelationHeader(NextResponse.json(
+        { success: false, reason: RAISON_DEJA_ASSIGNE, error: MESSAGE_DEJA_ASSIGNE },
+        { status: 409 }
+      ), requestContext);
+    }
     const portalUrl = buildGoogleConnexionUrl();
 
     // Un seul email récapitulatif (best-effort), vers la page de connexion.
-    await sendPackEmail(patient.idPatient, idPack, emailPatient, pack.nom, aCreer, dateLimite, notes, portalUrl).catch(
+    await sendPackEmail(patient.idPatient, idPack, emailPatient, pack.nom, crees.aInserer, dateLimite, notes, portalUrl).catch(
       e => logger.error({
         event: EVENT_CODES.ASSIGNATION_PACK_EMAIL_FAILED,
         domain: 'EMAIL',
@@ -243,7 +270,7 @@ export async function POST(req: Request): Promise<NextResponse> {
       })
     );
 
-    return withCorrelationHeader(NextResponse.json({ success: true, count: aCreer.length, packNom: pack.nom }), requestContext);
+    return withCorrelationHeader(NextResponse.json({ success: true, count: crees.aInserer.length, packNom: pack.nom }), requestContext);
   } catch (err) {
     logger.error({
       event: EVENT_CODES.ASSIGNATION_PACK_EXCEPTION,

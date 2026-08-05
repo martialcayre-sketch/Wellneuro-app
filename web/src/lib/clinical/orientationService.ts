@@ -9,6 +9,7 @@ import { evaluerOrientation, type RecommandationExploration } from '@/lib/clinic
 import { extraireDrapeauxAnamnese } from '@/lib/consultation/drapeauxAnamnese';
 import { idBaseDepuisPackId, packIdDepuisIdBase, type PackId } from '@/lib/questionnaires-functional';
 import { estAdministrableParLaRoute } from '@/lib/bibliotheque';
+import { STATUTS_ASSIGNATION_TERMINAL } from '@/lib/assignations/dedup';
 import { calculateScore } from '@/lib/questions';
 import { motifNonInterpretable } from '@/lib/scoring/passationsNonInterpretables';
 
@@ -133,8 +134,10 @@ export async function evaluerOrientationPourPatient(idPatient: string): Promise<
       select: { idReponse: true, idQuestionnaire: true, dateReponse: true, scoresJson: true },
       orderBy: { dateReponse: 'desc' },
     }),
+    // Seules les assignations OUVERTES comptent comme « déjà assigné » : une
+    // assignation annulée ou complétée ne doit pas bloquer une repassation.
     prisma.assignation.findMany({
-      where: { idPatient },
+      where: { idPatient, statut: { notIn: [...STATUTS_ASSIGNATION_TERMINAL] } },
       select: { idQuestionnaire: true },
     }),
     prisma.pack.findMany({

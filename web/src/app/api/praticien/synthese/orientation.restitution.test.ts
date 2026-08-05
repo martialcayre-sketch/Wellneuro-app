@@ -188,6 +188,68 @@ describe('bloc d’orientation transmis au modèle', () => {
     expect(message).toContain('1. pack');
   });
 
+  // LOT-B — l'antériorité voyage avec la recommandation. Sans elle, le modèle
+  // proposait de faire passer un instrument déjà chez le patient : la seule
+  // façon de ne pas le dire était de ne pas le savoir.
+  it('transmet l’état « déjà assigné » au modèle', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [{ ...ORIENTATION_ACTIVE.recommandations[0], dejaAssigne: true }],
+    });
+    await POST(req());
+    expect(messageEnvoye()).toContain('DÉJÀ ASSIGNÉ (en attente de réponse)');
+  });
+
+  it('transmet l’état « déjà renseigné »', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [{ ...ORIENTATION_ACTIVE.recommandations[0], dejaRepondu: true }],
+    });
+    await POST(req());
+    expect(messageEnvoye()).toContain('DÉJÀ RENSEIGNÉ');
+  });
+
+  // « inconnu » n'est pas « non renseigné » : un fait inconnu ne doit pas se
+  // présenter au modèle comme un fait négatif — même doctrine que le badge
+  // « couverture inconnue » du panneau praticien.
+  it('distingue une couverture inconnue d’une absence de réponse', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [{ ...ORIENTATION_ACTIVE.recommandations[0], dejaRepondu: null }],
+    });
+    await POST(req());
+    expect(messageEnvoye()).toContain('couverture inconnue');
+    expect(messageEnvoye()).not.toContain('DÉJÀ RENSEIGNÉ');
+  });
+
+  // Cas réel : une repassation d'un instrument déjà répondu est à la fois
+  // renseignée et de nouveau en attente. Les deux états cumulent dans le même
+  // segment — aucun n'écrase l'autre.
+  it('cumule les deux états quand une repassation est en attente', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue({
+      ...ORIENTATION_ACTIVE,
+      recommandations: [
+        { ...ORIENTATION_ACTIVE.recommandations[0], dejaAssigne: true, dejaRepondu: true },
+      ],
+    });
+    await POST(req());
+    const message = messageEnvoye();
+    expect(message).toContain('DÉJÀ ASSIGNÉ (en attente de réponse)');
+    expect(message).toContain('DÉJÀ RENSEIGNÉ');
+  });
+
+  // Contrôle négatif. ATTENTION à ce qu'il prouve, et à ce qu'il ne prouve
+  // PAS : l'absence de segment ne dit pas « jamais adressé ». Pour un pack,
+  // `dejaAssigne` est un `every()` sur la composition — un pack dont sept
+  // membres sur huit sont déjà chez le patient ne porte aucun segment. La
+  // consigne système est écrite en conséquence et interdit d'en conclure quoi
+  // que ce soit ; ce test vérifie seulement qu'on ne fabrique pas d'état.
+  it('n’écrit aucun état quand le moteur n’en signale aucun', async () => {
+    evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
+    await POST(req());
+    expect(messageEnvoye()).not.toContain('État :');
+  });
+
   it('place le bloc avant les résultats de questionnaires', async () => {
     evaluerOrientationPourPatient.mockResolvedValue(ORIENTATION_ACTIVE);
     await POST(req());

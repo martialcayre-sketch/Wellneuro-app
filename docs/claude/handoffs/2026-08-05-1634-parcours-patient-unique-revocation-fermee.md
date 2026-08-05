@@ -18,7 +18,7 @@ Campagne `2026-08-05-cloture-des-dettes-wellneuro-5-0`, LOT-04 : « Un seul parc
 4. **Décision finale : repli retiré entièrement**, sur les 6 routes — session `wn_portail` obligatoire, comme `api/patient/protocole` déjà. Vérifié **avant** ce choix, empiriquement, que `/portail/connexion` fonctionne réellement en production (logs runtime Vercel, hors dépôt : sessions Google et lien magique ouvertes dans les dernières 24h, 3 drapeaux actifs — `WN_G4_LIEN_MAGIQUE`, `WN_G4_REDEMANDE_PATIENT`, `WN_G5_GOOGLE_PATIENT`).
 5. **Redirection inconditionnelle** `/patient/[idAssignation]` → `/portail/connexion` (`web/next.config.mjs`, `redirects()`, 307 — pas 308, réversible ; pas d'email en query string).
 6. **2ᵉ NO-GO en revue** : les 6 routes renvoyaient 404 (lectures) / 403 (écritures) sur absence de session, mais le hub patient (`portail/[token]/questionnaires/[idAssignation]/page.tsx`) ne redirige vers le gate de reconnexion que sur 400/401 — une session expirée (TTL 12h glissantes) sur un lien profond atterrissait sur un écran d'erreur sans retour possible. **Corrigé en 401 uniforme.**
-7. Décision consignée dans le registre : `docs/DECISIONS.md` D-028 (référence [[D-002]]).
+7. Décision consignée dans le registre : `docs/DECISIONS.md` D-029 (référence [[D-002]]).
 
 ## Fichiers modifiés
 
@@ -30,7 +30,7 @@ Campagne `2026-08-05-cloture-des-dettes-wellneuro-5-0`, LOT-04 : « Un seul parc
 - `changelog.d/2026-08-05-parcours-patient-unique.md`.
 - `docs/claude/campagnes/2026-08-05-cloture-des-dettes-wellneuro-5-0/lots/LOT-04-validation.md` (statut, étapes, Résultats).
 - `docs/claude/campagnes/2026-08-05-cloture-des-dettes-wellneuro-5-0/CAMPAGNE.md` (ligne LOT-04 du tableau).
-- `docs/DECISIONS.md` (D-028).
+- `docs/DECISIONS.md` (D-029).
 - `docs/claude/SESSION_LOG.md` (entrée du jour).
 
 ## Validations exécutées

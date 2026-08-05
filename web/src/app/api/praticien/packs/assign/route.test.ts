@@ -5,7 +5,8 @@ const { sendMail, prisma } = vi.hoisted(() => ({
   prisma: {
     patient: { findFirst: vi.fn() },
     pack: { findUnique: vi.fn() },
-    assignation: { create: vi.fn() },
+    assignation: { create: vi.fn(), findMany: vi.fn() },
+    $queryRaw: vi.fn(),
     $transaction: vi.fn(),
   },
 }));
@@ -25,6 +26,7 @@ import { POST } from './route';
 import { resolvePackQuestionnaireIds } from '@/lib/consultation/packRegistry';
 import { logger } from '@/lib/observability/logger';
 import { EVENT_CODES } from '@/lib/observability/eventCodes';
+import { QUESTIONNAIRE_CATALOGUE } from '@/lib/questions';
 
 const patient = {
   idPatient: 'PAT_TEST',
@@ -53,9 +55,13 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     prisma.patient.findFirst.mockResolvedValue(patient);
     prisma.pack.findUnique.mockResolvedValue({ idPack: 'PACK_TEST', nom: 'Pack test', actif: true, qids: ['Q_NEU_03'] });
     prisma.assignation.create.mockResolvedValue({});
-    // LOT-04 : plus de withActivePortalAccess ; les créations passent par un
-    // $transaction(array) qui se contente d'exécuter les promesses.
-    prisma.$transaction.mockResolvedValue([]);
+    // Dédup : aucune assignation ouverte par défaut.
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
+    // Transaction interactive : le callback reçoit le client mocké lui-même.
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
     sendMail.mockResolvedValue(undefined);
   });
 
@@ -104,6 +110,45 @@ describe('POST /api/praticien/packs/assign — lien portail', () => {
     expect(logger.warn).not.toHaveBeenCalledWith(
       expect.objectContaining({ event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU })
     );
+  });
+
+  // Dédup : un qid déjà porté par une assignation ouverte est écarté (pack
+  // amputé, comme un instrument suspendu) ; si tout le pack l'est, refus 409
+  // sans aucune création ni e-mail.
+  it('écarte du pack un questionnaire déjà assigné (ouvert), le reste part', async () => {
+    vi.mocked(resolvePackQuestionnaireIds).mockResolvedValue({
+      qids: ['Q_NEU_03', 'Q_SOM_06'], source: 'legacy', raison: 'registre_absent', registryCount: 0,
+    });
+    prisma.assignation.findMany.mockResolvedValue([{ idQuestionnaire: 'Q_SOM_06' }]);
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ success: true, count: 1 });
+    expect(prisma.assignation.create).toHaveBeenCalledOnce();
+    const cree = prisma.assignation.create.mock.calls[0][0] as { data: { idQuestionnaire: string } };
+    expect(cree.data.idQuestionnaire).toBe('Q_NEU_03');
+    // Le mail ne liste que les retenus — pas le questionnaire écarté.
+    const titreEcarte = (QUESTIONNAIRE_CATALOGUE as Record<string, { titre: string }>)['Q_SOM_06'].titre;
+    const message = sendMail.mock.calls[0][0] as { text: string };
+    expect(message.text).not.toContain(titreEcarte);
+    // Et l'écart est journalisé sous son propre code — pas celui des suspendus.
+    expect(logger.warn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: EVENT_CODES.ASSIGNATION_DEJA_ASSIGNE_ECARTE,
+        message: expect.stringContaining('Q_SOM_06'),
+      })
+    );
+    expect(logger.warn).not.toHaveBeenCalledWith(
+      expect.objectContaining({ event: EVENT_CODES.ASSIGNATION_PACK_INSTRUMENT_SUSPENDU })
+    );
+  });
+
+  it('refuse en 409 deja_assigne quand tout le pack est déjà ouvert, sans mail', async () => {
+    prisma.assignation.findMany.mockResolvedValue([{ idQuestionnaire: 'Q_NEU_03' }]);
+    const response = await POST(request());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ success: false, reason: 'deja_assigne' });
+    expect(prisma.assignation.create).not.toHaveBeenCalled();
+    expect(sendMail).not.toHaveBeenCalled();
   });
 
   it('ne crée aucune assignation lorsque le portail est révoqué', async () => {

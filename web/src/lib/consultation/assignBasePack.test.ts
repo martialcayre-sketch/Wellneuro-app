@@ -1,7 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prisma } = vi.hoisted(() => ({
-  prisma: { assignation: { create: vi.fn() } },
+  prisma: {
+    assignation: { create: vi.fn(), findMany: vi.fn() },
+    $queryRaw: vi.fn(),
+    $transaction: vi.fn(),
+  },
 }));
 vi.mock('@/lib/prisma', () => ({ prisma }));
 vi.mock('@/lib/ids', () => ({ createPublicId: (prefix: string) => `${prefix}_TEST_12345678` }));
@@ -16,6 +20,13 @@ describe('assignPackToPatient — instruments suspendus', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     prisma.assignation.create.mockResolvedValue({});
+    // Dédup : aucune assignation ouverte par défaut ; la transaction
+    // interactive passe le client mocké lui-même comme tx.
+    prisma.assignation.findMany.mockResolvedValue([]);
+    prisma.$queryRaw.mockResolvedValue([{ id: 1 }]);
+    prisma.$transaction.mockImplementation(
+      (fn: (tx: typeof prisma) => Promise<unknown>) => fn(prisma),
+    );
   });
 
   async function assigner(qids: string[]) {
@@ -28,7 +39,7 @@ describe('assignPackToPatient — instruments suspendus', () => {
   }
 
   it('crée les assignations des instruments actifs', async () => {
-    const cree = await assigner(['Q_NEU_03']);
+    const { cree } = await assigner(['Q_NEU_03']);
     expect(cree).toHaveLength(1);
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
   });
@@ -40,7 +51,7 @@ describe('assignPackToPatient — instruments suspendus', () => {
   // usage ne coûte rien à personne, sa reconstruction ne servirait aujourd'hui
   // aucun usage.
   it('écarte un instrument suspendu sans faire échouer le reste du pack', async () => {
-    const cree = await assigner(['Q_NEU_03', 'Q_FIB_03']);
+    const { cree } = await assigner(['Q_NEU_03', 'Q_FIB_03']);
     expect(cree).toHaveLength(1);
     expect(prisma.assignation.create).toHaveBeenCalledOnce();
     const arg = prisma.assignation.create.mock.calls[0][0] as { data: { idQuestionnaire: string } };
@@ -55,9 +66,37 @@ describe('assignPackToPatient — instruments suspendus', () => {
     expect(qidsSuspendus(['Q_NEU_03'])).toEqual([]);
   });
 
+  // Idempotence onboarding : un qid déjà porté par une assignation ouverte est
+  // ignoré — une revalidation ne double pas le pack de base.
+  it('écarte un questionnaire déjà assigné (ouvert) et le REND à l’appelant', async () => {
+    prisma.assignation.findMany.mockResolvedValue([{ idQuestionnaire: 'Q_NEU_03' }]);
+    const { cree, dejaOuverts } = await assigner(['Q_NEU_03', 'Q_SOM_06']);
+    expect(cree).toHaveLength(1);
+    expect(dejaOuverts).toEqual(['Q_NEU_03']);
+    expect(prisma.assignation.create).toHaveBeenCalledOnce();
+    const arg = prisma.assignation.create.mock.calls[0][0] as { data: { idQuestionnaire: string } };
+    expect(arg.data.idQuestionnaire).toBe('Q_SOM_06');
+  });
+
+  it('la dédup exclut les statuts terminaux — repassation possible, statut inconnu bloquant', async () => {
+    await assigner(['Q_NEU_03']);
+    const whereDedup = prisma.assignation.findMany.mock.calls[0][0] as {
+      where: { statut: { notIn: string[] } };
+    };
+    expect(whereDedup.where.statut.notIn).toEqual(['Complété', 'Annulée']);
+  });
+
   it('n’écrit rien si le pack ne contient que des instruments suspendus', async () => {
-    const cree = await assigner(['Q_FIB_03']);
+    const { cree } = await assigner(['Q_FIB_03']);
     expect(cree).toHaveLength(0);
     expect(prisma.assignation.create).not.toHaveBeenCalled();
+  });
+
+  it('un pack vide ne prend ni transaction ni verrou', async () => {
+    const { cree, dejaOuverts } = await assigner([]);
+    expect(cree).toHaveLength(0);
+    expect(dejaOuverts).toEqual([]);
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
   });
 });
